@@ -1,0 +1,14 @@
+import { config } from "dotenv";
+import path from "node:path";
+
+config({ path: path.resolve(process.cwd(), "../.env") });
+
+export const env = {
+  nodeEnv: process.env.NODE_ENV ?? "development",
+  port: Number(process.env.PORT ?? 4000),
+  databaseUrl: process.env.DATABASE_URL ?? "",
+  jwtSecret: process.env.JWT_SECRET ?? "dev-secret",
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "7d",
+  storagePath: process.env.STORAGE_PATH ?? "./storage",
+  maxFileSizeMb: Number(process.env.MAX_FILE_SIZE_MB ?? 20),
+};

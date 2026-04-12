@@ -1,0 +1,284 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProjectStatus {
+  PROSPECT
+  ACTIVE
+  COMPLETED
+  PAUSED
+}
+
+enum StageName {
+  PREVENTA
+  INGENIERIA
+  COMPRAS
+  INSTALACION
+  HABILITACION
+  POSTVENTA
+}
+
+enum StageStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum SubstageStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  BLOCKED
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum TaskPriority {
+  NORMAL
+  URGENT
+}
+
+enum AuditEntityType {
+  project
+  stage
+  substage
+  task
+  file
+  user
+  notification
+}
+
+enum AuditAction {
+  created
+  updated
+  deleted
+  status_changed
+  file_uploaded
+  stage_advanced
+  alert_triggered
+}
+
+enum NotificationType {
+  task_due
+  stage_changed
+  progress_milestone
+  substage_blocked
+  stage_overdue
+  project_delayed
+}
+
+model User {
+  id                String           @id @default(cuid())
+  email             String           @unique
+  password          String
+  name              String
+  avatarUrl         String?          @map("avatar_url")
+  createdProjects   Project[]        @relation("ProjectCreatedBy")
+  assignedSubstages Substage[]
+  assignedTasks     Task[]
+  uploadedFiles     FileAttachment[] @relation("FileUploadedBy")
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  createdAt         DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime         @updatedAt @db.Timestamptz(6)
+
+  @@map("users")
+}
+
+model Project {
+  id                String           @id @default(cuid())
+  code              String           @unique
+  clientName        String
+  capacityKwp       Decimal          @db.Decimal(10, 2)
+  locationCity      String
+  locationProvince  String
+  status            ProjectStatus
+  startDate         DateTime         @db.Date
+  plannedEndDate    DateTime         @db.Date
+  actualEndDate     DateTime?        @db.Date
+  budgetUsd         Decimal          @db.Decimal(14, 2)
+  executedUsd       Decimal          @db.Decimal(14, 2)
+  estimatedMwhYear  Decimal          @db.Decimal(10, 2)
+  co2TonsAvoided    Decimal          @db.Decimal(10, 2)
+  notificationEmail String
+  notificationPhone String
+  createdById       String
+  createdBy         User             @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  stages            Stage[]
+  substages         Substage[]
+  tasks             Task[]
+  files             FileAttachment[]
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  deletedAt         DateTime?        @db.Timestamptz(6)
+  createdAt         DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime         @updatedAt @db.Timestamptz(6)
+
+  @@index([status])
+  @@index([createdById])
+  @@index([plannedEndDate])
+  @@index([deletedAt])
+  @@map("projects")
+}
+
+model Stage {
+  id                  String      @id @default(cuid())
+  projectId           String
+  project             Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  order               Int
+  name                StageName
+  status              StageStatus
+  progressPercent     Int
+  plannedStartDate    DateTime?   @db.Date
+  plannedEndDate      DateTime?   @db.Date
+  actualStartDate     DateTime?   @db.Date
+  actualEndDate       DateTime?   @db.Date
+  plannedDurationDays Int?
+  actualDurationDays  Int?
+  delayDays           Int?
+  notes               String?
+  substages           Substage[]
+  tasks               Task[]
+  files               FileAttachment[]
+  createdAt           DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime    @updatedAt @db.Timestamptz(6)
+
+  @@unique([projectId, order])
+  @@unique([projectId, name])
+  @@index([projectId, status])
+  @@map("stages")
+}
+
+model Substage {
+  id               String         @id @default(cuid())
+  stageId          String
+  projectId        String
+  order            Int
+  name             String
+  status           SubstageStatus
+  responsible      String
+  userId           String?
+  user             User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  stage            Stage          @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  project          Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  dueDate          DateTime?      @db.Date
+  plannedStartDate DateTime?      @db.Date
+  plannedEndDate   DateTime?      @db.Date
+  actualStartDate  DateTime?      @db.Date
+  actualEndDate    DateTime?      @db.Date
+  notes            String?
+  tasks            Task[]
+  files            FileAttachment[]
+  deletedAt        DateTime?      @db.Timestamptz(6)
+  createdAt        DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime       @updatedAt @db.Timestamptz(6)
+
+  @@unique([stageId, order])
+  @@index([projectId, status])
+  @@index([userId])
+  @@index([deletedAt])
+  @@map("substages")
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  projectId   String
+  stageId     String?
+  substageId  String?
+  title       String
+  description String?
+  status      TaskStatus
+  priority    TaskPriority
+  responsible String
+  userId      String?
+  user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stage       Stage?       @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  substage    Substage?    @relation(fields: [substageId], references: [id], onDelete: SetNull)
+  dueDate     DateTime?    @db.Date
+  completedAt DateTime?    @db.Timestamptz(6)
+  deletedAt   DateTime?    @db.Timestamptz(6)
+  createdAt   DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @db.Timestamptz(6)
+
+  @@index([projectId, status])
+  @@index([userId])
+  @@index([dueDate])
+  @@index([deletedAt])
+  @@map("tasks")
+}
+
+model FileAttachment {
+  id             String    @id @default(cuid())
+  projectId      String
+  stageId        String?
+  substageId     String?
+  filename       String
+  storedFilename String
+  mimeType       String
+  sizeBytes      Int
+  url            String
+  uploadedById   String
+  uploadedBy     User      @relation("FileUploadedBy", fields: [uploadedById], references: [id], onDelete: Restrict)
+  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stage          Stage?    @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  substage       Substage? @relation(fields: [substageId], references: [id], onDelete: SetNull)
+  deletedAt      DateTime? @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([projectId])
+  @@index([uploadedById])
+  @@index([deletedAt])
+  @@map("file_attachments")
+}
+
+model AuditLog {
+  id           String          @id @default(cuid())
+  entityType   AuditEntityType
+  entityId     String
+  projectId    String?
+  project      Project?        @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  action       AuditAction
+  fieldChanged String?
+  oldValue     String?
+  newValue     String?
+  description  String
+  timestamp    DateTime        @default(now()) @db.Timestamptz(6)
+  metadata     Json?
+
+  @@index([entityType, entityId])
+  @@index([projectId])
+  @@index([timestamp])
+  @@index([userId])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id           String           @id @default(cuid())
+  userId       String?
+  user         User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  projectId    String?
+  project      Project?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  type         NotificationType
+  title        String
+  message      String
+  read         Boolean          @default(false)
+  sentEmail    Boolean          @default(false)
+  sentWhatsapp Boolean          @default(false)
+  createdAt    DateTime         @default(now()) @db.Timestamptz(6)
+
+  @@index([userId, read])
+  @@index([projectId, type])
+  @@map("notifications")
+}
