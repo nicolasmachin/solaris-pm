@@ -1,0 +1,250 @@
+@baseUrl = http://127.0.0.1:4000
+@adminEmail = admin@solarispm.com
+@adminPassword = Admin1234
+@taskDueDate = 2026-04-13
+
+### AUTH · login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+###
+@token = {{login.response.body.token}}
+
+### PROYECTOS · listar
+# @name listProjects
+GET {{baseUrl}}/api/projects
+Authorization: Bearer {{token}}
+
+###
+@seedProjectId = {{listProjects.response.body.$[0].id}}
+
+### PROYECTOS · detalle completo de proyecto existente
+# @name getSeedProject
+GET {{baseUrl}}/api/projects/{{seedProjectId}}
+Authorization: Bearer {{token}}
+
+### PROYECTOS · crear proyecto de prueba
+# @name createProject
+POST {{baseUrl}}/api/projects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "clientName": "QA Solar Demo",
+  "capacityKwp": 88,
+  "locationCity": "Rosario",
+  "locationProvince": "Santa Fe",
+  "plannedEndDate": "2026-09-30",
+  "budgetUsd": 76500,
+  "estimatedMwhYear": 140.2,
+  "notificationEmail": "qa@solarispm.com",
+  "notificationPhone": "+5493415550101",
+  "startDate": "2026-04-12"
+}
+
+###
+@projectId = {{createProject.response.body.id}}
+@stage1Id = {{createProject.response.body.stages[0].id}}
+@stage2Id = {{createProject.response.body.stages[1].id}}
+
+### PROYECTOS · modificar clientName y budget
+# @name patchProject
+PATCH {{baseUrl}}/api/projects/{{projectId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "clientName": "QA Solar Demo Ajustado",
+  "budgetUsd": 81200
+}
+
+### PROYECTOS · verificar cambios
+# @name getCreatedProject
+GET {{baseUrl}}/api/projects/{{projectId}}
+Authorization: Bearer {{token}}
+
+### ETAPAS · listar etapas del proyecto nuevo
+# @name getStages
+GET {{baseUrl}}/api/projects/{{projectId}}/stages
+Authorization: Bearer {{token}}
+
+### ETAPAS · etapa 1 -> IN_PROGRESS
+# @name stage1InProgress
+PATCH {{baseUrl}}/api/projects/{{projectId}}/stages/{{stage1Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "IN_PROGRESS"
+}
+
+### ETAPAS · etapa 2 -> IN_PROGRESS sin completar etapa 1
+# @name stage2BeforeStage1Completed
+PATCH {{baseUrl}}/api/projects/{{projectId}}/stages/{{stage2Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "IN_PROGRESS"
+}
+
+### ETAPAS · etapa 1 -> COMPLETED
+# @name stage1Completed
+PATCH {{baseUrl}}/api/projects/{{projectId}}/stages/{{stage1Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "COMPLETED"
+}
+
+### ETAPAS · etapa 2 -> IN_PROGRESS
+# @name stage2InProgress
+PATCH {{baseUrl}}/api/projects/{{projectId}}/stages/{{stage2Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "IN_PROGRESS"
+}
+
+### SUBETAPAS · crear subetapa nueva
+# @name createSubstage
+POST {{baseUrl}}/api/projects/{{projectId}}/stages/{{stage2Id}}/substages
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Cableado DC sector QA",
+  "responsible": "Equipo QA",
+  "dueDate": "2026-04-20",
+  "plannedStartDate": "2026-04-14",
+  "plannedEndDate": "2026-04-20",
+  "notes": "Subetapa creada para testing"
+}
+
+###
+@substageId = {{createSubstage.response.body.id}}
+
+### SUBETAPAS · cambiar a IN_PROGRESS
+# @name substageInProgress
+PATCH {{baseUrl}}/api/projects/{{projectId}}/stages/{{stage2Id}}/substages/{{substageId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "IN_PROGRESS"
+}
+
+### SUBETAPAS · cambiar a BLOCKED
+# @name substageBlocked
+PATCH {{baseUrl}}/api/projects/{{projectId}}/stages/{{stage2Id}}/substages/{{substageId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "BLOCKED",
+  "notes": "Bloqueada por proveedor"
+}
+
+### SUBETAPAS · cambiar a COMPLETED
+# @name substageCompleted
+PATCH {{baseUrl}}/api/projects/{{projectId}}/stages/{{stage2Id}}/substages/{{substageId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "COMPLETED"
+}
+
+### TAREAS · crear tarea urgente
+# @name createTask
+POST {{baseUrl}}/api/projects/{{projectId}}/tasks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Tarea QA urgente",
+  "description": "Validar completedAt automático",
+  "responsible": "QA User",
+  "priority": "URGENT",
+  "dueDate": "{{taskDueDate}}",
+  "stageId": "{{stage2Id}}"
+}
+
+###
+@taskId = {{createTask.response.body.id}}
+
+### TAREAS · completar tarea
+# @name completeTask
+PATCH {{baseUrl}}/api/projects/{{projectId}}/tasks/{{taskId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "COMPLETED"
+}
+
+### ARCHIVOS · subir PDF de prueba
+# @name uploadFile
+POST {{baseUrl}}/api/projects/{{projectId}}/files
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=Etapa2Boundary
+
+--Etapa2Boundary
+Content-Disposition: form-data; name="stageId"
+
+{{stage2Id}}
+--Etapa2Boundary
+Content-Disposition: form-data; name="file"; filename="sample.pdf"
+Content-Type: application/pdf
+
+< ./server/test-data/sample.pdf
+--Etapa2Boundary--
+
+###
+@fileId = {{uploadFile.response.body.id}}
+
+### ARCHIVOS · listar archivos
+# @name listFiles
+GET {{baseUrl}}/api/projects/{{projectId}}/files
+Authorization: Bearer {{token}}
+
+### ARCHIVOS · descargar archivo
+# @name downloadFile
+GET {{baseUrl}}/api/files/{{fileId}}/download
+Authorization: Bearer {{token}}
+
+### AUDITORÍA · historial completo del proyecto
+# @name getAudit
+GET {{baseUrl}}/api/projects/{{projectId}}/audit?page=1&limit=100
+Authorization: Bearer {{token}}
+
+### AUDITORÍA · métricas de tiempo
+# @name getAuditStats
+GET {{baseUrl}}/api/audit/stats/{{projectId}}
+Authorization: Bearer {{token}}
+
+### NOTIFICACIONES · listar no leídas
+# @name listNotifications
+GET {{baseUrl}}/api/notifications?unread=true
+Authorization: Bearer {{token}}
+
+###
+@notificationId = {{listNotifications.response.body.$[0].id}}
+
+### NOTIFICACIONES · marcar una como leída
+# @name readNotification
+PATCH {{baseUrl}}/api/notifications/{{notificationId}}/read
+Authorization: Bearer {{token}}
+
+### NOTIFICACIONES · marcar todas como leídas
+# @name readAllNotifications
+PATCH {{baseUrl}}/api/notifications/read-all
+Authorization: Bearer {{token}}

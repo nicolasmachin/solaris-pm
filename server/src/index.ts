@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import Fastify from "fastify";
+import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
 
 import { env } from "./config/env.js";
@@ -15,6 +16,11 @@ async function buildServer() {
 
   const absoluteStoragePath = path.resolve(process.cwd(), "..", env.storagePath);
   fs.mkdirSync(absoluteStoragePath, { recursive: true });
+
+  await app.register(cors, {
+    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+    credentials: true,
+  });
 
   await app.register(multipart, {
     limits: {
