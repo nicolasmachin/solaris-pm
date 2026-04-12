@@ -5,6 +5,7 @@ export class AppError extends Error {
     public readonly statusCode: number,
     public readonly code: string,
     message: string,
+    public readonly details?: Record<string, unknown>,
   ) {
     super(message);
     this.name = "AppError";
@@ -27,8 +28,8 @@ export function notFound(code: string, message: string) {
   return new AppError(404, code, message);
 }
 
-export function conflict(code: string, message: string) {
-  return new AppError(409, code, message);
+export function conflict(code: string, message: string, details?: Record<string, unknown>) {
+  return new AppError(409, code, message, details);
 }
 
 export function formatErrorPayload(error: unknown) {
@@ -51,6 +52,7 @@ export function formatErrorPayload(error: unknown) {
         error: true,
         code: error.code,
         message: error.message,
+        ...(error.details ?? {}),
       },
     };
   }

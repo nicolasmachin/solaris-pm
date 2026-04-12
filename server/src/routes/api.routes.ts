@@ -1,7 +1,20 @@
 import fs from "node:fs";
 
 import type { FastifyInstance } from "fastify";
-import { AuditAction, AuditEntityType, NotificationType, Prisma, ProjectStatus, StageStatus, SubstageStatus, TaskPriority, TaskStatus } from "@prisma/client";
+import {
+  AuditAction,
+  AuditEntityType,
+  ModalidadPago,
+  NotificationType,
+  Prisma,
+  ProjectStatus,
+  StageStatus,
+  StageType,
+  SubstageStatus,
+  TaskPriority,
+  TaskStatus,
+  TipoObra,
+} from "@prisma/client";
 import { z } from "zod";
 
 import { prisma } from "../lib/prisma.js";
@@ -9,20 +22,23 @@ import { authenticate } from "../middleware/auth.middleware.js";
 import { createAuditEntriesForChanges, createAuditEntry } from "../services/audit.service.js";
 import { deleteStoredFile, getStoredFilePath, saveUploadedFile } from "../services/file-storage.service.js";
 import {
-  buildInitialStages,
   calculateProjectMetrics,
   calculateProjectProgress,
   calculateStageProgress,
+  createInitialPipeline,
   generateProjectCode,
   getCurrentStage,
   serializeFile,
+  serializeChecklistItem,
   serializeProject,
   serializeStage,
   serializeSubstage,
   serializeTask,
   sumProjectDelayDays,
   syncStageProgress,
+  syncSubstageProgress,
 } from "../services/project.service.js";
+import { getStageLabel, getTipoObraLabel, getOperationVisibility } from "../services/pipeline-definitions.js";
 import { createNotificationIfNotExists } from "../services/notification.service.js";
 import { diffInDays, parseDateOnly, todayUtc } from "../utils/dates.js";
 import { badRequest, conflict, notFound } from "../utils/errors.js";
@@ -39,6 +55,7 @@ const projectCreateSchema = z
     plannedEndDate: dateOnlySchema,
     budgetUsd: z.coerce.number().positive(),
     estimatedMwhYear: z.coerce.number().positive(),
+    modalidadPago: z.nativeEnum(ModalidadPago).optional(),
     notificationEmail: z.string().email(),
     notificationPhone: z.string().min(1),
     startDate: dateOnlySchema.optional(),
@@ -58,6 +75,7 @@ const projectPatchSchema = z
     budgetUsd: z.coerce.number().positive().optional(),
     executedUsd: z.coerce.number().nonnegative().optional(),
     estimatedMwhYear: z.coerce.number().positive().optional(),
+    modalidadPago: z.nativeEnum(ModalidadPago).nullable().optional(),
     notificationEmail: z.string().email().optional(),
     notificationPhone: z.string().min(1).optional(),
   })
@@ -66,6 +84,7 @@ const projectPatchSchema = z
 const stagePatchSchema = z
   .object({
     status: z.nativeEnum(StageStatus).optional(),
+    tipoObra: z.nativeEnum(TipoObra).nullable().optional(),
     notes: z.string().nullable().optional(),
     plannedStartDate: dateOnlySchema.nullable().optional(),
     plannedEndDate: dateOnlySchema.nullable().optional(),
@@ -76,6 +95,8 @@ const substageCreateSchema = z
   .object({
     name: z.string().min(1),
     responsible: z.string().min(1),
+    sopCode: z.string().nullable().optional(),
+    responsableRol: z.string().nullable().optional(),
     userId: z.string().nullable().optional(),
     dueDate: dateOnlySchema.nullable().optional(),
     plannedStartDate: dateOnlySchema.nullable().optional(),
@@ -87,6 +108,8 @@ const substageCreateSchema = z
 const substagePatchSchema = z
   .object({
     name: z.string().min(1).optional(),
+    sopCode: z.string().nullable().optional(),
+    responsableRol: z.string().nullable().optional(),
     status: z.nativeEnum(SubstageStatus).optional(),
     responsible: z.string().min(1).optional(),
     userId: z.string().nullable().optional(),
@@ -94,6 +117,19 @@ const substagePatchSchema = z
     plannedStartDate: dateOnlySchema.nullable().optional(),
     plannedEndDate: dateOnlySchema.nullable().optional(),
     notes: z.string().nullable().optional(),
+  })
+  .strict();
+
+const checklistPatchSchema = z
+  .object({
+    completed: z.boolean(),
+  })
+  .strict();
+
+const checklistCreateSchema = z
+  .object({
+    label: z.string().min(1),
+    isBlocker: z.boolean().optional(),
   })
   .strict();
 
@@ -168,9 +204,15 @@ async function findStageOrThrow(projectId: string, stageId: string) {
       projectId,
     },
     include: {
+      project: true,
       substages: {
         where: { deletedAt: null },
         orderBy: { order: "asc" },
+        include: {
+          checklistItems: {
+            orderBy: { order: "asc" },
+          },
+        },
       },
     },
   });
@@ -233,6 +275,70 @@ async function findFileOrThrow(fileId: string) {
   return file;
 }
 
+async function findChecklistItemOrThrow(itemId: string) {
+  const item = await prisma.checklistItem.findUnique({
+    where: { id: itemId },
+    include: {
+      substage: {
+        include: {
+          stage: true,
+        },
+      },
+      project: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  if (!item) {
+    throw notFound("CHECKLIST_ITEM_NOT_FOUND", "Ítem de checklist no encontrado");
+  }
+
+  return item;
+}
+
+async function getPendingBlockers(stageId: string, modalidadPago?: ModalidadPago | null) {
+  return prisma.checklistItem.findMany({
+    where: {
+      substage: {
+        stageId,
+        deletedAt: null,
+        isActive: true,
+      },
+      isBlocker: true,
+      completed: false,
+      OR: [
+        { appliesWhenModalidadPago: null },
+        ...(modalidadPago ? [{ appliesWhenModalidadPago: modalidadPago }] : []),
+      ],
+    },
+    orderBy: [{ substage: { order: "asc" } }, { order: "asc" }],
+  });
+}
+
+async function refreshStageProgressAndProject(stageId: string, projectId: string) {
+  const syncedStage = await syncStageProgress(stageId);
+  const projectProgressPercent = await calculateProjectProgress(projectId);
+  const projectDelayDays = await sumProjectDelayDays(projectId);
+
+  return {
+    syncedStage,
+    projectProgressPercent,
+    projectDelayDays,
+  };
+}
+
+function formatStageStatus(status: StageStatus) {
+  if (status === StageStatus.IN_PROGRESS) return "En curso";
+  if (status === StageStatus.COMPLETED) return "Completa";
+  return "Pendiente";
+}
+
 function normalizeProjectInput(input: Record<string, unknown>) {
   const source = input as Record<string, any>;
   const normalized: Record<string, unknown> = {};
@@ -254,6 +360,7 @@ function normalizeProjectInput(input: Record<string, unknown>) {
     normalized.estimatedMwhYear = new Prisma.Decimal(estimatedMwhYear);
     normalized.co2TonsAvoided = new Prisma.Decimal((estimatedMwhYear * 0.5).toFixed(2));
   }
+  if (source.modalidadPago !== undefined) normalized.modalidadPago = source.modalidadPago;
   if (source.notificationEmail !== undefined) normalized.notificationEmail = source.notificationEmail;
   if (source.notificationPhone !== undefined) normalized.notificationPhone = source.notificationPhone;
 
@@ -273,12 +380,14 @@ const projectFieldLabels: Record<string, string> = {
   executedUsd: "monto ejecutado USD",
   estimatedMwhYear: "generación estimada anual",
   co2TonsAvoided: "CO2 evitado",
+  modalidadPago: "modalidad de pago",
   notificationEmail: "email de notificación",
   notificationPhone: "teléfono de notificación",
 };
 
 const stageFieldLabels: Record<string, string> = {
   status: "estado de la etapa",
+  tipoObra: "tipo de obra",
   notes: "notas",
   plannedStartDate: "fecha planificada de inicio",
   plannedEndDate: "fecha planificada de fin",
@@ -291,7 +400,10 @@ const stageFieldLabels: Record<string, string> = {
 
 const substageFieldLabels: Record<string, string> = {
   name: "nombre de la subetapa",
+  sopCode: "código SOP",
+  responsableRol: "rol responsable",
   status: "estado de la subetapa",
+  progressPercent: "avance de la subetapa",
   responsible: "responsable",
   userId: "usuario asignado",
   dueDate: "vencimiento",
@@ -301,6 +413,12 @@ const substageFieldLabels: Record<string, string> = {
   actualEndDate: "fin real",
   notes: "notas",
   order: "orden",
+  isActive: "visibilidad",
+};
+
+const checklistFieldLabels: Record<string, string> = {
+  completed: "estado del checklist",
+  label: "ítem del checklist",
 };
 
 const taskFieldLabels: Record<string, string> = {
@@ -391,8 +509,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
           orderBy: { order: "asc" },
           include: {
             substages: {
-              where: { deletedAt: null },
+              where: { deletedAt: null, isActive: true },
               orderBy: { order: "asc" },
+              include: {
+                checklistItems: {
+                  orderBy: { order: "asc" },
+                },
+              },
             },
           },
         },
@@ -446,20 +569,24 @@ export async function registerApiRoutes(app: FastifyInstance) {
         capacityKwp: new Prisma.Decimal(body.capacityKwp),
         locationCity: body.locationCity,
         locationProvince: body.locationProvince,
-        status: ProjectStatus.PROSPECT,
+        status: ProjectStatus.ACTIVE,
         startDate,
         plannedEndDate,
         budgetUsd: new Prisma.Decimal(body.budgetUsd),
         executedUsd: new Prisma.Decimal(0),
         estimatedMwhYear: new Prisma.Decimal(body.estimatedMwhYear),
         co2TonsAvoided: new Prisma.Decimal((body.estimatedMwhYear * 0.5).toFixed(2)),
+        modalidadPago: body.modalidadPago ?? null,
         notificationEmail: body.notificationEmail,
         notificationPhone: body.notificationPhone,
         createdById: user.id,
-        stages: {
-          create: buildInitialStages(startDate, plannedEndDate),
-        },
       },
+    });
+
+    await createInitialPipeline(project.id, startDate, plannedEndDate, body.modalidadPago ?? null);
+
+    const projectWithStages = await prisma.project.findUniqueOrThrow({
+      where: { id: project.id },
       include: {
         stages: {
           orderBy: { order: "asc" },
@@ -474,13 +601,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
       userId: user.id,
       action: AuditAction.created,
       description: `Creó proyecto '${project.clientName}' con código ${project.code}`,
-      metadata: { stageCount: 6 },
+      metadata: { stageCount: 5 },
     });
 
     reply.code(201);
     return {
-      ...serializeProject(project),
-      stages: project.stages.map(serializeStage),
+      ...serializeProject(projectWithStages),
+      stages: projectWithStages.stages.map(serializeStage),
     };
   });
 
@@ -541,8 +668,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
       where: { projectId: params.projectId },
       include: {
         substages: {
-          where: { deletedAt: null },
+          where: { deletedAt: null, isActive: true },
           orderBy: { order: "asc" },
+          include: {
+            checklistItems: {
+              orderBy: { order: "asc" },
+            },
+          },
         },
       },
       orderBy: { order: "asc" },
@@ -561,6 +693,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const stage = await findStageOrThrow(params.projectId, params.stageId);
 
     const updateData: Record<string, unknown> = {};
+    if (body.tipoObra !== undefined) updateData.tipoObra = body.tipoObra;
     if (body.notes !== undefined) updateData.notes = body.notes;
     if (body.plannedStartDate !== undefined) updateData.plannedStartDate = body.plannedStartDate ? parseDateOnly(body.plannedStartDate) : null;
     if (body.plannedEndDate !== undefined) updateData.plannedEndDate = body.plannedEndDate ? parseDateOnly(body.plannedEndDate) : null;
@@ -581,6 +714,42 @@ export async function registerApiRoutes(app: FastifyInstance) {
           );
         }
 
+        if (stage.name === StageType.OPERACIONES) {
+          const tipoObra = body.tipoObra ?? stage.tipoObra;
+          if (!tipoObra) {
+            throw badRequest(
+              "TIPO_OBRA_REQUIRED",
+              "Debe definir el tipo de obra antes de iniciar Operaciones",
+            );
+          }
+
+          updateData.tipoObra = tipoObra;
+          const visibility = getOperationVisibility(tipoObra);
+          await prisma.$transaction([
+            prisma.substage.updateMany({
+              where: {
+                stageId: stage.id,
+                deletedAt: null,
+              },
+              data: { isActive: true },
+            }),
+            prisma.substage.updateMany({
+              where: {
+                stageId: stage.id,
+                name: "Ejecución de Obra Propia",
+              },
+              data: { isActive: visibility["Ejecución de Obra Propia"] },
+            }),
+            prisma.substage.updateMany({
+              where: {
+                stageId: stage.id,
+                name: "Ejecución de Obra Tercerizada",
+              },
+              data: { isActive: visibility["Ejecución de Obra Tercerizada"] },
+            }),
+          ]);
+        }
+
         updateData.status = StageStatus.IN_PROGRESS;
         updateData.actualStartDate = todayUtc();
 
@@ -593,9 +762,31 @@ export async function registerApiRoutes(app: FastifyInstance) {
           fieldChanged: "status",
           oldValue: stage.status,
           newValue: StageStatus.IN_PROGRESS,
-          description: `Cambió estado de ${stage.name} de ${stage.status} a IN_PROGRESS`,
+          description: `Cambió estado de ${getStageLabel(stage.name)} de ${formatStageStatus(stage.status)} a En curso`,
         });
+
+        if (updateData.tipoObra && updateData.tipoObra !== stage.tipoObra) {
+          await createAuditEntry({
+            entityType: AuditEntityType.stage,
+            entityId: stage.id,
+            projectId: params.projectId,
+            userId: user.id,
+            action: AuditAction.updated,
+            fieldChanged: "tipoObra",
+            oldValue: stage.tipoObra,
+            newValue: String(updateData.tipoObra),
+            description: `Definió tipo de obra ${getTipoObraLabel(updateData.tipoObra as TipoObra)} para ${getStageLabel(stage.name)}`,
+          });
+        }
       } else if (body.status === StageStatus.COMPLETED) {
+        const blockers = await getPendingBlockers(stage.id, stage.project.modalidadPago);
+        if (blockers.length > 0) {
+          const blockerLabels = blockers.map((item) => item.label);
+          throw conflict("BLOCKER_ITEMS_PENDING", "Hay ítems obligatorios sin completar", {
+            blockers: blockerLabels,
+          });
+        }
+
         const actualEndDate = todayUtc();
         const actualStartDate = stage.actualStartDate ?? actualEndDate;
         const actualDurationDays = Math.max(0, diffInDays(actualStartDate, actualEndDate));
@@ -621,7 +812,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           fieldChanged: "status",
           oldValue: stage.status,
           newValue: StageStatus.COMPLETED,
-          description: `Completó etapa ${stage.name}`,
+          description: `Completó etapa ${getStageLabel(stage.name)}`,
         });
       } else {
         updateData.status = body.status;
@@ -651,7 +842,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       newData: comparableStage,
       labels: stageFieldLabels,
       formatter: ({ label, oldValue, newValue }) =>
-        `Actualizó ${label} de etapa ${stage.name} de ${oldValue ?? "vacío"} a ${newValue ?? "vacío"}`,
+        `Actualizó ${label} de etapa ${getStageLabel(stage.name)} de ${oldValue ?? "vacío"} a ${newValue ?? "vacío"}`,
       action: AuditAction.updated,
     });
 
@@ -667,6 +858,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         projectId: params.projectId,
         stageId: params.stageId,
         deletedAt: null,
+        isActive: true,
       },
       orderBy: { order: "asc" },
     });
@@ -678,7 +870,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const user = ensureUser(request);
     const params = z.object({ projectId: z.string(), stageId: z.string() }).parse(request.params);
     const body = substageCreateSchema.parse(request.body);
-    await findStageOrThrow(params.projectId, params.stageId);
+    const stage = await findStageOrThrow(params.projectId, params.stageId);
 
     const maxOrder = await prisma.substage.aggregate({
       where: {
@@ -695,15 +887,22 @@ export async function registerApiRoutes(app: FastifyInstance) {
         stageId: params.stageId,
         order: (maxOrder._max.order ?? 0) + 1,
         name: body.name,
+        sopCode: body.sopCode ?? null,
+        responsableRol: body.responsableRol ?? null,
         status: SubstageStatus.PENDING,
+        progressPercent: 0,
         responsible: body.responsible,
         userId: body.userId ?? null,
         dueDate: body.dueDate ? parseDateOnly(body.dueDate) : null,
         plannedStartDate: body.plannedStartDate ? parseDateOnly(body.plannedStartDate) : null,
         plannedEndDate: body.plannedEndDate ? parseDateOnly(body.plannedEndDate) : null,
         notes: body.notes ?? null,
+        isSystem: false,
+        isActive: true,
       },
     });
+
+    await refreshStageProgressAndProject(params.stageId, params.projectId);
 
     await createAuditEntry({
       entityType: AuditEntityType.substage,
@@ -711,7 +910,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       projectId: params.projectId,
       userId: user.id,
       action: AuditAction.created,
-      description: `Creó subetapa '${substage.name}' en etapa ${params.stageId}`,
+      description: `Creó subetapa '${substage.name}' en etapa ${getStageLabel(stage.name)}`,
     });
 
     reply.code(201);
@@ -728,6 +927,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const updateData: Record<string, unknown> = {};
 
     if (body.name !== undefined) updateData.name = body.name;
+    if (body.sopCode !== undefined) updateData.sopCode = body.sopCode;
+    if (body.responsableRol !== undefined) updateData.responsableRol = body.responsableRol;
     if (body.responsible !== undefined) updateData.responsible = body.responsible;
     if (body.userId !== undefined) updateData.userId = body.userId;
     if (body.dueDate !== undefined) updateData.dueDate = body.dueDate ? parseDateOnly(body.dueDate) : null;
@@ -738,11 +939,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
     if (body.status && body.status !== substage.status) {
       updateData.status = body.status;
       if (body.status === SubstageStatus.IN_PROGRESS) {
-        updateData.actualStartDate = todayUtc();
+        updateData.actualStartDate = substage.actualStartDate ?? todayUtc();
       }
       if (body.status === SubstageStatus.COMPLETED) {
         updateData.actualEndDate = todayUtc();
         updateData.actualStartDate = substage.actualStartDate ?? todayUtc();
+        updateData.progressPercent = 100;
       }
       if (body.status === SubstageStatus.BLOCKED) {
         await createNotificationIfNotExists({
@@ -760,15 +962,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       data: updateData,
     });
 
-    await syncStageProgress(params.stageId);
-    const syncedStage = await prisma.stage.findUnique({
-      where: { id: params.stageId },
-      include: {
-        substages: {
-          where: { deletedAt: null },
-        },
-      },
-    });
+    const syncedSubstage = await syncSubstageProgress(substage.id);
+    const { syncedStage } = await refreshStageProgressAndProject(params.stageId, params.projectId);
 
     await createAuditEntriesForChanges({
       entityType: AuditEntityType.substage,
@@ -783,8 +978,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     return {
-      ...serializeSubstage(updatedSubstage),
-      stageProgressPercent: syncedStage ? calculateStageProgress(syncedStage.substages) : null,
+      ...serializeSubstage(syncedSubstage ?? updatedSubstage),
+      stageProgressPercent: syncedStage?.progressPercent ?? null,
     };
   });
 
@@ -823,12 +1018,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
       .parse(request.params);
     const substage = await findSubstageOrThrow(params.projectId, params.stageId, params.substageId);
 
+    if (substage.isSystem) {
+      throw conflict("SYSTEM_SUBSTAGE_PROTECTED", "No se pueden eliminar las subetapas predefinidas del sistema");
+    }
+
     const deletedSubstage = await prisma.substage.update({
       where: { id: substage.id },
       data: { deletedAt: new Date() },
     });
 
-    await syncStageProgress(params.stageId);
+    await refreshStageProgressAndProject(params.stageId, params.projectId);
 
     await createAuditEntry({
       entityType: AuditEntityType.substage,
@@ -840,6 +1039,163 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     return serializeSubstage(deletedSubstage);
+  });
+
+  app.get("/projects/:projectId/stages/:stageId/substages/:substageId/checklist", async (request) => {
+    const params = z
+      .object({ projectId: z.string(), stageId: z.string(), substageId: z.string() })
+      .parse(request.params);
+    const substage = await findSubstageOrThrow(params.projectId, params.stageId, params.substageId);
+
+    const checklistItems = await prisma.checklistItem.findMany({
+      where: {
+        substageId: substage.id,
+        projectId: params.projectId,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: { order: "asc" },
+    });
+
+    return checklistItems.map((item) => ({
+      ...serializeChecklistItem(item),
+      completedByUser: item.user,
+    }));
+  });
+
+  app.post("/projects/:projectId/stages/:stageId/substages/:substageId/checklist", async (request, reply) => {
+    const user = ensureUser(request);
+    const params = z
+      .object({ projectId: z.string(), stageId: z.string(), substageId: z.string() })
+      .parse(request.params);
+    const body = checklistCreateSchema.parse(request.body);
+    const substage = await findSubstageOrThrow(params.projectId, params.stageId, params.substageId);
+
+    const maxOrder = await prisma.checklistItem.aggregate({
+      where: { substageId: substage.id },
+      _max: { order: true },
+    });
+
+    const item = await prisma.checklistItem.create({
+      data: {
+        substageId: substage.id,
+        projectId: params.projectId,
+        order: (maxOrder._max.order ?? 0) + 1,
+        label: body.label,
+        isRequired: false,
+        isBlocker: body.isBlocker ?? false,
+      },
+    });
+
+    const syncedSubstage = await syncSubstageProgress(substage.id);
+    const { syncedStage } = await refreshStageProgressAndProject(params.stageId, params.projectId);
+
+    await createAuditEntry({
+      entityType: AuditEntityType.substage,
+      entityId: substage.id,
+      projectId: params.projectId,
+      userId: user.id,
+      action: AuditAction.created,
+      description: `Agregó ítem '${item.label}' al checklist de '${substage.name}'`,
+    });
+
+    reply.code(201);
+    return {
+      ...serializeChecklistItem(item),
+      substageProgressPercent: syncedSubstage?.progressPercent ?? null,
+      stageProgressPercent: syncedStage?.progressPercent ?? null,
+    };
+  });
+
+  app.patch("/checklist/:itemId", async (request) => {
+    const user = ensureUser(request);
+    const params = z.object({ itemId: z.string() }).parse(request.params);
+    const body = checklistPatchSchema.parse(request.body);
+    const item = await findChecklistItemOrThrow(params.itemId);
+
+    const updatedItem = await prisma.checklistItem.update({
+      where: { id: item.id },
+      data: {
+        completed: body.completed,
+        completedAt: body.completed ? new Date() : null,
+        completedBy: body.completed ? user.id : null,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    const syncedSubstage = await syncSubstageProgress(item.substageId);
+    const { syncedStage } = await refreshStageProgressAndProject(item.substage.stageId, item.projectId);
+
+    await createAuditEntriesForChanges({
+      entityType: AuditEntityType.substage,
+      entityId: item.substageId,
+      projectId: item.projectId,
+      userId: user.id,
+      oldData: item,
+      newData: {
+        ...item,
+        completed: updatedItem.completed,
+      },
+      labels: checklistFieldLabels,
+      formatter: ({ field, oldValue, newValue }) =>
+        field === "completed"
+          ? `${body.completed ? "Marcó" : "Desmarcó"} ítem '${item.label}' del checklist de '${item.substage.name}'`
+          : `Actualizó ítem '${item.label}' de ${oldValue ?? "vacío"} a ${newValue ?? "vacío"}`,
+    });
+
+    return {
+      ...serializeChecklistItem(updatedItem),
+      completedByUser: updatedItem.user,
+      substageProgressPercent: syncedSubstage?.progressPercent ?? null,
+      stageProgressPercent: syncedStage?.progressPercent ?? null,
+    };
+  });
+
+  app.delete("/checklist/:itemId", async (request) => {
+    const user = ensureUser(request);
+    const params = z.object({ itemId: z.string() }).parse(request.params);
+    const item = await findChecklistItemOrThrow(params.itemId);
+
+    if (item.isRequired) {
+      throw conflict("CHECKLIST_ITEM_PROTECTED", "Los ítems predefinidos del sistema no se pueden eliminar");
+    }
+
+    await prisma.checklistItem.delete({
+      where: { id: item.id },
+    });
+
+    const syncedSubstage = await syncSubstageProgress(item.substageId);
+    const { syncedStage } = await refreshStageProgressAndProject(item.substage.stageId, item.projectId);
+
+    await createAuditEntry({
+      entityType: AuditEntityType.substage,
+      entityId: item.substageId,
+      projectId: item.projectId,
+      userId: user.id,
+      action: AuditAction.deleted,
+      description: `Eliminó ítem '${item.label}' del checklist de '${item.substage.name}'`,
+    });
+
+    return {
+      success: true,
+      substageProgressPercent: syncedSubstage?.progressPercent ?? null,
+      stageProgressPercent: syncedStage?.progressPercent ?? null,
+    };
   });
 
   app.get("/projects/:projectId/tasks", async (request) => {

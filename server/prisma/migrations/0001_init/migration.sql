@@ -5,7 +5,13 @@ CREATE SCHEMA IF NOT EXISTS "public";
 CREATE TYPE "ProjectStatus" AS ENUM ('PROSPECT', 'ACTIVE', 'COMPLETED', 'PAUSED');
 
 -- CreateEnum
-CREATE TYPE "StageName" AS ENUM ('PREVENTA', 'INGENIERIA', 'COMPRAS', 'INSTALACION', 'HABILITACION', 'POSTVENTA');
+CREATE TYPE "StageType" AS ENUM ('ONBOARDING', 'INGENIERIA', 'OPERACIONES', 'HABILITACION_UTE', 'POSTVENTA');
+
+-- CreateEnum
+CREATE TYPE "TipoObra" AS ENUM ('PROPIA', 'TERCERIZADA');
+
+-- CreateEnum
+CREATE TYPE "ModalidadPago" AS ENUM ('DIRECTO_50_50', 'FINANCIACION_BANCARIA');
 
 -- CreateEnum
 CREATE TYPE "StageStatus" AS ENUM ('PENDING', 'IN_PROGRESS', 'COMPLETED');
@@ -57,6 +63,7 @@ CREATE TABLE "projects" (
     "executedUsd" DECIMAL(14,2) NOT NULL,
     "estimatedMwhYear" DECIMAL(10,2) NOT NULL,
     "co2TonsAvoided" DECIMAL(10,2) NOT NULL,
+    "modalidadPago" "ModalidadPago",
     "notificationEmail" TEXT NOT NULL,
     "notificationPhone" TEXT NOT NULL,
     "createdById" TEXT NOT NULL,
@@ -72,9 +79,10 @@ CREATE TABLE "stages" (
     "id" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
     "order" INTEGER NOT NULL,
-    "name" "StageName" NOT NULL,
+    "name" "StageType" NOT NULL,
     "status" "StageStatus" NOT NULL,
     "progressPercent" INTEGER NOT NULL,
+    "tipoObra" "TipoObra",
     "plannedStartDate" DATE,
     "plannedEndDate" DATE,
     "actualStartDate" DATE,
@@ -96,7 +104,10 @@ CREATE TABLE "substages" (
     "projectId" TEXT NOT NULL,
     "order" INTEGER NOT NULL,
     "name" TEXT NOT NULL,
+    "sopCode" TEXT,
+    "responsableRol" TEXT,
     "status" "SubstageStatus" NOT NULL,
+    "progressPercent" INTEGER NOT NULL DEFAULT 0,
     "responsible" TEXT NOT NULL,
     "userId" TEXT,
     "dueDate" DATE,
@@ -105,11 +116,32 @@ CREATE TABLE "substages" (
     "actualStartDate" DATE,
     "actualEndDate" DATE,
     "notes" TEXT,
+    "isSystem" BOOLEAN NOT NULL DEFAULT false,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
     "deletedAt" TIMESTAMPTZ(6),
     "createdAt" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ(6) NOT NULL,
 
     CONSTRAINT "substages_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "checklist_items" (
+    "id" TEXT NOT NULL,
+    "substageId" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "order" INTEGER NOT NULL,
+    "label" TEXT NOT NULL,
+    "completed" BOOLEAN NOT NULL DEFAULT false,
+    "completedAt" TIMESTAMPTZ(6),
+    "completedBy" TEXT,
+    "isRequired" BOOLEAN NOT NULL DEFAULT false,
+    "isBlocker" BOOLEAN NOT NULL DEFAULT false,
+    "appliesWhenModalidadPago" "ModalidadPago",
+    "createdAt" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ(6) NOT NULL,
+
+    CONSTRAINT "checklist_items_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -225,6 +257,12 @@ CREATE INDEX "substages_deletedAt_idx" ON "substages"("deletedAt");
 CREATE UNIQUE INDEX "substages_stageId_order_key" ON "substages"("stageId", "order");
 
 -- CreateIndex
+CREATE INDEX "checklist_items_substageId_idx" ON "checklist_items"("substageId");
+
+-- CreateIndex
+CREATE INDEX "checklist_items_projectId_idx" ON "checklist_items"("projectId");
+
+-- CreateIndex
 CREATE INDEX "tasks_projectId_status_idx" ON "tasks"("projectId", "status");
 
 -- CreateIndex
@@ -277,6 +315,15 @@ ALTER TABLE "substages" ADD CONSTRAINT "substages_stageId_fkey" FOREIGN KEY ("st
 
 -- AddForeignKey
 ALTER TABLE "substages" ADD CONSTRAINT "substages_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "checklist_items" ADD CONSTRAINT "checklist_items_substageId_fkey" FOREIGN KEY ("substageId") REFERENCES "substages"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "checklist_items" ADD CONSTRAINT "checklist_items_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "checklist_items" ADD CONSTRAINT "checklist_items_completedBy_fkey" FOREIGN KEY ("completedBy") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "tasks" ADD CONSTRAINT "tasks_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
