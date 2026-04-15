@@ -1,5 +1,6 @@
 import {
   ModalidadPago,
+  PhaseType,
   Prisma,
   ProjectStatus,
   StageStatus,
@@ -380,6 +381,7 @@ export function serializeProject(project: {
   modalidadPago: ModalidadPago | null;
   notificationEmail: string;
   notificationPhone: string;
+  firstDateScheduledAt?: Date | null;
   createdById: string;
   createdAt: Date;
   updatedAt: Date;
@@ -395,9 +397,37 @@ export function serializeProject(project: {
     startDate: serializeDateOnly(project.startDate),
     plannedEndDate: serializeDateOnly(project.plannedEndDate),
     actualEndDate: serializeDateOnly(project.actualEndDate),
+    firstDateScheduledAt: project.firstDateScheduledAt ? serializeDate(project.firstDateScheduledAt) : null,
     createdAt: serializeDate(project.createdAt),
     updatedAt: serializeDate(project.updatedAt),
     deletedAt: serializeDate(project.deletedAt),
+  };
+}
+
+export function serializeSolarSystem(system: {
+  id: string;
+  projectId: string;
+  order: number;
+  description: string | null;
+  inverterBrand: string | null;
+  inverterPowerKw: Prisma.Decimal | null;
+  inverterQuantity: number | null;
+  inverterPhaseType: PhaseType | null;
+  inverterModel: string | null;
+  panelQuantity: number | null;
+  panelPowerW: number | null;
+  panelBrand: string | null;
+  panelModel: string | null;
+  deletedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  return {
+    ...system,
+    inverterPowerKw: decimalToNumber(system.inverterPowerKw),
+    createdAt: serializeDate(system.createdAt),
+    updatedAt: serializeDate(system.updatedAt),
+    deletedAt: serializeDate(system.deletedAt),
   };
 }
 
@@ -416,6 +446,7 @@ export function serializeStage(stage: {
   plannedDurationDays: number | null;
   actualDurationDays: number | null;
   delayDays: number | null;
+  responsibleName: string | null;
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -449,6 +480,8 @@ export function serializeSubstage(substage: {
   plannedEndDate: Date | null;
   actualStartDate: Date | null;
   actualEndDate: Date | null;
+  actualDurationDays: number | null;
+  delayDays: number | null;
   notes: string | null;
   isSystem: boolean;
   isActive: boolean;
@@ -478,8 +511,10 @@ export function serializeChecklistItem(item: {
   completed: boolean;
   completedAt: Date | null;
   completedBy: string | null;
+  notes: string | null;
   isRequired: boolean;
   isBlocker: boolean;
+  isCustom: boolean;
   appliesWhenModalidadPago: ModalidadPago | null;
   createdAt: Date;
   updatedAt: Date;

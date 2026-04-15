@@ -1,9 +1,23 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SOLARIS PM</title>
+    <title>VOLTIA PM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      // Apply theme before React hydrates to avoid flash
+      (function () {
+        var stored = localStorage.getItem('voltia-theme');
+        var mode = stored === 'light' ? 'light' : 'dark';
+        document.documentElement.className = mode;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

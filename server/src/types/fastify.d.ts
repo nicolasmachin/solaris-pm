@@ -1,4 +1,5 @@
 import "fastify";
+import type { Role } from "@prisma/client";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -6,6 +7,7 @@ declare module "fastify" {
       id: string;
       email: string;
       name: string;
+      role: Role;
     };
   }
 }

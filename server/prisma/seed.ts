@@ -1,11 +1,21 @@
 import bcrypt from "bcryptjs";
 import {
+  Action,
   AuditAction,
   AuditEntityType,
+  GoalArea,
+  GoalMetric,
+  GoalPeriod,
   ModalidadPago,
+  Module,
   NotificationType,
+  PhaseType,
   Prisma,
   ProjectStatus,
+  Role,
+  SalesStage,
+  SettingKey,
+  SettingLevel,
   StageStatus,
   StageType,
   SubstageStatus,
@@ -54,9 +64,16 @@ async function resetDatabase() {
   await prisma.notification.deleteMany();
   await prisma.fileAttachment.deleteMany();
   await prisma.task.deleteMany();
+  await prisma.comment.deleteMany();
   await prisma.checklistItem.deleteMany();
   await prisma.substage.deleteMany();
   await prisma.stage.deleteMany();
+  await prisma.salesActivity.deleteMany();
+  await prisma.salesLead.deleteMany();
+  await prisma.proposalGeneration.deleteMany();
+  await prisma.setting.deleteMany();
+  await prisma.permission.deleteMany();
+  await prisma.solarSystem.deleteMany();
   await prisma.project.deleteMany();
   await prisma.user.deleteMany();
 }
@@ -66,23 +83,337 @@ async function createUsers() {
 
   const admin = await prisma.user.create({
     data: {
-      email: "admin@solarispm.com",
+      email: "admin@voltiapm.com",
       password,
-      name: "Administrador Solaris",
+      name: "Administrador Voltia",
+      role: Role.ADMIN,
       avatarUrl: null,
     },
   });
 
   const operations = await prisma.user.create({
     data: {
-      email: "operaciones@solarispm.com",
+      email: "operaciones@voltiapm.com",
       password,
       name: "Gerencia Operaciones",
+      role: Role.OPERACIONES,
       avatarUrl: null,
     },
   });
 
-  return { admin, operations };
+  const comercial = await prisma.user.create({
+    data: {
+      email: "comercial@voltiapm.com",
+      password,
+      name: "Asesor Comercial",
+      role: Role.ASESOR_COMERCIAL,
+      avatarUrl: null,
+    },
+  });
+
+  const ingeniero = await prisma.user.create({
+    data: {
+      email: "ingeniero@voltiapm.com",
+      password,
+      name: "Ingeniero Proyectista",
+      role: Role.INGENIERIA,
+      avatarUrl: null,
+    },
+  });
+
+  return { admin, operations, comercial, ingeniero };
+}
+
+async function seedPermissions() {
+  const matrix: Array<{ role: Role; module: Module; actions: Action[] }> = [
+    // ADMIN — acceso total
+    { role: Role.ADMIN, module: Module.VENTAS,         actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMMENT] },
+    { role: Role.ADMIN, module: Module.ONBOARDING,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { role: Role.ADMIN, module: Module.INGENIERIA,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { role: Role.ADMIN, module: Module.OPERACIONES,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { role: Role.ADMIN, module: Module.HABILITACION,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { role: Role.ADMIN, module: Module.POSTVENTA,      actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { role: Role.ADMIN, module: Module.METRICAS,       actions: [Action.VIEW] },
+    { role: Role.ADMIN, module: Module.CONFIGURACION,  actions: [Action.VIEW, Action.EDIT] },
+    { role: Role.ADMIN, module: Module.USUARIOS,       actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+
+    // ASESOR_COMERCIAL — ventas y onboarding, sin acceso a métricas
+    { role: Role.ASESOR_COMERCIAL, module: Module.VENTAS,        actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMMENT] },
+    { role: Role.ASESOR_COMERCIAL, module: Module.ONBOARDING,    actions: [Action.VIEW, Action.COMMENT] },
+    { role: Role.ASESOR_COMERCIAL, module: Module.INGENIERIA,    actions: [Action.VIEW] },
+    { role: Role.ASESOR_COMERCIAL, module: Module.OPERACIONES,   actions: [Action.VIEW] },
+    { role: Role.ASESOR_COMERCIAL, module: Module.HABILITACION,  actions: [Action.VIEW] },
+    { role: Role.ASESOR_COMERCIAL, module: Module.POSTVENTA,     actions: [Action.VIEW] },
+
+    // INGENIERIA — ingeniería completa, sin acceso al módulo de ventas
+    { role: Role.INGENIERIA, module: Module.ONBOARDING,    actions: [Action.VIEW, Action.COMMENT] },
+    { role: Role.INGENIERIA, module: Module.INGENIERIA,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
+    { role: Role.INGENIERIA, module: Module.OPERACIONES,   actions: [Action.VIEW, Action.COMMENT] },
+    { role: Role.INGENIERIA, module: Module.HABILITACION,  actions: [Action.VIEW, Action.COMMENT] },
+    { role: Role.INGENIERIA, module: Module.POSTVENTA,     actions: [Action.VIEW] },
+    { role: Role.INGENIERIA, module: Module.METRICAS,      actions: [Action.VIEW] },
+
+    // OPERACIONES — operaciones y habilitación completas, resto lectura
+    { role: Role.OPERACIONES, module: Module.VENTAS,        actions: [Action.VIEW] },
+    { role: Role.OPERACIONES, module: Module.ONBOARDING,    actions: [Action.VIEW, Action.COMMENT] },
+    { role: Role.OPERACIONES, module: Module.INGENIERIA,    actions: [Action.VIEW] },
+    { role: Role.OPERACIONES, module: Module.OPERACIONES,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
+    { role: Role.OPERACIONES, module: Module.HABILITACION,  actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
+    { role: Role.OPERACIONES, module: Module.POSTVENTA,     actions: [Action.VIEW, Action.COMMENT] },
+    { role: Role.OPERACIONES, module: Module.METRICAS,      actions: [Action.VIEW] },
+  ];
+
+  for (const entry of matrix) {
+    for (const action of entry.actions) {
+      await prisma.permission.create({
+        data: { role: entry.role, module: entry.module, action },
+      });
+    }
+  }
+}
+
+async function seedSettings(updatedById: string) {
+  const systemSettings: Array<{ key: SettingKey; value: string }> = [
+    { key: SettingKey.DEFAULT_CURRENCY,        value: "USD" },
+    { key: SettingKey.DATE_FORMAT,             value: "DD/MM/YYYY" },
+    { key: SettingKey.TIMEZONE,                value: "America/Argentina/Buenos_Aires" },
+    { key: SettingKey.NOTIFICATIONS_EMAIL,     value: "true" },
+    { key: SettingKey.NOTIFICATIONS_WHATSAPP,  value: "false" },
+    { key: SettingKey.SHOW_BUDGET_IN_PIPELINE, value: "true" },
+    { key: SettingKey.DEFAULT_LANGUAGE,        value: "es" },
+    { key: SettingKey.CO2_FACTOR,              value: "0.5" },
+    { key: SettingKey.PROPOSAL_SCRIPT_PATH,    value: "scripts/proposal_generator.py" },
+  ];
+
+  for (const s of systemSettings) {
+    await prisma.setting.create({
+      data: {
+        level: SettingLevel.SYSTEM,
+        key: s.key,
+        value: s.value,
+        updatedById,
+      },
+    });
+  }
+}
+
+async function seedLeads(comercialId: string, adminId: string, projectId: string) {
+  // Lead 1 — recién ingresado
+  const lead1 = await prisma.salesLead.create({
+    data: {
+      code: "LEAD-2026-001",
+      clientName: "Frigorífico del Sur S.A. — Marcelo Ríos",
+      clientEmail: "mrios@frigsur.com.ar",
+      clientPhone: "+54 9 11 5544-3322",
+      address: "Cañuelas, Buenos Aires",
+      estimatedKwp: new Prisma.Decimal(180),
+      estimatedBudgetUsd: new Prisma.Decimal(95000),
+      stage: SalesStage.NUEVO_LEAD,
+      assignedToId: comercialId,
+      createdById: adminId,
+      notes: "Contacto vía LinkedIn. Techo industrial disponible ~1200 m². Interesado en financiamiento.",
+    },
+  });
+  await prisma.salesActivity.create({
+    data: {
+      leadId: lead1.id,
+      userId: comercialId,
+      action: "LLAMADA",
+      notes: "Primer contacto telefónico. Cliente interesado, solicitó más información.",
+    },
+  });
+
+  // Lead 2 — cotizado
+  const lead2 = await prisma.salesLead.create({
+    data: {
+      code: "LEAD-2026-002",
+      clientName: "Bodegas Andinas S.R.L. — Valentina Pereyra",
+      clientEmail: "vpereyra@bodegasandinas.com",
+      clientPhone: "+54 9 261 4433-2211",
+      address: "Maipú, Mendoza",
+      estimatedKwp: new Prisma.Decimal(320),
+      estimatedBudgetUsd: new Prisma.Decimal(170000),
+      stage: SalesStage.COTIZADO,
+      assignedToId: comercialId,
+      createdById: adminId,
+      proposalSentAt: new Date("2026-03-23T10:00:00Z"),
+      notes: "Empresa mediana. Tarifa T3 BT. Cotización enviada el 05/04. Esperando respuesta del directorio.",
+    },
+  });
+  await prisma.salesActivity.createMany({
+    data: [
+      {
+        leadId: lead2.id,
+        userId: comercialId,
+        fromStage: SalesStage.NUEVO_LEAD,
+        toStage: SalesStage.PENDIENTE_COTIZAR,
+        action: "REUNION",
+        notes: "Visita técnica a la bodega. Se tomaron medidas del techo y se relevó medidor.",
+      },
+      {
+        leadId: lead2.id,
+        userId: comercialId,
+        fromStage: SalesStage.PENDIENTE_COTIZAR,
+        toStage: SalesStage.COTIZADO,
+        action: "EMAIL",
+        notes: "Envío de cotización formal con 3 opciones de capacidad: 250, 320 y 400 kWp.",
+      },
+    ],
+  });
+
+  // Lead 3 — en negociación
+  const lead3 = await prisma.salesLead.create({
+    data: {
+      code: "LEAD-2026-003",
+      clientName: "Logística Patagónica S.A. — Roberto Álvarez",
+      clientEmail: "ralvarez@logpata.com.ar",
+      clientPhone: "+54 9 294 3322-1100",
+      address: "Bariloche, Río Negro",
+      estimatedKwp: new Prisma.Decimal(90),
+      estimatedBudgetUsd: new Prisma.Decimal(48000),
+      stage: SalesStage.NEGOCIACION,
+      assignedToId: comercialId,
+      createdById: adminId,
+      proposalSentAt: new Date("2026-03-12T11:00:00Z"),
+      visitScheduledAt: new Date("2026-03-17T09:00:00Z"),
+      visitCompletedAt: new Date("2026-03-18T14:00:00Z"),
+      notes: "Cliente muy interesado. Negocia precio por pago anticipado. Oferta revisada con 5% de descuento.",
+    },
+  });
+  await prisma.salesActivity.createMany({
+    data: [
+      {
+        leadId: lead3.id,
+        userId: comercialId,
+        fromStage: SalesStage.COTIZADO,
+        toStage: SalesStage.NEGOCIACION,
+        action: "REUNION",
+        notes: "Segunda reunión presencial. El cliente quiere cerrar antes de fin de mes.",
+      },
+      {
+        leadId: lead3.id,
+        userId: comercialId,
+        action: "LLAMADA",
+        notes: "Revisión de condiciones contractuales. Acuerdo verbal sobre precio.",
+      },
+    ],
+  });
+
+  // Lead 4 — convertido al proyecto (vinculado al projectId dado)
+  const lead4 = await prisma.salesLead.create({
+    data: {
+      code: "LEAD-2025-047",
+      clientName: "Supermercados Frescos S.A. — Daniela Morán",
+      clientEmail: "dmoran@frescos.com.ar",
+      clientPhone: "+54 9 351 6677-8899",
+      address: "Córdoba, Córdoba",
+      estimatedKwp: new Prisma.Decimal(250),
+      estimatedBudgetUsd: new Prisma.Decimal(135000),
+      stage: SalesStage.CERRADO_GANADO,
+      assignedToId: comercialId,
+      createdById: adminId,
+      convertedToProjectId: projectId,
+      convertedAt: new Date("2025-11-10T09:00:00Z"),
+      proposalSentAt: new Date("2025-10-18T10:00:00Z"),
+      visitScheduledAt: new Date("2025-10-25T10:00:00Z"),
+      visitCompletedAt: new Date("2025-10-26T15:00:00Z"),
+      closedAt: new Date("2025-11-10T09:00:00Z"),
+      notes: "Convertido a proyecto activo. Firma de contrato realizada el 2025-11-10.",
+    },
+  });
+  await prisma.salesActivity.createMany({
+    data: [
+      {
+        leadId: lead4.id,
+        userId: comercialId,
+        action: "REUNION",
+        notes: "Presentación formal de propuesta ejecutiva.",
+      },
+      {
+        leadId: lead4.id,
+        userId: adminId,
+        fromStage: SalesStage.NEGOCIACION,
+        toStage: SalesStage.CERRADO_GANADO,
+        action: "CONTRATO",
+        notes: "Firma de contrato y pago de anticipo del 50%. Lead convertido a proyecto.",
+      },
+    ],
+  });
+
+  return { lead1, lead2, lead3, lead4 };
+}
+
+async function seedGoals(adminId: string) {
+  const goals: Array<{
+    area: GoalArea;
+    metric: GoalMetric;
+    period: GoalPeriod;
+    year: number;
+    quarter: number | null;
+    targetValue: number;
+  }> = [
+    { area: GoalArea.VENTAS,       metric: GoalMetric.LEADS_CREATED,        period: GoalPeriod.ANNUAL,     year: 2025, quarter: null, targetValue: 50 },
+    { area: GoalArea.VENTAS,       metric: GoalMetric.LEADS_CREATED,        period: GoalPeriod.QUARTERLY,  year: 2025, quarter: 2,   targetValue: 15 },
+    { area: GoalArea.VENTAS,       metric: GoalMetric.PROPOSALS_SENT,       period: GoalPeriod.ANNUAL,     year: 2025, quarter: null, targetValue: 40 },
+    { area: GoalArea.VENTAS,       metric: GoalMetric.PROPOSALS_SENT,       period: GoalPeriod.QUARTERLY,  year: 2025, quarter: 2,   targetValue: 12 },
+    { area: GoalArea.VENTAS,       metric: GoalMetric.CLOSED_WON,           period: GoalPeriod.ANNUAL,     year: 2025, quarter: null, targetValue: 20 },
+    { area: GoalArea.VENTAS,       metric: GoalMetric.CLOSED_WON,           period: GoalPeriod.QUARTERLY,  year: 2025, quarter: 2,   targetValue: 6  },
+    { area: GoalArea.OPERACIONES,  metric: GoalMetric.INSTALLATIONS_COUNT,  period: GoalPeriod.ANNUAL,     year: 2025, quarter: null, targetValue: 20 },
+    { area: GoalArea.OPERACIONES,  metric: GoalMetric.INSTALLATIONS_COUNT,  period: GoalPeriod.QUARTERLY,  year: 2025, quarter: 2,   targetValue: 6  },
+    { area: GoalArea.OPERACIONES,  metric: GoalMetric.KWP_INSTALLED,        period: GoalPeriod.ANNUAL,     year: 2025, quarter: null, targetValue: 1500 },
+    { area: GoalArea.OPERACIONES,  metric: GoalMetric.KWP_INSTALLED,        period: GoalPeriod.QUARTERLY,  year: 2025, quarter: 2,   targetValue: 400 },
+  ];
+
+  await prisma.goal.createMany({
+    data: goals.map((g) => ({
+      area: g.area,
+      metric: g.metric,
+      period: g.period,
+      year: g.year,
+      quarter: g.quarter,
+      targetValue: new Prisma.Decimal(g.targetValue),
+      createdById: adminId,
+    })),
+    skipDuplicates: true,
+  });
+}
+
+async function seedComments(
+  adminId: string,
+  comercialId: string,
+  ingenieroId: string,
+  projectId: string,
+  stageId: string,
+  taskId: string,
+) {
+  // Comentario a nivel proyecto
+  await prisma.comment.create({
+    data: {
+      projectId,
+      authorId: comercialId,
+      content: "El cliente confirmó que el transformador tiene capacidad suficiente para los 250 kWp. No se requiere ampliación.",
+    },
+  });
+
+  // Comentario a nivel etapa
+  await prisma.comment.create({
+    data: {
+      projectId,
+      stageId,
+      authorId: ingenieroId,
+      content: "Planos aprobados por el departamento de ingeniería. Se adjuntó versión final en archivos del proyecto.",
+    },
+  });
+
+  // Comentario a nivel tarea
+  await prisma.comment.create({
+    data: {
+      projectId,
+      taskId,
+      authorId: adminId,
+      content: "Verificar que el proveedor de estructuras confirme entrega antes del 20/04. El cronograma depende de esto.",
+    },
+  });
 }
 
 async function createProject(params: {
@@ -160,6 +491,38 @@ async function hydrateProject(projectId: string) {
   }
 
   return project;
+}
+
+async function createSolarSystem(params: {
+  projectId: string;
+  order?: number;
+  description?: string | null;
+  inverterBrand?: string | null;
+  inverterPowerKw?: number | null;
+  inverterQuantity?: number | null;
+  inverterPhaseType?: PhaseType | null;
+  inverterModel?: string | null;
+  panelQuantity?: number | null;
+  panelPowerW?: number | null;
+  panelBrand?: string | null;
+  panelModel?: string | null;
+}) {
+  await prisma.solarSystem.create({
+    data: {
+      projectId: params.projectId,
+      order: params.order ?? 1,
+      description: params.description ?? null,
+      inverterBrand: params.inverterBrand ?? null,
+      inverterPowerKw: params.inverterPowerKw != null ? decimal(params.inverterPowerKw) : null,
+      inverterQuantity: params.inverterQuantity ?? 1,
+      inverterPhaseType: params.inverterPhaseType ?? null,
+      inverterModel: params.inverterModel ?? null,
+      panelQuantity: params.panelQuantity ?? null,
+      panelPowerW: params.panelPowerW ?? null,
+      panelBrand: params.panelBrand ?? null,
+      panelModel: params.panelModel ?? null,
+    },
+  });
 }
 
 function getStage(project: ProjectGraph, stageType: StageType) {
@@ -367,6 +730,16 @@ async function seedProject1(adminId: string, operationsId: string) {
     createdById: adminId,
   });
 
+  await createSolarSystem({
+    projectId: project.id,
+    inverterBrand: "Growatt",
+    inverterPowerKw: 25,
+    inverterQuantity: 1,
+    inverterPhaseType: PhaseType.TRIFASICO_400,
+    panelQuantity: 40,
+    panelPowerW: 550,
+  });
+
   let graph = await hydrateProject(project.id);
 
   for (const [substageName, completedAt] of [
@@ -531,6 +904,16 @@ async function seedProject2(adminId: string, operationsId: string) {
     createdById: adminId,
   });
 
+  await createSolarSystem({
+    projectId: project.id,
+    inverterBrand: "Huawei",
+    inverterPowerKw: 20,
+    inverterQuantity: 1,
+    inverterPhaseType: PhaseType.TRIFASICO_400,
+    panelQuantity: 32,
+    panelPowerW: 550,
+  });
+
   let graph = await hydrateProject(project.id);
 
   for (const stageType of [StageType.ONBOARDING, StageType.INGENIERIA] as const) {
@@ -685,6 +1068,16 @@ async function seedProject3(adminId: string, operationsId: string) {
     createdById: adminId,
   });
 
+  await createSolarSystem({
+    projectId: project.id,
+    inverterBrand: "Growatt",
+    inverterPowerKw: 6,
+    inverterQuantity: 1,
+    inverterPhaseType: PhaseType.MONOFASICO,
+    panelQuantity: 12,
+    panelPowerW: 550,
+  });
+
   let graph = await hydrateProject(project.id);
 
   for (const substage of getStage(graph, StageType.ONBOARDING).substages) {
@@ -784,6 +1177,16 @@ async function seedProject4(adminId: string, operationsId: string) {
     notificationEmail: "mantenimiento@bodegalacuesta.com",
     notificationPhone: "+5492615550980",
     createdById: adminId,
+  });
+
+  await createSolarSystem({
+    projectId: project.id,
+    inverterBrand: "Growatt",
+    inverterPowerKw: 12,
+    inverterQuantity: 1,
+    inverterPhaseType: PhaseType.TRIFASICO_230,
+    panelQuantity: 20,
+    panelPowerW: 580,
   });
 
   let graph = await hydrateProject(project.id);
@@ -1251,7 +1654,7 @@ async function createProjectAudits(projectId: string, userId: string) {
 
 async function run() {
   await resetDatabase();
-  const { admin, operations } = await createUsers();
+  const { admin, operations, comercial, ingeniero } = await createUsers();
 
   const project1Id = await seedProject1(admin.id, operations.id);
   const project2Id = await seedProject2(admin.id, operations.id);
@@ -1265,7 +1668,31 @@ async function run() {
   await createProjectAudits(project3Id, admin.id);
   await createProjectAudits(project4Id, admin.id);
 
-  console.log("Seed completado con pipeline SOP real.");
+  await seedPermissions();
+  await seedSettings(admin.id);
+  await seedLeads(comercial.id, admin.id, project1Id);
+  await seedGoals(admin.id);
+
+  // Para seedComments necesitamos IDs de una etapa y una tarea del project1
+  const project1 = await prisma.project.findUnique({
+    where: { id: project1Id },
+    include: {
+      stages: { orderBy: { order: "asc" }, take: 1 },
+      tasks: { take: 1 },
+    },
+  });
+  if (project1 && project1.stages.length > 0 && project1.tasks.length > 0) {
+    await seedComments(
+      admin.id,
+      comercial.id,
+      ingeniero.id,
+      project1Id,
+      project1.stages[0].id,
+      project1.tasks[0].id,
+    );
+  }
+
+  console.log("Seed completado con pipeline SOP real, permisos, settings, leads, objetivos y comentarios.");
 }
 
 run()

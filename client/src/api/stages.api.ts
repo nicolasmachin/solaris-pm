@@ -1,0 +1,77 @@
+import { apiClient } from "./axios";
+import type { Stage, Substage, SubstagePatchResponse } from "../types/api.types";
+
+export async function patchStage(
+  projectId: string,
+  stageId: string,
+  body: {
+    status?: Stage["status"];
+    notes?: string | null;
+    responsibleName?: string | null;
+    plannedStartDate?: string | null;
+    plannedEndDate?: string | null;
+  }
+): Promise<Stage> {
+  const { data } = await apiClient.patch<Stage>(
+    `/api/projects/${projectId}/stages/${stageId}`,
+    body
+  );
+  return data;
+}
+
+export async function createSubstage(
+  projectId: string,
+  stageId: string,
+  body: {
+    name: string;
+    responsible: string;
+    dueDate?: string | null;
+    plannedStartDate?: string | null;
+    plannedEndDate?: string | null;
+    notes?: string | null;
+  }
+): Promise<Substage> {
+  const { data } = await apiClient.post<Substage>(
+    `/api/projects/${projectId}/stages/${stageId}/substages`,
+    body
+  );
+  return data;
+}
+
+export async function patchSubstage(
+  projectId: string,
+  stageId: string,
+  substageId: string,
+  body: {
+    name?: string;
+    status?: Substage["status"];
+    notes?: string | null;
+    responsible?: string;
+    dueDate?: string | null;
+    plannedStartDate?: string | null;
+    plannedEndDate?: string | null;
+  }
+): Promise<SubstagePatchResponse> {
+  const { data } = await apiClient.patch<SubstagePatchResponse>(
+    `/api/projects/${projectId}/stages/${stageId}/substages/${substageId}`,
+    body
+  );
+  return data;
+}
+
+export async function deleteSubstage(
+  projectId: string,
+  stageId: string,
+  substageId: string
+): Promise<void> {
+  await apiClient.delete(
+    `/api/projects/${projectId}/stages/${stageId}/substages/${substageId}`
+  );
+}
+
+export async function completeSubstage(substageId: string): Promise<SubstagePatchResponse> {
+  const { data } = await apiClient.patch<SubstagePatchResponse>(
+    `/api/substages/${substageId}/complete`
+  );
+  return data;
+}

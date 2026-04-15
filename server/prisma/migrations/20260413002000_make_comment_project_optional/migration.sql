@@ -1,0 +1,2 @@
+ALTER TABLE "comments"
+ALTER COLUMN "projectId" DROP NOT NULL;

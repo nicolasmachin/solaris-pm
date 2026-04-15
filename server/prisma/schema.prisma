@@ -7,11 +7,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Enums existentes ────────────────────────────────────────────────────────
+
 enum ProjectStatus {
   PROSPECT
   ACTIVE
   COMPLETED
   PAUSED
+  ARCHIVED
 }
 
 enum StageType {
@@ -58,12 +61,18 @@ enum TaskPriority {
 
 enum AuditEntityType {
   project
+  solar_system
   stage
   substage
   task
   file
   user
   notification
+  comment
+  lead
+  proposal
+  setting
+  permission
 }
 
 enum AuditAction {
@@ -74,6 +83,16 @@ enum AuditAction {
   file_uploaded
   stage_advanced
   alert_triggered
+  comment_added
+  comment_edited
+  comment_deleted
+  lead_created
+  lead_stage_changed
+  lead_converted
+  proposal_generated
+  setting_changed
+  role_changed
+  permission_changed
 }
 
 enum NotificationType {
@@ -83,47 +102,159 @@ enum NotificationType {
   substage_blocked
   stage_overdue
   project_delayed
+  goals_not_configured
 }
 
-model User {
-  id                String           @id @default(cuid())
-  email             String           @unique
-  password          String
-  name              String
-  avatarUrl         String?          @map("avatar_url")
-  createdProjects   Project[]        @relation("ProjectCreatedBy")
-  assignedSubstages Substage[]
-  completedChecklistItems ChecklistItem[] @relation("ChecklistCompletedBy")
-  assignedTasks     Task[]
-  uploadedFiles     FileAttachment[] @relation("FileUploadedBy")
-  auditLogs         AuditLog[]
-  notifications     Notification[]
-  createdAt         DateTime         @default(now()) @db.Timestamptz(6)
-  updatedAt         DateTime         @updatedAt @db.Timestamptz(6)
+enum GoalArea {
+  VENTAS
+  OPERACIONES
+}
 
+enum GoalMetric {
+  INSTALLATIONS_COUNT
+  KWP_INSTALLED
+  LEADS_CREATED
+  PROPOSALS_SENT
+  CLOSED_WON
+}
+
+enum GoalPeriod {
+  ANNUAL
+  QUARTERLY
+}
+
+enum PhaseType {
+  MONOFASICO
+  TRIFASICO_230
+  TRIFASICO_400
+}
+
+// ─── Enums nuevos ────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  ASESOR_COMERCIAL
+  INGENIERIA
+  OPERACIONES
+}
+
+enum Module {
+  VENTAS
+  ONBOARDING
+  INGENIERIA
+  OPERACIONES
+  HABILITACION
+  POSTVENTA
+  METRICAS
+  CONFIGURACION
+  USUARIOS
+}
+
+enum Action {
+  VIEW
+  CREATE
+  EDIT
+  DELETE
+  COMPLETE
+  COMMENT
+}
+
+enum SettingLevel {
+  SYSTEM
+  PROJECT
+  USER
+}
+
+enum SettingKey {
+  DEFAULT_CURRENCY
+  DATE_FORMAT
+  TIMEZONE
+  NOTIFICATIONS_EMAIL
+  NOTIFICATIONS_WHATSAPP
+  SHOW_BUDGET_IN_PIPELINE
+  DEFAULT_LANGUAGE
+  CO2_FACTOR
+  PROPOSAL_SCRIPT_PATH
+}
+
+enum SalesStage {
+  NUEVO_LEAD
+  PENDIENTE_COTIZAR
+  COTIZADO
+  RECLAMADO
+  VOLVER_CONTACTAR
+  NEGOCIACION
+  AGENDAR_VISITA
+  VISITADO
+  ONBOARDING
+  CERRADO_GANADO
+  CERRADO_PERDIDO
+  MAS_ADELANTE
+}
+
+enum ProposalStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// ─── Modelos existentes ───────────────────────────────────────────────────────
+
+model User {
+  id                      String               @id @default(cuid())
+  email                   String               @unique
+  password                String
+  name                    String
+  role                    Role                 @default(OPERACIONES)
+  tenantId                String?
+  avatarUrl               String?              @map("avatar_url")
+  createdProjects         Project[]            @relation("ProjectCreatedBy")
+  assignedSubstages       Substage[]
+  completedChecklistItems ChecklistItem[]      @relation("ChecklistCompletedBy")
+  assignedTasks           Task[]
+  uploadedFiles           FileAttachment[]     @relation("FileUploadedBy")
+  auditLogs               AuditLog[]
+  notifications           Notification[]
+  comments                Comment[]
+  settings                Setting[]            @relation("SettingUser")
+  settingsUpdated         Setting[]            @relation("SettingUpdatedBy")
+  salesLeadsAssigned      SalesLead[]          @relation("LeadAssignedTo")
+  salesLeadsCreated       SalesLead[]          @relation("LeadCreatedBy")
+  salesActivities         SalesActivity[]
+  proposals               ProposalGeneration[] @relation("ProposalGeneratedBy")
+  goals                   Goal[]               @relation("GoalCreatedBy")
+  deletedAt               DateTime?            @db.Timestamptz(6)
+  createdAt               DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt               DateTime             @updatedAt @db.Timestamptz(6)
+
+  @@index([deletedAt])
+  @@index([tenantId])
   @@map("users")
 }
 
 model Project {
-  id                String           @id @default(cuid())
-  code              String           @unique
+  id                String               @id @default(cuid())
+  code              String               @unique
+  tenantId          String?
   clientName        String
-  capacityKwp       Decimal          @db.Decimal(10, 2)
+  capacityKwp       Decimal              @db.Decimal(10, 2)
   locationCity      String
   locationProvince  String
   status            ProjectStatus
-  startDate         DateTime         @db.Date
-  plannedEndDate    DateTime         @db.Date
-  actualEndDate     DateTime?        @db.Date
-  budgetUsd         Decimal          @db.Decimal(14, 2)
-  executedUsd       Decimal          @db.Decimal(14, 2)
-  estimatedMwhYear  Decimal          @db.Decimal(10, 2)
-  co2TonsAvoided    Decimal          @db.Decimal(10, 2)
-  modalidadPago     ModalidadPago?
-  notificationEmail String
+  startDate         DateTime             @db.Date
+  plannedEndDate    DateTime             @db.Date
+  actualEndDate     DateTime?            @db.Date
+  budgetUsd         Decimal              @db.Decimal(14, 2)
+  executedUsd       Decimal              @db.Decimal(14, 2)
+  estimatedMwhYear  Decimal              @db.Decimal(10, 2)
+  co2TonsAvoided    Decimal              @db.Decimal(10, 2)
+  modalidadPago          ModalidadPago?
+  firstDateScheduledAt   DateTime?            @db.Timestamptz(6)
+  notificationEmail      String
   notificationPhone String
   createdById       String
-  createdBy         User             @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy         User                 @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   stages            Stage[]
   substages         Substage[]
   checklistItems    ChecklistItem[]
@@ -131,48 +262,85 @@ model Project {
   files             FileAttachment[]
   auditLogs         AuditLog[]
   notifications     Notification[]
-  deletedAt         DateTime?        @db.Timestamptz(6)
-  createdAt         DateTime         @default(now()) @db.Timestamptz(6)
-  updatedAt         DateTime         @updatedAt @db.Timestamptz(6)
+  comments          Comment[]
+  settings          Setting[]            @relation("SettingProject")
+  convertedLeads    SalesLead[]          @relation("LeadConvertedTo")
+  proposals         ProposalGeneration[] @relation("ProposalProject")
+  solarSystems      SolarSystem[]
+  deletedAt         DateTime?            @db.Timestamptz(6)
+  createdAt         DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime             @updatedAt @db.Timestamptz(6)
 
   @@index([status])
+  @@index([tenantId])
   @@index([createdById])
   @@index([plannedEndDate])
   @@index([deletedAt])
   @@map("projects")
 }
 
+model SolarSystem {
+  id                 String     @id @default(cuid())
+  projectId          String
+  project            Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  order              Int        @default(1)
+  description        String?
+  inverterBrand      String?
+  inverterPowerKw    Decimal?   @db.Decimal(10, 2)
+  inverterQuantity   Int?       @default(1)
+  inverterPhaseType  PhaseType?
+  inverterModel      String?
+  panelQuantity      Int?
+  panelPowerW        Int?
+  panelBrand         String?
+  panelModel         String?
+  deletedAt          DateTime?  @db.Timestamptz(6)
+  createdAt          DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime   @updatedAt @db.Timestamptz(6)
+
+  @@unique([projectId, order])
+  @@index([projectId])
+  @@index([deletedAt])
+  @@map("solar_systems")
+}
+
 model Stage {
-  id                  String      @id @default(cuid())
+  id                  String           @id @default(cuid())
   projectId           String
-  project             Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project             Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
   order               Int
   name                StageType
   status              StageStatus
   progressPercent     Int
   tipoObra            TipoObra?
-  plannedStartDate    DateTime?   @db.Date
-  plannedEndDate      DateTime?   @db.Date
-  actualStartDate     DateTime?   @db.Date
-  actualEndDate       DateTime?   @db.Date
+  plannedStartDate    DateTime?        @db.Date
+  plannedEndDate      DateTime?        @db.Date
+  actualStartDate     DateTime?        @db.Date
+  actualEndDate       DateTime?        @db.Date
   plannedDurationDays Int?
   actualDurationDays  Int?
   delayDays           Int?
+  responsibleName     String?
   notes               String?
   substages           Substage[]
   tasks               Task[]
   files               FileAttachment[]
-  createdAt           DateTime    @default(now()) @db.Timestamptz(6)
-  updatedAt           DateTime    @updatedAt @db.Timestamptz(6)
+  comments            Comment[]
+  deletedAt           DateTime?        @db.Timestamptz(6)
+  createdAt           DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime         @updatedAt @db.Timestamptz(6)
 
   @@unique([projectId, order])
   @@unique([projectId, name])
+  @@index([projectId, order])
   @@index([projectId, status])
+  @@index([status])
+  @@index([deletedAt])
   @@map("stages")
 }
 
 model Substage {
-  id               String         @id @default(cuid())
+  id               String          @id @default(cuid())
   stageId          String
   projectId        String
   order            Int
@@ -180,54 +348,65 @@ model Substage {
   sopCode          String?
   responsableRol   String?
   status           SubstageStatus
-  progressPercent  Int            @default(0)
+  progressPercent  Int             @default(0)
   responsible      String
   userId           String?
-  user             User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
-  stage            Stage          @relation(fields: [stageId], references: [id], onDelete: Cascade)
-  project          Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  dueDate          DateTime?      @db.Date
-  plannedStartDate DateTime?      @db.Date
-  plannedEndDate   DateTime?      @db.Date
-  actualStartDate  DateTime?      @db.Date
-  actualEndDate    DateTime?      @db.Date
+  user             User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  stage            Stage           @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  project          Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  dueDate          DateTime?       @db.Date
+  plannedStartDate DateTime?       @db.Date
+  plannedEndDate   DateTime?       @db.Date
+  actualStartDate  DateTime?       @db.Date
+  actualEndDate    DateTime?       @db.Date
+  actualDurationDays Int?
+  delayDays        Int?
   notes            String?
-  isSystem         Boolean        @default(false)
-  isActive         Boolean        @default(true)
+  isSystem         Boolean         @default(false)
+  isActive         Boolean         @default(true)
   checklistItems   ChecklistItem[]
   tasks            Task[]
   files            FileAttachment[]
-  deletedAt        DateTime?      @db.Timestamptz(6)
-  createdAt        DateTime       @default(now()) @db.Timestamptz(6)
-  updatedAt        DateTime       @updatedAt @db.Timestamptz(6)
+  comments         Comment[]
+  deletedAt        DateTime?       @db.Timestamptz(6)
+  createdAt        DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime        @updatedAt @db.Timestamptz(6)
 
   @@unique([stageId, order])
+  @@index([stageId])
   @@index([projectId, status])
+  @@index([status])
   @@index([userId])
   @@index([deletedAt])
   @@map("substages")
 }
 
 model ChecklistItem {
-  id                       String          @id @default(cuid())
+  id                       String        @id @default(cuid())
   substageId               String
-  substage                 Substage        @relation(fields: [substageId], references: [id], onDelete: Cascade)
+  substage                 Substage      @relation(fields: [substageId], references: [id], onDelete: Cascade)
   projectId                String
-  project                  Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project                  Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   order                    Int
   label                    String
-  completed                Boolean         @default(false)
-  completedAt              DateTime?       @db.Timestamptz(6)
+  completed                Boolean       @default(false)
+  completedAt              DateTime?     @db.Timestamptz(6)
   completedBy              String?
-  user                     User?           @relation("ChecklistCompletedBy", fields: [completedBy], references: [id], onDelete: SetNull)
-  isRequired               Boolean         @default(false)
-  isBlocker                Boolean         @default(false)
+  user                     User?         @relation("ChecklistCompletedBy", fields: [completedBy], references: [id], onDelete: SetNull)
+  notes                    String?
+  isRequired               Boolean       @default(false)
+  isBlocker                Boolean       @default(false)
+  isCustom                 Boolean       @default(false)
   appliesWhenModalidadPago ModalidadPago?
-  createdAt                DateTime        @default(now()) @db.Timestamptz(6)
-  updatedAt                DateTime        @updatedAt @db.Timestamptz(6)
+  comments                 Comment[]
+  deletedAt                DateTime?     @db.Timestamptz(6)
+  createdAt                DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt                DateTime      @updatedAt @db.Timestamptz(6)
 
   @@index([substageId])
+  @@index([completed])
   @@index([projectId])
+  @@index([deletedAt])
   @@map("checklist_items")
 }
 
@@ -246,12 +425,15 @@ model Task {
   project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
   stage       Stage?       @relation(fields: [stageId], references: [id], onDelete: SetNull)
   substage    Substage?    @relation(fields: [substageId], references: [id], onDelete: SetNull)
+  comments    Comment[]
   dueDate     DateTime?    @db.Date
   completedAt DateTime?    @db.Timestamptz(6)
   deletedAt   DateTime?    @db.Timestamptz(6)
   createdAt   DateTime     @default(now()) @db.Timestamptz(6)
   updatedAt   DateTime     @updatedAt @db.Timestamptz(6)
 
+  @@index([projectId])
+  @@index([status])
   @@index([projectId, status])
   @@index([userId])
   @@index([dueDate])
@@ -301,6 +483,7 @@ model AuditLog {
 
   @@index([entityType, entityId])
   @@index([projectId])
+  @@index([projectId, timestamp])
   @@index([timestamp])
   @@index([userId])
   @@map("audit_logs")
@@ -321,6 +504,171 @@ model Notification {
   createdAt    DateTime         @default(now()) @db.Timestamptz(6)
 
   @@index([userId, read])
+  @@index([projectId])
   @@index([projectId, type])
   @@map("notifications")
+}
+
+// ─── Modelos nuevos ───────────────────────────────────────────────────────────
+
+model Permission {
+  id        String   @id @default(cuid())
+  role      Role
+  module    Module
+  action    Action
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([role, module, action])
+  @@index([role])
+  @@map("permissions")
+}
+
+model Comment {
+  id              String         @id @default(cuid())
+  content         String
+  authorId        String
+  author          User           @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  projectId       String?
+  project         Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  leadId          String?
+  lead            SalesLead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  stageId         String?
+  stage           Stage?         @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  substageId      String?
+  substage        Substage?      @relation(fields: [substageId], references: [id], onDelete: SetNull)
+  checklistItemId String?
+  checklistItem   ChecklistItem? @relation(fields: [checklistItemId], references: [id], onDelete: SetNull)
+  taskId          String?
+  task            Task?          @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  isEdited        Boolean        @default(false)
+  editedAt        DateTime?      @db.Timestamptz(6)
+  deletedAt       DateTime?      @db.Timestamptz(6)
+  createdAt       DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime       @updatedAt @db.Timestamptz(6)
+
+  @@index([projectId])
+  @@index([leadId])
+  @@index([stageId])
+  @@index([substageId])
+  @@index([checklistItemId])
+  @@index([taskId])
+  @@index([authorId])
+  @@index([deletedAt])
+  @@map("comments")
+}
+
+model Setting {
+  id          String       @id @default(cuid())
+  level       SettingLevel
+  key         SettingKey
+  value       String
+  userId      String?
+  user        User?        @relation("SettingUser", fields: [userId], references: [id], onDelete: SetNull)
+  projectId   String?
+  project     Project?     @relation("SettingProject", fields: [projectId], references: [id], onDelete: Cascade)
+  updatedById String
+  updatedBy   User         @relation("SettingUpdatedBy", fields: [updatedById], references: [id], onDelete: Restrict)
+  updatedAt   DateTime     @updatedAt @db.Timestamptz(6)
+
+  @@unique([level, key, userId, projectId])
+  @@index([level, key])
+  @@map("settings")
+}
+
+model SalesLead {
+  id                   String          @id @default(cuid())
+  code                 String          @unique
+  tenantId             String?
+  clientName           String
+  clientEmail          String?
+  clientPhone          String?
+  address              String?
+  stage                SalesStage      @default(NUEVO_LEAD)
+  estimatedKwp         Decimal?        @db.Decimal(10, 2)
+  estimatedBudgetUsd   Decimal?        @db.Decimal(14, 2)
+  uteBillMonthlyUsd    Decimal?        @db.Decimal(10, 2)
+  roofType             String?
+  notes                String?
+  lostReason           String?
+  proposalSentAt       DateTime?       @db.Timestamptz(6)
+  visitScheduledAt     DateTime?       @db.Timestamptz(6)
+  visitCompletedAt     DateTime?       @db.Timestamptz(6)
+  closedAt             DateTime?       @db.Timestamptz(6)
+  assignedToId         String?
+  assignedTo           User?           @relation("LeadAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  convertedToProjectId String?
+  convertedToProject   Project?        @relation("LeadConvertedTo", fields: [convertedToProjectId], references: [id], onDelete: SetNull)
+  convertedAt          DateTime?       @db.Timestamptz(6)
+  createdById          String
+  createdBy            User            @relation("LeadCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  activities           SalesActivity[]
+  proposals            ProposalGeneration[] @relation("ProposalLead")
+  comments             Comment[]
+  deletedAt            DateTime?       @db.Timestamptz(6)
+  createdAt            DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime        @updatedAt @db.Timestamptz(6)
+
+  @@index([stage])
+  @@index([tenantId])
+  @@index([assignedToId])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@map("sales_leads")
+}
+
+model SalesActivity {
+  id        String      @id @default(cuid())
+  leadId    String
+  lead      SalesLead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  fromStage SalesStage?
+  toStage   SalesStage?
+  action    String
+  notes     String?
+  createdAt DateTime    @default(now()) @db.Timestamptz(6)
+
+  @@index([leadId])
+  @@index([createdAt])
+  @@map("sales_activities")
+}
+
+model Goal {
+  id          String     @id @default(cuid())
+  area        GoalArea
+  metric      GoalMetric
+  period      GoalPeriod
+  year        Int
+  quarter     Int?
+  targetValue Decimal    @db.Decimal(14, 2)
+  createdById String
+  createdBy   User       @relation("GoalCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime   @updatedAt @db.Timestamptz(6)
+
+  @@unique([area, metric, period, year, quarter])
+  @@index([area])
+  @@index([year])
+  @@map("goals")
+}
+
+model ProposalGeneration {
+  id             String         @id @default(cuid())
+  leadId         String?
+  lead           SalesLead?     @relation("ProposalLead", fields: [leadId], references: [id], onDelete: SetNull)
+  projectId      String?
+  project        Project?       @relation("ProposalProject", fields: [projectId], references: [id], onDelete: SetNull)
+  inputFilePath  String?
+  outputFilePath String?
+  status         ProposalStatus @default(PENDING)
+  errorMessage   String?
+  generatedById  String
+  generatedBy    User           @relation("ProposalGeneratedBy", fields: [generatedById], references: [id], onDelete: Restrict)
+  createdAt      DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime       @updatedAt @db.Timestamptz(6)
+
+  @@index([leadId])
+  @@index([projectId])
+  @@index([status])
+  @@map("proposal_generations")
 }

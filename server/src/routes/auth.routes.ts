@@ -24,7 +24,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       where: { email: body.email },
     });
 
-    if (!user) {
+    if (!user || user.deletedAt) {
       throw unauthorized("Credenciales inválidas");
     }
 
@@ -37,6 +37,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       id: user.id,
       email: user.email,
       name: user.name,
+      role: user.role,
     });
 
     return {
@@ -45,6 +46,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         id: user.id,
         email: user.email,
         name: user.name,
+        role: user.role,
       },
     };
   });

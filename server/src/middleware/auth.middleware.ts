@@ -8,6 +8,7 @@ type JwtPayload = {
   sub: string;
   email: string;
   name: string;
+  role: string;
 };
 
 export async function authenticate(request: import("fastify").FastifyRequest) {
@@ -31,22 +32,30 @@ export async function authenticate(request: import("fastify").FastifyRequest) {
       id: true,
       email: true,
       name: true,
+      role: true,
+      deletedAt: true,
     },
   });
 
-  if (!user) {
+  if (!user || user.deletedAt) {
     throw unauthorized("El usuario del token no existe");
   }
 
-  request.user = user;
+  request.user = {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+  };
 }
 
-export function signToken(user: { id: string; email: string; name: string }) {
+export function signToken(user: { id: string; email: string; name: string; role: string }) {
   return jwt.sign(
     {
       sub: user.id,
       email: user.email,
       name: user.name,
+      role: user.role,
     },
     env.jwtSecret,
     {

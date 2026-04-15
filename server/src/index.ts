@@ -6,7 +6,7 @@ import multipart from "@fastify/multipart";
 
 import { env } from "./config/env.js";
 import { registerRoutes } from "./routes/index.js";
-import { startAlertsJob } from "./services/alerts.service.js";
+import { checkGoalsConfigured, startAlertsJob, startGoalsCheckJob } from "./services/alerts.service.js";
 import { formatErrorPayload } from "./utils/errors.js";
 
 async function buildServer() {
@@ -45,6 +45,10 @@ async function buildServer() {
 async function start() {
   const app = await buildServer();
   const alertsJob = startAlertsJob();
+  startGoalsCheckJob();
+
+  // Startup check: notify admins if no goals for current quarter
+  checkGoalsConfigured().catch((err) => console.error("[startup] checkGoalsConfigured failed:", err));
 
   try {
     await app.listen({

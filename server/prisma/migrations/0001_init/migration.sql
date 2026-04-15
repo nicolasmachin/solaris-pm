@@ -41,6 +41,7 @@ CREATE TABLE "users" (
     "password" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "avatar_url" TEXT,
+    "deletedAt" TIMESTAMPTZ(6),
     "createdAt" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ(6) NOT NULL,
 
@@ -219,6 +220,7 @@ CREATE TABLE "notifications" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+CREATE INDEX "users_deletedAt_idx" ON "users"("deletedAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "projects_code_key" ON "projects"("code");
@@ -360,4 +362,3 @@ ALTER TABLE "notifications" ADD CONSTRAINT "notifications_userId_fkey" FOREIGN K
 
 -- AddForeignKey
 ALTER TABLE "notifications" ADD CONSTRAINT "notifications_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
