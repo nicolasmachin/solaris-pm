@@ -73,6 +73,12 @@ enum AuditEntityType {
   proposal
   setting
   permission
+  supplier
+  finance_movement
+  finance_comprobante
+  stock_product
+  stock_movement
+  exchange_rate
 }
 
 enum AuditAction {
@@ -136,6 +142,7 @@ enum Role {
   ASESOR_COMERCIAL
   INGENIERIA
   OPERACIONES
+  FINANZAS
 }
 
 enum Module {
@@ -148,6 +155,71 @@ enum Module {
   METRICAS
   CONFIGURACION
   USUARIOS
+  FINANZAS
+  STOCK
+}
+
+enum Moneda {
+  USD
+  UYU
+}
+
+enum MetodoPago {
+  TRANSFERENCIA
+  EFECTIVO
+  CHEQUE
+  TARJETA_DEBITO
+  TARJETA_CREDITO
+  CRYPTO
+  OTRO
+}
+
+enum TipoMovimiento {
+  INGRESO
+  GASTO
+  AJUSTE
+}
+
+enum CategoriaPrincipal {
+  FIJO
+  VARIABLE
+  PROYECTO_ENTRADA
+  PROYECTO_SALIDA
+  COMPRA_STOCK
+  CONSUMO_STOCK
+  PAGO_PROVEEDOR
+  COBRO_CLIENTE
+  OTRO
+}
+
+enum EstadoAprobacion {
+  BORRADOR
+  REGISTRADO
+  PENDIENTE_APROBACION
+  APROBADO
+  RECHAZADO
+  ANULADO
+}
+
+enum TipoComprobante {
+  FACTURA
+  NOTA_CREDITO
+  TICKET
+  PRESUPUESTO
+  OTRO
+}
+
+enum EstadoComprobante {
+  PENDIENTE
+  PARCIALMENTE_PAGADO
+  PAGADO
+  ANULADO
+}
+
+enum TipoMovimientoStock {
+  INGRESO
+  EGRESO
+  AJUSTE
 }
 
 enum Action {
@@ -210,6 +282,7 @@ model User {
   tenantId                String?
   avatarUrl               String?              @map("avatar_url")
   createdProjects         Project[]            @relation("ProjectCreatedBy")
+  projectsSalesperson     Project[]            @relation("ProjectSalesperson")
   assignedSubstages       Substage[]
   completedChecklistItems ChecklistItem[]      @relation("ChecklistCompletedBy")
   assignedTasks           Task[]
@@ -224,6 +297,9 @@ model User {
   salesActivities         SalesActivity[]
   proposals               ProposalGeneration[] @relation("ProposalGeneratedBy")
   goals                   Goal[]               @relation("GoalCreatedBy")
+  financeMovementsCreated  FinanceMovement[]   @relation("FinanceMovCreadoPor")
+  financeMovementsApproved FinanceMovement[]   @relation("FinanceMovAprobadoPor")
+  financeApprovalHistory   FinanceApprovalHistory[]
   deletedAt               DateTime?            @db.Timestamptz(6)
   createdAt               DateTime             @default(now()) @db.Timestamptz(6)
   updatedAt               DateTime             @updatedAt @db.Timestamptz(6)
@@ -255,6 +331,8 @@ model Project {
   notificationPhone String
   createdById       String
   createdBy         User                 @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  salespersonId     String?
+  salesperson       User?                @relation("ProjectSalesperson", fields: [salespersonId], references: [id], onDelete: SetNull)
   stages            Stage[]
   substages         Substage[]
   checklistItems    ChecklistItem[]
@@ -267,6 +345,8 @@ model Project {
   convertedLeads    SalesLead[]          @relation("LeadConvertedTo")
   proposals         ProposalGeneration[] @relation("ProposalProject")
   solarSystems      SolarSystem[]
+  financeMovements  FinanceMovement[]
+  stockMovements    StockMovement[]
   deletedAt         DateTime?            @db.Timestamptz(6)
   createdAt         DateTime             @default(now()) @db.Timestamptz(6)
   updatedAt         DateTime             @updatedAt @db.Timestamptz(6)
@@ -274,6 +354,7 @@ model Project {
   @@index([status])
   @@index([tenantId])
   @@index([createdById])
+  @@index([salespersonId])
   @@index([plannedEndDate])
   @@index([deletedAt])
   @@map("projects")
@@ -671,4 +752,242 @@ model ProposalGeneration {
   @@index([projectId])
   @@index([status])
   @@map("proposal_generations")
+}
+
+// ─── Módulo Finanzas & Stock ──────────────────────────────────────────────────
+
+model Supplier {
+  id            String    @id @default(cuid())
+  nombre        String
+  email         String?
+  telefono      String?
+  condicionPago String?
+  activo        Boolean   @default(true)
+  notas         String?
+  deletedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  movimientos      FinanceMovement[]
+  pagos            FinancePayment[]
+  comprobantes     FinanceComprobante[]
+  movimientosStock StockMovement[]
+
+  @@index([activo])
+  @@map("suppliers")
+}
+
+model FinanceSubcategory {
+  id        String             @id @default(cuid())
+  nombre    String
+  categoria CategoriaPrincipal
+  activa    Boolean            @default(true)
+  createdAt DateTime           @default(now())
+
+  movimientos FinanceMovement[]
+
+  @@unique([nombre, categoria])
+  @@map("finance_subcategories")
+}
+
+model ExchangeRate {
+  id        String   @id @default(cuid())
+  date      DateTime @default(now())
+  usdToUyu  Decimal  @db.Decimal(10, 4)
+  source    String   @default("manual")
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  @@index([date])
+  @@map("exchange_rates")
+}
+
+model FinanceMovement {
+  id                 String                   @id @default(cuid())
+  fecha              DateTime
+  mes                Int
+  anio               Int
+  tipoMovimiento     TipoMovimiento
+  categoriaPrincipal CategoriaPrincipal
+  subcategoriaId     String?
+  subcategoria       FinanceSubcategory?      @relation(fields: [subcategoriaId], references: [id])
+  descripcion        String
+  monto              Decimal                  @db.Decimal(14, 2)
+  moneda             Moneda                   @default(USD)
+  tipoCambio         Decimal?                 @db.Decimal(10, 4)
+  pagado             Boolean                  @default(false)
+  cobrado            Boolean                  @default(false)
+  impactaFlujo       Boolean                  @default(true)
+  projectId          String?
+  project            Project?                 @relation(fields: [projectId], references: [id])
+  supplierId         String?
+  supplier           Supplier?                @relation(fields: [supplierId], references: [id])
+  observaciones      String?
+  estadoAprobacion   EstadoAprobacion         @default(REGISTRADO)
+  archivoAdjuntoUrl  String?
+  pagos              FinancePayment[]
+  comprobantes       FinanceComprobante[]
+  movimientosStock   StockMovement[]
+  historial          FinanceApprovalHistory[]
+  creadoPorId        String?
+  creadoPor          User?                    @relation("FinanceMovCreadoPor", fields: [creadoPorId], references: [id])
+  aprobadoPorId      String?
+  aprobadoPor        User?                    @relation("FinanceMovAprobadoPor", fields: [aprobadoPorId], references: [id])
+  deletedAt          DateTime?
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+
+  @@index([fecha])
+  @@index([mes, anio])
+  @@index([projectId])
+  @@index([categoriaPrincipal])
+  @@index([estadoAprobacion])
+  @@index([tipoMovimiento])
+  @@map("finance_movements")
+}
+
+model FinancePayment {
+  id             String          @id @default(cuid())
+  movimientoId   String
+  movimiento     FinanceMovement @relation(fields: [movimientoId], references: [id], onDelete: Cascade)
+  fecha          DateTime
+  monto          Decimal         @db.Decimal(14, 2)
+  moneda         Moneda          @default(USD)
+  metodoPago     MetodoPago      @default(TRANSFERENCIA)
+  supplierId     String?
+  supplier       Supplier?       @relation(fields: [supplierId], references: [id])
+  comprobanteUrl String?
+  observaciones  String?
+  createdAt      DateTime        @default(now())
+
+  @@index([movimientoId])
+  @@map("finance_payments")
+}
+
+model FinanceComprobante {
+  id               String                     @id @default(cuid())
+  supplierId       String
+  supplier         Supplier                   @relation(fields: [supplierId], references: [id])
+  numero           String?
+  tipo             TipoComprobante            @default(FACTURA)
+  concepto         String
+  monto            Decimal                    @db.Decimal(14, 2)
+  moneda           Moneda                     @default(USD)
+  fechaEmision     DateTime
+  fechaVencimiento DateTime?
+  estado           EstadoComprobante          @default(PENDIENTE)
+  movimientoId     String?
+  movimiento       FinanceMovement?           @relation(fields: [movimientoId], references: [id])
+  origenEmail      String?
+  archivoUrl       String?
+  notas            String?
+  pagos            FinanceComprobantePayment[]
+  deletedAt        DateTime?
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+
+  @@index([supplierId])
+  @@index([estado])
+  @@index([fechaVencimiento])
+  @@map("finance_comprobantes")
+}
+
+model FinanceComprobantePayment {
+  id             String             @id @default(cuid())
+  comprobanteId  String
+  comprobante    FinanceComprobante @relation(fields: [comprobanteId], references: [id], onDelete: Cascade)
+  fecha          DateTime
+  monto          Decimal            @db.Decimal(14, 2)
+  moneda         Moneda             @default(USD)
+  metodoPago     MetodoPago         @default(TRANSFERENCIA)
+  referencia     String?
+  comprobanteUrl String?
+  observaciones  String?
+  createdAt      DateTime           @default(now())
+
+  @@index([comprobanteId])
+  @@map("finance_comprobante_payments")
+}
+
+model FinanceApprovalHistory {
+  id            String          @id @default(cuid())
+  movimientoId  String
+  movimiento    FinanceMovement @relation(fields: [movimientoId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User            @relation(fields: [userId], references: [id])
+  accion        String
+  comentario    String?
+  estadoAntes   EstadoAprobacion
+  estadoDespues EstadoAprobacion
+  createdAt     DateTime        @default(now())
+
+  @@index([movimientoId])
+  @@index([userId])
+  @@map("finance_approval_history")
+}
+
+model FinanceApprovalRule {
+  id               String           @id @default(cuid())
+  nombre           String
+  activa           Boolean          @default(true)
+  prioridad        Int              @default(0)
+  categorias       String[]
+  montoMinimo      Decimal?         @db.Decimal(14, 2)
+  montoMaximo      Decimal?         @db.Decimal(14, 2)
+  estadoResultante EstadoAprobacion @default(PENDIENTE_APROBACION)
+  descripcion      String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@map("finance_approval_rules")
+}
+
+model StockProduct {
+  id            String    @id @default(cuid())
+  nombre        String
+  descripcion   String?
+  categoria     String
+  unidad        String    @default("unidad")
+  stockActual   Decimal   @default(0) @db.Decimal(14, 3)
+  stockMinimo   Decimal   @default(0) @db.Decimal(14, 3)
+  costoPromedio Decimal   @default(0) @db.Decimal(14, 2)
+  moneda        Moneda    @default(USD)
+  activo        Boolean   @default(true)
+  notas         String?
+  deletedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  movimientos StockMovement[]
+
+  @@index([categoria])
+  @@map("stock_products")
+}
+
+model StockMovement {
+  id                String              @id @default(cuid())
+  fecha             DateTime
+  productId         String
+  product           StockProduct        @relation(fields: [productId], references: [id])
+  tipo              TipoMovimientoStock
+  cantidad          Decimal             @db.Decimal(14, 3)
+  costoUnitario     Decimal?            @db.Decimal(14, 2)
+  costoTotal        Decimal?            @db.Decimal(14, 2)
+  moneda            Moneda              @default(USD)
+  stockResultante   Decimal             @db.Decimal(14, 3)
+  supplierId        String?
+  supplier          Supplier?           @relation(fields: [supplierId], references: [id])
+  projectId         String?
+  project           Project?            @relation(fields: [projectId], references: [id])
+  financeMovementId String?
+  financeMovement   FinanceMovement?    @relation(fields: [financeMovementId], references: [id])
+  referencia        String?
+  observaciones     String?
+  createdAt         DateTime            @default(now())
+
+  @@index([productId])
+  @@index([fecha])
+  @@index([projectId])
+  @@index([financeMovementId])
+  @@map("stock_movements")
 }

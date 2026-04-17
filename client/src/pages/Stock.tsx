@@ -1,0 +1,737 @@
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
+import { Plus, X, AlertTriangle, Package, ChevronLeft, ChevronRight, ArrowDown, ArrowUp, SlidersHorizontal } from 'lucide-react';
+import { Spinner } from '../components/ui/Spinner';
+import {
+  getStockProducts, createStockProduct, patchStockProduct, deleteStockProduct,
+  createStockMovement, getProductMovements, getStockAlerts, getStockMovements,
+} from '../api/stock.api';
+import { getSuppliers } from '../api/finance.api';
+import { apiClient } from '../api/axios';
+import { fmtCurrency, fmtDate } from '../lib/finance';
+import type { Moneda, StockProduct, TipoMovimientoStock } from '../types/finance.types';
+
+function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
+
+const inp = 'w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]';
+const lbl = 'block text-xs font-mono text-[var(--color-text-muted)] mb-1 uppercase tracking-wider';
+
+// ─── Product Form ─────────────────────────────────────────────────────────────
+
+function ProductForm({ initial, productId, onSuccess, onCancel }: {
+  initial?: StockProduct | null;
+  productId?: string;
+  onSuccess: () => void;
+  onCancel: () => void;
+}) {
+  const [form, setForm] = useState({
+    nombre: initial?.nombre ?? '',
+    descripcion: initial?.descripcion ?? '',
+    categoria: initial?.categoria ?? '',
+    unidad: initial?.unidad ?? 'unidad',
+    stockMinimo: String(initial?.stockMinimo ?? 0),
+    costoPromedio: String(initial?.costoPromedio ?? 0),
+    moneda: (initial?.moneda ?? 'USD') as Moneda,
+    notas: initial?.notas ?? '',
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  function setF(key: keyof typeof form, v: string) { setForm(p => ({ ...p, [key]: v })); }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const body = {
+        nombre: form.nombre,
+        ...(form.descripcion ? { descripcion: form.descripcion } : {}),
+        categoria: form.categoria,
+        unidad: form.unidad,
+        stockMinimo: parseFloat(form.stockMinimo) || 0,
+        costoPromedio: parseFloat(form.costoPromedio) || 0,
+        moneda: form.moneda,
+        ...(form.notas ? { notas: form.notas } : {}),
+      };
+      if (productId) {
+        await patchStockProduct(productId, body);
+        toast.success('Producto actualizado');
+      } else {
+        await createStockProduct(body);
+        toast.success('Producto creado');
+      }
+      onSuccess();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg ?? 'Error al guardar');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="col-span-2"><label className={lbl}>Nombre *</label><input className={inp} value={form.nombre} onChange={e => setF('nombre', e.target.value)} required /></div>
+        <div><label className={lbl}>Categoría *</label><input className={inp} value={form.categoria} onChange={e => setF('categoria', e.target.value)} required /></div>
+        <div><label className={lbl}>Unidad</label><input className={inp} value={form.unidad} onChange={e => setF('unidad', e.target.value)} /></div>
+        <div><label className={lbl}>Stock mínimo</label><input type="number" className={inp} min="0" step="0.01" value={form.stockMinimo} onChange={e => setF('stockMinimo', e.target.value)} /></div>
+        <div>
+          <label className={lbl}>Costo promedio inicial</label>
+          <div className="flex gap-2">
+            <select className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none" value={form.moneda} onChange={e => setF('moneda', e.target.value)}>
+              <option value="USD">USD</option><option value="UYU">UYU</option>
+            </select>
+            <input type="number" className={klass(inp, 'flex-1')} min="0" step="0.01" value={form.costoPromedio} onChange={e => setF('costoPromedio', e.target.value)} />
+          </div>
+        </div>
+      </div>
+      <div><label className={lbl}>Descripción</label><input className={inp} value={form.descripcion} onChange={e => setF('descripcion', e.target.value)} /></div>
+      <div><label className={lbl}>Notas</label><textarea className={klass(inp, 'resize-none')} rows={2} value={form.notas} onChange={e => setF('notas', e.target.value)} /></div>
+      {error && <p className="text-sm text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{error}</p>}
+      <div className="flex gap-3">
+        <button type="submit" disabled={loading} className="flex-1 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-60">
+          {loading ? 'Guardando...' : (productId ? 'Guardar cambios' : 'Crear producto')}
+        </button>
+        <button type="button" onClick={onCancel} className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  );
+}
+
+// ─── Ingreso Modal ────────────────────────────────────────────────────────────
+
+function IngresoModal({ product, onSuccess, onClose }: { product: StockProduct; onSuccess: () => void; onClose: () => void }) {
+  const today = new Date().toISOString().split('T')[0];
+  const [form, setForm] = useState({ fecha: today, cantidad: '', costoUnitario: '', moneda: 'USD' as Moneda, supplierId: '', referencia: '', observaciones: '' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const { data: suppliers = [] } = useQuery({ queryKey: ['suppliers'], queryFn: () => getSuppliers() });
+
+  function setF(k: keyof typeof form, v: string) { setForm(p => ({ ...p, [k]: v })); }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      await createStockMovement({
+        fecha: form.fecha,
+        productId: product.id,
+        tipo: 'INGRESO',
+        cantidad: parseFloat(form.cantidad),
+        costoUnitario: parseFloat(form.costoUnitario) || undefined,
+        moneda: form.moneda,
+        ...(form.supplierId ? { supplierId: form.supplierId } : {}),
+        ...(form.referencia ? { referencia: form.referencia } : {}),
+        ...(form.observaciones ? { observaciones: form.observaciones } : {}),
+      });
+      toast.success(`Ingreso registrado. Nuevo stock: ${product.stockActual + parseFloat(form.cantidad)} ${product.unidad}`);
+      onSuccess();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg ?? 'Error al registrar ingreso');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-md shadow-2xl">
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-sm font-semibold text-[var(--color-text-primary)]">Registrar ingreso</p>
+          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"><X className="w-4 h-4" /></button>
+        </div>
+        <p className="text-xs text-[var(--color-text-muted)] mb-4">{product.nombre} · Stock actual: <strong>{product.stockActual} {product.unidad}</strong></p>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className={lbl}>Fecha *</label><input type="date" className={inp} value={form.fecha} onChange={e => setF('fecha', e.target.value)} required /></div>
+            <div><label className={lbl}>Cantidad *</label><input type="number" className={inp} min="0.001" step="0.001" placeholder={product.unidad} value={form.cantidad} onChange={e => setF('cantidad', e.target.value)} required /></div>
+          </div>
+          <div>
+            <label className={lbl}>Costo unitario *</label>
+            <div className="flex gap-2">
+              <select className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none" value={form.moneda} onChange={e => setF('moneda', e.target.value)}>
+                <option value="USD">USD</option><option value="UYU">UYU</option>
+              </select>
+              <input type="number" className={klass(inp, 'flex-1')} min="0" step="0.01" value={form.costoUnitario} onChange={e => setF('costoUnitario', e.target.value)} required />
+            </div>
+          </div>
+          {form.cantidad && form.costoUnitario && (
+            <p className="text-xs text-[var(--color-text-muted)]">
+              Costo total: {fmtCurrency(parseFloat(form.cantidad) * parseFloat(form.costoUnitario), form.moneda)}
+              {' · '}Nuevo costo prom: {product.stockActual > 0
+                ? fmtCurrency((product.stockActual * product.costoPromedio + parseFloat(form.cantidad) * parseFloat(form.costoUnitario)) / (product.stockActual + parseFloat(form.cantidad)), form.moneda)
+                : fmtCurrency(parseFloat(form.costoUnitario), form.moneda)}
+            </p>
+          )}
+          <div>
+            <label className={lbl}>Proveedor</label>
+            <select className={inp} value={form.supplierId} onChange={e => setF('supplierId', e.target.value)}>
+              <option value="">Sin proveedor</option>
+              {suppliers.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+            </select>
+          </div>
+          <div><label className={lbl}>Referencia</label><input className={inp} value={form.referencia} onChange={e => setF('referencia', e.target.value)} /></div>
+          <div><label className={lbl}>Observaciones</label><textarea className={klass(inp, 'resize-none')} rows={2} value={form.observaciones} onChange={e => setF('observaciones', e.target.value)} /></div>
+          {error && <p className="text-sm text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{error}</p>}
+          <div className="flex gap-3 pt-1">
+            <button type="submit" disabled={loading} className="flex-1 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 transition-colors disabled:opacity-60">
+              {loading ? 'Registrando...' : 'Registrar ingreso'}
+            </button>
+            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Egreso Modal ─────────────────────────────────────────────────────────────
+
+function EgresoModal({ product, onSuccess, onClose }: { product: StockProduct; onSuccess: () => void; onClose: () => void }) {
+  const today = new Date().toISOString().split('T')[0];
+  const [form, setForm] = useState({ fecha: today, cantidad: '', projectId: '', observaciones: '' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [projects, setProjects] = useState<{ id: string; code: string; clientName: string }[]>([]);
+
+  useState(() => {
+    apiClient.get('/api/projects?status=ACTIVE').then(r => setProjects(r.data)).catch(() => {});
+  });
+
+  function setF(k: keyof typeof form, v: string) { setForm(p => ({ ...p, [k]: v })); }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    const qty = parseFloat(form.cantidad);
+    if (qty > product.stockActual) {
+      setError(`Stock insuficiente. Disponible: ${product.stockActual} ${product.unidad}`);
+      return;
+    }
+    setLoading(true);
+    try {
+      await createStockMovement({
+        fecha: form.fecha,
+        productId: product.id,
+        tipo: 'EGRESO',
+        cantidad: qty,
+        ...(form.projectId ? { projectId: form.projectId } : {}),
+        ...(form.observaciones ? { observaciones: form.observaciones } : {}),
+      });
+      toast.success(`Egreso registrado. Nuevo stock: ${product.stockActual - qty} ${product.unidad}`);
+      onSuccess();
+    } catch (err: unknown) {
+      const errData = (err as { response?: { data?: { message?: string; code?: string } } })?.response?.data;
+      if (errData?.code === 'INSUFFICIENT_STOCK') {
+        setError(errData.message ?? `Stock insuficiente. Disponible: ${product.stockActual} ${product.unidad}`);
+      } else {
+        setError(errData?.message ?? 'Error al registrar egreso');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-md shadow-2xl">
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-sm font-semibold text-[var(--color-text-primary)]">Registrar egreso</p>
+          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"><X className="w-4 h-4" /></button>
+        </div>
+        <p className="text-xs text-[var(--color-text-muted)] mb-4">{product.nombre} · Stock actual: <strong className={product.bajominimo ? 'text-red-400' : ''}>{product.stockActual} {product.unidad}</strong></p>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className={lbl}>Fecha *</label><input type="date" className={inp} value={form.fecha} onChange={e => setF('fecha', e.target.value)} required /></div>
+            <div>
+              <label className={lbl}>Cantidad *</label>
+              <input type="number" className={inp} min="0.001" step="0.001" max={product.stockActual} placeholder={product.unidad}
+                value={form.cantidad} onChange={e => setF('cantidad', e.target.value)} required />
+            </div>
+          </div>
+          <div>
+            <label className={lbl}>Proyecto (obra)</label>
+            <select className={inp} value={form.projectId} onChange={e => setF('projectId', e.target.value)}>
+              <option value="">— Sin proyecto asociado —</option>
+              {projects.map(p => <option key={p.id} value={p.id}>{p.code} — {p.clientName}</option>)}
+            </select>
+          </div>
+          <div><label className={lbl}>Observaciones</label><textarea className={klass(inp, 'resize-none')} rows={2} value={form.observaciones} onChange={e => setF('observaciones', e.target.value)} /></div>
+          {error && (
+            <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2.5">
+              <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+              <p className="text-sm text-red-400">{error}</p>
+            </div>
+          )}
+          <div className="flex gap-3 pt-1">
+            <button type="submit" disabled={loading} className="flex-1 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-60">
+              {loading ? 'Registrando...' : 'Registrar egreso'}
+            </button>
+            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Ajuste Modal ─────────────────────────────────────────────────────────────
+
+function AjusteModal({ product, onSuccess, onClose }: { product: StockProduct; onSuccess: () => void; onClose: () => void }) {
+  const today = new Date().toISOString().split('T')[0];
+  const [form, setForm] = useState({ fecha: today, nuevoStock: String(product.stockActual), motivo: '' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  function setF(k: keyof typeof form, v: string) { setForm(p => ({ ...p, [k]: v })); }
+
+  const diff = parseFloat(form.nuevoStock || '0') - product.stockActual;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    if (!form.motivo.trim()) { setError('El motivo del ajuste es requerido'); return; }
+    setLoading(true);
+    try {
+      await createStockMovement({
+        fecha: form.fecha,
+        productId: product.id,
+        tipo: 'AJUSTE',
+        cantidad: parseFloat(form.nuevoStock),
+        observaciones: form.motivo,
+      });
+      toast.success(`Stock ajustado a ${form.nuevoStock} ${product.unidad}`);
+      onSuccess();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg ?? 'Error al registrar ajuste');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-md shadow-2xl">
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-sm font-semibold text-[var(--color-text-primary)]">Ajuste de inventario</p>
+          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"><X className="w-4 h-4" /></button>
+        </div>
+        <p className="text-xs text-[var(--color-text-muted)] mb-4">{product.nombre} · Stock actual: <strong>{product.stockActual} {product.unidad}</strong></p>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className={lbl}>Fecha *</label><input type="date" className={inp} value={form.fecha} onChange={e => setF('fecha', e.target.value)} required /></div>
+            <div>
+              <label className={lbl}>Nuevo stock *</label>
+              <input type="number" className={inp} min="0" step="0.001" value={form.nuevoStock} onChange={e => setF('nuevoStock', e.target.value)} required />
+            </div>
+          </div>
+          {form.nuevoStock && (
+            <div className={klass('text-xs px-3 py-2 rounded-lg',
+              diff > 0 ? 'bg-green-500/10 text-green-400' : diff < 0 ? 'bg-red-500/10 text-red-400' : 'bg-[var(--color-border)] text-[var(--color-text-muted)]')}>
+              Diferencia: {diff > 0 ? '+' : ''}{diff.toFixed(3)} {product.unidad}
+            </div>
+          )}
+          <div>
+            <label className={lbl}>Motivo del ajuste *</label>
+            <textarea className={klass(inp, 'resize-none')} rows={3} placeholder="Ej: Conteo físico, merma, corrección de error..." value={form.motivo} onChange={e => setF('motivo', e.target.value)} required />
+          </div>
+          {error && <p className="text-sm text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{error}</p>}
+          <div className="flex gap-3 pt-1">
+            <button type="submit" disabled={loading} className="flex-1 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-60">
+              {loading ? 'Ajustando...' : 'Confirmar ajuste'}
+            </button>
+            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Product Panel ────────────────────────────────────────────────────────────
+
+type ActiveModal = 'ingreso' | 'egreso' | 'ajuste' | null;
+
+function ProductPanel({ product, onClose, onRefresh }: { product: StockProduct; onClose: () => void; onRefresh: () => void }) {
+  const [tab, setTab] = useState<'movimientos' | 'editar'>('movimientos');
+  const [activeModal, setActiveModal] = useState<ActiveModal>(null);
+  const [movPage, setMovPage] = useState(1);
+
+  const { data: movData, refetch: refetchMovs } = useQuery({
+    queryKey: ['product-movements', product.id, movPage],
+    queryFn: () => getProductMovements(product.id, { page: movPage, limit: 10 }),
+  });
+
+  const qc = useQueryClient();
+  const deleteMut = useMutation({
+    mutationFn: () => deleteStockProduct(product.id),
+    onSuccess: () => {
+      toast.success('Producto eliminado');
+      qc.invalidateQueries({ queryKey: ['stock-products'] });
+      qc.invalidateQueries({ queryKey: ['stock-alerts'] });
+      onClose();
+    },
+    onError: () => toast.error('No se pudo eliminar'),
+  });
+
+  function handleMovSuccess() {
+    setActiveModal(null);
+    refetchMovs();
+    onRefresh();
+  }
+
+  const stockPct = product.stockMinimo > 0 ? Math.min(100, (product.stockActual / product.stockMinimo) * 100) : 100;
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40 flex justify-end" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+        <div className="w-full max-w-md bg-[var(--color-bg-card)] border-l border-[var(--color-border)] h-full overflow-y-auto shadow-2xl">
+          {/* Header */}
+          <div className="flex items-start justify-between p-5 border-b border-[var(--color-border)]">
+            <div className="flex items-center gap-3">
+              <div className={klass('w-10 h-10 rounded-lg flex items-center justify-center shrink-0', product.bajominimo ? 'bg-red-500/15' : 'bg-[var(--color-info-bg)]')}>
+                <Package className={klass('w-5 h-5', product.bajominimo ? 'text-red-400' : 'text-[var(--color-info-text)]')} />
+              </div>
+              <div>
+                <p className="font-semibold text-[var(--color-text-primary)]">{product.nombre}</p>
+                <p className="text-xs text-[var(--color-text-muted)]">{product.categoria} · {product.unidad}</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"><X className="w-5 h-5" /></button>
+          </div>
+
+          {/* Stock bar */}
+          <div className="px-5 py-3 border-b border-[var(--color-border)]">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs text-[var(--color-text-muted)]">Stock actual</span>
+              <div className="flex items-center gap-2">
+                {product.bajominimo && (
+                  <span className="text-[10px] font-mono bg-red-500/20 text-red-400 px-2 py-0.5 rounded uppercase">Bajo mínimo</span>
+                )}
+                <span className={klass('text-sm font-bold', product.bajominimo ? 'text-red-400' : 'text-[var(--color-text-primary)]')}>
+                  {product.stockActual} {product.unidad}
+                </span>
+              </div>
+            </div>
+            <div className="h-2 rounded-full bg-[var(--color-border)] overflow-hidden">
+              <div className={klass('h-full rounded-full', product.bajominimo ? 'bg-red-400' : 'bg-green-400')} style={{ width: `${stockPct}%` }} />
+            </div>
+            <div className="flex justify-between mt-1">
+              <span className="text-[11px] text-[var(--color-text-muted)]">Mín: {product.stockMinimo} {product.unidad}</span>
+              <span className="text-[11px] text-[var(--color-text-muted)]">Costo prom: {fmtCurrency(product.costoPromedio, product.moneda)}</span>
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="grid grid-cols-3 gap-2 px-5 py-3 border-b border-[var(--color-border)]">
+            <button onClick={() => setActiveModal('ingreso')}
+              className="flex flex-col items-center gap-1 py-2.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 transition-colors">
+              <ArrowDown className="w-4 h-4" />
+              <span className="text-[11px] font-medium">Ingreso</span>
+            </button>
+            <button onClick={() => setActiveModal('egreso')}
+              className="flex flex-col items-center gap-1 py-2.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors">
+              <ArrowUp className="w-4 h-4" />
+              <span className="text-[11px] font-medium">Egreso</span>
+            </button>
+            <button onClick={() => setActiveModal('ajuste')}
+              className="flex flex-col items-center gap-1 py-2.5 rounded-lg bg-[var(--color-border)]/50 hover:bg-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors">
+              <SlidersHorizontal className="w-4 h-4" />
+              <span className="text-[11px] font-medium">Ajuste</span>
+            </button>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex border-b border-[var(--color-border)]">
+            {(['movimientos', 'editar'] as const).map(t => (
+              <button key={t} onClick={() => setTab(t)}
+                className={klass('flex-1 py-2.5 text-xs font-mono uppercase tracking-wider transition-colors border-b-2',
+                  tab === t ? 'border-[var(--color-accent)] text-[var(--color-accent)]' : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]')}>
+                {t}
+              </button>
+            ))}
+          </div>
+
+          <div className="p-5 space-y-3">
+            {tab === 'editar' && (
+              <div className="space-y-4">
+                <ProductForm
+                  initial={product}
+                  productId={product.id}
+                  onSuccess={() => { onRefresh(); setTab('movimientos'); }}
+                  onCancel={() => setTab('movimientos')}
+                />
+                <button onClick={() => { if (confirm('¿Eliminar este producto?')) deleteMut.mutate(); }}
+                  className="w-full py-2 rounded-lg bg-red-500/15 text-red-400 text-sm font-semibold hover:bg-red-500/25 transition-colors">
+                  Eliminar producto
+                </button>
+              </div>
+            )}
+
+            {tab === 'movimientos' && (
+              <>
+                {!movData?.data.length ? (
+                  <p className="text-sm text-[var(--color-text-muted)] text-center py-4">Sin movimientos</p>
+                ) : (
+                  <div className="space-y-2">
+                    {movData.data.map(m => (
+                      <div key={m.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-[var(--color-bg-app)]">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className={klass('text-[10px] font-mono px-1.5 py-0.5 rounded uppercase',
+                              m.tipo === 'INGRESO' ? 'bg-green-500/20 text-green-400' : m.tipo === 'EGRESO' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400')}>
+                              {m.tipo}
+                            </span>
+                            <span className="text-xs text-[var(--color-text-muted)]">{fmtDate(m.fecha)}</span>
+                          </div>
+                          {(m.referencia || m.observaciones) && (
+                            <p className="text-[11px] text-[var(--color-text-muted)] truncate mt-0.5">{m.referencia ?? m.observaciones}</p>
+                          )}
+                          {m.project && <p className="text-[11px] text-[var(--color-text-muted)] truncate">{m.project.code}</p>}
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className={klass('text-sm font-semibold tabular-nums', m.tipo === 'EGRESO' ? 'text-red-400' : 'text-green-400')}>
+                            {m.tipo === 'EGRESO' ? '-' : '+'}{m.cantidad}
+                          </p>
+                          <p className="text-[11px] text-[var(--color-text-muted)]">→ {m.stockResultante}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {movData.totalPages > 1 && (
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-xs text-[var(--color-text-muted)]">{movData.total} mov.</span>
+                        <div className="flex gap-2">
+                          <button onClick={() => setMovPage(p => Math.max(1, p - 1))} disabled={movPage === 1}
+                            className="p-1 rounded border border-[var(--color-border)] disabled:opacity-40 hover:bg-[var(--color-bg-card-hover)]">
+                            <ChevronLeft className="w-3 h-3 text-[var(--color-text-secondary)]" />
+                          </button>
+                          <button onClick={() => setMovPage(p => Math.min(movData.totalPages, p + 1))} disabled={movPage === movData.totalPages}
+                            className="p-1 rounded border border-[var(--color-border)] disabled:opacity-40 hover:bg-[var(--color-bg-card-hover)]">
+                            <ChevronRight className="w-3 h-3 text-[var(--color-text-secondary)]" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {activeModal === 'ingreso' && <IngresoModal product={product} onSuccess={handleMovSuccess} onClose={() => setActiveModal(null)} />}
+      {activeModal === 'egreso' && <EgresoModal product={product} onSuccess={handleMovSuccess} onClose={() => setActiveModal(null)} />}
+      {activeModal === 'ajuste' && <AjusteModal product={product} onSuccess={handleMovSuccess} onClose={() => setActiveModal(null)} />}
+    </>
+  );
+}
+
+// ─── Stock Page ───────────────────────────────────────────────────────────────
+
+export function Stock() {
+  const qc = useQueryClient();
+  const [newModal, setNewModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<StockProduct | null>(null);
+  const [filterCat, setFilterCat] = useState('');
+  const [filterAlert, setFilterAlert] = useState(false);
+
+  const { data: products = [], isLoading, refetch: refetchProducts } = useQuery({
+    queryKey: ['stock-products', filterCat, filterAlert],
+    queryFn: () => getStockProducts({ ...(filterCat ? { categoria: filterCat } : {}) }),
+  });
+
+  const { data: alerts = [] } = useQuery({
+    queryKey: ['stock-alerts'],
+    queryFn: getStockAlerts,
+  });
+
+  const { data: recentMovements } = useQuery({
+    queryKey: ['stock-movements-recent'],
+    queryFn: () => getStockMovements({ limit: 5, page: 1 }),
+  });
+
+  const activeProducts = products.filter(p => p.activo);
+  const bajominimo = products.filter(p => p.bajominimo);
+  const valorTotal = products.reduce((sum, p) => sum + p.stockActual * p.costoPromedio, 0);
+
+  const displayedProducts = filterAlert ? products.filter(p => p.bajominimo) : products;
+  const categorias = [...new Set(products.map(p => p.categoria))].sort();
+
+  function handleProductRefresh() {
+    qc.invalidateQueries({ queryKey: ['stock-products'] });
+    qc.invalidateQueries({ queryKey: ['stock-alerts'] });
+    qc.invalidateQueries({ queryKey: ['stock-movements-recent'] });
+    // Refresh selected product data too
+    if (selectedProduct) {
+      refetchProducts().then(result => {
+        const updated = result.data?.find(p => p.id === selectedProduct.id);
+        if (updated) setSelectedProduct(updated);
+      });
+    }
+  }
+
+  return (
+    <div className="p-6 space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Stock</h1>
+          <p className="text-sm text-[var(--color-text-muted)] mt-0.5">Gestión de inventario</p>
+        </div>
+        <button onClick={() => setNewModal(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] transition-colors">
+          <Plus className="w-4 h-4" /> Nuevo producto
+        </button>
+      </div>
+
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-4">
+          <p className="text-xs text-[var(--color-text-muted)] mb-1">Productos activos</p>
+          <p className="text-2xl font-bold font-display text-[var(--color-text-primary)]">{activeProducts.length}</p>
+          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{categorias.length} categoría{categorias.length !== 1 ? 's' : ''}</p>
+        </div>
+        <div className={klass('border rounded-xl p-4', bajominimo.length > 0 ? 'bg-red-500/10 border-red-500/30' : 'bg-[var(--color-bg-card)] border-[var(--color-border)]')}>
+          <p className="text-xs text-[var(--color-text-muted)] mb-1">Bajo mínimo</p>
+          <p className={klass('text-2xl font-bold font-display', bajominimo.length > 0 ? 'text-red-400' : 'text-[var(--color-text-primary)]')}>{bajominimo.length}</p>
+          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{bajominimo.length === 0 ? 'Todo en orden' : 'requieren atención'}</p>
+        </div>
+        <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-4">
+          <p className="text-xs text-[var(--color-text-muted)] mb-1">Valor inventario</p>
+          <p className="text-base font-bold text-[var(--color-text-primary)] tabular-nums">{fmtCurrency(valorTotal)}</p>
+          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">costo promedio ponderado</p>
+        </div>
+        <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-4">
+          <p className="text-xs text-[var(--color-text-muted)] mb-1">Ult. movimiento</p>
+          {recentMovements?.data[0] ? (
+            <>
+              <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{recentMovements.data[0].product?.nombre ?? '—'}</p>
+              <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{fmtDate(recentMovements.data[0].fecha)} · {recentMovements.data[0].tipo}</p>
+            </>
+          ) : (
+            <p className="text-sm text-[var(--color-text-muted)]">Sin movimientos</p>
+          )}
+        </div>
+      </div>
+
+      {/* Últimos 5 movimientos */}
+      {recentMovements?.data && recentMovements.data.length > 0 && (
+        <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl overflow-hidden">
+          <p className="px-5 py-3 text-xs font-mono text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Últimos movimientos</p>
+          <div className="divide-y divide-[var(--color-border)]">
+            {recentMovements.data.slice(0, 5).map(m => (
+              <div key={m.id} className="px-5 py-2.5 flex items-center gap-3">
+                <span className={klass('text-[10px] font-mono px-1.5 py-0.5 rounded uppercase shrink-0',
+                  m.tipo === 'INGRESO' ? 'bg-green-500/20 text-green-400' : m.tipo === 'EGRESO' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400')}>
+                  {m.tipo}
+                </span>
+                <span className="text-sm text-[var(--color-text-primary)] truncate flex-1">{m.product?.nombre ?? '—'}</span>
+                <span className={klass('text-sm font-semibold tabular-nums shrink-0', m.tipo === 'EGRESO' ? 'text-red-400' : 'text-green-400')}>
+                  {m.tipo === 'EGRESO' ? '-' : '+'}{m.cantidad} {m.product?.unidad ?? ''}
+                </span>
+                <span className="text-xs text-[var(--color-text-muted)] shrink-0">{fmtDate(m.fecha)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-1.5 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
+          value={filterCat}
+          onChange={e => setFilterCat(e.target.value)}
+        >
+          <option value="">Todas las categorías</option>
+          {categorias.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
+          <input type="checkbox" checked={filterAlert} onChange={e => setFilterAlert(e.target.checked)} className="accent-[var(--color-accent)]" />
+          Solo alertas ({bajominimo.length})
+        </label>
+      </div>
+
+      {/* Products table */}
+      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl overflow-hidden">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12"><Spinner /></div>
+        ) : displayedProducts.length === 0 ? (
+          <p className="text-sm text-[var(--color-text-muted)] text-center py-12">
+            {filterAlert ? 'Sin productos bajo mínimo 👍' : 'Sin productos registrados'}
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[var(--color-border)] text-xs font-mono text-[var(--color-text-muted)] uppercase tracking-wider">
+                  {['Producto', 'Categoría', 'Unidad', 'Stock actual', 'Mínimo', 'Costo prom.', 'Moneda'].map(h => (
+                    <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--color-border)]">
+                {displayedProducts.map(p => (
+                  <tr key={p.id} onClick={() => setSelectedProduct(p)}
+                    className={klass('cursor-pointer hover:bg-[var(--color-bg-card-hover)] transition-colors', p.bajominimo && 'bg-red-500/5')}>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        {p.bajominimo && <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />}
+                        <div>
+                          <span className="font-medium text-[var(--color-text-primary)]">{p.nombre}</span>
+                          {p.bajominimo && <span className="ml-2 text-[10px] font-mono bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded uppercase">Bajo mínimo</span>}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-[var(--color-text-muted)]">{p.categoria}</td>
+                    <td className="px-4 py-3 text-[var(--color-text-muted)]">{p.unidad}</td>
+                    <td className={klass('px-4 py-3 font-semibold tabular-nums', p.bajominimo ? 'text-red-400' : 'text-[var(--color-text-primary)]')}>
+                      {p.stockActual}
+                    </td>
+                    <td className="px-4 py-3 text-[var(--color-text-muted)] tabular-nums">{p.stockMinimo}</td>
+                    <td className="px-4 py-3 text-[var(--color-text-secondary)] tabular-nums">{p.costoPromedio.toLocaleString('es-UY', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</td>
+                    <td className="px-4 py-3 text-[var(--color-text-muted)]">{p.moneda}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* New product modal */}
+      {newModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-lg shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-semibold text-[var(--color-text-primary)]">Nuevo producto</p>
+              <button onClick={() => setNewModal(false)} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"><X className="w-5 h-5" /></button>
+            </div>
+            <ProductForm
+              onSuccess={() => { setNewModal(false); qc.invalidateQueries({ queryKey: ['stock-products'] }); qc.invalidateQueries({ queryKey: ['stock-alerts'] }); }}
+              onCancel={() => setNewModal(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Product panel */}
+      {selectedProduct && (
+        <ProductPanel
+          product={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+          onRefresh={handleProductRefresh}
+        />
+      )}
+    </div>
+  );
+}

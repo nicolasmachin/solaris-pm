@@ -47,45 +47,53 @@ type BlockStyle = {
 };
 
 const BLOCK: Record<string, BlockStyle> = {
-  COMPLETED: { background: "var(--color-state-done-bg)", border: "1px solid color-mix(in srgb, var(--color-state-done-text) 40%, transparent)" },
-  IN_PROGRESS: { background: "var(--color-state-active-bg)", border: "1px solid color-mix(in srgb, var(--color-state-active-text) 32%, transparent)" },
+  COMPLETED: { background: "#1a4d2e", border: "1px solid color-mix(in srgb, #4ade80 50%, transparent)" },
+  IN_PROGRESS: { background: "#4a3f1a", border: "1px solid color-mix(in srgb, #fbbf24 50%, transparent)" },
   PENDING: { background: "var(--color-bg-card-hover)", border: "1px solid var(--color-border-hover)" },
   BLOCKED: { background: "var(--color-danger-bg)", border: "1px solid color-mix(in srgb, var(--color-danger-text) 36%, transparent)" },
 };
 
 const HEADER_COLOR: Record<string, string> = {
-  COMPLETED: "var(--color-text-primary)",
-  IN_PROGRESS: "var(--color-accent)",
+  COMPLETED: "#4ade80",
+  IN_PROGRESS: "#fbbf24",
   PENDING: "var(--color-text-primary)",
   BLOCKED: "var(--color-danger-text)",
 };
 
+// Deriva el estado visual desde el progreso real, ignorando el estado stale de la DB
+function deriveDisplayStatus(stage: Stage): Stage["status"] {
+  if (stage.status === "BLOCKED") return "BLOCKED";
+  if (stage.progressPercent >= 100) return "COMPLETED";
+  if (stage.progressPercent > 0) return "IN_PROGRESS";
+  return "PENDING";
+}
+
 function StatusLabel({ stage }: { stage: Stage }) {
-  if (stage.status === "IN_PROGRESS") {
+  const display = deriveDisplayStatus(stage);
+  if (display === "COMPLETED") {
     return (
-      <span style={{ color: "var(--color-text-primary)", fontWeight: 700, fontSize: 10 }}>
+      <span style={{ color: "#4ade80", fontWeight: 700, fontSize: 10 }}>
+        ✓ Completo 100%
+      </span>
+    );
+  }
+  if (display === "IN_PROGRESS") {
+    return (
+      <span style={{ color: "#fbbf24", fontWeight: 700, fontSize: 10 }}>
         ▶ Activo {stage.progressPercent}%
       </span>
     );
   }
-  if (stage.status === "COMPLETED") {
-    return (
-      <span style={{ color: "var(--color-state-done-text)", fontWeight: 700, fontSize: 10 }}>
-        ✓ Completo
-      </span>
-    );
-  }
-  if (stage.status === "BLOCKED") {
+  if (display === "BLOCKED") {
     return (
       <span style={{ color: "var(--color-danger-text)", fontWeight: 700, fontSize: 10 }}>
-        ✕ Bloqueado
+        ✕ Bloqueado {stage.progressPercent}%
       </span>
     );
   }
-  // PENDING
   return (
     <span style={{ color: "var(--color-text-primary)", fontSize: 10, fontWeight: 500 }}>
-      ◌ Sin inicio
+      ◌ Sin inicio 0%
     </span>
   );
 }
@@ -93,7 +101,7 @@ function StatusLabel({ stage }: { stage: Stage }) {
 function SubstageDot({ status }: { status: Stage["substages"][number]["status"] }) {
   const color =
     status === "COMPLETED"
-      ? "var(--color-state-done-text)"
+      ? "#4ade80"
       : status === "IN_PROGRESS"
       ? "var(--color-accent)"
       : status === "BLOCKED"
@@ -116,8 +124,9 @@ function SubstageDot({ status }: { status: Stage["substages"][number]["status"] 
 }
 
 function StageColumn({ stage, onClick }: { stage: Stage; onClick: () => void }) {
-  const blockStyle = BLOCK[stage.status] ?? BLOCK.PENDING;
-  const headerColor = HEADER_COLOR[stage.status] ?? "var(--color-text-secondary)";
+  const displayStatus = deriveDisplayStatus(stage);
+  const blockStyle = BLOCK[displayStatus] ?? BLOCK.PENDING;
+  const headerColor = HEADER_COLOR[displayStatus] ?? "var(--color-text-secondary)";
 
   const visibleSubs = stage.substages.slice(0, 3);
   const extraCount = stage.substages.length - 3;

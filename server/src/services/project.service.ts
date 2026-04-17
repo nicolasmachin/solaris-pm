@@ -71,24 +71,25 @@ export function calculateStageProgress(
   }>,
   modalidadPago?: ModalidadPago | null,
 ) {
-  const activeSubstages = substages.filter((substage) => !substage.deletedAt && substage.isActive !== false);
+  if (!substages || substages.length === 0) {
+    return 0;
+  }
+
+  const activeSubstages = substages.filter(
+    (substage) => !substage.deletedAt && (substage.isActive !== false)
+  );
   if (activeSubstages.length === 0) {
     return 0;
   }
 
-  const total = activeSubstages.reduce((sum, substage) => {
-    const progress =
-      substage.progressPercent ??
-      calculateSubstageProgress({
-        status: substage.status,
-        checklistItems: substage.checklistItems,
-        modalidadPago,
-      });
+  const completedSubstages = activeSubstages.filter(
+    (substage) => substage.status === "COMPLETED"
+  ).length;
+  const progressPercent = Math.round(
+    (completedSubstages / activeSubstages.length) * 100
+  );
 
-    return sum + progress;
-  }, 0);
-
-  return Math.round(total / activeSubstages.length);
+  return progressPercent;
 }
 
 export async function syncStageProgress(stageId: string) {
@@ -101,7 +102,7 @@ export async function syncStageProgress(stageId: string) {
         },
       },
       substages: {
-        where: { deletedAt: null },
+        where: { deletedAt: null, isActive: true },
         include: {
           checklistItems: true,
         },
@@ -115,10 +116,69 @@ export async function syncStageProgress(stageId: string) {
 
   const progressPercent = calculateStageProgress(stage.substages, stage.project.modalidadPago);
 
-  return prisma.stage.update({
+  const updateData: Record<string, unknown> = { progressPercent };
+  const now = todayUtc();
+  const subs = stage.substages;
+  const hasAny = subs.length > 0;
+  const allCompleted = hasAny && subs.every((s) => s.status === "COMPLETED");
+  const anyCompleted = hasAny && subs.some((s) => s.status === "COMPLETED");
+
+  if (allCompleted) {
+    // Todas completadas → COMPLETED
+    if (stage.status !== StageStatus.COMPLETED) {
+      updateData.status = StageStatus.COMPLETED;
+      if (!stage.actualStartDate) updateData.actualStartDate = now;
+      if (!stage.actualEndDate) updateData.actualEndDate = now;
+    }
+  } else if (anyCompleted) {
+    // Al menos una completada → IN_PROGRESS
+    if (stage.status === StageStatus.PENDING || stage.status === StageStatus.COMPLETED) {
+      updateData.status = StageStatus.IN_PROGRESS;
+      if (!stage.actualStartDate) updateData.actualStartDate = now;
+      updateData.actualEndDate = null;
+    }
+  } else {
+    // Ninguna completada → volver a PENDING
+    if (stage.status === StageStatus.IN_PROGRESS || stage.status === StageStatus.COMPLETED) {
+      updateData.status = StageStatus.PENDING;
+      updateData.actualEndDate = null;
+    }
+  }
+
+  const updatedStage = await prisma.stage.update({
     where: { id: stageId },
-    data: { progressPercent },
+    data: updateData,
   });
+
+  // Verificar si todas las etapas del proyecto quedaron completas, sin importar si
+  // esta llamada transicionó la etapa. Cubre el caso donde la última etapa ya estaba
+  // COMPLETED pero el proyecto no se marcó por un flow previo que falló.
+  const finalStatus = (updateData.status as StageStatus | undefined) ?? stage.status;
+  if (finalStatus === StageStatus.COMPLETED) {
+    const allProjectStages = await prisma.stage.findMany({
+      where: { projectId: stage.projectId },
+      select: { status: true },
+    });
+    const allStagesDone =
+      allProjectStages.length > 0 && allProjectStages.every((s) => s.status === StageStatus.COMPLETED);
+    if (allStagesDone) {
+      const project = await prisma.project.findUnique({
+        where: { id: stage.projectId },
+        select: { status: true, actualEndDate: true },
+      });
+      if (project && (project.status !== ProjectStatus.COMPLETED || !project.actualEndDate)) {
+        await prisma.project.update({
+          where: { id: stage.projectId },
+          data: {
+            status: ProjectStatus.COMPLETED,
+            actualEndDate: project.actualEndDate ?? now,
+          },
+        });
+      }
+    }
+  }
+
+  return updatedStage;
 }
 
 export async function syncSubstageProgress(substageId: string) {
@@ -381,6 +441,8 @@ export function serializeProject(project: {
   modalidadPago: ModalidadPago | null;
   notificationEmail: string;
   notificationPhone: string;
+  salespersonId: string | null;
+  salesperson?: { id: string; name: string } | null;
   firstDateScheduledAt?: Date | null;
   createdById: string;
   createdAt: Date;
@@ -401,6 +463,7 @@ export function serializeProject(project: {
     createdAt: serializeDate(project.createdAt),
     updatedAt: serializeDate(project.updatedAt),
     deletedAt: serializeDate(project.deletedAt),
+    salesperson: project.salesperson || null,
   };
 }
 

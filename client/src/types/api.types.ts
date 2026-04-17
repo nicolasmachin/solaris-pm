@@ -246,6 +246,8 @@ export interface Project {
   notificationPhone: string | null;
   firstDateScheduledAt: string | null;
   createdById: string;
+  salespersonId: string | null;
+  salesperson: { id: string; name: string } | null;
   deletedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -338,6 +340,7 @@ export interface MetricsOverview {
   projectsWithDelay: number;
   avgDelayDays: number;
   avgTimeEfficiency: number;
+  goals: GoalProgress[];
 }
 
 export type GoalMetric = "INSTALLATIONS_COUNT" | "KWP_INSTALLED" | "LEADS_CREATED" | "PROPOSALS_SENT" | "CLOSED_WON";

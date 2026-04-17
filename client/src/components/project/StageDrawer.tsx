@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import type { Stage, Substage, SubstageStatus, FileAttachment, ChecklistItem } from "../../types/api.types";
-import { patchSubstage, patchStage, createSubstage, deleteSubstage, completeSubstage } from "../../api/stages.api";
+import { patchSubstage, patchStage, createSubstage, deleteSubstage, completeSubstage, completeAllSubstages } from "../../api/stages.api";
 import { apiClient } from "../../api/axios";
 import { uploadFile, getDownloadUrl } from "../../api/files.api";
 import { Badge } from "../ui/Badge";
@@ -33,6 +33,8 @@ function ChecklistSection({
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [editLabel, setEditLabel] = useState("");
   const [confirmDeleteItem, setConfirmDeleteItem] = useState<ChecklistItem | null>(null);
+  const [addingItem, setAddingItem] = useState(false);
+  const [newLabel, setNewLabel] = useState("");
 
   const { mutate: toggleItem } = useMutation({
     mutationFn: ({ itemId, completed }: { itemId: string; completed: boolean }) =>
@@ -44,53 +46,74 @@ function ChecklistSection({
   const { mutate: saveLabel, isPending: savingLabel } = useMutation({
     mutationFn: ({ itemId, label }: { itemId: string; label: string }) =>
       apiClient.patch(`/api/checklist/${itemId}`, { label }).then(r => r.data),
-    onSuccess: () => {
-      setEditingItem(null);
-      onChanged();
-    },
-    onError: (err: unknown) => {
-      const code = (err as { response?: { data?: { code?: string } } })?.response?.data?.code;
-      if (code === "SOP_ITEM_PROTECTED") {
-        toast.error("Los ítems del SOP no se pueden editar");
-      } else {
-        toast.error("Error al editar ítem");
-      }
-    },
+    onSuccess: () => { setEditingItem(null); onChanged(); },
+    onError: () => toast.error("Error al editar ítem"),
   });
 
   const { mutate: removeItem, isPending: deletingItem } = useMutation({
     mutationFn: (itemId: string) => apiClient.delete(`/api/checklist/${itemId}`),
-    onSuccess: () => {
-      setConfirmDeleteItem(null);
-      onChanged();
-    },
-    onError: (err: unknown) => {
-      const code = (err as { response?: { data?: { code?: string } } })?.response?.data?.code;
-      if (code === "SOP_ITEM_PROTECTED") {
-        toast.error("Los ítems del SOP no se pueden eliminar");
-      } else {
-        toast.error("Error al eliminar ítem");
-      }
-    },
+    onSuccess: () => { setConfirmDeleteItem(null); onChanged(); },
+    onError: () => toast.error("Error al eliminar ítem"),
+  });
+
+  const { mutate: addItem, isPending: addingItemPending } = useMutation({
+    mutationFn: (label: string) =>
+      apiClient.post(`/api/projects/${projectId}/stages/${stageId}/substages/${substage.id}/checklist`, { label }).then(r => r.data),
+    onSuccess: () => { setNewLabel(""); setAddingItem(false); onChanged(); },
+    onError: () => toast.error("Error al agregar ítem"),
   });
 
   const items = substage.checklistItems ?? [];
-  if (items.length === 0) return null;
 
   return (
     <>
       <div className="mt-2">
-        <p className="font-mono text-[9px] uppercase tracking-widest text-[var(--color-text-muted)] mb-1.5">
-          Checklist ({items.filter(i => i.completed).length}/{items.length})
-        </p>
+        <div className="flex items-center justify-between mb-1.5">
+          <p className="font-mono text-[9px] uppercase tracking-widest text-[var(--color-text-muted)]">
+            Checklist ({items.filter(i => i.completed).length}/{items.length})
+          </p>
+          <button
+            onClick={() => setAddingItem(v => !v)}
+            className="text-[10px] text-[var(--color-accent)] hover:underline"
+          >
+            + Agregar
+          </button>
+        </div>
+
+        {/* Formulario agregar ítem */}
+        {addingItem && (
+          <div className="flex gap-1 mb-2">
+            <input
+              className="flex-1 px-1.5 py-1 text-[11px] bg-[var(--color-bg-app)] border border-[var(--color-border)] rounded text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
+              placeholder="Descripción del ítem..."
+              value={newLabel}
+              onChange={e => setNewLabel(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter" && newLabel.trim()) addItem(newLabel.trim());
+                if (e.key === "Escape") { setAddingItem(false); setNewLabel(""); }
+              }}
+              autoFocus
+            />
+            <button
+              onClick={() => newLabel.trim() && addItem(newLabel.trim())}
+              disabled={addingItemPending || !newLabel.trim()}
+              style={{ padding: "2px 8px", borderRadius: 3, border: "none", background: "var(--color-accent)", color: "#000", fontSize: 10, cursor: "pointer" }}
+            >✓</button>
+            <button
+              onClick={() => { setAddingItem(false); setNewLabel(""); }}
+              style={{ padding: "2px 6px", borderRadius: 3, border: "1px solid var(--color-border)", background: "none", color: "var(--color-text-muted)", fontSize: 10, cursor: "pointer" }}
+            >✕</button>
+          </div>
+        )}
+
         <ul className="space-y-1">
           {items.map(item => (
             <li key={item.id} className="flex items-center gap-2 group">
-              {/* Checkbox */}
               <button
                 onClick={() => toggleItem({ itemId: item.id, completed: !item.completed })}
                 style={{
-                  width: 14, height: 14, borderRadius: 3, border: `1.5px solid ${item.completed ? "var(--color-accent)" : "var(--color-border)"}`,
+                  width: 14, height: 14, borderRadius: 3,
+                  border: `1.5px solid ${item.completed ? "var(--color-accent)" : "var(--color-border)"}`,
                   background: item.completed ? "var(--color-accent)" : "none",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   cursor: "pointer", flexShrink: 0, transition: "all 0.15s",
@@ -103,7 +126,6 @@ function ChecklistSection({
                 )}
               </button>
 
-              {/* Label */}
               {editingItem === item.id ? (
                 <input
                   className="flex-1 px-1.5 py-0.5 text-[11px] bg-[var(--color-bg-app)] border border-[var(--color-border)] rounded text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
@@ -125,7 +147,6 @@ function ChecklistSection({
                 </span>
               )}
 
-              {/* Edit/Delete actions — always visible on custom, tooltip on SOP */}
               {editingItem === item.id ? (
                 <div className="flex gap-1">
                   <button onClick={() => saveLabel({ itemId: item.id, label: editLabel })} disabled={savingLabel} style={{ padding: "2px 6px", borderRadius: 3, border: "none", background: "var(--color-accent)", color: "#000", fontSize: 10, cursor: "pointer" }}>✓</button>
@@ -133,31 +154,16 @@ function ChecklistSection({
                 </div>
               ) : (
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {item.isCustom ? (
-                    <>
-                      <button
-                        onClick={() => { setEditingItem(item.id); setEditLabel(item.label); }}
-                        style={{ padding: "2px 5px", borderRadius: 3, border: "1px solid var(--color-border)", background: "none", color: "var(--color-text-muted)", fontSize: 10, cursor: "pointer" }}
-                        title="Editar ítem"
-                      >
-                        ✎
-                      </button>
-                      <button
-                        onClick={() => setConfirmDeleteItem(item)}
-                        style={{ padding: "2px 5px", borderRadius: 3, border: "1px solid #7f1d1d", background: "none", color: "#f87171", fontSize: 10, cursor: "pointer" }}
-                        title="Eliminar ítem"
-                      >
-                        ✕
-                      </button>
-                    </>
-                  ) : (
-                    <span
-                      style={{ padding: "2px 5px", fontSize: 9, color: "var(--color-text-muted)", cursor: "default", fontFamily: "var(--font-mono)" }}
-                      title="Ítem del SOP — no se puede eliminar"
-                    >
-                      SOP
-                    </span>
-                  )}
+                  <button
+                    onClick={() => { setEditingItem(item.id); setEditLabel(item.label); }}
+                    style={{ padding: "2px 5px", borderRadius: 3, border: "1px solid var(--color-border)", background: "none", color: "var(--color-text-muted)", fontSize: 10, cursor: "pointer" }}
+                    title="Editar ítem"
+                  >✎</button>
+                  <button
+                    onClick={() => setConfirmDeleteItem(item)}
+                    style={{ padding: "2px 5px", borderRadius: 3, border: "1px solid #7f1d1d", background: "none", color: "#f87171", fontSize: 10, cursor: "pointer" }}
+                    title="Eliminar ítem"
+                  >✕</button>
                 </div>
               )}
             </li>
@@ -165,7 +171,6 @@ function ChecklistSection({
         </ul>
       </div>
 
-      {/* Delete confirmation */}
       {confirmDeleteItem && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}
           onClick={e => { if (e.target === e.currentTarget) setConfirmDeleteItem(null); }}>
@@ -219,7 +224,6 @@ function SubstageRow({
   const [plannedEnd, setPlannedEnd] = useState(substage.plannedEndDate?.slice(0, 10) ?? "");
   const [notes, setNotes] = useState(substage.notes ?? "");
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [completing, setCompleting] = useState(false);
   const [checklistPendingItems, setChecklistPendingItems] = useState<{ id: string; label: string }[]>([]);
 
   const isCompleted = substage.status === "COMPLETED";
@@ -251,24 +255,26 @@ function SubstageRow({
     onError: () => toast.error("Error al eliminar subetapa"),
   });
 
-  async function handleQuickComplete(e: React.MouseEvent) {
-    e.stopPropagation();
-    if (isCompleted) return;
-    setCompleting(true);
-    try {
-      await completeSubstage(substage.id);
+  const completeSubstageMutation = useMutation({
+    mutationFn: () => completeSubstage(projectId, stageId, substage.id),
+    onSuccess: () => {
       toast.success("Subetapa completada");
       onChanged();
-    } catch (err: unknown) {
+    },
+    onError: (err: unknown) => {
       const resp = (err as { response?: { data?: { code?: string; details?: { pendingItems?: { id: string; label: string }[] } } } })?.response?.data;
       if (resp?.code === "CHECKLIST_INCOMPLETE") {
         setChecklistPendingItems(resp.details?.pendingItems ?? []);
       } else {
         toast.error("Error al completar subetapa");
       }
-    } finally {
-      setCompleting(false);
-    }
+    },
+  });
+
+  async function handleQuickComplete(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (isCompleted) return;
+    completeSubstageMutation.mutate();
   }
 
   const dotColor = {
@@ -286,7 +292,7 @@ function SubstageRow({
           {/* Quick complete circular button */}
           <button
             onClick={handleQuickComplete}
-            disabled={isCompleted || completing}
+            disabled={isCompleted || completeSubstageMutation.isPending}
             title={isCompleted ? "Completado" : "Marcar como completado"}
             style={{
               width: 18, height: 18, borderRadius: "50%",
@@ -297,7 +303,7 @@ function SubstageRow({
               flexShrink: 0, marginTop: 1, transition: "all 0.15s",
             }}
           >
-            {completing ? (
+            {completeSubstageMutation.isPending ? (
               <span style={{ width: 8, height: 8, borderRadius: "50%", border: "1.5px solid currentColor", borderTopColor: "transparent", animation: "spin 0.6s linear infinite", display: "block" }} />
             ) : isCompleted ? (
               <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
@@ -509,8 +515,10 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
     return () => window.removeEventListener("keydown", fn);
   }, [onClose]);
 
-  const invalidate = () =>
+  const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["project", projectId] });
+    qc.invalidateQueries({ queryKey: ["projects"] });
+  };
 
   // Patch substage status
   const subStatusMutation = useMutation({
@@ -572,6 +580,16 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
       invalidate();
     },
     onError: () => toast.error("Error al crear subetapa"),
+  });
+
+  // Complete all substages
+  const completeAllMutation = useMutation({
+    mutationFn: () => completeAllSubstages(projectId, stage.id),
+    onSuccess: () => {
+      toast.success("Todas las subetapas marcadas como completadas");
+      invalidate();
+    },
+    onError: () => toast.error("Error al completar las subetapas"),
   });
 
   // Upload file
@@ -748,14 +766,25 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
           <section>
             <div className="flex items-center justify-between mb-2">
               <p className="font-mono text-[9px] uppercase tracking-widest text-[var(--color-text-muted)]">
-                Subetapas ({stage.substages.length})
+                Subetapas ({stage.substages.filter(s => s.status === "COMPLETED").length}/{stage.substages.length})
               </p>
-              <button
-                onClick={() => setShowSubForm((v) => !v)}
-                className="text-[10px] text-[var(--color-accent)] hover:underline"
-              >
-                + Agregar
-              </button>
+              <div className="flex gap-2">
+                {stage.substages.length > 0 && stage.substages.some(s => s.status !== "COMPLETED") && (
+                  <button
+                    onClick={() => completeAllMutation.mutate()}
+                    disabled={completeAllMutation.isPending}
+                    className="text-[10px] text-[#4ade80] hover:underline disabled:opacity-50"
+                  >
+                    {completeAllMutation.isPending ? "Completando..." : "✓ Completar todas"}
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowSubForm((v) => !v)}
+                  className="text-[10px] text-[var(--color-accent)] hover:underline"
+                >
+                  + Agregar
+                </button>
+              </div>
             </div>
 
             {showSubForm && (

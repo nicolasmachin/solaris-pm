@@ -69,9 +69,17 @@ export async function deleteSubstage(
   );
 }
 
-export async function completeSubstage(substageId: string): Promise<SubstagePatchResponse> {
+export async function completeSubstage(projectId: string, stageId: string, substageId: string): Promise<SubstagePatchResponse> {
   const { data } = await apiClient.patch<SubstagePatchResponse>(
-    `/api/substages/${substageId}/complete`
+    `/api/projects/${projectId}/stages/${stageId}/substages/${substageId}`,
+    { status: "COMPLETED" }
   );
   return data;
+}
+
+export async function completeAllSubstages(projectId: string, stageId: string): Promise<void> {
+  await apiClient.patch(
+    `/api/projects/${projectId}/stages/${stageId}/complete-all`,
+    {}
+  );
 }

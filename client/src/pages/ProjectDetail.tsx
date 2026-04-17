@@ -3,6 +3,8 @@ import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { getProject, patchProject } from "../api/projects.api";
+import { getStockMovements, createStockMovement, getStockProducts } from "../api/stock.api";
+import type { StockMovement } from "../types/finance.types";
 import type { Project, Stage } from "../types/api.types";
 
 import { ProjectHeader } from "../components/project/ProjectHeader";
@@ -292,6 +294,205 @@ function SolarSystemsSection({
   );
 }
 
+// ─── Materiales Tab ───────────────────────────────────────────────────────────
+
+function ConsumoModal({ projectId, onClose, onSaved }: { projectId: string; onClose: () => void; onSaved: () => void }) {
+  const [productId, setProductId] = useState('');
+  const [cantidad, setCantidad] = useState('');
+  const [observaciones, setObservaciones] = useState('');
+  const [serverErr, setServerErr] = useState('');
+
+  const { data: products = [] } = useQuery({
+    queryKey: ['stock-products'],
+    queryFn: () => getStockProducts({ activo: true }),
+  });
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: () => createStockMovement({
+      fecha: new Date().toISOString().slice(0, 10),
+      productId,
+      tipo: 'EGRESO',
+      cantidad: parseFloat(cantidad),
+      projectId,
+      observaciones: observaciones || undefined,
+    }),
+    onSuccess: () => { toast.success('Consumo registrado'); onSaved(); onClose(); },
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: { code?: string; message?: string } } };
+      if (e.response?.data?.code === 'INSUFFICIENT_STOCK') {
+        setServerErr(`Stock insuficiente. ${e.response.data.message ?? ''}`);
+      } else {
+        toast.error(e.response?.data?.message ?? 'Error al registrar');
+      }
+    },
+  });
+
+  const selectedProduct = products.find(p => p.id === productId);
+  const qty = parseFloat(cantidad) || 0;
+  const insufficient = selectedProduct && qty > selectedProduct.stockActual;
+
+  const inp = 'w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]';
+  const lbl = 'block text-xs font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1';
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-md space-y-4">
+        <p className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">Registrar consumo</p>
+
+        <div>
+          <label className={lbl}>Producto *</label>
+          <select className={inp} value={productId} onChange={e => { setProductId(e.target.value); setServerErr(''); }}>
+            <option value="">Seleccionar producto...</option>
+            {products.map(p => (
+              <option key={p.id} value={p.id}>{p.nombre} — stock: {p.stockActual} {p.unidad}</option>
+            ))}
+          </select>
+        </div>
+
+        {selectedProduct && (
+          <p className="text-xs text-[var(--color-text-muted)]">
+            Disponible: <span className="font-semibold text-[var(--color-text-primary)]">{selectedProduct.stockActual} {selectedProduct.unidad}</span>
+          </p>
+        )}
+
+        <div>
+          <label className={lbl}>Cantidad *</label>
+          <input type="number" min="0.001" step="any" className={inp} value={cantidad} onChange={e => { setCantidad(e.target.value); setServerErr(''); }} />
+          {insufficient && (
+            <p className="text-xs text-amber-400 mt-1">La cantidad supera el stock disponible</p>
+          )}
+        </div>
+
+        <div>
+          <label className={lbl}>Observaciones</label>
+          <input className={inp} value={observaciones} onChange={e => setObservaciones(e.target.value)} placeholder="Opcional" />
+        </div>
+
+        {serverErr && <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-3">{serverErr}</p>}
+
+        <div className="flex gap-2 justify-end pt-2">
+          <button onClick={onClose} className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]/30 transition-colors">
+            Cancelar
+          </button>
+          <button
+            onClick={() => mutate()}
+            disabled={isPending || !productId || !cantidad || qty <= 0}
+            className="px-4 py-2 rounded-lg bg-orange-500 text-white text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-orange-600 transition-colors"
+          >
+            {isPending ? 'Registrando...' : 'Registrar egreso'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MaterialesTab({ projectId }: { projectId: string }) {
+  const qc = useQueryClient();
+  const [page, setPage] = useState(1);
+  const [showConsumo, setShowConsumo] = useState(false);
+  const limit = 15;
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['stock-movements', { projectId, page, limit }],
+    queryFn: () => getStockMovements({ projectId, page, limit }),
+  });
+
+  const tipoLabel: Record<string, string> = { INGRESO: 'Ingreso', EGRESO: 'Egreso', AJUSTE: 'Ajuste' };
+  const tipoColor: Record<string, string> = {
+    INGRESO: 'text-green-400',
+    EGRESO: 'text-red-400',
+    AJUSTE: 'text-blue-400',
+  };
+
+  function fmtDate(iso: string) {
+    return new Date(iso).toLocaleDateString('es-UY', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-[var(--color-text-muted)]">
+          Movimientos de stock asociados a este proyecto
+        </p>
+        <button
+          onClick={() => setShowConsumo(true)}
+          className="px-3 py-1.5 rounded-lg bg-orange-500 text-white text-xs font-semibold hover:bg-orange-600 transition-colors"
+        >
+          + Registrar consumo
+        </button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-10"><Spinner /></div>
+      ) : !data || data.data.length === 0 ? (
+        <div className="text-center py-10 text-sm text-[var(--color-text-muted)] border border-dashed border-[var(--color-border)] rounded-xl">
+          No hay movimientos de stock para este proyecto
+        </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-app)]/50">
+                  <th className="px-4 py-2.5 text-left text-xs font-mono uppercase tracking-wider text-[var(--color-text-muted)]">Producto</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-mono uppercase tracking-wider text-[var(--color-text-muted)]">Tipo</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-mono uppercase tracking-wider text-[var(--color-text-muted)]">Cantidad</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-mono uppercase tracking-wider text-[var(--color-text-muted)]">Costo total</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-mono uppercase tracking-wider text-[var(--color-text-muted)]">Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.data.map((mv: StockMovement) => (
+                  <tr key={mv.id} className="border-b border-[var(--color-border)] hover:bg-[var(--color-border)]/10 transition-colors">
+                    <td className="px-4 py-2.5 text-[var(--color-text-primary)]">
+                      <div className="font-medium">{mv.product?.nombre ?? '—'}</div>
+                      <div className="text-xs text-[var(--color-text-muted)]">{mv.product?.categoria} · {mv.product?.unidad}</div>
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <span className={`text-xs font-semibold ${tipoColor[mv.tipo] ?? ''}`}>{tipoLabel[mv.tipo] ?? mv.tipo}</span>
+                    </td>
+                    <td className="px-4 py-2.5 text-right tabular-nums text-[var(--color-text-primary)]">
+                      {mv.tipo === 'EGRESO' ? '-' : '+'}{mv.cantidad} {mv.product?.unidad}
+                    </td>
+                    <td className="px-4 py-2.5 text-right tabular-nums text-[var(--color-text-secondary)]">
+                      {mv.costoTotal != null ? `${mv.moneda} ${mv.costoTotal.toLocaleString('es-UY', { minimumFractionDigits: 2 })}` : '—'}
+                    </td>
+                    <td className="px-4 py-2.5 text-right text-xs text-[var(--color-text-muted)]">{fmtDate(mv.fecha)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {data.totalPages > 1 && (
+            <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)]">
+              <span>{data.total} movimientos</span>
+              <div className="flex gap-2">
+                <button onClick={() => setPage(p => p - 1)} disabled={page === 1} className="px-3 py-1 rounded-lg border border-[var(--color-border)] disabled:opacity-40 hover:bg-[var(--color-border)]/30 transition-colors">
+                  Anterior
+                </button>
+                <span className="px-2 py-1">{page} / {data.totalPages}</span>
+                <button onClick={() => setPage(p => p + 1)} disabled={page === data.totalPages} className="px-3 py-1 rounded-lg border border-[var(--color-border)] disabled:opacity-40 hover:bg-[var(--color-border)]/30 transition-colors">
+                  Siguiente
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {showConsumo && (
+        <ConsumoModal
+          projectId={projectId}
+          onClose={() => setShowConsumo(false)}
+          onSaved={() => qc.invalidateQueries({ queryKey: ['stock-movements'] })}
+        />
+      )}
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export function ProjectDetail() {
@@ -302,8 +503,9 @@ export function ProjectDetail() {
   const [showEditProject, setShowEditProject] = useState(false);
   const [editingSolarSystemId, setEditingSolarSystemId] = useState<string | null>(null);
   const [showCreateSolarSystem, setShowCreateSolarSystem] = useState(false);
-  const [bottomTab, setBottomTab] = useState<"activity" | "comments" | "timeline">("activity");
+  const [bottomTab, setBottomTab] = useState<"activity" | "comments" | "timeline" | "materiales">("activity");
   const canViewMetrics = usePermission("METRICAS", "VIEW");
+  const canViewStock = usePermission("STOCK", "VIEW");
 
   const {
     data: project,
@@ -395,15 +597,15 @@ export function ProjectDetail() {
         onCreate={() => setShowCreateSolarSystem(true)}
       />
 
-      {/* KPI cards */}
-      <KpiCards project={project} />
-      <ProjectTimelineIndicators project={project} />
-
       {/* Pipeline */}
       <Pipeline
         stages={project.stages}
         onStageClick={(stage) => setSelectedStage(stage)}
       />
+
+      {/* KPI cards */}
+      <KpiCards project={project} />
+      <ProjectTimelineIndicators project={project} />
 
       {/* Bottom row */}
       <div
@@ -444,6 +646,15 @@ export function ProjectDetail() {
               Cronograma
             </button>
           ) : null}
+          {canViewStock ? (
+            <button
+              className={`rounded-full px-3 py-1 text-xs ${bottomTab === "materiales" ? "bg-[var(--color-accent)] text-black" : "text-[var(--color-text-secondary)]"}`}
+              onClick={() => setBottomTab("materiales")}
+              type="button"
+            >
+              Materiales
+            </button>
+          ) : null}
         </div>
 
         {bottomTab === "activity" ? (
@@ -460,6 +671,8 @@ export function ProjectDetail() {
           ) : (
             <ProjectGantt data={ganttQuery.data} />
           )
+        ) : bottomTab === "materiales" ? (
+          <MaterialesTab projectId={project.id} />
         ) : (
           <CommentThread projectId={project.id} level="project" context={commentContext} />
         )}

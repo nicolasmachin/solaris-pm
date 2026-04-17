@@ -3,7 +3,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { apiClient } from "../api/axios";
 import { getGoals, upsertGoal, deleteGoal } from "../api/metrics.api";
+import { getSubcategories, createSubcategory, deleteSubcategory } from "../api/finance.api";
 import type { GoalArea, GoalMetric, GoalPeriod, GoalData } from "../types/api.types";
+import type { CategoriaPrincipal } from "../types/finance.types";
+import { CATEGORIA_LABEL } from "../types/finance.types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -452,6 +455,15 @@ function TabConfiguracion() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
+  const { mutate: repairProjects, isPending: repairing } = useMutation({
+    mutationFn: () => apiClient.post<{ fixed: number; total: number }>("/api/admin/repair-completed-projects").then(r => r.data),
+    onSuccess: (data) => {
+      if (data.fixed === 0) toast("No había proyectos para reparar");
+      else toast.success(`${data.fixed} proyecto(s) reparado(s)`);
+    },
+    onError: () => toast.error("Error al reparar proyectos"),
+  });
+
   // Initialize local state when settings load
   const settingsMap = Object.fromEntries(settings.map(s => [s.key, s.value]));
   const currentValues = { ...settingsMap, ...values };
@@ -527,6 +539,24 @@ function TabConfiguracion() {
       >
         {saving ? "Guardando..." : "Guardar cambios"}
       </button>
+
+      <div style={{ marginTop: 36, paddingTop: 24, borderTop: "1px solid var(--color-border)" }}>
+        <p style={{ ...labelStyle, marginBottom: 8 }}>Mantenimiento de datos</p>
+        <p style={{ fontSize: 12, color: "var(--color-text-muted)", marginBottom: 12 }}>
+          Repara proyectos con estado COMPLETADO que no tienen fecha real de fin registrada (necesario para que aparezcan en métricas de instalaciones).
+        </p>
+        <button
+          onClick={() => repairProjects()}
+          disabled={repairing}
+          style={{
+            padding: "8px 16px", borderRadius: 6, border: "1px solid var(--color-border)",
+            background: "var(--color-bg-card)", color: "var(--color-text-primary)", fontSize: 12, fontWeight: 500,
+            cursor: repairing ? "not-allowed" : "pointer", opacity: repairing ? 0.6 : 1,
+          }}
+        >
+          {repairing ? "Reparando..." : "Reparar proyectos completados"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -834,7 +864,133 @@ function TabObjetivos() {
 
 // ─── Admin Page ───────────────────────────────────────────────────────────────
 
-type Tab = "usuarios" | "permisos" | "configuracion" | "objetivos";
+// ─── Finance Subcategories Tab ────────────────────────────────────────────────
+
+const CATEGORIAS_ORDENADAS: CategoriaPrincipal[] = [
+  "PROYECTO_ENTRADA", "COBRO_CLIENTE",
+  "PROYECTO_SALIDA", "COMPRA_STOCK", "CONSUMO_STOCK",
+  "FIJO", "VARIABLE", "PAGO_PROVEEDOR", "OTRO",
+];
+
+function TabFinanzas() {
+  const qc = useQueryClient();
+  const [nombre, setNombre] = useState("");
+  const [cat, setCat] = useState<CategoriaPrincipal>("VARIABLE");
+  const [saving, setSaving] = useState(false);
+
+  const { data: subs = [], isLoading } = useQuery({
+    queryKey: ["fin-subcategories"],
+    queryFn: () => getSubcategories(),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deleteSubcategory(id),
+    onSuccess: () => {
+      toast.success("Subcategoría eliminada");
+      qc.invalidateQueries({ queryKey: ["fin-subcategories"] });
+    },
+    onError: () => toast.error("Error al eliminar"),
+  });
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    if (!nombre.trim()) return;
+    setSaving(true);
+    try {
+      await createSubcategory({ nombre: nombre.trim(), categoriaPrincipal: cat });
+      toast.success("Subcategoría creada");
+      setNombre("");
+      qc.invalidateQueries({ queryKey: ["fin-subcategories"] });
+    } catch {
+      toast.error("Error al crear subcategoría");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const porCategoria = CATEGORIAS_ORDENADAS.reduce<Record<string, typeof subs>>((acc, c) => {
+    acc[c] = subs.filter(s => s.categoriaPrincipal === c);
+    return acc;
+  }, {});
+
+  return (
+    <div style={{ maxWidth: 700 }}>
+      <p style={{ fontSize: 13, color: "var(--color-text-muted)", marginBottom: 16 }}>
+        Subcategorías para clasificar movimientos financieros, agrupadas por categoría principal.
+      </p>
+
+      {/* Add form */}
+      <form onSubmit={handleAdd} style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" as const }}>
+        <input
+          style={{ ...inputStyle, flex: 1, minWidth: 180 }}
+          placeholder="Nombre de subcategoría"
+          value={nombre}
+          onChange={e => setNombre(e.target.value)}
+          required
+        />
+        <select
+          style={{ ...inputStyle, width: "auto", cursor: "pointer" }}
+          value={cat}
+          onChange={e => setCat(e.target.value as CategoriaPrincipal)}
+        >
+          {CATEGORIAS_ORDENADAS.map(c => (
+            <option key={c} value={c}>{CATEGORIA_LABEL[c]}</option>
+          ))}
+        </select>
+        <button
+          type="submit"
+          disabled={saving}
+          style={{
+            padding: "7px 16px", borderRadius: 6, border: "none",
+            background: "var(--color-accent)", color: "#111", fontSize: 13,
+            fontWeight: 600, cursor: "pointer", opacity: saving ? 0.7 : 1,
+          }}
+        >
+          {saving ? "Agregando..." : "+ Agregar"}
+        </button>
+      </form>
+
+      {/* List */}
+      {isLoading ? (
+        <p style={{ fontSize: 13, color: "var(--color-text-muted)" }}>Cargando...</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {CATEGORIAS_ORDENADAS.map(c => {
+            const items = porCategoria[c];
+            if (!items.length) return null;
+            return (
+              <div key={c}>
+                <p style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>
+                  {CATEGORIA_LABEL[c]}
+                </p>
+                <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 8 }}>
+                  {items.map(s => (
+                    <span key={s.id} style={{
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      background: "var(--color-bg-card-hover)", border: "1px solid var(--color-border)",
+                      borderRadius: 20, padding: "4px 12px",
+                      fontSize: 12, color: "var(--color-text-secondary)",
+                    }}>
+                      {s.nombre}
+                      <button
+                        onClick={() => { if (confirm(`¿Eliminar "${s.nombre}"?`)) deleteMut.mutate(s.id); }}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-muted)", fontSize: 14, lineHeight: 1, padding: 0 }}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+type Tab = "usuarios" | "permisos" | "configuracion" | "objetivos" | "finanzas";
 
 export function Admin() {
   const [activeTab, setActiveTab] = useState<Tab>("usuarios");
@@ -844,6 +1000,7 @@ export function Admin() {
     { id: "permisos", label: "Permisos" },
     { id: "configuracion", label: "Configuración del sistema" },
     { id: "objetivos", label: "Objetivos" },
+    { id: "finanzas", label: "Subcategorías" },
   ];
 
   return (
@@ -880,6 +1037,7 @@ export function Admin() {
       {activeTab === "permisos" && <TabPermisos />}
       {activeTab === "configuracion" && <TabConfiguracion />}
       {activeTab === "objetivos" && <TabObjetivos />}
+      {activeTab === "finanzas" && <TabFinanzas />}
     </div>
   );
 }

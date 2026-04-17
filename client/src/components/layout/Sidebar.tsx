@@ -78,7 +78,7 @@ export const Sidebar = memo(function Sidebar({ open, onClose }: SidebarProps) {
   });
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
   const [sortKey, setSortKey] = useState<SortKey>("recent");
   const [showModal, setShowModal] = useState(false);
 

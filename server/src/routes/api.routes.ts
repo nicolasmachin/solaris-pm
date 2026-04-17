@@ -11,11 +11,16 @@ import {
   Action,
   AuditAction,
   AuditEntityType,
+  CategoriaPrincipal,
+  EstadoAprobacion,
+  EstadoComprobante,
   GoalArea,
   GoalMetric,
   GoalPeriod,
+  MetodoPago,
   ModalidadPago,
   Module,
+  Moneda,
   NotificationType,
   PhaseType,
   Prisma,
@@ -29,6 +34,9 @@ import {
   SubstageStatus,
   TaskPriority,
   TaskStatus,
+  TipoComprobante,
+  TipoMovimiento,
+  TipoMovimientoStock,
   TipoObra,
 } from "@prisma/client";
 import { z } from "zod";
@@ -105,6 +113,7 @@ const projectCreateSchema = z
     plannedEndDate: dateOnlySchema,
     budgetUsd: z.coerce.number().positive(),
     estimatedMwhYear: z.coerce.number().positive().optional().default(0),
+    salespersonId: z.string().optional(),
     modalidadPago: z.nativeEnum(ModalidadPago).optional(),
     notificationEmail: z.string().email().optional().default(""),
     notificationPhone: z.string().optional().default(""),
@@ -1083,6 +1092,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
         deletedAt: null,
       },
       include: {
+        salesperson: {
+          select: { id: true, name: true },
+        },
         stages: {
           orderBy: { order: "asc" },
           include: {
@@ -1165,6 +1177,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         modalidadPago: body.modalidadPago ?? null,
         notificationEmail: body.notificationEmail,
         notificationPhone: body.notificationPhone,
+        salespersonId: body.salespersonId ?? null,
         createdById: user.id,
         ...(body.solarSystem
           ? {
@@ -1748,7 +1761,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     const syncedSubstage = await syncSubstageProgress(substage.id);
-    const { syncedStage, projectProgressPercent } = await refreshStageProgressAndProject(params.stageId, params.projectId);
+    let syncedStage = await syncStageProgress(params.stageId);
+    const projectProgressPercent = await calculateProjectProgress(params.projectId);
 
     // Check progress milestones after substage update
     if (projectProgressPercent) {
@@ -1867,6 +1881,108 @@ export async function registerApiRoutes(app: FastifyInstance) {
     };
   });
 
+  app.patch("/projects/:projectId/stages/:stageId/complete-all", { preHandler: authorize(Module.OPERACIONES, Action.COMPLETE) }, async (request) => {
+    const user = ensureUser(request);
+    const params = z.object({ projectId: z.string(), stageId: z.string() }).parse(request.params);
+    const stage = await findStageOrThrow(params.projectId, params.stageId);
+
+    // Obtener todas las subetapas activas con sus checklist items
+    const substages = await prisma.substage.findMany({
+      where: {
+        stageId: stage.id,
+        deletedAt: null,
+        isActive: true,
+        status: { not: SubstageStatus.COMPLETED },
+      },
+      include: {
+        checklistItems: {
+          where: { deletedAt: null, completed: false },
+        },
+      },
+    });
+
+    const actualEndDate = todayUtc();
+
+    await prisma.$transaction(async (tx) => {
+      for (const substage of substages) {
+        const actualStartDate = substage.actualStartDate ?? actualEndDate;
+        const actualDurationDays = Math.max(0, diffInDays(actualStartDate, actualEndDate));
+        const plannedDurationDays =
+          substage.plannedStartDate && substage.plannedEndDate
+            ? Math.max(0, diffInDays(substage.plannedStartDate, substage.plannedEndDate))
+            : 0;
+
+        // Completar todos los checklist items de la subetapa
+        if (substage.checklistItems.length > 0) {
+          await tx.checklistItem.updateMany({
+            where: {
+              substageId: substage.id,
+              deletedAt: null,
+              completed: false,
+            },
+            data: {
+              completed: true,
+              completedAt: actualEndDate,
+              completedBy: user.id,
+            },
+          });
+        }
+
+        // Completar la subetapa
+        await tx.substage.update({
+          where: { id: substage.id },
+          data: {
+            status: SubstageStatus.COMPLETED,
+            actualStartDate,
+            actualEndDate,
+            actualDurationDays,
+            delayDays: actualDurationDays - plannedDurationDays,
+            progressPercent: 100,
+          },
+        });
+      }
+    });
+
+    // Actualizar progreso de la etapa y del proyecto
+    await syncStageProgress(stage.id);
+    await calculateProjectProgress(params.projectId);
+
+    // Audit entries
+    for (const substage of substages) {
+      await createAuditEntry({
+        entityType: AuditEntityType.substage,
+        entityId: substage.id,
+        projectId: params.projectId,
+        userId: user.id,
+        action: AuditAction.updated,
+        fieldChanged: "status",
+        oldValue: substage.status,
+        newValue: SubstageStatus.COMPLETED,
+        description: `Completó todas las subetapas de la etapa '${stage.name}'`,
+      });
+    }
+
+    // Devolver etapa actualizada
+    const updatedStage = await prisma.stage.findUniqueOrThrow({
+      where: { id: stage.id },
+      include: {
+        substages: {
+          where: { deletedAt: null, isActive: true },
+          orderBy: { order: "asc" },
+          include: { checklistItems: { orderBy: { order: "asc" } } },
+        },
+      },
+    });
+
+    return {
+      ...serializeStage(updatedStage),
+      substages: updatedStage.substages.map((sub) => ({
+        ...serializeSubstage(sub),
+        checklistItems: sub.checklistItems.map(serializeChecklistItem),
+      })),
+    };
+  });
+
   app.patch("/projects/:projectId/stages/:stageId/substages/reorder", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
     const user = ensureUser(request);
     const params = z.object({ projectId: z.string(), stageId: z.string() }).parse(request.params);
@@ -1901,10 +2017,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
       .object({ projectId: z.string(), stageId: z.string(), substageId: z.string() })
       .parse(request.params);
     const substage = await findSubstageOrThrow(params.projectId, params.stageId, params.substageId);
-
-    if (substage.isSystem) {
-      throw conflict("SYSTEM_SUBSTAGE_PROTECTED", "No se pueden eliminar las subetapas predefinidas del sistema");
-    }
 
     const deletedSubstage = await prisma.substage.update({
       where: { id: substage.id },
@@ -2010,9 +2122,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
       throw forbidden("No tenés permiso para realizar esta acción");
     }
 
-    if (body.label !== undefined && !item.isCustom) {
-      throw badRequest("SOP_ITEM_PROTECTED", "Los ítems del SOP no se pueden editar");
-    }
 
     const updateData: Record<string, unknown> = {};
 
@@ -2086,10 +2195,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const user = ensureUser(request);
     const params = z.object({ itemId: z.string() }).parse(request.params);
     const item = await findChecklistItemOrThrow(params.itemId);
-
-    if (!item.isCustom) {
-      throw badRequest("SOP_ITEM_PROTECTED", "Los ítems del SOP no se pueden eliminar");
-    }
 
     await prisma.checklistItem.delete({
       where: { id: item.id },
@@ -2520,6 +2625,48 @@ export async function registerApiRoutes(app: FastifyInstance) {
           )
         : null;
 
+    // Goals for the period (OPERACIONES area)
+    const opsGoals = await prisma.goal.findMany({
+      where: {
+        area: GoalArea.OPERACIONES,
+        year: filterYear,
+        ...(filterQuarter
+          ? { OR: [{ period: GoalPeriod.QUARTERLY, quarter: filterQuarter }, { period: GoalPeriod.ANNUAL }] }
+          : { period: GoalPeriod.ANNUAL }),
+      },
+    });
+
+    const opsActualValues: Record<string, number> = {
+      [GoalMetric.INSTALLATIONS_COUNT]: filterQuarter ? installationsThisQuarter : installationsThisYear,
+      [GoalMetric.KWP_INSTALLED]: filterQuarter ? kwpInstalledThisQuarter : kwpInstalledThisYear,
+    };
+
+    function opsIsOnTrack(actual: number, target: number, pStart: Date, pEnd: Date): boolean {
+      const totalMs = pEnd.getTime() - pStart.getTime();
+      const elapsedMs = Math.min(now.getTime() - pStart.getTime(), totalMs);
+      const elapsedFraction = totalMs > 0 ? elapsedMs / totalMs : 1;
+      const achievedFraction = target > 0 ? actual / target : 0;
+      return achievedFraction >= elapsedFraction;
+    }
+
+    const opsGoalsData = opsGoals.map((g) => {
+      const metric = g.metric as GoalMetric;
+      const target = Number(g.targetValue);
+      const actual = opsActualValues[metric] ?? 0;
+      const pStart = g.period === GoalPeriod.QUARTERLY ? (quarterStart ?? yearStart) : yearStart;
+      const pEnd = g.period === GoalPeriod.QUARTERLY ? (quarterEnd ?? yearEnd) : yearEnd;
+      return {
+        id: g.id,
+        metric,
+        period: g.period,
+        quarter: g.quarter,
+        targetValue: target,
+        actualValue: actual,
+        percentAchieved: target > 0 ? Number(((actual / target) * 100).toFixed(1)) : null,
+        onTrack: opsIsOnTrack(actual, target, pStart, pEnd),
+      };
+    });
+
     return {
       filterYear,
       filterQuarter: filterQuarter ?? null,
@@ -2563,6 +2710,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         metricsByProject.length > 0
           ? Number((metricsByProject.reduce((sum, m) => sum + m.timeEfficiency, 0) / metricsByProject.length).toFixed(2))
           : 0,
+      goals: opsGoalsData,
     };
   });
 
@@ -3819,6 +3967,45 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return { success: true };
   });
 
+  // ─── Admin: repair completed projects without actualEndDate ─────────────────
+  app.post("/admin/repair-completed-projects", { preHandler: authorize(Module.CONFIGURACION, Action.EDIT) }, async () => {
+    const candidateProjects = await prisma.project.findMany({
+      where: {
+        status: { in: [ProjectStatus.COMPLETED, ProjectStatus.ACTIVE] },
+        deletedAt: null,
+      },
+      include: {
+        stages: { select: { status: true, actualEndDate: true, plannedEndDate: true } },
+      },
+    });
+
+    let fixed = 0;
+    for (const project of candidateProjects) {
+      if (project.stages.length === 0) continue;
+      const allDone = project.stages.every((s) => s.status === StageStatus.COMPLETED);
+      if (!allDone) continue;
+      const alreadyOk = project.status === ProjectStatus.COMPLETED && project.actualEndDate;
+      if (alreadyOk) continue;
+
+      const lastActualEnd = project.stages
+        .map((s) => s.actualEndDate)
+        .filter(Boolean)
+        .sort((a, b) => (b as Date).getTime() - (a as Date).getTime())[0];
+      const endDate = project.actualEndDate ?? lastActualEnd ?? todayUtc();
+
+      await prisma.project.update({
+        where: { id: project.id },
+        data: {
+          status: ProjectStatus.COMPLETED,
+          actualEndDate: endDate,
+        },
+      });
+      fixed++;
+    }
+
+    return { fixed, total: candidateProjects.length };
+  });
+
   // ─── Sales Leads ─────────────────────────────────────────────────────────────
 
   const leadCreateSchema = z.object({
@@ -4515,6 +4702,1045 @@ export async function registerApiRoutes(app: FastifyInstance) {
         emailTarget: project.notificationEmail ?? null,
         whatsappTarget: project.notificationPhone ?? null,
       };
+    });
+
+    // ─── Finance: Exchange Rate ───────────────────────────────────────────────
+
+    app.get("/finance/exchange-rate", async () => {
+      const rate = await prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } });
+      if (!rate) throw notFound("EXCHANGE_RATE_NOT_FOUND", "No hay tipo de cambio registrado");
+      return { usdToUyu: decimalToNumber(rate.usdToUyu), date: serializeDate(rate.date), source: rate.source };
+    });
+
+    app.post("/finance/exchange-rate", { preHandler: authorize(Module.FINANZAS, Action.CREATE) }, async (request) => {
+      const user = ensureUser(request);
+      const body = z.object({ usdToUyu: z.coerce.number().positive() }).strict().parse(request.body);
+      const rate = await prisma.exchangeRate.create({
+        data: { usdToUyu: new Prisma.Decimal(body.usdToUyu), createdBy: user.id },
+      });
+      await createAuditEntry({
+        entityType: AuditEntityType.exchange_rate,
+        entityId: rate.id,
+        userId: user.id,
+        action: AuditAction.created,
+        description: `Tipo de cambio actualizado a 1 USD = ${body.usdToUyu} UYU`,
+      });
+      return { usdToUyu: decimalToNumber(rate.usdToUyu), date: serializeDate(rate.date), source: rate.source };
+    });
+
+    app.get("/finance/exchange-rate/history", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async () => {
+      const rates = await prisma.exchangeRate.findMany({ orderBy: { date: "desc" }, take: 30 });
+      return rates.map((r) => ({ id: r.id, usdToUyu: decimalToNumber(r.usdToUyu), date: serializeDate(r.date), source: r.source }));
+    });
+
+    // ─── Finance: Suppliers ───────────────────────────────────────────────────
+
+    const supplierCreateSchema = z.object({
+      nombre: z.string().min(1),
+      email: z.string().email().optional(),
+      telefono: z.string().optional(),
+      condicionPago: z.string().optional(),
+      notas: z.string().optional(),
+    }).strict();
+
+    const supplierPatchSchema = z.object({
+      nombre: z.string().min(1).optional(),
+      email: z.string().email().nullable().optional(),
+      telefono: z.string().nullable().optional(),
+      condicionPago: z.string().nullable().optional(),
+      notas: z.string().nullable().optional(),
+      activo: z.boolean().optional(),
+    }).strict();
+
+    app.get("/finance/suppliers", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const query = z.object({ activo: z.enum(["true", "false"]).optional() }).parse(request.query);
+      const activo = query.activo === undefined ? true : query.activo === "true";
+      const suppliers = await prisma.supplier.findMany({
+        where: { deletedAt: null, activo },
+        include: { _count: { select: { movimientos: true, comprobantes: true } } },
+        orderBy: { nombre: "asc" },
+      });
+      return suppliers.map((s) => ({
+        id: s.id, nombre: s.nombre, email: s.email, telefono: s.telefono,
+        condicionPago: s.condicionPago, activo: s.activo, notas: s.notas,
+        createdAt: serializeDate(s.createdAt), updatedAt: serializeDate(s.updatedAt),
+        _count: s._count,
+      }));
+    });
+
+    app.post("/finance/suppliers", { preHandler: authorize(Module.FINANZAS, Action.CREATE) }, async (request) => {
+      const user = ensureUser(request);
+      const body = supplierCreateSchema.parse(request.body);
+      const supplier = await prisma.supplier.create({ data: body });
+      await createAuditEntry({
+        entityType: AuditEntityType.supplier,
+        entityId: supplier.id,
+        userId: user.id,
+        action: AuditAction.created,
+        description: `Creó proveedor ${supplier.nombre}`,
+      });
+      return supplier;
+    });
+
+    app.patch("/finance/suppliers/:id", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const body = supplierPatchSchema.parse(request.body);
+      const existing = await prisma.supplier.findFirst({ where: { id, deletedAt: null } });
+      if (!existing) throw notFound("SUPPLIER_NOT_FOUND", "Proveedor no encontrado");
+      const updated = await prisma.supplier.update({ where: { id }, data: body });
+      await createAuditEntriesForChanges({
+        entityType: AuditEntityType.supplier,
+        entityId: id,
+        userId: user.id,
+        oldData: existing as Record<string, unknown>,
+        newData: { ...existing, ...body } as Record<string, unknown>,
+        formatter: ({ label, oldValue, newValue }) => `Actualizó ${label} de ${oldValue ?? "vacío"} a ${newValue ?? "vacío"} en proveedor ${existing.nombre}`,
+      });
+      return updated;
+    });
+
+    app.delete("/finance/suppliers/:id", { preHandler: authorize(Module.FINANZAS, Action.DELETE) }, async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const existing = await prisma.supplier.findFirst({ where: { id, deletedAt: null } });
+      if (!existing) throw notFound("SUPPLIER_NOT_FOUND", "Proveedor no encontrado");
+      await prisma.supplier.update({ where: { id }, data: { deletedAt: new Date() } });
+      await createAuditEntry({
+        entityType: AuditEntityType.supplier,
+        entityId: id,
+        userId: user.id,
+        action: AuditAction.deleted,
+        description: `Eliminó proveedor ${existing.nombre}`,
+      });
+      return { success: true };
+    });
+
+    // ─── Finance: Subcategorías ───────────────────────────────────────────────
+
+    const subcategoryCreateSchema = z.object({
+      nombre: z.string().min(1),
+      categoria: z.nativeEnum(CategoriaPrincipal),
+    }).strict();
+
+    app.get("/finance/subcategories", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const query = z.object({ categoria: z.nativeEnum(CategoriaPrincipal).optional() }).parse(request.query);
+      const subcategories = await prisma.financeSubcategory.findMany({
+        where: { activa: true, ...(query.categoria ? { categoria: query.categoria } : {}) },
+        orderBy: [{ categoria: "asc" }, { nombre: "asc" }],
+      });
+      return subcategories;
+    });
+
+    app.post("/finance/subcategories", { preHandler: authorize(Module.FINANZAS, Action.CREATE) }, async (request) => {
+      const body = subcategoryCreateSchema.parse(request.body);
+      const existing = await prisma.financeSubcategory.findUnique({ where: { nombre_categoria: { nombre: body.nombre, categoria: body.categoria } } });
+      if (existing) throw conflict("SUBCATEGORY_EXISTS", "Ya existe una subcategoría con ese nombre en esa categoría");
+      return prisma.financeSubcategory.create({ data: body });
+    });
+
+    app.patch("/finance/subcategories/:id", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const body = z.object({ nombre: z.string().min(1).optional(), activa: z.boolean().optional() }).strict().parse(request.body);
+      const existing = await prisma.financeSubcategory.findUnique({ where: { id } });
+      if (!existing) throw notFound("SUBCATEGORY_NOT_FOUND", "Subcategoría no encontrada");
+      return prisma.financeSubcategory.update({ where: { id }, data: body });
+    });
+
+    app.delete("/finance/subcategories/:id", { preHandler: authorize(Module.FINANZAS, Action.DELETE) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const existing = await prisma.financeSubcategory.findUnique({ where: { id }, include: { _count: { select: { movimientos: true } } } });
+      if (!existing) throw notFound("SUBCATEGORY_NOT_FOUND", "Subcategoría no encontrada");
+      if (existing._count.movimientos > 0) throw badRequest("SUBCATEGORY_IN_USE", "No se puede eliminar: la subcategoría tiene movimientos asociados");
+      await prisma.financeSubcategory.update({ where: { id }, data: { activa: false } });
+      return { success: true };
+    });
+
+    // ─── Finance: Movements ───────────────────────────────────────────────────
+
+    const movementCreateSchema = z.object({
+      fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      tipoMovimiento: z.nativeEnum(TipoMovimiento),
+      categoriaPrincipal: z.nativeEnum(CategoriaPrincipal),
+      subcategoriaId: z.string().optional(),
+      descripcion: z.string().min(1),
+      monto: z.coerce.number().positive(),
+      moneda: z.nativeEnum(Moneda).default(Moneda.USD),
+      tipoCambio: z.coerce.number().positive().optional(),
+      pagado: z.boolean().default(false),
+      cobrado: z.boolean().default(false),
+      impactaFlujo: z.boolean().default(true),
+      projectId: z.string().optional(),
+      supplierId: z.string().optional(),
+      observaciones: z.string().optional(),
+      estadoAprobacion: z.nativeEnum(EstadoAprobacion).default(EstadoAprobacion.REGISTRADO),
+      archivoAdjuntoUrl: z.string().optional(),
+    }).strict();
+
+    const movementPatchSchema = z.object({
+      fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      tipoMovimiento: z.nativeEnum(TipoMovimiento).optional(),
+      categoriaPrincipal: z.nativeEnum(CategoriaPrincipal).optional(),
+      subcategoriaId: z.string().nullable().optional(),
+      descripcion: z.string().min(1).optional(),
+      monto: z.coerce.number().positive().optional(),
+      moneda: z.nativeEnum(Moneda).optional(),
+      tipoCambio: z.coerce.number().positive().nullable().optional(),
+      pagado: z.boolean().optional(),
+      cobrado: z.boolean().optional(),
+      impactaFlujo: z.boolean().optional(),
+      projectId: z.string().nullable().optional(),
+      supplierId: z.string().nullable().optional(),
+      observaciones: z.string().nullable().optional(),
+      estadoAprobacion: z.nativeEnum(EstadoAprobacion).optional(),
+      archivoAdjuntoUrl: z.string().nullable().optional(),
+    }).strict();
+
+    app.get("/finance/movements", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const query = z.object({
+        mes: z.coerce.number().int().min(1).max(12).optional(),
+        anio: z.coerce.number().int().optional(),
+        tipo: z.nativeEnum(TipoMovimiento).optional(),
+        categoria: z.nativeEnum(CategoriaPrincipal).optional(),
+        projectId: z.string().optional(),
+        page: z.coerce.number().int().positive().optional(),
+        limit: z.coerce.number().int().positive().max(100).optional(),
+      }).parse(request.query);
+
+      const take = query.limit ?? 20;
+      const skip = ((query.page ?? 1) - 1) * take;
+
+      const [movements, total] = await prisma.$transaction([
+        prisma.financeMovement.findMany({
+          where: {
+            deletedAt: null,
+            ...(query.mes ? { mes: query.mes } : {}),
+            ...(query.anio ? { anio: query.anio } : {}),
+            ...(query.tipo ? { tipoMovimiento: query.tipo } : {}),
+            ...(query.categoria ? { categoriaPrincipal: query.categoria } : {}),
+            ...(query.projectId ? { projectId: query.projectId } : {}),
+          },
+          include: {
+            project: { select: { id: true, clientName: true, code: true } },
+            supplier: { select: { id: true, nombre: true } },
+            subcategoria: { select: { id: true, nombre: true, categoria: true } },
+          },
+          orderBy: { fecha: "desc" },
+          skip,
+          take,
+        }),
+        prisma.financeMovement.count({
+          where: {
+            deletedAt: null,
+            ...(query.mes ? { mes: query.mes } : {}),
+            ...(query.anio ? { anio: query.anio } : {}),
+            ...(query.tipo ? { tipoMovimiento: query.tipo } : {}),
+            ...(query.categoria ? { categoriaPrincipal: query.categoria } : {}),
+            ...(query.projectId ? { projectId: query.projectId } : {}),
+          },
+        }),
+      ]);
+
+      return {
+        data: movements.map((m) => ({
+          ...m,
+          monto: decimalToNumber(m.monto),
+          tipoCambio: m.tipoCambio ? decimalToNumber(m.tipoCambio) : null,
+          fecha: serializeDate(m.fecha),
+          createdAt: serializeDate(m.createdAt),
+          updatedAt: serializeDate(m.updatedAt),
+        })),
+        total,
+        page: query.page ?? 1,
+        limit: take,
+        totalPages: Math.ceil(total / take),
+      };
+    });
+
+    app.post("/finance/movements", { preHandler: authorize(Module.FINANZAS, Action.CREATE) }, async (request) => {
+      const user = ensureUser(request);
+      const body = movementCreateSchema.parse(request.body);
+      const fecha = new Date(body.fecha);
+      const mes = fecha.getUTCMonth() + 1;
+      const anio = fecha.getUTCFullYear();
+
+      let tipoCambio = body.tipoCambio ? new Prisma.Decimal(body.tipoCambio) : null;
+      if (body.moneda === Moneda.UYU && !tipoCambio) {
+        const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } });
+        if (lastRate) tipoCambio = lastRate.usdToUyu;
+      }
+
+      const movement = await prisma.financeMovement.create({
+        data: {
+          fecha,
+          mes,
+          anio,
+          tipoMovimiento: body.tipoMovimiento,
+          categoriaPrincipal: body.categoriaPrincipal,
+          subcategoriaId: body.subcategoriaId,
+          descripcion: body.descripcion,
+          monto: new Prisma.Decimal(body.monto),
+          moneda: body.moneda,
+          tipoCambio,
+          pagado: body.pagado,
+          cobrado: body.cobrado,
+          impactaFlujo: body.impactaFlujo,
+          projectId: body.projectId,
+          supplierId: body.supplierId,
+          observaciones: body.observaciones,
+          estadoAprobacion: body.estadoAprobacion,
+          archivoAdjuntoUrl: body.archivoAdjuntoUrl,
+          creadoPorId: user.id,
+        },
+      });
+
+      await createAuditEntry({
+        entityType: AuditEntityType.finance_movement,
+        entityId: movement.id,
+        projectId: body.projectId,
+        userId: user.id,
+        action: AuditAction.created,
+        description: `Registró movimiento: ${body.descripcion} por ${body.monto} ${body.moneda}`,
+      });
+
+      return { ...movement, monto: decimalToNumber(movement.monto), tipoCambio: movement.tipoCambio ? decimalToNumber(movement.tipoCambio) : null };
+    });
+
+    app.get("/finance/movements/:id", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const movement = await prisma.financeMovement.findFirst({
+        where: { id, deletedAt: null },
+        include: {
+          project: { select: { id: true, clientName: true, code: true } },
+          supplier: { select: { id: true, nombre: true } },
+          subcategoria: true,
+          pagos: { include: { supplier: { select: { id: true, nombre: true } } } },
+          historial: { include: { user: { select: { id: true, name: true } } }, orderBy: { createdAt: "desc" } },
+          comprobantes: { select: { id: true, numero: true, tipo: true, monto: true, moneda: true, estado: true } },
+        },
+      });
+      if (!movement) throw notFound("MOVEMENT_NOT_FOUND", "Movimiento no encontrado");
+      return {
+        ...movement,
+        monto: decimalToNumber(movement.monto),
+        tipoCambio: movement.tipoCambio ? decimalToNumber(movement.tipoCambio) : null,
+        pagos: movement.pagos.map((p) => ({ ...p, monto: decimalToNumber(p.monto) })),
+        comprobantes: movement.comprobantes.map((c) => ({ ...c, monto: decimalToNumber(c.monto) })),
+      };
+    });
+
+    app.patch("/finance/movements/:id", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const body = movementPatchSchema.parse(request.body);
+      const existing = await prisma.financeMovement.findFirst({ where: { id, deletedAt: null } });
+      if (!existing) throw notFound("MOVEMENT_NOT_FOUND", "Movimiento no encontrado");
+
+      const updateData: Record<string, unknown> = { ...body };
+      if (body.fecha) {
+        const d = new Date(body.fecha);
+        updateData.fecha = d;
+        updateData.mes = d.getUTCMonth() + 1;
+        updateData.anio = d.getUTCFullYear();
+      }
+      if (body.monto !== undefined) updateData.monto = new Prisma.Decimal(body.monto);
+      if (body.tipoCambio !== undefined) updateData.tipoCambio = body.tipoCambio ? new Prisma.Decimal(body.tipoCambio) : null;
+
+      const updated = await prisma.financeMovement.update({ where: { id }, data: updateData });
+      await createAuditEntry({
+        entityType: AuditEntityType.finance_movement,
+        entityId: id,
+        projectId: existing.projectId,
+        userId: user.id,
+        action: AuditAction.updated,
+        description: `Actualizó movimiento: ${existing.descripcion}`,
+      });
+      return { ...updated, monto: decimalToNumber(updated.monto), tipoCambio: updated.tipoCambio ? decimalToNumber(updated.tipoCambio) : null };
+    });
+
+    app.delete("/finance/movements/:id", { preHandler: authorize(Module.FINANZAS, Action.DELETE) }, async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const existing = await prisma.financeMovement.findFirst({ where: { id, deletedAt: null } });
+      if (!existing) throw notFound("MOVEMENT_NOT_FOUND", "Movimiento no encontrado");
+      await prisma.financeMovement.update({ where: { id }, data: { deletedAt: new Date() } });
+      await createAuditEntry({
+        entityType: AuditEntityType.finance_movement,
+        entityId: id,
+        projectId: existing.projectId,
+        userId: user.id,
+        action: AuditAction.deleted,
+        description: `Eliminó movimiento: ${existing.descripcion}`,
+      });
+      return { success: true };
+    });
+
+    // ─── Finance: Comprobantes ────────────────────────────────────────────────
+
+    const comprobanteCreateSchema = z.object({
+      supplierId: z.string().min(1),
+      numero: z.string().optional(),
+      tipo: z.nativeEnum(TipoComprobante).default(TipoComprobante.FACTURA),
+      concepto: z.string().min(1),
+      monto: z.coerce.number().positive(),
+      moneda: z.nativeEnum(Moneda).default(Moneda.USD),
+      fechaEmision: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      fechaVencimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      movimientoId: z.string().optional(),
+      origenEmail: z.string().optional(),
+      archivoUrl: z.string().optional(),
+      notas: z.string().optional(),
+    }).strict();
+
+    app.get("/finance/comprobantes", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const query = z.object({
+        supplierId: z.string().optional(),
+        estado: z.nativeEnum(EstadoComprobante).optional(),
+      }).parse(request.query);
+
+      const comprobantes = await prisma.financeComprobante.findMany({
+        where: {
+          deletedAt: null,
+          ...(query.supplierId ? { supplierId: query.supplierId } : {}),
+          ...(query.estado ? { estado: query.estado } : {}),
+        },
+        include: {
+          supplier: { select: { id: true, nombre: true } },
+          pagos: { select: { monto: true, moneda: true } },
+        },
+        orderBy: { fechaEmision: "desc" },
+      });
+
+      return comprobantes.map((c) => {
+        const montoPagado = c.pagos.reduce((sum, p) => sum + (decimalToNumber(p.monto) ?? 0), 0);
+        return {
+          id: c.id, supplierId: c.supplierId, supplier: c.supplier,
+          numero: c.numero, tipo: c.tipo, concepto: c.concepto,
+          monto: decimalToNumber(c.monto), moneda: c.moneda,
+          fechaEmision: serializeDate(c.fechaEmision),
+          fechaVencimiento: c.fechaVencimiento ? serializeDate(c.fechaVencimiento) : null,
+          estado: c.estado, movimientoId: c.movimientoId,
+          montoPagado,
+          saldoPendiente: (decimalToNumber(c.monto) ?? 0) - montoPagado,
+          createdAt: serializeDate(c.createdAt),
+        };
+      });
+    });
+
+    app.post("/finance/comprobantes", { preHandler: authorize(Module.FINANZAS, Action.CREATE) }, async (request) => {
+      const user = ensureUser(request);
+      const body = comprobanteCreateSchema.parse(request.body);
+      const supplier = await prisma.supplier.findFirst({ where: { id: body.supplierId, deletedAt: null } });
+      if (!supplier) throw notFound("SUPPLIER_NOT_FOUND", "Proveedor no encontrado");
+      const comprobante = await prisma.financeComprobante.create({
+        data: {
+          ...body,
+          monto: new Prisma.Decimal(body.monto),
+          fechaEmision: new Date(body.fechaEmision),
+          fechaVencimiento: body.fechaVencimiento ? new Date(body.fechaVencimiento) : null,
+        },
+      });
+      await createAuditEntry({
+        entityType: AuditEntityType.finance_comprobante,
+        entityId: comprobante.id,
+        userId: user.id,
+        action: AuditAction.created,
+        description: `Registró comprobante ${body.tipo} de ${supplier.nombre} por ${body.monto} ${body.moneda}`,
+      });
+      return { ...comprobante, monto: decimalToNumber(comprobante.monto) };
+    });
+
+    app.patch("/finance/comprobantes/:id", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const body = z.object({
+        numero: z.string().nullable().optional(),
+        concepto: z.string().min(1).optional(),
+        fechaVencimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+        notas: z.string().nullable().optional(),
+        archivoUrl: z.string().nullable().optional(),
+        estado: z.nativeEnum(EstadoComprobante).optional(),
+      }).strict().parse(request.body);
+      const existing = await prisma.financeComprobante.findFirst({ where: { id, deletedAt: null } });
+      if (!existing) throw notFound("COMPROBANTE_NOT_FOUND", "Comprobante no encontrado");
+      const updateData: Record<string, unknown> = { ...body };
+      if (body.fechaVencimiento !== undefined) {
+        updateData.fechaVencimiento = body.fechaVencimiento ? new Date(body.fechaVencimiento) : null;
+      }
+      const updated = await prisma.financeComprobante.update({ where: { id }, data: updateData });
+      await createAuditEntry({
+        entityType: AuditEntityType.finance_comprobante,
+        entityId: id,
+        userId: user.id,
+        action: AuditAction.updated,
+        description: `Actualizó comprobante ${existing.concepto}`,
+      });
+      return { ...updated, monto: decimalToNumber(updated.monto) };
+    });
+
+    app.post("/finance/comprobantes/:id/payments", { preHandler: authorize(Module.FINANZAS, Action.CREATE) }, async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const body = z.object({
+        fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        monto: z.coerce.number().positive(),
+        moneda: z.nativeEnum(Moneda).default(Moneda.USD),
+        metodoPago: z.nativeEnum(MetodoPago).default(MetodoPago.TRANSFERENCIA),
+        referencia: z.string().optional(),
+        comprobanteUrl: z.string().optional(),
+        observaciones: z.string().optional(),
+      }).strict().parse(request.body);
+
+      const comprobante = await prisma.financeComprobante.findFirst({
+        where: { id, deletedAt: null },
+        include: { pagos: { select: { monto: true } } },
+      });
+      if (!comprobante) throw notFound("COMPROBANTE_NOT_FOUND", "Comprobante no encontrado");
+
+      const pago = await prisma.financeComprobantePayment.create({
+        data: {
+          comprobanteId: id,
+          fecha: new Date(body.fecha),
+          monto: new Prisma.Decimal(body.monto),
+          moneda: body.moneda,
+          metodoPago: body.metodoPago,
+          referencia: body.referencia,
+          comprobanteUrl: body.comprobanteUrl,
+          observaciones: body.observaciones,
+        },
+      });
+
+      const totalPagado = comprobante.pagos.reduce((s, p) => s + (decimalToNumber(p.monto) ?? 0), 0) + body.monto;
+      const montoTotal = decimalToNumber(comprobante.monto) ?? 0;
+      const nuevoEstado: EstadoComprobante =
+        totalPagado >= montoTotal ? EstadoComprobante.PAGADO : EstadoComprobante.PARCIALMENTE_PAGADO;
+
+      await prisma.financeComprobante.update({ where: { id }, data: { estado: nuevoEstado } });
+      await createAuditEntry({
+        entityType: AuditEntityType.finance_comprobante,
+        entityId: id,
+        userId: user.id,
+        action: AuditAction.updated,
+        description: `Registró pago de ${body.monto} ${body.moneda} en comprobante ${comprobante.concepto}. Estado: ${nuevoEstado}`,
+      });
+
+      return { ...pago, monto: decimalToNumber(pago.monto), nuevoEstado };
+    });
+
+    // ─── Finance: Reports ─────────────────────────────────────────────────────
+
+    app.get("/finance/reports/results", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const { anio } = z.object({ anio: z.coerce.number().int().default(new Date().getUTCFullYear()) }).parse(request.query);
+
+      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } });
+      const fallbackRate = lastRate ? (decimalToNumber(lastRate.usdToUyu) ?? 1) : 1;
+
+      const movements = await prisma.financeMovement.findMany({
+        where: { anio, deletedAt: null },
+        select: { mes: true, categoriaPrincipal: true, monto: true, moneda: true, tipoCambio: true },
+      });
+
+      function toUsd(monto: Prisma.Decimal, moneda: Moneda, tipoCambio: Prisma.Decimal | null): number {
+        const amount = decimalToNumber(monto) ?? 0;
+        if (moneda === Moneda.USD) return amount;
+        const rate = tipoCambio ? (decimalToNumber(tipoCambio) ?? fallbackRate) : fallbackRate;
+        return rate > 0 ? amount / rate : amount;
+      }
+
+      const entradaCats = new Set<CategoriaPrincipal>([CategoriaPrincipal.PROYECTO_ENTRADA, CategoriaPrincipal.COBRO_CLIENTE]);
+      const costoCats = new Set<CategoriaPrincipal>([CategoriaPrincipal.PROYECTO_SALIDA, CategoriaPrincipal.COMPRA_STOCK, CategoriaPrincipal.CONSUMO_STOCK]);
+      const fijoCats = new Set<CategoriaPrincipal>([CategoriaPrincipal.FIJO]);
+      const variableCats = new Set<CategoriaPrincipal>([CategoriaPrincipal.VARIABLE, CategoriaPrincipal.PAGO_PROVEEDOR, CategoriaPrincipal.OTRO]);
+
+      const byMes: Record<number, { entradas: number; costoInstalaciones: number; costosFijos: number; costosVariables: number }> = {};
+      for (let m = 1; m <= 12; m++) byMes[m] = { entradas: 0, costoInstalaciones: 0, costosFijos: 0, costosVariables: 0 };
+
+      for (const mov of movements) {
+        const usd = toUsd(mov.monto, mov.moneda, mov.tipoCambio);
+        if (entradaCats.has(mov.categoriaPrincipal)) byMes[mov.mes].entradas += usd;
+        else if (costoCats.has(mov.categoriaPrincipal)) byMes[mov.mes].costoInstalaciones += usd;
+        else if (fijoCats.has(mov.categoriaPrincipal)) byMes[mov.mes].costosFijos += usd;
+        else if (variableCats.has(mov.categoriaPrincipal)) byMes[mov.mes].costosVariables += usd;
+      }
+
+      const meses = Object.entries(byMes).map(([mes, d]) => {
+        const resultadoBruto = d.entradas - d.costoInstalaciones;
+        const totalCostosOp = d.costosFijos + d.costosVariables;
+        return {
+          mes: Number(mes), entradas: d.entradas, costoInstalaciones: d.costoInstalaciones,
+          resultadoBruto, costosFijos: d.costosFijos, costosVariables: d.costosVariables,
+          totalCostosOp, resultadoOperativo: resultadoBruto - totalCostosOp,
+        };
+      });
+
+      const totales = meses.reduce((acc, m) => ({
+        entradas: acc.entradas + m.entradas,
+        costoInstalaciones: acc.costoInstalaciones + m.costoInstalaciones,
+        resultadoBruto: acc.resultadoBruto + m.resultadoBruto,
+        costosFijos: acc.costosFijos + m.costosFijos,
+        costosVariables: acc.costosVariables + m.costosVariables,
+        totalCostosOp: acc.totalCostosOp + m.totalCostosOp,
+        resultadoOperativo: acc.resultadoOperativo + m.resultadoOperativo,
+      }), { entradas: 0, costoInstalaciones: 0, resultadoBruto: 0, costosFijos: 0, costosVariables: 0, totalCostosOp: 0, resultadoOperativo: 0 });
+
+      return { anio, meses, totales };
+    });
+
+    app.get("/finance/reports/cashflow", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const query = z.object({
+        fechaDesde: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        fechaHasta: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      }).parse(request.query);
+
+      const dateFilter = {
+        ...(query.fechaDesde ? { gte: new Date(query.fechaDesde) } : {}),
+        ...(query.fechaHasta ? { lte: new Date(query.fechaHasta) } : {}),
+      };
+      const where = { deletedAt: null, impactaFlujo: true, ...(Object.keys(dateFilter).length ? { fecha: dateFilter } : {}) };
+
+      const movements = await prisma.financeMovement.findMany({
+        where,
+        select: { tipoMovimiento: true, monto: true, moneda: true, tipoCambio: true, cobrado: true, pagado: true },
+      });
+
+      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } });
+      const fallbackRate = lastRate ? (decimalToNumber(lastRate.usdToUyu) ?? 1) : 1;
+
+      function toUsd(m: (typeof movements)[number]): number {
+        const amount = decimalToNumber(m.monto) ?? 0;
+        if (m.moneda === Moneda.USD) return amount;
+        const rate = m.tipoCambio ? (decimalToNumber(m.tipoCambio) ?? fallbackRate) : fallbackRate;
+        return rate > 0 ? amount / rate : amount;
+      }
+
+      let saldoActual = 0, porCobrar = 0, porPagar = 0;
+      for (const m of movements) {
+        const usd = toUsd(m);
+        if (m.tipoMovimiento === TipoMovimiento.INGRESO) {
+          if (m.cobrado) saldoActual += usd;
+          else porCobrar += usd;
+        } else if (m.tipoMovimiento === TipoMovimiento.GASTO) {
+          if (m.pagado) saldoActual -= usd;
+          else porPagar += usd;
+        }
+      }
+
+      return { saldoActual, porCobrar, porPagar, saldoProyectado: saldoActual + porCobrar - porPagar };
+    });
+
+    app.get("/finance/reports/dashboard", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async () => {
+      const now = new Date();
+      const mes = now.getUTCMonth() + 1;
+      const anio = now.getUTCFullYear();
+
+      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } });
+      const fallbackRate = lastRate ? (decimalToNumber(lastRate.usdToUyu) ?? 1) : 1;
+
+      const movements = await prisma.financeMovement.findMany({
+        where: { mes, anio, deletedAt: null },
+        include: {
+          project: { select: { id: true, clientName: true, code: true } },
+          supplier: { select: { id: true, nombre: true } },
+        },
+        orderBy: { fecha: "desc" },
+      });
+
+      function toUsd(monto: Prisma.Decimal, moneda: Moneda, tipoCambio: Prisma.Decimal | null): number {
+        const amount = decimalToNumber(monto) ?? 0;
+        if (moneda === Moneda.USD) return amount;
+        const rate = tipoCambio ? (decimalToNumber(tipoCambio) ?? fallbackRate) : fallbackRate;
+        return rate > 0 ? amount / rate : amount;
+      }
+
+      let ingresos = 0, gastos = 0, pendienteCobro = 0, pendientePago = 0;
+      for (const m of movements) {
+        const usd = toUsd(m.monto, m.moneda, m.tipoCambio);
+        if (m.tipoMovimiento === TipoMovimiento.INGRESO) {
+          ingresos += usd;
+          if (!m.cobrado) pendienteCobro += usd;
+        } else if (m.tipoMovimiento === TipoMovimiento.GASTO) {
+          gastos += usd;
+          if (!m.pagado) pendientePago += usd;
+        }
+      }
+
+      return {
+        mes, anio, ingresos, gastos, resultado: ingresos - gastos,
+        pendienteCobro, pendientePago,
+        ultimosMovimientos: movements.slice(0, 10).map((m) => ({
+          id: m.id, fecha: serializeDate(m.fecha), descripcion: m.descripcion,
+          tipoMovimiento: m.tipoMovimiento, monto: decimalToNumber(m.monto), moneda: m.moneda,
+          project: m.project, supplier: m.supplier,
+        })),
+      };
+    });
+
+    app.get("/finance/reports/by-project/:projectId", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
+      const project = await prisma.project.findFirst({ where: { id: projectId, deletedAt: null }, select: { id: true, clientName: true, code: true } });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+
+      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } });
+      const fallbackRate = lastRate ? (decimalToNumber(lastRate.usdToUyu) ?? 1) : 1;
+
+      const movements = await prisma.financeMovement.findMany({
+        where: { projectId, deletedAt: null },
+        include: { subcategoria: { select: { id: true, nombre: true } }, supplier: { select: { id: true, nombre: true } } },
+        orderBy: { fecha: "desc" },
+      });
+
+      function toUsd(monto: Prisma.Decimal, moneda: Moneda, tipoCambio: Prisma.Decimal | null): number {
+        const amount = decimalToNumber(monto) ?? 0;
+        if (moneda === Moneda.USD) return amount;
+        const rate = tipoCambio ? (decimalToNumber(tipoCambio) ?? fallbackRate) : fallbackRate;
+        return rate > 0 ? amount / rate : amount;
+      }
+
+      let totalIngresos = 0, totalGastos = 0;
+      for (const m of movements) {
+        const usd = toUsd(m.monto, m.moneda, m.tipoCambio);
+        if (m.tipoMovimiento === TipoMovimiento.INGRESO) totalIngresos += usd;
+        else totalGastos += usd;
+      }
+
+      return {
+        project,
+        totalIngresos,
+        totalGastos,
+        resultadoNeto: totalIngresos - totalGastos,
+        movimientos: movements.map((m) => ({
+          id: m.id, fecha: serializeDate(m.fecha), descripcion: m.descripcion,
+          tipoMovimiento: m.tipoMovimiento, categoriaPrincipal: m.categoriaPrincipal,
+          monto: decimalToNumber(m.monto), moneda: m.moneda,
+          subcategoria: m.subcategoria, supplier: m.supplier,
+          pagado: m.pagado, cobrado: m.cobrado,
+        })),
+      };
+    });
+
+    // ─── Stock: Products ──────────────────────────────────────────────────────
+
+    const stockProductCreateSchema = z.object({
+      nombre: z.string().min(1),
+      descripcion: z.string().optional(),
+      categoria: z.string().min(1),
+      unidad: z.string().default("unidad"),
+      stockMinimo: z.coerce.number().min(0).default(0),
+      costoPromedio: z.coerce.number().min(0).default(0),
+      moneda: z.nativeEnum(Moneda).default(Moneda.USD),
+      notas: z.string().optional(),
+    }).strict();
+
+    const stockProductPatchSchema = z.object({
+      nombre: z.string().min(1).optional(),
+      descripcion: z.string().nullable().optional(),
+      categoria: z.string().min(1).optional(),
+      unidad: z.string().optional(),
+      stockMinimo: z.coerce.number().min(0).optional(),
+      costoPromedio: z.coerce.number().min(0).optional(),
+      moneda: z.nativeEnum(Moneda).optional(),
+      notas: z.string().nullable().optional(),
+      activo: z.boolean().optional(),
+    }).strict();
+
+    app.get("/stock/products", { preHandler: authorize(Module.STOCK, Action.VIEW) }, async (request) => {
+      const query = z.object({
+        categoria: z.string().optional(),
+        activo: z.enum(["true", "false"]).optional(),
+      }).parse(request.query);
+      const activo = query.activo === undefined ? true : query.activo === "true";
+
+      const products = await prisma.stockProduct.findMany({
+        where: { deletedAt: null, activo, ...(query.categoria ? { categoria: query.categoria } : {}) },
+        orderBy: [{ categoria: "asc" }, { nombre: "asc" }],
+      });
+
+      return products.map((p) => ({
+        id: p.id, nombre: p.nombre, descripcion: p.descripcion, categoria: p.categoria,
+        unidad: p.unidad, moneda: p.moneda, activo: p.activo, notas: p.notas,
+        stockActual: decimalToNumber(p.stockActual),
+        stockMinimo: decimalToNumber(p.stockMinimo),
+        costoPromedio: decimalToNumber(p.costoPromedio),
+        bajominimo: (decimalToNumber(p.stockActual) ?? 0) <= (decimalToNumber(p.stockMinimo) ?? 0),
+        createdAt: serializeDate(p.createdAt),
+        updatedAt: serializeDate(p.updatedAt),
+      }));
+    });
+
+    app.post("/stock/products", { preHandler: authorize(Module.STOCK, Action.CREATE) }, async (request) => {
+      const user = ensureUser(request);
+      const body = stockProductCreateSchema.parse(request.body);
+      const product = await prisma.stockProduct.create({
+        data: {
+          ...body,
+          stockMinimo: new Prisma.Decimal(body.stockMinimo),
+          costoPromedio: new Prisma.Decimal(body.costoPromedio),
+          stockActual: new Prisma.Decimal(0),
+        },
+      });
+      await createAuditEntry({
+        entityType: AuditEntityType.stock_product,
+        entityId: product.id,
+        userId: user.id,
+        action: AuditAction.created,
+        description: `Creó producto de stock: ${product.nombre}`,
+      });
+      return { ...product, stockActual: decimalToNumber(product.stockActual), stockMinimo: decimalToNumber(product.stockMinimo), costoPromedio: decimalToNumber(product.costoPromedio) };
+    });
+
+    app.patch("/stock/products/:id", { preHandler: authorize(Module.STOCK, Action.EDIT) }, async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const body = stockProductPatchSchema.parse(request.body);
+      const existing = await prisma.stockProduct.findFirst({ where: { id, deletedAt: null } });
+      if (!existing) throw notFound("PRODUCT_NOT_FOUND", "Producto no encontrado");
+
+      const updateData: Record<string, unknown> = { ...body };
+      if (body.stockMinimo !== undefined) updateData.stockMinimo = new Prisma.Decimal(body.stockMinimo);
+      if (body.costoPromedio !== undefined) updateData.costoPromedio = new Prisma.Decimal(body.costoPromedio);
+
+      const updated = await prisma.stockProduct.update({ where: { id }, data: updateData });
+      await createAuditEntry({
+        entityType: AuditEntityType.stock_product,
+        entityId: id,
+        userId: user.id,
+        action: AuditAction.updated,
+        description: `Actualizó producto de stock: ${existing.nombre}`,
+      });
+      return { ...updated, stockActual: decimalToNumber(updated.stockActual), stockMinimo: decimalToNumber(updated.stockMinimo), costoPromedio: decimalToNumber(updated.costoPromedio) };
+    });
+
+    app.delete("/stock/products/:id", { preHandler: authorize(Module.STOCK, Action.DELETE) }, async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const existing = await prisma.stockProduct.findFirst({ where: { id, deletedAt: null } });
+      if (!existing) throw notFound("PRODUCT_NOT_FOUND", "Producto no encontrado");
+      await prisma.stockProduct.update({ where: { id }, data: { deletedAt: new Date() } });
+      await createAuditEntry({
+        entityType: AuditEntityType.stock_product,
+        entityId: id,
+        userId: user.id,
+        action: AuditAction.deleted,
+        description: `Eliminó producto de stock: ${existing.nombre}`,
+      });
+      return { success: true };
+    });
+
+    // ─── Stock: Movements ─────────────────────────────────────────────────────
+
+    app.get("/stock/movements", { preHandler: authorize(Module.STOCK, Action.VIEW) }, async (request) => {
+      const query = z.object({
+        productId: z.string().optional(),
+        projectId: z.string().optional(),
+        tipo: z.nativeEnum(TipoMovimientoStock).optional(),
+        page: z.coerce.number().int().positive().optional(),
+        limit: z.coerce.number().int().positive().max(100).optional(),
+      }).parse(request.query);
+
+      const take = query.limit ?? 20;
+      const skip = ((query.page ?? 1) - 1) * take;
+
+      const [movements, total] = await prisma.$transaction([
+        prisma.stockMovement.findMany({
+          where: {
+            ...(query.productId ? { productId: query.productId } : {}),
+            ...(query.projectId ? { projectId: query.projectId } : {}),
+            ...(query.tipo ? { tipo: query.tipo } : {}),
+          },
+          include: {
+            product: { select: { id: true, nombre: true, categoria: true, unidad: true } },
+            supplier: { select: { id: true, nombre: true } },
+            project: { select: { id: true, clientName: true, code: true } },
+          },
+          orderBy: { fecha: "desc" },
+          skip,
+          take,
+        }),
+        prisma.stockMovement.count({
+          where: {
+            ...(query.productId ? { productId: query.productId } : {}),
+            ...(query.projectId ? { projectId: query.projectId } : {}),
+            ...(query.tipo ? { tipo: query.tipo } : {}),
+          },
+        }),
+      ]);
+
+      return {
+        data: movements.map((m) => ({
+          ...m,
+          cantidad: decimalToNumber(m.cantidad),
+          costoUnitario: m.costoUnitario ? decimalToNumber(m.costoUnitario) : null,
+          costoTotal: m.costoTotal ? decimalToNumber(m.costoTotal) : null,
+          stockResultante: decimalToNumber(m.stockResultante),
+          fecha: serializeDate(m.fecha),
+          createdAt: serializeDate(m.createdAt),
+        })),
+        total,
+        page: query.page ?? 1,
+        limit: take,
+        totalPages: Math.ceil(total / take),
+      };
+    });
+
+    app.post("/stock/movements", { preHandler: authorize(Module.STOCK, Action.CREATE) }, async (request) => {
+      const user = ensureUser(request);
+      const body = z.object({
+        fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        productId: z.string().min(1),
+        tipo: z.nativeEnum(TipoMovimientoStock),
+        cantidad: z.coerce.number().positive(),
+        costoUnitario: z.coerce.number().min(0).optional(),
+        moneda: z.nativeEnum(Moneda).default(Moneda.USD),
+        supplierId: z.string().optional(),
+        projectId: z.string().optional(),
+        financeMovementId: z.string().optional(),
+        referencia: z.string().optional(),
+        observaciones: z.string().optional(),
+      }).strict().parse(request.body);
+
+      const product = await prisma.stockProduct.findFirst({ where: { id: body.productId, deletedAt: null } });
+      if (!product) throw notFound("PRODUCT_NOT_FOUND", "Producto no encontrado");
+
+      const stockActual = decimalToNumber(product.stockActual) ?? 0;
+      const costoActual = decimalToNumber(product.costoPromedio) ?? 0;
+      let nuevoStock: number;
+      let nuevoCostoPromedio = costoActual;
+      let descripcion: string;
+
+      if (body.tipo === TipoMovimientoStock.INGRESO) {
+        nuevoStock = stockActual + body.cantidad;
+        if (body.costoUnitario && body.costoUnitario > 0) {
+          nuevoCostoPromedio = stockActual > 0
+            ? (stockActual * costoActual + body.cantidad * body.costoUnitario) / nuevoStock
+            : body.costoUnitario;
+        }
+        descripcion = `Ingreso de ${body.cantidad} ${product.unidad} de ${product.nombre}`;
+      } else if (body.tipo === TipoMovimientoStock.EGRESO) {
+        if (stockActual < body.cantidad) {
+          throw badRequest("INSUFFICIENT_STOCK", `Stock insuficiente. Disponible: ${stockActual} ${product.unidad}`);
+        }
+        nuevoStock = stockActual - body.cantidad;
+        descripcion = `Egreso de ${body.cantidad} ${product.unidad} de ${product.nombre}`;
+      } else {
+        nuevoStock = body.cantidad;
+        descripcion = `Ajuste de stock de ${product.nombre} a ${body.cantidad} ${product.unidad}`;
+      }
+
+      const costoTotal = body.costoUnitario ? body.cantidad * body.costoUnitario : null;
+
+      const [stockMovement] = await prisma.$transaction([
+        prisma.stockMovement.create({
+          data: {
+            fecha: new Date(body.fecha),
+            productId: body.productId,
+            tipo: body.tipo,
+            cantidad: new Prisma.Decimal(body.cantidad),
+            costoUnitario: body.costoUnitario ? new Prisma.Decimal(body.costoUnitario) : null,
+            costoTotal: costoTotal ? new Prisma.Decimal(costoTotal) : null,
+            moneda: body.moneda,
+            stockResultante: new Prisma.Decimal(nuevoStock),
+            supplierId: body.supplierId,
+            projectId: body.projectId,
+            financeMovementId: body.financeMovementId,
+            referencia: body.referencia,
+            observaciones: body.observaciones,
+          },
+        }),
+        prisma.stockProduct.update({
+          where: { id: body.productId },
+          data: {
+            stockActual: new Prisma.Decimal(nuevoStock),
+            costoPromedio: new Prisma.Decimal(nuevoCostoPromedio.toFixed(4)),
+          },
+        }),
+      ]);
+
+      await createAuditEntry({
+        entityType: AuditEntityType.stock_movement,
+        entityId: stockMovement.id,
+        projectId: body.projectId,
+        userId: user.id,
+        action: AuditAction.created,
+        description: descripcion,
+      });
+
+      return {
+        ...stockMovement,
+        cantidad: decimalToNumber(stockMovement.cantidad),
+        costoUnitario: stockMovement.costoUnitario ? decimalToNumber(stockMovement.costoUnitario) : null,
+        costoTotal: stockMovement.costoTotal ? decimalToNumber(stockMovement.costoTotal) : null,
+        stockResultante: decimalToNumber(stockMovement.stockResultante),
+        nuevoStockActual: nuevoStock,
+        nuevoCostoPromedio,
+      };
+    });
+
+    app.get("/stock/products/:id/movements", { preHandler: authorize(Module.STOCK, Action.VIEW) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const query = z.object({
+        page: z.coerce.number().int().positive().optional(),
+        limit: z.coerce.number().int().positive().max(100).optional(),
+      }).parse(request.query);
+
+      const take = query.limit ?? 20;
+      const skip = ((query.page ?? 1) - 1) * take;
+
+      const product = await prisma.stockProduct.findFirst({ where: { id, deletedAt: null } });
+      if (!product) throw notFound("PRODUCT_NOT_FOUND", "Producto no encontrado");
+
+      const [movements, total] = await prisma.$transaction([
+        prisma.stockMovement.findMany({
+          where: { productId: id },
+          include: {
+            supplier: { select: { id: true, nombre: true } },
+            project: { select: { id: true, clientName: true, code: true } },
+          },
+          orderBy: { fecha: "desc" },
+          skip,
+          take,
+        }),
+        prisma.stockMovement.count({ where: { productId: id } }),
+      ]);
+
+      return {
+        product: {
+          id: product.id, nombre: product.nombre, categoria: product.categoria,
+          unidad: product.unidad, stockActual: decimalToNumber(product.stockActual),
+        },
+        data: movements.map((m) => ({
+          id: m.id, fecha: serializeDate(m.fecha), tipo: m.tipo,
+          cantidad: decimalToNumber(m.cantidad),
+          costoUnitario: m.costoUnitario ? decimalToNumber(m.costoUnitario) : null,
+          costoTotal: m.costoTotal ? decimalToNumber(m.costoTotal) : null,
+          stockResultante: decimalToNumber(m.stockResultante),
+          supplier: m.supplier, project: m.project,
+          referencia: m.referencia, observaciones: m.observaciones,
+          createdAt: serializeDate(m.createdAt),
+        })),
+        total, page: query.page ?? 1, limit: take, totalPages: Math.ceil(total / take),
+      };
+    });
+
+    app.get("/stock/alerts", { preHandler: authorize(Module.STOCK, Action.VIEW) }, async () => {
+      const products = await prisma.stockProduct.findMany({
+        where: { deletedAt: null, activo: true },
+        orderBy: { stockActual: "asc" },
+      });
+
+      const alerts = products
+        .filter((p) => (decimalToNumber(p.stockActual) ?? 0) <= (decimalToNumber(p.stockMinimo) ?? 0))
+        .map((p) => {
+          const actual = decimalToNumber(p.stockActual) ?? 0;
+          const minimo = decimalToNumber(p.stockMinimo) ?? 0;
+          return {
+            id: p.id, nombre: p.nombre, categoria: p.categoria, unidad: p.unidad,
+            stockActual: actual, stockMinimo: minimo, moneda: p.moneda,
+            ratio: minimo > 0 ? actual / minimo : 0,
+          };
+        })
+        .sort((a, b) => a.ratio - b.ratio);
+
+      return alerts;
     });
   }
 }

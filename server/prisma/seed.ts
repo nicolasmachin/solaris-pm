@@ -3,11 +3,16 @@ import {
   Action,
   AuditAction,
   AuditEntityType,
+  CategoriaPrincipal,
+  EstadoAprobacion,
+  EstadoComprobante,
   GoalArea,
   GoalMetric,
   GoalPeriod,
+  MetodoPago,
   ModalidadPago,
   Module,
+  Moneda,
   NotificationType,
   PhaseType,
   Prisma,
@@ -21,6 +26,9 @@ import {
   SubstageStatus,
   TaskPriority,
   TaskStatus,
+  TipoComprobante,
+  TipoMovimiento,
+  TipoMovimientoStock,
   TipoObra,
 } from "@prisma/client";
 
@@ -74,12 +82,25 @@ async function resetDatabase() {
   await prisma.setting.deleteMany();
   await prisma.permission.deleteMany();
   await prisma.solarSystem.deleteMany();
+  // Finance & Stock
+  await prisma.financeApprovalHistory.deleteMany();
+  await prisma.financeComprobantePayment.deleteMany();
+  await prisma.financePayment.deleteMany();
+  await prisma.stockMovement.deleteMany();
+  await prisma.financeComprobante.deleteMany();
+  await prisma.financeMovement.deleteMany();
+  await prisma.exchangeRate.deleteMany();
+  await prisma.financeSubcategory.deleteMany();
+  await prisma.financeApprovalRule.deleteMany();
+  await prisma.stockProduct.deleteMany();
+  await prisma.supplier.deleteMany();
+  await prisma.goal.deleteMany();
   await prisma.project.deleteMany();
   await prisma.user.deleteMany();
 }
 
 async function createUsers() {
-  const password = await bcrypt.hash("Admin1234", 10);
+  const password = await bcrypt.hash("Y1025Voltia", 10);
 
   const admin = await prisma.user.create({
     data: {
@@ -121,7 +142,17 @@ async function createUsers() {
     },
   });
 
-  return { admin, operations, comercial, ingeniero };
+  const finanzas = await prisma.user.create({
+    data: {
+      email: "finanzas@voltiapm.com",
+      password,
+      name: "Responsable Finanzas",
+      role: Role.FINANZAS,
+      avatarUrl: null,
+    },
+  });
+
+  return { admin, operations, comercial, ingeniero, finanzas };
 }
 
 async function seedPermissions() {
@@ -134,7 +165,7 @@ async function seedPermissions() {
     { role: Role.ADMIN, module: Module.HABILITACION,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { role: Role.ADMIN, module: Module.POSTVENTA,      actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { role: Role.ADMIN, module: Module.METRICAS,       actions: [Action.VIEW] },
-    { role: Role.ADMIN, module: Module.CONFIGURACION,  actions: [Action.VIEW, Action.EDIT] },
+    { role: Role.ADMIN, module: Module.CONFIGURACION,  actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { role: Role.ADMIN, module: Module.USUARIOS,       actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
 
     // ASESOR_COMERCIAL — ventas y onboarding, sin acceso a métricas
@@ -153,6 +184,10 @@ async function seedPermissions() {
     { role: Role.INGENIERIA, module: Module.POSTVENTA,     actions: [Action.VIEW] },
     { role: Role.INGENIERIA, module: Module.METRICAS,      actions: [Action.VIEW] },
 
+    // ADMIN — finanzas y stock
+    { role: Role.ADMIN, module: Module.FINANZAS, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { role: Role.ADMIN, module: Module.STOCK,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+
     // OPERACIONES — operaciones y habilitación completas, resto lectura
     { role: Role.OPERACIONES, module: Module.VENTAS,        actions: [Action.VIEW] },
     { role: Role.OPERACIONES, module: Module.ONBOARDING,    actions: [Action.VIEW, Action.COMMENT] },
@@ -161,6 +196,11 @@ async function seedPermissions() {
     { role: Role.OPERACIONES, module: Module.HABILITACION,  actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
     { role: Role.OPERACIONES, module: Module.POSTVENTA,     actions: [Action.VIEW, Action.COMMENT] },
     { role: Role.OPERACIONES, module: Module.METRICAS,      actions: [Action.VIEW] },
+    { role: Role.OPERACIONES, module: Module.STOCK,         actions: [Action.VIEW] },
+
+    // FINANZAS — acceso completo a finanzas y stock
+    { role: Role.FINANZAS, module: Module.FINANZAS, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { role: Role.FINANZAS, module: Module.STOCK,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
   ];
 
   for (const entry of matrix) {
@@ -1672,6 +1712,7 @@ async function run() {
   await seedSettings(admin.id);
   await seedLeads(comercial.id, admin.id, project1Id);
   await seedGoals(admin.id);
+  await seedFinanceAndStock(admin.id, project1Id, project2Id, project3Id);
 
   // Para seedComments necesitamos IDs de una etapa y una tarea del project1
   const project1 = await prisma.project.findUnique({
@@ -1693,6 +1734,346 @@ async function run() {
   }
 
   console.log("Seed completado con pipeline SOP real, permisos, settings, leads, objetivos y comentarios.");
+}
+
+async function seedFinanceAndStock(
+  adminId: string,
+  project1Id: string,
+  project2Id: string,
+  project3Id: string,
+) {
+  // ExchangeRate
+  await prisma.exchangeRate.create({
+    data: {
+      usdToUyu: new Prisma.Decimal("43.50"),
+      source: "manual",
+      createdBy: adminId,
+    },
+  });
+
+  // Suppliers
+  const growatt = await prisma.supplier.create({
+    data: {
+      nombre: "Growatt Uruguay",
+      email: "growatt@example.com",
+      condicionPago: "30 días",
+    },
+  });
+  const estructuras = await prisma.supplier.create({
+    data: {
+      nombre: "Estructuras del Sur",
+      email: "estructuras@example.com",
+      condicionPago: "contado",
+    },
+  });
+  const cables = await prisma.supplier.create({
+    data: {
+      nombre: "Cables & Más",
+      email: "cables@example.com",
+      condicionPago: "15 días",
+    },
+  });
+
+  // FinanceSubcategories
+  const subCobro = await prisma.financeSubcategory.create({
+    data: { nombre: "Cobro cliente", categoria: CategoriaPrincipal.PROYECTO_ENTRADA },
+  });
+  const subMateriales = await prisma.financeSubcategory.create({
+    data: { nombre: "Materiales de obra", categoria: CategoriaPrincipal.PROYECTO_SALIDA },
+  });
+  const subManoObra = await prisma.financeSubcategory.create({
+    data: { nombre: "Mano de obra", categoria: CategoriaPrincipal.PROYECTO_SALIDA },
+  });
+  const subAlquiler = await prisma.financeSubcategory.create({
+    data: { nombre: "Alquiler", categoria: CategoriaPrincipal.FIJO },
+  });
+  const subSueldos = await prisma.financeSubcategory.create({
+    data: { nombre: "Sueldos", categoria: CategoriaPrincipal.FIJO },
+  });
+  const subCombustible = await prisma.financeSubcategory.create({
+    data: { nombre: "Combustible", categoria: CategoriaPrincipal.VARIABLE },
+  });
+  const subCompra = await prisma.financeSubcategory.create({
+    data: { nombre: "Compra paneles", categoria: CategoriaPrincipal.COMPRA_STOCK },
+  });
+  const subConsumo = await prisma.financeSubcategory.create({
+    data: { nombre: "Consumo en obra", categoria: CategoriaPrincipal.CONSUMO_STOCK },
+  });
+
+  // StockProducts
+  const paneles = await prisma.stockProduct.create({
+    data: {
+      nombre: "Panel solar 550W",
+      categoria: "Paneles",
+      unidad: "unidad",
+      stockActual: new Prisma.Decimal("45"),
+      stockMinimo: new Prisma.Decimal("10"),
+      costoPromedio: new Prisma.Decimal("185.00"),
+      moneda: Moneda.USD,
+    },
+  });
+  const inversores = await prisma.stockProduct.create({
+    data: {
+      nombre: "Inversor Growatt 5kW",
+      categoria: "Inversores",
+      unidad: "unidad",
+      stockActual: new Prisma.Decimal("8"),
+      stockMinimo: new Prisma.Decimal("2"),
+      costoPromedio: new Prisma.Decimal("950.00"),
+      moneda: Moneda.USD,
+    },
+  });
+  const cable = await prisma.stockProduct.create({
+    data: {
+      nombre: "Cable DC 6mm",
+      categoria: "Cables",
+      unidad: "metro",
+      stockActual: new Prisma.Decimal("500"),
+      stockMinimo: new Prisma.Decimal("100"),
+      costoPromedio: new Prisma.Decimal("2.50"),
+      moneda: Moneda.USD,
+    },
+  });
+  const estructura = await prisma.stockProduct.create({
+    data: {
+      nombre: "Estructura aluminio",
+      categoria: "Estructuras",
+      unidad: "kit",
+      stockActual: new Prisma.Decimal("15"),
+      stockMinimo: new Prisma.Decimal("5"),
+      costoPromedio: new Prisma.Decimal("320.00"),
+      moneda: Moneda.USD,
+    },
+  });
+  const disyuntor = await prisma.stockProduct.create({
+    data: {
+      nombre: "Disyuntor 32A",
+      categoria: "Protecciones",
+      unidad: "unidad",
+      stockActual: new Prisma.Decimal("30"),
+      stockMinimo: new Prisma.Decimal("10"),
+      costoPromedio: new Prisma.Decimal("18.00"),
+      moneda: Moneda.USD,
+    },
+  });
+
+  // FinanceMovements — 3 ingresos vinculados a proyectos
+  const mov1 = await prisma.financeMovement.create({
+    data: {
+      fecha: new Date("2026-02-10"),
+      mes: 2,
+      anio: 2026,
+      tipoMovimiento: TipoMovimiento.INGRESO,
+      categoriaPrincipal: CategoriaPrincipal.PROYECTO_ENTRADA,
+      subcategoriaId: subCobro.id,
+      descripcion: "Cobro anticipo proyecto P1",
+      monto: new Prisma.Decimal("8500.00"),
+      moneda: Moneda.USD,
+      cobrado: true,
+      impactaFlujo: true,
+      projectId: project1Id,
+      estadoAprobacion: EstadoAprobacion.APROBADO,
+      creadoPorId: adminId,
+    },
+  });
+  const mov2 = await prisma.financeMovement.create({
+    data: {
+      fecha: new Date("2026-03-05"),
+      mes: 3,
+      anio: 2026,
+      tipoMovimiento: TipoMovimiento.INGRESO,
+      categoriaPrincipal: CategoriaPrincipal.PROYECTO_ENTRADA,
+      subcategoriaId: subCobro.id,
+      descripcion: "Cobro saldo proyecto P2",
+      monto: new Prisma.Decimal("12000.00"),
+      moneda: Moneda.USD,
+      cobrado: true,
+      impactaFlujo: true,
+      projectId: project2Id,
+      estadoAprobacion: EstadoAprobacion.APROBADO,
+      creadoPorId: adminId,
+    },
+  });
+  const mov3 = await prisma.financeMovement.create({
+    data: {
+      fecha: new Date("2026-03-20"),
+      mes: 3,
+      anio: 2026,
+      tipoMovimiento: TipoMovimiento.INGRESO,
+      categoriaPrincipal: CategoriaPrincipal.PROYECTO_ENTRADA,
+      subcategoriaId: subCobro.id,
+      descripcion: "Cobro anticipo proyecto P3",
+      monto: new Prisma.Decimal("6200.00"),
+      moneda: Moneda.USD,
+      cobrado: false,
+      impactaFlujo: true,
+      projectId: project3Id,
+      estadoAprobacion: EstadoAprobacion.REGISTRADO,
+      creadoPorId: adminId,
+    },
+  });
+
+  // FinanceMovements — 3 gastos fijos sin proyecto
+  await prisma.financeMovement.create({
+    data: {
+      fecha: new Date("2026-02-01"),
+      mes: 2,
+      anio: 2026,
+      tipoMovimiento: TipoMovimiento.GASTO,
+      categoriaPrincipal: CategoriaPrincipal.FIJO,
+      subcategoriaId: subAlquiler.id,
+      descripcion: "Alquiler oficina febrero",
+      monto: new Prisma.Decimal("1200.00"),
+      moneda: Moneda.USD,
+      pagado: true,
+      impactaFlujo: true,
+      estadoAprobacion: EstadoAprobacion.APROBADO,
+      creadoPorId: adminId,
+    },
+  });
+  await prisma.financeMovement.create({
+    data: {
+      fecha: new Date("2026-02-28"),
+      mes: 2,
+      anio: 2026,
+      tipoMovimiento: TipoMovimiento.GASTO,
+      categoriaPrincipal: CategoriaPrincipal.FIJO,
+      subcategoriaId: subSueldos.id,
+      descripcion: "Sueldos febrero",
+      monto: new Prisma.Decimal("5800.00"),
+      moneda: Moneda.USD,
+      pagado: true,
+      impactaFlujo: true,
+      estadoAprobacion: EstadoAprobacion.APROBADO,
+      creadoPorId: adminId,
+    },
+  });
+  await prisma.financeMovement.create({
+    data: {
+      fecha: new Date("2026-03-31"),
+      mes: 3,
+      anio: 2026,
+      tipoMovimiento: TipoMovimiento.GASTO,
+      categoriaPrincipal: CategoriaPrincipal.FIJO,
+      subcategoriaId: subSueldos.id,
+      descripcion: "Sueldos marzo",
+      monto: new Prisma.Decimal("5800.00"),
+      moneda: Moneda.USD,
+      pagado: false,
+      impactaFlujo: true,
+      estadoAprobacion: EstadoAprobacion.PENDIENTE_APROBACION,
+      creadoPorId: adminId,
+    },
+  });
+
+  // FinanceMovements — 2 gastos variables
+  await prisma.financeMovement.create({
+    data: {
+      fecha: new Date("2026-03-10"),
+      mes: 3,
+      anio: 2026,
+      tipoMovimiento: TipoMovimiento.GASTO,
+      categoriaPrincipal: CategoriaPrincipal.VARIABLE,
+      subcategoriaId: subCombustible.id,
+      descripcion: "Combustible camioneta marzo",
+      monto: new Prisma.Decimal("340.00"),
+      moneda: Moneda.USD,
+      pagado: true,
+      impactaFlujo: true,
+      estadoAprobacion: EstadoAprobacion.REGISTRADO,
+      creadoPorId: adminId,
+    },
+  });
+  await prisma.financeMovement.create({
+    data: {
+      fecha: new Date("2026-03-15"),
+      mes: 3,
+      anio: 2026,
+      tipoMovimiento: TipoMovimiento.GASTO,
+      categoriaPrincipal: CategoriaPrincipal.PROYECTO_SALIDA,
+      subcategoriaId: subManoObra.id,
+      descripcion: "Subcontrato instalación eléctrica P1",
+      monto: new Prisma.Decimal("1500.00"),
+      moneda: Moneda.USD,
+      pagado: false,
+      impactaFlujo: true,
+      projectId: project1Id,
+      estadoAprobacion: EstadoAprobacion.REGISTRADO,
+      creadoPorId: adminId,
+    },
+  });
+
+  // FinanceMovements — 2 compras de stock
+  const movStock1 = await prisma.financeMovement.create({
+    data: {
+      fecha: new Date("2026-02-15"),
+      mes: 2,
+      anio: 2026,
+      tipoMovimiento: TipoMovimiento.GASTO,
+      categoriaPrincipal: CategoriaPrincipal.COMPRA_STOCK,
+      subcategoriaId: subCompra.id,
+      descripcion: "Compra 20 paneles 550W - Growatt",
+      monto: new Prisma.Decimal("3700.00"),
+      moneda: Moneda.USD,
+      pagado: true,
+      impactaFlujo: true,
+      supplierId: growatt.id,
+      estadoAprobacion: EstadoAprobacion.APROBADO,
+      creadoPorId: adminId,
+    },
+  });
+  const movStock2 = await prisma.financeMovement.create({
+    data: {
+      fecha: new Date("2026-03-01"),
+      mes: 3,
+      anio: 2026,
+      tipoMovimiento: TipoMovimiento.GASTO,
+      categoriaPrincipal: CategoriaPrincipal.COMPRA_STOCK,
+      subcategoriaId: subCompra.id,
+      descripcion: "Compra 5 kits estructura aluminio",
+      monto: new Prisma.Decimal("1600.00"),
+      moneda: Moneda.USD,
+      pagado: true,
+      impactaFlujo: true,
+      supplierId: estructuras.id,
+      estadoAprobacion: EstadoAprobacion.APROBADO,
+      creadoPorId: adminId,
+    },
+  });
+
+  // StockMovements vinculados a las compras
+  await prisma.stockMovement.create({
+    data: {
+      fecha: new Date("2026-02-15"),
+      productId: paneles.id,
+      tipo: TipoMovimientoStock.INGRESO,
+      cantidad: new Prisma.Decimal("20"),
+      costoUnitario: new Prisma.Decimal("185.00"),
+      costoTotal: new Prisma.Decimal("3700.00"),
+      moneda: Moneda.USD,
+      stockResultante: new Prisma.Decimal("45"),
+      supplierId: growatt.id,
+      financeMovementId: movStock1.id,
+      referencia: "OC-2026-001",
+    },
+  });
+  await prisma.stockMovement.create({
+    data: {
+      fecha: new Date("2026-03-01"),
+      productId: estructura.id,
+      tipo: TipoMovimientoStock.INGRESO,
+      cantidad: new Prisma.Decimal("5"),
+      costoUnitario: new Prisma.Decimal("320.00"),
+      costoTotal: new Prisma.Decimal("1600.00"),
+      moneda: Moneda.USD,
+      stockResultante: new Prisma.Decimal("15"),
+      supplierId: estructuras.id,
+      financeMovementId: movStock2.id,
+      referencia: "OC-2026-002",
+    },
+  });
+
+  console.log("Finance & Stock seed completado.");
 }
 
 run()

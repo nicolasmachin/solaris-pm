@@ -59,11 +59,6 @@ export function Dashboard() {
         </div>
       )}
 
-      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl px-6 py-5">
-        <p className="text-sm text-[var(--color-text-muted)]">
-          Vista completa disponible en Etapa 6
-        </p>
-      </div>
     </div>
   );
 }

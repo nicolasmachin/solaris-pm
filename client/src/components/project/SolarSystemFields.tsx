@@ -139,6 +139,15 @@ function Field({
   );
 }
 
+export function validateSolarSystem(form: SolarSystemFormValues) {
+  const errors: Partial<Record<keyof SolarSystemFormValues, string>> = {};
+  if (!form.panelQuantity || Number(form.panelQuantity) <= 0) errors.panelQuantity = "Requerido";
+  if (!form.panelPowerW || Number(form.panelPowerW) <= 0) errors.panelPowerW = "Requerido";
+  if (!form.inverterBrand?.trim()) errors.inverterBrand = "Requerido";
+  if (!form.inverterPowerKw || Number(form.inverterPowerKw) <= 0) errors.inverterPowerKw = "Requerido";
+  return errors;
+}
+
 export function SolarSystemFields({
   form,
   onChange,
@@ -168,13 +177,13 @@ export function SolarSystemFields({
           Inversor
         </p>
         <div className="grid gap-3 md:grid-cols-2">
-          <Field label="Marca" error={errors.inverterBrand}>
+          <Field label="Marca *" error={errors.inverterBrand}>
             <input className={input(!!errors.inverterBrand)} value={form.inverterBrand} onChange={bind("inverterBrand")} placeholder="Growatt" />
           </Field>
           <Field label="Modelo">
             <input className={input()} value={form.inverterModel} onChange={bind("inverterModel")} placeholder="MID 25KTL3-X" />
           </Field>
-          <Field label="Potencia (kW)" error={errors.inverterPowerKw}>
+          <Field label="Potencia (kW) *" error={errors.inverterPowerKw}>
             <input type="number" min="0" step="0.01" className={input(!!errors.inverterPowerKw)} value={form.inverterPowerKw} onChange={bind("inverterPowerKw")} placeholder="25" />
           </Field>
           <Field label="Cantidad" error={errors.inverterQuantity}>
@@ -198,10 +207,10 @@ export function SolarSystemFields({
           Paneles
         </p>
         <div className="grid gap-3 md:grid-cols-2">
-          <Field label="Cantidad" error={errors.panelQuantity}>
+          <Field label="Cantidad *" error={errors.panelQuantity}>
             <input type="number" min="0" step="1" className={input(!!errors.panelQuantity)} value={form.panelQuantity} onChange={bind("panelQuantity")} placeholder="40" />
           </Field>
-          <Field label="Potencia por panel (W)" error={errors.panelPowerW}>
+          <Field label="Potencia por panel (W) *" error={errors.panelPowerW}>
             <input type="number" min="0" step="1" className={input(!!errors.panelPowerW)} value={form.panelPowerW} onChange={bind("panelPowerW")} placeholder="550" />
           </Field>
           <Field label="Marca">

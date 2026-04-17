@@ -18,6 +18,11 @@ const Settings = lazy(() => import("./pages/Settings").then((module) => ({ defau
 const Admin = lazy(() => import("./pages/Admin").then((module) => ({ default: module.Admin })));
 const Notifications = lazy(() => import("./pages/Notifications").then((module) => ({ default: module.Notifications })));
 const NotFound = lazy(() => import("./pages/NotFound").then((module) => ({ default: module.NotFound })));
+const Finance = lazy(() => import("./pages/Finance").then((module) => ({ default: module.Finance })));
+const FinanceMovements = lazy(() => import("./pages/FinanceMovements").then((module) => ({ default: module.FinanceMovements })));
+const FinanceSuppliers = lazy(() => import("./pages/FinanceSuppliers").then((module) => ({ default: module.FinanceSuppliers })));
+const FinanceReports = lazy(() => import("./pages/FinanceReports").then((module) => ({ default: module.FinanceReports })));
+const Stock = lazy(() => import("./pages/Stock").then((module) => ({ default: module.Stock })));
 
 function RouteFallback() {
   return (
@@ -133,6 +138,46 @@ export function App() {
           element={
             <PermissionRoute module="USUARIOS" action="VIEW">
               <Admin />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/finanzas"
+          element={
+            <PermissionRoute module="FINANZAS" action="VIEW">
+              <Finance />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/finanzas/movimientos"
+          element={
+            <PermissionRoute module="FINANZAS" action="VIEW">
+              <FinanceMovements />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/finanzas/proveedores"
+          element={
+            <PermissionRoute module="FINANZAS" action="VIEW">
+              <FinanceSuppliers />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/finanzas/reportes"
+          element={
+            <PermissionRoute module="FINANZAS" action="VIEW">
+              <FinanceReports />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/stock"
+          element={
+            <PermissionRoute module="STOCK" action="VIEW">
+              <Stock />
             </PermissionRoute>
           }
         />

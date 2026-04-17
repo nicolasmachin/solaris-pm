@@ -34,12 +34,17 @@ export async function createProject(body: {
   budgetUsd: number;
   startDate?: string;
   estimatedMwhYear?: number;
+  salespersonId?: string;
   notificationEmail?: string;
   notificationPhone?: string;
   solarSystem?: SolarSystemPayload;
 }): Promise<Project> {
   const { data } = await apiClient.post<Project>("/api/projects", body);
   return data;
+}
+
+export async function deleteProject(id: string): Promise<void> {
+  await apiClient.delete(`/api/projects/${id}`);
 }
 
 export async function patchProject(
