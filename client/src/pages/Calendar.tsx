@@ -18,13 +18,16 @@ import {
   confirmSchedule,
   createSchedule,
   deleteSchedule,
-  getCalendar,
+  getCalendarMonth,
+  getCalendarYear,
   getCalendarTeams,
   patchSchedule,
   type InstallationSchedule,
 } from "../api/calendar.api";
 import { getProjects } from "../api/projects.api";
 import { Button } from "../components/ui/Button";
+
+type CalendarView = "month" | "year";
 
 const TEAM_COLORS: string[] = [
   "#378ADD",
@@ -34,6 +37,12 @@ const TEAM_COLORS: string[] = [
   "#BA7517",
   "#888780",
 ];
+
+const COMPLETED_COLOR = "#9AA0A6";
+
+function effectiveColor(schedule: InstallationSchedule): string {
+  return schedule.operationsCompleted ? COMPLETED_COLOR : schedule.teamColor;
+}
 
 const MONTHS_ES = [
   "enero",
@@ -53,6 +62,16 @@ const MONTHS_ES = [
 const MONTHS_ES_CAP = MONTHS_ES.map((m) => m.charAt(0).toUpperCase() + m.slice(1));
 
 const DAY_HEADERS = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"];
+
+const DAY_NAMES_LONG = [
+  "domingo",
+  "lunes",
+  "martes",
+  "miércoles",
+  "jueves",
+  "viernes",
+  "sábado",
+];
 
 // ─── Helpers de fechas (UTC) ──────────────────────────────────────────────────
 
@@ -92,16 +111,20 @@ function getWeeksForMonth(year: number, month: number): Date[] {
   return weeks;
 }
 
-function formatWeekLabel(weekStart: Date): string {
-  const end = addDays(weekStart, 4);
-  const startDay = weekStart.getUTCDate();
-  const endDay = end.getUTCDate();
-  const startMonth = MONTHS_ES[weekStart.getUTCMonth()];
-  const endMonth = MONTHS_ES[end.getUTCMonth()];
-  if (weekStart.getUTCMonth() !== end.getUTCMonth()) {
-    return `${startDay} de ${startMonth}–${endDay} de ${endMonth}`;
+function daysBetweenInclusive(start: Date, end: Date): number {
+  const ms = end.getTime() - start.getTime();
+  return Math.round(ms / (1000 * 60 * 60 * 24)) + 1;
+}
+
+function businessDaysInclusive(start: Date, end: Date): number {
+  let count = 0;
+  const cursor = new Date(start);
+  while (cursor.getTime() <= end.getTime()) {
+    const dow = cursor.getUTCDay();
+    if (dow !== 0 && dow !== 6) count++;
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
-  return `${startDay}–${endDay} de ${endMonth}`;
+  return count;
 }
 
 function formatMonthTitle(year: number, month: number): string {
@@ -110,6 +133,29 @@ function formatMonthTitle(year: number, month: number): string {
 
 function formatShortMonthName(month: number): string {
   return MONTHS_ES[month - 1];
+}
+
+function formatLongDate(date: Date): string {
+  const dayName = DAY_NAMES_LONG[date.getUTCDay()];
+  const day = date.getUTCDate();
+  const month = MONTHS_ES[date.getUTCMonth()];
+  return `${dayName} ${day} de ${month}`;
+}
+
+function formatRangeShort(startIso: string, endIso: string): string {
+  const start = parseIso(startIso);
+  const end = parseIso(endIso);
+  const startDay = start.getUTCDate();
+  const endDay = end.getUTCDate();
+  const startMonth = MONTHS_ES[start.getUTCMonth()];
+  const endMonth = MONTHS_ES[end.getUTCMonth()];
+  if (startIso === endIso) {
+    return `${startDay} de ${endMonth}`;
+  }
+  if (start.getUTCMonth() === end.getUTCMonth()) {
+    return `${startDay}–${endDay} de ${endMonth}`;
+  }
+  return `${startDay} de ${startMonth}–${endDay} de ${endMonth}`;
 }
 
 function isColorDark(hex: string): boolean {
@@ -134,6 +180,20 @@ function workTypeLabel(wt: "PROPIA" | "TERCERIZADA" | null): string {
   return "Tipo de obra sin definir";
 }
 
+function scheduleCoversDay(schedule: InstallationSchedule, dayIso: string): boolean {
+  return dayIso >= schedule.plannedWorkStart && dayIso <= schedule.plannedWorkEnd;
+}
+
+function findScheduleForDay(
+  schedules: InstallationSchedule[],
+  dayIso: string,
+): InstallationSchedule | null {
+  for (const s of schedules) {
+    if (scheduleCoversDay(s, dayIso)) return s;
+  }
+  return null;
+}
+
 // ─── Página ───────────────────────────────────────────────────────────────────
 
 export function Calendar() {
@@ -144,33 +204,45 @@ export function Calendar() {
   const today = new Date();
   const [year, setYear] = useState(today.getUTCFullYear());
   const [month, setMonth] = useState(today.getUTCMonth() + 1);
-  const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
+  const [view, setView] = useState<CalendarView>("month");
+  const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
   const [showNewModal, setShowNewModal] = useState(false);
-  const [newModalPrefillWeek, setNewModalPrefillWeek] = useState<string | null>(null);
+  const [newModalPrefill, setNewModalPrefill] = useState<{ start: string; end: string } | null>(null);
   const [showReprogram, setShowReprogram] = useState(false);
   const [moveRequest, setMoveRequest] = useState<
-    | { schedule: InstallationSchedule; targetWeekStart: string }
+    | { schedule: InstallationSchedule; targetStart: string; targetEnd: string }
     | null
   >(null);
   const [draggingSchedule, setDraggingSchedule] = useState<InstallationSchedule | null>(null);
 
-  // Query param ?week=YYYY-MM-DD para preseleccionar desde ProjectDetail
+  // Query param ?start=YYYY-MM-DD para preseleccionar desde ProjectDetail
   const lastProcessedQueryRef = useRef<string | null>(null);
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const week = params.get("week");
-    if (week && week !== lastProcessedQueryRef.current) {
-      const d = parseIso(week);
+    const start = params.get("start") ?? params.get("week"); // retrocompat con ?week=
+    if (start && start !== lastProcessedQueryRef.current) {
+      const d = parseIso(start);
       setYear(d.getUTCFullYear());
       setMonth(d.getUTCMonth() + 1);
-      setSelectedWeek(week);
-      lastProcessedQueryRef.current = week;
+      setView("month");
+      lastProcessedQueryRef.current = start;
+      // Se seleccionará cuando lleguen los datos (ver efecto abajo)
+      pendingSelectStartRef.current = start;
     }
   }, [location.search]);
 
-  const calendarQuery = useQuery({
-    queryKey: ["calendar", year, month],
-    queryFn: () => getCalendar(year, month),
+  const pendingSelectStartRef = useRef<string | null>(null);
+
+  const monthQuery = useQuery({
+    queryKey: ["calendar", "month", year, month],
+    queryFn: () => getCalendarMonth(year, month),
+    enabled: view === "month",
+  });
+
+  const yearQuery = useQuery({
+    queryKey: ["calendar", "year", year],
+    queryFn: () => getCalendarYear(year),
+    enabled: view === "year",
   });
 
   const teamsQuery = useQuery({
@@ -178,24 +250,38 @@ export function Calendar() {
     queryFn: getCalendarTeams,
   });
 
-  const schedules = calendarQuery.data?.schedules ?? [];
-  const freeWeeks = calendarQuery.data?.freeWeeks ?? [];
+  const schedules = (view === "month" ? monthQuery.data?.schedules : yearQuery.data?.schedules) ?? [];
 
-  const scheduleByWeek = useMemo(() => {
+  const scheduleById = useMemo(() => {
     const map = new Map<string, InstallationSchedule>();
-    for (const s of schedules) map.set(s.weekStart, s);
+    for (const s of schedules) map.set(s.id, s);
     return map;
   }, [schedules]);
 
-  const selectedSchedule = selectedWeek ? scheduleByWeek.get(selectedWeek) ?? null : null;
+  const selectedSchedule = selectedScheduleId ? scheduleById.get(selectedScheduleId) ?? null : null;
+
+  // Al cargar datos, si hay un pending ?start=, buscar el schedule que cubre ese día
+  useEffect(() => {
+    const pending = pendingSelectStartRef.current;
+    if (!pending) return;
+    if (schedules.length === 0) return;
+    const match = schedules.find((s) => scheduleCoversDay(s, pending));
+    if (match) {
+      setSelectedScheduleId(match.id);
+    }
+    pendingSelectStartRef.current = null;
+  }, [schedules]);
 
   const moveMutation = useMutation({
-    mutationFn: (args: { id: string; weekStart: string }) =>
-      patchSchedule(args.id, { weekStart: args.weekStart }),
+    mutationFn: (args: { id: string; plannedWorkStart: string; plannedWorkEnd: string }) =>
+      patchSchedule(args.id, {
+        plannedWorkStart: args.plannedWorkStart,
+        plannedWorkEnd: args.plannedWorkEnd,
+      }),
     onSuccess: (data) => {
       toast.success("Instalación reprogramada");
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
-      setSelectedWeek(data.weekStart);
+      setSelectedScheduleId(data.id);
       setMoveRequest(null);
       setShowReprogram(false);
     },
@@ -210,7 +296,7 @@ export function Calendar() {
     onSuccess: () => {
       toast.success("Asignación eliminada");
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
-      setSelectedWeek(null);
+      setSelectedScheduleId(null);
     },
     onError: () => toast.error("No se pudo eliminar"),
   });
@@ -227,60 +313,98 @@ export function Calendar() {
 
   function handleDragEnd(e: DragEndEvent) {
     const scheduleId = String(e.active.id);
-    const targetWeek = e.over?.id != null ? String(e.over.id) : null;
+    const targetDay = e.over?.id != null ? String(e.over.id) : null;
     setDraggingSchedule(null);
-    if (!targetWeek) return;
+    if (!targetDay) return;
     const schedule = schedules.find((s) => s.id === scheduleId);
     if (!schedule) return;
-    if (schedule.weekStart === targetWeek) return;
-    setMoveRequest({ schedule, targetWeekStart: targetWeek });
+    if (schedule.plannedWorkStart === targetDay) return;
+    // Preservar duración: fin = fin anterior desplazado
+    const oldStart = parseIso(schedule.plannedWorkStart);
+    const oldEnd = parseIso(schedule.plannedWorkEnd);
+    const durationDays = daysBetweenInclusive(oldStart, oldEnd) - 1;
+    const newStart = parseIso(targetDay);
+    const newEnd = addDays(newStart, durationDays);
+    setMoveRequest({
+      schedule,
+      targetStart: formatIso(newStart),
+      targetEnd: formatIso(newEnd),
+    });
   }
 
-  function goPrevMonth() {
-    if (month === 1) {
+  function goPrev() {
+    if (view === "year") {
+      setYear(year - 1);
+    } else if (month === 1) {
       setYear(year - 1);
       setMonth(12);
     } else {
       setMonth(month - 1);
     }
-    setSelectedWeek(null);
+    setSelectedScheduleId(null);
   }
 
-  function goNextMonth() {
-    if (month === 12) {
+  function goNext() {
+    if (view === "year") {
+      setYear(year + 1);
+    } else if (month === 12) {
       setYear(year + 1);
       setMonth(1);
     } else {
       setMonth(month + 1);
     }
-    setSelectedWeek(null);
+    setSelectedScheduleId(null);
   }
 
-  function handleWeekClick(weekIso: string) {
-    const hasSchedule = scheduleByWeek.has(weekIso);
-    if (hasSchedule) {
-      setSelectedWeek(weekIso);
+  function handleDayClick(dayIso: string) {
+    const schedule = findScheduleForDay(schedules, dayIso);
+    if (schedule) {
+      setSelectedScheduleId(schedule.id);
     } else {
-      setNewModalPrefillWeek(weekIso);
+      // Prefill: inicio = ese día, fin = viernes de esa semana
+      const start = parseIso(dayIso);
+      const monday = getMonday(start);
+      const friday = addDays(monday, 4);
+      const endCandidate = friday.getTime() >= start.getTime() ? friday : start;
+      setNewModalPrefill({ start: dayIso, end: formatIso(endCandidate) });
+      setShowNewModal(true);
+    }
+  }
+
+  function handleYearDayClick(dayIso: string) {
+    const schedule = findScheduleForDay(schedules, dayIso);
+    const d = parseIso(dayIso);
+    if (schedule) {
+      // Cambiar a vista mensual del mes del schedule + seleccionar
+      const sd = parseIso(schedule.plannedWorkStart);
+      setYear(sd.getUTCFullYear());
+      setMonth(sd.getUTCMonth() + 1);
+      setView("month");
+      setSelectedScheduleId(schedule.id);
+    } else {
+      setYear(d.getUTCFullYear());
+      setMonth(d.getUTCMonth() + 1);
+      setView("month");
+      // Abrir modal con ese día pre-cargado como inicio
+      const monday = getMonday(d);
+      const friday = addDays(monday, 4);
+      const endCandidate = friday.getTime() >= d.getTime() ? friday : d;
+      setNewModalPrefill({ start: dayIso, end: formatIso(endCandidate) });
       setShowNewModal(true);
     }
   }
 
   function handleCreated(created: InstallationSchedule) {
-    const targetDate = parseIso(created.weekStart);
-    const targetY = targetDate.getUTCFullYear();
-    const targetM = targetDate.getUTCMonth() + 1;
-    if (targetY !== year || targetM !== month) {
-      setYear(targetY);
-      setMonth(targetM);
-    }
-    setSelectedWeek(created.weekStart);
+    const d = parseIso(created.plannedWorkStart);
+    setYear(d.getUTCFullYear());
+    setMonth(d.getUTCMonth() + 1);
+    setView("month");
+    setSelectedScheduleId(created.id);
     setShowNewModal(false);
-    setNewModalPrefillWeek(null);
+    setNewModalPrefill(null);
   }
 
-  const prevMonth = month === 1 ? 12 : month - 1;
-  const nextMonth = month === 12 ? 1 : month + 1;
+  const isLoading = view === "month" ? monthQuery.isLoading : yearQuery.isLoading;
 
   return (
     <DndContext
@@ -299,83 +423,97 @@ export function Calendar() {
             <div className="mt-2 flex items-center gap-3 text-sm">
               <button
                 type="button"
-                onClick={goPrevMonth}
+                onClick={goPrev}
                 className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+                aria-label={view === "year" ? "Año anterior" : "Mes anterior"}
               >
-                ‹ {formatShortMonthName(prevMonth)}
+                ‹
               </button>
               <span className="font-medium text-[var(--color-text-primary)]">
-                {formatMonthTitle(year, month)}
+                {view === "month" ? formatMonthTitle(year, month) : year}
               </span>
               <button
                 type="button"
-                onClick={goNextMonth}
+                onClick={goNext}
                 className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+                aria-label={view === "year" ? "Año siguiente" : "Mes siguiente"}
               >
-                {formatShortMonthName(nextMonth)} ›
+                ›
               </button>
             </div>
           </div>
-          <Button
-            size="sm"
-            onClick={() => {
-              setNewModalPrefillWeek(null);
-              setShowNewModal(true);
-            }}
-          >
-            + Nueva instalación
-          </Button>
+          <div className="flex items-center gap-2">
+            <ViewToggle view={view} onChange={setView} />
+            <Button
+              size="sm"
+              onClick={() => {
+                setNewModalPrefill(null);
+                setShowNewModal(true);
+              }}
+            >
+              + Nueva instalación
+            </Button>
+          </div>
         </div>
+
+        {/* Leyenda de equipos */}
+        {teamsQuery.data && teamsQuery.data.length > 0 && (
+          <TeamsLegend teams={teamsQuery.data} />
+        )}
 
         <div className="flex gap-5 flex-col lg:flex-row">
           {/* Columna izquierda: calendario */}
           <div className="flex-1 min-w-0">
-            <MonthGrid
-              year={year}
-              month={month}
-              scheduleByWeek={scheduleByWeek}
-              selectedWeek={selectedWeek}
-              onSelectWeek={handleWeekClick}
-            />
-            {calendarQuery.isLoading && (
+            {view === "month" ? (
+              <MonthGrid
+                year={year}
+                month={month}
+                schedules={schedules}
+                selectedScheduleId={selectedScheduleId}
+                onDayClick={handleDayClick}
+              />
+            ) : (
+              <YearGrid
+                year={year}
+                schedules={schedules}
+                onDayClick={handleYearDayClick}
+              />
+            )}
+            {isLoading && (
               <p className="mt-3 text-xs text-[var(--color-text-muted)]">Cargando…</p>
             )}
           </div>
 
-          {/* Columna derecha: panel lateral */}
-          <div className="w-full lg:w-[220px] lg:shrink-0">
-            <SidePanel
-              selectedWeek={selectedWeek}
-              selectedSchedule={selectedSchedule}
-              freeWeeks={freeWeeks}
-              onOpenNewForWeek={(wk) => {
-                setNewModalPrefillWeek(wk);
-                setShowNewModal(true);
-              }}
-              onConfirm={async (id) => {
-                try {
-                  await confirmSchedule(id);
-                  toast.success("Fecha confirmada correctamente");
-                  queryClient.invalidateQueries({ queryKey: ["calendar"] });
-                } catch {
-                  toast.error("No se pudo confirmar la fecha");
-                }
-              }}
-              onReprogramClick={() => setShowReprogram(true)}
-              onDelete={(id) => deleteMutation.mutate(id)}
-              onPatch={async (id, body) => {
-                try {
-                  await patchSchedule(id, body);
-                  toast.success("Cambios guardados");
-                  queryClient.invalidateQueries({ queryKey: ["calendar"] });
-                  queryClient.invalidateQueries({ queryKey: ["calendar-teams"] });
-                } catch {
-                  toast.error("No se pudieron guardar los cambios");
-                }
-              }}
-              onProjectClick={(projectId) => navigate(`/projects/${projectId}`)}
-            />
-          </div>
+          {/* Columna derecha: panel lateral (solo en vista mensual) */}
+          {view === "month" && (
+            <div className="w-full lg:w-[240px] lg:shrink-0">
+              <SidePanel
+                selectedSchedule={selectedSchedule}
+                onConfirm={async (id) => {
+                  try {
+                    await confirmSchedule(id);
+                    toast.success("Fecha confirmada correctamente");
+                    queryClient.invalidateQueries({ queryKey: ["calendar"] });
+                  } catch {
+                    toast.error("No se pudo confirmar la fecha");
+                  }
+                }}
+                onReprogramClick={() => setShowReprogram(true)}
+                onDelete={(id) => deleteMutation.mutate(id)}
+                onPatch={async (id, body) => {
+                  try {
+                    await patchSchedule(id, body);
+                    toast.success("Cambios guardados");
+                    queryClient.invalidateQueries({ queryKey: ["calendar"] });
+                    queryClient.invalidateQueries({ queryKey: ["calendar-teams"] });
+                  } catch {
+                    toast.error("No se pudieron guardar los cambios");
+                  }
+                }}
+                onProjectClick={(projectId) => navigate(`/projects/${projectId}`)}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -387,11 +525,11 @@ export function Calendar() {
 
       {showNewModal && (
         <NewScheduleModal
-          prefillWeek={newModalPrefillWeek}
+          prefill={newModalPrefill}
           teams={teamsQuery.data ?? []}
           onClose={() => {
             setShowNewModal(false);
-            setNewModalPrefillWeek(null);
+            setNewModalPrefill(null);
           }}
           onCreated={handleCreated}
         />
@@ -401,8 +539,12 @@ export function Calendar() {
         <ReprogramModal
           schedule={selectedSchedule}
           onCancel={() => setShowReprogram(false)}
-          onConfirm={(newWeek) =>
-            moveMutation.mutate({ id: selectedSchedule.id, weekStart: newWeek })
+          onConfirm={(start, end) =>
+            moveMutation.mutate({
+              id: selectedSchedule.id,
+              plannedWorkStart: start,
+              plannedWorkEnd: end,
+            })
           }
           loading={moveMutation.isPending}
         />
@@ -411,12 +553,14 @@ export function Calendar() {
       {moveRequest && (
         <MoveConfirmDialog
           clientName={moveRequest.schedule.project?.clientName ?? "el proyecto"}
-          targetWeekStart={moveRequest.targetWeekStart}
+          targetStart={moveRequest.targetStart}
+          targetEnd={moveRequest.targetEnd}
           onCancel={() => setMoveRequest(null)}
           onConfirm={() =>
             moveMutation.mutate({
               id: moveRequest.schedule.id,
-              weekStart: moveRequest.targetWeekStart,
+              plannedWorkStart: moveRequest.targetStart,
+              plannedWorkEnd: moveRequest.targetEnd,
             })
           }
           loading={moveMutation.isPending}
@@ -426,20 +570,61 @@ export function Calendar() {
   );
 }
 
+// ─── Toggle de vista ──────────────────────────────────────────────────────────
+
+function ViewToggle({ view, onChange }: { view: CalendarView; onChange: (v: CalendarView) => void }) {
+  return (
+    <div className="inline-flex rounded-md border border-[var(--color-border)] bg-[var(--color-bg-card)] p-0.5 text-xs">
+      {(["month", "year"] as const).map((v) => (
+        <button
+          key={v}
+          type="button"
+          onClick={() => onChange(v)}
+          className={`rounded px-2.5 py-1 font-medium transition-colors ${
+            view === v
+              ? "bg-[var(--color-accent)] text-white"
+              : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+          }`}
+        >
+          {v === "month" ? "Mes" : "Año"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Leyenda de equipos ───────────────────────────────────────────────────────
+
+function TeamsLegend({ teams }: { teams: { teamName: string; teamColor: string }[] }) {
+  return (
+    <div className="mb-3 flex flex-wrap gap-2 text-[11px]">
+      {teams.map((t) => (
+        <span
+          key={t.teamName}
+          className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 py-0.5 text-[var(--color-text-secondary)]"
+        >
+          <span className="h-2.5 w-2.5 rounded-full" style={{ background: t.teamColor }} />
+          {t.teamName}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 // ─── MonthGrid ────────────────────────────────────────────────────────────────
 
 function MonthGrid({
   year,
   month,
-  scheduleByWeek,
-  selectedWeek,
-  onSelectWeek,
+  schedules,
+  selectedScheduleId,
+  onDayClick,
 }: {
   year: number;
   month: number;
-  scheduleByWeek: Map<string, InstallationSchedule>;
-  selectedWeek: string | null;
-  onSelectWeek: (weekIso: string) => void;
+  schedules: InstallationSchedule[];
+  selectedScheduleId: string | null;
+  onDayClick: (dayIso: string) => void;
 }) {
   const weeks = useMemo(() => getWeeksForMonth(year, month), [year, month]);
   const today = new Date();
@@ -466,9 +651,9 @@ function MonthGrid({
             weekStart={weekStart}
             monthNumber={month}
             todayIso={todayIso}
-            schedule={scheduleByWeek.get(formatIso(weekStart)) ?? null}
-            isSelected={selectedWeek === formatIso(weekStart)}
-            onSelect={onSelectWeek}
+            schedules={schedules}
+            selectedScheduleId={selectedScheduleId}
+            onDayClick={onDayClick}
           />
         ))}
       </div>
@@ -480,48 +665,51 @@ function WeekRow({
   weekStart,
   monthNumber,
   todayIso,
-  schedule,
-  isSelected,
-  onSelect,
+  schedules,
+  selectedScheduleId,
+  onDayClick,
 }: {
   weekStart: Date;
   monthNumber: number;
   todayIso: string;
-  schedule: InstallationSchedule | null;
-  isSelected: boolean;
-  onSelect: (weekIso: string) => void;
+  schedules: InstallationSchedule[];
+  selectedScheduleId: string | null;
+  onDayClick: (dayIso: string) => void;
 }) {
-  const weekIso = formatIso(weekStart);
-  const { setNodeRef, isOver } = useDroppable({ id: weekIso });
-
   const days: Date[] = [];
   for (let i = 0; i < 7; i++) days.push(addDays(weekStart, i));
+  const weekStartIso = formatIso(weekStart);
+  const weekEndIso = formatIso(addDays(weekStart, 6));
 
   return (
-    <div
-      ref={setNodeRef}
-      className={`grid grid-cols-7 gap-1 rounded-md transition-[outline] ${
-        isSelected ? "outline outline-2 outline-[var(--color-accent)]" : ""
-      } ${isOver ? "outline outline-2 outline-[var(--color-accent-hover)]" : ""}`}
-    >
-      {days.map((day, idx) => {
+    <div className="grid grid-cols-7 gap-1">
+      {days.map((day) => {
         const dayIso = formatIso(day);
-        const isInstallDay = idx < 5; // Lu-Vi
         const isOtherMonth = day.getUTCMonth() + 1 !== monthNumber;
         const isToday = dayIso === todayIso;
-        const dayHasInstallation = schedule && isInstallDay;
+        const schedule = findScheduleForDay(schedules, dayIso);
+        const isFirstOfSegment = schedule
+          ? dayIso === schedule.plannedWorkStart || dayIso === weekStartIso
+          : false;
+        const isLastOfSegment = schedule
+          ? dayIso === schedule.plannedWorkEnd || dayIso === weekEndIso
+          : false;
+        const isFirstOfSchedule = schedule ? dayIso === schedule.plannedWorkStart : false;
+        const isSelected = schedule?.id != null && schedule.id === selectedScheduleId;
 
         return (
           <DayCell
             key={dayIso}
             day={day}
+            dayIso={dayIso}
             isOtherMonth={isOtherMonth}
             isToday={isToday}
-            hasInstallation={Boolean(dayHasInstallation)}
-            isFirstInstallDay={idx === 0 && Boolean(schedule)}
-            isLastInstallDay={idx === 4 && Boolean(schedule)}
-            schedule={dayHasInstallation ? schedule : null}
-            onClick={() => onSelect(weekIso)}
+            schedule={schedule}
+            isFirstOfSegment={isFirstOfSegment}
+            isLastOfSegment={isLastOfSegment}
+            isFirstOfSchedule={isFirstOfSchedule}
+            isSelected={isSelected}
+            onClick={() => onDayClick(dayIso)}
           />
         );
       })}
@@ -531,44 +719,54 @@ function WeekRow({
 
 function DayCell({
   day,
+  dayIso,
   isOtherMonth,
   isToday,
-  hasInstallation,
-  isFirstInstallDay,
-  isLastInstallDay,
   schedule,
+  isFirstOfSegment,
+  isLastOfSegment,
+  isFirstOfSchedule,
+  isSelected,
   onClick,
 }: {
   day: Date;
+  dayIso: string;
   isOtherMonth: boolean;
   isToday: boolean;
-  hasInstallation: boolean;
-  isFirstInstallDay: boolean;
-  isLastInstallDay: boolean;
   schedule: InstallationSchedule | null;
+  isFirstOfSegment: boolean;
+  isLastOfSegment: boolean;
+  isFirstOfSchedule: boolean;
+  isSelected: boolean;
   onClick: () => void;
 }) {
-  const bg = hasInstallation && schedule ? schedule.teamColor : undefined;
+  const { setNodeRef, isOver } = useDroppable({ id: dayIso });
+  const bg = schedule ? effectiveColor(schedule) : undefined;
   const textDark = bg ? !isColorDark(bg) : true;
 
   const cellStyle: CSSProperties = {
     background: bg,
-    borderTopLeftRadius: isFirstInstallDay ? 6 : undefined,
-    borderBottomLeftRadius: isFirstInstallDay ? 6 : undefined,
-    borderTopRightRadius: isLastInstallDay ? 6 : undefined,
-    borderBottomRightRadius: isLastInstallDay ? 6 : undefined,
+    borderTopLeftRadius: isFirstOfSegment ? 6 : undefined,
+    borderBottomLeftRadius: isFirstOfSegment ? 6 : undefined,
+    borderTopRightRadius: isLastOfSegment ? 6 : undefined,
+    borderBottomRightRadius: isLastOfSegment ? 6 : undefined,
+    outline: isSelected ? "2px solid var(--color-accent)" : undefined,
+    outlineOffset: isSelected ? "-2px" : undefined,
   };
 
   return (
     <button
+      ref={setNodeRef}
       type="button"
       onClick={onClick}
       className={`relative h-16 px-1.5 py-1 text-left transition-colors ${
         !bg
           ? `border border-[var(--color-border)] hover:bg-[var(--color-bg-card-hover)] rounded ${
               isOtherMonth ? "bg-[var(--color-bg-app)] text-[var(--color-text-muted)]" : ""
-            }`
-          : ""
+            } ${isOver ? "outline outline-2 outline-[var(--color-accent-hover)]" : ""}`
+          : isOver
+            ? "outline outline-2 outline-[var(--color-accent-hover)]"
+            : ""
       }`}
       style={cellStyle}
     >
@@ -589,7 +787,7 @@ function DayCell({
         ) : null}
       </span>
 
-      {isFirstInstallDay && schedule ? (
+      {isFirstOfSchedule && schedule ? (
         <ScheduleDraggable schedule={schedule} />
       ) : null}
     </button>
@@ -598,7 +796,7 @@ function DayCell({
 
 function ScheduleDraggable({ schedule }: { schedule: InstallationSchedule }) {
   const { setNodeRef, listeners, attributes, isDragging } = useDraggable({ id: schedule.id });
-  const textDark = !isColorDark(schedule.teamColor);
+  const textDark = !isColorDark(effectiveColor(schedule));
   return (
     <span
       ref={setNodeRef}
@@ -615,13 +813,14 @@ function ScheduleDraggable({ schedule }: { schedule: InstallationSchedule }) {
 }
 
 function ScheduleOverlay({ schedule }: { schedule: InstallationSchedule }) {
-  const textDark = !isColorDark(schedule.teamColor);
+  const color = effectiveColor(schedule);
+  const textDark = !isColorDark(color);
   return (
     <div
       className={`rounded-md px-3 py-2 text-xs font-medium shadow-lg ${
         textDark ? "text-[#0c3b6e]" : "text-white"
       }`}
-      style={{ background: schedule.teamColor, minWidth: 160 }}
+      style={{ background: color, minWidth: 160 }}
     >
       {schedule.project?.clientName ?? "Instalación"}
       <p className="text-[10px] opacity-80 mt-0.5">{schedule.teamName}</p>
@@ -629,68 +828,184 @@ function ScheduleOverlay({ schedule }: { schedule: InstallationSchedule }) {
   );
 }
 
+// ─── YearGrid (vista anual) ───────────────────────────────────────────────────
+
+function YearGrid({
+  year,
+  schedules,
+  onDayClick,
+}: {
+  year: number;
+  schedules: InstallationSchedule[];
+  onDayClick: (dayIso: string) => void;
+}) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+        <MiniMonth
+          key={m}
+          year={year}
+          month={m}
+          schedules={schedules}
+          onDayClick={onDayClick}
+        />
+      ))}
+    </div>
+  );
+}
+
+function MiniMonth({
+  year,
+  month,
+  schedules,
+  onDayClick,
+}: {
+  year: number;
+  month: number;
+  schedules: InstallationSchedule[];
+  onDayClick: (dayIso: string) => void;
+}) {
+  const weeks = useMemo(() => getWeeksForMonth(year, month), [year, month]);
+  const today = new Date();
+  const todayIso = formatIso(
+    new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())),
+  );
+
+  return (
+    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-2">
+      <p className="font-display text-[11px] font-semibold text-[var(--color-text-primary)] mb-1.5 text-center">
+        {MONTHS_ES_CAP[month - 1]}
+      </p>
+      <div className="grid grid-cols-7 gap-[2px] mb-1">
+        {DAY_HEADERS.map((h) => (
+          <div
+            key={h}
+            className="font-mono text-[8px] uppercase text-[var(--color-text-muted)] text-center"
+          >
+            {h.charAt(0)}
+          </div>
+        ))}
+      </div>
+      <div className="space-y-[2px]">
+        {weeks.map((weekStart) => {
+          const weekStartIso = formatIso(weekStart);
+          const weekEndIso = formatIso(addDays(weekStart, 6));
+          return (
+            <div key={weekStartIso} className="grid grid-cols-7 gap-[2px]">
+              {Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)).map((day) => {
+                const dayIso = formatIso(day);
+                const isOtherMonth = day.getUTCMonth() + 1 !== month;
+                const isToday = dayIso === todayIso;
+                const schedule = findScheduleForDay(schedules, dayIso);
+                const isFirstOfSegment = schedule
+                  ? dayIso === schedule.plannedWorkStart || dayIso === weekStartIso
+                  : false;
+                const isLastOfSegment = schedule
+                  ? dayIso === schedule.plannedWorkEnd || dayIso === weekEndIso
+                  : false;
+                return (
+                  <MiniDayCell
+                    key={dayIso}
+                    day={day}
+                    dayIso={dayIso}
+                    isOtherMonth={isOtherMonth}
+                    isToday={isToday}
+                    schedule={schedule}
+                    isFirstOfSegment={isFirstOfSegment}
+                    isLastOfSegment={isLastOfSegment}
+                    onClick={() => onDayClick(dayIso)}
+                  />
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function MiniDayCell({
+  day,
+  dayIso,
+  isOtherMonth,
+  isToday,
+  schedule,
+  isFirstOfSegment,
+  isLastOfSegment,
+  onClick,
+}: {
+  day: Date;
+  dayIso: string;
+  isOtherMonth: boolean;
+  isToday: boolean;
+  schedule: InstallationSchedule | null;
+  isFirstOfSegment: boolean;
+  isLastOfSegment: boolean;
+  onClick: () => void;
+}) {
+  const bg = schedule ? effectiveColor(schedule) : undefined;
+  const tooltip = schedule
+    ? `${schedule.project?.clientName ?? "Sin proyecto"} · ${schedule.teamName} · ${formatRangeShort(schedule.plannedWorkStart, schedule.plannedWorkEnd)}`
+    : `${day.getUTCDate()} de ${MONTHS_ES[day.getUTCMonth()]}`;
+
+  const style: CSSProperties = {
+    background: bg,
+    borderTopLeftRadius: isFirstOfSegment ? 3 : undefined,
+    borderBottomLeftRadius: isFirstOfSegment ? 3 : undefined,
+    borderTopRightRadius: isLastOfSegment ? 3 : undefined,
+    borderBottomRightRadius: isLastOfSegment ? 3 : undefined,
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={tooltip}
+      aria-label={tooltip}
+      className={`relative h-5 w-full transition-colors ${
+        !bg
+          ? `rounded-[2px] ${
+              isOtherMonth
+                ? "bg-transparent hover:bg-[var(--color-bg-card-hover)]"
+                : "bg-[var(--color-bg-app)] hover:bg-[var(--color-bg-card-hover)]"
+            }`
+          : "hover:opacity-90"
+      }`}
+      style={style}
+    >
+      {isToday && !bg ? (
+        <span className="absolute inset-0 flex items-center justify-center">
+          <span className="h-1 w-1 rounded-full bg-[var(--color-accent)]" />
+        </span>
+      ) : null}
+    </button>
+  );
+}
+
 // ─── Side panel ───────────────────────────────────────────────────────────────
 
 function SidePanel({
-  selectedWeek,
   selectedSchedule,
-  freeWeeks,
-  onOpenNewForWeek,
   onConfirm,
   onReprogramClick,
   onDelete,
   onPatch,
   onProjectClick,
 }: {
-  selectedWeek: string | null;
   selectedSchedule: InstallationSchedule | null;
-  freeWeeks: string[];
-  onOpenNewForWeek: (weekIso: string) => void;
   onConfirm: (id: string) => void;
   onReprogramClick: () => void;
   onDelete: (id: string) => void;
   onPatch: (id: string, body: { teamName?: string; teamColor?: string; notes?: string | null }) => Promise<void>;
   onProjectClick: (projectId: string) => void;
 }) {
-  if (!selectedWeek) {
-    return (
-      <aside className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3">
-        <p className="text-xs text-[var(--color-text-muted)] mb-3">
-          Seleccioná una semana para ver el detalle.
-        </p>
-        {freeWeeks.length > 0 && (
-          <>
-            <p className="font-mono text-[9px] uppercase tracking-widest text-[var(--color-text-muted)] mb-2">
-              Semanas libres
-            </p>
-            <div className="flex flex-col gap-1.5">
-              {freeWeeks.map((wk) => (
-                <button
-                  key={wk}
-                  type="button"
-                  onClick={() => onOpenNewForWeek(wk)}
-                  className="text-left rounded border border-dashed border-[var(--color-border-hover)] px-2 py-1.5 text-[11px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors"
-                >
-                  {formatWeekLabel(parseIso(wk))}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-      </aside>
-    );
-  }
-
   if (!selectedSchedule) {
     return (
       <aside className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3">
-        <p className="font-mono text-[9px] uppercase tracking-widest text-[var(--color-text-muted)] mb-2">
-          {formatWeekLabel(parseIso(selectedWeek))}
+        <p className="text-xs text-[var(--color-text-muted)]">
+          Seleccioná una instalación para ver el detalle.
         </p>
-        <p className="text-xs text-[var(--color-text-secondary)] mb-3">Semana libre</p>
-        <Button size="sm" onClick={() => onOpenNewForWeek(selectedWeek)}>
-          + Asignar proyecto
-        </Button>
       </aside>
     );
   }
@@ -728,7 +1043,6 @@ function ScheduleDetail({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // sync cuando cambia el schedule seleccionado
   useEffect(() => {
     setTeamName(schedule.teamName);
     setTeamColor(schedule.teamColor);
@@ -741,8 +1055,13 @@ function ScheduleDetail({
     teamColor !== schedule.teamColor ||
     (notes ?? "") !== (schedule.notes ?? "");
 
-  const textDark = !isColorDark(schedule.teamColor);
+  const blockColor = effectiveColor(schedule);
+  const textDark = !isColorDark(blockColor);
   const confirmed = Boolean(schedule.confirmedAt);
+
+  const startDate = parseIso(schedule.plannedWorkStart);
+  const endDate = parseIso(schedule.plannedWorkEnd);
+  const businessDays = businessDaysInclusive(startDate, endDate);
 
   async function handleSave() {
     setSaving(true);
@@ -760,10 +1079,21 @@ function ScheduleDetail({
   return (
     <aside className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3 space-y-3">
       <div>
-        <p className="font-mono text-[9px] uppercase tracking-widest text-[var(--color-text-muted)]">
-          {formatWeekLabel(parseIso(schedule.weekStart))}
-        </p>
-        <div className="mt-1.5">
+        <div className="space-y-0.5 text-[11px] text-[var(--color-text-secondary)]">
+          <p>
+            <span className="text-[var(--color-text-muted)]">Inicio:</span>{" "}
+            {formatLongDate(startDate)}
+          </p>
+          <p>
+            <span className="text-[var(--color-text-muted)]">Fin:</span>{" "}
+            {formatLongDate(endDate)}
+          </p>
+          <p>
+            <span className="text-[var(--color-text-muted)]">Duración:</span>{" "}
+            {businessDays} {businessDays === 1 ? "día hábil" : "días hábiles"}
+          </p>
+        </div>
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
           {confirmed ? (
             <span className="inline-block rounded px-2 py-0.5 text-[10px] font-semibold text-[var(--color-state-done-text)] bg-[var(--color-state-done-bg)]">
               Confirmada
@@ -771,6 +1101,11 @@ function ScheduleDetail({
           ) : (
             <span className="inline-block rounded px-2 py-0.5 text-[10px] font-semibold text-[var(--color-warning-text)] bg-[var(--color-warning-bg)]">
               Sin confirmar
+            </span>
+          )}
+          {schedule.operationsCompleted && (
+            <span className="inline-block rounded px-2 py-0.5 text-[10px] font-semibold text-[var(--color-state-done-text)] bg-[var(--color-state-done-bg)]">
+              Obra finalizada
             </span>
           )}
         </div>
@@ -781,7 +1116,7 @@ function ScheduleDetail({
           type="button"
           onClick={() => schedule.project && onProjectClick(schedule.project.id)}
           className="block w-full rounded-md p-2.5 text-left transition-opacity hover:opacity-90"
-          style={{ background: schedule.teamColor, color: textDark ? "#0c3b6e" : "#ffffff" }}
+          style={{ background: blockColor, color: textDark ? "#0c3b6e" : "#ffffff" }}
         >
           <p className="text-xs font-medium leading-tight">{schedule.project.clientName}</p>
           <p className="text-[10px] opacity-80 mt-0.5">{schedule.teamName}</p>
@@ -919,13 +1254,72 @@ function ModalShell({ children, onClose, title }: { children: ReactNode; onClose
   );
 }
 
+function DateRangeFields({
+  start,
+  end,
+  onChangeStart,
+  onChangeEnd,
+}: {
+  start: string;
+  end: string;
+  onChangeStart: (v: string) => void;
+  onChangeEnd: (v: string) => void;
+}) {
+  const rangeInvalid = Boolean(start && end && end < start);
+  const businessDays =
+    start && end && !rangeInvalid
+      ? businessDaysInclusive(parseIso(start), parseIso(end))
+      : null;
+
+  return (
+    <div className="space-y-2">
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
+            Fecha inicio
+          </label>
+          <input
+            type="date"
+            value={start}
+            onChange={(e) => onChangeStart(e.target.value)}
+            className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+            required
+          />
+        </div>
+        <div>
+          <label className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
+            Fecha fin
+          </label>
+          <input
+            type="date"
+            value={end}
+            onChange={(e) => onChangeEnd(e.target.value)}
+            min={start || undefined}
+            className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+            required
+          />
+        </div>
+      </div>
+      {rangeInvalid ? (
+        <p className="text-[10px] text-red-400">
+          La fecha de fin debe ser posterior al inicio
+        </p>
+      ) : businessDays !== null ? (
+        <p className="text-[10px] text-[var(--color-text-muted)]">
+          Duración: {businessDays} {businessDays === 1 ? "día hábil" : "días hábiles"}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function NewScheduleModal({
-  prefillWeek,
+  prefill,
   teams,
   onClose,
   onCreated,
 }: {
-  prefillWeek: string | null;
+  prefill: { start: string; end: string } | null;
   teams: { teamName: string; teamColor: string }[];
   onClose: () => void;
   onCreated: (s: InstallationSchedule) => void;
@@ -946,11 +1340,11 @@ function NewScheduleModal({
     .sort((a, b) => a.clientName.localeCompare(b.clientName, "es"));
 
   const [projectId, setProjectId] = useState("");
-  const [weekStart, setWeekStart] = useState(prefillWeek ?? "");
+  const [plannedWorkStart, setPlannedWorkStart] = useState(prefill?.start ?? "");
+  const [plannedWorkEnd, setPlannedWorkEnd] = useState(prefill?.end ?? "");
   const [teamName, setTeamName] = useState("");
   const [teamColor, setTeamColor] = useState<string>(TEAM_COLORS[0]!);
   const [notes, setNotes] = useState("");
-  const [weekError, setWeekError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showTeamSuggestions, setShowTeamSuggestions] = useState(false);
 
@@ -960,7 +1354,8 @@ function NewScheduleModal({
         projectId,
         teamName: teamName.trim(),
         teamColor,
-        weekStart,
+        plannedWorkStart,
+        plannedWorkEnd,
         notes: notes.trim() ? notes.trim() : null,
       }),
     onSuccess: (data) => {
@@ -975,18 +1370,31 @@ function NewScheduleModal({
     },
   });
 
-  function handleWeekChange(value: string) {
-    setWeekStart(value);
-    setWeekError(null);
-    if (!value) return;
-    const d = parseIso(value);
-    if (d.getUTCDay() !== 1) {
-      setWeekError("Debe ser un lunes");
+  function handleStartChange(v: string) {
+    setPlannedWorkStart(v);
+    // Auto-ajuste: si no hay fin o el fin queda antes, setear fin = viernes de esa semana o igual al inicio
+    if (v && (!plannedWorkEnd || plannedWorkEnd < v)) {
+      const start = parseIso(v);
+      const monday = getMonday(start);
+      const friday = addDays(monday, 4);
+      const end = friday.getTime() >= start.getTime() ? friday : start;
+      setPlannedWorkEnd(formatIso(end));
     }
   }
 
+  const rangeInvalid = Boolean(
+    plannedWorkStart && plannedWorkEnd && plannedWorkEnd < plannedWorkStart,
+  );
+
   function canSubmit() {
-    return projectId && weekStart && teamName.trim() && !weekError && !mutation.isPending;
+    return (
+      projectId &&
+      plannedWorkStart &&
+      plannedWorkEnd &&
+      !rangeInvalid &&
+      teamName.trim() &&
+      !mutation.isPending
+    );
   }
 
   const matchingTeams = teams.filter(
@@ -1026,21 +1434,12 @@ function NewScheduleModal({
           )}
         </div>
 
-        <div>
-          <label className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
-            Semana de inicio (lunes)
-          </label>
-          <input
-            type="date"
-            value={weekStart}
-            onChange={(e) => handleWeekChange(e.target.value)}
-            className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
-            required
-          />
-          {weekError ? (
-            <p className="mt-1 text-[10px] text-red-400">{weekError}</p>
-          ) : null}
-        </div>
+        <DateRangeFields
+          start={plannedWorkStart}
+          end={plannedWorkEnd}
+          onChangeStart={handleStartChange}
+          onChangeEnd={setPlannedWorkEnd}
+        />
 
         <div className="relative">
           <label className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
@@ -1132,13 +1531,15 @@ function NewScheduleModal({
 
 function MoveConfirmDialog({
   clientName,
-  targetWeekStart,
+  targetStart,
+  targetEnd,
   onCancel,
   onConfirm,
   loading,
 }: {
   clientName: string;
-  targetWeekStart: string;
+  targetStart: string;
+  targetEnd: string;
   onCancel: () => void;
   onConfirm: () => void;
   loading: boolean;
@@ -1146,7 +1547,7 @@ function MoveConfirmDialog({
   return (
     <ModalShell title="Mover instalación" onClose={onCancel}>
       <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-        ¿Mover {clientName} a la semana del {formatWeekLabel(parseIso(targetWeekStart))}?
+        ¿Mover {clientName} a {formatRangeShort(targetStart, targetEnd)}?
       </p>
       <div className="flex justify-end gap-2">
         <Button size="sm" variant="ghost" onClick={onCancel}>
@@ -1168,32 +1569,37 @@ function ReprogramModal({
 }: {
   schedule: InstallationSchedule;
   onCancel: () => void;
-  onConfirm: (newWeek: string) => void;
+  onConfirm: (start: string, end: string) => void;
   loading: boolean;
 }) {
-  const [value, setValue] = useState(schedule.weekStart);
-  const [error, setError] = useState<string | null>(null);
+  const [start, setStart] = useState(schedule.plannedWorkStart);
+  const [end, setEnd] = useState(schedule.plannedWorkEnd);
 
-  function handleChange(v: string) {
-    setValue(v);
-    setError(null);
-    if (!v) return;
-    const d = parseIso(v);
-    if (d.getUTCDay() !== 1) setError("Debe ser un lunes");
+  function handleStartChange(v: string) {
+    setStart(v);
+    if (v && end && end < v) {
+      // Preservar duración anterior si la nueva fecha rompe el rango
+      const oldStart = parseIso(schedule.plannedWorkStart);
+      const oldEnd = parseIso(schedule.plannedWorkEnd);
+      const duration = daysBetweenInclusive(oldStart, oldEnd) - 1;
+      setEnd(formatIso(addDays(parseIso(v), duration)));
+    }
   }
+
+  const rangeInvalid = Boolean(start && end && end < start);
+  const unchanged = start === schedule.plannedWorkStart && end === schedule.plannedWorkEnd;
 
   return (
     <ModalShell title="Reprogramar instalación" onClose={onCancel}>
       <p className="text-xs text-[var(--color-text-muted)] mb-3">
-        Seleccioná la nueva semana (debe ser un lunes).
+        Seleccioná las nuevas fechas de obra.
       </p>
-      <input
-        type="date"
-        value={value}
-        onChange={(e) => handleChange(e.target.value)}
-        className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+      <DateRangeFields
+        start={start}
+        end={end}
+        onChangeStart={handleStartChange}
+        onChangeEnd={setEnd}
       />
-      {error && <p className="mt-1 text-[10px] text-red-400">{error}</p>}
       <div className="mt-4 flex justify-end gap-2">
         <Button size="sm" variant="ghost" onClick={onCancel}>
           Cancelar
@@ -1201,13 +1607,12 @@ function ReprogramModal({
         <Button
           size="sm"
           loading={loading}
-          disabled={!!error || !value || value === schedule.weekStart}
-          onClick={() => onConfirm(value)}
+          disabled={rangeInvalid || !start || !end || unchanged}
+          onClick={() => onConfirm(start, end)}
         >
-          Confirmar nueva fecha
+          Confirmar nuevas fechas
         </Button>
       </div>
     </ModalShell>
   );
 }
-

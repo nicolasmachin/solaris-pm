@@ -1143,8 +1143,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
           id: project.installationSchedule.id,
           teamName: project.installationSchedule.teamName,
           teamColor: project.installationSchedule.teamColor,
-          weekStart: serializeDateOnly(project.installationSchedule.weekStart),
-          weekEnd: serializeDateOnly(project.installationSchedule.weekEnd),
+          plannedWorkStart: serializeDateOnly(project.installationSchedule.plannedWorkStart),
+          plannedWorkEnd: serializeDateOnly(project.installationSchedule.plannedWorkEnd),
           confirmedAt: serializeDate(project.installationSchedule.confirmedAt),
           confirmedByUser: project.installationSchedule.confirmedByUser
             ? {
@@ -4678,20 +4678,22 @@ export async function registerApiRoutes(app: FastifyInstance) {
     projectId: z.string().min(1),
     teamName: z.string().trim().min(1),
     teamColor: z.string().trim().regex(/^#[0-9A-Fa-f]{6}$/, "Color debe ser hex (#RRGGBB)").optional(),
-    weekStart: dateOnlySchema,
+    plannedWorkStart: dateOnlySchema,
+    plannedWorkEnd: dateOnlySchema,
     notes: z.string().trim().optional().nullable(),
   });
 
   const calendarPatchSchema = z.object({
     teamName: z.string().trim().min(1).optional(),
     teamColor: z.string().trim().regex(/^#[0-9A-Fa-f]{6}$/, "Color debe ser hex (#RRGGBB)").optional(),
-    weekStart: dateOnlySchema.optional(),
+    plannedWorkStart: dateOnlySchema.optional(),
+    plannedWorkEnd: dateOnlySchema.optional(),
     notes: z.string().trim().nullable().optional(),
   }).strict();
 
-  function assertMondayUtc(date: Date) {
-    if (date.getUTCDay() !== 1) {
-      throw badRequest("INVALID_WEEK_START", "weekStart debe ser un lunes");
+  function assertRangeValid(start: Date, end: Date) {
+    if (end.getTime() < start.getTime()) {
+      throw badRequest("INVALID_DATE_RANGE", "plannedWorkEnd debe ser mayor o igual a plannedWorkStart");
     }
   }
 
@@ -4700,8 +4702,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
     projectId: string;
     teamName: string;
     teamColor: string;
-    weekStart: Date;
-    weekEnd: Date;
+    plannedWorkStart: Date;
+    plannedWorkEnd: Date;
     confirmedAt: Date | null;
     confirmedBy: string | null;
     confirmedByUser?: { id: string; name: string } | null;
@@ -4716,24 +4718,26 @@ export async function registerApiRoutes(app: FastifyInstance) {
       code: string;
       capacityKwp: Prisma.Decimal;
       locationCity: string;
-      stages?: Array<{ name: StageType; tipoObra: TipoObra | null }>;
+      stages?: Array<{ name: StageType; tipoObra: TipoObra | null; status: StageStatus }>;
     };
   }) {
-    const workType =
-      s.project?.stages?.find((st) => st.name === StageType.OPERACIONES)?.tipoObra ?? null;
+    const operationsStage = s.project?.stages?.find((st) => st.name === StageType.OPERACIONES);
+    const workType = operationsStage?.tipoObra ?? null;
+    const operationsCompleted = operationsStage?.status === StageStatus.COMPLETED;
     return {
       id: s.id,
       projectId: s.projectId,
       teamName: s.teamName,
       teamColor: s.teamColor,
-      weekStart: serializeDateOnly(s.weekStart),
-      weekEnd: serializeDateOnly(s.weekEnd),
+      plannedWorkStart: serializeDateOnly(s.plannedWorkStart),
+      plannedWorkEnd: serializeDateOnly(s.plannedWorkEnd),
       confirmedAt: serializeDate(s.confirmedAt),
       confirmedBy: s.confirmedBy,
       confirmedByUser: s.confirmedByUser
         ? { id: s.confirmedByUser.id, name: s.confirmedByUser.name }
         : null,
       notes: s.notes,
+      operationsCompleted,
       createdAt: serializeDate(s.createdAt),
       updatedAt: serializeDate(s.updatedAt),
       project: s.project
@@ -4753,61 +4757,54 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const query = z
       .object({
         year: z.coerce.number().int().min(2000).max(2100),
-        month: z.coerce.number().int().min(1).max(12),
+        month: z.coerce.number().int().min(1).max(12).optional(),
       })
       .parse(request.query);
 
-    const firstDay = new Date(Date.UTC(query.year, query.month - 1, 1));
-    const lastDay = new Date(Date.UTC(query.year, query.month, 0));
+    let rangeStart: Date;
+    let rangeEnd: Date;
 
-    // Primer lunes de la grilla (puede caer el mes anterior)
-    const firstDayDow = firstDay.getUTCDay(); // 0=Sun..6=Sat
-    const offsetToMonday = firstDayDow === 0 ? -6 : 1 - firstDayDow;
-    const firstMonday = new Date(firstDay);
-    firstMonday.setUTCDate(firstMonday.getUTCDate() + offsetToMonday);
+    if (query.month !== undefined) {
+      // Vista mensual: grilla Lu-Do que cubre todo el mes
+      const firstDay = new Date(Date.UTC(query.year, query.month - 1, 1));
+      const lastDay = new Date(Date.UTC(query.year, query.month, 0));
+      const firstDayDow = firstDay.getUTCDay();
+      const offsetToMonday = firstDayDow === 0 ? -6 : 1 - firstDayDow;
+      rangeStart = new Date(firstDay);
+      rangeStart.setUTCDate(rangeStart.getUTCDate() + offsetToMonday);
+      const lastDayDow = lastDay.getUTCDay();
+      const offsetToSunday = lastDayDow === 0 ? 0 : 7 - lastDayDow;
+      rangeEnd = new Date(lastDay);
+      rangeEnd.setUTCDate(rangeEnd.getUTCDate() + offsetToSunday);
+    } else {
+      // Vista anual: todo el año
+      rangeStart = new Date(Date.UTC(query.year, 0, 1));
+      rangeEnd = new Date(Date.UTC(query.year, 11, 31));
+    }
 
-    // Último lunes cuya semana (Lu-Vi) toca el mes
-    const lastMonday = new Date(lastDay);
-    const lastDayDow = lastDay.getUTCDay();
-    const offsetFromLast = lastDayDow === 0 ? -6 : 1 - lastDayDow;
-    lastMonday.setUTCDate(lastMonday.getUTCDate() + offsetFromLast);
-
+    // Incluir bloques que se solapen con el rango (empiezan antes y/o terminan después)
     const schedules = await prisma.installationSchedule.findMany({
       where: {
         deletedAt: null,
-        weekStart: {
-          gte: firstMonday,
-          lte: lastMonday,
-        },
+        plannedWorkStart: { lte: rangeEnd },
+        plannedWorkEnd: { gte: rangeStart },
       },
       include: {
         project: {
           include: {
-            stages: { select: { name: true, tipoObra: true } },
+            stages: { select: { name: true, tipoObra: true, status: true } },
           },
         },
         confirmedByUser: { select: { id: true, name: true } },
       },
-      orderBy: { weekStart: "asc" },
+      orderBy: { plannedWorkStart: "asc" },
     });
-
-    const takenWeeks = new Set(schedules.map((s) => toDateOnlyString(s.weekStart)));
-    const freeWeeks: string[] = [];
-    const cursor = new Date(firstMonday);
-    while (cursor.getTime() <= lastMonday.getTime()) {
-      const iso = toDateOnlyString(cursor);
-      if (iso && !takenWeeks.has(iso)) {
-        freeWeeks.push(iso);
-      }
-      cursor.setUTCDate(cursor.getUTCDate() + 7);
-    }
 
     return {
       schedules: schedules.map((s) => serializeSchedule(s)),
-      freeWeeks,
       range: {
-        firstMonday: toDateOnlyString(firstMonday),
-        lastMonday: toDateOnlyString(lastMonday),
+        start: toDateOnlyString(rangeStart),
+        end: toDateOnlyString(rangeEnd),
       },
     };
   });
@@ -4831,8 +4828,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const user = ensureUser(request);
     const body = calendarCreateSchema.parse(request.body);
 
-    const weekStart = parseDateOnly(body.weekStart);
-    assertMondayUtc(weekStart);
+    const plannedWorkStart = parseDateOnly(body.plannedWorkStart);
+    const plannedWorkEnd = parseDateOnly(body.plannedWorkEnd);
+    assertRangeValid(plannedWorkStart, plannedWorkEnd);
 
     const project = await prisma.project.findFirst({
       where: { id: body.projectId, deletedAt: null },
@@ -4846,12 +4844,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
     if (existing && !existing.deletedAt) {
       throw conflict(
         "INSTALLATION_ALREADY_SCHEDULED",
-        `El proyecto ya tiene una instalación agendada para la semana del ${toDateOnlyString(existing.weekStart)}`,
+        `El proyecto ya tiene una instalación agendada desde ${toDateOnlyString(existing.plannedWorkStart)}`,
       );
     }
-
-    const weekEnd = new Date(weekStart);
-    weekEnd.setUTCDate(weekEnd.getUTCDate() + 4);
 
     let created;
     if (existing && existing.deletedAt) {
@@ -4861,8 +4856,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         data: {
           teamName: body.teamName,
           teamColor: body.teamColor ?? "#378ADD",
-          weekStart,
-          weekEnd,
+          plannedWorkStart,
+          plannedWorkEnd,
           notes: body.notes ?? null,
           createdBy: user.id,
           deletedAt: null,
@@ -4870,7 +4865,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           confirmedBy: null,
         },
         include: {
-          project: { include: { stages: { select: { name: true, tipoObra: true } } } },
+          project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } },
           confirmedByUser: { select: { id: true, name: true } },
         },
       });
@@ -4880,13 +4875,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
           projectId: body.projectId,
           teamName: body.teamName,
           teamColor: body.teamColor ?? "#378ADD",
-          weekStart,
-          weekEnd,
+          plannedWorkStart,
+          plannedWorkEnd,
           notes: body.notes ?? null,
           createdBy: user.id,
         },
         include: {
-          project: { include: { stages: { select: { name: true, tipoObra: true } } } },
+          project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } },
           confirmedByUser: { select: { id: true, name: true } },
         },
       });
@@ -4898,7 +4893,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       projectId: created.projectId,
       userId: user.id,
       action: AuditAction.created,
-      description: `Instalación de ${project.clientName} agendada para semana del ${toDateOnlyString(weekStart)}`,
+      description: `Instalación de ${project.clientName} agendada del ${toDateOnlyString(plannedWorkStart)} al ${toDateOnlyString(plannedWorkEnd)}`,
       metadata: { teamName: created.teamName, teamColor: created.teamColor },
     });
 
@@ -4922,20 +4917,22 @@ export async function registerApiRoutes(app: FastifyInstance) {
     if (body.teamName !== undefined) updateData.teamName = body.teamName;
     if (body.teamColor !== undefined) updateData.teamColor = body.teamColor;
     if (body.notes !== undefined) updateData.notes = body.notes;
-    if (body.weekStart !== undefined) {
-      const newStart = parseDateOnly(body.weekStart);
-      assertMondayUtc(newStart);
-      const newEnd = new Date(newStart);
-      newEnd.setUTCDate(newEnd.getUTCDate() + 4);
-      updateData.weekStart = newStart;
-      updateData.weekEnd = newEnd;
+
+    const nextStart =
+      body.plannedWorkStart !== undefined ? parseDateOnly(body.plannedWorkStart) : existing.plannedWorkStart;
+    const nextEnd =
+      body.plannedWorkEnd !== undefined ? parseDateOnly(body.plannedWorkEnd) : existing.plannedWorkEnd;
+    if (body.plannedWorkStart !== undefined || body.plannedWorkEnd !== undefined) {
+      assertRangeValid(nextStart, nextEnd);
+      updateData.plannedWorkStart = nextStart;
+      updateData.plannedWorkEnd = nextEnd;
     }
 
     const updated = await prisma.installationSchedule.update({
       where: { id: existing.id },
       data: updateData,
       include: {
-        project: { include: { stages: { select: { name: true, tipoObra: true } } } },
+        project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } },
         confirmedByUser: { select: { id: true, name: true } },
       },
     });
@@ -4943,7 +4940,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const labels: Record<string, string> = {
       teamName: "equipo",
       teamColor: "color de equipo",
-      weekStart: "semana de inicio",
+      plannedWorkStart: "fecha de inicio",
+      plannedWorkEnd: "fecha de fin",
       notes: "notas",
     };
     await createAuditEntriesForChanges({
@@ -4979,7 +4977,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         confirmedBy: user.id,
       },
       include: {
-        project: { include: { stages: { select: { name: true, tipoObra: true } } } },
+        project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } },
         confirmedByUser: { select: { id: true, name: true } },
       },
     });

@@ -973,8 +973,8 @@ model InstallationSchedule {
   project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   teamName        String
   teamColor       String    @default("#378ADD")
-  weekStart       DateTime  @db.Date
-  weekEnd         DateTime  @db.Date
+  plannedWorkStart DateTime @db.Date
+  plannedWorkEnd   DateTime @db.Date
   confirmedAt     DateTime? @db.Timestamptz(6)
   confirmedBy     String?
   confirmedByUser User?     @relation("InstallationConfirmedBy", fields: [confirmedBy], references: [id], onDelete: SetNull)
@@ -984,7 +984,7 @@ model InstallationSchedule {
   updatedAt       DateTime  @updatedAt @db.Timestamptz(6)
   deletedAt       DateTime? @db.Timestamptz(6)
 
-  @@index([weekStart])
+  @@index([plannedWorkStart])
   @@index([projectId])
   @@index([deletedAt])
   @@map("installation_schedules")

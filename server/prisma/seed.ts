@@ -1419,8 +1419,8 @@ async function seedInstallationSchedules(params: {
       update: {
         teamName: data.teamName,
         teamColor: data.teamColor,
-        weekStart: data.weekStart,
-        weekEnd: data.weekEnd,
+        plannedWorkStart: data.plannedWorkStart,
+        plannedWorkEnd: data.plannedWorkEnd,
         notes: data.notes,
       },
     });
@@ -1429,8 +1429,8 @@ async function seedInstallationSchedules(params: {
   await upsertSchedule(project1Id, {
     teamName: "Equipo propio",
     teamColor: "#378ADD",
-    weekStart: parseDateOnly("2026-05-04"),
-    weekEnd: parseDateOnly("2026-05-08"),
+    plannedWorkStart: parseDateOnly("2026-05-04"),
+    plannedWorkEnd: parseDateOnly("2026-05-08"),
     confirmedAt: new Date("2026-04-20T12:00:00Z"),
     confirmedBy: adminId,
     notes: "Traslado de materiales confirmado con logística.",
@@ -1439,16 +1439,16 @@ async function seedInstallationSchedules(params: {
   await upsertSchedule(project2Id, {
     teamName: "Instaladores Sur",
     teamColor: "#1D9E75",
-    weekStart: parseDateOnly("2026-05-11"),
-    weekEnd: parseDateOnly("2026-05-15"),
+    plannedWorkStart: parseDateOnly("2026-05-11"),
+    plannedWorkEnd: parseDateOnly("2026-05-15"),
     notes: "Coordinar ingreso con planta.",
   });
 
   await upsertSchedule(project4Id, {
     teamName: "Equipo propio",
     teamColor: "#378ADD",
-    weekStart: parseDateOnly("2026-05-25"),
-    weekEnd: parseDateOnly("2026-05-29"),
+    plannedWorkStart: parseDateOnly("2026-05-25"),
+    plannedWorkEnd: parseDateOnly("2026-05-29"),
     confirmedAt: new Date("2026-04-22T15:00:00Z"),
     confirmedBy: adminId,
   });

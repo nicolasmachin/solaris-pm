@@ -263,8 +263,8 @@ export interface Project {
     id: string;
     teamName: string;
     teamColor: string;
-    weekStart: string;
-    weekEnd: string;
+    plannedWorkStart: string;
+    plannedWorkEnd: string;
     confirmedAt: string | null;
     confirmedByUser: { id: string; name: string } | null;
     notes: string | null;

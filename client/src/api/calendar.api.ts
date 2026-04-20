@@ -16,12 +16,13 @@ export interface InstallationSchedule {
   projectId: string;
   teamName: string;
   teamColor: string;
-  weekStart: string; // YYYY-MM-DD (lunes)
-  weekEnd: string;   // YYYY-MM-DD (viernes)
+  plannedWorkStart: string; // YYYY-MM-DD
+  plannedWorkEnd: string;   // YYYY-MM-DD
   confirmedAt: string | null;
   confirmedBy: string | null;
   confirmedByUser: { id: string; name: string } | null;
   notes: string | null;
+  operationsCompleted: boolean;
   createdAt: string;
   updatedAt: string;
   project: InstallationScheduleProjectRef | null;
@@ -29,8 +30,7 @@ export interface InstallationSchedule {
 
 export interface CalendarResponse {
   schedules: InstallationSchedule[];
-  freeWeeks: string[];
-  range: { firstMonday: string; lastMonday: string };
+  range: { start: string; end: string };
 }
 
 export interface CalendarTeam {
@@ -38,9 +38,16 @@ export interface CalendarTeam {
   teamColor: string;
 }
 
-export async function getCalendar(year: number, month: number): Promise<CalendarResponse> {
+export async function getCalendarMonth(year: number, month: number): Promise<CalendarResponse> {
   const { data } = await apiClient.get<CalendarResponse>("/api/calendar", {
     params: { year, month },
+  });
+  return data;
+}
+
+export async function getCalendarYear(year: number): Promise<CalendarResponse> {
+  const { data } = await apiClient.get<CalendarResponse>("/api/calendar", {
+    params: { year },
   });
   return data;
 }
@@ -54,7 +61,8 @@ export async function createSchedule(body: {
   projectId: string;
   teamName: string;
   teamColor?: string;
-  weekStart: string;
+  plannedWorkStart: string;
+  plannedWorkEnd: string;
   notes?: string | null;
 }): Promise<InstallationSchedule> {
   const { data } = await apiClient.post<InstallationSchedule>("/api/calendar", body);
@@ -66,7 +74,8 @@ export async function patchSchedule(
   body: {
     teamName?: string;
     teamColor?: string;
-    weekStart?: string;
+    plannedWorkStart?: string;
+    plannedWorkEnd?: string;
     notes?: string | null;
   },
 ): Promise<InstallationSchedule> {

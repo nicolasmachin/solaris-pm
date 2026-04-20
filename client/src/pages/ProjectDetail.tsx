@@ -500,26 +500,30 @@ const MONTHS_ES_SHORT = [
   "julio","agosto","setiembre","octubre","noviembre","diciembre",
 ];
 
-function formatWeekStartLabel(iso: string): string {
-  const d = new Date(`${iso}T00:00:00Z`);
-  const end = new Date(d);
-  end.setUTCDate(end.getUTCDate() + 4);
-  const startDay = d.getUTCDate();
+function formatInstallationRangeLabel(startIso: string, endIso: string): string {
+  const start = new Date(`${startIso}T00:00:00Z`);
+  const end = new Date(`${endIso}T00:00:00Z`);
+  const startDay = start.getUTCDate();
   const endDay = end.getUTCDate();
+  const startMonth = MONTHS_ES_SHORT[start.getUTCMonth()];
   const endMonth = MONTHS_ES_SHORT[end.getUTCMonth()];
-  const startMonth = MONTHS_ES_SHORT[d.getUTCMonth()];
-  if (d.getUTCMonth() === end.getUTCMonth()) {
+  if (startIso === endIso) {
+    return `${startDay} de ${endMonth}`;
+  }
+  if (start.getUTCMonth() === end.getUTCMonth()) {
     return `${startDay}–${endDay} de ${endMonth}`;
   }
   return `${startDay} de ${startMonth}–${endDay} de ${endMonth}`;
 }
 
 function InstallationScheduleRow({
-  weekStart,
+  plannedWorkStart,
+  plannedWorkEnd,
   teamName,
   confirmed,
 }: {
-  weekStart: string;
+  plannedWorkStart: string;
+  plannedWorkEnd: string;
   teamName: string;
   confirmed: boolean;
 }) {
@@ -527,11 +531,11 @@ function InstallationScheduleRow({
   return (
     <button
       type="button"
-      onClick={() => navigate(`/calendario?week=${encodeURIComponent(weekStart)}`)}
+      onClick={() => navigate(`/calendario?start=${encodeURIComponent(plannedWorkStart)}`)}
       className="mb-4 -mt-2 flex items-center gap-2 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
     >
       <span>
-        Instalación: semana del {formatWeekStartLabel(weekStart)} · {teamName}
+        Instalación: {formatInstallationRangeLabel(plannedWorkStart, plannedWorkEnd)} · {teamName}
       </span>
       <span
         className="rounded px-1.5 py-0.5 text-[10px] font-semibold"
@@ -647,7 +651,8 @@ export function ProjectDetail() {
 
       {project.installationSchedule ? (
         <InstallationScheduleRow
-          weekStart={project.installationSchedule.weekStart}
+          plannedWorkStart={project.installationSchedule.plannedWorkStart}
+          plannedWorkEnd={project.installationSchedule.plannedWorkEnd}
           teamName={project.installationSchedule.teamName}
           confirmed={Boolean(project.installationSchedule.confirmedAt)}
         />

@@ -365,6 +365,26 @@ La preparación para multi-tenant está documentada en:
 
 [server/docs/SAAS_MIGRATION.md](server/docs/SAAS_MIGRATION.md)
 
+## Guardado y backup
+
+Para guardar todos los cambios, hacer commit,
+push a GitHub y backup de la base de datos,
+ejecutar desde la raíz del proyecto:
+
+   bash save.sh
+
+O desde la carpeta server/:
+
+   npm run save
+
+Esto hace automáticamente:
+- Backup de la DB comprimido en OneDrive
+- Git commit con fecha y hora
+- Git push a GitHub
+
+Correrlo siempre antes de cerrar el día
+o antes de hacer migraciones.
+
 ## Troubleshooting
 
 ## El frontend levanta pero no carga datos
