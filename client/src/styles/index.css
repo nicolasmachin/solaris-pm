@@ -33,6 +33,42 @@
   --color-warning-bg: #5d4700;
   --color-danger-text: #ffd1d1;
   --color-danger-bg: #5a1f2e;
+
+  /* Nav tab activa (dark: mismo color que accent — preserva aspecto actual) */
+  --color-nav-active-text: #ffd84d;
+  --color-nav-active-underline: #ffd84d;
+  --color-nav-active-underline-width: 1px;
+  --color-nav-active-weight: 400;
+  --color-nav-inactive-text: #c8def8;
+
+  /* Warnings inline ("⚠ Ritmo en riesgo", desvío +N días) */
+  --color-warn-inline: #ffd84d;
+
+  /* Punto de alerta en sidebar */
+  --color-alert-dot: #ef4444;
+
+  /* Pipeline: peso tipográfico del label de estado */
+  --color-pipe-status-weight: 700;
+
+  /* Pipeline: tarjeta Completo (dark: preserva look actual) */
+  --color-pipe-done-bg: #1a4d2e;
+  --color-pipe-done-border: color-mix(in srgb, #4ade80 50%, transparent);
+  --color-pipe-done-border-left: color-mix(in srgb, #4ade80 50%, transparent);
+  --color-pipe-done-border-left-width: 1px;
+  --color-pipe-done-title: #4ade80;
+  --color-pipe-done-label: #4ade80;
+  --color-pipe-done-subitem: #f8fbff;
+  --color-pipe-done-dot: #4ade80;
+
+  /* Pipeline: tarjeta Activo / En progreso */
+  --color-pipe-active-bg: #4a3f1a;
+  --color-pipe-active-border: color-mix(in srgb, #fbbf24 50%, transparent);
+  --color-pipe-active-border-left: color-mix(in srgb, #fbbf24 50%, transparent);
+  --color-pipe-active-border-left-width: 1px;
+  --color-pipe-active-title: #fbbf24;
+  --color-pipe-active-label: #fbbf24;
+  --color-pipe-active-subitem: #f8fbff;
+  --color-pipe-active-dot: #ffd84d;
 }
 
 :root {
@@ -41,22 +77,23 @@
 
 :root.light {
   color-scheme: light;
-  --color-bg-app: #eef6ff;
+  /* Paleta "Solar clásica" — modo diurno */
+  --color-bg-app: #f8fafc;
   --color-bg-sidebar: #e6f1ff;
   --color-bg-card: #ffffff;
   --color-bg-card-hover: #f3f9ff;
   --color-border: #b7d3f2;
   --color-border-hover: #80b4eb;
-  --color-text-primary: #07203b;
+  --color-text-primary: #0c3b6e;
   --color-text-secondary: #27507c;
-  --color-text-muted: #5379a3;
-  --color-accent: #e3b400;
-  --color-accent-hover: #c99c00;
+  --color-text-muted: #64748b;
+  --color-accent: #f5b800;
+  --color-accent-hover: #d99f00;
 
-  --color-state-done-text: #eef7ff;
-  --color-state-done-bg: #2e6fa8;
-  --color-state-active-text: #ffffff;
-  --color-state-active-bg: #1576ca;
+  --color-state-done-text: #14532d;
+  --color-state-done-bg: #e8f3ec;
+  --color-state-active-text: #78350f;
+  --color-state-active-bg: #fff4cc;
   --color-state-pending-text: #5b4700;
   --color-state-pending-bg: #fff1ad;
   --color-state-locked-bg: #dbeaf9;
@@ -64,12 +101,48 @@
 
   --color-info-text: #eef7ff;
   --color-info-bg: #4f8ec8;
-  --color-success-text: #eef7ff;
-  --color-success-bg: #2f73ad;
-  --color-warning-text: #654d00;
-  --color-warning-bg: #ffef9c;
-  --color-danger-text: #7f1d35;
-  --color-danger-bg: #ffd9df;
+  --color-success-text: #14532d;
+  --color-success-bg: #e8f3ec;
+  --color-warning-text: #78350f;
+  --color-warning-bg: #fff4cc;
+  --color-danger-text: #7f1d1d;
+  --color-danger-bg: #fee2e2;
+
+  /* Nav: texto activo azul primario, subrayado amarillo 2px */
+  --color-nav-active-text: #0c3b6e;
+  --color-nav-active-underline: #f5b800;
+  --color-nav-active-underline-width: 2px;
+  --color-nav-active-weight: 500;
+  --color-nav-inactive-text: #64748b;
+
+  /* Warning inline en amber 700 para contraste AA */
+  --color-warn-inline: #b45309;
+
+  /* Dot de alerta: red-600 en lugar de red-500 saturado */
+  --color-alert-dot: #dc2626;
+
+  /* Pipeline: peso tipográfico del label de estado (light: 500) */
+  --color-pipe-status-weight: 500;
+
+  /* Pipeline: tarjeta Completo — pastel + barra lateral sólida */
+  --color-pipe-done-bg: #e8f3ec;
+  --color-pipe-done-border: rgba(15, 23, 42, 0.08);
+  --color-pipe-done-border-left: #1f7a3a;
+  --color-pipe-done-border-left-width: 3px;
+  --color-pipe-done-title: #14532d;
+  --color-pipe-done-label: #64748b;
+  --color-pipe-done-subitem: #166534;
+  --color-pipe-done-dot: #1f7a3a;
+
+  /* Pipeline: tarjeta Activo — pastel + barra lateral sólida */
+  --color-pipe-active-bg: #fff4cc;
+  --color-pipe-active-border: rgba(15, 23, 42, 0.08);
+  --color-pipe-active-border-left: #f5b800;
+  --color-pipe-active-border-left-width: 3px;
+  --color-pipe-active-title: #78350f;
+  --color-pipe-active-label: #64748b;
+  --color-pipe-active-subitem: #92400e;
+  --color-pipe-active-dot: #f5b800;
 }
 
 * {
@@ -105,6 +178,12 @@ body {
 ::-webkit-scrollbar-thumb {
   background: var(--color-border-hover);
   border-radius: 3px;
+}
+
+/* Nav tab activa: peso + subrayado controlados por variables de tema */
+.nav-active {
+  font-weight: var(--color-nav-active-weight);
+  border-bottom: var(--color-nav-active-underline-width) solid var(--color-nav-active-underline);
 }
 
 /* Skeleton animation */

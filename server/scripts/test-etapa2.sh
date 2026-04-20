@@ -74,7 +74,7 @@ request_download() {
 
 cd "$ROOT_DIR" || exit 1
 
-request_json "POST" "$BASE_URL/auth/login" '{"email":"admin@solarispm.com","password":"Admin1234"}'
+request_json "POST" "$BASE_URL/auth/login" '{"email":"admin@voltiapm.com","password":"Admin1234"}'
 TOKEN="$(printf "%s" "$RESPONSE_BODY" | jq -r '.token // empty')"
 record_result "AUTH · POST /auth/login" "$RESPONSE_STATUS" "200" "token obtenido"
 
@@ -85,7 +85,7 @@ record_result "PROYECTOS · GET /api/projects" "$RESPONSE_STATUS" "200" "primer 
 request_json "GET" "$BASE_URL/api/projects/$FIRST_PROJECT_ID" "" "$TOKEN"
 record_result "PROYECTOS · GET /api/projects/:id" "$RESPONSE_STATUS" "200" "detalle con métricas"
 
-CREATE_PROJECT_BODY='{"clientName":"QA Solar Demo","capacityKwp":88,"locationCity":"Rosario","locationProvince":"Santa Fe","plannedEndDate":"2026-09-30","budgetUsd":76500,"estimatedMwhYear":140.2,"notificationEmail":"qa@solarispm.com","notificationPhone":"+5493415550101","startDate":"2026-04-12"}'
+CREATE_PROJECT_BODY='{"clientName":"QA Solar Demo","capacityKwp":88,"locationCity":"Rosario","locationProvince":"Santa Fe","plannedEndDate":"2026-09-30","budgetUsd":76500,"estimatedMwhYear":140.2,"notificationEmail":"qa@voltiapm.com","notificationPhone":"+5493415550101","startDate":"2026-04-12"}'
 request_json "POST" "$BASE_URL/api/projects" "$CREATE_PROJECT_BODY" "$TOKEN"
 TEST_PROJECT_ID="$(printf "%s" "$RESPONSE_BODY" | jq -r '.id // empty')"
 STAGE1_ID="$(printf "%s" "$RESPONSE_BODY" | jq -r '.stages[0].id // empty')"
@@ -161,7 +161,7 @@ record_result "ARCHIVOS · GET download" "$RESPONSE_STATUS" "200" "bytes=$DOWNLO
 
 (
   cd "$SERVER_DIR" || exit 1
-  DATABASE_URL="postgresql://nicolasmachin@localhost:5433/solaris_pm_local" JWT_SECRET="dev-secret" node --import tsx -e "import { runAlertsCheck } from './src/services/alerts.service.ts'; await runAlertsCheck();"
+  DATABASE_URL="postgresql://nicolasmachin@localhost:5433/voltia_pm_local" JWT_SECRET="dev-secret" node --import tsx -e "import { runAlertsCheck } from './src/services/alerts.service.ts'; await runAlertsCheck();"
 ) >/dev/null 2>&1
 
 request_json "GET" "$BASE_URL/api/projects/$TEST_PROJECT_ID/audit?page=1&limit=100" "" "$TOKEN"

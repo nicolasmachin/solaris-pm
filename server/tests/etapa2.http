@@ -1,5 +1,5 @@
 @baseUrl = http://127.0.0.1:4000
-@adminEmail = admin@solarispm.com
+@adminEmail = admin@voltiapm.com
 @adminPassword = Admin1234
 @taskDueDate = 2026-04-13
 
@@ -43,7 +43,7 @@ Content-Type: application/json
   "plannedEndDate": "2026-09-30",
   "budgetUsd": 76500,
   "estimatedMwhYear": 140.2,
-  "notificationEmail": "qa@solarispm.com",
+  "notificationEmail": "qa@voltiapm.com",
   "notificationPhone": "+5493415550101",
   "startDate": "2026-04-12"
 }

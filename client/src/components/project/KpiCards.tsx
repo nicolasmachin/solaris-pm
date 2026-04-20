@@ -22,7 +22,7 @@ function KpiCard({ label, value, unit, delta, warning }: KpiCardProps) {
       </div>
       {delta && <div className="mt-1 text-[10px]">{delta}</div>}
       {warning && (
-        <p className="mt-1 text-[10px] text-[var(--color-accent)]">{warning}</p>
+        <p className="mt-1 text-[10px] text-[var(--color-warn-inline)]">{warning}</p>
       )}
     </div>
   );
@@ -47,7 +47,7 @@ export function KpiCards({ project }: KpiCardsProps) {
   let daysDelta: React.ReactNode;
   if (m.delayDays > 0) {
     daysDelta = (
-      <span className="text-[var(--color-accent)]">⚠ +{m.delayDays} días desvío</span>
+      <span className="text-[var(--color-warn-inline)]">⚠ +{m.delayDays} días desvío</span>
     );
   } else if (m.delayDays < 0) {
     daysDelta = (

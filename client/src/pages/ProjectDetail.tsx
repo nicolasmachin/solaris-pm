@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { getProject, patchProject } from "../api/projects.api";
@@ -493,6 +493,60 @@ function MaterialesTab({ projectId }: { projectId: string }) {
   );
 }
 
+// ─── Installation schedule row ────────────────────────────────────────────────
+
+const MONTHS_ES_SHORT = [
+  "enero","febrero","marzo","abril","mayo","junio",
+  "julio","agosto","setiembre","octubre","noviembre","diciembre",
+];
+
+function formatWeekStartLabel(iso: string): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  const end = new Date(d);
+  end.setUTCDate(end.getUTCDate() + 4);
+  const startDay = d.getUTCDate();
+  const endDay = end.getUTCDate();
+  const endMonth = MONTHS_ES_SHORT[end.getUTCMonth()];
+  const startMonth = MONTHS_ES_SHORT[d.getUTCMonth()];
+  if (d.getUTCMonth() === end.getUTCMonth()) {
+    return `${startDay}–${endDay} de ${endMonth}`;
+  }
+  return `${startDay} de ${startMonth}–${endDay} de ${endMonth}`;
+}
+
+function InstallationScheduleRow({
+  weekStart,
+  teamName,
+  confirmed,
+}: {
+  weekStart: string;
+  teamName: string;
+  confirmed: boolean;
+}) {
+  const navigate = useNavigate();
+  return (
+    <button
+      type="button"
+      onClick={() => navigate(`/calendario?week=${encodeURIComponent(weekStart)}`)}
+      className="mb-4 -mt-2 flex items-center gap-2 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+    >
+      <span>
+        Instalación: semana del {formatWeekStartLabel(weekStart)} · {teamName}
+      </span>
+      <span
+        className="rounded px-1.5 py-0.5 text-[10px] font-semibold"
+        style={
+          confirmed
+            ? { background: "var(--color-state-done-bg)", color: "var(--color-state-done-text)" }
+            : { background: "var(--color-warning-bg)", color: "var(--color-warning-text)" }
+        }
+      >
+        {confirmed ? "Confirmada" : "Sin confirmar"}
+      </span>
+    </button>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export function ProjectDetail() {
@@ -590,6 +644,14 @@ export function ProjectDetail() {
         project={project}
         onEdit={() => setShowEditProject(true)}
       />
+
+      {project.installationSchedule ? (
+        <InstallationScheduleRow
+          weekStart={project.installationSchedule.weekStart}
+          teamName={project.installationSchedule.teamName}
+          confirmed={Boolean(project.installationSchedule.confirmedAt)}
+        />
+      ) : null}
 
       <SolarSystemsSection
         project={project}

@@ -23,6 +23,7 @@ const FinanceMovements = lazy(() => import("./pages/FinanceMovements").then((mod
 const FinanceSuppliers = lazy(() => import("./pages/FinanceSuppliers").then((module) => ({ default: module.FinanceSuppliers })));
 const FinanceReports = lazy(() => import("./pages/FinanceReports").then((module) => ({ default: module.FinanceReports })));
 const Stock = lazy(() => import("./pages/Stock").then((module) => ({ default: module.Stock })));
+const Calendar = lazy(() => import("./pages/Calendar").then((module) => ({ default: module.Calendar })));
 
 function RouteFallback() {
   return (
@@ -178,6 +179,14 @@ export function App() {
           element={
             <PermissionRoute module="STOCK" action="VIEW">
               <Stock />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/calendario"
+          element={
+            <PermissionRoute module="OPERACIONES" action="VIEW">
+              <Calendar />
             </PermissionRoute>
           }
         />

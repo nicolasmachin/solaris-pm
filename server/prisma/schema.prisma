@@ -79,6 +79,7 @@ enum AuditEntityType {
   stock_product
   stock_movement
   exchange_rate
+  installation_schedule
 }
 
 enum AuditAction {
@@ -300,6 +301,7 @@ model User {
   financeMovementsCreated  FinanceMovement[]   @relation("FinanceMovCreadoPor")
   financeMovementsApproved FinanceMovement[]   @relation("FinanceMovAprobadoPor")
   financeApprovalHistory   FinanceApprovalHistory[]
+  installationSchedulesConfirmed InstallationSchedule[] @relation("InstallationConfirmedBy")
   deletedAt               DateTime?            @db.Timestamptz(6)
   createdAt               DateTime             @default(now()) @db.Timestamptz(6)
   updatedAt               DateTime             @updatedAt @db.Timestamptz(6)
@@ -347,6 +349,7 @@ model Project {
   solarSystems      SolarSystem[]
   financeMovements  FinanceMovement[]
   stockMovements    StockMovement[]
+  installationSchedule InstallationSchedule?
   deletedAt         DateTime?            @db.Timestamptz(6)
   createdAt         DateTime             @default(now()) @db.Timestamptz(6)
   updatedAt         DateTime             @updatedAt @db.Timestamptz(6)
@@ -962,6 +965,29 @@ model StockProduct {
 
   @@index([categoria])
   @@map("stock_products")
+}
+
+model InstallationSchedule {
+  id              String    @id @default(cuid())
+  projectId       String    @unique
+  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  teamName        String
+  teamColor       String    @default("#378ADD")
+  weekStart       DateTime  @db.Date
+  weekEnd         DateTime  @db.Date
+  confirmedAt     DateTime? @db.Timestamptz(6)
+  confirmedBy     String?
+  confirmedByUser User?     @relation("InstallationConfirmedBy", fields: [confirmedBy], references: [id], onDelete: SetNull)
+  notes           String?
+  createdBy       String?
+  createdAt       DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @db.Timestamptz(6)
+  deletedAt       DateTime? @db.Timestamptz(6)
+
+  @@index([weekStart])
+  @@index([projectId])
+  @@index([deletedAt])
+  @@map("installation_schedules")
 }
 
 model StockMovement {

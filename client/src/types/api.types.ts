@@ -259,6 +259,16 @@ export interface Project {
   currentStage: Stage | null;
   recentTasks: Task[];
   recentFiles: FileAttachment[];
+  installationSchedule?: {
+    id: string;
+    teamName: string;
+    teamColor: string;
+    weekStart: string;
+    weekEnd: string;
+    confirmedAt: string | null;
+    confirmedByUser: { id: string; name: string } | null;
+    notes: string | null;
+  } | null;
 }
 
 // ─── Substage patch response ──────────────────────────────────────────────────

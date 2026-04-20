@@ -1,6 +1,6 @@
-# SOLARIS PM
+# VOLTIA PM
 
-SOLARIS PM es un sistema interno para gestionar proyectos fotovoltaicos de punta a punta. El objetivo del producto es que un equipo pueda seguir el ciclo completo de trabajo en un solo lugar: desde el lead comercial hasta la ejecución, habilitación, postventa, auditoría, métricas y notificaciones.
+VOLTIA PM es un sistema interno para gestionar proyectos fotovoltaicos de punta a punta. El objetivo del producto es que un equipo pueda seguir el ciclo completo de trabajo en un solo lugar: desde el lead comercial hasta la ejecución, habilitación, postventa, auditoría, métricas y notificaciones.
 
 Este README está escrito para que lo pueda usar alguien que no conozca el proyecto de antemano. Si abrís este repo por primera vez, lo ideal es seguir los pasos en el orden en que aparecen.
 
@@ -56,7 +56,7 @@ Si no vas a usar todavía el generador de propuestas, Python no bloquea el resto
 ## Estructura general del repositorio
 
 ```text
-solaris-pm/
+voltia-pm/
 ├── client/
 │   ├── src/
 │   │   ├── api/                # clientes Axios por módulo
@@ -98,10 +98,10 @@ solaris-pm/
 
 ```bash
 git clone <repo>
-cd solaris-pm
+cd voltia-pm
 ```
 
-Si ya tenés el repo descargado, asegurate de estar parado en la carpeta raíz `solaris-pm/` antes de seguir.
+Si ya tenés el repo descargado, asegurate de estar parado en la carpeta raíz `voltia-pm/` antes de seguir.
 
 ## 2. Instalar dependencias
 
@@ -149,7 +149,7 @@ Para poder arrancar lo mínimo, necesitás:
 Un ejemplo local típico podría ser:
 
 ```env
-DATABASE_URL=postgresql://usuario:password@localhost:5432/solaris_pm
+DATABASE_URL=postgresql://usuario:password@localhost:5432/voltia_pm
 JWT_SECRET=dev-secret
 JWT_EXPIRES_IN=7d
 STORAGE_PATH=./storage
@@ -280,10 +280,10 @@ El seed crea estos usuarios para probar roles distintos:
 
 | Email | Password | Rol | Uso recomendado |
 | --- | --- | --- | --- |
-| `admin@solarispm.com` | `Admin1234` | `ADMIN` | Ver todo y configurar todo |
-| `comercial@solarispm.com` | `Admin1234` | `ASESOR_COMERCIAL` | Probar CRM y ventas |
-| `ingeniero@solarispm.com` | `Admin1234` | `INGENIERIA` | Probar vistas técnicas |
-| `operaciones@solarispm.com` | `Admin1234` | `OPERACIONES` | Probar ejecución y seguimiento |
+| `admin@voltiapm.com` | `Admin1234` | `ADMIN` | Ver todo y configurar todo |
+| `comercial@voltiapm.com` | `Admin1234` | `ASESOR_COMERCIAL` | Probar CRM y ventas |
+| `ingeniero@voltiapm.com` | `Admin1234` | `INGENIERIA` | Probar vistas técnicas |
+| `operaciones@voltiapm.com` | `Admin1234` | `OPERACIONES` | Probar ejecución y seguimiento |
 
 ## Scripts útiles
 
@@ -341,7 +341,7 @@ Esto está pensado para que no tengas que crear todo manualmente solo para proba
 
 Si querés una validación rápida del sistema:
 
-1. Iniciá sesión con `admin@solarispm.com`
+1. Iniciá sesión con `admin@voltiapm.com`
 2. Entrá al dashboard
 3. Abrí un proyecto
 4. Revisá etapas, tareas y comentarios

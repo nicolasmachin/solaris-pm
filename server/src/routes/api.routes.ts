@@ -68,7 +68,7 @@ import {
 import { getStageLabel, getTipoObraLabel, getOperationVisibility } from "../services/pipeline-definitions.js";
 import { createNotificationIfNotExists } from "../services/notification.service.js";
 import { createAndSendNotification, checkProgressMilestone } from "../services/notify.service.js";
-import { diffInDays, parseDateOnly, todayUtc } from "../utils/dates.js";
+import { diffInDays, parseDateOnly, todayUtc, toDateOnlyString } from "../utils/dates.js";
 import { AppError, badRequest, conflict, forbidden, notFound } from "../utils/errors.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../utils/serialization.js";
 
@@ -1123,6 +1123,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
           where: { deletedAt: null },
           orderBy: { order: "asc" },
         },
+        installationSchedule: {
+          where: { deletedAt: null },
+          include: {
+            confirmedByUser: { select: { id: true, name: true } },
+          },
+        },
       },
     });
 
@@ -1132,8 +1138,27 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     const metrics = calculateProjectMetrics(project);
 
+    const installationSchedule = project.installationSchedule
+      ? {
+          id: project.installationSchedule.id,
+          teamName: project.installationSchedule.teamName,
+          teamColor: project.installationSchedule.teamColor,
+          weekStart: serializeDateOnly(project.installationSchedule.weekStart),
+          weekEnd: serializeDateOnly(project.installationSchedule.weekEnd),
+          confirmedAt: serializeDate(project.installationSchedule.confirmedAt),
+          confirmedByUser: project.installationSchedule.confirmedByUser
+            ? {
+                id: project.installationSchedule.confirmedByUser.id,
+                name: project.installationSchedule.confirmedByUser.name,
+              }
+            : null,
+          notes: project.installationSchedule.notes,
+        }
+      : null;
+
     return {
       ...serializeProject(project),
+      installationSchedule,
       solarSystems: project.solarSystems.map(serializeSolarSystem),
       metrics,
       currentStage: (() => {
@@ -4645,6 +4670,359 @@ export async function registerApiRoutes(app: FastifyInstance) {
       updatedAt: serializeDate(proposal.updatedAt),
       downloadUrl: proposal.status === "COMPLETED" ? `/api/proposals/${proposal.id}/download` : null,
     }));
+  });
+
+  // ─── Calendario de instalaciones ─────────────────────────────────────────────
+
+  const calendarCreateSchema = z.object({
+    projectId: z.string().min(1),
+    teamName: z.string().trim().min(1),
+    teamColor: z.string().trim().regex(/^#[0-9A-Fa-f]{6}$/, "Color debe ser hex (#RRGGBB)").optional(),
+    weekStart: dateOnlySchema,
+    notes: z.string().trim().optional().nullable(),
+  });
+
+  const calendarPatchSchema = z.object({
+    teamName: z.string().trim().min(1).optional(),
+    teamColor: z.string().trim().regex(/^#[0-9A-Fa-f]{6}$/, "Color debe ser hex (#RRGGBB)").optional(),
+    weekStart: dateOnlySchema.optional(),
+    notes: z.string().trim().nullable().optional(),
+  }).strict();
+
+  function assertMondayUtc(date: Date) {
+    if (date.getUTCDay() !== 1) {
+      throw badRequest("INVALID_WEEK_START", "weekStart debe ser un lunes");
+    }
+  }
+
+  function serializeSchedule(s: {
+    id: string;
+    projectId: string;
+    teamName: string;
+    teamColor: string;
+    weekStart: Date;
+    weekEnd: Date;
+    confirmedAt: Date | null;
+    confirmedBy: string | null;
+    confirmedByUser?: { id: string; name: string } | null;
+    notes: string | null;
+    createdBy: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    deletedAt?: Date | null;
+    project?: {
+      id: string;
+      clientName: string;
+      code: string;
+      capacityKwp: Prisma.Decimal;
+      locationCity: string;
+      stages?: Array<{ name: StageType; tipoObra: TipoObra | null }>;
+    };
+  }) {
+    const workType =
+      s.project?.stages?.find((st) => st.name === StageType.OPERACIONES)?.tipoObra ?? null;
+    return {
+      id: s.id,
+      projectId: s.projectId,
+      teamName: s.teamName,
+      teamColor: s.teamColor,
+      weekStart: serializeDateOnly(s.weekStart),
+      weekEnd: serializeDateOnly(s.weekEnd),
+      confirmedAt: serializeDate(s.confirmedAt),
+      confirmedBy: s.confirmedBy,
+      confirmedByUser: s.confirmedByUser
+        ? { id: s.confirmedByUser.id, name: s.confirmedByUser.name }
+        : null,
+      notes: s.notes,
+      createdAt: serializeDate(s.createdAt),
+      updatedAt: serializeDate(s.updatedAt),
+      project: s.project
+        ? {
+            id: s.project.id,
+            clientName: s.project.clientName,
+            code: s.project.code,
+            capacityKwp: decimalToNumber(s.project.capacityKwp),
+            locationCity: s.project.locationCity,
+            workType,
+          }
+        : null,
+    };
+  }
+
+  app.get("/calendar", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async (request) => {
+    const query = z
+      .object({
+        year: z.coerce.number().int().min(2000).max(2100),
+        month: z.coerce.number().int().min(1).max(12),
+      })
+      .parse(request.query);
+
+    const firstDay = new Date(Date.UTC(query.year, query.month - 1, 1));
+    const lastDay = new Date(Date.UTC(query.year, query.month, 0));
+
+    // Primer lunes de la grilla (puede caer el mes anterior)
+    const firstDayDow = firstDay.getUTCDay(); // 0=Sun..6=Sat
+    const offsetToMonday = firstDayDow === 0 ? -6 : 1 - firstDayDow;
+    const firstMonday = new Date(firstDay);
+    firstMonday.setUTCDate(firstMonday.getUTCDate() + offsetToMonday);
+
+    // Último lunes cuya semana (Lu-Vi) toca el mes
+    const lastMonday = new Date(lastDay);
+    const lastDayDow = lastDay.getUTCDay();
+    const offsetFromLast = lastDayDow === 0 ? -6 : 1 - lastDayDow;
+    lastMonday.setUTCDate(lastMonday.getUTCDate() + offsetFromLast);
+
+    const schedules = await prisma.installationSchedule.findMany({
+      where: {
+        deletedAt: null,
+        weekStart: {
+          gte: firstMonday,
+          lte: lastMonday,
+        },
+      },
+      include: {
+        project: {
+          include: {
+            stages: { select: { name: true, tipoObra: true } },
+          },
+        },
+        confirmedByUser: { select: { id: true, name: true } },
+      },
+      orderBy: { weekStart: "asc" },
+    });
+
+    const takenWeeks = new Set(schedules.map((s) => toDateOnlyString(s.weekStart)));
+    const freeWeeks: string[] = [];
+    const cursor = new Date(firstMonday);
+    while (cursor.getTime() <= lastMonday.getTime()) {
+      const iso = toDateOnlyString(cursor);
+      if (iso && !takenWeeks.has(iso)) {
+        freeWeeks.push(iso);
+      }
+      cursor.setUTCDate(cursor.getUTCDate() + 7);
+    }
+
+    return {
+      schedules: schedules.map((s) => serializeSchedule(s)),
+      freeWeeks,
+      range: {
+        firstMonday: toDateOnlyString(firstMonday),
+        lastMonday: toDateOnlyString(lastMonday),
+      },
+    };
+  });
+
+  app.get("/calendar/teams", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async () => {
+    const rows = await prisma.installationSchedule.findMany({
+      where: { deletedAt: null },
+      select: { teamName: true, teamColor: true },
+      orderBy: { createdAt: "desc" },
+    });
+    const seen = new Map<string, string>();
+    for (const r of rows) {
+      if (!seen.has(r.teamName)) {
+        seen.set(r.teamName, r.teamColor);
+      }
+    }
+    return Array.from(seen.entries()).map(([teamName, teamColor]) => ({ teamName, teamColor }));
+  });
+
+  app.post("/calendar", { preHandler: authorize(Module.OPERACIONES, Action.CREATE) }, async (request, reply) => {
+    const user = ensureUser(request);
+    const body = calendarCreateSchema.parse(request.body);
+
+    const weekStart = parseDateOnly(body.weekStart);
+    assertMondayUtc(weekStart);
+
+    const project = await prisma.project.findFirst({
+      where: { id: body.projectId, deletedAt: null },
+      include: { installationSchedule: true },
+    });
+    if (!project) {
+      throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+    }
+
+    const existing = project.installationSchedule;
+    if (existing && !existing.deletedAt) {
+      throw conflict(
+        "INSTALLATION_ALREADY_SCHEDULED",
+        `El proyecto ya tiene una instalación agendada para la semana del ${toDateOnlyString(existing.weekStart)}`,
+      );
+    }
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setUTCDate(weekEnd.getUTCDate() + 4);
+
+    let created;
+    if (existing && existing.deletedAt) {
+      // Reactivar registro soft-deleted
+      created = await prisma.installationSchedule.update({
+        where: { id: existing.id },
+        data: {
+          teamName: body.teamName,
+          teamColor: body.teamColor ?? "#378ADD",
+          weekStart,
+          weekEnd,
+          notes: body.notes ?? null,
+          createdBy: user.id,
+          deletedAt: null,
+          confirmedAt: null,
+          confirmedBy: null,
+        },
+        include: {
+          project: { include: { stages: { select: { name: true, tipoObra: true } } } },
+          confirmedByUser: { select: { id: true, name: true } },
+        },
+      });
+    } else {
+      created = await prisma.installationSchedule.create({
+        data: {
+          projectId: body.projectId,
+          teamName: body.teamName,
+          teamColor: body.teamColor ?? "#378ADD",
+          weekStart,
+          weekEnd,
+          notes: body.notes ?? null,
+          createdBy: user.id,
+        },
+        include: {
+          project: { include: { stages: { select: { name: true, tipoObra: true } } } },
+          confirmedByUser: { select: { id: true, name: true } },
+        },
+      });
+    }
+
+    await createAuditEntry({
+      entityType: AuditEntityType.installation_schedule,
+      entityId: created.id,
+      projectId: created.projectId,
+      userId: user.id,
+      action: AuditAction.created,
+      description: `Instalación de ${project.clientName} agendada para semana del ${toDateOnlyString(weekStart)}`,
+      metadata: { teamName: created.teamName, teamColor: created.teamColor },
+    });
+
+    reply.code(201);
+    return serializeSchedule(created);
+  });
+
+  app.patch("/calendar/:id", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
+    const user = ensureUser(request);
+    const params = z.object({ id: z.string() }).parse(request.params);
+    const body = calendarPatchSchema.parse(request.body);
+
+    const existing = await prisma.installationSchedule.findFirst({
+      where: { id: params.id, deletedAt: null },
+    });
+    if (!existing) {
+      throw notFound("INSTALLATION_NOT_FOUND", "Instalación no encontrada");
+    }
+
+    const updateData: Prisma.InstallationScheduleUpdateInput = {};
+    if (body.teamName !== undefined) updateData.teamName = body.teamName;
+    if (body.teamColor !== undefined) updateData.teamColor = body.teamColor;
+    if (body.notes !== undefined) updateData.notes = body.notes;
+    if (body.weekStart !== undefined) {
+      const newStart = parseDateOnly(body.weekStart);
+      assertMondayUtc(newStart);
+      const newEnd = new Date(newStart);
+      newEnd.setUTCDate(newEnd.getUTCDate() + 4);
+      updateData.weekStart = newStart;
+      updateData.weekEnd = newEnd;
+    }
+
+    const updated = await prisma.installationSchedule.update({
+      where: { id: existing.id },
+      data: updateData,
+      include: {
+        project: { include: { stages: { select: { name: true, tipoObra: true } } } },
+        confirmedByUser: { select: { id: true, name: true } },
+      },
+    });
+
+    const labels: Record<string, string> = {
+      teamName: "equipo",
+      teamColor: "color de equipo",
+      weekStart: "semana de inicio",
+      notes: "notas",
+    };
+    await createAuditEntriesForChanges({
+      entityType: AuditEntityType.installation_schedule,
+      entityId: existing.id,
+      projectId: existing.projectId,
+      userId: user.id,
+      oldData: existing as unknown as Record<string, unknown>,
+      newData: updated as unknown as Record<string, unknown>,
+      labels,
+      formatter: ({ label, oldValue, newValue }) =>
+        `Actualizó ${label} de la instalación de ${oldValue ?? "vacío"} a ${newValue ?? "vacío"}`,
+    });
+
+    return serializeSchedule(updated);
+  });
+
+  app.patch("/calendar/:id/confirm", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
+    const user = ensureUser(request);
+    const params = z.object({ id: z.string() }).parse(request.params);
+
+    const existing = await prisma.installationSchedule.findFirst({
+      where: { id: params.id, deletedAt: null },
+    });
+    if (!existing) {
+      throw notFound("INSTALLATION_NOT_FOUND", "Instalación no encontrada");
+    }
+
+    const updated = await prisma.installationSchedule.update({
+      where: { id: existing.id },
+      data: {
+        confirmedAt: new Date(),
+        confirmedBy: user.id,
+      },
+      include: {
+        project: { include: { stages: { select: { name: true, tipoObra: true } } } },
+        confirmedByUser: { select: { id: true, name: true } },
+      },
+    });
+
+    await createAuditEntry({
+      entityType: AuditEntityType.installation_schedule,
+      entityId: existing.id,
+      projectId: existing.projectId,
+      userId: user.id,
+      action: AuditAction.updated,
+      description: "Fecha de instalación confirmada",
+    });
+
+    return serializeSchedule(updated);
+  });
+
+  app.delete("/calendar/:id", { preHandler: authorize(Module.OPERACIONES, Action.DELETE) }, async (request) => {
+    const user = ensureUser(request);
+    const params = z.object({ id: z.string() }).parse(request.params);
+
+    const existing = await prisma.installationSchedule.findFirst({
+      where: { id: params.id, deletedAt: null },
+      include: { project: { select: { clientName: true } } },
+    });
+    if (!existing) {
+      throw notFound("INSTALLATION_NOT_FOUND", "Instalación no encontrada");
+    }
+
+    await prisma.installationSchedule.update({
+      where: { id: existing.id },
+      data: { deletedAt: new Date() },
+    });
+
+    await createAuditEntry({
+      entityType: AuditEntityType.installation_schedule,
+      entityId: existing.id,
+      projectId: existing.projectId,
+      userId: user.id,
+      action: AuditAction.deleted,
+      description: `Eliminó la programación de instalación de ${existing.project.clientName}`,
+    });
+
+    return { success: true };
   });
 
   // ─── PASO 5: Dev test endpoint ───────────────────────────────────────────────

@@ -9,6 +9,10 @@ import { registerRoutes } from "./routes/index.js";
 import { checkGoalsConfigured, startAlertsJob, startGoalsCheckJob } from "./services/alerts.service.js";
 import { formatErrorPayload } from "./utils/errors.js";
 
+if (process.env.NODE_ENV === "production") {
+  console.log("Servidor corriendo en PRODUCCIÓN");
+}
+
 async function buildServer() {
   const app = Fastify({
     logger: env.nodeEnv !== "test",

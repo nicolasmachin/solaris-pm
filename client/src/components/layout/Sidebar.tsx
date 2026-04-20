@@ -230,7 +230,7 @@ function ProjectItem({
           {project.clientName}
         </p>
         {showDelayAlert ? <span className="text-xs text-[var(--color-accent)]">⚠</span> : null}
-        {showOverdueStageAlert ? <span className="inline-block h-2 w-2 rounded-full bg-red-500" /> : null}
+        {showOverdueStageAlert ? <span className="inline-block h-2 w-2 rounded-full bg-[var(--color-alert-dot)]" /> : null}
       </div>
       <p className="text-[10px] font-mono text-[var(--color-text-muted)] mt-0.5 truncate">
         {project.capacityKwp} kWp · {project.currentStage?.label ?? project.currentStage?.name ?? "Sin etapa"}

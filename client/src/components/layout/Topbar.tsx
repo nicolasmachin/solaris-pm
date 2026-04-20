@@ -72,8 +72,8 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `text-sm transition-colors pb-0.5 ${
       isActive
-        ? "text-[var(--color-accent)] border-b border-[var(--color-accent)]"
-        : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+        ? "nav-active text-[var(--color-nav-active-text)]"
+        : "text-[var(--color-nav-inactive-text)] hover:text-[var(--color-text-primary)]"
     }`;
 
   return (
@@ -125,6 +125,11 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
           <NavLink to="/projects" className={navLinkClass}>
             Proyectos
           </NavLink>
+          <CanAccess module="OPERACIONES" action="VIEW">
+            <NavLink to="/calendario" className={navLinkClass}>
+              Calendario
+            </NavLink>
+          </CanAccess>
           <CanAccess module="VENTAS" action="VIEW">
             <NavLink to="/ventas" className={navLinkClass}>
               Ventas

@@ -38,7 +38,7 @@ export function ProjectTimelineIndicators({ project }: { project: Project }) {
           <span>Avance {metrics.progressPercent}%</span>
         </div>
         {rhythmAtRisk ? (
-          <p className="mt-2 text-xs text-[var(--color-accent)]">⚠ Ritmo en riesgo</p>
+          <p className="mt-2 text-xs text-[var(--color-warn-inline)]">⚠ Ritmo en riesgo</p>
         ) : (
           <p className="mt-2 text-xs text-[var(--color-text-muted)]">Ritmo alineado al plan</p>
         )}

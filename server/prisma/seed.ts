@@ -5,11 +5,9 @@ import {
   AuditEntityType,
   CategoriaPrincipal,
   EstadoAprobacion,
-  EstadoComprobante,
   GoalArea,
   GoalMetric,
   GoalPeriod,
-  MetodoPago,
   ModalidadPago,
   Module,
   Moneda,
@@ -26,7 +24,6 @@ import {
   SubstageStatus,
   TaskPriority,
   TaskStatus,
-  TipoComprobante,
   TipoMovimiento,
   TipoMovimientoStock,
   TipoObra,
@@ -40,6 +37,15 @@ import {
   syncSubstageProgress,
 } from "../src/services/project.service.js";
 import { diffInDays, parseDateOnly } from "../src/utils/dates.js";
+
+// ─── Guard de producción ──────────────────────────────────────────────────────
+// Bloquea la ejecución del seed si NODE_ENV === "production" para evitar
+// destrucción accidental de datos reales.
+
+if (process.env.NODE_ENV === "production") {
+  console.log("Seed bloqueado en producción.");
+  process.exit(0);
+}
 
 type ProjectGraph = Prisma.ProjectGetPayload<{
   include: {
@@ -67,97 +73,45 @@ function decimal(value: number) {
   return new Prisma.Decimal(value);
 }
 
-async function resetDatabase() {
-  await prisma.auditLog.deleteMany();
-  await prisma.notification.deleteMany();
-  await prisma.fileAttachment.deleteMany();
-  await prisma.task.deleteMany();
-  await prisma.comment.deleteMany();
-  await prisma.checklistItem.deleteMany();
-  await prisma.substage.deleteMany();
-  await prisma.stage.deleteMany();
-  await prisma.salesActivity.deleteMany();
-  await prisma.salesLead.deleteMany();
-  await prisma.proposalGeneration.deleteMany();
-  await prisma.setting.deleteMany();
-  await prisma.permission.deleteMany();
-  await prisma.solarSystem.deleteMany();
-  // Finance & Stock
-  await prisma.financeApprovalHistory.deleteMany();
-  await prisma.financeComprobantePayment.deleteMany();
-  await prisma.financePayment.deleteMany();
-  await prisma.stockMovement.deleteMany();
-  await prisma.financeComprobante.deleteMany();
-  await prisma.financeMovement.deleteMany();
-  await prisma.exchangeRate.deleteMany();
-  await prisma.financeSubcategory.deleteMany();
-  await prisma.financeApprovalRule.deleteMany();
-  await prisma.stockProduct.deleteMany();
-  await prisma.supplier.deleteMany();
-  await prisma.goal.deleteMany();
-  await prisma.project.deleteMany();
-  await prisma.user.deleteMany();
+function slug(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
+
+// ─── Usuarios ─────────────────────────────────────────────────────────────────
 
 async function createUsers() {
   const password = await bcrypt.hash("Y1025Voltia", 10);
 
-  const admin = await prisma.user.create({
-    data: {
-      email: "admin@voltiapm.com",
-      password,
-      name: "Administrador Voltia",
-      role: Role.ADMIN,
-      avatarUrl: null,
-    },
-  });
+  async function upsertUser(email: string, data: { name: string; role: Role }) {
+    return prisma.user.upsert({
+      where: { email },
+      create: {
+        email,
+        password,
+        name: data.name,
+        role: data.role,
+        avatarUrl: null,
+      },
+      update: {
+        // No sobreescribir password ni role en re-seed: preservar cambios hechos desde la app.
+        name: data.name,
+      },
+    });
+  }
 
-  const operations = await prisma.user.create({
-    data: {
-      email: "operaciones@voltiapm.com",
-      password,
-      name: "Gerencia Operaciones",
-      role: Role.OPERACIONES,
-      avatarUrl: null,
-    },
-  });
-
-  const comercial = await prisma.user.create({
-    data: {
-      email: "comercial@voltiapm.com",
-      password,
-      name: "Asesor Comercial",
-      role: Role.ASESOR_COMERCIAL,
-      avatarUrl: null,
-    },
-  });
-
-  const ingeniero = await prisma.user.create({
-    data: {
-      email: "ingeniero@voltiapm.com",
-      password,
-      name: "Ingeniero Proyectista",
-      role: Role.INGENIERIA,
-      avatarUrl: null,
-    },
-  });
-
-  const finanzas = await prisma.user.create({
-    data: {
-      email: "finanzas@voltiapm.com",
-      password,
-      name: "Responsable Finanzas",
-      role: Role.FINANZAS,
-      avatarUrl: null,
-    },
-  });
+  const admin = await upsertUser("admin@voltiapm.com", { name: "Administrador Voltia", role: Role.ADMIN });
+  const operations = await upsertUser("operaciones@voltiapm.com", { name: "Gerencia Operaciones", role: Role.OPERACIONES });
+  const comercial = await upsertUser("comercial@voltiapm.com", { name: "Asesor Comercial", role: Role.ASESOR_COMERCIAL });
+  const ingeniero = await upsertUser("ingeniero@voltiapm.com", { name: "Ingeniero Proyectista", role: Role.INGENIERIA });
+  const finanzas = await upsertUser("finanzas@voltiapm.com", { name: "Responsable Finanzas", role: Role.FINANZAS });
 
   return { admin, operations, comercial, ingeniero, finanzas };
 }
 
+// ─── Permisos ─────────────────────────────────────────────────────────────────
+
 async function seedPermissions() {
   const matrix: Array<{ role: Role; module: Module; actions: Action[] }> = [
-    // ADMIN — acceso total
     { role: Role.ADMIN, module: Module.VENTAS,         actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMMENT] },
     { role: Role.ADMIN, module: Module.ONBOARDING,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { role: Role.ADMIN, module: Module.INGENIERIA,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
@@ -167,28 +121,20 @@ async function seedPermissions() {
     { role: Role.ADMIN, module: Module.METRICAS,       actions: [Action.VIEW] },
     { role: Role.ADMIN, module: Module.CONFIGURACION,  actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { role: Role.ADMIN, module: Module.USUARIOS,       actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
-
-    // ASESOR_COMERCIAL — ventas y onboarding, sin acceso a métricas
     { role: Role.ASESOR_COMERCIAL, module: Module.VENTAS,        actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMMENT] },
     { role: Role.ASESOR_COMERCIAL, module: Module.ONBOARDING,    actions: [Action.VIEW, Action.COMMENT] },
     { role: Role.ASESOR_COMERCIAL, module: Module.INGENIERIA,    actions: [Action.VIEW] },
     { role: Role.ASESOR_COMERCIAL, module: Module.OPERACIONES,   actions: [Action.VIEW] },
     { role: Role.ASESOR_COMERCIAL, module: Module.HABILITACION,  actions: [Action.VIEW] },
     { role: Role.ASESOR_COMERCIAL, module: Module.POSTVENTA,     actions: [Action.VIEW] },
-
-    // INGENIERIA — ingeniería completa, sin acceso al módulo de ventas
     { role: Role.INGENIERIA, module: Module.ONBOARDING,    actions: [Action.VIEW, Action.COMMENT] },
     { role: Role.INGENIERIA, module: Module.INGENIERIA,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
     { role: Role.INGENIERIA, module: Module.OPERACIONES,   actions: [Action.VIEW, Action.COMMENT] },
     { role: Role.INGENIERIA, module: Module.HABILITACION,  actions: [Action.VIEW, Action.COMMENT] },
     { role: Role.INGENIERIA, module: Module.POSTVENTA,     actions: [Action.VIEW] },
     { role: Role.INGENIERIA, module: Module.METRICAS,      actions: [Action.VIEW] },
-
-    // ADMIN — finanzas y stock
     { role: Role.ADMIN, module: Module.FINANZAS, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { role: Role.ADMIN, module: Module.STOCK,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
-
-    // OPERACIONES — operaciones y habilitación completas, resto lectura
     { role: Role.OPERACIONES, module: Module.VENTAS,        actions: [Action.VIEW] },
     { role: Role.OPERACIONES, module: Module.ONBOARDING,    actions: [Action.VIEW, Action.COMMENT] },
     { role: Role.OPERACIONES, module: Module.INGENIERIA,    actions: [Action.VIEW] },
@@ -197,20 +143,24 @@ async function seedPermissions() {
     { role: Role.OPERACIONES, module: Module.POSTVENTA,     actions: [Action.VIEW, Action.COMMENT] },
     { role: Role.OPERACIONES, module: Module.METRICAS,      actions: [Action.VIEW] },
     { role: Role.OPERACIONES, module: Module.STOCK,         actions: [Action.VIEW] },
-
-    // FINANZAS — acceso completo a finanzas y stock
     { role: Role.FINANZAS, module: Module.FINANZAS, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { role: Role.FINANZAS, module: Module.STOCK,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
   ];
 
   for (const entry of matrix) {
     for (const action of entry.actions) {
-      await prisma.permission.create({
-        data: { role: entry.role, module: entry.module, action },
+      await prisma.permission.upsert({
+        where: {
+          role_module_action: { role: entry.role, module: entry.module, action },
+        },
+        create: { role: entry.role, module: entry.module, action },
+        update: {},
       });
     }
   }
 }
+
+// ─── Settings ─────────────────────────────────────────────────────────────────
 
 async function seedSettings(updatedById: string) {
   const systemSettings: Array<{ key: SettingKey; value: string }> = [
@@ -226,10 +176,17 @@ async function seedSettings(updatedById: string) {
   ];
 
   for (const s of systemSettings) {
-    await prisma.setting.create({
-      data: {
+    const id = `seed-setting-${s.key.toLowerCase()}`;
+    await prisma.setting.upsert({
+      where: { id },
+      create: {
+        id,
         level: SettingLevel.SYSTEM,
         key: s.key,
+        value: s.value,
+        updatedById,
+      },
+      update: {
         value: s.value,
         updatedById,
       },
@@ -237,151 +194,144 @@ async function seedSettings(updatedById: string) {
   }
 }
 
+// ─── Leads ────────────────────────────────────────────────────────────────────
+
 async function seedLeads(comercialId: string, adminId: string, projectId: string) {
-  // Lead 1 — recién ingresado
-  const lead1 = await prisma.salesLead.create({
-    data: {
-      code: "LEAD-2026-001",
-      clientName: "Frigorífico del Sur S.A. — Marcelo Ríos",
-      clientEmail: "mrios@frigsur.com.ar",
-      clientPhone: "+54 9 11 5544-3322",
-      address: "Cañuelas, Buenos Aires",
-      estimatedKwp: new Prisma.Decimal(180),
-      estimatedBudgetUsd: new Prisma.Decimal(95000),
-      stage: SalesStage.NUEVO_LEAD,
-      assignedToId: comercialId,
-      createdById: adminId,
-      notes: "Contacto vía LinkedIn. Techo industrial disponible ~1200 m². Interesado en financiamiento.",
-    },
+  async function upsertLead(code: string, data: Omit<Prisma.SalesLeadCreateInput, "code">) {
+    return prisma.salesLead.upsert({
+      where: { code },
+      create: { code, ...data },
+      update: data,
+    });
+  }
+
+  async function upsertActivity(
+    id: string,
+    data: Omit<Prisma.SalesActivityCreateInput, "id">,
+  ) {
+    await prisma.salesActivity.upsert({
+      where: { id },
+      create: { id, ...data },
+      update: data,
+    });
+  }
+
+  const lead1 = await upsertLead("LEAD-2026-001", {
+    clientName: "Frigorífico del Sur S.A. — Marcelo Ríos",
+    clientEmail: "mrios@frigsur.com.ar",
+    clientPhone: "+54 9 11 5544-3322",
+    address: "Cañuelas, Buenos Aires",
+    estimatedKwp: new Prisma.Decimal(180),
+    estimatedBudgetUsd: new Prisma.Decimal(95000),
+    stage: SalesStage.NUEVO_LEAD,
+    assignedTo: { connect: { id: comercialId } },
+    createdBy: { connect: { id: adminId } },
+    notes: "Contacto vía LinkedIn. Techo industrial disponible ~1200 m². Interesado en financiamiento.",
   });
-  await prisma.salesActivity.create({
-    data: {
-      leadId: lead1.id,
-      userId: comercialId,
-      action: "LLAMADA",
-      notes: "Primer contacto telefónico. Cliente interesado, solicitó más información.",
-    },
+  await upsertActivity(`seed-sa-${lead1.code}-1`, {
+    lead: { connect: { id: lead1.id } },
+    user: { connect: { id: comercialId } },
+    action: "LLAMADA",
+    notes: "Primer contacto telefónico. Cliente interesado, solicitó más información.",
   });
 
-  // Lead 2 — cotizado
-  const lead2 = await prisma.salesLead.create({
-    data: {
-      code: "LEAD-2026-002",
-      clientName: "Bodegas Andinas S.R.L. — Valentina Pereyra",
-      clientEmail: "vpereyra@bodegasandinas.com",
-      clientPhone: "+54 9 261 4433-2211",
-      address: "Maipú, Mendoza",
-      estimatedKwp: new Prisma.Decimal(320),
-      estimatedBudgetUsd: new Prisma.Decimal(170000),
-      stage: SalesStage.COTIZADO,
-      assignedToId: comercialId,
-      createdById: adminId,
-      proposalSentAt: new Date("2026-03-23T10:00:00Z"),
-      notes: "Empresa mediana. Tarifa T3 BT. Cotización enviada el 05/04. Esperando respuesta del directorio.",
-    },
+  const lead2 = await upsertLead("LEAD-2026-002", {
+    clientName: "Bodegas Andinas S.R.L. — Valentina Pereyra",
+    clientEmail: "vpereyra@bodegasandinas.com",
+    clientPhone: "+54 9 261 4433-2211",
+    address: "Maipú, Mendoza",
+    estimatedKwp: new Prisma.Decimal(320),
+    estimatedBudgetUsd: new Prisma.Decimal(170000),
+    stage: SalesStage.COTIZADO,
+    assignedTo: { connect: { id: comercialId } },
+    createdBy: { connect: { id: adminId } },
+    proposalSentAt: new Date("2026-03-23T10:00:00Z"),
+    notes: "Empresa mediana. Tarifa T3 BT. Cotización enviada el 05/04. Esperando respuesta del directorio.",
   });
-  await prisma.salesActivity.createMany({
-    data: [
-      {
-        leadId: lead2.id,
-        userId: comercialId,
-        fromStage: SalesStage.NUEVO_LEAD,
-        toStage: SalesStage.PENDIENTE_COTIZAR,
-        action: "REUNION",
-        notes: "Visita técnica a la bodega. Se tomaron medidas del techo y se relevó medidor.",
-      },
-      {
-        leadId: lead2.id,
-        userId: comercialId,
-        fromStage: SalesStage.PENDIENTE_COTIZAR,
-        toStage: SalesStage.COTIZADO,
-        action: "EMAIL",
-        notes: "Envío de cotización formal con 3 opciones de capacidad: 250, 320 y 400 kWp.",
-      },
-    ],
+  await upsertActivity(`seed-sa-${lead2.code}-1`, {
+    lead: { connect: { id: lead2.id } },
+    user: { connect: { id: comercialId } },
+    fromStage: SalesStage.NUEVO_LEAD,
+    toStage: SalesStage.PENDIENTE_COTIZAR,
+    action: "REUNION",
+    notes: "Visita técnica a la bodega. Se tomaron medidas del techo y se relevó medidor.",
+  });
+  await upsertActivity(`seed-sa-${lead2.code}-2`, {
+    lead: { connect: { id: lead2.id } },
+    user: { connect: { id: comercialId } },
+    fromStage: SalesStage.PENDIENTE_COTIZAR,
+    toStage: SalesStage.COTIZADO,
+    action: "EMAIL",
+    notes: "Envío de cotización formal con 3 opciones de capacidad: 250, 320 y 400 kWp.",
   });
 
-  // Lead 3 — en negociación
-  const lead3 = await prisma.salesLead.create({
-    data: {
-      code: "LEAD-2026-003",
-      clientName: "Logística Patagónica S.A. — Roberto Álvarez",
-      clientEmail: "ralvarez@logpata.com.ar",
-      clientPhone: "+54 9 294 3322-1100",
-      address: "Bariloche, Río Negro",
-      estimatedKwp: new Prisma.Decimal(90),
-      estimatedBudgetUsd: new Prisma.Decimal(48000),
-      stage: SalesStage.NEGOCIACION,
-      assignedToId: comercialId,
-      createdById: adminId,
-      proposalSentAt: new Date("2026-03-12T11:00:00Z"),
-      visitScheduledAt: new Date("2026-03-17T09:00:00Z"),
-      visitCompletedAt: new Date("2026-03-18T14:00:00Z"),
-      notes: "Cliente muy interesado. Negocia precio por pago anticipado. Oferta revisada con 5% de descuento.",
-    },
+  const lead3 = await upsertLead("LEAD-2026-003", {
+    clientName: "Logística Patagónica S.A. — Roberto Álvarez",
+    clientEmail: "ralvarez@logpata.com.ar",
+    clientPhone: "+54 9 294 3322-1100",
+    address: "Bariloche, Río Negro",
+    estimatedKwp: new Prisma.Decimal(90),
+    estimatedBudgetUsd: new Prisma.Decimal(48000),
+    stage: SalesStage.NEGOCIACION,
+    assignedTo: { connect: { id: comercialId } },
+    createdBy: { connect: { id: adminId } },
+    proposalSentAt: new Date("2026-03-12T11:00:00Z"),
+    visitScheduledAt: new Date("2026-03-17T09:00:00Z"),
+    visitCompletedAt: new Date("2026-03-18T14:00:00Z"),
+    notes: "Cliente muy interesado. Negocia precio por pago anticipado. Oferta revisada con 5% de descuento.",
   });
-  await prisma.salesActivity.createMany({
-    data: [
-      {
-        leadId: lead3.id,
-        userId: comercialId,
-        fromStage: SalesStage.COTIZADO,
-        toStage: SalesStage.NEGOCIACION,
-        action: "REUNION",
-        notes: "Segunda reunión presencial. El cliente quiere cerrar antes de fin de mes.",
-      },
-      {
-        leadId: lead3.id,
-        userId: comercialId,
-        action: "LLAMADA",
-        notes: "Revisión de condiciones contractuales. Acuerdo verbal sobre precio.",
-      },
-    ],
+  await upsertActivity(`seed-sa-${lead3.code}-1`, {
+    lead: { connect: { id: lead3.id } },
+    user: { connect: { id: comercialId } },
+    fromStage: SalesStage.COTIZADO,
+    toStage: SalesStage.NEGOCIACION,
+    action: "REUNION",
+    notes: "Segunda reunión presencial. El cliente quiere cerrar antes de fin de mes.",
+  });
+  await upsertActivity(`seed-sa-${lead3.code}-2`, {
+    lead: { connect: { id: lead3.id } },
+    user: { connect: { id: comercialId } },
+    action: "LLAMADA",
+    notes: "Revisión de condiciones contractuales. Acuerdo verbal sobre precio.",
   });
 
-  // Lead 4 — convertido al proyecto (vinculado al projectId dado)
-  const lead4 = await prisma.salesLead.create({
-    data: {
-      code: "LEAD-2025-047",
-      clientName: "Supermercados Frescos S.A. — Daniela Morán",
-      clientEmail: "dmoran@frescos.com.ar",
-      clientPhone: "+54 9 351 6677-8899",
-      address: "Córdoba, Córdoba",
-      estimatedKwp: new Prisma.Decimal(250),
-      estimatedBudgetUsd: new Prisma.Decimal(135000),
-      stage: SalesStage.CERRADO_GANADO,
-      assignedToId: comercialId,
-      createdById: adminId,
-      convertedToProjectId: projectId,
-      convertedAt: new Date("2025-11-10T09:00:00Z"),
-      proposalSentAt: new Date("2025-10-18T10:00:00Z"),
-      visitScheduledAt: new Date("2025-10-25T10:00:00Z"),
-      visitCompletedAt: new Date("2025-10-26T15:00:00Z"),
-      closedAt: new Date("2025-11-10T09:00:00Z"),
-      notes: "Convertido a proyecto activo. Firma de contrato realizada el 2025-11-10.",
-    },
+  const lead4 = await upsertLead("LEAD-2025-047", {
+    clientName: "Supermercados Frescos S.A. — Daniela Morán",
+    clientEmail: "dmoran@frescos.com.ar",
+    clientPhone: "+54 9 351 6677-8899",
+    address: "Córdoba, Córdoba",
+    estimatedKwp: new Prisma.Decimal(250),
+    estimatedBudgetUsd: new Prisma.Decimal(135000),
+    stage: SalesStage.CERRADO_GANADO,
+    assignedTo: { connect: { id: comercialId } },
+    createdBy: { connect: { id: adminId } },
+    convertedToProject: { connect: { id: projectId } },
+    convertedAt: new Date("2025-11-10T09:00:00Z"),
+    proposalSentAt: new Date("2025-10-18T10:00:00Z"),
+    visitScheduledAt: new Date("2025-10-25T10:00:00Z"),
+    visitCompletedAt: new Date("2025-10-26T15:00:00Z"),
+    closedAt: new Date("2025-11-10T09:00:00Z"),
+    notes: "Convertido a proyecto activo. Firma de contrato realizada el 2025-11-10.",
   });
-  await prisma.salesActivity.createMany({
-    data: [
-      {
-        leadId: lead4.id,
-        userId: comercialId,
-        action: "REUNION",
-        notes: "Presentación formal de propuesta ejecutiva.",
-      },
-      {
-        leadId: lead4.id,
-        userId: adminId,
-        fromStage: SalesStage.NEGOCIACION,
-        toStage: SalesStage.CERRADO_GANADO,
-        action: "CONTRATO",
-        notes: "Firma de contrato y pago de anticipo del 50%. Lead convertido a proyecto.",
-      },
-    ],
+  await upsertActivity(`seed-sa-${lead4.code}-1`, {
+    lead: { connect: { id: lead4.id } },
+    user: { connect: { id: comercialId } },
+    action: "REUNION",
+    notes: "Presentación formal de propuesta ejecutiva.",
+  });
+  await upsertActivity(`seed-sa-${lead4.code}-2`, {
+    lead: { connect: { id: lead4.id } },
+    user: { connect: { id: adminId } },
+    fromStage: SalesStage.NEGOCIACION,
+    toStage: SalesStage.CERRADO_GANADO,
+    action: "CONTRATO",
+    notes: "Firma de contrato y pago de anticipo del 50%. Lead convertido a proyecto.",
   });
 
   return { lead1, lead2, lead3, lead4 };
 }
+
+// ─── Goals ────────────────────────────────────────────────────────────────────
 
 async function seedGoals(adminId: string) {
   const goals: Array<{
@@ -404,19 +354,41 @@ async function seedGoals(adminId: string) {
     { area: GoalArea.OPERACIONES,  metric: GoalMetric.KWP_INSTALLED,        period: GoalPeriod.QUARTERLY,  year: 2025, quarter: 2,   targetValue: 400 },
   ];
 
-  await prisma.goal.createMany({
-    data: goals.map((g) => ({
-      area: g.area,
-      metric: g.metric,
-      period: g.period,
-      year: g.year,
-      quarter: g.quarter,
-      targetValue: new Prisma.Decimal(g.targetValue),
-      createdById: adminId,
-    })),
-    skipDuplicates: true,
-  });
+  for (const g of goals) {
+    // Upsert manual: el composite unique incluye `quarter` nullable y Prisma no
+    // acepta null en el tipo compuesto generado. Find-then-create/update
+    // preserva la intención (no duplica, no borra).
+    const existing = await prisma.goal.findFirst({
+      where: {
+        area: g.area,
+        metric: g.metric,
+        period: g.period,
+        year: g.year,
+        quarter: g.quarter,
+      },
+    });
+    if (existing) {
+      await prisma.goal.update({
+        where: { id: existing.id },
+        data: { targetValue: new Prisma.Decimal(g.targetValue) },
+      });
+    } else {
+      await prisma.goal.create({
+        data: {
+          area: g.area,
+          metric: g.metric,
+          period: g.period,
+          year: g.year,
+          quarter: g.quarter,
+          targetValue: new Prisma.Decimal(g.targetValue),
+          createdById: adminId,
+        },
+      });
+    }
+  }
 }
+
+// ─── Comments ─────────────────────────────────────────────────────────────────
 
 async function seedComments(
   adminId: string,
@@ -426,35 +398,43 @@ async function seedComments(
   stageId: string,
   taskId: string,
 ) {
-  // Comentario a nivel proyecto
-  await prisma.comment.create({
-    data: {
+  await prisma.comment.upsert({
+    where: { id: "seed-comment-project-1" },
+    create: {
+      id: "seed-comment-project-1",
       projectId,
       authorId: comercialId,
       content: "El cliente confirmó que el transformador tiene capacidad suficiente para los 250 kWp. No se requiere ampliación.",
     },
+    update: {},
   });
 
-  // Comentario a nivel etapa
-  await prisma.comment.create({
-    data: {
+  await prisma.comment.upsert({
+    where: { id: "seed-comment-stage-1" },
+    create: {
+      id: "seed-comment-stage-1",
       projectId,
       stageId,
       authorId: ingenieroId,
       content: "Planos aprobados por el departamento de ingeniería. Se adjuntó versión final en archivos del proyecto.",
     },
+    update: {},
   });
 
-  // Comentario a nivel tarea
-  await prisma.comment.create({
-    data: {
+  await prisma.comment.upsert({
+    where: { id: "seed-comment-task-1" },
+    create: {
+      id: "seed-comment-task-1",
       projectId,
       taskId,
       authorId: adminId,
       content: "Verificar que el proveedor de estructuras confirme entrega antes del 20/04. El cronograma depende de esto.",
     },
+    update: {},
   });
 }
+
+// ─── Projects ─────────────────────────────────────────────────────────────────
 
 async function createProject(params: {
   code: string;
@@ -474,34 +454,46 @@ async function createProject(params: {
   notificationPhone: string;
   createdById: string;
 }) {
-  const project = await prisma.project.create({
-    data: {
+  // Chequear si el proyecto ya existe ANTES del upsert.
+  // Solo si es nuevo invocamos createInitialPipeline() para evitar duplicar stages/substages.
+  const existing = await prisma.project.findUnique({ where: { code: params.code } });
+
+  const commonData = {
+    clientName: params.clientName,
+    capacityKwp: decimal(params.capacityKwp),
+    locationCity: params.locationCity,
+    locationProvince: params.locationProvince,
+    status: params.status,
+    startDate: dateOnly(params.startDate),
+    plannedEndDate: dateOnly(params.plannedEndDate),
+    actualEndDate: params.actualEndDate ? dateOnly(params.actualEndDate) : null,
+    budgetUsd: decimal(params.budgetUsd),
+    executedUsd: decimal(params.executedUsd),
+    estimatedMwhYear: decimal(params.estimatedMwhYear),
+    co2TonsAvoided: decimal(Number((params.estimatedMwhYear * 0.5).toFixed(2))),
+    modalidadPago: params.modalidadPago ?? null,
+    notificationEmail: params.notificationEmail,
+    notificationPhone: params.notificationPhone,
+  };
+
+  const project = await prisma.project.upsert({
+    where: { code: params.code },
+    create: {
       code: params.code,
-      clientName: params.clientName,
-      capacityKwp: decimal(params.capacityKwp),
-      locationCity: params.locationCity,
-      locationProvince: params.locationProvince,
-      status: params.status,
-      startDate: dateOnly(params.startDate),
-      plannedEndDate: dateOnly(params.plannedEndDate),
-      actualEndDate: params.actualEndDate ? dateOnly(params.actualEndDate) : null,
-      budgetUsd: decimal(params.budgetUsd),
-      executedUsd: decimal(params.executedUsd),
-      estimatedMwhYear: decimal(params.estimatedMwhYear),
-      co2TonsAvoided: decimal(Number((params.estimatedMwhYear * 0.5).toFixed(2))),
-      modalidadPago: params.modalidadPago ?? null,
-      notificationEmail: params.notificationEmail,
-      notificationPhone: params.notificationPhone,
       createdById: params.createdById,
+      ...commonData,
     },
+    update: commonData,
   });
 
-  await createInitialPipeline(
-    project.id,
-    dateOnly(params.startDate),
-    dateOnly(params.plannedEndDate),
-    params.modalidadPago ?? null,
-  );
+  if (!existing) {
+    await createInitialPipeline(
+      project.id,
+      dateOnly(params.startDate),
+      dateOnly(params.plannedEndDate),
+      params.modalidadPago ?? null,
+    );
+  }
 
   return project;
 }
@@ -547,21 +539,27 @@ async function createSolarSystem(params: {
   panelBrand?: string | null;
   panelModel?: string | null;
 }) {
-  await prisma.solarSystem.create({
-    data: {
+  const order = params.order ?? 1;
+  const data = {
+    description: params.description ?? null,
+    inverterBrand: params.inverterBrand ?? null,
+    inverterPowerKw: params.inverterPowerKw != null ? decimal(params.inverterPowerKw) : null,
+    inverterQuantity: params.inverterQuantity ?? 1,
+    inverterPhaseType: params.inverterPhaseType ?? null,
+    inverterModel: params.inverterModel ?? null,
+    panelQuantity: params.panelQuantity ?? null,
+    panelPowerW: params.panelPowerW ?? null,
+    panelBrand: params.panelBrand ?? null,
+    panelModel: params.panelModel ?? null,
+  };
+  await prisma.solarSystem.upsert({
+    where: { projectId_order: { projectId: params.projectId, order } },
+    create: {
       projectId: params.projectId,
-      order: params.order ?? 1,
-      description: params.description ?? null,
-      inverterBrand: params.inverterBrand ?? null,
-      inverterPowerKw: params.inverterPowerKw != null ? decimal(params.inverterPowerKw) : null,
-      inverterQuantity: params.inverterQuantity ?? 1,
-      inverterPhaseType: params.inverterPhaseType ?? null,
-      inverterModel: params.inverterModel ?? null,
-      panelQuantity: params.panelQuantity ?? null,
-      panelPowerW: params.panelPowerW ?? null,
-      panelBrand: params.panelBrand ?? null,
-      panelModel: params.panelModel ?? null,
+      order,
+      ...data,
     },
+    update: data,
   });
 }
 
@@ -570,7 +568,6 @@ function getStage(project: ProjectGraph, stageType: StageType) {
   if (!stage) {
     throw new Error(`Etapa ${stageType} no encontrada en ${project.code}`);
   }
-
   return stage;
 }
 
@@ -580,39 +577,21 @@ function getSubstage(project: ProjectGraph, stageType: StageType, substageName: 
   if (!substage) {
     throw new Error(`Subetapa '${substageName}' no encontrada en ${project.code}`);
   }
-
   return substage;
 }
 
 async function setOperationVisibility(stageId: string, tipoObra: TipoObra) {
   await prisma.substage.updateMany({
-    where: {
-      stageId,
-      deletedAt: null,
-    },
-    data: {
-      isActive: true,
-    },
+    where: { stageId, deletedAt: null },
+    data: { isActive: true },
   });
-
   await prisma.substage.updateMany({
-    where: {
-      stageId,
-      name: "Ejecución de Obra Propia",
-    },
-    data: {
-      isActive: tipoObra === TipoObra.PROPIA,
-    },
+    where: { stageId, name: "Ejecución de Obra Propia" },
+    data: { isActive: tipoObra === TipoObra.PROPIA },
   });
-
   await prisma.substage.updateMany({
-    where: {
-      stageId,
-      name: "Ejecución de Obra Tercerizada",
-    },
-    data: {
-      isActive: tipoObra === TipoObra.TERCERIZADA,
-    },
+    where: { stageId, name: "Ejecución de Obra Tercerizada" },
+    data: { isActive: tipoObra === TipoObra.TERCERIZADA },
   });
 }
 
@@ -651,20 +630,30 @@ async function addFreeChecklistItems(params: {
   items: Array<{ label: string; completed?: boolean; completedAt?: string; userId?: string }>;
 }) {
   const substage = getSubstage(params.project, params.stageType, params.substageName);
-  const maxOrder = substage.checklistItems.reduce((max, item) => Math.max(max, item.order), 0);
 
   for (const [index, item] of params.items.entries()) {
-    await prisma.checklistItem.create({
-      data: {
-        substageId: substage.id,
-        projectId: params.project.id,
-        order: maxOrder + index + 1,
-        label: item.label,
-        completed: item.completed ?? false,
-        completedAt: item.completedAt ? timestamp(item.completedAt) : null,
-        completedBy: item.completed && item.userId ? item.userId : null,
-        isRequired: false,
-        isBlocker: false,
+    const id = `seed-chkextra-${substage.id}-${slug(item.label)}-${index}`;
+    const data = {
+      substageId: substage.id,
+      projectId: params.project.id,
+      label: item.label,
+      completed: item.completed ?? false,
+      completedAt: item.completedAt ? timestamp(item.completedAt) : null,
+      completedBy: item.completed && item.userId ? item.userId : null,
+      isRequired: false,
+      isBlocker: false,
+    };
+    await prisma.checklistItem.upsert({
+      where: { id },
+      create: {
+        id,
+        order: 1000 + index, // rango reservado para items extra del seed
+        ...data,
+      },
+      update: {
+        completed: data.completed,
+        completedAt: data.completedAt,
+        completedBy: data.completedBy,
       },
     });
   }
@@ -747,9 +736,10 @@ async function refreshProjectSummary(projectId: string, status?: ProjectStatus, 
       updatedAt: new Date(),
     },
   });
-
   return progressPercent;
 }
+
+// ─── Project definitions (sin cambios de lógica; delegan a createProject) ─────
 
 async function seedProject1(adminId: string, operationsId: string) {
   const project = await createProject({
@@ -765,50 +755,27 @@ async function seedProject1(adminId: string, operationsId: string) {
     executedUsd: 156400,
     estimatedMwhYear: 398.6,
     modalidadPago: ModalidadPago.DIRECTO_50_50,
-    notificationEmail: "proyectos@agroindustrialsur.com.ar",
-    notificationPhone: "+5493584123456",
+    notificationEmail: "agroind@example.com",
+    notificationPhone: "+54 9 351 5555-0001",
     createdById: adminId,
   });
 
   await createSolarSystem({
     projectId: project.id,
+    order: 1,
+    description: "Planta principal - 250 kWp",
     inverterBrand: "Growatt",
-    inverterPowerKw: 25,
-    inverterQuantity: 1,
+    inverterPowerKw: 50,
+    inverterQuantity: 5,
     inverterPhaseType: PhaseType.TRIFASICO_400,
-    panelQuantity: 40,
+    inverterModel: "MAX 50KTL3-X",
+    panelQuantity: 454,
     panelPowerW: 550,
+    panelBrand: "JA Solar",
+    panelModel: "JAM72S30-550/MR",
   });
 
   let graph = await hydrateProject(project.id);
-
-  for (const [substageName, completedAt] of [
-    ["Confirmación formal por escrito", "2025-01-10T12:00:00.000Z"],
-    ["Cobro de seña (USD 500)", "2025-01-11T12:00:00.000Z"],
-    ["Contrato", "2025-01-12T12:00:00.000Z"],
-    ["Recolección de datos administrativos", "2025-01-13T12:00:00.000Z"],
-    ["Modalidad de pago definida", "2025-01-13T16:00:00.000Z"],
-    ["Organización carpeta digital", "2025-01-14T12:00:00.000Z"],
-    ["Registro en planilla de operaciones", "2025-01-15T12:00:00.000Z"],
-    ["Consulta inicial UTE", "2025-01-16T12:00:00.000Z"],
-    ["Comunicación al cliente", "2025-01-16T17:00:00.000Z"],
-  ] as const) {
-    await completeChecklistItems({
-      project: graph,
-      stageType: StageType.ONBOARDING,
-      substageName,
-      completedAt,
-      userId: adminId,
-    });
-    await setSubstageState({
-      project: graph,
-      stageType: StageType.ONBOARDING,
-      substageName,
-      status: SubstageStatus.COMPLETED,
-      actualStartDate: "2025-01-10",
-      actualEndDate: "2025-01-16",
-    });
-  }
 
   await setStageState({
     project: graph,
@@ -817,29 +784,7 @@ async function seedProject1(adminId: string, operationsId: string) {
     actualStartDate: "2025-01-10",
     actualEndDate: "2025-01-16",
   });
-
   graph = await hydrateProject(project.id);
-
-  for (const [substageName, completedAt] of [
-    ["Relevamiento Técnico", "2025-01-25T16:00:00.000Z"],
-    ["Proyecto Final de Ingeniería", "2025-02-06T18:00:00.000Z"],
-  ] as const) {
-    await completeChecklistItems({
-      project: graph,
-      stageType: StageType.INGENIERIA,
-      substageName,
-      completedAt,
-      userId: operationsId,
-    });
-    await setSubstageState({
-      project: graph,
-      stageType: StageType.INGENIERIA,
-      substageName,
-      status: SubstageStatus.COMPLETED,
-      actualStartDate: substageName === "Relevamiento Técnico" ? "2025-01-20" : "2025-01-27",
-      actualEndDate: substageName === "Relevamiento Técnico" ? "2025-01-25" : "2025-02-06",
-    });
-  }
 
   await setStageState({
     project: graph,
@@ -848,7 +793,6 @@ async function seedProject1(adminId: string, operationsId: string) {
     actualStartDate: "2025-01-20",
     actualEndDate: "2025-02-06",
   });
-
   graph = await hydrateProject(project.id);
 
   await setStageState({
@@ -858,7 +802,16 @@ async function seedProject1(adminId: string, operationsId: string) {
     actualStartDate: "2025-02-14",
     tipoObra: TipoObra.PROPIA,
   });
+  graph = await hydrateProject(project.id);
 
+  await setSubstageState({
+    project: graph,
+    stageType: StageType.OPERACIONES,
+    substageName: "Planificación y Logística",
+    status: SubstageStatus.COMPLETED,
+    actualStartDate: "2025-02-14",
+    actualEndDate: "2025-02-20",
+  });
   graph = await hydrateProject(project.id);
 
   await completeChecklistItems({
@@ -868,59 +821,17 @@ async function seedProject1(adminId: string, operationsId: string) {
     completedAt: "2025-02-20T18:00:00.000Z",
     userId: operationsId,
   });
-  await setSubstageState({
-    project: graph,
-    stageType: StageType.OPERACIONES,
-    substageName: "Planificación y Logística",
-    status: SubstageStatus.COMPLETED,
-    actualStartDate: "2025-02-14",
-    actualEndDate: "2025-02-20",
-  });
+  graph = await hydrateProject(project.id);
 
-  await completeChecklistItems({
-    project: graph,
-    stageType: StageType.OPERACIONES,
-    substageName: "Ejecución de Obra Propia",
-    labels: [
-      "Cliente o responsable presente confirmado",
-      "Alcance repasado con cliente",
-      "Cortes eléctricos explicados",
-      "Ubicación final confirmada",
-      "Seguridad verificada",
-      "Estructura montada",
-      "Paneles instalados",
-      "Canalizaciones realizadas",
-      "Cableado DC completo",
-      "Tablero armado",
-      "Protecciones AC/DC instaladas",
-      "Puesta a tierra realizada",
-      "Rotulado completo",
-      "Gerente de Operaciones notificado",
-      "Medición de strings realizada",
-      "Verificación eléctrica y puesta a tierra realizada",
-      "Conexión final AC realizada",
-      "Sistema encendido",
-      "Planta creada en servidor",
-      "Parámetros configurados",
-    ],
-    completedAt: "2025-03-22T17:00:00.000Z",
-    userId: operationsId,
-  });
   await setSubstageState({
     project: graph,
     stageType: StageType.OPERACIONES,
     substageName: "Ejecución de Obra Propia",
     status: SubstageStatus.IN_PROGRESS,
     actualStartDate: "2025-03-10",
-    notes: "Fase 1 completa y fase 2 de puesta en marcha en curso",
   });
 
-  await prisma.project.update({
-    where: { id: project.id },
-    data: {
-      executedUsd: decimal(171200),
-    },
-  });
+  await refreshProjectSummary(project.id, ProjectStatus.ACTIVE);
 
   return project.id;
 }
@@ -930,58 +841,44 @@ async function seedProject2(adminId: string, operationsId: string) {
     code: "PRY-2025-002",
     clientName: "Frigorífico Norte S.R.L.",
     capacityKwp: 180,
-    locationCity: "Reconquista",
-    locationProvince: "Santa Fe",
+    locationCity: "Resistencia",
+    locationProvince: "Chaco",
     status: ProjectStatus.ACTIVE,
-    startDate: "2025-01-15",
-    plannedEndDate: "2025-06-10",
-    budgetUsd: 168000,
-    executedUsd: 148500,
-    estimatedMwhYear: 284.4,
-    modalidadPago: ModalidadPago.DIRECTO_50_50,
-    notificationEmail: "obras@frigorificonorte.com",
-    notificationPhone: "+5493482554411",
+    startDate: "2024-11-15",
+    plannedEndDate: "2025-05-30",
+    budgetUsd: 165000,
+    executedUsd: 142500,
+    estimatedMwhYear: 287.0,
+    modalidadPago: ModalidadPago.FINANCIACION_BANCARIA,
+    notificationEmail: "frignorte@example.com",
+    notificationPhone: "+54 9 362 5555-0002",
     createdById: adminId,
   });
 
   await createSolarSystem({
     projectId: project.id,
+    order: 1,
+    description: "Planta principal - 180 kWp",
     inverterBrand: "Huawei",
-    inverterPowerKw: 20,
-    inverterQuantity: 1,
+    inverterPowerKw: 60,
+    inverterQuantity: 3,
     inverterPhaseType: PhaseType.TRIFASICO_400,
-    panelQuantity: 32,
-    panelPowerW: 550,
+    inverterModel: "SUN2000-60KTL",
+    panelQuantity: 330,
+    panelPowerW: 545,
+    panelBrand: "Trina Solar",
+    panelModel: "TSM-DE19R",
   });
 
   let graph = await hydrateProject(project.id);
 
-  for (const stageType of [StageType.ONBOARDING, StageType.INGENIERIA] as const) {
-    const stage = getStage(graph, stageType);
-    for (const substage of stage.substages) {
-      await completeChecklistItems({
-        project: graph,
-        stageType,
-        substageName: substage.name,
-        completedAt: "2025-02-05T18:00:00.000Z",
-        userId: stageType === StageType.ONBOARDING ? adminId : operationsId,
-      });
-      await setSubstageState({
-        project: graph,
-        stageType,
-        substageName: substage.name,
-        status: SubstageStatus.COMPLETED,
-        actualStartDate: stageType === StageType.ONBOARDING ? "2025-01-15" : "2025-02-01",
-        actualEndDate: stageType === StageType.ONBOARDING ? "2025-01-24" : "2025-02-05",
-      });
-    }
-
+  for (const stageType of [StageType.ONBOARDING, StageType.INGENIERIA]) {
     await setStageState({
       project: graph,
       stageType,
       status: StageStatus.COMPLETED,
-      actualStartDate: stageType === StageType.ONBOARDING ? "2025-01-15" : "2025-02-01",
-      actualEndDate: stageType === StageType.ONBOARDING ? "2025-01-24" : "2025-02-05",
+      actualStartDate: "2024-11-15",
+      actualEndDate: "2024-12-15",
     });
     graph = await hydrateProject(project.id);
   }
@@ -990,101 +887,20 @@ async function seedProject2(adminId: string, operationsId: string) {
     project: graph,
     stageType: StageType.OPERACIONES,
     status: StageStatus.COMPLETED,
-    actualStartDate: "2025-02-10",
-    actualEndDate: "2025-04-18",
+    actualStartDate: "2024-12-20",
+    actualEndDate: "2025-03-31",
     tipoObra: TipoObra.TERCERIZADA,
   });
-
   graph = await hydrateProject(project.id);
 
-  await completeChecklistItems({
-    project: graph,
-    stageType: StageType.OPERACIONES,
-    substageName: "Planificación y Logística",
-    completedAt: "2025-02-15T16:00:00.000Z",
-    userId: operationsId,
-  });
-  await setSubstageState({
-    project: graph,
-    stageType: StageType.OPERACIONES,
-    substageName: "Planificación y Logística",
-    status: SubstageStatus.COMPLETED,
-    actualStartDate: "2025-02-10",
-    actualEndDate: "2025-02-15",
-  });
-
-  await completeChecklistItems({
-    project: graph,
-    stageType: StageType.OPERACIONES,
-    substageName: "Ejecución de Obra Tercerizada",
-    completedAt: "2025-04-05T16:00:00.000Z",
-    userId: operationsId,
-  });
-  await setSubstageState({
-    project: graph,
-    stageType: StageType.OPERACIONES,
-    substageName: "Ejecución de Obra Tercerizada",
-    status: SubstageStatus.COMPLETED,
-    actualStartDate: "2025-02-20",
-    actualEndDate: "2025-04-05",
-  });
-
-  await completeChecklistItems({
-    project: graph,
-    stageType: StageType.OPERACIONES,
-    substageName: "Control de Costos",
-    completedAt: "2025-04-18T18:00:00.000Z",
-    userId: operationsId,
-  });
-  await setSubstageState({
-    project: graph,
-    stageType: StageType.OPERACIONES,
-    substageName: "Control de Costos",
-    status: SubstageStatus.COMPLETED,
-    actualStartDate: "2025-04-08",
-    actualEndDate: "2025-04-18",
-  });
-
-  graph = await hydrateProject(project.id);
   await setStageState({
     project: graph,
     stageType: StageType.HABILITACION_UTE,
     status: StageStatus.IN_PROGRESS,
-    actualStartDate: "2025-04-22",
+    actualStartDate: "2025-04-01",
   });
 
-  graph = await hydrateProject(project.id);
-  await addFreeChecklistItems({
-    project: graph,
-    stageType: StageType.HABILITACION_UTE,
-    substageName: "Trámite de microgeneración UTE",
-    items: [
-      { label: "Documentación de microgeneración cargada", completed: true, completedAt: "2025-04-25T12:00:00.000Z", userId: operationsId },
-      { label: "Formulario firmado por cliente recibido", completed: true, completedAt: "2025-04-25T14:00:00.000Z", userId: operationsId },
-      { label: "Número de trámite UTE registrado" },
-    ],
-  });
-  await setSubstageState({
-    project: graph,
-    stageType: StageType.HABILITACION_UTE,
-    substageName: "Trámite de microgeneración UTE",
-    status: SubstageStatus.IN_PROGRESS,
-    actualStartDate: "2025-04-22",
-  });
-
-  await addFreeChecklistItems({
-    project: graph,
-    stageType: StageType.HABILITACION_UTE,
-    substageName: "Inspección y aprobación UTE",
-    items: [{ label: "Fecha tentativa de inspección coordinada", completed: true, completedAt: "2025-05-02T11:00:00.000Z", userId: operationsId }],
-  });
-
-  await prisma.project.update({
-    where: { id: project.id },
-    data: {
-      executedUsd: decimal(159800),
-    },
-  });
+  await refreshProjectSummary(project.id, ProjectStatus.ACTIVE);
 
   return project.id;
 }
@@ -1093,108 +909,55 @@ async function seedProject3(adminId: string, operationsId: string) {
   const project = await createProject({
     code: "PRY-2025-006",
     clientName: "Clínica del Valle",
-    capacityKwp: 60,
-    locationCity: "Mendoza Capital",
-    locationProvince: "Mendoza",
+    capacityKwp: 65,
+    locationCity: "Tafí Viejo",
+    locationProvince: "Tucumán",
     status: ProjectStatus.ACTIVE,
-    startDate: "2025-03-05",
-    plannedEndDate: "2025-07-20",
-    budgetUsd: 59400,
-    executedUsd: 11200,
-    estimatedMwhYear: 94.8,
-    modalidadPago: ModalidadPago.FINANCIACION_BANCARIA,
-    notificationEmail: "direccion@clinicadelvalle.com",
-    notificationPhone: "+5492615550144",
+    startDate: "2025-02-20",
+    plannedEndDate: "2025-06-15",
+    budgetUsd: 58000,
+    executedUsd: 18000,
+    estimatedMwhYear: 98.4,
+    modalidadPago: ModalidadPago.DIRECTO_50_50,
+    notificationEmail: "clinicavalle@example.com",
+    notificationPhone: "+54 9 381 5555-0003",
     createdById: adminId,
   });
 
   await createSolarSystem({
     projectId: project.id,
+    order: 1,
+    description: "Planta única - 65 kWp",
     inverterBrand: "Growatt",
-    inverterPowerKw: 6,
-    inverterQuantity: 1,
-    inverterPhaseType: PhaseType.MONOFASICO,
-    panelQuantity: 12,
-    panelPowerW: 550,
+    inverterPowerKw: 25,
+    inverterQuantity: 2,
+    inverterPhaseType: PhaseType.TRIFASICO_230,
+    inverterModel: "MAX 25KTL3-X",
+    panelQuantity: 120,
+    panelPowerW: 545,
+    panelBrand: "Canadian Solar",
+    panelModel: "CS6R-HKN",
   });
 
   let graph = await hydrateProject(project.id);
-
-  for (const substage of getStage(graph, StageType.ONBOARDING).substages) {
-    await completeChecklistItems({
-      project: graph,
-      stageType: StageType.ONBOARDING,
-      substageName: substage.name,
-      completedAt: "2025-03-18T17:00:00.000Z",
-      userId: adminId,
-    });
-    await setSubstageState({
-      project: graph,
-      stageType: StageType.ONBOARDING,
-      substageName: substage.name,
-      status: SubstageStatus.COMPLETED,
-      actualStartDate: "2025-03-05",
-      actualEndDate: "2025-03-18",
-    });
-  }
 
   await setStageState({
     project: graph,
     stageType: StageType.ONBOARDING,
     status: StageStatus.COMPLETED,
-    actualStartDate: "2025-03-05",
-    actualEndDate: "2025-03-18",
+    actualStartDate: "2025-02-20",
+    actualEndDate: "2025-02-26",
   });
-
   graph = await hydrateProject(project.id);
+
   await setStageState({
     project: graph,
     stageType: StageType.INGENIERIA,
     status: StageStatus.IN_PROGRESS,
-    actualStartDate: "2025-03-20",
+    actualStartDate: "2025-03-01",
   });
 
-  graph = await hydrateProject(project.id);
-  await completeChecklistItems({
-    project: graph,
-    stageType: StageType.INGENIERIA,
-    substageName: "Relevamiento Técnico",
-    labels: [
-      "Visita coordinada con cliente",
-      "Fecha registrada en CRM",
-      "Visita confirmada el día anterior",
-      "Tipo y estado del techo relevado",
-      "Pendiente y orientación medidas",
-      "Obstáculos identificados",
-      "Sistema de fijación viable definido",
-      "Tipo de suministro relevado",
-      "Estado de tablero relevado",
-      "Espacio para protecciones verificado",
-      "Puesta a tierra relevada",
-      "Ubicación del inversor definida",
-      "Ubicación de tablero de protecciones definida",
-      "Recorridos DC y AC medidos",
-      "Fotos del techo cargadas",
-      "Fotos de estructura cargadas",
-    ],
-    completedAt: "2025-03-28T16:00:00.000Z",
-    userId: operationsId,
-  });
-  await setSubstageState({
-    project: graph,
-    stageType: StageType.INGENIERIA,
-    substageName: "Relevamiento Técnico",
-    status: SubstageStatus.IN_PROGRESS,
-    actualStartDate: "2025-03-21",
-    notes: "Faltan evidencias y cierre del informe técnico",
-  });
-
-  await prisma.project.update({
-    where: { id: project.id },
-    data: {
-      executedUsd: decimal(12800),
-    },
-  });
+  await refreshProjectSummary(project.id, ProjectStatus.ACTIVE);
 
   return project.id;
 }
@@ -1203,178 +966,55 @@ async function seedProject4(adminId: string, operationsId: string) {
   const project = await createProject({
     code: "PRY-2025-005",
     clientName: "Bodega La Cuesta",
-    capacityKwp: 120,
-    locationCity: "Luján de Cuyo",
+    capacityKwp: 145,
+    locationCity: "San Rafael",
     locationProvince: "Mendoza",
     status: ProjectStatus.COMPLETED,
-    startDate: "2024-09-02",
-    plannedEndDate: "2025-01-30",
-    actualEndDate: "2025-02-08",
-    budgetUsd: 118500,
-    executedUsd: 121900,
-    estimatedMwhYear: 189.2,
+    startDate: "2024-08-10",
+    plannedEndDate: "2025-01-20",
+    actualEndDate: "2025-01-18",
+    budgetUsd: 132000,
+    executedUsd: 132000,
+    estimatedMwhYear: 230.0,
     modalidadPago: ModalidadPago.DIRECTO_50_50,
-    notificationEmail: "mantenimiento@bodegalacuesta.com",
-    notificationPhone: "+5492615550980",
+    notificationEmail: "bodegalacuesta@example.com",
+    notificationPhone: "+54 9 260 5555-0004",
     createdById: adminId,
   });
 
   await createSolarSystem({
     projectId: project.id,
-    inverterBrand: "Growatt",
-    inverterPowerKw: 12,
-    inverterQuantity: 1,
-    inverterPhaseType: PhaseType.TRIFASICO_230,
-    panelQuantity: 20,
-    panelPowerW: 580,
+    order: 1,
+    description: "Sistema completo - 145 kWp",
+    inverterBrand: "Fronius",
+    inverterPowerKw: 50,
+    inverterQuantity: 3,
+    inverterPhaseType: PhaseType.TRIFASICO_400,
+    inverterModel: "Symo 50.0-3",
+    panelQuantity: 264,
+    panelPowerW: 550,
+    panelBrand: "Longi",
+    panelModel: "Hi-MO 6",
   });
 
-  let graph = await hydrateProject(project.id);
-
-  const fullCompletedStages: Array<{
-    stageType: StageType;
+  const stageConfigs: Array<{
+    type: StageType;
     stageStart: string;
     stageEnd: string;
     tipoObra?: TipoObra;
-    substageWindows: Array<{ name: string; start: string; end: string }>;
   }> = [
-    {
-      stageType: StageType.ONBOARDING,
-      stageStart: "2024-09-02",
-      stageEnd: "2024-09-12",
-      substageWindows: getStage(graph, StageType.ONBOARDING).substages.map((substage) => ({
-        name: substage.name,
-        start: "2024-09-02",
-        end: "2024-09-12",
-      })),
-    },
-    {
-      stageType: StageType.INGENIERIA,
-      stageStart: "2024-09-15",
-      stageEnd: "2024-10-05",
-      substageWindows: [
-        { name: "Relevamiento Técnico", start: "2024-09-15", end: "2024-09-20" },
-        { name: "Proyecto Final de Ingeniería", start: "2024-09-21", end: "2024-10-05" },
-      ],
-    },
-    {
-      stageType: StageType.OPERACIONES,
-      stageStart: "2024-10-12",
-      stageEnd: "2024-12-05",
-      tipoObra: TipoObra.PROPIA,
-      substageWindows: [
-        { name: "Planificación y Logística", start: "2024-10-12", end: "2024-10-18" },
-        { name: "Ejecución de Obra Propia", start: "2024-10-21", end: "2024-11-25" },
-        { name: "Control de Costos", start: "2024-11-26", end: "2024-12-05" },
-      ],
-    },
-    {
-      stageType: StageType.HABILITACION_UTE,
-      stageStart: "2024-12-10",
-      stageEnd: "2025-01-20",
-      substageWindows: [
-        { name: "Trámite de microgeneración UTE", start: "2024-12-10", end: "2024-12-22" },
-        { name: "Inspección y aprobación UTE", start: "2024-12-23", end: "2025-01-10" },
-        { name: "Medidor bidireccional", start: "2025-01-11", end: "2025-01-20" },
-      ],
-    },
-    {
-      stageType: StageType.POSTVENTA,
-      stageStart: "2025-01-22",
-      stageEnd: "2025-02-08",
-      substageWindows: [
-        { name: "Capacitación al cliente", start: "2025-01-22", end: "2025-01-24" },
-        { name: "Alta en plataforma de monitoreo", start: "2025-01-25", end: "2025-01-28" },
-        { name: "Garantías y documentación final", start: "2025-01-29", end: "2025-02-08" },
-      ],
-    },
+    { type: StageType.ONBOARDING, stageStart: "2024-08-10", stageEnd: "2024-08-17" },
+    { type: StageType.INGENIERIA, stageStart: "2024-08-20", stageEnd: "2024-09-10" },
+    { type: StageType.OPERACIONES, stageStart: "2024-09-15", stageEnd: "2024-11-30", tipoObra: TipoObra.PROPIA },
+    { type: StageType.HABILITACION_UTE, stageStart: "2024-12-01", stageEnd: "2024-12-20" },
+    { type: StageType.POSTVENTA, stageStart: "2024-12-21", stageEnd: "2025-01-18" },
   ];
 
-  for (const stageConfig of fullCompletedStages) {
-    if (stageConfig.stageType === StageType.HABILITACION_UTE) {
-      await addFreeChecklistItems({
-        project: graph,
-        stageType: StageType.HABILITACION_UTE,
-        substageName: "Trámite de microgeneración UTE",
-        items: [
-          { label: "Expediente completo presentado", completed: true, completedAt: "2024-12-22T15:00:00.000Z", userId: operationsId },
-          { label: "Seguimiento en planilla UTE actualizado", completed: true, completedAt: "2024-12-22T16:00:00.000Z", userId: operationsId },
-        ],
-      });
-      await addFreeChecklistItems({
-        project: graph,
-        stageType: StageType.HABILITACION_UTE,
-        substageName: "Inspección y aprobación UTE",
-        items: [
-          { label: "Inspección aprobada sin observaciones", completed: true, completedAt: "2025-01-10T14:00:00.000Z", userId: operationsId },
-        ],
-      });
-      await addFreeChecklistItems({
-        project: graph,
-        stageType: StageType.HABILITACION_UTE,
-        substageName: "Medidor bidireccional",
-        items: [
-          { label: "Medidor bidireccional instalado", completed: true, completedAt: "2025-01-20T13:00:00.000Z", userId: operationsId },
-        ],
-      });
-    }
-
-    if (stageConfig.stageType === StageType.POSTVENTA) {
-      await addFreeChecklistItems({
-        project: graph,
-        stageType: StageType.POSTVENTA,
-        substageName: "Capacitación al cliente",
-        items: [{ label: "Capacitación presencial realizada", completed: true, completedAt: "2025-01-24T11:00:00.000Z", userId: operationsId }],
-      });
-      await addFreeChecklistItems({
-        project: graph,
-        stageType: StageType.POSTVENTA,
-        substageName: "Alta en plataforma de monitoreo",
-        items: [{ label: "Usuario del cliente habilitado", completed: true, completedAt: "2025-01-28T11:00:00.000Z", userId: operationsId }],
-      });
-      await addFreeChecklistItems({
-        project: graph,
-        stageType: StageType.POSTVENTA,
-        substageName: "Garantías y documentación final",
-        items: [{ label: "Dossier final entregado", completed: true, completedAt: "2025-02-08T11:00:00.000Z", userId: operationsId }],
-      });
-    }
-
-    graph = await hydrateProject(project.id);
-
-    if (stageConfig.stageType === StageType.OPERACIONES && stageConfig.tipoObra) {
-      await setStageState({
-        project: graph,
-        stageType: StageType.OPERACIONES,
-        status: StageStatus.IN_PROGRESS,
-        actualStartDate: stageConfig.stageStart,
-        tipoObra: stageConfig.tipoObra,
-      });
-      graph = await hydrateProject(project.id);
-    }
-
-    for (const substageWindow of stageConfig.substageWindows) {
-      await completeChecklistItems({
-        project: graph,
-        stageType: stageConfig.stageType,
-        substageName: substageWindow.name,
-        completedAt: `${substageWindow.end}T18:00:00.000Z`,
-        userId: stageConfig.stageType === StageType.ONBOARDING ? adminId : operationsId,
-      });
-      await setSubstageState({
-        project: graph,
-        stageType: stageConfig.stageType,
-        substageName: substageWindow.name,
-        status: SubstageStatus.COMPLETED,
-        actualStartDate: substageWindow.start,
-        actualEndDate: substageWindow.end,
-      });
-    }
-
-    graph = await hydrateProject(project.id);
+  let graph = await hydrateProject(project.id);
+  for (const stageConfig of stageConfigs) {
     await setStageState({
       project: graph,
-      stageType: stageConfig.stageType,
+      stageType: stageConfig.type,
       status: StageStatus.COMPLETED,
       actualStartDate: stageConfig.stageStart,
       actualEndDate: stageConfig.stageEnd,
@@ -1385,6 +1025,8 @@ async function seedProject4(adminId: string, operationsId: string) {
 
   return project.id;
 }
+
+// ─── Tasks, Files, Notifications ──────────────────────────────────────────────
 
 async function createTasksAndFiles(projectIds: string[], adminId: string, operationsId: string) {
   const [project1Id, project2Id, project3Id, project4Id] = projectIds;
@@ -1401,9 +1043,10 @@ async function createTasksAndFiles(projectIds: string[], adminId: string, operat
   const p3O0 = getSubstage(project3, StageType.INGENIERIA, "Relevamiento Técnico");
   const p4Postventa = getStage(project4, StageType.POSTVENTA);
 
-  await prisma.task.createMany({
-    data: [
-      {
+  const tasks: Array<{ id: string; data: Prisma.TaskUncheckedCreateInput }> = [
+    {
+      id: "seed-task-p1-1",
+      data: {
         projectId: project1Id,
         stageId: p1OpsStage.id,
         substageId: p1Own.id,
@@ -1415,7 +1058,10 @@ async function createTasksAndFiles(projectIds: string[], adminId: string, operat
         userId: operationsId,
         dueDate: dateOnly("2025-03-24"),
       },
-      {
+    },
+    {
+      id: "seed-task-p1-2",
+      data: {
         projectId: project1Id,
         stageId: p1OpsStage.id,
         substageId: p1Own.id,
@@ -1427,7 +1073,10 @@ async function createTasksAndFiles(projectIds: string[], adminId: string, operat
         userId: operationsId,
         dueDate: dateOnly("2025-03-25"),
       },
-      {
+    },
+    {
+      id: "seed-task-p2-1",
+      data: {
         projectId: project2Id,
         stageId: p2Ute.id,
         title: "Confirmar fecha de inspección UTE",
@@ -1438,7 +1087,10 @@ async function createTasksAndFiles(projectIds: string[], adminId: string, operat
         userId: operationsId,
         dueDate: dateOnly("2025-05-05"),
       },
-      {
+    },
+    {
+      id: "seed-task-p3-1",
+      data: {
         projectId: project3Id,
         stageId: p3Engineering.id,
         substageId: p3O0.id,
@@ -1450,7 +1102,10 @@ async function createTasksAndFiles(projectIds: string[], adminId: string, operat
         userId: operationsId,
         dueDate: dateOnly("2025-03-30"),
       },
-      {
+    },
+    {
+      id: "seed-task-p4-1",
+      data: {
         projectId: project4Id,
         stageId: p4Postventa.id,
         title: "Enviar reporte final de monitoreo",
@@ -1461,13 +1116,22 @@ async function createTasksAndFiles(projectIds: string[], adminId: string, operat
         userId: adminId,
         dueDate: dateOnly("2025-02-10"),
         completedAt: timestamp("2025-02-10T16:00:00.000Z"),
-      } as Prisma.TaskCreateManyInput,
-    ],
-  });
+      },
+    },
+  ];
 
-  await prisma.fileAttachment.createMany({
-    data: [
-      {
+  for (const t of tasks) {
+    await prisma.task.upsert({
+      where: { id: t.id },
+      create: { id: t.id, ...t.data },
+      update: t.data,
+    });
+  }
+
+  const files: Array<{ id: string; data: Prisma.FileAttachmentUncheckedCreateInput }> = [
+    {
+      id: "seed-file-p1-1",
+      data: {
         projectId: project1Id,
         stageId: p1OpsStage.id,
         substageId: p1Own.id,
@@ -1478,7 +1142,10 @@ async function createTasksAndFiles(projectIds: string[], adminId: string, operat
         url: "seed/PRY-2025-004/acta-avance-obra-propia.pdf",
         uploadedById: operationsId,
       },
-      {
+    },
+    {
+      id: "seed-file-p2-1",
+      data: {
         projectId: project2Id,
         stageId: p2Ute.id,
         filename: "expediente-ute-microgeneracion.pdf",
@@ -1488,7 +1155,10 @@ async function createTasksAndFiles(projectIds: string[], adminId: string, operat
         url: "seed/PRY-2025-002/expediente-ute.pdf",
         uploadedById: operationsId,
       },
-      {
+    },
+    {
+      id: "seed-file-p3-1",
+      data: {
         projectId: project3Id,
         stageId: p3Engineering.id,
         substageId: p3O0.id,
@@ -1499,7 +1169,10 @@ async function createTasksAndFiles(projectIds: string[], adminId: string, operat
         url: "seed/PRY-2025-006/fotos-relevamiento.zip",
         uploadedById: operationsId,
       },
-      {
+    },
+    {
+      id: "seed-file-p4-1",
+      data: {
         projectId: project4Id,
         stageId: p4Postventa.id,
         filename: "dossier-final-bodega.pdf",
@@ -1509,60 +1182,94 @@ async function createTasksAndFiles(projectIds: string[], adminId: string, operat
         url: "seed/PRY-2025-005/dossier-final.pdf",
         uploadedById: adminId,
       },
-    ],
-  });
+    },
+  ];
 
-  await prisma.notification.createMany({
-    data: [
-      {
+  for (const f of files) {
+    await prisma.fileAttachment.upsert({
+      where: { id: f.id },
+      create: { id: f.id, ...f.data },
+      update: f.data,
+    });
+  }
+
+  const notifications: Array<{ id: string; data: Prisma.NotificationUncheckedCreateInput }> = [
+    {
+      id: "seed-notif-p1-overdue",
+      data: {
         userId: operationsId,
         projectId: project1Id,
         type: NotificationType.stage_overdue,
         title: "Operaciones con desvío parcial",
         message: "La puesta en marcha de Agroindustrial Sur sigue abierta y requiere seguimiento.",
       },
-      {
+    },
+    {
+      id: "seed-notif-p2-milestone",
+      data: {
         userId: operationsId,
         projectId: project2Id,
         type: NotificationType.progress_milestone,
         title: "Proyecto entrando en habilitación",
         message: "Frigorífico Norte completó Operaciones y avanzó a Habilitación UTE.",
       },
-      {
+    },
+    {
+      id: "seed-notif-p3-due",
+      data: {
         userId: operationsId,
         projectId: project3Id,
         type: NotificationType.task_due,
         title: "Relevamiento con vencimiento próximo",
         message: "La tarea de cierre de informe técnico vence mañana.",
       },
-    ],
-  });
+    },
+  ];
+
+  for (const n of notifications) {
+    await prisma.notification.upsert({
+      where: { id: n.id },
+      create: { id: n.id, ...n.data },
+      update: n.data,
+    });
+  }
 }
 
-async function createAuditTrail(projectId: string, userId: string, entries: Array<{
-  entityType: AuditEntityType;
-  entityId: string;
-  action: AuditAction;
-  description: string;
-  fieldChanged?: string | null;
-  oldValue?: string | null;
-  newValue?: string | null;
-  timestamp: string;
-}>) {
-  for (const entry of entries) {
-    await prisma.auditLog.create({
-      data: {
-        entityType: entry.entityType,
-        entityId: entry.entityId,
-        projectId,
-        userId,
-        action: entry.action,
-        fieldChanged: entry.fieldChanged ?? null,
-        oldValue: entry.oldValue ?? null,
-        newValue: entry.newValue ?? null,
-        description: entry.description,
-        timestamp: timestamp(entry.timestamp),
-      },
+// ─── Audit trail ──────────────────────────────────────────────────────────────
+
+async function createAuditTrail(
+  projectCode: string,
+  projectId: string,
+  userId: string,
+  entries: Array<{
+    entityType: AuditEntityType;
+    entityId: string;
+    action: AuditAction;
+    description: string;
+    fieldChanged?: string | null;
+    oldValue?: string | null;
+    newValue?: string | null;
+    timestamp: string;
+  }>,
+) {
+  for (const [index, entry] of entries.entries()) {
+    const id = `seed-audit-${projectCode}-${index + 1}`;
+    const data = {
+      entityType: entry.entityType,
+      entityId: entry.entityId,
+      projectId,
+      userId,
+      action: entry.action,
+      fieldChanged: entry.fieldChanged ?? null,
+      oldValue: entry.oldValue ?? null,
+      newValue: entry.newValue ?? null,
+      description: entry.description,
+      timestamp: timestamp(entry.timestamp),
+    };
+    await prisma.auditLog.upsert({
+      where: { id },
+      create: { id, ...data },
+      update: data,
     });
   }
 }
@@ -1574,7 +1281,7 @@ async function createProjectAudits(projectId: string, userId: string) {
   const operations = getStage(project, StageType.OPERACIONES);
   const habilitacion = getStage(project, StageType.HABILITACION_UTE);
 
-  await createAuditTrail(projectId, userId, [
+  await createAuditTrail(project.code, projectId, userId, [
     {
       entityType: AuditEntityType.project,
       entityId: project.id,
@@ -1692,8 +1399,392 @@ async function createProjectAudits(projectId: string, userId: string) {
   ]);
 }
 
+// ─── Installation schedules ───────────────────────────────────────────────────
+
+async function seedInstallationSchedules(params: {
+  adminId: string;
+  project1Id: string;
+  project2Id: string;
+  project4Id: string;
+}) {
+  const { adminId, project1Id, project2Id, project4Id } = params;
+
+  async function upsertSchedule(
+    projectId: string,
+    data: Omit<Prisma.InstallationScheduleUncheckedCreateInput, "projectId">,
+  ) {
+    await prisma.installationSchedule.upsert({
+      where: { projectId },
+      create: { projectId, ...data, createdBy: adminId },
+      update: {
+        teamName: data.teamName,
+        teamColor: data.teamColor,
+        weekStart: data.weekStart,
+        weekEnd: data.weekEnd,
+        notes: data.notes,
+      },
+    });
+  }
+
+  await upsertSchedule(project1Id, {
+    teamName: "Equipo propio",
+    teamColor: "#378ADD",
+    weekStart: parseDateOnly("2026-05-04"),
+    weekEnd: parseDateOnly("2026-05-08"),
+    confirmedAt: new Date("2026-04-20T12:00:00Z"),
+    confirmedBy: adminId,
+    notes: "Traslado de materiales confirmado con logística.",
+  });
+
+  await upsertSchedule(project2Id, {
+    teamName: "Instaladores Sur",
+    teamColor: "#1D9E75",
+    weekStart: parseDateOnly("2026-05-11"),
+    weekEnd: parseDateOnly("2026-05-15"),
+    notes: "Coordinar ingreso con planta.",
+  });
+
+  await upsertSchedule(project4Id, {
+    teamName: "Equipo propio",
+    teamColor: "#378ADD",
+    weekStart: parseDateOnly("2026-05-25"),
+    weekEnd: parseDateOnly("2026-05-29"),
+    confirmedAt: new Date("2026-04-22T15:00:00Z"),
+    confirmedBy: adminId,
+  });
+}
+
+// ─── Finance & Stock ──────────────────────────────────────────────────────────
+
+async function seedFinanceAndStock(
+  adminId: string,
+  project1Id: string,
+  project2Id: string,
+  project3Id: string,
+) {
+  // ExchangeRate
+  await prisma.exchangeRate.upsert({
+    where: { id: "seed-exch-initial" },
+    create: {
+      id: "seed-exch-initial",
+      usdToUyu: new Prisma.Decimal("43.50"),
+      source: "manual",
+      createdBy: adminId,
+    },
+    update: {
+      usdToUyu: new Prisma.Decimal("43.50"),
+      source: "manual",
+    },
+  });
+
+  // Suppliers
+  async function upsertSupplier(
+    id: string,
+    data: Omit<Prisma.SupplierCreateInput, "id">,
+  ) {
+    return prisma.supplier.upsert({
+      where: { id },
+      create: { id, ...data },
+      update: data,
+    });
+  }
+
+  const growatt = await upsertSupplier("seed-supplier-growatt", {
+    nombre: "Growatt Uruguay",
+    email: "growatt@example.com",
+    condicionPago: "30 días",
+  });
+  const estructuras = await upsertSupplier("seed-supplier-estructuras", {
+    nombre: "Estructuras del Sur",
+    email: "estructuras@example.com",
+    condicionPago: "contado",
+  });
+  await upsertSupplier("seed-supplier-cables", {
+    nombre: "Cables & Más",
+    email: "cables@example.com",
+    condicionPago: "15 días",
+  });
+
+  // FinanceSubcategories — tienen unique compuesto (nombre, categoria)
+  async function upsertSubcat(nombre: string, categoria: CategoriaPrincipal) {
+    return prisma.financeSubcategory.upsert({
+      where: { nombre_categoria: { nombre, categoria } },
+      create: { nombre, categoria },
+      update: {},
+    });
+  }
+
+  const subCobro = await upsertSubcat("Cobro cliente", CategoriaPrincipal.PROYECTO_ENTRADA);
+  const subManoObra = await upsertSubcat("Mano de obra", CategoriaPrincipal.PROYECTO_SALIDA);
+  const subAlquiler = await upsertSubcat("Alquiler", CategoriaPrincipal.FIJO);
+  const subSueldos = await upsertSubcat("Sueldos", CategoriaPrincipal.FIJO);
+  const subCombustible = await upsertSubcat("Combustible", CategoriaPrincipal.VARIABLE);
+  const subCompra = await upsertSubcat("Compra paneles", CategoriaPrincipal.COMPRA_STOCK);
+  await upsertSubcat("Materiales de obra", CategoriaPrincipal.PROYECTO_SALIDA);
+  await upsertSubcat("Consumo en obra", CategoriaPrincipal.CONSUMO_STOCK);
+
+  // StockProducts
+  async function upsertProduct(
+    id: string,
+    data: Omit<Prisma.StockProductCreateInput, "id">,
+  ) {
+    return prisma.stockProduct.upsert({
+      where: { id },
+      create: { id, ...data },
+      update: data,
+    });
+  }
+
+  const paneles = await upsertProduct("seed-stock-paneles", {
+    nombre: "Panel solar 550W",
+    categoria: "Paneles",
+    unidad: "unidad",
+    stockActual: new Prisma.Decimal("45"),
+    stockMinimo: new Prisma.Decimal("10"),
+    costoPromedio: new Prisma.Decimal("185.00"),
+    moneda: Moneda.USD,
+  });
+  await upsertProduct("seed-stock-inversores", {
+    nombre: "Inversor Growatt 5kW",
+    categoria: "Inversores",
+    unidad: "unidad",
+    stockActual: new Prisma.Decimal("8"),
+    stockMinimo: new Prisma.Decimal("2"),
+    costoPromedio: new Prisma.Decimal("950.00"),
+    moneda: Moneda.USD,
+  });
+  await upsertProduct("seed-stock-cable", {
+    nombre: "Cable DC 6mm",
+    categoria: "Cables",
+    unidad: "metro",
+    stockActual: new Prisma.Decimal("500"),
+    stockMinimo: new Prisma.Decimal("100"),
+    costoPromedio: new Prisma.Decimal("2.50"),
+    moneda: Moneda.USD,
+  });
+  const estructura = await upsertProduct("seed-stock-estructura", {
+    nombre: "Estructura aluminio",
+    categoria: "Estructuras",
+    unidad: "kit",
+    stockActual: new Prisma.Decimal("15"),
+    stockMinimo: new Prisma.Decimal("5"),
+    costoPromedio: new Prisma.Decimal("320.00"),
+    moneda: Moneda.USD,
+  });
+  await upsertProduct("seed-stock-disyuntor", {
+    nombre: "Disyuntor 32A",
+    categoria: "Protecciones",
+    unidad: "unidad",
+    stockActual: new Prisma.Decimal("30"),
+    stockMinimo: new Prisma.Decimal("10"),
+    costoPromedio: new Prisma.Decimal("18.00"),
+    moneda: Moneda.USD,
+  });
+
+  // FinanceMovements
+  async function upsertMov(
+    id: string,
+    data: Omit<Prisma.FinanceMovementUncheckedCreateInput, "id">,
+  ) {
+    return prisma.financeMovement.upsert({
+      where: { id },
+      create: { id, ...data },
+      update: data,
+    });
+  }
+
+  const mov1 = await upsertMov("seed-movfin-1", {
+    fecha: new Date("2026-02-10"),
+    mes: 2, anio: 2026,
+    tipoMovimiento: TipoMovimiento.INGRESO,
+    categoriaPrincipal: CategoriaPrincipal.PROYECTO_ENTRADA,
+    subcategoriaId: subCobro.id,
+    descripcion: "Cobro anticipo proyecto P1",
+    monto: new Prisma.Decimal("8500.00"),
+    moneda: Moneda.USD,
+    cobrado: true, impactaFlujo: true,
+    projectId: project1Id,
+    estadoAprobacion: EstadoAprobacion.APROBADO,
+    creadoPorId: adminId,
+  });
+  void mov1;
+
+  await upsertMov("seed-movfin-2", {
+    fecha: new Date("2026-03-05"),
+    mes: 3, anio: 2026,
+    tipoMovimiento: TipoMovimiento.INGRESO,
+    categoriaPrincipal: CategoriaPrincipal.PROYECTO_ENTRADA,
+    subcategoriaId: subCobro.id,
+    descripcion: "Cobro saldo proyecto P2",
+    monto: new Prisma.Decimal("12000.00"),
+    moneda: Moneda.USD,
+    cobrado: true, impactaFlujo: true,
+    projectId: project2Id,
+    estadoAprobacion: EstadoAprobacion.APROBADO,
+    creadoPorId: adminId,
+  });
+
+  await upsertMov("seed-movfin-3", {
+    fecha: new Date("2026-03-20"),
+    mes: 3, anio: 2026,
+    tipoMovimiento: TipoMovimiento.INGRESO,
+    categoriaPrincipal: CategoriaPrincipal.PROYECTO_ENTRADA,
+    subcategoriaId: subCobro.id,
+    descripcion: "Cobro anticipo proyecto P3",
+    monto: new Prisma.Decimal("6200.00"),
+    moneda: Moneda.USD,
+    cobrado: false, impactaFlujo: true,
+    projectId: project3Id,
+    estadoAprobacion: EstadoAprobacion.REGISTRADO,
+    creadoPorId: adminId,
+  });
+
+  await upsertMov("seed-movfin-4", {
+    fecha: new Date("2026-02-01"),
+    mes: 2, anio: 2026,
+    tipoMovimiento: TipoMovimiento.GASTO,
+    categoriaPrincipal: CategoriaPrincipal.FIJO,
+    subcategoriaId: subAlquiler.id,
+    descripcion: "Alquiler oficina febrero",
+    monto: new Prisma.Decimal("1200.00"),
+    moneda: Moneda.USD,
+    pagado: true, impactaFlujo: true,
+    estadoAprobacion: EstadoAprobacion.APROBADO,
+    creadoPorId: adminId,
+  });
+
+  await upsertMov("seed-movfin-5", {
+    fecha: new Date("2026-02-28"),
+    mes: 2, anio: 2026,
+    tipoMovimiento: TipoMovimiento.GASTO,
+    categoriaPrincipal: CategoriaPrincipal.FIJO,
+    subcategoriaId: subSueldos.id,
+    descripcion: "Sueldos febrero",
+    monto: new Prisma.Decimal("5800.00"),
+    moneda: Moneda.USD,
+    pagado: true, impactaFlujo: true,
+    estadoAprobacion: EstadoAprobacion.APROBADO,
+    creadoPorId: adminId,
+  });
+
+  await upsertMov("seed-movfin-6", {
+    fecha: new Date("2026-03-31"),
+    mes: 3, anio: 2026,
+    tipoMovimiento: TipoMovimiento.GASTO,
+    categoriaPrincipal: CategoriaPrincipal.FIJO,
+    subcategoriaId: subSueldos.id,
+    descripcion: "Sueldos marzo",
+    monto: new Prisma.Decimal("5800.00"),
+    moneda: Moneda.USD,
+    pagado: false, impactaFlujo: true,
+    estadoAprobacion: EstadoAprobacion.PENDIENTE_APROBACION,
+    creadoPorId: adminId,
+  });
+
+  await upsertMov("seed-movfin-7", {
+    fecha: new Date("2026-03-10"),
+    mes: 3, anio: 2026,
+    tipoMovimiento: TipoMovimiento.GASTO,
+    categoriaPrincipal: CategoriaPrincipal.VARIABLE,
+    subcategoriaId: subCombustible.id,
+    descripcion: "Combustible camioneta marzo",
+    monto: new Prisma.Decimal("340.00"),
+    moneda: Moneda.USD,
+    pagado: true, impactaFlujo: true,
+    estadoAprobacion: EstadoAprobacion.REGISTRADO,
+    creadoPorId: adminId,
+  });
+
+  await upsertMov("seed-movfin-8", {
+    fecha: new Date("2026-03-15"),
+    mes: 3, anio: 2026,
+    tipoMovimiento: TipoMovimiento.GASTO,
+    categoriaPrincipal: CategoriaPrincipal.PROYECTO_SALIDA,
+    subcategoriaId: subManoObra.id,
+    descripcion: "Subcontrato instalación eléctrica P1",
+    monto: new Prisma.Decimal("1500.00"),
+    moneda: Moneda.USD,
+    pagado: false, impactaFlujo: true,
+    projectId: project1Id,
+    estadoAprobacion: EstadoAprobacion.REGISTRADO,
+    creadoPorId: adminId,
+  });
+
+  const movStock1 = await upsertMov("seed-movfin-stock-1", {
+    fecha: new Date("2026-02-15"),
+    mes: 2, anio: 2026,
+    tipoMovimiento: TipoMovimiento.GASTO,
+    categoriaPrincipal: CategoriaPrincipal.COMPRA_STOCK,
+    subcategoriaId: subCompra.id,
+    descripcion: "Compra 20 paneles 550W - Growatt",
+    monto: new Prisma.Decimal("3700.00"),
+    moneda: Moneda.USD,
+    pagado: true, impactaFlujo: true,
+    supplierId: growatt.id,
+    estadoAprobacion: EstadoAprobacion.APROBADO,
+    creadoPorId: adminId,
+  });
+
+  const movStock2 = await upsertMov("seed-movfin-stock-2", {
+    fecha: new Date("2026-03-01"),
+    mes: 3, anio: 2026,
+    tipoMovimiento: TipoMovimiento.GASTO,
+    categoriaPrincipal: CategoriaPrincipal.COMPRA_STOCK,
+    subcategoriaId: subCompra.id,
+    descripcion: "Compra 5 kits estructura aluminio",
+    monto: new Prisma.Decimal("1600.00"),
+    moneda: Moneda.USD,
+    pagado: true, impactaFlujo: true,
+    supplierId: estructuras.id,
+    estadoAprobacion: EstadoAprobacion.APROBADO,
+    creadoPorId: adminId,
+  });
+
+  // StockMovements
+  async function upsertStockMov(
+    id: string,
+    data: Omit<Prisma.StockMovementUncheckedCreateInput, "id">,
+  ) {
+    await prisma.stockMovement.upsert({
+      where: { id },
+      create: { id, ...data },
+      update: data,
+    });
+  }
+
+  await upsertStockMov("seed-movstock-1", {
+    fecha: new Date("2026-02-15"),
+    productId: paneles.id,
+    tipo: TipoMovimientoStock.INGRESO,
+    cantidad: new Prisma.Decimal("20"),
+    costoUnitario: new Prisma.Decimal("185.00"),
+    costoTotal: new Prisma.Decimal("3700.00"),
+    moneda: Moneda.USD,
+    stockResultante: new Prisma.Decimal("45"),
+    supplierId: growatt.id,
+    financeMovementId: movStock1.id,
+    referencia: "OC-2026-001",
+  });
+  await upsertStockMov("seed-movstock-2", {
+    fecha: new Date("2026-03-01"),
+    productId: estructura.id,
+    tipo: TipoMovimientoStock.INGRESO,
+    cantidad: new Prisma.Decimal("5"),
+    costoUnitario: new Prisma.Decimal("320.00"),
+    costoTotal: new Prisma.Decimal("1600.00"),
+    moneda: Moneda.USD,
+    stockResultante: new Prisma.Decimal("15"),
+    supplierId: estructuras.id,
+    financeMovementId: movStock2.id,
+    referencia: "OC-2026-002",
+  });
+
+  console.log("Finance & Stock seed completado.");
+}
+
+// ─── Entry point ──────────────────────────────────────────────────────────────
+
 async function run() {
-  await resetDatabase();
   const { admin, operations, comercial, ingeniero } = await createUsers();
 
   const project1Id = await seedProject1(admin.id, operations.id);
@@ -1713,8 +1804,8 @@ async function run() {
   await seedLeads(comercial.id, admin.id, project1Id);
   await seedGoals(admin.id);
   await seedFinanceAndStock(admin.id, project1Id, project2Id, project3Id);
+  await seedInstallationSchedules({ adminId: admin.id, project1Id, project2Id, project4Id });
 
-  // Para seedComments necesitamos IDs de una etapa y una tarea del project1
   const project1 = await prisma.project.findUnique({
     where: { id: project1Id },
     include: {
@@ -1733,347 +1824,7 @@ async function run() {
     );
   }
 
-  console.log("Seed completado con pipeline SOP real, permisos, settings, leads, objetivos y comentarios.");
-}
-
-async function seedFinanceAndStock(
-  adminId: string,
-  project1Id: string,
-  project2Id: string,
-  project3Id: string,
-) {
-  // ExchangeRate
-  await prisma.exchangeRate.create({
-    data: {
-      usdToUyu: new Prisma.Decimal("43.50"),
-      source: "manual",
-      createdBy: adminId,
-    },
-  });
-
-  // Suppliers
-  const growatt = await prisma.supplier.create({
-    data: {
-      nombre: "Growatt Uruguay",
-      email: "growatt@example.com",
-      condicionPago: "30 días",
-    },
-  });
-  const estructuras = await prisma.supplier.create({
-    data: {
-      nombre: "Estructuras del Sur",
-      email: "estructuras@example.com",
-      condicionPago: "contado",
-    },
-  });
-  const cables = await prisma.supplier.create({
-    data: {
-      nombre: "Cables & Más",
-      email: "cables@example.com",
-      condicionPago: "15 días",
-    },
-  });
-
-  // FinanceSubcategories
-  const subCobro = await prisma.financeSubcategory.create({
-    data: { nombre: "Cobro cliente", categoria: CategoriaPrincipal.PROYECTO_ENTRADA },
-  });
-  const subMateriales = await prisma.financeSubcategory.create({
-    data: { nombre: "Materiales de obra", categoria: CategoriaPrincipal.PROYECTO_SALIDA },
-  });
-  const subManoObra = await prisma.financeSubcategory.create({
-    data: { nombre: "Mano de obra", categoria: CategoriaPrincipal.PROYECTO_SALIDA },
-  });
-  const subAlquiler = await prisma.financeSubcategory.create({
-    data: { nombre: "Alquiler", categoria: CategoriaPrincipal.FIJO },
-  });
-  const subSueldos = await prisma.financeSubcategory.create({
-    data: { nombre: "Sueldos", categoria: CategoriaPrincipal.FIJO },
-  });
-  const subCombustible = await prisma.financeSubcategory.create({
-    data: { nombre: "Combustible", categoria: CategoriaPrincipal.VARIABLE },
-  });
-  const subCompra = await prisma.financeSubcategory.create({
-    data: { nombre: "Compra paneles", categoria: CategoriaPrincipal.COMPRA_STOCK },
-  });
-  const subConsumo = await prisma.financeSubcategory.create({
-    data: { nombre: "Consumo en obra", categoria: CategoriaPrincipal.CONSUMO_STOCK },
-  });
-
-  // StockProducts
-  const paneles = await prisma.stockProduct.create({
-    data: {
-      nombre: "Panel solar 550W",
-      categoria: "Paneles",
-      unidad: "unidad",
-      stockActual: new Prisma.Decimal("45"),
-      stockMinimo: new Prisma.Decimal("10"),
-      costoPromedio: new Prisma.Decimal("185.00"),
-      moneda: Moneda.USD,
-    },
-  });
-  const inversores = await prisma.stockProduct.create({
-    data: {
-      nombre: "Inversor Growatt 5kW",
-      categoria: "Inversores",
-      unidad: "unidad",
-      stockActual: new Prisma.Decimal("8"),
-      stockMinimo: new Prisma.Decimal("2"),
-      costoPromedio: new Prisma.Decimal("950.00"),
-      moneda: Moneda.USD,
-    },
-  });
-  const cable = await prisma.stockProduct.create({
-    data: {
-      nombre: "Cable DC 6mm",
-      categoria: "Cables",
-      unidad: "metro",
-      stockActual: new Prisma.Decimal("500"),
-      stockMinimo: new Prisma.Decimal("100"),
-      costoPromedio: new Prisma.Decimal("2.50"),
-      moneda: Moneda.USD,
-    },
-  });
-  const estructura = await prisma.stockProduct.create({
-    data: {
-      nombre: "Estructura aluminio",
-      categoria: "Estructuras",
-      unidad: "kit",
-      stockActual: new Prisma.Decimal("15"),
-      stockMinimo: new Prisma.Decimal("5"),
-      costoPromedio: new Prisma.Decimal("320.00"),
-      moneda: Moneda.USD,
-    },
-  });
-  const disyuntor = await prisma.stockProduct.create({
-    data: {
-      nombre: "Disyuntor 32A",
-      categoria: "Protecciones",
-      unidad: "unidad",
-      stockActual: new Prisma.Decimal("30"),
-      stockMinimo: new Prisma.Decimal("10"),
-      costoPromedio: new Prisma.Decimal("18.00"),
-      moneda: Moneda.USD,
-    },
-  });
-
-  // FinanceMovements — 3 ingresos vinculados a proyectos
-  const mov1 = await prisma.financeMovement.create({
-    data: {
-      fecha: new Date("2026-02-10"),
-      mes: 2,
-      anio: 2026,
-      tipoMovimiento: TipoMovimiento.INGRESO,
-      categoriaPrincipal: CategoriaPrincipal.PROYECTO_ENTRADA,
-      subcategoriaId: subCobro.id,
-      descripcion: "Cobro anticipo proyecto P1",
-      monto: new Prisma.Decimal("8500.00"),
-      moneda: Moneda.USD,
-      cobrado: true,
-      impactaFlujo: true,
-      projectId: project1Id,
-      estadoAprobacion: EstadoAprobacion.APROBADO,
-      creadoPorId: adminId,
-    },
-  });
-  const mov2 = await prisma.financeMovement.create({
-    data: {
-      fecha: new Date("2026-03-05"),
-      mes: 3,
-      anio: 2026,
-      tipoMovimiento: TipoMovimiento.INGRESO,
-      categoriaPrincipal: CategoriaPrincipal.PROYECTO_ENTRADA,
-      subcategoriaId: subCobro.id,
-      descripcion: "Cobro saldo proyecto P2",
-      monto: new Prisma.Decimal("12000.00"),
-      moneda: Moneda.USD,
-      cobrado: true,
-      impactaFlujo: true,
-      projectId: project2Id,
-      estadoAprobacion: EstadoAprobacion.APROBADO,
-      creadoPorId: adminId,
-    },
-  });
-  const mov3 = await prisma.financeMovement.create({
-    data: {
-      fecha: new Date("2026-03-20"),
-      mes: 3,
-      anio: 2026,
-      tipoMovimiento: TipoMovimiento.INGRESO,
-      categoriaPrincipal: CategoriaPrincipal.PROYECTO_ENTRADA,
-      subcategoriaId: subCobro.id,
-      descripcion: "Cobro anticipo proyecto P3",
-      monto: new Prisma.Decimal("6200.00"),
-      moneda: Moneda.USD,
-      cobrado: false,
-      impactaFlujo: true,
-      projectId: project3Id,
-      estadoAprobacion: EstadoAprobacion.REGISTRADO,
-      creadoPorId: adminId,
-    },
-  });
-
-  // FinanceMovements — 3 gastos fijos sin proyecto
-  await prisma.financeMovement.create({
-    data: {
-      fecha: new Date("2026-02-01"),
-      mes: 2,
-      anio: 2026,
-      tipoMovimiento: TipoMovimiento.GASTO,
-      categoriaPrincipal: CategoriaPrincipal.FIJO,
-      subcategoriaId: subAlquiler.id,
-      descripcion: "Alquiler oficina febrero",
-      monto: new Prisma.Decimal("1200.00"),
-      moneda: Moneda.USD,
-      pagado: true,
-      impactaFlujo: true,
-      estadoAprobacion: EstadoAprobacion.APROBADO,
-      creadoPorId: adminId,
-    },
-  });
-  await prisma.financeMovement.create({
-    data: {
-      fecha: new Date("2026-02-28"),
-      mes: 2,
-      anio: 2026,
-      tipoMovimiento: TipoMovimiento.GASTO,
-      categoriaPrincipal: CategoriaPrincipal.FIJO,
-      subcategoriaId: subSueldos.id,
-      descripcion: "Sueldos febrero",
-      monto: new Prisma.Decimal("5800.00"),
-      moneda: Moneda.USD,
-      pagado: true,
-      impactaFlujo: true,
-      estadoAprobacion: EstadoAprobacion.APROBADO,
-      creadoPorId: adminId,
-    },
-  });
-  await prisma.financeMovement.create({
-    data: {
-      fecha: new Date("2026-03-31"),
-      mes: 3,
-      anio: 2026,
-      tipoMovimiento: TipoMovimiento.GASTO,
-      categoriaPrincipal: CategoriaPrincipal.FIJO,
-      subcategoriaId: subSueldos.id,
-      descripcion: "Sueldos marzo",
-      monto: new Prisma.Decimal("5800.00"),
-      moneda: Moneda.USD,
-      pagado: false,
-      impactaFlujo: true,
-      estadoAprobacion: EstadoAprobacion.PENDIENTE_APROBACION,
-      creadoPorId: adminId,
-    },
-  });
-
-  // FinanceMovements — 2 gastos variables
-  await prisma.financeMovement.create({
-    data: {
-      fecha: new Date("2026-03-10"),
-      mes: 3,
-      anio: 2026,
-      tipoMovimiento: TipoMovimiento.GASTO,
-      categoriaPrincipal: CategoriaPrincipal.VARIABLE,
-      subcategoriaId: subCombustible.id,
-      descripcion: "Combustible camioneta marzo",
-      monto: new Prisma.Decimal("340.00"),
-      moneda: Moneda.USD,
-      pagado: true,
-      impactaFlujo: true,
-      estadoAprobacion: EstadoAprobacion.REGISTRADO,
-      creadoPorId: adminId,
-    },
-  });
-  await prisma.financeMovement.create({
-    data: {
-      fecha: new Date("2026-03-15"),
-      mes: 3,
-      anio: 2026,
-      tipoMovimiento: TipoMovimiento.GASTO,
-      categoriaPrincipal: CategoriaPrincipal.PROYECTO_SALIDA,
-      subcategoriaId: subManoObra.id,
-      descripcion: "Subcontrato instalación eléctrica P1",
-      monto: new Prisma.Decimal("1500.00"),
-      moneda: Moneda.USD,
-      pagado: false,
-      impactaFlujo: true,
-      projectId: project1Id,
-      estadoAprobacion: EstadoAprobacion.REGISTRADO,
-      creadoPorId: adminId,
-    },
-  });
-
-  // FinanceMovements — 2 compras de stock
-  const movStock1 = await prisma.financeMovement.create({
-    data: {
-      fecha: new Date("2026-02-15"),
-      mes: 2,
-      anio: 2026,
-      tipoMovimiento: TipoMovimiento.GASTO,
-      categoriaPrincipal: CategoriaPrincipal.COMPRA_STOCK,
-      subcategoriaId: subCompra.id,
-      descripcion: "Compra 20 paneles 550W - Growatt",
-      monto: new Prisma.Decimal("3700.00"),
-      moneda: Moneda.USD,
-      pagado: true,
-      impactaFlujo: true,
-      supplierId: growatt.id,
-      estadoAprobacion: EstadoAprobacion.APROBADO,
-      creadoPorId: adminId,
-    },
-  });
-  const movStock2 = await prisma.financeMovement.create({
-    data: {
-      fecha: new Date("2026-03-01"),
-      mes: 3,
-      anio: 2026,
-      tipoMovimiento: TipoMovimiento.GASTO,
-      categoriaPrincipal: CategoriaPrincipal.COMPRA_STOCK,
-      subcategoriaId: subCompra.id,
-      descripcion: "Compra 5 kits estructura aluminio",
-      monto: new Prisma.Decimal("1600.00"),
-      moneda: Moneda.USD,
-      pagado: true,
-      impactaFlujo: true,
-      supplierId: estructuras.id,
-      estadoAprobacion: EstadoAprobacion.APROBADO,
-      creadoPorId: adminId,
-    },
-  });
-
-  // StockMovements vinculados a las compras
-  await prisma.stockMovement.create({
-    data: {
-      fecha: new Date("2026-02-15"),
-      productId: paneles.id,
-      tipo: TipoMovimientoStock.INGRESO,
-      cantidad: new Prisma.Decimal("20"),
-      costoUnitario: new Prisma.Decimal("185.00"),
-      costoTotal: new Prisma.Decimal("3700.00"),
-      moneda: Moneda.USD,
-      stockResultante: new Prisma.Decimal("45"),
-      supplierId: growatt.id,
-      financeMovementId: movStock1.id,
-      referencia: "OC-2026-001",
-    },
-  });
-  await prisma.stockMovement.create({
-    data: {
-      fecha: new Date("2026-03-01"),
-      productId: estructura.id,
-      tipo: TipoMovimientoStock.INGRESO,
-      cantidad: new Prisma.Decimal("5"),
-      costoUnitario: new Prisma.Decimal("320.00"),
-      costoTotal: new Prisma.Decimal("1600.00"),
-      moneda: Moneda.USD,
-      stockResultante: new Prisma.Decimal("15"),
-      supplierId: estructuras.id,
-      financeMovementId: movStock2.id,
-      referencia: "OC-2026-002",
-    },
-  });
-
-  console.log("Finance & Stock seed completado.");
+  console.log("Seed completado (idempotente: upsert por claves únicas, sin borrar datos existentes).");
 }
 
 run()

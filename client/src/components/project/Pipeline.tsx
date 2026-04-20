@@ -44,20 +44,44 @@ export function Pipeline({ stages, onStageClick }: PipelineProps) {
 type BlockStyle = {
   background: string;
   border: string;
+  borderLeft: string;
 };
 
 const BLOCK: Record<string, BlockStyle> = {
-  COMPLETED: { background: "#1a4d2e", border: "1px solid color-mix(in srgb, #4ade80 50%, transparent)" },
-  IN_PROGRESS: { background: "#4a3f1a", border: "1px solid color-mix(in srgb, #fbbf24 50%, transparent)" },
-  PENDING: { background: "var(--color-bg-card-hover)", border: "1px solid var(--color-border-hover)" },
-  BLOCKED: { background: "var(--color-danger-bg)", border: "1px solid color-mix(in srgb, var(--color-danger-text) 36%, transparent)" },
+  COMPLETED: {
+    background: "var(--color-pipe-done-bg)",
+    border: "1px solid var(--color-pipe-done-border)",
+    borderLeft: "var(--color-pipe-done-border-left-width) solid var(--color-pipe-done-border-left)",
+  },
+  IN_PROGRESS: {
+    background: "var(--color-pipe-active-bg)",
+    border: "1px solid var(--color-pipe-active-border)",
+    borderLeft: "var(--color-pipe-active-border-left-width) solid var(--color-pipe-active-border-left)",
+  },
+  PENDING: {
+    background: "var(--color-bg-card-hover)",
+    border: "1px solid var(--color-border-hover)",
+    borderLeft: "1px solid var(--color-border-hover)",
+  },
+  BLOCKED: {
+    background: "var(--color-danger-bg)",
+    border: "1px solid color-mix(in srgb, var(--color-danger-text) 36%, transparent)",
+    borderLeft: "1px solid color-mix(in srgb, var(--color-danger-text) 36%, transparent)",
+  },
 };
 
 const HEADER_COLOR: Record<string, string> = {
-  COMPLETED: "#4ade80",
-  IN_PROGRESS: "#fbbf24",
+  COMPLETED: "var(--color-pipe-done-label)",
+  IN_PROGRESS: "var(--color-pipe-active-label)",
   PENDING: "var(--color-text-primary)",
   BLOCKED: "var(--color-danger-text)",
+};
+
+const SUBITEM_COLOR: Record<string, string> = {
+  COMPLETED: "var(--color-pipe-done-subitem)",
+  IN_PROGRESS: "var(--color-pipe-active-subitem)",
+  PENDING: "var(--color-text-primary)",
+  BLOCKED: "var(--color-text-primary)",
 };
 
 // Deriva el estado visual desde el progreso real, ignorando el estado stale de la DB
@@ -72,14 +96,26 @@ function StatusLabel({ stage }: { stage: Stage }) {
   const display = deriveDisplayStatus(stage);
   if (display === "COMPLETED") {
     return (
-      <span style={{ color: "#4ade80", fontWeight: 700, fontSize: 10 }}>
+      <span
+        style={{
+          color: "var(--color-pipe-done-title)",
+          fontWeight: "var(--color-pipe-status-weight)",
+          fontSize: 10,
+        }}
+      >
         ✓ Completo 100%
       </span>
     );
   }
   if (display === "IN_PROGRESS") {
     return (
-      <span style={{ color: "#fbbf24", fontWeight: 700, fontSize: 10 }}>
+      <span
+        style={{
+          color: "var(--color-pipe-active-title)",
+          fontWeight: "var(--color-pipe-status-weight)",
+          fontSize: 10,
+        }}
+      >
         ▶ Activo {stage.progressPercent}%
       </span>
     );
@@ -101,9 +137,9 @@ function StatusLabel({ stage }: { stage: Stage }) {
 function SubstageDot({ status }: { status: Stage["substages"][number]["status"] }) {
   const color =
     status === "COMPLETED"
-      ? "#4ade80"
+      ? "var(--color-pipe-done-dot)"
       : status === "IN_PROGRESS"
-      ? "var(--color-accent)"
+      ? "var(--color-pipe-active-dot)"
       : status === "BLOCKED"
       ? "var(--color-danger-text)"
       : "var(--color-text-muted)";
@@ -127,6 +163,7 @@ function StageColumn({ stage, onClick }: { stage: Stage; onClick: () => void }) 
   const displayStatus = deriveDisplayStatus(stage);
   const blockStyle = BLOCK[displayStatus] ?? BLOCK.PENDING;
   const headerColor = HEADER_COLOR[displayStatus] ?? "var(--color-text-secondary)";
+  const subItemColor = SUBITEM_COLOR[displayStatus] ?? "var(--color-text-primary)";
 
   const visibleSubs = stage.substages.slice(0, 3);
   const extraCount = stage.substages.length - 3;
@@ -187,7 +224,7 @@ function StageColumn({ stage, onClick }: { stage: Stage; onClick: () => void }) 
                 alignItems: "flex-start",
                 gap: 4,
                 fontSize: 9,
-                color: "var(--color-text-primary)",
+                color: subItemColor,
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
@@ -204,7 +241,7 @@ function StageColumn({ stage, onClick }: { stage: Stage; onClick: () => void }) 
             <li
               style={{
                 fontSize: 9,
-                color: "var(--color-text-primary)",
+                color: subItemColor,
               }}
             >
               + {extraCount} más
