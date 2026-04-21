@@ -1454,6 +1454,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       await authorize(Module.OPERACIONES, Action.COMPLETE)(request);
     }
 
+    let stageCompletionWarning: { code: string; message: string } | null = null;
+
     const updateData: Record<string, unknown> = {};
     if (body.tipoObra !== undefined) updateData.tipoObra = body.tipoObra;
     if (body.responsibleName !== undefined) updateData.responsibleName = body.responsibleName;
@@ -1550,6 +1552,34 @@ export async function registerApiRoutes(app: FastifyInstance) {
           });
         }
 
+        // Regla 3: al completar OPERACIONES, validar contra fechas de instalación
+        if (stage.name === StageType.OPERACIONES) {
+          const installation = await prisma.installationSchedule.findFirst({
+            where: { projectId: params.projectId, deletedAt: null },
+            select: { plannedWorkEnd: true, actualWorkEnd: true },
+          });
+          if (installation) {
+            const today = todayUtc();
+            // Caso A: plannedWorkEnd todavía no pasó → bloquear
+            if (installation.plannedWorkEnd.getTime() > today.getTime()) {
+              throw badRequest(
+                "INSTALL_NOT_FINISHED",
+                `La fecha de fin de instalación programada (${formatDateEs(installation.plannedWorkEnd)}) aún no pasó. Actualizá las fechas de instalación o esperá a que finalice antes de cerrar la etapa Operaciones.`,
+              );
+            }
+            // Caso B: plannedWorkEnd pasó pero actualWorkEnd es null → warning
+            if (!installation.actualWorkEnd) {
+              stageCompletionWarning = {
+                code: "WORK_END_NOT_CONFIRMED",
+                message:
+                  "La fecha de fin de instalación pasó pero no fue confirmada en el sistema. Registrá el fin real de obra en la ficha del proyecto.",
+              };
+            }
+            // Caso C: no hay plannedWorkEnd (installation=null) → permit (nada)
+            // Caso D: actualWorkEnd existe y <= hoy → permit
+          }
+        }
+
         const actualEndDate = todayUtc();
         const actualStartDate = stage.actualStartDate ?? actualEndDate;
         const actualDurationDays = Math.max(0, diffInDays(actualStartDate, actualEndDate));
@@ -1640,7 +1670,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       await checkProgressMilestone(params.projectId, projectProgressPercent);
     }
 
-    return serializeStage(updatedStage);
+    const serialized = serializeStage(updatedStage);
+    return stageCompletionWarning ? { ...serialized, _warning: stageCompletionWarning } : serialized;
   });
 
   app.get("/projects/:projectId/stages/:stageId/substages", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async (request) => {
@@ -1722,6 +1753,24 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     if (body.status === SubstageStatus.COMPLETED) {
       await authorize(Module.OPERACIONES, Action.COMPLETE)(request);
+    }
+
+    // Regla 2: no permitir iniciar/completar subetapa de ejecución si OPERACIONES no está activa
+    if (
+      body.status &&
+      (body.status === SubstageStatus.IN_PROGRESS || body.status === SubstageStatus.COMPLETED) &&
+      body.status !== substage.status
+    ) {
+      const stage = await prisma.stage.findUnique({
+        where: { id: params.stageId },
+        select: { name: true, status: true },
+      });
+      if (stage && isInstallationWorkSubstage(substage.name, stage) && stage.status !== StageStatus.IN_PROGRESS) {
+        throw badRequest(
+          "OPERATIONS_NOT_ACTIVE",
+          "No podés iniciar la instalación si la etapa Operaciones no está en curso. Primero activá la etapa Operaciones.",
+        );
+      }
     }
 
     if (body.name !== undefined) updateData.name = body.name;
@@ -1841,6 +1890,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     if (!substage) {
       throw notFound("SUBSTAGE_NOT_FOUND", "Subetapa no encontrada");
+    }
+
+    // Regla 2: no completar subetapa de ejecución si OPERACIONES no está activa
+    if (isInstallationWorkSubstage(substage.name, substage.stage) && substage.stage.status !== StageStatus.IN_PROGRESS) {
+      throw badRequest(
+        "OPERATIONS_NOT_ACTIVE",
+        "No podés iniciar la instalación si la etapa Operaciones no está en curso. Primero activá la etapa Operaciones.",
+      );
     }
 
     const pendingItems = substage.checklistItems.filter((item) => {
@@ -4672,24 +4729,209 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }));
   });
 
+  // ─── Equipos instaladores ────────────────────────────────────────────────────
+
+  const teamCreateSchema = z
+    .object({
+      name: z.string().trim().min(1),
+      color: z
+        .string()
+        .trim()
+        .regex(/^#[0-9A-Fa-f]{6}$/, "Color debe ser hex (#RRGGBB)")
+        .default("#378ADD"),
+      notes: z.string().trim().nullable().optional(),
+    })
+    .strict();
+
+  const teamPatchSchema = z
+    .object({
+      name: z.string().trim().min(1).optional(),
+      color: z
+        .string()
+        .trim()
+        .regex(/^#[0-9A-Fa-f]{6}$/, "Color debe ser hex (#RRGGBB)")
+        .optional(),
+      notes: z.string().trim().nullable().optional(),
+    })
+    .strict();
+
+  function serializeTeam(t: {
+    id: string;
+    name: string;
+    color: string;
+    notes: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    deletedAt: Date | null;
+  }) {
+    return {
+      id: t.id,
+      name: t.name,
+      color: t.color,
+      notes: t.notes,
+      createdAt: serializeDate(t.createdAt),
+      updatedAt: serializeDate(t.updatedAt),
+      deletedAt: serializeDate(t.deletedAt),
+    };
+  }
+
+  app.get("/teams", { preHandler: authorize(Module.CONFIGURACION, Action.VIEW) }, async (request) => {
+    const query = z
+      .object({
+        includeDeleted: z.union([z.literal("true"), z.literal("false")]).optional(),
+      })
+      .parse(request.query);
+    const teams = await prisma.team.findMany({
+      where: query.includeDeleted === "true" ? undefined : { deletedAt: null },
+      orderBy: { name: "asc" },
+    });
+    return teams.map(serializeTeam);
+  });
+
+  app.post("/teams", { preHandler: authorize(Module.CONFIGURACION, Action.CREATE) }, async (request, reply) => {
+    const user = ensureUser(request);
+    const body = teamCreateSchema.parse(request.body);
+
+    const existing = await prisma.team.findUnique({ where: { name: body.name } });
+    if (existing) {
+      if (existing.deletedAt === null) {
+        throw conflict("TEAM_NAME_DUPLICATE", `Ya existe un equipo con el nombre "${body.name}"`);
+      }
+      // Reactivar equipo previamente soft-deleted con el mismo nombre
+      const reactivated = await prisma.team.update({
+        where: { id: existing.id },
+        data: {
+          deletedAt: null,
+          color: body.color,
+          notes: body.notes ?? null,
+        },
+      });
+      await createAuditEntry({
+        entityType: AuditEntityType.team,
+        entityId: reactivated.id,
+        userId: user.id,
+        action: AuditAction.created,
+        description: `Reactivó equipo: ${reactivated.name}`,
+      });
+      reply.code(201);
+      return serializeTeam(reactivated);
+    }
+
+    const team = await prisma.team.create({
+      data: {
+        name: body.name,
+        color: body.color,
+        notes: body.notes ?? null,
+        createdBy: user.id,
+      },
+    });
+    await createAuditEntry({
+      entityType: AuditEntityType.team,
+      entityId: team.id,
+      userId: user.id,
+      action: AuditAction.created,
+      description: `Creó equipo: ${team.name}`,
+    });
+    reply.code(201);
+    return serializeTeam(team);
+  });
+
+  app.patch("/teams/:id", { preHandler: authorize(Module.CONFIGURACION, Action.EDIT) }, async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const body = teamPatchSchema.parse(request.body);
+
+    const existing = await prisma.team.findFirst({ where: { id, deletedAt: null } });
+    if (!existing) throw notFound("TEAM_NOT_FOUND", "Equipo no encontrado");
+
+    if (body.name && body.name !== existing.name) {
+      const collision = await prisma.team.findFirst({
+        where: { name: body.name, NOT: { id }, deletedAt: null },
+      });
+      if (collision) {
+        throw conflict("TEAM_NAME_DUPLICATE", `Ya existe un equipo con el nombre "${body.name}"`);
+      }
+    }
+
+    const updated = await prisma.team.update({ where: { id }, data: body });
+
+    // Si cambió el name o color, sincronizar el snapshot en installation_schedules
+    const nameChanged = body.name !== undefined && body.name !== existing.name;
+    const colorChanged = body.color !== undefined && body.color !== existing.color;
+    if (nameChanged || colorChanged) {
+      const snapshotData: Prisma.InstallationScheduleUpdateManyMutationInput = {};
+      if (nameChanged) snapshotData.teamName = body.name!;
+      if (colorChanged) snapshotData.teamColor = body.color!;
+      await prisma.installationSchedule.updateMany({
+        where: { teamId: id, deletedAt: null },
+        data: snapshotData,
+      });
+    }
+
+    await createAuditEntriesForChanges({
+      entityType: AuditEntityType.team,
+      entityId: id,
+      projectId: null,
+      userId: user.id,
+      oldData: existing as unknown as Record<string, unknown>,
+      newData: updated as unknown as Record<string, unknown>,
+      labels: { name: "nombre", color: "color", notes: "notas" },
+      formatter: ({ label, oldValue, newValue }) =>
+        `Actualizó ${label} del equipo ${existing.name} de ${oldValue ?? "vacío"} a ${newValue ?? "vacío"}`,
+    });
+
+    return serializeTeam(updated);
+  });
+
+  app.delete("/teams/:id", { preHandler: authorize(Module.CONFIGURACION, Action.DELETE) }, async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+
+    const existing = await prisma.team.findFirst({ where: { id, deletedAt: null } });
+    if (!existing) throw notFound("TEAM_NOT_FOUND", "Equipo no encontrado");
+
+    await prisma.team.update({ where: { id }, data: { deletedAt: new Date() } });
+    // Nullify teamId en instalaciones relacionadas; mantienen el snapshot
+    await prisma.installationSchedule.updateMany({
+      where: { teamId: id, deletedAt: null },
+      data: { teamId: null },
+    });
+
+    await createAuditEntry({
+      entityType: AuditEntityType.team,
+      entityId: id,
+      userId: user.id,
+      action: AuditAction.deleted,
+      description: `Eliminó equipo: ${existing.name}`,
+    });
+
+    return { success: true };
+  });
+
   // ─── Calendario de instalaciones ─────────────────────────────────────────────
 
   const calendarCreateSchema = z.object({
     projectId: z.string().min(1),
-    teamName: z.string().trim().min(1),
-    teamColor: z.string().trim().regex(/^#[0-9A-Fa-f]{6}$/, "Color debe ser hex (#RRGGBB)").optional(),
+    teamId: z.string().min(1),
     plannedWorkStart: dateOnlySchema,
     plannedWorkEnd: dateOnlySchema,
     notes: z.string().trim().optional().nullable(),
   });
 
   const calendarPatchSchema = z.object({
-    teamName: z.string().trim().min(1).optional(),
-    teamColor: z.string().trim().regex(/^#[0-9A-Fa-f]{6}$/, "Color debe ser hex (#RRGGBB)").optional(),
+    teamId: z.string().min(1).optional(),
     plannedWorkStart: dateOnlySchema.optional(),
     plannedWorkEnd: dateOnlySchema.optional(),
     notes: z.string().trim().nullable().optional(),
   }).strict();
+
+  async function loadActiveTeamOrThrow(teamId: string) {
+    const team = await prisma.team.findFirst({ where: { id: teamId, deletedAt: null } });
+    if (!team) {
+      throw badRequest("TEAM_NOT_FOUND", "El equipo seleccionado no existe o fue eliminado");
+    }
+    return team;
+  }
 
   function assertRangeValid(start: Date, end: Date) {
     if (end.getTime() < start.getTime()) {
@@ -4697,13 +4939,94 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
   }
 
+  function formatDateEs(date: Date): string {
+    return `${String(date.getUTCDate()).padStart(2, "0")}/${String(date.getUTCMonth() + 1).padStart(2, "0")}/${date.getUTCFullYear()}`;
+  }
+
+  type InstallationValidationResult =
+    | { ok: false; error: { code: string; message: string } }
+    | { ok: true; warning: { code: string; message: string } | null };
+
+  // Regla 1: verificar coherencia entre fechas de instalación y etapa OPERACIONES
+  async function validateInstallationAgainstOperations(
+    projectId: string,
+    plannedWorkStart: Date,
+    plannedWorkEnd: Date,
+  ): Promise<InstallationValidationResult> {
+    const operations = await prisma.stage.findFirst({
+      where: { projectId, name: StageType.OPERACIONES },
+      select: {
+        actualStartDate: true,
+        actualEndDate: true,
+        plannedStartDate: true,
+        plannedEndDate: true,
+      },
+    });
+
+    if (!operations) return { ok: true, warning: null };
+
+    // Caso B: instalación empieza antes del inicio real de Operaciones
+    if (operations.actualStartDate && plannedWorkStart.getTime() < operations.actualStartDate.getTime()) {
+      return {
+        ok: false,
+        error: {
+          code: "INSTALL_BEFORE_OPERATIONS",
+          message: `La instalación no puede empezar antes del inicio real de la etapa Operaciones (${formatDateEs(operations.actualStartDate)}). Ajustá las fechas de instalación.`,
+        },
+      };
+    }
+
+    // Caso C: instalación termina después del fin real de Operaciones
+    if (operations.actualEndDate && plannedWorkEnd.getTime() > operations.actualEndDate.getTime()) {
+      return {
+        ok: false,
+        error: {
+          code: "INSTALL_AFTER_OPERATIONS",
+          message: `La instalación no puede terminar después del cierre real de la etapa Operaciones (${formatDateEs(operations.actualEndDate)}). Ajustá las fechas de instalación.`,
+        },
+      };
+    }
+
+    // Caso D: fuera del rango planificado (pero dentro de real) → warning
+    if (operations.plannedStartDate && operations.plannedEndDate) {
+      const outsidePlanned =
+        plannedWorkStart.getTime() < operations.plannedStartDate.getTime() ||
+        plannedWorkEnd.getTime() > operations.plannedEndDate.getTime();
+      if (outsidePlanned) {
+        return {
+          ok: true,
+          warning: {
+            code: "INSTALL_OUTSIDE_PLANNED_RANGE",
+            message: `La instalación queda fuera del rango planificado de la etapa Operaciones (plan: ${formatDateEs(operations.plannedStartDate)} → ${formatDateEs(operations.plannedEndDate)}). Podés continuar pero revisá la planificación.`,
+          },
+        };
+      }
+    }
+
+    return { ok: true, warning: null };
+  }
+
+  // Regla 2: identifica si una subetapa es de ejecución de obra
+  // (la spec pide OPERACIONES_OBRA_PROPIA/TERCERIZADA pero esos enums no existen;
+  // las subetapas se identifican por nombre "Ejecución de Obra" bajo stage OPERACIONES)
+  function isInstallationWorkSubstage(
+    substageName: string,
+    stage: { name: StageType },
+  ): boolean {
+    if (stage.name !== StageType.OPERACIONES) return false;
+    return substageName.toLowerCase().includes("ejecución de obra");
+  }
+
   function serializeSchedule(s: {
     id: string;
     projectId: string;
+    teamId: string | null;
+    team?: { id: string; name: string; color: string; deletedAt: Date | null } | null;
     teamName: string;
     teamColor: string;
     plannedWorkStart: Date;
     plannedWorkEnd: Date;
+    actualWorkEnd: Date | null;
     confirmedAt: Date | null;
     confirmedBy: string | null;
     confirmedByUser?: { id: string; name: string } | null;
@@ -4727,10 +5050,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return {
       id: s.id,
       projectId: s.projectId,
+      teamId: s.teamId,
+      team:
+        s.team && s.team.deletedAt === null
+          ? { id: s.team.id, name: s.team.name, color: s.team.color }
+          : null,
       teamName: s.teamName,
       teamColor: s.teamColor,
       plannedWorkStart: serializeDateOnly(s.plannedWorkStart),
       plannedWorkEnd: serializeDateOnly(s.plannedWorkEnd),
+      actualWorkEnd: serializeDateOnly(s.actualWorkEnd),
       confirmedAt: serializeDate(s.confirmedAt),
       confirmedBy: s.confirmedBy,
       confirmedByUser: s.confirmedByUser
@@ -4795,6 +5124,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
             stages: { select: { name: true, tipoObra: true, status: true } },
           },
         },
+        team: true,
         confirmedByUser: { select: { id: true, name: true } },
       },
       orderBy: { plannedWorkStart: "asc" },
@@ -4810,18 +5140,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
   });
 
   app.get("/calendar/teams", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async () => {
-    const rows = await prisma.installationSchedule.findMany({
+    // Devuelve equipos activos para selectores y filtros del calendario
+    const teams = await prisma.team.findMany({
       where: { deletedAt: null },
-      select: { teamName: true, teamColor: true },
-      orderBy: { createdAt: "desc" },
+      orderBy: { name: "asc" },
     });
-    const seen = new Map<string, string>();
-    for (const r of rows) {
-      if (!seen.has(r.teamName)) {
-        seen.set(r.teamName, r.teamColor);
-      }
-    }
-    return Array.from(seen.entries()).map(([teamName, teamColor]) => ({ teamName, teamColor }));
+    return teams.map((t) => ({ id: t.id, teamName: t.name, teamColor: t.color }));
   });
 
   app.post("/calendar", { preHandler: authorize(Module.OPERACIONES, Action.CREATE) }, async (request, reply) => {
@@ -4848,14 +5172,27 @@ export async function registerApiRoutes(app: FastifyInstance) {
       );
     }
 
+    // Regla 1: verificar coherencia con OPERACIONES
+    const validation = await validateInstallationAgainstOperations(
+      body.projectId,
+      plannedWorkStart,
+      plannedWorkEnd,
+    );
+    if (!validation.ok) {
+      throw badRequest(validation.error.code, validation.error.message);
+    }
+
+    const team = await loadActiveTeamOrThrow(body.teamId);
+
     let created;
     if (existing && existing.deletedAt) {
       // Reactivar registro soft-deleted
       created = await prisma.installationSchedule.update({
         where: { id: existing.id },
         data: {
-          teamName: body.teamName,
-          teamColor: body.teamColor ?? "#378ADD",
+          teamId: team.id,
+          teamName: team.name,
+          teamColor: team.color,
           plannedWorkStart,
           plannedWorkEnd,
           notes: body.notes ?? null,
@@ -4865,7 +5202,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           confirmedBy: null,
         },
         include: {
-          project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } },
+          project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } }, team: true,
           confirmedByUser: { select: { id: true, name: true } },
         },
       });
@@ -4873,15 +5210,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
       created = await prisma.installationSchedule.create({
         data: {
           projectId: body.projectId,
-          teamName: body.teamName,
-          teamColor: body.teamColor ?? "#378ADD",
+          teamId: team.id,
+          teamName: team.name,
+          teamColor: team.color,
           plannedWorkStart,
           plannedWorkEnd,
           notes: body.notes ?? null,
           createdBy: user.id,
         },
         include: {
-          project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } },
+          project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } }, team: true,
           confirmedByUser: { select: { id: true, name: true } },
         },
       });
@@ -4898,7 +5236,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     reply.code(201);
-    return serializeSchedule(created);
+    return { data: serializeSchedule(created), warning: validation.warning };
   });
 
   app.patch("/calendar/:id", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
@@ -4914,9 +5252,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
 
     const updateData: Prisma.InstallationScheduleUpdateInput = {};
-    if (body.teamName !== undefined) updateData.teamName = body.teamName;
-    if (body.teamColor !== undefined) updateData.teamColor = body.teamColor;
     if (body.notes !== undefined) updateData.notes = body.notes;
+    if (body.teamId !== undefined) {
+      const team = await loadActiveTeamOrThrow(body.teamId);
+      updateData.team = { connect: { id: team.id } };
+      updateData.teamName = team.name;
+      updateData.teamColor = team.color;
+    }
 
     const nextStart =
       body.plannedWorkStart !== undefined ? parseDateOnly(body.plannedWorkStart) : existing.plannedWorkStart;
@@ -4932,12 +5274,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
       where: { id: existing.id },
       data: updateData,
       include: {
-        project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } },
+        project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } }, team: true,
         confirmedByUser: { select: { id: true, name: true } },
       },
     });
 
     const labels: Record<string, string> = {
+      teamId: "equipo",
       teamName: "equipo",
       teamColor: "color de equipo",
       plannedWorkStart: "fecha de inicio",
@@ -4977,7 +5320,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         confirmedBy: user.id,
       },
       include: {
-        project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } },
+        project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } }, team: true,
         confirmedByUser: { select: { id: true, name: true } },
       },
     });
@@ -4992,6 +5335,161 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     return serializeSchedule(updated);
+  });
+
+  app.get("/projects/:id/installation-check", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async (request) => {
+    const params = z.object({ id: z.string() }).parse(request.params);
+
+    const project = await prisma.project.findFirst({
+      where: { id: params.id, deletedAt: null },
+      include: {
+        installationSchedule: true,
+        stages: {
+          where: { name: StageType.OPERACIONES },
+          select: {
+            status: true,
+            plannedStartDate: true,
+            plannedEndDate: true,
+            actualStartDate: true,
+            actualEndDate: true,
+          },
+          take: 1,
+        },
+      },
+    });
+    if (!project) {
+      throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+    }
+
+    const install = project.installationSchedule && !project.installationSchedule.deletedAt
+      ? project.installationSchedule
+      : null;
+    const operations = project.stages[0] ?? null;
+
+    const issues: Array<{ severity: "error" | "warning"; code: string; message: string }> = [];
+
+    if (install && operations) {
+      // Regla 1 aplicada como diagnóstico
+      if (
+        operations.actualStartDate &&
+        install.plannedWorkStart.getTime() < operations.actualStartDate.getTime()
+      ) {
+        issues.push({
+          severity: "error",
+          code: "INSTALL_BEFORE_OPERATIONS",
+          message: `La instalación empieza el ${formatDateEs(install.plannedWorkStart)} pero Operaciones recién arrancó el ${formatDateEs(operations.actualStartDate)}.`,
+        });
+      }
+      if (
+        operations.actualEndDate &&
+        install.plannedWorkEnd.getTime() > operations.actualEndDate.getTime()
+      ) {
+        issues.push({
+          severity: "error",
+          code: "INSTALL_AFTER_OPERATIONS",
+          message: `La instalación termina el ${formatDateEs(install.plannedWorkEnd)} pero Operaciones cerró el ${formatDateEs(operations.actualEndDate)}.`,
+        });
+      }
+      if (operations.plannedStartDate && operations.plannedEndDate) {
+        const outside =
+          install.plannedWorkStart.getTime() < operations.plannedStartDate.getTime() ||
+          install.plannedWorkEnd.getTime() > operations.plannedEndDate.getTime();
+        if (outside) {
+          issues.push({
+            severity: "warning",
+            code: "INSTALL_OUTSIDE_PLANNED_RANGE",
+            message: `La instalación queda fuera del rango planificado de Operaciones (${formatDateEs(operations.plannedStartDate)} → ${formatDateEs(operations.plannedEndDate)}).`,
+          });
+        }
+      }
+    }
+
+    return {
+      hasInstallation: install !== null,
+      plannedWorkStart: install ? serializeDateOnly(install.plannedWorkStart) : null,
+      plannedWorkEnd: install ? serializeDateOnly(install.plannedWorkEnd) : null,
+      actualWorkEnd: install ? serializeDateOnly(install.actualWorkEnd) : null,
+      operationsStatus: operations?.status ?? null,
+      operationsActualStart: operations ? serializeDateOnly(operations.actualStartDate) : null,
+      operationsActualEnd: operations ? serializeDateOnly(operations.actualEndDate) : null,
+      issues,
+    };
+  });
+
+  app.patch("/calendar/:id/reschedule", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
+    const user = ensureUser(request);
+    const params = z.object({ id: z.string() }).parse(request.params);
+    const body = z
+      .object({
+        plannedWorkStart: dateOnlySchema,
+        plannedWorkEnd: dateOnlySchema,
+      })
+      .strict()
+      .parse(request.body);
+
+    const existing = await prisma.installationSchedule.findFirst({
+      where: { id: params.id, deletedAt: null },
+    });
+    if (!existing) {
+      throw notFound("INSTALLATION_NOT_FOUND", "Instalación no encontrada");
+    }
+
+    const newStart = parseDateOnly(body.plannedWorkStart);
+    const newEnd = parseDateOnly(body.plannedWorkEnd);
+    assertRangeValid(newStart, newEnd);
+
+    const today = todayUtc();
+    if (newStart.getTime() < today.getTime()) {
+      throw badRequest("PAST_DATE", "No se puede reprogramar a una fecha pasada");
+    }
+
+    const overlap = await prisma.installationSchedule.findFirst({
+      where: {
+        id: { not: existing.id },
+        deletedAt: null,
+        plannedWorkStart: { lte: newEnd },
+        plannedWorkEnd: { gte: newStart },
+      },
+      include: { project: { select: { clientName: true } } },
+    });
+    if (overlap) {
+      throw conflict(
+        "SCHEDULE_OVERLAP",
+        `Ya hay una instalación en esas fechas (${overlap.project.clientName})`,
+      );
+    }
+
+    // Regla 1: verificar coherencia con OPERACIONES
+    const validation = await validateInstallationAgainstOperations(existing.projectId, newStart, newEnd);
+    if (!validation.ok) {
+      throw badRequest(validation.error.code, validation.error.message);
+    }
+
+    const updated = await prisma.installationSchedule.update({
+      where: { id: existing.id },
+      data: { plannedWorkStart: newStart, plannedWorkEnd: newEnd },
+      include: {
+        project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } }, team: true,
+        confirmedByUser: { select: { id: true, name: true } },
+      },
+    });
+
+    await createAuditEntriesForChanges({
+      entityType: AuditEntityType.installation_schedule,
+      entityId: existing.id,
+      projectId: existing.projectId,
+      userId: user.id,
+      oldData: existing as unknown as Record<string, unknown>,
+      newData: updated as unknown as Record<string, unknown>,
+      labels: {
+        plannedWorkStart: "fecha de inicio",
+        plannedWorkEnd: "fecha de fin",
+      },
+      formatter: ({ label, oldValue, newValue }) =>
+        `Reprogramó ${label} de la instalación de ${oldValue ?? "vacío"} a ${newValue ?? "vacío"}`,
+    });
+
+    return { data: serializeSchedule(updated), warning: validation.warning };
   });
 
   app.delete("/calendar/:id", { preHandler: authorize(Module.OPERACIONES, Action.DELETE) }, async (request) => {

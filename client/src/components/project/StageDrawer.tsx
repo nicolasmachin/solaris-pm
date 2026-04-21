@@ -197,6 +197,7 @@ function SubstageRow({
   commentContext,
   statusOptions,
   statusLabels,
+  statusError,
   onStatusChange,
   onQuickComplete,
   onChanged,
@@ -211,6 +212,7 @@ function SubstageRow({
   };
   statusOptions: SubstageStatus[];
   statusLabels: Record<SubstageStatus, string>;
+  statusError: string | null;
   onStatusChange: (s: SubstageStatus) => void;
   onQuickComplete: () => void;
   onChanged: () => void;
@@ -326,16 +328,23 @@ function SubstageRow({
             )}
           </div>
 
-          <select
-            value={substage.status}
-            onChange={e => onStatusChange(e.target.value as SubstageStatus)}
-            onClick={e => e.stopPropagation()}
-            className="text-[10px] bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-secondary)] rounded px-1 py-0.5 focus:outline-none"
-          >
-            {statusOptions.map(s => (
-              <option key={s} value={s}>{statusLabels[s]}</option>
-            ))}
-          </select>
+          <div className="flex flex-col items-end gap-1">
+            <select
+              value={substage.status}
+              onChange={e => onStatusChange(e.target.value as SubstageStatus)}
+              onClick={e => e.stopPropagation()}
+              className="text-[10px] bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-secondary)] rounded px-1 py-0.5 focus:outline-none"
+            >
+              {statusOptions.map(s => (
+                <option key={s} value={s}>{statusLabels[s]}</option>
+              ))}
+            </select>
+            {statusError && (
+              <p className="max-w-[180px] text-right text-[10px] leading-tight text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded px-1.5 py-0.5">
+                {statusError}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Expanded content */}
@@ -508,6 +517,11 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
   const [uploadPct, setUploadPct] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Error inline por substage (para OPERATIONS_NOT_ACTIVE, etc.)
+  const [substageStatusError, setSubstageStatusError] = useState<
+    { substageId: string; message: string } | null
+  >(null);
+
   // Close on Escape
   useEffect(() => {
     const fn = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -529,11 +543,22 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
       substageId: string;
       status: SubstageStatus;
     }) => patchSubstage(projectId, stage.id, substageId, { status }),
+    onMutate: ({ substageId }) => {
+      if (substageStatusError?.substageId === substageId) setSubstageStatusError(null);
+    },
     onSuccess: () => {
       toast.success("Estado actualizado");
+      setSubstageStatusError(null);
       invalidate();
     },
-    onError: () => toast.error("Error al actualizar estado"),
+    onError: (err: unknown, vars) => {
+      const resp = (err as { response?: { data?: { code?: string; message?: string } } })?.response?.data;
+      if (resp?.code === "OPERATIONS_NOT_ACTIVE" && resp.message) {
+        setSubstageStatusError({ substageId: vars.substageId, message: resp.message });
+      } else {
+        toast.error(resp?.message ?? "Error al actualizar estado");
+      }
+    },
   });
 
   // Save notes
@@ -833,6 +858,9 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
                   commentContext={stageCommentContext}
                   statusOptions={STATUS_OPTIONS}
                   statusLabels={STATUS_LABELS}
+                  statusError={
+                    substageStatusError?.substageId === sub.id ? substageStatusError.message : null
+                  }
                   onStatusChange={(status) =>
                     subStatusMutation.mutate({ substageId: sub.id, status })
                   }

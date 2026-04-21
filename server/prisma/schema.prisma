@@ -80,6 +80,7 @@ enum AuditEntityType {
   stock_movement
   exchange_rate
   installation_schedule
+  team
 }
 
 enum AuditAction {
@@ -971,10 +972,13 @@ model InstallationSchedule {
   id              String    @id @default(cuid())
   projectId       String    @unique
   project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  teamId          String?
+  team            Team?     @relation(fields: [teamId], references: [id], onDelete: SetNull)
   teamName        String
   teamColor       String    @default("#378ADD")
   plannedWorkStart DateTime @db.Date
   plannedWorkEnd   DateTime @db.Date
+  actualWorkEnd    DateTime? @db.Date
   confirmedAt     DateTime? @db.Timestamptz(6)
   confirmedBy     String?
   confirmedByUser User?     @relation("InstallationConfirmedBy", fields: [confirmedBy], references: [id], onDelete: SetNull)
@@ -986,8 +990,25 @@ model InstallationSchedule {
 
   @@index([plannedWorkStart])
   @@index([projectId])
+  @@index([teamId])
   @@index([deletedAt])
   @@map("installation_schedules")
+}
+
+model Team {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  color     String    @default("#378ADD")
+  notes     String?
+  createdBy String?
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(6)
+  deletedAt DateTime? @db.Timestamptz(6)
+
+  installations InstallationSchedule[]
+
+  @@index([deletedAt])
+  @@map("teams")
 }
 
 model StockMovement {

@@ -23,6 +23,7 @@ import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
 import { CommentThread } from "../components/comments/CommentThread";
 import { getProjectGantt } from "../api/metrics.api";
+import { installationCheck } from "../api/calendar.api";
 import { usePermission } from "../hooks/usePermission";
 import {
   formatSolarSystemPanels,
@@ -551,6 +552,55 @@ function InstallationScheduleRow({
   );
 }
 
+function InstallationCoherenceBanner({
+  issues,
+}: {
+  issues: Array<{ severity: "error" | "warning"; code: string; message: string }>;
+}) {
+  const navigate = useNavigate();
+  const hasError = issues.some((i) => i.severity === "error");
+  const palette = hasError
+    ? {
+        border: "border-red-500/40",
+        bg: "bg-red-500/10",
+        text: "text-red-300",
+        title: "Inconsistencias en las fechas de instalación",
+      }
+    : {
+        border: "border-amber-500/40",
+        bg: "bg-amber-500/10",
+        text: "text-amber-300",
+        title: "Revisá las fechas de instalación",
+      };
+
+  return (
+    <div
+      className={`mb-4 rounded-lg border ${palette.border} ${palette.bg} p-3`}
+      role={hasError ? "alert" : "status"}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className={`text-xs ${palette.text} space-y-1`}>
+          <p className="font-semibold">{palette.title}</p>
+          <ul className="list-disc ml-4">
+            {issues.map((issue) => (
+              <li key={issue.code} className="leading-snug">
+                {issue.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <button
+          type="button"
+          onClick={() => navigate("/calendario")}
+          className={`shrink-0 rounded px-2 py-1 text-[10px] font-semibold border ${palette.border} ${palette.text} hover:bg-black/20`}
+        >
+          Ver en calendario
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export function ProjectDetail() {
@@ -581,6 +631,12 @@ export function ProjectDetail() {
     queryKey: ["project", id, "gantt"],
     queryFn: () => getProjectGantt(id!),
     enabled: !!id && canViewMetrics && bottomTab === "timeline",
+  });
+
+  const installationCheckQuery = useQuery({
+    queryKey: ["project", id, "installation-check"],
+    queryFn: () => installationCheck(id!),
+    enabled: !!id,
   });
 
   // ── Error / loading states ────────────────────────────────────────────────
@@ -657,6 +713,10 @@ export function ProjectDetail() {
           confirmed={Boolean(project.installationSchedule.confirmedAt)}
         />
       ) : null}
+
+      {installationCheckQuery.data && installationCheckQuery.data.issues.length > 0 && (
+        <InstallationCoherenceBanner issues={installationCheckQuery.data.issues} />
+      )}
 
       <SolarSystemsSection
         project={project}

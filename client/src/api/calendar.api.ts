@@ -14,10 +14,13 @@ export interface InstallationScheduleProjectRef {
 export interface InstallationSchedule {
   id: string;
   projectId: string;
-  teamName: string;
-  teamColor: string;
+  teamId: string | null;
+  team: { id: string; name: string; color: string } | null;
+  teamName: string; // snapshot del nombre al momento de agendar
+  teamColor: string; // snapshot del color
   plannedWorkStart: string; // YYYY-MM-DD
   plannedWorkEnd: string;   // YYYY-MM-DD
+  actualWorkEnd: string | null;
   confirmedAt: string | null;
   confirmedBy: string | null;
   confirmedByUser: { id: string; name: string } | null;
@@ -34,8 +37,34 @@ export interface CalendarResponse {
 }
 
 export interface CalendarTeam {
+  id: string;
   teamName: string;
   teamColor: string;
+}
+
+export interface CalendarWarning {
+  code: string;
+  message: string;
+}
+
+export interface ScheduleWithWarning {
+  data: InstallationSchedule;
+  warning: CalendarWarning | null;
+}
+
+export interface InstallationCheckResponse {
+  hasInstallation: boolean;
+  plannedWorkStart: string | null;
+  plannedWorkEnd: string | null;
+  actualWorkEnd: string | null;
+  operationsStatus: string | null;
+  operationsActualStart: string | null;
+  operationsActualEnd: string | null;
+  issues: Array<{
+    severity: "error" | "warning";
+    code: string;
+    message: string;
+  }>;
 }
 
 export async function getCalendarMonth(year: number, month: number): Promise<CalendarResponse> {
@@ -59,27 +88,36 @@ export async function getCalendarTeams(): Promise<CalendarTeam[]> {
 
 export async function createSchedule(body: {
   projectId: string;
-  teamName: string;
-  teamColor?: string;
+  teamId: string;
   plannedWorkStart: string;
   plannedWorkEnd: string;
   notes?: string | null;
-}): Promise<InstallationSchedule> {
-  const { data } = await apiClient.post<InstallationSchedule>("/api/calendar", body);
+}): Promise<ScheduleWithWarning> {
+  const { data } = await apiClient.post<ScheduleWithWarning>("/api/calendar", body);
   return data;
 }
 
 export async function patchSchedule(
   id: string,
   body: {
-    teamName?: string;
-    teamColor?: string;
+    teamId?: string;
     plannedWorkStart?: string;
     plannedWorkEnd?: string;
     notes?: string | null;
   },
 ): Promise<InstallationSchedule> {
   const { data } = await apiClient.patch<InstallationSchedule>(`/api/calendar/${id}`, body);
+  return data;
+}
+
+export async function rescheduleSchedule(
+  id: string,
+  body: { plannedWorkStart: string; plannedWorkEnd: string },
+): Promise<ScheduleWithWarning> {
+  const { data } = await apiClient.patch<ScheduleWithWarning>(
+    `/api/calendar/${id}/reschedule`,
+    body,
+  );
   return data;
 }
 
@@ -90,4 +128,11 @@ export async function confirmSchedule(id: string): Promise<InstallationSchedule>
 
 export async function deleteSchedule(id: string): Promise<void> {
   await apiClient.delete(`/api/calendar/${id}`);
+}
+
+export async function installationCheck(projectId: string): Promise<InstallationCheckResponse> {
+  const { data } = await apiClient.get<InstallationCheckResponse>(
+    `/api/projects/${projectId}/installation-check`,
+  );
+  return data;
 }

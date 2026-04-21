@@ -4,6 +4,7 @@ import { toast } from "react-hot-toast";
 import { apiClient } from "../api/axios";
 import { getGoals, upsertGoal, deleteGoal } from "../api/metrics.api";
 import { getSubcategories, createSubcategory, deleteSubcategory } from "../api/finance.api";
+import { getTeams, createTeam, patchTeam, deleteTeam, type Team } from "../api/teams.api";
 import type { GoalArea, GoalMetric, GoalPeriod, GoalData } from "../types/api.types";
 import type { CategoriaPrincipal } from "../types/finance.types";
 import { CATEGORIA_LABEL } from "../types/finance.types";
@@ -990,13 +991,300 @@ function TabFinanzas() {
   );
 }
 
-type Tab = "usuarios" | "permisos" | "configuracion" | "objetivos" | "finanzas";
+// ─── Tab: Equipos instaladores ────────────────────────────────────────────────
+
+const TEAM_COLORS: string[] = [
+  "#378ADD",
+  "#1D9E75",
+  "#D85A30",
+  "#7F77DD",
+  "#BA7517",
+  "#888780",
+];
+
+function TabEquipos() {
+  const qc = useQueryClient();
+  const { data: teams = [], isLoading } = useQuery({ queryKey: ["admin-teams"], queryFn: () => getTeams() });
+  const [editing, setEditing] = useState<Team | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<Team | null>(null);
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deleteTeam(id),
+    onSuccess: () => {
+      toast.success("Equipo eliminado");
+      qc.invalidateQueries({ queryKey: ["admin-teams"] });
+      qc.invalidateQueries({ queryKey: ["calendar-teams"] });
+      qc.invalidateQueries({ queryKey: ["calendar"] });
+      setConfirmDelete(null);
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? "No se pudo eliminar");
+    },
+  });
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <p style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
+          Equipos disponibles para asignar a instalaciones.
+        </p>
+        <button
+          onClick={() => setCreating(true)}
+          style={{
+            background: "var(--color-accent)", color: "var(--color-bg-app)",
+            padding: "7px 14px", border: "none", borderRadius: 6,
+            fontSize: 12, fontWeight: 600, cursor: "pointer",
+          }}
+        >
+          + Nuevo equipo
+        </button>
+      </div>
+
+      {isLoading ? (
+        <p style={{ fontSize: 12, color: "var(--color-text-muted)" }}>Cargando…</p>
+      ) : teams.length === 0 ? (
+        <p style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
+          Todavía no hay equipos. Creá uno para asignarlo a las instalaciones.
+        </p>
+      ) : (
+        <div style={{ border: "1px solid var(--color-border)", borderRadius: 8, overflow: "hidden" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: "var(--color-bg-card)", borderBottom: "1px solid var(--color-border)" }}>
+                <th style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Nombre
+                </th>
+                <th style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Color
+                </th>
+                <th style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Notas
+                </th>
+                <th style={{ padding: "10px 14px", textAlign: "right", width: 140 }} />
+              </tr>
+            </thead>
+            <tbody>
+              {teams.map((team) => (
+                <tr key={team.id} style={{ borderBottom: "1px solid var(--color-border)" }}>
+                  <td style={{ padding: "10px 14px", color: "var(--color-text-primary)" }}>{team.name}</td>
+                  <td style={{ padding: "10px 14px" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ width: 14, height: 14, borderRadius: 4, background: team.color, border: "1px solid var(--color-border)" }} />
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-text-muted)" }}>{team.color}</span>
+                    </span>
+                  </td>
+                  <td style={{ padding: "10px 14px", color: "var(--color-text-secondary)", fontSize: 12 }}>
+                    {team.notes ?? "—"}
+                  </td>
+                  <td style={{ padding: "10px 14px", textAlign: "right" }}>
+                    <button
+                      onClick={() => setEditing(team)}
+                      style={{ background: "none", border: "none", color: "var(--color-accent)", fontSize: 12, cursor: "pointer", marginRight: 8 }}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => setConfirmDelete(team)}
+                      style={{ background: "none", border: "none", color: "var(--color-danger-text)", fontSize: 12, cursor: "pointer" }}
+                    >
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {(creating || editing) && (
+        <TeamModal
+          team={editing}
+          onClose={() => {
+            setCreating(false);
+            setEditing(null);
+          }}
+          onSaved={() => {
+            qc.invalidateQueries({ queryKey: ["admin-teams"] });
+            qc.invalidateQueries({ queryKey: ["calendar-teams"] });
+            qc.invalidateQueries({ queryKey: ["calendar"] });
+            setCreating(false);
+            setEditing(null);
+          }}
+        />
+      )}
+
+      {confirmDelete && (
+        <ConfirmTeamDelete
+          team={confirmDelete}
+          loading={deleteMut.isPending}
+          onCancel={() => setConfirmDelete(null)}
+          onConfirm={() => deleteMut.mutate(confirmDelete.id)}
+        />
+      )}
+    </div>
+  );
+}
+
+function TeamModal({ team, onClose, onSaved }: { team: Team | null; onClose: () => void; onSaved: () => void }) {
+  const isEdit = team !== null;
+  const [name, setName] = useState(team?.name ?? "");
+  const [color, setColor] = useState(team?.color ?? TEAM_COLORS[0]!);
+  const [notes, setNotes] = useState(team?.notes ?? "");
+  const [error, setError] = useState<string | null>(null);
+
+  const mut = useMutation({
+    mutationFn: () =>
+      isEdit
+        ? patchTeam(team!.id, { name: name.trim(), color, notes: notes.trim() || null })
+        : createTeam({ name: name.trim(), color, notes: notes.trim() || null }),
+    onSuccess: () => {
+      toast.success(isEdit ? "Equipo actualizado" : "Equipo creado");
+      onSaved();
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg ?? "No se pudo guardar el equipo");
+    },
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl shadow-2xl p-6 z-10">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="font-display font-bold text-base text-[var(--color-text-primary)]">
+            {isEdit ? `Editar equipo: ${team!.name}` : "Nuevo equipo"}
+          </h2>
+          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]">
+            ✕
+          </button>
+        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!name.trim() || mut.isPending) return;
+            mut.mutate();
+          }}
+          className="space-y-3"
+        >
+          <div>
+            <label style={labelStyle}>Nombre</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ej. Equipo propio"
+              style={inputStyle}
+              required
+              autoFocus
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>Color</label>
+            <div className="flex gap-2 flex-wrap">
+              {TEAM_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setColor(c)}
+                  className={`h-8 w-8 rounded-full transition-transform ${
+                    color.toLowerCase() === c.toLowerCase()
+                      ? "scale-110 ring-2 ring-[var(--color-accent)]"
+                      : ""
+                  }`}
+                  style={{ background: c }}
+                  aria-label={`Color ${c}`}
+                />
+              ))}
+            </div>
+          </div>
+          <div>
+            <label style={labelStyle}>Notas (opcional)</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+              style={{ ...inputStyle, resize: "vertical" }}
+            />
+          </div>
+          {error && <p className="text-xs text-[var(--color-danger-text)]">{error}</p>}
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              style={{ background: "none", border: "1px solid var(--color-border)", color: "var(--color-text-secondary)", padding: "7px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer" }}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={!name.trim() || mut.isPending}
+              style={{ background: "var(--color-accent)", color: "var(--color-bg-app)", padding: "7px 14px", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", opacity: !name.trim() || mut.isPending ? 0.5 : 1 }}
+            >
+              {mut.isPending ? "Guardando…" : isEdit ? "Guardar" : "Crear"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function ConfirmTeamDelete({
+  team,
+  loading,
+  onCancel,
+  onConfirm,
+}: {
+  team: Team;
+  loading: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-black/60" onClick={onCancel} />
+      <div className="relative w-full max-w-sm bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl shadow-2xl p-5 z-10">
+        <h2 className="font-display font-bold text-sm text-[var(--color-text-primary)] mb-2">
+          Eliminar equipo
+        </h2>
+        <p className="text-xs text-[var(--color-text-secondary)] mb-4">
+          ¿Eliminar el equipo <strong>{team.name}</strong>? Las instalaciones existentes quedarán sin
+          equipo asignado pero conservarán el nombre histórico.
+        </p>
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            style={{ background: "none", border: "1px solid var(--color-border)", color: "var(--color-text-secondary)", padding: "7px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer" }}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={loading}
+            style={{ background: "var(--color-danger-bg)", color: "var(--color-danger-text)", padding: "7px 14px", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", opacity: loading ? 0.5 : 1 }}
+          >
+            {loading ? "Eliminando…" : "Sí, eliminar"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type Tab = "usuarios" | "permisos" | "configuracion" | "objetivos" | "finanzas" | "equipos";
 
 export function Admin() {
   const [activeTab, setActiveTab] = useState<Tab>("usuarios");
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "usuarios", label: "Usuarios" },
+    { id: "equipos", label: "Equipos instaladores" },
     { id: "permisos", label: "Permisos" },
     { id: "configuracion", label: "Configuración del sistema" },
     { id: "objetivos", label: "Objetivos" },
@@ -1034,6 +1322,7 @@ export function Admin() {
       </div>
 
       {activeTab === "usuarios" && <TabUsuarios />}
+      {activeTab === "equipos" && <TabEquipos />}
       {activeTab === "permisos" && <TabPermisos />}
       {activeTab === "configuracion" && <TabConfiguracion />}
       {activeTab === "objetivos" && <TabObjetivos />}
