@@ -1,0 +1,7 @@
+{
+  "name": "voltia-pm",
+  "private": true,
+  "scripts": {
+    "save": "npm run save --prefix server"
+  }
+}
