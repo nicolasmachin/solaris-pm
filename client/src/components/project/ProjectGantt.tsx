@@ -1,83 +1,234 @@
-import { memo, useMemo, useState } from "react";
+import { memo, useMemo, useState, type CSSProperties } from "react";
 import type { ProjectGanttResponse, ProjectGanttStage } from "../../types/api.types";
 
-const DAY = 24 * 60 * 60 * 1000;
+// ─── Constantes de diseño ─────────────────────────────────────────────────────
 
-function toDate(value: string | null) {
-  return value ? new Date(value) : null;
+const PLAN_COLOR = "#5DCAA5";
+const REAL_COLOR = "#378ADD";
+const INSTALL_COLOR = "#EF9F27";
+const TODAY_COLOR = "#EF9F27";
+
+const ROW_HEIGHT = 28;
+const ROW_HEIGHT_OPS = 32;
+const BAR_HEIGHT = 8;
+const REAL_BAR_HEIGHT_OPS = 12;
+const INSTALL_BAR_HEIGHT = 8;
+const HEADER_HEIGHT = 24;
+const LABEL_WIDTH = 140;
+const LABEL_WIDTH_NARROW = 100;
+const PADDING_PCT = 5; // % de padding a cada lado del rango temporal
+
+const STRIPED = `repeating-linear-gradient(45deg, ${REAL_COLOR} 0, ${REAL_COLOR} 5px, transparent 5px, transparent 10px)`;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// ─── Tipos auxiliares ─────────────────────────────────────────────────────────
+
+export type GanttInstallationBlock = {
+  id: string;
+  plannedWorkStart: string;
+  plannedWorkEnd: string;
+  teamName: string;
+  clientName?: string;
+};
+
+type Tooltip = {
+  x: number;
+  y: number;
+  title: string;
+  lines: Array<{ text: string; color?: string }>;
+};
+
+// ─── Helpers de fechas ────────────────────────────────────────────────────────
+
+function parseUtcDate(s: string | null): Date | null {
+  if (!s) return null;
+  // s puede ser YYYY-MM-DD o ISO datetime; en ambos casos queremos día UTC
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(s);
+  const d = new Date(dateOnly ? `${s}T00:00:00Z` : s);
+  return isNaN(d.getTime()) ? null : d;
 }
 
-function startOfDay(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+function startOfUtcDay(d: Date): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 }
 
-function diffDays(from: Date, to: Date) {
-  return Math.round((startOfDay(to).getTime() - startOfDay(from).getTime()) / DAY);
+function todayUtc(): Date {
+  const now = new Date();
+  return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
 }
 
-function stageColor(stage: ProjectGanttStage) {
-  if (stage.status === "COMPLETED") return "#79bcff";
-  if (stage.status === "IN_PROGRESS") return "#ffd84d";
-  return "rgba(79, 166, 255, 0.42)";
+function diffDaysUtc(from: Date, to: Date): number {
+  return Math.round((startOfUtcDay(to).getTime() - startOfUtcDay(from).getTime()) / DAY_MS);
 }
 
-function buildAxisMarks(start: Date, end: Date) {
-  const totalDays = Math.max(diffDays(start, end), 1);
-  const marks: Array<{ label: string; offset: number }> = [];
+function addDaysUtc(date: Date, n: number): Date {
+  const d = new Date(date);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d;
+}
 
-  if (totalDays < 90) {
-    const cursor = new Date(start);
-    while (cursor <= end) {
-      marks.push({
-        label: `Sem ${Math.ceil(cursor.getDate() / 7)}`,
-        offset: diffDays(start, cursor),
-      });
-      cursor.setDate(cursor.getDate() + 7);
-    }
-  } else {
-    const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
-    while (cursor <= end) {
-      marks.push({
-        label: cursor.toLocaleDateString("es-UY", { month: "short", year: "2-digit" }),
-        offset: diffDays(start, cursor),
-      });
-      cursor.setMonth(cursor.getMonth() + 1);
+function formatShortDate(d: Date, narrow = false): string {
+  if (narrow) return `${MONTH_INITIAL[d.getUTCMonth()]}${String(d.getUTCFullYear()).slice(2)}`;
+  return `${MONTH_SHORT_ES[d.getUTCMonth()]} ${String(d.getUTCFullYear()).slice(2)}`;
+}
+
+function formatDayLabel(d: Date): string {
+  return `${d.getUTCDate()} ${MONTH_SHORT_ES[d.getUTCMonth()]}`;
+}
+
+const MONTH_SHORT_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+const MONTH_INITIAL = ["E", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+
+// ─── Cálculo del rango temporal ───────────────────────────────────────────────
+
+type TimeRange = {
+  start: Date; // con padding aplicado
+  end: Date; // con padding aplicado
+  totalMs: number;
+  rawStart: Date;
+  rawEnd: Date;
+};
+
+function computeRange(
+  stages: ProjectGanttStage[],
+  installations: GanttInstallationBlock[],
+): TimeRange | null {
+  const dates: Date[] = [];
+  for (const s of stages) {
+    for (const v of [s.plannedStart, s.plannedEnd, s.actualStart, s.actualEnd]) {
+      const d = parseUtcDate(v);
+      if (d) dates.push(d);
     }
   }
+  for (const i of installations) {
+    const a = parseUtcDate(i.plannedWorkStart);
+    const b = parseUtcDate(i.plannedWorkEnd);
+    if (a) dates.push(a);
+    if (b) dates.push(b);
+  }
+  // Incluir hoy si tiene sentido (proyecto corriendo)
+  dates.push(todayUtc());
 
+  if (dates.length === 0) return null;
+
+  const min = new Date(Math.min(...dates.map((d) => d.getTime())));
+  const max = new Date(Math.max(...dates.map((d) => d.getTime())));
+  const rawStart = startOfUtcDay(min);
+  const rawEnd = startOfUtcDay(max);
+  const span = Math.max(rawEnd.getTime() - rawStart.getTime(), DAY_MS);
+  const padMs = (span * PADDING_PCT) / 100;
+  const start = new Date(rawStart.getTime() - padMs);
+  const end = new Date(rawEnd.getTime() + padMs);
+  return {
+    start,
+    end,
+    totalMs: end.getTime() - start.getTime(),
+    rawStart,
+    rawEnd,
+  };
+}
+
+function pctFor(date: Date, range: TimeRange): number {
+  return ((date.getTime() - range.start.getTime()) / range.totalMs) * 100;
+}
+
+function widthPctBetween(from: Date, to: Date, range: TimeRange): number {
+  const a = pctFor(from, range);
+  const b = pctFor(to, range);
+  return Math.max(b - a, 0.4); // mínimo visible
+}
+
+// ─── Marcas del header (meses o semanas) ──────────────────────────────────────
+
+type AxisMark = { label: string; pct: number; isMonthStart?: boolean };
+
+function buildAxisMarks(range: TimeRange, narrow: boolean): AxisMark[] {
+  const totalDays = (range.end.getTime() - range.start.getTime()) / DAY_MS;
+  const marks: AxisMark[] = [];
+
+  if (totalDays < 90) {
+    // Semanas: lunes de cada semana dentro del rango
+    let cursor = new Date(range.start);
+    // Avanzar al próximo lunes
+    const dow = cursor.getUTCDay();
+    const offsetToMonday = dow === 0 ? 1 : (8 - dow) % 7;
+    cursor = addDaysUtc(cursor, offsetToMonday);
+    while (cursor.getTime() <= range.end.getTime()) {
+      marks.push({
+        label: formatDayLabel(cursor),
+        pct: pctFor(cursor, range),
+      });
+      cursor = addDaysUtc(cursor, 7);
+    }
+  } else {
+    // Meses: día 1 de cada mes
+    let cursor = new Date(Date.UTC(range.start.getUTCFullYear(), range.start.getUTCMonth(), 1));
+    if (cursor.getTime() < range.start.getTime()) {
+      cursor = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 1));
+    }
+    while (cursor.getTime() <= range.end.getTime()) {
+      marks.push({
+        label: formatShortDate(cursor, narrow),
+        pct: pctFor(cursor, range),
+        isMonthStart: true,
+      });
+      cursor = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 1));
+    }
+  }
   return marks;
 }
 
-export const ProjectGantt = memo(function ProjectGantt({ data }: { data: ProjectGanttResponse }) {
-  const [tooltip, setTooltip] = useState<{
-    x: number;
-    y: number;
-    stage: ProjectGanttStage;
-  } | null>(null);
+// ─── Tooltip helpers ──────────────────────────────────────────────────────────
 
-  const stagesWithPlan = data.stages.filter((stage) => stage.plannedStart && stage.plannedEnd);
+function formatDateRangeForTooltip(startIso: string | null, endIso: string | null): string {
+  if (!startIso && !endIso) return "—";
+  const s = startIso ? formatDayLabel(parseUtcDate(startIso)!) : "—";
+  const e = endIso ? formatDayLabel(parseUtcDate(endIso)!) : "—";
+  return `${s} → ${e}`;
+}
 
-  const timeline = useMemo(() => {
-    if (stagesWithPlan.length === 0) return null;
+function formatDelay(delayDays: number | null): { text: string; color: string } | null {
+  if (delayDays === null) return null;
+  if (delayDays === 0) return { text: "Sin desvío", color: "#9ca3af" };
+  if (delayDays > 0) return { text: `+${delayDays} días`, color: "#f87171" };
+  return { text: `${delayDays} días`, color: "#5DCAA5" };
+}
 
-    const candidates = stagesWithPlan.flatMap((stage) =>
-      [stage.plannedStart, stage.plannedEnd, stage.actualStart, stage.actualEnd].filter(Boolean).map((value) => new Date(value!)),
-    );
-    const start = new Date(Math.min(...candidates.map((date) => startOfDay(date).getTime())));
-    const end = new Date(Math.max(...candidates.map((date) => startOfDay(date).getTime())));
-    const today = startOfDay(new Date());
-    const totalDays = Math.max(diffDays(start, end), 1);
+// ─── Componente principal ─────────────────────────────────────────────────────
 
-    return {
-      start,
-      end,
-      totalDays,
-      todayOffset: diffDays(start, today),
-      axisMarks: buildAxisMarks(start, end),
-    };
-  }, [stagesWithPlan]);
+export const ProjectGantt = memo(function ProjectGantt({
+  data,
+  installationSchedules = [],
+}: {
+  data: ProjectGanttResponse;
+  installationSchedules?: GanttInstallationBlock[];
+}) {
+  const [tooltip, setTooltip] = useState<Tooltip | null>(null);
+  const [narrow, setNarrow] = useState(false);
 
-  if (!timeline) {
+  // Detectar viewport estrecho con ResizeObserver simple
+  // Usamos un ref callback para mediar sin useLayoutEffect
+  const containerRef = (el: HTMLDivElement | null) => {
+    if (!el) return;
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (!entry) return;
+      setNarrow(entry.contentRect.width < 900);
+    });
+    observer.observe(el);
+    // Nota: no devolvemos cleanup porque el ref callback no lo soporta;
+    // el observer se desreferencia cuando React desmonta el nodo.
+  };
+
+  const range = useMemo(
+    () => computeRange(data.stages, installationSchedules),
+    [data.stages, installationSchedules],
+  );
+
+  const today = useMemo(() => todayUtc(), []);
+
+  if (!range) {
     return (
       <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 text-sm text-[var(--color-text-secondary)]">
         Las fechas planificadas no están cargadas. Editá las etapas para agregar fechas.
@@ -85,161 +236,433 @@ export const ProjectGantt = memo(function ProjectGantt({ data }: { data: Project
     );
   }
 
-  const rowHeight = 52;
-  const labelWidth = 150;
-  const chartWidth = 720;
-  const chartHeight = data.stages.length * rowHeight + 50;
+  const axisMarks = buildAxisMarks(range, narrow);
+  const todayPct = pctFor(today, range);
+  const todayInRange = todayPct >= 0 && todayPct <= 100;
+
+  const labelWidth = narrow ? LABEL_WIDTH_NARROW : LABEL_WIDTH;
+
+  // Alto total para la línea de hoy (header + filas)
+  const totalRowsHeight = data.stages.reduce(
+    (acc, s) => acc + (s.name === "OPERACIONES" ? ROW_HEIGHT_OPS : ROW_HEIGHT),
+    0,
+  );
 
   return (
-    <div className="relative overflow-x-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
-      <svg width={labelWidth + chartWidth + 24} height={chartHeight}>
-        <g transform={`translate(${labelWidth}, 12)`}>
-          {timeline.axisMarks.map((mark) => {
-            const x = (mark.offset / timeline.totalDays) * chartWidth;
-            return (
-              <g key={`${mark.label}-${mark.offset}`}>
-                <line x1={x} x2={x} y1={0} y2={chartHeight - 36} stroke="var(--color-border)" strokeDasharray="3 3" />
-                <text
-                  x={x + 4}
-                  y={12}
-                  fill="var(--color-text-muted)"
-                  fontSize="10"
-                  fontFamily="var(--font-mono)"
-                >
-                  {mark.label}
-                </text>
-              </g>
-            );
-          })}
+    <div
+      ref={containerRef}
+      className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4"
+    >
+      <Legend />
 
-          {timeline.todayOffset >= 0 && timeline.todayOffset <= timeline.totalDays && (
-            <g>
-              <line
-                x1={(timeline.todayOffset / timeline.totalDays) * chartWidth}
-                x2={(timeline.todayOffset / timeline.totalDays) * chartWidth}
-                y1={0}
-                y2={chartHeight - 36}
-                stroke="#ffd84d"
-                strokeWidth="2"
+      <div className="relative" style={{ display: "flex" }}>
+        {/* Columna de labels */}
+        <div style={{ width: labelWidth, flexShrink: 0 }}>
+          <div
+            className="border-b border-[var(--color-border)]"
+            style={{ height: HEADER_HEIGHT }}
+          />
+          {data.stages.map((stage) => (
+            <div
+              key={stage.id}
+              style={{
+                height: stage.name === "OPERACIONES" ? ROW_HEIGHT_OPS : ROW_HEIGHT,
+                display: "flex",
+                alignItems: "center",
+                paddingRight: 8,
+                fontSize: narrow ? 10 : 11,
+                color: "var(--color-text-primary)",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+              title={stage.label}
+            >
+              {stage.label}
+            </div>
+          ))}
+        </div>
+
+        {/* Área de chart */}
+        <div className="relative flex-1 min-w-0">
+          {/* Header con marcas */}
+          <div
+            className="relative border-b border-[var(--color-border)]"
+            style={{ height: HEADER_HEIGHT }}
+          >
+            {axisMarks.map((mark, i) => (
+              <span
+                key={i}
+                className="absolute top-1 font-mono text-[var(--color-text-muted)]"
+                style={{
+                  left: `${mark.pct}%`,
+                  fontSize: 10,
+                  transform: "translateX(2px)",
+                }}
+              >
+                {mark.label}
+              </span>
+            ))}
+          </div>
+
+          {/* Líneas verticales guía */}
+          <div
+            className="absolute left-0 right-0 pointer-events-none"
+            style={{ top: HEADER_HEIGHT, height: totalRowsHeight }}
+          >
+            {axisMarks.map((mark, i) => (
+              <div
+                key={i}
+                className="absolute top-0 bottom-0"
+                style={{
+                  left: `${mark.pct}%`,
+                  borderLeft: "1px dashed var(--color-border)",
+                  opacity: 0.4,
+                }}
               />
-              <text
-                x={(timeline.todayOffset / timeline.totalDays) * chartWidth + 6}
-                y={24}
-                fill="#ffd84d"
-                fontSize="10"
-                fontFamily="var(--font-mono)"
+            ))}
+          </div>
+
+          {/* Filas de stages */}
+          {data.stages.map((stage) => (
+            <StageRow
+              key={stage.id}
+              stage={stage}
+              range={range}
+              today={today}
+              installations={
+                stage.name === "OPERACIONES" ? installationSchedules : []
+              }
+              onTooltip={setTooltip}
+              onClearTooltip={() => setTooltip(null)}
+            />
+          ))}
+
+          {/* Línea de "Hoy" */}
+          {todayInRange && (
+            <div
+              className="absolute pointer-events-none"
+              style={{
+                left: `${todayPct}%`,
+                top: 0,
+                bottom: 0,
+                borderLeft: `1px solid ${TODAY_COLOR}`,
+                zIndex: 5,
+              }}
+            >
+              <span
+                className="absolute font-mono"
+                style={{
+                  top: 2,
+                  left: 4,
+                  fontSize: 9,
+                  color: TODAY_COLOR,
+                  whiteSpace: "nowrap",
+                }}
               >
                 Hoy
-              </text>
-            </g>
+              </span>
+            </div>
           )}
-
-          {data.stages.map((stage, index) => {
-            const y = 34 + index * rowHeight;
-            const plannedStart = toDate(stage.plannedStart);
-            const plannedEnd = toDate(stage.plannedEnd);
-            const actualStart = toDate(stage.actualStart);
-            const actualEnd = toDate(stage.actualEnd);
-
-            if (!plannedStart || !plannedEnd) {
-              return null;
-            }
-
-            const plannedX = (diffDays(timeline.start, plannedStart) / timeline.totalDays) * chartWidth;
-            const plannedWidth = (Math.max(diffDays(plannedStart, plannedEnd), 1) / timeline.totalDays) * chartWidth;
-            const actualBaseStart = actualStart ?? plannedStart;
-            const actualBaseEnd =
-              stage.status === "COMPLETED"
-                ? actualEnd ?? plannedEnd
-                : stage.status === "IN_PROGRESS"
-                  ? new Date()
-                  : plannedEnd;
-            const actualX = (diffDays(timeline.start, actualBaseStart) / timeline.totalDays) * chartWidth;
-            const actualWidth = (Math.max(diffDays(actualBaseStart, actualBaseEnd), 1) / timeline.totalDays) * chartWidth;
-            const overflowWidth =
-              actualBaseEnd > plannedEnd
-                ? (Math.max(diffDays(plannedEnd, actualBaseEnd), 1) / timeline.totalDays) * chartWidth
-                : 0;
-
-            return (
-              <g key={stage.id}>
-                <text
-                  x={-12}
-                  y={y + 14}
-                  textAnchor="end"
-                  fill="var(--color-text-primary)"
-                  fontSize="12"
-                >
-                  {stage.label}
-                </text>
-
-                <rect
-                  x={plannedX}
-                  y={y}
-                  width={plannedWidth}
-                  height={12}
-                  rx={6}
-                  fill="rgba(148, 163, 184, 0.25)"
-                />
-
-                <rect
-                  x={actualX}
-                  y={y + 2}
-                  width={actualWidth}
-                  height={8}
-                  rx={4}
-                  fill={stageColor(stage)}
-                  className={stage.status === "IN_PROGRESS" ? "animate-pulse" : undefined}
-                  onMouseEnter={(event) =>
-                    setTooltip({
-                      x: event.clientX,
-                      y: event.clientY,
-                      stage,
-                    })
-                  }
-                  onMouseMove={(event) =>
-                    setTooltip({
-                      x: event.clientX,
-                      y: event.clientY,
-                      stage,
-                    })
-                  }
-                  onMouseLeave={() => setTooltip(null)}
-                />
-
-                {overflowWidth > 0 && (
-                  <rect
-                    x={plannedX + plannedWidth}
-                    y={y + 2}
-                    width={overflowWidth}
-                    height={8}
-                    rx={4}
-                    fill="rgba(248, 113, 113, 0.85)"
-                  />
-                )}
-              </g>
-            );
-          })}
-        </g>
-      </svg>
-
-      {tooltip ? (
-        <div
-          className="pointer-events-none fixed z-50 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-xs shadow-xl"
-          style={{ left: tooltip.x + 12, top: tooltip.y + 12, maxWidth: 240 }}
-        >
-          <p className="mb-1 font-semibold text-[var(--color-text-primary)]">{tooltip.stage.label}</p>
-          <p className="text-[var(--color-text-secondary)]">
-            Plan: {tooltip.stage.plannedStart ?? "—"} → {tooltip.stage.plannedEnd ?? "—"}
-          </p>
-          <p className="text-[var(--color-text-secondary)]">
-            Real: {tooltip.stage.actualStart ?? "—"} → {tooltip.stage.actualEnd ?? (tooltip.stage.status === "IN_PROGRESS" ? "En curso" : "—")}
-          </p>
-          <p className="text-[var(--color-text-secondary)]">
-            Desvío: {tooltip.stage.delayDays !== null ? `${tooltip.stage.delayDays > 0 ? "+" : ""}${tooltip.stage.delayDays} días` : "—"}
-          </p>
         </div>
-      ) : null}
+      </div>
+
+      {/* Tooltip flotante */}
+      {tooltip && (
+        <div
+          className="pointer-events-none fixed z-50 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-xs shadow-xl"
+          style={{ left: tooltip.x + 12, top: tooltip.y + 12, maxWidth: 260 }}
+        >
+          <p className="mb-1 font-semibold text-[var(--color-text-primary)]">{tooltip.title}</p>
+          {tooltip.lines.map((l, i) => (
+            <p key={i} style={{ color: l.color ?? "var(--color-text-secondary)" }}>
+              {l.text}
+            </p>
+          ))}
+        </div>
+      )}
     </div>
   );
 });
+
+// ─── Leyenda ──────────────────────────────────────────────────────────────────
+
+function Legend() {
+  const items: Array<{ kind: "swatch" | "stripe" | "line"; color: string; label: string }> = [
+    { kind: "swatch", color: PLAN_COLOR, label: "Plan" },
+    { kind: "swatch", color: REAL_COLOR, label: "Real" },
+    { kind: "stripe", color: REAL_COLOR, label: "En curso" },
+    { kind: "swatch", color: INSTALL_COLOR, label: "Instalación" },
+    { kind: "line", color: TODAY_COLOR, label: "Hoy" },
+  ];
+  return (
+    <div className="mb-4 flex flex-wrap items-center" style={{ gap: 16 }}>
+      {items.map((item) => (
+        <div key={item.label} className="flex items-center gap-1.5 text-[11px] text-[var(--color-text-muted)]">
+          {item.kind === "swatch" ? (
+            <span
+              style={{
+                display: "inline-block",
+                width: 14,
+                height: 6,
+                borderRadius: 2,
+                background: item.color,
+              }}
+            />
+          ) : item.kind === "stripe" ? (
+            <span
+              style={{
+                display: "inline-block",
+                width: 14,
+                height: 6,
+                borderRadius: 2,
+                background: STRIPED,
+              }}
+            />
+          ) : (
+            <span
+              style={{
+                display: "inline-block",
+                width: 1,
+                height: 12,
+                background: item.color,
+              }}
+            />
+          )}
+          <span>{item.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Fila de stage ────────────────────────────────────────────────────────────
+
+function StageRow({
+  stage,
+  range,
+  today,
+  installations,
+  onTooltip,
+  onClearTooltip,
+}: {
+  stage: ProjectGanttStage;
+  range: TimeRange;
+  today: Date;
+  installations: GanttInstallationBlock[];
+  onTooltip: (t: Tooltip) => void;
+  onClearTooltip: () => void;
+}) {
+  const isOps = stage.name === "OPERACIONES";
+  const rowHeight = isOps ? ROW_HEIGHT_OPS : ROW_HEIGHT;
+  const realBarHeight = isOps ? REAL_BAR_HEIGHT_OPS : BAR_HEIGHT;
+
+  const plannedStart = parseUtcDate(stage.plannedStart);
+  const plannedEnd = parseUtcDate(stage.plannedEnd);
+  const actualStart = parseUtcDate(stage.actualStart);
+  const actualEnd = parseUtcDate(stage.actualEnd);
+
+  // Posición vertical: plan arriba, real abajo, separación 4px
+  const planTop = 4;
+  const realTop = 4 + BAR_HEIGHT + 4;
+
+  const showPending = stage.status === "PENDING";
+
+  function planTooltip(e: React.MouseEvent) {
+    onTooltip({
+      x: e.clientX,
+      y: e.clientY,
+      title: stage.label,
+      lines: [
+        { text: `Plan: ${formatDateRangeForTooltip(stage.plannedStart, stage.plannedEnd)}` },
+        actualStart || actualEnd
+          ? { text: `Real: ${formatDateRangeForTooltip(stage.actualStart, stage.actualEnd)}` }
+          : { text: "Real: —" },
+        ...(formatDelay(stage.delayDays)
+          ? [{ text: `Desvío: ${formatDelay(stage.delayDays)!.text}`, color: formatDelay(stage.delayDays)!.color }]
+          : []),
+      ],
+    });
+  }
+
+  function installTooltip(e: React.MouseEvent, inst: GanttInstallationBlock) {
+    onTooltip({
+      x: e.clientX,
+      y: e.clientY,
+      title: inst.clientName ?? "Instalación",
+      lines: [
+        { text: `Equipo: ${inst.teamName}` },
+        { text: formatDateRangeForTooltip(inst.plannedWorkStart, inst.plannedWorkEnd) },
+      ],
+    });
+  }
+
+  return (
+    <div className="relative" style={{ height: rowHeight }}>
+      {/* Barra plan */}
+      {plannedStart && plannedEnd && (
+        <div
+          className="absolute"
+          style={{
+            left: `${pctFor(plannedStart, range)}%`,
+            width: `${widthPctBetween(plannedStart, plannedEnd, range)}%`,
+            top: planTop,
+            height: BAR_HEIGHT,
+            background: PLAN_COLOR,
+            opacity: showPending ? 0.5 : 1,
+            borderRadius: 3,
+            cursor: "default",
+          }}
+          onMouseEnter={planTooltip}
+          onMouseMove={planTooltip}
+          onMouseLeave={onClearTooltip}
+        />
+      )}
+
+      {/* Texto "Sin iniciar" */}
+      {showPending && plannedEnd && (
+        <span
+          className="absolute font-mono text-[var(--color-text-muted)]"
+          style={{
+            left: `calc(${pctFor(plannedEnd, range)}% + 4px)`,
+            top: planTop - 1,
+            fontSize: 9,
+            whiteSpace: "nowrap",
+          }}
+        >
+          Sin iniciar
+        </span>
+      )}
+
+      {/* Barra real (solo si ya inició) */}
+      {!showPending && actualStart && (
+        <RealBars
+          stage={stage}
+          actualStart={actualStart}
+          actualEnd={actualEnd}
+          plannedEnd={plannedEnd}
+          today={today}
+          range={range}
+          top={realTop}
+          height={realBarHeight}
+          onTooltip={planTooltip}
+          onClearTooltip={onClearTooltip}
+        />
+      )}
+
+      {/* Bloques de instalación (solo en Operaciones) */}
+      {installations.map((inst) => {
+        const start = parseUtcDate(inst.plannedWorkStart);
+        const end = parseUtcDate(inst.plannedWorkEnd);
+        if (!start || !end) return null;
+        const barCenter = realTop + realBarHeight / 2;
+        const installTop = barCenter - INSTALL_BAR_HEIGHT / 2;
+        return (
+          <div
+            key={inst.id}
+            className="absolute"
+            style={{
+              left: `${pctFor(start, range)}%`,
+              width: `${widthPctBetween(start, end, range)}%`,
+              top: installTop,
+              height: INSTALL_BAR_HEIGHT,
+              background: INSTALL_COLOR,
+              borderRadius: 2,
+              zIndex: 3,
+              cursor: "default",
+            }}
+            onMouseEnter={(e) => installTooltip(e, inst)}
+            onMouseMove={(e) => installTooltip(e, inst)}
+            onMouseLeave={onClearTooltip}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function RealBars({
+  stage,
+  actualStart,
+  actualEnd,
+  plannedEnd,
+  today,
+  range,
+  top,
+  height,
+  onTooltip,
+  onClearTooltip,
+}: {
+  stage: ProjectGanttStage;
+  actualStart: Date;
+  actualEnd: Date | null;
+  plannedEnd: Date | null;
+  today: Date;
+  range: TimeRange;
+  top: number;
+  height: number;
+  onTooltip: (e: React.MouseEvent) => void;
+  onClearTooltip: () => void;
+}) {
+  const baseStyle: CSSProperties = {
+    position: "absolute",
+    top,
+    height,
+    borderRadius: 3,
+    cursor: "default",
+  };
+
+  const handlers = {
+    onMouseEnter: onTooltip,
+    onMouseMove: onTooltip,
+    onMouseLeave: onClearTooltip,
+  };
+
+  if (stage.status === "COMPLETED") {
+    const end = actualEnd ?? today;
+    return (
+      <div
+        style={{
+          ...baseStyle,
+          left: `${pctFor(actualStart, range)}%`,
+          width: `${widthPctBetween(actualStart, end, range)}%`,
+          background: REAL_COLOR,
+        }}
+        {...handlers}
+      />
+    );
+  }
+
+  // IN_PROGRESS
+  // Solid: actualStart → min(plannedEnd, today)
+  // Striped: si today > plannedEnd → desde plannedEnd a today
+  // Si no hay plannedEnd, todo el tramo actualStart → today va sólido
+  const referenceEnd = plannedEnd ?? today;
+  const solidEnd = referenceEnd.getTime() <= today.getTime() ? referenceEnd : today;
+  const stripedNeeded = plannedEnd !== null && today.getTime() > plannedEnd.getTime();
+
+  return (
+    <>
+      <div
+        style={{
+          ...baseStyle,
+          left: `${pctFor(actualStart, range)}%`,
+          width: `${widthPctBetween(actualStart, solidEnd, range)}%`,
+          background: REAL_COLOR,
+        }}
+        {...handlers}
+      />
+      {stripedNeeded && plannedEnd && (
+        <div
+          style={{
+            ...baseStyle,
+            left: `${pctFor(plannedEnd, range)}%`,
+            width: `${widthPctBetween(plannedEnd, today, range)}%`,
+            background: STRIPED,
+          }}
+          {...handlers}
+        />
+      )}
+    </>
+  );
+}

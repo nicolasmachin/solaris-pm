@@ -38,13 +38,13 @@ import {
 } from "../src/services/project.service.js";
 import { diffInDays, parseDateOnly } from "../src/utils/dates.js";
 
-// ─── Guard de producción ──────────────────────────────────────────────────────
-// Bloquea la ejecución del seed si NODE_ENV === "production" para evitar
-// destrucción accidental de datos reales.
-
-if (process.env.NODE_ENV === "production") {
-  console.log("Seed bloqueado en producción.");
-  process.exit(0);
+if (process.env.NODE_ENV === 'production') {
+  console.log('⛔ Seed bloqueado en producción.')
+  console.log('Para correr manualmente usá:')
+  console.log('FORCE_SEED=1 npm run db:seed')
+  if (process.env.FORCE_SEED !== '1') {
+    process.exit(0)
+  }
 }
 
 type ProjectGraph = Prisma.ProjectGetPayload<{

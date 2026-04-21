@@ -796,7 +796,22 @@ export function ProjectDetail() {
               No se pudo cargar el cronograma. Verificá que el backend esté reiniciado y que tu usuario tenga permiso de métricas.
             </div>
           ) : (
-            <ProjectGantt data={ganttQuery.data} />
+            <ProjectGantt
+              data={ganttQuery.data}
+              installationSchedules={
+                project.installationSchedule
+                  ? [
+                      {
+                        id: project.installationSchedule.id,
+                        plannedWorkStart: project.installationSchedule.plannedWorkStart,
+                        plannedWorkEnd: project.installationSchedule.plannedWorkEnd,
+                        teamName: project.installationSchedule.teamName,
+                        clientName: project.clientName,
+                      },
+                    ]
+                  : []
+              }
+            />
           )
         ) : bottomTab === "materiales" ? (
           <MaterialesTab projectId={project.id} />

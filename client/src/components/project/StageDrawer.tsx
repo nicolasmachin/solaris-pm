@@ -644,10 +644,15 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
 
   function formatDate(d: string | null) {
     if (!d) return "—";
-    return new Date(d).toLocaleDateString("es-AR", {
+    // Las fechas DATE-only (YYYY-MM-DD) deben formatearse en UTC
+    // para no perder un día por la conversión a hora local (Argentina = UTC-3).
+    const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(d);
+    const parsed = new Date(isDateOnly ? `${d}T00:00:00Z` : d);
+    return parsed.toLocaleDateString("es-AR", {
       day: "2-digit",
       month: "short",
       year: "numeric",
+      ...(isDateOnly ? { timeZone: "UTC" } : {}),
     });
   }
 
