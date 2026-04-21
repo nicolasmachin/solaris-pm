@@ -4,6 +4,8 @@ VOLTIA PM es un sistema interno para gestionar proyectos fotovoltaicos de punta 
 
 Este README está escrito para que lo pueda usar alguien que no conozca el proyecto de antemano. Si abrís este repo por primera vez, lo ideal es seguir los pasos en el orden en que aparecen.
 
+> Si ya lo tenés instalado y buscás la guía del día a día (cómo deployar, diagnosticar, restaurar backups), mirá [OPERATIVA.md](OPERATIVA.md).
+
 ## Qué resuelve el sistema
 
 Hoy el sistema ya cubre estos bloques principales:
@@ -371,7 +373,7 @@ Para guardar todos los cambios, hacer commit,
 push a GitHub y backup de la base de datos,
 ejecutar desde la raíz del proyecto:
 
-   bash save.sh
+   
 
 O desde la carpeta server/:
 
