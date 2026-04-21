@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import type { Stage, Substage, SubstageStatus, FileAttachment, ChecklistItem } from "../../types/api.types";
 import { patchSubstage, patchStage, createSubstage, deleteSubstage, completeSubstage, completeAllSubstages } from "../../api/stages.api";
+import { useAuthStore } from "../../store/auth.store";
 import { apiClient } from "../../api/axios";
 import { uploadFile, getDownloadUrl } from "../../api/files.api";
 import { Badge } from "../ui/Badge";
@@ -503,9 +504,16 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
   const [editingDates, setEditingDates] = useState(false);
   const [plannedStart, setPlannedStart] = useState(stage.plannedStartDate?.slice(0, 10) ?? "");
   const [plannedEnd, setPlannedEnd] = useState(stage.plannedEndDate?.slice(0, 10) ?? "");
+  const [actualStart, setActualStart] = useState(stage.actualStartDate?.slice(0, 10) ?? "");
+  const [actualEnd, setActualEnd] = useState(stage.actualEndDate?.slice(0, 10) ?? "");
+  const [dateEditError, setDateEditError] = useState<string | null>(null);
   const [responsibleName, setResponsibleName] = useState(
     (stage as Stage & { responsibleName?: string | null }).responsibleName ?? ""
   );
+
+  const currentUser = useAuthStore((s) => s.user);
+  const isAdmin = currentUser?.role === "ADMIN";
+  const isPostventa = stage.name === "POSTVENTA";
 
   // New substage form
   const [showSubForm, setShowSubForm] = useState(false);
@@ -572,20 +580,41 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
     onError: () => toast.error("Error al guardar notas"),
   });
 
-  // Save stage dates
+  // Save stage dates (plan + real si es ADMIN)
   const datesMutation = useMutation({
-    mutationFn: () =>
-      patchStage(projectId, stage.id, {
-        plannedStartDate: plannedStart || null,
-        plannedEndDate: plannedEnd || null,
-        responsibleName: responsibleName || null,
-      }),
+    mutationFn: () => {
+      const body: {
+        plannedStartDate?: string | null;
+        plannedEndDate?: string | null;
+        actualStartDate?: string | null;
+        actualEndDate?: string | null;
+        responsibleName?: string | null;
+      } = {};
+      const currentPlannedStart = stage.plannedStartDate?.slice(0, 10) ?? "";
+      const currentPlannedEnd = stage.plannedEndDate?.slice(0, 10) ?? "";
+      const currentActualStart = stage.actualStartDate?.slice(0, 10) ?? "";
+      const currentActualEnd = stage.actualEndDate?.slice(0, 10) ?? "";
+      const currentResponsible =
+        (stage as Stage & { responsibleName?: string | null }).responsibleName ?? "";
+
+      if ((plannedStart || "") !== currentPlannedStart) body.plannedStartDate = plannedStart || null;
+      if ((plannedEnd || "") !== currentPlannedEnd) body.plannedEndDate = plannedEnd || null;
+      if (isAdmin && (actualStart || "") !== currentActualStart) body.actualStartDate = actualStart || null;
+      if (isAdmin && (actualEnd || "") !== currentActualEnd) body.actualEndDate = actualEnd || null;
+      if ((responsibleName || "") !== currentResponsible) body.responsibleName = responsibleName || null;
+
+      return patchStage(projectId, stage.id, body);
+    },
     onSuccess: () => {
       setEditingDates(false);
+      setDateEditError(null);
       toast.success("Fechas actualizadas");
       invalidate();
     },
-    onError: () => toast.error("Error al guardar fechas"),
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? "Error al guardar fechas");
+    },
   });
 
   // Create substage
@@ -711,86 +740,203 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
 
         <div className="flex-1 px-5 py-4 space-y-5">
           {/* Time metrics */}
-          <section>
-            <div className="flex items-center justify-between mb-2">
-              <p className="font-mono text-[9px] uppercase tracking-widest text-[var(--color-text-muted)]">
+          {isPostventa ? (
+            <section>
+              <p className="font-mono text-[9px] uppercase tracking-widest text-[var(--color-text-muted)] mb-2">
                 Fechas
               </p>
-              <button
-                onClick={() => setEditingDates(v => !v)}
-                className="text-[10px] text-[var(--color-accent)] hover:underline"
-              >
-                {editingDates ? "Cancelar" : "Editar"}
-              </button>
-            </div>
-
-            {editingDates ? (
-              <div className="space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Plan inicio</p>
-                    <input
-                      type="date"
-                      className="w-full px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
-                      value={plannedStart}
-                      onChange={e => setPlannedStart(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Plan fin</p>
-                    <input
-                      type="date"
-                      className="w-full px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
-                      value={plannedEnd}
-                      onChange={e => setPlannedEnd(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <input
-                  className="w-full px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]"
-                  placeholder="Responsable de etapa"
-                  value={responsibleName}
-                  onChange={e => setResponsibleName(e.target.value)}
-                />
-                <Button size="sm" loading={datesMutation.isPending} onClick={() => datesMutation.mutate()}>
-                  Guardar fechas
-                </Button>
+              <p className="text-xs text-[var(--color-text-muted)] italic">
+                La etapa Postventa no tiene fechas asociadas por ser indefinida.
+              </p>
+            </section>
+          ) : (
+            <section>
+              <div className="flex items-center justify-between mb-2">
+                <p className="font-mono text-[9px] uppercase tracking-widest text-[var(--color-text-muted)]">
+                  Fechas
+                </p>
+                <button
+                  onClick={() => {
+                    setEditingDates((v) => !v);
+                    setDateEditError(null);
+                  }}
+                  className="text-[10px] text-[var(--color-accent)] hover:underline"
+                >
+                  {editingDates ? "Cancelar" : "Editar"}
+                </button>
               </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                <div>
-                  <span className="text-[var(--color-text-muted)]">Plan inicio</span>
-                  <p className="text-[var(--color-text-secondary)]">{formatDate(stage.plannedStartDate)}</p>
-                </div>
-                <div>
-                  <span className="text-[var(--color-text-muted)]">Plan fin</span>
-                  <p className="text-[var(--color-text-secondary)]">{formatDate(stage.plannedEndDate)}</p>
-                </div>
-                <div>
-                  <span className="text-[var(--color-text-muted)]">Inicio real</span>
-                  <p className="text-[var(--color-text-secondary)]">{formatDate(stage.actualStartDate)}</p>
-                </div>
-                <div>
-                  <span className="text-[var(--color-text-muted)]">Fin real</span>
-                  <p className="text-[var(--color-text-secondary)]">{formatDate(stage.actualEndDate)}</p>
-                </div>
-                {stage.plannedDurationDays && (
-                  <div>
-                    <span className="text-[var(--color-text-muted)]">Duración plan</span>
-                    <p className="text-[var(--color-text-secondary)]">{stage.plannedDurationDays} días</p>
+
+              {editingDates ? (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Plan inicio</p>
+                      <input
+                        type="date"
+                        className="w-full px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
+                        value={plannedStart}
+                        onChange={(e) => setPlannedStart(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Plan fin</p>
+                      <input
+                        type="date"
+                        className="w-full px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
+                        value={plannedEnd}
+                        onChange={(e) => setPlannedEnd(e.target.value)}
+                      />
+                    </div>
+                    <div title={isAdmin ? undefined : "Solo admin puede modificar fechas reales"}>
+                      <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Real inicio</p>
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="date"
+                          disabled={!isAdmin}
+                          className="flex-1 px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)] disabled:opacity-60 disabled:cursor-not-allowed"
+                          value={actualStart}
+                          onChange={(e) => setActualStart(e.target.value)}
+                        />
+                        {isAdmin && actualStart && (
+                          <button
+                            type="button"
+                            onClick={() => setActualStart("")}
+                            className="text-[var(--color-text-muted)] hover:text-[var(--color-danger-text)] px-1 text-xs"
+                            title="Limpiar fecha"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div title={isAdmin ? undefined : "Solo admin puede modificar fechas reales"}>
+                      <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Real fin</p>
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="date"
+                          disabled={!isAdmin}
+                          className="flex-1 px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)] disabled:opacity-60 disabled:cursor-not-allowed"
+                          value={actualEnd}
+                          onChange={(e) => setActualEnd(e.target.value)}
+                        />
+                        {isAdmin && actualEnd && (
+                          <button
+                            type="button"
+                            onClick={() => setActualEnd("")}
+                            className="text-[var(--color-text-muted)] hover:text-[var(--color-danger-text)] px-1 text-xs"
+                            title="Limpiar fecha"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                )}
-                {stage.delayDays !== null && (
+                  <input
+                    className="w-full px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]"
+                    placeholder="Responsable de etapa"
+                    value={responsibleName}
+                    onChange={(e) => setResponsibleName(e.target.value)}
+                  />
+                  {dateEditError && (
+                    <p className="text-[11px] text-[var(--color-danger-text)]">{dateEditError}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      loading={datesMutation.isPending}
+                      onClick={() => {
+                        // Validación local
+                        if (plannedStart && plannedEnd && plannedEnd < plannedStart) {
+                          setDateEditError("Plan fin no puede ser anterior al inicio");
+                          return;
+                        }
+                        if (actualStart && actualEnd && actualEnd < actualStart) {
+                          setDateEditError("Real fin no puede ser anterior al inicio");
+                          return;
+                        }
+                        setDateEditError(null);
+                        datesMutation.mutate();
+                      }}
+                    >
+                      Guardar cambios
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setEditingDates(false);
+                        setDateEditError(null);
+                        setPlannedStart(stage.plannedStartDate?.slice(0, 10) ?? "");
+                        setPlannedEnd(stage.plannedEndDate?.slice(0, 10) ?? "");
+                        setActualStart(stage.actualStartDate?.slice(0, 10) ?? "");
+                        setActualEnd(stage.actualEndDate?.slice(0, 10) ?? "");
+                      }}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
                   <div>
-                    <span className="text-[var(--color-text-muted)]">Desvío</span>
-                    <p className={stage.delayDays > 0 ? "text-red-400" : "text-[#4ade80]"}>
-                      {stage.delayDays > 0 ? "+" : ""}{stage.delayDays} días
+                    <span className="text-[var(--color-text-muted)] text-[10px]">Plan inicio</span>
+                    <p className="text-[var(--color-text-secondary)]">{formatDate(stage.plannedStartDate)}</p>
+                  </div>
+                  <div>
+                    <span className="text-[var(--color-text-muted)] text-[10px]">Plan fin</span>
+                    <p className="text-[var(--color-text-secondary)]">{formatDate(stage.plannedEndDate)}</p>
+                  </div>
+                  <div>
+                    <span className="text-[var(--color-text-muted)] text-[10px]">Real inicio</span>
+                    <p className="text-[var(--color-text-secondary)] flex items-center gap-1">
+                      {stage.status === "PENDING" && !stage.actualStartDate
+                        ? <span className="text-[var(--color-text-muted)] italic">Pendiente</span>
+                        : formatDate(stage.actualStartDate)}
+                      {stage.actualDatesManuallyEdited && (
+                        <span
+                          title="Fecha modificada manualmente por admin"
+                          className="text-[var(--color-text-muted)] text-[11px]"
+                        >
+                          ✎
+                        </span>
+                      )}
                     </p>
                   </div>
-                )}
-              </div>
-            )}
-          </section>
+                  <div>
+                    <span className="text-[var(--color-text-muted)] text-[10px]">Real fin</span>
+                    <p className="text-[var(--color-text-secondary)] flex items-center gap-1">
+                      {stage.status === "PENDING" && !stage.actualEndDate
+                        ? <span className="text-[var(--color-text-muted)] italic">Pendiente</span>
+                        : formatDate(stage.actualEndDate)}
+                      {stage.actualDatesManuallyEdited && (
+                        <span
+                          title="Fecha modificada manualmente por admin"
+                          className="text-[var(--color-text-muted)] text-[11px]"
+                        >
+                          ✎
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  {stage.plannedDurationDays && (
+                    <div>
+                      <span className="text-[var(--color-text-muted)] text-[10px]">Duración plan</span>
+                      <p className="text-[var(--color-text-secondary)]">{stage.plannedDurationDays} días</p>
+                    </div>
+                  )}
+                  {stage.delayDays !== null && (
+                    <div>
+                      <span className="text-[var(--color-text-muted)] text-[10px]">Desvío</span>
+                      <p className={stage.delayDays > 0 ? "text-red-400" : "text-[#4ade80]"}>
+                        {stage.delayDays > 0 ? "+" : ""}{stage.delayDays} días
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+          )}
 
           {/* Substages */}
           <section>

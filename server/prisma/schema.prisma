@@ -328,6 +328,10 @@ model Project {
   executedUsd       Decimal              @db.Decimal(14, 2)
   estimatedMwhYear  Decimal              @db.Decimal(10, 2)
   co2TonsAvoided    Decimal              @db.Decimal(10, 2)
+  actualOnboardingEnd   DateTime?         @db.Date
+  actualEngineeringEnd  DateTime?         @db.Date
+  actualUteStart        DateTime?         @db.Date
+  actualUteEnd          DateTime?         @db.Date
   modalidadPago          ModalidadPago?
   firstDateScheduledAt   DateTime?            @db.Timestamptz(6)
   notificationEmail      String
@@ -405,6 +409,7 @@ model Stage {
   plannedDurationDays Int?
   actualDurationDays  Int?
   delayDays           Int?
+  actualDatesManuallyEdited Boolean       @default(false)
   responsibleName     String?
   notes               String?
   substages           Substage[]

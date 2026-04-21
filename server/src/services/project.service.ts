@@ -275,14 +275,55 @@ export async function generateProjectCode() {
 
 export function buildInitialStages(startDate: Date, plannedEndDate: Date, modalidadPago?: ModalidadPago | null) {
   const totalDays = Math.max(1, diffInDays(startDate, plannedEndDate) + 1);
+  // POSTVENTA es indefinida: no tiene fechas y no consume tiempo del cronograma.
+  // Los días totales se distribuyen sólo entre las etapas "datadas", usando los
+  // weights relativos entre ellas.
+  const datedDefs = PIPELINE_DEFINITIONS.filter((s) => s.name !== StageType.POSTVENTA);
+  const totalWeight = datedDefs.reduce((sum, s) => sum + s.weight, 0);
+
   let cursor = startOfUtcDay(startDate);
   let consumedDays = 0;
+  let datedIndex = -1;
 
-  return PIPELINE_DEFINITIONS.map((stageConfig, index) => {
-    const isLast = index === PIPELINE_DEFINITIONS.length - 1;
-    const stageDays = isLast
+  return PIPELINE_DEFINITIONS.map((stageConfig) => {
+    const substages = stageConfig.substages.map((substage) => ({
+      order: substage.order,
+      name: substage.name,
+      sopCode: substage.sopCode ?? null,
+      responsableRol: substage.responsableRol ?? null,
+      responsible: substage.responsible,
+      status: SubstageStatus.PENDING,
+      progressPercent: 0,
+      isSystem: substage.isSystem ?? true,
+      isActive: substage.isActive ?? true,
+      checklistItems: (substage.checklist ?? []).map((item, checklistIndex) => ({
+        order: checklistIndex + 1,
+        label: item.label,
+        isRequired: item.isRequired ?? false,
+        isBlocker: item.isBlocker ?? false,
+        appliesWhenModalidadPago: item.appliesWhenModalidadPago ?? null,
+      })),
+    }));
+
+    if (stageConfig.name === StageType.POSTVENTA) {
+      return {
+        order: stageConfig.order,
+        name: stageConfig.name,
+        status: StageStatus.PENDING,
+        progressPercent: 0,
+        tipoObra: null,
+        plannedStartDate: null as Date | null,
+        plannedEndDate: null as Date | null,
+        plannedDurationDays: null as number | null,
+        substages,
+      };
+    }
+
+    datedIndex++;
+    const isLastDated = datedIndex === datedDefs.length - 1;
+    const stageDays = isLastDated
       ? Math.max(1, totalDays - consumedDays)
-      : Math.max(1, Math.round((totalDays * stageConfig.weight) / 100));
+      : Math.max(1, Math.round((totalDays * stageConfig.weight) / totalWeight));
     const plannedStartDate = cursor;
     const plannedEndDateForStage = addDays(plannedStartDate, Math.max(stageDays - 1, 0));
     cursor = addDays(plannedEndDateForStage, 1);
@@ -294,27 +335,10 @@ export function buildInitialStages(startDate: Date, plannedEndDate: Date, modali
       status: StageStatus.PENDING,
       progressPercent: 0,
       tipoObra: null,
-      plannedStartDate,
-      plannedEndDate: plannedEndDateForStage,
-      plannedDurationDays: stageDays,
-      substages: stageConfig.substages.map((substage) => ({
-          order: substage.order,
-          name: substage.name,
-          sopCode: substage.sopCode ?? null,
-          responsableRol: substage.responsableRol ?? null,
-          responsible: substage.responsible,
-          status: SubstageStatus.PENDING,
-          progressPercent: 0,
-          isSystem: substage.isSystem ?? true,
-          isActive: substage.isActive ?? true,
-          checklistItems: (substage.checklist ?? []).map((item, checklistIndex) => ({
-            order: checklistIndex + 1,
-            label: item.label,
-            isRequired: item.isRequired ?? false,
-            isBlocker: item.isBlocker ?? false,
-            appliesWhenModalidadPago: item.appliesWhenModalidadPago ?? null,
-          })),
-        })),
+      plannedStartDate: plannedStartDate as Date | null,
+      plannedEndDate: plannedEndDateForStage as Date | null,
+      plannedDurationDays: stageDays as number | null,
+      substages,
     };
   });
 }
@@ -444,26 +468,49 @@ export function serializeProject(project: {
   salespersonId: string | null;
   salesperson?: { id: string; name: string } | null;
   firstDateScheduledAt?: Date | null;
+  actualOnboardingEnd?: Date | null;
+  actualEngineeringEnd?: Date | null;
+  actualUteStart?: Date | null;
+  actualUteEnd?: Date | null;
   createdById: string;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
+  stages?: Array<{
+    name: StageType;
+    plannedStartDate: Date | null;
+    plannedEndDate: Date | null;
+    actualStartDate: Date | null;
+    actualEndDate: Date | null;
+  }>;
 }) {
+  const { stages, ...rest } = project;
+  // La "fecha fin del proyecto" a mostrar en la UI deriva de Habilitación UTE,
+  // NO de Postventa (que es indefinida) ni del campo Project.plannedEndDate
+  // cuando éste pudo haber quedado desincronizado.
+  const uteStage = stages?.find((s) => s.name === StageType.HABILITACION_UTE);
+  const displayedPlannedEnd = uteStage?.plannedEndDate ?? rest.plannedEndDate;
+  const displayedActualEnd =
+    uteStage?.actualEndDate ?? rest.actualUteEnd ?? rest.actualEndDate;
   return {
-    ...project,
-    capacityKwp: decimalToNumber(project.capacityKwp),
-    budgetUsd: decimalToNumber(project.budgetUsd),
-    executedUsd: decimalToNumber(project.executedUsd),
-    estimatedMwhYear: decimalToNumber(project.estimatedMwhYear),
-    co2TonsAvoided: decimalToNumber(project.co2TonsAvoided),
-    startDate: serializeDateOnly(project.startDate),
-    plannedEndDate: serializeDateOnly(project.plannedEndDate),
-    actualEndDate: serializeDateOnly(project.actualEndDate),
-    firstDateScheduledAt: project.firstDateScheduledAt ? serializeDate(project.firstDateScheduledAt) : null,
-    createdAt: serializeDate(project.createdAt),
-    updatedAt: serializeDate(project.updatedAt),
-    deletedAt: serializeDate(project.deletedAt),
-    salesperson: project.salesperson || null,
+    ...rest,
+    capacityKwp: decimalToNumber(rest.capacityKwp),
+    budgetUsd: decimalToNumber(rest.budgetUsd),
+    executedUsd: decimalToNumber(rest.executedUsd),
+    estimatedMwhYear: decimalToNumber(rest.estimatedMwhYear),
+    co2TonsAvoided: decimalToNumber(rest.co2TonsAvoided),
+    startDate: serializeDateOnly(rest.startDate),
+    plannedEndDate: serializeDateOnly(displayedPlannedEnd),
+    actualEndDate: serializeDateOnly(displayedActualEnd),
+    actualOnboardingEnd: rest.actualOnboardingEnd ? serializeDateOnly(rest.actualOnboardingEnd) : null,
+    actualEngineeringEnd: rest.actualEngineeringEnd ? serializeDateOnly(rest.actualEngineeringEnd) : null,
+    actualUteStart: rest.actualUteStart ? serializeDateOnly(rest.actualUteStart) : null,
+    actualUteEnd: rest.actualUteEnd ? serializeDateOnly(rest.actualUteEnd) : null,
+    firstDateScheduledAt: rest.firstDateScheduledAt ? serializeDate(rest.firstDateScheduledAt) : null,
+    createdAt: serializeDate(rest.createdAt),
+    updatedAt: serializeDate(rest.updatedAt),
+    deletedAt: serializeDate(rest.deletedAt),
+    salesperson: rest.salesperson || null,
   };
 }
 

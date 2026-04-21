@@ -187,6 +187,7 @@ export interface Stage {
   plannedDurationDays: number | null;
   actualDurationDays: number | null;
   delayDays: number | null;
+  actualDatesManuallyEdited?: boolean;
   responsibleName?: string | null;
   notes: string | null;
   createdAt: string;

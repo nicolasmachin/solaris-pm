@@ -10,6 +10,8 @@ export async function patchStage(
     responsibleName?: string | null;
     plannedStartDate?: string | null;
     plannedEndDate?: string | null;
+    actualStartDate?: string | null;
+    actualEndDate?: string | null;
   }
 ): Promise<Stage> {
   const { data } = await apiClient.patch<Stage>(

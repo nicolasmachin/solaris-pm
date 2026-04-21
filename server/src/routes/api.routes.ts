@@ -150,6 +150,8 @@ const stagePatchSchema = z
     notes: z.string().nullable().optional(),
     plannedStartDate: dateOnlySchema.nullable().optional(),
     plannedEndDate: dateOnlySchema.nullable().optional(),
+    actualStartDate: dateOnlySchema.nullable().optional(),
+    actualEndDate: dateOnlySchema.nullable().optional(),
   })
   .strict();
 
@@ -1454,6 +1456,26 @@ export async function registerApiRoutes(app: FastifyInstance) {
       await authorize(Module.OPERACIONES, Action.COMPLETE)(request);
     }
 
+    // POSTVENTA es indefinida: no acepta ningún cambio de fecha (plan ni real)
+    const touchesAnyDate =
+      body.plannedStartDate !== undefined ||
+      body.plannedEndDate !== undefined ||
+      body.actualStartDate !== undefined ||
+      body.actualEndDate !== undefined;
+    if (stage.name === StageType.POSTVENTA && touchesAnyDate) {
+      throw badRequest(
+        "POSTVENTA_NO_DATES",
+        "La etapa Postventa no tiene fechas asociadas por ser indefinida",
+      );
+    }
+
+    // Sólo ADMIN puede modificar fechas reales manualmente
+    const touchesActualDates =
+      body.actualStartDate !== undefined || body.actualEndDate !== undefined;
+    if (touchesActualDates && user.role !== Role.ADMIN) {
+      throw new AppError(403, "ADMIN_REQUIRED", "Solo admin puede modificar fechas reales");
+    }
+
     let stageCompletionWarning: { code: string; message: string } | null = null;
 
     const updateData: Record<string, unknown> = {};
@@ -1462,6 +1484,32 @@ export async function registerApiRoutes(app: FastifyInstance) {
     if (body.notes !== undefined) updateData.notes = body.notes;
     if (body.plannedStartDate !== undefined) updateData.plannedStartDate = body.plannedStartDate ? parseDateOnly(body.plannedStartDate) : null;
     if (body.plannedEndDate !== undefined) updateData.plannedEndDate = body.plannedEndDate ? parseDateOnly(body.plannedEndDate) : null;
+
+    // Fechas reales editadas por ADMIN
+    if (body.actualStartDate !== undefined) {
+      updateData.actualStartDate = body.actualStartDate ? parseDateOnly(body.actualStartDate) : null;
+    }
+    if (body.actualEndDate !== undefined) {
+      updateData.actualEndDate = body.actualEndDate ? parseDateOnly(body.actualEndDate) : null;
+    }
+    if (touchesActualDates) {
+      // Validar rango si ambos quedan definidos post-update
+      const nextStart =
+        body.actualStartDate !== undefined
+          ? (updateData.actualStartDate as Date | null)
+          : stage.actualStartDate;
+      const nextEnd =
+        body.actualEndDate !== undefined
+          ? (updateData.actualEndDate as Date | null)
+          : stage.actualEndDate;
+      if (nextStart && nextEnd && nextEnd.getTime() < nextStart.getTime()) {
+        throw badRequest(
+          "INVALID_DATE_RANGE",
+          "La fecha fin real no puede ser anterior al inicio",
+        );
+      }
+      updateData.actualDatesManuallyEdited = true;
+    }
 
     if (body.status && body.status !== stage.status) {
       if (body.status === StageStatus.IN_PROGRESS) {
@@ -1623,6 +1671,25 @@ export async function registerApiRoutes(app: FastifyInstance) {
       where: { id: stage.id },
       data: updateData,
     });
+
+    // Sincronizar fechas reales de Project según la etapa tocada
+    const projectSync: Prisma.ProjectUpdateInput = {};
+    if (stage.name === StageType.ONBOARDING) {
+      projectSync.actualOnboardingEnd = updatedStage.actualEndDate;
+    }
+    if (stage.name === StageType.INGENIERIA) {
+      projectSync.actualEngineeringEnd = updatedStage.actualEndDate;
+    }
+    if (stage.name === StageType.HABILITACION_UTE) {
+      projectSync.actualUteStart = updatedStage.actualStartDate;
+      projectSync.actualUteEnd = updatedStage.actualEndDate;
+    }
+    if (Object.keys(projectSync).length > 0) {
+      await prisma.project.update({
+        where: { id: params.projectId },
+        data: projectSync,
+      });
+    }
 
     const { status: _ignoredStatus, ...comparableStage } = { ...stage, ...updateData };
 
@@ -2804,6 +2871,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
           status: ProjectStatus.COMPLETED,
         },
         status: StageStatus.COMPLETED,
+        // POSTVENTA es indefinida y no participa de las métricas de etapas
+        name: { not: StageType.POSTVENTA },
       },
       orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     });
@@ -2815,7 +2884,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       grouped.set(stage.name, bucket);
     }
 
-    return (Object.values(StageType) as StageType[]).map((stageName) => {
+    return (Object.values(StageType) as StageType[])
+      .filter((stageName) => stageName !== StageType.POSTVENTA)
+      .map((stageName) => {
       const items = grouped.get(stageName) ?? [];
       const completedCount = items.length;
       const avgPlannedDays =
