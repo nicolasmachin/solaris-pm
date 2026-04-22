@@ -1,10 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { apiClient } from "../api/axios";
 import { getGoals, upsertGoal, deleteGoal } from "../api/metrics.api";
 import { getSubcategories, createSubcategory, deleteSubcategory } from "../api/finance.api";
 import { getTeams, createTeam, patchTeam, deleteTeam, type Team } from "../api/teams.api";
+import {
+  getPipelineTemplate,
+  putPipelineTemplate,
+  resetPipelineTemplate,
+  type PipelineStage,
+} from "../api/pipelineTemplate.api";
 import type { GoalArea, GoalMetric, GoalPeriod, GoalData } from "../types/api.types";
 import type { CategoriaPrincipal } from "../types/finance.types";
 import { CATEGORIA_LABEL } from "../types/finance.types";
@@ -1277,7 +1283,1087 @@ function ConfirmTeamDelete({
   );
 }
 
-type Tab = "usuarios" | "permisos" | "configuracion" | "objetivos" | "finanzas" | "equipos";
+// ─── Tab: Pipeline template (etapas + subetapas + checklist precargados) ─────
+
+const STAGE_LABELS_PIPELINE: Record<string, string> = {
+  ONBOARDING: "Onboarding",
+  INGENIERIA: "Ingeniería",
+  OPERACIONES: "Operaciones",
+  HABILITACION_UTE: "Habilitación UTE",
+  POSTVENTA: "Postventa",
+};
+
+// Lista fija de roles de negocio usada en el select de "Responsable" de subetapa.
+// Si el valor almacenado no está en la lista, se muestra como opción adicional
+// para no perder datos legacy.
+const RESPONSIBLE_OPTIONS = [
+  "Asesor Comercial",
+  "Gerente de Operaciones",
+  "Técnico de Relevamiento / Gerente de Operaciones",
+  "Proyectista",
+  "Ingeniería",
+  "Equipo Postventa",
+];
+
+const MODALIDAD_OPTIONS: Array<{ value: "" | "CONTADO" | "FINANCIADO" | "DIRECTO_50_50"; label: string }> = [
+  { value: "", label: "Todas las modalidades" },
+  { value: "CONTADO", label: "Contado" },
+  { value: "FINANCIADO", label: "Financiado" },
+  { value: "DIRECTO_50_50", label: "Directo 50/50" },
+];
+
+const FIXED_STAGE_ORDER: PipelineStage["name"][] = [
+  "ONBOARDING",
+  "INGENIERIA",
+  "OPERACIONES",
+  "HABILITACION_UTE",
+  "POSTVENTA",
+];
+
+// Tipos locales con IDs estables para React keys (se strippean antes de guardar)
+let _localIdCounter = 1;
+function genLocalId(): string {
+  return `l${_localIdCounter++}`;
+}
+
+type DraftChecklistItem = {
+  _localId: string;
+  label: string;
+  isRequired?: boolean;
+  isBlocker?: boolean;
+  appliesWhenModalidadPago?: "CONTADO" | "FINANCIADO" | "DIRECTO_50_50" | null;
+};
+type DraftSubstage = {
+  _localId: string;
+  order: number;
+  name: string;
+  sopCode?: string | null;
+  responsableRol?: string | null;
+  responsible: string;
+  isSystem?: boolean;
+  isActive?: boolean;
+  operationVariant?: "PROPIA" | "TERCERIZADA" | null;
+  checklist: DraftChecklistItem[];
+};
+type DraftStage = {
+  order: number;
+  name: PipelineStage["name"];
+  label: string; // hidratado con fallback desde STAGE_LABELS_PIPELINE
+  weight: number;
+  substages: DraftSubstage[];
+};
+
+function hydrate(stages: PipelineStage[]): DraftStage[] {
+  // Respeta el orden fijo por slug, no el order server (por las dudas)
+  const byName = new Map(stages.map((s) => [s.name, s]));
+  return FIXED_STAGE_ORDER.map((name, idx) => {
+    const s = byName.get(name);
+    if (!s) {
+      return {
+        order: idx + 1,
+        name,
+        label: STAGE_LABELS_PIPELINE[name] ?? name,
+        weight: 0,
+        substages: [],
+      };
+    }
+    return {
+      order: idx + 1,
+      name: s.name,
+      label: (s.label ?? "").trim() || STAGE_LABELS_PIPELINE[s.name] || s.name,
+      weight: s.weight,
+      substages: s.substages.map((sub) => ({
+        _localId: genLocalId(),
+        order: sub.order,
+        name: sub.name,
+        sopCode: sub.sopCode ?? null,
+        responsableRol: sub.responsableRol ?? null,
+        responsible: sub.responsible,
+        isSystem: sub.isSystem,
+        isActive: sub.isActive,
+        operationVariant: sub.operationVariant ?? null,
+        checklist: (sub.checklist ?? []).map((item) => ({
+          _localId: genLocalId(),
+          label: item.label,
+          isRequired: item.isRequired,
+          isBlocker: item.isBlocker,
+          appliesWhenModalidadPago: item.appliesWhenModalidadPago ?? null,
+        })),
+      })),
+    };
+  });
+}
+
+function dehydrate(stages: DraftStage[]): PipelineStage[] {
+  return stages.map((s, stageIdx) => ({
+    order: stageIdx + 1,
+    name: s.name,
+    label: s.label.trim() || STAGE_LABELS_PIPELINE[s.name] || s.name,
+    weight: s.weight,
+    substages: s.substages.map((sub, subIdx) => ({
+      order: subIdx + 1,
+      name: sub.name.trim(),
+      sopCode: sub.sopCode ?? null,
+      responsableRol: sub.responsableRol ?? null,
+      responsible: sub.responsible,
+      isSystem: sub.isSystem,
+      isActive: sub.isActive,
+      operationVariant: sub.operationVariant ?? null,
+      checklist: sub.checklist.map((item) => ({
+        label: item.label.trim(),
+        isRequired: item.isRequired,
+        isBlocker: item.isBlocker,
+        appliesWhenModalidadPago: item.appliesWhenModalidadPago ?? null,
+      })),
+    })),
+  }));
+}
+
+// Comparación estable para detectar cambios por stage/substage
+function serializeForDiff(stages: PipelineStage[]): string {
+  return JSON.stringify(stages);
+}
+
+function TabPipeline() {
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-pipeline-template"],
+    queryFn: getPipelineTemplate,
+  });
+
+  const [draft, setDraft] = useState<DraftStage[] | null>(null);
+  const [originalSnapshot, setOriginalSnapshot] = useState<string>("");
+  const [expandedStages, setExpandedStages] = useState<Set<string>>(new Set(["ONBOARDING"]));
+  const [expandedChecklist, setExpandedChecklist] = useState<Set<string>>(new Set());
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [confirmDeleteSubstage, setConfirmDeleteSubstage] = useState<
+    | { stageIdx: number; substageIdx: number; name: string; checklistCount: number }
+    | null
+  >(null);
+
+  // Hidratar draft cuando llegan datos del server, pero solo si el usuario no
+  // tiene cambios pendientes (para no pisar su edición en caso de refetch).
+  const currentSnapshot = draft ? serializeForDiff(dehydrate(draft)) : "";
+  const isDirty = draft !== null && currentSnapshot !== originalSnapshot;
+
+  useEffect(() => {
+    if (!data) return;
+    if (draft === null || !isDirty) {
+      const hydrated = hydrate(data.stages);
+      setDraft(hydrated);
+      setOriginalSnapshot(serializeForDiff(dehydrate(hydrated)));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
+
+  const saveMut = useMutation({
+    mutationFn: (stages: PipelineStage[]) => putPipelineTemplate(stages),
+    onSuccess: () => {
+      toast.success("Template guardado correctamente");
+      qc.invalidateQueries({ queryKey: ["admin-pipeline-template"] });
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? "No se pudo guardar el template");
+    },
+  });
+
+  const resetMut = useMutation({
+    mutationFn: () => resetPipelineTemplate(),
+    onSuccess: () => {
+      toast.success("Template restaurado al default");
+      qc.invalidateQueries({ queryKey: ["admin-pipeline-template"] });
+      setConfirmReset(false);
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? "No se pudo restaurar");
+    },
+  });
+
+  function toggleStageExpanded(name: string) {
+    setExpandedStages((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  }
+  function toggleChecklistEditor(key: string) {
+    setExpandedChecklist((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  function discard() {
+    if (data) {
+      const hydrated = hydrate(data.stages);
+      setDraft(hydrated);
+      setOriginalSnapshot(serializeForDiff(dehydrate(hydrated)));
+    }
+    setConfirmDiscard(false);
+  }
+
+  function save() {
+    if (!draft) return;
+    // Validación cliente antes de enviar
+    for (const stage of draft) {
+      if (!stage.label.trim()) {
+        toast.error(`La etapa ${STAGE_LABELS_PIPELINE[stage.name]} necesita un nombre visible`);
+        return;
+      }
+      if (!Number.isInteger(stage.weight) || stage.weight < 0) {
+        toast.error(`El weight de ${STAGE_LABELS_PIPELINE[stage.name]} debe ser entero ≥ 0`);
+        return;
+      }
+      for (const sub of stage.substages) {
+        if (!sub.name.trim()) {
+          toast.error("Cada subetapa necesita un nombre");
+          return;
+        }
+        if (!sub.responsible.trim()) {
+          toast.error("Cada subetapa necesita un responsable");
+          return;
+        }
+        for (const item of sub.checklist) {
+          if (!item.label.trim()) {
+            toast.error("Cada ítem de checklist necesita texto");
+            return;
+          }
+        }
+      }
+    }
+    saveMut.mutate(dehydrate(draft));
+  }
+
+  // Mutators del draft
+  function updateStage(stageIdx: number, patch: Partial<DraftStage>) {
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const next = [...prev];
+      next[stageIdx] = { ...next[stageIdx]!, ...patch };
+      return next;
+    });
+  }
+  function updateSubstage(stageIdx: number, subIdx: number, patch: Partial<DraftSubstage>) {
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const next = [...prev];
+      const stage = { ...next[stageIdx]! };
+      const subs = [...stage.substages];
+      subs[subIdx] = { ...subs[subIdx]!, ...patch };
+      stage.substages = subs;
+      next[stageIdx] = stage;
+      return next;
+    });
+  }
+  function addSubstage(stageIdx: number) {
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const next = [...prev];
+      const stage = { ...next[stageIdx]! };
+      stage.substages = [
+        ...stage.substages,
+        {
+          _localId: genLocalId(),
+          order: stage.substages.length + 1,
+          name: "Nueva subetapa",
+          responsible: RESPONSIBLE_OPTIONS[0]!,
+          sopCode: null,
+          responsableRol: null,
+          isSystem: false,
+          isActive: true,
+          operationVariant: null,
+          checklist: [],
+        },
+      ];
+      next[stageIdx] = stage;
+      return next;
+    });
+  }
+  function removeSubstage(stageIdx: number, subIdx: number) {
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const next = [...prev];
+      const stage = { ...next[stageIdx]! };
+      stage.substages = stage.substages.filter((_, i) => i !== subIdx);
+      next[stageIdx] = stage;
+      return next;
+    });
+  }
+  function moveSubstage(stageIdx: number, subIdx: number, direction: -1 | 1) {
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const target = subIdx + direction;
+      const stage = prev[stageIdx]!;
+      if (target < 0 || target >= stage.substages.length) return prev;
+      const next = [...prev];
+      const subs = [...stage.substages];
+      [subs[subIdx], subs[target]] = [subs[target]!, subs[subIdx]!];
+      next[stageIdx] = { ...stage, substages: subs };
+      return next;
+    });
+  }
+  function updateChecklistItem(
+    stageIdx: number,
+    subIdx: number,
+    itemIdx: number,
+    patch: Partial<DraftChecklistItem>,
+  ) {
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const next = [...prev];
+      const stage = { ...next[stageIdx]! };
+      const subs = [...stage.substages];
+      const sub = { ...subs[subIdx]! };
+      const checklist = [...sub.checklist];
+      checklist[itemIdx] = { ...checklist[itemIdx]!, ...patch };
+      sub.checklist = checklist;
+      subs[subIdx] = sub;
+      stage.substages = subs;
+      next[stageIdx] = stage;
+      return next;
+    });
+  }
+  function addChecklistItem(stageIdx: number, subIdx: number) {
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const next = [...prev];
+      const stage = { ...next[stageIdx]! };
+      const subs = [...stage.substages];
+      const sub = { ...subs[subIdx]! };
+      sub.checklist = [
+        ...sub.checklist,
+        { _localId: genLocalId(), label: "", isRequired: false, isBlocker: false, appliesWhenModalidadPago: null },
+      ];
+      subs[subIdx] = sub;
+      stage.substages = subs;
+      next[stageIdx] = stage;
+      return next;
+    });
+  }
+  function removeChecklistItem(stageIdx: number, subIdx: number, itemIdx: number) {
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const next = [...prev];
+      const stage = { ...next[stageIdx]! };
+      const subs = [...stage.substages];
+      const sub = { ...subs[subIdx]! };
+      sub.checklist = sub.checklist.filter((_, i) => i !== itemIdx);
+      subs[subIdx] = sub;
+      stage.substages = subs;
+      next[stageIdx] = stage;
+      return next;
+    });
+  }
+  function moveChecklistItem(stageIdx: number, subIdx: number, itemIdx: number, direction: -1 | 1) {
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const stage = prev[stageIdx]!;
+      const sub = stage.substages[subIdx]!;
+      const target = itemIdx + direction;
+      if (target < 0 || target >= sub.checklist.length) return prev;
+      const next = [...prev];
+      const subs = [...stage.substages];
+      const nextSub = { ...sub };
+      const checklist = [...nextSub.checklist];
+      [checklist[itemIdx], checklist[target]] = [checklist[target]!, checklist[itemIdx]!];
+      nextSub.checklist = checklist;
+      subs[subIdx] = nextSub;
+      next[stageIdx] = { ...stage, substages: subs };
+      return next;
+    });
+  }
+
+  if (isLoading || !data || !draft) {
+    return <p style={{ fontSize: 12, color: "var(--color-text-muted)" }}>Cargando template…</p>;
+  }
+
+  // Computar qué etapas están "modificadas" para mostrar badge
+  const origStages = hydrate(data.stages);
+  const stageDirtyFlags = draft.map((stage, idx) => {
+    const orig = origStages[idx];
+    return orig
+      ? serializeForDiff([dehydrate([stage])[0]!]) !== serializeForDiff([dehydrate([orig])[0]!])
+      : true;
+  });
+
+  return (
+    <div>
+      <div
+        style={{
+          display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+          marginBottom: 16, gap: 12,
+          position: "sticky", top: 0, background: "var(--color-bg-app)", zIndex: 5, paddingBottom: 8,
+        }}
+      >
+        <div>
+          <p style={{ fontSize: 13, color: "var(--color-text-primary)", marginBottom: 4, fontWeight: 600 }}>
+            Etapas precargadas al crear un nuevo proyecto
+          </p>
+          <p style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
+            Los cambios no afectan proyectos existentes, sólo los nuevos.
+            {data.isCustom ? " El template está personalizado." : " Usando el template default del sistema."}
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "center" }}>
+          {isDirty && (
+            <span style={{ fontSize: 10, color: "var(--color-warning-text)", fontFamily: "var(--font-mono)" }}>
+              Hay cambios sin guardar
+            </span>
+          )}
+          {data.isCustom && (
+            <button
+              onClick={() => setConfirmReset(true)}
+              disabled={isDirty}
+              title={isDirty ? "Guardá o descartá los cambios primero" : undefined}
+              style={{
+                background: "none", border: "1px solid var(--color-border)",
+                color: "var(--color-text-secondary)", padding: "7px 14px", borderRadius: 6,
+                fontSize: 12, cursor: isDirty ? "not-allowed" : "pointer",
+                opacity: isDirty ? 0.4 : 1,
+              }}
+            >
+              Volver al default
+            </button>
+          )}
+          <button
+            onClick={() => (isDirty ? setConfirmDiscard(true) : discard())}
+            disabled={!isDirty}
+            style={{
+              background: "none", border: "1px solid var(--color-border)",
+              color: "var(--color-text-secondary)", padding: "7px 14px", borderRadius: 6,
+              fontSize: 12, cursor: isDirty ? "pointer" : "not-allowed",
+              opacity: isDirty ? 1 : 0.4,
+            }}
+          >
+            Descartar cambios
+          </button>
+          <button
+            onClick={save}
+            disabled={!isDirty || saveMut.isPending}
+            style={{
+              background: "var(--color-accent)", color: "var(--color-bg-app)",
+              padding: "7px 14px", border: "none", borderRadius: 6,
+              fontSize: 12, fontWeight: 600,
+              cursor: isDirty && !saveMut.isPending ? "pointer" : "not-allowed",
+              opacity: !isDirty || saveMut.isPending ? 0.5 : 1,
+            }}
+          >
+            {saveMut.isPending ? "Guardando…" : "Guardar template"}
+          </button>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {draft.map((stage, stageIdx) => (
+          <StageCard
+            key={stage.name}
+            stage={stage}
+            stageIdx={stageIdx}
+            isModified={stageDirtyFlags[stageIdx] ?? false}
+            expanded={expandedStages.has(stage.name)}
+            expandedChecklist={expandedChecklist}
+            onToggle={() => toggleStageExpanded(stage.name)}
+            onToggleChecklist={toggleChecklistEditor}
+            onUpdateStage={(patch) => updateStage(stageIdx, patch)}
+            onAddSubstage={() => addSubstage(stageIdx)}
+            onUpdateSubstage={(subIdx, patch) => updateSubstage(stageIdx, subIdx, patch)}
+            onRequestDeleteSubstage={(subIdx) => {
+              const sub = stage.substages[subIdx]!;
+              setConfirmDeleteSubstage({
+                stageIdx,
+                substageIdx: subIdx,
+                name: sub.name,
+                checklistCount: sub.checklist.length,
+              });
+            }}
+            onMoveSubstage={(subIdx, dir) => moveSubstage(stageIdx, subIdx, dir)}
+            onUpdateChecklistItem={(subIdx, itemIdx, patch) =>
+              updateChecklistItem(stageIdx, subIdx, itemIdx, patch)
+            }
+            onAddChecklistItem={(subIdx) => addChecklistItem(stageIdx, subIdx)}
+            onRemoveChecklistItem={(subIdx, itemIdx) =>
+              removeChecklistItem(stageIdx, subIdx, itemIdx)
+            }
+            onMoveChecklistItem={(subIdx, itemIdx, dir) =>
+              moveChecklistItem(stageIdx, subIdx, itemIdx, dir)
+            }
+          />
+        ))}
+      </div>
+
+      {confirmDiscard && (
+        <ConfirmDialog
+          title="Descartar cambios"
+          message="Perderás todos los cambios que no guardaste. ¿Continuar?"
+          confirmLabel="Sí, descartar"
+          danger
+          onCancel={() => setConfirmDiscard(false)}
+          onConfirm={discard}
+        />
+      )}
+
+      {confirmDeleteSubstage && (
+        <ConfirmDialog
+          title="Eliminar subetapa"
+          message={
+            confirmDeleteSubstage.checklistCount > 0
+              ? `"${confirmDeleteSubstage.name}" tiene ${confirmDeleteSubstage.checklistCount} ítem(s) de checklist. ¿Eliminar de todos modos?`
+              : `¿Eliminar "${confirmDeleteSubstage.name}"?`
+          }
+          confirmLabel="Sí, eliminar"
+          danger
+          onCancel={() => setConfirmDeleteSubstage(null)}
+          onConfirm={() => {
+            removeSubstage(confirmDeleteSubstage.stageIdx, confirmDeleteSubstage.substageIdx);
+            setConfirmDeleteSubstage(null);
+          }}
+        />
+      )}
+
+      {confirmReset && (
+        <ConfirmDialog
+          title="Restaurar template"
+          message="Esto borra el template personalizado y vuelve al template por defecto del código. Los proyectos ya creados no se ven afectados."
+          confirmLabel={resetMut.isPending ? "Restaurando…" : "Sí, restaurar"}
+          confirmDisabled={resetMut.isPending}
+          danger
+          onCancel={() => setConfirmReset(false)}
+          onConfirm={() => resetMut.mutate()}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Sub-componentes de la UI del pipeline ───────────────────────────────────
+
+function StageCard({
+  stage,
+  stageIdx,
+  isModified,
+  expanded,
+  expandedChecklist,
+  onToggle,
+  onToggleChecklist,
+  onUpdateStage,
+  onAddSubstage,
+  onUpdateSubstage,
+  onRequestDeleteSubstage,
+  onMoveSubstage,
+  onUpdateChecklistItem,
+  onAddChecklistItem,
+  onRemoveChecklistItem,
+  onMoveChecklistItem,
+}: {
+  stage: DraftStage;
+  stageIdx: number;
+  isModified: boolean;
+  expanded: boolean;
+  expandedChecklist: Set<string>;
+  onToggle: () => void;
+  onToggleChecklist: (key: string) => void;
+  onUpdateStage: (patch: Partial<DraftStage>) => void;
+  onAddSubstage: () => void;
+  onUpdateSubstage: (subIdx: number, patch: Partial<DraftSubstage>) => void;
+  onRequestDeleteSubstage: (subIdx: number) => void;
+  onMoveSubstage: (subIdx: number, direction: -1 | 1) => void;
+  onUpdateChecklistItem: (subIdx: number, itemIdx: number, patch: Partial<DraftChecklistItem>) => void;
+  onAddChecklistItem: (subIdx: number) => void;
+  onRemoveChecklistItem: (subIdx: number, itemIdx: number) => void;
+  onMoveChecklistItem: (subIdx: number, itemIdx: number, direction: -1 | 1) => void;
+}) {
+  void stageIdx;
+  return (
+    <div
+      style={{
+        border: isModified ? "1px solid var(--color-warning-text)" : "1px solid var(--color-border)",
+        borderRadius: 8,
+        background: "var(--color-bg-card)",
+      }}
+    >
+      <button
+        onClick={onToggle}
+        style={{
+          width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
+          padding: "10px 14px", background: "none", border: "none", cursor: "pointer",
+          color: "var(--color-text-primary)", fontSize: 13, fontWeight: 600,
+        }}
+      >
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {expanded ? "▾" : "▸"} {stage.label || STAGE_LABELS_PIPELINE[stage.name]}
+          <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--color-text-muted)", fontWeight: 400 }}>
+            {stage.name}
+          </span>
+          {isModified && <Badge label="modificado" variant="warning" />}
+        </span>
+        <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--color-text-muted)", fontWeight: 400 }}>
+          weight {stage.weight} · {stage.substages.length} subetapa{stage.substages.length === 1 ? "" : "s"}
+        </span>
+      </button>
+      {expanded && (
+        <div style={{ borderTop: "1px solid var(--color-border)", padding: "12px 14px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 120px", gap: 10, marginBottom: 14 }}>
+            <div>
+              <label style={{ ...labelStyle, marginBottom: 4 }}>Nombre visible</label>
+              <input
+                type="text"
+                value={stage.label}
+                onChange={(e) => onUpdateStage({ label: e.target.value })}
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label style={{ ...labelStyle, marginBottom: 4 }}>Weight</label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={1}
+                value={stage.weight}
+                onChange={(e) => onUpdateStage({ weight: parseInt(e.target.value, 10) || 0 })}
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
+          <p style={{ ...labelStyle, marginBottom: 6 }}>Subetapas</p>
+          {stage.substages.length === 0 ? (
+            <p style={{ fontSize: 11, color: "var(--color-text-muted)", fontStyle: "italic", marginBottom: 8 }}>
+              Esta etapa no tiene subetapas todavía.
+            </p>
+          ) : (
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+              {stage.substages.map((sub, subIdx) => {
+                const key = `${stage.name}-${sub._localId}`;
+                const checklistOpen = expandedChecklist.has(key);
+                return (
+                  <SubstageRow
+                    key={sub._localId}
+                    substage={sub}
+                    subIdx={subIdx}
+                    isFirst={subIdx === 0}
+                    isLast={subIdx === stage.substages.length - 1}
+                    checklistOpen={checklistOpen}
+                    onToggleChecklist={() => onToggleChecklist(key)}
+                    onUpdate={(patch) => onUpdateSubstage(subIdx, patch)}
+                    onDelete={() => onRequestDeleteSubstage(subIdx)}
+                    onMove={(dir) => onMoveSubstage(subIdx, dir)}
+                    onUpdateItem={(itemIdx, patch) => onUpdateChecklistItem(subIdx, itemIdx, patch)}
+                    onAddItem={() => onAddChecklistItem(subIdx)}
+                    onRemoveItem={(itemIdx) => onRemoveChecklistItem(subIdx, itemIdx)}
+                    onMoveItem={(itemIdx, dir) => onMoveChecklistItem(subIdx, itemIdx, dir)}
+                  />
+                );
+              })}
+            </ul>
+          )}
+          <button
+            type="button"
+            onClick={onAddSubstage}
+            style={{
+              marginTop: 10, background: "none",
+              border: "1px dashed var(--color-border)", color: "var(--color-accent)",
+              padding: "6px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer",
+            }}
+          >
+            + Agregar subetapa
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SubstageRow({
+  substage,
+  subIdx,
+  isFirst,
+  isLast,
+  checklistOpen,
+  onToggleChecklist,
+  onUpdate,
+  onDelete,
+  onMove,
+  onUpdateItem,
+  onAddItem,
+  onRemoveItem,
+  onMoveItem,
+}: {
+  substage: DraftSubstage;
+  subIdx: number;
+  isFirst: boolean;
+  isLast: boolean;
+  checklistOpen: boolean;
+  onToggleChecklist: () => void;
+  onUpdate: (patch: Partial<DraftSubstage>) => void;
+  onDelete: () => void;
+  onMove: (direction: -1 | 1) => void;
+  onUpdateItem: (itemIdx: number, patch: Partial<DraftChecklistItem>) => void;
+  onAddItem: () => void;
+  onRemoveItem: (itemIdx: number) => void;
+  onMoveItem: (itemIdx: number, direction: -1 | 1) => void;
+}) {
+  void subIdx;
+  const customResponsible =
+    substage.responsible && !RESPONSIBLE_OPTIONS.includes(substage.responsible);
+  const checklistCount = substage.checklist.length;
+  return (
+    <li style={{ border: "1px solid var(--color-border)", borderRadius: 6, background: "var(--color-bg-app)" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "auto 1fr 220px auto auto",
+          gap: 8, alignItems: "center", padding: "8px 10px",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <IconButton
+            title="Mover arriba"
+            disabled={isFirst}
+            onClick={() => onMove(-1)}
+          >
+            ▲
+          </IconButton>
+          <IconButton
+            title="Mover abajo"
+            disabled={isLast}
+            onClick={() => onMove(1)}
+          >
+            ▼
+          </IconButton>
+        </div>
+        <input
+          type="text"
+          value={substage.name}
+          onChange={(e) => onUpdate({ name: e.target.value })}
+          placeholder="Nombre de la subetapa"
+          style={{ ...inputStyle, fontSize: 12 }}
+        />
+        <select
+          value={substage.responsible}
+          onChange={(e) => onUpdate({ responsible: e.target.value })}
+          style={{ ...inputStyle, fontSize: 12 }}
+        >
+          {customResponsible && (
+            <option value={substage.responsible}>{substage.responsible} (custom)</option>
+          )}
+          {RESPONSIBLE_OPTIONS.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={onToggleChecklist}
+          title={checklistOpen ? "Cerrar checklist" : "Editar checklist"}
+          style={{
+            background: "none", border: "1px solid var(--color-border)",
+            color: "var(--color-text-secondary)", padding: "5px 10px",
+            borderRadius: 4, fontSize: 11, cursor: "pointer",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {checklistOpen ? "▾" : "▸"} {checklistCount} check{checklistCount === 1 ? "" : "s"}
+        </button>
+        <IconButton title="Eliminar subetapa" danger onClick={onDelete}>
+          🗑
+        </IconButton>
+      </div>
+      {checklistOpen && (
+        <ChecklistEditor
+          items={substage.checklist}
+          onUpdateItem={onUpdateItem}
+          onAddItem={onAddItem}
+          onRemoveItem={onRemoveItem}
+          onMoveItem={onMoveItem}
+        />
+      )}
+    </li>
+  );
+}
+
+function ChecklistEditor({
+  items,
+  onUpdateItem,
+  onAddItem,
+  onRemoveItem,
+  onMoveItem,
+}: {
+  items: DraftChecklistItem[];
+  onUpdateItem: (itemIdx: number, patch: Partial<DraftChecklistItem>) => void;
+  onAddItem: () => void;
+  onRemoveItem: (itemIdx: number) => void;
+  onMoveItem: (itemIdx: number, direction: -1 | 1) => void;
+}) {
+  const [openAdvanced, setOpenAdvanced] = useState<Set<string>>(new Set());
+
+  function toggleAdvanced(id: string) {
+    setOpenAdvanced((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  return (
+    <div style={{ borderTop: "1px dashed var(--color-border)", padding: "8px 10px 10px", background: "rgba(0,0,0,0.12)" }}>
+      {items.length === 0 && (
+        <p style={{ fontSize: 10, color: "var(--color-text-muted)", fontStyle: "italic", marginBottom: 6 }}>
+          Sin ítems de checklist todavía.
+        </p>
+      )}
+      <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+        {items.map((item, itemIdx) => {
+          const advancedOpen = openAdvanced.has(item._localId);
+          return (
+            <li key={item._localId} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "auto 1fr auto auto auto",
+                  gap: 6, alignItems: "center",
+                }}
+              >
+                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <IconButton
+                    title="Mover arriba"
+                    disabled={itemIdx === 0}
+                    onClick={() => onMoveItem(itemIdx, -1)}
+                    small
+                  >
+                    ▲
+                  </IconButton>
+                  <IconButton
+                    title="Mover abajo"
+                    disabled={itemIdx === items.length - 1}
+                    onClick={() => onMoveItem(itemIdx, 1)}
+                    small
+                  >
+                    ▼
+                  </IconButton>
+                </div>
+                <input
+                  type="text"
+                  value={item.label}
+                  onChange={(e) => onUpdateItem(itemIdx, { label: e.target.value })}
+                  placeholder="Descripción del ítem"
+                  style={{ ...inputStyle, fontSize: 11, padding: "5px 8px" }}
+                />
+                <label
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 4,
+                    fontSize: 10, color: "var(--color-text-secondary)", cursor: "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={item.isRequired ?? false}
+                    onChange={(e) => onUpdateItem(itemIdx, { isRequired: e.target.checked })}
+                  />
+                  Obligatorio
+                </label>
+                <IconButton
+                  title={advancedOpen ? "Ocultar avanzado" : "Opciones avanzadas"}
+                  onClick={() => toggleAdvanced(item._localId)}
+                  small
+                >
+                  ⋯
+                </IconButton>
+                <IconButton
+                  title="Eliminar ítem"
+                  danger
+                  onClick={() => onRemoveItem(itemIdx)}
+                  small
+                >
+                  🗑
+                </IconButton>
+              </div>
+              {advancedOpen && (
+                <div
+                  style={{
+                    marginLeft: 32, padding: 8, borderLeft: "2px solid var(--color-border)",
+                    display: "flex", flexDirection: "column", gap: 6,
+                  }}
+                >
+                  <label
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      fontSize: 10, color: "var(--color-text-secondary)", cursor: "pointer",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={item.isBlocker ?? false}
+                      onChange={(e) => onUpdateItem(itemIdx, { isBlocker: e.target.checked })}
+                    />
+                    Bloquea el cierre de la etapa si no está completo
+                  </label>
+                  <div>
+                    <label style={{ fontSize: 10, color: "var(--color-text-muted)", display: "block", marginBottom: 2 }}>
+                      Sólo aplica si la modalidad de pago es:
+                    </label>
+                    <select
+                      value={item.appliesWhenModalidadPago ?? ""}
+                      onChange={(e) =>
+                        onUpdateItem(itemIdx, {
+                          appliesWhenModalidadPago:
+                            (e.target.value as DraftChecklistItem["appliesWhenModalidadPago"]) || null,
+                        })
+                      }
+                      style={{ ...inputStyle, fontSize: 11, padding: "4px 8px", width: 220 }}
+                    >
+                      {MODALIDAD_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      <button
+        type="button"
+        onClick={onAddItem}
+        style={{
+          marginTop: 8, background: "none",
+          border: "1px dashed var(--color-border)", color: "var(--color-accent)",
+          padding: "4px 10px", borderRadius: 4, fontSize: 10, cursor: "pointer",
+        }}
+      >
+        + Agregar ítem
+      </button>
+    </div>
+  );
+}
+
+function IconButton({
+  children,
+  title,
+  onClick,
+  disabled,
+  danger,
+  small,
+}: {
+  children: React.ReactNode;
+  title: string;
+  onClick: () => void;
+  disabled?: boolean;
+  danger?: boolean;
+  small?: boolean;
+}) {
+  const size = small ? 18 : 22;
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        width: size, height: size,
+        background: "none",
+        border: "1px solid var(--color-border)",
+        color: danger ? "var(--color-danger-text)" : "var(--color-text-muted)",
+        borderRadius: 4,
+        fontSize: small ? 9 : 10,
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.35 : 1,
+        padding: 0,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Badge({ label, variant }: { label: string; variant: "neutral" | "danger" | "info" | "warning" }) {
+  const styles: Record<string, { bg: string; color: string }> = {
+    neutral: { bg: "var(--color-bg-card-hover)", color: "var(--color-text-muted)" },
+    danger: { bg: "var(--color-danger-bg)", color: "var(--color-danger-text)" },
+    info: { bg: "var(--color-info-bg)", color: "var(--color-info-text)" },
+    warning: { bg: "var(--color-warning-bg)", color: "var(--color-warning-text)" },
+  };
+  const s = styles[variant];
+  return (
+    <span
+      style={{
+        background: s.bg, color: s.color,
+        padding: "1px 6px", borderRadius: 3,
+        fontSize: 9, fontFamily: "var(--font-mono)",
+        fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em",
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+function ConfirmDialog({
+  title,
+  message,
+  confirmLabel,
+  confirmDisabled,
+  danger,
+  onCancel,
+  onConfirm,
+}: {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  confirmDisabled?: boolean;
+  danger?: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-black/60" onClick={onCancel} />
+      <div className="relative w-full max-w-sm bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl shadow-2xl p-5 z-10">
+        <h2 className="font-display font-bold text-sm text-[var(--color-text-primary)] mb-2">{title}</h2>
+        <p className="text-xs text-[var(--color-text-secondary)] mb-4">{message}</p>
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            style={{ background: "none", border: "1px solid var(--color-border)", color: "var(--color-text-secondary)", padding: "7px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer" }}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={confirmDisabled}
+            style={{
+              background: danger ? "var(--color-danger-bg)" : "var(--color-accent)",
+              color: danger ? "var(--color-danger-text)" : "var(--color-bg-app)",
+              padding: "7px 14px", border: "none", borderRadius: 6,
+              fontSize: 12, fontWeight: 600,
+              cursor: confirmDisabled ? "not-allowed" : "pointer",
+              opacity: confirmDisabled ? 0.5 : 1,
+            }}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type Tab = "usuarios" | "permisos" | "configuracion" | "objetivos" | "finanzas" | "equipos" | "pipeline";
 
 export function Admin() {
   const [activeTab, setActiveTab] = useState<Tab>("usuarios");
@@ -1285,6 +2371,7 @@ export function Admin() {
   const tabs: { id: Tab; label: string }[] = [
     { id: "usuarios", label: "Usuarios" },
     { id: "equipos", label: "Equipos instaladores" },
+    { id: "pipeline", label: "Pipeline default" },
     { id: "permisos", label: "Permisos" },
     { id: "configuracion", label: "Configuración del sistema" },
     { id: "objetivos", label: "Objetivos" },
@@ -1323,6 +2410,7 @@ export function Admin() {
 
       {activeTab === "usuarios" && <TabUsuarios />}
       {activeTab === "equipos" && <TabEquipos />}
+      {activeTab === "pipeline" && <TabPipeline />}
       {activeTab === "permisos" && <TabPermisos />}
       {activeTab === "configuracion" && <TabConfiguracion />}
       {activeTab === "objetivos" && <TabObjetivos />}

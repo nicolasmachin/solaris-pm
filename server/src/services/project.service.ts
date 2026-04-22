@@ -11,7 +11,7 @@ import {
 } from "@prisma/client";
 
 import { prisma } from "../lib/prisma.js";
-import { PIPELINE_DEFINITIONS, getStageLabel } from "./pipeline-definitions.js";
+import { PIPELINE_DEFINITIONS, getActivePipelineTemplate, getStageLabel } from "./pipeline-definitions.js";
 import { addDays, diffInDays, startOfUtcDay, todayUtc } from "../utils/dates.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../utils/serialization.js";
 
@@ -273,19 +273,25 @@ export async function generateProjectCode() {
   return `${prefix}${nextSequence}`;
 }
 
-export function buildInitialStages(startDate: Date, plannedEndDate: Date, modalidadPago?: ModalidadPago | null) {
+export function buildInitialStages(
+  startDate: Date,
+  plannedEndDate: Date,
+  modalidadPago?: ModalidadPago | null,
+  template?: typeof PIPELINE_DEFINITIONS,
+) {
+  const activeTemplate = template ?? PIPELINE_DEFINITIONS;
   const totalDays = Math.max(1, diffInDays(startDate, plannedEndDate) + 1);
   // POSTVENTA es indefinida: no tiene fechas y no consume tiempo del cronograma.
   // Los días totales se distribuyen sólo entre las etapas "datadas", usando los
   // weights relativos entre ellas.
-  const datedDefs = PIPELINE_DEFINITIONS.filter((s) => s.name !== StageType.POSTVENTA);
+  const datedDefs = activeTemplate.filter((s) => s.name !== StageType.POSTVENTA);
   const totalWeight = datedDefs.reduce((sum, s) => sum + s.weight, 0);
 
   let cursor = startOfUtcDay(startDate);
   let consumedDays = 0;
   let datedIndex = -1;
 
-  return PIPELINE_DEFINITIONS.map((stageConfig) => {
+  return activeTemplate.map((stageConfig) => {
     const substages = stageConfig.substages.map((substage) => ({
       order: substage.order,
       name: substage.name,
@@ -349,7 +355,9 @@ export async function createInitialPipeline(
   plannedEndDate: Date,
   modalidadPago?: ModalidadPago | null,
 ) {
-  const stageBlueprints = buildInitialStages(startDate, plannedEndDate, modalidadPago);
+  // Usar template activo (del setting si existe, si no fallback al const)
+  const template = await getActivePipelineTemplate();
+  const stageBlueprints = buildInitialStages(startDate, plannedEndDate, modalidadPago, template);
 
   for (const stage of stageBlueprints) {
     const createdStage = await prisma.stage.create({

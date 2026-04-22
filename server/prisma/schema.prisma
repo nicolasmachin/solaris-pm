@@ -249,6 +249,7 @@ enum SettingKey {
   DEFAULT_LANGUAGE
   CO2_FACTOR
   PROPOSAL_SCRIPT_PATH
+  PIPELINE_TEMPLATE
 }
 
 enum SalesStage {

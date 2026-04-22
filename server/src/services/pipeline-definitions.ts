@@ -1,13 +1,14 @@
-import { ModalidadPago, StageType, TipoObra } from "@prisma/client";
+import { ModalidadPago, SettingKey, SettingLevel, StageType, TipoObra } from "@prisma/client";
+import { prisma } from "../lib/prisma.js";
 
-type ChecklistTemplate = {
+export type ChecklistTemplate = {
   label: string;
   isRequired?: boolean;
   isBlocker?: boolean;
   appliesWhenModalidadPago?: ModalidadPago;
 };
 
-type SubstageTemplate = {
+export type SubstageTemplate = {
   order: number;
   name: string;
   sopCode?: string;
@@ -19,12 +20,15 @@ type SubstageTemplate = {
   checklist?: ChecklistTemplate[];
 };
 
-type StageTemplate = {
+export type StageTemplate = {
   order: number;
   name: StageType;
+  label?: string;
   weight: number;
   substages: SubstageTemplate[];
 };
+
+export type PipelineTemplate = StageTemplate[];
 
 export const STAGE_LABELS: Record<StageType, string> = {
   [StageType.ONBOARDING]: "Onboarding",
@@ -446,6 +450,30 @@ export const PIPELINE_DEFINITIONS: StageTemplate[] = [
 
 export function getStageDefinition(stageType: StageType) {
   return PIPELINE_DEFINITIONS.find((stage) => stage.name === stageType) ?? null;
+}
+
+/**
+ * Devuelve el template activo del pipeline.
+ * - Si existe un registro en settings (key PIPELINE_TEMPLATE) con JSON válido,
+ *   se usa ése.
+ * - Si no, fallback al const hardcoded PIPELINE_DEFINITIONS.
+ * Se invoca al crear un proyecto (POST /projects, conversión de lead).
+ */
+export async function getActivePipelineTemplate(): Promise<PipelineTemplate> {
+  try {
+    const setting = await prisma.setting.findFirst({
+      where: { key: SettingKey.PIPELINE_TEMPLATE, level: SettingLevel.SYSTEM },
+    });
+    if (setting && setting.value) {
+      const parsed = JSON.parse(setting.value) as { stages?: PipelineTemplate };
+      if (parsed && Array.isArray(parsed.stages) && parsed.stages.length > 0) {
+        return parsed.stages as PipelineTemplate;
+      }
+    }
+  } catch {
+    // JSON inválido o DB no disponible → usar fallback
+  }
+  return PIPELINE_DEFINITIONS;
 }
 
 export function getOperationVisibility(tipoObra: TipoObra) {

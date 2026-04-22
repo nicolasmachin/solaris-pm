@@ -65,7 +65,12 @@ import {
   syncStageProgress,
   syncSubstageProgress,
 } from "../services/project.service.js";
-import { getStageLabel, getTipoObraLabel, getOperationVisibility } from "../services/pipeline-definitions.js";
+import {
+  getActivePipelineTemplate,
+  getStageLabel,
+  getTipoObraLabel,
+  getOperationVisibility,
+} from "../services/pipeline-definitions.js";
 import { createNotificationIfNotExists } from "../services/notification.service.js";
 import { createAndSendNotification, checkProgressMilestone } from "../services/notify.service.js";
 import { diffInDays, parseDateOnly, todayUtc, toDateOnlyString } from "../utils/dates.js";
@@ -4845,6 +4850,141 @@ export async function registerApiRoutes(app: FastifyInstance) {
       deletedAt: serializeDate(t.deletedAt),
     };
   }
+
+  // ─── Pipeline template (config del pipeline precargado al crear proyecto) ────
+
+  const pipelineChecklistItemSchema = z.object({
+    label: z.string().min(1),
+    isRequired: z.boolean().optional(),
+    isBlocker: z.boolean().optional(),
+    appliesWhenModalidadPago: z.nativeEnum(ModalidadPago).nullable().optional(),
+  }).strict();
+
+  const pipelineSubstageSchema = z.object({
+    order: z.number().int().min(1),
+    name: z.string().min(1),
+    sopCode: z.string().nullable().optional(),
+    responsableRol: z.string().nullable().optional(),
+    responsible: z.string().min(1),
+    isSystem: z.boolean().optional(),
+    isActive: z.boolean().optional(),
+    operationVariant: z.nativeEnum(TipoObra).nullable().optional(),
+    checklist: z.array(pipelineChecklistItemSchema).optional(),
+  }).strict();
+
+  const pipelineStageSchema = z.object({
+    order: z.number().int().min(1),
+    name: z.nativeEnum(StageType),
+    label: z.string().trim().min(1).nullable().optional(),
+    weight: z.number().min(0).max(100),
+    substages: z.array(pipelineSubstageSchema),
+  }).strict();
+
+  const pipelineTemplatePutSchema = z.object({
+    stages: z.array(pipelineStageSchema).length(5, "El template debe tener las 5 etapas"),
+  }).strict();
+
+  app.get("/pipeline-template", { preHandler: authorize(Module.CONFIGURACION, Action.VIEW) }, async () => {
+    const template = await getActivePipelineTemplate();
+    const setting = await prisma.setting.findFirst({
+      where: { key: SettingKey.PIPELINE_TEMPLATE, level: SettingLevel.SYSTEM },
+    });
+    return {
+      stages: template,
+      isCustom: setting !== null,
+      updatedAt: setting ? serializeDate(setting.updatedAt) : null,
+    };
+  });
+
+  app.put("/pipeline-template", { preHandler: authorize(Module.CONFIGURACION, Action.EDIT) }, async (request) => {
+    const user = ensureUser(request);
+    if (user.role !== Role.ADMIN) {
+      throw new AppError(403, "ADMIN_REQUIRED", "Solo admin puede editar el template del pipeline");
+    }
+    const body = pipelineTemplatePutSchema.parse(request.body);
+
+    // Validar que las 5 etapas sean las esperadas, sin duplicados
+    const stageNames = new Set(body.stages.map((s) => s.name));
+    if (stageNames.size !== 5) {
+      throw badRequest("INVALID_TEMPLATE", "El template debe tener las 5 etapas únicas (ONBOARDING, INGENIERIA, OPERACIONES, HABILITACION_UTE, POSTVENTA)");
+    }
+    const expected: StageType[] = [
+      StageType.ONBOARDING,
+      StageType.INGENIERIA,
+      StageType.OPERACIONES,
+      StageType.HABILITACION_UTE,
+      StageType.POSTVENTA,
+    ];
+    for (const name of expected) {
+      if (!stageNames.has(name)) {
+        throw badRequest("INVALID_TEMPLATE", `Falta la etapa ${name} en el template`);
+      }
+    }
+
+    const json = JSON.stringify({ stages: body.stages });
+    // Setting.userId y Setting.projectId son nullable; el @@unique con nullables
+    // no matchea igual → hacemos find-then-update/create manual.
+    const existing = await prisma.setting.findFirst({
+      where: {
+        level: SettingLevel.SYSTEM,
+        key: SettingKey.PIPELINE_TEMPLATE,
+      },
+    });
+    const saved = existing
+      ? await prisma.setting.update({
+          where: { id: existing.id },
+          data: { value: json, updatedById: user.id },
+        })
+      : await prisma.setting.create({
+          data: {
+            level: SettingLevel.SYSTEM,
+            key: SettingKey.PIPELINE_TEMPLATE,
+            value: json,
+            updatedById: user.id,
+          },
+        });
+
+    await createAuditEntry({
+      entityType: AuditEntityType.setting,
+      entityId: saved.id,
+      userId: user.id,
+      action: AuditAction.updated,
+      description: "Actualizó template del pipeline",
+      metadata: {
+        stagesCount: body.stages.length,
+        substagesCount: body.stages.reduce((sum, s) => sum + s.substages.length, 0),
+        checklistCount: body.stages.reduce(
+          (sum, s) => sum + s.substages.reduce((sub, ss) => sub + (ss.checklist?.length ?? 0), 0),
+          0,
+        ),
+      },
+    });
+
+    return {
+      stages: body.stages,
+      isCustom: true,
+      updatedAt: serializeDate(saved.updatedAt),
+    };
+  });
+
+  app.delete("/pipeline-template", { preHandler: authorize(Module.CONFIGURACION, Action.DELETE) }, async (request) => {
+    // Volver al default hardcoded: borra el registro en settings
+    const user = ensureUser(request);
+    if (user.role !== Role.ADMIN) {
+      throw new AppError(403, "ADMIN_REQUIRED", "Solo admin puede editar el template del pipeline");
+    }
+    await prisma.setting.deleteMany({
+      where: { key: SettingKey.PIPELINE_TEMPLATE, level: SettingLevel.SYSTEM },
+    });
+    await createAuditEntry({
+      entityType: AuditEntityType.setting,
+      entityId: "pipeline-template",
+      userId: user.id,
+      action: AuditAction.deleted,
+      description: "Restauró el template del pipeline al default",
+    });
+    return { success: true };
+  });
 
   app.get("/teams", { preHandler: authorize(Module.CONFIGURACION, Action.VIEW) }, async (request) => {
     const query = z
