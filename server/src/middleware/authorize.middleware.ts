@@ -1,4 +1,4 @@
-import type { Action, Module, Role } from "@prisma/client";
+import type { Action, Module } from "@prisma/client";
 
 import { prisma } from "../lib/prisma.js";
 import { forbidden, unauthorized } from "../utils/errors.js";
@@ -10,31 +10,29 @@ type PermissionCacheEntry = {
   expiresAt: number;
 };
 
+// Cache keyed por roleName + module + action. Se invalida vía clearPermissionCache()
+// cuando se editan roles o se modifica la matriz de permisos.
 const permissionsCache = new Map<string, PermissionCacheEntry>();
 
-function buildCacheKey(role: Role, module: Module, action: Action) {
-  return `${role}:${module}:${action}`;
+function buildCacheKey(roleName: string, module: Module, action: Action) {
+  return `${roleName}:${module}:${action}`;
 }
 
-async function hasPermission(role: Role, module: Module, action: Action) {
-  const cacheKey = buildCacheKey(role, module, action);
+async function hasPermission(roleName: string, module: Module, action: Action) {
+  const cacheKey = buildCacheKey(roleName, module, action);
   const cachedPermission = permissionsCache.get(cacheKey);
 
   if (cachedPermission && cachedPermission.expiresAt > Date.now()) {
     return cachedPermission.allowed;
   }
 
-  const permission = await prisma.permission.findUnique({
+  const permission = await prisma.permission.findFirst({
     where: {
-      role_module_action: {
-        role,
-        module,
-        action,
-      },
+      module,
+      action,
+      role: { name: roleName },
     },
-    select: {
-      id: true,
-    },
+    select: { id: true },
   });
 
   const allowed = Boolean(permission);

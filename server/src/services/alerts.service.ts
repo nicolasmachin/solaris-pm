@@ -1,4 +1,4 @@
-import { AuditAction, AuditEntityType, GoalPeriod, NotificationType, Role, StageStatus, SubstageStatus, TaskStatus } from "@prisma/client";
+import { AuditAction, AuditEntityType, GoalPeriod, NotificationType, StageStatus, SubstageStatus, TaskStatus } from "@prisma/client";
 import cron from "node-cron";
 
 import { prisma } from "../lib/prisma.js";
@@ -249,7 +249,7 @@ export async function checkGoalsConfigured(): Promise<void> {
 
   // Notify all ADMIN users
   const admins = await prisma.user.findMany({
-    where: { role: Role.ADMIN, deletedAt: null },
+    where: { role: { name: "ADMIN" }, deletedAt: null },
     select: { id: true },
   });
 

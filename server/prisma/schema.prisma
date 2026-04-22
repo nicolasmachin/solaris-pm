@@ -139,12 +139,19 @@ enum PhaseType {
 
 // ─── Enums nuevos ────────────────────────────────────────────────────────────
 
-enum Role {
-  ADMIN
-  ASESOR_COMERCIAL
-  INGENIERIA
-  OPERACIONES
-  FINANZAS
+model Role {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  label       String
+  description String?
+  isSystem    Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  users       User[]
+  permissions Permission[]
+
+  @@map("roles")
 }
 
 enum Module {
@@ -281,7 +288,8 @@ model User {
   email                   String               @unique
   password                String
   name                    String
-  role                    Role                 @default(OPERACIONES)
+  roleId                  String
+  role                    Role                 @relation(fields: [roleId], references: [id], onDelete: Restrict)
   tenantId                String?
   avatarUrl               String?              @map("avatar_url")
   createdProjects         Project[]            @relation("ProjectCreatedBy")
@@ -604,13 +612,14 @@ model Notification {
 
 model Permission {
   id        String   @id @default(cuid())
-  role      Role
+  roleId    String
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
   module    Module
   action    Action
   createdAt DateTime @default(now()) @db.Timestamptz(6)
 
-  @@unique([role, module, action])
-  @@index([role])
+  @@unique([roleId, module, action])
+  @@index([roleId])
   @@map("permissions")
 }
 

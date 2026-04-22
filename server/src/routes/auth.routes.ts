@@ -22,6 +22,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     const body = loginSchema.parse(request.body);
     const user = await prisma.user.findUnique({
       where: { email: body.email },
+      include: { role: { select: { name: true } } },
     });
 
     if (!user || user.deletedAt) {
@@ -37,7 +38,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       id: user.id,
       email: user.email,
       name: user.name,
-      role: user.role,
+      role: user.role.name,
     });
 
     return {
@@ -46,7 +47,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role,
+        role: user.role.name,
       },
     };
   });

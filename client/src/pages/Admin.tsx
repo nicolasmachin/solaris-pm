@@ -6,6 +6,16 @@ import { getGoals, upsertGoal, deleteGoal } from "../api/metrics.api";
 import { getSubcategories, createSubcategory, deleteSubcategory } from "../api/finance.api";
 import { getTeams, createTeam, patchTeam, deleteTeam, type Team } from "../api/teams.api";
 import {
+  getRoles,
+  getPermissionsCatalog,
+  createRole,
+  patchRole,
+  deleteRole,
+  type RoleData,
+  type PermissionCatalogEntry,
+  type PermissionEntry,
+} from "../api/roles.api";
+import {
   getPipelineTemplate,
   putPipelineTemplate,
   resetPipelineTemplate,
@@ -17,7 +27,10 @@ import { CATEGORIA_LABEL } from "../types/finance.types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type UserRole = "ADMIN" | "ASESOR_COMERCIAL" | "INGENIERIA" | "OPERACIONES";
+// Los roles ahora son dinámicos (tabla roles). UserRole es simplemente el
+// name del rol como string. Los valores "clásicos" siguen existiendo como
+// roles isSystem=true pero ya no son un enum cerrado.
+type UserRole = string;
 
 interface AdminUser {
   id: string;
@@ -33,13 +46,13 @@ interface SystemSetting {
   value: string;
 }
 
-interface PermissionEntry {
+interface UserMePermissionEntry {
   module: string;
   actions: string[];
 }
 
 interface UserMe {
-  permissions: PermissionEntry[];
+  permissions: UserMePermissionEntry[];
 }
 
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -136,6 +149,9 @@ function UserModal({
   const [password, setPassword] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Roles dinámicos desde la tabla roles
+  const { data: rolesData } = useQuery({ queryKey: ["admin-roles-select"], queryFn: getRoles });
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -181,8 +197,14 @@ function UserModal({
           )}
           <div>
             <label style={labelStyle}>Rol *</label>
-            <select style={{ ...inputStyle, cursor: "pointer" }} value={role} onChange={e => setRole(e.target.value as UserRole)}>
-              {ALL_ROLES.map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+            <select style={{ ...inputStyle, cursor: "pointer" }} value={role} onChange={e => setRole(e.target.value)}>
+              {(rolesData ?? []).map(r => (
+                <option key={r.id} value={r.name}>{r.label}</option>
+              ))}
+              {/* Si el rol actual del usuario no está en la lista (edge case: rol borrado), mostrarlo */}
+              {isEdit && role && !(rolesData ?? []).some(r => r.name === role) && (
+                <option value={role}>{role} (desconocido)</option>
+              )}
             </select>
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
@@ -368,76 +390,718 @@ function TabUsuarios() {
   );
 }
 
-// ─── Tab 2: Permisos ──────────────────────────────────────────────────────────
+// ─── Tab 2: Permisos (matriz editable + gestión de roles) ────────────────────
 
-// Hard-coded matrix based on seed data (read-only display)
-const PERMISSIONS_MATRIX: Record<string, Record<string, string[]>> = {
-  ADMIN:            { VENTAS: ["VIEW","CREATE","EDIT","DELETE","COMMENT"], ONBOARDING: ["VIEW","CREATE","EDIT","DELETE","COMPLETE","COMMENT"], INGENIERIA: ["VIEW","CREATE","EDIT","DELETE","COMPLETE","COMMENT"], OPERACIONES: ["VIEW","CREATE","EDIT","DELETE","COMPLETE","COMMENT"], HABILITACION: ["VIEW","CREATE","EDIT","DELETE","COMPLETE","COMMENT"], POSTVENTA: ["VIEW","CREATE","EDIT","DELETE","COMPLETE","COMMENT"], METRICAS: ["VIEW"], CONFIGURACION: ["VIEW","EDIT"], USUARIOS: ["VIEW","CREATE","EDIT","DELETE"] },
-  ASESOR_COMERCIAL: { VENTAS: ["VIEW","CREATE","EDIT","COMMENT"], ONBOARDING: ["VIEW","COMMENT"], INGENIERIA: ["VIEW"], OPERACIONES: ["VIEW"], HABILITACION: ["VIEW"], POSTVENTA: ["VIEW"], METRICAS: ["VIEW"] },
-  INGENIERIA:       { VENTAS: ["VIEW"], ONBOARDING: ["VIEW","COMMENT"], INGENIERIA: ["VIEW","CREATE","EDIT","COMPLETE","COMMENT"], OPERACIONES: ["VIEW","COMMENT"], HABILITACION: ["VIEW","COMMENT"], POSTVENTA: ["VIEW"], METRICAS: ["VIEW"] },
-  OPERACIONES:      { VENTAS: ["VIEW"], ONBOARDING: ["VIEW","COMMENT"], INGENIERIA: ["VIEW"], OPERACIONES: ["VIEW","CREATE","EDIT","COMPLETE","COMMENT"], HABILITACION: ["VIEW","CREATE","EDIT","COMPLETE","COMMENT"], POSTVENTA: ["VIEW","COMMENT"], METRICAS: ["VIEW"] },
+const ACTION_LABELS: Record<string, string> = {
+  VIEW: "Ver",
+  CREATE: "Crear",
+  EDIT: "Editar",
+  DELETE: "Eliminar",
+  COMPLETE: "Completar",
+  COMMENT: "Comentar",
 };
 
-const ACTION_COLORS: Record<string, { bg: string; color: string }> = {
-  VIEW:     { bg: "var(--color-info-bg)", color: "var(--color-info-text)" },
-  CREATE:   { bg: "var(--color-state-done-bg)", color: "var(--color-state-done-text)" },
-  EDIT:     { bg: "var(--color-warning-bg)", color: "var(--color-warning-text)" },
-  DELETE:   { bg: "var(--color-danger-bg)", color: "var(--color-danger-text)" },
-  COMPLETE: { bg: "var(--color-state-active-bg)", color: "var(--color-state-active-text)" },
-  COMMENT:  { bg: "var(--color-bg-card-hover)", color: "var(--color-text-primary)" },
+const MODULE_LABELS: Record<string, string> = {
+  VENTAS: "Ventas",
+  ONBOARDING: "Onboarding",
+  INGENIERIA: "Ingeniería",
+  OPERACIONES: "Operaciones",
+  HABILITACION: "Habilitación UTE",
+  POSTVENTA: "Postventa",
+  METRICAS: "Métricas",
+  CONFIGURACION: "Configuración",
+  USUARIOS: "Usuarios",
+  FINANZAS: "Finanzas",
+  STOCK: "Stock",
 };
+
+// Key compuesta role+module+action → bool activo
+type PermsMap = Record<string, Record<string, Record<string, boolean>>>;
+
+function buildPermsMap(roles: RoleData[]): PermsMap {
+  const map: PermsMap = {};
+  for (const r of roles) {
+    map[r.id] = {};
+    for (const mp of r.permissions) {
+      map[r.id]![mp.module] = {};
+      for (const action of mp.actions) {
+        map[r.id]![mp.module]![action] = true;
+      }
+    }
+  }
+  return map;
+}
+
+function rolePermsToArray(rolePerms: Record<string, Record<string, boolean>> | undefined): PermissionEntry[] {
+  if (!rolePerms) return [];
+  const out: PermissionEntry[] = [];
+  for (const mod of Object.keys(rolePerms)) {
+    for (const act of Object.keys(rolePerms[mod]!)) {
+      if (rolePerms[mod]![act]) out.push({ module: mod, action: act });
+    }
+  }
+  return out;
+}
 
 function TabPermisos() {
+  const qc = useQueryClient();
+  const rolesQuery = useQuery({ queryKey: ["admin-roles"], queryFn: getRoles });
+  const catalogQuery = useQuery({ queryKey: ["admin-perms-catalog"], queryFn: getPermissionsCatalog });
+
+  const [draft, setDraft] = useState<PermsMap | null>(null);
+  const [originalSnapshot, setOriginalSnapshot] = useState<string>("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingRole, setEditingRole] = useState<RoleData | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<RoleData | null>(null);
+
+  // Hydrate draft cuando llegan los roles, si no hay cambios pendientes
+  useEffect(() => {
+    if (!rolesQuery.data) return;
+    const built = buildPermsMap(rolesQuery.data);
+    const snap = JSON.stringify(built);
+    if (draft === null || JSON.stringify(draft) === originalSnapshot) {
+      setDraft(built);
+      setOriginalSnapshot(snap);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rolesQuery.data]);
+
+  const saveMut = useMutation({
+    mutationFn: async (changes: Array<{ roleId: string; permissions: PermissionEntry[] }>) => {
+      for (const c of changes) {
+        await patchRole(c.roleId, { permissions: c.permissions });
+      }
+    },
+    onSuccess: () => {
+      toast.success("Permisos guardados");
+      qc.invalidateQueries({ queryKey: ["admin-roles"] });
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? "No se pudieron guardar los permisos");
+    },
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deleteRole(id),
+    onSuccess: () => {
+      toast.success("Rol eliminado");
+      qc.invalidateQueries({ queryKey: ["admin-roles"] });
+      setConfirmDelete(null);
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? "No se pudo eliminar el rol");
+    },
+  });
+
+  if (rolesQuery.isLoading || catalogQuery.isLoading || !rolesQuery.data || !catalogQuery.data || !draft) {
+    return <p style={{ fontSize: 12, color: "var(--color-text-muted)" }}>Cargando permisos…</p>;
+  }
+
+  const roles = rolesQuery.data;
+  const catalog = catalogQuery.data;
+
+  const adminRole = roles.find((r) => r.name === "ADMIN");
+  const editableRoles = roles.filter((r) => r.name !== "ADMIN");
+
+  const currentSnapshot = JSON.stringify(draft);
+  const isDirty = currentSnapshot !== originalSnapshot;
+
+  // Toggle individual
+  function toggle(roleId: string, module: string, action: string) {
+    if (roles.find((r) => r.id === roleId)?.name === "ADMIN") return; // ADMIN siempre ON
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev };
+      next[roleId] = { ...next[roleId] };
+      next[roleId]![module] = { ...(next[roleId]![module] ?? {}) };
+      next[roleId]![module]![action] = !next[roleId]![module]![action];
+      return next;
+    });
+  }
+
+  // Marcar / desmarcar todas las acciones de un módulo para un rol
+  function toggleModule(roleId: string, module: string, allowedActions: string[]) {
+    const role = roles.find((r) => r.id === roleId);
+    if (role?.name === "ADMIN") return;
+    const currentAll = allowedActions.every((a) => draft?.[roleId]?.[module]?.[a]);
+    const next = !currentAll;
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const out = { ...prev };
+      out[roleId] = { ...out[roleId] };
+      out[roleId]![module] = { ...(out[roleId]![module] ?? {}) };
+      for (const a of allowedActions) out[roleId]![module]![a] = next;
+      return out;
+    });
+  }
+
+  // Marcar / desmarcar TODO para un rol
+  function toggleAllForRole(roleId: string) {
+    const role = roles.find((r) => r.id === roleId);
+    if (role?.name === "ADMIN") return;
+    const totalActions = catalog.reduce((s, m) => s + m.actions.length, 0);
+    const currentCount = rolePermsToArray(draft?.[roleId]).length;
+    const setAll = currentCount < totalActions;
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const out = { ...prev };
+      const roleMap: Record<string, Record<string, boolean>> = {};
+      if (setAll) {
+        for (const m of catalog) {
+          roleMap[m.module] = {};
+          for (const a of m.actions) roleMap[m.module]![a] = true;
+        }
+      }
+      out[roleId] = roleMap;
+      return out;
+    });
+  }
+
+  function discard() {
+    if (rolesQuery.data) {
+      const fresh = buildPermsMap(rolesQuery.data);
+      setDraft(fresh);
+      setOriginalSnapshot(JSON.stringify(fresh));
+    }
+  }
+
+  function save() {
+    if (!draft) return;
+    // Calcular qué roles cambiaron
+    const origMap = buildPermsMap(roles);
+    const changes: Array<{ roleId: string; permissions: PermissionEntry[] }> = [];
+    for (const role of editableRoles) {
+      const before = JSON.stringify(origMap[role.id] ?? {});
+      const after = JSON.stringify(draft[role.id] ?? {});
+      if (before !== after) {
+        changes.push({ roleId: role.id, permissions: rolePermsToArray(draft[role.id]) });
+      }
+    }
+    if (changes.length === 0) return;
+    saveMut.mutate(changes);
+  }
+
+  const pendingCount = (() => {
+    const origMap = buildPermsMap(roles);
+    let c = 0;
+    for (const role of editableRoles) {
+      const before = JSON.stringify(origMap[role.id] ?? {});
+      const after = JSON.stringify(draft[role.id] ?? {});
+      if (before !== after) c++;
+    }
+    return c;
+  })();
+
   return (
     <div>
-      <div style={{ background: "var(--color-warning-bg)", border: "1px solid var(--color-accent)", borderRadius: 6, padding: "10px 14px", marginBottom: 20, fontSize: 12, color: "var(--color-warning-text)" }}>
-        La edición de permisos estará disponible próximamente
+      {/* Admin notice + botón nuevo rol */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, gap: 12 }}>
+        <div>
+          <p style={{ fontSize: 12, color: "var(--color-text-muted)", marginBottom: 4 }}>
+            Matriz de permisos por rol. Los cambios se aplican al clickear "Guardar".
+            El rol <strong>ADMIN</strong> tiene acceso completo y no se puede modificar.
+          </p>
+          {adminRole && (
+            <p style={{ fontSize: 11, color: "var(--color-text-muted)", fontFamily: "var(--font-mono)" }}>
+              ADMIN: {adminRole.permissions.reduce((s, p) => s + p.actions.length, 0)} permisos · {adminRole.userCount} usuario(s)
+            </p>
+          )}
+        </div>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          style={{ background: "var(--color-accent)", color: "var(--color-bg-app)", padding: "7px 14px", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+        >
+          + Nuevo rol
+        </button>
       </div>
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+
+      {/* Tabla matriz */}
+      <div style={{ overflowX: "auto", borderRadius: 8, border: "1px solid var(--color-border)" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
           <thead>
-            <tr>
-              <th style={{ textAlign: "left", padding: "8px 12px", fontSize: 10, fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--color-text-muted)", borderBottom: "1px solid var(--color-border)" }}>
-                Módulo
+            <tr style={{ background: "var(--color-bg-card)", borderBottom: "1px solid var(--color-border)" }}>
+              <th style={{ textAlign: "left", padding: "10px 14px", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", width: 200 }}>
+                Módulo / Acción
               </th>
-              {ALL_ROLES.map(role => (
-                <th key={role} style={{ textAlign: "center", padding: "8px 12px", borderBottom: "1px solid var(--color-border)" }}>
-                  <RoleBadge role={role} />
+              {editableRoles.map((r) => (
+                <th key={r.id} style={{ padding: "8px 10px", minWidth: 130 }}>
+                  <RoleHeaderCell
+                    role={r}
+                    onEdit={() => setEditingRole(r)}
+                    onDelete={() => setConfirmDelete(r)}
+                    onToggleAll={() => toggleAllForRole(r.id)}
+                  />
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {ALL_MODULES.map(mod => (
-              <tr key={mod} style={{ borderBottom: "1px solid var(--color-border)" }}>
-                <td style={{ padding: "10px 12px", fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  {mod}
-                </td>
-                {ALL_ROLES.map(role => {
-                  const actions = PERMISSIONS_MATRIX[role]?.[mod] ?? [];
-                  return (
-                    <td key={role} style={{ padding: "8px 12px", textAlign: "center" }}>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 3, justifyContent: "center" }}>
-                        {actions.length === 0 ? (
-                          <span style={{ fontSize: 10, color: "var(--color-text-muted)" }}>—</span>
-                        ) : (
-                          actions.map(a => {
-                            const c = ACTION_COLORS[a] ?? { bg: "var(--color-bg-card-hover)", color: "var(--color-text-muted)" };
-                            return (
-                              <span key={a} style={{ background: c.bg, color: c.color, padding: "1px 5px", borderRadius: 3, fontSize: 9, fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-                                {a}
-                              </span>
-                            );
-                          })
-                        )}
-                      </div>
+            {catalog.map((mod) => {
+              return (
+                <>
+                  {/* Fila del módulo (con checkboxes de módulo completo) */}
+                  <tr key={`mod-${mod.module}`} style={{ background: "var(--color-bg-app)", borderTop: "1px solid var(--color-border)" }}>
+                    <td colSpan={1} style={{ padding: "8px 14px", fontSize: 11, fontWeight: 600, color: "var(--color-text-primary)", fontFamily: "var(--font-mono)" }}>
+                      {MODULE_LABELS[mod.module] ?? mod.module}
                     </td>
-                  );
-                })}
-              </tr>
-            ))}
+                    {editableRoles.map((r) => {
+                      const allChecked = mod.actions.every((a) => draft[r.id]?.[mod.module]?.[a]);
+                      const someChecked = mod.actions.some((a) => draft[r.id]?.[mod.module]?.[a]);
+                      return (
+                        <td key={`mod-${mod.module}-${r.id}`} style={{ padding: "6px 10px", textAlign: "center" }}>
+                          <input
+                            type="checkbox"
+                            checked={allChecked}
+                            ref={(el) => {
+                              if (el) el.indeterminate = !allChecked && someChecked;
+                            }}
+                            onChange={() => toggleModule(r.id, mod.module, mod.actions)}
+                            title={`Marcar/desmarcar todo ${MODULE_LABELS[mod.module] ?? mod.module}`}
+                            style={{ cursor: "pointer", accentColor: "var(--color-accent)" }}
+                          />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                  {/* Filas por acción */}
+                  {mod.actions.map((action) => (
+                    <tr key={`${mod.module}-${action}`} style={{ borderTop: "1px solid var(--color-border)" }}>
+                      <td style={{ padding: "7px 14px 7px 30px", fontSize: 11, color: "var(--color-text-secondary)" }}>
+                        {ACTION_LABELS[action] ?? action}
+                      </td>
+                      {editableRoles.map((r) => {
+                        const checked = draft[r.id]?.[mod.module]?.[action] ?? false;
+                        return (
+                          <td key={`${mod.module}-${action}-${r.id}`} style={{ padding: "4px 10px", textAlign: "center" }}>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggle(r.id, mod.module, action)}
+                              style={{ cursor: "pointer", accentColor: "var(--color-accent)" }}
+                            />
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </>
+              );
+            })}
           </tbody>
         </table>
+      </div>
+
+      {/* Barra flotante de cambios pendientes */}
+      {isDirty && (
+        <div
+          style={{
+            position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)",
+            background: "var(--color-bg-card)",
+            border: "1px solid var(--color-accent)",
+            borderRadius: 8,
+            padding: "10px 16px",
+            display: "flex", gap: 12, alignItems: "center",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+            zIndex: 40,
+          }}
+        >
+          <span style={{ fontSize: 12, color: "var(--color-text-primary)" }}>
+            Tenés {pendingCount} rol{pendingCount === 1 ? "" : "es"} con cambios sin guardar
+          </span>
+          <button
+            onClick={discard}
+            style={{ background: "none", border: "1px solid var(--color-border)", color: "var(--color-text-secondary)", padding: "6px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}
+          >
+            Descartar
+          </button>
+          <button
+            onClick={save}
+            disabled={saveMut.isPending}
+            style={{ background: "var(--color-accent)", color: "var(--color-bg-app)", padding: "6px 14px", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: saveMut.isPending ? "not-allowed" : "pointer", opacity: saveMut.isPending ? 0.5 : 1 }}
+          >
+            {saveMut.isPending ? "Guardando…" : "Guardar"}
+          </button>
+        </div>
+      )}
+
+      {showCreateModal && (
+        <RoleCreateModal
+          catalog={catalog}
+          onClose={() => setShowCreateModal(false)}
+          onCreated={() => {
+            qc.invalidateQueries({ queryKey: ["admin-roles"] });
+            setShowCreateModal(false);
+          }}
+        />
+      )}
+
+      {editingRole && (
+        <RoleEditModal
+          role={editingRole}
+          onClose={() => setEditingRole(null)}
+          onSaved={() => {
+            qc.invalidateQueries({ queryKey: ["admin-roles"] });
+            setEditingRole(null);
+          }}
+        />
+      )}
+
+      {confirmDelete && (
+        <RoleDeleteConfirm
+          role={confirmDelete}
+          loading={deleteMut.isPending}
+          onCancel={() => setConfirmDelete(null)}
+          onConfirm={() => deleteMut.mutate(confirmDelete.id)}
+        />
+      )}
+    </div>
+  );
+}
+
+function RoleHeaderCell({
+  role,
+  onEdit,
+  onDelete,
+  onToggleAll,
+}: {
+  role: RoleData;
+  onEdit: () => void;
+  onDelete: () => void;
+  onToggleAll: () => void;
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <span
+          style={{
+            fontSize: 11, color: "var(--color-text-primary)", fontWeight: 600,
+            whiteSpace: "nowrap", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis",
+          }}
+          title={`${role.label} (${role.name})`}
+        >
+          {role.label}
+        </span>
+        <button
+          onClick={onEdit}
+          title="Editar etiqueta y descripción"
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-muted)", fontSize: 11, padding: 0 }}
+        >
+          ✎
+        </button>
+        {!role.isSystem && (
+          <button
+            onClick={onDelete}
+            title="Eliminar rol"
+            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-danger-text)", fontSize: 11, padding: 0 }}
+          >
+            🗑
+          </button>
+        )}
+      </div>
+      <div style={{ fontSize: 9, color: "var(--color-text-muted)", fontFamily: "var(--font-mono)" }}>
+        {role.userCount} user{role.userCount === 1 ? "" : "s"}
+      </div>
+      <button
+        onClick={onToggleAll}
+        title="Marcar / desmarcar todo"
+        style={{
+          background: "none", border: "1px solid var(--color-border)",
+          color: "var(--color-text-muted)", padding: "2px 6px", borderRadius: 3,
+          fontSize: 9, cursor: "pointer", fontFamily: "var(--font-mono)",
+        }}
+      >
+        Todos
+      </button>
+    </div>
+  );
+}
+
+function RoleCreateModal({
+  catalog,
+  onClose,
+  onCreated,
+}: {
+  catalog: PermissionCatalogEntry[];
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [label, setLabel] = useState("");
+  const [description, setDescription] = useState("");
+  const [perms, setPerms] = useState<Record<string, Record<string, boolean>>>({});
+  const [error, setError] = useState<string | null>(null);
+
+  function toggle(module: string, action: string) {
+    setPerms((prev) => ({
+      ...prev,
+      [module]: { ...(prev[module] ?? {}), [action]: !prev[module]?.[action] },
+    }));
+  }
+
+  const mut = useMutation({
+    mutationFn: () => {
+      const permissions: PermissionEntry[] = [];
+      for (const m of Object.keys(perms)) {
+        for (const a of Object.keys(perms[m]!)) {
+          if (perms[m]![a]) permissions.push({ module: m, action: a });
+        }
+      }
+      return createRole({
+        name: name.trim().toUpperCase().replace(/\s+/g, "_"),
+        label: label.trim(),
+        description: description.trim() || null,
+        permissions,
+      });
+    },
+    onSuccess: () => {
+      toast.success("Rol creado");
+      onCreated();
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg ?? "No se pudo crear el rol");
+    },
+  });
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!name.trim()) {
+      setError("El nombre interno es obligatorio");
+      return;
+    }
+    if (!label.trim()) {
+      setError("La etiqueta es obligatoria");
+      return;
+    }
+    if (!/^[A-Z][A-Z0-9_]*$/.test(name.trim().toUpperCase().replace(/\s+/g, "_"))) {
+      setError("El nombre interno debe empezar con letra y usar sólo MAYÚSCULAS, números y guión bajo");
+      return;
+    }
+    mut.mutate();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div className="relative w-full max-w-2xl bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl shadow-2xl p-5 z-10 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display font-bold text-base text-[var(--color-text-primary)]">Nuevo rol</h2>
+          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]">✕</button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label style={labelStyle}>Nombre interno (MAYÚSCULAS, sin espacios)</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, "_"))}
+              placeholder="Ej: SOPORTE_TECNICO"
+              style={inputStyle}
+              required
+              autoFocus
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>Etiqueta visible</label>
+            <input
+              type="text"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              placeholder="Ej: Soporte técnico"
+              style={inputStyle}
+              required
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>Descripción (opcional)</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              style={{ ...inputStyle, resize: "vertical" }}
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>Permisos iniciales</label>
+            <div style={{ border: "1px solid var(--color-border)", borderRadius: 6, padding: 10, maxHeight: 300, overflowY: "auto" }}>
+              {catalog.map((m) => (
+                <div key={m.module} style={{ marginBottom: 10 }}>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-primary)", marginBottom: 4, fontFamily: "var(--font-mono)" }}>
+                    {MODULE_LABELS[m.module] ?? m.module}
+                  </p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                    {m.actions.map((a) => (
+                      <label key={a} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={perms[m.module]?.[a] ?? false}
+                          onChange={() => toggle(m.module, a)}
+                          style={{ accentColor: "var(--color-accent)" }}
+                        />
+                        <span style={{ color: "var(--color-text-secondary)" }}>{ACTION_LABELS[a] ?? a}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {error && <p className="text-xs text-[var(--color-danger-text)]">{error}</p>}
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              style={{ background: "none", border: "1px solid var(--color-border)", color: "var(--color-text-secondary)", padding: "7px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer" }}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={mut.isPending}
+              style={{ background: "var(--color-accent)", color: "var(--color-bg-app)", padding: "7px 14px", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", opacity: mut.isPending ? 0.5 : 1 }}
+            >
+              {mut.isPending ? "Creando…" : "Crear rol"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function RoleEditModal({
+  role,
+  onClose,
+  onSaved,
+}: {
+  role: RoleData;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [label, setLabel] = useState(role.label);
+  const [description, setDescription] = useState(role.description ?? "");
+  const [error, setError] = useState<string | null>(null);
+
+  const mut = useMutation({
+    mutationFn: () => patchRole(role.id, { label: label.trim(), description: description.trim() || null }),
+    onSuccess: () => {
+      toast.success("Rol actualizado");
+      onSaved();
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg ?? "No se pudo actualizar el rol");
+    },
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl shadow-2xl p-5 z-10">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display font-bold text-base text-[var(--color-text-primary)]">Editar rol</h2>
+          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]">✕</button>
+        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setError(null);
+            if (!label.trim()) {
+              setError("La etiqueta es obligatoria");
+              return;
+            }
+            mut.mutate();
+          }}
+          className="space-y-3"
+        >
+          <div>
+            <label style={labelStyle}>Nombre interno (no editable)</label>
+            <input type="text" value={role.name} disabled style={{ ...inputStyle, opacity: 0.6 }} />
+          </div>
+          <div>
+            <label style={labelStyle}>Etiqueta visible</label>
+            <input
+              type="text"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              style={inputStyle}
+              required
+              autoFocus
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>Descripción (opcional)</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              style={{ ...inputStyle, resize: "vertical" }}
+            />
+          </div>
+          {error && <p className="text-xs text-[var(--color-danger-text)]">{error}</p>}
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              style={{ background: "none", border: "1px solid var(--color-border)", color: "var(--color-text-secondary)", padding: "7px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer" }}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={mut.isPending}
+              style={{ background: "var(--color-accent)", color: "var(--color-bg-app)", padding: "7px 14px", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", opacity: mut.isPending ? 0.5 : 1 }}
+            >
+              {mut.isPending ? "Guardando…" : "Guardar"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function RoleDeleteConfirm({
+  role,
+  loading,
+  onCancel,
+  onConfirm,
+}: {
+  role: RoleData;
+  loading: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-black/60" onClick={onCancel} />
+      <div className="relative w-full max-w-sm bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl shadow-2xl p-5 z-10">
+        <h2 className="font-display font-bold text-sm text-[var(--color-text-primary)] mb-2">Eliminar rol</h2>
+        <p className="text-xs text-[var(--color-text-secondary)] mb-4">
+          {role.userCount > 0
+            ? `El rol "${role.label}" tiene ${role.userCount} usuario(s) asignado(s). Reasignalos a otro rol antes de eliminar.`
+            : `¿Eliminar el rol "${role.label}"?`}
+        </p>
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            style={{ background: "none", border: "1px solid var(--color-border)", color: "var(--color-text-secondary)", padding: "7px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer" }}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={loading || role.userCount > 0}
+            style={{ background: "var(--color-danger-bg)", color: "var(--color-danger-text)", padding: "7px 14px", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: role.userCount > 0 ? "not-allowed" : "pointer", opacity: loading || role.userCount > 0 ? 0.4 : 1 }}
+          >
+            {loading ? "Eliminando…" : "Sí, eliminar"}
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -32,7 +32,7 @@ export async function authenticate(request: import("fastify").FastifyRequest) {
       id: true,
       email: true,
       name: true,
-      role: true,
+      role: { select: { name: true } },
       deletedAt: true,
     },
   });
@@ -45,7 +45,7 @@ export async function authenticate(request: import("fastify").FastifyRequest) {
     id: user.id,
     email: user.email,
     name: user.name,
-    role: user.role,
+    role: user.role.name,
   };
 }
 

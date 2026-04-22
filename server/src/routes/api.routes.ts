@@ -44,7 +44,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { env } from "../config/env.js";
 import { authenticate } from "../middleware/auth.middleware.js";
-import { authorize } from "../middleware/authorize.middleware.js";
+import { authorize, clearPermissionCache } from "../middleware/authorize.middleware.js";
 import { createAuditEntriesForChanges, createAuditEntry } from "../services/audit.service.js";
 import { deleteStoredFile, getStoredFilePath, saveUploadedFile } from "../services/file-storage.service.js";
 import {
@@ -254,7 +254,8 @@ const userCreateSchema = z
     name: z.string().min(1),
     email: z.string().email(),
     password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
-    role: z.nativeEnum(Role),
+    // role = name del rol en la tabla roles (ej: "ADMIN", "OPERACIONES")
+    role: z.string().min(1),
   })
   .strict();
 
@@ -262,7 +263,7 @@ const userPatchSchema = z
   .object({
     name: z.string().min(1).optional(),
     email: z.string().email().optional(),
-    role: z.nativeEnum(Role).optional(),
+    role: z.string().min(1).optional(),
   })
   .strict();
 
@@ -674,14 +675,17 @@ function serializeUserSummary(user: {
   id: string;
   name: string;
   email: string;
-  role: Role;
+  role: { id: string; name: string; label: string };
   createdAt: Date;
 }) {
   return {
     id: user.id,
     name: user.name,
     email: user.email,
-    role: user.role,
+    // Mantiene compat: los consumidores esperan un string con el name del rol.
+    role: user.role.name,
+    roleId: user.role.id,
+    roleLabel: user.role.label,
     createdAt: serializeDate(user.createdAt),
   };
 }
@@ -1477,7 +1481,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // Sólo ADMIN puede modificar fechas reales manualmente
     const touchesActualDates =
       body.actualStartDate !== undefined || body.actualEndDate !== undefined;
-    if (touchesActualDates && user.role !== Role.ADMIN) {
+    if (touchesActualDates && user.role !== "ADMIN") {
       throw new AppError(403, "ADMIN_REQUIRED", "Solo admin puede modificar fechas reales");
     }
 
@@ -2272,7 +2276,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const body = checklistPatchSchema.parse(request.body);
     const item = await findChecklistItemOrThrow(params.itemId);
 
-    if (body.isRequired !== undefined && user.role !== Role.ADMIN) {
+    if (body.isRequired !== undefined && user.role !== "ADMIN") {
       throw forbidden("No tenés permiso para realizar esta acción");
     }
 
@@ -3357,7 +3361,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     const permissions = await prisma.permission.findMany({
       where: {
-        role: user.role,
+        role: { name: user.role },
       },
       select: {
         module: true,
@@ -3373,6 +3377,243 @@ export async function registerApiRoutes(app: FastifyInstance) {
       role: user.role,
       permissions: groupPermissionsByModule(permissions),
     };
+  });
+
+  // ─── Roles dinámicos y matriz de permisos ────────────────────────────────────
+
+  const PERMISSION_CATALOG: Array<{ module: Module; actions: Action[] }> = [
+    { module: Module.VENTAS,        actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMMENT] },
+    { module: Module.ONBOARDING,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { module: Module.INGENIERIA,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { module: Module.OPERACIONES,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { module: Module.HABILITACION,  actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { module: Module.POSTVENTA,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { module: Module.METRICAS,      actions: [Action.VIEW] },
+    { module: Module.CONFIGURACION, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { module: Module.USUARIOS,      actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { module: Module.FINANZAS,      actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { module: Module.STOCK,         actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+  ];
+
+  const roleNameSchema = z
+    .string()
+    .trim()
+    .min(1)
+    .regex(/^[A-Z][A-Z0-9_]*$/, "El nombre del rol debe ser mayúsculas, guión bajo y números (ej: SOPORTE_TECNICO)");
+
+  const permissionEntrySchema = z
+    .object({
+      module: z.nativeEnum(Module),
+      action: z.nativeEnum(Action),
+    })
+    .strict();
+
+  const roleCreateSchema = z
+    .object({
+      name: roleNameSchema,
+      label: z.string().trim().min(1),
+      description: z.string().trim().nullable().optional(),
+      permissions: z.array(permissionEntrySchema).default([]),
+    })
+    .strict();
+
+  const rolePatchSchema = z
+    .object({
+      label: z.string().trim().min(1).optional(),
+      description: z.string().trim().nullable().optional(),
+      permissions: z.array(permissionEntrySchema).optional(),
+    })
+    .strict();
+
+  function assertAdmin(request: import("fastify").FastifyRequest) {
+    const user = ensureUser(request);
+    if (user.role !== "ADMIN") {
+      throw new AppError(403, "ADMIN_REQUIRED", "Solo admin puede gestionar roles");
+    }
+    return user;
+  }
+
+  app.get("/permissions/catalog", { preHandler: authorize(Module.USUARIOS, Action.VIEW) }, async () => {
+    return PERMISSION_CATALOG;
+  });
+
+  app.get("/roles", { preHandler: authorize(Module.USUARIOS, Action.VIEW) }, async () => {
+    const roles = await prisma.role.findMany({
+      orderBy: [{ isSystem: "desc" }, { name: "asc" }],
+      include: {
+        permissions: { select: { module: true, action: true } },
+        _count: { select: { users: { where: { deletedAt: null } } } },
+      },
+    });
+
+    return roles.map((r) => {
+      const byModule = new Map<Module, Action[]>();
+      for (const p of r.permissions) {
+        const arr = byModule.get(p.module) ?? [];
+        arr.push(p.action);
+        byModule.set(p.module, arr);
+      }
+      return {
+        id: r.id,
+        name: r.name,
+        label: r.label,
+        description: r.description,
+        isSystem: r.isSystem,
+        userCount: r._count.users,
+        permissions: Array.from(byModule.entries()).map(([module, actions]) => ({
+          module,
+          actions,
+        })),
+        createdAt: serializeDate(r.createdAt),
+        updatedAt: serializeDate(r.updatedAt),
+      };
+    });
+  });
+
+  app.post("/roles", { preHandler: authorize(Module.USUARIOS, Action.CREATE) }, async (request, reply) => {
+    const user = assertAdmin(request);
+    const body = roleCreateSchema.parse(request.body);
+
+    const existing = await prisma.role.findUnique({ where: { name: body.name } });
+    if (existing) {
+      throw conflict("ROLE_NAME_DUPLICATE", `Ya existe un rol con el nombre "${body.name}"`);
+    }
+
+    const created = await prisma.$transaction(async (tx) => {
+      const role = await tx.role.create({
+        data: {
+          name: body.name,
+          label: body.label,
+          description: body.description ?? null,
+          isSystem: false,
+        },
+      });
+      if (body.permissions.length > 0) {
+        await tx.permission.createMany({
+          data: body.permissions.map((p) => ({
+            roleId: role.id,
+            module: p.module,
+            action: p.action,
+          })),
+          skipDuplicates: true,
+        });
+      }
+      return role;
+    });
+
+    clearPermissionCache();
+
+    await createAuditEntry({
+      entityType: AuditEntityType.permission,
+      entityId: created.id,
+      userId: user.id,
+      action: AuditAction.created,
+      description: `Creó rol '${created.label}' (${created.name}) con ${body.permissions.length} permisos`,
+    });
+
+    reply.code(201);
+    return { id: created.id, name: created.name, label: created.label };
+  });
+
+  app.patch("/roles/:id", { preHandler: authorize(Module.USUARIOS, Action.EDIT) }, async (request) => {
+    const user = assertAdmin(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const body = rolePatchSchema.parse(request.body);
+
+    const existing = await prisma.role.findUnique({ where: { id } });
+    if (!existing) {
+      throw notFound("ROLE_NOT_FOUND", "Rol no encontrado");
+    }
+
+    // No tocar permisos de ADMIN nunca
+    if (existing.name === "ADMIN" && body.permissions !== undefined) {
+      throw new AppError(
+        403,
+        "ADMIN_ROLE_PROTECTED",
+        "Los permisos del rol Admin no se pueden modificar",
+      );
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const updateData: Record<string, unknown> = {};
+      if (body.label !== undefined) updateData.label = body.label;
+      if (body.description !== undefined) updateData.description = body.description;
+      if (Object.keys(updateData).length > 0) {
+        await tx.role.update({ where: { id }, data: updateData });
+      }
+
+      if (body.permissions !== undefined) {
+        // Roles system: sólo ADMIN está protegido. Para los demás system (OPERACIONES,
+        // INGENIERIA, ASESOR_COMERCIAL, FINANZAS) se permite editar permisos.
+        await tx.permission.deleteMany({ where: { roleId: id } });
+        if (body.permissions.length > 0) {
+          await tx.permission.createMany({
+            data: body.permissions.map((p) => ({
+              roleId: id,
+              module: p.module,
+              action: p.action,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
+    });
+
+    clearPermissionCache();
+
+    await createAuditEntry({
+      entityType: AuditEntityType.permission,
+      entityId: id,
+      userId: user.id,
+      action: AuditAction.updated,
+      description:
+        body.permissions !== undefined
+          ? `Actualizó rol '${existing.label}' (${body.permissions.length} permisos)`
+          : `Actualizó metadata del rol '${existing.label}'`,
+    });
+
+    return { success: true };
+  });
+
+  app.delete("/roles/:id", { preHandler: authorize(Module.USUARIOS, Action.DELETE) }, async (request) => {
+    const user = assertAdmin(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+
+    const existing = await prisma.role.findUnique({
+      where: { id },
+      include: { _count: { select: { users: { where: { deletedAt: null } } } } },
+    });
+    if (!existing) {
+      throw notFound("ROLE_NOT_FOUND", "Rol no encontrado");
+    }
+
+    if (existing.isSystem) {
+      throw new AppError(
+        403,
+        "SYSTEM_ROLE_PROTECTED",
+        "Los roles del sistema no se pueden eliminar",
+      );
+    }
+
+    if (existing._count.users > 0) {
+      throw badRequest(
+        "ROLE_IN_USE",
+        `Este rol tiene ${existing._count.users} usuario(s) asignado(s). Reasignalos antes de eliminar.`,
+      );
+    }
+
+    await prisma.role.delete({ where: { id } });
+    clearPermissionCache();
+
+    await createAuditEntry({
+      entityType: AuditEntityType.permission,
+      entityId: id,
+      userId: user.id,
+      action: AuditAction.deleted,
+      description: `Eliminó rol '${existing.label}' (${existing.name})`,
+    });
+
+    return { success: true };
   });
 
   app.patch("/users/me", async (request) => {
@@ -3393,7 +3634,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
         ...(body.name !== undefined && { name: body.name }),
         ...(body.email !== undefined && { email: body.email }),
       },
-      select: { id: true, name: true, email: true, role: true, createdAt: true },
+      select: {
+        id: true, name: true, email: true, createdAt: true,
+        role: { select: { id: true, name: true, label: true } },
+      },
     });
 
     if (body.name !== undefined && body.name !== existingUser.name) {
@@ -3433,8 +3677,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         id: true,
         name: true,
         email: true,
-        role: true,
         createdAt: true,
+        role: { select: { id: true, name: true, label: true } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -3446,20 +3690,26 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const currentUser = ensureUser(request);
     const body = userCreateSchema.parse(request.body);
 
+    // Buscar rol por name (lanza 400 si no existe)
+    const role = await prisma.role.findUnique({ where: { name: body.role } });
+    if (!role) {
+      throw badRequest("ROLE_NOT_FOUND", `El rol "${body.role}" no existe`);
+    }
+
     const hashedPassword = await bcrypt.hash(body.password, 10);
     const user = await prisma.user.create({
       data: {
         name: body.name,
         email: body.email,
         password: hashedPassword,
-        role: body.role,
+        roleId: role.id,
       },
       select: {
         id: true,
         name: true,
         email: true,
-        role: true,
         createdAt: true,
+        role: { select: { id: true, name: true, label: true } },
       },
     });
 
@@ -3468,7 +3718,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       entityId: user.id,
       userId: currentUser.id,
       action: AuditAction.created,
-      description: `Creó usuario '${user.name}' con rol ${user.role}`,
+      description: `Creó usuario '${user.name}' con rol ${user.role.name}`,
     });
 
     reply.code(201);
@@ -3485,10 +3735,20 @@ export async function registerApiRoutes(app: FastifyInstance) {
         id: params.id,
         deletedAt: null,
       },
+      include: { role: { select: { id: true, name: true, label: true } } },
     });
 
     if (!existingUser) {
       throw notFound("USER_NOT_FOUND", "Usuario no encontrado");
+    }
+
+    let newRoleId: string | undefined;
+    if (body.role !== undefined && body.role !== existingUser.role.name) {
+      const role = await prisma.role.findUnique({ where: { name: body.role } });
+      if (!role) {
+        throw badRequest("ROLE_NOT_FOUND", `El rol "${body.role}" no existe`);
+      }
+      newRoleId = role.id;
     }
 
     const updatedUser = await prisma.user.update({
@@ -3496,14 +3756,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
       data: {
         ...(body.name !== undefined && { name: body.name }),
         ...(body.email !== undefined && { email: body.email }),
-        ...(body.role !== undefined && { role: body.role }),
+        ...(newRoleId !== undefined && { roleId: newRoleId }),
       },
       select: {
         id: true,
         name: true,
         email: true,
-        role: true,
         createdAt: true,
+        role: { select: { id: true, name: true, label: true } },
       },
     });
 
@@ -3533,16 +3793,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
       });
     }
 
-    if (body.role !== undefined && body.role !== existingUser.role) {
+    if (body.role !== undefined && body.role !== existingUser.role.name) {
       await createAuditEntry({
         entityType: AuditEntityType.user,
         entityId: existingUser.id,
         userId: currentUser.id,
         action: AuditAction.role_changed,
         fieldChanged: "role",
-        oldValue: existingUser.role,
+        oldValue: existingUser.role.name,
         newValue: body.role,
-        description: `Cambió rol del usuario '${existingUser.name}' de ${existingUser.role} a ${body.role}`,
+        description: `Cambió rol del usuario '${existingUser.name}' de ${existingUser.role.name} a ${body.role}`,
       });
     }
 
@@ -3566,7 +3826,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
 
     const isSelf = currentUser.id === targetUser.id;
-    const isAdmin = currentUser.role === Role.ADMIN;
+    const isAdmin = currentUser.role === "ADMIN";
 
     if (!isSelf && !isAdmin) {
       throw forbidden("No tenés permiso para realizar esta acción");
@@ -3612,16 +3872,17 @@ export async function registerApiRoutes(app: FastifyInstance) {
         id: params.id,
         deletedAt: null,
       },
+      include: { role: { select: { name: true } } },
     });
 
     if (!targetUser) {
       throw notFound("USER_NOT_FOUND", "Usuario no encontrado");
     }
 
-    if (targetUser.role === Role.ADMIN) {
+    if (targetUser.role.name === "ADMIN") {
       const activeAdmins = await prisma.user.count({
         where: {
-          role: Role.ADMIN,
+          role: { name: "ADMIN" },
           deletedAt: null,
         },
       });
@@ -4061,7 +4322,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const body = commentPatchSchema.parse(request.body);
     const existingComment = await findCommentOrThrow(params.id);
 
-    if (existingComment.authorId !== user.id && user.role !== Role.ADMIN) {
+    if (existingComment.authorId !== user.id && user.role !== "ADMIN") {
       throw forbidden("No tenés permiso para realizar esta acción");
     }
 
@@ -4101,7 +4362,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const params = z.object({ id: z.string() }).parse(request.params);
     const existingComment = await findCommentOrThrow(params.id);
 
-    if (existingComment.authorId !== user.id && user.role !== Role.ADMIN) {
+    if (existingComment.authorId !== user.id && user.role !== "ADMIN") {
       throw forbidden("No tenés permiso para realizar esta acción");
     }
 
@@ -4898,7 +5159,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
   app.put("/pipeline-template", { preHandler: authorize(Module.CONFIGURACION, Action.EDIT) }, async (request) => {
     const user = ensureUser(request);
-    if (user.role !== Role.ADMIN) {
+    if (user.role !== "ADMIN") {
       throw new AppError(403, "ADMIN_REQUIRED", "Solo admin puede editar el template del pipeline");
     }
     const body = pipelineTemplatePutSchema.parse(request.body);
@@ -4970,7 +5231,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
   app.delete("/pipeline-template", { preHandler: authorize(Module.CONFIGURACION, Action.DELETE) }, async (request) => {
     // Volver al default hardcoded: borra el registro en settings
     const user = ensureUser(request);
-    if (user.role !== Role.ADMIN) {
+    if (user.role !== "ADMIN") {
       throw new AppError(403, "ADMIN_REQUIRED", "Solo admin puede editar el template del pipeline");
     }
     await prisma.setting.deleteMany({

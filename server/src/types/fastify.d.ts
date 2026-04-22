@@ -1,5 +1,4 @@
 import "fastify";
-import type { Role } from "@prisma/client";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -7,7 +6,9 @@ declare module "fastify" {
       id: string;
       email: string;
       name: string;
-      role: Role;
+      // name del rol (ej: "ADMIN", "OPERACIONES"). Desde el refactor de roles
+      // dinámicos es un string libre sourced de la tabla roles.
+      role: string;
     };
   }
 }

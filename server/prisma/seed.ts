@@ -15,7 +15,6 @@ import {
   PhaseType,
   Prisma,
   ProjectStatus,
-  Role,
   SalesStage,
   SettingKey,
   SettingLevel,
@@ -77,19 +76,48 @@ function slug(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
+// ─── Roles sistema ────────────────────────────────────────────────────────────
+
+const SYSTEM_ROLES: Array<{ name: string; label: string }> = [
+  { name: "ADMIN", label: "Administrador" },
+  { name: "OPERACIONES", label: "Operaciones" },
+  { name: "INGENIERIA", label: "Ingeniería" },
+  { name: "ASESOR_COMERCIAL", label: "Asesor comercial" },
+  { name: "FINANZAS", label: "Finanzas" },
+];
+
+async function seedSystemRoles(): Promise<Map<string, string>> {
+  // Upsert por name (idempotente). Mantiene isSystem=true sin pisar labels si el admin renombró.
+  const map = new Map<string, string>();
+  for (const r of SYSTEM_ROLES) {
+    const role = await prisma.role.upsert({
+      where: { name: r.name },
+      create: { name: r.name, label: r.label, isSystem: true },
+      update: {
+        // No sobreescribimos label/description en re-seed: respeta ediciones del admin.
+        isSystem: true,
+      },
+    });
+    map.set(r.name, role.id);
+  }
+  return map;
+}
+
 // ─── Usuarios ─────────────────────────────────────────────────────────────────
 
-async function createUsers() {
+async function createUsers(roleIdByName: Map<string, string>) {
   const password = await bcrypt.hash("Y1025Voltia", 10);
 
-  async function upsertUser(email: string, data: { name: string; role: Role }) {
+  async function upsertUser(email: string, data: { name: string; roleName: string }) {
+    const roleId = roleIdByName.get(data.roleName);
+    if (!roleId) throw new Error(`Rol ${data.roleName} no encontrado en la tabla roles`);
     return prisma.user.upsert({
       where: { email },
       create: {
         email,
         password,
         name: data.name,
-        role: data.role,
+        roleId,
         avatarUrl: null,
       },
       update: {
@@ -99,61 +127,63 @@ async function createUsers() {
     });
   }
 
-  const admin = await upsertUser("admin@voltiapm.com", { name: "Administrador Voltia", role: Role.ADMIN });
-  const operations = await upsertUser("operaciones@voltiapm.com", { name: "Gerencia Operaciones", role: Role.OPERACIONES });
-  const comercial = await upsertUser("comercial@voltiapm.com", { name: "Asesor Comercial", role: Role.ASESOR_COMERCIAL });
-  const ingeniero = await upsertUser("ingeniero@voltiapm.com", { name: "Ingeniero Proyectista", role: Role.INGENIERIA });
-  const finanzas = await upsertUser("finanzas@voltiapm.com", { name: "Responsable Finanzas", role: Role.FINANZAS });
+  const admin = await upsertUser("admin@voltiapm.com", { name: "Administrador Voltia", roleName: "ADMIN" });
+  const operations = await upsertUser("operaciones@voltiapm.com", { name: "Gerencia Operaciones", roleName: "OPERACIONES" });
+  const comercial = await upsertUser("comercial@voltiapm.com", { name: "Asesor Comercial", roleName: "ASESOR_COMERCIAL" });
+  const ingeniero = await upsertUser("ingeniero@voltiapm.com", { name: "Ingeniero Proyectista", roleName: "INGENIERIA" });
+  const finanzas = await upsertUser("finanzas@voltiapm.com", { name: "Responsable Finanzas", roleName: "FINANZAS" });
 
   return { admin, operations, comercial, ingeniero, finanzas };
 }
 
 // ─── Permisos ─────────────────────────────────────────────────────────────────
 
-async function seedPermissions() {
-  const matrix: Array<{ role: Role; module: Module; actions: Action[] }> = [
-    { role: Role.ADMIN, module: Module.VENTAS,         actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMMENT] },
-    { role: Role.ADMIN, module: Module.ONBOARDING,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
-    { role: Role.ADMIN, module: Module.INGENIERIA,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
-    { role: Role.ADMIN, module: Module.OPERACIONES,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
-    { role: Role.ADMIN, module: Module.HABILITACION,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
-    { role: Role.ADMIN, module: Module.POSTVENTA,      actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
-    { role: Role.ADMIN, module: Module.METRICAS,       actions: [Action.VIEW] },
-    { role: Role.ADMIN, module: Module.CONFIGURACION,  actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
-    { role: Role.ADMIN, module: Module.USUARIOS,       actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
-    { role: Role.ASESOR_COMERCIAL, module: Module.VENTAS,        actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMMENT] },
-    { role: Role.ASESOR_COMERCIAL, module: Module.ONBOARDING,    actions: [Action.VIEW, Action.COMMENT] },
-    { role: Role.ASESOR_COMERCIAL, module: Module.INGENIERIA,    actions: [Action.VIEW] },
-    { role: Role.ASESOR_COMERCIAL, module: Module.OPERACIONES,   actions: [Action.VIEW] },
-    { role: Role.ASESOR_COMERCIAL, module: Module.HABILITACION,  actions: [Action.VIEW] },
-    { role: Role.ASESOR_COMERCIAL, module: Module.POSTVENTA,     actions: [Action.VIEW] },
-    { role: Role.INGENIERIA, module: Module.ONBOARDING,    actions: [Action.VIEW, Action.COMMENT] },
-    { role: Role.INGENIERIA, module: Module.INGENIERIA,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
-    { role: Role.INGENIERIA, module: Module.OPERACIONES,   actions: [Action.VIEW, Action.COMMENT] },
-    { role: Role.INGENIERIA, module: Module.HABILITACION,  actions: [Action.VIEW, Action.COMMENT] },
-    { role: Role.INGENIERIA, module: Module.POSTVENTA,     actions: [Action.VIEW] },
-    { role: Role.INGENIERIA, module: Module.METRICAS,      actions: [Action.VIEW] },
-    { role: Role.ADMIN, module: Module.FINANZAS, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
-    { role: Role.ADMIN, module: Module.STOCK,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
-    { role: Role.OPERACIONES, module: Module.VENTAS,        actions: [Action.VIEW] },
-    { role: Role.OPERACIONES, module: Module.ONBOARDING,    actions: [Action.VIEW, Action.COMMENT] },
-    { role: Role.OPERACIONES, module: Module.INGENIERIA,    actions: [Action.VIEW] },
-    { role: Role.OPERACIONES, module: Module.OPERACIONES,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
-    { role: Role.OPERACIONES, module: Module.HABILITACION,  actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
-    { role: Role.OPERACIONES, module: Module.POSTVENTA,     actions: [Action.VIEW, Action.COMMENT] },
-    { role: Role.OPERACIONES, module: Module.METRICAS,      actions: [Action.VIEW] },
-    { role: Role.OPERACIONES, module: Module.STOCK,         actions: [Action.VIEW] },
-    { role: Role.FINANZAS, module: Module.FINANZAS, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
-    { role: Role.FINANZAS, module: Module.STOCK,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+async function seedPermissions(roleIdByName: Map<string, string>) {
+  const matrix: Array<{ roleName: string; module: Module; actions: Action[] }> = [
+    { roleName: "ADMIN", module: Module.VENTAS,         actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMMENT] },
+    { roleName: "ADMIN", module: Module.ONBOARDING,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { roleName: "ADMIN", module: Module.INGENIERIA,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { roleName: "ADMIN", module: Module.OPERACIONES,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { roleName: "ADMIN", module: Module.HABILITACION,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { roleName: "ADMIN", module: Module.POSTVENTA,      actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { roleName: "ADMIN", module: Module.METRICAS,       actions: [Action.VIEW] },
+    { roleName: "ADMIN", module: Module.CONFIGURACION,  actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { roleName: "ADMIN", module: Module.USUARIOS,       actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { roleName: "ADMIN", module: Module.FINANZAS,       actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { roleName: "ADMIN", module: Module.STOCK,          actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { roleName: "ASESOR_COMERCIAL", module: Module.VENTAS,        actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMMENT] },
+    { roleName: "ASESOR_COMERCIAL", module: Module.ONBOARDING,    actions: [Action.VIEW, Action.COMMENT] },
+    { roleName: "ASESOR_COMERCIAL", module: Module.INGENIERIA,    actions: [Action.VIEW] },
+    { roleName: "ASESOR_COMERCIAL", module: Module.OPERACIONES,   actions: [Action.VIEW] },
+    { roleName: "ASESOR_COMERCIAL", module: Module.HABILITACION,  actions: [Action.VIEW] },
+    { roleName: "ASESOR_COMERCIAL", module: Module.POSTVENTA,     actions: [Action.VIEW] },
+    { roleName: "INGENIERIA", module: Module.ONBOARDING,    actions: [Action.VIEW, Action.COMMENT] },
+    { roleName: "INGENIERIA", module: Module.INGENIERIA,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
+    { roleName: "INGENIERIA", module: Module.OPERACIONES,   actions: [Action.VIEW, Action.COMMENT] },
+    { roleName: "INGENIERIA", module: Module.HABILITACION,  actions: [Action.VIEW, Action.COMMENT] },
+    { roleName: "INGENIERIA", module: Module.POSTVENTA,     actions: [Action.VIEW] },
+    { roleName: "INGENIERIA", module: Module.METRICAS,      actions: [Action.VIEW] },
+    { roleName: "OPERACIONES", module: Module.VENTAS,        actions: [Action.VIEW] },
+    { roleName: "OPERACIONES", module: Module.ONBOARDING,    actions: [Action.VIEW, Action.COMMENT] },
+    { roleName: "OPERACIONES", module: Module.INGENIERIA,    actions: [Action.VIEW] },
+    { roleName: "OPERACIONES", module: Module.OPERACIONES,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
+    { roleName: "OPERACIONES", module: Module.HABILITACION,  actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
+    { roleName: "OPERACIONES", module: Module.POSTVENTA,     actions: [Action.VIEW, Action.COMMENT] },
+    { roleName: "OPERACIONES", module: Module.METRICAS,      actions: [Action.VIEW] },
+    { roleName: "OPERACIONES", module: Module.STOCK,         actions: [Action.VIEW] },
+    { roleName: "FINANZAS", module: Module.FINANZAS, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { roleName: "FINANZAS", module: Module.STOCK,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
   ];
 
   for (const entry of matrix) {
+    const roleId = roleIdByName.get(entry.roleName);
+    if (!roleId) throw new Error(`Rol ${entry.roleName} no encontrado`);
     for (const action of entry.actions) {
       await prisma.permission.upsert({
         where: {
-          role_module_action: { role: entry.role, module: entry.module, action },
+          roleId_module_action: { roleId, module: entry.module, action },
         },
-        create: { role: entry.role, module: entry.module, action },
+        create: { roleId, module: entry.module, action },
         update: {},
       });
     }
@@ -1785,7 +1815,8 @@ async function seedFinanceAndStock(
 // ─── Entry point ──────────────────────────────────────────────────────────────
 
 async function run() {
-  const { admin, operations, comercial, ingeniero } = await createUsers();
+  const roleIdByName = await seedSystemRoles();
+  const { admin, operations, comercial, ingeniero } = await createUsers(roleIdByName);
 
   const project1Id = await seedProject1(admin.id, operations.id);
   const project2Id = await seedProject2(admin.id, operations.id);
@@ -1799,7 +1830,7 @@ async function run() {
   await createProjectAudits(project3Id, admin.id);
   await createProjectAudits(project4Id, admin.id);
 
-  await seedPermissions();
+  await seedPermissions(roleIdByName);
   await seedSettings(admin.id);
   await seedLeads(comercial.id, admin.id, project1Id);
   await seedGoals(admin.id);
