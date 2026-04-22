@@ -1,87 +1,60 @@
 import type { Project } from "../../types/api.types";
 
-function fmtSignedDays(value: number) {
-  if (value > 0) return `+${value} días`;
-  if (value < 0) return `${value} días`;
-  return "0 días";
+function daysBetween(fromIso: string | null, to: Date): number | null {
+  if (!fromIso) return null;
+  const from = new Date(fromIso);
+  if (isNaN(from.getTime())) return null;
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  return Math.max(0, Math.round((to.getTime() - from.getTime()) / DAY_MS));
 }
 
 export function ProjectTimelineIndicators({ project }: { project: Project }) {
   const metrics = project.metrics;
-  const totalPlannedDays = Math.max(metrics.totalPlannedDays, 1);
-  const timeConsumedPercent = Math.max(0, Math.min(100, (metrics.daysElapsed / totalPlannedDays) * 100));
-  const adjustedEndDate =
-    project.plannedEndDate && metrics.delayDays !== 0
-      ? new Date(new Date(project.plannedEndDate).getTime() + metrics.delayDays * 24 * 60 * 60 * 1000)
-      : null;
-  const plannedEndDate = project.plannedEndDate ? new Date(project.plannedEndDate) : null;
-  const rhythmAtRisk = timeConsumedPercent > metrics.progressPercent + 15;
+  const now = new Date();
+  const daysSinceSale = daysBetween(project.createdAt, now);
+  const currentStage = project.currentStage;
 
   return (
     <div className="mb-4 grid gap-3 md:grid-cols-3">
       <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
         <p className="mb-2 font-mono text-[9px] uppercase tracking-widest text-[var(--color-text-muted)]">
-          Tiempo consumido vs avance
+          Avance general
         </p>
         <div className="relative h-3 overflow-hidden rounded-full bg-[var(--color-bg-app)]">
           <div
-            className="absolute inset-y-0 left-0 rounded-full bg-sky-500/40"
-            style={{ width: `${timeConsumedPercent}%` }}
-          />
-          <div
-            className="absolute inset-y-0 left-0 rounded-full bg-[var(--color-state-done-text)]/70"
+            className="absolute inset-y-0 left-0 rounded-full bg-[var(--color-state-done-text)]/80"
             style={{ width: `${metrics.progressPercent}%` }}
           />
         </div>
-        <div className="mt-2 flex items-center justify-between text-[11px] text-[var(--color-text-secondary)]">
-          <span>Tiempo {timeConsumedPercent.toFixed(1)}%</span>
-          <span>Avance {metrics.progressPercent}%</span>
-        </div>
-        {rhythmAtRisk ? (
-          <p className="mt-2 text-xs text-[var(--color-warn-inline)]">⚠ Ritmo en riesgo</p>
-        ) : (
-          <p className="mt-2 text-xs text-[var(--color-text-muted)]">Ritmo alineado al plan</p>
-        )}
+        <p className="mt-2 text-[11px] text-[var(--color-text-secondary)]">
+          {metrics.progressPercent}% completado
+        </p>
       </section>
 
       <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
         <p className="mb-2 font-mono text-[9px] uppercase tracking-widest text-[var(--color-text-muted)]">
-          Desvío acumulado
+          Tiempo desde venta
         </p>
-        <div
-          className={`font-display text-3xl font-bold ${
-            metrics.delayDays > 0
-              ? "text-red-400"
-              : metrics.delayDays < 0
-                ? "text-[var(--color-state-done-text)]"
-                : "text-[var(--color-text-primary)]"
-          }`}
-        >
-          {fmtSignedDays(metrics.delayDays)}
+        <div className="font-display text-3xl font-bold text-[var(--color-text-primary)]">
+          {daysSinceSale != null ? `${daysSinceSale}` : "—"}
+          {daysSinceSale != null && (
+            <span className="ml-2 text-sm font-normal text-[var(--color-text-muted)]">días</span>
+          )}
         </div>
         <p className="mt-2 text-xs text-[var(--color-text-secondary)]">
-          {metrics.delayDays > 0
-            ? "Acumula retraso respecto del plan"
-            : metrics.delayDays < 0
-              ? "Viene adelantado frente al plan"
-              : "Sin desvíos acumulados"}
+          Desde la creación del proyecto
         </p>
       </section>
 
       <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
         <p className="mb-2 font-mono text-[9px] uppercase tracking-widest text-[var(--color-text-muted)]">
-          Entrega ajustada
+          Etapa actual
         </p>
         <div className="font-display text-2xl font-bold text-[var(--color-text-primary)]">
-          {adjustedEndDate
-            ? adjustedEndDate.toLocaleDateString("es-UY", { day: "2-digit", month: "short", year: "numeric" })
-            : "Sin cambio"}
+          {currentStage ? (currentStage.label || currentStage.name) : "—"}
         </div>
         <p className="mt-2 text-xs text-[var(--color-text-secondary)]">
-          Plan original:{" "}
-          {plannedEndDate
-            ? plannedEndDate.toLocaleDateString("es-UY", { day: "2-digit", month: "short", year: "numeric" })
-            : "—"}
+          {currentStage ? `${currentStage.progressPercent}% de avance en esta etapa` : "Sin etapa en curso"}
         </p>
       </section>
     </div>

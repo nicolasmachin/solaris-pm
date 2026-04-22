@@ -444,7 +444,7 @@ export function Metrics() {
                 </p>
               </div>
               <p className="text-xs text-[var(--color-text-secondary)] mt-auto">
-                {safe(overviewQ.data.completedProjects)} completados
+                {safe(overviewQ.data.completedProjects)} completados · venta→entrega: {overviewQ.data.avgSaleToDeliveryDays != null ? `${safe(overviewQ.data.avgSaleToDeliveryDays, 0)} días prom.` : "—"}
               </p>
             </div>
 
@@ -481,15 +481,15 @@ export function Metrics() {
               {/* Duración por etapa */}
               <div>
                 <p className="text-sm font-medium text-[var(--color-text-primary)] mb-4">
-                  Duración real vs plan por etapa
+                  Duración real por etapa
                 </p>
                 <StageTimingChart stages={stagesQ.data} />
               </div>
 
-              {/* Ranking */}
+              {/* Proyectos activos */}
               <div>
                 <p className="text-sm font-medium text-[var(--color-text-primary)] mb-4">
-                  Ranking por desvío
+                  Proyectos activos
                 </p>
                 <ProjectRanking projects={projectsQ.data} />
               </div>

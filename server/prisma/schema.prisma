@@ -331,20 +331,20 @@ model Project {
   locationProvince  String
   status            ProjectStatus
   startDate         DateTime             @db.Date
-  plannedEndDate    DateTime             @db.Date
+  plannedEndDate    DateTime?            @db.Date
   actualEndDate     DateTime?            @db.Date
-  budgetUsd         Decimal              @db.Decimal(14, 2)
+  budgetUsd         Decimal?             @db.Decimal(14, 2)
   executedUsd       Decimal              @db.Decimal(14, 2)
-  estimatedMwhYear  Decimal              @db.Decimal(10, 2)
-  co2TonsAvoided    Decimal              @db.Decimal(10, 2)
+  estimatedMwhYear  Decimal?             @db.Decimal(10, 2)
+  co2TonsAvoided    Decimal?             @db.Decimal(10, 2)
   actualOnboardingEnd   DateTime?         @db.Date
   actualEngineeringEnd  DateTime?         @db.Date
   actualUteStart        DateTime?         @db.Date
   actualUteEnd          DateTime?         @db.Date
   modalidadPago          ModalidadPago?
   firstDateScheduledAt   DateTime?            @db.Timestamptz(6)
-  notificationEmail      String
-  notificationPhone String
+  notificationEmail      String?
+  notificationPhone String?
   createdById       String
   createdBy         User                 @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   salespersonId     String?

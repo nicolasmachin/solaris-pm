@@ -898,7 +898,6 @@ function RoleCreateModal({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, "_"))}
-              placeholder="Ej: SOPORTE_TECNICO"
               style={inputStyle}
               required
               autoFocus
@@ -910,7 +909,6 @@ function RoleCreateModal({
               type="text"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              placeholder="Ej: Soporte técnico"
               style={inputStyle}
               required
             />
@@ -1485,7 +1483,7 @@ function TabObjetivos() {
             </div>
             <div>
               <label style={labelStyle}>Objetivo</label>
-              <input style={inputStyle} type="number" step="0.01" value={addValue} onChange={e => setAddValue(e.target.value)} placeholder="0" />
+              <input style={inputStyle} type="number" step="0.01" value={addValue} onChange={e => setAddValue(e.target.value)} />
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 14 }}>
@@ -1594,7 +1592,6 @@ function TabFinanzas() {
       <form onSubmit={handleAdd} style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" as const }}>
         <input
           style={{ ...inputStyle, flex: 1, minWidth: 180 }}
-          placeholder="Nombre de subcategoría"
           value={nombre}
           onChange={e => setNombre(e.target.value)}
           required
@@ -1846,7 +1843,6 @@ function TeamModal({ team, onClose, onSaved }: { team: Team | null; onClose: () 
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ej. Equipo propio"
               style={inputStyle}
               required
               autoFocus
@@ -2706,7 +2702,6 @@ function SubstageRow({
           type="text"
           value={substage.name}
           onChange={(e) => onUpdate({ name: e.target.value })}
-          placeholder="Nombre de la subetapa"
           style={{ ...inputStyle, fontSize: 12 }}
         />
         <select
@@ -2818,7 +2813,6 @@ function ChecklistEditor({
                   type="text"
                   value={item.label}
                   onChange={(e) => onUpdateItem(itemIdx, { label: e.target.value })}
-                  placeholder="Descripción del ítem"
                   style={{ ...inputStyle, fontSize: 11, padding: "5px 8px" }}
                 />
                 <label

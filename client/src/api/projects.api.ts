@@ -30,9 +30,7 @@ export async function createProject(body: {
   capacityKwp: number;
   locationCity: string;
   locationProvince: string;
-  plannedEndDate: string;
-  budgetUsd: number;
-  startDate?: string;
+  budgetUsd?: number;
   estimatedMwhYear?: number;
   salespersonId?: string;
   notificationEmail?: string;
@@ -55,10 +53,9 @@ export async function patchProject(
     locationCity?: string;
     locationProvince?: string;
     status?: import("../types/api.types").ProjectStatus;
-    plannedEndDate?: string | null;
-    budgetUsd?: number;
-    notificationEmail?: string;
-    notificationPhone?: string;
+    budgetUsd?: number | null;
+    notificationEmail?: string | null;
+    notificationPhone?: string | null;
     firstDateScheduledAt?: string | null;
   }
 ): Promise<Project> {
@@ -67,11 +64,11 @@ export async function patchProject(
 }
 
 export async function createSolarSystem(projectId: string, body: SolarSystemPayload): Promise<SolarSystem> {
-  const { data } = await apiClient.post<SolarSystem>(`/api/projects/${projectId}/solar-systems`, body);
+  const { data } = await apiClient.post<SolarSystem>(`/api/projects/${projectId}/systems`, body);
   return data;
 }
 
 export async function patchSolarSystem(projectId: string, solarSystemId: string, body: SolarSystemPayload): Promise<SolarSystem> {
-  const { data } = await apiClient.patch<SolarSystem>(`/api/projects/${projectId}/solar-systems/${solarSystemId}`, body);
+  const { data } = await apiClient.patch<SolarSystem>(`/api/projects/${projectId}/systems/${solarSystemId}`, body);
   return data;
 }

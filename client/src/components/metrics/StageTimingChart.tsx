@@ -13,96 +13,76 @@ export function StageTimingChart({ stages }: StageTimingChartProps) {
   const filtered = stages.filter(
     (s) => s.stageName !== "POSTVENTA" && s.completedCount > 0,
   );
-  const maxDays = Math.max(1, ...filtered.flatMap((s) => [s.avgPlannedDays, s.avgActualDays]));
+  const maxDays = Math.max(1, ...filtered.map((s) => s.maxActualDays));
 
   if (filtered.length === 0) {
     return (
       <p className="text-sm text-[var(--color-text-muted)]">
-        Todavía no hay proyectos completados para calcular promedios.
+        Todavía no hay etapas completadas para calcular duraciones.
       </p>
     );
   }
 
   return (
     <div>
-      {/* Leyenda */}
       <div className="flex items-center gap-4 mb-4">
         <span className="flex items-center gap-1.5 text-[11px] text-[var(--color-text-muted)]">
           <span
             className="inline-block w-3 h-3 rounded-sm"
-            style={{ background: "rgba(14,165,233,0.7)" }}
+            style={{ background: "rgba(55,138,221,0.7)" }}
           />
-          Plan
+          Promedio real
         </span>
-        <span className="flex items-center gap-1.5 text-[11px] text-[var(--color-text-muted)]">
-          <span
-            className="inline-block w-3 h-3 rounded-sm"
-            style={{ background: "rgba(245,158,11,0.7)" }}
-          />
-          Real
+        <span className="text-[11px] text-[var(--color-text-muted)]">
+          (min/max = rango observado)
         </span>
       </div>
 
       <div className="space-y-5">
-        {filtered.map((stage) => (
-          <div key={stage.stageName}>
-            {/* Header de etapa */}
-            <div className="flex items-center justify-between mb-1.5">
-              <div>
-                <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                  {stage.stageLabel}
-                </span>
-                <span className="ml-2 text-[10px] text-[var(--color-text-muted)]">
-                  {stage.completedCount} proy.
+        {filtered.map((stage) => {
+          const avgPct = (stage.avgActualDays / maxDays) * 100;
+          const minPct = (stage.minActualDays / maxDays) * 100;
+          const maxPct = (stage.maxActualDays / maxDays) * 100;
+          return (
+            <div key={stage.stageName}>
+              <div className="flex items-center justify-between mb-1.5">
+                <div>
+                  <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                    {stage.stageLabel}
+                  </span>
+                  <span className="ml-2 text-[10px] text-[var(--color-text-muted)]">
+                    {stage.completedCount} etapas completadas
+                  </span>
+                </div>
+                <span className="text-sm font-semibold tabular-nums text-[var(--color-text-primary)]">
+                  {fmt(stage.avgActualDays)}d
                 </span>
               </div>
-              <span
-                className={`text-sm font-semibold tabular-nums ${
-                  stage.avgDelayDays > 0
-                    ? "text-red-400"
-                    : stage.avgDelayDays < 0
-                      ? "text-green-400"
-                      : "text-[var(--color-text-muted)]"
-                }`}
-              >
-                {stage.avgDelayDays > 0 ? "+" : ""}
-                {fmt(stage.avgDelayDays)}d
-              </span>
-            </div>
 
-            {/* Barra Plan */}
-            <div className="mb-1">
-              <div className="h-2 rounded-full bg-[var(--color-bg-app)] overflow-hidden">
+              <div className="relative h-2 rounded-full bg-[var(--color-bg-app)] overflow-hidden">
                 <div
-                  className="h-2 rounded-full transition-all duration-500"
+                  className="absolute top-0 h-2 rounded-full"
                   style={{
-                    width: `${(stage.avgPlannedDays / maxDays) * 100}%`,
-                    background: "rgba(14,165,233,0.7)",
+                    left: `${minPct}%`,
+                    width: `${Math.max(maxPct - minPct, 0.5)}%`,
+                    background: "rgba(55,138,221,0.25)",
+                  }}
+                />
+                <div
+                  className="absolute top-0 h-2 rounded-full transition-all duration-500"
+                  style={{
+                    width: `${avgPct}%`,
+                    background: "rgba(55,138,221,0.9)",
                   }}
                 />
               </div>
-              <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5">
-                plan {fmt(stage.avgPlannedDays)}d
+              <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5 flex justify-between">
+                <span>min {fmt(stage.minActualDays)}d</span>
+                <span>max {fmt(stage.maxActualDays)}d</span>
               </p>
             </div>
-
-            {/* Barra Real */}
-            <div>
-              <div className="h-2 rounded-full bg-[var(--color-bg-app)] overflow-hidden">
-                <div
-                  className="h-2 rounded-full transition-all duration-500"
-                  style={{
-                    width: `${(stage.avgActualDays / maxDays) * 100}%`,
-                    background: "rgba(245,158,11,0.7)",
-                  }}
-                />
-              </div>
-              <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5">
-                real {fmt(stage.avgActualDays)}d
-              </p>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -9,7 +9,6 @@ import {
   buildSolarSystemPayload,
   EMPTY_SOLAR_SYSTEM_FORM,
   hasSolarSystemValues,
-  validateSolarSystem,
   type SolarSystemFormValues,
   SolarSystemFields,
 } from "./SolarSystemFields";
@@ -19,9 +18,7 @@ interface NewProjectForm {
   capacityKwp: string;
   locationCity: string;
   locationProvince: string;
-  plannedEndDate: string;
   budgetUsd: string;
-  startDate: string;
   salespersonId: string;
   notificationEmail: string;
   notificationPhone: string;
@@ -32,9 +29,7 @@ const EMPTY_FORM: NewProjectForm = {
   capacityKwp: "",
   locationCity: "",
   locationProvince: "",
-  plannedEndDate: "",
   budgetUsd: "",
-  startDate: new Date().toISOString().split("T")[0] ?? "",
   salespersonId: "",
   notificationEmail: "",
   notificationPhone: "",
@@ -52,20 +47,14 @@ function calculateCapacity(solarForm: SolarSystemFormValues): number {
   return Math.min(panelCapacityKw, inverterCapacityKw);
 }
 
-function validate(form: NewProjectForm, solarForm: SolarSystemFormValues) {
+function validate(form: NewProjectForm) {
   const errors: Partial<Record<keyof NewProjectForm, string>> = {};
+  // Sólo estos 4 son obligatorios
   if (!form.clientName.trim()) errors.clientName = "Requerido";
   if (!form.locationCity.trim()) errors.locationCity = "Requerido";
   if (!form.locationProvince.trim()) errors.locationProvince = "Requerido";
-  if (!form.plannedEndDate) errors.plannedEndDate = "Requerido";
-  if (!form.budgetUsd || Number(form.budgetUsd) <= 0) errors.budgetUsd = "Debe ser mayor a 0";
-  if (!form.salespersonId) errors.salespersonId = "Requerido";
-
-  const solarErrors = validateSolarSystem(solarForm);
-  if (Object.keys(solarErrors).length > 0) {
-    errors.capacityKwp = "Sistema fotovoltaico: completá los campos obligatorios";
-  }
-
+  // capacityKwp se valida por solarForm (o es 0 y el usuario tiene que cargar después)
+  if (form.budgetUsd && Number(form.budgetUsd) <= 0) errors.budgetUsd = "Debe ser mayor a 0";
   return errors;
 }
 
@@ -99,8 +88,6 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
   const [form, setForm] = useState<NewProjectForm>(EMPTY_FORM);
   const [solarForm, setSolarForm] = useState<SolarSystemFormValues>(EMPTY_SOLAR_SYSTEM_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof NewProjectForm, string>>>({});
-  const [solarErrors, setSolarErrors] = useState<Partial<Record<keyof SolarSystemFormValues, string>>>({});
-  const [showSolarSection, setShowSolarSection] = useState(true);
 
   const { data: users = [] } = useQuery({
     queryKey: ["users"],
@@ -110,20 +97,20 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
   const mutation = useMutation({
     mutationFn: () => {
       const capacityKwp = calculateCapacity(solarForm);
-      const estimatedMwhYear = capacityKwp > 0 ? capacityKwp * 1.478 : undefined;
+      const hasCapacity = capacityKwp > 0;
+      const estimatedMwhYear = hasCapacity ? capacityKwp * 1.478 : undefined;
+      const solarPayload = hasSolarSystemValues(solarForm) ? buildSolarSystemPayload(solarForm) : undefined;
       return createProject({
         clientName: form.clientName.trim(),
-        capacityKwp,
+        capacityKwp: hasCapacity ? capacityKwp : 0.01, // placeholder mínimo, el admin lo edita después
         locationCity: form.locationCity.trim(),
         locationProvince: form.locationProvince.trim(),
-        plannedEndDate: form.plannedEndDate,
-        budgetUsd: Number(form.budgetUsd),
-        startDate: form.startDate || undefined,
+        budgetUsd: form.budgetUsd ? Number(form.budgetUsd) : undefined,
         estimatedMwhYear,
         salespersonId: form.salespersonId || undefined,
         notificationEmail: form.notificationEmail.trim() || undefined,
         notificationPhone: form.notificationPhone.trim() || undefined,
-        solarSystem: buildSolarSystemPayload(solarForm),
+        solarSystem: solarPayload,
       });
     },
     onSuccess: (project) => {
@@ -148,22 +135,17 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
 
   function updateSolarField(key: keyof SolarSystemFormValues, value: string) {
     setSolarForm((current) => ({ ...current, [key]: value }));
-    if (solarErrors[key]) {
-      setSolarErrors((current) => ({ ...current, [key]: undefined }));
-    }
   }
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    const nextErrors = validate(form, solarForm);
-    const nextSolarErrors = validateSolarSystem(solarForm);
-    if (Object.keys(nextErrors).length > 0 || Object.keys(nextSolarErrors).length > 0) {
+    const nextErrors = validate(form);
+    if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
-      setSolarErrors(nextSolarErrors);
       return;
     }
+    // El sistema técnico es 100% opcional — se envía lo que haya cargado el usuario.
     setErrors({});
-    setSolarErrors({});
     mutation.mutate();
   }
 
@@ -184,43 +166,33 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
           <div className="space-y-4">
             <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--color-text-muted)]">Datos del proyecto</p>
 
-            <Field label="Nombre del cliente" error={errors.clientName}>
-              <input className={input(!!errors.clientName)} value={form.clientName} onChange={(event) => updateField("clientName", event.target.value)} placeholder="Ej: Agroindustrial Sur S.A." />
+            <Field label="Nombre del cliente *" error={errors.clientName}>
+              <input className={input(!!errors.clientName)} value={form.clientName} onChange={(event) => updateField("clientName", event.target.value)} />
             </Field>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <Field label="Ciudad *" error={errors.locationCity}>
+                <input className={input(!!errors.locationCity)} value={form.locationCity} onChange={(event) => updateField("locationCity", event.target.value)} />
+              </Field>
+              <Field label="Departamento *" error={errors.locationProvince}>
+                <input className={input(!!errors.locationProvince)} value={form.locationProvince} onChange={(event) => updateField("locationProvince", event.target.value)} />
+              </Field>
+            </div>
 
             <Field label="Presupuesto (USD)" error={errors.budgetUsd}>
-              <input type="number" min="0" step="0.01" className={input(!!errors.budgetUsd)} value={form.budgetUsd} onChange={(event) => updateField("budgetUsd", event.target.value)} placeholder="120000" />
+              <input type="number" min="0" step="0.01" className={input(!!errors.budgetUsd)} value={form.budgetUsd} onChange={(event) => updateField("budgetUsd", event.target.value)} />
             </Field>
-
-            <div className="grid gap-3 md:grid-cols-2">
-              <Field label="Ciudad" error={errors.locationCity}>
-                <input className={input(!!errors.locationCity)} value={form.locationCity} onChange={(event) => updateField("locationCity", event.target.value)} placeholder="Montevideo" />
-              </Field>
-              <Field label="Departamento" error={errors.locationProvince}>
-                <input className={input(!!errors.locationProvince)} value={form.locationProvince} onChange={(event) => updateField("locationProvince", event.target.value)} placeholder="Montevideo" />
-              </Field>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-2">
-              <Field label="Fecha de inicio">
-                <input type="date" className={input()} value={form.startDate} onChange={(event) => updateField("startDate", event.target.value)} />
-              </Field>
-              <Field label="Fecha estimada de fin" error={errors.plannedEndDate}>
-                <input type="date" className={input(!!errors.plannedEndDate)} value={form.plannedEndDate} onChange={(event) => updateField("plannedEndDate", event.target.value)} />
-              </Field>
-            </div>
 
             <div className="grid gap-3 md:grid-cols-2">
               <Field label="Email de notificación">
-                <input type="text" className={input()} value={form.notificationEmail} onChange={(event) => updateField("notificationEmail", event.target.value)} placeholder="cliente@empresa.com" />
+                <input type="text" className={input()} value={form.notificationEmail} onChange={(event) => updateField("notificationEmail", event.target.value)} />
+              </Field>
+              <Field label="Teléfono WhatsApp">
+                <input type="tel" className={input()} value={form.notificationPhone} onChange={(event) => updateField("notificationPhone", event.target.value)} />
               </Field>
             </div>
 
-            <Field label="Teléfono WhatsApp">
-              <input type="tel" className={input()} value={form.notificationPhone} onChange={(event) => updateField("notificationPhone", event.target.value)} placeholder="+59899123456" />
-            </Field>
-
-            <Field label="Vendedor *" error={errors.salespersonId}>
+            <Field label="Vendedor" error={errors.salespersonId}>
               <select className={input(!!errors.salespersonId)} value={form.salespersonId} onChange={(event) => updateField("salespersonId", event.target.value)}>
                 <option value="">Seleccionar vendedor...</option>
                 {users.map(user => (
@@ -231,9 +203,9 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
           </div>
 
           <div className="space-y-4">
-            <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--color-text-muted)]">Sistema fotovoltaico *</p>
+            <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--color-text-muted)]">Sistema fotovoltaico (opcional)</p>
             <div className="rounded-xl border border-[var(--color-border)] px-4 py-4">
-              <SolarSystemFields form={solarForm} onChange={updateSolarField} errors={solarErrors} />
+              <SolarSystemFields form={solarForm} onChange={updateSolarField} optional />
             </div>
           </div>
 

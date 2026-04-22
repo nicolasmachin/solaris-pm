@@ -151,7 +151,7 @@ function IngresoModal({ product, onSuccess, onClose }: { product: StockProduct; 
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div><label className={lbl}>Fecha *</label><input type="date" className={inp} value={form.fecha} onChange={e => setF('fecha', e.target.value)} required /></div>
-            <div><label className={lbl}>Cantidad *</label><input type="number" className={inp} min="0.001" step="0.001" placeholder={product.unidad} value={form.cantidad} onChange={e => setF('cantidad', e.target.value)} required /></div>
+            <div><label className={lbl}>Cantidad * <span className="text-[var(--color-text-muted)]">({product.unidad})</span></label><input type="number" className={inp} min="0.001" step="0.001" value={form.cantidad} onChange={e => setF('cantidad', e.target.value)} required /></div>
           </div>
           <div>
             <label className={lbl}>Costo unitario *</label>
@@ -251,8 +251,8 @@ function EgresoModal({ product, onSuccess, onClose }: { product: StockProduct; o
           <div className="grid grid-cols-2 gap-3">
             <div><label className={lbl}>Fecha *</label><input type="date" className={inp} value={form.fecha} onChange={e => setF('fecha', e.target.value)} required /></div>
             <div>
-              <label className={lbl}>Cantidad *</label>
-              <input type="number" className={inp} min="0.001" step="0.001" max={product.stockActual} placeholder={product.unidad}
+              <label className={lbl}>Cantidad * <span className="text-[var(--color-text-muted)]">({product.unidad})</span></label>
+              <input type="number" className={inp} min="0.001" step="0.001" max={product.stockActual}
                 value={form.cantidad} onChange={e => setF('cantidad', e.target.value)} required />
             </div>
           </div>
@@ -341,7 +341,7 @@ function AjusteModal({ product, onSuccess, onClose }: { product: StockProduct; o
           )}
           <div>
             <label className={lbl}>Motivo del ajuste *</label>
-            <textarea className={klass(inp, 'resize-none')} rows={3} placeholder="Ej: Conteo físico, merma, corrección de error..." value={form.motivo} onChange={e => setF('motivo', e.target.value)} required />
+            <textarea className={klass(inp, 'resize-none')} rows={3} value={form.motivo} onChange={e => setF('motivo', e.target.value)} required />
           </div>
           {error && <p className="text-sm text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{error}</p>}
           <div className="flex gap-3 pt-1">

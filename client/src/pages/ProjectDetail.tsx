@@ -117,8 +117,7 @@ function EditProjectModal({
   const [capacityKwp, setCapacityKwp] = useState(String(project.capacityKwp));
   const [locationCity, setLocationCity] = useState(project.locationCity);
   const [locationProvince, setLocationProvince] = useState(project.locationProvince);
-  const [plannedEndDate, setPlannedEndDate] = useState(project.plannedEndDate?.slice(0, 10) ?? "");
-  const [budgetUsd, setBudgetUsd] = useState(String(project.budgetUsd));
+  const [budgetUsd, setBudgetUsd] = useState(project.budgetUsd != null ? String(project.budgetUsd) : "");
   const [notificationEmail, setNotificationEmail] = useState(project.notificationEmail ?? "");
   const [notificationPhone, setNotificationPhone] = useState(project.notificationPhone ?? "");
   const [firstDateScheduledAt, setFirstDateScheduledAt] = useState(
@@ -126,20 +125,22 @@ function EditProjectModal({
   );
 
   const { mutate, isPending } = useMutation({
-    mutationFn: () =>
-      patchProject(project.id, {
-        clientName,
-        capacityKwp: parseFloat(capacityKwp),
-        locationCity,
-        locationProvince,
-        plannedEndDate: plannedEndDate || null,
-        budgetUsd: parseFloat(budgetUsd),
-        notificationEmail: notificationEmail || undefined,
-        notificationPhone: notificationPhone || undefined,
+    mutationFn: () => {
+      const capNum = parseFloat(capacityKwp);
+      const budgetNum = budgetUsd.trim() === "" ? null : parseFloat(budgetUsd);
+      return patchProject(project.id, {
+        clientName: clientName.trim(),
+        capacityKwp: Number.isFinite(capNum) && capNum > 0 ? capNum : 0.01,
+        locationCity: locationCity.trim(),
+        locationProvince: locationProvince.trim(),
+        budgetUsd: budgetNum != null && Number.isFinite(budgetNum) ? budgetNum : null,
+        notificationEmail: notificationEmail.trim() || null,
+        notificationPhone: notificationPhone.trim() || null,
         firstDateScheduledAt: firstDateScheduledAt
           ? new Date(firstDateScheduledAt).toISOString()
           : null,
-      }),
+      });
+    },
     onSuccess: () => {
       toast.success("Proyecto actualizado");
       onSaved();
@@ -168,11 +169,11 @@ function EditProjectModal({
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
-              <label style={labelStyle}>Ciudad</label>
+              <label style={labelStyle}>Ciudad *</label>
               <input style={inputStyle} value={locationCity} onChange={e => setLocationCity(e.target.value)} />
             </div>
             <div>
-              <label style={labelStyle}>Provincia</label>
+              <label style={labelStyle}>Departamento *</label>
               <input style={inputStyle} value={locationProvince} onChange={e => setLocationProvince(e.target.value)} />
             </div>
           </div>
@@ -186,15 +187,9 @@ function EditProjectModal({
               <input style={inputStyle} type="number" step="0.01" value={budgetUsd} onChange={e => setBudgetUsd(e.target.value)} />
             </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div>
-              <label style={labelStyle}>Fecha fin planificada</label>
-              <input style={inputStyle} type="date" value={plannedEndDate} onChange={e => setPlannedEndDate(e.target.value)} />
-            </div>
-            <div>
-              <label style={labelStyle}>Fecha tentativa de obra</label>
-              <input style={inputStyle} type="date" value={firstDateScheduledAt} onChange={e => setFirstDateScheduledAt(e.target.value)} />
-            </div>
+          <div>
+            <label style={labelStyle}>Fecha tentativa de obra</label>
+            <input style={inputStyle} type="date" value={firstDateScheduledAt} onChange={e => setFirstDateScheduledAt(e.target.value)} />
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
@@ -366,7 +361,7 @@ function ConsumoModal({ projectId, onClose, onSaved }: { projectId: string; onCl
 
         <div>
           <label className={lbl}>Observaciones</label>
-          <input className={inp} value={observaciones} onChange={e => setObservaciones(e.target.value)} placeholder="Opcional" />
+          <input className={inp} value={observaciones} onChange={e => setObservaciones(e.target.value)} />
         </div>
 
         {serverErr && <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-3">{serverErr}</p>}

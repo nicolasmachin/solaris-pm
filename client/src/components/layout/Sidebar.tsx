@@ -203,20 +203,10 @@ function ProjectItem({
   project: ProjectListItem;
   onClick: () => void;
 }) {
-  const showDelayAlert = project.delayDays > 5;
-  const showOverdueStageAlert = Boolean(project.hasOverdueStage);
-  const tooltip = [
-    showDelayAlert ? `Proyecto con desvío acumulado de ${project.delayDays} días` : null,
-    showOverdueStageAlert ? "Tiene una etapa vencida que sigue en curso" : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
-
   return (
     <NavLink
       to={`/projects/${project.id}`}
       onClick={onClick}
-      title={tooltip || undefined}
       className={({ isActive }) =>
         `block px-3 py-3 transition-colors border-l-2 ${
           isActive
@@ -229,8 +219,6 @@ function ProjectItem({
         <p className="truncate text-xs font-medium leading-snug text-[var(--color-text-primary)]">
           {project.clientName}
         </p>
-        {showDelayAlert ? <span className="text-xs text-[var(--color-accent)]">⚠</span> : null}
-        {showOverdueStageAlert ? <span className="inline-block h-2 w-2 rounded-full bg-[var(--color-alert-dot)]" /> : null}
       </div>
       <p className="text-[10px] font-mono text-[var(--color-text-muted)] mt-0.5 truncate">
         {project.capacityKwp} kWp · {project.currentStage?.label ?? project.currentStage?.name ?? "Sin etapa"}

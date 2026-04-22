@@ -73,7 +73,7 @@ import {
 } from "../services/pipeline-definitions.js";
 import { createNotificationIfNotExists } from "../services/notification.service.js";
 import { createAndSendNotification, checkProgressMilestone } from "../services/notify.service.js";
-import { diffInDays, parseDateOnly, todayUtc, toDateOnlyString } from "../utils/dates.js";
+import { addDays, diffInDays, parseDateOnly, todayUtc, toDateOnlyString } from "../utils/dates.js";
 import { AppError, badRequest, conflict, forbidden, notFound } from "../utils/errors.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../utils/serialization.js";
 
@@ -111,17 +111,19 @@ const solarSystemPatchSchema = solarSystemBaseSchema
 
 const projectCreateSchema = z
   .object({
+    // Obligatorios al crear: sólo estos 4
     clientName: z.string().min(1),
     capacityKwp: z.coerce.number().positive(),
     locationCity: z.string().min(1),
     locationProvince: z.string().min(1),
-    plannedEndDate: dateOnlySchema,
-    budgetUsd: z.coerce.number().positive(),
-    estimatedMwhYear: z.coerce.number().positive().optional().default(0),
+    // Todo lo demás: opcional. startDate default = hoy al crear.
+    plannedEndDate: dateOnlySchema.nullable().optional(),
+    budgetUsd: z.coerce.number().positive().nullable().optional(),
+    estimatedMwhYear: z.coerce.number().positive().nullable().optional(),
     salespersonId: z.string().optional(),
     modalidadPago: z.nativeEnum(ModalidadPago).optional(),
-    notificationEmail: z.string().email().optional().default(""),
-    notificationPhone: z.string().optional().default(""),
+    notificationEmail: z.string().email().nullable().optional(),
+    notificationPhone: z.string().nullable().optional(),
     startDate: dateOnlySchema.optional(),
     solarSystem: solarSystemCreateSchema.optional(),
   })
@@ -135,14 +137,14 @@ const projectPatchSchema = z
     locationProvince: z.string().min(1).optional(),
     status: z.nativeEnum(ProjectStatus).optional(),
     startDate: dateOnlySchema.optional(),
-    plannedEndDate: dateOnlySchema.optional(),
+    plannedEndDate: dateOnlySchema.nullable().optional(),
     actualEndDate: dateOnlySchema.nullable().optional(),
-    budgetUsd: z.coerce.number().positive().optional(),
+    budgetUsd: z.coerce.number().positive().nullable().optional(),
     executedUsd: z.coerce.number().nonnegative().optional(),
-    estimatedMwhYear: z.coerce.number().positive().optional(),
+    estimatedMwhYear: z.coerce.number().positive().nullable().optional(),
     modalidadPago: z.nativeEnum(ModalidadPago).nullable().optional(),
-    notificationEmail: z.string().email().optional(),
-    notificationPhone: z.string().min(1).optional(),
+    notificationEmail: z.union([z.string().email(), z.literal("")]).nullable().optional(),
+    notificationPhone: z.string().nullable().optional(),
     firstDateScheduledAt: z.string().datetime({ offset: true }).nullable().optional(),
   })
   .strict();
@@ -1192,7 +1194,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const user = ensureUser(request);
     const body = projectCreateSchema.parse(request.body);
     const startDate = body.startDate ? parseDateOnly(body.startDate) : todayUtc();
-    const plannedEndDate = parseDateOnly(body.plannedEndDate);
+    // plannedEndDate es opcional. Para armar el pipeline inicial si no viene,
+    // asumimos 90 días desde el inicio como placeholder (no se muestra en UI).
+    const plannedEndDate = body.plannedEndDate
+      ? parseDateOnly(body.plannedEndDate)
+      : addDays(startDate, 90);
 
     const code = await generateProjectCode();
 
@@ -1205,14 +1211,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
         locationProvince: body.locationProvince,
         status: ProjectStatus.ACTIVE,
         startDate,
-        plannedEndDate,
-        budgetUsd: new Prisma.Decimal(body.budgetUsd),
+        plannedEndDate: body.plannedEndDate ? plannedEndDate : null,
+        budgetUsd: body.budgetUsd != null ? new Prisma.Decimal(body.budgetUsd) : null,
         executedUsd: new Prisma.Decimal(0),
-        estimatedMwhYear: new Prisma.Decimal(body.estimatedMwhYear),
-        co2TonsAvoided: new Prisma.Decimal((body.estimatedMwhYear * 0.5).toFixed(2)),
+        estimatedMwhYear: body.estimatedMwhYear != null ? new Prisma.Decimal(body.estimatedMwhYear) : null,
+        co2TonsAvoided: body.estimatedMwhYear != null
+          ? new Prisma.Decimal((body.estimatedMwhYear * 0.5).toFixed(2))
+          : null,
         modalidadPago: body.modalidadPago ?? null,
-        notificationEmail: body.notificationEmail,
-        notificationPhone: body.notificationPhone,
+        notificationEmail: body.notificationEmail || null,
+        notificationPhone: body.notificationPhone || null,
         salespersonId: body.salespersonId ?? null,
         createdById: user.id,
         ...(body.solarSystem
@@ -2700,13 +2708,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     return {
       projectId: params.projectId,
-      timeEfficiency: metrics.timeEfficiency,
       stages: project.stages.map((stage) => ({
         id: stage.id,
         name: stage.name,
-        plannedDurationDays: stage.plannedDurationDays,
         actualDurationDays: stage.actualDurationDays,
-        delayDays: stage.delayDays,
       })),
       statusChanges: statusChanges.map((entry) => ({
         id: entry.id,
@@ -2859,15 +2864,18 @@ export async function registerApiRoutes(app: FastifyInstance) {
               (metricsByProject.reduce((sum, m) => sum + m.progressPercent, 0) / metricsByProject.length).toFixed(2),
             )
           : 0,
-      projectsWithDelay: metricsByProject.filter((m) => m.delayDays > 0).length,
-      avgDelayDays:
-        metricsByProject.length > 0
-          ? Number((metricsByProject.reduce((sum, m) => sum + m.delayDays, 0) / metricsByProject.length).toFixed(2))
-          : 0,
-      avgTimeEfficiency:
-        metricsByProject.length > 0
-          ? Number((metricsByProject.reduce((sum, m) => sum + m.timeEfficiency, 0) / metricsByProject.length).toFixed(2))
-          : 0,
+      // Tiempo promedio venta → entrega (en proyectos COMPLETED con actualUteEnd)
+      avgSaleToDeliveryDays: (() => {
+        const completed = projects.filter(
+          (p) => p.status === ProjectStatus.COMPLETED && p.actualUteEnd,
+        );
+        if (completed.length === 0) return null;
+        const totalDays = completed.reduce(
+          (sum, p) => sum + Math.max(0, diffInDays(p.createdAt, p.actualUteEnd!)),
+          0,
+        );
+        return Number((totalDays / completed.length).toFixed(1));
+      })(),
       goals: opsGoalsData,
     };
   });
@@ -2896,30 +2904,27 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return (Object.values(StageType) as StageType[])
       .filter((stageName) => stageName !== StageType.POSTVENTA)
       .map((stageName) => {
-      const items = grouped.get(stageName) ?? [];
-      const completedCount = items.length;
-      const avgPlannedDays =
-        completedCount > 0
-          ? Number((items.reduce((sum, stage) => sum + (stage.plannedDurationDays ?? 0), 0) / completedCount).toFixed(2))
-          : 0;
-      const avgActualDays =
-        completedCount > 0
-          ? Number((items.reduce((sum, stage) => sum + (stage.actualDurationDays ?? 0), 0) / completedCount).toFixed(2))
-          : 0;
-      const avgDelayDays =
-        completedCount > 0
-          ? Number((items.reduce((sum, stage) => sum + (stage.delayDays ?? 0), 0) / completedCount).toFixed(2))
-          : 0;
+        const items = grouped.get(stageName) ?? [];
+        const completedCount = items.length;
+        const durations = items
+          .map((stage) => stage.actualDurationDays)
+          .filter((d): d is number => d != null);
+        const avgActualDays =
+          durations.length > 0
+            ? Number((durations.reduce((s, d) => s + d, 0) / durations.length).toFixed(2))
+            : 0;
+        const minActualDays = durations.length > 0 ? Math.min(...durations) : 0;
+        const maxActualDays = durations.length > 0 ? Math.max(...durations) : 0;
 
-      return {
-        stageName,
-        stageLabel: getStageLabel(stageName),
-        avgPlannedDays,
-        avgActualDays,
-        avgDelayDays,
-        completedCount,
-      };
-    });
+        return {
+          stageName,
+          stageLabel: getStageLabel(stageName),
+          avgActualDays,
+          minActualDays,
+          maxActualDays,
+          completedCount,
+        };
+      });
   });
 
   app.get("/metrics/projects", { preHandler: authorize(Module.METRICAS, Action.VIEW) }, async () => {
@@ -2943,15 +2948,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
           capacityKwp: decimalToNumber(project.capacityKwp),
           status: project.status,
           progressPercent: metrics.progressPercent,
-          delayDays: metrics.delayDays,
-          timeEfficiency: metrics.timeEfficiency,
           daysElapsed: metrics.daysElapsed,
-          daysRemaining: metrics.daysRemaining,
           budgetUsd: decimalToNumber(project.budgetUsd),
           executedUsd: decimalToNumber(project.executedUsd),
         };
       })
-      .sort((a, b) => b.delayDays - a.delayDays);
+      .sort((a, b) => b.progressPercent - a.progressPercent);
   });
 
   app.get("/metrics/projects/:id/gantt", { preHandler: authorize(Module.METRICAS, Action.VIEW) }, async (request) => {

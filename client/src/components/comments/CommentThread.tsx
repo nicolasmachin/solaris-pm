@@ -365,7 +365,6 @@ export const CommentThread = memo(function CommentThread(props: CommentThreadPro
           <textarea
             ref={textareaRef}
             className="min-h-[72px] w-full resize-none rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none"
-            placeholder="Escribí un comentario..."
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={(event) => {

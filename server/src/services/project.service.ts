@@ -410,48 +410,31 @@ export async function createInitialPipeline(
 
 export function calculateProjectMetrics(project: {
   startDate: Date;
-  plannedEndDate: Date;
-  budgetUsd: Prisma.Decimal;
+  plannedEndDate: Date | null;
+  budgetUsd: Prisma.Decimal | null;
   executedUsd: Prisma.Decimal;
   stages: Array<{
     progressPercent: number;
-    plannedDurationDays: number | null;
-    delayDays: number | null;
     status: StageStatus;
   }>;
 }) {
   const today = todayUtc();
   const daysElapsed = Math.max(0, diffInDays(project.startDate, today));
-  const daysRemaining = diffInDays(today, project.plannedEndDate);
   const progressPercent =
     project.stages.length > 0
       ? Math.round(project.stages.reduce((sum, stage) => sum + stage.progressPercent, 0) / project.stages.length)
       : 0;
-  const totalPlannedDays = Math.max(
-    1,
-    project.stages.reduce((sum, stage) => sum + (stage.plannedDurationDays ?? 0), 0),
-  );
-  const delayDays = project.stages
-    .filter((stage) => stage.status === StageStatus.COMPLETED)
-    .reduce((sum, stage) => sum + (stage.delayDays ?? 0), 0);
-  const expectedProgress = Math.max(0.01, daysElapsed / totalPlannedDays);
-  const timeEfficiency = Number((((progressPercent / 100) / expectedProgress) * 100).toFixed(2));
-  const budgetUsedPercent = Number(
-    (
-      (decimalToNumber(project.executedUsd) ?? 0) /
-      Math.max(decimalToNumber(project.budgetUsd) ?? 1, 1) *
-      100
-    ).toFixed(2),
-  );
+  const budgetNumber = decimalToNumber(project.budgetUsd);
+  const executedNumber = decimalToNumber(project.executedUsd) ?? 0;
+  const budgetUsedPercent =
+    budgetNumber && budgetNumber > 0
+      ? Number(((executedNumber / budgetNumber) * 100).toFixed(2))
+      : null;
 
   return {
     progressPercent,
     daysElapsed,
-    daysRemaining,
-    delayDays,
-    timeEfficiency,
     budgetUsedPercent,
-    totalPlannedDays,
   };
 }
 
@@ -464,15 +447,15 @@ export function serializeProject(project: {
   locationProvince: string;
   status: ProjectStatus;
   startDate: Date;
-  plannedEndDate: Date;
+  plannedEndDate: Date | null;
   actualEndDate: Date | null;
-  budgetUsd: Prisma.Decimal;
+  budgetUsd: Prisma.Decimal | null;
   executedUsd: Prisma.Decimal;
-  estimatedMwhYear: Prisma.Decimal;
-  co2TonsAvoided: Prisma.Decimal;
+  estimatedMwhYear: Prisma.Decimal | null;
+  co2TonsAvoided: Prisma.Decimal | null;
   modalidadPago: ModalidadPago | null;
-  notificationEmail: string;
-  notificationPhone: string;
+  notificationEmail: string | null;
+  notificationPhone: string | null;
   salespersonId: string | null;
   salesperson?: { id: string; name: string } | null;
   firstDateScheduledAt?: Date | null;

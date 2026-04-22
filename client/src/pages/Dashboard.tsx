@@ -15,8 +15,8 @@ export function Dashboard() {
 
   const totalKwp = projects?.reduce((sum, p) => sum + p.capacityKwp, 0) ?? 0;
 
-  const withDeviation = projects?.filter(
-    (p) => p.delayDays > 0
+  const completedCount = projects?.filter(
+    (p) => p.status === "COMPLETED"
   ).length ?? 0;
 
   return (
@@ -50,11 +50,10 @@ export function Dashboard() {
             icon="☀️"
           />
           <KpiCard
-            title="Con desvío"
-            value={withDeviation}
-            unit="proyectos vencidos"
-            icon="⚠️"
-            highlight={withDeviation > 0}
+            title="Completados"
+            value={completedCount}
+            unit="proyectos entregados"
+            icon="✅"
           />
         </div>
       )}

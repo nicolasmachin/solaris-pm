@@ -174,7 +174,7 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId }: MovFormProps) 
       {/* Descripción */}
       <div>
         <label className={lbl}>Descripción *</label>
-        <input type="text" className={inp} placeholder="Descripción del movimiento" value={form.descripcion} onChange={e => setF('descripcion', e.target.value)} required />
+        <input type="text" className={inp} value={form.descripcion} onChange={e => setF('descripcion', e.target.value)} required />
       </div>
 
       {/* Fecha + Monto */}
@@ -191,7 +191,7 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId }: MovFormProps) 
               <option value="USD">USD</option>
               <option value="UYU">UYU</option>
             </select>
-            <input type="number" className={klass(inp, 'flex-1')} placeholder="0" min="0" step="0.01"
+            <input type="number" className={klass(inp, 'flex-1')} min="0" step="0.01"
               value={form.monto || ''} onChange={e => setF('monto', parseFloat(e.target.value) || 0)} required />
           </div>
         </div>
@@ -201,7 +201,7 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId }: MovFormProps) 
       {form.moneda === 'UYU' && (
         <div>
           <label className={lbl}>Tipo de cambio (UYU por USD)</label>
-          <input type="number" className={inp} placeholder="Ej: 44.50" min="0" step="0.01"
+          <input type="number" className={inp} min="0" step="0.01"
             value={form.tipoCambio ?? ''} onChange={e => setF('tipoCambio', parseFloat(e.target.value) || undefined)} />
         </div>
       )}
@@ -257,7 +257,7 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId }: MovFormProps) 
       {/* Observaciones */}
       <div>
         <label className={lbl}>Observaciones</label>
-        <textarea className={klass(inp, 'resize-none')} rows={2} placeholder="Notas opcionales..."
+        <textarea className={klass(inp, 'resize-none')} rows={2}
           value={form.observaciones ?? ''} onChange={e => setF('observaciones', e.target.value || undefined)} />
       </div>
 

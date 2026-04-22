@@ -369,7 +369,7 @@ export function Calendar() {
   useEffect(() => saveTeamFilter(selectedTeams), [selectedTeams]);
   const [showNewModal, setShowNewModal] = useState(false);
   const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
-  const [newModalPrefill, setNewModalPrefill] = useState<{ start: string; end: string } | null>(null);
+  const [newModalPrefill, setNewModalPrefill] = useState<{ start: string; end: string; projectId?: string } | null>(null);
   const [showReprogram, setShowReprogram] = useState(false);
   const [moveRequest, setMoveRequest] = useState<
     | { schedule: InstallationSchedule; targetStart: string; targetEnd: string }
@@ -398,23 +398,37 @@ export function Calendar() {
 
   const todayIso = todayIsoLocal();
 
-  // Query param ?start=YYYY-MM-DD para preseleccionar desde ProjectDetail
+  // Query params:
+  //   ?start=YYYY-MM-DD      → posicionar en el mes y seleccionar schedule que cubre ese día
+  //   ?projectId=<id>        → buscar schedule del proyecto y seleccionarlo
+  //   ?newForProject=<id>    → abrir modal de nuevo agendamiento preseleccionando el proyecto
   const lastProcessedQueryRef = useRef<string | null>(null);
+  const pendingSelectStartRef = useRef<string | null>(null);
+  const pendingSelectProjectIdRef = useRef<string | null>(null);
   useEffect(() => {
     const params = new URLSearchParams(location.search);
+    if (location.search === lastProcessedQueryRef.current) return;
+    lastProcessedQueryRef.current = location.search;
+
     const start = params.get("start") ?? params.get("week"); // retrocompat con ?week=
-    if (start && start !== lastProcessedQueryRef.current) {
+    const projectIdParam = params.get("projectId");
+    const newForProject = params.get("newForProject");
+
+    if (start) {
       const d = parseIso(start);
       setYear(d.getUTCFullYear());
       setMonth(d.getUTCMonth() + 1);
       setView("month");
-      lastProcessedQueryRef.current = start;
-      // Se seleccionará cuando lleguen los datos (ver efecto abajo)
       pendingSelectStartRef.current = start;
     }
+    if (projectIdParam) {
+      pendingSelectProjectIdRef.current = projectIdParam;
+    }
+    if (newForProject) {
+      setNewModalPrefill({ start: "", end: "", projectId: newForProject });
+      setShowNewModal(true);
+    }
   }, [location.search]);
-
-  const pendingSelectStartRef = useRef<string | null>(null);
 
   const monthQuery = useQuery({
     queryKey: ["calendar", "month", year, month],
@@ -475,6 +489,22 @@ export function Calendar() {
       setSelectedScheduleIds([match.id]);
     }
     pendingSelectStartRef.current = null;
+  }, [schedules]);
+
+  // Al cargar datos, si hay un pending ?projectId=, buscar el schedule del proyecto
+  useEffect(() => {
+    const pending = pendingSelectProjectIdRef.current;
+    if (!pending) return;
+    if (schedules.length === 0) return;
+    const match = schedules.find((s) => s.projectId === pending);
+    if (match) {
+      setSelectedScheduleIds([match.id]);
+      const d = parseIso(match.plannedWorkStart);
+      setYear(d.getUTCFullYear());
+      setMonth(d.getUTCMonth() + 1);
+      setView("month");
+    }
+    pendingSelectProjectIdRef.current = null;
   }, [schedules]);
 
   const moveMutation = useMutation({
@@ -2110,7 +2140,6 @@ function ScheduleDetail({
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
           className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-[11px] text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
-          placeholder="Agregar notas…"
         />
         <Button
           size="sm"
@@ -2301,7 +2330,6 @@ function QuickCreateTeamModal({
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Ej. Equipo propio"
             className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
             required
             autoFocus
@@ -2349,7 +2377,7 @@ function NewScheduleModal({
   onCreated,
   onCreateTeamRequested,
 }: {
-  prefill: { start: string; end: string } | null;
+  prefill: { start: string; end: string; projectId?: string } | null;
   teams: CalendarTeam[];
   onClose: () => void;
   onCreated: (s: InstallationSchedule) => void;
@@ -2366,11 +2394,12 @@ function NewScheduleModal({
       scheduledProjectIds.add(s.projectId);
     }
   }
+  const prefillProjectId = prefill?.projectId ?? "";
   const availableProjects = (projectsQuery.data ?? [])
-    .filter((p) => !scheduledProjectIds.has(p.id))
+    .filter((p) => !scheduledProjectIds.has(p.id) || p.id === prefillProjectId)
     .sort((a, b) => a.clientName.localeCompare(b.clientName, "es"));
 
-  const [projectId, setProjectId] = useState("");
+  const [projectId, setProjectId] = useState(prefillProjectId);
   const [plannedWorkStart, setPlannedWorkStart] = useState(prefill?.start ?? "");
   const [plannedWorkEnd, setPlannedWorkEnd] = useState(prefill?.end ?? "");
   const [teamId, setTeamId] = useState("");

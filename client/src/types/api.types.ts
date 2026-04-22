@@ -72,11 +72,9 @@ export interface ProjectListItem {
   status: ProjectStatus;
   capacityKwp: number;
   progressPercent: number;
-  delayDays: number;
   startDate: string | null;
   plannedEndDate: string | null;
   solarSystems: SolarSystem[];
-  hasOverdueStage?: boolean;
   currentStage: ProjectCurrentStage | null;
   updatedAt: string;
 }
@@ -105,11 +103,7 @@ export interface SolarSystem {
 export interface ProjectMetrics {
   progressPercent: number;
   daysElapsed: number;
-  daysRemaining: number;
-  delayDays: number;
-  timeEfficiency: number;
-  budgetUsedPercent: number;
-  totalPlannedDays: number;
+  budgetUsedPercent: number | null;
 }
 
 export interface ChecklistItem {
@@ -239,7 +233,7 @@ export interface Project {
   startDate: string | null;
   plannedEndDate: string | null;
   actualEndDate: string | null;
-  budgetUsd: number;
+  budgetUsd: number | null;
   executedUsd: number;
   estimatedMwhYear: number | null;
   co2TonsAvoided: number | null;
@@ -348,9 +342,7 @@ export interface MetricsOverview {
   totalBudgetUsd: number;
   totalExecutedUsd: number;
   avgProgressPercent: number;
-  projectsWithDelay: number;
-  avgDelayDays: number;
-  avgTimeEfficiency: number;
+  avgSaleToDeliveryDays: number | null;
   goals: GoalProgress[];
 }
 
@@ -406,9 +398,9 @@ export interface MetricsSales {
 export interface MetricsStageRow {
   stageName: string;
   stageLabel: string;
-  avgPlannedDays: number;
   avgActualDays: number;
-  avgDelayDays: number;
+  minActualDays: number;
+  maxActualDays: number;
   completedCount: number;
 }
 
@@ -419,11 +411,8 @@ export interface MetricsProjectRow {
   capacityKwp: number;
   status: ProjectStatus;
   progressPercent: number;
-  delayDays: number;
-  timeEfficiency: number;
   daysElapsed: number;
-  daysRemaining: number;
-  budgetUsd: number;
+  budgetUsd: number | null;
   executedUsd: number;
 }
 

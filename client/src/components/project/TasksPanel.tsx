@@ -161,8 +161,8 @@ function TaskRow({
           onClick={e => e.stopPropagation()}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <input style={{ ...inputStyle, fontSize: 12 }} value={title} onChange={e => setTitle(e.target.value)} placeholder="Título" />
-            <input style={inputStyle} value={description} onChange={e => setDescription(e.target.value)} placeholder="Descripción (opcional)" />
+            <input style={{ ...inputStyle, fontSize: 12 }} value={title} onChange={e => setTitle(e.target.value)} />
+            <input style={inputStyle} value={description} onChange={e => setDescription(e.target.value)} />
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               <select style={{ ...inputStyle, cursor: "pointer" }} value={status} onChange={e => setStatus(e.target.value as Task["status"])}>
                 {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
@@ -171,7 +171,7 @@ function TaskRow({
                 {PRIORITY_OPTIONS.map(p => <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>)}
               </select>
             </div>
-            <input style={inputStyle} value={responsible} onChange={e => setResponsible(e.target.value)} placeholder="Responsable" />
+            <input style={inputStyle} value={responsible} onChange={e => setResponsible(e.target.value)} />
             <input style={inputStyle} type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
             <div style={{ display: "flex", gap: 6 }}>
               <button

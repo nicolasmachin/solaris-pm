@@ -772,7 +772,6 @@ function LeadPanel({
             <h3 className="mb-3 font-display text-lg font-bold text-[var(--color-text-primary)]">Cerrar como perdido</h3>
             <textarea
               className="min-h-[110px] w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
-              placeholder="Motivo de cierre"
               value={lostReason}
               onChange={(event) => setLostReason(event.target.value)}
             />

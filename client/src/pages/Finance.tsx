@@ -91,7 +91,6 @@ function ExchangeRateCard() {
             <input
               type="number"
               className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] mb-4"
-              placeholder="Ej: 44.50"
               value={newRate}
               onChange={e => setNewRate(e.target.value)}
               autoFocus

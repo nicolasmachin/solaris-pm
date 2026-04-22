@@ -39,32 +39,19 @@ interface KpiCardsProps {
 export function KpiCards({ project }: KpiCardsProps) {
   const m = project.metrics;
 
-  // Card 1 — Avance
-  const avanceWarning =
-    m.timeEfficiency < 85 ? "⚠ Ritmo en riesgo" : undefined;
-
-  // Card 2 — Días
-  let daysDelta: React.ReactNode;
-  if (m.delayDays > 0) {
-    daysDelta = (
-      <span className="text-[var(--color-warn-inline)]">⚠ +{m.delayDays} días desvío</span>
-    );
-  } else if (m.delayDays < 0) {
-    daysDelta = (
-      <span className="text-[var(--color-state-done-text,#4ade80)]">
-        ↑ {Math.abs(m.delayDays)} días adelanto
-      </span>
-    );
-  } else {
-    daysDelta = <span className="text-[var(--color-state-done-text)]">↑ En tiempo</span>;
-  }
-
-  const daysValue = m.daysRemaining > 0 ? m.daysRemaining : 0;
+  // Card 2 — Días desde venta
+  const daysSinceSaleDelta = (
+    <span className="text-[var(--color-text-muted)]">Desde creación del proyecto</span>
+  );
 
   // Card 3 — Presupuesto
-  const budgetDelta = (
+  const budgetDelta = project.budgetUsd != null ? (
     <span className="text-[var(--color-text-muted)]">
       USD {fmt(project.executedUsd)} / {fmt(project.budgetUsd)}
+    </span>
+  ) : (
+    <span className="text-[var(--color-text-muted)]">
+      USD {fmt(project.executedUsd)} · sin presupuesto
     </span>
   );
 
@@ -79,19 +66,17 @@ export function KpiCards({ project }: KpiCardsProps) {
         label="Avance global"
         value={m.progressPercent}
         unit="%"
-        delta={<span className="text-[var(--color-text-muted)]">↑ +0% este mes</span>}
-        warning={avanceWarning}
       />
       <KpiCard
-        label="Para entrega"
-        value={daysValue}
+        label="Días desde venta"
+        value={m.daysElapsed}
         unit="d"
-        delta={daysDelta}
+        delta={daysSinceSaleDelta}
       />
       <KpiCard
         label="Presupuesto ejec."
-        value={m.budgetUsedPercent.toFixed(1)}
-        unit="%"
+        value={m.budgetUsedPercent != null ? m.budgetUsedPercent.toFixed(1) : "—"}
+        unit={m.budgetUsedPercent != null ? "%" : ""}
         delta={budgetDelta}
       />
       <KpiCard

@@ -20,6 +20,15 @@ interface ProjectHeaderProps {
 export function ProjectHeader({ project, onEdit }: ProjectHeaderProps) {
   const navigate = useNavigate();
   const style = STATUS_STYLES[project.status] ?? STATUS_STYLES.ACTIVE;
+  const hasInstallation = !!project.installationSchedule;
+
+  function goToCalendar() {
+    if (hasInstallation) {
+      navigate(`/calendario?projectId=${project.id}`);
+    } else {
+      navigate(`/calendario?newForProject=${project.id}`);
+    }
+  }
 
   return (
     <div className="flex items-start justify-between gap-4 mb-5">
@@ -30,7 +39,7 @@ export function ProjectHeader({ project, onEdit }: ProjectHeaderProps) {
         >
           ← Proyectos
         </button>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <h1 className="font-display text-xl font-bold text-[var(--color-text-primary)] leading-tight">
             {project.clientName}
           </h1>
@@ -46,6 +55,14 @@ export function ProjectHeader({ project, onEdit }: ProjectHeaderProps) {
               </svg>
             </button>
           )}
+          <button
+            onClick={goToCalendar}
+            className="ml-1 inline-flex items-center gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 py-0.5 text-[11px] font-mono uppercase tracking-wider text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-accent)] transition-colors"
+            title={hasInstallation ? "Ver en el calendario" : "Agendar instalación en el calendario"}
+          >
+            <span>📅</span>
+            <span>{hasInstallation ? "Ver en calendario" : "Agendar instalación"}</span>
+          </button>
         </div>
         <p className="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">
           {project.code} · {project.capacityKwp} kWp · {project.locationCity},{" "}

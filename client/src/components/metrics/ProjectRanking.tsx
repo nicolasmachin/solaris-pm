@@ -22,7 +22,7 @@ export function ProjectRanking({ projects }: ProjectRankingProps) {
           <tr className="text-[11px] uppercase tracking-wide text-[var(--color-text-muted)]">
             <th className="pb-2 pr-2 w-6">#</th>
             <th className="pb-2 pr-3">Proyecto</th>
-            <th className="pb-2 pr-3 text-right">Desvío</th>
+            <th className="pb-2 pr-3 text-right">Avance</th>
             <th className="pb-2">Estado</th>
           </tr>
         </thead>
@@ -30,14 +30,12 @@ export function ProjectRanking({ projects }: ProjectRankingProps) {
           {projects.map((p, i) => (
             <tr
               key={p.id}
-              className={`border-t border-[var(--color-border)] ${p.delayDays > 5 ? "bg-red-500/5" : ""}`}
+              className="border-t border-[var(--color-border)]"
             >
-              {/* # */}
               <td className="py-2.5 pr-2 text-[var(--color-text-muted)] tabular-nums text-xs align-top pt-3">
                 {i + 1}
               </td>
 
-              {/* Proyecto */}
               <td className="py-2.5 pr-3">
                 <Link
                   to={`/projects/${p.id}`}
@@ -55,27 +53,16 @@ export function ProjectRanking({ projects }: ProjectRankingProps) {
                   />
                 </div>
                 <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5">
-                  {p.progressPercent}% avance
+                  {p.daysElapsed} días desde venta
                 </p>
               </td>
 
-              {/* Desvío */}
               <td className="py-2.5 pr-3 text-right align-top pt-3">
-                <span
-                  className={`text-sm font-semibold tabular-nums ${
-                    p.delayDays > 0
-                      ? "text-red-400"
-                      : p.delayDays < 0
-                        ? "text-green-400"
-                        : "text-[var(--color-text-muted)]"
-                  }`}
-                >
-                  {p.delayDays > 0 ? "+" : ""}
-                  {p.delayDays}d
+                <span className="text-sm font-semibold tabular-nums text-[var(--color-text-primary)]">
+                  {p.progressPercent}%
                 </span>
               </td>
 
-              {/* Estado */}
               <td className="py-2.5 align-top pt-3">
                 <Badge variant={p.status} />
               </td>

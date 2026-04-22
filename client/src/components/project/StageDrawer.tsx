@@ -86,7 +86,6 @@ function ChecklistSection({
           <div className="flex gap-1 mb-2">
             <input
               className="flex-1 px-1.5 py-1 text-[11px] bg-[var(--color-bg-app)] border border-[var(--color-border)] rounded text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
-              placeholder="Descripción del ítem..."
               value={newLabel}
               onChange={e => setNewLabel(e.target.value)}
               onKeyDown={e => {
@@ -223,8 +222,6 @@ function SubstageRow({
   const [name, setName] = useState(substage.name);
   const [responsible, setResponsible] = useState(substage.responsible ?? "");
   const [dueDate, setDueDate] = useState(substage.dueDate?.slice(0, 10) ?? "");
-  const [plannedStart, setPlannedStart] = useState(substage.plannedStartDate?.slice(0, 10) ?? "");
-  const [plannedEnd, setPlannedEnd] = useState(substage.plannedEndDate?.slice(0, 10) ?? "");
   const [notes, setNotes] = useState(substage.notes ?? "");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [checklistPendingItems, setChecklistPendingItems] = useState<{ id: string; label: string }[]>([]);
@@ -236,8 +233,6 @@ function SubstageRow({
       patchSubstage(projectId, stageId, substage.id, {
         name, responsible: responsible || undefined,
         dueDate: dueDate || null,
-        plannedStartDate: plannedStart || null,
-        plannedEndDate: plannedEnd || null,
         notes: notes || null,
       }),
     onSuccess: () => {
@@ -394,33 +389,20 @@ function SubstageRow({
           <div className="border-t border-[var(--color-border)] px-3 py-2 space-y-2">
             <input
               className="w-full px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]"
-              placeholder="Nombre"
               value={name}
               onChange={e => setName(e.target.value)}
             />
             <input
               className="w-full px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]"
-              placeholder="Responsable"
               value={responsible}
               onChange={e => setResponsible(e.target.value)}
             />
-            <div className="grid grid-cols-2 gap-1.5">
-              <div>
-                <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Plan inicio</p>
-                <input type="date" className="w-full px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]" value={plannedStart} onChange={e => setPlannedStart(e.target.value)} />
-              </div>
-              <div>
-                <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Plan fin</p>
-                <input type="date" className="w-full px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]" value={plannedEnd} onChange={e => setPlannedEnd(e.target.value)} />
-              </div>
-            </div>
             <div>
               <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Fecha límite</p>
               <input type="date" className="w-full px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]" value={dueDate} onChange={e => setDueDate(e.target.value)} />
             </div>
             <textarea
               className="w-full px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)] resize-none"
-              placeholder="Notas"
               rows={2}
               value={notes}
               onChange={e => setNotes(e.target.value)}
@@ -500,10 +482,8 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
   const [notes, setNotes] = useState(stage.notes ?? "");
   const [notesSaved, setNotesSaved] = useState(false);
 
-  // Stage dates editing
+  // Stage dates editing (sólo fechas reales: el plan ya no se edita desde acá)
   const [editingDates, setEditingDates] = useState(false);
-  const [plannedStart, setPlannedStart] = useState(stage.plannedStartDate?.slice(0, 10) ?? "");
-  const [plannedEnd, setPlannedEnd] = useState(stage.plannedEndDate?.slice(0, 10) ?? "");
   const [actualStart, setActualStart] = useState(stage.actualStartDate?.slice(0, 10) ?? "");
   const [actualEnd, setActualEnd] = useState(stage.actualEndDate?.slice(0, 10) ?? "");
   const [dateEditError, setDateEditError] = useState<string | null>(null);
@@ -580,25 +560,19 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
     onError: () => toast.error("Error al guardar notas"),
   });
 
-  // Save stage dates (plan + real si es ADMIN)
+  // Save stage dates (sólo fechas reales — admin — + responsable)
   const datesMutation = useMutation({
     mutationFn: () => {
       const body: {
-        plannedStartDate?: string | null;
-        plannedEndDate?: string | null;
         actualStartDate?: string | null;
         actualEndDate?: string | null;
         responsibleName?: string | null;
       } = {};
-      const currentPlannedStart = stage.plannedStartDate?.slice(0, 10) ?? "";
-      const currentPlannedEnd = stage.plannedEndDate?.slice(0, 10) ?? "";
       const currentActualStart = stage.actualStartDate?.slice(0, 10) ?? "";
       const currentActualEnd = stage.actualEndDate?.slice(0, 10) ?? "";
       const currentResponsible =
         (stage as Stage & { responsibleName?: string | null }).responsibleName ?? "";
 
-      if ((plannedStart || "") !== currentPlannedStart) body.plannedStartDate = plannedStart || null;
-      if ((plannedEnd || "") !== currentPlannedEnd) body.plannedEndDate = plannedEnd || null;
       if (isAdmin && (actualStart || "") !== currentActualStart) body.actualStartDate = actualStart || null;
       if (isAdmin && (actualEnd || "") !== currentActualEnd) body.actualEndDate = actualEnd || null;
       if ((responsibleName || "") !== currentResponsible) body.responsibleName = responsibleName || null;
@@ -769,24 +743,6 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
               {editingDates ? (
                 <div className="space-y-2">
                   <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Plan inicio</p>
-                      <input
-                        type="date"
-                        className="w-full px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
-                        value={plannedStart}
-                        onChange={(e) => setPlannedStart(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Plan fin</p>
-                      <input
-                        type="date"
-                        className="w-full px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
-                        value={plannedEnd}
-                        onChange={(e) => setPlannedEnd(e.target.value)}
-                      />
-                    </div>
                     <div title={isAdmin ? undefined : "Solo admin puede modificar fechas reales"}>
                       <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Real inicio</p>
                       <div className="flex items-center gap-1">
@@ -834,7 +790,6 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
                   </div>
                   <input
                     className="w-full px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]"
-                    placeholder="Responsable de etapa"
                     value={responsibleName}
                     onChange={(e) => setResponsibleName(e.target.value)}
                   />
@@ -846,11 +801,6 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
                       size="sm"
                       loading={datesMutation.isPending}
                       onClick={() => {
-                        // Validación local
-                        if (plannedStart && plannedEnd && plannedEnd < plannedStart) {
-                          setDateEditError("Plan fin no puede ser anterior al inicio");
-                          return;
-                        }
                         if (actualStart && actualEnd && actualEnd < actualStart) {
                           setDateEditError("Real fin no puede ser anterior al inicio");
                           return;
@@ -867,8 +817,6 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
                       onClick={() => {
                         setEditingDates(false);
                         setDateEditError(null);
-                        setPlannedStart(stage.plannedStartDate?.slice(0, 10) ?? "");
-                        setPlannedEnd(stage.plannedEndDate?.slice(0, 10) ?? "");
                         setActualStart(stage.actualStartDate?.slice(0, 10) ?? "");
                         setActualEnd(stage.actualEndDate?.slice(0, 10) ?? "");
                       }}
@@ -879,14 +827,6 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                  <div>
-                    <span className="text-[var(--color-text-muted)] text-[10px]">Plan inicio</span>
-                    <p className="text-[var(--color-text-secondary)]">{formatDate(stage.plannedStartDate)}</p>
-                  </div>
-                  <div>
-                    <span className="text-[var(--color-text-muted)] text-[10px]">Plan fin</span>
-                    <p className="text-[var(--color-text-secondary)]">{formatDate(stage.plannedEndDate)}</p>
-                  </div>
                   <div>
                     <span className="text-[var(--color-text-muted)] text-[10px]">Real inicio</span>
                     <p className="text-[var(--color-text-secondary)] flex items-center gap-1">
@@ -919,18 +859,10 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
                       )}
                     </p>
                   </div>
-                  {stage.plannedDurationDays && (
+                  {stage.actualDurationDays != null && (
                     <div>
-                      <span className="text-[var(--color-text-muted)] text-[10px]">Duración plan</span>
-                      <p className="text-[var(--color-text-secondary)]">{stage.plannedDurationDays} días</p>
-                    </div>
-                  )}
-                  {stage.delayDays !== null && (
-                    <div>
-                      <span className="text-[var(--color-text-muted)] text-[10px]">Desvío</span>
-                      <p className={stage.delayDays > 0 ? "text-red-400" : "text-[#4ade80]"}>
-                        {stage.delayDays > 0 ? "+" : ""}{stage.delayDays} días
-                      </p>
+                      <span className="text-[var(--color-text-muted)] text-[10px]">Duración real</span>
+                      <p className="text-[var(--color-text-secondary)]">{stage.actualDurationDays} días</p>
                     </div>
                   )}
                 </div>
@@ -967,13 +899,11 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
               <div className="mb-3 p-3 rounded-lg bg-[var(--color-bg-card)] border border-[var(--color-border)] space-y-2">
                 <input
                   className="w-full px-2.5 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]"
-                  placeholder="Nombre de la subetapa"
                   value={subName}
                   onChange={(e) => setSubName(e.target.value)}
                 />
                 <input
                   className="w-full px-2.5 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]"
-                  placeholder="Responsable"
                   value={subResponsible}
                   onChange={(e) => setSubResponsible(e.target.value)}
                 />
@@ -1033,7 +963,6 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
             <textarea
               className="w-full px-3 py-2 rounded-md text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)] resize-none"
               rows={4}
-              placeholder="Notas de la etapa..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />

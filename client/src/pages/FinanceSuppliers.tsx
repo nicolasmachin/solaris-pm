@@ -90,7 +90,7 @@ function SupplierForm({ initial, supplierId, onSuccess, onCancel }: {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div><label className={lbl}>RUT / CUIT</label><input className={inp} value={form.rut} onChange={e => setF('rut', e.target.value)} /></div>
-        <div><label className={lbl}>Condición de pago</label><input className={inp} placeholder="Ej: 30 días" value={form.condicionPago} onChange={e => setF('condicionPago', e.target.value)} /></div>
+        <div><label className={lbl}>Condición de pago</label><input className={inp} value={form.condicionPago} onChange={e => setF('condicionPago', e.target.value)} /></div>
       </div>
       <div><label className={lbl}>Notas</label><textarea className={klass(inp, 'resize-none')} rows={2} value={form.notas} onChange={e => setF('notas', e.target.value)} /></div>
       {error && <p className="text-sm text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{error}</p>}

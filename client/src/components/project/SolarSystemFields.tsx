@@ -67,18 +67,35 @@ export function hasSolarSystemValues(form: SolarSystemFormValues) {
 }
 
 export function buildSolarSystemPayload(form: SolarSystemFormValues): SolarSystemPayload {
-  return {
-    description: cleanText(form.description),
-    inverterBrand: cleanText(form.inverterBrand),
-    inverterPowerKw: cleanNumber(form.inverterPowerKw),
-    inverterQuantity: cleanInteger(form.inverterQuantity),
-    inverterPhaseType: form.inverterPhaseType || null,
-    inverterModel: cleanText(form.inverterModel),
-    panelQuantity: cleanInteger(form.panelQuantity),
-    panelPowerW: cleanInteger(form.panelPowerW),
-    panelBrand: cleanText(form.panelBrand),
-    panelModel: cleanText(form.panelModel),
-  };
+  // Sanitiza strings vacíos a undefined para no forzar "null" en campos que el
+  // usuario dejó en blanco. Así:
+  //  - En CREATE, el backend toma sus defaults o deja null de forma natural.
+  //  - En PATCH, no pisa valores existentes con null por descuido.
+  // El tipo de fase sí necesita null explícito cuando se pasa de "seleccionado"
+  // a "sin seleccionar" — pero como EMPTY_SOLAR_SYSTEM_FORM arranca con ""
+  // y el select no tiene forma de diferenciar "vacío inicial" de "borrado",
+  // usamos undefined acá y en el modal hay que limpiar con otra UX si hace falta.
+  const payload: SolarSystemPayload = {};
+  const description = pickText(form.description);
+  if (description !== undefined) payload.description = description;
+  const inverterBrand = pickText(form.inverterBrand);
+  if (inverterBrand !== undefined) payload.inverterBrand = inverterBrand;
+  const inverterPowerKw = pickNumber(form.inverterPowerKw);
+  if (inverterPowerKw !== undefined) payload.inverterPowerKw = inverterPowerKw;
+  const inverterQuantity = pickInteger(form.inverterQuantity);
+  if (inverterQuantity !== undefined) payload.inverterQuantity = inverterQuantity;
+  if (form.inverterPhaseType) payload.inverterPhaseType = form.inverterPhaseType;
+  const inverterModel = pickText(form.inverterModel);
+  if (inverterModel !== undefined) payload.inverterModel = inverterModel;
+  const panelQuantity = pickInteger(form.panelQuantity);
+  if (panelQuantity !== undefined) payload.panelQuantity = panelQuantity;
+  const panelPowerW = pickInteger(form.panelPowerW);
+  if (panelPowerW !== undefined) payload.panelPowerW = panelPowerW;
+  const panelBrand = pickText(form.panelBrand);
+  if (panelBrand !== undefined) payload.panelBrand = panelBrand;
+  const panelModel = pickText(form.panelModel);
+  if (panelModel !== undefined) payload.panelModel = panelModel;
+  return payload;
 }
 
 export function formatSolarSystemPrimary(system: SolarSystem) {
@@ -100,19 +117,24 @@ export function formatSolarSystemPanels(system: SolarSystem) {
   return "Sin paneles";
 }
 
-function cleanText(value: string) {
+function pickText(value: string): string | undefined {
   const next = value.trim();
-  return next ? next : null;
+  return next ? next : undefined;
 }
 
-function cleanNumber(value: string) {
+function pickNumber(value: string): number | undefined {
   const next = value.trim();
-  return next ? Number(next) : null;
+  if (!next) return undefined;
+  const normalized = next.replace(",", ".");
+  const num = Number(normalized);
+  return Number.isFinite(num) ? num : undefined;
 }
 
-function cleanInteger(value: string) {
+function pickInteger(value: string): number | undefined {
   const next = value.trim();
-  return next ? Number.parseInt(next, 10) : null;
+  if (!next) return undefined;
+  const num = Number.parseInt(next, 10);
+  return Number.isFinite(num) ? num : undefined;
 }
 
 function input(hasError = false) {
@@ -152,14 +174,18 @@ export function SolarSystemFields({
   form,
   onChange,
   errors = {},
+  optional = false,
 }: {
   form: SolarSystemFormValues;
   onChange: (key: keyof SolarSystemFormValues, value: string) => void;
   errors?: Partial<Record<keyof SolarSystemFormValues, string>>;
+  /** Cuando true, ningún campo se muestra como obligatorio (sin asteriscos). */
+  optional?: boolean;
 }) {
   function bind(key: keyof SolarSystemFormValues) {
     return (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => onChange(key, event.target.value);
   }
+  const req = optional ? "" : " *";
 
   return (
     <div className="space-y-4">
@@ -168,7 +194,6 @@ export function SolarSystemFields({
           className={input()}
           value={form.description}
           onChange={bind("description")}
-          placeholder="Ej: Sistema principal"
         />
       </Field>
 
@@ -177,17 +202,17 @@ export function SolarSystemFields({
           Inversor
         </p>
         <div className="grid gap-3 md:grid-cols-2">
-          <Field label="Marca *" error={errors.inverterBrand}>
-            <input className={input(!!errors.inverterBrand)} value={form.inverterBrand} onChange={bind("inverterBrand")} placeholder="Growatt" />
+          <Field label={`Marca${req}`} error={errors.inverterBrand}>
+            <input className={input(!!errors.inverterBrand)} value={form.inverterBrand} onChange={bind("inverterBrand")} />
           </Field>
           <Field label="Modelo">
-            <input className={input()} value={form.inverterModel} onChange={bind("inverterModel")} placeholder="MID 25KTL3-X" />
+            <input className={input()} value={form.inverterModel} onChange={bind("inverterModel")} />
           </Field>
-          <Field label="Potencia (kW) *" error={errors.inverterPowerKw}>
-            <input type="number" min="0" step="0.01" className={input(!!errors.inverterPowerKw)} value={form.inverterPowerKw} onChange={bind("inverterPowerKw")} placeholder="25" />
+          <Field label={`Potencia (kW)${req}`} error={errors.inverterPowerKw}>
+            <input type="number" min="0" step="0.01" className={input(!!errors.inverterPowerKw)} value={form.inverterPowerKw} onChange={bind("inverterPowerKw")} />
           </Field>
           <Field label="Cantidad" error={errors.inverterQuantity}>
-            <input type="number" min="1" step="1" className={input(!!errors.inverterQuantity)} value={form.inverterQuantity} onChange={bind("inverterQuantity")} placeholder="1" />
+            <input type="number" min="1" step="1" className={input(!!errors.inverterQuantity)} value={form.inverterQuantity} onChange={bind("inverterQuantity")} />
           </Field>
           <Field label="Tipo de fase" error={errors.inverterPhaseType}>
             <select className={input(!!errors.inverterPhaseType)} value={form.inverterPhaseType} onChange={bind("inverterPhaseType")}>
@@ -207,17 +232,17 @@ export function SolarSystemFields({
           Paneles
         </p>
         <div className="grid gap-3 md:grid-cols-2">
-          <Field label="Cantidad *" error={errors.panelQuantity}>
-            <input type="number" min="0" step="1" className={input(!!errors.panelQuantity)} value={form.panelQuantity} onChange={bind("panelQuantity")} placeholder="40" />
+          <Field label={`Cantidad${req}`} error={errors.panelQuantity}>
+            <input type="number" min="0" step="1" className={input(!!errors.panelQuantity)} value={form.panelQuantity} onChange={bind("panelQuantity")} />
           </Field>
-          <Field label="Potencia por panel (W) *" error={errors.panelPowerW}>
-            <input type="number" min="0" step="1" className={input(!!errors.panelPowerW)} value={form.panelPowerW} onChange={bind("panelPowerW")} placeholder="550" />
+          <Field label={`Potencia por panel (W)${req}`} error={errors.panelPowerW}>
+            <input type="number" min="0" step="1" className={input(!!errors.panelPowerW)} value={form.panelPowerW} onChange={bind("panelPowerW")} />
           </Field>
           <Field label="Marca">
-            <input className={input()} value={form.panelBrand} onChange={bind("panelBrand")} placeholder="Longi" />
+            <input className={input()} value={form.panelBrand} onChange={bind("panelBrand")} />
           </Field>
           <Field label="Modelo">
-            <input className={input()} value={form.panelModel} onChange={bind("panelModel")} placeholder="LR5-72HPH-550M" />
+            <input className={input()} value={form.panelModel} onChange={bind("panelModel")} />
           </Field>
         </div>
       </div>

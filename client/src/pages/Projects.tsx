@@ -16,7 +16,7 @@ import {
   getPhaseTypeShortLabel,
 } from "../components/project/SolarSystemFields";
 
-type SortKey = "client" | "location" | "status" | "progress" | "inverter" | "panels" | "dates" | "delay";
+type SortKey = "client" | "location" | "status" | "progress" | "inverter" | "panels" | "dates";
 type SortDirection = "asc" | "desc";
 
 const STATUS_OPTIONS: Array<{ value: "all" | ProjectStatus; label: string }> = [
@@ -85,12 +85,6 @@ function sortProjects(projects: ProjectListItem[], sortKey: SortKey, direction: 
         break;
       case "dates":
         result = new Date(a.startDate ?? "2100-01-01").getTime() - new Date(b.startDate ?? "2100-01-01").getTime();
-        if (result === 0) {
-          result = new Date(a.plannedEndDate ?? "2100-01-01").getTime() - new Date(b.plannedEndDate ?? "2100-01-01").getTime();
-        }
-        break;
-      case "delay":
-        result = a.delayDays - b.delayDays;
         break;
     }
 
@@ -208,7 +202,7 @@ export function Projects() {
       return;
     }
     setSortKey(nextKey);
-    setSortDirection(nextKey === "delay" || nextKey === "progress" ? "desc" : "asc");
+    setSortDirection(nextKey === "progress" ? "desc" : "asc");
   }
 
   if (isLoading) {
@@ -296,8 +290,7 @@ export function Projects() {
                   <th className="px-4 py-3"><SortHeader label="Avance" sortKey="progress" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
                   <th className="px-4 py-3"><SortHeader label="Inversor" sortKey="inverter" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
                   <th className="px-4 py-3"><SortHeader label="Paneles" sortKey="panels" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
-                  <th className="px-4 py-3"><SortHeader label="Fechas" sortKey="dates" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
-                  <th className="px-4 py-3"><SortHeader label="Desvío" sortKey="delay" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
+                  <th className="px-4 py-3"><SortHeader label="Inicio" sortKey="dates" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
                   <th className="px-4 py-3 text-left text-[11px] font-mono uppercase tracking-widest text-[var(--color-text-muted)]">Acciones</th>
                 </tr>
               </thead>
@@ -358,17 +351,6 @@ export function Projects() {
                       </td>
                       <td className="px-4 py-4 align-top">
                         <div className="text-sm text-[var(--color-text-primary)]">{formatDate(project.startDate)}</div>
-                        <div className="mt-1 text-xs text-[var(--color-text-muted)]">{formatDate(project.plannedEndDate)}</div>
-                      </td>
-                      <td className="px-4 py-4 align-top">
-                        {project.delayDays === 0 ? (
-                          <span className="text-sm text-[var(--color-text-muted)]">0 días</span>
-                        ) : (
-                          <span className={`text-sm font-medium ${project.delayDays > 0 ? "text-red-400" : "text-emerald-400"}`}>
-                            {project.delayDays > 0 ? "+" : ""}
-                            {project.delayDays} días
-                          </span>
-                        )}
                       </td>
                       <td className="px-4 py-4 align-top">
                         <div className="flex items-center gap-2">
