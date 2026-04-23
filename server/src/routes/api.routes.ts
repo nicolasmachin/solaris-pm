@@ -124,6 +124,7 @@ const projectCreateSchema = z
     modalidadPago: z.nativeEnum(ModalidadPago).optional(),
     notificationEmail: z.string().email().nullable().optional(),
     notificationPhone: z.string().nullable().optional(),
+    clientAddress: z.string().nullable().optional(),
     startDate: dateOnlySchema.optional(),
     solarSystem: solarSystemCreateSchema.optional(),
   })
@@ -145,6 +146,7 @@ const projectPatchSchema = z
     modalidadPago: z.nativeEnum(ModalidadPago).nullable().optional(),
     notificationEmail: z.union([z.string().email(), z.literal("")]).nullable().optional(),
     notificationPhone: z.string().nullable().optional(),
+    clientAddress: z.string().nullable().optional(),
     firstDateScheduledAt: z.string().datetime({ offset: true }).nullable().optional(),
   })
   .strict();
@@ -536,6 +538,7 @@ function normalizeProjectInput(input: Record<string, unknown>) {
   if (source.modalidadPago !== undefined) normalized.modalidadPago = source.modalidadPago;
   if (source.notificationEmail !== undefined) normalized.notificationEmail = source.notificationEmail;
   if (source.notificationPhone !== undefined) normalized.notificationPhone = source.notificationPhone;
+  if (source.clientAddress !== undefined) normalized.clientAddress = source.clientAddress;
   if (source.firstDateScheduledAt !== undefined) {
     normalized.firstDateScheduledAt = source.firstDateScheduledAt ? new Date(source.firstDateScheduledAt) : null;
   }
@@ -581,6 +584,7 @@ const projectFieldLabels: Record<string, string> = {
   modalidadPago: "modalidad de pago",
   notificationEmail: "email de notificación",
   notificationPhone: "teléfono de notificación",
+  clientAddress: "dirección del cliente",
 };
 
 const solarSystemFieldLabels: Record<string, string> = {
@@ -1232,6 +1236,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         modalidadPago: body.modalidadPago ?? null,
         notificationEmail: body.notificationEmail || null,
         notificationPhone: body.notificationPhone || null,
+        clientAddress: body.clientAddress || null,
         salespersonId: body.salespersonId ?? null,
         createdById: user.id,
         ...(body.solarSystem
@@ -2636,6 +2641,72 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     return serializeFile(deletedFile);
+  });
+
+  // Endpoint unificado para la sección "Documentos" de la ficha del proyecto.
+  // Devuelve todos los archivos asociados al proyecto con etiqueta de origen
+  // (etapa o subetapa). Por ahora Comment no tiene adjuntos, así que la fuente
+  // es siempre stage/substage.
+  app.get("/projects/:projectId/documents", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async (request) => {
+    const params = z.object({ projectId: z.string() }).parse(request.params);
+    await findProjectOrThrow(params.projectId);
+
+    const files = await prisma.fileAttachment.findMany({
+      where: { projectId: params.projectId, deletedAt: null },
+      orderBy: { createdAt: "desc" },
+      include: {
+        stage: { select: { id: true, name: true } },
+        substage: { select: { id: true, name: true, stageId: true } },
+      },
+    });
+
+    return files.map((file) => {
+      let source: "stage" | "substage" | "other" = "other";
+      let sourceLabel = "Proyecto";
+      let stageId: string | null = null;
+      let substageId: string | null = null;
+      if (file.substage) {
+        source = "substage";
+        sourceLabel = `Subetapa ${file.substage.name}`;
+        stageId = file.substage.stageId;
+        substageId = file.substage.id;
+      } else if (file.stage) {
+        source = "stage";
+        sourceLabel = `Etapa ${getStageLabel(file.stage.name)}`;
+        stageId = file.stage.id;
+      }
+      return {
+        id: file.id,
+        filename: file.filename,
+        mimeType: file.mimeType,
+        sizeBytes: file.sizeBytes,
+        uploadedAt: serializeDate(file.createdAt),
+        uploadedBy: file.uploadedById,
+        source,
+        sourceLabel,
+        stageId,
+        substageId,
+        downloadUrl: `/api/files/${file.id}/download`,
+        // El mismo endpoint sirve para preview (inline) — el front lo abre en iframe.
+        previewUrl: `/api/files/${file.id}/preview`,
+      };
+    });
+  });
+
+  // Sirve el archivo inline (no force-download) para previews de PDF/imagen.
+  app.get("/files/:fileId/preview", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async (request, reply) => {
+    ensureUser(request);
+    const params = z.object({ fileId: z.string() }).parse(request.params);
+    const file = await findFileOrThrow(params.fileId);
+    const absolutePath = getStoredFilePath(file.url);
+
+    if (!fs.existsSync(absolutePath)) {
+      throw notFound("FILE_NOT_FOUND", "El archivo no existe en storage");
+    }
+
+    reply.header("Content-Type", file.mimeType);
+    reply.header("Content-Disposition", `inline; filename="${file.filename}"`);
+    return reply.send(fs.createReadStream(absolutePath));
   });
 
   app.get("/projects/:projectId/audit", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async (request) => {

@@ -35,6 +35,7 @@ export async function createProject(body: {
   salespersonId?: string;
   notificationEmail?: string;
   notificationPhone?: string;
+  clientAddress?: string;
   solarSystem?: SolarSystemPayload;
 }): Promise<Project> {
   const { data } = await apiClient.post<Project>("/api/projects", body);
@@ -56,6 +57,7 @@ export async function patchProject(
     budgetUsd?: number | null;
     notificationEmail?: string | null;
     notificationPhone?: string | null;
+    clientAddress?: string | null;
     firstDateScheduledAt?: string | null;
   }
 ): Promise<Project> {

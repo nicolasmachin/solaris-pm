@@ -239,6 +239,7 @@ export interface Project {
   co2TonsAvoided: number | null;
   notificationEmail: string | null;
   notificationPhone: string | null;
+  clientAddress: string | null;
   firstDateScheduledAt: string | null;
   createdById: string;
   salespersonId: string | null;

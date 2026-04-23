@@ -35,3 +35,23 @@ export function getDownloadUrl(fileId: string): string {
   const base = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
   return `${base}/api/files/${fileId}/download`;
 }
+
+export interface ProjectDocument {
+  id: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  uploadedAt: string;
+  uploadedBy: string | null;
+  source: "stage" | "substage" | "other";
+  sourceLabel: string;
+  stageId: string | null;
+  substageId: string | null;
+  downloadUrl: string;
+  previewUrl: string;
+}
+
+export async function getProjectDocuments(projectId: string): Promise<ProjectDocument[]> {
+  const { data } = await apiClient.get<ProjectDocument[]>(`/api/projects/${projectId}/documents`);
+  return data;
+}

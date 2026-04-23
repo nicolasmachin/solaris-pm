@@ -5,6 +5,33 @@ interface PipelineProps {
   onStageClick: (stage: Stage) => void;
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function daysBetween(fromIso: string | null, toIso: string | null | Date): number | null {
+  if (!fromIso || !toIso) return null;
+  const from = new Date(fromIso);
+  const to = typeof toIso === "string" ? new Date(toIso) : toIso;
+  if (isNaN(from.getTime()) || isNaN(to.getTime())) return null;
+  return Math.max(0, Math.round((to.getTime() - from.getTime()) / DAY_MS));
+}
+
+function stageTimeLabel(stage: Stage): string {
+  if (stage.name === "POSTVENTA") return "Sin fechas asociadas";
+  const display = deriveDisplayStatus(stage);
+  if (display === "COMPLETED") {
+    const days = daysBetween(stage.actualStartDate, stage.actualEndDate);
+    if (days == null) return "Completada";
+    return `Completada en ${days} ${days === 1 ? "día" : "días"}`;
+  }
+  if (display === "IN_PROGRESS") {
+    const days = daysBetween(stage.actualStartDate, new Date());
+    if (days == null) return "En curso";
+    return `En curso · ${days} ${days === 1 ? "día" : "días"}`;
+  }
+  if (display === "BLOCKED") return "Bloqueada";
+  return "Sin iniciar";
+}
+
 export function Pipeline({ stages, onStageClick }: PipelineProps) {
   return (
     <div
@@ -12,23 +39,23 @@ export function Pipeline({ stages, onStageClick }: PipelineProps) {
         background: "var(--color-bg-card)",
         border: "1px solid var(--color-border)",
         borderRadius: 8,
-        padding: "14px",
+        padding: "18px",
         marginBottom: 16,
       }}
     >
       <p
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 9,
+          fontSize: 10,
           textTransform: "uppercase",
           letterSpacing: "0.1em",
           color: "var(--color-text-muted)",
-          marginBottom: 12,
+          marginBottom: 14,
         }}
       >
         Pipeline de etapas
       </p>
-      <div style={{ display: "flex", gap: 6 }}>
+      <div style={{ display: "flex", gap: 8 }}>
         {stages.map((stage) => (
           <StageColumn
             key={stage.id}
@@ -188,7 +215,7 @@ function StageColumn({ stage, onClick }: { stage: Stage; onClick: () => void }) 
       <p
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 9,
+          fontSize: 11,
           textTransform: "uppercase",
           letterSpacing: "0.05em",
           color: headerColor,
@@ -206,11 +233,11 @@ function StageColumn({ stage, onClick }: { stage: Stage; onClick: () => void }) 
         style={{
           ...blockStyle,
           borderRadius: 6,
-          padding: "8px 10px",
-          minHeight: 72,
+          padding: "10px 12px",
+          minHeight: 96,
         }}
       >
-        <div style={{ marginBottom: 8 }}>
+        <div style={{ marginBottom: 10 }}>
           <StatusLabel stage={stage} />
         </div>
 
@@ -222,13 +249,13 @@ function StageColumn({ stage, onClick }: { stage: Stage; onClick: () => void }) 
               style={{
                 display: "flex",
                 alignItems: "flex-start",
-                gap: 4,
-                fontSize: 9,
+                gap: 5,
+                fontSize: 11,
                 color: subItemColor,
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
-                marginBottom: 2,
+                marginBottom: 3,
               }}
             >
               <SubstageDot status={sub.status} />
@@ -240,7 +267,7 @@ function StageColumn({ stage, onClick }: { stage: Stage; onClick: () => void }) 
           {extraCount > 0 && (
             <li
               style={{
-                fontSize: 9,
+                fontSize: 10,
                 color: subItemColor,
               }}
             >
@@ -249,6 +276,21 @@ function StageColumn({ stage, onClick }: { stage: Stage; onClick: () => void }) 
           )}
         </ul>
       </div>
+
+      {/* Tiempo por etapa */}
+      <p
+        style={{
+          marginTop: 6,
+          fontSize: 11,
+          color: "var(--color-text-muted)",
+          textAlign: "center",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {stageTimeLabel(stage)}
+      </p>
     </button>
   );
 }

@@ -456,6 +456,7 @@ export function serializeProject(project: {
   modalidadPago: ModalidadPago | null;
   notificationEmail: string | null;
   notificationPhone: string | null;
+  clientAddress: string | null;
   salespersonId: string | null;
   salesperson?: { id: string; name: string } | null;
   firstDateScheduledAt?: Date | null;

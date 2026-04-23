@@ -12,12 +12,12 @@ import { KpiCards } from "../components/project/KpiCards";
 import { Pipeline } from "../components/project/Pipeline";
 import { StageDrawer } from "../components/project/StageDrawer";
 import { TasksPanel } from "../components/project/TasksPanel";
-import { ProgressPanel } from "../components/project/ProgressPanel";
 import { TaskModal } from "../components/project/TaskModal";
 import { SolarSystemModal } from "../components/project/SolarSystemModal";
 import { AuditHistory } from "../components/project/AuditHistory";
-import { ProjectTimelineIndicators } from "../components/project/ProjectTimelineIndicators";
 import { ProjectGantt } from "../components/project/ProjectGantt";
+import { DocumentsStrip } from "../components/project/DocumentsStrip";
+import { MoreDataSection } from "../components/project/MoreDataSection";
 import { Spinner } from "../components/ui/Spinner";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
@@ -120,6 +120,7 @@ function EditProjectModal({
   const [budgetUsd, setBudgetUsd] = useState(project.budgetUsd != null ? String(project.budgetUsd) : "");
   const [notificationEmail, setNotificationEmail] = useState(project.notificationEmail ?? "");
   const [notificationPhone, setNotificationPhone] = useState(project.notificationPhone ?? "");
+  const [clientAddress, setClientAddress] = useState(project.clientAddress ?? "");
   const [firstDateScheduledAt, setFirstDateScheduledAt] = useState(
     project.firstDateScheduledAt ? project.firstDateScheduledAt.slice(0, 10) : ""
   );
@@ -136,6 +137,7 @@ function EditProjectModal({
         budgetUsd: budgetNum != null && Number.isFinite(budgetNum) ? budgetNum : null,
         notificationEmail: notificationEmail.trim() || null,
         notificationPhone: notificationPhone.trim() || null,
+        clientAddress: clientAddress.trim() || null,
         firstDateScheduledAt: firstDateScheduledAt
           ? new Date(firstDateScheduledAt).toISOString()
           : null,
@@ -186,6 +188,10 @@ function EditProjectModal({
               <label style={labelStyle}>Presupuesto (USD)</label>
               <input style={inputStyle} type="number" step="0.01" value={budgetUsd} onChange={e => setBudgetUsd(e.target.value)} />
             </div>
+          </div>
+          <div>
+            <label style={labelStyle}>Dirección</label>
+            <input style={inputStyle} value={clientAddress} onChange={e => setClientAddress(e.target.value)} />
           </div>
           <div>
             <label style={labelStyle}>Fecha tentativa de obra</label>
@@ -717,6 +723,7 @@ export function ProjectDetail() {
         <InstallationCoherenceBanner issues={installationCheckQuery.data.issues} />
       )}
 
+      {/* Sistema fotovoltaico */}
       <SolarSystemsSection
         project={project}
         onEdit={(systemId) => setEditingSolarSystemId(systemId)}
@@ -729,23 +736,19 @@ export function ProjectDetail() {
         onStageClick={(stage) => setSelectedStage(stage)}
       />
 
-      {/* KPI cards */}
+      {/* KPIs (avance, días desde venta, etapa actual) */}
       <KpiCards project={project} />
-      <ProjectTimelineIndicators project={project} />
 
-      {/* Bottom row */}
-      <div
-        className="grid gap-4"
-        style={{ gridTemplateColumns: "1.5fr 1fr" }}
-      >
-        <TasksPanel
-          projectId={project.id}
-          tasks={project.tasks}
-          onNewTask={() => setShowTaskModal(true)}
-          onTasksChanged={invalidate}
-        />
-        <ProgressPanel stages={project.stages} />
-      </div>
+      {/* Documentos destacados */}
+      <DocumentsStrip projectId={project.id} />
+
+      {/* Tareas */}
+      <TasksPanel
+        projectId={project.id}
+        tasks={project.tasks}
+        onNewTask={() => setShowTaskModal(true)}
+        onTasksChanged={invalidate}
+      />
 
       <div className="mt-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
         <div className="mb-4 flex gap-2 border-b border-[var(--color-border)] pb-3">
@@ -816,6 +819,9 @@ export function ProjectDetail() {
           <CommentThread projectId={project.id} level="project" context={commentContext} />
         )}
       </div>
+
+      {/* Más datos del proyecto (colapsable) */}
+      <MoreDataSection project={project} />
 
       {/* Stage drawer */}
       {drawerStage && (

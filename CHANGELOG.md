@@ -58,3 +58,39 @@
   - Campos de búsqueda ("Buscar…").
   - Campos de login y cambio de contraseña.
   - Confirmación de borrado de un proyecto (donde hay que tipear el código del proyecto exacto).
+
+### Rediseño de la ficha del proyecto
+- Se reorganizó toda la ficha del proyecto para que lo importante esté arriba y visible sin scroll: primero los datos del cliente, después el sistema fotovoltaico, después el pipeline de etapas, después los indicadores y los documentos.
+- Las métricas y gráficos secundarios (presupuesto ejecutado, generación estimada, CO₂ evitado, avance por área) se movieron a una sección colapsable **"Más datos del proyecto"** al fondo de la página, para no saturar la vista.
+
+### Datos del cliente integrados al header
+- Los datos de contacto del cliente (email, teléfono y dirección) ahora aparecen como una **línea con íconos** justo debajo del código del proyecto, en el header. Se eliminó la card separada para liberar espacio vertical y que el pipeline quede visible sin hacer scroll.
+- Si un dato no está cargado, no se muestra (la línea se arma sólo con lo que hay).
+- El email es clickeable (abre el cliente de mail) y el teléfono también (llamada directa en móvil).
+- Nuevo campo **"Dirección"** en el alta y la edición de proyectos.
+
+### Pipeline más grande y con tiempos
+- Los bloques del pipeline de etapas se ven ~30% más grandes: nombres de etapa y subetapas más legibles.
+- Debajo de cada etapa aparece la duración:
+  - Etapa completada → "Completada en X días".
+  - Etapa en curso → "En curso · X días".
+  - Etapa pendiente → "Sin iniciar".
+  - Postventa → "Sin fechas asociadas".
+- Si hay varias etapas en curso al mismo tiempo (por ejemplo Ingeniería y Onboarding juntas), cada una muestra su propio contador de días en curso.
+
+### Indicadores rediseñados
+- Los indicadores de la ficha del proyecto se simplificaron a **3 tarjetas** debajo del pipeline:
+  - **Avance**: porcentaje y "X de Y etapas".
+  - **Días desde venta**: días desde que se creó el proyecto.
+  - **Etapa actual**: nombre de la etapa en curso y cuántos días lleva.
+
+### Sección de documentos
+- Nueva sección **"Documentos"** en la ficha del proyecto que reúne todos los archivos adjuntos del proyecto (subidos desde cualquier etapa o subetapa) en una fila con scroll horizontal.
+- Cada documento se ve como una tarjeta con ícono según el tipo de archivo (PDF, imagen, Word, Excel, otros), nombre, tamaño y fecha de subida.
+- Las imágenes muestran una **miniatura directamente** en la tarjeta.
+- Al hacer clic en un documento se abre un **modal de vista previa** grande con:
+  - Vista previa del archivo (PDF e imágenes se muestran embebidos).
+  - Para otros formatos (Word, Excel, ZIP, etc.): mensaje "Vista previa no disponible para este formato" y opción de descargar.
+  - Botones "Cerrar" y "Descargar".
+  - Origen del documento (ej: "Subetapa Relevamiento Técnico").
+- Si el proyecto todavía no tiene documentos, se muestra el mensaje "Este proyecto no tiene documentos adjuntos todavía".

@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { Mail, MapPin, Phone } from "lucide-react";
 import type { Project } from "../../types/api.types";
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
@@ -68,6 +69,34 @@ export function ProjectHeader({ project, onEdit }: ProjectHeaderProps) {
           {project.code} · {project.capacityKwp} kWp · {project.locationCity},{" "}
           {project.locationProvince}
         </p>
+        {(project.notificationEmail || project.notificationPhone || project.clientAddress) && (
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-[18px] gap-y-1.5 text-[12px] text-[var(--color-text-secondary)]">
+            {project.notificationEmail ? (
+              <a
+                href={`mailto:${project.notificationEmail}`}
+                className="inline-flex items-center gap-1 hover:text-[var(--color-text-primary)] transition-colors"
+              >
+                <Mail size={14} className="shrink-0" />
+                <span>{project.notificationEmail}</span>
+              </a>
+            ) : null}
+            {project.notificationPhone ? (
+              <a
+                href={`tel:${project.notificationPhone}`}
+                className="inline-flex items-center gap-1 hover:text-[var(--color-text-primary)] transition-colors"
+              >
+                <Phone size={14} className="shrink-0" />
+                <span>{project.notificationPhone}</span>
+              </a>
+            ) : null}
+            {project.clientAddress ? (
+              <span className="inline-flex items-center gap-1">
+                <MapPin size={14} className="shrink-0" />
+                <span>{project.clientAddress}</span>
+              </span>
+            ) : null}
+          </div>
+        )}
         {project.firstDateScheduledAt && (
           <p className="font-mono text-[10px] text-[var(--color-text-muted)] mt-0.5">
             Fecha tentativa de obra:{" "}

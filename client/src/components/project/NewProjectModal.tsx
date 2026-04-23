@@ -22,6 +22,7 @@ interface NewProjectForm {
   salespersonId: string;
   notificationEmail: string;
   notificationPhone: string;
+  clientAddress: string;
 }
 
 const EMPTY_FORM: NewProjectForm = {
@@ -33,6 +34,7 @@ const EMPTY_FORM: NewProjectForm = {
   salespersonId: "",
   notificationEmail: "",
   notificationPhone: "",
+  clientAddress: "",
 };
 
 function calculateCapacity(solarForm: SolarSystemFormValues): number {
@@ -110,6 +112,7 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
         salespersonId: form.salespersonId || undefined,
         notificationEmail: form.notificationEmail.trim() || undefined,
         notificationPhone: form.notificationPhone.trim() || undefined,
+        clientAddress: form.clientAddress.trim() || undefined,
         solarSystem: solarPayload,
       });
     },
@@ -178,6 +181,10 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
                 <input className={input(!!errors.locationProvince)} value={form.locationProvince} onChange={(event) => updateField("locationProvince", event.target.value)} />
               </Field>
             </div>
+
+            <Field label="Dirección">
+              <input type="text" className={input()} value={form.clientAddress} onChange={(event) => updateField("clientAddress", event.target.value)} />
+            </Field>
 
             <Field label="Presupuesto (USD)" error={errors.budgetUsd}>
               <input type="number" min="0" step="0.01" className={input(!!errors.budgetUsd)} value={form.budgetUsd} onChange={(event) => updateField("budgetUsd", event.target.value)} />
