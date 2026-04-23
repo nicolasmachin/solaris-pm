@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getProjectDocuments, type ProjectDocument } from "../../api/files.api";
 import { Spinner } from "../ui/Spinner";
+import { useAuthBlobUrl, downloadAuthenticated } from "../../hooks/useAuthBlobUrl";
+import { toast } from "react-hot-toast";
 
 const MONTHS_ES_SHORT = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
@@ -88,9 +90,29 @@ export function DocumentsStrip({ projectId }: { projectId: string }) {
   );
 }
 
+function ImageThumb({ src, alt }: { src: string; alt: string }) {
+  const { blobUrl, loading, error } = useAuthBlobUrl(src);
+  if (loading || !blobUrl) {
+    return (
+      <span className="block h-full w-full animate-pulse rounded bg-[var(--color-border)]/40" />
+    );
+  }
+  if (error) {
+    return <span style={{ fontSize: 28 }}>🖼️</span>;
+  }
+  return (
+    <img
+      src={blobUrl}
+      alt={alt}
+      className="h-full w-full rounded object-cover"
+      loading="lazy"
+    />
+  );
+}
+
 function DocumentCard({ doc, onClick }: { doc: ProjectDocument; onClick: () => void }) {
   const icon = iconFor(doc.mimeType);
-  const thumb = isImage(doc.mimeType) ? doc.previewUrl : null;
+  const showThumb = isImage(doc.mimeType);
 
   return (
     <button
@@ -99,21 +121,14 @@ function DocumentCard({ doc, onClick }: { doc: ProjectDocument; onClick: () => v
       title={`${doc.filename}\n${doc.sourceLabel}`}
       className="group flex w-[180px] shrink-0 flex-col gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] p-3 text-left transition-colors hover:border-[var(--color-text-secondary)]"
     >
-      <div className="flex h-20 items-center justify-center rounded bg-[var(--color-bg-card)]">
-        {thumb ? (
-          <img
-            src={thumb}
-            alt=""
-            className="h-full w-full rounded object-cover"
-            loading="lazy"
-          />
+      <div className="flex h-20 items-center justify-center overflow-hidden rounded bg-[var(--color-bg-card)]">
+        {showThumb ? (
+          <ImageThumb src={doc.previewUrl} alt="" />
         ) : (
           <span style={{ fontSize: 36, color: icon.color }}>{icon.emoji}</span>
         )}
       </div>
-      <p
-        className="truncate text-[12px] font-medium text-[var(--color-text-primary)]"
-      >
+      <p className="truncate text-[12px] font-medium text-[var(--color-text-primary)]">
         {doc.filename}
       </p>
       <div className="flex items-center justify-between text-[10px] text-[var(--color-text-muted)]">
@@ -132,6 +147,19 @@ function DocumentPreviewModal({
   onClose: () => void;
 }) {
   const canPreview = isPdf(doc.mimeType) || isImage(doc.mimeType);
+  const { blobUrl, loading, error } = useAuthBlobUrl(canPreview ? doc.previewUrl : null);
+  const [downloading, setDownloading] = useState(false);
+
+  async function handleDownload() {
+    try {
+      setDownloading(true);
+      await downloadAuthenticated(doc.downloadUrl, doc.filename);
+    } catch {
+      toast.error("No se pudo descargar el archivo");
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   return (
     <div
@@ -160,20 +188,8 @@ function DocumentPreviewModal({
           </button>
         </div>
 
-        <div className="flex-1 overflow-auto bg-black/40 flex items-center justify-center">
-          {isPdf(doc.mimeType) ? (
-            <iframe
-              src={doc.previewUrl}
-              title={doc.filename}
-              className="h-full w-full border-0 bg-white"
-            />
-          ) : isImage(doc.mimeType) ? (
-            <img
-              src={doc.previewUrl}
-              alt={doc.filename}
-              className="max-h-full max-w-full object-contain"
-            />
-          ) : (
+        <div className="flex flex-1 items-center justify-center overflow-auto bg-black/40">
+          {!canPreview ? (
             <div className="p-8 text-center">
               <p className="text-sm text-[var(--color-text-secondary)]">
                 Vista previa no disponible para este formato.
@@ -182,6 +198,29 @@ function DocumentPreviewModal({
                 Descargá el archivo para verlo.
               </p>
             </div>
+          ) : loading ? (
+            <div className="flex flex-col items-center gap-3 p-8">
+              <Spinner />
+              <p className="text-xs text-white/70">Cargando vista previa…</p>
+            </div>
+          ) : error || !blobUrl ? (
+            <div className="p-8 text-center">
+              <p className="text-sm text-white/80">
+                No se pudo cargar el preview. Descargá el archivo para verlo.
+              </p>
+            </div>
+          ) : isPdf(doc.mimeType) ? (
+            <iframe
+              src={blobUrl}
+              title={doc.filename}
+              className="h-full w-full border-0 bg-white"
+            />
+          ) : (
+            <img
+              src={blobUrl}
+              alt={doc.filename}
+              className="max-h-full max-w-full object-contain"
+            />
           )}
         </div>
 
@@ -193,15 +232,15 @@ function DocumentPreviewModal({
           >
             Cerrar
           </button>
-          <a
-            href={doc.downloadUrl}
-            download={doc.filename}
-            className="rounded-md bg-[var(--color-accent)] px-3 py-1.5 text-sm font-semibold text-black hover:opacity-90"
+          <button
+            type="button"
+            onClick={handleDownload}
+            disabled={downloading}
+            className="rounded-md bg-[var(--color-accent)] px-3 py-1.5 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-60"
           >
-            Descargar
-          </a>
+            {downloading ? "Descargando…" : "Descargar"}
+          </button>
         </div>
-        {!canPreview && null}
       </div>
     </div>
   );

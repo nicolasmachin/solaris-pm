@@ -157,13 +157,24 @@ function MarkdownView({ source }: { source: string }) {
           {renderInline(line.slice(3))}
         </h2>,
       );
+    } else if (line.startsWith("#### ")) {
+      flushBullets();
+      flushParagraph();
+      blocks.push(
+        <h4
+          key={`h-${blocks.length}`}
+          className="mt-3 mb-1.5 font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]"
+        >
+          {renderInline(line.slice(5))}
+        </h4>,
+      );
     } else if (line.startsWith("### ")) {
       flushBullets();
       flushParagraph();
       blocks.push(
         <h3
           key={`h-${blocks.length}`}
-          className="mt-3 mb-1.5 font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]"
+          className="mt-4 mb-2 text-sm font-semibold text-[var(--color-text-primary)]"
         >
           {renderInline(line.slice(4))}
         </h3>,

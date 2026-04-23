@@ -3,17 +3,21 @@ import { Outlet, useMatch } from "react-router-dom";
 import { Topbar } from "./Topbar";
 import { Sidebar } from "./Sidebar";
 import { VersionFooter } from "./VersionFooter";
+import { MobileNavDrawer } from "./MobileNavDrawer";
 
 export function AppLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const isProjectDetail = !!useMatch("/projects/:id");
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-app)]">
-      <Topbar onMenuToggle={() => setSidebarOpen((v) => !v)} />
-      {isProjectDetail && (
-        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      )}
+      <Topbar onMenuToggle={() => setMobileNavOpen((v) => !v)} />
+
+      {/* Menú principal para móvil (hamburguesa en el topbar) */}
+      <MobileNavDrawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+
+      {/* Sidebar de navegación interna del proyecto (solo en desktop) */}
+      {isProjectDetail && <Sidebar open={false} onClose={() => undefined} />}
 
       <main
         className="overflow-y-auto min-h-screen"
