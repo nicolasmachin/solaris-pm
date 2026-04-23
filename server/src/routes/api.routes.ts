@@ -6123,10 +6123,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       throw badRequest("INVALID_DATE_RANGE", "La fecha de fin debe ser mayor o igual a la de inicio");
     }
 
-    const today = todayUtc();
-    if (newStart.getTime() < today.getTime()) {
-      throw badRequest("PAST_DATE", "No se puede reprogramar a una fecha pasada");
-    }
+    // Permitimos fechas pasadas a propósito: sirve para ajustar el calendario
+    // a las fechas reales en las que se ejecutó la obra.
 
     const targetSegment = body.segmentId
       ? existing.segments.find((s) => s.id === body.segmentId)

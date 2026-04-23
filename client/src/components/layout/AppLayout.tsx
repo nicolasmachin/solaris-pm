@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Outlet, useMatch } from "react-router-dom";
 import { Topbar } from "./Topbar";
 import { Sidebar } from "./Sidebar";
+import { VersionFooter } from "./VersionFooter";
 
 export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -24,10 +25,11 @@ export function AppLayout() {
             main { margin-left: 0 !important; }
           }
         `}</style>
-        <div className="p-6">
+        <div className="p-6 pb-10">
           <Outlet />
         </div>
       </main>
+      <VersionFooter />
     </div>
   );
 }

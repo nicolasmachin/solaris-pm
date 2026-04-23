@@ -803,10 +803,8 @@ export function Calendar() {
     const endIso = formatIso(newEnd);
 
     if (source === "year") {
-      if (startIso < todayIso) {
-        toast.error("No se puede mover a fechas pasadas");
-        return;
-      }
+      // Las fechas pasadas se permiten: se usan para ajustar el calendario a
+      // las fechas reales en que se ejecutó la obra.
       // Sólo chequeamos solape contra otros tramos del mismo schedule.
       const overlap = schedule.segments.find(
         (seg) => seg.id !== meta.segmentId && rangesOverlap(startIso, endIso, seg.startDate, seg.endDate),
@@ -837,10 +835,8 @@ export function Calendar() {
 
       if (rs.currentStart === rs.originalStart && rs.currentEnd === rs.originalEnd) return;
       if (rs.currentEnd < rs.currentStart) return; // rango inválido
-      if (rs.edge === "start" && rs.currentStart < todayIso) {
-        toast.error("No se puede mover a fechas pasadas");
-        return;
-      }
+      // Las fechas pasadas se permiten: sirven para ajustar el calendario a
+      // las fechas reales en las que se ejecutó la obra.
       // Chequeo de solape: sólo contra otros TRAMOS del MISMO schedule (los tramos
       // del mismo schedule no se pueden superponer entre sí). Los tramos de
       // schedules distintos pueden coexistir en el mismo día — eso es lo que
