@@ -9,6 +9,8 @@ import { uploadFile, getDownloadUrl } from "../../api/files.api";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Spinner } from "../ui/Spinner";
+import { UserSelect } from "../ui/UserSelect";
+import { AssigneeLabel } from "../ui/AssigneeLabel";
 import { CommentThread } from "../comments/CommentThread";
 
 interface StageDrawerProps {
@@ -220,7 +222,7 @@ function SubstageRow({
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(substage.name);
-  const [responsible, setResponsible] = useState(substage.responsible ?? "");
+  const [userId, setUserId] = useState<string | null>(substage.userId ?? null);
   const [dueDate, setDueDate] = useState(substage.dueDate?.slice(0, 10) ?? "");
   const [notes, setNotes] = useState(substage.notes ?? "");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -231,7 +233,8 @@ function SubstageRow({
   const { mutate: saveEdit, isPending: saving } = useMutation({
     mutationFn: () =>
       patchSubstage(projectId, stageId, substage.id, {
-        name, responsible: responsible || undefined,
+        name,
+        userId,
         dueDate: dueDate || null,
         notes: notes || null,
       }),
@@ -313,9 +316,9 @@ function SubstageRow({
           {/* Content */}
           <div className="flex-1 min-w-0 cursor-pointer" onClick={() => !editing && setExpanded(v => !v)}>
             <p className="text-xs text-[var(--color-text-primary)] truncate">{substage.name}</p>
-            {substage.responsible && (
-              <p className="text-[10px] text-[var(--color-text-muted)]">{substage.responsible}</p>
-            )}
+            <p className="truncate">
+              <AssigneeLabel user={substage.user} legacyText={substage.responsible} size="xs" />
+            </p>
             {substage.dueDate && (
               <p className="font-mono text-[10px] text-[var(--color-text-muted)]">
                 Vence:{" "}
@@ -392,11 +395,19 @@ function SubstageRow({
               value={name}
               onChange={e => setName(e.target.value)}
             />
-            <input
-              className="w-full px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]"
-              value={responsible}
-              onChange={e => setResponsible(e.target.value)}
-            />
+            <div>
+              <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Responsable</p>
+              <UserSelect
+                value={userId}
+                onChange={setUserId}
+                ariaLabel="Responsable de la subetapa"
+              />
+              {!userId && substage.responsible && substage.responsible.trim() !== "" ? (
+                <p className="mt-1 text-[10px] text-[var(--color-text-muted)]">
+                  Texto legacy: <span className="italic">{substage.responsible}</span>
+                </p>
+              ) : null}
+            </div>
             <div>
               <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Fecha límite</p>
               <input type="date" className="w-full px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]" value={dueDate} onChange={e => setDueDate(e.target.value)} />
@@ -487,8 +498,8 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
   const [actualStart, setActualStart] = useState(stage.actualStartDate?.slice(0, 10) ?? "");
   const [actualEnd, setActualEnd] = useState(stage.actualEndDate?.slice(0, 10) ?? "");
   const [dateEditError, setDateEditError] = useState<string | null>(null);
-  const [responsibleName, setResponsibleName] = useState(
-    (stage as Stage & { responsibleName?: string | null }).responsibleName ?? ""
+  const [responsibleUserId, setResponsibleUserId] = useState<string | null>(
+    stage.responsibleUserId ?? null,
   );
 
   const currentUser = useAuthStore((s) => s.user);
@@ -498,7 +509,7 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
   // New substage form
   const [showSubForm, setShowSubForm] = useState(false);
   const [subName, setSubName] = useState("");
-  const [subResponsible, setSubResponsible] = useState("");
+  const [subUserId, setSubUserId] = useState<string | null>(null);
   const [subDue, setSubDue] = useState("");
 
   // File upload
@@ -566,16 +577,15 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
       const body: {
         actualStartDate?: string | null;
         actualEndDate?: string | null;
-        responsibleName?: string | null;
+        responsibleUserId?: string | null;
       } = {};
       const currentActualStart = stage.actualStartDate?.slice(0, 10) ?? "";
       const currentActualEnd = stage.actualEndDate?.slice(0, 10) ?? "";
-      const currentResponsible =
-        (stage as Stage & { responsibleName?: string | null }).responsibleName ?? "";
+      const currentResponsibleUserId = stage.responsibleUserId ?? null;
 
       if (isAdmin && (actualStart || "") !== currentActualStart) body.actualStartDate = actualStart || null;
       if (isAdmin && (actualEnd || "") !== currentActualEnd) body.actualEndDate = actualEnd || null;
-      if ((responsibleName || "") !== currentResponsible) body.responsibleName = responsibleName || null;
+      if (responsibleUserId !== currentResponsibleUserId) body.responsibleUserId = responsibleUserId;
 
       return patchStage(projectId, stage.id, body);
     },
@@ -596,14 +606,14 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
     mutationFn: () =>
       createSubstage(projectId, stage.id, {
         name: subName,
-        responsible: subResponsible,
+        userId: subUserId,
         dueDate: subDue || null,
       }),
     onSuccess: () => {
       toast.success("Subetapa creada");
       setShowSubForm(false);
       setSubName("");
-      setSubResponsible("");
+      setSubUserId(null);
       setSubDue("");
       invalidate();
     },
@@ -788,11 +798,19 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
                       </div>
                     </div>
                   </div>
-                  <input
-                    className="w-full px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]"
-                    value={responsibleName}
-                    onChange={(e) => setResponsibleName(e.target.value)}
-                  />
+                  <div>
+                    <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Responsable</p>
+                    <UserSelect
+                      value={responsibleUserId}
+                      onChange={setResponsibleUserId}
+                      ariaLabel="Responsable de la etapa"
+                    />
+                    {!responsibleUserId && stage.responsibleName && stage.responsibleName.trim() !== "" ? (
+                      <p className="mt-1 text-[10px] text-[var(--color-text-muted)]">
+                        Texto legacy: <span className="italic">{stage.responsibleName}</span>
+                      </p>
+                    ) : null}
+                  </div>
                   {dateEditError && (
                     <p className="text-[11px] text-[var(--color-danger-text)]">{dateEditError}</p>
                   )}
@@ -865,6 +883,15 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
                       <p className="text-[var(--color-text-secondary)]">{stage.actualDurationDays} días</p>
                     </div>
                   )}
+                  <div className="col-span-2">
+                    <span className="text-[var(--color-text-muted)] text-[10px]">Responsable</span>
+                    <p className="mt-0.5">
+                      <AssigneeLabel
+                        user={stage.responsibleUser}
+                        legacyText={stage.responsibleName}
+                      />
+                    </p>
+                  </div>
                 </div>
               )}
             </section>
@@ -897,27 +924,36 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
 
             {showSubForm && (
               <div className="mb-3 p-3 rounded-lg bg-[var(--color-bg-card)] border border-[var(--color-border)] space-y-2">
-                <input
-                  className="w-full px-2.5 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]"
-                  value={subName}
-                  onChange={(e) => setSubName(e.target.value)}
-                />
-                <input
-                  className="w-full px-2.5 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]"
-                  value={subResponsible}
-                  onChange={(e) => setSubResponsible(e.target.value)}
-                />
-                <input
-                  type="date"
-                  className="w-full px-2.5 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
-                  value={subDue}
-                  onChange={(e) => setSubDue(e.target.value)}
-                />
+                <div>
+                  <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Nombre</p>
+                  <input
+                    className="w-full px-2.5 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]"
+                    value={subName}
+                    onChange={(e) => setSubName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Responsable</p>
+                  <UserSelect
+                    value={subUserId}
+                    onChange={setSubUserId}
+                    ariaLabel="Responsable de la nueva subetapa"
+                  />
+                </div>
+                <div>
+                  <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Fecha límite</p>
+                  <input
+                    type="date"
+                    className="w-full px-2.5 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
+                    value={subDue}
+                    onChange={(e) => setSubDue(e.target.value)}
+                  />
+                </div>
                 <div className="flex gap-2">
                   <Button
                     size="sm"
                     loading={createSubMutation.isPending}
-                    disabled={!subName || !subResponsible}
+                    disabled={!subName}
                     onClick={() => createSubMutation.mutate()}
                   >
                     Guardar

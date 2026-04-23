@@ -533,6 +533,18 @@ export function serializeSolarSystem(system: {
   };
 }
 
+type ResponsibleUserRef = {
+  id: string;
+  name: string;
+  role: { name: string } | string | null;
+};
+
+function serializeResponsibleUser(user: ResponsibleUserRef | null | undefined) {
+  if (!user) return null;
+  const role = typeof user.role === "string" ? user.role : user.role?.name ?? null;
+  return { id: user.id, name: user.name, role };
+}
+
 export function serializeStage(stage: {
   id: string;
   projectId: string;
@@ -549,13 +561,18 @@ export function serializeStage(stage: {
   actualDurationDays: number | null;
   delayDays: number | null;
   responsibleName: string | null;
+  responsibleUserId?: string | null;
+  responsibleUser?: ResponsibleUserRef | null;
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
 }) {
+  const { responsibleUser, ...rest } = stage;
   return {
-    ...stage,
+    ...rest,
     label: getStageLabel(stage.name),
+    responsibleUserId: stage.responsibleUserId ?? null,
+    responsibleUser: serializeResponsibleUser(responsibleUser),
     plannedStartDate: serializeDateOnly(stage.plannedStartDate),
     plannedEndDate: serializeDateOnly(stage.plannedEndDate),
     actualStartDate: serializeDateOnly(stage.actualStartDate),
@@ -577,6 +594,7 @@ export function serializeSubstage(substage: {
   progressPercent: number;
   responsible: string;
   userId: string | null;
+  user?: ResponsibleUserRef | null;
   dueDate: Date | null;
   plannedStartDate: Date | null;
   plannedEndDate: Date | null;
@@ -591,8 +609,10 @@ export function serializeSubstage(substage: {
   createdAt: Date;
   updatedAt: Date;
 }) {
+  const { user, ...rest } = substage;
   return {
-    ...substage,
+    ...rest,
+    user: serializeResponsibleUser(user),
     dueDate: serializeDateOnly(substage.dueDate),
     plannedStartDate: serializeDateOnly(substage.plannedStartDate),
     plannedEndDate: serializeDateOnly(substage.plannedEndDate),
@@ -640,14 +660,17 @@ export function serializeTask(task: {
   priority: string;
   responsible: string;
   userId: string | null;
+  user?: ResponsibleUserRef | null;
   dueDate: Date | null;
   completedAt: Date | null;
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }) {
+  const { user, ...rest } = task;
   return {
-    ...task,
+    ...rest,
+    user: serializeResponsibleUser(user),
     dueDate: serializeDateOnly(task.dueDate),
     completedAt: serializeDate(task.completedAt),
     deletedAt: serializeDate(task.deletedAt),

@@ -119,6 +119,9 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
 
         {/* Nav links — hidden on mobile */}
         <nav className="hidden md:flex items-center gap-6 ml-6">
+          <NavLink to="/mis-tareas" className={navLinkClass}>
+            Mis tareas
+          </NavLink>
           <NavLink to="/dashboard" className={navLinkClass}>
             Dashboard
           </NavLink>

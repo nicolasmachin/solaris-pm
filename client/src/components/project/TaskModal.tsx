@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { createTask } from "../../api/tasks.api";
 import type { Stage } from "../../types/api.types";
 import { Button } from "../ui/Button";
+import { UserSelect } from "../ui/UserSelect";
 
 interface TaskModalProps {
   projectId: string;
@@ -16,7 +17,7 @@ export function TaskModal({ projectId, stages, onClose }: TaskModalProps) {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [responsible, setResponsible] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
   const [priority, setPriority] = useState<"NORMAL" | "URGENT">("NORMAL");
   const [dueDate, setDueDate] = useState("");
   const [stageId, setStageId] = useState("");
@@ -31,7 +32,7 @@ export function TaskModal({ projectId, stages, onClose }: TaskModalProps) {
     mutationFn: () =>
       createTask(projectId, {
         title,
-        responsible,
+        userId,
         description: description || null,
         priority,
         stageId: stageId || null,
@@ -97,13 +98,12 @@ export function TaskModal({ projectId, stages, onClose }: TaskModalProps) {
 
           <div>
             <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
-              Responsable *
+              Responsable
             </label>
-            <input
-              required
-              value={responsible}
-              onChange={(e) => setResponsible(e.target.value)}
-              className="w-full px-3 py-2 rounded-md text-sm bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]"
+            <UserSelect
+              value={userId}
+              onChange={setUserId}
+              ariaLabel="Responsable de la tarea"
             />
           </div>
 
@@ -167,7 +167,7 @@ export function TaskModal({ projectId, stages, onClose }: TaskModalProps) {
             <Button
               type="submit"
               loading={mutation.isPending}
-              disabled={!title || !responsible}
+              disabled={!title}
               className="flex-1"
             >
               Crear tarea

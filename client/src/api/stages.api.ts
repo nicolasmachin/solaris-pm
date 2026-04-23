@@ -7,7 +7,9 @@ export async function patchStage(
   body: {
     status?: Stage["status"];
     notes?: string | null;
+    /** @deprecated usar responsibleUserId */
     responsibleName?: string | null;
+    responsibleUserId?: string | null;
     plannedStartDate?: string | null;
     plannedEndDate?: string | null;
     actualStartDate?: string | null;
@@ -26,7 +28,9 @@ export async function createSubstage(
   stageId: string,
   body: {
     name: string;
-    responsible: string;
+    /** @deprecated usar userId */
+    responsible?: string;
+    userId?: string | null;
     dueDate?: string | null;
     plannedStartDate?: string | null;
     plannedEndDate?: string | null;
@@ -48,7 +52,9 @@ export async function patchSubstage(
     name?: string;
     status?: Substage["status"];
     notes?: string | null;
+    /** @deprecated usar userId */
     responsible?: string;
+    userId?: string | null;
     dueDate?: string | null;
     plannedStartDate?: string | null;
     plannedEndDate?: string | null;

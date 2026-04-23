@@ -4,6 +4,8 @@ import toast from "react-hot-toast";
 import type { Task } from "../../types/api.types";
 import { patchTask, deleteTask } from "../../api/tasks.api";
 import { Button } from "../ui/Button";
+import { UserSelect } from "../ui/UserSelect";
+import { AssigneeLabel } from "../ui/AssigneeLabel";
 import { CommentThread } from "../comments/CommentThread";
 
 interface TasksPanelProps {
@@ -56,7 +58,7 @@ function TaskRow({
   const [description, setDescription] = useState(task.description ?? "");
   const [status, setStatus] = useState<Task["status"]>(task.status);
   const [priority, setPriority] = useState<Task["priority"]>(task.priority);
-  const [responsible, setResponsible] = useState(task.responsible ?? "");
+  const [userId, setUserId] = useState<string | null>(task.userId ?? null);
   const [dueDate, setDueDate] = useState(task.dueDate?.slice(0, 10) ?? "");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -67,7 +69,7 @@ function TaskRow({
   const { mutate: saveEdit, isPending: saving } = useMutation({
     mutationFn: () => patchTask(projectId, task.id, {
       title, description: description || null, status, priority,
-      responsible: responsible || null, dueDate: dueDate || null,
+      userId, dueDate: dueDate || null,
     }),
     onSuccess: () => {
       toast.success("Tarea actualizada");
@@ -132,7 +134,10 @@ function TaskRow({
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 12px", fontSize: 11, color: "var(--color-text-muted)", marginBottom: 10 }}>
             <span>Estado: <span style={{ color: "var(--color-text-secondary)" }}>{STATUS_LABELS[task.status]}</span></span>
             <span>Prioridad: <span style={{ color: "var(--color-text-secondary)" }}>{PRIORITY_LABELS[task.priority]}</span></span>
-            {task.responsible && <span>Responsable: <span style={{ color: "var(--color-text-secondary)" }}>{task.responsible}</span></span>}
+            <span>
+              Responsable:{" "}
+              <AssigneeLabel user={task.user} legacyText={task.responsible} />
+            </span>
             {task.dueDate && <span>Vence: <span style={{ color: "var(--color-text-secondary)" }}>{formatDue(task.dueDate)}</span></span>}
           </div>
           <div style={{ display: "flex", gap: 6 }}>
@@ -171,7 +176,19 @@ function TaskRow({
                 {PRIORITY_OPTIONS.map(p => <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>)}
               </select>
             </div>
-            <input style={inputStyle} value={responsible} onChange={e => setResponsible(e.target.value)} />
+            <div>
+              <div style={{ fontSize: 10, color: "var(--color-text-muted)", marginBottom: 2 }}>Responsable</div>
+              <UserSelect
+                value={userId}
+                onChange={setUserId}
+                ariaLabel="Responsable de la tarea"
+              />
+              {!userId && task.responsible && task.responsible.trim() !== "" ? (
+                <p style={{ marginTop: 4, fontSize: 10, color: "var(--color-text-muted)" }}>
+                  Texto legacy: <span style={{ fontStyle: "italic" }}>{task.responsible}</span>
+                </p>
+              ) : null}
+            </div>
             <input style={inputStyle} type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
             <div style={{ display: "flex", gap: 6 }}>
               <button

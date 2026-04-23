@@ -1,8 +1,53 @@
 # Novedades
 
+## v1.2
+
+### 23 de abril de 2026
+
+#### Responsables reales en lugar de texto libre
+- Los campos "Responsable" de **subetapas, tareas y etapas** ahora se eligen con un **selector de usuarios** (con avatar, nombre, rol y búsqueda) en lugar de escribirse a mano. Esto evita typos y permite filtrar, notificar y asociar tareas al usuario correcto.
+- El selector incluye una opción **"Sin asignar"** al principio para dejar un responsable vacío.
+- Los responsables cargados antes (texto libre) se siguen mostrando en pantalla con un badge **"legacy"** en gris. Un administrador tiene que **reasignarlos manualmente** desde la UI para que queden como usuarios reales.
+- Mientras tanto, donde hoy figura "Responsable:" vas a ver tres estados posibles:
+  - Nombre del usuario asignado (flujo nuevo).
+  - Texto legacy atenuado + badge **"legacy"** (hay que reasignar).
+  - "Sin asignar" en gris (no hay responsable cargado).
+
+#### Admin: ver las tareas de otro usuario
+- En la pantalla **"Mis tareas"**, los administradores ahora tienen un selector arriba **"Ver tareas de"** para revisar las tareas de cualquier otro usuario del sistema.
+- Al cambiarlo aparece un banner informativo: *"Estás viendo las tareas de Juan Pérez"* con un botón **"Volver a las mías"**.
+- Los usuarios no-admin no ven este selector y sólo pueden ver las propias.
+- Queda traza en los logs del sistema cuando un admin consulta tareas ajenas (por transparencia).
+
+#### Mis tareas: ordenamiento y URL compartible
+- Nuevo selector **"Ordenar"** con 3 opciones:
+  - **Urgencia** (por defecto): atrasadas primero, después las que vencen pronto.
+  - **Proyecto**: alfabético por nombre de proyecto; dentro de cada proyecto, en el orden del flujo (Onboarding → Ingeniería → Operaciones → Habilitación → Postventa).
+  - **Fecha de vencimiento**: las más próximas primero; las que no tienen fecha al final.
+- El subtítulo de la página refleja el orden elegido.
+- Los filtros aplicados quedan en la URL (ej. `/mis-tareas?sort=project&scope=mine`) para que puedas **guardarla o compartirla** y al abrirla aparezca la misma vista.
+
 ## v1.1
 
 ### 23 de abril de 2026
+
+#### Nueva sección "Mis tareas"
+- Nueva entrada en el menú **"Mis tareas"** (primera opción, disponible para todos los usuarios autenticados).
+- Muestra un **dashboard personal** con las etapas de proyectos en las que estás involucrado, ordenadas por urgencia.
+- Cada fila es un **proyecto + etapa activa**, con:
+  - Barra lateral de color según urgencia (rojo = atrasada o vence hoy, amarillo = ≤ 7 días, verde = > 7 días, gris = sin fecha).
+  - Nombre del proyecto, badge de la etapa con color por módulo (Onboarding, Ingeniería, Operaciones, Habilitación, Postventa), código del proyecto.
+  - Contador de subetapas pendientes, destacando cuántas son tuyas.
+  - Fecha límite de la etapa a la derecha.
+- Al expandir cada fila se ven las **subetapas pendientes** con:
+  - Estado visual (pendiente / en curso / bloqueada).
+  - Nombre, fecha de vencimiento y progreso del checklist (X / Y ítems).
+  - Avatar del responsable (con resaltado especial si sos vos).
+- **Filtro "Todas" / "Solo mías"** para mostrar o filtrar por etapas con tareas asignadas a vos.
+- Stats arriba: etapas activas totales, subetapas pendientes, asignadas a vos y atrasadas.
+- Clic en una subetapa o en "Abrir etapa completa" lleva al proyecto con la **etapa ya abierta** en el drawer.
+- Cada usuario ve sólo las etapas cuyo módulo corresponda a sus permisos (Ingeniería solo si tiene INGENIERIA.VIEW, etc.).
+- Si no hay tareas pendientes, mensaje amistoso: "No tenés etapas activas en este momento. ¡Bien hecho!".
 
 #### Menú para móvil con hamburguesa
 - Desde el celular, el ícono ☰ del header ahora **abre un menú lateral** con todas las secciones: Dashboard, Proyectos, Calendario, Ventas, Finanzas, Stock, Métricas y Admin.

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { getProject, patchProject } from "../api/projects.api";
@@ -609,6 +609,7 @@ function InstallationCoherenceBanner({
 
 export function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const qc = useQueryClient();
   const [selectedStage, setSelectedStage] = useState<Stage | null>(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
@@ -631,6 +632,10 @@ export function ProjectDetail() {
     refetchInterval: 60_000,
   });
 
+  // Si llegamos con ?stage=<stageId> (p. ej. desde "Mis tareas"), abrimos el
+  // drawer automáticamente la primera vez que el proyecto esté disponible.
+  const autoOpenedStageRef = useRef<string | null>(null);
+
   const ganttQuery = useQuery({
     queryKey: ["project", id, "gantt"],
     queryFn: () => getProjectGantt(id!),
@@ -642,6 +647,23 @@ export function ProjectDetail() {
     queryFn: () => installationCheck(id!),
     enabled: !!id,
   });
+
+  // Abrir drawer automáticamente cuando viene ?stage=<id> (desde Mis Tareas)
+  useEffect(() => {
+    if (!project) return;
+    const stageParam = searchParams.get("stage");
+    if (!stageParam) return;
+    if (autoOpenedStageRef.current === stageParam) return;
+    const targetStage = project.stages.find((s) => s.id === stageParam);
+    if (!targetStage) return;
+    autoOpenedStageRef.current = stageParam;
+    setSelectedStage(targetStage);
+    // Limpiamos el query param para que al cerrar el drawer no se reabra.
+    const next = new URLSearchParams(searchParams);
+    next.delete("stage");
+    next.delete("substage");
+    setSearchParams(next, { replace: true });
+  }, [project, searchParams, setSearchParams]);
 
   // ── Error / loading states ────────────────────────────────────────────────
 

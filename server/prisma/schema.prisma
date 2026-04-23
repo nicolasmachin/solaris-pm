@@ -295,6 +295,7 @@ model User {
   createdProjects         Project[]            @relation("ProjectCreatedBy")
   projectsSalesperson     Project[]            @relation("ProjectSalesperson")
   assignedSubstages       Substage[]
+  assignedStages          Stage[]              @relation("StageResponsibleUser")
   completedChecklistItems ChecklistItem[]      @relation("ChecklistCompletedBy")
   assignedTasks           Task[]
   uploadedFiles           FileAttachment[]     @relation("FileUploadedBy")
@@ -420,7 +421,10 @@ model Stage {
   actualDurationDays  Int?
   delayDays           Int?
   actualDatesManuallyEdited Boolean       @default(false)
+  /// @deprecated usar responsibleUserId + relación responsibleUser. Se conserva como referencia.
   responsibleName     String?
+  responsibleUserId   String?
+  responsibleUser     User?            @relation("StageResponsibleUser", fields: [responsibleUserId], references: [id], onDelete: SetNull)
   notes               String?
   substages           Substage[]
   tasks               Task[]
@@ -435,6 +439,7 @@ model Stage {
   @@index([projectId, order])
   @@index([projectId, status])
   @@index([status])
+  @@index([responsibleUserId])
   @@index([deletedAt])
   @@map("stages")
 }
@@ -449,6 +454,7 @@ model Substage {
   responsableRol   String?
   status           SubstageStatus
   progressPercent  Int             @default(0)
+  /// @deprecated usar userId + relación user. Se conserva como referencia del rol sugerido heredado del template.
   responsible      String
   userId           String?
   user             User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -519,6 +525,7 @@ model Task {
   description String?
   status      TaskStatus
   priority    TaskPriority
+  /// @deprecated usar userId + relación user. Se conserva como referencia legacy.
   responsible String
   userId      String?
   user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)

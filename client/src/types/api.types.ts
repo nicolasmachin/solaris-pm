@@ -143,6 +143,12 @@ export interface Comment {
   };
 }
 
+export interface AssignedUserRef {
+  id: string;
+  name: string;
+  role: string | null;
+}
+
 export interface Substage {
   id: string;
   stageId: string;
@@ -150,8 +156,10 @@ export interface Substage {
   order: number;
   name: string;
   status: SubstageStatus;
+  /** @deprecated texto legacy; usar userId + user */
   responsible: string | null;
   userId: string | null;
+  user: AssignedUserRef | null;
   dueDate: string | null;
   plannedStartDate: string | null;
   plannedEndDate: string | null;
@@ -182,7 +190,10 @@ export interface Stage {
   actualDurationDays: number | null;
   delayDays: number | null;
   actualDatesManuallyEdited?: boolean;
+  /** @deprecated texto legacy; usar responsibleUserId + responsibleUser */
   responsibleName?: string | null;
+  responsibleUserId?: string | null;
+  responsibleUser?: AssignedUserRef | null;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -198,8 +209,10 @@ export interface Task {
   description: string | null;
   status: TaskStatus;
   priority: TaskPriority;
+  /** @deprecated texto legacy; usar userId + user */
   responsible: string | null;
   userId: string | null;
+  user: AssignedUserRef | null;
   dueDate: string | null;
   completedAt: string | null;
   deletedAt: string | null;

@@ -155,7 +155,9 @@ const stagePatchSchema = z
   .object({
     status: z.nativeEnum(StageStatus).optional(),
     tipoObra: z.nativeEnum(TipoObra).nullable().optional(),
+    /** @deprecated usar responsibleUserId. Se mantiene sólo por retrocompat. */
     responsibleName: z.string().trim().min(1).nullable().optional(),
+    responsibleUserId: z.string().min(1).nullable().optional(),
     notes: z.string().nullable().optional(),
     plannedStartDate: dateOnlySchema.nullable().optional(),
     plannedEndDate: dateOnlySchema.nullable().optional(),
@@ -167,7 +169,8 @@ const stagePatchSchema = z
 const substageCreateSchema = z
   .object({
     name: z.string().min(1),
-    responsible: z.string().min(1),
+    /** @deprecated usar userId. Se acepta por retrocompat y se guarda como snapshot vacío si no viene. */
+    responsible: z.string().optional(),
     sopCode: z.string().nullable().optional(),
     responsableRol: z.string().nullable().optional(),
     userId: z.string().nullable().optional(),
@@ -231,7 +234,8 @@ const taskCreateSchema = z
     description: z.string().nullable().optional(),
     status: z.nativeEnum(TaskStatus).default(TaskStatus.PENDING),
     priority: z.nativeEnum(TaskPriority).default(TaskPriority.NORMAL),
-    responsible: z.string().min(1),
+    /** @deprecated usar userId. Se acepta por retrocompat. */
+    responsible: z.string().optional(),
     userId: z.string().nullable().optional(),
     stageId: z.string().nullable().optional(),
     substageId: z.string().nullable().optional(),
@@ -1115,10 +1119,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
         stages: {
           orderBy: { order: "asc" },
           include: {
+            responsibleUser: { select: { id: true, name: true, role: { select: { name: true } } } },
             substages: {
               where: { deletedAt: null, isActive: true },
               orderBy: { order: "asc" },
               include: {
+                user: { select: { id: true, name: true, role: { select: { name: true } } } },
                 checklistItems: {
                   orderBy: { order: "asc" },
                 },
@@ -1130,6 +1136,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
           where: { deletedAt: null },
           orderBy: { updatedAt: "desc" },
           take: 10,
+          include: {
+            user: { select: { id: true, name: true, role: { select: { name: true } } } },
+          },
         },
         files: {
           where: { deletedAt: null },
@@ -1460,10 +1469,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const stages = await prisma.stage.findMany({
       where: { projectId: params.projectId },
       include: {
+        responsibleUser: { select: { id: true, name: true, role: { select: { name: true } } } },
         substages: {
           where: { deletedAt: null, isActive: true },
           orderBy: { order: "asc" },
           include: {
+            user: { select: { id: true, name: true, role: { select: { name: true } } } },
             checklistItems: {
               orderBy: { order: "asc" },
             },
@@ -1514,6 +1525,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const updateData: Record<string, unknown> = {};
     if (body.tipoObra !== undefined) updateData.tipoObra = body.tipoObra;
     if (body.responsibleName !== undefined) updateData.responsibleName = body.responsibleName;
+    if (body.responsibleUserId !== undefined) {
+      if (body.responsibleUserId !== null) {
+        await assertUserActiveOrThrow(body.responsibleUserId, "responsibleUserId");
+      }
+      updateData.responsibleUserId = body.responsibleUserId;
+    }
     if (body.notes !== undefined) updateData.notes = body.notes;
     if (body.plannedStartDate !== undefined) updateData.plannedStartDate = body.plannedStartDate ? parseDateOnly(body.plannedStartDate) : null;
     if (body.plannedEndDate !== undefined) updateData.plannedEndDate = body.plannedEndDate ? parseDateOnly(body.plannedEndDate) : null;
@@ -1801,6 +1818,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const body = substageCreateSchema.parse(request.body);
     const stage = await findStageOrThrow(params.projectId, params.stageId);
 
+    if (body.userId) {
+      await assertUserActiveOrThrow(body.userId, "userId");
+    }
+
     const maxOrder = await prisma.substage.aggregate({
       where: {
         stageId: params.stageId,
@@ -1820,7 +1841,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         responsableRol: body.responsableRol ?? null,
         status: SubstageStatus.PENDING,
         progressPercent: 0,
-        responsible: body.responsible,
+        responsible: body.responsible ?? "",
         userId: body.userId ?? null,
         dueDate: body.dueDate ? parseDateOnly(body.dueDate) : null,
         plannedStartDate: body.plannedStartDate ? parseDateOnly(body.plannedStartDate) : null,
@@ -1881,7 +1902,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
     if (body.sopCode !== undefined) updateData.sopCode = body.sopCode;
     if (body.responsableRol !== undefined) updateData.responsableRol = body.responsableRol;
     if (body.responsible !== undefined) updateData.responsible = body.responsible;
-    if (body.userId !== undefined) updateData.userId = body.userId;
+    if (body.userId !== undefined) {
+      if (body.userId !== null) {
+        await assertUserActiveOrThrow(body.userId, "userId");
+      }
+      updateData.userId = body.userId;
+    }
     if (body.dueDate !== undefined) updateData.dueDate = body.dueDate ? parseDateOnly(body.dueDate) : null;
     if (body.plannedStartDate !== undefined) updateData.plannedStartDate = body.plannedStartDate ? parseDateOnly(body.plannedStartDate) : null;
     if (body.plannedEndDate !== undefined) updateData.plannedEndDate = body.plannedEndDate ? parseDateOnly(body.plannedEndDate) : null;
@@ -2425,6 +2451,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
         priority: query.priority,
         stageId: query.stageId,
       },
+      include: {
+        user: { select: { id: true, name: true, role: { select: { name: true } } } },
+      },
       orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
     });
 
@@ -2437,6 +2466,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const body = taskCreateSchema.parse(request.body);
     await findProjectOrThrow(params.projectId);
 
+    if (body.userId) {
+      await assertUserActiveOrThrow(body.userId, "userId");
+    }
+
     const task = await prisma.task.create({
       data: {
         projectId: params.projectId,
@@ -2446,7 +2479,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         description: body.description ?? null,
         status: body.status,
         priority: body.priority,
-        responsible: body.responsible,
+        responsible: body.responsible ?? "",
         userId: body.userId ?? null,
         dueDate: body.dueDate ? parseDateOnly(body.dueDate) : null,
       },
@@ -2476,7 +2509,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
     if (body.description !== undefined) updateData.description = body.description;
     if (body.priority !== undefined) updateData.priority = body.priority;
     if (body.responsible !== undefined) updateData.responsible = body.responsible;
-    if (body.userId !== undefined) updateData.userId = body.userId;
+    if (body.userId !== undefined) {
+      if (body.userId !== null) {
+        await assertUserActiveOrThrow(body.userId, "userId");
+      }
+      updateData.userId = body.userId;
+    }
     if (body.stageId !== undefined) updateData.stageId = body.stageId;
     if (body.substageId !== undefined) updateData.substageId = body.substageId;
     if (body.dueDate !== undefined) updateData.dueDate = body.dueDate ? parseDateOnly(body.dueDate) : null;
@@ -3444,6 +3482,61 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return { success: true };
   });
 
+  // Lista de usuarios activos para poblar selectores (asignar responsables,
+  // etc.). Abierto a cualquier usuario autenticado porque ya se exponen estos
+  // datos de forma indirecta al mostrar responsables en las pantallas.
+  // El endpoint /users clásico sigue restringido a USUARIOS.VIEW.
+  const userActiveSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    email: z.string(),
+    role: z.string(),
+  });
+
+  app.get("/users/active", async () => {
+    const users = await prisma.user.findMany({
+      where: { deletedAt: null },
+      // SELECT explícito: nunca devolver password u otros campos sensibles.
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: { select: { name: true } },
+      },
+    });
+    const flattened = users.map((u) => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      role: u.role.name,
+    }));
+    // Orden alfabético case-insensitive por nombre (Postgres no garantiza
+    // "ignorar mayúsculas" sin collation extra; lo hacemos acá para ser explícitos).
+    flattened.sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }));
+    return z.array(userActiveSchema).parse(flattened);
+  });
+
+  // Helper: valida que un userId corresponda a un usuario existente y activo.
+  // Devuelve los campos mínimos útiles del usuario validado. Usado al asignar
+  // responsables a Stage/Substage/Task y al consultar /my-tasks?userId=...
+  async function assertUserActiveOrThrow(userId: string, fieldName = "userId") {
+    const user = await prisma.user.findFirst({
+      where: { id: userId, deletedAt: null },
+      select: {
+        id: true,
+        name: true,
+        role: { select: { name: true } },
+      },
+    });
+    if (!user) {
+      throw badRequest(
+        "INVALID_USER_ID",
+        `El ${fieldName} indicado no corresponde a un usuario activo`,
+      );
+    }
+    return { id: user.id, name: user.name, role: user.role.name };
+  }
+
   app.get("/users/me", async (request) => {
     const user = ensureUser(request);
 
@@ -3465,6 +3558,193 @@ export async function registerApiRoutes(app: FastifyInstance) {
       role: user.role,
       permissions: groupPermissionsByModule(permissions),
     };
+  });
+
+  // ─── "Mis tareas" ────────────────────────────────────────────────────────────
+  // Dashboard personal: un bloque por (proyecto + etapa activa) con sus
+  // subetapas pendientes. El usuario ve todas las subetapas pendientes de la
+  // etapa (no sólo las suyas), siempre que tenga permiso VIEW sobre el módulo
+  // correspondiente. Las etapas completamente terminadas no aparecen.
+
+  const STAGE_TYPE_TO_MODULE: Record<StageType, Module> = {
+    [StageType.ONBOARDING]: Module.ONBOARDING,
+    [StageType.INGENIERIA]: Module.INGENIERIA,
+    [StageType.OPERACIONES]: Module.OPERACIONES,
+    [StageType.HABILITACION_UTE]: Module.HABILITACION,
+    [StageType.POSTVENTA]: Module.POSTVENTA,
+  };
+
+  function computeInitials(name: string): string {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return "?";
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
+  app.get("/my-tasks", async (request) => {
+    const currentUser = ensureUser(request);
+
+    // Admins pueden consultar tareas de otro usuario vía ?userId=. Para no
+    // admins el param se ignora silenciosamente (no es error).
+    const query = z
+      .object({ userId: z.string().min(1).optional() })
+      .parse(request.query);
+    const isAdmin = currentUser.role === "ADMIN";
+    let targetUser: { id: string; role: string; name: string } = {
+      id: currentUser.id,
+      role: currentUser.role,
+      name: currentUser.name,
+    };
+    if (isAdmin && query.userId && query.userId !== currentUser.id) {
+      // Si el userId no existe o está borrado → 400 INVALID_USER_ID (mismo
+      // patrón que los patches de substage/task/stage). No hacemos fallback
+      // silencioso al admin porque genera confusión.
+      targetUser = await assertUserActiveOrThrow(query.userId, "userId");
+      // Transparencia: dejamos traza en los logs de que un admin miró tareas
+      // ajenas. No vamos al audit log porque AuditAction no tiene un "viewed";
+      // si más adelante queremos persistirlo, se agrega en una migración aparte.
+      request.log.info(
+        {
+          type: "my_tasks_admin_view",
+          adminId: currentUser.id,
+          adminName: currentUser.name,
+          targetUserId: targetUser.id,
+          targetUserName: targetUser.name,
+        },
+        `Admin ${currentUser.name} consultó las tareas de ${targetUser.name}`,
+      );
+    }
+
+    // 1. Módulos visibles para el ROL DEL USUARIO CONSULTADO (respetamos su
+    //    perfil: un admin ve lo que vería el otro usuario, no lo que él mismo
+    //    podría ver).
+    const userPermissions = await prisma.permission.findMany({
+      where: { role: { name: targetUser.role }, action: Action.VIEW },
+      select: { module: true },
+    });
+    const visibleModules = new Set(userPermissions.map((p) => p.module));
+
+    // 2. Etapas activas: no completadas, no borradas, proyecto activo, con al
+    //    menos una subetapa no completada y visible para el usuario.
+    const stages = await prisma.stage.findMany({
+      where: {
+        deletedAt: null,
+        status: { not: StageStatus.COMPLETED },
+        project: {
+          deletedAt: null,
+          status: { notIn: [ProjectStatus.ARCHIVED, ProjectStatus.COMPLETED] },
+        },
+        substages: {
+          some: {
+            deletedAt: null,
+            isActive: true,
+            status: { not: SubstageStatus.COMPLETED },
+          },
+        },
+      },
+      include: {
+        project: { select: { id: true, clientName: true, code: true } },
+        substages: {
+          where: {
+            deletedAt: null,
+            isActive: true,
+            status: { not: SubstageStatus.COMPLETED },
+          },
+          include: {
+            user: { select: { id: true, name: true } },
+            checklistItems: { where: { deletedAt: null }, select: { completed: true } },
+          },
+          orderBy: { order: "asc" },
+        },
+      },
+    });
+
+    const today = todayUtc();
+    const sevenDaysFromNow = addDays(today, 7);
+
+    function urgencyRank(dueDate: Date | null): number {
+      // 0 = atrasada o vence hoy, 1 = ≤ 7 días, 2 = > 7 días, 3 = sin fecha
+      if (!dueDate) return 3;
+      if (dueDate.getTime() <= today.getTime()) return 0;
+      if (dueDate.getTime() <= sevenDaysFromNow.getTime()) return 1;
+      return 2;
+    }
+
+    const blocks = stages
+      .filter((stage) => visibleModules.has(STAGE_TYPE_TO_MODULE[stage.name]))
+      .map((stage) => {
+        // Subetapas pendientes de esta etapa, ya filtradas arriba.
+        const subs = stage.substages;
+
+        // Urgencia del bloque = mínimo rank entre stageDueDate y cualquier
+        // substage pendiente (la más urgente manda).
+        const substageRanks = subs.map((s) => urgencyRank(s.dueDate));
+        const stageRank = urgencyRank(stage.plannedEndDate);
+        const blockRank = Math.min(stageRank, ...substageRanks);
+
+        const myPendingSubstagesCount = subs.filter((s) => s.userId === targetUser.id).length;
+
+        return {
+          projectId: stage.projectId,
+          projectCode: stage.project.code,
+          projectName: stage.project.clientName,
+          stageId: stage.id,
+          stageName: stage.name,
+          stageLabel: getStageLabel(stage.name),
+          stageDueDate: serializeDateOnly(stage.plannedEndDate),
+          pendingSubstagesCount: subs.length,
+          myPendingSubstagesCount,
+          blockRank,
+          substages: subs
+            .map((sub) => {
+              const total = sub.checklistItems.length;
+              const done = sub.checklistItems.filter((c) => c.completed).length;
+              return {
+                id: sub.id,
+                name: sub.name,
+                status: sub.status,
+                dueDate: serializeDateOnly(sub.dueDate),
+                checklistDoneCount: done,
+                checklistTotalCount: total,
+                assignedUser: sub.user
+                  ? {
+                      id: sub.user.id,
+                      name: sub.user.name,
+                      initials: computeInitials(sub.user.name),
+                      isCurrentUser: sub.user.id === targetUser.id,
+                    }
+                  : sub.responsible
+                    ? {
+                        id: null,
+                        name: sub.responsible,
+                        initials: computeInitials(sub.responsible),
+                        isCurrentUser: false,
+                      }
+                    : null,
+                urgencyRank: urgencyRank(sub.dueDate),
+              };
+            })
+            .sort((a, b) => {
+              if (a.urgencyRank !== b.urgencyRank) return a.urgencyRank - b.urgencyRank;
+              // Dentro del mismo rango, los que tienen fecha van antes, ordenados por fecha
+              if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+              if (a.dueDate) return -1;
+              if (b.dueDate) return 1;
+              return a.name.localeCompare(b.name, "es");
+            }),
+        };
+      });
+
+    // Ordenar bloques por urgencia, luego por fecha de stage, luego por nombre de proyecto.
+    blocks.sort((a, b) => {
+      if (a.blockRank !== b.blockRank) return a.blockRank - b.blockRank;
+      if (a.stageDueDate && b.stageDueDate) return a.stageDueDate.localeCompare(b.stageDueDate);
+      if (a.stageDueDate) return -1;
+      if (b.stageDueDate) return 1;
+      return a.projectName.localeCompare(b.projectName, "es");
+    });
+
+    return blocks;
   });
 
   // ─── Roles dinámicos y matriz de permisos ────────────────────────────────────

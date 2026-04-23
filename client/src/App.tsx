@@ -24,6 +24,7 @@ const FinanceSuppliers = lazy(() => import("./pages/FinanceSuppliers").then((mod
 const FinanceReports = lazy(() => import("./pages/FinanceReports").then((module) => ({ default: module.FinanceReports })));
 const Stock = lazy(() => import("./pages/Stock").then((module) => ({ default: module.Stock })));
 const Calendar = lazy(() => import("./pages/Calendar").then((module) => ({ default: module.Calendar })));
+const MisTareas = lazy(() => import("./pages/MisTareas").then((module) => ({ default: module.MisTareas })));
 
 function RouteFallback() {
   return (
@@ -112,6 +113,7 @@ export function App() {
         }
       >
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/mis-tareas" element={<MisTareas />} />
         <Route path="/projects" element={<Projects />} />
         <Route path="/projects/:id" element={<ProjectDetail />} />
         <Route path="/settings" element={<Settings />} />

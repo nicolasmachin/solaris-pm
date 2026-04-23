@@ -9,6 +9,7 @@ import {
   Package,
   BarChart3,
   Users,
+  ListTodo,
   X,
   LogOut,
 } from "lucide-react";
@@ -138,7 +139,11 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
 
         {/* Links */}
         <div className="flex-1 overflow-y-auto py-2">
-          <NavLink ref={firstLinkRef} to="/dashboard" className={linkClass}>
+          <NavLink ref={firstLinkRef} to="/mis-tareas" className={linkClass}>
+            <ListTodo size={18} className="shrink-0" />
+            <span>Mis tareas</span>
+          </NavLink>
+          <NavLink to="/dashboard" className={linkClass}>
             <LayoutDashboard size={18} className="shrink-0" />
             <span>Dashboard</span>
           </NavLink>
