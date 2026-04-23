@@ -517,11 +517,13 @@ function InstallationScheduleRow({
   plannedWorkEnd,
   teamName,
   confirmed,
+  segmentsCount,
 }: {
   plannedWorkStart: string;
   plannedWorkEnd: string;
   teamName: string;
   confirmed: boolean;
+  segmentsCount: number;
 }) {
   const navigate = useNavigate();
   return (
@@ -531,7 +533,8 @@ function InstallationScheduleRow({
       className="mb-4 -mt-2 flex items-center gap-2 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
     >
       <span>
-        Instalación: {formatInstallationRangeLabel(plannedWorkStart, plannedWorkEnd)} · {teamName}
+        Instalación: {formatInstallationRangeLabel(plannedWorkStart, plannedWorkEnd)}
+        {segmentsCount > 1 ? ` · ${segmentsCount} tramos` : ""} · {teamName}
       </span>
       <span
         className="rounded px-1.5 py-0.5 text-[10px] font-semibold"
@@ -700,12 +703,13 @@ export function ProjectDetail() {
         onEdit={() => setShowEditProject(true)}
       />
 
-      {project.installationSchedule ? (
+      {project.installationSchedule && project.installationSchedule.plannedWorkStart && project.installationSchedule.plannedWorkEnd ? (
         <InstallationScheduleRow
           plannedWorkStart={project.installationSchedule.plannedWorkStart}
           plannedWorkEnd={project.installationSchedule.plannedWorkEnd}
           teamName={project.installationSchedule.teamName}
           confirmed={Boolean(project.installationSchedule.confirmedAt)}
+          segmentsCount={project.installationSchedule.segments.length}
         />
       ) : null}
 
@@ -795,15 +799,13 @@ export function ProjectDetail() {
               data={ganttQuery.data}
               installationSchedules={
                 project.installationSchedule
-                  ? [
-                      {
-                        id: project.installationSchedule.id,
-                        plannedWorkStart: project.installationSchedule.plannedWorkStart,
-                        plannedWorkEnd: project.installationSchedule.plannedWorkEnd,
-                        teamName: project.installationSchedule.teamName,
-                        clientName: project.clientName,
-                      },
-                    ]
+                  ? project.installationSchedule.segments.map((seg) => ({
+                      id: seg.id,
+                      plannedWorkStart: seg.startDate,
+                      plannedWorkEnd: seg.endDate,
+                      teamName: project.installationSchedule!.teamName,
+                      clientName: project.clientName,
+                    }))
                   : []
               }
             />

@@ -258,11 +258,19 @@ export interface Project {
     id: string;
     teamName: string;
     teamColor: string;
-    plannedWorkStart: string;
-    plannedWorkEnd: string;
+    // Envelope (min/max de segments). Puede ser null si por alguna razón no hay
+    // segments, pero en la práctica siempre viene.
+    plannedWorkStart: string | null;
+    plannedWorkEnd: string | null;
     confirmedAt: string | null;
     confirmedByUser: { id: string; name: string } | null;
     notes: string | null;
+    segments: Array<{
+      id: string;
+      startDate: string;
+      endDate: string;
+      notes: string | null;
+    }>;
   } | null;
 }
 

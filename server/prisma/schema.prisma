@@ -991,9 +991,7 @@ model InstallationSchedule {
   team            Team?     @relation(fields: [teamId], references: [id], onDelete: SetNull)
   teamName        String
   teamColor       String    @default("#378ADD")
-  plannedWorkStart DateTime @db.Date
-  plannedWorkEnd   DateTime @db.Date
-  actualWorkEnd    DateTime? @db.Date
+  actualWorkEnd   DateTime? @db.Date
   confirmedAt     DateTime? @db.Timestamptz(6)
   confirmedBy     String?
   confirmedByUser User?     @relation("InstallationConfirmedBy", fields: [confirmedBy], references: [id], onDelete: SetNull)
@@ -1003,11 +1001,27 @@ model InstallationSchedule {
   updatedAt       DateTime  @updatedAt @db.Timestamptz(6)
   deletedAt       DateTime? @db.Timestamptz(6)
 
-  @@index([plannedWorkStart])
+  segments        InstallationSegment[]
+
   @@index([projectId])
   @@index([teamId])
   @@index([deletedAt])
   @@map("installation_schedules")
+}
+
+model InstallationSegment {
+  id          String    @id @default(cuid())
+  scheduleId  String
+  schedule    InstallationSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  startDate   DateTime  @db.Date
+  endDate     DateTime  @db.Date
+  notes       String?
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6)
+
+  @@index([scheduleId])
+  @@index([startDate])
+  @@map("installation_segments")
 }
 
 model Team {

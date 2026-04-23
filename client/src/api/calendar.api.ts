@@ -11,6 +11,16 @@ export interface InstallationScheduleProjectRef {
   workType: TipoObraLabel;
 }
 
+export interface InstallationSegment {
+  id: string;
+  scheduleId: string;
+  startDate: string; // YYYY-MM-DD
+  endDate: string;   // YYYY-MM-DD
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface InstallationSchedule {
   id: string;
   projectId: string;
@@ -18,6 +28,8 @@ export interface InstallationSchedule {
   team: { id: string; name: string; color: string } | null;
   teamName: string; // snapshot del nombre al momento de agendar
   teamColor: string; // snapshot del color
+  // Envelope calculado a partir de los segments (min/max). Se expone como YYYY-MM-DD
+  // para retrocompat con código viejo. Para rendering usar `segments`.
   plannedWorkStart: string; // YYYY-MM-DD
   plannedWorkEnd: string;   // YYYY-MM-DD
   actualWorkEnd: string | null;
@@ -26,6 +38,7 @@ export interface InstallationSchedule {
   confirmedByUser: { id: string; name: string } | null;
   notes: string | null;
   operationsCompleted: boolean;
+  segments: InstallationSegment[];
   createdAt: string;
   updatedAt: string;
   project: InstallationScheduleProjectRef | null;
@@ -89,9 +102,8 @@ export async function getCalendarTeams(): Promise<CalendarTeam[]> {
 export async function createSchedule(body: {
   projectId: string;
   teamId: string;
-  plannedWorkStart: string;
-  plannedWorkEnd: string;
   notes?: string | null;
+  segments: Array<{ startDate: string; endDate: string; notes?: string | null }>;
 }): Promise<ScheduleWithWarning> {
   const { data } = await apiClient.post<ScheduleWithWarning>("/api/calendar", body);
   return data;
@@ -101,9 +113,12 @@ export async function patchSchedule(
   id: string,
   body: {
     teamId?: string;
+    notes?: string | null;
+    // Reemplaza todos los tramos por los que vengan en el body.
+    segments?: Array<{ startDate: string; endDate: string; notes?: string | null }>;
+    // Retrocompat: si querés actualizar un schedule con un único tramo.
     plannedWorkStart?: string;
     plannedWorkEnd?: string;
-    notes?: string | null;
   },
 ): Promise<InstallationSchedule> {
   const { data } = await apiClient.patch<InstallationSchedule>(`/api/calendar/${id}`, body);
@@ -112,11 +127,44 @@ export async function patchSchedule(
 
 export async function rescheduleSchedule(
   id: string,
-  body: { plannedWorkStart: string; plannedWorkEnd: string },
+  body: { plannedWorkStart: string; plannedWorkEnd: string; segmentId?: string },
 ): Promise<ScheduleWithWarning> {
   const { data } = await apiClient.patch<ScheduleWithWarning>(
     `/api/calendar/${id}/reschedule`,
     body,
+  );
+  return data;
+}
+
+export async function addSegment(
+  scheduleId: string,
+  body: { startDate: string; endDate: string; notes?: string | null },
+): Promise<InstallationSchedule> {
+  const { data } = await apiClient.post<InstallationSchedule>(
+    `/api/calendar/${scheduleId}/segments`,
+    body,
+  );
+  return data;
+}
+
+export async function patchSegment(
+  scheduleId: string,
+  segmentId: string,
+  body: { startDate?: string; endDate?: string; notes?: string | null },
+): Promise<InstallationSchedule> {
+  const { data } = await apiClient.patch<InstallationSchedule>(
+    `/api/calendar/${scheduleId}/segments/${segmentId}`,
+    body,
+  );
+  return data;
+}
+
+export async function deleteSegment(
+  scheduleId: string,
+  segmentId: string,
+): Promise<InstallationSchedule> {
+  const { data } = await apiClient.delete<InstallationSchedule>(
+    `/api/calendar/${scheduleId}/segments/${segmentId}`,
   );
   return data;
 }

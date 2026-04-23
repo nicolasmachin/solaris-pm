@@ -1140,6 +1140,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           where: { deletedAt: null },
           include: {
             confirmedByUser: { select: { id: true, name: true } },
+            segments: { orderBy: { startDate: "asc" } },
           },
         },
       },
@@ -1152,21 +1153,31 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const metrics = calculateProjectMetrics(project);
 
     const installationSchedule = project.installationSchedule
-      ? {
-          id: project.installationSchedule.id,
-          teamName: project.installationSchedule.teamName,
-          teamColor: project.installationSchedule.teamColor,
-          plannedWorkStart: serializeDateOnly(project.installationSchedule.plannedWorkStart),
-          plannedWorkEnd: serializeDateOnly(project.installationSchedule.plannedWorkEnd),
-          confirmedAt: serializeDate(project.installationSchedule.confirmedAt),
-          confirmedByUser: project.installationSchedule.confirmedByUser
-            ? {
-                id: project.installationSchedule.confirmedByUser.id,
-                name: project.installationSchedule.confirmedByUser.name,
-              }
-            : null,
-          notes: project.installationSchedule.notes,
-        }
+      ? (() => {
+          const segs = project.installationSchedule!.segments;
+          const env = segs.length > 0 ? envelopeOf(segs) : null;
+          return {
+            id: project.installationSchedule!.id,
+            teamName: project.installationSchedule!.teamName,
+            teamColor: project.installationSchedule!.teamColor,
+            plannedWorkStart: env ? serializeDateOnly(env.start) : null,
+            plannedWorkEnd: env ? serializeDateOnly(env.end) : null,
+            confirmedAt: serializeDate(project.installationSchedule!.confirmedAt),
+            confirmedByUser: project.installationSchedule!.confirmedByUser
+              ? {
+                  id: project.installationSchedule!.confirmedByUser.id,
+                  name: project.installationSchedule!.confirmedByUser.name,
+                }
+              : null,
+            notes: project.installationSchedule!.notes,
+            segments: segs.map((s) => ({
+              id: s.id,
+              startDate: serializeDateOnly(s.startDate)!,
+              endDate: serializeDateOnly(s.endDate)!,
+              notes: s.notes,
+            })),
+          };
+        })()
       : null;
 
     return {
@@ -1621,18 +1632,22 @@ export async function registerApiRoutes(app: FastifyInstance) {
         if (stage.name === StageType.OPERACIONES) {
           const installation = await prisma.installationSchedule.findFirst({
             where: { projectId: params.projectId, deletedAt: null },
-            select: { plannedWorkEnd: true, actualWorkEnd: true },
+            select: {
+              actualWorkEnd: true,
+              segments: { orderBy: { endDate: "desc" }, take: 1, select: { endDate: true } },
+            },
           });
           if (installation) {
             const today = todayUtc();
-            // Caso A: plannedWorkEnd todavía no pasó → bloquear
-            if (installation.plannedWorkEnd.getTime() > today.getTime()) {
+            const lastEnd = installation.segments[0]?.endDate ?? null;
+            // Caso A: último fin planificado todavía no pasó → bloquear
+            if (lastEnd && lastEnd.getTime() > today.getTime()) {
               throw badRequest(
                 "INSTALL_NOT_FINISHED",
-                `La fecha de fin de instalación programada (${formatDateEs(installation.plannedWorkEnd)}) aún no pasó. Actualizá las fechas de instalación o esperá a que finalice antes de cerrar la etapa Operaciones.`,
+                `La fecha de fin de instalación programada (${formatDateEs(lastEnd)}) aún no pasó. Actualizá las fechas de instalación o esperá a que finalice antes de cerrar la etapa Operaciones.`,
               );
             }
-            // Caso B: plannedWorkEnd pasó pero actualWorkEnd es null → warning
+            // Caso B: fin planificado ya pasó pero actualWorkEnd es null → warning
             if (!installation.actualWorkEnd) {
               stageCompletionWarning = {
                 code: "WORK_END_NOT_CONFIRMED",
@@ -5384,20 +5399,88 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
   // ─── Calendario de instalaciones ─────────────────────────────────────────────
 
+  const segmentInputSchema = z.object({
+    startDate: dateOnlySchema,
+    endDate: dateOnlySchema,
+    notes: z.string().trim().nullable().optional(),
+  }).strict();
+
   const calendarCreateSchema = z.object({
     projectId: z.string().min(1),
     teamId: z.string().min(1),
-    plannedWorkStart: dateOnlySchema,
-    plannedWorkEnd: dateOnlySchema,
     notes: z.string().trim().optional().nullable(),
-  });
+    // Acepta el formato nuevo (segments) o, por retrocompat, plannedWorkStart/End
+    // (que se convierten automáticamente en un único segment).
+    segments: z.array(segmentInputSchema).min(1).optional(),
+    plannedWorkStart: dateOnlySchema.optional(),
+    plannedWorkEnd: dateOnlySchema.optional(),
+  }).refine(
+    (v) => v.segments !== undefined || (v.plannedWorkStart !== undefined && v.plannedWorkEnd !== undefined),
+    { message: "Hay que enviar segments o plannedWorkStart/plannedWorkEnd" },
+  );
 
   const calendarPatchSchema = z.object({
     teamId: z.string().min(1).optional(),
+    notes: z.string().trim().nullable().optional(),
+    // Si viene segments se reemplazan todos los tramos.
+    segments: z.array(segmentInputSchema).min(1).optional(),
+    // Compat: si viene un único rango, se trata como reemplazo total por 1 segment.
     plannedWorkStart: dateOnlySchema.optional(),
     plannedWorkEnd: dateOnlySchema.optional(),
-    notes: z.string().trim().nullable().optional(),
   }).strict();
+
+  function assertSegmentsNoOverlap(segments: Array<{ startDate: Date; endDate: Date }>) {
+    const sorted = [...segments].sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+    for (let i = 0; i < sorted.length; i++) {
+      const s = sorted[i];
+      if (s.endDate.getTime() < s.startDate.getTime()) {
+        throw badRequest("INVALID_DATE_RANGE", "La fecha de fin debe ser mayor o igual a la de inicio");
+      }
+      if (i > 0) {
+        const prev = sorted[i - 1];
+        if (s.startDate.getTime() <= prev.endDate.getTime()) {
+          throw badRequest(
+            "SEGMENTS_OVERLAP",
+            `Las fechas se superponen con el tramo del ${toDateOnlyString(prev.startDate)} al ${toDateOnlyString(prev.endDate)}`,
+          );
+        }
+      }
+    }
+  }
+
+  function envelopeOf(segments: Array<{ startDate: Date; endDate: Date }>) {
+    if (segments.length === 0) {
+      throw badRequest("NO_SEGMENTS", "Una instalación debe tener al menos un tramo");
+    }
+    let start = segments[0].startDate;
+    let end = segments[0].endDate;
+    for (const s of segments) {
+      if (s.startDate.getTime() < start.getTime()) start = s.startDate;
+      if (s.endDate.getTime() > end.getTime()) end = s.endDate;
+    }
+    return { start, end };
+  }
+
+  function normalizeIncomingSegments(
+    input: { segments?: Array<{ startDate: string; endDate: string; notes?: string | null }> } &
+          { plannedWorkStart?: string; plannedWorkEnd?: string },
+  ): Array<{ startDate: Date; endDate: Date; notes: string | null }> {
+    const list = input.segments
+      ? input.segments.map((s) => ({
+          startDate: parseDateOnly(s.startDate),
+          endDate: parseDateOnly(s.endDate),
+          notes: s.notes ?? null,
+        }))
+      : input.plannedWorkStart && input.plannedWorkEnd
+        ? [{
+            startDate: parseDateOnly(input.plannedWorkStart),
+            endDate: parseDateOnly(input.plannedWorkEnd),
+            notes: null,
+          }]
+        : [];
+    assertSegmentsNoOverlap(list);
+    return list;
+  }
 
   async function loadActiveTeamOrThrow(teamId: string) {
     const team = await prisma.team.findFirst({ where: { id: teamId, deletedAt: null } });
@@ -5405,12 +5488,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
       throw badRequest("TEAM_NOT_FOUND", "El equipo seleccionado no existe o fue eliminado");
     }
     return team;
-  }
-
-  function assertRangeValid(start: Date, end: Date) {
-    if (end.getTime() < start.getTime()) {
-      throw badRequest("INVALID_DATE_RANGE", "plannedWorkEnd debe ser mayor o igual a plannedWorkStart");
-    }
   }
 
   function formatDateEs(date: Date): string {
@@ -5491,6 +5568,26 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return substageName.toLowerCase().includes("ejecución de obra");
   }
 
+  function serializeSegment(seg: {
+    id: string;
+    scheduleId: string;
+    startDate: Date;
+    endDate: Date;
+    notes: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }) {
+    return {
+      id: seg.id,
+      scheduleId: seg.scheduleId,
+      startDate: serializeDateOnly(seg.startDate)!,
+      endDate: serializeDateOnly(seg.endDate)!,
+      notes: seg.notes,
+      createdAt: serializeDate(seg.createdAt),
+      updatedAt: serializeDate(seg.updatedAt),
+    };
+  }
+
   function serializeSchedule(s: {
     id: string;
     projectId: string;
@@ -5498,8 +5595,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
     team?: { id: string; name: string; color: string; deletedAt: Date | null } | null;
     teamName: string;
     teamColor: string;
-    plannedWorkStart: Date;
-    plannedWorkEnd: Date;
     actualWorkEnd: Date | null;
     confirmedAt: Date | null;
     confirmedBy: string | null;
@@ -5509,6 +5604,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
     createdAt: Date;
     updatedAt: Date;
     deletedAt?: Date | null;
+    segments: Array<{
+      id: string;
+      scheduleId: string;
+      startDate: Date;
+      endDate: Date;
+      notes: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
     project?: {
       id: string;
       clientName: string;
@@ -5521,6 +5625,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const operationsStage = s.project?.stages?.find((st) => st.name === StageType.OPERACIONES);
     const workType = operationsStage?.tipoObra ?? null;
     const operationsCompleted = operationsStage?.status === StageStatus.COMPLETED;
+    const sortedSegments = [...s.segments].sort(
+      (a, b) => a.startDate.getTime() - b.startDate.getTime(),
+    );
+    const envelope = sortedSegments.length > 0
+      ? {
+          start: sortedSegments[0].startDate,
+          end: sortedSegments.reduce((acc, seg) => (seg.endDate > acc ? seg.endDate : acc), sortedSegments[0].endDate),
+        }
+      : null;
     return {
       id: s.id,
       projectId: s.projectId,
@@ -5531,8 +5644,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
           : null,
       teamName: s.teamName,
       teamColor: s.teamColor,
-      plannedWorkStart: serializeDateOnly(s.plannedWorkStart),
-      plannedWorkEnd: serializeDateOnly(s.plannedWorkEnd),
+      // Envelope: min/max de todos los segments. Lo seguimos exponiendo para que
+      // el resto del código (lista de proyectos, chequeos, etc.) no rompa.
+      plannedWorkStart: envelope ? serializeDateOnly(envelope.start) : null,
+      plannedWorkEnd: envelope ? serializeDateOnly(envelope.end) : null,
       actualWorkEnd: serializeDateOnly(s.actualWorkEnd),
       confirmedAt: serializeDate(s.confirmedAt),
       confirmedBy: s.confirmedBy,
@@ -5543,6 +5658,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       operationsCompleted,
       createdAt: serializeDate(s.createdAt),
       updatedAt: serializeDate(s.updatedAt),
+      segments: sortedSegments.map(serializeSegment),
       project: s.project
         ? {
             id: s.project.id,
@@ -5585,12 +5701,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
       rangeEnd = new Date(Date.UTC(query.year, 11, 31));
     }
 
-    // Incluir bloques que se solapen con el rango (empiezan antes y/o terminan después)
+    // Traemos los schedules que tienen al menos un segment dentro del rango.
     const schedules = await prisma.installationSchedule.findMany({
       where: {
         deletedAt: null,
-        plannedWorkStart: { lte: rangeEnd },
-        plannedWorkEnd: { gte: rangeStart },
+        segments: {
+          some: {
+            startDate: { lte: rangeEnd },
+            endDate: { gte: rangeStart },
+          },
+        },
       },
       include: {
         project: {
@@ -5600,12 +5720,18 @@ export async function registerApiRoutes(app: FastifyInstance) {
         },
         team: true,
         confirmedByUser: { select: { id: true, name: true } },
+        segments: { orderBy: { startDate: "asc" } },
       },
-      orderBy: { plannedWorkStart: "asc" },
+    });
+
+    const sortedSchedules = schedules.sort((a, b) => {
+      const aStart = a.segments[0]?.startDate?.getTime() ?? 0;
+      const bStart = b.segments[0]?.startDate?.getTime() ?? 0;
+      return aStart - bStart;
     });
 
     return {
-      schedules: schedules.map((s) => serializeSchedule(s)),
+      schedules: sortedSchedules.map((s) => serializeSchedule(s)),
       range: {
         start: toDateOnlyString(rangeStart),
         end: toDateOnlyString(rangeEnd),
@@ -5625,10 +5751,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
   app.post("/calendar", { preHandler: authorize(Module.OPERACIONES, Action.CREATE) }, async (request, reply) => {
     const user = ensureUser(request);
     const body = calendarCreateSchema.parse(request.body);
-
-    const plannedWorkStart = parseDateOnly(body.plannedWorkStart);
-    const plannedWorkEnd = parseDateOnly(body.plannedWorkEnd);
-    assertRangeValid(plannedWorkStart, plannedWorkEnd);
+    const segments = normalizeIncomingSegments(body);
+    const { start: envStart, end: envEnd } = envelopeOf(segments);
 
     const project = await prisma.project.findFirst({
       where: { id: body.projectId, deletedAt: null },
@@ -5642,59 +5766,59 @@ export async function registerApiRoutes(app: FastifyInstance) {
     if (existing && !existing.deletedAt) {
       throw conflict(
         "INSTALLATION_ALREADY_SCHEDULED",
-        `El proyecto ya tiene una instalación agendada desde ${toDateOnlyString(existing.plannedWorkStart)}`,
+        `El proyecto ya tiene una instalación agendada`,
       );
     }
 
-    // Regla 1: verificar coherencia con OPERACIONES
-    const validation = await validateInstallationAgainstOperations(
-      body.projectId,
-      plannedWorkStart,
-      plannedWorkEnd,
-    );
+    // Regla 1: verificar coherencia con OPERACIONES (aplicada sobre el envelope)
+    const validation = await validateInstallationAgainstOperations(body.projectId, envStart, envEnd);
     if (!validation.ok) {
       throw badRequest(validation.error.code, validation.error.message);
     }
 
     const team = await loadActiveTeamOrThrow(body.teamId);
 
+    const commonData = {
+      teamId: team.id,
+      teamName: team.name,
+      teamColor: team.color,
+      notes: body.notes ?? null,
+      createdBy: user.id,
+    };
+
     let created;
     if (existing && existing.deletedAt) {
-      // Reactivar registro soft-deleted
       created = await prisma.installationSchedule.update({
         where: { id: existing.id },
         data: {
-          teamId: team.id,
-          teamName: team.name,
-          teamColor: team.color,
-          plannedWorkStart,
-          plannedWorkEnd,
-          notes: body.notes ?? null,
-          createdBy: user.id,
+          ...commonData,
           deletedAt: null,
           confirmedAt: null,
           confirmedBy: null,
+          segments: {
+            deleteMany: {},
+            create: segments,
+          },
         },
         include: {
-          project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } }, team: true,
+          project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } },
+          team: true,
           confirmedByUser: { select: { id: true, name: true } },
+          segments: { orderBy: { startDate: "asc" } },
         },
       });
     } else {
       created = await prisma.installationSchedule.create({
         data: {
           projectId: body.projectId,
-          teamId: team.id,
-          teamName: team.name,
-          teamColor: team.color,
-          plannedWorkStart,
-          plannedWorkEnd,
-          notes: body.notes ?? null,
-          createdBy: user.id,
+          ...commonData,
+          segments: { create: segments },
         },
         include: {
-          project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } }, team: true,
+          project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } },
+          team: true,
           confirmedByUser: { select: { id: true, name: true } },
+          segments: { orderBy: { startDate: "asc" } },
         },
       });
     }
@@ -5705,8 +5829,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       projectId: created.projectId,
       userId: user.id,
       action: AuditAction.created,
-      description: `Instalación de ${project.clientName} agendada del ${toDateOnlyString(plannedWorkStart)} al ${toDateOnlyString(plannedWorkEnd)}`,
-      metadata: { teamName: created.teamName, teamColor: created.teamColor },
+      description: `Instalación de ${project.clientName} agendada (${segments.length} tramo${segments.length === 1 ? "" : "s"})`,
+      metadata: { teamName: created.teamName, teamColor: created.teamColor, segmentsCount: segments.length },
     });
 
     reply.code(201);
@@ -5720,6 +5844,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     const existing = await prisma.installationSchedule.findFirst({
       where: { id: params.id, deletedAt: null },
+      include: { segments: { orderBy: { startDate: "asc" } } },
     });
     if (!existing) {
       throw notFound("INSTALLATION_NOT_FOUND", "Instalación no encontrada");
@@ -5734,43 +5859,44 @@ export async function registerApiRoutes(app: FastifyInstance) {
       updateData.teamColor = team.color;
     }
 
-    const nextStart =
-      body.plannedWorkStart !== undefined ? parseDateOnly(body.plannedWorkStart) : existing.plannedWorkStart;
-    const nextEnd =
-      body.plannedWorkEnd !== undefined ? parseDateOnly(body.plannedWorkEnd) : existing.plannedWorkEnd;
-    if (body.plannedWorkStart !== undefined || body.plannedWorkEnd !== undefined) {
-      assertRangeValid(nextStart, nextEnd);
-      updateData.plannedWorkStart = nextStart;
-      updateData.plannedWorkEnd = nextEnd;
+    // Si viene segments o plannedWorkStart/End, se reemplazan todos los tramos.
+    const wantsSegmentReplace =
+      body.segments !== undefined ||
+      body.plannedWorkStart !== undefined ||
+      body.plannedWorkEnd !== undefined;
+    if (wantsSegmentReplace) {
+      const segments = normalizeIncomingSegments(body);
+      const { start: envStart, end: envEnd } = envelopeOf(segments);
+      const validation = await validateInstallationAgainstOperations(existing.projectId, envStart, envEnd);
+      if (!validation.ok) {
+        throw badRequest(validation.error.code, validation.error.message);
+      }
+      updateData.segments = {
+        deleteMany: {},
+        create: segments,
+      };
     }
 
     const updated = await prisma.installationSchedule.update({
       where: { id: existing.id },
       data: updateData,
       include: {
-        project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } }, team: true,
+        project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } },
+        team: true,
         confirmedByUser: { select: { id: true, name: true } },
+        segments: { orderBy: { startDate: "asc" } },
       },
     });
 
-    const labels: Record<string, string> = {
-      teamId: "equipo",
-      teamName: "equipo",
-      teamColor: "color de equipo",
-      plannedWorkStart: "fecha de inicio",
-      plannedWorkEnd: "fecha de fin",
-      notes: "notas",
-    };
-    await createAuditEntriesForChanges({
+    await createAuditEntry({
       entityType: AuditEntityType.installation_schedule,
       entityId: existing.id,
       projectId: existing.projectId,
       userId: user.id,
-      oldData: existing as unknown as Record<string, unknown>,
-      newData: updated as unknown as Record<string, unknown>,
-      labels,
-      formatter: ({ label, oldValue, newValue }) =>
-        `Actualizó ${label} de la instalación de ${oldValue ?? "vacío"} a ${newValue ?? "vacío"}`,
+      action: AuditAction.updated,
+      description: wantsSegmentReplace
+        ? `Actualizó los tramos de la instalación (${updated.segments.length})`
+        : `Actualizó la instalación`,
     });
 
     return serializeSchedule(updated);
@@ -5794,8 +5920,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
         confirmedBy: user.id,
       },
       include: {
-        project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } }, team: true,
+        project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } },
+        team: true,
         confirmedByUser: { select: { id: true, name: true } },
+        segments: { orderBy: { startDate: "asc" } },
       },
     });
 
@@ -5817,7 +5945,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const project = await prisma.project.findFirst({
       where: { id: params.id, deletedAt: null },
       include: {
-        installationSchedule: true,
+        installationSchedule: {
+          include: { segments: { orderBy: { startDate: "asc" } } },
+        },
         stages: {
           where: { name: StageType.OPERACIONES },
           select: {
@@ -5840,34 +5970,38 @@ export async function registerApiRoutes(app: FastifyInstance) {
       : null;
     const operations = project.stages[0] ?? null;
 
+    // Para los chequeos de coherencia usamos el envelope (primer inicio / último fin).
+    const installEnvelope = install && install.segments.length > 0
+      ? envelopeOf(install.segments)
+      : null;
+
     const issues: Array<{ severity: "error" | "warning"; code: string; message: string }> = [];
 
-    if (install && operations) {
-      // Regla 1 aplicada como diagnóstico
+    if (install && installEnvelope && operations) {
       if (
         operations.actualStartDate &&
-        install.plannedWorkStart.getTime() < operations.actualStartDate.getTime()
+        installEnvelope.start.getTime() < operations.actualStartDate.getTime()
       ) {
         issues.push({
           severity: "error",
           code: "INSTALL_BEFORE_OPERATIONS",
-          message: `La instalación empieza el ${formatDateEs(install.plannedWorkStart)} pero Operaciones recién arrancó el ${formatDateEs(operations.actualStartDate)}.`,
+          message: `La instalación empieza el ${formatDateEs(installEnvelope.start)} pero Operaciones recién arrancó el ${formatDateEs(operations.actualStartDate)}.`,
         });
       }
       if (
         operations.actualEndDate &&
-        install.plannedWorkEnd.getTime() > operations.actualEndDate.getTime()
+        installEnvelope.end.getTime() > operations.actualEndDate.getTime()
       ) {
         issues.push({
           severity: "error",
           code: "INSTALL_AFTER_OPERATIONS",
-          message: `La instalación termina el ${formatDateEs(install.plannedWorkEnd)} pero Operaciones cerró el ${formatDateEs(operations.actualEndDate)}.`,
+          message: `La instalación termina el ${formatDateEs(installEnvelope.end)} pero Operaciones cerró el ${formatDateEs(operations.actualEndDate)}.`,
         });
       }
       if (operations.plannedStartDate && operations.plannedEndDate) {
         const outside =
-          install.plannedWorkStart.getTime() < operations.plannedStartDate.getTime() ||
-          install.plannedWorkEnd.getTime() > operations.plannedEndDate.getTime();
+          installEnvelope.start.getTime() < operations.plannedStartDate.getTime() ||
+          installEnvelope.end.getTime() > operations.plannedEndDate.getTime();
         if (outside) {
           issues.push({
             severity: "warning",
@@ -5880,8 +6014,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     return {
       hasInstallation: install !== null,
-      plannedWorkStart: install ? serializeDateOnly(install.plannedWorkStart) : null,
-      plannedWorkEnd: install ? serializeDateOnly(install.plannedWorkEnd) : null,
+      plannedWorkStart: installEnvelope ? serializeDateOnly(installEnvelope.start) : null,
+      plannedWorkEnd: installEnvelope ? serializeDateOnly(installEnvelope.end) : null,
       actualWorkEnd: install ? serializeDateOnly(install.actualWorkEnd) : null,
       operationsStatus: operations?.status ?? null,
       operationsActualStart: operations ? serializeDateOnly(operations.actualStartDate) : null,
@@ -5890,6 +6024,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
     };
   });
 
+  // Reprograma un tramo (segment) puntual. Si no se manda segmentId y el schedule
+  // tiene exactamente 1 tramo, se toma ese como default (compat con el flujo viejo).
   app.patch("/calendar/:id/reschedule", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
     const user = ensureUser(request);
     const params = z.object({ id: z.string() }).parse(request.params);
@@ -5897,12 +6033,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
       .object({
         plannedWorkStart: dateOnlySchema,
         plannedWorkEnd: dateOnlySchema,
+        segmentId: z.string().optional(),
       })
       .strict()
       .parse(request.body);
 
     const existing = await prisma.installationSchedule.findFirst({
       where: { id: params.id, deletedAt: null },
+      include: { segments: { orderBy: { startDate: "asc" } } },
     });
     if (!existing) {
       throw notFound("INSTALLATION_NOT_FOUND", "Instalación no encontrada");
@@ -5910,60 +6048,228 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     const newStart = parseDateOnly(body.plannedWorkStart);
     const newEnd = parseDateOnly(body.plannedWorkEnd);
-    assertRangeValid(newStart, newEnd);
+    if (newEnd.getTime() < newStart.getTime()) {
+      throw badRequest("INVALID_DATE_RANGE", "La fecha de fin debe ser mayor o igual a la de inicio");
+    }
 
     const today = todayUtc();
     if (newStart.getTime() < today.getTime()) {
       throw badRequest("PAST_DATE", "No se puede reprogramar a una fecha pasada");
     }
 
-    const overlap = await prisma.installationSchedule.findFirst({
-      where: {
-        id: { not: existing.id },
-        deletedAt: null,
-        plannedWorkStart: { lte: newEnd },
-        plannedWorkEnd: { gte: newStart },
-      },
-      include: { project: { select: { clientName: true } } },
-    });
-    if (overlap) {
-      throw conflict(
-        "SCHEDULE_OVERLAP",
-        `Ya hay una instalación en esas fechas (${overlap.project.clientName})`,
-      );
+    const targetSegment = body.segmentId
+      ? existing.segments.find((s) => s.id === body.segmentId)
+      : existing.segments.length === 1
+        ? existing.segments[0]
+        : null;
+    if (!targetSegment) {
+      if (body.segmentId) {
+        throw notFound("SEGMENT_NOT_FOUND", "Tramo no encontrado");
+      }
+      throw badRequest("SEGMENT_ID_REQUIRED", "Indicá qué tramo querés reprogramar");
     }
 
-    // Regla 1: verificar coherencia con OPERACIONES
-    const validation = await validateInstallationAgainstOperations(existing.projectId, newStart, newEnd);
+    // Validar que el nuevo rango del segment no pise otros tramos del mismo schedule.
+    const nextSegments = existing.segments.map((s) =>
+      s.id === targetSegment.id
+        ? { startDate: newStart, endDate: newEnd }
+        : { startDate: s.startDate, endDate: s.endDate },
+    );
+    assertSegmentsNoOverlap(nextSegments);
+
+    // Regla 1 aplicada sobre el envelope resultante.
+    const { start: envStart, end: envEnd } = envelopeOf(nextSegments);
+    const validation = await validateInstallationAgainstOperations(existing.projectId, envStart, envEnd);
     if (!validation.ok) {
       throw badRequest(validation.error.code, validation.error.message);
     }
 
-    const updated = await prisma.installationSchedule.update({
+    await prisma.installationSegment.update({
+      where: { id: targetSegment.id },
+      data: { startDate: newStart, endDate: newEnd },
+    });
+
+    const updated = await prisma.installationSchedule.findUniqueOrThrow({
       where: { id: existing.id },
-      data: { plannedWorkStart: newStart, plannedWorkEnd: newEnd },
       include: {
-        project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } }, team: true,
+        project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } },
+        team: true,
         confirmedByUser: { select: { id: true, name: true } },
+        segments: { orderBy: { startDate: "asc" } },
       },
     });
 
-    await createAuditEntriesForChanges({
+    await createAuditEntry({
       entityType: AuditEntityType.installation_schedule,
       entityId: existing.id,
       projectId: existing.projectId,
       userId: user.id,
-      oldData: existing as unknown as Record<string, unknown>,
-      newData: updated as unknown as Record<string, unknown>,
-      labels: {
-        plannedWorkStart: "fecha de inicio",
-        plannedWorkEnd: "fecha de fin",
-      },
-      formatter: ({ label, oldValue, newValue }) =>
-        `Reprogramó ${label} de la instalación de ${oldValue ?? "vacío"} a ${newValue ?? "vacío"}`,
+      action: AuditAction.updated,
+      description: `Reprogramó un tramo de la instalación: ${toDateOnlyString(targetSegment.startDate)}→${toDateOnlyString(targetSegment.endDate)} → ${toDateOnlyString(newStart)}→${toDateOnlyString(newEnd)}`,
     });
 
     return { data: serializeSchedule(updated), warning: validation.warning };
+  });
+
+  // ── CRUD de segments ──────────────────────────────────────────────────────────
+
+  app.post("/calendar/:id/segments", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request, reply) => {
+    const user = ensureUser(request);
+    const params = z.object({ id: z.string() }).parse(request.params);
+    const body = segmentInputSchema.parse(request.body);
+
+    const existing = await prisma.installationSchedule.findFirst({
+      where: { id: params.id, deletedAt: null },
+      include: { segments: { orderBy: { startDate: "asc" } } },
+    });
+    if (!existing) {
+      throw notFound("INSTALLATION_NOT_FOUND", "Instalación no encontrada");
+    }
+
+    const startDate = parseDateOnly(body.startDate);
+    const endDate = parseDateOnly(body.endDate);
+
+    const next = [
+      ...existing.segments.map((s) => ({ startDate: s.startDate, endDate: s.endDate })),
+      { startDate, endDate },
+    ];
+    assertSegmentsNoOverlap(next);
+
+    await prisma.installationSegment.create({
+      data: {
+        scheduleId: existing.id,
+        startDate,
+        endDate,
+        notes: body.notes ?? null,
+      },
+    });
+
+    const updated = await prisma.installationSchedule.findUniqueOrThrow({
+      where: { id: existing.id },
+      include: {
+        project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } },
+        team: true,
+        confirmedByUser: { select: { id: true, name: true } },
+        segments: { orderBy: { startDate: "asc" } },
+      },
+    });
+
+    await createAuditEntry({
+      entityType: AuditEntityType.installation_schedule,
+      entityId: existing.id,
+      projectId: existing.projectId,
+      userId: user.id,
+      action: AuditAction.updated,
+      description: `Agregó un tramo a la instalación: ${toDateOnlyString(startDate)}→${toDateOnlyString(endDate)}`,
+    });
+
+    reply.code(201);
+    return serializeSchedule(updated);
+  });
+
+  app.patch("/calendar/:id/segments/:segmentId", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
+    const user = ensureUser(request);
+    const params = z.object({ id: z.string(), segmentId: z.string() }).parse(request.params);
+    const body = z.object({
+      startDate: dateOnlySchema.optional(),
+      endDate: dateOnlySchema.optional(),
+      notes: z.string().trim().nullable().optional(),
+    }).strict().parse(request.body);
+
+    const existing = await prisma.installationSchedule.findFirst({
+      where: { id: params.id, deletedAt: null },
+      include: { segments: { orderBy: { startDate: "asc" } } },
+    });
+    if (!existing) {
+      throw notFound("INSTALLATION_NOT_FOUND", "Instalación no encontrada");
+    }
+    const target = existing.segments.find((s) => s.id === params.segmentId);
+    if (!target) {
+      throw notFound("SEGMENT_NOT_FOUND", "Tramo no encontrado");
+    }
+
+    const nextStart = body.startDate ? parseDateOnly(body.startDate) : target.startDate;
+    const nextEnd = body.endDate ? parseDateOnly(body.endDate) : target.endDate;
+
+    const nextSegments = existing.segments.map((s) =>
+      s.id === target.id
+        ? { startDate: nextStart, endDate: nextEnd }
+        : { startDate: s.startDate, endDate: s.endDate },
+    );
+    assertSegmentsNoOverlap(nextSegments);
+
+    await prisma.installationSegment.update({
+      where: { id: target.id },
+      data: {
+        startDate: nextStart,
+        endDate: nextEnd,
+        ...(body.notes !== undefined ? { notes: body.notes } : {}),
+      },
+    });
+
+    const updated = await prisma.installationSchedule.findUniqueOrThrow({
+      where: { id: existing.id },
+      include: {
+        project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } },
+        team: true,
+        confirmedByUser: { select: { id: true, name: true } },
+        segments: { orderBy: { startDate: "asc" } },
+      },
+    });
+
+    await createAuditEntry({
+      entityType: AuditEntityType.installation_schedule,
+      entityId: existing.id,
+      projectId: existing.projectId,
+      userId: user.id,
+      action: AuditAction.updated,
+      description: `Editó un tramo: ${toDateOnlyString(target.startDate)}→${toDateOnlyString(target.endDate)} → ${toDateOnlyString(nextStart)}→${toDateOnlyString(nextEnd)}`,
+    });
+
+    return serializeSchedule(updated);
+  });
+
+  app.delete("/calendar/:id/segments/:segmentId", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
+    const user = ensureUser(request);
+    const params = z.object({ id: z.string(), segmentId: z.string() }).parse(request.params);
+
+    const existing = await prisma.installationSchedule.findFirst({
+      where: { id: params.id, deletedAt: null },
+      include: { segments: true },
+    });
+    if (!existing) {
+      throw notFound("INSTALLATION_NOT_FOUND", "Instalación no encontrada");
+    }
+    const target = existing.segments.find((s) => s.id === params.segmentId);
+    if (!target) {
+      throw notFound("SEGMENT_NOT_FOUND", "Tramo no encontrado");
+    }
+    if (existing.segments.length <= 1) {
+      throw badRequest("LAST_SEGMENT", "Una instalación debe tener al menos un tramo");
+    }
+
+    await prisma.installationSegment.delete({ where: { id: target.id } });
+
+    const updated = await prisma.installationSchedule.findUniqueOrThrow({
+      where: { id: existing.id },
+      include: {
+        project: { include: { stages: { select: { name: true, tipoObra: true, status: true } } } },
+        team: true,
+        confirmedByUser: { select: { id: true, name: true } },
+        segments: { orderBy: { startDate: "asc" } },
+      },
+    });
+
+    await createAuditEntry({
+      entityType: AuditEntityType.installation_schedule,
+      entityId: existing.id,
+      projectId: existing.projectId,
+      userId: user.id,
+      action: AuditAction.updated,
+      description: `Eliminó un tramo de la instalación (${toDateOnlyString(target.startDate)}→${toDateOnlyString(target.endDate)})`,
+    });
+
+    return serializeSchedule(updated);
   });
 
   app.delete("/calendar/:id", { preHandler: authorize(Module.OPERACIONES, Action.DELETE) }, async (request) => {

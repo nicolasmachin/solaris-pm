@@ -1439,19 +1439,37 @@ async function seedInstallationSchedules(params: {
 }) {
   const { adminId, project1Id, project2Id, project4Id } = params;
 
-  async function upsertSchedule(
-    projectId: string,
-    data: Omit<Prisma.InstallationScheduleUncheckedCreateInput, "projectId">,
-  ) {
-    await prisma.installationSchedule.upsert({
-      where: { projectId },
-      create: { projectId, ...data, createdBy: adminId },
-      update: {
+  type ScheduleSeed = {
+    teamName: string;
+    teamColor: string;
+    confirmedAt?: Date;
+    confirmedBy?: string;
+    notes?: string;
+    segments: Array<{ startDate: Date; endDate: Date; notes?: string }>;
+  };
+
+  async function upsertSchedule(projectId: string, data: ScheduleSeed) {
+    // Borra cualquier instalación previa del proyecto (incluyendo segments por cascade).
+    const existing = await prisma.installationSchedule.findUnique({ where: { projectId } });
+    if (existing) {
+      await prisma.installationSchedule.delete({ where: { id: existing.id } });
+    }
+    await prisma.installationSchedule.create({
+      data: {
+        projectId,
         teamName: data.teamName,
         teamColor: data.teamColor,
-        plannedWorkStart: data.plannedWorkStart,
-        plannedWorkEnd: data.plannedWorkEnd,
+        confirmedAt: data.confirmedAt,
+        confirmedBy: data.confirmedBy,
         notes: data.notes,
+        createdBy: adminId,
+        segments: {
+          create: data.segments.map((s) => ({
+            startDate: s.startDate,
+            endDate: s.endDate,
+            notes: s.notes ?? null,
+          })),
+        },
       },
     });
   }
@@ -1459,28 +1477,31 @@ async function seedInstallationSchedules(params: {
   await upsertSchedule(project1Id, {
     teamName: "Equipo propio",
     teamColor: "#378ADD",
-    plannedWorkStart: parseDateOnly("2026-05-04"),
-    plannedWorkEnd: parseDateOnly("2026-05-08"),
     confirmedAt: new Date("2026-04-20T12:00:00Z"),
     confirmedBy: adminId,
     notes: "Traslado de materiales confirmado con logística.",
+    segments: [
+      { startDate: parseDateOnly("2026-05-04"), endDate: parseDateOnly("2026-05-08") },
+    ],
   });
 
   await upsertSchedule(project2Id, {
     teamName: "Instaladores Sur",
     teamColor: "#1D9E75",
-    plannedWorkStart: parseDateOnly("2026-05-11"),
-    plannedWorkEnd: parseDateOnly("2026-05-15"),
     notes: "Coordinar ingreso con planta.",
+    segments: [
+      { startDate: parseDateOnly("2026-05-11"), endDate: parseDateOnly("2026-05-15") },
+    ],
   });
 
   await upsertSchedule(project4Id, {
     teamName: "Equipo propio",
     teamColor: "#378ADD",
-    plannedWorkStart: parseDateOnly("2026-05-25"),
-    plannedWorkEnd: parseDateOnly("2026-05-29"),
     confirmedAt: new Date("2026-04-22T15:00:00Z"),
     confirmedBy: adminId,
+    segments: [
+      { startDate: parseDateOnly("2026-05-25"), endDate: parseDateOnly("2026-05-29") },
+    ],
   });
 }
 

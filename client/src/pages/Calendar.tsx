@@ -24,17 +24,21 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import {
+  addSegment,
   confirmSchedule,
   createSchedule,
   deleteSchedule,
+  deleteSegment,
   getCalendarMonth,
   getCalendarYear,
   getCalendarTeams,
   patchSchedule,
+  patchSegment,
   rescheduleSchedule,
   type CalendarResponse,
   type CalendarTeam,
   type InstallationSchedule,
+  type InstallationSegment,
 } from "../api/calendar.api";
 import { getProjects } from "../api/projects.api";
 import { createTeam } from "../api/teams.api";
@@ -202,11 +206,18 @@ function workTypeLabel(wt: "PROPIA" | "TERCERIZADA" | null): string {
 }
 
 function scheduleCoversDay(schedule: InstallationSchedule, dayIso: string): boolean {
-  return dayIso >= schedule.plannedWorkStart && dayIso <= schedule.plannedWorkEnd;
+  return schedule.segments.some((seg) => dayIso >= seg.startDate && dayIso <= seg.endDate);
 }
 
 function rangesOverlap(aStart: string, aEnd: string, bStart: string, bEnd: string): boolean {
   return aStart <= bEnd && bStart <= aEnd;
+}
+
+function addDayIso(iso: string): string {
+  const d = parseIso(iso);
+  const next = new Date(d);
+  next.setUTCDate(next.getUTCDate() + 1);
+  return formatIso(next);
 }
 
 function todayIsoLocal(): string {
@@ -245,79 +256,140 @@ function getInstallationsForDay(
     .sort((a, b) => a.teamName.localeCompare(b.teamName, "es"));
 }
 
-// Plan de tracks para una fila (semana). Cada schedule que toca la fila se le
-// asigna un slot vertical; si hay más schedules que el cap visible, los excedentes
-// se condensan en un track final con marca "+X" por día cubierto.
+// Plan de tracks para una fila (semana). Ahora trabaja sobre SEGMENTS (no schedules):
+// un mismo schedule puede tener múltiples tramos visibles, cada uno en su propio
+// slot o compartiendo slot con otro schedule si el algoritmo lo permite.
+//
+// Empaquetado inteligente (first-fit): ordenamos todos los segments que tocan la
+// semana por fecha de inicio y, para cada uno, buscamos el primer slot cuya
+// "próxima fecha libre" sea ≤ segment.startDate. Esto hace que cuando un
+// instalador termina una obra un día y empieza otra al día siguiente, ambas
+// caen en el mismo slot visual sin dejar filas vacías arriba.
 type WeekSegment = {
   scheduleId: string;
+  segmentId: string;
   startDayIndex: number; // 0..6
-  span: number; // días
-  isFirstOfSchedule: boolean;
-  isLastOfSchedule: boolean;
+  span: number; // días visibles en la semana
+  isFirstOfSegment: boolean; // el tramo empieza en esta semana (no cruza desde antes)
+  isLastOfSegment: boolean;  // el tramo termina en esta semana (no continúa)
+  // Fechas reales del segment completo (útiles para drag/resize).
+  segmentStart: string;
+  segmentEnd: string;
 };
 
 type WeekPlan = {
-  visibleTracks: Array<{ schedule: InstallationSchedule; segment: WeekSegment }>;
+  visibleTracks: Array<{ schedule: InstallationSchedule; segment: WeekSegment; slotIndex: number }>;
   overflowByDay: Map<number, number>; // dayIndex → count escondidos
-  hiddenSchedules: InstallationSchedule[];
   totalLanes: number;
+};
+
+type RawSegmentEntry = {
+  schedule: InstallationSchedule;
+  segmentId: string;
+  segmentStart: string;
+  segmentEnd: string;
+  // Recorte a la semana para el render
+  clippedStart: string;
+  clippedEnd: string;
 };
 
 function computeWeekPlan(
   schedules: InstallationSchedule[],
   weekStartIso: string,
   weekEndIso: string,
-  showAllUpTo: number, // mensual=3, anual=2
-  maxVisibleWhenTruncated = 2,
+  showAllUpTo: number, // hasta X slots mostramos todo (mensual=4, anual=4)
+  maxVisibleWhenTruncated: number, // cuando hay más → mostramos N slots + "+X" (mensual=3, anual=3)
 ): WeekPlan {
-  const inRow = schedules
-    .filter((s) => rangesOverlap(s.plannedWorkStart, s.plannedWorkEnd, weekStartIso, weekEndIso))
-    .sort((a, b) => {
-      if (a.plannedWorkStart !== b.plannedWorkStart) {
-        return a.plannedWorkStart < b.plannedWorkStart ? -1 : 1;
+  // 1. Flatten: todos los segments que tocan la semana.
+  const raw: RawSegmentEntry[] = [];
+  for (const schedule of schedules) {
+    for (const seg of schedule.segments) {
+      if (rangesOverlap(seg.startDate, seg.endDate, weekStartIso, weekEndIso)) {
+        const clippedStart = seg.startDate < weekStartIso ? weekStartIso : seg.startDate;
+        const clippedEnd = seg.endDate > weekEndIso ? weekEndIso : seg.endDate;
+        raw.push({
+          schedule,
+          segmentId: seg.id,
+          segmentStart: seg.startDate,
+          segmentEnd: seg.endDate,
+          clippedStart,
+          clippedEnd,
+        });
       }
-      return a.teamName.localeCompare(b.teamName, "es");
-    });
+    }
+  }
 
-  const visible = inRow.length <= showAllUpTo ? inRow : inRow.slice(0, maxVisibleWhenTruncated);
-  const hidden = inRow.length <= showAllUpTo ? [] : inRow.slice(maxVisibleWhenTruncated);
+  // 2. Ordenar por segment.startDate asc, luego teamName, luego scheduleId.
+  raw.sort((a, b) => {
+    if (a.segmentStart !== b.segmentStart) return a.segmentStart < b.segmentStart ? -1 : 1;
+    const teamCmp = a.schedule.teamName.localeCompare(b.schedule.teamName, "es");
+    if (teamCmp !== 0) return teamCmp;
+    return a.schedule.id.localeCompare(b.schedule.id);
+  });
+
+  // 3. First-fit: cada slot guarda su "próxima fecha libre".
+  const slotNextFree: string[] = []; // index → ISO "libre desde"
+  const slotByEntryIdx: number[] = [];
+  for (const entry of raw) {
+    let assigned = -1;
+    for (let slotIdx = 0; slotIdx < slotNextFree.length; slotIdx++) {
+      const nextFree = slotNextFree[slotIdx];
+      if (nextFree <= entry.segmentStart) {
+        assigned = slotIdx;
+        break;
+      }
+    }
+    if (assigned === -1) {
+      assigned = slotNextFree.length;
+      slotNextFree.push("0000-00-00");
+    }
+    slotNextFree[assigned] = addDayIso(entry.segmentEnd);
+    slotByEntryIdx.push(assigned);
+  }
+
+  const totalSlotsUsed = slotNextFree.length;
+  const maxVisibleSlots = totalSlotsUsed <= showAllUpTo ? totalSlotsUsed : maxVisibleWhenTruncated;
 
   const weekStart = parseIso(weekStartIso);
-
   function indexFor(iso: string): number {
     return Math.floor((parseIso(iso).getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24));
   }
 
-  const visibleTracks = visible.map((s) => {
-    const segStartIso = s.plannedWorkStart < weekStartIso ? weekStartIso : s.plannedWorkStart;
-    const segEndIso = s.plannedWorkEnd > weekEndIso ? weekEndIso : s.plannedWorkEnd;
-    const startDayIndex = indexFor(segStartIso);
-    const endDayIndex = indexFor(segEndIso);
-    return {
-      schedule: s,
-      segment: {
-        scheduleId: s.id,
-        startDayIndex,
-        span: endDayIndex - startDayIndex + 1,
-        isFirstOfSchedule: s.plannedWorkStart === segStartIso,
-        isLastOfSchedule: s.plannedWorkEnd === segEndIso,
-      },
-    };
-  });
-
+  const visibleTracks: WeekPlan["visibleTracks"] = [];
   const overflowByDay = new Map<number, number>();
-  for (const s of hidden) {
-    const segStartIso = s.plannedWorkStart < weekStartIso ? weekStartIso : s.plannedWorkStart;
-    const segEndIso = s.plannedWorkEnd > weekEndIso ? weekEndIso : s.plannedWorkEnd;
-    const startIdx = indexFor(segStartIso);
-    const endIdx = indexFor(segEndIso);
-    for (let i = startIdx; i <= endIdx; i++) {
-      overflowByDay.set(i, (overflowByDay.get(i) ?? 0) + 1);
+
+  for (let i = 0; i < raw.length; i++) {
+    const entry = raw[i];
+    const slot = slotByEntryIdx[i];
+    const startIdx = indexFor(entry.clippedStart);
+    const endIdx = indexFor(entry.clippedEnd);
+    if (slot < maxVisibleSlots) {
+      visibleTracks.push({
+        schedule: entry.schedule,
+        slotIndex: slot,
+        segment: {
+          scheduleId: entry.schedule.id,
+          segmentId: entry.segmentId,
+          startDayIndex: startIdx,
+          span: endIdx - startIdx + 1,
+          isFirstOfSegment: entry.segmentStart >= weekStartIso,
+          isLastOfSegment: entry.segmentEnd <= weekEndIso,
+          segmentStart: entry.segmentStart,
+          segmentEnd: entry.segmentEnd,
+        },
+      });
+    } else {
+      for (let d = startIdx; d <= endIdx; d++) {
+        overflowByDay.set(d, (overflowByDay.get(d) ?? 0) + 1);
+      }
     }
   }
 
-  const totalLanes = visibleTracks.length + (overflowByDay.size > 0 ? 1 : 0);
-  return { visibleTracks, overflowByDay, hiddenSchedules: hidden, totalLanes };
+  // Orden estable para rendering: por slotIndex asc.
+  visibleTracks.sort((a, b) => a.slotIndex - b.slotIndex);
+
+  const totalLanes = maxVisibleSlots + (overflowByDay.size > 0 ? 1 : 0);
+  return { visibleTracks, overflowByDay, totalLanes };
 }
 
 // ─── Filtro de equipos (persistente en localStorage) ──────────────────────────
@@ -372,19 +444,20 @@ export function Calendar() {
   const [newModalPrefill, setNewModalPrefill] = useState<{ start: string; end: string; projectId?: string } | null>(null);
   const [showReprogram, setShowReprogram] = useState(false);
   const [moveRequest, setMoveRequest] = useState<
-    | { schedule: InstallationSchedule; targetStart: string; targetEnd: string }
+    | { schedule: InstallationSchedule; segmentId: string; targetStart: string; targetEnd: string }
     | null
   >(null);
   const [draggingSchedule, setDraggingSchedule] = useState<InstallationSchedule | null>(null);
 
   // ─── Estado específico de la vista anual (drag & resize) ──────────────────────
   const [yearDragPreview, setYearDragPreview] = useState<
-    | { scheduleId: string; start: string; end: string; invalid: boolean; reason: string | null }
+    | { scheduleId: string; segmentId: string; start: string; end: string; invalid: boolean; reason: string | null }
     | null
   >(null);
   const [yearResize, setYearResize] = useState<
     | {
         scheduleId: string;
+        segmentId: string;
         edge: "start" | "end";
         originalStart: string;
         originalEnd: string;
@@ -508,15 +581,22 @@ export function Calendar() {
   }, [schedules]);
 
   const moveMutation = useMutation({
-    mutationFn: (args: { id: string; plannedWorkStart: string; plannedWorkEnd: string }) =>
-      patchSchedule(args.id, {
+    mutationFn: (args: {
+      id: string;
+      segmentId: string;
+      plannedWorkStart: string;
+      plannedWorkEnd: string;
+    }) =>
+      rescheduleSchedule(args.id, {
         plannedWorkStart: args.plannedWorkStart,
         plannedWorkEnd: args.plannedWorkEnd,
+        segmentId: args.segmentId,
       }),
-    onSuccess: (data) => {
+    onSuccess: (res) => {
       toast.success("Instalación reprogramada");
+      if (res.warning) toastWarning(res.warning.message);
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
-      setSelectedScheduleIds([data.id]);
+      setSelectedScheduleIds([res.data.id]);
       setMoveRequest(null);
       setShowReprogram(false);
     },
@@ -526,12 +606,20 @@ export function Calendar() {
     },
   });
 
-  // Reschedule con update optimista + rollback (para drag/resize de la vista anual)
+  // Reschedule con update optimista + rollback (para drag/resize de la vista anual).
+  // Ahora reprograma un TRAMO (segment) puntual; si no viene segmentId, el backend
+  // asume el único tramo que exista (compat).
   const rescheduleMutation = useMutation({
-    mutationFn: (args: { id: string; plannedWorkStart: string; plannedWorkEnd: string }) =>
+    mutationFn: (args: {
+      id: string;
+      segmentId?: string;
+      plannedWorkStart: string;
+      plannedWorkEnd: string;
+    }) =>
       rescheduleSchedule(args.id, {
         plannedWorkStart: args.plannedWorkStart,
         plannedWorkEnd: args.plannedWorkEnd,
+        segmentId: args.segmentId,
       }),
     onMutate: async (vars) => {
       await queryClient.cancelQueries({ queryKey: ["calendar"] });
@@ -540,11 +628,31 @@ export function Calendar() {
         if (!data) continue;
         queryClient.setQueryData<CalendarResponse>(key, {
           ...data,
-          schedules: data.schedules.map((s) =>
-            s.id === vars.id
-              ? { ...s, plannedWorkStart: vars.plannedWorkStart, plannedWorkEnd: vars.plannedWorkEnd }
-              : s,
-          ),
+          schedules: data.schedules.map((s) => {
+            if (s.id !== vars.id) return s;
+            // Resolver qué segment mover: el indicado o (si hay 1 solo) el primero.
+            const targetId = vars.segmentId ?? (s.segments.length === 1 ? s.segments[0].id : null);
+            if (!targetId) return s;
+            const nextSegments = s.segments.map((seg) =>
+              seg.id === targetId
+                ? { ...seg, startDate: vars.plannedWorkStart, endDate: vars.plannedWorkEnd }
+                : seg,
+            );
+            const envStart = nextSegments.reduce(
+              (min, seg) => (seg.startDate < min ? seg.startDate : min),
+              nextSegments[0].startDate,
+            );
+            const envEnd = nextSegments.reduce(
+              (max, seg) => (seg.endDate > max ? seg.endDate : max),
+              nextSegments[0].endDate,
+            );
+            return {
+              ...s,
+              segments: nextSegments,
+              plannedWorkStart: envStart,
+              plannedWorkEnd: envEnd,
+            };
+          }),
         });
       }
       return { snapshots };
@@ -559,8 +667,8 @@ export function Calendar() {
       toast.error(msg ?? "No se pudo reprogramar la instalación");
     },
     onSuccess: (res) => {
-      const start = parseIso(res.data.plannedWorkStart);
-      toast.success(`Instalación movida al ${formatLongDate(start)}`);
+      const env = res.data.plannedWorkStart ? parseIso(res.data.plannedWorkStart) : null;
+      toast.success(env ? `Instalación movida al ${formatLongDate(env)}` : "Instalación movida");
       if (res.warning) {
         toastWarning(res.warning.message);
       }
@@ -590,10 +698,13 @@ export function Calendar() {
 
   function computeYearDragPreview(
     schedule: InstallationSchedule,
+    segmentStart: string,
+    segmentEnd: string,
     targetDay: string,
+    segmentId: string,
   ): { start: string; end: string; invalid: boolean; reason: string | null } {
-    const oldStart = parseIso(schedule.plannedWorkStart);
-    const oldEnd = parseIso(schedule.plannedWorkEnd);
+    const oldStart = parseIso(segmentStart);
+    const oldEnd = parseIso(segmentEnd);
     const duration = daysBetweenInclusive(oldStart, oldEnd) - 1;
     const newStart = parseIso(targetDay);
     const newEnd = addDays(newStart, duration);
@@ -603,30 +714,47 @@ export function Calendar() {
     if (startIso < todayIso) {
       return { start: startIso, end: endIso, invalid: true, reason: "Fecha pasada" };
     }
-    const conflict = schedules.find(
-      (s) =>
-        s.id !== schedule.id &&
-        rangesOverlap(startIso, endIso, s.plannedWorkStart, s.plannedWorkEnd),
+    // Sólo chequeamos solape contra otros tramos del MISMO schedule.
+    const overlap = schedule.segments.find(
+      (seg) => seg.id !== segmentId && rangesOverlap(startIso, endIso, seg.startDate, seg.endDate),
     );
-    if (conflict) {
+    if (overlap) {
       return {
         start: startIso,
         end: endIso,
         invalid: true,
-        reason: `Se solapa con ${conflict.project?.clientName ?? "otra instalación"}`,
+        reason: `Se superpone con otro tramo`,
       };
     }
     return { start: startIso, end: endIso, invalid: false, reason: null };
   }
 
+  function dragMetaOf(
+    active: { data: { current?: Record<string, unknown> | undefined } },
+  ): { scheduleId: string; segmentId: string; segmentStart: string; segmentEnd: string } | null {
+    const data = active.data.current as
+      | { scheduleId?: string; segmentId?: string; segmentStart?: string; segmentEnd?: string }
+      | undefined;
+    if (!data?.scheduleId || !data.segmentId || !data.segmentStart || !data.segmentEnd) return null;
+    return {
+      scheduleId: data.scheduleId,
+      segmentId: data.segmentId,
+      segmentStart: data.segmentStart,
+      segmentEnd: data.segmentEnd,
+    };
+  }
+
   function handleDragStart(e: DragStartEvent) {
-    const schedule = schedules.find((s) => s.id === String(e.active.id));
-    setDraggingSchedule(schedule ?? null);
+    const meta = dragMetaOf(e.active);
+    if (!meta) return;
+    const schedule = schedules.find((s) => s.id === meta.scheduleId) ?? null;
+    setDraggingSchedule(schedule);
     if (schedule && dragSourceOf(e) === "year") {
       setYearDragPreview({
         scheduleId: schedule.id,
-        start: schedule.plannedWorkStart,
-        end: schedule.plannedWorkEnd,
+        segmentId: meta.segmentId,
+        start: meta.segmentStart,
+        end: meta.segmentEnd,
         invalid: false,
         reason: null,
       });
@@ -635,37 +763,39 @@ export function Calendar() {
 
   function handleDragOver(e: DragOverEvent) {
     if (dragSourceOf(e) !== "year") return;
-    const scheduleId = String(e.active.id);
-    const schedule = schedules.find((s) => s.id === scheduleId);
+    const meta = dragMetaOf(e.active);
+    if (!meta) return;
+    const schedule = schedules.find((s) => s.id === meta.scheduleId);
     if (!schedule) return;
     const targetDay = e.over?.id != null ? String(e.over.id) : null;
     if (!targetDay) {
       setYearDragPreview({
-        scheduleId,
-        start: schedule.plannedWorkStart,
-        end: schedule.plannedWorkEnd,
+        scheduleId: schedule.id,
+        segmentId: meta.segmentId,
+        start: meta.segmentStart,
+        end: meta.segmentEnd,
         invalid: false,
         reason: null,
       });
       return;
     }
-    const preview = computeYearDragPreview(schedule, targetDay);
-    setYearDragPreview({ scheduleId, ...preview });
+    const preview = computeYearDragPreview(schedule, meta.segmentStart, meta.segmentEnd, targetDay, meta.segmentId);
+    setYearDragPreview({ scheduleId: schedule.id, segmentId: meta.segmentId, ...preview });
   }
 
   function handleDragEnd(e: DragEndEvent) {
-    const scheduleId = String(e.active.id);
+    const meta = dragMetaOf(e.active);
     const targetDay = e.over?.id != null ? String(e.over.id) : null;
     const source = dragSourceOf(e);
     setDraggingSchedule(null);
     setYearDragPreview(null);
-    if (!targetDay) return;
-    const schedule = schedules.find((s) => s.id === scheduleId);
+    if (!meta || !targetDay) return;
+    const schedule = schedules.find((s) => s.id === meta.scheduleId);
     if (!schedule) return;
-    if (schedule.plannedWorkStart === targetDay) return;
+    if (meta.segmentStart === targetDay) return;
 
-    const oldStart = parseIso(schedule.plannedWorkStart);
-    const oldEnd = parseIso(schedule.plannedWorkEnd);
+    const oldStart = parseIso(meta.segmentStart);
+    const oldEnd = parseIso(meta.segmentEnd);
     const duration = daysBetweenInclusive(oldStart, oldEnd) - 1;
     const newStart = parseIso(targetDay);
     const newEnd = addDays(newStart, duration);
@@ -673,28 +803,29 @@ export function Calendar() {
     const endIso = formatIso(newEnd);
 
     if (source === "year") {
-      // Validación cliente (el server también la chequea)
       if (startIso < todayIso) {
         toast.error("No se puede mover a fechas pasadas");
         return;
       }
-      const conflict = schedules.find(
-        (s) =>
-          s.id !== schedule.id &&
-          rangesOverlap(startIso, endIso, s.plannedWorkStart, s.plannedWorkEnd),
+      // Sólo chequeamos solape contra otros tramos del mismo schedule.
+      const overlap = schedule.segments.find(
+        (seg) => seg.id !== meta.segmentId && rangesOverlap(startIso, endIso, seg.startDate, seg.endDate),
       );
-      if (conflict) {
-        toast.error(
-          `Se solapa con ${conflict.project?.clientName ?? "otra instalación"}`,
-        );
+      if (overlap) {
+        toast.error("El tramo se superpone con otro del mismo proyecto");
         return;
       }
-      rescheduleMutation.mutate({ id: schedule.id, plannedWorkStart: startIso, plannedWorkEnd: endIso });
+      rescheduleMutation.mutate({
+        id: schedule.id,
+        segmentId: meta.segmentId,
+        plannedWorkStart: startIso,
+        plannedWorkEnd: endIso,
+      });
       return;
     }
 
-    // Month view: flujo existente con diálogo de confirmación
-    setMoveRequest({ schedule, targetStart: startIso, targetEnd: endIso });
+    // Month view: flujo existente con diálogo de confirmación (ahora pasa segmentId).
+    setMoveRequest({ schedule, segmentId: meta.segmentId, targetStart: startIso, targetEnd: endIso });
   }
 
   // Mouseup global: confirma el resize al soltar
@@ -710,17 +841,25 @@ export function Calendar() {
         toast.error("No se puede mover a fechas pasadas");
         return;
       }
-      const conflict = schedules.find(
-        (s) =>
-          s.id !== rs.scheduleId &&
-          rangesOverlap(rs.currentStart, rs.currentEnd, s.plannedWorkStart, s.plannedWorkEnd),
-      );
-      if (conflict) {
-        toast.error(`Se solapa con ${conflict.project?.clientName ?? "otra instalación"}`);
-        return;
+      // Chequeo de solape: sólo contra otros TRAMOS del MISMO schedule (los tramos
+      // del mismo schedule no se pueden superponer entre sí). Los tramos de
+      // schedules distintos pueden coexistir en el mismo día — eso es lo que
+      // permite el empaquetado inteligente.
+      const schedule = schedules.find((s) => s.id === rs.scheduleId);
+      if (schedule) {
+        const overlap = schedule.segments.find(
+          (seg) =>
+            seg.id !== rs.segmentId &&
+            rangesOverlap(rs.currentStart, rs.currentEnd, seg.startDate, seg.endDate),
+        );
+        if (overlap) {
+          toast.error(`El tramo se superpone con otro del ${overlap.startDate} al ${overlap.endDate}`);
+          return;
+        }
       }
       rescheduleMutation.mutate({
         id: rs.scheduleId,
+        segmentId: rs.segmentId,
         plannedWorkStart: rs.currentStart,
         plannedWorkEnd: rs.currentEnd,
       });
@@ -729,16 +868,26 @@ export function Calendar() {
     return () => window.removeEventListener("mouseup", onMouseUp);
   }, [schedules, rescheduleMutation, todayIso]);
 
-  function startYearResize(scheduleId: string, edge: "start" | "end") {
-    const schedule = schedules.find((s) => s.id === scheduleId);
-    if (!schedule) return;
+  function startYearResize(segmentId: string, edge: "start" | "end") {
+    let foundSchedule: InstallationSchedule | null = null;
+    let foundSegment: InstallationSchedule["segments"][number] | null = null;
+    for (const s of schedules) {
+      const seg = s.segments.find((x) => x.id === segmentId);
+      if (seg) {
+        foundSchedule = s;
+        foundSegment = seg;
+        break;
+      }
+    }
+    if (!foundSchedule || !foundSegment) return;
     setYearResize({
-      scheduleId,
+      scheduleId: foundSchedule.id,
+      segmentId,
       edge,
-      originalStart: schedule.plannedWorkStart,
-      originalEnd: schedule.plannedWorkEnd,
-      currentStart: schedule.plannedWorkStart,
-      currentEnd: schedule.plannedWorkEnd,
+      originalStart: foundSegment.startDate,
+      originalEnd: foundSegment.endDate,
+      currentStart: foundSegment.startDate,
+      currentEnd: foundSegment.endDate,
     });
   }
 
@@ -1001,9 +1150,10 @@ export function Calendar() {
         <ReprogramModal
           schedule={primarySelected}
           onCancel={() => setShowReprogram(false)}
-          onConfirm={(start, end) =>
+          onConfirm={(segmentId, start, end) =>
             moveMutation.mutate({
               id: primarySelected.id,
+              segmentId,
               plannedWorkStart: start,
               plannedWorkEnd: end,
             })
@@ -1021,6 +1171,7 @@ export function Calendar() {
           onConfirm={() =>
             moveMutation.mutate({
               id: moveRequest.schedule.id,
+              segmentId: moveRequest.segmentId,
               plannedWorkStart: moveRequest.targetStart,
               plannedWorkEnd: moveRequest.targetEnd,
             })
@@ -1194,7 +1345,8 @@ const MONTH_TRACK_GAP = 1;
 function monthSlotHeight(totalLanes: number): number {
   if (totalLanes <= 1) return 48;
   if (totalLanes === 2) return 28;
-  return 22;
+  if (totalLanes === 3) return 22;
+  return 16; // 4 slots (o 3 visibles + overflow)
 }
 
 function WeekRow({
@@ -1223,7 +1375,7 @@ function WeekRow({
   const weekEndIso = formatIso(addDays(weekStart, 6));
 
   const plan = useMemo(
-    () => computeWeekPlan(schedules, weekStartIso, weekEndIso, 3, 2),
+    () => computeWeekPlan(schedules, weekStartIso, weekEndIso, 4, 3),
     [schedules, weekStartIso, weekEndIso],
   );
 
@@ -1263,22 +1415,25 @@ function WeekRow({
           pointerEvents: "none",
         }}
       >
-        {plan.visibleTracks.map((track, slotIndex) => (
+        {groupTracksBySlot(plan.visibleTracks).map((tracksInSlot, rowIdx) => (
           <div
-            key={track.schedule.id}
+            key={`slot-${rowIdx}`}
             className="grid grid-cols-7 gap-1"
             style={{
               height: slotH,
-              marginBottom: slotIndex < plan.totalLanes - 1 ? MONTH_TRACK_GAP : 0,
+              marginBottom: rowIdx < plan.totalLanes - 1 ? MONTH_TRACK_GAP : 0,
             }}
           >
-            <MonthTrackBlock
-              schedule={track.schedule}
-              segment={track.segment}
-              slotHeight={slotH}
-              isSelected={selectedScheduleIds.includes(track.schedule.id)}
-              onClick={() => onScheduleClick(track.schedule.id)}
-            />
+            {tracksInSlot.map((track) => (
+              <MonthTrackBlock
+                key={track.segment.segmentId}
+                schedule={track.schedule}
+                segment={track.segment}
+                slotHeight={slotH}
+                isSelected={selectedScheduleIds.includes(track.schedule.id)}
+                onClick={() => onScheduleClick(track.schedule.id)}
+              />
+            ))}
           </div>
         ))}
         {plan.overflowByDay.size > 0 && (
@@ -1311,6 +1466,16 @@ function WeekRow({
       </div>
     </div>
   );
+}
+
+// Agrupa los tracks por slotIndex preservando el orden (slot 0 arriba, 1 debajo…).
+function groupTracksBySlot<T extends { slotIndex: number }>(tracks: T[]): T[][] {
+  if (tracks.length === 0) return [];
+  const maxSlot = Math.max(...tracks.map((t) => t.slotIndex));
+  const rows: T[][] = [];
+  for (let i = 0; i <= maxSlot; i++) rows.push([]);
+  for (const t of tracks) rows[t.slotIndex].push(t);
+  return rows.filter((r) => r.length > 0);
 }
 
 function DayBackgroundCell({
@@ -1359,10 +1524,17 @@ function MonthTrackBlock({
   isSelected: boolean;
   onClick: () => void;
 }) {
-  const isDraggable = segment.isFirstOfSchedule;
+  const isDraggable = segment.isFirstOfSegment;
   const { setNodeRef, listeners, attributes, isDragging } = useDraggable({
-    id: schedule.id,
+    id: segment.segmentId,
     disabled: !isDraggable,
+    data: {
+      source: "month",
+      scheduleId: schedule.id,
+      segmentId: segment.segmentId,
+      segmentStart: segment.segmentStart,
+      segmentEnd: segment.segmentEnd,
+    },
   });
   const color = effectiveColor(schedule);
   const textDark = !isColorDark(color);
@@ -1372,10 +1544,10 @@ function MonthTrackBlock({
     gridColumn: `${segment.startDayIndex + 1} / span ${segment.span}`,
     background: color,
     height: slotHeight,
-    borderTopLeftRadius: segment.isFirstOfSchedule ? 6 : 2,
-    borderBottomLeftRadius: segment.isFirstOfSchedule ? 6 : 2,
-    borderTopRightRadius: segment.isLastOfSchedule ? 6 : 2,
-    borderBottomRightRadius: segment.isLastOfSchedule ? 6 : 2,
+    borderTopLeftRadius: segment.isFirstOfSegment ? 6 : 2,
+    borderBottomLeftRadius: segment.isFirstOfSegment ? 6 : 2,
+    borderTopRightRadius: segment.isLastOfSegment ? 6 : 2,
+    borderBottomRightRadius: segment.isLastOfSegment ? 6 : 2,
     outline: isSelected ? "2px solid var(--color-accent)" : undefined,
     outlineOffset: isSelected ? "-2px" : undefined,
     pointerEvents: "auto",
@@ -1405,7 +1577,7 @@ function MonthTrackBlock({
       }`}
       style={style}
     >
-      {segment.isFirstOfSchedule ? (
+      {segment.isFirstOfSegment ? (
         <span
           className={`truncate font-medium ${textDark ? "text-[#0c3b6e]" : "text-white"}`}
           style={{ fontSize: 9, padding: "1px 3px" }}
@@ -1454,6 +1626,7 @@ function ScheduleOverlay({
 
 type YearResizeState = {
   scheduleId: string;
+  segmentId: string;
   edge: "start" | "end";
   originalStart: string;
   originalEnd: string;
@@ -1486,14 +1659,28 @@ function YearGrid({
   onResizeStart: (scheduleId: string, edge: "start" | "end") => void;
   onResizeHover: (dayIso: string) => void;
 }) {
-  // Aplicar preview del resize a los horarios para el render en tiempo real
+  // Aplicar preview del resize a los horarios para el render en tiempo real:
+  // actualizamos el segment que se está redimensionando y recalculamos el envelope.
   const effective = useMemo(() => {
     if (!yearResize) return schedules;
-    return schedules.map((s) =>
-      s.id === yearResize.scheduleId
-        ? { ...s, plannedWorkStart: yearResize.currentStart, plannedWorkEnd: yearResize.currentEnd }
-        : s,
-    );
+    return schedules.map((s) => {
+      if (s.id !== yearResize.scheduleId) return s;
+      const nextSegments = s.segments.map((seg) =>
+        seg.id === yearResize.segmentId
+          ? { ...seg, startDate: yearResize.currentStart, endDate: yearResize.currentEnd }
+          : seg,
+      );
+      if (nextSegments.length === 0) return s;
+      const envStart = nextSegments.reduce(
+        (min, seg) => (seg.startDate < min ? seg.startDate : min),
+        nextSegments[0].startDate,
+      );
+      const envEnd = nextSegments.reduce(
+        (max, seg) => (seg.endDate > max ? seg.endDate : max),
+        nextSegments[0].endDate,
+      );
+      return { ...s, segments: nextSegments, plannedWorkStart: envStart, plannedWorkEnd: envEnd };
+    });
   }, [schedules, yearResize]);
 
   return (
@@ -1526,7 +1713,8 @@ const MINI_TRACK_GAP = 1;
 function miniSlotHeight(totalLanes: number): number {
   if (totalLanes <= 1) return 18;
   if (totalLanes === 2) return 11;
-  return 8;
+  if (totalLanes === 3) return 8;
+  return 6; // 4 slots en la vista anual
 }
 
 function MiniMonth({
@@ -1653,7 +1841,7 @@ function MiniWeekRow({
   const weekEndIso = formatIso(addDays(weekStart, 6));
 
   const plan = useMemo(
-    () => computeWeekPlan(schedules, weekStartIso, weekEndIso, 2, 2),
+    () => computeWeekPlan(schedules, weekStartIso, weekEndIso, 4, 3),
     [schedules, weekStartIso, weekEndIso],
   );
 
@@ -1700,25 +1888,28 @@ function MiniWeekRow({
           pointerEvents: "none",
         }}
       >
-        {plan.visibleTracks.map((track, slotIndex) => (
+        {groupTracksBySlot(plan.visibleTracks).map((tracksInSlot, rowIdx) => (
           <div
-            key={track.schedule.id}
+            key={`mini-slot-${rowIdx}`}
             className="grid grid-cols-7 gap-[2px]"
             style={{
               height: slotH,
-              marginBottom: slotIndex < plan.totalLanes - 1 ? MINI_TRACK_GAP : 0,
+              marginBottom: rowIdx < plan.totalLanes - 1 ? MINI_TRACK_GAP : 0,
             }}
           >
-            <YearTrackBlock
-              schedule={track.schedule}
-              segment={track.segment}
-              slotHeight={slotH}
-              cellWidth={cellWidth}
-              isSelected={selectedScheduleIds.includes(track.schedule.id)}
-              resizingSomething={yearResize !== null}
-              onClick={() => onScheduleClick(track.schedule.id)}
-              onResizeStart={onResizeStart}
-            />
+            {tracksInSlot.map((track) => (
+              <YearTrackBlock
+                key={track.segment.segmentId}
+                schedule={track.schedule}
+                segment={track.segment}
+                slotHeight={slotH}
+                cellWidth={cellWidth}
+                isSelected={selectedScheduleIds.includes(track.schedule.id)}
+                resizingSomething={yearResize !== null}
+                onClick={() => onScheduleClick(track.schedule.id)}
+                onResizeStart={onResizeStart}
+              />
+            ))}
           </div>
         ))}
         {plan.overflowByDay.size > 0 && (
@@ -1834,10 +2025,16 @@ function YearTrackBlock({
   onClick: () => void;
   onResizeStart: (scheduleId: string, edge: "start" | "end") => void;
 }) {
-  const isDraggable = segment.isFirstOfSchedule;
+  const isDraggable = segment.isFirstOfSegment;
   const { setNodeRef, listeners, attributes, isDragging } = useDraggable({
-    id: schedule.id,
-    data: { source: "year" },
+    id: segment.segmentId,
+    data: {
+      source: "year",
+      scheduleId: schedule.id,
+      segmentId: segment.segmentId,
+      segmentStart: segment.segmentStart,
+      segmentEnd: segment.segmentEnd,
+    },
     disabled: !isDraggable,
   });
   const color = effectiveColor(schedule);
@@ -1845,7 +2042,7 @@ function YearTrackBlock({
 
   // Texto: tier según ancho del segmento
   let text: string | null = null;
-  if (segment.isFirstOfSchedule && cellWidth > 0) {
+  if (segment.isFirstOfSegment && cellWidth > 0) {
     const segWidth = cellWidth * segment.span + MINI_CELL_GAP * (segment.span - 1);
     if (segWidth >= 60) text = clientName;
     else if (segWidth >= 30) text = computeInitials(clientName, 3);
@@ -1855,10 +2052,10 @@ function YearTrackBlock({
     gridColumn: `${segment.startDayIndex + 1} / span ${segment.span}`,
     background: color,
     height: slotHeight,
-    borderTopLeftRadius: segment.isFirstOfSchedule ? 3 : 1,
-    borderBottomLeftRadius: segment.isFirstOfSchedule ? 3 : 1,
-    borderTopRightRadius: segment.isLastOfSchedule ? 3 : 1,
-    borderBottomRightRadius: segment.isLastOfSchedule ? 3 : 1,
+    borderTopLeftRadius: segment.isFirstOfSegment ? 3 : 1,
+    borderBottomLeftRadius: segment.isFirstOfSegment ? 3 : 1,
+    borderTopRightRadius: segment.isLastOfSegment ? 3 : 1,
+    borderBottomRightRadius: segment.isLastOfSegment ? 3 : 1,
     outline: isSelected ? "1.5px solid var(--color-accent)" : undefined,
     outlineOffset: isSelected ? "-1.5px" : undefined,
     pointerEvents: resizingSomething ? "none" : "auto",
@@ -1883,7 +2080,7 @@ function YearTrackBlock({
           onClick();
         }
       }}
-      title={`${clientName} · ${displayTeamName(schedule)} · ${formatRangeShort(schedule.plannedWorkStart, schedule.plannedWorkEnd)}`}
+      title={`${clientName} · ${displayTeamName(schedule)} · ${formatRangeShort(segment.segmentStart, segment.segmentEnd)}`}
       className={`flex items-center overflow-hidden ${
         isDraggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
       }`}
@@ -1904,7 +2101,7 @@ function YearTrackBlock({
         </span>
       ) : null}
 
-      {segment.isFirstOfSchedule ? (
+      {segment.isFirstOfSegment ? (
         <span
           onMouseDown={(e) => {
             e.preventDefault();
@@ -1916,7 +2113,7 @@ function YearTrackBlock({
           aria-label="Cambiar fecha de inicio"
         />
       ) : null}
-      {segment.isLastOfSchedule ? (
+      {segment.isLastOfSegment ? (
         <span
           onMouseDown={(e) => {
             e.preventDefault();
@@ -2007,6 +2204,216 @@ function SidePanel({
   );
 }
 
+function SegmentsSection({ schedule }: { schedule: InstallationSchedule }) {
+  const queryClient = useQueryClient();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  function invalidate() {
+    queryClient.invalidateQueries({ queryKey: ["calendar"] });
+  }
+
+  function handleApiError(err: unknown, fallback: string) {
+    const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+    toast.error(msg ?? fallback);
+  }
+
+  const addMutation = useMutation({
+    mutationFn: (body: { startDate: string; endDate: string }) => addSegment(schedule.id, body),
+    onSuccess: () => {
+      toast.success("Tramo agregado");
+      setAdding(false);
+      invalidate();
+    },
+    onError: (err) => handleApiError(err, "No se pudo agregar el tramo"),
+  });
+
+  const editMutation = useMutation({
+    mutationFn: (args: { id: string; startDate: string; endDate: string }) =>
+      patchSegment(schedule.id, args.id, { startDate: args.startDate, endDate: args.endDate }),
+    onSuccess: () => {
+      toast.success("Tramo actualizado");
+      setEditingId(null);
+      invalidate();
+    },
+    onError: (err) => handleApiError(err, "No se pudo actualizar el tramo"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (segmentId: string) => deleteSegment(schedule.id, segmentId),
+    onSuccess: () => {
+      toast.success("Tramo eliminado");
+      setConfirmDeleteId(null);
+      invalidate();
+    },
+    onError: (err) => handleApiError(err, "No se pudo eliminar el tramo"),
+  });
+
+  function durationDays(seg: InstallationSegment): number {
+    return daysBetweenInclusive(parseIso(seg.startDate), parseIso(seg.endDate));
+  }
+
+  const canDelete = schedule.segments.length > 1;
+
+  return (
+    <div>
+      <p className="font-mono text-[9px] uppercase tracking-widest text-[var(--color-text-muted)] mb-1.5">
+        Tramos de obra
+      </p>
+      <div className="space-y-1.5">
+        {schedule.segments.map((seg) => (
+          <div
+            key={seg.id}
+            className="rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5"
+          >
+            {editingId === seg.id ? (
+              <SegmentEditor
+                initialStart={seg.startDate}
+                initialEnd={seg.endDate}
+                busy={editMutation.isPending}
+                onCancel={() => setEditingId(null)}
+                onSubmit={(startDate, endDate) =>
+                  editMutation.mutate({ id: seg.id, startDate, endDate })
+                }
+              />
+            ) : confirmDeleteId === seg.id ? (
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[11px] text-[var(--color-danger-text)]">¿Eliminar este tramo?</p>
+                <div className="flex gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    onClick={() => deleteMutation.mutate(seg.id)}
+                    loading={deleteMutation.isPending}
+                  >
+                    Sí
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setConfirmDeleteId(null)}>
+                    No
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-[11px] text-[var(--color-text-secondary)]">
+                  <span className="text-[var(--color-text-primary)]">
+                    {formatRangeShort(seg.startDate, seg.endDate)}
+                  </span>
+                  <span className="text-[var(--color-text-muted)]">
+                    {" "}· {durationDays(seg)} {durationDays(seg) === 1 ? "día" : "días"}
+                  </span>
+                </div>
+                <div className="flex gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setEditingId(seg.id)}
+                    title="Editar tramo"
+                    className="rounded px-1.5 py-0.5 text-[10px] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-card-hover)]"
+                  >
+                    ✎
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!canDelete}
+                    onClick={() => setConfirmDeleteId(seg.id)}
+                    title={canDelete ? "Eliminar tramo" : "No se puede eliminar el último tramo"}
+                    className={`rounded px-1.5 py-0.5 text-[10px] ${
+                      canDelete
+                        ? "text-[var(--color-text-muted)] hover:bg-[var(--color-bg-card-hover)]"
+                        : "text-[var(--color-text-muted)] opacity-40 cursor-not-allowed"
+                    }`}
+                  >
+                    🗑
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {adding ? (
+          <div className="rounded border border-dashed border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5">
+            <SegmentEditor
+              initialStart=""
+              initialEnd=""
+              busy={addMutation.isPending}
+              onCancel={() => setAdding(false)}
+              onSubmit={(startDate, endDate) => addMutation.mutate({ startDate, endDate })}
+            />
+          </div>
+        ) : (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="w-full"
+            onClick={() => setAdding(true)}
+          >
+            + Agregar tramo
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SegmentEditor({
+  initialStart,
+  initialEnd,
+  busy,
+  onCancel,
+  onSubmit,
+}: {
+  initialStart: string;
+  initialEnd: string;
+  busy: boolean;
+  onCancel: () => void;
+  onSubmit: (startDate: string, endDate: string) => void;
+}) {
+  const [start, setStart] = useState(initialStart);
+  const [end, setEnd] = useState(initialEnd);
+  const invalid = Boolean(start && end && end < start);
+  const disabled = !start || !end || invalid || busy;
+
+  return (
+    <div className="space-y-1.5">
+      <div className="grid grid-cols-2 gap-1.5">
+        <input
+          type="date"
+          className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-card)] px-1.5 py-1 text-[11px] text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+          value={start}
+          onChange={(e) => setStart(e.target.value)}
+        />
+        <input
+          type="date"
+          className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-card)] px-1.5 py-1 text-[11px] text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+          value={end}
+          onChange={(e) => setEnd(e.target.value)}
+        />
+      </div>
+      {invalid ? (
+        <p className="text-[10px] text-[var(--color-danger-text)]">
+          Fin no puede ser anterior al inicio
+        </p>
+      ) : null}
+      <div className="flex gap-1.5">
+        <Button
+          size="sm"
+          disabled={disabled}
+          loading={busy}
+          onClick={() => onSubmit(start, end)}
+          className="flex-1"
+        >
+          Guardar
+        </Button>
+        <Button size="sm" variant="ghost" onClick={onCancel}>
+          Cancelar
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function ScheduleDetail({
   schedule,
   teams,
@@ -2043,9 +2450,12 @@ function ScheduleDetail({
   const textDark = !isColorDark(blockColor);
   const confirmed = Boolean(schedule.confirmedAt);
 
-  const startDate = parseIso(schedule.plannedWorkStart);
-  const endDate = parseIso(schedule.plannedWorkEnd);
-  const businessDays = businessDaysInclusive(startDate, endDate);
+  const envelopeStart = schedule.plannedWorkStart;
+  const envelopeEnd = schedule.plannedWorkEnd;
+  const startDate = envelopeStart ? parseIso(envelopeStart) : null;
+  const endDate = envelopeEnd ? parseIso(envelopeEnd) : null;
+  const businessDays =
+    startDate && endDate ? businessDaysInclusive(startDate, endDate) : 0;
 
   async function handleSave() {
     setSaving(true);
@@ -2066,15 +2476,18 @@ function ScheduleDetail({
         <div className="space-y-0.5 text-[11px] text-[var(--color-text-secondary)]">
           <p>
             <span className="text-[var(--color-text-muted)]">Inicio:</span>{" "}
-            {formatLongDate(startDate)}
+            {startDate ? formatLongDate(startDate) : "—"}
           </p>
           <p>
             <span className="text-[var(--color-text-muted)]">Fin:</span>{" "}
-            {formatLongDate(endDate)}
+            {endDate ? formatLongDate(endDate) : "—"}
           </p>
           <p>
             <span className="text-[var(--color-text-muted)]">Duración:</span>{" "}
             {businessDays} {businessDays === 1 ? "día hábil" : "días hábiles"}
+            {schedule.segments.length > 1
+              ? ` · ${schedule.segments.length} tramos`
+              : ""}
           </p>
         </div>
         <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -2168,6 +2581,8 @@ function ScheduleDetail({
           el {formatConfirmedAt(schedule.confirmedAt)}
         </p>
       )}
+
+      <SegmentsSection schedule={schedule} />
 
       <Button size="sm" variant="secondary" onClick={onReprogramClick} className="w-full">
         Reprogramar
@@ -2411,9 +2826,8 @@ function NewScheduleModal({
       createSchedule({
         projectId,
         teamId,
-        plannedWorkStart,
-        plannedWorkEnd,
         notes: notes.trim() ? notes.trim() : null,
+        segments: [{ startDate: plannedWorkStart, endDate: plannedWorkEnd }],
       }),
     onSuccess: (res) => {
       toast.success("Instalación agendada correctamente");
@@ -2598,30 +3012,60 @@ function ReprogramModal({
 }: {
   schedule: InstallationSchedule;
   onCancel: () => void;
-  onConfirm: (start: string, end: string) => void;
+  onConfirm: (segmentId: string, start: string, end: string) => void;
   loading: boolean;
 }) {
-  const [start, setStart] = useState(schedule.plannedWorkStart);
-  const [end, setEnd] = useState(schedule.plannedWorkEnd);
+  const segments = schedule.segments;
+  const [selectedSegmentId, setSelectedSegmentId] = useState<string>(
+    segments[0]?.id ?? "",
+  );
+  const current = segments.find((s) => s.id === selectedSegmentId) ?? segments[0];
+  const [start, setStart] = useState(current?.startDate ?? "");
+  const [end, setEnd] = useState(current?.endDate ?? "");
+
+  // Al cambiar de tramo, sincronizar las fechas del form.
+  useEffect(() => {
+    if (!current) return;
+    setStart(current.startDate);
+    setEnd(current.endDate);
+  }, [selectedSegmentId, current]);
 
   function handleStartChange(v: string) {
     setStart(v);
-    if (v && end && end < v) {
-      // Preservar duración anterior si la nueva fecha rompe el rango
-      const oldStart = parseIso(schedule.plannedWorkStart);
-      const oldEnd = parseIso(schedule.plannedWorkEnd);
+    if (v && end && end < v && current) {
+      const oldStart = parseIso(current.startDate);
+      const oldEnd = parseIso(current.endDate);
       const duration = daysBetweenInclusive(oldStart, oldEnd) - 1;
       setEnd(formatIso(addDays(parseIso(v), duration)));
     }
   }
 
   const rangeInvalid = Boolean(start && end && end < start);
-  const unchanged = start === schedule.plannedWorkStart && end === schedule.plannedWorkEnd;
+  const unchanged =
+    !!current && start === current.startDate && end === current.endDate;
 
   return (
-    <ModalShell title="Reprogramar instalación" onClose={onCancel}>
+    <ModalShell title="Reprogramar tramo" onClose={onCancel}>
+      {segments.length > 1 && (
+        <div className="mb-3">
+          <label className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
+            Tramo a reprogramar
+          </label>
+          <select
+            className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+            value={selectedSegmentId}
+            onChange={(e) => setSelectedSegmentId(e.target.value)}
+          >
+            {segments.map((s, idx) => (
+              <option key={s.id} value={s.id}>
+                Tramo {idx + 1}: {formatRangeShort(s.startDate, s.endDate)}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <p className="text-xs text-[var(--color-text-muted)] mb-3">
-        Seleccioná las nuevas fechas de obra.
+        Seleccioná las nuevas fechas del tramo.
       </p>
       <DateRangeFields
         start={start}
@@ -2636,8 +3080,8 @@ function ReprogramModal({
         <Button
           size="sm"
           loading={loading}
-          disabled={rangeInvalid || !start || !end || unchanged}
-          onClick={() => onConfirm(start, end)}
+          disabled={rangeInvalid || !start || !end || unchanged || !current}
+          onClick={() => current && onConfirm(current.id, start, end)}
         >
           Confirmar nuevas fechas
         </Button>
