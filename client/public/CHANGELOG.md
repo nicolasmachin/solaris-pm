@@ -1,6 +1,6 @@
 # Novedades
 
-## v1.0
+## v1.1
 
 ### 23 de abril de 2026
 
@@ -14,6 +14,8 @@
 
 #### Arreglos
 - **Preview y descarga de documentos adjuntos**: se corrigió el problema por el que los documentos se veían en blanco al abrir el preview y no se podían descargar. Ahora los PDF e imágenes cargan correctamente en el modal y el botón "Descargar" guarda el archivo con su nombre original. También se muestran las miniaturas de las imágenes en la fila de documentos.
+
+## v1.0
 
 ### 22 de abril de 2026
 
