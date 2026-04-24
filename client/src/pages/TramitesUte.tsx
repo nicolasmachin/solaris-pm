@@ -30,11 +30,12 @@ import {
   type UteStage,
   type UteStatus,
 } from "../api/uteProcess.api";
-import { getProjects } from "../api/projects.api";
+import { getProjects, patchProject } from "../api/projects.api";
 import type { ProjectListItem } from "../types/api.types";
 import { Button } from "../components/ui/Button";
 import { Spinner } from "../components/ui/Spinner";
 import { useAuthStore } from "../store/auth.store";
+import { usePermission } from "../hooks/usePermission";
 import {
   STAGE_BADGE_COLORS,
   STATUS_BADGE_COLORS,
@@ -414,12 +415,28 @@ function UteTableRow({
 
   return (
     <tr className="hover:bg-[var(--color-bg-card-hover)]">
-      <td
-        className="sticky left-0 z-10 cursor-pointer bg-[var(--color-bg-card)] px-3 py-2 font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)]"
-        onClick={() => onRowClick(process.id)}
-      >
-        <div className="truncate max-w-[180px]">{process.project.clientName}</div>
-        <div className="font-mono text-[10px] text-[var(--color-text-muted)]">{process.project.code}</div>
+      <td className="sticky left-0 z-10 bg-[var(--color-bg-card)] px-3 py-2 font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)]">
+        <div
+          className="cursor-pointer truncate max-w-[200px]"
+          onClick={() => onRowClick(process.id)}
+        >
+          {process.project.clientName}
+        </div>
+        <div className="mt-0.5 flex items-center gap-1 text-[11px]">
+          <UteCodigoInline
+            projectId={process.project.id}
+            field="uteCodigoPS"
+            label="PS"
+            value={process.project.uteCodigoPS}
+          />
+          <span className="text-[var(--color-text-muted)]">·</span>
+          <UteCodigoInline
+            projectId={process.project.id}
+            field="uteCodigoAS"
+            label="AS"
+            value={process.project.uteCodigoAS}
+          />
+        </div>
       </td>
       <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
         <select
@@ -513,6 +530,144 @@ function UteTableRow({
         />
       </td>
     </tr>
+  );
+}
+
+// ─── Edición inline de códigos UTE (PS/AS) del proyecto ─────────────────────
+
+function stripNonDigits(s: string): string {
+  return s.replace(/\D+/g, "");
+}
+
+function UteCodigoInline({
+  projectId,
+  field,
+  label,
+  value,
+}: {
+  projectId: string;
+  field: "uteCodigoPS" | "uteCodigoAS";
+  label: "PS" | "AS";
+  value: string | null;
+}) {
+  const canEdit = usePermission("OPERACIONES", "EDIT");
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value ?? "");
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const qc = useQueryClient();
+
+  // Resincronizar draft sólo al cambiar de projectId (evita race con save).
+  useEffect(() => {
+    setDraft(value ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editing]);
+
+  const save = useMutation({
+    mutationFn: (next: string | null) => patchProject(projectId, { [field]: next } as any),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ute-processes"] });
+      qc.invalidateQueries({ queryKey: ["project", projectId] });
+      setEditing(false);
+    },
+    onError: () => {
+      toast.error(`No se pudo guardar ${label}`);
+      // Revert al valor anterior
+      setDraft(value ?? "");
+      setEditing(false);
+    },
+  });
+
+  function commit() {
+    const clean = stripNonDigits(draft);
+    const next = clean || null;
+    if (next === value) {
+      setEditing(false);
+      return;
+    }
+    save.mutate(next);
+  }
+
+  function cancel() {
+    setDraft(value ?? "");
+    setEditing(false);
+  }
+
+  if (!canEdit) {
+    return (
+      <span className="inline-flex items-baseline gap-0.5 whitespace-nowrap">
+        <span className="text-[var(--color-text-muted)]">{label}:</span>
+        <span className={value ? "text-[var(--color-text-secondary)]" : "text-[var(--color-text-muted)]"}>
+          {value ?? "—"}
+        </span>
+      </span>
+    );
+  }
+
+  if (editing) {
+    return (
+      <span className="inline-flex items-baseline gap-0.5 whitespace-nowrap">
+        <span className="text-[var(--color-text-muted)]">{label}:</span>
+        <input
+          ref={inputRef}
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={50}
+          aria-label={`Código ${label}`}
+          value={draft}
+          disabled={save.isPending}
+          onChange={(e) => setDraft(stripNonDigits(e.target.value))}
+          onPaste={(e) => {
+            e.preventDefault();
+            const pasted = e.clipboardData.getData("text");
+            setDraft(stripNonDigits(pasted));
+          }}
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              commit();
+            } else if (e.key === "Escape") {
+              e.preventDefault();
+              cancel();
+            }
+          }}
+          onBlur={commit}
+          className="w-[80px] rounded border border-[var(--color-accent)] bg-[var(--color-bg-app)] px-1 py-0 text-[11px] font-mono text-[var(--color-text-primary)] focus:outline-none"
+        />
+      </span>
+    );
+  }
+
+  return (
+    <span
+      role="button"
+      tabIndex={0}
+      onClick={(e) => {
+        e.stopPropagation();
+        setEditing(true);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          setEditing(true);
+        }
+      }}
+      className="inline-flex cursor-text items-baseline gap-0.5 whitespace-nowrap rounded px-1 py-0 -mx-1 hover:bg-[var(--color-bg-card-hover)] focus:bg-[var(--color-bg-card-hover)] focus:outline-none"
+      title={`Editar código ${label}`}
+    >
+      <span className="text-[var(--color-text-muted)]">{label}:</span>
+      <span className={value ? "font-mono text-[var(--color-text-secondary)]" : "text-[var(--color-text-muted)]"}>
+        {value ?? "—"}
+      </span>
+    </span>
   );
 }
 

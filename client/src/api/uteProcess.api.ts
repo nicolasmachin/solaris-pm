@@ -36,6 +36,8 @@ export type UteProcess = {
     locationCity: string;
     notificationPhone: string | null;
     notificationEmail: string | null;
+    uteCodigoPS: string | null;
+    uteCodigoAS: string | null;
   };
   currentStage: UteStage;
   currentStatus: UteStatus;

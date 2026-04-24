@@ -67,6 +67,8 @@ export async function patchProject(
     notificationPhone?: string | null;
     clientAddress?: string | null;
     firstDateScheduledAt?: string | null;
+    uteCodigoPS?: string | null;
+    uteCodigoAS?: string | null;
   }
 ): Promise<Project> {
   const { data } = await apiClient.patch<Project>(`/api/projects/${id}`, body);

@@ -348,6 +348,8 @@ model Project {
   notificationEmail      String?
   notificationPhone String?
   clientAddress          String?
+  uteCodigoPS            String?
+  uteCodigoAS            String?
   createdById       String
   createdBy         User                 @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   salespersonId     String?

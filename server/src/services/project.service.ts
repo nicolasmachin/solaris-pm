@@ -457,6 +457,8 @@ export function serializeProject(project: {
   notificationEmail: string | null;
   notificationPhone: string | null;
   clientAddress: string | null;
+  uteCodigoPS?: string | null;
+  uteCodigoAS?: string | null;
   salespersonId: string | null;
   salesperson?: { id: string; name: string } | null;
   firstDateScheduledAt?: Date | null;
@@ -503,6 +505,8 @@ export function serializeProject(project: {
     updatedAt: serializeDate(rest.updatedAt),
     deletedAt: serializeDate(rest.deletedAt),
     salesperson: rest.salesperson || null,
+    uteCodigoPS: rest.uteCodigoPS ?? null,
+    uteCodigoAS: rest.uteCodigoAS ?? null,
   };
 }
 

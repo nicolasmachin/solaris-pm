@@ -144,6 +144,8 @@ type UteProcessRow = Prisma.UteProcessGetPayload<{
         locationCity: true;
         notificationPhone: true;
         notificationEmail: true;
+        uteCodigoPS: true;
+        uteCodigoAS: true;
       };
     };
   };
@@ -159,6 +161,8 @@ export type SerializedUteProcess = {
     locationCity: string;
     notificationPhone: string | null;
     notificationEmail: string | null;
+    uteCodigoPS: string | null;
+    uteCodigoAS: string | null;
   };
   currentStage: UteStage;
   currentStatus: UteStatus;
@@ -201,6 +205,8 @@ export function serializeUteProcess(row: UteProcessRow, now: Date = new Date()):
       locationCity: row.project.locationCity,
       notificationPhone: row.project.notificationPhone,
       notificationEmail: row.project.notificationEmail,
+      uteCodigoPS: row.project.uteCodigoPS,
+      uteCodigoAS: row.project.uteCodigoAS,
     },
     currentStage: row.currentStage,
     currentStatus: row.currentStatus,
@@ -238,6 +244,8 @@ export const UTE_PROCESS_INCLUDE = {
       locationCity: true,
       notificationPhone: true,
       notificationEmail: true,
+      uteCodigoPS: true,
+      uteCodigoAS: true,
     },
   },
 } satisfies Prisma.UteProcessInclude;

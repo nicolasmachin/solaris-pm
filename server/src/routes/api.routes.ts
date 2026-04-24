@@ -162,6 +162,15 @@ const projectPatchSchema = z
     notificationPhone: z.string().nullable().optional(),
     clientAddress: z.string().nullable().optional(),
     firstDateScheduledAt: z.string().datetime({ offset: true }).nullable().optional(),
+    // Códigos PS/AS provistos por UTE. Solo dígitos o null para limpiar.
+    uteCodigoPS: z
+      .union([z.string().regex(/^\d+$/).max(50), z.literal("")])
+      .nullable()
+      .optional(),
+    uteCodigoAS: z
+      .union([z.string().regex(/^\d+$/).max(50), z.literal("")])
+      .nullable()
+      .optional(),
   })
   .strict();
 
@@ -563,6 +572,12 @@ function normalizeProjectInput(input: Record<string, unknown>) {
   if (source.clientAddress !== undefined) normalized.clientAddress = source.clientAddress;
   if (source.firstDateScheduledAt !== undefined) {
     normalized.firstDateScheduledAt = source.firstDateScheduledAt ? new Date(source.firstDateScheduledAt) : null;
+  }
+  if (source.uteCodigoPS !== undefined) {
+    normalized.uteCodigoPS = source.uteCodigoPS ? String(source.uteCodigoPS) : null;
+  }
+  if (source.uteCodigoAS !== undefined) {
+    normalized.uteCodigoAS = source.uteCodigoAS ? String(source.uteCodigoAS) : null;
   }
 
   return normalized;
