@@ -562,31 +562,21 @@ function InstallationCoherenceBanner({
   issues: Array<{ severity: "error" | "warning"; code: string; message: string }>;
 }) {
   const navigate = useNavigate();
-  const hasError = issues.some((i) => i.severity === "error");
-  const palette = hasError
-    ? {
-        border: "border-red-500/40",
-        bg: "bg-red-500/10",
-        text: "text-red-300",
-        title: "Inconsistencias en las fechas de instalación",
-      }
-    : {
-        border: "border-amber-500/40",
-        bg: "bg-amber-500/10",
-        text: "text-amber-300",
-        title: "Revisá las fechas de instalación",
-      };
+  // Sólo renderizamos el banner cuando hay al menos un error.
+  // Los warnings por "rango planificado" se eliminaron del backend.
+  const errors = issues.filter((i) => i.severity === "error");
+  if (errors.length === 0) return null;
 
   return (
     <div
-      className={`mb-4 rounded-lg border ${palette.border} ${palette.bg} p-3`}
-      role={hasError ? "alert" : "status"}
+      className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 p-3"
+      role="alert"
     >
       <div className="flex items-start justify-between gap-3">
-        <div className={`text-xs ${palette.text} space-y-1`}>
-          <p className="font-semibold">{palette.title}</p>
+        <div className="text-xs text-red-300 space-y-1">
+          <p className="font-semibold">Inconsistencias en las fechas de instalación</p>
           <ul className="list-disc ml-4">
-            {issues.map((issue) => (
+            {errors.map((issue) => (
               <li key={issue.code} className="leading-snug">
                 {issue.message}
               </li>
@@ -596,7 +586,7 @@ function InstallationCoherenceBanner({
         <button
           type="button"
           onClick={() => navigate("/calendario")}
-          className={`shrink-0 rounded px-2 py-1 text-[10px] font-semibold border ${palette.border} ${palette.text} hover:bg-black/20`}
+          className="shrink-0 rounded px-2 py-1 text-[10px] font-semibold border border-red-500/40 text-red-300 hover:bg-black/20"
         >
           Ver en calendario
         </button>

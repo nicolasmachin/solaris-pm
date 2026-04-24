@@ -19,6 +19,14 @@
 - Los usuarios no-admin no ven este selector y sólo pueden ver las propias.
 - Queda traza en los logs del sistema cuando un admin consulta tareas ajenas (por transparencia).
 
+#### Menos alertas en la ficha del proyecto
+- Se eliminó el **banner amarillo** *"Revisá las fechas de instalación · La instalación queda fuera del rango planificado de Operaciones"* que aparecía de forma confusa. Ya no tenía sentido porque quitamos las fechas planificadas de la UI.
+- Las validaciones de coherencia entre **instalación ↔ Operaciones** ahora sólo comparan contra fechas reales (inicio real y fin real de la etapa). Se mantienen los bloqueos de seguridad:
+  - La instalación no puede empezar antes del inicio real de Operaciones.
+  - La instalación no puede terminar después del cierre real de Operaciones.
+  - No se puede cerrar Operaciones si la instalación todavía no terminó.
+- Las alertas que quedan son **rojas** (errores reales); ya no hay advertencias ámbar por rango planificado.
+
 #### Mis tareas: ordenamiento y URL compartible
 - Nuevo selector **"Ordenar"** con 3 opciones:
   - **Urgencia** (por defecto): atrasadas primero, después las que vencen pronto.

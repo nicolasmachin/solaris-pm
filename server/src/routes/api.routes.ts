@@ -1520,7 +1520,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
       throw new AppError(403, "ADMIN_REQUIRED", "Solo admin puede modificar fechas reales");
     }
 
-    let stageCompletionWarning: { code: string; message: string } | null = null;
 
     const updateData: Record<string, unknown> = {};
     if (body.tipoObra !== undefined) updateData.tipoObra = body.tipoObra;
@@ -1650,35 +1649,26 @@ export async function registerApiRoutes(app: FastifyInstance) {
           });
         }
 
-        // Regla 3: al completar OPERACIONES, validar contra fechas de instalación
+        // Regla 3: al completar OPERACIONES, validar contra fechas de instalación.
+        // Sólo bloqueamos si la obra sigue en curso (último endDate > hoy).
+        // Eliminamos el warning WORK_END_NOT_CONFIRMED para simplificar el flujo:
+        // si la fecha ya pasó, se permite cerrar sin alerta.
         if (stage.name === StageType.OPERACIONES) {
           const installation = await prisma.installationSchedule.findFirst({
             where: { projectId: params.projectId, deletedAt: null },
             select: {
-              actualWorkEnd: true,
               segments: { orderBy: { endDate: "desc" }, take: 1, select: { endDate: true } },
             },
           });
           if (installation) {
             const today = todayUtc();
             const lastEnd = installation.segments[0]?.endDate ?? null;
-            // Caso A: último fin planificado todavía no pasó → bloquear
             if (lastEnd && lastEnd.getTime() > today.getTime()) {
               throw badRequest(
                 "INSTALL_NOT_FINISHED",
-                `La fecha de fin de instalación programada (${formatDateEs(lastEnd)}) aún no pasó. Actualizá las fechas de instalación o esperá a que finalice antes de cerrar la etapa Operaciones.`,
+                `La instalación está programada hasta el ${formatDateEs(lastEnd)}, que aún no pasó. Ajustá las fechas de instalación o esperá a que finalice antes de cerrar Operaciones.`,
               );
             }
-            // Caso B: fin planificado ya pasó pero actualWorkEnd es null → warning
-            if (!installation.actualWorkEnd) {
-              stageCompletionWarning = {
-                code: "WORK_END_NOT_CONFIRMED",
-                message:
-                  "La fecha de fin de instalación pasó pero no fue confirmada en el sistema. Registrá el fin real de obra en la ficha del proyecto.",
-              };
-            }
-            // Caso C: no hay plannedWorkEnd (installation=null) → permit (nada)
-            // Caso D: actualWorkEnd existe y <= hoy → permit
           }
         }
 
@@ -1791,8 +1781,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       await checkProgressMilestone(params.projectId, projectProgressPercent);
     }
 
-    const serialized = serializeStage(updatedStage);
-    return stageCompletionWarning ? { ...serialized, _warning: stageCompletionWarning } : serialized;
+    return serializeStage(updatedStage);
   });
 
   app.get("/projects/:projectId/stages/:stageId/substages", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async (request) => {
@@ -5849,7 +5838,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
     | { ok: false; error: { code: string; message: string } }
     | { ok: true; warning: { code: string; message: string } | null };
 
-  // Regla 1: verificar coherencia entre fechas de instalación y etapa OPERACIONES
+  // Regla 1: coherencia entre fechas de instalación y etapa OPERACIONES.
+  // Sólo comparamos contra las fechas REALES (actualStartDate/actualEndDate).
+  // Las fechas planificadas ya no se usan para esta validación — fueron
+  // eliminadas de la UI y por tanto de la regla.
   async function validateInstallationAgainstOperations(
     projectId: string,
     plannedWorkStart: Date,
@@ -5860,20 +5852,19 @@ export async function registerApiRoutes(app: FastifyInstance) {
       select: {
         actualStartDate: true,
         actualEndDate: true,
-        plannedStartDate: true,
-        plannedEndDate: true,
       },
     });
 
     if (!operations) return { ok: true, warning: null };
 
+    // Caso A: Operaciones todavía no inició → permitir sin restricción.
     // Caso B: instalación empieza antes del inicio real de Operaciones
     if (operations.actualStartDate && plannedWorkStart.getTime() < operations.actualStartDate.getTime()) {
       return {
         ok: false,
         error: {
           code: "INSTALL_BEFORE_OPERATIONS",
-          message: `La instalación no puede empezar antes del inicio real de la etapa Operaciones (${formatDateEs(operations.actualStartDate)}). Ajustá las fechas de instalación.`,
+          message: `La instalación no puede empezar antes del inicio real de Operaciones (${formatDateEs(operations.actualStartDate)}). Ajustá las fechas.`,
         },
       };
     }
@@ -5884,25 +5875,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
         ok: false,
         error: {
           code: "INSTALL_AFTER_OPERATIONS",
-          message: `La instalación no puede terminar después del cierre real de la etapa Operaciones (${formatDateEs(operations.actualEndDate)}). Ajustá las fechas de instalación.`,
+          message: `La instalación no puede terminar después del cierre real de Operaciones (${formatDateEs(operations.actualEndDate)}). Ajustá las fechas.`,
         },
       };
-    }
-
-    // Caso D: fuera del rango planificado (pero dentro de real) → warning
-    if (operations.plannedStartDate && operations.plannedEndDate) {
-      const outsidePlanned =
-        plannedWorkStart.getTime() < operations.plannedStartDate.getTime() ||
-        plannedWorkEnd.getTime() > operations.plannedEndDate.getTime();
-      if (outsidePlanned) {
-        return {
-          ok: true,
-          warning: {
-            code: "INSTALL_OUTSIDE_PLANNED_RANGE",
-            message: `La instalación queda fuera del rango planificado de la etapa Operaciones (plan: ${formatDateEs(operations.plannedStartDate)} → ${formatDateEs(operations.plannedEndDate)}). Podés continuar pero revisá la planificación.`,
-          },
-        };
-      }
     }
 
     return { ok: true, warning: null };
@@ -6349,18 +6324,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
           message: `La instalación termina el ${formatDateEs(installEnvelope.end)} pero Operaciones cerró el ${formatDateEs(operations.actualEndDate)}.`,
         });
       }
-      if (operations.plannedStartDate && operations.plannedEndDate) {
-        const outside =
-          installEnvelope.start.getTime() < operations.plannedStartDate.getTime() ||
-          installEnvelope.end.getTime() > operations.plannedEndDate.getTime();
-        if (outside) {
-          issues.push({
-            severity: "warning",
-            code: "INSTALL_OUTSIDE_PLANNED_RANGE",
-            message: `La instalación queda fuera del rango planificado de Operaciones (${formatDateEs(operations.plannedStartDate)} → ${formatDateEs(operations.plannedEndDate)}).`,
-          });
-        }
-      }
+      // La validación contra rango planificado se eliminó: las fechas
+      // planificadas ya no se muestran en la UI y no forman parte de las
+      // reglas de coherencia.
     }
 
     return {

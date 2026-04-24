@@ -43,7 +43,6 @@ import {
 import { getProjects } from "../api/projects.api";
 import { createTeam } from "../api/teams.api";
 import { Button } from "../components/ui/Button";
-import { toastWarning } from "../utils/toast";
 
 type CalendarView = "month" | "year";
 
@@ -594,7 +593,6 @@ export function Calendar() {
       }),
     onSuccess: (res) => {
       toast.success("Instalación reprogramada");
-      if (res.warning) toastWarning(res.warning.message);
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
       setSelectedScheduleIds([res.data.id]);
       setMoveRequest(null);
@@ -669,9 +667,6 @@ export function Calendar() {
     onSuccess: (res) => {
       const env = res.data.plannedWorkStart ? parseIso(res.data.plannedWorkStart) : null;
       toast.success(env ? `Instalación movida al ${formatLongDate(env)}` : "Instalación movida");
-      if (res.warning) {
-        toastWarning(res.warning.message);
-      }
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
     },
   });
@@ -2827,9 +2822,6 @@ function NewScheduleModal({
       }),
     onSuccess: (res) => {
       toast.success("Instalación agendada correctamente");
-      if (res.warning) {
-        toastWarning(res.warning.message);
-      }
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
       queryClient.invalidateQueries({ queryKey: ["calendar-teams"] });
       onCreated(res.data);
