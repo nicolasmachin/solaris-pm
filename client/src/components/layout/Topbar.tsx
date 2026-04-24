@@ -148,6 +148,11 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
               Stock
             </NavLink>
           </CanAccess>
+          <CanAccess module="TRAMITES_UTE" action="VIEW">
+            <NavLink to="/tramites-ute" className={navLinkClass}>
+              Trámites UTE
+            </NavLink>
+          </CanAccess>
           <CanAccess module="METRICAS" action="VIEW">
             <NavLink to="/metrics" className={navLinkClass}>
               Métricas

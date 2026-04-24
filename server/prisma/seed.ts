@@ -26,6 +26,8 @@ import {
   TipoMovimiento,
   TipoMovimientoStock,
   TipoObra,
+  UteStage,
+  UteStatus,
 } from "@prisma/client";
 
 import { prisma } from "../src/lib/prisma.js";
@@ -151,6 +153,7 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "ADMIN", module: Module.USUARIOS,       actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { roleName: "ADMIN", module: Module.FINANZAS,       actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { roleName: "ADMIN", module: Module.STOCK,          actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { roleName: "ADMIN", module: Module.TRAMITES_UTE,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { roleName: "ASESOR_COMERCIAL", module: Module.VENTAS,        actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMMENT] },
     { roleName: "ASESOR_COMERCIAL", module: Module.ONBOARDING,    actions: [Action.VIEW, Action.COMMENT] },
     { roleName: "ASESOR_COMERCIAL", module: Module.INGENIERIA,    actions: [Action.VIEW] },
@@ -171,6 +174,9 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "OPERACIONES", module: Module.POSTVENTA,     actions: [Action.VIEW, Action.COMMENT] },
     { roleName: "OPERACIONES", module: Module.METRICAS,      actions: [Action.VIEW] },
     { roleName: "OPERACIONES", module: Module.STOCK,         actions: [Action.VIEW] },
+    { roleName: "OPERACIONES", module: Module.TRAMITES_UTE,  actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
+    { roleName: "INGENIERIA", module: Module.TRAMITES_UTE,   actions: [Action.VIEW] },
+    { roleName: "ASESOR_COMERCIAL", module: Module.TRAMITES_UTE, actions: [Action.VIEW] },
     { roleName: "FINANZAS", module: Module.FINANZAS, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { roleName: "FINANZAS", module: Module.STOCK,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
   ];
@@ -1833,6 +1839,117 @@ async function seedFinanceAndStock(
   console.log("Finance & Stock seed completado.");
 }
 
+// ─── Trámites UTE ─────────────────────────────────────────────────────────────
+
+async function seedUteProcesses(adminId: string) {
+  // Backfill idempotente: todo proyecto sin trámite activo recibe uno vacío
+  // en CONSULTA/PENDIENTE. Como no hay índice único en projectId, hacemos
+  // findFirst + create para evitar duplicados al re-correr.
+  const projects = await prisma.project.findMany({
+    where: { deletedAt: null },
+    select: { id: true, clientName: true },
+  });
+
+  for (const p of projects) {
+    const existing = await prisma.uteProcess.findFirst({
+      where: { projectId: p.id, deletedAt: null },
+      select: { id: true },
+    });
+    if (!existing) {
+      await prisma.uteProcess.create({
+        data: {
+          projectId: p.id,
+          currentStage: UteStage.CONSULTA,
+          currentStatus: UteStatus.PENDIENTE,
+          createdById: adminId,
+        },
+      });
+    }
+  }
+
+  // Ejemplos realistas para poder probar todas las vistas sin cargar a mano.
+  // Si ya existe un trámite activo para el proyecto (ej: por backfill arriba),
+  // lo actualizamos con las fechas de ejemplo.
+  const examples: Array<{
+    clientName: string;
+    data: Prisma.UteProcessUncheckedUpdateInput;
+  }> = [
+    {
+      // Trámite completo: todas las fechas cargadas, finalizado.
+      clientName: "Agroindustrial Sur S.A.",
+      data: {
+        caseNumber: "UTE-2025-00412",
+        notes: "Trámite cerrado sin observaciones.",
+        currentStage: UteStage.FINALIZADO,
+        currentStatus: UteStatus.CERRADO,
+        consultaSentAt:     timestamp("2025-08-01T10:00:00.000Z"),
+        caseOpenedAt:       timestamp("2025-08-05T10:00:00.000Z"),
+        consultaApprovedAt: timestamp("2025-08-12T10:00:00.000Z"),
+        solicitudSentAt:    timestamp("2025-08-18T10:00:00.000Z"),
+        proyectoApprovedAt: timestamp("2025-09-02T10:00:00.000Z"),
+        docs1SentAt:        timestamp("2025-09-08T10:00:00.000Z"),
+        docs1ApprovedAt:    timestamp("2025-09-20T10:00:00.000Z"),
+        ensayosSentAt:      timestamp("2025-10-05T10:00:00.000Z"),
+        ensayosApprovedAt:  timestamp("2025-10-18T10:00:00.000Z"),
+        docs2SentAt:        timestamp("2025-10-25T10:00:00.000Z"),
+        finalizedAt:        timestamp("2025-11-08T10:00:00.000Z"),
+      },
+    },
+    {
+      // En curso: esperando aprobación de ensayos.
+      clientName: "Frigorífico Norte S.R.L.",
+      data: {
+        caseNumber: "UTE-2026-00157",
+        notes: "Esperando aprobación de ensayos por parte de UTE.",
+        currentStage: UteStage.ENSAYOS,
+        currentStatus: UteStatus.ESPERANDO,
+        consultaSentAt:     timestamp("2026-01-14T10:00:00.000Z"),
+        caseOpenedAt:       timestamp("2026-01-18T10:00:00.000Z"),
+        consultaApprovedAt: timestamp("2026-01-28T10:00:00.000Z"),
+        solicitudSentAt:    timestamp("2026-02-05T10:00:00.000Z"),
+        proyectoApprovedAt: timestamp("2026-02-22T10:00:00.000Z"),
+        docs1SentAt:        timestamp("2026-03-02T10:00:00.000Z"),
+        docs1ApprovedAt:    timestamp("2026-03-18T10:00:00.000Z"),
+        ensayosSentAt:      timestamp("2026-04-08T10:00:00.000Z"),
+      },
+    },
+    {
+      // Recién iniciado.
+      clientName: "Clínica del Valle",
+      data: {
+        caseNumber: null,
+        notes: "Consulta inicial recién enviada.",
+        currentStage: UteStage.CONSULTA,
+        currentStatus: UteStatus.ESPERANDO,
+        consultaSentAt: timestamp("2026-04-18T10:00:00.000Z"),
+      },
+    },
+  ];
+
+  for (const ex of examples) {
+    const project = await prisma.project.findFirst({
+      where: { clientName: ex.clientName, deletedAt: null },
+      select: { id: true },
+    });
+    if (!project) continue;
+    const existing = await prisma.uteProcess.findFirst({
+      where: { projectId: project.id, deletedAt: null },
+      select: { id: true },
+    });
+    if (existing) {
+      await prisma.uteProcess.update({ where: { id: existing.id }, data: ex.data });
+    } else {
+      await prisma.uteProcess.create({
+        data: {
+          ...(ex.data as Prisma.UteProcessUncheckedCreateInput),
+          projectId: project.id,
+          createdById: adminId,
+        },
+      });
+    }
+  }
+}
+
 // ─── Entry point ──────────────────────────────────────────────────────────────
 
 async function run() {
@@ -1857,6 +1974,7 @@ async function run() {
   await seedGoals(admin.id);
   await seedFinanceAndStock(admin.id, project1Id, project2Id, project3Id);
   await seedInstallationSchedules({ adminId: admin.id, project1Id, project2Id, project4Id });
+  await seedUteProcesses(admin.id);
 
   const project1 = await prisma.project.findUnique({
     where: { id: project1Id },

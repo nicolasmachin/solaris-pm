@@ -38,6 +38,8 @@ import {
   TipoMovimiento,
   TipoMovimientoStock,
   TipoObra,
+  UteStage,
+  UteStatus,
 } from "@prisma/client";
 import { z } from "zod";
 
@@ -65,6 +67,15 @@ import {
   syncStageProgress,
   syncSubstageProgress,
 } from "../services/project.service.js";
+import {
+  SENT_APPROVED_PAIRS,
+  UTE_ACTION_KEYS,
+  UTE_PROCESS_INCLUDE,
+  deriveStage,
+  serializeUteProcess,
+  validateCoherence,
+  type UteActionKey,
+} from "../services/uteProcess.service.js";
 import {
   getActivePipelineTemplate,
   getStageLabel,
@@ -1337,6 +1348,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     await createInitialPipeline(project.id, startDate, plannedEndDate, body.modalidadPago ?? null);
+
+    await prisma.uteProcess.create({
+      data: {
+        projectId: project.id,
+        currentStage: UteStage.CONSULTA,
+        currentStatus: UteStatus.PENDIENTE,
+        createdById: user.id,
+      },
+    });
 
     const projectWithStages = await prisma.project.findUniqueOrThrow({
       where: { id: project.id },
@@ -3895,6 +3915,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     { module: Module.USUARIOS,      actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { module: Module.FINANZAS,      actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { module: Module.STOCK,         actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { module: Module.TRAMITES_UTE,  actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
   ];
 
   const roleNameSchema = z
@@ -5343,6 +5364,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     await createInitialPipeline(project.id, startDate, plannedEndDate, null);
 
+    await prisma.uteProcess.create({
+      data: {
+        projectId: project.id,
+        currentStage: UteStage.CONSULTA,
+        currentStatus: UteStatus.PENDIENTE,
+        createdById: user.id,
+      },
+    });
+
     await prisma.salesLead.update({
       where: { id: lead.id },
       data: {
@@ -6760,6 +6790,215 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     return { success: true };
   });
+
+  // ─── Trámites UTE ────────────────────────────────────────────────────────────
+
+  const uteDateSchema = z.union([
+    z.string().datetime(),
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    z.null(),
+  ]);
+
+  const uteProcessCreateSchema = z
+    .object({
+      projectId: z.string().min(1),
+      caseNumber: z.string().trim().min(1).nullable().optional(),
+      notes: z.string().trim().min(1).nullable().optional(),
+      consultaSentAt: uteDateSchema.optional(),
+    })
+    .strict();
+
+  const uteProcessPatchSchema = z
+    .object({
+      caseNumber: z.string().trim().nullable().optional(),
+      notes: z.string().nullable().optional(),
+      currentStage: z.nativeEnum(UteStage).optional(),
+      currentStatus: z.nativeEnum(UteStatus).optional(),
+      consultaSentAt: uteDateSchema.optional(),
+      caseOpenedAt: uteDateSchema.optional(),
+      consultaApprovedAt: uteDateSchema.optional(),
+      solicitudSentAt: uteDateSchema.optional(),
+      proyectoApprovedAt: uteDateSchema.optional(),
+      docs1SentAt: uteDateSchema.optional(),
+      docs1ApprovedAt: uteDateSchema.optional(),
+      ensayosSentAt: uteDateSchema.optional(),
+      ensayosApprovedAt: uteDateSchema.optional(),
+      docs2SentAt: uteDateSchema.optional(),
+      finalizedAt: uteDateSchema.optional(),
+    })
+    .strict()
+    .refine((v) => Object.keys(v).length > 0, { message: "Debés enviar al menos un campo" });
+
+  function parseUteDate(value: string | null | undefined): Date | null | undefined {
+    if (value === undefined) return undefined;
+    if (value === null) return null;
+    return /^\d{4}-\d{2}-\d{2}$/.test(value) ? parseDateOnly(value) : new Date(value);
+  }
+
+  app.get("/ute-processes", { preHandler: authorize(Module.TRAMITES_UTE, Action.VIEW) }, async (request) => {
+    const query = z
+      .object({
+        stage: z.nativeEnum(UteStage).optional(),
+        status: z.nativeEnum(UteStatus).optional(),
+        search: z.string().trim().min(1).optional(),
+        sortBy: z.enum(["client", "duration", "currentStage", "updatedAt"]).optional(),
+        sortOrder: z.enum(["asc", "desc"]).optional(),
+      })
+      .parse(request.query);
+
+    const rows = await prisma.uteProcess.findMany({
+      where: {
+        deletedAt: null,
+        project: { deletedAt: null },
+        ...(query.stage ? { currentStage: query.stage } : {}),
+        ...(query.status ? { currentStatus: query.status } : {}),
+        ...(query.search
+          ? { project: { deletedAt: null, clientName: { contains: query.search, mode: "insensitive" } } }
+          : {}),
+      },
+      include: UTE_PROCESS_INCLUDE,
+      orderBy: { updatedAt: "desc" },
+    });
+
+    const now = new Date();
+    const serialized = rows.map((r) => serializeUteProcess(r, now));
+
+    const sortBy = query.sortBy ?? "updatedAt";
+    const order = query.sortOrder ?? "desc";
+    const dir = order === "asc" ? 1 : -1;
+    serialized.sort((a, b) => {
+      switch (sortBy) {
+        case "client":
+          return a.project.clientName.localeCompare(b.project.clientName, "es", { sensitivity: "base" }) * dir;
+        case "duration":
+          return (a.totalDays - b.totalDays) * dir;
+        case "currentStage":
+          return a.currentStage.localeCompare(b.currentStage) * dir;
+        case "updatedAt":
+        default:
+          return (new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()) * dir;
+      }
+    });
+
+    return serialized;
+  });
+
+  app.get("/ute-processes/:id", { preHandler: authorize(Module.TRAMITES_UTE, Action.VIEW) }, async (request) => {
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const row = await prisma.uteProcess.findFirst({
+      where: { id, deletedAt: null },
+      include: UTE_PROCESS_INCLUDE,
+    });
+    if (!row) throw notFound("UTE_PROCESS_NOT_FOUND", "Trámite UTE no encontrado");
+    return serializeUteProcess(row);
+  });
+
+  app.post("/ute-processes", { preHandler: authorize(Module.TRAMITES_UTE, Action.CREATE) }, async (request, reply) => {
+    const user = ensureUser(request);
+    const body = uteProcessCreateSchema.parse(request.body);
+
+    const project = await prisma.project.findFirst({
+      where: { id: body.projectId, deletedAt: null },
+      select: { id: true, clientName: true },
+    });
+    if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+
+    const existing = await prisma.uteProcess.findFirst({
+      where: { projectId: project.id, deletedAt: null },
+      select: { id: true },
+    });
+    if (existing) {
+      throw conflict("UTE_PROCESS_EXISTS", "El proyecto ya tiene un trámite UTE activo");
+    }
+
+    const consultaSent = parseUteDate(body.consultaSentAt) ?? null;
+
+    const created = await prisma.uteProcess.create({
+      data: {
+        projectId: project.id,
+        caseNumber: body.caseNumber ?? null,
+        notes: body.notes ?? null,
+        consultaSentAt: consultaSent,
+        currentStage: consultaSent ? UteStage.CONSULTA : UteStage.CONSULTA,
+        currentStatus: consultaSent ? UteStatus.ESPERANDO : UteStatus.PENDIENTE,
+        createdById: user.id,
+      },
+      include: UTE_PROCESS_INCLUDE,
+    });
+
+    reply.code(201);
+    return serializeUteProcess(created);
+  });
+
+  app.patch("/ute-processes/:id", { preHandler: authorize(Module.TRAMITES_UTE, Action.EDIT) }, async (request) => {
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const body = uteProcessPatchSchema.parse(request.body);
+
+    const existing = await prisma.uteProcess.findFirst({
+      where: { id, deletedAt: null },
+      include: UTE_PROCESS_INCLUDE,
+    });
+    if (!existing) throw notFound("UTE_PROCESS_NOT_FOUND", "Trámite UTE no encontrado");
+
+    const dateUpdates: Partial<Record<UteActionKey, Date | null>> = {};
+    for (const key of UTE_ACTION_KEYS) {
+      if (key in body) {
+        const parsed = parseUteDate(body[key] as string | null | undefined);
+        if (parsed !== undefined) dateUpdates[key] = parsed;
+      }
+    }
+
+    const mergedDates: Record<UteActionKey, Date | null> = {} as Record<UteActionKey, Date | null>;
+    for (const key of UTE_ACTION_KEYS) {
+      mergedDates[key] = key in dateUpdates ? dateUpdates[key] ?? null : (existing[key] as Date | null);
+    }
+    const coherence = validateCoherence(mergedDates);
+    if (!coherence.ok) throw badRequest("UTE_DATES_INCOHERENT", coherence.message);
+
+    const mergedRow = { ...existing, ...dateUpdates };
+    const stageFromDates = deriveStage(mergedRow);
+
+    // RELEVAR y cambios explícitos de stage son manuales. Sólo re-derivamos si
+    // el caller no mandó stage explícito y el stage actual no es RELEVAR.
+    const nextStage =
+      body.currentStage !== undefined
+        ? body.currentStage
+        : existing.currentStage === UteStage.RELEVAR
+          ? existing.currentStage
+          : stageFromDates;
+
+    // Si marca finalizedAt y no pasó status → pasa a CERRADO automático.
+    const nextStatus =
+      body.currentStatus !== undefined
+        ? body.currentStatus
+        : mergedRow.finalizedAt
+          ? UteStatus.CERRADO
+          : existing.currentStatus;
+
+    const updated = await prisma.uteProcess.update({
+      where: { id },
+      data: {
+        ...(body.caseNumber !== undefined ? { caseNumber: body.caseNumber } : {}),
+        ...(body.notes !== undefined ? { notes: body.notes } : {}),
+        ...dateUpdates,
+        currentStage: nextStage,
+        currentStatus: nextStatus,
+      },
+      include: UTE_PROCESS_INCLUDE,
+    });
+
+    return serializeUteProcess(updated);
+  });
+
+  app.delete("/ute-processes/:id", { preHandler: authorize(Module.TRAMITES_UTE, Action.DELETE) }, async (request) => {
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const existing = await prisma.uteProcess.findFirst({ where: { id, deletedAt: null } });
+    if (!existing) throw notFound("UTE_PROCESS_NOT_FOUND", "Trámite UTE no encontrado");
+    await prisma.uteProcess.update({ where: { id }, data: { deletedAt: new Date() } });
+    return { success: true };
+  });
+
+  void SENT_APPROVED_PAIRS;
 
   // ─── PASO 5: Dev test endpoint ───────────────────────────────────────────────
 

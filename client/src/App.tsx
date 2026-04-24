@@ -25,6 +25,7 @@ const FinanceReports = lazy(() => import("./pages/FinanceReports").then((module)
 const Stock = lazy(() => import("./pages/Stock").then((module) => ({ default: module.Stock })));
 const Calendar = lazy(() => import("./pages/Calendar").then((module) => ({ default: module.Calendar })));
 const MisTareas = lazy(() => import("./pages/MisTareas").then((module) => ({ default: module.MisTareas })));
+const TramitesUte = lazy(() => import("./pages/TramitesUte").then((module) => ({ default: module.TramitesUte })));
 
 function RouteFallback() {
   return (
@@ -181,6 +182,14 @@ export function App() {
           element={
             <PermissionRoute module="STOCK" action="VIEW">
               <Stock />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/tramites-ute"
+          element={
+            <PermissionRoute module="TRAMITES_UTE" action="VIEW">
+              <TramitesUte />
             </PermissionRoute>
           }
         />

@@ -166,6 +166,7 @@ enum Module {
   USUARIOS
   FINANZAS
   STOCK
+  TRAMITES_UTE
 }
 
 enum Moneda {
@@ -366,6 +367,7 @@ model Project {
   financeMovements  FinanceMovement[]
   stockMovements    StockMovement[]
   installationSchedule InstallationSchedule?
+  uteProcesses      UteProcess[]
   deletedAt         DateTime?            @db.Timestamptz(6)
   createdAt         DateTime             @default(now()) @db.Timestamptz(6)
   updatedAt         DateTime             @updatedAt @db.Timestamptz(6)
@@ -1074,4 +1076,62 @@ model StockMovement {
   @@index([projectId])
   @@index([financeMovementId])
   @@map("stock_movements")
+}
+
+// ─── Trámites UTE ────────────────────────────────────────────────────────────
+
+enum UteStage {
+  CONSULTA
+  SOLICITUD
+  DOCS_1
+  DOCS_2
+  RELEVAR
+  ENSAYOS
+  FINALIZADO
+}
+
+enum UteStatus {
+  CERRADO
+  EN_PROCESO
+  ESPERANDO
+  PENDIENTE
+}
+
+model UteProcess {
+  id        String    @id @default(cuid())
+  projectId String
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  currentStage  UteStage  @default(CONSULTA)
+  currentStatus UteStatus @default(PENDIENTE)
+
+  caseNumber String?
+  notes      String?
+
+  consultaSentAt     DateTime? @db.Timestamptz(6)
+  caseOpenedAt       DateTime? @db.Timestamptz(6)
+  consultaApprovedAt DateTime? @db.Timestamptz(6)
+
+  solicitudSentAt    DateTime? @db.Timestamptz(6)
+  proyectoApprovedAt DateTime? @db.Timestamptz(6)
+
+  docs1SentAt     DateTime? @db.Timestamptz(6)
+  docs1ApprovedAt DateTime? @db.Timestamptz(6)
+
+  ensayosSentAt     DateTime? @db.Timestamptz(6)
+  ensayosApprovedAt DateTime? @db.Timestamptz(6)
+
+  docs2SentAt DateTime? @db.Timestamptz(6)
+  finalizedAt DateTime? @db.Timestamptz(6)
+
+  createdById String?
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6)
+  deletedAt   DateTime? @db.Timestamptz(6)
+
+  @@index([projectId])
+  @@index([currentStage])
+  @@index([currentStatus])
+  @@index([deletedAt])
+  @@map("ute_processes")
 }

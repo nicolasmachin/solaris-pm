@@ -10,6 +10,7 @@ import {
   BarChart3,
   Users,
   ListTodo,
+  FileCheck,
   X,
   LogOut,
 } from "lucide-react";
@@ -173,6 +174,12 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
             <NavLink to="/stock" className={linkClass}>
               <Package size={18} className="shrink-0" />
               <span>Stock</span>
+            </NavLink>
+          </CanAccess>
+          <CanAccess module="TRAMITES_UTE" action="VIEW">
+            <NavLink to="/tramites-ute" className={linkClass}>
+              <FileCheck size={18} className="shrink-0" />
+              <span>Trámites UTE</span>
             </NavLink>
           </CanAccess>
           <CanAccess module="METRICAS" action="VIEW">
