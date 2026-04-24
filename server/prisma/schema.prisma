@@ -1102,11 +1102,13 @@ model UteProcess {
   projectId String
   project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  currentStage  UteStage  @default(CONSULTA)
-  currentStatus UteStatus @default(PENDIENTE)
+  currentStage      UteStage  @default(CONSULTA)
+  currentStatus     UteStatus @default(PENDIENTE)
+  stageManuallySet  Boolean   @default(false)
 
   caseNumber String?
   notes      String?
+  dateColors Json?
 
   consultaSentAt     DateTime? @db.Timestamptz(6)
   caseOpenedAt       DateTime? @db.Timestamptz(6)

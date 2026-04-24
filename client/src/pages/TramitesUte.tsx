@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
@@ -10,21 +10,23 @@ import {
   X,
   ExternalLink,
   Trash2,
-  Send,
-  Inbox,
+  Palette,
 } from "lucide-react";
 import {
   createUteProcess,
   deleteUteProcess,
   getUteProcesses,
   patchUteProcess,
-  UTE_ACTIONS_ORDERED,
+  UTE_COLOR_PALETTE,
+  UTE_DEFAULT_COLOR,
   UTE_STAGE_LABEL,
   UTE_STAGE_ORDER,
   UTE_STATUS_LABEL,
   type UteActionKey,
+  type UteColorHex,
   type UteListParams,
   type UteProcess,
+  type UteSortBy,
   type UteStage,
   type UteStatus,
 } from "../api/uteProcess.api";
@@ -32,32 +34,18 @@ import { getProjects } from "../api/projects.api";
 import type { ProjectListItem } from "../types/api.types";
 import { Button } from "../components/ui/Button";
 import { Spinner } from "../components/ui/Spinner";
-import { EmptyState } from "../components/ui/EmptyState";
 import { useAuthStore } from "../store/auth.store";
-
-// ─── Constantes de presentación ─────────────────────────────────────────────
+import {
+  STAGE_BADGE_COLORS,
+  STATUS_BADGE_COLORS,
+  UteProcessDetail,
+} from "../components/ute/UteProcessDetail";
+import { UteKanbanBoard } from "../components/ute/UteKanbanBoard";
 
 const FILTER_STORAGE_KEY = "ute-filters";
 const VIEW_STORAGE_KEY = "ute-view-mode";
 
 type ViewMode = "table" | "kanban";
-
-const STAGE_COLORS: Record<UteStage, { bg: string; text: string }> = {
-  CONSULTA:   { bg: "rgba(59,130,246,0.18)",  text: "#60a5fa" },
-  SOLICITUD:  { bg: "rgba(139,92,246,0.18)",  text: "#a78bfa" },
-  DOCS_1:     { bg: "rgba(16,185,129,0.18)",  text: "#34d399" },
-  DOCS_2:     { bg: "rgba(249,115,22,0.18)",  text: "#fb923c" },
-  RELEVAR:    { bg: "rgba(234,179,8,0.18)",   text: "#facc15" },
-  ENSAYOS:    { bg: "rgba(239,68,68,0.18)",   text: "#f87171" },
-  FINALIZADO: { bg: "rgba(45,212,191,0.18)",  text: "#5eead4" },
-};
-
-const STATUS_COLORS: Record<UteStatus, { bg: string; text: string }> = {
-  CERRADO:    { bg: "rgba(16,185,129,0.18)", text: "#34d399" },
-  EN_PROCESO: { bg: "rgba(59,130,246,0.18)", text: "#60a5fa" },
-  ESPERANDO:  { bg: "rgba(148,163,184,0.22)", text: "#cbd5e1" },
-  PENDIENTE:  { bg: "rgba(239,68,68,0.18)",  text: "#f87171" },
-};
 
 const MONTHS_ES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 
@@ -69,31 +57,57 @@ function fmtShort(iso: string | null): string {
 }
 
 function toInputDate(iso: string | null): string {
-  if (!iso) return "";
-  return iso.slice(0, 10);
+  return iso ? iso.slice(0, 10) : "";
 }
 
-// ─── Persistencia de filtros ────────────────────────────────────────────────
+// Alpha transparencia al 15% sobre el hex para el fondo de celdas coloreadas.
+function hexToBgAlpha(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},0.20)`;
+}
 
 type PersistedFilters = {
   stage: UteStage | "ALL";
   status: UteStatus | "ALL";
   search: string;
+  sortBy: UteSortBy;
+  sortOrder: "asc" | "desc";
+};
+
+const DEFAULT_FILTERS: PersistedFilters = {
+  stage: "ALL",
+  status: "ALL",
+  search: "",
+  sortBy: "updatedAt",
+  sortOrder: "desc",
+};
+
+const SORT_LABELS: Record<UteSortBy, string> = {
+  updatedAt: "Última actualización",
+  createdAt: "Fecha de creación",
+  currentStage: "Etapa",
+  currentStatus: "Estado",
+  client: "Cliente",
+  duration: "Duración",
 };
 
 function loadFilters(): PersistedFilters {
-  if (typeof window === "undefined") return { stage: "ALL", status: "ALL", search: "" };
+  if (typeof window === "undefined") return DEFAULT_FILTERS;
   try {
     const raw = window.localStorage.getItem(FILTER_STORAGE_KEY);
-    if (!raw) return { stage: "ALL", status: "ALL", search: "" };
+    if (!raw) return DEFAULT_FILTERS;
     const parsed = JSON.parse(raw);
     return {
-      stage: parsed.stage ?? "ALL",
-      status: parsed.status ?? "ALL",
-      search: parsed.search ?? "",
+      stage: parsed.stage ?? DEFAULT_FILTERS.stage,
+      status: parsed.status ?? DEFAULT_FILTERS.status,
+      search: parsed.search ?? DEFAULT_FILTERS.search,
+      sortBy: (parsed.sortBy as UteSortBy) ?? DEFAULT_FILTERS.sortBy,
+      sortOrder: parsed.sortOrder === "asc" ? "asc" : DEFAULT_FILTERS.sortOrder,
     };
   } catch {
-    return { stage: "ALL", status: "ALL", search: "" };
+    return DEFAULT_FILTERS;
   }
 }
 
@@ -101,7 +115,7 @@ function saveFilters(f: PersistedFilters) {
   try {
     window.localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(f));
   } catch {
-    // noop
+    /* noop */
   }
 }
 
@@ -117,7 +131,9 @@ export function TramitesUte() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState<PersistedFilters>(loadFilters);
   const [view, setView] = useState<ViewMode>(loadViewMode);
-  const [selectedId, setSelectedId] = useState<string | null>(searchParams.get("id"));
+  const [selectedId, setSelectedId] = useState<string | null>(
+    searchParams.get("id") ?? searchParams.get("highlight"),
+  );
   const [newModalOpen, setNewModalOpen] = useState(false);
 
   useEffect(() => saveFilters(filters), [filters]);
@@ -133,6 +149,7 @@ export function TramitesUte() {
     const next = new URLSearchParams(searchParams);
     if (selectedId) next.set("id", selectedId);
     else next.delete("id");
+    next.delete("highlight");
     if (next.toString() !== searchParams.toString()) {
       setSearchParams(next, { replace: true });
     }
@@ -144,6 +161,8 @@ export function TramitesUte() {
       stage: filters.stage === "ALL" ? null : filters.stage,
       status: filters.status === "ALL" ? null : filters.status,
       search: filters.search.trim() || null,
+      sortBy: filters.sortBy,
+      sortOrder: filters.sortOrder,
     }),
     [filters],
   );
@@ -242,6 +261,29 @@ export function TramitesUte() {
           onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
           className="flex-1 min-w-[180px] rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-1.5 text-xs text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
         />
+        <label className="inline-flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
+          <span className="font-mono uppercase tracking-widest">Ordenar</span>
+          <select
+            value={filters.sortBy}
+            onChange={(e) => setFilters((f) => ({ ...f, sortBy: e.target.value as UteSortBy }))}
+            className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1 text-xs text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+          >
+            {(Object.keys(SORT_LABELS) as UteSortBy[]).map((k) => (
+              <option key={k} value={k}>{SORT_LABELS[k]}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() =>
+              setFilters((f) => ({ ...f, sortOrder: f.sortOrder === "asc" ? "desc" : "asc" }))
+            }
+            className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1 font-mono text-[11px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+            title={filters.sortOrder === "asc" ? "Ascendente" : "Descendente"}
+            aria-label="Cambiar dirección del orden"
+          >
+            {filters.sortOrder === "asc" ? "↑" : "↓"}
+          </button>
+        </label>
       </div>
 
       {/* Contenido */}
@@ -257,22 +299,23 @@ export function TramitesUte() {
           </Button>
         </div>
       ) : processes.length === 0 ? (
-        <EmptyState
-          title="Sin trámites"
-          description="No hay trámites UTE que coincidan con los filtros."
-        />
+        <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-bg-card)] p-10 text-center">
+          <p className="font-display text-base font-semibold text-[var(--color-text-primary)]">
+            Sin trámites
+          </p>
+          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+            No hay trámites UTE que coincidan con los filtros.
+          </p>
+        </div>
       ) : view === "table" ? (
         <UteTable processes={processes} onRowClick={(id) => setSelectedId(id)} />
       ) : (
-        <UteKanbanPlaceholder processes={processes} onCardClick={(id) => setSelectedId(id)} />
+        <UteKanbanBoard processes={processes} onCardClick={(id) => setSelectedId(id)} />
       )}
 
       {/* Drawer detalle */}
       {selected ? (
-        <UteDetailDrawer
-          process={selected}
-          onClose={() => setSelectedId(null)}
-        />
+        <UteDetailDrawer process={selected} onClose={() => setSelectedId(null)} />
       ) : null}
 
       {/* Modal nuevo */}
@@ -321,7 +364,6 @@ function UteTable({
             <th className="px-3 py-2 text-left font-mono">Etapa</th>
             <th className="px-3 py-2 text-left font-mono">Estado</th>
             <th className="px-3 py-2 text-left font-mono">Caso</th>
-            <th className="px-3 py-2 text-left font-mono">Teléfono</th>
             {TABLE_DATE_COLUMNS.map((c) => (
               <th key={c.key} className="px-2 py-2 text-center font-mono" title={c.label}>
                 {c.short}
@@ -350,9 +392,25 @@ function UteTableRow({
   process: UteProcess;
   onRowClick: (id: string) => void;
 }) {
-  const [editingKey, setEditingKey] = useState<UteActionKey | null>(null);
-  const stageColor = STAGE_COLORS[process.currentStage];
-  const statusColor = STATUS_COLORS[process.currentStatus];
+  const qc = useQueryClient();
+  const [caseValue, setCaseValue] = useState(process.caseNumber ?? "");
+  // Resincronizar sólo cuando cambia el trámite, no cuando cambia el campo
+  // editable (evita que la respuesta del server pise lo que se está tipeando).
+  useEffect(() => {
+    setCaseValue(process.caseNumber ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [process.id]);
+
+  const patch = useMutation({
+    mutationFn: (body: Parameters<typeof patchUteProcess>[1]) => patchUteProcess(process.id, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["ute-processes"] }),
+    onError: (e: unknown) => {
+      const msg =
+        (e as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error
+          ?.message ?? "No se pudo guardar";
+      toast.error(msg);
+    },
+  });
 
   return (
     <tr className="hover:bg-[var(--color-bg-card-hover)]">
@@ -363,52 +421,77 @@ function UteTableRow({
         <div className="truncate max-w-[180px]">{process.project.clientName}</div>
         <div className="font-mono text-[10px] text-[var(--color-text-muted)]">{process.project.code}</div>
       </td>
-      <td className="px-3 py-2 cursor-pointer" onClick={() => onRowClick(process.id)}>
-        <span
-          className="inline-block rounded px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider whitespace-nowrap"
-          style={{ background: stageColor.bg, color: stageColor.text }}
+      <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
+        <select
+          value={process.currentStage}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => {
+            patch.mutate({ currentStage: e.target.value as UteStage });
+            toast.success("Etapa actualizada");
+          }}
+          className="w-full max-w-[120px] rounded border border-transparent bg-transparent px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider cursor-pointer focus:border-[var(--color-accent)] focus:outline-none"
+          style={{
+            background: STAGE_BADGE_COLORS[process.currentStage].bg,
+            color: STAGE_BADGE_COLORS[process.currentStage].text,
+          }}
+          aria-label="Cambiar etapa"
         >
-          {UTE_STAGE_LABEL[process.currentStage]}
-        </span>
+          {UTE_STAGE_ORDER.map((s) => (
+            <option key={s} value={s}>
+              {UTE_STAGE_LABEL[s]}
+            </option>
+          ))}
+        </select>
       </td>
-      <td className="px-3 py-2 cursor-pointer" onClick={() => onRowClick(process.id)}>
-        <span
-          className="inline-block rounded px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap"
-          style={{ background: statusColor.bg, color: statusColor.text }}
+      <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
+        <select
+          value={process.currentStatus}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => {
+            patch.mutate({ currentStatus: e.target.value as UteStatus });
+            toast.success("Estado actualizado");
+          }}
+          className="w-full max-w-[120px] rounded border border-transparent bg-transparent px-1.5 py-0.5 text-[10px] font-semibold cursor-pointer focus:border-[var(--color-accent)] focus:outline-none"
+          style={{
+            background: STATUS_BADGE_COLORS[process.currentStatus].bg,
+            color: STATUS_BADGE_COLORS[process.currentStatus].text,
+          }}
+          aria-label="Cambiar estado"
         >
-          {UTE_STATUS_LABEL[process.currentStatus]}
-        </span>
+          {(Object.keys(UTE_STATUS_LABEL) as UteStatus[]).map((s) => (
+            <option key={s} value={s}>
+              {UTE_STATUS_LABEL[s]}
+            </option>
+          ))}
+        </select>
       </td>
-      <td className="px-3 py-2 font-mono text-[11px] text-[var(--color-text-secondary)] cursor-pointer" onClick={() => onRowClick(process.id)}>
-        {process.caseNumber ?? "—"}
+      <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
+        <input
+          type="text"
+          value={caseValue}
+          onChange={(e) => setCaseValue(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          onBlur={() => {
+            if (caseValue !== (process.caseNumber ?? "")) {
+              patch.mutate({ caseNumber: caseValue.trim() || null });
+              toast.success("Caso actualizado");
+            }
+          }}
+          placeholder="—"
+          className="w-full max-w-[140px] rounded border border-transparent bg-transparent px-1.5 py-0.5 font-mono text-[11px] text-[var(--color-text-secondary)] hover:border-[var(--color-border)] focus:border-[var(--color-accent)] focus:bg-[var(--color-bg-app)] focus:outline-none"
+          aria-label="Número de caso"
+        />
       </td>
-      <td className="px-3 py-2 text-[var(--color-text-secondary)] cursor-pointer" onClick={() => onRowClick(process.id)}>
-        {process.project.notificationPhone ?? "—"}
-      </td>
-      {TABLE_DATE_COLUMNS.map((c) => {
-        const value = process[c.key];
-        const filled = !!value;
-        return (
-          <td
-            key={c.key}
-            className="px-1 py-1 text-center"
-            style={filled ? { background: "rgba(16,185,129,0.10)" } : undefined}
-          >
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setEditingKey(c.key);
-              }}
-              className="w-full rounded px-1 py-1 text-[11px] font-mono hover:bg-[var(--color-bg-card-hover)]"
-              title={c.label}
-              style={{ color: filled ? "var(--color-state-done-text)" : "var(--color-text-muted)" }}
-            >
-              {fmtShort(value)}
-            </button>
-          </td>
-        );
-      })}
+      {TABLE_DATE_COLUMNS.map((c) => (
+        <UteDateCell
+          key={c.key}
+          processId={process.id}
+          fieldKey={c.key}
+          label={c.label}
+          value={process[c.key]}
+          color={(process.dateColors[c.key] ?? UTE_DEFAULT_COLOR) as UteColorHex}
+        />
+      ))}
       <td className="px-3 py-2 text-right font-mono text-[11px] text-[var(--color-text-secondary)] cursor-pointer" onClick={() => onRowClick(process.id)}>
         {process.totalDays}
       </td>
@@ -422,187 +505,335 @@ function UteTableRow({
       <td className="px-3 py-2 text-right font-mono text-[11px] cursor-pointer" style={{ color: "#60a5fa" }} onClick={() => onRowClick(process.id)}>
         {process.uteTimeDays}
       </td>
-      <td className="px-3 py-2 max-w-[200px] cursor-pointer" onClick={() => onRowClick(process.id)}>
-        <div className="truncate text-[var(--color-text-secondary)]" title={process.notes ?? undefined}>
-          {process.notes ?? "—"}
-        </div>
-      </td>
-
-      {editingKey ? (
-        <MiniDateEditor
+      <td className="px-2 py-2 max-w-[200px]" onClick={(e) => e.stopPropagation()}>
+        <NotesCellButton
           processId={process.id}
-          fieldKey={editingKey}
-          label={TABLE_DATE_COLUMNS.find((c) => c.key === editingKey)!.label}
-          currentValue={process[editingKey]}
-          onClose={() => setEditingKey(null)}
+          value={process.notes}
+          clientName={process.project.clientName}
         />
-      ) : null}
+      </td>
     </tr>
   );
 }
 
-// ─── Mini editor de fecha ───────────────────────────────────────────────────
+function NotesCellButton({
+  processId,
+  value,
+  clientName,
+}: {
+  processId: string;
+  value: string | null;
+  clientName: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(true);
+        }}
+        className="w-full truncate rounded px-1.5 py-1 text-left text-[12px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] hover:text-[var(--color-text-primary)]"
+        title={value ?? "Agregar nota"}
+      >
+        {value ?? <span className="text-[var(--color-text-muted)]">—</span>}
+      </button>
+      {open ? (
+        <NotesMiniEditor
+          processId={processId}
+          initialValue={value ?? ""}
+          clientName={clientName}
+          onClose={() => setOpen(false)}
+        />
+      ) : null}
+    </>
+  );
+}
 
-function MiniDateEditor({
+function NotesMiniEditor({
+  processId,
+  initialValue,
+  clientName,
+  onClose,
+}: {
+  processId: string;
+  initialValue: string;
+  clientName: string;
+  onClose: () => void;
+}) {
+  const [value, setValue] = useState(initialValue);
+  const qc = useQueryClient();
+
+  const save = useMutation({
+    mutationFn: (next: string | null) =>
+      patchUteProcess(processId, { notes: next } as any),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ute-processes"] });
+      qc.invalidateQueries({ queryKey: ["project", processId] });
+      toast.success("Nota actualizada");
+      onClose();
+    },
+    onError: () => toast.error("No se pudo guardar la nota"),
+  });
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="w-full max-w-md rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 shadow-2xl">
+        <div className="mb-3 flex items-start justify-between">
+          <div>
+            <h3 className="font-display text-base font-semibold text-[var(--color-text-primary)]">
+              Nota del trámite
+            </h3>
+            <p className="text-[11px] text-[var(--color-text-muted)]">{clientName}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-bg-card-hover)]"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <textarea
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          rows={5}
+          maxLength={5000}
+          autoFocus
+          className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+          placeholder="Escribí una nota…"
+        />
+        <div className="mt-1 text-right text-[10px] text-[var(--color-text-muted)]">
+          {value.length} / 5000
+        </div>
+        <div className="mt-3 flex items-center justify-end gap-2">
+          <Button variant="secondary" size="sm" onClick={onClose}>Cancelar</Button>
+          <Button
+            size="sm"
+            onClick={() => save.mutate(value.trim() || null)}
+            loading={save.isPending}
+          >
+            Guardar
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UteDateCell({
   processId,
   fieldKey,
   label,
-  currentValue,
-  onClose,
+  value,
+  color,
 }: {
   processId: string;
   fieldKey: UteActionKey;
   label: string;
-  currentValue: string | null;
-  onClose: () => void;
+  value: string | null;
+  color: UteColorHex;
 }) {
-  const [value, setValue] = useState(toInputDate(currentValue));
+  const [showDateEditor, setShowDateEditor] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
   const qc = useQueryClient();
 
-  const save = useMutation({
+  const saveDate = useMutation({
     mutationFn: (v: string | null) => patchUteProcess(processId, { [fieldKey]: v } as any),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ute-processes"] });
       toast.success("Fecha actualizada");
-      onClose();
+      setShowDateEditor(false);
     },
-    onError: (e: any) => {
-      const msg = e?.response?.data?.error?.message ?? "No se pudo guardar";
+    onError: (e: unknown) => {
+      const msg =
+        (e as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error
+          ?.message ?? "No se pudo guardar";
       toast.error(msg);
     },
   });
 
+  const saveColor = useMutation({
+    mutationFn: (hex: string) =>
+      patchUteProcess(processId, { dateColors: { [fieldKey]: hex } } as any),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ute-processes"] });
+      toast.success("Color asignado");
+      setShowColorPicker(false);
+    },
+    onError: () => toast.error("No se pudo cambiar el color"),
+  });
+
+  const filled = !!value;
   return (
-    <td colSpan={100} className="p-0">
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+    <td
+      className="group relative px-1 py-1 text-center"
+      style={filled ? { background: hexToBgAlpha(color) } : undefined}
+      onClick={(e) => e.stopPropagation()}
+      onContextMenu={(e) => {
+        if (filled) {
+          e.preventDefault();
+          setShowColorPicker(true);
+        }
+      }}
+    >
+      <button
+        type="button"
         onClick={(e) => {
-          if (e.target === e.currentTarget) onClose();
+          e.stopPropagation();
+          setShowDateEditor(true);
         }}
+        className="w-full rounded px-1 py-1 text-[11px] font-mono hover:bg-[var(--color-bg-card-hover)]"
+        title={label}
+        style={{ color: filled ? color : "var(--color-text-muted)" }}
       >
-        <div className="w-full max-w-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 shadow-2xl">
-          <div className="mb-3 flex items-start justify-between">
-            <h3 className="font-display text-base font-semibold text-[var(--color-text-primary)]">{label}</h3>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-bg-card-hover)]"
-            >
-              <X size={16} />
-            </button>
-          </div>
-          <input
-            type="date"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
-            autoFocus
-          />
-          <div className="mt-4 flex items-center justify-between gap-2">
-            {currentValue ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => save.mutate(null)}
-                loading={save.isPending}
-              >
-                Limpiar
-              </Button>
-            ) : (
-              <span />
-            )}
-            <div className="flex gap-2">
-              <Button variant="secondary" size="sm" onClick={onClose}>Cancelar</Button>
-              <Button
-                size="sm"
-                onClick={() => save.mutate(value || null)}
-                loading={save.isPending}
-                disabled={!value}
-              >
-                Guardar
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+        {fmtShort(value)}
+      </button>
+
+      {filled ? (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowColorPicker(true);
+          }}
+          className="absolute right-0 top-0 hidden rounded bg-[var(--color-bg-app)] p-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] group-hover:block"
+          title="Cambiar color"
+          aria-label="Cambiar color"
+        >
+          <Palette size={10} />
+        </button>
+      ) : null}
+
+      {showDateEditor ? (
+        <MiniDateEditor
+          label={label}
+          currentValue={value}
+          onSave={(v) => saveDate.mutate(v)}
+          onClose={() => setShowDateEditor(false)}
+          loading={saveDate.isPending}
+        />
+      ) : null}
+
+      {showColorPicker ? (
+        <ColorPickerPopover
+          current={color}
+          onSelect={(hex) => saveColor.mutate(hex)}
+          onClose={() => setShowColorPicker(false)}
+        />
+      ) : null}
     </td>
   );
 }
 
-// ─── Kanban placeholder (se implementa en Fase C con dnd-kit) ───────────────
-
-function UteKanbanPlaceholder({
-  processes,
-  onCardClick,
+function MiniDateEditor({
+  label,
+  currentValue,
+  onSave,
+  onClose,
+  loading,
 }: {
-  processes: UteProcess[];
-  onCardClick: (id: string) => void;
+  label: string;
+  currentValue: string | null;
+  onSave: (v: string | null) => void;
+  onClose: () => void;
+  loading: boolean;
 }) {
-  const byStage = useMemo(() => {
-    const map = new Map<UteStage, UteProcess[]>();
-    for (const s of UTE_STAGE_ORDER) map.set(s, []);
-    for (const p of processes) map.get(p.currentStage)?.push(p);
-    return map;
-  }, [processes]);
+  const [value, setValue] = useState(toInputDate(currentValue));
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="w-full max-w-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 shadow-2xl">
+        <div className="mb-3 flex items-start justify-between">
+          <h3 className="font-display text-base font-semibold text-[var(--color-text-primary)]">{label}</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-bg-card-hover)]"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <input
+          type="date"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+          autoFocus
+        />
+        <div className="mt-4 flex items-center justify-between gap-2">
+          {currentValue ? (
+            <Button variant="ghost" size="sm" onClick={() => onSave(null)} loading={loading}>
+              Limpiar
+            </Button>
+          ) : (
+            <span />
+          )}
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={onClose}>Cancelar</Button>
+            <Button size="sm" onClick={() => onSave(value || null)} loading={loading} disabled={!value}>
+              Guardar
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ColorPickerPopover({
+  current,
+  onSelect,
+  onClose,
+}: {
+  current: string;
+  onSelect: (hex: string) => void;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    setTimeout(() => {
+      document.addEventListener("mousedown", onDocClick);
+      document.addEventListener("keydown", onKey);
+    }, 0);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
 
   return (
-    <div className="overflow-x-auto">
-      <div className="flex gap-3 pb-2" style={{ minWidth: "max-content" }}>
-        {UTE_STAGE_ORDER.map((stage) => {
-          const items = byStage.get(stage) ?? [];
-          const c = STAGE_COLORS[stage];
-          return (
-            <div
-              key={stage}
-              className="flex w-[260px] shrink-0 flex-col rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]"
-              style={{ borderTop: `3px solid ${c.text}` }}
-            >
-              <div className="border-b border-[var(--color-border)] px-3 py-2">
-                <div className="font-display text-sm font-semibold text-[var(--color-text-primary)]">
-                  {UTE_STAGE_LABEL[stage]}
-                </div>
-                <div className="text-[11px] text-[var(--color-text-muted)]">{items.length} trámites</div>
-              </div>
-              <div className="flex-1 space-y-2 p-2">
-                {items.length === 0 ? (
-                  <p className="py-6 text-center text-[11px] text-[var(--color-text-muted)]">Sin trámites</p>
-                ) : (
-                  items.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => onCardClick(p.id)}
-                      className="block w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] p-2.5 text-left transition-colors hover:bg-[var(--color-bg-card-hover)]"
-                    >
-                      <div className="mb-1 text-[12px] font-semibold text-[var(--color-text-primary)] line-clamp-1">
-                        {p.project.clientName}
-                      </div>
-                      <div className="mb-1.5">
-                        <span
-                          className="inline-block rounded px-1.5 py-0.5 text-[9px] font-semibold"
-                          style={{ background: STATUS_COLORS[p.currentStatus].bg, color: STATUS_COLORS[p.currentStatus].text }}
-                        >
-                          {UTE_STATUS_LABEL[p.currentStatus]}
-                        </span>
-                      </div>
-                      {p.notes ? (
-                        <p className="mb-1 line-clamp-1 text-[11px] text-[var(--color-text-secondary)]">{p.notes}</p>
-                      ) : null}
-                      <div className="flex items-center justify-between text-[10px] text-[var(--color-text-muted)]">
-                        <span>{p.totalDays} días</span>
-                        {p.caseNumber ? <span className="font-mono">#{p.caseNumber}</span> : null}
-                      </div>
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <p className="mt-3 text-[11px] text-[var(--color-text-muted)]">
-        Drag & drop entre columnas disponible en la próxima versión.
-      </p>
+    <div
+      ref={ref}
+      role="dialog"
+      aria-label="Elegir color"
+      className="absolute right-0 top-full z-50 mt-1 flex items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-1.5 shadow-xl"
+    >
+      {UTE_COLOR_PALETTE.map((hex) => (
+        <button
+          key={hex}
+          type="button"
+          onClick={() => onSelect(hex)}
+          className={`h-5 w-5 rounded-full border-2 transition-all ${
+            current === hex ? "border-white scale-110" : "border-transparent hover:border-white/50"
+          }`}
+          style={{ backgroundColor: hex }}
+          title={hex}
+          aria-label={`Color ${hex}`}
+        />
+      ))}
     </div>
   );
 }
@@ -620,23 +851,6 @@ function UteDetailDrawer({
   const qc = useQueryClient();
   const currentUser = useAuthStore((s) => s.user);
   const isAdmin = currentUser?.role === "ADMIN";
-  const [notesValue, setNotesValue] = useState(process.notes ?? "");
-  const [caseValue, setCaseValue] = useState(process.caseNumber ?? "");
-
-  useEffect(() => setNotesValue(process.notes ?? ""), [process.notes]);
-  useEffect(() => setCaseValue(process.caseNumber ?? ""), [process.caseNumber]);
-
-  const patch = useMutation({
-    mutationFn: (body: any) => patchUteProcess(process.id, body),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["ute-processes"] });
-      toast.success("Guardado");
-    },
-    onError: (e: any) => {
-      const msg = e?.response?.data?.error?.message ?? "No se pudo guardar";
-      toast.error(msg);
-    },
-  });
 
   const del = useMutation({
     mutationFn: () => deleteUteProcess(process.id),
@@ -648,14 +862,6 @@ function UteDetailDrawer({
     onError: () => toast.error("No se pudo eliminar"),
   });
 
-  function saveDateField(key: UteActionKey, value: string) {
-    patch.mutate({ [key]: value || null });
-  }
-
-  const completedPct = process.totalDays > 0 ? Math.round((process.ourTimeDays / process.totalDays) * 100) : 0;
-  const utePct = process.totalDays > 0 ? 100 - completedPct : 0;
-  const invariantOk = process.totalDays === process.ourTimeDays + process.uteTimeDays;
-
   return (
     <div className="fixed inset-0 z-40 flex">
       <div className="flex-1 bg-black/50" onClick={onClose} />
@@ -664,7 +870,6 @@ function UteDetailDrawer({
         role="dialog"
         aria-label="Detalle del trámite UTE"
       >
-        {/* Header */}
         <div className="sticky top-0 z-10 border-b border-[var(--color-border)] bg-[var(--color-bg-app)] p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -681,13 +886,19 @@ function UteDetailDrawer({
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <span
                   className="rounded px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider"
-                  style={{ background: STAGE_COLORS[process.currentStage].bg, color: STAGE_COLORS[process.currentStage].text }}
+                  style={{
+                    background: STAGE_BADGE_COLORS[process.currentStage].bg,
+                    color: STAGE_BADGE_COLORS[process.currentStage].text,
+                  }}
                 >
                   {UTE_STAGE_LABEL[process.currentStage]}
                 </span>
                 <span
                   className="rounded px-2 py-0.5 text-[10px] font-semibold"
-                  style={{ background: STATUS_COLORS[process.currentStatus].bg, color: STATUS_COLORS[process.currentStatus].text }}
+                  style={{
+                    background: STATUS_BADGE_COLORS[process.currentStatus].bg,
+                    color: STATUS_BADGE_COLORS[process.currentStatus].text,
+                  }}
                 >
                   {UTE_STATUS_LABEL[process.currentStatus]}
                 </span>
@@ -704,149 +915,8 @@ function UteDetailDrawer({
           </div>
         </div>
 
-        {/* Pipeline visual */}
-        <div className="border-b border-[var(--color-border)] px-5 py-4">
-          <div className="flex items-center gap-0.5">
-            {UTE_STAGE_ORDER.map((stage, idx) => {
-              const pos = UTE_STAGE_ORDER.indexOf(process.currentStage);
-              const reached = idx <= pos && process.currentStage !== "RELEVAR";
-              const isCurrent = stage === process.currentStage;
-              return (
-                <div key={stage} className="flex-1">
-                  <div
-                    className="h-1.5 rounded-full"
-                    style={{
-                      background: isCurrent
-                        ? "var(--color-accent)"
-                        : reached
-                          ? "var(--color-state-done-text)"
-                          : "var(--color-border)",
-                    }}
-                  />
-                  <div className="mt-1 text-center text-[9px] uppercase tracking-wide text-[var(--color-text-muted)]">
-                    {stage === "CONSULTA" ? "1" : stage === "SOLICITUD" ? "2" : stage === "DOCS_1" ? "3" : stage === "DOCS_2" ? "4" : stage === "RELEVAR" ? "5" : stage === "ENSAYOS" ? "6" : "7"}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <UteProcessDetail process={process} />
 
-        {/* Fechas */}
-        <div className="border-b border-[var(--color-border)] px-5 py-4">
-          <h3 className="mb-3 font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
-            Fechas de acciones
-          </h3>
-          <div className="space-y-2">
-            {UTE_ACTIONS_ORDERED.map((a) => {
-              const Icon = a.side === "ours" ? Send : Inbox;
-              const value = process[a.key];
-              return (
-                <div
-                  key={a.key}
-                  className="flex items-center gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2"
-                >
-                  <Icon
-                    size={14}
-                    className={a.side === "ours" ? "text-[#60a5fa]" : "text-[#34d399]"}
-                    aria-label={a.side === "ours" ? "Nuestro" : "De UTE"}
-                  />
-                  <label className="flex-1 text-xs text-[var(--color-text-secondary)]">{a.label}</label>
-                  <input
-                    type="date"
-                    value={toInputDate(value)}
-                    onBlur={(e) => {
-                      const next = e.target.value;
-                      if (next !== toInputDate(value)) saveDateField(a.key, next);
-                    }}
-                    onChange={(e) => {
-                      // controlled-ish: saveDateField en blur evita spam
-                      e.target.value;
-                    }}
-                    defaultValue={toInputDate(value)}
-                    className="rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1 text-xs text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
-                  />
-                  {value ? (
-                    <button
-                      type="button"
-                      onClick={() => saveDateField(a.key, "")}
-                      className="rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-bg-card-hover)] hover:text-red-400"
-                      title="Limpiar fecha"
-                    >
-                      <X size={12} />
-                    </button>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Notas */}
-        <div className="border-b border-[var(--color-border)] px-5 py-4">
-          <h3 className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
-            Notas
-          </h3>
-          <textarea
-            value={notesValue}
-            onChange={(e) => setNotesValue(e.target.value)}
-            onBlur={() => {
-              if (notesValue !== (process.notes ?? "")) patch.mutate({ notes: notesValue || null });
-            }}
-            rows={3}
-            className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
-            placeholder="Agregá una nota…"
-          />
-        </div>
-
-        {/* Caso */}
-        <div className="border-b border-[var(--color-border)] px-5 py-4">
-          <h3 className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
-            Datos del caso
-          </h3>
-          <label className="block text-xs text-[var(--color-text-secondary)]">
-            Número de caso UTE
-            <input
-              type="text"
-              value={caseValue}
-              onChange={(e) => setCaseValue(e.target.value)}
-              onBlur={() => {
-                if (caseValue !== (process.caseNumber ?? "")) patch.mutate({ caseNumber: caseValue.trim() || null });
-              }}
-              className="mt-1 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
-              placeholder="UTE-2026-…"
-            />
-          </label>
-          <p className="mt-2 text-[11px] text-[var(--color-text-muted)]">
-            Teléfono: {process.project.notificationPhone ?? "—"}
-          </p>
-        </div>
-
-        {/* Métricas */}
-        <div className="border-b border-[var(--color-border)] px-5 py-4">
-          <h3 className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
-            Métricas del trámite
-          </h3>
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3">
-              <div className="font-display text-xl font-bold text-[var(--color-text-primary)]">{process.totalDays}</div>
-              <div className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Total (días)</div>
-            </div>
-            <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3">
-              <div className="font-display text-xl font-bold" style={{ color: "#f87171" }}>{process.ourTimeDays}</div>
-              <div className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Nuestro ({completedPct}%)</div>
-            </div>
-            <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3">
-              <div className="font-display text-xl font-bold" style={{ color: "#60a5fa" }}>{process.uteTimeDays}</div>
-              <div className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">UTE ({utePct}%)</div>
-            </div>
-          </div>
-          <p className="mt-2 text-[11px] text-[var(--color-text-muted)]">
-            {invariantOk ? "✓" : "⚠"} Verificación: nuestro + UTE = total
-          </p>
-        </div>
-
-        {/* Footer */}
         <div className="flex items-center justify-between gap-2 px-5 py-4">
           {isAdmin ? (
             <Button
@@ -860,7 +930,9 @@ function UteDetailDrawer({
               <Trash2 size={14} />
               Eliminar
             </Button>
-          ) : <span />}
+          ) : (
+            <span />
+          )}
           <Button variant="secondary" size="sm" onClick={onClose}>Cerrar</Button>
         </div>
       </aside>
@@ -910,8 +982,10 @@ function NewUteModal({
       toast.success("Trámite creado");
       onCreated(p);
     },
-    onError: (e: any) => {
-      const msg = e?.response?.data?.error?.message ?? "No se pudo crear el trámite";
+    onError: (e: unknown) => {
+      const msg =
+        (e as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error
+          ?.message ?? "No se pudo crear el trámite";
       toast.error(msg);
     },
   });
@@ -986,6 +1060,7 @@ function NewUteModal({
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
+            maxLength={5000}
             className="mt-1 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
           />
         </label>

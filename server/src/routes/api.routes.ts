@@ -71,9 +71,12 @@ import {
   SENT_APPROVED_PAIRS,
   UTE_ACTION_KEYS,
   UTE_PROCESS_INCLUDE,
+  calculateTimes,
   deriveStage,
   serializeUteProcess,
   validateCoherence,
+  validateDateColors,
+  type DateColorsMap,
   type UteActionKey,
 } from "../services/uteProcess.service.js";
 import {
@@ -1242,12 +1245,22 @@ export async function registerApiRoutes(app: FastifyInstance) {
             segments: { orderBy: { startDate: "asc" } },
           },
         },
+        uteProcesses: {
+          where: { deletedAt: null },
+          include: UTE_PROCESS_INCLUDE,
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
       },
     });
 
     if (!project) {
       throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
     }
+
+    const uteProcess = project.uteProcesses[0]
+      ? serializeUteProcess(project.uteProcesses[0])
+      : null;
 
     const metrics = calculateProjectMetrics(project);
 
@@ -1297,6 +1310,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       })),
       recentTasks: project.tasks.map(serializeTask),
       recentFiles: project.files.map(serializeFile),
+      uteProcess,
     };
   });
 
@@ -6799,21 +6813,38 @@ export async function registerApiRoutes(app: FastifyInstance) {
     z.null(),
   ]);
 
+  // caseNumber y notes son texto libre sin validación de formato. Trim para
+  // evitar whitespace-only strings; null explícito limpia el campo.
+  const uteCaseNumberSchema = z
+    .string()
+    .max(200)
+    .transform((v) => v.trim())
+    .nullable()
+    .optional();
+  const uteNotesSchema = z
+    .string()
+    .max(5000)
+    .transform((v) => v.trim())
+    .nullable()
+    .optional();
+
   const uteProcessCreateSchema = z
     .object({
       projectId: z.string().min(1),
-      caseNumber: z.string().trim().min(1).nullable().optional(),
-      notes: z.string().trim().min(1).nullable().optional(),
+      caseNumber: uteCaseNumberSchema,
+      notes: uteNotesSchema,
       consultaSentAt: uteDateSchema.optional(),
     })
     .strict();
 
   const uteProcessPatchSchema = z
     .object({
-      caseNumber: z.string().trim().nullable().optional(),
-      notes: z.string().nullable().optional(),
+      caseNumber: uteCaseNumberSchema,
+      notes: uteNotesSchema,
       currentStage: z.nativeEnum(UteStage).optional(),
       currentStatus: z.nativeEnum(UteStatus).optional(),
+      stageManuallySet: z.boolean().optional(),
+      dateColors: z.record(z.string()).nullable().optional(),
       consultaSentAt: uteDateSchema.optional(),
       caseOpenedAt: uteDateSchema.optional(),
       consultaApprovedAt: uteDateSchema.optional(),
@@ -6841,7 +6872,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
         stage: z.nativeEnum(UteStage).optional(),
         status: z.nativeEnum(UteStatus).optional(),
         search: z.string().trim().min(1).optional(),
-        sortBy: z.enum(["client", "duration", "currentStage", "updatedAt"]).optional(),
+        sortBy: z
+          .enum(["client", "duration", "currentStage", "currentStatus", "createdAt", "updatedAt"])
+          .optional(),
         sortOrder: z.enum(["asc", "desc"]).optional(),
       })
       .parse(request.query);
@@ -6866,6 +6899,25 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const sortBy = query.sortBy ?? "updatedAt";
     const order = query.sortOrder ?? "desc";
     const dir = order === "asc" ? 1 : -1;
+    // Para ordenar por etapa y estado respetamos el orden del flow / severidad,
+    // no el alfabético del enum (DOCS_2 no debería ir entre DOCS_1 y ENSAYOS
+    // simplemente porque empieza igual).
+    const STAGE_RANK: Record<UteStage, number> = {
+      CONSULTA: 1,
+      SOLICITUD: 2,
+      DOCS_1: 3,
+      ENSAYOS: 4,
+      DOCS_2: 5,
+      FINALIZADO: 6,
+      RELEVAR: 99,
+    };
+    const STATUS_RANK: Record<UteStatus, number> = {
+      PENDIENTE: 1,
+      ESPERANDO: 2,
+      EN_PROCESO: 3,
+      CERRADO: 4,
+    };
+
     serialized.sort((a, b) => {
       switch (sortBy) {
         case "client":
@@ -6873,7 +6925,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
         case "duration":
           return (a.totalDays - b.totalDays) * dir;
         case "currentStage":
-          return a.currentStage.localeCompare(b.currentStage) * dir;
+          return (STAGE_RANK[a.currentStage] - STAGE_RANK[b.currentStage]) * dir;
+        case "currentStatus":
+          return (STATUS_RANK[a.currentStatus] - STATUS_RANK[b.currentStatus]) * dir;
+        case "createdAt":
+          return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * dir;
         case "updatedAt":
         default:
           return (new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()) * dir;
@@ -6958,14 +7014,20 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const mergedRow = { ...existing, ...dateUpdates };
     const stageFromDates = deriveStage(mergedRow);
 
-    // RELEVAR y cambios explícitos de stage son manuales. Sólo re-derivamos si
-    // el caller no mandó stage explícito y el stage actual no es RELEVAR.
-    const nextStage =
-      body.currentStage !== undefined
-        ? body.currentStage
-        : existing.currentStage === UteStage.RELEVAR
-          ? existing.currentStage
-          : stageFromDates;
+    // Un stage explícito lo marca como manual. Si ya estaba manual (flag),
+    // no se re-deriva salvo que el caller mande stageManuallySet=false.
+    let nextStageManuallySet = existing.stageManuallySet;
+    let nextStage = existing.currentStage;
+    if (body.currentStage !== undefined) {
+      nextStage = body.currentStage;
+      nextStageManuallySet = true;
+    } else if (body.stageManuallySet === false) {
+      nextStage = stageFromDates;
+      nextStageManuallySet = false;
+    } else if (!existing.stageManuallySet) {
+      nextStage = stageFromDates;
+    }
+    if (body.stageManuallySet === true) nextStageManuallySet = true;
 
     // Si marca finalizedAt y no pasó status → pasa a CERRADO automático.
     const nextStatus =
@@ -6975,14 +7037,35 @@ export async function registerApiRoutes(app: FastifyInstance) {
           ? UteStatus.CERRADO
           : existing.currentStatus;
 
+    // dateColors: merge del existente con el parche (null por clave limpia
+    // esa celda; null entero resetea todo).
+    let dateColorsData: Prisma.InputJsonValue | null | undefined = undefined;
+    if (body.dateColors !== undefined) {
+      if (body.dateColors === null) {
+        dateColorsData = Prisma.JsonNull as unknown as null;
+      } else {
+        const existingColors = (existing.dateColors as DateColorsMap | null) ?? {};
+        const merged: Record<string, string> = { ...existingColors };
+        for (const [k, v] of Object.entries(body.dateColors)) {
+          if (v === null || v === undefined) delete merged[k];
+          else merged[k] = v;
+        }
+        const validation = validateDateColors(merged);
+        if (!validation.ok) throw badRequest("UTE_COLOR_INVALID", validation.message);
+        dateColorsData = validation.value as Prisma.InputJsonValue;
+      }
+    }
+
     const updated = await prisma.uteProcess.update({
       where: { id },
       data: {
-        ...(body.caseNumber !== undefined ? { caseNumber: body.caseNumber } : {}),
-        ...(body.notes !== undefined ? { notes: body.notes } : {}),
+        ...(body.caseNumber !== undefined ? { caseNumber: body.caseNumber || null } : {}),
+        ...(body.notes !== undefined ? { notes: body.notes || null } : {}),
         ...dateUpdates,
         currentStage: nextStage,
         currentStatus: nextStatus,
+        stageManuallySet: nextStageManuallySet,
+        ...(dateColorsData !== undefined ? { dateColors: dateColorsData as Prisma.InputJsonValue } : {}),
       },
       include: UTE_PROCESS_INCLUDE,
     });
@@ -6996,6 +7079,142 @@ export async function registerApiRoutes(app: FastifyInstance) {
     if (!existing) throw notFound("UTE_PROCESS_NOT_FOUND", "Trámite UTE no encontrado");
     await prisma.uteProcess.update({ where: { id }, data: { deletedAt: new Date() } });
     return { success: true };
+  });
+
+  // ─── Métricas UTE ───────────────────────────────────────────────────────────
+
+  app.get("/metrics/ute", { preHandler: authorize(Module.TRAMITES_UTE, Action.VIEW) }, async () => {
+    const now = new Date();
+    const yearStart = new Date(now.getFullYear(), 0, 1);
+
+    const processes = await prisma.uteProcess.findMany({
+      where: { deletedAt: null, project: { deletedAt: null } },
+      include: {
+        project: {
+          select: { id: true, code: true, clientName: true, createdAt: true },
+        },
+      },
+    });
+
+    const serialized = processes.map((p) => ({
+      id: p.id,
+      projectId: p.projectId,
+      project: p.project,
+      currentStage: p.currentStage,
+      currentStatus: p.currentStatus,
+      ...calculateTimes(p, now),
+      finalizedAt: p.finalizedAt,
+      consultaSentAt: p.consultaSentAt,
+      // Timing por etapa (days between pairs, si ambas fechas existen)
+      stagePairs: {
+        consulta:
+          p.consultaSentAt && p.consultaApprovedAt
+            ? diffInDays(p.consultaSentAt, p.consultaApprovedAt)
+            : null,
+        solicitud:
+          p.solicitudSentAt && p.proyectoApprovedAt
+            ? diffInDays(p.solicitudSentAt, p.proyectoApprovedAt)
+            : null,
+        docs1:
+          p.docs1SentAt && p.docs1ApprovedAt ? diffInDays(p.docs1SentAt, p.docs1ApprovedAt) : null,
+        ensayos:
+          p.ensayosSentAt && p.ensayosApprovedAt
+            ? diffInDays(p.ensayosSentAt, p.ensayosApprovedAt)
+            : null,
+        finalizacion:
+          p.docs2SentAt && p.finalizedAt ? diffInDays(p.docs2SentAt, p.finalizedAt) : null,
+      },
+      createdProjectToConsultaDays:
+        p.consultaSentAt && p.project.createdAt
+          ? diffInDays(p.project.createdAt, p.consultaSentAt)
+          : null,
+    }));
+
+    const active = serialized.filter((p) => p.currentStatus !== UteStatus.CERRADO);
+    const finalizedThisYear = serialized.filter(
+      (p) => p.finalizedAt && p.finalizedAt >= yearStart,
+    );
+
+    function avg(nums: number[]): number | null {
+      if (nums.length === 0) return null;
+      return Math.round(nums.reduce((s, n) => s + n, 0) / nums.length);
+    }
+
+    const avgTotal = avg(finalizedThisYear.map((p) => p.totalDays));
+    const avgOur = avg(finalizedThisYear.map((p) => p.ourTimeDays));
+    const avgUte = avg(finalizedThisYear.map((p) => p.uteTimeDays));
+
+    const stageLabels: Record<keyof typeof serialized[0]["stagePairs"], string> = {
+      consulta: "Consulta (enviada → aprobada)",
+      solicitud: "Solicitud (enviada → proyecto aprobado)",
+      docs1: "Docs 1 (enviados → aprobados)",
+      ensayos: "Ensayos (enviados → aprobados)",
+      finalizacion: "Finalización (docs 2 → finalizado)",
+    };
+
+    const byStage = (Object.keys(stageLabels) as Array<keyof typeof stageLabels>).map((key) => {
+      const values = serialized
+        .map((p) => p.stagePairs[key])
+        .filter((v): v is number => v !== null && v >= 0);
+      return {
+        key,
+        label: stageLabels[key],
+        avg: avg(values),
+        min: values.length > 0 ? Math.min(...values) : null,
+        max: values.length > 0 ? Math.max(...values) : null,
+        count: values.length,
+      };
+    });
+
+    const totalOurAccum = serialized.reduce((s, p) => s + p.ourTimeDays, 0);
+    const totalUteAccum = serialized.reduce((s, p) => s + p.uteTimeDays, 0);
+    const grand = totalOurAccum + totalUteAccum;
+
+    const topOurDelay = [...active]
+      .sort((a, b) => b.ourTimeDays - a.ourTimeDays)
+      .slice(0, 5)
+      .map((p) => ({
+        id: p.id,
+        projectCode: p.project.code,
+        clientName: p.project.clientName,
+        days: p.ourTimeDays,
+        currentStage: p.currentStage,
+      }));
+    const topUteDelay = [...active]
+      .sort((a, b) => b.uteTimeDays - a.uteTimeDays)
+      .slice(0, 5)
+      .map((p) => ({
+        id: p.id,
+        projectCode: p.project.code,
+        clientName: p.project.clientName,
+        days: p.uteTimeDays,
+        currentStage: p.currentStage,
+      }));
+
+    const timeToStartValues = serialized
+      .map((p) => p.createdProjectToConsultaDays)
+      .filter((v): v is number => v !== null && v >= 0);
+    const avgTimeToStart = avg(timeToStartValues);
+
+    return {
+      kpis: {
+        activeCount: active.length,
+        finalizedThisYearCount: finalizedThisYear.length,
+        avgTotalDays: avgTotal,
+        avgOurDays: avgOur,
+        avgUteDays: avgUte,
+        avgTimeToStartDays: avgTimeToStart,
+      },
+      byStage,
+      distribution: {
+        ourPercent: grand > 0 ? Math.round((totalOurAccum / grand) * 100) : 0,
+        utePercent: grand > 0 ? Math.round((totalUteAccum / grand) * 100) : 0,
+        ourDays: totalOurAccum,
+        uteDays: totalUteAccum,
+      },
+      topOurDelay,
+      topUteDelay,
+    };
   });
 
   void SENT_APPROVED_PAIRS;

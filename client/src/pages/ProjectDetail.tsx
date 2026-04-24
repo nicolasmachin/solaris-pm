@@ -22,6 +22,7 @@ import { Spinner } from "../components/ui/Spinner";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
 import { CommentThread } from "../components/comments/CommentThread";
+import { UteProjectTab } from "../components/ute/UteProjectTab";
 import { getProjectGantt } from "../api/metrics.api";
 import { installationCheck } from "../api/calendar.api";
 import { usePermission } from "../hooks/usePermission";
@@ -606,9 +607,11 @@ export function ProjectDetail() {
   const [showEditProject, setShowEditProject] = useState(false);
   const [editingSolarSystemId, setEditingSolarSystemId] = useState<string | null>(null);
   const [showCreateSolarSystem, setShowCreateSolarSystem] = useState(false);
-  const [bottomTab, setBottomTab] = useState<"activity" | "comments" | "timeline" | "materiales">("activity");
+  const [bottomTab, setBottomTab] = useState<"activity" | "comments" | "timeline" | "materiales" | "ute">("activity");
   const canViewMetrics = usePermission("METRICAS", "VIEW");
   const canViewStock = usePermission("STOCK", "VIEW");
+  const canViewUte = usePermission("TRAMITES_UTE", "VIEW");
+  const canCreateUte = usePermission("TRAMITES_UTE", "CREATE");
 
   const {
     data: project,
@@ -796,6 +799,15 @@ export function ProjectDetail() {
               Materiales
             </button>
           ) : null}
+          {canViewUte ? (
+            <button
+              className={`rounded-full px-3 py-1 text-xs ${bottomTab === "ute" ? "bg-[var(--color-accent)] text-black" : "text-[var(--color-text-secondary)]"}`}
+              onClick={() => setBottomTab("ute")}
+              type="button"
+            >
+              UTE
+            </button>
+          ) : null}
         </div>
 
         {bottomTab === "activity" ? (
@@ -827,6 +839,13 @@ export function ProjectDetail() {
           )
         ) : bottomTab === "materiales" ? (
           <MaterialesTab projectId={project.id} />
+        ) : bottomTab === "ute" ? (
+          <UteProjectTab
+            projectId={project.id}
+            uteProcess={project.uteProcess ?? null}
+            canCreate={canCreateUte}
+            onChanged={invalidate}
+          />
         ) : (
           <CommentThread projectId={project.id} level="project" context={commentContext} />
         )}

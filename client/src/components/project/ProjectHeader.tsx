@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { Mail, MapPin, Phone } from "lucide-react";
+import { FileCheck, Mail, MapPin, Phone } from "lucide-react";
 import type { Project } from "../../types/api.types";
+import { UTE_STAGE_LABEL, UTE_STATUS_LABEL } from "../../api/uteProcess.api";
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
   ACTIVE:      { bg: "var(--color-state-active-bg)", text: "var(--color-state-active-text)", label: "EN EJECUCIÓN" },
@@ -107,6 +108,23 @@ export function ProjectHeader({ project, onEdit }: ProjectHeaderProps) {
             })}
           </p>
         )}
+        {project.uteProcess ? (
+          <div className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] text-[var(--color-text-secondary)]">
+            <FileCheck size={12} className="shrink-0" />
+            <span>
+              <span className="text-[var(--color-text-muted)]">UTE:</span>{" "}
+              {UTE_STAGE_LABEL[project.uteProcess.currentStage]} ·{" "}
+              {UTE_STATUS_LABEL[project.uteProcess.currentStatus]}
+            </span>
+            <button
+              type="button"
+              onClick={() => navigate(`/tramites-ute?highlight=${project.uteProcess!.id}`)}
+              className="text-[var(--color-accent)] hover:underline"
+            >
+              Ver →
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <span

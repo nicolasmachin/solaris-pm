@@ -293,6 +293,8 @@ export interface Project {
       notes: string | null;
     }>;
   } | null;
+  /** Trámite UTE asociado al proyecto (activo, no eliminado). */
+  uteProcess?: import("../api/uteProcess.api").UteProcess | null;
 }
 
 // ─── Substage patch response ──────────────────────────────────────────────────

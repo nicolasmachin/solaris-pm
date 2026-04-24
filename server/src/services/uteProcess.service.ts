@@ -162,8 +162,10 @@ export type SerializedUteProcess = {
   };
   currentStage: UteStage;
   currentStatus: UteStatus;
+  stageManuallySet: boolean;
   caseNumber: string | null;
   notes: string | null;
+  dateColors: DateColorsMap;
   consultaSentAt: string | null;
   caseOpenedAt: string | null;
   consultaApprovedAt: string | null;
@@ -186,6 +188,9 @@ export type SerializedUteProcess = {
 
 export function serializeUteProcess(row: UteProcessRow, now: Date = new Date()): SerializedUteProcess {
   const times = calculateTimes(row, now);
+  const colorsRaw = row.dateColors as unknown;
+  const colorsValidated = validateDateColors(colorsRaw);
+  const dateColors: DateColorsMap = colorsValidated.ok ? (colorsValidated.value ?? {}) : {};
   return {
     id: row.id,
     projectId: row.projectId,
@@ -199,8 +204,10 @@ export function serializeUteProcess(row: UteProcessRow, now: Date = new Date()):
     },
     currentStage: row.currentStage,
     currentStatus: row.currentStatus,
+    stageManuallySet: row.stageManuallySet,
     caseNumber: row.caseNumber,
     notes: row.notes,
+    dateColors,
     consultaSentAt: serializeDate(row.consultaSentAt),
     caseOpenedAt: serializeDate(row.caseOpenedAt),
     consultaApprovedAt: serializeDate(row.consultaApprovedAt),
@@ -259,4 +266,44 @@ export function validateCoherence(
     }
   }
   return { ok: true };
+}
+
+// ─── Paleta global de colores para celdas de fecha ──────────────────────────
+
+export const UTE_COLOR_PALETTE = [
+  "#5DCAA5", // verde (default)
+  "#EAB308", // amarillo
+  "#EF5B5B", // rojo
+  "#378ADD", // azul
+  "#6B7790", // gris
+  "#A78BFA", // violeta
+] as const;
+
+export type UteColorHex = (typeof UTE_COLOR_PALETTE)[number];
+
+export const UTE_DEFAULT_COLOR: UteColorHex = "#5DCAA5";
+
+const COLOR_SET = new Set<string>(UTE_COLOR_PALETTE);
+const ACTION_KEY_SET = new Set<string>(UTE_ACTION_KEYS);
+
+export type DateColorsMap = Partial<Record<UteActionKey, UteColorHex>>;
+
+export function validateDateColors(
+  value: unknown,
+): { ok: true; value: DateColorsMap | null } | { ok: false; message: string } {
+  if (value === null) return { ok: true, value: null };
+  if (typeof value !== "object" || Array.isArray(value)) {
+    return { ok: false, message: "dateColors debe ser un objeto plano" };
+  }
+  const result: DateColorsMap = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if (!ACTION_KEY_SET.has(k)) {
+      return { ok: false, message: `dateColors: clave "${k}" no es una acción válida` };
+    }
+    if (typeof v !== "string" || !COLOR_SET.has(v)) {
+      return { ok: false, message: `dateColors: color inválido para "${k}" (no está en la paleta)` };
+    }
+    result[k as UteActionKey] = v as UteColorHex;
+  }
+  return { ok: true, value: result };
 }
