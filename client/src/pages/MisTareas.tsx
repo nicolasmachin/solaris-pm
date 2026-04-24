@@ -72,7 +72,7 @@ function readSortParam(sp: URLSearchParams): SortOption {
 
 function readScopeParam(sp: URLSearchParams): ScopeOption {
   const v = sp.get("scope");
-  return v === "mine" ? "mine" : "all";
+  return v === "all" ? "all" : "mine";
 }
 
 // ─── Constantes de urgencia y colores ───────────────────────────────────────
@@ -143,7 +143,7 @@ export function MisTareas() {
     const next = new URLSearchParams();
     if (viewUserId && viewUserId !== currentUser?.id) next.set("userId", viewUserId);
     if (sort !== "urgency") next.set("sort", sort);
-    if (scope !== "all") next.set("scope", scope);
+    if (scope !== "mine") next.set("scope", scope);
     const currentStr = searchParams.toString();
     const nextStr = next.toString();
     if (currentStr !== nextStr) {

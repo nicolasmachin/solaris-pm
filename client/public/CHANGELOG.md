@@ -4,6 +4,10 @@
 
 ### 24 de abril de 2026
 
+#### "Mis tareas" abre filtrada por las tuyas
+- Al entrar a **Mis tareas**, la vista por defecto ahora es **"Solo mías"** (antes mostraba "Todas"). Así se ve de una el trabajo pendiente propio sin tener que filtrar cada vez.
+- El filtro "Todas" sigue disponible en la barra superior para ver las etapas con pendientes del equipo. El link directo con `?scope=all` también funciona y se preserva al navegar.
+
 #### Pre-llenado del responsable en subetapas nuevas
 - Al crear una subetapa nueva dentro de una etapa, el campo **"Responsable"** ya viene pre-llenado con el responsable de la etapa padre (si la etapa tiene uno). Si no tiene, queda en "Sin asignar".
 - Si cambiás el responsable en el form antes de guardar, se respeta tu elección. El pre-llenado es sólo un default.
