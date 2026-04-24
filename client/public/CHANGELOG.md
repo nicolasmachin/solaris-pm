@@ -1,6 +1,58 @@
 # Novedades
 
+## v1.3
+
+### 24 de abril de 2026
+
+#### Pre-llenado del responsable en subetapas nuevas
+- Al crear una subetapa nueva dentro de una etapa, el campo **"Responsable"** ya viene pre-llenado con el responsable de la etapa padre (si la etapa tiene uno). Si no tiene, queda en "Sin asignar".
+- Si cambiás el responsable en el form antes de guardar, se respeta tu elección. El pre-llenado es sólo un default.
+
+#### Propagar responsable de la etapa a las subetapas sin asignar
+- Al editar el **responsable de una etapa** y guardar, si la etapa tiene subetapas **sin responsable asignado**, aparece un modal: *"Esta etapa tiene N subetapas sin responsable. ¿Querés asignar el nuevo responsable también a esas subetapas?"*.
+- Dos opciones:
+  - **Solo cambiar la etapa**: cambia sólo el responsable de la etapa; las subetapas quedan como estaban.
+  - **Sí, propagar**: asigna el nuevo responsable a todas las subetapas sin asignar. Las subetapas con otro responsable **nunca se tocan**.
+- Si dejás el responsable de la etapa en "Sin asignar", no se propaga nada.
+- Si la etapa no tiene subetapas sin asignar, el modal no aparece y se guarda directo.
+
+#### Limpieza de datos históricos
+- Se corrió un **script único** que propagó el responsable de cada etapa existente a sus subetapas que estaban sin asignar. Las que ya tenían otro responsable asignado no se modificaron.
+- Este paso se hace una sola vez al deploy y es idempotente (correrlo de nuevo no cambia nada).
+
+#### Deprecaciones (no afecta la UI)
+- Los campos viejos de **responsable como texto libre** (`responsible` en subetapas/tareas, `responsibleName` en etapas) quedan marcados como deprecados. Se mantienen en la base de datos como referencia histórica pero ya no se editan desde la interfaz.
+- El endpoint `/api/users/active` queda abierto a cualquier usuario autenticado (sólo devuelve datos no sensibles: id, nombre, email, rol, avatar), para que el selector de usuarios funcione desde cualquier rol.
+
 ## v1.2
+
+### 23 de abril de 2026
+
+#### Favicon con el logo de VOLTIA
+- Ahora la pestaña del navegador muestra el **logo del sol azul** de VOLTIA PM (antes aparecía el logo genérico de Vite).
+- También aplica al ícono que queda si guardás la app en la pantalla de inicio del celular.
+
+#### Filtros y ordenamiento en la lista de proyectos
+- **Sidebar "Clientes activos"**: nuevo selector **"Etapa en proceso"** con las 5 etapas del flujo (Onboarding, Ingeniería, Operaciones, Habilitación UTE, Postventa) + opción "Todas las etapas". Filtra por proyectos cuya etapa esté actualmente en curso.
+- Se ampliaron las opciones de **orden** del sidebar a 8:
+  - Más recientes · Más antiguos
+  - Próxima instalación · Última instalación
+  - Más avanzados · Menos avanzados
+  - Alfabético A-Z · Alfabético Z-A
+- Cada proyecto del sidebar muestra ahora:
+  - La **etapa en curso** abajo del nombre (ej. "Ingeniería en curso").
+  - Una **barra de progreso** con color progresivo: gris (0–33%), azul (33–66%), verde (66–99%), verde oscuro (100%).
+- Los filtros quedan **persistentes**: al volver a abrir la app se restauran los últimos valores.
+
+#### Página de proyectos: filtros y columnas nuevas
+- Nuevo filtro **"Etapa en proceso"** arriba de la tabla con las mismas opciones que el sidebar.
+- Nueva columna **"Etapa actual"** que muestra la etapa en curso (si hay varias en paralelo, la principal + "+N en paralelo").
+- Nueva columna **"Instalación"** con la fecha de inicio de la instalación agendada (o "Sin agendar" si no tiene).
+- La columna **"Avance"** ahora usa una escala que excluye Postventa (Habilitación UTE completada = 100%) y tiene la misma barra con colores progresivos.
+- Los nuevos ordenamientos por click en el encabezado se suman a los ya existentes.
+- Los filtros también persisten en el navegador.
+
+
 
 ### 23 de abril de 2026
 

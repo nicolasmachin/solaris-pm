@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import type { Stage, Substage, SubstageStatus, FileAttachment, ChecklistItem } from "../../types/api.types";
-import { patchSubstage, patchStage, createSubstage, deleteSubstage, completeSubstage, completeAllSubstages } from "../../api/stages.api";
+import { patchSubstage, patchStage, createSubstage, deleteSubstage, completeSubstage, completeAllSubstages, getStageUnassignedSubstagesCount } from "../../api/stages.api";
 import { useAuthStore } from "../../store/auth.store";
 import { apiClient } from "../../api/axios";
 import { uploadFile, getDownloadUrl } from "../../api/files.api";
@@ -572,12 +572,15 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
   });
 
   // Save stage dates (sólo fechas reales — admin — + responsable)
+  const [confirmPropagate, setConfirmPropagate] = useState<{ count: number } | null>(null);
+  const [checkingPropagation, setCheckingPropagation] = useState(false);
   const datesMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: ({ propagate }: { propagate: boolean }) => {
       const body: {
         actualStartDate?: string | null;
         actualEndDate?: string | null;
         responsibleUserId?: string | null;
+        propagateResponsible?: boolean;
       } = {};
       const currentActualStart = stage.actualStartDate?.slice(0, 10) ?? "";
       const currentActualEnd = stage.actualEndDate?.slice(0, 10) ?? "";
@@ -585,14 +588,21 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
 
       if (isAdmin && (actualStart || "") !== currentActualStart) body.actualStartDate = actualStart || null;
       if (isAdmin && (actualEnd || "") !== currentActualEnd) body.actualEndDate = actualEnd || null;
-      if (responsibleUserId !== currentResponsibleUserId) body.responsibleUserId = responsibleUserId;
+      if (responsibleUserId !== currentResponsibleUserId) {
+        body.responsibleUserId = responsibleUserId;
+        if (propagate && responsibleUserId !== null) body.propagateResponsible = true;
+      }
 
       return patchStage(projectId, stage.id, body);
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       setEditingDates(false);
       setDateEditError(null);
-      toast.success("Fechas actualizadas");
+      toast.success(
+        variables.propagate
+          ? "Responsable actualizado y propagado a las subetapas"
+          : "Fechas actualizadas",
+      );
       invalidate();
     },
     onError: (err: unknown) => {
@@ -600,6 +610,34 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
       toast.error(msg ?? "Error al guardar fechas");
     },
   });
+
+  async function handleSaveDates() {
+    if (actualStart && actualEnd && actualEnd < actualStart) {
+      setDateEditError("Real fin no puede ser anterior al inicio");
+      return;
+    }
+    setDateEditError(null);
+
+    const currentResponsibleUserId = stage.responsibleUserId ?? null;
+    const responsibleChanged = responsibleUserId !== currentResponsibleUserId;
+    const responsibleIsAssigned = responsibleUserId !== null;
+
+    if (responsibleChanged && responsibleIsAssigned) {
+      setCheckingPropagation(true);
+      try {
+        const count = await getStageUnassignedSubstagesCount(projectId, stage.id);
+        if (count > 0) {
+          setConfirmPropagate({ count });
+          return;
+        }
+      } catch {
+        // Si el conteo falla, seguimos sin propagar: el PATCH no queda bloqueado.
+      } finally {
+        setCheckingPropagation(false);
+      }
+    }
+    datesMutation.mutate({ propagate: false });
+  }
 
   // Create substage
   const createSubMutation = useMutation({
@@ -817,15 +855,8 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
                   <div className="flex gap-2">
                     <Button
                       size="sm"
-                      loading={datesMutation.isPending}
-                      onClick={() => {
-                        if (actualStart && actualEnd && actualEnd < actualStart) {
-                          setDateEditError("Real fin no puede ser anterior al inicio");
-                          return;
-                        }
-                        setDateEditError(null);
-                        datesMutation.mutate();
-                      }}
+                      loading={datesMutation.isPending || checkingPropagation}
+                      onClick={handleSaveDates}
                     >
                       Guardar cambios
                     </Button>
@@ -914,7 +945,10 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
                   </button>
                 )}
                 <button
-                  onClick={() => setShowSubForm((v) => !v)}
+                  onClick={() => {
+                    if (!showSubForm) setSubUserId(stage.responsibleUserId ?? null);
+                    setShowSubForm((v) => !v);
+                  }}
                   className="text-[10px] text-[var(--color-accent)] hover:underline"
                 >
                   + Agregar
@@ -1088,6 +1122,49 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
           </section>
         </div>
       </aside>
+
+      {/* Confirm propagate responsible to substages */}
+      {confirmPropagate && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setConfirmPropagate(null); }}
+        >
+          <div style={{ background: "var(--color-bg-card)", border: "1px solid var(--color-border)", borderRadius: 10, padding: 20, width: 380 }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text-primary)", marginBottom: 8 }}>
+              Propagar responsable
+            </p>
+            <p style={{ fontSize: 12, color: "var(--color-text-secondary)", marginBottom: 16, lineHeight: 1.45 }}>
+              Esta etapa tiene <strong>{confirmPropagate.count}</strong>{" "}
+              {confirmPropagate.count === 1 ? "subetapa sin responsable" : "subetapas sin responsable"}.
+              ¿Querés asignar el nuevo responsable también a{" "}
+              {confirmPropagate.count === 1 ? "esa subetapa" : "esas subetapas"}?
+              Las subetapas con otro responsable no se tocan.
+            </p>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button
+                onClick={() => {
+                  setConfirmPropagate(null);
+                  datesMutation.mutate({ propagate: false });
+                }}
+                disabled={datesMutation.isPending}
+                style={{ padding: "7px 14px", borderRadius: 5, border: "1px solid var(--color-border)", background: "none", color: "var(--color-text-secondary)", fontSize: 12, cursor: "pointer" }}
+              >
+                Solo cambiar la etapa
+              </button>
+              <button
+                onClick={() => {
+                  setConfirmPropagate(null);
+                  datesMutation.mutate({ propagate: true });
+                }}
+                disabled={datesMutation.isPending}
+                style={{ padding: "7px 14px", borderRadius: 5, border: "none", background: "var(--color-accent)", color: "#000", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+              >
+                Sí, propagar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

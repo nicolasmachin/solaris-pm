@@ -5,7 +5,7 @@ import { Spinner } from "../components/ui/Spinner";
 export function Dashboard() {
   const { data: projects, isLoading } = useQuery({
     queryKey: ["projects"],
-    queryFn: getProjects,
+    queryFn: () => getProjects(),
     staleTime: 60_000,
   });
 

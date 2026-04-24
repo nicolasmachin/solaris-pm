@@ -2790,7 +2790,7 @@ function NewScheduleModal({
   onCreateTeamRequested: () => void;
 }) {
   const queryClient = useQueryClient();
-  const projectsQuery = useQuery({ queryKey: ["projects"], queryFn: getProjects });
+  const projectsQuery = useQuery({ queryKey: ["projects"], queryFn: () => getProjects() });
   const calendarCache = queryClient.getQueriesData<{ schedules: InstallationSchedule[] }>({
     queryKey: ["calendar"],
   });

@@ -158,6 +158,10 @@ const stagePatchSchema = z
     /** @deprecated usar responsibleUserId. Se mantiene sólo por retrocompat. */
     responsibleName: z.string().trim().min(1).nullable().optional(),
     responsibleUserId: z.string().min(1).nullable().optional(),
+    // Si true y responsibleUserId != null, se asigna también a todas las
+    // subetapas de la etapa que hoy no tienen responsable (userId=null).
+    // Subetapas con userId distinto nunca se tocan.
+    propagateResponsible: z.boolean().optional().default(false),
     notes: z.string().nullable().optional(),
     plannedStartDate: dateOnlySchema.nullable().optional(),
     plannedEndDate: dateOnlySchema.nullable().optional(),
@@ -990,29 +994,62 @@ const taskFieldLabels: Record<string, string> = {
 export async function registerApiRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authenticate);
 
+  const projectsSortBySchema = z.enum([
+    "recent",
+    "createdAt",
+    "clientName",
+    "installationDate",
+    "progress",
+  ]);
+  const projectsSortOrderSchema = z.enum(["asc", "desc"]);
+
   app.get("/projects", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async (request) => {
     const query = z
       .object({
         status: z.nativeEnum(ProjectStatus).optional(),
         search: z.string().trim().optional(),
+        stageInProgress: z.nativeEnum(StageType).optional(),
+        sortBy: projectsSortBySchema.optional(),
+        sortOrder: projectsSortOrderSchema.optional(),
         page: z.coerce.number().int().positive().optional(),
         limit: z.coerce.number().int().positive().max(100).optional(),
       })
       .parse(request.query);
 
+    const whereClause = {
+      deletedAt: null,
+      status: query.status,
+      ...(query.search
+        ? {
+            OR: [
+              { clientName: { contains: query.search, mode: "insensitive" as const } },
+              { code: { contains: query.search, mode: "insensitive" as const } },
+            ],
+          }
+        : {}),
+      ...(query.stageInProgress
+        ? {
+            stages: {
+              some: {
+                name: query.stageInProgress,
+                status: StageStatus.IN_PROGRESS,
+              },
+            },
+          }
+        : {}),
+    };
+
+    // Ordenamiento primario server-side (los campos calculados como progress
+    // se re-ordenan client-side porque no están en la tabla).
+    const baseOrder: Record<string, "asc" | "desc"> =
+      query.sortBy === "clientName"
+        ? { clientName: query.sortOrder ?? "asc" }
+        : query.sortBy === "createdAt"
+          ? { createdAt: query.sortOrder ?? "desc" }
+          : { updatedAt: query.sortOrder ?? "desc" }; // recent y fallback
+
     const projects = await prisma.project.findMany({
-      where: {
-        deletedAt: null,
-        status: query.status,
-        ...(query.search
-          ? {
-              OR: [
-                { clientName: { contains: query.search, mode: "insensitive" } },
-                { code: { contains: query.search, mode: "insensitive" } },
-              ],
-            }
-          : {}),
-      },
+      where: whereClause,
       include: {
         stages: {
           orderBy: { order: "asc" },
@@ -1021,8 +1058,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
           where: { deletedAt: null, order: 1 },
           orderBy: { order: "asc" },
         },
+        installationSchedule: {
+          where: { deletedAt: null },
+          include: { segments: { orderBy: { startDate: "asc" }, take: 1 } },
+        },
       },
-      orderBy: { updatedAt: "desc" },
+      orderBy: baseOrder,
       ...(query.page || query.limit
         ? {
             skip: ((query.page ?? 1) - 1) * (query.limit ?? 20),
@@ -1031,12 +1072,25 @@ export async function registerApiRoutes(app: FastifyInstance) {
         : {}),
     });
 
-    const items = projects.map((project) => {
+    let items = projects.map((project) => {
       const currentStage = getCurrentStage(project.stages);
       const progressPercent =
         project.stages.length > 0
           ? Math.round(project.stages.reduce((sum, stage) => sum + stage.progressPercent, 0) / project.stages.length)
           : 0;
+      // completionPercent: % de etapas completadas excluyendo POSTVENTA
+      // (POSTVENTA es indefinida; si alcanzamos Habilitación UTE cerrada → 100%).
+      const countedStages = project.stages.filter((s) => s.name !== StageType.POSTVENTA);
+      const completedCount = countedStages.filter((s) => s.status === StageStatus.COMPLETED).length;
+      const completionPercent = countedStages.length > 0
+        ? Math.round((completedCount / countedStages.length) * 100)
+        : 0;
+      const currentStages = project.stages
+        .filter((s) => s.status === StageStatus.IN_PROGRESS)
+        .map((s) => s.name);
+      const plannedWorkStart = project.installationSchedule?.segments[0]?.startDate
+        ? serializeDateOnly(project.installationSchedule.segments[0].startDate)
+        : null;
       const delayDays = project.stages
         .filter((stage) => stage.status === StageStatus.COMPLETED)
         .reduce((sum, stage) => sum + (stage.delayDays ?? 0), 0);
@@ -1056,10 +1110,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
         capacityKwp: decimalToNumber(project.capacityKwp),
         status: project.status,
         progressPercent,
+        completionPercent,
+        currentStages,
+        plannedWorkStart,
         delayDays,
         hasOverdueStage,
         startDate: serializeDateOnly(project.startDate),
         plannedEndDate: serializeDateOnly(project.plannedEndDate),
+        createdAt: serializeDate(project.createdAt),
         solarSystems: project.solarSystems.map(serializeSolarSystem),
         currentStage: currentStage
           ? {
@@ -1073,6 +1131,23 @@ export async function registerApiRoutes(app: FastifyInstance) {
         updatedAt: serializeDate(project.updatedAt),
       };
     });
+
+    // Ordenamientos sobre campos calculados (no se pueden hacer en Prisma).
+    if (query.sortBy === "progress") {
+      const dir = query.sortOrder === "asc" ? 1 : -1;
+      items = [...items].sort((a, b) => (a.completionPercent - b.completionPercent) * dir);
+    } else if (query.sortBy === "installationDate") {
+      const dir = query.sortOrder === "desc" ? -1 : 1;
+      items = [...items].sort((a, b) => {
+        // null al final independientemente del orden
+        if (a.plannedWorkStart && b.plannedWorkStart) {
+          return a.plannedWorkStart < b.plannedWorkStart ? -1 * dir : a.plannedWorkStart > b.plannedWorkStart ? 1 * dir : 0;
+        }
+        if (a.plannedWorkStart) return -1;
+        if (b.plannedWorkStart) return 1;
+        return 0;
+      });
+    }
 
     if (query.page || query.limit) {
       const total = await prisma.project.count({
@@ -1711,28 +1786,74 @@ export async function registerApiRoutes(app: FastifyInstance) {
       );
     }
 
-    const updatedStage = await prisma.stage.update({
-      where: { id: stage.id },
-      data: updateData,
+    // Propagación del responsable a subetapas sin userId: sólo aplica si el
+    // flag viene en true y el nuevo responsibleUserId no es null. El
+    // update del stage, la propagación y el sync de fechas del proyecto van
+    // juntos en una $transaction para que sean atómicos (si falla uno,
+    // revierte todo).
+    const nextResponsibleUserId =
+      body.responsibleUserId !== undefined ? body.responsibleUserId : stage.responsibleUserId;
+    const shouldPropagateResponsible =
+      body.propagateResponsible === true &&
+      body.responsibleUserId !== undefined &&
+      body.responsibleUserId !== null;
+
+    const { updatedStage, propagatedCount } = await prisma.$transaction(async (tx) => {
+      const stageAfter = await tx.stage.update({
+        where: { id: stage.id },
+        data: updateData,
+      });
+
+      let propagated = 0;
+      if (shouldPropagateResponsible && nextResponsibleUserId) {
+        const result = await tx.substage.updateMany({
+          where: {
+            stageId: stage.id,
+            userId: null,
+            deletedAt: null,
+            isActive: true,
+          },
+          data: { userId: nextResponsibleUserId },
+        });
+        propagated = result.count;
+      }
+
+      // Sincronizar fechas reales de Project según la etapa tocada
+      const projectSync: Prisma.ProjectUpdateInput = {};
+      if (stage.name === StageType.ONBOARDING) {
+        projectSync.actualOnboardingEnd = stageAfter.actualEndDate;
+      }
+      if (stage.name === StageType.INGENIERIA) {
+        projectSync.actualEngineeringEnd = stageAfter.actualEndDate;
+      }
+      if (stage.name === StageType.HABILITACION_UTE) {
+        projectSync.actualUteStart = stageAfter.actualStartDate;
+        projectSync.actualUteEnd = stageAfter.actualEndDate;
+      }
+      if (Object.keys(projectSync).length > 0) {
+        await tx.project.update({
+          where: { id: params.projectId },
+          data: projectSync,
+        });
+      }
+
+      return { updatedStage: stageAfter, propagatedCount: propagated };
     });
 
-    // Sincronizar fechas reales de Project según la etapa tocada
-    const projectSync: Prisma.ProjectUpdateInput = {};
-    if (stage.name === StageType.ONBOARDING) {
-      projectSync.actualOnboardingEnd = updatedStage.actualEndDate;
-    }
-    if (stage.name === StageType.INGENIERIA) {
-      projectSync.actualEngineeringEnd = updatedStage.actualEndDate;
-    }
-    if (stage.name === StageType.HABILITACION_UTE) {
-      projectSync.actualUteStart = updatedStage.actualStartDate;
-      projectSync.actualUteEnd = updatedStage.actualEndDate;
-    }
-    if (Object.keys(projectSync).length > 0) {
-      await prisma.project.update({
-        where: { id: params.projectId },
-        data: projectSync,
-      });
+    if (propagatedCount > 0) {
+      // No hay AuditAction específico para "responsable propagado"; dejamos
+      // traza en logs estructurados (mismo patrón que /my-tasks?userId=).
+      request.log.info(
+        {
+          type: "stage_responsible_propagated",
+          stageId: stage.id,
+          projectId: params.projectId,
+          responsibleUserId: nextResponsibleUserId,
+          substagesUpdated: propagatedCount,
+          triggeredBy: user.id,
+        },
+        `Stage ${getStageLabel(stage.name)}: propagó responsable a ${propagatedCount} subetapas`,
+      );
     }
 
     const { status: _ignoredStatus, ...comparableStage } = { ...stage, ...updateData };
@@ -1800,6 +1921,30 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     return substages.map(serializeSubstage);
   });
+
+  // Conteo rápido de subetapas sin responsable asignado. El frontend lo
+  // consulta antes de cambiar el responsable de la etapa para decidir si
+  // muestra el modal de "propagar a subetapas sin responsable".
+  app.get(
+    "/projects/:projectId/stages/:stageId/substages/unassigned-count",
+    { preHandler: authorize(Module.OPERACIONES, Action.VIEW) },
+    async (request) => {
+      const params = z.object({ projectId: z.string(), stageId: z.string() }).parse(request.params);
+      await findStageOrThrow(params.projectId, params.stageId);
+
+      const count = await prisma.substage.count({
+        where: {
+          projectId: params.projectId,
+          stageId: params.stageId,
+          deletedAt: null,
+          isActive: true,
+          userId: null,
+        },
+      });
+
+      return { count };
+    },
+  );
 
   app.post("/projects/:projectId/stages/:stageId/substages", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request, reply) => {
     const user = ensureUser(request);

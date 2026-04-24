@@ -10,6 +10,7 @@ export async function patchStage(
     /** @deprecated usar responsibleUserId */
     responsibleName?: string | null;
     responsibleUserId?: string | null;
+    propagateResponsible?: boolean;
     plannedStartDate?: string | null;
     plannedEndDate?: string | null;
     actualStartDate?: string | null;
@@ -21,6 +22,16 @@ export async function patchStage(
     body
   );
   return data;
+}
+
+export async function getStageUnassignedSubstagesCount(
+  projectId: string,
+  stageId: string,
+): Promise<number> {
+  const { data } = await apiClient.get<{ count: number }>(
+    `/api/projects/${projectId}/stages/${stageId}/substages/unassigned-count`,
+  );
+  return data.count;
 }
 
 export async function createSubstage(

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
@@ -16,8 +16,25 @@ import {
   getPhaseTypeShortLabel,
 } from "../components/project/SolarSystemFields";
 
-type SortKey = "client" | "location" | "status" | "progress" | "inverter" | "panels" | "dates";
+type SortKey =
+  | "client"
+  | "location"
+  | "status"
+  | "progress"
+  | "currentStage"
+  | "installationDate"
+  | "inverter"
+  | "panels"
+  | "dates";
 type SortDirection = "asc" | "desc";
+
+type StageFilter =
+  | "all"
+  | "ONBOARDING"
+  | "INGENIERIA"
+  | "OPERACIONES"
+  | "HABILITACION_UTE"
+  | "POSTVENTA";
 
 const STATUS_OPTIONS: Array<{ value: "all" | ProjectStatus; label: string }> = [
   { value: "all", label: "Todos" },
@@ -27,6 +44,59 @@ const STATUS_OPTIONS: Array<{ value: "all" | ProjectStatus; label: string }> = [
   { value: "PAUSED", label: "Pausados" },
   { value: "ARCHIVED", label: "Archivados" },
 ];
+
+const STAGE_OPTIONS: Array<{ value: StageFilter; label: string }> = [
+  { value: "all", label: "Todas las etapas" },
+  { value: "ONBOARDING", label: "Onboarding" },
+  { value: "INGENIERIA", label: "Ingeniería" },
+  { value: "OPERACIONES", label: "Operaciones" },
+  { value: "HABILITACION_UTE", label: "Habilitación UTE" },
+  { value: "POSTVENTA", label: "Postventa" },
+];
+
+const STAGE_LABELS: Record<string, string> = {
+  ONBOARDING: "Onboarding",
+  INGENIERIA: "Ingeniería",
+  OPERACIONES: "Operaciones",
+  HABILITACION_UTE: "Habilitación UTE",
+  POSTVENTA: "Postventa",
+};
+
+// Persistencia local de filtros de la página
+const PAGE_FILTER_KEY = "projects-page-filter";
+interface PagePersistedFilter {
+  statusFilter: "all" | ProjectStatus;
+  stageFilter: StageFilter;
+  sortKey: SortKey;
+  sortDirection: SortDirection;
+}
+
+function loadPageFilter(): PagePersistedFilter | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(PAGE_FILTER_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as PagePersistedFilter;
+  } catch {
+    return null;
+  }
+}
+
+function savePageFilter(f: PagePersistedFilter) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(PAGE_FILTER_KEY, JSON.stringify(f));
+  } catch {
+    // ignore
+  }
+}
+
+function progressBarClass(pct: number): string {
+  if (pct >= 100) return "bg-[#1F7A3A]";
+  if (pct >= 66) return "bg-emerald-500";
+  if (pct >= 33) return "bg-sky-500";
+  return "bg-[var(--color-text-muted)]";
+}
 
 function formatDate(date: string | null) {
   if (!date) return "—";
@@ -75,7 +145,23 @@ function sortProjects(projects: ProjectListItem[], sortKey: SortKey, direction: 
         result = compareText(a.status, b.status);
         break;
       case "progress":
-        result = a.progressPercent - b.progressPercent;
+        result = a.completionPercent - b.completionPercent;
+        break;
+      case "currentStage": {
+        const aStage = a.currentStages?.[0] ?? "";
+        const bStage = b.currentStages?.[0] ?? "";
+        if (aStage && bStage) result = compareText(aStage, bStage);
+        else if (aStage) result = -1;
+        else if (bStage) result = 1;
+        else result = 0;
+        break;
+      }
+      case "installationDate":
+        if (a.plannedWorkStart && b.plannedWorkStart) {
+          result = a.plannedWorkStart < b.plannedWorkStart ? -1 : a.plannedWorkStart > b.plannedWorkStart ? 1 : 0;
+        } else if (a.plannedWorkStart) result = -1;
+        else if (b.plannedWorkStart) result = 1;
+        else result = 0;
         break;
       case "inverter":
         result = compareText(formatSolarSystemPrimary(solarA ?? emptySolarSystem), formatSolarSystemPrimary(solarB ?? emptySolarSystem));
@@ -140,16 +226,24 @@ function SortHeader({
 export function Projects() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const persisted = useMemo(loadPageFilter, []);
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | ProjectStatus>("ACTIVE");
-  const [sortKey, setSortKey] = useState<SortKey>("client");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [statusFilter, setStatusFilter] = useState<"all" | ProjectStatus>(
+    persisted?.statusFilter ?? "ACTIVE",
+  );
+  const [stageFilter, setStageFilter] = useState<StageFilter>(persisted?.stageFilter ?? "all");
+  const [sortKey, setSortKey] = useState<SortKey>(persisted?.sortKey ?? "client");
+  const [sortDirection, setSortDirection] = useState<SortDirection>(persisted?.sortDirection ?? "asc");
   const [showNewProject, setShowNewProject] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<ProjectListItem | null>(null);
 
+  useEffect(() => {
+    savePageFilter({ statusFilter, stageFilter, sortKey, sortDirection });
+  }, [statusFilter, stageFilter, sortKey, sortDirection]);
+
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["projects"],
-    queryFn: getProjects,
+    queryFn: () => getProjects(),
     staleTime: 60_000,
   });
 
@@ -187,14 +281,16 @@ export function Projects() {
         statusFilter === "all"
           ? project.status !== "ARCHIVED"
           : project.status === statusFilter;
+      const matchesStageFilter =
+        stageFilter === "all" ? true : (project.currentStages ?? []).includes(stageFilter);
       const matchesQuery = term
         ? project.clientName.toLowerCase().includes(term) || project.code.toLowerCase().includes(term)
         : true;
-      return matchesStatus && matchesQuery;
+      return matchesStatus && matchesStageFilter && matchesQuery;
     });
 
     return sortProjects(filtered, sortKey, sortDirection);
-  }, [projects, query, sortKey, sortDirection, statusFilter]);
+  }, [projects, query, sortKey, sortDirection, statusFilter, stageFilter]);
 
   function handleSort(nextKey: SortKey) {
     if (sortKey === nextKey) {
@@ -202,7 +298,13 @@ export function Projects() {
       return;
     }
     setSortKey(nextKey);
-    setSortDirection(nextKey === "progress" ? "desc" : "asc");
+    // Direcciones default por tipo de columna:
+    // - progress → mayor avance primero (desc)
+    // - installationDate → próxima primero (asc)
+    // - resto → asc
+    const defaultDir: SortDirection =
+      nextKey === "progress" ? "desc" : nextKey === "installationDate" ? "asc" : "asc";
+    setSortDirection(defaultDir);
   }
 
   if (isLoading) {
@@ -263,6 +365,18 @@ export function Projects() {
               </option>
             ))}
           </select>
+          <select
+            value={stageFilter}
+            onChange={(event) => setStageFilter(event.target.value as StageFilter)}
+            aria-label="Filtrar por etapa en proceso"
+            className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+          >
+            {STAGE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
           <Button onClick={() => setShowNewProject(true)}>Nuevo proyecto</Button>
         </div>
       </div>
@@ -287,9 +401,11 @@ export function Projects() {
                   <th className="px-4 py-3"><SortHeader label="Cliente" sortKey="client" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
                   <th className="px-4 py-3"><SortHeader label="Ubicación" sortKey="location" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
                   <th className="px-4 py-3"><SortHeader label="Estado" sortKey="status" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
+                  <th className="px-4 py-3"><SortHeader label="Etapa actual" sortKey="currentStage" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
                   <th className="px-4 py-3"><SortHeader label="Avance" sortKey="progress" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
                   <th className="px-4 py-3"><SortHeader label="Inversor" sortKey="inverter" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
                   <th className="px-4 py-3"><SortHeader label="Paneles" sortKey="panels" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
+                  <th className="px-4 py-3"><SortHeader label="Instalación" sortKey="installationDate" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
                   <th className="px-4 py-3"><SortHeader label="Inicio" sortKey="dates" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
                   <th className="px-4 py-3 text-left text-[11px] font-mono uppercase tracking-widest text-[var(--color-text-muted)]">Acciones</th>
                 </tr>
@@ -317,11 +433,37 @@ export function Projects() {
                         <Badge variant={project.status} />
                       </td>
                       <td className="px-4 py-4 align-top">
+                        {project.currentStages && project.currentStages.length > 0 ? (
+                          <div>
+                            <div className="text-sm text-[var(--color-text-primary)]">
+                              {STAGE_LABELS[project.currentStages[0]] ?? project.currentStages[0]}
+                            </div>
+                            {project.currentStages.length > 1 ? (
+                              <div className="mt-0.5 text-[10px] text-[var(--color-text-muted)]">
+                                +{project.currentStages.length - 1} en paralelo
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-[var(--color-text-muted)]">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 align-top">
                         <div className="flex min-w-[150px] items-center gap-3">
                           <div className="min-w-0 flex-1">
-                            <ProgressBar value={project.progressPercent} height={8} />
+                            <div
+                              className="h-2 w-full overflow-hidden rounded-full bg-[var(--color-border)]"
+                              title={`${project.completionPercent}% completado`}
+                            >
+                              <div
+                                className={`h-full rounded-full transition-all ${progressBarClass(project.completionPercent)}`}
+                                style={{ width: `${project.completionPercent}%` }}
+                              />
+                            </div>
                           </div>
-                          <span className="text-sm font-medium text-[var(--color-text-primary)]">{project.progressPercent}%</span>
+                          <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                            {project.completionPercent}%
+                          </span>
                         </div>
                       </td>
                       <td className="px-4 py-4 align-top">
@@ -348,6 +490,15 @@ export function Projects() {
                         <span className="text-sm text-[var(--color-text-primary)]">
                           {solarSystem ? formatSolarSystemPanels(solarSystem) : "Sin datos"}
                         </span>
+                      </td>
+                      <td className="px-4 py-4 align-top">
+                        {project.plannedWorkStart ? (
+                          <div className="text-sm text-[var(--color-text-primary)]">
+                            {formatDate(project.plannedWorkStart)}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-[var(--color-text-muted)]">Sin agendar</span>
+                        )}
                       </td>
                       <td className="px-4 py-4 align-top">
                         <div className="text-sm text-[var(--color-text-primary)]">{formatDate(project.startDate)}</div>

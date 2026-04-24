@@ -15,8 +15,16 @@ export interface SolarSystemPayload {
   panelModel?: string | null;
 }
 
-export async function getProjects(): Promise<ProjectListItem[]> {
-  const { data } = await apiClient.get<ProjectListItem[]>("/api/projects");
+export interface GetProjectsParams {
+  status?: string;
+  search?: string;
+  stageInProgress?: string;
+  sortBy?: "recent" | "createdAt" | "clientName" | "installationDate" | "progress";
+  sortOrder?: "asc" | "desc";
+}
+
+export async function getProjects(params?: GetProjectsParams): Promise<ProjectListItem[]> {
+  const { data } = await apiClient.get<ProjectListItem[]>("/api/projects", { params });
   return data;
 }
 

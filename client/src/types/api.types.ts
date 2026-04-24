@@ -72,8 +72,15 @@ export interface ProjectListItem {
   status: ProjectStatus;
   capacityKwp: number;
   progressPercent: number;
+  /** Porcentaje de etapas completadas excluyendo POSTVENTA (0–100). */
+  completionPercent: number;
+  /** Nombres (StageType) de las etapas actualmente IN_PROGRESS. */
+  currentStages: string[];
+  /** Fecha de inicio de instalación (primer segment del schedule) si existe. */
+  plannedWorkStart: string | null;
   startDate: string | null;
   plannedEndDate: string | null;
+  createdAt: string;
   solarSystems: SolarSystem[];
   currentStage: ProjectCurrentStage | null;
   updatedAt: string;

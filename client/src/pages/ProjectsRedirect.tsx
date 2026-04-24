@@ -8,7 +8,7 @@ export function ProjectsRedirect() {
   const navigate = useNavigate();
   const { data, isLoading } = useQuery({
     queryKey: ["projects"],
-    queryFn: getProjects,
+    queryFn: () => getProjects(),
   });
 
   useEffect(() => {
