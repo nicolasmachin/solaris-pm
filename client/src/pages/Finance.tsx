@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { TrendingUp, TrendingDown, Wallet, Clock, AlertTriangle, ArrowRight, RefreshCw } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, Clock, AlertTriangle, ArrowRight, RefreshCw, Plus } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
-import { getDashboard, getCashflow, getExchangeRate, createExchangeRate, getComprobantes } from '../api/finance.api';
+import { getDashboard, getCashflow, getExchangeRate, createExchangeRate, getComprobantes, getBcuExchangeRatePreview } from '../api/finance.api';
 import { getStockAlerts } from '../api/stock.api';
 import { fmtCurrency, fmtDate, currentMonthYear, MONTH_NAMES } from '../lib/finance';
 import type { FinanceMovement, TipoMovimiento } from '../types/finance.types';
@@ -35,6 +35,8 @@ function ExchangeRateCard() {
   const [modalOpen, setModalOpen] = useState(false);
   const [newRate, setNewRate] = useState('');
   const [saving, setSaving] = useState(false);
+  const [bcuLoading, setBcuLoading] = useState(false);
+  const [bcuInfo, setBcuInfo] = useState<{ fechaIso: string; usdToUyu: number } | null>(null);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -48,10 +50,24 @@ function ExchangeRateCard() {
       qc.invalidateQueries({ queryKey: ['exchange-rate'] });
       setModalOpen(false);
       setNewRate('');
+      setBcuInfo(null);
     } catch {
       toast.error('Error al actualizar tipo de cambio');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleConsultBcu() {
+    setBcuLoading(true);
+    try {
+      const data = await getBcuExchangeRatePreview();
+      setBcuInfo(data);
+      setNewRate(data.usdToUyu.toString());
+    } catch {
+      toast.error('No se pudo consultar el BCU. Probá de nuevo o ingresá el valor a mano.');
+    } finally {
+      setBcuLoading(false);
     }
   }
 
@@ -87,6 +103,22 @@ function ExchangeRateCard() {
         >
           <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-sm shadow-2xl">
             <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">Actualizar tipo de cambio</h3>
+
+            <button
+              onClick={handleConsultBcu}
+              disabled={bcuLoading}
+              type="button"
+              className="mb-3 inline-flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors disabled:opacity-60"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${bcuLoading ? 'animate-spin' : ''}`} />
+              {bcuLoading ? 'Consultando BCU...' : 'Consultar TC oficial del BCU'}
+            </button>
+            {bcuInfo ? (
+              <p className="mb-3 text-[11px] text-[var(--color-text-muted)]">
+                BCU sugiere <span className="font-semibold text-[var(--color-text-secondary)]">1 USD = {bcuInfo.usdToUyu.toLocaleString('es-UY', { minimumFractionDigits: 2 })} UYU</span> (cotización del {fmtDate(bcuInfo.fechaIso)}). Editalo si querés y dale Guardar.
+              </p>
+            ) : null}
+
             <label className="block text-xs text-[var(--color-text-muted)] mb-1 font-mono uppercase tracking-wider">1 USD = ? UYU</label>
             <input
               type="number"
@@ -106,7 +138,7 @@ function ExchangeRateCard() {
                 {saving ? 'Guardando...' : 'Guardar'}
               </button>
               <button
-                onClick={() => setModalOpen(false)}
+                onClick={() => { setModalOpen(false); setBcuInfo(null); }}
                 className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors"
               >
                 Cancelar
@@ -246,9 +278,18 @@ export function Finance() {
   return (
     <div className="space-y-5 p-6">
       {/* Header */}
-      <div>
-        <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Finanzas</h1>
-        <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{mesLabel}</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Finanzas</h1>
+          <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{mesLabel}</p>
+        </div>
+        <Link
+          to="/finanzas/movimientos?new=1"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] transition-colors shrink-0"
+        >
+          <Plus className="w-4 h-4" />
+          Nuevo movimiento
+        </Link>
       </div>
 
       {/* Tipo de cambio */}

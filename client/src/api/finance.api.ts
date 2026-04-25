@@ -21,11 +21,18 @@ import type { PaginatedResponse } from '../types/api.types';
 export const getExchangeRate = () =>
   apiClient.get<ExchangeRate>('/api/finance/exchange-rate').then(r => r.data);
 
-export const createExchangeRate = (body: { date: string; usdToUyu: number; source?: string }) =>
+export const createExchangeRate = (body: { date: string; usdToUyu: number }) =>
   apiClient.post<ExchangeRate>('/api/finance/exchange-rate', body).then(r => r.data);
 
 export const getExchangeRateHistory = () =>
   apiClient.get<ExchangeRate[]>('/api/finance/exchange-rate/history').then(r => r.data);
+
+// Consulta el TC del BCU sin guardar — para sugerir un valor en el modal de
+// "actualizar TC". El usuario decide si lo aplica vía createExchangeRate.
+export const getBcuExchangeRatePreview = () =>
+  apiClient
+    .get<{ fechaIso: string; usdToUyu: number }>('/api/finance/exchange-rate/bcu-preview')
+    .then(r => r.data);
 
 // ─── Suppliers ────────────────────────────────────────────────────────────────
 

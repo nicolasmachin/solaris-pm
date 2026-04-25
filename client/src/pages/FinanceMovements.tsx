@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { Plus, X, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -348,6 +349,20 @@ export function FinanceMovements() {
   const [newModal, setNewModal] = useState(false);
   const [editMov, setEditMov] = useState<FinanceMovement | null>(null);
   const [detailMov, setDetailMov] = useState<FinanceMovement | null>(null);
+
+  // Si el usuario llega con ?new=1 (típicamente desde el botón "Nuevo
+  // movimiento" del dashboard de Finanzas), abrimos el modal y limpiamos
+  // el query param para que un refresh no lo vuelva a abrir.
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      setNewModal(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete('new');
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { data, isLoading } = useQuery({
     queryKey: ['finance-movements', mes, anio, tipo, cat, search, page],

@@ -87,6 +87,7 @@ import {
 } from "../services/pipeline-definitions.js";
 import { createNotificationIfNotExists } from "../services/notification.service.js";
 import { createAndSendNotification, checkProgressMilestone } from "../services/notify.service.js";
+import { fetchBcuRatePreview } from "../services/exchange-rate.service.js";
 import { addDays, diffInDays, parseDateOnly, todayUtc, toDateOnlyString } from "../utils/dates.js";
 import { AppError, badRequest, conflict, forbidden, notFound } from "../utils/errors.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../utils/serialization.js";
@@ -7297,16 +7298,27 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // ─── Finance: Exchange Rate ───────────────────────────────────────────────
 
     app.get("/finance/exchange-rate", async () => {
-      const rate = await prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } });
+      const rate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
       if (!rate) throw notFound("EXCHANGE_RATE_NOT_FOUND", "No hay tipo de cambio registrado");
       return { usdToUyu: decimalToNumber(rate.usdToUyu), date: serializeDate(rate.date), source: rate.source };
     });
 
     app.post("/finance/exchange-rate", { preHandler: authorize(Module.FINANZAS, Action.CREATE) }, async (request) => {
       const user = ensureUser(request);
-      const body = z.object({ usdToUyu: z.coerce.number().positive() }).strict().parse(request.body);
+      const body = z
+        .object({
+          usdToUyu: z.coerce.number().positive(),
+          // Fecha opcional ISO (YYYY-MM-DD o full ISO). Si no viene, usa now().
+          date: z.string().optional(),
+        })
+        .strict()
+        .parse(request.body);
       const rate = await prisma.exchangeRate.create({
-        data: { usdToUyu: new Prisma.Decimal(body.usdToUyu), createdBy: user.id },
+        data: {
+          usdToUyu: new Prisma.Decimal(body.usdToUyu),
+          createdBy: user.id,
+          ...(body.date ? { date: new Date(body.date) } : {}),
+        },
       });
       await createAuditEntry({
         entityType: AuditEntityType.exchange_rate,
@@ -7319,8 +7331,29 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     app.get("/finance/exchange-rate/history", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async () => {
-      const rates = await prisma.exchangeRate.findMany({ orderBy: { date: "desc" }, take: 30 });
+      const rates = await prisma.exchangeRate.findMany({
+        orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+        take: 30,
+      });
       return rates.map((r) => ({ id: r.id, usdToUyu: decimalToNumber(r.usdToUyu), date: serializeDate(r.date), source: r.source }));
+    });
+
+    // Consulta SOLO al BCU (sin guardar). El cliente lo usa para sugerir un
+    // valor en el modal de "actualizar TC". Si el usuario lo acepta, dispara
+    // el POST normal — esto deja el rate en source="manual" porque fue una
+    // decisión humana, distinto al cron diario que usa source="bcu".
+    app.get("/finance/exchange-rate/bcu-preview", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async () => {
+      try {
+        const rate = await fetchBcuRatePreview();
+        if (!rate) {
+          throw badRequest("BCU_NO_DATA", "BCU no devolvió cotizaciones recientes");
+        }
+        return rate;
+      } catch (err) {
+        if (err instanceof AppError) throw err;
+        const msg = err instanceof Error ? err.message : String(err);
+        throw badRequest("BCU_FETCH_ERROR", `No se pudo consultar BCU: ${msg}`);
+      }
     });
 
     // ─── Finance: Suppliers ───────────────────────────────────────────────────
@@ -7556,7 +7589,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
       let tipoCambio = body.tipoCambio ? new Prisma.Decimal(body.tipoCambio) : null;
       if (body.moneda === Moneda.UYU && !tipoCambio) {
-        const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } });
+        const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
         if (lastRate) tipoCambio = lastRate.usdToUyu;
       }
 
@@ -7822,7 +7855,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     app.get("/finance/reports/results", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
       const { anio } = z.object({ anio: z.coerce.number().int().default(new Date().getUTCFullYear()) }).parse(request.query);
 
-      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } });
+      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
       const fallbackRate = lastRate ? (decimalToNumber(lastRate.usdToUyu) ?? 1) : 1;
 
       const movements = await prisma.financeMovement.findMany({
@@ -7893,7 +7926,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         select: { tipoMovimiento: true, monto: true, moneda: true, tipoCambio: true, cobrado: true, pagado: true },
       });
 
-      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } });
+      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
       const fallbackRate = lastRate ? (decimalToNumber(lastRate.usdToUyu) ?? 1) : 1;
 
       function toUsd(m: (typeof movements)[number]): number {
@@ -7923,7 +7956,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const mes = now.getUTCMonth() + 1;
       const anio = now.getUTCFullYear();
 
-      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } });
+      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
       const fallbackRate = lastRate ? (decimalToNumber(lastRate.usdToUyu) ?? 1) : 1;
 
       const movements = await prisma.financeMovement.findMany({
@@ -7970,7 +8003,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const project = await prisma.project.findFirst({ where: { id: projectId, deletedAt: null }, select: { id: true, clientName: true, code: true } });
       if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
 
-      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } });
+      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
       const fallbackRate = lastRate ? (decimalToNumber(lastRate.usdToUyu) ?? 1) : 1;
 
       const movements = await prisma.financeMovement.findMany({

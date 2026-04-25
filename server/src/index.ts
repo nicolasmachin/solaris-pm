@@ -7,6 +7,7 @@ import multipart from "@fastify/multipart";
 import { env } from "./config/env.js";
 import { registerRoutes } from "./routes/index.js";
 import { checkGoalsConfigured, startAlertsJob, startGoalsCheckJob } from "./services/alerts.service.js";
+import { startBcuRateJob, syncBcuRate } from "./services/exchange-rate.service.js";
 import { formatErrorPayload } from "./utils/errors.js";
 
 if (process.env.NODE_ENV === "production") {
@@ -51,9 +52,13 @@ async function start() {
   const app = await buildServer();
   const alertsJob = startAlertsJob();
   startGoalsCheckJob();
+  startBcuRateJob();
 
   // Startup check: notify admins if no goals for current quarter
   checkGoalsConfigured().catch((err) => console.error("[startup] checkGoalsConfigured failed:", err));
+
+  // Sync BCU exchange rate on boot too (no esperamos al primer tick del cron).
+  syncBcuRate().catch((err) => console.error("[startup] syncBcuRate failed:", err));
 
   try {
     await app.listen({
