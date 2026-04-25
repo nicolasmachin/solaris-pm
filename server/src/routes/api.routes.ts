@@ -7234,9 +7234,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
   void SENT_APPROVED_PAIRS;
 
-  // ─── PASO 5: Dev test endpoint ───────────────────────────────────────────────
+  // ─── Dev test endpoint + Finanzas + Stock ───────────────────────────────────
+  // (Originalmente esto vivía dentro de un `if (NODE_ENV === "development")`
+  // que rompía silenciosamente Finanzas y Stock en local y prod. El bloque se
+  // sacó pero las 1000+ líneas internas mantienen su indent extra de 4
+  // espacios — la limpieza visual queda como cleanup futuro.)
 
-  if (process.env.NODE_ENV === "development") {
     app.post("/dev/test-notification", async (request, reply) => {
       const body = z
         .object({
@@ -8329,5 +8332,4 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
       return alerts;
     });
-  }
 }
