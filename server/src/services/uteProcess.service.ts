@@ -1,7 +1,7 @@
 import { Prisma, UteStage, UteStatus } from "@prisma/client";
 
 import { diffInDays, startOfUtcDay } from "../utils/dates.js";
-import { serializeDate } from "../utils/serialization.js";
+import { serializeDate, serializeDateOnly } from "../utils/serialization.js";
 
 // ─── Tipos ──────────────────────────────────────────────────────────────────
 
@@ -214,18 +214,18 @@ export function serializeUteProcess(row: UteProcessRow, now: Date = new Date()):
     caseNumber: row.caseNumber,
     notes: row.notes,
     dateColors,
-    consultaSentAt: serializeDate(row.consultaSentAt),
-    caseOpenedAt: serializeDate(row.caseOpenedAt),
-    consultaApprovedAt: serializeDate(row.consultaApprovedAt),
-    solicitudSentAt: serializeDate(row.solicitudSentAt),
-    proyectoApprovedAt: serializeDate(row.proyectoApprovedAt),
-    docs1SentAt: serializeDate(row.docs1SentAt),
-    docs1ApprovedAt: serializeDate(row.docs1ApprovedAt),
-    ensayosSentAt: serializeDate(row.ensayosSentAt),
-    ensayosApprovedAt: serializeDate(row.ensayosApprovedAt),
-    docs2SentAt: serializeDate(row.docs2SentAt),
-    finalizedAt: serializeDate(row.finalizedAt),
-    lastActionAt: serializeDate(lastActionAt(row)),
+    consultaSentAt: serializeDateOnly(row.consultaSentAt),
+    caseOpenedAt: serializeDateOnly(row.caseOpenedAt),
+    consultaApprovedAt: serializeDateOnly(row.consultaApprovedAt),
+    solicitudSentAt: serializeDateOnly(row.solicitudSentAt),
+    proyectoApprovedAt: serializeDateOnly(row.proyectoApprovedAt),
+    docs1SentAt: serializeDateOnly(row.docs1SentAt),
+    docs1ApprovedAt: serializeDateOnly(row.docs1ApprovedAt),
+    ensayosSentAt: serializeDateOnly(row.ensayosSentAt),
+    ensayosApprovedAt: serializeDateOnly(row.ensayosApprovedAt),
+    docs2SentAt: serializeDateOnly(row.docs2SentAt),
+    finalizedAt: serializeDateOnly(row.finalizedAt),
+    lastActionAt: serializeDateOnly(lastActionAt(row)),
     totalDays: times.totalDays,
     ourTimeDays: times.ourTimeDays,
     uteTimeDays: times.uteTimeDays,

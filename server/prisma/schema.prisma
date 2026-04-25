@@ -1112,21 +1112,21 @@ model UteProcess {
   notes      String?
   dateColors Json?
 
-  consultaSentAt     DateTime? @db.Timestamptz(6)
-  caseOpenedAt       DateTime? @db.Timestamptz(6)
-  consultaApprovedAt DateTime? @db.Timestamptz(6)
+  consultaSentAt     DateTime? @db.Date
+  caseOpenedAt       DateTime? @db.Date
+  consultaApprovedAt DateTime? @db.Date
 
-  solicitudSentAt    DateTime? @db.Timestamptz(6)
-  proyectoApprovedAt DateTime? @db.Timestamptz(6)
+  solicitudSentAt    DateTime? @db.Date
+  proyectoApprovedAt DateTime? @db.Date
 
-  docs1SentAt     DateTime? @db.Timestamptz(6)
-  docs1ApprovedAt DateTime? @db.Timestamptz(6)
+  docs1SentAt     DateTime? @db.Date
+  docs1ApprovedAt DateTime? @db.Date
 
-  ensayosSentAt     DateTime? @db.Timestamptz(6)
-  ensayosApprovedAt DateTime? @db.Timestamptz(6)
+  ensayosSentAt     DateTime? @db.Date
+  ensayosApprovedAt DateTime? @db.Date
 
-  docs2SentAt DateTime? @db.Timestamptz(6)
-  finalizedAt DateTime? @db.Timestamptz(6)
+  docs2SentAt DateTime? @db.Date
+  finalizedAt DateTime? @db.Date
 
   createdById String?
   createdAt   DateTime  @default(now()) @db.Timestamptz(6)

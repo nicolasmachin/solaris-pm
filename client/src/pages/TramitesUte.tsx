@@ -54,7 +54,10 @@ function fmtShort(iso: string | null): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "—";
-  return `${d.getDate()}-${MONTHS_ES[d.getMonth()]}`;
+  // Las fechas de UTE se guardan como medianoche UTC (ej: "2026-04-25T00:00:00Z").
+  // Leer con getDate()/getMonth() en zona UY (UTC-3) convierte a las 21:00 del día
+  // anterior y mostraría un día menos. Por eso usamos los getters UTC.
+  return `${d.getUTCDate()}-${MONTHS_ES[d.getUTCMonth()]}`;
 }
 
 function toInputDate(iso: string | null): string {

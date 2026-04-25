@@ -1331,14 +1331,12 @@ function MonthGrid({
   );
 }
 
-const MONTH_DAY_HEADER_HEIGHT = 16;
-const MONTH_TRACK_GAP = 1;
-function monthSlotHeight(totalLanes: number): number {
-  if (totalLanes <= 1) return 48;
-  if (totalLanes === 2) return 28;
-  if (totalLanes === 3) return 22;
-  return 16; // 4 slots (o 3 visibles + overflow)
-}
+// Altura mínima por lane en la grilla mensual. El row de la semana
+// escala para que los lanes nunca sean más finos que esto.
+const DAY_LANE_MIN_HEIGHT = 22;
+// Altura mínima total del track area por semana (para que semanas con
+// pocas barras no colapsen).
+const WEEK_TRACK_AREA_MIN = 80;
 
 function WeekRow({
   weekStart,
@@ -1370,20 +1368,29 @@ function WeekRow({
     [schedules, weekStartIso, weekEndIso],
   );
 
-  const slotH = monthSlotHeight(plan.totalLanes);
-  const tracksHeight = plan.totalLanes * slotH + Math.max(0, plan.totalLanes - 1) * MONTH_TRACK_GAP;
-  const rowHeight = MONTH_DAY_HEADER_HEIGHT + 4 + tracksHeight + 4; // header + paddings
+  // Altura dinámica por SEMANA: cada lane ocupa 1/maxLanes del trackArea.
+  // Así una semana con maxLanes=1 y una única multi-día usa el 100% de la
+  // altura; una con maxLanes=3 reparte en tercios.
+  const maxLanes = Math.max(1, plan.totalLanes);
+  const trackArea = Math.max(WEEK_TRACK_AREA_MIN, maxLanes * DAY_LANE_MIN_HEIGHT);
+  const rowHeight = trackArea;
+
+  // Pills "+N más" que deben ir en el último lane del día que tiene overflow.
+  const overflowEntries = Array.from(plan.overflowByDay.entries()).filter(
+    ([, count]) => count > 0,
+  );
 
   return (
-    <div className="relative" style={{ minHeight: Math.max(64, rowHeight) }}>
-      {/* Capa de fondo: 7 celdas clickeables (drop targets, día y today) */}
+    <div className="relative" style={{ height: rowHeight }}>
+      {/* Capa de fondo: 7 celdas. Cada celda es droppable y tiene su badge
+          con el número del día arriba a la derecha. */}
       <div className="absolute inset-0 grid grid-cols-7 gap-1">
         {days.map((day) => {
           const dayIso = formatIso(day);
           const isOtherMonth = day.getUTCMonth() + 1 !== monthNumber;
           const isToday = dayIso === todayIso;
           return (
-            <DayBackgroundCell
+            <DayCell
               key={dayIso}
               day={day}
               dayIso={dayIso}
@@ -1395,81 +1402,54 @@ function WeekRow({
         })}
       </div>
 
-      {/* Tracks apilados arriba */}
+      {/* Overlay de barras: grilla 7 cols × maxLanes rows. Cada barra es UN
+          elemento posicionado con gridColumn (start + span) y gridRow
+          (slotIndex + 1). Las multi-días se ven continuas porque CSS Grid
+          hace que un elemento spanning cruce los gaps entre columnas. */}
       <div
-        className="absolute"
+        className="pointer-events-none absolute inset-0 grid grid-cols-7 gap-1"
         style={{
-          left: 0,
-          right: 0,
-          top: MONTH_DAY_HEADER_HEIGHT + 4,
-          height: tracksHeight,
-          pointerEvents: "none",
+          gridTemplateRows: `repeat(${maxLanes}, 1fr)`,
         }}
       >
-        {groupTracksBySlot(plan.visibleTracks).map((tracksInSlot, rowIdx) => (
-          <div
-            key={`slot-${rowIdx}`}
-            className="grid grid-cols-7 gap-1"
-            style={{
-              height: slotH,
-              marginBottom: rowIdx < plan.totalLanes - 1 ? MONTH_TRACK_GAP : 0,
-            }}
-          >
-            {tracksInSlot.map((track) => (
-              <MonthTrackBlock
-                key={track.segment.segmentId}
-                schedule={track.schedule}
-                segment={track.segment}
-                slotHeight={slotH}
-                isSelected={selectedScheduleIds.includes(track.schedule.id)}
-                onClick={() => onScheduleClick(track.schedule.id)}
-              />
-            ))}
-          </div>
+        {plan.visibleTracks.map((track) => (
+          <MonthTrackBlock
+            key={track.segment.segmentId}
+            schedule={track.schedule}
+            segment={track.segment}
+            slotIndex={track.slotIndex}
+            isSelected={selectedScheduleIds.includes(track.schedule.id)}
+            onClick={() => onScheduleClick(track.schedule.id)}
+          />
         ))}
-        {plan.overflowByDay.size > 0 && (
-          <div
-            className="grid grid-cols-7 gap-1"
-            style={{ height: slotH }}
-          >
-            {days.map((day, idx) => {
-              const count = plan.overflowByDay.get(idx) ?? 0;
-              if (count === 0) return <div key={formatIso(day)} />;
-              const dayIso = formatIso(day);
-              return (
-                <button
-                  key={dayIso}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDayClick(dayIso);
-                  }}
-                  title={`+${count} más`}
-                  className="rounded text-[9px] font-medium text-[var(--color-text-muted)] bg-[var(--color-bg-app)] hover:bg-[var(--color-bg-card-hover)]"
-                  style={{ pointerEvents: "auto" }}
-                >
-                  +{count} más
-                </button>
-              );
-            })}
-          </div>
-        )}
+        {overflowEntries.map(([dayIdx, count]) => {
+          const dayIso = formatIso(days[dayIdx]);
+          return (
+            <button
+              key={`overflow-${dayIso}`}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDayClick(dayIso);
+              }}
+              title={`+${count} más`}
+              className="flex items-center justify-center rounded text-[9px] font-medium text-[var(--color-text-muted)] bg-[var(--color-bg-app)] hover:bg-[var(--color-bg-card-hover)]"
+              style={{
+                gridColumn: `${dayIdx + 1} / span 1`,
+                gridRow: `${maxLanes} / span 1`,
+                pointerEvents: "auto",
+              }}
+            >
+              +{count} más
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-// Agrupa los tracks por slotIndex preservando el orden (slot 0 arriba, 1 debajo…).
-function groupTracksBySlot<T extends { slotIndex: number }>(tracks: T[]): T[][] {
-  if (tracks.length === 0) return [];
-  const maxSlot = Math.max(...tracks.map((t) => t.slotIndex));
-  const rows: T[][] = [];
-  for (let i = 0; i <= maxSlot; i++) rows.push([]);
-  for (const t of tracks) rows[t.slotIndex].push(t);
-  return rows.filter((r) => r.length > 0);
-}
-
-function DayBackgroundCell({
+function DayCell({
   day,
   dayIso,
   isOtherMonth,
@@ -1484,34 +1464,52 @@ function DayBackgroundCell({
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: dayIso });
   return (
-    <button
+    <div
       ref={setNodeRef}
-      type="button"
-      onClick={onClick}
-      className={`relative h-full w-full rounded border border-[var(--color-border)] text-left px-1.5 py-1 transition-colors hover:bg-[var(--color-bg-card-hover)] ${
+      className={`relative h-full w-full rounded border border-[var(--color-border)] transition-colors ${
         isOtherMonth ? "bg-[var(--color-bg-app)]" : ""
       } ${isOver ? "outline outline-2 outline-[var(--color-accent-hover)]" : ""}`}
     >
-      <span className="block text-[10px] text-[var(--color-text-muted)]">
+      {/* Área clickeable de fondo (crea scheduling nuevo si no hay barras). */}
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={`Día ${day.getUTCDate()}`}
+        className="absolute inset-0 h-full w-full rounded hover:bg-[var(--color-bg-card-hover)]"
+      />
+
+      {/* Badge con número del día — siempre legible por encima de las barras. */}
+      <span
+        className="pointer-events-none absolute right-1 top-1 z-20 rounded font-semibold tabular-nums"
+        style={{
+          fontSize: 10,
+          padding: "1px 6px",
+          background: "rgba(13, 20, 32, 0.85)",
+          color: "#ffffff",
+        }}
+      >
         {day.getUTCDate()}
         {isToday ? (
-          <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-[var(--color-accent)] align-middle" />
+          <span
+            className="ml-1 inline-block h-1.5 w-1.5 rounded-full align-middle"
+            style={{ background: "var(--color-accent)" }}
+          />
         ) : null}
       </span>
-    </button>
+    </div>
   );
 }
 
 function MonthTrackBlock({
   schedule,
   segment,
-  slotHeight,
+  slotIndex,
   isSelected,
   onClick,
 }: {
   schedule: InstallationSchedule;
   segment: WeekSegment;
-  slotHeight: number;
+  slotIndex: number;
   isSelected: boolean;
   onClick: () => void;
 }) {
@@ -1533,8 +1531,8 @@ function MonthTrackBlock({
 
   const style: CSSProperties = {
     gridColumn: `${segment.startDayIndex + 1} / span ${segment.span}`,
+    gridRow: `${slotIndex + 1} / span 1`,
     background: color,
-    height: slotHeight,
     borderTopLeftRadius: segment.isFirstOfSegment ? 6 : 2,
     borderBottomLeftRadius: segment.isFirstOfSegment ? 6 : 2,
     borderTopRightRadius: segment.isLastOfSegment ? 6 : 2,
@@ -1543,6 +1541,7 @@ function MonthTrackBlock({
     outlineOffset: isSelected ? "-2px" : undefined,
     pointerEvents: "auto",
     opacity: isDragging ? 0.4 : 1,
+    minHeight: 0,
   };
 
   return (
@@ -1571,13 +1570,25 @@ function MonthTrackBlock({
       {segment.isFirstOfSegment ? (
         <span
           className={`truncate font-medium ${textDark ? "text-[#0c3b6e]" : "text-white"}`}
-          style={{ fontSize: 9, padding: "1px 3px" }}
+          style={{ fontSize: 9, padding: "1px 4px" }}
         >
           {clientName}
         </span>
       ) : null}
     </div>
   );
+}
+
+// Agrupa tracks por slotIndex preservando el orden (slot 0 arriba). Se usa
+// todavía en la vista anual (MiniMonth / YearTrackBlock). La vista mensual
+// ya no la necesita: cada día distribuye sus propias barras.
+function groupTracksBySlot<T extends { slotIndex: number }>(tracks: T[]): T[][] {
+  if (tracks.length === 0) return [];
+  const maxSlot = Math.max(...tracks.map((t) => t.slotIndex));
+  const rows: T[][] = [];
+  for (let i = 0; i <= maxSlot; i++) rows.push([]);
+  for (const t of tracks) rows[t.slotIndex].push(t);
+  return rows.filter((r) => r.length > 0);
 }
 
 function ScheduleOverlay({
