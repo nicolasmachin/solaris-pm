@@ -986,9 +986,13 @@ export function Calendar() {
         setYearDragPreview(null);
       }}
     >
-      <div className="px-6 py-5">
+      {/* En desktop el contenedor toma todo el alto disponible del viewport
+          (menos topbar + paddings del AppLayout ≈ 140px) y se comporta como
+          flex-col para repartir ese alto entre header, filtros y calendario.
+          En mobile (<md) se mantiene el flow vertical anterior. */}
+      <div className="md:flex md:flex-col md:h-[calc(100dvh-140px)]">
         {/* Header */}
-        <div className="mb-5 flex items-start justify-between gap-4 flex-wrap">
+        <div className="mb-5 flex items-start justify-between gap-4 flex-wrap md:shrink-0">
           <div>
             <h1 className="font-display text-xl font-bold text-[var(--color-text-primary)] leading-tight">
               Calendario de instalaciones
@@ -1031,17 +1035,19 @@ export function Calendar() {
 
         {/* Filtros por equipo */}
         {teamsQuery.data && teamsQuery.data.length > 0 && (
-          <TeamFilterBar
-            teams={teamsQuery.data}
-            selected={selectedTeams}
-            onChange={setSelectedTeams}
-            counts={teamCounts}
-          />
+          <div className="md:shrink-0">
+            <TeamFilterBar
+              teams={teamsQuery.data}
+              selected={selectedTeams}
+              onChange={setSelectedTeams}
+              counts={teamCounts}
+            />
+          </div>
         )}
 
-        <div className="flex gap-5 flex-col lg:flex-row">
+        <div className="flex gap-5 flex-col lg:flex-row md:flex-1 md:min-h-0">
           {/* Columna izquierda: calendario */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 md:min-h-0">
             {view === "month" ? (
               <MonthGrid
                 year={year}
@@ -1302,8 +1308,8 @@ function MonthGrid({
   );
 
   return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3">
-      <div className="grid grid-cols-7 gap-1 mb-2">
+    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3 md:flex md:h-full md:flex-col md:min-h-0">
+      <div className="grid grid-cols-7 gap-1 mb-2 md:shrink-0">
         {DAY_HEADERS.map((h) => (
           <div
             key={h}
@@ -1313,7 +1319,13 @@ function MonthGrid({
           </div>
         ))}
       </div>
-      <div className="space-y-1">
+      {/* En desktop: grid con una fila por semana, cada semana toma 1fr del
+          alto (mínimo 80px). Si el viewport no alcanza → scroll interno.
+          En mobile se renderiza como stack vertical con space-y-1. */}
+      <div
+        className="space-y-1 md:space-y-0 md:flex-1 md:min-h-0 md:grid md:gap-1 md:overflow-y-auto"
+        style={{ gridTemplateRows: `repeat(${weeks.length}, minmax(80px, 1fr))` }}
+      >
         {weeks.map((weekStart) => (
           <WeekRow
             key={formatIso(weekStart)}
@@ -1368,12 +1380,12 @@ function WeekRow({
     [schedules, weekStartIso, weekEndIso],
   );
 
-  // Altura dinámica por SEMANA: cada lane ocupa 1/maxLanes del trackArea.
-  // Así una semana con maxLanes=1 y una única multi-día usa el 100% de la
-  // altura; una con maxLanes=3 reparte en tercios.
+  // Altura mínima de la semana: respeta el alto mínimo que necesita con sus
+  // lanes para no colapsar cuando el contenedor padre también es ajustado.
+  // En desktop el padre (MonthGrid) aplica minmax(80px, 1fr) y la semana
+  // termina tomando 1fr del alto disponible; en mobile usa esta minHeight.
   const maxLanes = Math.max(1, plan.totalLanes);
-  const trackArea = Math.max(WEEK_TRACK_AREA_MIN, maxLanes * DAY_LANE_MIN_HEIGHT);
-  const rowHeight = trackArea;
+  const minRowHeight = Math.max(WEEK_TRACK_AREA_MIN, maxLanes * DAY_LANE_MIN_HEIGHT);
 
   // Pills "+N más" que deben ir en el último lane del día que tiene overflow.
   const overflowEntries = Array.from(plan.overflowByDay.entries()).filter(
@@ -1381,7 +1393,7 @@ function WeekRow({
   );
 
   return (
-    <div className="relative" style={{ height: rowHeight }}>
+    <div className="relative md:h-full md:min-h-0" style={{ minHeight: minRowHeight }}>
       {/* Capa de fondo: 7 celdas. Cada celda es droppable y tiene su badge
           con el número del día arriba a la derecha. */}
       <div className="absolute inset-0 grid grid-cols-7 gap-1">
