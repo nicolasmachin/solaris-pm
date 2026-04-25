@@ -4,8 +4,11 @@ type Variant = "primary" | "secondary" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg";
 
 const VARIANT_STYLES: Record<Variant, string> = {
+  // primary usa gradient amarillo Voltia (light: #fbbf24 → #f59e0b,
+  // dark: equivalente a accent-hover → accent). Texto oscuro hardcodeado
+  // en ambos modos porque el bg amarillo no varía suficiente entre temas.
   primary:
-    "bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[#10203a] font-semibold",
+    "bg-[linear-gradient(135deg,var(--color-accent-hover)_0%,var(--color-accent)_100%)] hover:opacity-95 text-[#1f2937] font-bold",
   secondary:
     "bg-[var(--color-border)] hover:bg-[var(--color-border-hover)] text-[var(--color-text-primary)]",
   ghost:

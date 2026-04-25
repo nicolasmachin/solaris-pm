@@ -69,6 +69,18 @@
   --color-pipe-active-label: #fbbf24;
   --color-pipe-active-subitem: #f8fbff;
   --color-pipe-active-dot: #ffd84d;
+
+  /* Headers de tabla "zona focal oscura". En dark, más oscuros que el bg
+     para sentirse "hundidos" debajo de las filas. */
+  --color-table-header-bg: #04101e;
+  --color-table-header-text: #e2e8f0;
+
+  /* Hover de fila en tablas. En dark mantiene el card-hover existente. */
+  --color-row-hover: #102746;
+
+  /* Variantes "soft" para fechas completadas / éxitos (badges con check). */
+  --color-success-bg-soft: rgba(16, 185, 129, 0.10);
+  --color-success-text-strong: #34d399;
 }
 
 :root {
@@ -77,36 +89,43 @@
 
 :root.light {
   color-scheme: light;
-  /* Paleta "Solar clásica" — modo diurno */
-  --color-bg-app: #f8fafc;
+  /* Paleta "Solar cálida" — modo diurno con identidad Voltia */
+  --color-bg-app: #fefdf8;
   --color-bg-sidebar: #e6f1ff;
   --color-bg-card: #ffffff;
-  --color-bg-card-hover: #f3f9ff;
-  --color-border: #b7d3f2;
-  --color-border-hover: #80b4eb;
-  --color-text-primary: #0c3b6e;
-  --color-text-secondary: #27507c;
-  --color-text-muted: #64748b;
-  --color-accent: #f5b800;
-  --color-accent-hover: #d99f00;
+  --color-bg-card-hover: #fffbeb;
+  --color-border: #f3e8c7;
+  --color-border-hover: #e7d49b;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #64748b;
+  --color-text-muted: #94a3b8;
+  --color-accent: #f59e0b;
+  --color-accent-hover: #fbbf24;
 
-  --color-state-done-text: #14532d;
-  --color-state-done-bg: #e8f3ec;
-  --color-state-active-text: #78350f;
-  --color-state-active-bg: #fff4cc;
-  --color-state-pending-text: #5b4700;
-  --color-state-pending-bg: #fff1ad;
-  --color-state-locked-bg: #dbeaf9;
-  --color-state-locked-text: #4f7194;
+  --color-state-done-text: #047857;
+  --color-state-done-bg: #ecfdf5;
+  --color-state-active-text: #b45309;
+  --color-state-active-bg: #fef3c7;
+  --color-state-pending-text: #92400e;
+  --color-state-pending-bg: #fde68a;
+  --color-state-locked-bg: #f1f5f9;
+  --color-state-locked-text: #64748b;
 
-  --color-info-text: #eef7ff;
-  --color-info-bg: #4f8ec8;
-  --color-success-text: #14532d;
-  --color-success-bg: #e8f3ec;
-  --color-warning-text: #78350f;
-  --color-warning-bg: #fff4cc;
-  --color-danger-text: #7f1d1d;
-  --color-danger-bg: #fee2e2;
+  --color-info-text: #1e40af;
+  --color-info-bg: #dbeafe;
+  --color-success-text: #047857;
+  --color-success-bg: #ecfdf5;
+  --color-warning-text: #b45309;
+  --color-warning-bg: #fef3c7;
+  --color-danger-text: #b91c1c;
+  --color-danger-bg: #fef2f2;
+
+  /* Tokens nuevos light */
+  --color-table-header-bg: #1e293b;
+  --color-table-header-text: #e2e8f0;
+  --color-row-hover: #fffbeb;
+  --color-success-bg-soft: #ecfdf5;
+  --color-success-text-strong: #047857;
 
   /* Nav: texto activo azul primario, subrayado amarillo 2px */
   --color-nav-active-text: #0c3b6e;
@@ -135,14 +154,14 @@
   --color-pipe-done-dot: #1f7a3a;
 
   /* Pipeline: tarjeta Activo — pastel + barra lateral sólida */
-  --color-pipe-active-bg: #fff4cc;
+  --color-pipe-active-bg: #fef3c7;
   --color-pipe-active-border: rgba(15, 23, 42, 0.08);
-  --color-pipe-active-border-left: #f5b800;
+  --color-pipe-active-border-left: #f59e0b;
   --color-pipe-active-border-left-width: 3px;
-  --color-pipe-active-title: #78350f;
-  --color-pipe-active-label: #64748b;
+  --color-pipe-active-title: #b45309;
+  --color-pipe-active-label: #94a3b8;
   --color-pipe-active-subitem: #92400e;
-  --color-pipe-active-dot: #f5b800;
+  --color-pipe-active-dot: #f59e0b;
 }
 
 * {

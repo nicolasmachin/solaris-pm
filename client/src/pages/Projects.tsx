@@ -215,7 +215,7 @@ function SortHeader({
     <button
       type="button"
       onClick={() => onSort(sortKey)}
-      className="flex items-center gap-1 text-left text-[11px] font-mono uppercase tracking-widest text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-primary)]"
+      className="flex items-center gap-1 text-left text-[11px] font-mono uppercase tracking-widest text-[var(--color-table-header-text)] transition-colors hover:text-white"
     >
       <span>{label}</span>
       <span className={active ? "text-[var(--color-accent)]" : "opacity-40"}>{active && direction === "asc" ? "↑" : "↓"}</span>
@@ -397,7 +397,7 @@ export function Projects() {
           <div className="overflow-x-auto">
             <table className="min-w-full border-collapse">
               <thead>
-                <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-app)]/50">
+                <tr className="bg-[var(--color-table-header-bg)] text-[var(--color-table-header-text)]">
                   <th className="px-4 py-3"><SortHeader label="Cliente" sortKey="client" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
                   <th className="px-4 py-3"><SortHeader label="Ubicación" sortKey="location" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
                   <th className="px-4 py-3"><SortHeader label="Estado" sortKey="status" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
@@ -407,7 +407,7 @@ export function Projects() {
                   <th className="px-4 py-3"><SortHeader label="Paneles" sortKey="panels" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
                   <th className="px-4 py-3"><SortHeader label="Instalación" sortKey="installationDate" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
                   <th className="px-4 py-3"><SortHeader label="Inicio" sortKey="dates" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
-                  <th className="px-4 py-3 text-left text-[11px] font-mono uppercase tracking-widest text-[var(--color-text-muted)]">Acciones</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-mono uppercase tracking-widest text-[var(--color-table-header-text)]">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -419,7 +419,7 @@ export function Projects() {
                     <tr
                       key={project.id}
                       onClick={() => navigate(`/projects/${project.id}`)}
-                      className="cursor-pointer border-b border-[var(--color-border)]/70 transition-colors hover:bg-[var(--color-bg-card-hover)]"
+                      className="cursor-pointer border-b border-[var(--color-border)]/70 transition-colors hover:bg-[var(--color-row-hover)]"
                     >
                       <td className="px-4 py-4 align-top">
                         <div className="font-medium text-[var(--color-text-primary)]">{project.clientName}</div>

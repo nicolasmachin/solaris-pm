@@ -58,3 +58,71 @@ export function Badge({ variant = "default", label, className = "" }: BadgeProps
     </span>
   );
 }
+
+// ─── Variante "outline + dot" ────────────────────────────────────────────────
+// Estilo distinto al Badge clásico (filled): pill con borde, dot de color
+// adelante y bg suave. Pensado para status interactivos tipo "Esperando",
+// "Pendiente", "En proceso". No reemplaza al Badge existente.
+
+type OutlineDotTone = "neutral" | "danger" | "warning" | "info" | "success";
+
+const OUTLINE_DOT_TONES: Record<
+  OutlineDotTone,
+  { bg: string; text: string; border: string; dot: string }
+> = {
+  neutral: {
+    bg: "var(--color-bg-card)",
+    text: "var(--color-text-secondary)",
+    border: "var(--color-border)",
+    dot: "var(--color-text-muted)",
+  },
+  danger: {
+    bg: "var(--color-danger-bg)",
+    text: "var(--color-danger-text)",
+    border: "var(--color-danger-text)",
+    dot: "var(--color-danger-text)",
+  },
+  warning: {
+    bg: "var(--color-warning-bg)",
+    text: "var(--color-warning-text)",
+    border: "var(--color-warning-text)",
+    dot: "var(--color-warning-text)",
+  },
+  info: {
+    bg: "var(--color-info-bg)",
+    text: "var(--color-info-text)",
+    border: "var(--color-info-text)",
+    dot: "var(--color-info-text)",
+  },
+  success: {
+    bg: "var(--color-success-bg-soft)",
+    text: "var(--color-success-text-strong)",
+    border: "var(--color-success-text-strong)",
+    dot: "var(--color-success-text-strong)",
+  },
+};
+
+export function OutlineDotBadge({
+  label,
+  tone = "neutral",
+  className = "",
+}: {
+  label: string;
+  tone?: OutlineDotTone;
+  className?: string;
+}) {
+  const t = OUTLINE_DOT_TONES[tone];
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold ${className}`}
+      style={{ background: t.bg, color: t.text, border: `1px solid ${t.border}` }}
+    >
+      <span
+        aria-hidden
+        className="inline-block h-1.5 w-1.5 rounded-full"
+        style={{ background: t.dot }}
+      />
+      {label}
+    </span>
+  );
+}

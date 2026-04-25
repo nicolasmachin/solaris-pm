@@ -1,3 +1,9 @@
+/**
+ * @deprecated Este archivo NO se usa. Los tokens viven en
+ * styles/index.css desde el refactor a CSS vars. Mantenido aquí
+ * solo para no romper imports residuales. No agregar valores
+ * nuevos.
+ */
 export const darkTheme = {
   bgApp: "#06111f",
   bgSidebar: "#08172a",

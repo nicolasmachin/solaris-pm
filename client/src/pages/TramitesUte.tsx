@@ -338,18 +338,27 @@ export function TramitesUte() {
 
 // ─── Vista Tabla ────────────────────────────────────────────────────────────
 
-const TABLE_DATE_COLUMNS: Array<{ key: UteActionKey; label: string; short: string }> = [
-  { key: "consultaSentAt",     label: "Consulta enviada",  short: "Cons.env" },
-  { key: "caseOpenedAt",       label: "Caso abierto",      short: "Caso" },
-  { key: "consultaApprovedAt", label: "Consulta aprobada", short: "Cons.apr" },
-  { key: "solicitudSentAt",    label: "Solicitud enviada", short: "Solic.env" },
-  { key: "proyectoApprovedAt", label: "Proyecto aprobado", short: "Proy.apr" },
-  { key: "docs1SentAt",        label: "Docs 1 enviados",   short: "D1.env" },
-  { key: "docs1ApprovedAt",    label: "Docs 1 aprobados",  short: "D1.apr" },
-  { key: "ensayosSentAt",      label: "Ensayos enviados",  short: "Ens.env" },
-  { key: "ensayosApprovedAt",  label: "Ensayos aprobados", short: "Ens.apr" },
-  { key: "docs2SentAt",        label: "Docs 2 enviados",   short: "D2.env" },
-  { key: "finalizedAt",        label: "Finalizado",        short: "Final" },
+// `lines` se renderiza como 2 líneas en el header (palabra arriba +
+// calificador abajo). `label` queda para el title/tooltip y para el
+// mini-modal de edición. `short` se preserva por compat (no usado en
+// la tabla actualmente).
+const TABLE_DATE_COLUMNS: Array<{
+  key: UteActionKey;
+  label: string;
+  short: string;
+  lines: [string, string];
+}> = [
+  { key: "consultaSentAt",     label: "Consulta enviada",  short: "Cons.env",  lines: ["Consulta", "enviada"] },
+  { key: "caseOpenedAt",       label: "Caso abierto",      short: "Caso",      lines: ["Caso", "abierto"] },
+  { key: "consultaApprovedAt", label: "Consulta aprobada", short: "Cons.apr",  lines: ["Consulta", "aprobada"] },
+  { key: "solicitudSentAt",    label: "Solicitud enviada", short: "Solic.env", lines: ["Solicitud", "enviada"] },
+  { key: "proyectoApprovedAt", label: "Proyecto aprobado", short: "Proy.apr",  lines: ["Proyecto", "aprobado"] },
+  { key: "docs1SentAt",        label: "Docs 1 enviados",   short: "D1.env",    lines: ["Docs 1", "enviados"] },
+  { key: "docs1ApprovedAt",    label: "Docs 1 aprobados",  short: "D1.apr",    lines: ["Docs 1", "aprobados"] },
+  { key: "ensayosSentAt",      label: "Ensayos enviados",  short: "Ens.env",   lines: ["Ensayos", "enviados"] },
+  { key: "ensayosApprovedAt",  label: "Ensayos aprobados", short: "Ens.apr",   lines: ["Ensayos", "aprobados"] },
+  { key: "docs2SentAt",        label: "Docs 2 enviados",   short: "D2.env",    lines: ["Docs 2", "enviados"] },
+  { key: "finalizedAt",        label: "Finalizado",        short: "Final",     lines: ["Finalizado", ""] },
 ];
 
 function UteTable({
@@ -362,15 +371,20 @@ function UteTable({
   return (
     <div className="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]">
       <table className="min-w-full text-xs">
-        <thead className="bg-[var(--color-bg-app)] text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">
+        <thead className="bg-[var(--color-table-header-bg)] text-[10px] uppercase tracking-wider text-[var(--color-table-header-text)]">
           <tr>
-            <th className="sticky left-0 z-10 bg-[var(--color-bg-app)] px-3 py-2 text-left font-mono">Cliente</th>
+            <th className="sticky left-0 z-10 bg-[var(--color-table-header-bg)] px-3 py-2 text-left font-mono">Cliente</th>
             <th className="px-3 py-2 text-left font-mono">Etapa</th>
             <th className="px-3 py-2 text-left font-mono">Estado</th>
             <th className="px-3 py-2 text-left font-mono">Caso</th>
             {TABLE_DATE_COLUMNS.map((c) => (
-              <th key={c.key} className="px-2 py-2 text-center font-mono" title={c.label}>
-                {c.short}
+              <th
+                key={c.key}
+                className="px-2 py-2 text-center font-mono normal-case tracking-normal align-middle leading-tight"
+                title={c.label}
+              >
+                <div>{c.lines[0]}</div>
+                <div>{c.lines[1] || " "}</div>
               </th>
             ))}
             <th className="px-3 py-2 text-right font-mono" title="Duración total">Dur.</th>
@@ -417,8 +431,8 @@ function UteTableRow({
   });
 
   return (
-    <tr className="hover:bg-[var(--color-bg-card-hover)]">
-      <td className="sticky left-0 z-10 bg-[var(--color-bg-card)] px-3 py-2 font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)]">
+    <tr className="hover:bg-[var(--color-row-hover)]">
+      <td className="sticky left-0 z-10 bg-[var(--color-bg-card)] px-3 py-2 font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-row-hover)]">
         <div
           className="cursor-pointer truncate max-w-[200px]"
           onClick={() => onRowClick(process.id)}
@@ -830,7 +844,6 @@ function UteDateCell({
   return (
     <td
       className="group relative px-1 py-1 text-center"
-      style={filled ? { background: hexToBgAlpha(color) } : undefined}
       onClick={(e) => e.stopPropagation()}
       onContextMenu={(e) => {
         if (filled) {
@@ -845,11 +858,23 @@ function UteDateCell({
           e.stopPropagation();
           setShowDateEditor(true);
         }}
-        className="w-full rounded px-1 py-1 text-[11px] font-mono hover:bg-[var(--color-bg-card-hover)]"
+        className="block w-full rounded px-1 py-1 text-center text-[11px]"
         title={label}
-        style={{ color: filled ? color : "var(--color-text-muted)" }}
       >
-        {fmtShort(value)}
+        {filled ? (
+          <span
+            className="inline-flex items-center whitespace-nowrap rounded font-mono font-semibold transition-opacity hover:opacity-90"
+            style={{
+              background: hexToBgAlpha(color),
+              color: color,
+              padding: "3px 8px",
+            }}
+          >
+            {fmtShort(value)}
+          </span>
+        ) : (
+          <span className="font-mono text-[var(--color-text-muted)]">—</span>
+        )}
       </button>
 
       {filled ? (
