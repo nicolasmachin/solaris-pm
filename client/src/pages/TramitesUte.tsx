@@ -10,7 +10,6 @@ import {
   X,
   ExternalLink,
   Trash2,
-  Palette,
 } from "lucide-react";
 import {
   createUteProcess,
@@ -810,16 +809,26 @@ function UteDateCell({
   value: string | null;
   color: UteColorHex;
 }) {
-  const [showDateEditor, setShowDateEditor] = useState(false);
-  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showEditor, setShowEditor] = useState(false);
   const qc = useQueryClient();
 
-  const saveDate = useMutation({
-    mutationFn: (v: string | null) => patchUteProcess(processId, { [fieldKey]: v } as any),
+  // Una sola mutation para fecha + color. Calcula el diff y arma el body
+  // con sólo los campos que cambiaron. Si no hay cambios, no pega al backend.
+  const save = useMutation({
+    mutationFn: ({ newDate, newColor }: { newDate: string | null; newColor: UteColorHex }) => {
+      const currentDateIso = value ? value.slice(0, 10) : null;
+      const dateChanged = newDate !== currentDateIso;
+      const colorChanged = newColor !== color;
+      if (!dateChanged && !colorChanged) return Promise.resolve(null);
+      const body: Record<string, unknown> = {};
+      if (dateChanged) body[fieldKey] = newDate;
+      if (colorChanged) body.dateColors = { [fieldKey]: newColor };
+      return patchUteProcess(processId, body as any);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ute-processes"] });
-      toast.success("Fecha actualizada");
-      setShowDateEditor(false);
+      toast.success("Guardado");
+      setShowEditor(false);
     },
     onError: (e: unknown) => {
       const msg =
@@ -829,34 +838,14 @@ function UteDateCell({
     },
   });
 
-  const saveColor = useMutation({
-    mutationFn: (hex: string) =>
-      patchUteProcess(processId, { dateColors: { [fieldKey]: hex } } as any),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["ute-processes"] });
-      toast.success("Color asignado");
-      setShowColorPicker(false);
-    },
-    onError: () => toast.error("No se pudo cambiar el color"),
-  });
-
   const filled = !!value;
   return (
-    <td
-      className="group relative px-1 py-1 text-center"
-      onClick={(e) => e.stopPropagation()}
-      onContextMenu={(e) => {
-        if (filled) {
-          e.preventDefault();
-          setShowColorPicker(true);
-        }
-      }}
-    >
+    <td className="relative px-1 py-1 text-center" onClick={(e) => e.stopPropagation()}>
       <button
         type="button"
         onClick={(e) => {
           e.stopPropagation();
-          setShowDateEditor(true);
+          setShowEditor(true);
         }}
         className="block w-full rounded px-1 py-1 text-center text-[11px]"
         title={label}
@@ -877,56 +866,51 @@ function UteDateCell({
         )}
       </button>
 
-      {filled ? (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowColorPicker(true);
-          }}
-          className="absolute right-0 top-0 hidden rounded bg-[var(--color-bg-app)] p-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] group-hover:block"
-          title="Cambiar color"
-          aria-label="Cambiar color"
-        >
-          <Palette size={10} />
-        </button>
-      ) : null}
-
-      {showDateEditor ? (
+      {showEditor ? (
         <MiniDateEditor
           label={label}
           currentValue={value}
-          onSave={(v) => saveDate.mutate(v)}
-          onClose={() => setShowDateEditor(false)}
-          loading={saveDate.isPending}
-        />
-      ) : null}
-
-      {showColorPicker ? (
-        <ColorPickerPopover
-          current={color}
-          onSelect={(hex) => saveColor.mutate(hex)}
-          onClose={() => setShowColorPicker(false)}
+          currentColor={color}
+          onSave={(newDate, newColor) => save.mutate({ newDate, newColor })}
+          onClose={() => setShowEditor(false)}
+          loading={save.isPending}
         />
       ) : null}
     </td>
   );
 }
 
+// Fecha de hoy en zona local del navegador, formato "YYYY-MM-DD"
+// (compatible con <input type="date">). No usar UTC: el usuario espera ver
+// "su" hoy según calendario local.
+function todayLocalIso(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function MiniDateEditor({
   label,
   currentValue,
+  currentColor,
   onSave,
   onClose,
   loading,
 }: {
   label: string;
   currentValue: string | null;
-  onSave: (v: string | null) => void;
+  currentColor: UteColorHex;
+  onSave: (date: string | null, color: UteColorHex) => void;
   onClose: () => void;
   loading: boolean;
 }) {
-  const [value, setValue] = useState(toInputDate(currentValue));
+  // Si la celda está vacía → input arranca en HOY local. Si tenía valor →
+  // ese valor (sin sobrescribir).
+  const [value, setValue] = useState(currentValue ? toInputDate(currentValue) : todayLocalIso());
+  const [pickedColor, setPickedColor] = useState<UteColorHex>(currentColor);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
@@ -943,6 +927,10 @@ function MiniDateEditor({
             <X size={16} />
           </button>
         </div>
+
+        <label className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
+          Fecha
+        </label>
         <input
           type="date"
           value={value}
@@ -950,9 +938,40 @@ function MiniDateEditor({
           className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
           autoFocus
         />
-        <div className="mt-4 flex items-center justify-between gap-2">
+
+        <label className="mb-2 mt-4 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
+          Color
+        </label>
+        <div className="flex items-center justify-center gap-2">
+          {UTE_COLOR_PALETTE.map((hex) => {
+            const selected = pickedColor === hex;
+            return (
+              <button
+                key={hex}
+                type="button"
+                onClick={() => setPickedColor(hex)}
+                aria-label={`Color ${hex}`}
+                aria-pressed={selected}
+                title={hex}
+                className={`h-5 w-5 rounded-full transition-transform hover:scale-110 ${
+                  selected
+                    ? "ring-2 ring-[var(--color-accent)] ring-offset-2 ring-offset-[var(--color-bg-card)]"
+                    : ""
+                }`}
+                style={{ backgroundColor: hex }}
+              />
+            );
+          })}
+        </div>
+
+        <div className="mt-5 flex items-center justify-between gap-2">
           {currentValue ? (
-            <Button variant="ghost" size="sm" onClick={() => onSave(null)} loading={loading}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onSave(null, pickedColor)}
+              loading={loading}
+            >
               Limpiar
             </Button>
           ) : (
@@ -960,63 +979,17 @@ function MiniDateEditor({
           )}
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" onClick={onClose}>Cancelar</Button>
-            <Button size="sm" onClick={() => onSave(value || null)} loading={loading} disabled={!value}>
+            <Button
+              size="sm"
+              onClick={() => onSave(value || null, pickedColor)}
+              loading={loading}
+              disabled={!value}
+            >
               Guardar
             </Button>
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function ColorPickerPopover({
-  current,
-  onSelect,
-  onClose,
-}: {
-  current: string;
-  onSelect: (hex: string) => void;
-  onClose: () => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    function onDocClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    setTimeout(() => {
-      document.addEventListener("mousedown", onDocClick);
-      document.addEventListener("keydown", onKey);
-    }, 0);
-    return () => {
-      document.removeEventListener("mousedown", onDocClick);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [onClose]);
-
-  return (
-    <div
-      ref={ref}
-      role="dialog"
-      aria-label="Elegir color"
-      className="absolute right-0 top-full z-50 mt-1 flex items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-1.5 shadow-xl"
-    >
-      {UTE_COLOR_PALETTE.map((hex) => (
-        <button
-          key={hex}
-          type="button"
-          onClick={() => onSelect(hex)}
-          className={`h-5 w-5 rounded-full border-2 transition-all ${
-            current === hex ? "border-white scale-110" : "border-transparent hover:border-white/50"
-          }`}
-          style={{ backgroundColor: hex }}
-          title={hex}
-          aria-label={`Color ${hex}`}
-        />
-      ))}
     </div>
   );
 }
