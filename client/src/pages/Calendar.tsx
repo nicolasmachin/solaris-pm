@@ -1417,10 +1417,12 @@ function WeekRow({
       {/* Overlay de barras: grilla 7 cols × maxLanes rows. Cada barra es UN
           elemento posicionado con gridColumn (start + span) y gridRow
           (slotIndex + 1). Las multi-días se ven continuas porque CSS Grid
-          hace que un elemento spanning cruce los gaps entre columnas. */}
+          hace que un elemento spanning cruce los gaps entre columnas.
+          Arranca a 26px del top para dejar espacio al número del día. */}
       <div
-        className="pointer-events-none absolute inset-0 grid grid-cols-7 gap-1"
+        className="pointer-events-none absolute inset-x-0 bottom-0 grid grid-cols-7 gap-1"
         style={{
+          top: 26,
           gridTemplateRows: `repeat(${maxLanes}, 1fr)`,
         }}
       >
@@ -1490,14 +1492,13 @@ function DayCell({
         className="absolute inset-0 h-full w-full rounded hover:bg-[var(--color-bg-card-hover)]"
       />
 
-      {/* Badge con número del día — siempre legible por encima de las barras. */}
+      {/* Número del día en la franja superior reservada (26px). Las barras
+          arrancan debajo, así que no hace falta badge oscuro de fondo. */}
       <span
-        className="pointer-events-none absolute right-1 top-1 z-20 rounded font-semibold tabular-nums"
+        className="pointer-events-none absolute right-2 top-1.5 z-20 font-semibold tabular-nums"
         style={{
-          fontSize: 10,
-          padding: "1px 6px",
-          background: "rgba(13, 20, 32, 0.85)",
-          color: "#ffffff",
+          fontSize: 11,
+          color: "var(--color-text-primary)",
         }}
       >
         {day.getUTCDate()}
