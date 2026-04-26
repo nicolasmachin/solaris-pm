@@ -14,6 +14,7 @@ import {
   CategoriaPrincipal,
   EstadoAprobacion,
   EstadoComprobante,
+  ExpenseSourceType,
   FinanceMovementStatus,
   MovementSourceType,
   GoalArea,
@@ -7599,6 +7600,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       precioSugerido: z.coerce.number().nonnegative().optional(),
       moneda: z.nativeEnum(Moneda).default(Moneda.USD),
       defaultSupplierId: z.string().optional(),
+      gestionaStock: z.boolean().optional(),
+      stockMinimo: z.coerce.number().nonnegative().optional(),
+      ubicacionDeposito: z.string().optional(),
     }).strict();
 
     const itemPatchSchema = z.object({
@@ -7610,22 +7614,37 @@ export async function registerApiRoutes(app: FastifyInstance) {
       moneda: z.nativeEnum(Moneda).optional(),
       defaultSupplierId: z.string().nullable().optional(),
       activo: z.boolean().optional(),
+      gestionaStock: z.boolean().optional(),
+      stockMinimo: z.coerce.number().nonnegative().nullable().optional(),
+      ubicacionDeposito: z.string().nullable().optional(),
     }).strict();
 
     function serializeMaterialItem(it: {
       id: string; categoryId: string; nombre: string; descripcion: string | null;
       unidad: string; precioSugerido: import("@prisma/client/runtime/library").Decimal | null;
       moneda: Moneda; defaultSupplierId: string | null; activo: boolean;
+      gestionaStock: boolean;
+      stockActual: import("@prisma/client/runtime/library").Decimal;
+      stockMinimo: import("@prisma/client/runtime/library").Decimal | null;
+      ubicacionDeposito: string | null;
       createdAt: Date; updatedAt: Date;
       category?: { id: string; nombre: string; orden: number; activa: boolean } | null;
       defaultSupplier?: { id: string; nombre: string } | null;
       _count?: { projectMaterials: number };
     }) {
+      const stockActualNum = Number(it.stockActual);
+      const stockMinimoNum = it.stockMinimo === null ? null : Number(it.stockMinimo);
+      const bajoMinimo = it.gestionaStock && stockMinimoNum !== null && stockActualNum < stockMinimoNum;
       return {
         id: it.id, categoryId: it.categoryId, nombre: it.nombre, descripcion: it.descripcion,
         unidad: it.unidad,
         precioSugerido: it.precioSugerido === null ? null : decimalToNumber(it.precioSugerido),
         moneda: it.moneda, defaultSupplierId: it.defaultSupplierId, activo: it.activo,
+        gestionaStock: it.gestionaStock,
+        stockActual: stockActualNum,
+        stockMinimo: stockMinimoNum,
+        ubicacionDeposito: it.ubicacionDeposito,
+        bajoMinimo,
         createdAt: serializeDate(it.createdAt), updatedAt: serializeDate(it.updatedAt),
         ...(it.category ? { category: it.category } : {}),
         ...(it.defaultSupplier ? { defaultSupplier: it.defaultSupplier } : {}),
@@ -7638,13 +7657,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
         categoryId: z.string().optional(),
         search: z.string().optional(),
         activo: z.enum(["true", "false", "all"]).optional(),
+        gestionaStock: z.enum(["true", "false", "all"]).optional(),
       }).parse(request.query);
-      const where: {
-        categoryId?: string; activo?: boolean;
-        OR?: Array<{ nombre: { contains: string; mode: "insensitive" } } | { descripcion: { contains: string; mode: "insensitive" } }>;
-      } = {};
+      const where: Prisma.MaterialItemWhereInput = {};
       if (query.categoryId) where.categoryId = query.categoryId;
       if (query.activo !== "all") where.activo = query.activo === "false" ? false : true;
+      if (query.gestionaStock && query.gestionaStock !== "all") {
+        where.gestionaStock = query.gestionaStock === "true";
+      }
       if (query.search) {
         where.OR = [
           { nombre: { contains: query.search, mode: "insensitive" } },
@@ -7946,6 +7966,116 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return { ...result, regenerated: movIds.length };
     });
 
+    // ─── Costos del proyecto (basado en consumos de stock) ────────────────────
+    //
+    // Calcula el costo real consumido por un proyecto a partir de los
+    // StockMovements de tipo EGRESO vinculados (no reversed). Cada egreso se
+    // valora con el costoUnitario que tenía el ítem al consumirse, o si no hay
+    // costo grabado, con el precioSugerido actual del MaterialItem como
+    // fallback.
+
+    app.get("/projects/:id/cost-summary", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const project = await prisma.project.findFirst({
+        where: { id, deletedAt: null },
+        select: { id: true, code: true, clientName: true, budgetUsd: true },
+      });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+
+      const movs = await prisma.stockMovement.findMany({
+        where: {
+          projectId: id,
+          tipo: TipoMovimientoStock.EGRESO,
+          reversed: false,
+        },
+        include: {
+          materialItem: {
+            select: {
+              id: true, nombre: true, unidad: true,
+              precioSugerido: true, moneda: true,
+              category: { select: { id: true, nombre: true, orden: true } },
+            },
+          },
+        },
+        orderBy: { fecha: "desc" },
+      });
+
+      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
+      const fallbackRate = lastRate ? (decimalToNumber(lastRate.usdToUyu) ?? 1) : 1;
+      function toUsd(amount: number, moneda: Moneda): number {
+        if (moneda === Moneda.USD) return amount;
+        return fallbackRate > 0 ? amount / fallbackRate : amount;
+      }
+
+      let totalUsedUSD = 0;
+      let totalUsedUYU = 0;
+      const byCategory = new Map<string, { id: string; nombre: string; orden: number; totalUSD: number; itemCount: number }>();
+
+      const movements = movs.map((m) => {
+        const cantidad = Number(m.cantidad);
+        // Precio: el grabado en el movimiento, si existe; sino el sugerido del catálogo.
+        const unitPrice = m.costoUnitario != null
+          ? Number(m.costoUnitario)
+          : (m.materialItem.precioSugerido != null ? Number(m.materialItem.precioSugerido) : 0);
+        const subtotal = cantidad * unitPrice;
+        const moneda = m.moneda;
+        const subtotalUSD = toUsd(subtotal, moneda);
+
+        if (moneda === Moneda.USD) totalUsedUSD += subtotal;
+        else totalUsedUYU += subtotal;
+
+        const cat = m.materialItem.category;
+        if (cat) {
+          const key = cat.id;
+          const prev = byCategory.get(key) ?? { id: cat.id, nombre: cat.nombre, orden: cat.orden, totalUSD: 0, itemCount: 0 };
+          prev.totalUSD += subtotalUSD;
+          prev.itemCount += 1;
+          byCategory.set(key, prev);
+        }
+
+        return {
+          id: m.id,
+          materialItemId: m.materialItemId,
+          materialItemName: m.materialItem.nombre,
+          unidad: m.materialItem.unidad,
+          categoryName: m.materialItem.category?.nombre ?? "—",
+          quantity: cantidad,
+          unitPrice,
+          moneda,
+          subtotal: Math.round(subtotal * 100) / 100,
+          subtotalUSD: Math.round(subtotalUSD * 100) / 100,
+          fecha: serializeDate(m.fecha),
+          priceSource: m.costoUnitario != null ? "movement" : "catalog",
+        };
+      });
+
+      const totalUsedUsdAll = movements.reduce((acc, m) => acc + m.subtotalUSD, 0);
+      const budgetUsd = project.budgetUsd ? decimalToNumber(project.budgetUsd) : null;
+      const marginUSD = budgetUsd != null ? Math.round((budgetUsd - totalUsedUsdAll) * 100) / 100 : null;
+      const marginPercent = budgetUsd != null && budgetUsd > 0
+        ? Math.round((marginUSD! / budgetUsd) * 1000) / 10
+        : null;
+
+      return {
+        project: { id: project.id, code: project.code, clientName: project.clientName },
+        budgetUsd,
+        totalUsedUSD: Math.round(totalUsedUSD * 100) / 100,
+        totalUsedUYU: Math.round(totalUsedUYU * 100) / 100,
+        totalUsedUsdAll: Math.round(totalUsedUsdAll * 100) / 100,
+        itemCount: movements.length,
+        marginUSD,
+        marginPercent,
+        exchangeRate: lastRate ? { usdToUyu: fallbackRate, date: serializeDate(lastRate.date) } : null,
+        byCategoryUSD: Array.from(byCategory.values()).sort((a, b) => a.orden - b.orden).map((c) => ({
+          id: c.id,
+          nombre: c.nombre,
+          totalUSD: Math.round(c.totalUSD * 100) / 100,
+          itemCount: c.itemCount,
+        })),
+        movements,
+      };
+    });
+
     // ─── Finance: Movements ───────────────────────────────────────────────────
 
     const movementCreateSchema = z.object({
@@ -8071,6 +8201,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
       // - Si no viene status, mantenemos compat: status = PAGADO si pagado=true, sino PAGADO por default.
       const status = body.status ?? (body.pagado === false ? FinanceMovementStatus.COMPROMETIDO : FinanceMovementStatus.PAGADO);
       const pagado = status === FinanceMovementStatus.PAGADO;
+      // Si el movimiento de gasto arranca en A_PAGAR/PAGADO, marcamos que
+      // requiere desglose de factura (la UI muestra alerta hasta que el
+      // usuario cargue ítems o lo marque como "sin materiales").
+      const requiresItemDetail = body.tipoMovimiento === TipoMovimiento.GASTO
+        && (status === FinanceMovementStatus.A_PAGAR || status === FinanceMovementStatus.PAGADO);
 
       const movement = await prisma.financeMovement.create({
         data: {
@@ -8090,6 +8225,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           status,
           expectedDate: body.expectedDate ? parseDateOnly(body.expectedDate) : null,
           dueDate: body.dueDate ? parseDateOnly(body.dueDate) : null,
+          requiresItemDetail,
           projectId: body.projectId,
           supplierId: body.supplierId,
           observaciones: body.observaciones,
@@ -8316,6 +8452,17 @@ export async function registerApiRoutes(app: FastifyInstance) {
         action: AuditAction.status_changed,
         description: `Transición ${existing.status} → ${body.newStatus} en movimiento ${existing.descripcion}`,
       });
+      // Auto-detección de desglose pendiente al pasar a A_PAGAR / PAGADO.
+      // No genera stock automáticamente — el usuario debe confirmar el
+      // desglose explícitamente desde el modal o marcar "sin materiales".
+      if (
+        (body.newStatus === FinanceMovementStatus.A_PAGAR || body.newStatus === FinanceMovementStatus.PAGADO)
+        && !existing.hasItemDetail
+        && !existing.noTieneMateriales
+      ) {
+        await prisma.financeMovement.update({ where: { id }, data: { requiresItemDetail: true } });
+      }
+
       return {
         id: updated.id,
         status: updated.status,
@@ -8323,6 +8470,394 @@ export async function registerApiRoutes(app: FastifyInstance) {
         dueDate: updated.dueDate ? serializeDateOnly(updated.dueDate) : null,
         pagado: updated.pagado,
       };
+    });
+
+    // ─── Finance: Pendientes de desglose ─────────────────────────────────────
+
+    app.get("/finance/movements/pending-detail", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async () => {
+      const movs = await prisma.financeMovement.findMany({
+        where: {
+          deletedAt: null,
+          status: { in: [FinanceMovementStatus.A_PAGAR, FinanceMovementStatus.PAGADO] },
+          hasItemDetail: false,
+          noTieneMateriales: false,
+        },
+        include: {
+          project: { select: { id: true, code: true, clientName: true } },
+          supplier: { select: { id: true, nombre: true } },
+        },
+        orderBy: { fecha: "asc" },
+      });
+      return movs.map((m) => ({
+        id: m.id,
+        descripcion: m.descripcion,
+        monto: decimalToNumber(m.monto),
+        moneda: m.moneda,
+        status: m.status,
+        fecha: serializeDateOnly(m.fecha),
+        dueDate: m.dueDate ? serializeDateOnly(m.dueDate) : null,
+        project: m.project,
+        supplier: m.supplier,
+      }));
+    });
+
+    // ─── Finance: Desglose de factura (InvoiceItem) ──────────────────────────
+    //
+    // Permite cargar el detalle de los productos comprados en una factura
+    // A_PAGAR/PAGADO. Al confirmar el desglose, se generan StockMovements de
+    // ENTRADA y se actualiza MaterialItem.stockActual. Si el movimiento luego
+    // se anula, se revierten todos los StockMovements vinculados.
+
+    function serializeInvoiceItem(it: {
+      id: string; movementId: string; materialItemId: string;
+      quantity: import("@prisma/client/runtime/library").Decimal;
+      unitPrice: import("@prisma/client/runtime/library").Decimal;
+      moneda: Moneda; notes: string | null;
+      createdAt: Date; updatedAt: Date;
+      materialItem?: {
+        id: string; nombre: string; unidad: string; gestionaStock: boolean;
+        category: { id: string; nombre: string };
+      } | null;
+      stockMovement?: { id: string; fecha: Date; reversed: boolean } | null;
+    }) {
+      const qty = Number(it.quantity);
+      const price = Number(it.unitPrice);
+      return {
+        id: it.id,
+        movementId: it.movementId,
+        materialItemId: it.materialItemId,
+        quantity: qty,
+        unitPrice: price,
+        subtotal: Math.round(qty * price * 100) / 100,
+        moneda: it.moneda,
+        notes: it.notes,
+        materialItem: it.materialItem ?? null,
+        stockMovement: it.stockMovement
+          ? {
+              id: it.stockMovement.id,
+              fecha: serializeDate(it.stockMovement.fecha),
+              reversed: it.stockMovement.reversed,
+            }
+          : null,
+        createdAt: serializeDate(it.createdAt),
+        updatedAt: serializeDate(it.updatedAt),
+      };
+    }
+
+    function sumInvoiceItems(items: Array<{ quantity: import("@prisma/client/runtime/library").Decimal; unitPrice: import("@prisma/client/runtime/library").Decimal }>) {
+      return items.reduce((acc, it) => acc + Number(it.quantity) * Number(it.unitPrice), 0);
+    }
+
+    app.get("/finance/movements/:id/invoice-items", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const movement = await prisma.financeMovement.findFirst({
+        where: { id, deletedAt: null },
+        select: { id: true, monto: true, moneda: true, status: true, hasItemDetail: true, noTieneMateriales: true, requiresItemDetail: true },
+      });
+      if (!movement) throw notFound("MOVEMENT_NOT_FOUND", "Movimiento no encontrado");
+      const items = await prisma.invoiceItem.findMany({
+        where: { movementId: id },
+        include: {
+          materialItem: {
+            select: {
+              id: true, nombre: true, unidad: true, gestionaStock: true,
+              category: { select: { id: true, nombre: true } },
+            },
+          },
+          stockMovement: { select: { id: true, fecha: true, reversed: true } },
+        },
+        orderBy: { createdAt: "asc" },
+      });
+      const totalItems = Math.round(sumInvoiceItems(items) * 100) / 100;
+      const monto = Number(movement.monto);
+      const diff = Math.round((monto - totalItems) * 100) / 100;
+      return {
+        movement: {
+          id: movement.id,
+          monto,
+          moneda: movement.moneda,
+          status: movement.status,
+          hasItemDetail: movement.hasItemDetail,
+          noTieneMateriales: movement.noTieneMateriales,
+          requiresItemDetail: movement.requiresItemDetail,
+        },
+        items: items.map(serializeInvoiceItem),
+        totalItems,
+        diff,
+        matches: Math.abs(diff) < 0.01,
+      };
+    });
+
+    function ensureCanEditInvoice(m: { status: FinanceMovementStatus; noTieneMateriales: boolean; deletedAt: Date | null }) {
+      if (m.deletedAt) throw badRequest("MOVEMENT_DELETED", "El movimiento está anulado");
+      if (m.noTieneMateriales) throw badRequest("NO_MATERIALES", "El movimiento está marcado como sin materiales");
+      if (m.status !== FinanceMovementStatus.A_PAGAR && m.status !== FinanceMovementStatus.PAGADO) {
+        throw badRequest("INVALID_STATUS", `Solo se puede cargar desglose en A_PAGAR o PAGADO (actual: ${m.status})`);
+      }
+    }
+
+    const invoiceItemBaseSchema = {
+      materialItemId: z.string(),
+      quantity: z.coerce.number().positive(),
+      unitPrice: z.coerce.number().nonnegative(),
+      moneda: z.nativeEnum(Moneda).optional(),
+      notes: z.string().nullable().optional(),
+    };
+
+    app.post("/finance/movements/:id/invoice-items", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const body = z.object(invoiceItemBaseSchema).strict().parse(request.body);
+      const movement = await prisma.financeMovement.findFirst({ where: { id } });
+      if (!movement) throw notFound("MOVEMENT_NOT_FOUND", "Movimiento no encontrado");
+      ensureCanEditInvoice(movement);
+      if (movement.hasItemDetail) {
+        throw badRequest("DETAIL_CONFIRMED", "Este movimiento ya tiene desglose confirmado. Anulalo o desconfírmalo antes de modificar.");
+      }
+      const item = await prisma.materialItem.findFirst({ where: { id: body.materialItemId, activo: true } });
+      if (!item) throw badRequest("MATERIAL_ITEM_INVALID", "El ítem no existe o está inactivo");
+      if (!item.gestionaStock) throw badRequest("ITEM_NO_STOCK", "El ítem no gestiona stock; no puede formar parte de un desglose de factura");
+      const moneda = body.moneda ?? movement.moneda;
+      if (moneda !== movement.moneda) throw badRequest("CURRENCY_MISMATCH", "La moneda de cada ítem debe coincidir con la del movimiento");
+      const created = await prisma.invoiceItem.create({
+        data: {
+          movementId: id,
+          materialItemId: body.materialItemId,
+          quantity: new Prisma.Decimal(body.quantity),
+          unitPrice: new Prisma.Decimal(body.unitPrice),
+          moneda,
+          notes: body.notes ?? null,
+        },
+        include: {
+          materialItem: {
+            select: {
+              id: true, nombre: true, unidad: true, gestionaStock: true,
+              category: { select: { id: true, nombre: true } },
+            },
+          },
+          stockMovement: { select: { id: true, fecha: true, reversed: true } },
+        },
+      });
+      return serializeInvoiceItem(created);
+    });
+
+    app.patch("/finance/movements/:id/invoice-items/:itemId", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+      const { id, itemId } = z.object({ id: z.string(), itemId: z.string() }).parse(request.params);
+      const body = z.object({
+        quantity: z.coerce.number().positive().optional(),
+        unitPrice: z.coerce.number().nonnegative().optional(),
+        notes: z.string().nullable().optional(),
+      }).strict().parse(request.body);
+      const movement = await prisma.financeMovement.findFirst({ where: { id } });
+      if (!movement) throw notFound("MOVEMENT_NOT_FOUND", "Movimiento no encontrado");
+      ensureCanEditInvoice(movement);
+      if (movement.hasItemDetail) {
+        throw badRequest("DETAIL_CONFIRMED", "Desglose ya confirmado; no se puede editar");
+      }
+      const existing = await prisma.invoiceItem.findFirst({ where: { id: itemId, movementId: id } });
+      if (!existing) throw notFound("INVOICE_ITEM_NOT_FOUND", "Ítem de factura no encontrado");
+      const updated = await prisma.invoiceItem.update({
+        where: { id: itemId },
+        data: {
+          ...(body.quantity != null ? { quantity: new Prisma.Decimal(body.quantity) } : {}),
+          ...(body.unitPrice != null ? { unitPrice: new Prisma.Decimal(body.unitPrice) } : {}),
+          ...(body.notes !== undefined ? { notes: body.notes } : {}),
+        },
+        include: {
+          materialItem: {
+            select: {
+              id: true, nombre: true, unidad: true, gestionaStock: true,
+              category: { select: { id: true, nombre: true } },
+            },
+          },
+          stockMovement: { select: { id: true, fecha: true, reversed: true } },
+        },
+      });
+      return serializeInvoiceItem(updated);
+    });
+
+    app.delete("/finance/movements/:id/invoice-items/:itemId", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+      const { id, itemId } = z.object({ id: z.string(), itemId: z.string() }).parse(request.params);
+      const movement = await prisma.financeMovement.findFirst({ where: { id } });
+      if (!movement) throw notFound("MOVEMENT_NOT_FOUND", "Movimiento no encontrado");
+      ensureCanEditInvoice(movement);
+      if (movement.hasItemDetail) {
+        throw badRequest("DETAIL_CONFIRMED", "Desglose ya confirmado; no se puede eliminar ítems");
+      }
+      const existing = await prisma.invoiceItem.findFirst({ where: { id: itemId, movementId: id } });
+      if (!existing) throw notFound("INVOICE_ITEM_NOT_FOUND", "Ítem de factura no encontrado");
+      await prisma.invoiceItem.delete({ where: { id: itemId } });
+      return { success: true };
+    });
+
+    app.post("/finance/movements/:id/invoice-items/confirm", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const user = ensureUser(request);
+      const movement = await prisma.financeMovement.findFirst({ where: { id } });
+      if (!movement) throw notFound("MOVEMENT_NOT_FOUND", "Movimiento no encontrado");
+      ensureCanEditInvoice(movement);
+      if (movement.hasItemDetail) throw badRequest("ALREADY_CONFIRMED", "El desglose ya estaba confirmado");
+
+      const items = await prisma.invoiceItem.findMany({
+        where: { movementId: id },
+        include: { materialItem: true },
+      });
+      if (items.length === 0) throw badRequest("NO_ITEMS", "Cargá al menos un ítem o marcá el movimiento como sin materiales");
+
+      const total = Math.round(sumInvoiceItems(items) * 100) / 100;
+      const monto = Number(movement.monto);
+      const diff = Math.round((monto - total) * 100) / 100;
+      if (Math.abs(diff) >= 0.01) {
+        throw badRequest(
+          "TOTAL_MISMATCH",
+          `El total de ítems (${total.toFixed(2)} ${movement.moneda}) no coincide con el monto del movimiento (${monto.toFixed(2)} ${movement.moneda}). Diferencia: ${diff.toFixed(2)}`,
+        );
+      }
+
+      // Generar StockMovements de ENTRADA por cada InvoiceItem y actualizar
+      // MaterialItem.stockActual. Todo en una transacción.
+      const today = new Date();
+      const fechaUtc = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+
+      await prisma.$transaction(async (tx) => {
+        for (const it of items) {
+          const stockActual = Number(it.materialItem.stockActual);
+          const cantidad = Number(it.quantity);
+          const nuevoStock = stockActual + cantidad;
+          const stockMov = await tx.stockMovement.create({
+            data: {
+              fecha: fechaUtc,
+              materialItemId: it.materialItemId,
+              tipo: TipoMovimientoStock.INGRESO,
+              cantidad: it.quantity,
+              costoUnitario: it.unitPrice,
+              costoTotal: new Prisma.Decimal(cantidad * Number(it.unitPrice)),
+              moneda: it.moneda,
+              stockResultante: new Prisma.Decimal(nuevoStock),
+              supplierId: movement.supplierId,
+              financeMovementId: movement.id,
+              invoiceItemId: it.id,
+              causaIngreso: ExpenseSourceType.FACTURA,
+              referencia: `Factura ${movement.descripcion}`,
+            },
+          });
+          await tx.materialItem.update({
+            where: { id: it.materialItemId },
+            data: { stockActual: new Prisma.Decimal(nuevoStock) },
+          });
+          // No hace falta volver a actualizar invoiceItem.stockMovementId: la
+          // relación inversa se infiere de StockMovement.invoiceItemId (UNIQUE).
+          void stockMov;
+        }
+        await tx.financeMovement.update({
+          where: { id },
+          data: { hasItemDetail: true, requiresItemDetail: true },
+        });
+      });
+
+      await createAuditEntry({
+        entityType: AuditEntityType.invoice_item,
+        entityId: id,
+        projectId: movement.projectId,
+        userId: user.id,
+        action: AuditAction.created,
+        description: `Confirmó desglose de factura: ${items.length} ítem(s) ingresaron al stock`,
+      });
+
+      return { confirmed: true, itemsCount: items.length, total };
+    });
+
+    app.post("/finance/movements/:id/mark-no-materials", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const user = ensureUser(request);
+      const movement = await prisma.financeMovement.findFirst({ where: { id, deletedAt: null } });
+      if (!movement) throw notFound("MOVEMENT_NOT_FOUND", "Movimiento no encontrado");
+      if (movement.hasItemDetail) throw badRequest("ALREADY_CONFIRMED", "El movimiento ya tiene desglose confirmado");
+      const existingItems = await prisma.invoiceItem.count({ where: { movementId: id } });
+      if (existingItems > 0) {
+        throw badRequest("ITEMS_PRESENT", "Eliminá los ítems cargados antes de marcar como sin materiales");
+      }
+      const updated = await prisma.financeMovement.update({
+        where: { id },
+        data: { noTieneMateriales: true, hasItemDetail: true, requiresItemDetail: false },
+      });
+      await createAuditEntry({
+        entityType: AuditEntityType.finance_movement,
+        entityId: id,
+        projectId: movement.projectId,
+        userId: user.id,
+        action: AuditAction.updated,
+        description: `Marcó factura como sin materiales: ${movement.descripcion}`,
+      });
+      return { id: updated.id, noTieneMateriales: true, hasItemDetail: true };
+    });
+
+    // ─── Finance: Anulación con reversión de stock ───────────────────────────
+
+    app.post("/finance/movements/:id/cancel", { preHandler: authorize(Module.FINANZAS, Action.DELETE) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const user = ensureUser(request);
+      const movement = await prisma.financeMovement.findFirst({ where: { id, deletedAt: null } });
+      if (!movement) throw notFound("MOVEMENT_NOT_FOUND", "Movimiento no encontrado");
+
+      const stockMovs = movement.hasItemDetail
+        ? await prisma.stockMovement.findMany({
+            where: { financeMovementId: id, reversed: false, invoiceItemId: { not: null } },
+            include: { materialItem: true },
+          })
+        : [];
+
+      await prisma.$transaction(async (tx) => {
+        // Revertir cada stock movement vinculado
+        for (const sm of stockMovs) {
+          const stockActual = Number(sm.materialItem.stockActual);
+          const cantidad = Number(sm.cantidad);
+          const reverso = sm.tipo === TipoMovimientoStock.INGRESO ? -cantidad : cantidad;
+          const nuevoStock = stockActual + reverso;
+          await tx.stockMovement.create({
+            data: {
+              fecha: new Date(),
+              materialItemId: sm.materialItemId,
+              tipo: sm.tipo === TipoMovimientoStock.INGRESO ? TipoMovimientoStock.EGRESO : TipoMovimientoStock.INGRESO,
+              cantidad: sm.cantidad,
+              costoUnitario: sm.costoUnitario,
+              costoTotal: sm.costoTotal,
+              moneda: sm.moneda,
+              stockResultante: new Prisma.Decimal(nuevoStock),
+              supplierId: sm.supplierId,
+              financeMovementId: sm.financeMovementId,
+              causaIngreso: sm.causaIngreso,
+              reversed: true,
+              referencia: `Reversión de ${sm.id}`,
+              observaciones: `Anulación de movimiento ${movement.descripcion}`,
+            },
+          });
+          await tx.stockMovement.update({ where: { id: sm.id }, data: { reversed: true } });
+          await tx.materialItem.update({
+            where: { id: sm.materialItemId },
+            data: { stockActual: new Prisma.Decimal(nuevoStock) },
+          });
+        }
+        await tx.financeMovement.update({
+          where: { id },
+          data: {
+            deletedAt: new Date(),
+            estadoAprobacion: EstadoAprobacion.ANULADO,
+          },
+        });
+      });
+
+      await createAuditEntry({
+        entityType: AuditEntityType.finance_movement,
+        entityId: id,
+        projectId: movement.projectId,
+        userId: user.id,
+        action: AuditAction.deleted,
+        description: stockMovs.length > 0
+          ? `Anuló movimiento y revirtió ${stockMovs.length} ingreso(s) de stock: ${movement.descripcion}`
+          : `Anuló movimiento: ${movement.descripcion}`,
+      });
+
+      return { success: true, reversedStockMovements: stockMovs.length };
     });
 
     // ─── Finance: Comprobantes ────────────────────────────────────────────────
@@ -8681,137 +9216,99 @@ export async function registerApiRoutes(app: FastifyInstance) {
       };
     });
 
-    // ─── Stock: Products ──────────────────────────────────────────────────────
-
-    const stockProductCreateSchema = z.object({
-      nombre: z.string().min(1),
-      descripcion: z.string().optional(),
-      categoria: z.string().min(1),
-      unidad: z.string().default("unidad"),
-      stockMinimo: z.coerce.number().min(0).default(0),
-      costoPromedio: z.coerce.number().min(0).default(0),
-      moneda: z.nativeEnum(Moneda).default(Moneda.USD),
-      notas: z.string().optional(),
-    }).strict();
-
-    const stockProductPatchSchema = z.object({
-      nombre: z.string().min(1).optional(),
-      descripcion: z.string().nullable().optional(),
-      categoria: z.string().min(1).optional(),
-      unidad: z.string().optional(),
-      stockMinimo: z.coerce.number().min(0).optional(),
-      costoPromedio: z.coerce.number().min(0).optional(),
-      moneda: z.nativeEnum(Moneda).optional(),
-      notas: z.string().nullable().optional(),
-      activo: z.boolean().optional(),
-    }).strict();
+    // ─── Stock: Productos (sobre MaterialItem unificado) ─────────────────────
+    //
+    // Tras la unificación de Stock + Materiales (2026-04-26) los productos del
+    // catálogo viven en MaterialItem. Estos endpoints siguen exponiendo la
+    // ruta legacy /stock/products devolviendo MaterialItems con
+    // gestionaStock=true. La creación/edición/eliminación del catálogo se
+    // hace desde /api/materials/items (mismo modelo).
 
     app.get("/stock/products", { preHandler: authorize(Module.STOCK, Action.VIEW) }, async (request) => {
       const query = z.object({
+        categoryId: z.string().optional(),
         categoria: z.string().optional(),
         activo: z.enum(["true", "false"]).optional(),
+        gestionaStock: z.enum(["true", "false", "all"]).optional(),
       }).parse(request.query);
       const activo = query.activo === undefined ? true : query.activo === "true";
 
-      const products = await prisma.stockProduct.findMany({
-        where: { deletedAt: null, activo, ...(query.categoria ? { categoria: query.categoria } : {}) },
-        orderBy: [{ categoria: "asc" }, { nombre: "asc" }],
-      });
+      const where: Prisma.MaterialItemWhereInput = { activo };
+      if (query.categoryId) where.categoryId = query.categoryId;
+      if (query.categoria) where.category = { nombre: query.categoria };
+      if (query.gestionaStock !== "all") {
+        where.gestionaStock = query.gestionaStock === undefined ? true : query.gestionaStock === "true";
+      }
 
-      return products.map((p) => ({
-        id: p.id, nombre: p.nombre, descripcion: p.descripcion, categoria: p.categoria,
-        unidad: p.unidad, moneda: p.moneda, activo: p.activo, notas: p.notas,
-        stockActual: decimalToNumber(p.stockActual),
-        stockMinimo: decimalToNumber(p.stockMinimo),
-        costoPromedio: decimalToNumber(p.costoPromedio),
-        bajominimo: (decimalToNumber(p.stockActual) ?? 0) <= (decimalToNumber(p.stockMinimo) ?? 0),
-        createdAt: serializeDate(p.createdAt),
-        updatedAt: serializeDate(p.updatedAt),
-      }));
-    });
-
-    app.post("/stock/products", { preHandler: authorize(Module.STOCK, Action.CREATE) }, async (request) => {
-      const user = ensureUser(request);
-      const body = stockProductCreateSchema.parse(request.body);
-      const product = await prisma.stockProduct.create({
-        data: {
-          ...body,
-          stockMinimo: new Prisma.Decimal(body.stockMinimo),
-          costoPromedio: new Prisma.Decimal(body.costoPromedio),
-          stockActual: new Prisma.Decimal(0),
+      const items = await prisma.materialItem.findMany({
+        where,
+        include: {
+          category: { select: { id: true, nombre: true, orden: true } },
+          defaultSupplier: { select: { id: true, nombre: true } },
         },
+        orderBy: [{ category: { orden: "asc" } }, { nombre: "asc" }],
       });
-      await createAuditEntry({
-        entityType: AuditEntityType.stock_product,
-        entityId: product.id,
-        userId: user.id,
-        action: AuditAction.created,
-        description: `Creó producto de stock: ${product.nombre}`,
+
+      return items.map((it) => {
+        const stockActual = Number(it.stockActual);
+        const stockMinimo = it.stockMinimo === null ? null : Number(it.stockMinimo);
+        return {
+          id: it.id,
+          nombre: it.nombre,
+          descripcion: it.descripcion,
+          categoria: it.category?.nombre ?? "—",
+          categoryId: it.categoryId,
+          unidad: it.unidad,
+          moneda: it.moneda,
+          activo: it.activo,
+          gestionaStock: it.gestionaStock,
+          ubicacionDeposito: it.ubicacionDeposito,
+          stockActual,
+          stockMinimo,
+          precioSugerido: it.precioSugerido === null ? null : decimalToNumber(it.precioSugerido),
+          defaultSupplier: it.defaultSupplier,
+          bajominimo: it.gestionaStock && stockMinimo !== null && stockActual < stockMinimo,
+          createdAt: serializeDate(it.createdAt),
+          updatedAt: serializeDate(it.updatedAt),
+        };
       });
-      return { ...product, stockActual: decimalToNumber(product.stockActual), stockMinimo: decimalToNumber(product.stockMinimo), costoPromedio: decimalToNumber(product.costoPromedio) };
-    });
-
-    app.patch("/stock/products/:id", { preHandler: authorize(Module.STOCK, Action.EDIT) }, async (request) => {
-      const user = ensureUser(request);
-      const { id } = z.object({ id: z.string() }).parse(request.params);
-      const body = stockProductPatchSchema.parse(request.body);
-      const existing = await prisma.stockProduct.findFirst({ where: { id, deletedAt: null } });
-      if (!existing) throw notFound("PRODUCT_NOT_FOUND", "Producto no encontrado");
-
-      const updateData: Record<string, unknown> = { ...body };
-      if (body.stockMinimo !== undefined) updateData.stockMinimo = new Prisma.Decimal(body.stockMinimo);
-      if (body.costoPromedio !== undefined) updateData.costoPromedio = new Prisma.Decimal(body.costoPromedio);
-
-      const updated = await prisma.stockProduct.update({ where: { id }, data: updateData });
-      await createAuditEntry({
-        entityType: AuditEntityType.stock_product,
-        entityId: id,
-        userId: user.id,
-        action: AuditAction.updated,
-        description: `Actualizó producto de stock: ${existing.nombre}`,
-      });
-      return { ...updated, stockActual: decimalToNumber(updated.stockActual), stockMinimo: decimalToNumber(updated.stockMinimo), costoPromedio: decimalToNumber(updated.costoPromedio) };
-    });
-
-    app.delete("/stock/products/:id", { preHandler: authorize(Module.STOCK, Action.DELETE) }, async (request) => {
-      const user = ensureUser(request);
-      const { id } = z.object({ id: z.string() }).parse(request.params);
-      const existing = await prisma.stockProduct.findFirst({ where: { id, deletedAt: null } });
-      if (!existing) throw notFound("PRODUCT_NOT_FOUND", "Producto no encontrado");
-      await prisma.stockProduct.update({ where: { id }, data: { deletedAt: new Date() } });
-      await createAuditEntry({
-        entityType: AuditEntityType.stock_product,
-        entityId: id,
-        userId: user.id,
-        action: AuditAction.deleted,
-        description: `Eliminó producto de stock: ${existing.nombre}`,
-      });
-      return { success: true };
     });
 
     // ─── Stock: Movements ─────────────────────────────────────────────────────
 
     app.get("/stock/movements", { preHandler: authorize(Module.STOCK, Action.VIEW) }, async (request) => {
       const query = z.object({
+        materialItemId: z.string().optional(),
+        // legacy: aceptamos productId y lo mapeamos
         productId: z.string().optional(),
         projectId: z.string().optional(),
         tipo: z.nativeEnum(TipoMovimientoStock).optional(),
+        includeReversed: z.enum(["true", "false"]).optional(),
         page: z.coerce.number().int().positive().optional(),
         limit: z.coerce.number().int().positive().max(100).optional(),
       }).parse(request.query);
 
+      const itemId = query.materialItemId ?? query.productId;
       const take = query.limit ?? 20;
       const skip = ((query.page ?? 1) - 1) * take;
 
+      const where: Prisma.StockMovementWhereInput = {
+        ...(itemId ? { materialItemId: itemId } : {}),
+        ...(query.projectId ? { projectId: query.projectId } : {}),
+        ...(query.tipo ? { tipo: query.tipo } : {}),
+        ...(query.includeReversed === "true" ? {} : { reversed: false }),
+      };
+
       const [movements, total] = await prisma.$transaction([
         prisma.stockMovement.findMany({
-          where: {
-            ...(query.productId ? { productId: query.productId } : {}),
-            ...(query.projectId ? { projectId: query.projectId } : {}),
-            ...(query.tipo ? { tipo: query.tipo } : {}),
-          },
+          where,
           include: {
-            product: { select: { id: true, nombre: true, categoria: true, unidad: true } },
+            materialItem: {
+              select: {
+                id: true, nombre: true, unidad: true,
+                category: { select: { id: true, nombre: true } },
+              },
+            },
             supplier: { select: { id: true, nombre: true } },
             project: { select: { id: true, clientName: true, code: true } },
           },
@@ -8819,23 +9316,36 @@ export async function registerApiRoutes(app: FastifyInstance) {
           skip,
           take,
         }),
-        prisma.stockMovement.count({
-          where: {
-            ...(query.productId ? { productId: query.productId } : {}),
-            ...(query.projectId ? { projectId: query.projectId } : {}),
-            ...(query.tipo ? { tipo: query.tipo } : {}),
-          },
-        }),
+        prisma.stockMovement.count({ where }),
       ]);
 
       return {
         data: movements.map((m) => ({
-          ...m,
-          cantidad: decimalToNumber(m.cantidad),
+          id: m.id,
+          fecha: serializeDate(m.fecha),
+          tipo: m.tipo,
+          cantidad: Number(m.cantidad),
           costoUnitario: m.costoUnitario ? decimalToNumber(m.costoUnitario) : null,
           costoTotal: m.costoTotal ? decimalToNumber(m.costoTotal) : null,
-          stockResultante: decimalToNumber(m.stockResultante),
-          fecha: serializeDate(m.fecha),
+          moneda: m.moneda,
+          stockResultante: Number(m.stockResultante),
+          materialItemId: m.materialItemId,
+          // alias para retrocompat con la UI vieja:
+          product: m.materialItem ? {
+            id: m.materialItem.id,
+            nombre: m.materialItem.nombre,
+            unidad: m.materialItem.unidad,
+            categoria: m.materialItem.category?.nombre ?? "—",
+          } : null,
+          materialItem: m.materialItem,
+          supplier: m.supplier,
+          project: m.project,
+          financeMovementId: m.financeMovementId,
+          invoiceItemId: m.invoiceItemId,
+          causaIngreso: m.causaIngreso,
+          reversed: m.reversed,
+          referencia: m.referencia,
+          observaciones: m.observaciones,
           createdAt: serializeDate(m.createdAt),
         })),
         total,
@@ -8849,7 +9359,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const user = ensureUser(request);
       const body = z.object({
         fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-        productId: z.string().min(1),
+        // legacy: productId también se acepta
+        materialItemId: z.string().min(1).optional(),
+        productId: z.string().min(1).optional(),
         tipo: z.nativeEnum(TipoMovimientoStock),
         cantidad: z.coerce.number().positive(),
         costoUnitario: z.coerce.number().min(0).optional(),
@@ -8857,36 +9369,34 @@ export async function registerApiRoutes(app: FastifyInstance) {
         supplierId: z.string().optional(),
         projectId: z.string().optional(),
         financeMovementId: z.string().optional(),
+        causaIngreso: z.nativeEnum(ExpenseSourceType).optional(),
         referencia: z.string().optional(),
         observaciones: z.string().optional(),
-      }).strict().parse(request.body);
+      }).strict()
+        .refine((d) => Boolean(d.materialItemId ?? d.productId), { message: "materialItemId requerido" })
+        .parse(request.body);
 
-      const product = await prisma.stockProduct.findFirst({ where: { id: body.productId, deletedAt: null } });
-      if (!product) throw notFound("PRODUCT_NOT_FOUND", "Producto no encontrado");
+      const itemId = body.materialItemId ?? body.productId!;
+      const item = await prisma.materialItem.findFirst({ where: { id: itemId, activo: true } });
+      if (!item) throw notFound("MATERIAL_ITEM_NOT_FOUND", "Ítem no encontrado o inactivo");
+      if (!item.gestionaStock) throw badRequest("ITEM_NO_STOCK", "Este ítem no gestiona stock (gestionaStock=false)");
 
-      const stockActual = decimalToNumber(product.stockActual) ?? 0;
-      const costoActual = decimalToNumber(product.costoPromedio) ?? 0;
+      const stockActual = Number(item.stockActual);
       let nuevoStock: number;
-      let nuevoCostoPromedio = costoActual;
       let descripcion: string;
 
       if (body.tipo === TipoMovimientoStock.INGRESO) {
         nuevoStock = stockActual + body.cantidad;
-        if (body.costoUnitario && body.costoUnitario > 0) {
-          nuevoCostoPromedio = stockActual > 0
-            ? (stockActual * costoActual + body.cantidad * body.costoUnitario) / nuevoStock
-            : body.costoUnitario;
-        }
-        descripcion = `Ingreso de ${body.cantidad} ${product.unidad} de ${product.nombre}`;
+        descripcion = `Ingreso de ${body.cantidad} ${item.unidad} de ${item.nombre}`;
       } else if (body.tipo === TipoMovimientoStock.EGRESO) {
         if (stockActual < body.cantidad) {
-          throw badRequest("INSUFFICIENT_STOCK", `Stock insuficiente. Disponible: ${stockActual} ${product.unidad}`);
+          throw badRequest("INSUFFICIENT_STOCK", `Stock insuficiente. Disponible: ${stockActual} ${item.unidad}`);
         }
         nuevoStock = stockActual - body.cantidad;
-        descripcion = `Egreso de ${body.cantidad} ${product.unidad} de ${product.nombre}`;
+        descripcion = `Egreso de ${body.cantidad} ${item.unidad} de ${item.nombre}`;
       } else {
         nuevoStock = body.cantidad;
-        descripcion = `Ajuste de stock de ${product.nombre} a ${body.cantidad} ${product.unidad}`;
+        descripcion = `Ajuste de stock de ${item.nombre} a ${body.cantidad} ${item.unidad}`;
       }
 
       const costoTotal = body.costoUnitario ? body.cantidad * body.costoUnitario : null;
@@ -8894,8 +9404,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const [stockMovement] = await prisma.$transaction([
         prisma.stockMovement.create({
           data: {
-            fecha: new Date(body.fecha),
-            productId: body.productId,
+            fecha: parseDateOnly(body.fecha),
+            materialItemId: itemId,
             tipo: body.tipo,
             cantidad: new Prisma.Decimal(body.cantidad),
             costoUnitario: body.costoUnitario ? new Prisma.Decimal(body.costoUnitario) : null,
@@ -8905,16 +9415,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
             supplierId: body.supplierId,
             projectId: body.projectId,
             financeMovementId: body.financeMovementId,
+            causaIngreso: body.causaIngreso,
             referencia: body.referencia,
             observaciones: body.observaciones,
           },
         }),
-        prisma.stockProduct.update({
-          where: { id: body.productId },
-          data: {
-            stockActual: new Prisma.Decimal(nuevoStock),
-            costoPromedio: new Prisma.Decimal(nuevoCostoPromedio.toFixed(4)),
-          },
+        prisma.materialItem.update({
+          where: { id: itemId },
+          data: { stockActual: new Prisma.Decimal(nuevoStock) },
         }),
       ]);
 
@@ -8928,13 +9436,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
       });
 
       return {
-        ...stockMovement,
-        cantidad: decimalToNumber(stockMovement.cantidad),
+        id: stockMovement.id,
+        fecha: serializeDate(stockMovement.fecha),
+        tipo: stockMovement.tipo,
+        cantidad: Number(stockMovement.cantidad),
         costoUnitario: stockMovement.costoUnitario ? decimalToNumber(stockMovement.costoUnitario) : null,
         costoTotal: stockMovement.costoTotal ? decimalToNumber(stockMovement.costoTotal) : null,
-        stockResultante: decimalToNumber(stockMovement.stockResultante),
+        stockResultante: Number(stockMovement.stockResultante),
         nuevoStockActual: nuevoStock,
-        nuevoCostoPromedio,
       };
     });
 
@@ -8948,12 +9457,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const take = query.limit ?? 20;
       const skip = ((query.page ?? 1) - 1) * take;
 
-      const product = await prisma.stockProduct.findFirst({ where: { id, deletedAt: null } });
-      if (!product) throw notFound("PRODUCT_NOT_FOUND", "Producto no encontrado");
+      const item = await prisma.materialItem.findFirst({
+        where: { id },
+        include: { category: { select: { id: true, nombre: true } } },
+      });
+      if (!item) throw notFound("MATERIAL_ITEM_NOT_FOUND", "Ítem no encontrado");
 
       const [movements, total] = await prisma.$transaction([
         prisma.stockMovement.findMany({
-          where: { productId: id },
+          where: { materialItemId: id, reversed: false },
           include: {
             supplier: { select: { id: true, nombre: true } },
             project: { select: { id: true, clientName: true, code: true } },
@@ -8962,22 +9474,26 @@ export async function registerApiRoutes(app: FastifyInstance) {
           skip,
           take,
         }),
-        prisma.stockMovement.count({ where: { productId: id } }),
+        prisma.stockMovement.count({ where: { materialItemId: id, reversed: false } }),
       ]);
 
       return {
         product: {
-          id: product.id, nombre: product.nombre, categoria: product.categoria,
-          unidad: product.unidad, stockActual: decimalToNumber(product.stockActual),
+          id: item.id,
+          nombre: item.nombre,
+          categoria: item.category?.nombre ?? "—",
+          unidad: item.unidad,
+          stockActual: Number(item.stockActual),
         },
         data: movements.map((m) => ({
           id: m.id, fecha: serializeDate(m.fecha), tipo: m.tipo,
-          cantidad: decimalToNumber(m.cantidad),
+          cantidad: Number(m.cantidad),
           costoUnitario: m.costoUnitario ? decimalToNumber(m.costoUnitario) : null,
           costoTotal: m.costoTotal ? decimalToNumber(m.costoTotal) : null,
-          stockResultante: decimalToNumber(m.stockResultante),
+          stockResultante: Number(m.stockResultante),
           supplier: m.supplier, project: m.project,
           referencia: m.referencia, observaciones: m.observaciones,
+          causaIngreso: m.causaIngreso,
           createdAt: serializeDate(m.createdAt),
         })),
         total, page: query.page ?? 1, limit: take, totalPages: Math.ceil(total / take),
@@ -8985,24 +9501,28 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     app.get("/stock/alerts", { preHandler: authorize(Module.STOCK, Action.VIEW) }, async () => {
-      const products = await prisma.stockProduct.findMany({
-        where: { deletedAt: null, activo: true },
+      const items = await prisma.materialItem.findMany({
+        where: { activo: true, gestionaStock: true, stockMinimo: { not: null } },
+        include: { category: { select: { id: true, nombre: true } } },
         orderBy: { stockActual: "asc" },
       });
 
-      const alerts = products
-        .filter((p) => (decimalToNumber(p.stockActual) ?? 0) <= (decimalToNumber(p.stockMinimo) ?? 0))
-        .map((p) => {
-          const actual = decimalToNumber(p.stockActual) ?? 0;
-          const minimo = decimalToNumber(p.stockMinimo) ?? 0;
+      return items
+        .map((it) => {
+          const actual = Number(it.stockActual);
+          const minimo = it.stockMinimo === null ? 0 : Number(it.stockMinimo);
           return {
-            id: p.id, nombre: p.nombre, categoria: p.categoria, unidad: p.unidad,
-            stockActual: actual, stockMinimo: minimo, moneda: p.moneda,
+            id: it.id,
+            nombre: it.nombre,
+            categoria: it.category?.nombre ?? "—",
+            unidad: it.unidad,
+            stockActual: actual,
+            stockMinimo: minimo,
+            moneda: it.moneda,
             ratio: minimo > 0 ? actual / minimo : 0,
           };
         })
+        .filter((a) => a.stockActual < a.stockMinimo)
         .sort((a, b) => a.ratio - b.ratio);
-
-      return alerts;
     });
 }

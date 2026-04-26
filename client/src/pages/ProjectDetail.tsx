@@ -301,20 +301,21 @@ function SolarSystemsSection({
 // ─── Materiales Tab ───────────────────────────────────────────────────────────
 
 function ConsumoModal({ projectId, onClose, onSaved }: { projectId: string; onClose: () => void; onSaved: () => void }) {
-  const [productId, setProductId] = useState('');
+  const [materialItemId, setMaterialItemId] = useState('');
   const [cantidad, setCantidad] = useState('');
   const [observaciones, setObservaciones] = useState('');
   const [serverErr, setServerErr] = useState('');
 
+  // Sólo ítems físicos con stock gestionado pueden consumirse en obra.
   const { data: products = [] } = useQuery({
-    queryKey: ['stock-products'],
-    queryFn: () => getStockProducts({ activo: true }),
+    queryKey: ['stock-products', 'gestionaStock-true'],
+    queryFn: () => getStockProducts({ activo: true, gestionaStock: 'true' }),
   });
 
   const { mutate, isPending } = useMutation({
     mutationFn: () => createStockMovement({
       fecha: new Date().toISOString().slice(0, 10),
-      productId,
+      materialItemId,
       tipo: 'EGRESO',
       cantidad: parseFloat(cantidad),
       projectId,
@@ -331,7 +332,7 @@ function ConsumoModal({ projectId, onClose, onSaved }: { projectId: string; onCl
     },
   });
 
-  const selectedProduct = products.find(p => p.id === productId);
+  const selectedProduct = products.find(p => p.id === materialItemId);
   const qty = parseFloat(cantidad) || 0;
   const insufficient = selectedProduct && qty > selectedProduct.stockActual;
 
@@ -345,7 +346,7 @@ function ConsumoModal({ projectId, onClose, onSaved }: { projectId: string; onCl
 
         <div>
           <label className={lbl}>Producto *</label>
-          <select className={inp} value={productId} onChange={e => { setProductId(e.target.value); setServerErr(''); }}>
+          <select className={inp} value={materialItemId} onChange={e => { setMaterialItemId(e.target.value); setServerErr(''); }}>
             <option value="">Seleccionar producto...</option>
             {products.map(p => (
               <option key={p.id} value={p.id}>{p.nombre} — stock: {p.stockActual} {p.unidad}</option>
@@ -380,7 +381,7 @@ function ConsumoModal({ projectId, onClose, onSaved }: { projectId: string; onCl
           </button>
           <button
             onClick={() => mutate()}
-            disabled={isPending || !productId || !cantidad || qty <= 0}
+            disabled={isPending || !materialItemId || !cantidad || qty <= 0}
             className="px-4 py-2 rounded-lg bg-orange-500 text-white text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-orange-600 transition-colors"
           >
             {isPending ? 'Registrando...' : 'Registrar egreso'}

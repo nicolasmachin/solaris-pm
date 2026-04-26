@@ -1,16 +1,27 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Sparkles, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Sparkles, X, AlertTriangle, ArrowRight } from "lucide-react";
 import { getProjects } from "../api/projects.api";
+import { getPendingDetailMovements } from "../api/finance.api";
 import { Spinner } from "../components/ui/Spinner";
 import { LATEST_RELEASE } from "../data/latestRelease";
+import { usePermission } from "../hooks/usePermission";
 
 const READ_VERSION_KEY = "voltia-changelog-read-version";
 
 export function Dashboard() {
+  const canViewFinance = usePermission("FINANZAS", "VIEW");
   const { data: projects, isLoading } = useQuery({
     queryKey: ["projects"],
     queryFn: () => getProjects(),
+    staleTime: 60_000,
+  });
+
+  const { data: pendingDetail = [] } = useQuery({
+    queryKey: ["pending-detail"],
+    queryFn: getPendingDetailMovements,
+    enabled: canViewFinance,
     staleTime: 60_000,
   });
 
@@ -34,6 +45,19 @@ export function Dashboard() {
           Resumen general de proyectos
         </p>
       </div>
+
+      {canViewFinance && pendingDetail.length > 0 && (
+        <Link
+          to="/finanzas/movimientos"
+          className="mb-4 flex items-center gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl px-5 py-3 hover:bg-amber-500/15 transition-colors"
+        >
+          <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+          <span className="text-sm text-amber-300 font-medium">
+            {pendingDetail.length} factura{pendingDetail.length > 1 ? "s" : ""} con stock sin desglosar
+          </span>
+          <ArrowRight className="w-4 h-4 text-amber-400 ml-auto" />
+        </Link>
+      )}
 
       {isLoading ? (
         <div className="flex items-center gap-3 text-[var(--color-text-muted)] text-sm py-12">

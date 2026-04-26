@@ -138,6 +138,10 @@ export interface FinanceMovement {
   materialItem?: { id: string; nombre: string; unidad: string } | null;
   quantity: number | null;
   unitPrice: number | null;
+  // Desglose de factura
+  requiresItemDetail: boolean;
+  hasItemDetail: boolean;
+  noTieneMateriales: boolean;
   estadoAprobacion: EstadoAprobacion;
   projectId: string | null;
   project: { id: string; code: string; clientName: string } | null;
@@ -186,18 +190,26 @@ export interface FinanceComprobante {
   createdAt: string;
 }
 
+// StockProduct ahora es un alias del shape que devuelve /api/stock/products,
+// que internamente es un MaterialItem con gestionaStock=true. Mantenemos el
+// nombre para no romper el resto del frontend pero los campos nuevos
+// (gestionaStock, ubicacionDeposito, precioSugerido, categoryId,
+// defaultSupplier) reflejan el modelo unificado. costoPromedio ya no existe.
 export interface StockProduct {
   id: string;
   nombre: string;
   descripcion: string | null;
-  categoria: string;
+  categoria: string;        // nombre de la categoría (legacy)
+  categoryId: string;
   unidad: string;
   moneda: Moneda;
   activo: boolean;
-  notas: string | null;
+  gestionaStock: boolean;
   stockActual: number;
-  stockMinimo: number;
-  costoPromedio: number;
+  stockMinimo: number | null;
+  ubicacionDeposito: string | null;
+  precioSugerido: number | null;
+  defaultSupplier: { id: string; nombre: string } | null;
   bajominimo: boolean;
   createdAt: string;
   updatedAt: string;
@@ -212,10 +224,19 @@ export interface StockMovement {
   costoTotal: number | null;
   stockResultante: number;
   moneda: Moneda;
-  productId: string;
+  materialItemId: string;
+  // alias legacy `product` mientras migramos la UI
   product: { id: string; nombre: string; categoria: string; unidad: string } | null;
+  materialItem: {
+    id: string; nombre: string; unidad: string;
+    category: { id: string; nombre: string } | null;
+  } | null;
   supplier: { id: string; nombre: string } | null;
   project: { id: string; code: string; clientName: string } | null;
+  financeMovementId: string | null;
+  invoiceItemId: string | null;
+  causaIngreso: 'FACTURA' | 'DEVOLUCION_PROVEEDOR' | 'AJUSTE_INVENTARIO' | 'IMPORTACION_INICIAL' | 'OTRO' | null;
+  reversed: boolean;
   referencia: string | null;
   observaciones: string | null;
   createdAt: string;

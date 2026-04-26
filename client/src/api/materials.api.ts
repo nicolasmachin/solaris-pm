@@ -35,6 +35,9 @@ export const createMaterialItem = (body: {
   precioSugerido?: number;
   moneda?: Moneda;
   defaultSupplierId?: string;
+  gestionaStock?: boolean;
+  stockMinimo?: number;
+  ubicacionDeposito?: string;
 }) => apiClient.post<MaterialItem>('/api/materials/items', body).then(r => r.data);
 
 export const patchMaterialItem = (id: string, body: Partial<{
@@ -46,6 +49,9 @@ export const patchMaterialItem = (id: string, body: Partial<{
   moneda: Moneda;
   defaultSupplierId: string | null;
   activo: boolean;
+  gestionaStock: boolean;
+  stockMinimo: number | null;
+  ubicacionDeposito: string | null;
 }>) => apiClient.patch<MaterialItem>(`/api/materials/items/${id}`, body).then(r => r.data);
 
 export const deleteMaterialItem = (id: string) =>

@@ -1,5 +1,70 @@
 # Novedades
 
+## v2.3
+
+### 26 de abril de 2026
+
+#### Stock unificado con catálogo de Materiales + desglose de facturas
+
+**Catálogo único**
+- El catálogo de Stock y el de Materiales se unificaron: ahora son la misma tabla. Los productos físicos viven en Admin → Materiales (también editables desde Stock) y comparten precio sugerido, proveedor por defecto, categoría y unidad.
+- Cada ítem tiene un toggle **"Gestiona stock"**: si está prendido es un producto físico que entra/sale del depósito; si está apagado es un servicio (mano de obra, trámites) que no impacta inventario pero sí puede aparecer en la lista de materiales del proyecto y generar previstos.
+- Campo nuevo **"Ubicación depósito"** por ítem.
+- Los datos de prueba viejos del Stock se borraron (los 5 productos demo y sus 2 movimientos). El stock arranca en 0 y se carga manualmente o vía desglose de factura.
+
+**Página Stock rediseñada**
+- Tabla muestra: producto, categoría, unidad, stock, mínimo, ubicación, precio sugerido. Filas de servicios se distinguen con badge.
+- Crear/editar producto = crear/editar MaterialItem (mismo modal en Stock y en Admin → Materiales).
+- Filtro nuevo: "Incluir servicios (sin stock)" — por default sólo se muestran físicos.
+- "Valor inventario" se calcula con precio sugerido (el costo promedio dejó de existir).
+- Modal de Ingreso pide ahora **causa**: Factura / Devolución de proveedor / Ajuste de inventario / Importación inicial / Otro. Aviso explícito de que para facturas conviene cargar el desglose desde Finanzas.
+
+**Desglose de factura → ingreso al stock**
+- Cuando un movimiento de gasto pasa a estado **A pagar** o **Pagado**, aparece un nuevo flujo para cargar el detalle de los ítems comprados.
+- En el form de "Nuevo movimiento", al elegir A pagar/Pagado aparece un panel ámbar con dos opciones:
+  - Botón **"Cargar desglose ahora"**: guarda el movimiento y abre directamente el modal de desglose.
+  - Toggle **"Esta factura no tiene materiales"**: se guarda como sin materiales (servicios, mano de obra) y no impacta stock.
+  - Si se ignora, el movimiento queda como "Desglose pendiente" con un toast de aviso.
+- En la lista de movimientos, cada factura A pagar/Pagado sin desglose muestra:
+  - Badge ámbar "⚠ Desglose pendiente" pegado a la descripción.
+  - Botón "Desglose" en la columna de acciones que abre el modal directo.
+- Las que ya tienen desglose confirmado muestran badge verde "✓ Stock".
+- Filtro nuevo en Movimientos: **"Pendientes de desglose"** que filtra localmente A pagar/Pagado sin desglose ni "sin materiales".
+
+**Modal de desglose**
+- Header con monto objetivo del movimiento y toggle "Esta factura no tiene materiales".
+- Tabla editable inline: cantidad y precio unitario con blur/Enter; subtotal calculado.
+- Selector de productos del catálogo (sólo físicos), agrupado por categoría con buscador.
+- Footer con: total ítems, monto del movimiento, **diferencia** en rojo si no cuadra. Botón "Confirmar desglose" deshabilitado hasta que la diferencia sea menor a 1 centavo.
+- Al confirmar:
+  - Se genera un movimiento de stock de tipo **Ingreso** por cada ítem con causa **Factura**.
+  - Se actualiza el stock actual del catálogo automáticamente.
+  - La factura queda marcada como "Stock ingresado".
+- Si después se anula la factura, todos esos ingresos de stock se revierten automáticamente.
+
+**Anular movimiento**
+- En el detalle de un movimiento con desglose confirmado, botón nuevo **"Anular movimiento (revierte stock)"** con confirmación.
+- Crea un movimiento de stock espejo (sale lo que entró) para mantener el saldo correcto.
+- El movimiento original queda marcado como ANULADO con `deletedAt` (preserva histórico para auditoría).
+
+**Alertas globales**
+- En el **Dashboard general** (página principal), si hay facturas con stock sin desglosar, aparece un banner ámbar arriba con link directo (sólo para usuarios con permiso FINANZAS.VIEW).
+- En el **Dashboard de Finanzas** (`/finanzas`), banner equivalente al lado del de stock bajo mínimo.
+
+**Pestaña Costos del proyecto rediseñada**
+- Antes los KPIs eran Previsto/Comprometido/A pagar/Pagado de FinanceMovements. Ahora la pestaña refleja **costo real consumido** del proyecto, basado en los egresos de stock vinculados al `projectId`.
+- KPIs: Costo total (USD + UYU desglosados), ítems consumidos, presupuesto del proyecto, **margen estimado** (presupuesto USD − costo total USD, con porcentaje).
+- Tabla por categoría con totales consolidados en USD.
+- Tabla detalle de cada consumo: ítem, categoría, cantidad, precio unitario (con marca `cat.` si vino del precio sugerido del catálogo en lugar del costo grabado), subtotal, fecha.
+- UYU se convierte a USD con el último tipo de cambio cargado; se aclara explícitamente abajo.
+
+**Pestaña Materiales del proyecto**
+- El dropdown del modal "Registrar consumo" ahora sólo lista productos físicos (gestionaStock=true). Servicios no aparecen porque no tiene sentido consumir mano de obra del depósito.
+
+#### Cambios técnicos importantes
+- Migración `unify_stock_with_materials_and_invoice_items`: se eliminó la tabla `stock_products`; los movimientos de stock ahora apuntan a `material_items`. Tabla nueva `invoice_items` para el desglose por factura.
+- Endpoints nuevos: `GET/POST/PATCH/DELETE /api/finance/movements/:id/invoice-items`, `POST /api/finance/movements/:id/invoice-items/confirm`, `POST /api/finance/movements/:id/mark-no-materials`, `POST /api/finance/movements/:id/cancel`, `GET /api/finance/movements/pending-detail`, `GET /api/projects/:id/cost-summary`.
+
 ## v2.2
 
 ### 26 de abril de 2026

@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { TrendingUp, TrendingDown, Wallet, Clock, AlertTriangle, ArrowRight, RefreshCw, Plus } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
-import { getDashboard, getCashflow, getExchangeRate, createExchangeRate, getComprobantes, getBcuExchangeRatePreview } from '../api/finance.api';
+import { getDashboard, getCashflow, getExchangeRate, createExchangeRate, getComprobantes, getBcuExchangeRatePreview, getPendingDetailMovements } from '../api/finance.api';
 import { getStockAlerts } from '../api/stock.api';
 import { fmtCurrency, fmtDate, currentMonthYear, MONTH_NAMES } from '../lib/finance';
 import type { FinanceMovement, TipoMovimiento } from '../types/finance.types';
@@ -328,6 +328,11 @@ export function Finance() {
     queryFn: getStockAlerts,
   });
 
+  const { data: pendingDetail = [] } = useQuery({
+    queryKey: ['pending-detail'],
+    queryFn: getPendingDetailMovements,
+  });
+
   const loading = loadingDash || loadingCF;
 
   return (
@@ -364,6 +369,18 @@ export function Finance() {
           <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0" />
           <span className="text-sm text-yellow-300 font-medium">{alerts.length} producto{alerts.length > 1 ? 's' : ''} con stock bajo mínimo</span>
           <ArrowRight className="w-4 h-4 text-yellow-400 ml-auto" />
+        </Link>
+      )}
+
+      {/* Movimientos pendientes de desglose */}
+      {pendingDetail.length > 0 && (
+        <Link to="/finanzas/movimientos" className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl px-5 py-3 hover:bg-amber-500/15 transition-colors">
+          <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+          <span className="text-sm text-amber-300 font-medium">
+            {pendingDetail.length} factura{pendingDetail.length > 1 ? 's' : ''} pendiente{pendingDetail.length > 1 ? 's' : ''} de desglose
+          </span>
+          <span className="text-xs text-amber-200/80">— el stock todavía no ingresó</span>
+          <ArrowRight className="w-4 h-4 text-amber-400 ml-auto" />
         </Link>
       )}
 

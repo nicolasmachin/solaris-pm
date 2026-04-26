@@ -24,7 +24,6 @@ import {
   TaskPriority,
   TaskStatus,
   TipoMovimiento,
-  TipoMovimientoStock,
   TipoObra,
   UteStage,
   UteStatus,
@@ -1580,64 +1579,6 @@ async function seedFinanceAndStock(
   await upsertSubcat("Materiales de obra", CategoriaPrincipal.PROYECTO_SALIDA);
   await upsertSubcat("Consumo en obra", CategoriaPrincipal.CONSUMO_STOCK);
 
-  // StockProducts
-  async function upsertProduct(
-    id: string,
-    data: Omit<Prisma.StockProductCreateInput, "id">,
-  ) {
-    return prisma.stockProduct.upsert({
-      where: { id },
-      create: { id, ...data },
-      update: data,
-    });
-  }
-
-  const paneles = await upsertProduct("seed-stock-paneles", {
-    nombre: "Panel solar 550W",
-    categoria: "Paneles",
-    unidad: "unidad",
-    stockActual: new Prisma.Decimal("45"),
-    stockMinimo: new Prisma.Decimal("10"),
-    costoPromedio: new Prisma.Decimal("185.00"),
-    moneda: Moneda.USD,
-  });
-  await upsertProduct("seed-stock-inversores", {
-    nombre: "Inversor Growatt 5kW",
-    categoria: "Inversores",
-    unidad: "unidad",
-    stockActual: new Prisma.Decimal("8"),
-    stockMinimo: new Prisma.Decimal("2"),
-    costoPromedio: new Prisma.Decimal("950.00"),
-    moneda: Moneda.USD,
-  });
-  await upsertProduct("seed-stock-cable", {
-    nombre: "Cable DC 6mm",
-    categoria: "Cables",
-    unidad: "metro",
-    stockActual: new Prisma.Decimal("500"),
-    stockMinimo: new Prisma.Decimal("100"),
-    costoPromedio: new Prisma.Decimal("2.50"),
-    moneda: Moneda.USD,
-  });
-  const estructura = await upsertProduct("seed-stock-estructura", {
-    nombre: "Estructura aluminio",
-    categoria: "Estructuras",
-    unidad: "kit",
-    stockActual: new Prisma.Decimal("15"),
-    stockMinimo: new Prisma.Decimal("5"),
-    costoPromedio: new Prisma.Decimal("320.00"),
-    moneda: Moneda.USD,
-  });
-  await upsertProduct("seed-stock-disyuntor", {
-    nombre: "Disyuntor 32A",
-    categoria: "Protecciones",
-    unidad: "unidad",
-    stockActual: new Prisma.Decimal("30"),
-    stockMinimo: new Prisma.Decimal("10"),
-    costoPromedio: new Prisma.Decimal("18.00"),
-    moneda: Moneda.USD,
-  });
-
   // FinanceMovements
   async function upsertMov(
     id: string,
@@ -1782,7 +1723,7 @@ async function seedFinanceAndStock(
     creadoPorId: adminId,
   });
 
-  const movStock2 = await upsertMov("seed-movfin-stock-2", {
+  await upsertMov("seed-movfin-stock-2", {
     fecha: new Date("2026-03-01"),
     mes: 3, anio: 2026,
     tipoMovimiento: TipoMovimiento.GASTO,
@@ -1797,45 +1738,12 @@ async function seedFinanceAndStock(
     creadoPorId: adminId,
   });
 
-  // StockMovements
-  async function upsertStockMov(
-    id: string,
-    data: Omit<Prisma.StockMovementUncheckedCreateInput, "id">,
-  ) {
-    await prisma.stockMovement.upsert({
-      where: { id },
-      create: { id, ...data },
-      update: data,
-    });
-  }
-
-  await upsertStockMov("seed-movstock-1", {
-    fecha: new Date("2026-02-15"),
-    productId: paneles.id,
-    tipo: TipoMovimientoStock.INGRESO,
-    cantidad: new Prisma.Decimal("20"),
-    costoUnitario: new Prisma.Decimal("185.00"),
-    costoTotal: new Prisma.Decimal("3700.00"),
-    moneda: Moneda.USD,
-    stockResultante: new Prisma.Decimal("45"),
-    supplierId: growatt.id,
-    financeMovementId: movStock1.id,
-    referencia: "OC-2026-001",
-  });
-  await upsertStockMov("seed-movstock-2", {
-    fecha: new Date("2026-03-01"),
-    productId: estructura.id,
-    tipo: TipoMovimientoStock.INGRESO,
-    cantidad: new Prisma.Decimal("5"),
-    costoUnitario: new Prisma.Decimal("320.00"),
-    costoTotal: new Prisma.Decimal("1600.00"),
-    moneda: Moneda.USD,
-    stockResultante: new Prisma.Decimal("15"),
-    supplierId: estructuras.id,
-    financeMovementId: movStock2.id,
-    referencia: "OC-2026-002",
-  });
-
+  // Nota: el seed antes creaba StockProduct + StockMovement de demo. Tras la
+  // unificación de stock con MaterialItem (migración
+  // 20260426210100_unify_stock_with_materials_and_invoice_items) los productos
+  // de stock viven en MaterialItem. El seed de catálogo de materiales corre
+  // aparte (seedMaterialCategories).
+  void movStock1;
   console.log("Finance & Stock seed completado.");
 }
 

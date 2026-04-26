@@ -21,6 +21,11 @@ export interface MaterialItem {
   moneda: Moneda;
   defaultSupplierId: string | null;
   activo: boolean;
+  gestionaStock: boolean;
+  stockActual: number;
+  stockMinimo: number | null;
+  ubicacionDeposito: string | null;
+  bajoMinimo: boolean;
   createdAt: string;
   updatedAt: string;
   category?: { id: string; nombre: string; orden: number; activa: boolean };

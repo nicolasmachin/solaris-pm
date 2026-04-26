@@ -138,6 +138,125 @@ export const deleteMovement = (id: string) =>
 export const transitionMovement = (id: string, body: { newStatus: FinanceMovementStatus; paidDate?: string; dueDate?: string }) =>
   apiClient.post<{ id: string; status: FinanceMovementStatus; fecha: string; dueDate: string | null; pagado: boolean }>(`/api/finance/movements/${id}/transition`, body).then(r => r.data);
 
+export const cancelMovement = (id: string) =>
+  apiClient.post<{ success: true; reversedStockMovements: number }>(`/api/finance/movements/${id}/cancel`).then(r => r.data);
+
+// ─── Invoice items (desglose de factura) ─────────────────────────────────────
+
+export interface InvoiceItem {
+  id: string;
+  movementId: string;
+  materialItemId: string;
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
+  moneda: Moneda;
+  notes: string | null;
+  materialItem: {
+    id: string;
+    nombre: string;
+    unidad: string;
+    gestionaStock: boolean;
+    category: { id: string; nombre: string };
+  } | null;
+  stockMovement: { id: string; fecha: string; reversed: boolean } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InvoiceItemsResponse {
+  movement: {
+    id: string;
+    monto: number;
+    moneda: Moneda;
+    status: FinanceMovementStatus;
+    hasItemDetail: boolean;
+    noTieneMateriales: boolean;
+    requiresItemDetail: boolean;
+  };
+  items: InvoiceItem[];
+  totalItems: number;
+  diff: number;
+  matches: boolean;
+}
+
+export const getInvoiceItems = (movementId: string) =>
+  apiClient.get<InvoiceItemsResponse>(`/api/finance/movements/${movementId}/invoice-items`).then(r => r.data);
+
+export const createInvoiceItem = (movementId: string, body: {
+  materialItemId: string;
+  quantity: number;
+  unitPrice: number;
+  moneda?: Moneda;
+  notes?: string | null;
+}) =>
+  apiClient.post<InvoiceItem>(`/api/finance/movements/${movementId}/invoice-items`, body).then(r => r.data);
+
+export const patchInvoiceItem = (movementId: string, itemId: string, body: Partial<{
+  quantity: number;
+  unitPrice: number;
+  notes: string | null;
+}>) =>
+  apiClient.patch<InvoiceItem>(`/api/finance/movements/${movementId}/invoice-items/${itemId}`, body).then(r => r.data);
+
+export const deleteInvoiceItem = (movementId: string, itemId: string) =>
+  apiClient.delete(`/api/finance/movements/${movementId}/invoice-items/${itemId}`);
+
+export const confirmInvoiceItems = (movementId: string) =>
+  apiClient.post<{ confirmed: true; itemsCount: number; total: number }>(`/api/finance/movements/${movementId}/invoice-items/confirm`).then(r => r.data);
+
+export const markNoMateriales = (movementId: string) =>
+  apiClient.post<{ id: string; noTieneMateriales: true; hasItemDetail: true }>(`/api/finance/movements/${movementId}/mark-no-materials`).then(r => r.data);
+
+// ─── Pendientes de desglose ──────────────────────────────────────────────────
+
+export interface PendingDetailMovement {
+  id: string;
+  descripcion: string;
+  monto: number;
+  moneda: Moneda;
+  status: FinanceMovementStatus;
+  fecha: string;
+  dueDate: string | null;
+  project: { id: string; code: string; clientName: string } | null;
+  supplier: { id: string; nombre: string } | null;
+}
+
+export const getPendingDetailMovements = () =>
+  apiClient.get<PendingDetailMovement[]>('/api/finance/movements/pending-detail').then(r => r.data);
+
+// ─── Cost summary del proyecto ───────────────────────────────────────────────
+
+export interface CostSummary {
+  project: { id: string; code: string; clientName: string };
+  budgetUsd: number | null;
+  totalUsedUSD: number;
+  totalUsedUYU: number;
+  totalUsedUsdAll: number;
+  itemCount: number;
+  marginUSD: number | null;
+  marginPercent: number | null;
+  exchangeRate: { usdToUyu: number; date: string } | null;
+  byCategoryUSD: { id: string; nombre: string; totalUSD: number; itemCount: number }[];
+  movements: {
+    id: string;
+    materialItemId: string;
+    materialItemName: string;
+    unidad: string;
+    categoryName: string;
+    quantity: number;
+    unitPrice: number;
+    moneda: Moneda;
+    subtotal: number;
+    subtotalUSD: number;
+    fecha: string;
+    priceSource: 'movement' | 'catalog';
+  }[];
+}
+
+export const getProjectCostSummary = (projectId: string) =>
+  apiClient.get<CostSummary>(`/api/projects/${projectId}/cost-summary`).then(r => r.data);
+
 export const getPrevistosPendientes = (params?: { categoryId?: string; supplierId?: string; from?: string; to?: string }) =>
   apiClient.get<PrevistoPendiente[]>('/api/finance/movements/previstos-pendientes', { params }).then(r => r.data);
 

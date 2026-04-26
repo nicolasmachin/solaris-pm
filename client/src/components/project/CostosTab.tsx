@@ -1,192 +1,166 @@
-import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Spinner } from '../ui/Spinner';
-import { getMovements } from '../../api/finance.api';
+import { getProjectCostSummary } from '../../api/finance.api';
 import { fmtCurrency, fmtDate } from '../../lib/finance';
-import {
-  CATEGORIA_LABEL,
-  STATUS_COLOR,
-  STATUS_LABEL,
-} from '../../types/finance.types';
-import type { FinanceMovement, FinanceMovementStatus } from '../../types/finance.types';
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
 
-const STATUS_OPTIONS: ('all' | FinanceMovementStatus)[] = ['all', 'PREVISTO', 'COMPROMETIDO', 'A_PAGAR', 'PAGADO'];
-const STATUS_OPT_LABEL: Record<'all' | FinanceMovementStatus, string> = {
-  all: 'Todos',
-  PREVISTO: 'Previstos',
-  COMPROMETIDO: 'Comprometidos',
-  A_PAGAR: 'A pagar',
-  PAGADO: 'Pagados',
-};
-
-export function CostosTab({ projectId, budgetUsd }: { projectId: string; budgetUsd?: number | null }) {
-  const [filter, setFilter] = useState<'all' | FinanceMovementStatus>('all');
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['project-movements', projectId],
-    queryFn: () => getMovements({ projectId, limit: 200 }),
+export function CostosTab({ projectId }: { projectId: string; budgetUsd?: number | null }) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['project-cost-summary', projectId],
+    queryFn: () => getProjectCostSummary(projectId),
   });
 
-  const movements: FinanceMovement[] = useMemo(() => data?.data ?? [], [data]);
+  if (isLoading) return <div className="flex items-center justify-center py-12"><Spinner /></div>;
+  if (error || !data) return <p className="text-sm text-[var(--color-text-muted)] text-center py-6">No se pudo cargar el resumen de costos</p>;
 
-  const filtered = useMemo(() => {
-    return filter === 'all' ? movements : movements.filter(m => m.status === filter);
-  }, [movements, filter]);
-
-  // Totales por estado, separados por moneda
-  const totals = useMemo(() => {
-    const init = (): Record<string, number> => ({});
-    const t = {
-      previsto: init(),
-      comprometido: init(),
-      a_pagar: init(),
-      pagado: init(),
-      ingresos: init(),
-    };
-    for (const m of movements) {
-      if (m.tipoMovimiento === 'INGRESO') {
-        t.ingresos[m.moneda] = (t.ingresos[m.moneda] ?? 0) + m.monto;
-        continue;
-      }
-      const bucket = m.status === 'PREVISTO' ? t.previsto : m.status === 'COMPROMETIDO' ? t.comprometido : m.status === 'A_PAGAR' ? t.a_pagar : t.pagado;
-      bucket[m.moneda] = (bucket[m.moneda] ?? 0) + m.monto;
-    }
-    return t;
-  }, [movements]);
-
-  // Total estimado para margen: previsto + comprometido + a_pagar + pagado, en USD asumiendo UYU se ignora si no hay TC
-  const totalCostosUsd = useMemo(() => {
-    const sum = (b: Record<string, number>) => (b.USD ?? 0);
-    return sum(totals.previsto) + sum(totals.comprometido) + sum(totals.a_pagar) + sum(totals.pagado);
-  }, [totals]);
-
-  const margenUsd = budgetUsd != null && budgetUsd > 0 ? budgetUsd - totalCostosUsd : null;
-  const margenPct = budgetUsd != null && budgetUsd > 0 ? (margenUsd! / budgetUsd) * 100 : null;
-
-  function fmtBucket(b: Record<string, number>) {
-    const parts = Object.entries(b).filter(([, v]) => v > 0).map(([m, v]) => fmtCurrency(v, m as 'USD' | 'UYU'));
-    return parts.length === 0 ? '—' : parts.join(' · ');
-  }
+  const usdAndUyu: { val: number; moneda: 'USD' | 'UYU' }[] = [];
+  if (data.totalUsedUSD > 0) usdAndUyu.push({ val: data.totalUsedUSD, moneda: 'USD' });
+  if (data.totalUsedUYU > 0) usdAndUyu.push({ val: data.totalUsedUYU, moneda: 'UYU' });
 
   return (
     <div className="space-y-4">
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KpiBox label="Previsto" value={fmtBucket(totals.previsto)} tone="muted" />
-        <KpiBox label="Comprometido" value={fmtBucket(totals.comprometido)} tone="info" />
-        <KpiBox label="A pagar" value={fmtBucket(totals.a_pagar)} tone="warning" />
-        <KpiBox label="Pagado" value={fmtBucket(totals.pagado)} tone="success" />
+        <KpiBox
+          label="Costo total"
+          value={
+            usdAndUyu.length === 0
+              ? '—'
+              : usdAndUyu.map(t => fmtCurrency(t.val, t.moneda)).join(' · ')
+          }
+          subtitle={`equivalente ${fmtCurrency(data.totalUsedUsdAll, 'USD')}`}
+          tone="info"
+        />
+        <KpiBox
+          label="Ítems consumidos"
+          value={data.itemCount.toString()}
+          subtitle={data.itemCount === 1 ? 'movimiento' : 'movimientos'}
+          tone="muted"
+        />
+        <KpiBox
+          label="Presupuesto"
+          value={data.budgetUsd != null ? fmtCurrency(data.budgetUsd, 'USD') : '—'}
+          subtitle={data.budgetUsd != null ? 'USD' : 'sin definir'}
+          tone="muted"
+        />
+        <KpiBox
+          label="Margen estimado"
+          value={
+            data.marginUSD != null
+              ? `${fmtCurrency(data.marginUSD, 'USD')}${data.marginPercent != null ? ` (${data.marginPercent.toFixed(1)}%)` : ''}`
+              : '—'
+          }
+          subtitle={data.marginUSD == null ? 'requiere presupuesto' : data.marginUSD >= 0 ? 'positivo' : 'negativo'}
+          tone={data.marginUSD == null ? 'muted' : data.marginUSD >= 0 ? 'success' : 'danger'}
+        />
       </div>
 
-      {budgetUsd != null && budgetUsd > 0 && (
-        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-3 flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-6">
-            <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]">Presupuesto</p>
-              <p className="text-sm font-semibold text-[var(--color-text-primary)] tabular-nums">{fmtCurrency(budgetUsd, 'USD')}</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]">Costos totales (USD)</p>
-              <p className="text-sm font-semibold text-[var(--color-text-primary)] tabular-nums">{fmtCurrency(totalCostosUsd, 'USD')}</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]">Margen estimado</p>
-              <p className={klass('text-sm font-semibold tabular-nums', (margenUsd ?? 0) >= 0 ? 'text-green-400' : 'text-red-400')}>
-                {fmtCurrency(margenUsd ?? 0, 'USD')} {margenPct != null && `(${margenPct.toFixed(1)}%)`}
-              </p>
-            </div>
-          </div>
-          <p className="text-[10px] text-[var(--color-text-muted)] max-w-xs">
-            Margen = presupuesto − todos los costos (previsto + comprometido + a pagar + pagado, en USD).
-            Los UYU no se convierten automáticamente.
-          </p>
-        </div>
-      )}
-
-      {/* Filtros */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs text-[var(--color-text-muted)]">Filtrar por estado:</span>
-        {STATUS_OPTIONS.map(s => (
-          <button
-            key={s}
-            onClick={() => setFilter(s)}
-            className={klass(
-              'text-xs px-2.5 py-1 rounded-full border transition-colors',
-              filter === s
-                ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-gray-900 font-semibold'
-                : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]',
-            )}
-          >
-            {STATUS_OPT_LABEL[s]}
-          </button>
-        ))}
-        <Link to="/finanzas/movimientos" className="ml-auto text-xs text-[var(--color-accent)] hover:underline">
-          Ver todos los movimientos →
-        </Link>
-      </div>
-
-      {/* Tabla */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12"><Spinner /></div>
-      ) : filtered.length === 0 ? (
-        <p className="text-sm text-[var(--color-text-muted)] text-center py-12">
-          {movements.length === 0 ? 'Sin movimientos vinculados al proyecto' : 'Ningún movimiento coincide con el filtro'}
-        </p>
-      ) : (
-        <div className="overflow-x-auto rounded-lg border border-[var(--color-border)]">
+      {/* Tabla por categoría */}
+      {data.byCategoryUSD.length > 0 && (
+        <div className="rounded-lg border border-[var(--color-border)] overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-card-hover)] text-xs font-mono text-[var(--color-text-muted)] uppercase tracking-wider">
-                {['Fecha', 'Descripción', 'Categoría', 'Proveedor', 'Monto', 'Estado'].map(h => (
-                  <th key={h} className="px-3 py-2 text-left font-medium">{h}</th>
-                ))}
+              <tr className="bg-[var(--color-bg-card-hover)] text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]">
+                <th className="px-3 py-2 text-left font-medium">Categoría</th>
+                <th className="px-2 py-2 text-right font-medium w-32">Ítems</th>
+                <th className="px-2 py-2 text-right font-medium w-40">Total (USD)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border)]">
-              {filtered.map(m => {
-                const showFecha = m.status === 'PAGADO' ? m.fecha : (m.expectedDate ?? m.dueDate ?? m.fecha);
-                const prefix = m.status === 'PAGADO' || m.tipoMovimiento === 'INGRESO' ? '' : (m.expectedDate ? '~' : m.dueDate ? '⏰' : '');
-                return (
-                  <tr key={m.id} className="hover:bg-[var(--color-bg-card-hover)]">
-                    <td className="px-3 py-2 whitespace-nowrap text-[var(--color-text-muted)]">
-                      {prefix}{fmtDate(showFecha)}
-                    </td>
-                    <td className="px-3 py-2 max-w-xs truncate text-[var(--color-text-primary)]">{m.descripcion}</td>
-                    <td className="px-3 py-2 whitespace-nowrap text-[var(--color-text-secondary)]">{CATEGORIA_LABEL[m.categoriaPrincipal]}</td>
-                    <td className="px-3 py-2 whitespace-nowrap text-[var(--color-text-muted)]">{m.supplier?.nombre ?? '—'}</td>
-                    <td className={klass('px-3 py-2 whitespace-nowrap font-semibold tabular-nums',
-                      m.tipoMovimiento === 'INGRESO' ? 'text-green-400' : m.tipoMovimiento === 'AJUSTE' ? 'text-blue-400' : 'text-red-400')}>
-                      {m.tipoMovimiento === 'GASTO' ? '-' : '+'}{fmtCurrency(m.monto, m.moneda)}
-                    </td>
-                    <td className="px-3 py-2">
-                      <span className={klass('text-[10px] font-mono px-2 py-0.5 rounded uppercase', STATUS_COLOR[m.status])}>
-                        {STATUS_LABEL[m.status]}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
+              {data.byCategoryUSD.map(c => (
+                <tr key={c.id} className="hover:bg-[var(--color-bg-card-hover)]">
+                  <td className="px-3 py-2 text-[var(--color-text-primary)]">{c.nombre}</td>
+                  <td className="px-2 py-2 text-right text-[var(--color-text-muted)] tabular-nums">{c.itemCount}</td>
+                  <td className="px-2 py-2 text-right font-semibold text-[var(--color-text-primary)] tabular-nums">{fmtCurrency(c.totalUSD, 'USD')}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       )}
+
+      {/* Detalle de movimientos */}
+      <div className="rounded-lg border border-[var(--color-border)] overflow-hidden">
+        <div className="px-3 py-2 bg-[var(--color-bg-card-hover)] flex items-center justify-between">
+          <p className="text-xs font-mono uppercase tracking-wider text-[var(--color-text-muted)]">
+            Consumos del proyecto ({data.movements.length})
+          </p>
+          <Link to="/stock" className="text-[10px] text-[var(--color-accent)] hover:underline">
+            Ir a Stock →
+          </Link>
+        </div>
+        {data.movements.length === 0 ? (
+          <p className="text-sm text-[var(--color-text-muted)] text-center py-8">
+            Aún no se consumió stock en este proyecto.
+            <br />
+            <span className="text-xs">Los consumos se registran desde Stock → Egreso o desde la pestaña Materiales del proyecto.</span>
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[var(--color-border)] text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]">
+                  <th className="px-3 py-2 text-left font-medium">Ítem</th>
+                  <th className="px-2 py-2 text-left font-medium">Categoría</th>
+                  <th className="px-2 py-2 text-right font-medium">Cant.</th>
+                  <th className="px-2 py-2 text-right font-medium">Precio</th>
+                  <th className="px-2 py-2 text-right font-medium">Subtotal</th>
+                  <th className="px-2 py-2 text-right font-medium">Fecha</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--color-border)]">
+                {data.movements.map(m => (
+                  <tr key={m.id} className="hover:bg-[var(--color-bg-card-hover)]">
+                    <td className="px-3 py-2 text-[var(--color-text-primary)]">
+                      <div className="font-medium">{m.materialItemName}</div>
+                      <div className="text-[10px] text-[var(--color-text-muted)]">{m.unidad}</div>
+                    </td>
+                    <td className="px-2 py-2 text-[var(--color-text-secondary)]">{m.categoryName}</td>
+                    <td className="px-2 py-2 text-right tabular-nums text-[var(--color-text-primary)]">{m.quantity}</td>
+                    <td className="px-2 py-2 text-right tabular-nums text-[var(--color-text-secondary)]">
+                      {fmtCurrency(m.unitPrice, m.moneda)}
+                      {m.priceSource === 'catalog' && (
+                        <span className="ml-1 text-[9px] font-mono text-[var(--color-text-muted)]" title="Precio tomado del catálogo (no había costo grabado en el movimiento)">cat.</span>
+                      )}
+                    </td>
+                    <td className="px-2 py-2 text-right tabular-nums font-semibold text-[var(--color-text-primary)]">{fmtCurrency(m.subtotal, m.moneda)}</td>
+                    <td className="px-2 py-2 text-right text-[var(--color-text-muted)] text-[11px]">{fmtDate(m.fecha)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <p className="text-[11px] text-[var(--color-text-muted)] leading-relaxed">
+        Cómo se calcula: cada egreso de stock vinculado al proyecto se valora con el costo unitario que tenía al consumirse;
+        si no hay costo grabado, se usa el precio sugerido actual del catálogo (marcado <span className="font-mono">cat.</span>).
+        UYU se convierte a USD con el último tipo de cambio
+        {data.exchangeRate ? ` (1 USD = ${data.exchangeRate.usdToUyu.toLocaleString('es-UY', { minimumFractionDigits: 2 })} UYU del ${fmtDate(data.exchangeRate.date)})` : ''}.
+      </p>
     </div>
   );
 }
 
-function KpiBox({ label, value, tone }: { label: string; value: string; tone: 'muted' | 'info' | 'warning' | 'success' }) {
+function KpiBox({ label, value, subtitle, tone }: { label: string; value: string; subtitle?: string; tone: 'muted' | 'info' | 'success' | 'danger' }) {
   const toneClass =
     tone === 'success' ? 'border-[var(--color-state-done-bg)]' :
-    tone === 'warning' ? 'border-[var(--color-warning-bg)]' :
+    tone === 'danger' ? 'border-red-500/40' :
     tone === 'info' ? 'border-[var(--color-info-bg)]' :
     'border-[var(--color-border)]';
+  const valColor =
+    tone === 'success' ? 'text-green-400' :
+    tone === 'danger' ? 'text-red-400' :
+    tone === 'info' ? 'text-[var(--color-info-text)]' :
+    'text-[var(--color-text-primary)]';
   return (
-    <div className={`rounded-xl border bg-[var(--color-bg-card)] p-3 ${toneClass}`}>
+    <div className={klass('rounded-xl border bg-[var(--color-bg-card)] p-3', toneClass)}>
       <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">{label}</p>
-      <p className="text-sm font-semibold text-[var(--color-text-primary)] tabular-nums">{value}</p>
+      <p className={klass('text-sm font-semibold tabular-nums', valColor)}>{value}</p>
+      {subtitle && <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5">{subtitle}</p>}
     </div>
   );
 }

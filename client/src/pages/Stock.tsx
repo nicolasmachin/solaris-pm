@@ -4,9 +4,11 @@ import { toast } from 'react-hot-toast';
 import { Plus, X, AlertTriangle, Package, ChevronLeft, ChevronRight, ArrowDown, ArrowUp, SlidersHorizontal } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
 import {
-  getStockProducts, createStockProduct, patchStockProduct, deleteStockProduct,
-  createStockMovement, getProductMovements, getStockAlerts, getStockMovements,
+  createStockMovement, getProductMovements, getStockAlerts, getStockMovements, getStockProducts,
 } from '../api/stock.api';
+import {
+  getMaterialCategories, createMaterialItem, patchMaterialItem, deleteMaterialItem,
+} from '../api/materials.api';
 import { getSuppliers } from '../api/finance.api';
 import { apiClient } from '../api/axios';
 import { fmtCurrency, fmtDate } from '../lib/finance';
@@ -17,7 +19,11 @@ function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).
 const inp = 'w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]';
 const lbl = 'block text-xs font-mono text-[var(--color-text-muted)] mb-1 uppercase tracking-wider';
 
-// ─── Product Form ─────────────────────────────────────────────────────────────
+function getApiErr(err: unknown) {
+  return (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+}
+
+// ─── Product (MaterialItem) Form ──────────────────────────────────────────────
 
 function ProductForm({ initial, productId, onSuccess, onCancel }: {
   initial?: StockProduct | null;
@@ -25,47 +31,80 @@ function ProductForm({ initial, productId, onSuccess, onCancel }: {
   onSuccess: () => void;
   onCancel: () => void;
 }) {
+  const { data: categories = [] } = useQuery({
+    queryKey: ['material-categories', 'true'],
+    queryFn: () => getMaterialCategories({ activa: 'true' }),
+  });
+  const { data: suppliers = [] } = useQuery({
+    queryKey: ['suppliers', 'true'],
+    queryFn: () => getSuppliers({ activo: 'true' }),
+  });
+
   const [form, setForm] = useState({
+    categoryId: initial?.categoryId ?? '',
     nombre: initial?.nombre ?? '',
     descripcion: initial?.descripcion ?? '',
-    categoria: initial?.categoria ?? '',
-    unidad: initial?.unidad ?? 'unidad',
-    stockMinimo: String(initial?.stockMinimo ?? 0),
-    costoPromedio: String(initial?.costoPromedio ?? 0),
+    unidad: initial?.unidad ?? 'un',
+    precioSugerido: initial?.precioSugerido?.toString() ?? '',
     moneda: (initial?.moneda ?? 'USD') as Moneda,
-    notas: initial?.notas ?? '',
+    defaultSupplierId: initial?.defaultSupplier?.id ?? '',
+    gestionaStock: initial?.gestionaStock ?? true,
+    stockMinimo: initial?.stockMinimo?.toString() ?? '',
+    ubicacionDeposito: initial?.ubicacionDeposito ?? '',
+    activo: initial?.activo ?? true,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  function setF(key: keyof typeof form, v: string) { setForm(p => ({ ...p, [key]: v })); }
+  function setF<K extends keyof typeof form>(key: K, v: typeof form[K]) {
+    setForm(p => ({ ...p, [key]: v }));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      const body = {
-        nombre: form.nombre,
-        ...(form.descripcion ? { descripcion: form.descripcion } : {}),
-        categoria: form.categoria,
-        unidad: form.unidad,
-        stockMinimo: parseFloat(form.stockMinimo) || 0,
-        costoPromedio: parseFloat(form.costoPromedio) || 0,
-        moneda: form.moneda,
-        ...(form.notas ? { notas: form.notas } : {}),
-      };
+      const precio = form.precioSugerido === '' ? undefined : parseFloat(form.precioSugerido);
+      const stockMin = form.stockMinimo === '' ? undefined : parseFloat(form.stockMinimo);
       if (productId) {
-        await patchStockProduct(productId, body);
+        await patchMaterialItem(productId, {
+          categoryId: form.categoryId,
+          nombre: form.nombre,
+          descripcion: form.descripcion || null,
+          unidad: form.unidad,
+          precioSugerido: precio === undefined ? null : precio,
+          moneda: form.moneda,
+          defaultSupplierId: form.defaultSupplierId || null,
+          gestionaStock: form.gestionaStock,
+          stockMinimo: stockMin === undefined ? null : stockMin,
+          ubicacionDeposito: form.ubicacionDeposito || null,
+          activo: form.activo,
+        });
         toast.success('Producto actualizado');
       } else {
-        await createStockProduct(body);
+        if (!form.categoryId) {
+          setError('Elegí una categoría');
+          setLoading(false);
+          return;
+        }
+        await createMaterialItem({
+          categoryId: form.categoryId,
+          nombre: form.nombre,
+          ...(form.descripcion ? { descripcion: form.descripcion } : {}),
+          unidad: form.unidad,
+          ...(precio !== undefined ? { precioSugerido: precio } : {}),
+          moneda: form.moneda,
+          ...(form.defaultSupplierId ? { defaultSupplierId: form.defaultSupplierId } : {}),
+          gestionaStock: form.gestionaStock,
+          ...(stockMin !== undefined ? { stockMinimo: stockMin } : {}),
+          ...(form.ubicacionDeposito ? { ubicacionDeposito: form.ubicacionDeposito } : {}),
+        });
         toast.success('Producto creado');
       }
       onSuccess();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(msg ?? 'Error al guardar');
+      setError(getApiErr(err) ?? 'Error al guardar');
     } finally {
       setLoading(false);
     }
@@ -74,22 +113,62 @@ function ProductForm({ initial, productId, onSuccess, onCancel }: {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <div className="col-span-2"><label className={lbl}>Nombre *</label><input className={inp} value={form.nombre} onChange={e => setF('nombre', e.target.value)} required /></div>
-        <div><label className={lbl}>Categoría *</label><input className={inp} value={form.categoria} onChange={e => setF('categoria', e.target.value)} required /></div>
-        <div><label className={lbl}>Unidad</label><input className={inp} value={form.unidad} onChange={e => setF('unidad', e.target.value)} /></div>
-        <div><label className={lbl}>Stock mínimo</label><input type="number" className={inp} min="0" step="0.01" value={form.stockMinimo} onChange={e => setF('stockMinimo', e.target.value)} /></div>
         <div>
-          <label className={lbl}>Costo promedio inicial</label>
-          <div className="flex gap-2">
-            <select className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none" value={form.moneda} onChange={e => setF('moneda', e.target.value)}>
-              <option value="USD">USD</option><option value="UYU">UYU</option>
-            </select>
-            <input type="number" className={klass(inp, 'flex-1')} min="0" step="0.01" value={form.costoPromedio} onChange={e => setF('costoPromedio', e.target.value)} />
-          </div>
+          <label className={lbl}>Categoría *</label>
+          <select className={inp} value={form.categoryId} onChange={e => setF('categoryId', e.target.value)} required>
+            <option value="">— Seleccioná —</option>
+            {categories.filter(c => c.activa || c.id === form.categoryId).map(c => (
+              <option key={c.id} value={c.id}>{c.nombre}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={lbl}>Unidad *</label>
+          <input className={inp} value={form.unidad} onChange={e => setF('unidad', e.target.value)} required placeholder="un, kg, m" />
         </div>
       </div>
+      <div><label className={lbl}>Nombre *</label><input className={inp} value={form.nombre} onChange={e => setF('nombre', e.target.value)} required /></div>
       <div><label className={lbl}>Descripción</label><input className={inp} value={form.descripcion} onChange={e => setF('descripcion', e.target.value)} /></div>
-      <div><label className={lbl}>Notas</label><textarea className={klass(inp, 'resize-none')} rows={2} value={form.notas} onChange={e => setF('notas', e.target.value)} /></div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={lbl}>Precio sugerido</label>
+          <div className="flex gap-2">
+            <select className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none" value={form.moneda} onChange={e => setF('moneda', e.target.value as Moneda)}>
+              <option value="USD">USD</option><option value="UYU">UYU</option>
+            </select>
+            <input type="number" className={klass(inp, 'flex-1')} min="0" step="0.01" value={form.precioSugerido} onChange={e => setF('precioSugerido', e.target.value)} />
+          </div>
+        </div>
+        <div>
+          <label className={lbl}>Stock mínimo</label>
+          <input type="number" className={inp} min="0" step="0.01" value={form.stockMinimo} onChange={e => setF('stockMinimo', e.target.value)} />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={lbl}>Proveedor por defecto</label>
+          <select className={inp} value={form.defaultSupplierId} onChange={e => setF('defaultSupplierId', e.target.value)}>
+            <option value="">— Sin proveedor —</option>
+            {suppliers.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className={lbl}>Ubicación depósito</label>
+          <input className={inp} value={form.ubicacionDeposito} onChange={e => setF('ubicacionDeposito', e.target.value)} placeholder="Estante A-3" />
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-4 pt-1">
+        <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
+          <input type="checkbox" checked={form.gestionaStock} onChange={e => setF('gestionaStock', e.target.checked)} className="accent-[var(--color-accent)]" />
+          Gestiona stock (físico, entra/sale del depósito)
+        </label>
+        {productId && (
+          <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
+            <input type="checkbox" checked={form.activo} onChange={e => setF('activo', e.target.checked)} className="accent-[var(--color-accent)]" />
+            Activo
+          </label>
+        )}
+      </div>
       {error && <p className="text-sm text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{error}</p>}
       <div className="flex gap-3">
         <button type="submit" disabled={loading} className="flex-1 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-60">
@@ -107,12 +186,16 @@ function ProductForm({ initial, productId, onSuccess, onCancel }: {
 
 function IngresoModal({ product, onSuccess, onClose }: { product: StockProduct; onSuccess: () => void; onClose: () => void }) {
   const today = new Date().toISOString().split('T')[0];
-  const [form, setForm] = useState({ fecha: today, cantidad: '', costoUnitario: '', moneda: 'USD' as Moneda, supplierId: '', referencia: '', observaciones: '' });
+  const [form, setForm] = useState({
+    fecha: today, cantidad: '', costoUnitario: '', moneda: 'USD' as Moneda,
+    supplierId: '', referencia: '', observaciones: '',
+    causaIngreso: 'OTRO' as 'FACTURA' | 'DEVOLUCION_PROVEEDOR' | 'AJUSTE_INVENTARIO' | 'IMPORTACION_INICIAL' | 'OTRO',
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { data: suppliers = [] } = useQuery({ queryKey: ['suppliers'], queryFn: () => getSuppliers() });
+  const { data: suppliers = [] } = useQuery({ queryKey: ['suppliers', 'true'], queryFn: () => getSuppliers({ activo: 'true' }) });
 
-  function setF(k: keyof typeof form, v: string) { setForm(p => ({ ...p, [k]: v })); }
+  function setF<K extends keyof typeof form>(k: K, v: typeof form[K]) { setForm(p => ({ ...p, [k]: v })); }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -121,11 +204,12 @@ function IngresoModal({ product, onSuccess, onClose }: { product: StockProduct; 
     try {
       await createStockMovement({
         fecha: form.fecha,
-        productId: product.id,
+        materialItemId: product.id,
         tipo: 'INGRESO',
         cantidad: parseFloat(form.cantidad),
         costoUnitario: parseFloat(form.costoUnitario) || undefined,
         moneda: form.moneda,
+        causaIngreso: form.causaIngreso,
         ...(form.supplierId ? { supplierId: form.supplierId } : {}),
         ...(form.referencia ? { referencia: form.referencia } : {}),
         ...(form.observaciones ? { observaciones: form.observaciones } : {}),
@@ -133,8 +217,7 @@ function IngresoModal({ product, onSuccess, onClose }: { product: StockProduct; 
       toast.success(`Ingreso registrado. Nuevo stock: ${product.stockActual + parseFloat(form.cantidad)} ${product.unidad}`);
       onSuccess();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(msg ?? 'Error al registrar ingreso');
+      setError(getApiErr(err) ?? 'Error al registrar ingreso');
     } finally {
       setLoading(false);
     }
@@ -154,22 +237,27 @@ function IngresoModal({ product, onSuccess, onClose }: { product: StockProduct; 
             <div><label className={lbl}>Cantidad * <span className="text-[var(--color-text-muted)]">({product.unidad})</span></label><input type="number" className={inp} min="0.001" step="0.001" value={form.cantidad} onChange={e => setF('cantidad', e.target.value)} required /></div>
           </div>
           <div>
-            <label className={lbl}>Costo unitario *</label>
+            <label className={lbl}>Costo unitario</label>
             <div className="flex gap-2">
-              <select className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none" value={form.moneda} onChange={e => setF('moneda', e.target.value)}>
+              <select className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none" value={form.moneda} onChange={e => setF('moneda', e.target.value as Moneda)}>
                 <option value="USD">USD</option><option value="UYU">UYU</option>
               </select>
-              <input type="number" className={klass(inp, 'flex-1')} min="0" step="0.01" value={form.costoUnitario} onChange={e => setF('costoUnitario', e.target.value)} required />
+              <input type="number" className={klass(inp, 'flex-1')} min="0" step="0.01" value={form.costoUnitario} onChange={e => setF('costoUnitario', e.target.value)} />
             </div>
           </div>
-          {form.cantidad && form.costoUnitario && (
-            <p className="text-xs text-[var(--color-text-muted)]">
-              Costo total: {fmtCurrency(parseFloat(form.cantidad) * parseFloat(form.costoUnitario), form.moneda)}
-              {' · '}Nuevo costo prom: {product.stockActual > 0
-                ? fmtCurrency((product.stockActual * product.costoPromedio + parseFloat(form.cantidad) * parseFloat(form.costoUnitario)) / (product.stockActual + parseFloat(form.cantidad)), form.moneda)
-                : fmtCurrency(parseFloat(form.costoUnitario), form.moneda)}
+          <div>
+            <label className={lbl}>Causa de ingreso</label>
+            <select className={inp} value={form.causaIngreso} onChange={e => setF('causaIngreso', e.target.value as typeof form.causaIngreso)}>
+              <option value="OTRO">Otro</option>
+              <option value="FACTURA">Factura</option>
+              <option value="DEVOLUCION_PROVEEDOR">Devolución de proveedor</option>
+              <option value="AJUSTE_INVENTARIO">Ajuste de inventario</option>
+              <option value="IMPORTACION_INICIAL">Importación inicial</option>
+            </select>
+            <p className="text-[10px] text-[var(--color-text-muted)] mt-1">
+              Si esta compra ya tiene una factura registrada en Finanzas, conviene cargar el desglose desde ahí (entra al stock automáticamente).
             </p>
-          )}
+          </div>
           <div>
             <label className={lbl}>Proveedor</label>
             <select className={inp} value={form.supplierId} onChange={e => setF('supplierId', e.target.value)}>
@@ -199,10 +287,9 @@ function EgresoModal({ product, onSuccess, onClose }: { product: StockProduct; o
   const [form, setForm] = useState({ fecha: today, cantidad: '', projectId: '', observaciones: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [projects, setProjects] = useState<{ id: string; code: string; clientName: string }[]>([]);
-
-  useState(() => {
-    apiClient.get('/api/projects?status=ACTIVE').then(r => setProjects(r.data)).catch(() => {});
+  const { data: projects = [] } = useQuery({
+    queryKey: ['active-projects-for-stock'],
+    queryFn: () => apiClient.get<{ id: string; code: string; clientName: string }[]>('/api/projects?status=ACTIVE').then(r => r.data),
   });
 
   function setF(k: keyof typeof form, v: string) { setForm(p => ({ ...p, [k]: v })); }
@@ -219,7 +306,7 @@ function EgresoModal({ product, onSuccess, onClose }: { product: StockProduct; o
     try {
       await createStockMovement({
         fecha: form.fecha,
-        productId: product.id,
+        materialItemId: product.id,
         tipo: 'EGRESO',
         cantidad: qty,
         ...(form.projectId ? { projectId: form.projectId } : {}),
@@ -302,16 +389,16 @@ function AjusteModal({ product, onSuccess, onClose }: { product: StockProduct; o
     try {
       await createStockMovement({
         fecha: form.fecha,
-        productId: product.id,
+        materialItemId: product.id,
         tipo: 'AJUSTE',
         cantidad: parseFloat(form.nuevoStock),
+        causaIngreso: 'AJUSTE_INVENTARIO',
         observaciones: form.motivo,
       });
       toast.success(`Stock ajustado a ${form.nuevoStock} ${product.unidad}`);
       onSuccess();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(msg ?? 'Error al registrar ajuste');
+      setError(getApiErr(err) ?? 'Error al registrar ajuste');
     } finally {
       setLoading(false);
     }
@@ -372,14 +459,15 @@ function ProductPanel({ product, onClose, onRefresh }: { product: StockProduct; 
 
   const qc = useQueryClient();
   const deleteMut = useMutation({
-    mutationFn: () => deleteStockProduct(product.id),
-    onSuccess: () => {
-      toast.success('Producto eliminado');
+    mutationFn: () => deleteMaterialItem(product.id),
+    onSuccess: (r) => {
+      toast.success(r.deactivated ? 'Producto desactivado (en uso)' : 'Producto eliminado');
       qc.invalidateQueries({ queryKey: ['stock-products'] });
       qc.invalidateQueries({ queryKey: ['stock-alerts'] });
+      qc.invalidateQueries({ queryKey: ['material-items'] });
       onClose();
     },
-    onError: () => toast.error('No se pudo eliminar'),
+    onError: (err) => toast.error(getApiErr(err) ?? 'No se pudo eliminar'),
   });
 
   function handleMovSuccess() {
@@ -388,7 +476,8 @@ function ProductPanel({ product, onClose, onRefresh }: { product: StockProduct; 
     onRefresh();
   }
 
-  const stockPct = product.stockMinimo > 0 ? Math.min(100, (product.stockActual / product.stockMinimo) * 100) : 100;
+  const stockMin = product.stockMinimo ?? 0;
+  const stockPct = stockMin > 0 ? Math.min(100, (product.stockActual / stockMin) * 100) : 100;
 
   return (
     <>
@@ -402,52 +491,66 @@ function ProductPanel({ product, onClose, onRefresh }: { product: StockProduct; 
               </div>
               <div>
                 <p className="font-semibold text-[var(--color-text-primary)]">{product.nombre}</p>
-                <p className="text-xs text-[var(--color-text-muted)]">{product.categoria} · {product.unidad}</p>
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  {product.categoria} · {product.unidad}
+                  {!product.gestionaStock && <span className="ml-2 text-[10px] font-mono bg-[var(--color-border)] text-[var(--color-text-muted)] px-1.5 py-0.5 rounded uppercase">Sin stock</span>}
+                </p>
               </div>
             </div>
             <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"><X className="w-5 h-5" /></button>
           </div>
 
-          {/* Stock bar */}
-          <div className="px-5 py-3 border-b border-[var(--color-border)]">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs text-[var(--color-text-muted)]">Stock actual</span>
-              <div className="flex items-center gap-2">
-                {product.bajominimo && (
-                  <span className="text-[10px] font-mono bg-red-500/20 text-red-400 px-2 py-0.5 rounded uppercase">Bajo mínimo</span>
-                )}
-                <span className={klass('text-sm font-bold', product.bajominimo ? 'text-red-400' : 'text-[var(--color-text-primary)]')}>
-                  {product.stockActual} {product.unidad}
-                </span>
+          {/* Stock bar (sólo si gestiona stock) */}
+          {product.gestionaStock && (
+            <div className="px-5 py-3 border-b border-[var(--color-border)]">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs text-[var(--color-text-muted)]">Stock actual</span>
+                <div className="flex items-center gap-2">
+                  {product.bajominimo && (
+                    <span className="text-[10px] font-mono bg-red-500/20 text-red-400 px-2 py-0.5 rounded uppercase">Bajo mínimo</span>
+                  )}
+                  <span className={klass('text-sm font-bold', product.bajominimo ? 'text-red-400' : 'text-[var(--color-text-primary)]')}>
+                    {product.stockActual} {product.unidad}
+                  </span>
+                </div>
               </div>
+              {stockMin > 0 && (
+                <>
+                  <div className="h-2 rounded-full bg-[var(--color-border)] overflow-hidden">
+                    <div className={klass('h-full rounded-full', product.bajominimo ? 'bg-red-400' : 'bg-green-400')} style={{ width: `${stockPct}%` }} />
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <span className="text-[11px] text-[var(--color-text-muted)]">Mín: {stockMin} {product.unidad}</span>
+                    {product.precioSugerido != null && <span className="text-[11px] text-[var(--color-text-muted)]">Precio sug: {fmtCurrency(product.precioSugerido, product.moneda)}</span>}
+                  </div>
+                </>
+              )}
+              {product.ubicacionDeposito && (
+                <p className="text-[11px] text-[var(--color-text-muted)] mt-1">📍 {product.ubicacionDeposito}</p>
+              )}
             </div>
-            <div className="h-2 rounded-full bg-[var(--color-border)] overflow-hidden">
-              <div className={klass('h-full rounded-full', product.bajominimo ? 'bg-red-400' : 'bg-green-400')} style={{ width: `${stockPct}%` }} />
-            </div>
-            <div className="flex justify-between mt-1">
-              <span className="text-[11px] text-[var(--color-text-muted)]">Mín: {product.stockMinimo} {product.unidad}</span>
-              <span className="text-[11px] text-[var(--color-text-muted)]">Costo prom: {fmtCurrency(product.costoPromedio, product.moneda)}</span>
-            </div>
-          </div>
+          )}
 
-          {/* Action buttons */}
-          <div className="grid grid-cols-3 gap-2 px-5 py-3 border-b border-[var(--color-border)]">
-            <button onClick={() => setActiveModal('ingreso')}
-              className="flex flex-col items-center gap-1 py-2.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 transition-colors">
-              <ArrowDown className="w-4 h-4" />
-              <span className="text-[11px] font-medium">Ingreso</span>
-            </button>
-            <button onClick={() => setActiveModal('egreso')}
-              className="flex flex-col items-center gap-1 py-2.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors">
-              <ArrowUp className="w-4 h-4" />
-              <span className="text-[11px] font-medium">Egreso</span>
-            </button>
-            <button onClick={() => setActiveModal('ajuste')}
-              className="flex flex-col items-center gap-1 py-2.5 rounded-lg bg-[var(--color-border)]/50 hover:bg-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors">
-              <SlidersHorizontal className="w-4 h-4" />
-              <span className="text-[11px] font-medium">Ajuste</span>
-            </button>
-          </div>
+          {/* Action buttons (sólo si gestiona stock) */}
+          {product.gestionaStock && (
+            <div className="grid grid-cols-3 gap-2 px-5 py-3 border-b border-[var(--color-border)]">
+              <button onClick={() => setActiveModal('ingreso')}
+                className="flex flex-col items-center gap-1 py-2.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 transition-colors">
+                <ArrowDown className="w-4 h-4" />
+                <span className="text-[11px] font-medium">Ingreso</span>
+              </button>
+              <button onClick={() => setActiveModal('egreso')}
+                className="flex flex-col items-center gap-1 py-2.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors">
+                <ArrowUp className="w-4 h-4" />
+                <span className="text-[11px] font-medium">Egreso</span>
+              </button>
+              <button onClick={() => setActiveModal('ajuste')}
+                className="flex flex-col items-center gap-1 py-2.5 rounded-lg bg-[var(--color-border)]/50 hover:bg-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors">
+                <SlidersHorizontal className="w-4 h-4" />
+                <span className="text-[11px] font-medium">Ajuste</span>
+              </button>
+            </div>
+          )}
 
           {/* Tabs */}
           <div className="flex border-b border-[var(--color-border)]">
@@ -469,7 +572,7 @@ function ProductPanel({ product, onClose, onRefresh }: { product: StockProduct; 
                   onSuccess={() => { onRefresh(); setTab('movimientos'); }}
                   onCancel={() => setTab('movimientos')}
                 />
-                <button onClick={() => { if (confirm('¿Eliminar este producto?')) deleteMut.mutate(); }}
+                <button onClick={() => { if (confirm('¿Eliminar este producto? Si tiene movimientos vinculados quedará desactivado en lugar de borrarse.')) deleteMut.mutate(); }}
                   className="w-full py-2 rounded-lg bg-red-500/15 text-red-400 text-sm font-semibold hover:bg-red-500/25 transition-colors">
                   Eliminar producto
                 </button>
@@ -543,10 +646,14 @@ export function Stock() {
   const [selectedProduct, setSelectedProduct] = useState<StockProduct | null>(null);
   const [filterCat, setFilterCat] = useState('');
   const [filterAlert, setFilterAlert] = useState(false);
+  const [includeServices, setIncludeServices] = useState(false);
 
   const { data: products = [], isLoading, refetch: refetchProducts } = useQuery({
-    queryKey: ['stock-products', filterCat, filterAlert],
-    queryFn: () => getStockProducts({ ...(filterCat ? { categoria: filterCat } : {}) }),
+    queryKey: ['stock-products', filterCat, filterAlert, includeServices],
+    queryFn: () => getStockProducts({
+      ...(filterCat ? { categoria: filterCat } : {}),
+      gestionaStock: includeServices ? 'all' : 'true',
+    }),
   });
 
   const { data: alerts = [] } = useQuery({
@@ -560,8 +667,9 @@ export function Stock() {
   });
 
   const activeProducts = products.filter(p => p.activo);
+  const physicalProducts = products.filter(p => p.gestionaStock);
   const bajominimo = products.filter(p => p.bajominimo);
-  const valorTotal = products.reduce((sum, p) => sum + p.stockActual * p.costoPromedio, 0);
+  const valorTotal = physicalProducts.reduce((sum, p) => sum + p.stockActual * (p.precioSugerido ?? 0), 0);
 
   const displayedProducts = filterAlert ? products.filter(p => p.bajominimo) : products;
   const categorias = [...new Set(products.map(p => p.categoria))].sort();
@@ -570,7 +678,7 @@ export function Stock() {
     qc.invalidateQueries({ queryKey: ['stock-products'] });
     qc.invalidateQueries({ queryKey: ['stock-alerts'] });
     qc.invalidateQueries({ queryKey: ['stock-movements-recent'] });
-    // Refresh selected product data too
+    qc.invalidateQueries({ queryKey: ['material-items'] });
     if (selectedProduct) {
       refetchProducts().then(result => {
         const updated = result.data?.find(p => p.id === selectedProduct.id);
@@ -585,7 +693,7 @@ export function Stock() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Stock</h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-0.5">Gestión de inventario</p>
+          <p className="text-sm text-[var(--color-text-muted)] mt-0.5">Gestión de inventario · catálogo unificado con Materiales</p>
         </div>
         <button onClick={() => setNewModal(true)}
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] transition-colors">
@@ -608,13 +716,13 @@ export function Stock() {
         <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-4">
           <p className="text-xs text-[var(--color-text-muted)] mb-1">Valor inventario</p>
           <p className="text-base font-bold text-[var(--color-text-primary)] tabular-nums">{fmtCurrency(valorTotal)}</p>
-          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">costo promedio ponderado</p>
+          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">a precio sugerido</p>
         </div>
         <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-4">
           <p className="text-xs text-[var(--color-text-muted)] mb-1">Ult. movimiento</p>
           {recentMovements?.data[0] ? (
             <>
-              <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{recentMovements.data[0].product?.nombre ?? '—'}</p>
+              <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{recentMovements.data[0].materialItem?.nombre ?? recentMovements.data[0].product?.nombre ?? '—'}</p>
               <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{fmtDate(recentMovements.data[0].fecha)} · {recentMovements.data[0].tipo}</p>
             </>
           ) : (
@@ -628,19 +736,23 @@ export function Stock() {
         <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl overflow-hidden">
           <p className="px-5 py-3 text-xs font-mono text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)]">Últimos movimientos</p>
           <div className="divide-y divide-[var(--color-border)]">
-            {recentMovements.data.slice(0, 5).map(m => (
-              <div key={m.id} className="px-5 py-2.5 flex items-center gap-3">
-                <span className={klass('text-[10px] font-mono px-1.5 py-0.5 rounded uppercase shrink-0',
-                  m.tipo === 'INGRESO' ? 'bg-green-500/20 text-green-400' : m.tipo === 'EGRESO' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400')}>
-                  {m.tipo}
-                </span>
-                <span className="text-sm text-[var(--color-text-primary)] truncate flex-1">{m.product?.nombre ?? '—'}</span>
-                <span className={klass('text-sm font-semibold tabular-nums shrink-0', m.tipo === 'EGRESO' ? 'text-red-400' : 'text-green-400')}>
-                  {m.tipo === 'EGRESO' ? '-' : '+'}{m.cantidad} {m.product?.unidad ?? ''}
-                </span>
-                <span className="text-xs text-[var(--color-text-muted)] shrink-0">{fmtDate(m.fecha)}</span>
-              </div>
-            ))}
+            {recentMovements.data.slice(0, 5).map(m => {
+              const itemName = m.materialItem?.nombre ?? m.product?.nombre ?? '—';
+              const itemUnidad = m.materialItem?.unidad ?? m.product?.unidad ?? '';
+              return (
+                <div key={m.id} className="px-5 py-2.5 flex items-center gap-3">
+                  <span className={klass('text-[10px] font-mono px-1.5 py-0.5 rounded uppercase shrink-0',
+                    m.tipo === 'INGRESO' ? 'bg-green-500/20 text-green-400' : m.tipo === 'EGRESO' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400')}>
+                    {m.tipo}
+                  </span>
+                  <span className="text-sm text-[var(--color-text-primary)] truncate flex-1">{itemName}</span>
+                  <span className={klass('text-sm font-semibold tabular-nums shrink-0', m.tipo === 'EGRESO' ? 'text-red-400' : 'text-green-400')}>
+                    {m.tipo === 'EGRESO' ? '-' : '+'}{m.cantidad} {itemUnidad}
+                  </span>
+                  <span className="text-xs text-[var(--color-text-muted)] shrink-0">{fmtDate(m.fecha)}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -659,6 +771,10 @@ export function Stock() {
           <input type="checkbox" checked={filterAlert} onChange={e => setFilterAlert(e.target.checked)} className="accent-[var(--color-accent)]" />
           Solo alertas ({bajominimo.length})
         </label>
+        <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
+          <input type="checkbox" checked={includeServices} onChange={e => setIncludeServices(e.target.checked)} className="accent-[var(--color-accent)]" />
+          Incluir servicios (sin stock)
+        </label>
       </div>
 
       {/* Products table */}
@@ -674,7 +790,7 @@ export function Stock() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-border)] text-xs font-mono text-[var(--color-text-muted)] uppercase tracking-wider">
-                  {['Producto', 'Categoría', 'Unidad', 'Stock actual', 'Mínimo', 'Costo prom.', 'Moneda'].map(h => (
+                  {['Producto', 'Categoría', 'Unidad', 'Stock', 'Mínimo', 'Ubicación', 'Precio sug.'].map(h => (
                     <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
                   ))}
                 </tr>
@@ -682,24 +798,30 @@ export function Stock() {
               <tbody className="divide-y divide-[var(--color-border)]">
                 {displayedProducts.map(p => (
                   <tr key={p.id} onClick={() => setSelectedProduct(p)}
-                    className={klass('cursor-pointer hover:bg-[var(--color-bg-card-hover)] transition-colors', p.bajominimo && 'bg-red-500/5')}>
+                    className={klass('cursor-pointer hover:bg-[var(--color-bg-card-hover)] transition-colors',
+                      p.bajominimo && 'bg-red-500/5',
+                      !p.activo && 'opacity-60')}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         {p.bajominimo && <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />}
                         <div>
                           <span className="font-medium text-[var(--color-text-primary)]">{p.nombre}</span>
-                          {p.bajominimo && <span className="ml-2 text-[10px] font-mono bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded uppercase">Bajo mínimo</span>}
+                          {p.bajominimo && <span className="ml-2 text-[10px] font-mono bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded uppercase">Bajo mín</span>}
+                          {!p.gestionaStock && <span className="ml-2 text-[10px] font-mono bg-[var(--color-border)] text-[var(--color-text-muted)] px-1.5 py-0.5 rounded uppercase">Servicio</span>}
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-[var(--color-text-muted)]">{p.categoria}</td>
                     <td className="px-4 py-3 text-[var(--color-text-muted)]">{p.unidad}</td>
-                    <td className={klass('px-4 py-3 font-semibold tabular-nums', p.bajominimo ? 'text-red-400' : 'text-[var(--color-text-primary)]')}>
-                      {p.stockActual}
+                    <td className={klass('px-4 py-3 font-semibold tabular-nums',
+                      !p.gestionaStock ? 'text-[var(--color-text-muted)]' : p.bajominimo ? 'text-red-400' : 'text-[var(--color-text-primary)]')}>
+                      {p.gestionaStock ? p.stockActual : '—'}
                     </td>
-                    <td className="px-4 py-3 text-[var(--color-text-muted)] tabular-nums">{p.stockMinimo}</td>
-                    <td className="px-4 py-3 text-[var(--color-text-secondary)] tabular-nums">{p.costoPromedio.toLocaleString('es-UY', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</td>
-                    <td className="px-4 py-3 text-[var(--color-text-muted)]">{p.moneda}</td>
+                    <td className="px-4 py-3 text-[var(--color-text-muted)] tabular-nums">{p.stockMinimo ?? '—'}</td>
+                    <td className="px-4 py-3 text-[var(--color-text-muted)]">{p.ubicacionDeposito ?? '—'}</td>
+                    <td className="px-4 py-3 text-[var(--color-text-secondary)] tabular-nums">
+                      {p.precioSugerido != null ? `${p.precioSugerido.toLocaleString('es-UY', { minimumFractionDigits: 2 })} ${p.moneda}` : '—'}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -717,7 +839,12 @@ export function Stock() {
               <button onClick={() => setNewModal(false)} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"><X className="w-5 h-5" /></button>
             </div>
             <ProductForm
-              onSuccess={() => { setNewModal(false); qc.invalidateQueries({ queryKey: ['stock-products'] }); qc.invalidateQueries({ queryKey: ['stock-alerts'] }); }}
+              onSuccess={() => {
+                setNewModal(false);
+                qc.invalidateQueries({ queryKey: ['stock-products'] });
+                qc.invalidateQueries({ queryKey: ['stock-alerts'] });
+                qc.invalidateQueries({ queryKey: ['material-items'] });
+              }}
               onCancel={() => setNewModal(false)}
             />
           </div>
@@ -735,3 +862,6 @@ export function Stock() {
     </div>
   );
 }
+
+// Re-export tipos por si los importan desde Stock.tsx
+export type { TipoMovimientoStock };

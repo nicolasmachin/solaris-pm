@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Plus, X, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { Plus, X, ChevronLeft, ChevronRight, ArrowRight, AlertTriangle, FileText } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
-import { getMovements, createMovement, patchMovement, deleteMovement, transitionMovement, getExchangeRate } from '../api/finance.api';
+import { getMovements, createMovement, patchMovement, deleteMovement, transitionMovement, cancelMovement, getExchangeRate } from '../api/finance.api';
 import { apiClient } from '../api/axios';
 import { fmtCurrency, fmtDate, currentMonthYear, MONTH_NAMES } from '../lib/finance';
 import type {
@@ -27,6 +27,7 @@ import {
   TIPO_MOV_LABEL,
 } from '../types/finance.types';
 import { CleanupPrevistosModal } from '../components/finance/CleanupPrevistosModal';
+import { InvoiceItemsDetail } from '../components/finance/InvoiceItemsDetail';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -39,9 +40,12 @@ interface MovFormProps {
   onCancel: () => void;
   initial?: Partial<MovimientoFormData>;
   editId?: string;
+  /** Si se pasa, al guardar (creación o edición) se invoca en lugar del cierre normal del modal,
+   *  pasando el id para abrir el desglose de la factura. */
+  onSavedOpenDesglose?: (id: string) => void;
 }
 
-function MovimientoForm({ onSuccess, onCancel, initial, editId }: MovFormProps) {
+function MovimientoForm({ onSuccess, onCancel, initial, editId, onSavedOpenDesglose }: MovFormProps) {
   const today = new Date().toISOString().split('T')[0];
 
   const [form, setForm] = useState<MovimientoFormData>({
@@ -61,6 +65,9 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId }: MovFormProps) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showCleanup, setShowCleanup] = useState(false);
+  // Intenciones extra al guardar (sólo aplican a GASTO en A_PAGAR/PAGADO):
+  const [markNoMaterialesIntent, setMarkNoMaterialesIntent] = useState(false);
+  const [openDesgloseAfter, setOpenDesgloseAfter] = useState(false);
   const [projects, setProjects] = useState<{ id: string; code: string; clientName: string }[]>([]);
   const [suppliers, setSuppliers] = useState<{ id: string; nombre: string }[]>([]);
   const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
@@ -117,12 +124,35 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId }: MovFormProps) 
     setError('');
     setLoading(true);
     try {
+      let resultId: string;
       if (editId) {
         await patchMovement(editId, form);
+        resultId = editId;
         toast.success('Movimiento actualizado');
       } else {
-        await createMovement(form);
+        const created = await createMovement(form);
+        resultId = created.id;
         toast.success('Movimiento registrado');
+      }
+      // Intent extras (sólo aplica a gastos A_PAGAR/PAGADO)
+      const aplicaDesglose = form.tipoMovimiento === 'GASTO' && (form.status === 'A_PAGAR' || form.status === 'PAGADO');
+      if (aplicaDesglose && markNoMaterialesIntent) {
+        try {
+          const { markNoMateriales } = await import('../api/finance.api');
+          await markNoMateriales(resultId);
+          toast.success('Marcado como factura sin materiales');
+        } catch (err) {
+          const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+          toast.error(msg ?? 'No se pudo marcar como sin materiales');
+        }
+      }
+      if (aplicaDesglose && openDesgloseAfter && onSavedOpenDesglose) {
+        onSavedOpenDesglose(resultId);
+        return;
+      }
+      // Aviso ámbar si quedó como pendiente de desglose sin acción
+      if (!editId && aplicaDesglose && !markNoMaterialesIntent && !openDesgloseAfter) {
+        toast('Recordá cargar el desglose para que entre al stock.', { icon: '⚠️' });
       }
       onSuccess();
     } catch (err: unknown) {
@@ -289,6 +319,34 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId }: MovFormProps) 
         </button>
       )}
 
+      {/* Desglose de factura (D.3) — sólo para GASTO en A_PAGAR/PAGADO,
+          y sólo en CREACIÓN. En EDICIÓN se muestra el botón en el detail panel. */}
+      {!editId && !esIngreso && (form.status === 'A_PAGAR' || form.status === 'PAGADO') && (
+        <div className="rounded-lg border border-[var(--color-warning-bg)] bg-[var(--color-warning-bg)]/20 p-3 space-y-2">
+          <p className="text-xs font-semibold text-[var(--color-text-primary)]">Esta factura puede tener ítems para stock</p>
+          <p className="text-[11px] text-[var(--color-text-muted)]">¿Cargás el desglose ahora? Los ítems entrarán al stock al confirmarlo.</p>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              type="submit"
+              disabled={loading}
+              onClick={() => { setOpenDesgloseAfter(true); setMarkNoMaterialesIntent(false); }}
+              className="px-3 py-1.5 rounded-lg bg-[var(--color-accent)] text-gray-900 text-xs font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-60"
+            >
+              Cargar desglose ahora
+            </button>
+            <label className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={markNoMaterialesIntent}
+                onChange={e => { setMarkNoMaterialesIntent(e.target.checked); if (e.target.checked) setOpenDesgloseAfter(false); }}
+                className="accent-[var(--color-accent)]"
+              />
+              Esta factura no tiene materiales
+            </label>
+          </div>
+        </div>
+      )}
+
       {/* Aprobación */}
       <div>
         <label className={lbl}>Aprobación</label>
@@ -327,13 +385,19 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId }: MovFormProps) 
 
 // ─── Detail Panel ─────────────────────────────────────────────────────────────
 
-function DetailPanel({ mov, onClose, onEdit, onDelete }: {
+function DetailPanel({ mov, onClose, onEdit, onDelete, onCancel, onOpenDesglose }: {
   mov: FinanceMovement;
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onCancel: () => void;
+  onOpenDesglose: () => void;
 }) {
   const esIngreso = CATEGORIAS_INGRESO.includes(mov.categoriaPrincipal);
+  const needsDetail = (mov.status === 'A_PAGAR' || mov.status === 'PAGADO')
+    && !mov.hasItemDetail && !mov.noTieneMateriales
+    && mov.tipoMovimiento === 'GASTO';
+  const canCancel = mov.hasItemDetail && !mov.noTieneMateriales;
   return (
     <div className="fixed inset-0 z-40 flex justify-end" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="w-full max-w-sm bg-[var(--color-bg-card)] border-l border-[var(--color-border)] h-full overflow-y-auto shadow-2xl p-5 space-y-4">
@@ -341,6 +405,19 @@ function DetailPanel({ mov, onClose, onEdit, onDelete }: {
           <p className="text-sm font-semibold text-[var(--color-text-primary)]">Detalle</p>
           <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"><X className="w-5 h-5" /></button>
         </div>
+
+        {needsDetail && (
+          <div className="rounded-lg border border-[var(--color-warning-bg)] bg-[var(--color-warning-bg)]/30 p-3 flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-[var(--color-warning-text)] shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-[var(--color-warning-text)] mb-1">Desglose pendiente</p>
+              <p className="text-[11px] text-[var(--color-text-secondary)] mb-2">Esta factura todavía no impactó en el stock.</p>
+              <button onClick={onOpenDesglose} className="text-xs px-2.5 py-1 rounded-lg bg-[var(--color-accent)] text-gray-900 font-semibold hover:bg-[var(--color-accent-hover)]">
+                Cargar desglose
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-3">
           <Row label="Descripción" value={mov.descripcion} />
@@ -357,11 +434,20 @@ function DetailPanel({ mov, onClose, onEdit, onDelete }: {
           {mov.dueDate && <Row label="Vencimiento" value={fmtDate(mov.dueDate)} />}
           {mov.sourceType === 'PROJECT_MATERIALS' && <Row label="Origen" value="Lista de materiales" />}
           {mov.materialItem && <Row label="Ítem" value={`${mov.materialItem.nombre}${mov.quantity != null ? ` (x${mov.quantity} ${mov.materialItem.unidad})` : ''}`} />}
+          {mov.hasItemDetail && !mov.noTieneMateriales && <Row label="Stock" value="Ingresado vía desglose" />}
+          {mov.noTieneMateriales && <Row label="Stock" value="Sin materiales" />}
           <Row label={esIngreso ? 'Cobrado' : 'Pagado'} value={esIngreso ? (mov.cobrado ? 'Sí' : 'No') : (mov.pagado ? 'Sí' : 'No')} />
           <Row label="Aprobación" value={ESTADO_APROBACION_LABEL[mov.estadoAprobacion]} />
           {mov.observaciones && <Row label="Observaciones" value={mov.observaciones} />}
           <Row label="Registrado" value={fmtDate(mov.createdAt)} />
         </div>
+
+        {(mov.status === 'A_PAGAR' || mov.status === 'PAGADO') && mov.tipoMovimiento === 'GASTO' && !needsDetail && (
+          <button onClick={onOpenDesglose} className="w-full py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] inline-flex items-center justify-center gap-2">
+            <FileText className="w-4 h-4" />
+            Ver desglose de factura
+          </button>
+        )}
 
         <div className="flex gap-2 pt-2">
           <button onClick={onEdit} className="flex-1 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] transition-colors">
@@ -371,6 +457,15 @@ function DetailPanel({ mov, onClose, onEdit, onDelete }: {
             Eliminar
           </button>
         </div>
+        {canCancel && (
+          <button
+            onClick={onCancel}
+            className="w-full py-2 rounded-lg border border-red-500/40 text-red-400 text-sm font-semibold hover:bg-red-500/15 transition-colors"
+            title="Esto revertirá el stock que ingresó por esta factura"
+          >
+            Anular movimiento (revierte stock)
+          </button>
+        )}
       </div>
     </div>
   );
@@ -413,6 +508,8 @@ export function FinanceMovements() {
   const [newModal, setNewModal] = useState(false);
   const [editMov, setEditMov] = useState<FinanceMovement | null>(null);
   const [detailMov, setDetailMov] = useState<FinanceMovement | null>(null);
+  const [desgloseMovId, setDesgloseMovId] = useState<string | null>(null);
+  const [pendingFilter, setPendingFilter] = useState(false);
 
   // Persistencia de filtros
   useEffect(() => {
@@ -467,10 +564,31 @@ export function FinanceMovements() {
       qc.invalidateQueries({ queryKey: ['finance-movements'] });
       qc.invalidateQueries({ queryKey: ['finance-dashboard'] });
       qc.invalidateQueries({ queryKey: ['comprobantes-widget'] });
+      qc.invalidateQueries({ queryKey: ['pending-detail'] });
     },
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       toast.error(msg ?? 'Error al cambiar estado');
+    },
+  });
+
+  const cancelMut = useMutation({
+    mutationFn: (id: string) => cancelMovement(id),
+    onSuccess: (r) => {
+      const msg = r.reversedStockMovements > 0
+        ? `Movimiento anulado · ${r.reversedStockMovements} ingreso(s) de stock revertido(s)`
+        : 'Movimiento anulado';
+      toast.success(msg);
+      qc.invalidateQueries({ queryKey: ['finance-movements'] });
+      qc.invalidateQueries({ queryKey: ['finance-dashboard'] });
+      qc.invalidateQueries({ queryKey: ['pending-detail'] });
+      qc.invalidateQueries({ queryKey: ['stock-products'] });
+      qc.invalidateQueries({ queryKey: ['stock-alerts'] });
+      setDetailMov(null);
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? 'Error al anular');
     },
   });
 
@@ -559,15 +677,32 @@ export function FinanceMovements() {
           <option value="PAGADO">Pagados</option>
         </select>
         <input type="text" className={klass(inp, 'min-w-40 flex-1')} placeholder="Buscar..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
+        <label className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)] cursor-pointer ml-1">
+          <input type="checkbox" checked={pendingFilter} onChange={e => setPendingFilter(e.target.checked)} className="accent-[var(--color-accent)]" />
+          Pendientes de desglose
+        </label>
       </div>
 
       {/* Table */}
       <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center py-12"><Spinner /></div>
-        ) : !data?.data.length ? (
-          <p className="text-sm text-[var(--color-text-muted)] text-center py-12">Sin movimientos en este período</p>
-        ) : (
+        ) : (() => {
+          const filteredRows = pendingFilter
+            ? (data?.data ?? []).filter(m =>
+                (m.status === 'A_PAGAR' || m.status === 'PAGADO')
+                && !m.hasItemDetail
+                && !m.noTieneMateriales,
+              )
+            : (data?.data ?? []);
+          if (filteredRows.length === 0) {
+            return (
+              <p className="text-sm text-[var(--color-text-muted)] text-center py-12">
+                {pendingFilter ? 'Sin movimientos pendientes de desglose en este período' : 'Sin movimientos en este período'}
+              </p>
+            );
+          }
+          return (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -578,9 +713,12 @@ export function FinanceMovements() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border)]">
-                {data.data.map(mov => {
+                {filteredRows.map(mov => {
                   const today = new Date().toISOString().slice(0, 10);
                   const overdue = mov.dueDate != null && mov.dueDate < today && mov.status === 'A_PAGAR';
+                  const needsDetail = (mov.status === 'A_PAGAR' || mov.status === 'PAGADO')
+                    && !mov.hasItemDetail && !mov.noTieneMateriales
+                    && mov.tipoMovimiento === 'GASTO';
                   const showFecha = mov.status === 'PAGADO' || mov.tipoMovimiento === 'INGRESO' || mov.tipoMovimiento === 'AJUSTE'
                     ? mov.fecha
                     : (mov.expectedDate ?? mov.fecha);
@@ -595,7 +733,22 @@ export function FinanceMovements() {
                       <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-muted)]">
                         {fechaLabel}{fmtDate(showFecha)}
                       </td>
-                      <td className="px-4 py-3 max-w-xs truncate text-[var(--color-text-primary)]">{mov.descripcion}</td>
+                      <td className="px-4 py-3 max-w-xs truncate text-[var(--color-text-primary)]">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate">{mov.descripcion}</span>
+                          {needsDetail && (
+                            <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded uppercase bg-[var(--color-warning-bg)] text-[var(--color-warning-text)]" title="Esta factura aún no tiene desglose">
+                              <AlertTriangle className="w-3 h-3" />
+                              Desglose pendiente
+                            </span>
+                          )}
+                          {mov.hasItemDetail && !mov.noTieneMateriales && (
+                            <span className="shrink-0 text-[10px] font-mono px-1.5 py-0.5 rounded uppercase bg-[var(--color-state-done-bg)] text-[var(--color-state-done-text)]" title="Stock ingresado">
+                              ✓ Stock
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-secondary)]">{CATEGORIA_LABEL[mov.categoriaPrincipal]}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-muted)]">{mov.project?.code ?? '—'}</td>
                       <td className={klass('px-4 py-3 whitespace-nowrap', overdue ? 'text-red-400 font-semibold' : 'text-[var(--color-text-muted)]')}>
@@ -611,21 +764,33 @@ export function FinanceMovements() {
                         </span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        {(mov.status === 'COMPROMETIDO' || mov.status === 'A_PAGAR') && (
-                          <button
-                            onClick={e => { e.stopPropagation(); handleQuickTransition(mov); }}
-                            disabled={transitionMut.isPending}
-                            className={klass(
-                              'text-[10px] px-2 py-1 rounded font-semibold transition-colors disabled:opacity-60',
-                              mov.status === 'COMPROMETIDO'
-                                ? 'bg-[var(--color-warning-bg)] text-[var(--color-warning-text)] hover:opacity-80'
-                                : 'bg-[var(--color-state-done-bg)] text-[var(--color-state-done-text)] hover:opacity-80',
-                            )}
-                            title={mov.status === 'COMPROMETIDO' ? 'Pasar a A pagar' : 'Marcar como pagado'}
-                          >
-                            <ArrowRight className="w-3 h-3 inline" />
-                          </button>
-                        )}
+                        <div className="flex items-center gap-1">
+                          {needsDetail && (
+                            <button
+                              onClick={e => { e.stopPropagation(); setDesgloseMovId(mov.id); }}
+                              className="text-[10px] px-2 py-1 rounded bg-[var(--color-warning-bg)] text-[var(--color-warning-text)] font-semibold hover:opacity-80 inline-flex items-center gap-1"
+                              title="Cargar desglose de factura"
+                            >
+                              <FileText className="w-3 h-3" />
+                              Desglose
+                            </button>
+                          )}
+                          {(mov.status === 'COMPROMETIDO' || mov.status === 'A_PAGAR') && (
+                            <button
+                              onClick={e => { e.stopPropagation(); handleQuickTransition(mov); }}
+                              disabled={transitionMut.isPending}
+                              className={klass(
+                                'text-[10px] px-2 py-1 rounded font-semibold transition-colors disabled:opacity-60',
+                                mov.status === 'COMPROMETIDO'
+                                  ? 'bg-[var(--color-warning-bg)] text-[var(--color-warning-text)] hover:opacity-80'
+                                  : 'bg-[var(--color-state-done-bg)] text-[var(--color-state-done-text)] hover:opacity-80',
+                              )}
+                              title={mov.status === 'COMPROMETIDO' ? 'Pasar a A pagar' : 'Marcar como pagado'}
+                            >
+                              <ArrowRight className="w-3 h-3 inline" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -633,7 +798,8 @@ export function FinanceMovements() {
               </tbody>
             </table>
           </div>
-        )}
+          );
+        })()}
 
         {/* Pagination */}
         {data && data.totalPages > 1 && (
@@ -667,6 +833,13 @@ export function FinanceMovements() {
               onSuccess={handleSuccess}
               onCancel={() => { setNewModal(false); setEditMov(null); }}
               editId={editMov?.id}
+              onSavedOpenDesglose={(id) => {
+                setNewModal(false);
+                setEditMov(null);
+                setDesgloseMovId(id);
+                qc.invalidateQueries({ queryKey: ['finance-movements'] });
+                qc.invalidateQueries({ queryKey: ['finance-dashboard'] });
+              }}
               initial={editMov ? {
                 fecha: editMov.fecha.split('T')[0],
                 tipoMovimiento: editMov.tipoMovimiento,
@@ -703,6 +876,20 @@ export function FinanceMovements() {
               deleteMut.mutate(detailMov.id);
             }
           }}
+          onCancel={() => {
+            if (confirm('Esto anulará el movimiento y revertirá el stock que ingresó por esta factura. ¿Continuar?')) {
+              cancelMut.mutate(detailMov.id);
+            }
+          }}
+          onOpenDesglose={() => { setDesgloseMovId(detailMov.id); setDetailMov(null); }}
+        />
+      )}
+
+      {/* Desglose modal */}
+      {desgloseMovId && (
+        <InvoiceItemsDetail
+          movementId={desgloseMovId}
+          onClose={() => setDesgloseMovId(null)}
         />
       )}
     </div>

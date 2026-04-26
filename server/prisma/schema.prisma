@@ -81,6 +81,9 @@ enum AuditEntityType {
   exchange_rate
   installation_schedule
   team
+  material_category
+  material_item
+  invoice_item
 }
 
 enum AuditAction {
@@ -236,6 +239,14 @@ enum FinanceMovementStatus {
 enum MovementSourceType {
   MANUAL
   PROJECT_MATERIALS
+}
+
+enum ExpenseSourceType {
+  FACTURA
+  DEVOLUCION_PROVEEDOR
+  AJUSTE_INVENTARIO
+  IMPORTACION_INICIAL
+  OTRO
 }
 
 enum TipoMovimientoStock {
@@ -875,6 +886,12 @@ model FinanceMovement {
   materialItem       MaterialItem?            @relation(fields: [materialItemId], references: [id])
   quantity           Decimal?                 @db.Decimal(10, 2)
   unitPrice          Decimal?                 @db.Decimal(12, 2)
+  // Desglose de factura → impacta stock cuando pasa a A_PAGAR
+  requiresItemDetail Boolean                  @default(false)
+  hasItemDetail      Boolean                  @default(false)
+  noTieneMateriales  Boolean                  @default(false)
+  depositoIngresoId  String?
+  invoiceItems       InvoiceItem[]
   projectId          String?
   project            Project?                 @relation(fields: [projectId], references: [id])
   supplierId         String?
@@ -1003,28 +1020,6 @@ model FinanceApprovalRule {
   @@map("finance_approval_rules")
 }
 
-model StockProduct {
-  id            String    @id @default(cuid())
-  nombre        String
-  descripcion   String?
-  categoria     String
-  unidad        String    @default("unidad")
-  stockActual   Decimal   @default(0) @db.Decimal(14, 3)
-  stockMinimo   Decimal   @default(0) @db.Decimal(14, 3)
-  costoPromedio Decimal   @default(0) @db.Decimal(14, 2)
-  moneda        Moneda    @default(USD)
-  activo        Boolean   @default(true)
-  notas         String?
-  deletedAt     DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  movimientos StockMovement[]
-
-  @@index([categoria])
-  @@map("stock_products")
-}
-
 model InstallationSchedule {
   id              String    @id @default(cuid())
   projectId       String    @unique
@@ -1085,8 +1080,8 @@ model Team {
 model StockMovement {
   id                String              @id @default(cuid())
   fecha             DateTime
-  productId         String
-  product           StockProduct        @relation(fields: [productId], references: [id])
+  materialItemId    String
+  materialItem      MaterialItem        @relation(fields: [materialItemId], references: [id])
   tipo              TipoMovimientoStock
   cantidad          Decimal             @db.Decimal(14, 3)
   costoUnitario     Decimal?            @db.Decimal(14, 2)
@@ -1099,14 +1094,19 @@ model StockMovement {
   project           Project?            @relation(fields: [projectId], references: [id])
   financeMovementId String?
   financeMovement   FinanceMovement?    @relation(fields: [financeMovementId], references: [id])
+  invoiceItemId     String?             @unique
+  invoiceItem       InvoiceItem?        @relation(fields: [invoiceItemId], references: [id])
+  causaIngreso      ExpenseSourceType?
+  reversed          Boolean             @default(false)
   referencia        String?
   observaciones     String?
   createdAt         DateTime            @default(now())
 
-  @@index([productId])
+  @@index([materialItemId])
   @@index([fecha])
   @@index([projectId])
   @@index([financeMovementId])
+  @@index([reversed])
   @@map("stock_movements")
 }
 
@@ -1206,14 +1206,25 @@ model MaterialItem {
 
   activo Boolean @default(true)
 
+  // Campos de stock (unificación con StockProduct)
+  // gestionaStock = false → es un servicio / mano de obra, no tiene representación
+  // física y no entra al inventario.
+  gestionaStock     Boolean  @default(true)
+  stockActual       Decimal  @default(0) @db.Decimal(10, 2)
+  stockMinimo       Decimal? @db.Decimal(10, 2)
+  ubicacionDeposito String?
+
   projectMaterials ProjectMaterial[]
   movimientos      FinanceMovement[]
+  stockMovements   StockMovement[]
+  invoiceItems     InvoiceItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([categoryId])
   @@index([activo])
+  @@index([gestionaStock])
   @@map("material_items")
 }
 
@@ -1243,4 +1254,33 @@ model ProjectMaterial {
   @@index([projectId])
   @@index([materialItemId])
   @@map("project_materials")
+}
+
+// ─── Desglose de factura (InvoiceItem) ──────────────────────────────────────
+// Cada factura A_PAGAR/PAGADO puede llevar el detalle de los ítems comprados.
+// Al confirmar el desglose, cada InvoiceItem genera un StockMovement de
+// ENTRADA. Si el movimiento luego se anula, se revierte el StockMovement.
+
+model InvoiceItem {
+  id         String          @id @default(cuid())
+  movementId String
+  movement   FinanceMovement @relation(fields: [movementId], references: [id], onDelete: Cascade)
+
+  materialItemId String
+  materialItem   MaterialItem @relation(fields: [materialItemId], references: [id])
+
+  quantity  Decimal @db.Decimal(10, 2)
+  unitPrice Decimal @db.Decimal(12, 2)
+  moneda    Moneda  @default(USD)
+  notes     String?
+
+  // 1:1 con el StockMovement de ENTRADA generado al confirmar
+  stockMovement StockMovement?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([movementId])
+  @@index([materialItemId])
+  @@map("invoice_items")
 }

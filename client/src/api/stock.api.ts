@@ -2,53 +2,43 @@ import { apiClient } from './axios';
 import type { Moneda, StockMovement, StockProduct, TipoMovimientoStock } from '../types/finance.types';
 import type { PaginatedResponse } from '../types/api.types';
 
-// ─── Products ─────────────────────────────────────────────────────────────────
+// ─── Products (legacy path; backend resuelve sobre MaterialItem) ─────────────
 
-export const getStockProducts = (params?: { categoria?: string; activo?: boolean }) =>
-  apiClient.get<StockProduct[]>('/api/stock/products', { params }).then(r => r.data);
-
-export const createStockProduct = (body: {
-  nombre: string;
-  descripcion?: string;
-  categoria: string;
-  unidad?: string;
-  stockMinimo?: number;
-  costoPromedio?: number;
-  moneda?: Moneda;
-  notas?: string;
+export const getStockProducts = (params?: {
+  categoryId?: string;
+  categoria?: string;
+  activo?: boolean;
+  gestionaStock?: 'true' | 'false' | 'all';
 }) =>
-  apiClient.post<StockProduct>('/api/stock/products', body).then(r => r.data);
-
-export const patchStockProduct = (id: string, body: Partial<{
-  nombre: string;
-  descripcion: string | null;
-  categoria: string;
-  unidad: string;
-  stockMinimo: number;
-  costoPromedio: number;
-  moneda: Moneda;
-  notas: string | null;
-  activo: boolean;
-}>) =>
-  apiClient.patch<StockProduct>(`/api/stock/products/${id}`, body).then(r => r.data);
-
-export const deleteStockProduct = (id: string) =>
-  apiClient.delete(`/api/stock/products/${id}`);
+  apiClient.get<StockProduct[]>('/api/stock/products', { params }).then(r => r.data);
 
 // ─── Movements ────────────────────────────────────────────────────────────────
 
-export const getStockMovements = (params?: { productId?: string; projectId?: string; tipo?: string; page?: number; limit?: number }) =>
+export const getStockMovements = (params?: {
+  materialItemId?: string;
+  /** @deprecated usar materialItemId */
+  productId?: string;
+  projectId?: string;
+  tipo?: TipoMovimientoStock;
+  includeReversed?: 'true' | 'false';
+  page?: number;
+  limit?: number;
+}) =>
   apiClient.get<PaginatedResponse<StockMovement>>('/api/stock/movements', { params }).then(r => r.data);
 
 export const createStockMovement = (body: {
   fecha: string;
-  productId: string;
+  materialItemId?: string;
+  /** @deprecated usar materialItemId */
+  productId?: string;
   tipo: TipoMovimientoStock;
   cantidad: number;
   costoUnitario?: number;
   moneda?: Moneda;
   supplierId?: string;
   projectId?: string;
+  financeMovementId?: string;
+  causaIngreso?: 'FACTURA' | 'DEVOLUCION_PROVEEDOR' | 'AJUSTE_INVENTARIO' | 'IMPORTACION_INICIAL' | 'OTRO';
   referencia?: string;
   observaciones?: string;
 }) =>
