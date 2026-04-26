@@ -2,6 +2,8 @@
 
 export type Moneda = 'USD' | 'UYU';
 export type TipoMovimiento = 'INGRESO' | 'GASTO' | 'AJUSTE';
+export type FinanceMovementStatus = 'PREVISTO' | 'COMPROMETIDO' | 'A_PAGAR' | 'PAGADO';
+export type MovementSourceType = 'MANUAL' | 'PROJECT_MATERIALS';
 export type CategoriaPrincipal =
   | 'PROYECTO_ENTRADA' | 'COBRO_CLIENTE'
   | 'PROYECTO_SALIDA' | 'COMPRA_STOCK' | 'CONSUMO_STOCK' | 'PAGO_PROVEEDOR'
@@ -33,6 +35,20 @@ export const TIPO_MOV_LABEL: Record<TipoMovimiento, string> = {
   INGRESO: 'Ingreso',
   GASTO: 'Gasto',
   AJUSTE: 'Ajuste',
+};
+
+export const STATUS_LABEL: Record<FinanceMovementStatus, string> = {
+  PREVISTO: 'Previsto',
+  COMPROMETIDO: 'Comprometido',
+  A_PAGAR: 'A pagar',
+  PAGADO: 'Pagado',
+};
+
+export const STATUS_COLOR: Record<FinanceMovementStatus, string> = {
+  PREVISTO: 'bg-[var(--color-border)] text-[var(--color-text-muted)] border border-[var(--color-border-hover)]',
+  COMPROMETIDO: 'bg-[var(--color-info-bg)] text-[var(--color-info-text)]',
+  A_PAGAR: 'bg-[var(--color-warning-bg)] text-[var(--color-warning-text)]',
+  PAGADO: 'bg-[var(--color-state-done-bg)] text-[var(--color-state-done-text)]',
 };
 
 export const ESTADO_APROBACION_LABEL: Record<EstadoAprobacion, string> = {
@@ -81,13 +97,16 @@ export interface ExchangeRate {
 export interface Supplier {
   id: string;
   nombre: string;
+  rut: string | null;
+  contactoNombre: string | null;
   email: string | null;
   telefono: string | null;
-  rut: string | null;
+  direccion: string | null;
   condicionPago: string | null;
   notas: string | null;
   activo: boolean;
   createdAt: string;
+  _count?: { movimientos: number; comprobantes: number };
 }
 
 export interface Subcategoria {
@@ -111,6 +130,14 @@ export interface FinanceMovement {
   pagado: boolean;
   cobrado: boolean;
   impactaFlujo: boolean;
+  status: FinanceMovementStatus;
+  expectedDate: string | null;
+  dueDate: string | null;
+  sourceType: MovementSourceType;
+  materialItemId: string | null;
+  materialItem?: { id: string; nombre: string; unidad: string } | null;
+  quantity: number | null;
+  unitPrice: number | null;
   estadoAprobacion: EstadoAprobacion;
   projectId: string | null;
   project: { id: string; code: string; clientName: string } | null;
@@ -120,6 +147,25 @@ export interface FinanceMovement {
   subcategoria: { id: string; nombre: string } | null;
   observaciones: string | null;
   createdAt: string;
+}
+
+export interface PrevistoPendiente {
+  id: string;
+  descripcion: string;
+  monto: number;
+  moneda: Moneda;
+  quantity: number | null;
+  unitPrice: number | null;
+  fecha: string;
+  expectedDate: string | null;
+  project: { id: string; code: string; clientName: string } | null;
+  supplier: { id: string; nombre: string } | null;
+  materialItem: {
+    id: string;
+    nombre: string;
+    unidad: string;
+    category: { id: string; nombre: string };
+  } | null;
 }
 
 export interface FinanceComprobante {
@@ -202,6 +248,10 @@ export interface FinanceCashflow {
   porCobrar: number;
   porPagar: number;
   saldoProyectado: number;
+  previstoTotal: number;
+  comprometidoTotal: number;
+  aPagarTotal: number;
+  saldoProyectadoSinPrevistos: number;
 }
 
 export interface FinanceResultsMes {
@@ -234,6 +284,9 @@ export interface MovimientoFormData {
   pagado: boolean;
   cobrado: boolean;
   impactaFlujo: boolean;
+  status: FinanceMovementStatus;
+  expectedDate?: string;
+  dueDate?: string;
   estadoAprobacion: EstadoAprobacion;
   proyectoId?: string;
   proveedorId?: string;

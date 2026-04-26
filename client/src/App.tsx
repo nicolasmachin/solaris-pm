@@ -22,6 +22,7 @@ const Finance = lazy(() => import("./pages/Finance").then((module) => ({ default
 const FinanceMovements = lazy(() => import("./pages/FinanceMovements").then((module) => ({ default: module.FinanceMovements })));
 const FinanceSuppliers = lazy(() => import("./pages/FinanceSuppliers").then((module) => ({ default: module.FinanceSuppliers })));
 const FinanceReports = lazy(() => import("./pages/FinanceReports").then((module) => ({ default: module.FinanceReports })));
+const FinanceAPagar = lazy(() => import("./pages/FinanceAPagar").then((module) => ({ default: module.FinanceAPagar })));
 const Stock = lazy(() => import("./pages/Stock").then((module) => ({ default: module.Stock })));
 const Calendar = lazy(() => import("./pages/Calendar").then((module) => ({ default: module.Calendar })));
 const MisTareas = lazy(() => import("./pages/MisTareas").then((module) => ({ default: module.MisTareas })));
@@ -158,6 +159,14 @@ export function App() {
           element={
             <PermissionRoute module="FINANZAS" action="VIEW">
               <FinanceMovements />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/finanzas/a-pagar"
+          element={
+            <PermissionRoute module="FINANZAS" action="VIEW">
+              <FinanceAPagar />
             </PermissionRoute>
           }
         />

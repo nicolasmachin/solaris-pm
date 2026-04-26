@@ -1,5 +1,68 @@
 # Novedades
 
+## v2.2
+
+### 26 de abril de 2026
+
+#### Previsión de gastos por proyecto + estados de movimientos
+Sistema completo para planificar el gasto de cada proyecto desde la lista de materiales y seguir el ciclo de cada compromiso hasta el pago.
+
+**Catálogo maestro de materiales (Admin → Materiales)**
+- Nueva pestaña en Administración con dos secciones:
+  - **Categorías**: 9 categorías precargadas (Paneles, Inversores, Estructura, Cableado, Protecciones, Mano de obra, Trámites, Logística, Otros). Editables, reordenables con flechas, desactivables. Si una categoría tiene ítems vinculados, al eliminarla queda inactiva en lugar de borrarse.
+  - **Ítems**: catálogo central de materiales con nombre, descripción, unidad, precio sugerido (USD o UYU) y proveedor por defecto. Filtros por categoría, búsqueda, mostrar inactivos. Si un ítem está usado en algún proyecto, "Eliminar" lo desactiva en lugar de borrarlo.
+
+**Lista de materiales en cada proyecto (etapa Ingeniería)**
+- Dentro del drawer de la etapa **Ingeniería** del proyecto aparece una sección "Lista de materiales" con tabla agrupada por categoría.
+- Botón **"+ Agregar ítem"** abre un buscador del catálogo agrupado por categorías; permite agregar varios sin cerrar el modal.
+- **Cantidad, precio y proveedor** se editan inline (blur o Enter guarda).
+- Cada fila puede tener una **nota** (ícono de chincheta).
+- Total estimado en el footer; subtotales por categoría en cada header.
+
+**Generación de gastos previstos**
+- Botón **"Generar previstos"** crea un movimiento `PREVISTO` por cada material de la lista, vinculado al proyecto. Si hay materiales sin previsto generado, el botón propone generar sólo los faltantes.
+- Banner cuando ya hay previstos generados con la fecha de última actualización.
+- **Regenerar** (solo admin): borra los previstos actuales y vuelve a generarlos en base a la lista. Pide confirmación.
+- Si eliminás un material que tenía previsto generado, se borra también el movimiento.
+
+**Nuevos estados de movimiento (Finanzas → Movimientos)**
+- Cada movimiento de gasto tiene ahora un **estado** del ciclo de vida:
+  - **Previsto** (gris): proyección desde la lista de materiales, no se crea manualmente.
+  - **Comprometido** (azul): compra acordada pero todavía sin fecha de pago.
+  - **A pagar** (ámbar): tiene fecha de vencimiento.
+  - **Pagado** (verde): cerrado.
+- **Filtro nuevo "Estado"** en la lista de movimientos, persistido por usuario.
+- **Columna nueva "Vence"** muestra el dueDate; las filas vencidas (status A pagar con fecha pasada) se resaltan en rojo con ⚠.
+- **Acciones rápidas** en la fila: si está Comprometido aparece botón "→ A pagar" (pide vencimiento); si está A pagar aparece "→ Pagado" (pide fecha de pago).
+- Modal de crear/editar adapta los campos según el estado (fecha esperada para previstos/comprometidos, vencimiento para A pagar).
+
+**Página "Cuentas a pagar" (Finanzas → A pagar)**
+- Nueva vista en `/finanzas/a-pagar` con todo lo Comprometido y A pagar ordenado por vencimiento ascendente.
+- 4 KPIs en el header: Comprometido total, A pagar total, Vencido (en rojo si > 0), Vence esta semana.
+- Filtros por rango (Vencidos / Esta semana / Este mes / Próximos 30 días / Todos), proyecto y proveedor. Persistencia.
+- Botón "Marcar como pagado" o "→ A pagar" en cada fila.
+- Acceso rápido desde el dashboard de Finanzas.
+
+**Limpieza de previstos al registrar la compra real**
+- Al crear o editar un movimiento con estado **Comprometido** o **A pagar**, aparece un botón "🧹 Limpiar previstos asociados…".
+- Abre un modal con todos los previstos pendientes agrupados por proyecto, con buscador y checkboxes individuales o por proyecto.
+- Muestra el total seleccionado y al confirmar elimina los previstos elegidos para que no queden contados dos veces.
+
+**Pestaña "Costos" en cada proyecto**
+- Junto a UTE, en el panel inferior del proyecto, hay una pestaña nueva **Costos** con todos los movimientos vinculados.
+- 4 KPIs: Previsto, Comprometido, A pagar, Pagado, separados por moneda.
+- Si el proyecto tiene presupuesto cargado, calcula el **margen estimado** (presupuesto − todos los costos en USD) y el porcentaje.
+- Filtro rápido por estado.
+
+**Flujo de fondos enriquecido**
+- El widget de Flujo de fondos ahora muestra también: Previsto total, Comprometido total, A pagar total.
+- Toggle "Incluir previstos en proyección" cambia cómo se calcula el saldo proyectado (con previstos = visión pesimista; sin previstos = sólo compromisos firmes).
+
+**Proveedores con datos de contacto**
+- El form de proveedores ahora persiste correctamente **RUT/CUIT, persona de contacto y dirección** (antes RUT se perdía al guardar).
+- La tabla de proveedores muestra RUT y contacto. Filtros nuevos: buscador por nombre/RUT/contacto/email + Activos/Todos/Inactivos. Persistencia.
+- El nombre del proveedor ahora es **único entre activos**: el backend rechaza duplicados.
+
 ## v2.1
 
 ### 25 de abril de 2026

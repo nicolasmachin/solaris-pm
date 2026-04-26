@@ -5,10 +5,12 @@ import type {
   FinanceComprobante,
   FinanceDashboard,
   FinanceMovement,
+  FinanceMovementStatus,
   FinanceResults,
   MetodoPago,
   Moneda,
   MovimientoFormData,
+  PrevistoPendiente,
   Subcategoria,
   Supplier,
   TipoComprobante,
@@ -36,14 +38,19 @@ export const getBcuExchangeRatePreview = () =>
 
 // ─── Suppliers ────────────────────────────────────────────────────────────────
 
-export const getSuppliers = (params?: { activo?: boolean }) =>
+export const getSuppliers = (params?: { activo?: 'true' | 'false' | 'all' }) =>
   apiClient.get<Supplier[]>('/api/finance/suppliers', { params }).then(r => r.data);
+
+export const getSupplier = (id: string) =>
+  apiClient.get<Supplier>(`/api/finance/suppliers/${id}`).then(r => r.data);
 
 export const createSupplier = (body: {
   nombre: string;
+  rut?: string;
+  contactoNombre?: string;
   email?: string;
   telefono?: string;
-  rut?: string;
+  direccion?: string;
   condicionPago?: string;
   notas?: string;
 }) =>
@@ -51,9 +58,11 @@ export const createSupplier = (body: {
 
 export const patchSupplier = (id: string, body: Partial<{
   nombre: string;
+  rut: string | null;
+  contactoNombre: string | null;
   email: string | null;
   telefono: string | null;
-  rut: string | null;
+  direccion: string | null;
   condicionPago: string | null;
   notas: string | null;
   activo: boolean;
@@ -81,8 +90,9 @@ export interface MovimientosQuery {
   limit?: number;
   anio?: number;
   mes?: number;
-  tipoMovimiento?: string;
-  categoriaPrincipal?: string;
+  tipo?: string;
+  categoria?: string;
+  status?: FinanceMovementStatus;
   projectId?: string;
   search?: string;
 }
@@ -93,30 +103,46 @@ export const getMovements = (params: MovimientosQuery) =>
 export const getMovement = (id: string) =>
   apiClient.get<FinanceMovement>(`/api/finance/movements/${id}`).then(r => r.data);
 
-export const createMovement = (body: MovimientoFormData) =>
-  apiClient.post<FinanceMovement>('/api/finance/movements', {
-    fecha: body.fecha,
-    tipoMovimiento: body.tipoMovimiento,
-    categoriaPrincipal: body.categoriaPrincipal,
-    descripcion: body.descripcion,
-    monto: body.monto,
-    moneda: body.moneda,
+function buildMovementBody(body: Partial<MovimientoFormData>) {
+  return {
+    ...(body.fecha != null ? { fecha: body.fecha } : {}),
+    ...(body.tipoMovimiento ? { tipoMovimiento: body.tipoMovimiento } : {}),
+    ...(body.categoriaPrincipal ? { categoriaPrincipal: body.categoriaPrincipal } : {}),
+    ...(body.descripcion != null ? { descripcion: body.descripcion } : {}),
+    ...(body.monto != null ? { monto: body.monto } : {}),
+    ...(body.moneda ? { moneda: body.moneda } : {}),
     ...(body.tipoCambio != null ? { tipoCambio: body.tipoCambio } : {}),
-    pagado: body.pagado,
-    cobrado: body.cobrado,
-    impactaFlujo: body.impactaFlujo,
-    estadoAprobacion: body.estadoAprobacion,
+    ...(body.pagado != null ? { pagado: body.pagado } : {}),
+    ...(body.cobrado != null ? { cobrado: body.cobrado } : {}),
+    ...(body.impactaFlujo != null ? { impactaFlujo: body.impactaFlujo } : {}),
+    ...(body.status ? { status: body.status } : {}),
+    ...(body.expectedDate ? { expectedDate: body.expectedDate } : {}),
+    ...(body.dueDate ? { dueDate: body.dueDate } : {}),
+    ...(body.estadoAprobacion ? { estadoAprobacion: body.estadoAprobacion } : {}),
     ...(body.proyectoId ? { projectId: body.proyectoId } : {}),
     ...(body.proveedorId ? { supplierId: body.proveedorId } : {}),
     ...(body.subcategoriaId ? { subcategoriaId: body.subcategoriaId } : {}),
     ...(body.observaciones ? { observaciones: body.observaciones } : {}),
-  }).then(r => r.data);
+  };
+}
+
+export const createMovement = (body: MovimientoFormData) =>
+  apiClient.post<FinanceMovement>('/api/finance/movements', buildMovementBody(body)).then(r => r.data);
 
 export const patchMovement = (id: string, body: Partial<MovimientoFormData>) =>
-  apiClient.patch<FinanceMovement>(`/api/finance/movements/${id}`, body).then(r => r.data);
+  apiClient.patch<FinanceMovement>(`/api/finance/movements/${id}`, buildMovementBody(body)).then(r => r.data);
 
 export const deleteMovement = (id: string) =>
   apiClient.delete(`/api/finance/movements/${id}`);
+
+export const transitionMovement = (id: string, body: { newStatus: FinanceMovementStatus; paidDate?: string; dueDate?: string }) =>
+  apiClient.post<{ id: string; status: FinanceMovementStatus; fecha: string; dueDate: string | null; pagado: boolean }>(`/api/finance/movements/${id}/transition`, body).then(r => r.data);
+
+export const getPrevistosPendientes = (params?: { categoryId?: string; supplierId?: string; from?: string; to?: string }) =>
+  apiClient.get<PrevistoPendiente[]>('/api/finance/movements/previstos-pendientes', { params }).then(r => r.data);
+
+export const cleanupPrevistos = (movementIds: string[]) =>
+  apiClient.post<{ deleted: number }>('/api/finance/movements/cleanup-previstos', { movementIds }).then(r => r.data);
 
 // ─── Comprobantes ─────────────────────────────────────────────────────────────
 

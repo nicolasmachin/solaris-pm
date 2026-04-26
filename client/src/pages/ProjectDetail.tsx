@@ -11,6 +11,7 @@ import { ProjectHeader } from "../components/project/ProjectHeader";
 import { KpiCards } from "../components/project/KpiCards";
 import { Pipeline } from "../components/project/Pipeline";
 import { StageDrawer } from "../components/project/StageDrawer";
+import { CostosTab } from "../components/project/CostosTab";
 import { TasksPanel } from "../components/project/TasksPanel";
 import { TaskModal } from "../components/project/TaskModal";
 import { SolarSystemModal } from "../components/project/SolarSystemModal";
@@ -607,7 +608,8 @@ export function ProjectDetail() {
   const [showEditProject, setShowEditProject] = useState(false);
   const [editingSolarSystemId, setEditingSolarSystemId] = useState<string | null>(null);
   const [showCreateSolarSystem, setShowCreateSolarSystem] = useState(false);
-  const [bottomTab, setBottomTab] = useState<"activity" | "comments" | "timeline" | "materiales" | "ute">("activity");
+  const [bottomTab, setBottomTab] = useState<"activity" | "comments" | "timeline" | "materiales" | "ute" | "costos">("activity");
+  const canViewFinance = usePermission("FINANZAS", "VIEW");
   const canViewMetrics = usePermission("METRICAS", "VIEW");
   const canViewStock = usePermission("STOCK", "VIEW");
   const canViewUte = usePermission("TRAMITES_UTE", "VIEW");
@@ -808,6 +810,15 @@ export function ProjectDetail() {
               UTE
             </button>
           ) : null}
+          {canViewFinance ? (
+            <button
+              className={`rounded-full px-3 py-1 text-xs ${bottomTab === "costos" ? "bg-[var(--color-accent)] text-black" : "text-[var(--color-text-secondary)]"}`}
+              onClick={() => setBottomTab("costos")}
+              type="button"
+            >
+              Costos
+            </button>
+          ) : null}
         </div>
 
         {bottomTab === "activity" ? (
@@ -846,6 +857,8 @@ export function ProjectDetail() {
             canCreate={canCreateUte}
             onChanged={invalidate}
           />
+        ) : bottomTab === "costos" ? (
+          <CostosTab projectId={project.id} budgetUsd={project.budgetUsd ?? null} />
         ) : (
           <CommentThread projectId={project.id} level="project" context={commentContext} />
         )}

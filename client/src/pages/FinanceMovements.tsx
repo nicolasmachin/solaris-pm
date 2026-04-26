@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Plus, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, X, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
-import { getMovements, createMovement, patchMovement, deleteMovement, getSubcategories, getExchangeRate } from '../api/finance.api';
+import { getMovements, createMovement, patchMovement, deleteMovement, transitionMovement, getExchangeRate } from '../api/finance.api';
 import { apiClient } from '../api/axios';
 import { fmtCurrency, fmtDate, currentMonthYear, MONTH_NAMES } from '../lib/finance';
 import type {
   CategoriaPrincipal,
   EstadoAprobacion,
   FinanceMovement,
+  FinanceMovementStatus,
   Moneda,
   MovimientoFormData,
   TipoMovimiento,
@@ -21,21 +22,15 @@ import {
   CATEGORIAS_INGRESO,
   CATEGORIAS_POR_TIPO,
   ESTADO_APROBACION_LABEL,
+  STATUS_COLOR,
+  STATUS_LABEL,
   TIPO_MOV_LABEL,
 } from '../types/finance.types';
+import { CleanupPrevistosModal } from '../components/finance/CleanupPrevistosModal';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
-
-const ESTADO_COLOR: Record<EstadoAprobacion, string> = {
-  BORRADOR: 'bg-[var(--color-border)] text-[var(--color-text-muted)]',
-  REGISTRADO: 'bg-[var(--color-info-bg)] text-[var(--color-info-text)]',
-  PENDIENTE_APROBACION: 'bg-[var(--color-warning-bg)] text-[var(--color-warning-text)]',
-  APROBADO: 'bg-[var(--color-state-done-bg)] text-[var(--color-state-done-text)]',
-  RECHAZADO: 'bg-[var(--color-danger-bg)] text-[var(--color-danger-text)]',
-  ANULADO: 'bg-[var(--color-danger-bg)] text-[var(--color-danger-text)]',
-};
 
 // ─── Movimiento Form ──────────────────────────────────────────────────────────
 
@@ -56,14 +51,16 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId }: MovFormProps) 
     descripcion: '',
     monto: 0,
     moneda: 'USD',
-    pagado: false,
+    pagado: true,
     cobrado: false,
     impactaFlujo: true,
+    status: 'PAGADO',
     estadoAprobacion: 'REGISTRADO',
     ...initial,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showCleanup, setShowCleanup] = useState(false);
   const [projects, setProjects] = useState<{ id: string; code: string; clientName: string }[]>([]);
   const [suppliers, setSuppliers] = useState<{ id: string; nombre: string }[]>([]);
   const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
@@ -105,6 +102,12 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId }: MovFormProps) 
         next.subcategoriaId = undefined;
       }
       if (key === 'categoriaPrincipal') next.subcategoriaId = undefined;
+      if (key === 'status') {
+        const s = value as FinanceMovementStatus;
+        next.pagado = s === 'PAGADO';
+        if (s !== 'A_PAGAR') next.dueDate = undefined;
+        if (s === 'PAGADO') next.expectedDate = undefined;
+      }
       return next;
     });
   }
@@ -225,14 +228,44 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId }: MovFormProps) 
         </select>
       </div>
 
+      {/* Estado del movimiento (PREVISTO/COMPROMETIDO/A_PAGAR/PAGADO) */}
+      {!esIngreso && (
+        <div>
+          <label className={lbl}>Estado *</label>
+          <div className="grid grid-cols-3 gap-2">
+            {(['COMPROMETIDO', 'A_PAGAR', 'PAGADO'] as FinanceMovementStatus[]).map(s => (
+              <button key={s} type="button" onClick={() => setF('status', s)}
+                className={klass('py-1.5 rounded-lg text-xs font-semibold border transition-colors',
+                  form.status === s
+                    ? 'bg-[var(--color-accent)] text-gray-900 border-[var(--color-accent)]'
+                    : 'bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border)] hover:bg-[var(--color-bg-card-hover)]'
+                )}>
+                {STATUS_LABEL[s]}
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-[var(--color-text-muted)] mt-1">
+            "Previsto" se genera automáticamente desde la lista de materiales del proyecto, no se crea acá.
+          </p>
+        </div>
+      )}
+
+      {/* Fechas según estado */}
+      {!esIngreso && form.status === 'COMPROMETIDO' && (
+        <div>
+          <label className={lbl}>Fecha esperada (opcional)</label>
+          <input type="date" className={inp} value={form.expectedDate ?? ''} onChange={e => setF('expectedDate', e.target.value || undefined)} />
+        </div>
+      )}
+      {!esIngreso && form.status === 'A_PAGAR' && (
+        <div>
+          <label className={lbl}>Vencimiento *</label>
+          <input type="date" className={inp} value={form.dueDate ?? ''} onChange={e => setF('dueDate', e.target.value || undefined)} required />
+        </div>
+      )}
+
       {/* Checkboxes */}
       <div className="flex flex-wrap gap-4 py-1">
-        {!esIngreso && (
-          <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
-            <input type="checkbox" checked={form.pagado} onChange={e => setF('pagado', e.target.checked)} className="accent-[var(--color-accent)]" />
-            Pagado
-          </label>
-        )}
         {esIngreso && (
           <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
             <input type="checkbox" checked={form.cobrado} onChange={e => setF('cobrado', e.target.checked)} className="accent-[var(--color-accent)]" />
@@ -245,9 +278,20 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId }: MovFormProps) 
         </label>
       </div>
 
-      {/* Estado */}
+      {/* Cleanup de previstos cuando estamos comprometiendo o vamos a pagar */}
+      {!esIngreso && (form.status === 'COMPROMETIDO' || form.status === 'A_PAGAR') && (
+        <button
+          type="button"
+          onClick={() => setShowCleanup(true)}
+          className="w-full py-2 rounded-lg border border-dashed border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors"
+        >
+          🧹 Limpiar previstos asociados a esta compra…
+        </button>
+      )}
+
+      {/* Aprobación */}
       <div>
-        <label className={lbl}>Estado</label>
+        <label className={lbl}>Aprobación</label>
         <select className={inp} value={form.estadoAprobacion} onChange={e => setF('estadoAprobacion', e.target.value as EstadoAprobacion)}>
           {(['BORRADOR', 'REGISTRADO', 'PENDIENTE_APROBACION', 'APROBADO'] as EstadoAprobacion[]).map(s => (
             <option key={s} value={s}>{ESTADO_APROBACION_LABEL[s]}</option>
@@ -274,6 +318,9 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId }: MovFormProps) 
           Cancelar
         </button>
       </div>
+      {showCleanup && (
+        <CleanupPrevistosModal onClose={() => setShowCleanup(false)} />
+      )}
     </form>
   );
 }
@@ -305,8 +352,13 @@ function DetailPanel({ mov, onClose, onEdit, onDelete }: {
           {mov.tipoCambio && <Row label="T. Cambio" value={`${mov.tipoCambio} UYU/USD`} />}
           {mov.project && <Row label="Proyecto" value={`${mov.project.code} — ${mov.project.clientName}`} />}
           {mov.supplier && <Row label="Proveedor" value={mov.supplier.nombre} />}
+          <Row label="Estado" value={STATUS_LABEL[mov.status]} />
+          {mov.expectedDate && <Row label="Fecha esperada" value={fmtDate(mov.expectedDate)} />}
+          {mov.dueDate && <Row label="Vencimiento" value={fmtDate(mov.dueDate)} />}
+          {mov.sourceType === 'PROJECT_MATERIALS' && <Row label="Origen" value="Lista de materiales" />}
+          {mov.materialItem && <Row label="Ítem" value={`${mov.materialItem.nombre}${mov.quantity != null ? ` (x${mov.quantity} ${mov.materialItem.unidad})` : ''}`} />}
           <Row label={esIngreso ? 'Cobrado' : 'Pagado'} value={esIngreso ? (mov.cobrado ? 'Sí' : 'No') : (mov.pagado ? 'Sí' : 'No')} />
-          <Row label="Estado" value={ESTADO_APROBACION_LABEL[mov.estadoAprobacion]} />
+          <Row label="Aprobación" value={ESTADO_APROBACION_LABEL[mov.estadoAprobacion]} />
           {mov.observaciones && <Row label="Observaciones" value={mov.observaciones} />}
           <Row label="Registrado" value={fmtDate(mov.createdAt)} />
         </div>
@@ -335,6 +387,17 @@ function Row({ label, value }: { label: string; value: string }) {
 
 // ─── Movements Page ───────────────────────────────────────────────────────────
 
+const FILTERS_KEY = 'finance-movements-filters-v2';
+
+interface PersistedFilters {
+  mes?: number;
+  anio?: number;
+  tipo?: string;
+  cat?: string;
+  status?: '' | FinanceMovementStatus;
+  search?: string;
+}
+
 export function FinanceMovements() {
   const qc = useQueryClient();
   const { mes: curMes, anio: curAnio } = currentMonthYear();
@@ -343,12 +406,32 @@ export function FinanceMovements() {
   const [anio, setAnio] = useState(curAnio);
   const [tipo, setTipo] = useState('');
   const [cat, setCat] = useState('');
+  const [status, setStatus] = useState<'' | FinanceMovementStatus>('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
 
   const [newModal, setNewModal] = useState(false);
   const [editMov, setEditMov] = useState<FinanceMovement | null>(null);
   const [detailMov, setDetailMov] = useState<FinanceMovement | null>(null);
+
+  // Persistencia de filtros
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(FILTERS_KEY);
+      if (raw) {
+        const p = JSON.parse(raw) as PersistedFilters;
+        if (typeof p.mes === 'number') setMes(p.mes);
+        if (typeof p.anio === 'number') setAnio(p.anio);
+        if (typeof p.tipo === 'string') setTipo(p.tipo);
+        if (typeof p.cat === 'string') setCat(p.cat);
+        if (p.status === '' || p.status === 'PREVISTO' || p.status === 'COMPROMETIDO' || p.status === 'A_PAGAR' || p.status === 'PAGADO') setStatus(p.status);
+        if (typeof p.search === 'string') setSearch(p.search);
+      }
+    } catch { /* ignore */ }
+  }, []);
+  useEffect(() => {
+    localStorage.setItem(FILTERS_KEY, JSON.stringify({ mes, anio, tipo, cat, status, search } satisfies PersistedFilters));
+  }, [mes, anio, tipo, cat, status, search]);
 
   // Si el usuario llega con ?new=1 (típicamente desde el botón "Nuevo
   // movimiento" del dashboard de Finanzas), abrimos el modal y limpiamos
@@ -365,15 +448,45 @@ export function FinanceMovements() {
   }, []);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['finance-movements', mes, anio, tipo, cat, search, page],
+    queryKey: ['finance-movements', mes, anio, tipo, cat, status, search, page],
     queryFn: () => getMovements({
       mes, anio, page, limit: 20,
-      ...(tipo ? { tipoMovimiento: tipo } : {}),
-      ...(cat ? { categoriaPrincipal: cat } : {}),
+      ...(tipo ? { tipo } : {}),
+      ...(cat ? { categoria: cat } : {}),
+      ...(status ? { status: status as FinanceMovementStatus } : {}),
       ...(search ? { search } : {}),
     }),
     placeholderData: prev => prev,
   });
+
+  const transitionMut = useMutation({
+    mutationFn: (args: { id: string; newStatus: FinanceMovementStatus; paidDate?: string; dueDate?: string }) =>
+      transitionMovement(args.id, { newStatus: args.newStatus, ...(args.paidDate ? { paidDate: args.paidDate } : {}), ...(args.dueDate ? { dueDate: args.dueDate } : {}) }),
+    onSuccess: () => {
+      toast.success('Estado actualizado');
+      qc.invalidateQueries({ queryKey: ['finance-movements'] });
+      qc.invalidateQueries({ queryKey: ['finance-dashboard'] });
+      qc.invalidateQueries({ queryKey: ['comprobantes-widget'] });
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? 'Error al cambiar estado');
+    },
+  });
+
+  function handleQuickTransition(mov: FinanceMovement) {
+    if (mov.status === 'COMPROMETIDO') {
+      const due = window.prompt('Fecha de vencimiento (YYYY-MM-DD):', new Date().toISOString().slice(0, 10));
+      if (!due) return;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(due)) { toast.error('Formato inválido'); return; }
+      transitionMut.mutate({ id: mov.id, newStatus: 'A_PAGAR', dueDate: due });
+    } else if (mov.status === 'A_PAGAR') {
+      const paid = window.prompt('Fecha de pago (YYYY-MM-DD):', new Date().toISOString().slice(0, 10));
+      if (!paid) return;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(paid)) { toast.error('Formato inválido'); return; }
+      transitionMut.mutate({ id: mov.id, newStatus: 'PAGADO', paidDate: paid });
+    }
+  }
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteMovement(id),
@@ -415,10 +528,13 @@ export function FinanceMovements() {
           <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Movimientos</h1>
           <p className="text-sm text-[var(--color-text-muted)] mt-0.5">Registro de ingresos y gastos</p>
         </div>
-        <button onClick={() => setNewModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] transition-colors">
-          <Plus className="w-4 h-4" /> Nuevo movimiento
-        </button>
+        <div className="flex items-center gap-2">
+          <Link to="/finanzas/a-pagar" className="text-xs text-[var(--color-accent)] hover:underline">Cuentas a pagar →</Link>
+          <button onClick={() => setNewModal(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] transition-colors">
+            <Plus className="w-4 h-4" /> Nuevo movimiento
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -435,6 +551,13 @@ export function FinanceMovements() {
         <select className={inp} value={cat} onChange={e => { setCat(e.target.value); setPage(1); }}>
           {CAT_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
+        <select className={inp} value={status} onChange={e => { setStatus(e.target.value as '' | FinanceMovementStatus); setPage(1); }}>
+          <option value="">Todos los estados</option>
+          <option value="PREVISTO">Previstos</option>
+          <option value="COMPROMETIDO">Comprometidos</option>
+          <option value="A_PAGAR">A pagar</option>
+          <option value="PAGADO">Pagados</option>
+        </select>
         <input type="text" className={klass(inp, 'min-w-40 flex-1')} placeholder="Buscar..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
       </div>
 
@@ -449,34 +572,60 @@ export function FinanceMovements() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-border)] text-xs font-mono text-[var(--color-text-muted)] uppercase tracking-wider">
-                  {['Fecha', 'Descripción', 'Categoría', 'Proyecto', 'Monto', 'Estado', ''].map(h => (
+                  {['Fecha', 'Descripción', 'Categoría', 'Proyecto', 'Vence', 'Monto', 'Estado', ''].map(h => (
                     <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border)]">
                 {data.data.map(mov => {
-                  const pendiente = (mov.tipoMovimiento === 'INGRESO' && !mov.cobrado) || (mov.tipoMovimiento === 'GASTO' && !mov.pagado);
+                  const today = new Date().toISOString().slice(0, 10);
+                  const overdue = mov.dueDate != null && mov.dueDate < today && mov.status === 'A_PAGAR';
+                  const showFecha = mov.status === 'PAGADO' || mov.tipoMovimiento === 'INGRESO' || mov.tipoMovimiento === 'AJUSTE'
+                    ? mov.fecha
+                    : (mov.expectedDate ?? mov.fecha);
+                  const fechaLabel = mov.status === 'PAGADO' || mov.tipoMovimiento === 'INGRESO' || mov.tipoMovimiento === 'AJUSTE'
+                    ? null
+                    : (mov.expectedDate ? '~' : null);
                   return (
                     <tr key={mov.id}
                       onClick={() => setDetailMov(mov)}
-                      className={klass('cursor-pointer hover:bg-[var(--color-bg-card-hover)] transition-colors', pendiente && 'bg-yellow-500/5')}
+                      className={klass('cursor-pointer hover:bg-[var(--color-bg-card-hover)] transition-colors', overdue && 'bg-red-500/5')}
                     >
-                      <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-muted)]">{fmtDate(mov.fecha)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-muted)]">
+                        {fechaLabel}{fmtDate(showFecha)}
+                      </td>
                       <td className="px-4 py-3 max-w-xs truncate text-[var(--color-text-primary)]">{mov.descripcion}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-secondary)]">{CATEGORIA_LABEL[mov.categoriaPrincipal]}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-muted)]">{mov.project?.code ?? '—'}</td>
+                      <td className={klass('px-4 py-3 whitespace-nowrap', overdue ? 'text-red-400 font-semibold' : 'text-[var(--color-text-muted)]')}>
+                        {mov.dueDate ? (overdue ? '⚠ ' : '') + fmtDate(mov.dueDate) : '—'}
+                      </td>
                       <td className={klass('px-4 py-3 whitespace-nowrap font-semibold tabular-nums',
                         mov.tipoMovimiento === 'INGRESO' ? 'text-green-400' : mov.tipoMovimiento === 'AJUSTE' ? 'text-blue-400' : 'text-red-400')}>
                         {mov.tipoMovimiento === 'GASTO' ? '-' : '+'}{fmtCurrency(mov.monto, mov.moneda)}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={klass('text-[10px] font-mono px-2 py-0.5 rounded uppercase', ESTADO_COLOR[mov.estadoAprobacion])}>
-                          {ESTADO_APROBACION_LABEL[mov.estadoAprobacion]}
+                        <span className={klass('text-[10px] font-mono px-2 py-0.5 rounded uppercase', STATUS_COLOR[mov.status])}>
+                          {STATUS_LABEL[mov.status]}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        {pendiente && <span className="text-[10px] text-yellow-400">●</span>}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {(mov.status === 'COMPROMETIDO' || mov.status === 'A_PAGAR') && (
+                          <button
+                            onClick={e => { e.stopPropagation(); handleQuickTransition(mov); }}
+                            disabled={transitionMut.isPending}
+                            className={klass(
+                              'text-[10px] px-2 py-1 rounded font-semibold transition-colors disabled:opacity-60',
+                              mov.status === 'COMPROMETIDO'
+                                ? 'bg-[var(--color-warning-bg)] text-[var(--color-warning-text)] hover:opacity-80'
+                                : 'bg-[var(--color-state-done-bg)] text-[var(--color-state-done-text)] hover:opacity-80',
+                            )}
+                            title={mov.status === 'COMPROMETIDO' ? 'Pasar a A pagar' : 'Marcar como pagado'}
+                          >
+                            <ArrowRight className="w-3 h-3 inline" />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -529,6 +678,9 @@ export function FinanceMovements() {
                 pagado: editMov.pagado,
                 cobrado: editMov.cobrado,
                 impactaFlujo: editMov.impactaFlujo,
+                status: editMov.status,
+                expectedDate: editMov.expectedDate ?? undefined,
+                dueDate: editMov.dueDate ?? undefined,
                 estadoAprobacion: editMov.estadoAprobacion,
                 proyectoId: editMov.projectId ?? undefined,
                 proveedorId: editMov.supplierId ?? undefined,

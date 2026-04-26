@@ -12,6 +12,7 @@ import { Spinner } from "../ui/Spinner";
 import { UserSelect } from "../ui/UserSelect";
 import { AssigneeLabel } from "../ui/AssigneeLabel";
 import { CommentThread } from "../comments/CommentThread";
+import { EngineeringMaterials } from "./EngineeringMaterials";
 
 interface StageDrawerProps {
   stage: Stage;
@@ -1024,6 +1025,11 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
               )}
             </ul>
           </section>
+
+          {/* Lista de materiales (solo etapa Ingeniería) */}
+          {stage.name === "INGENIERIA" && (
+            <EngineeringMaterials projectId={projectId} />
+          )}
 
           {/* Notes */}
           <section>

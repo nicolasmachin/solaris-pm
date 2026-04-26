@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Plus, X, Building2 } from 'lucide-react';
+import { Plus, X, Building2, Search } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
 import {
   getSuppliers, createSupplier, patchSupplier, deleteSupplier,
@@ -41,9 +41,11 @@ function SupplierForm({ initial, supplierId, onSuccess, onCancel }: {
 }) {
   const [form, setForm] = useState({
     nombre: initial?.nombre ?? '',
+    rut: initial?.rut ?? '',
+    contactoNombre: initial?.contactoNombre ?? '',
     email: initial?.email ?? '',
     telefono: initial?.telefono ?? '',
-    rut: initial?.rut ?? '',
+    direccion: initial?.direccion ?? '',
     condicionPago: initial?.condicionPago ?? '',
     notas: initial?.notas ?? '',
   });
@@ -57,9 +59,11 @@ function SupplierForm({ initial, supplierId, onSuccess, onCancel }: {
     try {
       const body = {
         nombre: form.nombre,
+        ...(form.rut ? { rut: form.rut } : {}),
+        ...(form.contactoNombre ? { contactoNombre: form.contactoNombre } : {}),
         ...(form.email ? { email: form.email } : {}),
         ...(form.telefono ? { telefono: form.telefono } : {}),
-        ...(form.rut ? { rut: form.rut } : {}),
+        ...(form.direccion ? { direccion: form.direccion } : {}),
         ...(form.condicionPago ? { condicionPago: form.condicionPago } : {}),
         ...(form.notas ? { notas: form.notas } : {}),
       };
@@ -85,13 +89,15 @@ function SupplierForm({ initial, supplierId, onSuccess, onCancel }: {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div><label className={lbl}>Nombre *</label><input className={inp} value={form.nombre} onChange={e => setF('nombre', e.target.value)} required /></div>
       <div className="grid grid-cols-2 gap-3">
+        <div><label className={lbl}>RUT / CUIT</label><input className={inp} value={form.rut} onChange={e => setF('rut', e.target.value)} /></div>
+        <div><label className={lbl}>Persona de contacto</label><input className={inp} value={form.contactoNombre} onChange={e => setF('contactoNombre', e.target.value)} /></div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
         <div><label className={lbl}>Email</label><input type="email" className={inp} value={form.email} onChange={e => setF('email', e.target.value)} /></div>
         <div><label className={lbl}>Teléfono</label><input className={inp} value={form.telefono} onChange={e => setF('telefono', e.target.value)} /></div>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div><label className={lbl}>RUT / CUIT</label><input className={inp} value={form.rut} onChange={e => setF('rut', e.target.value)} /></div>
-        <div><label className={lbl}>Condición de pago</label><input className={inp} value={form.condicionPago} onChange={e => setF('condicionPago', e.target.value)} /></div>
-      </div>
+      <div><label className={lbl}>Dirección</label><input className={inp} value={form.direccion} onChange={e => setF('direccion', e.target.value)} /></div>
+      <div><label className={lbl}>Condición de pago</label><textarea className={klass(inp, 'resize-none')} rows={2} value={form.condicionPago} onChange={e => setF('condicionPago', e.target.value)} /></div>
       <div><label className={lbl}>Notas</label><textarea className={klass(inp, 'resize-none')} rows={2} value={form.notas} onChange={e => setF('notas', e.target.value)} /></div>
       {error && <p className="text-sm text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{error}</p>}
       <div className="flex gap-3">
@@ -330,9 +336,11 @@ function SupplierPanel({ supplier, onClose, qc }: { supplier: Supplier; onClose:
             ) : (
               <div className="space-y-3">
                 {[
+                  { label: 'RUT/CUIT', value: supplier.rut ?? '—' },
+                  { label: 'Contacto', value: supplier.contactoNombre ?? '—' },
                   { label: 'Email', value: supplier.email ?? '—' },
                   { label: 'Teléfono', value: supplier.telefono ?? '—' },
-                  { label: 'RUT/CUIT', value: supplier.rut ?? '—' },
+                  { label: 'Dirección', value: supplier.direccion ?? '—' },
                   { label: 'Cond. de pago', value: supplier.condicionPago ?? '—' },
                   { label: 'Notas', value: supplier.notas ?? '—' },
                   { label: 'Estado', value: supplier.activo ? 'Activo' : 'Inactivo' },
@@ -443,15 +451,47 @@ function ComprobanteCard({ c, onPagar, paying, onPagoSuccess, onPagoCancel }: {
 
 // ─── Finance Suppliers Page ───────────────────────────────────────────────────
 
+type ActivoFilter = 'true' | 'false' | 'all';
+
+const FILTER_KEY = 'finance-suppliers-filters-v1';
+
 export function FinanceSuppliers() {
   const qc = useQueryClient();
   const [newModal, setNewModal] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+  const [activoFilter, setActivoFilter] = useState<ActivoFilter>('true');
+  const [search, setSearch] = useState('');
+
+  // Cargar filtros persistidos
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(FILTER_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as { activo?: ActivoFilter; search?: string };
+        if (parsed.activo === 'true' || parsed.activo === 'false' || parsed.activo === 'all') setActivoFilter(parsed.activo);
+        if (typeof parsed.search === 'string') setSearch(parsed.search);
+      }
+    } catch { /* ignore */ }
+  }, []);
+  useEffect(() => {
+    localStorage.setItem(FILTER_KEY, JSON.stringify({ activo: activoFilter, search }));
+  }, [activoFilter, search]);
 
   const { data: suppliers = [], isLoading } = useQuery({
-    queryKey: ['suppliers'],
-    queryFn: () => getSuppliers(),
+    queryKey: ['suppliers', activoFilter],
+    queryFn: () => getSuppliers({ activo: activoFilter }),
   });
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return suppliers;
+    return suppliers.filter(s =>
+      s.nombre.toLowerCase().includes(q)
+      || (s.rut?.toLowerCase().includes(q) ?? false)
+      || (s.contactoNombre?.toLowerCase().includes(q) ?? false)
+      || (s.email?.toLowerCase().includes(q) ?? false),
+    );
+  }, [suppliers, search]);
 
   return (
     <div className="p-6 space-y-5">
@@ -459,7 +499,7 @@ export function FinanceSuppliers() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Proveedores</h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{suppliers.length} proveedor{suppliers.length !== 1 ? 'es' : ''}</p>
+          <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{filtered.length} de {suppliers.length} proveedor{suppliers.length !== 1 ? 'es' : ''}</p>
         </div>
         <button onClick={() => setNewModal(true)}
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] transition-colors">
@@ -467,30 +507,63 @@ export function FinanceSuppliers() {
         </button>
       </div>
 
+      {/* Filters */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[220px] max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
+          <input
+            type="text"
+            placeholder="Buscar por nombre, RUT, contacto o email"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+          />
+        </div>
+        <div className="flex rounded-lg border border-[var(--color-border)] overflow-hidden text-xs font-mono uppercase tracking-wider">
+          {([['true', 'Activos'], ['all', 'Todos'], ['false', 'Inactivos']] as const).map(([val, label]) => (
+            <button
+              key={val}
+              onClick={() => setActivoFilter(val)}
+              className={klass(
+                'px-3 py-2 transition-colors',
+                activoFilter === val
+                  ? 'bg-[var(--color-accent)] text-gray-900 font-semibold'
+                  : 'bg-[var(--color-bg-card)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]',
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Table */}
       <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center py-12"><Spinner /></div>
-        ) : suppliers.length === 0 ? (
-          <p className="text-sm text-[var(--color-text-muted)] text-center py-12">Sin proveedores registrados</p>
+        ) : filtered.length === 0 ? (
+          <p className="text-sm text-[var(--color-text-muted)] text-center py-12">
+            {suppliers.length === 0 ? 'Sin proveedores registrados' : 'Ningún proveedor coincide con los filtros'}
+          </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-border)] text-xs font-mono text-[var(--color-text-muted)] uppercase tracking-wider">
-                  {['Nombre', 'Email', 'Teléfono', 'Cond. pago', 'Estado'].map(h => (
+                  {['Nombre', 'RUT', 'Contacto', 'Email', 'Teléfono', 'Estado'].map(h => (
                     <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border)]">
-                {suppliers.map(s => (
+                {filtered.map(s => (
                   <tr key={s.id} onClick={() => setSelectedSupplier(s)}
                     className="cursor-pointer hover:bg-[var(--color-bg-card-hover)] transition-colors">
                     <td className="px-4 py-3 font-medium text-[var(--color-text-primary)]">{s.nombre}</td>
+                    <td className="px-4 py-3 text-[var(--color-text-muted)]">{s.rut ?? '—'}</td>
+                    <td className="px-4 py-3 text-[var(--color-text-muted)]">{s.contactoNombre ?? '—'}</td>
                     <td className="px-4 py-3 text-[var(--color-text-muted)]">{s.email ?? '—'}</td>
                     <td className="px-4 py-3 text-[var(--color-text-muted)]">{s.telefono ?? '—'}</td>
-                    <td className="px-4 py-3 text-[var(--color-text-muted)]">{s.condicionPago ?? '—'}</td>
                     <td className="px-4 py-3">
                       <span className={klass('text-[10px] font-mono px-2 py-0.5 rounded uppercase',
                         s.activo ? 'bg-[var(--color-state-done-bg)] text-[var(--color-state-done-text)]' : 'bg-[var(--color-border)] text-[var(--color-text-muted)]')}>

@@ -24,6 +24,7 @@ import {
 import type { GoalArea, GoalMetric, GoalPeriod, GoalData } from "../types/api.types";
 import type { CategoriaPrincipal } from "../types/finance.types";
 import { CATEGORIA_LABEL } from "../types/finance.types";
+import { TabMateriales } from "./AdminMateriales";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -3021,7 +3022,7 @@ function ConfirmDialog({
   );
 }
 
-type Tab = "usuarios" | "permisos" | "configuracion" | "objetivos" | "finanzas" | "equipos" | "pipeline";
+type Tab = "usuarios" | "permisos" | "configuracion" | "objetivos" | "finanzas" | "equipos" | "pipeline" | "materiales";
 
 export function Admin() {
   const [activeTab, setActiveTab] = useState<Tab>("usuarios");
@@ -3034,6 +3035,7 @@ export function Admin() {
     { id: "configuracion", label: "Configuración del sistema" },
     { id: "objetivos", label: "Objetivos" },
     { id: "finanzas", label: "Subcategorías" },
+    { id: "materiales", label: "Materiales" },
   ];
 
   return (
@@ -3073,6 +3075,7 @@ export function Admin() {
       {activeTab === "configuracion" && <TabConfiguracion />}
       {activeTab === "objetivos" && <TabObjetivos />}
       {activeTab === "finanzas" && <TabFinanzas />}
+      {activeTab === "materiales" && <TabMateriales />}
     </div>
   );
 }

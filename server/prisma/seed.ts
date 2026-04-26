@@ -168,7 +168,7 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "INGENIERIA", module: Module.METRICAS,      actions: [Action.VIEW] },
     { roleName: "OPERACIONES", module: Module.VENTAS,        actions: [Action.VIEW] },
     { roleName: "OPERACIONES", module: Module.ONBOARDING,    actions: [Action.VIEW, Action.COMMENT] },
-    { roleName: "OPERACIONES", module: Module.INGENIERIA,    actions: [Action.VIEW] },
+    { roleName: "OPERACIONES", module: Module.INGENIERIA,    actions: [Action.VIEW, Action.EDIT] },
     { roleName: "OPERACIONES", module: Module.OPERACIONES,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
     { roleName: "OPERACIONES", module: Module.HABILITACION,  actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
     { roleName: "OPERACIONES", module: Module.POSTVENTA,     actions: [Action.VIEW, Action.COMMENT] },
@@ -1952,6 +1952,28 @@ async function seedUteProcesses(adminId: string) {
 
 // ─── Entry point ──────────────────────────────────────────────────────────────
 
+async function seedMaterialCategories() {
+  const categorias = [
+    "Paneles solares",
+    "Inversores",
+    "Estructura de montaje",
+    "Cableado y conexiones",
+    "Protecciones eléctricas",
+    "Mano de obra",
+    "Trámites y habilitaciones",
+    "Logística y transporte",
+    "Otros",
+  ];
+  for (let i = 0; i < categorias.length; i++) {
+    const nombre = categorias[i];
+    await prisma.materialCategory.upsert({
+      where: { nombre },
+      create: { nombre, orden: i, activa: true },
+      update: { orden: i },
+    });
+  }
+}
+
 async function run() {
   const roleIdByName = await seedSystemRoles();
   const { admin, operations, comercial, ingeniero } = await createUsers(roleIdByName);
@@ -1973,6 +1995,7 @@ async function run() {
   await seedLeads(comercial.id, admin.id, project1Id);
   await seedGoals(admin.id);
   await seedFinanceAndStock(admin.id, project1Id, project2Id, project3Id);
+  await seedMaterialCategories();
   await seedInstallationSchedules({ adminId: admin.id, project1Id, project2Id, project4Id });
   await seedUteProcesses(admin.id);
 

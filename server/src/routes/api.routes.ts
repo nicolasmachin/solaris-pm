@@ -14,6 +14,8 @@ import {
   CategoriaPrincipal,
   EstadoAprobacion,
   EstadoComprobante,
+  FinanceMovementStatus,
+  MovementSourceType,
   GoalArea,
   GoalMetric,
   GoalPeriod,
@@ -7360,40 +7362,70 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     const supplierCreateSchema = z.object({
       nombre: z.string().min(1),
+      rut: z.string().optional(),
+      contactoNombre: z.string().optional(),
       email: z.string().email().optional(),
       telefono: z.string().optional(),
+      direccion: z.string().optional(),
       condicionPago: z.string().optional(),
       notas: z.string().optional(),
     }).strict();
 
     const supplierPatchSchema = z.object({
       nombre: z.string().min(1).optional(),
+      rut: z.string().nullable().optional(),
+      contactoNombre: z.string().nullable().optional(),
       email: z.string().email().nullable().optional(),
       telefono: z.string().nullable().optional(),
+      direccion: z.string().nullable().optional(),
       condicionPago: z.string().nullable().optional(),
       notas: z.string().nullable().optional(),
       activo: z.boolean().optional(),
     }).strict();
 
+    function serializeSupplier(s: {
+      id: string; nombre: string; rut: string | null; contactoNombre: string | null;
+      email: string | null; telefono: string | null; direccion: string | null;
+      condicionPago: string | null; activo: boolean; notas: string | null;
+      createdAt: Date; updatedAt: Date;
+      _count?: { movimientos: number; comprobantes: number };
+    }) {
+      return {
+        id: s.id, nombre: s.nombre, rut: s.rut, contactoNombre: s.contactoNombre,
+        email: s.email, telefono: s.telefono, direccion: s.direccion,
+        condicionPago: s.condicionPago, activo: s.activo, notas: s.notas,
+        createdAt: serializeDate(s.createdAt), updatedAt: serializeDate(s.updatedAt),
+        ...(s._count ? { _count: s._count } : {}),
+      };
+    }
+
     app.get("/finance/suppliers", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
-      const query = z.object({ activo: z.enum(["true", "false"]).optional() }).parse(request.query);
-      const activo = query.activo === undefined ? true : query.activo === "true";
+      const query = z.object({ activo: z.enum(["true", "false", "all"]).optional() }).parse(request.query);
+      const where: { deletedAt: null; activo?: boolean } = { deletedAt: null };
+      if (query.activo !== "all") where.activo = query.activo === "false" ? false : true;
       const suppliers = await prisma.supplier.findMany({
-        where: { deletedAt: null, activo },
+        where,
         include: { _count: { select: { movimientos: true, comprobantes: true } } },
         orderBy: { nombre: "asc" },
       });
-      return suppliers.map((s) => ({
-        id: s.id, nombre: s.nombre, email: s.email, telefono: s.telefono,
-        condicionPago: s.condicionPago, activo: s.activo, notas: s.notas,
-        createdAt: serializeDate(s.createdAt), updatedAt: serializeDate(s.updatedAt),
-        _count: s._count,
-      }));
+      return suppliers.map(serializeSupplier);
+    });
+
+    app.get("/finance/suppliers/:id", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const supplier = await prisma.supplier.findFirst({
+        where: { id, deletedAt: null },
+        include: { _count: { select: { movimientos: true, comprobantes: true } } },
+      });
+      if (!supplier) throw notFound("SUPPLIER_NOT_FOUND", "Proveedor no encontrado");
+      return serializeSupplier(supplier);
     });
 
     app.post("/finance/suppliers", { preHandler: authorize(Module.FINANZAS, Action.CREATE) }, async (request) => {
       const user = ensureUser(request);
       const body = supplierCreateSchema.parse(request.body);
+      const dup = await prisma.supplier.findFirst({ where: { nombre: body.nombre, activo: true, deletedAt: null } });
+      if (dup) throw conflict("SUPPLIER_NAME_EXISTS", "Ya existe un proveedor activo con ese nombre");
       const supplier = await prisma.supplier.create({ data: body });
       await createAuditEntry({
         entityType: AuditEntityType.supplier,
@@ -7411,6 +7443,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const body = supplierPatchSchema.parse(request.body);
       const existing = await prisma.supplier.findFirst({ where: { id, deletedAt: null } });
       if (!existing) throw notFound("SUPPLIER_NOT_FOUND", "Proveedor no encontrado");
+      if (body.nombre && body.nombre !== existing.nombre) {
+        const dup = await prisma.supplier.findFirst({ where: { nombre: body.nombre, activo: true, deletedAt: null, id: { not: id } } });
+        if (dup) throw conflict("SUPPLIER_NAME_EXISTS", "Ya existe un proveedor activo con ese nombre");
+      }
       const updated = await prisma.supplier.update({ where: { id }, data: body });
       await createAuditEntriesForChanges({
         entityType: AuditEntityType.supplier,
@@ -7479,6 +7515,437 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return { success: true };
     });
 
+    // ─── Materiales: Catálogo (categorías + items) ────────────────────────────
+
+    const categoryCreateSchema = z.object({
+      nombre: z.string().min(1),
+      descripcion: z.string().optional(),
+      orden: z.number().int().optional(),
+    }).strict();
+
+    const categoryPatchSchema = z.object({
+      nombre: z.string().min(1).optional(),
+      descripcion: z.string().nullable().optional(),
+      orden: z.number().int().optional(),
+      activa: z.boolean().optional(),
+    }).strict();
+
+    app.get("/materials/categories", { preHandler: authorize(Module.INGENIERIA, Action.VIEW) }, async (request) => {
+      const query = z.object({ activa: z.enum(["true", "false", "all"]).optional() }).parse(request.query);
+      const where: { activa?: boolean } = {};
+      if (query.activa !== "all") where.activa = query.activa === "false" ? false : true;
+      const categories = await prisma.materialCategory.findMany({
+        where,
+        include: { _count: { select: { items: true } } },
+        orderBy: [{ orden: "asc" }, { nombre: "asc" }],
+      });
+      return categories.map((c) => ({
+        id: c.id, nombre: c.nombre, descripcion: c.descripcion, orden: c.orden, activa: c.activa,
+        createdAt: serializeDate(c.createdAt), updatedAt: serializeDate(c.updatedAt),
+        _count: c._count,
+      }));
+    });
+
+    app.post("/materials/categories", { preHandler: authorize(Module.CONFIGURACION, Action.CREATE) }, async (request) => {
+      const body = categoryCreateSchema.parse(request.body);
+      const dup = await prisma.materialCategory.findUnique({ where: { nombre: body.nombre } });
+      if (dup) throw conflict("CATEGORY_NAME_EXISTS", "Ya existe una categoría con ese nombre");
+      const last = await prisma.materialCategory.findFirst({ orderBy: { orden: "desc" } });
+      const orden = body.orden ?? ((last?.orden ?? 0) + 1);
+      return prisma.materialCategory.create({ data: { ...body, orden } });
+    });
+
+    app.patch("/materials/categories/:id", { preHandler: authorize(Module.CONFIGURACION, Action.EDIT) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const body = categoryPatchSchema.parse(request.body);
+      const existing = await prisma.materialCategory.findUnique({ where: { id } });
+      if (!existing) throw notFound("CATEGORY_NOT_FOUND", "Categoría no encontrada");
+      if (body.nombre && body.nombre !== existing.nombre) {
+        const dup = await prisma.materialCategory.findUnique({ where: { nombre: body.nombre } });
+        if (dup) throw conflict("CATEGORY_NAME_EXISTS", "Ya existe una categoría con ese nombre");
+      }
+      return prisma.materialCategory.update({ where: { id }, data: body });
+    });
+
+    app.delete("/materials/categories/:id", { preHandler: authorize(Module.CONFIGURACION, Action.DELETE) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const existing = await prisma.materialCategory.findUnique({
+        where: { id },
+        include: { _count: { select: { items: true } } },
+      });
+      if (!existing) throw notFound("CATEGORY_NOT_FOUND", "Categoría no encontrada");
+      if (existing._count.items > 0) {
+        // soft delete: desactivar
+        await prisma.materialCategory.update({ where: { id }, data: { activa: false } });
+        return { success: true, deactivated: true };
+      }
+      await prisma.materialCategory.delete({ where: { id } });
+      return { success: true, deactivated: false };
+    });
+
+    app.post("/materials/categories/reorder", { preHandler: authorize(Module.CONFIGURACION, Action.EDIT) }, async (request) => {
+      const body = z.object({ ids: z.array(z.string()).min(1) }).strict().parse(request.body);
+      await prisma.$transaction(body.ids.map((id, idx) =>
+        prisma.materialCategory.update({ where: { id }, data: { orden: idx } })
+      ));
+      return { success: true };
+    });
+
+    const itemCreateSchema = z.object({
+      categoryId: z.string(),
+      nombre: z.string().min(1),
+      descripcion: z.string().optional(),
+      unidad: z.string().min(1).default("un"),
+      precioSugerido: z.coerce.number().nonnegative().optional(),
+      moneda: z.nativeEnum(Moneda).default(Moneda.USD),
+      defaultSupplierId: z.string().optional(),
+    }).strict();
+
+    const itemPatchSchema = z.object({
+      categoryId: z.string().optional(),
+      nombre: z.string().min(1).optional(),
+      descripcion: z.string().nullable().optional(),
+      unidad: z.string().min(1).optional(),
+      precioSugerido: z.coerce.number().nonnegative().nullable().optional(),
+      moneda: z.nativeEnum(Moneda).optional(),
+      defaultSupplierId: z.string().nullable().optional(),
+      activo: z.boolean().optional(),
+    }).strict();
+
+    function serializeMaterialItem(it: {
+      id: string; categoryId: string; nombre: string; descripcion: string | null;
+      unidad: string; precioSugerido: import("@prisma/client/runtime/library").Decimal | null;
+      moneda: Moneda; defaultSupplierId: string | null; activo: boolean;
+      createdAt: Date; updatedAt: Date;
+      category?: { id: string; nombre: string; orden: number; activa: boolean } | null;
+      defaultSupplier?: { id: string; nombre: string } | null;
+      _count?: { projectMaterials: number };
+    }) {
+      return {
+        id: it.id, categoryId: it.categoryId, nombre: it.nombre, descripcion: it.descripcion,
+        unidad: it.unidad,
+        precioSugerido: it.precioSugerido === null ? null : decimalToNumber(it.precioSugerido),
+        moneda: it.moneda, defaultSupplierId: it.defaultSupplierId, activo: it.activo,
+        createdAt: serializeDate(it.createdAt), updatedAt: serializeDate(it.updatedAt),
+        ...(it.category ? { category: it.category } : {}),
+        ...(it.defaultSupplier ? { defaultSupplier: it.defaultSupplier } : {}),
+        ...(it._count ? { _count: it._count } : {}),
+      };
+    }
+
+    app.get("/materials/items", { preHandler: authorize(Module.INGENIERIA, Action.VIEW) }, async (request) => {
+      const query = z.object({
+        categoryId: z.string().optional(),
+        search: z.string().optional(),
+        activo: z.enum(["true", "false", "all"]).optional(),
+      }).parse(request.query);
+      const where: {
+        categoryId?: string; activo?: boolean;
+        OR?: Array<{ nombre: { contains: string; mode: "insensitive" } } | { descripcion: { contains: string; mode: "insensitive" } }>;
+      } = {};
+      if (query.categoryId) where.categoryId = query.categoryId;
+      if (query.activo !== "all") where.activo = query.activo === "false" ? false : true;
+      if (query.search) {
+        where.OR = [
+          { nombre: { contains: query.search, mode: "insensitive" } },
+          { descripcion: { contains: query.search, mode: "insensitive" } },
+        ];
+      }
+      const items = await prisma.materialItem.findMany({
+        where,
+        include: {
+          category: { select: { id: true, nombre: true, orden: true, activa: true } },
+          defaultSupplier: { select: { id: true, nombre: true } },
+          _count: { select: { projectMaterials: true } },
+        },
+        orderBy: [{ category: { orden: "asc" } }, { nombre: "asc" }],
+      });
+      return items.map(serializeMaterialItem);
+    });
+
+    app.get("/materials/items/:id", { preHandler: authorize(Module.INGENIERIA, Action.VIEW) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const item = await prisma.materialItem.findUnique({
+        where: { id },
+        include: {
+          category: { select: { id: true, nombre: true, orden: true, activa: true } },
+          defaultSupplier: { select: { id: true, nombre: true } },
+          _count: { select: { projectMaterials: true } },
+        },
+      });
+      if (!item) throw notFound("MATERIAL_ITEM_NOT_FOUND", "Ítem no encontrado");
+      return serializeMaterialItem(item);
+    });
+
+    app.post("/materials/items", { preHandler: authorize(Module.CONFIGURACION, Action.CREATE) }, async (request) => {
+      const body = itemCreateSchema.parse(request.body);
+      const cat = await prisma.materialCategory.findUnique({ where: { id: body.categoryId } });
+      if (!cat || !cat.activa) throw badRequest("CATEGORY_INVALID", "La categoría no existe o está inactiva");
+      if (body.defaultSupplierId) {
+        const sup = await prisma.supplier.findFirst({ where: { id: body.defaultSupplierId, deletedAt: null } });
+        if (!sup) throw badRequest("SUPPLIER_INVALID", "El proveedor por defecto no existe");
+      }
+      const item = await prisma.materialItem.create({
+        data: body,
+        include: {
+          category: { select: { id: true, nombre: true, orden: true, activa: true } },
+          defaultSupplier: { select: { id: true, nombre: true } },
+        },
+      });
+      return serializeMaterialItem(item);
+    });
+
+    app.patch("/materials/items/:id", { preHandler: authorize(Module.CONFIGURACION, Action.EDIT) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const body = itemPatchSchema.parse(request.body);
+      const existing = await prisma.materialItem.findUnique({ where: { id } });
+      if (!existing) throw notFound("MATERIAL_ITEM_NOT_FOUND", "Ítem no encontrado");
+      if (body.categoryId) {
+        const cat = await prisma.materialCategory.findUnique({ where: { id: body.categoryId } });
+        if (!cat || !cat.activa) throw badRequest("CATEGORY_INVALID", "La categoría no existe o está inactiva");
+      }
+      if (body.defaultSupplierId) {
+        const sup = await prisma.supplier.findFirst({ where: { id: body.defaultSupplierId, deletedAt: null } });
+        if (!sup) throw badRequest("SUPPLIER_INVALID", "El proveedor por defecto no existe");
+      }
+      const updated = await prisma.materialItem.update({
+        where: { id }, data: body,
+        include: {
+          category: { select: { id: true, nombre: true, orden: true, activa: true } },
+          defaultSupplier: { select: { id: true, nombre: true } },
+        },
+      });
+      return serializeMaterialItem(updated);
+    });
+
+    app.delete("/materials/items/:id", { preHandler: authorize(Module.CONFIGURACION, Action.DELETE) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const existing = await prisma.materialItem.findUnique({
+        where: { id },
+        include: { _count: { select: { projectMaterials: true } } },
+      });
+      if (!existing) throw notFound("MATERIAL_ITEM_NOT_FOUND", "Ítem no encontrado");
+      if (existing._count.projectMaterials > 0) {
+        await prisma.materialItem.update({ where: { id }, data: { activo: false } });
+        return { success: true, deactivated: true };
+      }
+      await prisma.materialItem.delete({ where: { id } });
+      return { success: true, deactivated: false };
+    });
+
+    // ─── Materiales: Lista por proyecto ───────────────────────────────────────
+
+    function serializeProjectMaterial(pm: {
+      id: string; projectId: string; materialItemId: string;
+      quantity: import("@prisma/client/runtime/library").Decimal;
+      unitPrice: import("@prisma/client/runtime/library").Decimal;
+      moneda: Moneda; supplierId: string | null; notes: string | null;
+      movementId: string | null;
+      createdAt: Date; updatedAt: Date;
+      materialItem?: {
+        id: string; nombre: string; unidad: string; categoryId: string;
+        category: { id: string; nombre: string; orden: number };
+      } | null;
+      supplier?: { id: string; nombre: string } | null;
+      movement?: { id: string; status: FinanceMovementStatus; descripcion: string } | null;
+    }) {
+      const qty = Number(pm.quantity);
+      const price = Number(pm.unitPrice);
+      return {
+        id: pm.id, projectId: pm.projectId, materialItemId: pm.materialItemId,
+        quantity: qty, unitPrice: price, subtotal: Math.round(qty * price * 100) / 100,
+        moneda: pm.moneda, supplierId: pm.supplierId, notes: pm.notes, movementId: pm.movementId,
+        createdAt: serializeDate(pm.createdAt), updatedAt: serializeDate(pm.updatedAt),
+        ...(pm.materialItem ? { materialItem: pm.materialItem } : {}),
+        ...(pm.supplier ? { supplier: pm.supplier } : {}),
+        ...(pm.movement ? { movement: pm.movement } : {}),
+      };
+    }
+
+    app.get("/projects/:id/materials", { preHandler: authorize(Module.INGENIERIA, Action.VIEW) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const project = await prisma.project.findFirst({ where: { id, deletedAt: null } });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+      const materials = await prisma.projectMaterial.findMany({
+        where: { projectId: id },
+        include: {
+          materialItem: {
+            select: {
+              id: true, nombre: true, unidad: true, categoryId: true,
+              category: { select: { id: true, nombre: true, orden: true } },
+            },
+          },
+          supplier: { select: { id: true, nombre: true } },
+          movement: { select: { id: true, status: true, descripcion: true } },
+        },
+        orderBy: [{ materialItem: { category: { orden: "asc" } } }, { materialItem: { nombre: "asc" } }],
+      });
+      return materials.map(serializeProjectMaterial);
+    });
+
+    const projectMaterialCreateSchema = z.object({
+      materialItemId: z.string(),
+      quantity: z.coerce.number().positive(),
+      unitPrice: z.coerce.number().nonnegative().optional(),
+      moneda: z.nativeEnum(Moneda).optional(),
+      supplierId: z.string().nullable().optional(),
+      notes: z.string().optional(),
+    }).strict();
+
+    app.post("/projects/:id/materials", { preHandler: authorize(Module.INGENIERIA, Action.EDIT) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const body = projectMaterialCreateSchema.parse(request.body);
+      const project = await prisma.project.findFirst({ where: { id, deletedAt: null } });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+      const item = await prisma.materialItem.findUnique({ where: { id: body.materialItemId } });
+      if (!item || !item.activo) throw badRequest("MATERIAL_ITEM_INVALID", "El ítem no existe o está inactivo");
+      const unitPrice = body.unitPrice ?? (item.precioSugerido ? Number(item.precioSugerido) : 0);
+      const moneda = body.moneda ?? item.moneda;
+      const supplierId = body.supplierId ?? item.defaultSupplierId ?? null;
+      const created = await prisma.projectMaterial.create({
+        data: {
+          projectId: id,
+          materialItemId: body.materialItemId,
+          quantity: body.quantity,
+          unitPrice,
+          moneda,
+          supplierId,
+          notes: body.notes,
+        },
+        include: {
+          materialItem: {
+            select: {
+              id: true, nombre: true, unidad: true, categoryId: true,
+              category: { select: { id: true, nombre: true, orden: true } },
+            },
+          },
+          supplier: { select: { id: true, nombre: true } },
+          movement: { select: { id: true, status: true, descripcion: true } },
+        },
+      });
+      return serializeProjectMaterial(created);
+    });
+
+    const projectMaterialPatchSchema = z.object({
+      quantity: z.coerce.number().positive().optional(),
+      unitPrice: z.coerce.number().nonnegative().optional(),
+      moneda: z.nativeEnum(Moneda).optional(),
+      supplierId: z.string().nullable().optional(),
+      notes: z.string().nullable().optional(),
+    }).strict();
+
+    app.patch("/projects/:id/materials/:materialId", { preHandler: authorize(Module.INGENIERIA, Action.EDIT) }, async (request) => {
+      const { id, materialId } = z.object({ id: z.string(), materialId: z.string() }).parse(request.params);
+      const body = projectMaterialPatchSchema.parse(request.body);
+      const existing = await prisma.projectMaterial.findFirst({ where: { id: materialId, projectId: id } });
+      if (!existing) throw notFound("PROJECT_MATERIAL_NOT_FOUND", "Material del proyecto no encontrado");
+      const updated = await prisma.projectMaterial.update({
+        where: { id: materialId }, data: body,
+        include: {
+          materialItem: {
+            select: {
+              id: true, nombre: true, unidad: true, categoryId: true,
+              category: { select: { id: true, nombre: true, orden: true } },
+            },
+          },
+          supplier: { select: { id: true, nombre: true } },
+          movement: { select: { id: true, status: true, descripcion: true } },
+        },
+      });
+      return serializeProjectMaterial(updated);
+    });
+
+    app.delete("/projects/:id/materials/:materialId", { preHandler: authorize(Module.INGENIERIA, Action.EDIT) }, async (request) => {
+      const { id, materialId } = z.object({ id: z.string(), materialId: z.string() }).parse(request.params);
+      const existing = await prisma.projectMaterial.findFirst({ where: { id: materialId, projectId: id } });
+      if (!existing) throw notFound("PROJECT_MATERIAL_NOT_FOUND", "Material del proyecto no encontrado");
+      await prisma.$transaction(async (tx) => {
+        if (existing.movementId) {
+          await tx.financeMovement.update({ where: { id: existing.movementId }, data: { deletedAt: new Date() } });
+        }
+        await tx.projectMaterial.delete({ where: { id: materialId } });
+      });
+      return { success: true };
+    });
+
+    // ─── Materiales: Generación / regeneración de previstos ───────────────────
+
+    async function generatePrevistosForProject(projectId: string, userId: string | undefined) {
+      const today = new Date();
+      const fechaIso = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+      const materials = await prisma.projectMaterial.findMany({
+        where: { projectId, movementId: null },
+        include: { materialItem: { select: { nombre: true } } },
+      });
+      let created = 0;
+      for (const pm of materials) {
+        const qty = Number(pm.quantity);
+        const price = Number(pm.unitPrice);
+        const monto = Math.round(qty * price * 100) / 100;
+        const mov = await prisma.financeMovement.create({
+          data: {
+            fecha: fechaIso,
+            mes: today.getMonth() + 1,
+            anio: today.getFullYear(),
+            tipoMovimiento: TipoMovimiento.GASTO,
+            categoriaPrincipal: CategoriaPrincipal.PROYECTO_SALIDA,
+            descripcion: `${pm.materialItem.nombre} (x${qty})`,
+            monto,
+            moneda: pm.moneda,
+            pagado: false,
+            impactaFlujo: true,
+            status: FinanceMovementStatus.PREVISTO,
+            sourceType: MovementSourceType.PROJECT_MATERIALS,
+            materialItemId: pm.materialItemId,
+            quantity: pm.quantity,
+            unitPrice: pm.unitPrice,
+            projectId,
+            supplierId: pm.supplierId,
+            estadoAprobacion: EstadoAprobacion.REGISTRADO,
+            ...(userId ? { creadoPorId: userId } : {}),
+          },
+        });
+        await prisma.projectMaterial.update({ where: { id: pm.id }, data: { movementId: mov.id } });
+        created++;
+      }
+      const alreadyExisted = await prisma.projectMaterial.count({ where: { projectId, NOT: { movementId: null } } });
+      return { created, alreadyExisted: alreadyExisted - created };
+    }
+
+    app.post("/projects/:id/materials/generate-previsto", { preHandler: authorize(Module.INGENIERIA, Action.EDIT) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const user = ensureUser(request);
+      const project = await prisma.project.findFirst({ where: { id, deletedAt: null } });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+      const result = await generatePrevistosForProject(id, user.id);
+      return result;
+    });
+
+    app.post("/projects/:id/materials/regenerate-previsto", { preHandler: authorize(Module.INGENIERIA, Action.EDIT) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const user = ensureUser(request);
+      if (user.role !== "ADMIN") throw forbidden("Solo un administrador puede regenerar previstos");
+      const project = await prisma.project.findFirst({ where: { id, deletedAt: null } });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+      // Borrar previstos generados y desvincularlos
+      const movsToDelete = await prisma.financeMovement.findMany({
+        where: {
+          projectId: id,
+          status: FinanceMovementStatus.PREVISTO,
+          sourceType: MovementSourceType.PROJECT_MATERIALS,
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+      const movIds = movsToDelete.map((m) => m.id);
+      await prisma.$transaction([
+        prisma.projectMaterial.updateMany({ where: { projectId: id, movementId: { in: movIds } }, data: { movementId: null } }),
+        prisma.financeMovement.updateMany({ where: { id: { in: movIds } }, data: { deletedAt: new Date() } }),
+      ]);
+      const result = await generatePrevistosForProject(id, user.id);
+      return { ...result, regenerated: movIds.length };
+    });
+
     // ─── Finance: Movements ───────────────────────────────────────────────────
 
     const movementCreateSchema = z.object({
@@ -7490,9 +7957,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
       monto: z.coerce.number().positive(),
       moneda: z.nativeEnum(Moneda).default(Moneda.USD),
       tipoCambio: z.coerce.number().positive().optional(),
-      pagado: z.boolean().default(false),
+      pagado: z.boolean().optional(),
       cobrado: z.boolean().default(false),
       impactaFlujo: z.boolean().default(true),
+      status: z.nativeEnum(FinanceMovementStatus).optional(),
+      expectedDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
       projectId: z.string().optional(),
       supplierId: z.string().optional(),
       observaciones: z.string().optional(),
@@ -7512,6 +7982,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       pagado: z.boolean().optional(),
       cobrado: z.boolean().optional(),
       impactaFlujo: z.boolean().optional(),
+      status: z.nativeEnum(FinanceMovementStatus).optional(),
+      expectedDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+      dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
       projectId: z.string().nullable().optional(),
       supplierId: z.string().nullable().optional(),
       observaciones: z.string().nullable().optional(),
@@ -7525,6 +7998,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         anio: z.coerce.number().int().optional(),
         tipo: z.nativeEnum(TipoMovimiento).optional(),
         categoria: z.nativeEnum(CategoriaPrincipal).optional(),
+        status: z.nativeEnum(FinanceMovementStatus).optional(),
         projectId: z.string().optional(),
         page: z.coerce.number().int().positive().optional(),
         limit: z.coerce.number().int().positive().max(100).optional(),
@@ -7533,35 +8007,30 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const take = query.limit ?? 20;
       const skip = ((query.page ?? 1) - 1) * take;
 
+      const where: Prisma.FinanceMovementWhereInput = {
+        deletedAt: null,
+        ...(query.mes ? { mes: query.mes } : {}),
+        ...(query.anio ? { anio: query.anio } : {}),
+        ...(query.tipo ? { tipoMovimiento: query.tipo } : {}),
+        ...(query.categoria ? { categoriaPrincipal: query.categoria } : {}),
+        ...(query.status ? { status: query.status } : {}),
+        ...(query.projectId ? { projectId: query.projectId } : {}),
+      };
+
       const [movements, total] = await prisma.$transaction([
         prisma.financeMovement.findMany({
-          where: {
-            deletedAt: null,
-            ...(query.mes ? { mes: query.mes } : {}),
-            ...(query.anio ? { anio: query.anio } : {}),
-            ...(query.tipo ? { tipoMovimiento: query.tipo } : {}),
-            ...(query.categoria ? { categoriaPrincipal: query.categoria } : {}),
-            ...(query.projectId ? { projectId: query.projectId } : {}),
-          },
+          where,
           include: {
             project: { select: { id: true, clientName: true, code: true } },
             supplier: { select: { id: true, nombre: true } },
             subcategoria: { select: { id: true, nombre: true, categoria: true } },
+            materialItem: { select: { id: true, nombre: true, unidad: true } },
           },
           orderBy: { fecha: "desc" },
           skip,
           take,
         }),
-        prisma.financeMovement.count({
-          where: {
-            deletedAt: null,
-            ...(query.mes ? { mes: query.mes } : {}),
-            ...(query.anio ? { anio: query.anio } : {}),
-            ...(query.tipo ? { tipoMovimiento: query.tipo } : {}),
-            ...(query.categoria ? { categoriaPrincipal: query.categoria } : {}),
-            ...(query.projectId ? { projectId: query.projectId } : {}),
-          },
-        }),
+        prisma.financeMovement.count({ where }),
       ]);
 
       return {
@@ -7569,7 +8038,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
           ...m,
           monto: decimalToNumber(m.monto),
           tipoCambio: m.tipoCambio ? decimalToNumber(m.tipoCambio) : null,
-          fecha: serializeDate(m.fecha),
+          quantity: m.quantity ? decimalToNumber(m.quantity) : null,
+          unitPrice: m.unitPrice ? decimalToNumber(m.unitPrice) : null,
+          fecha: serializeDateOnly(m.fecha),
+          expectedDate: m.expectedDate ? serializeDateOnly(m.expectedDate) : null,
+          dueDate: m.dueDate ? serializeDateOnly(m.dueDate) : null,
           createdAt: serializeDate(m.createdAt),
           updatedAt: serializeDate(m.updatedAt),
         })),
@@ -7583,7 +8056,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     app.post("/finance/movements", { preHandler: authorize(Module.FINANZAS, Action.CREATE) }, async (request) => {
       const user = ensureUser(request);
       const body = movementCreateSchema.parse(request.body);
-      const fecha = new Date(body.fecha);
+      const fecha = parseDateOnly(body.fecha);
       const mes = fecha.getUTCMonth() + 1;
       const anio = fecha.getUTCFullYear();
 
@@ -7592,6 +8065,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
         const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
         if (lastRate) tipoCambio = lastRate.usdToUyu;
       }
+
+      // Derivar status / pagado coherentemente.
+      // - Si status viene explícito, manda status; pagado = (status === PAGADO).
+      // - Si no viene status, mantenemos compat: status = PAGADO si pagado=true, sino PAGADO por default.
+      const status = body.status ?? (body.pagado === false ? FinanceMovementStatus.COMPROMETIDO : FinanceMovementStatus.PAGADO);
+      const pagado = status === FinanceMovementStatus.PAGADO;
 
       const movement = await prisma.financeMovement.create({
         data: {
@@ -7605,9 +8084,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
           monto: new Prisma.Decimal(body.monto),
           moneda: body.moneda,
           tipoCambio,
-          pagado: body.pagado,
+          pagado,
           cobrado: body.cobrado,
           impactaFlujo: body.impactaFlujo,
+          status,
+          expectedDate: body.expectedDate ? parseDateOnly(body.expectedDate) : null,
+          dueDate: body.dueDate ? parseDateOnly(body.dueDate) : null,
           projectId: body.projectId,
           supplierId: body.supplierId,
           observaciones: body.observaciones,
@@ -7661,13 +8143,19 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
       const updateData: Record<string, unknown> = { ...body };
       if (body.fecha) {
-        const d = new Date(body.fecha);
+        const d = parseDateOnly(body.fecha);
         updateData.fecha = d;
         updateData.mes = d.getUTCMonth() + 1;
         updateData.anio = d.getUTCFullYear();
       }
       if (body.monto !== undefined) updateData.monto = new Prisma.Decimal(body.monto);
       if (body.tipoCambio !== undefined) updateData.tipoCambio = body.tipoCambio ? new Prisma.Decimal(body.tipoCambio) : null;
+      if (body.expectedDate !== undefined) updateData.expectedDate = body.expectedDate ? parseDateOnly(body.expectedDate) : null;
+      if (body.dueDate !== undefined) updateData.dueDate = body.dueDate ? parseDateOnly(body.dueDate) : null;
+      // Mantener pagado coherente con status si viene status pero no pagado explícito.
+      if (body.status !== undefined && body.pagado === undefined) {
+        updateData.pagado = body.status === FinanceMovementStatus.PAGADO;
+      }
 
       const updated = await prisma.financeMovement.update({ where: { id }, data: updateData });
       await createAuditEntry({
@@ -7696,6 +8184,145 @@ export async function registerApiRoutes(app: FastifyInstance) {
         description: `Eliminó movimiento: ${existing.descripcion}`,
       });
       return { success: true };
+    });
+
+    // ─── Finance: Previstos pendientes + cleanup ──────────────────────────────
+
+    app.get("/finance/movements/previstos-pendientes", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const query = z.object({
+        categoryId: z.string().optional(),
+        supplierId: z.string().optional(),
+        from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      }).parse(request.query);
+      const where: Prisma.FinanceMovementWhereInput = {
+        status: FinanceMovementStatus.PREVISTO,
+        sourceType: MovementSourceType.PROJECT_MATERIALS,
+        deletedAt: null,
+      };
+      if (query.supplierId) where.supplierId = query.supplierId;
+      if (query.categoryId) where.materialItem = { categoryId: query.categoryId };
+      if (query.from || query.to) {
+        where.fecha = {};
+        if (query.from) where.fecha.gte = parseDateOnly(query.from);
+        if (query.to) where.fecha.lte = parseDateOnly(query.to);
+      }
+      const movs = await prisma.financeMovement.findMany({
+        where,
+        include: {
+          project: { select: { id: true, code: true, clientName: true } },
+          supplier: { select: { id: true, nombre: true } },
+          materialItem: {
+            select: {
+              id: true, nombre: true, unidad: true,
+              category: { select: { id: true, nombre: true } },
+            },
+          },
+        },
+        orderBy: [{ projectId: "asc" }, { createdAt: "asc" }],
+      });
+      return movs.map((m) => ({
+        id: m.id,
+        descripcion: m.descripcion,
+        monto: decimalToNumber(m.monto),
+        moneda: m.moneda,
+        quantity: m.quantity ? decimalToNumber(m.quantity) : null,
+        unitPrice: m.unitPrice ? decimalToNumber(m.unitPrice) : null,
+        fecha: serializeDateOnly(m.fecha),
+        expectedDate: m.expectedDate ? serializeDateOnly(m.expectedDate) : null,
+        project: m.project,
+        supplier: m.supplier,
+        materialItem: m.materialItem,
+      }));
+    });
+
+    app.post("/finance/movements/cleanup-previstos", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+      const user = ensureUser(request);
+      const body = z.object({ movementIds: z.array(z.string()).min(1) }).strict().parse(request.body);
+      const movs = await prisma.financeMovement.findMany({
+        where: { id: { in: body.movementIds }, deletedAt: null },
+        select: { id: true, status: true, projectId: true, descripcion: true },
+      });
+      const invalid = movs.filter((m) => m.status !== FinanceMovementStatus.PREVISTO);
+      if (invalid.length > 0) {
+        throw badRequest("INVALID_STATUS", `Solo se pueden eliminar movimientos PREVISTOS (${invalid.length} con otro estado)`);
+      }
+      const ids = movs.map((m) => m.id);
+      await prisma.$transaction([
+        prisma.projectMaterial.updateMany({ where: { movementId: { in: ids } }, data: { movementId: null } }),
+        prisma.financeMovement.updateMany({ where: { id: { in: ids } }, data: { deletedAt: new Date() } }),
+      ]);
+      for (const m of movs) {
+        await createAuditEntry({
+          entityType: AuditEntityType.finance_movement,
+          entityId: m.id,
+          projectId: m.projectId,
+          userId: user.id,
+          action: AuditAction.deleted,
+          description: `Limpió previsto: ${m.descripcion}`,
+        });
+      }
+      return { deleted: ids.length };
+    });
+
+    // ─── Finance: Transición de estados de movimientos ────────────────────────
+
+    const allowedTransitions: Record<FinanceMovementStatus, FinanceMovementStatus[]> = {
+      [FinanceMovementStatus.PREVISTO]: [],
+      [FinanceMovementStatus.COMPROMETIDO]: [FinanceMovementStatus.A_PAGAR, FinanceMovementStatus.PAGADO],
+      [FinanceMovementStatus.A_PAGAR]: [FinanceMovementStatus.PAGADO],
+      [FinanceMovementStatus.PAGADO]: [],
+    };
+
+    app.post("/finance/movements/:id/transition", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const body = z.object({
+        newStatus: z.nativeEnum(FinanceMovementStatus),
+        paidDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      }).strict().parse(request.body);
+      const user = ensureUser(request);
+      const existing = await prisma.financeMovement.findFirst({ where: { id, deletedAt: null } });
+      if (!existing) throw notFound("MOVEMENT_NOT_FOUND", "Movimiento no encontrado");
+
+      const allowed = allowedTransitions[existing.status] ?? [];
+      if (!allowed.includes(body.newStatus)) {
+        throw badRequest(
+          "INVALID_TRANSITION",
+          `No se puede pasar de ${existing.status} a ${body.newStatus}`,
+        );
+      }
+
+      const data: Prisma.FinanceMovementUpdateInput = { status: body.newStatus };
+      if (body.newStatus === FinanceMovementStatus.A_PAGAR) {
+        if (!body.dueDate) throw badRequest("MISSING_DUE_DATE", "Se requiere dueDate para pasar a A_PAGAR");
+        data.dueDate = parseDateOnly(body.dueDate);
+      }
+      if (body.newStatus === FinanceMovementStatus.PAGADO) {
+        if (!body.paidDate) throw badRequest("MISSING_PAID_DATE", "Se requiere paidDate para marcar como PAGADO");
+        const paid = parseDateOnly(body.paidDate);
+        data.fecha = paid;
+        data.mes = paid.getUTCMonth() + 1;
+        data.anio = paid.getUTCFullYear();
+        data.pagado = true;
+      }
+
+      const updated = await prisma.financeMovement.update({ where: { id }, data });
+      await createAuditEntry({
+        entityType: AuditEntityType.finance_movement,
+        entityId: id,
+        projectId: existing.projectId,
+        userId: user.id,
+        action: AuditAction.status_changed,
+        description: `Transición ${existing.status} → ${body.newStatus} en movimiento ${existing.descripcion}`,
+      });
+      return {
+        id: updated.id,
+        status: updated.status,
+        fecha: serializeDateOnly(updated.fecha),
+        dueDate: updated.dueDate ? serializeDateOnly(updated.dueDate) : null,
+        pagado: updated.pagado,
+      };
     });
 
     // ─── Finance: Comprobantes ────────────────────────────────────────────────
@@ -7923,7 +8550,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
       const movements = await prisma.financeMovement.findMany({
         where,
-        select: { tipoMovimiento: true, monto: true, moneda: true, tipoCambio: true, cobrado: true, pagado: true },
+        select: { tipoMovimiento: true, monto: true, moneda: true, tipoCambio: true, cobrado: true, pagado: true, status: true },
       });
 
       const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
@@ -7937,6 +8564,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       }
 
       let saldoActual = 0, porCobrar = 0, porPagar = 0;
+      let previstoTotal = 0, comprometidoTotal = 0, aPagarTotal = 0;
       for (const m of movements) {
         const usd = toUsd(m);
         if (m.tipoMovimiento === TipoMovimiento.INGRESO) {
@@ -7945,10 +8573,22 @@ export async function registerApiRoutes(app: FastifyInstance) {
         } else if (m.tipoMovimiento === TipoMovimiento.GASTO) {
           if (m.pagado) saldoActual -= usd;
           else porPagar += usd;
+          if (m.status === FinanceMovementStatus.PREVISTO) previstoTotal += usd;
+          else if (m.status === FinanceMovementStatus.COMPROMETIDO) comprometidoTotal += usd;
+          else if (m.status === FinanceMovementStatus.A_PAGAR) aPagarTotal += usd;
         }
       }
 
-      return { saldoActual, porCobrar, porPagar, saldoProyectado: saldoActual + porCobrar - porPagar };
+      return {
+        saldoActual,
+        porCobrar,
+        porPagar,
+        saldoProyectado: saldoActual + porCobrar - porPagar,
+        previstoTotal,
+        comprometidoTotal,
+        aPagarTotal,
+        saldoProyectadoSinPrevistos: saldoActual + porCobrar - (comprometidoTotal + aPagarTotal),
+      };
     });
 
     app.get("/finance/reports/dashboard", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async () => {

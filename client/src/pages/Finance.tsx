@@ -252,6 +252,61 @@ function CuentasPagarWidget() {
   );
 }
 
+// ─── Cashflow Section ─────────────────────────────────────────────────────────
+
+function CashflowSection({ cashflow }: { cashflow: import('../types/finance.types').FinanceCashflow }) {
+  const [includePrevistos, setIncludePrevistos] = useState(true);
+  const projected = includePrevistos ? cashflow.saldoProyectado - cashflow.previstoTotal : cashflow.saldoProyectadoSinPrevistos;
+  // Cuando el toggle está ON, "saldoProyectado" del backend ya considera todo lo no pagado (incluye previstos).
+  // El backend devuelve `saldoProyectado` como saldoActual + porCobrar - porPagar (donde porPagar = todo lo no pagado).
+  // Para que el toggle tenga efecto: si OFF, restamos sólo comprometido + a_pagar (sin previstos).
+  const projectedFinal = includePrevistos ? cashflow.saldoProyectado : cashflow.saldoProyectadoSinPrevistos;
+  void projected;
+  return (
+    <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-5">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <p className="text-sm font-semibold text-[var(--color-text-primary)]">Flujo de fondos proyectado</p>
+        <label className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)] cursor-pointer">
+          <input type="checkbox" checked={includePrevistos} onChange={e => setIncludePrevistos(e.target.checked)} className="accent-[var(--color-accent)]" />
+          Incluir previstos en proyección
+        </label>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        {[
+          { label: 'Saldo actual', value: cashflow.saldoActual, color: 'text-[var(--color-text-primary)]' },
+          { label: 'Por cobrar', value: cashflow.porCobrar, color: 'text-green-400', prefix: '+' },
+          { label: 'Por pagar', value: cashflow.porPagar, color: 'text-red-400', prefix: '-' },
+          { label: 'Proyectado', value: projectedFinal, color: projectedFinal >= 0 ? 'text-[var(--color-text-primary)]' : 'text-red-400' },
+        ].map(({ label, value, color, prefix }) => (
+          <div key={label}>
+            <p className="text-xs text-[var(--color-text-muted)] mb-1">{label}</p>
+            <p className={klass('text-base font-bold tabular-nums', color)}>
+              {prefix}{fmtCurrency(value)}
+            </p>
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-3 gap-3 pt-4 border-t border-[var(--color-border)]">
+        <CommitmentTile label="Previsto" value={cashflow.previstoTotal} tone="muted" />
+        <CommitmentTile label="Comprometido" value={cashflow.comprometidoTotal} tone="info" />
+        <CommitmentTile label="A pagar" value={cashflow.aPagarTotal} tone="warning" />
+      </div>
+    </div>
+  );
+}
+
+function CommitmentTile({ label, value, tone }: { label: string; value: number; tone: 'muted' | 'info' | 'warning' }) {
+  const color = tone === 'warning' ? 'text-yellow-400' : tone === 'info' ? 'text-[var(--color-info-text)]' : 'text-[var(--color-text-muted)]';
+  return (
+    <div className="text-center">
+      <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">{label}</p>
+      <p className={klass('text-sm font-semibold tabular-nums', color)}>
+        {value > 0 ? `-${fmtCurrency(value)}` : '—'}
+      </p>
+    </div>
+  );
+}
+
 // ─── Finance Page ─────────────────────────────────────────────────────────────
 
 export function Finance() {
@@ -283,13 +338,21 @@ export function Finance() {
           <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Finanzas</h1>
           <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{mesLabel}</p>
         </div>
-        <Link
-          to="/finanzas/movimientos?new=1"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] transition-colors shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          Nuevo movimiento
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/finanzas/a-pagar"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors shrink-0"
+          >
+            Cuentas a pagar
+          </Link>
+          <Link
+            to="/finanzas/movimientos?new=1"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] transition-colors shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            Nuevo movimiento
+          </Link>
+        </div>
       </div>
 
       {/* Tipo de cambio */}
@@ -325,26 +388,7 @@ export function Finance() {
       )}
 
       {/* Flujo de fondos */}
-      {!loading && cashflow && (
-        <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-5">
-          <p className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">Flujo de fondos proyectado</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { label: 'Saldo actual', value: cashflow.saldoActual, color: 'text-[var(--color-text-primary)]' },
-              { label: 'Por cobrar', value: cashflow.porCobrar, color: 'text-green-400', prefix: '+' },
-              { label: 'Por pagar', value: cashflow.porPagar, color: 'text-red-400', prefix: '-' },
-              { label: 'Proyectado', value: cashflow.saldoProyectado, color: cashflow.saldoProyectado >= 0 ? 'text-[var(--color-text-primary)]' : 'text-red-400' },
-            ].map(({ label, value, color, prefix }) => (
-              <div key={label}>
-                <p className="text-xs text-[var(--color-text-muted)] mb-1">{label}</p>
-                <p className={klass('text-base font-bold tabular-nums', color)}>
-                  {prefix}{fmtCurrency(value)}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {!loading && cashflow && <CashflowSection cashflow={cashflow} />}
 
       {/* Cuentas a pagar */}
       <CuentasPagarWidget />
