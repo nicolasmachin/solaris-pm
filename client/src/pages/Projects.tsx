@@ -10,8 +10,7 @@ import { EmptyState } from "../components/ui/EmptyState";
 import { ProgressBar } from "../components/ui/ProgressBar";
 import { Spinner } from "../components/ui/Spinner";
 import type { ProjectListItem, ProjectStatus, SolarSystem } from "../types/api.types";
-import { useTheme } from "../hooks/useTheme";
-import { getProjectTeamSurfaceStyle } from "../components/project/projectTeamColor";
+import { getProjectTeamColor, getProjectTeamName } from "../components/project/projectTeamColor";
 import {
   formatSolarSystemPanels,
   formatSolarSystemPrimary,
@@ -228,7 +227,6 @@ function SortHeader({
 export function Projects() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { isDark } = useTheme();
   const persisted = useMemo(loadPageFilter, []);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | ProjectStatus>(
@@ -418,16 +416,27 @@ export function Projects() {
                   const solarSystem = getPrimarySolarSystem(project);
                   const extraCount = Math.max(0, project.solarSystems.length - 1);
                   const tooltip = getAdditionalSystemsTooltip(project.solarSystems);
-                  const teamSurfaceStyle = getProjectTeamSurfaceStyle(project, { isDark });
+                  const teamColor = getProjectTeamColor(project);
+                  const teamName = getProjectTeamName(project);
                   return (
                     <tr
                       key={project.id}
                       onClick={() => navigate(`/projects/${project.id}`)}
-                      className="cursor-pointer border-b border-[var(--color-border)]/70 transition-[filter] hover:brightness-[0.99] dark:hover:brightness-110"
-                      style={teamSurfaceStyle}
+                      className="cursor-pointer border-b border-[var(--color-border)]/70 transition-colors hover:bg-[var(--color-row-hover)]"
                     >
                       <td className="px-4 py-4 align-top">
                         <div className="font-medium text-[var(--color-text-primary)]">{project.clientName}</div>
+                        {teamColor && teamName ? (
+                          <div
+                            className="mt-2 inline-flex items-center gap-2 rounded-md border px-2.5 py-1"
+                            style={{ borderColor: `${teamColor}55`, backgroundColor: `${teamColor}1A` }}
+                          >
+                            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: teamColor }} />
+                            <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-secondary)]">
+                              {teamName}
+                            </span>
+                          </div>
+                        ) : null}
                       </td>
                       <td className="px-4 py-4 align-top">
                         <div className="text-sm text-[var(--color-text-primary)]">{project.locationCity}</div>

@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { FileCheck, Mail, MapPin, Phone } from "lucide-react";
 import type { Project } from "../../types/api.types";
 import { UTE_STAGE_LABEL, UTE_STATUS_LABEL } from "../../api/uteProcess.api";
+import { getProjectTeamColor, getProjectTeamName } from "./projectTeamColor";
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
   ACTIVE:      { bg: "var(--color-state-active-bg)", text: "var(--color-state-active-text)", label: "EN EJECUCIÓN" },
@@ -23,6 +24,8 @@ export function ProjectHeader({ project, onEdit }: ProjectHeaderProps) {
   const navigate = useNavigate();
   const style = STATUS_STYLES[project.status] ?? STATUS_STYLES.ACTIVE;
   const hasInstallation = !!project.installationSchedule;
+  const installerTeamColor = getProjectTeamColor(project);
+  const installerTeamName = getProjectTeamName(project);
 
   function goToCalendar() {
     if (hasInstallation) {
@@ -127,12 +130,33 @@ export function ProjectHeader({ project, onEdit }: ProjectHeaderProps) {
         ) : null}
       </div>
 
-      <span
-        className="shrink-0 mt-1 px-2.5 py-1 rounded text-[10px] font-mono font-bold uppercase tracking-wider"
-        style={{ background: style.bg, color: style.text }}
-      >
-        {style.label}
-      </span>
+      <div className="shrink-0 mt-1 flex flex-col items-end gap-2">
+        <span
+          className="px-2.5 py-1 rounded text-[10px] font-mono font-bold uppercase tracking-wider"
+          style={{ background: style.bg, color: style.text }}
+        >
+          {style.label}
+        </span>
+        {installerTeamColor && installerTeamName ? (
+          <div
+            className="min-w-[180px] rounded-lg border px-3 py-2 text-right"
+            style={{ borderColor: `${installerTeamColor}66`, backgroundColor: `${installerTeamColor}1A` }}
+          >
+            <div className="flex items-center justify-end gap-2">
+              <span
+                className="inline-block h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: installerTeamColor }}
+              />
+              <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
+                Equipo instalador
+              </span>
+            </div>
+            <div className="mt-1 text-sm font-semibold text-[var(--color-text-primary)]">
+              {installerTeamName}
+            </div>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
