@@ -1125,6 +1125,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const plannedWorkStart = project.installationSchedule?.segments[0]?.startDate
         ? serializeDateOnly(project.installationSchedule.segments[0].startDate)
         : null;
+      const installationTeamColor = project.installationSchedule?.teamColor ?? null;
+      const installationTeamName = project.installationSchedule?.teamName ?? null;
       const delayDays = project.stages
         .filter((stage) => stage.status === StageStatus.COMPLETED)
         .reduce((sum, stage) => sum + (stage.delayDays ?? 0), 0);
@@ -1147,6 +1149,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         completionPercent,
         currentStages,
         plannedWorkStart,
+        installationTeamColor,
+        installationTeamName,
         delayDays,
         hasOverdueStage,
         startDate: serializeDateOnly(project.startDate),

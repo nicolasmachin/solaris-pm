@@ -10,6 +10,8 @@ import { EmptyState } from "../components/ui/EmptyState";
 import { ProgressBar } from "../components/ui/ProgressBar";
 import { Spinner } from "../components/ui/Spinner";
 import type { ProjectListItem, ProjectStatus, SolarSystem } from "../types/api.types";
+import { useTheme } from "../hooks/useTheme";
+import { getProjectTeamSurfaceStyle } from "../components/project/projectTeamColor";
 import {
   formatSolarSystemPanels,
   formatSolarSystemPrimary,
@@ -226,6 +228,7 @@ function SortHeader({
 export function Projects() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { isDark } = useTheme();
   const persisted = useMemo(loadPageFilter, []);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | ProjectStatus>(
@@ -415,11 +418,13 @@ export function Projects() {
                   const solarSystem = getPrimarySolarSystem(project);
                   const extraCount = Math.max(0, project.solarSystems.length - 1);
                   const tooltip = getAdditionalSystemsTooltip(project.solarSystems);
+                  const teamSurfaceStyle = getProjectTeamSurfaceStyle(project, { isDark });
                   return (
                     <tr
                       key={project.id}
                       onClick={() => navigate(`/projects/${project.id}`)}
-                      className="cursor-pointer border-b border-[var(--color-border)]/70 transition-colors hover:bg-[var(--color-row-hover)]"
+                      className="cursor-pointer border-b border-[var(--color-border)]/70 transition-[filter] hover:brightness-[0.99] dark:hover:brightness-110"
+                      style={teamSurfaceStyle}
                     >
                       <td className="px-4 py-4 align-top">
                         <div className="font-medium text-[var(--color-text-primary)]">{project.clientName}</div>

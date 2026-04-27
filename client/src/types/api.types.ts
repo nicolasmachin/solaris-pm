@@ -79,6 +79,10 @@ export interface ProjectListItem {
   currentStages: string[];
   /** Fecha de inicio de instalación (primer segment del schedule) si existe. */
   plannedWorkStart: string | null;
+  /** Snapshot del color del equipo de instalación asignado, si existe. */
+  installationTeamColor?: string | null;
+  /** Snapshot del nombre del equipo de instalación asignado, si existe. */
+  installationTeamName?: string | null;
   startDate: string | null;
   plannedEndDate: string | null;
   actualEndDate?: string | null;

@@ -27,6 +27,8 @@ import { UteProjectTab } from "../components/ute/UteProjectTab";
 import { getProjectGantt } from "../api/metrics.api";
 import { installationCheck } from "../api/calendar.api";
 import { usePermission } from "../hooks/usePermission";
+import { useTheme } from "../hooks/useTheme";
+import { getProjectTeamSurfaceStyle } from "../components/project/projectTeamColor";
 import {
   formatSolarSystemPanels,
   formatSolarSystemPrimary,
@@ -642,6 +644,7 @@ export function ProjectDetail() {
   const canViewStock = usePermission("STOCK", "VIEW");
   const canViewUte = usePermission("TRAMITES_UTE", "VIEW");
   const canCreateUte = usePermission("TRAMITES_UTE", "CREATE");
+  const { isDark } = useTheme();
 
   const {
     data: project,
@@ -745,24 +748,29 @@ export function ProjectDetail() {
     editingSolarSystemId != null
       ? project.solarSystems.find((system) => system.id === editingSolarSystemId) ?? null
       : null;
+  const projectTeamSurfaceStyle = getProjectTeamSurfaceStyle(project, { isDark });
 
   return (
     <div className="relative">
-      {/* Header */}
-      <ProjectHeader
-        project={project}
-        onEdit={() => setShowEditProject(true)}
-      />
-
-      {project.installationSchedule && project.installationSchedule.plannedWorkStart && project.installationSchedule.plannedWorkEnd ? (
-        <InstallationScheduleRow
-          plannedWorkStart={project.installationSchedule.plannedWorkStart}
-          plannedWorkEnd={project.installationSchedule.plannedWorkEnd}
-          teamName={project.installationSchedule.teamName}
-          confirmed={Boolean(project.installationSchedule.confirmedAt)}
-          segmentsCount={project.installationSchedule.segments.length}
+      <section
+        className="mb-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-5 py-4"
+        style={projectTeamSurfaceStyle}
+      >
+        <ProjectHeader
+          project={project}
+          onEdit={() => setShowEditProject(true)}
         />
-      ) : null}
+
+        {project.installationSchedule && project.installationSchedule.plannedWorkStart && project.installationSchedule.plannedWorkEnd ? (
+          <InstallationScheduleRow
+            plannedWorkStart={project.installationSchedule.plannedWorkStart}
+            plannedWorkEnd={project.installationSchedule.plannedWorkEnd}
+            teamName={project.installationSchedule.teamName}
+            confirmed={Boolean(project.installationSchedule.confirmedAt)}
+            segmentsCount={project.installationSchedule.segments.length}
+          />
+        ) : null}
+      </section>
 
       {installationCheckQuery.data && installationCheckQuery.data.issues.length > 0 && (
         <InstallationCoherenceBanner issues={installationCheckQuery.data.issues} />
