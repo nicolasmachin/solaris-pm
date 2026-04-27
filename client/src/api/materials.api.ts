@@ -80,7 +80,7 @@ export const patchProjectMaterial = (projectId: string, materialId: string, body
 }>) => apiClient.patch<ProjectMaterial>(`/api/projects/${projectId}/materials/${materialId}`, body).then(r => r.data);
 
 export const deleteProjectMaterial = (projectId: string, materialId: string) =>
-  apiClient.delete(`/api/projects/${projectId}/materials/${materialId}`);
+  apiClient.delete<{ success: true; previstoEliminado: boolean }>(`/api/projects/${projectId}/materials/${materialId}`).then(r => r.data);
 
 export const generateProjectPrevistos = (projectId: string) =>
   apiClient.post<{ created: number; alreadyExisted: number }>(`/api/projects/${projectId}/materials/generate-previsto`).then(r => r.data);

@@ -8244,7 +8244,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         }
         await tx.projectMaterial.delete({ where: { id: materialId } });
       });
-      return { success: true };
+      return { success: true, previstoEliminado: !!existing.movementId };
     });
 
     // ─── Materiales: Generación / regeneración de previstos ───────────────────

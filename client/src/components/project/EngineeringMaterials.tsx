@@ -218,9 +218,10 @@ function MaterialRow({ projectId, pm, suppliers }: {
 
   const deleteMut = useMutation({
     mutationFn: () => deleteProjectMaterial(projectId, pm.id),
-    onSuccess: () => {
-      toast.success('Material eliminado');
+    onSuccess: (r) => {
+      toast.success(r.previstoEliminado ? 'Material eliminado (previsto en Finanzas también eliminado)' : 'Material eliminado');
       qc.invalidateQueries({ queryKey: ['project-materials', projectId] });
+      qc.invalidateQueries({ queryKey: ['finance-movements'] });
     },
     onError: (err) => toast.error(getApiErr(err) ?? 'Error al eliminar'),
   });
@@ -308,11 +309,13 @@ function MaterialRow({ projectId, pm, suppliers }: {
               <StickyNote className="w-3.5 h-3.5" />
             </button>
             <button
-              title="Eliminar"
-              onClick={() => { if (confirm('¿Eliminar este material?')) deleteMut.mutate(); }}
-              className="p-1 rounded hover:bg-red-500/15 text-red-400"
+              title="Eliminar material"
+              onClick={() => deleteMut.mutate()}
+              disabled={deleteMut.isPending}
+              className="p-1.5 rounded hover:bg-red-500/15 text-red-500 hover:text-red-700 disabled:opacity-50 transition-colors"
+              aria-label="Eliminar material"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="w-4 h-4" />
             </button>
           </div>
         </td>
