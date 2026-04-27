@@ -1,5 +1,60 @@
 # Novedades
 
+## v2.4
+
+### 26 de abril de 2026
+
+#### Pagos parciales y vista por proveedor
+
+**Nuevo concepto de "Pago" separado de "Factura"**
+- Antes: una factura (`FinanceMovement`) sólo podía estar en estado A pagar o Pagado, todo o nada.
+- Ahora: cada **pago real** (transferencia, cheque, efectivo) es una entidad separada que puede aplicarse a **una o varias facturas** del mismo proveedor. Una factura puede recibir varios pagos parciales.
+- **Estado nuevo: "Parcialmente pagado"** (badge ámbar) para las facturas con pagos pero saldo > 0.
+
+**Página nueva "Pagos" (`/finanzas/pagos`)**
+- Tabla con todos los pagos del sistema. Filtros por proveedor, rango de fechas, "solo con saldo sin aplicar".
+- 3 KPIs: Pagos del mes, Total aplicado, Saldo sin aplicar (créditos a favor de proveedores).
+- Botón **"+ Registrar pago"** abre modal con buscador de proveedor + datos del pago + toggle "Aplicar a facturas ahora".
+- Si el toggle está activo, después de guardar abre el modal de aplicación con las facturas pendientes del mismo proveedor.
+- Click en cualquier pago abre un drawer lateral con: datos del pago, lista de aplicaciones (botón "Quitar aplicación"), botón "Aplicar a más facturas" si hay saldo, botón rojo "Anular pago" (revierte aplicaciones).
+
+**Modal "Aplicar pago a facturas"**
+- Lista las facturas del mismo proveedor en la misma moneda (excluye PAGADO y PREVISTO).
+- Cada fila: checkbox + monto editable. Por default propone el saldo pendiente real de la factura.
+- Footer: total a aplicar, saldo después, validación de no exceder. Botón "Aplicar" deshabilitado si no cuadra.
+- El backend valida en el commit y rechaza con mensaje claro si excede.
+
+**Vista detallada del proveedor (`/finanzas/proveedores/:id`)**
+- Header con datos del proveedor + botones Editar / Registrar pago / Nuevo gasto.
+- 3 KPIs: Total adeudado (rojo si > 0), Saldo a favor (info si > 0), Saldo neto (verde si tenemos crédito, rojo si debemos).
+- 3 tabs:
+  - **Facturas**: tabla con monto, pagado, saldo, vencimiento, estado. Filtros: Todas / Pendientes / Parciales / Pagadas. Filas vencidas resaltadas en rojo.
+  - **Pagos**: tabla con monto, aplicado, saldo sin aplicar. Filtros: Todos / Con saldo / Aplicados. Click → drawer del pago.
+  - **Estado de cuenta**: línea de tiempo cronológica unificada con saldo acumulado en USD (UYU se convierte con el último TC). Muestra deuda (positivo) o saldo a favor (negativo).
+
+**Lista de proveedores rediseñada**
+- Columnas nuevas: **Saldo neto** (color rojo si debemos / verde si saldo a favor), **N° facturas pendientes**, **Última actividad**.
+- Click en el nombre o en "Ver" lleva a la vista detallada.
+- Saldos por moneda separados (USD y UYU no se mezclan).
+
+**Integraciones en Movimientos**
+- Filtro de Estado incluye "Parcialmente pagados".
+- Detail panel de cada movimiento muestra **monto pagado y saldo pendiente** si tiene pagos aplicados, además de la lista de "Aplicaciones de pago" (cada pago con fecha, método, referencia y monto aplicado).
+- Si la factura tiene proveedor y saldo > 0, aparece botón **"Registrar pago a este proveedor"** que abre el flujo de creación de Payment con monto pre-rellenado al saldo pendiente.
+- El listing devuelve `saldoPendiente` y `montoPagado` calculados en tiempo real.
+
+**Página "A pagar" actualizada**
+- Incluye también las facturas en estado **Parcialmente pagado** (antes solo COMPROMETIDO/A_PAGAR).
+- La columna "Monto" muestra el **saldo pendiente** (no el monto total) — abajo en gris muestra "de $X" cuando hay diferencia.
+- Los KPIs (Comprometido, A pagar, Vencido, Vence esta semana) se calculan sobre saldos pendientes, no montos totales.
+- Acción nueva por fila: cuando la factura tiene proveedor, aparece botón **"💲 Pagar"** que abre el flujo de Payment. Para gastos sin proveedor sigue funcionando la transición manual a PAGADO.
+
+**Cambios técnicos importantes**
+- Migración `add_payments_and_applications`: nuevas tablas `payments` y `payment_applications`, enum `FinanceMovementStatus` ampliado. La tabla legacy `finance_payments` (estaba sin uso) fue eliminada.
+- Bloqueo de transición manual a PAGADO si el movimiento tiene proveedor: el backend devuelve 400 con sugerencia de usar el flujo de Pagos. Para gastos sin proveedor (ajustes contables) la transición manual sigue disponible.
+- El cálculo de status de cada factura es **automático** al aplicar/quitar pagos (no se setea manualmente).
+- El módulo Comprobantes (legacy, sin datos) quedó **oculto en la UI** pero el backend y la base de datos lo conservan por si hace falta restaurarlo. Se eliminará en cleanup futuro si no se reactiva (revisar mayo 2026).
+
 ## v2.3
 
 ### 26 de abril de 2026

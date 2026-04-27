@@ -38,7 +38,7 @@ export const getBcuExchangeRatePreview = () =>
 
 // ─── Suppliers ────────────────────────────────────────────────────────────────
 
-export const getSuppliers = (params?: { activo?: 'true' | 'false' | 'all' }) =>
+export const getSuppliers = (params?: { activo?: 'true' | 'false' | 'all'; withBalance?: 'true' | 'false' }) =>
   apiClient.get<Supplier[]>('/api/finance/suppliers', { params }).then(r => r.data);
 
 export const getSupplier = (id: string) =>
@@ -100,8 +100,26 @@ export interface MovimientosQuery {
 export const getMovements = (params: MovimientosQuery) =>
   apiClient.get<PaginatedResponse<FinanceMovement>>('/api/finance/movements', { params }).then(r => r.data);
 
+export interface FinanceMovementDetail extends FinanceMovement {
+  paymentApplications: Array<{
+    id: string;
+    paymentId: string;
+    montoAplicado: number;
+    createdAt: string;
+    payment: {
+      id: string;
+      fecha: string;
+      monto: number;
+      moneda: Moneda;
+      metodo: string;
+      referencia: string | null;
+      deletedAt: string | null;
+    };
+  }>;
+}
+
 export const getMovement = (id: string) =>
-  apiClient.get<FinanceMovement>(`/api/finance/movements/${id}`).then(r => r.data);
+  apiClient.get<FinanceMovementDetail>(`/api/finance/movements/${id}`).then(r => r.data);
 
 function buildMovementBody(body: Partial<MovimientoFormData>) {
   return {

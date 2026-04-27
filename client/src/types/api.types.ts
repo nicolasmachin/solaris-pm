@@ -61,6 +61,7 @@ export interface ProjectCurrentStage {
   label?: string;
   status: StageStatus;
   progressPercent: number;
+  responsibleUserId?: string | null;
 }
 
 export interface ProjectListItem {
@@ -80,6 +81,7 @@ export interface ProjectListItem {
   plannedWorkStart: string | null;
   startDate: string | null;
   plannedEndDate: string | null;
+  actualEndDate?: string | null;
   createdAt: string;
   solarSystems: SolarSystem[];
   currentStage: ProjectCurrentStage | null;

@@ -23,35 +23,67 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "2.1",
-  date: "25 de abril de 2026",
+  version: "2.4",
+  date: "26 de abril de 2026",
   sections: [
     {
-      title: "Modo claro renovado con identidad Voltia",
+      title: "Nuevo",
       items: [
-        "El **modo claro** ahora tiene una paleta cálida que se siente parte del producto, no un blanco frío genérico. Fondos crema suave, bordes cálidos, acentos amarillo Voltia consistentes.",
-        "Los **encabezados de tabla** ahora son una franja oscura (zona focal del estilo Voltia), antes se confundían con el fondo.",
-        "**Hover de filas** en tablas con tono amarillo muy suave, más cálido que el azul claro previo.",
-        "**Botón primario** (ej: \"+ Nuevo trámite\") con gradiente amarillo en lugar de un amarillo plano.",
-        "El **modo oscuro** no se modificó.",
+        "**Pagos parciales**: cada pago a proveedor es una entidad separada que se aplica a una o varias facturas. Las facturas pueden quedar en estado *Parcialmente pagado*.",
+        "Página nueva **Pagos** (/finanzas/pagos) con KPIs, filtros y modal de aplicación a múltiples facturas.",
+        "**Vista detallada por proveedor** con tabs Facturas / Pagos / Estado de cuenta cronológico.",
+        "Pestaña **Costos** del proyecto rediseñada con consumos reales de stock.",
       ],
     },
     {
-      title: "Trámites UTE — vista tabla más legible",
+      title: "Mejoras",
       items: [
-        "**Encabezados de columnas de fecha** ahora son nombres completos en dos líneas (\"Consulta / enviada\", \"Docs 1 / aprobados\") en lugar de las abreviaturas en mayúsculas.",
-        "**Celdas de fecha** ahora se ven como pills con el color asignado (verde por defecto, o el que elijas desde el popover de paleta).",
-        "Las fechas ya no se cortan en dos renglones cuando la columna es angosta (ej: \"14-ene\" se mantiene en una sola línea).",
+        "Lista de proveedores: ahora muestra saldo neto, n° de facturas pendientes y última actividad.",
+        "Cuentas a pagar muestra saldo pendiente real (no monto total).",
+        "Stock unificado con el catálogo de Materiales: misma tabla, mismos campos.",
       ],
     },
     {
-      title: "Calendario mensual — fixes visuales",
+      title: "Correcciones",
       items: [
-        "Las **barras multi-día** vuelven a verse como una sola barra continua que cruza los días, sin cortes.",
-        "El **número del día** queda en una franja superior reservada de cada celda; las barras arrancan debajo y nunca tapan los números.",
-        "El calendario ahora **ocupa todo el alto disponible** del viewport en desktop, en lugar de quedar comprimido con espacio vacío debajo.",
-        "Cada semana se reparte equitativamente el alto disponible.",
+        "Filtros de Movimientos guardaban valores incorrectos al cambiar de pestaña.",
+        "Comprobantes legacy quedaron ocultos hasta confirmar que ya no se usan.",
       ],
     },
   ],
 };
+
+/** Versiones anteriores para mostrar en el sidebar de novedades. */
+export type OldRelease = {
+  version: string;
+  shortDate: string;
+  highlights: string[];
+};
+
+export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "2.3",
+    shortDate: "26 abr",
+    highlights: [
+      "Stock unificado con materiales + desglose de facturas por ítem.",
+      "Pestaña Costos del proyecto basada en consumos reales.",
+    ],
+  },
+  {
+    version: "2.2",
+    shortDate: "25 abr",
+    highlights: [
+      "Estados de movimiento (Previsto / Comprometido / A pagar / Pagado).",
+      "Lista de materiales por proyecto + generación de previstos.",
+      "Página Cuentas a pagar.",
+    ],
+  },
+  {
+    version: "2.1",
+    shortDate: "25 abr",
+    highlights: [
+      "Modo claro renovado con identidad Voltia.",
+      "Trámites UTE: vista tabla más legible y fixes en calendario mensual.",
+    ],
+  },
+];

@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Plus, X, ChevronLeft, ChevronRight, ArrowRight, AlertTriangle, FileText } from 'lucide-react';
+import { Plus, X, ChevronLeft, ChevronRight, ArrowRight, AlertTriangle, FileText, DollarSign, Trash2 } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
-import { getMovements, createMovement, patchMovement, deleteMovement, transitionMovement, cancelMovement, getExchangeRate } from '../api/finance.api';
+import { getMovements, getMovement, createMovement, patchMovement, deleteMovement, transitionMovement, cancelMovement, getExchangeRate } from '../api/finance.api';
 import { apiClient } from '../api/axios';
 import { fmtCurrency, fmtDate, currentMonthYear, MONTH_NAMES } from '../lib/finance';
 import type {
@@ -28,6 +28,8 @@ import {
 } from '../types/finance.types';
 import { CleanupPrevistosModal } from '../components/finance/CleanupPrevistosModal';
 import { InvoiceItemsDetail } from '../components/finance/InvoiceItemsDetail';
+import { NewPaymentForSupplierModal } from '../components/finance/NewPaymentForSupplierModal';
+import { ApplyPaymentModal } from '../components/finance/ApplyPaymentModal';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -385,22 +387,36 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId, onSavedOpenDesgl
 
 // ─── Detail Panel ─────────────────────────────────────────────────────────────
 
-function DetailPanel({ mov, onClose, onEdit, onDelete, onCancel, onOpenDesglose }: {
+function DetailPanel({ mov, onClose, onEdit, onDelete, onCancel, onOpenDesglose, onApplyPayment }: {
   mov: FinanceMovement;
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
   onCancel: () => void;
   onOpenDesglose: () => void;
+  onApplyPayment: () => void;
 }) {
   const esIngreso = CATEGORIAS_INGRESO.includes(mov.categoriaPrincipal);
-  const needsDetail = (mov.status === 'A_PAGAR' || mov.status === 'PAGADO')
+  const needsDetail = (mov.status === 'A_PAGAR' || mov.status === 'PAGADO' || mov.status === 'PARCIALMENTE_PAGADO')
     && !mov.hasItemDetail && !mov.noTieneMateriales
     && mov.tipoMovimiento === 'GASTO';
   const canCancel = mov.hasItemDetail && !mov.noTieneMateriales;
+  // Pago: aplica si es gasto con supplier y saldo > 0
+  const canRegisterPayment = mov.tipoMovimiento === 'GASTO'
+    && !!mov.supplierId
+    && (mov.saldoPendiente ?? mov.monto) > 0.005
+    && (mov.status === 'A_PAGAR' || mov.status === 'COMPROMETIDO' || mov.status === 'PARCIALMENTE_PAGADO');
+
+  // Cargar detalle (con paymentApplications) si tiene supplierId (las facturas con pagos)
+  const { data: detail } = useQuery({
+    queryKey: ['movement-detail', mov.id],
+    queryFn: () => getMovement(mov.id),
+    enabled: mov.tipoMovimiento === 'GASTO' && !!mov.supplierId,
+  });
+
   return (
     <div className="fixed inset-0 z-40 flex justify-end" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="w-full max-w-sm bg-[var(--color-bg-card)] border-l border-[var(--color-border)] h-full overflow-y-auto shadow-2xl p-5 space-y-4">
+      <div className="w-full max-w-md bg-[var(--color-bg-card)] border-l border-[var(--color-border)] h-full overflow-y-auto shadow-2xl p-5 space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold text-[var(--color-text-primary)]">Detalle</p>
           <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"><X className="w-5 h-5" /></button>
@@ -436,11 +452,52 @@ function DetailPanel({ mov, onClose, onEdit, onDelete, onCancel, onOpenDesglose 
           {mov.materialItem && <Row label="Ítem" value={`${mov.materialItem.nombre}${mov.quantity != null ? ` (x${mov.quantity} ${mov.materialItem.unidad})` : ''}`} />}
           {mov.hasItemDetail && !mov.noTieneMateriales && <Row label="Stock" value="Ingresado vía desglose" />}
           {mov.noTieneMateriales && <Row label="Stock" value="Sin materiales" />}
+          {mov.tipoMovimiento === 'GASTO' && mov.montoPagado > 0 && (
+            <>
+              <Row label="Monto pagado" value={fmtCurrency(mov.montoPagado, mov.moneda)} />
+              <Row label="Saldo pendiente" value={fmtCurrency(mov.saldoPendiente, mov.moneda)} />
+            </>
+          )}
           <Row label={esIngreso ? 'Cobrado' : 'Pagado'} value={esIngreso ? (mov.cobrado ? 'Sí' : 'No') : (mov.pagado ? 'Sí' : 'No')} />
           <Row label="Aprobación" value={ESTADO_APROBACION_LABEL[mov.estadoAprobacion]} />
           {mov.observaciones && <Row label="Observaciones" value={mov.observaciones} />}
           <Row label="Registrado" value={fmtDate(mov.createdAt)} />
         </div>
+
+        {/* Aplicaciones de pago */}
+        {detail && detail.paymentApplications && detail.paymentApplications.length > 0 && (
+          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)]/50 p-3 space-y-2">
+            <p className="text-xs font-semibold text-[var(--color-text-primary)]">
+              Aplicaciones de pago ({detail.paymentApplications.length})
+            </p>
+            <div className="space-y-1.5">
+              {detail.paymentApplications.map(a => (
+                <div key={a.id} className="flex items-center justify-between text-xs">
+                  <div>
+                    <span className="text-[var(--color-text-secondary)]">{fmtDate(a.payment.fecha)}</span>
+                    <span className="text-[var(--color-text-muted)] mx-1">·</span>
+                    <span className="text-[var(--color-text-muted)]">{a.payment.metodo.replace('_', ' ').toLowerCase()}</span>
+                    {a.payment.referencia && <span className="text-[var(--color-text-muted)] ml-1">({a.payment.referencia})</span>}
+                  </div>
+                  <span className="font-semibold tabular-nums text-[var(--color-state-done-text)]">
+                    {fmtCurrency(a.montoAplicado, mov.moneda)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Botón Registrar pago */}
+        {canRegisterPayment && (
+          <button
+            onClick={onApplyPayment}
+            className="w-full py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] transition-colors inline-flex items-center justify-center gap-2"
+          >
+            <DollarSign className="w-4 h-4" />
+            Registrar pago a este proveedor
+          </button>
+        )}
 
         {(mov.status === 'A_PAGAR' || mov.status === 'PAGADO') && mov.tipoMovimiento === 'GASTO' && !needsDetail && (
           <button onClick={onOpenDesglose} className="w-full py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] inline-flex items-center justify-center gap-2">
@@ -510,6 +567,9 @@ export function FinanceMovements() {
   const [detailMov, setDetailMov] = useState<FinanceMovement | null>(null);
   const [desgloseMovId, setDesgloseMovId] = useState<string | null>(null);
   const [pendingFilter, setPendingFilter] = useState(false);
+  const [payForMov, setPayForMov] = useState<FinanceMovement | null>(null);
+  const [createdPaymentId, setCreatedPaymentId] = useState<string | null>(null);
+  const [preselectMovementForPay, setPreselectMovementForPay] = useState<string | null>(null);
 
   // Persistencia de filtros
   useEffect(() => {
@@ -674,6 +734,7 @@ export function FinanceMovements() {
           <option value="PREVISTO">Previstos</option>
           <option value="COMPROMETIDO">Comprometidos</option>
           <option value="A_PAGAR">A pagar</option>
+          <option value="PARCIALMENTE_PAGADO">Parcialmente pagados</option>
           <option value="PAGADO">Pagados</option>
         </select>
         <input type="text" className={klass(inp, 'min-w-40 flex-1')} placeholder="Buscar..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
@@ -882,6 +943,30 @@ export function FinanceMovements() {
             }
           }}
           onOpenDesglose={() => { setDesgloseMovId(detailMov.id); setDetailMov(null); }}
+          onApplyPayment={() => { setPayForMov(detailMov); setDetailMov(null); }}
+        />
+      )}
+
+      {payForMov && payForMov.supplierId && payForMov.supplier && (
+        <NewPaymentForSupplierModal
+          supplierId={payForMov.supplierId}
+          supplierName={payForMov.supplier.nombre}
+          defaultAmount={payForMov.saldoPendiente > 0 ? payForMov.saldoPendiente : payForMov.monto}
+          defaultMoneda={payForMov.moneda}
+          onClose={() => setPayForMov(null)}
+          onCreatedAndApply={(paymentId) => {
+            setPreselectMovementForPay(payForMov.id);
+            setCreatedPaymentId(paymentId);
+            setPayForMov(null);
+          }}
+        />
+      )}
+
+      {createdPaymentId && (
+        <ApplyPaymentModal
+          paymentId={createdPaymentId}
+          preselectMovementId={preselectMovementForPay ?? undefined}
+          onClose={() => { setCreatedPaymentId(null); setPreselectMovementForPay(null); }}
         />
       )}
 

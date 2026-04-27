@@ -345,6 +345,12 @@ export function Finance() {
         </div>
         <div className="flex items-center gap-2">
           <Link
+            to="/finanzas/pagos"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors shrink-0"
+          >
+            Pagos
+          </Link>
+          <Link
             to="/finanzas/a-pagar"
             className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors shrink-0"
           >
@@ -407,8 +413,10 @@ export function Finance() {
       {/* Flujo de fondos */}
       {!loading && cashflow && <CashflowSection cashflow={cashflow} />}
 
-      {/* Cuentas a pagar */}
-      <CuentasPagarWidget />
+      {/* DEPRECADO: widget de Comprobantes — reemplazado por Payment + PaymentApplication
+          en v2.4. La página /finanzas/a-pagar y /finanzas/pagos cubren este flujo.
+          Mantener oculto hasta confirmar no-uso (revisar mayo 2026).
+      <CuentasPagarWidget /> */}
 
       {/* Últimos movimientos */}
       <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl overflow-hidden">

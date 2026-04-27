@@ -1150,6 +1150,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         hasOverdueStage,
         startDate: serializeDateOnly(project.startDate),
         plannedEndDate: serializeDateOnly(project.plannedEndDate),
+        actualEndDate: serializeDateOnly(project.actualEndDate),
         createdAt: serializeDate(project.createdAt),
         solarSystems: project.solarSystems.map(serializeSolarSystem),
         currentStage: currentStage
@@ -1159,6 +1160,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
               label: getStageLabel(currentStage.name),
               status: currentStage.status,
               progressPercent: currentStage.progressPercent,
+              responsibleUserId: currentStage.responsibleUserId,
             }
           : null,
         updatedAt: serializeDate(project.updatedAt),
@@ -7401,7 +7403,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
 
     app.get("/finance/suppliers", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
-      const query = z.object({ activo: z.enum(["true", "false", "all"]).optional() }).parse(request.query);
+      const query = z.object({
+        activo: z.enum(["true", "false", "all"]).optional(),
+        withBalance: z.enum(["true", "false"]).optional(),
+      }).parse(request.query);
       const where: { deletedAt: null; activo?: boolean } = { deletedAt: null };
       if (query.activo !== "all") where.activo = query.activo === "false" ? false : true;
       const suppliers = await prisma.supplier.findMany({
@@ -7409,7 +7414,101 @@ export async function registerApiRoutes(app: FastifyInstance) {
         include: { _count: { select: { movimientos: true, comprobantes: true } } },
         orderBy: { nombre: "asc" },
       });
-      return suppliers.map(serializeSupplier);
+      const base = suppliers.map(serializeSupplier);
+      if (query.withBalance !== "true") return base;
+
+      // Cargar agregados por proveedor (facturas y pagos) para calcular saldo
+      const supplierIds = suppliers.map((s) => s.id);
+      const [movements, payments] = await Promise.all([
+        prisma.financeMovement.findMany({
+          where: {
+            deletedAt: null,
+            supplierId: { in: supplierIds },
+            tipoMovimiento: TipoMovimiento.GASTO,
+            status: { in: [
+              FinanceMovementStatus.COMPROMETIDO,
+              FinanceMovementStatus.A_PAGAR,
+              FinanceMovementStatus.PARCIALMENTE_PAGADO,
+              FinanceMovementStatus.PAGADO,
+            ] },
+          },
+          include: {
+            paymentApplications: {
+              where: { payment: { deletedAt: null } },
+              select: { montoAplicado: true },
+            },
+          },
+        }),
+        prisma.payment.findMany({
+          where: { deletedAt: null, supplierId: { in: supplierIds } },
+          include: { applications: { select: { montoAplicado: true } } },
+        }),
+      ]);
+
+      type Agg = {
+        facturasPendientesUSD: number; facturasPendientesUYU: number;
+        saldoAFavorUSD: number; saldoAFavorUYU: number;
+        facturasPendientesCount: number;
+        ultimaActividad: Date | null;
+      };
+      const aggBy = new Map<string, Agg>();
+      function getAgg(id: string): Agg {
+        let a = aggBy.get(id);
+        if (!a) {
+          a = { facturasPendientesUSD: 0, facturasPendientesUYU: 0, saldoAFavorUSD: 0, saldoAFavorUYU: 0, facturasPendientesCount: 0, ultimaActividad: null };
+          aggBy.set(id, a);
+        }
+        return a;
+      }
+      function bumpFecha(a: Agg, d: Date) {
+        if (!a.ultimaActividad || d > a.ultimaActividad) a.ultimaActividad = d;
+      }
+
+      for (const m of movements) {
+        if (!m.supplierId) continue;
+        const a = getAgg(m.supplierId);
+        const monto = Number(m.monto);
+        const pagado = m.paymentApplications.reduce((acc, ap) => acc + Number(ap.montoAplicado), 0);
+        const saldo = Math.max(0, monto - pagado);
+        if (saldo > 0.005) {
+          if (m.moneda === Moneda.USD) a.facturasPendientesUSD += saldo;
+          else a.facturasPendientesUYU += saldo;
+          a.facturasPendientesCount += 1;
+        }
+        bumpFecha(a, m.fecha);
+      }
+      for (const p of payments) {
+        const a = getAgg(p.supplierId);
+        const monto = Number(p.monto);
+        const aplicado = p.applications.reduce((acc, ap) => acc + Number(ap.montoAplicado), 0);
+        const saldoAFavor = Math.max(0, monto - aplicado);
+        if (saldoAFavor > 0.005) {
+          if (p.moneda === Moneda.USD) a.saldoAFavorUSD += saldoAFavor;
+          else a.saldoAFavorUYU += saldoAFavor;
+        }
+        bumpFecha(a, p.fecha);
+      }
+
+      return base.map((s) => {
+        const a = aggBy.get(s.id);
+        const facturasPendientesUSD = a ? Math.round(a.facturasPendientesUSD * 100) / 100 : 0;
+        const facturasPendientesUYU = a ? Math.round(a.facturasPendientesUYU * 100) / 100 : 0;
+        const saldoAFavorUSD = a ? Math.round(a.saldoAFavorUSD * 100) / 100 : 0;
+        const saldoAFavorUYU = a ? Math.round(a.saldoAFavorUYU * 100) / 100 : 0;
+        return {
+          ...s,
+          balance: {
+            facturasPendientesUSD,
+            facturasPendientesUYU,
+            saldoAFavorUSD,
+            saldoAFavorUYU,
+            saldoNetoUSD: Math.round((facturasPendientesUSD - saldoAFavorUSD) * 100) / 100,
+            saldoNetoUYU: Math.round((facturasPendientesUYU - saldoAFavorUYU) * 100) / 100,
+            facturasPendientesCount: a?.facturasPendientesCount ?? 0,
+            ultimaActividad: a?.ultimaActividad ? serializeDateOnly(a.ultimaActividad) : null,
+          },
+        };
+      });
     });
 
     app.get("/finance/suppliers/:id", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
@@ -8155,6 +8254,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
             supplier: { select: { id: true, nombre: true } },
             subcategoria: { select: { id: true, nombre: true, categoria: true } },
             materialItem: { select: { id: true, nombre: true, unidad: true } },
+            paymentApplications: {
+              include: { payment: { select: { deletedAt: true } } },
+              where: { payment: { deletedAt: null } },
+            },
           },
           orderBy: { fecha: "desc" },
           skip,
@@ -8164,18 +8267,34 @@ export async function registerApiRoutes(app: FastifyInstance) {
       ]);
 
       return {
-        data: movements.map((m) => ({
-          ...m,
-          monto: decimalToNumber(m.monto),
-          tipoCambio: m.tipoCambio ? decimalToNumber(m.tipoCambio) : null,
-          quantity: m.quantity ? decimalToNumber(m.quantity) : null,
-          unitPrice: m.unitPrice ? decimalToNumber(m.unitPrice) : null,
-          fecha: serializeDateOnly(m.fecha),
-          expectedDate: m.expectedDate ? serializeDateOnly(m.expectedDate) : null,
-          dueDate: m.dueDate ? serializeDateOnly(m.dueDate) : null,
-          createdAt: serializeDate(m.createdAt),
-          updatedAt: serializeDate(m.updatedAt),
-        })),
+        data: movements.map((m) => {
+          const monto = decimalToNumber(m.monto) ?? 0;
+          // Calculamos saldoPendiente sólo para gastos. Para ingresos/ajustes,
+          // saldoPendiente = monto (no aplica el flujo de pagos).
+          const montoPagado = m.tipoMovimiento === TipoMovimiento.GASTO
+            ? Math.round(m.paymentApplications.reduce((acc, a) => acc + Number(a.montoAplicado), 0) * 100) / 100
+            : 0;
+          const saldoPendiente = m.tipoMovimiento === TipoMovimiento.GASTO
+            ? Math.round((monto - montoPagado) * 100) / 100
+            : monto;
+          // Excluir paymentApplications del payload (sólo lo necesitábamos para el cálculo)
+          const { paymentApplications: _pa, ...rest } = m;
+          void _pa;
+          return {
+            ...rest,
+            monto,
+            montoPagado,
+            saldoPendiente,
+            tipoCambio: m.tipoCambio ? decimalToNumber(m.tipoCambio) : null,
+            quantity: m.quantity ? decimalToNumber(m.quantity) : null,
+            unitPrice: m.unitPrice ? decimalToNumber(m.unitPrice) : null,
+            fecha: serializeDateOnly(m.fecha),
+            expectedDate: m.expectedDate ? serializeDateOnly(m.expectedDate) : null,
+            dueDate: m.dueDate ? serializeDateOnly(m.dueDate) : null,
+            createdAt: serializeDate(m.createdAt),
+            updatedAt: serializeDate(m.updatedAt),
+          };
+        }),
         total,
         page: query.page ?? 1,
         limit: take,
@@ -8255,17 +8374,46 @@ export async function registerApiRoutes(app: FastifyInstance) {
           project: { select: { id: true, clientName: true, code: true } },
           supplier: { select: { id: true, nombre: true } },
           subcategoria: true,
-          pagos: { include: { supplier: { select: { id: true, nombre: true } } } },
+          paymentApplications: {
+            include: {
+              payment: {
+                select: {
+                  id: true, fecha: true, monto: true, moneda: true, metodo: true,
+                  referencia: true, deletedAt: true,
+                },
+              },
+            },
+            orderBy: { createdAt: "desc" },
+          },
           historial: { include: { user: { select: { id: true, name: true } } }, orderBy: { createdAt: "desc" } },
           comprobantes: { select: { id: true, numero: true, tipo: true, monto: true, moneda: true, estado: true } },
         },
       });
       if (!movement) throw notFound("MOVEMENT_NOT_FOUND", "Movimiento no encontrado");
+      const activeApps = movement.paymentApplications.filter((a) => !a.payment.deletedAt);
+      const montoPagado = activeApps.reduce((acc, a) => acc + Number(a.montoAplicado), 0);
+      const monto = Number(movement.monto);
       return {
         ...movement,
-        monto: decimalToNumber(movement.monto),
+        monto,
         tipoCambio: movement.tipoCambio ? decimalToNumber(movement.tipoCambio) : null,
-        pagos: movement.pagos.map((p) => ({ ...p, monto: decimalToNumber(p.monto) })),
+        montoPagado: Math.round(montoPagado * 100) / 100,
+        saldoPendiente: Math.round((monto - montoPagado) * 100) / 100,
+        paymentApplications: movement.paymentApplications.map((a) => ({
+          id: a.id,
+          paymentId: a.paymentId,
+          montoAplicado: Number(a.montoAplicado),
+          createdAt: serializeDate(a.createdAt),
+          payment: {
+            id: a.payment.id,
+            fecha: serializeDateOnly(a.payment.fecha),
+            monto: Number(a.payment.monto),
+            moneda: a.payment.moneda,
+            metodo: a.payment.metodo,
+            referencia: a.payment.referencia,
+            deletedAt: a.payment.deletedAt ? serializeDate(a.payment.deletedAt) : null,
+          },
+        })),
         comprobantes: movement.comprobantes.map((c) => ({ ...c, monto: decimalToNumber(c.monto) })),
       };
     });
@@ -8407,6 +8555,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       [FinanceMovementStatus.PREVISTO]: [],
       [FinanceMovementStatus.COMPROMETIDO]: [FinanceMovementStatus.A_PAGAR, FinanceMovementStatus.PAGADO],
       [FinanceMovementStatus.A_PAGAR]: [FinanceMovementStatus.PAGADO],
+      // PARCIALMENTE_PAGADO se setea automáticamente al aplicar pagos; no se
+      // transiciona manualmente (saldo restante debe pagarse vía Payment).
+      [FinanceMovementStatus.PARCIALMENTE_PAGADO]: [],
       [FinanceMovementStatus.PAGADO]: [],
     };
 
@@ -8426,6 +8577,17 @@ export async function registerApiRoutes(app: FastifyInstance) {
         throw badRequest(
           "INVALID_TRANSITION",
           `No se puede pasar de ${existing.status} a ${body.newStatus}`,
+        );
+      }
+
+      // Si el movimiento tiene supplierId y se quiere transicionar manualmente
+      // a PAGADO, se rechaza: el camino correcto es registrar un Payment y
+      // aplicarlo. Movimientos sin supplier (ajustes, gastos varios) sí pueden
+      // transicionar manualmente.
+      if (body.newStatus === FinanceMovementStatus.PAGADO && existing.supplierId) {
+        throw badRequest(
+          "USE_PAYMENT_FLOW",
+          "Para movimientos con proveedor, registrá un pago desde Pagos en lugar de marcar manualmente como pagado.",
         );
       }
 
@@ -8858,6 +9020,718 @@ export async function registerApiRoutes(app: FastifyInstance) {
       });
 
       return { success: true, reversedStockMovements: stockMovs.length };
+    });
+
+    // ─── Finance: Payments + PaymentApplications ─────────────────────────────
+    //
+    // Modelo: un Payment es un pago real hecho a un proveedor (transferencia,
+    // cheque, efectivo). Una PaymentApplication aplica una porción del pago a
+    // una factura específica (FinanceMovement). Un pago puede aplicarse a
+    // varias facturas, y una factura puede recibir varios pagos parciales.
+    // El status de la factura se recalcula al crear/borrar applications.
+
+    type PaymentApplicationLite = { montoAplicado: import("@prisma/client/runtime/library").Decimal };
+
+    /** Suma de aplicaciones (no descontando applications de pagos eliminados — el caller
+     *  debe pasar sólo las activas). */
+    function sumApplications(apps: PaymentApplicationLite[]): number {
+      return apps.reduce((acc, a) => acc + Number(a.montoAplicado), 0);
+    }
+
+    /** Recalcula el status de un movement según sus applications activas y lo
+     *  actualiza en DB. Retorna el balance final. Devuelve null si el movement
+     *  no debería evaluarse (ej. INGRESO/AJUSTE). */
+    async function recalcMovementStatus(
+      tx: Prisma.TransactionClient,
+      movementId: string,
+    ): Promise<{ saldo: number; pagado: number; status: FinanceMovementStatus } | null> {
+      const m = await tx.financeMovement.findFirst({
+        where: { id: movementId, deletedAt: null },
+        include: { paymentApplications: { include: { payment: { select: { deletedAt: true } } } } },
+      });
+      if (!m) return null;
+      if (m.tipoMovimiento !== TipoMovimiento.GASTO) return null;
+      const monto = Number(m.monto);
+      const activeApps = m.paymentApplications.filter((a) => !a.payment.deletedAt);
+      const pagado = sumApplications(activeApps);
+      const saldo = Math.round((monto - pagado) * 100) / 100;
+
+      // Reglas de transición automática:
+      // - saldo === 0 → PAGADO
+      // - 0 < pagado < monto → PARCIALMENTE_PAGADO
+      // - pagado === 0 → mantener el status existente (A_PAGAR / COMPROMETIDO / etc.)
+      let nextStatus = m.status;
+      const data: Prisma.FinanceMovementUpdateInput = {};
+
+      if (Math.abs(saldo) < 0.005) {
+        // Pagado por completo
+        nextStatus = FinanceMovementStatus.PAGADO;
+        if (m.status !== FinanceMovementStatus.PAGADO) {
+          // Tomar fecha del último Payment que aplica
+          const ultimaApp = activeApps.length > 0
+            ? await tx.paymentApplication.findFirst({
+                where: { movementId, payment: { deletedAt: null } },
+                orderBy: { payment: { fecha: "desc" } },
+                include: { payment: true },
+              })
+            : null;
+          if (ultimaApp) {
+            const fechaPago = ultimaApp.payment.fecha;
+            data.fecha = fechaPago;
+            data.mes = fechaPago.getUTCMonth() + 1;
+            data.anio = fechaPago.getUTCFullYear();
+          }
+          data.pagado = true;
+        }
+      } else if (pagado > 0 && saldo > 0) {
+        nextStatus = FinanceMovementStatus.PARCIALMENTE_PAGADO;
+      } else if (pagado === 0) {
+        // Sin pagos activos: si estaba PAGADO o PARCIALMENTE_PAGADO por aplicaciones,
+        // volver al estado A_PAGAR (si tiene dueDate) o COMPROMETIDO.
+        if (m.status === FinanceMovementStatus.PAGADO || m.status === FinanceMovementStatus.PARCIALMENTE_PAGADO) {
+          nextStatus = m.dueDate ? FinanceMovementStatus.A_PAGAR : FinanceMovementStatus.COMPROMETIDO;
+          data.pagado = false;
+        }
+      }
+
+      if (nextStatus !== m.status) {
+        data.status = nextStatus;
+      }
+      if (Object.keys(data).length > 0) {
+        await tx.financeMovement.update({ where: { id: movementId }, data });
+      }
+      return { saldo, pagado, status: nextStatus };
+    }
+
+    /** Devuelve el balance de un payment: monto, montoAplicado, saldoSinAplicar. */
+    async function getPaymentBalance(paymentId: string) {
+      const apps = await prisma.paymentApplication.findMany({ where: { paymentId } });
+      const pago = await prisma.payment.findUnique({ where: { id: paymentId } });
+      if (!pago) return null;
+      const monto = Number(pago.monto);
+      const aplicado = sumApplications(apps);
+      return {
+        monto,
+        montoAplicado: Math.round(aplicado * 100) / 100,
+        saldoSinAplicar: Math.round((monto - aplicado) * 100) / 100,
+      };
+    }
+
+    function serializePayment(p: {
+      id: string; supplierId: string;
+      fecha: Date; monto: import("@prisma/client/runtime/library").Decimal;
+      moneda: Moneda; metodo: MetodoPago;
+      referencia: string | null; notas: string | null;
+      createdById: string | null;
+      createdAt: Date; updatedAt: Date; deletedAt: Date | null;
+      supplier?: { id: string; nombre: string } | null;
+      applications?: Array<{
+        id: string; movementId: string; montoAplicado: import("@prisma/client/runtime/library").Decimal; createdAt: Date;
+        movement?: {
+          id: string; descripcion: string; monto: import("@prisma/client/runtime/library").Decimal;
+          moneda: Moneda; status: FinanceMovementStatus; fecha: Date; dueDate: Date | null;
+        } | null;
+      }>;
+    }, balance?: { monto: number; montoAplicado: number; saldoSinAplicar: number }) {
+      return {
+        id: p.id,
+        supplierId: p.supplierId,
+        supplier: p.supplier ?? null,
+        fecha: serializeDateOnly(p.fecha),
+        monto: Number(p.monto),
+        moneda: p.moneda,
+        metodo: p.metodo,
+        referencia: p.referencia,
+        notas: p.notas,
+        createdById: p.createdById,
+        createdAt: serializeDate(p.createdAt),
+        updatedAt: serializeDate(p.updatedAt),
+        deletedAt: p.deletedAt ? serializeDate(p.deletedAt) : null,
+        montoAplicado: balance?.montoAplicado ?? 0,
+        saldoSinAplicar: balance?.saldoSinAplicar ?? Number(p.monto),
+        ...(p.applications ? {
+          applications: p.applications.map((a) => ({
+            id: a.id,
+            movementId: a.movementId,
+            montoAplicado: Number(a.montoAplicado),
+            createdAt: serializeDate(a.createdAt),
+            movement: a.movement ? {
+              id: a.movement.id,
+              descripcion: a.movement.descripcion,
+              monto: Number(a.movement.monto),
+              moneda: a.movement.moneda,
+              status: a.movement.status,
+              fecha: serializeDateOnly(a.movement.fecha),
+              dueDate: a.movement.dueDate ? serializeDateOnly(a.movement.dueDate) : null,
+            } : null,
+          })),
+        } : {}),
+      };
+    }
+
+    // ─── Payments: listado + detalle ─────────────────────────────────────────
+
+    app.get("/finance/payments", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const query = z.object({
+        supplierId: z.string().optional(),
+        fechaDesde: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        fechaHasta: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        conSaldoSinAplicar: z.enum(["true", "false"]).optional(),
+        includeDeleted: z.enum(["true", "false"]).optional(),
+      }).parse(request.query);
+
+      const where: Prisma.PaymentWhereInput = {
+        ...(query.includeDeleted === "true" ? {} : { deletedAt: null }),
+        ...(query.supplierId ? { supplierId: query.supplierId } : {}),
+      };
+      if (query.fechaDesde || query.fechaHasta) {
+        where.fecha = {};
+        if (query.fechaDesde) where.fecha.gte = parseDateOnly(query.fechaDesde);
+        if (query.fechaHasta) where.fecha.lte = parseDateOnly(query.fechaHasta);
+      }
+      const payments = await prisma.payment.findMany({
+        where,
+        include: {
+          supplier: { select: { id: true, nombre: true } },
+          applications: { select: { montoAplicado: true } },
+        },
+        orderBy: { fecha: "desc" },
+      });
+      let result = payments.map((p) => {
+        const monto = Number(p.monto);
+        const aplicado = p.applications.reduce((acc, a) => acc + Number(a.montoAplicado), 0);
+        const balance = {
+          monto,
+          montoAplicado: Math.round(aplicado * 100) / 100,
+          saldoSinAplicar: Math.round((monto - aplicado) * 100) / 100,
+        };
+        return serializePayment({ ...p, applications: undefined }, balance);
+      });
+      if (query.conSaldoSinAplicar === "true") {
+        result = result.filter((p) => p.saldoSinAplicar > 0);
+      }
+      return result;
+    });
+
+    app.get("/finance/payments/:id", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const payment = await prisma.payment.findFirst({
+        where: { id },
+        include: {
+          supplier: { select: { id: true, nombre: true } },
+          applications: {
+            include: {
+              movement: {
+                select: {
+                  id: true, descripcion: true, monto: true, moneda: true, status: true,
+                  fecha: true, dueDate: true,
+                },
+              },
+            },
+            orderBy: { createdAt: "asc" },
+          },
+        },
+      });
+      if (!payment) throw notFound("PAYMENT_NOT_FOUND", "Pago no encontrado");
+      const balance = await getPaymentBalance(id);
+      return serializePayment(payment, balance ?? undefined);
+    });
+
+    // ─── Payments: CRUD ──────────────────────────────────────────────────────
+
+    const paymentCreateSchema = z.object({
+      supplierId: z.string().min(1),
+      fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      monto: z.coerce.number().positive(),
+      moneda: z.nativeEnum(Moneda).default(Moneda.USD),
+      metodo: z.nativeEnum(MetodoPago).default(MetodoPago.TRANSFERENCIA),
+      referencia: z.string().optional(),
+      notas: z.string().optional(),
+    }).strict();
+
+    const paymentPatchSchema = z.object({
+      fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      monto: z.coerce.number().positive().optional(),
+      moneda: z.nativeEnum(Moneda).optional(),
+      metodo: z.nativeEnum(MetodoPago).optional(),
+      referencia: z.string().nullable().optional(),
+      notas: z.string().nullable().optional(),
+    }).strict();
+
+    app.post("/finance/payments", { preHandler: authorize(Module.FINANZAS, Action.CREATE) }, async (request) => {
+      const user = ensureUser(request);
+      const body = paymentCreateSchema.parse(request.body);
+      const supplier = await prisma.supplier.findFirst({ where: { id: body.supplierId, deletedAt: null } });
+      if (!supplier) throw badRequest("SUPPLIER_INVALID", "Proveedor no existe o está eliminado");
+
+      const payment = await prisma.payment.create({
+        data: {
+          supplierId: body.supplierId,
+          fecha: parseDateOnly(body.fecha),
+          monto: new Prisma.Decimal(body.monto),
+          moneda: body.moneda,
+          metodo: body.metodo,
+          referencia: body.referencia,
+          notas: body.notas,
+          createdById: user.id,
+        },
+        include: { supplier: { select: { id: true, nombre: true } }, applications: true },
+      });
+      await createAuditEntry({
+        entityType: AuditEntityType.payment,
+        entityId: payment.id,
+        userId: user.id,
+        action: AuditAction.created,
+        description: `Registró pago de ${body.monto} ${body.moneda} a ${supplier.nombre}`,
+      });
+      return serializePayment(payment, { monto: Number(payment.monto), montoAplicado: 0, saldoSinAplicar: Number(payment.monto) });
+    });
+
+    app.patch("/finance/payments/:id", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const body = paymentPatchSchema.parse(request.body);
+      const existing = await prisma.payment.findFirst({
+        where: { id, deletedAt: null },
+        include: { applications: { select: { montoAplicado: true } } },
+      });
+      if (!existing) throw notFound("PAYMENT_NOT_FOUND", "Pago no encontrado");
+
+      // Si se reduce monto, validar que no quede menos que lo aplicado
+      if (body.monto != null) {
+        const aplicado = existing.applications.reduce((acc, a) => acc + Number(a.montoAplicado), 0);
+        if (body.monto < aplicado - 0.005) {
+          throw badRequest(
+            "MONTO_LT_APLICADO",
+            `El nuevo monto (${body.monto.toFixed(2)}) es menor al ya aplicado (${aplicado.toFixed(2)}). Eliminá aplicaciones primero.`,
+          );
+        }
+      }
+
+      const data: Prisma.PaymentUpdateInput = {};
+      if (body.fecha) data.fecha = parseDateOnly(body.fecha);
+      if (body.monto != null) data.monto = new Prisma.Decimal(body.monto);
+      if (body.moneda) data.moneda = body.moneda;
+      if (body.metodo) data.metodo = body.metodo;
+      if (body.referencia !== undefined) data.referencia = body.referencia;
+      if (body.notas !== undefined) data.notas = body.notas;
+
+      const updated = await prisma.payment.update({ where: { id }, data, include: { supplier: { select: { id: true, nombre: true } } } });
+      await createAuditEntry({
+        entityType: AuditEntityType.payment,
+        entityId: id,
+        userId: user.id,
+        action: AuditAction.updated,
+        description: `Actualizó pago a ${updated.supplier.nombre}`,
+      });
+      const balance = await getPaymentBalance(id);
+      return serializePayment(updated, balance ?? undefined);
+    });
+
+    app.delete("/finance/payments/:id", { preHandler: authorize(Module.FINANZAS, Action.DELETE) }, async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const existing = await prisma.payment.findFirst({
+        where: { id, deletedAt: null },
+        include: { applications: { select: { id: true, movementId: true } }, supplier: { select: { nombre: true } } },
+      });
+      if (!existing) throw notFound("PAYMENT_NOT_FOUND", "Pago no encontrado");
+
+      const movementIds = existing.applications.map((a) => a.movementId);
+      await prisma.$transaction(async (tx) => {
+        // Borrar applications primero
+        await tx.paymentApplication.deleteMany({ where: { paymentId: id } });
+        // Soft-delete del payment
+        await tx.payment.update({ where: { id }, data: { deletedAt: new Date() } });
+        // Recalcular status de cada movement afectado
+        for (const movId of movementIds) {
+          await recalcMovementStatus(tx, movId);
+        }
+      });
+      await createAuditEntry({
+        entityType: AuditEntityType.payment,
+        entityId: id,
+        userId: user.id,
+        action: AuditAction.deleted,
+        description: `Anuló pago a ${existing.supplier.nombre} (${existing.applications.length} aplicación(es) revertidas)`,
+      });
+      return { success: true, revertedApplications: existing.applications.length };
+    });
+
+    // ─── Payment Applications: aplicar / editar / quitar ─────────────────────
+
+    app.post("/finance/payments/:id/applications", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const body = z.object({
+        applications: z.array(z.object({
+          movementId: z.string(),
+          monto: z.coerce.number().positive(),
+        })).min(1),
+      }).strict().parse(request.body);
+
+      const payment = await prisma.payment.findFirst({
+        where: { id, deletedAt: null },
+        include: { applications: { select: { montoAplicado: true } } },
+      });
+      if (!payment) throw notFound("PAYMENT_NOT_FOUND", "Pago no encontrado");
+
+      const aplicadoActual = payment.applications.reduce((acc, a) => acc + Number(a.montoAplicado), 0);
+      const totalNuevo = body.applications.reduce((acc, a) => acc + a.monto, 0);
+      const monto = Number(payment.monto);
+      if (aplicadoActual + totalNuevo > monto + 0.005) {
+        throw badRequest(
+          "EXCEEDS_PAYMENT",
+          `La aplicación total (${(aplicadoActual + totalNuevo).toFixed(2)}) excede el monto del pago (${monto.toFixed(2)}). Saldo disponible: ${(monto - aplicadoActual).toFixed(2)}`,
+        );
+      }
+
+      // Validar movements
+      const movIds = body.applications.map((a) => a.movementId);
+      const movements = await prisma.financeMovement.findMany({
+        where: { id: { in: movIds }, deletedAt: null },
+        include: { paymentApplications: { include: { payment: { select: { deletedAt: true } } } } },
+      });
+      if (movements.length !== movIds.length) throw badRequest("MOVEMENT_INVALID", "Alguno de los movimientos no existe");
+
+      for (const m of movements) {
+        if (m.tipoMovimiento !== TipoMovimiento.GASTO) {
+          throw badRequest("NOT_A_EXPENSE", `El movimiento ${m.descripcion} no es un gasto, no se puede aplicar pago`);
+        }
+        if (m.supplierId !== payment.supplierId) {
+          throw badRequest("SUPPLIER_MISMATCH", `El movimiento ${m.descripcion} pertenece a otro proveedor`);
+        }
+        if (m.moneda !== payment.moneda) {
+          throw badRequest("CURRENCY_MISMATCH", `La moneda del movimiento (${m.moneda}) no coincide con la del pago (${payment.moneda})`);
+        }
+        // Saldo pendiente del movement
+        const activeApps = m.paymentApplications.filter((a) => !a.payment.deletedAt);
+        const pagado = activeApps.reduce((acc, a) => acc + Number(a.montoAplicado), 0);
+        const saldoMovement = Number(m.monto) - pagado;
+        const aplicacion = body.applications.find((a) => a.movementId === m.id)!;
+        if (aplicacion.monto > saldoMovement + 0.005) {
+          throw badRequest(
+            "EXCEEDS_MOVEMENT",
+            `${m.descripcion}: el monto a aplicar (${aplicacion.monto.toFixed(2)}) excede el saldo pendiente (${saldoMovement.toFixed(2)})`,
+          );
+        }
+        // Si ya hay una application para este (paymentId, movementId), rechazar (uso PATCH para editar)
+        const existingApp = m.paymentApplications.find((a) => a.paymentId === id);
+        if (existingApp) {
+          throw badRequest(
+            "APPLICATION_EXISTS",
+            `Ya hay una aplicación de este pago a ${m.descripcion}. Usá PATCH para editar el monto.`,
+          );
+        }
+      }
+
+      const result = await prisma.$transaction(async (tx) => {
+        for (const a of body.applications) {
+          await tx.paymentApplication.create({
+            data: {
+              paymentId: id,
+              movementId: a.movementId,
+              montoAplicado: new Prisma.Decimal(a.monto),
+            },
+          });
+          await recalcMovementStatus(tx, a.movementId);
+        }
+        return tx.payment.findUnique({
+          where: { id },
+          include: {
+            supplier: { select: { id: true, nombre: true } },
+            applications: {
+              include: {
+                movement: { select: { id: true, descripcion: true, monto: true, moneda: true, status: true, fecha: true, dueDate: true } },
+              },
+              orderBy: { createdAt: "asc" },
+            },
+          },
+        });
+      });
+
+      for (const a of body.applications) {
+        await createAuditEntry({
+          entityType: AuditEntityType.payment_application,
+          entityId: a.movementId,
+          userId: user.id,
+          action: AuditAction.created,
+          description: `Aplicó ${a.monto.toFixed(2)} ${payment.moneda} del pago al movimiento`,
+        });
+      }
+
+      const balance = await getPaymentBalance(id);
+      return serializePayment(result!, balance ?? undefined);
+    });
+
+    app.patch("/finance/payments/:id/applications/:applicationId", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+      const user = ensureUser(request);
+      const { id, applicationId } = z.object({ id: z.string(), applicationId: z.string() }).parse(request.params);
+      const body = z.object({ monto: z.coerce.number().positive() }).strict().parse(request.body);
+
+      const app = await prisma.paymentApplication.findFirst({
+        where: { id: applicationId, paymentId: id },
+        include: {
+          payment: { include: { applications: { select: { id: true, montoAplicado: true } } } },
+          movement: { include: { paymentApplications: { include: { payment: { select: { deletedAt: true } } } } } },
+        },
+      });
+      if (!app) throw notFound("APPLICATION_NOT_FOUND", "Aplicación no encontrada");
+      if (app.payment.deletedAt) throw badRequest("PAYMENT_DELETED", "El pago está anulado");
+
+      // Validar saldo del payment (sumar todas menos esta)
+      const otrasApps = app.payment.applications.filter((a) => a.id !== applicationId);
+      const aplicadoSinEsta = otrasApps.reduce((acc, a) => acc + Number(a.montoAplicado), 0);
+      const monto = Number(app.payment.monto);
+      if (aplicadoSinEsta + body.monto > monto + 0.005) {
+        throw badRequest(
+          "EXCEEDS_PAYMENT",
+          `El nuevo monto excede el saldo del pago. Saldo disponible: ${(monto - aplicadoSinEsta).toFixed(2)}`,
+        );
+      }
+
+      // Validar saldo del movement (sumar todas menos esta)
+      const movActiveApps = app.movement.paymentApplications.filter((a) => !a.payment.deletedAt && a.id !== applicationId);
+      const pagadoSinEsta = movActiveApps.reduce((acc, a) => acc + Number(a.montoAplicado), 0);
+      const saldoMovement = Number(app.movement.monto) - pagadoSinEsta;
+      if (body.monto > saldoMovement + 0.005) {
+        throw badRequest(
+          "EXCEEDS_MOVEMENT",
+          `El nuevo monto excede el saldo pendiente del movimiento (${saldoMovement.toFixed(2)})`,
+        );
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.paymentApplication.update({
+          where: { id: applicationId },
+          data: { montoAplicado: new Prisma.Decimal(body.monto) },
+        });
+        await recalcMovementStatus(tx, app.movementId);
+      });
+
+      await createAuditEntry({
+        entityType: AuditEntityType.payment_application,
+        entityId: app.movementId,
+        userId: user.id,
+        action: AuditAction.updated,
+        description: `Modificó aplicación de pago a ${body.monto.toFixed(2)} ${app.payment.moneda}`,
+      });
+
+      const balance = await getPaymentBalance(id);
+      const refreshed = await prisma.payment.findUnique({
+        where: { id },
+        include: {
+          supplier: { select: { id: true, nombre: true } },
+          applications: {
+            include: { movement: { select: { id: true, descripcion: true, monto: true, moneda: true, status: true, fecha: true, dueDate: true } } },
+            orderBy: { createdAt: "asc" },
+          },
+        },
+      });
+      return serializePayment(refreshed!, balance ?? undefined);
+    });
+
+    app.delete("/finance/payments/:id/applications/:applicationId", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+      const user = ensureUser(request);
+      const { id, applicationId } = z.object({ id: z.string(), applicationId: z.string() }).parse(request.params);
+      const app = await prisma.paymentApplication.findFirst({
+        where: { id: applicationId, paymentId: id },
+        include: { payment: { select: { id: true, deletedAt: true, moneda: true } } },
+      });
+      if (!app) throw notFound("APPLICATION_NOT_FOUND", "Aplicación no encontrada");
+
+      await prisma.$transaction(async (tx) => {
+        await tx.paymentApplication.delete({ where: { id: applicationId } });
+        await recalcMovementStatus(tx, app.movementId);
+      });
+
+      await createAuditEntry({
+        entityType: AuditEntityType.payment_application,
+        entityId: app.movementId,
+        userId: user.id,
+        action: AuditAction.deleted,
+        description: `Quitó aplicación de pago (${Number(app.montoAplicado).toFixed(2)} ${app.payment.moneda})`,
+      });
+
+      const balance = await getPaymentBalance(id);
+      const refreshed = await prisma.payment.findUnique({
+        where: { id },
+        include: {
+          supplier: { select: { id: true, nombre: true } },
+          applications: {
+            include: { movement: { select: { id: true, descripcion: true, monto: true, moneda: true, status: true, fecha: true, dueDate: true } } },
+            orderBy: { createdAt: "asc" },
+          },
+        },
+      });
+      return serializePayment(refreshed!, balance ?? undefined);
+    });
+
+    // ─── Estado de cuenta del proveedor ──────────────────────────────────────
+
+    app.get("/finance/suppliers/:id/account-summary", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const query = z.object({
+        fechaDesde: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        fechaHasta: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        soloPendientes: z.enum(["true", "false"]).optional(),
+      }).parse(request.query);
+
+      const supplier = await prisma.supplier.findFirst({ where: { id, deletedAt: null } });
+      if (!supplier) throw notFound("SUPPLIER_NOT_FOUND", "Proveedor no encontrado");
+
+      const fechaWhere: { gte?: Date; lte?: Date } = {};
+      if (query.fechaDesde) fechaWhere.gte = parseDateOnly(query.fechaDesde);
+      if (query.fechaHasta) fechaWhere.lte = parseDateOnly(query.fechaHasta);
+
+      // Movimientos GASTO del proveedor (facturas)
+      const movements = await prisma.financeMovement.findMany({
+        where: {
+          deletedAt: null,
+          supplierId: id,
+          tipoMovimiento: TipoMovimiento.GASTO,
+          status: { in: [
+            FinanceMovementStatus.COMPROMETIDO,
+            FinanceMovementStatus.A_PAGAR,
+            FinanceMovementStatus.PARCIALMENTE_PAGADO,
+            FinanceMovementStatus.PAGADO,
+          ] },
+          ...(Object.keys(fechaWhere).length ? { fecha: fechaWhere } : {}),
+        },
+        include: { paymentApplications: { include: { payment: { select: { id: true, fecha: true, deletedAt: true } } } } },
+        orderBy: { fecha: "asc" },
+      });
+
+      // Pagos del proveedor
+      const payments = await prisma.payment.findMany({
+        where: {
+          supplierId: id,
+          deletedAt: null,
+          ...(Object.keys(fechaWhere).length ? { fecha: fechaWhere } : {}),
+        },
+        include: { applications: { select: { montoAplicado: true } } },
+        orderBy: { fecha: "asc" },
+      });
+
+      // Construir filas de facturas
+      const facturas = movements.map((m) => {
+        const monto = Number(m.monto);
+        const activeApps = m.paymentApplications.filter((a) => !a.payment.deletedAt);
+        const pagado = activeApps.reduce((acc, a) => acc + Number(a.montoAplicado), 0);
+        const saldo = Math.round((monto - pagado) * 100) / 100;
+        return {
+          id: m.id,
+          fecha: serializeDateOnly(m.fecha),
+          descripcion: m.descripcion,
+          monto,
+          moneda: m.moneda,
+          montoPagado: Math.round(pagado * 100) / 100,
+          saldoPendiente: saldo,
+          status: m.status,
+          dueDate: m.dueDate ? serializeDateOnly(m.dueDate) : null,
+        };
+      });
+
+      const facturasFiltradas = query.soloPendientes === "true"
+        ? facturas.filter((f) => f.saldoPendiente > 0)
+        : facturas;
+
+      // Construir filas de pagos
+      const pagos = payments.map((p) => {
+        const monto = Number(p.monto);
+        const aplicado = p.applications.reduce((acc, a) => acc + Number(a.montoAplicado), 0);
+        const saldoSinAplicar = Math.round((monto - aplicado) * 100) / 100;
+        return {
+          id: p.id,
+          fecha: serializeDateOnly(p.fecha),
+          monto,
+          moneda: p.moneda,
+          metodo: p.metodo,
+          referencia: p.referencia,
+          montoAplicado: Math.round(aplicado * 100) / 100,
+          saldoSinAplicar,
+        };
+      });
+
+      // Totales por moneda
+      let facturasPendientesUSD = 0, facturasPendientesUYU = 0;
+      let saldoAFavorUSD = 0, saldoAFavorUYU = 0;
+      for (const f of facturas) {
+        if (f.saldoPendiente <= 0) continue;
+        if (f.moneda === Moneda.USD) facturasPendientesUSD += f.saldoPendiente;
+        else facturasPendientesUYU += f.saldoPendiente;
+      }
+      for (const p of pagos) {
+        if (p.saldoSinAplicar <= 0) continue;
+        if (p.moneda === Moneda.USD) saldoAFavorUSD += p.saldoSinAplicar;
+        else saldoAFavorUYU += p.saldoSinAplicar;
+      }
+
+      // Línea de tiempo (usamos sólo el subset filtrado por fecha)
+      type EdcRow = { tipo: "factura" | "pago"; fecha: string; monto: number; moneda: Moneda; descripcion: string; saldoAcumuladoUSD: number };
+      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
+      const fallbackRate = lastRate ? (decimalToNumber(lastRate.usdToUyu) ?? 1) : 1;
+      function toUsd(amount: number, moneda: Moneda) {
+        if (moneda === Moneda.USD) return amount;
+        return fallbackRate > 0 ? amount / fallbackRate : amount;
+      }
+
+      const eventos: EdcRow[] = [];
+      for (const f of facturasFiltradas) {
+        if (!f.fecha) continue;
+        eventos.push({
+          tipo: "factura",
+          fecha: f.fecha,
+          monto: f.monto,
+          moneda: f.moneda,
+          descripcion: f.descripcion,
+          saldoAcumuladoUSD: 0,
+        });
+      }
+      for (const p of pagos) {
+        if (!p.fecha) continue;
+        eventos.push({
+          tipo: "pago",
+          fecha: p.fecha,
+          monto: p.monto,
+          moneda: p.moneda,
+          descripcion: `Pago${p.referencia ? ` ref. ${p.referencia}` : ""} (${p.metodo})`,
+          saldoAcumuladoUSD: 0,
+        });
+      }
+      eventos.sort((a, b) => (a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0));
+      let acum = 0;
+      const estadoDeCuenta = eventos.map((e) => {
+        const usd = toUsd(e.monto, e.moneda);
+        // Factura suma deuda (positivo = debemos), pago resta deuda
+        acum += e.tipo === "factura" ? usd : -usd;
+        return { ...e, saldoAcumuladoUSD: Math.round(acum * 100) / 100 };
+      });
+
+      return {
+        supplier: {
+          id: supplier.id,
+          nombre: supplier.nombre,
+          rut: supplier.rut,
+          contactoNombre: supplier.contactoNombre,
+          email: supplier.email,
+          telefono: supplier.telefono,
+          direccion: supplier.direccion,
+          condicionPago: supplier.condicionPago,
+        },
+        totals: {
+          facturasPendientesUSD: Math.round(facturasPendientesUSD * 100) / 100,
+          facturasPendientesUYU: Math.round(facturasPendientesUYU * 100) / 100,
+          saldoAFavorUSD: Math.round(saldoAFavorUSD * 100) / 100,
+          saldoAFavorUYU: Math.round(saldoAFavorUYU * 100) / 100,
+          saldoNetoUSD: Math.round((facturasPendientesUSD - saldoAFavorUSD) * 100) / 100,
+          saldoNetoUYU: Math.round((facturasPendientesUYU - saldoAFavorUYU) * 100) / 100,
+        },
+        exchangeRate: lastRate ? { usdToUyu: fallbackRate, date: serializeDate(lastRate.date) } : null,
+        facturas: facturasFiltradas,
+        pagos,
+        estadoDeCuenta,
+      };
     });
 
     // ─── Finance: Comprobantes ────────────────────────────────────────────────

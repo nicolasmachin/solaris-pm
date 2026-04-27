@@ -2,13 +2,13 @@
 
 export type Moneda = 'USD' | 'UYU';
 export type TipoMovimiento = 'INGRESO' | 'GASTO' | 'AJUSTE';
-export type FinanceMovementStatus = 'PREVISTO' | 'COMPROMETIDO' | 'A_PAGAR' | 'PAGADO';
+export type FinanceMovementStatus = 'PREVISTO' | 'COMPROMETIDO' | 'A_PAGAR' | 'PARCIALMENTE_PAGADO' | 'PAGADO';
 export type MovementSourceType = 'MANUAL' | 'PROJECT_MATERIALS';
 export type CategoriaPrincipal =
   | 'PROYECTO_ENTRADA' | 'COBRO_CLIENTE'
   | 'PROYECTO_SALIDA' | 'COMPRA_STOCK' | 'CONSUMO_STOCK' | 'PAGO_PROVEEDOR'
   | 'FIJO' | 'VARIABLE' | 'OTRO';
-export type MetodoPago = 'TRANSFERENCIA' | 'EFECTIVO' | 'CHEQUE' | 'TARJETA' | 'OTRO';
+export type MetodoPago = 'TRANSFERENCIA' | 'EFECTIVO' | 'CHEQUE' | 'TARJETA_DEBITO' | 'TARJETA_CREDITO' | 'CRYPTO' | 'OTRO';
 export type EstadoAprobacion =
   | 'BORRADOR' | 'REGISTRADO' | 'PENDIENTE_APROBACION'
   | 'APROBADO' | 'RECHAZADO' | 'ANULADO';
@@ -41,6 +41,7 @@ export const STATUS_LABEL: Record<FinanceMovementStatus, string> = {
   PREVISTO: 'Previsto',
   COMPROMETIDO: 'Comprometido',
   A_PAGAR: 'A pagar',
+  PARCIALMENTE_PAGADO: 'Parcialmente pagado',
   PAGADO: 'Pagado',
 };
 
@@ -48,6 +49,7 @@ export const STATUS_COLOR: Record<FinanceMovementStatus, string> = {
   PREVISTO: 'bg-[var(--color-border)] text-[var(--color-text-muted)] border border-[var(--color-border-hover)]',
   COMPROMETIDO: 'bg-[var(--color-info-bg)] text-[var(--color-info-text)]',
   A_PAGAR: 'bg-[var(--color-warning-bg)] text-[var(--color-warning-text)]',
+  PARCIALMENTE_PAGADO: 'bg-amber-500/20 text-amber-300',
   PAGADO: 'bg-[var(--color-state-done-bg)] text-[var(--color-state-done-text)]',
 };
 
@@ -72,7 +74,9 @@ export const METODO_PAGO_LABEL: Record<MetodoPago, string> = {
   TRANSFERENCIA: 'Transferencia',
   EFECTIVO: 'Efectivo',
   CHEQUE: 'Cheque',
-  TARJETA: 'Tarjeta',
+  TARJETA_DEBITO: 'Tarjeta débito',
+  TARJETA_CREDITO: 'Tarjeta crédito',
+  CRYPTO: 'Crypto',
   OTRO: 'Otro',
 };
 
@@ -107,6 +111,17 @@ export interface Supplier {
   activo: boolean;
   createdAt: string;
   _count?: { movimientos: number; comprobantes: number };
+  /** Disponible cuando se pide GET /finance/suppliers?withBalance=true */
+  balance?: {
+    facturasPendientesUSD: number;
+    facturasPendientesUYU: number;
+    saldoAFavorUSD: number;
+    saldoAFavorUYU: number;
+    saldoNetoUSD: number;
+    saldoNetoUYU: number;
+    facturasPendientesCount: number;
+    ultimaActividad: string | null;
+  };
 }
 
 export interface Subcategoria {
@@ -142,6 +157,9 @@ export interface FinanceMovement {
   requiresItemDetail: boolean;
   hasItemDetail: boolean;
   noTieneMateriales: boolean;
+  // Saldos calculados desde payment_applications activas (sólo gastos)
+  montoPagado: number;
+  saldoPendiente: number;
   estadoAprobacion: EstadoAprobacion;
   projectId: string | null;
   project: { id: string; code: string; clientName: string } | null;

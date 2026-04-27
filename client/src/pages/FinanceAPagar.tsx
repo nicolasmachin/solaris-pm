@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { ArrowRight, AlertTriangle } from 'lucide-react';
+import { ArrowRight, AlertTriangle, DollarSign } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
 import { getMovements, transitionMovement } from '../api/finance.api';
+import { NewPaymentForSupplierModal } from '../components/finance/NewPaymentForSupplierModal';
+import { ApplyPaymentModal } from '../components/finance/ApplyPaymentModal';
 import { fmtCurrency, fmtDate } from '../lib/finance';
 import {
   CATEGORIA_LABEL,
@@ -48,6 +50,9 @@ export function FinanceAPagar() {
   const [range, setRange] = useState<RangeFilter>('all');
   const [projectId, setProjectId] = useState<string>('');
   const [supplierId, setSupplierId] = useState<string>('');
+  const [payForMov, setPayForMov] = useState<FinanceMovement | null>(null);
+  const [createdPaymentId, setCreatedPaymentId] = useState<string | null>(null);
+  const [preselectMovementForPay, setPreselectMovementForPay] = useState<string | null>(null);
 
   // Persistencia
   useEffect(() => {
@@ -65,7 +70,7 @@ export function FinanceAPagar() {
     localStorage.setItem(FILTERS_KEY, JSON.stringify({ range, projectId, supplierId } satisfies PersistedFilters));
   }, [range, projectId, supplierId]);
 
-  // Traemos COMPROMETIDOS y A_PAGAR en paralelo (el endpoint admite un solo status)
+  // Traemos COMPROMETIDOS, A_PAGAR y PARCIALMENTE_PAGADO en paralelo
   const queryComprometidos = useQuery({
     queryKey: ['finance-apagar', 'COMPROMETIDO'],
     queryFn: () => getMovements({ status: 'COMPROMETIDO', limit: 100 }),
@@ -74,13 +79,18 @@ export function FinanceAPagar() {
     queryKey: ['finance-apagar', 'A_PAGAR'],
     queryFn: () => getMovements({ status: 'A_PAGAR', limit: 100 }),
   });
+  const queryParcial = useQuery({
+    queryKey: ['finance-apagar', 'PARCIALMENTE_PAGADO'],
+    queryFn: () => getMovements({ status: 'PARCIALMENTE_PAGADO', limit: 100 }),
+  });
 
-  const isLoading = queryComprometidos.isLoading || queryAPagar.isLoading;
+  const isLoading = queryComprometidos.isLoading || queryAPagar.isLoading || queryParcial.isLoading;
   const all: FinanceMovement[] = useMemo(() => {
     const a = queryComprometidos.data?.data ?? [];
     const b = queryAPagar.data?.data ?? [];
-    return [...a, ...b];
-  }, [queryComprometidos.data, queryAPagar.data]);
+    const c = queryParcial.data?.data ?? [];
+    return [...a, ...b, ...c];
+  }, [queryComprometidos.data, queryAPagar.data, queryParcial.data]);
 
   // Filtros de UI
   const filtered = useMemo(() => {
@@ -91,7 +101,7 @@ export function FinanceAPagar() {
     return all.filter(m => {
       const ref = m.dueDate ?? m.expectedDate;
       if (range === 'overdue') {
-        if (!m.dueDate || m.status !== 'A_PAGAR' || m.dueDate >= today) return false;
+        if (!m.dueDate || (m.status !== 'A_PAGAR' && m.status !== 'PARCIALMENTE_PAGADO') || m.dueDate >= today) return false;
       } else if (range === 'this-week') {
         if (!ref || ref > eow || (m.dueDate && m.dueDate < today)) return false;
       } else if (range === 'this-month') {
@@ -112,6 +122,8 @@ export function FinanceAPagar() {
   const today = todayIso();
   const eow = endOfWeekIso();
 
+  // Totales se calculan sobre el saldoPendiente (no el monto total) para
+  // reflejar lo que realmente queda por pagar.
   const totals = useMemo(() => {
     let comprometidoUsd = 0, comprometidoUyu = 0;
     let aPagarUsd = 0, aPagarUyu = 0;
@@ -119,15 +131,16 @@ export function FinanceAPagar() {
     let semanaUsd = 0, semanaUyu = 0;
     for (const m of all) {
       const isUsd = m.moneda === 'USD';
+      const saldo = m.saldoPendiente;
       if (m.status === 'COMPROMETIDO') {
-        if (isUsd) comprometidoUsd += m.monto; else comprometidoUyu += m.monto;
-      } else if (m.status === 'A_PAGAR') {
-        if (isUsd) aPagarUsd += m.monto; else aPagarUyu += m.monto;
+        if (isUsd) comprometidoUsd += saldo; else comprometidoUyu += saldo;
+      } else if (m.status === 'A_PAGAR' || m.status === 'PARCIALMENTE_PAGADO') {
+        if (isUsd) aPagarUsd += saldo; else aPagarUyu += saldo;
         if (m.dueDate && m.dueDate < today) {
-          if (isUsd) vencidoUsd += m.monto; else vencidoUyu += m.monto;
+          if (isUsd) vencidoUsd += saldo; else vencidoUyu += saldo;
         }
         if (m.dueDate && m.dueDate >= today && m.dueDate <= eow) {
-          if (isUsd) semanaUsd += m.monto; else semanaUyu += m.monto;
+          if (isUsd) semanaUsd += saldo; else semanaUyu += saldo;
         }
       }
     }
@@ -267,7 +280,10 @@ export function FinanceAPagar() {
                         ) : '—'}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap font-semibold tabular-nums text-red-400">
-                        -{fmtCurrency(m.monto, m.moneda)}
+                        <div>-{fmtCurrency(m.saldoPendiente, m.moneda)}</div>
+                        {m.saldoPendiente !== m.monto && (
+                          <div className="text-[10px] text-[var(--color-text-muted)] font-normal">de {fmtCurrency(m.monto, m.moneda)}</div>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <span className={klass('text-[10px] font-mono px-2 py-0.5 rounded uppercase', STATUS_COLOR[m.status])}>
@@ -275,23 +291,37 @@ export function FinanceAPagar() {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        {m.status === 'A_PAGAR' ? (
-                          <button
-                            onClick={() => handlePagar(m)}
-                            disabled={transitionMut.isPending}
-                            className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-[var(--color-state-done-bg)] text-[var(--color-state-done-text)] font-semibold hover:opacity-80 disabled:opacity-60"
-                          >
-                            <ArrowRight className="w-3 h-3" /> Pagado
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handlePromover(m)}
-                            disabled={transitionMut.isPending}
-                            className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-[var(--color-warning-bg)] text-[var(--color-warning-text)] font-semibold hover:opacity-80 disabled:opacity-60"
-                          >
-                            <ArrowRight className="w-3 h-3" /> A pagar
-                          </button>
-                        )}
+                        <div className="flex items-center gap-1">
+                          {m.supplierId && (m.status === 'A_PAGAR' || m.status === 'PARCIALMENTE_PAGADO') && (
+                            <button
+                              onClick={() => setPayForMov(m)}
+                              className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-[var(--color-accent)] text-gray-900 font-semibold hover:bg-[var(--color-accent-hover)]"
+                              title="Registrar pago"
+                            >
+                              <DollarSign className="w-3 h-3" />
+                              Pagar
+                            </button>
+                          )}
+                          {m.status === 'A_PAGAR' && !m.supplierId && (
+                            <button
+                              onClick={() => handlePagar(m)}
+                              disabled={transitionMut.isPending}
+                              className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-[var(--color-state-done-bg)] text-[var(--color-state-done-text)] font-semibold hover:opacity-80 disabled:opacity-60"
+                              title="Marcar como pagado (sin proveedor)"
+                            >
+                              <ArrowRight className="w-3 h-3" /> Pagado
+                            </button>
+                          )}
+                          {m.status === 'COMPROMETIDO' && (
+                            <button
+                              onClick={() => handlePromover(m)}
+                              disabled={transitionMut.isPending}
+                              className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-[var(--color-warning-bg)] text-[var(--color-warning-text)] font-semibold hover:opacity-80 disabled:opacity-60"
+                            >
+                              <ArrowRight className="w-3 h-3" /> A pagar
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -301,6 +331,29 @@ export function FinanceAPagar() {
           </div>
         )}
       </div>
+
+      {payForMov && payForMov.supplierId && payForMov.supplier && (
+        <NewPaymentForSupplierModal
+          supplierId={payForMov.supplierId}
+          supplierName={payForMov.supplier.nombre}
+          defaultAmount={payForMov.saldoPendiente}
+          defaultMoneda={payForMov.moneda}
+          onClose={() => setPayForMov(null)}
+          onCreatedAndApply={(paymentId) => {
+            setPreselectMovementForPay(payForMov.id);
+            setCreatedPaymentId(paymentId);
+            setPayForMov(null);
+          }}
+        />
+      )}
+
+      {createdPaymentId && (
+        <ApplyPaymentModal
+          paymentId={createdPaymentId}
+          preselectMovementId={preselectMovementForPay ?? undefined}
+          onClose={() => { setCreatedPaymentId(null); setPreselectMovementForPay(null); }}
+        />
+      )}
     </div>
   );
 }
