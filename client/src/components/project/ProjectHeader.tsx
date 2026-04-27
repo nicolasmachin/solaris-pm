@@ -67,7 +67,7 @@ export function ProjectHeader({ project, onEdit }: ProjectHeaderProps) {
           </button>
         </div>
         <p className="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">
-          {project.code} · {project.capacityKwp} kWp · {project.locationCity},{" "}
+          {project.capacityKwp} kWp · {project.locationCity},{" "}
           {project.locationProvince}
         </p>
         {(project.notificationEmail || project.notificationPhone || project.clientAddress) && (

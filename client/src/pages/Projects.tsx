@@ -423,7 +423,6 @@ export function Projects() {
                     >
                       <td className="px-4 py-4 align-top">
                         <div className="font-medium text-[var(--color-text-primary)]">{project.clientName}</div>
-                        <div className="mt-1 text-xs text-[var(--color-text-muted)]">{project.code}</div>
                       </td>
                       <td className="px-4 py-4 align-top">
                         <div className="text-sm text-[var(--color-text-primary)]">{project.locationCity}</div>

@@ -97,8 +97,12 @@ export interface MovimientosQuery {
   search?: string;
 }
 
+export interface MovementsListResponse extends PaginatedResponse<FinanceMovement> {
+  saldoFinalUSD: number;
+}
+
 export const getMovements = (params: MovimientosQuery) =>
-  apiClient.get<PaginatedResponse<FinanceMovement>>('/api/finance/movements', { params }).then(r => r.data);
+  apiClient.get<MovementsListResponse>('/api/finance/movements', { params }).then(r => r.data);
 
 export interface FinanceMovementDetail extends FinanceMovement {
   paymentApplications: Array<{
@@ -140,6 +144,7 @@ function buildMovementBody(body: Partial<MovimientoFormData>) {
     ...(body.proyectoId ? { projectId: body.proyectoId } : {}),
     ...(body.proveedorId ? { supplierId: body.proveedorId } : {}),
     ...(body.subcategoriaId ? { subcategoriaId: body.subcategoriaId } : {}),
+    ...(body.accountId ? { accountId: body.accountId } : {}),
     ...(body.observaciones ? { observaciones: body.observaciones } : {}),
   };
 }
@@ -151,10 +156,10 @@ export const patchMovement = (id: string, body: Partial<MovimientoFormData>) =>
   apiClient.patch<FinanceMovement>(`/api/finance/movements/${id}`, buildMovementBody(body)).then(r => r.data);
 
 export const deleteMovement = (id: string) =>
-  apiClient.delete(`/api/finance/movements/${id}`);
+  apiClient.delete<{ success: true; liberatedApplications: number; liberatedAmount: number }>(`/api/finance/movements/${id}`).then(r => r.data);
 
 export const transitionMovement = (id: string, body: { newStatus: FinanceMovementStatus; paidDate?: string; dueDate?: string }) =>
-  apiClient.post<{ id: string; status: FinanceMovementStatus; fecha: string; dueDate: string | null; pagado: boolean }>(`/api/finance/movements/${id}/transition`, body).then(r => r.data);
+  apiClient.post<{ id: string; status: FinanceMovementStatus; fecha: string; dueDate: string | null; pagado: boolean; requiresItemDetail: boolean }>(`/api/finance/movements/${id}/transition`, body).then(r => r.data);
 
 export const cancelMovement = (id: string) =>
   apiClient.post<{ success: true; reversedStockMovements: number }>(`/api/finance/movements/${id}/cancel`).then(r => r.data);
@@ -245,9 +250,60 @@ export const getPendingDetailMovements = () =>
 
 // ─── Cost summary del proyecto ───────────────────────────────────────────────
 
+export interface CostSummaryConsumo {
+  id: string;
+  materialItemId: string;
+  materialItemName: string;
+  unidad: string;
+  categoryName: string;
+  quantity: number;
+  unitPrice: number;
+  moneda: Moneda;
+  subtotal: number;
+  subtotalUSD: number;
+  fecha: string;
+  priceSource: 'movement' | 'catalog';
+}
+
+export interface CostSummaryCategoria {
+  id: string;
+  nombre: string;
+  totalUSD: number;
+  itemCount: number;
+}
+
+export interface CostSummaryComparacion {
+  materialItemId: string;
+  nombre: string;
+  unidad: string;
+  categoryName: string;
+  quantityPrevista: number;
+  quantityReal: number;
+  quantityDiff: number;
+  subtotalPrevistoUSD: number;
+  subtotalRealUSD: number;
+  subtotalDiffUSD: number;
+}
+
 export interface CostSummary {
   project: { id: string; code: string; clientName: string };
   budgetUsd: number | null;
+
+  // PREVISTO (lista de Ingeniería)
+  costoPrevistoUSD: number;
+  costoPrevistoUYU: number;
+  costoPrevistoTotalUSD: number;
+  margenPrevistoUSD: number | null;
+  margenPrevistoPercent: number | null;
+
+  // REAL (consumos de stock)
+  costoRealUSD: number;
+  costoRealUYU: number;
+  costoRealTotalUSD: number;
+  margenRealUSD: number | null;
+  margenRealPercent: number | null;
+
+  // Compat con UI vieja
   totalUsedUSD: number;
   totalUsedUYU: number;
   totalUsedUsdAll: number;
@@ -255,21 +311,15 @@ export interface CostSummary {
   marginUSD: number | null;
   marginPercent: number | null;
   exchangeRate: { usdToUyu: number; date: string } | null;
-  byCategoryUSD: { id: string; nombre: string; totalUSD: number; itemCount: number }[];
-  movements: {
-    id: string;
-    materialItemId: string;
-    materialItemName: string;
-    unidad: string;
-    categoryName: string;
-    quantity: number;
-    unitPrice: number;
-    moneda: Moneda;
-    subtotal: number;
-    subtotalUSD: number;
-    fecha: string;
-    priceSource: 'movement' | 'catalog';
-  }[];
+  byCategoryUSD: CostSummaryCategoria[];
+  movements: CostSummaryConsumo[];
+
+  desglose: {
+    previstoPorCategoria: CostSummaryCategoria[];
+    realPorCategoria: CostSummaryCategoria[];
+    comparacionPorItem: CostSummaryComparacion[];
+    consumosDeStock: CostSummaryConsumo[];
+  };
 }
 
 export const getProjectCostSummary = (projectId: string) =>

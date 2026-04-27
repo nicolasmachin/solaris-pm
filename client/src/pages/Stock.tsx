@@ -141,7 +141,7 @@ function ProductForm({ initial, productId, onSuccess, onCancel }: {
         </div>
         <div>
           <label className={lbl}>Stock mínimo</label>
-          <input type="number" className={inp} min="0" step="0.01" value={form.stockMinimo} onChange={e => setF('stockMinimo', e.target.value)} />
+          <input type="number" className={inp} min="0" step="1" value={form.stockMinimo} onChange={e => setF('stockMinimo', e.target.value)} />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -206,7 +206,7 @@ function IngresoModal({ product, onSuccess, onClose }: { product: StockProduct; 
         fecha: form.fecha,
         materialItemId: product.id,
         tipo: 'INGRESO',
-        cantidad: parseFloat(form.cantidad),
+        cantidad: parseInt(form.cantidad, 10),
         costoUnitario: parseFloat(form.costoUnitario) || undefined,
         moneda: form.moneda,
         causaIngreso: form.causaIngreso,
@@ -234,7 +234,7 @@ function IngresoModal({ product, onSuccess, onClose }: { product: StockProduct; 
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div><label className={lbl}>Fecha *</label><input type="date" className={inp} value={form.fecha} onChange={e => setF('fecha', e.target.value)} required /></div>
-            <div><label className={lbl}>Cantidad * <span className="text-[var(--color-text-muted)]">({product.unidad})</span></label><input type="number" className={inp} min="0.001" step="0.001" value={form.cantidad} onChange={e => setF('cantidad', e.target.value)} required /></div>
+            <div><label className={lbl}>Cantidad * <span className="text-[var(--color-text-muted)]">({product.unidad})</span></label><input type="number" className={inp} min="1" step="1" value={form.cantidad} onChange={e => setF('cantidad', e.target.value)} required /></div>
           </div>
           <div>
             <label className={lbl}>Costo unitario</label>
@@ -339,7 +339,7 @@ function EgresoModal({ product, onSuccess, onClose }: { product: StockProduct; o
             <div><label className={lbl}>Fecha *</label><input type="date" className={inp} value={form.fecha} onChange={e => setF('fecha', e.target.value)} required /></div>
             <div>
               <label className={lbl}>Cantidad * <span className="text-[var(--color-text-muted)]">({product.unidad})</span></label>
-              <input type="number" className={inp} min="0.001" step="0.001" max={product.stockActual}
+              <input type="number" className={inp} min="1" step="1" max={product.stockActual}
                 value={form.cantidad} onChange={e => setF('cantidad', e.target.value)} required />
             </div>
           </div>
@@ -391,7 +391,7 @@ function AjusteModal({ product, onSuccess, onClose }: { product: StockProduct; o
         fecha: form.fecha,
         materialItemId: product.id,
         tipo: 'AJUSTE',
-        cantidad: parseFloat(form.nuevoStock),
+        cantidad: parseInt(form.nuevoStock, 10),
         causaIngreso: 'AJUSTE_INVENTARIO',
         observaciones: form.motivo,
       });
@@ -417,7 +417,7 @@ function AjusteModal({ product, onSuccess, onClose }: { product: StockProduct; o
             <div><label className={lbl}>Fecha *</label><input type="date" className={inp} value={form.fecha} onChange={e => setF('fecha', e.target.value)} required /></div>
             <div>
               <label className={lbl}>Nuevo stock *</label>
-              <input type="number" className={inp} min="0" step="0.001" value={form.nuevoStock} onChange={e => setF('nuevoStock', e.target.value)} required />
+              <input type="number" className={inp} min="0" step="1" value={form.nuevoStock} onChange={e => setF('nuevoStock', e.target.value)} required />
             </div>
           </div>
           {form.nuevoStock && (
@@ -598,7 +598,7 @@ function ProductPanel({ product, onClose, onRefresh }: { product: StockProduct; 
                           {(m.referencia || m.observaciones) && (
                             <p className="text-[11px] text-[var(--color-text-muted)] truncate mt-0.5">{m.referencia ?? m.observaciones}</p>
                           )}
-                          {m.project && <p className="text-[11px] text-[var(--color-text-muted)] truncate">{m.project.code}</p>}
+                          {m.project && <p className="text-[11px] text-[var(--color-text-muted)] truncate">{m.project.clientName}</p>}
                         </div>
                         <div className="text-right shrink-0">
                           <p className={klass('text-sm font-semibold tabular-nums', m.tipo === 'EGRESO' ? 'text-red-400' : 'text-green-400')}>
@@ -647,6 +647,7 @@ export function Stock() {
   const [filterCat, setFilterCat] = useState('');
   const [filterAlert, setFilterAlert] = useState(false);
   const [includeServices, setIncludeServices] = useState(false);
+  const [onlyWithStock, setOnlyWithStock] = useState(false);
 
   const { data: products = [], isLoading, refetch: refetchProducts } = useQuery({
     queryKey: ['stock-products', filterCat, filterAlert, includeServices],
@@ -671,7 +672,8 @@ export function Stock() {
   const bajominimo = products.filter(p => p.bajominimo);
   const valorTotal = physicalProducts.reduce((sum, p) => sum + p.stockActual * (p.precioSugerido ?? 0), 0);
 
-  const displayedProducts = filterAlert ? products.filter(p => p.bajominimo) : products;
+  let displayedProducts = filterAlert ? products.filter(p => p.bajominimo) : products;
+  if (onlyWithStock) displayedProducts = displayedProducts.filter(p => p.gestionaStock && p.stockActual > 0);
   const categorias = [...new Set(products.map(p => p.categoria))].sort();
 
   function handleProductRefresh() {
@@ -770,6 +772,10 @@ export function Stock() {
         <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
           <input type="checkbox" checked={filterAlert} onChange={e => setFilterAlert(e.target.checked)} className="accent-[var(--color-accent)]" />
           Solo alertas ({bajominimo.length})
+        </label>
+        <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
+          <input type="checkbox" checked={onlyWithStock} onChange={e => setOnlyWithStock(e.target.checked)} className="accent-[var(--color-accent)]" />
+          Solo con stock disponible
         </label>
         <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
           <input type="checkbox" checked={includeServices} onChange={e => setIncludeServices(e.target.checked)} className="accent-[var(--color-accent)]" />

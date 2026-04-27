@@ -343,7 +343,19 @@ export function Finance() {
           <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Finanzas</h1>
           <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{mesLabel}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            to="/finanzas/cuentas"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors shrink-0"
+          >
+            Cuentas
+          </Link>
+          <Link
+            to="/finanzas/proveedores"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors shrink-0"
+          >
+            Proveedores
+          </Link>
           <Link
             to="/finanzas/pagos"
             className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors shrink-0"
@@ -440,8 +452,8 @@ export function Finance() {
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                     <span className="text-xs text-[var(--color-text-muted)]">{fmtDate(mov.fecha)}</span>
                     {mov.project && (
-                      <span className="text-[10px] font-mono bg-[var(--color-info-bg)] text-[var(--color-info-text)] px-1.5 py-0.5 rounded uppercase">
-                        {mov.project.code}
+                      <span className="text-[10px] font-mono bg-[var(--color-info-bg)] text-[var(--color-info-text)] px-1.5 py-0.5 rounded">
+                        {mov.project.clientName}
                       </span>
                     )}
                   </div>

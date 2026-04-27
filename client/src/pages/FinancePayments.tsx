@@ -6,6 +6,8 @@ import { Plus, X, Search, ArrowRight } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
 import { getPayments, createPayment } from '../api/payments.api';
 import { getSuppliers } from '../api/finance.api';
+import { getAccounts } from '../api/accounts.api';
+import { ACCOUNT_TYPE_LABEL } from '../types/accounts.types';
 import { fmtCurrency, fmtDate } from '../lib/finance';
 import type { MetodoPago, Moneda } from '../types/finance.types';
 import type { Payment } from '../types/payments.types';
@@ -167,10 +169,19 @@ export function FinancePayments() {
                       onClick={() => setDetailForId(p.id)}
                       className={klass('cursor-pointer hover:bg-[var(--color-bg-card-hover)] transition-colors', tieneSaldo && 'bg-[var(--color-warning-bg)]/10')}>
                       <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-muted)]">{fmtDate(p.fecha)}</td>
-                      <td className="px-4 py-3 text-[var(--color-text-primary)] truncate max-w-xs">{p.supplier?.nombre ?? '—'}</td>
+                      <td className="px-4 py-3 text-[var(--color-text-primary)] truncate max-w-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate">{p.supplier?.nombre ?? '—'}</span>
+                          {p.monto < 0 && (
+                            <span className="shrink-0 text-[10px] font-mono px-1.5 py-0.5 rounded uppercase bg-blue-500/15 text-blue-400" title="Pago con monto negativo (devolución/compensación)">
+                              Nota de crédito
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-secondary)]">{METODO_LABEL[p.metodo]}</td>
                       <td className="px-4 py-3 text-[var(--color-text-muted)] text-[11px] truncate max-w-[140px]">{p.referencia ?? '—'}</td>
-                      <td className="px-4 py-3 text-right tabular-nums whitespace-nowrap text-[var(--color-text-primary)]">
+                      <td className={klass('px-4 py-3 text-right tabular-nums whitespace-nowrap', p.monto < 0 ? 'text-blue-400 font-semibold' : 'text-[var(--color-text-primary)]')}>
                         {fmtCurrency(p.monto, p.moneda)}
                       </td>
                       <td className="px-4 py-3 text-right tabular-nums whitespace-nowrap text-[var(--color-text-secondary)]">
@@ -269,6 +280,7 @@ function NewPaymentModal({ suppliers, onClose, onCreatedAndApply }: {
     monto: '',
     moneda: 'USD' as Moneda,
     metodo: 'TRANSFERENCIA' as MetodoPago,
+    accountId: '',
     referencia: '',
     notas: '',
     aplicarAhora: true,
@@ -276,6 +288,12 @@ function NewPaymentModal({ suppliers, onClose, onCreatedAndApply }: {
   const [showSupplierList, setShowSupplierList] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['accounts', 'true'],
+    queryFn: () => getAccounts({ activa: 'true' }),
+  });
+  const accountsForCurrency = accounts.filter(a => a.moneda === form.moneda);
 
   const filteredSuppliers = useMemo(() => {
     const q = form.supplierSearch.trim().toLowerCase();
@@ -294,11 +312,13 @@ function NewPaymentModal({ suppliers, onClose, onCreatedAndApply }: {
     setError('');
     if (!form.supplierId) { setError('Elegí un proveedor'); return; }
     const monto = parseFloat(form.monto);
-    if (!isFinite(monto) || monto <= 0) { setError('El monto debe ser mayor a 0'); return; }
+    if (!isFinite(monto) || Math.abs(monto) < 0.005) { setError('El monto no puede ser 0'); return; }
+    if (!form.accountId) { setError('Elegí una cuenta'); return; }
     setSaving(true);
     try {
       const created = await createPayment({
         supplierId: form.supplierId,
+        accountId: form.accountId,
         fecha: form.fecha,
         monto,
         moneda: form.moneda,
@@ -308,6 +328,7 @@ function NewPaymentModal({ suppliers, onClose, onCreatedAndApply }: {
       });
       qc.invalidateQueries({ queryKey: ['payments'] });
       qc.invalidateQueries({ queryKey: ['account-summary'] });
+      qc.invalidateQueries({ queryKey: ['accounts-summary'] });
       if (form.aplicarAhora) {
         toast.success('Pago registrado · aplicalo a facturas');
         onCreatedAndApply(created.id);
@@ -388,9 +409,24 @@ function NewPaymentModal({ suppliers, onClose, onCreatedAndApply }: {
                 <select className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-2 text-sm text-[var(--color-text-primary)]" value={form.moneda} onChange={e => setF('moneda', e.target.value as Moneda)}>
                   <option value="USD">USD</option><option value="UYU">UYU</option>
                 </select>
-                <input type="number" min="0" step="0.01" className={klass(inpStyle, 'flex-1')} value={form.monto} onChange={e => setF('monto', e.target.value)} required />
+                <input type="number" step="0.01" className={klass(inpStyle, 'flex-1')} value={form.monto} onChange={e => setF('monto', e.target.value)} required />
               </div>
             </div>
+          </div>
+
+          <div>
+            <label className={lbl}>Cuenta * <span className="text-[var(--color-text-muted)] normal-case lowercase">— de dónde sale el dinero</span></label>
+            <select className={inpStyle} value={form.accountId} onChange={e => setF('accountId', e.target.value)} required>
+              <option value="">— Elegí una cuenta —</option>
+              {accountsForCurrency.map(a => (
+                <option key={a.id} value={a.id}>{a.nombre} ({ACCOUNT_TYPE_LABEL[a.tipo]} · {a.moneda})</option>
+              ))}
+            </select>
+            {accountsForCurrency.length === 0 && (
+              <p className="text-[10px] text-[var(--color-warning-text)] mt-1">
+                No hay cuentas activas en {form.moneda}. Creá una desde Admin → Cuentas.
+              </p>
+            )}
           </div>
 
           <div>
@@ -404,6 +440,12 @@ function NewPaymentModal({ suppliers, onClose, onCreatedAndApply }: {
               <option value="OTRO">Otro</option>
             </select>
           </div>
+
+          {parseFloat(form.monto) < 0 && (
+            <p className="text-[11px] text-[var(--color-warning-text)] bg-[var(--color-warning-bg)]/30 rounded-lg px-3 py-2">
+              ⚠ Monto negativo: equivale a una nota de crédito o devolución.
+            </p>
+          )}
 
           <div><label className={lbl}>Referencia</label><input className={inpStyle} value={form.referencia} onChange={e => setF('referencia', e.target.value)} placeholder="N° transferencia, cheque, etc." /></div>
           <div><label className={lbl}>Notas</label><textarea className={klass(inpStyle, 'resize-none')} rows={2} value={form.notas} onChange={e => setF('notas', e.target.value)} /></div>

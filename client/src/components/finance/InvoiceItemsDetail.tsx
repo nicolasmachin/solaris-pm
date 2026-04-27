@@ -6,9 +6,10 @@ import {
   getInvoiceItems, createInvoiceItem, patchInvoiceItem, deleteInvoiceItem,
   confirmInvoiceItems, markNoMateriales,
 } from '../../api/finance.api';
-import { getMaterialCategories } from '../../api/materials.api';
+import { getMaterialCategories, createMaterialItem } from '../../api/materials.api';
 import { getStockProducts } from '../../api/stock.api';
 import { fmtCurrency } from '../../lib/finance';
+import { usePermission } from '../../hooks/usePermission';
 import type { InvoiceItem } from '../../api/finance.api';
 import type { StockProduct } from '../../types/finance.types';
 
@@ -256,7 +257,7 @@ function ItemRow({ movementId, item, moneda, confirmed, onChanged }: {
   });
 
   function commitQty() {
-    const n = parseFloat(qty);
+    const n = parseInt(qty, 10);
     if (!isFinite(n) || n <= 0) { setQty(item.quantity.toString()); return; }
     if (n !== item.quantity) patchMut.mutate({ quantity: n });
   }
@@ -277,7 +278,7 @@ function ItemRow({ movementId, item, moneda, confirmed, onChanged }: {
           <span className="text-sm tabular-nums">{item.quantity}</span>
         ) : (
           <input
-            type="number" min="0" step="0.01"
+            type="number" min="1" step="1"
             className="w-20 px-2 py-1 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] tabular-nums focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
             value={qty}
             onChange={e => setQty(e.target.value)}
@@ -333,6 +334,8 @@ function AddItemPicker({ movementId, existingIds, moneda, onClose }: {
   const [search, setSearch] = useState('');
   const [adding, setAdding] = useState<string | null>(null);
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
+  const [showCreate, setShowCreate] = useState(false);
+  const canCreateMaterial = usePermission('CONFIGURACION', 'CREATE');
 
   const { data: categories = [] } = useQuery({
     queryKey: ['material-categories', 'true'],
@@ -382,6 +385,22 @@ function AddItemPicker({ movementId, existingIds, moneda, onClose }: {
       toast.error(getApiErr(err) ?? 'Error al agregar');
     } finally {
       setAdding(null);
+    }
+  }
+
+  async function handleAddJustCreated(materialItemId: string, precioSugerido: number) {
+    try {
+      await createInvoiceItem(movementId, {
+        materialItemId,
+        quantity: 1,
+        unitPrice: precioSugerido,
+        moneda,
+      });
+      setAddedIds(prev => new Set(prev).add(materialItemId));
+      qc.invalidateQueries({ queryKey: ['invoice-items', movementId] });
+      qc.invalidateQueries({ queryKey: ['stock-products-for-invoice'] });
+    } catch (err) {
+      toast.error(getApiErr(err) ?? 'Material creado, pero falló al agregarlo al desglose');
     }
   }
 
@@ -453,12 +472,154 @@ function AddItemPicker({ movementId, existingIds, moneda, onClose }: {
             </div>
           )}
         </div>
-        <div className="p-3 border-t border-[var(--color-border)] flex justify-end">
+        <div className="p-3 border-t border-[var(--color-border)] flex items-center justify-between gap-3">
+          {canCreateMaterial ? (
+            <button
+              onClick={() => setShowCreate(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-[var(--color-border)] text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
+              title="Crear nuevo material y agregarlo al desglose"
+            >
+              <Plus className="w-3.5 h-3.5" /> Crear nuevo material
+            </button>
+          ) : (
+            <span className="text-[10px] text-[var(--color-text-muted)]">No tenés permiso para crear materiales</span>
+          )}
           <button onClick={onClose} className="px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)]">
             Listo
           </button>
         </div>
       </div>
+
+      {showCreate && (
+        <CreateMaterialQuickModal
+          defaultMoneda={moneda}
+          categories={categories}
+          onCancel={() => setShowCreate(false)}
+          onCreated={async (mi) => {
+            setShowCreate(false);
+            await handleAddJustCreated(mi.id, mi.precioSugerido ?? 0);
+            toast.success(`"${mi.nombre}" creado y agregado al desglose`);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Sub-modal: crear MaterialItem rápido (campos mínimos) ────────────────────
+
+function CreateMaterialQuickModal({ defaultMoneda, categories, onCancel, onCreated }: {
+  defaultMoneda: 'USD' | 'UYU';
+  categories: { id: string; nombre: string }[];
+  onCancel: () => void;
+  onCreated: (mi: { id: string; nombre: string; precioSugerido: number | null }) => void;
+}) {
+  const [nombre, setNombre] = useState('');
+  const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '');
+  const [unidad, setUnidad] = useState('un');
+  const [precioSugerido, setPrecioSugerido] = useState<string>('');
+  const [moneda, setMoneda] = useState<'USD' | 'UYU'>(defaultMoneda);
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!nombre.trim()) { toast.error('Nombre obligatorio'); return; }
+    if (!categoryId) { toast.error('Categoría obligatoria'); return; }
+    setSaving(true);
+    try {
+      const mi = await createMaterialItem({
+        categoryId,
+        nombre: nombre.trim(),
+        unidad: unidad.trim() || 'un',
+        moneda,
+        gestionaStock: true,
+        ...(precioSugerido.trim() ? { precioSugerido: Number(precioSugerido) } : {}),
+      });
+      onCreated({ id: mi.id, nombre: mi.nombre, precioSugerido: mi.precioSugerido ?? null });
+    } catch (err) {
+      toast.error(getApiErr(err) ?? 'Error al crear material');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/70 z-[80] flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onCancel(); }}>
+      <form onSubmit={handleSubmit} className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl w-full max-w-md shadow-2xl">
+        <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
+          <p className="text-sm font-semibold text-[var(--color-text-primary)]">Crear material nuevo</p>
+          <button type="button" onClick={onCancel} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"><X className="w-5 h-5" /></button>
+        </div>
+        <div className="p-4 space-y-3">
+          <div>
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Nombre *</label>
+            <input
+              autoFocus
+              type="text"
+              value={nombre}
+              onChange={e => setNombre(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Categoría *</label>
+              <select
+                value={categoryId}
+                onChange={e => setCategoryId(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+              >
+                {categories.length === 0 && <option value="">— sin categorías —</option>}
+                {categories.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Unidad</label>
+              <input
+                type="text"
+                value={unidad}
+                onChange={e => setUnidad(e.target.value)}
+                placeholder="un, kg, m, hs…"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2">
+              <label className="block text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Precio sugerido</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={precioSugerido}
+                onChange={e => setPrecioSugerido(e.target.value)}
+                placeholder="0.00"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Moneda</label>
+              <select
+                value={moneda}
+                onChange={e => setMoneda(e.target.value as 'USD' | 'UYU')}
+                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+              >
+                <option value="USD">USD</option>
+                <option value="UYU">UYU</option>
+              </select>
+            </div>
+          </div>
+          <p className="text-[11px] text-[var(--color-text-muted)] leading-relaxed">
+            Se crea como producto físico (gestiona stock). Después podés ajustar mínimo, ubicación y proveedor por defecto desde Admin → Materiales.
+          </p>
+        </div>
+        <div className="p-3 border-t border-[var(--color-border)] flex items-center justify-end gap-2">
+          <button type="button" onClick={onCancel} className="px-3 py-2 rounded-lg border border-[var(--color-border)] text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]">Cancelar</button>
+          <button type="submit" disabled={saving} className="px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-60">
+            {saving ? 'Creando…' : 'Crear y agregar'}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

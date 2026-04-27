@@ -30,6 +30,8 @@ import { CleanupPrevistosModal } from '../components/finance/CleanupPrevistosMod
 import { InvoiceItemsDetail } from '../components/finance/InvoiceItemsDetail';
 import { NewPaymentForSupplierModal } from '../components/finance/NewPaymentForSupplierModal';
 import { ApplyPaymentModal } from '../components/finance/ApplyPaymentModal';
+import { getAccounts } from '../api/accounts.api';
+import { ACCOUNT_TYPE_LABEL } from '../types/accounts.types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -50,10 +52,12 @@ interface MovFormProps {
 function MovimientoForm({ onSuccess, onCancel, initial, editId, onSavedOpenDesglose }: MovFormProps) {
   const today = new Date().toISOString().split('T')[0];
 
+  // Default para gastos nuevos: CONSUMO_STOCK (caso más frecuente).
+  // Para edición, el initial sobreescribe.
   const [form, setForm] = useState<MovimientoFormData>({
     fecha: today,
     tipoMovimiento: 'GASTO',
-    categoriaPrincipal: 'VARIABLE',
+    categoriaPrincipal: 'CONSUMO_STOCK',
     descripcion: '',
     monto: 0,
     moneda: 'USD',
@@ -73,6 +77,10 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId, onSavedOpenDesgl
   const [projects, setProjects] = useState<{ id: string; code: string; clientName: string }[]>([]);
   const [suppliers, setSuppliers] = useState<{ id: string; nombre: string }[]>([]);
   const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['accounts', 'true'],
+    queryFn: () => getAccounts({ activa: 'true' }),
+  });
 
   useEffect(() => {
     Promise.all([
@@ -106,8 +114,16 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId, onSavedOpenDesgl
     setForm(prev => {
       const next = { ...prev, [key]: value };
       if (key === 'tipoMovimiento') {
-        const cats = CATEGORIAS_POR_TIPO[value as TipoMovimiento] ?? [];
-        if (!cats.includes(next.categoriaPrincipal)) next.categoriaPrincipal = cats[0];
+        const tipo = value as TipoMovimiento;
+        const cats = CATEGORIAS_POR_TIPO[tipo] ?? [];
+        if (!cats.includes(next.categoriaPrincipal)) {
+          // Default sensato: para GASTO, CONSUMO_STOCK; para INGRESO/AJUSTE, primera disponible.
+          if (tipo === 'GASTO' && cats.includes('CONSUMO_STOCK')) {
+            next.categoriaPrincipal = 'CONSUMO_STOCK';
+          } else {
+            next.categoriaPrincipal = cats[0];
+          }
+        }
         next.subcategoriaId = undefined;
       }
       if (key === 'categoriaPrincipal') next.subcategoriaId = undefined;
@@ -247,7 +263,7 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId, onSavedOpenDesgl
         <label className={lbl}>Proyecto {necesitaProyecto ? '*' : '(opcional)'}</label>
         <select className={inp} value={form.proyectoId ?? ''} onChange={e => setF('proyectoId', e.target.value || undefined)} required={necesitaProyecto}>
           <option value="">— Empresa general —</option>
-          {projects.map(p => <option key={p.id} value={p.id}>{p.code} — {p.clientName}</option>)}
+          {projects.map(p => <option key={p.id} value={p.id}>{p.clientName}</option>)}
         </select>
       </div>
 
@@ -349,6 +365,38 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId, onSavedOpenDesgl
         </div>
       )}
 
+      {/* Cuenta — obligatoria si concreta dinero */}
+      {(() => {
+        const concretaDinero =
+          (form.tipoMovimiento === 'GASTO' && form.status === 'PAGADO') ||
+          (form.tipoMovimiento === 'INGRESO' && form.cobrado);
+        if (!concretaDinero) return null;
+        const filtered = accounts.filter(a => a.moneda === form.moneda);
+        return (
+          <div>
+            <label className={lbl}>Cuenta * <span className="text-[var(--color-text-muted)] normal-case lowercase">— de dónde {form.tipoMovimiento === 'INGRESO' ? 'entró' : 'salió'} el dinero</span></label>
+            <select
+              className={inp}
+              value={form.accountId ?? ''}
+              onChange={e => setF('accountId', e.target.value || undefined)}
+              required
+            >
+              <option value="">— Elegí una cuenta —</option>
+              {filtered.map(a => (
+                <option key={a.id} value={a.id}>
+                  {a.nombre} ({ACCOUNT_TYPE_LABEL[a.tipo]} · {a.moneda})
+                </option>
+              ))}
+            </select>
+            {filtered.length === 0 && (
+              <p className="text-[10px] text-[var(--color-warning-text)] mt-1">
+                No hay cuentas activas en {form.moneda}. Creá una desde Admin → Cuentas.
+              </p>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Aprobación */}
       <div>
         <label className={lbl}>Aprobación</label>
@@ -443,7 +491,7 @@ function DetailPanel({ mov, onClose, onEdit, onDelete, onCancel, onOpenDesglose,
           {mov.subcategoria && <Row label="Subcategoría" value={mov.subcategoria.nombre} />}
           <Row label="Monto" value={fmtCurrency(mov.monto, mov.moneda)} />
           {mov.tipoCambio && <Row label="T. Cambio" value={`${mov.tipoCambio} UYU/USD`} />}
-          {mov.project && <Row label="Proyecto" value={`${mov.project.code} — ${mov.project.clientName}`} />}
+          {mov.project && <Row label="Proyecto" value={mov.project.clientName} />}
           {mov.supplier && <Row label="Proveedor" value={mov.supplier.nombre} />}
           <Row label="Estado" value={STATUS_LABEL[mov.status]} />
           {mov.expectedDate && <Row label="Fecha esperada" value={fmtDate(mov.expectedDate)} />}
@@ -619,12 +667,17 @@ export function FinanceMovements() {
   const transitionMut = useMutation({
     mutationFn: (args: { id: string; newStatus: FinanceMovementStatus; paidDate?: string; dueDate?: string }) =>
       transitionMovement(args.id, { newStatus: args.newStatus, ...(args.paidDate ? { paidDate: args.paidDate } : {}), ...(args.dueDate ? { dueDate: args.dueDate } : {}) }),
-    onSuccess: () => {
-      toast.success('Estado actualizado');
+    onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ['finance-movements'] });
       qc.invalidateQueries({ queryKey: ['finance-dashboard'] });
       qc.invalidateQueries({ queryKey: ['comprobantes-widget'] });
       qc.invalidateQueries({ queryKey: ['pending-detail'] });
+      if (r.requiresItemDetail) {
+        toast.success('Estado actualizado · cargá el desglose de la factura');
+        setDesgloseMovId(r.id);
+      } else {
+        toast.success('Estado actualizado');
+      }
     },
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
@@ -668,9 +721,14 @@ export function FinanceMovements() {
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteMovement(id),
-    onSuccess: () => {
-      toast.success('Movimiento eliminado');
+    onSuccess: (r) => {
+      const msg = r.liberatedApplications > 0
+        ? `Movimiento eliminado · ${r.liberatedApplications} pago(s) liberado(s) por ${r.liberatedAmount} (saldo a favor del proveedor)`
+        : 'Movimiento eliminado';
+      toast.success(msg);
       qc.invalidateQueries({ queryKey: ['finance-movements'] });
+      qc.invalidateQueries({ queryKey: ['payments'] });
+      qc.invalidateQueries({ queryKey: ['finance-dashboard'] });
       setDetailMov(null);
     },
     onError: () => toast.error('Error al eliminar'),
@@ -768,8 +826,8 @@ export function FinanceMovements() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-border)] text-xs font-mono text-[var(--color-text-muted)] uppercase tracking-wider">
-                  {['Fecha', 'Descripción', 'Categoría', 'Proyecto', 'Vence', 'Monto', 'Estado', ''].map(h => (
-                    <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
+                  {['Fecha', 'Descripción', 'Categoría', 'Proyecto', 'Vence', 'Monto', 'Saldo USD', 'Estado', ''].map(h => (
+                    <th key={h} className={klass('px-4 py-3 font-medium', h === 'Monto' || h === 'Saldo USD' ? 'text-right' : 'text-left')}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -811,13 +869,25 @@ export function FinanceMovements() {
                         </div>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-secondary)]">{CATEGORIA_LABEL[mov.categoriaPrincipal]}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-muted)]">{mov.project?.code ?? '—'}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-muted)] truncate max-w-[180px]" title={mov.project?.clientName ?? ''}>{mov.project?.clientName ?? '—'}</td>
                       <td className={klass('px-4 py-3 whitespace-nowrap', overdue ? 'text-red-400 font-semibold' : 'text-[var(--color-text-muted)]')}>
                         {mov.dueDate ? (overdue ? '⚠ ' : '') + fmtDate(mov.dueDate) : '—'}
                       </td>
-                      <td className={klass('px-4 py-3 whitespace-nowrap font-semibold tabular-nums',
+                      <td className={klass('px-4 py-3 whitespace-nowrap text-right font-semibold tabular-nums',
                         mov.tipoMovimiento === 'INGRESO' ? 'text-green-400' : mov.tipoMovimiento === 'AJUSTE' ? 'text-blue-400' : 'text-red-400')}>
                         {mov.tipoMovimiento === 'GASTO' ? '-' : '+'}{fmtCurrency(mov.monto, mov.moneda)}
+                      </td>
+                      <td className={klass(
+                          'px-4 py-3 whitespace-nowrap text-right tabular-nums',
+                          mov.saldoEsReal
+                            ? (mov.saldoAcumuladoUSD < 0 ? 'text-red-400 font-semibold' : 'text-[var(--color-text-primary)] font-semibold')
+                            : (mov.saldoAcumuladoUSD < 0 ? 'text-red-400/60 italic' : 'text-[var(--color-text-muted)] italic'),
+                        )}
+                        title={mov.saldoEsReal
+                          ? `Saldo real al ${fmtDate(mov.fecha)}`
+                          : `Saldo proyectado al ${fmtDate(mov.fechaEfectiva)} (estado: ${STATUS_LABEL[mov.status]})`}
+                      >
+                        {fmtCurrency(mov.saldoAcumuladoUSD, 'USD')}
                       </td>
                       <td className="px-4 py-3">
                         <span className={klass('text-[10px] font-mono px-2 py-0.5 rounded uppercase', STATUS_COLOR[mov.status])}>
@@ -857,6 +927,19 @@ export function FinanceMovements() {
                   );
                 })}
               </tbody>
+              {data && (
+                <tfoot>
+                  <tr className="border-t border-[var(--color-border)] bg-[var(--color-bg-card-hover)] text-xs font-mono uppercase tracking-wider">
+                    <td colSpan={6} className="px-4 py-3 text-right text-[var(--color-text-muted)]">Saldo proyectado final USD</td>
+                    <td className={klass('px-4 py-3 text-right tabular-nums font-semibold',
+                      data.saldoFinalUSD < 0 ? 'text-red-400' : 'text-green-400')}
+                      title="Suma de TODOS los movimientos (pagados/cobrados + pendientes), ordenados por fecha efectiva. Es la proyección del flujo de fondos.">
+                      {fmtCurrency(data.saldoFinalUSD, 'USD')}
+                    </td>
+                    <td colSpan={2}></td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
           );
@@ -919,6 +1002,7 @@ export function FinanceMovements() {
                 proyectoId: editMov.projectId ?? undefined,
                 proveedorId: editMov.supplierId ?? undefined,
                 subcategoriaId: editMov.subcategoriaId ?? undefined,
+                accountId: editMov.accountId ?? undefined,
                 observaciones: editMov.observaciones ?? undefined,
               } : undefined}
             />
@@ -933,7 +1017,11 @@ export function FinanceMovements() {
           onClose={() => setDetailMov(null)}
           onEdit={() => { setEditMov(detailMov); setDetailMov(null); }}
           onDelete={() => {
-            if (confirm('¿Eliminar este movimiento?')) {
+            const tienePagos = detailMov.montoPagado > 0.005;
+            const msg = tienePagos
+              ? `Este movimiento tiene pagos aplicados por ${fmtCurrency(detailMov.montoPagado, detailMov.moneda)}. Al borrar, esos pagos quedarán como saldo a favor del proveedor (sin aplicar). ¿Confirmar?`
+              : '¿Eliminar este movimiento?';
+            if (confirm(msg)) {
               deleteMut.mutate(detailMov.id);
             }
           }}

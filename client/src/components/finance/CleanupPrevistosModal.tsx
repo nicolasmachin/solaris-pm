@@ -58,7 +58,7 @@ export function CleanupPrevistosModal({ onClose, defaultProjectId }: Props) {
     const map = new Map<string, { projectKey: string; projectLabel: string; items: PrevistoPendiente[] }>();
     for (const p of filtered) {
       const key = p.project?.id ?? 'sin-proyecto';
-      const label = p.project ? `${p.project.code} — ${p.project.clientName}` : 'Sin proyecto';
+      const label = p.project ? p.project.clientName : 'Sin proyecto';
       if (!map.has(key)) map.set(key, { projectKey: key, projectLabel: label, items: [] });
       map.get(key)!.items.push(p);
     }

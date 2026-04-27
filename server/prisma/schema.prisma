@@ -86,6 +86,7 @@ enum AuditEntityType {
   invoice_item
   payment
   payment_application
+  account
 }
 
 enum AuditAction {
@@ -249,6 +250,13 @@ enum ExpenseSourceType {
   DEVOLUCION_PROVEEDOR
   AJUSTE_INVENTARIO
   IMPORTACION_INICIAL
+  OTRO
+}
+
+enum AccountType {
+  BANCO
+  EFECTIVO
+  TARJETA
   OTRO
 }
 
@@ -900,6 +908,8 @@ model FinanceMovement {
   project             Project?                 @relation(fields: [projectId], references: [id])
   supplierId          String?
   supplier            Supplier?                @relation(fields: [supplierId], references: [id])
+  accountId           String?
+  account             Account?                 @relation(fields: [accountId], references: [id])
   observaciones       String?
   estadoAprobacion    EstadoAprobacion         @default(REGISTRADO)
   archivoAdjuntoUrl   String?
@@ -1292,6 +1302,9 @@ model Payment {
   referencia String?
   notas      String?
 
+  accountId String?
+  account   Account? @relation(fields: [accountId], references: [id])
+
   applications PaymentApplication[]
 
   createdById String?
@@ -1304,7 +1317,36 @@ model Payment {
   @@index([supplierId])
   @@index([fecha])
   @@index([deletedAt])
+  @@index([accountId])
   @@map("payments")
+}
+
+// ─── Cuentas (caja, bancos) ──────────────────────────────────────────────────
+//
+// Una Account representa una caja física o cuenta bancaria desde donde sale o
+// entra dinero. Los movimientos PAGADOS/COBRADOS y todos los Payments se
+// vinculan a una cuenta para poder calcular saldos por caja/banco.
+
+model Account {
+  id                String      @id @default(cuid())
+  nombre            String
+  tipo              AccountType
+  moneda            Moneda
+  saldoInicial      Decimal     @default(0) @db.Decimal(14, 2)
+  fechaSaldoInicial DateTime?   @db.Date
+  notas             String?
+  activa            Boolean     @default(true)
+
+  movements FinanceMovement[]
+  payments  Payment[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([activa])
+  @@index([tipo])
+  @@map("accounts")
 }
 
 model PaymentApplication {

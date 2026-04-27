@@ -7,6 +7,7 @@ import { Spinner } from '../components/ui/Spinner';
 import { getMovements, transitionMovement } from '../api/finance.api';
 import { NewPaymentForSupplierModal } from '../components/finance/NewPaymentForSupplierModal';
 import { ApplyPaymentModal } from '../components/finance/ApplyPaymentModal';
+import { InvoiceItemsDetail } from '../components/finance/InvoiceItemsDetail';
 import { fmtCurrency, fmtDate } from '../lib/finance';
 import {
   CATEGORIA_LABEL,
@@ -53,6 +54,7 @@ export function FinanceAPagar() {
   const [payForMov, setPayForMov] = useState<FinanceMovement | null>(null);
   const [createdPaymentId, setCreatedPaymentId] = useState<string | null>(null);
   const [preselectMovementForPay, setPreselectMovementForPay] = useState<string | null>(null);
+  const [desgloseMovId, setDesgloseMovId] = useState<string | null>(null);
 
   // Persistencia
   useEffect(() => {
@@ -154,7 +156,7 @@ export function FinanceAPagar() {
     for (const m of all) {
       if (!m.project || seen.has(m.project.id)) continue;
       seen.add(m.project.id);
-      opts.push({ id: m.project.id, label: `${m.project.code} — ${m.project.clientName}` });
+      opts.push({ id: m.project.id, label: m.project.clientName });
     }
     return opts.sort((a, b) => a.label.localeCompare(b.label));
   }, [all]);
@@ -172,11 +174,16 @@ export function FinanceAPagar() {
   const transitionMut = useMutation({
     mutationFn: (args: { id: string; newStatus: FinanceMovementStatus; paidDate?: string; dueDate?: string }) =>
       transitionMovement(args.id, { newStatus: args.newStatus, ...(args.paidDate ? { paidDate: args.paidDate } : {}), ...(args.dueDate ? { dueDate: args.dueDate } : {}) }),
-    onSuccess: () => {
-      toast.success('Estado actualizado');
+    onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ['finance-apagar'] });
       qc.invalidateQueries({ queryKey: ['finance-movements'] });
       qc.invalidateQueries({ queryKey: ['finance-dashboard'] });
+      if (r.requiresItemDetail) {
+        toast.success('Estado actualizado · cargá el desglose de la factura');
+        setDesgloseMovId(r.id);
+      } else {
+        toast.success('Estado actualizado');
+      }
     },
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
@@ -272,10 +279,10 @@ export function FinanceAPagar() {
                       <td className="px-4 py-3 max-w-xs truncate text-[var(--color-text-primary)]">{m.descripcion}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-secondary)]">{CATEGORIA_LABEL[m.categoriaPrincipal]}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-muted)]">{m.supplier?.nombre ?? '—'}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-muted)]">
+                      <td className="px-4 py-3 text-[var(--color-text-muted)] truncate max-w-[180px]">
                         {m.project ? (
-                          <Link to={`/proyectos/${m.project.id}`} className="hover:underline" onClick={e => e.stopPropagation()}>
-                            {m.project.code}
+                          <Link to={`/proyectos/${m.project.id}`} className="hover:underline" onClick={e => e.stopPropagation()} title={m.project.clientName}>
+                            {m.project.clientName}
                           </Link>
                         ) : '—'}
                       </td>
@@ -352,6 +359,17 @@ export function FinanceAPagar() {
           paymentId={createdPaymentId}
           preselectMovementId={preselectMovementForPay ?? undefined}
           onClose={() => { setCreatedPaymentId(null); setPreselectMovementForPay(null); }}
+        />
+      )}
+
+      {desgloseMovId && (
+        <InvoiceItemsDetail
+          movementId={desgloseMovId}
+          onClose={() => {
+            setDesgloseMovId(null);
+            qc.invalidateQueries({ queryKey: ['finance-apagar'] });
+            qc.invalidateQueries({ queryKey: ['finance-movements'] });
+          }}
         />
       )}
     </div>

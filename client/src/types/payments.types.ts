@@ -20,6 +20,8 @@ export interface Payment {
   id: string;
   supplierId: string;
   supplier: { id: string; nombre: string } | null;
+  accountId: string | null;
+  account: { id: string; nombre: string; tipo: 'BANCO' | 'EFECTIVO' | 'TARJETA' | 'OTRO'; moneda: Moneda } | null;
   fecha: string;
   monto: number;
   moneda: Moneda;

@@ -1,187 +1,142 @@
 # Novedades
 
-## v2.4
+## v3.0
 
-### 26 de abril de 2026
+### 27 de abril de 2026
 
-#### Pagos parciales y vista por proveedor
+Release grande que cierra el módulo de Finanzas: se agregaron **Cuentas (caja/bancos)** con saldos en tiempo real, se replanteó la **lista de materiales** y el **stock unificado**, se introdujo el ciclo completo de **Pagos** (parciales, notas de crédito, aplicación a facturas), apareció la pestaña de **Costos previsto vs. real** por proyecto, y la lista de Movimientos ahora tiene un **saldo USD proyectado** que considera todo el flujo de caja. También se mejoró fuerte la pantalla de **Mis Tareas** con alertas de vencimiento.
 
-**Nuevo concepto de "Pago" separado de "Factura"**
-- Antes: una factura (`FinanceMovement`) sólo podía estar en estado A pagar o Pagado, todo o nada.
-- Ahora: cada **pago real** (transferencia, cheque, efectivo) es una entidad separada que puede aplicarse a **una o varias facturas** del mismo proveedor. Una factura puede recibir varios pagos parciales.
-- **Estado nuevo: "Parcialmente pagado"** (badge ámbar) para las facturas con pagos pero saldo > 0.
+#### Cuentas (caja, bancos, tarjetas)
 
-**Página nueva "Pagos" (`/finanzas/pagos`)**
-- Tabla con todos los pagos del sistema. Filtros por proveedor, rango de fechas, "solo con saldo sin aplicar".
-- 3 KPIs: Pagos del mes, Total aplicado, Saldo sin aplicar (créditos a favor de proveedores).
-- Botón **"+ Registrar pago"** abre modal con buscador de proveedor + datos del pago + toggle "Aplicar a facturas ahora".
-- Si el toggle está activo, después de guardar abre el modal de aplicación con las facturas pendientes del mismo proveedor.
-- Click en cualquier pago abre un drawer lateral con: datos del pago, lista de aplicaciones (botón "Quitar aplicación"), botón "Aplicar a más facturas" si hay saldo, botón rojo "Anular pago" (revierte aplicaciones).
+Para saber en cualquier momento cuánta plata hay y dónde.
 
-**Modal "Aplicar pago a facturas"**
-- Lista las facturas del mismo proveedor en la misma moneda (excluye PAGADO y PREVISTO).
-- Cada fila: checkbox + monto editable. Por default propone el saldo pendiente real de la factura.
-- Footer: total a aplicar, saldo después, validación de no exceder. Botón "Aplicar" deshabilitado si no cuadra.
-- El backend valida en el commit y rechaza con mensaje claro si excede.
+- **Nuevo módulo Cuentas** con tipos: Banco, Efectivo, Tarjeta, Otro. Cada cuenta tiene moneda fija (USD o UYU), saldo inicial con fecha y notas.
+- **Página `/finanzas/cuentas`** con cards por cuenta mostrando saldo actual, total por moneda y total unificado en USD con el último tipo de cambio. Click en una cuenta abre un drawer con sus movimientos y pagos asociados.
+- **Pestaña "Cuentas" en Admin** para crear/editar/desactivar cuentas (no se pueden eliminar si tienen movimientos: pasan a inactivas).
+- **Cuenta obligatoria** cuando un movimiento concreta dinero (gasto pagado o ingreso cobrado) o cuando se registra un pago. La moneda de la cuenta tiene que coincidir con la del movimiento/pago. El backend rechaza con un mensaje claro si falta o no coincide.
 
-**Vista detallada del proveedor (`/finanzas/proveedores/:id`)**
-- Header con datos del proveedor + botones Editar / Registrar pago / Nuevo gasto.
-- 3 KPIs: Total adeudado (rojo si > 0), Saldo a favor (info si > 0), Saldo neto (verde si tenemos crédito, rojo si debemos).
-- 3 tabs:
-  - **Facturas**: tabla con monto, pagado, saldo, vencimiento, estado. Filtros: Todas / Pendientes / Parciales / Pagadas. Filas vencidas resaltadas en rojo.
-  - **Pagos**: tabla con monto, aplicado, saldo sin aplicar. Filtros: Todos / Con saldo / Aplicados. Click → drawer del pago.
-  - **Estado de cuenta**: línea de tiempo cronológica unificada con saldo acumulado en USD (UYU se convierte con el último TC). Muestra deuda (positivo) o saldo a favor (negativo).
+#### Catálogo unificado de Materiales y Stock
 
-**Lista de proveedores rediseñada**
-- Columnas nuevas: **Saldo neto** (color rojo si debemos / verde si saldo a favor), **N° facturas pendientes**, **Última actividad**.
-- Click en el nombre o en "Ver" lleva a la vista detallada.
-- Saldos por moneda separados (USD y UYU no se mezclan).
+Antes había dos tablas: catálogo de Materiales (Ingeniería) y productos de Stock. Ahora son la misma cosa.
 
-**Integraciones en Movimientos**
-- Filtro de Estado incluye "Parcialmente pagados".
-- Detail panel de cada movimiento muestra **monto pagado y saldo pendiente** si tiene pagos aplicados, además de la lista de "Aplicaciones de pago" (cada pago con fecha, método, referencia y monto aplicado).
-- Si la factura tiene proveedor y saldo > 0, aparece botón **"Registrar pago a este proveedor"** que abre el flujo de creación de Payment con monto pre-rellenado al saldo pendiente.
-- El listing devuelve `saldoPendiente` y `montoPagado` calculados en tiempo real.
-
-**Página "A pagar" actualizada**
-- Incluye también las facturas en estado **Parcialmente pagado** (antes solo COMPROMETIDO/A_PAGAR).
-- La columna "Monto" muestra el **saldo pendiente** (no el monto total) — abajo en gris muestra "de $X" cuando hay diferencia.
-- Los KPIs (Comprometido, A pagar, Vencido, Vence esta semana) se calculan sobre saldos pendientes, no montos totales.
-- Acción nueva por fila: cuando la factura tiene proveedor, aparece botón **"💲 Pagar"** que abre el flujo de Payment. Para gastos sin proveedor sigue funcionando la transición manual a PAGADO.
-
-**Cambios técnicos importantes**
-- Migración `add_payments_and_applications`: nuevas tablas `payments` y `payment_applications`, enum `FinanceMovementStatus` ampliado. La tabla legacy `finance_payments` (estaba sin uso) fue eliminada.
-- Bloqueo de transición manual a PAGADO si el movimiento tiene proveedor: el backend devuelve 400 con sugerencia de usar el flujo de Pagos. Para gastos sin proveedor (ajustes contables) la transición manual sigue disponible.
-- El cálculo de status de cada factura es **automático** al aplicar/quitar pagos (no se setea manualmente).
-- El módulo Comprobantes (legacy, sin datos) quedó **oculto en la UI** pero el backend y la base de datos lo conservan por si hace falta restaurarlo. Se eliminará en cleanup futuro si no se reactiva (revisar mayo 2026).
-
-## v2.3
-
-### 26 de abril de 2026
-
-#### Stock unificado con catálogo de Materiales + desglose de facturas
-
-**Catálogo único**
-- El catálogo de Stock y el de Materiales se unificaron: ahora son la misma tabla. Los productos físicos viven en Admin → Materiales (también editables desde Stock) y comparten precio sugerido, proveedor por defecto, categoría y unidad.
-- Cada ítem tiene un toggle **"Gestiona stock"**: si está prendido es un producto físico que entra/sale del depósito; si está apagado es un servicio (mano de obra, trámites) que no impacta inventario pero sí puede aparecer en la lista de materiales del proyecto y generar previstos.
+- **Catálogo único** con toggle **"Gestiona stock"**: si está prendido es un producto físico que entra/sale del depósito; si está apagado es un servicio (mano de obra, trámites) que no impacta inventario.
 - Campo nuevo **"Ubicación depósito"** por ítem.
-- Los datos de prueba viejos del Stock se borraron (los 5 productos demo y sus 2 movimientos). El stock arranca en 0 y se carga manualmente o vía desglose de factura.
+- **Página Stock rediseñada**: tabla con producto, categoría, unidad, stock, mínimo, ubicación y precio sugerido. Filas de servicios se distinguen con badge. Crear/editar es el mismo modal en Stock y en Admin → Materiales. Filtro "Incluir servicios (sin stock)" — por default sólo se muestran físicos. "Valor inventario" se calcula con precio sugerido.
+- **Cantidades enteras en todo el sistema**: stock, ingreso/egreso, lista de materiales del proyecto, ítems de desglose de factura. Si se intenta cargar un decimal el backend rechaza con "Las cantidades deben ser enteras".
+- **Modal de Ingreso de stock** pide ahora la causa: Factura / Devolución de proveedor / Ajuste de inventario / Importación inicial / Otro.
+- **Bloqueo**: los ítems sin gestionaStock no pueden tener movimientos de stock manuales.
 
-**Página Stock rediseñada**
-- Tabla muestra: producto, categoría, unidad, stock, mínimo, ubicación, precio sugerido. Filas de servicios se distinguen con badge.
-- Crear/editar producto = crear/editar MaterialItem (mismo modal en Stock y en Admin → Materiales).
-- Filtro nuevo: "Incluir servicios (sin stock)" — por default sólo se muestran físicos.
-- "Valor inventario" se calcula con precio sugerido (el costo promedio dejó de existir).
-- Modal de Ingreso pide ahora **causa**: Factura / Devolución de proveedor / Ajuste de inventario / Importación inicial / Otro. Aviso explícito de que para facturas conviene cargar el desglose desde Finanzas.
+#### Lista de materiales por proyecto + previstos
 
-**Desglose de factura → ingreso al stock**
-- Cuando un movimiento de gasto pasa a estado **A pagar** o **Pagado**, aparece un nuevo flujo para cargar el detalle de los ítems comprados.
-- En el form de "Nuevo movimiento", al elegir A pagar/Pagado aparece un panel ámbar con dos opciones:
-  - Botón **"Cargar desglose ahora"**: guarda el movimiento y abre directamente el modal de desglose.
-  - Toggle **"Esta factura no tiene materiales"**: se guarda como sin materiales (servicios, mano de obra) y no impacta stock.
-  - Si se ignora, el movimiento queda como "Desglose pendiente" con un toast de aviso.
-- En la lista de movimientos, cada factura A pagar/Pagado sin desglose muestra:
-  - Badge ámbar "⚠ Desglose pendiente" pegado a la descripción.
-  - Botón "Desglose" en la columna de acciones que abre el modal directo.
-- Las que ya tienen desglose confirmado muestran badge verde "✓ Stock".
-- Filtro nuevo en Movimientos: **"Pendientes de desglose"** que filtra localmente A pagar/Pagado sin desglose ni "sin materiales".
+- **Sección "Lista de materiales"** dentro del drawer de la etapa Ingeniería de cada proyecto. Tabla agrupada por categoría con buscador del catálogo, edición inline de cantidad / precio / proveedor (blur o Enter guarda) y notas por ítem.
+- **Botón "Generar previstos"**: crea un movimiento `PREVISTO` por cada material de la lista vinculado al proyecto. Si ya hay generados, propone generar sólo los faltantes.
+- **Regenerar previstos** (solo admin): borra los actuales y los vuelve a generar.
+- Al eliminar un material que ya tenía previsto, se borra también el movimiento.
+- **Limpieza de previstos al registrar compra real**: en el form de un movimiento Comprometido / A pagar aparece un botón "🧹 Limpiar previstos asociados…" que abre un modal con los previstos pendientes agrupados por proyecto y permite eliminar los que ya quedaron cubiertos por la compra real.
+- **Modal "Registrar consumo"** del proyecto: selector con buscador filtrable **por categoría** arriba del dropdown; sólo lista productos físicos (gestionaStock=true).
 
-**Modal de desglose**
-- Header con monto objetivo del movimiento y toggle "Esta factura no tiene materiales".
-- Tabla editable inline: cantidad y precio unitario con blur/Enter; subtotal calculado.
-- Selector de productos del catálogo (sólo físicos), agrupado por categoría con buscador.
-- Footer con: total ítems, monto del movimiento, **diferencia** en rojo si no cuadra. Botón "Confirmar desglose" deshabilitado hasta que la diferencia sea menor a 1 centavo.
-- Al confirmar:
-  - Se genera un movimiento de stock de tipo **Ingreso** por cada ítem con causa **Factura**.
-  - Se actualiza el stock actual del catálogo automáticamente.
-  - La factura queda marcada como "Stock ingresado".
-- Si después se anula la factura, todos esos ingresos de stock se revierten automáticamente.
+#### Movimientos: ciclo de vida, desglose y saldo USD proyectado
 
-**Anular movimiento**
-- En el detalle de un movimiento con desglose confirmado, botón nuevo **"Anular movimiento (revierte stock)"** con confirmación.
-- Crea un movimiento de stock espejo (sale lo que entró) para mantener el saldo correcto.
-- El movimiento original queda marcado como ANULADO con `deletedAt` (preserva histórico para auditoría).
+**Estados del ciclo de vida** de un movimiento de gasto:
+- **Previsto** (gris): proyección desde la lista de materiales.
+- **Comprometido** (azul): compra acordada, sin fecha de pago.
+- **A pagar** (ámbar): con fecha de vencimiento.
+- **Parcialmente pagado** (ámbar oscuro): tiene pagos aplicados pero saldo > 0.
+- **Pagado** (verde): cerrado.
 
-**Alertas globales**
-- En el **Dashboard general** (página principal), si hay facturas con stock sin desglosar, aparece un banner ámbar arriba con link directo (sólo para usuarios con permiso FINANZAS.VIEW).
-- En el **Dashboard de Finanzas** (`/finanzas`), banner equivalente al lado del de stock bajo mínimo.
+**Listado de Movimientos**:
+- Filtros nuevos: **Estado** (incluye "Parcialmente pagados") y **"Pendientes de desglose"** (A pagar/Pagado sin desglose ni "sin materiales").
+- Columna **"Vence"**: filas vencidas (A pagar con fecha pasada) en rojo con ⚠.
+- **Saldo USD proyectado** (columna nueva) — el saldo acumulado considerando TODOS los movimientos del sistema (ingresos suman, gastos restan), ordenados por **fecha efectiva**: si el movimiento ya concretó dinero la fecha real, sino la fecha esperada → vencimiento → fecha. Filas reales (PAGADO/cobrado) se ven con texto sólido; las proyectadas en gris itálico. Tooltip por fila explica el cálculo. Footer muestra el "Saldo proyectado final USD".
+- **Acciones rápidas**: "→ A pagar" (pide vencimiento), "→ Pagado" (pide fecha). Si la transición a A pagar / Pagado es para un gasto con proveedor sin desglose y no marcado "sin materiales", **abre automáticamente el modal de desglose**.
+- **Default categoría "Consumo stock"** al crear un gasto nuevo.
+- **Identificación por nombre del cliente** en lugar del código del proyecto en todos los selectores y columnas (el código sigue existiendo internamente pero no se muestra al usuario).
 
-**Pestaña Costos del proyecto rediseñada**
-- Antes los KPIs eran Previsto/Comprometido/A pagar/Pagado de FinanceMovements. Ahora la pestaña refleja **costo real consumido** del proyecto, basado en los egresos de stock vinculados al `projectId`.
-- KPIs: Costo total (USD + UYU desglosados), ítems consumidos, presupuesto del proyecto, **margen estimado** (presupuesto USD − costo total USD, con porcentaje).
-- Tabla por categoría con totales consolidados en USD.
-- Tabla detalle de cada consumo: ítem, categoría, cantidad, precio unitario (con marca `cat.` si vino del precio sugerido del catálogo en lugar del costo grabado), subtotal, fecha.
-- UYU se convierte a USD con el último tipo de cambio cargado; se aclara explícitamente abajo.
+**Desglose de factura → ingreso al stock** (para movimientos en A pagar / Pagado):
+- En el form de Nuevo movimiento aparece un panel ámbar con dos opciones: **"Cargar desglose ahora"** (guarda y abre el modal) o toggle **"Esta factura no tiene materiales"** (servicios, mano de obra). Si se ignora, queda como "Desglose pendiente" con badge ámbar **⚠ Desglose pendiente**.
+- **Modal de desglose**: header con monto objetivo, tabla editable inline (cantidad entera + precio unitario con blur/Enter), selector de productos del catálogo agrupado por categoría con buscador, **botón "+ Crear nuevo material"** que abre un mini-form (nombre, categoría, unidad, precio sugerido, moneda) y agrega el ítem creado al desglose con cantidad 1 (requiere permiso CONFIGURACION). Footer con total ítems vs monto del movimiento y diferencia en rojo si no cuadra; "Confirmar desglose" deshabilitado hasta que la diferencia sea menor a un centavo.
+- **Al confirmar**: se generan movimientos de stock tipo Ingreso (causa Factura) y la factura queda marcada con badge verde **✓ Stock**.
+- **Anular movimiento** (en el detalle): botón rojo que revierte automáticamente todos los ingresos de stock asociados con un movimiento espejo (sale lo que entró). El movimiento queda con `deletedAt` para auditoría.
 
-**Pestaña Materiales del proyecto**
-- El dropdown del modal "Registrar consumo" ahora sólo lista productos físicos (gestionaStock=true). Servicios no aparecen porque no tiene sentido consumir mano de obra del depósito.
+#### Pagos como entidades separadas
+
+Antes una factura era todo o nada (A pagar / Pagado). Ahora cada **pago real** (transferencia, cheque, efectivo) es una entidad separada que puede aplicarse a una o varias facturas del mismo proveedor.
+
+- **Página `/finanzas/pagos`** con tabla, filtros (proveedor, rango de fechas, "solo con saldo sin aplicar") y 3 KPIs: Pagos del mes, Total aplicado, Saldo sin aplicar.
+- **Cuenta obligatoria** en cada pago (con moneda compatible).
+- **Botón "+ Registrar pago"** abre modal con buscador de proveedor + datos del pago + cuenta + toggle "Aplicar a facturas ahora". Si está activo, después de guardar abre el modal de aplicación.
+- **Pagos negativos permitidos** (notas de crédito o devoluciones del proveedor). Se identifican con badge azul **"Nota de crédito"** en el listado y aviso al guardar. Se aplican como saldo a favor del proveedor para compensar facturas positivas.
+- **Drawer de cada pago**: datos, lista de aplicaciones (con "Quitar aplicación"), "Aplicar a más facturas" si hay saldo, y botón rojo **"Anular pago"** que revierte todas las aplicaciones y restituye el estado correcto de cada factura asociada (vuelve a A pagar, Parcialmente pagado o Pagado según corresponda).
+- **Modal "Aplicar pago a facturas"**: lista las facturas del mismo proveedor + moneda. Cada fila checkbox + monto editable, pre-cargado con `min(saldo pendiente, saldo del pago sin aplicar)`. Footer con total a aplicar, saldo después y validación de no exceder.
+- **Borrar un movimiento con pagos aplicados** ahora libera correctamente esos pagos como saldo a favor del proveedor (antes quedaban "huérfanos"). Confirmación clara en la UI antes de borrar: "Este movimiento tiene pagos aplicados por X. Al borrar, esos pagos quedarán como saldo a favor del proveedor."
+- **Bloqueo** de la transición manual a PAGADO cuando el movimiento tiene proveedor: el flujo correcto es registrar un pago. Para gastos sin proveedor (ajustes contables) la transición manual sigue.
+
+#### Vista detallada del proveedor
+
+Acceso desde la lista de Proveedores o desde cualquier movimiento.
+
+- **Header** con datos del proveedor + botones Editar / Registrar pago / Nuevo gasto.
+- **3 KPIs**: Total adeudado (rojo si > 0), Saldo a favor (info si > 0), Saldo neto (verde si tenemos crédito, rojo si debemos).
+- **3 tabs**:
+  - **Facturas** con monto, pagado, saldo, vencimiento, estado. Filtros: Todas / Pendientes / Parciales / Pagadas. Vencidas resaltadas en rojo.
+  - **Pagos** con monto, aplicado, saldo sin aplicar. Filtros: Todos / Con saldo / Aplicados.
+  - **Estado de cuenta** con línea de tiempo cronológica unificada y saldo acumulado en USD.
+- **Lista de proveedores rediseñada**: columnas Saldo neto (rojo si debemos / verde si saldo a favor), N° facturas pendientes, Última actividad. Saldos por moneda separados.
+- **Datos de contacto**: el form persiste correctamente RUT/CUIT, persona de contacto y dirección. La tabla los muestra. El nombre del proveedor es **único entre activos**.
+
+#### Página "A pagar"
+
+- Nueva vista en `/finanzas/a-pagar` con todo lo Comprometido, A pagar y Parcialmente pagado, ordenado por vencimiento ascendente.
+- **4 KPIs**: Comprometido total, A pagar total, Vencido (rojo si > 0), Vence esta semana. Calculados sobre saldos pendientes, no montos totales.
+- **Filtros**: rango (Vencidos / Esta semana / Este mes / Próximos 30 días / Todos), proyecto, proveedor. Persistentes.
+- Columna "Monto" muestra el **saldo pendiente** (no el monto total): "saldo $X · de $Y" cuando hay diferencia.
+- **Acciones por fila**: "💲 Pagar" (abre el flujo de Payment) si tiene proveedor, o "→ A pagar" / "Marcar como pagado" para gastos sin proveedor.
+- **Apertura automática del modal de desglose** al transicionar un gasto a A pagar (mismo flujo que en Movimientos).
+
+#### Costos del proyecto: previsto vs. real
+
+La pestaña Costos del proyecto se rediseñó para mostrar los dos lados de la moneda.
+
+- **3 KPIs arriba**: Presupuesto, Desviación previsto vs. real (rojo si gastamos de más, verde si de menos), Margen real estimado.
+- **Dos secciones paralelas**:
+  - **Previsto**: total (USD + UYU desglosados) con equivalente en USD, margen previsto vs. presupuesto y desglose por categoría — basado en la lista de materiales cargada por Ingeniería (cantidad × precio unitario).
+  - **Real**: ídem, basado en los egresos de stock vinculados al proyecto (consumos), valorados al costo unitario que tenían al consumirse o al precio sugerido del catálogo (con marca `cat.`).
+- **Tabla "Comparación por ítem"** que une previsto y real por material: cantidad prevista vs. real (Δ), USD previsto vs. real (Δ con color rojo si gastamos más, verde si menos).
+- **Tabla detalle de consumos reales** con ítem, categoría, cantidad, precio, subtotal y fecha.
+- UYU se convierte a USD con el último tipo de cambio cargado; se aclara abajo.
+
+#### Mis Tareas: alertas de vencimiento + bug fix de herencia
+
+**Bug crítico arreglado**: cuando una subetapa tenía un responsable explícito distinto al de la etapa, igual aparecía en la lista de Mis Tareas del responsable de la etapa. Ahora el filtro respeta:
+- Si la subetapa tiene responsable explícito → aparece sólo para ese usuario.
+- Si la subetapa no tiene responsable → la hereda el responsable de la etapa.
+- Si la subetapa tiene un responsable explícito **distinto** del de la etapa → no aparece para el responsable de la etapa.
+
+**Sistema de alertas de vencimiento**:
+- **Banner** arriba de la lista cuando hay tareas vencidas o que vencen hoy: "Tenés X tareas vencidas y Y que vencen hoy." (con pluralización correcta). Icono ⚠ con animación de "ring pulse".
+- **Filas con alerta**:
+  - Fondo sutil rojo claro (vencidas), amarillo claro (vence hoy / próxima a vencer).
+  - **Dot pulsante** (animación radar) al lado del nombre cuando es vencida o vence hoy.
+  - Texto contextual: "vencida hace Nd" / "vence hoy" / "vence en Nd" / "vence el DD-mes".
+  - **Badge** a la derecha con el plazo en formato corto: "Nd atraso" / "Hoy" / "Nd".
+- **Dark mode** soportado: las animaciones y colores usan tokens que cambian según el tema.
+- **Accesibilidad**: respeta `prefers-reduced-motion` (las animaciones se desactivan).
+
+#### Flujo de fondos
+
+- El widget muestra ahora también Previsto total, Comprometido total y A pagar total.
+- Toggle **"Incluir previstos en proyección"**: con previstos = visión pesimista; sin previstos = sólo compromisos firmes.
+
+#### Alertas globales
+
+- En el **Dashboard general** y en el **Dashboard de Finanzas**, banners ámbar arriba si hay facturas con stock sin desglosar (sólo para usuarios con permiso FINANZAS.VIEW).
 
 #### Cambios técnicos importantes
-- Migración `unify_stock_with_materials_and_invoice_items`: se eliminó la tabla `stock_products`; los movimientos de stock ahora apuntan a `material_items`. Tabla nueva `invoice_items` para el desglose por factura.
-- Endpoints nuevos: `GET/POST/PATCH/DELETE /api/finance/movements/:id/invoice-items`, `POST /api/finance/movements/:id/invoice-items/confirm`, `POST /api/finance/movements/:id/mark-no-materials`, `POST /api/finance/movements/:id/cancel`, `GET /api/finance/movements/pending-detail`, `GET /api/projects/:id/cost-summary`.
 
-## v2.2
-
-### 26 de abril de 2026
-
-#### Previsión de gastos por proyecto + estados de movimientos
-Sistema completo para planificar el gasto de cada proyecto desde la lista de materiales y seguir el ciclo de cada compromiso hasta el pago.
-
-**Catálogo maestro de materiales (Admin → Materiales)**
-- Nueva pestaña en Administración con dos secciones:
-  - **Categorías**: 9 categorías precargadas (Paneles, Inversores, Estructura, Cableado, Protecciones, Mano de obra, Trámites, Logística, Otros). Editables, reordenables con flechas, desactivables. Si una categoría tiene ítems vinculados, al eliminarla queda inactiva en lugar de borrarse.
-  - **Ítems**: catálogo central de materiales con nombre, descripción, unidad, precio sugerido (USD o UYU) y proveedor por defecto. Filtros por categoría, búsqueda, mostrar inactivos. Si un ítem está usado en algún proyecto, "Eliminar" lo desactiva en lugar de borrarlo.
-
-**Lista de materiales en cada proyecto (etapa Ingeniería)**
-- Dentro del drawer de la etapa **Ingeniería** del proyecto aparece una sección "Lista de materiales" con tabla agrupada por categoría.
-- Botón **"+ Agregar ítem"** abre un buscador del catálogo agrupado por categorías; permite agregar varios sin cerrar el modal.
-- **Cantidad, precio y proveedor** se editan inline (blur o Enter guarda).
-- Cada fila puede tener una **nota** (ícono de chincheta).
-- Total estimado en el footer; subtotales por categoría en cada header.
-
-**Generación de gastos previstos**
-- Botón **"Generar previstos"** crea un movimiento `PREVISTO` por cada material de la lista, vinculado al proyecto. Si hay materiales sin previsto generado, el botón propone generar sólo los faltantes.
-- Banner cuando ya hay previstos generados con la fecha de última actualización.
-- **Regenerar** (solo admin): borra los previstos actuales y vuelve a generarlos en base a la lista. Pide confirmación.
-- Si eliminás un material que tenía previsto generado, se borra también el movimiento.
-
-**Nuevos estados de movimiento (Finanzas → Movimientos)**
-- Cada movimiento de gasto tiene ahora un **estado** del ciclo de vida:
-  - **Previsto** (gris): proyección desde la lista de materiales, no se crea manualmente.
-  - **Comprometido** (azul): compra acordada pero todavía sin fecha de pago.
-  - **A pagar** (ámbar): tiene fecha de vencimiento.
-  - **Pagado** (verde): cerrado.
-- **Filtro nuevo "Estado"** en la lista de movimientos, persistido por usuario.
-- **Columna nueva "Vence"** muestra el dueDate; las filas vencidas (status A pagar con fecha pasada) se resaltan en rojo con ⚠.
-- **Acciones rápidas** en la fila: si está Comprometido aparece botón "→ A pagar" (pide vencimiento); si está A pagar aparece "→ Pagado" (pide fecha de pago).
-- Modal de crear/editar adapta los campos según el estado (fecha esperada para previstos/comprometidos, vencimiento para A pagar).
-
-**Página "Cuentas a pagar" (Finanzas → A pagar)**
-- Nueva vista en `/finanzas/a-pagar` con todo lo Comprometido y A pagar ordenado por vencimiento ascendente.
-- 4 KPIs en el header: Comprometido total, A pagar total, Vencido (en rojo si > 0), Vence esta semana.
-- Filtros por rango (Vencidos / Esta semana / Este mes / Próximos 30 días / Todos), proyecto y proveedor. Persistencia.
-- Botón "Marcar como pagado" o "→ A pagar" en cada fila.
-- Acceso rápido desde el dashboard de Finanzas.
-
-**Limpieza de previstos al registrar la compra real**
-- Al crear o editar un movimiento con estado **Comprometido** o **A pagar**, aparece un botón "🧹 Limpiar previstos asociados…".
-- Abre un modal con todos los previstos pendientes agrupados por proyecto, con buscador y checkboxes individuales o por proyecto.
-- Muestra el total seleccionado y al confirmar elimina los previstos elegidos para que no queden contados dos veces.
-
-**Pestaña "Costos" en cada proyecto**
-- Junto a UTE, en el panel inferior del proyecto, hay una pestaña nueva **Costos** con todos los movimientos vinculados.
-- 4 KPIs: Previsto, Comprometido, A pagar, Pagado, separados por moneda.
-- Si el proyecto tiene presupuesto cargado, calcula el **margen estimado** (presupuesto − todos los costos en USD) y el porcentaje.
-- Filtro rápido por estado.
-
-**Flujo de fondos enriquecido**
-- El widget de Flujo de fondos ahora muestra también: Previsto total, Comprometido total, A pagar total.
-- Toggle "Incluir previstos en proyección" cambia cómo se calcula el saldo proyectado (con previstos = visión pesimista; sin previstos = sólo compromisos firmes).
-
-**Proveedores con datos de contacto**
-- El form de proveedores ahora persiste correctamente **RUT/CUIT, persona de contacto y dirección** (antes RUT se perdía al guardar).
-- La tabla de proveedores muestra RUT y contacto. Filtros nuevos: buscador por nombre/RUT/contacto/email + Activos/Todos/Inactivos. Persistencia.
-- El nombre del proveedor ahora es **único entre activos**: el backend rechaza duplicados.
+- Nuevas migraciones: `add_payments_and_applications`, `unify_stock_with_materials_and_invoice_items`, `add_accounts`. Tablas nuevas: `payments`, `payment_applications`, `invoice_items`, `accounts`. Tabla `stock_products` eliminada (los movimientos de stock apuntan a `material_items`). Tabla legacy `finance_payments` eliminada. Enum `FinanceMovementStatus` ampliado con `PARCIALMENTE_PAGADO`. Enum nuevo `AccountType`.
+- El cálculo de status de cada factura es **automático** al aplicar/quitar pagos (no se setea manualmente).
+- El módulo Comprobantes (legacy, sin datos) quedó **oculto en la UI** pero el backend y la base de datos lo conservan por si hace falta restaurarlo.
+- Endpoints nuevos: CRUD de `/api/accounts` + `/balance` + `/summary`; CRUD de `/api/finance/payments` + `/applications`; `GET/POST/PATCH/DELETE /api/finance/movements/:id/invoice-items`, `/invoice-items/confirm`, `/mark-no-materials`, `/cancel`, `/pending-detail`; `GET /api/projects/:id/cost-summary` con previsto/real/comparación.
 
 ## v2.1
 

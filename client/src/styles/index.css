@@ -81,6 +81,26 @@
   /* Variantes "soft" para fechas completadas / éxitos (badges con check). */
   --color-success-bg-soft: rgba(16, 185, 129, 0.10);
   --color-success-text-strong: #34d399;
+
+  /* Alertas de vencimiento de tareas (Mis Tareas). */
+  --color-alert-overdue-bg: rgba(220, 38, 38, 0.08);
+  --color-alert-today-bg: rgba(245, 158, 11, 0.08);
+  --color-alert-upcoming-bg: rgba(245, 158, 11, 0.05);
+  --color-alert-banner-bg: rgba(220, 38, 38, 0.12);
+  --color-alert-banner-border: #dc2626;
+  --color-alert-banner-text: #fca5a5;
+  --color-alert-overdue-text: #fca5a5;
+  --color-alert-today-text: #fbbf24;
+  --color-alert-upcoming-text: #cbd5e1;
+  --color-alert-overdue-dot: #ef4444;
+  --color-alert-today-dot: #f59e0b;
+  --color-alert-badge-overdue-bg: rgba(220, 38, 38, 0.15);
+  --color-alert-badge-overdue-border: rgba(220, 38, 38, 0.30);
+  --color-alert-badge-today-bg: rgba(245, 158, 11, 0.15);
+  --color-alert-badge-today-border: rgba(245, 158, 11, 0.30);
+  --color-alert-badge-neutral-bg: rgba(148, 163, 184, 0.10);
+  --color-alert-badge-neutral-text: #cbd5e1;
+  --color-alert-badge-neutral-border: rgba(148, 163, 184, 0.25);
 }
 
 :root {
@@ -162,6 +182,26 @@
   --color-pipe-active-label: #94a3b8;
   --color-pipe-active-subitem: #92400e;
   --color-pipe-active-dot: #f59e0b;
+
+  /* Alertas de vencimiento de tareas — overrides para light. */
+  --color-alert-overdue-bg: #fef2f2;
+  --color-alert-today-bg: #fffbeb;
+  --color-alert-upcoming-bg: #fffbeb;
+  --color-alert-banner-bg: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  --color-alert-banner-border: #dc2626;
+  --color-alert-banner-text: #991b1b;
+  --color-alert-overdue-text: #b91c1c;
+  --color-alert-today-text: #b45309;
+  --color-alert-upcoming-text: #475569;
+  --color-alert-overdue-dot: #ef4444;
+  --color-alert-today-dot: #f59e0b;
+  --color-alert-badge-overdue-bg: #fef2f2;
+  --color-alert-badge-overdue-border: #fecaca;
+  --color-alert-badge-today-bg: #fffbeb;
+  --color-alert-badge-today-border: #fde68a;
+  --color-alert-badge-neutral-bg: #f1f5f9;
+  --color-alert-badge-neutral-text: #475569;
+  --color-alert-badge-neutral-border: #e2e8f0;
 }
 
 * {

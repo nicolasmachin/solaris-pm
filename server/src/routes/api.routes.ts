@@ -8,6 +8,7 @@ import { promisify } from "node:util";
 import bcrypt from "bcryptjs";
 import type { FastifyInstance } from "fastify";
 import {
+  AccountType,
   Action,
   AuditAction,
   AuditEntityType,
@@ -3814,7 +3815,23 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const visibleModules = new Set(userPermissions.map((p) => p.module));
 
     // 2. Etapas activas: no completadas, no borradas, proyecto activo, con al
-    //    menos una subetapa no completada y visible para el usuario.
+    //    menos una subetapa pendiente que pertenece al targetUser.
+    //    Pertenencia: subetapa.userId === targetUser.id (explícita) O
+    //    subetapa.userId IS NULL Y stage.responsibleUserId === targetUser.id
+    //    (heredada del responsable de etapa). Si la subetapa tiene userId
+    //    explícito a otro usuario, NO aparece para el targetUser aunque éste
+    //    sea el responsable de la etapa.
+    const substagePending: Prisma.SubstageWhereInput = {
+      deletedAt: null,
+      isActive: true,
+      status: { not: SubstageStatus.COMPLETED },
+    };
+    const substageBelongsToTarget: Prisma.SubstageWhereInput = {
+      OR: [
+        { userId: targetUser.id },
+        { userId: null, stage: { responsibleUserId: targetUser.id } },
+      ],
+    };
     const stages = await prisma.stage.findMany({
       where: {
         deletedAt: null,
@@ -3824,21 +3841,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
           status: { notIn: [ProjectStatus.ARCHIVED, ProjectStatus.COMPLETED] },
         },
         substages: {
-          some: {
-            deletedAt: null,
-            isActive: true,
-            status: { not: SubstageStatus.COMPLETED },
-          },
+          some: { ...substagePending, ...substageBelongsToTarget },
         },
       },
       include: {
         project: { select: { id: true, clientName: true, code: true } },
         substages: {
-          where: {
-            deletedAt: null,
-            isActive: true,
-            status: { not: SubstageStatus.COMPLETED },
-          },
+          where: { ...substagePending, ...substageBelongsToTarget },
           include: {
             user: { select: { id: true, name: true } },
             checklistItems: { where: { deletedAt: null }, select: { completed: true } },
@@ -7361,6 +7370,239 @@ export async function registerApiRoutes(app: FastifyInstance) {
       }
     });
 
+    // ─── Finance: Accounts (cajas / cuentas bancarias) ────────────────────────
+    //
+    // Una Account representa una caja o banco de donde sale/entra dinero.
+    // Movimientos PAGADOS/COBRADOS y Payments deben vincular una cuenta. El
+    // saldo se calcula on-demand sumando saldoInicial + ingresos - gastos -
+    // pagos vinculados.
+
+    const accountCreateSchema = z.object({
+      nombre: z.string().min(1),
+      tipo: z.nativeEnum(AccountType),
+      moneda: z.nativeEnum(Moneda),
+      saldoInicial: z.coerce.number().default(0),
+      fechaSaldoInicial: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+      notas: z.string().optional(),
+    }).strict();
+
+    const accountPatchSchema = z.object({
+      nombre: z.string().min(1).optional(),
+      tipo: z.nativeEnum(AccountType).optional(),
+      moneda: z.nativeEnum(Moneda).optional(),
+      saldoInicial: z.coerce.number().optional(),
+      fechaSaldoInicial: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+      notas: z.string().nullable().optional(),
+      activa: z.boolean().optional(),
+    }).strict();
+
+    function serializeAccount(a: {
+      id: string; nombre: string; tipo: AccountType; moneda: Moneda;
+      saldoInicial: import("@prisma/client/runtime/library").Decimal;
+      fechaSaldoInicial: Date | null; notas: string | null; activa: boolean;
+      createdAt: Date; updatedAt: Date; deletedAt: Date | null;
+      _count?: { movements: number; payments: number };
+    }) {
+      return {
+        id: a.id,
+        nombre: a.nombre,
+        tipo: a.tipo,
+        moneda: a.moneda,
+        saldoInicial: Number(a.saldoInicial),
+        fechaSaldoInicial: a.fechaSaldoInicial ? serializeDateOnly(a.fechaSaldoInicial) : null,
+        notas: a.notas,
+        activa: a.activa,
+        createdAt: serializeDate(a.createdAt),
+        updatedAt: serializeDate(a.updatedAt),
+        deletedAt: a.deletedAt ? serializeDate(a.deletedAt) : null,
+        ...(a._count ? { _count: a._count } : {}),
+      };
+    }
+
+    /** Calcula el saldo actual de una cuenta sumando todos los movimientos
+     *  PAGADOS/COBRADOS y los pagos asociados. */
+    async function computeAccountBalance(accountId: string): Promise<{
+      saldoInicial: number; ingresos: number; gastos: number; pagos: number; saldoActual: number;
+    }> {
+      const account = await prisma.account.findUnique({ where: { id: accountId } });
+      if (!account) throw notFound("ACCOUNT_NOT_FOUND", "Cuenta no encontrada");
+      const saldoInicial = Number(account.saldoInicial);
+
+      // Ingresos: movements INGRESO con cobrado=true
+      const ingresoAgg = await prisma.financeMovement.aggregate({
+        where: { accountId, deletedAt: null, tipoMovimiento: TipoMovimiento.INGRESO, cobrado: true },
+        _sum: { monto: true },
+      });
+      // Gastos: movements GASTO con pagado=true (sólo los que no tienen pagos vía Payment;
+      // si tienen Payment, ese sale de la cuenta del Payment, no de aquí)
+      const gastoAgg = await prisma.financeMovement.aggregate({
+        where: { accountId, deletedAt: null, tipoMovimiento: TipoMovimiento.GASTO, pagado: true },
+        _sum: { monto: true },
+      });
+      // Pagos: payments con accountId
+      const pagosAgg = await prisma.payment.aggregate({
+        where: { accountId, deletedAt: null },
+        _sum: { monto: true },
+      });
+
+      const ingresos = Number(ingresoAgg._sum.monto ?? 0);
+      const gastos = Number(gastoAgg._sum.monto ?? 0);
+      const pagos = Number(pagosAgg._sum.monto ?? 0);
+      const saldoActual = Math.round((saldoInicial + ingresos - gastos - pagos) * 100) / 100;
+      return { saldoInicial, ingresos, gastos, pagos, saldoActual };
+    }
+
+    app.get("/accounts", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const query = z.object({
+        activa: z.enum(["true", "false", "all"]).optional(),
+        tipo: z.nativeEnum(AccountType).optional(),
+        moneda: z.nativeEnum(Moneda).optional(),
+      }).parse(request.query);
+
+      const where: Prisma.AccountWhereInput = { deletedAt: null };
+      if (query.activa !== "all") where.activa = query.activa === "false" ? false : true;
+      if (query.tipo) where.tipo = query.tipo;
+      if (query.moneda) where.moneda = query.moneda;
+
+      const accounts = await prisma.account.findMany({
+        where,
+        include: { _count: { select: { movements: true, payments: true } } },
+        orderBy: [{ activa: "desc" }, { nombre: "asc" }],
+      });
+      return accounts.map(serializeAccount);
+    });
+
+    app.get("/accounts/:id", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const account = await prisma.account.findFirst({
+        where: { id, deletedAt: null },
+        include: { _count: { select: { movements: true, payments: true } } },
+      });
+      if (!account) throw notFound("ACCOUNT_NOT_FOUND", "Cuenta no encontrada");
+      const balance = await computeAccountBalance(id);
+      return { ...serializeAccount(account), balance };
+    });
+
+    app.get("/accounts/:id/balance", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      return computeAccountBalance(id);
+    });
+
+    app.get("/accounts/summary", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async () => {
+      const accounts = await prisma.account.findMany({
+        where: { deletedAt: null, activa: true },
+        orderBy: { nombre: "asc" },
+      });
+
+      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
+      const fallbackRate = lastRate ? (decimalToNumber(lastRate.usdToUyu) ?? 1) : 1;
+
+      const porCuenta = await Promise.all(
+        accounts.map(async (a) => {
+          const balance = await computeAccountBalance(a.id);
+          return {
+            id: a.id,
+            nombre: a.nombre,
+            tipo: a.tipo,
+            moneda: a.moneda,
+            saldoActual: balance.saldoActual,
+          };
+        }),
+      );
+
+      let totalUSD = 0;
+      let totalUYU = 0;
+      for (const p of porCuenta) {
+        if (p.moneda === Moneda.USD) totalUSD += p.saldoActual;
+        else totalUYU += p.saldoActual;
+      }
+      const totalUnificadoUSD = Math.round((totalUSD + (fallbackRate > 0 ? totalUYU / fallbackRate : 0)) * 100) / 100;
+
+      return {
+        porCuenta,
+        totalesPorMoneda: { USD: Math.round(totalUSD * 100) / 100, UYU: Math.round(totalUYU * 100) / 100 },
+        totalUnificadoUSD,
+        exchangeRate: lastRate ? { usdToUyu: fallbackRate, date: serializeDate(lastRate.date) } : null,
+      };
+    });
+
+    app.post("/accounts", { preHandler: authorize(Module.CONFIGURACION, Action.CREATE) }, async (request) => {
+      const user = ensureUser(request);
+      const body = accountCreateSchema.parse(request.body);
+      const account = await prisma.account.create({
+        data: {
+          nombre: body.nombre,
+          tipo: body.tipo,
+          moneda: body.moneda,
+          saldoInicial: new Prisma.Decimal(body.saldoInicial),
+          fechaSaldoInicial: body.fechaSaldoInicial ? parseDateOnly(body.fechaSaldoInicial) : null,
+          notas: body.notas,
+        },
+      });
+      await createAuditEntry({
+        entityType: AuditEntityType.account,
+        entityId: account.id,
+        userId: user.id,
+        action: AuditAction.created,
+        description: `Creó cuenta ${account.nombre} (${account.tipo} ${account.moneda})`,
+      });
+      return serializeAccount(account);
+    });
+
+    app.patch("/accounts/:id", { preHandler: authorize(Module.CONFIGURACION, Action.EDIT) }, async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const body = accountPatchSchema.parse(request.body);
+      const existing = await prisma.account.findFirst({ where: { id, deletedAt: null } });
+      if (!existing) throw notFound("ACCOUNT_NOT_FOUND", "Cuenta no encontrada");
+
+      const data: Prisma.AccountUpdateInput = {};
+      if (body.nombre != null) data.nombre = body.nombre;
+      if (body.tipo) data.tipo = body.tipo;
+      if (body.moneda) data.moneda = body.moneda;
+      if (body.saldoInicial != null) data.saldoInicial = new Prisma.Decimal(body.saldoInicial);
+      if (body.fechaSaldoInicial !== undefined) {
+        data.fechaSaldoInicial = body.fechaSaldoInicial ? parseDateOnly(body.fechaSaldoInicial) : null;
+      }
+      if (body.notas !== undefined) data.notas = body.notas;
+      if (body.activa != null) data.activa = body.activa;
+
+      const updated = await prisma.account.update({ where: { id }, data });
+      await createAuditEntry({
+        entityType: AuditEntityType.account,
+        entityId: id,
+        userId: user.id,
+        action: AuditAction.updated,
+        description: `Actualizó cuenta ${existing.nombre}`,
+      });
+      return serializeAccount(updated);
+    });
+
+    app.delete("/accounts/:id", { preHandler: authorize(Module.CONFIGURACION, Action.DELETE) }, async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const existing = await prisma.account.findFirst({
+        where: { id, deletedAt: null },
+        include: { _count: { select: { movements: true, payments: true } } },
+      });
+      if (!existing) throw notFound("ACCOUNT_NOT_FOUND", "Cuenta no encontrada");
+      if (existing._count.movements > 0 || existing._count.payments > 0) {
+        throw badRequest(
+          "ACCOUNT_HAS_MOVEMENTS",
+          `No se puede eliminar: la cuenta tiene ${existing._count.movements} movimiento(s) y ${existing._count.payments} pago(s) asociado(s). Desactivala en lugar de borrarla.`,
+        );
+      }
+      await prisma.account.update({ where: { id }, data: { deletedAt: new Date(), activa: false } });
+      await createAuditEntry({
+        entityType: AuditEntityType.account,
+        entityId: id,
+        userId: user.id,
+        action: AuditAction.deleted,
+        description: `Eliminó cuenta ${existing.nombre}`,
+      });
+      return { success: true };
+    });
+
     // ─── Finance: Suppliers ───────────────────────────────────────────────────
 
     const supplierCreateSchema = z.object({
@@ -7700,7 +7942,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       moneda: z.nativeEnum(Moneda).default(Moneda.USD),
       defaultSupplierId: z.string().optional(),
       gestionaStock: z.boolean().optional(),
-      stockMinimo: z.coerce.number().nonnegative().optional(),
+      stockMinimo: z.coerce.number().int({ message: "Las cantidades deben ser enteras" }).nonnegative().optional(),
       ubicacionDeposito: z.string().optional(),
     }).strict();
 
@@ -7714,7 +7956,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       defaultSupplierId: z.string().nullable().optional(),
       activo: z.boolean().optional(),
       gestionaStock: z.boolean().optional(),
-      stockMinimo: z.coerce.number().nonnegative().nullable().optional(),
+      stockMinimo: z.coerce.number().int({ message: "Las cantidades deben ser enteras" }).nonnegative().nullable().optional(),
       ubicacionDeposito: z.string().nullable().optional(),
     }).strict();
 
@@ -7904,7 +8146,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     const projectMaterialCreateSchema = z.object({
       materialItemId: z.string(),
-      quantity: z.coerce.number().positive(),
+      quantity: z.coerce.number().int({ message: "Las cantidades deben ser enteras" }).positive(),
       unitPrice: z.coerce.number().nonnegative().optional(),
       moneda: z.nativeEnum(Moneda).optional(),
       supplierId: z.string().nullable().optional(),
@@ -7946,7 +8188,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     const projectMaterialPatchSchema = z.object({
-      quantity: z.coerce.number().positive().optional(),
+      quantity: z.coerce.number().int({ message: "Las cantidades deben ser enteras" }).positive().optional(),
       unitPrice: z.coerce.number().nonnegative().optional(),
       moneda: z.nativeEnum(Moneda).optional(),
       supplierId: z.string().nullable().optional(),
@@ -8081,12 +8323,82 @@ export async function registerApiRoutes(app: FastifyInstance) {
       });
       if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
 
-      const movs = await prisma.stockMovement.findMany({
-        where: {
-          projectId: id,
-          tipo: TipoMovimientoStock.EGRESO,
-          reversed: false,
+      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
+      const fallbackRate = lastRate ? (decimalToNumber(lastRate.usdToUyu) ?? 1) : 1;
+      function toUsd(amount: number, moneda: Moneda): number {
+        if (moneda === Moneda.USD) return amount;
+        return fallbackRate > 0 ? amount / fallbackRate : amount;
+      }
+      const r2 = (n: number) => Math.round(n * 100) / 100;
+
+      // ───── PREVISTO: ProjectMaterials del proyecto ──────────────────────────
+      const projectMaterials = await prisma.projectMaterial.findMany({
+        where: { projectId: id },
+        include: {
+          materialItem: {
+            select: {
+              id: true, nombre: true, unidad: true,
+              category: { select: { id: true, nombre: true, orden: true } },
+            },
+          },
         },
+        orderBy: { createdAt: "asc" },
+      });
+
+      let costoPrevistoUSD = 0;
+      let costoPrevistoUYU = 0;
+      const previstoByCat = new Map<string, { id: string; nombre: string; orden: number; totalUSD: number; itemCount: number }>();
+      const previstoByItem = new Map<string, {
+        materialItemId: string; nombre: string; unidad: string;
+        categoryId: string | null; categoryName: string;
+        quantity: number; unitPrice: number; moneda: Moneda;
+        subtotal: number; subtotalUSD: number;
+      }>();
+      for (const pm of projectMaterials) {
+        const qty = Number(pm.quantity);
+        const price = Number(pm.unitPrice);
+        const subtotal = qty * price;
+        const subtotalUSD = toUsd(subtotal, pm.moneda);
+        if (pm.moneda === Moneda.USD) costoPrevistoUSD += subtotal;
+        else costoPrevistoUYU += subtotal;
+
+        const cat = pm.materialItem.category;
+        if (cat) {
+          const c = previstoByCat.get(cat.id) ?? { id: cat.id, nombre: cat.nombre, orden: cat.orden, totalUSD: 0, itemCount: 0 };
+          c.totalUSD += subtotalUSD;
+          c.itemCount += 1;
+          previstoByCat.set(cat.id, c);
+        }
+
+        // Acumular por ítem (en caso de tener el mismo ítem en varias filas)
+        const existing = previstoByItem.get(pm.materialItemId);
+        if (existing) {
+          existing.quantity += qty;
+          existing.subtotal += subtotal;
+          existing.subtotalUSD += subtotalUSD;
+        } else {
+          previstoByItem.set(pm.materialItemId, {
+            materialItemId: pm.materialItemId,
+            nombre: pm.materialItem.nombre,
+            unidad: pm.materialItem.unidad,
+            categoryId: cat?.id ?? null,
+            categoryName: cat?.nombre ?? "—",
+            quantity: qty,
+            unitPrice: price,
+            moneda: pm.moneda,
+            subtotal,
+            subtotalUSD,
+          });
+        }
+      }
+      const costoPrevistoTotalUSD = costoPrevistoUSD + toUsd(costoPrevistoUYU, Moneda.UYU);
+      const budgetUsd = project.budgetUsd ? decimalToNumber(project.budgetUsd) : null;
+      const margenPrevistoUSD = budgetUsd != null ? r2(budgetUsd - costoPrevistoTotalUSD) : null;
+      const margenPrevistoPercent = budgetUsd != null && budgetUsd > 0 ? Math.round((margenPrevistoUSD! / budgetUsd) * 1000) / 10 : null;
+
+      // ───── REAL: StockMovements EGRESO no reversed ──────────────────────────
+      const movs = await prisma.stockMovement.findMany({
+        where: { projectId: id, tipo: TipoMovimientoStock.EGRESO, reversed: false },
         include: {
           materialItem: {
             select: {
@@ -8099,20 +8411,17 @@ export async function registerApiRoutes(app: FastifyInstance) {
         orderBy: { fecha: "desc" },
       });
 
-      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
-      const fallbackRate = lastRate ? (decimalToNumber(lastRate.usdToUyu) ?? 1) : 1;
-      function toUsd(amount: number, moneda: Moneda): number {
-        if (moneda === Moneda.USD) return amount;
-        return fallbackRate > 0 ? amount / fallbackRate : amount;
-      }
-
-      let totalUsedUSD = 0;
-      let totalUsedUYU = 0;
-      const byCategory = new Map<string, { id: string; nombre: string; orden: number; totalUSD: number; itemCount: number }>();
+      let costoRealUSD = 0;
+      let costoRealUYU = 0;
+      const realByCat = new Map<string, { id: string; nombre: string; orden: number; totalUSD: number; itemCount: number }>();
+      const realByItem = new Map<string, {
+        materialItemId: string; nombre: string; unidad: string;
+        categoryId: string | null; categoryName: string;
+        quantity: number; subtotalUSD: number; moneda: Moneda; subtotal: number;
+      }>();
 
       const movements = movs.map((m) => {
         const cantidad = Number(m.cantidad);
-        // Precio: el grabado en el movimiento, si existe; sino el sugerido del catálogo.
         const unitPrice = m.costoUnitario != null
           ? Number(m.costoUnitario)
           : (m.materialItem.precioSugerido != null ? Number(m.materialItem.precioSugerido) : 0);
@@ -8120,16 +8429,34 @@ export async function registerApiRoutes(app: FastifyInstance) {
         const moneda = m.moneda;
         const subtotalUSD = toUsd(subtotal, moneda);
 
-        if (moneda === Moneda.USD) totalUsedUSD += subtotal;
-        else totalUsedUYU += subtotal;
+        if (moneda === Moneda.USD) costoRealUSD += subtotal;
+        else costoRealUYU += subtotal;
 
         const cat = m.materialItem.category;
         if (cat) {
-          const key = cat.id;
-          const prev = byCategory.get(key) ?? { id: cat.id, nombre: cat.nombre, orden: cat.orden, totalUSD: 0, itemCount: 0 };
-          prev.totalUSD += subtotalUSD;
-          prev.itemCount += 1;
-          byCategory.set(key, prev);
+          const c = realByCat.get(cat.id) ?? { id: cat.id, nombre: cat.nombre, orden: cat.orden, totalUSD: 0, itemCount: 0 };
+          c.totalUSD += subtotalUSD;
+          c.itemCount += 1;
+          realByCat.set(cat.id, c);
+        }
+
+        const existing = realByItem.get(m.materialItemId);
+        if (existing) {
+          existing.quantity += cantidad;
+          existing.subtotal += subtotal;
+          existing.subtotalUSD += subtotalUSD;
+        } else {
+          realByItem.set(m.materialItemId, {
+            materialItemId: m.materialItemId,
+            nombre: m.materialItem.nombre,
+            unidad: m.materialItem.unidad,
+            categoryId: cat?.id ?? null,
+            categoryName: cat?.nombre ?? "—",
+            quantity: cantidad,
+            moneda,
+            subtotal,
+            subtotalUSD,
+          });
         }
 
         return {
@@ -8141,35 +8468,80 @@ export async function registerApiRoutes(app: FastifyInstance) {
           quantity: cantidad,
           unitPrice,
           moneda,
-          subtotal: Math.round(subtotal * 100) / 100,
-          subtotalUSD: Math.round(subtotalUSD * 100) / 100,
+          subtotal: r2(subtotal),
+          subtotalUSD: r2(subtotalUSD),
           fecha: serializeDate(m.fecha),
           priceSource: m.costoUnitario != null ? "movement" : "catalog",
         };
       });
 
-      const totalUsedUsdAll = movements.reduce((acc, m) => acc + m.subtotalUSD, 0);
-      const budgetUsd = project.budgetUsd ? decimalToNumber(project.budgetUsd) : null;
-      const marginUSD = budgetUsd != null ? Math.round((budgetUsd - totalUsedUsdAll) * 100) / 100 : null;
-      const marginPercent = budgetUsd != null && budgetUsd > 0
-        ? Math.round((marginUSD! / budgetUsd) * 1000) / 10
-        : null;
+      const costoRealTotalUSD = costoRealUSD + toUsd(costoRealUYU, Moneda.UYU);
+      const margenRealUSD = budgetUsd != null ? r2(budgetUsd - costoRealTotalUSD) : null;
+      const margenRealPercent = budgetUsd != null && budgetUsd > 0 ? Math.round((margenRealUSD! / budgetUsd) * 1000) / 10 : null;
+
+      // ───── Comparación por ítem (previsto vs real) ──────────────────────────
+      const allItemIds = new Set<string>([...previstoByItem.keys(), ...realByItem.keys()]);
+      const comparacionPorItem = Array.from(allItemIds).map((itemId) => {
+        const prev = previstoByItem.get(itemId);
+        const real = realByItem.get(itemId);
+        const nombre = prev?.nombre ?? real?.nombre ?? "—";
+        const unidad = prev?.unidad ?? real?.unidad ?? "";
+        const categoryName = prev?.categoryName ?? real?.categoryName ?? "—";
+        const qPrev = prev?.quantity ?? 0;
+        const qReal = real?.quantity ?? 0;
+        const usdPrev = prev?.subtotalUSD ?? 0;
+        const usdReal = real?.subtotalUSD ?? 0;
+        return {
+          materialItemId: itemId,
+          nombre,
+          unidad,
+          categoryName,
+          quantityPrevista: qPrev,
+          quantityReal: qReal,
+          quantityDiff: qReal - qPrev,
+          subtotalPrevistoUSD: r2(usdPrev),
+          subtotalRealUSD: r2(usdReal),
+          subtotalDiffUSD: r2(usdReal - usdPrev),
+        };
+      }).sort((a, b) => a.nombre.localeCompare(b.nombre));
 
       return {
         project: { id: project.id, code: project.code, clientName: project.clientName },
         budgetUsd,
-        totalUsedUSD: Math.round(totalUsedUSD * 100) / 100,
-        totalUsedUYU: Math.round(totalUsedUYU * 100) / 100,
-        totalUsedUsdAll: Math.round(totalUsedUsdAll * 100) / 100,
+        // PREVISTO (lista de Ingeniería)
+        costoPrevistoUSD: r2(costoPrevistoUSD),
+        costoPrevistoUYU: r2(costoPrevistoUYU),
+        costoPrevistoTotalUSD: r2(costoPrevistoTotalUSD),
+        margenPrevistoUSD,
+        margenPrevistoPercent,
+        // REAL (consumos de stock)
+        costoRealUSD: r2(costoRealUSD),
+        costoRealUYU: r2(costoRealUYU),
+        costoRealTotalUSD: r2(costoRealTotalUSD),
+        margenRealUSD,
+        margenRealPercent,
+        // Compatibilidad: campos viejos que la UI antigua todavía consume
+        totalUsedUSD: r2(costoRealUSD),
+        totalUsedUYU: r2(costoRealUYU),
+        totalUsedUsdAll: r2(costoRealTotalUSD),
+        marginUSD: margenRealUSD,
+        marginPercent: margenRealPercent,
         itemCount: movements.length,
-        marginUSD,
-        marginPercent,
         exchangeRate: lastRate ? { usdToUyu: fallbackRate, date: serializeDate(lastRate.date) } : null,
-        byCategoryUSD: Array.from(byCategory.values()).sort((a, b) => a.orden - b.orden).map((c) => ({
-          id: c.id,
-          nombre: c.nombre,
-          totalUSD: Math.round(c.totalUSD * 100) / 100,
-          itemCount: c.itemCount,
+        // Desgloses
+        desglose: {
+          previstoPorCategoria: Array.from(previstoByCat.values()).sort((a, b) => a.orden - b.orden).map((c) => ({
+            id: c.id, nombre: c.nombre, totalUSD: r2(c.totalUSD), itemCount: c.itemCount,
+          })),
+          realPorCategoria: Array.from(realByCat.values()).sort((a, b) => a.orden - b.orden).map((c) => ({
+            id: c.id, nombre: c.nombre, totalUSD: r2(c.totalUSD), itemCount: c.itemCount,
+          })),
+          comparacionPorItem,
+          consumosDeStock: movements,
+        },
+        // Compatibilidad con la UI vieja
+        byCategoryUSD: Array.from(realByCat.values()).sort((a, b) => a.orden - b.orden).map((c) => ({
+          id: c.id, nombre: c.nombre, totalUSD: r2(c.totalUSD), itemCount: c.itemCount,
         })),
         movements,
       };
@@ -8194,6 +8566,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
       projectId: z.string().optional(),
       supplierId: z.string().optional(),
+      accountId: z.string().optional(),
       observaciones: z.string().optional(),
       estadoAprobacion: z.nativeEnum(EstadoAprobacion).default(EstadoAprobacion.REGISTRADO),
       archivoAdjuntoUrl: z.string().optional(),
@@ -8216,6 +8589,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
       projectId: z.string().nullable().optional(),
       supplierId: z.string().nullable().optional(),
+      accountId: z.string().nullable().optional(),
       observaciones: z.string().nullable().optional(),
       estadoAprobacion: z.nativeEnum(EstadoAprobacion).optional(),
       archivoAdjuntoUrl: z.string().nullable().optional(),
@@ -8246,7 +8620,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         ...(query.projectId ? { projectId: query.projectId } : {}),
       };
 
-      const [movements, total] = await prisma.$transaction([
+      const [movements, total, balanceRows, lastRate] = await prisma.$transaction([
         prisma.financeMovement.findMany({
           where,
           include: {
@@ -8264,7 +8638,69 @@ export async function registerApiRoutes(app: FastifyInstance) {
           take,
         }),
         prisma.financeMovement.count({ where }),
+        // Saldo USD proyectado: cálculo GLOBAL sobre todos los movimientos
+        // del sistema (no respeta filtros), ordenado por fecha efectiva ASC.
+        prisma.financeMovement.findMany({
+          where: { deletedAt: null },
+          select: {
+            id: true,
+            fecha: true,
+            createdAt: true,
+            tipoMovimiento: true,
+            status: true,
+            cobrado: true,
+            expectedDate: true,
+            dueDate: true,
+            monto: true,
+            moneda: true,
+            tipoCambio: true,
+          },
+        }),
+        prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } }),
       ]);
+
+      // Saldo USD proyectado GLOBAL. Considera TODOS los movimientos:
+      //   - INGRESO suma (sea cobrado o no)
+      //   - GASTO resta (sea pagado o no)
+      // Fecha efectiva para ordenar:
+      //   - PAGADO o cobrado → fecha real
+      //   - sino expectedDate → expectedDate
+      //   - sino dueDate → dueDate
+      //   - sino fecha (fallback)
+      // UYU se convierte con tipoCambio del movimiento, o el último TC global.
+      const fallbackUsdToUyu = lastRate ? (decimalToNumber(lastRate.usdToUyu) ?? 1) : 1;
+      const isReal = (r: { tipoMovimiento: TipoMovimiento; status: FinanceMovementStatus; cobrado: boolean }) =>
+        (r.tipoMovimiento === TipoMovimiento.GASTO && r.status === FinanceMovementStatus.PAGADO) ||
+        (r.tipoMovimiento === TipoMovimiento.INGRESO && r.cobrado);
+      const fechaEfectivaMs = (r: { fecha: Date; status: FinanceMovementStatus; cobrado: boolean; expectedDate: Date | null; dueDate: Date | null; tipoMovimiento: TipoMovimiento }) => {
+        if (isReal(r)) return r.fecha.getTime();
+        if (r.expectedDate) return r.expectedDate.getTime();
+        if (r.dueDate) return r.dueDate.getTime();
+        return r.fecha.getTime();
+      };
+      const sortedRows = [...balanceRows].sort((a, b) => {
+        const da = fechaEfectivaMs(a);
+        const db = fechaEfectivaMs(b);
+        if (da !== db) return da - db;
+        return a.createdAt.getTime() - b.createdAt.getTime();
+      });
+
+      const saldoMap = new Map<string, number>();
+      const fechaEfectivaMap = new Map<string, string>();
+      let acumuladoUSD = 0;
+      for (const r of sortedRows) {
+        const monto = decimalToNumber(r.monto) ?? 0;
+        const tc = r.tipoCambio ? (decimalToNumber(r.tipoCambio) ?? fallbackUsdToUyu) : fallbackUsdToUyu;
+        const montoUsd = r.moneda === Moneda.USD ? monto : (tc > 0 ? monto / tc : monto);
+        if (r.tipoMovimiento === TipoMovimiento.INGRESO) acumuladoUSD += montoUsd;
+        else if (r.tipoMovimiento === TipoMovimiento.GASTO) acumuladoUSD -= montoUsd;
+        // AJUSTE: no afecta saldo proyectado (los ajustes contables suelen
+        // ser correcciones que no representan flujo).
+        saldoMap.set(r.id, Math.round(acumuladoUSD * 100) / 100);
+        const efDate = new Date(fechaEfectivaMs(r));
+        fechaEfectivaMap.set(r.id, efDate.toISOString().slice(0, 10));
+      }
+      const saldoFinalUSD = Math.round(acumuladoUSD * 100) / 100;
 
       return {
         data: movements.map((m) => {
@@ -8280,11 +8716,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
           // Excluir paymentApplications del payload (sólo lo necesitábamos para el cálculo)
           const { paymentApplications: _pa, ...rest } = m;
           void _pa;
+          const real = (m.tipoMovimiento === TipoMovimiento.GASTO && m.status === FinanceMovementStatus.PAGADO)
+            || (m.tipoMovimiento === TipoMovimiento.INGRESO && m.cobrado);
           return {
             ...rest,
             monto,
             montoPagado,
             saldoPendiente,
+            saldoAcumuladoUSD: saldoMap.get(m.id) ?? 0,
+            saldoEsReal: real,
+            fechaEfectiva: fechaEfectivaMap.get(m.id) ?? serializeDateOnly(m.fecha),
             tipoCambio: m.tipoCambio ? decimalToNumber(m.tipoCambio) : null,
             quantity: m.quantity ? decimalToNumber(m.quantity) : null,
             unitPrice: m.unitPrice ? decimalToNumber(m.unitPrice) : null,
@@ -8299,8 +8740,41 @@ export async function registerApiRoutes(app: FastifyInstance) {
         page: query.page ?? 1,
         limit: take,
         totalPages: Math.ceil(total / take),
+        saldoFinalUSD,
       };
     });
+
+    /** Valida que si el movimiento "concreta dinero" (gasto pagado o ingreso
+     *  cobrado), tenga accountId con misma moneda. */
+    async function validateAccountForMovement(args: {
+      tipoMovimiento: TipoMovimiento;
+      status?: FinanceMovementStatus;
+      cobrado: boolean;
+      moneda: Moneda;
+      accountId: string | null | undefined;
+    }) {
+      const concretaDinero =
+        (args.tipoMovimiento === TipoMovimiento.GASTO && args.status === FinanceMovementStatus.PAGADO) ||
+        (args.tipoMovimiento === TipoMovimiento.INGRESO && args.cobrado);
+      if (!concretaDinero) return;
+      if (!args.accountId) {
+        throw badRequest(
+          "ACCOUNT_REQUIRED",
+          args.tipoMovimiento === TipoMovimiento.INGRESO
+            ? "Para registrar un ingreso cobrado tenés que indicar la cuenta donde entró el dinero."
+            : "Para registrar un gasto pagado tenés que indicar la cuenta de donde salió el dinero.",
+        );
+      }
+      const account = await prisma.account.findFirst({ where: { id: args.accountId, deletedAt: null } });
+      if (!account) throw badRequest("ACCOUNT_INVALID", "La cuenta seleccionada no existe");
+      if (!account.activa) throw badRequest("ACCOUNT_INACTIVE", "La cuenta está inactiva");
+      if (account.moneda !== args.moneda) {
+        throw badRequest(
+          "ACCOUNT_CURRENCY_MISMATCH",
+          `La moneda del movimiento (${args.moneda}) no coincide con la de la cuenta (${account.moneda}).`,
+        );
+      }
+    }
 
     app.post("/finance/movements", { preHandler: authorize(Module.FINANZAS, Action.CREATE) }, async (request) => {
       const user = ensureUser(request);
@@ -8320,6 +8794,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
       // - Si no viene status, mantenemos compat: status = PAGADO si pagado=true, sino PAGADO por default.
       const status = body.status ?? (body.pagado === false ? FinanceMovementStatus.COMPROMETIDO : FinanceMovementStatus.PAGADO);
       const pagado = status === FinanceMovementStatus.PAGADO;
+
+      // Validar cuenta si aplica
+      await validateAccountForMovement({
+        tipoMovimiento: body.tipoMovimiento,
+        status,
+        cobrado: body.cobrado,
+        moneda: body.moneda,
+        accountId: body.accountId,
+      });
       // Si el movimiento de gasto arranca en A_PAGAR/PAGADO, marcamos que
       // requiere desglose de factura (la UI muestra alerta hasta que el
       // usuario cargue ítems o lo marque como "sin materiales").
@@ -8347,6 +8830,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           requiresItemDetail,
           projectId: body.projectId,
           supplierId: body.supplierId,
+          accountId: body.accountId,
           observaciones: body.observaciones,
           estadoAprobacion: body.estadoAprobacion,
           archivoAdjuntoUrl: body.archivoAdjuntoUrl,
@@ -8441,6 +8925,30 @@ export async function registerApiRoutes(app: FastifyInstance) {
         updateData.pagado = body.status === FinanceMovementStatus.PAGADO;
       }
 
+      // Validar cuenta sólo si el cambio concreta dinero. Tomamos los valores
+      // efectivos (lo que viene en el body sino lo de existing).
+      const effectiveStatus = body.status ?? existing.status;
+      const effectiveCobrado = body.cobrado ?? existing.cobrado;
+      const effectiveMoneda = body.moneda ?? existing.moneda;
+      const effectiveAccountId = body.accountId !== undefined ? body.accountId : existing.accountId;
+      const wasConcreto =
+        (existing.tipoMovimiento === TipoMovimiento.GASTO && existing.status === FinanceMovementStatus.PAGADO) ||
+        (existing.tipoMovimiento === TipoMovimiento.INGRESO && existing.cobrado);
+      const willBeConcreto =
+        (existing.tipoMovimiento === TipoMovimiento.GASTO && effectiveStatus === FinanceMovementStatus.PAGADO) ||
+        (existing.tipoMovimiento === TipoMovimiento.INGRESO && effectiveCobrado);
+      // Validamos cuando pasa a concretarse, o cuando ya estaba concreto y se
+      // tocó accountId/moneda.
+      if (willBeConcreto && (!wasConcreto || body.accountId !== undefined || body.moneda !== undefined)) {
+        await validateAccountForMovement({
+          tipoMovimiento: existing.tipoMovimiento,
+          status: effectiveStatus,
+          cobrado: effectiveCobrado,
+          moneda: effectiveMoneda,
+          accountId: effectiveAccountId,
+        });
+      }
+
       const updated = await prisma.financeMovement.update({ where: { id }, data: updateData });
       await createAuditEntry({
         entityType: AuditEntityType.finance_movement,
@@ -8456,18 +8964,46 @@ export async function registerApiRoutes(app: FastifyInstance) {
     app.delete("/finance/movements/:id", { preHandler: authorize(Module.FINANZAS, Action.DELETE) }, async (request) => {
       const user = ensureUser(request);
       const { id } = z.object({ id: z.string() }).parse(request.params);
-      const existing = await prisma.financeMovement.findFirst({ where: { id, deletedAt: null } });
+      const existing = await prisma.financeMovement.findFirst({
+        where: { id, deletedAt: null },
+        include: {
+          paymentApplications: {
+            where: { payment: { deletedAt: null } },
+            select: { id: true, montoAplicado: true, paymentId: true },
+          },
+        },
+      });
       if (!existing) throw notFound("MOVEMENT_NOT_FOUND", "Movimiento no encontrado");
-      await prisma.financeMovement.update({ where: { id }, data: { deletedAt: new Date() } });
+
+      const apps = existing.paymentApplications;
+      const liberadoTotal = apps.reduce((acc, a) => acc + Number(a.montoAplicado), 0);
+
+      await prisma.$transaction(async (tx) => {
+        if (apps.length > 0) {
+          // Borrar aplicaciones del movimiento — los Payments quedan vivos y
+          // su saldo sin aplicar aumenta automáticamente (queda como saldo a
+          // favor del proveedor, listo para reaplicar en otra factura).
+          await tx.paymentApplication.deleteMany({ where: { movementId: id } });
+        }
+        await tx.financeMovement.update({ where: { id }, data: { deletedAt: new Date() } });
+      });
+
+      const liberadoStr = apps.length > 0
+        ? ` · liberó ${apps.length} aplicación(es) por ${Math.round(liberadoTotal * 100) / 100} ${existing.moneda} (saldo a favor del proveedor)`
+        : "";
       await createAuditEntry({
         entityType: AuditEntityType.finance_movement,
         entityId: id,
         projectId: existing.projectId,
         userId: user.id,
         action: AuditAction.deleted,
-        description: `Eliminó movimiento: ${existing.descripcion}`,
+        description: `Eliminó movimiento: ${existing.descripcion}${liberadoStr}`,
       });
-      return { success: true };
+      return {
+        success: true,
+        liberatedApplications: apps.length,
+        liberatedAmount: Math.round(liberadoTotal * 100) / 100,
+      };
     });
 
     // ─── Finance: Previstos pendientes + cleanup ──────────────────────────────
@@ -8567,6 +9103,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         newStatus: z.nativeEnum(FinanceMovementStatus),
         paidDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
         dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        accountId: z.string().optional(),
       }).strict().parse(request.body);
       const user = ensureUser(request);
       const existing = await prisma.financeMovement.findFirst({ where: { id, deletedAt: null } });
@@ -8603,6 +9140,19 @@ export async function registerApiRoutes(app: FastifyInstance) {
         data.mes = paid.getUTCMonth() + 1;
         data.anio = paid.getUTCFullYear();
         data.pagado = true;
+        // Validar cuenta (sólo se llega acá si no tiene supplier; los con
+        // supplier ya fueron bloqueados arriba).
+        const accountId = body.accountId ?? existing.accountId;
+        await validateAccountForMovement({
+          tipoMovimiento: existing.tipoMovimiento,
+          status: FinanceMovementStatus.PAGADO,
+          cobrado: existing.cobrado,
+          moneda: existing.moneda,
+          accountId,
+        });
+        if (body.accountId !== undefined) {
+          data.account = body.accountId ? { connect: { id: body.accountId } } : { disconnect: true };
+        }
       }
 
       const updated = await prisma.financeMovement.update({ where: { id }, data });
@@ -8615,13 +9165,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
         description: `Transición ${existing.status} → ${body.newStatus} en movimiento ${existing.descripcion}`,
       });
       // Auto-detección de desglose pendiente al pasar a A_PAGAR / PAGADO.
-      // No genera stock automáticamente — el usuario debe confirmar el
-      // desglose explícitamente desde el modal o marcar "sin materiales".
-      if (
+      // Sólo aplica a GASTO con proveedor — los movimientos sin proveedor
+      // suelen ser ajustes contables sin lista de ítems. El usuario aún tiene
+      // que confirmar el desglose o marcar "sin materiales" desde la UI.
+      const requiresDesgloseNow =
         (body.newStatus === FinanceMovementStatus.A_PAGAR || body.newStatus === FinanceMovementStatus.PAGADO)
+        && existing.tipoMovimiento === TipoMovimiento.GASTO
+        && existing.supplierId != null
         && !existing.hasItemDetail
-        && !existing.noTieneMateriales
-      ) {
+        && !existing.noTieneMateriales;
+      if (requiresDesgloseNow) {
         await prisma.financeMovement.update({ where: { id }, data: { requiresItemDetail: true } });
       }
 
@@ -8631,6 +9184,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         fecha: serializeDateOnly(updated.fecha),
         dueDate: updated.dueDate ? serializeDateOnly(updated.dueDate) : null,
         pagado: updated.pagado,
+        requiresItemDetail: requiresDesgloseNow || updated.requiresItemDetail,
       };
     });
 
@@ -8760,7 +9314,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     const invoiceItemBaseSchema = {
       materialItemId: z.string(),
-      quantity: z.coerce.number().positive(),
+      quantity: z.coerce.number().int({ message: "Las cantidades deben ser enteras" }).positive(),
       unitPrice: z.coerce.number().nonnegative(),
       moneda: z.nativeEnum(Moneda).optional(),
       notes: z.string().nullable().optional(),
@@ -8805,7 +9359,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     app.patch("/finance/movements/:id/invoice-items/:itemId", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
       const { id, itemId } = z.object({ id: z.string(), itemId: z.string() }).parse(request.params);
       const body = z.object({
-        quantity: z.coerce.number().positive().optional(),
+        quantity: z.coerce.number().int({ message: "Las cantidades deben ser enteras" }).positive().optional(),
         unitPrice: z.coerce.number().nonnegative().optional(),
         notes: z.string().nullable().optional(),
       }).strict().parse(request.body);
@@ -9122,9 +9676,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
       fecha: Date; monto: import("@prisma/client/runtime/library").Decimal;
       moneda: Moneda; metodo: MetodoPago;
       referencia: string | null; notas: string | null;
+      accountId: string | null;
       createdById: string | null;
       createdAt: Date; updatedAt: Date; deletedAt: Date | null;
       supplier?: { id: string; nombre: string } | null;
+      account?: { id: string; nombre: string; tipo: AccountType; moneda: Moneda } | null;
       applications?: Array<{
         id: string; movementId: string; montoAplicado: import("@prisma/client/runtime/library").Decimal; createdAt: Date;
         movement?: {
@@ -9137,6 +9693,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         id: p.id,
         supplierId: p.supplierId,
         supplier: p.supplier ?? null,
+        accountId: p.accountId,
+        account: p.account ?? null,
         fecha: serializeDateOnly(p.fecha),
         monto: Number(p.monto),
         moneda: p.moneda,
@@ -9193,6 +9751,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         where,
         include: {
           supplier: { select: { id: true, nombre: true } },
+          account: { select: { id: true, nombre: true, tipo: true, moneda: true } },
           applications: { select: { montoAplicado: true } },
         },
         orderBy: { fecha: "desc" },
@@ -9219,6 +9778,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         where: { id },
         include: {
           supplier: { select: { id: true, nombre: true } },
+          account: { select: { id: true, nombre: true, tipo: true, moneda: true } },
           applications: {
             include: {
               movement: {
@@ -9241,8 +9801,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     const paymentCreateSchema = z.object({
       supplierId: z.string().min(1),
+      accountId: z.string().min(1),
       fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-      monto: z.coerce.number().positive(),
+      // Permitimos negativos (notas de crédito); el handler valida que sea != 0.
+      monto: z.coerce.number(),
       moneda: z.nativeEnum(Moneda).default(Moneda.USD),
       metodo: z.nativeEnum(MetodoPago).default(MetodoPago.TRANSFERENCIA),
       referencia: z.string().optional(),
@@ -9251,22 +9813,41 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     const paymentPatchSchema = z.object({
       fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-      monto: z.coerce.number().positive().optional(),
+      monto: z.coerce.number().optional(),
       moneda: z.nativeEnum(Moneda).optional(),
       metodo: z.nativeEnum(MetodoPago).optional(),
+      accountId: z.string().min(1).optional(),
       referencia: z.string().nullable().optional(),
       notas: z.string().nullable().optional(),
     }).strict();
 
+    /** Valida la cuenta para un Payment: existe, está activa y misma moneda. */
+    async function validateAccountForPayment(accountId: string, moneda: Moneda) {
+      const account = await prisma.account.findFirst({ where: { id: accountId, deletedAt: null } });
+      if (!account) throw badRequest("ACCOUNT_INVALID", "La cuenta seleccionada no existe");
+      if (!account.activa) throw badRequest("ACCOUNT_INACTIVE", "La cuenta está inactiva");
+      if (account.moneda !== moneda) {
+        throw badRequest(
+          "ACCOUNT_CURRENCY_MISMATCH",
+          `La moneda del pago (${moneda}) no coincide con la de la cuenta (${account.moneda}).`,
+        );
+      }
+    }
+
     app.post("/finance/payments", { preHandler: authorize(Module.FINANZAS, Action.CREATE) }, async (request) => {
       const user = ensureUser(request);
       const body = paymentCreateSchema.parse(request.body);
+      if (Math.abs(body.monto) < 0.005) {
+        throw badRequest("MONTO_ZERO", "El monto del pago no puede ser 0");
+      }
       const supplier = await prisma.supplier.findFirst({ where: { id: body.supplierId, deletedAt: null } });
       if (!supplier) throw badRequest("SUPPLIER_INVALID", "Proveedor no existe o está eliminado");
+      await validateAccountForPayment(body.accountId, body.moneda);
 
       const payment = await prisma.payment.create({
         data: {
           supplierId: body.supplierId,
+          accountId: body.accountId,
           fecha: parseDateOnly(body.fecha),
           monto: new Prisma.Decimal(body.monto),
           moneda: body.moneda,
@@ -9277,12 +9858,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
         },
         include: { supplier: { select: { id: true, nombre: true } }, applications: true },
       });
+      const isNegative = body.monto < 0;
       await createAuditEntry({
         entityType: AuditEntityType.payment,
         entityId: payment.id,
         userId: user.id,
         action: AuditAction.created,
-        description: `Registró pago de ${body.monto} ${body.moneda} a ${supplier.nombre}`,
+        description: isNegative
+          ? `Pago negativo de ${body.monto.toFixed(2)} ${body.moneda} a ${supplier.nombre} (nota de crédito)`
+          : `Registró pago de ${body.monto.toFixed(2)} ${body.moneda} a ${supplier.nombre}`,
       });
       return serializePayment(payment, { monto: Number(payment.monto), montoAplicado: 0, saldoSinAplicar: Number(payment.monto) });
     });
@@ -9308,11 +9892,24 @@ export async function registerApiRoutes(app: FastifyInstance) {
         }
       }
 
+      // Validar monto != 0 si lo están cambiando
+      if (body.monto != null && Math.abs(body.monto) < 0.005) {
+        throw badRequest("MONTO_ZERO", "El monto del pago no puede ser 0");
+      }
+      // Validar cuenta si cambia accountId o moneda
+      const effectiveMoneda = body.moneda ?? existing.moneda;
+      const effectiveAccountId = body.accountId ?? existing.accountId;
+      if (body.accountId !== undefined || body.moneda !== undefined) {
+        if (!effectiveAccountId) throw badRequest("ACCOUNT_REQUIRED", "Un pago requiere una cuenta");
+        await validateAccountForPayment(effectiveAccountId, effectiveMoneda);
+      }
+
       const data: Prisma.PaymentUpdateInput = {};
       if (body.fecha) data.fecha = parseDateOnly(body.fecha);
       if (body.monto != null) data.monto = new Prisma.Decimal(body.monto);
       if (body.moneda) data.moneda = body.moneda;
       if (body.metodo) data.metodo = body.metodo;
+      if (body.accountId !== undefined) data.account = body.accountId ? { connect: { id: body.accountId } } : { disconnect: true };
       if (body.referencia !== undefined) data.referencia = body.referencia;
       if (body.notas !== undefined) data.notas = body.notas;
 
@@ -10237,7 +10834,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         materialItemId: z.string().min(1).optional(),
         productId: z.string().min(1).optional(),
         tipo: z.nativeEnum(TipoMovimientoStock),
-        cantidad: z.coerce.number().positive(),
+        cantidad: z.coerce.number().int({ message: "Las cantidades deben ser enteras" }).positive(),
         costoUnitario: z.coerce.number().min(0).optional(),
         moneda: z.nativeEnum(Moneda).default(Moneda.USD),
         supplierId: z.string().optional(),

@@ -226,7 +226,7 @@ function MaterialRow({ projectId, pm, suppliers }: {
   });
 
   function commitQty() {
-    const n = parseFloat(qty);
+    const n = parseInt(qty, 10);
     if (!isFinite(n) || n <= 0) { setQty(pm.quantity.toString()); return; }
     if (n !== pm.quantity) patchMut.mutate({ quantity: n });
   }
@@ -260,7 +260,7 @@ function MaterialRow({ projectId, pm, suppliers }: {
         </td>
         <td className="px-2 py-2">
           <input
-            type="number" min="0" step="0.01"
+            type="number" min="1" step="1"
             className="w-20 px-2 py-1 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] tabular-nums focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
             value={qty}
             onChange={e => setQty(e.target.value)}

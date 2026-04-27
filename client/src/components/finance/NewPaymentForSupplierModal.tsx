@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { X } from 'lucide-react';
 import { createPayment } from '../../api/payments.api';
+import { getAccounts } from '../../api/accounts.api';
+import { ACCOUNT_TYPE_LABEL } from '../../types/accounts.types';
 import type { MetodoPago, Moneda } from '../../types/finance.types';
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
@@ -38,12 +40,19 @@ export function NewPaymentForSupplierModal({
     monto: defaultAmount != null ? defaultAmount.toString() : '',
     moneda: (defaultMoneda ?? 'USD') as Moneda,
     metodo: 'TRANSFERENCIA' as MetodoPago,
+    accountId: '',
     referencia: '',
     notas: '',
     aplicarAhora: true,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['accounts', 'true'],
+    queryFn: () => getAccounts({ activa: 'true' }),
+  });
+  const accountsForCurrency = accounts.filter(a => a.moneda === form.moneda);
 
   function setF<K extends keyof typeof form>(k: K, v: typeof form[K]) {
     setForm(p => ({ ...p, [k]: v }));
@@ -53,11 +62,13 @@ export function NewPaymentForSupplierModal({
     e.preventDefault();
     setError('');
     const monto = parseFloat(form.monto);
-    if (!isFinite(monto) || monto <= 0) { setError('El monto debe ser mayor a 0'); return; }
+    if (!isFinite(monto) || Math.abs(monto) < 0.005) { setError('El monto no puede ser 0'); return; }
+    if (!form.accountId) { setError('Elegí una cuenta'); return; }
     setSaving(true);
     try {
       const created = await createPayment({
         supplierId,
+        accountId: form.accountId,
         fecha: form.fecha,
         monto,
         moneda: form.moneda,
@@ -102,9 +113,23 @@ export function NewPaymentForSupplierModal({
                 <select className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-2 text-sm text-[var(--color-text-primary)]" value={form.moneda} onChange={e => setF('moneda', e.target.value as Moneda)}>
                   <option value="USD">USD</option><option value="UYU">UYU</option>
                 </select>
-                <input type="number" min="0" step="0.01" className={klass(inpStyle, 'flex-1')} value={form.monto} onChange={e => setF('monto', e.target.value)} required />
+                <input type="number" step="0.01" className={klass(inpStyle, 'flex-1')} value={form.monto} onChange={e => setF('monto', e.target.value)} required />
               </div>
             </div>
+          </div>
+          <div>
+            <label className={lblStyle}>Cuenta * <span className="text-[var(--color-text-muted)] normal-case lowercase">— de dónde sale el dinero</span></label>
+            <select className={inpStyle} value={form.accountId} onChange={e => setF('accountId', e.target.value)} required>
+              <option value="">— Elegí una cuenta —</option>
+              {accountsForCurrency.map(a => (
+                <option key={a.id} value={a.id}>{a.nombre} ({ACCOUNT_TYPE_LABEL[a.tipo]} · {a.moneda})</option>
+              ))}
+            </select>
+            {accountsForCurrency.length === 0 && (
+              <p className="text-[10px] text-[var(--color-warning-text)] mt-1">
+                No hay cuentas activas en {form.moneda}. Creá una desde Admin → Cuentas.
+              </p>
+            )}
           </div>
           <div>
             <label className={lblStyle}>Método</label>
@@ -117,6 +142,11 @@ export function NewPaymentForSupplierModal({
               <option value="OTRO">Otro</option>
             </select>
           </div>
+          {parseFloat(form.monto) < 0 && (
+            <p className="text-[11px] text-[var(--color-warning-text)] bg-[var(--color-warning-bg)]/30 rounded-lg px-3 py-2">
+              ⚠ Monto negativo: equivale a una nota de crédito o devolución del proveedor.
+            </p>
+          )}
           <div><label className={lblStyle}>Referencia</label><input className={inpStyle} value={form.referencia} onChange={e => setF('referencia', e.target.value)} /></div>
           <div><label className={lblStyle}>Notas</label><textarea className={klass(inpStyle, 'resize-none')} rows={2} value={form.notas} onChange={e => setF('notas', e.target.value)} /></div>
           <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">

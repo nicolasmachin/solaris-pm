@@ -19,7 +19,7 @@ export function VersionFooter() {
   );
 }
 
-function VersionHistoryModal({ onClose }: { onClose: () => void }) {
+export function VersionHistoryModal({ onClose }: { onClose: () => void }) {
   const [source, setSource] = useState<string | null>(null);
   const [error, setError] = useState(false);
 

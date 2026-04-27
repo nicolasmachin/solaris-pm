@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, Eye } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronRight, Eye } from "lucide-react";
 import {
   getMyTasks,
   type MyTaskBlock,
@@ -12,6 +12,7 @@ import { Spinner } from "../components/ui/Spinner";
 import { UserSelect } from "../components/ui/UserSelect";
 import { apiClient } from "../api/axios";
 import { useAuthStore } from "../store/auth.store";
+import "./MisTareas.css";
 
 type SortOption = "urgency" | "project" | "date";
 type ScopeOption = "all" | "mine";
@@ -104,6 +105,8 @@ function formatDueShort(iso: string | null): string {
   return `${d.getDate()} ${MONTHS_ES[d.getMonth()]}`;
 }
 
+// Etiqueta de urgencia para el header del bloque (BlockRow). Mantenida tal cual
+// para no alterar el comportamiento del bloque.
 function dueLabel(iso: string | null, rank: number): string {
   if (rank === 3) return "Sin fecha";
   if (rank === 0) {
@@ -115,6 +118,49 @@ function dueLabel(iso: string | null, rank: number): string {
     return `Vence hoy`;
   }
   return `Vence ${formatDueShort(iso)}`;
+}
+
+// ─── Alertas de vencimiento (substage-level) ────────────────────────────────
+
+const UPCOMING_THRESHOLD_DAYS = 5;
+
+type AlertKind = "overdue" | "today" | "upcoming" | "future" | "none";
+
+interface AlertInfo {
+  kind: AlertKind;
+  daysAbs: number; // valor absoluto en días (sólo aplica si kind != "none")
+}
+
+function getAlertInfo(iso: string | null): AlertInfo {
+  if (!iso) return { kind: "none", daysAbs: 0 };
+  const d = new Date(`${iso}T00:00:00`);
+  if (isNaN(d.getTime())) return { kind: "none", daysAbs: 0 };
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) return { kind: "overdue", daysAbs: Math.abs(diffDays) };
+  if (diffDays === 0) return { kind: "today", daysAbs: 0 };
+  if (diffDays <= UPCOMING_THRESHOLD_DAYS) return { kind: "upcoming", daysAbs: diffDays };
+  return { kind: "future", daysAbs: diffDays };
+}
+
+// Texto contextual de plazo para una substage. Devuelve null si no hay fecha.
+function subDueText(iso: string | null, info: AlertInfo): string | null {
+  if (info.kind === "none") return null;
+  if (info.kind === "overdue") return `vencida hace ${info.daysAbs}d`;
+  if (info.kind === "today") return "vence hoy";
+  if (info.kind === "upcoming") return `vence en ${info.daysAbs}d`;
+  // future: "vence el DD-mes"
+  if (!iso) return null;
+  const d = new Date(`${iso}T00:00:00`);
+  if (isNaN(d.getTime())) return null;
+  return `vence el ${d.getDate()}-${MONTHS_ES[d.getMonth()]}`;
+}
+
+// Pluralización mínima en castellano. Si más adelante hace falta más casos, se
+// migra a Intl.PluralRules; para "tarea/tareas" alcanza con n === 1.
+function pluralize(n: number, singular: string, plural: string): string {
+  return n === 1 ? singular : plural;
 }
 
 // ─── Página ──────────────────────────────────────────────────────────────────
@@ -192,6 +238,23 @@ export function MisTareas() {
   const totalPending = allBlocks.reduce((s, b) => s + b.pendingSubstagesCount, 0);
   const myPending = allBlocks.reduce((s, b) => s + b.myPendingSubstagesCount, 0);
   const overdue = allBlocks.filter((b) => b.blockRank === 0).length;
+
+  // Conteo de alertas a nivel substage para el banner. Recorremos el set
+  // completo (allBlocks) para que el banner refleje todas las tareas del
+  // usuario target, sin importar el filtro de scope ni el orden.
+  const { overdueCount, todayCount } = useMemo(() => {
+    let o = 0;
+    let t = 0;
+    for (const block of allBlocks) {
+      for (const sub of block.substages) {
+        const info = getAlertInfo(sub.dueDate);
+        if (info.kind === "overdue") o++;
+        else if (info.kind === "today") t++;
+      }
+    }
+    return { overdueCount: o, todayCount: t };
+  }, [allBlocks]);
+  const showAlertBanner = overdueCount > 0 || todayCount > 0;
 
   // Inicializamos el primer bloque como expandido para que el usuario entienda el patrón
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -279,6 +342,11 @@ export function MisTareas() {
         </div>
       </div>
 
+      {/* Banner: alertas de vencimiento (vencidas + hoy) */}
+      {showAlertBanner ? (
+        <AlertSummaryBanner overdue={overdueCount} today={todayCount} />
+      ) : null}
+
       {/* Banner: admin mirando tareas de otro usuario */}
       {isAdmin && effectiveUserId && effectiveUserId !== currentUser?.id ? (
         <div
@@ -361,6 +429,55 @@ export function MisTareas() {
 }
 
 // ─── Sub-componentes ─────────────────────────────────────────────────────────
+
+function AlertSummaryBanner({ overdue, today }: { overdue: number; today: number }) {
+  // Mensaje compuesto. El backend ya filtra a las tareas del target, así que
+  // los conteos representan exclusivamente las suyas (pertenencia: explícita o
+  // heredada del responsable de etapa).
+  let message: React.ReactNode;
+  if (overdue > 0 && today > 0) {
+    message = (
+      <>
+        Tenés <strong className="font-semibold">{overdue}</strong>{" "}
+        {pluralize(overdue, "tarea vencida", "tareas vencidas")} y{" "}
+        <strong className="font-semibold">{today}</strong>{" "}
+        {pluralize(today, "que vence hoy", "que vencen hoy")}.
+      </>
+    );
+  } else if (overdue > 0) {
+    message = (
+      <>
+        Tenés <strong className="font-semibold">{overdue}</strong>{" "}
+        {pluralize(overdue, "tarea vencida", "tareas vencidas")}.
+      </>
+    );
+  } else {
+    message = (
+      <>
+        Tenés <strong className="font-semibold">{today}</strong>{" "}
+        {pluralize(today, "tarea que vence hoy", "tareas que vencen hoy")}.
+      </>
+    );
+  }
+
+  return (
+    <div
+      role="alert"
+      aria-live="polite"
+      className="mb-4 flex items-center gap-3 rounded-lg px-4 py-3.5"
+      style={{
+        background: "var(--color-alert-banner-bg)",
+        borderLeft: "3px solid var(--color-alert-banner-border)",
+        color: "var(--color-alert-banner-text)",
+      }}
+    >
+      <span className="banner-icon" aria-hidden="true">
+        <AlertTriangle size={18} strokeWidth={2.5} />
+      </span>
+      <span className="text-sm">{message}</span>
+    </div>
+  );
+}
 
 function Stat({
   label,
@@ -457,9 +574,6 @@ function BlockRow({
             >
               {block.stageLabel}
             </span>
-            <span className="font-mono text-[10px] text-[var(--color-text-muted)]">
-              {block.projectCode}
-            </span>
           </div>
           <p className="mt-1 text-[12px] text-[var(--color-text-secondary)]">
             {block.pendingSubstagesCount}{" "}
@@ -524,6 +638,21 @@ function SubstageRow({ sub, onClick }: { sub: MyTaskSubstage; onClick: () => voi
         : "bg-transparent border border-[var(--color-text-muted)]";
 
   const urgency = URGENCY[sub.urgencyRank] ?? URGENCY[3];
+  const alert = getAlertInfo(sub.dueDate);
+  const dueText = subDueText(sub.dueDate, alert);
+  const showPulseDot = alert.kind === "overdue" || alert.kind === "today";
+  const dueIsBold = alert.kind === "overdue" || alert.kind === "today";
+
+  // Fondo sutil de la fila según severidad. Cae sobre el bg base (--color-bg-app/40)
+  // del contenedor expandido.
+  const rowBg =
+    alert.kind === "overdue"
+      ? "var(--color-alert-overdue-bg)"
+      : alert.kind === "today"
+        ? "var(--color-alert-today-bg)"
+        : alert.kind === "upcoming"
+          ? "var(--color-alert-upcoming-bg)"
+          : undefined;
 
   return (
     <li>
@@ -531,6 +660,7 @@ function SubstageRow({ sub, onClick }: { sub: MyTaskSubstage; onClick: () => voi
         type="button"
         onClick={onClick}
         className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-[var(--color-bg-card-hover)]"
+        style={rowBg ? { background: rowBg } : undefined}
       >
         <span
           className={`h-3 w-3 shrink-0 rounded-full ${statusDot}`}
@@ -538,11 +668,25 @@ function SubstageRow({ sub, onClick }: { sub: MyTaskSubstage; onClick: () => voi
           aria-label={sub.status}
         />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] text-[var(--color-text-primary)]">{sub.name}</p>
+          <p className="truncate text-[13px] text-[var(--color-text-primary)]">
+            {showPulseDot ? (
+              <span
+                className={`pulse-dot mr-2 ${
+                  alert.kind === "overdue" ? "pulse-dot--overdue" : "pulse-dot--today"
+                }`}
+                aria-hidden="true"
+              />
+            ) : null}
+            {sub.name}
+          </p>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-[var(--color-text-muted)]">
-            <span style={{ color: sub.dueDate ? urgency.barVar : undefined }}>
-              {dueLabel(sub.dueDate, sub.urgencyRank)}
-            </span>
+            {dueText ? (
+              <span
+                style={{ color: urgency.barVar, fontWeight: dueIsBold ? 700 : undefined }}
+              >
+                {dueText}
+              </span>
+            ) : null}
             {sub.checklistTotalCount > 0 ? (
               <span>
                 {sub.checklistDoneCount} / {sub.checklistTotalCount} ítems
@@ -550,6 +694,7 @@ function SubstageRow({ sub, onClick }: { sub: MyTaskSubstage; onClick: () => voi
             ) : null}
           </div>
         </div>
+        <DueBadge alert={alert} />
         {sub.assignedUser ? (
           <span
             title={sub.assignedUser.name}
@@ -565,6 +710,47 @@ function SubstageRow({ sub, onClick }: { sub: MyTaskSubstage; onClick: () => voi
         <ChevronRight size={14} className="shrink-0 text-[var(--color-text-muted)]" />
       </button>
     </li>
+  );
+}
+
+// Pill compacta a la derecha de la fila con el plazo en formato corto. Se omite
+// cuando no hay fecha o cuando es "future" (>5d), para no saturar la vista.
+function DueBadge({ alert }: { alert: AlertInfo }) {
+  if (alert.kind === "none" || alert.kind === "future") return null;
+
+  let label: string;
+  let style: React.CSSProperties;
+  if (alert.kind === "overdue") {
+    label = `${alert.daysAbs}d atraso`;
+    style = {
+      background: "var(--color-alert-badge-overdue-bg)",
+      color: "var(--color-alert-overdue-text)",
+      border: "1px solid var(--color-alert-badge-overdue-border)",
+    };
+  } else if (alert.kind === "today") {
+    label = "Hoy";
+    style = {
+      background: "var(--color-alert-badge-today-bg)",
+      color: "var(--color-alert-today-text)",
+      border: "1px solid var(--color-alert-badge-today-border)",
+    };
+  } else {
+    // upcoming
+    label = `${alert.daysAbs}d`;
+    style = {
+      background: "var(--color-alert-badge-neutral-bg)",
+      color: "var(--color-alert-badge-neutral-text)",
+      border: "1px solid var(--color-alert-badge-neutral-border)",
+    };
+  }
+
+  return (
+    <span
+      className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap"
+      style={style}
+    >
+      {label}
+    </span>
   );
 }
 

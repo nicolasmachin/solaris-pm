@@ -160,6 +160,18 @@ export interface FinanceMovement {
   // Saldos calculados desde payment_applications activas (sólo gastos)
   montoPagado: number;
   saldoPendiente: number;
+  // Saldo USD proyectado GLOBAL (no respeta filtros), ordenado por
+  // `fechaEfectiva` ASC. Considera TODOS los movimientos (INGRESO suma,
+  // GASTO resta) — los pendientes (no PAGADO/COBRADO) cuentan como
+  // proyección de flujo. La UI distingue real vs proyectado con color.
+  saldoAcumuladoUSD: number;
+  // true si el movimiento ya concretó dinero (PAGADO o cobrado=true), false
+  // si el saldo correspondiente a esta fila es proyectado.
+  saldoEsReal: boolean;
+  // Fecha que se usó para ordenar este movimiento en el cálculo del saldo:
+  // PAGADO/COBRADO → fecha; sino expectedDate ?? dueDate ?? fecha.
+  fechaEfectiva: string;
+  accountId: string | null;
   estadoAprobacion: EstadoAprobacion;
   projectId: string | null;
   project: { id: string; code: string; clientName: string } | null;
@@ -330,5 +342,6 @@ export interface MovimientoFormData {
   proyectoId?: string;
   proveedorId?: string;
   subcategoriaId?: string;
+  accountId?: string;
   observaciones?: string;
 }

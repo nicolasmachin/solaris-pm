@@ -1,4 +1,4 @@
-import { Fragment, useMemo } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
@@ -12,6 +12,7 @@ import { getCalendarMonth } from "../api/calendar.api";
 import { getPendingDetailMovements } from "../api/finance.api";
 import { completeSubstage } from "../api/stages.api";
 import { LATEST_RELEASE, OLDER_RELEASES } from "../data/latestRelease";
+import { VersionHistoryModal } from "../components/layout/VersionFooter";
 import type { ProjectListItem } from "../types/api.types";
 import type { UteProcess, UteActionKey } from "../api/uteProcess.api";
 import type { MyTaskBlock, MyTaskSubstage } from "../api/myTasks.api";
@@ -694,42 +695,55 @@ function CardFrame({ icon, iconBg, title, link, children }: {
 
 function ChangelogSidebar() {
   const release = LATEST_RELEASE;
+  const [historyOpen, setHistoryOpen] = useState(false);
   return (
-    <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl overflow-hidden md:sticky md:top-6 md:self-start">
-      <div className="bg-slate-800 text-slate-200 px-4 py-3 flex items-center justify-between">
-        <span className="text-sm font-bold">Última versión</span>
-        <span className="text-sm font-bold font-mono text-amber-400">v{release.version}</span>
-      </div>
-      <div className="px-4 py-3 max-h-[70vh] overflow-y-auto">
-        {release.sections.map((section, i) => (
-          <div key={i} className="mb-3.5 last:mb-0">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1.5">
-              {section.title}
+    <>
+      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl overflow-hidden md:sticky md:top-6 md:self-start">
+        <div className="bg-slate-800 text-slate-200 px-4 py-3 flex items-center justify-between">
+          <span className="text-sm font-bold">Última versión</span>
+          <span className="text-sm font-bold font-mono text-amber-400">v{release.version}</span>
+        </div>
+        <div className="px-4 py-3 max-h-[70vh] overflow-y-auto">
+          {release.sections.map((section, i) => (
+            <div key={i} className="mb-3.5 last:mb-0">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1.5">
+                {section.title}
+              </div>
+              {section.items.map((item, j) => (
+                <ChangelogItem key={j} text={item} />
+              ))}
             </div>
-            {section.items.map((item, j) => (
-              <ChangelogItem key={j} text={item} />
-            ))}
-          </div>
-        ))}
-        {OLDER_RELEASES.length > 0 && (
-          <div className="mt-4 pt-3 border-t border-dashed border-[var(--color-border)] space-y-3">
-            {OLDER_RELEASES.map((old, i) => (
-              <Fragment key={i}>
-                <div>
-                  <div className="text-[11px] font-semibold text-[var(--color-text-muted)] mb-1">
-                    v{old.version} · {old.shortDate}
+          ))}
+          {OLDER_RELEASES.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-dashed border-[var(--color-border)] space-y-3">
+              {OLDER_RELEASES.map((old, i) => (
+                <Fragment key={i}>
+                  <div>
+                    <div className="text-[11px] font-semibold text-[var(--color-text-muted)] mb-1">
+                      v{old.version} · {old.shortDate}
+                    </div>
+                    {old.highlights.map((h, j) => (
+                      <ChangelogItem key={j} text={h} small />
+                    ))}
                   </div>
-                  {old.highlights.map((h, j) => (
-                    <ChangelogItem key={j} text={h} small />
-                  ))}
-                </div>
-                {i < OLDER_RELEASES.length - 1 && <div className="border-t border-dashed border-[var(--color-border)]" />}
-              </Fragment>
-            ))}
-          </div>
-        )}
+                  {i < OLDER_RELEASES.length - 1 && <div className="border-t border-dashed border-[var(--color-border)]" />}
+                </Fragment>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="border-t border-[var(--color-border)] px-4 py-2.5 text-right">
+          <button
+            type="button"
+            onClick={() => setHistoryOpen(true)}
+            className="text-[11px] font-semibold text-[var(--color-accent)] hover:underline"
+          >
+            Ver historial completo de versiones →
+          </button>
+        </div>
       </div>
-    </div>
+      {historyOpen ? <VersionHistoryModal onClose={() => setHistoryOpen(false)} /> : null}
+    </>
   );
 }
 

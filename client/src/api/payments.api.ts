@@ -17,6 +17,7 @@ export const getPayment = (id: string) =>
 
 export const createPayment = (body: {
   supplierId: string;
+  accountId: string;
   fecha: string;
   monto: number;
   moneda?: Moneda;
@@ -30,6 +31,7 @@ export const patchPayment = (id: string, body: Partial<{
   monto: number;
   moneda: Moneda;
   metodo: MetodoPago;
+  accountId: string;
   referencia: string | null;
   notas: string | null;
 }>) => apiClient.patch<Payment>(`/api/finance/payments/${id}`, body).then(r => r.data);

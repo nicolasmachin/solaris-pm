@@ -740,7 +740,7 @@ function UteTopList({
                 {it.clientName}
               </div>
               <div className="text-[11px] text-[var(--color-text-muted)]">
-                {it.projectCode} · {UTE_STAGE_LABEL[it.currentStage as keyof typeof UTE_STAGE_LABEL] ?? it.currentStage}
+                {UTE_STAGE_LABEL[it.currentStage as keyof typeof UTE_STAGE_LABEL] ?? it.currentStage}
               </div>
             </div>
             <span className="font-mono text-sm font-bold" style={{ color }}>

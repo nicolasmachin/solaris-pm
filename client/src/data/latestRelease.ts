@@ -23,31 +23,38 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "2.4",
-  date: "26 de abril de 2026",
+  version: "3.0",
+  date: "27 de abril de 2026",
   sections: [
     {
       title: "Nuevo",
       items: [
-        "**Pagos parciales**: cada pago a proveedor es una entidad separada que se aplica a una o varias facturas. Las facturas pueden quedar en estado *Parcialmente pagado*.",
-        "Página nueva **Pagos** (/finanzas/pagos) con KPIs, filtros y modal de aplicación a múltiples facturas.",
-        "**Vista detallada por proveedor** con tabs Facturas / Pagos / Estado de cuenta cronológico.",
-        "Pestaña **Costos** del proyecto rediseñada con consumos reales de stock.",
+        "**Cuentas (caja, bancos, tarjetas)**: módulo nuevo con saldos en tiempo real, total por moneda y total unificado en USD. Cuenta obligatoria al concretar dinero.",
+        "**Pagos como entidad separada**: aplicación a una o varias facturas, parciales, anulación con reversión correcta de saldos. Pagos negativos como notas de crédito.",
+        "**Costos del proyecto: previsto vs. real** lado a lado con desviación, margen y comparación por ítem.",
+        "**Saldo USD proyectado** en la lista de Movimientos: cuenta TODOS los estados ordenados por fecha efectiva. Distingue real (PAGADO/cobrado) de proyectado.",
+        "**Mis Tareas con alertas de vencimiento**: banner si hay vencidas/de hoy, dot pulsante por fila, badges con plazo, fondo sutil por severidad.",
       ],
     },
     {
       title: "Mejoras",
       items: [
-        "Lista de proveedores: ahora muestra saldo neto, n° de facturas pendientes y última actividad.",
-        "Cuentas a pagar muestra saldo pendiente real (no monto total).",
-        "Stock unificado con el catálogo de Materiales: misma tabla, mismos campos.",
+        "Catálogo unificado de Materiales y Stock con toggle *Gestiona stock* (productos vs. servicios).",
+        "Lista de materiales por proyecto + generación/limpieza de previstos.",
+        "Desglose de factura → ingreso al stock con botón **+ Crear nuevo material** dentro del modal.",
+        "Vista detallada del proveedor con tabs Facturas / Pagos / Estado de cuenta cronológico.",
+        "Página *A pagar* con saldos pendientes reales, KPIs y acción **💲 Pagar** por fila.",
+        "Identificación de proyectos por nombre del cliente; cantidades enteras en todo el sistema.",
       ],
     },
     {
       title: "Correcciones",
       items: [
-        "Filtros de Movimientos guardaban valores incorrectos al cambiar de pestaña.",
-        "Comprobantes legacy quedaron ocultos hasta confirmar que ya no se usan.",
+        "Mis Tareas: subetapas con responsable explícito ya no aparecen para el responsable de la etapa (respeta herencia correctamente).",
+        "Borrar un movimiento con pagos aplicados libera correctamente esos pagos como saldo a favor del proveedor.",
+        "Anular un pago con aplicaciones parciales restituye el estado correcto de cada factura asociada.",
+        "Modal *Aplicar pago* pre-carga `min(saldo pendiente, saldo del pago)` en lugar del monto total.",
+        "Transición a *A pagar* con proveedor abre automáticamente el modal de desglose si todavía no se cargó.",
       ],
     },
   ],
@@ -62,28 +69,19 @@ export type OldRelease = {
 
 export const OLDER_RELEASES: OldRelease[] = [
   {
-    version: "2.3",
-    shortDate: "26 abr",
-    highlights: [
-      "Stock unificado con materiales + desglose de facturas por ítem.",
-      "Pestaña Costos del proyecto basada en consumos reales.",
-    ],
-  },
-  {
-    version: "2.2",
-    shortDate: "25 abr",
-    highlights: [
-      "Estados de movimiento (Previsto / Comprometido / A pagar / Pagado).",
-      "Lista de materiales por proyecto + generación de previstos.",
-      "Página Cuentas a pagar.",
-    ],
-  },
-  {
     version: "2.1",
     shortDate: "25 abr",
     highlights: [
       "Modo claro renovado con identidad Voltia.",
       "Trámites UTE: vista tabla más legible y fixes en calendario mensual.",
+    ],
+  },
+  {
+    version: "2.0",
+    shortDate: "24 abr",
+    highlights: [
+      "Nuevo módulo Trámites UTE con tabla y kanban.",
+      "Cálculo automático de tiempo nuestro vs UTE por trámite.",
     ],
   },
 ];

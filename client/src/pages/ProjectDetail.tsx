@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
@@ -305,6 +305,7 @@ function ConsumoModal({ projectId, onClose, onSaved }: { projectId: string; onCl
   const [cantidad, setCantidad] = useState('');
   const [observaciones, setObservaciones] = useState('');
   const [serverErr, setServerErr] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   // Sólo ítems físicos con stock gestionado pueden consumirse en obra.
   const { data: products = [] } = useQuery({
@@ -312,12 +313,28 @@ function ConsumoModal({ projectId, onClose, onSaved }: { projectId: string; onCl
     queryFn: () => getStockProducts({ activo: true, gestionaStock: 'true' }),
   });
 
+  // Categorías deducidas del listado actual (deduplicadas).
+  const categories = useMemo(() => {
+    const seen = new Map<string, { id: string; nombre: string }>();
+    for (const p of products) {
+      if (p.categoryId && !seen.has(p.categoryId)) {
+        seen.set(p.categoryId, { id: p.categoryId, nombre: p.categoria });
+      }
+    }
+    return Array.from(seen.values()).sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }, [products]);
+
+  const filteredProducts = useMemo(() => {
+    if (categoryFilter === 'all') return products;
+    return products.filter(p => p.categoryId === categoryFilter);
+  }, [products, categoryFilter]);
+
   const { mutate, isPending } = useMutation({
     mutationFn: () => createStockMovement({
       fecha: new Date().toISOString().slice(0, 10),
       materialItemId,
       tipo: 'EGRESO',
-      cantidad: parseFloat(cantidad),
+      cantidad: parseInt(cantidad, 10),
       projectId,
       observaciones: observaciones || undefined,
     }),
@@ -345,10 +362,20 @@ function ConsumoModal({ projectId, onClose, onSaved }: { projectId: string; onCl
         <p className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">Registrar consumo</p>
 
         <div>
+          <label className={lbl}>Categoría</label>
+          <select className={inp} value={categoryFilter} onChange={e => { setCategoryFilter(e.target.value); setMaterialItemId(''); }}>
+            <option value="all">Todas las categorías</option>
+            {categories.map(c => (
+              <option key={c.id} value={c.id}>{c.nombre}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
           <label className={lbl}>Producto *</label>
           <select className={inp} value={materialItemId} onChange={e => { setMaterialItemId(e.target.value); setServerErr(''); }}>
             <option value="">Seleccionar producto...</option>
-            {products.map(p => (
+            {filteredProducts.map(p => (
               <option key={p.id} value={p.id}>{p.nombre} — stock: {p.stockActual} {p.unidad}</option>
             ))}
           </select>
@@ -362,7 +389,7 @@ function ConsumoModal({ projectId, onClose, onSaved }: { projectId: string; onCl
 
         <div>
           <label className={lbl}>Cantidad *</label>
-          <input type="number" min="0.001" step="any" className={inp} value={cantidad} onChange={e => { setCantidad(e.target.value); setServerErr(''); }} />
+          <input type="number" min="1" step="1" className={inp} value={cantidad} onChange={e => { setCantidad(e.target.value); setServerErr(''); }} />
           {insufficient && (
             <p className="text-xs text-amber-400 mt-1">La cantidad supera el stock disponible</p>
           )}
