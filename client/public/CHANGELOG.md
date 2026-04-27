@@ -1,6 +1,17 @@
 # Novedades
 
-## v3.0
+## v3.1
+
+### 27 de abril de 2026
+
+#### PDF de materiales con/sin precios
+
+- El botón "Exportar PDF" en la lista de materiales ahora es un **desplegable con dos opciones**: "Sin precios (para proveedores)" y "Con precios (uso interno)".
+- **Sin precios**: PDF con 3 columnas (Ítem, Cant., Unidad). Pensado para compartir con proveedores sin revelar los precios internos.
+- **Con precios**: PDF con 5 columnas (Ítem, Cant., Unidad, Precio, Subtotal) más total al pie por moneda. Para uso interno del equipo.
+- Cada variante se guarda con nombre descriptivo en los Documentos del proyecto y genera un toast diferenciado al completarse.
+
+---
 
 ### 27 de abril de 2026
 

@@ -36,14 +36,17 @@ export function getDownloadUrl(fileId: string): string {
   return `${base}/api/files/${fileId}/download`;
 }
 
+export type FileAttachmentTipo = "UPLOAD_MANUAL" | "LISTA_MATERIALES" | "PRESUPUESTO" | "OTRO" | null;
+
 export interface ProjectDocument {
   id: string;
   filename: string;
   mimeType: string;
   sizeBytes: number;
+  tipo: FileAttachmentTipo;
   uploadedAt: string;
   uploadedBy: string | null;
-  source: "stage" | "substage" | "other";
+  source: "stage" | "substage" | "generated" | "other";
   sourceLabel: string;
   stageId: string | null;
   substageId: string | null;
@@ -54,4 +57,8 @@ export interface ProjectDocument {
 export async function getProjectDocuments(projectId: string): Promise<ProjectDocument[]> {
   const { data } = await apiClient.get<ProjectDocument[]>(`/api/projects/${projectId}/documents`);
   return data;
+}
+
+export async function deleteFile(fileId: string): Promise<void> {
+  await apiClient.delete(`/api/files/${fileId}`);
 }

@@ -739,7 +739,7 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
       />
 
       {/* Drawer */}
-      <aside className="fixed top-0 right-0 h-full w-full max-w-[380px] z-50 flex flex-col bg-[var(--color-bg-sidebar)] border-l border-[var(--color-border)] shadow-2xl overflow-y-auto">
+      <aside className="fixed top-0 right-0 h-full w-full md:w-1/2 z-50 flex flex-col bg-[var(--color-bg-sidebar)] border-l border-[var(--color-border)] shadow-2xl overflow-y-auto">
         {/* Header */}
         <div className="flex items-start justify-between px-5 py-4 border-b border-[var(--color-border)] sticky top-0 bg-[var(--color-bg-sidebar)] z-10">
           <div>

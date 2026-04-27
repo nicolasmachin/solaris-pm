@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { getProjectDocuments, type ProjectDocument } from "../../api/files.api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Trash2 } from "lucide-react";
+import { getProjectDocuments, deleteFile, type ProjectDocument } from "../../api/files.api";
 import { Spinner } from "../ui/Spinner";
 import { useAuthBlobUrl, downloadAuthenticated } from "../../hooks/useAuthBlobUrl";
+import { useAuthStore } from "../../store/auth.store";
 import { toast } from "react-hot-toast";
 
 const MONTHS_ES_SHORT = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
@@ -38,11 +40,32 @@ function iconFor(mimeType: string): { emoji: string; color: string } {
 
 export function DocumentsStrip({ projectId }: { projectId: string }) {
   const [previewDoc, setPreviewDoc] = useState<ProjectDocument | null>(null);
+  const currentUser = useAuthStore(s => s.user);
+  const qc = useQueryClient();
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["project", projectId, "documents"],
+    queryKey: ["project-documents", projectId],
     queryFn: () => getProjectDocuments(projectId),
   });
+
+  const deleteMut = useMutation({
+    mutationFn: (fileId: string) => deleteFile(fileId),
+    onSuccess: () => {
+      toast.success("Archivo eliminado");
+      qc.invalidateQueries({ queryKey: ["project-documents", projectId] });
+    },
+    onError: () => toast.error("No se pudo eliminar el archivo"),
+  });
+
+  function handleDelete(doc: ProjectDocument) {
+    if (!confirm(`¿Eliminar "${doc.filename}"?`)) return;
+    deleteMut.mutate(doc.id);
+  }
+
+  function canDelete(doc: ProjectDocument): boolean {
+    if (!currentUser) return false;
+    return currentUser.role === "ADMIN" || doc.uploadedBy === currentUser.id;
+  }
 
   const documents = data ?? [];
 
@@ -76,7 +99,14 @@ export function DocumentsStrip({ projectId }: { projectId: string }) {
           <div className="-mx-1 overflow-x-auto">
             <div className="flex gap-2 px-1 pb-1">
               {documents.map((doc) => (
-                <DocumentCard key={doc.id} doc={doc} onClick={() => setPreviewDoc(doc)} />
+                <DocumentCard
+                  key={doc.id}
+                  doc={doc}
+                  onClick={() => setPreviewDoc(doc)}
+                  canDelete={canDelete(doc)}
+                  onDelete={() => handleDelete(doc)}
+                  deleting={deleteMut.isPending && deleteMut.variables === doc.id}
+                />
               ))}
             </div>
           </div>
@@ -110,32 +140,69 @@ function ImageThumb({ src, alt }: { src: string; alt: string }) {
   );
 }
 
-function DocumentCard({ doc, onClick }: { doc: ProjectDocument; onClick: () => void }) {
+const TIPO_BADGE: Record<string, { label: string; color: string }> = {
+  LISTA_MATERIALES: { label: "Lista materiales", color: "#1e40af" },
+  PRESUPUESTO: { label: "Presupuesto", color: "#065f46" },
+  UPLOAD_MANUAL: { label: "Manual", color: "#6B7280" },
+  OTRO: { label: "Otro", color: "#6B7280" },
+};
+
+function DocumentCard({ doc, onClick, canDelete, onDelete, deleting }: {
+  doc: ProjectDocument;
+  onClick: () => void;
+  canDelete: boolean;
+  onDelete: () => void;
+  deleting: boolean;
+}) {
   const icon = iconFor(doc.mimeType);
   const showThumb = isImage(doc.mimeType);
+  const tipoBadge = doc.tipo ? TIPO_BADGE[doc.tipo] : null;
+  const isGenerated = doc.tipo === "LISTA_MATERIALES" || doc.tipo === "PRESUPUESTO";
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={`${doc.filename}\n${doc.sourceLabel}`}
-      className="group flex w-[180px] shrink-0 flex-col gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] p-3 text-left transition-colors hover:border-[var(--color-text-secondary)]"
-    >
-      <div className="flex h-20 items-center justify-center overflow-hidden rounded bg-[var(--color-bg-card)]">
-        {showThumb ? (
-          <ImageThumb src={doc.previewUrl} alt="" />
-        ) : (
-          <span style={{ fontSize: 36, color: icon.color }}>{icon.emoji}</span>
+    <div className="group relative flex w-[180px] shrink-0 flex-col gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] p-3 text-left transition-colors hover:border-[var(--color-text-secondary)]">
+      {canDelete && (
+        <button
+          type="button"
+          onClick={e => { e.stopPropagation(); onDelete(); }}
+          disabled={deleting}
+          title={isGenerated ? "Eliminar este PDF generado automáticamente" : "Eliminar archivo"}
+          className="absolute right-1.5 top-1.5 rounded p-1 text-[var(--color-text-muted)] opacity-0 transition-opacity hover:bg-red-500/15 hover:text-red-500 group-hover:opacity-100 disabled:opacity-50"
+          aria-label="Eliminar archivo"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={onClick}
+        title={`${doc.filename}\n${doc.sourceLabel}`}
+        className="flex flex-col gap-1.5 text-left"
+      >
+        <div className="flex h-20 items-center justify-center overflow-hidden rounded bg-[var(--color-bg-card)]">
+          {showThumb ? (
+            <ImageThumb src={doc.previewUrl} alt="" />
+          ) : (
+            <span style={{ fontSize: 36, color: icon.color }}>{icon.emoji}</span>
+          )}
+        </div>
+        <p className="truncate text-[12px] font-medium text-[var(--color-text-primary)]">
+          {doc.filename}
+        </p>
+        <div className="flex items-center justify-between gap-1 text-[10px] text-[var(--color-text-muted)]">
+          <span>{formatSize(doc.sizeBytes)}</span>
+          <span>{formatShortDate(doc.uploadedAt)}</span>
+        </div>
+        {tipoBadge && (
+          <span
+            className="mt-0.5 inline-block rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider"
+            style={{ background: `${tipoBadge.color}22`, color: tipoBadge.color }}
+          >
+            {tipoBadge.label}
+          </span>
         )}
-      </div>
-      <p className="truncate text-[12px] font-medium text-[var(--color-text-primary)]">
-        {doc.filename}
-      </p>
-      <div className="flex items-center justify-between text-[10px] text-[var(--color-text-muted)]">
-        <span>{formatSize(doc.sizeBytes)}</span>
-        <span>{formatShortDate(doc.uploadedAt)}</span>
-      </div>
-    </button>
+      </button>
+    </div>
   );
 }
 

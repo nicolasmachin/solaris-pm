@@ -23,38 +23,13 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "3.0",
+  version: "3.1",
   date: "27 de abril de 2026",
   sections: [
     {
-      title: "Nuevo",
-      items: [
-        "**Cuentas (caja, bancos, tarjetas)**: módulo nuevo con saldos en tiempo real, total por moneda y total unificado en USD. Cuenta obligatoria al concretar dinero.",
-        "**Pagos como entidad separada**: aplicación a una o varias facturas, parciales, anulación con reversión correcta de saldos. Pagos negativos como notas de crédito.",
-        "**Costos del proyecto: previsto vs. real** lado a lado con desviación, margen y comparación por ítem.",
-        "**Saldo USD proyectado** en la lista de Movimientos: cuenta TODOS los estados ordenados por fecha efectiva. Distingue real (PAGADO/cobrado) de proyectado.",
-        "**Mis Tareas con alertas de vencimiento**: banner si hay vencidas/de hoy, dot pulsante por fila, badges con plazo, fondo sutil por severidad.",
-      ],
-    },
-    {
       title: "Mejoras",
       items: [
-        "Catálogo unificado de Materiales y Stock con toggle *Gestiona stock* (productos vs. servicios).",
-        "Lista de materiales por proyecto + generación/limpieza de previstos.",
-        "Desglose de factura → ingreso al stock con botón **+ Crear nuevo material** dentro del modal.",
-        "Vista detallada del proveedor con tabs Facturas / Pagos / Estado de cuenta cronológico.",
-        "Página *A pagar* con saldos pendientes reales, KPIs y acción **💲 Pagar** por fila.",
-        "Identificación de proyectos por nombre del cliente; cantidades enteras en todo el sistema.",
-      ],
-    },
-    {
-      title: "Correcciones",
-      items: [
-        "Mis Tareas: subetapas con responsable explícito ya no aparecen para el responsable de la etapa (respeta herencia correctamente).",
-        "Borrar un movimiento con pagos aplicados libera correctamente esos pagos como saldo a favor del proveedor.",
-        "Anular un pago con aplicaciones parciales restituye el estado correcto de cada factura asociada.",
-        "Modal *Aplicar pago* pre-carga `min(saldo pendiente, saldo del pago)` en lugar del monto total.",
-        "Transición a *A pagar* con proveedor abre automáticamente el modal de desglose si todavía no se cargó.",
+        "**PDF de materiales con dos versiones**: el botón "Exportar PDF" ahora es un desplegable con "Sin precios (para proveedores)" y "Con precios (uso interno)". Cada variante tiene su propio nombre y se guarda en los Documentos del proyecto.",
       ],
     },
   ],
@@ -68,6 +43,14 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "3.0",
+    shortDate: "27 abr",
+    highlights: [
+      "Cuentas (caja/bancos), Pagos, Costos previsto vs. real, Saldo USD proyectado.",
+      "Mis Tareas con alertas de vencimiento y badges por severidad.",
+    ],
+  },
   {
     version: "2.1",
     shortDate: "25 abr",

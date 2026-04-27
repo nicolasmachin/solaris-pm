@@ -87,3 +87,25 @@ export const generateProjectPrevistos = (projectId: string) =>
 
 export const regenerateProjectPrevistos = (projectId: string) =>
   apiClient.post<{ created: number; alreadyExisted: number; regenerated: number }>(`/api/projects/${projectId}/materials/regenerate-previsto`).then(r => r.data);
+
+export const exportMaterialsPdf = async (projectId: string, includePrecios: boolean): Promise<{ fileId: string }> => {
+  const response = await apiClient.post(
+    `/api/projects/${projectId}/materials/export-pdf`,
+    null,
+    { responseType: 'blob', params: { includePrecios: includePrecios ? 'true' : 'false' } },
+  );
+  const today = new Date().toISOString().slice(0, 10);
+  const filename = includePrecios
+    ? `Lista de materiales (con precios) ${today}.pdf`
+    : `Lista de materiales (sin precios) ${today}.pdf`;
+  const url = URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  const fileId = (response.headers['x-file-id'] as string) ?? '';
+  return { fileId };
+};

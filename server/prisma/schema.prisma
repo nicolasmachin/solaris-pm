@@ -589,7 +589,7 @@ model Task {
 }
 
 model FileAttachment {
-  id             String    @id @default(cuid())
+  id             String              @id @default(cuid())
   projectId      String
   stageId        String?
   substageId     String?
@@ -598,18 +598,26 @@ model FileAttachment {
   mimeType       String
   sizeBytes      Int
   url            String
+  tipo           FileAttachmentTipo? // null = upload manual legacy
   uploadedById   String
-  uploadedBy     User      @relation("FileUploadedBy", fields: [uploadedById], references: [id], onDelete: Restrict)
-  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  stage          Stage?    @relation(fields: [stageId], references: [id], onDelete: SetNull)
-  substage       Substage? @relation(fields: [substageId], references: [id], onDelete: SetNull)
-  deletedAt      DateTime? @db.Timestamptz(6)
-  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+  uploadedBy     User                @relation("FileUploadedBy", fields: [uploadedById], references: [id], onDelete: Restrict)
+  project        Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stage          Stage?              @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  substage       Substage?           @relation(fields: [substageId], references: [id], onDelete: SetNull)
+  deletedAt      DateTime?           @db.Timestamptz(6)
+  createdAt      DateTime            @default(now()) @db.Timestamptz(6)
 
   @@index([projectId])
   @@index([uploadedById])
   @@index([deletedAt])
   @@map("file_attachments")
+}
+
+enum FileAttachmentTipo {
+  UPLOAD_MANUAL
+  LISTA_MATERIALES
+  PRESUPUESTO
+  OTRO
 }
 
 model AuditLog {

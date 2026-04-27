@@ -16,6 +16,7 @@ import {
   EstadoAprobacion,
   EstadoComprobante,
   ExpenseSourceType,
+  FileAttachmentTipo,
   FinanceMovementStatus,
   MovementSourceType,
   GoalArea,
@@ -46,6 +47,7 @@ import {
   UteStage,
   UteStatus,
 } from "@prisma/client";
+import PDFDocument from "pdfkit";
 import { z } from "zod";
 
 import { prisma } from "../lib/prisma.js";
@@ -2897,11 +2899,17 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     return files.map((file) => {
-      let source: "stage" | "substage" | "other" = "other";
+      let source: "stage" | "substage" | "generated" | "other" = "other";
       let sourceLabel = "Proyecto";
       let stageId: string | null = null;
       let substageId: string | null = null;
-      if (file.substage) {
+      if (file.tipo === FileAttachmentTipo.LISTA_MATERIALES) {
+        source = "generated";
+        sourceLabel = "Generado · Lista de materiales";
+      } else if (file.tipo === FileAttachmentTipo.PRESUPUESTO) {
+        source = "generated";
+        sourceLabel = "Generado · Presupuesto";
+      } else if (file.substage) {
         source = "substage";
         sourceLabel = `Subetapa ${file.substage.name}`;
         stageId = file.substage.stageId;
@@ -2916,6 +2924,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         filename: file.filename,
         mimeType: file.mimeType,
         sizeBytes: file.sizeBytes,
+        tipo: file.tipo ?? null,
         uploadedAt: serializeDate(file.createdAt),
         uploadedBy: file.uploadedById,
         source,
@@ -2923,7 +2932,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
         stageId,
         substageId,
         downloadUrl: `/api/files/${file.id}/download`,
-        // El mismo endpoint sirve para preview (inline) — el front lo abre en iframe.
         previewUrl: `/api/files/${file.id}/preview`,
       };
     });
@@ -8323,6 +8331,221 @@ export async function registerApiRoutes(app: FastifyInstance) {
       ]);
       const result = await generatePrevistosForProject(id, user.id);
       return { ...result, regenerated: movIds.length };
+    });
+
+    // ─── Export PDF de lista de materiales ───────────────────────────────────
+
+    app.post("/projects/:id/materials/export-pdf", { preHandler: authorize(Module.INGENIERIA, Action.VIEW) }, async (request, reply) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const { includePrecios } = z.object({ includePrecios: z.string().optional() }).parse(request.query);
+      const withPrices = includePrecios === "true";
+
+      const project = await prisma.project.findFirst({ where: { id, deletedAt: null }, select: { id: true, clientName: true, code: true } });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+
+      const materials = await prisma.projectMaterial.findMany({
+        where: { projectId: id },
+        include: {
+          materialItem: {
+            select: { nombre: true, unidad: true, category: { select: { nombre: true, orden: true } } },
+          },
+        },
+        orderBy: { createdAt: "asc" },
+      });
+
+      // Directorio de destino dentro del storage del proyecto
+      const storageRoot = path.resolve(process.cwd(), "..", env.storagePath, id);
+      await fsPromises.mkdir(storageRoot, { recursive: true });
+
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const storedFilename = withPrices
+        ? `lista-materiales-con-precios-${Date.now()}.pdf`
+        : `lista-materiales-${Date.now()}.pdf`;
+      const absolutePath = path.join(storageRoot, storedFilename);
+      const displayName = withPrices
+        ? `Lista de materiales (con precios) ${timestamp}`
+        : `Lista de materiales (sin precios) ${timestamp}`;
+
+      // Generar PDF con pdfkit.
+      // Área útil A4: x=50..545 (495pt). Columnas diseñadas para caber exactas.
+      // Todas las celdas usan lineBreak: false para evitar solapamiento.
+      await new Promise<void>((resolve, reject) => {
+        const doc = new PDFDocument({ margin: 50, size: "A4", autoFirstPage: true });
+        const writeStream = fs.createWriteStream(absolutePath);
+        doc.pipe(writeStream);
+        writeStream.on("finish", resolve);
+        writeStream.on("error", reject);
+        doc.on("error", reject);
+
+        // ── Encabezado ────────────────────────────────────────────────────────
+        doc.font("Helvetica-Bold").fontSize(16).text("Lista de Materiales", 50, 50, { align: "center", width: 495 });
+        doc.font("Helvetica-Bold").fontSize(11).text(project.clientName, 50, 72, { align: "center", width: 495 });
+        doc.font("Helvetica").fontSize(9).fillColor("#666666")
+           .text(`Generado el ${new Date().toLocaleDateString("es-UY", { day: "2-digit", month: "long", year: "numeric" })}`, 50, 88, { align: "center", width: 495 });
+        doc.fillColor("#000000");
+
+        if (materials.length === 0) {
+          doc.fontSize(11).text("Sin materiales cargados.", 50, 120, { align: "center", width: 495 });
+          doc.end();
+          return;
+        }
+
+        // ── Definición de columnas según modo ────────────────────────────────
+        // Sin precios: Ítem(300) · gap(5) · Cant(80) · gap(5) · Unidad(105) = 495
+        // Con precios: Ítem(180) · gap(5) · Cant(40) · gap(5) · Unidad(55) · gap(5) · Precio(95) · gap(5) · Subtotal(105) = 495
+        const C = withPrices
+          ? {
+              item:     { x: 50,  w: 180 },
+              cant:     { x: 235, w: 40  },
+              unidad:   { x: 280, w: 55  },
+              precio:   { x: 340, w: 95  },
+              subtotal: { x: 440, w: 105 },
+            }
+          : {
+              item:     { x: 50,  w: 300 },
+              cant:     { x: 355, w: 80  },
+              unidad:   { x: 440, w: 105 },
+            };
+        const PAGE_BOTTOM = 790;
+        const ROW_H = 16;
+        const FONT_SIZE = 8.5;
+
+        function fitText(text: string, maxW: number): string {
+          if (doc.widthOfString(text) <= maxW) return text;
+          let t = text;
+          while (t.length > 1 && doc.widthOfString(t + "…") > maxW) t = t.slice(0, -1);
+          return t + "…";
+        }
+
+        function drawDataRow(y: number, nombre: string, cant: string, unidad: string, precio?: string, subtotal?: string) {
+          doc.font("Helvetica").fontSize(FONT_SIZE).fillColor("#000000");
+          doc.text(fitText(nombre, C.item.w), C.item.x, y, { width: C.item.w, lineBreak: false });
+          doc.text(cant, C.cant.x, y, { width: C.cant.w, lineBreak: false, align: "right" });
+          doc.text(fitText(unidad, C.unidad.w), C.unidad.x, y, { width: C.unidad.w, lineBreak: false, align: "center" });
+          if (withPrices && precio !== undefined && subtotal !== undefined) {
+            const Cp = C as { item: { x: number; w: number }; cant: { x: number; w: number }; unidad: { x: number; w: number }; precio: { x: number; w: number }; subtotal: { x: number; w: number } };
+            doc.text(precio,   Cp.precio.x,   y, { width: Cp.precio.w,   lineBreak: false, align: "right" });
+            doc.text(subtotal, Cp.subtotal.x, y, { width: Cp.subtotal.w, lineBreak: false, align: "right" });
+          }
+        }
+
+        // ── Cabecera de tabla ─────────────────────────────────────────────────
+        let rowY = 110;
+        doc.rect(50, rowY, 495, ROW_H).fill("#1e3a5f");
+        doc.font("Helvetica-Bold").fontSize(FONT_SIZE).fillColor("#ffffff");
+        doc.text("Ítem",   C.item.x, rowY + 3, { width: C.item.w, lineBreak: false });
+        doc.text("Cant.",  C.cant.x, rowY + 3, { width: C.cant.w, lineBreak: false, align: "right" });
+        doc.text("Unidad", C.unidad.x, rowY + 3, { width: C.unidad.w, lineBreak: false, align: "center" });
+        if (withPrices) {
+          const Cp = C as { item: { x: number; w: number }; cant: { x: number; w: number }; unidad: { x: number; w: number }; precio: { x: number; w: number }; subtotal: { x: number; w: number } };
+          doc.text("Precio",   Cp.precio.x,   rowY + 3, { width: Cp.precio.w,   lineBreak: false, align: "right" });
+          doc.text("Subtotal", Cp.subtotal.x, rowY + 3, { width: Cp.subtotal.w, lineBreak: false, align: "right" });
+        }
+        rowY += ROW_H + 1;
+
+        // ── Filas de datos ────────────────────────────────────────────────────
+        const groups = new Map<string, { orden: number; nombre: string; items: typeof materials }>();
+        for (const pm of materials) {
+          const catNombre = pm.materialItem.category?.nombre ?? "Sin categoría";
+          const catOrden = pm.materialItem.category?.orden ?? 9999;
+          if (!groups.has(catNombre)) groups.set(catNombre, { orden: catOrden, nombre: catNombre, items: [] });
+          groups.get(catNombre)!.items.push(pm);
+        }
+        const sortedGroups = Array.from(groups.values()).sort((a, b) => a.orden - b.orden);
+
+        const totalByMoneda: Record<string, number> = {};
+        let rowAlt = false;
+
+        for (const group of sortedGroups) {
+          if (rowY + ROW_H * 2 > PAGE_BOTTOM) {
+            doc.addPage();
+            rowY = 50;
+            rowAlt = false;
+          }
+
+          doc.rect(50, rowY, 495, ROW_H - 1).fill("#dbeafe");
+          doc.font("Helvetica-Bold").fontSize(8).fillColor("#1e3a5f")
+             .text(group.nombre, 54, rowY + 3, { width: 487, lineBreak: false });
+          rowY += ROW_H;
+
+          for (const pm of group.items) {
+            if (rowY + ROW_H > PAGE_BOTTOM) {
+              doc.addPage();
+              rowY = 50;
+              rowAlt = false;
+            }
+
+            const qty = Number(pm.quantity);
+            const price = Number(pm.unitPrice);
+            const subtotal = qty * price;
+            if (withPrices) totalByMoneda[pm.moneda] = (totalByMoneda[pm.moneda] ?? 0) + subtotal;
+
+            if (rowAlt) doc.rect(50, rowY, 495, ROW_H - 1).fill("#f8fafc");
+            drawDataRow(
+              rowY + 3,
+              pm.materialItem.nombre,
+              qty.toString(),
+              pm.materialItem.unidad,
+              withPrices ? `${price.toFixed(2)} ${pm.moneda}` : undefined,
+              withPrices ? `${subtotal.toFixed(2)} ${pm.moneda}` : undefined,
+            );
+            rowY += ROW_H;
+            rowAlt = !rowAlt;
+          }
+          rowY += 3;
+        }
+
+        // ── Separador + total (solo con precios) ──────────────────────────────
+        if (withPrices) {
+          if (rowY + 24 > PAGE_BOTTOM) {
+            doc.addPage();
+            rowY = 50;
+          }
+          doc.moveTo(50, rowY).lineTo(545, rowY).strokeColor("#1e3a5f").lineWidth(0.8).stroke();
+          rowY += 6;
+
+          const Cp = C as { item: { x: number; w: number }; cant: { x: number; w: number }; unidad: { x: number; w: number }; precio: { x: number; w: number }; subtotal: { x: number; w: number } };
+          const totStr = Object.entries(totalByMoneda)
+            .map(([m, v]) => `${v.toLocaleString("es-UY", { minimumFractionDigits: 2 })} ${m}`)
+            .join("   ·   ");
+          doc.font("Helvetica-Bold").fontSize(10).fillColor("#1e3a5f");
+          doc.text("Total estimado:", 50, rowY, { width: 340, lineBreak: false });
+          doc.text(totStr, Cp.subtotal.x - 95, rowY, { width: Cp.subtotal.w + 95, lineBreak: false, align: "right" });
+        }
+
+        doc.end();
+      });
+
+      const stats = await fsPromises.stat(absolutePath);
+
+      // Registrar en FileAttachment con tipo LISTA_MATERIALES
+      const attachment = await prisma.fileAttachment.create({
+        data: {
+          projectId: id,
+          filename: displayName + ".pdf",
+          storedFilename,
+          mimeType: "application/pdf",
+          sizeBytes: stats.size,
+          url: `${id}/${storedFilename}`,
+          tipo: FileAttachmentTipo.LISTA_MATERIALES,
+          uploadedById: user.id,
+        },
+      });
+
+      await createAuditEntry({
+        entityType: AuditEntityType.file,
+        entityId: attachment.id,
+        projectId: id,
+        userId: user.id,
+        action: AuditAction.file_uploaded,
+        description: `Generó PDF "Lista de materiales${withPrices ? " (con precios)" : " (sin precios)"}" para ${project.clientName}`,
+      });
+
+      reply.header("Content-Type", "application/pdf");
+      reply.header("Content-Disposition", `attachment; filename="${displayName}.pdf"`);
+      reply.header("X-File-Id", attachment.id);
+      return reply.send(fs.createReadStream(absolutePath));
     });
 
     // ─── Costos del proyecto (basado en consumos de stock) ────────────────────

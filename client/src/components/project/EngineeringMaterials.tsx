@@ -1,10 +1,10 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Plus, X, Search, Sparkles, RefreshCw, Trash2, StickyNote } from 'lucide-react';
+import { Plus, X, Search, Sparkles, RefreshCw, Trash2, StickyNote, FileText, DollarSign, ChevronDown } from 'lucide-react';
 import {
   getProjectMaterials, createProjectMaterial, patchProjectMaterial, deleteProjectMaterial,
-  generateProjectPrevistos, regenerateProjectPrevistos,
+  generateProjectPrevistos, regenerateProjectPrevistos, exportMaterialsPdf,
   getMaterialCategories, getMaterialItems,
 } from '../../api/materials.api';
 import { getSuppliers } from '../../api/finance.api';
@@ -260,15 +260,26 @@ function MaterialRow({ projectId, pm, suppliers }: {
           )}
         </td>
         <td className="px-2 py-2">
-          <input
-            type="number" min="1" step="1"
-            className="w-20 px-2 py-1 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] tabular-nums focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
-            value={qty}
-            onChange={e => setQty(e.target.value)}
-            onBlur={commitQty}
-            onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-          />
-          <span className="ml-1 text-[10px] text-[var(--color-text-muted)]">{pm.materialItem?.unidad}</span>
+          <div className="flex items-center gap-1.5">
+            <button
+              title="Eliminar material"
+              onClick={() => deleteMut.mutate()}
+              disabled={deleteMut.isPending}
+              className="p-1 rounded hover:bg-red-500/15 text-red-500 hover:text-red-700 disabled:opacity-50 transition-colors flex-shrink-0"
+              aria-label="Eliminar material"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+            <input
+              type="number" min="1" step="1"
+              className="w-20 px-2 py-1 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] tabular-nums focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
+              value={qty}
+              onChange={e => setQty(e.target.value)}
+              onBlur={commitQty}
+              onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+            />
+            <span className="text-[10px] text-[var(--color-text-muted)]">{pm.materialItem?.unidad}</span>
+          </div>
         </td>
         <td className="px-2 py-2">
           <div className="flex items-center gap-1">
@@ -297,27 +308,16 @@ function MaterialRow({ projectId, pm, suppliers }: {
           {fmtMoney(subtotal, pm.moneda)}
         </td>
         <td className="px-2 py-2">
-          <div className="flex items-center gap-1">
-            <button
-              title={pm.notes ? 'Editar nota' : 'Agregar nota'}
-              onClick={() => setShowNotes(v => !v)}
-              className={klass(
-                'p-1 rounded hover:bg-[var(--color-border)]',
-                pm.notes ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]',
-              )}
-            >
-              <StickyNote className="w-3.5 h-3.5" />
-            </button>
-            <button
-              title="Eliminar material"
-              onClick={() => deleteMut.mutate()}
-              disabled={deleteMut.isPending}
-              className="p-1.5 rounded hover:bg-red-500/15 text-red-500 hover:text-red-700 disabled:opacity-50 transition-colors"
-              aria-label="Eliminar material"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
+          <button
+            title={pm.notes ? 'Editar nota' : 'Agregar nota'}
+            onClick={() => setShowNotes(v => !v)}
+            className={klass(
+              'p-1 rounded hover:bg-[var(--color-border)]',
+              pm.notes ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]',
+            )}
+          >
+            <StickyNote className="w-3.5 h-3.5" />
+          </button>
         </td>
       </tr>
       {showNotes && (
@@ -434,6 +434,27 @@ export function EngineeringMaterials({ projectId }: { projectId: string }) {
   }
 
   const existingItemIds = useMemo(() => new Set(materials.map(m => m.materialItemId)), [materials]);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfDropOpen, setPdfDropOpen] = useState(false);
+
+  async function handleExportPdf(includePrecios: boolean) {
+    setPdfDropOpen(false);
+    setPdfLoading(true);
+    try {
+      await exportMaterialsPdf(projectId, includePrecios);
+      toast.success(
+        includePrecios
+          ? 'PDF con precios generado y guardado en Documentos'
+          : 'PDF sin precios generado y guardado en Documentos',
+      );
+      qc.invalidateQueries({ queryKey: ['project-documents', projectId] });
+    } catch (err) {
+      toast.error(getApiErr(err) ?? 'Error al generar PDF');
+    } finally {
+      setPdfLoading(false);
+    }
+  }
+
   const isWorking = generateMut.isPending || regenerateMut.isPending;
 
   return (
@@ -450,14 +471,57 @@ export function EngineeringMaterials({ projectId }: { projectId: string }) {
             + Agregar ítem
           </button>
           {materials.length > 0 && (
-            <button
-              onClick={handleGenerate}
-              disabled={isWorking}
-              className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-[var(--color-accent)] text-gray-900 font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-60"
-            >
-              <Sparkles className="w-3 h-3" />
-              {isWorking ? 'Procesando...' : (allGenerated ? 'Ya generado' : (hasGenerated ? `Generar ${pendingGeneration} faltante${pendingGeneration !== 1 ? 's' : ''}` : 'Generar previstos'))}
-            </button>
+            <>
+              <div className="relative">
+                <button
+                  onClick={() => setPdfDropOpen(o => !o)}
+                  disabled={pdfLoading}
+                  title="Exportar lista de materiales como PDF"
+                  className="flex items-center gap-1 text-[10px] px-2 py-1 rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-60"
+                >
+                  <FileText className="w-3 h-3" />
+                  {pdfLoading ? 'Generando...' : 'Exportar PDF'}
+                  <ChevronDown className="w-3 h-3 ml-0.5" />
+                </button>
+                {pdfDropOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setPdfDropOpen(false)} />
+                    <div className="absolute right-0 top-full mt-1 z-20 min-w-[200px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-lg overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => handleExportPdf(false)}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-[11px] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)]"
+                      >
+                        <FileText className="w-3.5 h-3.5 shrink-0 text-[var(--color-text-muted)]" />
+                        <span>
+                          <span className="block font-medium">Sin precios</span>
+                          <span className="text-[10px] text-[var(--color-text-muted)]">Para proveedores</span>
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleExportPdf(true)}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-[11px] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)]"
+                      >
+                        <DollarSign className="w-3.5 h-3.5 shrink-0 text-[var(--color-text-muted)]" />
+                        <span>
+                          <span className="block font-medium">Con precios</span>
+                          <span className="text-[10px] text-[var(--color-text-muted)]">Uso interno</span>
+                        </span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+              <button
+                onClick={handleGenerate}
+                disabled={isWorking}
+                className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-[var(--color-accent)] text-gray-900 font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-60"
+              >
+                <Sparkles className="w-3 h-3" />
+                {isWorking ? 'Procesando...' : (allGenerated ? 'Ya generado' : (hasGenerated ? `Generar ${pendingGeneration} faltante${pendingGeneration !== 1 ? 's' : ''}` : 'Generar previstos'))}
+              </button>
+            </>
           )}
         </div>
       </div>
