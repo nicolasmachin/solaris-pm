@@ -495,8 +495,9 @@ export function StageDrawer({ stage, projectId, files, onClose, plannedWorkStart
   const [notes, setNotes] = useState(stage.notes ?? "");
   const [notesSaved, setNotesSaved] = useState(false);
 
-  // Stage dates editing (sólo fechas reales: el plan ya no se edita desde acá)
+  // Stage dates editing (plannedEndDate editable por todos; fechas reales sólo admin)
   const [editingDates, setEditingDates] = useState(false);
+  const [plannedEnd, setPlannedEnd] = useState(stage.plannedEndDate?.slice(0, 10) ?? "");
   const [actualStart, setActualStart] = useState(stage.actualStartDate?.slice(0, 10) ?? "");
   const [actualEnd, setActualEnd] = useState(stage.actualEndDate?.slice(0, 10) ?? "");
   const [dateEditError, setDateEditError] = useState<string | null>(null);
@@ -579,15 +580,18 @@ export function StageDrawer({ stage, projectId, files, onClose, plannedWorkStart
   const datesMutation = useMutation({
     mutationFn: ({ propagate }: { propagate: boolean }) => {
       const body: {
+        plannedEndDate?: string | null;
         actualStartDate?: string | null;
         actualEndDate?: string | null;
         responsibleUserId?: string | null;
         propagateResponsible?: boolean;
       } = {};
+      const currentPlannedEnd = stage.plannedEndDate?.slice(0, 10) ?? "";
       const currentActualStart = stage.actualStartDate?.slice(0, 10) ?? "";
       const currentActualEnd = stage.actualEndDate?.slice(0, 10) ?? "";
       const currentResponsibleUserId = stage.responsibleUserId ?? null;
 
+      if ((plannedEnd || "") !== currentPlannedEnd) body.plannedEndDate = plannedEnd || null;
       if (isAdmin && (actualStart || "") !== currentActualStart) body.actualStartDate = actualStart || null;
       if (isAdmin && (actualEnd || "") !== currentActualEnd) body.actualEndDate = actualEnd || null;
       if (responsibleUserId !== currentResponsibleUserId) {
@@ -792,6 +796,28 @@ export function StageDrawer({ stage, projectId, files, onClose, plannedWorkStart
 
               {editingDates ? (
                 <div className="space-y-2">
+                  <div>
+                    <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Fecha límite</p>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="date"
+                        className="flex-1 px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
+                        value={plannedEnd}
+                        onChange={(e) => setPlannedEnd(e.target.value)}
+                      />
+                      {plannedEnd && (
+                        <button
+                          type="button"
+                          onClick={() => setPlannedEnd("")}
+                          className="text-[var(--color-text-muted)] hover:text-[var(--color-danger-text)] px-1 text-xs"
+                          title="Limpiar fecha"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                    <p className="mt-1 text-[10px] text-[var(--color-text-muted)]">Es la fecha que aparece en Mis Tareas</p>
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div title={isAdmin ? undefined : "Solo admin puede modificar fechas reales"}>
                       <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Real inicio</p>
@@ -868,6 +894,7 @@ export function StageDrawer({ stage, projectId, files, onClose, plannedWorkStart
                       onClick={() => {
                         setEditingDates(false);
                         setDateEditError(null);
+                        setPlannedEnd(stage.plannedEndDate?.slice(0, 10) ?? "");
                         setActualStart(stage.actualStartDate?.slice(0, 10) ?? "");
                         setActualEnd(stage.actualEndDate?.slice(0, 10) ?? "");
                       }}
@@ -878,6 +905,14 @@ export function StageDrawer({ stage, projectId, files, onClose, plannedWorkStart
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                  <div className="col-span-2">
+                    <span className="text-[var(--color-text-muted)] text-[10px]">Fecha límite</span>
+                    <p className="text-[var(--color-text-secondary)]">
+                      {stage.plannedEndDate
+                        ? new Date(stage.plannedEndDate).toLocaleDateString("es-UY", { day: "2-digit", month: "short", year: "numeric" })
+                        : <span className="text-[var(--color-text-muted)] italic">Sin definir</span>}
+                    </p>
+                  </div>
                   <div>
                     <span className="text-[var(--color-text-muted)] text-[10px]">Real inicio</span>
                     <p className="text-[var(--color-text-secondary)] flex items-center gap-1">
