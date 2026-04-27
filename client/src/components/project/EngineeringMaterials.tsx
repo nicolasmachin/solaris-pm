@@ -37,6 +37,83 @@ const STATUS_COLOR: Record<string, string> = {
 
 // ─── Modal: Agregar ítem desde catálogo ────────────────────────────────────────
 
+// ─── Modal: Confirmar generación de previstos con fecha ───────────────────────
+
+function GeneratePrevistosModal({
+  isRegenerate, pendingCount, expectedDate, onDateChange, onCancel, onConfirm, isLoading,
+}: {
+  isRegenerate: boolean;
+  pendingCount: number;
+  expectedDate: string;
+  onDateChange: (d: string) => void;
+  onCancel: () => void;
+  onConfirm: () => void;
+  isLoading: boolean;
+}) {
+  const oneYearFromNow = new Date();
+  oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+  const isFarFuture = expectedDate && new Date(expectedDate) > oneYearFromNow;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="w-full max-w-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-2xl">
+        <div className="border-b border-[var(--color-border)] px-5 py-4">
+          <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+            {isRegenerate ? 'Regenerar previstos' : 'Generar previstos'}
+          </p>
+        </div>
+        <div className="px-5 py-4 space-y-4">
+          <p className="text-sm text-[var(--color-text-secondary)]">
+            {isRegenerate
+              ? `Se eliminarán los previstos actuales y se crearán ${pendingCount} nuevo${pendingCount !== 1 ? 's' : ''} en Finanzas basados en la lista actual.`
+              : `Se crearán ${pendingCount} movimiento${pendingCount !== 1 ? 's' : ''} previsto${pendingCount !== 1 ? 's' : ''} en Finanzas basados en los materiales de esta lista.`}
+          </p>
+          <div>
+            <label className="mb-1.5 flex items-center gap-1 text-[11px] font-medium text-[var(--color-text-primary)]">
+              Fecha esperada de compra
+              <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              value={expectedDate}
+              onChange={(e) => onDateChange(e.target.value)}
+              required
+              className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+            />
+            <p className="mt-1.5 text-[11px] text-[var(--color-text-muted)]">
+              Se aplicará a todos los previstos generados
+            </p>
+            {isFarFuture && (
+              <p className="mt-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+                ⚠ La fecha está muy lejana, ¿es correcto?
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 border-t border-[var(--color-border)] px-5 py-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-md border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-app)]"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={!expectedDate || isLoading}
+            className="rounded-md bg-[var(--color-accent)] px-3 py-1.5 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50"
+          >
+            {isLoading ? 'Generando...' : (isRegenerate ? 'Regenerar previstos' : 'Generar previstos')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Modal: Agregar ítem desde catálogo ────────────────────────────────────────
+
 function AddItemModal({ projectId, existingItemIds, onClose }: { projectId: string; existingItemIds: Set<string>; onClose: () => void }) {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
@@ -344,7 +421,7 @@ function MaterialRow({ projectId, pm, suppliers }: {
 
 // ─── Componente principal ──────────────────────────────────────────────────────
 
-export function EngineeringMaterials({ projectId }: { projectId: string }) {
+export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectId: string; plannedWorkStart?: string | null }) {
   const qc = useQueryClient();
   const currentUser = useAuthStore(s => s.user);
   const isAdmin = currentUser?.role === 'ADMIN';
@@ -395,7 +472,7 @@ export function EngineeringMaterials({ projectId }: { projectId: string }) {
   }, [materials]);
 
   const generateMut = useMutation({
-    mutationFn: () => generateProjectPrevistos(projectId),
+    mutationFn: (expectedDate: string) => generateProjectPrevistos(projectId, expectedDate),
     onSuccess: (r) => {
       if (r.created > 0) toast.success(`${r.created} previsto${r.created !== 1 ? 's' : ''} generado${r.created !== 1 ? 's' : ''} en Finanzas`);
       else toast(`Ya hay previstos generados (${r.alreadyExisted})`);
@@ -405,7 +482,7 @@ export function EngineeringMaterials({ projectId }: { projectId: string }) {
   });
 
   const regenerateMut = useMutation({
-    mutationFn: () => regenerateProjectPrevistos(projectId),
+    mutationFn: (expectedDate: string) => regenerateProjectPrevistos(projectId, expectedDate),
     onSuccess: (r) => {
       toast.success(`Previstos regenerados (${r.regenerated} eliminados, ${r.created} nuevos)`);
       qc.invalidateQueries({ queryKey: ['project-materials', projectId] });
@@ -413,24 +490,36 @@ export function EngineeringMaterials({ projectId }: { projectId: string }) {
     onError: (err) => toast.error(getApiErr(err) ?? 'Error al regenerar'),
   });
 
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [isRegenerateMode, setIsRegenerateMode] = useState(false);
+  const [expectedDate, setExpectedDate] = useState<string>(plannedWorkStart ?? todayIso);
+
+  function openGenerateModal(regenerate: boolean) {
+    if (regenerate && !isAdmin) { toast('Solo un administrador puede regenerar previstos.'); return; }
+    setIsRegenerateMode(regenerate);
+    setExpectedDate(plannedWorkStart ?? todayIso);
+    setShowGenerateModal(true);
+  }
+
   function handleGenerate() {
     if (hasGenerated && pendingGeneration === 0) {
-      // Todo ya generado → ofrecer regenerar
-      if (isAdmin) {
-        if (!confirm('Este proyecto ya tiene previstos generados. ¿Querés regenerar (esto borrará los actuales y creará nuevos)?')) return;
-        regenerateMut.mutate();
-      } else {
-        toast('Solo un administrador puede regenerar previstos.');
-      }
+      if (isAdmin) openGenerateModal(true);
+      else toast('Solo un administrador puede regenerar previstos.');
       return;
     }
-    generateMut.mutate();
+    openGenerateModal(false);
   }
 
   function handleRegenerate() {
-    if (!isAdmin) { toast('Solo un administrador puede regenerar previstos.'); return; }
-    if (!confirm('Esto borrará los previstos actuales y creará nuevos en base a la lista. ¿Continuar?')) return;
-    regenerateMut.mutate();
+    openGenerateModal(true);
+  }
+
+  function submitGenerateModal() {
+    if (!expectedDate) { toast.error('Debe especificar la fecha esperada de compra'); return; }
+    setShowGenerateModal(false);
+    if (isRegenerateMode) regenerateMut.mutate(expectedDate);
+    else generateMut.mutate(expectedDate);
   }
 
   const existingItemIds = useMemo(() => new Set(materials.map(m => m.materialItemId)), [materials]);
@@ -601,6 +690,18 @@ export function EngineeringMaterials({ projectId }: { projectId: string }) {
           projectId={projectId}
           existingItemIds={existingItemIds}
           onClose={() => setShowAdd(false)}
+        />
+      )}
+
+      {showGenerateModal && (
+        <GeneratePrevistosModal
+          isRegenerate={isRegenerateMode}
+          pendingCount={isRegenerateMode ? materials.filter(m => m.movementId).length : pendingGeneration}
+          expectedDate={expectedDate}
+          onDateChange={setExpectedDate}
+          onCancel={() => setShowGenerateModal(false)}
+          onConfirm={submitGenerateModal}
+          isLoading={generateMut.isPending || regenerateMut.isPending}
         />
       )}
     </section>

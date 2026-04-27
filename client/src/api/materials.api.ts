@@ -82,11 +82,11 @@ export const patchProjectMaterial = (projectId: string, materialId: string, body
 export const deleteProjectMaterial = (projectId: string, materialId: string) =>
   apiClient.delete<{ success: true; previstoEliminado: boolean }>(`/api/projects/${projectId}/materials/${materialId}`).then(r => r.data);
 
-export const generateProjectPrevistos = (projectId: string) =>
-  apiClient.post<{ created: number; alreadyExisted: number }>(`/api/projects/${projectId}/materials/generate-previsto`).then(r => r.data);
+export const generateProjectPrevistos = (projectId: string, expectedDate: string) =>
+  apiClient.post<{ created: number; alreadyExisted: number }>(`/api/projects/${projectId}/materials/generate-previsto`, { expectedDate }).then(r => r.data);
 
-export const regenerateProjectPrevistos = (projectId: string) =>
-  apiClient.post<{ created: number; alreadyExisted: number; regenerated: number }>(`/api/projects/${projectId}/materials/regenerate-previsto`).then(r => r.data);
+export const regenerateProjectPrevistos = (projectId: string, expectedDate: string) =>
+  apiClient.post<{ created: number; alreadyExisted: number; regenerated: number }>(`/api/projects/${projectId}/materials/regenerate-previsto`, { expectedDate }).then(r => r.data);
 
 export const exportMaterialsPdf = async (projectId: string, includePrecios: boolean): Promise<{ fileId: string }> => {
   const response = await apiClient.post(

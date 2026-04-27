@@ -901,6 +901,7 @@ export function ProjectDetail() {
           projectId={project.id}
           files={project.files}
           onClose={() => setSelectedStage(null)}
+          plannedWorkStart={project.installationSchedule?.plannedWorkStart ?? null}
         />
       )}
 

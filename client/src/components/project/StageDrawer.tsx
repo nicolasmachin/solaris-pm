@@ -19,6 +19,7 @@ interface StageDrawerProps {
   projectId: string;
   files: FileAttachment[];
   onClose: () => void;
+  plannedWorkStart?: string | null;
 }
 
 // ─── Checklist section ────────────────────────────────────────────────────────
@@ -479,7 +480,7 @@ function SubstageRow({
 
 // ─── Stage Drawer ─────────────────────────────────────────────────────────────
 
-export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerProps) {
+export function StageDrawer({ stage, projectId, files, onClose, plannedWorkStart }: StageDrawerProps) {
   const qc = useQueryClient();
   const stageFiles = files.filter((f) => f.stageId === stage.id);
   const stageCommentContext = {
@@ -1028,7 +1029,7 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
 
           {/* Lista de materiales (solo etapa Ingeniería) */}
           {stage.name === "INGENIERIA" && (
-            <EngineeringMaterials projectId={projectId} />
+            <EngineeringMaterials projectId={projectId} plannedWorkStart={plannedWorkStart} />
           )}
 
           {/* Notes */}

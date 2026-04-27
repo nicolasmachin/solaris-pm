@@ -8257,13 +8257,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     // ─── Materiales: Generación / regeneración de previstos ───────────────────
 
-    async function generatePrevistosForProject(projectId: string, userId: string | undefined) {
-      const today = new Date();
-      const fechaIso = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+    async function generatePrevistosForProject(projectId: string, userId: string | undefined, expectedDate: Date) {
       const materials = await prisma.projectMaterial.findMany({
         where: { projectId, movementId: null },
         include: { materialItem: { select: { nombre: true } } },
       });
+      const fechaIso = new Date(Date.UTC(expectedDate.getUTCFullYear(), expectedDate.getUTCMonth(), expectedDate.getUTCDate()));
       let created = 0;
       for (const pm of materials) {
         const qty = Number(pm.quantity);
@@ -8272,8 +8271,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         const mov = await prisma.financeMovement.create({
           data: {
             fecha: fechaIso,
-            mes: today.getMonth() + 1,
-            anio: today.getFullYear(),
+            mes: fechaIso.getUTCMonth() + 1,
+            anio: fechaIso.getUTCFullYear(),
             tipoMovimiento: TipoMovimiento.GASTO,
             categoriaPrincipal: CategoriaPrincipal.PROYECTO_SALIDA,
             descripcion: `${pm.materialItem.nombre} (x${qty})`,
@@ -8289,6 +8288,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
             projectId,
             supplierId: pm.supplierId,
             estadoAprobacion: EstadoAprobacion.REGISTRADO,
+            expectedDate: fechaIso,
             ...(userId ? { creadoPorId: userId } : {}),
           },
         });
@@ -8299,22 +8299,27 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return { created, alreadyExisted: alreadyExisted - created };
     }
 
-    app.post("/projects/:id/materials/generate-previsto", { preHandler: authorize(Module.INGENIERIA, Action.EDIT) }, async (request) => {
+    app.post("/projects/:id/materials/generate-previsto", { preHandler: authorize(Module.INGENIERIA, Action.EDIT) }, async (request, reply) => {
       const { id } = z.object({ id: z.string() }).parse(request.params);
+      const { expectedDate: expectedDateStr } = z.object({ expectedDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }).parse(request.body);
+      if (!expectedDateStr) return reply.code(400).send({ error: "EXPECTED_DATE_REQUIRED", message: "La fecha esperada es obligatoria" });
       const user = ensureUser(request);
       const project = await prisma.project.findFirst({ where: { id, deletedAt: null } });
       if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
-      const result = await generatePrevistosForProject(id, user.id);
+      const expectedDate = parseDateOnly(expectedDateStr);
+      const result = await generatePrevistosForProject(id, user.id, expectedDate);
       return result;
     });
 
-    app.post("/projects/:id/materials/regenerate-previsto", { preHandler: authorize(Module.INGENIERIA, Action.EDIT) }, async (request) => {
+    app.post("/projects/:id/materials/regenerate-previsto", { preHandler: authorize(Module.INGENIERIA, Action.EDIT) }, async (request, reply) => {
       const { id } = z.object({ id: z.string() }).parse(request.params);
+      const { expectedDate: expectedDateStr } = z.object({ expectedDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }).parse(request.body);
+      if (!expectedDateStr) return reply.code(400).send({ error: "EXPECTED_DATE_REQUIRED", message: "La fecha esperada es obligatoria" });
       const user = ensureUser(request);
       if (user.role !== "ADMIN") throw forbidden("Solo un administrador puede regenerar previstos");
       const project = await prisma.project.findFirst({ where: { id, deletedAt: null } });
       if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
-      // Borrar previstos generados y desvincularlos
+      const expectedDate = parseDateOnly(expectedDateStr);
       const movsToDelete = await prisma.financeMovement.findMany({
         where: {
           projectId: id,
@@ -8329,7 +8334,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         prisma.projectMaterial.updateMany({ where: { projectId: id, movementId: { in: movIds } }, data: { movementId: null } }),
         prisma.financeMovement.updateMany({ where: { id: { in: movIds } }, data: { deletedAt: new Date() } }),
       ]);
-      const result = await generatePrevistosForProject(id, user.id);
+      const result = await generatePrevistosForProject(id, user.id, expectedDate);
       return { ...result, regenerated: movIds.length };
     });
 
