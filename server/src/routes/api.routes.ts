@@ -3890,11 +3890,21 @@ export async function registerApiRoutes(app: FastifyInstance) {
         // Subetapas pendientes de esta etapa, ya filtradas arriba.
         const subs = stage.substages;
 
-        // Urgencia del bloque = mínimo rank entre stageDueDate y cualquier
-        // substage pendiente (la más urgente manda).
-        const substageRanks = subs.map((s) => urgencyRank(s.dueDate));
-        const stageRank = urgencyRank(stage.plannedEndDate);
-        const blockRank = Math.min(stageRank, ...substageRanks);
+        // Urgencia del bloque = basada sólo en subetapas (stage.plannedEndDate
+        // se genera automáticamente al crear el proyecto y no ha sido revisada
+        // por el usuario; mezclarlo con las fechas explícitas de subetapas
+        // genera falsos "Atrasada". Se expone en el StageDrawer para edición).
+        const subsWithDue = subs.map((s) => ({ dueDate: s.dueDate, rank: urgencyRank(s.dueDate) }));
+        const substageRanks = subsWithDue.map((s) => s.rank);
+        const blockRank = substageRanks.length > 0 ? Math.min(...substageRanks) : 3;
+
+        // Fecha del badge = la subetapa más urgente (la que define el blockRank).
+        // Si ninguna tiene fecha, null → "Sin fecha".
+        const drivingDates = subsWithDue
+          .filter((s) => s.rank === blockRank && s.dueDate !== null)
+          .map((s) => s.dueDate as Date)
+          .sort((a, b) => a.getTime() - b.getTime());
+        const badgeDate = drivingDates[0] ?? null;
 
         const myPendingSubstagesCount = subs.filter((s) => s.userId === targetUser.id).length;
 
@@ -3905,7 +3915,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           stageId: stage.id,
           stageName: stage.name,
           stageLabel: getStageLabel(stage.name),
-          stageDueDate: serializeDateOnly(stage.plannedEndDate),
+          stageDueDate: serializeDateOnly(badgeDate),
           pendingSubstagesCount: subs.length,
           myPendingSubstagesCount,
           blockRank,
