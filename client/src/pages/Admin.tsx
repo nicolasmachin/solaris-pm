@@ -1671,6 +1671,11 @@ const TEAM_COLORS: string[] = [
   "#888780",
 ];
 
+const TEAM_TYPE_OPTIONS: Array<{ value: Team["type"]; label: string }> = [
+  { value: "PROPIO", label: "Equipo propio" },
+  { value: "TERCERIZADO", label: "Tercerizado" },
+];
+
 function TabEquipos() {
   const qc = useQueryClient();
   const { data: teams = [], isLoading } = useQuery({ queryKey: ["admin-teams"], queryFn: () => getTeams() });
@@ -1729,6 +1734,9 @@ function TabEquipos() {
                   Color
                 </th>
                 <th style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Tipo
+                </th>
+                <th style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   Notas
                 </th>
                 <th style={{ padding: "10px 14px", textAlign: "right", width: 140 }} />
@@ -1743,6 +1751,9 @@ function TabEquipos() {
                       <span style={{ width: 14, height: 14, borderRadius: 4, background: team.color, border: "1px solid var(--color-border)" }} />
                       <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-text-muted)" }}>{team.color}</span>
                     </span>
+                  </td>
+                  <td style={{ padding: "10px 14px", color: "var(--color-text-secondary)", fontSize: 12 }}>
+                    {team.type === "PROPIO" ? "Equipo propio" : "Tercerizado"}
                   </td>
                   <td style={{ padding: "10px 14px", color: "var(--color-text-secondary)", fontSize: 12 }}>
                     {team.notes ?? "—"}
@@ -1801,14 +1812,15 @@ function TeamModal({ team, onClose, onSaved }: { team: Team | null; onClose: () 
   const isEdit = team !== null;
   const [name, setName] = useState(team?.name ?? "");
   const [color, setColor] = useState(team?.color ?? TEAM_COLORS[0]!);
+  const [type, setType] = useState<Team["type"]>(team?.type ?? "PROPIO");
   const [notes, setNotes] = useState(team?.notes ?? "");
   const [error, setError] = useState<string | null>(null);
 
   const mut = useMutation({
     mutationFn: () =>
       isEdit
-        ? patchTeam(team!.id, { name: name.trim(), color, notes: notes.trim() || null })
-        : createTeam({ name: name.trim(), color, notes: notes.trim() || null }),
+        ? patchTeam(team!.id, { name: name.trim(), color, type, notes: notes.trim() || null })
+        : createTeam({ name: name.trim(), color, type, notes: notes.trim() || null }),
     onSuccess: () => {
       toast.success(isEdit ? "Equipo actualizado" : "Equipo creado");
       onSaved();
@@ -1868,6 +1880,20 @@ function TeamModal({ team, onClose, onSaved }: { team: Team | null; onClose: () 
                 />
               ))}
             </div>
+          </div>
+          <div>
+            <label style={labelStyle}>Tipo de equipo</label>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value as Team["type"])}
+              style={inputStyle}
+            >
+              {TEAM_TYPE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label style={labelStyle}>Notas (opcional)</label>

@@ -36,6 +36,7 @@ import {
   SettingKey,
   SettingLevel,
   SubstageStatus,
+  TeamType,
   TaskPriority,
   TaskStatus,
   TipoComprobante,
@@ -1127,6 +1128,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         : null;
       const installationTeamColor = project.installationSchedule?.teamColor ?? null;
       const installationTeamName = project.installationSchedule?.teamName ?? null;
+      const installationTeamType = project.installationSchedule?.teamType ?? null;
       const delayDays = project.stages
         .filter((stage) => stage.status === StageStatus.COMPLETED)
         .reduce((sum, stage) => sum + (stage.delayDays ?? 0), 0);
@@ -1151,6 +1153,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         plannedWorkStart,
         installationTeamColor,
         installationTeamName,
+        installationTeamType,
         delayDays,
         hasOverdueStage,
         startDate: serializeDateOnly(project.startDate),
@@ -1298,6 +1301,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
             id: project.installationSchedule!.id,
             teamName: project.installationSchedule!.teamName,
             teamColor: project.installationSchedule!.teamColor,
+            teamType: project.installationSchedule!.teamType,
             plannedWorkStart: env ? serializeDateOnly(env.start) : null,
             plannedWorkEnd: env ? serializeDateOnly(env.end) : null,
             confirmedAt: serializeDate(project.installationSchedule!.confirmedAt),
@@ -5656,6 +5660,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         .trim()
         .regex(/^#[0-9A-Fa-f]{6}$/, "Color debe ser hex (#RRGGBB)")
         .default("#378ADD"),
+      type: z.nativeEnum(TeamType).default(TeamType.PROPIO),
       notes: z.string().trim().nullable().optional(),
     })
     .strict();
@@ -5668,6 +5673,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         .trim()
         .regex(/^#[0-9A-Fa-f]{6}$/, "Color debe ser hex (#RRGGBB)")
         .optional(),
+      type: z.nativeEnum(TeamType).optional(),
       notes: z.string().trim().nullable().optional(),
     })
     .strict();
@@ -5676,6 +5682,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     id: string;
     name: string;
     color: string;
+    type: TeamType;
     notes: string | null;
     createdAt: Date;
     updatedAt: Date;
@@ -5685,6 +5692,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       id: t.id,
       name: t.name,
       color: t.color,
+      type: t.type,
       notes: t.notes,
       createdAt: serializeDate(t.createdAt),
       updatedAt: serializeDate(t.updatedAt),
@@ -5907,13 +5915,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     const updated = await prisma.team.update({ where: { id }, data: body });
 
-    // Si cambió el name o color, sincronizar el snapshot en installation_schedules
+    // Si cambió el name, color o tipo, sincronizar el snapshot en installation_schedules
     const nameChanged = body.name !== undefined && body.name !== existing.name;
     const colorChanged = body.color !== undefined && body.color !== existing.color;
-    if (nameChanged || colorChanged) {
+    const typeChanged = body.type !== undefined && body.type !== existing.type;
+    if (nameChanged || colorChanged || typeChanged) {
       const snapshotData: Prisma.InstallationScheduleUpdateManyMutationInput = {};
       if (nameChanged) snapshotData.teamName = body.name!;
       if (colorChanged) snapshotData.teamColor = body.color!;
+      if (typeChanged) snapshotData.teamType = body.type!;
       await prisma.installationSchedule.updateMany({
         where: { teamId: id, deletedAt: null },
         data: snapshotData,
@@ -6144,6 +6154,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     team?: { id: string; name: string; color: string; deletedAt: Date | null } | null;
     teamName: string;
     teamColor: string;
+    teamType: TeamType;
     actualWorkEnd: Date | null;
     confirmedAt: Date | null;
     confirmedBy: string | null;
@@ -6193,6 +6204,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           : null,
       teamName: s.teamName,
       teamColor: s.teamColor,
+      teamType: s.teamType,
       // Envelope: min/max de todos los segments. Lo seguimos exponiendo para que
       // el resto del código (lista de proyectos, chequeos, etc.) no rompa.
       plannedWorkStart: envelope ? serializeDateOnly(envelope.start) : null,
@@ -6331,6 +6343,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       teamId: team.id,
       teamName: team.name,
       teamColor: team.color,
+      teamType: team.type,
       notes: body.notes ?? null,
       createdBy: user.id,
     };
@@ -6406,6 +6419,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       updateData.team = { connect: { id: team.id } };
       updateData.teamName = team.name;
       updateData.teamColor = team.color;
+      updateData.teamType = team.type;
     }
 
     // Si viene segments o plannedWorkStart/End, se reemplazan todos los tramos.

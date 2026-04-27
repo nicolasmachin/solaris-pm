@@ -2729,10 +2729,11 @@ function QuickCreateTeamModal({
 }) {
   const [name, setName] = useState("");
   const [color, setColor] = useState<string>(TEAM_COLORS[0]!);
+  const [type, setType] = useState<"PROPIO" | "TERCERIZADO">("PROPIO");
   const [error, setError] = useState<string | null>(null);
 
   const mutation = useMutation({
-    mutationFn: () => createTeam({ name: name.trim(), color }),
+    mutationFn: () => createTeam({ name: name.trim(), color, type }),
     onSuccess: () => {
       toast.success("Equipo creado");
       onCreated();
@@ -2785,6 +2786,19 @@ function QuickCreateTeamModal({
               />
             ))}
           </div>
+        </div>
+        <div>
+          <label className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
+            Tipo de equipo
+          </label>
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value as "PROPIO" | "TERCERIZADO")}
+            className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+          >
+            <option value="PROPIO">Equipo propio</option>
+            <option value="TERCERIZADO">Tercerizado</option>
+          </select>
         </div>
         {error && <p className="text-xs text-[var(--color-danger-text)]">{error}</p>}
         <div className="flex justify-end gap-2 pt-2">

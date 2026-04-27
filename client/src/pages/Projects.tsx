@@ -10,7 +10,7 @@ import { EmptyState } from "../components/ui/EmptyState";
 import { ProgressBar } from "../components/ui/ProgressBar";
 import { Spinner } from "../components/ui/Spinner";
 import type { ProjectListItem, ProjectStatus, SolarSystem } from "../types/api.types";
-import { getProjectTeamColor, getProjectTeamName } from "../components/project/projectTeamColor";
+import { getProjectTeamColor, getProjectTeamName, getProjectTeamType } from "../components/project/projectTeamColor";
 import {
   formatSolarSystemPanels,
   formatSolarSystemPrimary,
@@ -179,6 +179,12 @@ function sortProjects(projects: ProjectListItem[], sortKey: SortKey, direction: 
   });
 }
 
+function teamTypeLabel(type: "PROPIO" | "TERCERIZADO" | null | undefined) {
+  if (type === "PROPIO") return "Equipo propio";
+  if (type === "TERCERIZADO") return "Tercerizado";
+  return "Sin definir";
+}
+
 const emptySolarSystem: SolarSystem = {
   id: "empty",
   projectId: "empty",
@@ -293,6 +299,19 @@ export function Projects() {
     return sortProjects(filtered, sortKey, sortDirection);
   }, [projects, query, sortKey, sortDirection, statusFilter, stageFilter]);
 
+  const ownTeamProjects = useMemo(
+    () => filteredProjects.filter((project) => getProjectTeamType(project) === "PROPIO"),
+    [filteredProjects],
+  );
+  const outsourcedTeamProjects = useMemo(
+    () => filteredProjects.filter((project) => getProjectTeamType(project) === "TERCERIZADO"),
+    [filteredProjects],
+  );
+  const uncategorizedProjects = useMemo(
+    () => filteredProjects.filter((project) => getProjectTeamType(project) == null),
+    [filteredProjects],
+  );
+
   function handleSort(nextKey: SortKey) {
     if (sortKey === nextKey) {
       setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
@@ -394,187 +413,42 @@ export function Projects() {
           <EmptyState title="No hay proyectos para ese filtro" description="Probá cambiando el estado o la búsqueda." />
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]">
-          <div className="overflow-x-auto">
-            <table className="min-w-full border-collapse">
-              <thead>
-                <tr className="bg-[var(--color-table-header-bg)] text-[var(--color-table-header-text)]">
-                  <th className="px-4 py-3"><SortHeader label="Cliente" sortKey="client" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
-                  <th className="px-4 py-3"><SortHeader label="Ubicación" sortKey="location" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
-                  <th className="px-4 py-3"><SortHeader label="Estado" sortKey="status" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
-                  <th className="px-4 py-3"><SortHeader label="Etapa actual" sortKey="currentStage" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
-                  <th className="px-4 py-3"><SortHeader label="Avance" sortKey="progress" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
-                  <th className="px-4 py-3"><SortHeader label="Inversor" sortKey="inverter" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
-                  <th className="px-4 py-3"><SortHeader label="Paneles" sortKey="panels" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
-                  <th className="px-4 py-3"><SortHeader label="Instalación" sortKey="installationDate" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
-                  <th className="px-4 py-3"><SortHeader label="Inicio" sortKey="dates" currentSortKey={sortKey} direction={sortDirection} onSort={handleSort} /></th>
-                  <th className="px-4 py-3 text-left text-[11px] font-mono uppercase tracking-widest text-[var(--color-table-header-text)]">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredProjects.map((project) => {
-                  const solarSystem = getPrimarySolarSystem(project);
-                  const extraCount = Math.max(0, project.solarSystems.length - 1);
-                  const tooltip = getAdditionalSystemsTooltip(project.solarSystems);
-                  const teamColor = getProjectTeamColor(project);
-                  const teamName = getProjectTeamName(project);
-                  return (
-                    <tr
-                      key={project.id}
-                      onClick={() => navigate(`/projects/${project.id}`)}
-                      className="cursor-pointer border-b border-[var(--color-border)]/70 transition-colors hover:bg-[var(--color-row-hover)]"
-                    >
-                      <td className="px-4 py-4 align-top">
-                        <div className="font-medium text-[var(--color-text-primary)]">{project.clientName}</div>
-                        {teamColor && teamName ? (
-                          <div
-                            className="mt-2 inline-flex items-center gap-2 rounded-md border px-2.5 py-1"
-                            style={{ borderColor: `${teamColor}55`, backgroundColor: `${teamColor}1A` }}
-                          >
-                            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: teamColor }} />
-                            <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-secondary)]">
-                              {teamName}
-                            </span>
-                          </div>
-                        ) : null}
-                      </td>
-                      <td className="px-4 py-4 align-top">
-                        <div className="text-sm text-[var(--color-text-primary)]">{project.locationCity}</div>
-                        <div className="mt-1 text-xs text-[var(--color-text-muted)]">{project.locationProvince}</div>
-                      </td>
-                      <td className="px-4 py-4 align-top">
-                        <Badge variant={project.status} />
-                      </td>
-                      <td className="px-4 py-4 align-top">
-                        {project.currentStages && project.currentStages.length > 0 ? (
-                          <div>
-                            <div className="text-sm text-[var(--color-text-primary)]">
-                              {STAGE_LABELS[project.currentStages[0]] ?? project.currentStages[0]}
-                            </div>
-                            {project.currentStages.length > 1 ? (
-                              <div className="mt-0.5 text-[10px] text-[var(--color-text-muted)]">
-                                +{project.currentStages.length - 1} en paralelo
-                              </div>
-                            ) : null}
-                          </div>
-                        ) : (
-                          <span className="text-sm text-[var(--color-text-muted)]">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-4 align-top">
-                        <div className="flex min-w-[150px] items-center gap-3">
-                          <div className="min-w-0 flex-1">
-                            <div
-                              className="h-2 w-full overflow-hidden rounded-full bg-[var(--color-border)]"
-                              title={`${project.completionPercent}% completado`}
-                            >
-                              <div
-                                className={`h-full rounded-full transition-all ${progressBarClass(project.completionPercent)}`}
-                                style={{ width: `${project.completionPercent}%` }}
-                              />
-                            </div>
-                          </div>
-                          <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                            {project.completionPercent}%
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 align-top">
-                        {solarSystem ? (
-                          <div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-sm text-[var(--color-text-primary)]">{formatSolarSystemPrimary(solarSystem)}</span>
-                              <Badge label={getPhaseTypeShortLabel(solarSystem.inverterPhaseType)} className="bg-[var(--color-border)] text-[var(--color-text-primary)]" />
-                              {extraCount > 0 ? (
-                                <span title={tooltip} className="inline-flex rounded-full border border-[var(--color-border)] px-2 py-0.5 text-[10px] font-mono text-[var(--color-text-secondary)]">
-                                  +{extraCount}
-                                </span>
-                              ) : null}
-                            </div>
-                            {solarSystem.inverterModel ? (
-                              <div className="mt-1 text-xs text-[var(--color-text-muted)]">{solarSystem.inverterModel}</div>
-                            ) : null}
-                          </div>
-                        ) : (
-                          <span className="text-sm text-[var(--color-text-muted)]">Sin datos</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-4 align-top">
-                        <span className="text-sm text-[var(--color-text-primary)]">
-                          {solarSystem ? formatSolarSystemPanels(solarSystem) : "Sin datos"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 align-top">
-                        {project.plannedWorkStart ? (
-                          <div className="text-sm text-[var(--color-text-primary)]">
-                            {formatDate(project.plannedWorkStart)}
-                          </div>
-                        ) : (
-                          <span className="text-sm text-[var(--color-text-muted)]">Sin agendar</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-4 align-top">
-                        <div className="text-sm text-[var(--color-text-primary)]">{formatDate(project.startDate)}</div>
-                      </td>
-                      <td className="px-4 py-4 align-top">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              navigate(`/projects/${project.id}`);
-                            }}
-                          >
-                            Ver
-                          </Button>
-                          <button
-                            type="button"
-                            title={project.status === "ARCHIVED" ? "Restaurar proyecto" : "Archivar proyecto"}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              archiveMutation.mutate({ id: project.id, archive: project.status !== "ARCHIVED" });
-                            }}
-                            className="p-1.5 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] transition-colors"
-                          >
-                            {project.status === "ARCHIVED" ? (
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <polyline points="1 4 1 10 7 10" />
-                                <path d="M3.51 15a9 9 0 1 0 .49-3.51" />
-                              </svg>
-                            ) : (
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <polyline points="21 8 21 21 3 21 3 8" />
-                                <rect x="1" y="3" width="22" height="5" />
-                                <line x1="10" y1="12" x2="14" y2="12" />
-                              </svg>
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            title="Eliminar proyecto"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setProjectToDelete(project);
-                            }}
-                            className="p-1.5 rounded text-[var(--color-text-muted)] hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <polyline points="3 6 5 6 21 6" />
-                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                              <path d="M10 11v6" />
-                              <path d="M14 11v6" />
-                              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+        <div className="space-y-4">
+          <ProjectGroupTable
+            title="Proyectos con equipo propio"
+            description="Instalaciones asignadas a equipos internos."
+            projects={ownTeamProjects}
+            sortKey={sortKey}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+            onOpenProject={(id) => navigate(`/projects/${id}`)}
+            onArchive={(project) => archiveMutation.mutate({ id: project.id, archive: project.status !== "ARCHIVED" })}
+            onDelete={setProjectToDelete}
+          />
+          <ProjectGroupTable
+            title="Proyectos con equipo tercerizado"
+            description="Instalaciones asignadas a contratistas o cuadrillas externas."
+            projects={outsourcedTeamProjects}
+            sortKey={sortKey}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+            onOpenProject={(id) => navigate(`/projects/${id}`)}
+            onArchive={(project) => archiveMutation.mutate({ id: project.id, archive: project.status !== "ARCHIVED" })}
+            onDelete={setProjectToDelete}
+          />
+          {uncategorizedProjects.length > 0 ? (
+            <ProjectGroupTable
+              title="Proyectos sin clasificación de equipo"
+              description="Proyectos sin equipo asignado o con equipos todavía sin tipo definido."
+              projects={uncategorizedProjects}
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              onSort={handleSort}
+              onOpenProject={(id) => navigate(`/projects/${id}`)}
+              onArchive={(project) => archiveMutation.mutate({ id: project.id, archive: project.status !== "ARCHIVED" })}
+              onDelete={setProjectToDelete}
+            />
+          ) : null}
         </div>
       )}
 
@@ -589,6 +463,231 @@ export function Projects() {
         />
       ) : null}
     </div>
+  );
+}
+
+function ProjectGroupTable({
+  title,
+  description,
+  projects,
+  sortKey,
+  sortDirection,
+  onSort,
+  onOpenProject,
+  onArchive,
+  onDelete,
+}: {
+  title: string;
+  description: string;
+  projects: ProjectListItem[];
+  sortKey: SortKey;
+  sortDirection: SortDirection;
+  onSort: (key: SortKey) => void;
+  onOpenProject: (id: string) => void;
+  onArchive: (project: ProjectListItem) => void;
+  onDelete: (project: ProjectListItem) => void;
+}) {
+  if (projects.length === 0) {
+    return (
+      <section className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-bg-card)] p-5">
+        <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--color-text-muted)]">{title}</p>
+        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">{description}</p>
+        <p className="mt-4 text-sm text-[var(--color-text-muted)]">No hay proyectos en este grupo.</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]">
+      <div className="border-b border-[var(--color-border)] bg-[var(--color-bg-card-hover)] px-5 py-4">
+        <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--color-text-muted)]">{title}</p>
+        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+          {description} <span className="text-[var(--color-text-muted)]">· {projects.length} proyecto{projects.length === 1 ? "" : "s"}</span>
+        </p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full border-collapse">
+          <thead>
+            <tr className="bg-[var(--color-table-header-bg)] text-[var(--color-table-header-text)]">
+              <th className="px-4 py-3"><SortHeader label="Cliente" sortKey="client" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th className="px-4 py-3"><SortHeader label="Ubicación" sortKey="location" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th className="px-4 py-3"><SortHeader label="Estado" sortKey="status" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th className="px-4 py-3"><SortHeader label="Etapa actual" sortKey="currentStage" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th className="px-4 py-3"><SortHeader label="Avance" sortKey="progress" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th className="px-4 py-3"><SortHeader label="Inversor" sortKey="inverter" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th className="px-4 py-3"><SortHeader label="Paneles" sortKey="panels" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th className="px-4 py-3"><SortHeader label="Instalación" sortKey="installationDate" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th className="px-4 py-3"><SortHeader label="Inicio" sortKey="dates" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th className="px-4 py-3 text-left text-[11px] font-mono uppercase tracking-widest text-[var(--color-table-header-text)]">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {projects.map((project) => {
+              const solarSystem = getPrimarySolarSystem(project);
+              const extraCount = Math.max(0, project.solarSystems.length - 1);
+              const tooltip = getAdditionalSystemsTooltip(project.solarSystems);
+              const teamColor = getProjectTeamColor(project);
+              const teamName = getProjectTeamName(project);
+              const teamType = getProjectTeamType(project);
+
+              return (
+                <tr
+                  key={project.id}
+                  onClick={() => onOpenProject(project.id)}
+                  className="cursor-pointer border-b border-[var(--color-border)]/70 transition-colors hover:bg-[var(--color-row-hover)]"
+                >
+                  <td className="px-4 py-4 align-top">
+                    <div className="font-medium text-[var(--color-text-primary)]">{project.clientName}</div>
+                    {teamColor && teamName ? (
+                      <div
+                        className="mt-2 inline-flex items-center gap-2 rounded-md border px-2.5 py-1"
+                        style={{ borderColor: `${teamColor}55`, backgroundColor: `${teamColor}1A` }}
+                      >
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: teamColor }} />
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-secondary)]">
+                          {teamName} · {teamTypeLabel(teamType)}
+                        </span>
+                      </div>
+                    ) : null}
+                  </td>
+                  <td className="px-4 py-4 align-top">
+                    <div className="text-sm text-[var(--color-text-primary)]">{project.locationCity}</div>
+                    <div className="mt-1 text-xs text-[var(--color-text-muted)]">{project.locationProvince}</div>
+                  </td>
+                  <td className="px-4 py-4 align-top">
+                    <Badge variant={project.status} />
+                  </td>
+                  <td className="px-4 py-4 align-top">
+                    {project.currentStages && project.currentStages.length > 0 ? (
+                      <div>
+                        <div className="text-sm text-[var(--color-text-primary)]">
+                          {STAGE_LABELS[project.currentStages[0]] ?? project.currentStages[0]}
+                        </div>
+                        {project.currentStages.length > 1 ? (
+                          <div className="mt-0.5 text-[10px] text-[var(--color-text-muted)]">
+                            +{project.currentStages.length - 1} en paralelo
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <span className="text-sm text-[var(--color-text-muted)]">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-4 align-top">
+                    <div className="flex min-w-[150px] items-center gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div
+                          className="h-2 w-full overflow-hidden rounded-full bg-[var(--color-border)]"
+                          title={`${project.completionPercent}% completado`}
+                        >
+                          <div
+                            className={`h-full rounded-full transition-all ${progressBarClass(project.completionPercent)}`}
+                            style={{ width: `${project.completionPercent}%` }}
+                          />
+                        </div>
+                      </div>
+                      <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                        {project.completionPercent}%
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 align-top">
+                    {solarSystem ? (
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm text-[var(--color-text-primary)]">{formatSolarSystemPrimary(solarSystem)}</span>
+                          <Badge label={getPhaseTypeShortLabel(solarSystem.inverterPhaseType)} className="bg-[var(--color-border)] text-[var(--color-text-primary)]" />
+                          {extraCount > 0 ? (
+                            <span title={tooltip} className="inline-flex rounded-full border border-[var(--color-border)] px-2 py-0.5 text-[10px] font-mono text-[var(--color-text-secondary)]">
+                              +{extraCount}
+                            </span>
+                          ) : null}
+                        </div>
+                        {solarSystem.inverterModel ? (
+                          <div className="mt-1 text-xs text-[var(--color-text-muted)]">{solarSystem.inverterModel}</div>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <span className="text-sm text-[var(--color-text-muted)]">Sin datos</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-4 align-top">
+                    <span className="text-sm text-[var(--color-text-primary)]">
+                      {solarSystem ? formatSolarSystemPanels(solarSystem) : "Sin datos"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 align-top">
+                    {project.plannedWorkStart ? (
+                      <div className="text-sm text-[var(--color-text-primary)]">
+                        {formatDate(project.plannedWorkStart)}
+                      </div>
+                    ) : (
+                      <span className="text-sm text-[var(--color-text-muted)]">Sin agendar</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-4 align-top">
+                    <div className="text-sm text-[var(--color-text-primary)]">{formatDate(project.startDate)}</div>
+                  </td>
+                  <td className="px-4 py-4 align-top">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onOpenProject(project.id);
+                        }}
+                      >
+                        Ver
+                      </Button>
+                      <button
+                        type="button"
+                        title={project.status === "ARCHIVED" ? "Restaurar proyecto" : "Archivar proyecto"}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onArchive(project);
+                        }}
+                        className="p-1.5 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] transition-colors"
+                      >
+                        {project.status === "ARCHIVED" ? (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polyline points="1 4 1 10 7 10" />
+                            <path d="M3.51 15a9 9 0 1 0 .49-3.51" />
+                          </svg>
+                        ) : (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polyline points="21 8 21 21 3 21 3 8" />
+                            <rect x="1" y="3" width="22" height="5" />
+                            <line x1="10" y1="12" x2="14" y2="12" />
+                          </svg>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        title="Eliminar proyecto"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onDelete(project);
+                        }}
+                        className="p-1.5 rounded text-[var(--color-text-muted)] hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                          <path d="M10 11v6" />
+                          <path d="M14 11v6" />
+                          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
 

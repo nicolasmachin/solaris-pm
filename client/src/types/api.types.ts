@@ -83,6 +83,8 @@ export interface ProjectListItem {
   installationTeamColor?: string | null;
   /** Snapshot del nombre del equipo de instalación asignado, si existe. */
   installationTeamName?: string | null;
+  /** Tipo del equipo de instalación asignado, si existe. */
+  installationTeamType?: "PROPIO" | "TERCERIZADO" | null;
   startDate: string | null;
   plannedEndDate: string | null;
   actualEndDate?: string | null;
@@ -285,6 +287,7 @@ export interface Project {
     id: string;
     teamName: string;
     teamColor: string;
+    teamType: "PROPIO" | "TERCERIZADO";
     // Envelope (min/max de segments). Puede ser null si por alguna razón no hay
     // segments, pero en la práctica siempre viene.
     plannedWorkStart: string | null;

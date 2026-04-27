@@ -4,6 +4,7 @@ export interface Team {
   id: string;
   name: string;
   color: string;
+  type: "PROPIO" | "TERCERIZADO";
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -20,6 +21,7 @@ export async function getTeams(includeDeleted = false): Promise<Team[]> {
 export async function createTeam(body: {
   name: string;
   color?: string;
+  type: "PROPIO" | "TERCERIZADO";
   notes?: string | null;
 }): Promise<Team> {
   const { data } = await apiClient.post<Team>("/api/teams", body);
@@ -28,7 +30,7 @@ export async function createTeam(body: {
 
 export async function patchTeam(
   id: string,
-  body: { name?: string; color?: string; notes?: string | null },
+  body: { name?: string; color?: string; type?: "PROPIO" | "TERCERIZADO"; notes?: string | null },
 ): Promise<Team> {
   const { data } = await apiClient.patch<Team>(`/api/teams/${id}`, body);
   return data;

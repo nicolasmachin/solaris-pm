@@ -1024,6 +1024,7 @@ model InstallationSchedule {
   team            Team?     @relation(fields: [teamId], references: [id], onDelete: SetNull)
   teamName        String
   teamColor       String    @default("#378ADD")
+  teamType        TeamType  @default(PROPIO)
   actualWorkEnd   DateTime? @db.Date
   confirmedAt     DateTime? @db.Timestamptz(6)
   confirmedBy     String?
@@ -1057,10 +1058,16 @@ model InstallationSegment {
   @@map("installation_segments")
 }
 
+enum TeamType {
+  PROPIO
+  TERCERIZADO
+}
+
 model Team {
   id        String    @id @default(cuid())
   name      String    @unique
   color     String    @default("#378ADD")
+  type      TeamType  @default(PROPIO)
   notes     String?
   createdBy String?
   createdAt DateTime  @default(now()) @db.Timestamptz(6)

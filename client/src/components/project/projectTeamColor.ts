@@ -2,9 +2,11 @@ type ProjectWithTeamColor =
   | {
       installationTeamColor?: string | null;
       installationTeamName?: string | null;
+      installationTeamType?: "PROPIO" | "TERCERIZADO" | null;
       installationSchedule?: {
         teamColor?: string | null;
         teamName?: string | null;
+        teamType?: "PROPIO" | "TERCERIZADO" | null;
       } | null;
     }
   | null
@@ -29,4 +31,8 @@ export function getProjectTeamColor(project: ProjectWithTeamColor): string | nul
 
 export function getProjectTeamName(project: ProjectWithTeamColor): string | null {
   return project?.installationSchedule?.teamName ?? project?.installationTeamName ?? null;
+}
+
+export function getProjectTeamType(project: ProjectWithTeamColor): "PROPIO" | "TERCERIZADO" | null {
+  return project?.installationSchedule?.teamType ?? project?.installationTeamType ?? null;
 }
