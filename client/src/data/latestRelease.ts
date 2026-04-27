@@ -29,7 +29,7 @@ export const LATEST_RELEASE: Release = {
     {
       title: "Mejoras",
       items: [
-        '**PDF de materiales con dos versiones**: el botón "Exportar PDF" ahora es un desplegable con "Sin precios (para proveedores)" y "Con precios (uso interno)". Cada variante tiene su propio nombre y se guarda en los Documentos del proyecto.',
+        '**PDF de materiales con dos versiones**: el boton "Exportar PDF" ahora es un desplegable con "Sin precios (para proveedores)" y "Con precios (uso interno)". Cada variante tiene su propio nombre y se guarda en los Documentos del proyecto.',
       ],
     },
   ],
