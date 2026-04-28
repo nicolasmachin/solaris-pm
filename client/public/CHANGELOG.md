@@ -1,5 +1,56 @@
 # Novedades
 
+## v3.2
+
+### 28 de abril de 2026
+
+#### Sistema de deadlines automáticos por subetapa
+
+- **Reglas configurables en Admin** (nueva tab "Reglas de Deadlines"): cada regla define cuándo debe completarse una subetapa según uno de cuatro tipos:
+  - **Días desde creación del proyecto** (ej: "Pre-Proyecto Ingeniería = 5 días desde alta").
+  - **Días antes de la instalación** (ej: "Lista de materiales = 7 días antes de empezar la obra").
+  - **Manual**: el usuario lo pone a mano.
+  - **Sin deadline**: la subetapa no tiene fecha.
+- Las reglas se aplican por **etapa + subetapa** (sopCode o nombre) y son globales: una regla impacta a todos los proyectos.
+- **Cálculo automático al crear un proyecto**: las subetapas reciben su deadline según las reglas activas.
+- **Recálculo automático al cambiar la fecha de instalación**: cuando se mueve un tramo en el calendario, los deadlines tipo "días antes de instalación" se recalculan. Si hay deadlines editados manualmente, **el sistema pide confirmación** antes de pisarlos.
+- **Edición manual desde el drawer de la etapa** (ADMIN y OPERACIONES): cada subetapa muestra su deadline con badge "manual" si fue editado, y se puede volver al cálculo automático con un click.
+- **Código de colores en el drawer**: rojo si vencido, naranja si quedan ≤3 días, amarillo ≤7 días, verde si la subetapa ya se completó.
+
+#### Fechas de etapa coherentes en Mis Tareas
+
+- El badge de "vence" a nivel etapa en Mis Tareas ya no usa la fecha planificada que se calculaba automáticamente al crear el proyecto (que solía mostrar fechas viejas y confusas).
+- Ahora muestra la **fecha más urgente entre sus subetapas pendientes**.
+- Además, el StageDrawer expone un campo **"Fecha límite"** editable a nivel etapa para todos los roles.
+
+#### Lista de materiales colapsable
+
+- La sección "Lista de materiales" en Ingeniería ahora se puede **colapsar/expandir** con un click en el título.
+- Cuando está colapsada se muestra un resumen mini (cantidad de ítems + total).
+- El estado se recuerda por proyecto (si dejaste un proyecto colapsado, al volver sigue así).
+
+#### Calculadora de triángulos de aluminio
+
+- Nueva calculadora dentro de Ingeniería para resolver triángulos isósceles (caso típico de soportes inclinados de paneles).
+- Tres modos de cálculo: **L + ángulo**, **L + altura**, **altura + ángulo**.
+- Soporta unidades milímetros, centímetros y metros.
+- Visualización en SVG con todas las medidas anotadas.
+- Acciones: **Descargar SVG**, **Copiar medidas** al portapapeles y **Guardar en el proyecto** (genera JPG + PDF con la imagen y las medidas, ambos quedan en Documentos del proyecto con tipo "Cálculo triángulos").
+
+#### Toggle de precios en el PDF de materiales
+
+- El botón "Exportar PDF" en la lista de materiales ahora es un **desplegable con dos opciones**: "Sin precios (para proveedores)" y "Con precios (uso interno)".
+- **Sin precios**: PDF con 3 columnas (Ítem, Cant., Unidad). Pensado para compartir con proveedores sin revelar los precios internos.
+- **Con precios**: PDF con 5 columnas (Ítem, Cant., Unidad, Precio, Subtotal) más total al pie por moneda.
+- Cada variante se guarda con nombre descriptivo en Documentos.
+
+#### Fecha esperada al generar previstos
+
+- Al generar movimientos previstos desde la lista de materiales, ahora se pide la **fecha esperada de compra** (obligatoria, viene precargada con la fecha de inicio planificado del proyecto o la fecha de hoy).
+- Los previstos se crean con esa fecha como `expectedDate`, lo que mejora la proyección de flujo de fondos.
+
+---
+
 ## v3.1
 
 ### 27 de abril de 2026

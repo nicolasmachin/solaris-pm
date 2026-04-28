@@ -23,13 +23,25 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "3.1",
-  date: "27 de abril de 2026",
+  version: "3.2",
+  date: "28 de abril de 2026",
   sections: [
+    {
+      title: "Nuevo",
+      items: [
+        "**Deadlines automáticos por subetapa**: nueva tab en Admin para configurar reglas (días desde creación, días antes de instalación, manual o sin deadline). Cada proyecto recibe los deadlines automáticamente al crearse y se recalculan al cambiar la fecha de instalación.",
+        "**Edición manual de deadlines** (ADMIN y OPERACIONES) desde el drawer de la etapa, con código de colores (rojo vencido, naranja ≤3d, amarillo ≤7d) y badge *manual* cuando aplica.",
+        "**Calculadora de triángulos de aluminio** dentro de Ingeniería: tres modos de cálculo, visualización SVG con medidas, descarga JPG/SVG y guardado automático en Documentos del proyecto (JPG + PDF).",
+      ],
+    },
     {
       title: "Mejoras",
       items: [
-        '**PDF de materiales con dos versiones**: el boton "Exportar PDF" ahora es un desplegable con "Sin precios (para proveedores)" y "Con precios (uso interno)". Cada variante tiene su propio nombre y se guarda en los Documentos del proyecto.',
+        "**Fechas de etapa coherentes en Mis Tareas**: el badge ya no usa la fecha planificada vieja del alta del proyecto, ahora refleja la subetapa más urgente.",
+        "**Fecha límite editable a nivel etapa** desde el StageDrawer (todos los roles).",
+        "**Lista de materiales colapsable** con resumen mini y persistencia por proyecto.",
+        '**PDF de materiales con dos versiones**: desplegable con "Sin precios (para proveedores)" y "Con precios (uso interno)".',
+        "**Fecha esperada al generar previstos**: el modal de generación pide la fecha de compra esperada (precargada con el inicio planificado), mejorando la proyección de flujo de fondos.",
       ],
     },
   ],
@@ -43,6 +55,13 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "3.1",
+    shortDate: "27 abr",
+    highlights: [
+      'PDF de materiales en dos versiones: "Sin precios" y "Con precios".',
+    ],
+  },
   {
     version: "3.0",
     shortDate: "27 abr",
