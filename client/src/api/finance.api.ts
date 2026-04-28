@@ -99,6 +99,12 @@ export interface MovimientosQuery {
 
 export interface MovementsListResponse extends PaginatedResponse<FinanceMovement> {
   saldoFinalUSD: number;
+  saldoActualCuentas: number;
+  saldoFinalProyectado: number;
+  saldoMinimoFuturo: number;
+  fechaSaldoMinimoFuturo: string | null;
+  sinCuentasActivas: boolean;
+  usaFallbackTipoCambio: boolean;
 }
 
 export const getMovements = (params: MovimientosQuery) =>

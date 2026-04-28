@@ -132,10 +132,17 @@ export function TabCuentas() {
     queryFn: () => getAccounts({ activa: showAll ? 'all' : 'true' }),
   });
 
+  function invalidateFinanceLiquidity() {
+    qc.invalidateQueries({ queryKey: ['accounts'] });
+    qc.invalidateQueries({ queryKey: ['accounts-summary'] });
+    qc.invalidateQueries({ queryKey: ['finance-movements'] });
+    qc.invalidateQueries({ queryKey: ['finance-dashboard'] });
+  }
+
   async function toggleActive(a: Account) {
     try {
       await patchAccount(a.id, { activa: !a.activa });
-      qc.invalidateQueries({ queryKey: ['accounts'] });
+      invalidateFinanceLiquidity();
     } catch (err) {
       toast.error(getApiErr(err) ?? 'No se pudo cambiar el estado');
     }
@@ -146,7 +153,7 @@ export function TabCuentas() {
     try {
       await deleteAccount(a.id);
       toast.success('Cuenta eliminada');
-      qc.invalidateQueries({ queryKey: ['accounts'] });
+      invalidateFinanceLiquidity();
     } catch (err) {
       toast.error(getApiErr(err) ?? 'Error al eliminar');
     }
@@ -216,12 +223,12 @@ export function TabCuentas() {
 
       {creating && (
         <Modal title="Nueva cuenta" onClose={() => setCreating(false)}>
-          <AccountForm onSuccess={() => { setCreating(false); qc.invalidateQueries({ queryKey: ['accounts'] }); }} onCancel={() => setCreating(false)} />
+          <AccountForm onSuccess={() => { setCreating(false); invalidateFinanceLiquidity(); }} onCancel={() => setCreating(false)} />
         </Modal>
       )}
       {editing && (
         <Modal title={`Editar "${editing.nombre}"`} onClose={() => setEditing(null)}>
-          <AccountForm initial={editing} accountId={editing.id} onSuccess={() => { setEditing(null); qc.invalidateQueries({ queryKey: ['accounts'] }); }} onCancel={() => setEditing(null)} />
+          <AccountForm initial={editing} accountId={editing.id} onSuccess={() => { setEditing(null); invalidateFinanceLiquidity(); }} onCancel={() => setEditing(null)} />
         </Modal>
       )}
     </div>

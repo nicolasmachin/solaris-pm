@@ -8195,6 +8195,44 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return { success: true };
     });
 
+    function isMovementConcreted(row: {
+      tipoMovimiento: TipoMovimiento;
+      status: FinanceMovementStatus;
+      cobrado: boolean;
+    }) {
+      return (
+        (row.tipoMovimiento === TipoMovimiento.GASTO && row.status === FinanceMovementStatus.PAGADO) ||
+        (row.tipoMovimiento === TipoMovimiento.INGRESO && row.cobrado)
+      );
+    }
+
+    function getMovementEffectiveDate(row: {
+      fecha: Date;
+      status: FinanceMovementStatus;
+      cobrado: boolean;
+      expectedDate: Date | null;
+      dueDate: Date | null;
+      tipoMovimiento: TipoMovimiento;
+    }) {
+      if (isMovementConcreted(row)) return row.fecha;
+      return row.expectedDate ?? row.dueDate ?? row.fecha;
+    }
+
+    function convertMovementToUsd(row: {
+      monto: import("@prisma/client/runtime/library").Decimal;
+      moneda: Moneda;
+      tipoCambio: import("@prisma/client/runtime/library").Decimal | null;
+    }, fallbackUsdToUyu: number) {
+      const monto = decimalToNumber(row.monto) ?? 0;
+      if (row.moneda === Moneda.USD) return monto;
+      const rowRate = row.tipoCambio ? (decimalToNumber(row.tipoCambio) ?? fallbackUsdToUyu) : fallbackUsdToUyu;
+      return rowRate > 0 ? monto / rowRate : monto;
+    }
+
+    function roundMoney(value: number) {
+      return Math.round(value * 100) / 100;
+    }
+
     // ─── Finance: Suppliers ───────────────────────────────────────────────────
 
     const supplierCreateSchema = z.object({
@@ -9792,8 +9830,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
           take,
         }),
         prisma.financeMovement.count({ where }),
-        // Saldo USD proyectado: cálculo GLOBAL sobre todos los movimientos
-        // del sistema (no respeta filtros), ordenado por fecha efectiva ASC.
         prisma.financeMovement.findMany({
           where: { deletedAt: null },
           select: {
@@ -9813,48 +9849,77 @@ export async function registerApiRoutes(app: FastifyInstance) {
         prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } }),
       ]);
 
-      // Saldo USD proyectado GLOBAL. Considera TODOS los movimientos:
-      //   - INGRESO suma (sea cobrado o no)
-      //   - GASTO resta (sea pagado o no)
-      // Fecha efectiva para ordenar:
-      //   - PAGADO o cobrado → fecha real
-      //   - sino expectedDate → expectedDate
-      //   - sino dueDate → dueDate
-      //   - sino fecha (fallback)
-      // UYU se convierte con tipoCambio del movimiento, o el último TC global.
-      const fallbackUsdToUyu = lastRate ? (decimalToNumber(lastRate.usdToUyu) ?? 1) : 1;
-      const isReal = (r: { tipoMovimiento: TipoMovimiento; status: FinanceMovementStatus; cobrado: boolean }) =>
-        (r.tipoMovimiento === TipoMovimiento.GASTO && r.status === FinanceMovementStatus.PAGADO) ||
-        (r.tipoMovimiento === TipoMovimiento.INGRESO && r.cobrado);
-      const fechaEfectivaMs = (r: { fecha: Date; status: FinanceMovementStatus; cobrado: boolean; expectedDate: Date | null; dueDate: Date | null; tipoMovimiento: TipoMovimiento }) => {
-        if (isReal(r)) return r.fecha.getTime();
-        if (r.expectedDate) return r.expectedDate.getTime();
-        if (r.dueDate) return r.dueDate.getTime();
-        return r.fecha.getTime();
-      };
-      const sortedRows = [...balanceRows].sort((a, b) => {
-        const da = fechaEfectivaMs(a);
-        const db = fechaEfectivaMs(b);
-        if (da !== db) return da - db;
-        return a.createdAt.getTime() - b.createdAt.getTime();
-      });
-
       const saldoMap = new Map<string, number>();
       const fechaEfectivaMap = new Map<string, string>();
-      let acumuladoUSD = 0;
-      for (const r of sortedRows) {
-        const monto = decimalToNumber(r.monto) ?? 0;
-        const tc = r.tipoCambio ? (decimalToNumber(r.tipoCambio) ?? fallbackUsdToUyu) : fallbackUsdToUyu;
-        const montoUsd = r.moneda === Moneda.USD ? monto : (tc > 0 ? monto / tc : monto);
-        if (r.tipoMovimiento === TipoMovimiento.INGRESO) acumuladoUSD += montoUsd;
-        else if (r.tipoMovimiento === TipoMovimiento.GASTO) acumuladoUSD -= montoUsd;
-        // AJUSTE: no afecta saldo proyectado (los ajustes contables suelen
-        // ser correcciones que no representan flujo).
-        saldoMap.set(r.id, Math.round(acumuladoUSD * 100) / 100);
-        const efDate = new Date(fechaEfectivaMs(r));
-        fechaEfectivaMap.set(r.id, efDate.toISOString().slice(0, 10));
+      for (const row of balanceRows) {
+        fechaEfectivaMap.set(row.id, getMovementEffectiveDate(row).toISOString().slice(0, 10));
       }
-      const saldoFinalUSD = Math.round(acumuladoUSD * 100) / 100;
+
+      const parsedRate = lastRate ? decimalToNumber(lastRate.usdToUyu) : null;
+      const fallbackUsdToUyu = parsedRate && parsedRate > 0 ? parsedRate : 1;
+      const activeAccounts = await prisma.account.findMany({
+        where: { deletedAt: null, activa: true },
+        select: { id: true, moneda: true },
+      });
+      const accountBalances = await Promise.all(
+        activeAccounts.map(async (account) => ({
+          moneda: account.moneda,
+          saldoActual: (await computeAccountBalance(account.id)).saldoActual,
+        })),
+      );
+
+      let saldoActualCuentas = 0;
+      for (const account of accountBalances) {
+        if (account.moneda === Moneda.USD) saldoActualCuentas += account.saldoActual;
+        else saldoActualCuentas += fallbackUsdToUyu > 0 ? account.saldoActual / fallbackUsdToUyu : account.saldoActual;
+      }
+      saldoActualCuentas = roundMoney(saldoActualCuentas);
+
+      const today = todayUtc();
+      const pastRows = balanceRows
+        .filter((row) => getMovementEffectiveDate(row) < today)
+        .sort((a, b) => {
+          const timeDiff = getMovementEffectiveDate(b).getTime() - getMovementEffectiveDate(a).getTime();
+          if (timeDiff !== 0) return timeDiff;
+          return b.createdAt.getTime() - a.createdAt.getTime();
+        });
+      const futureRows = balanceRows
+        .filter((row) => getMovementEffectiveDate(row) >= today)
+        .sort((a, b) => {
+          const timeDiff = getMovementEffectiveDate(a).getTime() - getMovementEffectiveDate(b).getTime();
+          if (timeDiff !== 0) return timeDiff;
+          return a.createdAt.getTime() - b.createdAt.getTime();
+        });
+
+      let saldoTemp = saldoActualCuentas;
+      for (const row of pastRows) {
+        saldoMap.set(row.id, roundMoney(saldoTemp));
+        if (!isMovementConcreted(row)) continue;
+        const montoUsd = convertMovementToUsd(row, fallbackUsdToUyu);
+        if (row.tipoMovimiento === TipoMovimiento.GASTO) saldoTemp += montoUsd;
+        else if (row.tipoMovimiento === TipoMovimiento.INGRESO) saldoTemp -= montoUsd;
+        saldoTemp = roundMoney(saldoTemp);
+      }
+
+      saldoTemp = saldoActualCuentas;
+      let saldoMinimoFuturo = saldoActualCuentas;
+      let fechaSaldoMinimoFuturo = serializeDateOnly(today);
+      for (const row of futureRows) {
+        const montoUsd = convertMovementToUsd(row, fallbackUsdToUyu);
+        if (row.tipoMovimiento === TipoMovimiento.GASTO) saldoTemp -= montoUsd;
+        else if (row.tipoMovimiento === TipoMovimiento.INGRESO) saldoTemp += montoUsd;
+        saldoTemp = roundMoney(saldoTemp);
+        saldoMap.set(row.id, saldoTemp);
+        if (saldoTemp < saldoMinimoFuturo) {
+          saldoMinimoFuturo = saldoTemp;
+          fechaSaldoMinimoFuturo = fechaEfectivaMap.get(row.id) ?? fechaSaldoMinimoFuturo;
+        }
+      }
+      const saldoFinalProyectado = roundMoney(saldoTemp);
+      const sinCuentasActivas = activeAccounts.length === 0;
+      const usaFallbackTipoCambio = (!parsedRate || parsedRate <= 0)
+        && (activeAccounts.some((account) => account.moneda === Moneda.UYU)
+          || balanceRows.some((row) => row.moneda === Moneda.UYU));
 
       return {
         data: movements.map((m) => {
@@ -9870,8 +9935,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           // Excluir paymentApplications del payload (sólo lo necesitábamos para el cálculo)
           const { paymentApplications: _pa, ...rest } = m;
           void _pa;
-          const real = (m.tipoMovimiento === TipoMovimiento.GASTO && m.status === FinanceMovementStatus.PAGADO)
-            || (m.tipoMovimiento === TipoMovimiento.INGRESO && m.cobrado);
+          const real = isMovementConcreted(m);
           return {
             ...rest,
             monto,
@@ -9894,7 +9958,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
         page: query.page ?? 1,
         limit: take,
         totalPages: Math.ceil(total / take),
-        saldoFinalUSD,
+        saldoActualCuentas,
+        saldoFinalProyectado,
+        saldoFinalUSD: saldoFinalProyectado,
+        saldoMinimoFuturo,
+        fechaSaldoMinimoFuturo,
+        sinCuentasActivas,
+        usaFallbackTipoCambio,
       };
     });
 

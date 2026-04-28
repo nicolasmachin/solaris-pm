@@ -48,6 +48,9 @@ function ExchangeRateCard() {
       await createExchangeRate({ date: today, usdToUyu: n });
       toast.success('Tipo de cambio actualizado');
       qc.invalidateQueries({ queryKey: ['exchange-rate'] });
+      qc.invalidateQueries({ queryKey: ['accounts-summary'] });
+      qc.invalidateQueries({ queryKey: ['finance-movements'] });
+      qc.invalidateQueries({ queryKey: ['finance-dashboard'] });
       setModalOpen(false);
       setNewRate('');
       setBcuInfo(null);

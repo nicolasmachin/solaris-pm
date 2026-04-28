@@ -36,6 +36,12 @@ import { ACCOUNT_TYPE_LABEL } from '../types/accounts.types';
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
+function isFutureMovement(fechaEfectiva: string, todayIso: string) {
+  return fechaEfectiva >= todayIso;
+}
+function isPastPendingMovement(mov: FinanceMovement, todayIso: string) {
+  return !mov.saldoEsReal && mov.fechaEfectiva < todayIso;
+}
 
 // ─── Movimiento Form ──────────────────────────────────────────────────────────
 
@@ -787,6 +793,7 @@ export function FinanceMovements() {
   ];
 
   const inp = 'rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-1.5 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]';
+  const todayIso = new Date().toISOString().slice(0, 10);
 
   return (
     <div className="p-6 space-y-5">
@@ -834,6 +841,58 @@ export function FinanceMovements() {
         </label>
       </div>
 
+      {data && (
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
+            <p className="text-xs font-mono uppercase tracking-wider text-[var(--color-text-muted)]">Saldo actual en cuentas</p>
+            <p className="mt-2 text-2xl font-bold tabular-nums text-[var(--color-text-primary)]">{fmtCurrency(data.saldoActualCuentas, 'USD')}</p>
+            <p className="mt-1 text-xs text-[var(--color-text-muted)]">Suma de cuentas activas con conversión a USD.</p>
+          </div>
+          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
+            <p className="text-xs font-mono uppercase tracking-wider text-[var(--color-text-muted)]">Saldo proyectado final</p>
+            <p className={klass(
+              'mt-2 text-2xl font-bold tabular-nums',
+              data.saldoFinalProyectado < 0 ? 'text-red-400' : 'text-[var(--color-text-primary)]',
+            )}>
+              {fmtCurrency(data.saldoFinalProyectado, 'USD')}
+            </p>
+            <p className="mt-1 text-xs text-[var(--color-text-muted)]">Liquidez luego de todos los movimientos.</p>
+          </div>
+          <div className={klass(
+            'rounded-xl border bg-[var(--color-bg-card)] p-4',
+            data.saldoMinimoFuturo < 0 ? 'border-red-500/60' : 'border-[var(--color-border)]',
+          )}>
+            <p className="text-xs font-mono uppercase tracking-wider text-[var(--color-text-muted)]">Punto mínimo de liquidez</p>
+            <p className={klass(
+              'mt-2 text-2xl font-bold tabular-nums',
+              data.saldoMinimoFuturo < 0 ? 'text-red-400' : 'text-[var(--color-text-primary)]',
+            )}>
+              {fmtCurrency(data.saldoMinimoFuturo, 'USD')}
+            </p>
+            <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+              {data.fechaSaldoMinimoFuturo ? `El ${fmtDate(data.fechaSaldoMinimoFuturo)}` : 'Sin fecha crítica detectada'}
+            </p>
+            {data.saldoMinimoFuturo < 0 && (
+              <span className="mt-2 inline-flex items-center rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-mono uppercase text-red-300">
+                Riesgo de insuficiencia
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {data?.sinCuentasActivas && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          No hay cuentas configuradas en el sistema. Configuralas en Admin para ver liquidez real.
+        </div>
+      )}
+
+      {data?.usaFallbackTipoCambio && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          Sin tipo de cambio configurado, los montos UYU se cuentan 1:1 con USD. Configurá un TC para mayor precisión.
+        </div>
+      )}
+
       {/* Table */}
       <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl overflow-hidden">
         {isLoading ? (
@@ -846,6 +905,18 @@ export function FinanceMovements() {
                 && !m.noTieneMateriales,
               )
             : (data?.data ?? []);
+          const rowItems: Array<{ kind: 'today-marker' } | { kind: 'movement'; mov: FinanceMovement }> = [];
+          let insertedTodayMarker = false;
+          let seenFuture = false;
+          for (const mov of filteredRows) {
+            const future = isFutureMovement(mov.fechaEfectiva, todayIso);
+            if (seenFuture && !future && !insertedTodayMarker) {
+              rowItems.push({ kind: 'today-marker' });
+              insertedTodayMarker = true;
+            }
+            if (future) seenFuture = true;
+            rowItems.push({ kind: 'movement', mov });
+          }
           if (filteredRows.length === 0) {
             return (
               <p className="text-sm text-[var(--color-text-muted)] text-center py-12">
@@ -864,9 +935,20 @@ export function FinanceMovements() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border)]">
-                {filteredRows.map(mov => {
-                  const today = new Date().toISOString().slice(0, 10);
-                  const overdue = mov.dueDate != null && mov.dueDate < today && mov.status === 'A_PAGAR';
+                {rowItems.map((item, idx) => {
+                  if (item.kind === 'today-marker') {
+                    return (
+                      <tr key={`today-marker-${idx}`} className="bg-blue-500/10">
+                        <td colSpan={9} className="px-4 py-2 text-center text-xs font-mono uppercase tracking-[0.2em] text-blue-300">
+                          HOY ({fmtDate(todayIso)})
+                        </td>
+                      </tr>
+                    );
+                  }
+                  const mov = item.mov;
+                  const overdue = mov.dueDate != null && mov.dueDate < todayIso && mov.status === 'A_PAGAR';
+                  const future = isFutureMovement(mov.fechaEfectiva, todayIso);
+                  const pastPending = isPastPendingMovement(mov, todayIso);
                   const needsDetail = (mov.status === 'A_PAGAR' || mov.status === 'PAGADO')
                     && !mov.hasItemDetail && !mov.noTieneMateriales
                     && mov.tipoMovimiento === 'GASTO';
@@ -879,7 +961,11 @@ export function FinanceMovements() {
                   return (
                     <tr key={mov.id}
                       onClick={() => setDetailMov(mov)}
-                      className={klass('cursor-pointer hover:bg-[var(--color-bg-card-hover)] transition-colors', overdue && 'bg-red-500/5')}
+                      className={klass(
+                        'cursor-pointer hover:bg-[var(--color-bg-card-hover)] transition-colors',
+                        overdue && 'bg-red-500/5',
+                        pastPending && 'opacity-75',
+                      )}
                     >
                       <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-muted)]">
                         {fechaLabel}{fmtDate(showFecha)}
@@ -898,6 +984,11 @@ export function FinanceMovements() {
                               ✓ Stock
                             </span>
                           )}
+                          {pastPending && (
+                            <span className="shrink-0 text-[10px] font-mono px-1.5 py-0.5 rounded uppercase bg-amber-500/15 text-amber-300" title="Ya pasó la fecha pero todavía no impactó cuentas">
+                              Atrasado, no concretado
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-secondary)]">{CATEGORIA_LABEL[mov.categoriaPrincipal]}</td>
@@ -911,13 +1002,19 @@ export function FinanceMovements() {
                       </td>
                       <td className={klass(
                           'px-4 py-3 whitespace-nowrap text-right tabular-nums',
-                          mov.saldoEsReal
-                            ? (mov.saldoAcumuladoUSD < 0 ? 'text-red-400 font-semibold' : 'text-[var(--color-text-primary)] font-semibold')
-                            : (mov.saldoAcumuladoUSD < 0 ? 'text-red-400/60 italic' : 'text-[var(--color-text-muted)] italic'),
+                          future
+                            ? (mov.saldoAcumuladoUSD < 0 ? 'text-red-400/70 italic' : 'text-[var(--color-text-muted)] italic')
+                            : pastPending
+                              ? (mov.saldoAcumuladoUSD < 0 ? 'text-red-400/80 italic' : 'text-amber-200 italic')
+                              : (mov.saldoAcumuladoUSD < 0 ? 'text-red-400 font-semibold' : 'text-[var(--color-text-primary)] font-semibold'),
                         )}
-                        title={mov.saldoEsReal
-                          ? `Saldo real al ${fmtDate(mov.fecha)}`
-                          : `Saldo proyectado al ${fmtDate(mov.fechaEfectiva)} (estado: ${STATUS_LABEL[mov.status]})`}
+                        title={
+                          future
+                            ? `Liquidez proyectada al ${fmtDate(mov.fechaEfectiva)}${mov.saldoAcumuladoUSD < 0 ? ' · Insuficiente' : ''}`
+                            : pastPending
+                              ? `Liquidez al ${fmtDate(mov.fechaEfectiva)}. Movimiento atrasado, no concretado: no afectó las cuentas.${mov.saldoAcumuladoUSD < 0 ? ' · Insuficiente' : ''}`
+                              : `Liquidez al ${fmtDate(mov.fechaEfectiva)}${mov.saldoAcumuladoUSD < 0 ? ' · Insuficiente' : ''}`
+                        }
                       >
                         {fmtCurrency(mov.saldoAcumuladoUSD, 'USD')}
                       </td>
@@ -964,9 +1061,9 @@ export function FinanceMovements() {
                   <tr className="border-t border-[var(--color-border)] bg-[var(--color-bg-card-hover)] text-xs font-mono uppercase tracking-wider">
                     <td colSpan={6} className="px-4 py-3 text-right text-[var(--color-text-muted)]">Saldo proyectado final USD</td>
                     <td className={klass('px-4 py-3 text-right tabular-nums font-semibold',
-                      data.saldoFinalUSD < 0 ? 'text-red-400' : 'text-green-400')}
-                      title="Suma de TODOS los movimientos (pagados/cobrados + pendientes), ordenados por fecha efectiva. Es la proyección del flujo de fondos.">
-                      {fmtCurrency(data.saldoFinalUSD, 'USD')}
+                      data.saldoFinalProyectado < 0 ? 'text-red-400' : 'text-green-400')}
+                      title="Liquidez proyectada después de aplicar todos los movimientos futuros sobre el saldo actual de cuentas.">
+                      {fmtCurrency(data.saldoFinalProyectado, 'USD')}
                     </td>
                     <td colSpan={2}></td>
                   </tr>

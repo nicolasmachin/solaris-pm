@@ -78,6 +78,9 @@ export function NewPaymentForSupplierModal({
       });
       qc.invalidateQueries({ queryKey: ['payments'] });
       qc.invalidateQueries({ queryKey: ['account-summary'] });
+      qc.invalidateQueries({ queryKey: ['accounts-summary'] });
+      qc.invalidateQueries({ queryKey: ['finance-movements'] });
+      qc.invalidateQueries({ queryKey: ['finance-dashboard'] });
       qc.invalidateQueries({ queryKey: ['suppliers'] });
       if (form.aplicarAhora) {
         toast.success('Pago registrado · aplicalo a facturas');
