@@ -416,6 +416,14 @@ function SubstageRow({
             {substage.notes && (
               <p className="text-[11px] text-[var(--color-text-secondary)] mb-2">{substage.notes}</p>
             )}
+            {/* G.3: fechas reales de la subetapa */}
+            {(substage.actualStartDate || substage.actualEndDate) && (
+              <p className="text-[10px] text-[var(--color-text-muted)] mb-2 font-mono">
+                {substage.actualStartDate && <>Iniciada: {formatDeadlineShort(substage.actualStartDate)}</>}
+                {substage.actualStartDate && substage.actualEndDate && <> · </>}
+                {substage.actualEndDate && <>Completada: {formatDeadlineShort(substage.actualEndDate)}</>}
+              </p>
+            )}
             <div className="flex gap-2 mb-2 flex-wrap">
               <button
                 onClick={() => setEditing(true)}

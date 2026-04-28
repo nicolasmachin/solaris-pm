@@ -117,6 +117,8 @@ enum NotificationType {
   stage_overdue
   project_delayed
   goals_not_configured
+  deadline_warning
+  prev_substage_completed
 }
 
 enum GoalArea {
@@ -323,10 +325,12 @@ model User {
   email                          String                   @unique
   password                       String
   name                           String
+  phone                          String?
   roleId                         String
   role                           Role                     @relation(fields: [roleId], references: [id], onDelete: Restrict)
   tenantId                       String?
   avatarUrl                      String?                  @map("avatar_url")
+  notificationPreferences        UserNotificationPreference?
   createdProjects                Project[]                @relation("ProjectCreatedBy")
   projectsSalesperson            Project[]                @relation("ProjectSalesperson")
   assignedSubstages              Substage[]
@@ -514,8 +518,10 @@ model Substage {
   tasks              Task[]
   files              FileAttachment[]
   comments           Comment[]
-  deadline             DateTime? @db.Date
-  deadlineManuallySet  Boolean   @default(false)
+  deadline                  DateTime? @db.Date
+  deadlineManuallySet       Boolean   @default(false)
+  deadlineNotificationSent  Boolean   @default(false)
+  deadlineNotifiedAt        DateTime? @db.Timestamptz(6)
   deletedAt          DateTime?        @db.Timestamptz(6)
   createdAt          DateTime         @default(now()) @db.Timestamptz(6)
   updatedAt          DateTime         @updatedAt @db.Timestamptz(6)
@@ -526,7 +532,31 @@ model Substage {
   @@index([status])
   @@index([userId])
   @@index([deletedAt])
+  @@index([deadline])
   @@map("substages")
+}
+
+model UserNotificationPreference {
+  id                            String   @id @default(cuid())
+  userId                        String   @unique
+  user                          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Aviso 3 días antes de un deadline
+  deadlineWarning               Boolean  @default(true)
+  deadlineWarningInApp          Boolean  @default(true)
+  deadlineWarningEmail          Boolean  @default(false)
+  deadlineWarningWhatsapp       Boolean  @default(false)
+
+  // Aviso al completarse la subetapa anterior a la mía
+  prevSubstageCompleted         Boolean  @default(true)
+  prevSubstageCompletedInApp    Boolean  @default(true)
+  prevSubstageCompletedEmail    Boolean  @default(false)
+  prevSubstageCompletedWhatsapp Boolean  @default(false)
+
+  createdAt                     DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt                     DateTime @updatedAt @db.Timestamptz(6)
+
+  @@map("user_notification_preferences")
 }
 
 enum DeadlineRuleTipo {

@@ -149,9 +149,15 @@ export async function recalculateProjectDeadlines(
 
       if (sameDate && !substage.deadlineManuallySet) continue;
 
+      // Si la fecha cambia, reseteamos la marca de notificación (G.3): es un
+      // deadline distinto, hay que volver a avisar 3 días antes del nuevo.
       await prisma.substage.update({
         where: { id: substage.id },
-        data: { deadline: newDeadline, deadlineManuallySet: false },
+        data: {
+          deadline: newDeadline,
+          deadlineManuallySet: false,
+          ...(sameDate ? {} : { deadlineNotificationSent: false, deadlineNotifiedAt: null }),
+        },
       });
       if (newDeadline) updated++;
       else cleared++;

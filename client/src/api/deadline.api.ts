@@ -58,3 +58,49 @@ export const recalculateProjectDeadlines = (projectId: string, forceOverrides: b
     .post<RecalculateDeadlinesResult>(`/api/projects/${projectId}/recalculate-deadlines`, { forceOverrides })
     .then(r => r.data);
 
+// ─── G.3: Fechas reales (admin) ─────────────────────────────────────────────
+
+export interface SubstageActualDatesResponse {
+  id: string;
+  actualStartDate: string | null;
+  actualEndDate: string | null;
+}
+
+export const setSubstageActualDates = (substageId: string, body: { actualStartDate?: string | null; actualEndDate?: string | null }) =>
+  apiClient.patch<SubstageActualDatesResponse>(`/api/substages/${substageId}/actual-dates`, body).then(r => r.data);
+
+// ─── G.3: Preferencias de notificación del usuario actual ──────────────────
+
+export interface NotificationPreferences {
+  id: string | null;
+  userId: string;
+  deadlineWarning: boolean;
+  deadlineWarningInApp: boolean;
+  deadlineWarningEmail: boolean;
+  deadlineWarningWhatsapp: boolean;
+  prevSubstageCompleted: boolean;
+  prevSubstageCompletedInApp: boolean;
+  prevSubstageCompletedEmail: boolean;
+  prevSubstageCompletedWhatsapp: boolean;
+}
+
+export const getNotificationPreferences = () =>
+  apiClient.get<NotificationPreferences>('/api/users/me/notification-preferences').then(r => r.data);
+
+export const updateNotificationPreferences = (body: Partial<Omit<NotificationPreferences, 'id' | 'userId'>>) =>
+  apiClient.patch<NotificationPreferences>('/api/users/me/notification-preferences', body).then(r => r.data);
+
+// ─── G.3: Deadlines próximos del usuario actual ────────────────────────────
+
+export interface UpcomingDeadline {
+  id: string;
+  name: string;
+  deadline: string;
+  deadlineManuallySet: boolean;
+  stage: { id: string; name: string; label: string };
+  project: { id: string; code: string | null; clientName: string };
+}
+
+export const getMyUpcomingDeadlines = (days: number = 7) =>
+  apiClient.get<UpcomingDeadline[]>(`/api/users/me/upcoming-deadlines`, { params: { days } }).then(r => r.data);
+

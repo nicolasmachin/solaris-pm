@@ -1,5 +1,33 @@
 # Novedades
 
+## v3.3
+
+### 28 de abril de 2026
+
+#### Fechas reales automáticas
+
+- La **fecha de inicio real** de una subetapa se llena sola cuando hay primera actividad: comentario, cambio de estado, subida de archivo o cualquier edición. Si ya tenía fecha, no se sobrescribe.
+- La **fecha de fin real** se setea automáticamente al marcar la subetapa como completada. Si después la reabrís, se limpia.
+- ADMIN puede editar manualmente las fechas reales si quedaron mal cargadas (`PATCH /api/substages/:id/actual-dates`).
+- El drawer de la subetapa ahora muestra "Iniciada" / "Completada" con sus fechas reales cuando existen.
+
+#### Notificaciones por usuario (in-app, email, WhatsApp)
+
+- En **Configuración** apareció una nueva sección **"Notificaciones de proyecto"** donde cada usuario elige si quiere recibir, y por qué canales:
+  - **Alerta 3 días antes de un deadline** (canales: in-app, email, WhatsApp).
+  - **Aviso cuando se completa la subetapa anterior a la suya** (canales: in-app, email, WhatsApp).
+- Se agregó un campo de **teléfono** al usuario (necesario para WhatsApp).
+- **Cron diario a las 9 AM**: recorre todas las subetapas con deadline en los próximos 3 días, no completadas, y dispara las notificaciones según las preferencias del responsable. Cada subetapa se marca como notificada para no duplicar.
+- Si se cambia el deadline (manual, reset a automático, o recálculo del proyecto), se **resetea la marca de notificación** para que se vuelva a avisar del nuevo plazo.
+- Al **completar una subetapa**, automáticamente se notifica al responsable de la **siguiente subetapa lógica** del proyecto (misma etapa siguiente en orden, o primera de la próxima etapa). Best-effort: si falla el envío, no bloquea el cambio de estado.
+
+#### Widget "Deadlines próximos" en el Dashboard
+
+- Nuevo card en el Dashboard que lista las **subetapas asignadas al usuario actual con deadline en los próximos 7 días**, ordenadas por urgencia y con código de colores (rojo vencido, naranja ≤3d, amarillo ≤7d).
+- Click en una fila lleva al proyecto.
+
+---
+
 ## v3.2
 
 ### 28 de abril de 2026

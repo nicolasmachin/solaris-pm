@@ -102,6 +102,8 @@ import {
   recalculateProjectDeadlines,
   calculateSubstageDeadline,
 } from "../services/deadline.service.js";
+import { markSubstageActivity } from "../services/substage-activity.service.js";
+import { findNextSubstage, notifyNextSubstageOwner } from "../services/substage-notifications.service.js";
 import { addDays, diffInDays, parseDateOnly, todayUtc, toDateOnlyString } from "../utils/dates.js";
 import { AppError, badRequest, conflict, forbidden, notFound } from "../utils/errors.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../utils/serialization.js";
@@ -2134,6 +2136,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
     if (body.plannedEndDate !== undefined) updateData.plannedEndDate = body.plannedEndDate ? parseDateOnly(body.plannedEndDate) : null;
     if (body.notes !== undefined) updateData.notes = body.notes;
 
+    // G.3: cualquier cambio en una subetapa cuenta como "actividad"
+    await markSubstageActivity(substage.id);
+
     if (body.status && body.status !== substage.status) {
       updateData.status = body.status;
       if (body.status === SubstageStatus.IN_PROGRESS) {
@@ -2153,6 +2158,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
         updateData.actualDurationDays = actualDurationDays;
         updateData.delayDays = actualDurationDays - plannedDurationDays;
         updateData.progressPercent = 100;
+      }
+      // G.3: si se reabre una subetapa completada → limpiar actualEndDate y duración
+      if (substage.status === SubstageStatus.COMPLETED && body.status !== SubstageStatus.COMPLETED) {
+        updateData.actualEndDate = null;
+        updateData.actualDurationDays = null;
+        updateData.delayDays = null;
       }
       if (body.status === SubstageStatus.BLOCKED) {
         const project = await prisma.project.findFirst({
@@ -2184,6 +2195,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
       where: { id: substage.id },
       data: updateData,
     });
+
+    // G.3: si recién se completó esta subetapa, notificar al responsable de la
+    // siguiente. Best-effort, no bloquea la respuesta si falla.
+    if (body.status === SubstageStatus.COMPLETED && substage.status !== SubstageStatus.COMPLETED) {
+      void notifyNextSubstageOwner(substage.id);
+    }
 
     const syncedSubstage = await syncSubstageProgress(substage.id);
     let syncedStage = await syncStageProgress(params.stageId);
@@ -2307,6 +2324,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
     if (projectProgressPercent) {
       await checkProgressMilestone(substage.projectId, projectProgressPercent);
     }
+
+    // G.3: notificar al responsable de la siguiente subetapa (best-effort)
+    void notifyNextSubstageOwner(substage.id);
 
     return {
       ...serializeSubstage(syncedSubstage ?? completedSubstage),
@@ -2834,6 +2854,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       action: AuditAction.file_uploaded,
       description: `Subió archivo '${file.filename}'`,
     });
+
+    // G.3: marcar actividad si el archivo apunta a una subetapa
+    await markSubstageActivity(substageId);
 
     reply.code(201);
     return serializeFile(file);
@@ -4821,6 +4844,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       },
     });
 
+    // G.3: marcar actividad si el comentario apunta a una subetapa
+    await markSubstageActivity(body.substageId);
+
     reply.code(201);
     return serializeComment(comment);
   });
@@ -6080,7 +6106,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const newDeadline = body.deadline ? parseDateOnly(body.deadline) : null;
     const updated = await prisma.substage.update({
       where: { id },
-      data: { deadline: newDeadline, deadlineManuallySet: true },
+      data: {
+        deadline: newDeadline,
+        deadlineManuallySet: true,
+        deadlineNotificationSent: false,
+        deadlineNotifiedAt: null,
+      },
     });
 
     await createAuditEntry({
@@ -6129,7 +6160,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const newDeadline = await calculateSubstageDeadline(existing, existing.project);
     const updated = await prisma.substage.update({
       where: { id },
-      data: { deadline: newDeadline, deadlineManuallySet: false },
+      data: {
+        deadline: newDeadline,
+        deadlineManuallySet: false,
+        deadlineNotificationSent: false,
+        deadlineNotifiedAt: null,
+      },
     });
 
     await createAuditEntry({
@@ -6147,6 +6183,138 @@ export async function registerApiRoutes(app: FastifyInstance) {
       deadline: serializeDateOnly(updated.deadline),
       deadlineManuallySet: updated.deadlineManuallySet,
     };
+  });
+
+  // ─── G.3: Edición manual de fechas reales por ADMIN ───────────────────────
+  app.patch("/substages/:id/actual-dates", async (request, reply) => {
+    const user = ensureUser(request);
+    if (user.role !== "ADMIN") {
+      return reply.code(403).send({
+        error: true,
+        code: "ADMIN_REQUIRED",
+        message: "Solo ADMIN puede editar fechas reales manualmente",
+      });
+    }
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const body = z
+      .object({
+        actualStartDate: dateOnlySchema.nullable().optional(),
+        actualEndDate: dateOnlySchema.nullable().optional(),
+      })
+      .strict()
+      .parse(request.body);
+
+    const existing = await prisma.substage.findFirst({
+      where: { id, deletedAt: null },
+      select: { id: true, name: true, projectId: true },
+    });
+    if (!existing) throw notFound("SUBSTAGE_NOT_FOUND", "Subetapa no encontrada");
+
+    const updateData: Record<string, unknown> = {};
+    if (body.actualStartDate !== undefined) {
+      updateData.actualStartDate = body.actualStartDate ? parseDateOnly(body.actualStartDate) : null;
+    }
+    if (body.actualEndDate !== undefined) {
+      updateData.actualEndDate = body.actualEndDate ? parseDateOnly(body.actualEndDate) : null;
+    }
+    const updated = await prisma.substage.update({ where: { id }, data: updateData });
+
+    await createAuditEntry({
+      entityType: AuditEntityType.substage,
+      entityId: id,
+      projectId: existing.projectId,
+      userId: user.id,
+      action: AuditAction.updated,
+      description: `Editó manualmente fechas reales de "${existing.name}"`,
+    });
+    return {
+      id: updated.id,
+      actualStartDate: serializeDateOnly(updated.actualStartDate),
+      actualEndDate: serializeDateOnly(updated.actualEndDate),
+    };
+  });
+
+  // ─── G.3: Preferencias de notificación del usuario actual ────────────────
+
+  function defaultNotifPrefs(userId: string) {
+    return {
+      userId,
+      deadlineWarning: true,
+      deadlineWarningInApp: true,
+      deadlineWarningEmail: false,
+      deadlineWarningWhatsapp: false,
+      prevSubstageCompleted: true,
+      prevSubstageCompletedInApp: true,
+      prevSubstageCompletedEmail: false,
+      prevSubstageCompletedWhatsapp: false,
+    };
+  }
+
+  app.get("/users/me/notification-preferences", async (request) => {
+    const user = ensureUser(request);
+    const prefs = await prisma.userNotificationPreference.findUnique({ where: { userId: user.id } });
+    if (prefs) return prefs;
+    // Si no existe, devuelvo los defaults sin persistir todavía
+    return { id: null, ...defaultNotifPrefs(user.id), createdAt: null, updatedAt: null };
+  });
+
+  app.patch("/users/me/notification-preferences", async (request) => {
+    const user = ensureUser(request);
+    const body = z
+      .object({
+        deadlineWarning: z.boolean().optional(),
+        deadlineWarningInApp: z.boolean().optional(),
+        deadlineWarningEmail: z.boolean().optional(),
+        deadlineWarningWhatsapp: z.boolean().optional(),
+        prevSubstageCompleted: z.boolean().optional(),
+        prevSubstageCompletedInApp: z.boolean().optional(),
+        prevSubstageCompletedEmail: z.boolean().optional(),
+        prevSubstageCompletedWhatsapp: z.boolean().optional(),
+      })
+      .strict()
+      .parse(request.body);
+
+    const updated = await prisma.userNotificationPreference.upsert({
+      where: { userId: user.id },
+      create: { ...defaultNotifPrefs(user.id), ...body },
+      update: body,
+    });
+    return updated;
+  });
+
+  // ─── G.3: Deadlines próximos del usuario actual (para widget dashboard) ───
+  app.get("/users/me/upcoming-deadlines", async (request) => {
+    const user = ensureUser(request);
+    const query = z.object({ days: z.coerce.number().int().min(1).max(60).default(7) }).parse(request.query);
+    const now = new Date();
+    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const horizon = new Date(today);
+    horizon.setUTCDate(horizon.getUTCDate() + query.days);
+
+    const substages = await prisma.substage.findMany({
+      where: {
+        userId: user.id,
+        deletedAt: null,
+        isActive: true,
+        actualEndDate: null,
+        deadline: { gte: today, lte: horizon },
+      },
+      orderBy: { deadline: "asc" },
+      include: {
+        stage: { select: { id: true, name: true, projectId: true } },
+        project: { select: { id: true, code: true, clientName: true } },
+      },
+      take: 20,
+    });
+
+    return substages.map((s) => ({
+      id: s.id,
+      name: s.name,
+      deadline: serializeDateOnly(s.deadline),
+      deadlineManuallySet: s.deadlineManuallySet,
+      stage: { id: s.stage.id, name: s.stage.name, label: getStageLabel(s.stage.name) },
+      project: { id: s.project.id, code: s.project.code, clientName: s.project.clientName },
+    }));
   });
 
   app.get("/teams", { preHandler: authorize(Module.CONFIGURACION, Action.VIEW) }, async (request) => {

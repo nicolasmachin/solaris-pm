@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { useAuthStore } from "../store/auth.store";
 import { apiClient } from "../api/axios";
+import { getNotificationPreferences, updateNotificationPreferences, type NotificationPreferences } from "../api/deadline.api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -392,6 +393,120 @@ function SectionPreferencias() {
   );
 }
 
+// ─── Section 3: Notificaciones de proyecto (G.3) ──────────────────────────
+
+function NotificationCheckbox({ label, checked, onChange, disabled }: { label: string; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
+  return (
+    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.5 : 1 }}>
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} disabled={disabled} />
+      <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{label}</span>
+    </label>
+  );
+}
+
+function SectionNotificaciones() {
+  const qc = useQueryClient();
+  const { data: prefs, isLoading } = useQuery<NotificationPreferences>({
+    queryKey: ["notification-preferences"],
+    queryFn: getNotificationPreferences,
+  });
+
+  const [local, setLocal] = useState<NotificationPreferences | null>(null);
+  useEffect(() => { if (prefs) setLocal(prefs); }, [prefs]);
+
+  const dirty = !!(prefs && local && JSON.stringify(prefs) !== JSON.stringify(local));
+
+  const { mutate: save, isPending: saving } = useMutation({
+    mutationFn: () => {
+      if (!local) throw new Error("no prefs");
+      const { id: _id, userId: _u, ...rest } = local;
+      void _id; void _u;
+      return updateNotificationPreferences(rest);
+    },
+    onSuccess: (data) => {
+      qc.setQueryData(["notification-preferences"], data);
+      setLocal(data);
+      toast.success("Preferencias de notificación guardadas");
+    },
+    onError: () => toast.error("Error al guardar preferencias"),
+  });
+
+  if (isLoading || !local) {
+    return (
+      <div style={sectionStyle}>
+        <p style={{ color: "var(--color-text-muted)", fontSize: 13 }}>Cargando preferencias...</p>
+      </div>
+    );
+  }
+
+  function set<K extends keyof NotificationPreferences>(k: K, v: NotificationPreferences[K]) {
+    setLocal((p) => (p ? { ...p, [k]: v } : p));
+  }
+
+  return (
+    <div style={sectionStyle}>
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--color-text-muted)", marginBottom: 18 }}>
+        Notificaciones de proyecto
+      </p>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+        {/* Bloque 1: deadline warning */}
+        <div>
+          <NotificationCheckbox
+            label="Recibir alerta 3 días antes de un deadline"
+            checked={local.deadlineWarning}
+            onChange={(v) => set("deadlineWarning", v)}
+          />
+          <div style={{ marginTop: 8, marginLeft: 24, display: "flex", flexDirection: "column", gap: 6 }}>
+            <p style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Canales
+            </p>
+            <NotificationCheckbox label="In-app" checked={local.deadlineWarningInApp} onChange={(v) => set("deadlineWarningInApp", v)} disabled={!local.deadlineWarning} />
+            <NotificationCheckbox label="Email" checked={local.deadlineWarningEmail} onChange={(v) => set("deadlineWarningEmail", v)} disabled={!local.deadlineWarning} />
+            <NotificationCheckbox label="WhatsApp" checked={local.deadlineWarningWhatsapp} onChange={(v) => set("deadlineWarningWhatsapp", v)} disabled={!local.deadlineWarning} />
+          </div>
+        </div>
+
+        {/* Bloque 2: subetapa anterior completada */}
+        <div>
+          <NotificationCheckbox
+            label="Recibir aviso cuando se completa una subetapa anterior a la mía"
+            checked={local.prevSubstageCompleted}
+            onChange={(v) => set("prevSubstageCompleted", v)}
+          />
+          <div style={{ marginTop: 8, marginLeft: 24, display: "flex", flexDirection: "column", gap: 6 }}>
+            <p style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Canales
+            </p>
+            <NotificationCheckbox label="In-app" checked={local.prevSubstageCompletedInApp} onChange={(v) => set("prevSubstageCompletedInApp", v)} disabled={!local.prevSubstageCompleted} />
+            <NotificationCheckbox label="Email" checked={local.prevSubstageCompletedEmail} onChange={(v) => set("prevSubstageCompletedEmail", v)} disabled={!local.prevSubstageCompleted} />
+            <NotificationCheckbox label="WhatsApp" checked={local.prevSubstageCompletedWhatsapp} onChange={(v) => set("prevSubstageCompletedWhatsapp", v)} disabled={!local.prevSubstageCompleted} />
+          </div>
+        </div>
+      </div>
+
+      <button
+        onClick={() => save()}
+        disabled={saving || !dirty}
+        style={{
+          marginTop: 22,
+          padding: "7px 16px", borderRadius: 6, border: "none",
+          background: "var(--color-accent)", color: "#000",
+          fontSize: 13, fontWeight: 600,
+          cursor: (saving || !dirty) ? "not-allowed" : "pointer",
+          opacity: (saving || !dirty) ? 0.5 : 1,
+        }}
+      >
+        {saving ? "Guardando..." : "Guardar cambios"}
+      </button>
+
+      <p style={{ marginTop: 14, fontSize: 11, color: "var(--color-text-muted)" }}>
+        Para recibir notificaciones por WhatsApp tu usuario debe tener un teléfono cargado.
+      </p>
+    </div>
+  );
+}
+
 // ─── Settings Page ────────────────────────────────────────────────────────
 
 export function Settings() {
@@ -408,6 +523,7 @@ export function Settings() {
 
       <SectionPerfil />
       <SectionPreferencias />
+      <SectionNotificaciones />
     </div>
   );
 }

@@ -23,25 +23,25 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "3.2",
+  version: "3.3",
   date: "28 de abril de 2026",
   sections: [
     {
       title: "Nuevo",
       items: [
-        "**Deadlines automáticos por subetapa**: nueva tab en Admin para configurar reglas (días desde creación, días antes de instalación, manual o sin deadline). Cada proyecto recibe los deadlines automáticamente al crearse y se recalculan al cambiar la fecha de instalación.",
-        "**Edición manual de deadlines** (ADMIN y OPERACIONES) desde el drawer de la etapa, con código de colores (rojo vencido, naranja ≤3d, amarillo ≤7d) y badge *manual* cuando aplica.",
-        "**Calculadora de triángulos de aluminio** dentro de Ingeniería: tres modos de cálculo, visualización SVG con medidas, descarga JPG/SVG y guardado automático en Documentos del proyecto (JPG + PDF).",
+        "**Fechas reales automáticas**: la fecha de inicio de cada subetapa se llena sola con la primera actividad (comentario, cambio de estado, archivo). La fecha de fin se setea al completar y se limpia si reabrís.",
+        '**Notificaciones por usuario** (Configuración → "Notificaciones de proyecto"): elegí si querés recibir alerta 3 días antes de un deadline y/o aviso cuando se completa la subetapa anterior. Canales: in-app, email, WhatsApp.',
+        "**Cron diario a las 9 AM** que dispara las alertas de deadline cercano según las preferencias de cada responsable.",
+        "**Widget Deadlines próximos** en el Dashboard: subetapas tuyas que vencen en los próximos 7 días, con código de colores.",
       ],
     },
     {
       title: "Mejoras",
       items: [
-        "**Fechas de etapa coherentes en Mis Tareas**: el badge ya no usa la fecha planificada vieja del alta del proyecto, ahora refleja la subetapa más urgente.",
-        "**Fecha límite editable a nivel etapa** desde el StageDrawer (todos los roles).",
-        "**Lista de materiales colapsable** con resumen mini y persistencia por proyecto.",
-        '**PDF de materiales con dos versiones**: desplegable con "Sin precios (para proveedores)" y "Con precios (uso interno)".',
-        "**Fecha esperada al generar previstos**: el modal de generación pide la fecha de compra esperada (precargada con el inicio planificado), mejorando la proyección de flujo de fondos.",
+        "Al **completar una subetapa**, se avisa automáticamente al responsable de la siguiente.",
+        "**Cambiar el deadline** (manual o automático) resetea la marca de notificación para volver a avisar del nuevo plazo.",
+        "**Drawer de subetapa** muestra fechas reales (Iniciada / Completada) cuando existen.",
+        "**Edición manual de fechas reales** (ADMIN) si quedaron mal cargadas.",
       ],
     },
   ],
@@ -55,6 +55,15 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "3.2",
+    shortDate: "28 abr",
+    highlights: [
+      "Sistema de deadlines automáticos por subetapa (reglas en Admin + cálculo automático).",
+      "Calculadora de triángulos de aluminio en Ingeniería.",
+      "Lista de materiales colapsable.",
+    ],
+  },
   {
     version: "3.1",
     shortDate: "27 abr",

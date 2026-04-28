@@ -13,6 +13,7 @@ import { getPendingDetailMovements } from "../api/finance.api";
 import { completeSubstage } from "../api/stages.api";
 import { LATEST_RELEASE, OLDER_RELEASES } from "../data/latestRelease";
 import { VersionHistoryModal } from "../components/layout/VersionFooter";
+import { getMyUpcomingDeadlines, type UpcomingDeadline } from "../api/deadline.api";
 import type { ProjectListItem } from "../types/api.types";
 import type { UteProcess, UteActionKey } from "../api/uteProcess.api";
 import type { MyTaskBlock, MyTaskSubstage } from "../api/myTasks.api";
@@ -106,6 +107,7 @@ export function Dashboard() {
           <ProjectsByStageCard userId={user?.id ?? null} isAdmin={isAdmin} />
           {canViewUte && <UteSinAvanceCard userId={user?.id ?? null} isAdmin={isAdmin} />}
           <InstalacionesSemanaCard userId={user?.id ?? null} isAdmin={isAdmin} />
+          <UpcomingDeadlinesCard />
           <MisTareasCard />
           <MisMetricasCard userId={user?.id ?? null} isAdmin={isAdmin} />
         </div>
@@ -769,5 +771,71 @@ function ChangelogItem({ text, small = false }: { text: string; small?: boolean 
         )}
       </span>
     </div>
+  );
+}
+
+// ─── Card: Deadlines próximos (G.3) ───────────────────────────────────────────
+
+function getUpcomingDeadlineColor(iso: string): string {
+  const d = new Date(`${iso}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Math.round((d.getTime() - today.getTime()) / 86400000);
+  if (days < 0) return "text-red-500 font-semibold";
+  if (days <= 3) return "text-orange-400";
+  if (days <= 7) return "text-yellow-500";
+  return "text-[var(--color-text-secondary)]";
+}
+
+function formatUpcomingDate(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("es-UY", { day: "2-digit", month: "short" });
+}
+
+function UpcomingDeadlinesCard() {
+  const { data = [], isLoading } = useQuery<UpcomingDeadline[]>({
+    queryKey: ["my-upcoming-deadlines", 7],
+    queryFn: () => getMyUpcomingDeadlines(7),
+    staleTime: 60_000,
+  });
+
+  return (
+    <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5">
+      <div className="mb-3 flex items-baseline justify-between">
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+          Deadlines próximos
+        </p>
+        <p className="text-[11px] text-[var(--color-text-muted)]">
+          Próximos 7 días
+        </p>
+      </div>
+      {isLoading ? (
+        <p className="py-4 text-center text-xs text-[var(--color-text-muted)]">Cargando…</p>
+      ) : data.length === 0 ? (
+        <p className="py-4 text-center text-xs text-[var(--color-text-muted)] italic">
+          Sin deadlines en los próximos 7 días.
+        </p>
+      ) : (
+        <ul className="divide-y divide-[var(--color-border)]">
+          {data.map((d) => (
+            <li key={d.id} className="flex items-center justify-between gap-3 py-2">
+              <div className="min-w-0 flex-1">
+                <Link
+                  to={`/proyectos/${d.project.id}`}
+                  className="text-xs font-medium text-[var(--color-text-primary)] hover:text-[var(--color-accent)] truncate block"
+                >
+                  {d.project.clientName}
+                </Link>
+                <p className="text-[10px] text-[var(--color-text-muted)] truncate">
+                  {d.stage.label} · {d.name}
+                </p>
+              </div>
+              <span className={`text-xs font-mono shrink-0 ${getUpcomingDeadlineColor(d.deadline)}`}>
+                {formatUpcomingDate(d.deadline)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
