@@ -70,7 +70,14 @@ export function InvoiceItemsDetail({ movementId, onClose }: Props) {
     );
   }
 
-  const { movement, items, totalItems, diff, matches } = data;
+  const { movement, items, totalItems, diff } = data;
+  // Tolerancia local de $1 (en la moneda del movimiento). Misma constante en el backend.
+  const TOLERANCIA = 1.0;
+  const WARN_LIMIT = 5.0;
+  const absDiff = Math.abs(diff);
+  const matches = absDiff <= TOLERANCIA;
+  const isWarn = !matches && absDiff <= WARN_LIMIT;
+  // const isError = absDiff > WARN_LIMIT;
   const noMaterialesActive = movement.noTieneMateriales;
   const confirmed = movement.hasItemDetail && !movement.noTieneMateriales;
 
@@ -180,13 +187,23 @@ export function InvoiceItemsDetail({ movementId, onClose }: Props) {
               <span className="ml-3 text-[var(--color-text-muted)]">Diferencia:</span>
               <span className={klass(
                 'ml-2 font-semibold tabular-nums',
-                matches ? 'text-[var(--color-state-done-text)]' : 'text-red-400',
+                matches ? 'text-[var(--color-state-done-text)]' : isWarn ? 'text-amber-400' : 'text-red-400',
               )}>
                 {diff > 0 ? '+' : ''}{fmtCurrency(diff, movement.moneda)}
                 {!matches && (
                   <AlertTriangle className="w-3.5 h-3.5 inline ml-1 mb-0.5" />
                 )}
               </span>
+              {matches && absDiff > 0 && (
+                <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
+                  Diferencia por redondeo: {fmtCurrency(absDiff, movement.moneda)} (aceptado, tolerancia ±{fmtCurrency(TOLERANCIA, movement.moneda)})
+                </p>
+              )}
+              {isWarn && (
+                <p className="text-[11px] text-amber-400 mt-1">
+                  La diferencia supera la tolerancia de {fmtCurrency(TOLERANCIA, movement.moneda)} pero está dentro del rango de advertencia. Revisá los precios.
+                </p>
+              )}
             </div>
             <button
               onClick={() => confirmMut.mutate()}
@@ -197,7 +214,7 @@ export function InvoiceItemsDetail({ movementId, onClose }: Props) {
                   ? 'bg-[var(--color-accent)] text-gray-900 hover:bg-[var(--color-accent-hover)]'
                   : 'bg-[var(--color-border)] text-[var(--color-text-muted)] cursor-not-allowed',
               )}
-              title={!matches ? 'La suma de ítems debe coincidir con el monto del movimiento' : undefined}
+              title={!matches ? `La diferencia (${fmtCurrency(absDiff, movement.moneda)}) supera la tolerancia de ${fmtCurrency(TOLERANCIA, movement.moneda)}` : undefined}
             >
               {confirmMut.isPending ? 'Confirmando…' : 'Confirmar desglose'}
             </button>

@@ -71,6 +71,8 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId, onSavedOpenDesgl
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showCleanup, setShowCleanup] = useState(false);
+  // Cleanup automático disparado tras crear un GASTO con proyecto en estado avanzado
+  const [autoCleanupProjectId, setAutoCleanupProjectId] = useState<string | null>(null);
   // Intenciones extra al guardar (sólo aplican a GASTO en A_PAGAR/PAGADO):
   const [markNoMaterialesIntent, setMarkNoMaterialesIntent] = useState(false);
   const [openDesgloseAfter, setOpenDesgloseAfter] = useState(false);
@@ -171,6 +173,27 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId, onSavedOpenDesgl
       // Aviso ámbar si quedó como pendiente de desglose sin acción
       if (!editId && aplicaDesglose && !markNoMaterialesIntent && !openDesgloseAfter) {
         toast('Recordá cargar el desglose para que entre al stock.', { icon: '⚠️' });
+      }
+      // Auto-cleanup de previstos: para creaciones GASTO con proyecto en estado
+      // avanzado (COMPROMETIDO/A_PAGAR/PAGADO). Si el proyecto tiene previstos
+      // pendientes, abrir el modal de limpieza antes de cerrar el form.
+      const triggersCleanup =
+        !editId &&
+        form.tipoMovimiento === 'GASTO' &&
+        !!form.proyectoId &&
+        (form.status === 'COMPROMETIDO' || form.status === 'A_PAGAR' || form.status === 'PAGADO');
+      if (triggersCleanup) {
+        try {
+          const { getPrevistosPendientes } = await import('../api/finance.api');
+          const previstos = await getPrevistosPendientes();
+          const ofProject = previstos.filter(p => p.project?.id === form.proyectoId);
+          if (ofProject.length > 0) {
+            setAutoCleanupProjectId(form.proyectoId!);
+            return; // No cerrar el form todavía: lo cierra el onClose del modal
+          }
+        } catch {
+          // Si falla la consulta de previstos, seguimos el flujo normal
+        }
       }
       onSuccess();
     } catch (err: unknown) {
@@ -428,6 +451,15 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId, onSavedOpenDesgl
       </div>
       {showCleanup && (
         <CleanupPrevistosModal onClose={() => setShowCleanup(false)} />
+      )}
+      {autoCleanupProjectId && (
+        <CleanupPrevistosModal
+          defaultProjectId={autoCleanupProjectId}
+          onClose={() => {
+            setAutoCleanupProjectId(null);
+            onSuccess();
+          }}
+        />
       )}
     </form>
   );

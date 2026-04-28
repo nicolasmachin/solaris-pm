@@ -10396,7 +10396,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         items: items.map(serializeInvoiceItem),
         totalItems,
         diff,
-        matches: Math.abs(diff) < 0.01,
+        matches: Math.abs(diff) <= 1.0,
       };
     });
 
@@ -10518,10 +10518,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const total = Math.round(sumInvoiceItems(items) * 100) / 100;
       const monto = Number(movement.monto);
       const diff = Math.round((monto - total) * 100) / 100;
-      if (Math.abs(diff) >= 0.01) {
+      // Tolerancia de $1 (en la moneda del movimiento) para absorber redondeos
+      // de precios unitarios × cantidades.
+      const TOLERANCIA = 1.0;
+      if (Math.abs(diff) > TOLERANCIA) {
         throw badRequest(
           "TOTAL_MISMATCH",
-          `El total de ítems (${total.toFixed(2)} ${movement.moneda}) no coincide con el monto del movimiento (${monto.toFixed(2)} ${movement.moneda}). Diferencia: ${diff.toFixed(2)}`,
+          `El total de ítems (${total.toFixed(2)} ${movement.moneda}) difiere del monto del movimiento (${monto.toFixed(2)} ${movement.moneda}) en más de ${TOLERANCIA.toFixed(2)} ${movement.moneda}. Diferencia: ${diff.toFixed(2)}`,
         );
       }
 
