@@ -19,6 +19,7 @@ export interface MaterialItem {
   unidad: string;
   precioSugerido: number | null;
   moneda: Moneda;
+  ivaTasa: number;
   defaultSupplierId: string | null;
   activo: boolean;
   gestionaStock: boolean;
@@ -41,6 +42,7 @@ export interface ProjectMaterial {
   unitPrice: number;
   subtotal: number;
   moneda: Moneda;
+  ivaTasa: number;
   supplierId: string | null;
   notes: string | null;
   movementId: string | null;

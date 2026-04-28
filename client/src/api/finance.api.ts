@@ -174,6 +174,7 @@ export interface InvoiceItem {
   unitPrice: number;
   subtotal: number;
   moneda: Moneda;
+  ivaTasa: number;
   notes: string | null;
   materialItem: {
     id: string;
@@ -211,6 +212,7 @@ export const createInvoiceItem = (movementId: string, body: {
   quantity: number;
   unitPrice: number;
   moneda?: Moneda;
+  ivaTasa?: number;
   notes?: string | null;
 }) =>
   apiClient.post<InvoiceItem>(`/api/finance/movements/${movementId}/invoice-items`, body).then(r => r.data);
@@ -218,6 +220,7 @@ export const createInvoiceItem = (movementId: string, body: {
 export const patchInvoiceItem = (movementId: string, itemId: string, body: Partial<{
   quantity: number;
   unitPrice: number;
+  ivaTasa: number;
   notes: string | null;
 }>) =>
   apiClient.patch<InvoiceItem>(`/api/finance/movements/${movementId}/invoice-items/${itemId}`, body).then(r => r.data);
@@ -269,6 +272,7 @@ export interface CostSummaryCategoria {
   id: string;
   nombre: string;
   totalUSD: number;
+  totalConIvaUSD?: number;
   itemCount: number;
 }
 
@@ -283,6 +287,9 @@ export interface CostSummaryComparacion {
   subtotalPrevistoUSD: number;
   subtotalRealUSD: number;
   subtotalDiffUSD: number;
+  subtotalPrevistoConIvaUSD?: number;
+  subtotalRealConIvaUSD?: number;
+  subtotalDiffConIvaUSD?: number;
 }
 
 export interface CostSummary {
@@ -293,6 +300,9 @@ export interface CostSummary {
   costoPrevistoUSD: number;
   costoPrevistoUYU: number;
   costoPrevistoTotalUSD: number;
+  costoPrevistoConIvaUSD: number;
+  costoPrevistoConIvaUYU: number;
+  costoPrevistoTotalConIvaUSD: number;
   margenPrevistoUSD: number | null;
   margenPrevistoPercent: number | null;
 
@@ -300,6 +310,9 @@ export interface CostSummary {
   costoRealUSD: number;
   costoRealUYU: number;
   costoRealTotalUSD: number;
+  costoRealConIvaUSD: number;
+  costoRealConIvaUYU: number;
+  costoRealTotalConIvaUSD: number;
   margenRealUSD: number | null;
   margenRealPercent: number | null;
 

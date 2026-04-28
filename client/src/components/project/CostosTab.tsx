@@ -69,9 +69,14 @@ export function CostosTab({ projectId }: { projectId: string; budgetUsd?: number
           </header>
           <div className="p-4 space-y-3">
             <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]">Total</p>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]">Total sin IVA</p>
               <p className="text-base font-semibold text-[var(--color-text-primary)] tabular-nums">{previstoVal.main}</p>
               {previstoVal.sub && <p className="text-[11px] text-[var(--color-text-muted)] tabular-nums">{previstoVal.sub}</p>}
+              {data.costoPrevistoTotalConIvaUSD != null && (
+                <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                  Con IVA: {fmtCurrency(data.costoPrevistoTotalConIvaUSD, 'USD')}
+                </p>
+              )}
             </div>
             {tieneBudget && (
               <div className="pt-2 border-t border-[var(--color-border)]">
@@ -101,9 +106,14 @@ export function CostosTab({ projectId }: { projectId: string; budgetUsd?: number
           </header>
           <div className="p-4 space-y-3">
             <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]">Total</p>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]">Total sin IVA</p>
               <p className="text-base font-semibold text-[var(--color-text-primary)] tabular-nums">{realVal.main}</p>
               {realVal.sub && <p className="text-[11px] text-[var(--color-text-muted)] tabular-nums">{realVal.sub}</p>}
+              {data.costoRealTotalConIvaUSD != null && (
+                <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                  Con IVA: {fmtCurrency(data.costoRealTotalConIvaUSD, 'USD')}
+                </p>
+              )}
             </div>
             {tieneBudget && (
               <div className="pt-2 border-t border-[var(--color-border)]">

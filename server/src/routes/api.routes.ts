@@ -8532,6 +8532,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       unidad: z.string().min(1).default("un"),
       precioSugerido: z.coerce.number().nonnegative().optional(),
       moneda: z.nativeEnum(Moneda).default(Moneda.USD),
+      ivaTasa: z.coerce.number().min(0).max(100).optional(),
       defaultSupplierId: z.string().optional(),
       gestionaStock: z.boolean().optional(),
       stockMinimo: z.coerce.number().int({ message: "Las cantidades deben ser enteras" }).nonnegative().optional(),
@@ -8545,6 +8546,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       unidad: z.string().min(1).optional(),
       precioSugerido: z.coerce.number().nonnegative().nullable().optional(),
       moneda: z.nativeEnum(Moneda).optional(),
+      ivaTasa: z.coerce.number().min(0).max(100).optional(),
       defaultSupplierId: z.string().nullable().optional(),
       activo: z.boolean().optional(),
       gestionaStock: z.boolean().optional(),
@@ -8555,7 +8557,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     function serializeMaterialItem(it: {
       id: string; categoryId: string; nombre: string; descripcion: string | null;
       unidad: string; precioSugerido: import("@prisma/client/runtime/library").Decimal | null;
-      moneda: Moneda; defaultSupplierId: string | null; activo: boolean;
+      moneda: Moneda; ivaTasa: number; defaultSupplierId: string | null; activo: boolean;
       gestionaStock: boolean;
       stockActual: import("@prisma/client/runtime/library").Decimal;
       stockMinimo: import("@prisma/client/runtime/library").Decimal | null;
@@ -8572,7 +8574,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         id: it.id, categoryId: it.categoryId, nombre: it.nombre, descripcion: it.descripcion,
         unidad: it.unidad,
         precioSugerido: it.precioSugerido === null ? null : decimalToNumber(it.precioSugerido),
-        moneda: it.moneda, defaultSupplierId: it.defaultSupplierId, activo: it.activo,
+        moneda: it.moneda, ivaTasa: it.ivaTasa, defaultSupplierId: it.defaultSupplierId, activo: it.activo,
         gestionaStock: it.gestionaStock,
         stockActual: stockActualNum,
         stockMinimo: stockMinimoNum,
@@ -8692,7 +8694,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       id: string; projectId: string; materialItemId: string;
       quantity: import("@prisma/client/runtime/library").Decimal;
       unitPrice: import("@prisma/client/runtime/library").Decimal;
-      moneda: Moneda; supplierId: string | null; notes: string | null;
+      moneda: Moneda; ivaTasa: number; supplierId: string | null; notes: string | null;
       movementId: string | null;
       createdAt: Date; updatedAt: Date;
       materialItem?: {
@@ -8707,7 +8709,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return {
         id: pm.id, projectId: pm.projectId, materialItemId: pm.materialItemId,
         quantity: qty, unitPrice: price, subtotal: Math.round(qty * price * 100) / 100,
-        moneda: pm.moneda, supplierId: pm.supplierId, notes: pm.notes, movementId: pm.movementId,
+        moneda: pm.moneda, ivaTasa: pm.ivaTasa, supplierId: pm.supplierId, notes: pm.notes, movementId: pm.movementId,
         createdAt: serializeDate(pm.createdAt), updatedAt: serializeDate(pm.updatedAt),
         ...(pm.materialItem ? { materialItem: pm.materialItem } : {}),
         ...(pm.supplier ? { supplier: pm.supplier } : {}),
@@ -8741,6 +8743,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       quantity: z.coerce.number().int({ message: "Las cantidades deben ser enteras" }).positive(),
       unitPrice: z.coerce.number().nonnegative().optional(),
       moneda: z.nativeEnum(Moneda).optional(),
+      ivaTasa: z.coerce.number().min(0).max(100).optional(),
       supplierId: z.string().nullable().optional(),
       notes: z.string().optional(),
     }).strict();
@@ -8754,6 +8757,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       if (!item || !item.activo) throw badRequest("MATERIAL_ITEM_INVALID", "El ítem no existe o está inactivo");
       const unitPrice = body.unitPrice ?? (item.precioSugerido ? Number(item.precioSugerido) : 0);
       const moneda = body.moneda ?? item.moneda;
+      const ivaTasa = body.ivaTasa ?? item.ivaTasa;
       const supplierId = body.supplierId ?? item.defaultSupplierId ?? null;
       const created = await prisma.projectMaterial.create({
         data: {
@@ -8762,6 +8766,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           quantity: body.quantity,
           unitPrice,
           moneda,
+          ivaTasa,
           supplierId,
           notes: body.notes,
         },
@@ -8783,6 +8788,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       quantity: z.coerce.number().int({ message: "Las cantidades deben ser enteras" }).positive().optional(),
       unitPrice: z.coerce.number().nonnegative().optional(),
       moneda: z.nativeEnum(Moneda).optional(),
+      ivaTasa: z.coerce.number().min(0).max(100).optional(),
       supplierId: z.string().nullable().optional(),
       notes: z.string().nullable().optional(),
     }).strict();
@@ -8901,6 +8907,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
                 quantity: pm.quantity,
                 unitPrice: pm.unitPrice,
                 moneda: pm.moneda,
+                ivaTasa: pm.ivaTasa,
                 notes: pm.notes,
               })),
             },
@@ -9149,6 +9156,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         const sortedGroups = Array.from(groups.values()).sort((a, b) => a.orden - b.orden);
 
         const totalByMoneda: Record<string, number> = {};
+        const totalByMonedaConIva: Record<string, number> = {};
         let rowAlt = false;
 
         for (const group of sortedGroups) {
@@ -9173,7 +9181,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
             const qty = Number(pm.quantity);
             const price = Number(pm.unitPrice);
             const subtotal = qty * price;
-            if (withPrices) totalByMoneda[pm.moneda] = (totalByMoneda[pm.moneda] ?? 0) + subtotal;
+            if (withPrices) {
+              totalByMoneda[pm.moneda] = (totalByMoneda[pm.moneda] ?? 0) + subtotal;
+              const ivaFactor = 1 + (pm.ivaTasa ?? 22) / 100;
+              totalByMonedaConIva[pm.moneda] = (totalByMonedaConIva[pm.moneda] ?? 0) + subtotal * ivaFactor;
+            }
 
             if (rowAlt) doc.rect(50, rowY, 495, ROW_H - 1).fill("#f8fafc");
             drawDataRow(
@@ -9204,8 +9216,17 @@ export async function registerApiRoutes(app: FastifyInstance) {
             .map(([m, v]) => `${v.toLocaleString("es-UY", { minimumFractionDigits: 2 })} ${m}`)
             .join("   ·   ");
           doc.font("Helvetica-Bold").fontSize(10).fillColor("#1e3a5f");
-          doc.text("Total estimado:", 50, rowY, { width: 340, lineBreak: false });
+          doc.text("Total sin IVA:", 50, rowY, { width: 340, lineBreak: false });
           doc.text(totStr, Cp.subtotal.x - 95, rowY, { width: Cp.subtotal.w + 95, lineBreak: false, align: "right" });
+
+          // Total con IVA (G.6)
+          rowY += 16;
+          const totConIvaStr = Object.entries(totalByMonedaConIva)
+            .map(([m, v]) => `${v.toLocaleString("es-UY", { minimumFractionDigits: 2 })} ${m}`)
+            .join("   ·   ");
+          doc.font("Helvetica-Bold").fontSize(10).fillColor("#1e3a5f");
+          doc.text("Total con IVA:", 50, rowY, { width: 340, lineBreak: false });
+          doc.text(totConIvaStr, Cp.subtotal.x - 95, rowY, { width: Cp.subtotal.w + 95, lineBreak: false, align: "right" });
         }
 
         doc.end();
@@ -9443,25 +9464,32 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
       let costoPrevistoUSD = 0;
       let costoPrevistoUYU = 0;
-      const previstoByCat = new Map<string, { id: string; nombre: string; orden: number; totalUSD: number; itemCount: number }>();
+      let costoPrevistoConIvaUSD = 0;
+      let costoPrevistoConIvaUYU = 0;
+      const previstoByCat = new Map<string, { id: string; nombre: string; orden: number; totalUSD: number; totalConIvaUSD: number; itemCount: number }>();
       const previstoByItem = new Map<string, {
         materialItemId: string; nombre: string; unidad: string;
         categoryId: string | null; categoryName: string;
         quantity: number; unitPrice: number; moneda: Moneda;
-        subtotal: number; subtotalUSD: number;
+        ivaTasa: number;
+        subtotal: number; subtotalUSD: number; subtotalConIvaUSD: number;
       }>();
       for (const pm of projectMaterials) {
         const qty = Number(pm.quantity);
         const price = Number(pm.unitPrice);
         const subtotal = qty * price;
         const subtotalUSD = toUsd(subtotal, pm.moneda);
-        if (pm.moneda === Moneda.USD) costoPrevistoUSD += subtotal;
-        else costoPrevistoUYU += subtotal;
+        const ivaFactor = 1 + (pm.ivaTasa ?? 22) / 100;
+        const subtotalConIva = subtotal * ivaFactor;
+        const subtotalConIvaUSD = subtotalUSD * ivaFactor;
+        if (pm.moneda === Moneda.USD) { costoPrevistoUSD += subtotal; costoPrevistoConIvaUSD += subtotalConIva; }
+        else { costoPrevistoUYU += subtotal; costoPrevistoConIvaUYU += subtotalConIva; }
 
         const cat = pm.materialItem.category;
         if (cat) {
-          const c = previstoByCat.get(cat.id) ?? { id: cat.id, nombre: cat.nombre, orden: cat.orden, totalUSD: 0, itemCount: 0 };
+          const c = previstoByCat.get(cat.id) ?? { id: cat.id, nombre: cat.nombre, orden: cat.orden, totalUSD: 0, totalConIvaUSD: 0, itemCount: 0 };
           c.totalUSD += subtotalUSD;
+          c.totalConIvaUSD += subtotalConIvaUSD;
           c.itemCount += 1;
           previstoByCat.set(cat.id, c);
         }
@@ -9472,6 +9500,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           existing.quantity += qty;
           existing.subtotal += subtotal;
           existing.subtotalUSD += subtotalUSD;
+          existing.subtotalConIvaUSD += subtotalConIvaUSD;
         } else {
           previstoByItem.set(pm.materialItemId, {
             materialItemId: pm.materialItemId,
@@ -9482,12 +9511,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
             quantity: qty,
             unitPrice: price,
             moneda: pm.moneda,
+            ivaTasa: pm.ivaTasa ?? 22,
             subtotal,
             subtotalUSD,
+            subtotalConIvaUSD,
           });
         }
       }
       const costoPrevistoTotalUSD = costoPrevistoUSD + toUsd(costoPrevistoUYU, Moneda.UYU);
+      const costoPrevistoTotalConIvaUSD = costoPrevistoConIvaUSD + toUsd(costoPrevistoConIvaUYU, Moneda.UYU);
       const budgetUsd = project.budgetUsd ? decimalToNumber(project.budgetUsd) : null;
       const margenPrevistoUSD = budgetUsd != null ? r2(budgetUsd - costoPrevistoTotalUSD) : null;
       const margenPrevistoPercent = budgetUsd != null && budgetUsd > 0 ? Math.round((margenPrevistoUSD! / budgetUsd) * 1000) / 10 : null;
@@ -9499,7 +9531,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           materialItem: {
             select: {
               id: true, nombre: true, unidad: true,
-              precioSugerido: true, moneda: true,
+              precioSugerido: true, moneda: true, ivaTasa: true,
               category: { select: { id: true, nombre: true, orden: true } },
             },
           },
@@ -9509,11 +9541,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
       let costoRealUSD = 0;
       let costoRealUYU = 0;
-      const realByCat = new Map<string, { id: string; nombre: string; orden: number; totalUSD: number; itemCount: number }>();
+      let costoRealConIvaUSD = 0;
+      let costoRealConIvaUYU = 0;
+      const realByCat = new Map<string, { id: string; nombre: string; orden: number; totalUSD: number; totalConIvaUSD: number; itemCount: number }>();
       const realByItem = new Map<string, {
         materialItemId: string; nombre: string; unidad: string;
         categoryId: string | null; categoryName: string;
-        quantity: number; subtotalUSD: number; moneda: Moneda; subtotal: number;
+        quantity: number; subtotalUSD: number; subtotalConIvaUSD: number;
+        moneda: Moneda; subtotal: number; ivaTasa: number;
       }>();
 
       const movements = movs.map((m) => {
@@ -9524,14 +9559,19 @@ export async function registerApiRoutes(app: FastifyInstance) {
         const subtotal = cantidad * unitPrice;
         const moneda = m.moneda;
         const subtotalUSD = toUsd(subtotal, moneda);
+        const ivaTasa = m.materialItem.ivaTasa ?? 22;
+        const ivaFactor = 1 + ivaTasa / 100;
+        const subtotalConIva = subtotal * ivaFactor;
+        const subtotalConIvaUSD = subtotalUSD * ivaFactor;
 
-        if (moneda === Moneda.USD) costoRealUSD += subtotal;
-        else costoRealUYU += subtotal;
+        if (moneda === Moneda.USD) { costoRealUSD += subtotal; costoRealConIvaUSD += subtotalConIva; }
+        else { costoRealUYU += subtotal; costoRealConIvaUYU += subtotalConIva; }
 
         const cat = m.materialItem.category;
         if (cat) {
-          const c = realByCat.get(cat.id) ?? { id: cat.id, nombre: cat.nombre, orden: cat.orden, totalUSD: 0, itemCount: 0 };
+          const c = realByCat.get(cat.id) ?? { id: cat.id, nombre: cat.nombre, orden: cat.orden, totalUSD: 0, totalConIvaUSD: 0, itemCount: 0 };
           c.totalUSD += subtotalUSD;
+          c.totalConIvaUSD += subtotalConIvaUSD;
           c.itemCount += 1;
           realByCat.set(cat.id, c);
         }
@@ -9541,6 +9581,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           existing.quantity += cantidad;
           existing.subtotal += subtotal;
           existing.subtotalUSD += subtotalUSD;
+          existing.subtotalConIvaUSD += subtotalConIvaUSD;
         } else {
           realByItem.set(m.materialItemId, {
             materialItemId: m.materialItemId,
@@ -9552,6 +9593,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
             moneda,
             subtotal,
             subtotalUSD,
+            subtotalConIvaUSD,
+            ivaTasa,
           });
         }
 
@@ -9564,14 +9607,18 @@ export async function registerApiRoutes(app: FastifyInstance) {
           quantity: cantidad,
           unitPrice,
           moneda,
+          ivaTasa,
           subtotal: r2(subtotal),
           subtotalUSD: r2(subtotalUSD),
+          subtotalConIva: r2(subtotalConIva),
+          subtotalConIvaUSD: r2(subtotalConIvaUSD),
           fecha: serializeDate(m.fecha),
           priceSource: m.costoUnitario != null ? "movement" : "catalog",
         };
       });
 
       const costoRealTotalUSD = costoRealUSD + toUsd(costoRealUYU, Moneda.UYU);
+      const costoRealTotalConIvaUSD = costoRealConIvaUSD + toUsd(costoRealConIvaUYU, Moneda.UYU);
       const margenRealUSD = budgetUsd != null ? r2(budgetUsd - costoRealTotalUSD) : null;
       const margenRealPercent = budgetUsd != null && budgetUsd > 0 ? Math.round((margenRealUSD! / budgetUsd) * 1000) / 10 : null;
 
@@ -9587,6 +9634,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         const qReal = real?.quantity ?? 0;
         const usdPrev = prev?.subtotalUSD ?? 0;
         const usdReal = real?.subtotalUSD ?? 0;
+        const usdPrevConIva = prev?.subtotalConIvaUSD ?? 0;
+        const usdRealConIva = real?.subtotalConIvaUSD ?? 0;
         return {
           materialItemId: itemId,
           nombre,
@@ -9598,6 +9647,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
           subtotalPrevistoUSD: r2(usdPrev),
           subtotalRealUSD: r2(usdReal),
           subtotalDiffUSD: r2(usdReal - usdPrev),
+          subtotalPrevistoConIvaUSD: r2(usdPrevConIva),
+          subtotalRealConIvaUSD: r2(usdRealConIva),
+          subtotalDiffConIvaUSD: r2(usdRealConIva - usdPrevConIva),
         };
       }).sort((a, b) => a.nombre.localeCompare(b.nombre));
 
@@ -9608,12 +9660,18 @@ export async function registerApiRoutes(app: FastifyInstance) {
         costoPrevistoUSD: r2(costoPrevistoUSD),
         costoPrevistoUYU: r2(costoPrevistoUYU),
         costoPrevistoTotalUSD: r2(costoPrevistoTotalUSD),
+        costoPrevistoConIvaUSD: r2(costoPrevistoConIvaUSD),
+        costoPrevistoConIvaUYU: r2(costoPrevistoConIvaUYU),
+        costoPrevistoTotalConIvaUSD: r2(costoPrevistoTotalConIvaUSD),
         margenPrevistoUSD,
         margenPrevistoPercent,
         // REAL (consumos de stock)
         costoRealUSD: r2(costoRealUSD),
         costoRealUYU: r2(costoRealUYU),
         costoRealTotalUSD: r2(costoRealTotalUSD),
+        costoRealConIvaUSD: r2(costoRealConIvaUSD),
+        costoRealConIvaUYU: r2(costoRealConIvaUYU),
+        costoRealTotalConIvaUSD: r2(costoRealTotalConIvaUSD),
         margenRealUSD,
         margenRealPercent,
         // Compatibilidad: campos viejos que la UI antigua todavía consume
@@ -9627,10 +9685,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
         // Desgloses
         desglose: {
           previstoPorCategoria: Array.from(previstoByCat.values()).sort((a, b) => a.orden - b.orden).map((c) => ({
-            id: c.id, nombre: c.nombre, totalUSD: r2(c.totalUSD), itemCount: c.itemCount,
+            id: c.id, nombre: c.nombre, totalUSD: r2(c.totalUSD), totalConIvaUSD: r2(c.totalConIvaUSD), itemCount: c.itemCount,
           })),
           realPorCategoria: Array.from(realByCat.values()).sort((a, b) => a.orden - b.orden).map((c) => ({
-            id: c.id, nombre: c.nombre, totalUSD: r2(c.totalUSD), itemCount: c.itemCount,
+            id: c.id, nombre: c.nombre, totalUSD: r2(c.totalUSD), totalConIvaUSD: r2(c.totalConIvaUSD), itemCount: c.itemCount,
           })),
           comparacionPorItem,
           consumosDeStock: movements,
@@ -10324,7 +10382,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       id: string; movementId: string; materialItemId: string;
       quantity: import("@prisma/client/runtime/library").Decimal;
       unitPrice: import("@prisma/client/runtime/library").Decimal;
-      moneda: Moneda; notes: string | null;
+      moneda: Moneda; ivaTasa: number; notes: string | null;
       createdAt: Date; updatedAt: Date;
       materialItem?: {
         id: string; nombre: string; unidad: string; gestionaStock: boolean;
@@ -10342,6 +10400,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         unitPrice: price,
         subtotal: Math.round(qty * price * 100) / 100,
         moneda: it.moneda,
+        ivaTasa: it.ivaTasa,
         notes: it.notes,
         materialItem: it.materialItem ?? null,
         stockMovement: it.stockMovement
@@ -10413,6 +10472,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       quantity: z.coerce.number().int({ message: "Las cantidades deben ser enteras" }).positive(),
       unitPrice: z.coerce.number().nonnegative(),
       moneda: z.nativeEnum(Moneda).optional(),
+      ivaTasa: z.coerce.number().min(0).max(100).optional(),
       notes: z.string().nullable().optional(),
     };
 
@@ -10430,6 +10490,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       if (!item.gestionaStock) throw badRequest("ITEM_NO_STOCK", "El ítem no gestiona stock; no puede formar parte de un desglose de factura");
       const moneda = body.moneda ?? movement.moneda;
       if (moneda !== movement.moneda) throw badRequest("CURRENCY_MISMATCH", "La moneda de cada ítem debe coincidir con la del movimiento");
+      const ivaTasa = body.ivaTasa ?? item.ivaTasa;
       const created = await prisma.invoiceItem.create({
         data: {
           movementId: id,
@@ -10437,6 +10498,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           quantity: new Prisma.Decimal(body.quantity),
           unitPrice: new Prisma.Decimal(body.unitPrice),
           moneda,
+          ivaTasa,
           notes: body.notes ?? null,
         },
         include: {
@@ -10457,6 +10519,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const body = z.object({
         quantity: z.coerce.number().int({ message: "Las cantidades deben ser enteras" }).positive().optional(),
         unitPrice: z.coerce.number().nonnegative().optional(),
+        ivaTasa: z.coerce.number().min(0).max(100).optional(),
         notes: z.string().nullable().optional(),
       }).strict().parse(request.body);
       const movement = await prisma.financeMovement.findFirst({ where: { id } });
@@ -10472,6 +10535,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         data: {
           ...(body.quantity != null ? { quantity: new Prisma.Decimal(body.quantity) } : {}),
           ...(body.unitPrice != null ? { unitPrice: new Prisma.Decimal(body.unitPrice) } : {}),
+          ...(body.ivaTasa != null ? { ivaTasa: body.ivaTasa } : {}),
           ...(body.notes !== undefined ? { notes: body.notes } : {}),
         },
         include: {

@@ -152,7 +152,9 @@ export function InvoiceItemsDetail({ movementId, onClose }: Props) {
                       <th className="px-3 py-2 text-left font-medium">Ítem</th>
                       <th className="px-2 py-2 text-left font-medium w-24">Cantidad</th>
                       <th className="px-2 py-2 text-left font-medium w-32">Precio unit.</th>
+                      <th className="px-2 py-2 text-left font-medium w-20">IVA %</th>
                       <th className="px-2 py-2 text-right font-medium w-32">Subtotal</th>
+                      <th className="px-2 py-2 text-right font-medium w-32">Subt. c/IVA</th>
                       {!confirmed && <th className="px-2 py-2 w-10" />}
                     </tr>
                   </thead>
@@ -256,12 +258,14 @@ function ItemRow({ movementId, item, moneda, confirmed, onChanged }: {
   const qc = useQueryClient();
   const [qty, setQty] = useState(item.quantity.toString());
   const [price, setPrice] = useState(item.unitPrice.toString());
+  const [iva, setIva] = useState((item.ivaTasa ?? 22).toString());
 
   useEffect(() => { setQty(item.quantity.toString()); }, [item.quantity]);
   useEffect(() => { setPrice(item.unitPrice.toString()); }, [item.unitPrice]);
+  useEffect(() => { setIva((item.ivaTasa ?? 22).toString()); }, [item.ivaTasa]);
 
   const patchMut = useMutation({
-    mutationFn: (body: Partial<{ quantity: number; unitPrice: number }>) =>
+    mutationFn: (body: Partial<{ quantity: number; unitPrice: number; ivaTasa: number }>) =>
       patchInvoiceItem(movementId, item.id, body),
     onSuccess: () => { onChanged(); qc.invalidateQueries({ queryKey: ['invoice-items', movementId] }); },
     onError: (err: unknown) => toast.error(getApiErr(err) ?? 'Error al actualizar'),
@@ -282,6 +286,11 @@ function ItemRow({ movementId, item, moneda, confirmed, onChanged }: {
     const n = parseFloat(price);
     if (!isFinite(n) || n < 0) { setPrice(item.unitPrice.toString()); return; }
     if (n !== item.unitPrice) patchMut.mutate({ unitPrice: n });
+  }
+  function commitIva() {
+    const n = parseFloat(iva);
+    if (!isFinite(n) || n < 0 || n > 100) { setIva((item.ivaTasa ?? 22).toString()); return; }
+    if (n !== item.ivaTasa) patchMut.mutate({ ivaTasa: n });
   }
 
   return (
@@ -321,8 +330,28 @@ function ItemRow({ movementId, item, moneda, confirmed, onChanged }: {
           </div>
         )}
       </td>
+      <td className="px-2 py-2">
+        {confirmed ? (
+          <span className="text-sm tabular-nums">{(item.ivaTasa ?? 22)}%</span>
+        ) : (
+          <div className="flex items-center gap-1">
+            <input
+              type="number" min="0" max="100" step="0.5"
+              className="w-14 px-2 py-1 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] tabular-nums focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
+              value={iva}
+              onChange={e => setIva(e.target.value)}
+              onBlur={commitIva}
+              onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+            />
+            <span className="text-[10px] text-[var(--color-text-muted)]">%</span>
+          </div>
+        )}
+      </td>
       <td className="px-2 py-2 text-right text-sm font-semibold text-[var(--color-text-primary)] tabular-nums">
         {fmtCurrency(item.subtotal, moneda)}
+      </td>
+      <td className="px-2 py-2 text-right text-sm font-medium text-[var(--color-text-muted)] tabular-nums">
+        {fmtCurrency(item.subtotal * (1 + (item.ivaTasa ?? 22) / 100), moneda)}
       </td>
       {!confirmed && (
         <td className="px-2 py-2">

@@ -23,23 +23,23 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "3.4",
+  version: "3.5",
   date: "28 de abril de 2026",
   sections: [
     {
       title: "Nuevo",
       items: [
-        "**Previstos agrupados por categoría**: en vez de crear una línea por cada material en Movimientos, ahora se crea un único movimiento PREVISTO por categoría con el detalle de los ítems adentro (ej: \"Previsto: Paneles solares\" con 10 ítems).",
-        "Si en una misma categoría hay precios en USD y UYU, se separan en dos movimientos (uno por moneda) para mantener precisión.",
-        '**Regenerar seguro**: el modal muestra cuántos previstos se borrarán y cuántos movimientos avanzados (A pagar / Pagado) se conservan sin tocar, con detalle colapsable.',
+        "**Tasa de IVA por material** (default 22%, editable inline en Ingeniería, catálogo y desglose de factura).",
+        "**Columnas \"con IVA\"** en la lista de materiales del proyecto, en el desglose de factura de Finanzas y en el catálogo de materiales.",
+        "**Totales con IVA** en la pestaña Costos (previsto y real) y en el PDF \"con precios\" de la lista de materiales.",
       ],
     },
     {
       title: "Mejoras",
       items: [
-        "El detalle individual de los materiales se preserva como InvoiceItems del movimiento previsto: no se pierde información.",
-        "Toast post-regenerar con resultado claro: previstos creados por categoría y avanzados conservados.",
-        "Nuevo endpoint de preview (`/regenerate-impact`) para ver el impacto antes de confirmar.",
+        "El IVA del ítem del catálogo se hereda automáticamente al agregarlo a la lista de un proyecto.",
+        "Los previstos creados por la lista de materiales propagan el IVA al InvoiceItem del movimiento agrupado.",
+        "El total que se valida en el desglose contra el monto del movimiento sigue siendo sin IVA (la tolerancia de $1 no cambia).",
       ],
     },
   ],
@@ -53,6 +53,15 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "3.4",
+    shortDate: "28 abr",
+    highlights: [
+      "Previstos agrupados por categoría (con detalle de ítems como InvoiceItems).",
+      "Regenerar previstos preservando movimientos avanzados (A pagar / Pagado).",
+      "Tolerancia $1 en validación del desglose de factura.",
+    ],
+  },
   {
     version: "3.3",
     shortDate: "28 abr",

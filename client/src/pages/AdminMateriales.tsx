@@ -240,6 +240,7 @@ function ItemForm({ initial, categories, suppliers, onSuccess, onCancel }: {
     unidad: initial?.unidad ?? 'un',
     precioSugerido: initial?.precioSugerido?.toString() ?? '',
     moneda: (initial?.moneda ?? 'USD') as Moneda,
+    ivaTasa: (initial?.ivaTasa ?? 22).toString(),
     defaultSupplierId: initial?.defaultSupplierId ?? '',
     activo: initial?.activo ?? true,
   });
@@ -254,6 +255,7 @@ function ItemForm({ initial, categories, suppliers, onSuccess, onCancel }: {
     setLoading(true);
     try {
       const precio = form.precioSugerido === '' ? undefined : parseFloat(form.precioSugerido);
+      const ivaTasa = parseFloat(form.ivaTasa);
       if (initial) {
         await patchMaterialItem(initial.id, {
           categoryId: form.categoryId,
@@ -262,6 +264,7 @@ function ItemForm({ initial, categories, suppliers, onSuccess, onCancel }: {
           unidad: form.unidad,
           precioSugerido: precio === undefined ? null : precio,
           moneda: form.moneda,
+          ivaTasa: isFinite(ivaTasa) ? ivaTasa : 22,
           defaultSupplierId: form.defaultSupplierId || null,
           activo: form.activo,
         });
@@ -274,6 +277,7 @@ function ItemForm({ initial, categories, suppliers, onSuccess, onCancel }: {
           unidad: form.unidad,
           ...(precio !== undefined ? { precioSugerido: precio } : {}),
           moneda: form.moneda,
+          ivaTasa: isFinite(ivaTasa) ? ivaTasa : 22,
           ...(form.defaultSupplierId ? { defaultSupplierId: form.defaultSupplierId } : {}),
         });
         toast.success('Ítem creado');
@@ -316,12 +320,17 @@ function ItemForm({ initial, categories, suppliers, onSuccess, onCancel }: {
           </div>
         </div>
         <div>
-          <label className={lbl}>Proveedor por defecto</label>
-          <select className={inp} value={form.defaultSupplierId} onChange={e => setF('defaultSupplierId', e.target.value)}>
-            <option value="">— Sin proveedor —</option>
-            {suppliers.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-          </select>
+          <label className={lbl}>IVA %</label>
+          <input type="number" min="0" max="100" step="0.5" className={inp} value={form.ivaTasa} onChange={e => setF('ivaTasa', e.target.value)} placeholder="22" />
+          <p className="text-[10px] text-[var(--color-text-muted)] mt-1">Default: 22% (tasa estándar Uruguay)</p>
         </div>
+      </div>
+      <div>
+        <label className={lbl}>Proveedor por defecto</label>
+        <select className={inp} value={form.defaultSupplierId} onChange={e => setF('defaultSupplierId', e.target.value)}>
+          <option value="">— Sin proveedor —</option>
+          {suppliers.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+        </select>
       </div>
       {initial && (
         <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
@@ -444,8 +453,8 @@ function ItemsPanel() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-border)] text-xs font-mono text-[var(--color-text-muted)] uppercase tracking-wider">
-                  {['Categoría', 'Nombre', 'Unidad', 'Precio sug.', 'Proveedor default', 'Usado', 'Estado', ''].map((h, i) => (
-                    <th key={i} className={klass('px-4 py-3 text-left font-medium', i === 7 && 'text-right')}>{h}</th>
+                  {['Categoría', 'Nombre', 'Unidad', 'Precio sug.', 'IVA %', 'Precio sug. c/IVA', 'Proveedor default', 'Usado', 'Estado', ''].map((h, i) => (
+                    <th key={i} className={klass('px-4 py-3 text-left font-medium', i === 9 && 'text-right')}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -460,6 +469,10 @@ function ItemsPanel() {
                     <td className="px-4 py-2 text-[var(--color-text-muted)]">{it.unidad}</td>
                     <td className="px-4 py-2 tabular-nums text-[var(--color-text-secondary)]">
                       {it.precioSugerido != null ? `${it.precioSugerido.toLocaleString('es-UY', { minimumFractionDigits: 2 })} ${it.moneda}` : '—'}
+                    </td>
+                    <td className="px-4 py-2 tabular-nums text-[var(--color-text-secondary)]">{(it.ivaTasa ?? 22)}%</td>
+                    <td className="px-4 py-2 tabular-nums text-[var(--color-text-muted)]">
+                      {it.precioSugerido != null ? `${(it.precioSugerido * (1 + (it.ivaTasa ?? 22) / 100)).toLocaleString('es-UY', { minimumFractionDigits: 2 })} ${it.moneda}` : '—'}
                     </td>
                     <td className="px-4 py-2 text-[var(--color-text-muted)]">{it.defaultSupplier?.nombre ?? '—'}</td>
                     <td className="px-4 py-2 text-[var(--color-text-muted)] tabular-nums">{it._count?.projectMaterials ?? 0}</td>

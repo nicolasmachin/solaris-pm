@@ -34,6 +34,7 @@ export const createMaterialItem = (body: {
   unidad?: string;
   precioSugerido?: number;
   moneda?: Moneda;
+  ivaTasa?: number;
   defaultSupplierId?: string;
   gestionaStock?: boolean;
   stockMinimo?: number;
@@ -47,6 +48,7 @@ export const patchMaterialItem = (id: string, body: Partial<{
   unidad: string;
   precioSugerido: number | null;
   moneda: Moneda;
+  ivaTasa: number;
   defaultSupplierId: string | null;
   activo: boolean;
   gestionaStock: boolean;
@@ -67,6 +69,7 @@ export const createProjectMaterial = (projectId: string, body: {
   quantity: number;
   unitPrice?: number;
   moneda?: Moneda;
+  ivaTasa?: number;
   supplierId?: string | null;
   notes?: string;
 }) => apiClient.post<ProjectMaterial>(`/api/projects/${projectId}/materials`, body).then(r => r.data);
@@ -75,6 +78,7 @@ export const patchProjectMaterial = (projectId: string, materialId: string, body
   quantity: number;
   unitPrice: number;
   moneda: Moneda;
+  ivaTasa: number;
   supplierId: string | null;
   notes: string | null;
 }>) => apiClient.patch<ProjectMaterial>(`/api/projects/${projectId}/materials/${materialId}`, body).then(r => r.data);

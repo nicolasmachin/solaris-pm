@@ -1,5 +1,24 @@
 # Novedades
 
+## v3.5
+
+### 28 de abril de 2026
+
+#### Columna "con IVA" en Ingeniería, Costos, Finanzas y catálogo
+
+Hasta ahora todos los precios del sistema eran sin IVA. Para poder comparar contra el precio que se le cobra al cliente (que sí incluye IVA), se agregó una columna calculada "con IVA" en los módulos relevantes.
+
+- **Cada material guarda su propia tasa de IVA** (`ivaTasa`, default 22%). Editable a nivel ítem del catálogo, ítem del proyecto y línea de invoice.
+- **Lista de materiales del proyecto (Ingeniería)**: nuevas columnas **IVA %** (editable inline por fila) y **Subt. c/IVA**. La cabecera de cada categoría muestra subtotal con IVA, y el footer suma "Total sin IVA" + "Total con IVA" por moneda.
+- **Pestaña Costos del proyecto**: el total previsto y el total real ahora muestran la versión con IVA debajo (ej: *Total sin IVA: $5.000,00 USD · Con IVA: $6.100,00 USD*).
+- **Movimientos de Finanzas (detail panel + modal de desglose)**: nuevas columnas IVA % editable y Subt. c/IVA. El total que se valida contra el monto del movimiento sigue siendo sin IVA (la tolerancia de $1 no cambia).
+- **Catálogo de materiales (Admin)**: campo IVA % en el form de crear/editar y columnas IVA % + Precio sug. c/IVA en la tabla.
+- **PDF con precios** de la lista de materiales: al pie ahora muestra dos totales: "Total sin IVA" + "Total con IVA" por moneda.
+- **Cost-summary endpoint** extendido con campos `costoPrevistoConIvaUSD`, `costoRealConIvaUSD` (totales y desglose por categoría/ítem).
+- Helpers `calculateConIva` y `formatPriceWithIva` centralizados en backend (`server/src/utils/iva.ts`) y frontend (`client/src/utils/iva.ts`).
+
+---
+
 ## v3.4
 
 ### 28 de abril de 2026

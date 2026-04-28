@@ -333,6 +333,7 @@ function MaterialRow({ projectId, pm, suppliers }: {
   const qc = useQueryClient();
   const [qty, setQty] = useState(pm.quantity.toString());
   const [price, setPrice] = useState(pm.unitPrice.toString());
+  const [iva, setIva] = useState(pm.ivaTasa?.toString() ?? '22');
   const [supplierId, setSupplierId] = useState(pm.supplierId ?? '');
   const [showNotes, setShowNotes] = useState(false);
   const [notes, setNotes] = useState(pm.notes ?? '');
@@ -340,11 +341,12 @@ function MaterialRow({ projectId, pm, suppliers }: {
   // Sincronizar valores externos cuando cambien
   useEffect(() => { setQty(pm.quantity.toString()); }, [pm.quantity]);
   useEffect(() => { setPrice(pm.unitPrice.toString()); }, [pm.unitPrice]);
+  useEffect(() => { setIva((pm.ivaTasa ?? 22).toString()); }, [pm.ivaTasa]);
   useEffect(() => { setSupplierId(pm.supplierId ?? ''); }, [pm.supplierId]);
   useEffect(() => { setNotes(pm.notes ?? ''); }, [pm.notes]);
 
   const patchMut = useMutation({
-    mutationFn: (body: Partial<{ quantity: number; unitPrice: number; supplierId: string | null; notes: string | null }>) =>
+    mutationFn: (body: Partial<{ quantity: number; unitPrice: number; ivaTasa: number; supplierId: string | null; notes: string | null }>) =>
       patchProjectMaterial(projectId, pm.id, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['project-materials', projectId] }),
     onError: (err) => toast.error(getApiErr(err) ?? 'Error al actualizar'),
@@ -369,6 +371,11 @@ function MaterialRow({ projectId, pm, suppliers }: {
     const n = parseFloat(price);
     if (!isFinite(n) || n < 0) { setPrice(pm.unitPrice.toString()); return; }
     if (n !== pm.unitPrice) patchMut.mutate({ unitPrice: n });
+  }
+  function commitIva() {
+    const n = parseFloat(iva);
+    if (!isFinite(n) || n < 0 || n > 100) { setIva((pm.ivaTasa ?? 22).toString()); return; }
+    if (n !== pm.ivaTasa) patchMut.mutate({ ivaTasa: n });
   }
   function commitSupplier(v: string) {
     setSupplierId(v);
@@ -429,6 +436,19 @@ function MaterialRow({ projectId, pm, suppliers }: {
           </div>
         </td>
         <td className="px-2 py-2">
+          <div className="flex items-center gap-1">
+            <input
+              type="number" min="0" max="100" step="0.5"
+              className="w-14 px-2 py-1 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] tabular-nums focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
+              value={iva}
+              onChange={e => setIva(e.target.value)}
+              onBlur={commitIva}
+              onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+            />
+            <span className="text-[10px] text-[var(--color-text-muted)]">%</span>
+          </div>
+        </td>
+        <td className="px-2 py-2">
           <select
             className="w-full max-w-[140px] px-2 py-1 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
             value={supplierId}
@@ -440,6 +460,9 @@ function MaterialRow({ projectId, pm, suppliers }: {
         </td>
         <td className="px-2 py-2 text-sm font-semibold text-[var(--color-text-primary)] tabular-nums whitespace-nowrap">
           {fmtMoney(subtotal, pm.moneda)}
+        </td>
+        <td className="px-2 py-2 text-sm font-medium text-[var(--color-text-muted)] tabular-nums whitespace-nowrap">
+          {fmtMoney(subtotal * (1 + (pm.ivaTasa ?? 22) / 100), pm.moneda)}
         </td>
         <td className="px-2 py-2">
           <button
@@ -456,7 +479,7 @@ function MaterialRow({ projectId, pm, suppliers }: {
       </tr>
       {showNotes && (
         <tr>
-          <td colSpan={6} className="px-3 py-2 bg-[var(--color-bg-app)]">
+          <td colSpan={8} className="px-3 py-2 bg-[var(--color-bg-app)]">
             <div className="flex items-start gap-2">
               <textarea
                 className="flex-1 px-2 py-1 rounded text-xs bg-[var(--color-bg-card)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] resize-none"
@@ -525,6 +548,16 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
   const totalsByMoneda = useMemo(() => {
     const m: Record<string, number> = {};
     for (const pm of materials) m[pm.moneda] = (m[pm.moneda] ?? 0) + pm.subtotal;
+    return m;
+  }, [materials]);
+
+  // Total con IVA por moneda
+  const totalsConIvaByMoneda = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const pm of materials) {
+      const factor = 1 + (pm.ivaTasa ?? 22) / 100;
+      m[pm.moneda] = (m[pm.moneda] ?? 0) + pm.subtotal * factor;
+    }
     return m;
   }, [materials]);
 
@@ -742,8 +775,10 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
                 <th className="px-3 py-2 text-left font-medium">Ítem</th>
                 <th className="px-2 py-2 text-left font-medium">Cant.</th>
                 <th className="px-2 py-2 text-left font-medium">Precio</th>
+                <th className="px-2 py-2 text-left font-medium">IVA %</th>
                 <th className="px-2 py-2 text-left font-medium">Proveedor</th>
                 <th className="px-2 py-2 text-left font-medium">Subtotal</th>
+                <th className="px-2 py-2 text-left font-medium">Subt. c/IVA</th>
                 <th className="px-2 py-2 w-16" />
               </tr>
             </thead>
@@ -751,11 +786,14 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
               {groups.map(g => (
                 <Fragment key={g.nombre}>
                   <tr className="bg-[var(--color-bg-app)]">
-                    <td colSpan={4} className="px-3 py-1.5 text-[11px] font-semibold text-[var(--color-text-secondary)]">
+                    <td colSpan={5} className="px-3 py-1.5 text-[11px] font-semibold text-[var(--color-text-secondary)]">
                       {g.nombre}
                     </td>
                     <td className="px-2 py-1.5 text-[11px] font-semibold text-[var(--color-text-secondary)] tabular-nums">
                       {fmtMoney(g.subtotal, g.moneda)}
+                    </td>
+                    <td className="px-2 py-1.5 text-[11px] font-semibold text-[var(--color-text-secondary)] tabular-nums">
+                      {fmtMoney(g.items.reduce((acc, pm) => acc + pm.subtotal * (1 + (pm.ivaTasa ?? 22) / 100), 0), g.moneda)}
                     </td>
                     <td className="px-2 py-1.5" />
                   </tr>
@@ -767,10 +805,14 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
             </tbody>
             <tfoot>
               <tr className="border-t border-[var(--color-border)] bg-[var(--color-bg-card-hover)]">
-                <td colSpan={4} className="px-3 py-2 text-[11px] font-semibold text-[var(--color-text-primary)] uppercase font-mono">Total estimado</td>
-                <td colSpan={2} className="px-2 py-2 text-sm font-bold text-[var(--color-text-primary)] tabular-nums">
+                <td colSpan={5} className="px-3 py-2 text-[11px] font-semibold text-[var(--color-text-primary)] uppercase font-mono">Total sin IVA</td>
+                <td className="px-2 py-2 text-sm font-bold text-[var(--color-text-primary)] tabular-nums">
                   {Object.entries(totalsByMoneda).map(([m, v]) => fmtMoney(v, m)).join(' · ')}
                 </td>
+                <td className="px-2 py-2 text-sm font-bold text-[var(--color-text-muted)] tabular-nums">
+                  {Object.entries(totalsConIvaByMoneda).map(([m, v]) => fmtMoney(v, m)).join(' · ')}
+                </td>
+                <td />
               </tr>
             </tfoot>
           </table>
