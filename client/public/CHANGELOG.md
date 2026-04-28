@@ -1,5 +1,32 @@
 # Novedades
 
+## v3.7
+
+### 28 de abril de 2026
+
+#### IVA en KPIs y saldos de Finanzas
+
+Hasta ahora todos los KPIs y saldos del módulo Finanzas mostraban montos sin IVA. Pero lo que realmente sale/entra de las cuentas es el monto **con IVA**. Ahora todas las pantallas de Finanzas muestran ambas versiones, y los saldos proyectados se calculan con IVA.
+
+- **Pantalla de Movimientos**: el card *Saldo proyectado final* y *Punto mínimo de liquidez* muestran el valor **con IVA** como principal (ese es el real impacto en la cuenta) y el sin IVA debajo en gris como referencia.
+- **Dashboard de Finanzas**: los KPIs *Ingresos del mes*, *Gastos del mes*, *Resultado*, *Pendiente cobro* y *Pendiente pago* muestran ambas versiones (sin IVA arriba, con IVA debajo).
+- **Flujo de fondos proyectado**: las tiles *Saldo actual*, *Por cobrar*, *Por pagar*, *Proyectado* y los compromisos *Previsto / Comprometido / A pagar* muestran ambas versiones.
+- **Últimos movimientos** en el dashboard: cada movimiento muestra el monto sin IVA (color por tipo) y debajo *c/IVA: X*.
+- **Detail panel del movimiento**: ahora muestra dos filas — *Monto (sin IVA)* y *Monto c/IVA (22%)*.
+- **Cálculo de saldos**: la proyección del saldo de cuentas usa el **monto con IVA** porque ese es el que realmente impacta en la cuenta. Los movimientos con `ivaTasa = null` se asumen 22% por defecto.
+
+#### Endpoints extendidos
+
+- `GET /finance/movements`: agrega `saldoFinalProyectadoSinIva` y `saldoMinimoFuturoSinIva`. Los campos `saldoFinalProyectado` y `saldoMinimoFuturo` ahora son **con IVA** (cambio de comportamiento).
+- `GET /finance/reports/dashboard`: agrega `ingresosConIva`, `gastosConIva`, `resultadoConIva`, `pendienteCobroConIva`, `pendientePagoConIva`. Cada item de `ultimosMovimientos` incluye `ivaTasa`.
+- `GET /finance/reports/cashflow`: agrega versiones con IVA de `porCobrar`, `porPagar`, `saldoProyectado`, `previstoTotal`, `comprometidoTotal`, `aPagarTotal`, `saldoProyectadoSinPrevistos`.
+
+#### Componente reutilizable
+
+Nuevo `AmountWithIva` para mostrar pares sin/con IVA de manera consistente en KPIs y celdas.
+
+---
+
 ## v3.6
 
 ### 28 de abril de 2026

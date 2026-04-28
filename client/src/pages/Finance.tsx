@@ -156,9 +156,10 @@ function ExchangeRateCard() {
 
 // ─── KPI Card ─────────────────────────────────────────────────────────────────
 
-function KpiCard({ label, value, moneda = 'USD', icon: Icon, colorClass, sub }: {
+function KpiCard({ label, value, valueConIva, moneda = 'USD', icon: Icon, colorClass, sub }: {
   label: string;
   value: number;
+  valueConIva?: number;
   moneda?: 'USD' | 'UYU';
   icon: React.ElementType;
   colorClass: string;
@@ -172,6 +173,9 @@ function KpiCard({ label, value, moneda = 'USD', icon: Icon, colorClass, sub }: 
       <div className="min-w-0">
         <p className="text-xs text-[var(--color-text-muted)] truncate">{label}</p>
         <p className="text-base font-bold text-[var(--color-text-primary)] tabular-nums">{fmtCurrency(value, moneda)}</p>
+        {valueConIva != null && (
+          <p className="text-[10px] text-[var(--color-text-muted)] tabular-nums">c/IVA: {fmtCurrency(valueConIva, moneda)}</p>
+        )}
         {sub && <p className="text-xs text-[var(--color-text-muted)]">{sub}</p>}
       </div>
     </div>
@@ -275,30 +279,42 @@ function CashflowSection({ cashflow }: { cashflow: import('../types/finance.type
         </label>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-        {[
-          { label: 'Saldo actual', value: cashflow.saldoActual, color: 'text-[var(--color-text-primary)]' },
-          { label: 'Por cobrar', value: cashflow.porCobrar, color: 'text-green-400', prefix: '+' },
-          { label: 'Por pagar', value: cashflow.porPagar, color: 'text-red-400', prefix: '-' },
-          { label: 'Proyectado', value: projectedFinal, color: projectedFinal >= 0 ? 'text-[var(--color-text-primary)]' : 'text-red-400' },
-        ].map(({ label, value, color, prefix }) => (
-          <div key={label}>
-            <p className="text-xs text-[var(--color-text-muted)] mb-1">{label}</p>
-            <p className={klass('text-base font-bold tabular-nums', color)}>
-              {prefix}{fmtCurrency(value)}
-            </p>
-          </div>
-        ))}
+        <div>
+          <p className="text-xs text-[var(--color-text-muted)] mb-1">Saldo actual</p>
+          <p className={klass('text-base font-bold tabular-nums text-[var(--color-text-primary)]')}>
+            {fmtCurrency(cashflow.saldoActual)}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-[var(--color-text-muted)] mb-1">Por cobrar</p>
+          <p className="text-base font-bold tabular-nums text-green-400">+{fmtCurrency(cashflow.porCobrar)}</p>
+          <p className="text-[10px] text-[var(--color-text-muted)]">c/IVA: +{fmtCurrency(cashflow.porCobrarConIva)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-[var(--color-text-muted)] mb-1">Por pagar</p>
+          <p className="text-base font-bold tabular-nums text-red-400">-{fmtCurrency(cashflow.porPagar)}</p>
+          <p className="text-[10px] text-[var(--color-text-muted)]">c/IVA: -{fmtCurrency(cashflow.porPagarConIva)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-[var(--color-text-muted)] mb-1">Proyectado</p>
+          <p className={klass('text-base font-bold tabular-nums', projectedFinal >= 0 ? 'text-[var(--color-text-primary)]' : 'text-red-400')}>
+            {fmtCurrency(projectedFinal)}
+          </p>
+          <p className="text-[10px] text-[var(--color-text-muted)]">
+            c/IVA: {fmtCurrency(includePrevistos ? cashflow.saldoProyectadoConIva : cashflow.saldoProyectadoSinPrevistosConIva)}
+          </p>
+        </div>
       </div>
       <div className="grid grid-cols-3 gap-3 pt-4 border-t border-[var(--color-border)]">
-        <CommitmentTile label="Previsto" value={cashflow.previstoTotal} tone="muted" />
-        <CommitmentTile label="Comprometido" value={cashflow.comprometidoTotal} tone="info" />
-        <CommitmentTile label="A pagar" value={cashflow.aPagarTotal} tone="warning" />
+        <CommitmentTile label="Previsto" value={cashflow.previstoTotal} valueConIva={cashflow.previstoTotalConIva} tone="muted" />
+        <CommitmentTile label="Comprometido" value={cashflow.comprometidoTotal} valueConIva={cashflow.comprometidoTotalConIva} tone="info" />
+        <CommitmentTile label="A pagar" value={cashflow.aPagarTotal} valueConIva={cashflow.aPagarTotalConIva} tone="warning" />
       </div>
     </div>
   );
 }
 
-function CommitmentTile({ label, value, tone }: { label: string; value: number; tone: 'muted' | 'info' | 'warning' }) {
+function CommitmentTile({ label, value, valueConIva, tone }: { label: string; value: number; valueConIva: number; tone: 'muted' | 'info' | 'warning' }) {
   const color = tone === 'warning' ? 'text-yellow-400' : tone === 'info' ? 'text-[var(--color-info-text)]' : 'text-[var(--color-text-muted)]';
   return (
     <div className="text-center">
@@ -306,6 +322,9 @@ function CommitmentTile({ label, value, tone }: { label: string; value: number; 
       <p className={klass('text-sm font-semibold tabular-nums', color)}>
         {value > 0 ? `-${fmtCurrency(value)}` : '—'}
       </p>
+      {value > 0 && (
+        <p className="text-[10px] text-[var(--color-text-muted)] tabular-nums">c/IVA: -{fmtCurrency(valueConIva)}</p>
+      )}
     </div>
   );
 }
@@ -412,16 +431,17 @@ export function Finance() {
         </div>
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-          <KpiCard label="Ingresos del mes" value={dash?.ingresos ?? 0} icon={TrendingUp} colorClass="bg-green-500/15 text-green-400" />
-          <KpiCard label="Gastos del mes" value={dash?.gastos ?? 0} icon={TrendingDown} colorClass="bg-red-500/15 text-red-400" />
+          <KpiCard label="Ingresos del mes" value={dash?.ingresos ?? 0} valueConIva={dash?.ingresosConIva} icon={TrendingUp} colorClass="bg-green-500/15 text-green-400" />
+          <KpiCard label="Gastos del mes" value={dash?.gastos ?? 0} valueConIva={dash?.gastosConIva} icon={TrendingDown} colorClass="bg-red-500/15 text-red-400" />
           <KpiCard
             label="Resultado"
             value={dash?.resultado ?? 0}
+            valueConIva={dash?.resultadoConIva}
             icon={Wallet}
             colorClass={(dash?.resultado ?? 0) >= 0 ? 'bg-[var(--color-info-bg)] text-[var(--color-info-text)]' : 'bg-orange-500/15 text-orange-400'}
           />
-          <KpiCard label="Pendiente cobro" value={dash?.pendienteCobro ?? 0} icon={Clock} colorClass="bg-yellow-500/15 text-yellow-400" sub="por cobrar" />
-          <KpiCard label="Pendiente pago" value={dash?.pendientePago ?? 0} icon={Clock} colorClass="bg-orange-500/15 text-orange-400" sub="por pagar" />
+          <KpiCard label="Pendiente cobro" value={dash?.pendienteCobro ?? 0} valueConIva={dash?.pendienteCobroConIva} icon={Clock} colorClass="bg-yellow-500/15 text-yellow-400" sub="por cobrar" />
+          <KpiCard label="Pendiente pago" value={dash?.pendientePago ?? 0} valueConIva={dash?.pendientePagoConIva} icon={Clock} colorClass="bg-orange-500/15 text-orange-400" sub="por pagar" />
         </div>
       )}
 
@@ -467,6 +487,9 @@ export function Finance() {
                     mov.tipoMovimiento === 'AJUSTE' ? 'text-blue-400' : 'text-red-400'
                   )}>
                     {mov.tipoMovimiento === 'GASTO' ? '-' : '+'}{fmtCurrency(mov.monto, mov.moneda)}
+                  </p>
+                  <p className="text-[10px] text-[var(--color-text-muted)] tabular-nums">
+                    c/IVA: {(mov.monto * (1 + ((mov.ivaTasa ?? 22) / 100))).toLocaleString('es-UY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {mov.moneda}
                   </p>
                   <span className={klass('text-[10px] font-mono px-1.5 py-0.5 rounded uppercase', TIPO_COLOR[mov.tipoMovimiento])}>
                     {mov.tipoMovimiento}

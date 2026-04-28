@@ -527,7 +527,8 @@ function DetailPanel({ mov, onClose, onEdit, onDelete, onCancel, onOpenDesglose,
           <Row label="Tipo" value={mov.tipoMovimiento} />
           <Row label="Categoría" value={CATEGORIA_LABEL[mov.categoriaPrincipal]} />
           {mov.subcategoria && <Row label="Subcategoría" value={mov.subcategoria.nombre} />}
-          <Row label="Monto" value={fmtCurrency(mov.monto, mov.moneda)} />
+          <Row label="Monto (sin IVA)" value={fmtCurrency(mov.monto, mov.moneda)} />
+          <Row label={`Monto c/IVA (${(mov.ivaTasa ?? 22)}%)`} value={fmtCurrency(mov.monto * (1 + ((mov.ivaTasa ?? 22) / 100)), mov.moneda)} />
           {mov.tipoCambio && <Row label="T. Cambio" value={`${mov.tipoCambio} UYU/USD`} />}
           {mov.project && <Row label="Proyecto" value={mov.project.clientName} />}
           {mov.supplier && <Row label="Proveedor" value={mov.supplier.nombre} />}
@@ -856,7 +857,10 @@ export function FinanceMovements() {
             )}>
               {fmtCurrency(data.saldoFinalProyectado, 'USD')}
             </p>
-            <p className="mt-1 text-xs text-[var(--color-text-muted)]">Liquidez luego de todos los movimientos.</p>
+            <p className="mt-0.5 text-[10px] text-[var(--color-text-muted)] tabular-nums">
+              Sin IVA: {fmtCurrency(data.saldoFinalProyectadoSinIva, 'USD')}
+            </p>
+            <p className="mt-1 text-xs text-[var(--color-text-muted)]">Liquidez luego de todos los movimientos (con IVA).</p>
           </div>
           <div className={klass(
             'rounded-xl border bg-[var(--color-bg-card)] p-4',
@@ -868,6 +872,9 @@ export function FinanceMovements() {
               data.saldoMinimoFuturo < 0 ? 'text-red-400' : 'text-[var(--color-text-primary)]',
             )}>
               {fmtCurrency(data.saldoMinimoFuturo, 'USD')}
+            </p>
+            <p className="mt-0.5 text-[10px] text-[var(--color-text-muted)] tabular-nums">
+              Sin IVA: {fmtCurrency(data.saldoMinimoFuturoSinIva, 'USD')}
             </p>
             <p className="mt-1 text-xs text-[var(--color-text-muted)]">
               {data.fechaSaldoMinimoFuturo ? `El ${fmtDate(data.fechaSaldoMinimoFuturo)}` : 'Sin fecha crítica detectada'}

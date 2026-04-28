@@ -141,6 +141,7 @@ export interface FinanceMovement {
   descripcion: string;
   monto: number;
   moneda: Moneda;
+  ivaTasa: number | null;
   tipoCambio: number | null;
   pagado: boolean;
   cobrado: boolean;
@@ -282,6 +283,12 @@ export interface FinanceDashboard {
   resultado: number;
   pendienteCobro: number;
   pendientePago: number;
+  // Versiones con IVA (G.7)
+  ingresosConIva: number;
+  gastosConIva: number;
+  resultadoConIva: number;
+  pendienteCobroConIva: number;
+  pendientePagoConIva: number;
   ultimosMovimientos: {
     id: string;
     fecha: string;
@@ -289,6 +296,7 @@ export interface FinanceDashboard {
     tipoMovimiento: TipoMovimiento;
     monto: number;
     moneda: Moneda;
+    ivaTasa: number | null;
     project: { id: string; code: string; clientName: string } | null;
     supplier: { id: string; nombre: string } | null;
   }[];
@@ -303,6 +311,14 @@ export interface FinanceCashflow {
   comprometidoTotal: number;
   aPagarTotal: number;
   saldoProyectadoSinPrevistos: number;
+  // Versiones con IVA (G.7)
+  porCobrarConIva: number;
+  porPagarConIva: number;
+  saldoProyectadoConIva: number;
+  previstoTotalConIva: number;
+  comprometidoTotalConIva: number;
+  aPagarTotalConIva: number;
+  saldoProyectadoSinPrevistosConIva: number;
 }
 
 export interface FinanceResultsMes {

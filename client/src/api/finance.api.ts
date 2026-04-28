@@ -101,7 +101,9 @@ export interface MovementsListResponse extends PaginatedResponse<FinanceMovement
   saldoFinalUSD: number;
   saldoActualCuentas: number;
   saldoFinalProyectado: number;
+  saldoFinalProyectadoSinIva: number;
   saldoMinimoFuturo: number;
+  saldoMinimoFuturoSinIva: number;
   fechaSaldoMinimoFuturo: string | null;
   sinCuentasActivas: boolean;
   usaFallbackTipoCambio: boolean;

@@ -23,21 +23,24 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "3.6",
+  version: "3.7",
   date: "28 de abril de 2026",
   sections: [
     {
       title: "Nuevo",
       items: [
-        "**Monitoreo de liquidez en Movimientos**: tres KPIs arriba de la lista — *Saldo actual en cuentas*, *Saldo proyectado final* y *Punto mínimo de liquidez* (con la fecha en que ocurre).",
-        "Si el punto mínimo de liquidez se proyecta **negativo**, el card se resalta en rojo y muestra un badge \"Riesgo de insuficiencia\".",
+        "**IVA en saldos y KPIs de Finanzas**: el saldo proyectado y el punto mínimo de liquidez ahora se calculan con IVA (lo que realmente sale/entra de la cuenta), con el monto sin IVA debajo como referencia.",
+        "**Dashboard de Finanzas**: los KPIs *Ingresos*, *Gastos*, *Resultado*, *Pendiente cobro/pago* muestran sin/con IVA.",
+        "**Flujo de fondos**: tiles de *Por cobrar*, *Por pagar*, *Previsto*, *Comprometido*, *A pagar* y *Proyectado* muestran ambas versiones.",
+        "**Últimos movimientos**: cada fila muestra el monto sin IVA y debajo c/IVA.",
       ],
     },
     {
       title: "Mejoras",
       items: [
-        "Los KPIs de liquidez se recalculan automáticamente al crear/editar/anular movimientos o al modificar cuentas.",
-        "Endpoint `GET /finance/movements` extendido con los campos de liquidez (saldoActualCuentas, saldoFinalProyectado, saldoMinimoFuturo, fechaSaldoMinimoFuturo).",
+        "**Detail panel del movimiento**: muestra dos filas — Monto (sin IVA) y Monto c/IVA con la tasa explícita.",
+        "Componente reutilizable `AmountWithIva` para mostrar pares sin/con IVA de forma consistente.",
+        "Cualquier movimiento sin tasa de IVA se asume 22% por defecto.",
       ],
     },
   ],
@@ -51,6 +54,13 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "3.6",
+    shortDate: "28 abr",
+    highlights: [
+      "Monitoreo de liquidez en Movimientos: saldo actual, proyectado final, punto mínimo con fecha y badge de riesgo.",
+    ],
+  },
   {
     version: "3.5",
     shortDate: "28 abr",

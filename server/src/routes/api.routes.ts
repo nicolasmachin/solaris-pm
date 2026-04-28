@@ -8229,6 +8229,22 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return rowRate > 0 ? monto / rowRate : monto;
     }
 
+    // Como convertMovementToUsd pero aplica IVA al monto antes de convertir.
+    // Para el cálculo de saldos: lo que sale/entra de la cuenta es monto * (1+iva/100).
+    function convertMovementToUsdConIva(row: {
+      monto: import("@prisma/client/runtime/library").Decimal;
+      moneda: Moneda;
+      tipoCambio: import("@prisma/client/runtime/library").Decimal | null;
+      ivaTasa?: number | null;
+    }, fallbackUsdToUyu: number) {
+      const monto = decimalToNumber(row.monto) ?? 0;
+      const tasa = row.ivaTasa ?? 22;
+      const montoConIva = monto * (1 + tasa / 100);
+      if (row.moneda === Moneda.USD) return montoConIva;
+      const rowRate = row.tipoCambio ? (decimalToNumber(row.tipoCambio) ?? fallbackUsdToUyu) : fallbackUsdToUyu;
+      return rowRate > 0 ? montoConIva / rowRate : montoConIva;
+    }
+
     function roundMoney(value: number) {
       return Math.round(value * 100) / 100;
     }
@@ -9843,6 +9859,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
             dueDate: true,
             monto: true,
             moneda: true,
+            ivaTasa: true,
             tipoCambio: true,
           },
         }),
@@ -9891,31 +9908,44 @@ export async function registerApiRoutes(app: FastifyInstance) {
           return a.createdAt.getTime() - b.createdAt.getTime();
         });
 
+      // Saldos proyectados: el efecto en la cuenta es CON IVA (lo que realmente
+      // entra/sale del bolsillo). También calculamos la versión sin IVA en
+      // paralelo para mostrar ambas. El saldoActualCuentas ya viene de las
+      // cuentas reales, así que no se vuelve a tocar.
       let saldoTemp = saldoActualCuentas;
+      let saldoTempSinIva = saldoActualCuentas;
       for (const row of pastRows) {
         saldoMap.set(row.id, roundMoney(saldoTemp));
         if (!isMovementConcreted(row)) continue;
-        const montoUsd = convertMovementToUsd(row, fallbackUsdToUyu);
-        if (row.tipoMovimiento === TipoMovimiento.GASTO) saldoTemp += montoUsd;
-        else if (row.tipoMovimiento === TipoMovimiento.INGRESO) saldoTemp -= montoUsd;
+        const montoUsd = convertMovementToUsdConIva(row, fallbackUsdToUyu);
+        const montoUsdSinIva = convertMovementToUsd(row, fallbackUsdToUyu);
+        if (row.tipoMovimiento === TipoMovimiento.GASTO) { saldoTemp += montoUsd; saldoTempSinIva += montoUsdSinIva; }
+        else if (row.tipoMovimiento === TipoMovimiento.INGRESO) { saldoTemp -= montoUsd; saldoTempSinIva -= montoUsdSinIva; }
         saldoTemp = roundMoney(saldoTemp);
+        saldoTempSinIva = roundMoney(saldoTempSinIva);
       }
 
       saldoTemp = saldoActualCuentas;
+      saldoTempSinIva = saldoActualCuentas;
       let saldoMinimoFuturo = saldoActualCuentas;
+      let saldoMinimoFuturoSinIva = saldoActualCuentas;
       let fechaSaldoMinimoFuturo = serializeDateOnly(today);
       for (const row of futureRows) {
-        const montoUsd = convertMovementToUsd(row, fallbackUsdToUyu);
-        if (row.tipoMovimiento === TipoMovimiento.GASTO) saldoTemp -= montoUsd;
-        else if (row.tipoMovimiento === TipoMovimiento.INGRESO) saldoTemp += montoUsd;
+        const montoUsd = convertMovementToUsdConIva(row, fallbackUsdToUyu);
+        const montoUsdSinIva = convertMovementToUsd(row, fallbackUsdToUyu);
+        if (row.tipoMovimiento === TipoMovimiento.GASTO) { saldoTemp -= montoUsd; saldoTempSinIva -= montoUsdSinIva; }
+        else if (row.tipoMovimiento === TipoMovimiento.INGRESO) { saldoTemp += montoUsd; saldoTempSinIva += montoUsdSinIva; }
         saldoTemp = roundMoney(saldoTemp);
+        saldoTempSinIva = roundMoney(saldoTempSinIva);
         saldoMap.set(row.id, saldoTemp);
         if (saldoTemp < saldoMinimoFuturo) {
           saldoMinimoFuturo = saldoTemp;
+          saldoMinimoFuturoSinIva = saldoTempSinIva;
           fechaSaldoMinimoFuturo = fechaEfectivaMap.get(row.id) ?? fechaSaldoMinimoFuturo;
         }
       }
       const saldoFinalProyectado = roundMoney(saldoTemp);
+      const saldoFinalProyectadoSinIva = roundMoney(saldoTempSinIva);
       const sinCuentasActivas = activeAccounts.length === 0;
       const usaFallbackTipoCambio = (!parsedRate || parsedRate <= 0)
         && (activeAccounts.some((account) => account.moneda === Moneda.UYU)
@@ -9960,8 +9990,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
         totalPages: Math.ceil(total / take),
         saldoActualCuentas,
         saldoFinalProyectado,
+        saldoFinalProyectadoSinIva,
         saldoFinalUSD: saldoFinalProyectado,
         saldoMinimoFuturo,
+        saldoMinimoFuturoSinIva,
         fechaSaldoMinimoFuturo,
         sinCuentasActivas,
         usaFallbackTipoCambio,
@@ -11789,7 +11821,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
       const movements = await prisma.financeMovement.findMany({
         where,
-        select: { tipoMovimiento: true, monto: true, moneda: true, tipoCambio: true, cobrado: true, pagado: true, status: true },
+        select: { tipoMovimiento: true, monto: true, moneda: true, ivaTasa: true, tipoCambio: true, cobrado: true, pagado: true, status: true },
       });
 
       const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
@@ -11804,17 +11836,21 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
       let saldoActual = 0, porCobrar = 0, porPagar = 0;
       let previstoTotal = 0, comprometidoTotal = 0, aPagarTotal = 0;
+      let saldoActualConIva = 0, porCobrarConIva = 0, porPagarConIva = 0;
+      let previstoTotalConIva = 0, comprometidoTotalConIva = 0, aPagarTotalConIva = 0;
       for (const m of movements) {
         const usd = toUsd(m);
+        const ivaFactor = 1 + ((m.ivaTasa ?? 22) / 100);
+        const usdConIva = usd * ivaFactor;
         if (m.tipoMovimiento === TipoMovimiento.INGRESO) {
-          if (m.cobrado) saldoActual += usd;
-          else porCobrar += usd;
+          if (m.cobrado) { saldoActual += usd; saldoActualConIva += usdConIva; }
+          else { porCobrar += usd; porCobrarConIva += usdConIva; }
         } else if (m.tipoMovimiento === TipoMovimiento.GASTO) {
-          if (m.pagado) saldoActual -= usd;
-          else porPagar += usd;
-          if (m.status === FinanceMovementStatus.PREVISTO) previstoTotal += usd;
-          else if (m.status === FinanceMovementStatus.COMPROMETIDO) comprometidoTotal += usd;
-          else if (m.status === FinanceMovementStatus.A_PAGAR) aPagarTotal += usd;
+          if (m.pagado) { saldoActual -= usd; saldoActualConIva -= usdConIva; }
+          else { porPagar += usd; porPagarConIva += usdConIva; }
+          if (m.status === FinanceMovementStatus.PREVISTO) { previstoTotal += usd; previstoTotalConIva += usdConIva; }
+          else if (m.status === FinanceMovementStatus.COMPROMETIDO) { comprometidoTotal += usd; comprometidoTotalConIva += usdConIva; }
+          else if (m.status === FinanceMovementStatus.A_PAGAR) { aPagarTotal += usd; aPagarTotalConIva += usdConIva; }
         }
       }
 
@@ -11827,6 +11863,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
         comprometidoTotal,
         aPagarTotal,
         saldoProyectadoSinPrevistos: saldoActual + porCobrar - (comprometidoTotal + aPagarTotal),
+        // Versiones con IVA (G.7)
+        porCobrarConIva,
+        porPagarConIva,
+        saldoProyectadoConIva: saldoActualConIva + porCobrarConIva - porPagarConIva,
+        previstoTotalConIva,
+        comprometidoTotalConIva,
+        aPagarTotalConIva,
+        saldoProyectadoSinPrevistosConIva: saldoActualConIva + porCobrarConIva - (comprometidoTotalConIva + aPagarTotalConIva),
       };
     });
 
@@ -11855,23 +11899,30 @@ export async function registerApiRoutes(app: FastifyInstance) {
       }
 
       let ingresos = 0, gastos = 0, pendienteCobro = 0, pendientePago = 0;
+      let ingresosConIva = 0, gastosConIva = 0, pendienteCobroConIva = 0, pendientePagoConIva = 0;
       for (const m of movements) {
         const usd = toUsd(m.monto, m.moneda, m.tipoCambio);
+        const ivaFactor = 1 + ((m.ivaTasa ?? 22) / 100);
+        const usdConIva = usd * ivaFactor;
         if (m.tipoMovimiento === TipoMovimiento.INGRESO) {
-          ingresos += usd;
-          if (!m.cobrado) pendienteCobro += usd;
+          ingresos += usd; ingresosConIva += usdConIva;
+          if (!m.cobrado) { pendienteCobro += usd; pendienteCobroConIva += usdConIva; }
         } else if (m.tipoMovimiento === TipoMovimiento.GASTO) {
-          gastos += usd;
-          if (!m.pagado) pendientePago += usd;
+          gastos += usd; gastosConIva += usdConIva;
+          if (!m.pagado) { pendientePago += usd; pendientePagoConIva += usdConIva; }
         }
       }
 
       return {
-        mes, anio, ingresos, gastos, resultado: ingresos - gastos,
+        mes, anio,
+        ingresos, gastos, resultado: ingresos - gastos,
         pendienteCobro, pendientePago,
+        ingresosConIva, gastosConIva, resultadoConIva: ingresosConIva - gastosConIva,
+        pendienteCobroConIva, pendientePagoConIva,
         ultimosMovimientos: movements.slice(0, 10).map((m) => ({
           id: m.id, fecha: serializeDate(m.fecha), descripcion: m.descripcion,
           tipoMovimiento: m.tipoMovimiento, monto: decimalToNumber(m.monto), moneda: m.moneda,
+          ivaTasa: m.ivaTasa,
           project: m.project, supplier: m.supplier,
         })),
       };
