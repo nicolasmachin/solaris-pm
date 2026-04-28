@@ -514,6 +514,8 @@ model Substage {
   tasks              Task[]
   files              FileAttachment[]
   comments           Comment[]
+  deadline             DateTime? @db.Date
+  deadlineManuallySet  Boolean   @default(false)
   deletedAt          DateTime?        @db.Timestamptz(6)
   createdAt          DateTime         @default(now()) @db.Timestamptz(6)
   updatedAt          DateTime         @updatedAt @db.Timestamptz(6)
@@ -525,6 +527,36 @@ model Substage {
   @@index([userId])
   @@index([deletedAt])
   @@map("substages")
+}
+
+enum DeadlineRuleTipo {
+  DIAS_DESDE_CREACION
+  DIAS_ANTES_INSTALACION
+  MANUAL
+  SIN_DEADLINE
+}
+
+// Reglas globales de cálculo de deadlines. Se matchea por (stageType, sopCode)
+// o (stageType, substageName) contra el template de pipeline. Una regla aplica
+// a las subetapas correspondientes en TODOS los proyectos.
+model DeadlineRule {
+  id           String           @id @default(cuid())
+  stageType    StageType
+  // Identifica la subetapa dentro de la etapa. Si ambos son null, la regla
+  // aplica como default a todas las subetapas de ese stageType que no tengan
+  // una regla más específica.
+  sopCode      String?
+  substageName String?
+  tipo         DeadlineRuleTipo
+  dias         Int?
+  activa       Boolean          @default(true)
+  createdAt    DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime         @updatedAt @db.Timestamptz(6)
+
+  @@unique([stageType, sopCode, substageName])
+  @@index([stageType])
+  @@index([activa])
+  @@map("deadline_rules")
 }
 
 model ChecklistItem {

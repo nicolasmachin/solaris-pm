@@ -26,6 +26,7 @@ import type { CategoriaPrincipal } from "../types/finance.types";
 import { CATEGORIA_LABEL } from "../types/finance.types";
 import { TabMateriales } from "./AdminMateriales";
 import { TabCuentas } from "./AdminCuentas";
+import { TabDeadlineRules } from "./AdminDeadlineRules";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -3049,7 +3050,7 @@ function ConfirmDialog({
   );
 }
 
-type Tab = "usuarios" | "permisos" | "configuracion" | "objetivos" | "finanzas" | "equipos" | "pipeline" | "materiales" | "cuentas";
+type Tab = "usuarios" | "permisos" | "configuracion" | "objetivos" | "finanzas" | "equipos" | "pipeline" | "materiales" | "cuentas" | "deadlines";
 
 export function Admin() {
   const [activeTab, setActiveTab] = useState<Tab>("usuarios");
@@ -3064,6 +3065,7 @@ export function Admin() {
     { id: "finanzas", label: "Subcategorías" },
     { id: "materiales", label: "Materiales" },
     { id: "cuentas", label: "Cuentas" },
+    { id: "deadlines", label: "Reglas de Deadlines" },
   ];
 
   return (
@@ -3105,6 +3107,7 @@ export function Admin() {
       {activeTab === "finanzas" && <TabFinanzas />}
       {activeTab === "materiales" && <TabMateriales />}
       {activeTab === "cuentas" && <TabCuentas />}
+      {activeTab === "deadlines" && <TabDeadlineRules />}
     </div>
   );
 }

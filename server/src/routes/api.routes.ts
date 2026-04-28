@@ -13,6 +13,7 @@ import {
   AuditAction,
   AuditEntityType,
   CategoriaPrincipal,
+  DeadlineRuleTipo,
   EstadoAprobacion,
   EstadoComprobante,
   ExpenseSourceType,
@@ -5849,6 +5850,150 @@ export async function registerApiRoutes(app: FastifyInstance) {
       userId: user.id,
       action: AuditAction.deleted,
       description: "Restauró el template del pipeline al default",
+    });
+    return { success: true };
+  });
+
+  // ─── Deadline Rules (G.1) ─────────────────────────────────────────────────
+  // Reglas globales de cálculo de deadlines por subetapa. Una regla matchea
+  // por (stageType, sopCode) o (stageType, substageName) contra el template
+  // del pipeline. Se aplica a todas las subetapas correspondientes en todos
+  // los proyectos. Si sopCode y substageName son null → default de etapa
+  // (aplica a las subetapas que no tienen una regla más específica).
+
+  const deadlineRuleCreateSchema = z
+    .object({
+      stageType: z.nativeEnum(StageType),
+      sopCode: z.string().trim().min(1).nullable().optional(),
+      substageName: z.string().trim().min(1).nullable().optional(),
+      tipo: z.nativeEnum(DeadlineRuleTipo),
+      dias: z.number().int().nullable().optional(),
+      activa: z.boolean().optional().default(true),
+    })
+    .strict();
+
+  const deadlineRulePatchSchema = z
+    .object({
+      tipo: z.nativeEnum(DeadlineRuleTipo).optional(),
+      dias: z.number().int().nullable().optional(),
+      activa: z.boolean().optional(),
+    })
+    .strict();
+
+  function validateRuleShape(tipo: DeadlineRuleTipo, dias: number | null | undefined) {
+    if (tipo === DeadlineRuleTipo.SIN_DEADLINE || tipo === DeadlineRuleTipo.MANUAL) {
+      if (dias !== null && dias !== undefined) {
+        throw badRequest("INVALID_DIAS", "El campo dias debe ser null para tipo SIN_DEADLINE o MANUAL");
+      }
+      return null;
+    }
+    // DIAS_DESDE_CREACION o DIAS_ANTES_INSTALACION
+    if (dias === null || dias === undefined) {
+      throw badRequest("DIAS_REQUIRED", "El campo dias es obligatorio para este tipo de regla");
+    }
+    if (dias <= 0) {
+      throw badRequest("DIAS_INVALID", "dias debe ser un entero mayor a 0");
+    }
+    return dias;
+  }
+
+  app.get("/admin/deadline-rules", { preHandler: authorize(Module.CONFIGURACION, Action.VIEW) }, async (request) => {
+    const query = z
+      .object({
+        stageType: z.nativeEnum(StageType).optional(),
+        activa: z.union([z.literal("true"), z.literal("false")]).optional(),
+      })
+      .parse(request.query);
+    const where: Prisma.DeadlineRuleWhereInput = {};
+    if (query.stageType) where.stageType = query.stageType;
+    if (query.activa !== undefined) where.activa = query.activa === "true";
+    const rules = await prisma.deadlineRule.findMany({
+      where,
+      orderBy: [{ stageType: "asc" }, { substageName: "asc" }, { sopCode: "asc" }],
+    });
+    return rules;
+  });
+
+  app.get("/admin/deadline-rules/:id", { preHandler: authorize(Module.CONFIGURACION, Action.VIEW) }, async (request) => {
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const rule = await prisma.deadlineRule.findUnique({ where: { id } });
+    if (!rule) throw notFound("DEADLINE_RULE_NOT_FOUND", "Regla no encontrada");
+    return rule;
+  });
+
+  app.post("/admin/deadline-rules", { preHandler: authorize(Module.CONFIGURACION, Action.CREATE) }, async (request, reply) => {
+    const user = ensureUser(request);
+    const body = deadlineRuleCreateSchema.parse(request.body);
+    const dias = validateRuleShape(body.tipo, body.dias);
+
+    try {
+      const rule = await prisma.deadlineRule.create({
+        data: {
+          stageType: body.stageType,
+          sopCode: body.sopCode ?? null,
+          substageName: body.substageName ?? null,
+          tipo: body.tipo,
+          dias,
+          activa: body.activa ?? true,
+        },
+      });
+      await createAuditEntry({
+        entityType: AuditEntityType.setting,
+        entityId: rule.id,
+        userId: user.id,
+        action: AuditAction.created,
+        description: `Creó regla de deadline: ${body.stageType}${body.sopCode ? ` / ${body.sopCode}` : body.substageName ? ` / ${body.substageName}` : ""}`,
+      });
+      return reply.code(201).send(rule);
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+        throw badRequest("RULE_ALREADY_EXISTS", "Ya existe una regla para esa combinación de etapa/subetapa");
+      }
+      throw err;
+    }
+  });
+
+  app.patch("/admin/deadline-rules/:id", { preHandler: authorize(Module.CONFIGURACION, Action.EDIT) }, async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const body = deadlineRulePatchSchema.parse(request.body);
+    const existing = await prisma.deadlineRule.findUnique({ where: { id } });
+    if (!existing) throw notFound("DEADLINE_RULE_NOT_FOUND", "Regla no encontrada");
+
+    const nextTipo = body.tipo ?? existing.tipo;
+    const nextDias = body.dias !== undefined ? body.dias : existing.dias;
+    const dias = validateRuleShape(nextTipo, nextDias);
+
+    const updated = await prisma.deadlineRule.update({
+      where: { id },
+      data: {
+        ...(body.tipo !== undefined ? { tipo: body.tipo } : {}),
+        ...(body.dias !== undefined || body.tipo !== undefined ? { dias } : {}),
+        ...(body.activa !== undefined ? { activa: body.activa } : {}),
+      },
+    });
+    await createAuditEntry({
+      entityType: AuditEntityType.system_setting,
+      entityId: id,
+      userId: user.id,
+      action: AuditAction.updated,
+      description: `Actualizó regla de deadline ${id}`,
+    });
+    return updated;
+  });
+
+  app.delete("/admin/deadline-rules/:id", { preHandler: authorize(Module.CONFIGURACION, Action.DELETE) }, async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const existing = await prisma.deadlineRule.findUnique({ where: { id } });
+    if (!existing) throw notFound("DEADLINE_RULE_NOT_FOUND", "Regla no encontrada");
+    await prisma.deadlineRule.delete({ where: { id } });
+    await createAuditEntry({
+      entityType: AuditEntityType.system_setting,
+      entityId: id,
+      userId: user.id,
+      action: AuditAction.deleted,
+      description: `Eliminó regla de deadline ${id}`,
     });
     return { success: true };
   });
