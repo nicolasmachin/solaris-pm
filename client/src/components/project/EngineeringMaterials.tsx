@@ -1,7 +1,8 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Plus, X, Search, Sparkles, RefreshCw, Trash2, StickyNote, FileText, DollarSign, ChevronDown } from 'lucide-react';
+import { Plus, X, Search, Sparkles, RefreshCw, Trash2, StickyNote, FileText, DollarSign, ChevronDown, Triangle } from 'lucide-react';
+import { TriangleCalculatorModal } from './TriangleCalculator';
 import {
   getProjectMaterials, createProjectMaterial, patchProjectMaterial, deleteProjectMaterial,
   generateProjectPrevistos, regenerateProjectPrevistos, exportMaterialsPdf,
@@ -526,6 +527,19 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfDropOpen, setPdfDropOpen] = useState(false);
 
+  const [showTriangleCalc, setShowTriangleCalc] = useState(false);
+
+  // Estado colapsable persistido por proyecto en localStorage
+  const collapsedKey = `materials-collapsed-${projectId}`;
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(collapsedKey) === 'true';
+  });
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(collapsedKey, String(collapsed));
+  }, [collapsed, collapsedKey]);
+
   async function handleExportPdf(includePrecios: boolean) {
     setPdfDropOpen(false);
     setPdfLoading(true);
@@ -549,10 +563,18 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
   return (
     <section>
       <div className="flex items-center justify-between mb-3">
-        <p className="font-mono text-[9px] uppercase tracking-widest text-[var(--color-text-muted)]">
+        <button
+          type="button"
+          onClick={() => setCollapsed(c => !c)}
+          className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-widest text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
+          title={collapsed ? 'Expandir' : 'Colapsar'}
+        >
+          <ChevronDown
+            className={klass('w-3 h-3 transition-transform duration-200', collapsed && '-rotate-90')}
+          />
           Lista de materiales ({materials.length})
-        </p>
-        <div className="flex items-center gap-2">
+        </button>
+        <div className={klass('flex items-center gap-2', collapsed && 'hidden')}>
           <button
             onClick={() => setShowAdd(true)}
             className="text-[10px] text-[var(--color-accent)] hover:underline"
@@ -615,7 +637,17 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
         </div>
       </div>
 
-      {hasGenerated && generatedAt && (
+      {collapsed && materials.length > 0 && (
+        <div className="text-[11px] text-[var(--color-text-muted)] flex items-center gap-2">
+          <span>{materials.length} ítem{materials.length === 1 ? '' : 's'}</span>
+          <span>·</span>
+          <span className="tabular-nums">
+            Total: {Object.entries(totalsByMoneda).map(([m, v]) => fmtMoney(v, m)).join(' · ')}
+          </span>
+        </div>
+      )}
+
+      {!collapsed && hasGenerated && generatedAt && (
         <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-[var(--color-info-bg)]/50 border border-[var(--color-info-bg)]">
           <span className="text-[10px] font-mono uppercase text-[var(--color-info-text)]">Previstos generados</span>
           <span className="text-[10px] text-[var(--color-text-muted)]">
@@ -630,7 +662,7 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
         </div>
       )}
 
-      {isLoading ? (
+      {!collapsed && (isLoading ? (
         <p className="text-xs text-[var(--color-text-muted)] text-center py-6">Cargando...</p>
       ) : materials.length === 0 ? (
         <div className="text-center py-6 rounded-lg border border-dashed border-[var(--color-border)]">
@@ -683,7 +715,7 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
             </tfoot>
           </table>
         </div>
-      )}
+      ))}
 
       {showAdd && (
         <AddItemModal
@@ -703,6 +735,25 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
           onConfirm={submitGenerateModal}
           isLoading={generateMut.isPending || regenerateMut.isPending}
         />
+      )}
+
+      {/* Cálculos de ingeniería */}
+      <div className="mt-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[11px] font-medium text-[var(--color-text-primary)]">Cálculos de ingeniería</p>
+          <p className="text-[10px] text-[var(--color-text-muted)]">Calculadora de triángulos isósceles de aluminio</p>
+        </div>
+        <button
+          onClick={() => setShowTriangleCalc(true)}
+          className="flex items-center gap-1.5 rounded-md border border-[var(--color-border)] px-3 py-1.5 text-[11px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-app)] shrink-0"
+        >
+          <Triangle className="w-3 h-3" />
+          Abrir calculadora
+        </button>
+      </div>
+
+      {showTriangleCalc && (
+        <TriangleCalculatorModal projectId={projectId} onClose={() => setShowTriangleCalc(false)} />
       )}
     </section>
   );

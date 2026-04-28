@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "FileAttachmentTipo" ADD VALUE 'CALCULO_TRIANGULOS';

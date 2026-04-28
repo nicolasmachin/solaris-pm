@@ -8951,6 +8951,167 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return reply.send(fs.createReadStream(absolutePath));
     });
 
+    // ─── Calculadora de triángulos: guardar JPG + PDF ─────────────────────────
+    //
+    // Recibe el SVG ya renderizado del frontend + el JPG ya convertido vía
+    // canvas (base64). Genera un PDF con pdfkit incluyendo la imagen y la
+    // tabla de medidas, guarda ambos archivos en el storage del proyecto y
+    // crea dos registros FileAttachment tipo CALCULO_TRIANGULOS.
+
+    app.post("/projects/:id/triangle-calculation/save", { preHandler: authorize(Module.INGENIERIA, Action.EDIT) }, async (request, reply) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+
+      const triangleSchema = z.object({
+        mode: z.enum(["L-angle", "L-height", "height-angle"]),
+        unit: z.enum(["mm", "cm", "m"]),
+        values: z.object({
+          L: z.number().positive().optional(),
+          height: z.number().positive().optional(),
+          angle: z.number().positive().optional(),
+        }),
+        result: z.object({
+          L: z.number().positive(),
+          height: z.number().positive(),
+          angle: z.number().positive(),
+          backLeg: z.number().positive(),
+          totalMaterial: z.number().positive(),
+        }),
+        svgString: z.string().min(1),
+        jpgBase64: z.string().min(1),
+      }).strict();
+      const body = triangleSchema.parse(request.body);
+
+      const project = await prisma.project.findFirst({
+        where: { id, deletedAt: null },
+        select: { id: true, clientName: true, code: true },
+      });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+
+      const storageRoot = path.resolve(process.cwd(), "..", env.storagePath, id);
+      await fsPromises.mkdir(storageRoot, { recursive: true });
+
+      const ts = Date.now();
+      const dateLabel = new Date().toISOString().slice(0, 10);
+      const jpgFilename = `triangulo-${ts}.jpg`;
+      const pdfFilename = `triangulo-${ts}.pdf`;
+      const jpgPath = path.join(storageRoot, jpgFilename);
+      const pdfPath = path.join(storageRoot, pdfFilename);
+
+      // Decodificar JPG base64 ("data:image/jpeg;base64,XXX" o "XXX")
+      const jpgPayload = body.jpgBase64.startsWith("data:")
+        ? body.jpgBase64.split(",")[1] ?? ""
+        : body.jpgBase64;
+      const jpgBuffer = Buffer.from(jpgPayload, "base64");
+      if (jpgBuffer.length === 0) {
+        throw badRequest("INVALID_JPG", "El JPG enviado está vacío");
+      }
+      await fsPromises.writeFile(jpgPath, jpgBuffer);
+
+      // Generar PDF con pdfkit incluyendo la imagen y la tabla de medidas
+      await new Promise<void>((resolve, reject) => {
+        const doc = new PDFDocument({ margin: 50, size: "A4" });
+        const ws = fs.createWriteStream(pdfPath);
+        doc.pipe(ws);
+        ws.on("finish", resolve);
+        ws.on("error", reject);
+        doc.on("error", reject);
+
+        // Header
+        doc.font("Helvetica-Bold").fontSize(16).text("Cálculo de triángulo de aluminio", 50, 50, { align: "center", width: 495 });
+        doc.font("Helvetica-Bold").fontSize(11).text(project.clientName, 50, 72, { align: "center", width: 495 });
+        doc.font("Helvetica").fontSize(9).fillColor("#666666")
+          .text(`Generado el ${new Date().toLocaleDateString("es-UY", { day: "2-digit", month: "long", year: "numeric" })}`, 50, 88, { align: "center", width: 495 });
+        doc.fillColor("#000000");
+
+        // Imagen del triángulo (centrada)
+        try {
+          doc.image(jpgBuffer, 70, 115, { fit: [455, 290], align: "center" });
+        } catch {
+          doc.font("Helvetica").fontSize(10).fillColor("#dc2626")
+            .text("(No se pudo embeber la imagen del triángulo)", 50, 200, { align: "center", width: 495 });
+          doc.fillColor("#000000");
+        }
+
+        // Tabla de medidas
+        const tableY = 430;
+        const u = body.unit;
+        const fmt = (n: number, dec: number = 2) =>
+          n.toLocaleString("es-UY", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+
+        doc.font("Helvetica-Bold").fontSize(11).fillColor("#1e3a5f")
+          .text("Medidas calculadas", 50, tableY, { width: 495 });
+        doc.fillColor("#000000");
+
+        const rows: Array<[string, string]> = [
+          ["Lado L (base e inclinado)", `${fmt(body.result.L)} ${u}`],
+          ["Altura vertical", `${fmt(body.result.height)} ${u}`],
+          ["Lado posterior", `${fmt(body.result.backLeg)} ${u}`],
+          ["Ángulo de inclinación", `${fmt(body.result.angle, 1)}°`],
+          ["Material total de aluminio (L + L + posterior)", `${fmt(body.result.totalMaterial)} ${u}`],
+        ];
+
+        let y = tableY + 22;
+        for (const [label, value] of rows) {
+          doc.font("Helvetica").fontSize(10).fillColor("#000000")
+            .text(label, 60, y, { width: 320, lineBreak: false });
+          doc.font("Helvetica-Bold").fontSize(10)
+            .text(value, 380, y, { width: 165, lineBreak: false, align: "right" });
+          y += 20;
+        }
+
+        // Pie con info del cálculo
+        doc.font("Helvetica").fontSize(8).fillColor("#888888")
+          .text(`Modo de cálculo: ${body.mode} · Unidad: ${u}`, 50, 770, { width: 495, align: "center" });
+
+        doc.end();
+      });
+
+      const jpgStats = await fsPromises.stat(jpgPath);
+      const pdfStats = await fsPromises.stat(pdfPath);
+
+      const displayBase = `Cálculo triángulo ${dateLabel}`;
+
+      const [jpgAttachment, pdfAttachment] = await Promise.all([
+        prisma.fileAttachment.create({
+          data: {
+            projectId: id,
+            filename: `${displayBase}.jpg`,
+            storedFilename: jpgFilename,
+            mimeType: "image/jpeg",
+            sizeBytes: jpgStats.size,
+            url: `${id}/${jpgFilename}`,
+            tipo: FileAttachmentTipo.CALCULO_TRIANGULOS,
+            uploadedById: user.id,
+          },
+        }),
+        prisma.fileAttachment.create({
+          data: {
+            projectId: id,
+            filename: `${displayBase}.pdf`,
+            storedFilename: pdfFilename,
+            mimeType: "application/pdf",
+            sizeBytes: pdfStats.size,
+            url: `${id}/${pdfFilename}`,
+            tipo: FileAttachmentTipo.CALCULO_TRIANGULOS,
+            uploadedById: user.id,
+          },
+        }),
+      ]);
+
+      await createAuditEntry({
+        entityType: AuditEntityType.file,
+        entityId: pdfAttachment.id,
+        projectId: id,
+        userId: user.id,
+        action: AuditAction.file_uploaded,
+        description: `Guardó cálculo de triángulo (L=${body.result.L.toFixed(2)} ${body.unit}, h=${body.result.height.toFixed(2)} ${body.unit}, θ=${body.result.angle.toFixed(1)}°)`,
+      });
+
+      reply.code(201);
+      return { jpgFileId: jpgAttachment.id, pdfFileId: pdfAttachment.id };
+    });
+
     // ─── Costos del proyecto (basado en consumos de stock) ────────────────────
     //
     // Calcula el costo real consumido por un proyecto a partir de los
