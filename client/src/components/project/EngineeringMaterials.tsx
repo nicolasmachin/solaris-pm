@@ -6,7 +6,7 @@ import { TriangleCalculatorModal } from './TriangleCalculator';
 import {
   getProjectMaterials, createProjectMaterial, patchProjectMaterial, deleteProjectMaterial,
   generateProjectPrevistos, regenerateProjectPrevistos, exportMaterialsPdf,
-  getMaterialCategories, getMaterialItems,
+  getMaterialCategories, getMaterialItems, getRegenerateImpact,
 } from '../../api/materials.api';
 import { getSuppliers } from '../../api/finance.api';
 import type { MaterialItem, ProjectMaterial } from '../../types/materials.types';
@@ -40,10 +40,19 @@ const STATUS_COLOR: Record<string, string> = {
 
 // ─── Modal: Confirmar generación de previstos con fecha ───────────────────────
 
+const STATUS_LABEL_FINANCE: Record<string, string> = {
+  PREVISTO: 'Previsto',
+  COMPROMETIDO: 'Comprometido',
+  A_PAGAR: 'A pagar',
+  PARCIALMENTE_PAGADO: 'Parc. pagado',
+  PAGADO: 'Pagado',
+};
+
 function GeneratePrevistosModal({
-  isRegenerate, pendingCount, expectedDate, onDateChange, onCancel, onConfirm, isLoading,
+  isRegenerate, projectId, pendingCount, expectedDate, onDateChange, onCancel, onConfirm, isLoading,
 }: {
   isRegenerate: boolean;
+  projectId: string;
   pendingCount: number;
   expectedDate: string;
   onDateChange: (d: string) => void;
@@ -54,10 +63,18 @@ function GeneratePrevistosModal({
   const oneYearFromNow = new Date();
   oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
   const isFarFuture = expectedDate && new Date(expectedDate) > oneYearFromNow;
+  const [showPreserved, setShowPreserved] = useState(false);
+
+  const { data: impact, isLoading: loadingImpact } = useQuery({
+    queryKey: ['regenerate-impact', projectId],
+    queryFn: () => getRegenerateImpact(projectId),
+    enabled: isRegenerate,
+    staleTime: 30_000,
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-2xl">
+      <div className="w-full max-w-md rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="border-b border-[var(--color-border)] px-5 py-4">
           <p className="text-sm font-semibold text-[var(--color-text-primary)]">
             {isRegenerate ? 'Regenerar previstos' : 'Generar previstos'}
@@ -66,9 +83,48 @@ function GeneratePrevistosModal({
         <div className="px-5 py-4 space-y-4">
           <p className="text-sm text-[var(--color-text-secondary)]">
             {isRegenerate
-              ? `Se eliminarán los previstos actuales y se crearán ${pendingCount} nuevo${pendingCount !== 1 ? 's' : ''} en Finanzas basados en la lista actual.`
-              : `Se crearán ${pendingCount} movimiento${pendingCount !== 1 ? 's' : ''} previsto${pendingCount !== 1 ? 's' : ''} en Finanzas basados en los materiales de esta lista.`}
+              ? 'Se va a regenerar la lista de previstos para este proyecto. Se crean agrupados por categoría (un movimiento por categoría con el detalle de los ítems).'
+              : `Se crearán movimientos previstos en Finanzas, agrupados por categoría, basados en los materiales de esta lista (${pendingCount} ítem${pendingCount !== 1 ? 's' : ''} pendiente${pendingCount !== 1 ? 's' : ''}).`}
           </p>
+
+          {isRegenerate && (
+            <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-[11px] text-[var(--color-text-secondary)] space-y-1">
+              {loadingImpact ? (
+                <p>Calculando impacto…</p>
+              ) : impact ? (
+                <>
+                  <p>
+                    🗑️ <strong>{impact.toDelete}</strong> movimiento{impact.toDelete !== 1 ? 's' : ''} <em>previsto</em> {impact.toDelete !== 1 ? 'serán eliminados' : 'será eliminado'}.
+                  </p>
+                  <p>
+                    🔒 <strong>{impact.toPreserve}</strong> movimiento{impact.toPreserve !== 1 ? 's' : ''} en estado avanzado (Comprometido / A pagar / Pagado) {impact.toPreserve !== 1 ? 'se conservan' : 'se conserva'} sin tocar.
+                  </p>
+                  {impact.preservedDetails.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowPreserved((v) => !v)}
+                      className="mt-1 text-[10px] text-[var(--color-accent)] hover:underline"
+                    >
+                      {showPreserved ? 'Ocultar' : 'Ver'} detalle de los conservados
+                    </button>
+                  )}
+                  {showPreserved && (
+                    <ul className="mt-1 space-y-1 text-[10px]">
+                      {impact.preservedDetails.map((m) => (
+                        <li key={m.id} className="border-t border-[var(--color-border)] pt-1">
+                          <span className="text-[var(--color-text-primary)]">{m.descripcion}</span>
+                          <span className="ml-2 text-[var(--color-text-muted)]">
+                            · {STATUS_LABEL_FINANCE[m.status] ?? m.status} · {m.monto.toLocaleString('es-UY', { minimumFractionDigits: 2 })} {m.moneda}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              ) : null}
+            </div>
+          )}
+
           <div>
             <label className="mb-1.5 flex items-center gap-1 text-[11px] font-medium text-[var(--color-text-primary)]">
               Fecha esperada de compra
@@ -485,8 +541,12 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
   const regenerateMut = useMutation({
     mutationFn: (expectedDate: string) => regenerateProjectPrevistos(projectId, expectedDate),
     onSuccess: (r) => {
-      toast.success(`Previstos regenerados (${r.regenerated} eliminados, ${r.created} nuevos)`);
+      const parts: string[] = [];
+      parts.push(`${r.created} previsto${r.created !== 1 ? 's' : ''} creado${r.created !== 1 ? 's' : ''} por categoría`);
+      if (r.preservedCount > 0) parts.push(`${r.preservedCount} conservado${r.preservedCount !== 1 ? 's' : ''} sin tocar`);
+      toast.success(parts.join(' · '));
       qc.invalidateQueries({ queryKey: ['project-materials', projectId] });
+      qc.invalidateQueries({ queryKey: ['regenerate-impact', projectId] });
     },
     onError: (err) => toast.error(getApiErr(err) ?? 'Error al regenerar'),
   });
@@ -728,6 +788,7 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
       {showGenerateModal && (
         <GeneratePrevistosModal
           isRegenerate={isRegenerateMode}
+          projectId={projectId}
           pendingCount={isRegenerateMode ? materials.filter(m => m.movementId).length : pendingGeneration}
           expectedDate={expectedDate}
           onDateChange={setExpectedDate}

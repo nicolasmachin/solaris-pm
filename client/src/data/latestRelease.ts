@@ -23,25 +23,23 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "3.3",
+  version: "3.4",
   date: "28 de abril de 2026",
   sections: [
     {
       title: "Nuevo",
       items: [
-        "**Fechas reales automáticas**: la fecha de inicio de cada subetapa se llena sola con la primera actividad (comentario, cambio de estado, archivo). La fecha de fin se setea al completar y se limpia si reabrís.",
-        '**Notificaciones por usuario** (Configuración → "Notificaciones de proyecto"): elegí si querés recibir alerta 3 días antes de un deadline y/o aviso cuando se completa la subetapa anterior. Canales: in-app, email, WhatsApp.',
-        "**Cron diario a las 9 AM** que dispara las alertas de deadline cercano según las preferencias de cada responsable.",
-        "**Widget Deadlines próximos** en el Dashboard: subetapas tuyas que vencen en los próximos 7 días, con código de colores.",
+        "**Previstos agrupados por categoría**: en vez de crear una línea por cada material en Movimientos, ahora se crea un único movimiento PREVISTO por categoría con el detalle de los ítems adentro (ej: \"Previsto: Paneles solares\" con 10 ítems).",
+        "Si en una misma categoría hay precios en USD y UYU, se separan en dos movimientos (uno por moneda) para mantener precisión.",
+        '**Regenerar seguro**: el modal muestra cuántos previstos se borrarán y cuántos movimientos avanzados (A pagar / Pagado) se conservan sin tocar, con detalle colapsable.',
       ],
     },
     {
       title: "Mejoras",
       items: [
-        "Al **completar una subetapa**, se avisa automáticamente al responsable de la siguiente.",
-        "**Cambiar el deadline** (manual o automático) resetea la marca de notificación para volver a avisar del nuevo plazo.",
-        "**Drawer de subetapa** muestra fechas reales (Iniciada / Completada) cuando existen.",
-        "**Edición manual de fechas reales** (ADMIN) si quedaron mal cargadas.",
+        "El detalle individual de los materiales se preserva como InvoiceItems del movimiento previsto: no se pierde información.",
+        "Toast post-regenerar con resultado claro: previstos creados por categoría y avanzados conservados.",
+        "Nuevo endpoint de preview (`/regenerate-impact`) para ver el impacto antes de confirmar.",
       ],
     },
   ],
@@ -55,6 +53,15 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "3.3",
+    shortDate: "28 abr",
+    highlights: [
+      "Fechas reales automáticas en subetapas (primera actividad → actualStartDate).",
+      "Notificaciones por usuario: deadline 3 días antes + subetapa anterior completada (in-app, email, WhatsApp).",
+      "Widget Deadlines próximos en el Dashboard.",
+    ],
+  },
   {
     version: "3.2",
     shortDate: "28 abr",

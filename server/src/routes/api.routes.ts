@@ -8824,45 +8824,100 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // ─── Materiales: Generación / regeneración de previstos ───────────────────
 
     async function generatePrevistosForProject(projectId: string, userId: string | undefined, expectedDate: Date) {
+      // Sólo agrupar los ProjectMaterials que NO estén ya vinculados a un movimiento.
+      // Los que ya tienen movementId apuntando a un movimiento avanzado (COMPROMETIDO+)
+      // o a un PREVISTO existente no se tocan acá.
       const materials = await prisma.projectMaterial.findMany({
         where: { projectId, movementId: null },
-        include: { materialItem: { select: { nombre: true } } },
+        include: {
+          materialItem: {
+            select: { id: true, nombre: true, category: { select: { id: true, nombre: true } } },
+          },
+        },
+        orderBy: { createdAt: "asc" },
       });
+
       const fechaIso = new Date(Date.UTC(expectedDate.getUTCFullYear(), expectedDate.getUTCMonth(), expectedDate.getUTCDate()));
-      let created = 0;
+
+      // Agrupar por (categoría, moneda)
+      type GroupKey = string; // `${catId}|${moneda}`
+      type Group = {
+        catId: string | null;
+        catLabel: string;
+        moneda: typeof Moneda[keyof typeof Moneda];
+        items: typeof materials;
+        subtotal: number;
+      };
+      const groups = new Map<GroupKey, Group>();
       for (const pm of materials) {
-        const qty = Number(pm.quantity);
-        const price = Number(pm.unitPrice);
-        const monto = Math.round(qty * price * 100) / 100;
+        const cat = pm.materialItem.category;
+        const catId = cat?.id ?? null;
+        const catLabel = cat?.nombre ?? "Sin categoría";
+        const key = `${catId ?? "null"}|${pm.moneda}`;
+        let g = groups.get(key);
+        if (!g) {
+          g = { catId, catLabel, moneda: pm.moneda, items: [] as typeof materials, subtotal: 0 };
+          groups.set(key, g);
+        }
+        g.items.push(pm);
+        g.subtotal += Number(pm.quantity) * Number(pm.unitPrice);
+      }
+
+      let created = 0;
+      for (const g of groups.values()) {
+        const monto = Math.round(g.subtotal * 100) / 100;
+        // Si todos los items comparten el mismo proveedor, lo persistimos en el movimiento.
+        const supplierIds = new Set(g.items.map((pm) => pm.supplierId).filter((s) => !!s));
+        const sharedSupplierId = supplierIds.size === 1 ? Array.from(supplierIds)[0] : null;
+
+        // Cuántos monedas distintas hay totales en esta categoría → si hay > 1 (USD y UYU),
+        // lo aclaramos en la descripción para que sea inequívoca en la lista de Movimientos.
+        const otherMonedasInCat = Array.from(groups.values()).filter((og) => og.catId === g.catId).length;
+        const monedaSuffix = otherMonedasInCat > 1 ? ` (${g.moneda})` : "";
+        const descripcion = `Previsto: ${g.catLabel}${monedaSuffix}`;
+
         const mov = await prisma.financeMovement.create({
           data: {
             fecha: fechaIso,
             mes: fechaIso.getUTCMonth() + 1,
             anio: fechaIso.getUTCFullYear(),
             tipoMovimiento: TipoMovimiento.GASTO,
-            categoriaPrincipal: CategoriaPrincipal.PROYECTO_SALIDA,
-            descripcion: `${pm.materialItem.nombre} (x${qty})`,
+            categoriaPrincipal: CategoriaPrincipal.CONSUMO_STOCK,
+            descripcion,
             monto,
-            moneda: pm.moneda,
+            moneda: g.moneda,
             pagado: false,
             impactaFlujo: true,
             status: FinanceMovementStatus.PREVISTO,
             sourceType: MovementSourceType.PROJECT_MATERIALS,
-            materialItemId: pm.materialItemId,
-            quantity: pm.quantity,
-            unitPrice: pm.unitPrice,
             projectId,
-            supplierId: pm.supplierId,
+            supplierId: sharedSupplierId,
             estadoAprobacion: EstadoAprobacion.REGISTRADO,
             expectedDate: fechaIso,
             ...(userId ? { creadoPorId: userId } : {}),
+            invoiceItems: {
+              create: g.items.map((pm) => ({
+                materialItemId: pm.materialItemId,
+                quantity: pm.quantity,
+                unitPrice: pm.unitPrice,
+                moneda: pm.moneda,
+                notes: pm.notes,
+              })),
+            },
           },
         });
-        await prisma.projectMaterial.update({ where: { id: pm.id }, data: { movementId: mov.id } });
+        await prisma.projectMaterial.updateMany({
+          where: { id: { in: g.items.map((pm) => pm.id) } },
+          data: { movementId: mov.id },
+        });
         created++;
       }
-      const alreadyExisted = await prisma.projectMaterial.count({ where: { projectId, NOT: { movementId: null } } });
-      return { created, alreadyExisted: alreadyExisted - created };
+      // Cuenta de ProjectMaterials que ya estaban vinculados a movimientos previos
+      // (advanced o previstos antiguos no tocados): se considera "alreadyExisted".
+      const alreadyExisted = await prisma.projectMaterial.count({
+        where: { projectId, NOT: { movementId: null } },
+      });
+      return { created, alreadyExisted: Math.max(0, alreadyExisted - materials.length) };
     }
 
     app.post("/projects/:id/materials/generate-previsto", { preHandler: authorize(Module.INGENIERIA, Action.EDIT) }, async (request, reply) => {
@@ -8877,6 +8932,39 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return result;
     });
 
+    // Preview: cuántos PREVISTO se borrarían y qué movimientos avanzados se preservarían
+    app.get("/projects/:id/materials/regenerate-impact", { preHandler: authorize(Module.INGENIERIA, Action.VIEW) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const project = await prisma.project.findFirst({ where: { id, deletedAt: null } });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+
+      const movements = await prisma.financeMovement.findMany({
+        where: {
+          projectId: id,
+          sourceType: MovementSourceType.PROJECT_MATERIALS,
+          deletedAt: null,
+        },
+        select: { id: true, descripcion: true, status: true, monto: true, moneda: true, fecha: true },
+        orderBy: { fecha: "asc" },
+      });
+
+      const toDelete = movements.filter((m) => m.status === FinanceMovementStatus.PREVISTO);
+      const toPreserve = movements.filter((m) => m.status !== FinanceMovementStatus.PREVISTO);
+
+      return {
+        toDelete: toDelete.length,
+        toPreserve: toPreserve.length,
+        preservedDetails: toPreserve.map((m) => ({
+          id: m.id,
+          descripcion: m.descripcion,
+          status: m.status,
+          monto: Number(m.monto),
+          moneda: m.moneda,
+          fecha: serializeDateOnly(m.fecha),
+        })),
+      };
+    });
+
     app.post("/projects/:id/materials/regenerate-previsto", { preHandler: authorize(Module.INGENIERIA, Action.EDIT) }, async (request, reply) => {
       const { id } = z.object({ id: z.string() }).parse(request.params);
       const { expectedDate: expectedDateStr } = z.object({ expectedDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }).parse(request.body);
@@ -8886,6 +8974,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const project = await prisma.project.findFirst({ where: { id, deletedAt: null } });
       if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
       const expectedDate = parseDateOnly(expectedDateStr);
+
+      // Sólo los PREVISTO. Los avanzados (COMPROMETIDO, A_PAGAR, PARCIALMENTE_PAGADO, PAGADO)
+      // se preservan: sus ProjectMaterials siguen referenciando esos movimientos y NO se
+      // recalculan en la generación nueva.
       const movsToDelete = await prisma.financeMovement.findMany({
         where: {
           projectId: id,
@@ -8893,15 +8985,46 @@ export async function registerApiRoutes(app: FastifyInstance) {
           sourceType: MovementSourceType.PROJECT_MATERIALS,
           deletedAt: null,
         },
-        select: { id: true },
+        select: { id: true, descripcion: true, monto: true, moneda: true },
       });
+      const preservedMovs = await prisma.financeMovement.findMany({
+        where: {
+          projectId: id,
+          status: { in: [
+            FinanceMovementStatus.COMPROMETIDO,
+            FinanceMovementStatus.A_PAGAR,
+            FinanceMovementStatus.PARCIALMENTE_PAGADO,
+            FinanceMovementStatus.PAGADO,
+          ] },
+          sourceType: MovementSourceType.PROJECT_MATERIALS,
+          deletedAt: null,
+        },
+        select: { id: true, descripcion: true, status: true, monto: true, moneda: true },
+      });
+
       const movIds = movsToDelete.map((m) => m.id);
       await prisma.$transaction([
+        // Desvincular ProjectMaterials que apuntaban a los previstos a borrar
         prisma.projectMaterial.updateMany({ where: { projectId: id, movementId: { in: movIds } }, data: { movementId: null } }),
+        // Soft-delete de los movimientos previstos. Los InvoiceItems quedan asociados
+        // (cascada hard) — Prisma no los borra al hacer deletedAt: si querés podés agregar
+        // un cleanup posterior, pero hoy el filtro por deletedAt: null los oculta.
         prisma.financeMovement.updateMany({ where: { id: { in: movIds } }, data: { deletedAt: new Date() } }),
       ]);
       const result = await generatePrevistosForProject(id, user.id, expectedDate);
-      return { ...result, regenerated: movIds.length };
+      return {
+        ...result,
+        deletedCount: movIds.length,
+        preservedCount: preservedMovs.length,
+        preservedDetails: preservedMovs.map((m) => ({
+          id: m.id,
+          descripcion: m.descripcion,
+          status: m.status,
+          monto: Number(m.monto),
+          moneda: m.moneda,
+        })),
+        regenerated: movIds.length,
+      };
     });
 
     // ─── Export PDF de lista de materiales ───────────────────────────────────

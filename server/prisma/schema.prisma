@@ -988,7 +988,7 @@ model FinanceMovement {
   comprobantes        FinanceComprobante[]
   movimientosStock    StockMovement[]
   historial           FinanceApprovalHistory[]
-  projectMaterial     ProjectMaterial?
+  projectMaterials    ProjectMaterial[]
   creadoPorId         String?
   creadoPor           User?                    @relation("FinanceMovCreadoPor", fields: [creadoPorId], references: [id])
   aprobadoPorId       String?
@@ -1319,7 +1319,7 @@ model ProjectMaterial {
 
   notes String?
 
-  movementId String?          @unique
+  movementId String?
   movement   FinanceMovement? @relation(fields: [movementId], references: [id])
 
   createdAt DateTime @default(now())
@@ -1327,6 +1327,7 @@ model ProjectMaterial {
 
   @@index([projectId])
   @@index([materialItemId])
+  @@index([movementId])
   @@map("project_materials")
 }
 

@@ -1,5 +1,37 @@
 # Novedades
 
+## v3.4
+
+### 28 de abril de 2026
+
+#### Previstos agrupados por categoría
+
+Antes, cuando se "Generaban previstos" desde la lista de materiales de Ingeniería, se creaba **un movimiento PREVISTO por cada ítem** (un panel, un inversor, un cable…). La pestaña Movimientos quedaba inundada de líneas.
+
+Ahora se agrupan:
+
+- **Un movimiento PREVISTO por categoría** (ej: "Previsto: Paneles solares", "Previsto: Estructura de montaje").
+- Si dentro de una categoría hay ítems en USD y otros en UYU, se separan en dos movimientos por moneda (ej: "Previsto: Estructura (USD)" y "Previsto: Estructura (UYU)").
+- El **detalle de cada material individual** se conserva como `InvoiceItems` del movimiento previsto (mismo desglose que ya tenían los movimientos A_PAGAR/PAGADO de Fase D), así no se pierde información.
+- Cada `ProjectMaterial` queda referenciando al movimiento PREVISTO de su categoría/moneda (relación N:1).
+
+#### Regenerar seguro: preserva los avanzados
+
+Al click en "Regenerar previstos":
+
+- **Modal con preview** que muestra cuántos movimientos se van a eliminar y cuántos se conservan.
+- Se eliminan **solo los movimientos en estado PREVISTO**.
+- Los movimientos en estados avanzados (**Comprometido, A pagar, Parcialmente pagado, Pagado**) se **preservan automáticamente**, no se tocan.
+- Lista colapsable con el detalle de los avanzados que se conservan (descripción, estado, monto, moneda).
+- Toast con resultado: *"X previstos creados por categoría · Y conservados sin tocar"*.
+
+#### Nuevos endpoints
+
+- `GET /api/projects/:id/materials/regenerate-impact` — preview de qué se borraría/conservaría
+- `POST /api/projects/:id/materials/regenerate-previsto` ahora devuelve `deletedCount`, `preservedCount` y `preservedDetails`
+
+---
+
 ## v3.3
 
 ### 28 de abril de 2026
