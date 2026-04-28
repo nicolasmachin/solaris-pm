@@ -23,23 +23,21 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "3.5",
+  version: "3.6",
   date: "28 de abril de 2026",
   sections: [
     {
       title: "Nuevo",
       items: [
-        "**Tasa de IVA por material** (default 22%, editable inline en Ingeniería, catálogo y desglose de factura).",
-        "**Columnas \"con IVA\"** en la lista de materiales del proyecto, en el desglose de factura de Finanzas y en el catálogo de materiales.",
-        "**Totales con IVA** en la pestaña Costos (previsto y real) y en el PDF \"con precios\" de la lista de materiales.",
+        "**Monitoreo de liquidez en Movimientos**: tres KPIs arriba de la lista — *Saldo actual en cuentas*, *Saldo proyectado final* y *Punto mínimo de liquidez* (con la fecha en que ocurre).",
+        "Si el punto mínimo de liquidez se proyecta **negativo**, el card se resalta en rojo y muestra un badge \"Riesgo de insuficiencia\".",
       ],
     },
     {
       title: "Mejoras",
       items: [
-        "El IVA del ítem del catálogo se hereda automáticamente al agregarlo a la lista de un proyecto.",
-        "Los previstos creados por la lista de materiales propagan el IVA al InvoiceItem del movimiento agrupado.",
-        "El total que se valida en el desglose contra el monto del movimiento sigue siendo sin IVA (la tolerancia de $1 no cambia).",
+        "Los KPIs de liquidez se recalculan automáticamente al crear/editar/anular movimientos o al modificar cuentas.",
+        "Endpoint `GET /finance/movements` extendido con los campos de liquidez (saldoActualCuentas, saldoFinalProyectado, saldoMinimoFuturo, fechaSaldoMinimoFuturo).",
       ],
     },
   ],
@@ -53,6 +51,14 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "3.5",
+    shortDate: "28 abr",
+    highlights: [
+      "Tasa de IVA por material y columnas \"con IVA\" en Ingeniería, Costos, Finanzas y catálogo.",
+      "Total con IVA al pie del PDF de lista de materiales.",
+    ],
+  },
   {
     version: "3.4",
     shortDate: "28 abr",

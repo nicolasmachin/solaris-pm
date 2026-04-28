@@ -1,5 +1,25 @@
 # Novedades
 
+## v3.6
+
+### 28 de abril de 2026
+
+#### Monitoreo de liquidez en Movimientos
+
+Tres KPIs nuevos arriba de la lista de Movimientos para ver de un vistazo la salud financiera de la operación:
+
+- **Saldo actual en cuentas**: suma de todas las cuentas activas convertidas a USD con el último tipo de cambio.
+- **Saldo proyectado final**: liquidez resultante después de aplicar TODOS los movimientos previstos del período (incluye PREVISTO, COMPROMETIDO, A_PAGAR).
+- **Punto mínimo de liquidez**: el saldo más bajo que se proyecta alcanzar en el futuro, con la **fecha** en la que ocurre. Si el mínimo es **negativo**, el card se resalta en rojo y muestra un badge "Riesgo de insuficiencia".
+
+Estos KPIs se recalculan en tiempo real cuando se crean/editan/anulan movimientos o se toggle/borra/crea/edita una cuenta. Las invalidaciones de queries se centralizaron en `invalidateFinanceLiquidity` para mantener consistencia.
+
+#### Endpoint de movimientos extendido
+
+`GET /api/finance/movements` ahora devuelve, además del listado paginado, los campos: `saldoActualCuentas`, `saldoFinalProyectado`, `saldoMinimoFuturo`, `fechaSaldoMinimoFuturo`, `sinCuentasActivas`, `usaFallbackTipoCambio`.
+
+---
+
 ## v3.5
 
 ### 28 de abril de 2026
