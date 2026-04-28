@@ -21,7 +21,28 @@ apiClient.interceptors.request.use((config) => {
 
 // Handle 401 → clear token and redirect to /login
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // G.2: si el backend recalculó deadlines (X-Deadline-Recalc header), avisar al usuario.
+    const recalcHeader = response.headers?.["x-deadline-recalc"];
+    if (recalcHeader && typeof recalcHeader === "string") {
+      try {
+        const r = JSON.parse(recalcHeader) as { updated?: number; preserved?: number; cleared?: number };
+        const u = r.updated ?? 0;
+        const p = r.preserved ?? 0;
+        const c = r.cleared ?? 0;
+        if (u > 0 || c > 0 || p > 0) {
+          const parts: string[] = [];
+          if (u > 0) parts.push(`${u} actualizado${u === 1 ? "" : "s"}`);
+          if (c > 0) parts.push(`${c} eliminado${c === 1 ? "" : "s"}`);
+          if (p > 0) parts.push(`${p} preservado${p === 1 ? "" : "s"} (manual)`);
+          toast.success(`Deadlines: ${parts.join(", ")}`, { duration: 4000 });
+        }
+      } catch {
+        // noop — header malformado no debe romper el flujo
+      }
+    }
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem("voltia-token");

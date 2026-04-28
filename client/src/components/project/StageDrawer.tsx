@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import type { Stage, Substage, SubstageStatus, FileAttachment, ChecklistItem } from "../../types/api.types";
 import { patchSubstage, patchStage, createSubstage, deleteSubstage, completeSubstage, completeAllSubstages, getStageUnassignedSubstagesCount } from "../../api/stages.api";
+import { setSubstageDeadlineManual, resetSubstageDeadlineOverride } from "../../api/deadline.api";
 import { useAuthStore } from "../../store/auth.store";
 import { apiClient } from "../../api/axios";
 import { uploadFile, getDownloadUrl } from "../../api/files.api";
@@ -20,6 +21,27 @@ interface StageDrawerProps {
   files: FileAttachment[];
   onClose: () => void;
   plannedWorkStart?: string | null;
+}
+
+// ─── Deadline helpers (G.2) ──────────────────────────────────────────────────
+
+const DEADLINE_MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function getDeadlineColor(deadline: string | null, completedAt: string | null): string {
+  if (!deadline) return "text-[var(--color-text-muted)]";
+  if (completedAt) return "text-green-500";
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const d = new Date(`${deadline}T00:00:00`);
+  const diffDays = Math.round((d.getTime() - now.getTime()) / DEADLINE_MS_PER_DAY);
+  if (diffDays < 0) return "text-red-500 font-semibold";
+  if (diffDays <= 3) return "text-orange-500";
+  if (diffDays <= 7) return "text-yellow-600";
+  return "text-[var(--color-text-secondary)]";
+}
+
+function formatDeadlineShort(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("es-UY", { day: "2-digit", month: "short" });
 }
 
 // ─── Checklist section ────────────────────────────────────────────────────────
@@ -229,6 +251,33 @@ function SubstageRow({
   const [notes, setNotes] = useState(substage.notes ?? "");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [checklistPendingItems, setChecklistPendingItems] = useState<{ id: string; label: string }[]>([]);
+  const [showDeadlineModal, setShowDeadlineModal] = useState(false);
+
+  const currentUser = useAuthStore((s) => s.user);
+  const canEditDeadline = currentUser?.role === "ADMIN" || currentUser?.role === "OPERACIONES";
+
+  const setDeadlineMut = useMutation({
+    mutationFn: (deadline: string | null) => setSubstageDeadlineManual(substage.id, deadline),
+    onSuccess: () => {
+      toast.success("Deadline actualizado");
+      setShowDeadlineModal(false);
+      onChanged();
+    },
+    onError: () => toast.error("Error al actualizar deadline"),
+  });
+
+  const resetDeadlineMut = useMutation({
+    mutationFn: () => resetSubstageDeadlineOverride(substage.id),
+    onSuccess: (data) => {
+      toast.success(
+        data.deadline
+          ? `Deadline recalculado: ${formatDeadlineShort(data.deadline)}`
+          : "Override eliminado, sin deadline (no hay regla configurada)",
+      );
+      onChanged();
+    },
+    onError: () => toast.error("Error al resetear deadline"),
+  });
 
   const isCompleted = substage.status === "COMPLETED";
 
@@ -327,6 +376,19 @@ function SubstageRow({
                 {new Date(substage.dueDate).toLocaleDateString("es-AR", { day: "2-digit", month: "short" })}
               </p>
             )}
+            {substage.deadline && (
+              <p className={`font-mono text-[10px] flex items-center gap-1 ${getDeadlineColor(substage.deadline, substage.actualEndDate)}`}>
+                <span>📅 Deadline: {formatDeadlineShort(substage.deadline)}</span>
+                {substage.deadlineManuallySet && (
+                  <span
+                    className="px-1 py-px text-[8px] rounded border border-[var(--color-border)] text-[var(--color-text-muted)] uppercase tracking-wider"
+                    title="Editado manualmente. No se recalcula automáticamente."
+                  >
+                    manual
+                  </span>
+                )}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col items-end gap-1">
@@ -354,13 +416,31 @@ function SubstageRow({
             {substage.notes && (
               <p className="text-[11px] text-[var(--color-text-secondary)] mb-2">{substage.notes}</p>
             )}
-            <div className="flex gap-2 mb-2">
+            <div className="flex gap-2 mb-2 flex-wrap">
               <button
                 onClick={() => setEditing(true)}
                 className="text-[10px] px-2 py-1 rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-app)] transition-colors"
               >
                 Editar
               </button>
+              {canEditDeadline && (
+                <button
+                  onClick={() => setShowDeadlineModal(true)}
+                  className="text-[10px] px-2 py-1 rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-app)] transition-colors"
+                  title="Editar deadline manualmente"
+                >
+                  {substage.deadline ? "Editar deadline" : "+ Agregar deadline"}
+                </button>
+              )}
+              {canEditDeadline && substage.deadlineManuallySet && (
+                <button
+                  onClick={() => resetDeadlineMut.mutate()}
+                  disabled={resetDeadlineMut.isPending}
+                  className="text-[10px] px-2 py-1 rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-app)] transition-colors disabled:opacity-60"
+                >
+                  Volver a cálculo automático
+                </button>
+              )}
               <button
                 onClick={() => setConfirmDelete(true)}
                 className="text-[10px] px-2 py-1 rounded border border-red-900 text-red-400 hover:bg-red-900/20 transition-colors"
@@ -431,6 +511,16 @@ function SubstageRow({
           </div>
         )}
       </li>
+
+      {/* Modal: edit deadline manualmente */}
+      {showDeadlineModal && (
+        <DeadlineEditModal
+          substage={substage}
+          isPending={setDeadlineMut.isPending}
+          onSave={(d) => setDeadlineMut.mutate(d)}
+          onClose={() => setShowDeadlineModal(false)}
+        />
+      )}
 
       {/* Confirm delete substage */}
       {confirmDelete && (
@@ -1208,5 +1298,76 @@ export function StageDrawer({ stage, projectId, files, onClose, plannedWorkStart
         </div>
       )}
     </>
+  );
+}
+
+// ─── Modal: Editar deadline manualmente (G.2) ─────────────────────────────────
+
+function DeadlineEditModal({
+  substage,
+  isPending,
+  onSave,
+  onClose,
+}: {
+  substage: Substage;
+  isPending: boolean;
+  onSave: (deadline: string | null) => void;
+  onClose: () => void;
+}) {
+  const [date, setDate] = useState(substage.deadline?.slice(0, 10) ?? "");
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
+      <div className="w-full max-w-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-2xl">
+        <div className="border-b border-[var(--color-border)] px-5 py-3">
+          <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+            Editar deadline de "{substage.name}"
+          </p>
+        </div>
+        <div className="px-5 py-4 space-y-3">
+          <div>
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
+              Deadline manual
+            </label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+            />
+          </div>
+          <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] text-[var(--color-text-secondary)]">
+            <strong className="text-amber-500">Atención:</strong> al editar manualmente, este deadline NO se recalculará automáticamente con cambios de fecha de instalación. Podés volver al cálculo automático con el botón "Volver a cálculo automático".
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 border-t border-[var(--color-border)] px-5 py-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-app)]"
+          >
+            Cancelar
+          </button>
+          {substage.deadline && (
+            <button
+              type="button"
+              onClick={() => onSave(null)}
+              disabled={isPending}
+              className="rounded-md border border-red-900 px-3 py-1.5 text-sm text-red-400 hover:bg-red-900/20 disabled:opacity-60"
+            >
+              Eliminar deadline
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => onSave(date || null)}
+            disabled={isPending || !date}
+            className="rounded-md bg-[var(--color-accent)] px-3 py-1.5 text-sm font-semibold text-[var(--color-bg-app)] hover:opacity-90 disabled:opacity-50"
+          >
+            {isPending ? "Guardando…" : "Guardar"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -183,6 +183,8 @@ export interface Substage {
   actualDurationDays?: number | null;
   delayDays?: number | null;
   notes: string | null;
+  deadline: string | null;
+  deadlineManuallySet: boolean;
   deletedAt: string | null;
   createdAt: string;
   updatedAt: string;

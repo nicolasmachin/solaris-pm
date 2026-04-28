@@ -96,6 +96,12 @@ import {
 import { createNotificationIfNotExists } from "../services/notification.service.js";
 import { createAndSendNotification, checkProgressMilestone } from "../services/notify.service.js";
 import { fetchBcuRatePreview } from "../services/exchange-rate.service.js";
+import {
+  applyDeadlineRulesToProject,
+  countProjectManualOverrides,
+  recalculateProjectDeadlines,
+  calculateSubstageDeadline,
+} from "../services/deadline.service.js";
 import { addDays, diffInDays, parseDateOnly, todayUtc, toDateOnlyString } from "../utils/dates.js";
 import { AppError, badRequest, conflict, forbidden, notFound } from "../utils/errors.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../utils/serialization.js";
@@ -1395,6 +1401,20 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     await createInitialPipeline(project.id, startDate, plannedEndDate, body.modalidadPago ?? null);
+
+    // Aplicar reglas de deadline al pipeline recién creado (G.2). Es un proyecto
+    // nuevo, no tiene overrides manuales todavía, así que recalcula todo.
+    const deadlineResult = await applyDeadlineRulesToProject(project.id);
+    if (deadlineResult.updated > 0 || deadlineResult.cleared > 0) {
+      await createAuditEntry({
+        entityType: AuditEntityType.project,
+        entityId: project.id,
+        projectId: project.id,
+        userId: user.id,
+        action: AuditAction.updated,
+        description: `Deadlines calculados automáticamente (${deadlineResult.updated} subetapas con deadline)`,
+      });
+    }
 
     await prisma.uteProcess.create({
       data: {
@@ -5973,7 +5993,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       },
     });
     await createAuditEntry({
-      entityType: AuditEntityType.system_setting,
+      entityType: AuditEntityType.setting,
       entityId: id,
       userId: user.id,
       action: AuditAction.updated,
@@ -5989,13 +6009,144 @@ export async function registerApiRoutes(app: FastifyInstance) {
     if (!existing) throw notFound("DEADLINE_RULE_NOT_FOUND", "Regla no encontrada");
     await prisma.deadlineRule.delete({ where: { id } });
     await createAuditEntry({
-      entityType: AuditEntityType.system_setting,
+      entityType: AuditEntityType.setting,
       entityId: id,
       userId: user.id,
       action: AuditAction.deleted,
       description: `Eliminó regla de deadline ${id}`,
     });
     return { success: true };
+  });
+
+  // ─── Recálculo manual de deadlines a nivel proyecto (G.2) ─────────────────
+  // Útil cuando se cambian reglas en Admin y se quiere aplicarlas al proyecto
+  // sin esperar al próximo cambio de fecha de instalación.
+
+  app.post("/projects/:id/recalculate-deadlines", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request, reply) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const body = z.object({ forceOverrides: z.boolean().optional() }).parse(request.body ?? {});
+    const force = body.forceOverrides ?? false;
+
+    const project = await prisma.project.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
+    if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+
+    if (!force) {
+      const overrideCount = await countProjectManualOverrides(id);
+      if (overrideCount > 0) {
+        return reply.code(409).send({
+          error: true,
+          code: "CONFIRM_RECALCULATE",
+          overrideCount,
+          message: `Hay ${overrideCount} deadline${overrideCount === 1 ? "" : "s"} editado${overrideCount === 1 ? "" : "s"} manualmente que será${overrideCount === 1 ? "" : "n"} recalculado${overrideCount === 1 ? "" : "s"}`,
+        });
+      }
+    }
+
+    const result = await recalculateProjectDeadlines(id, force);
+    await createAuditEntry({
+      entityType: AuditEntityType.project,
+      entityId: id,
+      projectId: id,
+      userId: user.id,
+      action: AuditAction.updated,
+      description: `Recalculó deadlines (${result.updated} actualizados, ${result.preserved} preservados, ${result.cleared} eliminados)`,
+    });
+    return result;
+  });
+
+  // ─── Edición manual de deadline por subetapa (G.2) ────────────────────────
+  // Permitido a ADMIN y OPERACIONES. Marca deadlineManuallySet=true para que
+  // el recálculo automático no lo pise (a menos que el usuario confirme).
+
+  app.patch("/substages/:id/deadline", async (request, reply) => {
+    const user = ensureUser(request);
+    if (user.role !== "ADMIN" && user.role !== "OPERACIONES") {
+      return reply.code(403).send({
+        error: true,
+        code: "INSUFFICIENT_PERMISSIONS",
+        message: "Solo ADMIN y OPERACIONES pueden editar deadlines manualmente",
+      });
+    }
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const body = z.object({ deadline: dateOnlySchema.nullable() }).strict().parse(request.body);
+
+    const existing = await prisma.substage.findFirst({
+      where: { id, deletedAt: null },
+      select: { id: true, name: true, projectId: true },
+    });
+    if (!existing) throw notFound("SUBSTAGE_NOT_FOUND", "Subetapa no encontrada");
+
+    const newDeadline = body.deadline ? parseDateOnly(body.deadline) : null;
+    const updated = await prisma.substage.update({
+      where: { id },
+      data: { deadline: newDeadline, deadlineManuallySet: true },
+    });
+
+    await createAuditEntry({
+      entityType: AuditEntityType.substage,
+      entityId: id,
+      projectId: existing.projectId,
+      userId: user.id,
+      action: AuditAction.updated,
+      description: newDeadline
+        ? `Editó deadline manualmente de "${existing.name}" → ${toDateOnlyString(newDeadline)}`
+        : `Eliminó deadline de "${existing.name}"`,
+    });
+    return {
+      id: updated.id,
+      deadline: serializeDateOnly(updated.deadline),
+      deadlineManuallySet: updated.deadlineManuallySet,
+    };
+  });
+
+  // Resetea el override manual y recalcula con la regla actual.
+  app.delete("/substages/:id/deadline-override", async (request, reply) => {
+    const user = ensureUser(request);
+    if (user.role !== "ADMIN" && user.role !== "OPERACIONES") {
+      return reply.code(403).send({
+        error: true,
+        code: "INSUFFICIENT_PERMISSIONS",
+        message: "Solo ADMIN y OPERACIONES pueden gestionar deadlines",
+      });
+    }
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+
+    const existing = await prisma.substage.findFirst({
+      where: { id, deletedAt: null },
+      select: {
+        id: true,
+        name: true,
+        sopCode: true,
+        stageId: true,
+        projectId: true,
+        deadline: true,
+        project: { select: { id: true, createdAt: true } },
+      },
+    });
+    if (!existing) throw notFound("SUBSTAGE_NOT_FOUND", "Subetapa no encontrada");
+
+    const newDeadline = await calculateSubstageDeadline(existing, existing.project);
+    const updated = await prisma.substage.update({
+      where: { id },
+      data: { deadline: newDeadline, deadlineManuallySet: false },
+    });
+
+    await createAuditEntry({
+      entityType: AuditEntityType.substage,
+      entityId: id,
+      projectId: existing.projectId,
+      userId: user.id,
+      action: AuditAction.updated,
+      description: newDeadline
+        ? `Override manual eliminado, deadline recalculado a ${toDateOnlyString(newDeadline)}`
+        : `Override manual eliminado, subetapa sin deadline (no hay regla configurada)`,
+    });
+    return {
+      id: updated.id,
+      deadline: serializeDateOnly(updated.deadline),
+      deadlineManuallySet: updated.deadlineManuallySet,
+    };
   });
 
   app.get("/teams", { preHandler: authorize(Module.CONFIGURACION, Action.VIEW) }, async (request) => {
@@ -6150,6 +6301,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     segments: z.array(segmentInputSchema).min(1).optional(),
     plannedWorkStart: dateOnlySchema.optional(),
     plannedWorkEnd: dateOnlySchema.optional(),
+    forceRecalculate: z.boolean().optional(),
   }).refine(
     (v) => v.segments !== undefined || (v.plannedWorkStart !== undefined && v.plannedWorkEnd !== undefined),
     { message: "Hay que enviar segments o plannedWorkStart/plannedWorkEnd" },
@@ -6163,7 +6315,22 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // Compat: si viene un único rango, se trata como reemplazo total por 1 segment.
     plannedWorkStart: dateOnlySchema.optional(),
     plannedWorkEnd: dateOnlySchema.optional(),
+    forceRecalculate: z.boolean().optional(),
   }).strict();
+
+  // Helper de G.2: guarda contra recálculos no confirmados cuando hay overrides
+  // manuales. Devuelve null si está OK proceder, o un objeto 409 para enviar.
+  async function deadlineRecalcGuard(projectId: string, forceRecalculate: boolean) {
+    if (forceRecalculate) return null;
+    const overrideCount = await countProjectManualOverrides(projectId);
+    if (overrideCount === 0) return null;
+    return {
+      error: true,
+      code: "CONFIRM_RECALCULATE",
+      overrideCount,
+      message: `Hay ${overrideCount} deadline${overrideCount === 1 ? "" : "s"} editado${overrideCount === 1 ? "" : "s"} manualmente que será${overrideCount === 1 ? "" : "n"} recalculado${overrideCount === 1 ? "" : "s"}`,
+    } as const;
+  }
 
   function assertSegmentsNoOverlap(segments: Array<{ startDate: Date; endDate: Date }>) {
     const sorted = [...segments].sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
@@ -6494,6 +6661,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
       );
     }
 
+    // G.2: guard de recálculo si hay overrides manuales sin confirmación
+    const guard = await deadlineRecalcGuard(body.projectId, body.forceRecalculate ?? false);
+    if (guard) return reply.code(409).send(guard);
+
     // Regla 1: verificar coherencia con OPERACIONES (aplicada sobre el envelope)
     const validation = await validateInstallationAgainstOperations(body.projectId, envStart, envEnd);
     if (!validation.ok) {
@@ -6558,11 +6729,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
       metadata: { teamName: created.teamName, teamColor: created.teamColor, segmentsCount: segments.length },
     });
 
+    // G.2: recalcular deadlines del proyecto con la nueva fecha de instalación
+    const deadlineRecalc = await recalculateProjectDeadlines(body.projectId, body.forceRecalculate ?? false);
+    reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
+
     reply.code(201);
     return { data: serializeSchedule(created), warning: validation.warning };
   });
 
-  app.patch("/calendar/:id", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
+  app.patch("/calendar/:id", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request, reply) => {
     const user = ensureUser(request);
     const params = z.object({ id: z.string() }).parse(request.params);
     const body = calendarPatchSchema.parse(request.body);
@@ -6591,6 +6766,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
       body.plannedWorkStart !== undefined ||
       body.plannedWorkEnd !== undefined;
     if (wantsSegmentReplace) {
+      // G.2: si los segmentos cambian, validar overrides manuales antes de aplicar
+      const guard = await deadlineRecalcGuard(existing.projectId, body.forceRecalculate ?? false);
+      if (guard) return reply.code(409).send(guard);
+
       const segments = normalizeIncomingSegments(body);
       const { start: envStart, end: envEnd } = envelopeOf(segments);
       const validation = await validateInstallationAgainstOperations(existing.projectId, envStart, envEnd);
@@ -6624,6 +6803,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
         ? `Actualizó los tramos de la instalación (${updated.segments.length})`
         : `Actualizó la instalación`,
     });
+
+    // G.2: recalcular si cambiaron los tramos
+    if (wantsSegmentReplace) {
+      const deadlineRecalc = await recalculateProjectDeadlines(existing.projectId, body.forceRecalculate ?? false);
+      reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
+    }
 
     return serializeSchedule(updated);
   });
@@ -6743,7 +6928,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
   // Reprograma un tramo (segment) puntual. Si no se manda segmentId y el schedule
   // tiene exactamente 1 tramo, se toma ese como default (compat con el flujo viejo).
-  app.patch("/calendar/:id/reschedule", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
+  app.patch("/calendar/:id/reschedule", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request, reply) => {
     const user = ensureUser(request);
     const params = z.object({ id: z.string() }).parse(request.params);
     const body = z
@@ -6751,6 +6936,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         plannedWorkStart: dateOnlySchema,
         plannedWorkEnd: dateOnlySchema,
         segmentId: z.string().optional(),
+        forceRecalculate: z.boolean().optional(),
       })
       .strict()
       .parse(request.body);
@@ -6762,6 +6948,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
     if (!existing) {
       throw notFound("INSTALLATION_NOT_FOUND", "Instalación no encontrada");
     }
+
+    // G.2: guard de overrides manuales
+    const guard = await deadlineRecalcGuard(existing.projectId, body.forceRecalculate ?? false);
+    if (guard) return reply.code(409).send(guard);
 
     const newStart = parseDateOnly(body.plannedWorkStart);
     const newEnd = parseDateOnly(body.plannedWorkEnd);
@@ -6823,6 +7013,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       description: `Reprogramó un tramo de la instalación: ${toDateOnlyString(targetSegment.startDate)}→${toDateOnlyString(targetSegment.endDate)} → ${toDateOnlyString(newStart)}→${toDateOnlyString(newEnd)}`,
     });
 
+    const deadlineRecalc = await recalculateProjectDeadlines(existing.projectId, body.forceRecalculate ?? false);
+    reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
+
     return { data: serializeSchedule(updated), warning: validation.warning };
   });
 
@@ -6831,7 +7024,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
   app.post("/calendar/:id/segments", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request, reply) => {
     const user = ensureUser(request);
     const params = z.object({ id: z.string() }).parse(request.params);
-    const body = segmentInputSchema.parse(request.body);
+    const segmentBodySchema = z.object({
+      startDate: dateOnlySchema,
+      endDate: dateOnlySchema,
+      notes: z.string().trim().nullable().optional(),
+      forceRecalculate: z.boolean().optional(),
+    }).strict();
+    const body = segmentBodySchema.parse(request.body);
 
     const existing = await prisma.installationSchedule.findFirst({
       where: { id: params.id, deletedAt: null },
@@ -6840,6 +7039,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
     if (!existing) {
       throw notFound("INSTALLATION_NOT_FOUND", "Instalación no encontrada");
     }
+
+    // G.2: guard de overrides
+    const guard = await deadlineRecalcGuard(existing.projectId, body.forceRecalculate ?? false);
+    if (guard) return reply.code(409).send(guard);
 
     const startDate = parseDateOnly(body.startDate);
     const endDate = parseDateOnly(body.endDate);
@@ -6878,17 +7081,21 @@ export async function registerApiRoutes(app: FastifyInstance) {
       description: `Agregó un tramo a la instalación: ${toDateOnlyString(startDate)}→${toDateOnlyString(endDate)}`,
     });
 
+    const deadlineRecalc = await recalculateProjectDeadlines(existing.projectId, body.forceRecalculate ?? false);
+    reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
+
     reply.code(201);
     return serializeSchedule(updated);
   });
 
-  app.patch("/calendar/:id/segments/:segmentId", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
+  app.patch("/calendar/:id/segments/:segmentId", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request, reply) => {
     const user = ensureUser(request);
     const params = z.object({ id: z.string(), segmentId: z.string() }).parse(request.params);
     const body = z.object({
       startDate: dateOnlySchema.optional(),
       endDate: dateOnlySchema.optional(),
       notes: z.string().trim().nullable().optional(),
+      forceRecalculate: z.boolean().optional(),
     }).strict().parse(request.body);
 
     const existing = await prisma.installationSchedule.findFirst({
@@ -6901,6 +7108,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const target = existing.segments.find((s) => s.id === params.segmentId);
     if (!target) {
       throw notFound("SEGMENT_NOT_FOUND", "Tramo no encontrado");
+    }
+
+    // G.2: si cambia la fecha del segmento → guard de overrides
+    const datesChanging = body.startDate !== undefined || body.endDate !== undefined;
+    if (datesChanging) {
+      const guard = await deadlineRecalcGuard(existing.projectId, body.forceRecalculate ?? false);
+      if (guard) return reply.code(409).send(guard);
     }
 
     const nextStart = body.startDate ? parseDateOnly(body.startDate) : target.startDate;
@@ -6941,12 +7155,19 @@ export async function registerApiRoutes(app: FastifyInstance) {
       description: `Editó un tramo: ${toDateOnlyString(target.startDate)}→${toDateOnlyString(target.endDate)} → ${toDateOnlyString(nextStart)}→${toDateOnlyString(nextEnd)}`,
     });
 
+    if (datesChanging) {
+      const deadlineRecalc = await recalculateProjectDeadlines(existing.projectId, body.forceRecalculate ?? false);
+      reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
+    }
+
     return serializeSchedule(updated);
   });
 
-  app.delete("/calendar/:id/segments/:segmentId", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
+  app.delete("/calendar/:id/segments/:segmentId", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request, reply) => {
     const user = ensureUser(request);
     const params = z.object({ id: z.string(), segmentId: z.string() }).parse(request.params);
+    const query = z.object({ forceRecalculate: z.union([z.literal("true"), z.literal("false")]).optional() }).parse(request.query);
+    const forceRecalculate = query.forceRecalculate === "true";
 
     const existing = await prisma.installationSchedule.findFirst({
       where: { id: params.id, deletedAt: null },
@@ -6961,6 +7182,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
     if (existing.segments.length <= 1) {
       throw badRequest("LAST_SEGMENT", "Una instalación debe tener al menos un tramo");
+    }
+
+    // G.2: si el tramo eliminado es el más temprano, podría cambiar el earliest start
+    const sortedByStart = [...existing.segments].sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+    const isEarliest = sortedByStart[0].id === target.id;
+    if (isEarliest) {
+      const guard = await deadlineRecalcGuard(existing.projectId, forceRecalculate);
+      if (guard) return reply.code(409).send(guard);
     }
 
     await prisma.installationSegment.delete({ where: { id: target.id } });
@@ -6984,12 +7213,19 @@ export async function registerApiRoutes(app: FastifyInstance) {
       description: `Eliminó un tramo de la instalación (${toDateOnlyString(target.startDate)}→${toDateOnlyString(target.endDate)})`,
     });
 
+    if (isEarliest) {
+      const deadlineRecalc = await recalculateProjectDeadlines(existing.projectId, forceRecalculate);
+      reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
+    }
+
     return serializeSchedule(updated);
   });
 
-  app.delete("/calendar/:id", { preHandler: authorize(Module.OPERACIONES, Action.DELETE) }, async (request) => {
+  app.delete("/calendar/:id", { preHandler: authorize(Module.OPERACIONES, Action.DELETE) }, async (request, reply) => {
     const user = ensureUser(request);
     const params = z.object({ id: z.string() }).parse(request.params);
+    const query = z.object({ forceRecalculate: z.union([z.literal("true"), z.literal("false")]).optional() }).parse(request.query);
+    const forceRecalculate = query.forceRecalculate === "true";
 
     const existing = await prisma.installationSchedule.findFirst({
       where: { id: params.id, deletedAt: null },
@@ -6998,6 +7234,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
     if (!existing) {
       throw notFound("INSTALLATION_NOT_FOUND", "Instalación no encontrada");
     }
+
+    // G.2: borrar el schedule deja DIAS_ANTES_INSTALACION sin fecha → guard
+    const guard = await deadlineRecalcGuard(existing.projectId, forceRecalculate);
+    if (guard) return reply.code(409).send(guard);
 
     await prisma.installationSchedule.update({
       where: { id: existing.id },
@@ -7012,6 +7252,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       action: AuditAction.deleted,
       description: `Eliminó la programación de instalación de ${existing.project.clientName}`,
     });
+
+    const deadlineRecalc = await recalculateProjectDeadlines(existing.projectId, forceRecalculate);
+    reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
 
     return { success: true };
   });

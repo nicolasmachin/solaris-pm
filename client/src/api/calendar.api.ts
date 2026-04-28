@@ -99,14 +99,35 @@ export async function getCalendarTeams(): Promise<CalendarTeam[]> {
   return data;
 }
 
+// G.2: si el backend devuelve 409 CONFIRM_RECALCULATE (por overrides manuales),
+// pide confirmación al usuario y reintenta con forceRecalculate=true.
+async function withDeadlineConfirm<T>(call: (force: boolean) => Promise<T>): Promise<T> {
+  try {
+    return await call(false);
+  } catch (err) {
+    const e = err as { response?: { status?: number; data?: { code?: string; overrideCount?: number; message?: string } } };
+    if (e.response?.status === 409 && e.response?.data?.code === "CONFIRM_RECALCULATE") {
+      const count = e.response.data.overrideCount ?? 0;
+      const ok = window.confirm(
+        `Hay ${count} deadline${count === 1 ? "" : "s"} editado${count === 1 ? "" : "s"} manualmente que ${count === 1 ? "será recalculado" : "serán recalculados"}.\n\n¿Continuar?`,
+      );
+      if (!ok) throw err;
+      return await call(true);
+    }
+    throw err;
+  }
+}
+
 export async function createSchedule(body: {
   projectId: string;
   teamId: string;
   notes?: string | null;
   segments: Array<{ startDate: string; endDate: string; notes?: string | null }>;
 }): Promise<ScheduleWithWarning> {
-  const { data } = await apiClient.post<ScheduleWithWarning>("/api/calendar", body);
-  return data;
+  return withDeadlineConfirm(async (forceRecalculate) => {
+    const { data } = await apiClient.post<ScheduleWithWarning>("/api/calendar", { ...body, forceRecalculate });
+    return data;
+  });
 }
 
 export async function patchSchedule(
@@ -121,30 +142,36 @@ export async function patchSchedule(
     plannedWorkEnd?: string;
   },
 ): Promise<InstallationSchedule> {
-  const { data } = await apiClient.patch<InstallationSchedule>(`/api/calendar/${id}`, body);
-  return data;
+  return withDeadlineConfirm(async (forceRecalculate) => {
+    const { data } = await apiClient.patch<InstallationSchedule>(`/api/calendar/${id}`, { ...body, forceRecalculate });
+    return data;
+  });
 }
 
 export async function rescheduleSchedule(
   id: string,
   body: { plannedWorkStart: string; plannedWorkEnd: string; segmentId?: string },
 ): Promise<ScheduleWithWarning> {
-  const { data } = await apiClient.patch<ScheduleWithWarning>(
-    `/api/calendar/${id}/reschedule`,
-    body,
-  );
-  return data;
+  return withDeadlineConfirm(async (forceRecalculate) => {
+    const { data } = await apiClient.patch<ScheduleWithWarning>(
+      `/api/calendar/${id}/reschedule`,
+      { ...body, forceRecalculate },
+    );
+    return data;
+  });
 }
 
 export async function addSegment(
   scheduleId: string,
   body: { startDate: string; endDate: string; notes?: string | null },
 ): Promise<InstallationSchedule> {
-  const { data } = await apiClient.post<InstallationSchedule>(
-    `/api/calendar/${scheduleId}/segments`,
-    body,
-  );
-  return data;
+  return withDeadlineConfirm(async (forceRecalculate) => {
+    const { data } = await apiClient.post<InstallationSchedule>(
+      `/api/calendar/${scheduleId}/segments`,
+      { ...body, forceRecalculate },
+    );
+    return data;
+  });
 }
 
 export async function patchSegment(
@@ -152,21 +179,26 @@ export async function patchSegment(
   segmentId: string,
   body: { startDate?: string; endDate?: string; notes?: string | null },
 ): Promise<InstallationSchedule> {
-  const { data } = await apiClient.patch<InstallationSchedule>(
-    `/api/calendar/${scheduleId}/segments/${segmentId}`,
-    body,
-  );
-  return data;
+  return withDeadlineConfirm(async (forceRecalculate) => {
+    const { data } = await apiClient.patch<InstallationSchedule>(
+      `/api/calendar/${scheduleId}/segments/${segmentId}`,
+      { ...body, forceRecalculate },
+    );
+    return data;
+  });
 }
 
 export async function deleteSegment(
   scheduleId: string,
   segmentId: string,
 ): Promise<InstallationSchedule> {
-  const { data } = await apiClient.delete<InstallationSchedule>(
-    `/api/calendar/${scheduleId}/segments/${segmentId}`,
-  );
-  return data;
+  return withDeadlineConfirm(async (forceRecalculate) => {
+    const { data } = await apiClient.delete<InstallationSchedule>(
+      `/api/calendar/${scheduleId}/segments/${segmentId}`,
+      { params: forceRecalculate ? { forceRecalculate: "true" } : {} },
+    );
+    return data;
+  });
 }
 
 export async function confirmSchedule(id: string): Promise<InstallationSchedule> {
@@ -175,7 +207,12 @@ export async function confirmSchedule(id: string): Promise<InstallationSchedule>
 }
 
 export async function deleteSchedule(id: string): Promise<void> {
-  await apiClient.delete(`/api/calendar/${id}`);
+  await withDeadlineConfirm(async (forceRecalculate) => {
+    await apiClient.delete(`/api/calendar/${id}`, {
+      params: forceRecalculate ? { forceRecalculate: "true" } : {},
+    });
+    return null;
+  });
 }
 
 export async function installationCheck(projectId: string): Promise<InstallationCheckResponse> {

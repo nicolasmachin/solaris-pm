@@ -609,6 +609,8 @@ export function serializeSubstage(substage: {
   notes: string | null;
   isSystem: boolean;
   isActive: boolean;
+  deadline?: Date | null;
+  deadlineManuallySet?: boolean;
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -622,6 +624,8 @@ export function serializeSubstage(substage: {
     plannedEndDate: serializeDateOnly(substage.plannedEndDate),
     actualStartDate: serializeDateOnly(substage.actualStartDate),
     actualEndDate: serializeDateOnly(substage.actualEndDate),
+    deadline: serializeDateOnly(substage.deadline ?? null),
+    deadlineManuallySet: substage.deadlineManuallySet ?? false,
     deletedAt: serializeDate(substage.deletedAt),
     createdAt: serializeDate(substage.createdAt),
     updatedAt: serializeDate(substage.updatedAt),

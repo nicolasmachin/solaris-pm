@@ -1,6 +1,13 @@
 import { DeadlineRuleTipo, type DeadlineRule, type Substage, type StageType } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 
+export interface RecalculateResult {
+  total: number;
+  updated: number;
+  preserved: number;
+  cleared: number;
+}
+
 // Resuelve la regla aplicable a una subetapa: prioridad sopCode > substageName
 // > default de etapa (sopCode y substageName ambos null).
 export async function findRuleForSubstage(
@@ -74,4 +81,88 @@ export async function calculateSubstageDeadline(
     default:
       return null;
   }
+}
+
+// Cuenta cuántas subetapas del proyecto tienen deadline editado manualmente.
+// Usado para detectar conflictos antes de un recálculo masivo.
+export async function countProjectManualOverrides(projectId: string): Promise<number> {
+  return prisma.substage.count({
+    where: {
+      projectId,
+      deletedAt: null,
+      isActive: true,
+      deadlineManuallySet: true,
+    },
+  });
+}
+
+// Aplica las reglas de deadline a TODAS las subetapas del proyecto.
+// Si forceOverrides=false → respeta las subetapas con deadlineManuallySet=true.
+// Si forceOverrides=true → recalcula también las que tienen override manual.
+export async function recalculateProjectDeadlines(
+  projectId: string,
+  forceOverrides: boolean = false,
+): Promise<RecalculateResult> {
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { id: true, createdAt: true },
+  });
+  if (!project) return { total: 0, updated: 0, preserved: 0, cleared: 0 };
+
+  const stages = await prisma.stage.findMany({
+    where: { projectId, deletedAt: null },
+    select: {
+      id: true,
+      name: true,
+      substages: {
+        where: { deletedAt: null, isActive: true },
+        select: {
+          id: true,
+          stageId: true,
+          projectId: true,
+          name: true,
+          sopCode: true,
+          deadline: true,
+          deadlineManuallySet: true,
+        },
+      },
+    },
+  });
+
+  let updated = 0;
+  let preserved = 0;
+  let cleared = 0;
+  let total = 0;
+
+  for (const stage of stages) {
+    for (const substage of stage.substages) {
+      total++;
+      if (substage.deadlineManuallySet && !forceOverrides) {
+        preserved++;
+        continue;
+      }
+      const newDeadline = await calculateSubstageDeadline(substage, project);
+      const previousDeadline = substage.deadline;
+      const sameDate =
+        (newDeadline?.toISOString().slice(0, 10) ?? null) ===
+        (previousDeadline?.toISOString().slice(0, 10) ?? null);
+
+      if (sameDate && !substage.deadlineManuallySet) continue;
+
+      await prisma.substage.update({
+        where: { id: substage.id },
+        data: { deadline: newDeadline, deadlineManuallySet: false },
+      });
+      if (newDeadline) updated++;
+      else cleared++;
+    }
+  }
+
+  return { total, updated, preserved, cleared };
+}
+
+// Llamado al crear un proyecto: pobla el deadline inicial de todas sus subetapas
+// segun las reglas activas. No respeta overrides porque no los hay todavía.
+export async function applyDeadlineRulesToProject(projectId: string): Promise<RecalculateResult> {
+  return recalculateProjectDeadlines(projectId, true);
 }
