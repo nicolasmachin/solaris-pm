@@ -8200,9 +8200,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
       status: FinanceMovementStatus;
       cobrado: boolean;
     }) {
+      // Un movimiento se considera "concretado" (ya impactó el flujo de caja)
+      // cuando GASTO está PAGADO, INGRESO está cobrado, o es un AJUSTE
+      // (instantáneo). PARCIALMENTE_PAGADO no se considera concretado completo.
       return (
         (row.tipoMovimiento === TipoMovimiento.GASTO && row.status === FinanceMovementStatus.PAGADO) ||
-        (row.tipoMovimiento === TipoMovimiento.INGRESO && row.cobrado)
+        (row.tipoMovimiento === TipoMovimiento.INGRESO && row.cobrado) ||
+        row.tipoMovimiento === TipoMovimiento.AJUSTE
       );
     }
 

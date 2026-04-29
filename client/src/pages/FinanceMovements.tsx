@@ -39,8 +39,18 @@ function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).
 function isFutureMovement(fechaEfectiva: string, todayIso: string) {
   return fechaEfectiva >= todayIso;
 }
+// Concretado = ya impactó el flujo de caja. Re-derivamos del campo canónico
+// (status / cobrado / tipoMovimiento) y NO confiamos sólo en `saldoEsReal`,
+// como salvaguarda si el backend devolviese info inconsistente.
+function isMovementConcretado(mov: FinanceMovement): boolean {
+  if (mov.tipoMovimiento === 'GASTO') return mov.status === 'PAGADO';
+  if (mov.tipoMovimiento === 'INGRESO') return mov.cobrado === true;
+  if (mov.tipoMovimiento === 'AJUSTE') return true;
+  return false;
+}
 function isPastPendingMovement(mov: FinanceMovement, todayIso: string) {
-  return !mov.saldoEsReal && mov.fechaEfectiva < todayIso;
+  if (mov.fechaEfectiva >= todayIso) return false;
+  return !isMovementConcretado(mov);
 }
 
 // ─── Movimiento Form ──────────────────────────────────────────────────────────
