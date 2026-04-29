@@ -10032,6 +10032,47 @@ export async function registerApiRoutes(app: FastifyInstance) {
       }
     }
 
+    // G.8: helper que crea un Payment + PaymentApplication automáticos para un
+    // movimiento GASTO PAGADO con proveedor + cuenta. Se invoca al crear el
+    // movimiento o al hacerlo transicionar a PAGADO sin pasar por el flujo manual.
+    // Idempotente: el caller verifica que no haya ya applications activas.
+    async function createAutoPaymentForMovement(
+      tx: Prisma.TransactionClient,
+      movement: {
+        id: string;
+        fecha: Date;
+        monto: import("@prisma/client/runtime/library").Decimal;
+        moneda: Moneda;
+        tipoCambio: import("@prisma/client/runtime/library").Decimal | null;
+        descripcion: string;
+        supplierId: string;
+        accountId: string;
+      },
+      userId: string,
+    ) {
+      const payment = await tx.payment.create({
+        data: {
+          supplierId: movement.supplierId,
+          accountId: movement.accountId,
+          fecha: movement.fecha,
+          monto: movement.monto,
+          moneda: movement.moneda,
+          metodo: MetodoPago.OTRO,
+          referencia: `Auto-pago: ${movement.descripcion}`.slice(0, 200),
+          notas: "Pago automático generado al crear movimiento PAGADO directamente",
+          createdById: userId,
+        },
+      });
+      await tx.paymentApplication.create({
+        data: {
+          paymentId: payment.id,
+          movementId: movement.id,
+          montoAplicado: movement.monto,
+        },
+      });
+      return payment;
+    }
+
     app.post("/finance/movements", { preHandler: authorize(Module.FINANZAS, Action.CREATE) }, async (request) => {
       const user = ensureUser(request);
       const body = movementCreateSchema.parse(request.body);
@@ -10065,33 +10106,63 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const requiresItemDetail = body.tipoMovimiento === TipoMovimiento.GASTO
         && (status === FinanceMovementStatus.A_PAGAR || status === FinanceMovementStatus.PAGADO);
 
-      const movement = await prisma.financeMovement.create({
-        data: {
-          fecha,
-          mes,
-          anio,
-          tipoMovimiento: body.tipoMovimiento,
-          categoriaPrincipal: body.categoriaPrincipal,
-          subcategoriaId: body.subcategoriaId,
-          descripcion: body.descripcion,
-          monto: new Prisma.Decimal(body.monto),
-          moneda: body.moneda,
-          tipoCambio,
-          pagado,
-          cobrado: body.cobrado,
-          impactaFlujo: body.impactaFlujo,
-          status,
-          expectedDate: body.expectedDate ? parseDateOnly(body.expectedDate) : null,
-          dueDate: body.dueDate ? parseDateOnly(body.dueDate) : null,
-          requiresItemDetail,
-          projectId: body.projectId,
-          supplierId: body.supplierId,
-          accountId: body.accountId,
-          observaciones: body.observaciones,
-          estadoAprobacion: body.estadoAprobacion,
-          archivoAdjuntoUrl: body.archivoAdjuntoUrl,
-          creadoPorId: user.id,
-        },
+      // G.8: si el movimiento se crea directamente PAGADO con proveedor + cuenta,
+      // generamos el Payment + PaymentApplication automáticamente para que el
+      // saldo del proveedor quede consistente (factura pagada en su totalidad).
+      const shouldAutoPayment =
+        body.tipoMovimiento === TipoMovimiento.GASTO &&
+        status === FinanceMovementStatus.PAGADO &&
+        !!body.supplierId &&
+        !!body.accountId;
+
+      const { movement, autoPayment } = await prisma.$transaction(async (tx) => {
+        const created = await tx.financeMovement.create({
+          data: {
+            fecha,
+            mes,
+            anio,
+            tipoMovimiento: body.tipoMovimiento,
+            categoriaPrincipal: body.categoriaPrincipal,
+            subcategoriaId: body.subcategoriaId,
+            descripcion: body.descripcion,
+            monto: new Prisma.Decimal(body.monto),
+            moneda: body.moneda,
+            tipoCambio,
+            pagado,
+            cobrado: body.cobrado,
+            impactaFlujo: body.impactaFlujo,
+            status,
+            expectedDate: body.expectedDate ? parseDateOnly(body.expectedDate) : null,
+            dueDate: body.dueDate ? parseDateOnly(body.dueDate) : null,
+            requiresItemDetail,
+            projectId: body.projectId,
+            supplierId: body.supplierId,
+            accountId: body.accountId,
+            observaciones: body.observaciones,
+            estadoAprobacion: body.estadoAprobacion,
+            archivoAdjuntoUrl: body.archivoAdjuntoUrl,
+            creadoPorId: user.id,
+          },
+        });
+
+        let payment = null as Awaited<ReturnType<typeof createAutoPaymentForMovement>> | null;
+        if (shouldAutoPayment) {
+          payment = await createAutoPaymentForMovement(
+            tx,
+            {
+              id: created.id,
+              fecha: created.fecha,
+              monto: created.monto,
+              moneda: created.moneda,
+              tipoCambio: created.tipoCambio,
+              descripcion: created.descripcion,
+              supplierId: body.supplierId!,
+              accountId: body.accountId!,
+            },
+            user.id,
+          );
+        }
+        return { movement: created, autoPayment: payment };
       });
 
       await createAuditEntry({
@@ -10102,6 +10173,18 @@ export async function registerApiRoutes(app: FastifyInstance) {
         action: AuditAction.created,
         description: `Registró movimiento: ${body.descripcion} por ${body.monto} ${body.moneda}`,
       });
+
+      if (autoPayment) {
+        await createAuditEntry({
+          entityType: AuditEntityType.finance_movement,
+          entityId: autoPayment.id,
+          projectId: body.projectId,
+          userId: user.id,
+          action: AuditAction.created,
+          description: `Auto-pago generado para movimiento PAGADO ${movement.id}`,
+          metadata: { autoGenerated: true, sourceMovementId: movement.id },
+        });
+      }
 
       return { ...movement, monto: decimalToNumber(movement.monto), tipoCambio: movement.tipoCambio ? decimalToNumber(movement.tipoCambio) : null };
     });
@@ -10206,6 +10289,50 @@ export async function registerApiRoutes(app: FastifyInstance) {
       }
 
       const updated = await prisma.financeMovement.update({ where: { id }, data: updateData });
+
+      // G.8: si el movimiento pasó a PAGADO en este patch (desde otro estado)
+      // y tiene proveedor + cuenta y NO había applications activas, generamos
+      // el auto-Payment para mantener coherencia del saldo del proveedor.
+      const wasNotPagado = existing.status !== FinanceMovementStatus.PAGADO;
+      const isNowPagado = effectiveStatus === FinanceMovementStatus.PAGADO;
+      if (
+        wasNotPagado && isNowPagado &&
+        existing.tipoMovimiento === TipoMovimiento.GASTO &&
+        updated.supplierId &&
+        updated.accountId
+      ) {
+        const existingAppsCount = await prisma.paymentApplication.count({
+          where: { movementId: id, payment: { deletedAt: null } },
+        });
+        if (existingAppsCount === 0) {
+          const autoPayment = await prisma.$transaction(async (tx) => {
+            return createAutoPaymentForMovement(
+              tx,
+              {
+                id: updated.id,
+                fecha: updated.fecha,
+                monto: updated.monto,
+                moneda: updated.moneda,
+                tipoCambio: updated.tipoCambio,
+                descripcion: updated.descripcion,
+                supplierId: updated.supplierId!,
+                accountId: updated.accountId!,
+              },
+              user.id,
+            );
+          });
+          await createAuditEntry({
+            entityType: AuditEntityType.finance_movement,
+            entityId: autoPayment.id,
+            projectId: updated.projectId,
+            userId: user.id,
+            action: AuditAction.created,
+            description: `Auto-pago generado al transicionar movimiento ${id} a PAGADO`,
+            metadata: { autoGenerated: true, sourceMovementId: id },
+          });
+        }
+      }
+
       await createAuditEntry({
         entityType: AuditEntityType.finance_movement,
         entityId: id,

@@ -23,24 +23,22 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "3.7",
-  date: "28 de abril de 2026",
+  version: "3.8",
+  date: "29 de abril de 2026",
   sections: [
     {
       title: "Nuevo",
       items: [
-        "**IVA en saldos y KPIs de Finanzas**: el saldo proyectado y el punto mínimo de liquidez ahora se calculan con IVA (lo que realmente sale/entra de la cuenta), con el monto sin IVA debajo como referencia.",
-        "**Dashboard de Finanzas**: los KPIs *Ingresos*, *Gastos*, *Resultado*, *Pendiente cobro/pago* muestran sin/con IVA.",
-        "**Flujo de fondos**: tiles de *Por cobrar*, *Por pagar*, *Previsto*, *Comprometido*, *A pagar* y *Proyectado* muestran ambas versiones.",
-        "**Últimos movimientos**: cada fila muestra el monto sin IVA y debajo c/IVA.",
+        "**Auto-Payment al crear movimientos PAGADOS**: si creás un gasto directamente en estado PAGADO con proveedor + cuenta, el sistema genera automáticamente el Payment aplicado a la factura. El saldo del proveedor queda en cero y la pestaña Pagos refleja el pago real.",
+        "También aplica al transicionar un movimiento existente a PAGADO sin pasar por el flujo manual de Payment.",
+        "**Badge \"Auto\"** en la pestaña Pagos del proveedor para distinguir los pagos automáticos.",
       ],
     },
     {
       title: "Mejoras",
       items: [
-        "**Detail panel del movimiento**: muestra dos filas — Monto (sin IVA) y Monto c/IVA con la tasa explícita.",
-        "Componente reutilizable `AmountWithIva` para mostrar pares sin/con IVA de forma consistente.",
-        "Cualquier movimiento sin tasa de IVA se asume 22% por defecto.",
+        "**Backfill de movimientos legacy**: nuevo script que genera Payments retroactivos para movimientos PAGADOS antiguos sin Payment asociado (idempotente).",
+        "Atomicidad: el Payment automático y el movimiento se crean en una sola transacción.",
       ],
     },
   ],
@@ -54,6 +52,14 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "3.7",
+    shortDate: "28 abr",
+    highlights: [
+      "IVA en KPIs y saldos de Finanzas: la proyección de saldo se calcula con IVA, con sin IVA como referencia.",
+      "Componente reutilizable AmountWithIva.",
+    ],
+  },
   {
     version: "3.6",
     shortDate: "28 abr",

@@ -358,6 +358,10 @@ function FacturasTab({ facturas, total, filter, onFilterChange }: {
   );
 }
 
+function isAutoPayment(p: { referencia: string | null; metodo: string }) {
+  return p.metodo === 'OTRO' && !!p.referencia && (p.referencia.startsWith('Auto-pago:') || p.referencia.startsWith('[BACKFILL]'));
+}
+
 function PagosTab({ pagos, total, filter, onFilterChange, onPagoClick }: {
   pagos: { id: string; fecha: string; monto: number; moneda: 'USD' | 'UYU'; metodo: string; referencia: string | null; montoAplicado: number; saldoSinAplicar: number }[];
   total: number;
@@ -405,7 +409,19 @@ function PagosTab({ pagos, total, filter, onFilterChange, onPagoClick }: {
                 return (
                   <tr key={p.id} onClick={() => onPagoClick(p.id)} className="cursor-pointer hover:bg-[var(--color-bg-card-hover)]">
                     <td className="px-3 py-2 text-[var(--color-text-muted)] whitespace-nowrap">{fmtDate(p.fecha)}</td>
-                    <td className="px-2 py-2 text-[var(--color-text-secondary)] whitespace-nowrap">{METODO_PAGO_LABEL[p.metodo as keyof typeof METODO_PAGO_LABEL] ?? p.metodo}</td>
+                    <td className="px-2 py-2 text-[var(--color-text-secondary)] whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <span>{METODO_PAGO_LABEL[p.metodo as keyof typeof METODO_PAGO_LABEL] ?? p.metodo}</span>
+                        {isAutoPayment(p) && (
+                          <span
+                            title={p.referencia?.startsWith('[BACKFILL]') ? 'Pago retroactivo creado por el backfill de G.8' : 'Pago generado automáticamente al crear el movimiento PAGADO directamente'}
+                            className="text-[9px] font-mono px-1.5 py-0.5 rounded uppercase border border-[var(--color-border)] text-[var(--color-text-muted)]"
+                          >
+                            Auto
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-3 py-2 text-[var(--color-text-muted)] text-[11px] truncate max-w-[200px]">{p.referencia ?? '—'}</td>
                     <td className="px-2 py-2 text-right tabular-nums whitespace-nowrap text-[var(--color-text-primary)]">{fmtCurrency(p.monto, p.moneda)}</td>
                     <td className="px-2 py-2 text-right tabular-nums whitespace-nowrap text-[var(--color-text-secondary)]">{fmtCurrency(p.montoAplicado, p.moneda)}</td>
