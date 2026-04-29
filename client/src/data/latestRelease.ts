@@ -23,21 +23,22 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "4.0",
+  version: "4.1",
   date: "29 de abril de 2026",
   sections: [
     {
       title: "Correcciones",
       items: [
-        "**Fix sistémico de zonas horarias en fechas**: las fechas \"sin hora\" (deadlines, fecha de movimientos, saldos iniciales, conciliaciones) ahora se muestran correctamente. Antes, en horarios cercanos a medianoche o por conversión a la zona local, se podía ver el día anterior.",
-        "Los formularios que toman \"hoy\" como default ahora usan la fecha local (antes podían devolver el día siguiente si era de noche).",
+        "**Fix saldo de cuentas vs columna \"Saldo USD\"**: el KPI de saldo actual y la columna de saldo en `/finanzas/movimientos` ahora son siempre coherentes. Antes podían mostrar valores muy distintos (ej. USD 38.081 vs USD 5.872) cuando había movimientos PAGADOS con fecha de hoy o del futuro.",
+        "Eliminado el doble conteo en el cálculo de saldo de cuentas: cuando un gasto PAGADO directo tenía Auto-Payment asociado (desde v3.8), se descontaba dos veces de la cuenta.",
       ],
     },
     {
-      title: "Mejoras",
+      title: "Cómo funciona ahora",
       items: [
-        "Helper centralizado `formatDate` que trabaja sobre strings sin convertir a Date, evitando shifts de zona.",
-        "El helper `fmtDate` que se usa en toda la app ahora delega en el nuevo helper, así que el fix se propaga sin tocar 65+ callsites.",
+        "El último movimiento concretado (PAGADO/COBRADO) en orden cronológico siempre tiene saldo USD igual al \"Saldo actual en cuentas\".",
+        "Los concretados se ordenan DESC y se camina hacia atrás desde el saldo actual (revirtiendo cada efecto). Los no-concretados (previstos, pendientes) proyectan hacia adelante desde ahí.",
+        "Los KPIs `Saldo final proyectado` y `Saldo mínimo futuro` siguen calculándose con IVA. La columna saldo de la tabla usa SIN IVA para matchear con el cálculo real de cuentas.",
       ],
     },
   ],
@@ -51,6 +52,14 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "4.0",
+    shortDate: "29 abr",
+    highlights: [
+      "Fix sistémico de zonas horarias: las fechas date-only ahora se muestran siempre correctamente.",
+      "Helper `formatDate` que trabaja sobre strings, sin shifts de zona en 65+ usos.",
+    ],
+  },
   {
     version: "3.9",
     shortDate: "29 abr",

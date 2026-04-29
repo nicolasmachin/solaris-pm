@@ -8025,10 +8025,18 @@ export async function registerApiRoutes(app: FastifyInstance) {
         where: { accountId, deletedAt: null, tipoMovimiento: TipoMovimiento.INGRESO, cobrado: true },
         _sum: { monto: true },
       });
-      // Gastos: movements GASTO con pagado=true (sólo los que no tienen pagos vía Payment;
-      // si tienen Payment, ese sale de la cuenta del Payment, no de aquí)
+      // Gastos: movements GASTO con pagado=true que NO tienen Payment asociado.
+      // Si tienen Payment (via PaymentApplication), ese ya se cuenta abajo en pagosAgg
+      // — sumar ambos generaría doble débito (G.8 Auto-Payment crea ambos para el
+      // mismo evento lógico).
       const gastoAgg = await prisma.financeMovement.aggregate({
-        where: { accountId, deletedAt: null, tipoMovimiento: TipoMovimiento.GASTO, pagado: true },
+        where: {
+          accountId,
+          deletedAt: null,
+          tipoMovimiento: TipoMovimiento.GASTO,
+          pagado: true,
+          paymentApplications: { none: { payment: { deletedAt: null } } },
+        },
         _sum: { monto: true },
       });
       // Pagos: payments con accountId
@@ -10108,59 +10116,82 @@ export async function registerApiRoutes(app: FastifyInstance) {
       saldoActualCuentas = roundMoney(saldoActualCuentas);
 
       const today = todayUtc();
-      const pastRows = balanceRows
-        .filter((row) => getMovementEffectiveDate(row) < today)
+
+      // Split por concretado, NO por fecha. Regla: saldo de cuentas = suma
+      // cronológica de todos los PAGADOS/COBRADOS hasta el último inclusive.
+      // El último concretado en orden cronológico debe tener saldoUSD == saldoActualCuentas.
+      // Los no-concretados proyectan hacia adelante desde ahí.
+      const concretadosDesc = balanceRows
+        .filter((row) => isMovementConcreted(row))
         .sort((a, b) => {
           const timeDiff = getMovementEffectiveDate(b).getTime() - getMovementEffectiveDate(a).getTime();
           if (timeDiff !== 0) return timeDiff;
           return b.createdAt.getTime() - a.createdAt.getTime();
         });
-      const futureRows = balanceRows
-        .filter((row) => getMovementEffectiveDate(row) >= today)
+      const noConcretadosAsc = balanceRows
+        .filter((row) => !isMovementConcreted(row))
         .sort((a, b) => {
           const timeDiff = getMovementEffectiveDate(a).getTime() - getMovementEffectiveDate(b).getTime();
           if (timeDiff !== 0) return timeDiff;
           return a.createdAt.getTime() - b.createdAt.getTime();
         });
 
-      // Saldos proyectados: el efecto en la cuenta es CON IVA (lo que realmente
-      // entra/sale del bolsillo). También calculamos la versión sin IVA en
-      // paralelo para mostrar ambas. El saldoActualCuentas ya viene de las
-      // cuentas reales, así que no se vuelve a tocar.
+      // Past loop (concretados, DESC): el primero (más reciente) tiene saldo =
+      // saldoActualCuentas. Para los anteriores, revertimos cada efecto.
+      // Usamos SIN IVA (monto crudo) para que coincida con computeAccountBalance.
       let saldoTemp = saldoActualCuentas;
-      let saldoTempSinIva = saldoActualCuentas;
-      for (const row of pastRows) {
+      for (const row of concretadosDesc) {
         saldoMap.set(row.id, roundMoney(saldoTemp));
-        if (!isMovementConcreted(row)) continue;
-        const montoUsd = convertMovementToUsdConIva(row, fallbackUsdToUyu);
         const montoUsdSinIva = convertMovementToUsd(row, fallbackUsdToUyu);
-        if (row.tipoMovimiento === TipoMovimiento.GASTO) { saldoTemp += montoUsd; saldoTempSinIva += montoUsdSinIva; }
-        else if (row.tipoMovimiento === TipoMovimiento.INGRESO) { saldoTemp -= montoUsd; saldoTempSinIva -= montoUsdSinIva; }
+        if (row.tipoMovimiento === TipoMovimiento.GASTO) saldoTemp += montoUsdSinIva;
+        else if (row.tipoMovimiento === TipoMovimiento.INGRESO) saldoTemp -= montoUsdSinIva;
+        // AJUSTE no afecta saldo (mismo criterio que computeAccountBalance).
         saldoTemp = roundMoney(saldoTemp);
-        saldoTempSinIva = roundMoney(saldoTempSinIva);
       }
 
+      // Future loop (no concretados, ASC): proyectamos hacia adelante desde
+      // saldoActualCuentas. Tracking paralelo CON IVA para los KPIs (G.7).
       saldoTemp = saldoActualCuentas;
-      saldoTempSinIva = saldoActualCuentas;
+      let saldoTempConIva = saldoActualCuentas;
       let saldoMinimoFuturo = saldoActualCuentas;
       let saldoMinimoFuturoSinIva = saldoActualCuentas;
       let fechaSaldoMinimoFuturo = serializeDateOnly(today);
-      for (const row of futureRows) {
-        const montoUsd = convertMovementToUsdConIva(row, fallbackUsdToUyu);
+      for (const row of noConcretadosAsc) {
         const montoUsdSinIva = convertMovementToUsd(row, fallbackUsdToUyu);
-        if (row.tipoMovimiento === TipoMovimiento.GASTO) { saldoTemp -= montoUsd; saldoTempSinIva -= montoUsdSinIva; }
-        else if (row.tipoMovimiento === TipoMovimiento.INGRESO) { saldoTemp += montoUsd; saldoTempSinIva += montoUsdSinIva; }
+        const montoUsdConIva = convertMovementToUsdConIva(row, fallbackUsdToUyu);
+        if (row.tipoMovimiento === TipoMovimiento.GASTO) {
+          saldoTemp -= montoUsdSinIva;
+          saldoTempConIva -= montoUsdConIva;
+        } else if (row.tipoMovimiento === TipoMovimiento.INGRESO) {
+          saldoTemp += montoUsdSinIva;
+          saldoTempConIva += montoUsdConIva;
+        }
         saldoTemp = roundMoney(saldoTemp);
-        saldoTempSinIva = roundMoney(saldoTempSinIva);
+        saldoTempConIva = roundMoney(saldoTempConIva);
         saldoMap.set(row.id, saldoTemp);
-        if (saldoTemp < saldoMinimoFuturo) {
-          saldoMinimoFuturo = saldoTemp;
-          saldoMinimoFuturoSinIva = saldoTempSinIva;
+        if (saldoTempConIva < saldoMinimoFuturo) {
+          saldoMinimoFuturo = saldoTempConIva;
+          saldoMinimoFuturoSinIva = saldoTemp;
           fechaSaldoMinimoFuturo = fechaEfectivaMap.get(row.id) ?? fechaSaldoMinimoFuturo;
         }
       }
-      const saldoFinalProyectado = roundMoney(saldoTemp);
-      const saldoFinalProyectadoSinIva = roundMoney(saldoTempSinIva);
+      const saldoFinalProyectado = roundMoney(saldoTempConIva);
+      const saldoFinalProyectadoSinIva = roundMoney(saldoTemp);
+
+      // Coherencia: el último concretado en orden cronológico debe tener
+      // saldoUSD == saldoActualCuentas. Si no, hay un bug en algún otro lado.
+      if (concretadosDesc.length > 0) {
+        const ultimoConcretadoSaldo = saldoMap.get(concretadosDesc[0].id);
+        if (
+          ultimoConcretadoSaldo !== undefined &&
+          Math.abs(ultimoConcretadoSaldo - saldoActualCuentas) > 0.01
+        ) {
+          app.log.warn(
+            { ultimoConcretadoSaldo, saldoActualCuentas, movementId: concretadosDesc[0].id },
+            "Incoherencia: saldo del último concretado no coincide con saldoActualCuentas",
+          );
+        }
+      }
       const sinCuentasActivas = activeAccounts.length === 0;
       const usaFallbackTipoCambio = (!parsedRate || parsedRate <= 0)
         && (activeAccounts.some((account) => account.moneda === Moneda.UYU)

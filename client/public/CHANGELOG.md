@@ -1,5 +1,35 @@
 # Novedades
 
+## v4.1
+
+### 29 de abril de 2026
+
+#### Fix saldo de cuentas vs columna "Saldo USD"
+
+Bug doble que generaba inconsistencia entre el KPI "Saldo actual en cuentas" y la columna "Saldo USD" del último movimiento concretado en `/finanzas/movimientos`.
+
+**Síntomas**:
+- KPI de saldo actual mostraba un valor (ej. USD 38.081) y la columna de saldo del último PAGADO/COBRADO mostraba otro (ej. USD 5.872).
+- Movimientos con fecha "hoy" o futura PAGADOS aparecían debajo del marcador "HOY" como si fueran proyectados, y se contaban dos veces (una en el saldo actual, otra al proyectar hacia adelante).
+
+**Causa 1 — split por fecha en lugar de por concretado**:
+El cálculo dividía los movimientos en "pasados" y "futuros" según `fechaEfectiva < hoy`. Eso ponía mal a los PAGADOS de hoy (o del futuro) en el grupo "futuro" y los volvía a aplicar sobre el saldo actual, que ya los incluía → doble conteo en la columna saldo.
+
+**Fix 1**: ahora el split es por **concretado vs no-concretado** (no por fecha).
+- Concretados (PAGADO/COBRADO/AJUSTE): caminan DESC desde `saldoActualCuentas`. El más reciente queda con `saldoUSD == saldoActualCuentas` exacto. Para los anteriores se revierte cada efecto (regla cronológica).
+- No-concretados (previstos, pendientes, en proceso): caminan ASC desde `saldoActualCuentas`, proyectando hacia adelante.
+
+**Causa 2 — doble débito en `computeAccountBalance`**:
+La función sumaba los GASTOS con `pagado=true` Y todos los Payments de la cuenta. Pero desde Auto-Payment (v3.8), un GASTO PAGADO directo crea **ambas cosas** para el mismo evento (el FinanceMovement con `pagado=true` y un Payment + PaymentApplication). Resultado: el saldo de la cuenta venía descontado dos veces.
+
+**Fix 2**: el agregado de gastos ahora excluye los movimientos que ya tienen `PaymentApplication` activa (`paymentApplications: { none: { payment: { deletedAt: null } } }`). Si tiene Payment, se cuenta sólo por el Payment.
+
+**Coherencia garantizada**: el último concretado en orden cronológico tiene siempre `saldoUSD == saldoActualCuentas`. Si por alguna razón no coincide, el backend deja un warning en logs.
+
+**KPIs CON IVA preservados**: los KPIs `saldoFinalProyectado` y `saldoMinimoFuturo` siguen calculándose en paralelo con IVA (como introdujo v3.7). Lo único que cambia a SIN IVA es el valor numérico de la columna saldo, para que matchee con el cálculo de cuentas.
+
+---
+
 ## v4.0
 
 ### 29 de abril de 2026
