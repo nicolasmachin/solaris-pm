@@ -13,6 +13,7 @@ import {
   METODO_PAGO_LABEL,
 } from '../types/finance.types';
 import type { FinanceMovementStatus } from '../types/finance.types';
+import { todayLocalISO } from '../utils/date';
 import { ApplyPaymentModal } from '../components/finance/ApplyPaymentModal';
 import { PaymentDetailPanel } from '../components/finance/PaymentDetailPanel';
 import { NewPaymentForSupplierModal } from '../components/finance/NewPaymentForSupplierModal';
@@ -326,7 +327,7 @@ function FacturasTab({ facturas, total, filter, onFilterChange }: {
             </thead>
             <tbody className="divide-y divide-[var(--color-border)]">
               {facturas.map(f => {
-                const today = new Date().toISOString().slice(0, 10);
+                const today = todayLocalISO();
                 const overdue = f.dueDate != null && f.dueDate < today && f.saldoPendiente > 0.005;
                 return (
                   <tr key={f.id} className={klass('hover:bg-[var(--color-bg-card-hover)]', overdue && 'bg-red-500/5')}>

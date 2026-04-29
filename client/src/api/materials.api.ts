@@ -1,6 +1,7 @@
 import { apiClient } from './axios';
 import type { MaterialCategory, MaterialItem, ProjectMaterial } from '../types/materials.types';
 import type { Moneda } from '../types/finance.types';
+import { todayLocalISO } from '../utils/date';
 
 // ─── Categorías ──────────────────────────────────────────────────────────────
 
@@ -125,7 +126,7 @@ export const exportMaterialsPdf = async (projectId: string, includePrecios: bool
     null,
     { responseType: 'blob', params: { includePrecios: includePrecios ? 'true' : 'false' } },
   );
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalISO();
   const filename = includePrecios
     ? `Lista de materiales (con precios) ${today}.pdf`
     : `Lista de materiales (sin precios) ${today}.pdf`;

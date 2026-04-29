@@ -5,6 +5,7 @@ import { X, Scale, ArrowUpCircle, ArrowDownCircle, CheckCircle2 } from 'lucide-r
 import { getAccountBalance } from '../../api/accounts.api';
 import { reconcileAccount } from '../../api/accounts.api';
 import type { Account } from '../../types/accounts.types';
+import { todayLocalISO } from '../../utils/date';
 
 function fmt(n: number, currency: string) {
   return `${n.toLocaleString('es-UY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
@@ -12,7 +13,7 @@ function fmt(n: number, currency: string) {
 
 export function ReconcileAccountModal({ account, onClose }: { account: Account; onClose: () => void }) {
   const qc = useQueryClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalISO();
 
   const { data: balance } = useQuery({
     queryKey: ['account-balance', account.id],

@@ -10,6 +10,7 @@ import { getAccounts } from '../api/accounts.api';
 import { ACCOUNT_TYPE_LABEL } from '../types/accounts.types';
 import { fmtCurrency, fmtDate } from '../lib/finance';
 import type { MetodoPago, Moneda } from '../types/finance.types';
+import { todayLocalISO } from '../utils/date';
 import type { Payment } from '../types/payments.types';
 import { ApplyPaymentModal } from '../components/finance/ApplyPaymentModal';
 import { PaymentDetailPanel } from '../components/finance/PaymentDetailPanel';
@@ -272,7 +273,7 @@ function NewPaymentModal({ suppliers, onClose, onCreatedAndApply }: {
   onCreatedAndApply: (id: string) => void;
 }) {
   const qc = useQueryClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalISO();
   const [form, setForm] = useState({
     supplierId: '',
     supplierSearch: '',

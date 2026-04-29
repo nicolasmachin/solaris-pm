@@ -1,5 +1,30 @@
 # Novedades
 
+## v4.0
+
+### 29 de abril de 2026
+
+#### Fix sistémico de zonas horarias en fechas
+
+Bug crónico que mostraba el día anterior en muchas fechas (saldoInicial, deadlines, fecha de movimientos, conciliaciones, etc.) cuando se mostraban en zona Uruguay (UTC-3).
+
+**Causa**: las fechas "sin hora" (ej. `"2026-04-29"`) al pasar por `new Date()` se interpretan como medianoche UTC. Al formatearlas con `toLocaleDateString('es-UY')` el navegador las convierte a hora local (UTC-3) y muestra `28/04/2026`.
+
+**Fix central** (un solo cambio que se propaga a 65+ usos):
+- Nuevo helper [`client/src/utils/date.ts`](client/src/utils/date.ts) con `toDateOnlyISO`, `parseDateOnly`, `formatDate`, `toInputDate`, `todayLocalISO`. Trabaja con strings `"YYYY-MM-DD"` directamente (sin `new Date()`), evitando shifts.
+- `fmtDate` (en `lib/finance.ts`) ahora delega en el nuevo helper.
+- Cualquier fecha date-only que llegue del backend (sea como `"2026-04-29"` o `"2026-04-29T00:00:00.000Z"`) se renderiza siempre como `29/04/2026`.
+
+**Form defaults para "hoy"**:
+- Reemplazado `new Date().toISOString().slice(0, 10)` por `todayLocalISO()` en todos los formularios que tomaban "hoy" como default. El patrón anterior podía devolver `2026-04-30` cuando localmente era 22:00 del `2026-04-29` (Uruguay). Ahora siempre devuelve la fecha local correcta.
+- Archivos tocados: ReconcileAccountModal, NewPaymentForSupplierModal, FinancePayments, FinanceSupplierDetail, FinanceMovements, Finance, Stock, ProjectDetail, FinanceAPagar, EngineeringMaterials, materials.api.
+
+**Backend**: el helper `parseDateOnly` ya parseaba correctamente `"YYYY-MM-DD"` a medianoche UTC, no requirió cambios.
+
+**No se migra la DB**: las fechas existentes están guardadas correctamente en UTC. Lo que estaba mal era solo el display en frontend.
+
+---
+
 ## v3.9
 
 ### 29 de abril de 2026

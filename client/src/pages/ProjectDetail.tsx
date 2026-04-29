@@ -6,6 +6,7 @@ import { getProject, patchProject } from "../api/projects.api";
 import { getStockMovements, createStockMovement, getStockProducts } from "../api/stock.api";
 import type { StockMovement } from "../types/finance.types";
 import type { Project, Stage } from "../types/api.types";
+import { todayLocalISO } from "../utils/date";
 
 import { ProjectHeader } from "../components/project/ProjectHeader";
 import { KpiCards } from "../components/project/KpiCards";
@@ -331,7 +332,7 @@ function ConsumoModal({ projectId, onClose, onSaved }: { projectId: string; onCl
 
   const { mutate, isPending } = useMutation({
     mutationFn: () => createStockMovement({
-      fecha: new Date().toISOString().slice(0, 10),
+      fecha: todayLocalISO(),
       materialItemId,
       tipo: 'EGRESO',
       cantidad: parseInt(cantidad, 10),

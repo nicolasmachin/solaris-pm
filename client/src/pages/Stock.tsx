@@ -13,6 +13,7 @@ import { getSuppliers } from '../api/finance.api';
 import { apiClient } from '../api/axios';
 import { fmtCurrency, fmtDate } from '../lib/finance';
 import type { Moneda, StockProduct, TipoMovimientoStock } from '../types/finance.types';
+import { todayLocalISO } from '../utils/date';
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
 
@@ -185,7 +186,7 @@ function ProductForm({ initial, productId, onSuccess, onCancel }: {
 // ─── Ingreso Modal ────────────────────────────────────────────────────────────
 
 function IngresoModal({ product, onSuccess, onClose }: { product: StockProduct; onSuccess: () => void; onClose: () => void }) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayLocalISO();
   const [form, setForm] = useState({
     fecha: today, cantidad: '', costoUnitario: '', moneda: 'USD' as Moneda,
     supplierId: '', referencia: '', observaciones: '',
@@ -283,7 +284,7 @@ function IngresoModal({ product, onSuccess, onClose }: { product: StockProduct; 
 // ─── Egreso Modal ─────────────────────────────────────────────────────────────
 
 function EgresoModal({ product, onSuccess, onClose }: { product: StockProduct; onSuccess: () => void; onClose: () => void }) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayLocalISO();
   const [form, setForm] = useState({ fecha: today, cantidad: '', projectId: '', observaciones: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -372,7 +373,7 @@ function EgresoModal({ product, onSuccess, onClose }: { product: StockProduct; o
 // ─── Ajuste Modal ─────────────────────────────────────────────────────────────
 
 function AjusteModal({ product, onSuccess, onClose }: { product: StockProduct; onSuccess: () => void; onClose: () => void }) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayLocalISO();
   const [form, setForm] = useState({ fecha: today, nuevoStock: String(product.stockActual), motivo: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

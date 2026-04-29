@@ -32,6 +32,7 @@ import { NewPaymentForSupplierModal } from '../components/finance/NewPaymentForS
 import { ApplyPaymentModal } from '../components/finance/ApplyPaymentModal';
 import { getAccounts } from '../api/accounts.api';
 import { ACCOUNT_TYPE_LABEL } from '../types/accounts.types';
+import { todayLocalISO } from '../utils/date';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -69,7 +70,7 @@ interface MovFormProps {
 }
 
 function MovimientoForm({ onSuccess, onCancel, initial, editId, onSavedOpenDesglose }: MovFormProps) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayLocalISO();
 
   // Default para gastos nuevos: CONSUMO_STOCK (caso más frecuente).
   // Para edición, el initial sobreescribe.
@@ -760,12 +761,12 @@ export function FinanceMovements() {
 
   function handleQuickTransition(mov: FinanceMovement) {
     if (mov.status === 'COMPROMETIDO') {
-      const due = window.prompt('Fecha de vencimiento (YYYY-MM-DD):', new Date().toISOString().slice(0, 10));
+      const due = window.prompt('Fecha de vencimiento (YYYY-MM-DD):', todayLocalISO());
       if (!due) return;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(due)) { toast.error('Formato inválido'); return; }
       transitionMut.mutate({ id: mov.id, newStatus: 'A_PAGAR', dueDate: due });
     } else if (mov.status === 'A_PAGAR') {
-      const paid = window.prompt('Fecha de pago (YYYY-MM-DD):', new Date().toISOString().slice(0, 10));
+      const paid = window.prompt('Fecha de pago (YYYY-MM-DD):', todayLocalISO());
       if (!paid) return;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(paid)) { toast.error('Formato inválido'); return; }
       transitionMut.mutate({ id: mov.id, newStatus: 'PAGADO', paidDate: paid });
@@ -808,7 +809,7 @@ export function FinanceMovements() {
   ];
 
   const inp = 'rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-1.5 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]';
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayIso = todayLocalISO();
 
   return (
     <div className="p-6 space-y-5">

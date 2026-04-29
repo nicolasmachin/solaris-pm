@@ -11,6 +11,7 @@ import {
 import { getSuppliers } from '../../api/finance.api';
 import type { MaterialItem, ProjectMaterial } from '../../types/materials.types';
 import { useAuthStore } from '../../store/auth.store';
+import { todayLocalISO } from '../../utils/date';
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
 
@@ -584,7 +585,7 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
     onError: (err) => toast.error(getApiErr(err) ?? 'Error al regenerar'),
   });
 
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayIso = todayLocalISO();
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [isRegenerateMode, setIsRegenerateMode] = useState(false);
   const [expectedDate, setExpectedDate] = useState<string>(plannedWorkStart ?? todayIso);

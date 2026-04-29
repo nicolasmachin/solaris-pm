@@ -9,6 +9,7 @@ import { getDashboard, getCashflow, getExchangeRate, createExchangeRate, getComp
 import { getStockAlerts } from '../api/stock.api';
 import { fmtCurrency, fmtDate, currentMonthYear, MONTH_NAMES } from '../lib/finance';
 import type { FinanceMovement, TipoMovimiento } from '../types/finance.types';
+import { todayLocalISO } from '../utils/date';
 
 // ─── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -39,7 +40,7 @@ function ExchangeRateCard() {
   const [bcuLoading, setBcuLoading] = useState(false);
   const [bcuInfo, setBcuInfo] = useState<{ fechaIso: string; usdToUyu: number } | null>(null);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayLocalISO();
 
   async function handleSave() {
     const n = parseFloat(newRate);
@@ -192,7 +193,7 @@ function CuentasPagarWidget() {
     select: data => data.filter(c => c.estado !== 'PAGADO' && c.estado !== 'ANULADO'),
   });
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayLocalISO();
   const in7 = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
 
   const totalPendiente = comprobantes.reduce((s, c) => s + c.saldoPendiente, 0);

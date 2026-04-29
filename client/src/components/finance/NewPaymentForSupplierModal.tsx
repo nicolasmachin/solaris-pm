@@ -6,6 +6,7 @@ import { createPayment } from '../../api/payments.api';
 import { getAccounts } from '../../api/accounts.api';
 import { ACCOUNT_TYPE_LABEL } from '../../types/accounts.types';
 import type { MetodoPago, Moneda } from '../../types/finance.types';
+import { todayLocalISO } from '../../utils/date';
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
 function getApiErr(err: unknown) {
@@ -34,7 +35,7 @@ export function NewPaymentForSupplierModal({
   onCreated,
 }: Props) {
   const qc = useQueryClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalISO();
   const [form, setForm] = useState({
     fecha: today,
     monto: defaultAmount != null ? defaultAmount.toString() : '',

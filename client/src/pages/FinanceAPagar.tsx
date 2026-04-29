@@ -15,6 +15,7 @@ import {
   STATUS_LABEL,
 } from '../types/finance.types';
 import type { FinanceMovement, FinanceMovementStatus } from '../types/finance.types';
+import { todayLocalISO } from '../utils/date';
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
 
@@ -27,11 +28,15 @@ interface PersistedFilters {
   supplierId?: string;
 }
 
-function todayIso() { return new Date().toISOString().slice(0, 10); }
+function todayIso() { return todayLocalISO(); }
 function isoDaysFromNow(days: number) {
   const d = new Date();
   d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  // d ya está en local, calcular ISO de fecha local
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
 }
 function endOfMonthIso() {
   const d = new Date();

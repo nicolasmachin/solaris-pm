@@ -23,24 +23,21 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "3.9",
+  version: "4.0",
   date: "29 de abril de 2026",
   sections: [
     {
-      title: "Nuevo",
+      title: "Correcciones",
       items: [
-        "**Conciliación bancaria**: botón \"Conciliar\" en cada cuenta de `/finanzas/cuentas`. Cargás el saldo real del home banking y el sistema te muestra la diferencia con su saldo calculado.",
-        "Si hay diferencia, opcionalmente se genera un **movimiento de ajuste** (INGRESO o GASTO según corresponda) con categoría \"Ajuste conciliación\" para que los saldos cuadren.",
-        "**Historial de conciliaciones** por cuenta en el drawer de detalle.",
-        "**Banner global en Finanzas** cuando hay cuentas sin conciliar (>30 días o nunca).",
+        "**Fix sistémico de zonas horarias en fechas**: las fechas \"sin hora\" (deadlines, fecha de movimientos, saldos iniciales, conciliaciones) ahora se muestran correctamente. Antes, en horarios cercanos a medianoche o por conversión a la zona local, se podía ver el día anterior.",
+        "Los formularios que toman \"hoy\" como default ahora usan la fecha local (antes podían devolver el día siguiente si era de noche).",
       ],
     },
     {
       title: "Mejoras",
       items: [
-        "Badge en cada card de cuenta: \"✓ Hace Xd\", \"Conciliar (hace Yd)\" o \"Nunca conciliada\".",
-        "El movimiento de ajuste y el registro de conciliación se crean en una sola transacción atómica.",
-        "Audit log dedicado por conciliación con metadata del ajuste.",
+        "Helper centralizado `formatDate` que trabaja sobre strings sin convertir a Date, evitando shifts de zona.",
+        "El helper `fmtDate` que se usa en toda la app ahora delega en el nuevo helper, así que el fix se propaga sin tocar 65+ callsites.",
       ],
     },
   ],
@@ -54,6 +51,14 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "3.9",
+    shortDate: "29 abr",
+    highlights: [
+      "Conciliación bancaria de cuentas con generación opcional de movimiento de ajuste.",
+      "Historial de conciliaciones por cuenta y banner global en Finanzas.",
+    ],
+  },
   {
     version: "3.8",
     shortDate: "29 abr",
