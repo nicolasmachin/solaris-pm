@@ -8201,13 +8201,20 @@ export async function registerApiRoutes(app: FastifyInstance) {
       cobrado: boolean;
     }) {
       // Un movimiento se considera "concretado" (ya impactó el flujo de caja)
-      // cuando GASTO está PAGADO, INGRESO está cobrado, o es un AJUSTE
-      // (instantáneo). PARCIALMENTE_PAGADO no se considera concretado completo.
-      return (
-        (row.tipoMovimiento === TipoMovimiento.GASTO && row.status === FinanceMovementStatus.PAGADO) ||
-        (row.tipoMovimiento === TipoMovimiento.INGRESO && row.cobrado) ||
-        row.tipoMovimiento === TipoMovimiento.AJUSTE
-      );
+      // cuando:
+      // - GASTO con status=PAGADO
+      // - INGRESO con status=PAGADO O cobrado=true (datos legacy y formularios
+      //   nuevos pueden setear uno u otro; ambos significan dinero ya recibido)
+      // - AJUSTE (instantáneo)
+      // PARCIALMENTE_PAGADO NO se considera concretado completo.
+      if (row.tipoMovimiento === TipoMovimiento.AJUSTE) return true;
+      if (row.tipoMovimiento === TipoMovimiento.GASTO) {
+        return row.status === FinanceMovementStatus.PAGADO;
+      }
+      if (row.tipoMovimiento === TipoMovimiento.INGRESO) {
+        return row.status === FinanceMovementStatus.PAGADO || row.cobrado;
+      }
+      return false;
     }
 
     function getMovementEffectiveDate(row: {

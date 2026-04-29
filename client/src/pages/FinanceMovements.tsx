@@ -42,9 +42,12 @@ function isFutureMovement(fechaEfectiva: string, todayIso: string) {
 // Concretado = ya impactó el flujo de caja. Re-derivamos del campo canónico
 // (status / cobrado / tipoMovimiento) y NO confiamos sólo en `saldoEsReal`,
 // como salvaguarda si el backend devolviese info inconsistente.
+// Para INGRESOS aceptamos status=PAGADO O cobrado=true, ya que ambos
+// significan que el dinero efectivamente entró (datos legacy y formularios
+// nuevos pueden setear uno u otro).
 function isMovementConcretado(mov: FinanceMovement): boolean {
   if (mov.tipoMovimiento === 'GASTO') return mov.status === 'PAGADO';
-  if (mov.tipoMovimiento === 'INGRESO') return mov.cobrado === true;
+  if (mov.tipoMovimiento === 'INGRESO') return mov.status === 'PAGADO' || mov.cobrado === true;
   if (mov.tipoMovimiento === 'AJUSTE') return true;
   return false;
 }
