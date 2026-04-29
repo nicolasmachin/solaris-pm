@@ -10114,7 +10114,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
       // Si el movimiento de gasto arranca en A_PAGAR/PAGADO, marcamos que
       // requiere desglose de factura (la UI muestra alerta hasta que el
       // usuario cargue ítems o lo marque como "sin materiales").
+      // Sólo GASTOS con proveedor: ajustes / gastos varios sin proveedor no
+      // necesitan desglose de stock.
       const requiresItemDetail = body.tipoMovimiento === TipoMovimiento.GASTO
+        && !!body.supplierId
         && (status === FinanceMovementStatus.A_PAGAR || status === FinanceMovementStatus.PAGADO);
 
       // G.8: si el movimiento se crea directamente PAGADO con proveedor + cuenta,

@@ -498,7 +498,8 @@ function DetailPanel({ mov, onClose, onEdit, onDelete, onCancel, onOpenDesglose,
   const esIngreso = CATEGORIAS_INGRESO.includes(mov.categoriaPrincipal);
   const needsDetail = (mov.status === 'A_PAGAR' || mov.status === 'PAGADO' || mov.status === 'PARCIALMENTE_PAGADO')
     && !mov.hasItemDetail && !mov.noTieneMateriales
-    && mov.tipoMovimiento === 'GASTO';
+    && mov.tipoMovimiento === 'GASTO'
+    && !!mov.supplierId;
   const canCancel = mov.hasItemDetail && !mov.noTieneMateriales;
   // Pago: aplica si es gasto con supplier y saldo > 0
   const canRegisterPayment = mov.tipoMovimiento === 'GASTO'
@@ -971,7 +972,8 @@ export function FinanceMovements() {
                   const pastPending = isPastPendingMovement(mov, todayIso);
                   const needsDetail = (mov.status === 'A_PAGAR' || mov.status === 'PAGADO')
                     && !mov.hasItemDetail && !mov.noTieneMateriales
-                    && mov.tipoMovimiento === 'GASTO';
+                    && mov.tipoMovimiento === 'GASTO'
+                    && !!mov.supplierId;
                   const showFecha = mov.status === 'PAGADO' || mov.tipoMovimiento === 'INGRESO' || mov.tipoMovimiento === 'AJUSTE'
                     ? mov.fecha
                     : (mov.expectedDate ?? mov.fecha);
