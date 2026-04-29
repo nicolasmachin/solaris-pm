@@ -10588,9 +10588,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // ─── Finance: Pendientes de desglose ─────────────────────────────────────
 
     app.get("/finance/movements/pending-detail", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async () => {
+      // Solo GASTOS con proveedor: el desglose de factura sirve para imputar
+      // stock cuando el proveedor facturó materiales. No aplica a INGRESOS,
+      // AJUSTES, ni gastos sin proveedor (ej. pago de servicios genéricos).
       const movs = await prisma.financeMovement.findMany({
         where: {
           deletedAt: null,
+          tipoMovimiento: TipoMovimiento.GASTO,
+          supplierId: { not: null },
           status: { in: [FinanceMovementStatus.A_PAGAR, FinanceMovementStatus.PAGADO] },
           hasItemDetail: false,
           noTieneMateriales: false,
