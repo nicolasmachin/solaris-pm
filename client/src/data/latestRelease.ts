@@ -23,22 +23,26 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "4.1",
+  version: "4.2",
   date: "29 de abril de 2026",
   sections: [
     {
-      title: "Correcciones",
+      title: "Aplicar pago a facturas pendientes desde Nuevo movimiento",
       items: [
-        "**Fix saldo de cuentas vs columna \"Saldo USD\"**: el KPI de saldo actual y la columna de saldo en `/finanzas/movimientos` ahora son siempre coherentes. Antes podían mostrar valores muy distintos (ej. USD 38.081 vs USD 5.872) cuando había movimientos PAGADOS con fecha de hoy o del futuro.",
-        "Eliminado el doble conteo en el cálculo de saldo de cuentas: cuando un gasto PAGADO directo tenía Auto-Payment asociado (desde v3.8), se descontaba dos veces de la cuenta.",
+        "Al crear un GASTO PAGADO con proveedor + cuenta, el form ahora detecta facturas A_PAGAR / PARCIALMENTE_PAGADO del mismo proveedor en la misma moneda.",
+        "Si hay facturas pendientes, aparece un panel azul ofreciendo distribuir el monto del pago entre ellas (o entre ellas y el movimiento nuevo).",
+        "El modal pre-distribuye en orden de vencimiento y permite editar fila por fila.",
+        "Si todo el pago se aplica a facturas pendientes (sin sobrante), no se crea movimiento nuevo: equivale a registrar el pago desde la pantalla de Pagos.",
+        "Si hay sobrante, el movimiento nuevo se crea con monto = sobrante (no el monto original del form) y el sobrante se aplica al movimiento.",
       ],
     },
     {
-      title: "Cómo funciona ahora",
+      title: "Detalles técnicos",
       items: [
-        "El último movimiento concretado (PAGADO/COBRADO) en orden cronológico siempre tiene saldo USD igual al \"Saldo actual en cuentas\".",
-        "Los concretados se ordenan DESC y se camina hacia atrás desde el saldo actual (revirtiendo cada efecto). Los no-concretados (previstos, pendientes) proyectan hacia adelante desde ahí.",
-        "Los KPIs `Saldo final proyectado` y `Saldo mínimo futuro` siguen calculándose con IVA. La columna saldo de la tabla usa SIN IVA para matchear con el cálculo real de cuentas.",
+        "Toda la operación es atómica: 1 Payment + N PaymentApplication en una transacción.",
+        "Las facturas afectadas pasan a PAGADO o PARCIALMENTE_PAGADO según el saldo restante.",
+        "Validaciones: mismo proveedor, misma moneda, cada aplicación ≤ saldo pendiente, suma ≤ monto del pago.",
+        "Nuevo endpoint `GET /finance/movements/pending-by-supplier`. `POST /finance/movements` acepta `applyToPendingInvoices` opcional.",
       ],
     },
   ],
@@ -52,6 +56,14 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "4.1",
+    shortDate: "29 abr",
+    highlights: [
+      "Fix saldo de cuentas: KPI vs columna saldo USD ahora siempre coinciden.",
+      "Sin doble conteo: GASTO PAGADO con Auto-Payment ya no se descuenta dos veces.",
+    ],
+  },
   {
     version: "4.0",
     shortDate: "29 abr",

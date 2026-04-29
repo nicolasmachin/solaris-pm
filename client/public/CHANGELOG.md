@@ -1,5 +1,43 @@
 # Novedades
 
+## v4.2
+
+### 29 de abril de 2026
+
+#### Aplicar Payment a facturas pendientes desde "Nuevo movimiento"
+
+Hasta ahora, al crear un GASTO PAGADO con proveedor en `/finanzas/movimientos`, el sistema generaba un Auto-Payment (v3.8) aplicado únicamente al movimiento nuevo. Si el proveedor tenía facturas A_PAGAR/PARCIALMENTE_PAGADO, había que registrar el pago aparte desde "Pagos → Registrar pago" y luego aplicarlo manualmente.
+
+Ahora el flujo de "+ Nuevo movimiento" detecta automáticamente las facturas pendientes del proveedor y permite distribuir el monto del pago entre ellas y/o el movimiento nuevo, en una sola operación atómica.
+
+**Cómo funciona**:
+- Cuando completás GASTO + PAGADO + proveedor + cuenta + monto, el form consulta facturas pendientes del proveedor en la misma moneda.
+- Si hay facturas pendientes, aparece un panel azul ofreciendo aplicar el pago a esas facturas.
+- Al hacer click, abre un modal con la lista de facturas (saldo pendiente, vencimiento) y un input "a aplicar" por fila.
+- Default: el modal pre-distribuye el monto del pago en orden de vencimiento, hasta consumirlo.
+- Resumen abajo: aplicado a facturas + resto al movimiento nuevo.
+- Al confirmar, la distribución queda guardada en el form. Recién al "Registrar movimiento" se persiste todo.
+
+**Comportamiento al guardar**:
+- Si **no hay sobrante** (todo el pago se aplicó a facturas), no se crea movimiento nuevo. El flujo equivale a "Registrar pago" desde Pagos.
+- Si **hay sobrante**, se crea el movimiento nuevo con monto = sobrante (no el monto original del form), y el sobrante se aplica al movimiento.
+- El Payment se crea con monto total y se reparte entre las facturas pendientes + el movimiento nuevo (si corresponde).
+- Toda la operación es atómica (transacción Prisma).
+- Las facturas afectadas pasan automáticamente a PAGADO o PARCIALMENTE_PAGADO según el saldo restante.
+
+**Validaciones**:
+- Mismo proveedor en todas las aplicaciones.
+- Misma moneda.
+- Cada aplicación ≤ saldo pendiente de su factura.
+- Suma de aplicaciones ≤ monto del pago.
+- Cuenta válida y activa.
+
+**Endpoints**:
+- Nuevo: `GET /api/finance/movements/pending-by-supplier?supplierId=&moneda=` devuelve facturas elegibles.
+- Extendido: `POST /api/finance/movements` acepta `applyToPendingInvoices: [{ movementId, monto }]` opcional.
+
+---
+
 ## v4.1
 
 ### 29 de abril de 2026

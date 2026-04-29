@@ -10001,6 +10001,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
       observaciones: z.string().optional(),
       estadoAprobacion: z.nativeEnum(EstadoAprobacion).default(EstadoAprobacion.REGISTRADO),
       archivoAdjuntoUrl: z.string().optional(),
+      // Si viene seteado y el movimiento es GASTO + PAGADO con proveedor + cuenta,
+      // el monto del form se trata como Payment total: se distribuye entre las
+      // facturas pendientes indicadas y, si sobra, se crea el movimiento nuevo
+      // con el restante. Si no sobra (todo se aplicó a pendientes), no se crea
+      // el movimiento nuevo (el flujo equivale a "Registrar pago" desde Pagos).
+      applyToPendingInvoices: z.array(z.object({
+        movementId: z.string(),
+        monto: z.coerce.number().positive(),
+      })).optional(),
     }).strict();
 
     const movementPatchSchema = z.object({
@@ -10358,13 +10367,160 @@ export async function registerApiRoutes(app: FastifyInstance) {
       // G.8: si el movimiento se crea directamente PAGADO con proveedor + cuenta,
       // generamos el Payment + PaymentApplication automáticamente para que el
       // saldo del proveedor quede consistente (factura pagada en su totalidad).
+      // Si además vienen facturas pendientes a aplicar (applyToPendingInvoices),
+      // se reparte el pago entre ellas y, si sobra, sólo el sobrante queda como
+      // movimiento nuevo. Si no sobra, no se crea movimiento nuevo (el pago va
+      // íntegro a las pendientes, equivalente a "Registrar pago" desde Pagos).
+      const applyToPending = body.applyToPendingInvoices ?? [];
+      const useApplyMode =
+        applyToPending.length > 0 &&
+        body.tipoMovimiento === TipoMovimiento.GASTO &&
+        status === FinanceMovementStatus.PAGADO &&
+        !!body.supplierId &&
+        !!body.accountId;
       const shouldAutoPayment =
+        !useApplyMode &&
         body.tipoMovimiento === TipoMovimiento.GASTO &&
         status === FinanceMovementStatus.PAGADO &&
         !!body.supplierId &&
         !!body.accountId;
 
-      const { movement, autoPayment } = await prisma.$transaction(async (tx) => {
+      if (applyToPending.length > 0 && !useApplyMode) {
+        throw badRequest(
+          "APPLY_INVALID_CONTEXT",
+          "Sólo se pueden aplicar facturas pendientes en un GASTO PAGADO con proveedor y cuenta.",
+        );
+      }
+
+      type CreatedMovement = Awaited<ReturnType<typeof prisma.financeMovement.create>>;
+      const { movement, autoPayment, appliedPayment, applyDetails } = await prisma.$transaction(async (tx) => {
+        if (useApplyMode) {
+          // Validar facturas pendientes: mismo proveedor, misma moneda, saldo
+          // pendiente >= monto a aplicar.
+          const invoiceIds = applyToPending.map((a) => a.movementId);
+          const invoices = await tx.financeMovement.findMany({
+            where: { id: { in: invoiceIds }, deletedAt: null },
+            include: {
+              paymentApplications: { include: { payment: { select: { deletedAt: true } } } },
+            },
+          });
+          const invoiceMap = new Map(invoices.map((i) => [i.id, i]));
+
+          for (const a of applyToPending) {
+            const inv = invoiceMap.get(a.movementId);
+            if (!inv) {
+              throw badRequest("INVOICE_NOT_FOUND", `La factura ${a.movementId} no existe o fue eliminada.`);
+            }
+            if (inv.tipoMovimiento !== TipoMovimiento.GASTO) {
+              throw badRequest("INVOICE_INVALID_TYPE", "Sólo se pueden aplicar pagos a facturas de gasto.");
+            }
+            if (inv.supplierId !== body.supplierId) {
+              throw badRequest("SUPPLIER_MISMATCH", "Las facturas pendientes deben ser del mismo proveedor.");
+            }
+            if (inv.moneda !== body.moneda) {
+              throw badRequest("CURRENCY_MISMATCH", "Las facturas pendientes deben tener la misma moneda.");
+            }
+            const invMonto = decimalToNumber(inv.monto) ?? 0;
+            const invAplicado = sumApplications(inv.paymentApplications.filter((p) => !p.payment.deletedAt));
+            const invSaldo = Math.round((invMonto - invAplicado) * 100) / 100;
+            if (a.monto > invSaldo + 0.005) {
+              throw badRequest(
+                "OVER_APPLIED_INVOICE",
+                `La aplicación a la factura "${inv.descripcion}" excede su saldo pendiente (${invSaldo}).`,
+              );
+            }
+          }
+
+          const totalPago = body.monto;
+          const sumApplied = Math.round(applyToPending.reduce((acc, a) => acc + a.monto, 0) * 100) / 100;
+          if (sumApplied > totalPago + 0.005) {
+            throw badRequest(
+              "OVER_APPLIED",
+              "La suma de aplicaciones a facturas pendientes excede el monto del pago.",
+            );
+          }
+          const remainder = Math.round((totalPago - sumApplied) * 100) / 100;
+
+          // Crear el Payment con el monto total de la salida de caja.
+          const payment = await tx.payment.create({
+            data: {
+              supplierId: body.supplierId!,
+              accountId: body.accountId!,
+              fecha,
+              monto: new Prisma.Decimal(totalPago),
+              moneda: body.moneda,
+              metodo: MetodoPago.OTRO,
+              referencia: `Pago: ${body.descripcion}`.slice(0, 200),
+              notas: "Pago generado al crear movimiento PAGADO con aplicación a facturas pendientes",
+              createdById: user.id,
+            },
+          });
+
+          // Aplicar Payment a cada factura pendiente.
+          for (const a of applyToPending) {
+            await tx.paymentApplication.create({
+              data: {
+                paymentId: payment.id,
+                movementId: a.movementId,
+                montoAplicado: new Prisma.Decimal(a.monto),
+              },
+            });
+          }
+
+          // Si sobra, crear movimiento nuevo con monto = sobrante y aplicar el sobrante.
+          // Si no sobra, no se crea movimiento.
+          let createdMovement: CreatedMovement | null = null;
+          if (remainder > 0.005) {
+            createdMovement = await tx.financeMovement.create({
+              data: {
+                fecha,
+                mes,
+                anio,
+                tipoMovimiento: body.tipoMovimiento,
+                categoriaPrincipal: body.categoriaPrincipal,
+                subcategoriaId: body.subcategoriaId,
+                descripcion: body.descripcion,
+                monto: new Prisma.Decimal(remainder),
+                moneda: body.moneda,
+                tipoCambio,
+                pagado: true,
+                cobrado: body.cobrado,
+                impactaFlujo: body.impactaFlujo,
+                status: FinanceMovementStatus.PAGADO,
+                expectedDate: body.expectedDate ? parseDateOnly(body.expectedDate) : null,
+                dueDate: body.dueDate ? parseDateOnly(body.dueDate) : null,
+                requiresItemDetail,
+                projectId: body.projectId,
+                supplierId: body.supplierId,
+                accountId: body.accountId,
+                observaciones: body.observaciones,
+                estadoAprobacion: body.estadoAprobacion,
+                archivoAdjuntoUrl: body.archivoAdjuntoUrl,
+                creadoPorId: user.id,
+              },
+            });
+            await tx.paymentApplication.create({
+              data: {
+                paymentId: payment.id,
+                movementId: createdMovement.id,
+                montoAplicado: new Prisma.Decimal(remainder),
+              },
+            });
+          }
+
+          // Recalcular status de cada factura afectada.
+          for (const a of applyToPending) {
+            await recalcMovementStatus(tx, a.movementId);
+          }
+
+          return {
+            movement: createdMovement,
+            autoPayment: null as null,
+            appliedPayment: payment,
+            applyDetails: { totalPago, sumApplied, remainder, count: applyToPending.length },
+          };
+        }
+
         const created = await tx.financeMovement.create({
           data: {
             fecha,
@@ -10411,17 +10567,24 @@ export async function registerApiRoutes(app: FastifyInstance) {
             user.id,
           );
         }
-        return { movement: created, autoPayment: payment };
+        return {
+          movement: created,
+          autoPayment: payment,
+          appliedPayment: null as null,
+          applyDetails: null as null,
+        };
       });
 
-      await createAuditEntry({
-        entityType: AuditEntityType.finance_movement,
-        entityId: movement.id,
-        projectId: body.projectId,
-        userId: user.id,
-        action: AuditAction.created,
-        description: `Registró movimiento: ${body.descripcion} por ${body.monto} ${body.moneda}`,
-      });
+      if (movement) {
+        await createAuditEntry({
+          entityType: AuditEntityType.finance_movement,
+          entityId: movement.id,
+          projectId: body.projectId,
+          userId: user.id,
+          action: AuditAction.created,
+          description: `Registró movimiento: ${body.descripcion} por ${decimalToNumber(movement.monto)} ${body.moneda}`,
+        });
+      }
 
       if (autoPayment) {
         await createAuditEntry({
@@ -10430,12 +10593,45 @@ export async function registerApiRoutes(app: FastifyInstance) {
           projectId: body.projectId,
           userId: user.id,
           action: AuditAction.created,
-          description: `Auto-pago generado para movimiento PAGADO ${movement.id}`,
-          metadata: { autoGenerated: true, sourceMovementId: movement.id },
+          description: `Auto-pago generado para movimiento PAGADO ${movement?.id ?? ""}`,
+          metadata: { autoGenerated: true, sourceMovementId: movement?.id ?? null },
         });
       }
 
-      return { ...movement, monto: decimalToNumber(movement.monto), tipoCambio: movement.tipoCambio ? decimalToNumber(movement.tipoCambio) : null };
+      if (appliedPayment) {
+        await createAuditEntry({
+          entityType: AuditEntityType.finance_movement,
+          entityId: appliedPayment.id,
+          projectId: body.projectId,
+          userId: user.id,
+          action: AuditAction.created,
+          description: movement
+            ? `Pago de ${applyDetails?.totalPago} ${body.moneda} a ${applyDetails?.count} factura(s) pendiente(s) y movimiento nuevo ${movement.id}`
+            : `Pago de ${applyDetails?.totalPago} ${body.moneda} aplicado íntegramente a ${applyDetails?.count} factura(s) pendiente(s)`,
+          metadata: {
+            appliedToInvoices: applyToPending,
+            remainderToNewMovement: applyDetails?.remainder ?? 0,
+          },
+        });
+      }
+
+      if (movement) {
+        return {
+          ...movement,
+          monto: decimalToNumber(movement.monto),
+          tipoCambio: movement.tipoCambio ? decimalToNumber(movement.tipoCambio) : null,
+          appliedToInvoices: applyDetails ? { count: applyDetails.count, total: applyDetails.sumApplied, remainder: applyDetails.remainder } : null,
+        };
+      }
+      // Caso "movimiento no creado": el pago se aplicó íntegramente a facturas
+      // pendientes. Devolvemos un payload distinto para que el front pueda
+      // distinguir y mostrar el toast adecuado.
+      return {
+        skipped: true,
+        message: "Pago aplicado íntegramente a facturas pendientes",
+        paymentId: appliedPayment?.id ?? null,
+        appliedToInvoices: applyDetails ? { count: applyDetails.count, total: applyDetails.sumApplied, remainder: 0 } : null,
+      };
     });
 
     app.get("/finance/movements/:id", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
@@ -10821,6 +11017,53 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     // ─── Finance: Pendientes de desglose ─────────────────────────────────────
+
+    // Devuelve facturas A_PAGAR / PARCIALMENTE_PAGADO de un proveedor en una
+    // moneda dada, con saldo pendiente > 0. Lo usa el form de "Nuevo movimiento"
+    // PAGADO con proveedor: si hay facturas pendientes, ofrece aplicar el pago
+    // contra ellas en lugar de crear sólo un Payment auto al movimiento nuevo.
+    app.get("/finance/movements/pending-by-supplier", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const query = z.object({
+        supplierId: z.string(),
+        moneda: z.nativeEnum(Moneda),
+      }).parse(request.query);
+
+      const facturas = await prisma.financeMovement.findMany({
+        where: {
+          deletedAt: null,
+          tipoMovimiento: TipoMovimiento.GASTO,
+          supplierId: query.supplierId,
+          moneda: query.moneda,
+          status: { in: [FinanceMovementStatus.A_PAGAR, FinanceMovementStatus.PARCIALMENTE_PAGADO] },
+        },
+        include: {
+          paymentApplications: {
+            include: { payment: { select: { deletedAt: true } } },
+          },
+        },
+        orderBy: [{ dueDate: "asc" }, { fecha: "asc" }],
+      });
+
+      const result = facturas
+        .map((m) => {
+          const monto = decimalToNumber(m.monto) ?? 0;
+          const aplicado = sumApplications(m.paymentApplications.filter((a) => !a.payment.deletedAt));
+          const saldoPendiente = Math.round((monto - aplicado) * 100) / 100;
+          return {
+            id: m.id,
+            descripcion: m.descripcion,
+            fecha: serializeDateOnly(m.fecha),
+            monto,
+            moneda: m.moneda,
+            saldoPendiente,
+            status: m.status,
+            dueDate: m.dueDate ? serializeDateOnly(m.dueDate) : null,
+          };
+        })
+        .filter((f) => f.saldoPendiente > 0.005);
+
+      return { facturasPendientes: result };
+    });
 
     app.get("/finance/movements/pending-detail", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async () => {
       // Solo GASTOS con proveedor: el desglose de factura sirve para imputar

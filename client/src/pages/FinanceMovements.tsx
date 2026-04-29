@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Plus, X, ChevronLeft, ChevronRight, ArrowRight, AlertTriangle, FileText, DollarSign, Trash2 } from 'lucide-react';
+import { Plus, X, ChevronLeft, ChevronRight, ArrowRight, AlertTriangle, FileText, DollarSign, Trash2, Info } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
-import { getMovements, getMovement, createMovement, patchMovement, deleteMovement, transitionMovement, cancelMovement, getExchangeRate } from '../api/finance.api';
+import { getMovements, getMovement, createMovement, patchMovement, deleteMovement, transitionMovement, cancelMovement, getExchangeRate, getPendingInvoicesBySupplier } from '../api/finance.api';
 import { apiClient } from '../api/axios';
 import { fmtCurrency, fmtDate, currentMonthYear, MONTH_NAMES } from '../lib/finance';
 import type {
@@ -30,6 +30,7 @@ import { CleanupPrevistosModal } from '../components/finance/CleanupPrevistosMod
 import { InvoiceItemsDetail } from '../components/finance/InvoiceItemsDetail';
 import { NewPaymentForSupplierModal } from '../components/finance/NewPaymentForSupplierModal';
 import { ApplyPaymentModal } from '../components/finance/ApplyPaymentModal';
+import { ApplyToPendingFromMovementModal, type ApplyDistribution } from '../components/finance/ApplyToPendingFromMovementModal';
 import { getAccounts } from '../api/accounts.api';
 import { ACCOUNT_TYPE_LABEL } from '../types/accounts.types';
 import { todayLocalISO } from '../utils/date';
@@ -96,6 +97,9 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId, onSavedOpenDesgl
   // Intenciones extra al guardar (sólo aplican a GASTO en A_PAGAR/PAGADO):
   const [markNoMaterialesIntent, setMarkNoMaterialesIntent] = useState(false);
   const [openDesgloseAfter, setOpenDesgloseAfter] = useState(false);
+  // Aplicación a facturas pendientes (sólo en creación GASTO+PAGADO+supplier+account):
+  const [applyDistribution, setApplyDistribution] = useState<ApplyDistribution | null>(null);
+  const [showApplyModal, setShowApplyModal] = useState(false);
   const [projects, setProjects] = useState<{ id: string; code: string; clientName: string }[]>([]);
   const [suppliers, setSuppliers] = useState<{ id: string; nombre: string }[]>([]);
   const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
@@ -103,6 +107,39 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId, onSavedOpenDesgl
     queryKey: ['accounts', 'true'],
     queryFn: () => getAccounts({ activa: 'true' }),
   });
+
+  // Detección de facturas pendientes del proveedor: sólo cuando se cumplen
+  // todas las condiciones para aplicar un Payment (GASTO + PAGADO + proveedor
+  // + monto + moneda). En edición no aplica: el flujo de aplicar pago a
+  // pendientes está disponible vía detail panel ("Aplicar pago" → ApplyPaymentModal).
+  const canApplyToPending =
+    !editId &&
+    form.tipoMovimiento === 'GASTO' &&
+    form.status === 'PAGADO' &&
+    !!form.proveedorId &&
+    !!form.accountId &&
+    form.monto > 0;
+  const { data: pendingInvoices = [] } = useQuery({
+    queryKey: ['pending-by-supplier', form.proveedorId, form.moneda],
+    queryFn: () => getPendingInvoicesBySupplier(form.proveedorId!, form.moneda),
+    enabled: canApplyToPending,
+  });
+
+  // Si cambia algo crítico (proveedor, moneda, monto), invalidamos la
+  // distribución existente para no aplicar montos a facturas que ya no
+  // corresponden.
+  useEffect(() => {
+    setApplyDistribution(null);
+  }, [form.proveedorId, form.moneda]);
+
+  const totalPendiente = useMemo(
+    () => pendingInvoices.reduce((acc, f) => acc + f.saldoPendiente, 0),
+    [pendingInvoices],
+  );
+  const distribucionTotal = useMemo(
+    () => (applyDistribution ?? []).reduce((acc, d) => acc + d.monto, 0),
+    [applyDistribution],
+  );
 
   useEffect(() => {
     Promise.all([
@@ -164,15 +201,46 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId, onSavedOpenDesgl
     setError('');
     setLoading(true);
     try {
-      let resultId: string;
+      let resultId: string | null;
+      let movementSkipped = false;
       if (editId) {
         await patchMovement(editId, form);
         resultId = editId;
         toast.success('Movimiento actualizado');
       } else {
-        const created = await createMovement(form);
-        resultId = created.id;
-        toast.success('Movimiento registrado');
+        const created = await createMovement(
+          form,
+          applyDistribution && applyDistribution.length > 0 ? applyDistribution : undefined,
+        );
+        if ('skipped' in created) {
+          // Todo el monto se aplicó a facturas pendientes — no se creó movimiento.
+          resultId = null;
+          movementSkipped = true;
+          toast.success(
+            `Pago aplicado íntegramente a ${created.appliedToInvoices?.count ?? 0} factura(s) pendiente(s)`,
+          );
+        } else {
+          resultId = created.id;
+          const applied = created.appliedToInvoices;
+          if (applied && applied.count > 0) {
+            toast.success(
+              `Pago registrado · Aplicado a ${applied.count} factura(s) · Resto al movimiento nuevo: ${fmtCurrency(applied.remainder, form.moneda)}`,
+            );
+          } else {
+            toast.success('Movimiento registrado');
+          }
+        }
+      }
+      if (movementSkipped) {
+        // Si no hay movimiento nuevo, no aplican intents de desglose ni cleanup
+        // de previstos. Cerramos el form directo.
+        onSuccess();
+        return;
+      }
+      if (!resultId) {
+        // Defensive: nada que hacer.
+        onSuccess();
+        return;
       }
       // Intent extras (sólo aplica a gastos A_PAGAR/PAGADO)
       const aplicaDesglose = form.tipoMovimiento === 'GASTO' && (form.status === 'A_PAGAR' || form.status === 'PAGADO');
@@ -440,6 +508,47 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId, onSavedOpenDesgl
         );
       })()}
 
+      {/* Aplicar a facturas pendientes (sólo creación GASTO+PAGADO+supplier+account+monto>0) */}
+      {canApplyToPending && pendingInvoices.length > 0 && (
+        <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 p-3 space-y-2">
+          <div className="flex items-start gap-2">
+            <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-[var(--color-text-primary)]">
+                Este proveedor tiene {pendingInvoices.length} factura{pendingInvoices.length === 1 ? '' : 's'} pendiente{pendingInvoices.length === 1 ? '' : 's'} de pago
+              </p>
+              <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                Total pendiente: {fmtCurrency(totalPendiente, form.moneda)}.
+                Podés aplicar parte o todo el monto del pago a esas facturas.
+              </p>
+              {applyDistribution && applyDistribution.length > 0 && (
+                <p className="text-[11px] text-[var(--color-state-done-text)] mt-1">
+                  Distribución actual: {applyDistribution.length} factura(s) · {fmtCurrency(distribucionTotal, form.moneda)} aplicado · resto al movimiento nuevo: {fmtCurrency(form.monto - distribucionTotal, form.moneda)}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setShowApplyModal(true)}
+              className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors"
+            >
+              {applyDistribution && applyDistribution.length > 0 ? 'Editar aplicación' : 'Aplicar a facturas pendientes'}
+            </button>
+            {applyDistribution && applyDistribution.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setApplyDistribution(null)}
+                className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors"
+              >
+                Quitar aplicación
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Aprobación */}
       <div>
         <label className={lbl}>Aprobación</label>
@@ -478,6 +587,19 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId, onSavedOpenDesgl
           onClose={() => {
             setAutoCleanupProjectId(null);
             onSuccess();
+          }}
+        />
+      )}
+      {showApplyModal && pendingInvoices.length > 0 && (
+        <ApplyToPendingFromMovementModal
+          totalPago={form.monto}
+          moneda={form.moneda}
+          facturas={pendingInvoices}
+          initialDistribution={applyDistribution ?? undefined}
+          onClose={() => setShowApplyModal(false)}
+          onConfirm={(dist) => {
+            setApplyDistribution(dist.length > 0 ? dist : null);
+            setShowApplyModal(false);
           }}
         />
       )}

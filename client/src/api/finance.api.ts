@@ -157,8 +157,48 @@ function buildMovementBody(body: Partial<MovimientoFormData>) {
   };
 }
 
-export const createMovement = (body: MovimientoFormData) =>
-  apiClient.post<FinanceMovement>('/api/finance/movements', buildMovementBody(body)).then(r => r.data);
+/** Resultado de createMovement: si todo el pago se aplicó a facturas pendientes
+ *  no se crea movimiento nuevo y la respuesta tiene `skipped: true`. */
+export type CreateMovementResult =
+  | (FinanceMovement & {
+      appliedToInvoices?: { count: number; total: number; remainder: number } | null;
+    })
+  | {
+      skipped: true;
+      message: string;
+      paymentId: string | null;
+      appliedToInvoices: { count: number; total: number; remainder: number } | null;
+    };
+
+export const createMovement = (
+  body: MovimientoFormData,
+  applyToPendingInvoices?: { movementId: string; monto: number }[],
+) => {
+  const payload: Record<string, unknown> = buildMovementBody(body);
+  if (applyToPendingInvoices && applyToPendingInvoices.length > 0) {
+    payload.applyToPendingInvoices = applyToPendingInvoices;
+  }
+  return apiClient.post<CreateMovementResult>('/api/finance/movements', payload).then(r => r.data);
+};
+
+export interface PendingInvoiceForSupplier {
+  id: string;
+  descripcion: string;
+  fecha: string;
+  monto: number;
+  moneda: Moneda;
+  saldoPendiente: number;
+  status: FinanceMovementStatus;
+  dueDate: string | null;
+}
+
+export const getPendingInvoicesBySupplier = (supplierId: string, moneda: Moneda) =>
+  apiClient
+    .get<{ facturasPendientes: PendingInvoiceForSupplier[] }>(
+      '/api/finance/movements/pending-by-supplier',
+      { params: { supplierId, moneda } },
+    )
+    .then(r => r.data.facturasPendientes);
 
 export const patchMovement = (id: string, body: Partial<MovimientoFormData>) =>
   apiClient.patch<FinanceMovement>(`/api/finance/movements/${id}`, buildMovementBody(body)).then(r => r.data);
