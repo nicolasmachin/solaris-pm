@@ -8195,6 +8195,210 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return { success: true };
     });
 
+    // ─── G.10: Conciliación bancaria ──────────────────────────────────────────
+
+    // Importante: registrar la ruta estática ANTES que las parametrizadas, para
+    // que Fastify no interprete "reconciliation-alerts" como un :id de cuenta.
+    app.get("/accounts/reconciliation-alerts", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async () => {
+      const accounts = await prisma.account.findMany({
+        where: { deletedAt: null, activa: true },
+        select: {
+          id: true,
+          nombre: true,
+          moneda: true,
+          tipo: true,
+          reconciliations: {
+            orderBy: { fecha: "desc" },
+            take: 1,
+            select: { id: true, fecha: true },
+          },
+        },
+        orderBy: { nombre: "asc" },
+      });
+      const todayMs = todayUtc().getTime();
+      let totalAlertas = 0;
+      const out = accounts.map((a) => {
+        const last = a.reconciliations[0] ?? null;
+        const dias = last ? Math.floor((todayMs - last.fecha.getTime()) / 86400000) : null;
+        const necesita = dias === null || dias > 30;
+        if (necesita) totalAlertas++;
+        return {
+          accountId: a.id,
+          nombre: a.nombre,
+          moneda: a.moneda,
+          tipo: a.tipo,
+          ultimaConciliacionId: last?.id ?? null,
+          ultimaConciliacion: last ? serializeDateOnly(last.fecha) : null,
+          diasDesdeUltimaConciliacion: dias,
+          necesitaConciliacion: necesita,
+        };
+      });
+      return { totalAlertas, accounts: out };
+    });
+
+    app.get("/accounts/:id/reconciliation-preview", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const { saldoReal: saldoRealStr } = z.object({ saldoReal: z.string() }).parse(request.query);
+      const saldoReal = Number.parseFloat(saldoRealStr);
+      if (!Number.isFinite(saldoReal)) throw badRequest("INVALID_SALDO", "saldoReal debe ser numérico");
+
+      const account = await prisma.account.findFirst({
+        where: { id, deletedAt: null },
+        select: { id: true, nombre: true, moneda: true },
+      });
+      if (!account) throw notFound("ACCOUNT_NOT_FOUND", "Cuenta no encontrada");
+
+      const balance = await computeAccountBalance(id);
+      const saldoCalculado = balance.saldoActual;
+      const diferencia = roundMoney(saldoReal - saldoCalculado);
+      const requiereAjuste = Math.abs(diferencia) > 0.01;
+
+      return {
+        accountId: account.id,
+        accountName: account.nombre,
+        moneda: account.moneda,
+        saldoCalculado,
+        saldoReal: roundMoney(saldoReal),
+        diferencia,
+        requiereAjuste,
+        ajusteSugerido: requiereAjuste
+          ? {
+              tipo: diferencia > 0 ? TipoMovimiento.INGRESO : TipoMovimiento.GASTO,
+              monto: Math.abs(diferencia),
+              descripcion: `Ajuste conciliación ${account.nombre}`,
+            }
+          : null,
+      };
+    });
+
+    app.post("/accounts/:id/reconcile", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const body = z.object({
+        fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        saldoReal: z.coerce.number(),
+        notas: z.string().nullable().optional(),
+        aplicarAjuste: z.boolean().optional().default(true),
+      }).strict().parse(request.body);
+
+      const account = await prisma.account.findFirst({ where: { id, deletedAt: null } });
+      if (!account) throw notFound("ACCOUNT_NOT_FOUND", "Cuenta no encontrada");
+
+      const balance = await computeAccountBalance(id);
+      const saldoCalculado = balance.saldoActual;
+      const diferencia = roundMoney(body.saldoReal - saldoCalculado);
+      const fecha = parseDateOnly(body.fecha);
+
+      const reconciliation = await prisma.$transaction(async (tx) => {
+        let ajusteMovementId: string | null = null;
+        if (Math.abs(diferencia) > 0.01 && body.aplicarAjuste) {
+          const esIngreso = diferencia > 0;
+          const ajuste = await tx.financeMovement.create({
+            data: {
+              fecha,
+              mes: fecha.getUTCMonth() + 1,
+              anio: fecha.getUTCFullYear(),
+              tipoMovimiento: esIngreso ? TipoMovimiento.INGRESO : TipoMovimiento.GASTO,
+              categoriaPrincipal: CategoriaPrincipal.AJUSTE_CONCILIACION,
+              descripcion: `Ajuste conciliación ${account.nombre}`,
+              monto: new Prisma.Decimal(Math.abs(diferencia)),
+              moneda: account.moneda,
+              ivaTasa: 0, // ajustes no llevan IVA
+              pagado: !esIngreso,
+              cobrado: esIngreso,
+              impactaFlujo: true,
+              status: FinanceMovementStatus.PAGADO,
+              accountId: id,
+              estadoAprobacion: EstadoAprobacion.REGISTRADO,
+              observaciones: body.notas ?? `Conciliación al ${body.fecha}: real=${body.saldoReal.toFixed(2)} calculado=${saldoCalculado.toFixed(2)}`,
+              creadoPorId: user.id,
+            },
+          });
+          ajusteMovementId = ajuste.id;
+        }
+
+        return tx.accountReconciliation.create({
+          data: {
+            accountId: id,
+            fecha,
+            saldoReal: new Prisma.Decimal(body.saldoReal),
+            saldoCalculado: new Prisma.Decimal(saldoCalculado),
+            diferencia: new Prisma.Decimal(diferencia),
+            ajusteMovementId,
+            notas: body.notas ?? null,
+            createdById: user.id,
+          },
+          include: {
+            ajusteMovement: { select: { id: true, descripcion: true, monto: true, tipoMovimiento: true } },
+          },
+        });
+      });
+
+      await createAuditEntry({
+        entityType: AuditEntityType.account,
+        entityId: id,
+        userId: user.id,
+        action: AuditAction.created,
+        description: `Conciliación de ${account.nombre}: real=${body.saldoReal.toFixed(2)}, calculado=${saldoCalculado.toFixed(2)}, diferencia=${diferencia.toFixed(2)}${reconciliation.ajusteMovementId ? " (con ajuste automático)" : ""}`,
+        metadata: { reconciliationId: reconciliation.id, ajusteMovementId: reconciliation.ajusteMovementId },
+      });
+
+      return {
+        id: reconciliation.id,
+        accountId: reconciliation.accountId,
+        fecha: serializeDateOnly(reconciliation.fecha),
+        saldoReal: Number(reconciliation.saldoReal),
+        saldoCalculado: Number(reconciliation.saldoCalculado),
+        diferencia: Number(reconciliation.diferencia),
+        ajusteMovementId: reconciliation.ajusteMovementId,
+        ajusteMovement: reconciliation.ajusteMovement
+          ? {
+              id: reconciliation.ajusteMovement.id,
+              descripcion: reconciliation.ajusteMovement.descripcion,
+              monto: Number(reconciliation.ajusteMovement.monto),
+              tipoMovimiento: reconciliation.ajusteMovement.tipoMovimiento,
+            }
+          : null,
+        notas: reconciliation.notas,
+        createdAt: serializeDate(reconciliation.createdAt),
+      };
+    });
+
+    app.get("/accounts/:id/reconciliations", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const account = await prisma.account.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
+      if (!account) throw notFound("ACCOUNT_NOT_FOUND", "Cuenta no encontrada");
+
+      const items = await prisma.accountReconciliation.findMany({
+        where: { accountId: id },
+        orderBy: { fecha: "desc" },
+        include: {
+          ajusteMovement: { select: { id: true, descripcion: true, monto: true, tipoMovimiento: true } },
+          createdBy: { select: { id: true, name: true } },
+        },
+      });
+
+      return items.map((r) => ({
+        id: r.id,
+        fecha: serializeDateOnly(r.fecha),
+        saldoReal: Number(r.saldoReal),
+        saldoCalculado: Number(r.saldoCalculado),
+        diferencia: Number(r.diferencia),
+        ajusteMovementId: r.ajusteMovementId,
+        ajusteMovement: r.ajusteMovement
+          ? {
+              id: r.ajusteMovement.id,
+              descripcion: r.ajusteMovement.descripcion,
+              monto: Number(r.ajusteMovement.monto),
+              tipoMovimiento: r.ajusteMovement.tipoMovimiento,
+            }
+          : null,
+        notas: r.notas,
+        createdBy: { id: r.createdBy.id, name: r.createdBy.name },
+        createdAt: serializeDate(r.createdAt),
+      }));
+    });
+
     function isMovementConcreted(row: {
       tipoMovimiento: TipoMovimiento;
       status: FinanceMovementStatus;

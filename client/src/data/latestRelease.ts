@@ -23,22 +23,24 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "3.8",
+  version: "3.9",
   date: "29 de abril de 2026",
   sections: [
     {
       title: "Nuevo",
       items: [
-        "**Auto-Payment al crear movimientos PAGADOS**: si creás un gasto directamente en estado PAGADO con proveedor + cuenta, el sistema genera automáticamente el Payment aplicado a la factura. El saldo del proveedor queda en cero y la pestaña Pagos refleja el pago real.",
-        "También aplica al transicionar un movimiento existente a PAGADO sin pasar por el flujo manual de Payment.",
-        "**Badge \"Auto\"** en la pestaña Pagos del proveedor para distinguir los pagos automáticos.",
+        "**Conciliación bancaria**: botón \"Conciliar\" en cada cuenta de `/finanzas/cuentas`. Cargás el saldo real del home banking y el sistema te muestra la diferencia con su saldo calculado.",
+        "Si hay diferencia, opcionalmente se genera un **movimiento de ajuste** (INGRESO o GASTO según corresponda) con categoría \"Ajuste conciliación\" para que los saldos cuadren.",
+        "**Historial de conciliaciones** por cuenta en el drawer de detalle.",
+        "**Banner global en Finanzas** cuando hay cuentas sin conciliar (>30 días o nunca).",
       ],
     },
     {
       title: "Mejoras",
       items: [
-        "**Backfill de movimientos legacy**: nuevo script que genera Payments retroactivos para movimientos PAGADOS antiguos sin Payment asociado (idempotente).",
-        "Atomicidad: el Payment automático y el movimiento se crean en una sola transacción.",
+        "Badge en cada card de cuenta: \"✓ Hace Xd\", \"Conciliar (hace Yd)\" o \"Nunca conciliada\".",
+        "El movimiento de ajuste y el registro de conciliación se crean en una sola transacción atómica.",
+        "Audit log dedicado por conciliación con metadata del ajuste.",
       ],
     },
   ],
@@ -52,6 +54,15 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "3.8",
+    shortDate: "29 abr",
+    highlights: [
+      "Auto-Payment al crear gastos directamente PAGADOS (con proveedor + cuenta).",
+      "Backfill de movimientos PAGADOS legacy sin Payment asociado.",
+      "Badge \"Auto\" en pagos generados automáticamente.",
+    ],
+  },
   {
     version: "3.7",
     shortDate: "28 abr",

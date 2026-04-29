@@ -1,5 +1,36 @@
 # Novedades
 
+## v3.9
+
+### 29 de abril de 2026
+
+#### Conciliación bancaria de cuentas
+
+Nueva funcionalidad para verificar periódicamente que el saldo del sistema coincide con la realidad de cada cuenta (banco, caja, tarjeta).
+
+- **Botón "Conciliar"** en cada cuenta de `/finanzas/cuentas`. Abre un modal donde se ingresa el saldo real (según home banking) y la fecha del corte.
+- **Diferencia en vivo**: el modal muestra al instante si hay diferencia y cuál (con texto explicativo: "tenés más / menos plata de la que el sistema cree").
+- **Ajuste automático opcional**: si hay diferencia, un toggle permite generar un movimiento de **categoría nueva "Ajuste conciliación"** (INGRESO o GASTO según el signo de la diferencia) para que el saldo calculado iguale al real.
+- **Atomicidad**: todo (movimiento de ajuste + registro de conciliación) se hace en una sola transacción.
+- **Historial por cuenta**: el drawer de detalle muestra una tabla con todas las conciliaciones (fecha, real, calculado, diferencia y si se aplicó ajuste).
+- **Badge en cada cuenta**: indica "✓ Conciliada hace Xd", "Conciliar (hace Yd)" o "Nunca conciliada" según los días desde la última.
+- **Banner global** en `/finanzas` cuando hay cuentas sin conciliar (>30 días o nunca).
+- **Audit log** dedicado en cada conciliación con metadata (`reconciliationId`, `ajusteMovementId`).
+
+#### Modelo nuevo
+
+- `AccountReconciliation`: punto verificado en el tiempo (fecha, saldoReal, saldoCalculado, diferencia, ajusteMovementId, notas, createdBy).
+- Categoría `AJUSTE_CONCILIACION` agregada al enum `CategoriaPrincipal`.
+
+#### Endpoints
+
+- `GET /api/accounts/reconciliation-alerts` — cuentas que necesitan conciliarse (con días desde la última).
+- `GET /api/accounts/:id/reconciliation-preview?saldoReal=X` — preview del impacto antes de confirmar.
+- `POST /api/accounts/:id/reconcile` — aplica la conciliación y opcionalmente crea el movimiento de ajuste.
+- `GET /api/accounts/:id/reconciliations` — historial de la cuenta.
+
+---
+
 ## v3.8
 
 ### 29 de abril de 2026

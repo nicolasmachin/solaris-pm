@@ -1,14 +1,15 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, X, ArrowDown, ArrowUp, Wallet, CreditCard, Banknote, MoreHorizontal } from 'lucide-react';
+import { ArrowLeft, X, ArrowDown, ArrowUp, Wallet, CreditCard, Banknote, MoreHorizontal, Scale } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
-import { getAccounts, getAccountsSummary } from '../api/accounts.api';
+import { getAccounts, getAccountsSummary, getReconciliationAlerts, getAccountReconciliations } from '../api/accounts.api';
 import { getMovements } from '../api/finance.api';
 import { getPayments } from '../api/payments.api';
 import { fmtCurrency, fmtDate } from '../lib/finance';
 import type { Account } from '../types/accounts.types';
 import { ACCOUNT_TYPE_LABEL } from '../types/accounts.types';
+import { ReconcileAccountModal } from '../components/finance/ReconcileAccountModal';
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
 
@@ -21,6 +22,7 @@ const TYPE_ICON = {
 
 export function FinanceCuentas() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [reconcileAccount, setReconcileAccount] = useState<Account | null>(null);
 
   const { data: summary, isLoading: loadingSummary } = useQuery({
     queryKey: ['accounts-summary'],
@@ -31,6 +33,16 @@ export function FinanceCuentas() {
     queryKey: ['accounts', 'all'],
     queryFn: () => getAccounts({ activa: 'all' }),
   });
+
+  const { data: alerts } = useQuery({
+    queryKey: ['reconciliation-alerts'],
+    queryFn: getReconciliationAlerts,
+  });
+  const alertByAccount = useMemo(() => {
+    const m = new Map<string, { dias: number | null; necesita: boolean }>();
+    if (alerts) for (const a of alerts.accounts) m.set(a.accountId, { dias: a.diasDesdeUltimaConciliacion, necesita: a.necesitaConciliacion });
+    return m;
+  }, [alerts]);
 
   return (
     <div className="p-6 space-y-5">
@@ -77,38 +89,60 @@ export function FinanceCuentas() {
               {summary.porCuenta.map(c => {
                 const account = accounts.find(a => a.id === c.id);
                 const Icon = TYPE_ICON[c.tipo];
+                const alertInfo = alertByAccount.get(c.id);
                 return (
-                  <button
+                  <div
                     key={c.id}
-                    onClick={() => setSelectedId(c.id)}
-                    className="text-left rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4 hover:bg-[var(--color-bg-card-hover)] transition-colors"
+                    className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4 hover:bg-[var(--color-bg-card-hover)] transition-colors"
                   >
-                    <div className="flex items-start justify-between gap-2 mb-3">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-8 h-8 rounded-lg bg-[var(--color-info-bg)] text-[var(--color-info-text)] flex items-center justify-center shrink-0">
-                          <Icon className="w-4 h-4" />
+                    <button onClick={() => setSelectedId(c.id)} className="text-left w-full">
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-8 h-8 rounded-lg bg-[var(--color-info-bg)] text-[var(--color-info-text)] flex items-center justify-center shrink-0">
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-[var(--color-text-primary)] truncate">{c.nombre}</p>
+                            <p className="text-[10px] font-mono uppercase text-[var(--color-text-muted)]">{ACCOUNT_TYPE_LABEL[c.tipo]} · {c.moneda}</p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-[var(--color-text-primary)] truncate">{c.nombre}</p>
-                          <p className="text-[10px] font-mono uppercase text-[var(--color-text-muted)]">{ACCOUNT_TYPE_LABEL[c.tipo]} · {c.moneda}</p>
-                        </div>
+                        {account && !account.activa && (
+                          <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-[var(--color-border)] text-[var(--color-text-muted)] shrink-0">Inactiva</span>
+                        )}
                       </div>
-                      {account && !account.activa && (
-                        <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-[var(--color-border)] text-[var(--color-text-muted)] shrink-0">Inactiva</span>
+                      <p className={klass(
+                        'text-xl font-bold tabular-nums',
+                        c.saldoActual < 0 ? 'text-red-400' : 'text-[var(--color-text-primary)]',
+                      )}>
+                        {fmtCurrency(c.saldoActual, c.moneda)}
+                      </p>
+                      {account?.saldoInicial !== undefined && (
+                        <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
+                          Inicial: {fmtCurrency(account.saldoInicial, c.moneda)}
+                        </p>
+                      )}
+                    </button>
+                    <div className="mt-3 flex items-center justify-between gap-2 pt-3 border-t border-[var(--color-border)]">
+                      {alertInfo && (
+                        alertInfo.dias === null ? (
+                          <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400">Nunca conciliada</span>
+                        ) : alertInfo.necesita ? (
+                          <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400">Conciliar (hace {alertInfo.dias}d)</span>
+                        ) : (
+                          <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">✓ Hace {alertInfo.dias}d</span>
+                        )
+                      )}
+                      {account && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setReconcileAccount(account); }}
+                          className="ml-auto flex items-center gap-1 text-[11px] px-2 py-1 rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-app)]"
+                        >
+                          <Scale className="w-3 h-3" /> Conciliar
+                        </button>
                       )}
                     </div>
-                    <p className={klass(
-                      'text-xl font-bold tabular-nums',
-                      c.saldoActual < 0 ? 'text-red-400' : 'text-[var(--color-text-primary)]',
-                    )}>
-                      {fmtCurrency(c.saldoActual, c.moneda)}
-                    </p>
-                    {account?.saldoInicial !== undefined && (
-                      <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
-                        Inicial: {fmtCurrency(account.saldoInicial, c.moneda)}
-                      </p>
-                    )}
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -118,6 +152,9 @@ export function FinanceCuentas() {
 
       {selectedId && (
         <AccountDrawer accountId={selectedId} onClose={() => setSelectedId(null)} />
+      )}
+      {reconcileAccount && (
+        <ReconcileAccountModal account={reconcileAccount} onClose={() => setReconcileAccount(null)} />
       )}
     </div>
   );
@@ -165,6 +202,11 @@ function AccountDrawer({ accountId, onClose }: { accountId: string; onClose: () 
   const { data: payments = [] } = useQuery({
     queryKey: ['account-payments', accountId],
     queryFn: () => getPayments(),
+  });
+
+  const { data: reconciliations = [] } = useQuery({
+    queryKey: ['account-reconciliations', accountId],
+    queryFn: () => getAccountReconciliations(accountId),
   });
 
   // Filtrar localmente — el endpoint actual no filtra por accountId
@@ -258,6 +300,49 @@ function AccountDrawer({ accountId, onClose }: { accountId: string; onClose: () 
           )}
           {account.notas && <p className="mt-3 text-[11px] italic text-[var(--color-text-muted)]">"{account.notas}"</p>}
         </div>
+
+        {reconciliations.length > 0 && (
+          <div className="p-5 border-b border-[var(--color-border)]">
+            <p className="text-xs font-semibold text-[var(--color-text-primary)] mb-3">Historial de conciliaciones ({reconciliations.length})</p>
+            <div className="rounded-lg border border-[var(--color-border)] overflow-hidden">
+              <table className="w-full text-[11px]">
+                <thead>
+                  <tr className="bg-[var(--color-bg-app)] text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]">
+                    <th className="px-2 py-1.5 text-left">Fecha</th>
+                    <th className="px-2 py-1.5 text-right">Real</th>
+                    <th className="px-2 py-1.5 text-right">Calculado</th>
+                    <th className="px-2 py-1.5 text-right">Diferencia</th>
+                    <th className="px-2 py-1.5 text-center">Ajuste</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reconciliations.map(r => (
+                    <tr key={r.id} className="border-t border-[var(--color-border)]">
+                      <td className="px-2 py-1.5 text-[var(--color-text-secondary)] whitespace-nowrap">{fmtDate(r.fecha)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums text-[var(--color-text-primary)]">{fmtCurrency(r.saldoReal, account.moneda)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums text-[var(--color-text-muted)]">{fmtCurrency(r.saldoCalculado, account.moneda)}</td>
+                      <td className={klass(
+                        'px-2 py-1.5 text-right tabular-nums',
+                        Math.abs(r.diferencia) < 0.01
+                          ? 'text-[var(--color-text-muted)]'
+                          : r.diferencia > 0 ? 'text-emerald-400' : 'text-amber-400',
+                      )}>
+                        {r.diferencia > 0 ? '+' : ''}{fmtCurrency(r.diferencia, account.moneda)}
+                      </td>
+                      <td className="px-2 py-1.5 text-center">
+                        {r.ajusteMovementId ? (
+                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[var(--color-info-bg)] text-[var(--color-info-text)]">Aplicado</span>
+                        ) : (
+                          <span className="text-[var(--color-text-muted)]">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         <div className="p-5">
           <p className="text-xs font-semibold text-[var(--color-text-primary)] mb-3">Movimientos ({timeline.length})</p>

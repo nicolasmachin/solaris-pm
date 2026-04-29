@@ -207,6 +207,7 @@ enum CategoriaPrincipal {
   CONSUMO_STOCK
   PAGO_PROVEEDOR
   COBRO_CLIENTE
+  AJUSTE_CONCILIACION
   OTRO
 }
 
@@ -353,6 +354,7 @@ model User {
   financeApprovalHistory         FinanceApprovalHistory[]
   paymentsCreated                Payment[]                @relation("PaymentCreatedBy")
   installationSchedulesConfirmed InstallationSchedule[]   @relation("InstallationConfirmedBy")
+  reconciliationsCreated         AccountReconciliation[]  @relation("ReconciliationCreatedBy")
   deletedAt                      DateTime?                @db.Timestamptz(6)
   createdAt                      DateTime                 @default(now()) @db.Timestamptz(6)
   updatedAt                      DateTime                 @updatedAt @db.Timestamptz(6)
@@ -990,6 +992,7 @@ model FinanceMovement {
   movimientosStock    StockMovement[]
   historial           FinanceApprovalHistory[]
   projectMaterials    ProjectMaterial[]
+  reconciliacionAjuste AccountReconciliation? @relation("ReconciliationAjuste")
   creadoPorId         String?
   creadoPor           User?                    @relation("FinanceMovCreadoPor", fields: [creadoPorId], references: [id])
   aprobadoPorId       String?
@@ -1420,8 +1423,9 @@ model Account {
   notas             String?
   activa            Boolean     @default(true)
 
-  movements FinanceMovement[]
-  payments  Payment[]
+  movements       FinanceMovement[]
+  payments        Payment[]
+  reconciliations AccountReconciliation[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -1430,6 +1434,37 @@ model Account {
   @@index([activa])
   @@index([tipo])
   @@map("accounts")
+}
+
+// G.10 — Conciliación bancaria. Punto verificado en el tiempo donde el usuario
+// cargó el saldo real de la cuenta (ej: extracto de home banking) y el sistema
+// lo comparó contra el saldo calculado por movimientos. Si hubo diferencia y el
+// usuario eligió aplicar ajuste, queda un FinanceMovement de tipo
+// AJUSTE_CONCILIACION linkeado vía ajusteMovementId.
+model AccountReconciliation {
+  id String @id @default(cuid())
+
+  accountId String
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  fecha          DateTime @db.Date
+  saldoReal      Decimal  @db.Decimal(14, 2)
+  saldoCalculado Decimal  @db.Decimal(14, 2)
+  diferencia     Decimal  @db.Decimal(14, 2) // saldoReal - saldoCalculado
+
+  ajusteMovementId String?          @unique
+  ajusteMovement   FinanceMovement? @relation("ReconciliationAjuste", fields: [ajusteMovementId], references: [id], onDelete: SetNull)
+
+  notas String?
+
+  createdById String
+  createdBy   User   @relation("ReconciliationCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([accountId, fecha])
+  @@index([createdAt])
+  @@map("account_reconciliations")
 }
 
 model PaymentApplication {
