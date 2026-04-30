@@ -157,11 +157,17 @@ function buildMovementBody(body: Partial<MovimientoFormData>) {
   };
 }
 
+export interface MovementWarning {
+  type: 'PAST_DATE_NOT_PAID';
+  message: string;
+}
+
 /** Resultado de createMovement: si todo el pago se aplicó a facturas pendientes
  *  no se crea movimiento nuevo y la respuesta tiene `skipped: true`. */
 export type CreateMovementResult =
   | (FinanceMovement & {
       appliedToInvoices?: { count: number; total: number; remainder: number } | null;
+      warnings?: MovementWarning[];
     })
   | {
       skipped: true;
@@ -191,6 +197,26 @@ export interface PendingInvoiceForSupplier {
   status: FinanceMovementStatus;
   dueDate: string | null;
 }
+
+export interface FinanceInvariantCheck {
+  ok: boolean;
+  details: {
+    saldoCuentasUSD: number;
+    saldoFlujoUSD: number;
+    diferencia: number;
+    fecha: string;
+    perAccount: Array<{
+      nombre: string;
+      moneda: Moneda;
+      saldoActual: number;
+      saldoActualUSD: number;
+    }>;
+    tipoCambioUsado: number;
+  };
+}
+
+export const getFinanceInvariantCheck = () =>
+  apiClient.get<FinanceInvariantCheck>('/api/finance/invariant-check').then(r => r.data);
 
 export const getPendingInvoicesBySupplier = (supplierId: string, moneda: Moneda) =>
   apiClient

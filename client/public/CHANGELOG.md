@@ -1,5 +1,40 @@
 # Novedades
 
+## v4.3
+
+### 29 de abril de 2026
+
+#### Salud financiera: regla de oro y monitoreo continuo
+
+Se establece la **regla de oro del sistema**: el saldo total de cuentas (bancos + caja) debe ser igual al saldo del flujo de fondos hasta hoy, considerando SOLO movimientos PAGADOS/COBRADOS (plata real). Los proyectados, comprometidos o A_PAGAR no afectan al saldo de caja.
+
+**1. `fechaSaldoInicial` ahora es funcional**:
+- En `computeAccountBalance` se filtra `fecha >= account.fechaSaldoInicial`. Sólo movimientos posteriores (o iguales) afectan el saldo.
+- Sirve como "punto cero" de cada cuenta: el saldoInicial representa el balance al fechaSaldoInicial; movimientos anteriores quedan como histórico ya consolidado.
+- Si la cuenta no tiene `fechaSaldoInicial` (legacy), no hay corte.
+
+**2. Validación de fechas**:
+- Backend rechaza `fechaSaldoInicial` futura con mensaje claro.
+- Frontend: input con `max={hoy}` impide elegir fechas futuras desde el datepicker.
+- Movimientos PROYECTADO / COMPROMETIDO / A_PAGAR / PARCIALMENTE_PAGADO con fecha pasada generan warning (no bloqueo). El front muestra toast: "El movimiento tiene fecha pasada pero su estado es A_PAGAR. Verificá si debería estar pagado/cobrado."
+
+**3. Test de invariante automático**:
+- Nuevo helper `validateFinanceInvariants()` que computa **dos formas independientes** del saldo total USD:
+  - Suma de `computeAccountBalance` por cuenta activa (convertido a USD).
+  - Walk cronológico: saldoInicial total + movimientos PAGADOS/COBRADOS con fecha ≤ hoy y ≥ fechaSaldoInicial + Payments con misma condición.
+- Si difieren > $0.01, el sistema lo detecta como descalce.
+- Hooks en operaciones críticas (POST/PATCH/DELETE de movimientos, payments, applications, account; reconcile): si tras la operación el invariante queda roto, deja warning en logs del servidor (no bloquea la operación, pero queda traceable).
+- Endpoint `GET /api/finance/invariant-check` devuelve el estado actual.
+
+**4. UI de salud**:
+- **Widget en /admin** (debajo del header): muestra "✓ Salud financiera: coherente" o el descalce con botón directo a `/finanzas/cuentas` para conciliar.
+- **Banner global en /finanzas/***: aparece sólo si hay descalce, en cualquier página de Finanzas. Re-chequea cada minuto y al volver el foco a la pestaña.
+
+**5. Script de limpieza**:
+- `server/scripts/fix-future-fecha-saldo-inicial.ts` — idempotente, lleva las cuentas con `fechaSaldoInicial` futura a hoy. Útil para corregir el estado pre-v4.3 detectado en el reporte de diagnóstico (BBVA y BROU con fecha 2026-04-30). Tras correrlo, si el saldo no matchea la realidad, conciliá la cuenta.
+
+---
+
 ## v4.2
 
 ### 29 de abril de 2026

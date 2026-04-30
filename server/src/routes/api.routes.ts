@@ -7969,12 +7969,30 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // saldo se calcula on-demand sumando saldoInicial + ingresos - gastos -
     // pagos vinculados.
 
+    // fechaSaldoInicial no puede ser futura: el saldoInicial representa el saldo
+    // de la cuenta a esa fecha. Si fuera futuro, los movimientos actuales no se
+    // contarían y el saldo quedaría desconectado de la realidad.
+    const fechaSaldoInicialSchema = z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullable()
+      .optional()
+      .refine(
+        (val) => {
+          if (!val) return true;
+          // Comparamos como string YYYY-MM-DD para evitar problemas de TZ.
+          const hoy = new Date().toISOString().slice(0, 10);
+          return val <= hoy;
+        },
+        { message: "La fecha del saldo inicial no puede ser futura" },
+      );
+
     const accountCreateSchema = z.object({
       nombre: z.string().min(1),
       tipo: z.nativeEnum(AccountType),
       moneda: z.nativeEnum(Moneda),
       saldoInicial: z.coerce.number().default(0),
-      fechaSaldoInicial: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+      fechaSaldoInicial: fechaSaldoInicialSchema,
       notas: z.string().optional(),
     }).strict();
 
@@ -7983,7 +8001,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       tipo: z.nativeEnum(AccountType).optional(),
       moneda: z.nativeEnum(Moneda).optional(),
       saldoInicial: z.coerce.number().optional(),
-      fechaSaldoInicial: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+      fechaSaldoInicial: fechaSaldoInicialSchema,
       notas: z.string().nullable().optional(),
       activa: z.boolean().optional(),
     }).strict();
@@ -8012,17 +8030,25 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
 
     /** Calcula el saldo actual de una cuenta sumando todos los movimientos
-     *  PAGADOS/COBRADOS y los pagos asociados. */
+     *  PAGADOS/COBRADOS y los pagos asociados.
+     *
+     *  Si la cuenta tiene `fechaSaldoInicial` seteado, sólo se cuentan los
+     *  movimientos y pagos con `fecha >= fechaSaldoInicial`: el saldoInicial
+     *  representa el estado de la cuenta AL fechaSaldoInicial y los movimientos
+     *  anteriores se consideran "histórico ya consolidado". Si está en null,
+     *  no hay corte (legacy). */
     async function computeAccountBalance(accountId: string): Promise<{
       saldoInicial: number; ingresos: number; gastos: number; pagos: number; saldoActual: number;
     }> {
       const account = await prisma.account.findUnique({ where: { id: accountId } });
       if (!account) throw notFound("ACCOUNT_NOT_FOUND", "Cuenta no encontrada");
       const saldoInicial = Number(account.saldoInicial);
+      const fechaCorte = account.fechaSaldoInicial; // Date | null
+      const fechaFilter = fechaCorte ? { fecha: { gte: fechaCorte } } : {};
 
       // Ingresos: movements INGRESO con cobrado=true
       const ingresoAgg = await prisma.financeMovement.aggregate({
-        where: { accountId, deletedAt: null, tipoMovimiento: TipoMovimiento.INGRESO, cobrado: true },
+        where: { accountId, deletedAt: null, tipoMovimiento: TipoMovimiento.INGRESO, cobrado: true, ...fechaFilter },
         _sum: { monto: true },
       });
       // Gastos: movements GASTO con pagado=true que NO tienen Payment asociado.
@@ -8036,12 +8062,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
           tipoMovimiento: TipoMovimiento.GASTO,
           pagado: true,
           paymentApplications: { none: { payment: { deletedAt: null } } },
+          ...fechaFilter,
         },
         _sum: { monto: true },
       });
       // Pagos: payments con accountId
       const pagosAgg = await prisma.payment.aggregate({
-        where: { accountId, deletedAt: null },
+        where: { accountId, deletedAt: null, ...fechaFilter },
         _sum: { monto: true },
       });
 
@@ -8051,6 +8078,158 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const saldoActual = Math.round((saldoInicial + ingresos - gastos - pagos) * 100) / 100;
       return { saldoInicial, ingresos, gastos, pagos, saldoActual };
     }
+
+    // ─── Invariante de coherencia financiera ────────────────────────────────
+    //
+    // REGLA DE ORO: el saldo total de cuentas activas (suma `computeAccountBalance`)
+    // debe coincidir con el flujo de fondos unificado hasta HOY, considerando SOLO
+    // movimientos PAGADOS/COBRADOS (plata real, no proyectada ni a pagar).
+    //
+    // Si los dos cálculos divergen (>$0.01 USD) hay un descalce que investigar:
+    // típicamente bug en alguna de las lógicas, o movimiento PAGADO con fecha
+    // futura, o data corrupta (Payment sin movement, etc.).
+    type InvariantDetails = {
+      saldoCuentasUSD: number;
+      saldoFlujoUSD: number;
+      diferencia: number;
+      fecha: string;
+      perAccount: Array<{
+        nombre: string;
+        moneda: Moneda;
+        saldoActual: number;
+        saldoActualUSD: number;
+      }>;
+      tipoCambioUsado: number;
+    };
+
+    async function validateFinanceInvariants(): Promise<{ ok: boolean; details: InvariantDetails }> {
+      const accounts = await prisma.account.findMany({
+        where: { activa: true, deletedAt: null },
+      });
+      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
+      const parsedRate = lastRate ? decimalToNumber(lastRate.usdToUyu) : null;
+      const fallbackUsdToUyu = parsedRate && parsedRate > 0 ? parsedRate : 1;
+      const toUSD = (monto: number, moneda: Moneda, tipoCambioRow: number | null) => {
+        if (moneda === Moneda.USD) return monto;
+        const rate = tipoCambioRow && tipoCambioRow > 0 ? tipoCambioRow : fallbackUsdToUyu;
+        return rate > 0 ? monto / rate : monto;
+      };
+
+      // 1) saldoCuentasUSD = Σ computeAccountBalance, convertido a USD.
+      const perAccount: InvariantDetails["perAccount"] = [];
+      let saldoCuentasUSD = 0;
+      for (const account of accounts) {
+        const balance = await computeAccountBalance(account.id);
+        const saldoActual = balance.saldoActual;
+        const saldoActualUSD = toUSD(saldoActual, account.moneda, null);
+        saldoCuentasUSD += saldoActualUSD;
+        perAccount.push({
+          nombre: account.nombre,
+          moneda: account.moneda,
+          saldoActual: Math.round(saldoActual * 100) / 100,
+          saldoActualUSD: Math.round(saldoActualUSD * 100) / 100,
+        });
+      }
+
+      // 2) saldoFlujoUSD = Σ saldoInicial USD + walk cronológico de movimientos
+      //    PAGADOS/COBRADOS y Payments con fecha <= hoy y >= fechaSaldoInicial.
+      //    Walk iterativo (no aggregate) para que sea una segunda fuente de
+      //    verdad y detecte bugs en el helper.
+      const hoyIso = new Date().toISOString().slice(0, 10);
+      const hoyDate = new Date(`${hoyIso}T23:59:59.999Z`);
+
+      let saldoFlujoUSD = 0;
+      const accountsById = new Map(accounts.map((a) => [a.id, a]));
+      for (const a of accounts) {
+        saldoFlujoUSD += toUSD(Number(a.saldoInicial), a.moneda, null);
+      }
+
+      // Movimientos PAGADOS/COBRADOS con accountId activo, fecha <= hoy y >= corte.
+      const movsPagados = await prisma.financeMovement.findMany({
+        where: {
+          deletedAt: null,
+          fecha: { lte: hoyDate },
+          accountId: { in: accounts.map((a) => a.id) },
+          OR: [
+            { tipoMovimiento: TipoMovimiento.GASTO, status: FinanceMovementStatus.PAGADO },
+            { tipoMovimiento: TipoMovimiento.INGRESO, cobrado: true },
+          ],
+        },
+        select: {
+          id: true, fecha: true, monto: true, moneda: true, tipoCambio: true,
+          tipoMovimiento: true, accountId: true,
+          paymentApplications: { include: { payment: { select: { deletedAt: true } } } },
+        },
+      });
+      for (const m of movsPagados) {
+        const a = m.accountId ? accountsById.get(m.accountId) : null;
+        if (!a) continue;
+        if (a.fechaSaldoInicial && m.fecha < a.fechaSaldoInicial) continue;
+        // Si el GASTO tiene Payment activo asociado, ya se cuenta vía pagosWalk.
+        const tieneAppActiva = m.tipoMovimiento === TipoMovimiento.GASTO
+          && m.paymentApplications.some((pa) => !pa.payment.deletedAt);
+        if (tieneAppActiva) continue;
+        const monto = decimalToNumber(m.monto) ?? 0;
+        const tcRow = m.tipoCambio ? decimalToNumber(m.tipoCambio) : null;
+        const usd = toUSD(monto, m.moneda, tcRow);
+        if (m.tipoMovimiento === TipoMovimiento.GASTO) saldoFlujoUSD -= usd;
+        else if (m.tipoMovimiento === TipoMovimiento.INGRESO) saldoFlujoUSD += usd;
+      }
+
+      // Payments con fecha <= hoy.
+      const pagos = await prisma.payment.findMany({
+        where: {
+          deletedAt: null,
+          fecha: { lte: hoyDate },
+          accountId: { in: accounts.map((a) => a.id) },
+        },
+        select: { fecha: true, monto: true, moneda: true, accountId: true },
+      });
+      for (const p of pagos) {
+        const a = p.accountId ? accountsById.get(p.accountId) : null;
+        if (!a) continue;
+        if (a.fechaSaldoInicial && p.fecha < a.fechaSaldoInicial) continue;
+        const monto = decimalToNumber(p.monto) ?? 0;
+        saldoFlujoUSD -= toUSD(monto, p.moneda, null);
+      }
+
+      saldoCuentasUSD = Math.round(saldoCuentasUSD * 100) / 100;
+      saldoFlujoUSD = Math.round(saldoFlujoUSD * 100) / 100;
+      const diferencia = Math.round((saldoCuentasUSD - saldoFlujoUSD) * 100) / 100;
+
+      return {
+        ok: Math.abs(diferencia) < 0.01,
+        details: {
+          saldoCuentasUSD,
+          saldoFlujoUSD,
+          diferencia,
+          fecha: hoyIso,
+          perAccount,
+          tipoCambioUsado: fallbackUsdToUyu,
+        },
+      };
+    }
+
+    /** Wrap: corre el check y, si el invariante está roto, deja un warning en
+     *  logs (no bloquea la operación). Útil para llamar después de operaciones
+     *  críticas que tocan saldos. */
+    async function checkInvariantOrWarn(operation: string, context?: Record<string, unknown>) {
+      try {
+        const result = await validateFinanceInvariants();
+        if (!result.ok) {
+          app.log.warn(
+            { operation, ...context, ...result.details },
+            `INVARIANTE FINANCIERO ROTO tras "${operation}": diferencia=${result.details.diferencia} USD`,
+          );
+        }
+      } catch (err) {
+        app.log.error({ operation, err }, "Falló el check de invariante financiero");
+      }
+    }
+
+    app.get("/finance/invariant-check", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async () => {
+      return validateFinanceInvariants();
+    });
 
     app.get("/accounts", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
       const query = z.object({
@@ -8175,6 +8354,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
         action: AuditAction.updated,
         description: `Actualizó cuenta ${existing.nombre}`,
       });
+      // Si cambió saldoInicial o fechaSaldoInicial, el saldo de cuenta cambió:
+      // verificar invariante.
+      if (body.saldoInicial != null || body.fechaSaldoInicial !== undefined) {
+        void checkInvariantOrWarn("patch account (saldo/fecha)", { accountId: id });
+      }
       return serializeAccount(updated);
     });
 
@@ -8351,6 +8535,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         metadata: { reconciliationId: reconciliation.id, ajusteMovementId: reconciliation.ajusteMovementId },
       });
 
+      void checkInvariantOrWarn("reconcile account", { accountId: id, reconciliationId: reconciliation.id });
       return {
         id: reconciliation.id,
         accountId: reconciliation.accountId,
@@ -8427,6 +8612,34 @@ export async function registerApiRoutes(app: FastifyInstance) {
         return row.status === FinanceMovementStatus.PAGADO || row.cobrado;
       }
       return false;
+    }
+
+    /** Devuelve un warning si el movimiento es PROYECTADO/COMPROMETIDO/A_PAGAR/
+     *  PARCIALMENTE_PAGADO con fecha efectiva pasada (ya pasó la fecha de pago
+     *  esperada pero no se concretó). El front lo muestra como toast/alert pero
+     *  no bloquea el guardado. */
+    function detectPastDateNotPaidWarning(row: {
+      fecha: Date; status: FinanceMovementStatus; cobrado: boolean;
+      tipoMovimiento: TipoMovimiento;
+      expectedDate: Date | null; dueDate: Date | null;
+    }): { type: "PAST_DATE_NOT_PAID"; message: string } | null {
+      if (isMovementConcreted(row)) return null;
+      const pendientes: FinanceMovementStatus[] = [
+        FinanceMovementStatus.PREVISTO,
+        FinanceMovementStatus.COMPROMETIDO,
+        FinanceMovementStatus.A_PAGAR,
+        FinanceMovementStatus.PARCIALMENTE_PAGADO,
+      ];
+      if (!pendientes.includes(row.status)) return null;
+      const fechaEf = getMovementEffectiveDate(row);
+      const hoy = new Date();
+      hoy.setUTCHours(23, 59, 59, 999);
+      if (fechaEf >= hoy) return null;
+      const fechaIso = fechaEf.toISOString().slice(0, 10);
+      return {
+        type: "PAST_DATE_NOT_PAID",
+        message: `El movimiento tiene fecha pasada (${fechaIso}) pero su estado es ${row.status}. Verificá si debería estar pagado/cobrado.`,
+      };
     }
 
     function getMovementEffectiveDate(row: {
@@ -10615,12 +10828,19 @@ export async function registerApiRoutes(app: FastifyInstance) {
         });
       }
 
+      void checkInvariantOrWarn("create movement", { movementId: movement?.id, paymentId: appliedPayment?.id ?? autoPayment?.id });
+
+      const warnings = movement
+        ? [detectPastDateNotPaidWarning(movement)].filter((w): w is NonNullable<typeof w> => w !== null)
+        : [];
+
       if (movement) {
         return {
           ...movement,
           monto: decimalToNumber(movement.monto),
           tipoCambio: movement.tipoCambio ? decimalToNumber(movement.tipoCambio) : null,
           appliedToInvoices: applyDetails ? { count: applyDetails.count, total: applyDetails.sumApplied, remainder: applyDetails.remainder } : null,
+          warnings,
         };
       }
       // Caso "movimiento no creado": el pago se aplicó íntegramente a facturas
@@ -10786,7 +11006,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
         action: AuditAction.updated,
         description: `Actualizó movimiento: ${existing.descripcion}`,
       });
-      return { ...updated, monto: decimalToNumber(updated.monto), tipoCambio: updated.tipoCambio ? decimalToNumber(updated.tipoCambio) : null };
+      void checkInvariantOrWarn("patch movement", { movementId: id });
+      const patchWarning = detectPastDateNotPaidWarning(updated);
+      const patchWarnings = patchWarning ? [patchWarning] : [];
+      return {
+        ...updated,
+        monto: decimalToNumber(updated.monto),
+        tipoCambio: updated.tipoCambio ? decimalToNumber(updated.tipoCambio) : null,
+        warnings: patchWarnings,
+      };
     });
 
     app.delete("/finance/movements/:id", { preHandler: authorize(Module.FINANZAS, Action.DELETE) }, async (request) => {
@@ -10827,6 +11055,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         action: AuditAction.deleted,
         description: `Eliminó movimiento: ${existing.descripcion}${liberadoStr}`,
       });
+      void checkInvariantOrWarn("delete movement", { movementId: id });
       return {
         success: true,
         liberatedApplications: apps.length,
@@ -11006,6 +11235,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         await prisma.financeMovement.update({ where: { id }, data: { requiresItemDetail: true } });
       }
 
+      void checkInvariantOrWarn("transition movement", { movementId: id, newStatus });
       return {
         id: updated.id,
         status: updated.status,
@@ -11462,6 +11692,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           : `Anuló movimiento: ${movement.descripcion}`,
       });
 
+      void checkInvariantOrWarn("cancel movement", { movementId: id });
       return { success: true, reversedStockMovements: stockMovs.length };
     });
 
@@ -11757,6 +11988,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           ? `Pago negativo de ${body.monto.toFixed(2)} ${body.moneda} a ${supplier.nombre} (nota de crédito)`
           : `Registró pago de ${body.monto.toFixed(2)} ${body.moneda} a ${supplier.nombre}`,
       });
+      void checkInvariantOrWarn("create payment", { paymentId: payment.id });
       return serializePayment(payment, { monto: Number(payment.monto), montoAplicado: 0, saldoSinAplicar: Number(payment.monto) });
     });
 
@@ -11841,6 +12073,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         action: AuditAction.deleted,
         description: `Anuló pago a ${existing.supplier.nombre} (${existing.applications.length} aplicación(es) revertidas)`,
       });
+      void checkInvariantOrWarn("delete payment", { paymentId: id });
       return { success: true, revertedApplications: existing.applications.length };
     });
 
@@ -11947,6 +12180,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       }
 
       const balance = await getPaymentBalance(id);
+      void checkInvariantOrWarn("apply payment", { paymentId: id });
       return serializePayment(result!, balance ?? undefined);
     });
 
@@ -12014,6 +12248,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           },
         },
       });
+      void checkInvariantOrWarn("change payment application", { paymentId: id });
       return serializePayment(refreshed!, balance ?? undefined);
     });
 
@@ -12050,6 +12285,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           },
         },
       });
+      void checkInvariantOrWarn("change payment application", { paymentId: id });
       return serializePayment(refreshed!, balance ?? undefined);
     });
 

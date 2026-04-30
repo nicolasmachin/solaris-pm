@@ -229,6 +229,9 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId, onSavedOpenDesgl
           } else {
             toast.success('Movimiento registrado');
           }
+          for (const w of created.warnings ?? []) {
+            toast(w.message, { icon: '⚠️', duration: 6000 });
+          }
         }
       }
       if (movementSkipped) {

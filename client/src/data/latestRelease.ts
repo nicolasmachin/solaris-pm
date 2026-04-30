@@ -23,26 +23,32 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "4.2",
+  version: "4.3",
   date: "29 de abril de 2026",
   sections: [
     {
-      title: "Aplicar pago a facturas pendientes desde Nuevo movimiento",
+      title: "Regla de oro del sistema",
       items: [
-        "Al crear un GASTO PAGADO con proveedor + cuenta, el form ahora detecta facturas A_PAGAR / PARCIALMENTE_PAGADO del mismo proveedor en la misma moneda.",
-        "Si hay facturas pendientes, aparece un panel azul ofreciendo distribuir el monto del pago entre ellas (o entre ellas y el movimiento nuevo).",
-        "El modal pre-distribuye en orden de vencimiento y permite editar fila por fila.",
-        "Si todo el pago se aplica a facturas pendientes (sin sobrante), no se crea movimiento nuevo: equivale a registrar el pago desde la pantalla de Pagos.",
-        "Si hay sobrante, el movimiento nuevo se crea con monto = sobrante (no el monto original del form) y el sobrante se aplica al movimiento.",
+        "El saldo total de cuentas (bancos + caja) debe ser igual al saldo del flujo de fondos hasta hoy, considerando SOLO movimientos PAGADOS/COBRADOS (plata real).",
+        "Los proyectados, comprometidos o A_PAGAR no afectan al saldo de caja — sólo proyectan a futuro.",
       ],
     },
     {
-      title: "Detalles técnicos",
+      title: "fechaSaldoInicial ahora es funcional",
       items: [
-        "Toda la operación es atómica: 1 Payment + N PaymentApplication en una transacción.",
-        "Las facturas afectadas pasan a PAGADO o PARCIALMENTE_PAGADO según el saldo restante.",
-        "Validaciones: mismo proveedor, misma moneda, cada aplicación ≤ saldo pendiente, suma ≤ monto del pago.",
-        "Nuevo endpoint `GET /finance/movements/pending-by-supplier`. `POST /finance/movements` acepta `applyToPendingInvoices` opcional.",
+        "Cada cuenta tiene un \"punto cero\": el saldoInicial captura el balance a esa fecha y sólo movimientos posteriores afectan el saldo.",
+        "Permite hacer reseteos limpios después de conciliaciones, sin que la historia previa contamine el saldo.",
+        "No se puede elegir fecha futura (validación backend + datepicker con `max=hoy`).",
+      ],
+    },
+    {
+      title: "Monitoreo de salud financiera",
+      items: [
+        "Nuevo endpoint `GET /finance/invariant-check`: verifica con dos cálculos independientes que el saldo de cuentas == flujo unificado.",
+        "Widget en /admin: muestra \"✓ Coherente\" o el descalce con link directo a Conciliar cuentas.",
+        "Banner global en /finanzas/* aparece sólo si hay descalce, en cualquier página del módulo.",
+        "Tras cada operación crítica (crear/editar/anular movimiento, payment, aplicación; conciliar; cambiar saldoInicial) el sistema valida y deja warning en logs si se rompe.",
+        "Movimientos PROYECTADO / A_PAGAR con fecha pasada ahora generan toast de advertencia al guardar.",
       ],
     },
   ],
@@ -56,6 +62,14 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "4.2",
+    shortDate: "29 abr",
+    highlights: [
+      "Aplicar pago a facturas pendientes desde \"Nuevo movimiento\" GASTO PAGADO.",
+      "Modal de distribución entre facturas + movimiento nuevo.",
+    ],
+  },
   {
     version: "4.1",
     shortDate: "29 abr",

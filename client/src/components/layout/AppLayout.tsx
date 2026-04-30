@@ -4,6 +4,7 @@ import { Topbar } from "./Topbar";
 import { Sidebar } from "./Sidebar";
 import { VersionFooter } from "./VersionFooter";
 import { MobileNavDrawer } from "./MobileNavDrawer";
+import { FinanceInvariantBanner } from "../finance/FinanceInvariantBanner";
 
 export function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -30,6 +31,7 @@ export function AppLayout() {
           }
         `}</style>
         <div className="p-6 pb-10">
+          <FinanceInvariantBanner />
           <Outlet />
         </div>
       </main>

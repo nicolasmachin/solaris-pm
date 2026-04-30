@@ -7,6 +7,7 @@ import { fmtCurrency, fmtDate } from '../lib/finance';
 import type { Account, AccountType } from '../types/accounts.types';
 import { ACCOUNT_TYPE_LABEL } from '../types/accounts.types';
 import type { Moneda } from '../types/finance.types';
+import { todayLocalISO } from '../utils/date';
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
 function getApiErr(err: unknown) {
@@ -100,7 +101,16 @@ function AccountForm({ initial, accountId, onSuccess, onCancel }: {
         </div>
         <div>
           <label className={lbl}>Fecha del saldo</label>
-          <input type="date" className={inp} value={form.fechaSaldoInicial} onChange={e => setF('fechaSaldoInicial', e.target.value)} />
+          <input
+            type="date"
+            className={inp}
+            value={form.fechaSaldoInicial}
+            max={todayLocalISO()}
+            onChange={e => setF('fechaSaldoInicial', e.target.value)}
+          />
+          <p className="text-[10px] text-[var(--color-text-muted)] mt-1">
+            Sólo movimientos desde esta fecha (inclusive) afectan el saldo. Los anteriores quedan como histórico ya consolidado en el saldo inicial.
+          </p>
         </div>
       </div>
       <div><label className={lbl}>Notas</label><textarea className={klass(inp, 'resize-none')} rows={2} value={form.notas} onChange={e => setF('notas', e.target.value)} /></div>
