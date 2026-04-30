@@ -8481,6 +8481,21 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const diferencia = roundMoney(body.saldoReal - saldoCalculado);
       const fecha = parseDateOnly(body.fecha);
 
+      // Si la cuenta tiene fechaSaldoInicial > fecha de la conciliación, el
+      // ajuste que se cree no contaría (queda antes del corte). Refuse con
+      // mensaje claro: el usuario debe corregir fechaSaldoInicial primero.
+      if (
+        Math.abs(diferencia) > 0.01
+        && body.aplicarAjuste
+        && account.fechaSaldoInicial
+        && fecha < account.fechaSaldoInicial
+      ) {
+        throw badRequest(
+          "RECONCILE_FECHA_BEFORE_CUTOFF",
+          `La fecha de conciliación (${body.fecha}) es anterior al corte de la cuenta (fechaSaldoInicial=${serializeDateOnly(account.fechaSaldoInicial)}). El ajuste no afectaría el saldo. Editá la cuenta desde Admin → Cuentas y bajá la fechaSaldoInicial, o usá una fecha de conciliación >= ${serializeDateOnly(account.fechaSaldoInicial)}.`,
+        );
+      }
+
       const reconciliation = await prisma.$transaction(async (tx) => {
         let ajusteMovementId: string | null = null;
         if (Math.abs(diferencia) > 0.01 && body.aplicarAjuste) {
@@ -10286,7 +10301,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
               where: { payment: { deletedAt: null } },
             },
           },
-          orderBy: { fecha: "desc" },
+          // createdAt como tie-breaker: cuando hay varios movimientos en la
+          // misma fecha, el orden visual debe matchear el orden cronológico
+          // del walk del saldo (también createdAt DESC) para que la columna
+          // saldoUSD sea legible top-to-bottom.
+          orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
           skip,
           take,
         }),
