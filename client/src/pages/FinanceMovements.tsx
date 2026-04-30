@@ -666,7 +666,7 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId, onSavedOpenDesgl
 
 // ─── Detail Panel ─────────────────────────────────────────────────────────────
 
-function DetailPanel({ mov, onClose, onEdit, onDelete, onCancel, onOpenDesglose, onApplyPayment }: {
+function DetailPanel({ mov, onClose, onEdit, onDelete, onCancel, onOpenDesglose, onApplyPayment, onOpenPayment }: {
   mov: FinanceMovement;
   onClose: () => void;
   onEdit: () => void;
@@ -674,6 +674,7 @@ function DetailPanel({ mov, onClose, onEdit, onDelete, onCancel, onOpenDesglose,
   onCancel: () => void;
   onOpenDesglose: () => void;
   onApplyPayment: () => void;
+  onOpenPayment: (paymentId: string) => void;
 }) {
   const esIngreso = CATEGORIAS_INGRESO.includes(mov.categoriaPrincipal);
   const needsDetail = (mov.status === 'A_PAGAR' || mov.status === 'PAGADO' || mov.status === 'PARCIALMENTE_PAGADO')
@@ -749,6 +750,31 @@ function DetailPanel({ mov, onClose, onEdit, onDelete, onCancel, onOpenDesglose,
           {mov.observaciones && <Row label="Observaciones" value={mov.observaciones} />}
           <Row label="Registrado" value={fmtDate(mov.createdAt)} />
         </div>
+
+        {/* Aviso: pagado vía Payment (saldo informativo) */}
+        {mov.pagadoViaPayment && (
+          <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 flex items-start gap-2">
+            <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+            <div className="flex-1 text-[11px] text-[var(--color-text-secondary)]">
+              <p className="font-semibold text-[var(--color-text-primary)] mb-0.5">Pagado vía Payment</p>
+              <p>
+                Esta factura está totalmente pagada por el pago asociado. El descuento al saldo de cuentas ocurrió en el Payment — esta fila es informativa.
+              </p>
+              {mov.paymentIdsAsociados && mov.paymentIdsAsociados.length > 0 && (
+                <button
+                  onClick={() => {
+                    if (mov.paymentIdsAsociados && mov.paymentIdsAsociados.length > 0) {
+                      onOpenPayment(mov.paymentIdsAsociados[0]);
+                    }
+                  }}
+                  className="text-[var(--color-accent)] hover:underline mt-1"
+                >
+                  Ver pago{mov.paymentIdsAsociados.length > 1 ? 's' : ''} asociado{mov.paymentIdsAsociados.length > 1 ? 's' : ''} →
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Breakdown de pago: factura vs pagado vs pendiente */}
         {mov.tipoMovimiento === 'GASTO' && mov.montoPagado > 0.005 && (
@@ -1330,26 +1356,39 @@ export function FinanceMovements() {
                       })()}
                       <td className={klass(
                           'px-4 py-3 whitespace-nowrap text-right tabular-nums',
-                          future
-                            ? (mov.saldoAcumuladoUSD < 0 ? 'text-red-400/70 italic' : 'text-[var(--color-text-muted)] italic')
-                            : pastPending
-                              ? (mov.saldoAcumuladoUSD < 0 ? 'text-red-400/80 italic' : 'text-amber-200 italic')
-                              : (mov.saldoAcumuladoUSD < 0 ? 'text-red-400 font-semibold' : 'text-[var(--color-text-primary)] font-semibold'),
+                          mov.pagadoViaPayment
+                            ? 'text-[var(--color-text-muted)] italic'
+                            : future
+                              ? (mov.saldoAcumuladoUSD < 0 ? 'text-red-400/70 italic' : 'text-[var(--color-text-muted)] italic')
+                              : pastPending
+                                ? (mov.saldoAcumuladoUSD < 0 ? 'text-red-400/80 italic' : 'text-amber-200 italic')
+                                : (mov.saldoAcumuladoUSD < 0 ? 'text-red-400 font-semibold' : 'text-[var(--color-text-primary)] font-semibold'),
                         )}
                         title={
-                          future
-                            ? `Liquidez proyectada al ${fmtDate(mov.fechaEfectiva)}${mov.saldoAcumuladoUSD < 0 ? ' · Insuficiente' : ''}`
-                            : pastPending
-                              ? `Liquidez al ${fmtDate(mov.fechaEfectiva)}. Movimiento atrasado, no concretado: no afectó las cuentas.${mov.saldoAcumuladoUSD < 0 ? ' · Insuficiente' : ''}`
-                              : `Liquidez al ${fmtDate(mov.fechaEfectiva)}${mov.saldoAcumuladoUSD < 0 ? ' · Insuficiente' : ''}`
+                          mov.pagadoViaPayment
+                            ? `Esta factura se pagó vía Payment. El descuento ocurrió en el pago asociado, esta fila es informativa (saldo previo al pago).`
+                            : future
+                              ? `Liquidez proyectada al ${fmtDate(mov.fechaEfectiva)}${mov.saldoAcumuladoUSD < 0 ? ' · Insuficiente' : ''}`
+                              : pastPending
+                                ? `Liquidez al ${fmtDate(mov.fechaEfectiva)}. Movimiento atrasado, no concretado: no afectó las cuentas.${mov.saldoAcumuladoUSD < 0 ? ' · Insuficiente' : ''}`
+                                : `Liquidez al ${fmtDate(mov.fechaEfectiva)}${mov.saldoAcumuladoUSD < 0 ? ' · Insuficiente' : ''}`
                         }
                       >
                         {fmtCurrency(mov.saldoAcumuladoUSD, 'USD')}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={klass('text-[10px] font-mono px-2 py-0.5 rounded uppercase', STATUS_COLOR[mov.status])}>
-                          {STATUS_LABEL[mov.status]}
-                        </span>
+                        {mov.pagadoViaPayment ? (
+                          <span
+                            className="text-[10px] font-mono px-2 py-0.5 rounded uppercase border border-[var(--color-state-done-bg)] text-[var(--color-state-done-text)]"
+                            title="Pagado vía Payment — el saldo lo descontó el pago asociado"
+                          >
+                            Pagado vía pago
+                          </span>
+                        ) : (
+                          <span className={klass('text-[10px] font-mono px-2 py-0.5 rounded uppercase', STATUS_COLOR[mov.status])}>
+                            {STATUS_LABEL[mov.status]}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex items-center gap-1">
@@ -1489,6 +1528,7 @@ export function FinanceMovements() {
           }}
           onOpenDesglose={() => { setDesgloseMovId(detailMov.id); setDetailMov(null); }}
           onApplyPayment={() => { setPayForMov(detailMov); setDetailMov(null); }}
+          onOpenPayment={(paymentId) => { setDetailPaymentId(paymentId); setDetailMov(null); }}
         />
       )}
 

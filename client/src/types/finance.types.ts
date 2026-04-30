@@ -138,6 +138,12 @@ export interface FinanceMovement {
   /** True si el movement tiene PaymentApplication activa: el saldo NO se
    *  descuenta vía esta fila (lo hace el Payment correspondiente). */
   tieneApp?: boolean;
+  /** True si el movement está totalmente pagado vía Payment(s) (status PAGADO
+   *  con apps que cubren el monto). El saldoAcumuladoUSD de esta fila refleja
+   *  el saldo "previo al pago" — fila informativa. */
+  pagadoViaPayment?: boolean;
+  /** IDs de los Payments cuyas applications cubren este movement. */
+  paymentIdsAsociados?: string[];
   id: string;
   fecha: string;
   anio: number;

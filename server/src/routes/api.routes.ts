@@ -10941,7 +10941,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
             subcategoria: { select: { id: true, nombre: true, categoria: true } },
             materialItem: { select: { id: true, nombre: true, unidad: true } },
             paymentApplications: {
-              include: { payment: { select: { deletedAt: true } } },
+              include: { payment: { select: { id: true, deletedAt: true } } },
               where: { payment: { deletedAt: null } },
             },
           },
@@ -11170,6 +11170,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
           ? Math.round((monto - montoPagado) * 100) / 100
           : monto;
         const tieneApp = movHasActiveApp.get(m.id) ?? false;
+        // Pagado vía Payment: tiene application activa Y la suma cubre el monto
+        // total (saldoPendiente <= 0). El saldo no se descuenta vía esta fila —
+        // ya lo hizo el Payment correspondiente.
+        const pagadoViaPayment = tieneApp && saldoPendiente <= 0.005;
+        const paymentIdsAsociados = m.paymentApplications
+          .filter((pa) => !pa.payment.deletedAt)
+          .map((pa) => pa.payment.id);
         const real = isMovementConcreted(m);
         const { paymentApplications: _pa, ...rest } = m;
         void _pa;
@@ -11184,6 +11191,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
             montoPagado,
             saldoPendiente,
             tieneApp,
+            pagadoViaPayment,
+            paymentIdsAsociados,
             saldoAcumuladoUSD: saldoMap.get(`MOVEMENT:${m.id}`) ?? 0,
             saldoEsReal: real,
             fechaEfectiva: fechaEfectivaMap.get(`MOVEMENT:${m.id}`) ?? serializeDateOnly(m.fecha),
