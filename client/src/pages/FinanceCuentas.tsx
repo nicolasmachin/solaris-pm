@@ -312,7 +312,7 @@ function AccountDrawer({ accountId, onClose }: { accountId: string; onClose: () 
                     <th className="px-2 py-1.5 text-right">Real</th>
                     <th className="px-2 py-1.5 text-right">Calculado</th>
                     <th className="px-2 py-1.5 text-right">Diferencia</th>
-                    <th className="px-2 py-1.5 text-center">Ajuste</th>
+                    <th className="px-2 py-1.5 text-center">Acción</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -331,9 +331,11 @@ function AccountDrawer({ accountId, onClose }: { accountId: string; onClose: () 
                       </td>
                       <td className="px-2 py-1.5 text-center">
                         {r.ajusteMovementId ? (
-                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[var(--color-info-bg)] text-[var(--color-info-text)]">Aplicado</span>
+                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded border border-[var(--color-border)] text-[var(--color-text-muted)]" title="Conciliación previa a v4.4: generó un movimiento de ajuste">Ajuste legacy</span>
+                        ) : Math.abs(r.diferencia) < 0.01 ? (
+                          <span className="text-[var(--color-text-muted)]">Sin diferencia</span>
                         ) : (
-                          <span className="text-[var(--color-text-muted)]">—</span>
+                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[var(--color-info-bg)] text-[var(--color-info-text)]" title="Saldo de la cuenta actualizado al valor real">Saldo actualizado</span>
                         )}
                       </td>
                     </tr>

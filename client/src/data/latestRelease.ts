@@ -23,32 +23,30 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "4.3",
-  date: "29 de abril de 2026",
+  version: "4.4",
+  date: "30 de abril de 2026",
   sections: [
     {
-      title: "Regla de oro del sistema",
+      title: "Conciliación simple — el banco siempre dice la verdad",
       items: [
-        "El saldo total de cuentas (bancos + caja) debe ser igual al saldo del flujo de fondos hasta hoy, considerando SOLO movimientos PAGADOS/COBRADOS (plata real).",
-        "Los proyectados, comprometidos o A_PAGAR no afectan al saldo de caja — sólo proyectan a futuro.",
+        "Cuando conciliás una cuenta y el saldo real difiere del calculado, ahora el sistema actualiza directamente el saldoInicial y la fechaSaldoInicial al valor real, sin crear movimientos de ajuste falsos.",
+        "Movimientos anteriores a la conciliación pasan a histórico (ya consolidados en el nuevo saldoInicial); los posteriores se aplican sobre el saldo recién fijado.",
+        "El listado de movimientos ya no se contamina con \"Ajuste conciliación\" cada vez que conciliás.",
       ],
     },
     {
-      title: "fechaSaldoInicial ahora es funcional",
+      title: "Modal de conciliación simplificado",
       items: [
-        "Cada cuenta tiene un \"punto cero\": el saldoInicial captura el balance a esa fecha y sólo movimientos posteriores afectan el saldo.",
-        "Permite hacer reseteos limpios después de conciliaciones, sin que la historia previa contamine el saldo.",
-        "No se puede elegir fecha futura (validación backend + datepicker con `max=hoy`).",
+        "Se eliminó el toggle \"Crear movimiento de ajuste automático\". Hay un único modo de conciliación.",
+        "Si hay diferencia, un panel ámbar explica exactamente qué va a pasar antes de confirmar.",
+        "Toast nuevo: muestra el saldo nuevo y la diferencia anterior.",
       ],
     },
     {
-      title: "Monitoreo de salud financiera",
+      title: "Historial preservado",
       items: [
-        "Nuevo endpoint `GET /finance/invariant-check`: verifica con dos cálculos independientes que el saldo de cuentas == flujo unificado.",
-        "Widget en /admin: muestra \"✓ Coherente\" o el descalce con link directo a Conciliar cuentas.",
-        "Banner global en /finanzas/* aparece sólo si hay descalce, en cualquier página del módulo.",
-        "Tras cada operación crítica (crear/editar/anular movimiento, payment, aplicación; conciliar; cambiar saldoInicial) el sistema valida y deja warning en logs si se rompe.",
-        "Movimientos PROYECTADO / A_PAGAR con fecha pasada ahora generan toast de advertencia al guardar.",
+        "Conciliaciones nuevas (v4.4+): badge \"Saldo actualizado\" cuando hubo diferencia.",
+        "Conciliaciones legacy (de versiones previas con movimiento de ajuste): badge \"Ajuste legacy\", sin modificar — la auditoría se preserva.",
       ],
     },
   ],
@@ -62,6 +60,14 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "4.3",
+    shortDate: "29 abr",
+    highlights: [
+      "Regla de oro: saldo cuentas == flujo unificado de PAGADOS/COBRADOS.",
+      "fechaSaldoInicial funcional, validación de fechas, widget de salud y banner de descalce.",
+    ],
+  },
   {
     version: "4.2",
     shortDate: "29 abr",

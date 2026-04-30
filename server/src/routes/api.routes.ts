@@ -8466,11 +8466,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
     app.post("/accounts/:id/reconcile", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
       const user = ensureUser(request);
       const { id } = z.object({ id: z.string() }).parse(request.params);
+      // v4.4: lógica simplificada — el banco siempre dice la verdad. Si hay
+      // diferencia, actualizamos saldoInicial=saldoReal y fechaSaldoInicial=fecha,
+      // y NO creamos movimiento de ajuste (la AccountReconciliation queda como
+      // único registro del evento). Movimientos previos quedan como histórico.
       const body = z.object({
         fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
         saldoReal: z.coerce.number(),
         notas: z.string().nullable().optional(),
-        aplicarAjuste: z.boolean().optional().default(true),
       }).strict().parse(request.body);
 
       const account = await prisma.account.findFirst({ where: { id, deletedAt: null } });
@@ -8481,47 +8484,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const diferencia = roundMoney(body.saldoReal - saldoCalculado);
       const fecha = parseDateOnly(body.fecha);
 
-      // Si la cuenta tiene fechaSaldoInicial > fecha de la conciliación, el
-      // ajuste que se cree no contaría (queda antes del corte). Refuse con
-      // mensaje claro: el usuario debe corregir fechaSaldoInicial primero.
-      if (
-        Math.abs(diferencia) > 0.01
-        && body.aplicarAjuste
-        && account.fechaSaldoInicial
-        && fecha < account.fechaSaldoInicial
-      ) {
-        throw badRequest(
-          "RECONCILE_FECHA_BEFORE_CUTOFF",
-          `La fecha de conciliación (${body.fecha}) es anterior al corte de la cuenta (fechaSaldoInicial=${serializeDateOnly(account.fechaSaldoInicial)}). El ajuste no afectaría el saldo. Editá la cuenta desde Admin → Cuentas y bajá la fechaSaldoInicial, o usá una fecha de conciliación >= ${serializeDateOnly(account.fechaSaldoInicial)}.`,
-        );
-      }
-
       const reconciliation = await prisma.$transaction(async (tx) => {
-        let ajusteMovementId: string | null = null;
-        if (Math.abs(diferencia) > 0.01 && body.aplicarAjuste) {
-          const esIngreso = diferencia > 0;
-          const ajuste = await tx.financeMovement.create({
+        if (Math.abs(diferencia) > 0.01) {
+          await tx.account.update({
+            where: { id },
             data: {
-              fecha,
-              mes: fecha.getUTCMonth() + 1,
-              anio: fecha.getUTCFullYear(),
-              tipoMovimiento: esIngreso ? TipoMovimiento.INGRESO : TipoMovimiento.GASTO,
-              categoriaPrincipal: CategoriaPrincipal.AJUSTE_CONCILIACION,
-              descripcion: `Ajuste conciliación ${account.nombre}`,
-              monto: new Prisma.Decimal(Math.abs(diferencia)),
-              moneda: account.moneda,
-              ivaTasa: 0, // ajustes no llevan IVA
-              pagado: !esIngreso,
-              cobrado: esIngreso,
-              impactaFlujo: true,
-              status: FinanceMovementStatus.PAGADO,
-              accountId: id,
-              estadoAprobacion: EstadoAprobacion.REGISTRADO,
-              observaciones: body.notas ?? `Conciliación al ${body.fecha}: real=${body.saldoReal.toFixed(2)} calculado=${saldoCalculado.toFixed(2)}`,
-              creadoPorId: user.id,
+              saldoInicial: new Prisma.Decimal(body.saldoReal),
+              fechaSaldoInicial: fecha,
             },
           });
-          ajusteMovementId = ajuste.id;
         }
 
         return tx.accountReconciliation.create({
@@ -8531,7 +8502,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
             saldoReal: new Prisma.Decimal(body.saldoReal),
             saldoCalculado: new Prisma.Decimal(saldoCalculado),
             diferencia: new Prisma.Decimal(diferencia),
-            ajusteMovementId,
+            ajusteMovementId: null, // v4.4: nunca se crean ajuste-movimientos
             notas: body.notas ?? null,
             createdById: user.id,
           },
@@ -8546,8 +8517,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
         entityId: id,
         userId: user.id,
         action: AuditAction.created,
-        description: `Conciliación de ${account.nombre}: real=${body.saldoReal.toFixed(2)}, calculado=${saldoCalculado.toFixed(2)}, diferencia=${diferencia.toFixed(2)}${reconciliation.ajusteMovementId ? " (con ajuste automático)" : ""}`,
-        metadata: { reconciliationId: reconciliation.id, ajusteMovementId: reconciliation.ajusteMovementId },
+        description: Math.abs(diferencia) > 0.01
+          ? `Conciliación ${account.nombre}: real=${body.saldoReal.toFixed(2)}, calculado=${saldoCalculado.toFixed(2)}, diferencia=${diferencia.toFixed(2)}. Saldo de cuenta actualizado.`
+          : `Conciliación ${account.nombre} sin diferencia. Saldo confirmado: ${body.saldoReal.toFixed(2)}.`,
+        metadata: { reconciliationId: reconciliation.id, saldoActualizado: Math.abs(diferencia) > 0.01 },
       });
 
       void checkInvariantOrWarn("reconcile account", { accountId: id, reconciliationId: reconciliation.id });

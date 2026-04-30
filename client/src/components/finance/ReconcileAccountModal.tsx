@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { X, Scale, ArrowUpCircle, ArrowDownCircle, CheckCircle2 } from 'lucide-react';
+import { X, Scale, ArrowUpCircle, ArrowDownCircle, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { getAccountBalance } from '../../api/accounts.api';
 import { reconcileAccount } from '../../api/accounts.api';
 import type { Account } from '../../types/accounts.types';
-import { todayLocalISO } from '../../utils/date';
+import { todayLocalISO, formatDate } from '../../utils/date';
 
 function fmt(n: number, currency: string) {
   return `${n.toLocaleString('es-UY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
@@ -24,7 +24,6 @@ export function ReconcileAccountModal({ account, onClose }: { account: Account; 
   const [saldoRealStr, setSaldoRealStr] = useState<string>('');
   const [fecha, setFecha] = useState(today);
   const [notas, setNotas] = useState('');
-  const [aplicarAjuste, setAplicarAjuste] = useState(true);
 
   const saldoReal = Number.parseFloat(saldoRealStr);
   const saldoRealValido = Number.isFinite(saldoReal);
@@ -44,13 +43,17 @@ export function ReconcileAccountModal({ account, onClose }: { account: Account; 
       fecha,
       saldoReal,
       notas: notas || null,
-      aplicarAjuste: !cuadra && aplicarAjuste,
     }),
     onSuccess: (r) => {
-      const msg = r.ajusteMovementId
-        ? `Conciliación guardada. Se generó ${r.ajusteMovement?.tipoMovimiento === 'INGRESO' ? 'INGRESO' : 'GASTO'} de ajuste por ${fmt(Math.abs(Number(r.ajusteMovement?.monto ?? 0)), account.moneda)}.`
-        : 'Conciliación guardada (sin diferencia).';
-      toast.success(msg, { duration: 5000 });
+      if (Math.abs(Number(r.diferencia)) <= 0.01) {
+        toast.success('Conciliación exitosa. La cuenta cuadra.', { duration: 5000 });
+      } else {
+        const sign = Number(r.diferencia) > 0 ? '+' : '';
+        toast.success(
+          `Saldo actualizado a ${fmt(saldoReal, account.moneda)}. Diferencia anterior: ${sign}${fmt(Number(r.diferencia), account.moneda)}.`,
+          { duration: 6000 },
+        );
+      }
       qc.invalidateQueries({ queryKey: ['accounts'] });
       qc.invalidateQueries({ queryKey: ['accounts-summary'] });
       qc.invalidateQueries({ queryKey: ['account-balance'] });
@@ -58,6 +61,7 @@ export function ReconcileAccountModal({ account, onClose }: { account: Account; 
       qc.invalidateQueries({ queryKey: ['reconciliation-alerts'] });
       qc.invalidateQueries({ queryKey: ['finance-movements'] });
       qc.invalidateQueries({ queryKey: ['finance-cashflow'] });
+      qc.invalidateQueries({ queryKey: ['finance-invariant-check'] });
       onClose();
     },
     onError: (err) => {
@@ -112,50 +116,36 @@ export function ReconcileAccountModal({ account, onClose }: { account: Account; 
             />
           </div>
 
-          {saldoRealValido && (
-            <div
-              className={
-                cuadra
-                  ? 'rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2.5'
-                  : diferencia > 0
-                    ? 'rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3 py-2.5'
-                    : 'rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2.5'
-              }
-            >
-              {cuadra ? (
-                <p className="text-sm flex items-center gap-2 text-emerald-500">
-                  <CheckCircle2 className="h-4 w-4" /> Cuenta conciliada — el saldo real coincide con el calculado.
-                </p>
-              ) : (
-                <>
-                  <p className="text-sm flex items-center gap-2 font-semibold text-[var(--color-text-primary)]">
-                    {diferencia > 0 ? <ArrowUpCircle className="h-4 w-4 text-emerald-500" /> : <ArrowDownCircle className="h-4 w-4 text-amber-500" />}
-                    Diferencia: {diferencia > 0 ? '+' : ''}{fmt(diferencia, account.moneda)}
-                  </p>
-                  <p className="mt-1 text-[11px] text-[var(--color-text-secondary)]">
-                    {diferencia > 0
-                      ? '⬆ Tenés MÁS plata de la que el sistema cree. Probablemente falta cargar un INGRESO.'
-                      : '⬇ Tenés MENOS plata de la que el sistema cree. Probablemente falta cargar un GASTO.'}
-                  </p>
-                </>
-              )}
+          {saldoRealValido && cuadra && (
+            <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2.5">
+              <p className="text-sm flex items-center gap-2 text-emerald-500">
+                <CheckCircle2 className="h-4 w-4" /> Cuenta conciliada — el saldo real coincide con el calculado.
+              </p>
             </div>
           )}
 
           {saldoRealValido && !cuadra && (
-            <label className="flex items-start gap-2 rounded-md border border-[var(--color-border)] px-3 py-2.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={aplicarAjuste}
-                onChange={(e) => setAplicarAjuste(e.target.checked)}
-                className="mt-0.5"
-              />
-              <span className="text-[11px] text-[var(--color-text-secondary)]">
-                <strong className="text-[var(--color-text-primary)]">Crear movimiento de ajuste automático.</strong>
-                <br />
-                Se generará un {diferencia > 0 ? 'INGRESO' : 'GASTO'} de {fmt(Math.abs(diferencia), account.moneda)} con categoría "Ajuste conciliación" para que el saldo calculado coincida con el real.
-              </span>
-            </label>
+            <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2.5 space-y-2">
+              <p className="text-sm flex items-center gap-2 font-semibold text-[var(--color-text-primary)]">
+                {diferencia > 0 ? <ArrowUpCircle className="h-4 w-4 text-emerald-500" /> : <ArrowDownCircle className="h-4 w-4 text-amber-500" />}
+                Diferencia: {diferencia > 0 ? '+' : ''}{fmt(diferencia, account.moneda)}
+              </p>
+              <p className="text-[11px] text-[var(--color-text-secondary)]">
+                El sistema dice <strong>{fmt(saldoCalculado, account.moneda)}</strong> pero el banco dice <strong>{fmt(saldoReal, account.moneda)}</strong>.
+              </p>
+              <div className="text-[11px] text-[var(--color-text-secondary)] flex items-start gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-[var(--color-text-primary)]">Al confirmar:</strong>
+                  <ul className="list-disc pl-4 mt-1 space-y-0.5">
+                    <li>El saldo del sistema queda en {fmt(saldoReal, account.moneda)} (al {formatDate(fecha)}).</li>
+                    <li>NO se crea ningún movimiento de gasto/ingreso.</li>
+                    <li>Movimientos anteriores al {formatDate(fecha)} pasan a histórico (no afectan saldo).</li>
+                    <li>Movimientos posteriores se aplican sobre el saldo nuevo.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           )}
 
           <div>

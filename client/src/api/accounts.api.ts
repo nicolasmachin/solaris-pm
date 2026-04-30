@@ -87,7 +87,7 @@ export const getReconciliationPreview = (accountId: string, saldoReal: number) =
     .get<ReconciliationPreview>(`/api/accounts/${accountId}/reconciliation-preview`, { params: { saldoReal: String(saldoReal) } })
     .then(r => r.data);
 
-export const reconcileAccount = (accountId: string, body: { fecha: string; saldoReal: number; notas?: string | null; aplicarAjuste?: boolean }) =>
+export const reconcileAccount = (accountId: string, body: { fecha: string; saldoReal: number; notas?: string | null }) =>
   apiClient.post<AccountReconciliation>(`/api/accounts/${accountId}/reconcile`, body).then(r => r.data);
 
 export const getAccountReconciliations = (accountId: string) =>

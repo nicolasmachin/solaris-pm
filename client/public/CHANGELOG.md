@@ -1,5 +1,35 @@
 # Novedades
 
+## v4.4
+
+### 30 de abril de 2026
+
+#### Conciliación simple (el banco siempre dice la verdad)
+
+Se simplificó el flujo de conciliación de cuentas para que sea consistente con la regla de oro: el saldo real (lo que dice el home banking) es el ground truth, sin "ensuciar" el listado de movimientos con gastos/ingresos falsos.
+
+**Cómo funciona ahora**:
+- Si el saldo real coincide con el calculado: solo se registra la conciliación en el historial.
+- Si hay diferencia: se actualiza `saldoInicial = saldoReal` y `fechaSaldoInicial = fecha de la conciliación` en una sola transacción.
+- **Ya no se crean movimientos de ajuste** (categoría AJUSTE_CONCILIACION). Cada conciliación queda registrada en `account_reconciliations` como auditoría.
+- Movimientos anteriores a la fecha de conciliación pasan a histórico (no afectan al saldo nuevo).
+- Movimientos posteriores se aplican sobre el saldo recién fijado.
+
+**UI del modal**:
+- Se eliminó el toggle "Crear movimiento de ajuste automático".
+- Si hay diferencia, panel ámbar explica explícitamente lo que va a pasar al confirmar (saldo nuevo, fecha de corte, sin movimiento creado).
+- Botón único "Confirmar conciliación".
+- Toast nuevo: "Saldo actualizado a X. Diferencia anterior: Y." o "Conciliación exitosa. La cuenta cuadra." según el caso.
+
+**Historial de conciliaciones**:
+- Las conciliaciones nuevas muestran badge **"Saldo actualizado"** cuando tuvieron diferencia.
+- Las conciliaciones legacy (de v4.3 o anteriores con `ajusteMovementId`) muestran **"Ajuste legacy"** y siguen vinculadas a su movimiento de ajuste; no se modifican.
+- Las conciliaciones sin diferencia muestran "Sin diferencia".
+
+**Beneficio**: el listado de movimientos ya no se contamina con AJUSTE_CONCILIACION cada vez que conciliás. La realidad de la cuenta es lo que dice el banco; el sistema se ajusta.
+
+---
+
 ## v4.3
 
 ### 29 de abril de 2026
