@@ -8676,6 +8676,121 @@ export async function registerApiRoutes(app: FastifyInstance) {
       };
     });
 
+    // Vista anual con desglose por categoría mes a mes (planilla P&L).
+    // Una sola query por año, agrupación en memoria (más eficiente que llamar
+    // 12 veces a calculateIncomeStatement).
+    app.get("/finance/income-statement/yearly-breakdown", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const query = z.object({ anio: z.coerce.number().int() }).parse(request.query);
+      const anio = query.anio;
+      const fechaInicio = new Date(Date.UTC(anio, 0, 1));
+      const fechaFin = new Date(Date.UTC(anio + 1, 0, 1));
+
+      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
+      const fallback = lastRate ? (decimalToNumber(lastRate.usdToUyu) ?? 1) : 1;
+
+      const [movements, payments] = await prisma.$transaction([
+        prisma.financeMovement.findMany({
+          where: {
+            deletedAt: null,
+            fecha: { gte: fechaInicio, lt: fechaFin },
+            categoriaPrincipal: { not: CategoriaPrincipal.AJUSTE_CONCILIACION },
+            OR: [
+              { tipoMovimiento: TipoMovimiento.INGRESO, cobrado: true },
+              { tipoMovimiento: TipoMovimiento.GASTO, pagado: true },
+            ],
+          },
+          include: {
+            paymentApplications: {
+              select: { id: true, payment: { select: { deletedAt: true } } },
+              where: { payment: { deletedAt: null } },
+            },
+          },
+        }),
+        prisma.payment.findMany({
+          where: { deletedAt: null, fecha: { gte: fechaInicio, lt: fechaFin } },
+        }),
+      ]);
+
+      // Buckets: porSeccion → porCategoria → meses[12].
+      type Bucket = Map<string, number[]>;
+      const ingresosBucket: Bucket = new Map();
+      const directosBucket: Bucket = new Map();
+      const operativosBucket: Bucket = new Map();
+
+      function add(bucket: Bucket, categoria: string, mesIdx: number, montoUsd: number) {
+        const arr = bucket.get(categoria) ?? new Array<number>(12).fill(0);
+        arr[mesIdx] += montoUsd;
+        bucket.set(categoria, arr);
+      }
+
+      for (const m of movements) {
+        const mesIdx = m.fecha.getUTCMonth(); // 0-11
+        const usd = convertMovementToUsd(m, fallback);
+
+        if (m.tipoMovimiento === TipoMovimiento.INGRESO) {
+          add(ingresosBucket, m.categoriaPrincipal, mesIdx, usd);
+        } else if (m.tipoMovimiento === TipoMovimiento.GASTO) {
+          // Anti-doble-conteo: si tiene Payment app activa, lo cuenta el Payment.
+          const tieneApp = m.paymentApplications.length > 0;
+          if (tieneApp) continue;
+          if (CATEGORIAS_DIRECTAS_PNL.includes(m.categoriaPrincipal)) {
+            add(directosBucket, m.categoriaPrincipal, mesIdx, usd);
+          } else {
+            add(operativosBucket, m.categoriaPrincipal, mesIdx, usd);
+          }
+        }
+      }
+
+      // Payments siempre como costo directo (PAGO_PROVEEDOR).
+      for (const p of payments) {
+        const mesIdx = p.fecha.getUTCMonth();
+        const monto = decimalToNumber(p.monto) ?? 0;
+        const usd = p.moneda === Moneda.USD ? monto : (fallback > 0 ? monto / fallback : monto);
+        add(directosBucket, CategoriaPrincipal.PAGO_PROVEEDOR, mesIdx, usd);
+      }
+
+      function bucketToSection(bucket: Bucket) {
+        const porCategoria = Array.from(bucket.entries())
+          .map(([categoria, meses]) => {
+            const mesesRound = meses.map((v) => roundMoney(v));
+            const total = roundMoney(mesesRound.reduce((s, v) => s + v, 0));
+            return { categoria, label: categoria, meses: mesesRound, total };
+          })
+          .filter((c) => c.total > 0.005)
+          .sort((a, b) => b.total - a.total);
+        const totalMensual = new Array<number>(12).fill(0);
+        for (const c of porCategoria) {
+          for (let i = 0; i < 12; i++) totalMensual[i] += c.meses[i];
+        }
+        const totalMensualRound = totalMensual.map((v) => roundMoney(v));
+        const totalAnio = roundMoney(totalMensualRound.reduce((s, v) => s + v, 0));
+        return { porCategoria, totalMensual: totalMensualRound, totalAnio };
+      }
+
+      const ingresos = bucketToSection(ingresosBucket);
+      const costosDirectos = bucketToSection(directosBucket);
+      const gastosOperativos = bucketToSection(operativosBucket);
+
+      const margenMeses = ingresos.totalMensual.map((ing, i) =>
+        roundMoney(ing - costosDirectos.totalMensual[i]),
+      );
+      const margenTotal = roundMoney(margenMeses.reduce((s, v) => s + v, 0));
+
+      const resultadoMeses = margenMeses.map((mb, i) =>
+        roundMoney(mb - gastosOperativos.totalMensual[i]),
+      );
+      const resultadoTotal = roundMoney(resultadoMeses.reduce((s, v) => s + v, 0));
+
+      return {
+        anio,
+        ingresos,
+        costosDirectos,
+        margenBruto: { meses: margenMeses, totalAnio: margenTotal },
+        gastosOperativos,
+        resultadoNeto: { meses: resultadoMeses, totalAnio: resultadoTotal },
+      };
+    });
+
     app.get("/accounts", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
       const query = z.object({
         activa: z.enum(["true", "false", "all"]).optional(),

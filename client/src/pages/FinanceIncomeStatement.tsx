@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
-import { getIncomeStatement, getIncomeStatementYearly } from '../api/finance.api';
-import type { CategoriaSummary } from '../api/finance.api';
+import { getIncomeStatement, getIncomeStatementYearly, getIncomeStatementYearlyBreakdown } from '../api/finance.api';
+import type { CategoriaSummary, IncomeStatementYearlyBreakdown } from '../api/finance.api';
 import { fmtCurrency, MONTH_NAMES } from '../lib/finance';
 import { CATEGORIA_LABEL } from '../types/finance.types';
 import type { CategoriaPrincipal } from '../types/finance.types';
@@ -22,37 +23,32 @@ const today = new Date();
 const DEFAULT_MES = today.getUTCMonth() + 1;
 const DEFAULT_ANIO = today.getUTCFullYear();
 
+type Tab = 'mensual' | 'anual';
+
 export function FinanceIncomeStatement() {
+  const [tab, setTab] = useState<Tab>('mensual');
   const [mes, setMes] = useState(DEFAULT_MES);
   const [anio, setAnio] = useState(DEFAULT_ANIO);
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['income-statement', mes, anio],
-    queryFn: () => getIncomeStatement(mes, anio),
-  });
-
-  const { data: yearly } = useQuery({
-    queryKey: ['income-statement-yearly', anio],
-    queryFn: () => getIncomeStatementYearly(anio),
-  });
 
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Estado de resultado</h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-0.5">P&amp;L mensual basado en plata real (PAGADOS / COBRADOS)</p>
+          <p className="text-sm text-[var(--color-text-muted)] mt-0.5">P&amp;L basado en plata real (PAGADOS / COBRADOS)</p>
         </div>
         <div className="flex gap-2">
-          <select
-            value={mes}
-            onChange={e => setMes(Number(e.target.value))}
-            className="px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] text-sm text-[var(--color-text-primary)]"
-          >
-            {MONTH_NAMES.map((name, i) => (
-              <option key={i + 1} value={i + 1}>{name}</option>
-            ))}
-          </select>
+          {tab === 'mensual' && (
+            <select
+              value={mes}
+              onChange={e => setMes(Number(e.target.value))}
+              className="px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] text-sm text-[var(--color-text-primary)]"
+            >
+              {MONTH_NAMES.map((name, i) => (
+                <option key={i + 1} value={i + 1}>{name}</option>
+              ))}
+            </select>
+          )}
           <select
             value={anio}
             onChange={e => setAnio(Number(e.target.value))}
@@ -65,17 +61,63 @@ export function FinanceIncomeStatement() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-0 border-b border-[var(--color-border)]">
+        {([['mensual', 'Mensual (P&L)'], ['anual', 'Anual (planilla)']] as const).map(([t, label]) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={klass(
+              'px-4 py-2 text-xs font-mono uppercase tracking-wider transition-colors border-b-2 -mb-px',
+              tab === t
+                ? 'text-[var(--color-accent)] border-[var(--color-accent)] font-semibold'
+                : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-secondary)]',
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'mensual' && <TabMensual mes={mes} anio={anio} setMes={setMes} />}
+      {tab === 'anual' && <TabAnual anio={anio} />}
+    </div>
+  );
+}
+
+function TabMensual({ mes, anio, setMes }: { mes: number; anio: number; setMes: (m: number) => void }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['income-statement', mes, anio],
+    queryFn: () => getIncomeStatement(mes, anio),
+  });
+
+  const { data: yearly } = useQuery({
+    queryKey: ['income-statement-yearly', anio],
+    queryFn: () => getIncomeStatementYearly(anio),
+  });
+
+  return (
+    <div className="space-y-5">
       {isLoading || !data ? (
         <div className="flex justify-center py-16"><Spinner /></div>
       ) : (
         <PnLCard data={data} />
       )}
-
       {yearly && (
         <YearlyCard yearly={yearly} selectedMes={mes} onSelectMes={setMes} />
       )}
     </div>
   );
+}
+
+function TabAnual({ anio }: { anio: number }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['income-statement-yearly-breakdown', anio],
+    queryFn: () => getIncomeStatementYearlyBreakdown(anio),
+  });
+
+  if (isLoading || !data) return <div className="flex justify-center py-16"><Spinner /></div>;
+  return <YearlyBreakdownTable data={data} />;
 }
 
 function PnLCard({ data }: { data: import('../api/finance.api').IncomeStatement }) {
@@ -213,6 +255,247 @@ function SummaryRow({ label, value, porcentaje, positive }: { label: string; val
 
 function Divider() {
   return <div className="border-t border-[var(--color-border)]" />;
+}
+
+// ─── Vista anual: planilla mes a mes ──────────────────────────────────────────
+
+function YearlyBreakdownTable({ data }: { data: IncomeStatementYearlyBreakdown }) {
+  return (
+    <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl overflow-hidden">
+      <div className="px-4 py-3 border-b border-[var(--color-border)] flex items-center justify-between">
+        <p className="text-sm font-semibold text-[var(--color-text-primary)]">Planilla anual {data.anio}</p>
+        <p className="text-[11px] text-[var(--color-text-muted)]">Click en una celda para ver los movimientos.</p>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="text-xs whitespace-nowrap" style={{ minWidth: '900px' }}>
+          <thead>
+            <tr className="bg-[var(--color-bg-app)] text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)]">
+              <th className="sticky left-0 z-10 bg-[var(--color-bg-app)] px-3 py-2 text-left font-medium border-r border-[var(--color-border)] min-w-[200px]">
+                Concepto
+              </th>
+              {MONTH_NAMES.map((name) => (
+                <th key={name} className="px-2 py-2 text-right font-medium min-w-[80px]">{name}</th>
+              ))}
+              <th className="px-3 py-2 text-right font-semibold border-l border-[var(--color-border)] bg-[var(--color-bg-card-hover)] min-w-[100px]">
+                Total
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <SectionHeader label="INGRESOS" colorClass="bg-emerald-500/10 text-emerald-400" />
+            {data.ingresos.porCategoria.length === 0 ? (
+              <EmptyRow />
+            ) : (
+              data.ingresos.porCategoria.map((cat) => (
+                <CategoryRow key={cat.categoria} cat={cat} anio={data.anio} kind="ingreso" tipo="INGRESO" />
+              ))
+            )}
+            <TotalRow
+              label="Total ingresos"
+              meses={data.ingresos.totalMensual}
+              total={data.ingresos.totalAnio}
+              colorClass="bg-emerald-500/15 text-emerald-300"
+              sign="+"
+            />
+
+            <SectionHeader label="(-) COSTOS DIRECTOS" colorClass="bg-red-500/10 text-red-400" />
+            {data.costosDirectos.porCategoria.length === 0 ? (
+              <EmptyRow />
+            ) : (
+              data.costosDirectos.porCategoria.map((cat) => (
+                <CategoryRow key={cat.categoria} cat={cat} anio={data.anio} kind="directo" tipo="GASTO" />
+              ))
+            )}
+            <TotalRow
+              label="Total costos directos"
+              meses={data.costosDirectos.totalMensual}
+              total={data.costosDirectos.totalAnio}
+              colorClass="bg-red-500/15 text-red-300"
+              sign="-"
+              parens
+            />
+
+            <SummaryBlueRow
+              label="= MARGEN BRUTO"
+              meses={data.margenBruto.meses}
+              total={data.margenBruto.totalAnio}
+            />
+
+            <SectionHeader label="(-) GASTOS OPERATIVOS" colorClass="bg-amber-500/10 text-amber-400" />
+            {data.gastosOperativos.porCategoria.length === 0 ? (
+              <EmptyRow />
+            ) : (
+              data.gastosOperativos.porCategoria.map((cat) => (
+                <CategoryRow key={cat.categoria} cat={cat} anio={data.anio} kind="operativo" tipo="GASTO" />
+              ))
+            )}
+            <TotalRow
+              label="Total operativos"
+              meses={data.gastosOperativos.totalMensual}
+              total={data.gastosOperativos.totalAnio}
+              colorClass="bg-amber-500/15 text-amber-300"
+              sign="-"
+              parens
+            />
+
+            <SummaryBlueRow
+              label="= RESULTADO NETO"
+              meses={data.resultadoNeto.meses}
+              total={data.resultadoNeto.totalAnio}
+              big
+            />
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function SectionHeader({ label, colorClass }: { label: string; colorClass: string }) {
+  return (
+    <tr className={klass('font-semibold text-[10px] font-mono uppercase tracking-wider', colorClass)}>
+      <td colSpan={14} className="sticky left-0 z-[5] px-3 py-2">{label}</td>
+    </tr>
+  );
+}
+
+function EmptyRow() {
+  return (
+    <tr>
+      <td colSpan={14} className="sticky left-0 px-6 py-2 text-[var(--color-text-muted)] italic">
+        Sin movimientos en el año.
+      </td>
+    </tr>
+  );
+}
+
+function CategoryRow({ cat, anio, kind, tipo }: {
+  cat: { categoria: string; meses: number[]; total: number };
+  anio: number;
+  kind: 'ingreso' | 'directo' | 'operativo';
+  tipo: 'INGRESO' | 'GASTO';
+}) {
+  const colorClass = kind === 'ingreso'
+    ? 'text-emerald-300'
+    : kind === 'directo'
+      ? 'text-red-300'
+      : 'text-amber-300';
+  const formatCell = (v: number) => {
+    if (v <= 0.005) return '—';
+    if (kind === 'ingreso') return fmtCurrency(v, 'USD');
+    return `(${fmtCurrency(v, 'USD')})`;
+  };
+  return (
+    <tr className="border-t border-[var(--color-border)] hover:bg-[var(--color-bg-card-hover)]/50">
+      <td className="sticky left-0 z-[5] bg-[var(--color-bg-card)] px-3 py-1.5 pl-6 text-[var(--color-text-secondary)] border-r border-[var(--color-border)]">
+        {categoriaLabel(cat.categoria)}
+      </td>
+      {cat.meses.map((m, i) => (
+        <CellLink
+          key={i}
+          mes={i + 1}
+          anio={anio}
+          categoria={cat.categoria}
+          tipo={tipo}
+          value={m}
+          formatted={formatCell(m)}
+          className={klass('px-2 py-1.5 text-right tabular-nums', m > 0.005 ? colorClass : 'text-[var(--color-text-muted)]')}
+        />
+      ))}
+      <td className={klass('px-3 py-1.5 text-right tabular-nums font-semibold border-l border-[var(--color-border)] bg-[var(--color-bg-card-hover)]/30', colorClass)}>
+        {kind === 'ingreso' ? fmtCurrency(cat.total, 'USD') : `(${fmtCurrency(cat.total, 'USD')})`}
+      </td>
+    </tr>
+  );
+}
+
+function CellLink({ mes, anio, categoria, tipo, value, formatted, className }: {
+  mes: number;
+  anio: number;
+  categoria: string;
+  tipo: 'INGRESO' | 'GASTO';
+  value: number;
+  formatted: string;
+  className: string;
+}) {
+  if (value <= 0.005) {
+    return <td className={className}>{formatted}</td>;
+  }
+  // Click → /finanzas/movimientos con filtros pre-aplicados.
+  return (
+    <td className={klass(className, 'cursor-pointer hover:text-[var(--color-accent)] hover:underline')}>
+      <Link
+        to={`/finanzas/movimientos?mes=${mes}&anio=${anio}&tipo=${tipo}&categoria=${categoria}`}
+        className="block"
+        title={`Ver movimientos de ${MONTH_NAMES[mes - 1]} ${anio}: ${categoriaLabel(categoria)}`}
+      >
+        {formatted}
+      </Link>
+    </td>
+  );
+}
+
+function TotalRow({ label, meses, total, colorClass, sign, parens }: {
+  label: string;
+  meses: number[];
+  total: number;
+  colorClass: string;
+  sign: '+' | '-';
+  parens?: boolean;
+}) {
+  const fmtCell = (v: number) => {
+    if (v <= 0.005) return '—';
+    return parens ? `(${fmtCurrency(v, 'USD')})` : `${sign}${fmtCurrency(v, 'USD')}`;
+  };
+  return (
+    <tr className={klass('border-t border-[var(--color-border)] font-semibold', colorClass)}>
+      <td className={klass('sticky left-0 z-[5] px-3 py-2 border-r border-[var(--color-border)]', colorClass)}>
+        {label}
+      </td>
+      {meses.map((m, i) => (
+        <td key={i} className="px-2 py-2 text-right tabular-nums">{fmtCell(m)}</td>
+      ))}
+      <td className="px-3 py-2 text-right tabular-nums border-l border-[var(--color-border)]">
+        {parens ? `(${fmtCurrency(total, 'USD')})` : `${sign}${fmtCurrency(total, 'USD')}`}
+      </td>
+    </tr>
+  );
+}
+
+function SummaryBlueRow({ label, meses, total, big }: { label: string; meses: number[]; total: number; big?: boolean }) {
+  return (
+    <tr className={klass(
+      'border-t-2 border-b-2 border-[var(--color-accent)]/30 font-bold',
+      big ? 'bg-blue-500/15 text-base' : 'bg-blue-500/10',
+    )}>
+      <td className={klass(
+        'sticky left-0 z-[5] px-3 py-2 border-r border-[var(--color-border)]',
+        big ? 'bg-blue-500/15' : 'bg-blue-500/10',
+        'text-blue-300',
+      )}>
+        {label}
+      </td>
+      {meses.map((m, i) => (
+        <td
+          key={i}
+          className={klass(
+            'px-2 py-2 text-right tabular-nums',
+            m >= 0 ? 'text-emerald-300' : 'text-red-300',
+          )}
+        >
+          {fmtCurrency(m, 'USD')}
+        </td>
+      ))}
+      <td className={klass(
+        'px-3 py-2 text-right tabular-nums border-l border-[var(--color-border)]',
+        total >= 0 ? 'text-emerald-300' : 'text-red-300',
+      )}>
+        {fmtCurrency(total, 'USD')}
+      </td>
+    </tr>
+  );
 }
 
 function YearlyCard({ yearly, selectedMes, onSelectMes }: {

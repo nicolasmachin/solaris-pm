@@ -639,3 +639,30 @@ export interface IncomeStatementYearly {
 
 export const getIncomeStatementYearly = (anio: number) =>
   apiClient.get<IncomeStatementYearly>('/api/finance/income-statement/yearly', { params: { anio } }).then(r => r.data);
+
+export interface YearlyBreakdownCategory {
+  categoria: string;
+  label: string;
+  meses: number[]; // 12 valores USD
+  total: number;
+}
+
+export interface YearlyBreakdownSection {
+  porCategoria: YearlyBreakdownCategory[];
+  totalMensual: number[];
+  totalAnio: number;
+}
+
+export interface IncomeStatementYearlyBreakdown {
+  anio: number;
+  ingresos: YearlyBreakdownSection;
+  costosDirectos: YearlyBreakdownSection;
+  margenBruto: { meses: number[]; totalAnio: number };
+  gastosOperativos: YearlyBreakdownSection;
+  resultadoNeto: { meses: number[]; totalAnio: number };
+}
+
+export const getIncomeStatementYearlyBreakdown = (anio: number) =>
+  apiClient
+    .get<IncomeStatementYearlyBreakdown>('/api/finance/income-statement/yearly-breakdown', { params: { anio } })
+    .then(r => r.data);
