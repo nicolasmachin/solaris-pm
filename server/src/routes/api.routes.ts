@@ -14109,4 +14109,168 @@ export async function registerApiRoutes(app: FastifyInstance) {
         .filter((a) => a.stockActual < a.stockMinimo)
         .sort((a, b) => a.ratio - b.ratio);
     });
+
+    // ─── Asistente IA: text-to-SQL con guardrails ────────────────────────────
+    //
+    // Sólo accesible para roles con role.name = ADMIN. El service ejecuta SQL
+    // generado por Claude vía un usuario PG read-only que NO tiene SELECT
+    // sobre tablas sensibles (audit_logs, ai_queries, etc.). El validador
+    // local también rechaza palabras prohibidas como segunda capa.
+
+    async function requireAdminRole(request: import("fastify").FastifyRequest) {
+      const user = request.user;
+      if (!user) throw badRequest("AUTH_CONTEXT_MISSING", "No autenticado");
+      if (user.role !== "ADMIN") {
+        throw forbidden("Sólo usuarios ADMIN pueden usar el asistente IA");
+      }
+    }
+
+    app.get("/ai/status", { preHandler: requireAdminRole }, async () => {
+      const { isAIAssistantEnabled } = await import("../services/ai-assistant.service.js");
+      const enabled = isAIAssistantEnabled();
+      return {
+        enabled,
+        message: enabled
+          ? "Asistente IA disponible."
+          : "Falta configurar ANTHROPIC_API_KEY o DATABASE_URL_READONLY en el server.",
+      };
+    });
+
+    app.post("/ai/ask", { preHandler: requireAdminRole }, async (request, reply) => {
+      const user = ensureUser(request);
+      const body = z.object({
+        question: z.string().min(1).max(2000),
+      }).strict().parse(request.body);
+
+      const { processQuestion, isAIAssistantEnabled, AICannotGenerateError, AISQLInvalidError, AIExecutionError } =
+        await import("../services/ai-assistant.service.js");
+      const { checkRateLimit } = await import("../services/ai-rate-limit.service.js");
+
+      if (!isAIAssistantEnabled()) {
+        return reply.status(503).send({
+          error: "El asistente IA no está configurado en este server (falta ANTHROPIC_API_KEY o DATABASE_URL_READONLY).",
+        });
+      }
+
+      // Rate limit
+      const rl = await checkRateLimit(user.id);
+      if (!rl.allowed) {
+        await prisma.aIQuery.create({
+          data: {
+            userId: user.id,
+            question: body.question,
+            status: "RATE_LIMIT_EXCEEDED",
+            errorMessage: rl.message,
+          },
+        });
+        return reply.status(429).send({ error: rl.message });
+      }
+
+      const startTime = Date.now();
+      try {
+        const result = await processQuestion(body.question);
+        const durationMs = Date.now() - startTime;
+
+        await prisma.aIQuery.create({
+          data: {
+            userId: user.id,
+            question: body.question,
+            generatedSQL: result.generatedSQL,
+            result: result.result as Prisma.InputJsonValue,
+            response: result.response,
+            status: "SUCCESS",
+            tokensInput: result.tokens.input,
+            tokensOutput: result.tokens.output,
+            costUSD: new Prisma.Decimal(result.costUSD.toFixed(6)),
+            durationMs,
+          },
+        });
+
+        return {
+          response: result.response,
+          sql: result.generatedSQL,
+          rowCount: result.rowCount,
+          costUSD: Number(result.costUSD.toFixed(6)),
+          tokens: result.tokens,
+          durationMs,
+        };
+      } catch (err) {
+        const durationMs = Date.now() - startTime;
+        let status: "SQL_INVALID" | "EXECUTION_ERROR" | "AI_ERROR" = "AI_ERROR";
+        let generatedSQL: string | null = null;
+        let errorMessage = err instanceof Error ? err.message : String(err);
+        if (err instanceof AISQLInvalidError) {
+          status = "SQL_INVALID";
+          generatedSQL = err.generatedSQL;
+        } else if (err instanceof AIExecutionError) {
+          status = "EXECUTION_ERROR";
+          generatedSQL = err.generatedSQL;
+        } else if (err instanceof AICannotGenerateError) {
+          // Lo dejamos como AI_ERROR para no inflar el enum.
+          status = "AI_ERROR";
+        }
+
+        await prisma.aIQuery.create({
+          data: {
+            userId: user.id,
+            question: body.question,
+            generatedSQL: generatedSQL ?? undefined,
+            status,
+            errorMessage,
+            durationMs,
+          },
+        });
+
+        return reply.status(400).send({ error: errorMessage });
+      }
+    });
+
+    app.get("/ai/history", { preHandler: requireAdminRole }, async (request) => {
+      const user = ensureUser(request);
+      const items = await prisma.aIQuery.findMany({
+        where: { userId: user.id },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        select: {
+          id: true,
+          question: true,
+          response: true,
+          generatedSQL: true,
+          status: true,
+          errorMessage: true,
+          costUSD: true,
+          durationMs: true,
+          createdAt: true,
+        },
+      });
+      return items.map((q) => ({
+        ...q,
+        costUSD: q.costUSD ? Number(q.costUSD) : 0,
+        createdAt: serializeDate(q.createdAt),
+      }));
+    });
+
+    // Logs globales (para una página /admin/ai-logs).
+    app.get("/ai/logs", { preHandler: requireAdminRole }, async (request) => {
+      const query = z.object({
+        limit: z.coerce.number().int().min(1).max(200).optional().default(50),
+      }).parse(request.query);
+      const items = await prisma.aIQuery.findMany({
+        orderBy: { createdAt: "desc" },
+        take: query.limit,
+        include: { user: { select: { id: true, name: true, email: true } } },
+      });
+      return items.map((q) => ({
+        id: q.id,
+        question: q.question,
+        status: q.status,
+        errorMessage: q.errorMessage,
+        costUSD: q.costUSD ? Number(q.costUSD) : 0,
+        durationMs: q.durationMs,
+        tokensInput: q.tokensInput,
+        tokensOutput: q.tokensOutput,
+        createdAt: serializeDate(q.createdAt),
+        user: q.user,
+      }));
+    });
 }

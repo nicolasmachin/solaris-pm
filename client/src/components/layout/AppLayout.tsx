@@ -5,6 +5,7 @@ import { Sidebar } from "./Sidebar";
 import { VersionFooter } from "./VersionFooter";
 import { MobileNavDrawer } from "./MobileNavDrawer";
 import { FinanceInvariantBanner } from "../finance/FinanceInvariantBanner";
+import { AIFloatingButton } from "../ai/AIFloatingButton";
 
 export function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -36,6 +37,7 @@ export function AppLayout() {
         </div>
       </main>
       <VersionFooter />
+      <AIFloatingButton />
     </div>
   );
 }

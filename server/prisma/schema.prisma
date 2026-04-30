@@ -355,6 +355,8 @@ model User {
   paymentsCreated                Payment[]                @relation("PaymentCreatedBy")
   installationSchedulesConfirmed InstallationSchedule[]   @relation("InstallationConfirmedBy")
   reconciliationsCreated         AccountReconciliation[]  @relation("ReconciliationCreatedBy")
+  aiQueries                      AIQuery[]
+  aiRateLimit                    AIRateLimit?
   deletedAt                      DateTime?                @db.Timestamptz(6)
   createdAt                      DateTime                 @default(now()) @db.Timestamptz(6)
   updatedAt                      DateTime                 @updatedAt @db.Timestamptz(6)
@@ -1482,4 +1484,57 @@ model PaymentApplication {
   @@unique([paymentId, movementId])
   @@index([movementId])
   @@map("payment_applications")
+}
+
+// ─── AI Assistant: registros de consultas + rate limits ──────────────────────
+
+enum AIQueryStatus {
+  SUCCESS
+  SQL_INVALID
+  EXECUTION_ERROR
+  RATE_LIMIT_EXCEEDED
+  PERMISSION_DENIED
+  AI_ERROR
+}
+
+model AIQuery {
+  id           String         @id @default(cuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  question     String
+  generatedSQL String?        @db.Text
+  result       Json?
+  response     String?        @db.Text
+
+  status       AIQueryStatus
+  errorMessage String?
+
+  tokensInput  Int?
+  tokensOutput Int?
+  costUSD      Decimal?       @db.Decimal(10, 6)
+
+  durationMs   Int?
+
+  createdAt    DateTime       @default(now()) @db.Timestamptz(6)
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@map("ai_queries")
+}
+
+model AIRateLimit {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  queriesPerDay   Int     @default(100)
+  costUSDPerMonth Decimal @default(50) @db.Decimal(10, 2)
+
+  enabled         Boolean @default(true)
+
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+
+  @@map("ai_rate_limits")
 }
