@@ -682,19 +682,39 @@ function DetailPanel({ mov, onClose, onEdit, onDelete, onCancel, onOpenDesglose,
           {mov.materialItem && <Row label="Ítem" value={`${mov.materialItem.nombre}${mov.quantity != null ? ` (x${mov.quantity} ${mov.materialItem.unidad})` : ''}`} />}
           {mov.hasItemDetail && !mov.noTieneMateriales && <Row label="Stock" value="Ingresado vía desglose" />}
           {mov.noTieneMateriales && <Row label="Stock" value="Sin materiales" />}
-          {mov.tipoMovimiento === 'GASTO' && mov.montoPagado > 0 && (
-            <>
-              <Row label="Monto pagado" value={fmtCurrency(mov.montoPagado, mov.moneda)} />
-              <Row label="Saldo pendiente" value={fmtCurrency(mov.saldoPendiente, mov.moneda)} />
-            </>
-          )}
           <Row label={esIngreso ? 'Cobrado' : 'Pagado'} value={esIngreso ? (mov.cobrado ? 'Sí' : 'No') : (mov.pagado ? 'Sí' : 'No')} />
           <Row label="Aprobación" value={ESTADO_APROBACION_LABEL[mov.estadoAprobacion]} />
           {mov.observaciones && <Row label="Observaciones" value={mov.observaciones} />}
           <Row label="Registrado" value={fmtDate(mov.createdAt)} />
         </div>
 
-        {/* Aplicaciones de pago */}
+        {/* Breakdown de pago: factura vs pagado vs pendiente */}
+        {mov.tipoMovimiento === 'GASTO' && mov.montoPagado > 0.005 && (
+          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)]/50 p-3 space-y-2">
+            <p className="text-xs font-semibold text-[var(--color-text-primary)]">Estado de pago</p>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div>
+                <p className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider">Factura</p>
+                <p className="text-sm font-semibold tabular-nums text-[var(--color-text-primary)] mt-0.5">{fmtCurrency(mov.monto, mov.moneda)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider">Pagado</p>
+                <p className="text-sm font-semibold tabular-nums text-emerald-400 mt-0.5">{fmtCurrency(mov.montoPagado, mov.moneda)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider">Pendiente</p>
+                <p className={klass(
+                  'text-sm font-semibold tabular-nums mt-0.5',
+                  mov.saldoPendiente > 0.005 ? 'text-amber-400' : 'text-[var(--color-text-muted)]',
+                )}>
+                  {fmtCurrency(mov.saldoPendiente, mov.moneda)}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Aplicaciones de pago (lista de Payments aplicados) */}
         {detail && detail.paymentApplications && detail.paymentApplications.length > 0 && (
           <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)]/50 p-3 space-y-2">
             <p className="text-xs font-semibold text-[var(--color-text-primary)]">
@@ -1202,10 +1222,27 @@ export function FinanceMovements() {
                       <td className={klass('px-4 py-3 whitespace-nowrap', overdue ? 'text-red-400 font-semibold' : 'text-[var(--color-text-muted)]')}>
                         {mov.dueDate ? (overdue ? '⚠ ' : '') + fmtDate(mov.dueDate) : '—'}
                       </td>
-                      <td className={klass('px-4 py-3 whitespace-nowrap text-right font-semibold tabular-nums',
-                        mov.tipoMovimiento === 'INGRESO' ? 'text-green-400' : mov.tipoMovimiento === 'AJUSTE' ? 'text-blue-400' : 'text-red-400')}>
-                        {mov.tipoMovimiento === 'GASTO' ? '-' : '+'}{fmtCurrency(mov.monto, mov.moneda)}
-                      </td>
+                      {(() => {
+                        // Si el movement es GASTO con applications activas, mostramos
+                        // saldoPendiente como monto principal (lo que aún proyecta).
+                        const tieneApps = mov.tipoMovimiento === 'GASTO' && mov.montoPagado > 0.005;
+                        const mostrarPendiente = tieneApps && mov.saldoPendiente > 0.005 && mov.saldoPendiente < mov.monto;
+                        const colorClass = mov.tipoMovimiento === 'INGRESO' ? 'text-green-400' : mov.tipoMovimiento === 'AJUSTE' ? 'text-blue-400' : 'text-red-400';
+                        return (
+                          <td className={klass('px-4 py-3 whitespace-nowrap text-right font-semibold tabular-nums', colorClass)}
+                            title={tieneApps
+                              ? `Saldo pendiente: ${fmtCurrency(mov.saldoPendiente, mov.moneda)}. Ya pagado: ${fmtCurrency(mov.montoPagado, mov.moneda)} de ${fmtCurrency(mov.monto, mov.moneda)} total.`
+                              : undefined}
+                          >
+                            {mov.tipoMovimiento === 'GASTO' ? '-' : '+'}{fmtCurrency(mostrarPendiente ? mov.saldoPendiente : mov.monto, mov.moneda)}
+                            {mostrarPendiente && (
+                              <div className="text-[10px] font-normal text-[var(--color-text-muted)] mt-0.5">
+                                de {fmtCurrency(mov.monto, mov.moneda)}
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })()}
                       <td className={klass(
                           'px-4 py-3 whitespace-nowrap text-right tabular-nums',
                           future

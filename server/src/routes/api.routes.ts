@@ -10570,7 +10570,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
             ivaTasa: true,
             tipoCambio: true,
             paymentApplications: {
-              select: { id: true, payment: { select: { deletedAt: true } } },
+              select: {
+                id: true,
+                montoAplicado: true,
+                payment: { select: { deletedAt: true } },
+              },
               where: { payment: { deletedAt: null } },
             },
           },
@@ -10703,14 +10707,26 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
       // Future loop (no concretados, ASC): proyectamos hacia adelante desde
       // saldoActualCuentas. Tracking paralelo CON IVA para los KPIs (G.7).
+      // Para movements parcialmente pagados (con PaymentApplication activa)
+      // proyectamos sólo saldoPendiente = monto - sum(applications), porque
+      // la parte ya pagada está reflejada en el saldoActualCuentas vía Payments.
       saldoTemp = saldoActualCuentas;
       let saldoTempConIva = saldoActualCuentas;
       let saldoMinimoFuturo = saldoActualCuentas;
       let saldoMinimoFuturoSinIva = saldoActualCuentas;
       let fechaSaldoMinimoFuturo = serializeDateOnly(today);
       for (const row of noConcretadosAsc) {
-        const montoUsdSinIva = convertMovementToUsd(row, fallbackUsdToUyu);
-        const montoUsdConIva = convertMovementToUsdConIva(row, fallbackUsdToUyu);
+        const aplicado = row.paymentApplications.reduce((s, pa) => s + Number(pa.montoAplicado), 0);
+        const montoOriginal = Number(row.monto) || 0;
+        const saldoPendiente = montoOriginal - aplicado;
+        if (saldoPendiente <= 0.005) {
+          // Totalmente pagado: el Payment ya impactó el saldo, no proyectamos.
+          saldoMap.set(`MOVEMENT:${row.id}`, saldoTemp);
+          continue;
+        }
+        const ratio = montoOriginal > 0 ? saldoPendiente / montoOriginal : 0;
+        const montoUsdSinIva = convertMovementToUsd(row, fallbackUsdToUyu) * ratio;
+        const montoUsdConIva = convertMovementToUsdConIva(row, fallbackUsdToUyu) * ratio;
         if (row.tipoMovimiento === TipoMovimiento.GASTO) {
           saldoTemp -= montoUsdSinIva;
           saldoTempConIva -= montoUsdConIva;
