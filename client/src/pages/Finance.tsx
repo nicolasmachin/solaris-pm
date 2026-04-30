@@ -404,6 +404,12 @@ export function Finance() {
             Cuentas a pagar
           </Link>
           <Link
+            to="/finanzas/resultado"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors shrink-0"
+          >
+            Estado de resultado
+          </Link>
+          <Link
             to="/finanzas/movimientos?new=1"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] transition-colors shrink-0"
           >

@@ -8477,6 +8477,205 @@ export async function registerApiRoutes(app: FastifyInstance) {
       };
     });
 
+    // ─── Estado de resultado mensual (P&L) ──────────────────────────────────
+    //
+    // Estructura contable simple basada en CAJA REAL del mes:
+    //   INGRESOS BRUTOS   = INGRESOS cobrados (excl AJUSTE_CONCILIACION)
+    //   COSTOS DIRECTOS   = GASTOS PAGADOS sin Payment app + Payments del mes
+    //                       (categorías SALIDA_PROYECTO/PAGO_PROVEEDOR/COMPRA_STOCK
+    //                        + Payments siempre como PAGO_PROVEEDOR)
+    //   MARGEN BRUTO      = INGRESOS - COSTOS DIRECTOS
+    //   GASTOS OPERATIVOS = GASTOS PAGADOS sin Payment app, categorías que NO
+    //                       son directas ni AJUSTE_CONCILIACION
+    //   RESULTADO NETO    = MARGEN BRUTO - GASTOS OPERATIVOS
+    //
+    // Las cifras se devuelven en USD usando el TC del movimiento o, en su
+    // defecto, el último TC global.
+    const CATEGORIAS_DIRECTAS_PNL: CategoriaPrincipal[] = [
+      CategoriaPrincipal.PROYECTO_SALIDA,
+      CategoriaPrincipal.PAGO_PROVEEDOR,
+      CategoriaPrincipal.COMPRA_STOCK,
+    ];
+
+    type CategoriaSummary = { categoria: string; total: number; cantidadMovimientos: number };
+
+    function groupByCategoria(rows: { categoriaPrincipal: CategoriaPrincipal; montoUsd: number }[]): CategoriaSummary[] {
+      const map = new Map<string, { total: number; count: number }>();
+      for (const r of rows) {
+        const cur = map.get(r.categoriaPrincipal) ?? { total: 0, count: 0 };
+        cur.total += r.montoUsd;
+        cur.count += 1;
+        map.set(r.categoriaPrincipal, cur);
+      }
+      return Array.from(map.entries())
+        .map(([categoria, { total, count }]) => ({
+          categoria,
+          total: roundMoney(total),
+          cantidadMovimientos: count,
+        }))
+        .sort((a, b) => b.total - a.total);
+    }
+
+    async function calculateIncomeStatement(mes: number, anio: number) {
+      const fechaInicio = new Date(Date.UTC(anio, mes - 1, 1));
+      const fechaFin = new Date(Date.UTC(anio, mes, 1));
+
+      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
+      const fallback = lastRate ? (decimalToNumber(lastRate.usdToUyu) ?? 1) : 1;
+
+      // INGRESOS cobrados del mes (excluye AJUSTE_CONCILIACION).
+      const ingresos = await prisma.financeMovement.findMany({
+        where: {
+          deletedAt: null,
+          tipoMovimiento: TipoMovimiento.INGRESO,
+          cobrado: true,
+          fecha: { gte: fechaInicio, lt: fechaFin },
+          categoriaPrincipal: { not: CategoriaPrincipal.AJUSTE_CONCILIACION },
+        },
+      });
+      const ingresosRows = ingresos.map((m) => ({
+        categoriaPrincipal: m.categoriaPrincipal,
+        montoUsd: convertMovementToUsd(m, fallback),
+      }));
+      const ingresosBrutos = roundMoney(ingresosRows.reduce((s, r) => s + r.montoUsd, 0));
+
+      // GASTOS PAGADOS del mes sin Payment app (sin doble conteo) +
+      // categorías directas.
+      const gastosDirectos = await prisma.financeMovement.findMany({
+        where: {
+          deletedAt: null,
+          tipoMovimiento: TipoMovimiento.GASTO,
+          pagado: true,
+          fecha: { gte: fechaInicio, lt: fechaFin },
+          categoriaPrincipal: { in: CATEGORIAS_DIRECTAS_PNL },
+          paymentApplications: { none: { payment: { deletedAt: null } } },
+        },
+      });
+      const gastosDirectosRows = gastosDirectos.map((m) => ({
+        categoriaPrincipal: m.categoriaPrincipal,
+        montoUsd: convertMovementToUsd(m, fallback),
+      }));
+
+      // Payments del mes (siempre cuentan como costo directo / PAGO_PROVEEDOR).
+      const payments = await prisma.payment.findMany({
+        where: { deletedAt: null, fecha: { gte: fechaInicio, lt: fechaFin } },
+      });
+      const paymentsRows = payments.map((p) => {
+        const monto = decimalToNumber(p.monto) ?? 0;
+        const usd = p.moneda === Moneda.USD ? monto : (fallback > 0 ? monto / fallback : monto);
+        return { categoriaPrincipal: CategoriaPrincipal.PAGO_PROVEEDOR, montoUsd: usd };
+      });
+
+      const directosTotal = roundMoney(
+        gastosDirectosRows.reduce((s, r) => s + r.montoUsd, 0) +
+          paymentsRows.reduce((s, r) => s + r.montoUsd, 0),
+      );
+      const directosCategorias = groupByCategoria([...gastosDirectosRows, ...paymentsRows]);
+
+      // GASTOS PAGADOS del mes sin Payment app, categorías NO directas (operativos).
+      const gastosOperativos = await prisma.financeMovement.findMany({
+        where: {
+          deletedAt: null,
+          tipoMovimiento: TipoMovimiento.GASTO,
+          pagado: true,
+          fecha: { gte: fechaInicio, lt: fechaFin },
+          categoriaPrincipal: {
+            notIn: [...CATEGORIAS_DIRECTAS_PNL, CategoriaPrincipal.AJUSTE_CONCILIACION],
+          },
+          paymentApplications: { none: { payment: { deletedAt: null } } },
+        },
+      });
+      const operativosRows = gastosOperativos.map((m) => ({
+        categoriaPrincipal: m.categoriaPrincipal,
+        montoUsd: convertMovementToUsd(m, fallback),
+      }));
+      const operativosTotal = roundMoney(operativosRows.reduce((s, r) => s + r.montoUsd, 0));
+
+      const margenBruto = roundMoney(ingresosBrutos - directosTotal);
+      const resultadoNeto = roundMoney(margenBruto - operativosTotal);
+
+      const totalPagosUsd = roundMoney(paymentsRows.reduce((s, r) => s + r.montoUsd, 0));
+
+      return {
+        periodo: {
+          mes,
+          anio,
+          fechaInicio: serializeDateOnly(fechaInicio),
+          fechaFin: serializeDateOnly(new Date(fechaFin.getTime() - 24 * 60 * 60 * 1000)),
+        },
+        ingresosBrutos: {
+          total: ingresosBrutos,
+          detalleCategorias: groupByCategoria(ingresosRows),
+        },
+        costosDirectos: {
+          total: directosTotal,
+          detalleCategorias: directosCategorias,
+        },
+        margenBruto: {
+          valor: margenBruto,
+          porcentaje: ingresosBrutos > 0 ? roundMoney((margenBruto / ingresosBrutos) * 100) : 0,
+        },
+        gastosOperativos: {
+          total: operativosTotal,
+          detalleCategorias: groupByCategoria(operativosRows),
+        },
+        resultadoNeto: {
+          valor: resultadoNeto,
+          porcentaje: ingresosBrutos > 0 ? roundMoney((resultadoNeto / ingresosBrutos) * 100) : 0,
+        },
+        pagosProveedor: {
+          total: totalPagosUsd,
+          cantidad: payments.length,
+        },
+        tipoCambio: fallback,
+      };
+    }
+
+    app.get("/finance/income-statement", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const query = z.object({
+        mes: z.coerce.number().int().min(1).max(12),
+        anio: z.coerce.number().int(),
+      }).parse(request.query);
+      return calculateIncomeStatement(query.mes, query.anio);
+    });
+
+    app.get("/finance/income-statement/yearly", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const query = z.object({ anio: z.coerce.number().int() }).parse(request.query);
+      const meses: Array<{ mes: number; ingresos: number; costosDirectos: number; margenBruto: number; gastosOperativos: number; resultadoNeto: number }> = [];
+      let totalIngresos = 0;
+      let totalDirectos = 0;
+      let totalMargen = 0;
+      let totalOperativos = 0;
+      let totalResultado = 0;
+      for (let m = 1; m <= 12; m++) {
+        const r = await calculateIncomeStatement(m, query.anio);
+        meses.push({
+          mes: m,
+          ingresos: r.ingresosBrutos.total,
+          costosDirectos: r.costosDirectos.total,
+          margenBruto: r.margenBruto.valor,
+          gastosOperativos: r.gastosOperativos.total,
+          resultadoNeto: r.resultadoNeto.valor,
+        });
+        totalIngresos += r.ingresosBrutos.total;
+        totalDirectos += r.costosDirectos.total;
+        totalMargen += r.margenBruto.valor;
+        totalOperativos += r.gastosOperativos.total;
+        totalResultado += r.resultadoNeto.valor;
+      }
+      return {
+        anio: query.anio,
+        meses,
+        totales: {
+          ingresos: roundMoney(totalIngresos),
+          costosDirectos: roundMoney(totalDirectos),
+          margenBruto: roundMoney(totalMargen),
+          gastosOperativos: roundMoney(totalOperativos),
+          resultadoNeto: roundMoney(totalResultado),
+        },
+      };
+    });
+
     app.get("/accounts", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
       const query = z.object({
         activa: z.enum(["true", "false", "all"]).optional(),

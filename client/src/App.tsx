@@ -28,6 +28,7 @@ const FinanceSupplierDetail = lazy(() => import("./pages/FinanceSupplierDetail")
 const FinanceCuentas = lazy(() => import("./pages/FinanceCuentas").then((module) => ({ default: module.FinanceCuentas })));
 const FinanceCobros = lazy(() => import("./pages/FinanceCobros").then((module) => ({ default: module.FinanceCobros })));
 const FinanceCobroDetail = lazy(() => import("./pages/FinanceCobroDetail").then((module) => ({ default: module.FinanceCobroDetail })));
+const FinanceIncomeStatement = lazy(() => import("./pages/FinanceIncomeStatement").then((module) => ({ default: module.FinanceIncomeStatement })));
 const Stock = lazy(() => import("./pages/Stock").then((module) => ({ default: module.Stock })));
 const Calendar = lazy(() => import("./pages/Calendar").then((module) => ({ default: module.Calendar })));
 const MisTareas = lazy(() => import("./pages/MisTareas").then((module) => ({ default: module.MisTareas })));
@@ -220,6 +221,14 @@ export function App() {
           element={
             <PermissionRoute module="FINANZAS" action="VIEW">
               <FinanceCobroDetail />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/finanzas/resultado"
+          element={
+            <PermissionRoute module="FINANZAS" action="VIEW">
+              <FinanceIncomeStatement />
             </PermissionRoute>
           }
         />

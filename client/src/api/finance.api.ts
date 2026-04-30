@@ -595,3 +595,47 @@ export const applySaldoAFavorToMovement = (movementId: string) =>
   apiClient
     .post<ApplySaldoAFavorResponse>(`/api/finance/movements/${movementId}/apply-saldo-a-favor`)
     .then(r => r.data);
+
+// ─── Estado de resultado mensual / anual (P&L) ───────────────────────────────
+
+export interface CategoriaSummary {
+  categoria: string;
+  total: number;
+  cantidadMovimientos: number;
+}
+
+export interface IncomeStatement {
+  periodo: { mes: number; anio: number; fechaInicio: string; fechaFin: string };
+  ingresosBrutos: { total: number; detalleCategorias: CategoriaSummary[] };
+  costosDirectos: { total: number; detalleCategorias: CategoriaSummary[] };
+  margenBruto: { valor: number; porcentaje: number };
+  gastosOperativos: { total: number; detalleCategorias: CategoriaSummary[] };
+  resultadoNeto: { valor: number; porcentaje: number };
+  pagosProveedor: { total: number; cantidad: number };
+  tipoCambio: number;
+}
+
+export const getIncomeStatement = (mes: number, anio: number) =>
+  apiClient.get<IncomeStatement>('/api/finance/income-statement', { params: { mes, anio } }).then(r => r.data);
+
+export interface IncomeStatementYearly {
+  anio: number;
+  meses: Array<{
+    mes: number;
+    ingresos: number;
+    costosDirectos: number;
+    margenBruto: number;
+    gastosOperativos: number;
+    resultadoNeto: number;
+  }>;
+  totales: {
+    ingresos: number;
+    costosDirectos: number;
+    margenBruto: number;
+    gastosOperativos: number;
+    resultadoNeto: number;
+  };
+}
+
+export const getIncomeStatementYearly = (anio: number) =>
+  apiClient.get<IncomeStatementYearly>('/api/finance/income-statement/yearly', { params: { anio } }).then(r => r.data);
