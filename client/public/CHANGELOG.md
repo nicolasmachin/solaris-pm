@@ -1,5 +1,54 @@
 # Novedades
 
+## v4.8
+
+### 30 de abril de 2026
+
+#### Asistente IA con Text-to-SQL (Claude Sonnet 4.5)
+
+Nueva integración que permite a usuarios **ADMIN** consultar datos de la app en lenguaje natural. El asistente genera SQL con Claude, lo valida contra reglas de seguridad, lo ejecuta con un usuario PostgreSQL de sólo lectura, y resume el resultado en lenguaje natural.
+
+**UI**:
+- Botón flotante violeta abajo a la derecha (sólo visible para ADMIN).
+- Click → panel lateral con sugerencias iniciales y chat conversacional.
+- Cada respuesta tiene un collapsible "Ver SQL" con: SQL ejecutado, cantidad de filas, costo USD y duración.
+- Mensajes diferenciados (usuario / IA / error).
+
+**Seguridad (defensa en capas)**:
+- Sólo usuarios con `role.name = ADMIN` pueden invocar el endpoint.
+- Validador de SQL en backend rechaza: queries no-SELECT, palabras prohibidas (INSERT/UPDATE/DELETE/DROP/ALTER/etc.), tablas sensibles (`audit_logs`, `ai_queries`, `ai_rate_limits`, `file_attachments`, etc.), múltiples statements.
+- Ejecución vía usuario PG `voltia_readonly` con `GRANT SELECT` exclusivamente sobre tablas no sensibles. Doble cinturón.
+- LIMIT 500 forzado automáticamente si el SQL no tiene uno.
+
+**Rate limiting**:
+- Modelo `AIRateLimit` por usuario: default 100 consultas/día y USD 50/mes.
+- Cada `/ai/ask` registra una `AIQuery` con status (SUCCESS / SQL_INVALID / EXECUTION_ERROR / RATE_LIMIT_EXCEEDED / AI_ERROR), tokens consumidos, costo, duración y SQL generado para auditoría.
+
+**Endpoints nuevos**:
+- `GET /api/ai/status` — chequeo si está habilitado.
+- `POST /api/ai/ask` — pregunta + respuesta + SQL.
+- `GET /api/ai/history` — historial del usuario.
+- `GET /api/ai/logs` — historial global (admin).
+
+**Costos esperados**: ~USD 0,015 por consulta. Modelo: Claude Sonnet 4.5.
+
+**Configuración del server**:
+- `ANTHROPIC_API_KEY` en `.env` de la raíz del repo.
+- `DATABASE_URL_READONLY` para el pool readonly (configurado en `docker-compose.yml`).
+- Migración Prisma `20260430190912_add_ai_assistant` aplicada.
+
+#### Indicador visual: Movement pagado vía Payment
+
+En la lista de movimientos, cuando un GASTO PAGADO está totalmente cubierto por Payment(s) aplicados, el saldo USD aparece en gris itálica y el badge cambia a "Pagado vía pago" (en lugar de "Pagado"). Tooltip aclara que esa fila es informativa: el descuento real ocurrió en el Payment asociado.
+
+El detail panel del Movement ahora incluye un panel azul cuando aplica, con botón "Ver pago asociado →" que abre directamente el panel del Payment.
+
+#### Detalle de movimientos en P&L mensual
+
+En la vista mensual de `/finanzas/resultado`, cada categoría dentro de Ingresos / Costos directos / Gastos operativos ahora se puede expandir para ver la lista de movimientos individuales que la componen (fecha, descripción, proyecto/proveedor, cuenta, monto USD). Cada categoría es expandible independientemente. Click en una fila tipo Pago abre el panel lateral del Payment.
+
+---
+
 ## v4.7
 
 ### 30 de abril de 2026

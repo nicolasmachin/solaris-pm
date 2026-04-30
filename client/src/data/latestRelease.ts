@@ -23,41 +23,33 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "4.7",
+  version: "4.8",
   date: "30 de abril de 2026",
   sections: [
     {
-      title: "Estado de resultado (P&L) mensual y anual",
+      title: "Asistente IA con Text-to-SQL (Claude)",
       items: [
-        "Nueva sección /finanzas/resultado con tabs Mensual y Anual.",
-        "Mensual: estructura contable formal (Ingresos brutos → Costos directos → Margen bruto → Gastos operativos → Resultado neto), con bar chart de los 12 meses y tabla de evolución.",
-        "Cada categoría se expande para ver la lista de movimientos individuales (fecha, descripción, proyecto/proveedor, cuenta, monto USD). Click en un Pago abre el panel lateral.",
-        "Anual: planilla mes a mes con todas las categorías, sticky en primera columna y header. Click en cualquier celda lleva a la lista filtrada de movimientos.",
-        "Reglas: sólo plata real (PAGADOS/COBRADOS), excluye AJUSTE_CONCILIACION, sin doble conteo de Payments.",
+        "Botón violeta flotante abajo a la derecha (sólo visible para ADMIN).",
+        "Hacé preguntas en lenguaje natural sobre tus datos: \"¿Cuánto cobré en abril?\", \"Top 5 proveedores con más facturas pendientes\", etc.",
+        "Cada respuesta incluye el SQL ejecutado, cantidad de filas, costo USD y duración (collapsible).",
+        "Seguridad en capas: validador de SQL rechaza queries de mutación, tablas sensibles bloqueadas a nivel Postgres con usuario read-only.",
+        "Rate limit por usuario: 100 consultas/día y USD 50/mes (default), configurable.",
       ],
     },
     {
-      title: "Saldo a favor del proveedor — aplicación automática",
+      title: "Indicador visual de Movement pagado vía Payment",
       items: [
-        "Al cargar una factura A_PAGAR a un proveedor con Payments sin aplicar, el sistema ofrece aplicar ese saldo automáticamente (FIFO).",
-        "Modal con detalle de Payments involucrados; aplicación atómica que cierra (parcial o totalmente) la factura sin mover saldo de cuentas.",
-        "Botón \"Aplicar saldo a favor\" también en el detail panel de cada factura.",
+        "Cuando un GASTO PAGADO tiene Payment aplicado que lo cubre totalmente, el saldo USD aparece en gris itálica y el badge dice \"Pagado vía pago\".",
+        "Tooltip aclara que la fila es informativa (el descuento real ocurrió en el Payment).",
+        "Detail panel del Movement: panel azul + botón \"Ver pago asociado →\" abre el Payment directamente.",
       ],
     },
     {
-      title: "Lista de movimientos unificada",
+      title: "Detalle de movimientos en P&L mensual",
       items: [
-        "/finanzas/movimientos muestra Movements y Payments mezclados cronológicamente, con badge \"Pago\" para diferenciarlos.",
-        "Click en una fila de Pago abre el panel del Payment con sus aplicaciones.",
-        "Sin doble conteo: si un GASTO tiene Payment aplicado, no se descuenta dos veces.",
-      ],
-    },
-    {
-      title: "Cobros por proyecto + fix doble descuento parcial",
-      items: [
-        "Nueva sección /finanzas/cobros: lista de proyectos con presupuesto vs cobrado y estado de cobranza por color.",
-        "Detalle por proyecto con KPIs por moneda y modal \"Registrar cobro\" pre-cargado.",
-        "Fix: facturas parcialmente pagadas ahora proyectan sólo saldoPendiente (no monto total). Detail panel con desglose Factura / Pagado / Pendiente.",
+        "En /finanzas/resultado tab Mensual, cada categoría es expandible para ver los movimientos individuales que la componen.",
+        "Cada categoría tiene estado independiente — expandir una no afecta a las otras.",
+        "Click en una fila tipo Pago abre el panel lateral del Payment.",
       ],
     },
   ],
@@ -71,6 +63,14 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "4.7",
+    shortDate: "30 abr",
+    highlights: [
+      "Estado de resultado (P&L) mensual y anual con planilla mes a mes y bar chart.",
+      "Detalle de movimientos por categoría expandible. Click en celda anual lleva a movimientos filtrados.",
+    ],
+  },
   {
     version: "4.6",
     shortDate: "30 abr",

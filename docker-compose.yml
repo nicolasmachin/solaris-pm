@@ -30,7 +30,7 @@ services:
       DATABASE_URL: postgresql://voltia:voltia_dev_password@postgres:5432/voltia_pm
       # Usuario solo-lectura para el AI assistant (Text-to-SQL).
       # Tablas sensibles (audit_logs, ai_queries, etc.) están REVOKE-eadas.
-      DATABASE_URL_READONLY: postgresql://voltia_readonly:cd5114edca9edf05f0d82c0b6c306b4e@postgres:5432/voltia_pm
+      DATABASE_URL_READONLY: postgresql://voltia_readonly:voltia_readonly_2026@postgres:5432/voltia_pm
       # API key del modelo Claude (Anthropic). Se lee del .env del host
       # (raíz del repo) — agregar `ANTHROPIC_API_KEY=sk-ant-...` ahí.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
