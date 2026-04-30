@@ -4,12 +4,14 @@ import type {
   FinanceCashflow,
   FinanceComprobante,
   FinanceDashboard,
+  FinanceListItem,
   FinanceMovement,
   FinanceMovementStatus,
   FinanceResults,
   MetodoPago,
   Moneda,
   MovimientoFormData,
+  PaymentRow,
   PrevistoPendiente,
   Subcategoria,
   Supplier,
@@ -94,10 +96,13 @@ export interface MovimientosQuery {
   categoria?: string;
   status?: FinanceMovementStatus;
   projectId?: string;
+  supplierId?: string;
+  accountId?: string;
+  rowType?: 'MOVEMENT' | 'PAYMENT' | 'ALL';
   search?: string;
 }
 
-export interface MovementsListResponse extends PaginatedResponse<FinanceMovement> {
+export interface MovementsListResponse extends PaginatedResponse<FinanceListItem> {
   saldoFinalUSD: number;
   saldoActualCuentas: number;
   saldoFinalProyectado: number;
@@ -107,6 +112,14 @@ export interface MovementsListResponse extends PaginatedResponse<FinanceMovement
   fechaSaldoMinimoFuturo: string | null;
   sinCuentasActivas: boolean;
   usaFallbackTipoCambio: boolean;
+}
+
+/** Helpers para distinguir el tipo de fila de la lista unificada. */
+export function isPaymentRow(item: FinanceListItem): item is PaymentRow {
+  return item._type === 'PAYMENT';
+}
+export function isMovementRow(item: FinanceListItem): item is FinanceMovement {
+  return item._type !== 'PAYMENT';
 }
 
 export const getMovements = (params: MovimientosQuery) =>

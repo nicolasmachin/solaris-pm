@@ -93,9 +93,11 @@ export function FinanceAPagar() {
 
   const isLoading = queryComprometidos.isLoading || queryAPagar.isLoading || queryParcial.isLoading;
   const all: FinanceMovement[] = useMemo(() => {
-    const a = queryComprometidos.data?.data ?? [];
-    const b = queryAPagar.data?.data ?? [];
-    const c = queryParcial.data?.data ?? [];
+    // El backend filtra por status (A_PAGAR / PARCIALMENTE_PAGADO / COMPROMETIDO)
+    // que excluye Payments, pero igual narrow para que TS deduzca el tipo concreto.
+    const a = (queryComprometidos.data?.data ?? []).filter((m): m is FinanceMovement => m._type !== 'PAYMENT');
+    const b = (queryAPagar.data?.data ?? []).filter((m): m is FinanceMovement => m._type !== 'PAYMENT');
+    const c = (queryParcial.data?.data ?? []).filter((m): m is FinanceMovement => m._type !== 'PAYMENT');
     return [...a, ...b, ...c];
   }, [queryComprometidos.data, queryAPagar.data, queryParcial.data]);
 

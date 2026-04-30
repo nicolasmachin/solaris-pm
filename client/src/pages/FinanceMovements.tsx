@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { Plus, X, ChevronLeft, ChevronRight, ArrowRight, AlertTriangle, FileText, DollarSign, Trash2, Info } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
-import { getMovements, getMovement, createMovement, patchMovement, deleteMovement, transitionMovement, cancelMovement, getExchangeRate, getPendingInvoicesBySupplier } from '../api/finance.api';
+import { getMovements, getMovement, createMovement, patchMovement, deleteMovement, transitionMovement, cancelMovement, getExchangeRate, getPendingInvoicesBySupplier, isPaymentRow, isMovementRow } from '../api/finance.api';
 import { apiClient } from '../api/axios';
 import { fmtCurrency, fmtDate, currentMonthYear, MONTH_NAMES } from '../lib/finance';
 import type {
@@ -22,10 +22,13 @@ import {
   CATEGORIAS_INGRESO,
   CATEGORIAS_POR_TIPO,
   ESTADO_APROBACION_LABEL,
+  METODO_PAGO_LABEL,
   STATUS_COLOR,
   STATUS_LABEL,
   TIPO_MOV_LABEL,
 } from '../types/finance.types';
+import type { PaymentRow as PaymentRowType } from '../types/finance.types';
+import { PaymentDetailPanel } from '../components/finance/PaymentDetailPanel';
 import { CleanupPrevistosModal } from '../components/finance/CleanupPrevistosModal';
 import { InvoiceItemsDetail } from '../components/finance/InvoiceItemsDetail';
 import { NewPaymentForSupplierModal } from '../components/finance/NewPaymentForSupplierModal';
@@ -792,6 +795,7 @@ export function FinanceMovements() {
   const [newModal, setNewModal] = useState(false);
   const [editMov, setEditMov] = useState<FinanceMovement | null>(null);
   const [detailMov, setDetailMov] = useState<FinanceMovement | null>(null);
+  const [detailPaymentId, setDetailPaymentId] = useState<string | null>(null);
   const [desgloseMovId, setDesgloseMovId] = useState<string | null>(null);
   const [pendingFilter, setPendingFilter] = useState(false);
   const [payForMov, setPayForMov] = useState<FinanceMovement | null>(null);
@@ -1045,24 +1049,36 @@ export function FinanceMovements() {
         {isLoading ? (
           <div className="flex items-center justify-center py-12"><Spinner /></div>
         ) : (() => {
+          // pendingFilter sólo aplica a MOVEMENTs (Payments no tienen desglose).
           const filteredRows = pendingFilter
-            ? (data?.data ?? []).filter(m =>
-                (m.status === 'A_PAGAR' || m.status === 'PAGADO')
-                && !m.hasItemDetail
-                && !m.noTieneMateriales,
+            ? (data?.data ?? []).filter(item =>
+                isMovementRow(item)
+                && (item.status === 'A_PAGAR' || item.status === 'PAGADO')
+                && !item.hasItemDetail
+                && !item.noTieneMateriales,
               )
             : (data?.data ?? []);
-          const rowItems: Array<{ kind: 'today-marker' } | { kind: 'movement'; mov: FinanceMovement }> = [];
+          const rowItems: Array<
+            | { kind: 'today-marker' }
+            | { kind: 'movement'; mov: FinanceMovement }
+            | { kind: 'payment'; pay: PaymentRowType }
+          > = [];
           let insertedTodayMarker = false;
           let seenFuture = false;
-          for (const mov of filteredRows) {
-            const future = isFutureMovement(mov.fechaEfectiva, todayIso);
+          for (const item of filteredRows) {
+            // PAYMENTs siempre son past (fecha real); MOVEMENTs pueden ser futuros.
+            const fechaEf = item.fechaEfectiva;
+            const future = isPaymentRow(item) ? false : isFutureMovement(fechaEf, todayIso);
             if (seenFuture && !future && !insertedTodayMarker) {
               rowItems.push({ kind: 'today-marker' });
               insertedTodayMarker = true;
             }
             if (future) seenFuture = true;
-            rowItems.push({ kind: 'movement', mov });
+            if (isPaymentRow(item)) {
+              rowItems.push({ kind: 'payment', pay: item });
+            } else {
+              rowItems.push({ kind: 'movement', mov: item });
+            }
           }
           if (filteredRows.length === 0) {
             return (
@@ -1089,6 +1105,48 @@ export function FinanceMovements() {
                         <td colSpan={9} className="px-4 py-2 text-center text-xs font-mono uppercase tracking-[0.2em] text-blue-300">
                           HOY ({fmtDate(todayIso)})
                         </td>
+                      </tr>
+                    );
+                  }
+                  if (item.kind === 'payment') {
+                    const pay = item.pay;
+                    const appCount = pay.applications.length;
+                    return (
+                      <tr key={`pay-${pay.id}`}
+                        onClick={() => setDetailPaymentId(pay.id)}
+                        className="cursor-pointer hover:bg-[var(--color-bg-card-hover)] transition-colors"
+                      >
+                        <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-muted)]">{fmtDate(pay.fecha)}</td>
+                        <td className="px-4 py-3 max-w-xs text-[var(--color-text-primary)]">
+                          <div className="flex items-center gap-2">
+                            <span className="shrink-0 inline-flex items-center text-[10px] font-mono px-1.5 py-0.5 rounded uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30" title="Pago a proveedor">
+                              Pago
+                            </span>
+                            <span className="truncate">{pay.descripcion}</span>
+                          </div>
+                          {appCount > 0 && (
+                            <div className="text-[10px] text-[var(--color-text-muted)] mt-0.5 ml-12">
+                              Aplicado a {appCount} factura{appCount === 1 ? '' : 's'} · {METODO_PAGO_LABEL[pay.metodo]}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-[var(--color-text-muted)]">—</td>
+                        <td className="px-4 py-3 text-[var(--color-text-muted)] truncate max-w-[180px]">—</td>
+                        <td className="px-4 py-3 text-[var(--color-text-muted)]">—</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-right font-semibold tabular-nums text-red-400">
+                          -{fmtCurrency(pay.monto, pay.moneda)}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-right tabular-nums text-[var(--color-text-primary)] font-semibold"
+                          title={`Liquidez después de aplicar este pago${pay.saldoAcumuladoUSD < 0 ? ' · Insuficiente' : ''}`}
+                        >
+                          {fmtCurrency(pay.saldoAcumuladoUSD, 'USD')}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded uppercase bg-[var(--color-state-done-bg)] text-[var(--color-state-done-text)]">
+                            Pagado
+                          </span>
+                        </td>
+                        <td className="px-4 py-3" />
                       </tr>
                     );
                   }
@@ -1332,6 +1390,14 @@ export function FinanceMovements() {
           paymentId={createdPaymentId}
           preselectMovementId={preselectMovementForPay ?? undefined}
           onClose={() => { setCreatedPaymentId(null); setPreselectMovementForPay(null); }}
+        />
+      )}
+
+      {/* Payment detail panel: cuando se hace click en una fila tipo PAGO */}
+      {detailPaymentId && (
+        <PaymentDetailPanel
+          paymentId={detailPaymentId}
+          onClose={() => setDetailPaymentId(null)}
         />
       )}
 

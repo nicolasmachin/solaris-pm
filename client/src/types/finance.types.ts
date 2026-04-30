@@ -132,6 +132,12 @@ export interface Subcategoria {
 }
 
 export interface FinanceMovement {
+  /** Discriminador de la lista unificada. En FinanceMovement siempre es
+   *  'MOVEMENT' o undefined (para callers legacy). */
+  _type?: 'MOVEMENT';
+  /** True si el movement tiene PaymentApplication activa: el saldo NO se
+   *  descuenta vía esta fila (lo hace el Payment correspondiente). */
+  tieneApp?: boolean;
   id: string;
   fecha: string;
   anio: number;
@@ -183,6 +189,38 @@ export interface FinanceMovement {
   observaciones: string | null;
   createdAt: string;
 }
+
+/** Fila tipo PAYMENT en la lista unificada de /finance/movements. Es un Payment
+ *  serializado para coexistir con FinanceMovement en la misma lista. */
+export interface PaymentRow {
+  _type: 'PAYMENT';
+  id: string;
+  fecha: string;
+  fechaEfectiva: string;
+  descripcion: string;
+  monto: number;
+  moneda: Moneda;
+  metodo: MetodoPago;
+  referencia: string | null;
+  notas: string | null;
+  supplierId: string;
+  supplier: { id: string; nombre: string } | null;
+  accountId: string | null;
+  account: { id: string; nombre: string; moneda: Moneda } | null;
+  applications: Array<{
+    id: string;
+    movementId: string;
+    montoAplicado: number;
+    movement: { id: string; descripcion: string; monto: number; moneda: Moneda } | null;
+  }>;
+  saldoAcumuladoUSD: number;
+  saldoEsReal: true;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Item unificado de la lista. Backend serializa con _type para discriminar. */
+export type FinanceListItem = FinanceMovement | PaymentRow;
 
 export interface PrevistoPendiente {
   id: string;

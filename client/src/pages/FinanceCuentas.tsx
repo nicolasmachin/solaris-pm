@@ -9,6 +9,7 @@ import { getPayments } from '../api/payments.api';
 import { fmtCurrency, fmtDate } from '../lib/finance';
 import type { Account } from '../types/accounts.types';
 import { ACCOUNT_TYPE_LABEL } from '../types/accounts.types';
+import type { FinanceMovement } from '../types/finance.types';
 import { ReconcileAccountModal } from '../components/finance/ReconcileAccountModal';
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
@@ -209,14 +210,16 @@ function AccountDrawer({ accountId, onClose }: { accountId: string; onClose: () 
     queryFn: () => getAccountReconciliations(accountId),
   });
 
-  // Filtrar localmente — el endpoint actual no filtra por accountId
+  // Filtrar localmente — el endpoint puede devolver Payments también, los
+  // sacamos con narrowing y luego filtramos por accountId.
   const movs = useMemo(() => {
     if (!movements?.data) return [];
-    return movements.data.filter(m => {
-      if ((m as unknown as { accountId?: string }).accountId !== accountId) return false;
-      // Sólo los que afectan saldo
-      return (m.tipoMovimiento === 'GASTO' && m.pagado) || (m.tipoMovimiento === 'INGRESO' && m.cobrado);
-    });
+    return movements.data
+      .filter((m): m is FinanceMovement => m._type !== 'PAYMENT')
+      .filter(m => {
+        if (m.accountId !== accountId) return false;
+        return (m.tipoMovimiento === 'GASTO' && m.pagado) || (m.tipoMovimiento === 'INGRESO' && m.cobrado);
+      });
   }, [movements, accountId]);
 
   const pays = useMemo(() => payments.filter(p => p.accountId === accountId), [payments, accountId]);

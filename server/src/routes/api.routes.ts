@@ -10490,13 +10490,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
         categoria: z.nativeEnum(CategoriaPrincipal).optional(),
         status: z.nativeEnum(FinanceMovementStatus).optional(),
         projectId: z.string().optional(),
+        supplierId: z.string().optional(),
+        accountId: z.string().optional(),
+        rowType: z.enum(["MOVEMENT", "PAYMENT", "ALL"]).optional(),
         page: z.coerce.number().int().positive().optional(),
         limit: z.coerce.number().int().positive().max(100).optional(),
       }).parse(request.query);
 
       const take = query.limit ?? 20;
-      const skip = ((query.page ?? 1) - 1) * take;
 
+      // Filtros que aplican a MOVEMENT.
       const where: Prisma.FinanceMovementWhereInput = {
         deletedAt: null,
         ...(query.mes ? { mes: query.mes } : {}),
@@ -10505,11 +10508,40 @@ export async function registerApiRoutes(app: FastifyInstance) {
         ...(query.categoria ? { categoriaPrincipal: query.categoria } : {}),
         ...(query.status ? { status: query.status } : {}),
         ...(query.projectId ? { projectId: query.projectId } : {}),
+        ...(query.supplierId ? { supplierId: query.supplierId } : {}),
+        ...(query.accountId ? { accountId: query.accountId } : {}),
       };
 
-      const [movements, total, balanceRows, lastRate] = await prisma.$transaction([
+      // Decidimos si incluir Payments en la respuesta. Excluimos cuando hay
+      // filtros movement-only (categoria/status/projectId) o cuando se filtra
+      // por un tipo que no es GASTO (Payments siempre representan egresos).
+      const includePayments = query.rowType !== "MOVEMENT"
+        && !query.categoria
+        && !query.status
+        && !query.projectId
+        && (query.tipo === undefined || query.tipo === TipoMovimiento.GASTO);
+      const onlyPayments = query.rowType === "PAYMENT";
+
+      // Para Payments construimos un where equivalente.
+      const paymentWhere: Prisma.PaymentWhereInput = {
+        deletedAt: null,
+        ...(query.supplierId ? { supplierId: query.supplierId } : {}),
+        ...(query.accountId ? { accountId: query.accountId } : {}),
+      };
+      // mes/anio: convertimos a rango de fechas
+      if (query.mes && query.anio) {
+        const start = new Date(Date.UTC(query.anio, query.mes - 1, 1));
+        const end = new Date(Date.UTC(query.anio, query.mes, 1));
+        paymentWhere.fecha = { gte: start, lt: end };
+      } else if (query.anio) {
+        const start = new Date(Date.UTC(query.anio, 0, 1));
+        const end = new Date(Date.UTC(query.anio + 1, 0, 1));
+        paymentWhere.fecha = { gte: start, lt: end };
+      }
+
+      const [allMovements, balanceRows, allPayments, lastRate] = await prisma.$transaction([
         prisma.financeMovement.findMany({
-          where,
+          where: onlyPayments ? { id: "__never__" } : where,
           include: {
             project: { select: { id: true, clientName: true, code: true } },
             supplier: { select: { id: true, nombre: true } },
@@ -10520,15 +10552,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
               where: { payment: { deletedAt: null } },
             },
           },
-          // createdAt como tie-breaker: cuando hay varios movimientos en la
-          // misma fecha, el orden visual debe matchear el orden cronológico
-          // del walk del saldo (también createdAt DESC) para que la columna
-          // saldoUSD sea legible top-to-bottom.
           orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
-          skip,
-          take,
         }),
-        prisma.financeMovement.count({ where }),
         prisma.financeMovement.findMany({
           where: { deletedAt: null },
           select: {
@@ -10544,15 +10569,46 @@ export async function registerApiRoutes(app: FastifyInstance) {
             moneda: true,
             ivaTasa: true,
             tipoCambio: true,
+            paymentApplications: {
+              select: { id: true, payment: { select: { deletedAt: true } } },
+              where: { payment: { deletedAt: null } },
+            },
           },
         }),
+        includePayments
+          ? prisma.payment.findMany({
+              where: paymentWhere,
+              include: {
+                supplier: { select: { id: true, nombre: true } },
+                account: { select: { id: true, nombre: true, moneda: true } },
+                applications: {
+                  include: { movement: { select: { id: true, descripcion: true, monto: true, moneda: true } } },
+                },
+              },
+              orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
+            })
+          : prisma.payment.findMany({ where: { id: "__never__" } }),
         prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } }),
       ]);
 
+      // Lookup: id de movement → tiene PaymentApplication activa.
+      // Se usa para:
+      //   1. En el saldo walk: el GASTO con app NO mueve saldoTemp (lo hace el Payment).
+      //   2. En el render: saldoPendiente del GASTO.
+      const movHasActiveApp = new Map<string, boolean>();
+      for (const row of balanceRows) {
+        movHasActiveApp.set(row.id, row.paymentApplications.length > 0);
+      }
+
+      // saldoMap es por clave compuesta `${type}:${id}` para evitar colisiones
+      // (movements y payments usan cuid, no deberían colisionar pero por las dudas).
       const saldoMap = new Map<string, number>();
       const fechaEfectivaMap = new Map<string, string>();
       for (const row of balanceRows) {
-        fechaEfectivaMap.set(row.id, getMovementEffectiveDate(row).toISOString().slice(0, 10));
+        fechaEfectivaMap.set(`MOVEMENT:${row.id}`, getMovementEffectiveDate(row).toISOString().slice(0, 10));
+      }
+      for (const p of allPayments) {
+        fechaEfectivaMap.set(`PAYMENT:${p.id}`, p.fecha.toISOString().slice(0, 10));
       }
 
       const parsedRate = lastRate ? decimalToNumber(lastRate.usdToUyu) : null;
@@ -10577,17 +10633,37 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
       const today = todayUtc();
 
-      // Split por concretado, NO por fecha. Regla: saldo de cuentas = suma
-      // cronológica de todos los PAGADOS/COBRADOS hasta el último inclusive.
-      // El último concretado en orden cronológico debe tener saldoUSD == saldoActualCuentas.
-      // Los no-concretados proyectan hacia adelante desde ahí.
-      const concretadosDesc = balanceRows
-        .filter((row) => isMovementConcreted(row))
-        .sort((a, b) => {
-          const timeDiff = getMovementEffectiveDate(b).getTime() - getMovementEffectiveDate(a).getTime();
-          if (timeDiff !== 0) return timeDiff;
-          return b.createdAt.getTime() - a.createdAt.getTime();
-        });
+      // Past set (afectó el flujo): MOVEMENT concretados (incl. los que tienen
+      // Payment app — informativos, no mueven saldo) + ALL Payments.
+      // Sort DESC por fechaEfectiva, createdAt.
+      type PastItem = (
+        | { kind: "MOVEMENT"; row: typeof balanceRows[number]; fechaEfectiva: Date }
+        | { kind: "PAYMENT"; row: typeof allPayments[number]; fechaEfectiva: Date }
+      );
+      const pastItems: PastItem[] = [];
+      for (const row of balanceRows) {
+        if (isMovementConcreted(row)) {
+          pastItems.push({ kind: "MOVEMENT", row, fechaEfectiva: getMovementEffectiveDate(row) });
+        }
+      }
+      for (const p of allPayments) {
+        pastItems.push({ kind: "PAYMENT", row: p, fechaEfectiva: p.fecha });
+      }
+      pastItems.sort((a, b) => {
+        const dt = b.fechaEfectiva.getTime() - a.fechaEfectiva.getTime();
+        if (dt !== 0) return dt;
+        // Tie-breaker 1: createdAt DESC
+        const aCreated = a.row.createdAt.getTime();
+        const bCreated = b.row.createdAt.getTime();
+        if (aCreated !== bCreated) return bCreated - aCreated;
+        // Tie-breaker 2: MOVEMENT antes que PAYMENT (si createdAt empata) para
+        // que en pares Auto-Payment ambos muestren el saldo "después del pago"
+        // (el movement no mueve saldo, el payment sí, así que el movement
+        // primero permite que ambos vean el mismo saldo).
+        if (a.kind !== b.kind) return a.kind === "MOVEMENT" ? -1 : 1;
+        return 0;
+      });
+
       const noConcretadosAsc = balanceRows
         .filter((row) => !isMovementConcreted(row))
         .sort((a, b) => {
@@ -10596,17 +10672,33 @@ export async function registerApiRoutes(app: FastifyInstance) {
           return a.createdAt.getTime() - b.createdAt.getTime();
         });
 
-      // Past loop (concretados, DESC): el primero (más reciente) tiene saldo =
-      // saldoActualCuentas. Para los anteriores, revertimos cada efecto.
-      // Usamos SIN IVA (monto crudo) para que coincida con computeAccountBalance.
+      // Past loop unificado: walk DESC, set saldoMap, reverse efecto sólo para
+      // items que afectan saldo (MOVEMENT GASTO/INGRESO sin app + PAYMENTs).
       let saldoTemp = saldoActualCuentas;
-      for (const row of concretadosDesc) {
-        saldoMap.set(row.id, roundMoney(saldoTemp));
-        const montoUsdSinIva = convertMovementToUsd(row, fallbackUsdToUyu);
-        if (row.tipoMovimiento === TipoMovimiento.GASTO) saldoTemp += montoUsdSinIva;
-        else if (row.tipoMovimiento === TipoMovimiento.INGRESO) saldoTemp -= montoUsdSinIva;
-        // AJUSTE no afecta saldo (mismo criterio que computeAccountBalance).
-        saldoTemp = roundMoney(saldoTemp);
+      for (const item of pastItems) {
+        if (item.kind === "MOVEMENT") {
+          const row = item.row;
+          saldoMap.set(`MOVEMENT:${row.id}`, roundMoney(saldoTemp));
+          const tieneApp = movHasActiveApp.get(row.id) ?? false;
+          // Si tiene Payment activo, el saldo lo mueve el Payment. El movement
+          // queda informativo (mismo saldo que el siguiente Payment).
+          if (tieneApp && row.tipoMovimiento === TipoMovimiento.GASTO) continue;
+          const montoUsdSinIva = convertMovementToUsd(row, fallbackUsdToUyu);
+          if (row.tipoMovimiento === TipoMovimiento.GASTO) saldoTemp += montoUsdSinIva;
+          else if (row.tipoMovimiento === TipoMovimiento.INGRESO) saldoTemp -= montoUsdSinIva;
+          // AJUSTE no mueve saldo (criterio de computeAccountBalance).
+          saldoTemp = roundMoney(saldoTemp);
+        } else {
+          // PAYMENT
+          const p = item.row;
+          saldoMap.set(`PAYMENT:${p.id}`, roundMoney(saldoTemp));
+          const monto = decimalToNumber(p.monto) ?? 0;
+          const montoUsd = p.moneda === Moneda.USD
+            ? monto
+            : (fallbackUsdToUyu > 0 ? monto / fallbackUsdToUyu : monto);
+          saldoTemp += montoUsd; // reverse: el Payment fue una salida
+          saldoTemp = roundMoney(saldoTemp);
+        }
       }
 
       // Future loop (no concretados, ASC): proyectamos hacia adelante desde
@@ -10628,27 +10720,25 @@ export async function registerApiRoutes(app: FastifyInstance) {
         }
         saldoTemp = roundMoney(saldoTemp);
         saldoTempConIva = roundMoney(saldoTempConIva);
-        saldoMap.set(row.id, saldoTemp);
+        saldoMap.set(`MOVEMENT:${row.id}`, saldoTemp);
         if (saldoTempConIva < saldoMinimoFuturo) {
           saldoMinimoFuturo = saldoTempConIva;
           saldoMinimoFuturoSinIva = saldoTemp;
-          fechaSaldoMinimoFuturo = fechaEfectivaMap.get(row.id) ?? fechaSaldoMinimoFuturo;
+          fechaSaldoMinimoFuturo = fechaEfectivaMap.get(`MOVEMENT:${row.id}`) ?? fechaSaldoMinimoFuturo;
         }
       }
       const saldoFinalProyectado = roundMoney(saldoTempConIva);
       const saldoFinalProyectadoSinIva = roundMoney(saldoTemp);
 
-      // Coherencia: el último concretado en orden cronológico debe tener
-      // saldoUSD == saldoActualCuentas. Si no, hay un bug en algún otro lado.
-      if (concretadosDesc.length > 0) {
-        const ultimoConcretadoSaldo = saldoMap.get(concretadosDesc[0].id);
-        if (
-          ultimoConcretadoSaldo !== undefined &&
-          Math.abs(ultimoConcretadoSaldo - saldoActualCuentas) > 0.01
-        ) {
+      // Coherencia: el primer item del past (más reciente) debe tener saldoUSD == saldoActualCuentas.
+      if (pastItems.length > 0) {
+        const first = pastItems[0];
+        const key = first.kind === "MOVEMENT" ? `MOVEMENT:${first.row.id}` : `PAYMENT:${first.row.id}`;
+        const ultimoSaldo = saldoMap.get(key);
+        if (ultimoSaldo !== undefined && Math.abs(ultimoSaldo - saldoActualCuentas) > 0.01) {
           app.log.warn(
-            { ultimoConcretadoSaldo, saldoActualCuentas, movementId: concretadosDesc[0].id },
-            "Incoherencia: saldo del último concretado no coincide con saldoActualCuentas",
+            { ultimoSaldo, saldoActualCuentas, key },
+            "Incoherencia: saldo del último item past no coincide con saldoActualCuentas",
           );
         }
       }
@@ -10657,29 +10747,37 @@ export async function registerApiRoutes(app: FastifyInstance) {
         && (activeAccounts.some((account) => account.moneda === Moneda.UYU)
           || balanceRows.some((row) => row.moneda === Moneda.UYU));
 
-      return {
-        data: movements.map((m) => {
-          const monto = decimalToNumber(m.monto) ?? 0;
-          // Calculamos saldoPendiente sólo para gastos. Para ingresos/ajustes,
-          // saldoPendiente = monto (no aplica el flujo de pagos).
-          const montoPagado = m.tipoMovimiento === TipoMovimiento.GASTO
-            ? Math.round(m.paymentApplications.reduce((acc, a) => acc + Number(a.montoAplicado), 0) * 100) / 100
-            : 0;
-          const saldoPendiente = m.tipoMovimiento === TipoMovimiento.GASTO
-            ? Math.round((monto - montoPagado) * 100) / 100
-            : monto;
-          // Excluir paymentApplications del payload (sólo lo necesitábamos para el cálculo)
-          const { paymentApplications: _pa, ...rest } = m;
-          void _pa;
-          const real = isMovementConcreted(m);
-          return {
+      // ─── Construcción de items unificados ───────────────────────────────────
+      type UnifiedItem = { fechaEfectiva: Date; createdAt: Date; isMovement: boolean; data: Record<string, unknown> };
+      const unifiedItems: UnifiedItem[] = [];
+
+      // Movements
+      for (const m of allMovements) {
+        const monto = decimalToNumber(m.monto) ?? 0;
+        const montoPagado = m.tipoMovimiento === TipoMovimiento.GASTO
+          ? Math.round(m.paymentApplications.reduce((acc, a) => acc + Number(a.montoAplicado), 0) * 100) / 100
+          : 0;
+        const saldoPendiente = m.tipoMovimiento === TipoMovimiento.GASTO
+          ? Math.round((monto - montoPagado) * 100) / 100
+          : monto;
+        const tieneApp = movHasActiveApp.get(m.id) ?? false;
+        const real = isMovementConcreted(m);
+        const { paymentApplications: _pa, ...rest } = m;
+        void _pa;
+        unifiedItems.push({
+          fechaEfectiva: getMovementEffectiveDate(m),
+          createdAt: m.createdAt,
+          isMovement: true,
+          data: {
+            _type: "MOVEMENT",
             ...rest,
             monto,
             montoPagado,
             saldoPendiente,
-            saldoAcumuladoUSD: saldoMap.get(m.id) ?? 0,
+            tieneApp,
+            saldoAcumuladoUSD: saldoMap.get(`MOVEMENT:${m.id}`) ?? 0,
             saldoEsReal: real,
-            fechaEfectiva: fechaEfectivaMap.get(m.id) ?? serializeDateOnly(m.fecha),
+            fechaEfectiva: fechaEfectivaMap.get(`MOVEMENT:${m.id}`) ?? serializeDateOnly(m.fecha),
             tipoCambio: m.tipoCambio ? decimalToNumber(m.tipoCambio) : null,
             quantity: m.quantity ? decimalToNumber(m.quantity) : null,
             unitPrice: m.unitPrice ? decimalToNumber(m.unitPrice) : null,
@@ -10688,10 +10786,73 @@ export async function registerApiRoutes(app: FastifyInstance) {
             dueDate: m.dueDate ? serializeDateOnly(m.dueDate) : null,
             createdAt: serializeDate(m.createdAt),
             updatedAt: serializeDate(m.updatedAt),
-          };
-        }),
+          },
+        });
+      }
+
+      // Payments
+      for (const p of allPayments) {
+        const monto = decimalToNumber(p.monto) ?? 0;
+        unifiedItems.push({
+          fechaEfectiva: p.fecha,
+          createdAt: p.createdAt,
+          isMovement: false,
+          data: {
+            _type: "PAYMENT",
+            id: p.id,
+            fecha: serializeDateOnly(p.fecha),
+            fechaEfectiva: serializeDateOnly(p.fecha),
+            descripcion: `Pago a ${p.supplier?.nombre ?? "proveedor"}${p.referencia ? ` · ${p.referencia}` : ""}`,
+            monto,
+            moneda: p.moneda,
+            metodo: p.metodo,
+            referencia: p.referencia,
+            notas: p.notas,
+            supplierId: p.supplierId,
+            supplier: p.supplier,
+            accountId: p.accountId,
+            account: p.account,
+            applications: p.applications.map((a) => ({
+              id: a.id,
+              movementId: a.movementId,
+              montoAplicado: Number(a.montoAplicado),
+              movement: a.movement
+                ? {
+                    id: a.movement.id,
+                    descripcion: a.movement.descripcion,
+                    monto: Number(a.movement.monto),
+                    moneda: a.movement.moneda,
+                  }
+                : null,
+            })),
+            saldoAcumuladoUSD: saldoMap.get(`PAYMENT:${p.id}`) ?? 0,
+            saldoEsReal: true,
+            createdAt: serializeDate(p.createdAt),
+            updatedAt: serializeDate(p.updatedAt),
+          },
+        });
+      }
+
+      // Sort DESC por fecha efectiva, createdAt; tie-breaker MOVEMENT primero
+      // (ver comentario en pastItems sort).
+      unifiedItems.sort((a, b) => {
+        const dt = b.fechaEfectiva.getTime() - a.fechaEfectiva.getTime();
+        if (dt !== 0) return dt;
+        const dtc = b.createdAt.getTime() - a.createdAt.getTime();
+        if (dtc !== 0) return dtc;
+        if (a.isMovement !== b.isMovement) return a.isMovement ? -1 : 1;
+        return 0;
+      });
+
+      const total = unifiedItems.length;
+      const page = query.page ?? 1;
+      const startIdx = (page - 1) * take;
+      const pageData = unifiedItems.slice(startIdx, startIdx + take).map((it) => it.data);
+
+      return {
+        data: pageData,
         total,
-        page: query.page ?? 1,
+        page,
         limit: take,
         totalPages: Math.ceil(total / take),
         saldoActualCuentas,

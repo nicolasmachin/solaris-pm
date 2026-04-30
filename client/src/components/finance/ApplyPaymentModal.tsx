@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { X, AlertTriangle } from 'lucide-react';
 import { applyPayment, getPayment } from '../../api/payments.api';
-import { getMovements } from '../../api/finance.api';
+import { getMovements, isMovementRow } from '../../api/finance.api';
 import { fmtCurrency, fmtDate } from '../../lib/finance';
 import type { FinanceMovement } from '../../types/finance.types';
 
@@ -43,7 +43,7 @@ export function ApplyPaymentModal({ paymentId, onClose, preselectMovementId }: P
   // Facturas elegibles: gasto, mismo proveedor, misma moneda, status A_PAGAR/COMPROMETIDO/PARCIALMENTE_PAGADO
   const elegibles = useMemo(() => {
     if (!payment || !facturas) return [];
-    const all = facturas.data.filter(m =>
+    const all = facturas.data.filter(isMovementRow).filter(m =>
       m.tipoMovimiento === 'GASTO'
       && m.supplierId === payment.supplierId
       && m.moneda === payment.moneda
