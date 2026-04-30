@@ -12704,6 +12704,158 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return serializePayment(refreshed!, balance ?? undefined);
     });
 
+    // ─── Saldo a favor del proveedor (Payments con saldo sin aplicar) ────────
+    //
+    // Cuando un Payment tiene monto > Σ applications activas, ese remanente es
+    // saldo a favor del proveedor. Estos endpoints listan ese saldo y permiten
+    // aplicarlo automáticamente (FIFO) a una factura nueva.
+
+    app.get("/finance/suppliers/:supplierId/saldo-a-favor", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const { supplierId } = z.object({ supplierId: z.string() }).parse(request.params);
+      const query = z.object({
+        moneda: z.nativeEnum(Moneda),
+      }).parse(request.query);
+
+      const supplier = await prisma.supplier.findFirst({ where: { id: supplierId, deletedAt: null } });
+      if (!supplier) throw notFound("SUPPLIER_NOT_FOUND", "Proveedor no encontrado");
+
+      const payments = await prisma.payment.findMany({
+        where: { supplierId, moneda: query.moneda, deletedAt: null },
+        include: {
+          applications: {
+            include: { movement: { select: { deletedAt: true } } },
+          },
+        },
+        orderBy: { fecha: "asc" }, // FIFO
+      });
+
+      const result = payments
+        .map((p) => {
+          // Ignoramos applications a movements borrados.
+          const aplicado = p.applications
+            .filter((a) => !a.movement || a.movement.deletedAt === null)
+            .reduce((s, a) => s + Number(a.montoAplicado), 0);
+          const saldoSinAplicar = roundMoney(Number(p.monto) - aplicado);
+          return {
+            id: p.id,
+            fecha: serializeDateOnly(p.fecha),
+            monto: Number(p.monto),
+            saldoSinAplicar,
+            referencia: p.referencia,
+            metodo: p.metodo,
+          };
+        })
+        .filter((p) => p.saldoSinAplicar > 0.005);
+
+      const total = roundMoney(result.reduce((s, p) => s + p.saldoSinAplicar, 0));
+
+      return {
+        total,
+        moneda: query.moneda,
+        payments: result,
+      };
+    });
+
+    app.post("/finance/movements/:id/apply-saldo-a-favor", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+      const user = ensureUser(request);
+      const { id: movementId } = z.object({ id: z.string() }).parse(request.params);
+
+      const result = await prisma.$transaction(async (tx) => {
+        const movement = await tx.financeMovement.findFirst({
+          where: { id: movementId, deletedAt: null },
+          include: {
+            paymentApplications: { include: { payment: { select: { deletedAt: true } } } },
+          },
+        });
+        if (!movement) throw notFound("MOVEMENT_NOT_FOUND", "Movimiento no encontrado");
+        if (movement.tipoMovimiento !== TipoMovimiento.GASTO) {
+          throw badRequest("INVALID_MOVEMENT_TYPE", "Sólo se puede aplicar saldo a favor a GASTOS.");
+        }
+        if (!movement.supplierId) {
+          throw badRequest("SUPPLIER_REQUIRED", "El movimiento debe tener un proveedor asignado.");
+        }
+
+        const aplicadoExistente = movement.paymentApplications
+          .filter((pa) => !pa.payment.deletedAt)
+          .reduce((s, pa) => s + Number(pa.montoAplicado), 0);
+        let saldoPendiente = roundMoney(Number(movement.monto) - aplicadoExistente);
+        if (saldoPendiente <= 0.005) {
+          throw badRequest("FACTURA_YA_PAGADA", "La factura ya está totalmente pagada.");
+        }
+
+        // Movements ya aplicados desde estos Payments — para evitar conflicto
+        // con la unique constraint (paymentId, movementId).
+        const yaAplicadosDeesteMov = new Set(
+          movement.paymentApplications.filter((pa) => !pa.payment.deletedAt).map((pa) => pa.paymentId),
+        );
+
+        // Buscar Payments del proveedor con saldo a favor, FIFO.
+        const payments = await tx.payment.findMany({
+          where: { supplierId: movement.supplierId, moneda: movement.moneda, deletedAt: null },
+          include: {
+            applications: { include: { movement: { select: { deletedAt: true } } } },
+          },
+          orderBy: { fecha: "asc" },
+        });
+
+        const paymentsConSaldo = payments
+          .map((p) => {
+            const aplicado = p.applications
+              .filter((a) => !a.movement || a.movement.deletedAt === null)
+              .reduce((s, a) => s + Number(a.montoAplicado), 0);
+            return { payment: p, saldoSinAplicar: roundMoney(Number(p.monto) - aplicado) };
+          })
+          .filter(({ payment, saldoSinAplicar }) =>
+            saldoSinAplicar > 0.005 && !yaAplicadosDeesteMov.has(payment.id),
+          );
+
+        if (paymentsConSaldo.length === 0) {
+          throw badRequest("NO_HAY_SALDO_A_FAVOR", "El proveedor no tiene saldo a favor disponible para aplicar.");
+        }
+
+        // Aplicar FIFO.
+        let totalAplicadoNuevo = 0;
+        const applicationsCreadas: { paymentId: string; montoAplicado: number }[] = [];
+        for (const { payment, saldoSinAplicar } of paymentsConSaldo) {
+          if (saldoPendiente <= 0.005) break;
+          const aplicar = roundMoney(Math.min(saldoSinAplicar, saldoPendiente));
+          if (aplicar <= 0.005) continue;
+          await tx.paymentApplication.create({
+            data: {
+              paymentId: payment.id,
+              movementId,
+              montoAplicado: new Prisma.Decimal(aplicar),
+            },
+          });
+          applicationsCreadas.push({ paymentId: payment.id, montoAplicado: aplicar });
+          saldoPendiente = roundMoney(saldoPendiente - aplicar);
+          totalAplicadoNuevo += aplicar;
+        }
+
+        // Recalcular status del movement vía helper centralizado.
+        const recalc = await recalcMovementStatus(tx, movementId);
+
+        return {
+          totalAplicado: roundMoney(totalAplicadoNuevo),
+          applicationsCreadas,
+          saldoPendiente,
+          newStatus: recalc?.status ?? movement.status,
+        };
+      });
+
+      await createAuditEntry({
+        entityType: AuditEntityType.finance_movement,
+        entityId: movementId,
+        userId: user.id,
+        action: AuditAction.updated,
+        description: `Aplicó saldo a favor: ${result.totalAplicado} desde ${result.applicationsCreadas.length} pago(s)`,
+        metadata: { applicationsCreadas: result.applicationsCreadas, newStatus: result.newStatus },
+      });
+
+      void checkInvariantOrWarn("apply saldo a favor", { movementId });
+      return result;
+    });
+
     // ─── Estado de cuenta del proveedor ──────────────────────────────────────
 
     app.get("/finance/suppliers/:id/account-summary", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {

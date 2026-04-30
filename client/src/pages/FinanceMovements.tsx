@@ -4,7 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { Plus, X, ChevronLeft, ChevronRight, ArrowRight, AlertTriangle, FileText, DollarSign, Trash2, Info } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
-import { getMovements, getMovement, createMovement, patchMovement, deleteMovement, transitionMovement, cancelMovement, getExchangeRate, getPendingInvoicesBySupplier, isPaymentRow, isMovementRow } from '../api/finance.api';
+import { getMovements, getMovement, createMovement, patchMovement, deleteMovement, transitionMovement, cancelMovement, getExchangeRate, getPendingInvoicesBySupplier, getSaldoAFavorProveedor, isPaymentRow, isMovementRow } from '../api/finance.api';
+import type { SaldoAFavorResponse } from '../api/finance.api';
 import { apiClient } from '../api/axios';
 import { fmtCurrency, fmtDate, currentMonthYear, MONTH_NAMES } from '../lib/finance';
 import type {
@@ -34,6 +35,7 @@ import { InvoiceItemsDetail } from '../components/finance/InvoiceItemsDetail';
 import { NewPaymentForSupplierModal } from '../components/finance/NewPaymentForSupplierModal';
 import { ApplyPaymentModal } from '../components/finance/ApplyPaymentModal';
 import { ApplyToPendingFromMovementModal, type ApplyDistribution } from '../components/finance/ApplyToPendingFromMovementModal';
+import { ApplySaldoAFavorModal } from '../components/finance/ApplySaldoAFavorModal';
 import { getAccounts } from '../api/accounts.api';
 import { ACCOUNT_TYPE_LABEL } from '../types/accounts.types';
 import { todayLocalISO } from '../utils/date';
@@ -103,6 +105,11 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId, onSavedOpenDesgl
   // Aplicación a facturas pendientes (sólo en creación GASTO+PAGADO+supplier+account):
   const [applyDistribution, setApplyDistribution] = useState<ApplyDistribution | null>(null);
   const [showApplyModal, setShowApplyModal] = useState(false);
+  // Modal post-save: aplicar saldo a favor del proveedor a una factura nueva.
+  const [saldoAFavorPrompt, setSaldoAFavorPrompt] = useState<{
+    movementId: string; movementMonto: number; movementMoneda: 'USD' | 'UYU';
+    movementMontoPagado: number; supplierName: string; saldoAFavor: SaldoAFavorResponse;
+  } | null>(null);
   const [projects, setProjects] = useState<{ id: string; code: string; clientName: string }[]>([]);
   const [suppliers, setSuppliers] = useState<{ id: string; nombre: string }[]>([]);
   const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
@@ -287,6 +294,35 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId, onSavedOpenDesgl
           }
         } catch {
           // Si falla la consulta de previstos, seguimos el flujo normal
+        }
+      }
+      // Saldo a favor del proveedor: si la factura nueva quedó A_PAGAR /
+      // PARCIALMENTE_PAGADO con supplier asignado, ofrecer aplicar saldo a favor
+      // (Payments del proveedor con saldo sin aplicar) automáticamente vía FIFO.
+      const aplicaSaldoAFavor =
+        !editId &&
+        !movementSkipped &&
+        resultId &&
+        form.tipoMovimiento === 'GASTO' &&
+        !!form.proveedorId &&
+        (form.status === 'A_PAGAR' || form.status === 'PARCIALMENTE_PAGADO');
+      if (aplicaSaldoAFavor) {
+        try {
+          const saldoAFavor = await getSaldoAFavorProveedor(form.proveedorId!, form.moneda);
+          if (saldoAFavor.total > 0.005) {
+            const supplierName = suppliers.find(s => s.id === form.proveedorId)?.nombre ?? 'Proveedor';
+            setSaldoAFavorPrompt({
+              movementId: resultId,
+              movementMonto: form.monto,
+              movementMoneda: form.moneda,
+              movementMontoPagado: 0,
+              supplierName,
+              saldoAFavor,
+            });
+            return; // Esperamos al usuario; el modal cerrará el form al terminar.
+          }
+        } catch {
+          // Si falla la consulta, no bloqueamos el guardado
         }
       }
       onSuccess();
@@ -609,6 +645,21 @@ function MovimientoForm({ onSuccess, onCancel, initial, editId, onSavedOpenDesgl
           }}
         />
       )}
+      {saldoAFavorPrompt && (
+        <ApplySaldoAFavorModal
+          movementId={saldoAFavorPrompt.movementId}
+          movementMonto={saldoAFavorPrompt.movementMonto}
+          movementMoneda={saldoAFavorPrompt.movementMoneda}
+          movementMontoPagado={saldoAFavorPrompt.movementMontoPagado}
+          supplierName={saldoAFavorPrompt.supplierName}
+          saldoAFavor={saldoAFavorPrompt.saldoAFavor}
+          skipLabel="No aplicar (cerrar)"
+          onClose={() => {
+            setSaldoAFavorPrompt(null);
+            onSuccess();
+          }}
+        />
+      )}
     </form>
   );
 }
@@ -642,6 +693,17 @@ function DetailPanel({ mov, onClose, onEdit, onDelete, onCancel, onOpenDesglose,
     queryFn: () => getMovement(mov.id),
     enabled: mov.tipoMovimiento === 'GASTO' && !!mov.supplierId,
   });
+
+  // Saldo a favor del proveedor: para mostrar botón "Aplicar saldo a favor".
+  const { data: saldoAFavor } = useQuery({
+    queryKey: ['saldo-a-favor', mov.supplierId, mov.moneda],
+    queryFn: () => getSaldoAFavorProveedor(mov.supplierId!, mov.moneda),
+    enabled: !!mov.supplierId
+      && mov.tipoMovimiento === 'GASTO'
+      && (mov.status === 'A_PAGAR' || mov.status === 'PARCIALMENTE_PAGADO')
+      && (mov.saldoPendiente ?? mov.monto) > 0.005,
+  });
+  const [showSaldoAFavorModal, setShowSaldoAFavorModal] = useState(false);
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
@@ -747,6 +809,29 @@ function DetailPanel({ mov, onClose, onEdit, onDelete, onCancel, onOpenDesglose,
             <DollarSign className="w-4 h-4" />
             Registrar pago a este proveedor
           </button>
+        )}
+
+        {/* Botón Aplicar saldo a favor */}
+        {canRegisterPayment && saldoAFavor && saldoAFavor.total > 0.005 && (
+          <button
+            onClick={() => setShowSaldoAFavorModal(true)}
+            className="w-full py-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-sm font-semibold hover:bg-emerald-500/20 transition-colors inline-flex items-center justify-center gap-2"
+            title="El proveedor tiene Payments con saldo sin aplicar"
+          >
+            Aplicar saldo a favor ({fmtCurrency(saldoAFavor.total, mov.moneda)})
+          </button>
+        )}
+
+        {showSaldoAFavorModal && saldoAFavor && (
+          <ApplySaldoAFavorModal
+            movementId={mov.id}
+            movementMonto={mov.monto}
+            movementMoneda={mov.moneda}
+            movementMontoPagado={mov.montoPagado}
+            supplierName={mov.supplier?.nombre ?? 'Proveedor'}
+            saldoAFavor={saldoAFavor}
+            onClose={() => setShowSaldoAFavorModal(false)}
+          />
         )}
 
         {(mov.status === 'A_PAGAR' || mov.status === 'PAGADO') && mov.tipoMovimiento === 'GASTO' && !needsDetail && (

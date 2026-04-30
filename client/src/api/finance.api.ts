@@ -561,3 +561,37 @@ export interface CobroDetail {
 
 export const getCobroProjectDetail = (projectId: string) =>
   apiClient.get<CobroDetail>(`/api/finance/cobros-by-project/${projectId}`).then(r => r.data);
+
+// ─── Saldo a favor del proveedor ─────────────────────────────────────────────
+
+export interface SaldoAFavorPaymentItem {
+  id: string;
+  fecha: string;
+  monto: number;
+  saldoSinAplicar: number;
+  referencia: string | null;
+  metodo: MetodoPago;
+}
+
+export interface SaldoAFavorResponse {
+  total: number;
+  moneda: Moneda;
+  payments: SaldoAFavorPaymentItem[];
+}
+
+export const getSaldoAFavorProveedor = (supplierId: string, moneda: Moneda) =>
+  apiClient
+    .get<SaldoAFavorResponse>(`/api/finance/suppliers/${supplierId}/saldo-a-favor`, { params: { moneda } })
+    .then(r => r.data);
+
+export interface ApplySaldoAFavorResponse {
+  totalAplicado: number;
+  applicationsCreadas: Array<{ paymentId: string; montoAplicado: number }>;
+  saldoPendiente: number;
+  newStatus: FinanceMovementStatus;
+}
+
+export const applySaldoAFavorToMovement = (movementId: string) =>
+  apiClient
+    .post<ApplySaldoAFavorResponse>(`/api/finance/movements/${movementId}/apply-saldo-a-favor`)
+    .then(r => r.data);

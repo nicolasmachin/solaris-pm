@@ -23,23 +23,42 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "4.5",
+  version: "4.6",
   date: "30 de abril de 2026",
   sections: [
     {
-      title: "Fix: doble descuento al conciliar con movimientos del mismo día",
+      title: "Aplicar saldo a favor del proveedor",
       items: [
-        "Antes: si conciliabas una cuenta con fecha=hoy después de cargar movimientos del día, esos movimientos se aplicaban ENCIMA del saldo real, descontando dos veces.",
-        "Ahora: el saldo inicial representa el CIERRE del día indicado. Los movimientos de ese día quedan absorbidos en el saldo y no se vuelven a restar.",
+        "Al cargar una factura A_PAGAR a un proveedor con Payments sin aplicar totalmente, el sistema detecta y ofrece aplicar ese saldo automáticamente (FIFO, más antiguo primero).",
+        "Modal con total disponible, monto aplicable, saldo después, y detalle de los Payments involucrados.",
+        "Botón \"Aplicar saldo a favor (X)\" también disponible desde el detail panel de cada factura A_PAGAR / PARCIALMENTE_PAGADO.",
+        "No afecta el saldo de cuentas: sólo redistribuye Payments existentes y cierra (parcial o totalmente) la factura.",
       ],
     },
     {
-      title: "Cómo funciona la fecha de corte",
+      title: "Lista de movimientos unificada",
       items: [
-        "fechaSaldoInicial = X significa \"saldo al cierre del día X\".",
-        "Movimientos con fecha ≤ X: ya están consolidados en saldoInicial, no se aplican otra vez.",
-        "Movimientos con fecha > X (día siguiente en adelante): se aplican sobre el saldo recién fijado.",
-        "El modal de conciliación y la edición de cuentas ahora explican esta semántica explícitamente.",
+        "/finanzas/movimientos ahora muestra Movements y Payments mezclados cronológicamente, con badge \"Pago\" para diferenciarlos.",
+        "Click en una fila de pago abre el panel lateral con sus aplicaciones, método y proveedor.",
+        "Sin doble conteo: si un GASTO tiene Payment aplicado, no se descuenta dos veces del saldo.",
+        "Nuevo filtro `rowType` para mostrar sólo movements, sólo payments, o todo.",
+      ],
+    },
+    {
+      title: "Cobros por proyecto",
+      items: [
+        "Nueva sección /finanzas/cobros: espejo de Proveedores pero por proyecto/cliente.",
+        "Lista con presupuesto, cobrado, pendiente y estado de cobranza (pendiente / parcial / completo / excedido).",
+        "Detalle por proyecto con KPIs por moneda, lista de cobros y estado de cuenta cronológico.",
+        "Botón \"Registrar cobro\" pre-carga el form con projectId del proyecto.",
+      ],
+    },
+    {
+      title: "Fix doble conteo en facturas parcialmente pagadas",
+      items: [
+        "El saldo final proyectado descontaba el monto total de cada factura, sin importar si parte ya estaba pagada vía Payment. Generaba doble descuento.",
+        "Ahora se proyecta sólo el saldo pendiente. La lista muestra el saldo pendiente como monto principal con el monto factura como subtítulo.",
+        "Detail panel: panel \"Estado de pago\" con Factura / Pagado / Pendiente en tres columnas.",
       ],
     },
   ],
@@ -53,6 +72,14 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "4.5",
+    shortDate: "30 abr",
+    highlights: [
+      "Fix: doble descuento al conciliar con movimientos del mismo día.",
+      "Semántica nueva: fechaSaldoInicial = saldo al cierre del día.",
+    ],
+  },
   {
     version: "4.4",
     shortDate: "30 abr",

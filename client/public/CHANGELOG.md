@@ -1,5 +1,39 @@
 # Novedades
 
+## v4.6
+
+### 30 de abril de 2026
+
+#### Aplicar saldo a favor del proveedor a una factura nueva
+
+Cuando un proveedor tiene Payments con saldo sin aplicar (saldo a favor), al cargar una factura A_PAGAR / PARCIALMENTE_PAGADO el sistema detecta automáticamente y ofrece aplicar ese saldo a la factura nueva.
+
+- **Detección**: post-save de la factura, el sistema consulta `GET /finance/suppliers/:id/saldo-a-favor` y, si hay > 0, abre el modal.
+- **Modal**: muestra total disponible, monto aplicable (= mín entre saldo a favor y saldo pendiente de la factura), saldo después, detalle FIFO colapsable con cada Payment con saldo sin aplicar.
+- **Aplicación FIFO**: el endpoint `POST /finance/movements/:id/apply-saldo-a-favor` recorre los Payments del proveedor (ordenados por fecha ASC) y crea PaymentApplications hasta cubrir la factura o agotar el saldo. Recalcula el status de la factura (PAGADO o PARCIALMENTE_PAGADO).
+- **No afecta saldo de cuentas**: sólo redistribuye Payments existentes, no mueve plata.
+- **También disponible desde el detail panel** del movement (botón "Aplicar saldo a favor (X)" en gastos A_PAGAR/PARCIALMENTE_PAGADO con saldo a favor del proveedor).
+
+#### Lista de movimientos unificada (Movements + Payments)
+
+La lista `/finanzas/movimientos` ahora muestra Movements y Payments mezclados cronológicamente. Cada fila tiene un discriminador `_type`:
+- **MOVEMENT**: factura/gasto/ingreso normal.
+- **PAYMENT**: pago a proveedor, badge violeta "Pago" + descripción "Pago a {proveedor}", muestra el método y la cantidad de aplicaciones. Click abre el detail panel del Payment.
+- Anti-doble-conteo en el saldo: si un GASTO tiene PaymentApplication activa, su monto NO se descuenta del saldo (sólo lo hace el Payment).
+- Filtros: nuevo `rowType` (MOVEMENT/PAYMENT/ALL), supplierId/accountId aplicados a ambos tipos. Los filtros movement-only (categoria/status/projectId) excluyen Payments automáticamente.
+
+#### Cobros por proyecto (`/finanzas/cobros`)
+
+Espejo de Proveedores pero por proyecto. Lista todos los proyectos con su presupuesto vs lo cobrado, estado de cobranza (Pendiente / Parcial / Completo / Excedido / Sin presupuesto) con badges de color, KPIs globales (presupuestado / cobrado / pendiente / a favor cliente), búsqueda por cliente o código. Detalle por proyecto con KPIs por moneda (USD / UYU), tabs de cobros y estado de cuenta, y botón "Registrar cobro" con modal pre-cargado (crea un INGRESO `PROYECTO_ENTRADA`).
+
+#### Fix: doble conteo en facturas parcialmente pagadas
+
+El saldo final proyectado descontaba el monto total de cada factura A_PAGAR / PARCIALMENTE_PAGADO, sin importar si parte ya estaba pagada vía Payment. Resultado: factura USD 50 con Payment USD 1 aplicado descontaba USD 51 del flujo (50 proyectado + 1 real) en vez de los USD 50 reales.
+
+**Fix**: el future loop ahora proyecta sólo `saldoPendiente = monto - sum(applications)`. Si la factura está totalmente pagada por applications, no proyecta nada. La lista muestra el saldo pendiente como monto principal con el monto original como subtítulo. El detail panel tiene un panel destacado de 3 columnas: Factura / Pagado / Pendiente.
+
+---
+
 ## v4.5
 
 ### 30 de abril de 2026
