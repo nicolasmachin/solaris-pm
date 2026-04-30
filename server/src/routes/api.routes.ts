@@ -8233,6 +8233,250 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return validateFinanceInvariants();
     });
 
+    // ─── Cobros por proyecto ────────────────────────────────────────────────
+    //
+    // Espejo de Proveedores pero por proyecto (cliente). Compara budgetUsd con
+    // la suma de INGRESOS cobrados con projectId asignado, agrupando por moneda
+    // y normalizando a USD para los KPIs globales.
+
+    type EstadoCobranza = "SIN_PRESUPUESTO" | "PENDIENTE" | "PARCIAL" | "COMPLETO" | "EXCEDIDO";
+
+    function clasificarEstado(presupuestoUsd: number | null, cobradoUsd: number): EstadoCobranza {
+      if (presupuestoUsd == null) return "SIN_PRESUPUESTO";
+      if (cobradoUsd < 0.005) return "PENDIENTE";
+      if (cobradoUsd > presupuestoUsd + 0.005) return "EXCEDIDO";
+      if (cobradoUsd >= presupuestoUsd - 0.005) return "COMPLETO";
+      return "PARCIAL";
+    }
+
+    app.get("/finance/cobros-by-project", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const query = z.object({
+        estado: z.enum(["PENDIENTE", "PARCIAL", "COMPLETO", "EXCEDIDO", "SIN_PRESUPUESTO"]).optional(),
+        clientName: z.string().optional(),
+        activos: z.enum(["true", "false"]).optional(),
+      }).parse(request.query);
+
+      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
+      const fallbackUsdToUyu = lastRate ? (decimalToNumber(lastRate.usdToUyu) ?? 1) : 1;
+
+      const where: Prisma.ProjectWhereInput = {};
+      if (query.activos === "true") where.status = ProjectStatus.ACTIVE;
+      if (query.clientName && query.clientName.trim().length > 0) {
+        where.clientName = { contains: query.clientName.trim(), mode: "insensitive" };
+      }
+
+      const projects = await prisma.project.findMany({
+        where,
+        select: {
+          id: true,
+          code: true,
+          clientName: true,
+          capacityKwp: true,
+          budgetUsd: true,
+          status: true,
+        },
+        orderBy: [{ status: "asc" }, { clientName: "asc" }],
+      });
+
+      // Cobros agregados por proyecto en una sola query.
+      const projectIds = projects.map((p) => p.id);
+      const cobrosAgg = projectIds.length === 0 ? [] : await prisma.financeMovement.findMany({
+        where: {
+          deletedAt: null,
+          tipoMovimiento: TipoMovimiento.INGRESO,
+          cobrado: true,
+          projectId: { in: projectIds },
+        },
+        select: {
+          projectId: true,
+          fecha: true,
+          monto: true,
+          moneda: true,
+          tipoCambio: true,
+        },
+      });
+
+      const cobrosByProject = new Map<string, typeof cobrosAgg>();
+      for (const m of cobrosAgg) {
+        if (!m.projectId) continue;
+        const arr = cobrosByProject.get(m.projectId) ?? [];
+        arr.push(m);
+        cobrosByProject.set(m.projectId, arr);
+      }
+
+      const items = projects.map((p) => {
+        const cobros = cobrosByProject.get(p.id) ?? [];
+        let totalCobradoUSD = 0;
+        let ultimoCobro: Date | null = null;
+        for (const c of cobros) {
+          totalCobradoUSD += convertMovementToUsd(c, fallbackUsdToUyu);
+          if (!ultimoCobro || c.fecha > ultimoCobro) ultimoCobro = c.fecha;
+        }
+        totalCobradoUSD = roundMoney(totalCobradoUSD);
+        const presupuestoUSD = p.budgetUsd != null ? Number(p.budgetUsd) : null;
+        const saldoPendienteUSD = presupuestoUSD != null
+          ? roundMoney(Math.max(0, presupuestoUSD - totalCobradoUSD))
+          : 0;
+        const saldoAFavorUSD = presupuestoUSD != null
+          ? roundMoney(Math.max(0, totalCobradoUSD - presupuestoUSD))
+          : 0;
+        const estadoCobranza = clasificarEstado(presupuestoUSD, totalCobradoUSD);
+
+        return {
+          id: p.id,
+          clientName: p.clientName,
+          code: p.code,
+          capacity: Number(p.capacityKwp),
+          status: p.status,
+          presupuestoUSD,
+          totalCobradoUSD,
+          saldoPendienteUSD,
+          saldoAFavorUSD,
+          estadoCobranza,
+          ultimoCobro: ultimoCobro ? serializeDateOnly(ultimoCobro) : null,
+          cantidadCobros: cobros.length,
+        };
+      });
+
+      const filtered = query.estado ? items.filter((i) => i.estadoCobranza === query.estado) : items;
+
+      const totales = filtered.reduce(
+        (acc, p) => ({
+          totalPresupuestadoUSD: acc.totalPresupuestadoUSD + (p.presupuestoUSD ?? 0),
+          totalCobradoUSD: acc.totalCobradoUSD + p.totalCobradoUSD,
+          totalPendienteUSD: acc.totalPendienteUSD + p.saldoPendienteUSD,
+          totalSaldoAFavorUSD: acc.totalSaldoAFavorUSD + p.saldoAFavorUSD,
+        }),
+        { totalPresupuestadoUSD: 0, totalCobradoUSD: 0, totalPendienteUSD: 0, totalSaldoAFavorUSD: 0 },
+      );
+
+      return {
+        projects: filtered,
+        totales: {
+          totalPresupuestadoUSD: roundMoney(totales.totalPresupuestadoUSD),
+          totalCobradoUSD: roundMoney(totales.totalCobradoUSD),
+          totalPendienteUSD: roundMoney(totales.totalPendienteUSD),
+          totalSaldoAFavorUSD: roundMoney(totales.totalSaldoAFavorUSD),
+        },
+        tipoCambio: fallbackUsdToUyu,
+      };
+    });
+
+    app.get("/finance/cobros-by-project/:projectId", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
+
+      const project = await prisma.project.findFirst({
+        where: { id: projectId },
+        select: {
+          id: true, code: true, clientName: true,
+          capacityKwp: true, budgetUsd: true, status: true,
+        },
+      });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+
+      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
+      const fallbackUsdToUyu = lastRate ? (decimalToNumber(lastRate.usdToUyu) ?? 1) : 1;
+
+      const cobros = await prisma.financeMovement.findMany({
+        where: {
+          deletedAt: null,
+          tipoMovimiento: TipoMovimiento.INGRESO,
+          cobrado: true,
+          projectId,
+        },
+        include: {
+          account: { select: { id: true, nombre: true, moneda: true } },
+        },
+        orderBy: { fecha: "asc" },
+      });
+
+      // KPIs por moneda.
+      const kpisPorMoneda: Record<Moneda, { presupuesto: number; cobrado: number; pendiente: number; saldoAFavor: number }> = {
+        [Moneda.USD]: { presupuesto: 0, cobrado: 0, pendiente: 0, saldoAFavor: 0 },
+        [Moneda.UYU]: { presupuesto: 0, cobrado: 0, pendiente: 0, saldoAFavor: 0 },
+      };
+      // El presupuesto del proyecto está en USD por convención (budgetUsd).
+      if (project.budgetUsd != null) {
+        kpisPorMoneda[Moneda.USD].presupuesto = Number(project.budgetUsd);
+      }
+      for (const c of cobros) {
+        kpisPorMoneda[c.moneda].cobrado += Number(c.monto);
+      }
+      for (const m of [Moneda.USD, Moneda.UYU] as Moneda[]) {
+        const k = kpisPorMoneda[m];
+        k.cobrado = roundMoney(k.cobrado);
+        const diff = k.presupuesto - k.cobrado;
+        k.pendiente = roundMoney(Math.max(0, diff));
+        k.saldoAFavor = roundMoney(Math.max(0, -diff));
+      }
+
+      // Totales unificados USD.
+      const totalCobradoUSD = roundMoney(
+        cobros.reduce((acc, c) => acc + convertMovementToUsd(c, fallbackUsdToUyu), 0),
+      );
+      const presupuestoUSD = project.budgetUsd != null ? Number(project.budgetUsd) : null;
+      const saldoPendienteUSD = presupuestoUSD != null
+        ? roundMoney(Math.max(0, presupuestoUSD - totalCobradoUSD))
+        : 0;
+      const saldoAFavorUSD = presupuestoUSD != null
+        ? roundMoney(Math.max(0, totalCobradoUSD - presupuestoUSD))
+        : 0;
+      const estadoCobranza = clasificarEstado(presupuestoUSD, totalCobradoUSD);
+
+      // Estado de cuenta cronológico: cada cobro suma al saldo del cliente
+      // hacia el "completado". Lo dejamos como ledger simple (acumulado del
+      // cobrado vs presupuesto).
+      let acumulado = 0;
+      const estadoCuenta = cobros.map((c) => {
+        const usd = convertMovementToUsd(c, fallbackUsdToUyu);
+        acumulado = roundMoney(acumulado + usd);
+        return {
+          fecha: serializeDateOnly(c.fecha),
+          descripcion: c.descripcion,
+          monto: Number(c.monto),
+          moneda: c.moneda,
+          montoUSD: roundMoney(usd),
+          acumuladoCobradoUSD: acumulado,
+          saldoRestanteUSD: presupuestoUSD != null
+            ? roundMoney(presupuestoUSD - acumulado)
+            : null,
+        };
+      });
+
+      return {
+        project: {
+          id: project.id,
+          code: project.code,
+          clientName: project.clientName,
+          capacity: Number(project.capacityKwp),
+          status: project.status,
+          presupuestoUSD,
+        },
+        kpis: kpisPorMoneda,
+        totals: {
+          totalCobradoUSD,
+          saldoPendienteUSD,
+          saldoAFavorUSD,
+          estadoCobranza,
+          cantidadCobros: cobros.length,
+        },
+        cobros: cobros.map((c) => ({
+          id: c.id,
+          fecha: serializeDateOnly(c.fecha),
+          descripcion: c.descripcion,
+          monto: Number(c.monto),
+          moneda: c.moneda,
+          tipoCambio: c.tipoCambio ? Number(c.tipoCambio) : null,
+          accountId: c.accountId,
+          accountName: c.account?.nombre ?? null,
+          accountMoneda: c.account?.moneda ?? null,
+          observaciones: c.observaciones,
+        })),
+        estadoCuenta,
+        tipoCambio: fallbackUsdToUyu,
+      };
+    });
+
     app.get("/accounts", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
       const query = z.object({
         activa: z.enum(["true", "false", "all"]).optional(),

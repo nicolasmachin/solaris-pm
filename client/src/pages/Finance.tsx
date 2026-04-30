@@ -386,6 +386,12 @@ export function Finance() {
             Proveedores
           </Link>
           <Link
+            to="/finanzas/cobros"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors shrink-0"
+          >
+            Cobros
+          </Link>
+          <Link
             to="/finanzas/pagos"
             className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors shrink-0"
           >

@@ -26,6 +26,8 @@ const FinanceAPagar = lazy(() => import("./pages/FinanceAPagar").then((module) =
 const FinancePayments = lazy(() => import("./pages/FinancePayments").then((module) => ({ default: module.FinancePayments })));
 const FinanceSupplierDetail = lazy(() => import("./pages/FinanceSupplierDetail").then((module) => ({ default: module.FinanceSupplierDetail })));
 const FinanceCuentas = lazy(() => import("./pages/FinanceCuentas").then((module) => ({ default: module.FinanceCuentas })));
+const FinanceCobros = lazy(() => import("./pages/FinanceCobros").then((module) => ({ default: module.FinanceCobros })));
+const FinanceCobroDetail = lazy(() => import("./pages/FinanceCobroDetail").then((module) => ({ default: module.FinanceCobroDetail })));
 const Stock = lazy(() => import("./pages/Stock").then((module) => ({ default: module.Stock })));
 const Calendar = lazy(() => import("./pages/Calendar").then((module) => ({ default: module.Calendar })));
 const MisTareas = lazy(() => import("./pages/MisTareas").then((module) => ({ default: module.MisTareas })));
@@ -202,6 +204,22 @@ export function App() {
           element={
             <PermissionRoute module="FINANZAS" action="VIEW">
               <FinanceSupplierDetail />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/finanzas/cobros"
+          element={
+            <PermissionRoute module="FINANZAS" action="VIEW">
+              <FinanceCobros />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/finanzas/cobros/:id"
+          element={
+            <PermissionRoute module="FINANZAS" action="VIEW">
+              <FinanceCobroDetail />
             </PermissionRoute>
           }
         />

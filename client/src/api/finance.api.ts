@@ -468,3 +468,83 @@ export const getResults = (anio: number) =>
 
 export const getByProject = (projectId: string) =>
   apiClient.get(`/api/finance/reports/by-project/${projectId}`).then(r => r.data);
+
+// ─── Cobros por proyecto ─────────────────────────────────────────────────────
+
+export type EstadoCobranza = 'SIN_PRESUPUESTO' | 'PENDIENTE' | 'PARCIAL' | 'COMPLETO' | 'EXCEDIDO';
+
+export interface CobroProjectItem {
+  id: string;
+  clientName: string;
+  code: string;
+  capacity: number;
+  status: 'PROSPECT' | 'ACTIVE' | 'COMPLETED' | 'PAUSED' | 'ARCHIVED';
+  presupuestoUSD: number | null;
+  totalCobradoUSD: number;
+  saldoPendienteUSD: number;
+  saldoAFavorUSD: number;
+  estadoCobranza: EstadoCobranza;
+  ultimoCobro: string | null;
+  cantidadCobros: number;
+}
+
+export interface CobrosListResponse {
+  projects: CobroProjectItem[];
+  totales: {
+    totalPresupuestadoUSD: number;
+    totalCobradoUSD: number;
+    totalPendienteUSD: number;
+    totalSaldoAFavorUSD: number;
+  };
+  tipoCambio: number;
+}
+
+export const getCobrosByProject = (params?: { estado?: EstadoCobranza; clientName?: string; activos?: 'true' | 'false' }) =>
+  apiClient.get<CobrosListResponse>('/api/finance/cobros-by-project', { params }).then(r => r.data);
+
+export interface CobroDetail {
+  project: {
+    id: string;
+    code: string;
+    clientName: string;
+    capacity: number;
+    status: string;
+    presupuestoUSD: number | null;
+  };
+  kpis: {
+    USD: { presupuesto: number; cobrado: number; pendiente: number; saldoAFavor: number };
+    UYU: { presupuesto: number; cobrado: number; pendiente: number; saldoAFavor: number };
+  };
+  totals: {
+    totalCobradoUSD: number;
+    saldoPendienteUSD: number;
+    saldoAFavorUSD: number;
+    estadoCobranza: EstadoCobranza;
+    cantidadCobros: number;
+  };
+  cobros: Array<{
+    id: string;
+    fecha: string;
+    descripcion: string;
+    monto: number;
+    moneda: Moneda;
+    tipoCambio: number | null;
+    accountId: string | null;
+    accountName: string | null;
+    accountMoneda: Moneda | null;
+    observaciones: string | null;
+  }>;
+  estadoCuenta: Array<{
+    fecha: string;
+    descripcion: string;
+    monto: number;
+    moneda: Moneda;
+    montoUSD: number;
+    acumuladoCobradoUSD: number;
+    saldoRestanteUSD: number | null;
+  }>;
+  tipoCambio: number;
+}
+
+export const getCobroProjectDetail = (projectId: string) =>
+  apiClient.get<CobroDetail>(`/api/finance/cobros-by-project/${projectId}`).then(r => r.data);
