@@ -1,5 +1,64 @@
 # Novedades
 
+## v4.7
+
+### 30 de abril de 2026
+
+#### Estado de resultado (P&L) mensual y anual
+
+Nueva sección `/finanzas/resultado` con tabs **Mensual** y **Anual**.
+
+**Tab Mensual** — Estructura contable formal:
+- INGRESOS BRUTOS → expandible por categoría → cada categoría expandible con la lista de movimientos individuales (fecha, descripción, proyecto/proveedor, cuenta, monto USD).
+- (-) COSTOS DIRECTOS (PROYECTO_SALIDA + PAGO_PROVEEDOR + COMPRA_STOCK + Payments del mes).
+- = MARGEN BRUTO (con %).
+- (-) GASTOS OPERATIVOS (todo lo demás).
+- = RESULTADO NETO destacado en bloque emerald/red según signo.
+- Mini bar chart de los 12 meses + tabla de evolución mensual con totales del año.
+- Click en una fila tipo Pago → abre el panel lateral del Payment.
+- Click en la descripción de un movement → lleva a la lista filtrada.
+
+**Tab Anual** — Planilla mes a mes (estilo P&L formal):
+- Tabla con 14 columnas (Concepto + Ene-Dic + Total).
+- Secciones con bandas de color: emerald (ingresos), red (directos), amber (operativos), azul (margen bruto / resultado neto).
+- Sticky vertical (header) y horizontal (primera columna "Concepto").
+- Convención contable: ingresos sin paréntesis, costos/gastos en `(USD x)`, ceros como `—`.
+- Click en cualquier celda → abre `/finanzas/movimientos` con los filtros de mes + categoría + tipo pre-aplicados (auditable).
+
+**Reglas de cálculo** (aplican a ambas vistas):
+- Solo plata real: INGRESOS cobrados + GASTOS PAGADOS + Payments.
+- Excluye `categoria=AJUSTE_CONCILIACION` (correcciones contables, no operativas).
+- Anti-doble-conteo: GASTOS con PaymentApplication activa los cuenta el Payment correspondiente.
+- Conversión USD vía TC del movimiento o último TC global como fallback.
+- Vista anual: una sola query del año, agrupación en memoria por mes y categoría (eficiente).
+
+#### Aplicar saldo a favor del proveedor a una factura nueva
+
+Cuando un proveedor tiene Payments con saldo sin aplicar (saldo a favor), al cargar una factura A_PAGAR / PARCIALMENTE_PAGADO el sistema detecta automáticamente y ofrece aplicar ese saldo a la factura nueva.
+
+- Modal post-save con total disponible, monto aplicable, saldo después, detalle FIFO colapsable.
+- Aplicación FIFO (más antiguo primero) en una transacción atómica. Recalcula status de la factura.
+- No afecta saldo de cuentas: redistribuye Payments existentes.
+- Botón "Aplicar saldo a favor (X)" también en el detail panel del movement.
+
+#### Lista de movimientos unificada (Movements + Payments)
+
+`/finanzas/movimientos` ahora incluye Payments mezclados cronológicamente con los Movements. Cada fila lleva un `_type` discriminador.
+
+- Filas tipo Pago tienen badge violeta "Pago", método y count de aplicaciones. Click abre el panel del Payment.
+- Anti-doble-conteo en el saldo: GASTOS con PaymentApplication no descuentan dos veces.
+- Nuevos filtros: `rowType` (MOVEMENT/PAYMENT/ALL), `supplierId`, `accountId`.
+
+#### Cobros por proyecto (`/finanzas/cobros`)
+
+Espejo de Proveedores pero por cliente/proyecto. Lista todos los proyectos con presupuesto vs cobrado, estado de cobranza (Pendiente / Parcial / Completo / Excedido / Sin presupuesto), KPIs globales y filtros de búsqueda. Detalle por proyecto con KPIs por moneda, tabs de cobros y estado de cuenta, y botón "Registrar cobro" pre-cargado.
+
+#### Fix doble conteo en facturas parcialmente pagadas
+
+El saldo final proyectado descontaba el monto total de la factura aunque parte ya estuviera pagada vía Payment, generando doble descuento. Ahora se proyecta solo `saldoPendiente = monto - Σ applications`. La lista muestra saldoPendiente como monto principal con el monto factura como subtítulo. El detail panel tiene un panel destacado de 3 columnas: Factura / Pagado / Pendiente.
+
+---
+
 ## v4.6
 
 ### 30 de abril de 2026

@@ -598,10 +598,26 @@ export const applySaldoAFavorToMovement = (movementId: string) =>
 
 // ─── Estado de resultado mensual / anual (P&L) ───────────────────────────────
 
+export interface PnLMovement {
+  id: string;
+  _type: 'MOVEMENT' | 'PAYMENT';
+  fecha: string;
+  descripcion: string;
+  monto: number;
+  moneda: Moneda;
+  montoUSD: number;
+  projectId: string | null;
+  projectName: string | null;
+  supplierId: string | null;
+  supplierName: string | null;
+  accountName: string | null;
+}
+
 export interface CategoriaSummary {
   categoria: string;
   total: number;
   cantidadMovimientos: number;
+  movimientos: PnLMovement[];
 }
 
 export interface IncomeStatement {

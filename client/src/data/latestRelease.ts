@@ -23,42 +23,41 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "4.6",
+  version: "4.7",
   date: "30 de abril de 2026",
   sections: [
     {
-      title: "Aplicar saldo a favor del proveedor",
+      title: "Estado de resultado (P&L) mensual y anual",
       items: [
-        "Al cargar una factura A_PAGAR a un proveedor con Payments sin aplicar totalmente, el sistema detecta y ofrece aplicar ese saldo automáticamente (FIFO, más antiguo primero).",
-        "Modal con total disponible, monto aplicable, saldo después, y detalle de los Payments involucrados.",
-        "Botón \"Aplicar saldo a favor (X)\" también disponible desde el detail panel de cada factura A_PAGAR / PARCIALMENTE_PAGADO.",
-        "No afecta el saldo de cuentas: sólo redistribuye Payments existentes y cierra (parcial o totalmente) la factura.",
+        "Nueva sección /finanzas/resultado con tabs Mensual y Anual.",
+        "Mensual: estructura contable formal (Ingresos brutos → Costos directos → Margen bruto → Gastos operativos → Resultado neto), con bar chart de los 12 meses y tabla de evolución.",
+        "Cada categoría se expande para ver la lista de movimientos individuales (fecha, descripción, proyecto/proveedor, cuenta, monto USD). Click en un Pago abre el panel lateral.",
+        "Anual: planilla mes a mes con todas las categorías, sticky en primera columna y header. Click en cualquier celda lleva a la lista filtrada de movimientos.",
+        "Reglas: sólo plata real (PAGADOS/COBRADOS), excluye AJUSTE_CONCILIACION, sin doble conteo de Payments.",
+      ],
+    },
+    {
+      title: "Saldo a favor del proveedor — aplicación automática",
+      items: [
+        "Al cargar una factura A_PAGAR a un proveedor con Payments sin aplicar, el sistema ofrece aplicar ese saldo automáticamente (FIFO).",
+        "Modal con detalle de Payments involucrados; aplicación atómica que cierra (parcial o totalmente) la factura sin mover saldo de cuentas.",
+        "Botón \"Aplicar saldo a favor\" también en el detail panel de cada factura.",
       ],
     },
     {
       title: "Lista de movimientos unificada",
       items: [
-        "/finanzas/movimientos ahora muestra Movements y Payments mezclados cronológicamente, con badge \"Pago\" para diferenciarlos.",
-        "Click en una fila de pago abre el panel lateral con sus aplicaciones, método y proveedor.",
-        "Sin doble conteo: si un GASTO tiene Payment aplicado, no se descuenta dos veces del saldo.",
-        "Nuevo filtro `rowType` para mostrar sólo movements, sólo payments, o todo.",
+        "/finanzas/movimientos muestra Movements y Payments mezclados cronológicamente, con badge \"Pago\" para diferenciarlos.",
+        "Click en una fila de Pago abre el panel del Payment con sus aplicaciones.",
+        "Sin doble conteo: si un GASTO tiene Payment aplicado, no se descuenta dos veces.",
       ],
     },
     {
-      title: "Cobros por proyecto",
+      title: "Cobros por proyecto + fix doble descuento parcial",
       items: [
-        "Nueva sección /finanzas/cobros: espejo de Proveedores pero por proyecto/cliente.",
-        "Lista con presupuesto, cobrado, pendiente y estado de cobranza (pendiente / parcial / completo / excedido).",
-        "Detalle por proyecto con KPIs por moneda, lista de cobros y estado de cuenta cronológico.",
-        "Botón \"Registrar cobro\" pre-carga el form con projectId del proyecto.",
-      ],
-    },
-    {
-      title: "Fix doble conteo en facturas parcialmente pagadas",
-      items: [
-        "El saldo final proyectado descontaba el monto total de cada factura, sin importar si parte ya estaba pagada vía Payment. Generaba doble descuento.",
-        "Ahora se proyecta sólo el saldo pendiente. La lista muestra el saldo pendiente como monto principal con el monto factura como subtítulo.",
-        "Detail panel: panel \"Estado de pago\" con Factura / Pagado / Pendiente en tres columnas.",
+        "Nueva sección /finanzas/cobros: lista de proyectos con presupuesto vs cobrado y estado de cobranza por color.",
+        "Detalle por proyecto con KPIs por moneda y modal \"Registrar cobro\" pre-cargado.",
+        "Fix: facturas parcialmente pagadas ahora proyectan sólo saldoPendiente (no monto total). Detail panel con desglose Factura / Pagado / Pendiente.",
       ],
     },
   ],
@@ -72,6 +71,14 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "4.6",
+    shortDate: "30 abr",
+    highlights: [
+      "Saldo a favor del proveedor: aplicación FIFO automática a facturas nuevas.",
+      "Lista unificada Movements + Payments. Cobros por proyecto. Fix doble descuento en facturas parciales.",
+    ],
+  },
   {
     version: "4.5",
     shortDate: "30 abr",

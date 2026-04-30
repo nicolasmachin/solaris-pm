@@ -8497,21 +8497,41 @@ export async function registerApiRoutes(app: FastifyInstance) {
       CategoriaPrincipal.COMPRA_STOCK,
     ];
 
-    type CategoriaSummary = { categoria: string; total: number; cantidadMovimientos: number };
+    type PnLMovement = {
+      id: string;
+      _type: "MOVEMENT" | "PAYMENT";
+      fecha: string;
+      descripcion: string;
+      monto: number;
+      moneda: Moneda;
+      montoUSD: number;
+      projectId: string | null;
+      projectName: string | null;
+      supplierId: string | null;
+      supplierName: string | null;
+      accountName: string | null;
+    };
+    type CategoriaSummary = {
+      categoria: string;
+      total: number;
+      cantidadMovimientos: number;
+      movimientos: PnLMovement[];
+    };
 
-    function groupByCategoria(rows: { categoriaPrincipal: CategoriaPrincipal; montoUsd: number }[]): CategoriaSummary[] {
-      const map = new Map<string, { total: number; count: number }>();
+    function groupByCategoria(rows: { categoriaPrincipal: CategoriaPrincipal; montoUsd: number; mov: PnLMovement }[]): CategoriaSummary[] {
+      const map = new Map<string, { total: number; movs: PnLMovement[] }>();
       for (const r of rows) {
-        const cur = map.get(r.categoriaPrincipal) ?? { total: 0, count: 0 };
+        const cur = map.get(r.categoriaPrincipal) ?? { total: 0, movs: [] };
         cur.total += r.montoUsd;
-        cur.count += 1;
+        cur.movs.push(r.mov);
         map.set(r.categoriaPrincipal, cur);
       }
       return Array.from(map.entries())
-        .map(([categoria, { total, count }]) => ({
+        .map(([categoria, { total, movs }]) => ({
           categoria,
           total: roundMoney(total),
-          cantidadMovimientos: count,
+          cantidadMovimientos: movs.length,
+          movimientos: movs.sort((a, b) => (a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0)),
         }))
         .sort((a, b) => b.total - a.total);
     }
@@ -8523,6 +8543,44 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
       const fallback = lastRate ? (decimalToNumber(lastRate.usdToUyu) ?? 1) : 1;
 
+      // Inclusión de detalle (project/supplier/account) para que la respuesta
+      // pueda mostrar la lista de movimientos al expandir cada categoría.
+      const movInclude = {
+        project: { select: { id: true, clientName: true, code: true } },
+        supplier: { select: { id: true, nombre: true } },
+        account: { select: { id: true, nombre: true } },
+      } as const;
+
+      function movToPnL(m: {
+        id: string;
+        fecha: Date;
+        descripcion: string;
+        monto: import("@prisma/client/runtime/library").Decimal;
+        moneda: Moneda;
+        tipoCambio: import("@prisma/client/runtime/library").Decimal | null;
+        projectId: string | null;
+        supplierId: string | null;
+        accountId: string | null;
+        project: { id: string; clientName: string; code: string } | null;
+        supplier: { id: string; nombre: string } | null;
+        account: { id: string; nombre: string } | null;
+      }, montoUsd: number): PnLMovement {
+        return {
+          id: m.id,
+          _type: "MOVEMENT",
+          fecha: serializeDateOnly(m.fecha),
+          descripcion: m.descripcion,
+          monto: decimalToNumber(m.monto) ?? 0,
+          moneda: m.moneda,
+          montoUSD: roundMoney(montoUsd),
+          projectId: m.projectId,
+          projectName: m.project?.clientName ?? null,
+          supplierId: m.supplierId,
+          supplierName: m.supplier?.nombre ?? null,
+          accountName: m.account?.nombre ?? null,
+        };
+      }
+
       // INGRESOS cobrados del mes (excluye AJUSTE_CONCILIACION).
       const ingresos = await prisma.financeMovement.findMany({
         where: {
@@ -8532,11 +8590,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
           fecha: { gte: fechaInicio, lt: fechaFin },
           categoriaPrincipal: { not: CategoriaPrincipal.AJUSTE_CONCILIACION },
         },
+        include: movInclude,
       });
-      const ingresosRows = ingresos.map((m) => ({
-        categoriaPrincipal: m.categoriaPrincipal,
-        montoUsd: convertMovementToUsd(m, fallback),
-      }));
+      const ingresosRows = ingresos.map((m) => {
+        const usd = convertMovementToUsd(m, fallback);
+        return { categoriaPrincipal: m.categoriaPrincipal, montoUsd: usd, mov: movToPnL(m, usd) };
+      });
       const ingresosBrutos = roundMoney(ingresosRows.reduce((s, r) => s + r.montoUsd, 0));
 
       // GASTOS PAGADOS del mes sin Payment app (sin doble conteo) +
@@ -8550,20 +8609,39 @@ export async function registerApiRoutes(app: FastifyInstance) {
           categoriaPrincipal: { in: CATEGORIAS_DIRECTAS_PNL },
           paymentApplications: { none: { payment: { deletedAt: null } } },
         },
+        include: movInclude,
       });
-      const gastosDirectosRows = gastosDirectos.map((m) => ({
-        categoriaPrincipal: m.categoriaPrincipal,
-        montoUsd: convertMovementToUsd(m, fallback),
-      }));
+      const gastosDirectosRows = gastosDirectos.map((m) => {
+        const usd = convertMovementToUsd(m, fallback);
+        return { categoriaPrincipal: m.categoriaPrincipal, montoUsd: usd, mov: movToPnL(m, usd) };
+      });
 
       // Payments del mes (siempre cuentan como costo directo / PAGO_PROVEEDOR).
       const payments = await prisma.payment.findMany({
         where: { deletedAt: null, fecha: { gte: fechaInicio, lt: fechaFin } },
+        include: {
+          supplier: { select: { id: true, nombre: true } },
+          account: { select: { id: true, nombre: true } },
+        },
       });
       const paymentsRows = payments.map((p) => {
         const monto = decimalToNumber(p.monto) ?? 0;
         const usd = p.moneda === Moneda.USD ? monto : (fallback > 0 ? monto / fallback : monto);
-        return { categoriaPrincipal: CategoriaPrincipal.PAGO_PROVEEDOR, montoUsd: usd };
+        const mov: PnLMovement = {
+          id: p.id,
+          _type: "PAYMENT",
+          fecha: serializeDateOnly(p.fecha),
+          descripcion: `Pago a ${p.supplier?.nombre ?? "proveedor"}${p.referencia ? ` · ${p.referencia}` : ""}`,
+          monto,
+          moneda: p.moneda,
+          montoUSD: roundMoney(usd),
+          projectId: null,
+          projectName: null,
+          supplierId: p.supplierId,
+          supplierName: p.supplier?.nombre ?? null,
+          accountName: p.account?.nombre ?? null,
+        };
+        return { categoriaPrincipal: CategoriaPrincipal.PAGO_PROVEEDOR, montoUsd: usd, mov };
       });
 
       const directosTotal = roundMoney(
@@ -8584,11 +8662,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
           },
           paymentApplications: { none: { payment: { deletedAt: null } } },
         },
+        include: movInclude,
       });
-      const operativosRows = gastosOperativos.map((m) => ({
-        categoriaPrincipal: m.categoriaPrincipal,
-        montoUsd: convertMovementToUsd(m, fallback),
-      }));
+      const operativosRows = gastosOperativos.map((m) => {
+        const usd = convertMovementToUsd(m, fallback);
+        return { categoriaPrincipal: m.categoriaPrincipal, montoUsd: usd, mov: movToPnL(m, usd) };
+      });
       const operativosTotal = roundMoney(operativosRows.reduce((s, r) => s + r.montoUsd, 0));
 
       const margenBruto = roundMoney(ingresosBrutos - directosTotal);

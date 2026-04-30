@@ -4,10 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
 import { getIncomeStatement, getIncomeStatementYearly, getIncomeStatementYearlyBreakdown } from '../api/finance.api';
-import type { CategoriaSummary, IncomeStatementYearlyBreakdown } from '../api/finance.api';
-import { fmtCurrency, MONTH_NAMES } from '../lib/finance';
+import type { CategoriaSummary, IncomeStatementYearlyBreakdown, PnLMovement } from '../api/finance.api';
+import { fmtCurrency, fmtDate, MONTH_NAMES } from '../lib/finance';
 import { CATEGORIA_LABEL } from '../types/finance.types';
 import type { CategoriaPrincipal } from '../types/finance.types';
+import { PaymentDetailPanel } from '../components/finance/PaymentDetailPanel';
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
 
@@ -121,12 +122,16 @@ function TabAnual({ anio }: { anio: number }) {
 }
 
 function PnLCard({ data }: { data: import('../api/finance.api').IncomeStatement }) {
+  const [openPaymentId, setOpenPaymentId] = useState<string | null>(null);
+  const mes = data.periodo.mes;
+  const anio = data.periodo.anio;
+
   return (
     <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-5 space-y-4">
       <div>
         <p className="text-xs font-mono uppercase tracking-wider text-[var(--color-text-muted)]">Período</p>
         <p className="text-lg font-semibold text-[var(--color-text-primary)]">
-          {MONTH_NAMES[data.periodo.mes - 1]} {data.periodo.anio}
+          {MONTH_NAMES[mes - 1]} {anio}
         </p>
       </div>
 
@@ -137,6 +142,9 @@ function PnLCard({ data }: { data: import('../api/finance.api').IncomeStatement 
         sign="+"
         bold
         detalle={data.ingresosBrutos.detalleCategorias}
+        mes={mes}
+        anio={anio}
+        onPaymentClick={setOpenPaymentId}
       />
 
       <PnLRow
@@ -146,6 +154,9 @@ function PnLCard({ data }: { data: import('../api/finance.api').IncomeStatement 
         sign="-"
         bold
         detalle={data.costosDirectos.detalleCategorias}
+        mes={mes}
+        anio={anio}
+        onPaymentClick={setOpenPaymentId}
       />
 
       <Divider />
@@ -164,6 +175,9 @@ function PnLCard({ data }: { data: import('../api/finance.api').IncomeStatement 
         sign="-"
         bold
         detalle={data.gastosOperativos.detalleCategorias}
+        mes={mes}
+        anio={anio}
+        onPaymentClick={setOpenPaymentId}
       />
 
       <Divider />
@@ -182,19 +196,39 @@ function PnLCard({ data }: { data: import('../api/finance.api').IncomeStatement 
       <div className="text-[11px] text-[var(--color-text-muted)] pt-2 border-t border-[var(--color-border)]">
         Pagos a proveedores en el mes: {data.pagosProveedor.cantidad} · {fmtCurrency(data.pagosProveedor.total, 'USD')} (incluidos en costos directos).
       </div>
+
+      {openPaymentId && (
+        <PaymentDetailPanel
+          paymentId={openPaymentId}
+          onClose={() => setOpenPaymentId(null)}
+        />
+      )}
     </div>
   );
 }
 
-function PnLRow({ label, value, valueClass, sign, bold, detalle }: {
+function PnLRow({ label, value, valueClass, sign, bold, detalle, mes, anio, onPaymentClick }: {
   label: string;
   value: number;
   valueClass: string;
   sign: '+' | '-';
   bold?: boolean;
   detalle: CategoriaSummary[];
+  mes: number;
+  anio: number;
+  onPaymentClick: (paymentId: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  // Cada categoría con su propio estado expandido independiente.
+  const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
+  const toggleCat = (cat: string) => {
+    setExpandedCats(prev => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  };
   const tieneDetalle = detalle.length > 0;
   return (
     <div>
@@ -216,25 +250,108 @@ function PnLRow({ label, value, valueClass, sign, bold, detalle }: {
         </span>
       </div>
       {open && tieneDetalle && (
-        <div className="mt-2 ml-5 rounded border border-[var(--color-border)] overflow-hidden">
-          <table className="w-full text-xs">
-            <tbody>
-              {detalle.map(c => (
-                <tr key={c.categoria} className="border-t border-[var(--color-border)] first:border-t-0">
-                  <td className="px-3 py-1.5 text-[var(--color-text-secondary)]">
-                    {categoriaLabel(c.categoria)}
-                    <span className="text-[10px] text-[var(--color-text-muted)] ml-1.5">({c.cantidadMovimientos})</span>
-                  </td>
-                  <td className="px-3 py-1.5 text-right tabular-nums text-[var(--color-text-primary)]">
+        <div className="mt-2 ml-5 space-y-1">
+          {detalle.map(c => {
+            const isCatOpen = expandedCats.has(c.categoria);
+            return (
+              <div key={c.categoria} className="rounded border border-[var(--color-border)] overflow-hidden">
+                <button
+                  onClick={() => toggleCat(c.categoria)}
+                  className="w-full flex items-center justify-between gap-2 px-3 py-1.5 hover:bg-[var(--color-bg-card-hover)]/50 text-left"
+                >
+                  <div className="flex items-center gap-1 text-[var(--color-text-secondary)] text-xs">
+                    {isCatOpen ? <ChevronDown className="w-3 h-3 text-[var(--color-text-muted)]" /> : <ChevronRight className="w-3 h-3 text-[var(--color-text-muted)]" />}
+                    <span>{categoriaLabel(c.categoria)}</span>
+                    <span className="text-[10px] text-[var(--color-text-muted)] ml-1">({c.cantidadMovimientos})</span>
+                  </div>
+                  <span className="text-xs tabular-nums text-[var(--color-text-primary)] font-medium">
                     {fmtCurrency(c.total, 'USD')}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </span>
+                </button>
+                {isCatOpen && c.movimientos.length > 0 && (
+                  <div className="border-t border-[var(--color-border)] bg-[var(--color-bg-app)]/40">
+                    <table className="w-full text-[11px]">
+                      <thead>
+                        <tr className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)]">
+                          <th className="px-3 py-1.5 text-left font-medium w-24">Fecha</th>
+                          <th className="px-3 py-1.5 text-left font-medium">Descripción</th>
+                          <th className="px-3 py-1.5 text-left font-medium hidden md:table-cell">Proyecto / Proveedor</th>
+                          <th className="px-3 py-1.5 text-left font-medium hidden md:table-cell w-32">Cuenta</th>
+                          <th className="px-3 py-1.5 text-right font-medium w-28">Monto USD</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[var(--color-border)]">
+                        {c.movimientos.map(m => (
+                          <MovimientoRow
+                            key={`${m._type}-${m.id}`}
+                            m={m}
+                            mes={mes}
+                            anio={anio}
+                            categoria={c.categoria}
+                            onPaymentClick={onPaymentClick}
+                          />
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
+  );
+}
+
+function MovimientoRow({ m, mes, anio, categoria, onPaymentClick }: {
+  m: PnLMovement;
+  mes: number;
+  anio: number;
+  categoria: string;
+  onPaymentClick: (paymentId: string) => void;
+}) {
+  const peopleLabel = m.projectName ?? m.supplierName ?? '—';
+  if (m._type === 'PAYMENT') {
+    return (
+      <tr
+        onClick={() => onPaymentClick(m.id)}
+        className="cursor-pointer hover:bg-[var(--color-bg-card-hover)]"
+      >
+        <td className="px-3 py-1.5 text-[var(--color-text-secondary)] tabular-nums">{fmtDate(m.fecha)}</td>
+        <td className="px-3 py-1.5 text-[var(--color-text-primary)]">
+          <span className="inline-flex items-center text-[9px] font-mono px-1 py-0.5 rounded uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30 mr-1.5">
+            Pago
+          </span>
+          {m.descripcion}
+        </td>
+        <td className="px-3 py-1.5 text-[var(--color-text-muted)] hidden md:table-cell">{peopleLabel}</td>
+        <td className="px-3 py-1.5 text-[var(--color-text-muted)] hidden md:table-cell">{m.accountName ?? '—'}</td>
+        <td className="px-3 py-1.5 text-right tabular-nums text-[var(--color-text-primary)] font-medium">
+          {fmtCurrency(m.montoUSD, 'USD')}
+        </td>
+      </tr>
+    );
+  }
+  // MOVEMENT: link a la lista filtrada (los detalles del movement se ven ahí).
+  return (
+    <tr className="hover:bg-[var(--color-bg-card-hover)]">
+      <td className="px-3 py-1.5 text-[var(--color-text-secondary)] tabular-nums">{fmtDate(m.fecha)}</td>
+      <td className="px-3 py-1.5">
+        <Link
+          to={`/finanzas/movimientos?mes=${mes}&anio=${anio}&categoria=${categoria}`}
+          className="text-[var(--color-text-primary)] hover:text-[var(--color-accent)] hover:underline"
+          title="Ver en la lista de movimientos"
+        >
+          {m.descripcion}
+        </Link>
+      </td>
+      <td className="px-3 py-1.5 text-[var(--color-text-muted)] hidden md:table-cell">{peopleLabel}</td>
+      <td className="px-3 py-1.5 text-[var(--color-text-muted)] hidden md:table-cell">{m.accountName ?? '—'}</td>
+      <td className="px-3 py-1.5 text-right tabular-nums text-[var(--color-text-primary)] font-medium">
+        {fmtCurrency(m.montoUSD, 'USD')}
+      </td>
+    </tr>
   );
 }
 
