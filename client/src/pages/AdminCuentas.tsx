@@ -109,7 +109,7 @@ function AccountForm({ initial, accountId, onSuccess, onCancel }: {
             onChange={e => setF('fechaSaldoInicial', e.target.value)}
           />
           <p className="text-[10px] text-[var(--color-text-muted)] mt-1">
-            Sólo movimientos desde esta fecha (inclusive) afectan el saldo. Los anteriores quedan como histórico ya consolidado en el saldo inicial.
+            "Saldo inicial" representa el saldo al CIERRE de esta fecha. Los movimientos de ese día y anteriores quedan absorbidos en el saldo inicial; sólo los del día siguiente en adelante afectan el saldo calculado.
           </p>
         </div>
       </div>

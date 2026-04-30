@@ -1,5 +1,32 @@
 # Novedades
 
+## v4.5
+
+### 30 de abril de 2026
+
+#### Fix: doble descuento al conciliar con movimientos del mismo día
+
+Cuando conciliabas una cuenta con `fecha=hoy` después de haber cargado movimientos del día, esos movimientos quedaban activos y se aplicaban EN ADEMÁS del saldoReal recién fijado, generando un descuento doble. Ej.: cargás un GASTO de USD 4.000 hoy, mirás el banco (que ya descontó esos $4k), conciliás con saldo real → el sistema te restaba otros $4.000.
+
+**Causa**: el filtro `fecha >= fechaSaldoInicial` incluía el mismo día, así que los movimientos del día de la conciliación se sumaban encima del saldoReal.
+
+**Fix**: cambio a comparación estricta `fecha > fechaSaldoInicial`. Semántica nueva: `fechaSaldoInicial = X` significa "saldo al **cierre** del día X". Movimientos con fecha = X quedan absorbidos en `saldoInicial`; sólo los del día X+1 en adelante afectan el saldo calculado.
+
+**Cambios**:
+- `computeAccountBalance`: filtro `fecha: { gt: fechaCorte }` en ingresos, gastos directos y payments.
+- `validateFinanceInvariants`: comparación `<=` en lugar de `<` al filtrar movimientos absorbidos por el saldoInicial.
+- Modal de conciliación: texto actualizado — explica que el saldoReal es el "cierre del día X" e incluye TODOS los movimientos de ese día.
+- Admin → Cuentas: leyenda del campo "Fecha del saldo" actualizada.
+
+**Validación manual** (qué deberías ver tras este fix):
+1. BBVA con saldo calculado X y movs del 29/04 cargados.
+2. Conciliás con saldoReal=33.791, fecha=29/04.
+3. Saldo de BBVA queda en 33.791 (los movs del 29/04 NO se restan otra vez).
+4. Cargás un GASTO de USD 100 con fecha 30/04 → saldo = 33.691.
+5. Cargás un GASTO de USD 50 con fecha 29/04 → saldo sigue 33.691 (ese mov ya está absorbido en el cierre del 29/04).
+
+---
+
 ## v4.4
 
 ### 30 de abril de 2026

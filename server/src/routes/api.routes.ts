@@ -8032,11 +8032,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
     /** Calcula el saldo actual de una cuenta sumando todos los movimientos
      *  PAGADOS/COBRADOS y los pagos asociados.
      *
-     *  Si la cuenta tiene `fechaSaldoInicial` seteado, sólo se cuentan los
-     *  movimientos y pagos con `fecha >= fechaSaldoInicial`: el saldoInicial
-     *  representa el estado de la cuenta AL fechaSaldoInicial y los movimientos
-     *  anteriores se consideran "histórico ya consolidado". Si está en null,
-     *  no hay corte (legacy). */
+     *  Semántica de `fechaSaldoInicial`: "saldo al CIERRE de ese día". Los
+     *  movimientos con fecha == fechaSaldoInicial ya están absorbidos en
+     *  `saldoInicial`, así que sólo cuentan los ESTRICTAMENTE posteriores
+     *  (fecha > fechaSaldoInicial = día siguiente en adelante). Si el campo
+     *  está en null, no hay corte (legacy: todos los movimientos cuentan). */
     async function computeAccountBalance(accountId: string): Promise<{
       saldoInicial: number; ingresos: number; gastos: number; pagos: number; saldoActual: number;
     }> {
@@ -8044,7 +8044,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       if (!account) throw notFound("ACCOUNT_NOT_FOUND", "Cuenta no encontrada");
       const saldoInicial = Number(account.saldoInicial);
       const fechaCorte = account.fechaSaldoInicial; // Date | null
-      const fechaFilter = fechaCorte ? { fecha: { gte: fechaCorte } } : {};
+      const fechaFilter = fechaCorte ? { fecha: { gt: fechaCorte } } : {};
 
       // Ingresos: movements INGRESO con cobrado=true
       const ingresoAgg = await prisma.financeMovement.aggregate({
@@ -8164,7 +8164,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       for (const m of movsPagados) {
         const a = m.accountId ? accountsById.get(m.accountId) : null;
         if (!a) continue;
-        if (a.fechaSaldoInicial && m.fecha < a.fechaSaldoInicial) continue;
+        // Cierre del día: movimientos del propio día de fechaSaldoInicial ya
+        // están absorbidos. Solo aplican estrictamente posteriores.
+        if (a.fechaSaldoInicial && m.fecha <= a.fechaSaldoInicial) continue;
         // Si el GASTO tiene Payment activo asociado, ya se cuenta vía pagosWalk.
         const tieneAppActiva = m.tipoMovimiento === TipoMovimiento.GASTO
           && m.paymentApplications.some((pa) => !pa.payment.deletedAt);
@@ -8188,7 +8190,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       for (const p of pagos) {
         const a = p.accountId ? accountsById.get(p.accountId) : null;
         if (!a) continue;
-        if (a.fechaSaldoInicial && p.fecha < a.fechaSaldoInicial) continue;
+        if (a.fechaSaldoInicial && p.fecha <= a.fechaSaldoInicial) continue;
         const monto = decimalToNumber(p.monto) ?? 0;
         saldoFlujoUSD -= toUSD(monto, p.moneda, null);
       }

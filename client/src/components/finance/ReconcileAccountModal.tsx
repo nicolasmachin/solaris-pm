@@ -133,15 +133,18 @@ export function ReconcileAccountModal({ account, onClose }: { account: Account; 
               <p className="text-[11px] text-[var(--color-text-secondary)]">
                 El sistema dice <strong>{fmt(saldoCalculado, account.moneda)}</strong> pero el banco dice <strong>{fmt(saldoReal, account.moneda)}</strong>.
               </p>
+              <p className="text-[11px] text-[var(--color-text-secondary)]">
+                El saldo real representa el <strong>cierre del {formatDate(fecha)}</strong>, ya incluye TODOS los movimientos de ese día.
+              </p>
               <div className="text-[11px] text-[var(--color-text-secondary)] flex items-start gap-1.5">
                 <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0 mt-0.5" />
                 <div>
                   <strong className="text-[var(--color-text-primary)]">Al confirmar:</strong>
                   <ul className="list-disc pl-4 mt-1 space-y-0.5">
-                    <li>El saldo del sistema queda en {fmt(saldoReal, account.moneda)} (al {formatDate(fecha)}).</li>
+                    <li>El saldo del sistema queda en {fmt(saldoReal, account.moneda)} (cierre del {formatDate(fecha)}).</li>
                     <li>NO se crea ningún movimiento de gasto/ingreso.</li>
-                    <li>Movimientos anteriores al {formatDate(fecha)} pasan a histórico (no afectan saldo).</li>
-                    <li>Movimientos posteriores se aplican sobre el saldo nuevo.</li>
+                    <li>Movimientos del {formatDate(fecha)} y anteriores quedan absorbidos en el nuevo saldo (no se aplican otra vez).</li>
+                    <li>Sólo movimientos del día siguiente en adelante afectan al saldo nuevo.</li>
                   </ul>
                 </div>
               </div>

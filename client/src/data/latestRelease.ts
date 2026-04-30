@@ -23,30 +23,23 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "4.4",
+  version: "4.5",
   date: "30 de abril de 2026",
   sections: [
     {
-      title: "Conciliación simple — el banco siempre dice la verdad",
+      title: "Fix: doble descuento al conciliar con movimientos del mismo día",
       items: [
-        "Cuando conciliás una cuenta y el saldo real difiere del calculado, ahora el sistema actualiza directamente el saldoInicial y la fechaSaldoInicial al valor real, sin crear movimientos de ajuste falsos.",
-        "Movimientos anteriores a la conciliación pasan a histórico (ya consolidados en el nuevo saldoInicial); los posteriores se aplican sobre el saldo recién fijado.",
-        "El listado de movimientos ya no se contamina con \"Ajuste conciliación\" cada vez que conciliás.",
+        "Antes: si conciliabas una cuenta con fecha=hoy después de cargar movimientos del día, esos movimientos se aplicaban ENCIMA del saldo real, descontando dos veces.",
+        "Ahora: el saldo inicial representa el CIERRE del día indicado. Los movimientos de ese día quedan absorbidos en el saldo y no se vuelven a restar.",
       ],
     },
     {
-      title: "Modal de conciliación simplificado",
+      title: "Cómo funciona la fecha de corte",
       items: [
-        "Se eliminó el toggle \"Crear movimiento de ajuste automático\". Hay un único modo de conciliación.",
-        "Si hay diferencia, un panel ámbar explica exactamente qué va a pasar antes de confirmar.",
-        "Toast nuevo: muestra el saldo nuevo y la diferencia anterior.",
-      ],
-    },
-    {
-      title: "Historial preservado",
-      items: [
-        "Conciliaciones nuevas (v4.4+): badge \"Saldo actualizado\" cuando hubo diferencia.",
-        "Conciliaciones legacy (de versiones previas con movimiento de ajuste): badge \"Ajuste legacy\", sin modificar — la auditoría se preserva.",
+        "fechaSaldoInicial = X significa \"saldo al cierre del día X\".",
+        "Movimientos con fecha ≤ X: ya están consolidados en saldoInicial, no se aplican otra vez.",
+        "Movimientos con fecha > X (día siguiente en adelante): se aplican sobre el saldo recién fijado.",
+        "El modal de conciliación y la edición de cuentas ahora explican esta semántica explícitamente.",
       ],
     },
   ],
@@ -60,6 +53,14 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "4.4",
+    shortDate: "30 abr",
+    highlights: [
+      "Conciliación simple: el banco dice la verdad, sin movimientos de ajuste.",
+      "Conciliaciones legacy preservadas con badge separado.",
+    ],
+  },
   {
     version: "4.3",
     shortDate: "29 abr",
