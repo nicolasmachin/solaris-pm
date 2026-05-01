@@ -454,11 +454,12 @@ function InstalacionesSemanaCard({ userId, isAdmin }: { userId: string | null; i
 
 function MisTareasCard() {
   const qc = useQueryClient();
-  const { data: blocks = [], isLoading } = useQuery({
+  const { data: myTasksResp, isLoading } = useQuery({
     queryKey: ["dashboard-my-tasks"],
     queryFn: () => getMyTasks(),
     staleTime: 60_000,
   });
+  const blocks = myTasksResp?.blocks ?? [];
 
   // Aplanar y ordenar por urgencia: las propias del usuario, ordenadas por urgencyRank.
   const tasks = useMemo(() => {
@@ -576,11 +577,12 @@ function MisMetricasCard({ userId, isAdmin }: { userId: string | null; isAdmin: 
     queryFn: () => getProjects({ status: "COMPLETED" }),
     staleTime: 60_000,
   });
-  const { data: myTasks = [] } = useQuery({
+  const { data: myTasksResp2 } = useQuery({
     queryKey: ["dashboard-my-tasks"],
     queryFn: () => getMyTasks(),
     staleTime: 60_000,
   });
+  const myTasks = myTasksResp2?.blocks ?? [];
 
   const metrics = useMemo(() => {
     const isMine = (p: ProjectListItem) => isAdmin || p.currentStage?.responsibleUserId === userId;

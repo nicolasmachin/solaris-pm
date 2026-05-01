@@ -4071,7 +4071,57 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return a.projectName.localeCompare(b.projectName, "es");
     });
 
-    return blocks;
+    // 3. Tasks asignados al usuario target. Independiente de la lógica de
+    //    stages/substages: cada Task con userId === targetUser.id que no esté
+    //    completado, en proyecto activo, aparece acá. Esto incluye tareas
+    //    "sueltas" (sin substageId, ni stageId), tareas atadas a una etapa, y
+    //    tareas atadas a una subetapa específica. El frontend muestra cada una
+    //    con el contexto que corresponda (Proyecto · Etapa · Subetapa, o
+    //    Proyecto · Tarea suelta).
+    const tasksRaw = await prisma.task.findMany({
+      where: {
+        userId: targetUser.id,
+        deletedAt: null,
+        status: { not: TaskStatus.COMPLETED },
+        project: {
+          deletedAt: null,
+          status: { notIn: [ProjectStatus.ARCHIVED, ProjectStatus.COMPLETED] },
+        },
+      },
+      include: {
+        project: { select: { id: true, code: true, clientName: true } },
+        stage: { select: { id: true, name: true } },
+        substage: { select: { id: true, name: true } },
+      },
+    });
+
+    const tasks = tasksRaw
+      .map((t) => ({
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        status: t.status,
+        priority: t.priority,
+        dueDate: serializeDateOnly(t.dueDate),
+        urgencyRank: urgencyRank(t.dueDate),
+        projectId: t.project.id,
+        projectCode: t.project.code,
+        projectName: t.project.clientName,
+        stageId: t.stage?.id ?? null,
+        stageName: (t.stage?.name ?? null) as StageType | null,
+        stageLabel: t.stage ? getStageLabel(t.stage.name) : null,
+        substageId: t.substage?.id ?? null,
+        substageName: t.substage?.name ?? null,
+      }))
+      .sort((a, b) => {
+        if (a.urgencyRank !== b.urgencyRank) return a.urgencyRank - b.urgencyRank;
+        if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+        if (a.dueDate) return -1;
+        if (b.dueDate) return 1;
+        return a.projectName.localeCompare(b.projectName, "es");
+      });
+
+    return { blocks, tasks };
   });
 
   // ─── Roles dinámicos y matriz de permisos ────────────────────────────────────

@@ -1,5 +1,5 @@
 import { apiClient } from "./axios";
-import type { StageStatus, SubstageStatus } from "../types/api.types";
+import type { StageStatus, SubstageStatus, TaskPriority, TaskStatus } from "../types/api.types";
 
 export type StageType =
   | "ONBOARDING"
@@ -40,9 +40,32 @@ export interface MyTaskBlock {
   stageStatus?: StageStatus;
 }
 
-export async function getMyTasks(params?: { userId?: string | null }): Promise<MyTaskBlock[]> {
+export interface MyTaskItem {
+  id: string;
+  title: string;
+  description: string | null;
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueDate: string | null;
+  urgencyRank: number;
+  projectId: string;
+  projectCode: string;
+  projectName: string;
+  stageId: string | null;
+  stageName: StageType | null;
+  stageLabel: string | null;
+  substageId: string | null;
+  substageName: string | null;
+}
+
+export interface MyTasksResponse {
+  blocks: MyTaskBlock[];
+  tasks: MyTaskItem[];
+}
+
+export async function getMyTasks(params?: { userId?: string | null }): Promise<MyTasksResponse> {
   const query: Record<string, string> = {};
   if (params?.userId) query.userId = params.userId;
-  const { data } = await apiClient.get<MyTaskBlock[]>("/api/my-tasks", { params: query });
+  const { data } = await apiClient.get<MyTasksResponse>("/api/my-tasks", { params: query });
   return data;
 }

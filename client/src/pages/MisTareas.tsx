@@ -5,6 +5,7 @@ import { AlertTriangle, ChevronDown, ChevronRight, Eye } from "lucide-react";
 import {
   getMyTasks,
   type MyTaskBlock,
+  type MyTaskItem,
   type MyTaskSubstage,
   type StageType,
 } from "../api/myTasks.api";
@@ -223,7 +224,8 @@ export function MisTareas() {
     return activeUsers?.find((u) => u.id === effectiveUserId)?.name ?? null;
   }, [activeUsers, effectiveUserId]);
 
-  const allBlocks = data ?? [];
+  const allBlocks = data?.blocks ?? [];
+  const allTasks = data?.tasks ?? [];
   const filteredBlocks = useMemo(() => {
     // scope="mine" filtra por el USUARIO TARGET. El backend ya calcula
     // myPendingSubstagesCount respecto al target, así que funciona tal cual
@@ -316,6 +318,7 @@ export function MisTareas() {
           <Stat label="Etapas activas" value={allBlocks.length} />
           <Stat label="Subetapas pendientes" value={totalPending} />
           <Stat label="Asignadas a mí" value={myPending} highlight />
+          <Stat label="Tareas" value={allTasks.length} />
           <Stat label="Atrasadas" value={overdue} danger={overdue > 0} />
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
@@ -399,7 +402,7 @@ export function MisTareas() {
             Reintentar
           </button>
         </div>
-      ) : filteredBlocks.length === 0 ? (
+      ) : filteredBlocks.length === 0 && allTasks.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-bg-card)] p-10 text-center">
           <p className="font-display text-base font-semibold text-[var(--color-text-primary)]">
             {allBlocks.length === 0
@@ -411,20 +414,110 @@ export function MisTareas() {
           </p>
         </div>
       ) : (
-        <div className={`space-y-2 ${isFetching ? "opacity-60 transition-opacity" : ""}`} aria-busy={isFetching}>
-          {filteredBlocks.map((block) => (
-            <BlockRow
-              key={block.stageId}
-              block={block}
-              expanded={expanded.has(block.stageId)}
-              onToggle={() => toggle(block.stageId)}
-              onSubstageClick={(sid) => goToStage(block, sid)}
-              onStageClick={() => goToStage(block)}
-            />
-          ))}
+        <div className={`space-y-6 ${isFetching ? "opacity-60 transition-opacity" : ""}`} aria-busy={isFetching}>
+          {filteredBlocks.length > 0 && (
+            <section className="space-y-2">
+              {filteredBlocks.map((block) => (
+                <BlockRow
+                  key={block.stageId}
+                  block={block}
+                  expanded={expanded.has(block.stageId)}
+                  onToggle={() => toggle(block.stageId)}
+                  onSubstageClick={(sid) => goToStage(block, sid)}
+                  onStageClick={() => goToStage(block)}
+                />
+              ))}
+            </section>
+          )}
+
+          {allTasks.length > 0 && (
+            <section>
+              <h2 className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
+                Tareas asignadas
+              </h2>
+              <ul className="space-y-1.5">
+                {allTasks.map((task) => (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    onClick={() => {
+                      const params = new URLSearchParams();
+                      if (task.stageId) params.set("stage", task.stageId);
+                      if (task.substageId) params.set("substage", task.substageId);
+                      const qs = params.toString();
+                      navigate(`/projects/${task.projectId}${qs ? `?${qs}` : ""}`);
+                    }}
+                  />
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
       )}
     </div>
+  );
+}
+
+function TaskRow({ task, onClick }: { task: MyTaskItem; onClick: () => void }) {
+  const urgency = URGENCY[task.urgencyRank] ?? URGENCY[3];
+  const alert = getAlertInfo(task.dueDate);
+  const dueText = subDueText(task.dueDate, alert);
+  const showPulseDot = alert.kind === "overdue" || alert.kind === "today";
+  const dueIsBold = alert.kind === "overdue" || alert.kind === "today";
+
+  // Contexto: Proyecto · Etapa · Subetapa, o Proyecto · Tarea suelta.
+  const contextParts: string[] = [task.projectName];
+  if (task.stageLabel) contextParts.push(task.stageLabel);
+  if (task.substageName) contextParts.push(task.substageName);
+  if (!task.stageId && !task.substageId) contextParts.push("Tarea suelta");
+  const context = contextParts.join(" · ");
+
+  const rowBg =
+    alert.kind === "overdue"
+      ? "var(--color-alert-overdue-bg)"
+      : alert.kind === "today"
+        ? "var(--color-alert-today-bg)"
+        : alert.kind === "upcoming"
+          ? "var(--color-alert-upcoming-bg)"
+          : undefined;
+
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onClick}
+        className="flex w-full items-center gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-2.5 text-left transition-colors hover:bg-[var(--color-bg-card-hover)]"
+        style={{
+          ...(rowBg ? { background: rowBg } : {}),
+          borderLeft: `4px solid ${urgency.barVar}`,
+        }}
+      >
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[13px] text-[var(--color-text-primary)]">
+            {showPulseDot ? (
+              <span
+                className={`pulse-dot mr-2 ${
+                  alert.kind === "overdue" ? "pulse-dot--overdue" : "pulse-dot--today"
+                }`}
+                aria-hidden="true"
+              />
+            ) : null}
+            {task.title}
+          </p>
+          <p className="mt-0.5 truncate text-[11px] text-[var(--color-text-muted)]">{context}</p>
+          {dueText ? (
+            <p
+              className="mt-0.5 text-[11px]"
+              style={{ color: urgency.barVar, fontWeight: dueIsBold ? 700 : undefined }}
+            >
+              {dueText}
+            </p>
+          ) : null}
+        </div>
+        <DueBadge alert={alert} />
+        <ChevronRight size={14} className="shrink-0 text-[var(--color-text-muted)]" />
+      </button>
+    </li>
   );
 }
 
