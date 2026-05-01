@@ -10,6 +10,7 @@ import {
 import { MetricCard } from "../components/metrics/MetricCard";
 import { PeriodSelector } from "../components/metrics/PeriodSelector";
 import { StageTimingChart } from "../components/metrics/StageTimingChart";
+import { UteEvolutionChart } from "../components/metrics/UteEvolutionChart";
 import { ProjectRanking } from "../components/metrics/ProjectRanking";
 import { usePermission } from "../hooks/usePermission";
 import { getUteMetrics, UTE_STAGE_LABEL } from "../api/uteProcess.api";
@@ -181,8 +182,8 @@ export function Metrics() {
     queryFn: () => getMetricsSales(apiParams),
   });
   const stagesQ = useQuery({
-    queryKey: ["metrics", "stages"],
-    queryFn: getMetricsStages,
+    queryKey: ["metrics", "stages", period],
+    queryFn: () => getMetricsStages(apiParams),
   });
   const projectsQ = useQuery({
     queryKey: ["metrics", "projects"],
@@ -411,6 +412,9 @@ export function Metrics() {
 
         {/* ── KPIs ────────────────────────────────────────────────────────── */}
         <SLabel>Instalaciones</SLabel>
+        <p className="text-[11px] text-[var(--color-text-muted)] -mt-2 mb-3" title="Cuenta proyectos cuya etapa OPERACIONES está en estado COMPLETED. Incluye proyectos con trámite UTE o postventa todavía abiertos.">
+          Proyectos con la etapa OPERACIONES completada, independientemente del estado de etapas posteriores (trámites UTE, postventa).
+        </p>
 
         {isLoading ? (
           <div className="grid gap-3 md:grid-cols-4 mb-6">
@@ -492,8 +496,11 @@ export function Metrics() {
 
               {/* Duración por etapa */}
               <div>
-                <p className="text-sm font-medium text-[var(--color-text-primary)] mb-4">
+                <p className="text-sm font-medium text-[var(--color-text-primary)]">
                   Duración real por etapa
+                </p>
+                <p className="text-[11px] text-[var(--color-text-muted)] mb-4">
+                  Etapas completadas en {qLabel}
                 </p>
                 <StageTimingChart stages={stagesQ.data} />
               </div>
@@ -575,6 +582,11 @@ export function Metrics() {
                     onClick={(id) => navigate(`/tramites-ute?highlight=${id}`)}
                   />
                 </div>
+              </div>
+
+              {/* Evolución de tiempos por período */}
+              <div className="mt-6">
+                <UteEvolutionChart />
               </div>
             </div>
           )}

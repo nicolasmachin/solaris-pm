@@ -3129,23 +3129,50 @@ export async function registerApiRoutes(app: FastifyInstance) {
       (project) => project.status === ProjectStatus.ACTIVE || project.status === ProjectStatus.COMPLETED,
     );
 
-    // Period-filtered completed projects
-    const completedInYear = projects.filter(
-      (p) => p.status === ProjectStatus.COMPLETED && p.actualEndDate && p.actualEndDate >= yearStart && p.actualEndDate < yearEnd,
+    // "Instalación realizada" = el proyecto tiene la etapa OPERACIONES en
+    // status COMPLETED. No exigimos un sopCode específico de subetapa porque
+    // los pipelines varían (no todos tienen O2P/O2T como subetapas formales).
+    // La fecha que se usa para agrupar es el actualEndDate de esa stage.
+    const completedOperacionesStages = await prisma.stage.findMany({
+      where: {
+        deletedAt: null,
+        name: StageType.OPERACIONES,
+        status: StageStatus.COMPLETED,
+        actualEndDate: { not: null },
+        project: { deletedAt: null },
+      },
+      select: {
+        projectId: true,
+        actualEndDate: true,
+        project: { select: { id: true, capacityKwp: true } },
+      },
+    });
+
+    type Installed = { projectId: string; installedAt: Date; capacityKwp: number };
+    const installedAll: Installed[] = completedOperacionesStages
+      .filter((s) => s.actualEndDate != null && s.project != null)
+      .map((s) => ({
+        projectId: s.projectId,
+        installedAt: s.actualEndDate as Date,
+        capacityKwp: decimalToNumber(s.project!.capacityKwp) ?? 0,
+      }));
+
+    const completedInYear = installedAll.filter(
+      (p) => p.installedAt >= yearStart && p.installedAt < yearEnd,
     );
     const completedInQuarter = filterQuarter
-      ? projects.filter(
-          (p) => p.status === ProjectStatus.COMPLETED && p.actualEndDate && quarterStart && quarterEnd && p.actualEndDate >= quarterStart && p.actualEndDate < quarterEnd,
+      ? installedAll.filter(
+          (p) => quarterStart && quarterEnd && p.installedAt >= quarterStart && p.installedAt < quarterEnd,
         )
       : [];
 
     const installationsThisYear = completedInYear.length;
     const installationsThisQuarter = completedInQuarter.length;
     const kwpInstalledThisYear = Number(
-      completedInYear.reduce((sum, p) => sum + (decimalToNumber(p.capacityKwp) ?? 0), 0).toFixed(2),
+      completedInYear.reduce((sum, p) => sum + p.capacityKwp, 0).toFixed(2),
     );
     const kwpInstalledThisQuarter = Number(
-      completedInQuarter.reduce((sum, p) => sum + (decimalToNumber(p.capacityKwp) ?? 0), 0).toFixed(2),
+      completedInQuarter.reduce((sum, p) => sum + p.capacityKwp, 0).toFixed(2),
     );
 
     // avgDaysToScheduleFirstDate for year
@@ -3254,16 +3281,39 @@ export async function registerApiRoutes(app: FastifyInstance) {
     };
   });
 
-  app.get("/metrics/stages", { preHandler: authorize(Module.METRICAS, Action.VIEW) }, async () => {
+  app.get("/metrics/stages", { preHandler: authorize(Module.METRICAS, Action.VIEW) }, async (request) => {
+    // Mide la duración real de cada etapa para TODOS los proyectos no
+    // borrados (independientemente del status del proyecto). Una etapa con
+    // status=COMPLETED y ambas fechas reales pobladas aporta una observación.
+    // POSTVENTA queda excluida por ser indefinida.
+    //
+    // Filtros opcionales por período (year y quarter): se aplican sobre
+    // `actualEndDate` de la etapa (cuándo terminó). Si no se pasan, devuelve
+    // todas las etapas completadas históricas.
+    const query = z.object({
+      year: z.coerce.number().int().optional(),
+      quarter: z.coerce.number().int().min(1).max(4).optional(),
+    }).parse(request.query);
+
+    let fechaFilter: { gte: Date; lt: Date } | undefined;
+    if (query.year && query.quarter) {
+      fechaFilter = {
+        gte: new Date(Date.UTC(query.year, (query.quarter - 1) * 3, 1)),
+        lt: new Date(Date.UTC(query.year, query.quarter * 3, 1)),
+      };
+    } else if (query.year) {
+      fechaFilter = {
+        gte: new Date(Date.UTC(query.year, 0, 1)),
+        lt: new Date(Date.UTC(query.year + 1, 0, 1)),
+      };
+    }
+
     const completedStages = await prisma.stage.findMany({
       where: {
-        project: {
-          deletedAt: null,
-          status: ProjectStatus.COMPLETED,
-        },
+        project: { deletedAt: null },
         status: StageStatus.COMPLETED,
-        // POSTVENTA es indefinida y no participa de las métricas de etapas
         name: { not: StageType.POSTVENTA },
+        ...(fechaFilter ? { actualEndDate: fechaFilter } : {}),
       },
       orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     });
@@ -3280,9 +3330,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
       .map((stageName) => {
         const items = grouped.get(stageName) ?? [];
         const completedCount = items.length;
+        // Calculamos duración on-the-fly desde fechas reales. La columna
+        // persistida `actualDurationDays` no siempre está populada (legacy),
+        // así que la ignoramos y nos basamos en lo que hay en la DB.
         const durations = items
-          .map((stage) => stage.actualDurationDays)
-          .filter((d): d is number => d != null);
+          .filter((s) => s.actualStartDate != null && s.actualEndDate != null)
+          .map((s) => {
+            const ms = s.actualEndDate!.getTime() - s.actualStartDate!.getTime();
+            return Math.round(ms / 86_400_000);
+          })
+          .filter((d) => d >= 0);
         const avgActualDays =
           durations.length > 0
             ? Number((durations.reduce((s, d) => s + d, 0) / durations.length).toFixed(2))
@@ -7840,6 +7897,154 @@ export async function registerApiRoutes(app: FastifyInstance) {
   });
 
   void SENT_APPROVED_PAIRS;
+
+  // ─── UTE quarterly-evolution: evolución trimestral con tendencias ────────
+  //
+  // Para los últimos 8 trimestres devuelve, sólo para los Q que tengan al
+  // menos un trámite finalizado, estadísticas (promedio/mediana/min/max) de:
+  //   - tiempo total
+  //   - tiempo Voltia (ourTimeDays)
+  //   - tiempo UTE (uteTimeDays)
+  //   - por etapa (cada par enviado→aprobado cuya aprobación cae en el Q)
+  //
+  // Y un resumen `tendencias` que compara el último Q vs el promedio de los
+  // últimos 4 Q (incluyendo el último) y clasifica en MEJORANDO/EMPEORANDO/
+  // ESTABLE en base al cambio porcentual (+/- 5%).
+  app.get("/metrics/ute/quarterly-evolution", { preHandler: authorize(Module.TRAMITES_UTE, Action.VIEW) }, async () => {
+    const COUNT = 8;
+    const now = new Date();
+    type Q = { key: string; label: string; year: number; quarter: number; start: Date; end: Date };
+
+    const curQ = Math.floor(now.getUTCMonth() / 3) + 1;
+    let y = now.getUTCFullYear();
+    let q = curQ;
+    const allQuarters: Q[] = [];
+    for (let i = 0; i < COUNT; i++) {
+      const start = new Date(Date.UTC(y, (q - 1) * 3, 1));
+      const end = new Date(Date.UTC(y, q * 3, 1));
+      allQuarters.push({ key: `${y}-Q${q}`, label: `Q${q} ${y}`, year: y, quarter: q, start, end });
+      q -= 1;
+      if (q < 1) { q = 4; y -= 1; }
+    }
+    allQuarters.reverse(); // chronological order
+
+    const processes = await prisma.uteProcess.findMany({
+      where: { deletedAt: null, project: { deletedAt: null } },
+    });
+
+    function median(nums: number[]): number | null {
+      if (nums.length === 0) return null;
+      const sorted = [...nums].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      const v = sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+      return Math.round(v * 10) / 10;
+    }
+    function avg(nums: number[]): number | null {
+      if (nums.length === 0) return null;
+      return Math.round((nums.reduce((s, n) => s + n, 0) / nums.length) * 10) / 10;
+    }
+    function stats(nums: number[]) {
+      return {
+        promedio: avg(nums),
+        mediana: median(nums),
+        min: nums.length > 0 ? Math.min(...nums) : null,
+        max: nums.length > 0 ? Math.max(...nums) : null,
+      };
+    }
+
+    type Responsible = "VOLTIA" | "UTE";
+    const stagePairs: Array<{
+      key: string;
+      label: string;
+      responsible: Responsible;
+      sentField: UteActionKey;
+      approvedField: UteActionKey;
+    }> = [
+      { key: "consulta", label: "Consulta", responsible: "UTE", sentField: "consultaSentAt", approvedField: "consultaApprovedAt" },
+      { key: "solicitud", label: "Solicitud → Proyecto", responsible: "UTE", sentField: "solicitudSentAt", approvedField: "proyectoApprovedAt" },
+      { key: "docs1", label: "Docs 1", responsible: "UTE", sentField: "docs1SentAt", approvedField: "docs1ApprovedAt" },
+      { key: "ensayos", label: "Ensayos", responsible: "UTE", sentField: "ensayosSentAt", approvedField: "ensayosApprovedAt" },
+      { key: "finalizacion", label: "Finalización", responsible: "UTE", sentField: "docs2SentAt", approvedField: "finalizedAt" },
+    ];
+
+    const builtQuarters = allQuarters.map((quarter) => {
+      const finalizedInQ = processes.filter(
+        (p) => p.finalizedAt && p.finalizedAt >= quarter.start && p.finalizedAt < quarter.end,
+      );
+      const times = finalizedInQ.map((p) => calculateTimes(p, now));
+
+      const porEtapa = stagePairs.map((sp) => {
+        const values: number[] = [];
+        for (const p of processes) {
+          const sent = p[sp.sentField] as Date | null;
+          const approved = p[sp.approvedField] as Date | null;
+          if (!sent || !approved) continue;
+          if (approved < quarter.start || approved >= quarter.end) continue;
+          values.push(Math.max(0, Math.round((approved.getTime() - sent.getTime()) / 86_400_000)));
+        }
+        return {
+          stageName: sp.key,
+          stageLabel: sp.label,
+          responsible: sp.responsible,
+          promedio: avg(values),
+          mediana: median(values),
+          count: values.length,
+        };
+      });
+
+      return {
+        quarter: quarter.key,
+        label: quarter.label,
+        cantidadTramites: finalizedInQ.length,
+        tiempoTotalDias: stats(times.map((t) => t.totalDays)),
+        tiempoVoltiaDias: stats(times.map((t) => t.ourTimeDays)),
+        tiempoUteDias: stats(times.map((t) => t.uteTimeDays)),
+        porEtapa,
+      };
+    });
+
+    // Sólo Q con datos: o tiene trámites finalizados, o tiene al menos un par
+    // enviado→aprobado en alguna etapa. Los Q vacíos del todo no se muestran.
+    const quarters = builtQuarters.filter(
+      (qq) =>
+        qq.cantidadTramites > 0 ||
+        qq.porEtapa.some((e) => e.count > 0),
+    );
+
+    // ─── Tendencias: último Q vs promedio últimos 4 Q (incl. último) ────────
+    type Direccion = "MEJORANDO" | "EMPEORANDO" | "ESTABLE";
+    function tendencia(values: (number | null)[]): {
+      ultimoQ: number | null;
+      promedioUltimos4Q: number | null;
+      cambio: number | null;
+      direccion: Direccion;
+    } {
+      const valid = values.filter((v): v is number => v != null);
+      if (valid.length === 0) {
+        return { ultimoQ: null, promedioUltimos4Q: null, cambio: null, direccion: "ESTABLE" };
+      }
+      const ultimoQ = valid[valid.length - 1];
+      const last4 = valid.slice(-4);
+      const promedioUltimos4Q = Math.round((last4.reduce((s, n) => s + n, 0) / last4.length) * 10) / 10;
+      if (promedioUltimos4Q === 0) {
+        return { ultimoQ, promedioUltimos4Q, cambio: 0, direccion: "ESTABLE" };
+      }
+      const cambioRaw = ((ultimoQ - promedioUltimos4Q) / promedioUltimos4Q) * 100;
+      const cambio = Math.round(cambioRaw * 10) / 10;
+      let direccion: Direccion = "ESTABLE";
+      if (cambio < -5) direccion = "MEJORANDO";
+      else if (cambio > 5) direccion = "EMPEORANDO";
+      return { ultimoQ, promedioUltimos4Q, cambio, direccion };
+    }
+
+    const tendencias = {
+      tiempoTotal: tendencia(quarters.map((qq) => qq.tiempoTotalDias.promedio)),
+      tiempoVoltia: tendencia(quarters.map((qq) => qq.tiempoVoltiaDias.promedio)),
+      tiempoUte: tendencia(quarters.map((qq) => qq.tiempoUteDias.promedio)),
+    };
+
+    return { quarters, tendencias };
+  });
 
   // ─── Dev test endpoint + Finanzas + Stock ───────────────────────────────────
   // (Originalmente esto vivía dentro de un `if (NODE_ENV === "development")`

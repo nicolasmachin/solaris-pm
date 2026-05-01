@@ -44,6 +44,23 @@ export function isOurAction(key: UteActionKey): boolean {
   return OUR_ACTIONS.has(key);
 }
 
+// Acciones que NO marcan cambio de responsable y por lo tanto NO participan
+// del cálculo de tiempos Voltia/UTE. `caseOpenedAt` es un evento intermedio
+// dentro del turno de UTE (registran el caso pero siguen ellos trabajando
+// hasta aprobar la consulta). Si lo incluyéramos, la regla del "tail" del
+// proceso en curso lo trataría como "última acción de UTE → ahora le toca
+// a Voltia", atribuyendo erróneamente días de espera a Voltia.
+//
+// El campo se mantiene en el modelo y se sigue mostrando en la UI: sólo
+// queda excluido del split ours/ute.
+const TIMING_EXCLUDED_ACTIONS = new Set<UteActionKey>([
+  "caseOpenedAt",
+]);
+
+export function participatesInTiming(key: UteActionKey): boolean {
+  return !TIMING_EXCLUDED_ACTIONS.has(key);
+}
+
 // ─── Cálculo de tiempos ─────────────────────────────────────────────────────
 
 export type UteTimes = {
@@ -58,11 +75,13 @@ type ProcessDates = Pick<
 >;
 
 export function calculateTimes(process: ProcessDates, now: Date = new Date()): UteTimes {
-  const actions = UTE_ACTION_KEYS.map((key) => ({
-    key,
-    type: isOurAction(key) ? ("ours" as const) : ("ute" as const),
-    date: process[key] as Date | null,
-  }));
+  const actions = UTE_ACTION_KEYS
+    .filter((key) => participatesInTiming(key))
+    .map((key) => ({
+      key,
+      type: isOurAction(key) ? ("ours" as const) : ("ute" as const),
+      date: process[key] as Date | null,
+    }));
 
   const completed = actions.filter((a): a is { key: UteActionKey; type: "ours" | "ute"; date: Date } => a.date !== null);
 

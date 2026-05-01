@@ -249,3 +249,54 @@ export async function getUteMetrics(): Promise<UteMetrics> {
   const { data } = await apiClient.get<UteMetrics>("/api/metrics/ute");
   return data;
 }
+
+export type UteResponsible = "VOLTIA" | "UTE";
+
+export type UteDireccion = "MEJORANDO" | "EMPEORANDO" | "ESTABLE";
+
+export type UteStats = {
+  promedio: number | null;
+  mediana: number | null;
+  min: number | null;
+  max: number | null;
+};
+
+export type UteQuarter = {
+  quarter: string;
+  label: string;
+  cantidadTramites: number;
+  tiempoTotalDias: UteStats;
+  tiempoVoltiaDias: UteStats;
+  tiempoUteDias: UteStats;
+  porEtapa: Array<{
+    stageName: string;
+    stageLabel: string;
+    responsible: UteResponsible;
+    promedio: number | null;
+    mediana: number | null;
+    count: number;
+  }>;
+};
+
+export type UteTendencia = {
+  ultimoQ: number | null;
+  promedioUltimos4Q: number | null;
+  cambio: number | null;
+  direccion: UteDireccion;
+};
+
+export type UteQuarterlyEvolution = {
+  quarters: UteQuarter[];
+  tendencias: {
+    tiempoTotal: UteTendencia;
+    tiempoVoltia: UteTendencia;
+    tiempoUte: UteTendencia;
+  };
+};
+
+export async function getUteQuarterlyEvolution(): Promise<UteQuarterlyEvolution> {
+  const { data } = await apiClient.get<UteQuarterlyEvolution>(
+    "/api/metrics/ute/quarterly-evolution",
+  );
+  return data;
+}

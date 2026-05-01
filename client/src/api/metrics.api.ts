@@ -26,8 +26,8 @@ export async function getMetricsOverview(params?: PeriodParams): Promise<Metrics
   return data;
 }
 
-export async function getMetricsStages(): Promise<MetricsStageRow[]> {
-  const { data } = await apiClient.get<MetricsStageRow[]>("/api/metrics/stages");
+export async function getMetricsStages(params?: PeriodParams): Promise<MetricsStageRow[]> {
+  const { data } = await apiClient.get<MetricsStageRow[]>("/api/metrics/stages", { params: periodQuery(params) });
   return data;
 }
 
