@@ -33,6 +33,7 @@ import { getProjects, patchProject } from "../api/projects.api";
 import type { ProjectListItem } from "../types/api.types";
 import { Button } from "../components/ui/Button";
 import { Spinner } from "../components/ui/Spinner";
+import { DropdownFilter } from "../components/ui/DropdownFilter";
 import { useAuthStore } from "../store/auth.store";
 import { usePermission } from "../hooks/usePermission";
 import {
@@ -72,16 +73,20 @@ function hexToBgAlpha(hex: string): string {
 }
 
 type PersistedFilters = {
-  stage: UteStage | "ALL";
-  status: UteStatus | "ALL";
+  stages: UteStage[];   // multi-select; vacío = "ninguno"
+  statuses: UteStatus[]; // multi-select; vacío = "ninguno"
   search: string;
   sortBy: UteSortBy;
   sortOrder: "asc" | "desc";
 };
 
+// Default: ocultar trámites finalizados (etapa FINALIZADO) y cerrados (status CERRADO).
+const ALL_STAGES: UteStage[] = ["CONSULTA", "SOLICITUD", "DOCS_1", "DOCS_2", "RELEVAR", "ENSAYOS", "FINALIZADO"];
+const ALL_STATUSES: UteStatus[] = ["CERRADO", "EN_PROCESO", "ESPERANDO", "PENDIENTE"];
+
 const DEFAULT_FILTERS: PersistedFilters = {
-  stage: "ALL",
-  status: "ALL",
+  stages: ALL_STAGES.filter((s) => s !== "FINALIZADO"),
+  statuses: ALL_STATUSES.filter((s) => s !== "CERRADO"),
   search: "",
   sortBy: "updatedAt",
   sortOrder: "desc",
@@ -102,10 +107,17 @@ function loadFilters(): PersistedFilters {
     const raw = window.localStorage.getItem(FILTER_STORAGE_KEY);
     if (!raw) return DEFAULT_FILTERS;
     const parsed = JSON.parse(raw);
+    // Migración desde el formato anterior (single-select con "ALL").
+    const stagesArr = Array.isArray(parsed.stages)
+      ? (parsed.stages as UteStage[]).filter((s) => ALL_STAGES.includes(s))
+      : DEFAULT_FILTERS.stages;
+    const statusesArr = Array.isArray(parsed.statuses)
+      ? (parsed.statuses as UteStatus[]).filter((s) => ALL_STATUSES.includes(s))
+      : DEFAULT_FILTERS.statuses;
     return {
-      stage: parsed.stage ?? DEFAULT_FILTERS.stage,
-      status: parsed.status ?? DEFAULT_FILTERS.status,
-      search: parsed.search ?? DEFAULT_FILTERS.search,
+      stages: stagesArr,
+      statuses: statusesArr,
+      search: typeof parsed.search === "string" ? parsed.search : DEFAULT_FILTERS.search,
       sortBy: (parsed.sortBy as UteSortBy) ?? DEFAULT_FILTERS.sortBy,
       sortOrder: parsed.sortOrder === "asc" ? "asc" : DEFAULT_FILTERS.sortOrder,
     };
@@ -159,10 +171,12 @@ export function TramitesUte() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
+  // Sin filtros server-side por etapa/status (los aplicamos client-side al ser
+  // multi-select). Sólo pasamos search + sort al backend.
   const queryParams = useMemo<UteListParams>(
     () => ({
-      stage: filters.stage === "ALL" ? null : filters.stage,
-      status: filters.status === "ALL" ? null : filters.status,
+      stage: null,
+      status: null,
       search: filters.search.trim() || null,
       sortBy: filters.sortBy,
       sortOrder: filters.sortOrder,
@@ -170,13 +184,25 @@ export function TramitesUte() {
     [filters],
   );
 
-  const { data: processes = [], isLoading, isError, refetch } = useQuery({
+  const { data: allProcesses = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["ute-processes", queryParams],
     queryFn: () => getUteProcesses(queryParams),
   });
 
-  const activeCount = processes.filter((p) => p.currentStatus !== "CERRADO").length;
-  const finalizedCount = processes.filter((p) => p.currentStatus === "CERRADO").length;
+  // Filtrado client-side por multi-select de etapas y estados.
+  const processes = useMemo(() => allProcesses.filter((p) => {
+    if (filters.stages.length === 0) return false;
+    if (filters.statuses.length === 0) return false;
+    if (!filters.stages.includes(p.currentStage)) return false;
+    if (!filters.statuses.includes(p.currentStatus)) return false;
+    return true;
+  }), [allProcesses, filters.stages, filters.statuses]);
+
+  const activeCount = allProcesses.filter((p) => p.currentStatus !== "CERRADO").length;
+  const finalizedCount = allProcesses.filter((p) => p.currentStatus === "CERRADO").length;
+  const totalProcesses = allProcesses.length;
+  const filteredCount = processes.length;
+  const isFiltered = filters.stages.length !== ALL_STAGES.length || filters.statuses.length !== ALL_STATUSES.length;
 
   const selected = selectedId ? processes.find((p) => p.id === selectedId) ?? null : null;
 
@@ -231,32 +257,30 @@ export function TramitesUte() {
 
       {/* Filtros */}
       <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3">
-        <label className="inline-flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
-          <span className="font-mono uppercase tracking-widest">Etapa</span>
-          <select
-            value={filters.stage}
-            onChange={(e) => setFilters((f) => ({ ...f, stage: e.target.value as UteStage | "ALL" }))}
-            className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1 text-xs text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+        <DropdownFilter
+          label="Etapa"
+          options={UTE_STAGE_ORDER.map((s) => ({ value: s, label: UTE_STAGE_LABEL[s] }))}
+          selected={filters.stages}
+          onChange={(stages) => setFilters((f) => ({ ...f, stages: stages as UteStage[] }))}
+          allLabel="Todas"
+        />
+        <DropdownFilter
+          label="Estado"
+          options={(Object.keys(UTE_STATUS_LABEL) as UteStatus[]).map((s) => ({ value: s, label: UTE_STATUS_LABEL[s] }))}
+          selected={filters.statuses}
+          onChange={(statuses) => setFilters((f) => ({ ...f, statuses: statuses as UteStatus[] }))}
+          allLabel="Todos"
+        />
+        {isFiltered && (
+          <button
+            type="button"
+            onClick={() => setFilters((f) => ({ ...f, stages: ALL_STAGES, statuses: ALL_STATUSES }))}
+            className="text-xs text-[var(--color-accent)] hover:underline font-mono uppercase tracking-wider"
+            title="Resetear filtros: mostrar todas las etapas y estados"
           >
-            <option value="ALL">Todas</option>
-            {UTE_STAGE_ORDER.map((s) => (
-              <option key={s} value={s}>{UTE_STAGE_LABEL[s]}</option>
-            ))}
-          </select>
-        </label>
-        <label className="inline-flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
-          <span className="font-mono uppercase tracking-widest">Estado</span>
-          <select
-            value={filters.status}
-            onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value as UteStatus | "ALL" }))}
-            className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1 text-xs text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
-          >
-            <option value="ALL">Todos</option>
-            {(Object.keys(UTE_STATUS_LABEL) as UteStatus[]).map((s) => (
-              <option key={s} value={s}>{UTE_STATUS_LABEL[s]}</option>
-            ))}
-          </select>
-        </label>
+            Mostrar todos
+          </button>
+        )}
         <input
           type="search"
           placeholder="Buscar cliente…"
@@ -264,6 +288,9 @@ export function TramitesUte() {
           onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
           className="flex-1 min-w-[180px] rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-1.5 text-xs text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
         />
+        <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]">
+          {filteredCount} de {totalProcesses}
+        </span>
         <label className="inline-flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
           <span className="font-mono uppercase tracking-widest">Ordenar</span>
           <select
@@ -304,11 +331,23 @@ export function TramitesUte() {
       ) : processes.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-bg-card)] p-10 text-center">
           <p className="font-display text-base font-semibold text-[var(--color-text-primary)]">
-            Sin trámites
+            {totalProcesses === 0 ? "Sin trámites" : "Ningún trámite coincide con los filtros"}
           </p>
           <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-            No hay trámites UTE que coincidan con los filtros.
+            {totalProcesses === 0
+              ? "No hay trámites UTE registrados todavía."
+              : `${totalProcesses} trámite${totalProcesses === 1 ? "" : "s"} oculto${totalProcesses === 1 ? "" : "s"} por filtros activos.`}
           </p>
+          {isFiltered && totalProcesses > 0 && (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="mt-3"
+              onClick={() => setFilters((f) => ({ ...f, stages: ALL_STAGES, statuses: ALL_STATUSES }))}
+            >
+              Mostrar todos
+            </Button>
+          )}
         </div>
       ) : view === "table" ? (
         <UteTable processes={processes} onRowClick={(id) => setSelectedId(id)} />
