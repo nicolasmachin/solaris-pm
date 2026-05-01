@@ -85,6 +85,7 @@ const SYSTEM_ROLES: Array<{ name: string; label: string }> = [
   { name: "INGENIERIA", label: "Ingeniería" },
   { name: "ASESOR_COMERCIAL", label: "Asesor comercial" },
   { name: "FINANZAS", label: "Finanzas" },
+  { name: "CLIENT", label: "Cliente" },
 ];
 
 async function seedSystemRoles(): Promise<Map<string, string>> {
@@ -153,6 +154,8 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "ADMIN", module: Module.FINANZAS,       actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { roleName: "ADMIN", module: Module.STOCK,          actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { roleName: "ADMIN", module: Module.TRAMITES_UTE,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { roleName: "ADMIN", module: Module.PORTAL_CLIENTE, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { roleName: "CLIENT", module: Module.PORTAL_CLIENTE, actions: [Action.VIEW] },
     { roleName: "ASESOR_COMERCIAL", module: Module.VENTAS,        actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMMENT] },
     { roleName: "ASESOR_COMERCIAL", module: Module.ONBOARDING,    actions: [Action.VIEW, Action.COMMENT] },
     { roleName: "ASESOR_COMERCIAL", module: Module.INGENIERIA,    actions: [Action.VIEW] },

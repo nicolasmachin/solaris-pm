@@ -37,13 +37,20 @@ export type PhaseType = "MONOFASICO" | "TRIFASICO_230" | "TRIFASICO_400";
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
-export type UserRole = "ADMIN" | "ASESOR_COMERCIAL" | "INGENIERIA" | "OPERACIONES";
+export type UserRole =
+  | "ADMIN"
+  | "ASESOR_COMERCIAL"
+  | "INGENIERIA"
+  | "OPERACIONES"
+  | "FINANZAS"
+  | "CLIENT";
 
 export interface User {
   id: string;
   email: string;
   name: string;
   role: UserRole;
+  passwordTemporary?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }

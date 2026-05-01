@@ -15,9 +15,16 @@ export function Login() {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Already authenticated → go to dashboard
+  // Already authenticated → ruteo según rol
   useEffect(() => {
-    if (isAuthenticated) navigate("/dashboard", { replace: true });
+    if (!isAuthenticated) return;
+    const u = useAuthStore.getState().user;
+    if (u?.role === "CLIENT") {
+      if (u.passwordTemporary) navigate("/cambiar-password", { replace: true });
+      else navigate("/portal", { replace: true });
+    } else {
+      navigate("/dashboard", { replace: true });
+    }
   }, [isAuthenticated, navigate]);
 
   async function handleSubmit(e: FormEvent) {
@@ -29,8 +36,14 @@ export function Login() {
       // Set token first so the next call includes Authorization header
       setAuth(data.token, data.user);
       const me = await getMe();
-      setAuth(data.token, data.user, me.permissions);
-      navigate("/dashboard", { replace: true });
+      const userWithFlag = { ...data.user, passwordTemporary: me.passwordTemporary ?? false };
+      setAuth(data.token, userWithFlag, me.permissions);
+      if (data.user.role === "CLIENT") {
+        if (me.passwordTemporary) navigate("/cambiar-password", { replace: true });
+        else navigate("/portal", { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data) {
         const apiErr = err.response.data as ApiError;

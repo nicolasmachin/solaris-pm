@@ -3847,22 +3847,24 @@ export async function registerApiRoutes(app: FastifyInstance) {
   app.get("/users/me", async (request) => {
     const user = ensureUser(request);
 
-    const permissions = await prisma.permission.findMany({
-      where: {
-        role: { name: user.role },
-      },
-      select: {
-        module: true,
-        action: true,
-      },
-      orderBy: [{ module: "asc" }, { action: "asc" }],
-    });
+    const [permissions, dbUser] = await Promise.all([
+      prisma.permission.findMany({
+        where: { role: { name: user.role } },
+        select: { module: true, action: true },
+        orderBy: [{ module: "asc" }, { action: "asc" }],
+      }),
+      prisma.user.findUnique({
+        where: { id: user.id },
+        select: { passwordTemporary: true },
+      }),
+    ]);
 
     return {
       id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
+      passwordTemporary: dbUser?.passwordTemporary ?? false,
       permissions: groupPermissionsByModule(permissions),
     };
   });

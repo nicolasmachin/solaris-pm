@@ -175,6 +175,7 @@ enum Module {
   FINANZAS
   STOCK
   TRAMITES_UTE
+  PORTAL_CLIENTE
 }
 
 enum Moneda {
@@ -357,6 +358,8 @@ model User {
   reconciliationsCreated         AccountReconciliation[]  @relation("ReconciliationCreatedBy")
   aiQueries                      AIQuery[]
   aiRateLimit                    AIRateLimit?
+  clientProjects                 Project[]                @relation("ProjectClient")
+  passwordTemporary              Boolean                  @default(false)
   deletedAt                      DateTime?                @db.Timestamptz(6)
   createdAt                      DateTime                 @default(now()) @db.Timestamptz(6)
   updatedAt                      DateTime                 @updatedAt @db.Timestamptz(6)
@@ -397,6 +400,8 @@ model Project {
   createdBy            User                  @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   salespersonId        String?
   salesperson          User?                 @relation("ProjectSalesperson", fields: [salespersonId], references: [id], onDelete: SetNull)
+  clientUserId         String?
+  clientUser           User?                 @relation("ProjectClient", fields: [clientUserId], references: [id], onDelete: SetNull)
   stages               Stage[]
   substages            Substage[]
   checklistItems       ChecklistItem[]
@@ -422,6 +427,7 @@ model Project {
   @@index([tenantId])
   @@index([createdById])
   @@index([salespersonId])
+  @@index([clientUserId])
   @@index([plannedEndDate])
   @@index([deletedAt])
   @@map("projects")

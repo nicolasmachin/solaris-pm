@@ -27,6 +27,7 @@ import { CATEGORIA_LABEL } from "../types/finance.types";
 import { TabMateriales } from "./AdminMateriales";
 import { TabCuentas } from "./AdminCuentas";
 import { TabDeadlineRules } from "./AdminDeadlineRules";
+import { TabClientes } from "./AdminClientes";
 import { FinanceHealthWidget } from "../components/finance/FinanceHealthWidget";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -3051,7 +3052,7 @@ function ConfirmDialog({
   );
 }
 
-type Tab = "usuarios" | "permisos" | "configuracion" | "objetivos" | "finanzas" | "equipos" | "pipeline" | "materiales" | "cuentas" | "deadlines";
+type Tab = "usuarios" | "permisos" | "configuracion" | "objetivos" | "finanzas" | "equipos" | "pipeline" | "materiales" | "cuentas" | "deadlines" | "clientes";
 
 export function Admin() {
   const [activeTab, setActiveTab] = useState<Tab>("usuarios");
@@ -3067,6 +3068,7 @@ export function Admin() {
     { id: "materiales", label: "Materiales" },
     { id: "cuentas", label: "Cuentas" },
     { id: "deadlines", label: "Reglas de Deadlines" },
+    { id: "clientes", label: "Clientes portal" },
   ];
 
   return (
@@ -3113,6 +3115,7 @@ export function Admin() {
       {activeTab === "materiales" && <TabMateriales />}
       {activeTab === "cuentas" && <TabCuentas />}
       {activeTab === "deadlines" && <TabDeadlineRules />}
+      {activeTab === "clientes" && <TabClientes />}
     </div>
   );
 }

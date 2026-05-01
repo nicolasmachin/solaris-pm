@@ -33,6 +33,10 @@ const Stock = lazy(() => import("./pages/Stock").then((module) => ({ default: mo
 const Calendar = lazy(() => import("./pages/Calendar").then((module) => ({ default: module.Calendar })));
 const MisTareas = lazy(() => import("./pages/MisTareas").then((module) => ({ default: module.MisTareas })));
 const TramitesUte = lazy(() => import("./pages/TramitesUte").then((module) => ({ default: module.TramitesUte })));
+const PortalProjects = lazy(() => import("./pages/PortalProjects").then((module) => ({ default: module.PortalProjects })));
+const PortalProjectUte = lazy(() => import("./pages/PortalProjectUte").then((module) => ({ default: module.PortalProjectUte })));
+const PortalLayout = lazy(() => import("./components/layout/PortalLayout").then((module) => ({ default: module.PortalLayout })));
+const ChangePassword = lazy(() => import("./pages/ChangePassword").then((module) => ({ default: module.ChangePassword })));
 
 function RouteFallback() {
   return (
@@ -43,8 +47,17 @@ function RouteFallback() {
 }
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
+  const location = useLocation();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  // Si es CLIENT con password temporal, forzar cambio de contraseña.
+  if (user?.role === "CLIENT" && user.passwordTemporary && location.pathname !== "/cambiar-password") {
+    return <Navigate to="/cambiar-password" replace />;
+  }
+  // Si es CLIENT, solo puede entrar a rutas /portal/* y /cambiar-password.
+  if (user?.role === "CLIENT" && !location.pathname.startsWith("/portal") && location.pathname !== "/cambiar-password") {
+    return <Navigate to="/portal" replace />;
+  }
   return <>{children}</>;
 }
 
@@ -111,6 +124,28 @@ export function App() {
 
       {/* Redirect root to dashboard */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+      {/* Cambio de contraseña (forzado para passwordTemporary) — sin layout */}
+      <Route
+        path="/cambiar-password"
+        element={
+          <ProtectedRoute>
+            <ChangePassword />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Portal cliente — layout simple, sin sidebar admin */}
+      <Route
+        element={
+          <ProtectedRoute>
+            <PortalLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/portal" element={<PortalProjects />} />
+        <Route path="/portal/:id" element={<PortalProjectUte />} />
+      </Route>
 
       {/* Protected layout */}
       <Route
