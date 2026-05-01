@@ -1,5 +1,45 @@
 # Novedades
 
+## v4.9
+
+### 1 de mayo de 2026
+
+#### Trámites UTE — fix en cálculo de tiempos
+
+La fecha de "Caso abierto" (acción intermedia de UTE) ya no le sumaba días por error a Voltia en la cola del proceso. En trámites con la última acción siendo "Caso abierto" sin más actividad, el tiempo en espera ahora se atribuye correctamente a UTE. Caso testigo: Fernando Ciaran (99 días en espera) ahora figuran del lado de UTE, no nuestro.
+
+#### Métricas — "Duración real por etapa" arreglada
+
+La sección dejó de estar vacía:
+- Se removió el filtro `project.status = COMPLETED` que excluía todas las etapas (ningún proyecto está marcado COMPLETED).
+- La duración por etapa se calcula on-the-fly desde `actualEndDate - actualStartDate` (la columna persistida estaba siempre nula).
+- Se agregó soporte de filtros año/trimestre del PeriodSelector que ya tenía el resto de la página.
+
+#### Métricas /overview — "proyectos completados"
+
+Ahora considera proyectos cuyo stage OPERACIONES está en estado COMPLETED (antes usaba `project.status = COMPLETED`, que ningún proyecto tiene, dejando el KPI en 0).
+
+#### Nueva sección "Evolución de tiempos UTE"
+
+Vive abajo del bloque UTE en `/metricas/ute`.
+
+**3 tarjetas grandes lado a lado**: Tiempo Total · Tiempo Voltia · Tiempo UTE.
+- Cada tarjeta = un gráfico de barras con los últimos 8 trimestres con datos.
+- Valor = promedio por trámite finalizado en ese Q (cada trámite aporta una observación: suma de todas sus etapas Voltia / UTE / total).
+- Se llenan al cerrar el primer trámite; mientras tanto el resto de la sección sigue mostrando datos por etapa.
+
+**Grilla de mini-gráficos por etapa**: una mini-card por cada etapa cerrada (Caso abierto, Consulta aprobada, Solicitud enviada, Proyecto aprobado, Docs 1, Ensayos, Docs 2, Finalizado, etc.).
+- Cada etapa cerrada se asigna al Q de su fecha de cierre (no requiere que el trámite esté finalizado).
+- Color según responsable: verde Voltia, naranja UTE.
+- Muestra promedio del último Q + total de observaciones acumuladas.
+
+**Indicador de tendencia**: cada gráfico tiene un badge con flecha y % vs promedio últimos 4 Q.
+- Verde + flecha hacia abajo = MEJORANDO (los tiempos bajan).
+- Roja + flecha hacia arriba = EMPEORANDO.
+- Gris = ESTABLE (cambio dentro de ±5%).
+
+**Detalles visuales**: la barra del Q actual va con color full opacity; las anteriores con 50% para resaltar el período en curso. Tooltip con contraste arreglado y conteo de trámites.
+
 ## v4.8
 
 ### 30 de abril de 2026

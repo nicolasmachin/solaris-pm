@@ -7900,16 +7900,24 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
   // ─── UTE quarterly-evolution: evolución trimestral con tendencias ────────
   //
-  // Para los últimos 8 trimestres devuelve, sólo para los Q que tengan al
-  // menos un trámite finalizado, estadísticas (promedio/mediana/min/max) de:
-  //   - tiempo total
-  //   - tiempo Voltia (ourTimeDays)
-  //   - tiempo UTE (uteTimeDays)
-  //   - por etapa (cada par enviado→aprobado cuya aprobación cae en el Q)
+  // Dos modelos conviven en este endpoint:
   //
-  // Y un resumen `tendencias` que compara el último Q vs el promedio de los
-  // últimos 4 Q (incluyendo el último) y clasifica en MEJORANDO/EMPEORANDO/
-  // ESTABLE en base al cambio porcentual (+/- 5%).
+  // 1) Tarjetas grandes (Tiempo Total / Voltia / UTE): SOLO trámites
+  //    finalizados. Por trámite se calcula:
+  //      - tiempoTotal  = suma de todas sus etapas cerradas
+  //      - tiempoVoltia = suma de sus etapas VOLTIA (envíos)
+  //      - tiempoUte    = suma de sus etapas UTE (aprobaciones, caso, fin)
+  //    Cada trámite se asigna al Q de su `finalizedAt` y aporta UN valor a
+  //    cada estadística (promedio/mediana/min/max).
+  //
+  // 2) Mini cards "por etapa": cada etapa cerrada (intervalo entre dos
+  //    acciones consecutivas) se asigna al Q de la acción de cierre. Una
+  //    etapa contribuye independientemente del estado del trámite.
+  //
+  // Q se incluye si tiene datos en cualquiera de los dos modelos.
+  //
+  // Tendencias: último Q vs promedio últimos 4 Q (inclusive). Clasifica en
+  // MEJORANDO (cambio < -5%) / EMPEORANDO (> 5%) / ESTABLE.
   app.get("/metrics/ute/quarterly-evolution", { preHandler: authorize(Module.TRAMITES_UTE, Action.VIEW) }, async () => {
     const COUNT = 8;
     const now = new Date();
@@ -7926,7 +7934,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       q -= 1;
       if (q < 1) { q = 4; y -= 1; }
     }
-    allQuarters.reverse(); // chronological order
+    allQuarters.reverse();
 
     const processes = await prisma.uteProcess.findMany({
       where: { deletedAt: null, project: { deletedAt: null } },
@@ -7949,69 +7957,147 @@ export async function registerApiRoutes(app: FastifyInstance) {
         mediana: median(nums),
         min: nums.length > 0 ? Math.min(...nums) : null,
         max: nums.length > 0 ? Math.max(...nums) : null,
+        cantidad: nums.length,
       };
     }
 
     type Responsible = "VOLTIA" | "UTE";
-    const stagePairs: Array<{
-      key: string;
-      label: string;
-      responsible: Responsible;
-      sentField: UteActionKey;
-      approvedField: UteActionKey;
-    }> = [
-      { key: "consulta", label: "Consulta", responsible: "UTE", sentField: "consultaSentAt", approvedField: "consultaApprovedAt" },
-      { key: "solicitud", label: "Solicitud → Proyecto", responsible: "UTE", sentField: "solicitudSentAt", approvedField: "proyectoApprovedAt" },
-      { key: "docs1", label: "Docs 1", responsible: "UTE", sentField: "docs1SentAt", approvedField: "docs1ApprovedAt" },
-      { key: "ensayos", label: "Ensayos", responsible: "UTE", sentField: "ensayosSentAt", approvedField: "ensayosApprovedAt" },
-      { key: "finalizacion", label: "Finalización", responsible: "UTE", sentField: "docs2SentAt", approvedField: "finalizedAt" },
+
+    // Cada acción que CIERRA una etapa, con su label y responsable.
+    // `consultaSentAt` no figura: nunca cierra una etapa (es la primera
+    // acción del trámite).
+    const STAGE_META: Record<string, { label: string; responsible: Responsible }> = {
+      caseOpenedAt:        { label: "Caso abierto",        responsible: "UTE" },
+      consultaApprovedAt:  { label: "Consulta aprobada",   responsible: "UTE" },
+      solicitudSentAt:     { label: "Solicitud enviada",   responsible: "VOLTIA" },
+      proyectoApprovedAt:  { label: "Proyecto aprobado",   responsible: "UTE" },
+      docs1SentAt:         { label: "Docs 1 enviados",     responsible: "VOLTIA" },
+      docs1ApprovedAt:     { label: "Docs 1 aprobados",    responsible: "UTE" },
+      ensayosSentAt:       { label: "Ensayos enviados",    responsible: "VOLTIA" },
+      ensayosApprovedAt:   { label: "Ensayos aprobados",   responsible: "UTE" },
+      docs2SentAt:         { label: "Docs 2 enviados",     responsible: "VOLTIA" },
+      finalizedAt:         { label: "Finalizado",          responsible: "UTE" },
+    };
+    const STAGE_ORDER = Object.keys(STAGE_META);
+
+    const ALL_ACTIONS: UteActionKey[] = [
+      "consultaSentAt", "caseOpenedAt", "consultaApprovedAt",
+      "solicitudSentAt", "proyectoApprovedAt",
+      "docs1SentAt", "docs1ApprovedAt",
+      "ensayosSentAt", "ensayosApprovedAt",
+      "docs2SentAt", "finalizedAt",
     ];
 
-    const builtQuarters = allQuarters.map((quarter) => {
-      const finalizedInQ = processes.filter(
-        (p) => p.finalizedAt && p.finalizedAt >= quarter.start && p.finalizedAt < quarter.end,
-      );
-      const times = finalizedInQ.map((p) => calculateTimes(p, now));
+    type ClosedStage = {
+      stageKey: string;
+      responsible: Responsible;
+      duracion: number;
+      fechaCierre: Date;
+    };
 
-      const porEtapa = stagePairs.map((sp) => {
-        const values: number[] = [];
-        for (const p of processes) {
-          const sent = p[sp.sentField] as Date | null;
-          const approved = p[sp.approvedField] as Date | null;
-          if (!sent || !approved) continue;
-          if (approved < quarter.start || approved >= quarter.end) continue;
-          values.push(Math.max(0, Math.round((approved.getTime() - sent.getTime()) / 86_400_000)));
-        }
+    const allClosed: ClosedStage[] = [];
+    for (const p of processes) {
+      const actions = ALL_ACTIONS
+        .map((k) => ({ key: k, date: p[k] as Date | null }))
+        .filter((a): a is { key: UteActionKey; date: Date } => a.date != null)
+        .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+      for (let i = 1; i < actions.length; i++) {
+        const prev = actions[i - 1];
+        const curr = actions[i];
+        const meta = STAGE_META[curr.key];
+        if (!meta) continue;
+        const duracion = Math.max(
+          0,
+          Math.round((curr.date.getTime() - prev.date.getTime()) / 86_400_000),
+        );
+        allClosed.push({
+          stageKey: curr.key,
+          responsible: meta.responsible,
+          duracion,
+          fechaCierre: curr.date,
+        });
+      }
+    }
+
+    // Por cada trámite finalizado, sumar sus etapas Voltia/UTE/Total.
+    type FinalizedTotals = {
+      processId: string;
+      finalizedAt: Date;
+      tiempoVoltia: number;
+      tiempoUte: number;
+      tiempoTotal: number;
+    };
+    const finalizedTotals: FinalizedTotals[] = [];
+    for (const p of processes) {
+      if (!p.finalizedAt) continue;
+      const acts = ALL_ACTIONS
+        .map((k) => ({ key: k, date: p[k] as Date | null }))
+        .filter((a): a is { key: UteActionKey; date: Date } => a.date != null)
+        .sort((a, b) => a.date.getTime() - b.date.getTime());
+      let voltia = 0;
+      let ute = 0;
+      for (let i = 1; i < acts.length; i++) {
+        const meta = STAGE_META[acts[i].key];
+        if (!meta) continue;
+        const dur = Math.max(
+          0,
+          Math.round((acts[i].date.getTime() - acts[i - 1].date.getTime()) / 86_400_000),
+        );
+        if (meta.responsible === "VOLTIA") voltia += dur;
+        else ute += dur;
+      }
+      finalizedTotals.push({
+        processId: p.id,
+        finalizedAt: p.finalizedAt,
+        tiempoVoltia: voltia,
+        tiempoUte: ute,
+        tiempoTotal: voltia + ute,
+      });
+    }
+
+    const builtQuarters = allQuarters.map((quarter) => {
+      // Top cards: trámites finalizados en este Q, agregados por trámite.
+      const finishedInQ = finalizedTotals.filter(
+        (t) => t.finalizedAt >= quarter.start && t.finalizedAt < quarter.end,
+      );
+      const totalsTotal = finishedInQ.map((t) => t.tiempoTotal);
+      const totalsVoltia = finishedInQ.map((t) => t.tiempoVoltia);
+      const totalsUte = finishedInQ.map((t) => t.tiempoUte);
+
+      // Mini cards: cada etapa cerrada en este Q.
+      const stagesInQ = allClosed.filter(
+        (s) => s.fechaCierre >= quarter.start && s.fechaCierre < quarter.end,
+      );
+      const porEtapa = STAGE_ORDER.map((key) => {
+        const meta = STAGE_META[key];
+        const durs = stagesInQ.filter((s) => s.stageKey === key).map((s) => s.duracion);
         return {
-          stageName: sp.key,
-          stageLabel: sp.label,
-          responsible: sp.responsible,
-          promedio: avg(values),
-          mediana: median(values),
-          count: values.length,
+          stageName: key,
+          stageLabel: meta.label,
+          responsible: meta.responsible,
+          promedio: avg(durs),
+          mediana: median(durs),
+          count: durs.length,
         };
       });
 
       return {
         quarter: quarter.key,
         label: quarter.label,
-        cantidadTramites: finalizedInQ.length,
-        tiempoTotalDias: stats(times.map((t) => t.totalDays)),
-        tiempoVoltiaDias: stats(times.map((t) => t.ourTimeDays)),
-        tiempoUteDias: stats(times.map((t) => t.uteTimeDays)),
+        cantidadTramitesFinalizados: finishedInQ.length,
+        cantidadEtapasCerradas: stagesInQ.length,
+        tiempoTotalDias: stats(totalsTotal),
+        tiempoVoltiaDias: stats(totalsVoltia),
+        tiempoUteDias: stats(totalsUte),
         porEtapa,
       };
     });
 
-    // Sólo Q con datos: o tiene trámites finalizados, o tiene al menos un par
-    // enviado→aprobado en alguna etapa. Los Q vacíos del todo no se muestran.
     const quarters = builtQuarters.filter(
-      (qq) =>
-        qq.cantidadTramites > 0 ||
-        qq.porEtapa.some((e) => e.count > 0),
+      (qq) => qq.cantidadTramitesFinalizados > 0 || qq.cantidadEtapasCerradas > 0,
     );
 
-    // ─── Tendencias: último Q vs promedio últimos 4 Q (incl. último) ────────
     type Direccion = "MEJORANDO" | "EMPEORANDO" | "ESTABLE";
     function tendencia(values: (number | null)[]): {
       ultimoQ: number | null;

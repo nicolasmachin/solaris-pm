@@ -259,12 +259,14 @@ export type UteStats = {
   mediana: number | null;
   min: number | null;
   max: number | null;
+  cantidad: number;
 };
 
 export type UteQuarter = {
   quarter: string;
   label: string;
-  cantidadTramites: number;
+  cantidadTramitesFinalizados: number;
+  cantidadEtapasCerradas: number;
   tiempoTotalDias: UteStats;
   tiempoVoltiaDias: UteStats;
   tiempoUteDias: UteStats;

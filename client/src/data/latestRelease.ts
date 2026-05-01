@@ -23,33 +23,38 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "4.8",
-  date: "30 de abril de 2026",
+  version: "4.9",
+  date: "1 de mayo de 2026",
   sections: [
     {
-      title: "Asistente IA con Text-to-SQL (Claude)",
+      title: "Trámites UTE — fix en cálculo de tiempos",
       items: [
-        "Botón violeta flotante abajo a la derecha (sólo visible para ADMIN).",
-        "Hacé preguntas en lenguaje natural sobre tus datos: \"¿Cuánto cobré en abril?\", \"Top 5 proveedores con más facturas pendientes\", etc.",
-        "Cada respuesta incluye el SQL ejecutado, cantidad de filas, costo USD y duración (collapsible).",
-        "Seguridad en capas: validador de SQL rechaza queries de mutación, tablas sensibles bloqueadas a nivel Postgres con usuario read-only.",
-        "Rate limit por usuario: 100 consultas/día y USD 50/mes (default), configurable.",
+        "La fecha de \"Caso abierto\" ya no le sumaba días por error a Voltia en la cola del proceso.",
+        "En trámites con \"Caso abierto\" como última acción, los días en espera ahora se atribuyen correctamente a UTE.",
       ],
     },
     {
-      title: "Indicador visual de Movement pagado vía Payment",
+      title: "Métricas — \"Duración real por etapa\" arreglada",
       items: [
-        "Cuando un GASTO PAGADO tiene Payment aplicado que lo cubre totalmente, el saldo USD aparece en gris itálica y el badge dice \"Pagado vía pago\".",
-        "Tooltip aclara que la fila es informativa (el descuento real ocurrió en el Payment).",
-        "Detail panel del Movement: panel azul + botón \"Ver pago asociado →\" abre el Payment directamente.",
+        "Se quitó el filtro de proyecto completado que excluía todas las etapas (ningún proyecto está marcado completado).",
+        "La duración por etapa se calcula desde la fecha real de inicio y fin (la columna persistida estaba siempre nula).",
+        "Soporta filtros de año/trimestre como el resto de la página.",
       ],
     },
     {
-      title: "Detalle de movimientos en P&L mensual",
+      title: "Métricas /overview — \"proyectos completados\"",
       items: [
-        "En /finanzas/resultado tab Mensual, cada categoría es expandible para ver los movimientos individuales que la componen.",
-        "Cada categoría tiene estado independiente — expandir una no afecta a las otras.",
-        "Click en una fila tipo Pago abre el panel lateral del Payment.",
+        "Ahora considera proyectos cuyo stage OPERACIONES está en estado COMPLETED (antes usaba el status del proyecto, que nadie marca, y el KPI quedaba en 0).",
+      ],
+    },
+    {
+      title: "Evolución de tiempos UTE",
+      items: [
+        "Nueva sección abajo del bloque UTE en /metricas/ute con últimos 8 trimestres con datos.",
+        "3 gráficos de barras grandes lado a lado: Tiempo Total · Tiempo Voltia · Tiempo UTE. Cada barra = promedio por trámite finalizado en ese Q (suma de todas sus etapas).",
+        "Grilla de mini-gráficos por etapa cerrada (Consulta aprobada, Solicitud enviada, Docs 1, Ensayos, etc.) coloreados según responsable: verde Voltia, naranja UTE.",
+        "Indicador de tendencia con flecha y % vs promedio últimos 4 Q (verde si bajan los tiempos, roja si suben, gris si está estable).",
+        "Barra del Q actual full opacity; anteriores 50% para resaltar el período en curso.",
       ],
     },
   ],
@@ -63,6 +68,14 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "4.8",
+    shortDate: "30 abr",
+    highlights: [
+      "Asistente IA con Text-to-SQL (sólo ADMIN): preguntá en lenguaje natural sobre tus datos.",
+      "Indicador visual de Movement pagado vía Payment + detalle de movimientos expandible en P&L mensual.",
+    ],
+  },
   {
     version: "4.7",
     shortDate: "30 abr",
