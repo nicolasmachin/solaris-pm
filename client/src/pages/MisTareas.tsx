@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ChevronDown, ChevronRight, Eye } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
+import { AlertTriangle, Check, ChevronDown, ChevronRight, Eye } from "lucide-react";
+import { patchTask } from "../api/tasks.api";
 import {
   getMyTasks,
   type MyTaskBlock,
   type MyTaskItem,
   type MyTaskSubstage,
   type StageType,
+  type TaskScope,
 } from "../api/myTasks.api";
 import { Spinner } from "../components/ui/Spinner";
 import { UserSelect } from "../components/ui/UserSelect";
@@ -202,9 +205,11 @@ export function MisTareas() {
 
   const effectiveUserId = isAdmin ? viewUserId : null;
 
+  const [tasksScope, setTasksScope] = useState<TaskScope>("pending");
+
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
-    queryKey: ["my-tasks", effectiveUserId ?? "self"],
-    queryFn: () => getMyTasks({ userId: effectiveUserId }),
+    queryKey: ["my-tasks", effectiveUserId ?? "self", tasksScope],
+    queryFn: () => getMyTasks({ userId: effectiveUserId, taskScope: tasksScope }),
     staleTime: 30_000,
   });
 
@@ -402,7 +407,7 @@ export function MisTareas() {
             Reintentar
           </button>
         </div>
-      ) : filteredBlocks.length === 0 && allTasks.length === 0 ? (
+      ) : filteredBlocks.length === 0 && allTasks.length === 0 && tasksScope === "pending" ? (
         <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-bg-card)] p-10 text-center">
           <p className="font-display text-base font-semibold text-[var(--color-text-primary)]">
             {allBlocks.length === 0
@@ -430,11 +435,21 @@ export function MisTareas() {
             </section>
           )}
 
-          {allTasks.length > 0 && (
-            <section>
-              <h2 className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
+          <section>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <h2 className="font-mono text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
                 Tareas asignadas
               </h2>
+              <div className="inline-flex rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] p-0.5 text-[11px]">
+                <FilterButton active={tasksScope === "pending"} onClick={() => setTasksScope("pending")}>
+                  Pendientes
+                </FilterButton>
+                <FilterButton active={tasksScope === "completed"} onClick={() => setTasksScope("completed")}>
+                  Completadas
+                </FilterButton>
+              </div>
+            </div>
+            {allTasks.length > 0 ? (
               <ul className="space-y-1.5">
                 {allTasks.map((task) => (
                   <TaskRow
@@ -450,8 +465,14 @@ export function MisTareas() {
                   />
                 ))}
               </ul>
-            </section>
-          )}
+            ) : (
+              <p className="rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-bg-card)] p-4 text-center text-xs text-[var(--color-text-muted)]">
+                {tasksScope === "pending"
+                  ? "No tenés tareas pendientes."
+                  : "Aún no completaste ninguna tarea."}
+              </p>
+            )}
+          </section>
         </div>
       )}
     </div>
@@ -459,11 +480,13 @@ export function MisTareas() {
 }
 
 function TaskRow({ task, onClick }: { task: MyTaskItem; onClick: () => void }) {
+  const qc = useQueryClient();
+  const isCompleted = task.status === "COMPLETED";
   const urgency = URGENCY[task.urgencyRank] ?? URGENCY[3];
   const alert = getAlertInfo(task.dueDate);
   const dueText = subDueText(task.dueDate, alert);
-  const showPulseDot = alert.kind === "overdue" || alert.kind === "today";
-  const dueIsBold = alert.kind === "overdue" || alert.kind === "today";
+  const showPulseDot = !isCompleted && (alert.kind === "overdue" || alert.kind === "today");
+  const dueIsBold = !isCompleted && (alert.kind === "overdue" || alert.kind === "today");
 
   // Contexto: Proyecto · Etapa · Subetapa, o Proyecto · Tarea suelta.
   const contextParts: string[] = [task.projectName];
@@ -472,8 +495,9 @@ function TaskRow({ task, onClick }: { task: MyTaskItem; onClick: () => void }) {
   if (!task.stageId && !task.substageId) contextParts.push("Tarea suelta");
   const context = contextParts.join(" · ");
 
-  const rowBg =
-    alert.kind === "overdue"
+  const rowBg = isCompleted
+    ? undefined
+    : alert.kind === "overdue"
       ? "var(--color-alert-overdue-bg)"
       : alert.kind === "today"
         ? "var(--color-alert-today-bg)"
@@ -481,44 +505,124 @@ function TaskRow({ task, onClick }: { task: MyTaskItem; onClick: () => void }) {
           ? "var(--color-alert-upcoming-bg)"
           : undefined;
 
+  const completeMut = useMutation({
+    mutationFn: () =>
+      patchTask(task.projectId, task.id, {
+        status: isCompleted ? "PENDING" : "COMPLETED",
+      }),
+    onSuccess: () => {
+      toast.success(isCompleted ? "Tarea reabierta" : "Tarea completada");
+      qc.invalidateQueries({ queryKey: ["my-tasks"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-my-tasks"] });
+      qc.invalidateQueries({ queryKey: ["project"] });
+    },
+    onError: () =>
+      toast.error(isCompleted ? "No se pudo reabrir la tarea" : "No se pudo completar la tarea"),
+  });
+
+  // Borde izquierdo: urgencia para pendientes, gris para completadas.
+  const borderLeftColor = isCompleted ? "var(--color-border)" : urgency.barVar;
+
   return (
     <li>
-      <button
-        type="button"
-        onClick={onClick}
+      <div
         className="flex w-full items-center gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-2.5 text-left transition-colors hover:bg-[var(--color-bg-card-hover)]"
         style={{
           ...(rowBg ? { background: rowBg } : {}),
-          borderLeft: `4px solid ${urgency.barVar}`,
+          borderLeft: `4px solid ${borderLeftColor}`,
         }}
       >
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] text-[var(--color-text-primary)]">
-            {showPulseDot ? (
-              <span
-                className={`pulse-dot mr-2 ${
-                  alert.kind === "overdue" ? "pulse-dot--overdue" : "pulse-dot--today"
-                }`}
-                aria-hidden="true"
-              />
-            ) : null}
-            {task.title}
-          </p>
-          <p className="mt-0.5 truncate text-[11px] text-[var(--color-text-muted)]">{context}</p>
-          {dueText ? (
+        {isCompleted ? (
+          <span
+            aria-hidden="true"
+            className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400"
+          >
+            <Check size={12} />
+          </span>
+        ) : (
+          <button
+            type="button"
+            aria-label="Marcar como completada"
+            title="Marcar como completada"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (completeMut.isPending) return;
+              completeMut.mutate();
+            }}
+            disabled={completeMut.isPending}
+            className="group relative inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-bg-app)] text-[var(--color-text-muted)] transition-colors hover:border-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-400 disabled:opacity-50"
+          >
+            <Check size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onClick}
+          className="flex flex-1 min-w-0 items-center gap-3 text-left"
+        >
+          <div className="min-w-0 flex-1">
             <p
-              className="mt-0.5 text-[11px]"
-              style={{ color: urgency.barVar, fontWeight: dueIsBold ? 700 : undefined }}
+              className={`truncate text-[13px] ${
+                isCompleted
+                  ? "text-[var(--color-text-muted)] line-through"
+                  : "text-[var(--color-text-primary)]"
+              }`}
             >
-              {dueText}
+              {showPulseDot ? (
+                <span
+                  className={`pulse-dot mr-2 ${
+                    alert.kind === "overdue" ? "pulse-dot--overdue" : "pulse-dot--today"
+                  }`}
+                  aria-hidden="true"
+                />
+              ) : null}
+              {task.title}
             </p>
-          ) : null}
-        </div>
-        <DueBadge alert={alert} />
-        <ChevronRight size={14} className="shrink-0 text-[var(--color-text-muted)]" />
-      </button>
+            <p className="mt-0.5 truncate text-[11px] text-[var(--color-text-muted)]">{context}</p>
+            {isCompleted && task.completedAt ? (
+              <p className="mt-0.5 text-[11px] text-emerald-400">
+                Completada el {formatCompletedAt(task.completedAt)}
+              </p>
+            ) : !isCompleted && dueText ? (
+              <p
+                className="mt-0.5 text-[11px]"
+                style={{ color: urgency.barVar, fontWeight: dueIsBold ? 700 : undefined }}
+              >
+                {dueText}
+              </p>
+            ) : null}
+          </div>
+          {!isCompleted && <DueBadge alert={alert} />}
+          <ChevronRight size={14} className="shrink-0 text-[var(--color-text-muted)]" />
+        </button>
+        {isCompleted && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (completeMut.isPending) return;
+              completeMut.mutate();
+            }}
+            disabled={completeMut.isPending}
+            className="shrink-0 rounded-md border border-[var(--color-border)] px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] hover:text-[var(--color-text-primary)] disabled:opacity-50"
+          >
+            {completeMut.isPending ? "…" : "Reabrir"}
+          </button>
+        )}
+      </div>
     </li>
   );
+}
+
+function formatCompletedAt(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  const day = d.getDate();
+  const mon = MONTHS_ES[d.getMonth()];
+  const yr = d.getFullYear();
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${day} ${mon} ${yr} · ${hh}:${mm}`;
 }
 
 // ─── Sub-componentes ─────────────────────────────────────────────────────────

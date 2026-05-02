@@ -3895,8 +3895,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     // Admins pueden consultar tareas de otro usuario vía ?userId=. Para no
     // admins el param se ignora silenciosamente (no es error).
+    // taskScope: "pending" (default) muestra tareas no-completadas, "completed"
+    // muestra sólo las ya cerradas (con completedAt). Sólo afecta a la lista
+    // `tasks`; el listado de etapas/subetapas siempre es el mismo.
     const query = z
-      .object({ userId: z.string().min(1).optional() })
+      .object({
+        userId: z.string().min(1).optional(),
+        taskScope: z.enum(["pending", "completed"]).optional().default("pending"),
+      })
       .parse(request.query);
     const isAdmin = currentUser.role === "ADMIN";
     let targetUser: { id: string; role: string; name: string } = {
@@ -4082,7 +4088,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
       where: {
         userId: targetUser.id,
         deletedAt: null,
-        status: { not: TaskStatus.COMPLETED },
+        status:
+          query.taskScope === "completed"
+            ? TaskStatus.COMPLETED
+            : { not: TaskStatus.COMPLETED },
         project: {
           deletedAt: null,
           status: { notIn: [ProjectStatus.ARCHIVED, ProjectStatus.COMPLETED] },
@@ -4103,6 +4112,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         status: t.status,
         priority: t.priority,
         dueDate: serializeDateOnly(t.dueDate),
+        completedAt: serializeDate(t.completedAt),
         urgencyRank: urgencyRank(t.dueDate),
         projectId: t.project.id,
         projectCode: t.project.code,
@@ -4114,6 +4124,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
         substageName: t.substage?.name ?? null,
       }))
       .sort((a, b) => {
+        // Completadas: orden descendente por completedAt (más reciente primero).
+        if (query.taskScope === "completed") {
+          if (a.completedAt && b.completedAt) return b.completedAt.localeCompare(a.completedAt);
+          if (a.completedAt) return -1;
+          if (b.completedAt) return 1;
+          return a.projectName.localeCompare(b.projectName, "es");
+        }
+        // Pendientes: orden por urgencia.
         if (a.urgencyRank !== b.urgencyRank) return a.urgencyRank - b.urgencyRank;
         if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
         if (a.dueDate) return -1;

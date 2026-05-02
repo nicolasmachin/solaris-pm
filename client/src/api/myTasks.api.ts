@@ -47,6 +47,7 @@ export interface MyTaskItem {
   status: TaskStatus;
   priority: TaskPriority;
   dueDate: string | null;
+  completedAt: string | null;
   urgencyRank: number;
   projectId: string;
   projectCode: string;
@@ -63,9 +64,15 @@ export interface MyTasksResponse {
   tasks: MyTaskItem[];
 }
 
-export async function getMyTasks(params?: { userId?: string | null }): Promise<MyTasksResponse> {
+export type TaskScope = "pending" | "completed";
+
+export async function getMyTasks(params?: {
+  userId?: string | null;
+  taskScope?: TaskScope;
+}): Promise<MyTasksResponse> {
   const query: Record<string, string> = {};
   if (params?.userId) query.userId = params.userId;
+  if (params?.taskScope) query.taskScope = params.taskScope;
   const { data } = await apiClient.get<MyTasksResponse>("/api/my-tasks", { params: query });
   return data;
 }

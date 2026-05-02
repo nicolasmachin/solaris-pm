@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import { Check } from "lucide-react";
 import type { Task } from "../../types/api.types";
 import { patchTask, deleteTask } from "../../api/tasks.api";
 import { Button } from "../ui/Button";
@@ -47,10 +48,12 @@ function TaskRow({
   task,
   projectId,
   onChanged,
+  isCompletedView,
 }: {
   task: Task;
   projectId: string;
   onChanged: () => void;
+  isCompletedView: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -88,6 +91,19 @@ function TaskRow({
     onError: () => toast.error("Error al eliminar tarea"),
   });
 
+  const { mutate: complete, isPending: completing } = useMutation({
+    mutationFn: () =>
+      patchTask(projectId, task.id, {
+        status: isCompletedView ? "PENDING" : "COMPLETED",
+      }),
+    onSuccess: () => {
+      toast.success(isCompletedView ? "Tarea reabierta" : "Tarea completada");
+      onChanged();
+    },
+    onError: () =>
+      toast.error(isCompletedView ? "Error al reabrir tarea" : "Error al completar tarea"),
+  });
+
   const priorityDot: Record<Task["priority"], string> = {
     URGENT: "var(--color-accent)",
     HIGH: "#8cc7ff",
@@ -101,29 +117,83 @@ function TaskRow({
     return new Date(d).toLocaleDateString("es-AR", { day: "2-digit", month: "short" });
   }
 
+  function formatCompletedAt(iso: string) {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("es-AR", { day: "2-digit", month: "short", year: "2-digit" }) +
+      " " +
+      d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+  }
+
   return (
     <li>
       <div
         className="flex items-start gap-2 cursor-pointer"
         onClick={() => { if (!editing) setExpanded(v => !v); }}
       >
+        {isCompletedView ? (
+          <span
+            aria-hidden="true"
+            className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 mt-0.5"
+          >
+            <Check size={10} />
+          </span>
+        ) : (
+          <button
+            type="button"
+            aria-label="Marcar como completada"
+            title="Marcar como completada"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (completing) return;
+              complete();
+            }}
+            disabled={completing}
+            className="group relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-bg-app)] text-[var(--color-text-muted)] transition-colors hover:border-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-400 disabled:opacity-50 mt-0.5"
+          >
+            <Check size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
+        )}
         <span
           className="w-1.5 h-1.5 rounded-full shrink-0 mt-1.5"
           style={{ background: priorityDot[task.priority] ?? "#60a5fa" }}
         />
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-[var(--color-text-primary)] leading-snug truncate">
+          <p
+            className={`text-xs leading-snug truncate ${
+              isCompletedView
+                ? "text-[var(--color-text-muted)] line-through"
+                : "text-[var(--color-text-primary)]"
+            }`}
+          >
             {task.title}
           </p>
-          {task.dueDate && (
+          {isCompletedView && task.completedAt ? (
+            <p className="font-mono text-[10px] text-emerald-400">
+              ✓ {formatCompletedAt(task.completedAt)}
+            </p>
+          ) : task.dueDate && !isCompletedView ? (
             <p className={`font-mono text-[10px] ${overdue ? "text-red-400" : "text-[var(--color-text-muted)]"}`}>
               {overdue ? "⚠ " : ""}{formatDue(task.dueDate)}
             </p>
-          )}
+          ) : null}
         </div>
-        {task.priority === "URGENT" && (
+        {isCompletedView ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (completing) return;
+              complete();
+            }}
+            disabled={completing}
+            className="shrink-0 rounded border border-[var(--color-border)] px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-50"
+          >
+            {completing ? "…" : "Reabrir"}
+          </button>
+        ) : task.priority === "URGENT" ? (
           <span className="shrink-0 text-[9px] font-mono font-bold text-[var(--color-accent)] uppercase">URG</span>
-        )}
+        ) : null}
       </div>
 
       {expanded && !editing && (
@@ -234,18 +304,29 @@ function TaskRow({
 
 export function TasksPanel({ projectId, tasks, onNewTask, onTasksChanged }: TasksPanelProps) {
   const qc = useQueryClient();
+  const [scope, setScope] = useState<"pending" | "completed">("pending");
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const pending = tasks
-    .filter((t) => t.status !== "COMPLETED" && t.status !== "CANCELLED")
-    .sort((a, b) => {
-      if (!a.dueDate) return 1;
-      if (!b.dueDate) return -1;
-      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-    })
-    .slice(0, 8);
+  const visible = (() => {
+    if (scope === "pending") {
+      return tasks
+        .filter((t) => t.status !== "COMPLETED" && t.status !== "CANCELLED")
+        .sort((a, b) => {
+          if (!a.dueDate) return 1;
+          if (!b.dueDate) return -1;
+          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        })
+        .slice(0, 8);
+    }
+    // Completadas: orden descendente por completedAt (más recientes primero).
+    return tasks
+      .filter((t) => t.status === "COMPLETED")
+      .sort((a, b) => {
+        const ta = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+        const tb = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+        return tb - ta;
+      })
+      .slice(0, 20);
+  })();
 
   function handleChanged() {
     if (onTasksChanged) {
@@ -257,22 +338,49 @@ export function TasksPanel({ projectId, tasks, onNewTask, onTasksChanged }: Task
 
   return (
     <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg p-4 flex flex-col">
-      <p className="font-mono text-[9px] uppercase tracking-widest text-[var(--color-text-muted)] mb-3">
-        Tareas activas
-      </p>
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <p className="font-mono text-[9px] uppercase tracking-widest text-[var(--color-text-muted)]">
+          Tareas
+        </p>
+        <div className="inline-flex rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] p-0.5 text-[10px]">
+          <button
+            type="button"
+            onClick={() => setScope("pending")}
+            className={`rounded px-2 py-0.5 transition-colors ${
+              scope === "pending"
+                ? "bg-[var(--color-accent)] text-black font-semibold"
+                : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+            }`}
+          >
+            Pendientes
+          </button>
+          <button
+            type="button"
+            onClick={() => setScope("completed")}
+            className={`rounded px-2 py-0.5 transition-colors ${
+              scope === "completed"
+                ? "bg-[var(--color-accent)] text-black font-semibold"
+                : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+            }`}
+          >
+            Completadas
+          </button>
+        </div>
+      </div>
 
-      {pending.length === 0 ? (
+      {visible.length === 0 ? (
         <p className="text-xs text-[var(--color-text-muted)] flex-1 flex items-center">
-          Sin tareas pendientes
+          {scope === "pending" ? "Sin tareas pendientes" : "Aún no se completaron tareas"}
         </p>
       ) : (
         <ul className="space-y-2 flex-1">
-          {pending.map((task) => (
+          {visible.map((task) => (
             <TaskRow
               key={task.id}
               task={task}
               projectId={projectId}
               onChanged={handleChanged}
+              isCompletedView={scope === "completed"}
             />
           ))}
         </ul>
