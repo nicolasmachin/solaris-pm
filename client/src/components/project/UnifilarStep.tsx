@@ -197,6 +197,10 @@ export function UnifilarStep({ projectId }: { projectId: string }) {
             setDialogOpen(false);
             setDuplicateFrom(null);
             qc.invalidateQueries({ queryKey: ["unifilar-versions", projectId] });
+            // El backend genera y guarda el PDF como FileAttachment del proyecto
+            // (tipo UNIFILAR). Invalidar la query de documentos para que aparezca
+            // en la sección "Documentos" sin necesidad de refrescar la página.
+            qc.invalidateQueries({ queryKey: ["project-documents", projectId] });
             setPreviewVersionId(created.id);
           }}
         />

@@ -1,6 +1,10 @@
 // Conversión SVG → PDF de una página A4. Renderiza el SVG a PNG con resvg-js
 // y lo embebe en un PDF con pdf-lib.
 
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+import { existsSync } from "node:fs";
+
 import { Resvg } from "@resvg/resvg-js";
 import { PDFDocument } from "pdf-lib";
 
@@ -9,11 +13,38 @@ import { PAGE_H, PAGE_W } from "./layout.js";
 const A4_PT_W = 595.28;
 const A4_PT_H = 841.89;
 
+// Roboto Regular/Bold están bundleados en `./fonts/`. resvg necesita TTFs
+// porque el container Node no trae fuentes del sistema; sin esto, el PDF
+// renderiza sin texto. El `defaultFontFamily` actúa como fallback cuando el
+// SVG usa "Arial, Helvetica, sans-serif" (resvg no las encuentra y cae acá).
+function fontPaths(): string[] {
+  const here = dirname(fileURLToPath(import.meta.url));
+  // Cuando corre vía tsx, here = .../src/services/unifilarSvg
+  // Cuando corre desde dist/, here = .../dist/services/unifilarSvg
+  // En ambos casos buscamos el directorio fonts/ relativo al source.
+  const candidates = [
+    join(here, "fonts"),
+    join(here, "..", "..", "..", "src", "services", "unifilarSvg", "fonts"),
+  ];
+  for (const dir of candidates) {
+    const reg = join(dir, "Roboto-Regular.ttf");
+    if (existsSync(reg)) {
+      const bold = join(dir, "Roboto-Bold.ttf");
+      return existsSync(bold) ? [reg, bold] : [reg];
+    }
+  }
+  return [];
+}
+
 export async function svgToPdf(svg: string): Promise<Uint8Array> {
-  // Render SVG → PNG (alta resolución para que el PDF salga nítido).
-  const scale = 2; // 2× = ~192dpi efectivo
+  const scale = 2;
   const resvg = new Resvg(svg, {
     fitTo: { mode: "width", value: PAGE_W * scale },
+    font: {
+      fontFiles: fontPaths(),
+      loadSystemFonts: false,
+      defaultFontFamily: "Roboto",
+    },
   });
   const png = resvg.render().asPng();
 
