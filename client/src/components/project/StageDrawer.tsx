@@ -15,6 +15,7 @@ import { UserSelect } from "../ui/UserSelect";
 import { AssigneeLabel } from "../ui/AssigneeLabel";
 import { CommentThread } from "../comments/CommentThread";
 import { EngineeringMaterials } from "./EngineeringMaterials";
+import { UnifilarStep } from "./UnifilarStep";
 
 interface StageDrawerProps {
   stage: Stage;
@@ -1229,6 +1230,13 @@ export function StageDrawer({ stage, projectId, files, onClose, plannedWorkStart
           {/* Lista de materiales (solo etapa Ingeniería) */}
           {stage.name === "INGENIERIA" && (
             <EngineeringMaterials projectId={projectId} plannedWorkStart={plannedWorkStart} />
+          )}
+
+          {/* Generador de unifilares (solo etapa Ingeniería) */}
+          {stage.name === "INGENIERIA" && (
+            <div className="mt-3">
+              <UnifilarStep projectId={projectId} />
+            </div>
           )}
 
           {/* Notes */}

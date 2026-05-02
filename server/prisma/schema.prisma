@@ -422,6 +422,7 @@ model Project {
   installationSchedule InstallationSchedule?
   uteProcesses         UteProcess[]
   clients              ProjectClient[]
+  unifilarVersions     UnifilarVersion[]
   deletedAt            DateTime?             @db.Timestamptz(6)
   createdAt            DateTime              @default(now()) @db.Timestamptz(6)
   updatedAt            DateTime              @updatedAt @db.Timestamptz(6)
@@ -1572,4 +1573,64 @@ model AIRateLimit {
   updatedAt       DateTime @updatedAt @db.Timestamptz(6)
 
   @@map("ai_rate_limits")
+}
+
+// ─── Generador de unifilares ──────────────────────────────────────────────
+//
+// `UnifilarVersion` representa un snapshot inmutable de un plano unifilar
+// para un proyecto. Cada versión guarda los inputs eléctricos + un snapshot
+// denormalizado de los datos del proyecto (cliente, ubicación, autor) para
+// que el plano sea inmutable aunque después se modifiquen los datos del
+// proyecto. Sin estados (DRAFT/FINAL); cada versión vale por sí misma.
+
+enum TipoRed {
+  MONO_230
+  TRI_230_SN
+  TRI_400_CN
+}
+
+enum TipoProteccionDC {
+  TERMOMAGNETICO
+  FUSIBLE
+}
+
+model UnifilarVersion {
+  id            String   @id @default(cuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  versionNumber Int
+  label         String?
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+
+  // Snapshot del proyecto (denormalizado para inmutabilidad)
+  snapshotCliente   String
+  snapshotUbicacion String
+  snapshotFecha     DateTime @db.Timestamptz(6)
+  snapshotAutor     String
+
+  // Ejes de variación
+  tipoRed              TipoRed
+  cantidadPaneles      Int
+  potenciaPanelW       Int              @default(580)
+  cantidadStrings      Int              @default(2)
+  potenciaContratadaKw Float
+  tipoProteccionDc     TipoProteccionDC @default(TERMOMAGNETICO)
+
+  // Modelos de equipos (string libre)
+  modeloPanel             String?
+  modeloInversor          String
+  potenciaInversorKw      Float
+  modeloMedidorMonitoreo  String?
+  calibreProteccionDc     String           @default("25A 2P")
+
+  // Longitudes (metros, int)
+  largoDcPanelesM      Int
+  largoDcEsLargo       Boolean @default(false)
+  largoAcInversorIcpM  Int
+  largoAcIcpTableroM   Int
+
+  @@unique([projectId, versionNumber])
+  @@index([projectId])
+  @@map("unifilar_versions")
 }
