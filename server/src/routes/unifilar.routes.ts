@@ -276,6 +276,10 @@ export async function registerUnifilarRoutes(app: FastifyInstance) {
             sizeBytes: stored.sizeBytes,
             url: stored.url,
             tipo: "UNIFILAR",
+            // Trazabilidad fina (badge "Ingeniería: Unifilar v3", filtros).
+            toolSource: "unifilar",
+            toolVersion: created.versionNumber,
+            toolEntityId: created.id,
             uploadedById: user.id,
           },
         });
