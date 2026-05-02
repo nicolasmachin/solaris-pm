@@ -128,6 +128,11 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
           <NavLink to="/projects" className={navLinkClass}>
             Proyectos
           </NavLink>
+          <CanAccess module="INGENIERIA" action="VIEW">
+            <NavLink to="/ingenieria" className={navLinkClass}>
+              Ingeniería
+            </NavLink>
+          </CanAccess>
           <CanAccess module="OPERACIONES" action="VIEW">
             <NavLink to="/calendario" className={navLinkClass}>
               Calendario

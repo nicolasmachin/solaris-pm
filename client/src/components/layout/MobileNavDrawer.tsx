@@ -11,6 +11,7 @@ import {
   Users,
   ListTodo,
   FileCheck,
+  HardHat,
   X,
   LogOut,
 } from "lucide-react";
@@ -152,6 +153,12 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
             <FolderKanban size={18} className="shrink-0" />
             <span>Proyectos</span>
           </NavLink>
+          <CanAccess module="INGENIERIA" action="VIEW">
+            <NavLink to="/ingenieria" className={linkClass}>
+              <HardHat size={18} className="shrink-0" />
+              <span>Ingeniería</span>
+            </NavLink>
+          </CanAccess>
           <CanAccess module="OPERACIONES" action="VIEW">
             <NavLink to="/calendario" className={linkClass}>
               <Calendar size={18} className="shrink-0" />
