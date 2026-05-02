@@ -14,6 +14,7 @@
 
 import type { Prisma, PrismaClient, SubstageStatus, UteProcess } from "@prisma/client";
 
+import { calculateProjectProgress, syncStageProgress } from "./project.service.js";
 import { UTE_ACTION_KEYS, type UteActionKey } from "./uteProcess.service.js";
 
 export type UteSubstageSpec = {
@@ -197,7 +198,12 @@ export async function syncUteSubstages(
 }
 
 /**
- * Wrapper conveniente: ensure + sync en una transacción.
+ * Wrapper conveniente: ensure + sync. También recalcula `progressPercent` y
+ * `status` de la stage HABILITACION_UTE (PENDING → IN_PROGRESS → COMPLETED
+ * según las subetapas) y el progreso global del proyecto.
+ *
+ * `syncStageProgress` y `calculateProjectProgress` usan el `prisma` global
+ * (no respetan `tx`), así que se llaman después de la sync principal.
  */
 export async function regenerateUteSubstages(
   tx: Tx,
@@ -205,6 +211,12 @@ export async function regenerateUteSubstages(
 ): Promise<void> {
   await ensureUteSubstages(tx, uteProcess.projectId);
   await syncUteSubstages(tx, uteProcess);
+
+  const stage = await findHabilitacionStage(tx, uteProcess.projectId);
+  if (stage) {
+    await syncStageProgress(stage.id);
+    await calculateProjectProgress(uteProcess.projectId);
+  }
 }
 
 /**
