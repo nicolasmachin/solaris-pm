@@ -15,7 +15,7 @@ import { UserSelect } from "../ui/UserSelect";
 import { AssigneeLabel } from "../ui/AssigneeLabel";
 import { CommentThread } from "../comments/CommentThread";
 import { EngineeringMaterials } from "./EngineeringMaterials";
-import { UnifilarStep } from "./UnifilarStep";
+import { EngineeringModuleSection } from "./EngineeringModuleSection";
 
 interface StageDrawerProps {
   stage: Stage;
@@ -1232,10 +1232,11 @@ export function StageDrawer({ stage, projectId, files, onClose, plannedWorkStart
             <EngineeringMaterials projectId={projectId} plannedWorkStart={plannedWorkStart} />
           )}
 
-          {/* Generador de unifilares (solo etapa Ingeniería) */}
+          {/* Módulo Ingeniería: link al workspace + documentos generados (read-only).
+              El generador de unifilar vivía acá; ahora vive en /ingenieria/proyecto/:id/unifilar. */}
           {stage.name === "INGENIERIA" && (
             <div className="mt-3">
-              <UnifilarStep projectId={projectId} />
+              <EngineeringModuleSection projectId={projectId} />
             </div>
           )}
 

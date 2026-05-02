@@ -36,7 +36,14 @@ export function getDownloadUrl(fileId: string): string {
   return `${base}/api/files/${fileId}/download`;
 }
 
-export type FileAttachmentTipo = "UPLOAD_MANUAL" | "LISTA_MATERIALES" | "PRESUPUESTO" | "OTRO" | null;
+export type FileAttachmentTipo =
+  | "UPLOAD_MANUAL"
+  | "LISTA_MATERIALES"
+  | "PRESUPUESTO"
+  | "CALCULO_TRIANGULOS"
+  | "UNIFILAR"
+  | "OTRO"
+  | null;
 
 export interface ProjectDocument {
   id: string;
@@ -44,6 +51,10 @@ export interface ProjectDocument {
   mimeType: string;
   sizeBytes: number;
   tipo: FileAttachmentTipo;
+  /** Origen fino para docs generados por herramientas del módulo Ingeniería. */
+  toolSource: string | null;
+  toolVersion: number | null;
+  toolEntityId: string | null;
   uploadedAt: string;
   uploadedBy: string | null;
   source: "stage" | "substage" | "generated" | "other";

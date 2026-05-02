@@ -3007,7 +3007,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
       let sourceLabel = "Proyecto";
       let stageId: string | null = null;
       let substageId: string | null = null;
-      if (file.tipo === FileAttachmentTipo.LISTA_MATERIALES) {
+      // Documentos generados por herramientas del módulo Ingeniería (toolSource).
+      // Tienen prioridad sobre el match por stage/substage para que el badge
+      // "Ingeniería · Unifilar v3" se muestre coherente.
+      if (file.toolSource === "unifilar") {
+        source = "generated";
+        sourceLabel = file.toolVersion
+          ? `Ingeniería · Unifilar v${file.toolVersion}`
+          : "Ingeniería · Unifilar";
+      } else if (file.tipo === FileAttachmentTipo.LISTA_MATERIALES) {
         source = "generated";
         sourceLabel = "Generado · Lista de materiales";
       } else if (file.tipo === FileAttachmentTipo.PRESUPUESTO) {
@@ -3029,6 +3037,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
         mimeType: file.mimeType,
         sizeBytes: file.sizeBytes,
         tipo: file.tipo ?? null,
+        toolSource: file.toolSource,
+        toolVersion: file.toolVersion,
+        toolEntityId: file.toolEntityId,
         uploadedAt: serializeDate(file.createdAt),
         uploadedBy: file.uploadedById,
         source,
