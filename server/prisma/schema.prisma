@@ -701,6 +701,12 @@ model FileAttachment {
   sizeBytes      Int
   url            String
   tipo           FileAttachmentTipo? // null = upload manual legacy
+  // Trazabilidad fina del origen para documentos generados por herramientas del
+  // módulo Ingeniería. `tipo` queda como índice grueso (UNIFILAR, etc.); estos
+  // campos permiten badges "Ingeniería: Unifilar v3" y filtros por origen.
+  toolSource     String?
+  toolVersion    Int?
+  toolEntityId   String?
   uploadedById   String
   uploadedBy     User                @relation("FileUploadedBy", fields: [uploadedById], references: [id], onDelete: Restrict)
   project        Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -712,6 +718,7 @@ model FileAttachment {
   @@index([projectId])
   @@index([uploadedById])
   @@index([deletedAt])
+  @@index([toolSource])
   @@map("file_attachments")
 }
 
