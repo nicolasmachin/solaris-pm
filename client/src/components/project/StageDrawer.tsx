@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import type { Stage, Substage, SubstageStatus, FileAttachment, ChecklistItem } from "../../types/api.types";
@@ -280,11 +281,12 @@ function SubstageRow({
   });
 
   const isCompleted = substage.status === "COMPLETED";
+  const isUteManaged = !!(substage.isSystem && substage.uteAction);
 
   const { mutate: saveEdit, isPending: saving } = useMutation({
     mutationFn: () =>
       patchSubstage(projectId, stageId, substage.id, {
-        name,
+        ...(substage.isSystem && substage.uteAction ? {} : { name }),
         userId,
         dueDate: dueDate || null,
         notes: notes || null,
@@ -341,18 +343,23 @@ function SubstageRow({
       <li className="rounded-md bg-[var(--color-bg-card)] border border-[var(--color-border)]">
         {/* Row header */}
         <div className="flex items-start gap-2 px-3 py-2">
-          {/* Quick complete circular button */}
+          {/* Quick complete circular button (no clickeable si es UTE-managed) */}
           <button
-            onClick={handleQuickComplete}
-            disabled={isCompleted || completeSubstageMutation.isPending}
-            title={isCompleted ? "Completado" : "Marcar como completado"}
+            onClick={isUteManaged ? undefined : handleQuickComplete}
+            disabled={isUteManaged || isCompleted || completeSubstageMutation.isPending}
+            title={
+              isUteManaged
+                ? "Se completa automáticamente al cargar la fecha en Trámites UTE"
+                : isCompleted ? "Completado" : "Marcar como completado"
+            }
             style={{
               width: 18, height: 18, borderRadius: "50%",
               border: `2px solid ${isCompleted ? "#4ade80" : dotColor}`,
               background: isCompleted ? "#4ade80" : "none",
               display: "flex", alignItems: "center", justifyContent: "center",
-              cursor: isCompleted ? "default" : "pointer",
+              cursor: isUteManaged ? "not-allowed" : isCompleted ? "default" : "pointer",
               flexShrink: 0, marginTop: 1, transition: "all 0.15s",
+              opacity: isUteManaged && !isCompleted ? 0.6 : 1,
             }}
           >
             {completeSubstageMutation.isPending ? (
@@ -366,7 +373,17 @@ function SubstageRow({
 
           {/* Content */}
           <div className="flex-1 min-w-0 cursor-pointer" onClick={() => !editing && setExpanded(v => !v)}>
-            <p className="text-xs text-[var(--color-text-primary)] truncate">{substage.name}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-xs text-[var(--color-text-primary)] truncate">{substage.name}</p>
+              {isUteManaged && (
+                <span
+                  className="shrink-0 inline-flex items-center gap-0.5 rounded border border-blue-500/40 bg-blue-500/10 px-1 py-px text-[8px] font-mono uppercase tracking-wider text-blue-400"
+                  title="Se sincroniza automáticamente desde el módulo Trámites UTE"
+                >
+                  Auto
+                </span>
+              )}
+            </div>
             <p className="truncate">
               <AssigneeLabel user={substage.user} legacyText={substage.responsible} size="xs" />
             </p>
@@ -396,7 +413,9 @@ function SubstageRow({
               value={substage.status}
               onChange={e => onStatusChange(e.target.value as SubstageStatus)}
               onClick={e => e.stopPropagation()}
-              className="text-[10px] bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-secondary)] rounded px-1 py-0.5 focus:outline-none"
+              disabled={isUteManaged}
+              title={isUteManaged ? "El status se actualiza automáticamente desde Trámites UTE" : undefined}
+              className="text-[10px] bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-secondary)] rounded px-1 py-0.5 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {statusOptions.map(s => (
                 <option key={s} value={s}>{statusLabels[s]}</option>
@@ -425,12 +444,23 @@ function SubstageRow({
               </p>
             )}
             <div className="flex gap-2 mb-2 flex-wrap">
-              <button
-                onClick={() => setEditing(true)}
-                className="text-[10px] px-2 py-1 rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-app)] transition-colors"
-              >
-                Editar
-              </button>
+              {!isUteManaged && (
+                <button
+                  onClick={() => setEditing(true)}
+                  className="text-[10px] px-2 py-1 rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-app)] transition-colors"
+                >
+                  Editar
+                </button>
+              )}
+              {isUteManaged && (
+                <button
+                  onClick={() => setEditing(true)}
+                  className="text-[10px] px-2 py-1 rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-app)] transition-colors"
+                  title="Sólo podés editar responsable, dueDate y notas"
+                >
+                  Editar (responsable / fechas / notas)
+                </button>
+              )}
               {canEditDeadline && (
                 <button
                   onClick={() => setShowDeadlineModal(true)}
@@ -449,12 +479,14 @@ function SubstageRow({
                   Volver a cálculo automático
                 </button>
               )}
-              <button
-                onClick={() => setConfirmDelete(true)}
-                className="text-[10px] px-2 py-1 rounded border border-red-900 text-red-400 hover:bg-red-900/20 transition-colors"
-              >
-                Eliminar
-              </button>
+              {!isUteManaged && (
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="text-[10px] px-2 py-1 rounded border border-red-900 text-red-400 hover:bg-red-900/20 transition-colors"
+                >
+                  Eliminar
+                </button>
+              )}
             </div>
 
             {/* Checklist */}
@@ -480,11 +512,18 @@ function SubstageRow({
         {/* Edit form */}
         {editing && (
           <div className="border-t border-[var(--color-border)] px-3 py-2 space-y-2">
-            <input
-              className="w-full px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]"
-              value={name}
-              onChange={e => setName(e.target.value)}
-            />
+            {isUteManaged ? (
+              <p className="text-[10px] text-blue-400 bg-blue-500/10 border border-blue-500/30 rounded px-2 py-1.5">
+                El nombre y status de esta subetapa los maneja el módulo Trámites UTE.
+                Acá podés actualizar responsable, deadline y notas.
+              </p>
+            ) : (
+              <input
+                className="w-full px-2 py-1.5 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]"
+                value={name}
+                onChange={e => setName(e.target.value)}
+              />
+            )}
             <div>
               <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Responsable</p>
               <UserSelect
@@ -509,7 +548,7 @@ function SubstageRow({
               onChange={e => setNotes(e.target.value)}
             />
             <div className="flex gap-2">
-              <Button size="sm" loading={saving} disabled={!name} onClick={() => saveEdit()}>
+              <Button size="sm" loading={saving} disabled={!isUteManaged && !name} onClick={() => saveEdit()}>
                 Guardar
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
@@ -580,6 +619,7 @@ function SubstageRow({
 
 export function StageDrawer({ stage, projectId, files, onClose, plannedWorkStart }: StageDrawerProps) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const stageFiles = files.filter((f) => f.stageId === stage.id);
   const stageCommentContext = {
     stageLabelsById: { [stage.id]: stage.name },
@@ -1070,28 +1110,54 @@ export function StageDrawer({ stage, projectId, files, onClose, plannedWorkStart
                 Subetapas ({stage.substages.filter(s => s.status === "COMPLETED").length}/{stage.substages.length})
               </p>
               <div className="flex gap-2">
-                {stage.substages.length > 0 && stage.substages.some(s => s.status !== "COMPLETED") && (
-                  <button
-                    onClick={() => completeAllMutation.mutate()}
-                    disabled={completeAllMutation.isPending}
-                    className="text-[10px] text-[#4ade80] hover:underline disabled:opacity-50"
+                {stage.name === "HABILITACION_UTE" ? (
+                  <a
+                    href={`/tramites-ute?projectId=${projectId}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigate(`/tramites-ute?projectId=${projectId}`);
+                    }}
+                    className="text-[10px] text-[var(--color-accent)] hover:underline"
+                    title="Estas subetapas se gestionan desde el módulo Trámites UTE"
                   >
-                    {completeAllMutation.isPending ? "Completando..." : "✓ Completar todas"}
-                  </button>
+                    → Ir a Trámites UTE
+                  </a>
+                ) : (
+                  <>
+                    {stage.substages.length > 0 && stage.substages.some(s => s.status !== "COMPLETED") && (
+                      <button
+                        onClick={() => completeAllMutation.mutate()}
+                        disabled={completeAllMutation.isPending}
+                        className="text-[10px] text-[#4ade80] hover:underline disabled:opacity-50"
+                      >
+                        {completeAllMutation.isPending ? "Completando..." : "✓ Completar todas"}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        if (!showSubForm) setSubUserId(stage.responsibleUserId ?? null);
+                        setShowSubForm((v) => !v);
+                      }}
+                      className="text-[10px] text-[var(--color-accent)] hover:underline"
+                    >
+                      + Agregar
+                    </button>
+                  </>
                 )}
-                <button
-                  onClick={() => {
-                    if (!showSubForm) setSubUserId(stage.responsibleUserId ?? null);
-                    setShowSubForm((v) => !v);
-                  }}
-                  className="text-[10px] text-[var(--color-accent)] hover:underline"
-                >
-                  + Agregar
-                </button>
               </div>
             </div>
 
-            {showSubForm && (
+            {stage.name === "HABILITACION_UTE" && (
+              <div className="mb-3 rounded-lg bg-blue-500/5 border border-blue-500/20 p-3">
+                <p className="text-[11px] text-blue-300">
+                  Las subetapas de Trámite UTE se generan y sincronizan automáticamente
+                  desde el módulo <strong>Trámites UTE</strong>. Acá podés ver el estado y
+                  asignar responsables, pero nombres, status y orden vienen del trámite.
+                </p>
+              </div>
+            )}
+
+            {showSubForm && stage.name !== "HABILITACION_UTE" && (
               <div className="mb-3 p-3 rounded-lg bg-[var(--color-bg-card)] border border-[var(--color-border)] space-y-2">
                 <div>
                   <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Nombre</p>

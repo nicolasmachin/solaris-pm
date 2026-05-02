@@ -609,6 +609,7 @@ export function serializeSubstage(substage: {
   notes: string | null;
   isSystem: boolean;
   isActive: boolean;
+  uteAction?: string | null;
   deadline?: Date | null;
   deadlineManuallySet?: boolean;
   deletedAt: Date | null;

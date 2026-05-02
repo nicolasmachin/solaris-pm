@@ -192,6 +192,8 @@ export interface Substage {
   notes: string | null;
   deadline: string | null;
   deadlineManuallySet: boolean;
+  isSystem?: boolean;
+  uteAction?: string | null;
   deletedAt: string | null;
   createdAt: string;
   updatedAt: string;

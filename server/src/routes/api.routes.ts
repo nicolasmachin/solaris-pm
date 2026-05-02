@@ -88,6 +88,10 @@ import {
   type UteActionKey,
 } from "../services/uteProcess.service.js";
 import {
+  isUteManagedSubstage,
+  regenerateUteSubstages,
+} from "../services/ute-sync.service.js";
+import {
   getActivePipelineTemplate,
   getStageLabel,
   getTipoObraLabel,
@@ -1418,7 +1422,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       });
     }
 
-    await prisma.uteProcess.create({
+    const newUteProcess = await prisma.uteProcess.create({
       data: {
         projectId: project.id,
         currentStage: UteStage.CONSULTA,
@@ -1426,6 +1430,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
         createdById: user.id,
       },
     });
+
+    // Genera las 11 subetapas system bajo HABILITACION_UTE.
+    await regenerateUteSubstages(prisma, newUteProcess);
 
     const projectWithStages = await prisma.project.findUniqueOrThrow({
       where: { id: project.id },
@@ -2041,6 +2048,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const body = substageCreateSchema.parse(request.body);
     const stage = await findStageOrThrow(params.projectId, params.stageId);
 
+    if (stage.name === "HABILITACION_UTE") {
+      throw badRequest(
+        "UTE_SUBSTAGES_AUTOMATIC",
+        "Las subetapas de Trámite UTE se generan automáticamente desde el módulo Trámites UTE. No se pueden crear manualmente.",
+      );
+    }
+
     if (body.userId) {
       await assertUserActiveOrThrow(body.userId, "userId");
     }
@@ -2097,6 +2111,31 @@ export async function registerApiRoutes(app: FastifyInstance) {
       .parse(request.params);
     const body = substagePatchSchema.parse(request.body);
     const substage = await findSubstageOrThrow(params.projectId, params.stageId, params.substageId);
+
+    // Bloqueo: las subetapas system de HABILITACION_UTE (las 11 generadas
+    // desde UteProcess) no permiten cambios de nombre, status, sopCode,
+    // responsable* ni fechas planned/actual desde este endpoint. Sí permiten
+    // userId, dueDate y notes.
+    if (isUteManagedSubstage(substage)) {
+      const blocked: Array<keyof typeof body> = [
+        "name",
+        "sopCode",
+        "responsableRol",
+        "responsible",
+        "plannedStartDate",
+        "plannedEndDate",
+        "status",
+      ];
+      for (const k of blocked) {
+        if (body[k] !== undefined) {
+          throw badRequest(
+            "UTE_SUBSTAGE_LOCKED",
+            "Esta subetapa se sincroniza automáticamente desde el módulo Trámites UTE. Sólo podés editar responsable, deadline y notas.",
+          );
+        }
+      }
+    }
+
     const updateData: Record<string, unknown> = {};
 
     if (body.status === SubstageStatus.COMPLETED) {
@@ -2258,6 +2297,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     if (!substage) {
       throw notFound("SUBSTAGE_NOT_FOUND", "Subetapa no encontrada");
+    }
+
+    if (isUteManagedSubstage(substage)) {
+      throw badRequest(
+        "UTE_SUBSTAGE_LOCKED",
+        "Esta subetapa se completa automáticamente al cargar la fecha en el módulo Trámites UTE.",
+      );
     }
 
     // Regla 2: no completar subetapa de ejecución si OPERACIONES no está activa
@@ -2440,7 +2486,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const user = ensureUser(request);
     const params = z.object({ projectId: z.string(), stageId: z.string() }).parse(request.params);
     const body = reorderSubstagesSchema.parse(request.body);
-    await findStageOrThrow(params.projectId, params.stageId);
+    const stage = await findStageOrThrow(params.projectId, params.stageId);
+
+    if (stage.name === "HABILITACION_UTE") {
+      throw badRequest(
+        "UTE_SUBSTAGES_AUTOMATIC",
+        "El orden de las subetapas de Trámite UTE no se puede cambiar manualmente.",
+      );
+    }
 
     await prisma.$transaction(
       body.items.map((item) =>
@@ -2470,6 +2523,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
       .object({ projectId: z.string(), stageId: z.string(), substageId: z.string() })
       .parse(request.params);
     const substage = await findSubstageOrThrow(params.projectId, params.stageId, params.substageId);
+
+    if (isUteManagedSubstage(substage)) {
+      throw badRequest(
+        "UTE_SUBSTAGE_LOCKED",
+        "Esta subetapa se sincroniza automáticamente desde Trámites UTE y no puede eliminarse.",
+      );
+    }
 
     const deletedSubstage = await prisma.substage.update({
       where: { id: substage.id },
@@ -5608,7 +5668,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     await createInitialPipeline(project.id, startDate, plannedEndDate, null);
 
-    await prisma.uteProcess.create({
+    const newUteProcessFromLead = await prisma.uteProcess.create({
       data: {
         projectId: project.id,
         currentStage: UteStage.CONSULTA,
@@ -5616,6 +5676,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         createdById: user.id,
       },
     });
+
+    await regenerateUteSubstages(prisma, newUteProcessFromLead);
 
     await prisma.salesLead.update({
       where: { id: lead.id },
@@ -6333,9 +6395,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     const existing = await prisma.substage.findFirst({
       where: { id, deletedAt: null },
-      select: { id: true, name: true, projectId: true },
+      select: { id: true, name: true, projectId: true, isSystem: true, uteAction: true },
     });
     if (!existing) throw notFound("SUBSTAGE_NOT_FOUND", "Subetapa no encontrada");
+
+    if (isUteManagedSubstage(existing)) {
+      throw badRequest(
+        "UTE_SUBSTAGE_LOCKED",
+        "Las fechas reales de subetapas de Trámite UTE se setean al cargar la acción correspondiente en /tramites-ute.",
+      );
+    }
 
     const updateData: Record<string, unknown> = {};
     if (body.actualStartDate !== undefined) {
@@ -7731,6 +7800,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       include: UTE_PROCESS_INCLUDE,
     });
 
+    await regenerateUteSubstages(prisma, created);
+
     reply.code(201);
     return serializeUteProcess(created);
   });
@@ -7818,6 +7889,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
       },
       include: UTE_PROCESS_INCLUDE,
     });
+
+    // Re-syncea status/fechas de las 11 subetapas system. ensureUteSubstages
+    // también corre por si una migración previa quedó incompleta.
+    await regenerateUteSubstages(prisma, updated);
 
     return serializeUteProcess(updated);
   });
