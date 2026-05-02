@@ -23,6 +23,24 @@ function getApiErr(err: unknown) {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
 }
 
+/** Descarga un endpoint protegido por JWT enviando el Bearer en headers. */
+async function downloadWithAuth(url: string, filename: string): Promise<void> {
+  const token = localStorage.getItem("voltia-token");
+  const res = await fetch(url, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const blob = await res.blob();
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+}
+
 const inp =
   "w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-xs text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]";
 const lbl = "block text-[10px] font-mono text-[var(--color-text-muted)] mb-0.5 uppercase tracking-wider";
@@ -242,26 +260,26 @@ function UnifilarVersionList({
                   >
                     Ver
                   </button>
-                  <a
-                    href={unifilarSvgUrl(v.id)}
-                    download={`unifilar_v${v.versionNumber}.svg`}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    onClick={() =>
+                      downloadWithAuth(unifilarSvgUrl(v.id), `unifilar_v${v.versionNumber}.svg`)
+                        .catch(() => toast.error("No se pudo descargar SVG"))
+                    }
                     className="p-1 rounded hover:bg-[var(--color-bg-card-hover)] text-[var(--color-text-muted)]"
                     title="Descargar SVG"
                   >
                     <Download className="w-3 h-3" />
-                  </a>
-                  <a
-                    href={unifilarPdfUrl(v.id)}
-                    download={`unifilar_v${v.versionNumber}.pdf`}
-                    target="_blank"
-                    rel="noreferrer"
+                  </button>
+                  <button
+                    onClick={() =>
+                      downloadWithAuth(unifilarPdfUrl(v.id), `unifilar_v${v.versionNumber}.pdf`)
+                        .catch(() => toast.error("No se pudo descargar PDF"))
+                    }
                     className="p-1 rounded hover:bg-[var(--color-bg-card-hover)] text-[var(--color-text-muted)]"
                     title="Descargar PDF"
                   >
                     <FileText className="w-3 h-3" />
-                  </a>
+                  </button>
                   <button
                     onClick={() => onDuplicate(v.id)}
                     className="px-2 py-0.5 rounded text-[10px] border border-[var(--color-border)] hover:bg-[var(--color-bg-card-hover)]"
@@ -344,7 +362,7 @@ function UnifilarFormDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div
-        className="w-full max-w-5xl max-h-[92vh] rounded-xl bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-2xl overflow-hidden flex flex-col"
+        className="w-full max-w-[1400px] max-h-[92vh] rounded-xl bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-2xl overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
@@ -359,7 +377,7 @@ function UnifilarFormDialog({
           </button>
         </div>
 
-        <div className="flex-1 overflow-hidden grid grid-cols-1 md:grid-cols-2 gap-0">
+        <div className="flex-1 overflow-hidden grid grid-cols-1 md:grid-cols-[420px_1fr] gap-0">
           {/* Form */}
           <form
             onSubmit={submit}
@@ -501,7 +519,7 @@ function UnifilarFormDialog({
               <p className="text-xs text-red-500">No se pudo generar el preview</p>
             ) : (
               <div
-                className="w-full"
+                className="w-full [&>svg]:w-full [&>svg]:h-auto [&>svg]:max-w-full"
                 // SVG es generado por nuestro backend, seguro de renderizar
                 dangerouslySetInnerHTML={{ __html: previewQ.data ?? "" }}
               />
@@ -540,24 +558,26 @@ function UnifilarPreviewModal({ versionId, onClose }: { versionId: string; onClo
             Vista del unifilar
           </h3>
           <div className="flex items-center gap-2">
-            <a
-              href={unifilarSvgUrl(versionId)}
-              download
-              target="_blank"
-              rel="noreferrer"
+            <button
+              onClick={() =>
+                downloadWithAuth(unifilarSvgUrl(versionId), `unifilar.svg`).catch(() =>
+                  toast.error("No se pudo descargar SVG"),
+                )
+              }
               className="inline-flex items-center gap-1 rounded border border-[var(--color-border)] px-2 py-1 text-[11px] hover:bg-[var(--color-bg-card-hover)]"
             >
               <Download className="w-3 h-3" /> SVG
-            </a>
-            <a
-              href={unifilarPdfUrl(versionId)}
-              download
-              target="_blank"
-              rel="noreferrer"
+            </button>
+            <button
+              onClick={() =>
+                downloadWithAuth(unifilarPdfUrl(versionId), `unifilar.pdf`).catch(() =>
+                  toast.error("No se pudo descargar PDF"),
+                )
+              }
               className="inline-flex items-center gap-1 rounded border border-[var(--color-border)] px-2 py-1 text-[11px] hover:bg-[var(--color-bg-card-hover)]"
             >
               <FileText className="w-3 h-3" /> PDF
-            </a>
+            </button>
             <button
               onClick={onClose}
               className="p-1 rounded hover:bg-[var(--color-bg-card-hover)] text-[var(--color-text-muted)]"
@@ -572,7 +592,10 @@ function UnifilarPreviewModal({ versionId, onClose }: { versionId: string; onClo
           ) : svgQ.error ? (
             <p className="text-xs text-red-500">No se pudo cargar el plano</p>
           ) : (
-            <div className="w-full" dangerouslySetInnerHTML={{ __html: svgQ.data ?? "" }} />
+            <div
+              className="w-full [&>svg]:w-full [&>svg]:h-auto [&>svg]:max-w-full"
+              dangerouslySetInnerHTML={{ __html: svgQ.data ?? "" }}
+            />
           )}
         </div>
       </div>

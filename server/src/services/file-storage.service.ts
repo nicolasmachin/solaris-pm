@@ -53,6 +53,36 @@ export async function saveUploadedFile(file: MultipartFile, projectId: string) {
   };
 }
 
+/**
+ * Guarda un Buffer al storage del proyecto y devuelve los metadatos para
+ * crear un `FileAttachment`. Útil para archivos generados por el server (no
+ * uploads del usuario) — ej. unifilares en PDF.
+ */
+export async function saveBufferAsAttachment(
+  buffer: Uint8Array | Buffer,
+  filename: string,
+  mimeType: string,
+  projectId: string,
+) {
+  const extension = path.extname(filename).toLowerCase() || ".bin";
+  const storageRoot = path.resolve(process.cwd(), "..", env.storagePath, projectId);
+  await fsPromises.mkdir(storageRoot, { recursive: true });
+
+  const storedFilename = `${randomUUID()}${extension}`;
+  const absolutePath = path.join(storageRoot, storedFilename);
+  await fsPromises.writeFile(absolutePath, buffer);
+
+  const stats = await fsPromises.stat(absolutePath);
+  return {
+    filename,
+    storedFilename,
+    mimeType,
+    sizeBytes: stats.size,
+    absolutePath,
+    url: `${projectId}/${storedFilename}`,
+  };
+}
+
 export async function deleteStoredFile(relativeUrl: string) {
   const absolutePath = path.resolve(process.cwd(), "..", env.storagePath, relativeUrl);
   await fsPromises.unlink(absolutePath).catch(() => undefined);

@@ -8,6 +8,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
+import { deleteStoredFile, saveBufferAsAttachment } from "../services/file-storage.service.js";
 import { generateUnifilarSvg, type UnifilarInputs } from "../services/unifilarSvg/index.js";
 import { svgToPdf } from "../services/unifilarSvg/pdf.js";
 import { badRequest, notFound, unauthorized } from "../utils/errors.js";
@@ -241,6 +242,62 @@ export async function registerUnifilarRoutes(app: FastifyInstance) {
           largoAcIcpTableroM: body.largoAcIcpTableroM,
         },
       });
+
+      // Guardar el PDF de esta versión como FileAttachment del proyecto con
+      // tipo UNIFILAR. Sólo queda la última: las versiones anteriores con
+      // tipo UNIFILAR se soft-deletean (y se borra el archivo físico). Esto
+      // hace que el plano vigente sea accesible desde "Documentos" del
+      // proyecto para el resto del equipo (operaciones, etc.).
+      try {
+        const svg = generateUnifilarSvg(inputsFromVersion(created));
+        const pdfBytes = await svgToPdf(svg);
+        const filenameBase = `unifilar_${project.clientName.replace(/[^\w-]+/g, "_")}_v${nextVersion}.pdf`;
+
+        const previousAttachments = await prisma.fileAttachment.findMany({
+          where: { projectId: params.projectId, tipo: "UNIFILAR", deletedAt: null },
+          select: { id: true, url: true },
+        });
+
+        const stored = await saveBufferAsAttachment(
+          Buffer.from(pdfBytes),
+          filenameBase,
+          "application/pdf",
+          params.projectId,
+        );
+
+        await prisma.fileAttachment.create({
+          data: {
+            projectId: params.projectId,
+            stageId: null,
+            substageId: null,
+            filename: stored.filename,
+            storedFilename: stored.storedFilename,
+            mimeType: stored.mimeType,
+            sizeBytes: stored.sizeBytes,
+            url: stored.url,
+            tipo: "UNIFILAR",
+            uploadedById: user.id,
+          },
+        });
+
+        if (previousAttachments.length > 0) {
+          await prisma.fileAttachment.updateMany({
+            where: { id: { in: previousAttachments.map((a) => a.id) } },
+            data: { deletedAt: new Date() },
+          });
+          // Borrado físico best-effort.
+          await Promise.all(
+            previousAttachments.map((a) => deleteStoredFile(a.url).catch(() => undefined)),
+          );
+        }
+      } catch (err) {
+        // No interrumpir la creación de la versión si falla el guardado del
+        // documento — el SVG/PDF on-demand siguen funcionando.
+        request.log.warn(
+          { err, unifilarVersionId: created.id },
+          "[unifilar] no se pudo guardar el PDF como FileAttachment",
+        );
+      }
 
       reply.code(201);
       return serializeVersionFull(created);

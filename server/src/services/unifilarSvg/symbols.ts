@@ -20,11 +20,11 @@ export function label(
   return `<text x="${x}" y="${y}" font-family="${FONT}" font-size="${size}" fill="${color}" text-anchor="${anchor}" font-weight="${weight}">${safe}</text>`;
 }
 
-export function vline(x: number, y1: number, y2: number, color = COLOR.wire, width = 1.2): string {
+export function vline(x: number, y1: number, y2: number, color: string = COLOR.wire, width = 1.2): string {
   return `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="${color}" stroke-width="${width}"/>`;
 }
 
-export function hline(x1: number, x2: number, y: number, color = COLOR.wire, width = 1.2): string {
+export function hline(x1: number, x2: number, y: number, color: string = COLOR.wire, width = 1.2): string {
   return `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${color}" stroke-width="${width}"/>`;
 }
 
@@ -181,7 +181,7 @@ export function tableroBox(
   w: number,
   h: number,
   titulo: string,
-  colorBorder = COLOR.tableroBorder,
+  colorBorder: string = COLOR.tableroBorder,
 ): string {
   let out = `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="${colorBorder}" stroke-width="1.5"/>`;
   out += label(x + 4, y - 4, titulo, { size: 8, weight: "bold", color: colorBorder });
