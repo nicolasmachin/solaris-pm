@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Trash2 } from "lucide-react";
+import { Lock, Trash2 } from "lucide-react";
 import { getProjectDocuments, deleteFile, type ProjectDocument } from "../../api/files.api";
 import { Spinner } from "../ui/Spinner";
 import { useAuthBlobUrl, downloadAuthenticated } from "../../hooks/useAuthBlobUrl";
@@ -38,8 +38,30 @@ function iconFor(mimeType: string): { emoji: string; color: string } {
   return { emoji: "📎", color: "#6B7280" };
 }
 
+type OriginFilter = "todos" | "manual" | "ingenieria" | "lista_materiales" | "presupuesto" | "calculo_triangulos";
+
+const ORIGIN_FILTER_LABEL: Record<OriginFilter, string> = {
+  todos: "Todos",
+  manual: "Manual",
+  ingenieria: "Ingeniería",
+  lista_materiales: "Lista materiales",
+  presupuesto: "Presupuesto",
+  calculo_triangulos: "Cálculos",
+};
+
+function matchesOrigin(doc: ProjectDocument, filter: OriginFilter): boolean {
+  if (filter === "todos") return true;
+  if (filter === "ingenieria") return doc.toolSource != null;
+  if (filter === "manual") return doc.tipo === "UPLOAD_MANUAL" || doc.tipo == null;
+  if (filter === "lista_materiales") return doc.tipo === "LISTA_MATERIALES";
+  if (filter === "presupuesto") return doc.tipo === "PRESUPUESTO";
+  if (filter === "calculo_triangulos") return doc.tipo === "CALCULO_TRIANGULOS";
+  return true;
+}
+
 export function DocumentsStrip({ projectId }: { projectId: string }) {
   const [previewDoc, setPreviewDoc] = useState<ProjectDocument | null>(null);
+  const [originFilter, setOriginFilter] = useState<OriginFilter>("todos");
   const currentUser = useAuthStore(s => s.user);
   const qc = useQueryClient();
 
@@ -64,24 +86,78 @@ export function DocumentsStrip({ projectId }: { projectId: string }) {
 
   function canDelete(doc: ProjectDocument): boolean {
     if (!currentUser) return false;
+    // Documentos generados por herramientas (toolSource) son inmutables. Para
+    // reemplazar el unifilar, hay que crear una nueva versión desde la
+    // herramienta — eso soft-deletea el FileAttachment automáticamente.
+    if (doc.toolSource != null) return false;
     return currentUser.role === "ADMIN" || doc.uploadedBy === currentUser.id;
   }
 
-  const documents = data ?? [];
+  const allDocuments = data ?? [];
+  const documents = useMemo(
+    () => allDocuments.filter((d) => matchesOrigin(d, originFilter)),
+    [allDocuments, originFilter],
+  );
+
+  // Conteos por origen para mostrar opciones que tengan al menos un doc.
+  const counts = useMemo(() => {
+    const c: Record<OriginFilter, number> = {
+      todos: allDocuments.length,
+      manual: 0,
+      ingenieria: 0,
+      lista_materiales: 0,
+      presupuesto: 0,
+      calculo_triangulos: 0,
+    };
+    for (const d of allDocuments) {
+      if (d.toolSource != null) c.ingenieria++;
+      if (d.tipo === "UPLOAD_MANUAL" || d.tipo == null) c.manual++;
+      if (d.tipo === "LISTA_MATERIALES") c.lista_materiales++;
+      if (d.tipo === "PRESUPUESTO") c.presupuesto++;
+      if (d.tipo === "CALCULO_TRIANGULOS") c.calculo_triangulos++;
+    }
+    return c;
+  }, [allDocuments]);
 
   return (
     <>
       <section className="mb-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5">
-        <div className="mb-3 flex items-baseline justify-between">
+        <div className="mb-3 flex items-baseline justify-between gap-2 flex-wrap">
           <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
             Documentos
           </p>
           <p className="text-[11px] text-[var(--color-text-muted)]">
             {isLoading
               ? "Cargando…"
-              : `${documents.length} ${documents.length === 1 ? "documento cargado" : "documentos cargados"}`}
+              : `${documents.length} ${documents.length === 1 ? "documento" : "documentos"}${
+                  originFilter !== "todos" ? ` · filtrado: ${ORIGIN_FILTER_LABEL[originFilter]}` : ""
+                }`}
           </p>
         </div>
+
+        {/* Filtros de origen — sólo se muestran si hay variedad */}
+        {!isLoading && allDocuments.length > 0 && (
+          <div className="mb-3 inline-flex flex-wrap gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] p-0.5 text-[10px]">
+            {(Object.keys(ORIGIN_FILTER_LABEL) as OriginFilter[]).map((f) => {
+              const n = counts[f];
+              if (f !== "todos" && n === 0) return null;
+              return (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setOriginFilter(f)}
+                  className={`rounded px-2 py-0.5 transition-colors ${
+                    originFilter === f
+                      ? "bg-[var(--color-accent)] text-black font-semibold"
+                      : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                  }`}
+                >
+                  {ORIGIN_FILTER_LABEL[f]} ({n})
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {isLoading ? (
           <div className="flex min-h-[120px] items-center justify-center">
@@ -156,22 +232,38 @@ function DocumentCard({ doc, onClick, canDelete, onDelete, deleting }: {
 }) {
   const icon = iconFor(doc.mimeType);
   const showThumb = isImage(doc.mimeType);
-  const tipoBadge = doc.tipo ? TIPO_BADGE[doc.tipo] : null;
-  const isGenerated = doc.tipo === "LISTA_MATERIALES" || doc.tipo === "PRESUPUESTO";
+  // Origen tool-generado tiene precedencia sobre `tipo` para el badge.
+  const isToolGenerated = doc.toolSource != null;
+  const toolBadgeLabel = isToolGenerated
+    ? `${doc.toolSource!.charAt(0).toUpperCase()}${doc.toolSource!.slice(1)}${
+        doc.toolVersion ? ` v${doc.toolVersion}` : ""
+      }`
+    : null;
+  const tipoBadge = !isToolGenerated && doc.tipo ? TIPO_BADGE[doc.tipo] : null;
 
   return (
     <div className="group relative flex w-[180px] shrink-0 flex-col gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] p-3 text-left transition-colors hover:border-[var(--color-text-secondary)]">
-      {canDelete && (
-        <button
-          type="button"
-          onClick={e => { e.stopPropagation(); onDelete(); }}
-          disabled={deleting}
-          title={isGenerated ? "Eliminar este PDF generado automáticamente" : "Eliminar archivo"}
-          className="absolute right-1.5 top-1.5 rounded p-1 text-[var(--color-text-muted)] opacity-0 transition-opacity hover:bg-red-500/15 hover:text-red-500 group-hover:opacity-100 disabled:opacity-50"
-          aria-label="Eliminar archivo"
+      {isToolGenerated ? (
+        <span
+          className="absolute right-1.5 top-1.5 inline-flex items-center gap-0.5 rounded bg-[var(--color-bg-card)] px-1 py-0.5 text-[8px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]"
+          title="Documento generado automáticamente. Para reemplazarlo, creá una versión nueva desde la herramienta."
         >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+          <Lock className="h-2.5 w-2.5" />
+          inmutable
+        </span>
+      ) : (
+        canDelete && (
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); onDelete(); }}
+            disabled={deleting}
+            title="Eliminar archivo"
+            className="absolute right-1.5 top-1.5 rounded p-1 text-[var(--color-text-muted)] opacity-0 transition-opacity hover:bg-red-500/15 hover:text-red-500 group-hover:opacity-100 disabled:opacity-50"
+            aria-label="Eliminar archivo"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        )
       )}
       <button
         type="button"
@@ -193,14 +285,22 @@ function DocumentCard({ doc, onClick, canDelete, onDelete, deleting }: {
           <span>{formatSize(doc.sizeBytes)}</span>
           <span>{formatShortDate(doc.uploadedAt)}</span>
         </div>
-        {tipoBadge && (
+        {toolBadgeLabel ? (
+          <span
+            className="mt-0.5 inline-block rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider"
+            style={{ background: "rgba(59,130,246,0.15)", color: "#60a5fa" }}
+            title={`Generado desde el módulo Ingeniería · ${toolBadgeLabel}`}
+          >
+            Ingeniería · {toolBadgeLabel}
+          </span>
+        ) : tipoBadge ? (
           <span
             className="mt-0.5 inline-block rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider"
             style={{ background: `${tipoBadge.color}22`, color: tipoBadge.color }}
           >
             {tipoBadge.label}
           </span>
-        )}
+        ) : null}
       </button>
     </div>
   );
