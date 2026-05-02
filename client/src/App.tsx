@@ -33,6 +33,7 @@ const Stock = lazy(() => import("./pages/Stock").then((module) => ({ default: mo
 const Calendar = lazy(() => import("./pages/Calendar").then((module) => ({ default: module.Calendar })));
 const MisTareas = lazy(() => import("./pages/MisTareas").then((module) => ({ default: module.MisTareas })));
 const TramitesUte = lazy(() => import("./pages/TramitesUte").then((module) => ({ default: module.TramitesUte })));
+const Ingenieria = lazy(() => import("./pages/Ingenieria").then((module) => ({ default: module.Ingenieria })));
 const PortalProjects = lazy(() => import("./pages/PortalProjects").then((module) => ({ default: module.PortalProjects })));
 const PortalProjectUte = lazy(() => import("./pages/PortalProjectUte").then((module) => ({ default: module.PortalProjectUte })));
 const PortalLayout = lazy(() => import("./components/layout/PortalLayout").then((module) => ({ default: module.PortalLayout })));
@@ -288,6 +289,14 @@ export function App() {
           element={
             <PermissionRoute module="TRAMITES_UTE" action="VIEW">
               <TramitesUte />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/ingenieria"
+          element={
+            <PermissionRoute module="INGENIERIA" action="VIEW">
+              <Ingenieria />
             </PermissionRoute>
           }
         />
