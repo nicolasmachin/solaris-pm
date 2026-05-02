@@ -57,3 +57,38 @@ export async function patchClient(id: string, input: ClientPatchInput): Promise<
 export async function deleteClient(id: string): Promise<void> {
   await apiClient.delete(`/api/admin/clients/${id}`);
 }
+
+export interface AvailableProjectForClient {
+  id: string;
+  code: string;
+  clientName: string;
+  capacityKwp: number;
+  location: string;
+  status: string;
+  /** Cuántos clientes ya tienen acceso a este proyecto (m2m). */
+  clientsCount: number;
+}
+
+export async function getProjectsAvailableForClient(): Promise<AvailableProjectForClient[]> {
+  const { data } = await apiClient.get<AvailableProjectForClient[]>(
+    "/api/admin/projects/available-for-client",
+  );
+  return data;
+}
+
+export interface ProjectClientLink {
+  projectClientId: string;
+  userId: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  passwordTemporary: boolean;
+  assignedAt: string;
+}
+
+export async function getProjectClients(projectId: string): Promise<ProjectClientLink[]> {
+  const { data } = await apiClient.get<ProjectClientLink[]>(
+    `/api/admin/projects/${projectId}/clients`,
+  );
+  return data;
+}

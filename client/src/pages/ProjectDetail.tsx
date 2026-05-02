@@ -14,6 +14,7 @@ import { Pipeline } from "../components/project/Pipeline";
 import { StageDrawer } from "../components/project/StageDrawer";
 import { CostosTab } from "../components/project/CostosTab";
 import { TasksPanel } from "../components/project/TasksPanel";
+import { PortalClientsPanel } from "../components/project/PortalClientsPanel";
 import { TaskModal } from "../components/project/TaskModal";
 import { SolarSystemModal } from "../components/project/SolarSystemModal";
 import { AuditHistory } from "../components/project/AuditHistory";
@@ -643,6 +644,7 @@ export function ProjectDetail() {
   const canViewStock = usePermission("STOCK", "VIEW");
   const canViewUte = usePermission("TRAMITES_UTE", "VIEW");
   const canCreateUte = usePermission("TRAMITES_UTE", "CREATE");
+  const canViewClients = usePermission("USUARIOS", "VIEW");
 
   const {
     data: project,
@@ -794,6 +796,9 @@ export function ProjectDetail() {
         onNewTask={() => setShowTaskModal(true)}
         onTasksChanged={invalidate}
       />
+
+      {/* Clientes con acceso al portal — sólo admins (permiso USUARIOS.VIEW) */}
+      {canViewClients && <PortalClientsPanel projectId={project.id} />}
 
       <div className="mt-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
         <div className="mb-4 flex gap-2 border-b border-[var(--color-border)] pb-3">

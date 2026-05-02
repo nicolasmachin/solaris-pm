@@ -6,13 +6,13 @@ import {
   createClient,
   deleteClient,
   getClients,
+  getProjectsAvailableForClient,
   patchClient,
+  type AvailableProjectForClient,
   type ClientUser,
   type ClientCreateInput,
   type ClientPatchInput,
 } from '../api/clients.api';
-import { getProjects } from '../api/projects.api';
-import type { ProjectListItem } from '../types/api.types';
 
 function klass(...p: (string | false | undefined)[]) {
   return p.filter(Boolean).join(' ');
@@ -71,8 +71,8 @@ export function AdminClientes() {
 
   const clientsQ = useQuery({ queryKey: ['admin-clients'], queryFn: getClients });
   const projectsQ = useQuery({
-    queryKey: ['projects-for-client-assign'],
-    queryFn: () => getProjects(),
+    queryKey: ['projects-available-for-client'],
+    queryFn: getProjectsAvailableForClient,
   });
 
   return (
@@ -183,13 +183,12 @@ export function AdminClientes() {
       {createOpen && (
         <CreateClientModal
           projects={projectsQ.data ?? []}
-          existingClients={clientsQ.data ?? []}
           onClose={() => setCreateOpen(false)}
           onSuccess={(result) => {
             setCreateOpen(false);
             setCreatedResult(result);
             qc.invalidateQueries({ queryKey: ['admin-clients'] });
-            qc.invalidateQueries({ queryKey: ['projects-for-client-assign'] });
+            qc.invalidateQueries({ queryKey: ['projects-available-for-client'] });
           }}
         />
       )}
@@ -198,12 +197,11 @@ export function AdminClientes() {
         <EditClientModal
           client={editing}
           projects={projectsQ.data ?? []}
-          existingClients={clientsQ.data ?? []}
           onClose={() => setEditing(null)}
           onSuccess={() => {
             setEditing(null);
             qc.invalidateQueries({ queryKey: ['admin-clients'] });
-            qc.invalidateQueries({ queryKey: ['projects-for-client-assign'] });
+            qc.invalidateQueries({ queryKey: ['projects-available-for-client'] });
           }}
         />
       )}
@@ -236,12 +234,10 @@ export function AdminClientes() {
 
 function CreateClientModal({
   projects,
-  existingClients,
   onClose,
   onSuccess,
 }: {
-  projects: ProjectListItem[];
-  existingClients: ClientUser[];
+  projects: AvailableProjectForClient[];
   onClose: () => void;
   onSuccess: (result: { email: string; name: string; password: string }) => void;
 }) {
@@ -253,16 +249,6 @@ function CreateClientModal({
     projectIds: [],
   });
   const [error, setError] = useState('');
-
-  const assignedIds = useMemo(() => {
-    const set = new Set<string>();
-    for (const c of existingClients) for (const p of c.projects) set.add(p.id);
-    return set;
-  }, [existingClients]);
-  const availableProjects = useMemo(
-    () => projects.filter((p) => !assignedIds.has(p.id)),
-    [projects, assignedIds],
-  );
 
   const mut = useMutation({
     mutationFn: (input: ClientCreateInput) => createClient(input),
@@ -349,12 +335,12 @@ function CreateClientModal({
         <div>
           <label className={lbl}>Asignar a proyecto(s)</label>
           <ProjectMultiSelect
-            availableProjects={availableProjects}
+            availableProjects={projects}
             selectedIds={form.projectIds}
             onChange={(ids) => setForm((f) => ({ ...f, projectIds: ids }))}
           />
           <p className="text-[10px] text-[var(--color-text-muted)] mt-1">
-            Sólo aparecen proyectos sin cliente asignado.
+            Un proyecto puede tener varios clientes asignados; todos ven lo mismo.
           </p>
         </div>
         <div className="rounded-md bg-blue-500/10 border border-blue-500/30 p-3 text-xs text-[var(--color-text-secondary)]">
@@ -384,13 +370,11 @@ function CreateClientModal({
 function EditClientModal({
   client,
   projects,
-  existingClients,
   onClose,
   onSuccess,
 }: {
   client: ClientUser;
-  projects: ProjectListItem[];
-  existingClients: ClientUser[];
+  projects: AvailableProjectForClient[];
   onClose: () => void;
   onSuccess: () => void;
 }) {
@@ -401,19 +385,6 @@ function EditClientModal({
     projectIds: client.projects.map((p) => p.id),
   });
   const [error, setError] = useState('');
-
-  const otherClientsAssigned = useMemo(() => {
-    const set = new Set<string>();
-    for (const c of existingClients) {
-      if (c.id === client.id) continue;
-      for (const p of c.projects) set.add(p.id);
-    }
-    return set;
-  }, [existingClients, client.id]);
-  const availableProjects = useMemo(
-    () => projects.filter((p) => !otherClientsAssigned.has(p.id)),
-    [projects, otherClientsAssigned],
-  );
 
   const mut = useMutation({
     mutationFn: (input: ClientPatchInput) => patchClient(client.id, input),
@@ -468,10 +439,13 @@ function EditClientModal({
         <div>
           <label className={lbl}>Proyectos asignados</label>
           <ProjectMultiSelect
-            availableProjects={availableProjects}
+            availableProjects={projects}
             selectedIds={form.projectIds}
             onChange={(ids) => setForm((f) => ({ ...f, projectIds: ids }))}
           />
+          <p className="text-[10px] text-[var(--color-text-muted)] mt-1">
+            Un proyecto puede tener varios clientes asignados; todos ven lo mismo.
+          </p>
         </div>
         {error && (
           <div className="rounded-md bg-red-500/10 border border-red-500/30 p-3 text-xs text-red-400">
@@ -679,7 +653,7 @@ function ProjectMultiSelect({
   selectedIds,
   onChange,
 }: {
-  availableProjects: ProjectListItem[];
+  availableProjects: AvailableProjectForClient[];
   selectedIds: string[];
   onChange: (ids: string[]) => void;
 }) {
@@ -728,7 +702,17 @@ function ProjectMultiSelect({
                 <span className="font-mono text-[10px] text-[var(--color-text-muted)] w-24 shrink-0">
                   {p.code}
                 </span>
-                <span className="text-[var(--color-text-primary)] truncate">{p.clientName}</span>
+                <span className="text-[var(--color-text-primary)] truncate flex-1">
+                  {p.clientName}
+                </span>
+                {p.clientsCount > 0 && (
+                  <span
+                    className="shrink-0 rounded border border-[var(--color-border)] bg-[var(--color-bg-card)] px-1.5 py-0.5 text-[9px] font-mono text-[var(--color-text-muted)] uppercase tracking-wider"
+                    title={`Ya asignado a ${p.clientsCount} cliente${p.clientsCount === 1 ? '' : 's'}`}
+                  >
+                    {p.clientsCount} {p.clientsCount === 1 ? 'cliente' : 'clientes'}
+                  </span>
+                )}
               </label>
             );
           })

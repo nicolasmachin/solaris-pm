@@ -359,6 +359,8 @@ model User {
   aiQueries                      AIQuery[]
   aiRateLimit                    AIRateLimit?
   clientProjects                 Project[]                @relation("ProjectClient")
+  projectClients                 ProjectClient[]          @relation("ProjectClientUser")
+  projectClientsCreated          ProjectClient[]          @relation("ProjectClientCreatedBy")
   passwordTemporary              Boolean                  @default(false)
   deletedAt                      DateTime?                @db.Timestamptz(6)
   createdAt                      DateTime                 @default(now()) @db.Timestamptz(6)
@@ -419,6 +421,7 @@ model Project {
   stockMovements       StockMovement[]
   installationSchedule InstallationSchedule?
   uteProcesses         UteProcess[]
+  clients              ProjectClient[]
   deletedAt            DateTime?             @db.Timestamptz(6)
   createdAt            DateTime              @default(now()) @db.Timestamptz(6)
   updatedAt            DateTime              @updatedAt @db.Timestamptz(6)
@@ -431,6 +434,26 @@ model Project {
   @@index([plannedEndDate])
   @@index([deletedAt])
   @@map("projects")
+}
+
+// Relación many-to-many entre Project y User (rol CLIENT). Reemplaza al
+// `Project.clientUserId` que sólo permitía un cliente por proyecto. El campo
+// directo se conserva como legacy (deprecado, no se actualiza desde nuevos
+// endpoints) para no romper datos preexistentes hasta una migración posterior.
+model ProjectClient {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation("ProjectClientUser", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  createdById String?
+  createdBy   User?    @relation("ProjectClientCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+  @@map("project_clients")
 }
 
 model SolarSystem {

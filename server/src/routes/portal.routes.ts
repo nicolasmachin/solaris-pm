@@ -51,7 +51,7 @@ function serializeClient(c: {
   passwordTemporary: boolean;
   deletedAt: Date | null;
   createdAt: Date;
-  clientProjects: Array<{ id: string; code: string; clientName: string }>;
+  projectClients: Array<{ project: { id: string; code: string; clientName: string } | null }>;
 }) {
   return {
     id: c.id,
@@ -61,13 +61,22 @@ function serializeClient(c: {
     passwordTemporary: c.passwordTemporary,
     active: c.deletedAt == null,
     createdAt: serializeDate(c.createdAt),
-    projects: c.clientProjects.map((p) => ({
-      id: p.id,
-      code: p.code,
-      clientName: p.clientName,
-    })),
+    projects: c.projectClients
+      .map((pc) => pc.project)
+      .filter((p): p is { id: string; code: string; clientName: string } => p != null)
+      .map((p) => ({ id: p.id, code: p.code, clientName: p.clientName })),
   };
 }
+
+const CLIENT_PROJECTS_INCLUDE = {
+  projectClients: {
+    where: { project: { deletedAt: null } },
+    include: {
+      project: { select: { id: true, code: true, clientName: true } },
+    },
+    orderBy: { createdAt: "desc" as const },
+  },
+} as const;
 
 // ─── Timeline UTE para portal cliente ───────────────────────────────────────
 
@@ -296,17 +305,80 @@ export async function registerPortalRoutes(app: FastifyInstance) {
     async () => {
       const clients = await prisma.user.findMany({
         where: { role: { name: "CLIENT" } },
-        include: {
-          clientProjects: {
-            where: { deletedAt: null },
-            select: { id: true, code: true, clientName: true },
-            orderBy: { createdAt: "desc" },
-          },
-        },
+        include: CLIENT_PROJECTS_INCLUDE,
         orderBy: { createdAt: "desc" },
       });
 
       return clients.map(serializeClient);
+    },
+  );
+
+  // Lista de proyectos disponibles para asignar a un cliente desde el modal
+  // de admin. A diferencia del flujo anterior, NO filtra por "sin cliente
+  // asignado": ahora un proyecto puede tener varios clientes (m2m). Devuelve
+  // un contador con la cantidad de clientes que ya tienen acceso, para que
+  // el admin lo vea como contexto en el multi-select.
+  app.get(
+    "/admin/projects/available-for-client",
+    { preHandler: authorize(Module.USUARIOS, Action.VIEW) },
+    async () => {
+      const projects = await prisma.project.findMany({
+        where: { deletedAt: null },
+        select: {
+          id: true,
+          code: true,
+          clientName: true,
+          capacityKwp: true,
+          locationCity: true,
+          locationProvince: true,
+          status: true,
+          _count: { select: { clients: true } },
+        },
+        orderBy: { code: "desc" },
+      });
+      return projects.map((p) => ({
+        id: p.id,
+        code: p.code,
+        clientName: p.clientName,
+        capacityKwp: Number(p.capacityKwp),
+        location: `${p.locationCity}, ${p.locationProvince}`,
+        status: p.status,
+        clientsCount: p._count.clients,
+      }));
+    },
+  );
+
+  // Clientes con acceso al portal para un proyecto específico (m2m). Usado
+  // en el detalle del proyecto para mostrar qué CLIENTs ya tienen acceso.
+  app.get(
+    "/admin/projects/:projectId/clients",
+    { preHandler: authorize(Module.USUARIOS, Action.VIEW) },
+    async (request) => {
+      const params = z.object({ projectId: z.string() }).parse(request.params);
+      const project = await prisma.project.findFirst({
+        where: { id: params.projectId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+
+      const rows = await prisma.projectClient.findMany({
+        where: { projectId: params.projectId, user: { deletedAt: null } },
+        include: {
+          user: {
+            select: { id: true, name: true, email: true, phone: true, passwordTemporary: true },
+          },
+        },
+        orderBy: { createdAt: "asc" },
+      });
+      return rows.map((r) => ({
+        projectClientId: r.id,
+        userId: r.user.id,
+        name: r.user.name,
+        email: r.user.email,
+        phone: r.user.phone,
+        passwordTemporary: r.user.passwordTemporary,
+        assignedAt: serializeDate(r.createdAt),
+      }));
     },
   );
 
@@ -317,13 +389,7 @@ export async function registerPortalRoutes(app: FastifyInstance) {
       const params = z.object({ id: z.string() }).parse(request.params);
       const client = await prisma.user.findFirst({
         where: { id: params.id, role: { name: "CLIENT" } },
-        include: {
-          clientProjects: {
-            where: { deletedAt: null },
-            select: { id: true, code: true, clientName: true },
-            orderBy: { createdAt: "desc" },
-          },
-        },
+        include: CLIENT_PROJECTS_INCLUDE,
       });
       if (!client) throw notFound("CLIENT_NOT_FOUND", "Cliente no encontrado");
       return serializeClient(client);
@@ -344,20 +410,15 @@ export async function registerPortalRoutes(app: FastifyInstance) {
         const existing = await tx.user.findUnique({ where: { email: body.email } });
         if (existing) throw badRequest("EMAIL_IN_USE", "El email ya está en uso");
 
+        // Validar que los projectIds existan; ya no validamos "no asignado" porque
+        // un proyecto puede tener varios clientes.
         if (body.projectIds.length > 0) {
           const projects = await tx.project.findMany({
             where: { id: { in: body.projectIds }, deletedAt: null },
-            select: { id: true, clientUserId: true, code: true },
+            select: { id: true },
           });
           if (projects.length !== body.projectIds.length) {
             throw badRequest("PROJECT_NOT_FOUND", "Alguno de los proyectos no existe o está borrado");
-          }
-          const taken = projects.find((p) => p.clientUserId != null);
-          if (taken) {
-            throw badRequest(
-              "PROJECT_ALREADY_ASSIGNED",
-              `El proyecto ${taken.code} ya está asignado a otro cliente`,
-            );
           }
         }
 
@@ -374,21 +435,19 @@ export async function registerPortalRoutes(app: FastifyInstance) {
         });
 
         if (body.projectIds.length > 0) {
-          await tx.project.updateMany({
-            where: { id: { in: body.projectIds } },
-            data: { clientUserId: newUser.id },
+          await tx.projectClient.createMany({
+            data: body.projectIds.map((projectId) => ({
+              projectId,
+              userId: newUser.id,
+              createdById: currentUser.id,
+            })),
+            skipDuplicates: true,
           });
         }
 
         return tx.user.findUniqueOrThrow({
           where: { id: newUser.id },
-          include: {
-            clientProjects: {
-              where: { deletedAt: null },
-              select: { id: true, code: true, clientName: true },
-              orderBy: { createdAt: "desc" },
-            },
-          },
+          include: CLIENT_PROJECTS_INCLUDE,
         });
       });
 
@@ -415,12 +474,7 @@ export async function registerPortalRoutes(app: FastifyInstance) {
 
       const existing = await prisma.user.findFirst({
         where: { id: params.id, role: { name: "CLIENT" } },
-        include: {
-          clientProjects: {
-            where: { deletedAt: null },
-            select: { id: true, code: true, clientName: true },
-          },
-        },
+        include: CLIENT_PROJECTS_INCLUDE,
       });
       if (!existing) throw notFound("CLIENT_NOT_FOUND", "Cliente no encontrado");
 
@@ -447,46 +501,38 @@ export async function registerPortalRoutes(app: FastifyInstance) {
         }
 
         if (body.projectIds !== undefined) {
-          // Validar disponibilidad: si algún projectId está asignado a OTRO cliente, fallar.
+          // Validar que los nuevos projectIds existan. Ya no validamos
+          // "asignado a otro cliente" porque la relación es m2m.
           if (body.projectIds.length > 0) {
-            const conflicting = await tx.project.findMany({
-              where: {
-                id: { in: body.projectIds },
-                deletedAt: null,
-                clientUserId: { not: null, notIn: [existing.id] },
-              },
-              select: { code: true },
+            const projects = await tx.project.findMany({
+              where: { id: { in: body.projectIds }, deletedAt: null },
+              select: { id: true },
             });
-            if (conflicting.length > 0) {
-              throw badRequest(
-                "PROJECT_ALREADY_ASSIGNED",
-                `Proyecto(s) ya asignado(s) a otro cliente: ${conflicting.map((p) => p.code).join(", ")}`,
-              );
+            if (projects.length !== body.projectIds.length) {
+              throw badRequest("PROJECT_NOT_FOUND", "Alguno de los proyectos no existe o está borrado");
             }
           }
-          // Desasignar los actuales no incluidos en la nueva lista.
-          await tx.project.updateMany({
-            where: { clientUserId: existing.id, id: { notIn: body.projectIds } },
-            data: { clientUserId: null },
+
+          // Sync: quitar los project_clients de este user que no estén
+          // en la nueva lista, y crear los nuevos.
+          await tx.projectClient.deleteMany({
+            where: { userId: existing.id, projectId: { notIn: body.projectIds } },
           });
-          // Asignar los nuevos.
           if (body.projectIds.length > 0) {
-            await tx.project.updateMany({
-              where: { id: { in: body.projectIds }, deletedAt: null },
-              data: { clientUserId: existing.id },
+            await tx.projectClient.createMany({
+              data: body.projectIds.map((projectId) => ({
+                projectId,
+                userId: existing.id,
+                createdById: currentUser.id,
+              })),
+              skipDuplicates: true,
             });
           }
         }
 
         return tx.user.findUniqueOrThrow({
           where: { id: existing.id },
-          include: {
-            clientProjects: {
-              where: { deletedAt: null },
-              select: { id: true, code: true, clientName: true },
-              orderBy: { createdAt: "desc" },
-            },
-          },
+          include: CLIENT_PROJECTS_INCLUDE,
         });
       });
 
@@ -519,6 +565,9 @@ export async function registerPortalRoutes(app: FastifyInstance) {
           where: { id: existing.id },
           data: { deletedAt: new Date() },
         });
+        // Sacar todas sus asignaciones m2m. El campo legacy clientUserId
+        // también se limpia por consistencia hasta que se dropee.
+        await tx.projectClient.deleteMany({ where: { userId: existing.id } });
         await tx.project.updateMany({
           where: { clientUserId: existing.id },
           data: { clientUserId: null },
@@ -548,7 +597,10 @@ export async function registerPortalRoutes(app: FastifyInstance) {
       const user = ensureUser(request);
 
       const projects = await prisma.project.findMany({
-        where: { clientUserId: user.id, deletedAt: null },
+        where: {
+          deletedAt: null,
+          clients: { some: { userId: user.id } },
+        },
         select: {
           id: true,
           code: true,
@@ -587,7 +639,11 @@ export async function registerPortalRoutes(app: FastifyInstance) {
       const params = z.object({ id: z.string() }).parse(request.params);
 
       const project = await prisma.project.findFirst({
-        where: { id: params.id, clientUserId: user.id, deletedAt: null },
+        where: {
+          id: params.id,
+          deletedAt: null,
+          clients: { some: { userId: user.id } },
+        },
         include: {
           uteProcesses: {
             where: { deletedAt: null },
