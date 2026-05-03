@@ -4,14 +4,28 @@
 // FileAttachment con `toolSource="preing"`. Las fotos se suben antes via
 // `upload-foto` y se asocian al crear la versión.
 
-import { Action, FileAttachmentTipo, Module } from "@prisma/client";
+import { Action, AuditAction, AuditEntityType, FileAttachmentTipo, Module } from "@prisma/client";
 import type { FastifyInstance } from "fastify";
+import { z } from "zod";
 
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { prisma } from "../lib/prisma.js";
-import { saveUploadedFile } from "../services/file-storage.service.js";
+import {
+  deleteStoredFile,
+  getStoredFilePath,
+  saveBufferAsAttachment,
+  saveUploadedFile,
+} from "../services/file-storage.service.js";
+import {
+  generatePreIngenieriaPdf,
+  type PreIngenieriaPdfFoto,
+  type PreIngenieriaPdfInputs,
+  type TipoTechoKey,
+} from "../services/preingenieriaPdf/index.js";
+import { createAuditEntry } from "../services/audit.service.js";
 import { badRequest, notFound, unauthorized } from "../utils/errors.js";
+import { serializeDate } from "../utils/serialization.js";
 
 function ensureUser(request: import("fastify").FastifyRequest) {
   if (!request.user) throw unauthorized("No autenticado");
@@ -24,6 +38,89 @@ const ALLOWED_PHOTO_MIMETYPES = new Set([
   "image/png",
   "image/webp",
 ]);
+
+const tipoTechoEnum = z.enum(["ISOPANEL", "HORMIGON", "CHAPA", "TEJAS", "OTRO"]) satisfies z.ZodType<TipoTechoKey>;
+
+const createBodySchema = z
+  .object({
+    label: z.string().trim().max(80).optional().nullable(),
+    // Sitio
+    tipoTecho: tipoTechoEnum.optional().nullable(),
+    tipoTechoOtro: z.string().trim().max(100).optional().nullable(),
+    infoTecho: z.string().trim().max(2000).optional().nullable(),
+    alturaTecho: z.string().trim().max(50).optional().nullable(),
+    // Eléctricos
+    cantidadPaneles: z.string().trim().max(100).optional().nullable(),
+    potenciaPaneles: z.string().trim().max(50).optional().nullable(),
+    inversor: z.string().trim().max(150).optional().nullable(),
+    stringsLineasDc: z.string().trim().max(50).optional().nullable(),
+    cableAc: z.string().trim().max(100).optional().nullable(),
+    termicaAc: z.string().trim().max(50).optional().nullable(),
+    diferencialAc: z.string().trim().max(50).optional().nullable(),
+    largoCablesAcMts: z.string().trim().max(20).optional().nullable(),
+    largoCablesDcMts: z.string().trim().max(20).optional().nullable(),
+    // Cliente (override editable del snapshot pre-rellenado)
+    snapshotNombre: z.string().trim().min(1).max(150),
+    snapshotDireccion: z.string().trim().max(200).optional().nullable(),
+    snapshotCiudad: z.string().trim().max(100).optional().nullable(),
+    snapshotCelular: z.string().trim().max(50).optional().nullable(),
+    snapshotFechaPrevista: z.string().trim().max(80).optional().nullable(),
+    // Red
+    redMonofasica: z.boolean().default(false),
+    redTrifasica230SN: z.boolean().default(false),
+    redTrifasica400CN: z.boolean().default(false),
+    // Notas
+    notasAdicionales: z.string().trim().max(2000).optional().nullable(),
+    // Trazabilidad
+    unifilarVersionId: z.string().min(1).optional().nullable(),
+    // Fotos: orden + etiquetas indexadas por fileId
+    fotosOrden: z.array(z.string().min(1)).default([]),
+    fotosEtiquetas: z.record(z.string(), z.string().max(100)).optional().nullable(),
+  })
+  .strict();
+
+type CreateBody = z.infer<typeof createBodySchema>;
+
+function serializeVersionListItem(v: {
+  id: string;
+  versionNumber: number;
+  label: string | null;
+  createdAt: Date;
+}) {
+  return {
+    id: v.id,
+    versionNumber: v.versionNumber,
+    label: v.label,
+    createdAt: serializeDate(v.createdAt),
+  };
+}
+
+function inputsFromVersion(v: CreateBody & { snapshotNombre: string }): PreIngenieriaPdfInputs {
+  return {
+    snapshotNombre: v.snapshotNombre,
+    snapshotDireccion: v.snapshotDireccion ?? null,
+    snapshotCiudad: v.snapshotCiudad ?? null,
+    snapshotCelular: v.snapshotCelular ?? null,
+    snapshotFechaPrevista: v.snapshotFechaPrevista ?? null,
+    tipoTecho: v.tipoTecho ?? null,
+    tipoTechoOtro: v.tipoTechoOtro ?? null,
+    infoTecho: v.infoTecho ?? null,
+    alturaTecho: v.alturaTecho ?? null,
+    cantidadPaneles: v.cantidadPaneles ?? null,
+    potenciaPaneles: v.potenciaPaneles ?? null,
+    inversor: v.inversor ?? null,
+    stringsLineasDc: v.stringsLineasDc ?? null,
+    cableAc: v.cableAc ?? null,
+    termicaAc: v.termicaAc ?? null,
+    diferencialAc: v.diferencialAc ?? null,
+    largoCablesAcMts: v.largoCablesAcMts ?? null,
+    largoCablesDcMts: v.largoCablesDcMts ?? null,
+    redMonofasica: v.redMonofasica,
+    redTrifasica230SN: v.redTrifasica230SN,
+    redTrifasica400CN: v.redTrifasica400CN,
+    notasAdicionales: v.notasAdicionales ?? null,
+  };
+}
 
 export async function registerPreIngenieriaRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authenticate);
@@ -78,6 +175,339 @@ export async function registerPreIngenieriaRoutes(app: FastifyInstance) {
         filename: attachment.filename,
         size: attachment.sizeBytes,
       };
+    },
+  );
+
+  // ─── Listar versiones de un proyecto ─────────────────────────────────────
+  app.get(
+    "/projects/:projectId/preingenieria-versions",
+    { preHandler: authorize(Module.INGENIERIA, Action.VIEW) },
+    async (request) => {
+      const params = z.object({ projectId: z.string().min(1) }).parse(request.params);
+
+      const project = await prisma.project.findFirst({
+        where: { id: params.projectId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+
+      const versions = await prisma.preIngenieriaVersion.findMany({
+        where: { projectId: params.projectId },
+        orderBy: { versionNumber: "desc" },
+        select: { id: true, versionNumber: true, label: true, createdAt: true },
+      });
+      return { versions: versions.map(serializeVersionListItem) };
+    },
+  );
+
+  // ─── Obtener una versión completa ────────────────────────────────────────
+  app.get(
+    "/preingenieria-versions/:id",
+    { preHandler: authorize(Module.INGENIERIA, Action.VIEW) },
+    async (request) => {
+      const params = z.object({ id: z.string().min(1) }).parse(request.params);
+      const version = await prisma.preIngenieriaVersion.findUnique({
+        where: { id: params.id },
+        include: {
+          fotos: {
+            orderBy: { orden: "asc" },
+            include: {
+              fileAttachment: {
+                select: { id: true, filename: true, mimeType: true, sizeBytes: true, url: true },
+              },
+            },
+          },
+        },
+      });
+      if (!version) throw notFound("PREING_NOT_FOUND", "Versión no encontrada");
+      const pdfAttachment = await prisma.fileAttachment.findFirst({
+        where: {
+          projectId: version.projectId,
+          toolSource: "preing",
+          toolEntityId: version.id,
+          deletedAt: null,
+        },
+        select: { id: true, filename: true, sizeBytes: true, createdAt: true },
+      });
+      return {
+        ...version,
+        createdAt: serializeDate(version.createdAt),
+        pdfAttachment: pdfAttachment
+          ? {
+              ...pdfAttachment,
+              createdAt: serializeDate(pdfAttachment.createdAt),
+              previewUrl: `/api/files/${pdfAttachment.id}/preview`,
+              downloadUrl: `/api/files/${pdfAttachment.id}/download`,
+            }
+          : null,
+      };
+    },
+  );
+
+  // ─── Crear versión nueva ─────────────────────────────────────────────────
+  // 1) Snapshot del cliente (recibido editable). 2) versionNumber correlativo.
+  // 3) Crea PreIngenieriaVersion + PreIngenieriaFoto[] referenciando los
+  // FileAttachment ya subidos via /upload-foto. 4) Genera PDF y lo guarda como
+  // FileAttachment con toolSource="preing", toolVersion=N. 5) Soft-delete del
+  // PDF anterior (las versiones de PreIngenieria quedan; sólo se reemplaza el
+  // documento "vigente" en Documentos del proyecto).
+  app.post(
+    "/projects/:projectId/preingenieria-versions",
+    { preHandler: authorize(Module.INGENIERIA, Action.EDIT) },
+    async (request, reply) => {
+      const user = ensureUser(request);
+      const params = z.object({ projectId: z.string().min(1) }).parse(request.params);
+      const body: CreateBody = createBodySchema.parse(request.body);
+
+      const project = await prisma.project.findFirst({
+        where: { id: params.projectId, deletedAt: null },
+        select: { id: true, clientName: true },
+      });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+
+      // Validar que las fotos referenciadas existen y pertenecen al proyecto.
+      if (body.fotosOrden.length > 0) {
+        const fotos = await prisma.fileAttachment.findMany({
+          where: { id: { in: body.fotosOrden }, projectId: params.projectId, deletedAt: null },
+          select: { id: true },
+        });
+        if (fotos.length !== body.fotosOrden.length) {
+          throw badRequest(
+            "INVALID_PHOTO_REFERENCES",
+            "Alguna de las fotos referenciadas no existe o no pertenece al proyecto",
+          );
+        }
+      }
+
+      const last = await prisma.preIngenieriaVersion.findFirst({
+        where: { projectId: params.projectId },
+        orderBy: { versionNumber: "desc" },
+        select: { versionNumber: true },
+      });
+      const nextVersion = (last?.versionNumber ?? 0) + 1;
+
+      const created = await prisma.preIngenieriaVersion.create({
+        data: {
+          projectId: params.projectId,
+          versionNumber: nextVersion,
+          label: body.label?.trim() || null,
+          snapshotNombre: body.snapshotNombre,
+          snapshotDireccion: body.snapshotDireccion ?? null,
+          snapshotCiudad: body.snapshotCiudad ?? null,
+          snapshotCelular: body.snapshotCelular ?? null,
+          snapshotFechaPrevista: body.snapshotFechaPrevista ?? null,
+          tipoTecho: body.tipoTecho ?? null,
+          tipoTechoOtro: body.tipoTechoOtro ?? null,
+          infoTecho: body.infoTecho ?? null,
+          alturaTecho: body.alturaTecho ?? null,
+          cantidadPaneles: body.cantidadPaneles ?? null,
+          potenciaPaneles: body.potenciaPaneles ?? null,
+          inversor: body.inversor ?? null,
+          stringsLineasDc: body.stringsLineasDc ?? null,
+          cableAc: body.cableAc ?? null,
+          termicaAc: body.termicaAc ?? null,
+          diferencialAc: body.diferencialAc ?? null,
+          largoCablesAcMts: body.largoCablesAcMts ?? null,
+          largoCablesDcMts: body.largoCablesDcMts ?? null,
+          redMonofasica: body.redMonofasica,
+          redTrifasica230SN: body.redTrifasica230SN,
+          redTrifasica400CN: body.redTrifasica400CN,
+          notasAdicionales: body.notasAdicionales ?? null,
+          unifilarVersionId: body.unifilarVersionId ?? null,
+          fotos: {
+            create: body.fotosOrden.map((fileId, idx) => ({
+              orden: idx + 1,
+              etiqueta: body.fotosEtiquetas?.[fileId]?.trim() || null,
+              fileAttachmentId: fileId,
+            })),
+          },
+        },
+        include: { fotos: true },
+      });
+
+      // Generar PDF y persistir como FileAttachment.
+      try {
+        const fotosForPdf: PreIngenieriaPdfFoto[] = await (async () => {
+          if (created.fotos.length === 0) return [];
+          const attachments = await prisma.fileAttachment.findMany({
+            where: { id: { in: created.fotos.map((f) => f.fileAttachmentId).filter((x): x is string => x !== null) } },
+            select: { id: true, url: true },
+          });
+          const byId = new Map(attachments.map((a) => [a.id, a]));
+          return created.fotos
+            .filter((f) => f.fileAttachmentId && byId.has(f.fileAttachmentId))
+            .map((f) => ({
+              orden: f.orden,
+              etiqueta: f.etiqueta,
+              filePath: getStoredFilePath(byId.get(f.fileAttachmentId!)!.url),
+            }));
+        })();
+
+        const pdfBytes = await generatePreIngenieriaPdf(inputsFromVersion(body), fotosForPdf);
+
+        const filenameBase = `preingenieria_${project.clientName.replace(/[^\w-]+/g, "_")}_v${nextVersion}.pdf`;
+
+        // Soft-delete del PDF de la versión anterior (sólo el archivo).
+        const previousPdfs = await prisma.fileAttachment.findMany({
+          where: {
+            projectId: params.projectId,
+            toolSource: "preing",
+            deletedAt: null,
+          },
+          select: { id: true, url: true },
+        });
+
+        const stored = await saveBufferAsAttachment(
+          pdfBytes,
+          filenameBase,
+          "application/pdf",
+          params.projectId,
+        );
+
+        const pdfAttachment = await prisma.fileAttachment.create({
+          data: {
+            projectId: params.projectId,
+            filename: stored.filename,
+            storedFilename: stored.storedFilename,
+            mimeType: stored.mimeType,
+            sizeBytes: stored.sizeBytes,
+            url: stored.url,
+            tipo: FileAttachmentTipo.PRE_INGENIERIA,
+            toolSource: "preing",
+            toolVersion: nextVersion,
+            toolEntityId: created.id,
+            uploadedById: user.id,
+          },
+        });
+
+        if (previousPdfs.length > 0) {
+          await prisma.fileAttachment.updateMany({
+            where: { id: { in: previousPdfs.map((p) => p.id) } },
+            data: { deletedAt: new Date() },
+          });
+          await Promise.all(
+            previousPdfs.map((p) => deleteStoredFile(p.url).catch(() => undefined)),
+          );
+        }
+
+        await createAuditEntry({
+          entityType: AuditEntityType.file,
+          entityId: pdfAttachment.id,
+          projectId: params.projectId,
+          userId: user.id,
+          action: AuditAction.file_uploaded,
+          description: `Generó pre-ingeniería v${nextVersion} para ${project.clientName}`,
+        });
+
+        reply.code(201);
+        return {
+          id: created.id,
+          versionNumber: created.versionNumber,
+          label: created.label,
+          createdAt: serializeDate(created.createdAt),
+          pdfAttachment: {
+            id: pdfAttachment.id,
+            filename: pdfAttachment.filename,
+            sizeBytes: pdfAttachment.sizeBytes,
+            previewUrl: `/api/files/${pdfAttachment.id}/preview`,
+            downloadUrl: `/api/files/${pdfAttachment.id}/download`,
+          },
+        };
+      } catch (err) {
+        request.log.error(
+          { err, preIngenieriaId: created.id },
+          "[preingenieria] error generando PDF — la versión queda creada sin PDF",
+        );
+        reply.code(201);
+        return {
+          id: created.id,
+          versionNumber: created.versionNumber,
+          label: created.label,
+          createdAt: serializeDate(created.createdAt),
+          pdfAttachment: null,
+          warning: "PDF_GENERATION_FAILED",
+        };
+      }
+    },
+  );
+
+  // ─── Descargar PDF de la versión vigente ─────────────────────────────────
+  // Devuelve el último FileAttachment con toolSource="preing" + toolEntityId
+  // que matchea la versión.
+  app.get(
+    "/preingenieria-versions/:id/pdf",
+    { preHandler: authorize(Module.INGENIERIA, Action.VIEW) },
+    async (request, reply) => {
+      const params = z.object({ id: z.string().min(1) }).parse(request.params);
+      const version = await prisma.preIngenieriaVersion.findUnique({
+        where: { id: params.id },
+        select: { id: true, projectId: true, versionNumber: true },
+      });
+      if (!version) throw notFound("PREING_NOT_FOUND", "Versión no encontrada");
+
+      const pdf = await prisma.fileAttachment.findFirst({
+        where: {
+          projectId: version.projectId,
+          toolSource: "preing",
+          toolEntityId: version.id,
+          deletedAt: null,
+        },
+        select: { id: true, filename: true, url: true },
+      });
+      if (!pdf) throw notFound("PREING_PDF_NOT_FOUND", "PDF no encontrado para esta versión");
+
+      reply.redirect(`/api/files/${pdf.id}/preview`);
+    },
+  );
+
+  // ─── Eliminar versión ────────────────────────────────────────────────────
+  // Borra la PreIngenieriaVersion (cascade borra fotos relacionadas) + soft-
+  // delete del FileAttachment del PDF + archivo físico best-effort. Las fotos
+  // del usuario (FileAttachment con tipo UPLOAD_MANUAL) NO se borran — siguen
+  // accesibles en Documentos del proyecto.
+  app.delete(
+    "/preingenieria-versions/:id",
+    { preHandler: authorize(Module.INGENIERIA, Action.DELETE) },
+    async (request, reply) => {
+      const user = ensureUser(request);
+      const params = z.object({ id: z.string().min(1) }).parse(request.params);
+      const version = await prisma.preIngenieriaVersion.findUnique({
+        where: { id: params.id },
+        select: { id: true, projectId: true, versionNumber: true, label: true },
+      });
+      if (!version) throw notFound("PREING_NOT_FOUND", "Versión no encontrada");
+
+      const pdfs = await prisma.fileAttachment.findMany({
+        where: {
+          projectId: version.projectId,
+          toolSource: "preing",
+          toolEntityId: version.id,
+          deletedAt: null,
+        },
+        select: { id: true, url: true },
+      });
+
+      await prisma.preIngenieriaVersion.delete({ where: { id: params.id } });
+
+      if (pdfs.length > 0) {
+        await prisma.fileAttachment.updateMany({
+          where: { id: { in: pdfs.map((p) => p.id) } },
+          data: { deletedAt: new Date() },
+        });
+        await Promise.all(pdfs.map((p) => deleteStoredFile(p.url).catch(() => undefined)));
+      }
+
+      await createAuditEntry({
+        entityType: AuditEntityType.file,
+        entityId: version.id,
+        projectId: version.projectId,
+        userId: user.id,
+        action: AuditAction.deleted,
+        description: `Eliminó pre-ingeniería v${version.versionNumber}${version.label ? ` (${version.label})` : ""}`,
+      });
+
+      reply.code(204);
+      return;
     },
   );
 }
