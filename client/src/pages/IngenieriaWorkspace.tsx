@@ -19,6 +19,7 @@ import {
   type IngenieriaWorkspaceDocument,
 } from "../api/ingenieria.api";
 import { ToolAccordion } from "../components/ingenieria/ToolAccordion";
+import { UnifilarToolPanel } from "../components/ingenieria/unifilar/UnifilarToolPanel";
 
 const MONTHS_ES_SHORT = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 function formatShortDate(iso: string): string {
@@ -119,9 +120,7 @@ export function IngenieriaWorkspace() {
               open={openToolKey === h.key}
               onToggle={() => setOpenToolKey(openToolKey === h.key ? null : h.key)}
             >
-              {h.key === "unifilar" && (
-                <UnifilarToolPanelPlaceholder projectId={id} />
-              )}
+              {h.key === "unifilar" && <UnifilarToolPanel projectId={id} />}
             </ToolAccordion>
           ))}
         </div>
@@ -155,29 +154,6 @@ export function IngenieriaWorkspace() {
           </ul>
         )}
       </section>
-    </div>
-  );
-}
-
-/**
- * Placeholder transitorio del body del unifilar. En el commit siguiente lo
- * reemplaza `<UnifilarToolPanel>` (3 últimas versiones + modales). Mientras
- * tanto, el botón abre la página dedicada `/ingenieria/proyecto/:id/unifilar`
- * que sigue funcionando.
- */
-function UnifilarToolPanelPlaceholder({ projectId }: { projectId: string }) {
-  return (
-    <div className="space-y-3">
-      <p className="text-xs text-[var(--color-text-muted)]">
-        El generador de unifilar va a quedar inline en este bloque (próximo commit).
-        Por ahora, abrilo en su página dedicada:
-      </p>
-      <Link
-        to={`/ingenieria/proyecto/${projectId}/unifilar`}
-        className="inline-flex items-center gap-1 rounded-md bg-[var(--color-accent)] px-3 py-1.5 text-xs font-semibold text-black hover:opacity-90"
-      >
-        Abrir generador <ArrowRight className="w-3 h-3" />
-      </Link>
     </div>
   );
 }
