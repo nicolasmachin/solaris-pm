@@ -41,6 +41,7 @@ export interface IngenieriaWorkspaceDocument {
   toolSource: string | null;
   toolVersion: number | null;
   toolEntityId: string | null;
+  sourceLabel: string | null;
   createdAt: string;
   downloadUrl: string;
   previewUrl: string;

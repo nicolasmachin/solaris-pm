@@ -3015,6 +3015,21 @@ export async function registerApiRoutes(app: FastifyInstance) {
         sourceLabel = file.toolVersion
           ? `Ingeniería · Unifilar v${file.toolVersion}`
           : "Ingeniería · Unifilar";
+      } else if (file.toolSource === "materiales-con-precios") {
+        source = "generated";
+        sourceLabel = file.toolVersion
+          ? `Ingeniería · Materiales v${file.toolVersion} (con precios)`
+          : "Ingeniería · Materiales (con precios)";
+      } else if (file.toolSource === "materiales-sin-precios") {
+        source = "generated";
+        sourceLabel = file.toolVersion
+          ? `Ingeniería · Materiales v${file.toolVersion} (sin precios)`
+          : "Ingeniería · Materiales (sin precios)";
+      } else if (file.toolSource === "triangulos") {
+        source = "generated";
+        sourceLabel = file.toolVersion
+          ? `Ingeniería · Triángulos v${file.toolVersion}`
+          : "Ingeniería · Triángulos";
       } else if (file.tipo === FileAttachmentTipo.LISTA_MATERIALES) {
         source = "generated";
         sourceLabel = "Generado · Lista de materiales";
@@ -10798,7 +10813,22 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
       const stats = await fsPromises.stat(absolutePath);
 
-      // Registrar en FileAttachment con tipo LISTA_MATERIALES
+      // Versionado por stream (con/sin precios son streams independientes:
+      // cada modo mantiene su propia secuencia y soft-delete sólo afecta a su
+      // mismo stream — el PDF "con precios" no pisa al "sin precios").
+      const toolSourceKey = withPrices ? "materiales-con-precios" : "materiales-sin-precios";
+      const previousAttachments = await prisma.fileAttachment.findMany({
+        where: { projectId: id, toolSource: toolSourceKey, deletedAt: null },
+        select: { id: true, url: true, toolVersion: true },
+      });
+      const lastVersion = previousAttachments.reduce(
+        (max, a) => Math.max(max, a.toolVersion ?? 0),
+        0,
+      );
+      const nextVersion = lastVersion + 1;
+
+      // Registrar en FileAttachment con tipo LISTA_MATERIALES + tool metadata
+      // para que aparezca con badge "Ingeniería · Materiales vN" en Documentos.
       const attachment = await prisma.fileAttachment.create({
         data: {
           projectId: id,
@@ -10808,9 +10838,23 @@ export async function registerApiRoutes(app: FastifyInstance) {
           sizeBytes: stats.size,
           url: `${id}/${storedFilename}`,
           tipo: FileAttachmentTipo.LISTA_MATERIALES,
+          toolSource: toolSourceKey,
+          toolVersion: nextVersion,
           uploadedById: user.id,
         },
       });
+
+      // Soft-delete versiones previas del mismo stream (mismo toolSource).
+      // Borra también el archivo físico best-effort para liberar storage.
+      if (previousAttachments.length > 0) {
+        await prisma.fileAttachment.updateMany({
+          where: { id: { in: previousAttachments.map((a) => a.id) } },
+          data: { deletedAt: new Date() },
+        });
+        await Promise.all(
+          previousAttachments.map((a) => deleteStoredFile(a.url).catch(() => undefined)),
+        );
+      }
 
       await createAuditEntry({
         entityType: AuditEntityType.file,
@@ -10818,7 +10862,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         projectId: id,
         userId: user.id,
         action: AuditAction.file_uploaded,
-        description: `Generó PDF "Lista de materiales${withPrices ? " (con precios)" : " (sin precios)"}" para ${project.clientName}`,
+        description: `Generó PDF "Lista de materiales${withPrices ? " (con precios)" : " (sin precios)"}" v${nextVersion} para ${project.clientName}`,
       });
 
       reply.header("Content-Type", "application/pdf");
@@ -10948,6 +10992,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
       const displayBase = `Cálculo triángulo ${dateLabel}`;
 
+      // Versionado del cálculo de triángulos. JPG y PDF comparten toolVersion
+      // porque representan la misma "versión" del cálculo. Sólo queda la
+      // última: las anteriores se soft-deletean y se borran físicamente.
+      const previousTriangleAttachments = await prisma.fileAttachment.findMany({
+        where: { projectId: id, toolSource: "triangulos", deletedAt: null },
+        select: { id: true, url: true, toolVersion: true },
+      });
+      const nextTriangleVersion =
+        previousTriangleAttachments.reduce((max, a) => Math.max(max, a.toolVersion ?? 0), 0) + 1;
+
       const [jpgAttachment, pdfAttachment] = await Promise.all([
         prisma.fileAttachment.create({
           data: {
@@ -10958,6 +11012,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
             sizeBytes: jpgStats.size,
             url: `${id}/${jpgFilename}`,
             tipo: FileAttachmentTipo.CALCULO_TRIANGULOS,
+            toolSource: "triangulos",
+            toolVersion: nextTriangleVersion,
             uploadedById: user.id,
           },
         }),
@@ -10970,10 +11026,22 @@ export async function registerApiRoutes(app: FastifyInstance) {
             sizeBytes: pdfStats.size,
             url: `${id}/${pdfFilename}`,
             tipo: FileAttachmentTipo.CALCULO_TRIANGULOS,
+            toolSource: "triangulos",
+            toolVersion: nextTriangleVersion,
             uploadedById: user.id,
           },
         }),
       ]);
+
+      if (previousTriangleAttachments.length > 0) {
+        await prisma.fileAttachment.updateMany({
+          where: { id: { in: previousTriangleAttachments.map((a) => a.id) } },
+          data: { deletedAt: new Date() },
+        });
+        await Promise.all(
+          previousTriangleAttachments.map((a) => deleteStoredFile(a.url).catch(() => undefined)),
+        );
+      }
 
       await createAuditEntry({
         entityType: AuditEntityType.file,
@@ -10981,7 +11049,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         projectId: id,
         userId: user.id,
         action: AuditAction.file_uploaded,
-        description: `Guardó cálculo de triángulo (L=${body.result.L.toFixed(2)} ${body.unit}, h=${body.result.height.toFixed(2)} ${body.unit}, θ=${body.result.angle.toFixed(1)}°)`,
+        description: `Guardó cálculo de triángulo v${nextTriangleVersion} (L=${body.result.L.toFixed(2)} ${body.unit}, h=${body.result.height.toFixed(2)} ${body.unit}, θ=${body.result.angle.toFixed(1)}°)`,
       });
 
       reply.code(201);

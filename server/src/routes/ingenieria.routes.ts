@@ -39,6 +39,31 @@ function countCompletedSubstages(substages: { status: string }[]) {
   return substages.filter((s) => s.status === "COMPLETED").length;
 }
 
+/**
+ * Devuelve el label del badge para un documento generado por una herramienta
+ * (ver tabla en `api.routes.ts /projects/:projectId/documents`). Mantener
+ * sincronizado entre ambos endpoints.
+ */
+function buildToolSourceLabel(toolSource: string | null, toolVersion: number | null): string | null {
+  if (toolSource === "unifilar") {
+    return toolVersion ? `Ingeniería · Unifilar v${toolVersion}` : "Ingeniería · Unifilar";
+  }
+  if (toolSource === "materiales-con-precios") {
+    return toolVersion
+      ? `Ingeniería · Materiales v${toolVersion} (con precios)`
+      : "Ingeniería · Materiales (con precios)";
+  }
+  if (toolSource === "materiales-sin-precios") {
+    return toolVersion
+      ? `Ingeniería · Materiales v${toolVersion} (sin precios)`
+      : "Ingeniería · Materiales (sin precios)";
+  }
+  if (toolSource === "triangulos") {
+    return toolVersion ? `Ingeniería · Triángulos v${toolVersion}` : "Ingeniería · Triángulos";
+  }
+  return null;
+}
+
 export async function registerIngenieriaRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authenticate);
 
@@ -248,6 +273,7 @@ export async function registerIngenieriaRoutes(app: FastifyInstance) {
         toolSource: d.toolSource,
         toolVersion: d.toolVersion,
         toolEntityId: d.toolEntityId,
+        sourceLabel: buildToolSourceLabel(d.toolSource, d.toolVersion),
         createdAt: serializeDate(d.createdAt),
         downloadUrl: `/api/files/${d.id}/download`,
         previewUrl: `/api/files/${d.id}/preview`,

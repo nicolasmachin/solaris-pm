@@ -159,11 +159,7 @@ export function IngenieriaWorkspace() {
 }
 
 function DocRow({ doc }: { doc: IngenieriaWorkspaceDocument }) {
-  const sourceLabel = doc.toolSource
-    ? `${doc.toolSource.charAt(0).toUpperCase() + doc.toolSource.slice(1)}${
-        doc.toolVersion ? ` v${doc.toolVersion}` : ""
-      }`
-    : doc.tipo ?? "Documento";
+  const sourceLabel = doc.sourceLabel ?? doc.tipo ?? "Documento";
   return (
     <li className="flex items-center gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-2.5">
       <FileText className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
