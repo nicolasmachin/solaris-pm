@@ -63,9 +63,9 @@ async function downloadWithAuth(url: string, filename: string): Promise<void> {
 export function IngenieriaWorkspace() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  // Sólo una herramienta abierta a la vez. Default: la primera disponible
-  // (unifilar). Si el usuario cierra todas, queda null.
-  const [openToolKey, setOpenToolKey] = useState<string | null>("unifilar");
+  // Sólo una herramienta abierta a la vez. Default cerrado para que el grid
+  // de 2 columnas se vea balanceado al entrar.
+  const [openToolKey, setOpenToolKey] = useState<string | null>(null);
   const { data, isLoading, isError } = useQuery({
     queryKey: ["ingenieria-workspace", id],
     queryFn: () => getIngenieriaWorkspace(id!),
@@ -109,28 +109,34 @@ export function IngenieriaWorkspace() {
         </div>
       )}
 
-      {/* Herramientas — acordeón inline, sólo una abierta a la vez */}
+      {/* Herramientas — acordeón inline en grid de 2 columnas. La herramienta
+          abierta ocupa ancho completo (span 2) para que el body inline (lista
+          de materiales, fotos del unifilar, etc.) tenga espacio. */}
       <section>
         <p className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] mb-2">
           Herramientas
         </p>
-        <div className="space-y-2">
-          {(data?.herramientas ?? []).map((h) => (
-            <ToolAccordion
-              key={h.key}
-              icon={iconFor(h.key)}
-              name={h.nombre}
-              status={h.estado}
-              available={h.disponible}
-              open={openToolKey === h.key}
-              onToggle={() => setOpenToolKey(openToolKey === h.key ? null : h.key)}
-            >
-              {h.key === "unifilar" && <UnifilarToolPanel projectId={id} />}
-              {h.key === "materiales" && <MaterialesToolPanel projectId={id} />}
-              {h.key === "triangulos" && <TriangulosToolPanel projectId={id} />}
-              {h.key === "preing" && <PreIngenieriaToolPanel projectId={id} />}
-            </ToolAccordion>
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {(data?.herramientas ?? []).map((h) => {
+            const isOpen = openToolKey === h.key;
+            return (
+              <div key={h.key} className={isOpen ? "md:col-span-2" : ""}>
+                <ToolAccordion
+                  icon={iconFor(h.key)}
+                  name={h.nombre}
+                  status={h.estado}
+                  available={h.disponible}
+                  open={isOpen}
+                  onToggle={() => setOpenToolKey(isOpen ? null : h.key)}
+                >
+                  {h.key === "unifilar" && <UnifilarToolPanel projectId={id} />}
+                  {h.key === "materiales" && <MaterialesToolPanel projectId={id} />}
+                  {h.key === "triangulos" && <TriangulosToolPanel projectId={id} />}
+                  {h.key === "preing" && <PreIngenieriaToolPanel projectId={id} />}
+                </ToolAccordion>
+              </div>
+            );
+          })}
         </div>
       </section>
 
