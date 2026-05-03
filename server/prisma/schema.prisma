@@ -277,6 +277,11 @@ enum Action {
   DELETE
   COMPLETE
   COMMENT
+  // ACCESS = "puede entrar al módulo / sección" — gate de feature gruesa,
+  // independiente de los permisos de lectura/escritura granulares (VIEW, EDIT,
+  // etc.). Usado p.ej. para gatear el top-nav del módulo Ingeniería sin
+  // afectar la visibilidad de datos legacy del proyecto.
+  ACCESS
 }
 
 enum SettingLevel {
