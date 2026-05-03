@@ -61,6 +61,11 @@ function buildToolSourceLabel(toolSource: string | null, toolVersion: number | n
   if (toolSource === "triangulos") {
     return toolVersion ? `Ingeniería · Triángulos v${toolVersion}` : "Ingeniería · Triángulos";
   }
+  if (toolSource === "preing") {
+    return toolVersion
+      ? `Ingeniería · Pre-ingeniería v${toolVersion}`
+      : "Ingeniería · Pre-ingeniería";
+  }
   return null;
 }
 
@@ -206,6 +211,9 @@ export async function registerIngenieriaRoutes(app: FastifyInstance) {
         orderBy: { toolVersion: "desc" },
         select: { toolVersion: true },
       });
+      const preIngenieriaCount = await prisma.preIngenieriaVersion.count({
+        where: { projectId: project.id },
+      });
 
       type ToolCard = {
         key: string;
@@ -245,6 +253,17 @@ export async function registerIngenieriaRoutes(app: FastifyInstance) {
           estado: lastTriangulosVersion?.toolVersion
             ? `Última versión guardada: v${lastTriangulosVersion.toolVersion}`
             : "Sin cálculos guardados",
+          disponible: true,
+          ruta: null,
+        },
+        {
+          key: "preing",
+          nombre: "Pre-ingeniería",
+          icono: "clipboard",
+          estado:
+            preIngenieriaCount === 0
+              ? "Sin versiones generadas"
+              : `${preIngenieriaCount} ${preIngenieriaCount === 1 ? "versión" : "versiones"} generada${preIngenieriaCount === 1 ? "" : "s"}`,
           disponible: true,
           ruta: null,
         },
