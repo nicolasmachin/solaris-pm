@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Calculator,
+  ClipboardList,
   Download,
   FileText,
   HardHat,
@@ -22,6 +23,7 @@ import { ToolAccordion } from "../components/ingenieria/ToolAccordion";
 import { UnifilarToolPanel } from "../components/ingenieria/unifilar/UnifilarToolPanel";
 import { MaterialesToolPanel } from "../components/ingenieria/MaterialesToolPanel";
 import { TriangulosToolPanel } from "../components/ingenieria/TriangulosToolPanel";
+import { PreIngenieriaToolPanel } from "../components/ingenieria/preing/PreIngenieriaToolPanel";
 
 const MONTHS_ES_SHORT = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 function formatShortDate(iso: string): string {
@@ -34,6 +36,7 @@ function iconFor(key: string): LucideIcon {
   if (key === "unifilar") return Zap;
   if (key === "triangulos") return Calculator;
   if (key === "materiales") return Package;
+  if (key === "preing") return ClipboardList;
   if (key === "memoria") return FileText;
   return Lightbulb;
 }
@@ -125,6 +128,7 @@ export function IngenieriaWorkspace() {
               {h.key === "unifilar" && <UnifilarToolPanel projectId={id} />}
               {h.key === "materiales" && <MaterialesToolPanel projectId={id} />}
               {h.key === "triangulos" && <TriangulosToolPanel projectId={id} />}
+              {h.key === "preing" && <PreIngenieriaToolPanel projectId={id} />}
             </ToolAccordion>
           ))}
         </div>
