@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
@@ -8,16 +9,16 @@ import {
   FileText,
   HardHat,
   Lightbulb,
-  Lock,
   Package,
   Zap,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { toast } from "react-hot-toast";
 import {
   getIngenieriaWorkspace,
-  type IngenieriaToolCard,
   type IngenieriaWorkspaceDocument,
 } from "../api/ingenieria.api";
+import { ToolAccordion } from "../components/ingenieria/ToolAccordion";
 
 const MONTHS_ES_SHORT = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 function formatShortDate(iso: string): string {
@@ -26,7 +27,7 @@ function formatShortDate(iso: string): string {
   return `${d.getDate()} ${MONTHS_ES_SHORT[d.getMonth()]} ${String(d.getFullYear()).slice(-2)}`;
 }
 
-function iconFor(key: string) {
+function iconFor(key: string): LucideIcon {
   if (key === "unifilar") return Zap;
   if (key === "triangulos") return Calculator;
   if (key === "materiales") return Package;
@@ -56,6 +57,9 @@ async function downloadWithAuth(url: string, filename: string): Promise<void> {
 export function IngenieriaWorkspace() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  // Sólo una herramienta abierta a la vez. Default: la primera disponible
+  // (unifilar). Si el usuario cierra todas, queda null.
+  const [openToolKey, setOpenToolKey] = useState<string | null>("unifilar");
   const { data, isLoading, isError } = useQuery({
     queryKey: ["ingenieria-workspace", id],
     queryFn: () => getIngenieriaWorkspace(id!),
@@ -99,20 +103,26 @@ export function IngenieriaWorkspace() {
         </div>
       )}
 
-      {/* Herramientas */}
+      {/* Herramientas — acordeón inline, sólo una abierta a la vez */}
       <section>
         <p className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] mb-2">
           Herramientas
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-2">
           {(data?.herramientas ?? []).map((h) => (
-            <ToolCard
+            <ToolAccordion
               key={h.key}
-              tool={h}
-              onClick={() => {
-                if (h.disponible && h.ruta) navigate(h.ruta);
-              }}
-            />
+              icon={iconFor(h.key)}
+              name={h.nombre}
+              status={h.estado}
+              available={h.disponible}
+              open={openToolKey === h.key}
+              onToggle={() => setOpenToolKey(openToolKey === h.key ? null : h.key)}
+            >
+              {h.key === "unifilar" && (
+                <UnifilarToolPanelPlaceholder projectId={id} />
+              )}
+            </ToolAccordion>
           ))}
         </div>
       </section>
@@ -149,37 +159,26 @@ export function IngenieriaWorkspace() {
   );
 }
 
-function ToolCard({ tool, onClick }: { tool: IngenieriaToolCard; onClick: () => void }) {
-  const Icon = iconFor(tool.key);
-  const disabled = !tool.disponible;
+/**
+ * Placeholder transitorio del body del unifilar. En el commit siguiente lo
+ * reemplaza `<UnifilarToolPanel>` (3 últimas versiones + modales). Mientras
+ * tanto, el botón abre la página dedicada `/ingenieria/proyecto/:id/unifilar`
+ * que sigue funcionando.
+ */
+function UnifilarToolPanelPlaceholder({ projectId }: { projectId: string }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`flex w-full items-center gap-3 rounded-lg border p-4 text-left transition-colors ${
-        disabled
-          ? "border-[var(--color-border)] bg-[var(--color-bg-card)] opacity-60 cursor-not-allowed"
-          : "border-[var(--color-border)] bg-[var(--color-bg-card)] hover:bg-[var(--color-bg-card-hover)]"
-      }`}
-    >
-      <div
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded ${
-          disabled ? "bg-[var(--color-bg-app)]" : "bg-[var(--color-accent)]/15"
-        }`}
+    <div className="space-y-3">
+      <p className="text-xs text-[var(--color-text-muted)]">
+        El generador de unifilar va a quedar inline en este bloque (próximo commit).
+        Por ahora, abrilo en su página dedicada:
+      </p>
+      <Link
+        to={`/ingenieria/proyecto/${projectId}/unifilar`}
+        className="inline-flex items-center gap-1 rounded-md bg-[var(--color-accent)] px-3 py-1.5 text-xs font-semibold text-black hover:opacity-90"
       >
-        {disabled ? (
-          <Lock className="w-4 h-4 text-[var(--color-text-muted)]" />
-        ) : (
-          <Icon className="w-5 h-5 text-[var(--color-accent)]" />
-        )}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-[var(--color-text-primary)]">{tool.nombre}</p>
-        <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">{tool.estado}</p>
-      </div>
-      {!disabled && <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />}
-    </button>
+        Abrir generador <ArrowRight className="w-3 h-3" />
+      </Link>
+    </div>
   );
 }
 
