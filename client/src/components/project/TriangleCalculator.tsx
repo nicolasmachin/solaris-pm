@@ -321,6 +321,7 @@ export function TriangleCalculatorModal({ projectId, onClose }: { projectId: str
       });
       toast.success('Cálculo guardado en Documentos del proyecto');
       qc.invalidateQueries({ queryKey: ['project-documents', projectId] });
+      qc.invalidateQueries({ queryKey: ['ingenieria-workspace', projectId] });
       onClose();
     } catch (err) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;

@@ -20,6 +20,8 @@ import {
 } from "../api/ingenieria.api";
 import { ToolAccordion } from "../components/ingenieria/ToolAccordion";
 import { UnifilarToolPanel } from "../components/ingenieria/unifilar/UnifilarToolPanel";
+import { MaterialesToolPanel } from "../components/ingenieria/MaterialesToolPanel";
+import { TriangulosToolPanel } from "../components/ingenieria/TriangulosToolPanel";
 
 const MONTHS_ES_SHORT = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 function formatShortDate(iso: string): string {
@@ -121,6 +123,8 @@ export function IngenieriaWorkspace() {
               onToggle={() => setOpenToolKey(openToolKey === h.key ? null : h.key)}
             >
               {h.key === "unifilar" && <UnifilarToolPanel projectId={id} />}
+              {h.key === "materiales" && <MaterialesToolPanel projectId={id} />}
+              {h.key === "triangulos" && <TriangulosToolPanel projectId={id} />}
             </ToolAccordion>
           ))}
         </div>

@@ -196,6 +196,16 @@ export async function registerIngenieriaRoutes(app: FastifyInstance) {
       const unifilarCount = await prisma.unifilarVersion.count({
         where: { projectId: project.id },
       });
+      const materialesCount = await prisma.projectMaterial.count({
+        where: { projectId: project.id },
+      });
+      // Última versión de PDF de triángulos (incluye soft-deleted para mostrar
+      // "vN" del último guardado, no "0 versiones" después de regenerar).
+      const lastTriangulosVersion = await prisma.fileAttachment.findFirst({
+        where: { projectId: project.id, toolSource: "triangulos", deletedAt: null },
+        orderBy: { toolVersion: "desc" },
+        select: { toolVersion: true },
+      });
 
       type ToolCard = {
         key: string;
@@ -218,19 +228,24 @@ export async function registerIngenieriaRoutes(app: FastifyInstance) {
           ruta: `/ingenieria/proyecto/${project.id}/unifilar`,
         },
         {
-          key: "triangulos",
-          nombre: "Cálculos estructurales (triángulos)",
-          icono: "triangle",
-          estado: "Próximamente",
-          disponible: false,
-          ruta: null,
-        },
-        {
           key: "materiales",
           nombre: "Lista de materiales",
           icono: "package",
-          estado: "Próximamente",
-          disponible: false,
+          estado:
+            materialesCount === 0
+              ? "Sin ítems cargados"
+              : `${materialesCount} ${materialesCount === 1 ? "ítem" : "ítems"}`,
+          disponible: true,
+          ruta: null,
+        },
+        {
+          key: "triangulos",
+          nombre: "Cálculos estructurales (triángulos)",
+          icono: "triangle",
+          estado: lastTriangulosVersion?.toolVersion
+            ? `Última versión guardada: v${lastTriangulosVersion.toolVersion}`
+            : "Sin cálculos guardados",
+          disponible: true,
           ruta: null,
         },
         {

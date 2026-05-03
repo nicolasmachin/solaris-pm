@@ -1,8 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Plus, X, Search, Sparkles, RefreshCw, Trash2, StickyNote, FileText, DollarSign, ChevronDown, Triangle } from 'lucide-react';
-import { TriangleCalculatorModal } from './TriangleCalculator';
+import { Plus, X, Search, Sparkles, RefreshCw, Trash2, StickyNote, FileText, DollarSign, ChevronDown } from 'lucide-react';
 import {
   getProjectMaterials, createProjectMaterial, patchProjectMaterial, deleteProjectMaterial,
   generateProjectPrevistos, regenerateProjectPrevistos, exportMaterialsPdf,
@@ -621,8 +620,6 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfDropOpen, setPdfDropOpen] = useState(false);
 
-  const [showTriangleCalc, setShowTriangleCalc] = useState(false);
-
   // Estado colapsable persistido por proyecto en localStorage
   const collapsedKey = `materials-collapsed-${projectId}`;
   const [collapsed, setCollapsed] = useState(() => {
@@ -645,6 +642,7 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
           : 'PDF sin precios generado y guardado en Documentos',
       );
       qc.invalidateQueries({ queryKey: ['project-documents', projectId] });
+      qc.invalidateQueries({ queryKey: ['ingenieria-workspace', projectId] });
     } catch (err) {
       toast.error(getApiErr(err) ?? 'Error al generar PDF');
     } finally {
@@ -839,25 +837,6 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
           onConfirm={submitGenerateModal}
           isLoading={generateMut.isPending || regenerateMut.isPending}
         />
-      )}
-
-      {/* Cálculos de ingeniería */}
-      <div className="mt-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3 flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[11px] font-medium text-[var(--color-text-primary)]">Cálculos de ingeniería</p>
-          <p className="text-[10px] text-[var(--color-text-muted)]">Calculadora de triángulos isósceles de aluminio</p>
-        </div>
-        <button
-          onClick={() => setShowTriangleCalc(true)}
-          className="flex items-center gap-1.5 rounded-md border border-[var(--color-border)] px-3 py-1.5 text-[11px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-app)] shrink-0"
-        >
-          <Triangle className="w-3 h-3" />
-          Abrir calculadora
-        </button>
-      </div>
-
-      {showTriangleCalc && (
-        <TriangleCalculatorModal projectId={projectId} onClose={() => setShowTriangleCalc(false)} />
       )}
     </section>
   );
