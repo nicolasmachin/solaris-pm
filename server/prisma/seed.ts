@@ -144,7 +144,7 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
   const matrix: Array<{ roleName: string; module: Module; actions: Action[] }> = [
     { roleName: "ADMIN", module: Module.VENTAS,         actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMMENT] },
     { roleName: "ADMIN", module: Module.ONBOARDING,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
-    { roleName: "ADMIN", module: Module.INGENIERIA,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { roleName: "ADMIN", module: Module.INGENIERIA,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT, Action.ACCESS] },
     { roleName: "ADMIN", module: Module.OPERACIONES,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { roleName: "ADMIN", module: Module.HABILITACION,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { roleName: "ADMIN", module: Module.POSTVENTA,      actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
@@ -163,7 +163,7 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "ASESOR_COMERCIAL", module: Module.HABILITACION,  actions: [Action.VIEW] },
     { roleName: "ASESOR_COMERCIAL", module: Module.POSTVENTA,     actions: [Action.VIEW] },
     { roleName: "INGENIERIA", module: Module.ONBOARDING,    actions: [Action.VIEW, Action.COMMENT] },
-    { roleName: "INGENIERIA", module: Module.INGENIERIA,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
+    { roleName: "INGENIERIA", module: Module.INGENIERIA,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT, Action.ACCESS] },
     { roleName: "INGENIERIA", module: Module.OPERACIONES,   actions: [Action.VIEW, Action.COMMENT] },
     { roleName: "INGENIERIA", module: Module.HABILITACION,  actions: [Action.VIEW, Action.COMMENT] },
     { roleName: "INGENIERIA", module: Module.POSTVENTA,     actions: [Action.VIEW] },
