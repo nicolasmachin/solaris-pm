@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { Download, FileText, History, Plus, Trash2 } from "lucide-react";
+import { Eye, FileText, History, Plus, Trash2 } from "lucide-react";
 import {
   deletePreIngenieriaVersion,
-  getPreIngenieriaVersion,
   getPreIngenieriaVersions,
   type PreIngenieriaVersionListItem,
 } from "../../../api/preingenieria.api";
 import { getProject } from "../../../api/projects.api";
-import { downloadWithAuth, getApiErr } from "./shared";
+import { getApiErr } from "./shared";
 import { PreIngenieriaFormModal } from "./PreIngenieriaFormModal";
 import { PreIngenieriaHistoryModal } from "./PreIngenieriaHistoryModal";
+import { PreIngenieriaPreviewModal } from "./PreIngenieriaPreviewModal";
 
 const MONTHS_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 function fmt(iso: string): string {
@@ -23,11 +23,18 @@ export function PreIngenieriaToolPanel({ projectId }: { projectId: string }) {
   const qc = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [previewVersion, setPreviewVersion] = useState<{ id: string; versionNumber?: number } | null>(
+    null,
+  );
 
   const versionsQ = useQuery({
     queryKey: ["preingenieria-versions", projectId],
     queryFn: () => getPreIngenieriaVersions(projectId),
   });
+
+  function findVersionNumber(id: string): number | undefined {
+    return versionsQ.data?.find((v) => v.id === id)?.versionNumber;
+  }
 
   // Datos del proyecto para pre-rellenar el modal cuando se abre.
   const projectQ = useQuery({
@@ -53,20 +60,8 @@ export function PreIngenieriaToolPanel({ projectId }: { projectId: string }) {
     }
   }
 
-  async function handlePreview(id: string) {
-    try {
-      const full = await getPreIngenieriaVersion(id);
-      if (!full.pdfAttachment) {
-        toast.error("Esta versión no tiene un PDF asociado");
-        return;
-      }
-      await downloadWithAuth(
-        full.pdfAttachment.previewUrl,
-        full.pdfAttachment.filename,
-      );
-    } catch {
-      toast.error("No se pudo descargar el PDF");
-    }
+  function handlePreview(id: string) {
+    setPreviewVersion({ id, versionNumber: findVersionNumber(id) });
   }
 
   const all = versionsQ.data ?? [];
@@ -132,6 +127,14 @@ export function PreIngenieriaToolPanel({ projectId }: { projectId: string }) {
           }}
         />
       )}
+
+      {previewVersion && (
+        <PreIngenieriaPreviewModal
+          versionId={previewVersion.id}
+          versionNumber={previewVersion.versionNumber}
+          onClose={() => setPreviewVersion(null)}
+        />
+      )}
     </div>
   );
 }
@@ -167,9 +170,9 @@ function VersionList({
           <button
             onClick={() => onPreview(v.id)}
             className="inline-flex items-center gap-1 rounded border border-[var(--color-border)] px-2 py-1 text-[10px] hover:bg-[var(--color-bg-card-hover)]"
-            title="Descargar PDF"
+            title="Ver vista previa"
           >
-            <Download className="w-3 h-3" /> PDF
+            <Eye className="w-3 h-3" /> Ver
           </button>
           <button
             onClick={() => onDelete(v.id)}
