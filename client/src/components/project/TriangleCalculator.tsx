@@ -507,7 +507,7 @@ export function TriangleCalculatorModal({ projectId, onClose }: { projectId: str
             disabled={!result || saving}
             className="flex items-center gap-1.5 rounded-md bg-[var(--color-accent)] px-3 py-1.5 text-xs font-semibold text-[var(--color-bg-app)] hover:opacity-90 disabled:opacity-50"
           >
-            <Save className="h-3.5 w-3.5" /> {saving ? 'Guardando…' : 'Guardar en el proyecto'}
+            <Save className="h-3.5 w-3.5" /> {saving ? 'Generando…' : 'Generar PDF y guardar'}
           </button>
         </div>
       </div>
