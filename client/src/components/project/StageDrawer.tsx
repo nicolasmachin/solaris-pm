@@ -14,7 +14,6 @@ import { Spinner } from "../ui/Spinner";
 import { UserSelect } from "../ui/UserSelect";
 import { AssigneeLabel } from "../ui/AssigneeLabel";
 import { CommentThread } from "../comments/CommentThread";
-import { EngineeringMaterials } from "./EngineeringMaterials";
 import { EngineeringModuleSection } from "./EngineeringModuleSection";
 
 interface StageDrawerProps {
@@ -22,7 +21,6 @@ interface StageDrawerProps {
   projectId: string;
   files: FileAttachment[];
   onClose: () => void;
-  plannedWorkStart?: string | null;
 }
 
 // ─── Deadline helpers (G.2) ──────────────────────────────────────────────────
@@ -618,7 +616,7 @@ function SubstageRow({
 
 // ─── Stage Drawer ─────────────────────────────────────────────────────────────
 
-export function StageDrawer({ stage, projectId, files, onClose, plannedWorkStart }: StageDrawerProps) {
+export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerProps) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const stageFiles = files.filter((f) => f.stageId === stage.id);
@@ -1227,13 +1225,9 @@ export function StageDrawer({ stage, projectId, files, onClose, plannedWorkStart
             </ul>
           </section>
 
-          {/* Lista de materiales (solo etapa Ingeniería) */}
-          {stage.name === "INGENIERIA" && (
-            <EngineeringMaterials projectId={projectId} plannedWorkStart={plannedWorkStart} />
-          )}
-
           {/* Módulo Ingeniería: link al workspace + documentos generados (read-only).
-              El generador de unifilar vivía acá; ahora vive en /ingenieria/proyecto/:id/unifilar. */}
+              Las herramientas del módulo (unifilar, lista de materiales,
+              calculadora de triángulos) viven ahora en /ingenieria/proyecto/:id. */}
           {stage.name === "INGENIERIA" && (
             <div className="mt-3">
               <EngineeringModuleSection projectId={projectId} />
