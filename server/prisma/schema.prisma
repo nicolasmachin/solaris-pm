@@ -428,6 +428,7 @@ model Project {
   uteProcesses         UteProcess[]
   clients              ProjectClient[]
   unifilarVersions     UnifilarVersion[]
+  preIngenieriaVersions PreIngenieriaVersion[]
   deletedAt            DateTime?             @db.Timestamptz(6)
   createdAt            DateTime              @default(now()) @db.Timestamptz(6)
   updatedAt            DateTime              @updatedAt @db.Timestamptz(6)
@@ -717,6 +718,7 @@ model FileAttachment {
   project        Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
   stage          Stage?              @relation(fields: [stageId], references: [id], onDelete: SetNull)
   substage       Substage?           @relation(fields: [substageId], references: [id], onDelete: SetNull)
+  preIngenieriaFotos PreIngenieriaFoto[]
   deletedAt      DateTime?           @db.Timestamptz(6)
   createdAt      DateTime            @default(now()) @db.Timestamptz(6)
 
@@ -733,6 +735,7 @@ enum FileAttachmentTipo {
   PRESUPUESTO
   CALCULO_TRIANGULOS
   UNIFILAR
+  PRE_INGENIERIA
   OTRO
 }
 
@@ -1646,4 +1649,73 @@ model UnifilarVersion {
   @@unique([projectId, versionNumber])
   @@index([projectId])
   @@map("unifilar_versions")
+}
+
+// Versiones del documento "Resumen Técnico" (Pre-Ingeniería). Mismo patrón que
+// UnifilarVersion: 1:N inmutable, snapshot del cliente al momento de crear, los
+// datos eléctricos son texto libre (soporta multi-instalación tipo COVITEJA).
+model PreIngenieriaVersion {
+  id            String   @id @default(cuid())
+
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  versionNumber Int
+  label         String?
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+
+  // Snapshot de datos del cliente (denormalizado al crear la versión)
+  snapshotNombre        String
+  snapshotDireccion     String?
+  snapshotCiudad        String?
+  snapshotCelular       String?
+  snapshotFechaPrevista String?
+
+  // Datos del sitio
+  tipoTecho     String?
+  tipoTechoOtro String?
+  infoTecho     String?
+  alturaTecho   String?
+
+  // Datos eléctricos (texto libre)
+  cantidadPaneles  String?
+  potenciaPaneles  String?
+  inversor         String?
+  stringsLineasDc  String?
+  cableAc          String?
+  termicaAc        String?
+  diferencialAc    String?
+  largoCablesAcMts String?
+  largoCablesDcMts String?
+
+  // Tipo de red (multi-select para multi-instalación)
+  redMonofasica     Boolean @default(false)
+  redTrifasica230SN Boolean @default(false)
+  redTrifasica400CN Boolean @default(false)
+
+  // Notas adicionales
+  notasAdicionales String?
+
+  // Trazabilidad de pre-rellenado desde unifilar (opcional, sin FK fuerte)
+  unifilarVersionId String?
+
+  fotos PreIngenieriaFoto[]
+
+  @@unique([projectId, versionNumber])
+  @@index([projectId])
+  @@map("preingenieria_versions")
+}
+
+model PreIngenieriaFoto {
+  id               String                @id @default(cuid())
+  versionId        String
+  version          PreIngenieriaVersion  @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  orden            Int
+  etiqueta         String?
+  fileAttachmentId String?
+  fileAttachment   FileAttachment?       @relation(fields: [fileAttachmentId], references: [id], onDelete: SetNull)
+
+  @@index([versionId])
+  @@index([fileAttachmentId])
+  @@map("preingenieria_fotos")
 }
