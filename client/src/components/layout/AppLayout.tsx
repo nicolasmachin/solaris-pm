@@ -13,9 +13,12 @@ export function AppLayout() {
   const isProjectDetail = !!useMatch("/projects/:id");
   // Workspace del módulo Ingeniería (incluye sub-páginas como /unifilar). El
   // sidebar lateral se mantiene visible mientras el usuario navega entre
-  // herramientas del mismo proyecto.
-  const isIngenieriaWorkspace =
-    !!useMatch("/ingenieria/proyecto/:id") || !!useMatch("/ingenieria/proyecto/:id/*");
+  // herramientas del mismo proyecto. Los dos `useMatch` deben llamarse
+  // INCONDICIONALMENTE en cada render — usar `||` entre ellos rompe las
+  // rules of hooks por short-circuit.
+  const matchIngenieriaWorkspace = useMatch("/ingenieria/proyecto/:id");
+  const matchIngenieriaWorkspaceSub = useMatch("/ingenieria/proyecto/:id/*");
+  const isIngenieriaWorkspace = !!matchIngenieriaWorkspace || !!matchIngenieriaWorkspaceSub;
   const showSidebar = isProjectDetail || isIngenieriaWorkspace;
 
   return (
