@@ -66,6 +66,39 @@ export interface PreIngenieriaVersionFull {
   pdfAttachment: PreIngenieriaPdfAttachment | null;
 }
 
+export interface ExtractedMinutaFields {
+  tipoTecho: TipoTecho | null;
+  tipoTechoOtro: string | null;
+  infoTecho: string | null;
+  alturaTecho: string | null;
+  cantidadPaneles: string | null;
+  potenciaPaneles: string | null;
+  inversor: string | null;
+  stringsLineasDc: string | null;
+  cableAc: string | null;
+  termicaAc: string | null;
+  diferencialAc: string | null;
+  largoCablesAcMts: string | null;
+  largoCablesDcMts: string | null;
+  redMonofasica: boolean;
+  redTrifasica230SN: boolean;
+  redTrifasica400CN: boolean;
+  notasAdicionales: string | null;
+}
+
+export interface MinutaExtractMetadata {
+  modelUsed: string;
+  latencyMs: number;
+  tokensInput: number;
+  tokensOutput: number;
+}
+
+export interface MinutaExtractResult {
+  minutaFileId: string;
+  extractedFields: ExtractedMinutaFields;
+  metadata: MinutaExtractMetadata;
+}
+
 export interface PreIngenieriaFormInput {
   label?: string | null;
   // Cliente snapshot (editable)
@@ -97,6 +130,9 @@ export interface PreIngenieriaFormInput {
   notasAdicionales?: string | null;
   // Trazabilidad
   unifilarVersionId?: string | null;
+  // Trazabilidad de extracción de minuta (sólo si se usó IA para pre-rellenar)
+  minutaFileId?: string | null;
+  minutaModelUsed?: string | null;
   // Fotos
   fotosOrden: string[];
   fotosEtiquetas?: Record<string, string>;
@@ -158,6 +194,32 @@ export async function uploadPreIngenieriaFoto(
     `/api/projects/${projectId}/preingenieria-versions/upload-foto`,
     fd,
     { headers: { "Content-Type": "multipart/form-data" } },
+  );
+  return data;
+}
+
+export async function extractMinutaFields(
+  projectId: string,
+  file: File,
+): Promise<MinutaExtractResult> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const { data } = await apiClient.post<MinutaExtractResult>(
+    `/api/projects/${projectId}/preingenieria/extract-from-minuta`,
+    fd,
+    { headers: { "Content-Type": "multipart/form-data" }, timeout: 120_000 },
+  );
+  return data;
+}
+
+export async function retryMinutaExtraction(
+  projectId: string,
+  minutaFileId: string,
+): Promise<MinutaExtractResult> {
+  const { data } = await apiClient.post<MinutaExtractResult>(
+    `/api/projects/${projectId}/preingenieria/extract-from-minuta/retry`,
+    { minutaFileId },
+    { timeout: 120_000 },
   );
   return data;
 }
