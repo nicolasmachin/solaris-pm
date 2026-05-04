@@ -176,12 +176,14 @@ export function symSpd(x: number, y: number): string {
 }
 
 export function symGround(x: number, y: number): string {
+  // Símbolo de tierra (3 líneas decrecientes) más prominente, label "PAT"
+  // en verde y bold al costado.
   let out = '<g class="ground">';
-  out += vline(x, y, y + 6, COLOR.ground, 1.5);
-  out += `<line x1="${x - 12}" y1="${y + 6}" x2="${x + 12}" y2="${y + 6}" stroke="${COLOR.ground}" stroke-width="2.2"/>`;
-  out += `<line x1="${x - 8}" y1="${y + 10}" x2="${x + 8}" y2="${y + 10}" stroke="${COLOR.ground}" stroke-width="1.8"/>`;
-  out += `<line x1="${x - 5}" y1="${y + 14}" x2="${x + 5}" y2="${y + 14}" stroke="${COLOR.ground}" stroke-width="1.4"/>`;
-  out += label(x + 16, y + 12, "PAT", { size: 8, weight: "bold", color: COLOR.ground });
+  out += vline(x, y, y + 6, COLOR.ground, 1.8);
+  out += `<line x1="${x - 14}" y1="${y + 6}" x2="${x + 14}" y2="${y + 6}" stroke="${COLOR.ground}" stroke-width="2.6"/>`;
+  out += `<line x1="${x - 9}" y1="${y + 11}" x2="${x + 9}" y2="${y + 11}" stroke="${COLOR.ground}" stroke-width="2.2"/>`;
+  out += `<line x1="${x - 5}" y1="${y + 16}" x2="${x + 5}" y2="${y + 16}" stroke="${COLOR.ground}" stroke-width="1.8"/>`;
+  out += label(x + 18, y + 12, "PAT", { size: 10, weight: "bold", color: COLOR.ground });
   out += "</g>";
   return out;
 }
