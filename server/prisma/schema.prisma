@@ -1735,6 +1735,13 @@ model MaterialesConsolidadosVersion {
   projectsSnapshot Json
   itemsSnapshot    Json
 
+  // Paths del PDF y XLSX en STORAGE_PATH (relativos: ej. "ingenieria/consolidados/v3.pdf").
+  // Esta herramienta es global (no atada a un proyecto) por lo que no usa
+  // FileAttachment (que requiere projectId NOT NULL). Los archivos se sirven
+  // por endpoint dedicado que verifica el permiso del módulo.
+  pdfPath  String?
+  xlsxPath String?
+
   @@index([createdAt])
   @@map("materiales_consolidados_versions")
 }

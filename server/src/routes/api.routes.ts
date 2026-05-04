@@ -3035,6 +3035,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
         sourceLabel = file.toolVersion
           ? `Ingeniería · Pre-ingeniería v${file.toolVersion}`
           : "Ingeniería · Pre-ingeniería";
+      } else if (file.toolSource === "consolidado") {
+        source = "generated";
+        sourceLabel = file.toolVersion
+          ? `Consolidador · v${file.toolVersion}`
+          : "Consolidador";
       } else if (file.tipo === FileAttachmentTipo.LISTA_MATERIALES) {
         source = "generated";
         sourceLabel = "Generado · Lista de materiales";
