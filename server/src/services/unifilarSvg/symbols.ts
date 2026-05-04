@@ -89,18 +89,19 @@ export function symInverter(x: number, y: number, esTri: boolean): string {
 }
 
 export function symMeterBidir(x: number, y: number): string {
-  const w = 38;
-  const h = 26;
+  // Cuadrado (no rectángulo alargado) con dos flechas opuestas adentro
+  // — flujo bidireccional — más prominentes que la versión anterior.
+  const size = 36;
   let out = '<g class="meter">';
-  out += `<rect x="${x - w / 2}" y="${y - h / 2}" width="${w}" height="${h}" fill="white" stroke="${COLOR.wire}" stroke-width="1.2"/>`;
-  // flecha derecha
-  const a1 = y - 5;
-  out += `<line x1="${x - 10}" y1="${a1}" x2="${x + 8}" y2="${a1}" stroke="${COLOR.wire}" stroke-width="1"/>`;
-  out += `<polygon points="${x + 8},${a1 - 3} ${x + 12},${a1} ${x + 8},${a1 + 3}" fill="${COLOR.wire}"/>`;
-  // flecha izquierda
-  const a2 = y + 5;
-  out += `<line x1="${x + 10}" y1="${a2}" x2="${x - 8}" y2="${a2}" stroke="${COLOR.wire}" stroke-width="1"/>`;
-  out += `<polygon points="${x - 8},${a2 - 3} ${x - 12},${a2} ${x - 8},${a2 + 3}" fill="${COLOR.wire}"/>`;
+  out += `<rect x="${x - size / 2}" y="${y - size / 2}" width="${size}" height="${size}" fill="white" stroke="${COLOR.wire}" stroke-width="1.4"/>`;
+  // Flecha hacia la derecha (entrada de energía) — arriba.
+  const a1 = y - 6;
+  out += `<line x1="${x - 12}" y1="${a1}" x2="${x + 9}" y2="${a1}" stroke="${COLOR.wire}" stroke-width="1.4"/>`;
+  out += `<polygon points="${x + 9},${a1 - 4} ${x + 14},${a1} ${x + 9},${a1 + 4}" fill="${COLOR.wire}"/>`;
+  // Flecha hacia la izquierda (inyección a red) — abajo.
+  const a2 = y + 6;
+  out += `<line x1="${x + 12}" y1="${a2}" x2="${x - 9}" y2="${a2}" stroke="${COLOR.wire}" stroke-width="1.4"/>`;
+  out += `<polygon points="${x - 9},${a2 - 4} ${x - 14},${a2} ${x - 9},${a2 + 4}" fill="${COLOR.wire}"/>`;
   out += "</g>";
   return out;
 }
