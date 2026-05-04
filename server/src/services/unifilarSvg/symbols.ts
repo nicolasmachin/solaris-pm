@@ -103,9 +103,12 @@ export function symMeterBidir(x: number, y: number): string {
 }
 
 export function symMeterSimple(x: number, y: number): string {
+  // Rectángulo simple — formato IEC. La etiqueta "Medidor para monitoreo" la
+  // pone el layout exterior. Antes era un círculo con "M" adentro (no IEC).
+  const w = 32;
+  const h = 22;
   let out = '<g class="meter-mon">';
-  out += `<circle cx="${x}" cy="${y}" r="13" fill="white" stroke="${COLOR.wire}" stroke-width="1.4"/>`;
-  out += label(x, y + 4, "M", { size: 12, anchor: "middle", weight: "bold" });
+  out += `<rect x="${x - w / 2}" y="${y - h / 2}" width="${w}" height="${h}" fill="white" stroke="${COLOR.wire}" stroke-width="1.4"/>`;
   out += "</g>";
   return out;
 }
