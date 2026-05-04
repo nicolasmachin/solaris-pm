@@ -64,23 +64,26 @@ export function symPanel(x: number, y: number, _nPaneles: number, nStrings: numb
 }
 
 export function symInverter(x: number, y: number, esTri: boolean): string {
+  // Caja con diagonal interna: zona DC arriba (= dos líneas horizontales) y
+  // zona AC abajo (~ sinusoide). Marca de fase 1~/3~ AFUERA del rectángulo,
+  // a la izquierda — formato IEC, replica el plano de Voltia.
   const w = 65;
   const h = 55;
   let out = '<g class="inverter">';
   out += `<rect x="${x - w / 2}" y="${y - h / 2}" width="${w}" height="${h}" fill="white" stroke="${COLOR.wire}" stroke-width="1.8"/>`;
-  // diagonal divisoria
+  // Diagonal divisoria.
   out += `<line x1="${x - w / 2 + 4}" y1="${y + h / 2 - 4}" x2="${x + w / 2 - 4}" y2="${y - h / 2 + 4}" stroke="${COLOR.wire}" stroke-width="1"/>`;
-  // DC: dos líneas horizontales
+  // DC: dos líneas horizontales (una sólida, una punteada — como en planos comerciales).
   const dcX = x - w / 4;
   const dcY = y - h / 4;
   out += `<line x1="${dcX - 7}" y1="${dcY - 2}" x2="${dcX + 7}" y2="${dcY - 2}" stroke="${COLOR.wire}" stroke-width="1.5"/>`;
   out += `<line x1="${dcX - 7}" y1="${dcY + 2}" x2="${dcX + 7}" y2="${dcY + 2}" stroke="${COLOR.wire}" stroke-width="1.5" stroke-dasharray="2,1.5"/>`;
-  // AC: sinusoide
+  // AC: sinusoide.
   const acX = x + w / 4;
   const acY = y + h / 4;
   out += `<path d="M ${acX - 9} ${acY} Q ${acX - 4.5} ${acY - 5} ${acX} ${acY} T ${acX + 9} ${acY}" fill="none" stroke="${COLOR.wire}" stroke-width="1.5"/>`;
-  // marca de fase
-  out += label(x, y + h / 2 - 4, esTri ? "3~" : "1~", { size: 9, anchor: "middle", weight: "bold" });
+  // Marca de fase AFUERA del rectángulo (a la izquierda).
+  out += label(x - w / 2 - 4, y + h / 2 - 4, esTri ? "3~" : "1~", { size: 10, anchor: "end", weight: "bold" });
   out += "</g>";
   return out;
 }
