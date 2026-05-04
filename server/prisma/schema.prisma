@@ -1717,6 +1717,28 @@ model PreIngenieriaVersion {
   @@map("preingenieria_versions")
 }
 
+// Consolidador de materiales: herramienta global del módulo Ingeniería que
+// agrupa las listas de materiales de varios proyectos en una sola tabla
+// ítem×proyecto + total. NO está atada a un Project — los proyectos viven
+// en el snapshot JSON. Versionado correlativo global.
+model MaterialesConsolidadosVersion {
+  id            String   @id @default(cuid())
+  versionNumber Int      @unique
+  label         String?
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+
+  // Snapshot al momento de consolidar — si los proyectos cambian su lista o
+  // se borran después, la versión queda intacta. Estructura:
+  //   projectsSnapshot: [{ id, nombreCliente, potenciaKwp, ubicacion }, ...]
+  //   itemsSnapshot:    [{ catalogItemId, nombre, categoria, categoriaOrden,
+  //                        unidad, cantidadesPorProyecto: {pid: n}, total }]
+  projectsSnapshot Json
+  itemsSnapshot    Json
+
+  @@index([createdAt])
+  @@map("materiales_consolidados_versions")
+}
+
 model PreIngenieriaFoto {
   id               String                @id @default(cuid())
   versionId        String
