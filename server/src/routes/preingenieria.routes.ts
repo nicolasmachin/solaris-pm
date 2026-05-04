@@ -4,6 +4,8 @@
 // FileAttachment con `toolSource="preing"`. Las fotos se suben antes via
 // `upload-foto` y se asocian al crear la versión.
 
+import { promises as fsPromises } from "node:fs";
+
 import { Action, AuditAction, AuditEntityType, FileAttachmentTipo, Module } from "@prisma/client";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
@@ -23,6 +25,10 @@ import {
   type PreIngenieriaPdfInputs,
   type TipoTechoKey,
 } from "../services/preingenieriaPdf/index.js";
+import {
+  extractFromMinuta,
+  isMinutaExtractionEnabled,
+} from "../services/minutaExtraction/index.js";
 import { createAuditEntry } from "../services/audit.service.js";
 import { badRequest, notFound, unauthorized } from "../utils/errors.js";
 import { serializeDate } from "../utils/serialization.js";
@@ -30,6 +36,10 @@ import { serializeDate } from "../utils/serialization.js";
 function ensureUser(request: import("fastify").FastifyRequest) {
   if (!request.user) throw unauthorized("No autenticado");
   return request.user;
+}
+
+async function readStoredFileBuffer(absolutePath: string): Promise<Buffer> {
+  return fsPromises.readFile(absolutePath);
 }
 
 const ALLOWED_PHOTO_MIMETYPES = new Set([
@@ -73,6 +83,9 @@ const createBodySchema = z
     notasAdicionales: z.string().trim().max(2000).optional().nullable(),
     // Trazabilidad
     unifilarVersionId: z.string().min(1).optional().nullable(),
+    // Trazabilidad de extracción de minuta (opcional — sólo si se usó IA).
+    minutaFileId: z.string().min(1).optional().nullable(),
+    minutaModelUsed: z.string().max(80).optional().nullable(),
     // Fotos: orden + etiquetas indexadas por fileId
     fotosOrden: z.array(z.string().min(1)).default([]),
     fotosEtiquetas: z.record(z.string(), z.string().max(100)).optional().nullable(),
@@ -174,6 +187,164 @@ export async function registerPreIngenieriaRoutes(app: FastifyInstance) {
         fileId: attachment.id,
         filename: attachment.filename,
         size: attachment.sizeBytes,
+      };
+    },
+  );
+
+  // ─── Extracción IA de minuta ─────────────────────────────────────────────
+  // Multipart: un PDF de minuta. 1) Persiste el PDF como FileAttachment con
+  // tipo MINUTA_RELEVAMIENTO, 2) extrae texto, 3) llama Claude, 4) audita,
+  // 5) devuelve campos sugeridos + minutaFileId. El frontend pre-rellena el
+  // formulario con los campos y deja que el usuario edite antes de guardar.
+  app.post(
+    "/projects/:projectId/preingenieria/extract-from-minuta",
+    { preHandler: authorize(Module.INGENIERIA, Action.EDIT) },
+    async (request, reply) => {
+      const user = ensureUser(request);
+      const projectId = (request.params as { projectId?: string }).projectId;
+      if (!projectId) throw badRequest("MISSING_PROJECT_ID", "Falta projectId");
+
+      if (!isMinutaExtractionEnabled()) {
+        throw badRequest(
+          "MINUTA_EXTRACTION_DISABLED",
+          "ANTHROPIC_API_KEY no está configurada — la extracción IA está deshabilitada.",
+        );
+      }
+
+      const project = await prisma.project.findFirst({
+        where: { id: projectId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+
+      const part = await request.file();
+      if (!part) throw badRequest("MISSING_FILE", "No se envió ningún archivo");
+
+      if (part.mimetype.toLowerCase() !== "application/pdf") {
+        throw badRequest(
+          "INVALID_MINUTA_MIMETYPE",
+          `Sólo se acepta PDF. Recibido: ${part.mimetype}.`,
+        );
+      }
+
+      // 1) Persistir el PDF como FileAttachment ANTES de extraer (así si la
+      //    extracción falla, el archivo queda y se puede reintentar).
+      const stored = await saveUploadedFile(part, projectId);
+      const attachment = await prisma.fileAttachment.create({
+        data: {
+          projectId,
+          filename: stored.filename,
+          storedFilename: stored.storedFilename,
+          mimeType: stored.mimeType,
+          sizeBytes: stored.sizeBytes,
+          url: stored.url,
+          tipo: FileAttachmentTipo.MINUTA_RELEVAMIENTO,
+          uploadedById: user.id,
+        },
+      });
+
+      // 2) Leer el archivo del disco como buffer y extraer.
+      const fileBuffer = await readStoredFileBuffer(stored.absolutePath);
+
+      try {
+        const result = await extractFromMinuta(fileBuffer);
+
+        // 3) Auditar la extracción exitosa con métricas.
+        await createAuditEntry({
+          entityType: AuditEntityType.file,
+          entityId: attachment.id,
+          projectId,
+          userId: user.id,
+          action: AuditAction.file_uploaded,
+          description: `Subió minuta y extrajo campos con IA (${result.metadata.modelUsed})`,
+          metadata: {
+            kind: "minuta_extraction",
+            modelUsed: result.metadata.modelUsed,
+            latencyMs: result.metadata.latencyMs,
+            tokensInput: result.metadata.tokensInput,
+            tokensOutput: result.metadata.tokensOutput,
+            pdfSizeKb: Math.round(stored.sizeBytes / 1024),
+          },
+        });
+
+        return {
+          minutaFileId: attachment.id,
+          extractedFields: result.extractedFields,
+          metadata: result.metadata,
+        };
+      } catch (err) {
+        // El FileAttachment queda; el cliente puede reintentar via /retry.
+        request.log.error(
+          { err, projectId, minutaFileId: attachment.id },
+          "[minuta] error en extracción IA",
+        );
+        await createAuditEntry({
+          entityType: AuditEntityType.file,
+          entityId: attachment.id,
+          projectId,
+          userId: user.id,
+          action: AuditAction.file_uploaded,
+          description: `Subió minuta pero falló la extracción IA`,
+          metadata: {
+            kind: "minuta_extraction_error",
+            error: err instanceof Error ? err.message : String(err),
+            pdfSizeKb: Math.round(stored.sizeBytes / 1024),
+          },
+        });
+        throw err;
+      }
+    },
+  );
+
+  // ─── Reintentar extracción de minuta ya subida ───────────────────────────
+  // Útil si la primera llamada falló por timeout/rate limit.
+  app.post(
+    "/projects/:projectId/preingenieria/extract-from-minuta/retry",
+    { preHandler: authorize(Module.INGENIERIA, Action.EDIT) },
+    async (request) => {
+      const user = ensureUser(request);
+      const params = z.object({ projectId: z.string().min(1) }).parse(request.params);
+      const body = z.object({ minutaFileId: z.string().min(1) }).parse(request.body);
+
+      if (!isMinutaExtractionEnabled()) {
+        throw badRequest("MINUTA_EXTRACTION_DISABLED", "Extracción IA deshabilitada");
+      }
+
+      const att = await prisma.fileAttachment.findFirst({
+        where: {
+          id: body.minutaFileId,
+          projectId: params.projectId,
+          tipo: FileAttachmentTipo.MINUTA_RELEVAMIENTO,
+          deletedAt: null,
+        },
+        select: { id: true, url: true, sizeBytes: true },
+      });
+      if (!att) throw notFound("MINUTA_NOT_FOUND", "Minuta no encontrada");
+
+      const absolutePath = getStoredFilePath(att.url);
+      const buffer = await readStoredFileBuffer(absolutePath);
+      const result = await extractFromMinuta(buffer);
+
+      await createAuditEntry({
+        entityType: AuditEntityType.file,
+        entityId: att.id,
+        projectId: params.projectId,
+        userId: user.id,
+        action: AuditAction.file_uploaded,
+        description: `Reintentó extracción IA de minuta (${result.metadata.modelUsed})`,
+        metadata: {
+          kind: "minuta_extraction_retry",
+          modelUsed: result.metadata.modelUsed,
+          latencyMs: result.metadata.latencyMs,
+          tokensInput: result.metadata.tokensInput,
+          tokensOutput: result.metadata.tokensOutput,
+        },
+      });
+
+      return {
+        minutaFileId: att.id,
+        extractedFields: result.extractedFields,
+        metadata: result.metadata,
       };
     },
   );
@@ -314,6 +485,9 @@ export async function registerPreIngenieriaRoutes(app: FastifyInstance) {
           redTrifasica400CN: body.redTrifasica400CN,
           notasAdicionales: body.notasAdicionales ?? null,
           unifilarVersionId: body.unifilarVersionId ?? null,
+          minutaFileId: body.minutaFileId ?? null,
+          minutaExtractedAt: body.minutaFileId ? new Date() : null,
+          minutaModelUsed: body.minutaModelUsed ?? null,
           fotos: {
             create: body.fotosOrden.map((fileId, idx) => ({
               orden: idx + 1,
