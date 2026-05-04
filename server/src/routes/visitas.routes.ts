@@ -30,6 +30,10 @@ import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
 import { getStoredFilePath, saveUploadedFile } from "../services/file-storage.service.js";
 import { generateVisitReport } from "../services/visit-report.service.js";
+import {
+  generateVisitReportPdf,
+  type VisitReportPdfInputs,
+} from "../services/visitReportPdf/index.js";
 import { isWhisperEnabled, transcribeAudio } from "../services/whisper.service.js";
 import { badRequest, notFound, unauthorized } from "../utils/errors.js";
 import { serializeDate } from "../utils/serialization.js";
@@ -505,6 +509,57 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
         summary: result.report.summary,
         metadata: result.metadata,
       };
+    },
+  );
+
+  // ── Descargar PDF de un reporte (on-demand) ────────────────────────────
+  app.get(
+    "/technical-visits/:visitId/reports/:reportId/pdf",
+    { preHandler: authorize(Module.INGENIERIA, Action.VIEW) },
+    async (request, reply) => {
+      const params = z
+        .object({ visitId: z.string().min(1), reportId: z.string().min(1) })
+        .parse(request.params);
+      const report = await prisma.visitReport.findFirst({
+        where: { id: params.reportId, visitId: params.visitId },
+        include: {
+          generatedBy: { select: { name: true } },
+          visit: {
+            include: {
+              createdBy: { select: { name: true } },
+              project: { select: { code: true, clientName: true } },
+            },
+          },
+        },
+      });
+      if (!report) throw notFound("REPORT_NOT_FOUND", "Reporte no encontrado");
+
+      const content = (report.content as Record<string, string>) ?? {};
+      const suggestions = Array.isArray(report.projectSuggestions)
+        ? (report.projectSuggestions as VisitReportPdfInputs["projectSuggestions"])
+        : [];
+
+      const pdfBuffer = await generateVisitReportPdf({
+        cliente: report.visit.project.clientName,
+        proyectoCode: report.visit.project.code,
+        visitDate: report.visit.visitDate,
+        visitType: report.visit.visitType,
+        operario: report.visit.createdBy?.name ?? null,
+        version: report.version,
+        generatedAt: report.generatedAt,
+        generatedBy: report.generatedBy?.name ?? null,
+        summary: report.summary,
+        changesFromPrevious: report.changesFromPrevious,
+        content,
+        projectSuggestions: suggestions,
+      });
+
+      reply.header("Content-Type", "application/pdf");
+      reply.header(
+        "Content-Disposition",
+        `inline; filename="visita-${report.visit.project.code}-v${report.version}.pdf"`,
+      );
+      return reply.send(pdfBuffer);
     },
   );
 }
