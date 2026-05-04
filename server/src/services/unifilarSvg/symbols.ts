@@ -111,13 +111,25 @@ export function symMeterSimple(x: number, y: number): string {
 }
 
 export function symBreaker(x: number, y: number): string {
+  // Símbolo IEC 60617: palanca diagonal entre dos contactos circulares.
+  // Sin rectángulo cerrado. Ocupa altura ~28 entre lineIn y lineOut para que
+  // las conexiones encastren con los cables vline() del layout.
   const h = 28;
-  const w = 14;
+  const topY = y - h / 2;
+  const bottomY = y + h / 2;
+  const contactTopY = topY + 5;
+  const contactBottomY = bottomY - 5;
   let out = '<g class="breaker">';
-  out += `<rect x="${x - w / 2}" y="${y - h / 2}" width="${w}" height="${h}" fill="white" stroke="${COLOR.wire}" stroke-width="1.2"/>`;
-  out += `<line x1="${x - 3}" y1="${y - h / 2 + 4}" x2="${x + 5}" y2="${y + h / 2 - 4}" stroke="${COLOR.wire}" stroke-width="1.5"/>`;
-  out += `<circle cx="${x - 3}" cy="${y - h / 2 + 4}" r="1.5" fill="${COLOR.wire}"/>`;
-  out += `<circle cx="${x + 5}" cy="${y + h / 2 - 4}" r="1.5" fill="${COLOR.wire}"/>`;
+  // Tramo superior (entrada del cable principal hasta el contacto).
+  out += `<line x1="${x}" y1="${topY}" x2="${x}" y2="${contactTopY}" stroke="${COLOR.wire}" stroke-width="1.5"/>`;
+  // Contacto superior (círculo relleno).
+  out += `<circle cx="${x}" cy="${contactTopY}" r="2" fill="${COLOR.wire}"/>`;
+  // Palanca diagonal: del contacto superior hacia el costado derecho.
+  out += `<line x1="${x}" y1="${contactTopY}" x2="${x + 9}" y2="${contactBottomY}" stroke="${COLOR.wire}" stroke-width="1.5"/>`;
+  // Contacto inferior.
+  out += `<circle cx="${x}" cy="${contactBottomY}" r="2" fill="${COLOR.wire}"/>`;
+  // Tramo inferior (salida).
+  out += `<line x1="${x}" y1="${contactBottomY}" x2="${x}" y2="${bottomY}" stroke="${COLOR.wire}" stroke-width="1.5"/>`;
   out += "</g>";
   return out;
 }
