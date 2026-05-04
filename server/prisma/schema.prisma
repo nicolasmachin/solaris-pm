@@ -718,7 +718,8 @@ model FileAttachment {
   project        Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
   stage          Stage?              @relation(fields: [stageId], references: [id], onDelete: SetNull)
   substage       Substage?           @relation(fields: [substageId], references: [id], onDelete: SetNull)
-  preIngenieriaFotos PreIngenieriaFoto[]
+  preIngenieriaFotos     PreIngenieriaFoto[]
+  preIngenieriaMinutaFor PreIngenieriaVersion[]  @relation("MinutaSource")
   deletedAt      DateTime?           @db.Timestamptz(6)
   createdAt      DateTime            @default(now()) @db.Timestamptz(6)
 
@@ -736,6 +737,7 @@ enum FileAttachmentTipo {
   CALCULO_TRIANGULOS
   UNIFILAR
   PRE_INGENIERIA
+  MINUTA_RELEVAMIENTO
   OTRO
 }
 
@@ -1699,10 +1701,19 @@ model PreIngenieriaVersion {
   // Trazabilidad de pre-rellenado desde unifilar (opcional, sin FK fuerte)
   unifilarVersionId String?
 
+  // Trazabilidad de extracción desde minuta del relevamiento. Si se usó IA
+  // para pre-rellenar el formulario, se guarda el FileAttachment del PDF
+  // original + cuándo se extrajo + qué modelo se usó (auditoría/costos).
+  minutaFileId      String?
+  minutaFile        FileAttachment? @relation("MinutaSource", fields: [minutaFileId], references: [id], onDelete: SetNull)
+  minutaExtractedAt DateTime?       @db.Timestamptz(6)
+  minutaModelUsed   String?
+
   fotos PreIngenieriaFoto[]
 
   @@unique([projectId, versionNumber])
   @@index([projectId])
+  @@index([minutaFileId])
   @@map("preingenieria_versions")
 }
 
