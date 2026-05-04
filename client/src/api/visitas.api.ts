@@ -108,13 +108,27 @@ export async function uploadVisitNote(
   return data;
 }
 
+function extensionFromMime(mime: string): string {
+  const base = mime.split(";")[0].trim().toLowerCase();
+  if (base.includes("webm")) return "webm";
+  if (base.includes("mp4") || base === "audio/m4a" || base === "audio/x-m4a") return "m4a";
+  if (base.includes("aac")) return "aac";
+  if (base.includes("mpeg") || base === "audio/mp3") return "mp3";
+  if (base.includes("ogg")) return "ogg";
+  if (base.includes("wav")) return "wav";
+  return "webm";
+}
+
 export async function uploadVisitAudio(
   visitId: string,
   blob: Blob,
+  mimeType: string,
   description?: string | null,
 ): Promise<VisitInputDto> {
+  const ext = extensionFromMime(mimeType || blob.type || "audio/webm");
+  const filename = `recording_${Date.now()}.${ext}`;
   const fd = new FormData();
-  fd.append("file", blob, "audio.webm");
+  fd.append("file", blob, filename);
   if (description) fd.append("description", description);
   const { data } = await apiClient.post<VisitInputDto>(
     `/api/technical-visits/${visitId}/inputs/audio`,

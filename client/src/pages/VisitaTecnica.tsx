@@ -113,8 +113,8 @@ export function VisitaTecnica() {
   });
 
   const audioMut = useMutation({
-    mutationFn: ({ blob, description }: { blob: Blob; description: string }) =>
-      uploadVisitAudio(visitId!, blob, description || null),
+    mutationFn: ({ blob, mimeType, description }: { blob: Blob; mimeType: string; description: string }) =>
+      uploadVisitAudio(visitId!, blob, mimeType, description || null),
     onSuccess: () => {
       setMode("none");
       qc.invalidateQueries({ queryKey: ["technical-visit", visitId] });
@@ -212,8 +212,8 @@ export function VisitaTecnica() {
             {mode === "audio" && (
               <AudioRecorder
                 onCancel={() => setMode("none")}
-                onSave={async (blob, description) => {
-                  await audioMut.mutateAsync({ blob, description });
+                onSave={async (blob, mimeType, description) => {
+                  await audioMut.mutateAsync({ blob, mimeType, description });
                 }}
               />
             )}
@@ -407,7 +407,13 @@ function InputRow({
                 </p>
               )}
               {input.fileUrl && (
-                <audio controls className="w-full mt-1" src={visitAudioUrl(visitId, input.id)} />
+                <audio
+                  controls
+                  preload="metadata"
+                  playsInline
+                  className="w-full mt-1"
+                  src={visitAudioUrl(visitId, input.id)}
+                />
               )}
             </>
           )}

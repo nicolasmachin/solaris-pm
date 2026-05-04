@@ -10,10 +10,22 @@ import { env } from "../config/env.js";
 import { badRequest } from "../utils/errors.js";
 
 const allowedExtensions = new Set([
+  // Imágenes
   ".jpg",
   ".jpeg",
   ".png",
   ".gif",
+  ".webp",
+  // Audio (visitas técnicas — iOS Safari graba en m4a/mp4, otros browsers en webm)
+  ".webm",
+  ".mp4",
+  ".m4a",
+  ".aac",
+  ".mp3",
+  ".ogg",
+  ".oga",
+  ".wav",
+  // Documentos
   ".pdf",
   ".dwg",
   ".xlsx",

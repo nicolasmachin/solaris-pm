@@ -43,7 +43,10 @@ function ensureUser(request: FastifyRequest) {
   return request.user;
 }
 
-const ALLOWED_AUDIO_MIMES = new Set([
+// MIMEs aceptados para audio. Se compara por "base" (sin la parte de codecs)
+// para tolerar valores como `audio/webm;codecs=opus` o `audio/mp4;codecs=mp4a.40.2`
+// que devuelven Chrome y Safari respectivamente.
+const ALLOWED_AUDIO_BASE_MIMES = new Set([
   "audio/webm",
   "audio/ogg",
   "audio/mpeg",
@@ -51,8 +54,16 @@ const ALLOWED_AUDIO_MIMES = new Set([
   "audio/wav",
   "audio/x-wav",
   "audio/m4a",
+  "audio/x-m4a",
   "audio/mp4",
+  "audio/aac",
 ]);
+
+function isAllowedAudioMime(mime: string): boolean {
+  if (!mime) return false;
+  const base = mime.split(";")[0].trim().toLowerCase();
+  return ALLOWED_AUDIO_BASE_MIMES.has(base);
+}
 const ALLOWED_PHOTO_MIMES = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
 
 const visitTypeEnum = z.enum(["INICIAL", "REVISION", "COMPLEMENTARIA"]) satisfies z.ZodType<VisitType>;
@@ -327,8 +338,7 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
       const part = await request.file();
       if (!part) throw badRequest("MISSING_FILE", "No se envió ningún archivo");
 
-      const mimeLower = part.mimetype.toLowerCase();
-      if (!ALLOWED_AUDIO_MIMES.has(mimeLower)) {
+      if (!isAllowedAudioMime(part.mimetype)) {
         throw badRequest("INVALID_AUDIO_MIMETYPE", `Audio no soportado: ${part.mimetype}`);
       }
       const description = (part.fields.description as { value?: string } | undefined)?.value ?? null;

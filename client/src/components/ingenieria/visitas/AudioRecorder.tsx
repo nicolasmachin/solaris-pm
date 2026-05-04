@@ -3,7 +3,9 @@ import { toast } from "react-hot-toast";
 import { Mic, Square, X } from "lucide-react";
 
 interface AudioRecorderProps {
-  onSave: (blob: Blob, description: string) => Promise<void> | void;
+  // El callback recibe el Blob, su MIME real y la descripción. El caller
+  // arma el FormData con un filename con extensión correcta.
+  onSave: (blob: Blob, mimeType: string, description: string) => Promise<void> | void;
   onCancel: () => void;
 }
 
@@ -13,10 +15,37 @@ function formatDuration(s: number): string {
   return `${m}:${String(sec).padStart(2, "0")}`;
 }
 
+/**
+ * Devuelve el primer MIME type soportado por el `MediaRecorder` del browser,
+ * priorizando webm/opus (Chrome/Firefox/Android) y luego mp4/m4a (Safari iOS).
+ * Si nada matchea, devuelve "" para que el constructor use el default del
+ * browser — Safari iOS suele inicializar bien sin opciones.
+ */
+function pickSupportedMimeType(): string {
+  const candidates = [
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/mp4;codecs=mp4a.40.2",
+    "audio/mp4",
+    "audio/mpeg",
+    "audio/ogg;codecs=opus",
+  ];
+  if (typeof MediaRecorder === "undefined") return "";
+  for (const t of candidates) {
+    try {
+      if (MediaRecorder.isTypeSupported(t)) return t;
+    } catch {
+      // ignore
+    }
+  }
+  return "";
+}
+
 export function AudioRecorder({ onSave, onCancel }: AudioRecorderProps) {
   const [recording, setRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioMimeType, setAudioMimeType] = useState<string>("");
   const [description, setDescription] = useState("");
   const [duration, setDuration] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -37,16 +66,28 @@ export function AudioRecorder({ onSave, onCancel }: AudioRecorderProps) {
 
   async function startRecording() {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true },
+      });
       streamRef.current = stream;
-      const recorder = new MediaRecorder(stream);
+
+      const preferredMime = pickSupportedMimeType();
+      const recorder = preferredMime
+        ? new MediaRecorder(stream, { mimeType: preferredMime })
+        : new MediaRecorder(stream);
+
       chunksRef.current = [];
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        // Usar el MIME REAL del recorder en lugar del que pedimos. Safari iOS
+        // a veces ignora el preferredMime y graba en mp4 — el blob debe
+        // anunciar el formato verdadero o el <audio> no lo reproduce.
+        const realMime = recorder.mimeType || preferredMime || "audio/webm";
+        const blob = new Blob(chunksRef.current, { type: realMime });
         setAudioBlob(blob);
+        setAudioMimeType(realMime);
         setAudioUrl(URL.createObjectURL(blob));
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
@@ -77,6 +118,7 @@ export function AudioRecorder({ onSave, onCancel }: AudioRecorderProps) {
     if (audioUrl) URL.revokeObjectURL(audioUrl);
     setAudioBlob(null);
     setAudioUrl(null);
+    setAudioMimeType("");
     setDuration(0);
     setDescription("");
   }
@@ -85,7 +127,7 @@ export function AudioRecorder({ onSave, onCancel }: AudioRecorderProps) {
     if (!audioBlob) return;
     setSaving(true);
     try {
-      await onSave(audioBlob, description.trim());
+      await onSave(audioBlob, audioMimeType || audioBlob.type || "audio/webm", description.trim());
     } finally {
       setSaving(false);
     }
@@ -129,7 +171,20 @@ export function AudioRecorder({ onSave, onCancel }: AudioRecorderProps) {
 
       {audioBlob && !recording && (
         <>
-          {audioUrl && <audio src={audioUrl} controls className="w-full" />}
+          {audioUrl && (
+            <audio
+              src={audioUrl}
+              controls
+              preload="metadata"
+              playsInline
+              className="w-full"
+            />
+          )}
+          {audioMimeType && (
+            <p className="text-[9px] font-mono text-[var(--color-text-muted)]">
+              {audioMimeType}
+            </p>
+          )}
           <input
             className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-xs"
             placeholder="Descripción opcional (ej: 'recorrida del techo')"
