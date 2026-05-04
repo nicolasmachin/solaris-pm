@@ -522,6 +522,35 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
     },
   );
 
+  // ── Reset: borrar todos los reportes de la visita (mantiene los inputs) ─
+  app.delete(
+    "/technical-visits/:id/reports",
+    { preHandler: authorize(Module.OPERACIONES, Action.EDIT) },
+    async (request, reply) => {
+      const user = ensureUser(request);
+      const params = z.object({ id: z.string().min(1) }).parse(request.params);
+      const visit = await prisma.technicalVisit.findFirst({
+        where: { id: params.id, deletedAt: null },
+        select: { id: true, projectId: true },
+      });
+      if (!visit) throw notFound("VISIT_NOT_FOUND", "Visita no encontrada");
+
+      const result = await prisma.visitReport.deleteMany({ where: { visitId: visit.id } });
+
+      await createAuditEntry({
+        entityType: AuditEntityType.file,
+        entityId: visit.id,
+        projectId: visit.projectId,
+        userId: user.id,
+        action: AuditAction.deleted,
+        description: `Reset de informes de visita técnica (eliminó ${result.count} versiones)`,
+      });
+
+      reply.code(204);
+      return;
+    },
+  );
+
   // ── Descargar PDF de un reporte (on-demand) ────────────────────────────
   app.get(
     "/technical-visits/:visitId/reports/:reportId/pdf",

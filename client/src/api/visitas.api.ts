@@ -158,6 +158,10 @@ export async function deleteVisitInput(visitId: string, inputId: string): Promis
   await apiClient.delete(`/api/technical-visits/${visitId}/inputs/${inputId}`);
 }
 
+export async function resetVisitReports(visitId: string): Promise<void> {
+  await apiClient.delete(`/api/technical-visits/${visitId}/reports`);
+}
+
 export async function generateVisitReport(visitId: string): Promise<{
   id: string;
   version: number;

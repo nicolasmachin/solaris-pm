@@ -193,10 +193,16 @@ function buildInputsContext(inputs: VisitInput[]): string {
         if (input.transcriptionStatus === "COMPLETED" && input.transcription) {
           return `[AUDIO ${idx + 1} — transcripción]${desc}\n${input.transcription}`;
         }
-        return `[AUDIO ${idx + 1}]${desc}\n(Status: ${input.transcriptionStatus ?? "PENDING"} — ignorar para esta versión, regenerar cuando esté listo)`;
+        if (input.transcriptionStatus === "FAILED") {
+          return `[AUDIO ${idx + 1} — falló transcripción]${desc}\n(El operario dejó un audio que no se pudo transcribir. Mencionar en "observaciones" que existe el audio para revisión manual.)`;
+        }
+        // PENDING/PROCESSING no debería llegar acá porque el endpoint bloquea
+        // antes; queda como fallback defensivo.
+        return `[AUDIO ${idx + 1} — pendiente]${desc}\n(Audio sin procesar)`;
       }
       if (input.type === "PHOTO") {
-        return `[FOTO ${idx + 1}]${desc || "(sin descripción)"}\n(Adjunto visual — sólo metadata; no procesar imagen)`;
+        const filename = input.fileUrl?.split("/").pop() || "foto";
+        return `[FOTO ${idx + 1}]${desc || "(sin descripción)"}\nArchivo: ${filename}\n(La foto está disponible para el proyectista. La IA no analiza imágenes en esta versión — mencionar en "observaciones" que hay una foto adjunta${input.description ? ` que muestra "${input.description}"` : ""}.)`;
       }
       return `[INPUT ${idx + 1}] (tipo desconocido)`;
     })
@@ -343,6 +349,22 @@ export async function generateVisitReport(
       400,
       "NO_NEW_INPUTS",
       "No hay inputs nuevos desde el último informe. Cargá audios, fotos o notas adicionales antes de generar una versión nueva.",
+    );
+  }
+
+  // Bloqueo si hay audios todavía transcribiendo entre los inputs nuevos.
+  // Si dejamos generar, Claude recibe el audio como "pendiente — ignorar" y
+  // arma un informe vacío. Mejor parar acá y que el frontend espere.
+  const pendingAudios = newInputs.filter(
+    (i) =>
+      i.type === "AUDIO" &&
+      (i.transcriptionStatus === "PENDING" || i.transcriptionStatus === "PROCESSING"),
+  ).length;
+  if (pendingAudios > 0) {
+    throw new AppError(
+      400,
+      "AUDIOS_PENDING",
+      `No se puede generar el informe todavía: ${pendingAudios} audio${pendingAudios === 1 ? "" : "s"} ${pendingAudios === 1 ? "se está transcribiendo" : "se están transcribiendo"}. Esperá unos segundos y volvé a intentar.`,
     );
   }
 
