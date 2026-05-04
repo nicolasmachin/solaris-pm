@@ -1,5 +1,81 @@
 # Novedades
 
+## v5.0
+
+### 3 de mayo de 2026
+
+#### Módulo Ingeniería — workspace técnico por proyecto
+
+Nuevo módulo accesible desde la barra superior (sólo roles con permiso `INGENIERIA`). Incluye:
+
+- **Dashboard** en `/ingenieria` con estadísticas (proyectos en cola / en proceso / completados últimos 30 días) y listado de proyectos del módulo con filtros y búsqueda.
+- **Workspace por proyecto** en `/ingenieria/proyecto/:id` con sidebar lateral persistente (mismo patrón que el sidebar de Proyectos), header con datos del cliente, indicador de estado y progreso de la etapa, y herramientas técnicas en formato accordion (2 columnas, una sola abierta a la vez).
+- **Sección "Documentos técnicos generados"** que junta los PDFs producidos por las herramientas y permite descargarlos. La misma sección aparece en formato compacto en el StageDrawer del proyecto, accesible para roles que ven el proyecto pero no entran al módulo.
+
+#### Generador de unifilar (inline)
+
+El generador de unifilares dejó de ser una página dedicada y vive ahora dentro del workspace de Ingeniería como herramienta inline:
+
+- Lista de las 3 últimas versiones generadas en la card abierta, con botones Ver / Duplicar / Descargar SVG / Descargar PDF / Eliminar.
+- Si hay más de 3 versiones, botón "Historial completo" que abre un modal con la tabla entera + búsqueda por etiqueta + filtro por tipo de red.
+- Modal "+ Nueva versión" más ancho (1400px) con form a la izquierda y preview SVG en vivo a la derecha (debounce 300ms).
+- Cada versión genera y guarda automáticamente el PDF como documento técnico del proyecto. Las versiones anteriores quedan en el historial pero el "PDF vigente" en Documentos se reemplaza automáticamente.
+
+#### Lista de materiales — movida al módulo Ingeniería
+
+La lista de materiales ya no aparece en el StageDrawer del proyecto. Se accede desde la herramienta correspondiente del workspace de Ingeniería (mismo componente, misma funcionalidad: agregar ítems, generar previstos, exportar PDF con/sin precios). Los PDFs exportados se versionan independientemente para "con precios" y "sin precios" — cada modo mantiene su secuencia.
+
+#### Cálculos estructurales (triángulos) — movida al módulo
+
+La calculadora de triángulos isósceles de aluminio también dejó el StageDrawer y vive ahora como herramienta independiente del workspace. El botón principal del modal pasó a llamarse **"Generar PDF y guardar"** para reflejar mejor lo que hace (genera el PDF y queda como documento técnico del proyecto). Cada cálculo nuevo soft-deletea la versión anterior del PDF.
+
+#### Pre-ingeniería ("Resumen Técnico")
+
+Nueva herramienta que reemplaza el documento que se hacía a mano en una herramienta externa antes de cada proyecto. Genera un PDF A4 con:
+
+- Página 1: formulario fijo con datos del cliente, datos del sitio (tipo de techo, info, altura), datos eléctricos (9 campos texto libre para soportar multi-instalación), tipo de red (multi-select para casos como COVITEJA con mono + trifásico), notas adicionales.
+- Páginas siguientes: una foto por página (subidas por el usuario, ya anotadas externamente).
+
+Funcionalidades:
+
+- **Pre-rellenado desde una versión de unifilar existente** — botón que mapea automáticamente la sección/calibre de cables, cantidad de paneles, modelo de inversor, tipo de red, etc.
+- **Datos del cliente pre-rellenados** desde el proyecto (nombre, dirección, ciudad concatenada con provincia, celular).
+- **Subida de fotos múltiples** con thumbnails, etiquetas opcionales por foto, reordenamiento por flechas, eliminar.
+- **Vista previa del PDF** generado embebida en la app (mismo patrón que unifilar).
+- Versionado 1:N inmutable: cada versión queda guardada con su snapshot completo. El PDF "vigente" en Documentos se reemplaza al crear v+1.
+
+#### Extracción de minuta con IA
+
+Si tenés la minuta del relevamiento técnico-comercial en PDF (la que genera el bot externo a partir del audio), la podés subir al modal de "Nueva pre-ingeniería" y la IA pre-rellena los campos del formulario automáticamente:
+
+- Tipo de techo (chapa / hormigón / tejas / isopanel / otro)
+- Info techo (texto multi-línea con dimensiones, sectores, interferencias)
+- Cantidad de paneles, inversor, líneas DC, longitudes de cables (cuando aparecen)
+- Tipo de red (mono / trifásica 230 / trifásica 400)
+- Notas adicionales (pendientes, aspectos comerciales, plazos)
+
+Cada campo extraído se marca con un ícono ✨ al lado del label. Cuando lo editás, el ícono desaparece. Validado contra 3 minutas reales (Diego Trías, Percovich, Edgar Valdés) con 100% de acierto en los campos críticos. Modelo: Claude Haiku 4.5. Latencia ~5 segundos. Costo aproximado USD 0.005 por minuta.
+
+#### Consolidador de materiales
+
+Nueva herramienta global del módulo Ingeniería (vive en el dashboard, no en un proyecto específico). Pensada para el comprador: seleccionás los proyectos a comprar y obtenés:
+
+- **Vista en pantalla** con tabla agrupada por categoría: filas = ítems, columnas = una por proyecto + TOTAL.
+- **PDF descargable** (A4 horizontal si 4+ proyectos, vertical si 2-3) con el mismo layout.
+- **Excel descargable** (XLSX) listo para editar y usar en compras: encabezados de categoría como filas separadoras, totales en negrita, auto-width.
+
+Sólo se ofrecen como opciones los proyectos que tienen lista de materiales cargada. Las versiones generadas quedan en un historial con descarga + "Ver tabla" + Eliminar. La advertencia visible: agrupa por ID exacto del catálogo, así que dos ítems con el mismo nombre pero distinto ID no se unifican.
+
+#### StageDrawer del proyecto — limpieza
+
+La etapa Ingeniería del StageDrawer ya no muestra la lista de materiales ni el botón de la calculadora — ambos viven en el workspace del módulo. Lo que sigue ahí: subetapas, notas, archivos, comentarios, sección "Trabajar en este proyecto" (botón "Abrir workspace") y sección "Documentos técnicos generados" en lectura.
+
+#### Documentos del proyecto — badge y filtros
+
+- Badge azul **"Ingeniería · Unifilar v3"**, **"Ingeniería · Materiales v2 (con precios)"**, **"Ingeniería · Triángulos v1"**, **"Ingeniería · Pre-ingeniería v4"** según el origen del documento.
+- Filtro por origen agregado al sidebar de Documentos.
+- Lock inmutable: los documentos generados desde herramientas no se editan ni eliminan desde Documentos del proyecto — la única forma de "reemplazar" es generar una versión nueva desde la herramienta (que soft-deletea la anterior automáticamente).
+
 ## v4.9
 
 ### 1 de mayo de 2026

@@ -23,38 +23,69 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "4.9",
-  date: "1 de mayo de 2026",
+  version: "5.0",
+  date: "3 de mayo de 2026",
   sections: [
     {
-      title: "Trámites UTE — fix en cálculo de tiempos",
+      title: "Módulo Ingeniería — workspace técnico por proyecto",
       items: [
-        "La fecha de \"Caso abierto\" ya no le sumaba días por error a Voltia en la cola del proceso.",
-        "En trámites con \"Caso abierto\" como última acción, los días en espera ahora se atribuyen correctamente a UTE.",
+        "Nuevo módulo en la barra superior (sólo roles con permiso INGENIERIA).",
+        "Dashboard /ingenieria con estadísticas y listado de proyectos del módulo.",
+        "Workspace /ingenieria/proyecto/:id con sidebar lateral + herramientas en accordion (2 columnas, una abierta a la vez).",
+        "Sección \"Documentos técnicos generados\" tanto en el workspace como compacta en el StageDrawer del proyecto.",
       ],
     },
     {
-      title: "Métricas — \"Duración real por etapa\" arreglada",
+      title: "Generador de unifilar — inline en el workspace",
       items: [
-        "Se quitó el filtro de proyecto completado que excluía todas las etapas (ningún proyecto está marcado completado).",
-        "La duración por etapa se calcula desde la fecha real de inicio y fin (la columna persistida estaba siempre nula).",
-        "Soporta filtros de año/trimestre como el resto de la página.",
+        "Lista de las 3 últimas versiones con Ver / Duplicar / Descargar SVG/PDF / Eliminar.",
+        "Botón \"Historial completo\" si hay más de 3 versiones (modal con búsqueda + filtro por tipo de red).",
+        "Modal de nueva versión más ancho (1400px) con form a la izquierda y preview SVG en vivo a la derecha.",
+        "El PDF vigente en Documentos se reemplaza automáticamente al crear una versión nueva.",
       ],
     },
     {
-      title: "Métricas /overview — \"proyectos completados\"",
+      title: "Lista de materiales y calculadora de triángulos — al módulo Ingeniería",
       items: [
-        "Ahora considera proyectos cuyo stage OPERACIONES está en estado COMPLETED (antes usaba el status del proyecto, que nadie marca, y el KPI quedaba en 0).",
+        "Ambas herramientas dejaron el StageDrawer del proyecto. Se acceden desde el workspace de Ingeniería.",
+        "El PDF de lista de materiales se versiona independiente para \"con precios\" y \"sin precios\".",
+        "El botón principal de la calculadora pasó a llamarse \"Generar PDF y guardar\".",
       ],
     },
     {
-      title: "Evolución de tiempos UTE",
+      title: "Pre-ingeniería (\"Resumen Técnico\") — nueva herramienta",
       items: [
-        "Nueva sección abajo del bloque UTE en /metricas/ute con últimos 8 trimestres con datos.",
-        "3 gráficos de barras grandes lado a lado: Tiempo Total · Tiempo Voltia · Tiempo UTE. Cada barra = promedio por trámite finalizado en ese Q (suma de todas sus etapas).",
-        "Grilla de mini-gráficos por etapa cerrada (Consulta aprobada, Solicitud enviada, Docs 1, Ensayos, etc.) coloreados según responsable: verde Voltia, naranja UTE.",
-        "Indicador de tendencia con flecha y % vs promedio últimos 4 Q (verde si bajan los tiempos, roja si suben, gris si está estable).",
-        "Barra del Q actual full opacity; anteriores 50% para resaltar el período en curso.",
+        "Genera el PDF que antes se hacía a mano en una herramienta externa. Página 1 con formulario + páginas siguientes con fotos.",
+        "Datos del cliente pre-rellenados desde el proyecto. Botón para pre-rellenar los datos eléctricos desde una versión de unifilar existente.",
+        "Subida de fotos múltiples con thumbnails, etiquetas, reordenamiento.",
+        "Vista previa del PDF embebida en la app.",
+        "Versionado 1:N inmutable: cada versión queda guardada con snapshot completo.",
+      ],
+    },
+    {
+      title: "Extracción de minuta con IA",
+      items: [
+        "Subís el PDF de la minuta del relevamiento (la que genera el bot externo) y la IA pre-rellena los campos del formulario de Pre-ingeniería.",
+        "Cada campo extraído se marca con ✨ al lado del label; al editarlo, el ícono desaparece.",
+        "Validado contra 3 minutas reales (Diego Trías, Percovich, Edgar Valdés) con 100% de acierto en campos críticos.",
+        "Claude Haiku 4.5, ~5s de latencia, ~USD 0.005 por minuta.",
+      ],
+    },
+    {
+      title: "Consolidador de materiales (herramienta global)",
+      items: [
+        "Vive en el dashboard de Ingeniería, no en un proyecto. Pensado para el comprador.",
+        "Seleccionás varios proyectos y obtenés tabla unificada agrupada por categoría: filas = ítems, columnas = proyectos + TOTAL.",
+        "Descarga PDF (A4 horizontal si 4+ proyectos, vertical si 2-3) y Excel (XLSX) listo para usar en compras.",
+        "Sólo se ofrecen como opciones los proyectos con lista de materiales cargada. Las versiones quedan en un historial.",
+      ],
+    },
+    {
+      title: "Documentos del proyecto — badge y filtros",
+      items: [
+        "Badge azul \"Ingeniería · Unifilar v3\", \"Ingeniería · Materiales v2 (con precios)\", \"Ingeniería · Triángulos v1\", \"Ingeniería · Pre-ingeniería v4\" según el origen.",
+        "Filtro por origen agregado al sidebar de Documentos.",
+        "Documentos generados desde herramientas no se editan ni eliminan desde Documentos del proyecto — para reemplazarlos hay que crear una versión nueva (soft-deletea la anterior automáticamente).",
       ],
     },
   ],
@@ -68,6 +99,14 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "4.9",
+    shortDate: "1 may",
+    highlights: [
+      "Trámites UTE: fix en cálculo de tiempos por la fecha de \"Caso abierto\".",
+      "Métricas: \"Duración real por etapa\" arreglada y nueva sección \"Evolución de tiempos UTE\" con últimos 8 trimestres.",
+    ],
+  },
   {
     version: "4.8",
     shortDate: "30 abr",
