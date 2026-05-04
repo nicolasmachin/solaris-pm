@@ -135,8 +135,9 @@ export function symBreaker(x: number, y: number): string {
 }
 
 export function symResidual(x: number, y: number): string {
+  // RCD = breaker + cuadrado pequeño de test al lado (botón).
   let out = symBreaker(x, y);
-  out += `<rect x="${x + 10}" y="${y - 3}" width="6" height="6" fill="${COLOR.wire}"/>`;
+  out += `<rect x="${x + 12}" y="${y - 3}" width="6" height="6" fill="${COLOR.wire}"/>`;
   return out;
 }
 
