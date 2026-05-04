@@ -109,7 +109,7 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
   // ── Listar visitas de un proyecto ──────────────────────────────────────
   app.get(
     "/projects/:projectId/technical-visits",
-    { preHandler: authorize(Module.INGENIERIA, Action.VIEW) },
+    { preHandler: authorize(Module.OPERACIONES, Action.VIEW) },
     async (request) => {
       const params = z.object({ projectId: z.string().min(1) }).parse(request.params);
       const project = await prisma.project.findFirst({
@@ -146,7 +146,7 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
   // ── Crear visita ────────────────────────────────────────────────────────
   app.post(
     "/projects/:projectId/technical-visits",
-    { preHandler: authorize(Module.INGENIERIA, Action.EDIT) },
+    { preHandler: authorize(Module.OPERACIONES, Action.EDIT) },
     async (request, reply) => {
       const user = ensureUser(request);
       const params = z.object({ projectId: z.string().min(1) }).parse(request.params);
@@ -186,7 +186,7 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
   // ── Detalle de visita (con inputs y reportes) ──────────────────────────
   app.get(
     "/technical-visits/:id",
-    { preHandler: authorize(Module.INGENIERIA, Action.VIEW) },
+    { preHandler: authorize(Module.OPERACIONES, Action.VIEW) },
     async (request) => {
       const params = z.object({ id: z.string().min(1) }).parse(request.params);
       const visit = await prisma.technicalVisit.findFirst({
@@ -253,7 +253,7 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
   // ── Eliminar visita ────────────────────────────────────────────────────
   app.delete(
     "/technical-visits/:id",
-    { preHandler: authorize(Module.INGENIERIA, Action.DELETE) },
+    { preHandler: authorize(Module.OPERACIONES, Action.DELETE) },
     async (request, reply) => {
       const user = ensureUser(request);
       const params = z.object({ id: z.string().min(1) }).parse(request.params);
@@ -285,7 +285,7 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
   // ── Subir nota ──────────────────────────────────────────────────────────
   app.post(
     "/technical-visits/:id/inputs/note",
-    { preHandler: authorize(Module.INGENIERIA, Action.EDIT) },
+    { preHandler: authorize(Module.OPERACIONES, Action.EDIT) },
     async (request, reply) => {
       const user = ensureUser(request);
       const params = z.object({ id: z.string().min(1) }).parse(request.params);
@@ -314,7 +314,7 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
   // ── Subir audio ─────────────────────────────────────────────────────────
   app.post(
     "/technical-visits/:id/inputs/audio",
-    { preHandler: authorize(Module.INGENIERIA, Action.EDIT) },
+    { preHandler: authorize(Module.OPERACIONES, Action.EDIT) },
     async (request, reply) => {
       const user = ensureUser(request);
       const params = z.object({ id: z.string().min(1) }).parse(request.params);
@@ -375,7 +375,7 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
   // ── Subir foto ──────────────────────────────────────────────────────────
   app.post(
     "/technical-visits/:id/inputs/photo",
-    { preHandler: authorize(Module.INGENIERIA, Action.EDIT) },
+    { preHandler: authorize(Module.OPERACIONES, Action.EDIT) },
     async (request, reply) => {
       const user = ensureUser(request);
       const params = z.object({ id: z.string().min(1) }).parse(request.params);
@@ -425,7 +425,7 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
   // ── Eliminar input ─────────────────────────────────────────────────────
   app.delete(
     "/technical-visits/:visitId/inputs/:inputId",
-    { preHandler: authorize(Module.INGENIERIA, Action.EDIT) },
+    { preHandler: authorize(Module.OPERACIONES, Action.EDIT) },
     async (request, reply) => {
       const params = z
         .object({ visitId: z.string().min(1), inputId: z.string().min(1) })
@@ -448,7 +448,7 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
   // ── Recuperar audio (preview) ───────────────────────────────────────────
   app.get(
     "/technical-visits/:visitId/inputs/:inputId/audio",
-    { preHandler: authorize(Module.INGENIERIA, Action.VIEW) },
+    { preHandler: authorize(Module.OPERACIONES, Action.VIEW) },
     async (request, reply) => {
       const params = z
         .object({ visitId: z.string().min(1), inputId: z.string().min(1) })
@@ -469,7 +469,7 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
   // ── Generar reporte ─────────────────────────────────────────────────────
   app.post(
     "/technical-visits/:id/generate-report",
-    { preHandler: authorize(Module.INGENIERIA, Action.EDIT) },
+    { preHandler: authorize(Module.OPERACIONES, Action.EDIT) },
     async (request, reply) => {
       const user = ensureUser(request);
       const params = z.object({ id: z.string().min(1) }).parse(request.params);
@@ -515,7 +515,7 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
   // ── Descargar PDF de un reporte (on-demand) ────────────────────────────
   app.get(
     "/technical-visits/:visitId/reports/:reportId/pdf",
-    { preHandler: authorize(Module.INGENIERIA, Action.VIEW) },
+    { preHandler: authorize(Module.OPERACIONES, Action.VIEW) },
     async (request, reply) => {
       const params = z
         .object({ visitId: z.string().min(1), reportId: z.string().min(1) })

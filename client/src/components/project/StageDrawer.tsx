@@ -15,6 +15,7 @@ import { UserSelect } from "../ui/UserSelect";
 import { AssigneeLabel } from "../ui/AssigneeLabel";
 import { CommentThread } from "../comments/CommentThread";
 import { EngineeringModuleSection } from "./EngineeringModuleSection";
+import { VisitasToolPanel } from "../ingenieria/visitas/VisitasToolPanel";
 
 interface StageDrawerProps {
   stage: Stage;
@@ -1229,8 +1230,16 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
               Las herramientas del módulo (unifilar, lista de materiales,
               calculadora de triángulos) viven ahora en /ingenieria/proyecto/:id. */}
           {stage.name === "INGENIERIA" && (
-            <div className="mt-3">
+            <div className="mt-3 space-y-3">
               <EngineeringModuleSection projectId={projectId} />
+              {/* Visita técnica con IA — accesible para OPERACIONES también
+                  (operario carga audios/fotos/notas y la IA arma el informe). */}
+              <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
+                <p className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] mb-2">
+                  Visita técnica (IA)
+                </p>
+                <VisitasToolPanel projectId={projectId} />
+              </section>
             </div>
           )}
 

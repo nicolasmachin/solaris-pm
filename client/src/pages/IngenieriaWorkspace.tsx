@@ -10,7 +10,6 @@ import {
   FileText,
   HardHat,
   Lightbulb,
-  Mic,
   Package,
   Zap,
 } from "lucide-react";
@@ -25,7 +24,6 @@ import { UnifilarToolPanel } from "../components/ingenieria/unifilar/UnifilarToo
 import { MaterialesToolPanel } from "../components/ingenieria/MaterialesToolPanel";
 import { TriangulosToolPanel } from "../components/ingenieria/TriangulosToolPanel";
 import { PreIngenieriaToolPanel } from "../components/ingenieria/preing/PreIngenieriaToolPanel";
-import { VisitasToolPanel } from "../components/ingenieria/visitas/VisitasToolPanel";
 
 const MONTHS_ES_SHORT = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 function formatShortDate(iso: string): string {
@@ -39,7 +37,6 @@ function iconFor(key: string): LucideIcon {
   if (key === "triangulos") return Calculator;
   if (key === "materiales") return Package;
   if (key === "preing") return ClipboardList;
-  if (key === "visitas") return Mic;
   if (key === "memoria") return FileText;
   return Lightbulb;
 }
@@ -136,7 +133,6 @@ export function IngenieriaWorkspace() {
                   {h.key === "materiales" && <MaterialesToolPanel projectId={id} />}
                   {h.key === "triangulos" && <TriangulosToolPanel projectId={id} />}
                   {h.key === "preing" && <PreIngenieriaToolPanel projectId={id} />}
-                  {h.key === "visitas" && <VisitasToolPanel projectId={id} />}
                 </ToolAccordion>
               </div>
             );

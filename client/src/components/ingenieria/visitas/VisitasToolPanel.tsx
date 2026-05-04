@@ -49,7 +49,7 @@ export function VisitasToolPanel({ projectId }: { projectId: string }) {
       }),
     onSuccess: (created) => {
       qc.invalidateQueries({ queryKey: ["technical-visits", projectId] });
-      navigate(`/ingenieria/proyecto/${projectId}/visita/${created.id}`);
+      navigate(`/projects/${projectId}/visita/${created.id}`);
     },
     onError: (err) => toast.error(getApiErr(err) ?? "No se pudo crear la visita"),
   });
@@ -157,7 +157,7 @@ export function VisitasToolPanel({ projectId }: { projectId: string }) {
             <VisitRow
               key={v.id}
               visit={v}
-              onOpen={() => navigate(`/ingenieria/proyecto/${projectId}/visita/${v.id}`)}
+              onOpen={() => navigate(`/projects/${projectId}/visita/${v.id}`)}
               onDelete={() => handleDelete(v.id)}
             />
           ))}

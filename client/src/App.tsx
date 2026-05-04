@@ -320,9 +320,9 @@ export function App() {
           }
         />
         <Route
-          path="/ingenieria/proyecto/:projectId/visita/:visitId"
+          path="/projects/:projectId/visita/:visitId"
           element={
-            <PermissionRoute module="INGENIERIA" action="VIEW">
+            <PermissionRoute module="OPERACIONES" action="VIEW">
               <VisitaTecnica />
             </PermissionRoute>
           }

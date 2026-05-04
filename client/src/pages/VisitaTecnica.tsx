@@ -152,10 +152,10 @@ export function VisitaTecnica() {
     <div className="space-y-4">
       <header>
         <Link
-          to={`/ingenieria/proyecto/${projectId}`}
+          to={`/projects/${projectId}`}
           className="inline-flex items-center gap-1 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
         >
-          <ArrowLeft className="w-3 h-3" /> Volver al workspace
+          <ArrowLeft className="w-3 h-3" /> Volver al proyecto
         </Link>
         <div className="mt-2 flex items-baseline justify-between gap-3 flex-wrap">
           <h1 className="text-lg font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
