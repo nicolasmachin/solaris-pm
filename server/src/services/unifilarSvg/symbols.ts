@@ -152,9 +152,18 @@ export function symFuse(x: number, y: number): string {
 }
 
 export function symSpd(x: number, y: number): string {
+  // Triángulo con vértice abajo + cable a tierra + 3 líneas decrecientes
+  // (símbolo de tierra). El cable principal entra por arriba del triángulo
+  // (la conexión la hace el layout exterior con vline).
   let out = '<g class="spd">';
+  // Triángulo (base arriba, vértice abajo).
   out += `<polygon points="${x - 9},${y - 12} ${x + 9},${y - 12} ${x},${y + 5}" fill="white" stroke="${COLOR.wire}" stroke-width="1.4"/>`;
-  out += `<line x1="${x}" y1="${y + 5}" x2="${x}" y2="${y + 14}" stroke="${COLOR.wire}" stroke-width="1.4"/>`;
+  // Cable del triángulo a tierra.
+  out += `<line x1="${x}" y1="${y + 5}" x2="${x}" y2="${y + 13}" stroke="${COLOR.wire}" stroke-width="1.4"/>`;
+  // Símbolo de tierra (3 líneas decrecientes).
+  out += `<line x1="${x - 8}" y1="${y + 13}" x2="${x + 8}" y2="${y + 13}" stroke="${COLOR.wire}" stroke-width="1.5"/>`;
+  out += `<line x1="${x - 5}" y1="${y + 16}" x2="${x + 5}" y2="${y + 16}" stroke="${COLOR.wire}" stroke-width="1.3"/>`;
+  out += `<line x1="${x - 2.5}" y1="${y + 19}" x2="${x + 2.5}" y2="${y + 19}" stroke="${COLOR.wire}" stroke-width="1.1"/>`;
   out += "</g>";
   return out;
 }
