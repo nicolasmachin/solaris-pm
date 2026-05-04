@@ -209,13 +209,14 @@ const SYSTEM_PROMPT = `Sos un asistente especializado en redactar informes técn
 
 Tu trabajo es procesar los inputs (notas escritas + audios transcriptos + descripciones de fotos) que el operario trajo de la visita técnica y generar un informe estructurado en 7 secciones fijas.
 
+IMPORTANTE: este informe debe basarse EXCLUSIVAMENTE en los inputs que recibís acá y en el contexto del proyecto. NO mezcles información con informes anteriores — la consolidación entre versiones se hace en otro paso por separado. Si una sección no tiene info en los inputs actuales, marcala como "Sin información relevada todavía".
+
 REGLAS:
 1. Devolvé SOLO un JSON válido, sin markdown, sin texto antes o después, sin explicaciones.
-2. Si una sección no tiene información, ponela como "Sin información relevada todavía" — no inventes datos.
-3. Para cada sección, sintetizá la info de TODOS los inputs disponibles Y el contexto del proyecto.
+2. Si una sección no tiene información en los inputs nuevos, ponela como "Sin información relevada todavía" — no inventes datos ni copies de otros informes.
+3. Para cada sección, sintetizá SÓLO lo que aparece en los inputs nuevos.
 4. Si la info nueva contradice o complementa el contexto del proyecto, mencionalo.
 5. Si detectás info que sugiere actualizar campos del proyecto (capacidad, dirección, modalidad de pago, etc), agregalo en "projectSuggestions" con el field exacto del modelo Project (clientAddress, capacityKwp, etc).
-6. Si hay reporte anterior, agregá un changelog corto destacando qué cambió, qué se confirmó y qué se agregó nuevo.
 
 ESTRUCTURA DEL JSON:
 {
@@ -229,7 +230,6 @@ ESTRUCTURA DEL JSON:
     "proximosPasos": "markdown"
   },
   "summary": "resumen ejecutivo de 2-3 oraciones",
-  "changesFromPrevious": "markdown con cambios. null si no hay reporte anterior.",
   "projectSuggestions": [
     {
       "field": "capacityKwp",
@@ -252,10 +252,10 @@ function buildUserPrompt(args: {
   projectContext: ProjectContext;
   inputsContext: string;
   visit: { visitDate: Date; visitType: string; notes: string | null; createdBy?: { name: string } | null };
-  previousReport: VisitReport | null;
+  newInputsCount: number;
 }): string {
-  const { projectContext, inputsContext, visit, previousReport } = args;
-  let prompt = `# CONTEXTO DEL PROYECTO
+  const { projectContext, inputsContext, visit, newInputsCount } = args;
+  return `# CONTEXTO DEL PROYECTO
 
 ${JSON.stringify(projectContext, null, 2)}
 
@@ -266,22 +266,13 @@ Tipo: ${visit.visitType}
 Operario: ${visit.createdBy?.name ?? "—"}
 Notas generales del operario: ${visit.notes || "(sin notas generales)"}
 
-# INPUTS DEL OPERARIO
+# INPUTS NUEVOS (${newInputsCount})
+
+Los siguientes inputs son los AGREGADOS desde el último informe. Generá el informe basándote sólo en estos inputs nuevos + contexto del proyecto. NO incluyas información de informes anteriores — eso se consolida en otro paso aparte.
 
 ${inputsContext}
-`;
 
-  if (previousReport) {
-    prompt += `\n# REPORTE ANTERIOR (versión ${previousReport.version})
-
-${JSON.stringify(previousReport.content, null, 2)}
-
-Resumen anterior: ${previousReport.summary ?? "(sin resumen)"}
-`;
-  }
-
-  prompt += `\nGenerá ahora el informe en formato JSON según las reglas indicadas.`;
-  return prompt;
+Generá ahora el informe en formato JSON según las reglas indicadas.`;
 }
 
 // ─── Pricing aproximado ─────────────────────────────────────────────────────
@@ -339,10 +330,24 @@ export async function generateVisitReport(
     throw new AppError(404, "VISIT_NOT_FOUND", "Visita no encontrada");
   }
 
-  const projectContext = await buildProjectContext(visit.projectId);
-  const inputsContext = buildInputsContext(visit.inputs);
   const previousReport = visit.reports[0] ?? null;
   const nextVersion = (previousReport?.version ?? 0) + 1;
+
+  // Inputs NUEVOS desde el último informe: excluye los que ya estaban en
+  // `inputsUsed` del reporte anterior. La consolidación entre versiones se
+  // hace en otro paso (botón "integrar con anterior" — pendiente).
+  const previouslyUsed = new Set<string>(previousReport?.inputsUsed ?? []);
+  const newInputs = visit.inputs.filter((i) => !previouslyUsed.has(i.id));
+  if (newInputs.length === 0) {
+    throw new AppError(
+      400,
+      "NO_NEW_INPUTS",
+      "No hay inputs nuevos desde el último informe. Cargá audios, fotos o notas adicionales antes de generar una versión nueva.",
+    );
+  }
+
+  const projectContext = await buildProjectContext(visit.projectId);
+  const inputsContext = buildInputsContext(newInputs);
 
   const client = getClient();
   const t0 = Date.now();
@@ -357,7 +362,7 @@ export async function generateVisitReport(
           projectContext,
           inputsContext,
           visit,
-          previousReport,
+          newInputsCount: newInputs.length,
         }),
       },
     ],
@@ -397,9 +402,10 @@ export async function generateVisitReport(
       version: nextVersion,
       content: validated.data.sections as unknown as object,
       summary: validated.data.summary ?? null,
-      changesFromPrevious: validated.data.changesFromPrevious ?? null,
+      changesFromPrevious: null,
       projectSuggestions: (validated.data.projectSuggestions ?? []) as unknown as object,
-      inputsUsed: visit.inputs.map((i) => i.id),
+      // Sólo los IDs de los inputs NUEVOS — los anteriores están en versiones previas.
+      inputsUsed: newInputs.map((i) => i.id),
       modelUsed: DEFAULT_MODEL,
       tokensInput,
       tokensOutput,
