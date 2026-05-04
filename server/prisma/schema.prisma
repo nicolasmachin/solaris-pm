@@ -366,6 +366,9 @@ model User {
   clientProjects                 Project[]                @relation("ProjectClient")
   projectClients                 ProjectClient[]          @relation("ProjectClientUser")
   projectClientsCreated          ProjectClient[]          @relation("ProjectClientCreatedBy")
+  technicalVisitsCreated         TechnicalVisit[]         @relation("TechnicalVisitCreator")
+  visitInputsCreated             VisitInput[]             @relation("VisitInputCreator")
+  visitReportsGenerated          VisitReport[]            @relation("VisitReportGenerator")
   passwordTemporary              Boolean                  @default(false)
   deletedAt                      DateTime?                @db.Timestamptz(6)
   createdAt                      DateTime                 @default(now()) @db.Timestamptz(6)
@@ -429,6 +432,7 @@ model Project {
   clients              ProjectClient[]
   unifilarVersions     UnifilarVersion[]
   preIngenieriaVersions PreIngenieriaVersion[]
+  technicalVisits      TechnicalVisit[]
   deletedAt            DateTime?             @db.Timestamptz(6)
   createdAt            DateTime              @default(now()) @db.Timestamptz(6)
   updatedAt            DateTime              @updatedAt @db.Timestamptz(6)
@@ -1758,4 +1762,132 @@ model PreIngenieriaFoto {
   @@index([versionId])
   @@index([fileAttachmentId])
   @@map("preingenieria_fotos")
+}
+
+// ─── Visita Técnica con IA ────────────────────────────────────────────────
+// Operario carga audios/fotos/notas durante la visita y la IA genera un
+// informe estructurado en 7 secciones. Cada vez que se agregan inputs nuevos,
+// se genera una versión nueva del reporte que complementa la anterior.
+
+enum VisitType {
+  INICIAL
+  REVISION
+  COMPLEMENTARIA
+}
+
+enum VisitStatus {
+  EN_CURSO
+  FINALIZADA
+  ARCHIVADA
+}
+
+enum VisitInputType {
+  AUDIO
+  PHOTO
+  NOTE
+}
+
+enum TranscriptionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model TechnicalVisit {
+  id          String  @id @default(cuid())
+  projectId   String
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User    @relation("TechnicalVisitCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  visitDate DateTime    @db.Timestamptz(6)
+  visitType VisitType   @default(INICIAL)
+  notes     String?
+  status    VisitStatus @default(EN_CURSO)
+
+  inputs  VisitInput[]
+  reports VisitReport[]
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(6)
+  deletedAt DateTime? @db.Timestamptz(6)
+
+  @@index([projectId])
+  @@index([createdById])
+  @@index([deletedAt])
+  @@map("technical_visits")
+}
+
+model VisitInput {
+  id      String         @id @default(cuid())
+  visitId String
+  visit   TechnicalVisit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+
+  type VisitInputType
+
+  // Para AUDIO y PHOTO: archivo en storage.
+  fileUrl      String?
+  fileMimeType String?
+  fileSize     Int?
+
+  // Sólo AUDIO.
+  transcription       String?              @db.Text
+  transcriptionStatus TranscriptionStatus?
+
+  // Sólo NOTE.
+  noteText String? @db.Text
+
+  // Etiqueta opcional para cualquier tipo (ej: "tablero general", "recorrida techo").
+  description String?
+
+  createdById String
+  createdBy   User   @relation("VisitInputCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  deletedAt DateTime? @db.Timestamptz(6)
+
+  @@index([visitId, createdAt])
+  @@index([deletedAt])
+  @@map("visit_inputs")
+}
+
+model VisitReport {
+  id      String         @id @default(cuid())
+  visitId String
+  visit   TechnicalVisit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+
+  version Int
+
+  // Contenido estructurado: 7 secciones predefinidas como markdown.
+  // { datosGenerales, acometida, techo, espacioInversor, canalizaciones,
+  //   observaciones, proximosPasos }
+  content Json
+
+  summary             String? @db.Text
+  changesFromPrevious String? @db.Text
+
+  // [{ field, currentValue, suggestedValue, reason, confidence }]
+  projectSuggestions Json?
+
+  // IDs de los VisitInput que se usaron para generar este reporte.
+  inputsUsed String[]
+
+  modelUsed    String?
+  tokensInput  Int?
+  tokensOutput Int?
+  costUsd      Decimal? @db.Decimal(10, 6)
+
+  generatedAt   DateTime @default(now()) @db.Timestamptz(6)
+  generatedById String
+  generatedBy   User     @relation("VisitReportGenerator", fields: [generatedById], references: [id], onDelete: Restrict)
+
+  // Path al PDF persistido (relativo a STORAGE_PATH). Null si la versión
+  // todavía no se exportó a PDF.
+  pdfPath String?
+
+  @@unique([visitId, version])
+  @@index([visitId])
+  @@map("visit_reports")
 }
