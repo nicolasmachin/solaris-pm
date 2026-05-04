@@ -40,6 +40,7 @@ import {
   symLoadPanel,
   symMeterBidir,
   symMeterSimple,
+  symMiiMeter,
   symPanel,
   symResidual,
   symSpd,
@@ -158,9 +159,14 @@ export function generateUnifilarSvg(p: UnifilarInputs): string {
 
   Y.invCenter = Y.acTabBot + 56;
 
-  Y.cableInvDc = Y.invCenter + 38;
+  // Medidor MII (rectángulo separado debajo del inversor) — formato canónico
+  // del plano de Voltia: el medidor del Ministerio de Industria tiene su
+  // propio rectángulo aunque venga integrado al inversor.
+  Y.miiCenter = Y.invCenter + 48;
 
-  Y.dcTabTop = Y.invCenter + 56;
+  Y.cableInvDc = Y.miiCenter + 28;
+
+  Y.dcTabTop = Y.miiCenter + 38;
   const H_DC = 90;
   Y.dcProtCenter = Y.dcTabTop + 30;
   Y.dcDeriv = Y.dcTabTop + 60;
@@ -276,13 +282,21 @@ export function generateUnifilarSvg(p: UnifilarInputs): string {
 
   const peAcTop = Y.acDeriv + 26;
 
-  // B3: Inversor
+  // B3: Inversor + medidor MII separado
   parts.push(
     symInverter(CX_MAIN, Y.invCenter, esTri),
     label(CX_MAIN + 40, Y.invCenter - 8, p.modeloInversor, { size: 8, weight: "bold" }),
     label(CX_MAIN + 40, Y.invCenter + 2, `${p.potenciaInversorKw} kW`, { size: 8 }),
-    label(CX_MAIN + 40, Y.invCenter + 12, "Medidor MII (integrado)", { size: 7 }),
-    vline(CX_MAIN, Y.invCenter + 28, Y.dcTabTop),
+    label(CX_MAIN + 40, Y.invCenter + 12, "Inversor", { size: 7 }),
+    // Línea inversor → medidor MII.
+    vline(CX_MAIN, Y.invCenter + 28, Y.miiCenter - 9),
+    // Medidor MII (rectángulo separado).
+    symMiiMeter(CX_MAIN, Y.miiCenter),
+    label(CX_MAIN + 30, Y.miiCenter - 3, "Medidor para", { size: 7 }),
+    label(CX_MAIN + 30, Y.miiCenter + 4, "Ministerio de Industria", { size: 7 }),
+    label(CX_MAIN + 30, Y.miiCenter + 11, "(Incluido en inversor)", { size: 7 }),
+    // Línea medidor MII → tablero DC.
+    vline(CX_MAIN, Y.miiCenter + 9, Y.dcTabTop),
     cableLabelLeft(CX_MAIN, Y.cableInvDc, `2x${secDc}+${secDc}PE PVC 1m`),
   );
 

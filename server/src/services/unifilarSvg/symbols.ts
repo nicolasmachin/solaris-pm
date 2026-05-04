@@ -189,6 +189,15 @@ export function symBusbar(x: number, y: number): string {
   return `<circle cx="${x}" cy="${y}" r="3.5" fill="${COLOR.wire}"/>`;
 }
 
+/** Medidor MII: rectángulo simple separado del inversor por una línea corta.
+ * En el plano canónico va debajo del inversor con la etiqueta
+ * "Medidor para Ministerio de Industria (Incluido en inversor)". */
+export function symMiiMeter(x: number, y: number): string {
+  const w = 50;
+  const h = 18;
+  return `<rect x="${x - w / 2}" y="${y - h / 2}" width="${w}" height="${h}" fill="white" stroke="${COLOR.wire}" stroke-width="1.4"/>`;
+}
+
 export function symLoadPanel(x: number, y: number): string {
   const s = 12;
   let out = `<rect x="${x - s}" y="${y - s}" width="${2 * s}" height="${2 * s}" fill="white" stroke="${COLOR.wire}" stroke-width="1.2"/>`;
