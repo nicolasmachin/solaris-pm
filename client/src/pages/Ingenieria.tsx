@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, HardHat, Search } from "lucide-react";
+import { ArrowRight, HardHat, Package, Search } from "lucide-react";
 import {
   getIngenieriaDashboard,
   type IngenieriaDashboardProject,
@@ -84,6 +84,30 @@ export function Ingenieria() {
           loading={isLoading}
         />
       </div>
+
+      {/* Herramientas globales del módulo */}
+      <section>
+        <p className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] mb-2">
+          Herramientas globales
+        </p>
+        <button
+          onClick={() => navigate("/ingenieria/materiales-consolidados")}
+          className="w-full flex items-center gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-3 text-left hover:border-[var(--color-accent)]/40 hover:bg-[var(--color-bg-card-hover)] transition-colors"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-[var(--color-accent)]/15">
+            <Package className="w-5 h-5 text-[var(--color-accent)]" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-[var(--color-text-primary)]">
+              Consolidador de materiales
+            </p>
+            <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+              Unificá listas de materiales de varios proyectos para hacer las compras.
+            </p>
+          </div>
+          <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
+        </button>
+      </section>
 
       {/* Filtros */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
