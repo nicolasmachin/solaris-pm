@@ -23,73 +23,43 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "5.0",
-  date: "3 de mayo de 2026",
+  version: "5.1",
+  date: "4 de mayo de 2026",
   sections: [
     {
-      title: "Módulo Ingeniería — workspace técnico por proyecto",
+      title: "Visita técnica con IA — nueva herramienta",
       items: [
-        "Nuevo módulo en la barra superior (sólo roles con permiso INGENIERIA).",
-        "Dashboard /ingenieria con estadísticas y listado de proyectos del módulo.",
-        "Workspace /ingenieria/proyecto/:id con sidebar lateral + herramientas en accordion (2 columnas, una abierta a la vez).",
-        "Sección \"Documentos técnicos generados\" tanto en el workspace como compacta en el StageDrawer del proyecto.",
+        "Operario carga audios, fotos y notas desde el panel \"Visita técnica\" en la etapa Ingeniería del proyecto.",
+        "La IA arma el informe en 7 secciones (datos del sitio, acometida, techo, espacio inversor, canalizaciones, observaciones, próximos pasos).",
+        "Una visita = un operario por proyecto. Si vuelven en >7 días, se crea una nueva visita. Cada operario tiene su propia visita; no se mezclan datos entre operarios.",
+        "Audios se graban en el browser y se transcriben automáticamente con Whisper (Chrome desktop, Android, iOS Safari).",
+        "Auto-regeneración del informe con cada input nuevo (sin tocar botón Generar).",
+        "Vista previa del PDF + descarga.",
       ],
     },
     {
-      title: "Generador de unifilar — inline en el workspace",
+      title: "Atajo en el dashboard del operario",
       items: [
-        "Lista de las 3 últimas versiones con Ver / Duplicar / Descargar SVG/PDF / Eliminar.",
-        "Botón \"Historial completo\" si hay más de 3 versiones (modal con búsqueda + filtro por tipo de red).",
-        "Modal de nueva versión más ancho (1400px) con form a la izquierda y preview SVG en vivo a la derecha.",
-        "El PDF vigente en Documentos se reemplaza automáticamente al crear una versión nueva.",
+        "Banner grande arriba de todo en /dashboard cuando el rol es OPERACIONES.",
+        "Click → /visita-rapida con selector de proyecto y los 3 botones Audio/Foto/Nota directos. Cero fricción para registrar la visita desde el celu.",
       ],
     },
     {
-      title: "Lista de materiales y calculadora de triángulos — al módulo Ingeniería",
+      title: "Módulo Ingeniería — accordion read-only de Visitas técnicas",
       items: [
-        "Ambas herramientas dejaron el StageDrawer del proyecto. Se acceden desde el workspace de Ingeniería.",
-        "El PDF de lista de materiales se versiona independiente para \"con precios\" y \"sin precios\".",
-        "El botón principal de la calculadora pasó a llamarse \"Generar PDF y guardar\".",
+        "Nueva entrada en /ingenieria/proyecto/:id donde el proyectista ve la lista de visitas que el operario cargó.",
+        "Click \"Abrir\" lleva al detalle de la visita.",
       ],
     },
     {
-      title: "Pre-ingeniería (\"Resumen Técnico\") — nueva herramienta",
+      title: "Cleanup al borrar visita o input",
       items: [
-        "Genera el PDF que antes se hacía a mano en una herramienta externa. Página 1 con formulario + páginas siguientes con fotos.",
-        "Datos del cliente pre-rellenados desde el proyecto. Botón para pre-rellenar los datos eléctricos desde una versión de unifilar existente.",
-        "Subida de fotos múltiples con thumbnails, etiquetas, reordenamiento.",
-        "Vista previa del PDF embebida en la app.",
-        "Versionado 1:N inmutable: cada versión queda guardada con snapshot completo.",
-      ],
-    },
-    {
-      title: "Extracción de minuta con IA",
-      items: [
-        "Subís el PDF de la minuta del relevamiento (la que genera el bot externo) y la IA pre-rellena los campos del formulario de Pre-ingeniería.",
-        "Cada campo extraído se marca con ✨ al lado del label; al editarlo, el ícono desaparece.",
-        "Validado contra 3 minutas reales (Diego Trías, Percovich, Edgar Valdés) con 100% de acierto en campos críticos.",
-        "Claude Haiku 4.5, ~5s de latencia, ~USD 0.005 por minuta.",
-      ],
-    },
-    {
-      title: "Consolidador de materiales (herramienta global)",
-      items: [
-        "Vive en el dashboard de Ingeniería, no en un proyecto. Pensado para el comprador.",
-        "Seleccionás varios proyectos y obtenés tabla unificada agrupada por categoría: filas = ítems, columnas = proyectos + TOTAL.",
-        "Descarga PDF (A4 horizontal si 4+ proyectos, vertical si 2-3) y Excel (XLSX) listo para usar en compras.",
-        "Sólo se ofrecen como opciones los proyectos con lista de materiales cargada. Las versiones quedan en un historial.",
-      ],
-    },
-    {
-      title: "Documentos del proyecto — badge y filtros",
-      items: [
-        "Badge azul \"Ingeniería · Unifilar v3\", \"Ingeniería · Materiales v2 (con precios)\", \"Ingeniería · Triángulos v1\", \"Ingeniería · Pre-ingeniería v4\" según el origen.",
-        "Filtro por origen agregado al sidebar de Documentos.",
-        "Documentos generados desde herramientas no se editan ni eliminan desde Documentos del proyecto — para reemplazarlos hay que crear una versión nueva (soft-deletea la anterior automáticamente).",
+        "Al borrar una visita o input individual, el archivo del proyecto se soft-deletea y el archivo físico también. Antes quedaban huérfanos en Documentos del proyecto.",
       ],
     },
   ],
 };
+
 
 /** Versiones anteriores para mostrar en el sidebar de novedades. */
 export type OldRelease = {
@@ -99,6 +69,14 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "5.0",
+    shortDate: "3 may",
+    highlights: [
+      "Módulo Ingeniería completo: workspace por proyecto + sidebar.",
+      "Generador de unifilar inline + Pre-ingeniería + Consolidador de materiales + extracción de minuta con IA.",
+    ],
+  },
   {
     version: "4.9",
     shortDate: "1 may",

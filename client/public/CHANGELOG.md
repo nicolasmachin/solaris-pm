@@ -1,5 +1,29 @@
 # Novedades
 
+## v5.1
+
+### 4 de mayo de 2026
+
+#### Nueva herramienta: Visita técnica con IA
+
+Nueva herramienta dentro de la etapa Ingeniería del proyecto. El operario, durante la visita al sitio, carga **audios, fotos y notas** desde el panel "Visita técnica" del StageDrawer del proyecto. La IA arma automáticamente un informe estructurado en 7 secciones (datos del sitio, acometida, techo, espacio para inversor, canalizaciones, observaciones, próximos pasos).
+
+- **Una visita = un operario en un proyecto.** Cada operario tiene su propia visita activa por proyecto. Los inputs se autoacumulan ahí (si pasaron más de 7 días desde el último input, se crea una visita nueva). Los demás operarios ven la visita en lectura, no se mezclan los datos.
+- **Audios grabados en el browser** (`MediaRecorder`) — funciona en Chrome desktop, Android, iOS Safari (mp4/m4a). Se transcriben automáticamente con OpenAI Whisper en español.
+- **Auto-regeneración del informe**: cada vez que el operario suma un input, el informe se actualiza solo. No hay que clickear "Generar". Si hay audios todavía transcribiendo, se espera a que terminen.
+- **Vista previa del PDF** del informe + descarga.
+- **Botón en el Dashboard del operario** ("Cargar entrada de visita técnica") como atajo grande arriba de todo. Lleva a `/visita-rapida` que pide elegir el proyecto y muestra los 3 botones (Audio / Foto / Nota) directos.
+- **Versionado**: cada regeneración crea una versión nueva del informe. Selector para ver versiones anteriores.
+- **Permisos finos**: el operario edita/borra sólo SUS inputs. Los demás (incluido el proyectista) ven en lectura. ADMIN puede todo.
+
+#### Módulo Ingeniería — accordion "Visita técnica (operario)"
+
+Nueva entrada read-only en el workspace `/ingenieria/proyecto/:id`. El proyectista ve la lista de visitas que el operario cargó desde el StageDrawer del proyecto, con nombre, fecha, cantidad de inputs y versión del informe. Click "Abrir" lleva al detalle de la visita.
+
+#### Borrar visita o input limpia los archivos del proyecto
+
+Al borrar una visita técnica completa o un input individual (audio/foto), el `FileAttachment` correspondiente del proyecto se soft-deletea y el archivo físico se borra del storage. Antes quedaban huérfanos en la sección Documentos del proyecto.
+
 ## v5.0
 
 ### 3 de mayo de 2026
