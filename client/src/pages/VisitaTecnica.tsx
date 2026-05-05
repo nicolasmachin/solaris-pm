@@ -30,6 +30,7 @@ import { ReportPreviewModal } from "../components/ingenieria/visitas/ReportPrevi
 import { ReportViewer } from "../components/ingenieria/visitas/ReportViewer";
 import { deleteVisitInput } from "../api/visitas.api";
 import { useAuthStore } from "../store/auth.store";
+import { VisitFloatingButton } from "../components/visitas/VisitFloatingButton";
 
 const MONTHS_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 function fmtDate(iso: string): string {
@@ -402,6 +403,7 @@ export function VisitaTecnica() {
           onClose={() => setPreviewReportId(null)}
         />
       )}
+      <VisitFloatingButton projectId={projectId} />
     </div>
   );
 }

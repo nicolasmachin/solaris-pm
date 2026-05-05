@@ -16,6 +16,7 @@ import { AssigneeLabel } from "../ui/AssigneeLabel";
 import { CommentThread } from "../comments/CommentThread";
 import { EngineeringModuleSection } from "./EngineeringModuleSection";
 import { VisitasToolPanel } from "../ingenieria/visitas/VisitasToolPanel";
+import { VisitFloatingButton } from "../visitas/VisitFloatingButton";
 
 interface StageDrawerProps {
   stage: Stage;
@@ -1240,6 +1241,7 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
                 </p>
                 <VisitasToolPanel projectId={projectId} />
               </section>
+              <VisitFloatingButton projectId={projectId} />
             </div>
           )}
 

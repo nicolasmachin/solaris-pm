@@ -1,24 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { useMatch } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { Mic, X } from "lucide-react";
 import { useAuthStore } from "../../store/auth.store";
 import { usePermission } from "../../hooks/usePermission";
 import { uploadProjectVisitAudio } from "../../api/visitas.api";
-
-/**
- * Botón flotante de audio (estilo WhatsApp) para grabar una entrada de visita
- * técnica desde cualquier pantalla de proyecto. Tap arranca la grabación,
- * tap detiene. Después abre un dialog con preview + descripción + guardar.
- *
- * Visible sólo si:
- *  - El user tiene OPERACIONES.EDIT (operario o admin)
- *  - La URL actual contiene un projectId reconocible
- *
- * Posición: bottom-6 right-24 (al lado del FAB violeta de IA, que va en
- * bottom-6 right-6).
- */
 
 function pickSupportedMimeType(): string {
   const candidates = [
@@ -46,14 +32,9 @@ function formatDuration(s: number): string {
   return `${m}:${String(sec).padStart(2, "0")}`;
 }
 
-export function VisitFloatingButton() {
+export function VisitFloatingButton({ projectId }: { projectId: string }) {
   const { user } = useAuthStore();
   const canCreateVisitas = usePermission("OPERACIONES", "EDIT");
-
-  // Detectar projectId de la URL actual.
-  const projectMatch = useMatch("/projects/:projectId");
-  const visitMatch = useMatch("/projects/:projectId/visita/:visitId");
-  const projectId = visitMatch?.params.projectId ?? projectMatch?.params.projectId ?? null;
 
   const qc = useQueryClient();
 
@@ -159,11 +140,8 @@ export function VisitFloatingButton() {
     else startRecording();
   }
 
-  // No mostrar el botón si no hay context o no hay permiso.
-  if (!user || !canCreateVisitas || !projectId) return null;
+  if (!user || !canCreateVisitas) return null;
 
-  // Posición: si el user es ADMIN, hay otro FAB en bottom-6 right-6 (IA).
-  // Me corro a la izquierda. Si no, ocupo right-6.
   const positionClass = user.role === "ADMIN" ? "right-24" : "right-6";
 
   return (

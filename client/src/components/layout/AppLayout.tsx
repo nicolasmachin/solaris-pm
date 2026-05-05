@@ -6,7 +6,6 @@ import { VersionFooter } from "./VersionFooter";
 import { MobileNavDrawer } from "./MobileNavDrawer";
 import { FinanceInvariantBanner } from "../finance/FinanceInvariantBanner";
 import { AIFloatingButton } from "../ai/AIFloatingButton";
-import { VisitFloatingButton } from "../visitas/VisitFloatingButton";
 import { EngineeringProjectsSidebar } from "../ingenieria/EngineeringProjectsSidebar";
 
 export function AppLayout() {
@@ -50,7 +49,6 @@ export function AppLayout() {
       </main>
       <VersionFooter />
       <AIFloatingButton />
-      <VisitFloatingButton />
     </div>
   );
 }
