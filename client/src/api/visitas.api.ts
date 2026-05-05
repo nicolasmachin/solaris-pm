@@ -108,6 +108,54 @@ export async function uploadVisitNote(
   return data;
 }
 
+// ─── Endpoints "por proyecto" (resuelven la visita activa del usuario) ─────
+
+export async function uploadProjectVisitNote(
+  projectId: string,
+  body: { noteText: string; description?: string | null },
+): Promise<VisitInputDto & { visitId: string }> {
+  const { data } = await apiClient.post<VisitInputDto & { visitId: string }>(
+    `/api/projects/${projectId}/visit-inputs/note`,
+    body,
+  );
+  return data;
+}
+
+export async function uploadProjectVisitAudio(
+  projectId: string,
+  blob: Blob,
+  mimeType: string,
+  description?: string | null,
+): Promise<VisitInputDto & { visitId: string }> {
+  const ext = extensionFromMime(mimeType || blob.type || "audio/webm");
+  const filename = `recording_${Date.now()}.${ext}`;
+  const fd = new FormData();
+  fd.append("file", blob, filename);
+  if (description) fd.append("description", description);
+  const { data } = await apiClient.post<VisitInputDto & { visitId: string }>(
+    `/api/projects/${projectId}/visit-inputs/audio`,
+    fd,
+    { headers: { "Content-Type": "multipart/form-data" } },
+  );
+  return data;
+}
+
+export async function uploadProjectVisitPhoto(
+  projectId: string,
+  file: File,
+  description?: string | null,
+): Promise<VisitInputDto & { visitId: string }> {
+  const fd = new FormData();
+  fd.append("file", file);
+  if (description) fd.append("description", description);
+  const { data } = await apiClient.post<VisitInputDto & { visitId: string }>(
+    `/api/projects/${projectId}/visit-inputs/photo`,
+    fd,
+    { headers: { "Content-Type": "multipart/form-data" } },
+  );
+  return data;
+}
+
 function extensionFromMime(mime: string): string {
   const base = mime.split(";")[0].trim().toLowerCase();
   if (base.includes("webm")) return "webm";

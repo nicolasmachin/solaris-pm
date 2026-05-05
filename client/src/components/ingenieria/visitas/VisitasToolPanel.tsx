@@ -1,15 +1,28 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { ArrowRight, Calendar, FileText, Plus, Trash2, User } from "lucide-react";
 import {
-  createVisita,
+  ArrowRight,
+  Calendar,
+  Camera,
+  FileText,
+  Mic,
+  StickyNote,
+  Trash2,
+  User,
+} from "lucide-react";
+import {
   deleteVisita,
   getVisitas,
+  uploadProjectVisitAudio,
+  uploadProjectVisitNote,
+  uploadProjectVisitPhoto,
   type VisitListItem,
   type VisitType,
 } from "../../../api/visitas.api";
+import { useAuthStore } from "../../../store/auth.store";
+import { AudioRecorder } from "./AudioRecorder";
 
 const MONTHS_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 function fmtDate(iso: string): string {
@@ -27,31 +40,85 @@ function getApiErr(err: unknown): string | undefined {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
 }
 
+/**
+ * Panel de Visita técnica en el StageDrawer del proyecto.
+ *
+ * Modelo: una visita = un operario en un proyecto. Cualquier input que el
+ * usuario logueado agrega va a SU visita activa (creada automáticamente si no
+ * existe o tiene >7 días). Los demás operarios tienen sus propias visitas.
+ *
+ * UI:
+ *  - 3 botones directos (Audio / Foto / Nota) — el backend resuelve a qué
+ *    visita van.
+ *  - Lista de TODAS las visitas del proyecto (de cualquier operario), con
+ *    nombre del dueño y status.
+ */
 export function VisitasToolPanel({ projectId }: { projectId: string }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const [creating, setCreating] = useState(false);
-  const [newType, setNewType] = useState<VisitType>("INICIAL");
-  const [newDate, setNewDate] = useState<string>(new Date().toISOString().slice(0, 10));
-  const [newNotes, setNewNotes] = useState("");
+  const currentUser = useAuthStore((s) => s.user);
+  const isAdmin = currentUser?.role === "ADMIN";
+
+  const [mode, setMode] = useState<"none" | "audio" | "photo" | "note">("none");
+  const [noteText, setNoteText] = useState("");
+  const [noteDesc, setNoteDesc] = useState("");
+  const [photoDesc, setPhotoDesc] = useState("");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const visitsQ = useQuery({
     queryKey: ["technical-visits", projectId],
     queryFn: () => getVisitas(projectId),
+    refetchInterval: (q) => {
+      const data = q.state.data ?? [];
+      // Polling activo si hay visitas con status EN_CURSO (auto-regenerate
+      // del informe corre en background tras input).
+      return data.some((v) => v.status === "EN_CURSO") ? 5000 : false;
+    },
   });
 
-  const createMut = useMutation({
+  const noteMut = useMutation({
     mutationFn: () =>
-      createVisita(projectId, {
-        visitDate: new Date(newDate).toISOString(),
-        visitType: newType,
-        notes: newNotes.trim() || null,
+      uploadProjectVisitNote(projectId, {
+        noteText: noteText.trim(),
+        description: noteDesc.trim() || null,
       }),
-    onSuccess: (created) => {
+    onSuccess: () => {
+      toast.success("Nota guardada · regenerando informe…");
+      setNoteText("");
+      setNoteDesc("");
+      setMode("none");
       qc.invalidateQueries({ queryKey: ["technical-visits", projectId] });
-      navigate(`/projects/${projectId}/visita/${created.id}`);
     },
-    onError: (err) => toast.error(getApiErr(err) ?? "No se pudo crear la visita"),
+    onError: (err) => toast.error(getApiErr(err) ?? "No se pudo guardar la nota"),
+  });
+
+  const photoMut = useMutation({
+    mutationFn: (file: File) => uploadProjectVisitPhoto(projectId, file, photoDesc.trim() || null),
+    onSuccess: () => {
+      toast.success("Foto guardada · regenerando informe…");
+      setPhotoDesc("");
+      setMode("none");
+      qc.invalidateQueries({ queryKey: ["technical-visits", projectId] });
+    },
+    onError: (err) => toast.error(getApiErr(err) ?? "No se pudo subir la foto"),
+  });
+
+  const audioMut = useMutation({
+    mutationFn: ({
+      blob,
+      mimeType,
+      description,
+    }: {
+      blob: Blob;
+      mimeType: string;
+      description: string;
+    }) => uploadProjectVisitAudio(projectId, blob, mimeType, description || null),
+    onSuccess: () => {
+      toast.success("Audio guardado · transcribiendo…");
+      setMode("none");
+      qc.invalidateQueries({ queryKey: ["technical-visits", projectId] });
+    },
+    onError: (err) => toast.error(getApiErr(err) ?? "No se pudo subir el audio"),
   });
 
   const deleteMut = useMutation({
@@ -70,131 +137,204 @@ export function VisitasToolPanel({ projectId }: { projectId: string }) {
   }
 
   const visits = visitsQ.data ?? [];
+  const myActiveVisit = visits.find(
+    (v) => v.createdBy.id === currentUser?.id && v.status === "EN_CURSO",
+  );
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs text-[var(--color-text-muted)]">
-          Cargá audios, fotos y notas durante la visita técnica. La IA genera un informe
-          estructurado en 7 secciones que se actualiza con cada input nuevo.
-        </p>
-        <button
-          onClick={() => setCreating((v) => !v)}
-          className="inline-flex items-center gap-1 rounded bg-[var(--color-accent)] px-2.5 py-1 text-[11px] font-semibold text-black hover:opacity-90 shrink-0"
-        >
-          <Plus className="w-3 h-3" /> Nueva visita
-        </button>
-      </div>
+      <p className="text-xs text-[var(--color-text-muted)]">
+        Cargá audios, fotos o notas durante la visita. Cada operario tiene su propia visita en el
+        proyecto (la IA arma un informe por operario, no se mezclan).
+      </p>
 
-      {creating && (
-        <div className="rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 p-3 space-y-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <div>
-              <label className="block text-[10px] font-mono text-[var(--color-text-muted)] mb-0.5 uppercase tracking-wider">
-                Tipo
-              </label>
-              <select
-                className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-xs"
-                value={newType}
-                onChange={(e) => setNewType(e.target.value as VisitType)}
-              >
-                <option value="INICIAL">Inicial</option>
-                <option value="REVISION">Revisión</option>
-                <option value="COMPLEMENTARIA">Complementaria</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-[10px] font-mono text-[var(--color-text-muted)] mb-0.5 uppercase tracking-wider">
-                Fecha
-              </label>
-              <input
-                type="date"
-                className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-xs"
-                value={newDate}
-                onChange={(e) => setNewDate(e.target.value)}
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-[10px] font-mono text-[var(--color-text-muted)] mb-0.5 uppercase tracking-wider">
-              Notas generales (opcional)
-            </label>
-            <textarea
-              className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-xs min-h-[50px]"
-              placeholder="Ej: relevamiento general, cliente disponible 14-16h"
-              value={newNotes}
-              onChange={(e) => setNewNotes(e.target.value)}
-              maxLength={2000}
-            />
-          </div>
+      {/* Botones directos */}
+      {mode === "none" && (
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            onClick={() => setMode("audio")}
+            className="inline-flex flex-col items-center gap-1 rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] p-3 text-[11px] hover:bg-[var(--color-bg-card-hover)]"
+          >
+            <Mic className="w-5 h-5 text-red-400" />
+            Audio
+          </button>
+          <button
+            onClick={() => {
+              setMode("photo");
+              setTimeout(() => fileInputRef.current?.click(), 50);
+            }}
+            className="inline-flex flex-col items-center gap-1 rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] p-3 text-[11px] hover:bg-[var(--color-bg-card-hover)]"
+          >
+            <Camera className="w-5 h-5 text-blue-400" />
+            Foto
+          </button>
+          <button
+            onClick={() => setMode("note")}
+            className="inline-flex flex-col items-center gap-1 rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] p-3 text-[11px] hover:bg-[var(--color-bg-card-hover)]"
+          >
+            <StickyNote className="w-5 h-5 text-yellow-400" />
+            Nota
+          </button>
+        </div>
+      )}
+
+      {mode === "audio" && (
+        <AudioRecorder
+          onCancel={() => setMode("none")}
+          onSave={async (blob, mimeType, description) => {
+            await audioMut.mutateAsync({ blob, mimeType, description });
+          }}
+        />
+      )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) photoMut.mutate(f);
+          if (fileInputRef.current) fileInputRef.current.value = "";
+        }}
+      />
+      {mode === "photo" && (
+        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] p-3 space-y-2">
+          <input
+            className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-xs"
+            placeholder="Descripción de la foto (opcional)"
+            value={photoDesc}
+            onChange={(e) => setPhotoDesc(e.target.value)}
+            maxLength={200}
+          />
           <div className="flex justify-end gap-2">
             <button
-              onClick={() => setCreating(false)}
+              onClick={() => setMode("none")}
               className="rounded border border-[var(--color-border)] px-2.5 py-1 text-[11px] hover:bg-[var(--color-bg-card-hover)]"
             >
               Cancelar
             </button>
             <button
-              onClick={() => createMut.mutate()}
-              disabled={createMut.isPending}
-              className="inline-flex items-center gap-1 rounded bg-[var(--color-accent)] px-2.5 py-1 text-[11px] font-semibold text-black hover:opacity-90 disabled:opacity-50"
+              onClick={() => fileInputRef.current?.click()}
+              className="rounded bg-[var(--color-accent)] px-2.5 py-1 text-[11px] font-semibold text-black hover:opacity-90"
             >
-              {createMut.isPending ? "Creando…" : "Crear y abrir"}
+              Elegir archivo
             </button>
           </div>
         </div>
       )}
 
-      {visitsQ.isLoading ? (
-        <p className="text-xs text-[var(--color-text-muted)]">Cargando…</p>
-      ) : visits.length === 0 && !creating ? (
-        <p className="rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-bg-app)] p-6 text-center text-xs text-[var(--color-text-muted)]">
-          Sin visitas registradas todavía.
-        </p>
-      ) : (
-        <ul className="space-y-1.5">
-          {visits.map((v) => (
-            <VisitRow
-              key={v.id}
-              visit={v}
-              onOpen={() => navigate(`/projects/${projectId}/visita/${v.id}`)}
-              onDelete={() => handleDelete(v.id)}
-            />
-          ))}
-        </ul>
+      {mode === "note" && (
+        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] p-3 space-y-2">
+          <textarea
+            className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-xs min-h-[80px]"
+            placeholder="Texto de la nota…"
+            value={noteText}
+            onChange={(e) => setNoteText(e.target.value)}
+            maxLength={5000}
+          />
+          <input
+            className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-xs"
+            placeholder="Descripción corta (opcional)"
+            value={noteDesc}
+            onChange={(e) => setNoteDesc(e.target.value)}
+            maxLength={200}
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setMode("none")}
+              className="rounded border border-[var(--color-border)] px-2.5 py-1 text-[11px] hover:bg-[var(--color-bg-card-hover)]"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => noteMut.mutate()}
+              disabled={!noteText.trim() || noteMut.isPending}
+              className="rounded bg-[var(--color-accent)] px-2.5 py-1 text-[11px] font-semibold text-black hover:opacity-90 disabled:opacity-50"
+            >
+              {noteMut.isPending ? "Guardando…" : "Guardar"}
+            </button>
+          </div>
+        </div>
       )}
+
+      {/* Status de la visita activa del usuario actual */}
+      {myActiveVisit && (
+        <p className="text-[10px] text-[var(--color-text-muted)] font-mono">
+          Tu visita activa en este proyecto: {VISIT_TYPE_LABEL[myActiveVisit.visitType]} ·
+          {myActiveVisit.inputsCount} input{myActiveVisit.inputsCount === 1 ? "" : "s"} ·
+          {myActiveVisit.reportsCount > 0 ? ` informe v${myActiveVisit.reportsCount}` : " sin informe"}
+        </p>
+      )}
+
+      {/* Lista de visitas del proyecto */}
+      <div>
+        <p className="text-[10px] font-mono uppercase tracking-widest text-[var(--color-text-muted)] mb-1.5">
+          Visitas del proyecto ({visits.length})
+        </p>
+        {visitsQ.isLoading ? (
+          <p className="text-xs text-[var(--color-text-muted)]">Cargando…</p>
+        ) : visits.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-bg-app)] p-4 text-center text-xs text-[var(--color-text-muted)]">
+            Sin visitas todavía. Cargá un audio/foto/nota para crear la tuya.
+          </p>
+        ) : (
+          <ul className="space-y-1.5">
+            {visits.map((v) => (
+              <VisitRow
+                key={v.id}
+                visit={v}
+                isMine={v.createdBy.id === currentUser?.id}
+                canDelete={isAdmin}
+                onOpen={() => navigate(`/projects/${projectId}/visita/${v.id}`)}
+                onDelete={() => handleDelete(v.id)}
+              />
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
 
 function VisitRow({
   visit,
+  isMine,
+  canDelete,
   onOpen,
   onDelete,
 }: {
   visit: VisitListItem;
+  isMine: boolean;
+  canDelete: boolean;
   onOpen: () => void;
   onDelete: () => void;
 }) {
   return (
-    <li className="flex items-center gap-3 rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2">
+    <li
+      className={`flex items-center gap-3 rounded border px-3 py-2 ${
+        isMine
+          ? "border-[var(--color-accent)]/40 bg-[var(--color-accent)]/5"
+          : "border-[var(--color-border)] bg-[var(--color-bg-app)]"
+      }`}
+    >
       <Calendar className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
       <div className="min-w-0 flex-1">
-        <p className="text-xs text-[var(--color-text-primary)]">
-          <span className="font-mono">{VISIT_TYPE_LABEL[visit.visitType]}</span>
-          <span className="text-[var(--color-text-muted)]"> · {fmtDate(visit.visitDate)}</span>
+        <p className="text-xs text-[var(--color-text-primary)] flex items-center gap-1.5">
+          <User className="w-3 h-3 text-[var(--color-text-muted)]" />
+          <span className="font-medium">{visit.createdBy.name}</span>
+          {isMine && (
+            <span className="text-[9px] font-mono uppercase text-[var(--color-accent)]">(vos)</span>
+          )}
+          <span className="text-[var(--color-text-muted)]">·</span>
+          <span className="text-[var(--color-text-muted)]">{fmtDate(visit.visitDate)}</span>
         </p>
-        <p className="text-[10px] text-[var(--color-text-muted)] font-mono mt-0.5 flex items-center gap-2">
-          <User className="w-3 h-3" /> {visit.createdBy.name}
-          <span>·</span>
-          <span>
-            {visit.inputsCount} input{visit.inputsCount === 1 ? "" : "s"}
-          </span>
-          <span>·</span>
-          <FileText className="w-3 h-3" />
-          <span>
-            {visit.reportsCount} informe{visit.reportsCount === 1 ? "" : "s"}
-          </span>
+        <p className="text-[10px] text-[var(--color-text-muted)] font-mono mt-0.5">
+          {VISIT_TYPE_LABEL[visit.visitType]} · {visit.status === "EN_CURSO" ? "En curso" : "Finalizada"} ·
+          {" "}
+          {visit.inputsCount} input{visit.inputsCount === 1 ? "" : "s"} ·
+          <FileText className="inline w-3 h-3 mx-0.5" />
+          {visit.reportsCount > 0 ? `v${visit.reportsCount}` : "sin informe"}
         </p>
       </div>
       <button
@@ -203,13 +343,15 @@ function VisitRow({
       >
         Abrir <ArrowRight className="w-3 h-3" />
       </button>
-      <button
-        onClick={onDelete}
-        className="p-1 rounded hover:bg-red-500/20 text-red-400"
-        title="Eliminar"
-      >
-        <Trash2 className="w-3 h-3" />
-      </button>
+      {canDelete && (
+        <button
+          onClick={onDelete}
+          className="p-1 rounded hover:bg-red-500/20 text-red-400"
+          title="Eliminar visita (admin)"
+        >
+          <Trash2 className="w-3 h-3" />
+        </button>
+      )}
     </li>
   );
 }

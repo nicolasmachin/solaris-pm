@@ -34,6 +34,7 @@ import { AudioRecorder } from "../components/ingenieria/visitas/AudioRecorder";
 import { ReportPreviewModal } from "../components/ingenieria/visitas/ReportPreviewModal";
 import { ReportViewer } from "../components/ingenieria/visitas/ReportViewer";
 import { deleteVisitInput } from "../api/visitas.api";
+import { useAuthStore } from "../store/auth.store";
 
 const MONTHS_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 function fmtDate(iso: string): string {
@@ -65,6 +66,8 @@ async function downloadWithAuth(url: string, filename: string): Promise<void> {
 export function VisitaTecnica() {
   const { projectId, visitId } = useParams<{ projectId: string; visitId: string }>();
   const qc = useQueryClient();
+  const currentUser = useAuthStore((s) => s.user);
+  const isAdmin = currentUser?.role === "ADMIN";
   const [mode, setMode] = useState<"none" | "audio" | "photo" | "note">("none");
   const [noteText, setNoteText] = useState("");
   const [noteDesc, setNoteDesc] = useState("");
@@ -177,6 +180,10 @@ export function VisitaTecnica() {
 
   const inputs = visit?.inputs ?? [];
   const reports = visit?.reports ?? [];
+  // El usuario puede agregar/borrar inputs sólo si es el dueño de la visita
+  // (o admin). Los demás operarios ven la visita en read-only.
+  const isOwner = visit ? visit.createdBy.id === currentUser?.id : false;
+  const canEditInputs = isOwner || isAdmin;
   const selectedReport = reports.find((r) => r.id === selectedReportId) ?? reports[0] ?? null;
   const nextVersion = (reports[0]?.version ?? 0) + 1;
   const inputsCount = inputs.length;
@@ -222,6 +229,12 @@ export function VisitaTecnica() {
             Proyecto: {visit.project.clientName}
           </p>
         )}
+        {visit && !canEditInputs && (
+          <p className="text-[11px] text-[var(--color-text-muted)] font-mono mt-1 italic">
+            Estás viendo la visita de {visit.createdBy.name} en modo lectura. Para cargar tus
+            propios inputs, volvé al proyecto y usá los botones del panel de visitas.
+          </p>
+        )}
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -232,7 +245,7 @@ export function VisitaTecnica() {
               Insumos cargados ({inputsCount})
             </p>
 
-            {mode === "none" && (
+            {mode === "none" && canEditInputs && (
               <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => setMode("audio")}
@@ -339,44 +352,54 @@ export function VisitaTecnica() {
             )}
 
             <ul className="space-y-1.5">
-              {inputs.map((input) => (
-                <InputRow
-                  key={input.id}
-                  input={input}
-                  visitId={visitId}
-                  onDelete={() => deleteInputMut.mutate(input.id)}
-                />
-              ))}
+              {inputs.map((input) => {
+                // El usuario puede borrar sólo SUS inputs (createdById match) o admin.
+                const canDeleteThisInput =
+                  isAdmin || (currentUser && input.createdBy?.id === currentUser.id);
+                return (
+                  <InputRow
+                    key={input.id}
+                    input={input}
+                    visitId={visitId}
+                    onDelete={
+                      canDeleteThisInput
+                        ? () => deleteInputMut.mutate(input.id)
+                        : null
+                    }
+                  />
+                );
+              })}
             </ul>
 
-            <div className="space-y-1.5">
-              <button
-                onClick={() => generateMut.mutate()}
-                disabled={!canGenerate || generateMut.isPending}
-                className="w-full inline-flex items-center justify-center gap-1.5 rounded bg-[var(--color-accent)] px-3 py-2 text-xs font-semibold text-black hover:opacity-90 disabled:opacity-50"
-              >
-                {pendingAudiosCount > 0 ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Transcribiendo {pendingAudiosCount} audio{pendingAudiosCount === 1 ? "" : "s"}…
-                  </>
-                ) : generateMut.isPending ? (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    Generando…
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    Generar informe v{nextVersion} ({newInputsCount} input
-                    {newInputsCount === 1 ? "" : "s"} nuevo{newInputsCount === 1 ? "" : "s"})
-                  </>
-                )}
-              </button>
-              <p className="text-[10px] text-[var(--color-text-muted)]">
-                Cada versión usa sólo los inputs agregados desde el último informe. La consolidación entre versiones se hará en otro paso (próximamente).
-              </p>
-            </div>
+            {canEditInputs && (
+              <div className="space-y-1.5">
+                <button
+                  onClick={() => generateMut.mutate()}
+                  disabled={!canGenerate || generateMut.isPending}
+                  className="w-full inline-flex items-center justify-center gap-1.5 rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-50"
+                >
+                  {pendingAudiosCount > 0 ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Transcribiendo {pendingAudiosCount} audio{pendingAudiosCount === 1 ? "" : "s"}…
+                    </>
+                  ) : generateMut.isPending ? (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      Regenerando…
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      Regenerar informe (v{nextVersion})
+                    </>
+                  )}
+                </button>
+                <p className="text-[10px] text-[var(--color-text-muted)]">
+                  El informe se regenera automáticamente con cada input nuevo. Usá este botón sólo si necesitás forzar una regeneración manual.
+                </p>
+              </div>
+            )}
           </section>
         </div>
 
@@ -388,26 +411,7 @@ export function VisitaTecnica() {
                 Informe técnico
               </p>
               <div className="flex items-center gap-2">
-                {reports.length >= 1 && canConsolidate && (
-                  <button
-                    onClick={() => {
-                      if (
-                        confirm(
-                          `¿Generar un informe consolidado integrando las ${reports.length} versiones existentes? Se crea una versión nueva con la info completa.`,
-                        )
-                      ) {
-                        consolidateMut.mutate();
-                      }
-                    }}
-                    disabled={consolidateMut.isPending}
-                    className="inline-flex items-center gap-1 rounded bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/40 px-2 py-1 text-[11px] text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20 disabled:opacity-50"
-                    title="Consolida todas las versiones en un super-informe (proyectista)"
-                  >
-                    <Layers className="w-3 h-3" />
-                    {consolidateMut.isPending ? "Integrando…" : `Integrar ${reports.length} versiones`}
-                  </button>
-                )}
-                {reports.length > 0 && (
+                {reports.length > 0 && canEditInputs && (
                   <button
                     onClick={() => {
                       if (
@@ -493,7 +497,7 @@ function InputRow({
 }: {
   input: VisitInputDto;
   visitId: string;
-  onDelete: () => void;
+  onDelete: (() => void) | null;
 }) {
   return (
     <li className="rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2.5 py-2">
@@ -550,13 +554,15 @@ function InputRow({
             {input.createdBy?.name ?? "—"} · {fmtDate(input.createdAt)}
           </p>
         </div>
-        <button
-          onClick={onDelete}
-          className="p-1 rounded hover:bg-red-500/20 text-red-400 shrink-0"
-          title="Eliminar"
-        >
-          <Trash2 className="w-3 h-3" />
-        </button>
+        {onDelete && (
+          <button
+            onClick={onDelete}
+            className="p-1 rounded hover:bg-red-500/20 text-red-400 shrink-0"
+            title="Eliminar"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        )}
       </div>
     </li>
   );
