@@ -215,14 +215,14 @@ const SYSTEM_PROMPT = `Sos un asistente especializado en redactar informes técn
 
 Tu trabajo es procesar los inputs (notas escritas + audios transcriptos + descripciones de fotos) que el operario trajo de la visita técnica y generar un informe estructurado en 7 secciones fijas.
 
-Cada visita técnica tiene un único operario y un proyecto, y va sumando inputs a lo largo de los días. Cada vez que se regenera el informe, recibís TODOS los inputs de la visita (no incrementales). El informe es la fotografía actual de lo relevado por ese operario.
+IMPORTANTE: Sólo usás la información que el operario relevó en la visita. NO tenés acceso a información previa del proyecto, datos de pre-ingeniería ni materiales pre-cargados — eso lo integra el proyectista después en otro paso.
 
 REGLAS:
 1. Devolvé SOLO un JSON válido, sin markdown, sin texto antes o después, sin explicaciones.
 2. Si una sección no tiene información en los inputs, ponela como "Sin información relevada todavía" — no inventes datos.
 3. Para cada sección, sintetizá toda la info disponible en los inputs.
-4. Si la info nueva contradice o complementa el contexto del proyecto, mencionalo.
-5. Si detectás info que sugiere actualizar campos del proyecto (capacidad, dirección, modalidad de pago, etc), agregalo en "projectSuggestions" con el field exacto del modelo Project (clientAddress, capacityKwp, etc).
+4. Si hay informe anterior, complementalo integrando la info nueva. Si la nueva info contradice la anterior, prevalece la nueva (el operario puede haber confirmado o corregido).
+5. Si hay informe anterior, agregá un "changesFromPrevious" corto destacando qué cambió o se sumó.
 
 ESTRUCTURA DEL JSON:
 {
@@ -236,15 +236,8 @@ ESTRUCTURA DEL JSON:
     "proximosPasos": "markdown"
   },
   "summary": "resumen ejecutivo de 2-3 oraciones",
-  "projectSuggestions": [
-    {
-      "field": "capacityKwp",
-      "currentValue": 5,
-      "suggestedValue": 6,
-      "reason": "El operario midió un área disponible que permite 6 kWp en lugar de los 5 estimados",
-      "confidence": "alta"
-    }
-  ]
+  "changesFromPrevious": "qué cambió respecto a la versión anterior. null si es el primer informe.",
+  "projectSuggestions": []
 }
 
 ESTILO:
@@ -255,30 +248,37 @@ ESTILO:
 - Concreto y específico`;
 
 function buildUserPrompt(args: {
-  projectContext: ProjectContext;
   inputsContext: string;
   visit: { visitDate: Date; visitType: string; notes: string | null; createdBy?: { name: string } | null };
-  newInputsCount: number;
+  inputsCount: number;
+  previousReport: { content: unknown; summary: string | null } | null;
 }): string {
-  const { projectContext, inputsContext, visit, newInputsCount } = args;
-  return `# CONTEXTO DEL PROYECTO
-
-${JSON.stringify(projectContext, null, 2)}
-
-# VISITA TÉCNICA
+  const { inputsContext, visit, inputsCount, previousReport } = args;
+  let prompt = `# VISITA TÉCNICA
 
 Fecha: ${visit.visitDate.toISOString()}
 Tipo: ${visit.visitType}
 Operario: ${visit.createdBy?.name ?? "—"}
 Notas generales del operario: ${visit.notes || "(sin notas generales)"}
 
-# INPUTS DE LA VISITA (${newInputsCount})
+# INPUTS DE LA VISITA (${inputsCount})
 
 Los siguientes son TODOS los inputs cargados por el operario en esta visita. Generá el informe consolidando toda la información en las 7 secciones.
 
 ${inputsContext}
+`;
 
-Generá ahora el informe en formato JSON según las reglas indicadas.`;
+  if (previousReport) {
+    prompt += `\n# INFORME ANTERIOR (a actualizar/complementar)
+
+${JSON.stringify(previousReport.content, null, 2)}
+
+Resumen anterior: ${previousReport.summary ?? "(sin resumen)"}
+`;
+  }
+
+  prompt += `\nGenerá ahora el informe en formato JSON según las reglas indicadas.${previousReport ? " Complementá el informe anterior con la info nueva, manteniendo lo que sigue siendo válido." : ""}`;
+  return prompt;
 }
 
 // ─── Pricing aproximado ─────────────────────────────────────────────────────
@@ -522,7 +522,8 @@ export async function generateVisitReport(
     );
   }
 
-  const projectContext = await buildProjectContext(visit.projectId);
+  // Sin contexto del proyecto: la IA usa SÓLO lo que el operario relevó.
+  // El proyectista integra con info del pre-proyecto en otro paso.
   const inputsContext = buildInputsContext(visit.inputs);
   const allInputs = visit.inputs;
 
@@ -536,10 +537,12 @@ export async function generateVisitReport(
       {
         role: "user",
         content: buildUserPrompt({
-          projectContext,
           inputsContext,
           visit,
-          newInputsCount: allInputs.length,
+          inputsCount: allInputs.length,
+          previousReport: previousReport
+            ? { content: previousReport.content, summary: previousReport.summary }
+            : null,
         }),
       },
     ],
@@ -573,23 +576,43 @@ export async function generateVisitReport(
   const tokensOutput = response.usage.output_tokens;
   const costUsd = calculateCostUsd(DEFAULT_MODEL, tokensInput, tokensOutput);
 
-  const report = await prisma.visitReport.create({
-    data: {
-      visitId,
-      version: nextVersion,
-      content: validated.data.sections as unknown as object,
-      summary: validated.data.summary ?? null,
-      changesFromPrevious: null,
-      projectSuggestions: (validated.data.projectSuggestions ?? []) as unknown as object,
-      // Modelo nuevo: cada versión re-consolida TODOS los inputs de la visita.
-      inputsUsed: allInputs.map((i) => i.id),
-      modelUsed: DEFAULT_MODEL,
-      tokensInput,
-      tokensOutput,
-      costUsd,
-      generatedById,
-    },
-  });
+  // Update in-place: cada visita tiene UN reporte que se va completando.
+  // El campo `version` se usa como contador interno (cuántas veces se
+  // regeneró), no como historial de versiones para el usuario.
+  const report = previousReport
+    ? await prisma.visitReport.update({
+        where: { id: previousReport.id },
+        data: {
+          version: nextVersion,
+          content: validated.data.sections as unknown as object,
+          summary: validated.data.summary ?? null,
+          changesFromPrevious: validated.data.changesFromPrevious ?? null,
+          projectSuggestions: (validated.data.projectSuggestions ?? []) as unknown as object,
+          inputsUsed: allInputs.map((i) => i.id),
+          modelUsed: DEFAULT_MODEL,
+          tokensInput,
+          tokensOutput,
+          costUsd,
+          generatedById,
+          generatedAt: new Date(),
+        },
+      })
+    : await prisma.visitReport.create({
+        data: {
+          visitId,
+          version: 1,
+          content: validated.data.sections as unknown as object,
+          summary: validated.data.summary ?? null,
+          changesFromPrevious: null,
+          projectSuggestions: (validated.data.projectSuggestions ?? []) as unknown as object,
+          inputsUsed: allInputs.map((i) => i.id),
+          modelUsed: DEFAULT_MODEL,
+          tokensInput,
+          tokensOutput,
+          costUsd,
+          generatedById,
+        },
+      });
 
   return {
     report,

@@ -23,38 +23,29 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "5.1",
+  version: "5.2",
   date: "4 de mayo de 2026",
   sections: [
     {
-      title: "Visita técnica con IA — nueva herramienta",
+      title: "Visita técnica — botón flotante de audio",
       items: [
-        "Operario carga audios, fotos y notas desde el panel \"Visita técnica\" en la etapa Ingeniería del proyecto.",
-        "La IA arma el informe en 7 secciones (datos del sitio, acometida, techo, espacio inversor, canalizaciones, observaciones, próximos pasos).",
-        "Una visita = un operario por proyecto. Si vuelven en >7 días, se crea una nueva visita. Cada operario tiene su propia visita; no se mezclan datos entre operarios.",
-        "Audios se graban en el browser y se transcriben automáticamente con Whisper (Chrome desktop, Android, iOS Safari).",
-        "Auto-regeneración del informe con cada input nuevo (sin tocar botón Generar).",
-        "Vista previa del PDF + descarga.",
+        "FAB amarillo estilo WhatsApp en la esquina inferior derecha. Tap para grabar (botón rojo pulsante con duración), tap para detener. Dialog post-grabación con preview, descripción y guardar/descartar.",
+        "Aparece sólo en pantallas de proyecto (/projects/:id y /projects/:id/visita/:id) para no abultar.",
+        "El botón Audio del panel se reemplazó por el FAB. Foto y Nota siguen en el panel.",
       ],
     },
     {
-      title: "Atajo en el dashboard del operario",
+      title: "Informe único por visita (update in-place)",
       items: [
-        "Banner grande arriba de todo en /dashboard cuando el rol es OPERACIONES.",
-        "Click → /visita-rapida con selector de proyecto y los 3 botones Audio/Foto/Nota directos. Cero fricción para registrar la visita desde el celu.",
+        "Cada visita técnica tiene UN solo informe que se va actualizando con cada audio/foto/nota nuevos. Antes había v1, v2, v3…",
+        "El botón \"Regenerar informe\" salió. El informe se actualiza solo. Indicador \"Transcribiendo N audios…\" cuando hay audios procesando.",
       ],
     },
     {
-      title: "Módulo Ingeniería — accordion read-only de Visitas técnicas",
+      title: "Informe sin contexto del pre-proyecto",
       items: [
-        "Nueva entrada en /ingenieria/proyecto/:id donde el proyectista ve la lista de visitas que el operario cargó.",
-        "Click \"Abrir\" lleva al detalle de la visita.",
-      ],
-    },
-    {
-      title: "Cleanup al borrar visita o input",
-      items: [
-        "Al borrar una visita o input individual, el archivo del proyecto se soft-deletea y el archivo físico también. Antes quedaban huérfanos en Documentos del proyecto.",
+        "La IA genera el informe sólo con lo que el operario relevó (audios, fotos, notas). No usa info previa del proyecto.",
+        "La integración con info del pre-proyecto la hace el proyectista manualmente en el módulo Ingeniería.",
       ],
     },
   ],
@@ -69,6 +60,14 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "5.1",
+    shortDate: "4 may",
+    highlights: [
+      "Visita técnica con IA: operario carga audios/fotos/notas y se genera informe automático.",
+      "Atajo en dashboard del operario y panel \"Visita técnica (operario)\" en módulo Ingeniería.",
+    ],
+  },
   {
     version: "5.0",
     shortDate: "3 may",

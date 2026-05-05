@@ -1,5 +1,24 @@
 # Novedades
 
+## v5.2
+
+### 4 de mayo de 2026
+
+#### Visita técnica — botón flotante de audio + UX más simple
+
+- **Botón flotante amarillo de audio** estilo WhatsApp en la esquina inferior derecha. Tap para arrancar (botón pasa a rojo y muestra duración pulsante), tap para detener. Después aparece un dialog con preview, descripción opcional y guardar/descartar.
+- Aparece **sólo en pantallas de proyecto** (`/projects/:id` y `/projects/:id/visita/:id`). En otras pantallas no aparece para no abultar.
+- El botón "Audio" del bloque superior salió — el FAB lo reemplaza. Quedan **Foto** y **Nota** en el panel.
+- En la página de visita el botón **"Regenerar informe"** salió. El informe se actualiza solo con cada input nuevo (audio cuando termina la transcripción, foto/nota inmediato). El indicador "Transcribiendo N audios…" muestra cuándo está procesando.
+
+#### Informe sin contexto del pre-proyecto
+
+La IA ahora genera el informe **sólo** con la info que el operario relevó (audios, fotos, notas). No usa más datos previos del proyecto (capacidad, dirección, materiales pre-cargados, etc.). El proyectista hace la integración después manualmente en el módulo Ingeniería con el informe consolidado.
+
+#### Un informe por visita (update in-place)
+
+Cada visita tiene **un solo informe** que se va completando con cada regeneración. Antes generaba múltiples versiones (v1, v2, v3…) y aparecía un selector. Ahora hay un único informe por visita y se va actualizando — más simple de leer y consistente con "el informe se actualiza solo".
+
 ## v5.1
 
 ### 4 de mayo de 2026

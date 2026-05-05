@@ -7,7 +7,6 @@ import {
   Calendar,
   Camera,
   FileText,
-  Mic,
   StickyNote,
   Trash2,
   User,
@@ -15,14 +14,12 @@ import {
 import {
   deleteVisita,
   getVisitas,
-  uploadProjectVisitAudio,
   uploadProjectVisitNote,
   uploadProjectVisitPhoto,
   type VisitListItem,
   type VisitType,
 } from "../../../api/visitas.api";
 import { useAuthStore } from "../../../store/auth.store";
-import { AudioRecorder } from "./AudioRecorder";
 
 const MONTHS_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 function fmtDate(iso: string): string {
@@ -59,7 +56,7 @@ export function VisitasToolPanel({ projectId }: { projectId: string }) {
   const currentUser = useAuthStore((s) => s.user);
   const isAdmin = currentUser?.role === "ADMIN";
 
-  const [mode, setMode] = useState<"none" | "audio" | "photo" | "note">("none");
+  const [mode, setMode] = useState<"none" | "photo" | "note">("none");
   const [noteText, setNoteText] = useState("");
   const [noteDesc, setNoteDesc] = useState("");
   const [photoDesc, setPhotoDesc] = useState("");
@@ -103,24 +100,6 @@ export function VisitasToolPanel({ projectId }: { projectId: string }) {
     onError: (err) => toast.error(getApiErr(err) ?? "No se pudo subir la foto"),
   });
 
-  const audioMut = useMutation({
-    mutationFn: ({
-      blob,
-      mimeType,
-      description,
-    }: {
-      blob: Blob;
-      mimeType: string;
-      description: string;
-    }) => uploadProjectVisitAudio(projectId, blob, mimeType, description || null),
-    onSuccess: () => {
-      toast.success("Audio guardado · transcribiendo…");
-      setMode("none");
-      qc.invalidateQueries({ queryKey: ["technical-visits", projectId] });
-    },
-    onError: (err) => toast.error(getApiErr(err) ?? "No se pudo subir el audio"),
-  });
-
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteVisita(id),
     onSuccess: () => {
@@ -144,20 +123,14 @@ export function VisitasToolPanel({ projectId }: { projectId: string }) {
   return (
     <div className="space-y-3">
       <p className="text-xs text-[var(--color-text-muted)]">
-        Cargá audios, fotos o notas durante la visita. Cada operario tiene su propia visita en el
-        proyecto (la IA arma un informe por operario, no se mezclan).
+        Cargá fotos o notas durante la visita. Para grabar audio usá el botón flotante amarillo.
+        Cada operario tiene su propia visita en el proyecto (la IA arma un informe por operario,
+        no se mezclan).
       </p>
 
-      {/* Botones directos */}
+      {/* Botones directos: Audio queda en el FAB global */}
       {mode === "none" && (
-        <div className="grid grid-cols-3 gap-2">
-          <button
-            onClick={() => setMode("audio")}
-            className="inline-flex flex-col items-center gap-1 rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] p-3 text-[11px] hover:bg-[var(--color-bg-card-hover)]"
-          >
-            <Mic className="w-5 h-5 text-red-400" />
-            Audio
-          </button>
+        <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => {
               setMode("photo");
@@ -176,15 +149,6 @@ export function VisitasToolPanel({ projectId }: { projectId: string }) {
             Nota
           </button>
         </div>
-      )}
-
-      {mode === "audio" && (
-        <AudioRecorder
-          onCancel={() => setMode("none")}
-          onSave={async (blob, mimeType, description) => {
-            await audioMut.mutateAsync({ blob, mimeType, description });
-          }}
-        />
       )}
 
       <input

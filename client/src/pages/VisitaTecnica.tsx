@@ -18,19 +18,14 @@ import {
   Trash2,
 } from "lucide-react";
 import {
-  consolidateVisitReport,
-  generateVisitReport,
   getVisita,
   resetVisitReports,
-  uploadVisitAudio,
   uploadVisitNote,
   uploadVisitPhoto,
   visitAudioUrl,
   visitReportPdfUrl,
   type VisitInputDto,
 } from "../api/visitas.api";
-import { usePermission } from "../hooks/usePermission";
-import { AudioRecorder } from "../components/ingenieria/visitas/AudioRecorder";
 import { ReportPreviewModal } from "../components/ingenieria/visitas/ReportPreviewModal";
 import { ReportViewer } from "../components/ingenieria/visitas/ReportViewer";
 import { deleteVisitInput } from "../api/visitas.api";
@@ -124,57 +119,21 @@ export function VisitaTecnica() {
     onError: (err) => toast.error(getApiErr(err) ?? "No se pudo subir la foto"),
   });
 
-  const audioMut = useMutation({
-    mutationFn: ({ blob, mimeType, description }: { blob: Blob; mimeType: string; description: string }) =>
-      uploadVisitAudio(visitId!, blob, mimeType, description || null),
-    onSuccess: () => {
-      setMode("none");
-      qc.invalidateQueries({ queryKey: ["technical-visit", visitId] });
-    },
-    onError: (err) => toast.error(getApiErr(err) ?? "No se pudo subir el audio"),
-  });
-
   const deleteInputMut = useMutation({
     mutationFn: (inputId: string) => deleteVisitInput(visitId!, inputId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["technical-visit", visitId] }),
     onError: (err) => toast.error(getApiErr(err) ?? "No se pudo eliminar"),
   });
 
-  const generateMut = useMutation({
-    mutationFn: () => generateVisitReport(visitId!),
-    onSuccess: (res) => {
-      toast.success(
-        `Informe v${res.version} generado · ${res.metadata.tokensInput + res.metadata.tokensOutput} tokens · USD ${res.metadata.costUsd.toFixed(4)}`,
-      );
-      setSelectedReportId(res.id);
-      qc.invalidateQueries({ queryKey: ["technical-visit", visitId] });
-    },
-    onError: (err) => toast.error(getApiErr(err) ?? "No se pudo generar el informe"),
-  });
-
   const resetMut = useMutation({
     mutationFn: () => resetVisitReports(visitId!),
     onSuccess: () => {
-      toast.success("Informes borrados — los inputs se mantuvieron");
+      toast.success("Informe borrado — los inputs se mantuvieron");
       setSelectedReportId(null);
       qc.invalidateQueries({ queryKey: ["technical-visit", visitId] });
     },
     onError: (err) => toast.error(getApiErr(err) ?? "No se pudo borrar"),
   });
-
-  const consolidateMut = useMutation({
-    mutationFn: () => consolidateVisitReport(visitId!),
-    onSuccess: (res) => {
-      toast.success(
-        `Informe consolidado v${res.version} generado · USD ${res.metadata.costUsd.toFixed(4)}`,
-      );
-      setSelectedReportId(res.id);
-      qc.invalidateQueries({ queryKey: ["technical-visit", visitId] });
-    },
-    onError: (err) => toast.error(getApiErr(err) ?? "No se pudo consolidar"),
-  });
-
-  const canConsolidate = usePermission("INGENIERIA", "EDIT");
 
   if (!projectId || !visitId) return null;
 
@@ -185,24 +144,14 @@ export function VisitaTecnica() {
   const isOwner = visit ? visit.createdBy.id === currentUser?.id : false;
   const canEditInputs = isOwner || isAdmin;
   const selectedReport = reports.find((r) => r.id === selectedReportId) ?? reports[0] ?? null;
-  const nextVersion = (reports[0]?.version ?? 0) + 1;
   const inputsCount = inputs.length;
 
-  // Inputs nuevos = todos los inputs de la visita menos los ya usados en
-  // versiones de reporte previas. La versión nueva sólo contempla esos.
-  const usedInputIds = new Set<string>();
-  for (const r of reports) {
-    for (const id of r.inputsUsed ?? []) usedInputIds.add(id);
-  }
-  const newInputs = inputs.filter((i) => !usedInputIds.has(i.id));
-  const newInputsCount = newInputs.length;
-  // Audios nuevos todavía transcribiendo: bloquean la generación.
-  const pendingAudiosCount = newInputs.filter(
+  // Audios todavía transcribiendo: muestran indicador "actualizando informe…"
+  const pendingAudiosCount = inputs.filter(
     (i) =>
       i.type === "AUDIO" &&
       (i.transcriptionStatus === "PENDING" || i.transcriptionStatus === "PROCESSING"),
   ).length;
-  const canGenerate = newInputsCount > 0 && pendingAudiosCount === 0;
 
   return (
     <div className="space-y-4">
@@ -246,13 +195,7 @@ export function VisitaTecnica() {
             </p>
 
             {mode === "none" && canEditInputs && (
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => setMode("audio")}
-                  className="inline-flex flex-col items-center gap-1 rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] p-2 text-[11px] hover:bg-[var(--color-bg-card-hover)]"
-                >
-                  <Mic className="w-4 h-4 text-red-400" /> Audio
-                </button>
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => {
                     setMode("photo");
@@ -270,14 +213,10 @@ export function VisitaTecnica() {
                 </button>
               </div>
             )}
-
-            {mode === "audio" && (
-              <AudioRecorder
-                onCancel={() => setMode("none")}
-                onSave={async (blob, mimeType, description) => {
-                  await audioMut.mutateAsync({ blob, mimeType, description });
-                }}
-              />
+            {mode === "none" && canEditInputs && (
+              <p className="text-[10px] text-[var(--color-text-muted)] italic">
+                Para grabar audio usá el botón flotante amarillo abajo a la derecha.
+              </p>
             )}
 
             <input
@@ -371,34 +310,19 @@ export function VisitaTecnica() {
               })}
             </ul>
 
-            {canEditInputs && (
-              <div className="space-y-1.5">
-                <button
-                  onClick={() => generateMut.mutate()}
-                  disabled={!canGenerate || generateMut.isPending}
-                  className="w-full inline-flex items-center justify-center gap-1.5 rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-50"
-                >
-                  {pendingAudiosCount > 0 ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Transcribiendo {pendingAudiosCount} audio{pendingAudiosCount === 1 ? "" : "s"}…
-                    </>
-                  ) : generateMut.isPending ? (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      Regenerando…
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      Regenerar informe (v{nextVersion})
-                    </>
-                  )}
-                </button>
-                <p className="text-[10px] text-[var(--color-text-muted)]">
-                  El informe se regenera automáticamente con cada input nuevo. Usá este botón sólo si necesitás forzar una regeneración manual.
-                </p>
+            {/* Indicador de estado: el informe se actualiza automáticamente
+                con cada input. Si hay audios pendientes, esperamos a que
+                terminen de transcribir. */}
+            {pendingAudiosCount > 0 ? (
+              <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Transcribiendo {pendingAudiosCount} audio{pendingAudiosCount === 1 ? "" : "s"} —
+                el informe se actualizará al terminar.
               </div>
+            ) : (
+              <p className="text-[10px] text-[var(--color-text-muted)]">
+                El informe se actualiza automáticamente con cada audio, foto o nota nuevos.
+              </p>
             )}
           </section>
         </div>
@@ -429,18 +353,10 @@ export function VisitaTecnica() {
                     <RotateCcw className="w-3 h-3" /> Reset
                   </button>
                 )}
-                {reports.length > 0 && (
-                  <select
-                    value={selectedReport?.id ?? ""}
-                    onChange={(e) => setSelectedReportId(e.target.value)}
-                    className="rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1 text-[11px]"
-                  >
-                    {reports.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        v{r.version} · {fmtDate(r.generatedAt)}
-                      </option>
-                    ))}
-                  </select>
+                {selectedReport && (
+                  <span className="text-[10px] font-mono text-[var(--color-text-muted)]">
+                    v{selectedReport.version} · {fmtDate(selectedReport.generatedAt)}
+                  </span>
                 )}
                 {selectedReport && (
                   <>
@@ -470,7 +386,7 @@ export function VisitaTecnica() {
 
             {!selectedReport ? (
               <p className="rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-bg-app)] p-6 text-center text-xs text-[var(--color-text-muted)]">
-                Aún no hay informe. Cargá insumos y tocá "Generar informe" para crear el primero.
+                Aún no hay informe. Cargá audios, fotos o notas y la IA genera el informe automáticamente.
               </p>
             ) : (
               <ReportViewer report={selectedReport} />
