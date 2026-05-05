@@ -314,6 +314,164 @@ export interface GenerateReportResult {
   };
 }
 
+/**
+ * Consolida TODAS las versiones del informe + TODOS los inputs en un super-
+ * informe integrado. Lo invoca el proyectista (rol INGENIERIA) cuando ya hay
+ * varias versiones parciales y quiere un reporte unificado.
+ *
+ * A diferencia de `generateVisitReport`, acá:
+ *   - No filtra por inputs nuevos: pasa todos los inputs de la visita
+ *   - Incluye los reportes anteriores como contexto
+ *   - El prompt instruye explícitamente a integrar/consolidar
+ *   - El reporte resultante guarda inputsUsed = todos los IDs de la visita
+ *   - El summary arranca con "Consolidado de N versiones —" como marca
+ */
+export async function consolidateVisitReport(
+  visitId: string,
+  generatedById: string,
+): Promise<GenerateReportResult> {
+  const visit = await prisma.technicalVisit.findFirst({
+    where: { id: visitId, deletedAt: null },
+    include: {
+      createdBy: { select: { name: true } },
+      inputs: {
+        where: { deletedAt: null },
+        orderBy: { createdAt: "asc" },
+      },
+      reports: {
+        orderBy: { version: "asc" },
+      },
+    },
+  });
+  if (!visit) {
+    throw new AppError(404, "VISIT_NOT_FOUND", "Visita no encontrada");
+  }
+  if (visit.reports.length === 0) {
+    throw new AppError(
+      400,
+      "NO_REPORTS",
+      "No hay informes para consolidar — generá al menos una versión primero.",
+    );
+  }
+  if (visit.inputs.length === 0) {
+    throw new AppError(400, "NO_INPUTS", "La visita no tiene inputs cargados");
+  }
+
+  // Bloqueo si hay audios todavía transcribiendo.
+  const pendingAudios = visit.inputs.filter(
+    (i) =>
+      i.type === "AUDIO" &&
+      (i.transcriptionStatus === "PENDING" || i.transcriptionStatus === "PROCESSING"),
+  ).length;
+  if (pendingAudios > 0) {
+    throw new AppError(
+      400,
+      "AUDIOS_PENDING",
+      `Hay ${pendingAudios} audio${pendingAudios === 1 ? "" : "s"} todavía transcribiendo. Esperá unos segundos.`,
+    );
+  }
+
+  const projectContext = await buildProjectContext(visit.projectId);
+  const allInputsContext = buildInputsContext(visit.inputs);
+  const previousReportsContext = visit.reports
+    .map(
+      (r) =>
+        `## Versión ${r.version} (${r.generatedAt.toISOString().slice(0, 10)})\n\nResumen: ${r.summary ?? "(sin resumen)"}\n\nSecciones:\n${JSON.stringify(r.content, null, 2)}`,
+    )
+    .join("\n\n---\n\n");
+
+  const nextVersion = visit.reports[visit.reports.length - 1].version + 1;
+
+  const consolidatePrompt = `# CONTEXTO DEL PROYECTO
+
+${JSON.stringify(projectContext, null, 2)}
+
+# VISITA TÉCNICA
+
+Fecha: ${visit.visitDate.toISOString()}
+Tipo: ${visit.visitType}
+Operario: ${visit.createdBy?.name ?? "—"}
+Notas generales del operario: ${visit.notes || "(sin notas generales)"}
+
+# TODOS LOS INPUTS (${visit.inputs.length})
+
+${allInputsContext}
+
+# INFORMES PARCIALES PREVIOS (${visit.reports.length})
+
+${previousReportsContext}
+
+# TAREA
+
+Generá un INFORME CONSOLIDADO que integre toda la información de los inputs Y de las ${visit.reports.length} versiones parciales anteriores. Esta es la versión final del informe técnico de la visita.
+
+REGLAS específicas para la consolidación:
+- Resumí en cada sección la información COMPLETA conocida hasta el momento, no sólo lo último.
+- Si hay contradicciones entre versiones (ej: v1 decía 8 paneles, v2 dice 6), priorizá la versión más reciente y mencioná el cambio.
+- Conservá los detalles importantes de versiones anteriores aunque no aparezcan explícitamente en los inputs nuevos.
+- En el "summary" arrancá con "Consolidado de ${visit.reports.length} versiones —" para que el frontend lo identifique como tal.
+
+Devolvé el JSON según el schema indicado.`;
+
+  const client = getClient();
+  const t0 = Date.now();
+  const response = await client.messages.create({
+    model: DEFAULT_MODEL,
+    max_tokens: 4000,
+    system: SYSTEM_PROMPT,
+    messages: [{ role: "user", content: consolidatePrompt }],
+  });
+  const latencyMs = Date.now() - t0;
+
+  const textBlock = response.content.find((c) => c.type === "text");
+  if (!textBlock || textBlock.type !== "text") {
+    throw new AppError(500, "CLAUDE_NO_TEXT", "Claude devolvió respuesta sin texto");
+  }
+  const jsonText = stripCodeFences(textBlock.text.trim());
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonText);
+  } catch {
+    throw new AppError(500, "CLAUDE_INVALID_JSON", "Claude devolvió un JSON inválido");
+  }
+
+  const validated = ReportJsonSchema.safeParse(parsed);
+  if (!validated.success) {
+    throw new AppError(
+      500,
+      "CLAUDE_SCHEMA_MISMATCH",
+      `JSON no cumple schema: ${validated.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ")}`,
+    );
+  }
+
+  const tokensInput = response.usage.input_tokens;
+  const tokensOutput = response.usage.output_tokens;
+  const costUsd = calculateCostUsd(DEFAULT_MODEL, tokensInput, tokensOutput);
+
+  const report = await prisma.visitReport.create({
+    data: {
+      visitId,
+      version: nextVersion,
+      content: validated.data.sections as unknown as object,
+      summary: validated.data.summary ?? null,
+      changesFromPrevious: null,
+      projectSuggestions: (validated.data.projectSuggestions ?? []) as unknown as object,
+      inputsUsed: visit.inputs.map((i) => i.id),
+      modelUsed: DEFAULT_MODEL,
+      tokensInput,
+      tokensOutput,
+      costUsd,
+      generatedById,
+    },
+  });
+
+  return {
+    report,
+    metadata: { modelUsed: DEFAULT_MODEL, tokensInput, tokensOutput, costUsd, latencyMs },
+  };
+}
+
 export async function generateVisitReport(
   visitId: string,
   generatedById: string,

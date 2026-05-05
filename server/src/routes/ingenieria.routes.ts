@@ -214,6 +214,14 @@ export async function registerIngenieriaRoutes(app: FastifyInstance) {
       const preIngenieriaCount = await prisma.preIngenieriaVersion.count({
         where: { projectId: project.id },
       });
+      const visitasInfo = await prisma.technicalVisit.aggregate({
+        where: { projectId: project.id, deletedAt: null },
+        _count: { id: true },
+      });
+      const visitasCount = visitasInfo._count.id;
+      const reportesCount = await prisma.visitReport.count({
+        where: { visit: { projectId: project.id, deletedAt: null } },
+      });
 
       type ToolCard = {
         key: string;
@@ -264,6 +272,17 @@ export async function registerIngenieriaRoutes(app: FastifyInstance) {
             preIngenieriaCount === 0
               ? "Sin versiones generadas"
               : `${preIngenieriaCount} ${preIngenieriaCount === 1 ? "versión" : "versiones"} generada${preIngenieriaCount === 1 ? "" : "s"}`,
+          disponible: true,
+          ruta: null,
+        },
+        {
+          key: "visitas",
+          nombre: "Visita técnica (operario)",
+          icono: "mic",
+          estado:
+            visitasCount === 0
+              ? "Sin visitas registradas"
+              : `${visitasCount} visita${visitasCount === 1 ? "" : "s"} · ${reportesCount} informe${reportesCount === 1 ? "" : "s"}`,
           disponible: true,
           ruta: null,
         },

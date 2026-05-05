@@ -162,6 +162,24 @@ export async function resetVisitReports(visitId: string): Promise<void> {
   await apiClient.delete(`/api/technical-visits/${visitId}/reports`);
 }
 
+export async function consolidateVisitReport(visitId: string): Promise<{
+  id: string;
+  version: number;
+  summary: string | null;
+  metadata: {
+    modelUsed: string;
+    tokensInput: number;
+    tokensOutput: number;
+    costUsd: number;
+    latencyMs: number;
+  };
+}> {
+  const { data } = await apiClient.post(
+    `/api/technical-visits/${visitId}/consolidate-report`,
+  );
+  return data;
+}
+
 export async function generateVisitReport(visitId: string): Promise<{
   id: string;
   version: number;

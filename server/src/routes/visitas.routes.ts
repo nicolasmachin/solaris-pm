@@ -28,8 +28,11 @@ import { prisma } from "../lib/prisma.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
-import { getStoredFilePath, saveUploadedFile } from "../services/file-storage.service.js";
-import { generateVisitReport } from "../services/visit-report.service.js";
+import { deleteStoredFile, getStoredFilePath, saveUploadedFile } from "../services/file-storage.service.js";
+import {
+  consolidateVisitReport,
+  generateVisitReport,
+} from "../services/visit-report.service.js";
 import {
   generateVisitReportPdf,
   type VisitReportPdfInputs,
@@ -82,6 +85,37 @@ const noteBodySchema = z.object({
 });
 
 // ─── Background transcription ───────────────────────────────────────────────
+
+/**
+ * Borra el FileAttachment del proyecto asociado al input (si tiene archivo)
+ * y elimina el archivo físico. Se llama al borrar un input o la visita entera
+ * para que los audios/fotos no queden huérfanos en Documentos del proyecto.
+ */
+async function cleanupVisitInputAttachments(inputs: { fileUrl: string | null; projectId: string }[]) {
+  const filesToCleanup = inputs.filter((i) => i.fileUrl);
+  if (filesToCleanup.length === 0) return;
+
+  // Soft-delete los FileAttachments (matching por url + projectId).
+  await Promise.all(
+    filesToCleanup.map(async (i) => {
+      const att = await prisma.fileAttachment.findFirst({
+        where: { url: i.fileUrl!, projectId: i.projectId, deletedAt: null },
+        select: { id: true },
+      });
+      if (att) {
+        await prisma.fileAttachment.update({
+          where: { id: att.id },
+          data: { deletedAt: new Date() },
+        });
+      }
+    }),
+  );
+
+  // Borrar los archivos físicos best-effort.
+  await Promise.all(
+    filesToCleanup.map((i) => deleteStoredFile(i.fileUrl!).catch(() => undefined)),
+  );
+}
 
 async function runTranscriptionAsync(visitInputId: string, absolutePath: string): Promise<void> {
   if (!isWhisperEnabled()) {
@@ -270,9 +304,19 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
       const params = z.object({ id: z.string().min(1) }).parse(request.params);
       const visit = await prisma.technicalVisit.findFirst({
         where: { id: params.id, deletedAt: null },
-        select: { id: true, projectId: true, visitDate: true },
+        include: {
+          inputs: {
+            where: { deletedAt: null, fileUrl: { not: null } },
+            select: { fileUrl: true },
+          },
+        },
       });
       if (!visit) throw notFound("VISIT_NOT_FOUND", "Visita no encontrada");
+
+      // Cleanup de FileAttachments y archivos físicos de los inputs.
+      await cleanupVisitInputAttachments(
+        visit.inputs.map((i) => ({ fileUrl: i.fileUrl, projectId: visit.projectId })),
+      );
 
       await prisma.technicalVisit.update({
         where: { id: visit.id },
@@ -442,8 +486,14 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
         .parse(request.params);
       const input = await prisma.visitInput.findFirst({
         where: { id: params.inputId, visitId: params.visitId, deletedAt: null },
+        include: { visit: { select: { projectId: true } } },
       });
       if (!input) throw notFound("INPUT_NOT_FOUND", "Input no encontrado");
+
+      // Cleanup del FileAttachment + archivo físico (si tiene).
+      await cleanupVisitInputAttachments([
+        { fileUrl: input.fileUrl, projectId: input.visit.projectId },
+      ]);
 
       await prisma.visitInput.update({
         where: { id: input.id },
@@ -504,6 +554,49 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
         description: `Generó informe v${result.report.version} de visita técnica con IA`,
         metadata: {
           kind: "visit_report_generation",
+          modelUsed: result.metadata.modelUsed,
+          latencyMs: result.metadata.latencyMs,
+          tokensInput: result.metadata.tokensInput,
+          tokensOutput: result.metadata.tokensOutput,
+          costUsd: result.metadata.costUsd,
+        },
+      });
+
+      reply.code(201);
+      return {
+        id: result.report.id,
+        version: result.report.version,
+        summary: result.report.summary,
+        metadata: result.metadata,
+      };
+    },
+  );
+
+  // ── Consolidar versiones: integra todas las parciales en un super-informe ─
+  // Permiso INGENIERIA.EDIT — el proyectista (no el operario) hace el merge.
+  app.post(
+    "/technical-visits/:id/consolidate-report",
+    { preHandler: authorize(Module.INGENIERIA, Action.EDIT) },
+    async (request, reply) => {
+      const user = ensureUser(request);
+      const params = z.object({ id: z.string().min(1) }).parse(request.params);
+      const visit = await prisma.technicalVisit.findFirst({
+        where: { id: params.id, deletedAt: null },
+        select: { id: true, projectId: true },
+      });
+      if (!visit) throw notFound("VISIT_NOT_FOUND", "Visita no encontrada");
+
+      const result = await consolidateVisitReport(visit.id, user.id);
+
+      await createAuditEntry({
+        entityType: AuditEntityType.file,
+        entityId: result.report.id,
+        projectId: visit.projectId,
+        userId: user.id,
+        action: AuditAction.created,
+        description: `Consolidó informe v${result.report.version} de visita técnica con IA`,
+        metadata: {
+          kind: "visit_report_consolidation",
           modelUsed: result.metadata.modelUsed,
           latencyMs: result.metadata.latencyMs,
           tokensInput: result.metadata.tokensInput,

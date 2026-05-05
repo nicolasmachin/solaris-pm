@@ -9,6 +9,7 @@ import {
   Eye,
   FileText,
   HardHat,
+  Layers,
   Loader2,
   Mic,
   RotateCcw,
@@ -17,6 +18,7 @@ import {
   Trash2,
 } from "lucide-react";
 import {
+  consolidateVisitReport,
   generateVisitReport,
   getVisita,
   resetVisitReports,
@@ -27,6 +29,7 @@ import {
   visitReportPdfUrl,
   type VisitInputDto,
 } from "../api/visitas.api";
+import { usePermission } from "../hooks/usePermission";
 import { AudioRecorder } from "../components/ingenieria/visitas/AudioRecorder";
 import { ReportPreviewModal } from "../components/ingenieria/visitas/ReportPreviewModal";
 import { ReportViewer } from "../components/ingenieria/visitas/ReportViewer";
@@ -155,6 +158,20 @@ export function VisitaTecnica() {
     },
     onError: (err) => toast.error(getApiErr(err) ?? "No se pudo borrar"),
   });
+
+  const consolidateMut = useMutation({
+    mutationFn: () => consolidateVisitReport(visitId!),
+    onSuccess: (res) => {
+      toast.success(
+        `Informe consolidado v${res.version} generado · USD ${res.metadata.costUsd.toFixed(4)}`,
+      );
+      setSelectedReportId(res.id);
+      qc.invalidateQueries({ queryKey: ["technical-visit", visitId] });
+    },
+    onError: (err) => toast.error(getApiErr(err) ?? "No se pudo consolidar"),
+  });
+
+  const canConsolidate = usePermission("INGENIERIA", "EDIT");
 
   if (!projectId || !visitId) return null;
 
@@ -371,6 +388,25 @@ export function VisitaTecnica() {
                 Informe técnico
               </p>
               <div className="flex items-center gap-2">
+                {reports.length >= 1 && canConsolidate && (
+                  <button
+                    onClick={() => {
+                      if (
+                        confirm(
+                          `¿Generar un informe consolidado integrando las ${reports.length} versiones existentes? Se crea una versión nueva con la info completa.`,
+                        )
+                      ) {
+                        consolidateMut.mutate();
+                      }
+                    }}
+                    disabled={consolidateMut.isPending}
+                    className="inline-flex items-center gap-1 rounded bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/40 px-2 py-1 text-[11px] text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20 disabled:opacity-50"
+                    title="Consolida todas las versiones en un super-informe (proyectista)"
+                  >
+                    <Layers className="w-3 h-3" />
+                    {consolidateMut.isPending ? "Integrando…" : `Integrar ${reports.length} versiones`}
+                  </button>
+                )}
                 {reports.length > 0 && (
                   <button
                     onClick={() => {
