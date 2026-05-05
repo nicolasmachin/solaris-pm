@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Mic, Search } from "lucide-react";
 import { getProjects } from "../api/projects.api";
 import { VisitasToolPanel } from "../components/ingenieria/visitas/VisitasToolPanel";
+import { VisitFloatingButton } from "../components/visitas/VisitFloatingButton";
 
 /**
  * Página de "atajo" para que el operario cargue una entrada de visita técnica
@@ -134,6 +135,8 @@ export function VisitaRapida() {
           <VisitasToolPanel projectId={selected.id} />
         </section>
       )}
+
+      {selected && <VisitFloatingButton projectId={selected.id} />}
     </div>
   );
 }
