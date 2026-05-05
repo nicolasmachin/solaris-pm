@@ -215,12 +215,12 @@ const SYSTEM_PROMPT = `Sos un asistente especializado en redactar informes técn
 
 Tu trabajo es procesar los inputs (notas escritas + audios transcriptos + descripciones de fotos) que el operario trajo de la visita técnica y generar un informe estructurado en 7 secciones fijas.
 
-IMPORTANTE: este informe debe basarse EXCLUSIVAMENTE en los inputs que recibís acá y en el contexto del proyecto. NO mezcles información con informes anteriores — la consolidación entre versiones se hace en otro paso por separado. Si una sección no tiene info en los inputs actuales, marcala como "Sin información relevada todavía".
+Cada visita técnica tiene un único operario y un proyecto, y va sumando inputs a lo largo de los días. Cada vez que se regenera el informe, recibís TODOS los inputs de la visita (no incrementales). El informe es la fotografía actual de lo relevado por ese operario.
 
 REGLAS:
 1. Devolvé SOLO un JSON válido, sin markdown, sin texto antes o después, sin explicaciones.
-2. Si una sección no tiene información en los inputs nuevos, ponela como "Sin información relevada todavía" — no inventes datos ni copies de otros informes.
-3. Para cada sección, sintetizá SÓLO lo que aparece en los inputs nuevos.
+2. Si una sección no tiene información en los inputs, ponela como "Sin información relevada todavía" — no inventes datos.
+3. Para cada sección, sintetizá toda la info disponible en los inputs.
 4. Si la info nueva contradice o complementa el contexto del proyecto, mencionalo.
 5. Si detectás info que sugiere actualizar campos del proyecto (capacidad, dirección, modalidad de pago, etc), agregalo en "projectSuggestions" con el field exacto del modelo Project (clientAddress, capacityKwp, etc).
 
@@ -272,9 +272,9 @@ Tipo: ${visit.visitType}
 Operario: ${visit.createdBy?.name ?? "—"}
 Notas generales del operario: ${visit.notes || "(sin notas generales)"}
 
-# INPUTS NUEVOS (${newInputsCount})
+# INPUTS DE LA VISITA (${newInputsCount})
 
-Los siguientes inputs son los AGREGADOS desde el último informe. Generá el informe basándote sólo en estos inputs nuevos + contexto del proyecto. NO incluyas información de informes anteriores — eso se consolida en otro paso aparte.
+Los siguientes son TODOS los inputs cargados por el operario en esta visita. Generá el informe consolidando toda la información en las 7 secciones.
 
 ${inputsContext}
 
@@ -497,23 +497,19 @@ export async function generateVisitReport(
   const previousReport = visit.reports[0] ?? null;
   const nextVersion = (previousReport?.version ?? 0) + 1;
 
-  // Inputs NUEVOS desde el último informe: excluye los que ya estaban en
-  // `inputsUsed` del reporte anterior. La consolidación entre versiones se
-  // hace en otro paso (botón "integrar con anterior" — pendiente).
-  const previouslyUsed = new Set<string>(previousReport?.inputsUsed ?? []);
-  const newInputs = visit.inputs.filter((i) => !previouslyUsed.has(i.id));
-  if (newInputs.length === 0) {
+  // Modelo nuevo: una visita = un operario en un proyecto. Cada generación
+  // re-consolida TODOS los inputs (no incremental). Si hay 0 inputs, error.
+  if (visit.inputs.length === 0) {
     throw new AppError(
       400,
-      "NO_NEW_INPUTS",
-      "No hay inputs nuevos desde el último informe. Cargá audios, fotos o notas adicionales antes de generar una versión nueva.",
+      "NO_INPUTS",
+      "La visita no tiene inputs cargados todavía. Cargá audios, fotos o notas antes de generar el informe.",
     );
   }
 
-  // Bloqueo si hay audios todavía transcribiendo entre los inputs nuevos.
-  // Si dejamos generar, Claude recibe el audio como "pendiente — ignorar" y
-  // arma un informe vacío. Mejor parar acá y que el frontend espere.
-  const pendingAudios = newInputs.filter(
+  // Bloqueo si hay audios todavía transcribiendo. Si dejamos generar, Claude
+  // los ve como pendientes y los ignora — el informe queda incompleto.
+  const pendingAudios = visit.inputs.filter(
     (i) =>
       i.type === "AUDIO" &&
       (i.transcriptionStatus === "PENDING" || i.transcriptionStatus === "PROCESSING"),
@@ -527,7 +523,8 @@ export async function generateVisitReport(
   }
 
   const projectContext = await buildProjectContext(visit.projectId);
-  const inputsContext = buildInputsContext(newInputs);
+  const inputsContext = buildInputsContext(visit.inputs);
+  const allInputs = visit.inputs;
 
   const client = getClient();
   const t0 = Date.now();
@@ -542,7 +539,7 @@ export async function generateVisitReport(
           projectContext,
           inputsContext,
           visit,
-          newInputsCount: newInputs.length,
+          newInputsCount: allInputs.length,
         }),
       },
     ],
@@ -584,8 +581,8 @@ export async function generateVisitReport(
       summary: validated.data.summary ?? null,
       changesFromPrevious: null,
       projectSuggestions: (validated.data.projectSuggestions ?? []) as unknown as object,
-      // Sólo los IDs de los inputs NUEVOS — los anteriores están en versiones previas.
-      inputsUsed: newInputs.map((i) => i.id),
+      // Modelo nuevo: cada versión re-consolida TODOS los inputs de la visita.
+      inputsUsed: allInputs.map((i) => i.id),
       modelUsed: DEFAULT_MODEL,
       tokensInput,
       tokensOutput,

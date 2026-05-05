@@ -38,7 +38,7 @@ import {
   type VisitReportPdfInputs,
 } from "../services/visitReportPdf/index.js";
 import { isWhisperEnabled, transcribeAudio } from "../services/whisper.service.js";
-import { badRequest, notFound, unauthorized } from "../utils/errors.js";
+import { AppError, badRequest, notFound, unauthorized } from "../utils/errors.js";
 import { serializeDate } from "../utils/serialization.js";
 
 function ensureUser(request: FastifyRequest) {
@@ -117,7 +117,12 @@ async function cleanupVisitInputAttachments(inputs: { fileUrl: string | null; pr
   );
 }
 
-async function runTranscriptionAsync(visitInputId: string, absolutePath: string): Promise<void> {
+async function runTranscriptionAsync(
+  visitInputId: string,
+  absolutePath: string,
+  visitId: string,
+  userId: string,
+): Promise<void> {
   if (!isWhisperEnabled()) {
     await prisma.visitInput.update({
       where: { id: visitInputId },
@@ -135,6 +140,8 @@ async function runTranscriptionAsync(visitInputId: string, absolutePath: string)
       where: { id: visitInputId },
       data: { transcription: result.text, transcriptionStatus: "COMPLETED" },
     });
+    // Auto-regenerar el informe ahora que el audio quedó transcripto.
+    triggerAutoRegenerate(visitId, userId);
   } catch (err) {
     await prisma.visitInput.update({
       where: { id: visitInputId },
@@ -143,6 +150,81 @@ async function runTranscriptionAsync(visitInputId: string, absolutePath: string)
         transcription: err instanceof Error ? err.message : String(err),
       },
     });
+  }
+}
+
+/**
+ * Busca una visita ACTIVA del usuario en el proyecto (status EN_CURSO,
+ * createdById, <7 días). Si no hay, crea una nueva. Cualquier input que el
+ * operario agregue a un proyecto va a su visita activa — no necesita conocer
+ * el visitId desde el frontend.
+ */
+const ACTIVE_VISIT_DAYS = 7;
+async function getOrCreateActiveVisit(projectId: string, userId: string) {
+  const cutoff = new Date(Date.now() - ACTIVE_VISIT_DAYS * 24 * 60 * 60 * 1000);
+
+  const existing = await prisma.technicalVisit.findFirst({
+    where: {
+      projectId,
+      createdById: userId,
+      status: "EN_CURSO",
+      deletedAt: null,
+      createdAt: { gte: cutoff },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  if (existing) return existing;
+
+  // Si el usuario tiene visitas previas (más viejas) en el mismo proyecto,
+  // marcar la nueva como REVISION; sino INICIAL.
+  const previousCount = await prisma.technicalVisit.count({
+    where: { projectId, createdById: userId, deletedAt: null },
+  });
+
+  return await prisma.technicalVisit.create({
+    data: {
+      projectId,
+      createdById: userId,
+      visitDate: new Date(),
+      visitType: previousCount > 0 ? "REVISION" : "INICIAL",
+      status: "EN_CURSO",
+    },
+  });
+}
+
+/**
+ * Dispara la regeneración del informe en background (sin bloquear la
+ * respuesta al cliente). Si hay audios pendientes, el service tira error y
+ * lo silenciamos — la regeneración va a correr cuando termine la
+ * transcripción del audio que falte.
+ */
+function triggerAutoRegenerate(visitId: string, userId: string): void {
+  void (async () => {
+    try {
+      await import("../services/visit-report.service.js").then((m) =>
+        m.generateVisitReport(visitId, userId),
+      );
+    } catch (err) {
+      // Errores esperables: AUDIOS_PENDING (sigue transcribiendo), NO_INPUTS.
+      // No los logueamos como error para no llenar de ruido el log.
+      const code = (err as { code?: string }).code;
+      if (code !== "AUDIOS_PENDING" && code !== "NO_INPUTS") {
+        // eslint-disable-next-line no-console
+        console.error("[visitas] auto-regenerate falló", err);
+      }
+    }
+  })();
+}
+
+/** Verifica que el user puede editar/borrar el input. ADMIN o el dueño. */
+async function ensureCanEditInput(input: { createdById: string }, user: { id: string; role: string | null }): Promise<void> {
+  if (user.role === "ADMIN") return;
+  if (input.createdById !== user.id) {
+    throw new AppError(
+      403,
+      "FORBIDDEN_INPUT_ACTION",
+      "Sólo el dueño de la visita o un admin pueden modificar este input.",
+    );
   }
 }
 
@@ -337,7 +419,40 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
     },
   );
 
-  // ── Subir nota ──────────────────────────────────────────────────────────
+  // ── Subir nota (por proyecto, resuelve la visita activa) ───────────────
+  app.post(
+    "/projects/:projectId/visit-inputs/note",
+    { preHandler: authorize(Module.OPERACIONES, Action.EDIT) },
+    async (request, reply) => {
+      const user = ensureUser(request);
+      const params = z.object({ projectId: z.string().min(1) }).parse(request.params);
+      const body = noteBodySchema.parse(request.body);
+
+      const project = await prisma.project.findFirst({
+        where: { id: params.projectId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+
+      const visit = await getOrCreateActiveVisit(params.projectId, user.id);
+      const input = await prisma.visitInput.create({
+        data: {
+          visitId: visit.id,
+          type: "NOTE" satisfies VisitInputType,
+          noteText: body.noteText,
+          description: body.description ?? null,
+          createdById: user.id,
+        },
+      });
+      // Auto-regenerar el informe (las notas no requieren procesamiento).
+      triggerAutoRegenerate(visit.id, user.id);
+
+      reply.code(201);
+      return { ...serializeInput(input), visitId: visit.id };
+    },
+  );
+
+  // ── Subir nota (legacy: con visitId explícito, sin auto-resolución) ─────
   app.post(
     "/technical-visits/:id/inputs/note",
     { preHandler: authorize(Module.OPERACIONES, Action.EDIT) },
@@ -361,12 +476,69 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
           createdById: user.id,
         },
       });
+      triggerAutoRegenerate(visit.id, user.id);
       reply.code(201);
       return serializeInput(input);
     },
   );
 
-  // ── Subir audio ─────────────────────────────────────────────────────────
+  // ── Subir audio (por proyecto, resuelve la visita activa) ──────────────
+  app.post(
+    "/projects/:projectId/visit-inputs/audio",
+    { preHandler: authorize(Module.OPERACIONES, Action.EDIT) },
+    async (request, reply) => {
+      const user = ensureUser(request);
+      const params = z.object({ projectId: z.string().min(1) }).parse(request.params);
+      const project = await prisma.project.findFirst({
+        where: { id: params.projectId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+
+      const part = await request.file();
+      if (!part) throw badRequest("MISSING_FILE", "No se envió ningún archivo");
+      if (!isAllowedAudioMime(part.mimetype)) {
+        throw badRequest("INVALID_AUDIO_MIMETYPE", `Audio no soportado: ${part.mimetype}`);
+      }
+      const description = (part.fields.description as { value?: string } | undefined)?.value ?? null;
+
+      const visit = await getOrCreateActiveVisit(params.projectId, user.id);
+
+      const stored = await saveUploadedFile(part, params.projectId);
+      await prisma.fileAttachment.create({
+        data: {
+          projectId: params.projectId,
+          filename: stored.filename,
+          storedFilename: stored.storedFilename,
+          mimeType: stored.mimeType,
+          sizeBytes: stored.sizeBytes,
+          url: stored.url,
+          tipo: FileAttachmentTipo.UPLOAD_MANUAL,
+          uploadedById: user.id,
+        },
+      });
+
+      const input = await prisma.visitInput.create({
+        data: {
+          visitId: visit.id,
+          type: "AUDIO" satisfies VisitInputType,
+          fileUrl: stored.url,
+          fileMimeType: stored.mimeType,
+          fileSize: stored.sizeBytes,
+          description,
+          transcriptionStatus: "PENDING",
+          createdById: user.id,
+        },
+      });
+      // La transcripción dispara la auto-regeneración cuando termina.
+      void runTranscriptionAsync(input.id, stored.absolutePath, visit.id, user.id);
+
+      reply.code(201);
+      return { ...serializeInput(input), visitId: visit.id };
+    },
+  );
+
+  // ── Subir audio (legacy: con visitId explícito) ────────────────────────
   app.post(
     "/technical-visits/:id/inputs/audio",
     { preHandler: authorize(Module.OPERACIONES, Action.EDIT) },
@@ -419,14 +591,69 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
 
       // 3) Disparar transcripción en background. NO await — devolvemos
       //    rápido al frontend que va a hacer polling sobre el status.
-      void runTranscriptionAsync(input.id, stored.absolutePath);
+      void runTranscriptionAsync(input.id, stored.absolutePath, visit.id, user.id);
 
       reply.code(201);
       return serializeInput(input);
     },
   );
 
-  // ── Subir foto ──────────────────────────────────────────────────────────
+  // ── Subir foto (por proyecto, resuelve la visita activa) ───────────────
+  app.post(
+    "/projects/:projectId/visit-inputs/photo",
+    { preHandler: authorize(Module.OPERACIONES, Action.EDIT) },
+    async (request, reply) => {
+      const user = ensureUser(request);
+      const params = z.object({ projectId: z.string().min(1) }).parse(request.params);
+      const project = await prisma.project.findFirst({
+        where: { id: params.projectId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+
+      const part = await request.file();
+      if (!part) throw badRequest("MISSING_FILE", "No se envió ningún archivo");
+      if (!ALLOWED_PHOTO_MIMES.has(part.mimetype.toLowerCase())) {
+        throw badRequest("INVALID_PHOTO_MIMETYPE", `Foto no soportada: ${part.mimetype}`);
+      }
+      const description = (part.fields.description as { value?: string } | undefined)?.value ?? null;
+
+      const visit = await getOrCreateActiveVisit(params.projectId, user.id);
+
+      const stored = await saveUploadedFile(part, params.projectId);
+      await prisma.fileAttachment.create({
+        data: {
+          projectId: params.projectId,
+          filename: stored.filename,
+          storedFilename: stored.storedFilename,
+          mimeType: stored.mimeType,
+          sizeBytes: stored.sizeBytes,
+          url: stored.url,
+          tipo: FileAttachmentTipo.UPLOAD_MANUAL,
+          uploadedById: user.id,
+        },
+      });
+
+      const input = await prisma.visitInput.create({
+        data: {
+          visitId: visit.id,
+          type: "PHOTO" satisfies VisitInputType,
+          fileUrl: stored.url,
+          fileMimeType: stored.mimeType,
+          fileSize: stored.sizeBytes,
+          description,
+          createdById: user.id,
+        },
+      });
+      // Las fotos no se procesan; auto-regenerar ya.
+      triggerAutoRegenerate(visit.id, user.id);
+
+      reply.code(201);
+      return { ...serializeInput(input), visitId: visit.id };
+    },
+  );
+
+  // ── Subir foto (legacy: con visitId explícito) ─────────────────────────
   app.post(
     "/technical-visits/:id/inputs/photo",
     { preHandler: authorize(Module.OPERACIONES, Action.EDIT) },
@@ -477,10 +704,12 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
   );
 
   // ── Eliminar input ─────────────────────────────────────────────────────
+  // Permisos: el dueño del input (createdById === user.id) o un ADMIN.
   app.delete(
     "/technical-visits/:visitId/inputs/:inputId",
     { preHandler: authorize(Module.OPERACIONES, Action.EDIT) },
     async (request, reply) => {
+      const user = ensureUser(request);
       const params = z
         .object({ visitId: z.string().min(1), inputId: z.string().min(1) })
         .parse(request.params);
@@ -489,6 +718,7 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
         include: { visit: { select: { projectId: true } } },
       });
       if (!input) throw notFound("INPUT_NOT_FOUND", "Input no encontrado");
+      await ensureCanEditInput(input, { id: user.id, role: user.role });
 
       // Cleanup del FileAttachment + archivo físico (si tiene).
       await cleanupVisitInputAttachments([
@@ -499,6 +729,8 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
         where: { id: input.id },
         data: { deletedAt: new Date() },
       });
+      // Auto-regenerar el informe sin el input borrado (si quedan otros).
+      triggerAutoRegenerate(params.visitId, user.id);
 
       reply.code(204);
       return;
