@@ -37,6 +37,7 @@ const Ingenieria = lazy(() => import("./pages/Ingenieria").then((module) => ({ d
 const IngenieriaWorkspace = lazy(() => import("./pages/IngenieriaWorkspace").then((module) => ({ default: module.IngenieriaWorkspace })));
 const MaterialesConsolidados = lazy(() => import("./pages/MaterialesConsolidados").then((module) => ({ default: module.MaterialesConsolidados })));
 const VisitaTecnica = lazy(() => import("./pages/VisitaTecnica").then((module) => ({ default: module.VisitaTecnica })));
+const VisitaRapida = lazy(() => import("./pages/VisitaRapida").then((module) => ({ default: module.VisitaRapida })));
 const PortalProjects = lazy(() => import("./pages/PortalProjects").then((module) => ({ default: module.PortalProjects })));
 const PortalProjectUte = lazy(() => import("./pages/PortalProjectUte").then((module) => ({ default: module.PortalProjectUte })));
 const PortalLayout = lazy(() => import("./components/layout/PortalLayout").then((module) => ({ default: module.PortalLayout })));
@@ -324,6 +325,14 @@ export function App() {
           element={
             <PermissionRoute module="OPERACIONES" action="VIEW">
               <VisitaTecnica />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/visita-rapida"
+          element={
+            <PermissionRoute module="OPERACIONES" action="EDIT">
+              <VisitaRapida />
             </PermissionRoute>
           }
         />

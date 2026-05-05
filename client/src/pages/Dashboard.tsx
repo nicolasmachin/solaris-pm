@@ -2,7 +2,7 @@ import { Fragment, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import { AlertTriangle, ArrowRight } from "lucide-react";
+import { AlertTriangle, ArrowRight, Mic } from "lucide-react";
 import { useAuthStore } from "../store/auth.store";
 import { usePermission } from "../hooks/usePermission";
 import { getProjects } from "../api/projects.api";
@@ -75,8 +75,33 @@ export function Dashboard() {
     staleTime: 60_000,
   });
 
+  // Shortcut grande para el rol OPERACIONES (operario): cargar una entrada
+  // de visita técnica rápida sin tener que entrar al proyecto manualmente.
+  // Reduce la fricción del flujo "tomo el celu, abro la app, grabo".
+  const isOperario = user?.role === "OPERACIONES";
+
   return (
     <div>
+      {isOperario && (
+        <Link
+          to="/visita-rapida"
+          className="mb-4 flex items-center gap-3 bg-[var(--color-accent)]/15 border border-[var(--color-accent)]/40 rounded-xl px-5 py-4 hover:bg-[var(--color-accent)]/25 transition-colors"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent)]/30">
+            <Mic className="w-5 h-5 text-[var(--color-accent)]" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+              Cargar entrada de visita técnica
+            </p>
+            <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+              Audio, foto o nota — elegís el proyecto y la app arma tu visita automáticamente.
+            </p>
+          </div>
+          <ArrowRight className="w-4 h-4 text-[var(--color-accent)] shrink-0" />
+        </Link>
+      )}
+
       {/* Banner de pendientes de desglose (existente) */}
       {canViewFinance && pendingDetail.length > 0 && (
         <Link
