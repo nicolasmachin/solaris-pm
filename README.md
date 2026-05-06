@@ -377,7 +377,7 @@ ejecutar desde la raíz del proyecto:
 
 O desde la carpeta server/:
 
-   npm run save
+   
 
 Esto hace automáticamente:
 - Backup de la DB comprimido en OneDrive
