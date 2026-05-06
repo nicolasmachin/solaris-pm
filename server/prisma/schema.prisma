@@ -369,6 +369,8 @@ model User {
   technicalVisitsCreated         TechnicalVisit[]         @relation("TechnicalVisitCreator")
   visitInputsCreated             VisitInput[]             @relation("VisitInputCreator")
   visitReportsGenerated          VisitReport[]            @relation("VisitReportGenerator")
+  efpVersionsCreated             EFPVersion[]             @relation("EFPVersionCreator")
+  efpAttachmentsUploaded         EFPAttachment[]          @relation("EFPAttachmentUploader")
   passwordTemporary              Boolean                  @default(false)
   deletedAt                      DateTime?                @db.Timestamptz(6)
   createdAt                      DateTime                 @default(now()) @db.Timestamptz(6)
@@ -433,6 +435,7 @@ model Project {
   unifilarVersions     UnifilarVersion[]
   preIngenieriaVersions PreIngenieriaVersion[]
   technicalVisits      TechnicalVisit[]
+  engineeringFinalProject EngineeringFinalProject?
   deletedAt            DateTime?             @db.Timestamptz(6)
   createdAt            DateTime              @default(now()) @db.Timestamptz(6)
   updatedAt            DateTime              @updatedAt @db.Timestamptz(6)
@@ -724,6 +727,7 @@ model FileAttachment {
   substage       Substage?           @relation(fields: [substageId], references: [id], onDelete: SetNull)
   preIngenieriaFotos     PreIngenieriaFoto[]
   preIngenieriaMinutaFor PreIngenieriaVersion[]  @relation("MinutaSource")
+  efpAttachments         EFPAttachment[]         @relation("EFPAttachmentFile")
   deletedAt      DateTime?           @db.Timestamptz(6)
   createdAt      DateTime            @default(now()) @db.Timestamptz(6)
 
@@ -1890,4 +1894,98 @@ model VisitReport {
   @@unique([visitId, version])
   @@index([visitId])
   @@map("visit_reports")
+}
+
+// ─── Proyecto Final de Ingeniería (EFP) ─────────────────────────────────────
+// Documento integrador que el proyectista arma a partir de pre-ingeniería +
+// visitas técnicas + criterio profesional. Mismo patrón que VisitReport pero
+// versionado N (cada "Crear nueva versión" o "Regenerar con IA" snapshotea).
+// La edición inline NO crea versión nueva: actualiza la versión actual.
+
+enum EFPStatus {
+  DRAFT
+  REVIEW
+  APPROVED
+  ARCHIVED
+}
+
+model EngineeringFinalProject {
+  id        String  @id @default(cuid())
+  projectId String  @unique
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  status EFPStatus @default(DRAFT)
+
+  versions    EFPVersion[]
+  attachments EFPAttachment[]
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(6)
+  deletedAt DateTime? @db.Timestamptz(6)
+
+  @@index([deletedAt])
+  @@map("engineering_final_projects")
+}
+
+model EFPVersion {
+  id    String                  @id @default(cuid())
+  efpId String
+  efp   EngineeringFinalProject @relation(fields: [efpId], references: [id], onDelete: Cascade)
+
+  version Int
+
+  // Contenido de las 7 secciones como markdown:
+  // { datosGenerales, resumenEjecutivo, analisisSitio, equipamiento,
+  //   disenoElectrico, disenoMecanico, anexos }
+  content Json
+
+  // Checklist sugerida por la IA — qué revisar en cada sección. Misma estructura
+  // de 7 keys con array de strings. Null si la versión no se generó con IA.
+  checklist Json?
+
+  // Visitas técnicas usadas como base de la generación.
+  sourceVisitIds String[]
+
+  // Si se generó con IA (vs. snapshot manual o edición inline).
+  aiGenerated  Boolean  @default(false)
+  modelUsed    String?
+  tokensInput  Int?
+  tokensOutput Int?
+  costUsd      Decimal? @db.Decimal(10, 6)
+
+  changesFromPrevious String? @db.Text
+
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+  createdById String
+  createdBy   User     @relation("EFPVersionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@unique([efpId, version])
+  @@index([efpId, version])
+  @@map("efp_versions")
+}
+
+// Anexos extra del proyecto final (datasheets, planos, fotos adicionales que
+// el proyectista sube fuera de las visitas). Apuntan a un FileAttachment del
+// proyecto para que aparezcan también en Documentos.
+model EFPAttachment {
+  id    String                  @id @default(cuid())
+  efpId String
+  efp   EngineeringFinalProject @relation(fields: [efpId], references: [id], onDelete: Cascade)
+
+  fileAttachmentId String
+  fileAttachment   FileAttachment @relation("EFPAttachmentFile", fields: [fileAttachmentId], references: [id], onDelete: Cascade)
+
+  description String?
+  category    String? // 'datasheet' | 'foto' | 'plano' | 'otro'
+
+  uploadedById String
+  uploadedBy   User   @relation("EFPAttachmentUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  deletedAt DateTime? @db.Timestamptz(6)
+
+  @@index([efpId])
+  @@index([fileAttachmentId])
+  @@map("efp_attachments")
 }

@@ -66,6 +66,9 @@ function buildToolSourceLabel(toolSource: string | null, toolVersion: number | n
       ? `Ingeniería · Pre-ingeniería v${toolVersion}`
       : "Ingeniería · Pre-ingeniería";
   }
+  if (toolSource === "efp-attach") {
+    return "Ingeniería · Anexo de Proyecto Final";
+  }
   return null;
 }
 
@@ -222,6 +225,17 @@ export async function registerIngenieriaRoutes(app: FastifyInstance) {
       const reportesCount = await prisma.visitReport.count({
         where: { visit: { projectId: project.id, deletedAt: null } },
       });
+      const efpInfo = await prisma.engineeringFinalProject.findFirst({
+        where: { projectId: project.id, deletedAt: null },
+        select: {
+          status: true,
+          versions: { orderBy: { version: "desc" }, take: 1, select: { version: true } },
+          _count: { select: { versions: true } },
+        },
+      });
+      const efpVersionsCount = efpInfo?._count.versions ?? 0;
+      const efpLastVersion = efpInfo?.versions[0]?.version ?? null;
+      const efpStatus = efpInfo?.status ?? null;
 
       type ToolCard = {
         key: string;
@@ -285,6 +299,17 @@ export async function registerIngenieriaRoutes(app: FastifyInstance) {
               : `${visitasCount} visita${visitasCount === 1 ? "" : "s"} · ${reportesCount} informe${reportesCount === 1 ? "" : "s"}`,
           disponible: true,
           ruta: null,
+        },
+        {
+          key: "efp",
+          nombre: "Proyecto Final de Ingeniería",
+          icono: "book",
+          estado:
+            efpVersionsCount === 0
+              ? "Sin versiones generadas"
+              : `v${efpLastVersion ?? "?"} · ${efpVersionsCount} ${efpVersionsCount === 1 ? "versión" : "versiones"}${efpStatus ? ` · ${efpStatus}` : ""}`,
+          disponible: true,
+          ruta: `/ingenieria/proyecto/${project.id}/proyecto-final`,
         },
         {
           key: "memoria",

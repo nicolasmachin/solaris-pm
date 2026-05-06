@@ -35,6 +35,7 @@ const MisTareas = lazy(() => import("./pages/MisTareas").then((module) => ({ def
 const TramitesUte = lazy(() => import("./pages/TramitesUte").then((module) => ({ default: module.TramitesUte })));
 const Ingenieria = lazy(() => import("./pages/Ingenieria").then((module) => ({ default: module.Ingenieria })));
 const IngenieriaWorkspace = lazy(() => import("./pages/IngenieriaWorkspace").then((module) => ({ default: module.IngenieriaWorkspace })));
+const ProyectoFinal = lazy(() => import("./pages/ProyectoFinal").then((module) => ({ default: module.ProyectoFinal })));
 const MaterialesConsolidados = lazy(() => import("./pages/MaterialesConsolidados").then((module) => ({ default: module.MaterialesConsolidados })));
 const VisitaTecnica = lazy(() => import("./pages/VisitaTecnica").then((module) => ({ default: module.VisitaTecnica })));
 const VisitaRapida = lazy(() => import("./pages/VisitaRapida").then((module) => ({ default: module.VisitaRapida })));
@@ -309,6 +310,14 @@ export function App() {
           element={
             <PermissionRoute module="INGENIERIA" action="VIEW">
               <IngenieriaWorkspace />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/ingenieria/proyecto/:projectId/proyecto-final"
+          element={
+            <PermissionRoute module="INGENIERIA" action="VIEW">
+              <ProyectoFinal />
             </PermissionRoute>
           }
         />

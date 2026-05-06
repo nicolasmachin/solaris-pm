@@ -2,6 +2,22 @@
 
 ## v5.2
 
+### 5 de mayo de 2026
+
+#### Nueva herramienta: Proyecto Final de Ingeniería
+
+Nueva herramienta dentro del workspace de Ingeniería para que el proyectista arme el documento integrador del proyecto, combinando la pre-ingeniería + visitas técnicas + criterio profesional. La IA arma el primer borrador y el proyectista lo refina inline.
+
+- **7 secciones predefinidas**: datos generales, resumen ejecutivo del sistema, análisis del sitio, equipamiento y materiales, diseño eléctrico, diseño mecánico/instalación física, anexos.
+- **Generación inicial con IA**: modal pide qué visita(s) usar como base. La IA recibe pre-ingeniería + datos del proyecto + materiales presupuestados + visitas seleccionadas y devuelve las 7 secciones en markdown + una checklist de "qué verificar" por sección.
+- **Edición inline estilo Notion**: cada sección tiene botón Editar/Guardar. Auto-save con debounce de 1.5s mientras se escribe — no hay que clickear "Guardar" cada vez.
+- **Versionado completo**: botón "Regenerar con IA" crea v2, v3… Botón "Snapshot" duplica la versión actual sin IA (útil antes de hacer cambios grandes). Selector de versiones para volver a versiones anteriores en lectura.
+- **Cambios respecto a versión anterior** que la IA destaca arriba del documento.
+- **Anexos extras**: subir imágenes/PDFs (datasheets, planos, fotos adicionales) que aparecen al pie y también en Documentos del proyecto.
+- **Exportar PDF profesional**: botón descargar PDF con header (logo Voltia + datos del proyecto + versión), las 7 secciones renderizadas, listado de anexos al final.
+- **Permisos**: solo INGENIERIA y ADMIN pueden editar/regenerar. Otros roles del módulo pueden ver.
+- **Acceso**: tarjeta "Proyecto Final de Ingeniería" en el workspace `/ingenieria/proyecto/:id` que abre la página dedicada `/ingenieria/proyecto/:id/proyecto-final`.
+
 ### 4 de mayo de 2026
 
 #### Visita técnica — botón flotante de audio + UX más simple
