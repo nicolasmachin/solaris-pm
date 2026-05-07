@@ -95,7 +95,7 @@ export async function generateEFPWithAI(
   const { data } = await apiClient.post(
     `/api/projects/${projectId}/efp/generate-with-ai`,
     { sourceVisitIds },
-    { timeout: 180_000 },
+    { timeout: 360_000 },
   );
   return data;
 }
