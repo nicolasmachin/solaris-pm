@@ -576,11 +576,32 @@ export async function registerEFPRoutes(app: FastifyInstance) {
             include: {
               project: {
                 select: {
+                  id: true,
                   code: true,
                   clientName: true,
+                  clientAddress: true,
                   locationCity: true,
                   locationProvince: true,
                   capacityKwp: true,
+                  notificationEmail: true,
+                  preIngenieriaVersions: {
+                    orderBy: { versionNumber: "desc" },
+                    take: 1,
+                    select: {
+                      cantidadPaneles: true,
+                      potenciaPaneles: true,
+                      inversor: true,
+                    },
+                  },
+                  uteProcesses: {
+                    where: { deletedAt: null },
+                    take: 1,
+                    select: {
+                      caseNumber: true,
+                      currentStage: true,
+                      currentStatus: true,
+                    },
+                  },
                 },
               },
               attachments: {
@@ -593,15 +614,29 @@ export async function registerEFPRoutes(app: FastifyInstance) {
       });
       if (!version) throw notFound("EFP_VERSION_NOT_FOUND", "Versión no encontrada");
 
+      const project = version.efp.project;
+      const preIng = project.preIngenieriaVersions[0] ?? null;
+      const ute = project.uteProcesses[0] ?? null;
+
       const pdfBuffer = await generateEFPPdf({
-        cliente: version.efp.project.clientName,
-        proyectoCode: version.efp.project.code,
-        ubicacion: `${version.efp.project.locationCity}, ${version.efp.project.locationProvince}`,
-        capacidadKwp: Number(version.efp.project.capacityKwp),
+        cliente: project.clientName,
+        proyectoCode: project.code,
+        ubicacion: `${project.locationCity}, ${project.locationProvince}`,
+        clientAddress: project.clientAddress,
+        clientEmail: project.notificationEmail,
+        capacidadKwp: Number(project.capacityKwp),
+        paneles: {
+          cantidad: preIng?.cantidadPaneles ?? null,
+          potenciaW: preIng?.potenciaPaneles ?? null,
+        },
+        inversor: preIng?.inversor ?? null,
+        uteCaso: ute?.caseNumber ?? null,
+        uteEtapa: ute?.currentStage ?? null,
+        uteStatus: ute?.currentStatus ?? null,
+        proyectista: version.createdBy?.name ?? null,
         version: version.version,
         status: version.efp.status,
         generatedAt: version.createdAt,
-        generatedBy: version.createdBy?.name ?? null,
         changesFromPrevious: version.changesFromPrevious,
         content: (version.content as Record<string, string>) ?? {},
         attachments: version.efp.attachments.map((a) => ({
