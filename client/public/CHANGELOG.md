@@ -4,6 +4,10 @@
 
 ### 6 de mayo de 2026
 
+#### Arreglos
+
+- **Generador de borrador del Proyecto Final de Ingeniería** ahora funciona en proyectos con muchos materiales o varias visitas técnicas. Antes la IA fallaba con un error genérico cuando la respuesta era muy larga (cliente con 60+ materiales o 2+ visitas). Ahora se completa correctamente y genera las 7 secciones aunque la respuesta sea grande.
+
 #### Aviso a Operaciones cuando Ingeniería termina
 
 Cuando un proyecto sale de la etapa de Ingeniería, ahora avisa automáticamente al equipo de Operaciones (y a los administradores) para que puedan empezar a planificar la instalación. El aviso llega tanto por la campanita de la app como por email.

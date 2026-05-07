@@ -289,6 +289,58 @@ function stripCodeFences(text: string): string {
   return m ? m[1].trim() : text;
 }
 
+// Schema JSON crudo que se le pasa a Claude vía tool_use. Equivalente al Zod
+// de arriba, pero como JSONSchema (que es lo que entiende la API).
+const EFP_TOOL_INPUT_SCHEMA = {
+  type: "object" as const,
+  properties: {
+    sections: {
+      type: "object",
+      properties: {
+        datosGenerales: { type: "string" },
+        resumenEjecutivo: { type: "string" },
+        analisisSitio: { type: "string" },
+        equipamiento: { type: "string" },
+        disenoElectrico: { type: "string" },
+        disenoMecanico: { type: "string" },
+        anexos: { type: "string" },
+      },
+      required: [
+        "datosGenerales",
+        "resumenEjecutivo",
+        "analisisSitio",
+        "equipamiento",
+        "disenoElectrico",
+        "disenoMecanico",
+        "anexos",
+      ],
+    },
+    checklist: {
+      type: "object",
+      properties: {
+        datosGenerales: { type: "array", items: { type: "string" } },
+        resumenEjecutivo: { type: "array", items: { type: "string" } },
+        analisisSitio: { type: "array", items: { type: "string" } },
+        equipamiento: { type: "array", items: { type: "string" } },
+        disenoElectrico: { type: "array", items: { type: "string" } },
+        disenoMecanico: { type: "array", items: { type: "string" } },
+        anexos: { type: "array", items: { type: "string" } },
+      },
+      required: [
+        "datosGenerales",
+        "resumenEjecutivo",
+        "analisisSitio",
+        "equipamiento",
+        "disenoElectrico",
+        "disenoMecanico",
+        "anexos",
+      ],
+    },
+    changesFromPrevious: { type: ["string", "null"] },
+  },
+  required: ["sections", "checklist"],
+};
+
 export interface GenerateEFPResult {
   version: EFPVersion;
   metadata: {
@@ -473,27 +525,60 @@ export async function generateEFPVersionWithAI(args: {
   const t0 = Date.now();
   const response = await client.messages.create({
     model: DEFAULT_MODEL,
-    max_tokens: 8000,
+    max_tokens: 16000,
     system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: userPrompt }],
+    tools: [
+      {
+        name: "generate_efp_draft",
+        description:
+          "Generar el borrador del Proyecto Final de Ingeniería con sus 7 secciones, checklist por sección y resumen de cambios respecto a la versión anterior.",
+        input_schema: EFP_TOOL_INPUT_SCHEMA,
+      },
+    ],
+    tool_choice: { type: "tool", name: "generate_efp_draft" },
   });
   const latencyMs = Date.now() - t0;
 
-  const textBlock = response.content.find((c) => c.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
-    throw new AppError(500, "CLAUDE_NO_TEXT", "Claude devolvió respuesta sin texto");
-  }
-  const jsonText = stripCodeFences(textBlock.text.trim());
+  console.log(
+    `[efp] Claude responded in ${latencyMs}ms — stop_reason=${response.stop_reason} input=${response.usage.input_tokens} output=${response.usage.output_tokens} blocks=${response.content.map((c) => c.type).join(",")}`,
+  );
 
+  if (response.stop_reason === "max_tokens") {
+    throw new AppError(
+      500,
+      "CLAUDE_RESPONSE_TRUNCATED",
+      "La respuesta de la IA se cortó por exceder el límite de tokens. Probá con menos visitas técnicas como input.",
+    );
+  }
+
+  const toolUseBlock = response.content.find((c) => c.type === "tool_use");
   let parsed: unknown;
-  try {
-    parsed = JSON.parse(jsonText);
-  } catch {
-    throw new AppError(500, "CLAUDE_INVALID_JSON", "Claude devolvió un JSON inválido");
+  if (toolUseBlock && toolUseBlock.type === "tool_use") {
+    parsed = toolUseBlock.input;
+  } else {
+    // Fallback defensivo: si Claude ignoró el tool y devolvió texto, intentamos
+    // parsear el JSON crudo como antes (con limpieza de markdown wrapper).
+    const textBlock = response.content.find((c) => c.type === "text");
+    if (!textBlock || textBlock.type !== "text") {
+      throw new AppError(500, "CLAUDE_NO_TOOL_NOR_TEXT", "Claude no devolvió ni tool_use ni texto");
+    }
+    const jsonText = stripCodeFences(textBlock.text.trim());
+    try {
+      parsed = JSON.parse(jsonText);
+    } catch {
+      console.error("[efp] JSON parse fallback failed. Raw response (primeros 1500 chars):");
+      console.error(textBlock.text.slice(0, 1500));
+      throw new AppError(500, "CLAUDE_INVALID_JSON", "Claude devolvió un JSON inválido");
+    }
   }
 
   const validated = EFPJsonSchema.safeParse(parsed);
   if (!validated.success) {
+    console.error(
+      "[efp] Schema mismatch. Parsed keys:",
+      parsed && typeof parsed === "object" ? Object.keys(parsed) : typeof parsed,
+    );
     throw new AppError(
       500,
       "CLAUDE_SCHEMA_MISMATCH",
