@@ -119,6 +119,7 @@ enum NotificationType {
   goals_not_configured
   deadline_warning
   prev_substage_completed
+  engineering_completed
 }
 
 enum GoalArea {
@@ -785,6 +786,7 @@ model Notification {
   read         Boolean          @default(false)
   sentEmail    Boolean          @default(false)
   sentWhatsapp Boolean          @default(false)
+  uniqueKey    String?          @unique
   createdAt    DateTime         @default(now()) @db.Timestamptz(6)
 
   @@index([userId, read])

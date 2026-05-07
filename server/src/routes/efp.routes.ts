@@ -8,7 +8,7 @@
 // Edición inline:   PATCH /efp/versions/:versionId — actualiza el content de la
 //                   versión actual sin crear una nueva (estilo Notion).
 
-import { Action, AuditAction, AuditEntityType, FileAttachmentTipo, Module } from "@prisma/client";
+import { Action, AuditAction, AuditEntityType, EFPStatus, FileAttachmentTipo, Module } from "@prisma/client";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
 
@@ -24,6 +24,7 @@ import {
 } from "../services/efp.service.js";
 import { generateEFPPdf } from "../services/efpPdf/index.js";
 import { deleteStoredFile, saveUploadedFile } from "../services/file-storage.service.js";
+import { notifyEngineeringCompleted } from "../services/notify.service.js";
 import { badRequest, notFound, unauthorized } from "../utils/errors.js";
 import { serializeDate } from "../utils/serialization.js";
 
@@ -187,6 +188,54 @@ export async function registerEFPRoutes(app: FastifyInstance) {
       const efp = await ensureEFP(params.projectId);
       reply.code(201);
       return efp;
+    },
+  );
+
+  // ─── Cambiar status del EFP (DRAFT/REVIEW/APPROVED/ARCHIVED) ─────────────
+  // Pasar a APPROVED dispara aviso a Operaciones + Admin (idempotente).
+  app.patch(
+    "/efp/:id/status",
+    { preHandler: authorize(Module.INGENIERIA, Action.EDIT) },
+    async (request) => {
+      const user = ensureUser(request);
+      const params = z.object({ id: z.string().min(1) }).parse(request.params);
+      const body = z.object({ status: z.nativeEnum(EFPStatus) }).parse(request.body);
+
+      const efp = await prisma.engineeringFinalProject.findFirst({
+        where: { id: params.id, deletedAt: null },
+        select: { id: true, projectId: true, status: true },
+      });
+      if (!efp) throw notFound("EFP_NOT_FOUND", "EFP no encontrado");
+
+      if (efp.status === body.status) {
+        return { id: efp.id, status: efp.status };
+      }
+
+      const updated = await prisma.engineeringFinalProject.update({
+        where: { id: efp.id },
+        data: { status: body.status },
+        select: { id: true, status: true, projectId: true },
+      });
+
+      await createAuditEntry({
+        entityType: AuditEntityType.file,
+        entityId: efp.id,
+        projectId: efp.projectId,
+        userId: user.id,
+        action: AuditAction.status_changed,
+        description: `Cambió estado del Proyecto Final de Ingeniería de ${efp.status} a ${body.status}`,
+        oldValue: efp.status,
+        newValue: body.status,
+      });
+
+      if (body.status === EFPStatus.APPROVED) {
+        await notifyEngineeringCompleted({
+          projectId: efp.projectId,
+          trigger: "efp_approved",
+        });
+      }
+
+      return { id: updated.id, status: updated.status };
     },
   );
 

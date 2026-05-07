@@ -98,7 +98,7 @@ import {
   getOperationVisibility,
 } from "../services/pipeline-definitions.js";
 import { createNotificationIfNotExists } from "../services/notification.service.js";
-import { createAndSendNotification, checkProgressMilestone } from "../services/notify.service.js";
+import { createAndSendNotification, checkProgressMilestone, notifyEngineeringCompleted } from "../services/notify.service.js";
 import { fetchBcuRatePreview } from "../services/exchange-rate.service.js";
 import {
   applyDeadlineRulesToProject,
@@ -1988,6 +1988,17 @@ export async function registerApiRoutes(app: FastifyInstance) {
             changedBy: user.name,
           },
           deduplicate: false,
+        });
+      }
+
+      // Aviso a Operaciones + Admin cuando Ingeniería queda completada.
+      if (
+        stage.name === StageType.INGENIERIA &&
+        body.status === StageStatus.COMPLETED
+      ) {
+        await notifyEngineeringCompleted({
+          projectId: params.projectId,
+          trigger: "stage_completed",
         });
       }
     }
@@ -8334,7 +8345,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
       if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
 
-      const contextMap: Record<NotificationType, Parameters<typeof createAndSendNotification>[0]["context"]> = {
+      const contextMap: Partial<Record<NotificationType, Parameters<typeof createAndSendNotification>[0]["context"]>> = {
         task_due: { type: "task_due", projectName: project.clientName, taskTitle: "Tarea de prueba", dueDate: new Date().toISOString().slice(0, 10) },
         stage_changed: { type: "stage_changed", projectName: project.clientName, stageName: "Etapa de prueba", oldStatus: "Pendiente", newStatus: "En curso" },
         progress_milestone: { type: "progress_milestone", projectName: project.clientName, percent: 50 },
@@ -8344,7 +8355,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         goals_not_configured: { type: "goals_not_configured", period: "Q2 2025" },
       };
 
-      const titleMap: Record<NotificationType, string> = {
+      const titleMap: Partial<Record<NotificationType, string>> = {
         task_due: "Test: tarea por vencer",
         stage_changed: "Test: cambio de etapa",
         progress_milestone: "Test: hito de progreso",
@@ -8354,12 +8365,22 @@ export async function registerApiRoutes(app: FastifyInstance) {
         goals_not_configured: "Test: objetivos no configurados",
       };
 
+      const context = contextMap[body.type];
+      const title = titleMap[body.type];
+      if (!context || !title) {
+        reply.code(400);
+        return {
+          success: false,
+          error: `El tipo ${body.type} no tiene template de prueba (usar el flujo real para esa notificación).`,
+        };
+      }
+
       await createAndSendNotification({
         projectId: body.projectId,
         type: body.type,
-        title: titleMap[body.type],
+        title,
         message: `Notificación de prueba (${body.type}) para proyecto ${project.clientName}`,
-        context: contextMap[body.type],
+        context,
         deduplicate: false,
       });
 

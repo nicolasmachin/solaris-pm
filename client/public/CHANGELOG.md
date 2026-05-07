@@ -2,6 +2,17 @@
 
 ## v5.2
 
+### 6 de mayo de 2026
+
+#### Aviso a Operaciones cuando Ingeniería termina
+
+Cuando un proyecto sale de la etapa de Ingeniería, ahora avisa automáticamente al equipo de Operaciones (y a los administradores) para que puedan empezar a planificar la instalación. El aviso llega tanto por la campanita de la app como por email.
+
+- **Dos formas de disparar el aviso**: marcar la etapa "Ingeniería" del proyecto como Completada, o aprobar el Proyecto Final de Ingeniería desde su página dedicada (botón "Aprobar" arriba a la derecha, junto al estado).
+- **Una sola vez por proyecto**: aunque se den las dos cosas (marcar la etapa Y aprobar el Proyecto Final), cada destinatario recibe el aviso una sola vez. Si se vuelve atrás y se vuelve a marcar como completada, no se duplica.
+- **Estado visible del Proyecto Final**: ahora aparece un cartelito con el estado actual (Borrador / En revisión / Aprobado / Archivado) junto al título de la página del Proyecto Final. Si ya está aprobado, el botón cambia a "Reabrir" para volver a borrador.
+- **Permisos**: solo INGENIERIA y ADMIN pueden aprobar o reabrir.
+
 ### 5 de mayo de 2026
 
 #### Nueva herramienta: Proyecto Final de Ingeniería

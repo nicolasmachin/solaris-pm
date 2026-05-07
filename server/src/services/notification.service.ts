@@ -10,6 +10,7 @@ type CreateNotificationInput = {
   message: string;
   sentEmail?: boolean;
   sentWhatsapp?: boolean;
+  uniqueKey?: string | null;
 };
 
 export async function createNotification(input: CreateNotificationInput) {
@@ -22,6 +23,7 @@ export async function createNotification(input: CreateNotificationInput) {
       message: input.message,
       sentEmail: input.sentEmail ?? false,
       sentWhatsapp: input.sentWhatsapp ?? false,
+      uniqueKey: input.uniqueKey ?? null,
     },
   });
 }
@@ -40,4 +42,21 @@ export async function createNotificationIfNotExists(input: CreateNotificationInp
   }
 
   return createNotification(input);
+}
+
+/**
+ * Crea una notificación deduplicada por `uniqueKey`. Si ya existe una con la
+ * misma key, devuelve la existente sin crear una nueva (idempotencia
+ * "una sola vez de por vida"). Pensado para eventos que se pueden disparar
+ * desde varios lugares (ej. completar etapa Ingeniería + aprobar EFP).
+ */
+export async function createNotificationByUniqueKey(
+  input: CreateNotificationInput & { uniqueKey: string },
+) {
+  const existing = await prisma.notification.findUnique({
+    where: { uniqueKey: input.uniqueKey },
+  });
+  if (existing) return { notification: existing, created: false };
+  const notification = await createNotification(input);
+  return { notification, created: true };
 }

@@ -183,3 +183,31 @@ export function emailStageChanged(params: {
     text: `Cambio de etapa en ${params.projectName}\n${params.stageName}: ${params.oldStatus} → ${params.newStatus}\nVer: ${projectLink(params.projectId)}`,
   };
 }
+
+// ─── Template 7 — Ingeniería completada (listo para Operaciones) ─────────────
+
+export function emailEngineeringCompleted(params: {
+  projectName: string;
+  projectCode?: string | null;
+  projectId: string;
+  trigger: "stage_completed" | "efp_approved";
+}) {
+  const triggerLabel =
+    params.trigger === "efp_approved"
+      ? "Proyecto Final de Ingeniería aprobado"
+      : "Etapa de Ingeniería completada";
+  return {
+    subject: `Proyecto ${params.projectName} — Listo para Operaciones`,
+    html: layout(`
+      <h2>Listo para Operaciones</h2>
+      <p>El proyecto <strong>${params.projectName}</strong> completó la etapa de Ingeniería y está listo para que Operaciones inicie la planificación de la instalación.</p>
+      <div class="meta">
+        <div class="meta-row"><span class="meta-label">Proyecto</span><span class="meta-value">${params.projectName}</span></div>
+        ${params.projectCode ? `<div class="meta-row"><span class="meta-label">Código</span><span class="meta-value">${params.projectCode}</span></div>` : ""}
+        <div class="meta-row"><span class="meta-label">Disparador</span><span class="meta-value">${triggerLabel}</span></div>
+      </div>
+      <a class="btn" href="${projectLink(params.projectId)}">Ver proyecto →</a>
+    `),
+    text: `Proyecto ${params.projectName} listo para Operaciones (${triggerLabel}).\nVer: ${projectLink(params.projectId)}`,
+  };
+}

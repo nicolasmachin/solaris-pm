@@ -148,3 +148,14 @@ export function efpVersionPdfUrl(versionId: string): string {
   const base = apiClient.defaults.baseURL ?? "";
   return `${base}/api/efp/versions/${versionId}/pdf`;
 }
+
+export async function updateEFPStatus(
+  efpId: string,
+  status: EFPStatus,
+): Promise<{ id: string; status: EFPStatus }> {
+  const { data } = await apiClient.patch<{ id: string; status: EFPStatus }>(
+    `/api/efp/${efpId}/status`,
+    { status },
+  );
+  return data;
+}

@@ -21,6 +21,7 @@ import {
   EFP_SECTION_TITLES,
   type EFPAttachmentDto,
   type EFPSectionKey,
+  type EFPStatus,
   type EFPVersionDto,
   deleteEFPAttachment,
   deleteEFPVersion,
@@ -28,10 +29,12 @@ import {
   generateEFPWithAI,
   getEFP,
   snapshotEFPVersion,
+  updateEFPStatus,
   updateEFPVersion,
   uploadEFPAttachment,
 } from "../api/efp.api";
 import { getVisitas, type VisitListItem } from "../api/visitas.api";
+import { usePermission } from "../hooks/usePermission";
 
 const MONTHS_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 function fmt(iso: string): string {
@@ -42,6 +45,29 @@ function fmt(iso: string): string {
 
 function getApiErr(err: unknown) {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+}
+
+const STATUS_LABELS: Record<EFPStatus, string> = {
+  DRAFT: "Borrador",
+  REVIEW: "En revisión",
+  APPROVED: "Aprobado",
+  ARCHIVED: "Archivado",
+};
+
+function StatusBadge({ status }: { status: EFPStatus }) {
+  const tone =
+    status === "APPROVED"
+      ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+      : status === "REVIEW"
+        ? "bg-blue-500/20 text-blue-300 border-blue-500/40"
+        : status === "ARCHIVED"
+          ? "bg-zinc-500/20 text-zinc-300 border-zinc-500/40"
+          : "bg-yellow-500/20 text-yellow-300 border-yellow-500/40";
+  return (
+    <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded border ${tone}`}>
+      {STATUS_LABELS[status]}
+    </span>
+  );
 }
 
 async function downloadWithAuth(url: string, filename: string): Promise<void> {
@@ -65,6 +91,7 @@ export function ProyectoFinal() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const canEditIngenieria = usePermission("INGENIERIA", "EDIT");
 
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
@@ -78,6 +105,23 @@ export function ProyectoFinal() {
   const efp = efpQ.data?.efp ?? null;
   const project = efpQ.data?.project ?? null;
   const versions = efp?.versions ?? [];
+
+  const statusMutation = useMutation({
+    mutationFn: ({ efpId, status }: { efpId: string; status: EFPStatus }) =>
+      updateEFPStatus(efpId, status),
+    onSuccess: ({ status }) => {
+      qc.invalidateQueries({ queryKey: ["efp", projectId] });
+      qc.invalidateQueries({ queryKey: ["ingenieria-workspace", projectId] });
+      if (status === "APPROVED") {
+        toast.success("Proyecto Final aprobado. Operaciones recibió el aviso.");
+      } else {
+        toast.success(`Estado actualizado a ${status}`);
+      }
+    },
+    onError: (err) => {
+      toast.error(getApiErr(err) ?? "No se pudo cambiar el estado");
+    },
+  });
 
   const currentVersion = useMemo(() => {
     if (versions.length === 0) return null;
@@ -106,12 +150,46 @@ export function ProyectoFinal() {
           <h1 className="text-lg font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-[var(--color-accent)]" />
             Proyecto Final de Ingeniería
+            {efp && <StatusBadge status={efp.status} />}
           </h1>
-          {project && (
-            <p className="text-[11px] text-[var(--color-text-muted)] font-mono">
-              {project.code} · {project.clientName}
-            </p>
-          )}
+          <div className="flex items-center gap-3 flex-wrap">
+            {project && (
+              <p className="text-[11px] text-[var(--color-text-muted)] font-mono">
+                {project.code} · {project.clientName}
+              </p>
+            )}
+            {efp && canEditIngenieria && efp.status !== "APPROVED" && versions.length > 0 && (
+              <button
+                onClick={() => {
+                  if (
+                    confirm(
+                      "¿Aprobar el Proyecto Final? Se le va a avisar a Operaciones para que arranque la planificación de la instalación.",
+                    )
+                  ) {
+                    statusMutation.mutate({ efpId: efp.id, status: "APPROVED" });
+                  }
+                }}
+                disabled={statusMutation.isPending}
+                className="inline-flex items-center gap-1.5 rounded-md bg-[var(--color-accent)] px-3 py-1.5 text-xs font-semibold text-black hover:opacity-90 disabled:opacity-50"
+              >
+                <Check className="w-3.5 h-3.5" />
+                {statusMutation.isPending ? "Aprobando…" : "Aprobar"}
+              </button>
+            )}
+            {efp && canEditIngenieria && efp.status === "APPROVED" && (
+              <button
+                onClick={() => {
+                  if (confirm("¿Volver el Proyecto Final a estado borrador?")) {
+                    statusMutation.mutate({ efpId: efp.id, status: "DRAFT" });
+                  }
+                }}
+                disabled={statusMutation.isPending}
+                className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-50"
+              >
+                Reabrir
+              </button>
+            )}
+          </div>
         </div>
       </header>
 

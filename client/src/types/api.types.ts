@@ -32,7 +32,10 @@ export type NotificationType =
   | "stage_changed"
   | "progress_milestone"
   | "project_delayed"
-  | "goals_not_configured";
+  | "goals_not_configured"
+  | "deadline_warning"
+  | "prev_substage_completed"
+  | "engineering_completed";
 export type PhaseType = "MONOFASICO" | "TRIFASICO_230" | "TRIFASICO_400";
 
 // ─── Auth ────────────────────────────────────────────────────────────────────

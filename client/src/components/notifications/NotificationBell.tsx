@@ -14,6 +14,8 @@ function getTypeIcon(type: NotificationType): string {
     case "stage_changed":
     case "STAGE_COMPLETED":
       return "✅";
+    case "engineering_completed":
+      return "⚡";
     case "progress_milestone":
     case "goals_not_configured":
       return "🎯";
