@@ -4,6 +4,15 @@
 
 ### 6 de mayo de 2026
 
+#### Proyecto Final de Ingeniería — borrador más conciso y rápido
+
+El borrador con IA ahora apunta a un PDF de 6 a 10 páginas, no de 19. Cada sección tiene un alcance acotado, no se repite información entre secciones, y la sección Anexos pasa a ser solo una lista de archivos adjuntos disponibles (sin redactar contenido técnico ahí, como hacía antes).
+
+- **Asignación clara por sección**: los datos del cliente van en Datos generales, los datos técnicos en Resumen ejecutivo, el techo y la instalación existente en Análisis del sitio, etc. La misma información no se repite en dos lugares.
+- **Más rápido**: la generación bajó de ~4 minutos a ~75 segundos en proyectos típicos.
+- **Más barato por borrador** (alrededor de un tercio del costo anterior).
+- **Checklist por sección** ahora tiene un máximo de 5 ítems para mantenerla accionable.
+
 #### Arreglos
 
 - **Generador de borrador del Proyecto Final de Ingeniería** ahora funciona en proyectos con muchos materiales o varias visitas técnicas. Antes la IA fallaba con un error genérico cuando la respuesta era muy larga (cliente con 60+ materiales o 2+ visitas). Ahora se completa correctamente y genera las 7 secciones aunque la respuesta sea grande.

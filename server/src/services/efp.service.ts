@@ -76,48 +76,52 @@ const EFPJsonSchema = z.object({
   changesFromPrevious: z.string().nullable().optional(),
 });
 
-const SYSTEM_PROMPT = `Sos un asistente especializado en redactar proyectos finales de ingeniería de sistemas fotovoltaicos residenciales y comerciales en Uruguay para la empresa Voltia.
+const SYSTEM_PROMPT = `Sos un proyectista senior de sistemas fotovoltaicos en Uruguay para Voltia. Tu trabajo es redactar el Proyecto Final de Ingeniería basado en pre-ingeniería + datos del proyecto + visitas técnicas de relevamiento.
 
-Tu trabajo es integrar la información de la pre-ingeniería + datos del proyecto + visitas técnicas relevadas en obra, y generar un borrador del Proyecto Final de Ingeniería estructurado en 7 secciones fijas.
+REGLAS DE ORO (no negociables):
 
-Este borrador será luego editado por el proyectista, así que debe ser un punto de partida sólido pero no se espera que sea perfecto.
+1. CONCISIÓN: Cada sección es CORTA y DIRECTA. No redactes como tesis, sino como memo técnico. Un proyectista experimentado no necesita explicaciones largas. El PDF final tiene que tener entre 6 y 10 páginas en total — NO 19.
 
-REGLAS:
-1. Devolvé SOLO un JSON válido, sin markdown alrededor, sin explicaciones antes o después.
-2. Si una sección no tiene info suficiente, ponela como "Pendiente de completar por el proyectista" e indicá brevemente qué falta.
-3. Sintetizá info de pre-ingeniería + datos del proyecto + visitas. NO inventes datos técnicos (potencias, calibres, calibres exactos de protecciones, etc).
-4. Para cada sección, redactá en markdown con bullets cuando ayuden y prosa cuando aporte.
-5. Si hay información contradictoria entre pre-ingeniería y visita técnica, prevalece la visita (es el dato más actualizado del sitio real) y dejá una nota indicando la diferencia.
-6. La checklist debe listar 3 a 6 puntos accionables que el proyectista tiene que verificar/completar en cada sección.
+2. CERO REPETICIÓN: Cada dato/observación va EN UNA SOLA sección. Si lo mencionás en "Análisis del sitio", NO lo repetís en "Resumen ejecutivo" ni en "Diseño eléctrico". Asignación clara:
 
-ESTRUCTURA DEL JSON:
-{
-  "sections": {
-    "datosGenerales": "markdown",
-    "resumenEjecutivo": "markdown",
-    "analisisSitio": "markdown",
-    "equipamiento": "markdown",
-    "disenoElectrico": "markdown",
-    "disenoMecanico": "markdown",
-    "anexos": "markdown con lista de docs/fotos disponibles"
-  },
-  "checklist": {
-    "datosGenerales": ["punto 1 a verificar", "punto 2", ...],
-    "resumenEjecutivo": [...],
-    "analisisSitio": [...],
-    "equipamiento": [...],
-    "disenoElectrico": [...],
-    "disenoMecanico": [...],
-    "anexos": [...]
-  },
-  "changesFromPrevious": "qué cambió respecto a versión anterior. null si es la primera."
-}
+   - Datos generales: cliente, dirección, ubicación, modalidad de pago, características administrativas. NADA técnico acá.
+   - Resumen ejecutivo: síntesis del sistema en bullets de 1-2 líneas (potencia, paneles, inversor, tipo de red). Solo particularidades CRÍTICAS que afecten el diseño. Nada de detalle.
+   - Análisis del sitio: techo (tipo, pendiente, estado), sombras, orientación, INSTALACIÓN ELÉCTRICA EXISTENTE relevada en visita, trabajos de normalización requeridos. Acá van las discrepancias entre pre-ingeniería y visita.
+   - Equipamiento: SOLO lista de qué materiales se usan (modelos, cantidades). NO el dónde/cómo se instalan.
+   - Diseño eléctrico: cálculos, protecciones DC y AC, conexionado, puesta a tierra, monitoreo. NO repitas la lista de materiales que ya está en Equipamiento.
+   - Diseño mecánico: layout de paneles, sistema de montaje, anclajes, cargas. NO repitas orientación del techo (eso va en Análisis).
+   - Anexos: SOLO lista de archivos adjuntos disponibles. NUNCA redactes contenido técnico ahí.
 
-ESTILO:
-- Español rioplatense
-- Profesional, técnico, sin emojis
-- Listas con bullets cuando ayudan, prosa cuando aporta
-- Concreto: si tenés un dato (modelo de inversor, cantidad de paneles), usalo`;
+3. ESTILO:
+   - Español rioplatense, profesional, técnico.
+   - Bullets cortos, no párrafos largos.
+   - Sin sub-headers internos (nada de H3/H4 dentro de las secciones). Usar bullets o tablas en markdown.
+   - Sin emojis.
+   - Sin frases de relleno tipo "Es importante mencionar que…", "Cabe destacar…", "El presente proyecto…".
+
+4. DATOS:
+   - Si tenés el dato, decilo claro y concreto.
+   - Si NO tenés el dato, ponelo como ítem de la CHECKLIST de esa sección, no como párrafo dentro del contenido. Evitá la frase "Pendiente de completar por el proyectista" repetida — eso no es información para el lector del PDF.
+   - NO inventes datos técnicos (calibres, modelos, cargas, etc.).
+
+5. DISCREPANCIAS: Si hay contradicción entre pre-ingeniería y visita, mencionarla UNA SOLA VEZ en "Análisis del sitio" y agregá un ítem en checklist "validar dimensiones".
+
+6. ANEXOS = LISTA DE ARCHIVOS:
+   Ejemplo correcto:
+   "Documentación adjunta:
+   - 5 fotografías del relevamiento (visita 5/5/2026)
+   - Pre-ingeniería v1
+   - Presupuesto de materiales (45 ítems)
+   - Pendiente: datasheets de equipos"
+
+   Ejemplo INCORRECTO: redactar de nuevo el sistema, repetir info técnica, agregar conclusiones.
+
+7. CHECKLIST POR SECCIÓN:
+   - 3 a 5 ítems accionables MAXIMO por sección.
+   - Cada ítem es lo que el proyectista debe verificar o completar para cerrar esa sección.
+   - Tono imperativo: "Verificar X", "Confirmar Y", "Cargar datasheet de Z".
+
+OBJETIVO FINAL: PDF de 6 a 10 páginas, sin repetición, info bien asignada por sección. Pensá como ingeniero ocupado que necesita la info justa, no como escritor académico.`;
 
 interface BuildPromptArgs {
   project: {
@@ -247,9 +251,9 @@ ${preIng.notasAdicionales ?? "(sin notas)"}
     visits.forEach((v, idx) => {
       prompt += `\n## Visita ${idx + 1} — ${v.visitType.toLowerCase()} del ${v.visitDate.toISOString().slice(0, 10)} (operario: ${v.operario})\n`;
       if (v.notes) prompt += `Notas generales del operario: ${v.notes}\n`;
-      prompt += `Cantidad de inputs cargados: ${v.inputsCount}\n`;
       if (v.latestReport) {
-        prompt += `\nÚltimo informe de la visita (v${v.latestReport.version}):\nResumen: ${v.latestReport.summary ?? "(sin resumen)"}\nSecciones:\n${JSON.stringify(v.latestReport.content, null, 2)}\n`;
+        prompt += `Resumen del informe (v${v.latestReport.version}): ${v.latestReport.summary ?? "(sin resumen)"}\n`;
+        prompt += `Observaciones por sección:\n${formatVisitReportContent(v.latestReport.content)}\n`;
       } else {
         prompt += `(La visita aún no tiene informe generado.)\n`;
       }
@@ -259,22 +263,50 @@ ${preIng.notasAdicionales ?? "(sin notas)"}
   }
 
   if (previousEFPVersion) {
-    prompt += `\n# VERSIÓN ANTERIOR DEL PROYECTO FINAL (v${previousEFPVersion.version})
+    prompt += `\n# VERSIÓN ANTERIOR (v${previousEFPVersion.version})
 
-${JSON.stringify(previousEFPVersion.content, null, 2)}
+${summarizePreviousEFP(previousEFPVersion.content)}
 
-Generá la nueva versión integrando los inputs actualizados. En "changesFromPrevious" indicá qué cambió respecto a v${previousEFPVersion.version}.
+En "changesFromPrevious" indicá brevemente qué cambia (1-3 bullets, no el detalle).
 `;
   }
 
   prompt += `\n# TAREA
 
-Generá el Proyecto Final de Ingeniería en formato JSON según las reglas del system prompt. Asegurate de:
-- Llenar las 7 secciones aunque algunas tengan info parcial.
-- Producir checklists accionables (qué tiene que verificar el proyectista).
-- Mencionar carencias importantes en cada sección si faltan datos clave.`;
+Generá el Proyecto Final de Ingeniería siguiendo las reglas del system prompt: concisión, cero repetición entre secciones, anexos solo como lista de archivos.`;
 
   return prompt;
+}
+
+// Aplana las 7 secciones del informe de visita como bullets legibles, en vez
+// de volcar el JSON entero. Cada valor se trunca para no inflar el contexto.
+function formatVisitReportContent(content: unknown): string {
+  if (!content || typeof content !== "object") return "(sin observaciones)";
+  const max = 600;
+  const lines: string[] = [];
+  for (const [key, value] of Object.entries(content as Record<string, unknown>)) {
+    if (value == null) continue;
+    const text = typeof value === "string" ? value : JSON.stringify(value);
+    if (!text.trim()) continue;
+    const truncated = text.length > max ? `${text.slice(0, max).trim()}…` : text.trim();
+    lines.push(`- ${key}: ${truncated}`);
+  }
+  return lines.length > 0 ? lines.join("\n") : "(sin observaciones)";
+}
+
+// Resumen muy compacto de la versión previa: el outline por sección con los
+// primeros caracteres, no el contenido completo. Suficiente para que la IA
+// detecte qué cambia sin que tenga que copiar todo.
+function summarizePreviousEFP(content: unknown): string {
+  if (!content || typeof content !== "object") return "(sin contenido)";
+  const max = 200;
+  const lines: string[] = [];
+  for (const [key, value] of Object.entries(content as Record<string, unknown>)) {
+    const text = typeof value === "string" ? value.trim() : "";
+    const preview = text.length > max ? `${text.slice(0, max)}…` : text;
+    lines.push(`- ${key} (${text.length} chars): ${preview || "(vacío)"}`);
+  }
+  return lines.join("\n");
 }
 
 function calculateCostUsd(modelUsed: string, tokensInput: number, tokensOutput: number): number {
@@ -289,21 +321,50 @@ function stripCodeFences(text: string): string {
   return m ? m[1].trim() : text;
 }
 
-// Schema JSON crudo que se le pasa a Claude vía tool_use. Equivalente al Zod
-// de arriba, pero como JSONSchema (que es lo que entiende la API).
+// Schema JSON que se le pasa a Claude vía tool_use. Las descriptions per-section
+// refuerzan al system prompt: cada sección tiene un alcance acotado y un techo
+// orientativo de longitud para que el PDF final quede entre 6-10 páginas.
 const EFP_TOOL_INPUT_SCHEMA = {
   type: "object" as const,
   properties: {
     sections: {
       type: "object",
       properties: {
-        datosGenerales: { type: "string" },
-        resumenEjecutivo: { type: "string" },
-        analisisSitio: { type: "string" },
-        equipamiento: { type: "string" },
-        disenoElectrico: { type: "string" },
-        disenoMecanico: { type: "string" },
-        anexos: { type: "string" },
+        datosGenerales: {
+          type: "string",
+          description:
+            "Datos del cliente, dirección, ubicación, modalidad de pago, características administrativas. Nada técnico. Máx 1 página.",
+        },
+        resumenEjecutivo: {
+          type: "string",
+          description:
+            "Síntesis técnica del sistema en bullets cortos (potencia, paneles, inversor, tipo de red). Solo particularidades CRÍTICAS que afecten el diseño. Máx 1 página.",
+        },
+        analisisSitio: {
+          type: "string",
+          description:
+            "Techo, sombras, orientación, instalación eléctrica existente relevada en visita, trabajos de normalización requeridos. Acá van las discrepancias entre pre-ingeniería y visita. Máx 2 páginas.",
+        },
+        equipamiento: {
+          type: "string",
+          description:
+            "Lista de equipos y materiales (modelo + cantidad). Solo el QUÉ, no el dónde/cómo. NO repetir lo que va en Diseño eléctrico/mecánico. Máx 1.5 páginas.",
+        },
+        disenoElectrico: {
+          type: "string",
+          description:
+            "Cálculos, protecciones DC y AC, conexionado, puesta a tierra, monitoreo. NO repetir lista de materiales. Máx 2 páginas.",
+        },
+        disenoMecanico: {
+          type: "string",
+          description:
+            "Layout de paneles, sistema de montaje, anclajes, cargas estructurales. NO repetir orientación del techo (eso va en Análisis del sitio). Máx 1.5 páginas.",
+        },
+        anexos: {
+          type: "string",
+          description:
+            "SOLO lista de archivos adjuntos disponibles (fotos, presupuesto, pre-ingeniería, datasheets). NUNCA redactar contenido técnico ahí. Máx 0.5 página.",
+        },
       },
       required: [
         "datosGenerales",
@@ -317,14 +378,16 @@ const EFP_TOOL_INPUT_SCHEMA = {
     },
     checklist: {
       type: "object",
+      description:
+        "Checklist por sección: 3 a 5 ítems accionables que el proyectista debe verificar/completar. Tono imperativo: 'Verificar X', 'Confirmar Y'.",
       properties: {
-        datosGenerales: { type: "array", items: { type: "string" } },
-        resumenEjecutivo: { type: "array", items: { type: "string" } },
-        analisisSitio: { type: "array", items: { type: "string" } },
-        equipamiento: { type: "array", items: { type: "string" } },
-        disenoElectrico: { type: "array", items: { type: "string" } },
-        disenoMecanico: { type: "array", items: { type: "string" } },
-        anexos: { type: "array", items: { type: "string" } },
+        datosGenerales: { type: "array", items: { type: "string" }, maxItems: 5 },
+        resumenEjecutivo: { type: "array", items: { type: "string" }, maxItems: 5 },
+        analisisSitio: { type: "array", items: { type: "string" }, maxItems: 5 },
+        equipamiento: { type: "array", items: { type: "string" }, maxItems: 5 },
+        disenoElectrico: { type: "array", items: { type: "string" }, maxItems: 5 },
+        disenoMecanico: { type: "array", items: { type: "string" }, maxItems: 5 },
+        anexos: { type: "array", items: { type: "string" }, maxItems: 5 },
       },
       required: [
         "datosGenerales",
@@ -336,7 +399,11 @@ const EFP_TOOL_INPUT_SCHEMA = {
         "anexos",
       ],
     },
-    changesFromPrevious: { type: ["string", "null"] },
+    changesFromPrevious: {
+      type: ["string", "null"],
+      description:
+        "Resumen breve (1-3 bullets) de qué cambió respecto a la versión anterior. null si es la primera versión.",
+    },
   },
   required: ["sections", "checklist"],
 };
