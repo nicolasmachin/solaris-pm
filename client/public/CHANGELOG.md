@@ -2,6 +2,21 @@
 
 ## v5.3
 
+### 10 de mayo de 2026 (tercera parte)
+
+#### Finanzas — Pestaña Estado de resultados
+
+La pestaña Estado de resultados deja de ser un placeholder y muestra el P&L real del período elegido (mensual, trimestral o anual), con desplegables por categoría para ver el detalle de cada ítem.
+
+- **Selector de período** arriba: Mensual / Trimestral / Anual + selector del mes / trimestre / año correspondiente.
+- **Ingresos en verde** + **egresos por categoría en rojo** (Costos fijos, Costos variables, Salidas por proyecto, Pago a proveedores, Compras de stock, Otros). Las categorías sin movimientos en el período no se muestran.
+- **Click en una categoría** abre el detalle: cada ítem con fecha, descripción, proveedor o cliente, y monto.
+- **Salidas por proyecto** se agrupan automáticamente por proyecto: click en el proyecto muestra los movimientos individuales adentro.
+- **Costos fijos** muestran el nombre del costo fijo predefinido (no la descripción del movimiento), si está vinculado.
+- **Resultado** abajo: ingresos − egresos. Verde si positivo, rojo si negativo.
+- **Rentabilidad** en porcentaje (resultado / ingresos × 100).
+- Los movimientos en USD se convierten a UYU usando el tipo de cambio actual para que todos los totales estén en una sola moneda. Se excluyen los ajustes de conciliación porque no son operación.
+
 ### 10 de mayo de 2026 (segunda parte)
 
 #### Finanzas — Pestaña Flujo de fondos

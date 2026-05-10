@@ -15220,4 +15220,160 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
     throw badRequest("UNSUPPORTED", "sourceType no soportado");
   });
+
+  // ─── Estado de resultados (P&L) ────────────────────────────────────────────
+
+  type ResultItem = {
+    id: string;
+    fecha: string;
+    descripcion: string;
+    monto: number;
+    moneda: Moneda;
+    projectClientName: string | null;
+    projectCode: string | null;
+    supplierName: string | null;
+  };
+
+  function rangeForPeriod(periodo: "MENSUAL" | "TRIMESTRAL" | "ANUAL", anio: number, mes?: number, trimestre?: number) {
+    if (periodo === "MENSUAL") {
+      const m = mes ?? 1;
+      return {
+        fechaInicio: new Date(Date.UTC(anio, m - 1, 1)),
+        fechaFin: new Date(Date.UTC(anio, m, 1)),
+      };
+    }
+    if (periodo === "TRIMESTRAL") {
+      const t = Math.max(1, Math.min(4, trimestre ?? 1));
+      const startMonth = (t - 1) * 3;
+      return {
+        fechaInicio: new Date(Date.UTC(anio, startMonth, 1)),
+        fechaFin: new Date(Date.UTC(anio, startMonth + 3, 1)),
+      };
+    }
+    return {
+      fechaInicio: new Date(Date.UTC(anio, 0, 1)),
+      fechaFin: new Date(Date.UTC(anio + 1, 0, 1)),
+    };
+  }
+
+  app.get("/finance/results", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+    const query = z
+      .object({
+        periodo: z.enum(["MENSUAL", "TRIMESTRAL", "ANUAL"]),
+        anio: z.coerce.number().int(),
+        mes: z.coerce.number().int().min(1).max(12).optional(),
+        trimestre: z.coerce.number().int().min(1).max(4).optional(),
+      })
+      .parse(request.query);
+
+    const { fechaInicio, fechaFin } = rangeForPeriod(query.periodo, query.anio, query.mes, query.trimestre);
+
+    const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
+    const fallbackUsdToUyu =
+      lastRate && Number(lastRate.usdToUyu) > 0 ? Number(lastRate.usdToUyu) : 1;
+    const toUyu = (amount: number, moneda: Moneda) =>
+      moneda === Moneda.USD ? amount * fallbackUsdToUyu : amount;
+
+    const movements = await prisma.financeMovement.findMany({
+      where: {
+        status: FinanceMovementStatus.PAGADO,
+        deletedAt: null,
+        fecha: { gte: fechaInicio, lt: fechaFin },
+        // Excluir ajustes de conciliación: no son operación, son ruido contable.
+        categoriaPrincipal: { not: CategoriaPrincipal.AJUSTE_CONCILIACION },
+      },
+      include: {
+        project: { select: { id: true, code: true, clientName: true } },
+        supplier: { select: { nombre: true } },
+        fixedCost: { select: { nombre: true } },
+      },
+      orderBy: { fecha: "asc" },
+    });
+
+    function fmtItem(m: typeof movements[number]): ResultItem {
+      return {
+        id: m.id,
+        fecha: serializeDateNonNull(m.fecha),
+        descripcion: m.descripcion,
+        monto: Number(m.monto),
+        moneda: m.moneda,
+        projectClientName: m.project?.clientName ?? null,
+        projectCode: m.project?.code ?? null,
+        supplierName: m.supplier?.nombre ?? null,
+      };
+    }
+
+    const sumUyu = (rows: typeof movements) =>
+      rows.reduce((s, m) => s + toUyu(Number(m.monto), m.moneda), 0);
+
+    const ingresosRows = movements.filter((m) => m.tipoMovimiento === TipoMovimiento.INGRESO);
+    const egresosRows = movements.filter((m) => m.tipoMovimiento === TipoMovimiento.GASTO);
+
+    const fijos = egresosRows.filter((m) => m.categoriaPrincipal === CategoriaPrincipal.FIJO);
+    const variables = egresosRows.filter((m) => m.categoriaPrincipal === CategoriaPrincipal.VARIABLE);
+    const salidasProyecto = egresosRows.filter((m) => m.categoriaPrincipal === CategoriaPrincipal.PROYECTO_SALIDA);
+    const pagoProveedores = egresosRows.filter((m) => m.categoriaPrincipal === CategoriaPrincipal.PAGO_PROVEEDOR);
+    const comprasStock = egresosRows.filter((m) => m.categoriaPrincipal === CategoriaPrincipal.COMPRA_STOCK);
+    const otrosCats = new Set<CategoriaPrincipal>([
+      CategoriaPrincipal.FIJO,
+      CategoriaPrincipal.VARIABLE,
+      CategoriaPrincipal.PROYECTO_SALIDA,
+      CategoriaPrincipal.PAGO_PROVEEDOR,
+      CategoriaPrincipal.COMPRA_STOCK,
+    ]);
+    const otros = egresosRows.filter((m) => !otrosCats.has(m.categoriaPrincipal));
+
+    type ProjectGroup = { projectId: string; clientName: string; code: string; total: number; items: ResultItem[] };
+    const byProjectMap = new Map<string, ProjectGroup>();
+    for (const m of salidasProyecto) {
+      const key = m.projectId ?? "sin-proyecto";
+      let g = byProjectMap.get(key);
+      if (!g) {
+        g = {
+          projectId: m.projectId ?? "",
+          clientName: m.project?.clientName ?? "Sin proyecto",
+          code: m.project?.code ?? "",
+          total: 0,
+          items: [],
+        };
+        byProjectMap.set(key, g);
+      }
+      g.total += toUyu(Number(m.monto), m.moneda);
+      g.items.push(fmtItem(m));
+    }
+    const byProject = Array.from(byProjectMap.values()).sort((a, b) => b.total - a.total);
+
+    const totalIngresos = sumUyu(ingresosRows);
+    const totalEgresos = sumUyu(egresosRows);
+    const resultado = totalIngresos - totalEgresos;
+    const rentabilidad = totalIngresos > 0 ? Math.round((resultado / totalIngresos) * 1000) / 10 : 0;
+
+    return {
+      periodo: query.periodo,
+      anio: query.anio,
+      mes: query.mes ?? null,
+      trimestre: query.trimestre ?? null,
+      fechaInicio: serializeDateNonNull(fechaInicio),
+      fechaFin: serializeDateNonNull(fechaFin),
+      fallbackUsdToUyu,
+      ingresos: { total: totalIngresos, items: ingresosRows.map(fmtItem) },
+      egresos: {
+        total: totalEgresos,
+        costosFijos: {
+          total: sumUyu(fijos),
+          items: fijos.map((m) => ({
+            ...fmtItem(m),
+            descripcion: m.fixedCost?.nombre ?? m.descripcion,
+          })),
+        },
+        costosVariables: { total: sumUyu(variables), items: variables.map(fmtItem) },
+        salidasProyecto: { total: sumUyu(salidasProyecto), byProject },
+        pagoProveedores: { total: sumUyu(pagoProveedores), items: pagoProveedores.map(fmtItem) },
+        comprasStock: { total: sumUyu(comprasStock), items: comprasStock.map(fmtItem) },
+        otros: { total: sumUyu(otros), items: otros.map(fmtItem) },
+      },
+      resultado,
+      rentabilidad,
+    };
+  });
 }
