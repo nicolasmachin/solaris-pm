@@ -2,6 +2,19 @@
 
 ## v5.3
 
+### 10 de mayo de 2026 (quinta parte)
+
+#### Finanzas — Flujo de fondos con histórico
+
+El gráfico de Flujo de fondos ahora muestra **6 meses** en pantalla: los **últimos 3 meses reales** (saldo de cuentas día a día, según los movimientos pagados) y los **próximos 3 meses proyectados**.
+
+- La curva del pasado se dibuja en **gris azulado**, más fina, indicando que es contexto histórico.
+- La curva de la proyección se mantiene en **azul Voltia**, más gruesa, porque es lo que importa para decidir.
+- Una **línea vertical punteada con la etiqueta "Hoy"** marca el día actual en el medio del gráfico.
+- El punto donde termina el pasado y arranca la proyección coincide en valor: la transición es continua.
+- La zona roja sigue apareciendo solo en la parte futura cuando el saldo proyectado cae a negativo (no marca pasado).
+- Abajo del gráfico hay una leyenda con tres ítems: "Pasado (real)", "Proyección (futuro)" y "Saldo bajo / negativo".
+
 ### 10 de mayo de 2026 (cuarta parte)
 
 #### Finanzas — Pestaña Pendientes (nueva)

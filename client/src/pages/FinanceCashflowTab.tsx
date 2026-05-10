@@ -76,7 +76,10 @@ export function FinanceCashflowTab() {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Metric label="Saldo actual (USD + UYU a TC)" value={fmtCurrency(data.timelineUSD[0]?.saldo ?? 0, "USD")} />
+        <Metric
+          label="Saldo actual (USD + UYU a TC)"
+          value={fmtCurrency(data.projectionTimeline[0]?.saldo ?? 0, "USD")}
+        />
         <Metric
           label="Entradas previstas"
           value={`+${fmtCurrency(entradasTotal, "USD")}`}
@@ -139,32 +142,63 @@ function Metric({ label, value, tone }: { label: string; value: string; tone?: "
 }
 
 function CashflowChart({ data }: { data: CashflowDto }) {
-  const chartData = useMemo(
-    () =>
-      data.timelineUSD.map((p) => ({
+  // Combinamos las 2 series en un solo array, indexado por fechaIso. Cada fila
+  // tiene saldoPasado o saldoFuturo (uno de los dos en null) para que recharts
+  // dibuje 2 líneas separadas con connectNulls=false.
+  const chartData = useMemo(() => {
+    const rows: {
+      fechaIso: string;
+      saldoPasado: number | null;
+      saldoFuturo: number | null;
+      descripcion: string;
+    }[] = [];
+    for (const p of data.historicalTimeline) {
+      rows.push({
         fechaIso: p.fecha,
-        fechaShort: formatDateShort(p.fecha),
-        saldo: p.saldo,
+        saldoPasado: p.saldo,
+        saldoFuturo: null,
         descripcion: p.descripcion,
-      })),
-    [data.timelineUSD],
-  );
+      });
+    }
+    // El primer punto de la proyección coincide con el último del histórico
+    // (mismo timestamp). Lo dejamos como punto "puente": saldoPasado + saldoFuturo
+    // ambos seteados para que las 2 líneas se toquen visualmente.
+    if (data.projectionTimeline.length > 0 && rows.length > 0) {
+      rows[rows.length - 1].saldoFuturo = data.projectionTimeline[0].saldo;
+    }
+    for (let i = 1; i < data.projectionTimeline.length; i++) {
+      const p = data.projectionTimeline[i];
+      rows.push({
+        fechaIso: p.fecha,
+        saldoPasado: null,
+        saldoFuturo: p.saldo,
+        descripcion: p.descripcion,
+      });
+    }
+    rows.sort((a, b) => a.fechaIso.localeCompare(b.fechaIso));
+    return rows;
+  }, [data.historicalTimeline, data.projectionTimeline]);
 
-  const minSaldo = Math.min(...chartData.map((p) => p.saldo));
-  const maxSaldo = Math.max(...chartData.map((p) => p.saldo));
+  const todayIso = data.projectionTimeline[0]?.fecha ?? new Date().toISOString();
+  const minSaldoFuturo = Math.min(
+    ...data.projectionTimeline.map((p) => p.saldo),
+    0,
+  );
 
   return (
     <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-4">
       <p className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider font-mono mb-3">
-        Evolución del saldo (USD) — próximos 3 meses
+        Evolución del saldo (USD) — últimos 3 meses + próximos 3 meses
       </p>
-      <ResponsiveContainer width="100%" height={220}>
-        <LineChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+      <ResponsiveContainer width="100%" height={240}>
+        <LineChart data={chartData} margin={{ top: 22, right: 10, left: 10, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
           <XAxis
-            dataKey="fechaShort"
+            dataKey="fechaIso"
+            tickFormatter={(iso) => formatDateShort(String(iso))}
             tick={{ fontSize: 11, fill: "var(--color-text-muted)" }}
             stroke="var(--color-border)"
+            minTickGap={32}
           />
           <YAxis
             tickFormatter={formatCurrencyShort}
@@ -173,7 +207,10 @@ function CashflowChart({ data }: { data: CashflowDto }) {
             width={64}
           />
           <Tooltip
-            formatter={(value) => [fmtCurrency(Number(value), "USD"), "Saldo"]}
+            formatter={(value, name) => {
+              const label = name === "saldoPasado" ? "Pasado" : "Proyección";
+              return [fmtCurrency(Number(value), "USD"), label];
+            }}
             labelFormatter={(_label, payload) => {
               const p = payload?.[0]?.payload as { fechaIso?: string; descripcion?: string } | undefined;
               const f = p?.fechaIso ? fmtDate(p.fechaIso) : "";
@@ -185,32 +222,64 @@ function CashflowChart({ data }: { data: CashflowDto }) {
               fontSize: 12,
             }}
           />
-          <ReferenceLine y={0} stroke="#e24b4a" strokeDasharray="4 4" />
-          {minSaldo < 0 && (
-            <ReferenceArea y1={minSaldo} y2={0} fill="#e24b4a" fillOpacity={0.1} />
+          <ReferenceLine y={0} stroke="#e24b4a" strokeDasharray="4 4" strokeOpacity={0.5} />
+          {/* Zona roja solo donde el saldo proyectado cae a negativo. */}
+          {minSaldoFuturo < 0 && (
+            <ReferenceArea y1={minSaldoFuturo} y2={0} fill="#e24b4a" fillOpacity={0.1} />
           )}
+          {/* Línea vertical de "Hoy" con etiqueta. */}
+          <ReferenceLine
+            x={todayIso}
+            stroke="var(--color-text-primary)"
+            strokeWidth={1.5}
+            strokeDasharray="4 3"
+            label={{
+              value: "Hoy",
+              position: "top",
+              fill: "var(--color-text-primary)",
+              fontSize: 11,
+              fontWeight: 600,
+            }}
+          />
+          <Line
+            type="monotone"
+            dataKey="saldoPasado"
+            stroke="#5A6578"
+            strokeWidth={2}
+            dot={false}
+            connectNulls={false}
+            isAnimationActive={false}
+            name="saldoPasado"
+          />
           <Line
             type="stepAfter"
-            dataKey="saldo"
+            dataKey="saldoFuturo"
             stroke="#2438D6"
-            strokeWidth={2}
-            dot={{ r: 2, fill: "#2438D6" }}
-            activeDot={{ r: 4 }}
+            strokeWidth={2.5}
+            dot={{ r: 2.5, fill: "#2438D6" }}
+            activeDot={{ r: 5, stroke: "#fff", strokeWidth: 1.5 }}
+            connectNulls={false}
             isAnimationActive={false}
+            name="saldoFuturo"
           />
         </LineChart>
       </ResponsiveContainer>
-      <p className="text-[10px] text-[var(--color-text-muted)] mt-2">
-        Saldo arranca en {fmtCurrency(chartData[0]?.saldo ?? 0, "USD")}
-        {minSaldo < 0 && (
-          <span className="text-red-400 ml-2">
-            · cae a {fmtCurrency(minSaldo, "USD")} en algún punto
-          </span>
-        )}
-        {maxSaldo > (chartData[0]?.saldo ?? 0) && (
-          <span className="ml-2">· pico {fmtCurrency(maxSaldo, "USD")}</span>
-        )}
-      </p>
+
+      {/* Leyenda */}
+      <div className="flex items-center gap-5 mt-3 pt-3 border-t border-[var(--color-border)] text-[11px] text-[var(--color-text-secondary)] flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="inline-block w-6 h-0.5" style={{ background: "#5A6578" }} />
+          <span>Pasado (real)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-block w-6 h-[2.5px]" style={{ background: "#2438D6" }} />
+          <span>Proyección (futuro)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-block w-3 h-3" style={{ background: "rgba(226,75,74,0.18)" }} />
+          <span>Saldo bajo / negativo</span>
+        </div>
+      </div>
     </div>
   );
 }

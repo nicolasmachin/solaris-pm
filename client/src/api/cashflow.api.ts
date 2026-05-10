@@ -27,9 +27,13 @@ export interface CashflowDto {
   saldoActualUSD: number;
   fallbackUsdToUyu: number;
   events: CashflowEvent[];
+  historicalTimeline: CashflowTimelinePoint[];
+  projectionTimeline: CashflowTimelinePoint[];
+  // Alias de projectionTimeline (compat temporal con código viejo).
   timelineUSD: CashflowTimelinePoint[];
   alertaNegativo: boolean;
   horizonUntil: string;
+  historyFrom: string;
 }
 
 export async function getCashflow(): Promise<CashflowDto> {

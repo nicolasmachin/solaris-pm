@@ -15318,30 +15318,106 @@ export async function registerApiRoutes(app: FastifyInstance) {
           ? amount / fallbackUsdToUyu
           : amount
         : amount;
-    let saldoUsd = saldoActualUSD + (fallbackUsdToUyu > 0 ? saldoActualUYU / fallbackUsdToUyu : 0);
-    saldoUsd = roundMoney(saldoUsd);
-    const timeline: { fecha: string; saldo: number; descripcion: string }[] = [
-      { fecha: serializeDateNonNull(now), saldo: saldoUsd, descripcion: "Saldo actual" },
-    ];
+    const saldoActualUsdConsolidado =
+      saldoActualUSD + (fallbackUsdToUyu > 0 ? saldoActualUYU / fallbackUsdToUyu : 0);
 
+    // 7a) Histórico: últimos 3 meses. Estrategia:
+    //     saldoAt(now - 3mo) = saldoActual − Σ(deltas de movements/payments en [now-3mo, now])
+    //     Después walkamos forward acumulando para construir la curva.
+    const fromPast = addMonths(now, -3);
+    const pastMovements = await prisma.financeMovement.findMany({
+      where: {
+        deletedAt: null,
+        status: FinanceMovementStatus.PAGADO,
+        fecha: { gte: fromPast, lte: now },
+        // Excluir Movements que tienen PaymentApplication activa: el cash event
+        // real es el Payment correspondiente, contarlos los dos sería doble.
+        paymentApplications: { none: { payment: { deletedAt: null } } },
+      },
+      select: { fecha: true, tipoMovimiento: true, monto: true, moneda: true, descripcion: true },
+    });
+    const pastPayments = await prisma.payment.findMany({
+      where: {
+        deletedAt: null,
+        fecha: { gte: fromPast, lte: now },
+      },
+      select: { fecha: true, monto: true, moneda: true, supplier: { select: { nombre: true } } },
+    });
+
+    type PastEvent = { fecha: Date; deltaUsd: number; descripcion: string };
+    const pastEvents: PastEvent[] = [];
+    for (const m of pastMovements) {
+      const sign = m.tipoMovimiento === TipoMovimiento.INGRESO ? 1 : m.tipoMovimiento === TipoMovimiento.GASTO ? -1 : 0;
+      pastEvents.push({
+        fecha: m.fecha,
+        deltaUsd: sign * toUsd(Number(m.monto), m.moneda),
+        descripcion: m.descripcion,
+      });
+    }
+    for (const p of pastPayments) {
+      pastEvents.push({
+        fecha: p.fecha,
+        // Payment positivo → egreso (pago a proveedor). Negativo → nota de crédito (ingreso).
+        deltaUsd: -toUsd(Number(p.monto), p.moneda),
+        descripcion: `Pago ${p.supplier?.nombre ?? "proveedor"}`,
+      });
+    }
+    pastEvents.sort((a, b) => a.fecha.getTime() - b.fecha.getTime());
+
+    const totalDeltaPast = pastEvents.reduce((s, e) => s + e.deltaUsd, 0);
+    let saldoAtStart = roundMoney(saldoActualUsdConsolidado - totalDeltaPast);
+
+    const historicalTimeline: { fecha: string; saldo: number; descripcion: string }[] = [
+      { fecha: serializeDateNonNull(fromPast), saldo: saldoAtStart, descripcion: "Saldo inicial (hace 3 meses)" },
+    ];
+    let saldoAcum = saldoAtStart;
+    for (const ev of pastEvents) {
+      saldoAcum = roundMoney(saldoAcum + ev.deltaUsd);
+      historicalTimeline.push({
+        fecha: serializeDateNonNull(ev.fecha),
+        saldo: saldoAcum,
+        descripcion: ev.descripcion,
+      });
+    }
+    // Anclamos el último punto del histórico al saldo actual real (puede haber
+    // diferencia mínima por redondeos / movements con PaymentApplication que
+    // excluimos arriba). Esto garantiza la continuidad visual con la proyección.
+    const saldoUsdNow = roundMoney(saldoActualUsdConsolidado);
+    historicalTimeline.push({
+      fecha: serializeDateNonNull(now),
+      saldo: saldoUsdNow,
+      descripcion: "Saldo actual",
+    });
+
+    // 7b) Proyección: igual que antes, arrancando en saldoUsdNow.
+    let saldoUsdProj = saldoUsdNow;
+    const projectionTimeline: { fecha: string; saldo: number; descripcion: string }[] = [
+      { fecha: serializeDateNonNull(now), saldo: saldoUsdProj, descripcion: "Saldo actual" },
+    ];
     for (const ev of allEvents) {
       const delta = toUsd(ev.monto, ev.moneda) * (ev.impacto === "POSITIVO" ? 1 : -1);
-      saldoUsd = roundMoney(saldoUsd + delta);
-      const causeNegative = saldoUsd < 0 && timeline[timeline.length - 1].saldo >= 0;
+      saldoUsdProj = roundMoney(saldoUsdProj + delta);
+      const causeNegative =
+        saldoUsdProj < 0 && projectionTimeline[projectionTimeline.length - 1].saldo >= 0;
       if (causeNegative) ev.causeNegative = true;
-      timeline.push({ fecha: ev.fecha, saldo: saldoUsd, descripcion: ev.descripcion });
+      projectionTimeline.push({ fecha: ev.fecha, saldo: saldoUsdProj, descripcion: ev.descripcion });
     }
 
-    const alertaNegativo = timeline.some((t) => t.saldo < 0);
+    const alertaNegativo = projectionTimeline.some((t) => t.saldo < 0);
 
     return {
       saldoActualUYU,
       saldoActualUSD,
       fallbackUsdToUyu,
       events: allEvents,
-      timelineUSD: timeline,
+      historicalTimeline,
+      projectionTimeline,
+      // Compatibilidad temporal: mantener timelineUSD como alias de la proyección
+      // hasta que el cliente nuevo esté deployado en todos lados.
+      timelineUSD: projectionTimeline,
       alertaNegativo,
       horizonUntil: serializeDateNonNull(horizon),
+      historyFrom: serializeDateNonNull(fromPast),
     };
   });
 
