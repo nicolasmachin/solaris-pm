@@ -2,6 +2,7 @@ import { NavLink, Outlet } from "react-router-dom";
 
 const TABS = [
   { to: "movimientos", label: "Movimientos" },
+  { to: "pendientes", label: "Pendientes" },
   { to: "proveedores", label: "Proveedores" },
   { to: "cobros", label: "Cobros" },
   { to: "flujo", label: "Flujo de fondos" },

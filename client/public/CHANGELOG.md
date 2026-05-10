@@ -2,6 +2,35 @@
 
 ## v5.3
 
+### 10 de mayo de 2026 (cuarta parte)
+
+#### Finanzas — Pestaña Pendientes (nueva)
+
+Nueva pestaña entre **Movimientos** y **Proveedores** que centraliza **todo lo que está comprometido a pagar y todavía no se pagó**, en una sola lista. Las pestañas de Finanzas pasan a ser **siete**: Movimientos, Pendientes, Proveedores, Cobros, Flujo de fondos, Estado de resultados, Cuentas.
+
+Lo que se ve en Pendientes:
+
+- **Costos fijos del mes** que aún no se pagaron (alquiler, contador, internet, etc), según los configurados en Administración → Costos fijos.
+- **Materiales proyectados de obras** que tienen fecha esperada de compra cargada desde Ingeniería.
+- **Deuda a proveedores** (facturas pendientes o parcialmente pagadas).
+- **Otros compromisos** manuales (sueldos, comisiones — los movimientos en estado "A pagar" sin proveedor).
+
+Cada fila muestra fecha esperada, descripción, origen, categoría y monto. Los **vencidos** aparecen en rojo arriba con la nota "Vencido". Hay filtros por tipo de pendiente, por proyecto y por proveedor, y cuatro tarjetas de resumen arriba con los totales de cada tipo.
+
+Cada pendiente tiene su botón **"Marcar pagado"** que actúa según el origen: para los compromisos manuales (sueldos / comisiones) los pasa a estado Pagado directo; para los de proveedor abre la cuenta del proveedor; para los costos fijos abre el formulario de nuevo movimiento; para los materiales abre el módulo de Ingeniería del proyecto.
+
+#### Finanzas — Movimientos: editar y eliminar
+
+Cada fila de Movimientos ahora tiene **dos botones a la derecha**: lápiz para editar y papelera para eliminar.
+
+- **Editar** abre un modal con todos los campos modificables: descripción, categoría, monto, moneda, cuenta, fecha, proveedor (si es gasto) y proyecto. No se puede cambiar el tipo (ingreso/gasto) ni el estado.
+- **Eliminar** pide confirmación y hace borrado seguro (soft-delete): el movimiento desaparece de la lista pero no se pierde de la base, así que en caso de error se puede recuperar.
+- Los pagos a proveedores no se editan desde acá: hay que hacerlo desde la cuenta del proveedor.
+
+#### Finanzas — Movimientos: solo lo ejecutado
+
+La pestaña Movimientos ahora muestra **solo movimientos en estado Pagado**. Los compromisos pendientes (sueldos, comisiones, costos fijos no pagados, etc) dejan de mezclarse acá y viven en la nueva pestaña Pendientes.
+
 ### 10 de mayo de 2026 (tercera parte)
 
 #### Finanzas — Pestaña Estado de resultados

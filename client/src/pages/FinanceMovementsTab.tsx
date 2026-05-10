@@ -2,15 +2,18 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { Plus, X } from "lucide-react";
+import { Pencil, Plus, Trash2, X } from "lucide-react";
 
 import {
   createMovement,
+  deleteMovement,
   getMovements,
   getSuppliers,
   isMovementRow,
   isPaymentRow,
+  patchMovement,
 } from "../api/finance.api";
+import type { FinanceMovement } from "../types/finance.types";
 import { getAccounts } from "../api/accounts.api";
 import { getProjects } from "../api/projects.api";
 import { listPendingFixedCosts, type FixedCostPendingDto } from "../api/fixedCosts.api";
@@ -101,6 +104,23 @@ export function FinanceMovementsTab() {
   }, [accounts]);
 
   const items = useMemo(() => data?.data ?? [], [data]);
+
+  const qcRoot = useQueryClient();
+  const [editingMovement, setEditingMovement] = useState<FinanceMovement | null>(null);
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deleteMovement(id),
+    onSuccess: () => {
+      toast.success("Movimiento eliminado");
+      qcRoot.invalidateQueries({ queryKey: ["finance-movements-tab"] });
+      qcRoot.invalidateQueries({ queryKey: ["finance-movements"] });
+      qcRoot.invalidateQueries({ queryKey: ["finance-pending"] });
+      qcRoot.invalidateQueries({ queryKey: ["finance-cashflow"] });
+    },
+    onError: (err) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? "No se pudo eliminar");
+    },
+  });
   const saldoUSD = data?.saldoActualUSD ?? 0;
   const saldoUYU = data?.saldoActualUYU ?? 0;
 
@@ -171,6 +191,7 @@ export function FinanceMovementsTab() {
                 <th className="text-left px-4 py-2.5 font-medium">Categoría</th>
                 <th className="text-left px-4 py-2.5 font-medium">Cuenta</th>
                 <th className="text-right px-4 py-2.5 font-medium">Monto</th>
+                <th className="text-right px-4 py-2.5 font-medium w-20">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border)]">
@@ -201,6 +222,9 @@ export function FinanceMovementsTab() {
                           {it.monto < 0 ? "+" : "-"}
                           {fmtCurrency(Math.abs(it.monto), it.moneda)}
                         </span>
+                      </td>
+                      <td className="px-4 py-3 text-right text-[11px] text-[var(--color-text-muted)]">
+                        <span title="Los pagos a proveedores se editan desde la cuenta del proveedor.">—</span>
                       </td>
                     </tr>
                   );
@@ -237,6 +261,31 @@ export function FinanceMovementsTab() {
                           {fmtCurrency(it.monto, it.moneda)}
                         </span>
                       </td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap">
+                        <button
+                          onClick={() => setEditingMovement(it)}
+                          title="Editar"
+                          className="text-[var(--color-text-muted)] hover:text-[var(--color-accent)] p-1"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (
+                              confirm(
+                                `¿Eliminar movimiento "${it.descripcion}" por ${fmtCurrency(it.monto, it.moneda)}?`,
+                              )
+                            ) {
+                              deleteMut.mutate(it.id);
+                            }
+                          }}
+                          title="Eliminar"
+                          disabled={deleteMut.isPending}
+                          className="text-[var(--color-text-muted)] hover:text-red-400 p-1 ml-1 disabled:opacity-50"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
                     </tr>
                   );
                 }
@@ -248,6 +297,205 @@ export function FinanceMovementsTab() {
       </div>
 
       {showForm && <NewMovementModal onClose={() => setShowForm(false)} />}
+      {editingMovement && (
+        <EditMovementModal
+          movement={editingMovement}
+          onClose={() => setEditingMovement(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Modal: Editar movimiento ───────────────────────────────────────────────
+
+function EditMovementModal({
+  movement,
+  onClose,
+}: {
+  movement: FinanceMovement;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const [descripcion, setDescripcion] = useState(movement.descripcion);
+  const [monto, setMonto] = useState(String(movement.monto));
+  const [moneda, setMoneda] = useState<Moneda>(movement.moneda);
+  const [fecha, setFecha] = useState<string>(movement.fecha.slice(0, 10));
+  const [accountId, setAccountId] = useState<string>(movement.accountId ?? "");
+  const [categoria, setCategoria] = useState<CategoriaPrincipal>(movement.categoriaPrincipal);
+  const [supplierId, setSupplierId] = useState<string>(movement.supplierId ?? "");
+  const [projectId, setProjectId] = useState<string>(movement.projectId ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const { data: accounts = [] } = useQuery({ queryKey: ["accounts-active"], queryFn: () => getAccounts({ activa: "true" }) });
+  const { data: suppliers = [] } = useQuery({ queryKey: ["suppliers-active"], queryFn: () => getSuppliers({ activo: "true" }) });
+  const { data: projects = [] } = useQuery({ queryKey: ["projects-list-finance"], queryFn: () => getProjects() });
+
+  const categoriasDisponibles = CATEGORIAS_POR_TIPO[movement.tipoMovimiento];
+
+  const patchMut = useMutation({
+    mutationFn: () =>
+      patchMovement(movement.id, {
+        descripcion: descripcion.trim(),
+        monto: Number(monto),
+        moneda,
+        fecha,
+        ...(accountId ? { accountId } : {}),
+        categoriaPrincipal: categoria,
+        ...(movement.tipoMovimiento === "GASTO" ? { proveedorId: supplierId || undefined } : {}),
+        ...(projectId ? { proyectoId: projectId } : {}),
+      }),
+    onSuccess: () => {
+      toast.success("Movimiento actualizado");
+      qc.invalidateQueries({ queryKey: ["finance-movements-tab"] });
+      qc.invalidateQueries({ queryKey: ["finance-movements"] });
+      qc.invalidateQueries({ queryKey: ["finance-pending"] });
+      qc.invalidateQueries({ queryKey: ["finance-cashflow"] });
+      onClose();
+    },
+    onError: (err) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? "No se pudo actualizar");
+    },
+  });
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!descripcion.trim()) return toast.error("Falta la descripción");
+    const n = Number(monto);
+    if (!n || n <= 0) return toast.error("Monto inválido");
+    setSaving(true);
+    patchMut.mutate(undefined, { onSettled: () => setSaving(false) });
+  }
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-semibold text-[var(--color-text-primary)]">Editar movimiento</h3>
+          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <form onSubmit={submit} className="space-y-3">
+          <Field label="Descripción">
+            <input
+              type="text"
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              autoFocus
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            />
+          </Field>
+          <Field label="Categoría">
+            <select
+              value={categoria}
+              onChange={(e) => setCategoria(e.target.value as CategoriaPrincipal)}
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+            >
+              {categoriasDisponibles.map((c) => (
+                <option key={c} value={c}>
+                  {CATEGORIA_LABEL[c]}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Monto">
+              <input
+                type="number"
+                step="0.01"
+                value={monto}
+                onChange={(e) => setMonto(e.target.value)}
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+              />
+            </Field>
+            <Field label="Moneda">
+              <select
+                value={moneda}
+                onChange={(e) => setMoneda(e.target.value as Moneda)}
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+              >
+                <option value="UYU">UYU</option>
+                <option value="USD">USD</option>
+              </select>
+            </Field>
+          </div>
+          <Field label="Cuenta">
+            <select
+              value={accountId}
+              onChange={(e) => setAccountId(e.target.value)}
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+            >
+              <option value="">Sin cuenta</option>
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.nombre} ({a.moneda})
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Fecha">
+            <input
+              type="date"
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+            />
+          </Field>
+          {movement.tipoMovimiento === "GASTO" && (
+            <Field label="Proveedor (opcional)">
+              <select
+                value={supplierId}
+                onChange={(e) => setSupplierId(e.target.value)}
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+              >
+                <option value="">Sin proveedor</option>
+                {suppliers.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.nombre}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
+          <Field label="Proyecto (opcional)">
+            <select
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+            >
+              <option value="">Sin proyecto</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.code} · {p.clientName}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <div className="flex gap-2 pt-2">
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-60"
+            >
+              {saving ? "Guardando…" : "Guardar cambios"}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

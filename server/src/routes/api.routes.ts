@@ -11397,15 +11397,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
         ...(query.accountId ? { accountId: query.accountId } : {}),
       };
 
-      // Filtro base de la nueva vista de Movimientos: solo lo ejecutado
-      // (PAGADO) + A_PAGAR sin proveedor (sueldos, comisiones — no van por
-      // flujo de proveedor). Aplica solo si el cliente no mandó status
+      // Filtro base de la nueva vista de Movimientos: SOLO lo ejecutado
+      // (PAGADO). Los compromisos pendientes (A_PAGAR, PREVISTO) se gestionan
+      // desde la pestaña Pendientes. Aplica solo si el cliente no mandó status
       // explícito; mantiene compatibilidad con consumidores legacy.
       if (!query.status) {
-        where.OR = [
-          { status: FinanceMovementStatus.PAGADO },
-          { status: FinanceMovementStatus.A_PAGAR, supplierId: null },
-        ];
+        where.status = FinanceMovementStatus.PAGADO;
       }
 
       // Decidimos si incluir Payments en la respuesta. Excluimos cuando hay
@@ -14947,6 +14944,171 @@ export async function registerApiRoutes(app: FastifyInstance) {
     );
 
     return result.filter((r) => r !== null);
+  });
+
+  // ─── Pendientes (fuente única de compromisos a pagar) ────────────────────
+
+  type PendingItemSourceType = "FIXED_COST" | "PROJECT_MATERIAL" | "SUPPLIER_DEBT" | "COMMITTED_EXPENSE";
+  type PendingItem = {
+    id: string;
+    sourceType: PendingItemSourceType;
+    sourceId: string;
+    fecha: string;
+    descripcion: string;
+    categoria: string;
+    monto: number;
+    moneda: Moneda;
+    project: { id: string; clientName: string; code: string } | null;
+    supplier: { id: string; nombre: string } | null;
+    fixedCost: { id: string; nombre: string; periodicidad: FixedCostPeriodicity } | null;
+    isOverdue: boolean;
+  };
+
+  async function getPendingItemsCore(now: Date): Promise<PendingItem[]> {
+    const items: PendingItem[] = [];
+
+    // 1) Costos fijos pendientes del mes en curso (mensual / bimensual / anual).
+    const fixedCosts = await prisma.fixedCost.findMany({
+      where: { activo: true, deletedAt: null },
+    });
+    const mes = now.getUTCMonth() + 1;
+    const anio = now.getUTCFullYear();
+    for (const fc of fixedCosts) {
+      if (!appliesThisMonth(fc, mes)) continue;
+      const alreadyPaid = await prisma.financeMovement.findFirst({
+        where: {
+          fixedCostId: fc.id,
+          mes,
+          anio,
+          status: FinanceMovementStatus.PAGADO,
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+      if (alreadyPaid) continue;
+      const lastPayment = await prisma.financeMovement.findFirst({
+        where: { fixedCostId: fc.id, status: FinanceMovementStatus.PAGADO, deletedAt: null },
+        orderBy: { fecha: "desc" },
+        select: { monto: true },
+      });
+      const day = Math.min(fc.diaDelMes, 28);
+      const fecha = new Date(Date.UTC(anio, mes - 1, day));
+      items.push({
+        id: `fixed-${fc.id}`,
+        sourceType: "FIXED_COST",
+        sourceId: fc.id,
+        fecha: serializeDateNonNull(fecha),
+        descripcion: fc.nombre,
+        categoria: "FIJO",
+        monto: lastPayment ? Number(lastPayment.monto) : Number(fc.montoReferencia),
+        moneda: fc.moneda,
+        project: null,
+        supplier: null,
+        fixedCost: { id: fc.id, nombre: fc.nombre, periodicidad: fc.periodicidad },
+        isOverdue: fecha < now,
+      });
+    }
+
+    // 2) Materiales proyectados (ProjectMaterial.expectedDate, sin movement).
+    const pms = await prisma.projectMaterial.findMany({
+      where: {
+        expectedDate: { not: null },
+        movementId: null,
+        project: { deletedAt: null },
+      },
+      include: {
+        materialItem: { select: { nombre: true, category: { select: { nombre: true } } } },
+        project: { select: { id: true, code: true, clientName: true } },
+      },
+    });
+    for (const pm of pms) {
+      const fecha = pm.expectedDate as Date;
+      items.push({
+        id: `material-${pm.id}`,
+        sourceType: "PROJECT_MATERIAL",
+        sourceId: pm.id,
+        fecha: serializeDateNonNull(fecha),
+        descripcion: `${pm.materialItem.category?.nombre ?? "Material"} — ${pm.materialItem.nombre}`,
+        categoria: "PROYECTO_SALIDA",
+        monto: Number(pm.quantity) * Number(pm.unitPrice),
+        moneda: pm.moneda,
+        project: pm.project,
+        supplier: null,
+        fixedCost: null,
+        isOverdue: fecha < now,
+      });
+    }
+
+    // 3) Deuda a proveedores: facturas con saldo pendiente.
+    const facturas = await prisma.financeComprobante.findMany({
+      where: {
+        tipo: TipoComprobante.FACTURA,
+        estado: { in: [EstadoComprobante.PENDIENTE, EstadoComprobante.PARCIALMENTE_PAGADO] },
+        deletedAt: null,
+      },
+      include: {
+        supplier: { select: { id: true, nombre: true } },
+        movimiento: { select: { project: { select: { id: true, code: true, clientName: true } } } },
+        pagos: { select: { monto: true } },
+      },
+    });
+    for (const f of facturas) {
+      if (!f.supplier) continue;
+      const pagado = f.pagos.reduce((s, p) => s + Number(p.monto), 0);
+      const saldo = Number(f.monto) - pagado;
+      if (saldo <= 0.005) continue;
+      const fecha = f.fechaVencimiento ?? f.fechaEmision;
+      const numero = f.numero ?? f.concepto;
+      items.push({
+        id: `comprobante-${f.id}`,
+        sourceType: "SUPPLIER_DEBT",
+        sourceId: f.id,
+        fecha: serializeDateNonNull(fecha),
+        descripcion: `Factura ${numero} — ${f.supplier.nombre}`,
+        categoria: "PAGO_PROVEEDOR",
+        monto: saldo,
+        moneda: f.moneda,
+        project: f.movimiento?.project ?? null,
+        supplier: f.supplier,
+        fixedCost: null,
+        isOverdue: fecha < now,
+      });
+    }
+
+    // 4) A_PAGAR sin proveedor (sueldos, comisiones, compromisos manuales).
+    const committed = await prisma.financeMovement.findMany({
+      where: {
+        status: FinanceMovementStatus.A_PAGAR,
+        supplierId: null,
+        deletedAt: null,
+      },
+      include: { project: { select: { id: true, code: true, clientName: true } } },
+    });
+    for (const c of committed) {
+      const fecha = c.dueDate ?? c.expectedDate ?? c.fecha;
+      items.push({
+        id: `committed-${c.id}`,
+        sourceType: "COMMITTED_EXPENSE",
+        sourceId: c.id,
+        fecha: serializeDateNonNull(fecha),
+        descripcion: c.descripcion,
+        categoria: c.categoriaPrincipal,
+        monto: Number(c.monto),
+        moneda: c.moneda,
+        project: c.project,
+        supplier: null,
+        fixedCost: null,
+        isOverdue: fecha < now,
+      });
+    }
+
+    return items.sort((a, b) => a.fecha.localeCompare(b.fecha));
+  }
+
+  app.get("/finance/pending", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async () => {
+    const now = todayUtc();
+    const items = await getPendingItemsCore(now);
+    return { items, generatedAt: serializeDateNonNull(now) };
   });
 
   // ─── Flujo de fondos (proyección 3 meses) ──────────────────────────────────

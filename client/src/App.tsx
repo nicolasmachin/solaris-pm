@@ -26,6 +26,9 @@ const FinancePlaceholder = lazy(() =>
 const FinanceMovementsTab = lazy(() =>
   import("./pages/FinanceMovementsTab").then((module) => ({ default: module.FinanceMovementsTab })),
 );
+const FinancePendientesTab = lazy(() =>
+  import("./pages/FinancePendientesTab").then((module) => ({ default: module.FinancePendientesTab })),
+);
 const FinanceCashflowTab = lazy(() =>
   import("./pages/FinanceCashflowTab").then((module) => ({ default: module.FinanceCashflowTab })),
 );
@@ -217,6 +220,7 @@ export function App() {
         >
           <Route index element={<Navigate to="movimientos" replace />} />
           <Route path="movimientos" element={<FinanceMovementsTab />} />
+          <Route path="pendientes" element={<FinancePendientesTab />} />
           <Route path="proveedores" element={<FinanceSuppliers />} />
           <Route path="cobros" element={<FinanceCobros />} />
           <Route path="flujo" element={<FinanceCashflowTab />} />
