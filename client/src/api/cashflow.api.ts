@@ -27,7 +27,7 @@ export interface CashflowDto {
   saldoActualUSD: number;
   fallbackUsdToUyu: number;
   events: CashflowEvent[];
-  timelineUYU: CashflowTimelinePoint[];
+  timelineUSD: CashflowTimelinePoint[];
   alertaNegativo: boolean;
   horizonUntil: string;
 }

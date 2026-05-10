@@ -63,27 +63,28 @@ export function FinanceCashflowTab() {
     );
   }
 
-  const entradasTotal = data.events.filter((e) => e.impacto === "POSITIVO").reduce(
-    (s, e) => s + (e.moneda === "USD" ? e.monto * data.fallbackUsdToUyu : e.monto),
-    0,
-  );
-  const salidasTotal = data.events.filter((e) => e.impacto === "NEGATIVO").reduce(
-    (s, e) => s + (e.moneda === "USD" ? e.monto * data.fallbackUsdToUyu : e.monto),
-    0,
-  );
+  const tc = data.fallbackUsdToUyu;
+  const toUsd = (monto: number, moneda: "USD" | "UYU") =>
+    moneda === "UYU" ? (tc > 0 ? monto / tc : monto) : monto;
+  const entradasTotal = data.events
+    .filter((e) => e.impacto === "POSITIVO")
+    .reduce((s, e) => s + toUsd(e.monto, e.moneda), 0);
+  const salidasTotal = data.events
+    .filter((e) => e.impacto === "NEGATIVO")
+    .reduce((s, e) => s + toUsd(e.monto, e.moneda), 0);
 
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Metric label="Saldo actual (UYU + USD a TC)" value={fmtCurrency(data.timelineUYU[0]?.saldo ?? 0, "UYU")} />
+        <Metric label="Saldo actual (USD + UYU a TC)" value={fmtCurrency(data.timelineUSD[0]?.saldo ?? 0, "USD")} />
         <Metric
           label="Entradas previstas"
-          value={`+${fmtCurrency(entradasTotal, "UYU")}`}
+          value={`+${fmtCurrency(entradasTotal, "USD")}`}
           tone="success"
         />
         <Metric
           label="Salidas previstas"
-          value={`-${fmtCurrency(salidasTotal, "UYU")}`}
+          value={`-${fmtCurrency(salidasTotal, "USD")}`}
           tone="danger"
         />
       </div>
@@ -113,7 +114,8 @@ export function FinanceCashflowTab() {
       </div>
 
       <p className="text-[11px] text-[var(--color-text-muted)] font-mono">
-        TC USD→UYU usado para consolidar el gráfico: {data.fallbackUsdToUyu.toFixed(2)}. Horizonte: hasta {fmtDate(data.horizonUntil)}.
+        Gráfico consolidado en USD. TC UYU→USD usado: 1 USD = {data.fallbackUsdToUyu.toFixed(2)} UYU.
+        Horizonte: hasta {fmtDate(data.horizonUntil)}.
       </p>
     </div>
   );
@@ -139,13 +141,13 @@ function Metric({ label, value, tone }: { label: string; value: string; tone?: "
 function CashflowChart({ data }: { data: CashflowDto }) {
   const chartData = useMemo(
     () =>
-      data.timelineUYU.map((p) => ({
+      data.timelineUSD.map((p) => ({
         fechaIso: p.fecha,
         fechaShort: formatDateShort(p.fecha),
         saldo: p.saldo,
         descripcion: p.descripcion,
       })),
-    [data.timelineUYU],
+    [data.timelineUSD],
   );
 
   const minSaldo = Math.min(...chartData.map((p) => p.saldo));
@@ -154,7 +156,7 @@ function CashflowChart({ data }: { data: CashflowDto }) {
   return (
     <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-4">
       <p className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider font-mono mb-3">
-        Evolución del saldo — próximos 3 meses
+        Evolución del saldo (USD) — próximos 3 meses
       </p>
       <ResponsiveContainer width="100%" height={220}>
         <LineChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
@@ -168,10 +170,10 @@ function CashflowChart({ data }: { data: CashflowDto }) {
             tickFormatter={formatCurrencyShort}
             tick={{ fontSize: 11, fill: "var(--color-text-muted)" }}
             stroke="var(--color-border)"
-            width={56}
+            width={64}
           />
           <Tooltip
-            formatter={(value) => [fmtCurrency(Number(value), "UYU"), "Saldo"]}
+            formatter={(value) => [fmtCurrency(Number(value), "USD"), "Saldo"]}
             labelFormatter={(_label, payload) => {
               const p = payload?.[0]?.payload as { fechaIso?: string; descripcion?: string } | undefined;
               const f = p?.fechaIso ? fmtDate(p.fechaIso) : "";
@@ -199,14 +201,14 @@ function CashflowChart({ data }: { data: CashflowDto }) {
         </LineChart>
       </ResponsiveContainer>
       <p className="text-[10px] text-[var(--color-text-muted)] mt-2">
-        Saldo arranca en {fmtCurrency(chartData[0]?.saldo ?? 0, "UYU")}
+        Saldo arranca en {fmtCurrency(chartData[0]?.saldo ?? 0, "USD")}
         {minSaldo < 0 && (
           <span className="text-red-400 ml-2">
-            · cae a {fmtCurrency(minSaldo, "UYU")} en algún punto
+            · cae a {fmtCurrency(minSaldo, "USD")} en algún punto
           </span>
         )}
         {maxSaldo > (chartData[0]?.saldo ?? 0) && (
-          <span className="ml-2">· pico {fmtCurrency(maxSaldo, "UYU")}</span>
+          <span className="ml-2">· pico {fmtCurrency(maxSaldo, "USD")}</span>
         )}
       </p>
     </div>

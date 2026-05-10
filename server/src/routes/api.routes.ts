@@ -15148,22 +15148,26 @@ export async function registerApiRoutes(app: FastifyInstance) {
       (a, b) => a.fecha.localeCompare(b.fecha),
     );
 
-    // 7) Construir timeline en UYU. Convertimos USD a UYU con el tipo de cambio
+    // 7) Construir timeline en USD. Convertimos UYU → USD con el tipo de cambio
     //    actual para que el gráfico tenga una sola línea consolidada.
-    const toUyu = (amount: number, moneda: Moneda) =>
-      moneda === Moneda.USD ? amount * fallbackUsdToUyu : amount;
-    let saldoUyu = saldoActualUYU + saldoActualUSD * fallbackUsdToUyu;
-    saldoUyu = roundMoney(saldoUyu);
+    const toUsd = (amount: number, moneda: Moneda) =>
+      moneda === Moneda.UYU
+        ? fallbackUsdToUyu > 0
+          ? amount / fallbackUsdToUyu
+          : amount
+        : amount;
+    let saldoUsd = saldoActualUSD + (fallbackUsdToUyu > 0 ? saldoActualUYU / fallbackUsdToUyu : 0);
+    saldoUsd = roundMoney(saldoUsd);
     const timeline: { fecha: string; saldo: number; descripcion: string }[] = [
-      { fecha: serializeDateNonNull(now), saldo: saldoUyu, descripcion: "Saldo actual" },
+      { fecha: serializeDateNonNull(now), saldo: saldoUsd, descripcion: "Saldo actual" },
     ];
 
     for (const ev of allEvents) {
-      const delta = toUyu(ev.monto, ev.moneda) * (ev.impacto === "POSITIVO" ? 1 : -1);
-      saldoUyu = roundMoney(saldoUyu + delta);
-      const causeNegative = saldoUyu < 0 && timeline[timeline.length - 1].saldo >= 0;
+      const delta = toUsd(ev.monto, ev.moneda) * (ev.impacto === "POSITIVO" ? 1 : -1);
+      saldoUsd = roundMoney(saldoUsd + delta);
+      const causeNegative = saldoUsd < 0 && timeline[timeline.length - 1].saldo >= 0;
       if (causeNegative) ev.causeNegative = true;
-      timeline.push({ fecha: ev.fecha, saldo: saldoUyu, descripcion: ev.descripcion });
+      timeline.push({ fecha: ev.fecha, saldo: saldoUsd, descripcion: ev.descripcion });
     }
 
     const alertaNegativo = timeline.some((t) => t.saldo < 0);
@@ -15173,7 +15177,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       saldoActualUSD,
       fallbackUsdToUyu,
       events: allEvents,
-      timelineUYU: timeline,
+      timelineUSD: timeline,
       alertaNegativo,
       horizonUntil: serializeDateNonNull(horizon),
     };
