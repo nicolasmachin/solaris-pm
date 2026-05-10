@@ -2,7 +2,16 @@
 
 ## v5.3
 
-_Versión en curso — los cambios irán acá._
+### 9 de mayo de 2026
+
+#### Finanzas — pestañas y rediseño de Movimientos
+
+La pantalla principal de finanzas pasa a tener seis pestañas: **Movimientos**, Proveedores, Cobros, Flujo de fondos, Estado de resultados y Cuentas. La navegación entre las distintas vistas ahora vive en un solo lugar.
+
+- **Movimientos** se rediseñó para mostrar solo entradas y salidas ya ejecutadas (estado Pagado), más los pendientes sin proveedor (sueldos, comisiones). Los previstos de ingeniería y los a-pagar con proveedor dejan de aparecer en esta vista.
+- Arriba de la lista quedan dos tarjetas con el saldo actual en pesos uruguayos y en dólares.
+- El formulario de "Nuevo movimiento" se simplificó: ya no pregunta si el movimiento corresponde a una factura existente o a un proyectado.
+- Las pestañas Proveedores, Flujo de fondos y Estado de resultados muestran por ahora un placeholder "Próximamente disponible". Cuentas y Cobros funcionan igual que antes, ahora dentro del nuevo layout.
 
 ## v5.2
 

@@ -11451,6 +11451,17 @@ export async function registerApiRoutes(app: FastifyInstance) {
         ...(query.accountId ? { accountId: query.accountId } : {}),
       };
 
+      // Filtro base de la nueva vista de Movimientos: solo lo ejecutado
+      // (PAGADO) + A_PAGAR sin proveedor (sueldos, comisiones — no van por
+      // flujo de proveedor). Aplica solo si el cliente no mandó status
+      // explícito; mantiene compatibilidad con consumidores legacy.
+      if (!query.status) {
+        where.OR = [
+          { status: FinanceMovementStatus.PAGADO },
+          { status: FinanceMovementStatus.A_PAGAR, supplierId: null },
+        ];
+      }
+
       // Decidimos si incluir Payments en la respuesta. Excluimos cuando hay
       // filtros movement-only (categoria/status/projectId) o cuando se filtra
       // por un tipo que no es GASTO (Payments siempre representan egresos).
@@ -11568,11 +11579,20 @@ export async function registerApiRoutes(app: FastifyInstance) {
       );
 
       let saldoActualCuentas = 0;
+      let saldoActualUSD = 0;
+      let saldoActualUYU = 0;
       for (const account of accountBalances) {
-        if (account.moneda === Moneda.USD) saldoActualCuentas += account.saldoActual;
-        else saldoActualCuentas += fallbackUsdToUyu > 0 ? account.saldoActual / fallbackUsdToUyu : account.saldoActual;
+        if (account.moneda === Moneda.USD) {
+          saldoActualUSD += account.saldoActual;
+          saldoActualCuentas += account.saldoActual;
+        } else {
+          saldoActualUYU += account.saldoActual;
+          saldoActualCuentas += fallbackUsdToUyu > 0 ? account.saldoActual / fallbackUsdToUyu : account.saldoActual;
+        }
       }
       saldoActualCuentas = roundMoney(saldoActualCuentas);
+      saldoActualUSD = roundMoney(saldoActualUSD);
+      saldoActualUYU = roundMoney(saldoActualUYU);
 
       const today = todayUtc();
 
@@ -11820,6 +11840,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         limit: take,
         totalPages: Math.ceil(total / take),
         saldoActualCuentas,
+        saldoActualUSD,
+        saldoActualUYU,
         saldoFinalProyectado,
         saldoFinalProyectadoSinIva,
         saldoFinalUSD: saldoFinalProyectado,

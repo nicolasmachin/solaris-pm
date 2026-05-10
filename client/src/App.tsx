@@ -19,6 +19,13 @@ const Admin = lazy(() => import("./pages/Admin").then((module) => ({ default: mo
 const Notifications = lazy(() => import("./pages/Notifications").then((module) => ({ default: module.Notifications })));
 const NotFound = lazy(() => import("./pages/NotFound").then((module) => ({ default: module.NotFound })));
 const Finance = lazy(() => import("./pages/Finance").then((module) => ({ default: module.Finance })));
+const FinanceLayout = lazy(() => import("./pages/FinanceLayout").then((module) => ({ default: module.FinanceLayout })));
+const FinancePlaceholder = lazy(() =>
+  import("./pages/FinanceLayout").then((module) => ({ default: module.FinancePlaceholder })),
+);
+const FinanceMovementsTab = lazy(() =>
+  import("./pages/FinanceMovementsTab").then((module) => ({ default: module.FinanceMovementsTab })),
+);
 const FinanceMovements = lazy(() => import("./pages/FinanceMovements").then((module) => ({ default: module.FinanceMovements })));
 const FinanceSuppliers = lazy(() => import("./pages/FinanceSuppliers").then((module) => ({ default: module.FinanceSuppliers })));
 const FinanceReports = lazy(() => import("./pages/FinanceReports").then((module) => ({ default: module.FinanceReports })));
@@ -193,8 +200,27 @@ export function App() {
             </PermissionRoute>
           }
         />
+        {/* Layout con 6 pestañas. Las rutas detalle (proveedores/:id, cobros/:id, etc.) viven fuera. */}
         <Route
           path="/finanzas"
+          element={
+            <PermissionRoute module="FINANZAS" action="VIEW">
+              <FinanceLayout />
+            </PermissionRoute>
+          }
+        >
+          <Route index element={<Navigate to="movimientos" replace />} />
+          <Route path="movimientos" element={<FinanceMovementsTab />} />
+          <Route path="proveedores" element={<FinancePlaceholder title="Proveedores" />} />
+          <Route path="cobros" element={<FinanceCobros />} />
+          <Route path="flujo" element={<FinancePlaceholder title="Flujo de fondos" />} />
+          <Route path="resultados" element={<FinancePlaceholder title="Estado de resultados" />} />
+          <Route path="cuentas" element={<FinanceCuentas />} />
+        </Route>
+
+        {/* Rutas detalle / legacy mantenidas fuera del layout de pestañas. */}
+        <Route
+          path="/finanzas-legacy"
           element={
             <PermissionRoute module="FINANZAS" action="VIEW">
               <Finance />
@@ -202,7 +228,7 @@ export function App() {
           }
         />
         <Route
-          path="/finanzas/movimientos"
+          path="/finanzas/movimientos-legacy"
           element={
             <PermissionRoute module="FINANZAS" action="VIEW">
               <FinanceMovements />
@@ -226,15 +252,7 @@ export function App() {
           }
         />
         <Route
-          path="/finanzas/cuentas"
-          element={
-            <PermissionRoute module="FINANZAS" action="VIEW">
-              <FinanceCuentas />
-            </PermissionRoute>
-          }
-        />
-        <Route
-          path="/finanzas/proveedores"
+          path="/finanzas/proveedores-legacy"
           element={
             <PermissionRoute module="FINANZAS" action="VIEW">
               <FinanceSuppliers />
@@ -246,14 +264,6 @@ export function App() {
           element={
             <PermissionRoute module="FINANZAS" action="VIEW">
               <FinanceSupplierDetail />
-            </PermissionRoute>
-          }
-        />
-        <Route
-          path="/finanzas/cobros"
-          element={
-            <PermissionRoute module="FINANZAS" action="VIEW">
-              <FinanceCobros />
             </PermissionRoute>
           }
         />

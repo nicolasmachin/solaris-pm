@@ -1,0 +1,477 @@
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
+import { Plus, X } from "lucide-react";
+
+import {
+  createMovement,
+  getMovements,
+  getSuppliers,
+  isMovementRow,
+} from "../api/finance.api";
+import { getAccounts } from "../api/accounts.api";
+import { getProjects } from "../api/projects.api";
+import {
+  CATEGORIA_LABEL,
+  CATEGORIAS_POR_TIPO,
+  type CategoriaPrincipal,
+  type Moneda,
+  type TipoMovimiento,
+} from "../types/finance.types";
+import { fmtCurrency, fmtDate, currentMonthYear, MONTH_NAMES } from "../lib/finance";
+import { todayLocalISO } from "../utils/date";
+
+// ─── Helpers UI ─────────────────────────────────────────────────────────────
+
+function MetricCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl px-5 py-4">
+      <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider font-mono mb-1">
+        {label}
+      </p>
+      <p className="text-xl font-bold text-[var(--color-text-primary)] tabular-nums">{value}</p>
+    </div>
+  );
+}
+
+const CATEGORIA_BADGE: Record<CategoriaPrincipal, string> = {
+  COBRO_CLIENTE: "bg-green-500/15 text-green-400",
+  PROYECTO_ENTRADA: "bg-green-500/15 text-green-400",
+  PAGO_PROVEEDOR: "bg-yellow-500/15 text-yellow-400",
+  FIJO: "bg-zinc-500/15 text-zinc-300",
+  VARIABLE: "bg-zinc-500/15 text-zinc-300",
+  PROYECTO_SALIDA: "bg-red-500/15 text-red-400",
+  COMPRA_STOCK: "bg-blue-500/15 text-blue-400",
+  CONSUMO_STOCK: "bg-blue-500/15 text-blue-400",
+  OTRO: "bg-zinc-500/15 text-zinc-300",
+};
+
+function CategoryBadge({ categoria }: { categoria: CategoriaPrincipal }) {
+  const tone = CATEGORIA_BADGE[categoria] ?? "bg-zinc-500/15 text-zinc-300";
+  return (
+    <span className={`text-[10px] font-medium uppercase tracking-wide px-2 py-0.5 rounded ${tone}`}>
+      {CATEGORIA_LABEL[categoria]}
+    </span>
+  );
+}
+
+// ─── Página ────────────────────────────────────────────────────────────────
+
+export function FinanceMovementsTab() {
+  const { mes: defaultMes, anio: defaultAnio } = currentMonthYear();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [mes, setMes] = useState<number>(defaultMes);
+  const [anio, setAnio] = useState<number>(defaultAnio);
+  const [tipo, setTipo] = useState<"" | TipoMovimiento>("");
+  const [showForm, setShowForm] = useState(searchParams.get("new") === "1");
+
+  useEffect(() => {
+    if (searchParams.get("new") === "1") {
+      setShowForm(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete("new");
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["finance-movements-tab", mes, anio, tipo],
+    queryFn: () =>
+      getMovements({
+        mes,
+        anio,
+        ...(tipo ? { tipo } : {}),
+        rowType: "MOVEMENT",
+        limit: 100,
+      }),
+  });
+
+  const { data: accounts = [] } = useQuery({
+    queryKey: ["accounts-active-tab"],
+    queryFn: () => getAccounts({ activa: "all" }),
+  });
+  const accountNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const a of accounts) m.set(a.id, a.nombre);
+    return m;
+  }, [accounts]);
+
+  const items = useMemo(() => (data?.data ?? []).filter(isMovementRow), [data]);
+  const saldoUSD = data?.saldoActualUSD ?? 0;
+  const saldoUYU = data?.saldoActualUYU ?? 0;
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <MetricCard label="Saldo actual UYU" value={fmtCurrency(saldoUYU, "UYU")} />
+        <MetricCard label="Saldo actual USD" value={fmtCurrency(saldoUSD, "USD")} />
+      </div>
+
+      <div className="flex items-center gap-3 flex-wrap justify-between">
+        <div className="flex items-center gap-2 flex-wrap">
+          <select
+            value={mes}
+            onChange={(e) => setMes(Number(e.target.value))}
+            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+          >
+            {MONTH_NAMES.map((label, idx) => (
+              <option key={idx + 1} value={idx + 1}>
+                {label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={anio}
+            onChange={(e) => setAnio(Number(e.target.value))}
+            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+          >
+            {[defaultAnio - 1, defaultAnio, defaultAnio + 1].map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+          <select
+            value={tipo}
+            onChange={(e) => setTipo(e.target.value as "" | TipoMovimiento)}
+            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+          >
+            <option value="">Todos los tipos</option>
+            <option value="INGRESO">Ingresos</option>
+            <option value="GASTO">Gastos</option>
+          </select>
+        </div>
+        <button
+          onClick={() => setShowForm(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)]"
+        >
+          <Plus className="w-4 h-4" /> Nuevo movimiento
+        </button>
+      </div>
+
+      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl overflow-hidden">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <span className="text-sm text-[var(--color-text-muted)]">Cargando…</span>
+          </div>
+        ) : items.length === 0 ? (
+          <p className="text-sm text-[var(--color-text-muted)] text-center py-12">
+            Sin movimientos para los filtros seleccionados.
+          </p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="bg-[var(--color-bg-app)] text-xs text-[var(--color-text-muted)] uppercase tracking-wider">
+              <tr>
+                <th className="text-left px-4 py-2.5 font-medium">Fecha</th>
+                <th className="text-left px-4 py-2.5 font-medium">Descripción</th>
+                <th className="text-left px-4 py-2.5 font-medium">Categoría</th>
+                <th className="text-left px-4 py-2.5 font-medium">Cuenta</th>
+                <th className="text-right px-4 py-2.5 font-medium">Monto</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--color-border)]">
+              {items.map((m) => (
+                <tr key={m.id} className="hover:bg-[var(--color-bg-card-hover)]">
+                  <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-secondary)] tabular-nums">
+                    {fmtDate(m.fecha)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <p className="text-[var(--color-text-primary)]">{m.descripcion}</p>
+                    {m.project && (
+                      <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                        {m.project.clientName}
+                      </p>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <CategoryBadge categoria={m.categoriaPrincipal} />
+                  </td>
+                  <td className="px-4 py-3 text-[var(--color-text-secondary)]">
+                    {(m.accountId && accountNameById.get(m.accountId)) ?? "—"}
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums">
+                    <span
+                      className={
+                        m.tipoMovimiento === "INGRESO"
+                          ? "text-green-400 font-semibold"
+                          : "text-red-400 font-semibold"
+                      }
+                    >
+                      {m.tipoMovimiento === "INGRESO" ? "+" : "-"}
+                      {fmtCurrency(m.monto, m.moneda)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {showForm && <NewMovementModal onClose={() => setShowForm(false)} />}
+    </div>
+  );
+}
+
+// ─── Modal: Nuevo movimiento ────────────────────────────────────────────────
+
+function NewMovementModal({ onClose }: { onClose: () => void }) {
+  const qc = useQueryClient();
+
+  const [tipo, setTipo] = useState<TipoMovimiento>("GASTO");
+  const [categoria, setCategoria] = useState<CategoriaPrincipal>("VARIABLE");
+  const [descripcion, setDescripcion] = useState("");
+  const [monto, setMonto] = useState("");
+  const [moneda, setMoneda] = useState<Moneda>("UYU");
+  const [accountId, setAccountId] = useState<string>("");
+  const [fecha, setFecha] = useState<string>(todayLocalISO());
+  const [supplierId, setSupplierId] = useState<string>("");
+  const [projectId, setProjectId] = useState<string>("");
+  const [saving, setSaving] = useState(false);
+
+  const { data: accounts = [] } = useQuery({
+    queryKey: ["accounts-active"],
+    queryFn: () => getAccounts({ activa: "true" }),
+  });
+  const { data: suppliers = [] } = useQuery({
+    queryKey: ["suppliers-active"],
+    queryFn: () => getSuppliers({ activo: "true" }),
+  });
+  const { data: projects = [] } = useQuery({
+    queryKey: ["projects-list-finance"],
+    queryFn: () => getProjects(),
+  });
+
+  // Si cambia tipo, ajustar la categoría a una válida.
+  useEffect(() => {
+    const opciones = CATEGORIAS_POR_TIPO[tipo];
+    if (!opciones.includes(categoria)) {
+      setCategoria(opciones[0] ?? "OTRO");
+    }
+  }, [tipo, categoria]);
+
+  // Auto-set moneda según la cuenta seleccionada.
+  useEffect(() => {
+    if (!accountId) return;
+    const acct = accounts.find((a) => a.id === accountId);
+    if (acct && acct.moneda !== moneda) setMoneda(acct.moneda);
+  }, [accountId, accounts, moneda]);
+
+  const createMut = useMutation({
+    mutationFn: () =>
+      createMovement({
+        fecha,
+        tipoMovimiento: tipo,
+        categoriaPrincipal: categoria,
+        descripcion: descripcion.trim(),
+        monto: Number(monto),
+        moneda,
+        accountId,
+        status: "PAGADO",
+        pagado: true,
+        cobrado: tipo === "INGRESO",
+        impactaFlujo: true,
+        estadoAprobacion: "APROBADO",
+        ...(tipo === "GASTO" && supplierId ? { proveedorId: supplierId } : {}),
+        ...(projectId ? { proyectoId: projectId } : {}),
+      }),
+    onSuccess: () => {
+      toast.success("Movimiento creado");
+      qc.invalidateQueries({ queryKey: ["finance-movements-tab"] });
+      qc.invalidateQueries({ queryKey: ["finance-movements"] });
+      qc.invalidateQueries({ queryKey: ["accounts-summary"] });
+      qc.invalidateQueries({ queryKey: ["finance-dashboard"] });
+      onClose();
+    },
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "No se pudo crear el movimiento";
+      toast.error(msg);
+    },
+  });
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!descripcion.trim()) return toast.error("Falta la descripción");
+    const n = Number(monto);
+    if (!n || n <= 0) return toast.error("Monto inválido");
+    if (!accountId) return toast.error("Elegí una cuenta");
+    setSaving(true);
+    createMut.mutate(undefined, { onSettled: () => setSaving(false) });
+  }
+
+  const categoriasDisponibles = CATEGORIAS_POR_TIPO[tipo];
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-semibold text-[var(--color-text-primary)]">
+            Nuevo movimiento
+          </h3>
+          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <form onSubmit={submit} className="space-y-3">
+          <Field label="Tipo">
+            <div className="flex gap-2">
+              {(["INGRESO", "GASTO"] as TipoMovimiento[]).map((t) => (
+                <button
+                  type="button"
+                  key={t}
+                  onClick={() => setTipo(t)}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm border ${
+                    tipo === t
+                      ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-text-primary)]"
+                      : "border-[var(--color-border)] text-[var(--color-text-secondary)]"
+                  }`}
+                >
+                  {t === "INGRESO" ? "Ingreso" : "Gasto"}
+                </button>
+              ))}
+            </div>
+          </Field>
+
+          <Field label="Categoría">
+            <select
+              value={categoria}
+              onChange={(e) => setCategoria(e.target.value as CategoriaPrincipal)}
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            >
+              {categoriasDisponibles.map((c) => (
+                <option key={c} value={c}>
+                  {CATEGORIA_LABEL[c]}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Descripción">
+            <input
+              type="text"
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              autoFocus
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            />
+          </Field>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Monto">
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={monto}
+                onChange={(e) => setMonto(e.target.value)}
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+              />
+            </Field>
+            <Field label="Moneda">
+              <select
+                value={moneda}
+                onChange={(e) => setMoneda(e.target.value as Moneda)}
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+              >
+                <option value="UYU">UYU</option>
+                <option value="USD">USD</option>
+              </select>
+            </Field>
+          </div>
+
+          <Field label="Cuenta">
+            <select
+              value={accountId}
+              onChange={(e) => setAccountId(e.target.value)}
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            >
+              <option value="">Elegí una cuenta…</option>
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.nombre} ({a.moneda})
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Fecha">
+            <input
+              type="date"
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            />
+          </Field>
+
+          {tipo === "GASTO" && (
+            <Field label="Proveedor (opcional)">
+              <select
+                value={supplierId}
+                onChange={(e) => setSupplierId(e.target.value)}
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+              >
+                <option value="">Sin proveedor</option>
+                {suppliers.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.nombre}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
+
+          <Field label="Proyecto (opcional)">
+            <select
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            >
+              <option value="">Sin proyecto</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.code} · {p.clientName}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <div className="flex gap-2 pt-2">
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-60"
+            >
+              {saving ? "Guardando…" : "Guardar"}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="block text-[11px] uppercase tracking-wider text-[var(--color-text-muted)] mb-1 font-mono">
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}

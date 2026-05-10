@@ -105,6 +105,8 @@ export interface MovimientosQuery {
 export interface MovementsListResponse extends PaginatedResponse<FinanceListItem> {
   saldoFinalUSD: number;
   saldoActualCuentas: number;
+  saldoActualUSD: number;
+  saldoActualUYU: number;
   saldoFinalProyectado: number;
   saldoFinalProyectadoSinIva: number;
   saldoMinimoFuturo: number;
