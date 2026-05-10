@@ -142,11 +142,13 @@ function Metric({ label, value, tone }: { label: string; value: string; tone?: "
 }
 
 function CashflowChart({ data }: { data: CashflowDto }) {
-  // Combinamos las 2 series en un solo array, indexado por fechaIso. Cada fila
-  // tiene saldoPasado o saldoFuturo (uno de los dos en null) para que recharts
-  // dibuje 2 líneas separadas con connectNulls=false.
+  // Combinamos las 2 series en un solo array. Cada fila lleva `tsMs` (epoch en
+  // ms) para usar XAxis con escala TEMPORAL real: cada día ocupa el mismo
+  // ancho independientemente de cuántos eventos haya. saldoPasado o saldoFuturo
+  // null para que recharts dibuje 2 líneas separadas con connectNulls=false.
   const chartData = useMemo(() => {
     const rows: {
+      tsMs: number;
       fechaIso: string;
       saldoPasado: number | null;
       saldoFuturo: number | null;
@@ -154,6 +156,7 @@ function CashflowChart({ data }: { data: CashflowDto }) {
     }[] = [];
     for (const p of data.historicalTimeline) {
       rows.push({
+        tsMs: new Date(p.fecha).getTime(),
         fechaIso: p.fecha,
         saldoPasado: p.saldo,
         saldoFuturo: null,
@@ -169,21 +172,35 @@ function CashflowChart({ data }: { data: CashflowDto }) {
     for (let i = 1; i < data.projectionTimeline.length; i++) {
       const p = data.projectionTimeline[i];
       rows.push({
+        tsMs: new Date(p.fecha).getTime(),
         fechaIso: p.fecha,
         saldoPasado: null,
         saldoFuturo: p.saldo,
         descripcion: p.descripcion,
       });
     }
-    rows.sort((a, b) => a.fechaIso.localeCompare(b.fechaIso));
+    rows.sort((a, b) => a.tsMs - b.tsMs);
     return rows;
   }, [data.historicalTimeline, data.projectionTimeline]);
 
-  const todayIso = data.projectionTimeline[0]?.fecha ?? new Date().toISOString();
-  const minSaldoFuturo = Math.min(
-    ...data.projectionTimeline.map((p) => p.saldo),
-    0,
-  );
+  const todayMs = data.projectionTimeline[0]
+    ? new Date(data.projectionTimeline[0].fecha).getTime()
+    : Date.now();
+  const minTs = chartData[0]?.tsMs ?? todayMs;
+  const maxTs = chartData[chartData.length - 1]?.tsMs ?? todayMs;
+  // Generamos ticks mensuales para que el eje X muestre marcas equiespaciadas
+  // (1 por mes) en vez de una por evento.
+  const monthlyTicks = useMemo(() => {
+    const ticks: number[] = [];
+    const start = new Date(minTs);
+    start.setUTCDate(1);
+    while (start.getTime() <= maxTs) {
+      ticks.push(start.getTime());
+      start.setUTCMonth(start.getUTCMonth() + 1);
+    }
+    return ticks;
+  }, [minTs, maxTs]);
+  const minSaldoFuturo = Math.min(...data.projectionTimeline.map((p) => p.saldo), 0);
 
   return (
     <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-4">
@@ -194,11 +211,14 @@ function CashflowChart({ data }: { data: CashflowDto }) {
         <LineChart data={chartData} margin={{ top: 22, right: 10, left: 10, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
           <XAxis
-            dataKey="fechaIso"
-            tickFormatter={(iso) => formatDateShort(String(iso))}
+            dataKey="tsMs"
+            type="number"
+            scale="time"
+            domain={["dataMin", "dataMax"]}
+            ticks={monthlyTicks}
+            tickFormatter={(ms) => formatDateShort(new Date(Number(ms)).toISOString())}
             tick={{ fontSize: 11, fill: "var(--color-text-muted)" }}
             stroke="var(--color-border)"
-            minTickGap={32}
           />
           <YAxis
             tickFormatter={formatCurrencyShort}
@@ -229,7 +249,7 @@ function CashflowChart({ data }: { data: CashflowDto }) {
           )}
           {/* Línea vertical de "Hoy" con etiqueta. */}
           <ReferenceLine
-            x={todayIso}
+            x={todayMs}
             stroke="var(--color-text-primary)"
             strokeWidth={1.5}
             strokeDasharray="4 3"

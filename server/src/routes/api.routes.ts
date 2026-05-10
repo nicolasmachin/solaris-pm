@@ -11379,7 +11379,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         accountId: z.string().optional(),
         rowType: z.enum(["MOVEMENT", "PAYMENT", "ALL"]).optional(),
         page: z.coerce.number().int().positive().optional(),
-        limit: z.coerce.number().int().positive().max(100).optional(),
+        limit: z.coerce.number().int().positive().max(5000).optional(),
       }).parse(request.query);
 
       const take = query.limit ?? 20;

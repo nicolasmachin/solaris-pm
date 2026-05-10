@@ -1,6 +1,20 @@
 # Novedades
 
-## v5.3
+## v5.4
+
+### 10 de mayo de 2026 (sexta parte)
+
+#### Finanzas — Movimientos: vista anual por defecto, sin paginación
+
+La pestaña Movimientos ahora arranca mostrando **todo el año en curso** en una sola vista. Hay un toggle "Año en curso" / "Por mes" para alternar; el filtro de mes solo aparece cuando elegís "Por mes". La paginación de a 20 desapareció: la tabla muestra todos los movimientos juntos y scrolleás con la página normal. Arriba aparece un contador del estilo "N movimientos en 2026" para saber cuántos hay.
+
+#### Finanzas — Movimientos: editar y eliminar con botones visibles
+
+En la columna de Acciones ahora aparecen botones claros con etiqueta ("Editar" + lápiz, y el ícono de papelera con borde rojo al hacer hover). Los pagos a proveedores muestran "Editar en Proveedores" porque su edición vive en la cuenta del proveedor, no en Movimientos.
+
+#### Finanzas — Flujo de fondos: gráfico a escala temporal
+
+El gráfico ahora usa **escala de tiempo real** en el eje X: cada día ocupa el mismo ancho, sin importar cuántos eventos haya. Antes la mitad derecha (futuro) se veía estirada porque tenía más eventos que la izquierda (pasado). Ahora los 3 meses de pasado y los 3 meses de futuro ocupan la misma anchura visual, y la línea vertical "Hoy" queda exactamente en el centro.
 
 ### 10 de mayo de 2026 (quinta parte)
 

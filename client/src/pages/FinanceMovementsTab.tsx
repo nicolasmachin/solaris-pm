@@ -63,9 +63,12 @@ function CategoryBadge({ categoria }: { categoria: CategoriaPrincipal }) {
 
 // ─── Página ────────────────────────────────────────────────────────────────
 
+type Rango = "ANUAL" | "MENSUAL";
+
 export function FinanceMovementsTab() {
   const { mes: defaultMes, anio: defaultAnio } = currentMonthYear();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [rango, setRango] = useState<Rango>("ANUAL");
   const [mes, setMes] = useState<number>(defaultMes);
   const [anio, setAnio] = useState<number>(defaultAnio);
   const [tipo, setTipo] = useState<"" | TipoMovimiento>("");
@@ -81,15 +84,15 @@ export function FinanceMovementsTab() {
   }, [searchParams, setSearchParams]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["finance-movements-tab", mes, anio, tipo],
+    queryKey: ["finance-movements-tab", rango, mes, anio, tipo],
     queryFn: () =>
       getMovements({
-        mes,
+        ...(rango === "MENSUAL" ? { mes } : {}),
         anio,
         ...(tipo ? { tipo } : {}),
         // Sin rowType: incluimos Movements ejecutados + Payments
         // (los pagos a proveedores son egresos reales y deben verse acá).
-        limit: 100,
+        limit: 5000,
       }),
   });
 
@@ -133,23 +136,40 @@ export function FinanceMovementsTab() {
 
       <div className="flex items-center gap-3 flex-wrap justify-between">
         <div className="flex items-center gap-2 flex-wrap">
-          <select
-            value={mes}
-            onChange={(e) => setMes(Number(e.target.value))}
-            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
-          >
-            {MONTH_NAMES.map((label, idx) => (
-              <option key={idx + 1} value={idx + 1}>
-                {label}
-              </option>
+          <div className="inline-flex rounded-lg border border-[var(--color-border)] overflow-hidden text-sm">
+            {(["ANUAL", "MENSUAL"] as Rango[]).map((r) => (
+              <button
+                key={r}
+                onClick={() => setRango(r)}
+                className={`px-3 py-2 transition-colors ${
+                  rango === r
+                    ? "bg-[var(--color-accent)] text-gray-900 font-semibold"
+                    : "bg-[var(--color-bg-card)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
+                }`}
+              >
+                {r === "ANUAL" ? "Año en curso" : "Por mes"}
+              </button>
             ))}
-          </select>
+          </div>
+          {rango === "MENSUAL" && (
+            <select
+              value={mes}
+              onChange={(e) => setMes(Number(e.target.value))}
+              className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            >
+              {MONTH_NAMES.map((label, idx) => (
+                <option key={idx + 1} value={idx + 1}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          )}
           <select
             value={anio}
             onChange={(e) => setAnio(Number(e.target.value))}
             className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
           >
-            {[defaultAnio - 1, defaultAnio, defaultAnio + 1].map((y) => (
+            {[defaultAnio - 2, defaultAnio - 1, defaultAnio, defaultAnio + 1].map((y) => (
               <option key={y} value={y}>
                 {y}
               </option>
@@ -172,6 +192,12 @@ export function FinanceMovementsTab() {
           <Plus className="w-4 h-4" /> Nuevo movimiento
         </button>
       </div>
+
+      {!isLoading && items.length > 0 && (
+        <p className="text-[11px] text-[var(--color-text-muted)] font-mono">
+          {items.length} movimiento{items.length === 1 ? "" : "s"} {rango === "ANUAL" ? `en ${anio}` : `en ${MONTH_NAMES[mes - 1]} ${anio}`}
+        </p>
+      )}
 
       <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl overflow-hidden">
         {isLoading ? (
@@ -224,7 +250,9 @@ export function FinanceMovementsTab() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right text-[11px] text-[var(--color-text-muted)]">
-                        <span title="Los pagos a proveedores se editan desde la cuenta del proveedor.">—</span>
+                        <span title="Los pagos a proveedores se editan desde la cuenta del proveedor.">
+                          Editar en Proveedores
+                        </span>
                       </td>
                     </tr>
                   );
@@ -262,29 +290,32 @@ export function FinanceMovementsTab() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right whitespace-nowrap">
-                        <button
-                          onClick={() => setEditingMovement(it)}
-                          title="Editar"
-                          className="text-[var(--color-text-muted)] hover:text-[var(--color-accent)] p-1"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (
-                              confirm(
-                                `¿Eliminar movimiento "${it.descripcion}" por ${fmtCurrency(it.monto, it.moneda)}?`,
-                              )
-                            ) {
-                              deleteMut.mutate(it.id);
-                            }
-                          }}
-                          title="Eliminar"
-                          disabled={deleteMut.isPending}
-                          className="text-[var(--color-text-muted)] hover:text-red-400 p-1 ml-1 disabled:opacity-50"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="inline-flex items-center gap-1">
+                          <button
+                            onClick={() => setEditingMovement(it)}
+                            title="Editar movimiento"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-accent)] hover:text-gray-900 hover:border-[var(--color-accent)] transition-colors"
+                          >
+                            <Pencil className="w-3 h-3" />
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (
+                                confirm(
+                                  `¿Eliminar movimiento "${it.descripcion}" por ${fmtCurrency(it.monto, it.moneda)}?`,
+                                )
+                              ) {
+                                deleteMut.mutate(it.id);
+                              }
+                            }}
+                            title="Eliminar movimiento"
+                            disabled={deleteMut.isPending}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] hover:bg-red-500/15 hover:text-red-400 hover:border-red-500/40 transition-colors disabled:opacity-50"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

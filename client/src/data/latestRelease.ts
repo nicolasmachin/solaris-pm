@@ -23,13 +23,55 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "5.3",
-  date: "6 de mayo de 2026",
+  version: "5.4",
+  date: "10 de mayo de 2026",
   sections: [
     {
-      title: "Versión en curso",
+      title: "Finanzas — pestañas nuevas y rediseño general",
       items: [
-        "Estamos trabajando en la próxima tanda de mejoras. Los cambios van a aparecer acá a medida que se publiquen.",
+        "La pantalla de Finanzas pasa a tener siete pestañas: Movimientos, Pendientes, Proveedores, Cobros, Flujo de fondos, Estado de resultados y Cuentas.",
+        "Movimientos muestra solo lo ya pagado; arranca con la vista anual y sin paginación. Cada fila tiene botones visibles para Editar y Eliminar.",
+        "Nueva pestaña Pendientes: centraliza todo lo comprometido a pagar (costos fijos del mes, materiales proyectados de obras, deuda a proveedores y otros compromisos). Filtros por tipo, proyecto y proveedor, y botón \"Marcar pagado\" según origen.",
+      ],
+    },
+    {
+      title: "Flujo de fondos con histórico y proyección",
+      items: [
+        "El gráfico muestra 6 meses en pantalla: 3 atrás (saldo real día a día, en gris) y 3 adelante (proyección, en azul). Una línea vertical \"Hoy\" marca el día actual en el centro.",
+        "Eje X a escala temporal real: cada día ocupa el mismo ancho, sin importar cuántos eventos haya.",
+        "Zona roja cuando el saldo proyectado cae por debajo de cero, con alerta arriba del gráfico.",
+        "Las fechas tentativas de cada evento se pueden editar desde la tabla de abajo y el gráfico se actualiza al instante.",
+      ],
+    },
+    {
+      title: "Estado de resultados (P&L)",
+      items: [
+        "Vista mensual, trimestral y anual con desplegables por categoría: Costos fijos, Variables, Salidas por proyecto, Pago a proveedores, Compras de stock.",
+        "Salidas por proyecto se agrupan automáticamente por cliente con sub-detalle por ítem.",
+        "Resultado en verde si positivo, rojo si negativo, y rentabilidad en porcentaje.",
+      ],
+    },
+    {
+      title: "Costos fijos predefinidos",
+      items: [
+        "Nueva pestaña en Administración para pre-cargar gastos recurrentes (alquiler, contador, seguros, etc) con periodicidad mensual, bimensual o anual.",
+        "Aparecen como sugerencia en el formulario de \"Nuevo movimiento\" cuando elegís categoría \"Costo fijo\", solo los que faltan pagar este mes.",
+        "Cuando registrás un pago real, ese pasa a ser el monto sugerido la próxima vez.",
+      ],
+    },
+    {
+      title: "Ingeniería deja de ensuciar Movimientos",
+      items: [
+        "Los materiales proyectados de un proyecto ya no generan movimientos PREVISTO en Finanzas. La fecha tentativa vive en el material y alimenta directamente el Flujo de fondos.",
+        "En Movimientos quedan solo cosas reales que pasaron con la plata.",
+      ],
+    },
+    {
+      title: "Generador EFP más rápido y conciso",
+      items: [
+        "El borrador del Proyecto Final de Ingeniería ahora apunta a 6-10 páginas (antes 19), sin repetición entre secciones. Anexos pasa a ser solo lista de archivos.",
+        "Generación 3× más rápida (~75 segundos) y un tercio del costo por borrador.",
+        "Diseño nuevo del PDF: header con wordmark VOLTIA, cards de datos clave del sistema en página 1, secciones numeradas con línea azul, footer con paginación.",
       ],
     },
   ],
