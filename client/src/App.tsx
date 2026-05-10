@@ -211,7 +211,7 @@ export function App() {
         >
           <Route index element={<Navigate to="movimientos" replace />} />
           <Route path="movimientos" element={<FinanceMovementsTab />} />
-          <Route path="proveedores" element={<FinancePlaceholder title="Proveedores" />} />
+          <Route path="proveedores" element={<FinanceSuppliers />} />
           <Route path="cobros" element={<FinanceCobros />} />
           <Route path="flujo" element={<FinancePlaceholder title="Flujo de fondos" />} />
           <Route path="resultados" element={<FinancePlaceholder title="Estado de resultados" />} />

@@ -2,6 +2,25 @@
 
 ## v5.3
 
+### 10 de mayo de 2026
+
+#### Finanzas — Costos fijos predefinidos
+
+Nueva pestaña en Administración → **Costos fijos** para pre-cargar gastos que se repiten (alquiler, contador, seguros, sueldos, etc).
+
+- Cada costo fijo tiene nombre, día del mes en que se paga y periodicidad: mensual, bimensual (con selector de meses pares o impares) o anual (con selector del mes del año).
+- En el formulario de "Nuevo movimiento", al elegir categoría "Costo fijo" aparece un selector con los costos fijos que **faltan pagar este mes**. Al elegir uno, se autocompleta la descripción (no el monto, que siempre lo cargás vos).
+- Si ya pagaste el alquiler este mes, no vuelve a aparecer hasta el mes que viene. Para los bimensuales, solo aparece en los meses que corresponden. Para los anuales, solo en el mes del año configurado.
+- El selector muestra como referencia el último monto pagado de cada costo fijo, así sabés el orden de magnitud al cargar el monto real.
+
+#### Finanzas — Pestaña Proveedores
+
+La pestaña Proveedores deja de ser un placeholder y muestra la lista completa de proveedores con su saldo actual y filtros (activos / todos / inactivos, búsqueda por nombre/RUT/contacto). Click en un proveedor abre la cuenta corriente con el historial de facturas y pagos.
+
+#### Finanzas — Pagos a proveedores aparecen en Movimientos
+
+Los pagos registrados a proveedores ahora aparecen automáticamente en la pestaña **Movimientos** como salidas ejecutadas, junto al resto de los movimientos del mes. Antes solo se veían dentro de la cuenta corriente del proveedor.
+
 ### 9 de mayo de 2026
 
 #### Finanzas — pestañas y rediseño de Movimientos

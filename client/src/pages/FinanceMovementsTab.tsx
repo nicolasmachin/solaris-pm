@@ -9,9 +9,11 @@ import {
   getMovements,
   getSuppliers,
   isMovementRow,
+  isPaymentRow,
 } from "../api/finance.api";
 import { getAccounts } from "../api/accounts.api";
 import { getProjects } from "../api/projects.api";
+import { listPendingFixedCosts, type FixedCostPendingDto } from "../api/fixedCosts.api";
 import {
   CATEGORIA_LABEL,
   CATEGORIAS_POR_TIPO,
@@ -82,7 +84,8 @@ export function FinanceMovementsTab() {
         mes,
         anio,
         ...(tipo ? { tipo } : {}),
-        rowType: "MOVEMENT",
+        // Sin rowType: incluimos Movements ejecutados + Payments
+        // (los pagos a proveedores son egresos reales y deben verse acá).
         limit: 100,
       }),
   });
@@ -97,7 +100,7 @@ export function FinanceMovementsTab() {
     return m;
   }, [accounts]);
 
-  const items = useMemo(() => (data?.data ?? []).filter(isMovementRow), [data]);
+  const items = useMemo(() => data?.data ?? [], [data]);
   const saldoUSD = data?.saldoActualUSD ?? 0;
   const saldoUYU = data?.saldoActualUYU ?? 0;
 
@@ -171,39 +174,74 @@ export function FinanceMovementsTab() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border)]">
-              {items.map((m) => (
-                <tr key={m.id} className="hover:bg-[var(--color-bg-card-hover)]">
-                  <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-secondary)] tabular-nums">
-                    {fmtDate(m.fecha)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <p className="text-[var(--color-text-primary)]">{m.descripcion}</p>
-                    {m.project && (
-                      <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
-                        {m.project.clientName}
-                      </p>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <CategoryBadge categoria={m.categoriaPrincipal} />
-                  </td>
-                  <td className="px-4 py-3 text-[var(--color-text-secondary)]">
-                    {(m.accountId && accountNameById.get(m.accountId)) ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums">
-                    <span
-                      className={
-                        m.tipoMovimiento === "INGRESO"
-                          ? "text-green-400 font-semibold"
-                          : "text-red-400 font-semibold"
-                      }
-                    >
-                      {m.tipoMovimiento === "INGRESO" ? "+" : "-"}
-                      {fmtCurrency(m.monto, m.moneda)}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {items.map((it) => {
+                if (isPaymentRow(it)) {
+                  // Pago a proveedor — siempre es egreso.
+                  const accountName = it.account?.nombre ?? (it.accountId && accountNameById.get(it.accountId)) ?? "—";
+                  const desc = it.descripcion || `Pago a ${it.supplier?.nombre ?? "proveedor"}`;
+                  return (
+                    <tr key={`p-${it.id}`} className="hover:bg-[var(--color-bg-card-hover)]">
+                      <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-secondary)] tabular-nums">
+                        {fmtDate(it.fecha)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="text-[var(--color-text-primary)]">{desc}</p>
+                        {it.supplier && (
+                          <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                            {it.supplier.nombre}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <CategoryBadge categoria="PAGO_PROVEEDOR" />
+                      </td>
+                      <td className="px-4 py-3 text-[var(--color-text-secondary)]">{accountName}</td>
+                      <td className="px-4 py-3 text-right tabular-nums">
+                        <span className="text-red-400 font-semibold">
+                          {it.monto < 0 ? "+" : "-"}
+                          {fmtCurrency(Math.abs(it.monto), it.moneda)}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                }
+                if (isMovementRow(it)) {
+                  return (
+                    <tr key={`m-${it.id}`} className="hover:bg-[var(--color-bg-card-hover)]">
+                      <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-secondary)] tabular-nums">
+                        {fmtDate(it.fecha)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="text-[var(--color-text-primary)]">{it.descripcion}</p>
+                        {it.project && (
+                          <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                            {it.project.clientName}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <CategoryBadge categoria={it.categoriaPrincipal} />
+                      </td>
+                      <td className="px-4 py-3 text-[var(--color-text-secondary)]">
+                        {(it.accountId && accountNameById.get(it.accountId)) ?? "—"}
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums">
+                        <span
+                          className={
+                            it.tipoMovimiento === "INGRESO"
+                              ? "text-green-400 font-semibold"
+                              : "text-red-400 font-semibold"
+                          }
+                        >
+                          {it.tipoMovimiento === "INGRESO" ? "+" : "-"}
+                          {fmtCurrency(it.monto, it.moneda)}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                }
+                return null;
+              })}
             </tbody>
           </table>
         )}
@@ -228,7 +266,18 @@ function NewMovementModal({ onClose }: { onClose: () => void }) {
   const [fecha, setFecha] = useState<string>(todayLocalISO());
   const [supplierId, setSupplierId] = useState<string>("");
   const [projectId, setProjectId] = useState<string>("");
+  const [fixedCostId, setFixedCostId] = useState<string>("");
   const [saving, setSaving] = useState(false);
+
+  // Para el selector de costos fijos: usamos el mes/anio de la fecha del form.
+  const fechaParts = fecha.split("-");
+  const formAnio = Number(fechaParts[0] ?? new Date().getFullYear());
+  const formMes = Number(fechaParts[1] ?? new Date().getMonth() + 1);
+  const { data: pendingFixedCosts = [] } = useQuery({
+    queryKey: ["fixed-costs-pending", formMes, formAnio],
+    queryFn: () => listPendingFixedCosts(formMes, formAnio),
+    enabled: tipo === "GASTO" && categoria === "FIJO",
+  });
 
   const { data: accounts = [] } = useQuery({
     queryKey: ["accounts-active"],
@@ -250,6 +299,22 @@ function NewMovementModal({ onClose }: { onClose: () => void }) {
       setCategoria(opciones[0] ?? "OTRO");
     }
   }, [tipo, categoria]);
+
+  // Si la categoría deja de ser FIJO, limpiar la selección de costo fijo.
+  useEffect(() => {
+    if (categoria !== "FIJO") setFixedCostId("");
+  }, [categoria]);
+
+  function applyFixedCost(fc: FixedCostPendingDto | null) {
+    if (!fc) {
+      setFixedCostId("");
+      return;
+    }
+    setFixedCostId(fc.id);
+    if (!descripcion.trim()) setDescripcion(fc.nombre);
+    setMoneda(fc.moneda);
+    // No autocompletamos el monto: el usuario carga el real.
+  }
 
   // Auto-set moneda según la cuenta seleccionada.
   useEffect(() => {
@@ -275,6 +340,7 @@ function NewMovementModal({ onClose }: { onClose: () => void }) {
         estadoAprobacion: "APROBADO",
         ...(tipo === "GASTO" && supplierId ? { proveedorId: supplierId } : {}),
         ...(projectId ? { proyectoId: projectId } : {}),
+        ...(fixedCostId ? { fixedCostId } : {}),
       }),
     onSuccess: () => {
       toast.success("Movimiento creado");
@@ -353,6 +419,30 @@ function NewMovementModal({ onClose }: { onClose: () => void }) {
               ))}
             </select>
           </Field>
+
+          {tipo === "GASTO" && categoria === "FIJO" && pendingFixedCosts.length > 0 && (
+            <Field label="Costo fijo predefinido">
+              <select
+                value={fixedCostId}
+                onChange={(e) => {
+                  const fc = pendingFixedCosts.find((p) => p.id === e.target.value) ?? null;
+                  applyFixedCost(fc);
+                }}
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+              >
+                <option value="">Sin costo fijo asociado</option>
+                {pendingFixedCosts.map((fc) => (
+                  <option key={fc.id} value={fc.id}>
+                    {fc.nombre} (último pago: {fmtCurrency(fc.ultimoMontoPagado, fc.moneda)})
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
+                Solo se muestran los que faltan pagar este mes. Al elegir uno se completa el
+                nombre; el monto lo cargás vos.
+              </p>
+            </Field>
+          )}
 
           <Field label="Descripción">
             <input

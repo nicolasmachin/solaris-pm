@@ -19,6 +19,7 @@ import {
   ExpenseSourceType,
   FileAttachmentTipo,
   FinanceMovementStatus,
+  FixedCostPeriodicity,
   MovementSourceType,
   GoalArea,
   GoalMetric,
@@ -11387,6 +11388,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       observaciones: z.string().optional(),
       estadoAprobacion: z.nativeEnum(EstadoAprobacion).default(EstadoAprobacion.REGISTRADO),
       archivoAdjuntoUrl: z.string().optional(),
+      fixedCostId: z.string().optional(),
       // Si viene seteado y el movimiento es GASTO + PAGADO con proveedor + cuenta,
       // el monto del form se trata como Payment total: se distribuye entre las
       // facturas pendientes indicadas y, si sobra, se crea el movimiento nuevo
@@ -12141,6 +12143,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
             projectId: body.projectId,
             supplierId: body.supplierId,
             accountId: body.accountId,
+            fixedCostId: body.fixedCostId,
             observaciones: body.observaciones,
             estadoAprobacion: body.estadoAprobacion,
             archivoAdjuntoUrl: body.archivoAdjuntoUrl,
@@ -14841,4 +14844,164 @@ export async function registerApiRoutes(app: FastifyInstance) {
         user: q.user,
       }));
     });
+
+  // ─── Costos fijos predefinidos ─────────────────────────────────────────────
+
+  const fixedCostBodySchema = z.object({
+    nombre: z.string().min(1).max(120),
+    descripcion: z.string().max(500).nullable().optional(),
+    periodicidad: z.nativeEnum(FixedCostPeriodicity),
+    diaDelMes: z.number().int().min(1).max(31),
+    mesesPares: z.boolean().nullable().optional(),
+    mesAnual: z.number().int().min(1).max(12).nullable().optional(),
+    montoReferencia: z.number().nonnegative(),
+    moneda: z.nativeEnum(Moneda).optional(),
+    activo: z.boolean().optional(),
+  });
+
+  function serializeFixedCost(fc: {
+    id: string; nombre: string; descripcion: string | null;
+    periodicidad: FixedCostPeriodicity; diaDelMes: number;
+    mesesPares: boolean | null; mesAnual: number | null;
+    montoReferencia: Prisma.Decimal; moneda: Moneda; activo: boolean;
+    createdAt: Date; updatedAt: Date;
+  }) {
+    return {
+      id: fc.id,
+      nombre: fc.nombre,
+      descripcion: fc.descripcion,
+      periodicidad: fc.periodicidad,
+      diaDelMes: fc.diaDelMes,
+      mesesPares: fc.mesesPares,
+      mesAnual: fc.mesAnual,
+      montoReferencia: Number(fc.montoReferencia),
+      moneda: fc.moneda,
+      activo: fc.activo,
+      createdAt: serializeDate(fc.createdAt),
+      updatedAt: serializeDate(fc.updatedAt),
+    };
+  }
+
+  function appliesThisMonth(
+    fc: { periodicidad: FixedCostPeriodicity; mesesPares: boolean | null; mesAnual: number | null },
+    mes: number,
+  ): boolean {
+    if (fc.periodicidad === FixedCostPeriodicity.MENSUAL) return true;
+    if (fc.periodicidad === FixedCostPeriodicity.BIMENSUAL) {
+      const esPar = mes % 2 === 0;
+      return fc.mesesPares === esPar;
+    }
+    if (fc.periodicidad === FixedCostPeriodicity.ANUAL) return fc.mesAnual === mes;
+    return false;
+  }
+
+  // CRUD admin: listar todos (incluye inactivos para gestión).
+  app.get("/admin/fixed-costs", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async () => {
+    const items = await prisma.fixedCost.findMany({
+      where: { deletedAt: null },
+      orderBy: [{ activo: "desc" }, { nombre: "asc" }],
+    });
+    return items.map(serializeFixedCost);
+  });
+
+  app.post("/admin/fixed-costs", { preHandler: authorize(Module.FINANZAS, Action.CREATE) }, async (request, reply) => {
+    const body = fixedCostBodySchema.parse(request.body);
+    if (body.periodicidad === FixedCostPeriodicity.BIMENSUAL && body.mesesPares == null) {
+      throw badRequest("BIMENSUAL_REQUIRES_PARES", "Para bimensual hay que indicar pares o impares");
+    }
+    if (body.periodicidad === FixedCostPeriodicity.ANUAL && body.mesAnual == null) {
+      throw badRequest("ANUAL_REQUIRES_MES", "Para anual hay que indicar el mes del año");
+    }
+    const created = await prisma.fixedCost.create({
+      data: {
+        nombre: body.nombre,
+        descripcion: body.descripcion ?? null,
+        periodicidad: body.periodicidad,
+        diaDelMes: body.diaDelMes,
+        mesesPares: body.periodicidad === FixedCostPeriodicity.BIMENSUAL ? body.mesesPares ?? null : null,
+        mesAnual: body.periodicidad === FixedCostPeriodicity.ANUAL ? body.mesAnual ?? null : null,
+        montoReferencia: new Prisma.Decimal(body.montoReferencia),
+        moneda: body.moneda ?? Moneda.UYU,
+        activo: body.activo ?? true,
+      },
+    });
+    reply.code(201);
+    return serializeFixedCost(created);
+  });
+
+  app.patch("/admin/fixed-costs/:id", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+    const { id } = z.object({ id: z.string().min(1) }).parse(request.params);
+    const body = fixedCostBodySchema.partial().parse(request.body);
+    const existing = await prisma.fixedCost.findFirst({ where: { id, deletedAt: null } });
+    if (!existing) throw notFound("FIXED_COST_NOT_FOUND", "Costo fijo no encontrado");
+
+    const data: Prisma.FixedCostUpdateInput = {};
+    if (body.nombre !== undefined) data.nombre = body.nombre;
+    if (body.descripcion !== undefined) data.descripcion = body.descripcion;
+    if (body.periodicidad !== undefined) data.periodicidad = body.periodicidad;
+    if (body.diaDelMes !== undefined) data.diaDelMes = body.diaDelMes;
+    if (body.mesesPares !== undefined) data.mesesPares = body.mesesPares;
+    if (body.mesAnual !== undefined) data.mesAnual = body.mesAnual;
+    if (body.montoReferencia !== undefined) data.montoReferencia = new Prisma.Decimal(body.montoReferencia);
+    if (body.moneda !== undefined) data.moneda = body.moneda;
+    if (body.activo !== undefined) data.activo = body.activo;
+
+    const updated = await prisma.fixedCost.update({ where: { id }, data });
+    return serializeFixedCost(updated);
+  });
+
+  app.delete("/admin/fixed-costs/:id", { preHandler: authorize(Module.FINANZAS, Action.DELETE) }, async (request, reply) => {
+    const { id } = z.object({ id: z.string().min(1) }).parse(request.params);
+    const existing = await prisma.fixedCost.findFirst({ where: { id, deletedAt: null } });
+    if (!existing) throw notFound("FIXED_COST_NOT_FOUND", "Costo fijo no encontrado");
+    await prisma.fixedCost.update({ where: { id }, data: { deletedAt: new Date(), activo: false } });
+    reply.code(204);
+    return;
+  });
+
+  // Para el formulario de movimiento: costos fijos que aplican este mes
+  // y todavía no se pagaron, con último monto pagado como referencia visual
+  // (no autocompleta el monto, solo informa).
+  app.get("/finance/fixed-costs/pending", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+    const query = z.object({
+      mes: z.coerce.number().int().min(1).max(12),
+      anio: z.coerce.number().int(),
+    }).parse(request.query);
+
+    const allActive = await prisma.fixedCost.findMany({
+      where: { activo: true, deletedAt: null },
+      orderBy: { nombre: "asc" },
+    });
+    const matching = allActive.filter((fc) => appliesThisMonth(fc, query.mes));
+
+    const result = await Promise.all(
+      matching.map(async (fc) => {
+        const alreadyPaid = await prisma.financeMovement.findFirst({
+          where: {
+            fixedCostId: fc.id,
+            mes: query.mes,
+            anio: query.anio,
+            status: FinanceMovementStatus.PAGADO,
+            deletedAt: null,
+          },
+          select: { id: true },
+        });
+        if (alreadyPaid) return null;
+
+        const lastPayment = await prisma.financeMovement.findFirst({
+          where: { fixedCostId: fc.id, status: FinanceMovementStatus.PAGADO, deletedAt: null },
+          orderBy: { fecha: "desc" },
+          select: { monto: true, fecha: true },
+        });
+
+        return {
+          ...serializeFixedCost(fc),
+          ultimoMontoPagado: lastPayment ? Number(lastPayment.monto) : Number(fc.montoReferencia),
+          ultimoPagoFecha: lastPayment ? serializeDate(lastPayment.fecha) : null,
+        };
+      }),
+    );
+
+    return result.filter((r) => r !== null);
+  });
 }

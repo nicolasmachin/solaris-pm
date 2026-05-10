@@ -168,6 +168,7 @@ function buildMovementBody(body: Partial<MovimientoFormData>) {
     ...(body.proveedorId ? { supplierId: body.proveedorId } : {}),
     ...(body.subcategoriaId ? { subcategoriaId: body.subcategoriaId } : {}),
     ...(body.accountId ? { accountId: body.accountId } : {}),
+    ...(body.fixedCostId ? { fixedCostId: body.fixedCostId } : {}),
     ...(body.observaciones ? { observaciones: body.observaciones } : {}),
   };
 }

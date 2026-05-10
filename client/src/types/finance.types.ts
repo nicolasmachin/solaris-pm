@@ -403,5 +403,6 @@ export interface MovimientoFormData {
   proveedorId?: string;
   subcategoriaId?: string;
   accountId?: string;
+  fixedCostId?: string;
   observaciones?: string;
 }

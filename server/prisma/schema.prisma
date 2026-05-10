@@ -1059,6 +1059,8 @@ model FinanceMovement {
   historial           FinanceApprovalHistory[]
   projectMaterials    ProjectMaterial[]
   reconciliacionAjuste AccountReconciliation? @relation("ReconciliationAjuste")
+  fixedCostId         String?
+  fixedCost           FixedCost?               @relation(fields: [fixedCostId], references: [id])
   creadoPorId         String?
   creadoPor           User?                    @relation("FinanceMovCreadoPor", fields: [creadoPorId], references: [id])
   aprobadoPorId       String?
@@ -1076,7 +1078,42 @@ model FinanceMovement {
   @@index([status])
   @@index([sourceType])
   @@index([dueDate])
+  @@index([fixedCostId])
   @@map("finance_movements")
+}
+
+// Costos fijos predefinidos (alquiler, contador, seguros, sueldos, etc).
+// Usados como sugerencia en el formulario de movimiento (categoría FIJO):
+// el operador ve los que faltan pagar este mes y al elegir uno se autocompleta
+// el nombre. El monto siempre lo carga el usuario.
+model FixedCost {
+  id              String               @id @default(cuid())
+  nombre          String
+  descripcion     String?
+  periodicidad    FixedCostPeriodicity
+  diaDelMes       Int
+  // Solo cuando periodicidad = BIMENSUAL: true=meses pares (feb/abr/...),
+  // false=meses impares (ene/mar/...).
+  mesesPares      Boolean?
+  // Solo cuando periodicidad = ANUAL: 1-12, mes del año en que cae.
+  mesAnual        Int?
+  montoReferencia Decimal              @db.Decimal(12, 2)
+  moneda          Moneda               @default(UYU)
+  movements       FinanceMovement[]
+  activo          Boolean              @default(true)
+  createdAt       DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime             @updatedAt @db.Timestamptz(6)
+  deletedAt       DateTime?
+
+  @@index([activo])
+  @@index([deletedAt])
+  @@map("fixed_costs")
+}
+
+enum FixedCostPeriodicity {
+  MENSUAL
+  BIMENSUAL
+  ANUAL
 }
 
 model FinanceComprobante {

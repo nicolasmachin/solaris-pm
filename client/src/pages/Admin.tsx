@@ -28,6 +28,7 @@ import { TabMateriales } from "./AdminMateriales";
 import { TabCuentas } from "./AdminCuentas";
 import { TabDeadlineRules } from "./AdminDeadlineRules";
 import { TabClientes } from "./AdminClientes";
+import { TabCostosFijos } from "./AdminCostosFijos";
 import { FinanceHealthWidget } from "../components/finance/FinanceHealthWidget";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -3052,7 +3053,7 @@ function ConfirmDialog({
   );
 }
 
-type Tab = "usuarios" | "permisos" | "configuracion" | "objetivos" | "finanzas" | "equipos" | "pipeline" | "materiales" | "cuentas" | "deadlines" | "clientes";
+type Tab = "usuarios" | "permisos" | "configuracion" | "objetivos" | "finanzas" | "costos-fijos" | "equipos" | "pipeline" | "materiales" | "cuentas" | "deadlines" | "clientes";
 
 export function Admin() {
   const [activeTab, setActiveTab] = useState<Tab>("usuarios");
@@ -3065,6 +3066,7 @@ export function Admin() {
     { id: "configuracion", label: "Configuración del sistema" },
     { id: "objetivos", label: "Objetivos" },
     { id: "finanzas", label: "Subcategorías" },
+    { id: "costos-fijos", label: "Costos fijos" },
     { id: "materiales", label: "Materiales" },
     { id: "cuentas", label: "Cuentas" },
     { id: "deadlines", label: "Reglas de Deadlines" },
@@ -3112,6 +3114,7 @@ export function Admin() {
       {activeTab === "configuracion" && <TabConfiguracion />}
       {activeTab === "objetivos" && <TabObjetivos />}
       {activeTab === "finanzas" && <TabFinanzas />}
+      {activeTab === "costos-fijos" && <TabCostosFijos />}
       {activeTab === "materiales" && <TabMateriales />}
       {activeTab === "cuentas" && <TabCuentas />}
       {activeTab === "deadlines" && <TabDeadlineRules />}
