@@ -26,6 +26,9 @@ const FinancePlaceholder = lazy(() =>
 const FinanceMovementsTab = lazy(() =>
   import("./pages/FinanceMovementsTab").then((module) => ({ default: module.FinanceMovementsTab })),
 );
+const FinanceCashflowTab = lazy(() =>
+  import("./pages/FinanceCashflowTab").then((module) => ({ default: module.FinanceCashflowTab })),
+);
 const FinanceMovements = lazy(() => import("./pages/FinanceMovements").then((module) => ({ default: module.FinanceMovements })));
 const FinanceSuppliers = lazy(() => import("./pages/FinanceSuppliers").then((module) => ({ default: module.FinanceSuppliers })));
 const FinanceReports = lazy(() => import("./pages/FinanceReports").then((module) => ({ default: module.FinanceReports })));
@@ -213,7 +216,7 @@ export function App() {
           <Route path="movimientos" element={<FinanceMovementsTab />} />
           <Route path="proveedores" element={<FinanceSuppliers />} />
           <Route path="cobros" element={<FinanceCobros />} />
-          <Route path="flujo" element={<FinancePlaceholder title="Flujo de fondos" />} />
+          <Route path="flujo" element={<FinanceCashflowTab />} />
           <Route path="resultados" element={<FinancePlaceholder title="Estado de resultados" />} />
           <Route path="cuentas" element={<FinanceCuentas />} />
         </Route>

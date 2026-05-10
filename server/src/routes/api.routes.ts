@@ -10441,101 +10441,45 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // ─── Materiales: Generación / regeneración de previstos ───────────────────
 
     async function generatePrevistosForProject(projectId: string, userId: string | undefined, expectedDate: Date) {
-      // Sólo agrupar los ProjectMaterials que NO estén ya vinculados a un movimiento.
-      // Los que ya tienen movementId apuntando a un movimiento avanzado (COMPROMETIDO+)
-      // o a un PREVISTO existente no se tocan acá.
-      const materials = await prisma.projectMaterial.findMany({
-        where: { projectId, movementId: null },
-        include: {
-          materialItem: {
-            select: { id: true, nombre: true, category: { select: { id: true, nombre: true } } },
-          },
-        },
-        orderBy: { createdAt: "asc" },
-      });
-
+      // Bloque 3: ya NO creamos FinanceMovement PREVISTO. La fecha tentativa se
+      // setea directamente sobre cada ProjectMaterial.expectedDate y los
+      // proyectados se incluyen en el flujo de fondos vía /finance/cashflow.
+      // Solo se actualiza la fecha de los materiales que aún no están ligados
+      // a un movimiento avanzado (COMPROMETIDO+/A_PAGAR/PAGADO) — esos no se
+      // tocan porque ya forman parte del flujo real.
       const fechaIso = new Date(Date.UTC(expectedDate.getUTCFullYear(), expectedDate.getUTCMonth(), expectedDate.getUTCDate()));
 
-      // Agrupar por (categoría, moneda)
-      type GroupKey = string; // `${catId}|${moneda}`
-      type Group = {
-        catId: string | null;
-        catLabel: string;
-        moneda: typeof Moneda[keyof typeof Moneda];
-        items: typeof materials;
-        subtotal: number;
-      };
-      const groups = new Map<GroupKey, Group>();
-      for (const pm of materials) {
-        const cat = pm.materialItem.category;
-        const catId = cat?.id ?? null;
-        const catLabel = cat?.nombre ?? "Sin categoría";
-        const key = `${catId ?? "null"}|${pm.moneda}`;
-        let g = groups.get(key);
-        if (!g) {
-          g = { catId, catLabel, moneda: pm.moneda, items: [] as typeof materials, subtotal: 0 };
-          groups.set(key, g);
-        }
-        g.items.push(pm);
-        g.subtotal += Number(pm.quantity) * Number(pm.unitPrice);
-      }
+      const materials = await prisma.projectMaterial.findMany({
+        where: { projectId, movementId: null },
+        select: { id: true },
+      });
 
-      let created = 0;
-      for (const g of groups.values()) {
-        const monto = Math.round(g.subtotal * 100) / 100;
-        // Si todos los items comparten el mismo proveedor, lo persistimos en el movimiento.
-        const supplierIds = new Set(g.items.map((pm) => pm.supplierId).filter((s) => !!s));
-        const sharedSupplierId = supplierIds.size === 1 ? Array.from(supplierIds)[0] : null;
-
-        // Cuántos monedas distintas hay totales en esta categoría → si hay > 1 (USD y UYU),
-        // lo aclaramos en la descripción para que sea inequívoca en la lista de Movimientos.
-        const otherMonedasInCat = Array.from(groups.values()).filter((og) => og.catId === g.catId).length;
-        const monedaSuffix = otherMonedasInCat > 1 ? ` (${g.moneda})` : "";
-        const descripcion = `Previsto: ${g.catLabel}${monedaSuffix}`;
-
-        const mov = await prisma.financeMovement.create({
-          data: {
-            fecha: fechaIso,
-            mes: fechaIso.getUTCMonth() + 1,
-            anio: fechaIso.getUTCFullYear(),
-            tipoMovimiento: TipoMovimiento.GASTO,
-            categoriaPrincipal: CategoriaPrincipal.CONSUMO_STOCK,
-            descripcion,
-            monto,
-            moneda: g.moneda,
-            pagado: false,
-            impactaFlujo: true,
-            status: FinanceMovementStatus.PREVISTO,
-            sourceType: MovementSourceType.PROJECT_MATERIALS,
-            projectId,
-            supplierId: sharedSupplierId,
-            estadoAprobacion: EstadoAprobacion.REGISTRADO,
-            expectedDate: fechaIso,
-            ...(userId ? { creadoPorId: userId } : {}),
-            invoiceItems: {
-              create: g.items.map((pm) => ({
-                materialItemId: pm.materialItemId,
-                quantity: pm.quantity,
-                unitPrice: pm.unitPrice,
-                moneda: pm.moneda,
-                ivaTasa: pm.ivaTasa,
-                notes: pm.notes,
-              })),
-            },
-          },
-        });
+      if (materials.length > 0) {
         await prisma.projectMaterial.updateMany({
-          where: { id: { in: g.items.map((pm) => pm.id) } },
-          data: { movementId: mov.id },
+          where: { id: { in: materials.map((m) => m.id) } },
+          data: { expectedDate: fechaIso },
         });
-        created++;
       }
-      // Cuenta de ProjectMaterials que ya estaban vinculados a movimientos previos
-      // (advanced o previstos antiguos no tocados): se considera "alreadyExisted".
+
+      if (userId) {
+        await createAuditEntry({
+          entityType: AuditEntityType.project,
+          entityId: projectId,
+          projectId,
+          userId,
+          action: AuditAction.updated,
+          description: `Fecha prevista de materiales actualizada a ${fechaIso.toISOString().slice(0, 10)} (${materials.length} ítem${materials.length === 1 ? "" : "s"})`,
+        });
+      }
+
       const alreadyExisted = await prisma.projectMaterial.count({
         where: { projectId, NOT: { movementId: null } },
       });
-      return { created, alreadyExisted: Math.max(0, alreadyExisted - materials.length) };
+
+      // El shape de la respuesta se preserva: el frontend espera "created" como
+      // cantidad de ítems afectados; "alreadyExisted" como ítems ligados a
+      // movements (que no se modificaron).
+      return { created: materials.length, alreadyExisted };
     }
 
     app.post("/projects/:id/materials/generate-previsto", { preHandler: authorize(Module.INGENIERIA, Action.EDIT) }, async (request, reply) => {
@@ -15003,5 +14947,277 @@ export async function registerApiRoutes(app: FastifyInstance) {
     );
 
     return result.filter((r) => r !== null);
+  });
+
+  // ─── Flujo de fondos (proyección 3 meses) ──────────────────────────────────
+
+  type CashflowEvent = {
+    id: string;
+    fecha: string;
+    descripcion: string;
+    tipo: "FIXED_COST" | "PROJECT_MATERIAL" | "SUPPLIER_DEBT" | "CLIENT_COBRO";
+    monto: number;
+    moneda: Moneda;
+    impacto: "POSITIVO" | "NEGATIVO";
+    sourceType: "FIXED_COST" | "PROJECT_MATERIAL" | "SUPPLIER_DEBT" | "CLIENT_COBRO";
+    sourceId: string;
+    causeNegative?: boolean;
+  };
+
+  function addMonths(d: Date, n: number): Date {
+    const r = new Date(d);
+    r.setUTCMonth(r.getUTCMonth() + n);
+    return r;
+  }
+
+  function serializeDateNonNull(d: Date): string {
+    return d.toISOString();
+  }
+
+  function buildFixedCostEventsForRange(
+    fixedCosts: { id: string; nombre: string; periodicidad: FixedCostPeriodicity; mesesPares: boolean | null; mesAnual: number | null; diaDelMes: number; montoReferencia: Prisma.Decimal; moneda: Moneda }[],
+    paidThisMonth: Set<string>,
+    monthsAhead: number,
+    now: Date,
+    lastPaidByFc: Map<string, number>,
+  ): CashflowEvent[] {
+    const events: CashflowEvent[] = [];
+    for (let i = 0; i <= monthsAhead; i++) {
+      const ref = addMonths(now, i);
+      const mes = ref.getUTCMonth() + 1;
+      const anio = ref.getUTCFullYear();
+      for (const fc of fixedCosts) {
+        if (!appliesThisMonth(fc, mes)) continue;
+        const key = `${fc.id}:${anio}-${mes}`;
+        if (paidThisMonth.has(key)) continue;
+        const day = Math.min(fc.diaDelMes, 28);
+        const fecha = new Date(Date.UTC(anio, mes - 1, day));
+        if (fecha < now) continue;
+        const monto = lastPaidByFc.get(fc.id) ?? Number(fc.montoReferencia);
+        events.push({
+          id: `fc:${fc.id}:${anio}-${mes}`,
+          fecha: serializeDateNonNull(fecha),
+          descripcion: fc.nombre,
+          tipo: "FIXED_COST",
+          monto,
+          moneda: fc.moneda,
+          impacto: "NEGATIVO",
+          sourceType: "FIXED_COST",
+          sourceId: fc.id,
+        });
+      }
+    }
+    return events;
+  }
+
+  app.get("/finance/cashflow", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async () => {
+    const now = todayUtc();
+    const horizon = addMonths(now, 3);
+
+    // 1) Saldos actuales por moneda.
+    const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
+    const fallbackUsdToUyu =
+      lastRate && Number(lastRate.usdToUyu) > 0 ? Number(lastRate.usdToUyu) : 1;
+    const accounts = await prisma.account.findMany({
+      where: { deletedAt: null, activa: true },
+      select: { id: true, moneda: true },
+    });
+    let saldoActualUYU = 0;
+    let saldoActualUSD = 0;
+    for (const a of accounts) {
+      const bal = await computeAccountBalance(a.id);
+      if (a.moneda === Moneda.USD) saldoActualUSD += bal.saldoActual;
+      else saldoActualUYU += bal.saldoActual;
+    }
+    saldoActualUSD = roundMoney(saldoActualUSD);
+    saldoActualUYU = roundMoney(saldoActualUYU);
+
+    // 2) Costos fijos: cuáles aplican y cuáles ya se pagaron en cada mes.
+    const fixedCosts = await prisma.fixedCost.findMany({
+      where: { activo: true, deletedAt: null },
+    });
+    const paidFixedThisMonth = await prisma.financeMovement.findMany({
+      where: {
+        fixedCostId: { in: fixedCosts.map((f) => f.id) },
+        status: FinanceMovementStatus.PAGADO,
+        deletedAt: null,
+      },
+      select: { fixedCostId: true, mes: true, anio: true, monto: true, fecha: true },
+      orderBy: { fecha: "desc" },
+    });
+    const paidThisMonthSet = new Set<string>();
+    const lastPaidByFc = new Map<string, number>();
+    for (const p of paidFixedThisMonth) {
+      if (!p.fixedCostId) continue;
+      paidThisMonthSet.add(`${p.fixedCostId}:${p.anio}-${p.mes}`);
+      if (!lastPaidByFc.has(p.fixedCostId)) lastPaidByFc.set(p.fixedCostId, Number(p.monto));
+    }
+
+    const fixedCostEvents = buildFixedCostEventsForRange(fixedCosts, paidThisMonthSet, 3, now, lastPaidByFc);
+
+    // 3) Materiales proyectados (ProjectMaterial.expectedDate dentro del horizonte).
+    const pms = await prisma.projectMaterial.findMany({
+      where: {
+        expectedDate: { gte: now, lte: horizon },
+        movementId: null,
+        project: { deletedAt: null },
+      },
+      include: {
+        materialItem: { select: { nombre: true, category: { select: { nombre: true } } } },
+        project: { select: { id: true, code: true, clientName: true } },
+      },
+    });
+    const materialEvents: CashflowEvent[] = pms.map((pm) => ({
+      id: `pm:${pm.id}`,
+      fecha: serializeDateNonNull(pm.expectedDate as Date),
+      descripcion: `${pm.project.clientName} — ${pm.materialItem.nombre}`,
+      tipo: "PROJECT_MATERIAL",
+      monto: Number(pm.quantity) * Number(pm.unitPrice),
+      moneda: pm.moneda,
+      impacto: "NEGATIVO",
+      sourceType: "PROJECT_MATERIAL",
+      sourceId: pm.id,
+    }));
+
+    // 4) Deuda a proveedores: A_PAGAR/PARCIALMENTE_PAGADO con supplierId.
+    const supplierDebts = await prisma.financeMovement.findMany({
+      where: {
+        deletedAt: null,
+        supplierId: { not: null },
+        status: { in: [FinanceMovementStatus.A_PAGAR, FinanceMovementStatus.PARCIALMENTE_PAGADO] },
+      },
+      include: {
+        supplier: { select: { id: true, nombre: true } },
+        paymentApplications: {
+          where: { payment: { deletedAt: null } },
+          select: { montoAplicado: true },
+        },
+      },
+    });
+    const supplierDebtEvents: CashflowEvent[] = [];
+    for (const m of supplierDebts) {
+      const applied = m.paymentApplications.reduce((s, a) => s + Number(a.montoAplicado), 0);
+      const saldo = Number(m.monto) - applied;
+      if (saldo <= 0.005) continue;
+      const fechaRef = m.dueDate ?? m.expectedDate ?? m.fecha;
+      if (fechaRef > horizon) continue;
+      supplierDebtEvents.push({
+        id: `sd:${m.id}`,
+        fecha: serializeDateNonNull(fechaRef < now ? now : fechaRef),
+        descripcion: `${m.supplier?.nombre ?? "Proveedor"} — ${m.descripcion}`,
+        tipo: "SUPPLIER_DEBT",
+        monto: saldo,
+        moneda: m.moneda,
+        impacto: "NEGATIVO",
+        sourceType: "SUPPLIER_DEBT",
+        sourceId: m.id,
+      });
+    }
+
+    // 5) Cobros pendientes de clientes: INGRESO con cobrado=false en el horizonte.
+    const cobrosPendientes = await prisma.financeMovement.findMany({
+      where: {
+        deletedAt: null,
+        tipoMovimiento: TipoMovimiento.INGRESO,
+        cobrado: false,
+        OR: [
+          { expectedDate: { gte: now, lte: horizon } },
+          { dueDate: { gte: now, lte: horizon } },
+          { fecha: { gte: now, lte: horizon } },
+        ],
+      },
+      include: { project: { select: { clientName: true } } },
+    });
+    const cobroEvents: CashflowEvent[] = cobrosPendientes.map((m) => {
+      const fechaRef = m.expectedDate ?? m.dueDate ?? m.fecha;
+      return {
+        id: `cc:${m.id}`,
+        fecha: serializeDateNonNull(fechaRef),
+        descripcion: m.project ? `${m.project.clientName} — ${m.descripcion}` : m.descripcion,
+        tipo: "CLIENT_COBRO",
+        monto: Number(m.monto),
+        moneda: m.moneda,
+        impacto: "POSITIVO",
+        sourceType: "CLIENT_COBRO",
+        sourceId: m.id,
+      };
+    });
+
+    // 6) Combinar y ordenar por fecha.
+    const allEvents = [...fixedCostEvents, ...materialEvents, ...supplierDebtEvents, ...cobroEvents].sort(
+      (a, b) => a.fecha.localeCompare(b.fecha),
+    );
+
+    // 7) Construir timeline en UYU. Convertimos USD a UYU con el tipo de cambio
+    //    actual para que el gráfico tenga una sola línea consolidada.
+    const toUyu = (amount: number, moneda: Moneda) =>
+      moneda === Moneda.USD ? amount * fallbackUsdToUyu : amount;
+    let saldoUyu = saldoActualUYU + saldoActualUSD * fallbackUsdToUyu;
+    saldoUyu = roundMoney(saldoUyu);
+    const timeline: { fecha: string; saldo: number; descripcion: string }[] = [
+      { fecha: serializeDateNonNull(now), saldo: saldoUyu, descripcion: "Saldo actual" },
+    ];
+
+    for (const ev of allEvents) {
+      const delta = toUyu(ev.monto, ev.moneda) * (ev.impacto === "POSITIVO" ? 1 : -1);
+      saldoUyu = roundMoney(saldoUyu + delta);
+      const causeNegative = saldoUyu < 0 && timeline[timeline.length - 1].saldo >= 0;
+      if (causeNegative) ev.causeNegative = true;
+      timeline.push({ fecha: ev.fecha, saldo: saldoUyu, descripcion: ev.descripcion });
+    }
+
+    const alertaNegativo = timeline.some((t) => t.saldo < 0);
+
+    return {
+      saldoActualUYU,
+      saldoActualUSD,
+      fallbackUsdToUyu,
+      events: allEvents,
+      timelineUYU: timeline,
+      alertaNegativo,
+      horizonUntil: serializeDateNonNull(horizon),
+    };
+  });
+
+  // PATCH para mover la fecha tentativa de un evento del flujo.
+  app.patch("/finance/cashflow/events/:sourceType/:sourceId/fecha", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+    const params = z.object({
+      sourceType: z.enum(["FIXED_COST", "PROJECT_MATERIAL", "SUPPLIER_DEBT", "CLIENT_COBRO"]),
+      sourceId: z.string().min(1),
+    }).parse(request.params);
+    const { fecha } = z.object({ fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }).parse(request.body);
+    const newFecha = parseDateOnly(fecha);
+
+    if (params.sourceType === "FIXED_COST") {
+      throw badRequest(
+        "FIXED_COST_DATE_IS_FIXED",
+        "La fecha de costos fijos se configura desde Administración (día del mes).",
+      );
+    }
+    if (params.sourceType === "PROJECT_MATERIAL") {
+      const updated = await prisma.projectMaterial.update({
+        where: { id: params.sourceId },
+        data: { expectedDate: newFecha },
+        select: { id: true, expectedDate: true },
+      });
+      return { id: updated.id, fecha: serializeDate(updated.expectedDate as Date) };
+    }
+    if (params.sourceType === "SUPPLIER_DEBT") {
+      const updated = await prisma.financeMovement.update({
+        where: { id: params.sourceId },
+        data: { dueDate: newFecha },
+        select: { id: true, dueDate: true },
+      });
+      return { id: updated.id, fecha: updated.dueDate ? serializeDate(updated.dueDate) : null };
+    }
+    if (params.sourceType === "CLIENT_COBRO") {
+      const updated = await prisma.financeMovement.update({
+        where: { id: params.sourceId },
+        data: { expectedDate: newFecha },
+        select: { id: true, expectedDate: true },
+      });
+      return { id: updated.id, fecha: updated.expectedDate ? serializeDate(updated.expectedDate) : null };
+    }
+    throw badRequest("UNSUPPORTED", "sourceType no soportado");
   });
 }

@@ -1428,6 +1428,14 @@ model ProjectMaterial {
 
   notes String?
 
+  // Fecha tentativa de compra/uso. Reemplaza el movement.expectedDate del flujo
+  // viejo (donde cada grupo de materiales generaba un FinanceMovement PREVISTO).
+  // Ahora vive directamente acá y alimenta el flujo de fondos sin pasar por
+  // movements. movementId queda solo para los casos en que un material ya está
+  // ligado a un movimiento avanzado (COMPROMETIDO/A_PAGAR/PAGADO) — los nuevos
+  // proyectados no crean movements.
+  expectedDate DateTime? @db.Date
+
   movementId String?
   movement   FinanceMovement? @relation(fields: [movementId], references: [id])
 
@@ -1437,6 +1445,7 @@ model ProjectMaterial {
   @@index([projectId])
   @@index([materialItemId])
   @@index([movementId])
+  @@index([expectedDate])
   @@map("project_materials")
 }
 

@@ -2,6 +2,25 @@
 
 ## v5.3
 
+### 10 de mayo de 2026 (segunda parte)
+
+#### Finanzas — Pestaña Flujo de fondos
+
+La pestaña Flujo de fondos deja de ser un placeholder y muestra una proyección del saldo a 3 meses con un gráfico de evolución y la tabla detallada de cada evento futuro.
+
+- **Gráfico de línea** que arranca en el saldo actual y va sumando ingresos / restando egresos en orden cronológico. Cuando el saldo cae debajo de cero, aparece una **zona roja** y un cartel de alerta arriba.
+- La tabla lista cada evento futuro: costos fijos pendientes, materiales proyectados de obras, deuda pendiente a proveedores y cobros pendientes de clientes. Cada fila muestra fecha, descripción, tipo y el impacto en el saldo (positivo o negativo).
+- **Las fechas son editables** desde la tabla (click en la fecha) para reflejar cuándo realmente se va a pagar o cobrar. La fecha de los costos fijos no es editable acá: se modifica desde Administración → Costos fijos.
+- Las filas que llevan el saldo a negativo se marcan con un fondo rojo claro y la nota "saldo en rojo".
+
+#### Materiales proyectados de Ingeniería ya no ensucian Movimientos
+
+Los materiales proyectados de un proyecto (los que aparecen al elegir una "fecha esperada de compra" desde Ingeniería) ya **no generan movimientos PREVISTO** en Finanzas. La fecha tentativa vive ahora directamente en el material y alimenta el flujo de fondos sin pasar por la pestaña Movimientos.
+
+- Si tenías 14 PREVISTO de proyectos en la pestaña Movimientos, **ya no aparecen** ahí.
+- Los materiales proyectados **siguen visibles** en el módulo de Ingeniería con su fecha prevista, igual que antes.
+- Cambiar la fecha del material desde el flujo de fondos actualiza el gráfico y la tabla en tiempo real.
+
 ### 10 de mayo de 2026
 
 #### Finanzas — Costos fijos predefinidos
