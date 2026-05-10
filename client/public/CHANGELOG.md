@@ -1,5 +1,9 @@
 # Novedades
 
+## v5.3
+
+_Versión en curso — los cambios irán acá._
+
 ## v5.2
 
 ### 6 de mayo de 2026

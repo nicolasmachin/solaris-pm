@@ -23,29 +23,13 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "5.2",
-  date: "4 de mayo de 2026",
+  version: "5.3",
+  date: "6 de mayo de 2026",
   sections: [
     {
-      title: "Visita técnica — botón flotante de audio",
+      title: "Versión en curso",
       items: [
-        "FAB amarillo estilo WhatsApp en la esquina inferior derecha. Tap para grabar (botón rojo pulsante con duración), tap para detener. Dialog post-grabación con preview, descripción y guardar/descartar.",
-        "Aparece sólo en pantallas de proyecto (/projects/:id y /projects/:id/visita/:id) para no abultar.",
-        "El botón Audio del panel se reemplazó por el FAB. Foto y Nota siguen en el panel.",
-      ],
-    },
-    {
-      title: "Informe único por visita (update in-place)",
-      items: [
-        "Cada visita técnica tiene UN solo informe que se va actualizando con cada audio/foto/nota nuevos. Antes había v1, v2, v3…",
-        "El botón \"Regenerar informe\" salió. El informe se actualiza solo. Indicador \"Transcribiendo N audios…\" cuando hay audios procesando.",
-      ],
-    },
-    {
-      title: "Informe sin contexto del pre-proyecto",
-      items: [
-        "La IA genera el informe sólo con lo que el operario relevó (audios, fotos, notas). No usa info previa del proyecto.",
-        "La integración con info del pre-proyecto la hace el proyectista manualmente en el módulo Ingeniería.",
+        "Estamos trabajando en la próxima tanda de mejoras. Los cambios van a aparecer acá a medida que se publiquen.",
       ],
     },
   ],
@@ -60,6 +44,15 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "5.2",
+    shortDate: "6 may",
+    highlights: [
+      "Proyecto Final de Ingeniería: documento integrador con 7 secciones, borrador con IA y edición inline con auto-save.",
+      "Aviso automático a Operaciones cuando Ingeniería termina un proyecto (in-app + email).",
+      "Visita técnica: FAB de audio en pantallas de proyecto e informe único por visita (update in-place).",
+    ],
+  },
   {
     version: "5.1",
     shortDate: "4 may",
