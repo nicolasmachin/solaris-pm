@@ -200,6 +200,9 @@ enum TipoMovimiento {
   AJUSTE
 }
 
+// La categoría TRANSFERENCIA se usa para movimientos generados por una
+// transferencia entre cuentas (par GASTO+INGRESO con el mismo
+// transferGroupId). Neutral para flujo total, mueve saldo entre cuentas.
 enum CategoriaPrincipal {
   FIJO
   VARIABLE
@@ -210,6 +213,7 @@ enum CategoriaPrincipal {
   PAGO_PROVEEDOR
   COBRO_CLIENTE
   AJUSTE_CONCILIACION
+  TRANSFERENCIA
   OTRO
 }
 
@@ -1059,6 +1063,10 @@ model FinanceMovement {
   historial           FinanceApprovalHistory[]
   projectMaterials    ProjectMaterial[]
   reconciliacionAjuste AccountReconciliation? @relation("ReconciliationAjuste")
+  // Para transferencias entre cuentas: par de movimientos (GASTO origen +
+  // INGRESO destino) con el mismo transferGroupId. Permite eliminarlos juntos
+  // y mostrarlos como una sola operación en la UI.
+  transferGroupId     String?
   fixedCostId         String?
   fixedCost           FixedCost?               @relation(fields: [fixedCostId], references: [id])
   creadoPorId         String?
@@ -1079,6 +1087,7 @@ model FinanceMovement {
   @@index([sourceType])
   @@index([dueDate])
   @@index([fixedCostId])
+  @@index([transferGroupId])
   @@map("finance_movements")
 }
 
@@ -1100,6 +1109,7 @@ model FixedCost {
   montoReferencia Decimal              @db.Decimal(12, 2)
   moneda          Moneda               @default(UYU)
   movements       FinanceMovement[]
+  skips           FixedCostSkip[]
   activo          Boolean              @default(true)
   createdAt       DateTime             @default(now()) @db.Timestamptz(6)
   updatedAt       DateTime             @updatedAt @db.Timestamptz(6)
@@ -1108,6 +1118,20 @@ model FixedCost {
   @@index([activo])
   @@index([deletedAt])
   @@map("fixed_costs")
+}
+
+// Skip de un mes específico de un costo fijo. Sirve para "borrar" el pendiente
+// del mes sin desactivar el costo fijo entero (que afectaría los próximos meses).
+model FixedCostSkip {
+  id          String   @id @default(cuid())
+  fixedCostId String
+  fixedCost   FixedCost @relation(fields: [fixedCostId], references: [id], onDelete: Cascade)
+  mes         Int
+  anio        Int
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([fixedCostId, mes, anio])
+  @@map("fixed_cost_skips")
 }
 
 enum FixedCostPeriodicity {

@@ -14946,6 +14946,117 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return result.filter((r) => r !== null);
   });
 
+  // ─── Transferencias entre cuentas ──────────────────────────────────────────
+
+  // POST /api/finance/transfers — crea un par de movimientos PAGADO (GASTO
+  // origen + INGRESO destino) ligados por transferGroupId. Neto sobre el
+  // saldo total = 0, pero cada cuenta queda con su movimiento individual.
+  app.post(
+    "/finance/transfers",
+    { preHandler: authorize(Module.FINANZAS, Action.CREATE) },
+    async (request, reply) => {
+      const body = z
+        .object({
+          fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+          fromAccountId: z.string().min(1),
+          toAccountId: z.string().min(1),
+          monto: z.coerce.number().positive(),
+          moneda: z.nativeEnum(Moneda),
+          descripcion: z.string().max(200).optional(),
+        })
+        .parse(request.body);
+
+      if (body.fromAccountId === body.toAccountId) {
+        throw badRequest("SAME_ACCOUNT", "La cuenta origen y destino deben ser distintas");
+      }
+
+      const [from, to] = await Promise.all([
+        prisma.account.findFirst({ where: { id: body.fromAccountId, deletedAt: null } }),
+        prisma.account.findFirst({ where: { id: body.toAccountId, deletedAt: null } }),
+      ]);
+      if (!from) throw badRequest("FROM_INVALID", "Cuenta origen inválida");
+      if (!to) throw badRequest("TO_INVALID", "Cuenta destino inválida");
+      if (from.moneda !== body.moneda || to.moneda !== body.moneda) {
+        throw badRequest(
+          "MONEDA_MISMATCH",
+          "Las dos cuentas deben tener la misma moneda que la transferencia. Para cambio de moneda, registrá dos movimientos manuales.",
+        );
+      }
+
+      const user = ensureUser(request);
+      const fechaIso = parseDateOnly(body.fecha);
+      const mes = fechaIso.getUTCMonth() + 1;
+      const anio = fechaIso.getUTCFullYear();
+      const transferGroupId = randomUUID();
+      const baseDescripcion = body.descripcion?.trim();
+
+      const result = await prisma.$transaction(async (tx) => {
+        const movGasto = await tx.financeMovement.create({
+          data: {
+            fecha: fechaIso,
+            mes,
+            anio,
+            tipoMovimiento: TipoMovimiento.GASTO,
+            categoriaPrincipal: CategoriaPrincipal.TRANSFERENCIA,
+            descripcion: baseDescripcion
+              ? `${baseDescripcion} (transferencia a ${to.nombre})`
+              : `Transferencia a ${to.nombre}`,
+            monto: new Prisma.Decimal(body.monto),
+            moneda: body.moneda,
+            pagado: true,
+            cobrado: false,
+            impactaFlujo: true,
+            status: FinanceMovementStatus.PAGADO,
+            sourceType: MovementSourceType.MANUAL,
+            accountId: from.id,
+            estadoAprobacion: EstadoAprobacion.APROBADO,
+            transferGroupId,
+            creadoPorId: user.id,
+          },
+        });
+        const movIngreso = await tx.financeMovement.create({
+          data: {
+            fecha: fechaIso,
+            mes,
+            anio,
+            tipoMovimiento: TipoMovimiento.INGRESO,
+            categoriaPrincipal: CategoriaPrincipal.TRANSFERENCIA,
+            descripcion: baseDescripcion
+              ? `${baseDescripcion} (transferencia desde ${from.nombre})`
+              : `Transferencia desde ${from.nombre}`,
+            monto: new Prisma.Decimal(body.monto),
+            moneda: body.moneda,
+            pagado: false,
+            cobrado: true,
+            impactaFlujo: true,
+            status: FinanceMovementStatus.PAGADO,
+            sourceType: MovementSourceType.MANUAL,
+            accountId: to.id,
+            estadoAprobacion: EstadoAprobacion.APROBADO,
+            transferGroupId,
+            creadoPorId: user.id,
+          },
+        });
+        return { movGasto, movIngreso };
+      });
+
+      await createAuditEntry({
+        entityType: AuditEntityType.finance_movement,
+        entityId: result.movGasto.id,
+        userId: user.id,
+        action: AuditAction.created,
+        description: `Transferencia ${body.monto.toFixed(2)} ${body.moneda} de ${from.nombre} → ${to.nombre}`,
+      });
+
+      reply.code(201);
+      return {
+        transferGroupId,
+        gastoId: result.movGasto.id,
+        ingresoId: result.movIngreso.id,
+      };
+    },
+  );
+
   // ─── Pendientes (fuente única de compromisos a pagar) ────────────────────
 
   type PendingItemSourceType = "FIXED_COST" | "PROJECT_MATERIAL" | "SUPPLIER_DEBT" | "COMMITTED_EXPENSE";
@@ -14986,6 +15097,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
         select: { id: true },
       });
       if (alreadyPaid) continue;
+      // Si el usuario salteó explícitamente este mes desde Pendientes, tampoco
+      // aparece.
+      const skipped = await prisma.fixedCostSkip.findUnique({
+        where: { fixedCostId_mes_anio: { fixedCostId: fc.id, mes, anio } },
+        select: { id: true },
+      });
+      if (skipped) continue;
       const lastPayment = await prisma.financeMovement.findFirst({
         where: { fixedCostId: fc.id, status: FinanceMovementStatus.PAGADO, deletedAt: null },
         orderBy: { fecha: "desc" },
@@ -15110,6 +15228,69 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const items = await getPendingItemsCore(now);
     return { items, generatedAt: serializeDateNonNull(now) };
   });
+
+  // Eliminar un pendiente. La semántica depende del tipo:
+  //   - FIXED_COST: crea un FixedCostSkip para mes/anio actuales (el costo
+  //     fijo sigue activo para próximos meses, pero este mes ya no aparece).
+  //   - PROJECT_MATERIAL: pone expectedDate=null en el ProjectMaterial (queda
+  //     en el proyecto pero deja de aparecer en Pendientes / Flujo).
+  //   - SUPPLIER_DEBT: anula la factura (estado = ANULADO).
+  //   - COMMITTED_EXPENSE: soft-delete del FinanceMovement A_PAGAR.
+  // En NINGÚN caso se crea un movimiento PAGADO ni "pasa a Movimientos".
+  app.delete(
+    "/finance/pending/:sourceType/:sourceId",
+    { preHandler: authorize(Module.FINANZAS, Action.DELETE) },
+    async (request, reply) => {
+      const params = z
+        .object({
+          sourceType: z.enum(["FIXED_COST", "PROJECT_MATERIAL", "SUPPLIER_DEBT", "COMMITTED_EXPENSE"]),
+          sourceId: z.string().min(1),
+        })
+        .parse(request.params);
+
+      if (params.sourceType === "FIXED_COST") {
+        const now = todayUtc();
+        const mes = now.getUTCMonth() + 1;
+        const anio = now.getUTCFullYear();
+        await prisma.fixedCostSkip.upsert({
+          where: { fixedCostId_mes_anio: { fixedCostId: params.sourceId, mes, anio } },
+          create: { fixedCostId: params.sourceId, mes, anio },
+          update: {},
+        });
+        reply.code(204);
+        return;
+      }
+
+      if (params.sourceType === "PROJECT_MATERIAL") {
+        await prisma.projectMaterial.update({
+          where: { id: params.sourceId },
+          data: { expectedDate: null },
+        });
+        reply.code(204);
+        return;
+      }
+
+      if (params.sourceType === "SUPPLIER_DEBT") {
+        await prisma.financeComprobante.update({
+          where: { id: params.sourceId },
+          data: { estado: EstadoComprobante.ANULADO },
+        });
+        reply.code(204);
+        return;
+      }
+
+      if (params.sourceType === "COMMITTED_EXPENSE") {
+        await prisma.financeMovement.update({
+          where: { id: params.sourceId },
+          data: { deletedAt: new Date() },
+        });
+        reply.code(204);
+        return;
+      }
+
+      throw badRequest("UNSUPPORTED", "sourceType no soportado");
+    },
+  );
 
   // ─── Flujo de fondos (proyección 3 meses) ──────────────────────────────────
 

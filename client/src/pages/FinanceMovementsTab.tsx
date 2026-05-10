@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { Pencil, Plus, Trash2, X } from "lucide-react";
+import { ArrowRightLeft, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 
 import {
   createMovement,
+  createTransfer,
   deleteMovement,
   getMovements,
   getSuppliers,
@@ -14,6 +15,7 @@ import {
   patchMovement,
 } from "../api/finance.api";
 import type { FinanceMovement } from "../types/finance.types";
+import { ProjectPicker } from "../components/finance/ProjectPicker";
 import { getAccounts } from "../api/accounts.api";
 import { getProjects } from "../api/projects.api";
 import { listPendingFixedCosts, type FixedCostPendingDto } from "../api/fixedCosts.api";
@@ -65,6 +67,27 @@ function CategoryBadge({ categoria }: { categoria: CategoriaPrincipal }) {
 
 type Rango = "ANUAL" | "MENSUAL";
 
+type NewMovementPrefill = {
+  fixedCostId?: string;
+  descripcion?: string;
+  monto?: string;
+  moneda?: Moneda;
+};
+
+function readPrefill(params: URLSearchParams): NewMovementPrefill | null {
+  if (params.get("new") !== "1") return null;
+  const out: NewMovementPrefill = {};
+  const fc = params.get("fixedCostId");
+  if (fc) out.fixedCostId = fc;
+  const d = params.get("descripcion");
+  if (d) out.descripcion = d;
+  const m = params.get("monto");
+  if (m) out.monto = m;
+  const mn = params.get("moneda");
+  if (mn === "USD" || mn === "UYU") out.moneda = mn;
+  return Object.keys(out).length > 0 ? out : null;
+}
+
 export function FinanceMovementsTab() {
   const { mes: defaultMes, anio: defaultAnio } = currentMonthYear();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -72,13 +95,18 @@ export function FinanceMovementsTab() {
   const [mes, setMes] = useState<number>(defaultMes);
   const [anio, setAnio] = useState<number>(defaultAnio);
   const [tipo, setTipo] = useState<"" | TipoMovimiento>("");
+  const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(searchParams.get("new") === "1");
+  const [showTransfer, setShowTransfer] = useState(false);
+  const [prefill, setPrefill] = useState<NewMovementPrefill | null>(() => readPrefill(searchParams));
 
   useEffect(() => {
     if (searchParams.get("new") === "1") {
       setShowForm(true);
+      setPrefill(readPrefill(searchParams));
+      // Limpiamos los params para no reabrir el modal en navegación back.
       const next = new URLSearchParams(searchParams);
-      next.delete("new");
+      ["new", "fixedCostId", "descripcion", "monto", "moneda"].forEach((k) => next.delete(k));
       setSearchParams(next, { replace: true });
     }
   }, [searchParams, setSearchParams]);
@@ -106,7 +134,32 @@ export function FinanceMovementsTab() {
     return m;
   }, [accounts]);
 
-  const items = useMemo(() => data?.data ?? [], [data]);
+  const allItems = useMemo(() => data?.data ?? [], [data]);
+
+  // Búsqueda client-side: matchea por descripción, proveedor, cliente del
+  // proyecto, código del proyecto, cuenta o monto.
+  const items = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return allItems;
+    return allItems.filter((it) => {
+      const desc = it.descripcion?.toLowerCase() ?? "";
+      const montoStr = String(Math.abs(it.monto));
+      if (desc.includes(q)) return true;
+      if (montoStr.includes(q)) return true;
+      if (isMovementRow(it)) {
+        if (it.project?.clientName.toLowerCase().includes(q)) return true;
+        if (it.project?.code.toLowerCase().includes(q)) return true;
+        if (it.supplier?.nombre.toLowerCase().includes(q)) return true;
+        if (it.accountId && accountNameById.get(it.accountId)?.toLowerCase().includes(q)) return true;
+      }
+      if (isPaymentRow(it)) {
+        if (it.supplier?.nombre.toLowerCase().includes(q)) return true;
+        if (it.account?.nombre.toLowerCase().includes(q)) return true;
+        if (it.referencia?.toLowerCase().includes(q)) return true;
+      }
+      return false;
+    });
+  }, [allItems, search, accountNameById]);
 
   const qcRoot = useQueryClient();
   const [editingMovement, setEditingMovement] = useState<FinanceMovement | null>(null);
@@ -136,6 +189,25 @@ export function FinanceMovementsTab() {
 
       <div className="flex items-center gap-3 flex-wrap justify-between">
         <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative min-w-[260px]">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-muted)]" />
+            <input
+              type="text"
+              placeholder="Buscar por descripción, proveedor, cliente, cuenta o monto…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-8 pr-8 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                aria-label="Limpiar búsqueda"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
           <div className="inline-flex rounded-lg border border-[var(--color-border)] overflow-hidden text-sm">
             {(["ANUAL", "MENSUAL"] as Rango[]).map((r) => (
               <button
@@ -185,17 +257,27 @@ export function FinanceMovementsTab() {
             <option value="GASTO">Gastos</option>
           </select>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)]"
-        >
-          <Plus className="w-4 h-4" /> Nuevo movimiento
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowTransfer(true)}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors"
+          >
+            <ArrowRightLeft className="w-4 h-4" /> Transferencia
+          </button>
+          <button
+            onClick={() => setShowForm(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)]"
+          >
+            <Plus className="w-4 h-4" /> Nuevo movimiento
+          </button>
+        </div>
       </div>
 
-      {!isLoading && items.length > 0 && (
+      {!isLoading && allItems.length > 0 && (
         <p className="text-[11px] text-[var(--color-text-muted)] font-mono">
-          {items.length} movimiento{items.length === 1 ? "" : "s"} {rango === "ANUAL" ? `en ${anio}` : `en ${MONTH_NAMES[mes - 1]} ${anio}`}
+          {search.trim()
+            ? `${items.length} de ${allItems.length} movimiento${allItems.length === 1 ? "" : "s"} (filtrado por "${search.trim()}")`
+            : `${allItems.length} movimiento${allItems.length === 1 ? "" : "s"} en ${rango === "ANUAL" ? anio : `${MONTH_NAMES[mes - 1]} ${anio}`}`}
         </p>
       )}
 
@@ -327,13 +409,206 @@ export function FinanceMovementsTab() {
         )}
       </div>
 
-      {showForm && <NewMovementModal onClose={() => setShowForm(false)} />}
+      {showForm && (
+        <NewMovementModal
+          prefill={prefill}
+          onClose={() => {
+            setShowForm(false);
+            setPrefill(null);
+          }}
+        />
+      )}
       {editingMovement && (
         <EditMovementModal
           movement={editingMovement}
           onClose={() => setEditingMovement(null)}
         />
       )}
+      {showTransfer && <NewTransferModal onClose={() => setShowTransfer(false)} />}
+    </div>
+  );
+}
+
+// ─── Modal: Transferencia entre cuentas ─────────────────────────────────────
+
+function NewTransferModal({ onClose }: { onClose: () => void }) {
+  const qc = useQueryClient();
+  const { data: accounts = [] } = useQuery({
+    queryKey: ["accounts-active"],
+    queryFn: () => getAccounts({ activa: "true" }),
+  });
+
+  const [fromId, setFromId] = useState<string>("");
+  const [toId, setToId] = useState<string>("");
+  const [monto, setMonto] = useState("");
+  const [fecha, setFecha] = useState<string>(todayLocalISO());
+  const [descripcion, setDescripcion] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const fromAcct = accounts.find((a) => a.id === fromId);
+  const toAcct = accounts.find((a) => a.id === toId);
+  const monedaEffective = fromAcct?.moneda;
+  // Las cuentas destino válidas: distintas de origen + misma moneda.
+  const destOptions = accounts.filter(
+    (a) => a.id !== fromId && (!monedaEffective || a.moneda === monedaEffective),
+  );
+
+  const createMut = useMutation({
+    mutationFn: () =>
+      createTransfer({
+        fecha,
+        fromAccountId: fromId,
+        toAccountId: toId,
+        monto: Number(monto),
+        moneda: monedaEffective as Moneda,
+        ...(descripcion.trim() ? { descripcion: descripcion.trim() } : {}),
+      }),
+    onSuccess: () => {
+      toast.success("Transferencia registrada");
+      qc.invalidateQueries({ queryKey: ["finance-movements-tab"] });
+      qc.invalidateQueries({ queryKey: ["finance-movements"] });
+      qc.invalidateQueries({ queryKey: ["finance-pending"] });
+      qc.invalidateQueries({ queryKey: ["finance-cashflow"] });
+      qc.invalidateQueries({ queryKey: ["accounts-summary"] });
+      onClose();
+    },
+    onError: (err) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? "No se pudo registrar la transferencia");
+    },
+  });
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!fromId) return toast.error("Elegí la cuenta origen");
+    if (!toId) return toast.error("Elegí la cuenta destino");
+    if (fromId === toId) return toast.error("Origen y destino deben ser distintas");
+    const n = Number(monto);
+    if (!n || n <= 0) return toast.error("Monto inválido");
+    if (fromAcct && toAcct && fromAcct.moneda !== toAcct.moneda) {
+      return toast.error("Las dos cuentas deben tener la misma moneda");
+    }
+    setSaving(true);
+    createMut.mutate(undefined, { onSettled: () => setSaving(false) });
+  }
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-semibold text-[var(--color-text-primary)]">
+            Transferencia entre cuentas
+          </h3>
+          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <form onSubmit={submit} className="space-y-3">
+          <Field label="Cuenta origen">
+            <select
+              value={fromId}
+              onChange={(e) => {
+                setFromId(e.target.value);
+                // Si la cuenta destino dejó de ser válida (moneda distinta),
+                // la reseteamos.
+                const newFrom = accounts.find((a) => a.id === e.target.value);
+                const stillValid =
+                  toId &&
+                  toId !== e.target.value &&
+                  accounts.find((a) => a.id === toId)?.moneda === newFrom?.moneda;
+                if (!stillValid) setToId("");
+              }}
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+            >
+              <option value="">Elegí la cuenta…</option>
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.nombre} ({a.moneda})
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Cuenta destino">
+            <select
+              value={toId}
+              onChange={(e) => setToId(e.target.value)}
+              disabled={!fromId}
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] disabled:opacity-60"
+            >
+              <option value="">{fromId ? "Elegí la cuenta…" : "Primero elegí la origen"}</option>
+              {destOptions.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.nombre} ({a.moneda})
+                </option>
+              ))}
+            </select>
+            {fromAcct && (
+              <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
+                Solo se muestran cuentas en {fromAcct.moneda} (misma moneda que la origen).
+              </p>
+            )}
+          </Field>
+          <Field label="Monto">
+            <div className="relative">
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={monto}
+                onChange={(e) => setMonto(e.target.value)}
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 pr-14 text-sm text-[var(--color-text-primary)]"
+              />
+              {monedaEffective && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--color-text-muted)] font-mono">
+                  {monedaEffective}
+                </span>
+              )}
+            </div>
+          </Field>
+          <Field label="Fecha">
+            <input
+              type="date"
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+            />
+          </Field>
+          <Field label="Descripción (opcional)">
+            <input
+              type="text"
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              placeholder="Ej: pago a Banco República"
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+            />
+          </Field>
+          <p className="text-[11px] text-[var(--color-text-muted)]">
+            Se van a crear 2 movimientos PAGADO ligados: un egreso en la cuenta origen y un
+            ingreso en la destino. El saldo total no cambia.
+          </p>
+          <div className="flex gap-2 pt-2">
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-60"
+            >
+              {saving ? "Registrando…" : "Registrar transferencia"}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
@@ -496,18 +771,7 @@ function EditMovementModal({
             </Field>
           )}
           <Field label="Proyecto (opcional)">
-            <select
-              value={projectId}
-              onChange={(e) => setProjectId(e.target.value)}
-              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
-            >
-              <option value="">Sin proyecto</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.code} · {p.clientName}
-                </option>
-              ))}
-            </select>
+            <ProjectPicker value={projectId} onChange={setProjectId} />
           </Field>
           <div className="flex gap-2 pt-2">
             <button
@@ -533,19 +797,28 @@ function EditMovementModal({
 
 // ─── Modal: Nuevo movimiento ────────────────────────────────────────────────
 
-function NewMovementModal({ onClose }: { onClose: () => void }) {
+function NewMovementModal({
+  prefill,
+  onClose,
+}: {
+  prefill?: NewMovementPrefill | null;
+  onClose: () => void;
+}) {
   const qc = useQueryClient();
 
+  // Si vinimos con fixedCostId, arrancamos en categoría FIJO.
+  const initialCategoria: CategoriaPrincipal = prefill?.fixedCostId ? "FIJO" : "VARIABLE";
+
   const [tipo, setTipo] = useState<TipoMovimiento>("GASTO");
-  const [categoria, setCategoria] = useState<CategoriaPrincipal>("VARIABLE");
-  const [descripcion, setDescripcion] = useState("");
-  const [monto, setMonto] = useState("");
-  const [moneda, setMoneda] = useState<Moneda>("UYU");
+  const [categoria, setCategoria] = useState<CategoriaPrincipal>(initialCategoria);
+  const [descripcion, setDescripcion] = useState(prefill?.descripcion ?? "");
+  const [monto, setMonto] = useState(prefill?.monto ?? "");
+  const [moneda, setMoneda] = useState<Moneda>(prefill?.moneda ?? "USD");
   const [accountId, setAccountId] = useState<string>("");
   const [fecha, setFecha] = useState<string>(todayLocalISO());
   const [supplierId, setSupplierId] = useState<string>("");
   const [projectId, setProjectId] = useState<string>("");
-  const [fixedCostId, setFixedCostId] = useState<string>("");
+  const [fixedCostId, setFixedCostId] = useState<string>(prefill?.fixedCostId ?? "");
   const [saving, setSaving] = useState(false);
 
   // Para el selector de costos fijos: usamos el mes/anio de la fecha del form.
@@ -625,8 +898,11 @@ function NewMovementModal({ onClose }: { onClose: () => void }) {
       toast.success("Movimiento creado");
       qc.invalidateQueries({ queryKey: ["finance-movements-tab"] });
       qc.invalidateQueries({ queryKey: ["finance-movements"] });
+      qc.invalidateQueries({ queryKey: ["finance-pending"] });
+      qc.invalidateQueries({ queryKey: ["finance-cashflow"] });
       qc.invalidateQueries({ queryKey: ["accounts-summary"] });
       qc.invalidateQueries({ queryKey: ["finance-dashboard"] });
+      qc.invalidateQueries({ queryKey: ["fixed-costs-pending"] });
       onClose();
     },
     onError: (err: unknown) => {
@@ -699,27 +975,40 @@ function NewMovementModal({ onClose }: { onClose: () => void }) {
             </select>
           </Field>
 
-          {tipo === "GASTO" && categoria === "FIJO" && pendingFixedCosts.length > 0 && (
+          {tipo === "GASTO" && categoria === "FIJO" && (
             <Field label="Costo fijo predefinido">
-              <select
-                value={fixedCostId}
-                onChange={(e) => {
-                  const fc = pendingFixedCosts.find((p) => p.id === e.target.value) ?? null;
-                  applyFixedCost(fc);
-                }}
-                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
-              >
-                <option value="">Sin costo fijo asociado</option>
-                {pendingFixedCosts.map((fc) => (
-                  <option key={fc.id} value={fc.id}>
-                    {fc.nombre} (último pago: {fmtCurrency(fc.ultimoMontoPagado, fc.moneda)})
-                  </option>
-                ))}
-              </select>
-              <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
-                Solo se muestran los que faltan pagar este mes. Al elegir uno se completa el
-                nombre; el monto lo cargás vos.
-              </p>
+              {pendingFixedCosts.length > 0 ? (
+                <>
+                  <select
+                    value={fixedCostId}
+                    onChange={(e) => {
+                      const fc = pendingFixedCosts.find((p) => p.id === e.target.value) ?? null;
+                      applyFixedCost(fc);
+                    }}
+                    className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+                  >
+                    <option value="">Sin costo fijo asociado</option>
+                    {pendingFixedCosts.map((fc) => (
+                      <option key={fc.id} value={fc.id}>
+                        {fc.nombre} (último pago: {fmtCurrency(fc.ultimoMontoPagado, fc.moneda)})
+                      </option>
+                    ))}
+                    {fixedCostId && !pendingFixedCosts.some((p) => p.id === fixedCostId) && (
+                      <option value={fixedCostId}>{descripcion || "(costo seleccionado)"}</option>
+                    )}
+                  </select>
+                  <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
+                    Solo se muestran los que faltan pagar este mes. Al elegir uno se completa el
+                    nombre y la moneda; el monto lo cargás vos.
+                  </p>
+                </>
+              ) : (
+                <div className="rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-[11px] text-[var(--color-text-muted)]">
+                  No hay costos fijos pendientes este mes. Configurálos desde{" "}
+                  <span className="font-mono">Administración → Costos fijos</span>, o seguí sin
+                  asociar.
+                </div>
+              )}
             </Field>
           )}
 
@@ -798,18 +1087,7 @@ function NewMovementModal({ onClose }: { onClose: () => void }) {
           )}
 
           <Field label="Proyecto (opcional)">
-            <select
-              value={projectId}
-              onChange={(e) => setProjectId(e.target.value)}
-              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
-            >
-              <option value="">Sin proyecto</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.code} · {p.clientName}
-                </option>
-              ))}
-            </select>
+            <ProjectPicker value={projectId} onChange={setProjectId} />
           </Field>
 
           <div className="flex gap-2 pt-2">

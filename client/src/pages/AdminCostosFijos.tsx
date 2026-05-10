@@ -189,7 +189,7 @@ function FixedCostFormModal({
   const [montoReferencia, setMontoReferencia] = useState<string>(
     initial?.montoReferencia ? String(initial.montoReferencia) : "",
   );
-  const [moneda, setMoneda] = useState<Moneda>(initial?.moneda ?? "UYU");
+  const [moneda, setMoneda] = useState<Moneda>(initial?.moneda ?? "USD");
 
   const [saving, setSaving] = useState(false);
 

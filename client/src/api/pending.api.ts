@@ -32,3 +32,10 @@ export async function getPendingItems(): Promise<PendingResponse> {
   const { data } = await apiClient.get<PendingResponse>("/api/finance/pending");
   return data;
 }
+
+export async function deletePendingItem(
+  sourceType: PendingItemSourceType,
+  sourceId: string,
+): Promise<void> {
+  await apiClient.delete(`/api/finance/pending/${sourceType}/${sourceId}`);
+}

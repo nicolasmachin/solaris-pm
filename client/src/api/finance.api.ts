@@ -203,6 +203,24 @@ export const createMovement = (
   return apiClient.post<CreateMovementResult>('/api/finance/movements', payload).then(r => r.data);
 };
 
+export interface CreateTransferBody {
+  fecha: string;
+  fromAccountId: string;
+  toAccountId: string;
+  monto: number;
+  moneda: Moneda;
+  descripcion?: string;
+}
+
+export interface CreateTransferResult {
+  transferGroupId: string;
+  gastoId: string;
+  ingresoId: string;
+}
+
+export const createTransfer = (body: CreateTransferBody) =>
+  apiClient.post<CreateTransferResult>('/api/finance/transfers', body).then(r => r.data);
+
 export interface PendingInvoiceForSupplier {
   id: string;
   descripcion: string;

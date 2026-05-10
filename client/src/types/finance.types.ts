@@ -7,7 +7,7 @@ export type MovementSourceType = 'MANUAL' | 'PROJECT_MATERIALS';
 export type CategoriaPrincipal =
   | 'PROYECTO_ENTRADA' | 'COBRO_CLIENTE'
   | 'PROYECTO_SALIDA' | 'COMPRA_STOCK' | 'CONSUMO_STOCK' | 'PAGO_PROVEEDOR'
-  | 'FIJO' | 'VARIABLE' | 'OTRO';
+  | 'FIJO' | 'VARIABLE' | 'TRANSFERENCIA' | 'OTRO';
 export type MetodoPago = 'TRANSFERENCIA' | 'EFECTIVO' | 'CHEQUE' | 'TARJETA_DEBITO' | 'TARJETA_CREDITO' | 'CRYPTO' | 'OTRO';
 export type EstadoAprobacion =
   | 'BORRADOR' | 'REGISTRADO' | 'PENDIENTE_APROBACION'
@@ -28,6 +28,7 @@ export const CATEGORIA_LABEL: Record<CategoriaPrincipal, string> = {
   PAGO_PROVEEDOR: 'Pago proveedor',
   FIJO: 'Costo fijo',
   VARIABLE: 'Costo variable',
+  TRANSFERENCIA: 'Transferencia',
   OTRO: 'Otro',
 };
 

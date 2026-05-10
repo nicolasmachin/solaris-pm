@@ -2,11 +2,19 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { ChevronDown, MoreHorizontal } from "lucide-react";
+import { ExternalLink, Pencil, Trash2, X } from "lucide-react";
 
-import { getPendingItems, type PendingItem, type PendingItemSourceType } from "../api/pending.api";
+import {
+  deletePendingItem,
+  getPendingItems,
+  type PendingItem,
+  type PendingItemSourceType,
+} from "../api/pending.api";
 import { fmtCurrency, fmtDate } from "../lib/finance";
-import { transitionMovement } from "../api/finance.api";
+import { getMovement, patchMovement, transitionMovement } from "../api/finance.api";
+import { todayLocalISO } from "../utils/date";
+import type { Moneda } from "../types/finance.types";
+import { ProjectPicker } from "../components/finance/ProjectPicker";
 
 const SOURCE_LABEL: Record<PendingItemSourceType, string> = {
   FIXED_COST: "Costo fijo",
@@ -61,20 +69,53 @@ export function FinancePendientesTab() {
     return t;
   }, [items]);
 
+  const [editingCommittedId, setEditingCommittedId] = useState<string | null>(null);
+
+  function invalidatePending() {
+    qc.invalidateQueries({ queryKey: ["finance-pending"] });
+    qc.invalidateQueries({ queryKey: ["finance-movements-tab"] });
+    qc.invalidateQueries({ queryKey: ["finance-movements"] });
+    qc.invalidateQueries({ queryKey: ["finance-cashflow"] });
+    qc.invalidateQueries({ queryKey: ["fixed-costs-pending"] });
+  }
+
   const transitionMut = useMutation({
     mutationFn: (movementId: string) =>
-      transitionMovement(movementId, { newStatus: "PAGADO" }),
+      transitionMovement(movementId, { newStatus: "PAGADO", paidDate: todayLocalISO() }),
     onSuccess: () => {
       toast.success("Marcado como pagado");
-      qc.invalidateQueries({ queryKey: ["finance-pending"] });
-      qc.invalidateQueries({ queryKey: ["finance-movements-tab"] });
-      qc.invalidateQueries({ queryKey: ["finance-cashflow"] });
+      invalidatePending();
     },
     onError: (err) => {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       toast.error(msg ?? "No se pudo marcar como pagado");
     },
   });
+
+  const deletePendingMut = useMutation({
+    mutationFn: ({ type, id }: { type: PendingItemSourceType; id: string }) =>
+      deletePendingItem(type, id),
+    onSuccess: () => {
+      toast.success("Pendiente eliminado");
+      invalidatePending();
+    },
+    onError: (err) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? "No se pudo eliminar");
+    },
+  });
+
+  function deletePending(item: PendingItem) {
+    const monto = fmtCurrency(item.monto, item.moneda);
+    const messages: Record<PendingItemSourceType, string> = {
+      FIXED_COST: `¿Saltear "${item.descripcion}" este mes? Solo afecta a ${new Date().toLocaleDateString("es-UY", { month: "long", year: "numeric" })}; el costo fijo sigue activo para los próximos meses.`,
+      PROJECT_MATERIAL: `¿Quitar la fecha esperada del material "${item.descripcion}"? El material queda en el proyecto pero sale de Pendientes y del Flujo de fondos.`,
+      SUPPLIER_DEBT: `¿Anular la factura "${item.descripcion}" por ${monto}? Esto la marca como ANULADA en la cuenta del proveedor.`,
+      COMMITTED_EXPENSE: `¿Eliminar el compromiso "${item.descripcion}" por ${monto}?`,
+    };
+    if (!confirm(messages[item.sourceType])) return;
+    deletePendingMut.mutate({ type: item.sourceType, id: item.sourceId });
+  }
 
   function handlePay(item: PendingItem) {
     if (item.sourceType === "COMMITTED_EXPENSE") {
@@ -87,12 +128,15 @@ export function FinancePendientesTab() {
       navigate(`/finanzas/proveedores/${item.supplier.id}`);
       return;
     }
-    if (item.sourceType === "FIXED_COST") {
-      navigate(`/finanzas/movimientos?new=1`);
-      toast(
-        `Cargá el pago como movimiento PAGADO con categoría "Costo fijo" y elegí "${item.fixedCost?.nombre}" en el selector.`,
-        { icon: "ℹ️", duration: 6000 },
-      );
+    if (item.sourceType === "FIXED_COST" && item.fixedCost) {
+      const params = new URLSearchParams({
+        new: "1",
+        fixedCostId: item.fixedCost.id,
+        descripcion: item.descripcion,
+        monto: String(item.monto),
+        moneda: item.moneda,
+      });
+      navigate(`/finanzas/movimientos?${params.toString()}`);
       return;
     }
     if (item.sourceType === "PROJECT_MATERIAL" && item.project) {
@@ -175,12 +219,18 @@ export function FinancePendientesTab() {
                 <th className="text-left px-4 py-2.5 font-medium">Origen</th>
                 <th className="text-left px-4 py-2.5 font-medium">Categoría</th>
                 <th className="text-right px-4 py-2.5 font-medium">Monto</th>
-                <th className="text-right px-4 py-2.5 font-medium">Acción</th>
+                <th className="text-right px-4 py-2.5 font-medium w-72">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border)]">
               {filtered.map((it) => (
-                <PendingRow key={it.id} item={it} onPay={() => handlePay(it)} />
+                <PendingRow
+                  key={it.id}
+                  item={it}
+                  onPay={() => handlePay(it)}
+                  onEditCommitted={(id) => setEditingCommittedId(id)}
+                  onDelete={() => deletePending(it)}
+                />
               ))}
             </tbody>
           </table>
@@ -192,6 +242,17 @@ export function FinancePendientesTab() {
           Generado: {fmtDate(data.generatedAt)}. Esta lista es la fuente única de los compromisos:
           aparece igual en el Flujo de fondos.
         </p>
+      )}
+
+      {editingCommittedId && (
+        <EditCommittedModal
+          movementId={editingCommittedId}
+          onClose={() => setEditingCommittedId(null)}
+          onSaved={() => {
+            setEditingCommittedId(null);
+            invalidatePending();
+          }}
+        />
       )}
     </div>
   );
@@ -208,7 +269,18 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PendingRow({ item, onPay }: { item: PendingItem; onPay: () => void }) {
+function PendingRow({
+  item,
+  onPay,
+  onEditCommitted,
+  onDelete,
+}: {
+  item: PendingItem;
+  onPay: () => void;
+  onEditCommitted: (movementId: string) => void;
+  onDelete: () => void;
+}) {
+  const navigate = useNavigate();
   return (
     <tr className={`hover:bg-[var(--color-bg-card-hover)] ${item.isOverdue ? "bg-red-500/5" : ""}`}>
       <td className="px-4 py-3 whitespace-nowrap">
@@ -245,14 +317,228 @@ function PendingRow({ item, onPay }: { item: PendingItem; onPay: () => void }) {
           -{fmtCurrency(item.monto, item.moneda)}
         </span>
       </td>
-      <td className="px-4 py-3 text-right">
-        <button
-          onClick={onPay}
-          className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border border-[var(--color-border)] hover:bg-[var(--color-accent)] hover:text-gray-900 hover:border-[var(--color-accent)] transition-colors"
-        >
-          Marcar pagado
-        </button>
+      <td className="px-4 py-3 text-right whitespace-nowrap">
+        <div className="inline-flex items-center gap-1">
+          <button
+            onClick={onPay}
+            className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border border-[var(--color-border)] hover:bg-[var(--color-accent)] hover:text-gray-900 hover:border-[var(--color-accent)] transition-colors"
+          >
+            Marcar pagado
+          </button>
+
+          {/* Editar */}
+          {item.sourceType === "COMMITTED_EXPENSE" ? (
+            <button
+              onClick={() => onEditCommitted(item.sourceId)}
+              title="Editar compromiso"
+              className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-accent)] hover:text-gray-900 hover:border-[var(--color-accent)] transition-colors"
+            >
+              <Pencil className="w-3 h-3" />
+              Editar
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                if (item.sourceType === "FIXED_COST") navigate("/admin");
+                else if (item.sourceType === "PROJECT_MATERIAL" && item.project) navigate(`/projects/${item.project.id}`);
+                else if (item.sourceType === "SUPPLIER_DEBT" && item.supplier) navigate(`/finanzas/proveedores/${item.supplier.id}`);
+              }}
+              title={
+                item.sourceType === "FIXED_COST"
+                  ? "Editar en Administración → Costos fijos"
+                  : item.sourceType === "PROJECT_MATERIAL"
+                    ? "Editar desde Ingeniería del proyecto"
+                    : "Editar en cuenta del proveedor"
+              }
+              className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors"
+            >
+              <ExternalLink className="w-3 h-3" />
+              Editar
+            </button>
+          )}
+
+          {/* Eliminar — disponible para TODOS los pendientes. El backend hace la
+              acción semántica según el tipo (skip mes para FIXED_COST, clear
+              expectedDate para PROJECT_MATERIAL, anular factura para
+              SUPPLIER_DEBT, soft-delete para COMMITTED_EXPENSE). En ningún caso
+              se crea un movimiento PAGADO. */}
+          <button
+            onClick={onDelete}
+            title={
+              item.sourceType === "FIXED_COST"
+                ? "Saltear este mes"
+                : item.sourceType === "PROJECT_MATERIAL"
+                  ? "Quitar fecha esperada"
+                  : item.sourceType === "SUPPLIER_DEBT"
+                    ? "Anular factura"
+                    : "Eliminar compromiso"
+            }
+            className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-red-500/15 hover:text-red-400 hover:border-red-500/40 transition-colors"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        </div>
       </td>
     </tr>
+  );
+}
+
+// ─── Modal: editar compromiso manual (A_PAGAR sin proveedor) ──────────────
+
+function EditCommittedModal({
+  movementId,
+  onClose,
+  onSaved,
+}: {
+  movementId: string;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const { data: movement, isLoading } = useQuery({
+    queryKey: ["movement-detail-edit", movementId],
+    queryFn: () => getMovement(movementId),
+  });
+
+  const [descripcion, setDescripcion] = useState("");
+  const [monto, setMonto] = useState("");
+  const [moneda, setMoneda] = useState<Moneda>("USD");
+  const [dueDate, setDueDate] = useState<string>(todayLocalISO());
+  const [projectId, setProjectId] = useState<string>("");
+  const [hydrated, setHydrated] = useState(false);
+
+  // Hidratar el form una vez que llegan los datos.
+  if (movement && !hydrated) {
+    setDescripcion(movement.descripcion);
+    setMonto(String(movement.monto));
+    setMoneda(movement.moneda);
+    setDueDate((movement.dueDate ?? movement.fecha).slice(0, 10));
+    setProjectId(movement.projectId ?? "");
+    setHydrated(true);
+  }
+
+  const patchMut = useMutation({
+    mutationFn: () =>
+      patchMovement(movementId, {
+        descripcion: descripcion.trim(),
+        monto: Number(monto),
+        moneda,
+        dueDate,
+        ...(projectId ? { proyectoId: projectId } : {}),
+      }),
+    onSuccess: () => {
+      toast.success("Compromiso actualizado");
+      onSaved();
+    },
+    onError: (err) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? "No se pudo actualizar");
+    },
+  });
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!descripcion.trim()) return toast.error("Falta la descripción");
+    const n = Number(monto);
+    if (!n || n <= 0) return toast.error("Monto inválido");
+    patchMut.mutate();
+  }
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-semibold text-[var(--color-text-primary)]">
+            Editar compromiso
+          </h3>
+          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {isLoading ? (
+          <p className="text-sm text-[var(--color-text-muted)] text-center py-6">Cargando…</p>
+        ) : (
+          <form onSubmit={submit} className="space-y-3">
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-[var(--color-text-muted)] mb-1 font-mono">
+                Descripción
+              </label>
+              <input
+                type="text"
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
+                autoFocus
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] uppercase tracking-wider text-[var(--color-text-muted)] mb-1 font-mono">
+                  Monto
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={monto}
+                  onChange={(e) => setMonto(e.target.value)}
+                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] uppercase tracking-wider text-[var(--color-text-muted)] mb-1 font-mono">
+                  Moneda
+                </label>
+                <select
+                  value={moneda}
+                  onChange={(e) => setMoneda(e.target.value as Moneda)}
+                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                >
+                  <option value="UYU">UYU</option>
+                  <option value="USD">USD</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-[var(--color-text-muted)] mb-1 font-mono">
+                Fecha esperada de pago
+              </label>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-[var(--color-text-muted)] mb-1 font-mono">
+                Proyecto (opcional)
+              </label>
+              <ProjectPicker value={projectId} onChange={setProjectId} />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button
+                type="submit"
+                disabled={patchMut.isPending}
+                className="flex-1 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-60"
+              >
+                {patchMut.isPending ? "Guardando…" : "Guardar cambios"}
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
   );
 }
