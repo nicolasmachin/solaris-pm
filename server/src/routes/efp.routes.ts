@@ -17,6 +17,7 @@ import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
 import {
+  buildEFPSnapshots,
   EFP_SECTION_KEYS,
   ensureEFP,
   generateEFPVersionWithAI,
@@ -308,6 +309,12 @@ export async function registerEFPRoutes(app: FastifyInstance) {
       const current = efp.versions[0];
       const nextVersion = current.version + 1;
 
+      // Snapshot manual NO copia los snapshots de la versión origen — los
+      // re-captura del estado actual de DB. La idea es: al "fotografiar" se
+      // congela lo que hay en este momento, no lo que había cuando se generó
+      // la versión anterior.
+      const snapshots = await buildEFPSnapshots(efp.projectId);
+
       const created = await prisma.eFPVersion.create({
         data: {
           efpId: efp.id,
@@ -318,6 +325,10 @@ export async function registerEFPRoutes(app: FastifyInstance) {
           aiGenerated: false,
           changesFromPrevious: `Snapshot manual desde v${current.version}`,
           createdById: user.id,
+          snapshotProject: snapshots.snapshotProject as unknown as object,
+          snapshotPreIng: snapshots.snapshotPreIng as unknown as object,
+          snapshotUte: snapshots.snapshotUte as unknown as object,
+          snapshotMaterials: snapshots.snapshotMaterials as unknown as object,
         },
         include: { createdBy: { select: { id: true, name: true } } },
       });

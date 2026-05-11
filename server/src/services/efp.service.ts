@@ -16,6 +16,14 @@ import { z } from "zod";
 
 import { prisma } from "../lib/prisma.js";
 import { AppError } from "../utils/errors.js";
+import {
+  parseCantidadPaneles,
+  parsePotenciaPanelesW,
+  type SnapshotMaterials,
+  type SnapshotPreIng,
+  type SnapshotProject,
+  type SnapshotUte,
+} from "./efp.snapshots.types.js";
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const DEFAULT_MODEL = process.env.EFP_MODEL ?? "claude-sonnet-4-5-20250929";
@@ -420,6 +428,111 @@ export interface GenerateEFPResult {
 }
 
 /**
+ * Construye los 4 snapshots (project, preIng, ute, materiales) del proyecto
+ * en el momento actual. Usado por:
+ *  - generateEFPVersionWithAI: para anclar la versión que la IA acaba de crear.
+ *  - el endpoint POST /efp/:id/versions/snapshot: para anclar la versión
+ *    duplicada (no copia los snapshots de la versión origen — se re-capturan
+ *    para reflejar el estado del momento del snapshot).
+ *
+ * El snapshot de preIng usa la última PreIngenieriaVersion del proyecto.
+ * El snapshot UTE toma el primer UteProcess no eliminado. Los materiales
+ * snapshotean ProjectMaterials con su materialItem.
+ */
+export async function buildEFPSnapshots(projectId: string): Promise<{
+  snapshotProject: SnapshotProject;
+  snapshotPreIng: SnapshotPreIng;
+  snapshotUte: SnapshotUte;
+  snapshotMaterials: SnapshotMaterials;
+}> {
+  const capturedAt = new Date().toISOString();
+
+  const project = await prisma.project.findFirst({
+    where: { id: projectId, deletedAt: null },
+    select: {
+      id: true,
+      code: true,
+      clientName: true,
+      clientAddress: true,
+      locationCity: true,
+      locationProvince: true,
+      capacityKwp: true,
+      notificationEmail: true,
+    },
+  });
+  if (!project) throw new AppError(404, "PROJECT_NOT_FOUND", "Proyecto no encontrado");
+
+  const snapshotProject: SnapshotProject = {
+    id: project.id,
+    code: project.code ?? null,
+    clientName: project.clientName,
+    clientAddress: project.clientAddress,
+    locationCity: project.locationCity,
+    locationProvince: project.locationProvince,
+    capacityKwp: project.capacityKwp ? Number(project.capacityKwp) : null,
+    notificationEmail: project.notificationEmail,
+    capturedAt,
+  };
+
+  const preIng = await prisma.preIngenieriaVersion.findFirst({
+    where: { projectId },
+    orderBy: { versionNumber: "desc" },
+    select: {
+      id: true,
+      versionNumber: true,
+      cantidadPaneles: true,
+      potenciaPaneles: true,
+      inversor: true,
+    },
+  });
+  const snapshotPreIng: SnapshotPreIng = preIng
+    ? {
+        versionId: preIng.id,
+        version: preIng.versionNumber,
+        cantidadPaneles: parseCantidadPaneles(preIng.cantidadPaneles),
+        potenciaPanelesW: parsePotenciaPanelesW(preIng.potenciaPaneles),
+        inversor: preIng.inversor,
+        capturedAt,
+      }
+    : {
+        versionId: null,
+        version: null,
+        cantidadPaneles: null,
+        potenciaPanelesW: null,
+        inversor: null,
+        capturedAt,
+      };
+
+  const ute = await prisma.uteProcess.findFirst({
+    where: { projectId, deletedAt: null },
+    orderBy: { createdAt: "asc" },
+    select: { caseNumber: true, currentStage: true, currentStatus: true },
+  });
+  const snapshotUte: SnapshotUte = {
+    caseNumber: ute?.caseNumber ?? null,
+    currentStage: ute?.currentStage ?? null,
+    currentStatus: ute?.currentStatus ?? null,
+    capturedAt,
+  };
+
+  const materials = await prisma.projectMaterial.findMany({
+    where: { projectId },
+    include: { materialItem: { select: { id: true, nombre: true, unidad: true } } },
+  });
+  const snapshotMaterials: SnapshotMaterials = {
+    items: materials.map((m) => ({
+      materialItemId: m.materialItem?.id ?? m.materialItemId,
+      description: m.materialItem?.nombre ?? "(sin nombre)",
+      quantity: Number(m.quantity),
+      unit: m.materialItem?.unidad ?? null,
+    })),
+    capturedAt,
+  };
+
+  return { snapshotProject, snapshotPreIng, snapshotUte, snapshotMaterials };
+}
+
+/**
  * Crea o reusa el EngineeringFinalProject del proyecto. Idempotente.
  */
 export async function ensureEFP(projectId: string): Promise<{ id: string; status: string }> {
@@ -657,6 +770,8 @@ export async function generateEFPVersionWithAI(args: {
   const tokensOutput = response.usage.output_tokens;
   const costUsd = calculateCostUsd(DEFAULT_MODEL, tokensInput, tokensOutput);
 
+  const snapshots = await buildEFPSnapshots(projectId);
+
   const version = await prisma.eFPVersion.create({
     data: {
       efpId: efp.id,
@@ -671,6 +786,12 @@ export async function generateEFPVersionWithAI(args: {
       costUsd,
       changesFromPrevious: validated.data.changesFromPrevious ?? null,
       createdById: generatedById,
+      // Snapshots congelados al momento de crear esta versión. Estructura en
+      // server/src/services/efp.snapshots.types.ts.
+      snapshotProject: snapshots.snapshotProject as unknown as object,
+      snapshotPreIng: snapshots.snapshotPreIng as unknown as object,
+      snapshotUte: snapshots.snapshotUte as unknown as object,
+      snapshotMaterials: snapshots.snapshotMaterials as unknown as object,
     },
   });
 
