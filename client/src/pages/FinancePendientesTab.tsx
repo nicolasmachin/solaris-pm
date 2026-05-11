@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { ExternalLink, Pencil, Trash2, X } from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink, Pencil, Trash2, X } from "lucide-react";
 
 import {
   deletePendingItem,
@@ -69,7 +69,35 @@ export function FinancePendientesTab() {
     return t;
   }, [items]);
 
+  // Agrupamos los filtrados por sourceType para vista colapsable.
+  const groups = useMemo(() => {
+    const order: PendingItemSourceType[] = [
+      "FIXED_COST",
+      "PROJECT_MATERIAL",
+      "SUPPLIER_DEBT",
+      "COMMITTED_EXPENSE",
+    ];
+    return order
+      .map((type) => {
+        const groupItems = filtered.filter((it) => it.sourceType === type);
+        const totalMonto = groupItems.reduce((s, it) => s + it.monto, 0);
+        const overdueCount = groupItems.filter((it) => it.isOverdue).length;
+        return { type, items: groupItems, totalMonto, overdueCount };
+      })
+      .filter((g) => g.items.length > 0);
+  }, [filtered]);
+
   const [editingCommittedId, setEditingCommittedId] = useState<string | null>(null);
+  // Grupos abiertos. Por defecto: ninguno (vista compacta de categorías).
+  const [expandedGroups, setExpandedGroups] = useState<Set<PendingItemSourceType>>(new Set());
+  function toggleGroup(type: PendingItemSourceType) {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      return next;
+    });
+  }
 
   function invalidatePending() {
     qc.invalidateQueries({ queryKey: ["finance-pending"] });
@@ -210,30 +238,74 @@ export function FinancePendientesTab() {
             : "Ningún pendiente coincide con los filtros."}
         </div>
       ) : (
-        <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-[var(--color-bg-app)] text-xs text-[var(--color-text-muted)] uppercase tracking-wider">
-              <tr>
-                <th className="text-left px-4 py-2.5 font-medium">Fecha esperada</th>
-                <th className="text-left px-4 py-2.5 font-medium">Descripción</th>
-                <th className="text-left px-4 py-2.5 font-medium">Origen</th>
-                <th className="text-left px-4 py-2.5 font-medium">Categoría</th>
-                <th className="text-right px-4 py-2.5 font-medium">Monto</th>
-                <th className="text-right px-4 py-2.5 font-medium w-72">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--color-border)]">
-              {filtered.map((it) => (
-                <PendingRow
-                  key={it.id}
-                  item={it}
-                  onPay={() => handlePay(it)}
-                  onEditCommitted={(id) => setEditingCommittedId(id)}
-                  onDelete={() => deletePending(it)}
-                />
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-2">
+          {groups.map((g) => {
+            const isOpen = expandedGroups.has(g.type);
+            return (
+              <div
+                key={g.type}
+                className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl overflow-hidden"
+              >
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(g.type)}
+                  className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-[var(--color-bg-card-hover)] transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    {isOpen ? (
+                      <ChevronDown className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
+                    )}
+                    <span
+                      className={`text-[10px] font-medium uppercase tracking-wide px-2 py-0.5 rounded ${SOURCE_TONE[g.type]}`}
+                    >
+                      {SOURCE_LABEL[g.type]}
+                    </span>
+                    <span className="text-sm text-[var(--color-text-secondary)] tabular-nums">
+                      {g.items.length} pendiente{g.items.length === 1 ? "" : "s"}
+                    </span>
+                    {g.overdueCount > 0 && (
+                      <span className="text-[11px] text-red-400 font-medium">
+                        · {g.overdueCount} vencido{g.overdueCount === 1 ? "" : "s"}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-base font-semibold tabular-nums text-red-400">
+                    -{fmtCurrency(g.totalMonto, "UYU")}
+                  </span>
+                </button>
+
+                {isOpen && (
+                  <div className="border-t border-[var(--color-border)]">
+                    <table className="w-full text-sm">
+                      <thead className="bg-[var(--color-bg-app)] text-xs text-[var(--color-text-muted)] uppercase tracking-wider">
+                        <tr>
+                          <th className="text-left px-4 py-2 font-medium">Fecha esperada</th>
+                          <th className="text-left px-4 py-2 font-medium">Descripción</th>
+                          <th className="text-left px-4 py-2 font-medium">Categoría</th>
+                          <th className="text-right px-4 py-2 font-medium">Monto</th>
+                          <th className="text-right px-4 py-2 font-medium w-72">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[var(--color-border)]">
+                        {g.items.map((it) => (
+                          <PendingRow
+                            key={it.id}
+                            item={it}
+                            hideOrigen
+                            onPay={() => handlePay(it)}
+                            onEditCommitted={(id) => setEditingCommittedId(id)}
+                            onDelete={() => deletePending(it)}
+                          />
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -274,11 +346,13 @@ function PendingRow({
   onPay,
   onEditCommitted,
   onDelete,
+  hideOrigen,
 }: {
   item: PendingItem;
   onPay: () => void;
   onEditCommitted: (movementId: string) => void;
   onDelete: () => void;
+  hideOrigen?: boolean;
 }) {
   const navigate = useNavigate();
   return (
@@ -304,13 +378,15 @@ function PendingRow({
           <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">{item.supplier.nombre}</p>
         )}
       </td>
-      <td className="px-4 py-3">
-        <span
-          className={`text-[10px] font-medium uppercase tracking-wide px-2 py-0.5 rounded ${SOURCE_TONE[item.sourceType]}`}
-        >
-          {SOURCE_LABEL[item.sourceType]}
-        </span>
-      </td>
+      {!hideOrigen && (
+        <td className="px-4 py-3">
+          <span
+            className={`text-[10px] font-medium uppercase tracking-wide px-2 py-0.5 rounded ${SOURCE_TONE[item.sourceType]}`}
+          >
+            {SOURCE_LABEL[item.sourceType]}
+          </span>
+        </td>
+      )}
       <td className="px-4 py-3 text-[11px] text-[var(--color-text-secondary)]">{item.categoria}</td>
       <td className="px-4 py-3 text-right tabular-nums">
         <span className="text-red-400 font-semibold">
