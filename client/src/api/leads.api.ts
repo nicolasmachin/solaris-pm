@@ -92,3 +92,37 @@ export async function getProposal(id: string): Promise<LeadProposal> {
 export function getProposalDownloadUrl(id: string): string {
   return `${api.defaults.baseURL}/api/proposals/${id}/download`;
 }
+
+// ─── Adjuntos del lead ────────────────────────────────────────────────────
+
+export interface LeadAttachment {
+  id: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  url: string;
+  uploadedBy: { id: string; name: string } | null;
+  createdAt: string;
+}
+
+export async function listLeadAttachments(leadId: string): Promise<LeadAttachment[]> {
+  const { data } = await api.get<LeadAttachment[]>(`/api/leads/${leadId}/attachments`);
+  return data;
+}
+
+export async function uploadLeadAttachment(leadId: string, file: File): Promise<LeadAttachment> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const { data } = await api.post<LeadAttachment>(`/api/leads/${leadId}/attachments`, fd, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
+export async function deleteLeadAttachment(leadId: string, attachmentId: string): Promise<void> {
+  await api.delete(`/api/leads/${leadId}/attachments/${attachmentId}`);
+}
+
+export function leadAttachmentDownloadUrl(leadId: string, attachmentId: string): string {
+  return `${api.defaults.baseURL}/api/leads/${leadId}/attachments/${attachmentId}/download`;
+}

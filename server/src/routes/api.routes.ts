@@ -58,6 +58,7 @@ import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize, clearPermissionCache } from "../middleware/authorize.middleware.js";
 import { createAuditEntriesForChanges, createAuditEntry } from "../services/audit.service.js";
 import { deleteStoredFile, getStoredFilePath, saveUploadedFile } from "../services/file-storage.service.js";
+import { copyLeadAttachmentsToProject } from "../services/sales/sales.service.js";
 import {
   calculateProjectMetrics,
   calculateProjectProgress,
@@ -5763,6 +5764,26 @@ export async function registerApiRoutes(app: FastifyInstance) {
       action: AuditAction.created,
       description: `Creó proyecto '${project.clientName}' desde lead ${lead.code}`,
     });
+
+    // Copia de adjuntos del lead al proyecto. No falla la conversión si la
+    // copia falla parcialmente (preferimos tener el proyecto creado).
+    try {
+      const { copied } = await prisma.$transaction((tx) =>
+        copyLeadAttachmentsToProject(tx, lead.id, project.id, user.id),
+      );
+      if (copied > 0) {
+        await createAuditEntry({
+          entityType: AuditEntityType.file,
+          entityId: project.id,
+          projectId: project.id,
+          userId: user.id,
+          action: AuditAction.file_uploaded,
+          description: `Copió ${copied} adjunto${copied === 1 ? "" : "s"} del lead al proyecto`,
+        });
+      }
+    } catch (err) {
+      request.log.error({ err, leadId: lead.id, projectId: project.id }, "copy lead attachments failed");
+    }
 
     const projectWithStages = await prisma.project.findUniqueOrThrow({
       where: { id: project.id },

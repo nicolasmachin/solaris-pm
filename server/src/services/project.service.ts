@@ -690,7 +690,7 @@ export function serializeTask(task: {
 
 export function serializeFile(file: {
   id: string;
-  projectId: string;
+  projectId: string | null;
   stageId: string | null;
   substageId: string | null;
   filename: string;

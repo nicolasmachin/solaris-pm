@@ -31,6 +31,8 @@ import {
 } from "../api/leads.api";
 import { getUsers } from "../api/users.api";
 import { CommentThread } from "../components/comments/CommentThread";
+import { LeadAttachments } from "../components/sales/LeadAttachments";
+import { usePermission } from "../hooks/usePermission";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { CanAccess } from "../components/ui/CanAccess";
@@ -437,6 +439,7 @@ function LeadPanel({
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const canEditSales = usePermission("VENTAS", "EDIT");
   const [showProposalModal, setShowProposalModal] = useState(false);
   const [lostReason, setLostReason] = useState("");
   const [pendingStage, setPendingStage] = useState<SalesStage | null>(null);
@@ -761,6 +764,11 @@ function LeadPanel({
               </div>
             ))}
           </div>
+        </section>
+
+        <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
+          <h3 className="mb-3 text-sm font-semibold text-[var(--color-text-primary)]">Adjuntos</h3>
+          <LeadAttachments leadId={lead.id} canEdit={canEditSales} />
         </section>
 
         <CommentThread leadId={lead.id} level="lead" />

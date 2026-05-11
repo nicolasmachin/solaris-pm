@@ -2,6 +2,16 @@
 
 ## v5.4
 
+### 11 de mayo de 2026
+
+#### Ventas — Adjuntos en el lead
+
+Cada lead ahora tiene una sección **"Adjuntos"** en el panel lateral. Sirve para guardar todos los archivos que se generan durante el ciclo de venta: calculadoras Excel de cotización, propuestas comerciales en PDF, minutas de visita técnica, datasheets, fotos del sitio, etc.
+
+- **Subir** archivos directamente desde el panel (Excel, PDF, Word, PowerPoint, imágenes, ZIP, CSV).
+- **Descargar** o **eliminar** cualquier archivo cargado.
+- Cuando el lead se cierra como ganado y se convierte en proyecto, **todos los adjuntos del lead se copian automáticamente al proyecto** (los originales se preservan en el lead).
+
 ### 10 de mayo de 2026 (sexta parte)
 
 #### Finanzas — Movimientos: vista anual por defecto, sin paginación
