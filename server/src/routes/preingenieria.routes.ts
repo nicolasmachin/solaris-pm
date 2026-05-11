@@ -61,7 +61,9 @@ const createBodySchema = z
     alturaTecho: z.string().trim().max(50).optional().nullable(),
     // Eléctricos
     cantidadPaneles: z.string().trim().max(100).optional().nullable(),
-    potenciaPaneles: z.string().trim().max(50).optional().nullable(),
+    // Potencia por panel en Watts (entero positivo). Free-text legacy migró a
+    // Int en DB (Fase A). El frontend envía number ahora.
+    potenciaPaneles: z.number().int().positive().optional().nullable(),
     inversor: z.string().trim().max(150).optional().nullable(),
     stringsLineasDc: z.string().trim().max(50).optional().nullable(),
     cableAc: z.string().trim().max(100).optional().nullable(),
@@ -120,7 +122,9 @@ function inputsFromVersion(v: CreateBody & { snapshotNombre: string }): PreIngen
     infoTecho: v.infoTecho ?? null,
     alturaTecho: v.alturaTecho ?? null,
     cantidadPaneles: v.cantidadPaneles ?? null,
-    potenciaPaneles: v.potenciaPaneles ?? null,
+    // Coerce a string para el generador de PDF de pre-ingeniería (Fase A no
+    // toca PDFs; el campo en PreIngenieriaPdfInputs sigue siendo string).
+    potenciaPaneles: v.potenciaPaneles != null ? String(v.potenciaPaneles) : null,
     inversor: v.inversor ?? null,
     stringsLineasDc: v.stringsLineasDc ?? null,
     cableAc: v.cableAc ?? null,
