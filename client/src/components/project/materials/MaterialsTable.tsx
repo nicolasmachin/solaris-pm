@@ -286,8 +286,11 @@ function ColorPicker({
         <Palette className="w-3.5 h-3.5" />
       </IconBtn>
       {open && (
-        <div className="absolute top-full right-0 mt-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-xl z-30 p-2">
-          <div className="grid grid-cols-7 gap-1">
+        <div
+          className="absolute top-full right-0 mt-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-xl z-30 p-2.5"
+          style={{ width: 'max-content' }}
+        >
+          <div className="flex flex-row items-center gap-2 whitespace-nowrap">
             <button
               type="button"
               title="Sin color"
@@ -295,13 +298,13 @@ function ColorPicker({
                 setOpen(false);
                 onChange(null);
               }}
-              className={`w-6 h-6 rounded border flex items-center justify-center ${
+              className={`w-5 h-5 shrink-0 rounded-full border flex items-center justify-center transition-shadow ${
                 current === null
-                  ? 'border-[var(--color-accent)] bg-[var(--color-bg-card-hover)]'
+                  ? 'border-[var(--color-accent)] bg-[var(--color-bg-card-hover)] ring-2 ring-[var(--color-accent)] ring-offset-2 ring-offset-[var(--color-bg-card)]'
                   : 'border-[var(--color-border)] hover:border-[var(--color-border-hover)]'
               }`}
             >
-              <span className="text-[10px] text-[var(--color-text-muted)]">∅</span>
+              <span className="text-[9px] leading-none text-[var(--color-text-muted)]">∅</span>
             </button>
             {ROW_COLOR_SWATCHES.map((s) => (
               <button
@@ -312,8 +315,10 @@ function ColorPicker({
                   setOpen(false);
                   onChange(s.value);
                 }}
-                className={`w-6 h-6 rounded border ${
-                  current === s.value ? 'border-[var(--color-accent)] ring-2 ring-[var(--color-accent)]/40' : 'border-[var(--color-border)]'
+                className={`w-5 h-5 shrink-0 rounded-full border transition-shadow ${
+                  current === s.value
+                    ? 'border-[var(--color-accent)] ring-2 ring-[var(--color-accent)] ring-offset-2 ring-offset-[var(--color-bg-card)]'
+                    : 'border-[var(--color-border)] hover:border-[var(--color-border-hover)]'
                 }`}
                 style={{ background: s.swatch }}
               />
