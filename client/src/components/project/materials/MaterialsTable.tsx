@@ -2,12 +2,12 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Check, ChevronDown, ExternalLink, MoreHorizontal, Palette, StickyNote, Trash2 } from 'lucide-react';
+import { Check, ExternalLink, MoreHorizontal, Palette, StickyNote, Trash2 } from 'lucide-react';
 
 import { patchProjectMaterial, deleteProjectMaterial } from '../../../api/materials.api';
-import type { MaterialRowColor, MaterialStatus, ProjectMaterial } from '../../../types/materials.types';
-import { ROW_COLOR_SWATCHES, STATUS_META, categoryBadgeClass } from './types';
-import { MATERIAL_STATUSES } from '../../../types/materials.types';
+import type { MaterialRowColor, ProjectMaterial } from '../../../types/materials.types';
+import { ROW_COLOR_SWATCHES, categoryBadgeClass } from './types';
+import { StatusPill } from './StatusPill';
 
 // ─── Tabla principal ───────────────────────────────────────────────────────
 
@@ -186,71 +186,6 @@ const MaterialRow = memo(function MaterialRow({
     </tr>
   );
 });
-
-// ─── Status pill con dropdown ──────────────────────────────────────────────
-
-function StatusPill({
-  status,
-  disabled,
-  onChange,
-}: {
-  status: MaterialStatus;
-  disabled: boolean;
-  onChange: (s: MaterialStatus) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function onDocClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener('mousedown', onDocClick);
-    return () => document.removeEventListener('mousedown', onDocClick);
-  }, [open]);
-
-  const meta = STATUS_META[status];
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => !disabled && setOpen((v) => !v)}
-        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${meta.pillClass} ${
-          disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:opacity-80'
-        }`}
-      >
-        <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: meta.dot }} />
-        {meta.label}
-        {!disabled && <ChevronDown className="w-2.5 h-2.5 opacity-60" />}
-      </button>
-      {open && (
-        <div className="absolute top-full left-0 mt-1 min-w-[140px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-xl z-30 p-1">
-          {MATERIAL_STATUSES.map((s) => {
-            const m = STATUS_META[s];
-            return (
-              <button
-                key={s}
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  if (s !== status) onChange(s);
-                }}
-                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-left text-[11px] hover:bg-[var(--color-bg-card-hover)] ${
-                  s === status ? 'bg-[var(--color-bg-card-hover)]/60' : ''
-                }`}
-              >
-                <span className="inline-block w-2 h-2 rounded-full" style={{ background: m.dot }} />
-                <span className="text-[var(--color-text-primary)]">{m.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ─── Color picker popover ──────────────────────────────────────────────────
 

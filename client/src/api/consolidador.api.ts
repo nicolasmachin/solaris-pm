@@ -106,3 +106,45 @@ export function consolidadoXlsxUrl(id: string): string {
   const base = apiClient.defaults.baseURL ?? "";
   return `${base}/api/ingenieria/materiales-consolidados/${id}/xlsx`;
 }
+
+// ─── Vista compras: overlay con estado agregado por item ─────────────────
+
+import type { MaterialStatus } from "../types/materials.types";
+
+export type AggregatedStatus = MaterialStatus | "MIXED" | null;
+
+export interface ComprasOverlayItem {
+  catalogItemId: string;
+  aggregatedStatus: AggregatedStatus;
+  isCrossed: boolean;
+  perProjectStatus: Array<{
+    projectId: string;
+    projectMaterialId: string;
+    status: MaterialStatus;
+    crossed: boolean;
+  }>;
+}
+
+export async function getConsolidadoComprasOverlay(id: string): Promise<{ items: ComprasOverlayItem[] }> {
+  const { data } = await apiClient.get<{ items: ComprasOverlayItem[] }>(
+    `/api/ingenieria/materiales-consolidados/${id}/compras-overlay`,
+  );
+  return data;
+}
+
+export interface CascadeUpdateBody {
+  status?: MaterialStatus;
+  crossed?: boolean;
+}
+
+export async function cascadeUpdateConsolidadoItem(
+  versionId: string,
+  catalogItemId: string,
+  body: CascadeUpdateBody,
+): Promise<{ updatedCount: number; projectMaterialIds: string[] }> {
+  const { data } = await apiClient.post<{ updatedCount: number; projectMaterialIds: string[] }>(
+    `/api/ingenieria/materiales-consolidados/${versionId}/items/${catalogItemId}/cascade-update`,
+    body,
+  );
+  return data;
+}

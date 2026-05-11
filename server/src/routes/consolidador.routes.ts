@@ -20,7 +20,7 @@ import { z } from "zod";
 import { env } from "../config/env.js";
 import { prisma } from "../lib/prisma.js";
 import { authenticate } from "../middleware/auth.middleware.js";
-import { authorize } from "../middleware/authorize.middleware.js";
+import { authorize, authorizeAny } from "../middleware/authorize.middleware.js";
 import { badRequest, notFound, unauthorized } from "../utils/errors.js";
 import { serializeDate } from "../utils/serialization.js";
 
@@ -475,7 +475,12 @@ export async function registerConsolidadorRoutes(app: FastifyInstance) {
   // ── Obtener versión completa ────────────────────────────────────────────
   app.get(
     "/ingenieria/materiales-consolidados/:id",
-    { preHandler: authorize(Module.INGENIERIA, Action.VIEW) },
+    {
+      preHandler: authorizeAny([
+        { module: Module.INGENIERIA, action: Action.VIEW },
+        { module: Module.OPERACIONES, action: Action.VIEW },
+      ]),
+    },
     async (request) => {
       const params = z.object({ id: z.string().min(1) }).parse(request.params);
       const v = await prisma.materialesConsolidadosVersion.findUnique({
@@ -650,6 +655,157 @@ export async function registerConsolidadorRoutes(app: FastifyInstance) {
       await prisma.materialesConsolidadosVersion.delete({ where: { id: params.id } });
       reply.code(204);
       return;
+    },
+  );
+
+  // ── Vista compras: overlay con estado agregado por item ─────────────────
+  // Es un endpoint "lazy" que solo se llama cuando el usuario abre la "Vista
+  // compras" del modal del consolidador. Devuelve, para cada catalogItemId
+  // del snapshot, el estado agregado a partir de los ProjectMaterials VIVOS
+  // (no del snapshot) de los proyectos NO eliminados incluidos en la versión.
+  app.get(
+    "/ingenieria/materiales-consolidados/:id/compras-overlay",
+    {
+      preHandler: authorizeAny([
+        { module: Module.INGENIERIA, action: Action.VIEW },
+        { module: Module.OPERACIONES, action: Action.VIEW },
+      ]),
+    },
+    async (request) => {
+      const params = z.object({ id: z.string().min(1) }).parse(request.params);
+      const v = await prisma.materialesConsolidadosVersion.findUnique({
+        where: { id: params.id },
+        select: { projectsSnapshot: true, itemsSnapshot: true },
+      });
+      if (!v) throw notFound("CONSOLIDADO_NOT_FOUND", "Consolidado no encontrado");
+
+      const projects = (v.projectsSnapshot as ProjectSnapshot[] | null) ?? [];
+      const items = (v.itemsSnapshot as ItemConsolidado[] | null) ?? [];
+      const projectIds = projects.map((p) => p.id);
+      const catalogItemIds = items.map((it) => it.catalogItemId);
+      if (projectIds.length === 0 || catalogItemIds.length === 0) {
+        return { items: [] };
+      }
+
+      // Filtrar a proyectos no borrados — si un proyecto se eliminó después de
+      // crear la versión, no aparece en el overlay (no hay nada que actualizar).
+      const aliveProjects = await prisma.project.findMany({
+        where: { id: { in: projectIds }, deletedAt: null },
+        select: { id: true },
+      });
+      const aliveIds = new Set(aliveProjects.map((p) => p.id));
+
+      const pms = await prisma.projectMaterial.findMany({
+        where: {
+          projectId: { in: Array.from(aliveIds) },
+          materialItemId: { in: catalogItemIds },
+        },
+        select: {
+          id: true, projectId: true, materialItemId: true,
+          status: true, crossed: true,
+        },
+      });
+
+      const byItem = new Map<string, typeof pms>();
+      for (const pm of pms) {
+        const list = byItem.get(pm.materialItemId) ?? [];
+        list.push(pm);
+        byItem.set(pm.materialItemId, list);
+      }
+
+      const overlay = items.map((it) => {
+        const list = byItem.get(it.catalogItemId) ?? [];
+        const statuses = new Set(list.map((x) => x.status));
+        const aggregatedStatus = list.length === 0
+          ? null
+          : statuses.size === 1
+            ? Array.from(statuses)[0]
+            : "MIXED";
+        const isCrossed = list.length > 0 && list.every((x) => x.crossed);
+        return {
+          catalogItemId: it.catalogItemId,
+          aggregatedStatus,
+          isCrossed,
+          perProjectStatus: list.map((x) => ({
+            projectId: x.projectId,
+            projectMaterialId: x.id,
+            status: x.status,
+            crossed: x.crossed,
+          })),
+        };
+      });
+
+      return { items: overlay };
+    },
+  );
+
+  // ── Cascada: actualizar status/crossed en todos los ProjectMaterials del
+  // item dentro de los proyectos del consolidado. Atomico.
+  app.post(
+    "/ingenieria/materiales-consolidados/:id/items/:materialItemId/cascade-update",
+    {
+      preHandler: authorizeAny([
+        { module: Module.INGENIERIA, action: Action.EDIT },
+        { module: Module.OPERACIONES, action: Action.EDIT },
+      ]),
+    },
+    async (request) => {
+      const user = ensureUser(request);
+      const params = z.object({
+        id: z.string().min(1),
+        materialItemId: z.string().min(1),
+      }).parse(request.params);
+
+      const body = z.object({
+        status: z.enum(["PENDIENTE", "PEDIDO", "RECIBIDO", "EN_STOCK"]).optional(),
+        crossed: z.boolean().optional(),
+      }).refine((b) => b.status !== undefined || b.crossed !== undefined, {
+        message: "Debe pasarse al menos status o crossed",
+      }).parse(request.body);
+
+      const v = await prisma.materialesConsolidadosVersion.findUnique({
+        where: { id: params.id },
+        select: { projectsSnapshot: true },
+      });
+      if (!v) throw notFound("CONSOLIDADO_NOT_FOUND", "Consolidado no encontrado");
+
+      const projects = (v.projectsSnapshot as ProjectSnapshot[] | null) ?? [];
+      const projectIds = projects.map((p) => p.id);
+      if (projectIds.length === 0) return { updatedCount: 0, projectMaterialIds: [] };
+
+      const aliveProjects = await prisma.project.findMany({
+        where: { id: { in: projectIds }, deletedAt: null },
+        select: { id: true },
+      });
+      const aliveIds = aliveProjects.map((p) => p.id);
+      if (aliveIds.length === 0) return { updatedCount: 0, projectMaterialIds: [] };
+
+      // Atomic: leer ids + update masivo en una transacción.
+      const result = await prisma.$transaction(async (tx) => {
+        const target = await tx.projectMaterial.findMany({
+          where: {
+            projectId: { in: aliveIds },
+            materialItemId: params.materialItemId,
+          },
+          select: { id: true },
+        });
+        if (target.length === 0) return { updatedCount: 0, projectMaterialIds: [] };
+        const ids = target.map((x) => x.id);
+        const now = new Date();
+        await tx.projectMaterial.updateMany({
+          where: { id: { in: ids } },
+          data: {
+            ...(body.status !== undefined ? { status: body.status } : {}),
+            ...(body.crossed !== undefined ? { crossed: body.crossed } : {}),
+            lastEditedAt: now,
+            lastEditedById: user.id,
+            lastEditedRole: user.role,
+          },
+        });
+        return { updatedCount: ids.length, projectMaterialIds: ids };
+      });
+
+      return result;
     },
   );
 }
