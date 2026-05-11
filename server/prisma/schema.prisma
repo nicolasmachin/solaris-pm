@@ -379,6 +379,8 @@ model User {
   visitReportsGenerated          VisitReport[]            @relation("VisitReportGenerator")
   efpVersionsCreated             EFPVersion[]             @relation("EFPVersionCreator")
   efpAttachmentsUploaded         EFPAttachment[]          @relation("EFPAttachmentUploader")
+  projectMaterialsAdded          ProjectMaterial[]        @relation("ProjectMaterialAddedBy")
+  projectMaterialsEdited         ProjectMaterial[]        @relation("ProjectMaterialLastEditedBy")
   passwordTemporary              Boolean                  @default(false)
   deletedAt                      DateTime?                @db.Timestamptz(6)
   createdAt                      DateTime                 @default(now()) @db.Timestamptz(6)
@@ -1488,6 +1490,26 @@ model ProjectMaterial {
   movementId String?
   movement   FinanceMovement? @relation(fields: [movementId], references: [id])
 
+  // ─── Lista colaborativa (Ingeniería + Operaciones) ─────────────────────
+  // Estado de compra/recepción del ítem. Editable por ambas áreas.
+  status  MaterialStatus @default(PENDIENTE)
+  // Tachado: el ítem queda en la lista pero atravesado por una línea (legible).
+  crossed Boolean        @default(false)
+  // Color de fondo opcional para códigos de color personales. Valores
+  // permitidos: yellow | green | blue | purple | red | gray | null.
+  rowColor String?
+
+  // Audit livianas — quién agregó y quién editó por última vez.
+  addedById String?
+  addedBy   User?   @relation("ProjectMaterialAddedBy", fields: [addedById], references: [id], onDelete: SetNull)
+
+  lastEditedAt    DateTime?
+  lastEditedById  String?
+  lastEditedBy    User?     @relation("ProjectMaterialLastEditedBy", fields: [lastEditedById], references: [id], onDelete: SetNull)
+  // Rol del último editor (ej "INGENIERIA", "OPERACIONES", "ADMIN") — sirve
+  // para mostrar "Última edición {rol} hace 2h" sin joinear con User.
+  lastEditedRole  String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1495,7 +1517,15 @@ model ProjectMaterial {
   @@index([materialItemId])
   @@index([movementId])
   @@index([expectedDate])
+  @@index([status])
   @@map("project_materials")
+}
+
+enum MaterialStatus {
+  PENDIENTE
+  PEDIDO
+  RECIBIDO
+  EN_STOCK
 }
 
 // ─── Desglose de factura (InvoiceItem) ──────────────────────────────────────
