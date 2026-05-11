@@ -2082,6 +2082,16 @@ model EFPVersion {
 
   changesFromPrevious String? @db.Text
 
+  // Snapshots congelados al momento de crear la versión. Antes el PDF re-leía
+  // Project/PreIngeniería/UTE en cada export, así que aprobar v1 y después
+  // cambiar capacityKwp mutaba el PDF de v1. Con estos snapshots, cada versión
+  // queda anclada a los datos del momento. Estructura: ver
+  // server/src/services/efp.snapshots.types.ts.
+  snapshotProject   Json?
+  snapshotPreIng    Json?
+  snapshotUte       Json?
+  snapshotMaterials Json?
+
   createdAt   DateTime @default(now()) @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @db.Timestamptz(6)
   createdById String
@@ -2105,6 +2115,10 @@ model EFPAttachment {
 
   description String?
   category    String? // 'datasheet' | 'foto' | 'plano' | 'otro'
+
+  // Si false, el archivo no se fusiona al PDF final (sigue listado en la UI).
+  // Útil para excluir adjuntos pesados o irrelevantes del documento final.
+  includeInPdf Boolean @default(true)
 
   uploadedById String
   uploadedBy   User   @relation("EFPAttachmentUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
