@@ -21,6 +21,7 @@ import {
   FileAttachmentTipo,
   FinanceMovementStatus,
   FixedCostPeriodicity,
+  MaterialStatus,
   MovementSourceType,
   GoalArea,
   GoalMetric,
@@ -10428,6 +10429,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
       unitPrice: import("@prisma/client/runtime/library").Decimal;
       moneda: Moneda; ivaTasa: number; supplierId: string | null; notes: string | null;
       movementId: string | null;
+      status: MaterialStatus;
+      crossed: boolean;
+      rowColor: string | null;
+      addedById: string | null;
+      lastEditedAt: Date | null;
+      lastEditedById: string | null;
+      lastEditedRole: string | null;
       createdAt: Date; updatedAt: Date;
       materialItem?: {
         id: string; nombre: string; unidad: string; categoryId: string;
@@ -10435,6 +10443,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       } | null;
       supplier?: { id: string; nombre: string } | null;
       movement?: { id: string; status: FinanceMovementStatus; descripcion: string } | null;
+      addedBy?: { id: string; name: string } | null;
+      lastEditedBy?: { id: string; name: string } | null;
     }) {
       const qty = Number(pm.quantity);
       const price = Number(pm.unitPrice);
@@ -10442,12 +10452,34 @@ export async function registerApiRoutes(app: FastifyInstance) {
         id: pm.id, projectId: pm.projectId, materialItemId: pm.materialItemId,
         quantity: qty, unitPrice: price, subtotal: Math.round(qty * price * 100) / 100,
         moneda: pm.moneda, ivaTasa: pm.ivaTasa, supplierId: pm.supplierId, notes: pm.notes, movementId: pm.movementId,
+        status: pm.status,
+        crossed: pm.crossed,
+        rowColor: pm.rowColor,
+        addedBy: pm.addedBy ?? null,
+        lastEditedAt: pm.lastEditedAt ? serializeDate(pm.lastEditedAt) : null,
+        lastEditedBy: pm.lastEditedBy ?? null,
+        lastEditedRole: pm.lastEditedRole,
         createdAt: serializeDate(pm.createdAt), updatedAt: serializeDate(pm.updatedAt),
         ...(pm.materialItem ? { materialItem: pm.materialItem } : {}),
         ...(pm.supplier ? { supplier: pm.supplier } : {}),
         ...(pm.movement ? { movement: pm.movement } : {}),
       };
     }
+
+    // Include reusable: lo usan GET / POST / PATCH para mantener la respuesta
+    // consistente y para que el serializer reciba siempre la misma forma.
+    const projectMaterialInclude = {
+      materialItem: {
+        select: {
+          id: true, nombre: true, unidad: true, categoryId: true,
+          category: { select: { id: true, nombre: true, orden: true } },
+        },
+      },
+      supplier: { select: { id: true, nombre: true } },
+      movement: { select: { id: true, status: true, descripcion: true } },
+      addedBy: { select: { id: true, name: true } },
+      lastEditedBy: { select: { id: true, name: true } },
+    } as const;
 
     app.get("/projects/:id/materials", { preHandler: authorize(Module.INGENIERIA, Action.VIEW) }, async (request) => {
       const { id } = z.object({ id: z.string() }).parse(request.params);
