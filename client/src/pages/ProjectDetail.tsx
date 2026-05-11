@@ -13,6 +13,7 @@ import { KpiCards } from "../components/project/KpiCards";
 import { Pipeline } from "../components/project/Pipeline";
 import { StageDrawer } from "../components/project/StageDrawer";
 import { CostosTab } from "../components/project/CostosTab";
+import { ProjectMaterialsList } from "../components/project/EngineeringMaterials";
 import { TasksPanel } from "../components/project/TasksPanel";
 import { PortalClientsPanel } from "../components/project/PortalClientsPanel";
 import { TaskModal } from "../components/project/TaskModal";
@@ -638,13 +639,16 @@ export function ProjectDetail() {
   const [showEditProject, setShowEditProject] = useState(false);
   const [editingSolarSystemId, setEditingSolarSystemId] = useState<string | null>(null);
   const [showCreateSolarSystem, setShowCreateSolarSystem] = useState(false);
-  const [bottomTab, setBottomTab] = useState<"activity" | "comments" | "timeline" | "materiales" | "ute" | "costos">("activity");
+  const [bottomTab, setBottomTab] = useState<"activity" | "comments" | "timeline" | "materiales" | "compras" | "ute" | "costos">("activity");
   const canViewFinance = usePermission("FINANZAS", "VIEW");
   const canViewMetrics = usePermission("METRICAS", "VIEW");
   const canViewStock = usePermission("STOCK", "VIEW");
   const canViewUte = usePermission("TRAMITES_UTE", "VIEW");
   const canCreateUte = usePermission("TRAMITES_UTE", "CREATE");
   const canViewClients = usePermission("USUARIOS", "VIEW");
+  // El tab "Compras" es la lista colaborativa de materiales (Ingeniería +
+  // Operaciones). Mismo componente que se usa en /ingenieria/proyecto/:id.
+  const canViewCompras = usePermission("INGENIERIA", "VIEW") || usePermission("OPERACIONES", "VIEW");
 
   const {
     data: project,
@@ -834,6 +838,15 @@ export function ProjectDetail() {
               Materiales
             </button>
           ) : null}
+          {canViewCompras ? (
+            <button
+              className={`rounded-full px-3 py-1 text-xs ${bottomTab === "compras" ? "bg-[var(--color-accent)] text-black" : "text-[var(--color-text-secondary)]"}`}
+              onClick={() => setBottomTab("compras")}
+              type="button"
+            >
+              Compras
+            </button>
+          ) : null}
           {canViewUte ? (
             <button
               className={`rounded-full px-3 py-1 text-xs ${bottomTab === "ute" ? "bg-[var(--color-accent)] text-black" : "text-[var(--color-text-secondary)]"}`}
@@ -883,6 +896,8 @@ export function ProjectDetail() {
           )
         ) : bottomTab === "materiales" ? (
           <MaterialesTab projectId={project.id} />
+        ) : bottomTab === "compras" ? (
+          <ProjectMaterialsList projectId={project.id} />
         ) : bottomTab === "ute" ? (
           <UteProjectTab
             projectId={project.id}
