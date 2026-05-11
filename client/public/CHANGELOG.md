@@ -2,6 +2,23 @@
 
 ## v5.4
 
+### 11 de mayo de 2026 (tercera parte)
+
+#### Finanzas — Cargar facturas a pagar a proveedor
+
+Hasta ahora solo se podían **registrar pagos** a proveedores; no había forma de **cargar una factura pendiente** sin pagarla todavía. Eso rompía el circuito: la deuda no se reflejaba en Pendientes, no aparecía en Flujo de fondos como salida proyectada, y el saldo del proveedor no era confiable hasta que llegaba el pago.
+
+- **"+ Nueva factura a pagar"** arriba a la derecha en el listado de Proveedores.
+- **"+ Cargar factura"** en la ficha de cada proveedor, al lado de "Registrar pago".
+- Formulario corto: proveedor (prefijado si entrás desde su ficha), descripción, número de factura (opcional), monto, moneda, fecha de emisión (default hoy), **fecha de vencimiento** (obligatoria) y proyecto (opcional).
+- La factura cargada queda en estado **"A pagar"** y aparece automáticamente en:
+  - **Cuenta corriente del proveedor** — la deuda total se actualiza al toque.
+  - **Pendientes** — con fecha de vencimiento; si la fecha ya pasó queda marcada como **Vencido** en rojo.
+  - **Flujo de fondos** — como salida proyectada el día del vencimiento.
+- Cuando se aplica un pago parcial, la factura pasa a **"Parcialmente pagado"** y el saldo restante sigue figurando en Pendientes y Flujo. Cuando se cubre el total, pasa a **Pagado** y desaparece de Pendientes y Flujo, pero sigue en el historial del proveedor.
+
+Internamente: la factura es un movimiento de gasto (categoría "Pago a proveedor") con status "A pagar" y fecha de vencimiento; reutiliza todo el sistema existente de pagos parciales y aplicaciones.
+
 ### 11 de mayo de 2026 (segunda parte)
 
 #### Finanzas — Pendientes: agrupación por proyecto y manuales

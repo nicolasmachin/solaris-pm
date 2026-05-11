@@ -2,11 +2,12 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Plus, X, Search, ArrowRight } from 'lucide-react';
+import { Plus, X, Search, ArrowRight, FileText } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
 import {
   getSuppliers, createSupplier, patchSupplier,
 } from '../api/finance.api';
+import { NewSupplierInvoiceModal } from '../components/finance/NewSupplierInvoiceModal';
 import { fmtCurrency, fmtDate } from '../lib/finance';
 import type { Supplier } from '../types/finance.types';
 
@@ -129,6 +130,7 @@ const FILTER_KEY = 'finance-suppliers-filters-v2';
 export function FinanceSuppliers() {
   const qc = useQueryClient();
   const [newModal, setNewModal] = useState(false);
+  const [showNewInvoice, setShowNewInvoice] = useState(false);
   const [activoFilter, setActivoFilter] = useState<ActivoFilter>('true');
   const [search, setSearch] = useState('');
 
@@ -169,10 +171,16 @@ export function FinanceSuppliers() {
           <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Proveedores</h1>
           <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{filtered.length} de {suppliers.length} proveedor{suppliers.length !== 1 ? 'es' : ''}</p>
         </div>
-        <button onClick={() => setNewModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] transition-colors">
-          <Plus className="w-4 h-4" /> Nuevo proveedor
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowNewInvoice(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] text-sm font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)] transition-colors">
+            <FileText className="w-4 h-4" /> Nueva factura a pagar
+          </button>
+          <button onClick={() => setNewModal(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] transition-colors">
+            <Plus className="w-4 h-4" /> Nuevo proveedor
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center gap-3 flex-wrap">
@@ -268,6 +276,13 @@ export function FinanceSuppliers() {
             />
           </div>
         </div>
+      )}
+
+      {showNewInvoice && (
+        <NewSupplierInvoiceModal
+          onClose={() => setShowNewInvoice(false)}
+          onCreated={() => qc.invalidateQueries({ queryKey: ['suppliers'] })}
+        />
       )}
     </div>
   );

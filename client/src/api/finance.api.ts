@@ -342,6 +342,22 @@ export const confirmInvoiceItems = (movementId: string) =>
 export const markNoMateriales = (movementId: string) =>
   apiClient.post<{ id: string; noTieneMateriales: true; hasItemDetail: true }>(`/api/finance/movements/${movementId}/mark-no-materials`).then(r => r.data);
 
+// ─── Facturas a pagar (deuda a proveedor) ────────────────────────────────────
+
+export interface CreateSupplierInvoiceBody {
+  supplierId: string;
+  descripcion: string;
+  monto: number;
+  moneda: Moneda;
+  fechaEmision?: string;
+  fechaVencimiento: string;
+  invoiceNumber?: string;
+  projectId?: string;
+}
+
+export const createSupplierInvoice = (body: CreateSupplierInvoiceBody) =>
+  apiClient.post<{ id: string; status: FinanceMovementStatus }>('/api/finance/supplier-invoices', body).then(r => r.data);
+
 // ─── Pendientes de desglose ──────────────────────────────────────────────────
 
 export interface PendingDetailMovement {

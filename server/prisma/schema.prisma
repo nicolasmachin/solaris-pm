@@ -1043,6 +1043,7 @@ model FinanceMovement {
   status              FinanceMovementStatus    @default(PAGADO)
   expectedDate        DateTime?                @db.Date
   dueDate             DateTime?                @db.Date
+  invoiceNumber       String?
   sourceType          MovementSourceType       @default(MANUAL)
   materialItemId      String?
   materialItem        MaterialItem?            @relation(fields: [materialItemId], references: [id])
@@ -1146,6 +1147,11 @@ enum FixedCostPeriodicity {
   ANUAL
 }
 
+/// @deprecated A partir de v5.4: las facturas a pagar a proveedor se modelan
+/// como FinanceMovement (GASTO + PAGO_PROVEEDOR + status A_PAGAR + supplierId
+/// + dueDate). Los datos viejos siguen en esta tabla por compatibilidad; no
+/// crear nuevos registros desde código nuevo. El POST /finance/comprobantes
+/// sigue existiendo pero quedó en modo "solo lectura/legacy".
 model FinanceComprobante {
   id               String                      @id @default(cuid())
   supplierId       String

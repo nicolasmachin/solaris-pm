@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { ArrowLeft, ArrowRight, Plus, Pencil, X, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, Pencil, X, CheckCircle2, AlertTriangle, FileText } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
 import { getSupplier, deleteSupplier } from '../api/finance.api';
 import { getSupplierAccountSummary } from '../api/payments.api';
@@ -17,6 +17,7 @@ import { todayLocalISO } from '../utils/date';
 import { ApplyPaymentModal } from '../components/finance/ApplyPaymentModal';
 import { PaymentDetailPanel } from '../components/finance/PaymentDetailPanel';
 import { NewPaymentForSupplierModal } from '../components/finance/NewPaymentForSupplierModal';
+import { NewSupplierInvoiceModal } from '../components/finance/NewSupplierInvoiceModal';
 import { SupplierForm } from './FinanceSuppliers';
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
@@ -33,6 +34,7 @@ export function FinanceSupplierDetail() {
   const [tab, setTab] = useState<Tab>('facturas');
   const [editing, setEditing] = useState(false);
   const [newPaymentOpen, setNewPaymentOpen] = useState(false);
+  const [newInvoiceOpen, setNewInvoiceOpen] = useState(false);
   const [createdPaymentId, setCreatedPaymentId] = useState<string | null>(null);
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
   const [filterFacturas, setFilterFacturas] = useState<'all' | 'pending' | 'paid' | 'partial'>('all');
@@ -101,6 +103,12 @@ export function FinanceSupplierDetail() {
               className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
             >
               <Pencil className="w-3.5 h-3.5" /> Editar
+            </button>
+            <button
+              onClick={() => setNewInvoiceOpen(true)}
+              className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)]"
+            >
+              <FileText className="w-3.5 h-3.5" /> Cargar factura
             </button>
             <button
               onClick={() => setNewPaymentOpen(true)}
@@ -219,6 +227,16 @@ export function FinanceSupplierDetail() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal cargar factura a pagar (proveedor prefijado) */}
+      {newInvoiceOpen && (
+        <NewSupplierInvoiceModal
+          supplierId={supplier.id}
+          supplierName={supplier.nombre}
+          onClose={() => setNewInvoiceOpen(false)}
+          onCreated={() => qc.invalidateQueries({ queryKey: ['account-summary', id] })}
+        />
       )}
 
       {/* Modal registrar pago (con prefill del proveedor) */}

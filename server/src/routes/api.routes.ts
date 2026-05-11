@@ -14159,6 +14159,68 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return { ...pago, monto: decimalToNumber(pago.monto), nuevoEstado };
     });
 
+    // ─── Finance: Supplier Invoices (deudas pendientes) ──────────────────────
+    // Crea una FACTURA A PAGAR como FinanceMovement con status A_PAGAR.
+    // Esta es la fuente de verdad canónica para deuda a proveedor (reemplaza
+    // el flujo legacy de FinanceComprobante).
+    app.post("/finance/supplier-invoices", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+      const user = ensureUser(request);
+      const body = z.object({
+        supplierId: z.string().min(1),
+        descripcion: z.string().min(1),
+        monto: z.coerce.number().positive(),
+        moneda: z.nativeEnum(Moneda),
+        fechaEmision: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        fechaVencimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        invoiceNumber: z.string().optional(),
+        projectId: z.string().optional(),
+      }).strict().parse(request.body);
+
+      const supplier = await prisma.supplier.findFirst({ where: { id: body.supplierId, deletedAt: null } });
+      if (!supplier) throw notFound("SUPPLIER_NOT_FOUND", "Proveedor no encontrado");
+
+      if (body.projectId) {
+        const project = await prisma.project.findFirst({ where: { id: body.projectId, deletedAt: null } });
+        if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+      }
+
+      const fechaEmision = body.fechaEmision ? parseDateOnly(body.fechaEmision) : new Date();
+      const fechaVencimiento = parseDateOnly(body.fechaVencimiento);
+
+      const movement = await prisma.financeMovement.create({
+        data: {
+          tipoMovimiento: TipoMovimiento.GASTO,
+          categoriaPrincipal: CategoriaPrincipal.PAGO_PROVEEDOR,
+          status: FinanceMovementStatus.A_PAGAR,
+          sourceType: MovementSourceType.MANUAL,
+          estadoAprobacion: EstadoAprobacion.REGISTRADO,
+          supplierId: body.supplierId,
+          projectId: body.projectId ?? null,
+          descripcion: body.descripcion,
+          monto: new Prisma.Decimal(body.monto),
+          moneda: body.moneda,
+          fecha: fechaEmision,
+          dueDate: fechaVencimiento,
+          invoiceNumber: body.invoiceNumber ?? null,
+          mes: fechaVencimiento.getUTCMonth() + 1,
+          anio: fechaVencimiento.getUTCFullYear(),
+          pagado: false,
+          impactaFlujo: true,
+          creadoPorId: user.id,
+        },
+      });
+
+      await createAuditEntry({
+        entityType: AuditEntityType.finance_movement,
+        entityId: movement.id,
+        userId: user.id,
+        action: AuditAction.created,
+        description: `Registró factura a pagar de ${supplier.nombre} por ${body.monto} ${body.moneda}${body.invoiceNumber ? ` (Nº ${body.invoiceNumber})` : ""}`,
+      });
+
+      return { ...movement, monto: decimalToNumber(movement.monto) };
+    });
+
     // ─── Finance: Reports ─────────────────────────────────────────────────────
 
     app.get("/finance/reports/results", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
@@ -15304,7 +15366,59 @@ export async function registerApiRoutes(app: FastifyInstance) {
       g.categorias.sort((a, b) => b.totalAmount - a.totalAmount);
     }
 
-    // 3) Deuda a proveedores: facturas con saldo pendiente.
+    // 3) Deuda a proveedor — fuente canónica: FinanceMovement A_PAGAR /
+    // PARCIALMENTE_PAGADO con supplierId y dueDate. Reemplaza a la lectura
+    // directa de FinanceComprobante (que queda como fallback legacy).
+    const deudasMovements = await prisma.financeMovement.findMany({
+      where: {
+        tipoMovimiento: TipoMovimiento.GASTO,
+        categoriaPrincipal: CategoriaPrincipal.PAGO_PROVEEDOR,
+        status: { in: [FinanceMovementStatus.A_PAGAR, FinanceMovementStatus.PARCIALMENTE_PAGADO] },
+        supplierId: { not: null },
+        dueDate: { not: null },
+        deletedAt: null,
+      },
+      include: {
+        supplier: { select: { id: true, nombre: true } },
+        project: { select: { id: true, code: true, clientName: true } },
+        paymentApplications: { include: { payment: { select: { deletedAt: true } } } },
+        comprobantes: { select: { id: true } },
+      },
+    });
+    const supplierDebtMovementIds = new Set<string>();
+    const comprobantesYaConMovimiento = new Set<string>();
+    for (const m of deudasMovements) {
+      if (!m.supplier || !m.dueDate) continue;
+      const pagado = m.paymentApplications
+        .filter((a) => !a.payment.deletedAt)
+        .reduce((s, a) => s + Number(a.montoAplicado), 0);
+      const saldo = Number(m.monto) - pagado;
+      if (saldo <= 0.005) continue;
+      supplierDebtMovementIds.add(m.id);
+      for (const c of m.comprobantes) comprobantesYaConMovimiento.add(c.id);
+      const fechaIso = serializeDateNonNull(m.dueDate);
+      const descripcion = m.invoiceNumber
+        ? `Factura ${m.invoiceNumber} — ${m.supplier.nombre}`
+        : `${m.descripcion} — ${m.supplier.nombre}`;
+      items.push({
+        id: `supplier-invoice-${m.id}`,
+        sourceType: "SUPPLIER_DEBT",
+        sourceId: m.id,
+        fecha: fechaIso,
+        descripcion,
+        categoria: "PAGO_PROVEEDOR",
+        tipoMovimiento: "GASTO",
+        monto: saldo,
+        moneda: m.moneda,
+        project: m.project,
+        supplier: m.supplier,
+        fixedCost: null,
+        isOverdue: m.dueDate < now,
+      });
+    }
+
+    // 3b) Legacy: FinanceComprobante PENDIENTE/PARCIALMENTE_PAGADO sin movement
+    // espejo. Sigue funcionando para datos viejos pero no se crean nuevos.
     const facturas = await prisma.financeComprobante.findMany({
       where: {
         tipo: TipoComprobante.FACTURA,
@@ -15319,6 +15433,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
     for (const f of facturas) {
       if (!f.supplier) continue;
+      if (comprobantesYaConMovimiento.has(f.id)) continue;
       const pagado = f.pagos.reduce((s, p) => s + Number(p.monto), 0);
       const saldo = Number(f.monto) - pagado;
       if (saldo <= 0.005) continue;
