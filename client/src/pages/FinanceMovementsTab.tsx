@@ -51,6 +51,7 @@ const CATEGORIA_BADGE: Record<CategoriaPrincipal, string> = {
   PROYECTO_SALIDA: "bg-red-500/15 text-red-400",
   COMPRA_STOCK: "bg-blue-500/15 text-blue-400",
   CONSUMO_STOCK: "bg-blue-500/15 text-blue-400",
+  TRANSFERENCIA: "bg-indigo-500/15 text-indigo-400",
   OTRO: "bg-zinc-500/15 text-zinc-300",
 };
 

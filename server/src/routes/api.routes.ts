@@ -15129,7 +15129,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
   // ─── Pendientes (fuente única de compromisos a pagar) ────────────────────
 
-  type PendingItemSourceType = "FIXED_COST" | "PROJECT_MATERIAL" | "SUPPLIER_DEBT" | "COMMITTED_EXPENSE";
+  type PendingItemSourceType =
+    | "FIXED_COST"
+    | "PROJECT_MATERIAL"
+    | "SUPPLIER_DEBT"
+    | "COMMITTED_EXPENSE"
+    | "MANUAL_PENDING";
   type PendingItem = {
     id: string;
     sourceType: PendingItemSourceType;
@@ -15137,6 +15142,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     fecha: string;
     descripcion: string;
     categoria: string;
+    tipoMovimiento: "INGRESO" | "GASTO";
     monto: number;
     moneda: Moneda;
     project: { id: string; clientName: string; code: string } | null;
@@ -15144,8 +15150,38 @@ export async function registerApiRoutes(app: FastifyInstance) {
     fixedCost: { id: string; nombre: string; periodicidad: FixedCostPeriodicity } | null;
     isOverdue: boolean;
   };
+  type ProjectMaterialItem = {
+    id: string;
+    sourceId: string;
+    materialNombre: string;
+    quantity: number;
+    unitPrice: number;
+    monto: number;
+    moneda: Moneda;
+    fecha: string;
+    isOverdue: boolean;
+  };
+  type ProjectMaterialCategoria = {
+    categoria: string;
+    totalAmount: number;
+    items: ProjectMaterialItem[];
+  };
+  type ProjectMaterialGroup = {
+    projectId: string;
+    clientName: string;
+    projectCode: string;
+    totalAmount: number;
+    moneda: Moneda;
+    earliestDate: string;
+    overdueCount: number;
+    categorias: ProjectMaterialCategoria[];
+  };
+  type PendingResponse = {
+    items: PendingItem[];
+    projectMaterialGroups: ProjectMaterialGroup[];
+  };
 
-  async function getPendingItemsCore(now: Date): Promise<PendingItem[]> {
+  async function getPendingItemsCore(now: Date): Promise<PendingResponse> {
     const items: PendingItem[] = [];
 
     // 1) Costos fijos pendientes del mes en curso (mensual / bimensual / anual).
@@ -15167,8 +15203,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
         select: { id: true },
       });
       if (alreadyPaid) continue;
-      // Si el usuario salteó explícitamente este mes desde Pendientes, tampoco
-      // aparece.
       const skipped = await prisma.fixedCostSkip.findUnique({
         where: { fixedCostId_mes_anio: { fixedCostId: fc.id, mes, anio } },
         select: { id: true },
@@ -15188,6 +15222,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         fecha: serializeDateNonNull(fecha),
         descripcion: fc.nombre,
         categoria: "FIJO",
+        tipoMovimiento: "GASTO",
         monto: lastPayment ? Number(lastPayment.monto) : Number(fc.montoReferencia),
         moneda: fc.moneda,
         project: null,
@@ -15197,7 +15232,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       });
     }
 
-    // 2) Materiales proyectados (ProjectMaterial.expectedDate, sin movement).
+    // 2) Materiales proyectados — agrupados por proyecto > categoría.
     const pms = await prisma.projectMaterial.findMany({
       where: {
         expectedDate: { not: null },
@@ -15205,26 +15240,68 @@ export async function registerApiRoutes(app: FastifyInstance) {
         project: { deletedAt: null },
       },
       include: {
-        materialItem: { select: { nombre: true, category: { select: { nombre: true } } } },
+        materialItem: {
+          select: {
+            nombre: true,
+            category: { select: { nombre: true, orden: true } },
+          },
+        },
         project: { select: { id: true, code: true, clientName: true } },
       },
+      orderBy: [{ expectedDate: "asc" }, { createdAt: "asc" }],
     });
+    const groupsMap = new Map<string, ProjectMaterialGroup>();
     for (const pm of pms) {
       const fecha = pm.expectedDate as Date;
-      items.push({
+      const fechaIso = serializeDateNonNull(fecha);
+      const monto = Number(pm.quantity) * Number(pm.unitPrice);
+      const isOverdue = fecha < now;
+      const catNombre = pm.materialItem.category?.nombre ?? "Otros";
+
+      // Clave: projectId|moneda — proyectos con materiales en USD y UYU
+      // simultáneamente quedan en dos grupos (raro pero correcto).
+      const key = `${pm.project.id}|${pm.moneda}`;
+      let g = groupsMap.get(key);
+      if (!g) {
+        g = {
+          projectId: pm.project.id,
+          clientName: pm.project.clientName,
+          projectCode: pm.project.code,
+          totalAmount: 0,
+          moneda: pm.moneda,
+          earliestDate: fechaIso,
+          overdueCount: 0,
+          categorias: [],
+        };
+        groupsMap.set(key, g);
+      }
+      let cat = g.categorias.find((c) => c.categoria === catNombre);
+      if (!cat) {
+        cat = { categoria: catNombre, totalAmount: 0, items: [] };
+        g.categorias.push(cat);
+      }
+      cat.items.push({
         id: `material-${pm.id}`,
-        sourceType: "PROJECT_MATERIAL",
         sourceId: pm.id,
-        fecha: serializeDateNonNull(fecha),
-        descripcion: `${pm.materialItem.category?.nombre ?? "Material"} — ${pm.materialItem.nombre}`,
-        categoria: "PROYECTO_SALIDA",
-        monto: Number(pm.quantity) * Number(pm.unitPrice),
+        materialNombre: pm.materialItem.nombre,
+        quantity: Number(pm.quantity),
+        unitPrice: Number(pm.unitPrice),
+        monto,
         moneda: pm.moneda,
-        project: pm.project,
-        supplier: null,
-        fixedCost: null,
-        isOverdue: fecha < now,
+        fecha: fechaIso,
+        isOverdue,
       });
+      cat.totalAmount += monto;
+      g.totalAmount += monto;
+      if (isOverdue) g.overdueCount += 1;
+      if (fechaIso < g.earliestDate) g.earliestDate = fechaIso;
+    }
+    const projectMaterialGroups = Array.from(groupsMap.values()).sort((a, b) =>
+      a.earliestDate.localeCompare(b.earliestDate),
+    );
+    // Categorías dentro de cada grupo ordenadas por monto desc (más caro primero).
+    for (const g of projectMaterialGroups) {
+      g.categorias.sort((a, b) => b.totalAmount - a.totalAmount);
     }
 
     // 3) Deuda a proveedores: facturas con saldo pendiente.
@@ -15254,6 +15331,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         fecha: serializeDateNonNull(fecha),
         descripcion: `Factura ${numero} — ${f.supplier.nombre}`,
         categoria: "PAGO_PROVEEDOR",
+        tipoMovimiento: "GASTO",
         monto: saldo,
         moneda: f.moneda,
         project: f.movimiento?.project ?? null,
@@ -15281,6 +15359,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         fecha: serializeDateNonNull(fecha),
         descripcion: c.descripcion,
         categoria: c.categoriaPrincipal,
+        tipoMovimiento: c.tipoMovimiento === "INGRESO" ? "INGRESO" : "GASTO",
         monto: Number(c.monto),
         moneda: c.moneda,
         project: c.project,
@@ -15290,13 +15369,101 @@ export async function registerApiRoutes(app: FastifyInstance) {
       });
     }
 
-    return items.sort((a, b) => a.fecha.localeCompare(b.fecha));
+    // 5) MANUAL_PENDING — PREVISTOs creados manualmente desde Pendientes o desde
+    // el modal de cobro del proyecto (status PREVISTO + sourceType MANUAL).
+    // Cubre tanto gastos previstos (ingresos con sourceType MANUAL también).
+    const manualPrevistos = await prisma.financeMovement.findMany({
+      where: {
+        status: FinanceMovementStatus.PREVISTO,
+        sourceType: MovementSourceType.MANUAL,
+        deletedAt: null,
+      },
+      include: { project: { select: { id: true, code: true, clientName: true } } },
+    });
+    for (const m of manualPrevistos) {
+      const fecha = m.dueDate ?? m.expectedDate ?? m.fecha;
+      items.push({
+        id: `manual-${m.id}`,
+        sourceType: "MANUAL_PENDING",
+        sourceId: m.id,
+        fecha: serializeDateNonNull(fecha),
+        descripcion: m.descripcion,
+        categoria: m.categoriaPrincipal,
+        tipoMovimiento: m.tipoMovimiento === "INGRESO" ? "INGRESO" : "GASTO",
+        monto: Number(m.monto),
+        moneda: m.moneda,
+        project: m.project,
+        supplier: null,
+        fixedCost: null,
+        isOverdue: fecha < now,
+      });
+    }
+
+    items.sort((a, b) => a.fecha.localeCompare(b.fecha));
+    return { items, projectMaterialGroups };
   }
 
   app.get("/finance/pending", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async () => {
     const now = todayUtc();
-    const items = await getPendingItemsCore(now);
-    return { items, generatedAt: serializeDateNonNull(now) };
+    const { items, projectMaterialGroups } = await getPendingItemsCore(now);
+    return { items, projectMaterialGroups, generatedAt: serializeDateNonNull(now) };
+  });
+
+  // Crear un pendiente manual (PREVISTO + MANUAL). Soporta GASTO o INGRESO.
+  app.post("/finance/pending", { preHandler: authorize(Module.FINANZAS, Action.CREATE) }, async (request, reply) => {
+    const user = ensureUser(request);
+    const body = z
+      .object({
+        tipoMovimiento: z.enum(["INGRESO", "GASTO"]),
+        descripcion: z.string().min(1).max(200),
+        monto: z.coerce.number().positive(),
+        moneda: z.nativeEnum(Moneda),
+        categoriaPrincipal: z.nativeEnum(CategoriaPrincipal),
+        fechaEsperada: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        projectId: z.string().nullable().optional(),
+      })
+      .parse(request.body);
+
+    if (body.tipoMovimiento === "INGRESO" && !body.projectId) {
+      throw badRequest(
+        "PROJECT_REQUIRED",
+        "Los cobros previstos (ingresos) deben asociarse a un proyecto.",
+      );
+    }
+
+    const fecha = parseDateOnly(body.fechaEsperada);
+    const created = await prisma.financeMovement.create({
+      data: {
+        tipoMovimiento: body.tipoMovimiento as TipoMovimiento,
+        categoriaPrincipal: body.categoriaPrincipal,
+        status: FinanceMovementStatus.PREVISTO,
+        sourceType: MovementSourceType.MANUAL,
+        descripcion: body.descripcion.trim(),
+        monto: new Prisma.Decimal(body.monto),
+        moneda: body.moneda,
+        fecha,
+        dueDate: fecha,
+        expectedDate: fecha,
+        mes: fecha.getUTCMonth() + 1,
+        anio: fecha.getUTCFullYear(),
+        impactaFlujo: true,
+        estadoAprobacion: EstadoAprobacion.REGISTRADO,
+        projectId: body.projectId ?? null,
+        creadoPorId: user.id,
+      },
+    });
+
+    await createAuditEntry({
+      entityType: AuditEntityType.finance_movement,
+      entityId: created.id,
+      projectId: body.projectId ?? null,
+      userId: user.id,
+      action: AuditAction.created,
+      description: `Creó pendiente manual ${body.tipoMovimiento} ${body.moneda} ${body.monto.toFixed(2)} — ${body.descripcion}`,
+    });
+
+    reply.code(201);
+    return { id: created.id };
   });
 
   // Eliminar un pendiente. La semántica depende del tipo:
@@ -15313,7 +15480,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const params = z
         .object({
-          sourceType: z.enum(["FIXED_COST", "PROJECT_MATERIAL", "SUPPLIER_DEBT", "COMMITTED_EXPENSE"]),
+          sourceType: z.enum([
+            "FIXED_COST",
+            "PROJECT_MATERIAL",
+            "SUPPLIER_DEBT",
+            "COMMITTED_EXPENSE",
+            "MANUAL_PENDING",
+          ]),
           sourceId: z.string().min(1),
         })
         .parse(request.params);
@@ -15349,7 +15522,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         return;
       }
 
-      if (params.sourceType === "COMMITTED_EXPENSE") {
+      if (params.sourceType === "COMMITTED_EXPENSE" || params.sourceType === "MANUAL_PENDING") {
         await prisma.financeMovement.update({
           where: { id: params.sourceId },
           data: { deletedAt: new Date() },

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Check, ChevronDown, Search, X } from "lucide-react";
 
-import { getProjects, type ProjectListItem } from "../../api/projects.api";
+import { getProjects } from "../../api/projects.api";
+import type { ProjectListItem } from "../../types/api.types";
 
 const baseInput =
   "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]";

@@ -2,6 +2,18 @@
 
 ## v5.4
 
+### 11 de mayo de 2026 (segunda parte)
+
+#### Finanzas — Pendientes: agrupación por proyecto y manuales
+
+Tres mejoras a la pestaña **Pendientes** para que sea más prolija y más útil:
+
+- **Materiales proyectados agrupados.** Antes los materiales aparecían como una fila por cada ítem (paneles, inversor, cable, etc.), una al lado de la otra, y se mezclaban con los demás pendientes. Ahora se agrupan en una sola tarjeta colapsable con **dos niveles de desplegable**: primero por proyecto (cliente + código) y dentro de cada proyecto por categoría de material (Paneles solares, Inversores, Estructuras, Eléctrica, etc.). Cada nivel muestra su total y la cantidad de ítems vencidos.
+- **"+ Pendiente manual".** Nuevo botón arriba a la derecha del filtro. Sirve para agendar un gasto o un cobro que sabés que viene pero todavía no tiene factura ni movimiento. Toggle Gasto / Cobro, descripción, monto, moneda, fecha esperada y proyecto opcional (obligatorio si es Cobro). Los manuales aparecen con un badge **verde "Pendiente manual"** para distinguirlos de los costos fijos y deudas a proveedores.
+- **Cobros previstos desde un proyecto.** En la ficha de Cobros de cada proyecto, el modal "Registrar cobro" ahora tiene un toggle **Cobrado / Previsto** arriba. Si elegís Previsto, el cobro se agenda como pendiente (no toca cuentas, no impacta el saldo todavía) con fecha esperada. Cuando llegue el dinero, se marca como pagado desde Pendientes.
+
+Además, los pendientes que son ingresos (cobros previstos) se muestran en verde con prefijo `+`, mientras que los gastos siguen en rojo con prefijo `-`. La tira de tarjetas arriba pasó de 4 a **5 totales** (sumando "Pendientes manuales").
+
 ### 11 de mayo de 2026
 
 #### Ventas — Adjuntos en el lead

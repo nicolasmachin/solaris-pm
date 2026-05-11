@@ -229,11 +229,11 @@ function KpiCard({ moneda, data }: { moneda: Moneda; data: { presupuesto: number
 function RegisterCobroModal({ projectId, projectName, onClose }: { projectId: string; projectName: string; onClose: () => void }) {
   const qc = useQueryClient();
   const [form, setForm] = useState({
+    modo: 'COBRADO' as 'COBRADO' | 'PREVISTO',
     descripcion: '',
     fecha: todayLocalISO(),
     monto: '',
     moneda: 'USD' as Moneda,
-    cobrado: true,
     accountId: '',
     observaciones: '',
   });
@@ -247,7 +247,8 @@ function RegisterCobroModal({ projectId, projectName, onClose }: { projectId: st
   const accountsFiltered = accounts.filter(a => a.moneda === form.moneda);
   const monto = Number.parseFloat(form.monto);
   const montoValido = Number.isFinite(monto) && monto > 0;
-  const requiereCuenta = form.cobrado;
+  const esPrevisto = form.modo === 'PREVISTO';
+  const requiereCuenta = !esPrevisto;
   const accountInvalida = requiereCuenta && !form.accountId;
 
   const mut = useMutation({
@@ -259,21 +260,24 @@ function RegisterCobroModal({ projectId, projectName, onClose }: { projectId: st
       monto,
       moneda: form.moneda,
       pagado: false,
-      cobrado: form.cobrado,
+      cobrado: !esPrevisto,
       impactaFlujo: true,
-      status: 'PAGADO',
+      status: esPrevisto ? 'PREVISTO' : 'PAGADO',
       estadoAprobacion: 'REGISTRADO',
       proyectoId: projectId,
-      ...(form.cobrado && form.accountId ? { accountId: form.accountId } : {}),
+      ...(esPrevisto ? { dueDate: form.fecha } : {}),
+      ...(!esPrevisto && form.accountId ? { accountId: form.accountId } : {}),
       ...(form.observaciones ? { observaciones: form.observaciones } : {}),
     }),
     onSuccess: () => {
-      toast.success('Cobro registrado');
+      toast.success(esPrevisto ? 'Cobro previsto agendado' : 'Cobro registrado');
       qc.invalidateQueries({ queryKey: ['cobros-by-project'] });
       qc.invalidateQueries({ queryKey: ['accounts'] });
       qc.invalidateQueries({ queryKey: ['account-balance'] });
       qc.invalidateQueries({ queryKey: ['finance-movements'] });
       qc.invalidateQueries({ queryKey: ['finance-invariant-check'] });
+      qc.invalidateQueries({ queryKey: ['finance-pending'] });
+      qc.invalidateQueries({ queryKey: ['finance-cashflow'] });
       onClose();
     },
     onError: (err) => setError(getApiErr(err) ?? 'Error al guardar'),
@@ -294,12 +298,38 @@ function RegisterCobroModal({ projectId, projectName, onClose }: { projectId: st
 
         <div className="p-4 space-y-3">
           <div>
+            <label className="block text-[11px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Tipo *</label>
+            <div className="flex gap-2">
+              {(['COBRADO', 'PREVISTO'] as const).map(m => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setForm({ ...form, modo: m, accountId: m === 'PREVISTO' ? '' : form.accountId })}
+                  className={klass(
+                    'flex-1 px-3 py-2 rounded-lg text-sm border transition-colors',
+                    form.modo === m
+                      ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-text-primary)]'
+                      : 'border-[var(--color-border)] text-[var(--color-text-secondary)]',
+                  )}
+                >
+                  {m === 'COBRADO' ? 'Cobrado' : 'Previsto'}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-[var(--color-text-muted)] mt-1">
+              {esPrevisto
+                ? 'El dinero todavía no entró — se agenda como cobro previsto.'
+                : 'El dinero ya entró a una cuenta — registra el ingreso real.'}
+            </p>
+          </div>
+
+          <div>
             <label className="block text-[11px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Descripción *</label>
             <input
               type="text"
               value={form.descripcion}
               onChange={e => setForm({ ...form, descripcion: e.target.value })}
-              placeholder="Ej: Pago 50% obra"
+              placeholder={esPrevisto ? 'Ej: Anticipo 50% obra' : 'Ej: Pago 50% obra'}
               className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
               autoFocus
             />
@@ -307,11 +337,13 @@ function RegisterCobroModal({ projectId, projectName, onClose }: { projectId: st
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Fecha *</label>
+              <label className="block text-[11px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
+                {esPrevisto ? 'Fecha esperada *' : 'Fecha *'}
+              </label>
               <input
                 type="date"
                 value={form.fecha}
-                max={todayLocalISO()}
+                max={esPrevisto ? undefined : todayLocalISO()}
                 onChange={e => setForm({ ...form, fecha: e.target.value })}
                 className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
               />
@@ -339,17 +371,7 @@ function RegisterCobroModal({ projectId, projectName, onClose }: { projectId: st
             </div>
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.cobrado}
-              onChange={e => setForm({ ...form, cobrado: e.target.checked, accountId: e.target.checked ? form.accountId : '' })}
-              className="accent-[var(--color-accent)]"
-            />
-            <span><strong className="text-[var(--color-text-primary)]">Cobrado</strong> — el dinero ya entró a la cuenta</span>
-          </label>
-
-          {form.cobrado && (
+          {!esPrevisto && (
             <div>
               <label className="block text-[11px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
                 Cuenta donde entró el dinero *

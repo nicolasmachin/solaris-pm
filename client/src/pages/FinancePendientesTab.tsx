@@ -2,25 +2,28 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { ChevronDown, ChevronRight, ExternalLink, Pencil, Trash2, X } from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink, Pencil, Plus, Trash2, X } from "lucide-react";
 
 import {
   deletePendingItem,
   getPendingItems,
   type PendingItem,
   type PendingItemSourceType,
+  type ProjectMaterialGroup,
 } from "../api/pending.api";
 import { fmtCurrency, fmtDate } from "../lib/finance";
 import { getMovement, patchMovement, transitionMovement } from "../api/finance.api";
 import { todayLocalISO } from "../utils/date";
 import type { Moneda } from "../types/finance.types";
 import { ProjectPicker } from "../components/finance/ProjectPicker";
+import { ManualPendingModal } from "../components/finance/ManualPendingModal";
 
 const SOURCE_LABEL: Record<PendingItemSourceType, string> = {
   FIXED_COST: "Costo fijo",
   PROJECT_MATERIAL: "Material proyectado",
   SUPPLIER_DEBT: "Factura proveedor",
   COMMITTED_EXPENSE: "Compromiso manual",
+  MANUAL_PENDING: "Pendiente manual",
 };
 
 const SOURCE_TONE: Record<PendingItemSourceType, string> = {
@@ -28,6 +31,7 @@ const SOURCE_TONE: Record<PendingItemSourceType, string> = {
   PROJECT_MATERIAL: "bg-blue-500/15 text-blue-400",
   SUPPLIER_DEBT: "bg-yellow-500/15 text-yellow-400",
   COMMITTED_EXPENSE: "bg-purple-500/15 text-purple-400",
+  MANUAL_PENDING: "bg-emerald-500/15 text-emerald-400",
 };
 
 export function FinancePendientesTab() {
@@ -44,6 +48,8 @@ export function FinancePendientesTab() {
   const [filtroProveedor, setFiltroProveedor] = useState<string>("");
 
   const items = data?.items ?? [];
+  const projectMaterialGroups = data?.projectMaterialGroups ?? [];
+  const [showManual, setShowManual] = useState(false);
 
   const proyectos = useMemo(() => {
     const m = new Map<string, { id: string; clientName: string; code: string }>();
@@ -64,18 +70,25 @@ export function FinancePendientesTab() {
   });
 
   const totals = useMemo(() => {
-    const t = { FIXED_COST: 0, PROJECT_MATERIAL: 0, SUPPLIER_DEBT: 0, COMMITTED_EXPENSE: 0 };
+    const t = {
+      FIXED_COST: 0,
+      PROJECT_MATERIAL: 0,
+      SUPPLIER_DEBT: 0,
+      COMMITTED_EXPENSE: 0,
+      MANUAL_PENDING: 0,
+    };
     for (const it of items) t[it.sourceType] += it.monto;
+    for (const g of projectMaterialGroups) t.PROJECT_MATERIAL += g.totalAmount;
     return t;
-  }, [items]);
+  }, [items, projectMaterialGroups]);
 
   // Agrupamos los filtrados por sourceType para vista colapsable.
   const groups = useMemo(() => {
     const order: PendingItemSourceType[] = [
       "FIXED_COST",
-      "PROJECT_MATERIAL",
       "SUPPLIER_DEBT",
       "COMMITTED_EXPENSE",
+      "MANUAL_PENDING",
     ];
     return order
       .map((type) => {
@@ -86,6 +99,17 @@ export function FinancePendientesTab() {
       })
       .filter((g) => g.items.length > 0);
   }, [filtered]);
+
+  // Materiales proyectados también respetan filtros (origen + proyecto).
+  const filteredProjectMaterialGroups = useMemo(() => {
+    if (filtroOrigen && filtroOrigen !== "PROJECT_MATERIAL") return [];
+    if (filtroProveedor) return []; // materiales no tienen proveedor
+    return filtroProyecto
+      ? projectMaterialGroups.filter((g) => g.projectId === filtroProyecto)
+      : projectMaterialGroups;
+  }, [projectMaterialGroups, filtroOrigen, filtroProyecto, filtroProveedor]);
+
+  const hasAny = groups.length > 0 || filteredProjectMaterialGroups.length > 0;
 
   const [editingCommittedId, setEditingCommittedId] = useState<string | null>(null);
   // Grupos abiertos. Por defecto: ninguno (vista compacta de categorías).
@@ -140,6 +164,7 @@ export function FinancePendientesTab() {
       PROJECT_MATERIAL: `¿Quitar la fecha esperada del material "${item.descripcion}"? El material queda en el proyecto pero sale de Pendientes y del Flujo de fondos.`,
       SUPPLIER_DEBT: `¿Anular la factura "${item.descripcion}" por ${monto}? Esto la marca como ANULADA en la cuenta del proveedor.`,
       COMMITTED_EXPENSE: `¿Eliminar el compromiso "${item.descripcion}" por ${monto}?`,
+      MANUAL_PENDING: `¿Eliminar el pendiente "${item.descripcion}" por ${monto}?`,
     };
     if (!confirm(messages[item.sourceType])) return;
     deletePendingMut.mutate({ type: item.sourceType, id: item.sourceId });
@@ -184,61 +209,79 @@ export function FinancePendientesTab() {
         facturas a proveedores y otros compromisos (sueldos, comisiones).
       </p>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <Metric label="Costos fijos" value={fmtCurrency(totals.FIXED_COST, "UYU")} />
         <Metric label="Materiales de obras" value={fmtCurrency(totals.PROJECT_MATERIAL, "UYU")} />
         <Metric label="Deuda proveedores" value={fmtCurrency(totals.SUPPLIER_DEBT, "UYU")} />
         <Metric label="Otros compromisos" value={fmtCurrency(totals.COMMITTED_EXPENSE, "UYU")} />
+        <Metric label="Pendientes manuales" value={fmtCurrency(totals.MANUAL_PENDING, "UYU")} />
       </div>
 
-      <div className="flex items-center gap-2 flex-wrap">
-        <select
-          value={filtroOrigen}
-          onChange={(e) => setFiltroOrigen(e.target.value as "" | PendingItemSourceType)}
-          className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+      <div className="flex items-center gap-2 flex-wrap justify-between">
+        <div className="flex items-center gap-2 flex-wrap">
+          <select
+            value={filtroOrigen}
+            onChange={(e) => setFiltroOrigen(e.target.value as "" | PendingItemSourceType)}
+            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+          >
+            <option value="">Todos los tipos</option>
+            <option value="FIXED_COST">Costos fijos</option>
+            <option value="PROJECT_MATERIAL">Materiales de obras</option>
+            <option value="SUPPLIER_DEBT">Deuda proveedores</option>
+            <option value="COMMITTED_EXPENSE">Otros compromisos</option>
+            <option value="MANUAL_PENDING">Pendientes manuales</option>
+          </select>
+          <select
+            value={filtroProyecto}
+            onChange={(e) => setFiltroProyecto(e.target.value)}
+            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+          >
+            <option value="">Todos los proyectos</option>
+            {proyectos.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.code} · {p.clientName}
+              </option>
+            ))}
+          </select>
+          <select
+            value={filtroProveedor}
+            onChange={(e) => setFiltroProveedor(e.target.value)}
+            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+          >
+            <option value="">Todos los proveedores</option>
+            {proveedores.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button
+          onClick={() => setShowManual(true)}
+          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)]"
         >
-          <option value="">Todos los tipos</option>
-          <option value="FIXED_COST">Costos fijos</option>
-          <option value="PROJECT_MATERIAL">Materiales de obras</option>
-          <option value="SUPPLIER_DEBT">Deuda proveedores</option>
-          <option value="COMMITTED_EXPENSE">Otros compromisos</option>
-        </select>
-        <select
-          value={filtroProyecto}
-          onChange={(e) => setFiltroProyecto(e.target.value)}
-          className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
-        >
-          <option value="">Todos los proyectos</option>
-          {proyectos.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.code} · {p.clientName}
-            </option>
-          ))}
-        </select>
-        <select
-          value={filtroProveedor}
-          onChange={(e) => setFiltroProveedor(e.target.value)}
-          className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
-        >
-          <option value="">Todos los proveedores</option>
-          {proveedores.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.nombre}
-            </option>
-          ))}
-        </select>
+          <Plus className="w-4 h-4" /> Pendiente manual
+        </button>
       </div>
 
       {isLoading ? (
         <p className="text-sm text-[var(--color-text-muted)] text-center py-12">Cargando…</p>
-      ) : filtered.length === 0 ? (
+      ) : !hasAny ? (
         <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-12 text-center text-sm text-[var(--color-text-muted)]">
-          {items.length === 0
+          {items.length === 0 && projectMaterialGroups.length === 0
             ? "Sin compromisos pendientes."
             : "Ningún pendiente coincide con los filtros."}
         </div>
       ) : (
         <div className="space-y-2">
+          {/* Sección de materiales proyectados: jerarquía proyecto → categoría → ítems */}
+          {filteredProjectMaterialGroups.length > 0 && (
+            <ProjectMaterialsGroupCard
+              groups={filteredProjectMaterialGroups}
+              expanded={expandedGroups.has("PROJECT_MATERIAL")}
+              onToggle={() => toggleGroup("PROJECT_MATERIAL")}
+            />
+          )}
           {groups.map((g) => {
             const isOpen = expandedGroups.has(g.type);
             return (
@@ -316,6 +359,8 @@ export function FinancePendientesTab() {
         </p>
       )}
 
+      {showManual && <ManualPendingModal onClose={() => setShowManual(false)} />}
+
       {editingCommittedId && (
         <EditCommittedModal
           movementId={editingCommittedId}
@@ -389,8 +434,15 @@ function PendingRow({
       )}
       <td className="px-4 py-3 text-[11px] text-[var(--color-text-secondary)]">{item.categoria}</td>
       <td className="px-4 py-3 text-right tabular-nums">
-        <span className="text-red-400 font-semibold">
-          -{fmtCurrency(item.monto, item.moneda)}
+        <span
+          className={
+            item.tipoMovimiento === "INGRESO"
+              ? "text-green-400 font-semibold"
+              : "text-red-400 font-semibold"
+          }
+        >
+          {item.tipoMovimiento === "INGRESO" ? "+" : "-"}
+          {fmtCurrency(item.monto, item.moneda)}
         </span>
       </td>
       <td className="px-4 py-3 text-right whitespace-nowrap">
@@ -456,6 +508,176 @@ function PendingRow({
         </div>
       </td>
     </tr>
+  );
+}
+
+// ─── Tarjeta de materiales proyectados (proyecto → categoría → ítems) ────
+
+function ProjectMaterialsGroupCard({
+  groups,
+  expanded,
+  onToggle,
+}: {
+  groups: ProjectMaterialGroup[];
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const totalAll = groups.reduce((s, g) => s + g.totalAmount, 0);
+  const overdueAll = groups.reduce((s, g) => s + g.overdueCount, 0);
+  const monedas = new Set(groups.map((g) => g.moneda));
+  const displayMoneda = monedas.size === 1 ? Array.from(monedas)[0] : "UYU";
+
+  return (
+    <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-[var(--color-bg-card-hover)] transition-colors"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          {expanded ? (
+            <ChevronDown className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
+          )}
+          <span
+            className={`text-[10px] font-medium uppercase tracking-wide px-2 py-0.5 rounded ${SOURCE_TONE.PROJECT_MATERIAL}`}
+          >
+            {SOURCE_LABEL.PROJECT_MATERIAL}
+          </span>
+          <span className="text-sm text-[var(--color-text-secondary)] tabular-nums">
+            {groups.length} proyecto{groups.length === 1 ? "" : "s"}
+          </span>
+          {overdueAll > 0 && (
+            <span className="text-[11px] text-red-400 font-medium">
+              · {overdueAll} vencido{overdueAll === 1 ? "" : "s"}
+            </span>
+          )}
+        </div>
+        <span className="text-base font-semibold tabular-nums text-red-400">
+          -{fmtCurrency(totalAll, displayMoneda)}
+        </span>
+      </button>
+
+      {expanded && (
+        <div className="border-t border-[var(--color-border)]">
+          {groups.map((g) => (
+            <ProjectMaterialsProjectRow key={`${g.projectId}-${g.moneda}`} group={g} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProjectMaterialsProjectRow({ group }: { group: ProjectMaterialGroup }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border-t border-[var(--color-border)] first:border-t-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between gap-3 px-4 py-2.5 pl-9 hover:bg-[var(--color-bg-card-hover)] transition-colors"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          {open ? (
+            <ChevronDown className="w-3.5 h-3.5 text-[var(--color-text-muted)] shrink-0" />
+          ) : (
+            <ChevronRight className="w-3.5 h-3.5 text-[var(--color-text-muted)] shrink-0" />
+          )}
+          <span className="text-sm text-[var(--color-text-primary)] font-medium truncate">
+            {group.clientName}
+          </span>
+          <span className="text-[10px] font-mono text-[var(--color-text-muted)]">
+            {group.projectCode}
+          </span>
+          {group.overdueCount > 0 && (
+            <span className="text-[10px] text-red-400 font-medium">
+              · {group.overdueCount} vencido{group.overdueCount === 1 ? "" : "s"}
+            </span>
+          )}
+        </div>
+        <span className="text-sm tabular-nums text-red-400 font-medium">
+          -{fmtCurrency(group.totalAmount, group.moneda)}
+        </span>
+      </button>
+
+      {open && (
+        <div>
+          {group.categorias.map((cat) => (
+            <ProjectMaterialsCategoriaRow
+              key={`${group.projectId}-${cat.categoria}`}
+              categoria={cat}
+              moneda={group.moneda}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProjectMaterialsCategoriaRow({
+  categoria,
+  moneda,
+}: {
+  categoria: ProjectMaterialGroup["categorias"][number];
+  moneda: Moneda;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between gap-3 px-4 py-2 pl-14 border-t border-[var(--color-border)] hover:bg-[var(--color-bg-card-hover)] transition-colors text-xs"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          {open ? (
+            <ChevronDown className="w-3 h-3 text-[var(--color-text-muted)] shrink-0" />
+          ) : (
+            <ChevronRight className="w-3 h-3 text-[var(--color-text-muted)] shrink-0" />
+          )}
+          <span className="text-[var(--color-text-secondary)] truncate">{categoria.categoria}</span>
+          <span className="text-[10px] text-[var(--color-text-muted)]">
+            {categoria.items.length} ítem{categoria.items.length === 1 ? "" : "s"}
+          </span>
+        </div>
+        <span className="tabular-nums text-red-400">
+          -{fmtCurrency(categoria.totalAmount, moneda)}
+        </span>
+      </button>
+
+      {open && (
+        <div className="border-t border-[var(--color-border)] bg-[var(--color-bg-app)]/40">
+          {categoria.items.map((it) => (
+            <div
+              key={it.id}
+              className="flex items-center justify-between gap-3 px-4 py-1.5 pl-20 text-[11px]"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span
+                  className={`tabular-nums ${
+                    it.isOverdue ? "text-red-400" : "text-[var(--color-text-muted)]"
+                  }`}
+                >
+                  {fmtDate(it.fecha)}
+                </span>
+                <span className="text-[var(--color-text-secondary)] truncate">
+                  {it.materialNombre}
+                </span>
+                <span className="text-[var(--color-text-muted)] tabular-nums">
+                  {it.quantity} × {fmtCurrency(it.unitPrice, it.moneda)}
+                </span>
+              </div>
+              <span className="tabular-nums text-red-400">
+                -{fmtCurrency(it.monto, it.moneda)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   );
 }
 
