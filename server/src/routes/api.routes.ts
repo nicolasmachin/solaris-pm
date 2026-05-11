@@ -57,7 +57,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { env } from "../config/env.js";
 import { authenticate } from "../middleware/auth.middleware.js";
-import { authorize, clearPermissionCache } from "../middleware/authorize.middleware.js";
+import { authorize, authorizeAny, clearPermissionCache } from "../middleware/authorize.middleware.js";
 import { createAuditEntriesForChanges, createAuditEntry } from "../services/audit.service.js";
 import { deleteStoredFile, getStoredFilePath, saveUploadedFile } from "../services/file-storage.service.js";
 import { copyLeadAttachmentsToProject } from "../services/sales/sales.service.js";
@@ -10481,22 +10481,27 @@ export async function registerApiRoutes(app: FastifyInstance) {
       lastEditedBy: { select: { id: true, name: true } },
     } as const;
 
-    app.get("/projects/:id/materials", { preHandler: authorize(Module.INGENIERIA, Action.VIEW) }, async (request) => {
+    // Permisos: la lista de materiales es colaborativa entre Ingeniería y
+    // Operaciones — cualquiera de los dos puede ver/editar.
+    const materialPermsView = [
+      { module: Module.INGENIERIA, action: Action.VIEW },
+      { module: Module.OPERACIONES, action: Action.VIEW },
+    ];
+    const materialPermsEdit = [
+      { module: Module.INGENIERIA, action: Action.EDIT },
+      { module: Module.OPERACIONES, action: Action.EDIT },
+    ];
+
+    const ROW_COLOR_VALUES = ["yellow", "green", "blue", "purple", "red", "gray"] as const;
+    const rowColorSchema = z.enum(ROW_COLOR_VALUES).nullable();
+
+    app.get("/projects/:id/materials", { preHandler: authorizeAny(materialPermsView) }, async (request) => {
       const { id } = z.object({ id: z.string() }).parse(request.params);
       const project = await prisma.project.findFirst({ where: { id, deletedAt: null } });
       if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
       const materials = await prisma.projectMaterial.findMany({
         where: { projectId: id },
-        include: {
-          materialItem: {
-            select: {
-              id: true, nombre: true, unidad: true, categoryId: true,
-              category: { select: { id: true, nombre: true, orden: true } },
-            },
-          },
-          supplier: { select: { id: true, nombre: true } },
-          movement: { select: { id: true, status: true, descripcion: true } },
-        },
+        include: projectMaterialInclude,
         orderBy: [{ materialItem: { category: { orden: "asc" } } }, { materialItem: { nombre: "asc" } }],
       });
       return materials.map(serializeProjectMaterial);
@@ -10509,10 +10514,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
       moneda: z.nativeEnum(Moneda).optional(),
       ivaTasa: z.coerce.number().min(0).max(100).optional(),
       supplierId: z.string().nullable().optional(),
-      notes: z.string().optional(),
+      notes: z.string().nullable().optional(),
+      status: z.nativeEnum(MaterialStatus).optional(),
+      crossed: z.boolean().optional(),
+      rowColor: rowColorSchema.optional(),
     }).strict();
 
-    app.post("/projects/:id/materials", { preHandler: authorize(Module.INGENIERIA, Action.EDIT) }, async (request) => {
+    app.post("/projects/:id/materials", { preHandler: authorizeAny(materialPermsEdit) }, async (request) => {
+      const user = ensureUser(request);
       const { id } = z.object({ id: z.string() }).parse(request.params);
       const body = projectMaterialCreateSchema.parse(request.body);
       const project = await prisma.project.findFirst({ where: { id, deletedAt: null } });
@@ -10523,6 +10532,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const moneda = body.moneda ?? item.moneda;
       const ivaTasa = body.ivaTasa ?? item.ivaTasa;
       const supplierId = body.supplierId ?? item.defaultSupplierId ?? null;
+      const now = new Date();
       const created = await prisma.projectMaterial.create({
         data: {
           projectId: id,
@@ -10533,17 +10543,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
           ivaTasa,
           supplierId,
           notes: body.notes,
+          status: body.status ?? MaterialStatus.PENDIENTE,
+          crossed: body.crossed ?? false,
+          rowColor: body.rowColor ?? null,
+          addedById: user.id,
+          lastEditedAt: now,
+          lastEditedById: user.id,
+          lastEditedRole: user.role,
         },
-        include: {
-          materialItem: {
-            select: {
-              id: true, nombre: true, unidad: true, categoryId: true,
-              category: { select: { id: true, nombre: true, orden: true } },
-            },
-          },
-          supplier: { select: { id: true, nombre: true } },
-          movement: { select: { id: true, status: true, descripcion: true } },
-        },
+        include: projectMaterialInclude,
       });
       return serializeProjectMaterial(created);
     });
@@ -10555,30 +10563,31 @@ export async function registerApiRoutes(app: FastifyInstance) {
       ivaTasa: z.coerce.number().min(0).max(100).optional(),
       supplierId: z.string().nullable().optional(),
       notes: z.string().nullable().optional(),
+      status: z.nativeEnum(MaterialStatus).optional(),
+      crossed: z.boolean().optional(),
+      rowColor: rowColorSchema.optional(),
     }).strict();
 
-    app.patch("/projects/:id/materials/:materialId", { preHandler: authorize(Module.INGENIERIA, Action.EDIT) }, async (request) => {
+    app.patch("/projects/:id/materials/:materialId", { preHandler: authorizeAny(materialPermsEdit) }, async (request) => {
+      const user = ensureUser(request);
       const { id, materialId } = z.object({ id: z.string(), materialId: z.string() }).parse(request.params);
       const body = projectMaterialPatchSchema.parse(request.body);
       const existing = await prisma.projectMaterial.findFirst({ where: { id: materialId, projectId: id } });
       if (!existing) throw notFound("PROJECT_MATERIAL_NOT_FOUND", "Material del proyecto no encontrado");
       const updated = await prisma.projectMaterial.update({
-        where: { id: materialId }, data: body,
-        include: {
-          materialItem: {
-            select: {
-              id: true, nombre: true, unidad: true, categoryId: true,
-              category: { select: { id: true, nombre: true, orden: true } },
-            },
-          },
-          supplier: { select: { id: true, nombre: true } },
-          movement: { select: { id: true, status: true, descripcion: true } },
+        where: { id: materialId },
+        data: {
+          ...body,
+          lastEditedAt: new Date(),
+          lastEditedById: user.id,
+          lastEditedRole: user.role,
         },
+        include: projectMaterialInclude,
       });
       return serializeProjectMaterial(updated);
     });
 
-    app.delete("/projects/:id/materials/:materialId", { preHandler: authorize(Module.INGENIERIA, Action.EDIT) }, async (request) => {
+    app.delete("/projects/:id/materials/:materialId", { preHandler: authorizeAny(materialPermsEdit) }, async (request) => {
       const { id, materialId } = z.object({ id: z.string(), materialId: z.string() }).parse(request.params);
       const existing = await prisma.projectMaterial.findFirst({ where: { id: materialId, projectId: id } });
       if (!existing) throw notFound("PROJECT_MATERIAL_NOT_FOUND", "Material del proyecto no encontrado");
