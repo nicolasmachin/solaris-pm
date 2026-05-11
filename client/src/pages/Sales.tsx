@@ -544,14 +544,27 @@ function LeadPanel({
   });
 
   const convertMutation = useMutation({
-    mutationFn: () => convertLead(leadId),
+    mutationFn: async () => {
+      // Si el lead todavía no está en CERRADO_GANADO, primero transicionamos
+      // la etapa. El backend del convert exige que el lead ya esté ganado.
+      if (lead && lead.stage !== WON_STAGE) {
+        await patchLeadStage(leadId, { stage: "CERRADO_GANADO" as SalesStage });
+      }
+      return await convertLead(leadId);
+    },
     onSuccess: (project) => {
-      toast.success("Proyecto creado");
+      const codeStr = (project as { code?: string }).code;
+      toast.success(codeStr ? `Proyecto ${codeStr} creado` : "Proyecto creado");
       queryClient.invalidateQueries({ queryKey: ["lead-detail", leadId] });
       queryClient.invalidateQueries({ queryKey: ["lead-groups"] });
+      setConfirmConvert(false);
       navigate(`/projects/${project.id}`);
     },
-    onError: () => toast.error("No se pudo convertir el lead"),
+    onError: (err) => {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? "No se pudo convertir el lead");
+    },
   });
 
   if (isLoading || !lead) {
@@ -594,19 +607,41 @@ function LeadPanel({
         </div>
 
         {lead.stage === WON_STAGE || lead.stage === LOST_STAGE ? (
-          <div className="mb-5 flex items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
+          <div className="mb-5 flex flex-col items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
             <span className={`rounded-full px-4 py-1.5 text-sm font-semibold ${lead.stage === WON_STAGE ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400"}`}>
               {lead.stage === WON_STAGE ? "✓ Cerrado como Ganado" : "✗ Cerrado como Perdido"}
             </span>
+            {lead.convertedToProject ? (
+              <p className="text-xs text-[var(--color-text-secondary)]">
+                Convertido al proyecto{" "}
+                <button
+                  type="button"
+                  onClick={() => navigate(`/projects/${lead.convertedToProject!.id}`)}
+                  className="font-mono text-[var(--color-accent)] hover:underline"
+                >
+                  {lead.convertedToProject.code} · {lead.convertedToProject.clientName}
+                </button>
+              </p>
+            ) : lead.stage === WON_STAGE ? (
+              <button
+                type="button"
+                onClick={() => convertMutation.mutate()}
+                disabled={convertMutation.isPending}
+                className="text-xs text-[var(--color-accent)] hover:underline disabled:opacity-60"
+              >
+                {convertMutation.isPending ? "Convirtiendo…" : "Convertir a proyecto"}
+              </button>
+            ) : null}
           </div>
         ) : (
           <div className="mb-5 grid grid-cols-2 gap-3">
             <button
               type="button"
               onClick={() => setConfirmConvert(true)}
-              className="flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-500 active:bg-green-700 transition-colors"
+              disabled={convertMutation.isPending}
+              className="flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-500 active:bg-green-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              ✓ Marcar como Ganado
+              ✓ {convertMutation.isPending ? "Procesando…" : "Marcar como Ganado"}
             </button>
             <button
               type="button"
@@ -794,9 +829,10 @@ function LeadPanel({
       {confirmConvert ? (
         <div className="fixed inset-0 z-[96] flex items-center justify-center bg-black/60" onClick={(event) => event.target === event.currentTarget && setConfirmConvert(false)}>
           <div className="w-full max-w-lg rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6">
-            <h3 className="mb-2 font-display text-lg font-bold text-[var(--color-text-primary)]">Convertir lead en proyecto</h3>
+            <h3 className="mb-2 font-display text-lg font-bold text-[var(--color-text-primary)]">Marcar como Ganado y convertir</h3>
             <p className="text-sm text-[var(--color-text-secondary)]">
-              ¿Convertir este lead en proyecto? Se creará automáticamente con todas sus etapas y checklists.
+              El lead pasa a etapa Cerrado como Ganado y se crea automáticamente el proyecto con todas
+              sus etapas, checklists y los adjuntos del lead copiados.
             </p>
             <div className="mt-4 flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setConfirmConvert(false)}>Cancelar</Button>
