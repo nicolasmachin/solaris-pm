@@ -5665,9 +5665,29 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return { success: true };
   });
 
+  const leadConvertBodySchema = z
+    .object({
+      clientName: z.string().min(1).optional(),
+      clientAddress: z.string().nullable().optional(),
+      clientEmail: z.string().email().nullable().optional(),
+      clientPhone: z.string().nullable().optional(),
+      capacityKwp: z.coerce.number().positive().optional(),
+      locationCity: z.string().min(1).optional(),
+      locationProvince: z.string().min(1).optional(),
+      budgetUsd: z.coerce.number().nonnegative().nullable().optional(),
+      plannedEndDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+      startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      modalidadPago: z.nativeEnum(ModalidadPago).nullable().optional(),
+      notificationEmail: z.union([z.string().email(), z.literal("")]).nullable().optional(),
+      notificationPhone: z.string().nullable().optional(),
+    })
+    .strict()
+    .optional();
+
   app.post("/leads/:id/convert", { preHandler: authorize(Module.VENTAS, Action.CREATE) }, async (request) => {
     const user = ensureUser(request);
     const { id } = request.params as { id: string };
+    const body = leadConvertBodySchema.parse(request.body ?? undefined) ?? {};
 
     const lead = await prisma.salesLead.findFirst({
       where: { id, deletedAt: null },
@@ -5685,32 +5705,61 @@ export async function registerApiRoutes(app: FastifyInstance) {
       throw conflict("ALREADY_CONVERTED", "El lead ya fue convertido a proyecto");
     }
 
-    if (!lead.estimatedKwp) {
-      throw badRequest("LEAD_CAPACITY_REQUIRED", "El lead debe tener potencia estimada para convertirse");
+    // Merge: body tiene prioridad sobre lo del lead. Si después de mezclar
+    // todavía faltan los obligatorios, devolvemos un 400 con mensaje claro.
+    const clientName = body.clientName?.trim() || lead.clientName;
+    const clientAddress = body.clientAddress ?? lead.address ?? null;
+    const clientEmail = body.clientEmail ?? lead.clientEmail ?? null;
+    const clientPhone = body.clientPhone ?? lead.clientPhone ?? null;
+    const capacityKwpFinal =
+      body.capacityKwp ?? (lead.estimatedKwp ? decimalToNumber(lead.estimatedKwp) ?? 0 : 0);
+    const locationCity = body.locationCity?.trim() ?? "";
+    const locationProvince = body.locationProvince?.trim() ?? "";
+    const budgetUsdFinal =
+      body.budgetUsd ?? (lead.estimatedBudgetUsd ? decimalToNumber(lead.estimatedBudgetUsd) ?? 0 : 0);
+
+    const missing: string[] = [];
+    if (!clientName) missing.push("nombre del cliente");
+    if (!locationCity) missing.push("ciudad");
+    if (!locationProvince) missing.push("provincia");
+    if (!capacityKwpFinal || capacityKwpFinal <= 0) missing.push("potencia (kWp)");
+    if (missing.length > 0) {
+      throw badRequest(
+        "MISSING_PROJECT_FIELDS",
+        `Faltan datos para crear el proyecto: ${missing.join(", ")}.`,
+      );
     }
 
-    const startDate = todayUtc();
-    const plannedEndDate = new Date(startDate);
-    plannedEndDate.setUTCDate(plannedEndDate.getUTCDate() + 90);
-    const estimatedMwhYear = decimalToNumber(lead.estimatedKwp)! * 1.45;
+    const startDate = body.startDate ? parseDateOnly(body.startDate) : todayUtc();
+    const plannedEndDate = body.plannedEndDate
+      ? parseDateOnly(body.plannedEndDate)
+      : (() => {
+          const d = new Date(startDate);
+          d.setUTCDate(d.getUTCDate() + 90);
+          return d;
+        })();
+    const estimatedMwhYear = capacityKwpFinal * 1.45;
     const code = await generateProjectCode();
 
     const project = await prisma.project.create({
       data: {
         code,
-        clientName: lead.clientName,
-        capacityKwp: lead.estimatedKwp,
-        locationCity: "",
-        locationProvince: "",
+        clientName,
+        capacityKwp: new Prisma.Decimal(capacityKwpFinal),
+        locationCity,
+        locationProvince,
+        clientAddress,
         status: ProjectStatus.ACTIVE,
         startDate,
         plannedEndDate,
-        budgetUsd: lead.estimatedBudgetUsd ?? new Prisma.Decimal(0),
+        budgetUsd: new Prisma.Decimal(budgetUsdFinal),
         executedUsd: new Prisma.Decimal(0),
         estimatedMwhYear: new Prisma.Decimal(estimatedMwhYear.toFixed(2)),
         co2TonsAvoided: new Prisma.Decimal((estimatedMwhYear * 0.5).toFixed(2)),
-        notificationEmail: lead.clientEmail ?? "",
-        notificationPhone: lead.clientPhone ?? "",
+        notificationEmail: (body.notificationEmail ?? clientEmail ?? "") || "",
+        notificationPhone: (body.notificationPhone ?? clientPhone ?? "") || "",
+        modalidadPago: body.modalidadPago ?? null,
+        salespersonId: lead.assignedToId ?? null,
         createdById: user.id,
       },
     });

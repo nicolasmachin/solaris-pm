@@ -18,7 +18,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import {
-  convertLead,
   createLead,
   deleteLead,
   generateProposal,
@@ -32,6 +31,7 @@ import {
 import { getUsers } from "../api/users.api";
 import { CommentThread } from "../components/comments/CommentThread";
 import { LeadAttachments } from "../components/sales/LeadAttachments";
+import { LeadToProjectModal } from "../components/sales/LeadToProjectModal";
 import { usePermission } from "../hooks/usePermission";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -444,6 +444,7 @@ function LeadPanel({
   const [lostReason, setLostReason] = useState("");
   const [pendingStage, setPendingStage] = useState<SalesStage | null>(null);
   const [confirmConvert, setConfirmConvert] = useState(false);
+  const [showConversionModal, setShowConversionModal] = useState(false);
   const [dates, setDates] = useState({ proposalSentAt: "", visitScheduledAt: "", visitCompletedAt: "", closedAt: "" });
 
   const { data: lead, isLoading } = useQuery({
@@ -543,27 +544,24 @@ function LeadPanel({
     onError: () => toast.error("No se pudo cambiar la etapa"),
   });
 
-  const convertMutation = useMutation({
+  // Sólo cambia la etapa a CERRADO_GANADO. La creación del proyecto pasa
+  // por el modal LeadToProjectModal, que pide los datos que falten.
+  const markAsWonMutation = useMutation({
     mutationFn: async () => {
-      // Si el lead todavía no está en CERRADO_GANADO, primero transicionamos
-      // la etapa. El backend del convert exige que el lead ya esté ganado.
       if (lead && lead.stage !== WON_STAGE) {
         await patchLeadStage(leadId, { stage: "CERRADO_GANADO" as SalesStage });
       }
-      return await convertLead(leadId);
     },
-    onSuccess: (project) => {
-      const codeStr = (project as { code?: string }).code;
-      toast.success(codeStr ? `Proyecto ${codeStr} creado` : "Proyecto creado");
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lead-detail", leadId] });
       queryClient.invalidateQueries({ queryKey: ["lead-groups"] });
       setConfirmConvert(false);
-      navigate(`/projects/${project.id}`);
+      setShowConversionModal(true);
     },
     onError: (err) => {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(msg ?? "No se pudo convertir el lead");
+      toast.error(msg ?? "No se pudo cambiar la etapa");
     },
   });
 
@@ -625,11 +623,10 @@ function LeadPanel({
             ) : lead.stage === WON_STAGE ? (
               <button
                 type="button"
-                onClick={() => convertMutation.mutate()}
-                disabled={convertMutation.isPending}
-                className="text-xs text-[var(--color-accent)] hover:underline disabled:opacity-60"
+                onClick={() => setShowConversionModal(true)}
+                className="text-xs text-[var(--color-accent)] hover:underline"
               >
-                {convertMutation.isPending ? "Convirtiendo…" : "Convertir a proyecto"}
+                Convertir a proyecto
               </button>
             ) : null}
           </div>
@@ -638,10 +635,10 @@ function LeadPanel({
             <button
               type="button"
               onClick={() => setConfirmConvert(true)}
-              disabled={convertMutation.isPending}
+              disabled={markAsWonMutation.isPending}
               className="flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-500 active:bg-green-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              ✓ {convertMutation.isPending ? "Procesando…" : "Marcar como Ganado"}
+              ✓ {markAsWonMutation.isPending ? "Procesando…" : "Marcar como Ganado"}
             </button>
             <button
               type="button"
@@ -829,19 +826,26 @@ function LeadPanel({
       {confirmConvert ? (
         <div className="fixed inset-0 z-[96] flex items-center justify-center bg-black/60" onClick={(event) => event.target === event.currentTarget && setConfirmConvert(false)}>
           <div className="w-full max-w-lg rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6">
-            <h3 className="mb-2 font-display text-lg font-bold text-[var(--color-text-primary)]">Marcar como Ganado y convertir</h3>
+            <h3 className="mb-2 font-display text-lg font-bold text-[var(--color-text-primary)]">Marcar como Ganado</h3>
             <p className="text-sm text-[var(--color-text-secondary)]">
-              El lead pasa a etapa Cerrado como Ganado y se crea automáticamente el proyecto con todas
-              sus etapas, checklists y los adjuntos del lead copiados.
+              El lead pasa a etapa Cerrado como Ganado. Después vas a poder completar los datos
+              que falten para crear el proyecto (ciudad, provincia, potencia, presupuesto).
             </p>
             <div className="mt-4 flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setConfirmConvert(false)}>Cancelar</Button>
-              <Button loading={convertMutation.isPending} onClick={() => convertMutation.mutate()}>
+              <Button loading={markAsWonMutation.isPending} onClick={() => markAsWonMutation.mutate()}>
                 Confirmar
               </Button>
             </div>
           </div>
         </div>
+      ) : null}
+
+      {showConversionModal ? (
+        <LeadToProjectModal
+          leadId={lead.id}
+          onClose={() => setShowConversionModal(false)}
+        />
       ) : null}
 
       {showProposalModal ? <ProposalModal leadId={lead.id} onClose={() => setShowProposalModal(false)} /> : null}

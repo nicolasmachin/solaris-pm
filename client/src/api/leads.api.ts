@@ -61,6 +61,27 @@ export async function patchLeadStage(
   await api.patch(`/api/leads/${id}/stage`, body);
 }
 
+export interface ConvertLeadBody {
+  clientName?: string;
+  clientAddress?: string | null;
+  clientEmail?: string | null;
+  clientPhone?: string | null;
+  capacityKwp?: number;
+  locationCity?: string;
+  locationProvince?: string;
+  budgetUsd?: number | null;
+  plannedEndDate?: string | null;
+  startDate?: string;
+  modalidadPago?: "DIRECTO_50_50" | "FINANCIACION_BANCARIA" | null;
+  notificationEmail?: string | null;
+  notificationPhone?: string | null;
+}
+
+export async function convertLeadWithBody(id: string, body: ConvertLeadBody): Promise<Project> {
+  const { data } = await api.post<Project>(`/api/leads/${id}/convert`, body);
+  return data;
+}
+
 export async function convertLead(id: string): Promise<Project> {
   const { data } = await api.post<Project>(`/api/leads/${id}/convert`);
   return data;
