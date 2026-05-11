@@ -1,6 +1,33 @@
-FROM node:20-alpine
+FROM node:20-bookworm-slim
 
-RUN apk add --no-cache openssl
+# Dependencias del sistema:
+# - openssl: requerido por Prisma
+# - python3 + venv + pip: generador de propuestas comerciales (PDF)
+# - libfreetype6 + libjpeg62-turbo: necesarios por matplotlib/Pillow runtime
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+       openssl \
+       ca-certificates \
+       python3 \
+       python3-venv \
+       python3-pip \
+       libfreetype6 \
+       libjpeg62-turbo \
+       libpng16-16 \
+  && rm -rf /var/lib/apt/lists/*
+
+# Virtualenv aislado para el generador de propuestas. Vivir fuera de /app
+# evita que el bind mount del dev compose lo borre.
+RUN python3 -m venv /opt/proposal-venv \
+  && /opt/proposal-venv/bin/pip install --no-cache-dir --upgrade pip \
+  && /opt/proposal-venv/bin/pip install --no-cache-dir \
+       reportlab==4.0.7 \
+       PyPDF2==3.0.1 \
+       matplotlib==3.8.2 \
+       pandas==2.1.4 \
+       openpyxl==3.1.2
+
+ENV PROPOSAL_PYTHON=/opt/proposal-venv/bin/python3
 
 WORKDIR /app
 

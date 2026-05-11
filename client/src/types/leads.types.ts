@@ -69,10 +69,13 @@ export interface LeadActivity {
 
 export interface LeadProposal {
   id: string;
+  version: number;
   status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
   inputFilePath?: string | null;
   outputFilePath?: string | null;
   errorMessage?: string | null;
+  attachmentId?: string | null;
+  completedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   downloadUrl?: string | null;

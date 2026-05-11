@@ -2,6 +2,19 @@
 
 ## v5.4
 
+### 11 de mayo de 2026 (cuarta parte)
+
+#### Ventas — Generador de propuesta comercial integrado
+
+El generador de propuesta comercial en PDF que antes corría a mano en la PC del vendedor ahora vive dentro de Voltia PM. Desde la ficha del lead, subís el Excel CALCULADORA y la propuesta queda lista en segundos como un PDF descargable.
+
+- Botón **"Generar propuesta comercial"** en la sección Propuestas del lead.
+- Modal con upload del Excel + indicador de progreso en vivo (Pendiente → Procesando → Completado).
+- El servidor corre el script Python en background (sin bloquear la UI) y genera el PDF con los gráficos de generación mensual y retorno de inversión a partir de los datos de la hoja CALCULADORA.
+- **Versionado automático** por lead: la primera generación queda como **v1**, la siguiente **v2**, y así sucesivamente. Cada versión se conserva — no se pisan.
+- El PDF generado también aparece en la sección **Adjuntos del lead**, con el nombre *"Propuesta Comercial Voltia - {Cliente} v{N}.pdf"*, así se puede descargar desde ahí o desde la sección Propuestas.
+- Si el Excel no tiene una hoja "CALCULADORA" o falla por cualquier otro motivo, el estado de la propuesta queda como **Falló** y muestra el error puntual.
+
 ### 11 de mayo de 2026 (tercera parte)
 
 #### Finanzas — Cargar facturas a pagar a proveedor

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import fs, { promises as fsPromises } from "node:fs";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 import bcrypt from "bcryptjs";
@@ -920,6 +921,20 @@ async function saveProposalInputFile(file: import("@fastify/multipart").Multipar
   return absolutePath;
 }
 
+// Path absoluto al script Python headless. Vive bajo server/scripts/ y se
+// resuelve relativo al archivo actual para que ande dentro de Docker (cwd=/app)
+// y en dev local (cwd=server/). Cualquier setting "PROPOSAL_SCRIPT_PATH" queda
+// deprecado e ignorado.
+const proposalScriptPath = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "..",
+  "scripts",
+  "proposal-generator",
+  "generate_proposal.py",
+);
+const proposalPythonBin = process.env.PROPOSAL_PYTHON ?? "python3";
+
 async function processProposalGeneration(params: {
   proposalId: string;
   generatedById: string;
@@ -927,44 +942,20 @@ async function processProposalGeneration(params: {
 }) {
   const proposal = await prisma.proposalGeneration.findUnique({
     where: { id: params.proposalId },
+    include: { lead: { select: { id: true, clientName: true } } },
   });
 
   if (!proposal) {
     return;
   }
 
-  const resolvedSettings = await resolveSettings({
-    userId: params.generatedById,
-    projectId: params.projectId ?? null,
-  });
-  const scriptPath = resolvedSettings.PROPOSAL_SCRIPT_PATH?.trim();
-
-  if (!scriptPath) {
-    await prisma.proposalGeneration.update({
-      where: { id: params.proposalId },
-      data: {
-        status: "FAILED",
-        errorMessage: "Script de propuesta no configurado. Ir a Configuración.",
-      },
-    });
-
-    await createAuditEntry({
-      entityType: AuditEntityType.proposal,
-      entityId: params.proposalId,
-      projectId: params.projectId ?? null,
-      userId: params.generatedById,
-      action: AuditAction.updated,
-      fieldChanged: "status",
-      oldValue: proposal.status,
-      newValue: "FAILED",
-      description: "Falló la generación de propuesta por falta de script configurado",
-    });
-
-    return;
-  }
-
-  const extension = path.extname(proposal.inputFilePath ?? ".xlsx").toLowerCase() || ".xlsx";
-  const outputPath = path.resolve(process.cwd(), "..", env.storagePath, "proposals", `${randomUUID()}_output.pdf`);
+  const outputPath = path.resolve(
+    process.cwd(),
+    "..",
+    env.storagePath,
+    "proposals",
+    `${randomUUID()}_output.pdf`,
+  );
 
   await prisma.proposalGeneration.update({
     where: { id: params.proposalId },
@@ -975,13 +966,50 @@ async function processProposalGeneration(params: {
   });
 
   try {
-    await execFileAsync("python3", [scriptPath, proposal.inputFilePath ?? "", outputPath]);
+    await execFileAsync(
+      proposalPythonBin,
+      [proposalScriptPath, proposal.inputFilePath ?? "", outputPath],
+      { timeout: 120_000 },
+    );
+
+    const stats = await fsPromises.stat(outputPath).catch(() => null);
+    if (!stats) {
+      throw new Error("El script terminó pero no se encontró el PDF generado");
+    }
+
+    // Si la propuesta es de un lead, crear un FileAttachment para que aparezca
+    // en la sección "Adjuntos" del lead. Es soft-link al mismo archivo en disco.
+    let attachmentId: string | null = null;
+    if (proposal.leadId && proposal.lead) {
+      const clientName = proposal.lead.clientName?.trim() || "Cliente";
+      const fileName = `Propuesta Comercial Voltia - ${clientName} v${proposal.version}.pdf`;
+      const storedFilename = path.basename(outputPath);
+      const url = `proposals/${storedFilename}`;
+      const attachment = await prisma.fileAttachment.create({
+        data: {
+          leadId: proposal.leadId,
+          filename: fileName,
+          storedFilename,
+          mimeType: "application/pdf",
+          sizeBytes: stats.size,
+          url,
+          tipo: "OTRO",
+          toolSource: "ProposalGenerator",
+          toolVersion: proposal.version,
+          toolEntityId: proposal.id,
+          uploadedById: params.generatedById,
+        },
+      });
+      attachmentId = attachment.id;
+    }
 
     await prisma.proposalGeneration.update({
       where: { id: params.proposalId },
       data: {
         status: "COMPLETED",
         outputFilePath: outputPath,
+        attachmentId,
+        completedAt: new Date(),
         errorMessage: null,
       },
     });
@@ -1000,7 +1028,7 @@ async function processProposalGeneration(params: {
       projectId: params.projectId ?? null,
       userId: params.generatedById,
       action: AuditAction.proposal_generated,
-      description: `Generó propuesta comercial automáticamente (${extension})`,
+      description: `Generó propuesta comercial v${proposal.version}`,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "No se pudo ejecutar el script de propuesta";
@@ -1010,6 +1038,7 @@ async function processProposalGeneration(params: {
       data: {
         status: "FAILED",
         errorMessage: message,
+        completedAt: new Date(),
       },
     });
 
@@ -5488,10 +5517,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
       })),
       proposals: lead.proposals.map((proposal) => ({
         id: proposal.id,
+        version: proposal.version,
         status: proposal.status,
         inputFilePath: proposal.inputFilePath,
         outputFilePath: proposal.outputFilePath,
         errorMessage: proposal.errorMessage,
+        attachmentId: proposal.attachmentId,
+        completedAt: proposal.completedAt ? serializeDate(proposal.completedAt) : null,
         createdAt: serializeDate(proposal.createdAt),
         updatedAt: serializeDate(proposal.updatedAt),
       })),
@@ -5923,10 +5955,23 @@ export async function registerApiRoutes(app: FastifyInstance) {
       await findProjectOrThrow(projectId);
     }
 
+    // Calcular versión incremental por lead. Para proyectos sin lead (uso poco
+    // común) la versión queda en 1 — no usamos versionado por proyecto hoy.
+    let nextVersion = 1;
+    if (leadId) {
+      const previous = await prisma.proposalGeneration.findFirst({
+        where: { leadId },
+        orderBy: { version: "desc" },
+        select: { version: true },
+      });
+      nextVersion = (previous?.version ?? 0) + 1;
+    }
+
     const proposal = await prisma.proposalGeneration.create({
       data: {
         leadId,
         projectId,
+        version: nextVersion,
         inputFilePath: uploadedFilePath,
         status: "PENDING",
         generatedById: user.id,
@@ -5964,8 +6009,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     return {
       id: proposal.id,
+      version: proposal.version,
       status: proposal.status,
       errorMessage: proposal.errorMessage,
+      attachmentId: proposal.attachmentId,
+      completedAt: proposal.completedAt ? serializeDate(proposal.completedAt) : null,
       createdAt: serializeDate(proposal.createdAt),
       updatedAt: serializeDate(proposal.updatedAt),
       downloadUrl: proposal.status === "COMPLETED" ? `/api/proposals/${proposal.id}/download` : null,
@@ -6014,8 +6062,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     return proposals.map((proposal) => ({
       id: proposal.id,
+      version: proposal.version,
       status: proposal.status,
       errorMessage: proposal.errorMessage,
+      attachmentId: proposal.attachmentId,
+      completedAt: proposal.completedAt ? serializeDate(proposal.completedAt) : null,
       createdAt: serializeDate(proposal.createdAt),
       updatedAt: serializeDate(proposal.updatedAt),
       downloadUrl: proposal.status === "COMPLETED" ? `/api/proposals/${proposal.id}/download` : null,

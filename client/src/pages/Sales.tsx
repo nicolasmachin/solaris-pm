@@ -759,7 +759,9 @@ function LeadPanel({
                 <div key={proposal.id} className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] p-3">
                   <div className="flex items-center justify-between gap-2">
                     <div>
-                      <p className="text-sm text-[var(--color-text-primary)]">{formatRelative(proposal.createdAt)}</p>
+                      <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                        v{proposal.version} <span className="font-normal text-[var(--color-text-secondary)]">· {formatRelative(proposal.createdAt)}</span>
+                      </p>
                       <p className="font-mono text-[10px] text-[var(--color-text-muted)]">{proposal.id}</p>
                     </div>
                     <Badge variant="default" label={proposal.status} />

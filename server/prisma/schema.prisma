@@ -1,5 +1,8 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // "native" cubre macOS dev local; los Linux targets cubren el container.
+  // bookworm-slim usa glibc (linux-arm64 / linux-x64), no musl.
+  binaryTargets = ["native", "linux-arm64-openssl-3.0.x", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -737,6 +740,7 @@ model FileAttachment {
   preIngenieriaFotos     PreIngenieriaFoto[]
   preIngenieriaMinutaFor PreIngenieriaVersion[]  @relation("MinutaSource")
   efpAttachments         EFPAttachment[]         @relation("EFPAttachmentFile")
+  proposalGenerations    ProposalGeneration[]    @relation("ProposalAttachment")
   deletedAt      DateTime?           @db.Timestamptz(6)
   createdAt      DateTime            @default(now()) @db.Timestamptz(6)
 
@@ -950,19 +954,28 @@ model Goal {
 }
 
 model ProposalGeneration {
-  id             String         @id @default(cuid())
+  id             String          @id @default(cuid())
   leadId         String?
-  lead           SalesLead?     @relation("ProposalLead", fields: [leadId], references: [id], onDelete: SetNull)
+  lead           SalesLead?      @relation("ProposalLead", fields: [leadId], references: [id], onDelete: SetNull)
   projectId      String?
-  project        Project?       @relation("ProposalProject", fields: [projectId], references: [id], onDelete: SetNull)
+  project        Project?        @relation("ProposalProject", fields: [projectId], references: [id], onDelete: SetNull)
+  // Versión incremental por lead (1, 2, 3...). En proyectos sin lead asociado
+  // se mantiene 1 — el caso "propuesta para proyecto" no se usa hoy.
+  version        Int             @default(1)
   inputFilePath  String?
   outputFilePath String?
-  status         ProposalStatus @default(PENDING)
+  status         ProposalStatus  @default(PENDING)
   errorMessage   String?
+  // Al completarse, se crea un FileAttachment en el lead para que la propuesta
+  // aparezca en la sección "Adjuntos". La descarga sigue funcionando vía el
+  // endpoint /api/proposals/:id/download.
+  attachmentId   String?
+  attachment     FileAttachment? @relation("ProposalAttachment", fields: [attachmentId], references: [id], onDelete: SetNull)
   generatedById  String
-  generatedBy    User           @relation("ProposalGeneratedBy", fields: [generatedById], references: [id], onDelete: Restrict)
-  createdAt      DateTime       @default(now()) @db.Timestamptz(6)
-  updatedAt      DateTime       @updatedAt @db.Timestamptz(6)
+  generatedBy    User            @relation("ProposalGeneratedBy", fields: [generatedById], references: [id], onDelete: Restrict)
+  completedAt    DateTime?       @db.Timestamptz(6)
+  createdAt      DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime        @updatedAt @db.Timestamptz(6)
 
   @@index([leadId])
   @@index([projectId])
