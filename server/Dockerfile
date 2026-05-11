@@ -4,6 +4,13 @@ FROM node:20-bookworm-slim
 # - openssl: requerido por Prisma
 # - python3 + venv + pip: generador de propuestas comerciales (PDF)
 # - libfreetype6 + libjpeg62-turbo: necesarios por matplotlib/Pillow runtime
+# - chromium: requerido por Puppeteer para el generador EFP (Fase B). Se usa
+#   el Chromium de apt en lugar del bundled de Puppeteer porque éste último
+#   solo distribuye binarios x86_64 — en entornos ARM64 (Apple Silicon Docker)
+#   el bundled crashea con rosetta error. apt trae arm64 nativo. PUPPETEER_SKIP_DOWNLOAD
+#   y PUPPETEER_EXECUTABLE_PATH coordinan que la lib npm no intente descargar.
+# - fonts-liberation: tipos genéricos para que el PDF renderice bien aun si
+#   el CSS pide Inter y la red no carga Google Fonts.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
        openssl \
@@ -14,7 +21,13 @@ RUN apt-get update \
        libfreetype6 \
        libjpeg62-turbo \
        libpng16-16 \
+       fonts-liberation \
+       chromium \
+       chromium-sandbox \
   && rm -rf /var/lib/apt/lists/*
+
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # Virtualenv aislado para el generador de propuestas. Vivir fuera de /app
 # evita que el bind mount del dev compose lo borre.
