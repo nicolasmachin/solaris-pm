@@ -145,7 +145,7 @@ interface BuildPromptArgs {
     infoTecho: string | null;
     alturaTecho: string | null;
     cantidadPaneles: string | null;
-    potenciaPaneles: string | null;
+    potenciaPaneles: number | null;
     inversor: string | null;
     stringsLineasDc: string | null;
     cableAc: string | null;

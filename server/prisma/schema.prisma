@@ -1814,9 +1814,11 @@ model PreIngenieriaVersion {
   infoTecho     String?
   alturaTecho   String?
 
-  // Datos eléctricos (texto libre)
+  // Datos eléctricos (texto libre, salvo potenciaPaneles que migró a entero
+  // en watts — la columna acepta el W intended del panel, ej 580. Cantidad
+  // sigue como string por ahora.)
   cantidadPaneles  String?
-  potenciaPaneles  String?
+  potenciaPaneles  Int?
   inversor         String?
   stringsLineasDc  String?
   cableAc          String?

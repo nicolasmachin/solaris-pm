@@ -627,7 +627,10 @@ export async function registerEFPRoutes(app: FastifyInstance) {
         capacidadKwp: Number(project.capacityKwp),
         paneles: {
           cantidad: preIng?.cantidadPaneles ?? null,
-          potenciaW: preIng?.potenciaPaneles ?? null,
+          // Compatibilidad: efpPdf todavía espera string. potenciaPaneles ya es
+          // Int en DB (Fase A), pero el generador del PDF no se toca en esta
+          // fase. Se coerce a string acá.
+          potenciaW: preIng?.potenciaPaneles != null ? String(preIng.potenciaPaneles) : null,
         },
         inversor: preIng?.inversor ?? null,
         uteCaso: ute?.caseNumber ?? null,
