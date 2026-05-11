@@ -43,6 +43,20 @@ interface ProjectDefaults {
   notificationPhone: string | null;
 }
 
+// Parser de potenciaPaneles cuando viene como texto (extracción de minuta IA).
+// Mirror de server/src/services/efp.snapshots.types.ts::parsePotenciaPanelesW.
+// "570 W" → 570 · "5 kW" → 5000 · "590" → 590 · "abc" → null.
+function parsePotenciaPanelesWClient(raw: string): number | null {
+  const cleaned = raw.trim().toLowerCase();
+  if (!cleaned) return null;
+  const match = cleaned.match(/(\d+(?:[.,]\d+)?)\s*(kw|w)?/);
+  if (!match) return null;
+  const value = parseFloat(match[1].replace(",", "."));
+  if (!Number.isFinite(value) || value <= 0) return null;
+  const unit = match[2];
+  return unit === "kw" ? Math.round(value * 1000) : Math.round(value);
+}
+
 function countFilledExtracted(f: ExtractedMinutaFields): number {
   let n = 0;
   for (const k of [
@@ -165,11 +179,20 @@ export function PreIngenieriaFormModal({
       ];
       for (const k of keys) {
         const value = fields[k];
-        if (value !== null && value !== undefined && value !== "") {
-          // TS: cada key es válida en PreIngenieriaFormInput (subset común).
-          (next as unknown as Record<string, unknown>)[k] = value;
-          aiKeys.add(k);
+        if (value === null || value === undefined || value === "") continue;
+        // potenciaPaneles: la IA devuelve string ("580W", "5 kW"). El form
+        // ahora es number — parseamos detectando unidad kW.
+        if (k === "potenciaPaneles" && typeof value === "string") {
+          const parsed = parsePotenciaPanelesWClient(value);
+          if (parsed !== null) {
+            next.potenciaPaneles = parsed;
+            aiKeys.add(k);
+          }
+          continue;
         }
+        // TS: cada key es válida en PreIngenieriaFormInput (subset común).
+        (next as unknown as Record<string, unknown>)[k] = value;
+        aiKeys.add(k);
       }
       // Booleans de red — siempre los aplicamos (true/false son válidos).
       next.redMonofasica = fields.redMonofasica;
@@ -548,11 +571,33 @@ export function PreIngenieriaFormModal({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <div>
                 <label className={lbl}>Cantidad paneles<AiBadge active={aiFields.has("cantidadPaneles")} /></label>
-                <input className={inp} value={form.cantidadPaneles ?? ""} onChange={(e) => setF("cantidadPaneles", e.target.value)} maxLength={100} />
+                <input className={inp} value={form.cantidadPaneles ?? ""} onChange={(e) => setF("cantidadPaneles", e.target.value)} maxLength={100} placeholder="ej: 9" />
               </div>
               <div>
-                <label className={lbl}>Potencia paneles<AiBadge active={aiFields.has("potenciaPaneles")} /></label>
-                <input className={inp} value={form.potenciaPaneles ?? ""} onChange={(e) => setF("potenciaPaneles", e.target.value)} placeholder="ej: 580W" maxLength={50} />
+                <label className={lbl}>
+                  Potencia paneles (W)
+                  <AiBadge active={aiFields.has("potenciaPaneles")} />
+                </label>
+                <input
+                  className={inp}
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={form.potenciaPaneles ?? ""}
+                  onChange={(e) => {
+                    const raw = e.target.value.trim();
+                    if (raw === "") {
+                      setF("potenciaPaneles", null);
+                      return;
+                    }
+                    const n = parseInt(raw, 10);
+                    setF("potenciaPaneles", Number.isFinite(n) && n > 0 ? n : null);
+                  }}
+                  placeholder="ej: 580"
+                />
+                <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5">
+                  Watts por panel (entero positivo)
+                </p>
               </div>
               <div className="md:col-span-2">
                 <label className={lbl}>Inversor<AiBadge active={aiFields.has("inversor")} /></label>

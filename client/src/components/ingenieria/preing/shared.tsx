@@ -58,7 +58,7 @@ export function emptyForm(snapshotNombre: string): PreIngenieriaFormInput {
     infoTecho: "",
     alturaTecho: "",
     cantidadPaneles: "",
-    potenciaPaneles: "",
+    potenciaPaneles: null,
     inversor: "",
     stringsLineasDc: "",
     cableAc: "",
@@ -93,7 +93,9 @@ export function applyUnifilarPrefill(
   return {
     ...form,
     cantidadPaneles: String(v.cantidadPaneles),
-    potenciaPaneles: `${v.potenciaPanelW}W`,
+    // potenciaPaneles ya es Int en el backend (Watts enteros) — pasamos el
+    // entero directo sin sufijo de unidad.
+    potenciaPaneles: v.potenciaPanelW,
     inversor: `${v.modeloInversor} de ${v.potenciaInversorKw}kW`,
     stringsLineasDc: String(v.cantidadStrings),
     cableAc: `Superplastico ${polos}x${seccionMm2}mm2`,

@@ -49,7 +49,8 @@ export interface PreIngenieriaVersionFull {
   infoTecho: string | null;
   alturaTecho: string | null;
   cantidadPaneles: string | null;
-  potenciaPaneles: string | null;
+  /** Watts enteros (post Fase A: el campo es Int en DB). */
+  potenciaPaneles: number | null;
   inversor: string | null;
   stringsLineasDc: string | null;
   cableAc: string | null;
@@ -114,7 +115,8 @@ export interface PreIngenieriaFormInput {
   alturaTecho?: string | null;
   // Eléctricos
   cantidadPaneles?: string | null;
-  potenciaPaneles?: string | null;
+  /** Watts enteros (post Fase A). El backend valida con z.number().int().positive(). */
+  potenciaPaneles?: number | null;
   inversor?: string | null;
   stringsLineasDc?: string | null;
   cableAc?: string | null;
