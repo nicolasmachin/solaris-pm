@@ -34,6 +34,15 @@ export interface MaterialItem {
   _count?: { projectMaterials: number };
 }
 
+export type MaterialStatus = 'PENDIENTE' | 'PEDIDO' | 'RECIBIDO' | 'EN_STOCK';
+export type MaterialRowColor = 'yellow' | 'green' | 'blue' | 'purple' | 'red' | 'gray';
+export const MATERIAL_ROW_COLORS: ReadonlyArray<MaterialRowColor> = [
+  'yellow', 'green', 'blue', 'purple', 'red', 'gray',
+];
+export const MATERIAL_STATUSES: ReadonlyArray<MaterialStatus> = [
+  'PENDIENTE', 'PEDIDO', 'RECIBIDO', 'EN_STOCK',
+];
+
 export interface ProjectMaterial {
   id: string;
   projectId: string;
@@ -46,6 +55,13 @@ export interface ProjectMaterial {
   supplierId: string | null;
   notes: string | null;
   movementId: string | null;
+  status: MaterialStatus;
+  crossed: boolean;
+  rowColor: MaterialRowColor | null;
+  addedBy: { id: string; name: string } | null;
+  lastEditedAt: string | null;
+  lastEditedBy: { id: string; name: string } | null;
+  lastEditedRole: string | null;
   createdAt: string;
   updatedAt: string;
   materialItem?: {

@@ -72,7 +72,10 @@ export const createProjectMaterial = (projectId: string, body: {
   moneda?: Moneda;
   ivaTasa?: number;
   supplierId?: string | null;
-  notes?: string;
+  notes?: string | null;
+  status?: 'PENDIENTE' | 'PEDIDO' | 'RECIBIDO' | 'EN_STOCK';
+  crossed?: boolean;
+  rowColor?: 'yellow' | 'green' | 'blue' | 'purple' | 'red' | 'gray' | null;
 }) => apiClient.post<ProjectMaterial>(`/api/projects/${projectId}/materials`, body).then(r => r.data);
 
 export const patchProjectMaterial = (projectId: string, materialId: string, body: Partial<{
@@ -82,6 +85,9 @@ export const patchProjectMaterial = (projectId: string, materialId: string, body
   ivaTasa: number;
   supplierId: string | null;
   notes: string | null;
+  status: 'PENDIENTE' | 'PEDIDO' | 'RECIBIDO' | 'EN_STOCK';
+  crossed: boolean;
+  rowColor: 'yellow' | 'green' | 'blue' | 'purple' | 'red' | 'gray' | null;
 }>) => apiClient.patch<ProjectMaterial>(`/api/projects/${projectId}/materials/${materialId}`, body).then(r => r.data);
 
 export const deleteProjectMaterial = (projectId: string, materialId: string) =>

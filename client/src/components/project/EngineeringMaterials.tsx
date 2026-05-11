@@ -1,16 +1,21 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Plus, X, Search, Sparkles, RefreshCw, Trash2, StickyNote, FileText, DollarSign, ChevronDown } from 'lucide-react';
+import { ChevronDown, DollarSign, FileText, Plus, RefreshCw, Search, Sparkles, X } from 'lucide-react';
 import {
-  getProjectMaterials, createProjectMaterial, patchProjectMaterial, deleteProjectMaterial,
+  getProjectMaterials, createProjectMaterial,
   generateProjectPrevistos, regenerateProjectPrevistos, exportMaterialsPdf,
   getMaterialCategories, getMaterialItems, getRegenerateImpact,
 } from '../../api/materials.api';
-import { getSuppliers } from '../../api/finance.api';
 import type { MaterialItem, ProjectMaterial } from '../../types/materials.types';
 import { useAuthStore } from '../../store/auth.store';
+import { usePermission } from '../../hooks/usePermission';
 import { todayLocalISO } from '../../utils/date';
+
+import { MaterialsFilters } from './materials/MaterialsFilters';
+import { MaterialsTable } from './materials/MaterialsTable';
+import { applyFilters } from './materials/types';
+import { useMaterialsFilters } from './materials/useMaterialsFilters';
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
 
@@ -22,31 +27,30 @@ function fmtMoney(n: number, moneda: string) {
   return `${n.toLocaleString('es-UY', { minimumFractionDigits: 2 })} ${moneda}`;
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  PREVISTO: 'Previsto',
-  COMPROMETIDO: 'Comprometido',
-  A_PAGAR: 'A pagar',
-  PAGADO: 'Pagado',
-};
+function formatRelative(value: string) {
+  const diffMs = Date.now() - new Date(value).getTime();
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return 'hace instantes';
+  if (minutes < 60) return `hace ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `hace ${hours} h`;
+  const days = Math.floor(hours / 24);
+  return `hace ${days} día${days === 1 ? '' : 's'}`;
+}
 
-const STATUS_COLOR: Record<string, string> = {
-  PREVISTO: 'bg-[var(--color-border)] text-[var(--color-text-muted)]',
-  COMPROMETIDO: 'bg-[var(--color-info-bg)] text-[var(--color-info-text)]',
-  A_PAGAR: 'bg-[var(--color-warning-bg)] text-[var(--color-warning-text)]',
-  PAGADO: 'bg-[var(--color-state-done-bg)] text-[var(--color-state-done-text)]',
-};
-
-// ─── Modal: Agregar ítem desde catálogo ────────────────────────────────────────
+function roleLabel(role: string | null | undefined): string {
+  if (!role) return '';
+  const map: Record<string, string> = {
+    ADMIN: 'Admin',
+    INGENIERIA: 'Ingeniería',
+    OPERACIONES: 'Operaciones',
+    ASESOR_COMERCIAL: 'Ventas',
+    FINANZAS: 'Finanzas',
+  };
+  return map[role] ?? role.charAt(0) + role.slice(1).toLowerCase();
+}
 
 // ─── Modal: Confirmar generación de previstos con fecha ───────────────────────
-
-const STATUS_LABEL_FINANCE: Record<string, string> = {
-  PREVISTO: 'Previsto',
-  COMPROMETIDO: 'Comprometido',
-  A_PAGAR: 'A pagar',
-  PARCIALMENTE_PAGADO: 'Parc. pagado',
-  PAGADO: 'Pagado',
-};
 
 function GeneratePrevistosModal({
   isRegenerate, projectId, pendingCount, expectedDate, onDateChange, onCancel, onConfirm, isLoading,
@@ -98,25 +102,20 @@ function GeneratePrevistosModal({
                   </p>
                   <p>
                     🔒 <strong>{impact.toPreserve}</strong> movimiento{impact.toPreserve !== 1 ? 's' : ''} en estado avanzado (Comprometido / A pagar / Pagado) {impact.toPreserve !== 1 ? 'se conservan' : 'se conserva'} sin tocar.
+                    {impact.toPreserve > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowPreserved(v => !v)}
+                        className="ml-2 underline text-[var(--color-accent)]"
+                      >
+                        {showPreserved ? 'Ocultar detalle' : 'Ver detalle'}
+                      </button>
+                    )}
                   </p>
-                  {impact.preservedDetails.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowPreserved((v) => !v)}
-                      className="mt-1 text-[10px] text-[var(--color-accent)] hover:underline"
-                    >
-                      {showPreserved ? 'Ocultar' : 'Ver'} detalle de los conservados
-                    </button>
-                  )}
-                  {showPreserved && (
-                    <ul className="mt-1 space-y-1 text-[10px]">
-                      {impact.preservedDetails.map((m) => (
-                        <li key={m.id} className="border-t border-[var(--color-border)] pt-1">
-                          <span className="text-[var(--color-text-primary)]">{m.descripcion}</span>
-                          <span className="ml-2 text-[var(--color-text-muted)]">
-                            · {STATUS_LABEL_FINANCE[m.status] ?? m.status} · {m.monto.toLocaleString('es-UY', { minimumFractionDigits: 2 })} {m.moneda}
-                          </span>
-                        </li>
+                  {showPreserved && impact.preservedDetails.length > 0 && (
+                    <ul className="mt-1 ml-3 list-disc text-[10px] space-y-0.5">
+                      {impact.preservedDetails.map(d => (
+                        <li key={d.id}>{d.descripcion} — {fmtMoney(d.monto, d.moneda)}</li>
                       ))}
                     </ul>
                   )}
@@ -126,32 +125,28 @@ function GeneratePrevistosModal({
           )}
 
           <div>
-            <label className="mb-1.5 flex items-center gap-1 text-[11px] font-medium text-[var(--color-text-primary)]">
+            <label className="block text-[11px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
               Fecha esperada de compra
-              <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
               value={expectedDate}
-              onChange={(e) => onDateChange(e.target.value)}
-              required
-              className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+              onChange={e => onDateChange(e.target.value)}
+              className="w-full px-3 py-2 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             />
-            <p className="mt-1.5 text-[11px] text-[var(--color-text-muted)]">
-              Se aplicará a todos los previstos generados
-            </p>
             {isFarFuture && (
-              <p className="mt-1.5 text-[11px] text-amber-600 dark:text-amber-400">
-                ⚠ La fecha está muy lejana, ¿es correcto?
+              <p className="text-[11px] text-[var(--color-warning-text)] mt-1">
+                ⚠️ La fecha está a más de un año. ¿Es correcto?
               </p>
             )}
           </div>
         </div>
-        <div className="flex justify-end gap-2 border-t border-[var(--color-border)] px-5 py-3">
+        <div className="border-t border-[var(--color-border)] px-5 py-3 flex justify-end gap-2">
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-md border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-app)]"
+            disabled={isLoading}
+            className="rounded-md border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-50"
           >
             Cancelar
           </button>
@@ -188,7 +183,6 @@ function AddItemModal({ projectId, existingItemIds, onClose }: { projectId: stri
     queryFn: () => getMaterialItems({ activo: 'true' }),
   });
 
-  // Auto-expand categorías cuando hay búsqueda
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return items;
@@ -204,7 +198,6 @@ function AddItemModal({ projectId, existingItemIds, onClose }: { projectId: stri
     return map;
   }, [filteredItems]);
 
-  // Expandir todas si hay búsqueda
   const effectivelyExpanded = useMemo(() => {
     if (search.trim()) return new Set(categories.map(c => c.id));
     return expandedCats;
@@ -323,246 +316,64 @@ function AddItemModal({ projectId, existingItemIds, onClose }: { projectId: stri
   );
 }
 
-// ─── Fila de material editable inline ──────────────────────────────────────────
-
-function MaterialRow({ projectId, pm, suppliers }: {
-  projectId: string;
-  pm: ProjectMaterial;
-  suppliers: { id: string; nombre: string }[];
-}) {
-  const qc = useQueryClient();
-  const [qty, setQty] = useState(pm.quantity.toString());
-  const [price, setPrice] = useState(pm.unitPrice.toString());
-  const [iva, setIva] = useState(pm.ivaTasa?.toString() ?? '22');
-  const [supplierId, setSupplierId] = useState(pm.supplierId ?? '');
-  const [showNotes, setShowNotes] = useState(false);
-  const [notes, setNotes] = useState(pm.notes ?? '');
-
-  // Sincronizar valores externos cuando cambien
-  useEffect(() => { setQty(pm.quantity.toString()); }, [pm.quantity]);
-  useEffect(() => { setPrice(pm.unitPrice.toString()); }, [pm.unitPrice]);
-  useEffect(() => { setIva((pm.ivaTasa ?? 22).toString()); }, [pm.ivaTasa]);
-  useEffect(() => { setSupplierId(pm.supplierId ?? ''); }, [pm.supplierId]);
-  useEffect(() => { setNotes(pm.notes ?? ''); }, [pm.notes]);
-
-  const patchMut = useMutation({
-    mutationFn: (body: Partial<{ quantity: number; unitPrice: number; ivaTasa: number; supplierId: string | null; notes: string | null }>) =>
-      patchProjectMaterial(projectId, pm.id, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['project-materials', projectId] }),
-    onError: (err) => toast.error(getApiErr(err) ?? 'Error al actualizar'),
-  });
-
-  const deleteMut = useMutation({
-    mutationFn: () => deleteProjectMaterial(projectId, pm.id),
-    onSuccess: (r) => {
-      toast.success(r.previstoEliminado ? 'Material eliminado (previsto en Finanzas también eliminado)' : 'Material eliminado');
-      qc.invalidateQueries({ queryKey: ['project-materials', projectId] });
-      qc.invalidateQueries({ queryKey: ['finance-movements'] });
-    },
-    onError: (err) => toast.error(getApiErr(err) ?? 'Error al eliminar'),
-  });
-
-  function commitQty() {
-    const n = parseInt(qty, 10);
-    if (!isFinite(n) || n <= 0) { setQty(pm.quantity.toString()); return; }
-    if (n !== pm.quantity) patchMut.mutate({ quantity: n });
-  }
-  function commitPrice() {
-    const n = parseFloat(price);
-    if (!isFinite(n) || n < 0) { setPrice(pm.unitPrice.toString()); return; }
-    if (n !== pm.unitPrice) patchMut.mutate({ unitPrice: n });
-  }
-  function commitIva() {
-    const n = parseFloat(iva);
-    if (!isFinite(n) || n < 0 || n > 100) { setIva((pm.ivaTasa ?? 22).toString()); return; }
-    if (n !== pm.ivaTasa) patchMut.mutate({ ivaTasa: n });
-  }
-  function commitSupplier(v: string) {
-    setSupplierId(v);
-    patchMut.mutate({ supplierId: v || null });
-  }
-  function commitNotes() {
-    if (notes !== (pm.notes ?? '')) patchMut.mutate({ notes: notes || null });
-    setShowNotes(false);
-  }
-
-  const subtotal = pm.subtotal;
-  const movementStatus = pm.movement?.status;
-
-  return (
-    <>
-      <tr className="hover:bg-[var(--color-bg-card-hover)] transition-colors">
-        <td className="px-3 py-2 text-sm text-[var(--color-text-primary)]">
-          <div className="font-medium">{pm.materialItem?.nombre ?? '—'}</div>
-          {movementStatus && (
-            <span className={klass('text-[9px] font-mono px-1.5 py-0.5 rounded uppercase mt-1 inline-block', STATUS_COLOR[movementStatus] ?? '')}>
-              {STATUS_LABEL[movementStatus] ?? movementStatus}
-            </span>
-          )}
-        </td>
-        <td className="px-2 py-2">
-          <div className="flex items-center gap-1.5">
-            <button
-              title="Eliminar material"
-              onClick={() => deleteMut.mutate()}
-              disabled={deleteMut.isPending}
-              className="p-1 rounded hover:bg-red-500/15 text-red-500 hover:text-red-700 disabled:opacity-50 transition-colors flex-shrink-0"
-              aria-label="Eliminar material"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-            <input
-              type="number" min="1" step="1"
-              className="w-20 px-2 py-1 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] tabular-nums focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
-              value={qty}
-              onChange={e => setQty(e.target.value)}
-              onBlur={commitQty}
-              onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-            />
-            <span className="text-[10px] text-[var(--color-text-muted)]">{pm.materialItem?.unidad}</span>
-          </div>
-        </td>
-        <td className="px-2 py-2">
-          <div className="flex items-center gap-1">
-            <input
-              type="number" min="0" step="0.01"
-              className="w-24 px-2 py-1 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] tabular-nums focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
-              value={price}
-              onChange={e => setPrice(e.target.value)}
-              onBlur={commitPrice}
-              onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-            />
-            <span className="text-[10px] text-[var(--color-text-muted)]">{pm.moneda}</span>
-          </div>
-        </td>
-        <td className="px-2 py-2">
-          <div className="flex items-center gap-1">
-            <input
-              type="number" min="0" max="100" step="0.5"
-              className="w-14 px-2 py-1 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] tabular-nums focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
-              value={iva}
-              onChange={e => setIva(e.target.value)}
-              onBlur={commitIva}
-              onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-            />
-            <span className="text-[10px] text-[var(--color-text-muted)]">%</span>
-          </div>
-        </td>
-        <td className="px-2 py-2">
-          <select
-            className="w-full max-w-[140px] px-2 py-1 rounded text-xs bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
-            value={supplierId}
-            onChange={e => commitSupplier(e.target.value)}
-          >
-            <option value="">— sin —</option>
-            {suppliers.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-          </select>
-        </td>
-        <td className="px-2 py-2 text-sm font-semibold text-[var(--color-text-primary)] tabular-nums whitespace-nowrap">
-          {fmtMoney(subtotal, pm.moneda)}
-        </td>
-        <td className="px-2 py-2 text-sm font-medium text-[var(--color-text-muted)] tabular-nums whitespace-nowrap">
-          {fmtMoney(subtotal * (1 + (pm.ivaTasa ?? 22) / 100), pm.moneda)}
-        </td>
-        <td className="px-2 py-2">
-          <button
-            title={pm.notes ? 'Editar nota' : 'Agregar nota'}
-            onClick={() => setShowNotes(v => !v)}
-            className={klass(
-              'p-1 rounded hover:bg-[var(--color-border)]',
-              pm.notes ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]',
-            )}
-          >
-            <StickyNote className="w-3.5 h-3.5" />
-          </button>
-        </td>
-      </tr>
-      {showNotes && (
-        <tr>
-          <td colSpan={8} className="px-3 py-2 bg-[var(--color-bg-app)]">
-            <div className="flex items-start gap-2">
-              <textarea
-                className="flex-1 px-2 py-1 rounded text-xs bg-[var(--color-bg-card)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] resize-none"
-                rows={2}
-                placeholder="Nota sobre este material..."
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-              />
-              <button onClick={commitNotes} className="px-2 py-1 rounded bg-[var(--color-accent)] text-gray-900 text-xs font-semibold hover:bg-[var(--color-accent-hover)]">
-                OK
-              </button>
-            </div>
-          </td>
-        </tr>
-      )}
-    </>
-  );
-}
-
 // ─── Componente principal ──────────────────────────────────────────────────────
 
 export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectId: string; plannedWorkStart?: string | null }) {
   const qc = useQueryClient();
   const currentUser = useAuthStore(s => s.user);
   const isAdmin = currentUser?.role === 'ADMIN';
+
+  const canEditIng = usePermission('INGENIERIA', 'EDIT');
+  const canEditOps = usePermission('OPERACIONES', 'EDIT');
+  const canEdit = canEditIng || canEditOps || isAdmin;
+  const canGeneratePrevistos = canEditIng || isAdmin;
+  const canViewCatalog = usePermission('CONFIGURACION', 'VIEW') || isAdmin;
+
   const [showAdd, setShowAdd] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [isRegenerateMode, setIsRegenerateMode] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfDropOpen, setPdfDropOpen] = useState(false);
+
+  const { state: filterState } = useMaterialsFilters();
 
   const { data: materials = [], isLoading } = useQuery({
     queryKey: ['project-materials', projectId],
     queryFn: () => getProjectMaterials(projectId),
   });
 
-  const { data: suppliers = [] } = useQuery({
-    queryKey: ['suppliers', 'true'],
-    queryFn: () => getSuppliers({ activo: 'true' }),
-  });
+  const filtered = useMemo(() => applyFilters(materials, filterState), [materials, filterState]);
 
-  const generatedAt = useMemo(() => {
-    const withMov = materials.filter(m => m.movementId);
-    if (withMov.length === 0) return null;
-    // El generatedAt no lo guardamos en DB; aproximamos con el updatedAt del primer material vinculado
-    return withMov[0].updatedAt;
+  // Metadata para el header
+  const categoryCount = useMemo(() => {
+    const ids = new Set<string>();
+    for (const m of materials) {
+      if (m.materialItem?.category?.id) ids.add(m.materialItem.category.id);
+    }
+    return ids.size;
   }, [materials]);
 
+  const lastEdited = useMemo(() => {
+    let best: { at: string; role: string } | null = null;
+    for (const m of materials) {
+      if (!m.lastEditedAt) continue;
+      if (!best || m.lastEditedAt > best.at) {
+        best = { at: m.lastEditedAt, role: m.lastEditedRole ?? '' };
+      }
+    }
+    return best;
+  }, [materials]);
+
+  // Generación de previstos
   const hasGenerated = materials.some(m => m.movementId);
   const allGenerated = materials.length > 0 && materials.every(m => m.movementId);
   const pendingGeneration = materials.filter(m => !m.movementId).length;
 
-  // Agrupar por categoría
-  const groups = useMemo(() => {
-    const map = new Map<string, { nombre: string; orden: number; items: ProjectMaterial[]; subtotal: number; moneda: string }>();
-    for (const pm of materials) {
-      const cat = pm.materialItem?.category;
-      const key = cat?.id ?? 'sin-cat';
-      const nombre = cat?.nombre ?? 'Sin categoría';
-      const orden = cat?.orden ?? 9999;
-      if (!map.has(key)) map.set(key, { nombre, orden, items: [], subtotal: 0, moneda: pm.moneda });
-      const g = map.get(key)!;
-      g.items.push(pm);
-      g.subtotal += pm.subtotal;
-    }
-    return Array.from(map.values()).sort((a, b) => a.orden - b.orden);
-  }, [materials]);
-
-  // Total — si hay mezcla de monedas, se muestra desglosado
-  const totalsByMoneda = useMemo(() => {
-    const m: Record<string, number> = {};
-    for (const pm of materials) m[pm.moneda] = (m[pm.moneda] ?? 0) + pm.subtotal;
-    return m;
-  }, [materials]);
-
-  // Total con IVA por moneda
-  const totalsConIvaByMoneda = useMemo(() => {
-    const m: Record<string, number> = {};
-    for (const pm of materials) {
-      const factor = 1 + (pm.ivaTasa ?? 22) / 100;
-      m[pm.moneda] = (m[pm.moneda] ?? 0) + pm.subtotal * factor;
-    }
-    return m;
-  }, [materials]);
+  const todayIso = todayLocalISO();
+  const [expectedDate, setExpectedDate] = useState<string>(plannedWorkStart ?? todayIso);
 
   const generateMut = useMutation({
-    mutationFn: (expectedDate: string) => generateProjectPrevistos(projectId, expectedDate),
+    mutationFn: (d: string) => generateProjectPrevistos(projectId, d),
     onSuccess: (r) => {
       if (r.created > 0) toast.success(`${r.created} previsto${r.created !== 1 ? 's' : ''} generado${r.created !== 1 ? 's' : ''} en Finanzas`);
       else toast(`Ya hay previstos generados (${r.alreadyExisted})`);
@@ -572,10 +383,10 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
   });
 
   const regenerateMut = useMutation({
-    mutationFn: (expectedDate: string) => regenerateProjectPrevistos(projectId, expectedDate),
+    mutationFn: (d: string) => regenerateProjectPrevistos(projectId, d),
     onSuccess: (r) => {
       const parts: string[] = [];
-      parts.push(`${r.created} previsto${r.created !== 1 ? 's' : ''} creado${r.created !== 1 ? 's' : ''} por categoría`);
+      parts.push(`${r.created} previsto${r.created !== 1 ? 's' : ''} creado${r.created !== 1 ? 's' : ''}`);
       if (r.preservedCount > 0) parts.push(`${r.preservedCount} conservado${r.preservedCount !== 1 ? 's' : ''} sin tocar`);
       toast.success(parts.join(' · '));
       qc.invalidateQueries({ queryKey: ['project-materials', projectId] });
@@ -583,11 +394,6 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
     },
     onError: (err) => toast.error(getApiErr(err) ?? 'Error al regenerar'),
   });
-
-  const todayIso = todayLocalISO();
-  const [showGenerateModal, setShowGenerateModal] = useState(false);
-  const [isRegenerateMode, setIsRegenerateMode] = useState(false);
-  const [expectedDate, setExpectedDate] = useState<string>(plannedWorkStart ?? todayIso);
 
   function openGenerateModal(regenerate: boolean) {
     if (regenerate && !isAdmin) { toast('Solo un administrador puede regenerar previstos.'); return; }
@@ -605,31 +411,12 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
     openGenerateModal(false);
   }
 
-  function handleRegenerate() {
-    openGenerateModal(true);
-  }
-
   function submitGenerateModal() {
     if (!expectedDate) { toast.error('Debe especificar la fecha esperada de compra'); return; }
     setShowGenerateModal(false);
     if (isRegenerateMode) regenerateMut.mutate(expectedDate);
     else generateMut.mutate(expectedDate);
   }
-
-  const existingItemIds = useMemo(() => new Set(materials.map(m => m.materialItemId)), [materials]);
-  const [pdfLoading, setPdfLoading] = useState(false);
-  const [pdfDropOpen, setPdfDropOpen] = useState(false);
-
-  // Estado colapsable persistido por proyecto en localStorage
-  const collapsedKey = `materials-collapsed-${projectId}`;
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem(collapsedKey) === 'true';
-  });
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(collapsedKey, String(collapsed));
-  }, [collapsed, collapsedKey]);
 
   async function handleExportPdf(includePrecios: boolean) {
     setPdfDropOpen(false);
@@ -650,41 +437,61 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
     }
   }
 
+  const existingItemIds = useMemo(() => new Set(materials.map(m => m.materialItemId)), [materials]);
+
+  // Estado colapsable persistido por proyecto en localStorage
+  const collapsedKey = `materials-collapsed-${projectId}`;
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(collapsedKey) === 'true';
+  });
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(collapsedKey, String(collapsed));
+  }, [collapsed, collapsedKey]);
+
   const isWorking = generateMut.isPending || regenerateMut.isPending;
 
   return (
-    <section>
-      <div className="flex items-center justify-between mb-3">
-        <button
-          type="button"
-          onClick={() => setCollapsed(c => !c)}
-          className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-widest text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
-          title={collapsed ? 'Expandir' : 'Colapsar'}
-        >
-          <ChevronDown
-            className={klass('w-3 h-3 transition-transform duration-200', collapsed && '-rotate-90')}
-          />
-          Lista de materiales ({materials.length})
-        </button>
-        <div className={klass('flex items-center gap-2', collapsed && 'hidden')}>
+    <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-[var(--color-border)] flex items-start justify-between gap-3 flex-wrap">
+        <div className="min-w-0 flex-1">
           <button
-            onClick={() => setShowAdd(true)}
-            className="text-[10px] text-[var(--color-accent)] hover:underline"
+            type="button"
+            onClick={() => setCollapsed(c => !c)}
+            className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
+            title={collapsed ? 'Expandir' : 'Colapsar'}
           >
-            + Agregar ítem
+            <ChevronDown className={klass('w-3 h-3 transition-transform', collapsed && '-rotate-90')} />
+            Lista de materiales
           </button>
-          {materials.length > 0 && (
-            <>
+          <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
+            {materials.length} material{materials.length === 1 ? '' : 'es'}
+            {categoryCount > 0 && ` · ${categoryCount} categoría${categoryCount === 1 ? '' : 's'}`}
+            {lastEdited && (
+              <>
+                {' · '}
+                <span className="text-[var(--color-text-secondary)]">
+                  Última edición {roleLabel(lastEdited.role) || '—'} {formatRelative(lastEdited.at)}
+                </span>
+              </>
+            )}
+          </p>
+        </div>
+
+        {!collapsed && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {materials.length > 0 && (
               <div className="relative">
                 <button
                   onClick={() => setPdfDropOpen(o => !o)}
                   disabled={pdfLoading}
-                  title="Exportar lista de materiales como PDF"
-                  className="flex items-center gap-1 text-[10px] px-2 py-1 rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-60"
+                  className="flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-md border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-60"
                 >
                   <FileText className="w-3 h-3" />
-                  {pdfLoading ? 'Generando...' : 'Exportar PDF'}
-                  <ChevronDown className="w-3 h-3 ml-0.5" />
+                  {pdfLoading ? 'Generando...' : 'Exportar'}
+                  <ChevronDown className="w-3 h-3" />
                 </button>
                 {pdfDropOpen && (
                   <>
@@ -716,107 +523,61 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
                   </>
                 )}
               </div>
+            )}
+            {canGeneratePrevistos && materials.length > 0 && (
               <button
                 onClick={handleGenerate}
                 disabled={isWorking}
-                className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-[var(--color-accent)] text-gray-900 font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-60"
+                className="flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-md border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-60"
+                title={allGenerated ? 'Regenerar previstos en Finanzas' : 'Generar previstos en Finanzas'}
               >
-                <Sparkles className="w-3 h-3" />
-                {isWorking ? 'Procesando...' : (allGenerated ? 'Ya generado' : (hasGenerated ? `Generar ${pendingGeneration} faltante${pendingGeneration !== 1 ? 's' : ''}` : 'Generar previstos'))}
+                {hasGenerated && allGenerated ? <RefreshCw className={klass('w-3 h-3', isWorking && 'animate-spin')} /> : <Sparkles className="w-3 h-3" />}
+                {isWorking ? '…' : (allGenerated ? 'Regenerar' : hasGenerated ? `Generar ${pendingGeneration} más` : 'Generar previstos')}
               </button>
-            </>
-          )}
-        </div>
+            )}
+            {canEdit && (
+              <button
+                onClick={() => setShowAdd(true)}
+                className="flex items-center gap-1 text-[11px] px-3 py-1.5 rounded-md bg-[var(--color-accent)] text-gray-900 font-semibold hover:bg-[var(--color-accent-hover)]"
+              >
+                <Plus className="w-3 h-3" /> Agregar
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      {collapsed && materials.length > 0 && (
-        <div className="text-[11px] text-[var(--color-text-muted)] flex items-center gap-2">
-          <span>{materials.length} ítem{materials.length === 1 ? '' : 's'}</span>
-          <span>·</span>
-          <span className="tabular-nums">
-            Total: {Object.entries(totalsByMoneda).map(([m, v]) => fmtMoney(v, m)).join(' · ')}
-          </span>
-        </div>
-      )}
+      {!collapsed && (
+        <>
+          <MaterialsFilters materials={materials} filtered={filtered} />
 
-      {!collapsed && hasGenerated && generatedAt && (
-        <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-[var(--color-info-bg)]/50 border border-[var(--color-info-bg)]">
-          <span className="text-[10px] font-mono uppercase text-[var(--color-info-text)]">Previstos generados</span>
-          <span className="text-[10px] text-[var(--color-text-muted)]">
-            última actualización {new Date(generatedAt).toLocaleDateString('es-UY')}
-          </span>
-          {isAdmin && (
-            <button onClick={handleRegenerate} disabled={isWorking} className="ml-auto flex items-center gap-1 text-[10px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] disabled:opacity-60">
-              <RefreshCw className={klass('w-3 h-3', isWorking && 'animate-spin')} />
-              Regenerar
-            </button>
-          )}
-        </div>
+          {/* Tabla */}
+          <div className="p-4">
+            {isLoading ? (
+              <p className="text-xs text-[var(--color-text-muted)] text-center py-6">Cargando...</p>
+            ) : materials.length === 0 ? (
+              <div className="text-center py-8 rounded-lg border border-dashed border-[var(--color-border)]">
+                <p className="text-xs text-[var(--color-text-muted)] mb-2">Sin materiales cargados</p>
+                {canEdit && (
+                  <button
+                    onClick={() => setShowAdd(true)}
+                    className="inline-flex items-center gap-1 text-xs text-[var(--color-accent)] hover:underline"
+                  >
+                    <Plus className="w-3 h-3" /> Agregar primer ítem
+                  </button>
+                )}
+              </div>
+            ) : (
+              <MaterialsTable
+                projectId={projectId}
+                rows={filtered}
+                canEdit={canEdit}
+                canViewCatalog={canViewCatalog}
+              />
+            )}
+          </div>
+        </>
       )}
-
-      {!collapsed && (isLoading ? (
-        <p className="text-xs text-[var(--color-text-muted)] text-center py-6">Cargando...</p>
-      ) : materials.length === 0 ? (
-        <div className="text-center py-6 rounded-lg border border-dashed border-[var(--color-border)]">
-          <p className="text-xs text-[var(--color-text-muted)] mb-2">Sin materiales cargados</p>
-          <button
-            onClick={() => setShowAdd(true)}
-            className="inline-flex items-center gap-1 text-xs text-[var(--color-accent)] hover:underline"
-          >
-            <Plus className="w-3 h-3" /> Agregar primer ítem
-          </button>
-        </div>
-      ) : (
-        <div className="rounded-lg border border-[var(--color-border)] overflow-hidden">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="bg-[var(--color-bg-card-hover)] text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]">
-                <th className="px-3 py-2 text-left font-medium">Ítem</th>
-                <th className="px-2 py-2 text-left font-medium">Cant.</th>
-                <th className="px-2 py-2 text-left font-medium">Precio</th>
-                <th className="px-2 py-2 text-left font-medium">IVA %</th>
-                <th className="px-2 py-2 text-left font-medium">Proveedor</th>
-                <th className="px-2 py-2 text-left font-medium">Subtotal</th>
-                <th className="px-2 py-2 text-left font-medium">Subt. c/IVA</th>
-                <th className="px-2 py-2 w-16" />
-              </tr>
-            </thead>
-            <tbody>
-              {groups.map(g => (
-                <Fragment key={g.nombre}>
-                  <tr className="bg-[var(--color-bg-app)]">
-                    <td colSpan={5} className="px-3 py-1.5 text-[11px] font-semibold text-[var(--color-text-secondary)]">
-                      {g.nombre}
-                    </td>
-                    <td className="px-2 py-1.5 text-[11px] font-semibold text-[var(--color-text-secondary)] tabular-nums">
-                      {fmtMoney(g.subtotal, g.moneda)}
-                    </td>
-                    <td className="px-2 py-1.5 text-[11px] font-semibold text-[var(--color-text-secondary)] tabular-nums">
-                      {fmtMoney(g.items.reduce((acc, pm) => acc + pm.subtotal * (1 + (pm.ivaTasa ?? 22) / 100), 0), g.moneda)}
-                    </td>
-                    <td className="px-2 py-1.5" />
-                  </tr>
-                  {g.items.map(pm => (
-                    <MaterialRow key={pm.id} projectId={projectId} pm={pm} suppliers={suppliers} />
-                  ))}
-                </Fragment>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="border-t border-[var(--color-border)] bg-[var(--color-bg-card-hover)]">
-                <td colSpan={5} className="px-3 py-2 text-[11px] font-semibold text-[var(--color-text-primary)] uppercase font-mono">Total sin IVA</td>
-                <td className="px-2 py-2 text-sm font-bold text-[var(--color-text-primary)] tabular-nums">
-                  {Object.entries(totalsByMoneda).map(([m, v]) => fmtMoney(v, m)).join(' · ')}
-                </td>
-                <td className="px-2 py-2 text-sm font-bold text-[var(--color-text-muted)] tabular-nums">
-                  {Object.entries(totalsConIvaByMoneda).map(([m, v]) => fmtMoney(v, m)).join(' · ')}
-                </td>
-                <td />
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      ))}
 
       {showAdd && (
         <AddItemModal
@@ -841,3 +602,7 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
     </section>
   );
 }
+
+// Re-export bajo el nombre nuevo para uso desde otros lugares (ej. ProjectDetail
+// "Compras"). Internamente es el MISMO componente — UI compartida.
+export { EngineeringMaterials as ProjectMaterialsList };

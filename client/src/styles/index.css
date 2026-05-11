@@ -101,6 +101,16 @@
   --color-alert-badge-neutral-bg: rgba(148, 163, 184, 0.10);
   --color-alert-badge-neutral-text: #cbd5e1;
   --color-alert-badge-neutral-border: rgba(148, 163, 184, 0.25);
+
+  /* Tabla de materiales colaborativa — colores libres de fila (dark). */
+  --color-row-bg-yellow: rgba(253, 224, 71, 0.10);
+  --color-row-bg-green: rgba(74, 222, 128, 0.10);
+  --color-row-bg-blue: rgba(96, 165, 250, 0.10);
+  --color-row-bg-purple: rgba(196, 181, 253, 0.10);
+  --color-row-bg-red: rgba(252, 165, 165, 0.10);
+  --color-row-bg-gray: rgba(148, 163, 184, 0.08);
+  --color-table-header-bg: #08172a;
+  --color-table-header-text: #c8def8;
 }
 
 :root {
@@ -202,6 +212,41 @@
   --color-alert-badge-neutral-bg: #f1f5f9;
   --color-alert-badge-neutral-text: #475569;
   --color-alert-badge-neutral-border: #e2e8f0;
+
+  /* Tabla de materiales colaborativa — colores libres de fila (light). */
+  --color-row-bg-yellow: rgba(253, 224, 71, 0.22);
+  --color-row-bg-green: rgba(74, 222, 128, 0.18);
+  --color-row-bg-blue: rgba(96, 165, 250, 0.18);
+  --color-row-bg-purple: rgba(196, 181, 253, 0.22);
+  --color-row-bg-red: rgba(252, 165, 165, 0.22);
+  --color-row-bg-gray: rgba(148, 163, 184, 0.14);
+  --color-table-header-bg: #1e293b;
+  --color-table-header-text: #e2e8f0;
+}
+
+/* Materiales colaborativos: pintar fila por data-bg + tachado con línea fina. */
+tr[data-row-bg="yellow"] > td { background: var(--color-row-bg-yellow); }
+tr[data-row-bg="green"]  > td { background: var(--color-row-bg-green); }
+tr[data-row-bg="blue"]   > td { background: var(--color-row-bg-blue); }
+tr[data-row-bg="purple"] > td { background: var(--color-row-bg-purple); }
+tr[data-row-bg="red"]    > td { background: var(--color-row-bg-red); }
+tr[data-row-bg="gray"]   > td { background: var(--color-row-bg-gray); }
+
+/* Texto tachado: línea fina sobre el contenido. Aplicar a celdas marcadas con
+   `.crossable` adentro de una fila con clase `.material-crossed`. */
+tr.material-crossed td .crossable {
+  position: relative;
+  color: var(--color-text-muted);
+}
+tr.material-crossed td .crossable::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--color-text-muted);
+  pointer-events: none;
 }
 
 * {

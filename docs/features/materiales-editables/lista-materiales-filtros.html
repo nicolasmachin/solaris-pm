@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Voltia · Lista materiales con filtros</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, system-ui, sans-serif; }
+  body {
+    background: #fefdf8;
+    color: #0f172a;
+    padding: 24px;
+    min-height: 100vh;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 22px; margin-bottom: 6px; }
+  .subtitle { color: #64748b; font-size: 13px; margin-bottom: 24px; }
+  
+  .panel {
+    background: white;
+    border: 1px solid #f3e8c7;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  
+  .panel-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .panel-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+  }
+  .panel-meta {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 2px;
+  }
+  
+  .actions { display: flex; gap: 8px; }
+  .btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid #e2e8f0;
+    background: white;
+    color: #475569;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .btn:hover { background: #f8fafc; }
+  .btn-primary {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: #1f2937;
+    border-color: #f59e0b;
+    font-weight: 700;
+  }
+  
+  /* ════════════ BARRA DE FILTROS ════════════ */
+  .filter-bar {
+    padding: 12px 18px;
+    background: #fafaf9;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  
+  .search-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 7px 12px 7px 32px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 12px;
+    background: white url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="%2394a3b8" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>') no-repeat 10px center;
+  }
+  .search-input:focus {
+    outline: none;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+  }
+  
+  .filter-dropdown {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .filter-trigger {
+    padding: 6px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: white;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .filter-trigger:hover { background: #fffbeb; }
+  .filter-trigger.has-selection {
+    background: #fef3c7;
+    border-color: #fde68a;
+    color: #b45309;
+  }
+  .filter-count {
+    background: #f59e0b;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .filter-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 6px;
+    min-width: 200px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+    z-index: 10;
+    font-size: 12px;
+  }
+  
+  .filter-menu-section {
+    padding: 4px 6px;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+  
+  .filter-option {
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .filter-option:hover { background: #fffbeb; }
+  .filter-option input { margin: 0; }
+  .filter-option .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+  .filter-option .count {
+    margin-left: auto;
+    font-size: 10px;
+    color: #94a3b8;
+    font-weight: 600;
+  }
+  
+  .filter-clear {
+    border-top: 1px solid #f1f5f9;
+    margin-top: 4px;
+    padding-top: 6px;
+  }
+  .filter-clear-btn {
+    width: 100%;
+    text-align: center;
+    padding: 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .filter-clear-btn:hover { background: #f8fafc; }
+  
+  /* ════════════ CHIPS DE FILTROS ACTIVOS ════════════ */
+  .active-filters {
+    padding: 10px 18px;
+    background: #fffbeb;
+    border-bottom: 1px solid #fde68a;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    font-size: 11px;
+  }
+  .active-filters-label {
+    color: #64748b;
+    font-weight: 600;
+  }
+  .filter-chip {
+    background: white;
+    border: 1px solid #fde68a;
+    border-radius: 999px;
+    padding: 3px 4px 3px 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #b45309;
+    font-weight: 600;
+  }
+  .filter-chip .chip-x {
+    background: #f59e0b;
+    color: white;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 10px;
+    border: none;
+  }
+  .filter-chip-clear-all {
+    color: #b91c1c;
+    font-weight: 600;
+    margin-left: 6px;
+    cursor: pointer;
+    text-decoration: underline;
+    font-size: 11px;
+  }
+  
+  /* ════════════ STATS ════════════ */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    padding: 12px 18px;
+    background: #fafaf9;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .stat-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .stat-card:hover { background: #fffbeb; }
+  .stat-card.active {
+    border-color: #f59e0b;
+    background: #fffbeb;
+  }
+  .stat-label {
+    font-size: 10px;
+    color: #64748b;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .stat-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+  .stat-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  
+  /* ════════════ TABLA ════════════ */
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+  }
+  th {
+    background: #1e293b;
+    color: #e2e8f0;
+    text-align: left;
+    padding: 10px 12px;
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  td {
+    padding: 12px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fffbeb !important; }
+  
+  tr[data-bg="yellow"] td { background: rgba(253, 224, 71, 0.18); }
+  tr[data-bg="green"] td { background: rgba(74, 222, 128, 0.15); }
+  tr[data-bg="blue"] td { background: rgba(96, 165, 250, 0.15); }
+  tr[data-bg="purple"] td { background: rgba(196, 181, 253, 0.18); }
+  tr[data-bg="red"] td { background: rgba(252, 165, 165, 0.18); }
+  tr[data-bg="gray"] td { background: rgba(148, 163, 184, 0.10); }
+  
+  tr.crossed td .crossable {
+    position: relative;
+    color: #94a3b8;
+  }
+  tr.crossed td .crossable::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; top: 50%;
+    height: 1px; background: #94a3b8;
+  }
+  
+  .item-name { font-weight: 600; color: #0f172a; font-size: 13px; }
+  .item-detail { font-size: 11px; color: #64748b; margin-top: 2px; }
+  
+  /* Categoria badge */
+  .category-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    border: 1px solid;
+  }
+  .cat-panels { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+  .cat-electric { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .cat-structure { background: #f0f9ff; color: #0369a1; border-color: #bae6fd; }
+  .cat-protection { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+  .cat-other { background: #faf5ff; color: #6b21a8; border-color: #e9d5ff; }
+  
+  .status-select {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid;
+    cursor: pointer;
+    background: white;
+    white-space: nowrap;
+  }
+  .status-select::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+  }
+  .status-pendiente { color: #475569; border-color: #cbd5e1; }
+  .status-pendiente::before { background: #94a3b8; }
+  .status-pedido { color: #b45309; border-color: #fde68a; background: #fef3c7; }
+  .status-pedido::before { background: #f59e0b; }
+  .status-recibido { color: #047857; border-color: #a7f3d0; background: #ecfdf5; }
+  .status-recibido::before { background: #10b981; }
+  .status-stock { color: #1e40af; border-color: #bfdbfe; background: #dbeafe; }
+  .status-stock::before { background: #3b82f6; }
+  
+  .row-actions { display: flex; gap: 4px; align-items: center; }
+  .action-btn {
+    width: 26px; height: 26px;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    background: white;
+    color: #64748b;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  .action-btn:hover {
+    background: #fffbeb;
+    border-color: #fde68a;
+    color: #b45309;
+  }
+  .action-btn.active {
+    background: #fef3c7;
+    border-color: #fbbf24;
+    color: #b45309;
+  }
+  
+  .footer-note {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-top: 24px;
+    font-size: 12px;
+    color: #475569;
+    line-height: 1.6;
+  }
+  .footer-note strong { color: #0f172a; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Lista de materiales con filtros múltiples</h1>
+  <p class="subtitle">Filtrá por categoría, estado, color, agregado por... Combinable. Chips para ver qué filtros están activos.</p>
+  
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <div class="panel-title">Materiales · ESTILO SRL · Versión v3</div>
+        <div class="panel-meta">28 materiales · 4 categorías · Última edición Operaciones hace 2h</div>
+      </div>
+      <div class="actions">
+        <button class="btn">📥 Exportar</button>
+        <button class="btn">↻ Sincronizar con ingeniería</button>
+        <button class="btn btn-primary">+ Agregar</button>
+      </div>
+    </div>
+    
+    <!-- ════════════ BARRA DE FILTROS ════════════ -->
+    <div class="filter-bar">
+      <input type="text" class="search-input" placeholder="Buscar material..." value="" />
+      
+      <div class="filter-dropdown">
+        <button class="filter-trigger has-selection">
+          📂 Categoría
+          <span class="filter-count">2</span>
+          <span style="color:#cbd5e1;">▼</span>
+        </button>
+        <div class="filter-menu">
+          <div class="filter-menu-section">Filtrar por categoría</div>
+          <label class="filter-option">
+            <input type="checkbox" checked />
+            <span class="dot" style="background:#fb923c;"></span>
+            Paneles solares
+            <span class="count">2</span>
+          </label>
+          <label class="filter-option">
+            <input type="checkbox" checked />
+            <span class="dot" style="background:#10b981;"></span>
+            Eléctrica
+            <span class="count">8</span>
+          </label>
+          <label class="filter-option">
+            <input type="checkbox" />
+            <span class="dot" style="background:#0ea5e9;"></span>
+            Estructura
+            <span class="count">5</span>
+          </label>
+          <label class="filter-option">
+            <input type="checkbox" />
+            <span class="dot" style="background:#ef4444;"></span>
+            Protecciones
+            <span class="count">6</span>
+          </label>
+          <label class="filter-option">
+            <input type="checkbox" />
+            <span class="dot" style="background:#a855f7;"></span>
+            Otros
+            <span class="count">7</span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="filter-dropdown">
+        <button class="filter-trigger has-selection">
+          🏷️ Estado
+          <span class="filter-count">1</span>
+          <span style="color:#cbd5e1;">▼</span>
+        </button>
+      </div>
+      
+      <div class="filter-dropdown">
+        <button class="filter-trigger">
+          🎨 Color
+          <span style="color:#cbd5e1;">▼</span>
+        </button>
+      </div>
+      
+      <div class="filter-dropdown">
+        <button class="filter-trigger">
+          ⋯ Más filtros
+          <span style="color:#cbd5e1;">▼</span>
+        </button>
+      </div>
+    </div>
+    
+    <!-- ════════════ FILTROS ACTIVOS (chips) ════════════ -->
+    <div class="active-filters">
+      <span class="active-filters-label">Filtros activos:</span>
+      <span class="filter-chip">
+        📂 Paneles solares
+        <button class="chip-x">×</button>
+      </span>
+      <span class="filter-chip">
+        📂 Eléctrica
+        <button class="chip-x">×</button>
+      </span>
+      <span class="filter-chip">
+        🏷️ Pendiente
+        <button class="chip-x">×</button>
+      </span>
+      <a class="filter-chip-clear-all">Limpiar todo</a>
+    </div>
+    
+    <!-- ════════════ STATS ════════════ -->
+    <div class="stats-row">
+      <div class="stat-card active">
+        <div class="stat-label">Mostrando</div>
+        <div class="stat-value">5 / 28</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label"><span class="stat-dot" style="background:#94a3b8"></span>Pendiente</div>
+        <div class="stat-value">12</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label"><span class="stat-dot" style="background:#f59e0b"></span>Pedido</div>
+        <div class="stat-value">8</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label"><span class="stat-dot" style="background:#10b981"></span>Recibido</div>
+        <div class="stat-value">5</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label"><span class="stat-dot" style="background:#3b82f6"></span>En stock</div>
+        <div class="stat-value">3</div>
+      </div>
+    </div>
+    
+    <!-- ════════════ TABLA ════════════ -->
+    <table>
+      <thead>
+        <tr>
+          <th style="width:40px;"></th>
+          <th>Material</th>
+          <th style="width:130px;">Categoría</th>
+          <th style="width:80px;">Cantidad</th>
+          <th style="width:80px;">Unidad</th>
+          <th style="width:130px;">Estado</th>
+          <th style="width:120px;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>
+            <div class="crossable item-name">Panel solar Trina 540W</div>
+            <div class="item-detail">Modelo TSM-DE19R</div>
+          </td>
+          <td><span class="category-badge cat-panels">Paneles</span></td>
+          <td class="crossable">24</td>
+          <td class="crossable">u</td>
+          <td><span class="status-select status-pendiente">Pendiente</span></td>
+          <td>
+            <div class="row-actions">
+              <button class="action-btn" title="Tachar">✓</button>
+              <button class="action-btn" title="Color">🎨</button>
+              <button class="action-btn" title="Más">⋯</button>
+            </div>
+          </td>
+        </tr>
+        
+        <tr data-bg="yellow">
+          <td>2</td>
+          <td>
+            <div class="crossable item-name">Inversor Fronius Symo 15kW</div>
+            <div class="item-detail">3-fase, conexión a red</div>
+          </td>
+          <td><span class="category-badge cat-electric">Eléctrica</span></td>
+          <td class="crossable">1</td>
+          <td class="crossable">u</td>
+          <td><span class="status-select status-pedido">Pedido</span></td>
+          <td>
+            <div class="row-actions">
+              <button class="action-btn" title="Tachar">✓</button>
+              <button class="action-btn active" title="Color">🎨</button>
+              <button class="action-btn" title="Más">⋯</button>
+            </div>
+          </td>
+        </tr>
+        
+        <tr class="crossed">
+          <td>3</td>
+          <td>
+            <div class="crossable item-name">Cable solar 6mm² rojo</div>
+            <div class="item-detail">XLPE 1500V, Top Cable</div>
+          </td>
+          <td><span class="category-badge cat-electric">Eléctrica</span></td>
+          <td class="crossable">120</td>
+          <td class="crossable">m</td>
+          <td><span class="status-select status-recibido">Recibido</span></td>
+          <td>
+            <div class="row-actions">
+              <button class="action-btn active" title="Tachar">✓</button>
+              <button class="action-btn" title="Color">🎨</button>
+              <button class="action-btn" title="Más">⋯</button>
+            </div>
+          </td>
+        </tr>
+        
+        <tr data-bg="blue">
+          <td>4</td>
+          <td>
+            <div class="crossable item-name">Optimizador SolarEdge P850</div>
+            <div class="item-detail">Optimizador por panel</div>
+          </td>
+          <td><span class="category-badge cat-electric">Eléctrica</span></td>
+          <td class="crossable">24</td>
+          <td class="crossable">u</td>
+          <td><span class="status-select status-pendiente">Pendiente</span></td>
+          <td>
+            <div class="row-actions">
+              <button class="action-btn" title="Tachar">✓</button>
+              <button class="action-btn active" title="Color">🎨</button>
+              <button class="action-btn" title="Más">⋯</button>
+            </div>
+          </td>
+        </tr>
+        
+        <tr>
+          <td>5</td>
+          <td>
+            <div class="crossable item-name">Panel solar JA Solar 545W</div>
+            <div class="item-detail">JAM72S30, en reserva</div>
+          </td>
+          <td><span class="category-badge cat-panels">Paneles</span></td>
+          <td class="crossable">4</td>
+          <td class="crossable">u</td>
+          <td><span class="status-select status-pendiente">Pendiente</span></td>
+          <td>
+            <div class="row-actions">
+              <button class="action-btn" title="Tachar">✓</button>
+              <button class="action-btn" title="Color">🎨</button>
+              <button class="action-btn" title="Más">⋯</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- ════════════ NOTAS ════════════ -->
+  <div class="footer-note">
+    <strong>Cómo funcionan los filtros (combinables, todos AND):</strong>
+    <ul style="margin-top:8px;padding-left:24px;line-height:1.8;">
+      <li><strong>Buscador libre</strong>: texto en el nombre del material o detalle.</li>
+      <li><strong>📂 Categoría</strong>: paneles, eléctrica, estructura, protecciones, otros. Multi-select (varias a la vez).</li>
+      <li><strong>🏷️ Estado</strong>: pendiente, pedido, recibido, en stock. Multi-select.</li>
+      <li><strong>🎨 Color</strong>: filtrar por color asignado a la fila (sin color, amarillo, verde, etc.). Multi-select.</li>
+      <li><strong>⋯ Más filtros</strong>: agregado por (ingeniería/operaciones/admin), tachados sí/no, etc.</li>
+      <li><strong>Stats arriba</strong>: muestran el total filtrado vs total de la lista. Click en un stat de estado agrega ese estado como filtro.</li>
+      <li><strong>Chips bajo los filtros</strong>: cada filtro activo aparece como pill con × para quitarlo individual. "Limpiar todo" elimina todos los filtros de una.</li>
+      <li><strong>Persistencia</strong>: los filtros se guardan en querystring (URL), así si compartís el link, llega con los mismos filtros aplicados.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>
