@@ -78,6 +78,10 @@ html, body {
 .cover {
   display: flex;
   flex-direction: column;
+  /* Override del .page genérico: la portada NO rompe a página dedicada. */
+  /* El contenido fluye en la misma pág 1 con la primera sección técnica. */
+  page-break-after: auto;
+  margin-bottom: 32px;
 }
 
 .cover-title {
