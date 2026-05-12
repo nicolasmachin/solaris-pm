@@ -46,11 +46,16 @@ html, body {
   background: var(--voltia-blue);
   color: white;
   padding: 12px 16px 10px;
-  letter-spacing: 1.5px;
+  /* sin letter-spacing acá: el banner mezcla "VOLTIA · SOLUCIONES" en
+     mayúsculas con "voltia.com.uy" en minúsculas. El tracking va sólo en
+     el span uppercase. */
   font-size: 10px;
   font-weight: 500;
   position: relative;
   margin-bottom: 0;
+}
+.header-band__brand > span:first-child {
+  letter-spacing: 1px;
 }
 .header-band::after {
   content: '';
@@ -78,7 +83,7 @@ html, body {
 .cover-title {
   margin-top: 26mm;
   font-size: 11px;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   color: var(--text-muted);
   font-weight: 500;
   text-transform: uppercase;
@@ -106,7 +111,7 @@ html, body {
 }
 .client-block__label {
   font-size: 10px;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
   color: var(--text-muted);
   text-transform: uppercase;
   font-weight: 500;
@@ -138,7 +143,7 @@ html, body {
 .cover-kpis__cell:last-child { border-right: none; }
 .cover-kpis__label {
   font-size: 9px;
-  letter-spacing: 1.2px;
+  letter-spacing: 1px;
   font-weight: 500;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.75);
@@ -172,7 +177,7 @@ html, body {
 .section-title {
   color: var(--voltia-blue);
   font-size: 11px;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
   font-weight: 500;
   text-transform: uppercase;
 }
@@ -241,7 +246,7 @@ html, body {
 }
 .anexo-divider__label {
   font-size: 11px;
-  letter-spacing: 4px;
+  letter-spacing: 2px;
   color: var(--voltia-blue);
   font-weight: 500;
   text-transform: uppercase;
