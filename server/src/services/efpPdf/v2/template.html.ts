@@ -138,7 +138,6 @@ function renderCover(input: EFPPdfInput): string {
         </div>
       </div>
       <p class="cover-title">Proyecto Final de Ingeniería</p>
-      <h1 class="cover-h1">${escapeHtml(input.project.clientName)}</h1>
       <p class="cover-version-meta">Versión ${input.versionNumber} · ${escapeHtml(
         STATUS_LABEL[input.versionStatus] ?? input.versionStatus,
       )}${escapeHtml(fechaApro)}</p>

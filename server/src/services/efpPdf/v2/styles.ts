@@ -81,7 +81,7 @@ html, body {
 }
 
 .cover-title {
-  margin-top: 26mm;
+  margin-top: 48px;
   font-size: 11px;
   letter-spacing: 1px;
   color: var(--text-muted);
@@ -89,23 +89,15 @@ html, body {
   text-transform: uppercase;
 }
 
-.cover-h1 {
-  font-size: 28px;
-  font-weight: 500;
-  color: var(--text-primary);
-  margin-top: 6px;
-  letter-spacing: -0.5px;
-}
-
 .cover-version-meta {
-  margin-top: 18px;
+  margin-top: 4px;
   font-size: 11px;
   color: var(--text-secondary);
   letter-spacing: 0.5px;
 }
 
 .client-block {
-  margin-top: 36mm;
+  margin-top: 32px;
   padding-bottom: 16px;
   border-bottom: 0.5px solid var(--border-light);
 }
@@ -129,7 +121,7 @@ html, body {
 }
 
 .cover-kpis {
-  margin-top: 24mm;
+  margin-top: 32px;
   background: var(--voltia-blue);
   color: white;
   display: grid;
@@ -246,7 +238,7 @@ html, body {
 }
 .anexo-divider__label {
   font-size: 11px;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   color: var(--voltia-blue);
   font-weight: 500;
   text-transform: uppercase;
