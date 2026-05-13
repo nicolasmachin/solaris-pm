@@ -23,55 +23,53 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "5.4",
-  date: "10 de mayo de 2026",
+  version: "6.0",
+  date: "13 de mayo de 2026",
   sections: [
     {
-      title: "Finanzas — pestañas nuevas y rediseño general",
+      title: "Finanzas — Asistente de plan de pagos",
       items: [
-        "La pantalla de Finanzas pasa a tener siete pestañas: Movimientos, Pendientes, Proveedores, Cobros, Flujo de fondos, Estado de resultados y Cuentas.",
-        "Movimientos muestra solo lo ya pagado; arranca con la vista anual y sin paginación. Cada fila tiene botones visibles para Editar y Eliminar.",
-        "Nueva pestaña Pendientes: centraliza todo lo comprometido a pagar (costos fijos del mes, materiales proyectados de obras, deuda a proveedores y otros compromisos). Filtros por tipo, proyecto y proveedor, y botón \"Marcar pagado\" según origen.",
+        'En cada proyecto con presupuesto, banner amarillo "Crear plan de pagos →" que abre un asistente con 4 cuotas pre-cargadas (seña USD 500 + 50/30/20).',
+        "Edición libre antes de confirmar: monto ↔ porcentaje se recalculan recíprocamente, fechas independientes, agregar o eliminar cuotas (eliminar redistribuye monto entre las restantes).",
+        "Indicador de suma en vivo: verde con ✓ si coincide con el presupuesto (±USD 1), rojo con \"Faltan X\" si no. No se puede confirmar hasta que cierre.",
+        "Crea todas las cuotas como cobros previstos en una sola operación. En modo edición, reemplaza el plan anterior sin tocar los previstos sueltos ni los cobros pagados.",
       ],
     },
     {
-      title: "Flujo de fondos con histórico y proyección",
+      title: "Proyecto Final de Ingeniería — rediseño completo del PDF",
       items: [
-        "El gráfico muestra 6 meses en pantalla: 3 atrás (saldo real día a día, en gris) y 3 adelante (proyección, en azul). Una línea vertical \"Hoy\" marca el día actual en el centro.",
-        "Eje X a escala temporal real: cada día ocupa el mismo ancho, sin importar cuántos eventos haya.",
-        "Zona roja cuando el saldo proyectado cae por debajo de cero, con alerta arriba del gráfico.",
-        "Las fechas tentativas de cada evento se pueden editar desde la tabla de abajo y el gráfico se actualiza al instante.",
+        "Diseño nuevo con paleta Voltia (azul Francia + amarillo). Portada compacta con ficha del cliente y banda de KPIs en una sola página.",
+        "Datos congelados al aprobar cada versión: si cambia la capacidad después de aprobar v1, el PDF de v1 sigue mostrando los datos del momento.",
+        "Fusión real de PDFs adjuntos al final del documento, con separadores \"ANEXO A / B / C…\".",
+        "Toggle \"Incluir en PDF\" por cada adjunto para excluir los pesados o irrelevantes.",
+        "Sin código de proyecto ni caso UTE en el PDF, sin bug de ligaduras (\"fjos\" → \"fijos\"), sin páginas en blanco dispersas.",
       ],
     },
     {
-      title: "Estado de resultados (P&L)",
+      title: "Materiales — Lista colaborativa entre Ingeniería y Operaciones",
       items: [
-        "Vista mensual, trimestral y anual con desplegables por categoría: Costos fijos, Variables, Salidas por proyecto, Pago a proveedores, Compras de stock.",
-        "Salidas por proyecto se agrupan automáticamente por cliente con sub-detalle por ítem.",
-        "Resultado en verde si positivo, rojo si negativo, y rentabilidad en porcentaje.",
+        "Cada material se marca con estado de compra (Pendiente / Pedido / Recibido / En stock), se puede tachar, pintar la fila con un color libre y agregar notas internas.",
+        "Filtros multi-select de categoría / estado / color / agregado por + búsqueda libre. Chips de filtros activos con × individual. Stats clickeables arriba.",
+        "Filtros persisten en la URL: copiá el link y compartilo con los filtros aplicados.",
+        "Nuevo tab \"Compras\" en la ficha del proyecto, visible para usuarios de Ingeniería u Operaciones.",
+        "En el Consolidador, nueva \"Vista compras\" con estado agregado (Pendiente / Pedido / Recibido / En stock / Mixto) y cascada para cambiar el estado en todos los proyectos del consolidado de un click.",
       ],
     },
     {
-      title: "Costos fijos predefinidos",
+      title: "Finanzas — Pendientes y proveedores",
       items: [
-        "Nueva pestaña en Administración para pre-cargar gastos recurrentes (alquiler, contador, seguros, etc) con periodicidad mensual, bimensual o anual.",
-        "Aparecen como sugerencia en el formulario de \"Nuevo movimiento\" cuando elegís categoría \"Costo fijo\", solo los que faltan pagar este mes.",
-        "Cuando registrás un pago real, ese pasa a ser el monto sugerido la próxima vez.",
+        "Pendientes: materiales agrupados en 2 niveles (proyecto → categoría), botón \"+ Pendiente manual\" para gastos/cobros sin factura todavía, toggle Cobrado/Previsto en el modal de cobros.",
+        "Cargar facturas a pagar a proveedor desde el listado o la ficha de cada proveedor. La factura queda en \"A pagar\" y aparece automáticamente en Pendientes, cuenta corriente del proveedor y Flujo de fondos.",
+        "Pagos parciales/totales evolucionan el estado de la factura sin perder trazabilidad.",
       ],
     },
     {
-      title: "Ingeniería deja de ensuciar Movimientos",
+      title: "Ventas — Generador de propuesta comercial integrado",
       items: [
-        "Los materiales proyectados de un proyecto ya no generan movimientos PREVISTO en Finanzas. La fecha tentativa vive en el material y alimenta directamente el Flujo de fondos.",
-        "En Movimientos quedan solo cosas reales que pasaron con la plata.",
-      ],
-    },
-    {
-      title: "Generador EFP más rápido y conciso",
-      items: [
-        "El borrador del Proyecto Final de Ingeniería ahora apunta a 6-10 páginas (antes 19), sin repetición entre secciones. Anexos pasa a ser solo lista de archivos.",
-        "Generación 3× más rápida (~75 segundos) y un tercio del costo por borrador.",
-        "Diseño nuevo del PDF: header con wordmark VOLTIA, cards de datos clave del sistema en página 1, secciones numeradas con línea azul, footer con paginación.",
+        "El generador PDF de propuesta que antes corría en la PC del vendedor ahora vive en Voltia PM. Subís el Excel CALCULADORA desde la ficha del lead y en pocos segundos queda el PDF listo.",
+        "Versionado automático por lead (v1, v2, v3…). Cada versión se conserva.",
+        "El PDF también aparece en Adjuntos del lead con nombre legible \"Propuesta Comercial Voltia - {Cliente} v{N}.pdf\".",
+        "Indicador de progreso en vivo (Pendiente → Procesando → Completado) y error puntual si el Excel falla.",
       ],
     },
   ],
@@ -86,6 +84,16 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "5.4",
+    shortDate: "10 may",
+    highlights: [
+      "Finanzas: 7 pestañas (Movimientos, Pendientes, Proveedores, Cobros, Flujo de fondos, P&L, Cuentas).",
+      "Flujo de fondos con histórico (3 meses atrás + 3 adelante) y línea \"Hoy\" centrada.",
+      "Costos fijos predefinidos: sugerencias en formulario según los que faltan pagar este mes.",
+      "EFP: borrador con IA apuntando a 6-10 páginas, 3× más rápido y un tercio del costo.",
+    ],
+  },
   {
     version: "5.2",
     shortDate: "6 may",

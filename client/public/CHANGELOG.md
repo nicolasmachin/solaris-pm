@@ -1,6 +1,82 @@
 # Novedades
 
-## v5.4
+## v6.0
+
+### 13 de mayo de 2026
+
+#### Finanzas — Asistente de plan de pagos
+
+La pestaña Cobros de cada proyecto ahora arma el plan de cobros previstos por vos. Cuando un proyecto tiene presupuesto cargado y no hay cobros previstos todavía, aparece un banner amarillo con el botón **"Crear plan de pagos →"**. Click abre un asistente con 4 cuotas pre-cargadas: seña fija de USD 500 + Cuota 1 (50% incluyendo seña) + Cuota 2 (30%) + Cuota 3 (20%), todas con fechas escalonadas a 7, 30, 60 y 90 días.
+
+- **Edición libre** antes de confirmar: cambiá el monto o el porcentaje de cualquier cuota — el otro se recalcula solo. Cambiá la fecha de cada una. Renombrá las descripciones. Agregá o eliminá cuotas (la seña no se puede borrar).
+- **Eliminar redistribuye**: cuando borrás una cuota, su monto se reparte proporcionalmente entre las cuotas restantes (sin tocar la seña).
+- **Indicador de suma en vivo**: total en verde con ✓ cuando coincide con el presupuesto (tolerancia ±USD 1 por redondeo), rojo con "Faltan X" o "Excede por X" cuando no cierra. Si no cierra, no se puede confirmar.
+- **Validaciones**: si la seña supera el 50% del presupuesto, aparece un warning amarillo pero permite confirmar (puede ser intencional). Si la seña iguala o supera el presupuesto, error bloqueante.
+- **Una sola transacción**: al confirmar se crean todas las cuotas como cobros previstos en Finanzas. Si algo falla, no se crea ninguna.
+- **Modo edición**: cuando el plan ya existe, el banner se reemplaza por un botón discreto **"✎ Editar plan de pagos"**. Al confirmar cambios, los previstos viejos del plan se reemplazan por los nuevos en una sola operación. Los previstos sueltos (creados desde "Registrar cobro" sin pertenecer al plan) **no se tocan**, y los cobros ya pagados tampoco.
+
+Los previstos creados por el asistente aparecen en la pestaña global Pendientes y en el Flujo de fondos como salidas proyectadas (en realidad, ingresos esperados).
+
+#### Proyecto Final de Ingeniería — rediseño completo del PDF
+
+El generador del PDF del Proyecto Final de Ingeniería se reescribió de cero. Mejoras visibles:
+
+- **Diseño nuevo en HTML+CSS** con paleta Voltia (azul Francia + amarillo + blanco). Portada con banda superior, ficha del cliente y banda azul de KPIs en una sola página (antes la portada ocupaba una página entera con la mitad vacía).
+- **Datos congelados al aprobar la versión**: cada versión del EFP guarda un snapshot del proyecto, pre-ingeniería, trámite UTE y materiales al momento de crearse. Antes, si cambiaba la capacidad del proyecto después de aprobar v1, el PDF de v1 mostraba la nueva capacidad. Ahora cada versión queda anclada a su momento.
+- **Fusión real de anexos PDF** al final del documento: los PDFs adjuntos al EFP se appendean al final con sus separadores "ANEXO A / B / C…". Las imágenes y otros archivos quedan listadas como separador (sin contenido fusionable).
+- **Toggle "Incluir en PDF"** por cada adjunto: permite excluir adjuntos pesados o irrelevantes del documento final sin tener que borrarlos.
+- **Sin código de proyecto ni caso UTE** en el PDF: información administrativa interna que no debería estar en el documento técnico final.
+- **Tipografía Inter** sin el bug de ligaduras (antes aparecían "fjos" en lugar de "fijos", "Confguración" en lugar de "Configuración" por un problema del font anterior).
+- **Sin páginas en blanco** dispersas (antes había páginas 4-9 con solo header/footer).
+
+#### Materiales — Lista colaborativa entre Ingeniería y Operaciones
+
+La lista de materiales del proyecto pasa de ser "lista que genera Ingeniería" a "lista colaborativa". Operaciones y Ingeniería comparten la misma tabla y pueden marcar cada material con:
+
+- **Estado de compra**: Pendiente · Pedido · Recibido · En stock (pill clickeable que abre dropdown).
+- **Tachado** de items completados o cancelados (el texto sigue siendo legible).
+- **Color de fondo libre** por fila (6 colores pastel + sin color) para códigos de color personales.
+- **Notas internas** por ítem (texto libre hasta 500 caracteres).
+
+La tabla suma:
+
+- **Barra de filtros** con búsqueda libre + dropdowns multi-select de categoría, estado, color, y agregado por (manual vs auto-generado).
+- **Chips de filtros activos** en banda amarilla suave, con × individual y "Limpiar todo".
+- **Cards de stats arriba**: Total, Pendiente, Pedido, Recibido, En stock. Click en una stat agrega ese estado como filtro.
+- **Persistencia de filtros en la URL**: copiá el link de la pantalla con filtros aplicados y compartilo; quien abra ese link ve los mismos filtros.
+- **Última edición** en el header: "Última edición Operaciones hace 2h".
+
+La lista también se expone como nuevo **tab "Compras"** en la ficha del proyecto, visible para usuarios con permiso de Ingeniería o de Operaciones — antes solo era accesible desde el módulo Ingeniería.
+
+En el **Consolidador de Materiales** apareció una nueva **"Vista compras"** opcional: muestra el estado agregado de cada ítem (Pendiente / Pedido / Recibido / En stock / Mixto cuando los proyectos difieren) y permite cambiarlo en cascada para TODOS los proyectos del consolidado en un click. Mismo flujo con la acción de tachar.
+
+#### Finanzas — Pendientes refactor
+
+La pestaña Pendientes incorporó 3 mejoras:
+
+- **Materiales agrupados** en 2 niveles colapsables: primero por proyecto, dentro de cada proyecto por categoría de material (Paneles, Inversores, Estructuras, Eléctrica, etc.). Antes los materiales aparecían como filas planas mezcladas entre proyectos.
+- **Botón "+ Pendiente manual"** para agendar un gasto o un cobro que viene pero todavía no tiene factura. Toggle Gasto / Cobro, descripción, monto, moneda, fecha esperada y proyecto opcional (obligatorio si es Cobro).
+- **Toggle Cobrado / Previsto** en el modal "Registrar cobro" de cada proyecto: si elegís Previsto, el cobro se agenda como pendiente con fecha esperada sin tocar las cuentas.
+
+Los ingresos previstos se muestran en verde con prefijo `+` y los gastos en rojo con `-`. La barra de cards arriba pasó de 4 a 5 totales (sumando "Pendiente manual").
+
+#### Finanzas — Cargar facturas a pagar a proveedor
+
+Hasta ahora solo se podían **registrar pagos** a proveedores; no había forma de **cargar una factura pendiente** sin pagarla. Ahora se carga:
+
+- Desde el listado de Proveedores con botón **"+ Nueva factura a pagar"**.
+- Desde la ficha de cada proveedor con botón **"+ Cargar factura"** al lado de "Registrar pago".
+
+La factura queda en estado **"A pagar"** con fecha de vencimiento y aparece automáticamente en la cuenta corriente del proveedor, en Pendientes (con flag rojo si está vencida) y en Flujo de fondos como salida proyectada el día del vencimiento. Cuando llegan pagos parciales o totales, el estado evoluciona y el saldo restante se actualiza en todas las vistas.
+
+#### Ventas — Generador de propuesta comercial integrado
+
+El generador en PDF de la propuesta comercial que antes corría en la PC del vendedor ahora vive dentro de Voltia PM. Desde la ficha del lead se sube el Excel CALCULADORA, se aprieta "Generar" y en pocos segundos queda el PDF listo para descargar.
+
+- Versionado automático por lead (v1, v2, v3…). Cada versión se conserva.
+- El PDF también aparece en la sección Adjuntos del lead con el nombre `"Propuesta Comercial Voltia - {Cliente} v{N}.pdf"`.
+- Indicador de progreso en vivo en el modal (Pendiente → Procesando → Completado).
+- Si el Excel no tiene la hoja "CALCULADORA" o falla por otro motivo, el estado queda como "Falló" con el error puntual.
 
 ### 11 de mayo de 2026 (cuarta parte)
 
