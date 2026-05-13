@@ -12729,7 +12729,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // ─── Finance: Transición de estados de movimientos ────────────────────────
 
     const allowedTransitions: Record<FinanceMovementStatus, FinanceMovementStatus[]> = {
-      [FinanceMovementStatus.PREVISTO]: [],
+      // PREVISTO se puede confirmar como PAGADO (cobro real o gasto real entró).
+      // Usado por los pendientes manuales y las cuotas del plan de pagos.
+      [FinanceMovementStatus.PREVISTO]: [FinanceMovementStatus.PAGADO],
       [FinanceMovementStatus.COMPROMETIDO]: [FinanceMovementStatus.A_PAGAR, FinanceMovementStatus.PAGADO],
       [FinanceMovementStatus.A_PAGAR]: [FinanceMovementStatus.PAGADO],
       // PARCIALMENTE_PAGADO se setea automáticamente al aplicar pagos; no se
@@ -12781,13 +12783,21 @@ export async function registerApiRoutes(app: FastifyInstance) {
         data.mes = paid.getUTCMonth() + 1;
         data.anio = paid.getUTCFullYear();
         data.pagado = true;
+        // Para INGRESO PREVISTO → PAGADO, además seteamos cobrado=true: la
+        // valid validateAccountForMovement usa este flag para exigir cuenta
+        // (sin él, los ingresos pasarían sin pedir cuenta).
+        const cobradoEffective =
+          existing.tipoMovimiento === TipoMovimiento.INGRESO ? true : existing.cobrado;
+        if (existing.tipoMovimiento === TipoMovimiento.INGRESO) {
+          data.cobrado = true;
+        }
         // Validar cuenta (sólo se llega acá si no tiene supplier; los con
         // supplier ya fueron bloqueados arriba).
         const accountId = body.accountId ?? existing.accountId;
         await validateAccountForMovement({
           tipoMovimiento: existing.tipoMovimiento,
           status: FinanceMovementStatus.PAGADO,
-          cobrado: existing.cobrado,
+          cobrado: cobradoEffective,
           moneda: existing.moneda,
           accountId,
         });
@@ -12819,7 +12829,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         await prisma.financeMovement.update({ where: { id }, data: { requiresItemDetail: true } });
       }
 
-      void checkInvariantOrWarn("transition movement", { movementId: id, newStatus });
+      void checkInvariantOrWarn("transition movement", { movementId: id, newStatus: body.newStatus });
       return {
         id: updated.id,
         status: updated.status,
