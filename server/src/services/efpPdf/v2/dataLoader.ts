@@ -5,12 +5,14 @@
 
 import { prisma } from "../../../lib/prisma.js";
 import { AppError } from "../../../utils/errors.js";
+import { getStoredFilePath } from "../../file-storage.service.js";
 import type {
   SnapshotMaterials,
   SnapshotPreIng,
   SnapshotProject,
   SnapshotUte,
 } from "../../efp.snapshots.types.js";
+import type { AttachmentForMerge } from "./attachmentMerger.js";
 import type { EFPPdfInput, EFPVersionStatus } from "./types.js";
 
 export async function buildEFPPdfInput(versionId: string): Promise<EFPPdfInput> {
@@ -99,4 +101,50 @@ export async function buildEFPPdfInput(versionId: string): Promise<EFPPdfInput> 
     },
     attachments,
   };
+}
+
+/**
+ * Carga los adjuntos del EFP listos para el merge con pdf-lib.
+ *
+ * Reglas:
+ *  - Solo adjuntos con `includeInPdf=true` y `deletedAt=null`.
+ *  - Orden estable por `createdAt asc` (mismo orden que en el template HTML,
+ *    así los separadores ANEXO X coinciden con el contenido fusionado).
+ *  - Filtra a mimeType `application/pdf`: imágenes y otros tipos quedan
+ *    fuera del merge (el separador igual se renderiza en el PDF principal).
+ *  - Resuelve `filePath` a path absoluto en filesystem vía
+ *    `getStoredFilePath(fileAttachment.url)`.
+ */
+export async function loadAttachmentsForMerge(versionId: string): Promise<AttachmentForMerge[]> {
+  const version = await prisma.eFPVersion.findUnique({
+    where: { id: versionId },
+    include: {
+      efp: {
+        include: {
+          attachments: {
+            where: { deletedAt: null, includeInPdf: true },
+            orderBy: { createdAt: "asc" },
+            include: { fileAttachment: true },
+          },
+        },
+      },
+    },
+  });
+  if (!version) return [];
+
+  // Enumeramos PRIMERO sobre el orden global de attachments (mismo orden y
+  // misma letra que usa el template para los separadores). DESPUÉS filtramos
+  // a PDF. Si hay [PDF, IMG, PDF]: el template muestra A, B, C separadores;
+  // el merge concatena contenido en A y C, dejando B (imagen) sin contenido
+  // pero con su separador igual visible.
+  return version.efp.attachments
+    .map((a, idx) => ({ entry: a, idx }))
+    .filter(({ entry }) => entry.fileAttachment.mimeType === "application/pdf")
+    .map(({ entry, idx }) => ({
+      fileAttachmentId: entry.fileAttachment.id,
+      filePath: getStoredFilePath(entry.fileAttachment.url),
+      mimeType: entry.fileAttachment.mimeType,
+      label: `Anexo ${String.fromCharCode(65 + idx)}`,
+      title: entry.description?.trim() || entry.fileAttachment.filename,
+    }));
 }

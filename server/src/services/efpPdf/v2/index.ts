@@ -11,7 +11,8 @@
 //
 // Lee SIEMPRE de los snapshots de EFPVersion (Fase A), nunca de DB en vivo.
 
-import { buildEFPPdfInput } from "./dataLoader.js";
+import { mergePdfWithAttachments } from "./attachmentMerger.js";
+import { buildEFPPdfInput, loadAttachmentsForMerge } from "./dataLoader.js";
 import { renderHtmlToPdf } from "./pdfRenderer.js";
 import { buildFooterHtml, buildHeaderHtml, renderEFPHtml } from "./template.html.js";
 
@@ -20,5 +21,13 @@ export async function generateEFPPdfV2(versionId: string): Promise<Buffer> {
   const html = renderEFPHtml(input);
   const header = buildHeaderHtml(input);
   const footer = buildFooterHtml();
-  return renderHtmlToPdf(html, { headerHtml: header, footerHtml: footer });
+  const mainPdf = await renderHtmlToPdf(html, { headerHtml: header, footerHtml: footer });
+
+  // Si no hay PDFs para fusionar, devolvemos el principal tal cual. El
+  // template ya tiene las separadoras "ANEXO X" para imágenes que sólo
+  // viven como referencia visual sin contenido fusionable.
+  const pdfAttachments = await loadAttachmentsForMerge(versionId);
+  if (pdfAttachments.length === 0) return mainPdf;
+
+  return mergePdfWithAttachments(mainPdf, pdfAttachments);
 }
