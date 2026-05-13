@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { ChevronLeft, Plus, ExternalLink, X } from 'lucide-react';
+import { ChevronLeft, Plus, ExternalLink, X, Sparkles, Pencil } from 'lucide-react';
+import { usePlanPagos } from '../hooks/usePlanPagos';
+import { PlanPagosModal } from '../components/finance/PlanPagosModal';
 import { Spinner } from '../components/ui/Spinner';
 import { getCobroProjectDetail, createMovement } from '../api/finance.api';
 import { getAccounts } from '../api/accounts.api';
@@ -39,6 +41,8 @@ export function FinanceCobroDetail() {
   const { id: projectId } = useParams<{ id: string }>();
   const [tab, setTab] = useState<Tab>('cobros');
   const [showCobroModal, setShowCobroModal] = useState(false);
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const planQ = usePlanPagos(projectId ?? '');
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['cobros-by-project', projectId],
@@ -117,6 +121,15 @@ export function FinanceCobroDetail() {
       </div>
 
       {tab === 'cobros' && (
+        <PlanPagosBannerOrButton
+          presupuestoUsd={planQ.data?.presupuestoUsd ?? null}
+          hasPlan={planQ.data?.hasPlan ?? false}
+          cuotasCount={planQ.data?.cuotas.length ?? 0}
+          onOpen={() => setShowPlanModal(true)}
+        />
+      )}
+
+      {tab === 'cobros' && (
         <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl overflow-hidden">
           {cobros.length === 0 ? (
             <p className="text-sm text-[var(--color-text-muted)] text-center py-12">Sin cobros registrados todavía</p>
@@ -182,6 +195,14 @@ export function FinanceCobroDetail() {
         </div>
       )}
 
+      {showPlanModal && (
+        <PlanPagosModal
+          projectId={project.id}
+          projectName={project.clientName}
+          onClose={() => setShowPlanModal(false)}
+        />
+      )}
+
       {showCobroModal && (
         <RegisterCobroModal
           projectId={project.id}
@@ -220,6 +241,64 @@ function KpiCard({ moneda, data }: { moneda: Moneda; data: { presupuesto: number
           </p>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Banner / botón del asistente de plan de pagos ────────────────────────
+
+function PlanPagosBannerOrButton({
+  presupuestoUsd,
+  hasPlan,
+  cuotasCount,
+  onOpen,
+}: {
+  presupuestoUsd: number | null;
+  hasPlan: boolean;
+  cuotasCount: number;
+  onOpen: () => void;
+}) {
+  // Si el proyecto no tiene presupuesto, no podemos sugerir nada — escondemos
+  // banner y botón.
+  if (!presupuestoUsd || presupuestoUsd <= 0) return null;
+
+  if (!hasPlan) {
+    return (
+      <div className="rounded-lg border border-[var(--color-warning-bg)] bg-[var(--color-warning-bg)]/20 px-4 py-3 flex items-start justify-between gap-3 flex-wrap">
+        <div className="flex items-start gap-2.5 min-w-0">
+          <Sparkles className="w-4 h-4 text-[var(--color-warning-text)] mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-[var(--color-text-primary)]">
+              Este proyecto todavía no tiene plan de pagos previstos.
+            </p>
+            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+              Generá un plan basado en el presupuesto (seña + cuotas). Podés ajustar montos, % y fechas antes de confirmar.
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onOpen}
+          className="px-3 py-1.5 rounded bg-[var(--color-accent)] text-gray-900 text-xs font-semibold hover:bg-[var(--color-accent-hover)] shrink-0"
+        >
+          Crear plan de pagos →
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <p className="text-[11px] text-[var(--color-text-muted)]">
+        Plan de pagos vigente · {cuotasCount} cuota{cuotasCount === 1 ? "" : "s"} previstas
+      </p>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded border border-[var(--color-border)] text-[11px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
+      >
+        <Pencil className="w-3 h-3" /> Editar plan de pagos
+      </button>
     </div>
   );
 }
