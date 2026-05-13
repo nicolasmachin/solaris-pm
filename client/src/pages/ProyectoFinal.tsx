@@ -24,6 +24,7 @@ import {
   type EFPStatus,
   type EFPVersionDto,
   deleteEFPAttachment,
+  patchEFPAttachment,
   deleteEFPVersion,
   efpVersionPdfUrl,
   generateEFPWithAI,
@@ -630,6 +631,7 @@ function AttachmentsBlock({
               attachment={a}
               onDelete={() => handleDelete(a.id)}
               canEdit={canEdit}
+              onChange={onChange}
             />
           ))}
         </div>
@@ -642,13 +644,29 @@ function AttachmentCard({
   attachment,
   onDelete,
   canEdit,
+  onChange,
 }: {
   attachment: EFPAttachmentDto;
   onDelete: () => void;
   canEdit: boolean;
+  onChange: () => void;
 }) {
   const isImage = attachment.file?.mimeType?.startsWith("image/");
+  const isPdf = attachment.file?.mimeType === "application/pdf";
   const previewUrl = attachment.file?.previewUrl ?? "";
+  const [saving, setSaving] = useState(false);
+
+  async function toggleIncludeInPdf(next: boolean) {
+    setSaving(true);
+    try {
+      await patchEFPAttachment(attachment.id, { includeInPdf: next });
+      onChange();
+    } catch (err) {
+      toast.error(getApiErr(err) ?? "No se pudo actualizar");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div className="rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] overflow-hidden">
@@ -680,6 +698,25 @@ function AttachmentCard({
         <p className="text-[10px] text-[var(--color-text-muted)] font-mono mt-0.5">
           {Math.round((attachment.file?.sizeBytes ?? 0) / 1024)} KB · {fmt(attachment.createdAt)}
         </p>
+        {canEdit && (
+          <label
+            className="mt-1.5 flex items-center gap-1.5 text-[10px] text-[var(--color-text-secondary)] cursor-pointer hover:text-[var(--color-text-primary)]"
+            title={
+              isPdf
+                ? "Si está marcado, el contenido del PDF se fusiona al final del documento principal."
+                : "Si está marcado, aparece como separador con título 'ANEXO X' en el PDF. Las imágenes no se fusionan, solo el separador."
+            }
+          >
+            <input
+              type="checkbox"
+              checked={attachment.includeInPdf}
+              disabled={saving}
+              onChange={(e) => toggleIncludeInPdf(e.target.checked)}
+              className="accent-[var(--color-accent)]"
+            />
+            <span>Incluir en PDF</span>
+          </label>
+        )}
       </div>
     </div>
   );

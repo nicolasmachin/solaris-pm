@@ -46,6 +46,7 @@ export interface EFPAttachmentDto {
   id: string;
   description: string | null;
   category: string | null;
+  includeInPdf: boolean;
   createdAt: string;
   uploadedBy?: { id: string; name: string } | null;
   file: {
@@ -142,6 +143,19 @@ export async function uploadEFPAttachment(
 
 export async function deleteEFPAttachment(attachmentId: string): Promise<void> {
   await apiClient.delete(`/api/efp/attachments/${attachmentId}`);
+}
+
+export async function patchEFPAttachment(
+  attachmentId: string,
+  body: { description?: string | null; category?: "datasheet" | "foto" | "plano" | "otro" | null; includeInPdf?: boolean },
+): Promise<{ id: string; description: string | null; category: string | null; includeInPdf: boolean }> {
+  const { data } = await apiClient.patch<{
+    id: string;
+    description: string | null;
+    category: string | null;
+    includeInPdf: boolean;
+  }>(`/api/efp/attachments/${attachmentId}`, body);
+  return data;
 }
 
 export function efpVersionPdfUrl(versionId: string): string {

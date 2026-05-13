@@ -164,6 +164,7 @@ export async function registerEFPRoutes(app: FastifyInstance) {
             id: a.id,
             description: a.description,
             category: a.category,
+            includeInPdf: a.includeInPdf,
             createdAt: serializeDate(a.createdAt),
             uploadedBy: a.uploadedBy,
             file: a.fileAttachment
@@ -528,6 +529,54 @@ export async function registerEFPRoutes(app: FastifyInstance) {
           downloadUrl: `/api/files/${fileAttachment.id}/download`,
         },
       };
+    },
+  );
+
+  // ─── Patch de un anexo (descripción / categoría / includeInPdf) ─────────
+  app.patch(
+    "/efp/attachments/:attachmentId",
+    { preHandler: authorize(Module.INGENIERIA, Action.EDIT) },
+    async (request) => {
+      const user = ensureUser(request);
+      const params = z.object({ attachmentId: z.string().min(1) }).parse(request.params);
+      const body = z
+        .object({
+          description: z.string().max(500).nullable().optional(),
+          category: z.enum(["datasheet", "foto", "plano", "otro"]).nullable().optional(),
+          includeInPdf: z.boolean().optional(),
+        })
+        .strict()
+        .parse(request.body);
+
+      const existing = await prisma.eFPAttachment.findFirst({
+        where: { id: params.attachmentId, deletedAt: null },
+        include: { efp: { select: { projectId: true } } },
+      });
+      if (!existing) throw notFound("EFP_ATTACHMENT_NOT_FOUND", "Anexo no encontrado");
+
+      const updated = await prisma.eFPAttachment.update({
+        where: { id: existing.id },
+        data: {
+          ...(body.description !== undefined ? { description: body.description } : {}),
+          ...(body.category !== undefined ? { category: body.category } : {}),
+          ...(body.includeInPdf !== undefined ? { includeInPdf: body.includeInPdf } : {}),
+        },
+        select: { id: true, description: true, category: true, includeInPdf: true },
+      });
+
+      await createAuditEntry({
+        entityType: AuditEntityType.file,
+        entityId: existing.id,
+        projectId: existing.efp.projectId,
+        userId: user.id,
+        action: AuditAction.updated,
+        description: `Actualizó anexo del Proyecto Final${
+          body.includeInPdf !== undefined ? ` (includeInPdf=${body.includeInPdf})` : ""
+        }`,
+        metadata: body,
+      });
+
+      return updated;
     },
   );
 
