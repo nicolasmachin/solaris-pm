@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { ChevronDown, ChevronRight, ExternalLink, Pencil, Plus, Trash2, X } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronRight, ExternalLink, Pencil, Plus, Trash2, X } from "lucide-react";
 
 import {
   deletePendingItem,
@@ -308,6 +308,7 @@ export function FinancePendientesTab() {
               groups={filteredProjectMaterialGroups}
               expanded={expandedGroups.has("PROJECT_MATERIAL")}
               onToggle={() => toggleGroup("PROJECT_MATERIAL")}
+              onInvalidate={invalidatePending}
             />
           )}
           {groups.map((g) => {
@@ -627,19 +628,70 @@ function PendingRow({
 
 // ─── Tarjeta de materiales proyectados (proyecto → categoría → ítems) ────
 
+type MaterialMutations = {
+  editFecha: (ids: string[], fecha: string, label: string) => void;
+  deleteIds: (ids: string[], label: string) => void;
+  isPending: boolean;
+};
+
 function ProjectMaterialsGroupCard({
   groups,
   expanded,
   onToggle,
+  onInvalidate,
 }: {
   groups: ProjectMaterialGroup[];
   expanded: boolean;
   onToggle: () => void;
+  onInvalidate: () => void;
 }) {
   const totalAll = groups.reduce((s, g) => s + g.totalAmount, 0);
   const overdueAll = groups.reduce((s, g) => s + g.overdueCount, 0);
   const monedas = new Set(groups.map((g) => g.moneda));
   const displayMoneda = monedas.size === 1 ? Array.from(monedas)[0] : "UYU";
+
+  // Mutaciones bulk: usan el endpoint single-item ya existente y disparan N
+  // requests en paralelo. Para grupos chicos (decenas de ítems) está bien;
+  // si en algún momento hay cientos de ítems por proyecto se puede agregar
+  // un endpoint bulk dedicado.
+  const editFechaMut = useMutation({
+    mutationFn: async ({ ids, fecha }: { ids: string[]; fecha: string }) => {
+      await Promise.all(ids.map((id) => updateCashflowEventFecha("PROJECT_MATERIAL", id, fecha)));
+      return ids.length;
+    },
+    onSuccess: (count, vars) => {
+      toast.success(`${count} material${count === 1 ? "" : "es"} reagendado${count === 1 ? "" : "s"} para ${vars.fecha}`);
+      onInvalidate();
+    },
+    onError: (err) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? "No se pudo reagendar");
+    },
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: async ({ ids }: { ids: string[] }) => {
+      await Promise.all(ids.map((id) => deletePendingItem("PROJECT_MATERIAL", id)));
+      return ids.length;
+    },
+    onSuccess: (count) => {
+      toast.success(`${count} material${count === 1 ? "" : "es"} sacado${count === 1 ? "" : "s"} de Pendientes`);
+      onInvalidate();
+    },
+    onError: (err) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? "No se pudo eliminar");
+    },
+  });
+
+  const mutations: MaterialMutations = {
+    editFecha: (ids, fecha, _label) => editFechaMut.mutate({ ids, fecha }),
+    deleteIds: (ids, label) => {
+      if (!confirm(`¿Sacar de Pendientes ${label}? Los materiales no se borran del proyecto, solo se les quita la fecha esperada y dejan de impactar al Flujo de fondos.`)) return;
+      deleteMut.mutate({ ids });
+    },
+    isPending: editFechaMut.isPending || deleteMut.isPending,
+  };
 
   return (
     <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl overflow-hidden">
@@ -676,7 +728,11 @@ function ProjectMaterialsGroupCard({
       {expanded && (
         <div className="border-t border-[var(--color-border)]">
           {groups.map((g) => (
-            <ProjectMaterialsProjectRow key={`${g.projectId}-${g.moneda}`} group={g} />
+            <ProjectMaterialsProjectRow
+              key={`${g.projectId}-${g.moneda}`}
+              group={g}
+              mutations={mutations}
+            />
           ))}
         </div>
       )}
@@ -684,14 +740,110 @@ function ProjectMaterialsGroupCard({
   );
 }
 
-function ProjectMaterialsProjectRow({ group }: { group: ProjectMaterialGroup }) {
-  const [open, setOpen] = useState(false);
+// Acciones inline (reagendar fecha + eliminar) que se reusan en cada nivel
+// (proyecto / categoría / ítem). Maneja su propio estado de edición.
+function MaterialActions({
+  ids,
+  defaultFecha,
+  label,
+  size = "sm",
+  mutations,
+}: {
+  ids: string[];
+  defaultFecha: string;
+  label: string;
+  size?: "sm" | "xs";
+  mutations: MaterialMutations;
+}) {
+  const [editingFecha, setEditingFecha] = useState(false);
+  const [fechaValue, setFechaValue] = useState("");
+  const iconSize = size === "xs" ? "w-3 h-3" : "w-3.5 h-3.5";
+
+  function startEdit(e: React.MouseEvent) {
+    e.stopPropagation();
+    setFechaValue(defaultFecha.slice(0, 10));
+    setEditingFecha(true);
+  }
+  function cancelEdit(e: React.MouseEvent) {
+    e.stopPropagation();
+    setEditingFecha(false);
+  }
+  function saveFecha(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!fechaValue) return;
+    mutations.editFecha(ids, fechaValue, label);
+    setEditingFecha(false);
+  }
+  function deleteAll(e: React.MouseEvent) {
+    e.stopPropagation();
+    mutations.deleteIds(ids, label);
+  }
+
+  if (editingFecha) {
+    return (
+      <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <input
+          type="date"
+          value={fechaValue}
+          onChange={(e) => setFechaValue(e.target.value)}
+          autoFocus
+          className="rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-1.5 py-0.5 text-[11px] text-[var(--color-text-primary)]"
+        />
+        <button
+          type="button"
+          onClick={saveFecha}
+          disabled={mutations.isPending || !fechaValue}
+          className="text-[11px] text-[var(--color-accent)] hover:underline disabled:opacity-50"
+        >
+          Guardar
+        </button>
+        <button
+          type="button"
+          onClick={cancelEdit}
+          className="text-[11px] text-[var(--color-text-muted)] hover:underline"
+        >
+          Cancelar
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="border-t border-[var(--color-border)] first:border-t-0">
+    <div className="flex items-center gap-1">
       <button
         type="button"
+        onClick={startEdit}
+        title="Reagendar todos a una fecha"
+        className="p-1 rounded text-[var(--color-text-muted)] hover:bg-[var(--color-accent)]/15 hover:text-[var(--color-accent)] transition-colors"
+      >
+        <CalendarDays className={iconSize} />
+      </button>
+      <button
+        type="button"
+        onClick={deleteAll}
+        title="Sacar de Pendientes (no borra del proyecto)"
+        className="p-1 rounded text-[var(--color-text-muted)] hover:bg-red-500/15 hover:text-red-400 transition-colors"
+      >
+        <Trash2 className={iconSize} />
+      </button>
+    </div>
+  );
+}
+
+function ProjectMaterialsProjectRow({
+  group,
+  mutations,
+}: {
+  group: ProjectMaterialGroup;
+  mutations: MaterialMutations;
+}) {
+  const [open, setOpen] = useState(false);
+  const allIds = group.categorias.flatMap((c) => c.items.map((it) => it.sourceId));
+  return (
+    <div className="border-t border-[var(--color-border)] first:border-t-0">
+      <div
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-2.5 pl-9 hover:bg-[var(--color-bg-card-hover)] transition-colors"
+        className="w-full flex items-center justify-between gap-3 px-4 py-2.5 pl-9 hover:bg-[var(--color-bg-card-hover)] transition-colors cursor-pointer"
       >
         <div className="flex items-center gap-2 min-w-0">
           {open ? (
@@ -711,10 +863,18 @@ function ProjectMaterialsProjectRow({ group }: { group: ProjectMaterialGroup }) 
             </span>
           )}
         </div>
-        <span className="text-sm tabular-nums text-red-400 font-medium">
-          -{fmtCurrency(group.totalAmount, group.moneda)}
-        </span>
-      </button>
+        <div className="flex items-center gap-3 shrink-0">
+          <span className="text-sm tabular-nums text-red-400 font-medium">
+            -{fmtCurrency(group.totalAmount, group.moneda)}
+          </span>
+          <MaterialActions
+            ids={allIds}
+            defaultFecha={group.earliestDate}
+            label={`los ${allIds.length} materiales de "${group.clientName}"`}
+            mutations={mutations}
+          />
+        </div>
+      </div>
 
       {open && (
         <div>
@@ -723,6 +883,7 @@ function ProjectMaterialsProjectRow({ group }: { group: ProjectMaterialGroup }) 
               key={`${group.projectId}-${cat.categoria}`}
               categoria={cat}
               moneda={group.moneda}
+              mutations={mutations}
             />
           ))}
         </div>
@@ -734,17 +895,23 @@ function ProjectMaterialsProjectRow({ group }: { group: ProjectMaterialGroup }) 
 function ProjectMaterialsCategoriaRow({
   categoria,
   moneda,
+  mutations,
 }: {
   categoria: ProjectMaterialGroup["categorias"][number];
   moneda: Moneda;
+  mutations: MaterialMutations;
 }) {
   const [open, setOpen] = useState(false);
+  const ids = categoria.items.map((it) => it.sourceId);
+  const earliestDate = categoria.items.reduce(
+    (min, it) => (it.fecha < min ? it.fecha : min),
+    categoria.items[0]?.fecha ?? todayLocalISO(),
+  );
   return (
     <>
-      <button
-        type="button"
+      <div
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-2 pl-14 border-t border-[var(--color-border)] hover:bg-[var(--color-bg-card-hover)] transition-colors text-xs"
+        className="w-full flex items-center justify-between gap-3 px-4 py-2 pl-14 border-t border-[var(--color-border)] hover:bg-[var(--color-bg-card-hover)] transition-colors text-xs cursor-pointer"
       >
         <div className="flex items-center gap-2 min-w-0">
           {open ? (
@@ -757,10 +924,19 @@ function ProjectMaterialsCategoriaRow({
             {categoria.items.length} ítem{categoria.items.length === 1 ? "" : "s"}
           </span>
         </div>
-        <span className="tabular-nums text-red-400">
-          -{fmtCurrency(categoria.totalAmount, moneda)}
-        </span>
-      </button>
+        <div className="flex items-center gap-3 shrink-0">
+          <span className="tabular-nums text-red-400">
+            -{fmtCurrency(categoria.totalAmount, moneda)}
+          </span>
+          <MaterialActions
+            ids={ids}
+            defaultFecha={earliestDate}
+            label={`los ${ids.length} ítems de "${categoria.categoria}"`}
+            size="xs"
+            mutations={mutations}
+          />
+        </div>
+      </div>
 
       {open && (
         <div className="border-t border-[var(--color-border)] bg-[var(--color-bg-app)]/40">
@@ -784,9 +960,18 @@ function ProjectMaterialsCategoriaRow({
                   {it.quantity} × {fmtCurrency(it.unitPrice, it.moneda)}
                 </span>
               </div>
-              <span className="tabular-nums text-red-400">
-                -{fmtCurrency(it.monto, it.moneda)}
-              </span>
+              <div className="flex items-center gap-3 shrink-0">
+                <span className="tabular-nums text-red-400">
+                  -{fmtCurrency(it.monto, it.moneda)}
+                </span>
+                <MaterialActions
+                  ids={[it.sourceId]}
+                  defaultFecha={it.fecha}
+                  label={`"${it.materialNombre}"`}
+                  size="xs"
+                  mutations={mutations}
+                />
+              </div>
             </div>
           ))}
         </div>

@@ -97,6 +97,16 @@ El generador en PDF de la propuesta comercial que antes corría en la PC del ven
 - **Borrar** (ícono ✕ rojo) de un previsto ahora también lo saca del **Flujo de fondos** automáticamente: ya no se sigue contando como ingreso esperado / gasto proyectado. Útil cuando una previsión quedó cubierta por otra compra/cobro real.
 - Costos fijos no se pueden reagendar inline (su fecha es el "día del mes" configurado en Administración).
 
+#### Pendientes — Reagendar / sacar materiales proyectados a cualquier nivel
+
+En la tarjeta de **Materiales proyectados** ahora aparecen dos íconos de acción (📅 reagendar · 🗑 sacar) en cada nivel de la jerarquía:
+
+- **Por ítem**: reagenda o saca de Pendientes un único material.
+- **Por categoría**: reagenda todos los ítems de "Paneles" (por ejemplo) a una misma fecha, o los saca todos juntos.
+- **Por proyecto**: reagenda o saca de Pendientes todos los materiales de un proyecto en un click.
+
+"Sacar de Pendientes" no borra el material del proyecto — solo le quita la **fecha esperada** y deja de aparecer en Pendientes y en el Flujo de fondos. Útil cuando esos materiales ya quedaron cubiertos por una factura real o por otra compra.
+
 #### Arreglos
 
 - **Pendientes**: los botones **"Marcar pagado"** y **"Editar"** ahora funcionan sobre las cuotas del plan de pagos y otros previstos manuales. Marcar pagado abre un cuadrito para elegir fecha real y cuenta destino; al confirmar registra el cobro/pago y la cuota desaparece de Pendientes (queda como movimiento PAGADO en el flujo de fondos). Editar permite cambiar descripción, monto y fecha esperada antes de cobrarla. Antes los dos botones no hacían nada.
