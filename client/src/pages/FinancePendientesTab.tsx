@@ -13,6 +13,7 @@ import {
 } from "../api/pending.api";
 import { fmtCurrency, fmtDate } from "../lib/finance";
 import { getMovement, patchMovement, transitionMovement } from "../api/finance.api";
+import { updateCashflowEventFecha, type EditableEventSourceType } from "../api/cashflow.api";
 import { getAccounts } from "../api/accounts.api";
 import { ACCOUNT_TYPE_LABEL } from "../types/accounts.types";
 import { todayLocalISO } from "../utils/date";
@@ -144,6 +145,24 @@ export function FinancePendientesTab() {
     onError: (err) => {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       toast.error(msg ?? "No se pudo marcar como pagado");
+    },
+  });
+
+  // Edición inline de fecha por fila. La key del row en edición y la fecha
+  // tentativa viven en el contenedor para sobrevivir re-renders de la tabla.
+  const [editingFechaId, setEditingFechaId] = useState<string | null>(null);
+  const [editingFechaValue, setEditingFechaValue] = useState<string>("");
+  const editFechaMut = useMutation({
+    mutationFn: ({ sourceType, sourceId, fecha }: { sourceType: EditableEventSourceType; sourceId: string; fecha: string }) =>
+      updateCashflowEventFecha(sourceType, sourceId, fecha),
+    onSuccess: () => {
+      toast.success("Fecha actualizada");
+      setEditingFechaId(null);
+      invalidatePending();
+    },
+    onError: (err) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? "No se pudo actualizar la fecha");
     },
   });
 
@@ -349,6 +368,22 @@ export function FinancePendientesTab() {
                             onPay={() => handlePay(it)}
                             onEditCommitted={(id) => setEditingCommittedId(id)}
                             onDelete={() => deletePending(it)}
+                            editingFechaId={editingFechaId}
+                            editingFechaValue={editingFechaValue}
+                            isFechaSaving={editFechaMut.isPending}
+                            onStartFechaEdit={(id, current) => {
+                              setEditingFechaId(id);
+                              setEditingFechaValue(current.slice(0, 10));
+                            }}
+                            onCancelFechaEdit={() => setEditingFechaId(null)}
+                            onChangeFechaValue={setEditingFechaValue}
+                            onSaveFecha={() =>
+                              editFechaMut.mutate({
+                                sourceType: it.sourceType,
+                                sourceId: it.sourceId,
+                                fecha: editingFechaValue,
+                              })
+                            }
                           />
                         ))}
                       </tbody>
@@ -412,25 +447,84 @@ function PendingRow({
   onEditCommitted,
   onDelete,
   hideOrigen,
+  editingFechaId,
+  editingFechaValue,
+  isFechaSaving,
+  onStartFechaEdit,
+  onCancelFechaEdit,
+  onChangeFechaValue,
+  onSaveFecha,
 }: {
   item: PendingItem;
   onPay: () => void;
   onEditCommitted: (movementId: string) => void;
   onDelete: () => void;
   hideOrigen?: boolean;
+  editingFechaId: string | null;
+  editingFechaValue: string;
+  isFechaSaving: boolean;
+  onStartFechaEdit: (id: string, current: string) => void;
+  onCancelFechaEdit: () => void;
+  onChangeFechaValue: (v: string) => void;
+  onSaveFecha: () => void;
 }) {
   const navigate = useNavigate();
+  const isFixedCost = item.sourceType === "FIXED_COST";
+  const isEditingFecha = editingFechaId === item.id;
   return (
     <tr className={`hover:bg-[var(--color-bg-card-hover)] ${item.isOverdue ? "bg-red-500/5" : ""}`}>
       <td className="px-4 py-3 whitespace-nowrap">
-        <p
-          className={`tabular-nums ${
-            item.isOverdue ? "text-red-400 font-semibold" : "text-[var(--color-text-secondary)]"
-          }`}
-        >
-          {fmtDate(item.fecha)}
-        </p>
-        {item.isOverdue && <p className="text-[10px] text-red-400 mt-0.5">Vencido</p>}
+        {isEditingFecha ? (
+          <div className="flex items-center gap-1.5">
+            <input
+              type="date"
+              value={editingFechaValue}
+              onChange={(e) => onChangeFechaValue(e.target.value)}
+              className="rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1 text-xs text-[var(--color-text-primary)]"
+              autoFocus
+            />
+            <button
+              type="button"
+              onClick={onSaveFecha}
+              disabled={isFechaSaving || !editingFechaValue}
+              className="text-xs text-[var(--color-accent)] hover:underline disabled:opacity-50"
+            >
+              Guardar
+            </button>
+            <button
+              type="button"
+              onClick={onCancelFechaEdit}
+              className="text-xs text-[var(--color-text-muted)] hover:underline"
+            >
+              Cancelar
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              if (isFixedCost) {
+                toast(
+                  "La fecha de un costo fijo se cambia desde Administración → Costos fijos.",
+                  { icon: "ℹ️" },
+                );
+                return;
+              }
+              onStartFechaEdit(item.id, item.fecha);
+            }}
+            title={isFixedCost ? "Editable solo desde Administración" : "Click para cambiar la fecha"}
+            className={`tabular-nums text-left ${
+              item.isOverdue
+                ? "text-red-400 font-semibold"
+                : "text-[var(--color-text-secondary)]"
+            } ${isFixedCost ? "cursor-not-allowed" : "hover:underline"}`}
+          >
+            {fmtDate(item.fecha)}
+          </button>
+        )}
+        {item.isOverdue && !isEditingFecha && (
+          <p className="text-[10px] text-red-400 mt-0.5">Vencido</p>
+        )}
       </td>
       <td className="px-4 py-3">
         <p className="text-[var(--color-text-primary)]">{item.descripcion}</p>

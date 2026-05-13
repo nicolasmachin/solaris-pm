@@ -3,6 +3,14 @@ import type { Moneda } from "../types/finance.types";
 
 export type CashflowSourceType = "FIXED_COST" | "PROJECT_MATERIAL" | "SUPPLIER_DEBT" | "CLIENT_COBRO";
 
+// Tipos extendidos aceptados por el endpoint de edición de fecha. Incluye los
+// pendientes que el cashflow no proyecta directamente (compromisos manuales y
+// previstos) para que la UI de Pendientes pueda usar el mismo endpoint.
+export type EditableEventSourceType =
+  | CashflowSourceType
+  | "MANUAL_PENDING"
+  | "COMMITTED_EXPENSE";
+
 export interface CashflowEvent {
   id: string;
   fecha: string;
@@ -42,7 +50,7 @@ export async function getCashflow(): Promise<CashflowDto> {
 }
 
 export async function updateCashflowEventFecha(
-  sourceType: CashflowSourceType,
+  sourceType: EditableEventSourceType,
   sourceId: string,
   fecha: string,
 ): Promise<{ id: string; fecha: string | null }> {

@@ -91,6 +91,12 @@ El generador en PDF de la propuesta comercial que antes corría en la PC del ven
 - Indicador de progreso en vivo en el modal (Pendiente → Procesando → Completado).
 - Si el Excel no tiene la hoja "CALCULADORA" o falla por otro motivo, el estado queda como "Falló" con el error puntual.
 
+#### Pendientes — Editar fecha desde la tabla y borrar con impacto en flujo de fondos
+
+- **Click sobre la fecha** de cualquier pendiente (excepto costos fijos) abre un mini editor con calendario · Guardar / Cancelar. Sirve para reagendar una cuota del plan de pagos a otro día, mover una factura a proveedor, etc. — sin abrir el modal completo.
+- **Borrar** (ícono ✕ rojo) de un previsto ahora también lo saca del **Flujo de fondos** automáticamente: ya no se sigue contando como ingreso esperado / gasto proyectado. Útil cuando una previsión quedó cubierta por otra compra/cobro real.
+- Costos fijos no se pueden reagendar inline (su fecha es el "día del mes" configurado en Administración).
+
 #### Arreglos
 
 - **Pendientes**: los botones **"Marcar pagado"** y **"Editar"** ahora funcionan sobre las cuotas del plan de pagos y otros previstos manuales. Marcar pagado abre un cuadrito para elegir fecha real y cuenta destino; al confirmar registra el cobro/pago y la cuota desaparece de Pendientes (queda como movimiento PAGADO en el flujo de fondos). Editar permite cambiar descripción, monto y fecha esperada antes de cobrarla. Antes los dos botones no hacían nada.

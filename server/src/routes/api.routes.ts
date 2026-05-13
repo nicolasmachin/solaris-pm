@@ -16158,7 +16158,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
   // PATCH para mover la fecha tentativa de un evento del flujo.
   app.patch("/finance/cashflow/events/:sourceType/:sourceId/fecha", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
     const params = z.object({
-      sourceType: z.enum(["FIXED_COST", "PROJECT_MATERIAL", "SUPPLIER_DEBT", "CLIENT_COBRO"]),
+      sourceType: z.enum([
+        "FIXED_COST",
+        "PROJECT_MATERIAL",
+        "SUPPLIER_DEBT",
+        "CLIENT_COBRO",
+        "MANUAL_PENDING",
+        "COMMITTED_EXPENSE",
+      ]),
       sourceId: z.string().min(1),
     }).parse(request.params);
     const { fecha } = z.object({ fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }).parse(request.body);
@@ -16193,6 +16200,17 @@ export async function registerApiRoutes(app: FastifyInstance) {
         select: { id: true, expectedDate: true },
       });
       return { id: updated.id, fecha: updated.expectedDate ? serializeDate(updated.expectedDate) : null };
+    }
+    // MANUAL_PENDING y COMMITTED_EXPENSE: dueDate del FinanceMovement directamente.
+    // Sirve tanto para cuotas del plan de pagos como para gastos previstos
+    // manuales o compromisos (sueldos, comisiones).
+    if (params.sourceType === "MANUAL_PENDING" || params.sourceType === "COMMITTED_EXPENSE") {
+      const updated = await prisma.financeMovement.update({
+        where: { id: params.sourceId },
+        data: { dueDate: newFecha },
+        select: { id: true, dueDate: true },
+      });
+      return { id: updated.id, fecha: updated.dueDate ? serializeDate(updated.dueDate) : null };
     }
     throw badRequest("UNSUPPORTED", "sourceType no soportado");
   });
