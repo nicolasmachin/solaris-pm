@@ -1096,8 +1096,23 @@ export async function registerApiRoutes(app: FastifyInstance) {
         sortOrder: projectsSortOrderSchema.optional(),
         page: z.coerce.number().int().positive().optional(),
         limit: z.coerce.number().int().positive().max(100).optional(),
+        schedulable: z.coerce.boolean().optional(),
       })
       .parse(request.query);
+
+    // schedulable=true → solo proyectos elegibles para agendar una instalación:
+    // no tienen un InstallationSchedule activo y no están en estado terminal
+    // (COMPLETED / ARCHIVED). PAUSED se considera reagendable. Usa AND para
+    // combinarse limpio con un filtro de status explícito si vino.
+    const TERMINAL_STATUSES: ProjectStatus[] = [ProjectStatus.COMPLETED, ProjectStatus.ARCHIVED];
+    const schedulableFilter = query.schedulable
+      ? {
+          AND: [
+            { status: { notIn: TERMINAL_STATUSES } },
+            { NOT: { installationSchedule: { deletedAt: null } } },
+          ],
+        }
+      : {};
 
     const whereClause = {
       deletedAt: null,
@@ -1120,6 +1135,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
             },
           }
         : {}),
+      ...schedulableFilter,
     };
 
     // Ordenamiento primario server-side (los campos calculados como progress
@@ -1253,6 +1269,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
                 ],
               }
             : {}),
+          ...schedulableFilter,
         },
       });
 
