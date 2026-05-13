@@ -95,13 +95,17 @@ async function main() {
     expect(get0.status === 200, "GET plan-pagos inicial → 200");
     const presupuestoUsd = (get0.body as { presupuestoUsd?: number }).presupuestoUsd;
     expect(presupuestoUsd === budget, `presupuestoUsd = ${budget}`, presupuestoUsd);
+    const totalCobrado = (get0.body as { totalCobrado?: number }).totalCobrado ?? 0;
+    const saldoPendiente = (get0.body as { saldoPendiente?: number }).saldoPendiente ?? 0;
+    expect(typeof totalCobrado === "number", "totalCobrado es number", totalCobrado);
+    expect(Math.abs(saldoPendiente - (budget - totalCobrado)) < 0.01, "saldoPendiente = budget - cobrado");
 
     // ─── 2. POST con suma exacta → 201 ──────────────────────────────────
-    // Plan 50/30/20 con seña 500.
-    const senia = 500;
-    const cuota1 = (budget * 0.5) - senia;
-    const cuota2 = budget * 0.3;
-    const cuota3 = budget * 0.2;
+    // Plan 50/30/20 con seña 500 sobre el saldo pendiente.
+    const senia = Math.min(500, saldoPendiente * 0.5);
+    const cuota1 = (saldoPendiente * 0.5) - senia;
+    const cuota2 = saldoPendiente * 0.3;
+    const cuota3 = saldoPendiente * 0.2;
     const post1 = await authed(token, "POST", "/api/finance/plan-pagos", {
       projectId: project.id,
       cuotas: [
@@ -139,8 +143,8 @@ async function main() {
     const post2 = await authed(token, "POST", "/api/finance/plan-pagos", {
       projectId: project.id,
       cuotas: [
-        { descripcion: "Anticipo", monto: budget * 0.5, fechaPrevista: "2026-06-15" },
-        { descripcion: "Final", monto: budget * 0.5, fechaPrevista: "2026-09-15" },
+        { descripcion: "Anticipo", monto: saldoPendiente * 0.5, fechaPrevista: "2026-06-15" },
+        { descripcion: "Final", monto: saldoPendiente * 0.5, fechaPrevista: "2026-09-15" },
       ],
     });
     expect(post2.status === 201, "POST plan-pagos reemplazo → 201");
@@ -151,6 +155,8 @@ async function main() {
     expect(((get2.body as { cuotas?: unknown[] }).cuotas ?? []).length === 2, "GET tras reemplazo: 2 cuotas");
 
     // Confirmar que los 4 anteriores quedaron soft-deleted (deletedAt no null).
+    // Si el proyecto se reutiliza entre runs hay ruido histórico — chequeamos
+    // que sean al menos 4 (los recién creados).
     const oldRows = await prisma.financeMovement.findMany({
       where: {
         projectId: project.id,
@@ -160,7 +166,7 @@ async function main() {
       },
       select: { id: true },
     });
-    expect(oldRows.length === 4, `DB: 4 movimientos del plan viejo soft-deleted (real=${oldRows.length})`);
+    expect(oldRows.length >= 4, `DB: ≥4 movimientos del plan viejo soft-deleted (real=${oldRows.length})`);
 
     // ─── 6. Validación: suma incorrecta → 400 ──────────────────────────
     const post3 = await authed(token, "POST", "/api/finance/plan-pagos", {
@@ -178,16 +184,82 @@ async function main() {
     });
     expect(post4.status === 400, "POST con cuotas vacías → 400");
 
-    // ─── 8. Validación: seña >= budget → 400 ───────────────────────────
+    // ─── 8. Validación: seña >= saldoPendiente → 400 ───────────────────
     const post5 = await authed(token, "POST", "/api/finance/plan-pagos", {
       projectId: project.id,
       cuotas: [
-        { descripcion: "Seña gigante", monto: budget + 100, fechaPrevista: "2026-06-15" },
+        { descripcion: "Seña gigante", monto: saldoPendiente + 100, fechaPrevista: "2026-06-15" },
       ],
     });
-    expect(post5.status === 400, "POST con seña >= budget → 400");
+    expect(post5.status === 400, "POST con seña >= saldoPendiente → 400");
 
-    // ─── 9. Cleanup: soft-delete del plan actual ───────────────────────
+    // ─── 9. Cobro real reduce saldoPendiente y rebalancea validación ────
+    // Creamos un INGRESO PAGADO ad-hoc, verificamos que saldoPendiente caiga
+    // y que el plan ahora deba sumar (saldo previo - cobro), no budget bruto.
+    // Capturamos baseline porque el proyecto puede tener cobros históricos.
+    const getBase = await authed(token, "GET", `/api/finance/plan-pagos/${project.id}`);
+    const cobradoBase = (getBase.body as { totalCobrado?: number }).totalCobrado ?? 0;
+    const saldoBase = (getBase.body as { saldoPendiente?: number }).saldoPendiente ?? 0;
+    const cobroAmount = Math.round(budget * 0.2 * 100) / 100;
+    const cobroMovement = await prisma.financeMovement.create({
+      data: {
+        fecha: new Date(),
+        mes: new Date().getMonth() + 1,
+        anio: new Date().getFullYear(),
+        tipoMovimiento: "INGRESO",
+        categoriaPrincipal: "PROYECTO_ENTRADA",
+        descripcion: "[SMOKE] Cobro test",
+        monto: cobroAmount,
+        moneda: "USD",
+        pagado: false,
+        cobrado: true,
+        impactaFlujo: true,
+        status: "PAGADO",
+        sourceType: "MANUAL",
+        estadoAprobacion: "REGISTRADO",
+        projectId: project.id,
+        creadoPorId: admin.id,
+        updatedAt: new Date(),
+      },
+    });
+
+    const get3 = await authed(token, "GET", `/api/finance/plan-pagos/${project.id}`);
+    const cobrado3 = (get3.body as { totalCobrado?: number }).totalCobrado ?? 0;
+    const saldo3 = (get3.body as { saldoPendiente?: number }).saldoPendiente ?? 0;
+    expect(Math.abs((cobrado3 - cobradoBase) - cobroAmount) < 0.01, `Δ totalCobrado = ${cobroAmount} (real Δ=${cobrado3 - cobradoBase})`);
+    expect(Math.abs((saldoBase - saldo3) - cobroAmount) < 0.01, `Δ saldoPendiente = -${cobroAmount} (real Δ=${saldoBase - saldo3})`);
+
+    // POST con suma = budget (no = saldo) ahora debe rechazar
+    const postBadSum = await authed(token, "POST", "/api/finance/plan-pagos", {
+      projectId: project.id,
+      cuotas: [
+        { descripcion: "Una", monto: budget, fechaPrevista: "2026-10-01" },
+      ],
+    });
+    expect(postBadSum.status === 400, "POST con suma=budget (no saldo) → 400", postBadSum);
+
+    // POST con suma = saldo debe aceptar
+    const postGood = await authed(token, "POST", "/api/finance/plan-pagos", {
+      projectId: project.id,
+      cuotas: [
+        { descripcion: "Restante", monto: saldo3, fechaPrevista: "2026-10-01" },
+      ],
+    });
+    expect(postGood.status === 400, "POST con saldo entero como única cuota → 400 (seña >= saldo)", postGood);
+
+    // POST válido: seña + cuota que sumen saldo
+    const senia2 = Math.min(500, saldo3 * 0.5);
+    const resto2 = saldo3 - senia2;
+    const postSplit = await authed(token, "POST", "/api/finance/plan-pagos", {
+      projectId: project.id,
+      cuotas: [
+        { descripcion: "Seña", monto: senia2, fechaPrevista: "2026-10-01" },
+        { descripcion: "Resto", monto: resto2, fechaPrevista: "2026-11-01" },
+      ],
+    });
+    expect(postSplit.status === 201, "POST seña + resto sumando saldo → 201", postSplit);
+
+    // ─── 10. Cleanup: soft-delete del plan actual + cobro smoke ─────────
     await prisma.financeMovement.updateMany({
       where: {
         projectId: project.id,
@@ -196,7 +268,8 @@ async function main() {
       },
       data: { deletedAt: new Date() },
     });
-    console.log(`${c.info} cleanup: plan actual soft-deleted`);
+    await prisma.financeMovement.delete({ where: { id: cobroMovement.id } });
+    console.log(`${c.info} cleanup: plan actual soft-deleted + cobro smoke borrado`);
   } finally {
     if (cleanupProject) {
       // Borrado del proyecto efímero (cascada elimina movements).

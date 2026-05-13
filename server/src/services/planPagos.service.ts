@@ -44,8 +44,31 @@ export type PlanCuotaOutput = {
 export type GetPlanResult = {
   hasPlan: boolean;
   presupuestoUsd: number | null;
+  totalCobrado: number;
+  saldoPendiente: number;
   cuotas: PlanCuotaOutput[];
 };
+
+/**
+ * Suma los ingresos de proyecto ya cobrados (status PAGADO, INGRESO,
+ * PROYECTO_ENTRADA, no soft-deleted) — moneda USD a precio nominal.
+ * Lo que se descuenta del presupuesto para calcular el saldo pendiente sobre
+ * el cual se arma el plan de pagos.
+ */
+async function calcularTotalCobradoUsd(projectId: string): Promise<number> {
+  const rows = await prisma.financeMovement.findMany({
+    where: {
+      projectId,
+      tipoMovimiento: TipoMovimiento.INGRESO,
+      categoriaPrincipal: CategoriaPrincipal.PROYECTO_ENTRADA,
+      status: FinanceMovementStatus.PAGADO,
+      moneda: Moneda.USD,
+      deletedAt: null,
+    },
+    select: { monto: true },
+  });
+  return rows.reduce((acc, r) => acc + Number(r.monto), 0);
+}
 
 function stripPlanPrefix(desc: string): string {
   return desc.startsWith(PLAN_PREFIX) ? desc.slice(PLAN_PREFIX.length) : desc;
@@ -81,22 +104,30 @@ export async function getPlanPagos(projectId: string): Promise<GetPlanResult> {
   });
   if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
 
-  const cuotas = await prisma.financeMovement.findMany({
-    where: {
-      projectId,
-      tipoMovimiento: TipoMovimiento.INGRESO,
-      categoriaPrincipal: CategoriaPrincipal.PROYECTO_ENTRADA,
-      status: FinanceMovementStatus.PREVISTO,
-      sourceType: MovementSourceType.MANUAL,
-      descripcion: { startsWith: PLAN_PREFIX },
-      deletedAt: null,
-    },
-    orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }],
-  });
+  const [cuotas, totalCobrado] = await Promise.all([
+    prisma.financeMovement.findMany({
+      where: {
+        projectId,
+        tipoMovimiento: TipoMovimiento.INGRESO,
+        categoriaPrincipal: CategoriaPrincipal.PROYECTO_ENTRADA,
+        status: FinanceMovementStatus.PREVISTO,
+        sourceType: MovementSourceType.MANUAL,
+        descripcion: { startsWith: PLAN_PREFIX },
+        deletedAt: null,
+      },
+      orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }],
+    }),
+    calcularTotalCobradoUsd(projectId),
+  ]);
+
+  const presupuestoUsd = project.budgetUsd ? Number(project.budgetUsd) : null;
+  const saldoPendiente = (presupuestoUsd ?? 0) - totalCobrado;
 
   return {
     hasPlan: cuotas.length > 0,
-    presupuestoUsd: project.budgetUsd ? Number(project.budgetUsd) : null,
+    presupuestoUsd,
+    totalCobrado,
+    saldoPendiente,
     cuotas: cuotas.map(toCuotaOutput),
   };
 }
@@ -144,6 +175,15 @@ export async function createPlanPagos(args: {
     );
   }
   const budget = Number(project.budgetUsd);
+  const totalCobrado = await calcularTotalCobradoUsd(projectId);
+  const saldoPendiente = budget - totalCobrado;
+
+  if (saldoPendiente <= 0) {
+    throw badRequest(
+      "SALDO_PENDIENTE_INVALID",
+      `Este proyecto no tiene saldo pendiente (presupuesto USD ${budget.toFixed(2)}, cobrado USD ${totalCobrado.toFixed(2)}). No hay nada que planificar.`,
+    );
+  }
 
   if (cuotas.length === 0) {
     throw badRequest("CUOTAS_EMPTY", "El plan debe tener al menos una cuota.");
@@ -165,22 +205,23 @@ export async function createPlanPagos(args: {
     }
   }
 
-  // Validación de suma.
+  // Validación de suma: cierra contra saldo pendiente (presupuesto - cobrado),
+  // no contra presupuesto bruto. Permite reabrir el plan después de cobros.
   const total = cuotas.reduce((acc, c) => acc + c.monto, 0);
-  const diff = Math.abs(total - budget);
+  const diff = Math.abs(total - saldoPendiente);
   if (diff > SUM_TOLERANCE_USD) {
     throw badRequest(
       "SUM_MISMATCH",
-      `La suma de las cuotas (USD ${total.toFixed(2)}) no coincide con el presupuesto (USD ${budget.toFixed(2)}). Diferencia: USD ${(total - budget).toFixed(2)}.`,
+      `La suma de las cuotas (USD ${total.toFixed(2)}) no coincide con el saldo pendiente (USD ${saldoPendiente.toFixed(2)}). Diferencia: USD ${(total - saldoPendiente).toFixed(2)}.`,
     );
   }
 
-  // Validación matemática de seña.
+  // Validación matemática de seña: contra saldo pendiente, no presupuesto.
   const senia = cuotas[0];
-  if (senia.monto >= budget) {
+  if (senia.monto >= saldoPendiente) {
     throw badRequest(
-      "SENIA_GTE_BUDGET",
-      `La seña (USD ${senia.monto.toFixed(2)}) no puede ser mayor o igual al presupuesto (USD ${budget.toFixed(2)}).`,
+      "SENIA_GTE_SALDO",
+      `La seña (USD ${senia.monto.toFixed(2)}) no puede ser mayor o igual al saldo pendiente (USD ${saldoPendiente.toFixed(2)}).`,
     );
   }
 
@@ -253,10 +294,17 @@ export async function createPlanPagos(args: {
  */
 export async function getPlanBannerContext(projectId: string): Promise<{
   presupuestoUsd: number | null;
+  totalCobrado: number;
+  saldoPendiente: number;
   hasPlan: boolean;
 }> {
   const r = await getPlanPagos(projectId);
-  return { presupuestoUsd: r.presupuestoUsd, hasPlan: r.hasPlan };
+  return {
+    presupuestoUsd: r.presupuestoUsd,
+    totalCobrado: r.totalCobrado,
+    saldoPendiente: r.saldoPendiente,
+    hasPlan: r.hasPlan,
+  };
 }
 
 // Re-export tipo público para que las routes importen sin re-derivar.
