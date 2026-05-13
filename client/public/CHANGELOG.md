@@ -91,6 +91,10 @@ El generador en PDF de la propuesta comercial que antes corría en la PC del ven
 - Indicador de progreso en vivo en el modal (Pendiente → Procesando → Completado).
 - Si el Excel no tiene la hoja "CALCULADORA" o falla por otro motivo, el estado queda como "Falló" con el error puntual.
 
+#### Arreglos
+
+- **Pendientes**: los botones **"Marcar pagado"** y **"Editar"** ahora funcionan sobre las cuotas del plan de pagos y otros previstos manuales. Marcar pagado abre un cuadrito para elegir fecha real y cuenta destino; al confirmar registra el cobro/pago y la cuota desaparece de Pendientes (queda como movimiento PAGADO en el flujo de fondos). Editar permite cambiar descripción, monto y fecha esperada antes de cobrarla. Antes los dos botones no hacían nada.
+
 ### 11 de mayo de 2026 (cuarta parte)
 
 #### Ventas — Generador de propuesta comercial integrado
