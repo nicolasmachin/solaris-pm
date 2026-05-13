@@ -59,6 +59,7 @@ import { env } from "../config/env.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize, authorizeAny, clearPermissionCache } from "../middleware/authorize.middleware.js";
 import { createAuditEntriesForChanges, createAuditEntry } from "../services/audit.service.js";
+import { createPlanPagos, getPlanPagos } from "../services/planPagos.service.js";
 import { deleteStoredFile, getStoredFilePath, saveUploadedFile } from "../services/file-storage.service.js";
 import { copyLeadAttachmentsToProject } from "../services/sales/sales.service.js";
 import {
@@ -9092,6 +9093,67 @@ export async function registerApiRoutes(app: FastifyInstance) {
         tipoCambio: fallbackUsdToUyu,
       };
     });
+
+    // ─── Asistente Plan de Pagos Previstos ─────────────────────────────────
+    // Crea cobros previstos estructurados (seña + cuotas) a partir del
+    // presupuesto del proyecto en una sola transacción. Identificación del
+    // plan: prefijo "[PLAN] " en descripcion. Solo lectura/escritura para
+    // FINANZAS.{VIEW,EDIT}.
+
+    app.get(
+      "/finance/plan-pagos/:projectId",
+      { preHandler: authorize(Module.FINANZAS, Action.VIEW) },
+      async (request) => {
+        const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
+        return getPlanPagos(projectId);
+      },
+    );
+
+    const planPagosBodySchema = z
+      .object({
+        projectId: z.string().min(1),
+        cuotas: z
+          .array(
+            z.object({
+              descripcion: z.string().trim().min(1).max(120),
+              monto: z.number().positive(),
+              fechaPrevista: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+            }),
+          )
+          .min(1),
+      })
+      .strict();
+
+    app.post(
+      "/finance/plan-pagos",
+      { preHandler: authorize(Module.FINANZAS, Action.EDIT) },
+      async (request, reply) => {
+        const user = ensureUser(request);
+        const body = planPagosBodySchema.parse(request.body);
+
+        const result = await createPlanPagos({
+          projectId: body.projectId,
+          cuotas: body.cuotas,
+          userId: user.id,
+        });
+
+        await createAuditEntry({
+          entityType: AuditEntityType.project,
+          entityId: body.projectId,
+          projectId: body.projectId,
+          userId: user.id,
+          action: AuditAction.created,
+          description:
+            result.replaced > 0
+              ? `Reemplazó plan de pagos previstos (${result.replaced} previas → ${result.created} nuevas)`
+              : `Creó plan de pagos previstos (${result.created} cuotas)`,
+          metadata: { kind: "plan_pagos", created: result.created, replaced: result.replaced },
+        });
+
+        reply.code(201);
+        return result;
+      },
+    );
 
     // ─── Estado de resultado mensual (P&L) ──────────────────────────────────
     //
