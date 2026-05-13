@@ -123,6 +123,7 @@ export function FinanceCobroDetail() {
       {tab === 'cobros' && (
         <PlanPagosBannerOrButton
           presupuestoUsd={planQ.data?.presupuestoUsd ?? null}
+          saldoPendiente={planQ.data?.saldoPendiente ?? 0}
           hasPlan={planQ.data?.hasPlan ?? false}
           cuotasCount={planQ.data?.cuotas.length ?? 0}
           onOpen={() => setShowPlanModal(true)}
@@ -249,11 +250,13 @@ function KpiCard({ moneda, data }: { moneda: Moneda; data: { presupuesto: number
 
 function PlanPagosBannerOrButton({
   presupuestoUsd,
+  saldoPendiente,
   hasPlan,
   cuotasCount,
   onOpen,
 }: {
   presupuestoUsd: number | null;
+  saldoPendiente: number;
   hasPlan: boolean;
   cuotasCount: number;
   onOpen: () => void;
@@ -261,6 +264,11 @@ function PlanPagosBannerOrButton({
   // Si el proyecto no tiene presupuesto, no podemos sugerir nada — escondemos
   // banner y botón.
   if (!presupuestoUsd || presupuestoUsd <= 0) return null;
+
+  // Si ya está completamente cobrado (saldo pendiente <= 0), no hay nada que
+  // planificar — escondemos banner. El botón de "Editar plan" sigue visible
+  // si hay plan vigente (caso raro pero posible: cobro retroactivo).
+  if (!hasPlan && saldoPendiente <= 0) return null;
 
   if (!hasPlan) {
     return (

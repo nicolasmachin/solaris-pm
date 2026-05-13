@@ -18,6 +18,8 @@ export type PlanCuota = {
 export type GetPlanResponse = {
   hasPlan: boolean;
   presupuestoUsd: number | null;
+  totalCobrado: number;
+  saldoPendiente: number;
   cuotas: PlanCuota[];
 };
 

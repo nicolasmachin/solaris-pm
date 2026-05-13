@@ -31,17 +31,19 @@ function fmtUsd(n: number): string {
   return `USD ${n.toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-/** Genera el plan por default 50/30/20 con seña fija USD 500. */
-function buildDefaultPlan(budget: number): RowDraft[] {
+/** Genera el plan por default 50/30/20 con seña fija USD 500 sobre el saldo
+ *  pendiente (presupuesto - ya cobrado). Si saldoPendiente ≤ 0 retorna vacío. */
+function buildDefaultPlan(saldoPendiente: number): RowDraft[] {
+  if (saldoPendiente <= 0) return [];
   const today = todayLocalISO();
-  const senia = Math.min(DEFAULT_SENIA_USD, budget * 0.5);
+  const senia = Math.max(0, Math.min(DEFAULT_SENIA_USD, saldoPendiente * 0.5));
   // Cuota 1 completa hasta el 50% incluyendo la seña.
-  let cuota1 = budget * 0.5 - senia;
-  let cuota2 = budget * 0.3;
-  let cuota3 = budget * 0.2;
+  let cuota1 = saldoPendiente * 0.5 - senia;
+  let cuota2 = saldoPendiente * 0.3;
+  let cuota3 = saldoPendiente * 0.2;
   // Ajuste de centavos: la última cuota absorbe la diferencia.
   const sumPrev = senia + cuota1 + cuota2 + cuota3;
-  cuota3 += budget - sumPrev;
+  cuota3 += saldoPendiente - sumPrev;
   // Redondear a 2 decimales.
   const r = (n: number) => Math.round(n * 100) / 100;
   cuota1 = r(cuota1);
@@ -78,40 +80,43 @@ export function PlanPagosModal({
   const [rows, setRows] = useState<RowDraft[]>([]);
   const [initialized, setInitialized] = useState(false);
 
-  // Inicializamos rows una sola vez con: plan vigente si hay; sino default.
+  // Inicializamos rows una sola vez con: plan vigente si hay; sino default
+  // sobre el saldo pendiente (presupuesto - ya cobrado).
   useEffect(() => {
     if (initialized) return;
     if (!planQ.data) return;
-    const presupuesto = planQ.data.presupuestoUsd ?? 0;
+    const saldo = planQ.data.saldoPendiente ?? 0;
     if (planQ.data.cuotas.length > 0) {
       setRows(planFromCuotas(planQ.data.cuotas));
-    } else if (presupuesto > 0) {
-      setRows(buildDefaultPlan(presupuesto));
+    } else if (saldo > 0) {
+      setRows(buildDefaultPlan(saldo));
     }
     setInitialized(true);
   }, [planQ.data, initialized]);
 
   const presupuesto = planQ.data?.presupuestoUsd ?? 0;
+  const totalCobrado = planQ.data?.totalCobrado ?? 0;
+  const saldoPendiente = planQ.data?.saldoPendiente ?? 0;
   const isEdit = (planQ.data?.cuotas.length ?? 0) > 0;
 
   const sumActual = useMemo(
     () => rows.reduce((acc, r) => acc + (Number.isFinite(r.monto) ? r.monto : 0), 0),
     [rows],
   );
-  const diff = sumActual - presupuesto;
+  const diff = sumActual - saldoPendiente;
   const sumOk = Math.abs(diff) <= SUM_TOLERANCE_USD;
   const seniaMonto = rows[0]?.monto ?? 0;
-  const seniaPct = presupuesto > 0 ? (seniaMonto / presupuesto) * 100 : 0;
-  const seniaWarning = presupuesto > 0 && seniaPct > 50 && seniaMonto < presupuesto;
-  const seniaError = seniaMonto >= presupuesto && presupuesto > 0;
+  const seniaPct = saldoPendiente > 0 ? (seniaMonto / saldoPendiente) * 100 : 0;
+  const seniaWarning = saldoPendiente > 0 && seniaPct > 50 && seniaMonto < saldoPendiente;
+  const seniaError = seniaMonto >= saldoPendiente && saldoPendiente > 0;
 
   function patchRow(idx: number, patch: Partial<RowDraft>) {
     setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
   }
 
   function pctOf(monto: number): number {
-    if (presupuesto <= 0) return 0;
-    return (monto / presupuesto) * 100;
+    if (saldoPendiente <= 0) return 0;
+    return (monto / saldoPendiente) * 100;
   }
 
   function setMonto(idx: number, monto: number) {
@@ -119,8 +124,8 @@ export function PlanPagosModal({
   }
 
   function setPct(idx: number, pct: number) {
-    if (presupuesto <= 0) return;
-    const monto = Math.round(((presupuesto * pct) / 100) * 100) / 100;
+    if (saldoPendiente <= 0) return;
+    const monto = Math.round(((saldoPendiente * pct) / 100) * 100) / 100;
     patchRow(idx, { monto });
   }
 
@@ -145,7 +150,7 @@ export function PlanPagosModal({
       const others = prev.filter((_, i) => i !== idx);
       // Redistribuir el monto eliminado proporcionalmente entre las cuotas
       // restantes EXCEPTO la seña.
-      if (others.length <= 1 || presupuesto <= 0) return others;
+      if (others.length <= 1 || saldoPendiente <= 0) return others;
       const totalOtros = others.slice(1).reduce((acc, r) => acc + r.monto, 0);
       if (totalOtros <= 0) return others;
       const extra = removed.monto;
@@ -191,16 +196,45 @@ export function PlanPagosModal({
     >
       <div className="w-full max-w-3xl max-h-[92vh] flex flex-col rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-2xl overflow-hidden">
         <div className="flex items-start justify-between px-5 py-3 border-b border-[var(--color-border)]">
-          <div>
+          <div className="min-w-0">
             <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
               {isEdit ? "Editar plan de pagos" : "Plan de pagos"}
               <span className="text-[var(--color-text-muted)] font-normal"> — {projectName}</span>
             </h3>
-            <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
-              {presupuesto > 0
-                ? `Presupuesto del proyecto: ${fmtUsd(presupuesto)}`
-                : "Este proyecto no tiene presupuesto cargado."}
-            </p>
+            {presupuesto > 0 ? (
+              <p className="text-[11px] text-[var(--color-text-muted)] mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono">
+                <span>
+                  Presupuesto:{" "}
+                  <span className="text-[var(--color-text-secondary)] font-semibold tabular-nums">
+                    {fmtUsd(presupuesto)}
+                  </span>
+                </span>
+                <span className="text-[var(--color-border)]">|</span>
+                <span>
+                  Cobrado:{" "}
+                  <span className="text-emerald-400 font-semibold tabular-nums">
+                    {fmtUsd(totalCobrado)}
+                  </span>
+                </span>
+                <span className="text-[var(--color-border)]">|</span>
+                <span>
+                  Pendiente:{" "}
+                  <span
+                    className={`font-semibold tabular-nums ${
+                      saldoPendiente > 0
+                        ? "text-[var(--color-text-primary)]"
+                        : "text-[var(--color-text-muted)]"
+                    }`}
+                  >
+                    {fmtUsd(saldoPendiente)}
+                  </span>
+                </span>
+              </p>
+            ) : (
+              <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                Este proyecto no tiene presupuesto cargado.
+              </p>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -216,6 +250,10 @@ export function PlanPagosModal({
           ) : presupuesto <= 0 ? (
             <p className="text-xs text-[var(--color-warning-text)] bg-[var(--color-warning-bg)]/30 border border-[var(--color-warning-bg)] rounded p-3">
               No hay presupuesto cargado. Cargá <code>budgetUsd</code> en el proyecto para usar el asistente.
+            </p>
+          ) : saldoPendiente <= 0 ? (
+            <p className="text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded p-3">
+              Este proyecto ya tiene cobros por {fmtUsd(totalCobrado)} sobre un presupuesto de {fmtUsd(presupuesto)}. No queda saldo pendiente para planificar.
             </p>
           ) : (
             <>
@@ -335,14 +373,14 @@ export function PlanPagosModal({
               {seniaError && (
                 <p className="mt-3 text-[11px] text-[var(--color-danger-text)] bg-[var(--color-danger-bg)]/40 border border-[var(--color-danger-bg)] rounded p-2 flex items-start gap-2">
                   <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                  La seña no puede ser mayor o igual al presupuesto total. Ajustá el monto antes de confirmar.
+                  La seña no puede ser mayor o igual al saldo pendiente. Ajustá el monto antes de confirmar.
                 </p>
               )}
 
               {seniaWarning && !seniaError && (
                 <p className="mt-3 text-[11px] text-[var(--color-warning-text)] bg-[var(--color-warning-bg)]/40 border border-[var(--color-warning-bg)] rounded p-2 flex items-start gap-2">
                   <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                  La seña es mayor al 50% del presupuesto ({seniaPct.toFixed(1)}%). Confirmá que es intencional.
+                  La seña es mayor al 50% del saldo pendiente ({seniaPct.toFixed(1)}%). Confirmá que es intencional.
                 </p>
               )}
             </>
@@ -359,7 +397,7 @@ export function PlanPagosModal({
           </button>
           <button
             type="button"
-            disabled={!sumOk || seniaError || createMut.isPending || presupuesto <= 0 || rows.length === 0}
+            disabled={!sumOk || seniaError || createMut.isPending || saldoPendiente <= 0 || rows.length === 0}
             onClick={handleSubmit}
             className="px-3 py-1.5 rounded bg-[var(--color-accent)] text-gray-900 text-xs font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed"
           >
