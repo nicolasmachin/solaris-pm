@@ -21,6 +21,7 @@ export interface GetProjectsParams {
   stageInProgress?: string;
   sortBy?: "recent" | "createdAt" | "clientName" | "installationDate" | "progress";
   sortOrder?: "asc" | "desc";
+  schedulable?: boolean;
 }
 
 export async function getProjects(params?: GetProjectsParams): Promise<ProjectListItem[]> {

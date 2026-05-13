@@ -2828,19 +2828,19 @@ function NewScheduleModal({
   onCreateTeamRequested: () => void;
 }) {
   const queryClient = useQueryClient();
-  const projectsQuery = useQuery({ queryKey: ["projects"], queryFn: () => getProjects() });
-  const calendarCache = queryClient.getQueriesData<{ schedules: InstallationSchedule[] }>({
-    queryKey: ["calendar"],
+  // Trae solo proyectos agendables: sin InstallationSchedule activo y en
+  // estado no terminal. El filtro lo aplica el backend; el queryKey distinto
+  // garantiza que no pisa el cache global de ["projects"].
+  const projectsQuery = useQuery({
+    queryKey: ["projects", { schedulable: true }],
+    queryFn: () => getProjects({ schedulable: true }),
   });
-  const scheduledProjectIds = new Set<string>();
-  for (const [, data] of calendarCache) {
-    for (const s of data?.schedules ?? []) {
-      scheduledProjectIds.add(s.projectId);
-    }
-  }
   const prefillProjectId = prefill?.projectId ?? "";
+  // Si el modal viene con un projectId prefill que el filtro descartó (caso
+  // raro de race condition con el cache), lo dejamos disponible para que el
+  // form muestre la selección. El resto ya viene filtrado del servidor.
   const availableProjects = (projectsQuery.data ?? [])
-    .filter((p) => !scheduledProjectIds.has(p.id) || p.id === prefillProjectId)
+    .slice()
     .sort((a, b) => a.clientName.localeCompare(b.clientName, "es"));
 
   const [projectId, setProjectId] = useState(prefillProjectId);
@@ -2862,6 +2862,9 @@ function NewScheduleModal({
       toast.success("Instalación agendada correctamente");
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
       queryClient.invalidateQueries({ queryKey: ["calendar-teams"] });
+      // El proyecto agendado ya no es schedulable → refrescar la lista
+      // (afecta tanto al cache global como al filtrado por schedulable=true).
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
       onCreated(res.data);
     },
     onError: (err: unknown) => {
@@ -2924,7 +2927,7 @@ function NewScheduleModal({
           </select>
           {availableProjects.length === 0 && !projectsQuery.isLoading && (
             <p className="mt-1 text-[10px] text-[var(--color-text-muted)]">
-              No hay proyectos sin instalación agendada.
+              No hay proyectos disponibles para agendar. Todos los proyectos activos ya tienen instalación agendada.
             </p>
           )}
         </div>
