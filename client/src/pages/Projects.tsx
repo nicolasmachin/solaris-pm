@@ -26,7 +26,8 @@ type SortKey =
   | "installationDate"
   | "inverter"
   | "panels"
-  | "dates";
+  | "dates"
+  | "saleDate";
 type SortDirection = "asc" | "desc";
 
 type StageFilter =
@@ -172,6 +173,13 @@ function sortProjects(projects: ProjectListItem[], sortKey: SortKey, direction: 
         break;
       case "dates":
         result = new Date(a.startDate ?? "2100-01-01").getTime() - new Date(b.startDate ?? "2100-01-01").getTime();
+        break;
+      case "saleDate":
+        // null va al final independientemente de la dirección
+        if (a.saleDate && b.saleDate) result = a.saleDate < b.saleDate ? -1 : a.saleDate > b.saleDate ? 1 : 0;
+        else if (a.saleDate) result = -1;
+        else if (b.saleDate) result = 1;
+        else result = 0;
         break;
     }
 
@@ -321,9 +329,14 @@ export function Projects() {
     // Direcciones default por tipo de columna:
     // - progress → mayor avance primero (desc)
     // - installationDate → próxima primero (asc)
+    // - saleDate → venta más reciente primero (desc)
     // - resto → asc
     const defaultDir: SortDirection =
-      nextKey === "progress" ? "desc" : nextKey === "installationDate" ? "asc" : "asc";
+      nextKey === "progress" || nextKey === "saleDate"
+        ? "desc"
+        : nextKey === "installationDate"
+          ? "asc"
+          : "asc";
     setSortDirection(defaultDir);
   }
 
@@ -518,6 +531,7 @@ function ProjectGroupTable({
               <th className="px-4 py-3"><SortHeader label="Paneles" sortKey="panels" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
               <th className="px-4 py-3"><SortHeader label="Instalación" sortKey="installationDate" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
               <th className="px-4 py-3"><SortHeader label="Inicio" sortKey="dates" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th className="px-4 py-3"><SortHeader label="Venta" sortKey="saleDate" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
               <th className="px-4 py-3 text-left text-[11px] font-mono uppercase tracking-widest text-[var(--color-table-header-text)]">Acciones</th>
             </tr>
           </thead>
@@ -627,6 +641,13 @@ function ProjectGroupTable({
                   </td>
                   <td className="px-4 py-4 align-top">
                     <div className="text-sm text-[var(--color-text-primary)]">{formatDate(project.startDate)}</div>
+                  </td>
+                  <td className="px-4 py-4 align-top">
+                    {project.saleDate ? (
+                      <div className="text-sm text-[var(--color-text-primary)]">{formatDate(project.saleDate)}</div>
+                    ) : (
+                      <span className="text-sm text-[var(--color-text-muted)]">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-4 align-top">
                     <div className="flex items-center gap-2">

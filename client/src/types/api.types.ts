@@ -96,6 +96,7 @@ export interface ProjectListItem {
   /** Tipo del equipo de instalación asignado, si existe. */
   installationTeamType?: "PROPIO" | "TERCERIZADO" | null;
   startDate: string | null;
+  saleDate: string | null;
   plannedEndDate: string | null;
   actualEndDate?: string | null;
   createdAt: string;
@@ -273,6 +274,7 @@ export interface Project {
   locationProvince: string;
   status: ProjectStatus;
   startDate: string | null;
+  saleDate: string | null;
   plannedEndDate: string | null;
   actualEndDate: string | null;
   budgetUsd: number | null;

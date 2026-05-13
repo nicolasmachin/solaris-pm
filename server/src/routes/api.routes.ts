@@ -166,6 +166,7 @@ const projectCreateSchema = z
     notificationPhone: z.string().nullable().optional(),
     clientAddress: z.string().nullable().optional(),
     startDate: dateOnlySchema.optional(),
+    saleDate: dateOnlySchema.optional(),
     solarSystem: solarSystemCreateSchema.optional(),
   })
   .strict();
@@ -178,6 +179,7 @@ const projectPatchSchema = z
     locationProvince: z.string().min(1).optional(),
     status: z.nativeEnum(ProjectStatus).optional(),
     startDate: dateOnlySchema.optional(),
+    saleDate: dateOnlySchema.nullable().optional(),
     plannedEndDate: dateOnlySchema.nullable().optional(),
     actualEndDate: dateOnlySchema.nullable().optional(),
     budgetUsd: z.coerce.number().positive().nullable().optional(),
@@ -581,6 +583,9 @@ function normalizeProjectInput(input: Record<string, unknown>) {
   if (source.locationProvince !== undefined) normalized.locationProvince = source.locationProvince;
   if (source.status !== undefined) normalized.status = source.status;
   if (source.startDate !== undefined) normalized.startDate = parseDateOnly(source.startDate);
+  if (source.saleDate !== undefined) {
+    normalized.saleDate = source.saleDate ? parseDateOnly(source.saleDate) : null;
+  }
   if (source.plannedEndDate !== undefined) normalized.plannedEndDate = parseDateOnly(source.plannedEndDate);
   if (source.actualEndDate !== undefined) {
     normalized.actualEndDate = source.actualEndDate ? parseDateOnly(source.actualEndDate) : null;
@@ -638,6 +643,7 @@ const projectFieldLabels: Record<string, string> = {
   locationProvince: "provincia",
   status: "estado del proyecto",
   startDate: "fecha de inicio",
+  saleDate: "fecha de venta",
   plannedEndDate: "fecha estimada de entrega",
   actualEndDate: "fecha real de fin",
   budgetUsd: "presupuesto USD",
@@ -1083,6 +1089,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     "clientName",
     "installationDate",
     "progress",
+    "saleDate",
   ]);
   const projectsSortOrderSchema = z.enum(["asc", "desc"]);
 
@@ -1145,7 +1152,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
         ? { clientName: query.sortOrder ?? "asc" }
         : query.sortBy === "createdAt"
           ? { createdAt: query.sortOrder ?? "desc" }
-          : { updatedAt: query.sortOrder ?? "desc" }; // recent y fallback
+          : query.sortBy === "saleDate"
+            ? { saleDate: query.sortOrder ?? "desc" }
+            : { updatedAt: query.sortOrder ?? "desc" }; // recent y fallback
 
     const projects = await prisma.project.findMany({
       where: whereClause,
@@ -1221,6 +1230,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         delayDays,
         hasOverdueStage,
         startDate: serializeDateOnly(project.startDate),
+        saleDate: project.saleDate ? serializeDateOnly(project.saleDate) : null,
         plannedEndDate: serializeDateOnly(project.plannedEndDate),
         actualEndDate: serializeDateOnly(project.actualEndDate),
         createdAt: serializeDate(project.createdAt),
@@ -1413,6 +1423,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const user = ensureUser(request);
     const body = projectCreateSchema.parse(request.body);
     const startDate = body.startDate ? parseDateOnly(body.startDate) : todayUtc();
+    // saleDate por defecto: hoy (fecha de creación del proyecto). Editable
+    // después desde el detalle del proyecto.
+    const saleDate = body.saleDate ? parseDateOnly(body.saleDate) : todayUtc();
     // plannedEndDate es opcional. Para armar el pipeline inicial si no viene,
     // asumimos 90 días desde el inicio como placeholder (no se muestra en UI).
     const plannedEndDate = body.plannedEndDate
@@ -1430,6 +1443,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         locationProvince: body.locationProvince,
         status: ProjectStatus.ACTIVE,
         startDate,
+        saleDate,
         plannedEndDate: body.plannedEndDate ? plannedEndDate : null,
         budgetUsd: body.budgetUsd != null ? new Prisma.Decimal(body.budgetUsd) : null,
         executedUsd: new Prisma.Decimal(0),

@@ -447,6 +447,7 @@ export function serializeProject(project: {
   locationProvince: string;
   status: ProjectStatus;
   startDate: Date;
+  saleDate?: Date | null;
   plannedEndDate: Date | null;
   actualEndDate: Date | null;
   budgetUsd: Prisma.Decimal | null;
@@ -494,6 +495,7 @@ export function serializeProject(project: {
     estimatedMwhYear: decimalToNumber(rest.estimatedMwhYear),
     co2TonsAvoided: decimalToNumber(rest.co2TonsAvoided),
     startDate: serializeDateOnly(rest.startDate),
+    saleDate: rest.saleDate ? serializeDateOnly(rest.saleDate) : null,
     plannedEndDate: serializeDateOnly(displayedPlannedEnd),
     actualEndDate: serializeDateOnly(displayedActualEnd),
     actualOnboardingEnd: rest.actualOnboardingEnd ? serializeDateOnly(rest.actualOnboardingEnd) : null,

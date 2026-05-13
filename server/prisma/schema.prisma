@@ -401,6 +401,7 @@ model Project {
   locationProvince     String
   status               ProjectStatus
   startDate            DateTime              @db.Date
+  saleDate             DateTime?             @db.Date
   plannedEndDate       DateTime?             @db.Date
   actualEndDate        DateTime?             @db.Date
   budgetUsd            Decimal?              @db.Decimal(14, 2)
@@ -456,6 +457,7 @@ model Project {
   @@index([salespersonId])
   @@index([clientUserId])
   @@index([plannedEndDate])
+  @@index([saleDate])
   @@index([deletedAt])
   @@map("projects")
 }

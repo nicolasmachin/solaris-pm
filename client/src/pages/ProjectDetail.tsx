@@ -129,6 +129,7 @@ function EditProjectModal({
   const [firstDateScheduledAt, setFirstDateScheduledAt] = useState(
     project.firstDateScheduledAt ? project.firstDateScheduledAt.slice(0, 10) : ""
   );
+  const [saleDate, setSaleDate] = useState(project.saleDate ?? "");
 
   const { mutate, isPending } = useMutation({
     mutationFn: () => {
@@ -146,6 +147,7 @@ function EditProjectModal({
         firstDateScheduledAt: firstDateScheduledAt
           ? new Date(firstDateScheduledAt).toISOString()
           : null,
+        saleDate: saleDate || null,
       });
     },
     onSuccess: () => {
@@ -198,9 +200,15 @@ function EditProjectModal({
             <label style={labelStyle}>Dirección</label>
             <input style={inputStyle} value={clientAddress} onChange={e => setClientAddress(e.target.value)} />
           </div>
-          <div>
-            <label style={labelStyle}>Fecha tentativa de obra</label>
-            <input style={inputStyle} type="date" value={firstDateScheduledAt} onChange={e => setFirstDateScheduledAt(e.target.value)} />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              <label style={labelStyle}>Fecha de venta</label>
+              <input style={inputStyle} type="date" value={saleDate} onChange={e => setSaleDate(e.target.value)} />
+            </div>
+            <div>
+              <label style={labelStyle}>Fecha tentativa de obra</label>
+              <input style={inputStyle} type="date" value={firstDateScheduledAt} onChange={e => setFirstDateScheduledAt(e.target.value)} />
+            </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>

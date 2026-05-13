@@ -4,6 +4,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { createProject } from "../../api/projects.api";
 import { getUsers } from "../../api/users.api";
+import { todayLocalISO } from "../../utils/date";
 import { Button } from "../ui/Button";
 import {
   buildSolarSystemPayload,
@@ -23,19 +24,23 @@ interface NewProjectForm {
   notificationEmail: string;
   notificationPhone: string;
   clientAddress: string;
+  saleDate: string;
 }
 
-const EMPTY_FORM: NewProjectForm = {
-  clientName: "",
-  capacityKwp: "",
-  locationCity: "",
-  locationProvince: "",
-  budgetUsd: "",
-  salespersonId: "",
-  notificationEmail: "",
-  notificationPhone: "",
-  clientAddress: "",
-};
+function buildEmptyForm(): NewProjectForm {
+  return {
+    clientName: "",
+    capacityKwp: "",
+    locationCity: "",
+    locationProvince: "",
+    budgetUsd: "",
+    salespersonId: "",
+    notificationEmail: "",
+    notificationPhone: "",
+    clientAddress: "",
+    saleDate: todayLocalISO(),
+  };
+}
 
 function calculateCapacity(solarForm: SolarSystemFormValues): number {
   const panelQuantity = Number(solarForm.panelQuantity) || 0;
@@ -87,7 +92,7 @@ function Field({
 export function NewProjectModal({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [form, setForm] = useState<NewProjectForm>(EMPTY_FORM);
+  const [form, setForm] = useState<NewProjectForm>(buildEmptyForm);
   const [solarForm, setSolarForm] = useState<SolarSystemFormValues>(EMPTY_SOLAR_SYSTEM_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof NewProjectForm, string>>>({});
 
@@ -113,6 +118,7 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
         notificationEmail: form.notificationEmail.trim() || undefined,
         notificationPhone: form.notificationPhone.trim() || undefined,
         clientAddress: form.clientAddress.trim() || undefined,
+        saleDate: form.saleDate || undefined,
         solarSystem: solarPayload,
       });
     },
@@ -186,9 +192,14 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
               <input type="text" className={input()} value={form.clientAddress} onChange={(event) => updateField("clientAddress", event.target.value)} />
             </Field>
 
-            <Field label="Presupuesto (USD)" error={errors.budgetUsd}>
-              <input type="number" min="0" step="0.01" className={input(!!errors.budgetUsd)} value={form.budgetUsd} onChange={(event) => updateField("budgetUsd", event.target.value)} />
-            </Field>
+            <div className="grid gap-3 md:grid-cols-2">
+              <Field label="Presupuesto (USD)" error={errors.budgetUsd}>
+                <input type="number" min="0" step="0.01" className={input(!!errors.budgetUsd)} value={form.budgetUsd} onChange={(event) => updateField("budgetUsd", event.target.value)} />
+              </Field>
+              <Field label="Fecha de venta">
+                <input type="date" className={input()} value={form.saleDate} onChange={(event) => updateField("saleDate", event.target.value)} />
+              </Field>
+            </div>
 
             <div className="grid gap-3 md:grid-cols-2">
               <Field label="Email de notificación">

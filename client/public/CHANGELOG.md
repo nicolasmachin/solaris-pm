@@ -4,12 +4,25 @@
 
 ### 13 de mayo de 2026
 
+#### Proyectos — Fecha de venta
+
+Cada proyecto tiene ahora un campo **Fecha de venta**, separado de la fecha de inicio de obra.
+
+- **Al crear el proyecto**, la fecha de venta se autocompleta con la fecha del día. Podés editarla antes de confirmar (por si registrás un proyecto vendido la semana pasada).
+- **Después de creado**, se edita desde el botón **✎ Editar** del detalle del proyecto, junto con el resto de los datos del cliente.
+- **Nueva columna "Venta"** en la lista de proyectos, con su flecha de orden — al hacer click, ordena por venta más reciente primero. Volvé a hacer click para invertir.
+- **Backfill automático**: los proyectos que ya estaban en el sistema adoptan su fecha de creación como fecha de venta (podés ajustarla manualmente desde el detalle si la real es otra).
+
+#### Calendario — Filtro de proyectos al agendar instalación
+
+El selector de proyectos del modal **"Nueva instalación"** ahora solo muestra proyectos elegibles: los que no tienen instalación agendada todavía y no están completados ni archivados. Antes mostraba todos y dependía del usuario evitar los duplicados. El mensaje cuando no quedan proyectos también es más claro.
+
 #### Finanzas — Asistente de plan de pagos
 
 La pestaña Cobros de cada proyecto ahora arma el plan de cobros previstos por vos. Cuando un proyecto tiene presupuesto cargado y no hay cobros previstos todavía, aparece un banner amarillo con el botón **"Crear plan de pagos →"**. Click abre un asistente con 4 cuotas pre-cargadas: seña fija de USD 500 + Cuota 1 (50% incluyendo seña) + Cuota 2 (30%) + Cuota 3 (20%), todas con fechas escalonadas a 7, 30, 60 y 90 días.
 
-- **Edición libre** antes de confirmar: cambiá el monto o el porcentaje de cualquier cuota — el otro se recalcula solo. Cambiá la fecha de cada una. Renombrá las descripciones. Agregá o eliminá cuotas (la seña no se puede borrar).
-- **Eliminar redistribuye**: cuando borrás una cuota, su monto se reparte proporcionalmente entre las cuotas restantes (sin tocar la seña).
+- **Edición libre** antes de confirmar: cambiá el monto o el porcentaje de cualquier cuota — el otro se recalcula solo. Cambiá la fecha de cada una. Renombrá las descripciones. Agregá o eliminá cuotas (incluida la seña, mientras quede al menos una).
+- **Eliminar redistribuye**: cuando borrás una cuota, su monto se reparte proporcionalmente entre el resto.
 - **Indicador de suma en vivo**: total en verde con ✓ cuando coincide con el presupuesto (tolerancia ±USD 1 por redondeo), rojo con "Faltan X" o "Excede por X" cuando no cierra. Si no cierra, no se puede confirmar.
 - **Validaciones**: si la seña supera el 50% del presupuesto, aparece un warning amarillo pero permite confirmar (puede ser intencional). Si la seña iguala o supera el presupuesto, error bloqueante.
 - **Una sola transacción**: al confirmar se crean todas las cuotas como cobros previstos en Finanzas. Si algo falla, no se crea ninguna.
