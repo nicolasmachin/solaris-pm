@@ -103,3 +103,72 @@ export async function deleteStoredFile(relativeUrl: string) {
 export function getStoredFilePath(relativeUrl: string) {
   return path.resolve(process.cwd(), "..", env.storagePath, relativeUrl);
 }
+
+/**
+ * Construye un filename legible para un FileAttachment generado por una
+ * herramienta interna del backend (Unifilar, PreIngeniería, EFP, Consolidador
+ * de Materiales, ProposalGenerator, Triángulos, etc.).
+ *
+ * **SOLO para generadores AUTOMÁTICOS.**
+ *
+ * **NO usar para uploads manuales del usuario.** El filename de un upload
+ * manual debe preservar tal cual el `File.name` que vino del input HTML —
+ * el usuario eligió ese nombre y cualquier renombrado pierde su intención
+ * (ej: el usuario subió "presupuesto_juan.pdf"; renombrarlo a algo distinto
+ * confunde). Para uploads usar `saveUploadedFile(file, projectId)` que ya
+ * preserva `file.filename`.
+ *
+ * **Convención generada**: `<toolSource>_<sanitizedClientName>_v<version>.<ext>`.
+ *
+ * Ejemplos:
+ *   buildToolGeneratedFilename({ toolSource: 'unifilar', projectClientName: 'José Pérez', version: 3, extension: 'pdf' })
+ *     → 'unifilar_JosePerez_v3.pdf'
+ *
+ *   buildToolGeneratedFilename({ toolSource: 'preingenieria', projectClientName: 'Estación de Servicio Petrobras', version: 1, extension: 'pdf' })
+ *     → 'preingenieria_EstaciondeServicioPetrobras_v1.pdf'
+ *
+ *   buildToolGeneratedFilename({ toolSource: 'materiales', version: 2, extension: 'xlsx' })
+ *     → 'materiales_<timestamp>_v2.xlsx'  // sin clientName: fallback timestamp
+ *
+ * **Sanitización del clientName**:
+ *   1. Normalize NFD para descomponer acentos en base + combining marks.
+ *   2. Strip combining marks (rango U+0300-U+036F): "José" → "Jose".
+ *   3. Eliminar todo lo que no sea [a-zA-Z0-9]: espacios, puntuación, ñ se
+ *      pierde (se descompone a "n" + tilde, queda "n"), emojis, etc.
+ *   4. Truncar a 40 chars para evitar nombres absurdamente largos.
+ *
+ * Si querés agregar un helper similar para casos con identifier distinto
+ * (ej: leadCode en lugar de clientName), agregalo como variante explícita
+ * en este mismo archivo — la convención del filename debe vivir acá, no
+ * dispersa en cada caller.
+ */
+export function buildToolGeneratedFilename(params: {
+  toolSource: string; // ej "unifilar", "preingenieria", "materiales", "efp"
+  projectClientName?: string | null;
+  version?: number | null;
+  extension: string; // sin punto: "pdf", "xlsx", "jpg"
+}): string {
+  const sanitize = (s: string) =>
+    s
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "") // combining diacritical marks
+      .replace(/[^a-zA-Z0-9]+/g, "")
+      .substring(0, 40);
+
+  const parts: string[] = [params.toolSource];
+
+  const cleanedClient = params.projectClientName ? sanitize(params.projectClientName) : "";
+  if (cleanedClient.length > 0) {
+    parts.push(cleanedClient);
+  } else {
+    // Fallback: timestamp epoch para garantizar unicidad cuando no hay
+    // contexto de proyecto. Evita colisiones de filename idénticos.
+    parts.push(String(Date.now()));
+  }
+
+  if (params.version != null) {
+    parts.push(`v${params.version}`);
+  }
+
+  return `${parts.join("_")}.${params.extension}`;
+}
