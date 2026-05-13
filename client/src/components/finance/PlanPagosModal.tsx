@@ -144,23 +144,21 @@ export function PlanPagosModal({
   }
 
   function removeCuota(idx: number) {
-    if (idx === 0) return; // no se borra la seña
     setRows((prev) => {
+      if (prev.length <= 1) return prev; // siempre queda al menos una cuota
       const removed = prev[idx];
       const others = prev.filter((_, i) => i !== idx);
-      // Redistribuir el monto eliminado proporcionalmente entre las cuotas
-      // restantes EXCEPTO la seña.
-      if (others.length <= 1 || saldoPendiente <= 0) return others;
-      const totalOtros = others.slice(1).reduce((acc, r) => acc + r.monto, 0);
+      if (saldoPendiente <= 0) return others;
+      // Redistribuir el monto eliminado proporcionalmente entre TODAS las
+      // cuotas restantes (incluyendo la primera).
+      const totalOtros = others.reduce((acc, r) => acc + r.monto, 0);
       if (totalOtros <= 0) return others;
       const extra = removed.monto;
       const r = (n: number) => Math.round(n * 100) / 100;
-      const updated = others.map((row, i) => {
-        if (i === 0) return row; // seña intacta
+      return others.map((row) => {
         const share = (row.monto / totalOtros) * extra;
         return { ...row, monto: r(row.monto + share) };
       });
-      return updated;
     });
   }
 
@@ -294,24 +292,18 @@ export function PlanPagosModal({
                           />
                         </td>
                         <td className="px-2 py-2">
-                          {idx === 0 ? (
-                            <span className="block text-right text-[11px] tabular-nums text-[var(--color-text-muted)] px-1.5 py-1">
-                              {pctOf(r.monto).toFixed(1)}%
-                            </span>
-                          ) : (
-                            <input
-                              type="number"
-                              min="0"
-                              max="100"
-                              step="0.1"
-                              className={`${inp} text-right tabular-nums`}
-                              value={pctOf(r.monto).toFixed(2)}
-                              onChange={(e) => {
-                                const v = parseFloat(e.target.value);
-                                if (Number.isFinite(v)) setPct(idx, v);
-                              }}
-                            />
-                          )}
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.1"
+                            className={`${inp} text-right tabular-nums`}
+                            value={pctOf(r.monto).toFixed(2)}
+                            onChange={(e) => {
+                              const v = parseFloat(e.target.value);
+                              if (Number.isFinite(v)) setPct(idx, v);
+                            }}
+                          />
                         </td>
                         <td className="px-2 py-2">
                           <input
@@ -322,16 +314,15 @@ export function PlanPagosModal({
                           />
                         </td>
                         <td className="px-2 py-2 text-center">
-                          {idx > 0 ? (
-                            <button
-                              type="button"
-                              onClick={() => removeCuota(idx)}
-                              className="text-[var(--color-text-muted)] hover:text-[var(--color-danger-text)]"
-                              title="Eliminar cuota"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          ) : null}
+                          <button
+                            type="button"
+                            onClick={() => removeCuota(idx)}
+                            disabled={rows.length <= 1}
+                            className="text-[var(--color-text-muted)] hover:text-[var(--color-danger-text)] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-[var(--color-text-muted)]"
+                            title={rows.length <= 1 ? "Tiene que quedar al menos una cuota" : "Eliminar cuota"}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -373,14 +364,14 @@ export function PlanPagosModal({
               {seniaError && (
                 <p className="mt-3 text-[11px] text-[var(--color-danger-text)] bg-[var(--color-danger-bg)]/40 border border-[var(--color-danger-bg)] rounded p-2 flex items-start gap-2">
                   <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                  La seña no puede ser mayor o igual al saldo pendiente. Ajustá el monto antes de confirmar.
+                  La primera cuota no puede ser mayor o igual al saldo pendiente. Ajustá el monto antes de confirmar.
                 </p>
               )}
 
               {seniaWarning && !seniaError && (
                 <p className="mt-3 text-[11px] text-[var(--color-warning-text)] bg-[var(--color-warning-bg)]/40 border border-[var(--color-warning-bg)] rounded p-2 flex items-start gap-2">
                   <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                  La seña es mayor al 50% del saldo pendiente ({seniaPct.toFixed(1)}%). Confirmá que es intencional.
+                  La primera cuota es mayor al 50% del saldo pendiente ({seniaPct.toFixed(1)}%). Confirmá que es intencional.
                 </p>
               )}
             </>
