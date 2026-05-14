@@ -36,6 +36,7 @@ RUN python3 -m venv /opt/proposal-venv \
   && /opt/proposal-venv/bin/pip install --no-cache-dir \
        reportlab==4.0.7 \
        PyPDF2==3.0.1 \
+       pycryptodome==3.23.0 \
        matplotlib==3.8.2 \
        pandas==2.1.4 \
        openpyxl==3.1.2

@@ -381,6 +381,7 @@ model User {
   efpAttachmentsUploaded         EFPAttachment[]          @relation("EFPAttachmentUploader")
   projectMaterialsAdded          ProjectMaterial[]        @relation("ProjectMaterialAddedBy")
   projectMaterialsEdited         ProjectMaterial[]        @relation("ProjectMaterialLastEditedBy")
+  uteDocumentsGenerated          UteDocumentGeneration[]  @relation("UteDocsGeneratedBy")
   passwordTemporary              Boolean                  @default(false)
   deletedAt                      DateTime?                @db.Timestamptz(6)
   createdAt                      DateTime                 @default(now()) @db.Timestamptz(6)
@@ -447,6 +448,8 @@ model Project {
   preIngenieriaVersions PreIngenieriaVersion[]
   technicalVisits      TechnicalVisit[]
   engineeringFinalProject EngineeringFinalProject?
+  uteDocumentConfig    UteDocumentConfig?
+  uteDocumentGenerations UteDocumentGeneration[]
   deletedAt            DateTime?             @db.Timestamptz(6)
   createdAt            DateTime              @default(now()) @db.Timestamptz(6)
   updatedAt            DateTime              @updatedAt @db.Timestamptz(6)
@@ -2133,4 +2136,96 @@ model EFPAttachment {
   @@index([efpId])
   @@index([fileAttachmentId])
   @@map("efp_attachments")
+}
+
+// ─── Generador de documentos UTE ────────────────────────────────────────────
+// Plantillas PDF en server/src/assets/ute-templates/. La config guarda los
+// datos complementarios que no viven en Project (CI cliente, cuenta UTE,
+// representante, etc.) más los datos técnicos UTE-específicos.
+model UteDocumentConfig {
+  id        String  @id @default(cuid())
+  projectId String  @unique
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Datos del cliente (lo que no está en Project)
+  ciCliente       String  @default("")
+  calle           String  @default("")
+  numCalle        String  @default("")
+  cuentaUte       String  @default("")
+  casoUte         String  @default("")
+  personaFisica   Boolean @default(true)
+  empresa         Boolean @default(false)
+
+  // Representante del cliente (si aplica)
+  representa    String @default("")
+  ciRepre       String @default("")
+  calidadRepre  String @default("")
+
+  // Datos de Voltia / técnico instalador / UTE
+  fi          String @default("")
+  rut         String @default("")
+  dirFi       String @default("")  // Dirección de la firma instaladora (Voltia)
+  ti          String @default("")
+  ciTi        String @default("")
+  oficina     String @default("")
+  repUte      String @default("")
+  calidadUte  String @default("")
+  // "asUte" porque `as` es palabra reservada en TS.
+  asUte       String @default("")
+  ps          String @default("")
+  x           String @default("")
+
+  // Datos técnicos del sistema (lo que no está en SolarSystem)
+  potenciaNomSolicitudImg   String  @default("")
+  intensidadNomSolicitudImg String  @default("")
+  tension230                Boolean @default(true)
+  tension400                Boolean @default(false)
+  tensionNomInversor230     Boolean @default(true)
+  tensionNomInversor400     Boolean @default(false)
+  fasesMono                 Boolean @default(true)
+  fasesTri                  Boolean @default(false)
+  tipoGeneradorSincMono     Boolean @default(true)
+  tipoGeneradorSincTri      Boolean @default(false)
+  potImg                    String  @default("")
+  potImgLetras              String  @default("")
+  potContratada             String  @default("")
+  potContratadaLetras       String  @default("")
+  potContratada1000         String  @default("")
+  tarifa                    String  @default("")
+  fp                        String  @default("")
+  normas1                   String  @default("")
+  normas2                   String  @default("")
+  x1                        String  @default("")
+  x2                        String  @default("")
+  x3                        String  @default("")
+  x4                        String  @default("")
+  seriePanel                String  @default("")
+  serieInversor             String  @default("")
+  areaPaneles               String  @default("")
+
+  // Fechas
+  fechaDoc DateTime  @default(now()) @db.Date
+  fechaFin DateTime? @db.Date
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  @@map("ute_document_configs")
+}
+
+// Auditoría de cada generación. Guarda snapshot completo de los datos usados
+// para poder reproducir el ZIP si hace falta.
+model UteDocumentGeneration {
+  id             String   @id @default(cuid())
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  configSnapshot Json
+  docsGenerated  String[]
+  generatedById  String
+  generatedBy    User     @relation("UteDocsGeneratedBy", fields: [generatedById], references: [id], onDelete: Restrict)
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([projectId])
+  @@index([generatedById])
+  @@map("ute_document_generations")
 }

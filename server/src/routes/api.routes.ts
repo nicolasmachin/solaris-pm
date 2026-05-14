@@ -60,6 +60,8 @@ import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize, authorizeAny, clearPermissionCache } from "../middleware/authorize.middleware.js";
 import { createAuditEntriesForChanges, createAuditEntry } from "../services/audit.service.js";
 import { createPlanPagos, getPlanPagos } from "../services/planPagos.service.js";
+import { generateUteDocs, getOrCreateConfig as getOrCreateUteDocConfig, upsertConfig as upsertUteDocConfig } from "../services/ute-docs/generator.js";
+import { UTE_DOC_KEYS, type UteDocKey } from "../services/ute-docs/coordinates.js";
 import { deleteStoredFile, getStoredFilePath, saveUploadedFile } from "../services/file-storage.service.js";
 import { copyLeadAttachmentsToProject } from "../services/sales/sales.service.js";
 import {
@@ -9183,6 +9185,125 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
         reply.code(201);
         return result;
+      },
+    );
+
+    // ─── Generador de documentos UTE ────────────────────────────────────────
+    // GET config: devuelve la config UTE actual del proyecto (la crea con
+    // defaults si no existía).
+    app.get(
+      "/projects/:projectId/ute-docs/config",
+      { preHandler: authorize(Module.INGENIERIA, Action.VIEW) },
+      async (request) => {
+        const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
+        return getOrCreateUteDocConfig(projectId);
+      },
+    );
+
+    // PUT config: upsert con todos los campos editables.
+    const uteDocConfigBodySchema = z
+      .object({
+        ciCliente: z.string().optional(),
+        calle: z.string().optional(),
+        numCalle: z.string().optional(),
+        cuentaUte: z.string().optional(),
+        casoUte: z.string().optional(),
+        personaFisica: z.boolean().optional(),
+        empresa: z.boolean().optional(),
+        representa: z.string().optional(),
+        ciRepre: z.string().optional(),
+        calidadRepre: z.string().optional(),
+        fi: z.string().optional(),
+        rut: z.string().optional(),
+        dirFi: z.string().optional(),
+        ti: z.string().optional(),
+        ciTi: z.string().optional(),
+        oficina: z.string().optional(),
+        repUte: z.string().optional(),
+        calidadUte: z.string().optional(),
+        asUte: z.string().optional(),
+        ps: z.string().optional(),
+        x: z.string().optional(),
+        potenciaNomSolicitudImg: z.string().optional(),
+        intensidadNomSolicitudImg: z.string().optional(),
+        tension230: z.boolean().optional(),
+        tension400: z.boolean().optional(),
+        tensionNomInversor230: z.boolean().optional(),
+        tensionNomInversor400: z.boolean().optional(),
+        fasesMono: z.boolean().optional(),
+        fasesTri: z.boolean().optional(),
+        tipoGeneradorSincMono: z.boolean().optional(),
+        tipoGeneradorSincTri: z.boolean().optional(),
+        potImg: z.string().optional(),
+        potImgLetras: z.string().optional(),
+        potContratada: z.string().optional(),
+        potContratadaLetras: z.string().optional(),
+        potContratada1000: z.string().optional(),
+        tarifa: z.string().optional(),
+        fp: z.string().optional(),
+        normas1: z.string().optional(),
+        normas2: z.string().optional(),
+        x1: z.string().optional(),
+        x2: z.string().optional(),
+        x3: z.string().optional(),
+        x4: z.string().optional(),
+        seriePanel: z.string().optional(),
+        serieInversor: z.string().optional(),
+        areaPaneles: z.string().optional(),
+        fechaDoc: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        fechaFin: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+      })
+      .strict();
+
+    app.put(
+      "/projects/:projectId/ute-docs/config",
+      { preHandler: authorize(Module.INGENIERIA, Action.EDIT) },
+      async (request) => {
+        const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
+        const raw = uteDocConfigBodySchema.parse(request.body);
+        // Convertir fechas string → Date.
+        const data: Record<string, unknown> = { ...raw };
+        if (raw.fechaDoc) data.fechaDoc = parseDateOnly(raw.fechaDoc);
+        if (raw.fechaFin === null) data.fechaFin = null;
+        else if (raw.fechaFin) data.fechaFin = parseDateOnly(raw.fechaFin);
+        return upsertUteDocConfig({ projectId, data });
+      },
+    );
+
+    // POST generate: arma el ZIP de los docs pedidos y lo devuelve.
+    app.post(
+      "/projects/:projectId/ute-docs/generate",
+      { preHandler: authorize(Module.INGENIERIA, Action.EDIT) },
+      async (request, reply) => {
+        const user = ensureUser(request);
+        const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
+        const body = z
+          .object({
+            docs: z.array(z.enum(UTE_DOC_KEYS as [UteDocKey, ...UteDocKey[]])).min(1),
+          })
+          .strict()
+          .parse(request.body);
+
+        const { zipBuffer, zipFilename, docsGenerated } = await generateUteDocs({
+          projectId,
+          userId: user.id,
+          docs: body.docs,
+        });
+
+        await createAuditEntry({
+          entityType: AuditEntityType.project,
+          entityId: projectId,
+          projectId,
+          userId: user.id,
+          action: AuditAction.created,
+          description: `Generó ${docsGenerated.length} documento${docsGenerated.length === 1 ? "" : "s"} UTE`,
+          metadata: { kind: "ute_docs", docs: docsGenerated },
+        });
+
+        reply
+          .header("Content-Type", "application/zip")
+          .header("Content-Disposition", `attachment; filename="${zipFilename}"`)
+          .send(zipBuffer);
       },
     );
 

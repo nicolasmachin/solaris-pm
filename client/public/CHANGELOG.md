@@ -2,6 +2,21 @@
 
 ## v6.0
 
+### 14 de mayo de 2026
+
+#### Ingeniería — Generador de documentos UTE
+
+Nueva herramienta dentro del workspace de Ingeniería para generar los **8 PDFs** que UTE pide para habilitar una instalación FV (Solicitud IMG, DAR, Jurada Mínima, Jurada Técnica, Convenio, Solicitud de Habilitación, Acta de Habilitación, Contrato).
+
+- **Acceso**: workspace de ingeniería del proyecto → botón **"Documentos UTE"** arriba a la derecha. También por URL: `/ingenieria/proyecto/:id/ute-docs`.
+- **Configuración por proyecto**: cada proyecto tiene su propia configuración UTE persistente. Cargás CI cliente, nº cuenta y caso UTE, datos del representante (si aplica), datos técnicos del sistema (potencias, tensión, fases, factor de potencia, normas) y fechas (documento + habilitación). Los datos del proyecto (cliente, dirección, capacidad) se rellenan automáticamente, los UTE-específicos los cargás vos.
+- **Validar antes de generar**: la página primero te muestra todo el formulario para que revises/edites lo que falte (hay un cliente nuevo o algún campo cambió). Después seleccionás qué PDFs querés y descargás el ZIP.
+- **Selector de docs**: 8 checkboxes, todos marcados por defecto. Podés generar solo los que necesités.
+- **Descarga automática**: al confirmar se descarga un ZIP `docs_ute_{cliente}_{fecha}.zip` con los PDFs listos para imprimir y firmar.
+- **Reemplaza el script local**: antes el proceso era manual (completar `datos.txt` + correr Python en la PC). Ahora todo en Voltia PM, queda registro de cada generación.
+
+Las plantillas PDF originales viven en el server y se normalizan automáticamente al hacer build de la imagen Docker (los originales vienen encriptados con password vacío, no compatibles con la lib de generación).
+
 ### 13 de mayo de 2026
 
 #### Proyectos — Fecha de venta

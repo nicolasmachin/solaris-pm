@@ -107,6 +107,17 @@ export function IngenieriaWorkspace() {
             {data.project.code} · {data.project.potenciaKwp} kWp · {data.project.ubicacion}
           </p>
         )}
+        {data?.project && (
+          <div className="mt-3 flex gap-2 flex-wrap">
+            <Link
+              to={`/ingenieria/proyecto/${id}/ute-docs`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-[var(--color-border)] bg-[var(--color-bg-card)] text-[11px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              Documentos UTE
+            </Link>
+          </div>
+        )}
       </header>
 
       {isError && (

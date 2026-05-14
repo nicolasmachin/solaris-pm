@@ -52,6 +52,7 @@ const TramitesUte = lazy(() => import("./pages/TramitesUte").then((module) => ({
 const Ingenieria = lazy(() => import("./pages/Ingenieria").then((module) => ({ default: module.Ingenieria })));
 const IngenieriaWorkspace = lazy(() => import("./pages/IngenieriaWorkspace").then((module) => ({ default: module.IngenieriaWorkspace })));
 const ProyectoFinal = lazy(() => import("./pages/ProyectoFinal").then((module) => ({ default: module.ProyectoFinal })));
+const UteDocsPage = lazy(() => import("./pages/UteDocsPage").then((module) => ({ default: module.UteDocsPage })));
 const MaterialesConsolidados = lazy(() => import("./pages/MaterialesConsolidados").then((module) => ({ default: module.MaterialesConsolidados })));
 const VisitaTecnica = lazy(() => import("./pages/VisitaTecnica").then((module) => ({ default: module.VisitaTecnica })));
 const VisitaRapida = lazy(() => import("./pages/VisitaRapida").then((module) => ({ default: module.VisitaRapida })));
@@ -338,6 +339,14 @@ export function App() {
           element={
             <PermissionRoute module="INGENIERIA" action="VIEW">
               <ProyectoFinal />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/ingenieria/proyecto/:projectId/ute-docs"
+          element={
+            <PermissionRoute module="INGENIERIA" action="VIEW">
+              <UteDocsPage />
             </PermissionRoute>
           }
         />
