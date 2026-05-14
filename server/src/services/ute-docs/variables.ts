@@ -34,6 +34,12 @@ function bool(value: boolean, trueValue = "X"): string {
   return value ? trueValue : "";
 }
 
+// Bool → texto en lugar de "X". Para los campos que el script Python original
+// resuelve a string descriptivo (230V / Monofásico / Sincrónico monofásico).
+function boolText(value: boolean, trueText: string): string {
+  return value ? trueText : "";
+}
+
 function dec(d: { toString(): string } | null | undefined): string {
   if (d == null) return "";
   return String(d);
@@ -182,14 +188,14 @@ export function buildVariables(args: {
     // Técnicos UTE
     Potencia_nom_solicitud_IMG: config.potenciaNomSolicitudImg,
     Intensidad_nom_solicitud_IMG: config.intensidadNomSolicitudImg,
-    Tension_230: bool(config.tension230),
-    Tension_400: bool(config.tension400),
-    Tension_nom_inversor_230: bool(config.tensionNomInversor230),
-    Tension_nom_inversor_400: bool(config.tensionNomInversor400),
-    Fases_mono: bool(config.fasesMono),
-    Fases_tri: bool(config.fasesTri),
-    Tipo_generador_Sinc_mono: bool(config.tipoGeneradorSincMono),
-    Tipo_generador_Sinc_tri: bool(config.tipoGeneradorSincTri),
+    Tension_230: boolText(config.tension230, "230V"),
+    Tension_400: boolText(config.tension400, "400V"),
+    Tension_nom_inversor_230: boolText(config.tensionNomInversor230, "230V"),
+    Tension_nom_inversor_400: boolText(config.tensionNomInversor400, "400V"),
+    Fases_mono: boolText(config.fasesMono, "Monofásico"),
+    Fases_tri: boolText(config.fasesTri, "Trifásico"),
+    Tipo_generador_Sinc_mono: boolText(config.tipoGeneradorSincMono, "Sincrónico monofásico"),
+    Tipo_generador_Sinc_tri: boolText(config.tipoGeneradorSincTri, "Sincrónico trifásico"),
     Pot_IMG: config.potImg,
     Pot_IMG_letras: config.potImgLetras,
     Pot_contratada: config.potContratada,
