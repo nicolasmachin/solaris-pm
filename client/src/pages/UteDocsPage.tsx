@@ -431,13 +431,44 @@ export function UteDocsPage() {
         <Text label="X" value={form.x} onChange={(v) => patch("x", v)} />
       </Section>
 
-      {/* Datos técnicos */}
-      <Section title="Datos técnicos del sistema">
+      {/* Conexión eléctrica: una sola elección de fases + tensión. La tensión
+          aplica a todo: red, sistema FV e inversor. Tipo generador Sinc se
+          sincroniza automáticamente con las fases. */}
+      <Section title="Conexión eléctrica">
+        <div className="sm:col-span-2 lg:col-span-3">
+          <FasesYTension
+            label="Fases y tensión del sistema (red, FV e inversor)"
+            mono={form.fasesMono}
+            tri={form.fasesTri}
+            t230={form.tension230}
+            t400={form.tension400}
+            onSet={(mono, t230, t400) => {
+              setForm((cur) => cur && {
+                ...cur,
+                fasesMono: mono,
+                fasesTri: !mono,
+                // La tensión aplica a sistema y a inversor (mismo valor).
+                tension230: t230,
+                tension400: t400,
+                tensionNomInversor230: t230,
+                tensionNomInversor400: t400,
+                // Tipo generador sincroniza con fases.
+                tipoGeneradorSincMono: mono,
+                tipoGeneradorSincTri: !mono,
+              });
+            }}
+          />
+        </div>
+      </Section>
+
+      {/* Potencias declaradas a UTE: nominal IMG (+ corriente calc), IMG y
+          contratada en kW (con sus letras) + ×1000 calc. */}
+      <Section title="Potencias declaradas a UTE">
         <Text label="Pot nominal IMG (W)" value={form.potenciaNomSolicitudImg} onChange={(v) => patch("potenciaNomSolicitudImg", v)} />
         {/* Corriente Nominal (A) = P / 230 (mono) o P / (V × √3) (tri).
             Read-only preview; cálculo final lo hace variables.ts al generar. */}
         <div>
-          <label className={lbl}>Corriente Nominal (A)</label>
+          <label className={lbl}>Corriente Nominal (A) · calculada</label>
           <p className="text-sm text-[var(--color-text-secondary)] py-1.5 tabular-nums">
             {(() => {
               const raw = form.potenciaNomSolicitudImg.trim().replace(",", ".");
@@ -463,37 +494,32 @@ export function UteDocsPage() {
             })()}
           </p>
         </div>
-        <Checkbox label="Tensión 230V" checked={form.tension230} onChange={(v) => patch("tension230", v)} />
-        <Checkbox label="Tensión 400V" checked={form.tension400} onChange={(v) => patch("tension400", v)} />
-        <Checkbox label="Tensión inversor 230V" checked={form.tensionNomInversor230} onChange={(v) => patch("tensionNomInversor230", v)} />
-        <Checkbox label="Tensión inversor 400V" checked={form.tensionNomInversor400} onChange={(v) => patch("tensionNomInversor400", v)} />
-        <Checkbox label="Fases monofásico" checked={form.fasesMono} onChange={(v) => patch("fasesMono", v)} />
-        <Checkbox label="Fases trifásico" checked={form.fasesTri} onChange={(v) => patch("fasesTri", v)} />
-        <Checkbox label="Tipo generador Sinc mono" checked={form.tipoGeneradorSincMono} onChange={(v) => patch("tipoGeneradorSincMono", v)} />
-        <Checkbox label="Tipo generador Sinc tri" checked={form.tipoGeneradorSincTri} onChange={(v) => patch("tipoGeneradorSincTri", v)} />
+        <div className="hidden lg:block" />
         <Text label="Pot IMG (kW)" value={form.potImg} onChange={(v) => patch("potImg", v)} />
         <Text label="Pot IMG (en letras)" value={form.potImgLetras} onChange={(v) => patch("potImgLetras", v)} />
+        <div className="hidden lg:block" />
         <Text label="Pot contratada (kW)" value={form.potContratada} onChange={(v) => patch("potContratada", v)} />
         <Text label="Pot Contratada (en letras)" value={form.potContratadaLetras} onChange={(v) => patch("potContratadaLetras", v)} />
         {/* Pot_contratada_1000 = Pot_contratada × 1000. Calculado en variables.ts;
             mostramos preview read-only para que el usuario vea cuánto va al PDF. */}
         <div>
-          <label className={lbl}>Potencia contratada (×1000)</label>
+          <label className={lbl}>Pot contratada (×1000) · calculado</label>
           <p className="text-sm text-[var(--color-text-secondary)] py-1.5 tabular-nums">
             {(() => {
               const raw = form.potContratada.trim().replace(",", ".");
               const n = Number(raw);
-              return Number.isFinite(n) && raw !== "" ? `${Math.round(n * 1000)} (calculado)` : "—";
+              return Number.isFinite(n) && raw !== "" ? `${Math.round(n * 1000)}` : "—";
             })()}
           </p>
         </div>
         <Text label="Tarifa" value={form.tarifa} onChange={(v) => patch("tarifa", v)} />
         <Text label="Factor de potencia (fp)" value={form.fp} onChange={(v) => patch("fp", v)} />
+      </Section>
+
+      {/* Normas y categoría de instalación (X1-X4 derivados de corriente). */}
+      <Section title="Normas técnicas">
         <Text label="Norma 1" value={form.normas1} onChange={(v) => patch("normas1", v)} />
         <Text label="Norma 2" value={form.normas2} onChange={(v) => patch("normas2", v)} />
-        {/* X1-X4 son checkboxes de Jurada Técnica que dependen de la
-            corriente nominal: ≤16 A → X1+X2; >16 y ≤75 A → X3+X4; >75 → nada.
-            Se calculan al generar el PDF a partir de "Corriente Nominal (A)". */}
         <div className="sm:col-span-2 lg:col-span-3">
           <p className="text-[11px] text-[var(--color-text-muted)] bg-[var(--color-bg-app)]/50 rounded p-2">
             <span className="font-mono uppercase tracking-wider text-[10px]">X1-X4</span> · se marcan automáticamente al generar el PDF según la corriente nominal calculada:
@@ -519,6 +545,10 @@ export function UteDocsPage() {
             })()}
           </p>
         </div>
+      </Section>
+
+      {/* Series e info extra del sistema. */}
+      <Section title="Datos extra del sistema">
         <Text label="Serie panel" value={form.seriePanel} onChange={(v) => patch("seriePanel", v)} />
         <Text label="Serie inversor" value={form.serieInversor} onChange={(v) => patch("serieInversor", v)} />
         <Text label="Área paneles" value={form.areaPaneles} onChange={(v) => patch("areaPaneles", v)} />
@@ -648,6 +678,92 @@ function Checkbox({
       <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
       {label}
     </label>
+  );
+}
+
+// Control combinado fases + tensión. Reglas:
+// - Mono → tensión SIEMPRE 230 (forzada).
+// - Tri  → tensión 230 o 400 (radio).
+// Si vienen 2 booleans true (datos legacy), el resolver del onSet los normaliza.
+function FasesYTension({
+  label,
+  mono,
+  tri,
+  t230,
+  t400,
+  disableFases = false,
+  onSet,
+}: {
+  label: string;
+  mono: boolean;
+  tri: boolean;
+  t230: boolean;
+  t400: boolean;
+  disableFases?: boolean;
+  onSet: (mono: boolean, t230: boolean, t400: boolean) => void;
+}) {
+  // Para inversor (disableFases) usamos las fases del sistema, pero la tensión
+  // es independiente. Para sistema, fases + tensión se setean juntas.
+  const effectiveMono = mono && !tri ? true : !mono && tri ? false : mono; // por defecto mono si ambiguo
+  return (
+    <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)]/30 p-3 space-y-2">
+      <p className="text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] font-mono">
+        {label}
+      </p>
+      {!disableFases && (
+        <div className="flex gap-2 text-xs">
+          <RadioPill
+            label="Monofásico"
+            active={effectiveMono}
+            onClick={() => onSet(true, true, false)}
+          />
+          <RadioPill
+            label="Trifásico"
+            active={!effectiveMono}
+            onClick={() => onSet(false, t400 ? false : true, t400 ? true : false)}
+          />
+        </div>
+      )}
+      <div className="flex gap-2 text-xs">
+        <span className="text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] font-mono mr-2 self-center">
+          Tensión
+        </span>
+        {effectiveMono ? (
+          <span className="px-2.5 py-1 rounded text-[var(--color-text-secondary)] text-xs">
+            230 V (fijo en monofásico)
+          </span>
+        ) : (
+          <>
+            <RadioPill label="230 V" active={t230 && !t400} onClick={() => onSet(false, true, false)} />
+            <RadioPill label="400 V" active={t400} onClick={() => onSet(false, false, true)} />
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RadioPill({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-3 py-1 rounded border text-xs transition-colors ${
+        active
+          ? "bg-[var(--color-accent)] text-gray-900 border-[var(--color-accent)] font-semibold"
+          : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
+      }`}
+    >
+      {label}
+    </button>
   );
 }
 
