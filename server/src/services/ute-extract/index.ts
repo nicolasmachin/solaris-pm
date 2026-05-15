@@ -83,7 +83,7 @@ Devolvé ÚNICAMENTE un objeto JSON válido con esta estructura exacta (sin text
   "mail_cliente": "email del cliente si figura o null",
   "telefono_cliente": "teléfono del cliente si figura o null",
   "cuenta_ute": "número de cuenta UTE (suele ser un número largo) o null",
-  "caso_ute": "número de caso si figura o null",
+  "caso_ute": null,
   "oficina_ute": "oficina comercial UTE indicada en la factura o null",
   "tarifa_ute": "código de tarifa (ej: BT1, BT2, MT1) o null",
   "pot_contratada": "potencia contratada en kW como string numérico o null",

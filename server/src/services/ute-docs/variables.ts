@@ -194,7 +194,30 @@ export function buildVariables(args: {
     X: config.x,
     // Técnicos UTE
     Potencia_nom_solicitud_IMG: config.potenciaNomSolicitudImg,
-    Intensidad_nom_solicitud_IMG: config.intensidadNomSolicitudImg,
+    // Intensidad nominal calculada según fases + tensión:
+    //   Monofásico            → I = P / 230
+    //   Trifásico (230 V)     → I = P / (230 × √3)
+    //   Trifásico (400 V)     → I = P / (400 × √3)
+    // Se ignora cualquier valor manual guardado en config.intensidadNomSolicitudImg.
+    Intensidad_nom_solicitud_IMG: (() => {
+      const raw = (config.potenciaNomSolicitudImg ?? "").trim().replace(",", ".");
+      const p = Number(raw);
+      if (!Number.isFinite(p) || p <= 0) return "";
+      const SQRT3 = Math.sqrt(3);
+      let i: number;
+      if (config.fasesMono) {
+        i = p / 230;
+      } else if (config.fasesTri && config.tension400) {
+        i = p / (400 * SQRT3);
+      } else if (config.fasesTri && config.tension230) {
+        i = p / (230 * SQRT3);
+      } else {
+        // Fallback razonable: monofásico 230 V.
+        i = p / 230;
+      }
+      // Redondear al entero más cercano.
+      return String(Math.round(i));
+    })(),
     Tension_230: bool(config.tension230),
     Tension_400: bool(config.tension400),
     Tension_nom_inversor_230: bool(config.tensionNomInversor230),

@@ -24,6 +24,7 @@ import {
   type UteDocumentConfig,
 } from "../api/uteDocs.api";
 import { Spinner } from "../components/ui/Spinner";
+import { formatCi } from "../components/projects/UteExtractModal";
 
 // Campos del Project que se editan desde acá. Los cambios se persisten al
 // proyecto (no a la config UTE) usando patchProject — así si el operario
@@ -139,7 +140,8 @@ export function UteDocsPage() {
         clientAddress: projectQ.data.clientAddress ?? "",
         locationCity: projectQ.data.locationCity ?? "",
         locationProvince: projectQ.data.locationProvince ?? "",
-        ciCliente: projectQ.data.ciCliente ?? "",
+        // CI canónico: "X.XXX.XXX-Y". Si en DB quedó sin formato, lo mostramos formateado.
+        ciCliente: projectQ.data.ciCliente ? formatCi(projectQ.data.ciCliente) : "",
         calle: projectQ.data.calle ?? "",
         numCalle: projectQ.data.numCalle ?? "",
         personaFisica: projectQ.data.personaFisica ?? true,
@@ -432,7 +434,35 @@ export function UteDocsPage() {
       {/* Datos técnicos */}
       <Section title="Datos técnicos del sistema">
         <Text label="Pot nominal IMG (W)" value={form.potenciaNomSolicitudImg} onChange={(v) => patch("potenciaNomSolicitudImg", v)} />
-        <Text label="Corriente Nominal (A)" value={form.intensidadNomSolicitudImg} onChange={(v) => patch("intensidadNomSolicitudImg", v)} />
+        {/* Corriente Nominal (A) = P / 230 (mono) o P / (V × √3) (tri).
+            Read-only preview; cálculo final lo hace variables.ts al generar. */}
+        <div>
+          <label className={lbl}>Corriente Nominal (A)</label>
+          <p className="text-sm text-[var(--color-text-secondary)] py-1.5 tabular-nums">
+            {(() => {
+              const raw = form.potenciaNomSolicitudImg.trim().replace(",", ".");
+              const p = Number(raw);
+              if (!Number.isFinite(p) || p <= 0) return "—";
+              const SQRT3 = Math.sqrt(3);
+              let i: number;
+              let formula: string;
+              if (form.fasesMono) {
+                i = p / 230;
+                formula = "P/230";
+              } else if (form.fasesTri && form.tension400) {
+                i = p / (400 * SQRT3);
+                formula = "P/(400·√3)";
+              } else if (form.fasesTri && form.tension230) {
+                i = p / (230 * SQRT3);
+                formula = "P/(230·√3)";
+              } else {
+                i = p / 230;
+                formula = "P/230";
+              }
+              return `${Math.round(i)} A (${formula})`;
+            })()}
+          </p>
+        </div>
         <Checkbox label="Tensión 230V" checked={form.tension230} onChange={(v) => patch("tension230", v)} />
         <Checkbox label="Tensión 400V" checked={form.tension400} onChange={(v) => patch("tension400", v)} />
         <Checkbox label="Tensión inversor 230V" checked={form.tensionNomInversor230} onChange={(v) => patch("tensionNomInversor230", v)} />
@@ -466,17 +496,26 @@ export function UteDocsPage() {
             Se calculan al generar el PDF a partir de "Corriente Nominal (A)". */}
         <div className="sm:col-span-2 lg:col-span-3">
           <p className="text-[11px] text-[var(--color-text-muted)] bg-[var(--color-bg-app)]/50 rounded p-2">
-            <span className="font-mono uppercase tracking-wider text-[10px]">X1-X4</span> · se marcan automáticamente al generar el PDF según la <strong>Corriente Nominal (A)</strong>:
+            <span className="font-mono uppercase tracking-wider text-[10px]">X1-X4</span> · se marcan automáticamente al generar el PDF según la corriente nominal calculada:
             ≤ 16 A → X1+X2 · &gt; 16 y ≤ 75 A → X3+X4 · &gt; 75 A → ninguno.
             {(() => {
-              const raw = form.intensidadNomSolicitudImg.trim().replace(",", ".");
-              const n = Number(raw);
-              if (!Number.isFinite(n) || raw === "") {
-                return <span className="ml-1 text-[var(--color-warning-text)]"> (sin corriente cargada — no se marca ninguno).</span>;
+              const raw = form.potenciaNomSolicitudImg.trim().replace(",", ".");
+              const p = Number(raw);
+              if (!Number.isFinite(p) || p <= 0) {
+                return <span className="ml-1 text-[var(--color-warning-text)]"> (sin Pot nominal IMG cargada — no se marca ninguno).</span>;
               }
-              if (n <= 16) return <span className="ml-1 text-emerald-400"> Con {n} A → se marcarán X1 y X2.</span>;
-              if (n <= 75) return <span className="ml-1 text-emerald-400"> Con {n} A → se marcarán X3 y X4.</span>;
-              return <span className="ml-1 text-[var(--color-text-muted)]"> Con {n} A → no se marca ninguno.</span>;
+              const SQRT3 = Math.sqrt(3);
+              const i = form.fasesMono
+                ? p / 230
+                : form.fasesTri && form.tension400
+                  ? p / (400 * SQRT3)
+                  : form.fasesTri && form.tension230
+                    ? p / (230 * SQRT3)
+                    : p / 230;
+              const rounded = Math.round(i);
+              if (rounded <= 16) return <span className="ml-1 text-emerald-400"> Con {rounded} A → se marcarán X1 y X2.</span>;
+              if (rounded <= 75) return <span className="ml-1 text-emerald-400"> Con {rounded} A → se marcarán X3 y X4.</span>;
+              return <span className="ml-1 text-[var(--color-text-muted)]"> Con {rounded} A → no se marca ninguno.</span>;
             })()}
           </p>
         </div>

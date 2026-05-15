@@ -9,6 +9,7 @@ import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { ProgressBar } from "../components/ui/ProgressBar";
 import { Spinner } from "../components/ui/Spinner";
+import { MultiSelectFilter } from "../components/ui/MultiSelectFilter";
 import type { ProjectListItem, ProjectStatus, SolarSystem } from "../types/api.types";
 import { getProjectTeamColor, getProjectTeamName, getProjectTeamType } from "../components/project/projectTeamColor";
 import {
@@ -38,14 +39,17 @@ type StageFilter =
   | "HABILITACION_UTE"
   | "POSTVENTA";
 
-const STATUS_OPTIONS: Array<{ value: "all" | ProjectStatus; label: string }> = [
-  { value: "all", label: "Todos" },
+const STATUS_OPTIONS: Array<{ value: ProjectStatus; label: string }> = [
   { value: "ACTIVE", label: "Activos" },
   { value: "PROSPECT", label: "Prospectos" },
   { value: "COMPLETED", label: "Completados" },
   { value: "PAUSED", label: "Pausados" },
   { value: "ARCHIVED", label: "Archivados" },
 ];
+
+// Por defecto se muestran todos los estados EXCEPTO completados — los
+// proyectos completados rara vez interesan en el día a día.
+const DEFAULT_STATUSES: ProjectStatus[] = ["PROSPECT", "ACTIVE", "PAUSED", "ARCHIVED"];
 
 const STAGE_OPTIONS: Array<{ value: StageFilter; label: string }> = [
   { value: "all", label: "Todas las etapas" },
@@ -67,7 +71,8 @@ const STAGE_LABELS: Record<string, string> = {
 // Persistencia local de filtros de la página
 const PAGE_FILTER_KEY = "projects-page-filter";
 interface PagePersistedFilter {
-  statusFilter: "all" | ProjectStatus;
+  // Antes era single value; ahora multi-select como array.
+  statusFilters: ProjectStatus[];
   stageFilter: StageFilter;
   sortKey: SortKey;
   sortDirection: SortDirection;
@@ -243,8 +248,8 @@ export function Projects() {
   const queryClient = useQueryClient();
   const persisted = useMemo(loadPageFilter, []);
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | ProjectStatus>(
-    persisted?.statusFilter ?? "ACTIVE",
+  const [statusFilters, setStatusFilters] = useState<Set<ProjectStatus>>(
+    () => new Set(persisted?.statusFilters ?? DEFAULT_STATUSES),
   );
   const [stageFilter, setStageFilter] = useState<StageFilter>(persisted?.stageFilter ?? "all");
   const [sortKey, setSortKey] = useState<SortKey>(persisted?.sortKey ?? "client");
@@ -253,8 +258,13 @@ export function Projects() {
   const [projectToDelete, setProjectToDelete] = useState<ProjectListItem | null>(null);
 
   useEffect(() => {
-    savePageFilter({ statusFilter, stageFilter, sortKey, sortDirection });
-  }, [statusFilter, stageFilter, sortKey, sortDirection]);
+    savePageFilter({
+      statusFilters: Array.from(statusFilters),
+      stageFilter,
+      sortKey,
+      sortDirection,
+    });
+  }, [statusFilters, stageFilter, sortKey, sortDirection]);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["projects"],
@@ -292,10 +302,9 @@ export function Projects() {
   const filteredProjects = useMemo(() => {
     const term = query.trim().toLowerCase();
     const filtered = projects.filter((project) => {
-      const matchesStatus =
-        statusFilter === "all"
-          ? project.status !== "ARCHIVED"
-          : project.status === statusFilter;
+      // Si no hay estados seleccionados, no se muestra nada (interpretación
+      // razonable: el usuario explícitamente vació el filtro).
+      const matchesStatus = statusFilters.has(project.status as ProjectStatus);
       const matchesStageFilter =
         stageFilter === "all" ? true : (project.currentStages ?? []).includes(stageFilter);
       const matchesQuery = term
@@ -305,7 +314,7 @@ export function Projects() {
     });
 
     return sortProjects(filtered, sortKey, sortDirection);
-  }, [projects, query, sortKey, sortDirection, statusFilter, stageFilter]);
+  }, [projects, query, sortKey, sortDirection, statusFilters, stageFilter]);
 
   const ownTeamProjects = useMemo(
     () => filteredProjects.filter((project) => getProjectTeamType(project) === "PROPIO"),
@@ -366,16 +375,7 @@ export function Projects() {
           <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--color-text-muted)]">Proyectos</p>
           <h1 className="mt-1 font-display text-2xl text-[var(--color-text-primary)]">Resumen de cartera</h1>
           <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-            Mostrando {filteredProjects.length} de {projects.filter((p) => p.status !== "ARCHIVED").length} proyectos
-            {statusFilter !== "ARCHIVED" && projects.some((p) => p.status === "ARCHIVED") && (
-              <button
-                type="button"
-                onClick={() => setStatusFilter("ARCHIVED")}
-                className="ml-2 text-[var(--color-text-muted)] underline hover:text-[var(--color-text-secondary)] transition-colors"
-              >
-                ({projects.filter((p) => p.status === "ARCHIVED").length} archivados)
-              </button>
-            )}
+            Mostrando {filteredProjects.length} de {projects.length} proyectos
           </p>
         </div>
 
@@ -387,17 +387,13 @@ export function Projects() {
             onChange={(event) => setQuery(event.target.value)}
             className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none md:w-72"
           />
-          <select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value as "all" | ProjectStatus)}
-            className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
-          >
-            {STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          <MultiSelectFilter
+            options={STATUS_OPTIONS}
+            selected={statusFilters}
+            onChange={setStatusFilters}
+            buttonLabel="estados"
+            allLabel="Todos los estados"
+          />
           <select
             value={stageFilter}
             onChange={(event) => setStageFilter(event.target.value as StageFilter)}

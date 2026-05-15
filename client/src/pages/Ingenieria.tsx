@@ -7,26 +7,30 @@ import {
   type IngenieriaDashboardProject,
   type IngenieriaEstado,
 } from "../api/ingenieria.api";
+import { MultiSelectFilter } from "../components/ui/MultiSelectFilter";
 
-type ScopeFilter = "todas" | "en-cola" | "en-proceso" | "completadas";
+type ScopeFilter = "en-cola" | "en-proceso" | "completadas";
 
 function klass(...p: (string | false | undefined)[]) {
   return p.filter(Boolean).join(" ");
 }
 
-const SCOPE_LABEL: Record<ScopeFilter, string> = {
-  todas: "Todas",
-  "en-cola": "En cola",
-  "en-proceso": "En proceso",
-  completadas: "Completadas",
-};
+const SCOPE_OPTIONS: Array<{ value: ScopeFilter; label: string }> = [
+  { value: "en-cola", label: "En cola" },
+  { value: "en-proceso", label: "En proceso" },
+  { value: "completadas", label: "Completadas" },
+];
 
-function matchesScope(p: IngenieriaDashboardProject, scope: ScopeFilter): boolean {
-  if (scope === "todas") return true;
-  if (scope === "en-cola") return p.stageStatus === "PENDING";
-  if (scope === "en-proceso") return p.stageStatus === "IN_PROGRESS";
-  if (scope === "completadas") return p.stageStatus === "COMPLETED";
-  return true;
+// Por defecto: todos los scopes EXCEPTO completadas (los terminados rara
+// vez interesan en el día a día).
+const DEFAULT_SCOPES: ScopeFilter[] = ["en-cola", "en-proceso"];
+
+function matchesScopes(p: IngenieriaDashboardProject, scopes: Set<ScopeFilter>): boolean {
+  if (scopes.size === 0) return false;
+  if (p.stageStatus === "PENDING" && scopes.has("en-cola")) return true;
+  if (p.stageStatus === "IN_PROGRESS" && scopes.has("en-proceso")) return true;
+  if (p.stageStatus === "COMPLETED" && scopes.has("completadas")) return true;
+  return false;
 }
 
 function estadoColor(estado: IngenieriaEstado): { bg: string; text: string } {
@@ -38,7 +42,7 @@ function estadoColor(estado: IngenieriaEstado): { bg: string; text: string } {
 
 export function Ingenieria() {
   const navigate = useNavigate();
-  const [scope, setScope] = useState<ScopeFilter>("todas");
+  const [scopes, setScopes] = useState<Set<ScopeFilter>>(() => new Set(DEFAULT_SCOPES));
   const [search, setSearch] = useState("");
 
   const { data, isLoading, isError } = useQuery({
@@ -50,7 +54,7 @@ export function Ingenieria() {
     const projects = data?.projects ?? [];
     const q = search.toLowerCase().trim();
     return projects.filter((p) => {
-      if (!matchesScope(p, scope)) return false;
+      if (!matchesScopes(p, scopes)) return false;
       if (!q) return true;
       return (
         p.cliente.toLowerCase().includes(q) ||
@@ -58,7 +62,7 @@ export function Ingenieria() {
         p.ubicacion.toLowerCase().includes(q)
       );
     });
-  }, [data, scope, search]);
+  }, [data, scopes, search]);
 
   return (
     <div className="space-y-5">
@@ -111,22 +115,13 @@ export function Ingenieria() {
 
       {/* Filtros */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="inline-flex rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] p-0.5 text-xs">
-          {(Object.keys(SCOPE_LABEL) as ScopeFilter[]).map((s) => (
-            <button
-              key={s}
-              onClick={() => setScope(s)}
-              className={klass(
-                "rounded px-3 py-1 transition-colors",
-                scope === s
-                  ? "bg-[var(--color-accent)] text-black font-semibold"
-                  : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]",
-              )}
-            >
-              {SCOPE_LABEL[s]}
-            </button>
-          ))}
-        </div>
+        <MultiSelectFilter
+          options={SCOPE_OPTIONS}
+          selected={scopes}
+          onChange={setScopes}
+          buttonLabel="estados"
+          allLabel="Todos los estados"
+        />
         <div className="relative max-w-xs w-full">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-muted)]" />
           <input

@@ -3,6 +3,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 
 import { getProject, patchProject } from "../api/projects.api";
+import {
+  getUteDocsConfig,
+  saveUteDocsConfig,
+  type UteDocumentConfig,
+} from "../api/uteDocs.api";
 import type { Project } from "../types/api.types";
 import {
   uteExtract,
@@ -39,7 +44,13 @@ function buildProjectPatch(
     out[field as string] = value;
   };
 
-  if (tipo === "cedula") fill("nombreCliente", data.nombre_cliente);
+  // Excepción: nombreCliente SIEMPRE se actualiza desde la cédula (no se
+  // respeta el valor previo). La cédula es la fuente autoritativa del
+  // nombre para los docs UTE. El título del proyecto (clientName) sí queda
+  // intacto siempre.
+  if (tipo === "cedula" && data.nombre_cliente) {
+    out.nombreCliente = data.nombre_cliente;
+  }
   fill("ciCliente", data.ci_cliente);
   fill("calle", data.calle);
   fill("numCalle", data.num_calle);
@@ -52,15 +63,22 @@ function buildProjectPatch(
   return out;
 }
 
-// Campos que van a UteDocumentConfig (cuenta, caso). El frontend los manda
-// como parte del confirm; el caller decide si los aplica.
-export function buildConfigPatch(data: Partial<UteExtractedData>): Record<string, unknown> {
+// Campos que van a UteDocumentConfig. Misma regla "solo si está vacío".
+function buildConfigPatch(
+  data: Partial<UteExtractedData>,
+  config: UteDocumentConfig | undefined,
+): Record<string, unknown> {
   const out: Record<string, unknown> = {};
-  if (data.cuenta_ute) out.cuentaUte = data.cuenta_ute;
-  if (data.caso_ute) out.casoUte = data.caso_ute;
-  if (data.oficina_ute) out.oficina = data.oficina_ute;
-  if (data.tarifa_ute) out.tarifa = data.tarifa_ute;
-  if (data.pot_contratada) out.potContratada = data.pot_contratada;
+  const fill = <K extends keyof UteDocumentConfig>(field: K, value: unknown): void => {
+    if (!value) return;
+    if (config && !isEmpty(config[field])) return;
+    out[field as string] = value;
+  };
+  fill("cuentaUte", data.cuenta_ute);
+  fill("casoUte", data.caso_ute);
+  fill("oficina", data.oficina_ute);
+  fill("tarifa", data.tarifa_ute);
+  fill("potContratada", data.pot_contratada);
   return out;
 }
 
@@ -69,6 +87,11 @@ export function useUteExtract(projectId: string) {
   const projectQ = useQuery({
     queryKey: ["project", projectId],
     queryFn: () => getProject(projectId),
+    enabled: !!projectId,
+  });
+  const configQ = useQuery({
+    queryKey: ["ute-docs-config", projectId],
+    queryFn: () => getUteDocsConfig(projectId),
     enabled: !!projectId,
   });
   const [modalOpen, setModalOpen] = useState(false);
@@ -95,18 +118,23 @@ export function useUteExtract(projectId: string) {
   const confirmMut = useMutation({
     mutationFn: async (args: { data: Partial<UteExtractedData>; tipo: UteExtractTipo }) => {
       const projectPatch = buildProjectPatch(args.data, args.tipo, projectQ.data);
-      if (Object.keys(projectPatch).length === 0) return { applied: 0 };
-      await patchProject(projectId, projectPatch);
-      return { applied: Object.keys(projectPatch).length };
+      const configPatch = buildConfigPatch(args.data, configQ.data);
+      const ops: Promise<unknown>[] = [];
+      if (Object.keys(projectPatch).length > 0) ops.push(patchProject(projectId, projectPatch));
+      if (Object.keys(configPatch).length > 0) ops.push(saveUteDocsConfig(projectId, configPatch));
+      if (ops.length === 0) return { applied: 0 };
+      await Promise.all(ops);
+      return { applied: Object.keys(projectPatch).length + Object.keys(configPatch).length };
     },
     onSuccess: ({ applied }) => {
       toast.success(
         applied > 0
-          ? `${applied} dato${applied === 1 ? "" : "s"} guardado${applied === 1 ? "" : "s"} en el proyecto`
-          : "Sin cambios — los campos extraídos ya estaban cargados en el proyecto",
+          ? `${applied} dato${applied === 1 ? "" : "s"} guardado${applied === 1 ? "" : "s"}`
+          : "Sin cambios — los campos extraídos ya estaban cargados",
       );
       qc.invalidateQueries({ queryKey: ["project", projectId] });
       qc.invalidateQueries({ queryKey: ["projects"] });
+      qc.invalidateQueries({ queryKey: ["ute-docs-config", projectId] });
       setModalOpen(false);
       setExtracted(null);
     },
@@ -121,14 +149,24 @@ export function useUteExtract(projectId: string) {
   function buildAlreadyFilled(): Set<keyof UteExtractedData> {
     const out = new Set<keyof UteExtractedData>();
     const p = projectQ.data;
-    if (!p) return out;
-    if (!isEmpty(p.nombreCliente)) out.add("nombre_cliente");
-    if (!isEmpty(p.ciCliente)) out.add("ci_cliente");
-    if (!isEmpty(p.calle)) out.add("calle");
-    if (!isEmpty(p.numCalle)) out.add("num_calle");
-    if (!isEmpty(p.clientAddress)) out.add("dir_cliente");
-    if (!isEmpty(p.notificationEmail)) out.add("mail_cliente");
-    if (!isEmpty(p.notificationPhone)) out.add("telefono_cliente");
+    const c = configQ.data;
+    // nombre_cliente NO se marca como "ya en proyecto" — la cédula siempre
+    // pisa nombreCliente (no afecta clientName / título del proyecto).
+    if (p) {
+      if (!isEmpty(p.ciCliente)) out.add("ci_cliente");
+      if (!isEmpty(p.calle)) out.add("calle");
+      if (!isEmpty(p.numCalle)) out.add("num_calle");
+      if (!isEmpty(p.clientAddress)) out.add("dir_cliente");
+      if (!isEmpty(p.notificationEmail)) out.add("mail_cliente");
+      if (!isEmpty(p.notificationPhone)) out.add("telefono_cliente");
+    }
+    if (c) {
+      if (!isEmpty(c.cuentaUte)) out.add("cuenta_ute");
+      if (!isEmpty(c.casoUte)) out.add("caso_ute");
+      if (!isEmpty(c.oficina)) out.add("oficina_ute");
+      if (!isEmpty(c.tarifa)) out.add("tarifa_ute");
+      if (!isEmpty(c.potContratada)) out.add("pot_contratada");
+    }
     return out;
   }
 
