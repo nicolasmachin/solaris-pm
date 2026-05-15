@@ -1,40 +1,54 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 
-import { patchProject } from "../api/projects.api";
+import { getProject, patchProject } from "../api/projects.api";
+import type { Project } from "../types/api.types";
 import {
   uteExtract,
   type UteExtractTipo,
   type UteExtractedData,
 } from "../api/uteExtract.api";
 
-// Mapeo de campos extraídos por IA → campos del Project. Lo que se confirma
-// en el modal se persiste vía patchProject.
+// Mapeo de campos extraídos por IA → campos del Project.
 //
-// Reglas especiales por tipo de documento:
-// - Cédula: el nombre extraído va a nombreCliente (campo UTE-específico).
-//   NUNCA se modifica clientName (nombre del proyecto).
-// - Factura UTE: se IGNORA el nombre del titular de la factura (no toca
-//   ni clientName ni nombreCliente — el nombre oficial sale de cédula).
+// Reglas:
+// - Solo se persisten campos del proyecto que estén VACÍOS. Lo que el
+//   usuario ya cargó (al crear el proyecto o después) no se modifica.
+// - Cédula: el nombre va a nombreCliente. NUNCA toca clientName (nombre
+//   del proyecto).
+// - Factura UTE: se IGNORA el nombre del titular.
+// - Ciudad y departamento NUNCA se extraen (vienen del create del
+//   proyecto y son obligatorios allí).
+function isEmpty(v: unknown): boolean {
+  if (v == null) return true;
+  if (typeof v === "string" && v.trim() === "") return true;
+  return false;
+}
+
 function buildProjectPatch(
   data: Partial<UteExtractedData>,
   tipo: UteExtractTipo,
+  project: Project | undefined,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {};
-  if (tipo === "cedula" && data.nombre_cliente) out.nombreCliente = data.nombre_cliente;
-  if (data.ci_cliente) out.ciCliente = data.ci_cliente;
-  if (data.calle) out.calle = data.calle;
-  if (data.num_calle) out.numCalle = data.num_calle;
-  if (data.dir_cliente) out.clientAddress = data.dir_cliente;
-  if (data.ciudad) out.locationCity = data.ciudad;
-  if (data.depto) out.locationProvince = data.depto;
-  if (data.mail_cliente) out.notificationEmail = data.mail_cliente;
-  if (data.telefono_cliente) out.notificationPhone = data.telefono_cliente;
-  if (typeof data.persona_fisica === "boolean") {
-    out.personaFisica = data.persona_fisica;
-    out.empresa = !data.persona_fisica;
-  }
+  // Helper: incluir el campo solo si en el proyecto está vacío.
+  const fill = <K extends keyof Project>(field: K, value: unknown): void => {
+    if (!value) return;
+    if (project && !isEmpty(project[field])) return;
+    out[field as string] = value;
+  };
+
+  if (tipo === "cedula") fill("nombreCliente", data.nombre_cliente);
+  fill("ciCliente", data.ci_cliente);
+  fill("calle", data.calle);
+  fill("numCalle", data.num_calle);
+  fill("clientAddress", data.dir_cliente);
+  fill("notificationEmail", data.mail_cliente);
+  fill("notificationPhone", data.telefono_cliente);
+  // Ciudad y depto: no se tocan desde la extracción.
+  // Persona física / empresa: se respetan los valores actuales del proyecto
+  // (default true al crear). No los modifica la extracción.
   return out;
 }
 
@@ -52,6 +66,11 @@ export function buildConfigPatch(data: Partial<UteExtractedData>): Record<string
 
 export function useUteExtract(projectId: string) {
   const qc = useQueryClient();
+  const projectQ = useQuery({
+    queryKey: ["project", projectId],
+    queryFn: () => getProject(projectId),
+    enabled: !!projectId,
+  });
   const [modalOpen, setModalOpen] = useState(false);
   const [extracted, setExtracted] = useState<UteExtractedData | null>(null);
   const [tipoActual, setTipoActual] = useState<UteExtractTipo | null>(null);
@@ -75,13 +94,17 @@ export function useUteExtract(projectId: string) {
 
   const confirmMut = useMutation({
     mutationFn: async (args: { data: Partial<UteExtractedData>; tipo: UteExtractTipo }) => {
-      const projectPatch = buildProjectPatch(args.data, args.tipo);
+      const projectPatch = buildProjectPatch(args.data, args.tipo, projectQ.data);
       if (Object.keys(projectPatch).length === 0) return { applied: 0 };
       await patchProject(projectId, projectPatch);
       return { applied: Object.keys(projectPatch).length };
     },
     onSuccess: ({ applied }) => {
-      toast.success(applied > 0 ? "Datos guardados en el proyecto" : "Sin cambios para guardar");
+      toast.success(
+        applied > 0
+          ? `${applied} dato${applied === 1 ? "" : "s"} guardado${applied === 1 ? "" : "s"} en el proyecto`
+          : "Sin cambios — los campos extraídos ya estaban cargados en el proyecto",
+      );
       qc.invalidateQueries({ queryKey: ["project", projectId] });
       qc.invalidateQueries({ queryKey: ["projects"] });
       setModalOpen(false);
@@ -93,12 +116,29 @@ export function useUteExtract(projectId: string) {
     },
   });
 
+  // Qué campos extraídos NO van a persistirse porque el proyecto ya los tiene.
+  // El modal usa este set para mostrarlos con un badge "ya en el proyecto".
+  function buildAlreadyFilled(): Set<keyof UteExtractedData> {
+    const out = new Set<keyof UteExtractedData>();
+    const p = projectQ.data;
+    if (!p) return out;
+    if (!isEmpty(p.nombreCliente)) out.add("nombre_cliente");
+    if (!isEmpty(p.ciCliente)) out.add("ci_cliente");
+    if (!isEmpty(p.calle)) out.add("calle");
+    if (!isEmpty(p.numCalle)) out.add("num_calle");
+    if (!isEmpty(p.clientAddress)) out.add("dir_cliente");
+    if (!isEmpty(p.notificationEmail)) out.add("mail_cliente");
+    if (!isEmpty(p.notificationPhone)) out.add("telefono_cliente");
+    return out;
+  }
+
   return {
     uploadAndExtract: (file: File, tipo: UteExtractTipo) => extractMut.mutate({ file, tipo }),
     isExtracting: extractMut.isPending,
     modalOpen,
     extracted,
     tipoActual,
+    alreadyFilled: buildAlreadyFilled(),
     confirmar: (data: Partial<UteExtractedData>) => {
       if (!tipoActual) return;
       confirmMut.mutate({ data, tipo: tipoActual });

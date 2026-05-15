@@ -65,6 +65,7 @@ export function ClienteDocsUpload({
           data={extractor.extracted}
           tipo={extractor.tipoActual}
           isSaving={extractor.isConfirming}
+          alreadyFilled={extractor.alreadyFilled}
           onConfirm={(d) => extractor.confirmar(d)}
           onCancel={extractor.cancelar}
         />

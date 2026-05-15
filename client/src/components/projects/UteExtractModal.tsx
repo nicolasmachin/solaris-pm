@@ -23,17 +23,17 @@ const FIELD_LABEL: Record<FieldKey, string> = {
   persona_fisica: "Persona física",
 };
 
-// Qué campos se muestran según el tipo de doc. La cédula no trae datos UTE.
+// Qué campos se muestran según el tipo de doc. ciudad/depto se omiten
+// (vienen del create del proyecto, no se modifican desde extracción).
 const FIELDS_BY_TIPO: Record<UteExtractTipo, FieldKey[]> = {
-  cedula: ["nombre_cliente", "ci_cliente", "dir_cliente", "calle", "num_calle", "ciudad", "depto", "persona_fisica"],
+  cedula: ["nombre_cliente", "ci_cliente", "dir_cliente", "calle", "num_calle"],
   factura_ute: [
-    "nombre_cliente",
+    // Nombre intencionalmente omitido para factura UTE (se ignora; el oficial
+    // sale de cédula).
     "ci_cliente",
     "dir_cliente",
     "calle",
     "num_calle",
-    "ciudad",
-    "depto",
     "mail_cliente",
     "telefono_cliente",
     "cuenta_ute",
@@ -89,12 +89,14 @@ export function UteExtractModal({
   data,
   tipo,
   isSaving,
+  alreadyFilled,
   onConfirm,
   onCancel,
 }: {
   data: UteExtractedData;
   tipo: UteExtractTipo;
   isSaving: boolean;
+  alreadyFilled: Set<FieldKey>;
   onConfirm: (data: Partial<UteExtractedData>) => void;
   onCancel: () => void;
 }) {
@@ -161,11 +163,17 @@ export function UteExtractModal({
               const value = form[key];
               const isBoolean = typeof value === "boolean" || key === "persona_fisica";
               const isEmpty = value == null || value === "";
+              const filled = alreadyFilled.has(key);
               return (
                 <div key={key}>
                   <label className="block text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] mb-1 font-mono">
                     {FIELD_LABEL[key]}
-                    {isEmpty && !isBoolean && (
+                    {filled && (
+                      <span className="ml-1 normal-case tracking-normal text-[var(--color-text-muted)] font-sans">
+                        · ya en el proyecto, no se modifica
+                      </span>
+                    )}
+                    {!filled && isEmpty && !isBoolean && (
                       <span className="ml-1 normal-case tracking-normal text-[var(--color-warning-text)] font-sans">
                         · no encontrado
                       </span>
@@ -177,6 +185,7 @@ export function UteExtractModal({
                         type="checkbox"
                         checked={Boolean(value)}
                         onChange={(e) => patchField(key, e.target.checked)}
+                        disabled={filled}
                       />
                       Sí
                     </label>
@@ -186,8 +195,13 @@ export function UteExtractModal({
                       value={(value as string | null) ?? ""}
                       onChange={(e) => patchField(key, e.target.value)}
                       placeholder={isEmpty ? "No encontrado en el documento" : ""}
+                      disabled={filled}
                       className={`w-full rounded-md border border-[var(--color-border)] px-2.5 py-1.5 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] ${
-                        isEmpty ? "bg-[var(--color-bg-app)]/30" : "bg-[var(--color-bg-app)]"
+                        filled
+                          ? "bg-[var(--color-bg-app)]/20 text-[var(--color-text-muted)] cursor-not-allowed"
+                          : isEmpty
+                            ? "bg-[var(--color-bg-app)]/30"
+                            : "bg-[var(--color-bg-app)]"
                       }`}
                     />
                   )}
