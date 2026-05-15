@@ -2170,7 +2170,7 @@ model UteDocumentConfig {
   oficina     String @default("")
   repUte      String @default("")
   calidadUte  String @default("")
-  // "asUte" porque `as` es palabra reservada en TS.
+  // AS = Acuerdo de Servicio UTE. "asUte" porque `as` es palabra reservada en TS.
   asUte       String @default("")
   ps          String @default("")
   x           String @default("")

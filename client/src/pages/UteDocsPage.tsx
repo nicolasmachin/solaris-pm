@@ -374,41 +374,42 @@ export function UteDocsPage() {
         <Text label="Pot Nominal inversor (W)" value={solarFields.inverterPowerW} onChange={(v) => patchSolarField("inverterPowerW", v)} />
       </Section>
 
-      {/* Cliente (datos UTE-específicos) */}
-      <Section title="Cliente (datos UTE)">
+      {/* Cliente — datos sobre el cliente que UTE pide pero no están en el
+          Project (CI, calle/número descompuesta, tipo de persona). */}
+      <Section title="Cliente">
         <Text label="CI cliente" value={form.ciCliente} onChange={(v) => patch("ciCliente", v)} />
         <Text label="Calle" value={form.calle} onChange={(v) => patch("calle", v)} />
-        <Text label="Número" value={form.numCalle} onChange={(v) => patch("numCalle", v)} />
-        <Text label="Nº cuenta UTE" value={form.cuentaUte} onChange={(v) => patch("cuentaUte", v)} />
-        <Text label="Nº caso UTE" value={form.casoUte} onChange={(v) => patch("casoUte", v)} />
-        <Checkbox label="Persona física" checked={form.personaFisica} onChange={(v) => patch("personaFisica", v)} />
+        <Text label="Num calle" value={form.numCalle} onChange={(v) => patch("numCalle", v)} />
+        <Checkbox label="Persona Fisica" checked={form.personaFisica} onChange={(v) => patch("personaFisica", v)} />
         <Checkbox label="Empresa" checked={form.empresa} onChange={(v) => patch("empresa", v)} />
       </Section>
 
       {/* Representante */}
       <Section title="Representante del cliente (si aplica)">
-        <Text label="Nombre" value={form.representa} onChange={(v) => patch("representa", v)} />
-        <Text label="CI" value={form.ciRepre} onChange={(v) => patch("ciRepre", v)} />
-        <Text label="Calidad / cargo" value={form.calidadRepre} onChange={(v) => patch("calidadRepre", v)} />
+        <Text label="Representa" value={form.representa} onChange={(v) => patch("representa", v)} />
+        <Text label="CI Repre" value={form.ciRepre} onChange={(v) => patch("ciRepre", v)} />
+        <Text label="Calidad Repre" value={form.calidadRepre} onChange={(v) => patch("calidadRepre", v)} />
       </Section>
 
       {/* Voltia */}
       <Section title="Datos de Voltia y técnico instalador">
-        <Text label="Firma instaladora" value={form.fi} onChange={(v) => patch("fi", v)} />
+        <Text label="FI" value={form.fi} onChange={(v) => patch("fi", v)} />
         <Text label="RUT" value={form.rut} onChange={(v) => patch("rut", v)} />
-        <Text label="Dirección Voltia" value={form.dirFi} onChange={(v) => patch("dirFi", v)} />
-        <Text label="Técnico instalador" value={form.ti} onChange={(v) => patch("ti", v)} />
-        <Text label="CI técnico" value={form.ciTi} onChange={(v) => patch("ciTi", v)} />
-        <Text label="Oficina Comercial UTE" value={form.oficina} onChange={(v) => patch("oficina", v)} />
+        <Text label="Dir FI" value={form.dirFi} onChange={(v) => patch("dirFi", v)} />
+        <Text label="TI" value={form.ti} onChange={(v) => patch("ti", v)} />
+        <Text label="CI TI" value={form.ciTi} onChange={(v) => patch("ciTi", v)} />
       </Section>
 
-      {/* UTE */}
-      <Section title="UTE">
-        <Text label="Representante UTE" value={form.repUte} onChange={(v) => patch("repUte", v)} />
+      {/* Trámite UTE — todos los datos del trámite/expediente UTE. */}
+      <Section title="Trámite UTE">
+        <Text label="Cuenta" value={form.cuentaUte} onChange={(v) => patch("cuentaUte", v)} />
+        <Text label="Caso" value={form.casoUte} onChange={(v) => patch("casoUte", v)} />
+        <Text label="AS" value={form.asUte} onChange={(v) => patch("asUte", v)} />
+        <Text label="PS" value={form.ps} onChange={(v) => patch("ps", v)} />
+        <Text label="Oficina Comercial UTE" value={form.oficina} onChange={(v) => patch("oficina", v)} />
+        <Text label="Rep UTE" value={form.repUte} onChange={(v) => patch("repUte", v)} />
         <Text label="Calidad UTE" value={form.calidadUte} onChange={(v) => patch("calidadUte", v)} />
-        <Text label="Asesor" value={form.asUte} onChange={(v) => patch("asUte", v)} />
-        <Text label="Punto de suministro (PS)" value={form.ps} onChange={(v) => patch("ps", v)} />
-        <Text label="Marca X (genérico)" value={form.x} onChange={(v) => patch("x", v)} />
+        <Text label="X" value={form.x} onChange={(v) => patch("x", v)} />
       </Section>
 
       {/* Datos técnicos */}
