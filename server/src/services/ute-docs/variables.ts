@@ -143,7 +143,10 @@ export function buildVariables(args: {
   return {
     // Cliente — los datos generales viven en Project. Solo cuenta/caso UTE
     // siguen en config porque son por-expediente.
-    Cliente: project.clientName ?? "",
+    // Para el campo "Cliente" en los PDFs UTE preferimos nombreCliente
+    // (extraído de cédula, formato oficial). Si está vacío, caemos al
+    // clientName del proyecto.
+    Cliente: project.nombreCliente?.trim() ? project.nombreCliente : project.clientName ?? "",
     CI_cliente: project.ciCliente,
     Mail_cliente: project.notificationEmail ?? "",
     Telefono_cliente: project.notificationPhone ?? "",

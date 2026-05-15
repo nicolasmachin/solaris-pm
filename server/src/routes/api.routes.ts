@@ -204,6 +204,9 @@ const projectPatchSchema = z
       .optional(),
     // Datos generales del cliente que también se extraen con IA desde la
     // cédula / factura UTE (feature ute-doc-extraction).
+    // nombreCliente: nombre tal cual figura en la cédula, usado en los docs
+    // UTE. Independiente de clientName (nombre del proyecto).
+    nombreCliente: z.string().optional(),
     ciCliente: z.string().optional(),
     calle: z.string().optional(),
     numCalle: z.string().optional(),
@@ -623,6 +626,7 @@ function normalizeProjectInput(input: Record<string, unknown>) {
     normalized.uteCodigoAS = source.uteCodigoAS ? String(source.uteCodigoAS) : null;
   }
   // Datos del cliente extraíbles con IA.
+  if (source.nombreCliente !== undefined) normalized.nombreCliente = String(source.nombreCliente ?? "");
   if (source.ciCliente !== undefined) normalized.ciCliente = String(source.ciCliente ?? "");
   if (source.calle !== undefined) normalized.calle = String(source.calle ?? "");
   if (source.numCalle !== undefined) normalized.numCalle = String(source.numCalle ?? "");

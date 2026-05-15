@@ -44,10 +44,45 @@ const FIELDS_BY_TIPO: Record<UteExtractTipo, FieldKey[]> = {
   ],
 };
 
+// Formatea CI uruguaya al estilo "1.234.567-8": el último dígito es el
+// verificador (separado por guión); los anteriores se agrupan de a 3 con
+// punto desde la derecha. Acepta entradas con o sin formato.
+export function formatCi(raw: string | null | undefined): string {
+  if (!raw) return "";
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length < 2) return digits;
+  const verifier = digits.slice(-1);
+  const body = digits.slice(0, -1);
+  const grouped = body.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return `${grouped}-${verifier}`;
+}
+
+// Parsea una dirección al estilo "Calle Numero, Localidad" en {calle, num}.
+// Toma el segmento anterior a la primera coma (típicamente "Calle Numero")
+// y usa la ÚLTIMA secuencia de dígitos como número de puerta. Esto maneja
+// bien casos como "Av. 18 de Julio 1234" (calle = "Av. 18 de Julio").
+function parseAddress(dir: string): { calle: string; num: string } {
+  const streetPart = dir.split(",")[0].trim();
+  const matches = [...streetPart.matchAll(/\d+/g)];
+  if (matches.length === 0) return { calle: streetPart, num: "" };
+  const last = matches[matches.length - 1];
+  const num = last[0];
+  const calle = streetPart.slice(0, last.index ?? 0).trim().replace(/,$/, "");
+  return { calle, num };
+}
+
 function emptyForm(data: UteExtractedData): UteExtractedData {
-  // Convertir null → "" para strings y null → false para booleans en el form;
-  // al confirmar limpiamos los strings vacíos para no sobreescribir.
-  return data;
+  // 1) ci_cliente al formato canónico "X.XXX.XXX-Y" si vino solo dígitos.
+  // 2) Si calle o num_calle vienen null pero dir_cliente tiene algo, los
+  //    parseamos desde la dirección — UTE pide calle y num por separado.
+  const out = { ...data };
+  if (data.ci_cliente) out.ci_cliente = formatCi(data.ci_cliente);
+  if (data.dir_cliente && (!data.calle || !data.num_calle)) {
+    const parsed = parseAddress(data.dir_cliente);
+    if (!out.calle && parsed.calle) out.calle = parsed.calle;
+    if (!out.num_calle && parsed.num) out.num_calle = parsed.num;
+  }
+  return out;
 }
 
 export function UteExtractModal({

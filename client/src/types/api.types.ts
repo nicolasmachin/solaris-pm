@@ -286,6 +286,9 @@ export interface Project {
   clientAddress: string | null;
   firstDateScheduledAt: string | null;
   // Datos generales del cliente (extraíbles con IA, ver ute-doc-extraction).
+  // nombreCliente: nombre del cliente para docs UTE (separado del nombre
+  // del proyecto, clientName). Se llena con la extracción de cédula.
+  nombreCliente: string;
   ciCliente: string;
   calle: string;
   numCalle: string;

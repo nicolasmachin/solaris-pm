@@ -452,6 +452,10 @@ model Project {
   uteDocumentGenerations UteDocumentGeneration[]
   // Datos del cliente que se cargan desde el form del proyecto y/o se
   // extraen de la cédula con IA. Ver feature ute-doc-extraction.
+  // nombreCliente: nombre tal cual figura en la cédula, usado en los docs
+  // UTE. Independiente de clientName (nombre del proyecto). Puede coincidir
+  // pero la extracción de cédula sólo toca este campo, nunca clientName.
+  nombreCliente        String                @default("")
   ciCliente            String                @default("")
   calle                String                @default("")
   numCalle             String                @default("")

@@ -11,9 +11,18 @@ import {
 
 // Mapeo de campos extraídos por IA → campos del Project. Lo que se confirma
 // en el modal se persiste vía patchProject.
-function buildProjectPatch(data: Partial<UteExtractedData>): Record<string, unknown> {
+//
+// Reglas especiales por tipo de documento:
+// - Cédula: el nombre extraído va a nombreCliente (campo UTE-específico).
+//   NUNCA se modifica clientName (nombre del proyecto).
+// - Factura UTE: se IGNORA el nombre del titular de la factura (no toca
+//   ni clientName ni nombreCliente — el nombre oficial sale de cédula).
+function buildProjectPatch(
+  data: Partial<UteExtractedData>,
+  tipo: UteExtractTipo,
+): Record<string, unknown> {
   const out: Record<string, unknown> = {};
-  if (data.nombre_cliente) out.clientName = data.nombre_cliente;
+  if (tipo === "cedula" && data.nombre_cliente) out.nombreCliente = data.nombre_cliente;
   if (data.ci_cliente) out.ciCliente = data.ci_cliente;
   if (data.calle) out.calle = data.calle;
   if (data.num_calle) out.numCalle = data.num_calle;
@@ -65,8 +74,8 @@ export function useUteExtract(projectId: string) {
   });
 
   const confirmMut = useMutation({
-    mutationFn: async (data: Partial<UteExtractedData>) => {
-      const projectPatch = buildProjectPatch(data);
+    mutationFn: async (args: { data: Partial<UteExtractedData>; tipo: UteExtractTipo }) => {
+      const projectPatch = buildProjectPatch(args.data, args.tipo);
       if (Object.keys(projectPatch).length === 0) return { applied: 0 };
       await patchProject(projectId, projectPatch);
       return { applied: Object.keys(projectPatch).length };
@@ -90,7 +99,10 @@ export function useUteExtract(projectId: string) {
     modalOpen,
     extracted,
     tipoActual,
-    confirmar: (data: Partial<UteExtractedData>) => confirmMut.mutate(data),
+    confirmar: (data: Partial<UteExtractedData>) => {
+      if (!tipoActual) return;
+      confirmMut.mutate({ data, tipo: tipoActual });
+    },
     isConfirming: confirmMut.isPending,
     cancelar: () => {
       setModalOpen(false);

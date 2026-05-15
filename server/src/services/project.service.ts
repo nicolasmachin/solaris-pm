@@ -460,6 +460,7 @@ export function serializeProject(project: {
   clientAddress: string | null;
   uteCodigoPS?: string | null;
   uteCodigoAS?: string | null;
+  nombreCliente?: string;
   ciCliente?: string;
   calle?: string;
   numCalle?: string;
