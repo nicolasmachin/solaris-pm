@@ -186,9 +186,23 @@ export function buildVariables(args: {
     Serie_inversor: config.serieInversor,
     // SolarSystem guarda inverterPowerKw en kW; el PDF de UTE pide la
     // potencia nominal del inversor en W (ej. "6000"). Multiplicamos.
-    Potencia_nom_inversor: primarySolar?.inverterPowerKw
-      ? String(Math.round(Number(primarySolar.inverterPowerKw) * 1000))
-      : "",
+    // Si la Pot IMG (kW × 1000 = W) es menor que la Pot del inversor,
+    // agregamos "(limitado a NNNN)" — refleja que la instalación está
+    // capada al valor declarado a UTE aunque el inversor pueda más.
+    Potencia_nom_inversor: (() => {
+      const invW = primarySolar?.inverterPowerKw
+        ? Math.round(Number(primarySolar.inverterPowerKw) * 1000)
+        : null;
+      if (invW == null) return "";
+      const potImgKw = Number((config.potImg ?? "").trim().replace(",", "."));
+      const potImgW = Number.isFinite(potImgKw) && potImgKw > 0
+        ? Math.round(potImgKw * 1000)
+        : null;
+      if (potImgW != null && potImgW < invW) {
+        return `${invW} (limitado a ${potImgW})`;
+      }
+      return String(invW);
+    })(),
     // Voltia / técnico / UTE
     FI: config.fi,
     RUT: config.rut,

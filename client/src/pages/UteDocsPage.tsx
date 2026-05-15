@@ -927,7 +927,15 @@ function PreviewDatos({
           ["Marca inversor", solarFields.inverterBrand],
           ["Modelo inversor", solarFields.inverterModel],
           ["Cantidad inversores", solarFields.inverterQuantity],
-          ["Pot Nominal inversor (W)", solarFields.inverterPowerW],
+          [
+            "Pot Nominal inversor (W)",
+            (() => {
+              const invW = Number(solarFields.inverterPowerW.trim());
+              if (!Number.isFinite(invW) || invW <= 0) return "";
+              if (potImgW != null && potImgW < invW) return `${invW} (limitado a ${potImgW})`;
+              return String(invW);
+            })(),
+          ],
           ["Serie panel", form.seriePanel],
           ["Serie inversor", form.serieInversor],
           ["Área paneles (m²) · calc", areaPaneles != null ? String(areaPaneles) : "—"],
