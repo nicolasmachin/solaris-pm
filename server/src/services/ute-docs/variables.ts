@@ -171,7 +171,11 @@ export function buildVariables(args: {
     Cantidad_paneles: primarySolar?.panelQuantity ? String(primarySolar.panelQuantity) : "",
     Cantidad_inversores: primarySolar?.inverterQuantity ? String(primarySolar.inverterQuantity) : "",
     Pot_tot_paneles: potTotPanelesStr,
-    Area_paneles: config.areaPaneles,
+    // Área = 2.5 m² × cantidad de paneles (heurística estándar para paneles
+    // residenciales). Se ignora cualquier valor manual en config.areaPaneles.
+    Area_paneles: primarySolar?.panelQuantity
+      ? String(Math.round(primarySolar.panelQuantity * 2.5))
+      : "",
     Marca_panel: primarySolar?.panelBrand ?? "",
     Modelo_panel: primarySolar?.panelModel ?? "",
     Serie_panel: config.seriePanel,

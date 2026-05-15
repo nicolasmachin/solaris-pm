@@ -586,7 +586,16 @@ export function UteDocsPage() {
       <Section title="Datos extra del sistema">
         <Text label="Serie panel" value={form.seriePanel} onChange={(v) => patch("seriePanel", v)} />
         <Text label="Serie inversor" value={form.serieInversor} onChange={(v) => patch("serieInversor", v)} />
-        <Text label="Área paneles" value={form.areaPaneles} onChange={(v) => patch("areaPaneles", v)} />
+        <div>
+          <label className={lbl}>Área paneles (m²) · calculado</label>
+          <p className="text-sm text-[var(--color-text-secondary)] py-1.5 tabular-nums">
+            {(() => {
+              const qty = solarFields.panelQuantity.trim();
+              const n = Number(qty);
+              return Number.isFinite(n) && n > 0 ? `${Math.round(n * 2.5)} m² (2,5 × ${n})` : "—";
+            })()}
+          </p>
+        </div>
       </Section>
 
       {/* Fechas — ambas opcionales. Si quedan en blanco, los días/meses/años
