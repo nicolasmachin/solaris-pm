@@ -437,13 +437,16 @@ export function UteDocsPage() {
         <Text label="Calidad Repre" value={form.calidadRepre} onChange={(v) => patch("calidadRepre", v)} />
       </Section>
 
-      {/* Voltia */}
-      <Section title="Datos de Voltia y técnico instalador">
-        <Text label="FI" value={form.fi} onChange={(v) => patch("fi", v)} />
-        <Text label="RUT" value={form.rut} onChange={(v) => patch("rut", v)} />
-        <Text label="Dir FI" value={form.dirFi} onChange={(v) => patch("dirFi", v)} />
-        <Text label="TI" value={form.ti} onChange={(v) => patch("ti", v)} />
-        <Text label="CI TI" value={form.ciTi} onChange={(v) => patch("ciTi", v)} />
+      {/* Voltia — datos fijos de la empresa instaladora y del técnico. NO
+          son editables desde acá para evitar errores. Si alguna vez hay
+          que actualizarlos (cambio de técnico, datos de Voltia, etc.), se
+          modifica el default en schema.prisma y se migra. */}
+      <Section title="Datos de Voltia y técnico instalador (fijos)">
+        <ReadonlyField label="FI" value={form.fi} />
+        <ReadonlyField label="RUT" value={form.rut} />
+        <ReadonlyField label="Dir FI" value={form.dirFi} />
+        <ReadonlyField label="TI" value={form.ti} />
+        <ReadonlyField label="CI TI" value={form.ciTi} />
       </Section>
 
       {/* Trámite UTE — todos los datos del trámite/expediente UTE. */}
@@ -720,6 +723,17 @@ function Text({
         placeholder={placeholder}
         className={inp}
       />
+    </div>
+  );
+}
+
+// Campo read-only: muestra label + valor sin permitir edición. Útil para
+// datos fijos (FI, RUT, etc. de la empresa).
+function ReadonlyField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <label className={lbl}>{label}</label>
+      <p className="text-sm text-[var(--color-text-secondary)] py-1.5">{value || "—"}</p>
     </div>
   );
 }
