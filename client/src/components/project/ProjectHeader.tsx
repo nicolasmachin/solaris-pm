@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { FileCheck, Mail, MapPin, Phone } from "lucide-react";
+import { FileCheck, HardHat, Mail, MapPin, Phone } from "lucide-react";
 import type { Project } from "../../types/api.types";
 import { UTE_STAGE_LABEL, UTE_STATUS_LABEL } from "../../api/uteProcess.api";
 import { getProjectTeamColor, getProjectTeamName } from "./projectTeamColor";
@@ -128,6 +128,17 @@ export function ProjectHeader({ project, onEdit }: ProjectHeaderProps) {
             </button>
           </div>
         ) : null}
+        <div className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] text-[var(--color-text-secondary)]">
+          <HardHat size={12} className="shrink-0" />
+          <span className="text-[var(--color-text-muted)]">Ingeniería:</span>
+          <button
+            type="button"
+            onClick={() => navigate(`/ingenieria/proyecto/${project.id}`)}
+            className="text-[var(--color-accent)] hover:underline"
+          >
+            Abrir workspace →
+          </button>
+        </div>
       </div>
 
       <div className="shrink-0 mt-1 flex flex-col items-end gap-2">
