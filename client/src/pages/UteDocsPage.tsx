@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { ChevronLeft, Download, Save } from "lucide-react";
+import { ChevronLeft, Download, RotateCcw, Save } from "lucide-react";
 
 import {
   createSolarSystem,
@@ -267,6 +267,21 @@ export function UteDocsPage() {
     return { projectChanged: !!projectPatch, solarChanged: !!solarPatch };
   }
 
+  // Reset: descarta cambios locales no guardados y vuelve a hidratar desde
+  // el server (que reflejará los defaults del schema + lo que esté en
+  // Project / SolarSystem actualmente, igual que al entrar a la página).
+  async function handleReset() {
+    if (!confirm("¿Descartar cambios y volver a cargar los valores iniciales? Los datos que aún no guardaste se pierden.")) return;
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["project", projectId] }),
+      qc.invalidateQueries({ queryKey: ["ute-docs-config", projectId] }),
+    ]);
+    setForm(null);
+    setProjectFields(null);
+    setSolarFields(null);
+    toast.success("Valores restablecidos a los iniciales");
+  }
+
   async function handleSave() {
     if (!form || !projectFields || !solarFields) return;
     try {
@@ -451,8 +466,17 @@ export function UteDocsPage() {
         </div>
       </Section>
 
-      {/* Botón guardar config */}
-      <div className="flex justify-end">
+      {/* Botones de la config */}
+      <div className="flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={handleReset}
+          disabled={saveMut.isPending}
+          title="Vuelve a los valores cargados al entrar a la página"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded border border-[var(--color-border)] text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-bg-card-hover)] hover:text-[var(--color-text-secondary)] disabled:opacity-60"
+        >
+          <RotateCcw className="w-3.5 h-3.5" /> Resetear datos
+        </button>
         <button
           type="button"
           onClick={handleSave}
