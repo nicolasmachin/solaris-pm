@@ -49,7 +49,10 @@ type SolarFields = {
   inverterBrand: string;
   inverterModel: string;
   inverterQuantity: string;
-  inverterPowerKw: string;
+  // El form muestra/edita la potencia del inversor en W (igual que pide UTE).
+  // En la DB se guarda en kW (SolarSystem.inverterPowerKw). La conversión se
+  // hace al hidratar (×1000) y al guardar (÷1000).
+  inverterPowerW: string;
 };
 
 function emptyOrNum(s: string): number | null {
@@ -142,6 +145,10 @@ export function UteDocsPage() {
       const primary = projectQ.data.solarSystems?.[0] ?? null;
       const orDefault = <T,>(actual: T | null | undefined, def: T): T =>
         actual != null && actual !== "" ? actual : def;
+      // kW (DB) → W (form). Si hay valor, convierto y muestro en W.
+      const inverterWFromDb = primary?.inverterPowerKw != null
+        ? String(Math.round(Number(primary.inverterPowerKw) * 1000))
+        : "";
       setSolarFields({
         panelBrand: primary?.panelBrand ?? "",
         panelModel: primary?.panelModel ?? "",
@@ -150,9 +157,7 @@ export function UteDocsPage() {
         inverterBrand: orDefault(primary?.inverterBrand ?? "", "Growatt"),
         inverterModel: orDefault(primary?.inverterModel ?? "", "MIN 6000 TL-X2"),
         inverterQuantity: orDefault(primary?.inverterQuantity != null ? String(primary.inverterQuantity) : "", "1"),
-        // inverterPowerKw se guarda en kW; UTE pide W. "6" kW = "6000" W en
-        // el PDF (variables.ts hace la conversión). Input rotulado "kW".
-        inverterPowerKw: orDefault(primary?.inverterPowerKw != null ? String(primary.inverterPowerKw) : "", "6"),
+        inverterPowerW: orDefault(inverterWFromDb, "6000"),
       });
     }
   }, [projectQ.data, solarFields]);
@@ -226,7 +231,11 @@ export function UteDocsPage() {
     const sourceInvBrand = primarySolar?.inverterBrand ?? "";
     const sourceInvModel = primarySolar?.inverterModel ?? "";
     const sourceInvQty = primarySolar?.inverterQuantity != null ? String(primarySolar.inverterQuantity) : "";
-    const sourceInvPow = primarySolar?.inverterPowerKw != null ? String(primarySolar.inverterPowerKw) : "";
+    // Comparamos en W (la unidad que ve el usuario en el input). Si difiere,
+    // convertimos de vuelta a kW para persistir en SolarSystem.inverterPowerKw.
+    const sourceInvW = primarySolar?.inverterPowerKw != null
+      ? String(Math.round(Number(primarySolar.inverterPowerKw) * 1000))
+      : "";
 
     const out: SolarSystemPayload = {};
     if (sourceBrand !== solarFields.panelBrand) out.panelBrand = solarFields.panelBrand || null;
@@ -236,7 +245,10 @@ export function UteDocsPage() {
     if (sourceInvBrand !== solarFields.inverterBrand) out.inverterBrand = solarFields.inverterBrand || null;
     if (sourceInvModel !== solarFields.inverterModel) out.inverterModel = solarFields.inverterModel || null;
     if (sourceInvQty !== solarFields.inverterQuantity) out.inverterQuantity = emptyOrNum(solarFields.inverterQuantity);
-    if (sourceInvPow !== solarFields.inverterPowerKw) out.inverterPowerKw = emptyOrNum(solarFields.inverterPowerKw);
+    if (sourceInvW !== solarFields.inverterPowerW) {
+      const w = emptyOrNum(solarFields.inverterPowerW);
+      out.inverterPowerKw = w != null ? w / 1000 : null;
+    }
 
     return Object.keys(out).length > 0 ? out : null;
   }
@@ -336,7 +348,7 @@ export function UteDocsPage() {
         <Text label="Marca inversor" value={solarFields.inverterBrand} onChange={(v) => patchSolarField("inverterBrand", v)} />
         <Text label="Modelo inversor" value={solarFields.inverterModel} onChange={(v) => patchSolarField("inverterModel", v)} />
         <Text label="Cantidad de inversores" value={solarFields.inverterQuantity} onChange={(v) => patchSolarField("inverterQuantity", v)} />
-        <Text label="Potencia nominal inversor (kW)" value={solarFields.inverterPowerKw} onChange={(v) => patchSolarField("inverterPowerKw", v)} />
+        <Text label="Pot Nominal inversor (W)" value={solarFields.inverterPowerW} onChange={(v) => patchSolarField("inverterPowerW", v)} />
       </Section>
 
       {/* Cliente (datos UTE-específicos) */}
@@ -364,7 +376,7 @@ export function UteDocsPage() {
         <Text label="Dirección Voltia" value={form.dirFi} onChange={(v) => patch("dirFi", v)} />
         <Text label="Técnico instalador" value={form.ti} onChange={(v) => patch("ti", v)} />
         <Text label="CI técnico" value={form.ciTi} onChange={(v) => patch("ciTi", v)} />
-        <Text label="Oficina UTE" value={form.oficina} onChange={(v) => patch("oficina", v)} />
+        <Text label="Oficina Comercial UTE" value={form.oficina} onChange={(v) => patch("oficina", v)} />
       </Section>
 
       {/* UTE */}
@@ -378,8 +390,8 @@ export function UteDocsPage() {
 
       {/* Datos técnicos */}
       <Section title="Datos técnicos del sistema">
-        <Text label="Potencia nominal (Solicitud IMG)" value={form.potenciaNomSolicitudImg} onChange={(v) => patch("potenciaNomSolicitudImg", v)} />
-        <Text label="Intensidad nominal (Solicitud IMG)" value={form.intensidadNomSolicitudImg} onChange={(v) => patch("intensidadNomSolicitudImg", v)} />
+        <Text label="Pot nominal IMG (W)" value={form.potenciaNomSolicitudImg} onChange={(v) => patch("potenciaNomSolicitudImg", v)} />
+        <Text label="Corriente Nominal (A)" value={form.intensidadNomSolicitudImg} onChange={(v) => patch("intensidadNomSolicitudImg", v)} />
         <Checkbox label="Tensión 230V" checked={form.tension230} onChange={(v) => patch("tension230", v)} />
         <Checkbox label="Tensión 400V" checked={form.tension400} onChange={(v) => patch("tension400", v)} />
         <Checkbox label="Tensión inversor 230V" checked={form.tensionNomInversor230} onChange={(v) => patch("tensionNomInversor230", v)} />
@@ -388,11 +400,22 @@ export function UteDocsPage() {
         <Checkbox label="Fases trifásico" checked={form.fasesTri} onChange={(v) => patch("fasesTri", v)} />
         <Checkbox label="Tipo generador Sinc mono" checked={form.tipoGeneradorSincMono} onChange={(v) => patch("tipoGeneradorSincMono", v)} />
         <Checkbox label="Tipo generador Sinc tri" checked={form.tipoGeneradorSincTri} onChange={(v) => patch("tipoGeneradorSincTri", v)} />
-        <Text label="Potencia IMG" value={form.potImg} onChange={(v) => patch("potImg", v)} />
-        <Text label="Potencia IMG (en letras)" value={form.potImgLetras} onChange={(v) => patch("potImgLetras", v)} />
-        <Text label="Potencia contratada" value={form.potContratada} onChange={(v) => patch("potContratada", v)} />
-        <Text label="Potencia contratada (en letras)" value={form.potContratadaLetras} onChange={(v) => patch("potContratadaLetras", v)} />
-        <Text label="Potencia contratada (×1000)" value={form.potContratada1000} onChange={(v) => patch("potContratada1000", v)} />
+        <Text label="Pot IMG (kW)" value={form.potImg} onChange={(v) => patch("potImg", v)} />
+        <Text label="Pot IMG (en letras)" value={form.potImgLetras} onChange={(v) => patch("potImgLetras", v)} />
+        <Text label="Pot contratada (kW)" value={form.potContratada} onChange={(v) => patch("potContratada", v)} />
+        <Text label="Pot Contratada (en letras)" value={form.potContratadaLetras} onChange={(v) => patch("potContratadaLetras", v)} />
+        {/* Pot_contratada_1000 = Pot_contratada × 1000. Calculado en variables.ts;
+            mostramos preview read-only para que el usuario vea cuánto va al PDF. */}
+        <div>
+          <label className={lbl}>Potencia contratada (×1000)</label>
+          <p className="text-sm text-[var(--color-text-secondary)] py-1.5 tabular-nums">
+            {(() => {
+              const raw = form.potContratada.trim().replace(",", ".");
+              const n = Number(raw);
+              return Number.isFinite(n) && raw !== "" ? `${Math.round(n * 1000)} (calculado)` : "—";
+            })()}
+          </p>
+        </div>
         <Text label="Tarifa" value={form.tarifa} onChange={(v) => patch("tarifa", v)} />
         <Text label="Factor de potencia (fp)" value={form.fp} onChange={(v) => patch("fp", v)} />
         <Text label="Norma 1" value={form.normas1} onChange={(v) => patch("normas1", v)} />

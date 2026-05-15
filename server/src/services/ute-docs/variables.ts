@@ -203,7 +203,15 @@ export function buildVariables(args: {
     Pot_IMG_letras: config.potImgLetras,
     Pot_contratada: config.potContratada,
     Pot_contratada_letras: config.potContratadaLetras,
-    Pot_contratada_1000: config.potContratada1000,
+    // Pot_contratada_1000 = Pot_contratada × 1000 (kW → W). Si el usuario
+    // dejó algo escrito en config.potContratada1000 (datos viejos), lo
+    // ignoramos y usamos siempre el cálculo a partir de potContratada.
+    // Acepta "5.5" o "5,5" como separador decimal.
+    Pot_contratada_1000: (() => {
+      const raw = (config.potContratada ?? "").trim().replace(",", ".");
+      const n = Number(raw);
+      return Number.isFinite(n) && raw !== "" ? String(Math.round(n * 1000)) : "";
+    })(),
     Tarifa: config.tarifa,
     fp: config.fp,
     normas1: config.normas1,
