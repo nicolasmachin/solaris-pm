@@ -130,8 +130,9 @@ export function buildVariables(args: {
 }): UteVariables {
   const { project, config, primarySolar } = args;
 
-  const fechaDoc = fmtNum(config.fechaDoc);
-  const fechaFin = config.fechaFin ? fmtNum(config.fechaFin) : { dia: "", mesNombre: "", mesNum: "", anio: "", anioCorto: "" };
+  const emptyFecha = { dia: "", mesNombre: "", mesNum: "", anio: "", anioCorto: "" };
+  const fechaDoc = config.fechaDoc ? fmtNum(config.fechaDoc) : emptyFecha;
+  const fechaFin = config.fechaFin ? fmtNum(config.fechaFin) : emptyFecha;
 
   // Pot total paneles: si tenemos qty + W, calculamos en W; si no, queda vacío.
   let potTotPanelesStr = "";

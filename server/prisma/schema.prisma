@@ -2213,8 +2213,10 @@ model UteDocumentConfig {
   serieInversor             String  @default("")
   areaPaneles               String  @default("")
 
-  // Fechas
-  fechaDoc DateTime  @default(now()) @db.Date
+  // Fechas — ambas opcionales. fechaDoc tiene default = hoy al crear la
+  // config, pero el usuario puede limpiarla en el form si no quiere fecha
+  // en los PDFs.
+  fechaDoc DateTime? @default(now()) @db.Date
   fechaFin DateTime? @db.Date
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)

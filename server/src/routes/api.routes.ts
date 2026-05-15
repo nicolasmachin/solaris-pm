@@ -9267,7 +9267,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         seriePanel: z.string().optional(),
         serieInversor: z.string().optional(),
         areaPaneles: z.string().optional(),
-        fechaDoc: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        fechaDoc: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
         fechaFin: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
       })
       .strict();
@@ -9278,9 +9278,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
       async (request) => {
         const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
         const raw = uteDocConfigBodySchema.parse(request.body);
-        // Convertir fechas string → Date.
+        // Convertir fechas string → Date (null para clearear).
         const data: Record<string, unknown> = { ...raw };
-        if (raw.fechaDoc) data.fechaDoc = parseDateOnly(raw.fechaDoc);
+        if (raw.fechaDoc === null) data.fechaDoc = null;
+        else if (raw.fechaDoc) data.fechaDoc = parseDateOnly(raw.fechaDoc);
         if (raw.fechaFin === null) data.fechaFin = null;
         else if (raw.fechaFin) data.fechaFin = parseDateOnly(raw.fechaFin);
         return upsertUteDocConfig({ projectId, data });

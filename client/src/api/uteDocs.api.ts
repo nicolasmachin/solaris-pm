@@ -50,8 +50,8 @@ export interface UteDocumentConfig {
   seriePanel: string;
   serieInversor: string;
   areaPaneles: string;
-  // Fechas
-  fechaDoc: string; // ISO
+  // Fechas — ambas nullable.
+  fechaDoc: string | null;
   fechaFin: string | null;
   createdAt: string;
   updatedAt: string;

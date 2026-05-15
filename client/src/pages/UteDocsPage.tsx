@@ -81,10 +81,10 @@ type ConfigForm = Omit<UteDocumentConfig, "id" | "projectId" | "createdAt" | "up
 
 function configToForm(c: UteDocumentConfig): ConfigForm {
   const { id: _id, projectId: _p, createdAt: _c, updatedAt: _u, ...rest } = c;
-  // El backend envía las fechas como ISO; el <input type="date"> espera YYYY-MM-DD.
+  // El backend envía las fechas como ISO o null; el <input type="date"> espera YYYY-MM-DD o "".
   return {
     ...rest,
-    fechaDoc: rest.fechaDoc?.slice(0, 10) ?? "",
+    fechaDoc: rest.fechaDoc ? rest.fechaDoc.slice(0, 10) : null,
     fechaFin: rest.fechaFin ? rest.fechaFin.slice(0, 10) : null,
   };
 }
@@ -282,7 +282,11 @@ export function UteDocsPage() {
     const projectPatch = buildProjectPatch();
     const solarPatch = buildSolarPatch();
     const ops: Promise<unknown>[] = [
-      saveMut.mutateAsync({ ...form!, fechaFin: form!.fechaFin || null }),
+      saveMut.mutateAsync({
+        ...form!,
+        fechaDoc: form!.fechaDoc || null,
+        fechaFin: form!.fechaFin || null,
+      }),
     ];
     if (projectPatch) ops.push(patchProjectMut.mutateAsync(projectPatch));
     if (solarPatch) {
@@ -571,14 +575,15 @@ export function UteDocsPage() {
         <Text label="Área paneles" value={form.areaPaneles} onChange={(v) => patch("areaPaneles", v)} />
       </Section>
 
-      {/* Fechas */}
+      {/* Fechas — ambas opcionales. Si quedan en blanco, los días/meses/años
+          correspondientes salen vacíos en los PDFs. */}
       <Section title="Fechas">
         <div>
-          <label className={lbl}>Fecha del documento *</label>
+          <label className={lbl}>Fecha del documento</label>
           <input
             type="date"
-            value={form.fechaDoc}
-            onChange={(e) => patch("fechaDoc", e.target.value)}
+            value={form.fechaDoc ?? ""}
+            onChange={(e) => patch("fechaDoc", e.target.value || null)}
             className={inp}
           />
         </div>
