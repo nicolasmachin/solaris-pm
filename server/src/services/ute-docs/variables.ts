@@ -171,7 +171,11 @@ export function buildVariables(args: {
     Marca_inversor: primarySolar?.inverterBrand ?? "",
     Modelo_inversor: primarySolar?.inverterModel ?? "",
     Serie_inversor: config.serieInversor,
-    Potencia_nom_inversor: dec(primarySolar?.inverterPowerKw),
+    // SolarSystem guarda inverterPowerKw en kW; el PDF de UTE pide la
+    // potencia nominal del inversor en W (ej. "6000"). Multiplicamos.
+    Potencia_nom_inversor: primarySolar?.inverterPowerKw
+      ? String(Math.round(Number(primarySolar.inverterPowerKw) * 1000))
+      : "",
     // Voltia / técnico / UTE
     FI: config.fi,
     RUT: config.rut,

@@ -134,18 +134,25 @@ export function UteDocsPage() {
   }, [projectQ.data, projectFields]);
 
   // Hidratar los campos editables del SolarSystem primario cuando llega.
+  // Regla del usuario: si ya está en el proyecto, se carga. Si está vacío,
+  // se aplica el default (para los campos del listado típico). Los demás
+  // quedan en blanco si no hay dato.
   useEffect(() => {
     if (projectQ.data && !solarFields) {
       const primary = projectQ.data.solarSystems?.[0] ?? null;
+      const orDefault = <T,>(actual: T | null | undefined, def: T): T =>
+        actual != null && actual !== "" ? actual : def;
       setSolarFields({
         panelBrand: primary?.panelBrand ?? "",
         panelModel: primary?.panelModel ?? "",
         panelQuantity: primary?.panelQuantity != null ? String(primary.panelQuantity) : "",
-        panelPowerW: primary?.panelPowerW != null ? String(primary.panelPowerW) : "",
-        inverterBrand: primary?.inverterBrand ?? "",
-        inverterModel: primary?.inverterModel ?? "",
-        inverterQuantity: primary?.inverterQuantity != null ? String(primary.inverterQuantity) : "",
-        inverterPowerKw: primary?.inverterPowerKw != null ? String(primary.inverterPowerKw) : "",
+        panelPowerW: orDefault(primary?.panelPowerW != null ? String(primary.panelPowerW) : "", "580"),
+        inverterBrand: orDefault(primary?.inverterBrand ?? "", "Growatt"),
+        inverterModel: orDefault(primary?.inverterModel ?? "", "MIN 6000 TL-X2"),
+        inverterQuantity: orDefault(primary?.inverterQuantity != null ? String(primary.inverterQuantity) : "", "1"),
+        // inverterPowerKw se guarda en kW; UTE pide W. "6" kW = "6000" W en
+        // el PDF (variables.ts hace la conversión). Input rotulado "kW".
+        inverterPowerKw: orDefault(primary?.inverterPowerKw != null ? String(primary.inverterPowerKw) : "", "6"),
       });
     }
   }, [projectQ.data, solarFields]);
