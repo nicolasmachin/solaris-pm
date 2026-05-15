@@ -38,6 +38,9 @@ type ProjectFields = {
   locationCity: string;
   locationProvince: string;
   // Datos del cliente que también se extraen con IA. Ahora viven en Project.
+  // nombreCliente: nombre tal cual figura en cédula. Va al campo "Cliente"
+  // de los docs UTE. NO se confunde con clientName (título del proyecto).
+  nombreCliente: string;
   ciCliente: string;
   calle: string;
   numCalle: string;
@@ -140,6 +143,7 @@ export function UteDocsPage() {
         clientAddress: projectQ.data.clientAddress ?? "",
         locationCity: projectQ.data.locationCity ?? "",
         locationProvince: projectQ.data.locationProvince ?? "",
+        nombreCliente: projectQ.data.nombreCliente ?? "",
         // CI canónico: "X.XXX.XXX-Y". Si en DB quedó sin formato, lo mostramos formateado.
         ciCliente: projectQ.data.ciCliente ? formatCi(projectQ.data.ciCliente) : "",
         calle: projectQ.data.calle ?? "",
@@ -225,6 +229,7 @@ export function UteDocsPage() {
       "clientAddress",
       "locationCity",
       "locationProvince",
+      "nombreCliente",
       "ciCliente",
       "calle",
       "numCalle",
@@ -370,8 +375,10 @@ export function UteDocsPage() {
 
       {/* Datos del proyecto — editables. Los cambios se guardan al proyecto
           (no a la config UTE), así corrigen el dato en toda la app. */}
-      <Section title="Datos del proyecto (editables)">
-        <Text label="Cliente" value={projectFields.clientName} onChange={(v) => patchProjectField("clientName", v)} />
+      {/* Datos de contacto del proyecto. El "Cliente" para docs UTE va en
+          la sección "Cliente" (es nombreCliente, extraído de cédula),
+          NO el título del proyecto (clientName). */}
+      <Section title="Datos de contacto del proyecto">
         <Text label="Email" value={projectFields.notificationEmail} onChange={(v) => patchProjectField("notificationEmail", v)} />
         <Text label="Teléfono" value={projectFields.notificationPhone} onChange={(v) => patchProjectField("notificationPhone", v)} />
         <Text label="Dirección" value={projectFields.clientAddress} onChange={(v) => patchProjectField("clientAddress", v)} />
@@ -396,6 +403,7 @@ export function UteDocsPage() {
       {/* Cliente — viven en Project. Se editan acá y también se extraen con IA
           desde cédula / factura UTE (feature ute-doc-extraction). */}
       <Section title="Cliente">
+        <Text label="Nombre (cédula)" value={projectFields.nombreCliente} onChange={(v) => patchProjectField("nombreCliente", v)} />
         <Text label="CI cliente" value={projectFields.ciCliente} onChange={(v) => patchProjectField("ciCliente", v)} />
         <Text label="Calle" value={projectFields.calle} onChange={(v) => patchProjectField("calle", v)} />
         <Text label="Num calle" value={projectFields.numCalle} onChange={(v) => patchProjectField("numCalle", v)} />
