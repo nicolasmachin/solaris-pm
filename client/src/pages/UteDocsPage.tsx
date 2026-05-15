@@ -128,10 +128,23 @@ export function UteDocsPage() {
   const [solarFields, setSolarFields] = useState<SolarFields | null>(null);
   const [selectedDocs, setSelectedDocs] = useState<Set<UteDocKey>>(new Set(UTE_DOC_KEYS));
 
-  // Hidratar el form de la config cuando llega.
+  // Hidratar el form de la config cuando llega. Si los campos del
+  // representante están vacíos en config y el proyecto ya tiene
+  // nombreCliente/ciCliente, los prefilleamos con esos valores (caso 99%:
+  // el cliente es su propio representante). Quedan editables para el
+  // caso de apoderado.
   useEffect(() => {
-    if (configQ.data && !form) setForm(configToForm(configQ.data));
-  }, [configQ.data, form]);
+    if (configQ.data && projectQ.data && !form) {
+      const f = configToForm(configQ.data);
+      if (!f.representa && projectQ.data.nombreCliente) {
+        f.representa = projectQ.data.nombreCliente;
+      }
+      if (!f.ciRepre && projectQ.data.ciCliente) {
+        f.ciRepre = formatCi(projectQ.data.ciCliente);
+      }
+      setForm(f);
+    }
+  }, [configQ.data, projectQ.data, form]);
 
   // Hidratar los campos editables del proyecto cuando llega.
   useEffect(() => {
@@ -415,24 +428,12 @@ export function UteDocsPage() {
         <Checkbox label="Empresa" checked={projectFields.empresa} onChange={(v) => patchProjectField("empresa", v)} />
       </Section>
 
-      {/* Representante = cliente. Los campos Representa y CI Repre se
-          muestran read-only en vivo, tomando el valor actual del cliente
-          (nombreCliente / ciCliente). Si el cliente cambia, el representante
-          se actualiza solo. Si querés editar, lo hacés en la sección
-          "Cliente". */}
+      {/* Representante. Al hidratar se precargan Representa y CI Repre
+          con el nombre y CI del cliente; quedan editables por si hay
+          apoderado distinto del titular. */}
       <Section title="Representante del cliente">
-        <div>
-          <label className={lbl}>Representa</label>
-          <p className="text-sm text-[var(--color-text-secondary)] py-1.5">
-            {projectFields.nombreCliente || "—"}
-          </p>
-        </div>
-        <div>
-          <label className={lbl}>CI Repre</label>
-          <p className="text-sm text-[var(--color-text-secondary)] py-1.5 tabular-nums">
-            {projectFields.ciCliente || "—"}
-          </p>
-        </div>
+        <Text label="Representa" value={form.representa} onChange={(v) => patch("representa", v)} />
+        <Text label="CI Repre" value={form.ciRepre} onChange={(v) => patch("ciRepre", v)} />
         <Text label="Calidad Repre" value={form.calidadRepre} onChange={(v) => patch("calidadRepre", v)} />
       </Section>
 
