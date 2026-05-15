@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { ChevronLeft, Download, Save } from "lucide-react";
 
-import { getProject } from "../api/projects.api";
+import { getProject, patchProject } from "../api/projects.api";
 import {
   useGenerateUteDocs,
   useSaveUteDocsConfig,
@@ -17,6 +17,19 @@ import {
   type UteDocumentConfig,
 } from "../api/uteDocs.api";
 import { Spinner } from "../components/ui/Spinner";
+
+// Campos del Project que se editan desde acá. Los cambios se persisten al
+// proyecto (no a la config UTE) usando patchProject — así si el operario
+// detecta un email mal cargado o falta la ciudad, queda corregido en TODO
+// el proyecto, no sólo en este form.
+type ProjectFields = {
+  clientName: string;
+  notificationEmail: string;
+  notificationPhone: string;
+  clientAddress: string;
+  locationCity: string;
+  locationProvince: string;
+};
 
 const lbl =
   "block text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] mb-1 font-mono";
@@ -37,6 +50,7 @@ function configToForm(c: UteDocumentConfig): ConfigForm {
 
 export function UteDocsPage() {
   const { projectId } = useParams<{ projectId: string }>();
+  const qc = useQueryClient();
   const projectQ = useQuery({
     queryKey: ["project", projectId],
     queryFn: () => getProject(projectId!),
@@ -46,13 +60,37 @@ export function UteDocsPage() {
   const saveMut = useSaveUteDocsConfig(projectId!);
   const generateMut = useGenerateUteDocs(projectId!);
 
+  // Patch del Project para los campos editables de la sección "Datos del proyecto".
+  const patchProjectMut = useMutation({
+    mutationFn: (body: Partial<ProjectFields>) => patchProject(projectId!, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["project", projectId] });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+
   const [form, setForm] = useState<ConfigForm | null>(null);
+  const [projectFields, setProjectFields] = useState<ProjectFields | null>(null);
   const [selectedDocs, setSelectedDocs] = useState<Set<UteDocKey>>(new Set(UTE_DOC_KEYS));
 
-  // Hidratar el form cuando llega la config.
+  // Hidratar el form de la config cuando llega.
   useEffect(() => {
     if (configQ.data && !form) setForm(configToForm(configQ.data));
   }, [configQ.data, form]);
+
+  // Hidratar los campos editables del proyecto cuando llega.
+  useEffect(() => {
+    if (projectQ.data && !projectFields) {
+      setProjectFields({
+        clientName: projectQ.data.clientName ?? "",
+        notificationEmail: projectQ.data.notificationEmail ?? "",
+        notificationPhone: projectQ.data.notificationPhone ?? "",
+        clientAddress: projectQ.data.clientAddress ?? "",
+        locationCity: projectQ.data.locationCity ?? "",
+        locationProvince: projectQ.data.locationProvince ?? "",
+      });
+    }
+  }, [projectQ.data, projectFields]);
 
   const project = projectQ.data;
   const projectFilename = useMemo(
@@ -61,7 +99,7 @@ export function UteDocsPage() {
   );
 
   if (!projectId) return null;
-  if (configQ.isLoading || projectQ.isLoading || !form) {
+  if (configQ.isLoading || projectQ.isLoading || !form || !projectFields) {
     return (
       <div className="flex justify-center py-12">
         <Spinner />
@@ -73,6 +111,10 @@ export function UteDocsPage() {
     setForm((cur) => (cur ? { ...cur, [key]: value } : cur));
   }
 
+  function patchProjectField(key: keyof ProjectFields, value: string) {
+    setProjectFields((cur) => (cur ? { ...cur, [key]: value } : cur));
+  }
+
   function toggleDoc(key: UteDocKey) {
     setSelectedDocs((cur) => {
       const next = new Set(cur);
@@ -82,14 +124,41 @@ export function UteDocsPage() {
     });
   }
 
+  // Diff de campos del Project: solo persiste lo que realmente cambió.
+  // null vacío en lugar de string vacío para fields nullable (email, phone, address).
+  function buildProjectPatch(): Partial<ProjectFields> | null {
+    if (!projectFields || !project) return null;
+    const out: Partial<ProjectFields> = {};
+    const keys: (keyof ProjectFields)[] = [
+      "clientName",
+      "notificationEmail",
+      "notificationPhone",
+      "clientAddress",
+      "locationCity",
+      "locationProvince",
+    ];
+    for (const k of keys) {
+      const current = (project[k] ?? "") as string;
+      const next = projectFields[k];
+      if (current !== next) out[k] = next;
+    }
+    return Object.keys(out).length > 0 ? out : null;
+  }
+
   async function handleSave() {
-    if (!form) return;
+    if (!form || !projectFields) return;
     try {
-      await saveMut.mutateAsync({
-        ...form,
-        fechaFin: form.fechaFin || null,
-      });
-      toast.success("Configuración UTE guardada");
+      const projectPatch = buildProjectPatch();
+      const ops: Promise<unknown>[] = [
+        saveMut.mutateAsync({ ...form, fechaFin: form.fechaFin || null }),
+      ];
+      if (projectPatch) ops.push(patchProjectMut.mutateAsync(projectPatch));
+      await Promise.all(ops);
+      toast.success(
+        projectPatch
+          ? "Configuración UTE y datos del proyecto guardados"
+          : "Configuración UTE guardada",
+      );
     } catch (err) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       toast.error(msg ?? "No se pudo guardar");
@@ -103,7 +172,12 @@ export function UteDocsPage() {
     }
     try {
       // Guardar primero, después generar (asegura que el ZIP usa lo último).
-      await saveMut.mutateAsync({ ...form!, fechaFin: form!.fechaFin || null });
+      const projectPatch = buildProjectPatch();
+      const ops: Promise<unknown>[] = [
+        saveMut.mutateAsync({ ...form!, fechaFin: form!.fechaFin || null }),
+      ];
+      if (projectPatch) ops.push(patchProjectMut.mutateAsync(projectPatch));
+      await Promise.all(ops);
       const docs = UTE_DOC_KEYS.filter((k) => selectedDocs.has(k));
       const { docsCount } = await generateMut.mutateAsync({
         docs,
@@ -141,14 +215,15 @@ export function UteDocsPage() {
         Los datos del cliente, sistema fotovoltaico y trámite UTE se cargan acá. Algunos vienen del proyecto (cliente, dirección, capacidad) y otros son específicos del trámite. Revisá y completá lo que falte antes de generar el ZIP.
       </p>
 
-      {/* Datos del proyecto (read-only) */}
-      <Section title="Datos del proyecto (referencia)">
-        <Readonly label="Cliente" value={project?.clientName ?? ""} />
-        <Readonly label="Email" value={project?.notificationEmail ?? ""} />
-        <Readonly label="Teléfono" value={project?.notificationPhone ?? ""} />
-        <Readonly label="Dirección" value={project?.clientAddress ?? ""} />
-        <Readonly label="Ciudad" value={project?.locationCity ?? ""} />
-        <Readonly label="Departamento" value={project?.locationProvince ?? ""} />
+      {/* Datos del proyecto — editables. Los cambios se guardan al proyecto
+          (no a la config UTE), así corrigen el dato en toda la app. */}
+      <Section title="Datos del proyecto (editables)">
+        <Text label="Cliente" value={projectFields.clientName} onChange={(v) => patchProjectField("clientName", v)} />
+        <Text label="Email" value={projectFields.notificationEmail} onChange={(v) => patchProjectField("notificationEmail", v)} />
+        <Text label="Teléfono" value={projectFields.notificationPhone} onChange={(v) => patchProjectField("notificationPhone", v)} />
+        <Text label="Dirección" value={projectFields.clientAddress} onChange={(v) => patchProjectField("clientAddress", v)} />
+        <Text label="Ciudad" value={projectFields.locationCity} onChange={(v) => patchProjectField("locationCity", v)} />
+        <Text label="Departamento" value={projectFields.locationProvince} onChange={(v) => patchProjectField("locationProvince", v)} />
       </Section>
 
       {/* Cliente (datos UTE-específicos) */}
@@ -336,11 +411,3 @@ function Checkbox({
   );
 }
 
-function Readonly({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <label className={lbl}>{label}</label>
-      <p className="text-sm text-[var(--color-text-secondary)] py-1.5">{value || "—"}</p>
-    </div>
-  );
-}
