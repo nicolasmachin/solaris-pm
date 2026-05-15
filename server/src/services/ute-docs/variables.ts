@@ -161,11 +161,11 @@ export function buildVariables(args: {
     Caso: config.casoUte,
     Persona_Fisica: bool(project.personaFisica),
     Empresa: bool(project.empresa),
-    // Representante — por defecto es el propio cliente con su CI. Si el
-    // usuario carga un valor explícito en la config, lo usamos; si no,
-    // caemos al nombreCliente / ciCliente del proyecto.
-    Representa: config.representa?.trim() ? config.representa : project.nombreCliente,
-    CI_Repre: config.ciRepre?.trim() ? config.ciRepre : project.ciCliente,
+    // Representante = cliente. Siempre sigue al cliente (nombreCliente /
+    // ciCliente) — no se permite override desde config. Si el usuario
+    // necesita un apoderado distinto, lo edita en el campo Cliente.
+    Representa: project.nombreCliente,
+    CI_Repre: project.ciCliente,
     Calidad_Repre: config.calidadRepre,
     // Sistema
     Cantidad_paneles: primarySolar?.panelQuantity ? String(primarySolar.panelQuantity) : "",
