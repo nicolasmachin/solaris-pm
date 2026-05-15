@@ -36,6 +36,12 @@ type ProjectFields = {
   clientAddress: string;
   locationCity: string;
   locationProvince: string;
+  // Datos del cliente que también se extraen con IA. Ahora viven en Project.
+  ciCliente: string;
+  calle: string;
+  numCalle: string;
+  personaFisica: boolean;
+  empresa: boolean;
 };
 
 // Subconjunto editable del SolarSystem primario (order=1). Si el proyecto
@@ -133,6 +139,11 @@ export function UteDocsPage() {
         clientAddress: projectQ.data.clientAddress ?? "",
         locationCity: projectQ.data.locationCity ?? "",
         locationProvince: projectQ.data.locationProvince ?? "",
+        ciCliente: projectQ.data.ciCliente ?? "",
+        calle: projectQ.data.calle ?? "",
+        numCalle: projectQ.data.numCalle ?? "",
+        personaFisica: projectQ.data.personaFisica ?? true,
+        empresa: projectQ.data.empresa ?? false,
       });
     }
   }, [projectQ.data, projectFields]);
@@ -183,7 +194,7 @@ export function UteDocsPage() {
     setForm((cur) => (cur ? { ...cur, [key]: value } : cur));
   }
 
-  function patchProjectField(key: keyof ProjectFields, value: string) {
+  function patchProjectField<K extends keyof ProjectFields>(key: K, value: ProjectFields[K]) {
     setProjectFields((cur) => (cur ? { ...cur, [key]: value } : cur));
   }
 
@@ -205,19 +216,25 @@ export function UteDocsPage() {
   function buildProjectPatch(): Partial<ProjectFields> | null {
     if (!projectFields || !project) return null;
     const out: Partial<ProjectFields> = {};
-    const keys: (keyof ProjectFields)[] = [
+    const stringKeys: (keyof ProjectFields)[] = [
       "clientName",
       "notificationEmail",
       "notificationPhone",
       "clientAddress",
       "locationCity",
       "locationProvince",
+      "ciCliente",
+      "calle",
+      "numCalle",
     ];
-    for (const k of keys) {
-      const current = (project[k] ?? "") as string;
-      const next = projectFields[k];
-      if (current !== next) out[k] = next;
+    for (const k of stringKeys) {
+      const current = (project[k as keyof typeof project] ?? "") as string;
+      const next = projectFields[k] as string;
+      if (current !== next) (out as Record<string, unknown>)[k] = next;
     }
+    // Booleans (personaFisica, empresa).
+    if (project.personaFisica !== projectFields.personaFisica) out.personaFisica = projectFields.personaFisica;
+    if (project.empresa !== projectFields.empresa) out.empresa = projectFields.empresa;
     return Object.keys(out).length > 0 ? out : null;
   }
 
@@ -374,14 +391,14 @@ export function UteDocsPage() {
         <Text label="Pot Nominal inversor (W)" value={solarFields.inverterPowerW} onChange={(v) => patchSolarField("inverterPowerW", v)} />
       </Section>
 
-      {/* Cliente — datos sobre el cliente que UTE pide pero no están en el
-          Project (CI, calle/número descompuesta, tipo de persona). */}
+      {/* Cliente — viven en Project. Se editan acá y también se extraen con IA
+          desde cédula / factura UTE (feature ute-doc-extraction). */}
       <Section title="Cliente">
-        <Text label="CI cliente" value={form.ciCliente} onChange={(v) => patch("ciCliente", v)} />
-        <Text label="Calle" value={form.calle} onChange={(v) => patch("calle", v)} />
-        <Text label="Num calle" value={form.numCalle} onChange={(v) => patch("numCalle", v)} />
-        <Checkbox label="Persona Fisica" checked={form.personaFisica} onChange={(v) => patch("personaFisica", v)} />
-        <Checkbox label="Empresa" checked={form.empresa} onChange={(v) => patch("empresa", v)} />
+        <Text label="CI cliente" value={projectFields.ciCliente} onChange={(v) => patchProjectField("ciCliente", v)} />
+        <Text label="Calle" value={projectFields.calle} onChange={(v) => patchProjectField("calle", v)} />
+        <Text label="Num calle" value={projectFields.numCalle} onChange={(v) => patchProjectField("numCalle", v)} />
+        <Checkbox label="Persona Fisica" checked={projectFields.personaFisica} onChange={(v) => patchProjectField("personaFisica", v)} />
+        <Checkbox label="Empresa" checked={projectFields.empresa} onChange={(v) => patchProjectField("empresa", v)} />
       </Section>
 
       {/* Representante */}

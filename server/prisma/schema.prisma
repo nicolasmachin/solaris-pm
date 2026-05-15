@@ -450,6 +450,16 @@ model Project {
   engineeringFinalProject EngineeringFinalProject?
   uteDocumentConfig    UteDocumentConfig?
   uteDocumentGenerations UteDocumentGeneration[]
+  // Datos del cliente que se cargan desde el form del proyecto y/o se
+  // extraen de la cédula con IA. Ver feature ute-doc-extraction.
+  ciCliente            String                @default("")
+  calle                String                @default("")
+  numCalle             String                @default("")
+  personaFisica        Boolean               @default(true)
+  empresa              Boolean               @default(false)
+  // Rutas relativas dentro de STORAGE_PATH/projects/{id}/ute-docs/
+  cedulaPath           String?
+  facturaUtePath       String?
   deletedAt            DateTime?             @db.Timestamptz(6)
   createdAt            DateTime              @default(now()) @db.Timestamptz(6)
   updatedAt            DateTime              @updatedAt @db.Timestamptz(6)
@@ -2147,14 +2157,10 @@ model UteDocumentConfig {
   projectId String  @unique
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  // Datos del cliente (lo que no está en Project)
-  ciCliente       String  @default("")
-  calle           String  @default("")
-  numCalle        String  @default("")
+  // Datos del trámite UTE específicos al expediente. Los datos generales
+  // del cliente (CI, calle, persona física/empresa) viven en Project.
   cuentaUte       String  @default("")
   casoUte         String  @default("")
-  personaFisica   Boolean @default(true)
-  empresa         Boolean @default(false)
 
   // Representante del cliente (si aplica)
   representa    String @default("")

@@ -4,14 +4,9 @@ import { apiClient } from "./axios";
 export interface UteDocumentConfig {
   id: string;
   projectId: string;
-  // Cliente
-  ciCliente: string;
-  calle: string;
-  numCalle: string;
+  // Cliente (datos del trámite — los generales viven en Project ahora)
   cuentaUte: string;
   casoUte: string;
-  personaFisica: boolean;
-  empresa: boolean;
   // Representante
   representa: string;
   ciRepre: string;

@@ -460,6 +460,13 @@ export function serializeProject(project: {
   clientAddress: string | null;
   uteCodigoPS?: string | null;
   uteCodigoAS?: string | null;
+  ciCliente?: string;
+  calle?: string;
+  numCalle?: string;
+  personaFisica?: boolean;
+  empresa?: boolean;
+  cedulaPath?: string | null;
+  facturaUtePath?: string | null;
   salespersonId: string | null;
   salesperson?: { id: string; name: string } | null;
   firstDateScheduledAt?: Date | null;

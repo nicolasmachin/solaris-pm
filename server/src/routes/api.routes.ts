@@ -201,6 +201,15 @@ const projectPatchSchema = z
       .union([z.string().regex(/^\d+$/).max(50), z.literal("")])
       .nullable()
       .optional(),
+    // Datos generales del cliente que también se extraen con IA desde la
+    // cédula / factura UTE (feature ute-doc-extraction).
+    ciCliente: z.string().optional(),
+    calle: z.string().optional(),
+    numCalle: z.string().optional(),
+    personaFisica: z.boolean().optional(),
+    empresa: z.boolean().optional(),
+    cedulaPath: z.string().nullable().optional(),
+    facturaUtePath: z.string().nullable().optional(),
   })
   .strict();
 
@@ -612,6 +621,14 @@ function normalizeProjectInput(input: Record<string, unknown>) {
   if (source.uteCodigoAS !== undefined) {
     normalized.uteCodigoAS = source.uteCodigoAS ? String(source.uteCodigoAS) : null;
   }
+  // Datos del cliente extraíbles con IA.
+  if (source.ciCliente !== undefined) normalized.ciCliente = String(source.ciCliente ?? "");
+  if (source.calle !== undefined) normalized.calle = String(source.calle ?? "");
+  if (source.numCalle !== undefined) normalized.numCalle = String(source.numCalle ?? "");
+  if (source.personaFisica !== undefined) normalized.personaFisica = Boolean(source.personaFisica);
+  if (source.empresa !== undefined) normalized.empresa = Boolean(source.empresa);
+  if (source.cedulaPath !== undefined) normalized.cedulaPath = source.cedulaPath || null;
+  if (source.facturaUtePath !== undefined) normalized.facturaUtePath = source.facturaUtePath || null;
 
   return normalized;
 }
@@ -9203,13 +9220,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // PUT config: upsert con todos los campos editables.
     const uteDocConfigBodySchema = z
       .object({
-        ciCliente: z.string().optional(),
-        calle: z.string().optional(),
-        numCalle: z.string().optional(),
         cuentaUte: z.string().optional(),
         casoUte: z.string().optional(),
-        personaFisica: z.boolean().optional(),
-        empresa: z.boolean().optional(),
         representa: z.string().optional(),
         ciRepre: z.string().optional(),
         calidadRepre: z.string().optional(),

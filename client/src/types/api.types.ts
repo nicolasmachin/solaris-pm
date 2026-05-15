@@ -285,6 +285,14 @@ export interface Project {
   notificationPhone: string | null;
   clientAddress: string | null;
   firstDateScheduledAt: string | null;
+  // Datos generales del cliente (extraíbles con IA, ver ute-doc-extraction).
+  ciCliente: string;
+  calle: string;
+  numCalle: string;
+  personaFisica: boolean;
+  empresa: boolean;
+  cedulaPath: string | null;
+  facturaUtePath: string | null;
   createdById: string;
   salespersonId: string | null;
   salesperson: { id: string; name: string } | null;

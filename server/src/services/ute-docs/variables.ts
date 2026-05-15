@@ -141,20 +141,21 @@ export function buildVariables(args: {
   }
 
   return {
-    // Cliente
+    // Cliente — los datos generales viven en Project. Solo cuenta/caso UTE
+    // siguen en config porque son por-expediente.
     Cliente: project.clientName ?? "",
-    CI_cliente: config.ciCliente,
+    CI_cliente: project.ciCliente,
     Mail_cliente: project.notificationEmail ?? "",
     Telefono_cliente: project.notificationPhone ?? "",
     Dir_cliente: project.clientAddress ?? "",
-    Calle: config.calle,
-    Num_calle: config.numCalle,
+    Calle: project.calle,
+    Num_calle: project.numCalle,
     Ciudad: project.locationCity ?? "",
     Depto: project.locationProvince ?? "",
     Cuenta: config.cuentaUte,
     Caso: config.casoUte,
-    Persona_Fisica: bool(config.personaFisica),
-    Empresa: bool(config.empresa),
+    Persona_Fisica: bool(project.personaFisica),
+    Empresa: bool(project.empresa),
     // Representante
     Representa: config.representa,
     CI_Repre: config.ciRepre,
