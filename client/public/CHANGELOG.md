@@ -4,6 +4,23 @@
 
 ### 14 de mayo de 2026
 
+#### Proyectos — Extracción de datos del cliente con IA
+
+Nueva sección **"Documentos del cliente"** en cada proyecto, arriba del bloque "Sistema fotovoltaico". Permite subir:
+
+- **Cédula de identidad** (JPG, PNG o PDF, máx 10MB)
+- **Factura de UTE** (PDF, JPG o PNG, máx 10MB)
+
+Al subir, una IA (Claude Haiku) analiza el documento y extrae los datos relevantes: nombre, CI, dirección (calle y número separados), ciudad, departamento, y para la factura UTE además cuenta, caso, oficina, tarifa, potencia contratada, email y teléfono.
+
+- **Modal de validación**: antes de guardar, te aparece un cuadro con todos los datos extraídos editables. Lo que no haya podido leer queda con placeholder "no encontrado" en gris.
+- **Edición libre**: corregís lo que esté mal o completás lo que falte.
+- **Guardado en el proyecto**: al confirmar, los datos pasan al proyecto (no solo al form UTE), entonces aparecen también en `/proyectos`, en el detalle, y se precargan automáticamente en el form de Documentos UTE.
+- **El archivo queda guardado** en el storage del proyecto. Si subís uno nuevo del mismo tipo, reemplaza al anterior.
+- **El reset** del form UTE no borra estos datos (son del proyecto, no de la config UTE).
+
+Detrás de escena se mueve `ciCliente`, `calle`, `numCalle`, `personaFisica`, `empresa` de la config UTE a Project — por eso quedan accesibles a todo el sistema, no solo al generador.
+
 #### Ingeniería — Generador de documentos UTE
 
 Nueva herramienta dentro del workspace de Ingeniería para generar los **8 PDFs** que UTE pide para habilitar una instalación FV (Solicitud IMG, DAR, Jurada Mínima, Jurada Técnica, Convenio, Solicitud de Habilitación, Acta de Habilitación, Contrato).

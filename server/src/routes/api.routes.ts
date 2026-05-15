@@ -62,6 +62,7 @@ import { createAuditEntriesForChanges, createAuditEntry } from "../services/audi
 import { createPlanPagos, getPlanPagos } from "../services/planPagos.service.js";
 import { generateUteDocs, getOrCreateConfig as getOrCreateUteDocConfig, upsertConfig as upsertUteDocConfig } from "../services/ute-docs/generator.js";
 import { UTE_DOC_KEYS, type UteDocKey } from "../services/ute-docs/coordinates.js";
+import { extractFromDocument } from "../services/ute-extract/index.js";
 import { deleteStoredFile, getStoredFilePath, saveUploadedFile } from "../services/file-storage.service.js";
 import { copyLeadAttachmentsToProject } from "../services/sales/sales.service.js";
 import {
@@ -9328,6 +9329,108 @@ export async function registerApiRoutes(app: FastifyInstance) {
           .header("Content-Type", "application/zip")
           .header("Content-Disposition", `attachment; filename="${zipFilename}"`)
           .send(zipBuffer);
+      },
+    );
+
+    // ─── Extracción de datos del cliente con IA (cédula / factura UTE) ──────
+    // El cliente sube un archivo (multipart). El server lo guarda en
+    // storage/projects/{id}/ute-docs/, lo manda a Claude Haiku para extraer
+    // los datos, y devuelve el JSON al cliente. El cliente valida los datos
+    // en un modal y los persiste vía PATCH /projects/:id si confirma.
+    const UTE_EXTRACT_ALLOWED_MIME = ["image/jpeg", "image/png", "application/pdf"] as const;
+    const UTE_EXTRACT_MAX_SIZE = 10 * 1024 * 1024; // 10MB
+    app.post(
+      "/projects/:projectId/ute-extract",
+      { preHandler: authorize(Module.OPERACIONES, Action.EDIT) },
+      async (request, reply) => {
+        const user = ensureUser(request);
+        const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
+        const { tipo } = z
+          .object({ tipo: z.enum(["cedula", "factura_ute"]) })
+          .parse(request.query);
+
+        const project = await prisma.project.findFirst({
+          where: { id: projectId, deletedAt: null },
+        });
+        if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+
+        const filePart = await request.file();
+        if (!filePart) {
+          throw badRequest("NO_FILE", "No se recibió ningún archivo en el campo 'file'");
+        }
+        const mime = filePart.mimetype;
+        if (!UTE_EXTRACT_ALLOWED_MIME.includes(mime as (typeof UTE_EXTRACT_ALLOWED_MIME)[number])) {
+          throw badRequest(
+            "FILE_TYPE_INVALID",
+            `Formato no soportado (${mime}). Usá JPG, PNG o PDF.`,
+          );
+        }
+
+        // Drenar el stream a Buffer con límite explícito (multipart está
+        // configurado con 10MB global, pero hacemos guard aparte para mensaje claro).
+        const chunks: Buffer[] = [];
+        let total = 0;
+        for await (const chunk of filePart.file) {
+          total += chunk.length;
+          if (total > UTE_EXTRACT_MAX_SIZE) {
+            throw badRequest("FILE_TOO_LARGE", "El archivo supera los 10MB permitidos.");
+          }
+          chunks.push(Buffer.from(chunk));
+        }
+        const fileBuffer = Buffer.concat(chunks);
+
+        // Guardar en storage/projects/{id}/ute-docs/{tipo}.{ext}. Sobrescribe
+        // si ya existía. Mismo path resolution que file-storage.service.ts.
+        const ext = mime === "application/pdf" ? "pdf" : mime === "image/png" ? "png" : "jpg";
+        const fileName = `${tipo}.${ext}`;
+        const relativePath = path.join("projects", projectId, "ute-docs", fileName);
+        const absolutePath = path.resolve(process.cwd(), "..", env.storagePath, relativePath);
+        await fsPromises.mkdir(path.dirname(absolutePath), { recursive: true });
+        await fsPromises.writeFile(absolutePath, fileBuffer);
+
+        // Persistir la ruta en Project.{cedulaPath|facturaUtePath}.
+        const pathField = tipo === "cedula" ? "cedulaPath" : "facturaUtePath";
+        await prisma.project.update({
+          where: { id: projectId },
+          data: { [pathField]: relativePath },
+        });
+
+        // Llamar a Claude para extraer.
+        let extracted;
+        try {
+          extracted = await extractFromDocument({
+            fileBuffer,
+            mimeType: mime,
+            tipo: tipo as "cedula" | "factura_ute",
+          });
+        } catch (err) {
+          throw badRequest(
+            "AI_EXTRACTION_FAILED",
+            `No se pudieron extraer datos del documento: ${(err as Error).message}`,
+          );
+        }
+
+        await createAuditEntry({
+          entityType: AuditEntityType.project,
+          entityId: projectId,
+          projectId,
+          userId: user.id,
+          action: AuditAction.created,
+          description: `Extrajo datos de ${tipo === "cedula" ? "cédula" : "factura UTE"} con IA`,
+          metadata: {
+            kind: "ute_extract",
+            tipo,
+            archivo: relativePath,
+            tokensInput: extracted.tokensInput,
+            tokensOutput: extracted.tokensOutput,
+          },
+        });
+
+        return {
+          extraido: extracted.data,
+          archivo_guardado: relativePath,
+          tipo,
+        };
       },
     );
 

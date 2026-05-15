@@ -16,6 +16,7 @@ import { CostosTab } from "../components/project/CostosTab";
 import { ProjectMaterialsList } from "../components/project/EngineeringMaterials";
 import { TasksPanel } from "../components/project/TasksPanel";
 import { PortalClientsPanel } from "../components/project/PortalClientsPanel";
+import { ClienteDocsUpload } from "../components/projects/ClienteDocsUpload";
 import { TaskModal } from "../components/project/TaskModal";
 import { SolarSystemModal } from "../components/project/SolarSystemModal";
 import { AuditHistory } from "../components/project/AuditHistory";
@@ -781,6 +782,13 @@ export function ProjectDetail() {
       {installationCheckQuery.data && installationCheckQuery.data.issues.length > 0 && (
         <InstallationCoherenceBanner issues={installationCheckQuery.data.issues} />
       )}
+
+      {/* Documentos del cliente — extracción con IA */}
+      <ClienteDocsUpload
+        projectId={project.id}
+        cedulaPath={project.cedulaPath}
+        facturaUtePath={project.facturaUtePath}
+      />
 
       {/* Sistema fotovoltaico */}
       <SolarSystemsSection
