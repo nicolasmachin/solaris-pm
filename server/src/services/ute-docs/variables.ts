@@ -216,10 +216,22 @@ export function buildVariables(args: {
     fp: config.fp,
     normas1: config.normas1,
     normas2: config.normas2,
-    x1: config.x1,
-    x2: config.x2,
-    x3: config.x3,
-    x4: config.x4,
+    // x1-x4 son checkboxes en el doc Jurada Técnica que dependen del rango
+    // de la corriente nominal de la IMG declarada en la solicitud:
+    //   ≤ 16 A             → x1, x2 marcados (≈ "circuito clase A")
+    //   > 16 A, ≤ 75 A     → x3, x4 marcados
+    //   > 75 A             → ninguno marcado
+    // Si el campo está vacío o no parsea, ninguno se marca.
+    ...(() => {
+      const raw = (config.intensidadNomSolicitudImg ?? "").trim().replace(",", ".");
+      const n = Number(raw);
+      if (!Number.isFinite(n) || raw === "") {
+        return { x1: "", x2: "", x3: "", x4: "" };
+      }
+      if (n <= 16) return { x1: "X", x2: "X", x3: "", x4: "" };
+      if (n <= 75) return { x1: "", x2: "", x3: "X", x4: "X" };
+      return { x1: "", x2: "", x3: "", x4: "" };
+    })(),
     // Derivados
     Dia1: fechaDoc.dia,
     Mes2: fechaDoc.mesNombre,

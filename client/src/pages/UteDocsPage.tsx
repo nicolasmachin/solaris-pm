@@ -444,10 +444,25 @@ export function UteDocsPage() {
         <Text label="Factor de potencia (fp)" value={form.fp} onChange={(v) => patch("fp", v)} />
         <Text label="Norma 1" value={form.normas1} onChange={(v) => patch("normas1", v)} />
         <Text label="Norma 2" value={form.normas2} onChange={(v) => patch("normas2", v)} />
-        <Text label="X1 (checkbox)" value={form.x1} onChange={(v) => patch("x1", v)} />
-        <Text label="X2 (checkbox)" value={form.x2} onChange={(v) => patch("x2", v)} />
-        <Text label="X3 (checkbox)" value={form.x3} onChange={(v) => patch("x3", v)} />
-        <Text label="X4 (checkbox)" value={form.x4} onChange={(v) => patch("x4", v)} />
+        {/* X1-X4 son checkboxes de Jurada Técnica que dependen de la
+            corriente nominal: ≤16 A → X1+X2; >16 y ≤75 A → X3+X4; >75 → nada.
+            Se calculan al generar el PDF a partir de "Corriente Nominal (A)". */}
+        <div className="sm:col-span-2 lg:col-span-3">
+          <p className="text-[11px] text-[var(--color-text-muted)] bg-[var(--color-bg-app)]/50 rounded p-2">
+            <span className="font-mono uppercase tracking-wider text-[10px]">X1-X4</span> · se marcan automáticamente al generar el PDF según la <strong>Corriente Nominal (A)</strong>:
+            ≤ 16 A → X1+X2 · &gt; 16 y ≤ 75 A → X3+X4 · &gt; 75 A → ninguno.
+            {(() => {
+              const raw = form.intensidadNomSolicitudImg.trim().replace(",", ".");
+              const n = Number(raw);
+              if (!Number.isFinite(n) || raw === "") {
+                return <span className="ml-1 text-[var(--color-warning-text)]"> (sin corriente cargada — no se marca ninguno).</span>;
+              }
+              if (n <= 16) return <span className="ml-1 text-emerald-400"> Con {n} A → se marcarán X1 y X2.</span>;
+              if (n <= 75) return <span className="ml-1 text-emerald-400"> Con {n} A → se marcarán X3 y X4.</span>;
+              return <span className="ml-1 text-[var(--color-text-muted)]"> Con {n} A → no se marca ninguno.</span>;
+            })()}
+          </p>
+        </div>
         <Text label="Serie panel" value={form.seriePanel} onChange={(v) => patch("seriePanel", v)} />
         <Text label="Serie inversor" value={form.serieInversor} onChange={(v) => patch("serieInversor", v)} />
         <Text label="Área paneles" value={form.areaPaneles} onChange={(v) => patch("areaPaneles", v)} />
