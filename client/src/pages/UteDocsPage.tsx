@@ -415,10 +415,21 @@ export function UteDocsPage() {
         <Checkbox label="Empresa" checked={projectFields.empresa} onChange={(v) => patchProjectField("empresa", v)} />
       </Section>
 
-      {/* Representante */}
-      <Section title="Representante del cliente (si aplica)">
-        <Text label="Representa" value={form.representa} onChange={(v) => patch("representa", v)} />
-        <Text label="CI Repre" value={form.ciRepre} onChange={(v) => patch("ciRepre", v)} />
+      {/* Representante — por defecto es el propio cliente. Si se deja vacío,
+          variables.ts usa nombreCliente / ciCliente del proyecto. */}
+      <Section title="Representante del cliente (si difiere del titular)">
+        <Text
+          label="Representa"
+          value={form.representa}
+          onChange={(v) => patch("representa", v)}
+          placeholder={projectFields.nombreCliente ? `Por defecto: ${projectFields.nombreCliente}` : "Por defecto: el cliente"}
+        />
+        <Text
+          label="CI Repre"
+          value={form.ciRepre}
+          onChange={(v) => patch("ciRepre", v)}
+          placeholder={projectFields.ciCliente ? `Por defecto: ${projectFields.ciCliente}` : "Por defecto: la CI del cliente"}
+        />
         <Text label="Calidad Repre" value={form.calidadRepre} onChange={(v) => patch("calidadRepre", v)} />
       </Section>
 
@@ -673,15 +684,23 @@ function Text({
   label,
   value,
   onChange,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
+  placeholder?: string;
 }) {
   return (
     <div>
       <label className={lbl}>{label}</label>
-      <input type="text" value={value} onChange={(e) => onChange(e.target.value)} className={inp} />
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={inp}
+      />
     </div>
   );
 }
