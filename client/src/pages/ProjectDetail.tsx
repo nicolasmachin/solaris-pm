@@ -783,13 +783,6 @@ export function ProjectDetail() {
         <InstallationCoherenceBanner issues={installationCheckQuery.data.issues} />
       )}
 
-      {/* Documentos del cliente — extracción con IA */}
-      <ClienteDocsUpload
-        projectId={project.id}
-        cedulaPath={project.cedulaPath}
-        facturaUtePath={project.facturaUtePath}
-      />
-
       {/* Sistema fotovoltaico */}
       <SolarSystemsSection
         project={project}
@@ -801,6 +794,13 @@ export function ProjectDetail() {
       <Pipeline
         stages={project.stages}
         onStageClick={(stage) => setSelectedStage(stage)}
+      />
+
+      {/* Documentos del cliente — extracción con IA */}
+      <ClienteDocsUpload
+        projectId={project.id}
+        cedulaPath={project.cedulaPath}
+        facturaUtePath={project.facturaUtePath}
       />
 
       {/* KPIs (avance, días desde venta, etapa actual) */}
