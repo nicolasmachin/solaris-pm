@@ -4,7 +4,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { ChevronLeft, Download, Save } from "lucide-react";
 
-import { getProject, patchProject } from "../api/projects.api";
+import {
+  createSolarSystem,
+  getProject,
+  patchProject,
+  patchSolarSystem,
+  type SolarSystemPayload,
+} from "../api/projects.api";
 import {
   useGenerateUteDocs,
   useSaveUteDocsConfig,
@@ -30,6 +36,27 @@ type ProjectFields = {
   locationCity: string;
   locationProvince: string;
 };
+
+// Subconjunto editable del SolarSystem primario (order=1). Si el proyecto
+// todavía no tiene SolarSystem, al guardar se crea uno con estos datos.
+// Los campos numéricos se manejan como string en el form para que el input
+// soporte vacío sin saltar a 0.
+type SolarFields = {
+  panelBrand: string;
+  panelModel: string;
+  panelQuantity: string;
+  panelPowerW: string;
+  inverterBrand: string;
+  inverterModel: string;
+  inverterQuantity: string;
+  inverterPowerKw: string;
+};
+
+function emptyOrNum(s: string): number | null {
+  if (s.trim() === "") return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
 
 const lbl =
   "block text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] mb-1 font-mono";
@@ -69,8 +96,22 @@ export function UteDocsPage() {
     },
   });
 
+  // Upsert del SolarSystem primario (order=1). Si no existe, crea uno; si
+  // existe, patchea solo los 4 campos editables (marca/modelo panel + inv).
+  const saveSolarMut = useMutation({
+    mutationFn: async (args: { systemId: string | null; body: SolarSystemPayload }) => {
+      if (args.systemId) return patchSolarSystem(projectId!, args.systemId, args.body);
+      return createSolarSystem(projectId!, { order: 1, ...args.body });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["project", projectId] });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+
   const [form, setForm] = useState<ConfigForm | null>(null);
   const [projectFields, setProjectFields] = useState<ProjectFields | null>(null);
+  const [solarFields, setSolarFields] = useState<SolarFields | null>(null);
   const [selectedDocs, setSelectedDocs] = useState<Set<UteDocKey>>(new Set(UTE_DOC_KEYS));
 
   // Hidratar el form de la config cuando llega.
@@ -92,14 +133,32 @@ export function UteDocsPage() {
     }
   }, [projectQ.data, projectFields]);
 
+  // Hidratar los campos editables del SolarSystem primario cuando llega.
+  useEffect(() => {
+    if (projectQ.data && !solarFields) {
+      const primary = projectQ.data.solarSystems?.[0] ?? null;
+      setSolarFields({
+        panelBrand: primary?.panelBrand ?? "",
+        panelModel: primary?.panelModel ?? "",
+        panelQuantity: primary?.panelQuantity != null ? String(primary.panelQuantity) : "",
+        panelPowerW: primary?.panelPowerW != null ? String(primary.panelPowerW) : "",
+        inverterBrand: primary?.inverterBrand ?? "",
+        inverterModel: primary?.inverterModel ?? "",
+        inverterQuantity: primary?.inverterQuantity != null ? String(primary.inverterQuantity) : "",
+        inverterPowerKw: primary?.inverterPowerKw != null ? String(primary.inverterPowerKw) : "",
+      });
+    }
+  }, [projectQ.data, solarFields]);
+
   const project = projectQ.data;
+  const primarySolar = project?.solarSystems?.[0] ?? null;
   const projectFilename = useMemo(
     () => (project?.clientName ?? "proyecto").replace(/[^a-zA-Z0-9_-]+/g, "_"),
     [project],
   );
 
   if (!projectId) return null;
-  if (configQ.isLoading || projectQ.isLoading || !form || !projectFields) {
+  if (configQ.isLoading || projectQ.isLoading || !form || !projectFields || !solarFields) {
     return (
       <div className="flex justify-center py-12">
         <Spinner />
@@ -113,6 +172,10 @@ export function UteDocsPage() {
 
   function patchProjectField(key: keyof ProjectFields, value: string) {
     setProjectFields((cur) => (cur ? { ...cur, [key]: value } : cur));
+  }
+
+  function patchSolarField(key: keyof SolarFields, value: string) {
+    setSolarFields((cur) => (cur ? { ...cur, [key]: value } : cur));
   }
 
   function toggleDoc(key: UteDocKey) {
@@ -145,20 +208,54 @@ export function UteDocsPage() {
     return Object.keys(out).length > 0 ? out : null;
   }
 
+  // Diff del SolarSystem primario. Si no había sistema, cualquier valor no
+  // vacío dispara la creación. Si ya había, manda solo los campos cambiados.
+  function buildSolarPatch(): SolarSystemPayload | null {
+    if (!solarFields) return null;
+    const sourceBrand = primarySolar?.panelBrand ?? "";
+    const sourceModel = primarySolar?.panelModel ?? "";
+    const sourcePanelQty = primarySolar?.panelQuantity != null ? String(primarySolar.panelQuantity) : "";
+    const sourcePanelW = primarySolar?.panelPowerW != null ? String(primarySolar.panelPowerW) : "";
+    const sourceInvBrand = primarySolar?.inverterBrand ?? "";
+    const sourceInvModel = primarySolar?.inverterModel ?? "";
+    const sourceInvQty = primarySolar?.inverterQuantity != null ? String(primarySolar.inverterQuantity) : "";
+    const sourceInvPow = primarySolar?.inverterPowerKw != null ? String(primarySolar.inverterPowerKw) : "";
+
+    const out: SolarSystemPayload = {};
+    if (sourceBrand !== solarFields.panelBrand) out.panelBrand = solarFields.panelBrand || null;
+    if (sourceModel !== solarFields.panelModel) out.panelModel = solarFields.panelModel || null;
+    if (sourcePanelQty !== solarFields.panelQuantity) out.panelQuantity = emptyOrNum(solarFields.panelQuantity);
+    if (sourcePanelW !== solarFields.panelPowerW) out.panelPowerW = emptyOrNum(solarFields.panelPowerW);
+    if (sourceInvBrand !== solarFields.inverterBrand) out.inverterBrand = solarFields.inverterBrand || null;
+    if (sourceInvModel !== solarFields.inverterModel) out.inverterModel = solarFields.inverterModel || null;
+    if (sourceInvQty !== solarFields.inverterQuantity) out.inverterQuantity = emptyOrNum(solarFields.inverterQuantity);
+    if (sourceInvPow !== solarFields.inverterPowerKw) out.inverterPowerKw = emptyOrNum(solarFields.inverterPowerKw);
+
+    return Object.keys(out).length > 0 ? out : null;
+  }
+
+  async function saveAll(): Promise<{ projectChanged: boolean; solarChanged: boolean }> {
+    const projectPatch = buildProjectPatch();
+    const solarPatch = buildSolarPatch();
+    const ops: Promise<unknown>[] = [
+      saveMut.mutateAsync({ ...form!, fechaFin: form!.fechaFin || null }),
+    ];
+    if (projectPatch) ops.push(patchProjectMut.mutateAsync(projectPatch));
+    if (solarPatch) {
+      ops.push(saveSolarMut.mutateAsync({ systemId: primarySolar?.id ?? null, body: solarPatch }));
+    }
+    await Promise.all(ops);
+    return { projectChanged: !!projectPatch, solarChanged: !!solarPatch };
+  }
+
   async function handleSave() {
-    if (!form || !projectFields) return;
+    if (!form || !projectFields || !solarFields) return;
     try {
-      const projectPatch = buildProjectPatch();
-      const ops: Promise<unknown>[] = [
-        saveMut.mutateAsync({ ...form, fechaFin: form.fechaFin || null }),
-      ];
-      if (projectPatch) ops.push(patchProjectMut.mutateAsync(projectPatch));
-      await Promise.all(ops);
-      toast.success(
-        projectPatch
-          ? "Configuración UTE y datos del proyecto guardados"
-          : "Configuración UTE guardada",
-      );
+      const { projectChanged, solarChanged } = await saveAll();
+      const parts = ["Configuración UTE"];
+      if (projectChanged) parts.push("datos del proyecto");
+      if (solarChanged) parts.push("sistema FV");
+      toast.success(`${parts.join(", ")} ${parts.length === 1 ? "guardada" : "guardados"}`);
     } catch (err) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       toast.error(msg ?? "No se pudo guardar");
@@ -172,12 +269,7 @@ export function UteDocsPage() {
     }
     try {
       // Guardar primero, después generar (asegura que el ZIP usa lo último).
-      const projectPatch = buildProjectPatch();
-      const ops: Promise<unknown>[] = [
-        saveMut.mutateAsync({ ...form!, fechaFin: form!.fechaFin || null }),
-      ];
-      if (projectPatch) ops.push(patchProjectMut.mutateAsync(projectPatch));
-      await Promise.all(ops);
+      await saveAll();
       const docs = UTE_DOC_KEYS.filter((k) => selectedDocs.has(k));
       const { docsCount } = await generateMut.mutateAsync({
         docs,
@@ -224,6 +316,20 @@ export function UteDocsPage() {
         <Text label="Dirección" value={projectFields.clientAddress} onChange={(v) => patchProjectField("clientAddress", v)} />
         <Text label="Ciudad" value={projectFields.locationCity} onChange={(v) => patchProjectField("locationCity", v)} />
         <Text label="Departamento" value={projectFields.locationProvince} onChange={(v) => patchProjectField("locationProvince", v)} />
+      </Section>
+
+      {/* Sistema fotovoltaico — vive en SolarSystem. Editable acá; los cambios
+          se persisten al sistema primario del proyecto (o lo crean si no
+          existe todavía). */}
+      <Section title="Sistema fotovoltaico (editable)">
+        <Text label="Marca panel" value={solarFields.panelBrand} onChange={(v) => patchSolarField("panelBrand", v)} />
+        <Text label="Modelo panel" value={solarFields.panelModel} onChange={(v) => patchSolarField("panelModel", v)} />
+        <Text label="Cantidad de paneles" value={solarFields.panelQuantity} onChange={(v) => patchSolarField("panelQuantity", v)} />
+        <Text label="Potencia panel (W)" value={solarFields.panelPowerW} onChange={(v) => patchSolarField("panelPowerW", v)} />
+        <Text label="Marca inversor" value={solarFields.inverterBrand} onChange={(v) => patchSolarField("inverterBrand", v)} />
+        <Text label="Modelo inversor" value={solarFields.inverterModel} onChange={(v) => patchSolarField("inverterModel", v)} />
+        <Text label="Cantidad de inversores" value={solarFields.inverterQuantity} onChange={(v) => patchSolarField("inverterQuantity", v)} />
+        <Text label="Potencia nominal inversor (kW)" value={solarFields.inverterPowerKw} onChange={(v) => patchSolarField("inverterPowerKw", v)} />
       </Section>
 
       {/* Cliente (datos UTE-específicos) */}
