@@ -461,19 +461,30 @@ export function UteDocsPage() {
         </div>
       </Section>
 
-      {/* Potencias declaradas a UTE: nominal IMG (+ corriente calc), IMG y
-          contratada en kW (con sus letras) + ×1000 calc. */}
+      {/* Potencias declaradas a UTE: Pot IMG (kW) es el input maestro;
+          Pot nominal IMG (W) = potImg × 1000 (calculada). Corriente Nominal
+          se calcula a partir de la misma. */}
       <Section title="Potencias declaradas a UTE">
-        <Text label="Pot nominal IMG (W)" value={form.potenciaNomSolicitudImg} onChange={(v) => patch("potenciaNomSolicitudImg", v)} />
-        {/* Corriente Nominal (A) = P / 230 (mono) o P / (V × √3) (tri).
-            Read-only preview; cálculo final lo hace variables.ts al generar. */}
+        <Text label="Pot IMG (kW)" value={form.potImg} onChange={(v) => patch("potImg", v)} />
+        <Text label="Pot IMG (en letras)" value={form.potImgLetras} onChange={(v) => patch("potImgLetras", v)} />
+        <div>
+          <label className={lbl}>Pot nominal IMG (W) · calculado</label>
+          <p className="text-sm text-[var(--color-text-secondary)] py-1.5 tabular-nums">
+            {(() => {
+              const raw = form.potImg.trim().replace(",", ".");
+              const n = Number(raw);
+              return Number.isFinite(n) && raw !== "" ? `${Math.round(n * 1000)}` : "—";
+            })()}
+          </p>
+        </div>
         <div>
           <label className={lbl}>Corriente Nominal (A) · calculada</label>
           <p className="text-sm text-[var(--color-text-secondary)] py-1.5 tabular-nums">
             {(() => {
-              const raw = form.potenciaNomSolicitudImg.trim().replace(",", ".");
-              const p = Number(raw);
-              if (!Number.isFinite(p) || p <= 0) return "—";
+              const raw = form.potImg.trim().replace(",", ".");
+              const pKw = Number(raw);
+              if (!Number.isFinite(pKw) || pKw <= 0) return "—";
+              const p = pKw * 1000;
               const SQRT3 = Math.sqrt(3);
               let i: number;
               let formula: string;
@@ -494,9 +505,6 @@ export function UteDocsPage() {
             })()}
           </p>
         </div>
-        <div className="hidden lg:block" />
-        <Text label="Pot IMG (kW)" value={form.potImg} onChange={(v) => patch("potImg", v)} />
-        <Text label="Pot IMG (en letras)" value={form.potImgLetras} onChange={(v) => patch("potImgLetras", v)} />
         <div className="hidden lg:block" />
         <Text label="Pot contratada (kW)" value={form.potContratada} onChange={(v) => patch("potContratada", v)} />
         <Text label="Pot Contratada (en letras)" value={form.potContratadaLetras} onChange={(v) => patch("potContratadaLetras", v)} />
@@ -525,11 +533,12 @@ export function UteDocsPage() {
             <span className="font-mono uppercase tracking-wider text-[10px]">X1-X4</span> · se marcan automáticamente al generar el PDF según la corriente nominal calculada:
             ≤ 16 A → X1+X2 · &gt; 16 y ≤ 75 A → X3+X4 · &gt; 75 A → ninguno.
             {(() => {
-              const raw = form.potenciaNomSolicitudImg.trim().replace(",", ".");
-              const p = Number(raw);
-              if (!Number.isFinite(p) || p <= 0) {
-                return <span className="ml-1 text-[var(--color-warning-text)]"> (sin Pot nominal IMG cargada — no se marca ninguno).</span>;
+              const raw = form.potImg.trim().replace(",", ".");
+              const pKw = Number(raw);
+              if (!Number.isFinite(pKw) || pKw <= 0) {
+                return <span className="ml-1 text-[var(--color-warning-text)]"> (sin Pot IMG cargada — no se marca ninguno).</span>;
               }
+              const p = pKw * 1000;
               const SQRT3 = Math.sqrt(3);
               const i = form.fasesMono
                 ? p / 230

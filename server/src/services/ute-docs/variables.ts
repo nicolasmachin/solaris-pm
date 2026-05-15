@@ -193,15 +193,24 @@ export function buildVariables(args: {
     PS: config.ps,
     X: config.x,
     // Técnicos UTE
-    Potencia_nom_solicitud_IMG: config.potenciaNomSolicitudImg,
+    // Pot nominal IMG (W) = Pot IMG (kW) × 1000. El usuario carga solo kW;
+    // los W se derivan acá. Se ignora cualquier valor manual previo en
+    // config.potenciaNomSolicitudImg.
+    Potencia_nom_solicitud_IMG: (() => {
+      const raw = (config.potImg ?? "").trim().replace(",", ".");
+      const n = Number(raw);
+      return Number.isFinite(n) && raw !== "" ? String(Math.round(n * 1000)) : "";
+    })(),
     // Intensidad nominal calculada según fases + tensión:
     //   Monofásico            → I = P / 230
     //   Trifásico (230 V)     → I = P / (230 × √3)
     //   Trifásico (400 V)     → I = P / (400 × √3)
     // Se ignora cualquier valor manual guardado en config.intensidadNomSolicitudImg.
     Intensidad_nom_solicitud_IMG: (() => {
-      const raw = (config.potenciaNomSolicitudImg ?? "").trim().replace(",", ".");
-      const p = Number(raw);
+      // P (W) = potImg (kW) × 1000.
+      const raw = (config.potImg ?? "").trim().replace(",", ".");
+      const pKw = Number(raw);
+      const p = Number.isFinite(pKw) && raw !== "" ? pKw * 1000 : NaN;
       if (!Number.isFinite(p) || p <= 0) return "";
       const SQRT3 = Math.sqrt(3);
       let i: number;
@@ -244,19 +253,28 @@ export function buildVariables(args: {
     normas1: config.normas1,
     normas2: config.normas2,
     // x1-x4 son checkboxes en el doc Jurada Técnica que dependen del rango
-    // de la corriente nominal de la IMG declarada en la solicitud:
+    // de la corriente nominal CALCULADA (P / 230 mono ó P/(V·√3) tri):
     //   ≤ 16 A             → x1, x2 marcados (≈ "circuito clase A")
     //   > 16 A, ≤ 75 A     → x3, x4 marcados
     //   > 75 A             → ninguno marcado
-    // Si el campo está vacío o no parsea, ninguno se marca.
     ...(() => {
-      const raw = (config.intensidadNomSolicitudImg ?? "").trim().replace(",", ".");
-      const n = Number(raw);
-      if (!Number.isFinite(n) || raw === "") {
+      const raw = (config.potImg ?? "").trim().replace(",", ".");
+      const pKw = Number(raw);
+      const p = Number.isFinite(pKw) && raw !== "" ? pKw * 1000 : NaN;
+      if (!Number.isFinite(p) || p <= 0) {
         return { x1: "", x2: "", x3: "", x4: "" };
       }
-      if (n <= 16) return { x1: "X", x2: "X", x3: "", x4: "" };
-      if (n <= 75) return { x1: "", x2: "", x3: "X", x4: "X" };
+      const SQRT3 = Math.sqrt(3);
+      const i = config.fasesMono
+        ? p / 230
+        : config.fasesTri && config.tension400
+          ? p / (400 * SQRT3)
+          : config.fasesTri && config.tension230
+            ? p / (230 * SQRT3)
+            : p / 230;
+      const rounded = Math.round(i);
+      if (rounded <= 16) return { x1: "X", x2: "X", x3: "", x4: "" };
+      if (rounded <= 75) return { x1: "", x2: "", x3: "X", x4: "X" };
       return { x1: "", x2: "", x3: "", x4: "" };
     })(),
     // Derivados
