@@ -128,23 +128,14 @@ export function UteDocsPage() {
   const [solarFields, setSolarFields] = useState<SolarFields | null>(null);
   const [selectedDocs, setSelectedDocs] = useState<Set<UteDocKey>>(new Set(UTE_DOC_KEYS));
 
-  // Hidratar el form de la config cuando llega. Si los campos del
-  // representante están vacíos en config y el proyecto ya tiene
-  // nombreCliente/ciCliente, los prefilleamos con esos valores (caso 99%:
-  // el cliente es su propio representante). Quedan editables para el
-  // caso de apoderado.
+  // Hidratar el form de la config cuando llega. NO prefilleamos Representa
+  // / CI Repre — se muestra el valor del cliente en vivo cuando el campo
+  // está vacío (ver inputs abajo). Esto mantiene la sincronización con el
+  // cliente: si la cédula actualiza nombreCliente después, el input
+  // refleja el nuevo valor sin reset manual.
   useEffect(() => {
-    if (configQ.data && projectQ.data && !form) {
-      const f = configToForm(configQ.data);
-      if (!f.representa && projectQ.data.nombreCliente) {
-        f.representa = projectQ.data.nombreCliente;
-      }
-      if (!f.ciRepre && projectQ.data.ciCliente) {
-        f.ciRepre = formatCi(projectQ.data.ciCliente);
-      }
-      setForm(f);
-    }
-  }, [configQ.data, projectQ.data, form]);
+    if (configQ.data && !form) setForm(configToForm(configQ.data));
+  }, [configQ.data, form]);
 
   // Hidratar los campos editables del proyecto cuando llega.
   useEffect(() => {
@@ -428,12 +419,26 @@ export function UteDocsPage() {
         <Checkbox label="Empresa" checked={projectFields.empresa} onChange={(v) => patchProjectField("empresa", v)} />
       </Section>
 
-      {/* Representante. Al hidratar se precargan Representa y CI Repre
-          con el nombre y CI del cliente; quedan editables por si hay
-          apoderado distinto del titular. */}
+      {/* Representante — los inputs muestran nombreCliente / ciCliente
+          (cédula) por defecto, tracking en vivo del cliente. Si el usuario
+          escribe algo distinto, se guarda como override. Si limpia el
+          input o tipea lo mismo que el cliente, no se guarda override y
+          sigue tracking al cliente automáticamente. */}
       <Section title="Representante del cliente">
-        <Text label="Representa" value={form.representa} onChange={(v) => patch("representa", v)} />
-        <Text label="CI Repre" value={form.ciRepre} onChange={(v) => patch("ciRepre", v)} />
+        <Text
+          label="Representa"
+          value={form.representa || projectFields.nombreCliente}
+          onChange={(v) =>
+            patch("representa", v === projectFields.nombreCliente ? "" : v)
+          }
+        />
+        <Text
+          label="CI Repre"
+          value={form.ciRepre || projectFields.ciCliente}
+          onChange={(v) =>
+            patch("ciRepre", v === projectFields.ciCliente ? "" : v)
+          }
+        />
         <Text label="Calidad Repre" value={form.calidadRepre} onChange={(v) => patch("calidadRepre", v)} />
       </Section>
 
