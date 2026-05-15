@@ -9270,6 +9270,18 @@ export async function registerApiRoutes(app: FastifyInstance) {
       },
     );
 
+    // DELETE config: borra la fila para que el próximo GET la recree con los
+    // defaults del schema. Lo usa el botón "Resetear" del form.
+    app.delete(
+      "/projects/:projectId/ute-docs/config",
+      { preHandler: authorize(Module.INGENIERIA, Action.EDIT) },
+      async (request, reply) => {
+        const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
+        await prisma.uteDocumentConfig.deleteMany({ where: { projectId } });
+        reply.code(204);
+      },
+    );
+
     // POST generate: arma el ZIP de los docs pedidos y lo devuelve.
     app.post(
       "/projects/:projectId/ute-docs/generate",

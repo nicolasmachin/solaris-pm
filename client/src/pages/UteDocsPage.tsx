@@ -19,6 +19,7 @@ import {
 import {
   UTE_DOC_KEYS,
   UTE_DOC_LABEL,
+  deleteUteDocsConfig,
   type UteDocKey,
   type UteDocumentConfig,
 } from "../api/uteDocs.api";
@@ -267,19 +268,26 @@ export function UteDocsPage() {
     return { projectChanged: !!projectPatch, solarChanged: !!solarPatch };
   }
 
-  // Reset: descarta cambios locales no guardados y vuelve a hidratar desde
-  // el server (que reflejará los defaults del schema + lo que esté en
-  // Project / SolarSystem actualmente, igual que al entrar a la página).
+  // Reset: BORRA la config UTE persistida (incluye lo que el usuario haya
+  // guardado a mano) y vuelve a hidratar desde el server. El próximo GET
+  // recrea la config con los defaults del schema (FI, RUT, normas, etc.)
+  // y deja en blanco los campos sin default. No toca Project ni SolarSystem.
   async function handleReset() {
-    if (!confirm("¿Descartar cambios y volver a cargar los valores iniciales? Los datos que aún no guardaste se pierden.")) return;
-    await Promise.all([
-      qc.invalidateQueries({ queryKey: ["project", projectId] }),
-      qc.invalidateQueries({ queryKey: ["ute-docs-config", projectId] }),
-    ]);
-    setForm(null);
-    setProjectFields(null);
-    setSolarFields(null);
-    toast.success("Valores restablecidos a los iniciales");
+    if (!confirm("¿Borrar todos los datos cargados en la config UTE y volver a los valores por defecto? Los datos del proyecto y del sistema FV se conservan.")) return;
+    try {
+      await deleteUteDocsConfig(projectId!);
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["project", projectId] }),
+        qc.invalidateQueries({ queryKey: ["ute-docs-config", projectId] }),
+      ]);
+      setForm(null);
+      setProjectFields(null);
+      setSolarFields(null);
+      toast.success("Config UTE restablecida a los valores por defecto");
+    } catch (err) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? "No se pudo resetear");
+    }
   }
 
   async function handleSave() {

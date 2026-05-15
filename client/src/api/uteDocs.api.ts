@@ -107,6 +107,12 @@ export async function saveUteDocsConfig(
   return data;
 }
 
+// Borra la config UTE para que el próximo GET la recree con los defaults
+// del schema. Lo usa el botón "Resetear datos" del form.
+export async function deleteUteDocsConfig(projectId: string): Promise<void> {
+  await apiClient.delete(`/api/projects/${projectId}/ute-docs/config`);
+}
+
 export async function generateUteDocs(projectId: string, docs: UteDocKey[]): Promise<Blob> {
   const response = await apiClient.post(
     `/api/projects/${projectId}/ute-docs/generate`,
