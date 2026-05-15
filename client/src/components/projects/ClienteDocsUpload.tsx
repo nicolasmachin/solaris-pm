@@ -1,9 +1,11 @@
 import { useRef } from "react";
-import { Check, FileText, Loader2, Sparkles, Upload } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
+import { Check, FileText, Loader2, Sparkles, Trash2, Upload } from "lucide-react";
 
 import { useUteExtract } from "../../hooks/useUteExtract";
 import { UteExtractModal } from "./UteExtractModal";
-import type { UteExtractTipo } from "../../api/uteExtract.api";
+import { uteExtractDelete, type UteExtractTipo } from "../../api/uteExtract.api";
 
 const ACCEPT_BY_TIPO: Record<UteExtractTipo, string> = {
   cedula: "image/jpeg,image/png,application/pdf",
@@ -29,7 +31,19 @@ export function ClienteDocsUpload({
   cedulaPath?: string | null;
   facturaUtePath?: string | null;
 }) {
+  const qc = useQueryClient();
   const extractor = useUteExtract(projectId);
+  const deleteMut = useMutation({
+    mutationFn: (tipo: UteExtractTipo) => uteExtractDelete(projectId, tipo),
+    onSuccess: (_, tipo) => {
+      toast.success(`Archivo ${tipo === "cedula" ? "de cédula" : "de factura UTE"} eliminado`);
+      qc.invalidateQueries({ queryKey: ["project", projectId] });
+    },
+    onError: (err) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? "No se pudo borrar el archivo");
+    },
+  });
 
   return (
     <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5">
@@ -50,13 +64,25 @@ export function ClienteDocsUpload({
           tipo="cedula"
           path={cedulaPath}
           isUploading={extractor.isExtracting}
+          isDeleting={deleteMut.isPending && deleteMut.variables === "cedula"}
           onSelect={(f) => extractor.uploadAndExtract(f, "cedula")}
+          onDelete={() => {
+            if (confirm("¿Borrar el archivo de cédula? Los datos del cliente ya cargados se conservan.")) {
+              deleteMut.mutate("cedula");
+            }
+          }}
         />
         <DocSlot
           tipo="factura_ute"
           path={facturaUtePath}
           isUploading={extractor.isExtracting}
+          isDeleting={deleteMut.isPending && deleteMut.variables === "factura_ute"}
           onSelect={(f) => extractor.uploadAndExtract(f, "factura_ute")}
+          onDelete={() => {
+            if (confirm("¿Borrar el archivo de factura UTE? Los datos UTE ya cargados (cuenta, tarifa, etc.) se conservan.")) {
+              deleteMut.mutate("factura_ute");
+            }
+          }}
         />
       </div>
 
@@ -78,15 +104,20 @@ function DocSlot({
   tipo,
   path,
   isUploading,
+  isDeleting,
   onSelect,
+  onDelete,
 }: {
   tipo: UteExtractTipo;
   path?: string | null;
   isUploading: boolean;
+  isDeleting: boolean;
   onSelect: (f: File) => void;
+  onDelete: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const hasFile = Boolean(path);
+  const busy = isUploading || isDeleting;
 
   return (
     <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)]/30 p-3">
@@ -95,7 +126,7 @@ function DocSlot({
       </p>
       <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5">{HINT_BY_TIPO[tipo]}</p>
 
-      <div className="mt-3 flex items-center gap-2">
+      <div className="mt-3 flex items-center gap-2 flex-wrap">
         {hasFile && (
           <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400">
             <Check className="w-3 h-3" /> archivo cargado
@@ -104,7 +135,7 @@ function DocSlot({
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          disabled={isUploading}
+          disabled={busy}
           className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded border border-[var(--color-border)] text-[11px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-50"
         >
           {isUploading ? (
@@ -121,6 +152,25 @@ function DocSlot({
             </>
           )}
         </button>
+        {hasFile && (
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={busy}
+            title="Borrar archivo (los datos del cliente ya cargados no se borran)"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded border border-[var(--color-border)] text-[11px] text-[var(--color-text-muted)] hover:bg-red-500/15 hover:text-red-400 hover:border-red-500/40 disabled:opacity-50"
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin" /> Borrando…
+              </>
+            ) : (
+              <>
+                <Trash2 className="w-3 h-3" /> Borrar archivo
+              </>
+            )}
+          </button>
+        )}
         <input
           ref={inputRef}
           type="file"

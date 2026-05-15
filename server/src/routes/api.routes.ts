@@ -9438,6 +9438,52 @@ export async function registerApiRoutes(app: FastifyInstance) {
       },
     );
 
+    // DELETE: borra el archivo guardado (cédula o factura UTE) del storage
+    // y limpia la ruta en Project. NO toca los datos del cliente que el
+    // usuario haya confirmado en el modal (ciCliente, calle, etc.) — esos
+    // viven en el proyecto y se editan/borran desde el detalle si hace falta.
+    app.delete(
+      "/projects/:projectId/ute-extract",
+      { preHandler: authorize(Module.OPERACIONES, Action.EDIT) },
+      async (request, reply) => {
+        const user = ensureUser(request);
+        const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
+        const { tipo } = z
+          .object({ tipo: z.enum(["cedula", "factura_ute"]) })
+          .parse(request.query);
+        const project = await prisma.project.findFirst({
+          where: { id: projectId, deletedAt: null },
+        });
+        if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+        const pathField = tipo === "cedula" ? "cedulaPath" : "facturaUtePath";
+        const currentPath = project[pathField];
+        if (currentPath) {
+          // Best-effort: si el unlink falla (archivo ya no existe en disco),
+          // igual limpiamos la ruta en DB.
+          try {
+            const absolutePath = path.resolve(process.cwd(), "..", env.storagePath, currentPath);
+            await fsPromises.unlink(absolutePath);
+          } catch {
+            // ignore
+          }
+        }
+        await prisma.project.update({
+          where: { id: projectId },
+          data: { [pathField]: null },
+        });
+        await createAuditEntry({
+          entityType: AuditEntityType.project,
+          entityId: projectId,
+          projectId,
+          userId: user.id,
+          action: AuditAction.deleted,
+          description: `Eliminó archivo ${tipo === "cedula" ? "cédula" : "factura UTE"}`,
+          metadata: { kind: "ute_extract_delete", tipo, archivo: currentPath },
+        });
+        reply.code(204);
+      },
+    );
+
     // ─── Estado de resultado mensual (P&L) ──────────────────────────────────
     //
     // Estructura contable simple basada en CAJA REAL del mes:

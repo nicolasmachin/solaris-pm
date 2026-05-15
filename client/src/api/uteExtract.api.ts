@@ -27,6 +27,17 @@ export interface UteExtractResponse {
   tipo: UteExtractTipo;
 }
 
+// Borra el archivo cargado (cédula o factura UTE) del storage y limpia la
+// ruta en el Project. NO toca los datos del cliente ya confirmados.
+export async function uteExtractDelete(
+  projectId: string,
+  tipo: UteExtractTipo,
+): Promise<void> {
+  await apiClient.delete(`/api/projects/${projectId}/ute-extract`, {
+    params: { tipo },
+  });
+}
+
 export async function uteExtract(
   projectId: string,
   tipo: UteExtractTipo,
