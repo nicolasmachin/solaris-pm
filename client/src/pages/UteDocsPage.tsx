@@ -622,12 +622,6 @@ export function UteDocsPage() {
         </div>
       </Section>
 
-      <PreviewDatos
-        form={form}
-        projectFields={projectFields}
-        solarFields={solarFields}
-      />
-
       {/* Botones de la config */}
       <div className="flex justify-end gap-2">
         <button
@@ -684,6 +678,12 @@ export function UteDocsPage() {
           </button>
         </div>
       </div>
+
+      <PreviewDatos
+        form={form}
+        projectFields={projectFields}
+        solarFields={solarFields}
+      />
     </div>
   );
 }
