@@ -622,6 +622,12 @@ export function UteDocsPage() {
         </div>
       </Section>
 
+      <PreviewDatos
+        form={form}
+        projectFields={projectFields}
+        solarFields={solarFields}
+      />
+
       {/* Botones de la config */}
       <div className="flex justify-end gap-2">
         <button
@@ -821,3 +827,206 @@ function RadioPill({
   );
 }
 
+
+// Bloque al final del form que muestra todos los valores que van al PDF,
+// incluyendo los calculados (Pot nominal IMG, Corriente nom, Pot
+// contratada ×1000, Área paneles, X1-X4). Read-only — para verificar
+// rápido antes de generar el ZIP.
+function PreviewDatos({
+  form,
+  projectFields,
+  solarFields,
+}: {
+  form: ConfigForm;
+  projectFields: ProjectFields;
+  solarFields: SolarFields;
+}) {
+  // Helpers: replicamos la lógica de variables.ts (mantener en sync).
+  const potImgKw = (() => {
+    const n = Number(form.potImg.trim().replace(",", "."));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  })();
+  const potImgW = potImgKw != null ? Math.round(potImgKw * 1000) : null;
+  const corriente = (() => {
+    if (potImgW == null) return null;
+    const SQRT3 = Math.sqrt(3);
+    const p = potImgW;
+    if (form.fasesMono) return Math.round(p / 230);
+    if (form.fasesTri && form.tension400) return Math.round(p / (400 * SQRT3));
+    if (form.fasesTri && form.tension230) return Math.round(p / (230 * SQRT3));
+    return Math.round(p / 230);
+  })();
+  const xMarks = (() => {
+    if (corriente == null) return ["", "", "", ""];
+    if (corriente <= 16) return ["X", "X", "", ""];
+    if (corriente <= 75) return ["", "", "X", "X"];
+    return ["", "", "", ""];
+  })();
+  const potContratadaKw = (() => {
+    const n = Number(form.potContratada.trim().replace(",", "."));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  })();
+  const potContratada1000 = potContratadaKw != null ? Math.round(potContratadaKw * 1000) : null;
+  const panelQty = (() => {
+    const n = Number(solarFields.panelQuantity.trim());
+    return Number.isFinite(n) && n > 0 ? n : null;
+  })();
+  const areaPaneles = panelQty != null ? Math.round(panelQty * 2.5) : null;
+  const potTotPaneles = (() => {
+    const qty = panelQty;
+    const w = Number(solarFields.panelPowerW.trim());
+    return qty != null && Number.isFinite(w) && w > 0 ? qty * w : null;
+  })();
+  const tension = form.fasesMono ? "230 V" : form.tension400 ? "400 V" : "230 V";
+  const fases = form.fasesMono ? "Monofásico" : "Trifásico";
+  const bool = (b: boolean): string => (b ? "Sí" : "No");
+
+  return (
+    <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5">
+      <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
+        Resumen de datos cargados
+      </h2>
+      <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+        Vista read-only de todos los valores que van al PDF, incluyendo los calculados. Es lo que vas a obtener al generar el ZIP.
+      </p>
+
+      <PreviewGroup
+        title="Cliente"
+        rows={[
+          ["Nombre (cédula)", projectFields.nombreCliente],
+          ["CI cliente", projectFields.ciCliente],
+          ["Calle", projectFields.calle],
+          ["Num calle", projectFields.numCalle],
+          ["Dirección (proyecto)", projectFields.clientAddress],
+          ["Ciudad", projectFields.locationCity],
+          ["Departamento", projectFields.locationProvince],
+          ["Email", projectFields.notificationEmail],
+          ["Teléfono", projectFields.notificationPhone],
+          ["Persona Física", bool(projectFields.personaFisica)],
+          ["Empresa", bool(projectFields.empresa)],
+        ]}
+      />
+
+      <PreviewGroup
+        title="Representante (en el PDF UTE)"
+        rows={[
+          ["Representa", form.representa || projectFields.nombreCliente],
+          ["CI Repre", form.ciRepre || projectFields.ciCliente],
+          ["Calidad Repre", form.calidadRepre],
+        ]}
+      />
+
+      <PreviewGroup
+        title="Sistema fotovoltaico"
+        rows={[
+          ["Marca panel", solarFields.panelBrand],
+          ["Modelo panel", solarFields.panelModel],
+          ["Cantidad de paneles", solarFields.panelQuantity],
+          ["Potencia panel (W)", solarFields.panelPowerW],
+          ["Pot total paneles (W) · calc", potTotPaneles != null ? String(potTotPaneles) : "—"],
+          ["Marca inversor", solarFields.inverterBrand],
+          ["Modelo inversor", solarFields.inverterModel],
+          ["Cantidad inversores", solarFields.inverterQuantity],
+          ["Pot Nominal inversor (W)", solarFields.inverterPowerW],
+          ["Serie panel", form.seriePanel],
+          ["Serie inversor", form.serieInversor],
+          ["Área paneles (m²) · calc", areaPaneles != null ? String(areaPaneles) : "—"],
+        ]}
+      />
+
+      <PreviewGroup
+        title="Conexión eléctrica"
+        rows={[
+          ["Fases", fases],
+          ["Tensión", tension],
+          ["Tipo generador Sinc", form.tipoGeneradorSincMono ? "Monofásico" : "Trifásico"],
+        ]}
+      />
+
+      <PreviewGroup
+        title="Potencias declaradas a UTE"
+        rows={[
+          ["Pot IMG (kW)", form.potImg],
+          ["Pot nominal IMG (W) · calc", potImgW != null ? String(potImgW) : "—"],
+          ["Corriente nominal (A) · calc", corriente != null ? String(corriente) : "—"],
+          ["Pot IMG (en letras)", form.potImgLetras],
+          ["Pot contratada (kW)", form.potContratada],
+          ["Pot Contratada (en letras)", form.potContratadaLetras],
+          ["Pot contratada (×1000) · calc", potContratada1000 != null ? String(potContratada1000) : "—"],
+          ["Tarifa", form.tarifa],
+          ["Factor de potencia (fp)", form.fp],
+        ]}
+      />
+
+      <PreviewGroup
+        title="Normas y X1-X4 (Jurada Técnica)"
+        rows={[
+          ["Norma 1", form.normas1],
+          ["Norma 2", form.normas2],
+          ["X1", xMarks[0]],
+          ["X2", xMarks[1]],
+          ["X3", xMarks[2]],
+          ["X4", xMarks[3]],
+        ]}
+      />
+
+      <PreviewGroup
+        title="Voltia y técnico"
+        rows={[
+          ["FI", form.fi],
+          ["RUT", form.rut],
+          ["Dir FI", form.dirFi],
+          ["TI", form.ti],
+          ["CI TI", form.ciTi],
+        ]}
+      />
+
+      <PreviewGroup
+        title="Trámite UTE"
+        rows={[
+          ["Cuenta", form.cuentaUte],
+          ["Caso", form.casoUte],
+          ["AS", form.asUte],
+          ["PS", form.ps],
+          ["Oficina Comercial UTE", form.oficina],
+          ["Rep UTE", form.repUte],
+          ["Calidad UTE", form.calidadUte],
+          ["X", form.x],
+        ]}
+      />
+
+      <PreviewGroup
+        title="Fechas"
+        rows={[
+          ["Fecha del documento", form.fechaDoc ?? ""],
+          ["Fecha de habilitación", form.fechaFin ?? ""],
+        ]}
+      />
+    </section>
+  );
+}
+
+function PreviewGroup({ title, rows }: { title: string; rows: Array<[string, string]> }) {
+  return (
+    <div className="mt-4">
+      <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--color-text-muted)] mb-2">
+        {title}
+      </p>
+      <div className="rounded border border-[var(--color-border)] bg-[var(--color-bg-app)]/30 divide-y divide-[var(--color-border)]/60">
+        {rows.map(([label, value], idx) => (
+          <div
+            key={idx}
+            className="flex items-baseline justify-between gap-3 px-3 py-1.5 text-xs"
+          >
+            <span className="text-[var(--color-text-muted)] font-mono uppercase tracking-wide text-[10px] shrink-0 w-44">
+              {label}
+            </span>
+            <span className="text-[var(--color-text-primary)] tabular-nums text-right truncate">
+              {value || "—"}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
