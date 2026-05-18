@@ -62,7 +62,7 @@ export function InvoiceItemsDetail({ movementId, onClose }: Props) {
 
   if (isLoading || !data) {
     return (
-      <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
         <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl w-full max-w-3xl p-6">
           <p className="text-sm text-[var(--color-text-muted)] text-center">Cargando…</p>
         </div>
@@ -82,7 +82,7 @@ export function InvoiceItemsDetail({ movementId, onClose }: Props) {
   const confirmed = movement.hasItemDetail && !movement.noTieneMateriales;
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl">
         {/* Header */}
         <div className="flex items-start justify-between p-4 border-b border-[var(--color-border)]">
@@ -451,7 +451,7 @@ function AddItemPicker({ movementId, existingIds, moneda, onClose }: {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
         <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
           <p className="text-sm font-semibold text-[var(--color-text-primary)]">Agregar producto al desglose</p>
@@ -590,7 +590,7 @@ function CreateMaterialQuickModal({ defaultMoneda, categories, onCancel, onCreat
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-[80] flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onCancel(); }}>
+    <div className="fixed inset-0 bg-black/70 z-[80] flex items-center justify-center p-4" onMouseDown={e => { if (e.target === e.currentTarget) onCancel(); }}>
       <form onSubmit={handleSubmit} className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl w-full max-w-md shadow-2xl">
         <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
           <p className="text-sm font-semibold text-[var(--color-text-primary)]">Crear material nuevo</p>

@@ -153,7 +153,7 @@ function NewLeadModal({
   });
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60" onClick={(event) => event.target === event.currentTarget && onClose()}>
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <div className="w-full max-w-xl rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6">
         <div className="mb-5">
           <p className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Nuevo lead</p>
@@ -379,7 +379,7 @@ function ProposalModal({
   });
 
   return (
-    <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/60" onClick={(event) => event.target === event.currentTarget && onClose()}>
+    <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/60" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <div className="w-full max-w-lg rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6">
         <p className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Propuesta comercial</p>
         <h3 className="mb-4 font-display text-lg font-bold text-[var(--color-text-primary)]">Generar desde Excel</h3>
@@ -591,7 +591,7 @@ function LeadPanel({
 
   return (
     <>
-      <div className="fixed inset-0 z-30 bg-black/40" onClick={onClose} />
+      <div className="fixed inset-0 z-30 bg-black/40" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }} />
       <aside className="fixed right-0 top-[52px] z-40 h-[calc(100vh-52px)] w-full max-w-[420px] overflow-y-auto border-l border-[var(--color-border)] bg-[var(--color-bg-sidebar)] p-5">
         <div className="mb-5 flex items-start justify-between gap-3">
           <div>
@@ -809,7 +809,7 @@ function LeadPanel({
       </aside>
 
       {pendingStage === LOST_STAGE ? (
-        <div className="fixed inset-0 z-[96] flex items-center justify-center bg-black/60" onClick={(event) => event.target === event.currentTarget && setPendingStage(null)}>
+        <div className="fixed inset-0 z-[96] flex items-center justify-center bg-black/60" onMouseDown={(event) => event.target === event.currentTarget && setPendingStage(null)}>
           <div className="w-full max-w-md rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6">
             <h3 className="mb-3 font-display text-lg font-bold text-[var(--color-text-primary)]">Cerrar como perdido</h3>
             <textarea
@@ -826,7 +826,7 @@ function LeadPanel({
       ) : null}
 
       {confirmConvert ? (
-        <div className="fixed inset-0 z-[96] flex items-center justify-center bg-black/60" onClick={(event) => event.target === event.currentTarget && setConfirmConvert(false)}>
+        <div className="fixed inset-0 z-[96] flex items-center justify-center bg-black/60" onMouseDown={(event) => event.target === event.currentTarget && setConfirmConvert(false)}>
           <div className="w-full max-w-lg rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6">
             <h3 className="mb-2 font-display text-lg font-bold text-[var(--color-text-primary)]">Marcar como Ganado</h3>
             <p className="text-sm text-[var(--color-text-secondary)]">

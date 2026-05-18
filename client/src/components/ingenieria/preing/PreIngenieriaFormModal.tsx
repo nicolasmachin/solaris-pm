@@ -349,7 +349,7 @@ export function PreIngenieriaFormModal({
   const totalFotos = form.fotosOrden.length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div
         className="w-full max-w-3xl max-h-[92vh] rounded-xl bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-2xl flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}

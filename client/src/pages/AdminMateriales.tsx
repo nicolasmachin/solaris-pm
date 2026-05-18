@@ -27,7 +27,7 @@ function getApiErr(err: unknown) {
 
 function Modal({ title, onClose, children, maxWidth = 'max-w-md' }: { title: string; onClose: () => void; children: React.ReactNode; maxWidth?: string }) {
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className={klass('bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full shadow-2xl', maxWidth)}>
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm font-semibold text-[var(--color-text-primary)]">{title}</p>

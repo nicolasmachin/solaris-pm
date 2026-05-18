@@ -165,7 +165,7 @@ function EditProjectModal({
   return (
     <div
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }}
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div style={{ background: "var(--color-bg-card)", border: "1px solid var(--color-border)", borderRadius: 10, padding: 24, width: 480, maxHeight: "90vh", overflowY: "auto" }}>
         <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--color-text-muted)", marginBottom: 20 }}>
@@ -369,7 +369,7 @@ function ConsumoModal({ projectId, onClose, onSaved }: { projectId: string; onCl
   const lbl = 'block text-xs font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1';
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-md space-y-4">
         <p className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">Registrar consumo</p>
 

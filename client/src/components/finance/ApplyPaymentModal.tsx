@@ -134,7 +134,7 @@ export function ApplyPaymentModal({ paymentId, onClose, preselectMovementId }: P
 
   if (loadingPayment || !payment) {
     return (
-      <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
         <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl w-full max-w-2xl p-6">
           <p className="text-sm text-[var(--color-text-muted)] text-center">Cargando…</p>
         </div>
@@ -143,7 +143,7 @@ export function ApplyPaymentModal({ paymentId, onClose, preselectMovementId }: P
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl">
         <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
           <div>

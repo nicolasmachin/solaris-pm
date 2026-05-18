@@ -2,6 +2,12 @@
 
 ## v6.0
 
+### 18 de mayo de 2026
+
+#### Arreglos
+
+- **Formularios que se cerraban al seleccionar texto**: si dentro de un modal (alta de proyecto, formulario UTE, pre-ingeniería, materiales, finanzas, etc.) seleccionabas texto desde un input y soltabas el mouse fuera del campo, la ventana se cerraba y perdías los datos cargados. Ahora los modales solo cierran cuando hacés clic directamente sobre el fondo oscuro, no cuando el gesto empezó dentro del formulario.
+
 ### 14 de mayo de 2026
 
 #### Proyectos — Extracción de datos del cliente con IA

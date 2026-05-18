@@ -181,7 +181,7 @@ function UserModal({
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }}
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div style={{ background: "var(--color-bg-card)", border: "1px solid var(--color-border)", borderRadius: 10, padding: 24, width: 400 }}>
         <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--color-text-muted)", marginBottom: 20 }}>
           {isEdit ? "Editar usuario" : "Nuevo usuario"}
@@ -250,7 +250,7 @@ function ChangePasswordModal({ userId, onClose }: { userId: string; onClose: () 
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 110, display: "flex", alignItems: "center", justifyContent: "center" }}
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div style={{ background: "var(--color-bg-card)", border: "1px solid var(--color-border)", borderRadius: 10, padding: 24, width: 360 }}>
         <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--color-text-muted)", marginBottom: 20 }}>
           Cambiar contraseña
@@ -377,7 +377,7 @@ function TabUsuarios() {
       )}
       {confirmDelete && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }}
-          onClick={e => { if (e.target === e.currentTarget) setConfirmDelete(null); }}>
+          onMouseDown={e => { if (e.target === e.currentTarget) setConfirmDelete(null); }}>
           <div style={{ background: "var(--color-bg-card)", border: "1px solid var(--color-border)", borderRadius: 10, padding: 24, width: 360 }}>
             <p style={{ fontSize: 14, color: "var(--color-text-primary)", marginBottom: 8 }}>¿Eliminar a <strong>{confirmDelete.name}</strong>?</p>
             <p style={{ fontSize: 12, color: "var(--color-text-muted)", marginBottom: 20 }}>Esta acción no se puede deshacer.</p>

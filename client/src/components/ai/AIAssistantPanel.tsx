@@ -67,7 +67,7 @@ export function AIAssistantPanel({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="fixed inset-0 z-50 flex justify-end" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="w-full max-w-md bg-[var(--color-bg-card)] border-l border-[var(--color-border)] h-full flex flex-col shadow-2xl">
         <header className="px-4 py-3 border-b border-[var(--color-border)] flex items-center justify-between">
           <div>

@@ -254,7 +254,7 @@ function AccountDrawer({ accountId, onClose }: { accountId: string; onClose: () 
 
   if (!account) {
     return (
-      <div className="fixed inset-0 z-40 flex justify-end" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="fixed inset-0 z-40 flex justify-end" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
         <div className="w-full max-w-md bg-[var(--color-bg-card)] border-l border-[var(--color-border)] h-full p-6">
           <p className="text-sm text-[var(--color-text-muted)]">Cargando...</p>
         </div>
@@ -263,7 +263,7 @@ function AccountDrawer({ accountId, onClose }: { accountId: string; onClose: () 
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex justify-end" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="fixed inset-0 z-40 flex justify-end" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="w-full max-w-lg bg-[var(--color-bg-card)] border-l border-[var(--color-border)] h-full overflow-y-auto shadow-2xl">
         <div className="p-5 border-b border-[var(--color-border)] flex items-center justify-between">
           <div>

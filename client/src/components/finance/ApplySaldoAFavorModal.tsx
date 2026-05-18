@@ -57,7 +57,7 @@ export function ApplySaldoAFavorModal({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="w-full max-w-md max-h-[92vh] overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-2xl">
         <div className="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-3">
           <div className="flex items-center gap-2">

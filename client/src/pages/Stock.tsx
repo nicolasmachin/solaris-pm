@@ -225,7 +225,7 @@ function IngresoModal({ product, onSuccess, onClose }: { product: StockProduct; 
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-md shadow-2xl">
         <div className="flex items-center justify-between mb-1">
           <p className="text-sm font-semibold text-[var(--color-text-primary)]">Registrar ingreso</p>
@@ -328,7 +328,7 @@ function EgresoModal({ product, onSuccess, onClose }: { product: StockProduct; o
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-md shadow-2xl">
         <div className="flex items-center justify-between mb-1">
           <p className="text-sm font-semibold text-[var(--color-text-primary)]">Registrar egreso</p>
@@ -406,7 +406,7 @@ function AjusteModal({ product, onSuccess, onClose }: { product: StockProduct; o
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-md shadow-2xl">
         <div className="flex items-center justify-between mb-1">
           <p className="text-sm font-semibold text-[var(--color-text-primary)]">Ajuste de inventario</p>
@@ -482,7 +482,7 @@ function ProductPanel({ product, onClose, onRefresh }: { product: StockProduct; 
 
   return (
     <>
-      <div className="fixed inset-0 z-40 flex justify-end" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="fixed inset-0 z-40 flex justify-end" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
         <div className="w-full max-w-md bg-[var(--color-bg-card)] border-l border-[var(--color-border)] h-full overflow-y-auto shadow-2xl">
           {/* Header */}
           <div className="flex items-start justify-between p-5 border-b border-[var(--color-border)]">

@@ -70,7 +70,7 @@ export function PaymentDetailPanel({ paymentId, onClose }: { paymentId: string; 
 
   if (isLoading || !payment) {
     return (
-      <div className="fixed inset-0 z-40 flex justify-end" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="fixed inset-0 z-40 flex justify-end" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
         <div className="w-full max-w-md bg-[var(--color-bg-card)] border-l border-[var(--color-border)] h-full p-6">
           <p className="text-sm text-[var(--color-text-muted)]">Cargando…</p>
         </div>
@@ -84,7 +84,7 @@ export function PaymentDetailPanel({ paymentId, onClose }: { paymentId: string; 
 
   return (
     <>
-      <div className="fixed inset-0 z-40 flex justify-end" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="fixed inset-0 z-40 flex justify-end" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
         <div className="w-full max-w-md bg-[var(--color-bg-card)] border-l border-[var(--color-border)] h-full overflow-y-auto shadow-2xl">
           <div className="flex items-center justify-between p-5 border-b border-[var(--color-border)]">
             <div>

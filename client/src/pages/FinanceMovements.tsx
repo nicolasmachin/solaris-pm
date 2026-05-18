@@ -707,7 +707,7 @@ function DetailPanel({ mov, onClose, onEdit, onDelete, onCancel, onOpenDesglose,
   const [showSaldoAFavorModal, setShowSaldoAFavorModal] = useState(false);
 
   return (
-    <div className="fixed inset-0 z-40 flex justify-end" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="fixed inset-0 z-40 flex justify-end" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="w-full max-w-md bg-[var(--color-bg-card)] border-l border-[var(--color-border)] h-full overflow-y-auto shadow-2xl p-5 space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold text-[var(--color-text-primary)]">Detalle</p>

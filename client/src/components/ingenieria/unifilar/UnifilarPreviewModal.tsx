@@ -29,7 +29,7 @@ export function UnifilarPreviewModal({
   const suffix = versionNumber ? `_v${versionNumber}` : "";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div
         className="w-full max-w-3xl max-h-[92vh] rounded-xl bg-white border border-[var(--color-border)] shadow-2xl overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}

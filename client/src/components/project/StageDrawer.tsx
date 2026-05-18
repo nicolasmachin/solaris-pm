@@ -201,7 +201,7 @@ function ChecklistSection({
 
       {confirmDeleteItem && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}
-          onClick={e => { if (e.target === e.currentTarget) setConfirmDeleteItem(null); }}>
+          onMouseDown={e => { if (e.target === e.currentTarget) setConfirmDeleteItem(null); }}>
           <div style={{ background: "var(--color-bg-card)", border: "1px solid var(--color-border)", borderRadius: 10, padding: 20, width: 320 }}>
             <p style={{ fontSize: 13, color: "var(--color-text-primary)", marginBottom: 8 }}>¿Eliminar ítem del checklist?</p>
             <p style={{ fontSize: 11, color: "var(--color-text-muted)", marginBottom: 16 }}>{confirmDeleteItem.label}</p>
@@ -573,7 +573,7 @@ function SubstageRow({
       {/* Confirm delete substage */}
       {confirmDelete && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}
-          onClick={e => { if (e.target === e.currentTarget) setConfirmDelete(false); }}>
+          onMouseDown={e => { if (e.target === e.currentTarget) setConfirmDelete(false); }}>
           <div style={{ background: "var(--color-bg-card)", border: "1px solid var(--color-border)", borderRadius: 10, padding: 20, width: 320 }}>
             <p style={{ fontSize: 13, color: "var(--color-text-primary)", marginBottom: 8 }}>¿Eliminar subetapa?</p>
             <p style={{ fontSize: 11, color: "var(--color-text-muted)", marginBottom: 16 }}>{substage.name}</p>
@@ -590,7 +590,7 @@ function SubstageRow({
       {/* Checklist incomplete modal */}
       {checklistPendingItems.length > 0 && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}
-          onClick={e => { if (e.target === e.currentTarget) setChecklistPendingItems([]); }}>
+          onMouseDown={e => { if (e.target === e.currentTarget) setChecklistPendingItems([]); }}>
           <div style={{ background: "var(--color-bg-card)", border: "1px solid var(--color-border)", borderRadius: 10, padding: 20, width: 360 }}>
             <p style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text-primary)", marginBottom: 8 }}>Checklist incompleto</p>
             <p style={{ fontSize: 11, color: "var(--color-text-muted)", marginBottom: 12 }}>
@@ -1347,7 +1347,7 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
       {confirmPropagate && (
         <div
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}
-          onClick={(e) => { if (e.target === e.currentTarget) setConfirmPropagate(null); }}
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setConfirmPropagate(null); }}
         >
           <div style={{ background: "var(--color-bg-card)", border: "1px solid var(--color-border)", borderRadius: 10, padding: 20, width: 380 }}>
             <p style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text-primary)", marginBottom: 8 }}>

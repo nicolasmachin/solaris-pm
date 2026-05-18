@@ -282,7 +282,7 @@ function TaskRow({
       {confirmDelete && (
         <div
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}
-          onClick={e => { if (e.target === e.currentTarget) setConfirmDelete(false); }}
+          onMouseDown={e => { if (e.target === e.currentTarget) setConfirmDelete(false); }}
         >
           <div style={{ background: "var(--color-bg-card)", border: "1px solid var(--color-border)", borderRadius: 10, padding: 24, width: 340 }}>
             <p style={{ fontSize: 14, color: "var(--color-text-primary)", marginBottom: 8 }}>¿Eliminar tarea?</p>
