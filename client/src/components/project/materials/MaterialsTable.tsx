@@ -133,7 +133,15 @@ const MaterialRow = memo(function MaterialRow({
         </span>
       </td>
       <td className="px-2 py-2 text-right tabular-nums align-top">
-        <span className="crossable">{row.quantity}</span>
+        {canEdit ? (
+          <QuantityInput
+            value={row.quantity}
+            disabled={patchMut.isPending}
+            onCommit={(q) => patchMut.mutate({ quantity: q })}
+          />
+        ) : (
+          <span className="crossable">{row.quantity}</span>
+        )}
       </td>
       <td className="px-2 py-2 align-top">
         <span className="crossable text-[var(--color-text-muted)]">{unidad}</span>
@@ -186,6 +194,57 @@ const MaterialRow = memo(function MaterialRow({
     </tr>
   );
 });
+
+// ─── Quantity inline editor ────────────────────────────────────────────────
+
+function QuantityInput({
+  value,
+  disabled,
+  onCommit,
+}: {
+  value: number;
+  disabled: boolean;
+  onCommit: (q: number) => void;
+}) {
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => {
+    setDraft(String(value));
+  }, [value]);
+
+  const commit = () => {
+    const trimmed = draft.trim().replace(',', '.');
+    if (trimmed === '') {
+      setDraft(String(value));
+      return;
+    }
+    const n = Number(trimmed);
+    if (!Number.isFinite(n) || n < 0) {
+      setDraft(String(value));
+      return;
+    }
+    if (n !== value) onCommit(n);
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      value={draft}
+      disabled={disabled}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+        else if (e.key === 'Escape') {
+          setDraft(String(value));
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+      onFocus={(e) => e.target.select()}
+      className="w-16 px-1.5 py-0.5 text-right text-xs tabular-nums bg-[var(--color-bg-app)] text-[var(--color-text-primary)] border border-[var(--color-border)] rounded focus:outline-none focus:border-[var(--color-accent)] disabled:opacity-50"
+    />
+  );
+}
 
 // ─── Color picker popover ──────────────────────────────────────────────────
 

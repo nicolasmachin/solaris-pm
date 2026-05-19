@@ -2,6 +2,12 @@
 
 ## v6.0
 
+### 19 de mayo de 2026
+
+#### Materiales — Editar cantidad inline
+
+En la lista de materiales del proyecto, la columna **Cantidad** ahora es editable: hacés clic sobre el número, lo cambiás y al salir del campo (o presionando Enter) se guarda. Antes la cantidad solo se podía setear al agregar el material (en 1) y no había forma de modificarla después. Funciona para todos los roles con permiso de edición de materiales.
+
 ### 18 de mayo de 2026
 
 #### Arreglos
