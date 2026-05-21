@@ -55,8 +55,8 @@ function buildProjectPatch(
   fill("calle", data.calle);
   fill("numCalle", data.num_calle);
   fill("clientAddress", data.dir_cliente);
-  fill("notificationEmail", data.mail_cliente);
-  fill("notificationPhone", data.telefono_cliente);
+  fill("clientEmail", data.mail_cliente);
+  fill("clientPhone", data.telefono_cliente);
   // Ciudad y depto: no se tocan desde la extracción.
   // Persona física / empresa: se respetan los valores actuales del proyecto
   // (default true al crear). No los modifica la extracción.
@@ -157,8 +157,8 @@ export function useUteExtract(projectId: string) {
       if (!isEmpty(p.calle)) out.add("calle");
       if (!isEmpty(p.numCalle)) out.add("num_calle");
       if (!isEmpty(p.clientAddress)) out.add("dir_cliente");
-      if (!isEmpty(p.notificationEmail)) out.add("mail_cliente");
-      if (!isEmpty(p.notificationPhone)) out.add("telefono_cliente");
+      if (!isEmpty(p.clientEmail)) out.add("mail_cliente");
+      if (!isEmpty(p.clientPhone)) out.add("telefono_cliente");
     }
     if (c) {
       if (!isEmpty(c.cuentaUte)) out.add("cuenta_ute");

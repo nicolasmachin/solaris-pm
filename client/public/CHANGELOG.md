@@ -2,6 +2,16 @@
 
 ## v6.0
 
+### 21 de mayo de 2026
+
+#### Privacidad — Eliminado envío automático a clientes
+
+- **Incidente**: el campo "Email de notificación" del proyecto contenía emails de clientes y el sistema lo estaba usando para mandarles **notificaciones internas automáticas** (cambios de etapa, hitos, etapas vencidas, etc.). Llegaron mails con información interna a 27 clientes. Se cortó el envío en producción de emergencia y se aplicó este fix.
+- **El campo se renombró** a "Email del cliente" (y el de teléfono a "Teléfono del cliente"). En la ficha del proyecto y en los formularios ahora aclara explícitamente: *"Solo para contacto manual. No se usa para enviar notificaciones automáticas."*
+- **Se eliminaron las notificaciones automáticas multicanal**: tarea por vencer, etapa retrasada, hito de progreso, subetapa bloqueada, proyecto con desvío, cambio de estado de etapa. Eran las que iban por el flujo roto. Se conservan únicamente las notificaciones internas seguras: "subetapa anterior completada", "ingeniería completada → operaciones", "alertas de plazos" y "objetivos del trimestre no configurados".
+- **Guardrail de seguridad**: el envío de email y WhatsApp ahora valida por default que el destinatario sea un usuario interno de Voltia. Solo se permite enviar a externos si el código pasa explícitamente `type: 'client_facing'`. Esto previene que un cambio futuro vuelva a re-conectar avisos internos al email del cliente.
+- **Los datos del cliente se preservan**: el email/teléfono que estaba cargado en cada proyecto sigue ahí (renombrado), sigue siendo clickeable como `mailto:` / `tel:` para contacto manual, y se sigue usando para los PDFs de UTE donde corresponde poner el contacto del cliente.
+
 ### 19 de mayo de 2026
 
 #### Materiales — Editar cantidad inline

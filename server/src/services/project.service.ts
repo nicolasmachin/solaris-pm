@@ -455,8 +455,8 @@ export function serializeProject(project: {
   estimatedMwhYear: Prisma.Decimal | null;
   co2TonsAvoided: Prisma.Decimal | null;
   modalidadPago: ModalidadPago | null;
-  notificationEmail: string | null;
-  notificationPhone: string | null;
+  clientEmail: string | null;
+  clientPhone: string | null;
   clientAddress: string | null;
   uteCodigoPS?: string | null;
   uteCodigoAS?: string | null;

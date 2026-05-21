@@ -109,7 +109,7 @@ export function PreIngenieriaToolPanel({ projectId }: { projectId: string }) {
             clientAddress: projectQ.data.clientAddress ?? null,
             locationCity: projectQ.data.locationCity ?? null,
             locationProvince: projectQ.data.locationProvince ?? null,
-            notificationPhone: projectQ.data.notificationPhone ?? null,
+            clientPhone: projectQ.data.clientPhone ?? null,
           }}
           onClose={() => setFormOpen(false)}
           onSuccess={() => setFormOpen(false)}

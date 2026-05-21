@@ -32,8 +32,8 @@ import { formatCi } from "../components/projects/UteExtractModal";
 // el proyecto, no sólo en este form.
 type ProjectFields = {
   clientName: string;
-  notificationEmail: string;
-  notificationPhone: string;
+  clientEmail: string;
+  clientPhone: string;
   clientAddress: string;
   locationCity: string;
   locationProvince: string;
@@ -142,8 +142,8 @@ export function UteDocsPage() {
     if (projectQ.data && !projectFields) {
       setProjectFields({
         clientName: projectQ.data.clientName ?? "",
-        notificationEmail: projectQ.data.notificationEmail ?? "",
-        notificationPhone: projectQ.data.notificationPhone ?? "",
+        clientEmail: projectQ.data.clientEmail ?? "",
+        clientPhone: projectQ.data.clientPhone ?? "",
         clientAddress: projectQ.data.clientAddress ?? "",
         locationCity: projectQ.data.locationCity ?? "",
         locationProvince: projectQ.data.locationProvince ?? "",
@@ -228,8 +228,8 @@ export function UteDocsPage() {
     const out: Partial<ProjectFields> = {};
     const stringKeys: (keyof ProjectFields)[] = [
       "clientName",
-      "notificationEmail",
-      "notificationPhone",
+      "clientEmail",
+      "clientPhone",
       "clientAddress",
       "locationCity",
       "locationProvince",
@@ -387,8 +387,8 @@ export function UteDocsPage() {
           la sección "Cliente" (es nombreCliente, extraído de cédula),
           NO el título del proyecto (clientName). */}
       <Section title="Datos de contacto del proyecto">
-        <Text label="Email" value={projectFields.notificationEmail} onChange={(v) => patchProjectField("notificationEmail", v)} />
-        <Text label="Teléfono" value={projectFields.notificationPhone} onChange={(v) => patchProjectField("notificationPhone", v)} />
+        <Text label="Email" value={projectFields.clientEmail} onChange={(v) => patchProjectField("clientEmail", v)} />
+        <Text label="Teléfono" value={projectFields.clientPhone} onChange={(v) => patchProjectField("clientPhone", v)} />
         <Text label="Dirección" value={projectFields.clientAddress} onChange={(v) => patchProjectField("clientAddress", v)} />
         <Text label="Ciudad" value={projectFields.locationCity} onChange={(v) => patchProjectField("locationCity", v)} />
         <Text label="Departamento" value={projectFields.locationProvince} onChange={(v) => patchProjectField("locationProvince", v)} />
@@ -919,8 +919,8 @@ function PreviewDatos({
           ["Dirección (proyecto)", projectFields.clientAddress],
           ["Ciudad", projectFields.locationCity],
           ["Departamento", projectFields.locationProvince],
-          ["Email", projectFields.notificationEmail],
-          ["Teléfono", projectFields.notificationPhone],
+          ["Email", projectFields.clientEmail],
+          ["Teléfono", projectFields.clientPhone],
           ["Persona Física", bool(projectFields.personaFisica)],
           ["Empresa", bool(projectFields.empresa)],
         ]}

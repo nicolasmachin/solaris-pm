@@ -281,8 +281,8 @@ export interface Project {
   executedUsd: number;
   estimatedMwhYear: number | null;
   co2TonsAvoided: number | null;
-  notificationEmail: string | null;
-  notificationPhone: string | null;
+  clientEmail: string | null;
+  clientPhone: string | null;
   clientAddress: string | null;
   firstDateScheduledAt: string | null;
   // Datos generales del cliente (extraíbles con IA, ver ute-doc-extraction).

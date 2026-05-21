@@ -73,8 +73,6 @@ export interface ConvertLeadBody {
   plannedEndDate?: string | null;
   startDate?: string;
   modalidadPago?: "DIRECTO_50_50" | "FINANCIACION_BANCARIA" | null;
-  notificationEmail?: string | null;
-  notificationPhone?: string | null;
 }
 
 export async function convertLeadWithBody(id: string, body: ConvertLeadBody): Promise<Project> {

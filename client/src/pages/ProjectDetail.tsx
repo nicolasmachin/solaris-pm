@@ -124,8 +124,8 @@ function EditProjectModal({
   const [locationCity, setLocationCity] = useState(project.locationCity);
   const [locationProvince, setLocationProvince] = useState(project.locationProvince);
   const [budgetUsd, setBudgetUsd] = useState(project.budgetUsd != null ? String(project.budgetUsd) : "");
-  const [notificationEmail, setNotificationEmail] = useState(project.notificationEmail ?? "");
-  const [notificationPhone, setNotificationPhone] = useState(project.notificationPhone ?? "");
+  const [clientEmail, setClientEmail] = useState(project.clientEmail ?? "");
+  const [clientPhone, setClientPhone] = useState(project.clientPhone ?? "");
   const [clientAddress, setClientAddress] = useState(project.clientAddress ?? "");
   const [firstDateScheduledAt, setFirstDateScheduledAt] = useState(
     project.firstDateScheduledAt ? project.firstDateScheduledAt.slice(0, 10) : ""
@@ -142,8 +142,8 @@ function EditProjectModal({
         locationCity: locationCity.trim(),
         locationProvince: locationProvince.trim(),
         budgetUsd: budgetNum != null && Number.isFinite(budgetNum) ? budgetNum : null,
-        notificationEmail: notificationEmail.trim() || null,
-        notificationPhone: notificationPhone.trim() || null,
+        clientEmail: clientEmail.trim() || null,
+        clientPhone: clientPhone.trim() || null,
         clientAddress: clientAddress.trim() || null,
         firstDateScheduledAt: firstDateScheduledAt
           ? new Date(firstDateScheduledAt).toISOString()
@@ -213,12 +213,18 @@ function EditProjectModal({
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
-              <label style={labelStyle}>Email de notificación</label>
-              <input style={inputStyle} type="email" value={notificationEmail} onChange={e => setNotificationEmail(e.target.value)} />
+              <label style={labelStyle}>Email del cliente</label>
+              <input style={inputStyle} type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} />
+              <p style={{ marginTop: 4, fontSize: 10, fontStyle: "italic", color: "var(--color-text-muted)" }}>
+                Solo para contacto manual. No se usa para enviar notificaciones automáticas.
+              </p>
             </div>
             <div>
-              <label style={labelStyle}>Teléfono de notificación</label>
-              <input style={inputStyle} value={notificationPhone} onChange={e => setNotificationPhone(e.target.value)} />
+              <label style={labelStyle}>Teléfono del cliente</label>
+              <input style={inputStyle} value={clientPhone} onChange={e => setClientPhone(e.target.value)} />
+              <p style={{ marginTop: 4, fontSize: 10, fontStyle: "italic", color: "var(--color-text-muted)" }}>
+                Solo para contacto manual. No se usa para enviar WhatsApps automáticos.
+              </p>
             </div>
           </div>
         </div>

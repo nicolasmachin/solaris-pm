@@ -150,8 +150,8 @@ export function buildVariables(args: {
     // el usuario tiene que cargarlo manualmente o subiendo la cédula.
     Cliente: project.nombreCliente ?? "",
     CI_cliente: project.ciCliente,
-    Mail_cliente: project.notificationEmail ?? "",
-    Telefono_cliente: project.notificationPhone ?? "",
+    Mail_cliente: project.clientEmail ?? "",
+    Telefono_cliente: project.clientPhone ?? "",
     Dir_cliente: project.clientAddress ?? "",
     Calle: project.calle,
     Num_calle: project.numCalle,

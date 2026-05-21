@@ -76,8 +76,8 @@ interface ProjectContext {
     capacidadKwp: number;
     estado: string;
     modalidadPago: string | null;
-    notificationPhone: string | null;
-    notificationEmail: string | null;
+    clientPhone: string | null;
+    clientEmail: string | null;
   };
   tipoRedDerivado: TipoRed | null; // del último UnifilarVersion
   materiales: { nombre: string; cantidad: number; unidad: string; categoria: string; notas: string | null }[];
@@ -146,8 +146,8 @@ async function buildProjectContext(projectId: string): Promise<ProjectContext> {
       capacidadKwp: decimal(project.capacityKwp),
       estado: project.status,
       modalidadPago: project.modalidadPago ?? null,
-      notificationPhone: project.notificationPhone ?? null,
-      notificationEmail: project.notificationEmail ?? null,
+      clientPhone: project.clientPhone ?? null,
+      clientEmail: project.clientEmail ?? null,
     },
     tipoRedDerivado: lastUnifilar?.tipoRed ?? null,
     materiales: project.projectMaterials.map((pm) => ({

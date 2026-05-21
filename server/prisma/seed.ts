@@ -1231,46 +1231,13 @@ async function createTasksAndFiles(projectIds: string[], adminId: string, operat
     });
   }
 
-  const notifications: Array<{ id: string; data: Prisma.NotificationUncheckedCreateInput }> = [
-    {
-      id: "seed-notif-p1-overdue",
-      data: {
-        userId: operationsId,
-        projectId: project1Id,
-        type: NotificationType.stage_overdue,
-        title: "Operaciones con desvío parcial",
-        message: "La puesta en marcha de Agroindustrial Sur sigue abierta y requiere seguimiento.",
-      },
-    },
-    {
-      id: "seed-notif-p2-milestone",
-      data: {
-        userId: operationsId,
-        projectId: project2Id,
-        type: NotificationType.progress_milestone,
-        title: "Proyecto entrando en habilitación",
-        message: "Frigorífico Norte completó Operaciones y avanzó a Habilitación UTE.",
-      },
-    },
-    {
-      id: "seed-notif-p3-due",
-      data: {
-        userId: operationsId,
-        projectId: project3Id,
-        type: NotificationType.task_due,
-        title: "Relevamiento con vencimiento próximo",
-        message: "La tarea de cierre de informe técnico vence mañana.",
-      },
-    },
-  ];
-
-  for (const n of notifications) {
-    await prisma.notification.upsert({
-      where: { id: n.id },
-      create: { id: n.id, ...n.data },
-      update: n.data,
-    });
-  }
+  // Seed notifications removidas en mayo 2026: los 3 ejemplos usaban tipos
+  // (stage_overdue, progress_milestone, task_due) que se eliminaron junto
+  // con el dispatcher roto. Ver services/email.service.ts para contexto.
+  void operationsId;
+  void project1Id;
+  void project2Id;
+  void project3Id;
 }
 
 // ─── Audit trail ──────────────────────────────────────────────────────────────

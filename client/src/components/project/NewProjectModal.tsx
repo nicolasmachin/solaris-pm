@@ -21,8 +21,8 @@ interface NewProjectForm {
   locationProvince: string;
   budgetUsd: string;
   salespersonId: string;
-  notificationEmail: string;
-  notificationPhone: string;
+  clientEmail: string;
+  clientPhone: string;
   clientAddress: string;
   saleDate: string;
 }
@@ -35,8 +35,8 @@ function buildEmptyForm(): NewProjectForm {
     locationProvince: "",
     budgetUsd: "",
     salespersonId: "",
-    notificationEmail: "",
-    notificationPhone: "",
+    clientEmail: "",
+    clientPhone: "",
     clientAddress: "",
     saleDate: todayLocalISO(),
   };
@@ -72,10 +72,12 @@ function input(hasError = false) {
 function Field({
   label,
   error,
+  hint,
   children,
 }: {
   label: string;
   error?: string;
+  hint?: string;
   children: ReactNode;
 }) {
   return (
@@ -84,6 +86,7 @@ function Field({
         {label}
       </span>
       {children}
+      {hint ? <p className="mt-1 text-[10px] italic text-[var(--color-text-muted)]">{hint}</p> : null}
       {error ? <p className="mt-1 text-[11px] text-red-400">{error}</p> : null}
     </label>
   );
@@ -115,8 +118,8 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
         budgetUsd: form.budgetUsd ? Number(form.budgetUsd) : undefined,
         estimatedMwhYear,
         salespersonId: form.salespersonId || undefined,
-        notificationEmail: form.notificationEmail.trim() || undefined,
-        notificationPhone: form.notificationPhone.trim() || undefined,
+        clientEmail: form.clientEmail.trim() || undefined,
+        clientPhone: form.clientPhone.trim() || undefined,
         clientAddress: form.clientAddress.trim() || undefined,
         saleDate: form.saleDate || undefined,
         solarSystem: solarPayload,
@@ -202,11 +205,11 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
-              <Field label="Email de notificación">
-                <input type="text" className={input()} value={form.notificationEmail} onChange={(event) => updateField("notificationEmail", event.target.value)} />
+              <Field label="Email del cliente" hint="Solo para contacto manual. No se usa para enviar notificaciones automáticas.">
+                <input type="text" className={input()} value={form.clientEmail} onChange={(event) => updateField("clientEmail", event.target.value)} />
               </Field>
-              <Field label="Teléfono WhatsApp">
-                <input type="tel" className={input()} value={form.notificationPhone} onChange={(event) => updateField("notificationPhone", event.target.value)} />
+              <Field label="Teléfono del cliente" hint="Solo para contacto manual. No se usa para enviar WhatsApps automáticos.">
+                <input type="tel" className={input()} value={form.clientPhone} onChange={(event) => updateField("clientPhone", event.target.value)} />
               </Field>
             </div>
 

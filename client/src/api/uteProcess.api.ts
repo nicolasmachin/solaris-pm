@@ -34,8 +34,8 @@ export type UteProcess = {
     code: string;
     clientName: string;
     locationCity: string;
-    notificationPhone: string | null;
-    notificationEmail: string | null;
+    clientPhone: string | null;
+    clientEmail: string | null;
     uteCodigoPS: string | null;
     uteCodigoAS: string | null;
   };

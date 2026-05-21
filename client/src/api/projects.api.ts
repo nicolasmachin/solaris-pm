@@ -42,8 +42,8 @@ export async function createProject(body: {
   budgetUsd?: number;
   estimatedMwhYear?: number;
   salespersonId?: string;
-  notificationEmail?: string;
-  notificationPhone?: string;
+  clientEmail?: string;
+  clientPhone?: string;
   clientAddress?: string;
   saleDate?: string;
   solarSystem?: SolarSystemPayload;
@@ -65,8 +65,8 @@ export async function patchProject(
     locationProvince?: string;
     status?: import("../types/api.types").ProjectStatus;
     budgetUsd?: number | null;
-    notificationEmail?: string | null;
-    notificationPhone?: string | null;
+    clientEmail?: string | null;
+    clientPhone?: string | null;
     clientAddress?: string | null;
     firstDateScheduledAt?: string | null;
     saleDate?: string | null;

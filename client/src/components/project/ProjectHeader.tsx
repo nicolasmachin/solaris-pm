@@ -73,24 +73,24 @@ export function ProjectHeader({ project, onEdit }: ProjectHeaderProps) {
           {project.capacityKwp} kWp · {project.locationCity},{" "}
           {project.locationProvince}
         </p>
-        {(project.notificationEmail || project.notificationPhone || project.clientAddress) && (
+        {(project.clientEmail || project.clientPhone || project.clientAddress) && (
           <div className="mt-1.5 flex flex-wrap items-center gap-x-[18px] gap-y-1.5 text-[12px] text-[var(--color-text-secondary)]">
-            {project.notificationEmail ? (
+            {project.clientEmail ? (
               <a
-                href={`mailto:${project.notificationEmail}`}
+                href={`mailto:${project.clientEmail}`}
                 className="inline-flex items-center gap-1 hover:text-[var(--color-text-primary)] transition-colors"
               >
                 <Mail size={14} className="shrink-0" />
-                <span>{project.notificationEmail}</span>
+                <span>{project.clientEmail}</span>
               </a>
             ) : null}
-            {project.notificationPhone ? (
+            {project.clientPhone ? (
               <a
-                href={`tel:${project.notificationPhone}`}
+                href={`tel:${project.clientPhone}`}
                 className="inline-flex items-center gap-1 hover:text-[var(--color-text-primary)] transition-colors"
               >
                 <Phone size={14} className="shrink-0" />
-                <span>{project.notificationPhone}</span>
+                <span>{project.clientPhone}</span>
               </a>
             ) : null}
             {project.clientAddress ? (

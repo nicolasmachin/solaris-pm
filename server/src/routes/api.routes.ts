@@ -30,7 +30,6 @@ import {
   ModalidadPago,
   Module,
   Moneda,
-  NotificationType,
   PhaseType,
   Prisma,
   ProjectStatus,
@@ -106,7 +105,7 @@ import {
   getOperationVisibility,
 } from "../services/pipeline-definitions.js";
 import { createNotificationIfNotExists } from "../services/notification.service.js";
-import { createAndSendNotification, checkProgressMilestone, notifyEngineeringCompleted } from "../services/notify.service.js";
+import { notifyEngineeringCompleted } from "../services/notify.service.js";
 import { fetchBcuRatePreview } from "../services/exchange-rate.service.js";
 import {
   applyDeadlineRulesToProject,
@@ -165,8 +164,8 @@ const projectCreateSchema = z
     estimatedMwhYear: z.coerce.number().positive().nullable().optional(),
     salespersonId: z.string().optional(),
     modalidadPago: z.nativeEnum(ModalidadPago).optional(),
-    notificationEmail: z.string().email().nullable().optional(),
-    notificationPhone: z.string().nullable().optional(),
+    clientEmail: z.string().email().nullable().optional(),
+    clientPhone: z.string().nullable().optional(),
     clientAddress: z.string().nullable().optional(),
     startDate: dateOnlySchema.optional(),
     saleDate: dateOnlySchema.optional(),
@@ -189,8 +188,8 @@ const projectPatchSchema = z
     executedUsd: z.coerce.number().nonnegative().optional(),
     estimatedMwhYear: z.coerce.number().positive().nullable().optional(),
     modalidadPago: z.nativeEnum(ModalidadPago).nullable().optional(),
-    notificationEmail: z.union([z.string().email(), z.literal("")]).nullable().optional(),
-    notificationPhone: z.string().nullable().optional(),
+    clientEmail: z.union([z.string().email(), z.literal("")]).nullable().optional(),
+    clientPhone: z.string().nullable().optional(),
     clientAddress: z.string().nullable().optional(),
     firstDateScheduledAt: z.string().datetime({ offset: true }).nullable().optional(),
     // Códigos PS/AS provistos por UTE. Solo dígitos o null para limpiar.
@@ -613,8 +612,8 @@ function normalizeProjectInput(input: Record<string, unknown>) {
     normalized.co2TonsAvoided = new Prisma.Decimal((estimatedMwhYear * 0.5).toFixed(2));
   }
   if (source.modalidadPago !== undefined) normalized.modalidadPago = source.modalidadPago;
-  if (source.notificationEmail !== undefined) normalized.notificationEmail = source.notificationEmail;
-  if (source.notificationPhone !== undefined) normalized.notificationPhone = source.notificationPhone;
+  if (source.clientEmail !== undefined) normalized.clientEmail = source.clientEmail;
+  if (source.clientPhone !== undefined) normalized.clientPhone = source.clientPhone;
   if (source.clientAddress !== undefined) normalized.clientAddress = source.clientAddress;
   if (source.firstDateScheduledAt !== undefined) {
     normalized.firstDateScheduledAt = source.firstDateScheduledAt ? new Date(source.firstDateScheduledAt) : null;
@@ -675,8 +674,8 @@ const projectFieldLabels: Record<string, string> = {
   estimatedMwhYear: "generación estimada anual",
   co2TonsAvoided: "CO2 evitado",
   modalidadPago: "modalidad de pago",
-  notificationEmail: "email de notificación",
-  notificationPhone: "teléfono de notificación",
+  clientEmail: "email del cliente",
+  clientPhone: "teléfono del cliente",
   clientAddress: "dirección del cliente",
 };
 
@@ -1476,8 +1475,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
           ? new Prisma.Decimal((body.estimatedMwhYear * 0.5).toFixed(2))
           : null,
         modalidadPago: body.modalidadPago ?? null,
-        notificationEmail: body.notificationEmail || null,
-        notificationPhone: body.notificationPhone || null,
+        clientEmail: body.clientEmail || null,
+        clientPhone: body.clientPhone || null,
         clientAddress: body.clientAddress || null,
         salespersonId: body.salespersonId ?? null,
         createdById: user.id,
@@ -2055,47 +2054,20 @@ export async function registerApiRoutes(app: FastifyInstance) {
       action: AuditAction.updated,
     });
 
-    // Immediate: stage_changed notification
-    if (body.status && body.status !== stage.status) {
-      const project = await prisma.project.findFirst({
-        where: { id: params.projectId, deletedAt: null },
-        select: { clientName: true },
+    // Aviso a Operaciones + Admin cuando Ingeniería queda completada.
+    if (
+      body.status &&
+      body.status !== stage.status &&
+      stage.name === StageType.INGENIERIA &&
+      body.status === StageStatus.COMPLETED
+    ) {
+      await notifyEngineeringCompleted({
+        projectId: params.projectId,
+        trigger: "stage_completed",
       });
-      if (project) {
-        await createAndSendNotification({
-          projectId: params.projectId,
-          type: NotificationType.stage_changed,
-          title: `Etapa actualizada: ${getStageLabel(stage.name)}`,
-          message: `La etapa ${getStageLabel(stage.name)} cambió a ${formatStageStatus(body.status as StageStatus)}.`,
-          context: {
-            type: "stage_changed",
-            projectName: project.clientName,
-            stageName: getStageLabel(stage.name),
-            oldStatus: formatStageStatus(stage.status),
-            newStatus: formatStageStatus(body.status as StageStatus),
-            changedBy: user.name,
-          },
-          deduplicate: false,
-        });
-      }
-
-      // Aviso a Operaciones + Admin cuando Ingeniería queda completada.
-      if (
-        stage.name === StageType.INGENIERIA &&
-        body.status === StageStatus.COMPLETED
-      ) {
-        await notifyEngineeringCompleted({
-          projectId: params.projectId,
-          trigger: "stage_completed",
-        });
-      }
     }
 
-    // Check progress milestones after stage status change
-    const { projectProgressPercent } = await refreshStageProgressAndProject(stage.id, params.projectId);
-    if (projectProgressPercent) {
-      await checkProgressMilestone(params.projectId, projectProgressPercent);
-    }
+    await refreshStageProgressAndProject(stage.id, params.projectId);
 
     return serializeStage(updatedStage);
   });
@@ -2303,30 +2275,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
         updateData.actualDurationDays = null;
         updateData.delayDays = null;
       }
-      if (body.status === SubstageStatus.BLOCKED) {
-        const project = await prisma.project.findFirst({
-          where: { id: params.projectId, deletedAt: null },
-          select: { clientName: true },
-        });
-        const stageForNotif = await prisma.stage.findFirst({ where: { id: params.stageId } });
-        if (project) {
-          await createAndSendNotification({
-            projectId: params.projectId,
-            userId: substage.userId,
-            type: NotificationType.substage_blocked,
-            title: "Subetapa bloqueada",
-            message: `La subetapa '${substage.name}' fue marcada como bloqueada.`,
-            context: {
-              type: "substage_blocked",
-              projectName: project.clientName,
-              stageName: stageForNotif?.name ?? "",
-              substageName: substage.name,
-              responsible: substage.responsible,
-            },
-            deduplicate: true,
-          });
-        }
-      }
     }
 
     const updatedSubstage = await prisma.substage.update({
@@ -2342,12 +2290,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     const syncedSubstage = await syncSubstageProgress(substage.id);
     let syncedStage = await syncStageProgress(params.stageId);
-    const projectProgressPercent = await calculateProjectProgress(params.projectId);
-
-    // Check progress milestones after substage update
-    if (projectProgressPercent) {
-      await checkProgressMilestone(params.projectId, projectProgressPercent);
-    }
+    await calculateProjectProgress(params.projectId);
 
     await createAuditEntriesForChanges({
       entityType: AuditEntityType.substage,
@@ -2451,7 +2394,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     const syncedSubstage = await syncSubstageProgress(substage.id);
-    const { syncedStage, projectProgressPercent } = await refreshStageProgressAndProject(substage.stageId, substage.projectId);
+    const { syncedStage } = await refreshStageProgressAndProject(substage.stageId, substage.projectId);
 
     await createAuditEntry({
       entityType: AuditEntityType.substage,
@@ -2464,11 +2407,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
       newValue: SubstageStatus.COMPLETED,
       description: `Completó rápidamente la subetapa '${substage.name}'`,
     });
-
-    // Check progress milestones after quick complete
-    if (projectProgressPercent) {
-      await checkProgressMilestone(substage.projectId, projectProgressPercent);
-    }
 
     // G.3: notificar al responsable de la siguiente subetapa (best-effort)
     void notifyNextSubstageOwner(substage.id);
@@ -5758,7 +5696,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     .object({
       clientName: z.string().min(1).optional(),
       clientAddress: z.string().nullable().optional(),
-      clientEmail: z.string().email().nullable().optional(),
+      clientEmail: z.union([z.string().email(), z.literal("")]).nullable().optional(),
       clientPhone: z.string().nullable().optional(),
       capacityKwp: z.coerce.number().positive().optional(),
       locationCity: z.string().min(1).optional(),
@@ -5767,8 +5705,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
       plannedEndDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
       startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
       modalidadPago: z.nativeEnum(ModalidadPago).nullable().optional(),
-      notificationEmail: z.union([z.string().email(), z.literal("")]).nullable().optional(),
-      notificationPhone: z.string().nullable().optional(),
     })
     .strict()
     .optional();
@@ -5845,8 +5781,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         executedUsd: new Prisma.Decimal(0),
         estimatedMwhYear: new Prisma.Decimal(estimatedMwhYear.toFixed(2)),
         co2TonsAvoided: new Prisma.Decimal((estimatedMwhYear * 0.5).toFixed(2)),
-        notificationEmail: (body.notificationEmail ?? clientEmail ?? "") || "",
-        notificationPhone: (body.notificationPhone ?? clientPhone ?? "") || "",
+        clientEmail: (body.clientEmail ?? clientEmail ?? "") || "",
+        clientPhone: (body.clientPhone ?? clientPhone ?? "") || "",
         modalidadPago: body.modalidadPago ?? null,
         salespersonId: lead.assignedToId ?? null,
         createdById: user.id,
@@ -8508,70 +8444,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
   // que rompía silenciosamente Finanzas y Stock en local y prod. El bloque se
   // sacó pero las 1000+ líneas internas mantienen su indent extra de 4
   // espacios — la limpieza visual queda como cleanup futuro.)
-
-    app.post("/dev/test-notification", async (request, reply) => {
-      const body = z
-        .object({
-          type: z.nativeEnum(NotificationType),
-          projectId: z.string(),
-        })
-        .parse(request.body);
-
-      const project = await prisma.project.findFirst({
-        where: { id: body.projectId, deletedAt: null },
-        select: { clientName: true, notificationEmail: true, notificationPhone: true },
-      });
-
-      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
-
-      const contextMap: Partial<Record<NotificationType, Parameters<typeof createAndSendNotification>[0]["context"]>> = {
-        task_due: { type: "task_due", projectName: project.clientName, taskTitle: "Tarea de prueba", dueDate: new Date().toISOString().slice(0, 10) },
-        stage_changed: { type: "stage_changed", projectName: project.clientName, stageName: "Etapa de prueba", oldStatus: "Pendiente", newStatus: "En curso" },
-        progress_milestone: { type: "progress_milestone", projectName: project.clientName, percent: 50 },
-        substage_blocked: { type: "substage_blocked", projectName: project.clientName, stageName: "Etapa de prueba", substageName: "Subetapa de prueba", responsible: "Sistema" },
-        stage_overdue: { type: "stage_overdue", projectName: project.clientName, stageName: "Etapa de prueba", delayDays: 3 },
-        project_delayed: { type: "project_delayed", projectName: project.clientName, delayDays: 7 },
-        goals_not_configured: { type: "goals_not_configured", period: "Q2 2025" },
-      };
-
-      const titleMap: Partial<Record<NotificationType, string>> = {
-        task_due: "Test: tarea por vencer",
-        stage_changed: "Test: cambio de etapa",
-        progress_milestone: "Test: hito de progreso",
-        substage_blocked: "Test: subetapa bloqueada",
-        stage_overdue: "Test: etapa vencida",
-        project_delayed: "Test: proyecto retrasado",
-        goals_not_configured: "Test: objetivos no configurados",
-      };
-
-      const context = contextMap[body.type];
-      const title = titleMap[body.type];
-      if (!context || !title) {
-        reply.code(400);
-        return {
-          success: false,
-          error: `El tipo ${body.type} no tiene template de prueba (usar el flujo real para esa notificación).`,
-        };
-      }
-
-      await createAndSendNotification({
-        projectId: body.projectId,
-        type: body.type,
-        title,
-        message: `Notificación de prueba (${body.type}) para proyecto ${project.clientName}`,
-        context,
-        deduplicate: false,
-      });
-
-      reply.code(201);
-      return {
-        success: true,
-        type: body.type,
-        projectName: project.clientName,
-        emailTarget: project.notificationEmail ?? null,
-        whatsappTarget: project.notificationPhone ?? null,
-      };
-    });
 
     // ─── Finance: Exchange Rate ───────────────────────────────────────────────
 

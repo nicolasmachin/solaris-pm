@@ -139,8 +139,8 @@ interface BuildPromptArgs {
     locationCity: string;
     locationProvince: string;
     capacityKwp: number;
-    notificationPhone: string | null;
-    notificationEmail: string | null;
+    clientPhone: string | null;
+    clientEmail: string | null;
     modalidadPago: string | null;
   };
   preIng: {
@@ -201,8 +201,8 @@ Dirección: ${project.clientAddress ?? "—"}
 Ubicación: ${project.locationCity}, ${project.locationProvince}
 Capacidad pre-vendida: ${project.capacityKwp} kWp
 Modalidad de pago: ${project.modalidadPago ?? "—"}
-Teléfono de notificación: ${project.notificationPhone ?? "—"}
-Email de notificación: ${project.notificationEmail ?? "—"}
+Teléfono del cliente: ${project.clientPhone ?? "—"}
+Email del cliente: ${project.clientEmail ?? "—"}
 `;
 
   if (uteEstado.length > 0) {
@@ -457,7 +457,7 @@ export async function buildEFPSnapshots(projectId: string): Promise<{
       locationCity: true,
       locationProvince: true,
       capacityKwp: true,
-      notificationEmail: true,
+      clientEmail: true,
     },
   });
   if (!project) throw new AppError(404, "PROJECT_NOT_FOUND", "Proyecto no encontrado");
@@ -470,7 +470,7 @@ export async function buildEFPSnapshots(projectId: string): Promise<{
     locationCity: project.locationCity,
     locationProvince: project.locationProvince,
     capacityKwp: project.capacityKwp ? Number(project.capacityKwp) : null,
-    notificationEmail: project.notificationEmail,
+    clientEmail: project.clientEmail,
     capturedAt,
   };
 
@@ -576,8 +576,8 @@ export async function generateEFPVersionWithAI(args: {
       locationCity: true,
       locationProvince: true,
       capacityKwp: true,
-      notificationPhone: true,
-      notificationEmail: true,
+      clientPhone: true,
+      clientEmail: true,
       modalidadPago: true,
       projectMaterials: {
         include: {
@@ -646,8 +646,8 @@ export async function generateEFPVersionWithAI(args: {
       locationCity: project.locationCity,
       locationProvince: project.locationProvince,
       capacityKwp: Number(project.capacityKwp),
-      notificationPhone: project.notificationPhone,
-      notificationEmail: project.notificationEmail,
+      clientPhone: project.clientPhone,
+      clientEmail: project.clientEmail,
       modalidadPago: project.modalidadPago,
     },
     preIng: preIng

@@ -113,12 +113,6 @@ enum AuditAction {
 }
 
 enum NotificationType {
-  task_due
-  stage_changed
-  progress_milestone
-  substage_blocked
-  stage_overdue
-  project_delayed
   goals_not_configured
   deadline_warning
   prev_substage_completed
@@ -415,8 +409,8 @@ model Project {
   actualUteEnd         DateTime?             @db.Date
   modalidadPago        ModalidadPago?
   firstDateScheduledAt DateTime?             @db.Timestamptz(6)
-  notificationEmail    String?
-  notificationPhone    String?
+  clientEmail          String?
+  clientPhone          String?
   clientAddress        String?
   uteCodigoPS          String?
   uteCodigoAS          String?

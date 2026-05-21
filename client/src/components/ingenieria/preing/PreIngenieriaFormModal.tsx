@@ -40,7 +40,7 @@ interface ProjectDefaults {
   clientAddress: string | null;
   locationCity: string | null;
   locationProvince: string | null;
-  notificationPhone: string | null;
+  clientPhone: string | null;
 }
 
 // Parser de potenciaPaneles cuando viene como texto (extracción de minuta IA).
@@ -114,7 +114,7 @@ export function PreIngenieriaFormModal({
     base.snapshotCiudad = [defaults.locationCity, defaults.locationProvince]
       .filter((s): s is string => !!s && s.trim().length > 0)
       .join(", ");
-    base.snapshotCelular = defaults.notificationPhone ?? "";
+    base.snapshotCelular = defaults.clientPhone ?? "";
     return base;
   });
   const [error, setError] = useState<string | null>(null);

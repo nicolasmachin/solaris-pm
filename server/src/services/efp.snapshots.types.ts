@@ -16,7 +16,7 @@ export type SnapshotProject = {
   locationCity: string | null;
   locationProvince: string | null;
   capacityKwp: number | null;
-  notificationEmail: string | null;
+  clientEmail: string | null;
   capturedAt: string; // ISO timestamp del momento del snapshot
 };
 
