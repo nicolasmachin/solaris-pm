@@ -2,6 +2,13 @@
 
 ## v6.0
 
+### 25 de mayo de 2026
+
+#### Propuestas comerciales — Previsualizar y descargar
+
+- **Nuevo botón "Previsualizar"** al lado de "Descargar PDF" en la lista de propuestas del lead y en el modal de generación cuando termina. Abre el PDF embebido en una ventana grande sin tener que descargarlo primero, con un botón "Descargar" adentro por si querés guardarlo.
+- **Arreglo del botón "Descargar PDF"**: antes abría una pestaña que terminaba en una pantalla de error de login porque no llevaba la sesión. Ahora descarga directamente el archivo con el nombre `Propuesta Comercial Voltia - {cliente} v{versión}.pdf`.
+
 ### 21 de mayo de 2026
 
 #### Privacidad — Eliminado envío automático a clientes
