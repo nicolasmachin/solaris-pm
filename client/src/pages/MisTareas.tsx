@@ -15,6 +15,8 @@ import {
 import { Spinner } from "../components/ui/Spinner";
 import { UserSelect } from "../components/ui/UserSelect";
 import { StandaloneTasksBlock } from "../components/tasks/StandaloneTasksBlock";
+import { MyTasksCalendar } from "../components/my-tasks/MyTasksCalendar";
+import { useCalendarEvents } from "../hooks/useCalendarEvents";
 import { apiClient } from "../api/axios";
 import { useAuthStore } from "../store/auth.store";
 import "./MisTareas.css";
@@ -234,6 +236,7 @@ export function MisTareas() {
 
   const allBlocks = data?.blocks ?? [];
   const allTasks = data?.tasks ?? [];
+  const calendarEvents = useCalendarEvents(data);
   const filteredBlocks = useMemo(() => {
     // scope="mine" filtra por el USUARIO TARGET. El backend ya calcula
     // myPendingSubstagesCount respecto al target, así que funciona tal cual
@@ -407,9 +410,15 @@ export function MisTareas() {
             <Spinner />
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-bg-card)] p-10 text-center text-sm text-[var(--color-text-muted)]">
-            Vista calendario (en construcción)
-          </div>
+          <MyTasksCalendar
+            events={calendarEvents}
+            onEventClick={() => {
+              // cableado en commit P4
+            }}
+            onDayClick={() => {
+              // cableado en commit P4
+            }}
+          />
         )
       ) : isLoading ? (
         <div className="flex min-h-[240px] items-center justify-center">
