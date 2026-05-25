@@ -59,9 +59,23 @@ export interface MyTaskItem {
   substageName: string | null;
 }
 
+export interface StandaloneTaskItem {
+  id: string;
+  title: string;
+  description: string | null;
+  status: TaskStatus;
+  dueDate: string | null;
+  assignedUserId: string | null;
+  assignedUser: { id: string; name: string; email: string } | null;
+  urgencyRank: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface MyTasksResponse {
   blocks: MyTaskBlock[];
   tasks: MyTaskItem[];
+  standaloneTasks: StandaloneTaskItem[];
 }
 
 export type TaskScope = "pending" | "completed";

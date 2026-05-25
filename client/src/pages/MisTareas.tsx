@@ -14,6 +14,7 @@ import {
 } from "../api/myTasks.api";
 import { Spinner } from "../components/ui/Spinner";
 import { UserSelect } from "../components/ui/UserSelect";
+import { StandaloneTasksBlock } from "../components/tasks/StandaloneTasksBlock";
 import { apiClient } from "../api/axios";
 import { useAuthStore } from "../store/auth.store";
 import "./MisTareas.css";
@@ -407,7 +408,10 @@ export function MisTareas() {
             Reintentar
           </button>
         </div>
-      ) : filteredBlocks.length === 0 && allTasks.length === 0 && tasksScope === "pending" ? (
+      ) : filteredBlocks.length === 0 &&
+        allTasks.length === 0 &&
+        (data?.standaloneTasks?.length ?? 0) === 0 &&
+        tasksScope === "pending" ? (
         <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-bg-card)] p-10 text-center">
           <p className="font-display text-base font-semibold text-[var(--color-text-primary)]">
             {allBlocks.length === 0
@@ -473,6 +477,11 @@ export function MisTareas() {
               </p>
             )}
           </section>
+
+          <StandaloneTasksBlock
+            tasks={data?.standaloneTasks ?? []}
+            currentUserId={effectiveUserId ?? currentUser?.id ?? null}
+          />
         </div>
       )}
     </div>
