@@ -108,8 +108,18 @@ export async function getProposal(id: string): Promise<LeadProposal> {
   return data;
 }
 
-export function getProposalDownloadUrl(id: string): string {
-  return `${api.defaults.baseURL}/api/proposals/${id}/download`;
+export async function downloadProposal(id: string, filename: string): Promise<void> {
+  const response = await api.get<Blob>(`/api/proposals/${id}/download`, {
+    responseType: "blob",
+  });
+  const blobUrl = URL.createObjectURL(response.data);
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(blobUrl);
 }
 
 // ─── Adjuntos del lead ────────────────────────────────────────────────────

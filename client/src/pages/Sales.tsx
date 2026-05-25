@@ -20,11 +20,11 @@ import { useNavigate } from "react-router-dom";
 import {
   createLead,
   deleteLead,
+  downloadProposal,
   generateProposal,
   getLead,
   getLeads,
   getProposal,
-  getProposalDownloadUrl,
   patchLead,
   patchLeadStage,
 } from "../api/leads.api";
@@ -341,11 +341,18 @@ function KanbanColumn({
   );
 }
 
+function proposalFilename(clientName: string, version: number): string {
+  const name = clientName.trim() || "Cliente";
+  return `Propuesta Comercial Voltia - ${name} v${version}.pdf`;
+}
+
 function ProposalModal({
   leadId,
+  clientName,
   onClose,
 }: {
   leadId: string;
+  clientName: string;
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -408,14 +415,17 @@ function ProposalModal({
             </div>
           ) : null}
           {proposalQuery.data?.status === "COMPLETED" ? (
-            <a
-              className="inline-flex rounded-md bg-[var(--color-accent)] px-3 py-2 text-sm font-semibold text-black"
-              href={getProposalDownloadUrl(proposalQuery.data.id)}
-              target="_blank"
-              rel="noreferrer"
+            <Button
+              onClick={() => {
+                if (!proposalQuery.data) return;
+                void downloadProposal(
+                  proposalQuery.data.id,
+                  proposalFilename(clientName, proposalQuery.data.version),
+                ).catch(() => toast.error("No se pudo descargar el PDF"));
+              }}
             >
               Descargar PDF
-            </a>
+            </Button>
           ) : null}
         </div>
 
@@ -770,14 +780,20 @@ function LeadPanel({
                     <p className="mt-2 text-xs text-red-300">{proposal.errorMessage}</p>
                   ) : null}
                   {proposal.status === "COMPLETED" ? (
-                    <a
-                      className="mt-2 inline-flex text-sm text-[var(--color-accent)] hover:underline"
-                      href={getProposalDownloadUrl(proposal.id)}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Descargar PDF
-                    </a>
+                    <div className="mt-2 flex items-center gap-3 text-sm">
+                      <button
+                        type="button"
+                        className="text-[var(--color-accent)] hover:underline"
+                        onClick={() =>
+                          void downloadProposal(
+                            proposal.id,
+                            proposalFilename(lead.clientName, proposal.version),
+                          ).catch(() => toast.error("No se pudo descargar el PDF"))
+                        }
+                      >
+                        Descargar PDF
+                      </button>
+                    </div>
                   ) : null}
                 </div>
               ))
@@ -850,7 +866,13 @@ function LeadPanel({
         />
       ) : null}
 
-      {showProposalModal ? <ProposalModal leadId={lead.id} onClose={() => setShowProposalModal(false)} /> : null}
+      {showProposalModal ? (
+        <ProposalModal
+          leadId={lead.id}
+          clientName={lead.clientName}
+          onClose={() => setShowProposalModal(false)}
+        />
+      ) : null}
     </>
   );
 }
