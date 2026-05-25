@@ -943,12 +943,24 @@ async function saveProposalInputFile(file: import("@fastify/multipart").Multipar
   }
 
   const proposalsDir = path.resolve(process.cwd(), "..", env.storagePath, "proposals");
-  await fsPromises.mkdir(proposalsDir, { recursive: true });
+
+  try {
+    await fsPromises.mkdir(proposalsDir, { recursive: true });
+  } catch (err) {
+    console.error("[proposals] ERROR mkdir:", proposalsDir, err);
+    throw err;
+  }
 
   const storedFilename = `${randomUUID()}${extension}`;
   const absolutePath = path.join(proposalsDir, storedFilename);
-  const writeStream = fs.createWriteStream(absolutePath);
-  await pipeline(file.file, writeStream);
+
+  try {
+    const writeStream = fs.createWriteStream(absolutePath);
+    await pipeline(file.file, writeStream);
+  } catch (err) {
+    console.error("[proposals] ERROR pipeline:", absolutePath, err);
+    throw err;
+  }
 
   return absolutePath;
 }
@@ -5923,14 +5935,19 @@ export async function registerApiRoutes(app: FastifyInstance) {
     let projectId: string | null = null;
 
     console.log("[proposals] procesando parts");
-    for await (const part of parts) {
-      if (part.type === "file") {
-        uploadedFilePath = await saveProposalInputFile(part);
-      } else if (part.fieldname === "leadId") {
-        leadId = String(part.value || "") || null;
-      } else if (part.fieldname === "projectId") {
-        projectId = String(part.value || "") || null;
+    try {
+      for await (const part of parts) {
+        if (part.type === "file") {
+          uploadedFilePath = await saveProposalInputFile(part);
+        } else if (part.fieldname === "leadId") {
+          leadId = String(part.value || "") || null;
+        } else if (part.fieldname === "projectId") {
+          projectId = String(part.value || "") || null;
+        }
       }
+    } catch (err) {
+      console.error("[proposals] ERROR en for await:", err);
+      throw err;
     }
     console.log("[proposals] uploadedFilePath:", uploadedFilePath, "leadId:", leadId);
 
