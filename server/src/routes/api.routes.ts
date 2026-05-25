@@ -938,6 +938,7 @@ async function generateLeadCode() {
 async function saveProposalInputFile(file: import("@fastify/multipart").MultipartFile) {
   const extension = path.extname(file.filename).toLowerCase();
   if (![".xlsx", ".xls"].includes(extension)) {
+    console.log("[proposals] error: INVALID_PROPOSAL_FILE", file.filename);
     throw badRequest("INVALID_PROPOSAL_FILE", "Solo se permiten archivos .xlsx o .xls");
   }
 
@@ -5913,6 +5914,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
   });
 
   app.post("/proposals/generate", { preHandler: authorize(Module.VENTAS, Action.CREATE) }, async (request, reply) => {
+    console.log("[proposals] handler iniciado");
     const user = ensureUser(request);
 
     const parts = request.parts();
@@ -5920,6 +5922,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     let leadId: string | null = null;
     let projectId: string | null = null;
 
+    console.log("[proposals] procesando parts");
     for await (const part of parts) {
       if (part.type === "file") {
         uploadedFilePath = await saveProposalInputFile(part);
@@ -5929,8 +5932,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
         projectId = String(part.value || "") || null;
       }
     }
+    console.log("[proposals] uploadedFilePath:", uploadedFilePath, "leadId:", leadId);
 
     if (!uploadedFilePath) {
+      console.log("[proposals] error: FILE_REQUIRED");
       throw badRequest("FILE_REQUIRED", "Debés adjuntar un archivo Excel");
     }
 
@@ -5940,11 +5945,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
       });
 
       if (!lead) {
+        console.log("[proposals] error: LEAD_NOT_FOUND", leadId);
         throw notFound("LEAD_NOT_FOUND", "Lead no encontrado");
       }
     }
 
     if (projectId) {
+      console.log("[proposals] validando projectId:", projectId);
       await findProjectOrThrow(projectId);
     }
 
@@ -5980,6 +5987,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       description: "Creó una solicitud de generación de propuesta comercial",
     });
 
+    console.log("[proposals] disparando processProposalGeneration para:", proposal.id);
     void processProposalGeneration({
       proposalId: proposal.id,
       generatedById: user.id,
