@@ -2905,6 +2905,176 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return serializeTask(deletedTask);
   });
 
+  // ─── Tareas sueltas (standalone) ───────────────────────────────────────────
+  //
+  // Endpoints sin projectId en la URL. Soportan tanto tareas sueltas como
+  // tareas atadas a un proyecto. Conviven con `/projects/:projectId/tasks/*`
+  // — los flujos viejos no se tocan. Permiso: usuario autenticado; la
+  // autorización fina por dueño/admin se hace inline en el handler.
+
+  app.post("/tasks", async (request, reply) => {
+    const user = ensureUser(request);
+    const body = z
+      .object({
+        title: z.string().min(1).max(200),
+        description: z.string().max(2000).nullable().optional(),
+        dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+        projectId: z.string().min(1).nullable().optional(),
+        assignedUserId: z.string().min(1).nullable().optional(),
+      })
+      .strict()
+      .parse(request.body);
+
+    if (body.projectId) {
+      const project = await prisma.project.findFirst({
+        where: { id: body.projectId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!project) {
+        throw badRequest("PROJECT_NOT_FOUND", "El proyecto especificado no existe");
+      }
+    }
+
+    if (body.assignedUserId) {
+      await assertUserActiveOrThrow(body.assignedUserId, "assignedUserId");
+    }
+
+    // Default de asignado: el usuario que crea la tarea. Si vino explícito
+    // (incluido `null` para crearla sin asignar), respetar lo que vino.
+    const assignedUserId =
+      body.assignedUserId === undefined ? user.id : body.assignedUserId;
+
+    const task = await prisma.task.create({
+      data: {
+        projectId: body.projectId ?? null,
+        title: body.title,
+        description: body.description ?? null,
+        status: TaskStatus.PENDING,
+        priority: TaskPriority.NORMAL,
+        responsible: "",
+        userId: assignedUserId,
+        dueDate: body.dueDate ? parseDateOnly(body.dueDate) : null,
+      },
+    });
+
+    if (task.projectId) {
+      await createAuditEntry({
+        entityType: AuditEntityType.task,
+        entityId: task.id,
+        projectId: task.projectId,
+        userId: user.id,
+        action: AuditAction.created,
+        description: `Creó tarea '${task.title}'`,
+      });
+    }
+
+    reply.code(201);
+    return serializeTask(task);
+  });
+
+  app.patch("/tasks/:id", async (request) => {
+    const user = ensureUser(request);
+    const params = z.object({ id: z.string() }).parse(request.params);
+    const body = z
+      .object({
+        title: z.string().min(1).max(200).optional(),
+        description: z.string().max(2000).nullable().optional(),
+        dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+        projectId: z.string().min(1).nullable().optional(),
+        assignedUserId: z.string().min(1).nullable().optional(),
+        status: z.enum([TaskStatus.PENDING, TaskStatus.COMPLETED]).optional(),
+      })
+      .strict()
+      .parse(request.body);
+
+    const task = await prisma.task.findFirst({
+      where: { id: params.id, deletedAt: null },
+    });
+    if (!task) throw notFound("TASK_NOT_FOUND", "Tarea no encontrada");
+
+    // Permisos: ADMIN puede editar cualquiera. No-ADMIN solo puede editar las
+    // tareas que tiene asignadas (userId === me). No hay concepto de "creador"
+    // en el modelo Task — se decidió no agregarlo en esta iteración.
+    const isAdmin = user.role === "ADMIN";
+    if (!isAdmin && task.userId !== user.id) {
+      throw forbidden("No tenés permiso para modificar esta tarea");
+    }
+
+    if (body.projectId !== undefined && body.projectId !== null) {
+      const project = await prisma.project.findFirst({
+        where: { id: body.projectId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!project) {
+        throw badRequest("PROJECT_NOT_FOUND", "El proyecto especificado no existe");
+      }
+    }
+
+    if (body.assignedUserId !== undefined && body.assignedUserId !== null) {
+      await assertUserActiveOrThrow(body.assignedUserId, "assignedUserId");
+    }
+
+    const updateData: Record<string, unknown> = {};
+    if (body.title !== undefined) updateData.title = body.title;
+    if (body.description !== undefined) updateData.description = body.description;
+    if (body.dueDate !== undefined) updateData.dueDate = body.dueDate ? parseDateOnly(body.dueDate) : null;
+    if (body.projectId !== undefined) {
+      updateData.projectId = body.projectId;
+      // Al cambiar de proyecto (o dejar suelta) limpiar stage/substage que
+      // pertenecen al proyecto anterior.
+      if (body.projectId !== task.projectId) {
+        updateData.stageId = null;
+        updateData.substageId = null;
+      }
+    }
+    if (body.assignedUserId !== undefined) updateData.userId = body.assignedUserId;
+    if (body.status !== undefined) {
+      updateData.status = body.status;
+      updateData.completedAt = body.status === TaskStatus.COMPLETED ? new Date() : null;
+    }
+
+    const updatedTask = await prisma.task.update({
+      where: { id: task.id },
+      data: updateData,
+    });
+
+    if (updatedTask.projectId) {
+      await createAuditEntry({
+        entityType: AuditEntityType.task,
+        entityId: task.id,
+        projectId: updatedTask.projectId,
+        userId: user.id,
+        action: AuditAction.updated,
+        description: `Actualizó tarea '${task.title}'`,
+      });
+    }
+
+    return serializeTask(updatedTask);
+  });
+
+  app.delete("/tasks/:id", async (request, reply) => {
+    const user = ensureUser(request);
+    const params = z.object({ id: z.string() }).parse(request.params);
+
+    const task = await prisma.task.findFirst({
+      where: { id: params.id, deletedAt: null },
+    });
+    if (!task) throw notFound("TASK_NOT_FOUND", "Tarea no encontrada");
+
+    const isAdmin = user.role === "ADMIN";
+    if (!isAdmin && task.userId !== user.id) {
+      throw forbidden("No tenés permiso para eliminar esta tarea");
+    }
+
+    await prisma.task.update({
+      where: { id: task.id },
+      data: { deletedAt: new Date() },
+    });
+
+    reply.code(204);
+    return null;
+  });
+
   app.post("/projects/:projectId/files", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request, reply) => {
     const user = ensureUser(request);
     const params = z.object({ projectId: z.string() }).parse(request.params);
@@ -4275,7 +4445,38 @@ export async function registerApiRoutes(app: FastifyInstance) {
         return a.projectName.localeCompare(b.projectName, "es");
       });
 
-    return { blocks, tasks };
+    // 4. Tareas sueltas (standalone) del targetUser: projectId IS NULL,
+    //    asignadas al usuario, PENDING (no se exponen completadas en
+    //    standalone — el listado de Mis Tareas solo muestra pendientes).
+    const standaloneTasksRaw = await prisma.task.findMany({
+      where: {
+        userId: targetUser.id,
+        projectId: null,
+        deletedAt: null,
+        status: TaskStatus.PENDING,
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+      },
+      orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
+    });
+
+    const standaloneTasks = standaloneTasksRaw.map((t) => ({
+      id: t.id,
+      title: t.title,
+      description: t.description,
+      status: t.status,
+      dueDate: serializeDateOnly(t.dueDate),
+      assignedUserId: t.userId,
+      assignedUser: t.user
+        ? { id: t.user.id, name: t.user.name, email: t.user.email }
+        : null,
+      urgencyRank: urgencyRank(t.dueDate),
+      createdAt: serializeDate(t.createdAt),
+      updatedAt: serializeDate(t.updatedAt),
+    }));
+
+    return { blocks, tasks, standaloneTasks };
   });
 
   // ─── Roles dinámicos y matriz de permisos ────────────────────────────────────
