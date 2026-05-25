@@ -938,29 +938,16 @@ async function generateLeadCode() {
 async function saveProposalInputFile(file: import("@fastify/multipart").MultipartFile) {
   const extension = path.extname(file.filename).toLowerCase();
   if (![".xlsx", ".xls"].includes(extension)) {
-    console.log("[proposals] error: INVALID_PROPOSAL_FILE", file.filename);
     throw badRequest("INVALID_PROPOSAL_FILE", "Solo se permiten archivos .xlsx o .xls");
   }
 
   const proposalsDir = path.resolve(process.cwd(), "..", env.storagePath, "proposals");
-
-  try {
-    await fsPromises.mkdir(proposalsDir, { recursive: true });
-  } catch (err) {
-    console.error("[proposals] ERROR mkdir:", proposalsDir, err);
-    throw err;
-  }
+  await fsPromises.mkdir(proposalsDir, { recursive: true });
 
   const storedFilename = `${randomUUID()}${extension}`;
   const absolutePath = path.join(proposalsDir, storedFilename);
-
-  try {
-    const writeStream = fs.createWriteStream(absolutePath);
-    await pipeline(file.file, writeStream);
-  } catch (err) {
-    console.error("[proposals] ERROR pipeline:", absolutePath, err);
-    throw err;
-  }
+  const writeStream = fs.createWriteStream(absolutePath);
+  await pipeline(file.file, writeStream);
 
   return absolutePath;
 }
@@ -5926,7 +5913,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
   });
 
   app.post("/proposals/generate", { preHandler: authorize(Module.VENTAS, Action.CREATE) }, async (request, reply) => {
-    console.log("[proposals] handler iniciado");
     const user = ensureUser(request);
 
     const parts = request.parts();
@@ -5934,25 +5920,17 @@ export async function registerApiRoutes(app: FastifyInstance) {
     let leadId: string | null = null;
     let projectId: string | null = null;
 
-    console.log("[proposals] procesando parts");
-    try {
-      for await (const part of parts) {
-        if (part.type === "file") {
-          uploadedFilePath = await saveProposalInputFile(part);
-        } else if (part.fieldname === "leadId") {
-          leadId = String(part.value || "") || null;
-        } else if (part.fieldname === "projectId") {
-          projectId = String(part.value || "") || null;
-        }
+    for await (const part of parts) {
+      if (part.type === "file") {
+        uploadedFilePath = await saveProposalInputFile(part);
+      } else if (part.fieldname === "leadId") {
+        leadId = String(part.value || "") || null;
+      } else if (part.fieldname === "projectId") {
+        projectId = String(part.value || "") || null;
       }
-    } catch (err) {
-      console.error("[proposals] ERROR en for await:", err);
-      throw err;
     }
-    console.log("[proposals] uploadedFilePath:", uploadedFilePath, "leadId:", leadId);
 
     if (!uploadedFilePath) {
-      console.log("[proposals] error: FILE_REQUIRED");
       throw badRequest("FILE_REQUIRED", "Debés adjuntar un archivo Excel");
     }
 
@@ -5962,13 +5940,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
       });
 
       if (!lead) {
-        console.log("[proposals] error: LEAD_NOT_FOUND", leadId);
         throw notFound("LEAD_NOT_FOUND", "Lead no encontrado");
       }
     }
 
     if (projectId) {
-      console.log("[proposals] validando projectId:", projectId);
       await findProjectOrThrow(projectId);
     }
 
@@ -6004,7 +5980,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
       description: "Creó una solicitud de generación de propuesta comercial",
     });
 
-    console.log("[proposals] disparando processProposalGeneration para:", proposal.id);
     void processProposalGeneration({
       proposalId: proposal.id,
       generatedById: user.id,
