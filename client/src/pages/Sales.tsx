@@ -32,6 +32,7 @@ import { getUsers } from "../api/users.api";
 import { CommentThread } from "../components/comments/CommentThread";
 import { LeadAttachments } from "../components/sales/LeadAttachments";
 import { LeadToProjectModal } from "../components/sales/LeadToProjectModal";
+import { ProposalPreviewModal } from "../components/sales/ProposalPreviewModal";
 import { usePermission } from "../hooks/usePermission";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -358,6 +359,7 @@ function ProposalModal({
   const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
   const [proposalId, setProposalId] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   const proposalQuery = useQuery({
     queryKey: ["proposal-status", proposalId],
@@ -415,17 +417,22 @@ function ProposalModal({
             </div>
           ) : null}
           {proposalQuery.data?.status === "COMPLETED" ? (
-            <Button
-              onClick={() => {
-                if (!proposalQuery.data) return;
-                void downloadProposal(
-                  proposalQuery.data.id,
-                  proposalFilename(clientName, proposalQuery.data.version),
-                ).catch(() => toast.error("No se pudo descargar el PDF"));
-              }}
-            >
-              Descargar PDF
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={() => setShowPreview(true)}>
+                Previsualizar
+              </Button>
+              <Button
+                onClick={() => {
+                  if (!proposalQuery.data) return;
+                  void downloadProposal(
+                    proposalQuery.data.id,
+                    proposalFilename(clientName, proposalQuery.data.version),
+                  ).catch(() => toast.error("No se pudo descargar el PDF"));
+                }}
+              >
+                Descargar PDF
+              </Button>
+            </div>
           ) : null}
         </div>
 
@@ -436,6 +443,15 @@ function ProposalModal({
           </Button>
         </div>
       </div>
+
+      {proposalQuery.data?.status === "COMPLETED" ? (
+        <ProposalPreviewModal
+          proposalId={proposalQuery.data.id}
+          filename={proposalFilename(clientName, proposalQuery.data.version)}
+          open={showPreview}
+          onClose={() => setShowPreview(false)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -451,6 +467,7 @@ function LeadPanel({
   const queryClient = useQueryClient();
   const canEditSales = usePermission("VENTAS", "EDIT");
   const [showProposalModal, setShowProposalModal] = useState(false);
+  const [previewProposal, setPreviewProposal] = useState<LeadProposal | null>(null);
   const [lostReason, setLostReason] = useState("");
   const [pendingStage, setPendingStage] = useState<SalesStage | null>(null);
   const [confirmConvert, setConfirmConvert] = useState(false);
@@ -784,6 +801,13 @@ function LeadPanel({
                       <button
                         type="button"
                         className="text-[var(--color-accent)] hover:underline"
+                        onClick={() => setPreviewProposal(proposal)}
+                      >
+                        Previsualizar
+                      </button>
+                      <button
+                        type="button"
+                        className="text-[var(--color-accent)] hover:underline"
                         onClick={() =>
                           void downloadProposal(
                             proposal.id,
@@ -871,6 +895,15 @@ function LeadPanel({
           leadId={lead.id}
           clientName={lead.clientName}
           onClose={() => setShowProposalModal(false)}
+        />
+      ) : null}
+
+      {previewProposal ? (
+        <ProposalPreviewModal
+          proposalId={previewProposal.id}
+          filename={proposalFilename(lead.clientName, previewProposal.version)}
+          open={true}
+          onClose={() => setPreviewProposal(null)}
         />
       ) : null}
     </>
