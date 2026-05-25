@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { NumberInput } from "../../ui/NumberInput";
 import type {
   TipoProteccionDC,
   TipoRed,
@@ -61,6 +62,8 @@ export function emptyForm(): UnifilarFormInput {
     potenciaInversorKw: 6.0,
     tipoProteccionDc: "TERMOMAGNETICO",
     calibreProteccionDc: "25A 2P",
+    termicaAcCalibre: null,
+    diferencialAcCalibre: null,
     modeloMedidorMonitoreo: "",
     largoDcPanelesM: 15,
     largoDcEsLargo: false,
@@ -81,6 +84,8 @@ export function fromVersionAsForm(v: {
   potenciaInversorKw: number;
   tipoProteccionDc: TipoProteccionDC;
   calibreProteccionDc: string;
+  termicaAcCalibre: string | null;
+  diferencialAcCalibre: string | null;
   modeloMedidorMonitoreo: string | null;
   largoDcPanelesM: number;
   largoDcEsLargo: boolean;
@@ -99,6 +104,8 @@ export function fromVersionAsForm(v: {
     potenciaInversorKw: v.potenciaInversorKw,
     tipoProteccionDc: v.tipoProteccionDc,
     calibreProteccionDc: v.calibreProteccionDc,
+    termicaAcCalibre: v.termicaAcCalibre,
+    diferencialAcCalibre: v.diferencialAcCalibre,
     modeloMedidorMonitoreo: v.modeloMedidorMonitoreo ?? "",
     largoDcPanelesM: v.largoDcPanelesM,
     largoDcEsLargo: v.largoDcEsLargo,
@@ -120,6 +127,8 @@ export function NumGrid({ children }: { children: ReactNode }) {
   return <div className="grid grid-cols-2 gap-2">{children}</div>;
 }
 
+// Wrapper sobre NumberInput para enteros con min/max. Conserva la firma
+// histórica para no tocar los 8 call sites del UnifilarFormModal.
 export function Num({
   label,
   value,
@@ -136,18 +145,21 @@ export function Num({
   return (
     <div>
       <label className={lbl}>{label}</label>
-      <input
-        type="number"
-        className={inp}
+      <NumberInput
         value={value}
+        onChange={onChange}
         min={min}
         max={max}
-        onChange={(e) => onChange(Math.max(min, Math.min(max, Math.round(Number(e.target.value)))))}
+        step={1}
+        className={inp}
+        ariaLabel={label}
       />
     </div>
   );
 }
 
+// Wrapper sobre NumberInput para decimales (sin clamp explícito porque las
+// fuentes históricas no pasaban min/max; el server valida el rango).
 export function NumF({
   label,
   value,
@@ -160,15 +172,13 @@ export function NumF({
   return (
     <div>
       <label className={lbl}>{label}</label>
-      <input
-        type="number"
-        step="0.1"
-        className={inp}
+      <NumberInput
         value={value}
-        onChange={(e) => {
-          const n = Number(e.target.value);
-          if (!isNaN(n)) onChange(n);
-        }}
+        onChange={onChange}
+        allowDecimals
+        step={0.1}
+        className={inp}
+        ariaLabel={label}
       />
     </div>
   );

@@ -18,6 +18,12 @@ import {
   TIPO_PROT_DC_OPTIONS,
   TIPO_RED_OPTIONS,
 } from "./shared";
+import { CalibreInput } from "../../ui/CalibreInput";
+import {
+  CALIBRES_DIFERENCIAL_AC,
+  CALIBRES_PROTECCION_DC,
+  CALIBRES_TERMICA_AC,
+} from "../../ui/calibres";
 
 export function UnifilarFormModal({
   projectId,
@@ -171,10 +177,45 @@ export function UnifilarFormModal({
               </div>
               <div>
                 <label className={lbl}>Calibre</label>
-                <input className={inp} value={form.calibreProteccionDc}
-                  onChange={(e) => setF("calibreProteccionDc", e.target.value)}
-                  maxLength={50} />
+                <CalibreInput
+                  value={form.calibreProteccionDc}
+                  onChange={(v) => setF("calibreProteccionDc", v ?? "25A 2P")}
+                  predefined={CALIBRES_PROTECCION_DC}
+                  ariaLabel="Calibre protección DC"
+                />
               </div>
+            </FormSection>
+
+            <FormSection title="Protección AC">
+              <p className="text-[10px] italic text-[var(--color-text-muted)]">
+                Si dejás los campos en automático, el sistema elige el calibre
+                según potencia del inversor y tipo de red. Sobrescribí si
+                necesitás un valor específico.
+              </p>
+              <NumGrid>
+                <div>
+                  <label className={lbl}>Térmica AC</label>
+                  <CalibreInput
+                    value={form.termicaAcCalibre ?? null}
+                    onChange={(v) => setF("termicaAcCalibre", v)}
+                    predefined={CALIBRES_TERMICA_AC}
+                    emptyOptionLabel="Automático (según potencia y red)"
+                    placeholder="Automático"
+                    ariaLabel="Calibre térmica AC"
+                  />
+                </div>
+                <div>
+                  <label className={lbl}>Diferencial AC</label>
+                  <CalibreInput
+                    value={form.diferencialAcCalibre ?? null}
+                    onChange={(v) => setF("diferencialAcCalibre", v)}
+                    predefined={CALIBRES_DIFERENCIAL_AC}
+                    emptyOptionLabel="Automático (según potencia y red)"
+                    placeholder="Automático"
+                    ariaLabel="Calibre diferencial AC"
+                  />
+                </div>
+              </NumGrid>
             </FormSection>
 
             <FormSection title="Medidor de monitoreo">

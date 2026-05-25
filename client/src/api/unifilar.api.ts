@@ -33,6 +33,8 @@ export interface UnifilarVersionFull {
   potenciaInversorKw: number;
   tipoProteccionDc: TipoProteccionDC;
   calibreProteccionDc: string;
+  termicaAcCalibre: string | null;
+  diferencialAcCalibre: string | null;
   modeloMedidorMonitoreo: string | null;
   largoDcPanelesM: number;
   largoDcEsLargo: boolean;
@@ -52,6 +54,8 @@ export interface UnifilarFormInput {
   potenciaInversorKw: number;
   tipoProteccionDc: TipoProteccionDC;
   calibreProteccionDc: string;
+  termicaAcCalibre?: string | null;
+  diferencialAcCalibre?: string | null;
   modeloMedidorMonitoreo?: string | null;
   largoDcPanelesM: number;
   largoDcEsLargo: boolean;
