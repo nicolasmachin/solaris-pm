@@ -21,6 +21,7 @@ import "./MisTareas.css";
 
 type SortOption = "urgency" | "project" | "date";
 type ScopeOption = "all" | "mine";
+type ViewOption = "list" | "calendar";
 
 const SORT_LABELS: Record<SortOption, string> = {
   urgency: "Urgencia",
@@ -207,6 +208,7 @@ export function MisTareas() {
   const effectiveUserId = isAdmin ? viewUserId : null;
 
   const [tasksScope, setTasksScope] = useState<TaskScope>("pending");
+  const [view, setView] = useState<ViewOption>("list");
 
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
     queryKey: ["my-tasks", effectiveUserId ?? "self", tasksScope],
@@ -348,6 +350,14 @@ export function MisTareas() {
               Solo mías
             </FilterButton>
           </div>
+          <div className="inline-flex rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] p-0.5 text-xs">
+            <FilterButton active={view === "list"} onClick={() => setView("list")}>
+              Lista
+            </FilterButton>
+            <FilterButton active={view === "calendar"} onClick={() => setView("calendar")}>
+              Calendario
+            </FilterButton>
+          </div>
         </div>
       </div>
 
@@ -391,7 +401,17 @@ export function MisTareas() {
       </div>
 
       {/* Contenido */}
-      {isLoading ? (
+      {view === "calendar" ? (
+        isLoading ? (
+          <div className="flex min-h-[240px] items-center justify-center">
+            <Spinner />
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-bg-card)] p-10 text-center text-sm text-[var(--color-text-muted)]">
+            Vista calendario (en construcción)
+          </div>
+        )
+      ) : isLoading ? (
         <div className="flex min-h-[240px] items-center justify-center">
           <Spinner />
         </div>
