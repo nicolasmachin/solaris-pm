@@ -12,16 +12,19 @@ interface Props {
   // Si se pasa, se pre-rellena el selector de proyecto (modo "crear desde
   // la página del proyecto"). El usuario puede limpiarlo desde el modal.
   defaultProjectId?: string | null;
+  // Pre-rellena el campo de fecha de vencimiento (modo "crear desde el
+  // calendario"). YYYY-MM-DD.
+  defaultDueDate?: string;
   onClose: () => void;
 }
 
-export function StandaloneTaskModal({ task, defaultProjectId, onClose }: Props) {
+export function StandaloneTaskModal({ task, defaultProjectId, defaultDueDate, onClose }: Props) {
   const isEdit = !!task;
   const { createTask, updateTask } = useStandaloneTasks();
 
   const [title, setTitle] = useState(task?.title ?? "");
   const [description, setDescription] = useState(task?.description ?? "");
-  const [dueDate, setDueDate] = useState(task?.dueDate ?? "");
+  const [dueDate, setDueDate] = useState(task?.dueDate ?? defaultDueDate ?? "");
   const [projectId, setProjectId] = useState<string>(defaultProjectId ?? "");
   const [assignedUserId, setAssignedUserId] = useState<string | null>(
     task?.assignedUserId ?? null,

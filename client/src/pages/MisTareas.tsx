@@ -16,7 +16,9 @@ import { Spinner } from "../components/ui/Spinner";
 import { UserSelect } from "../components/ui/UserSelect";
 import { StandaloneTasksBlock } from "../components/tasks/StandaloneTasksBlock";
 import { MyTasksCalendar } from "../components/my-tasks/MyTasksCalendar";
+import type { CalendarEvent } from "../hooks/useCalendarEvents";
 import { useCalendarEvents } from "../hooks/useCalendarEvents";
+import { StandaloneTaskModal } from "../components/tasks/StandaloneTaskModal";
 import { apiClient } from "../api/axios";
 import { useAuthStore } from "../store/auth.store";
 import "./MisTareas.css";
@@ -211,6 +213,14 @@ export function MisTareas() {
 
   const [tasksScope, setTasksScope] = useState<TaskScope>("pending");
   const [view, setView] = useState<ViewOption>("list");
+
+  // Modal de tarea suelta abierto desde el calendario. En la vista lista
+  // cada bloque maneja su propio modal aparte.
+  const [calendarModal, setCalendarModal] = useState<
+    | { mode: "create"; date: string }
+    | { mode: "edit"; taskId: string }
+    | null
+  >(null);
 
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
     queryKey: ["my-tasks", effectiveUserId ?? "self", tasksScope],
@@ -412,11 +422,24 @@ export function MisTareas() {
         ) : (
           <MyTasksCalendar
             events={calendarEvents}
-            onEventClick={() => {
-              // cableado en commit P4
+            onEventClick={(event: CalendarEvent) => {
+              if (event.type === "standalone") {
+                setCalendarModal({ mode: "edit", taskId: event.originalId });
+                return;
+              }
+              // task de proyecto y substage: navegamos al proyecto con
+              // stage/substage en query string, mismo patrón que la vista
+              // lista (TaskRow.onClick y goToStage).
+              if (!event.projectId) return;
+              const params = new URLSearchParams();
+              if (event.stageId) params.set("stage", event.stageId);
+              if (event.substageId) params.set("substage", event.substageId);
+              const qs = params.toString();
+              navigate(`/projects/${event.projectId}${qs ? `?${qs}` : ""}`);
             }}
-            onDayClick={() => {
-              // cableado en commit P4
+            onDayClick={(date: Date) => {
+              const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+              setCalendarModal({ mode: "create", date: iso });
             }}
           />
         )
@@ -513,6 +536,24 @@ export function MisTareas() {
           />
         </div>
       )}
+
+      {calendarModal?.mode === "create" && (
+        <StandaloneTaskModal
+          defaultDueDate={calendarModal.date}
+          onClose={() => setCalendarModal(null)}
+        />
+      )}
+      {calendarModal?.mode === "edit" && (() => {
+        const task = data?.standaloneTasks?.find((t) => t.id === calendarModal.taskId);
+        if (!task) {
+          // El refetch eliminó la tarea (o no era standalone). Cerramos el modal.
+          setCalendarModal(null);
+          return null;
+        }
+        return (
+          <StandaloneTaskModal task={task} onClose={() => setCalendarModal(null)} />
+        );
+      })()}
     </div>
   );
 }
