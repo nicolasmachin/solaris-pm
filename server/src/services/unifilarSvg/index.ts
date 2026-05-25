@@ -64,6 +64,10 @@ export type UnifilarInputs = {
   potenciaInversorKw: number;
   tipoProteccionDc: TipoProteccionDC;
   calibreProteccionDc: string;
+  // Si están definidos, sobreescriben el calibre AC que sale de
+  // termicaCalibre()/diferencialCalibre() en rules.ts.
+  termicaAcCalibre?: string | null;
+  diferencialAcCalibre?: string | null;
   modeloMedidorMonitoreo?: string | null;
   largoDcPanelesM: number;
   largoDcEsLargo: boolean;
@@ -117,8 +121,10 @@ export function generateUnifilarSvg(p: UnifilarInputs): string {
   const secDc = seccionDc(p.largoDcEsLargo);
   const secAcInvIcp = seccionAc(p.potenciaInversorKw, p.tipoRed);
   const secAcCasa = seccionAc(p.potenciaContratadaKw, p.tipoRed);
-  const termCal = termicaCalibre(p.potenciaInversorKw);
-  const difCal = diferencialCalibre(p.potenciaInversorKw);
+  // Override del usuario (form) > regla del server. Si el override es
+  // null/undefined, se cae a la tabla que considera potencia + tipo de red.
+  const termCal = p.termicaAcCalibre ?? termicaCalibre(p.potenciaInversorKw, p.tipoRed);
+  const difCal = p.diferencialAcCalibre ?? diferencialCalibre(p.potenciaInversorKw, p.tipoRed);
   const secPe = seccionPeJabalina(p.potenciaInversorKw, p.tipoRed);
 
   // ─── Layout vertical ───

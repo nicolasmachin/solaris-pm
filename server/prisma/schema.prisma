@@ -1792,6 +1792,11 @@ model UnifilarVersion {
   potenciaInversorKw      Float
   modeloMedidorMonitoreo  String?
   calibreProteccionDc     String           @default("25A 2P")
+  // Overrides opcionales del calibre AC. Si son null, el SVG generator
+  // usa la tabla de rules.ts en función de (potenciaInversorKw, tipoRed).
+  // Si tienen valor, ese valor se imprime tal cual en el unifilar.
+  termicaAcCalibre        String?
+  diferencialAcCalibre    String?
 
   // Longitudes (metros, int)
   largoDcPanelesM      Int

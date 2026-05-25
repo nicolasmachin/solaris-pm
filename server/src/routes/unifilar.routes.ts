@@ -29,6 +29,9 @@ const formSchema = z.object({
   potenciaInversorKw: z.number().min(1).max(100),
   tipoProteccionDc: tipoProteccionDcEnum,
   calibreProteccionDc: z.string().trim().min(1).max(50).default("25A 2P"),
+  // Overrides opcionales del calibre AC. Null/undefined = usar regla server.
+  termicaAcCalibre: z.string().trim().max(50).optional().nullable(),
+  diferencialAcCalibre: z.string().trim().max(50).optional().nullable(),
   modeloMedidorMonitoreo: z.string().trim().max(100).optional().nullable(),
   largoDcPanelesM: z.number().int().min(1).max(200),
   largoDcEsLargo: z.boolean().default(false),
@@ -65,6 +68,8 @@ function inputsFromVersion(v: {
   potenciaInversorKw: number;
   tipoProteccionDc: TipoProteccionDC;
   calibreProteccionDc: string;
+  termicaAcCalibre: string | null;
+  diferencialAcCalibre: string | null;
   modeloMedidorMonitoreo: string | null;
   largoDcPanelesM: number;
   largoDcEsLargo: boolean;
@@ -86,6 +91,8 @@ function inputsFromVersion(v: {
     potenciaInversorKw: v.potenciaInversorKw,
     tipoProteccionDc: v.tipoProteccionDc,
     calibreProteccionDc: v.calibreProteccionDc,
+    termicaAcCalibre: v.termicaAcCalibre,
+    diferencialAcCalibre: v.diferencialAcCalibre,
     modeloMedidorMonitoreo: v.modeloMedidorMonitoreo,
     largoDcPanelesM: v.largoDcPanelesM,
     largoDcEsLargo: v.largoDcEsLargo,
@@ -235,6 +242,8 @@ export async function registerUnifilarRoutes(app: FastifyInstance) {
           potenciaInversorKw: body.potenciaInversorKw,
           tipoProteccionDc: body.tipoProteccionDc,
           calibreProteccionDc: body.calibreProteccionDc,
+          termicaAcCalibre: body.termicaAcCalibre?.trim() || null,
+          diferencialAcCalibre: body.diferencialAcCalibre?.trim() || null,
           modeloMedidorMonitoreo: body.modeloMedidorMonitoreo?.trim() || null,
           largoDcPanelesM: body.largoDcPanelesM,
           largoDcEsLargo: body.largoDcEsLargo,
@@ -377,6 +386,8 @@ export async function registerUnifilarRoutes(app: FastifyInstance) {
         potenciaInversorKw: body.potenciaInversorKw,
         tipoProteccionDc: body.tipoProteccionDc,
         calibreProteccionDc: body.calibreProteccionDc,
+        termicaAcCalibre: body.termicaAcCalibre ?? null,
+        diferencialAcCalibre: body.diferencialAcCalibre ?? null,
         modeloMedidorMonitoreo: body.modeloMedidorMonitoreo ?? null,
         largoDcPanelesM: body.largoDcPanelesM,
         largoDcEsLargo: body.largoDcEsLargo,

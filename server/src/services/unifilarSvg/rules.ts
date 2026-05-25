@@ -34,20 +34,41 @@ export function seccionAc(potenciaKw: number, tipo: TipoRed): "4" | "6" | "10" |
   return "16";
 }
 
-/** Térmica AC del ICP IMG (tabla 4.5 spec). */
-export function termicaCalibre(potenciaKw: number): string {
-  if (potenciaKw <= 6) return "32A";
-  if (potenciaKw <= 8) return "40A";
-  if (potenciaKw <= 12) return "50A";
-  if (potenciaKw <= 20) return "63A";
-  return "80A";
+/** Térmica AC del ICP IMG (tabla 4.5 spec).
+ *
+ * En trifásico la corriente por fase es ~1/√3 de la equivalente monofásica
+ * para la misma potencia, por lo que los calibres en TRI_* son menores.
+ * Valores razonables como base; el usuario puede sobreescribir desde el form
+ * (UnifilarVersion.termicaAcCalibre) si corresponde.
+ */
+export function termicaCalibre(potenciaKw: number, tipoRed: TipoRed): string {
+  if (tipoRed === "MONO_230") {
+    if (potenciaKw <= 6) return "32A";
+    if (potenciaKw <= 8) return "40A";
+    if (potenciaKw <= 12) return "50A";
+    if (potenciaKw <= 20) return "63A";
+    return "80A";
+  }
+  // Trifásico (con o sin neutro).
+  if (potenciaKw <= 4) return "16A";
+  if (potenciaKw <= 6) return "20A";
+  if (potenciaKw <= 8) return "25A";
+  if (potenciaKw <= 12) return "32A";
+  if (potenciaKw <= 20) return "40A";
+  return "50A";
 }
 
-/** Diferencial AC (300mA fija; tabla 4.5 spec). */
-export function diferencialCalibre(potenciaKw: number): string {
-  if (potenciaKw <= 6) return "40A 300mA";
-  if (potenciaKw <= 12) return "63A 300mA";
-  return "80A 300mA";
+/** Diferencial AC (300mA fija para PV; tabla 4.5 spec). */
+export function diferencialCalibre(potenciaKw: number, tipoRed: TipoRed): string {
+  if (tipoRed === "MONO_230") {
+    if (potenciaKw <= 6) return "40A 300mA";
+    if (potenciaKw <= 12) return "63A 300mA";
+    return "80A 300mA";
+  }
+  // Trifásico.
+  if (potenciaKw <= 6) return "25A 300mA";
+  if (potenciaKw <= 12) return "40A 300mA";
+  return "63A 300mA";
 }
 
 /** Sección PE conductor a la jabalina común (regla 4.6 spec). */
