@@ -670,7 +670,7 @@ export function serializeChecklistItem(item: {
 
 export function serializeTask(task: {
   id: string;
-  projectId: string;
+  projectId: string | null;
   stageId: string | null;
   substageId: string | null;
   title: string;

@@ -4221,6 +4221,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       where: {
         userId: targetUser.id,
         deletedAt: null,
+        // Solo tareas de proyecto. Las sueltas (projectId NULL) van en
+        // standaloneTasks más abajo.
+        projectId: { not: null },
         status:
           query.taskScope === "completed"
             ? TaskStatus.COMPLETED
@@ -4247,9 +4250,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
         dueDate: serializeDateOnly(t.dueDate),
         completedAt: serializeDate(t.completedAt),
         urgencyRank: urgencyRank(t.dueDate),
-        projectId: t.project.id,
-        projectCode: t.project.code,
-        projectName: t.project.clientName,
+        projectId: t.project!.id,
+        projectCode: t.project!.code,
+        projectName: t.project!.clientName,
         stageId: t.stage?.id ?? null,
         stageName: (t.stage?.name ?? null) as StageType | null,
         stageLabel: t.stage ? getStageLabel(t.stage.name) : null,

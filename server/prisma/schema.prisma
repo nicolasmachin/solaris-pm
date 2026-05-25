@@ -696,7 +696,10 @@ model ChecklistItem {
 
 model Task {
   id          String       @id @default(cuid())
-  projectId   String
+  // Si projectId es null, es una "tarea suelta" (standalone) — no atada a un
+  // proyecto. Se gestiona desde "Mis Tareas". Las tareas atadas a un proyecto
+  // mantienen el comportamiento anterior (cascade delete con el proyecto).
+  projectId   String?
   stageId     String?
   substageId  String?
   title       String
@@ -707,7 +710,7 @@ model Task {
   responsible String
   userId      String?
   user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
-  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project     Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
   stage       Stage?       @relation(fields: [stageId], references: [id], onDelete: SetNull)
   substage    Substage?    @relation(fields: [substageId], references: [id], onDelete: SetNull)
   comments    Comment[]
