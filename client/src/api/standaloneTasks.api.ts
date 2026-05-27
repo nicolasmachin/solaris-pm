@@ -1,6 +1,33 @@
 import { apiClient } from "./axios";
 import type { Task } from "../types/api.types";
 
+// Detalle de tarea individual con relaciones (project/stage/substage/user).
+// Lo usa TaskDetailModal en modo edición.
+export interface TaskDetail {
+  id: string;
+  title: string;
+  description: string | null;
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED";
+  priority: "NORMAL" | "URGENT";
+  dueDate: string | null;
+  projectId: string | null;
+  project: { id: string; code: string; name: string } | null;
+  stageId: string | null;
+  stage: { id: string; name: string } | null;
+  substageId: string | null;
+  substage: { id: string; name: string } | null;
+  userId: string | null;
+  user: { id: string; name: string; email: string } | null;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getTask(id: string): Promise<TaskDetail> {
+  const { data } = await apiClient.get<TaskDetail>(`/api/tasks/${id}`);
+  return data;
+}
+
 // Endpoints "tarea suelta" — viven en /api/tasks (sin projectId en URL).
 // Soportan tareas con projectId opcional. Conviven con los endpoints
 // /api/projects/:projectId/tasks/* usados por el flujo de tareas de proyecto.

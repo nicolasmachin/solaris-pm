@@ -1,10 +1,36 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { createComment, deleteComment, getLeadComments, getProjectComments, patchComment } from "../../api/comments.api";
+import ReactMarkdown from "react-markdown";
+import {
+  createComment,
+  createTaskComment,
+  deleteComment,
+  deleteTaskComment,
+  getLeadComments,
+  getProjectComments,
+  getTaskComments,
+  patchComment,
+  patchTaskComment,
+} from "../../api/comments.api";
 import type { Comment } from "../../types/api.types";
 import { useAuthStore } from "../../store/auth.store";
 import { Spinner } from "../ui/Spinner";
+
+// Subset seguro de markdown que aceptamos en comentarios: párrafos,
+// negrita/cursiva, listas y código inline. Sin HTML, sin imágenes, sin
+// links externos para evitar superficie de XSS o tracking. Sin remark-gfm
+// (no queremos tablas/autolinks).
+const MARKDOWN_ALLOWED = [
+  "p",
+  "strong",
+  "em",
+  "ul",
+  "ol",
+  "li",
+  "code",
+  "br",
+] as const;
 
 type CommentLevel = "project" | "stage" | "substage" | "checklist" | "task" | "lead";
 
@@ -135,6 +161,12 @@ export const CommentThread = memo(function CommentThread(props: CommentThreadPro
   const { data = [], isLoading } = useQuery({
     queryKey,
     queryFn: async () => {
+      // level=task usa siempre el endpoint específico, tenga o no projectId.
+      // Esto soporta tareas sueltas (sin proyecto) y mantiene consistencia
+      // de fetch para todas las tareas.
+      if (props.level === "task" && props.taskId) {
+        return getTaskComments(props.taskId);
+      }
       if (props.leadId) {
         return getLeadComments(props.leadId);
       }
@@ -148,7 +180,9 @@ export const CommentThread = memo(function CommentThread(props: CommentThreadPro
         limit: 100,
       });
     },
-    enabled: Boolean(props.projectId || props.leadId),
+    enabled:
+      (props.level === "task" && Boolean(props.taskId)) ||
+      Boolean(props.projectId || props.leadId),
   });
 
   const comments = useMemo(
@@ -166,17 +200,27 @@ export const CommentThread = memo(function CommentThread(props: CommentThreadPro
     }
   }, [draft]);
 
+  // Para level=task usamos los endpoints dedicados (acepta tareas sueltas
+  // y ADMIN no tiene poder extra). Para todo lo demás, los endpoints
+  // generales /api/comments/*.
+  const isTaskLevel = props.level === "task" && Boolean(props.taskId);
+
   const createMutation = useMutation({
-    mutationFn: () =>
-      createComment({
-        content: draft.trim(),
+    mutationFn: () => {
+      const content = draft.trim();
+      if (isTaskLevel && props.taskId) {
+        return createTaskComment(props.taskId, { content });
+      }
+      return createComment({
+        content,
         projectId: props.projectId,
         leadId: props.leadId,
         stageId: props.stageId,
         substageId: props.substageId,
         checklistItemId: props.checklistItemId,
         taskId: props.taskId,
-      }),
+      });
+    },
     onSuccess: (createdComment) => {
       setDraft("");
       queryClient.setQueryData<Comment[]>(queryKey, (current = []) => [...current, createdComment]);
@@ -185,7 +229,13 @@ export const CommentThread = memo(function CommentThread(props: CommentThreadPro
   });
 
   const patchMutation = useMutation({
-    mutationFn: (commentId: string) => patchComment(commentId, { content: editingValue.trim() }),
+    mutationFn: (commentId: string) => {
+      const content = editingValue.trim();
+      if (isTaskLevel && props.taskId) {
+        return patchTaskComment(props.taskId, commentId, { content });
+      }
+      return patchComment(commentId, { content });
+    },
     onSuccess: (updatedComment) => {
       setEditingId(null);
       setEditingValue("");
@@ -197,9 +247,24 @@ export const CommentThread = memo(function CommentThread(props: CommentThreadPro
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (commentId: string) => deleteComment(commentId),
+    mutationFn: (commentId: string) => {
+      if (isTaskLevel && props.taskId) {
+        return deleteTaskComment(props.taskId, commentId);
+      }
+      return deleteComment(commentId);
+    },
     onSuccess: (_, commentId) => {
       setConfirmDeleteId(null);
+      // En task-level usamos hard-remove visual (lo borra del listado) porque
+      // el endpoint hace soft delete via deletedAt y el siguiente fetch ya
+      // no lo trae. Para el resto mantenemos el comportamiento histórico
+      // (mostrar "Comentario eliminado") para no romper expectativas.
+      if (isTaskLevel) {
+        queryClient.setQueryData<Comment[]>(queryKey, (current = []) =>
+          current.filter((c) => c.id !== commentId),
+        );
+        return;
+      }
       queryClient.setQueryData<Comment[]>(queryKey, (current = []) =>
         current.map((comment) =>
           comment.id === commentId
@@ -234,7 +299,11 @@ export const CommentThread = memo(function CommentThread(props: CommentThreadPro
       ) : (
         <div className="space-y-3">
           {comments.map((comment) => {
-            const canManage = user?.role === "ADMIN" || user?.id === comment.author.id;
+            // En tareas, solo el autor (sin poder ADMIN extra). En el resto,
+            // ADMIN puede editar/borrar ajenos (comportamiento histórico).
+            const canManage = isTaskLevel
+              ? user?.id === comment.author.id
+              : user?.role === "ADMIN" || user?.id === comment.author.id;
             const isEditing = editingId === comment.id;
             const isDeleted = comment.content === "Comentario eliminado";
             const origin = getCommentOrigin(comment, props);
@@ -322,9 +391,21 @@ export const CommentThread = memo(function CommentThread(props: CommentThreadPro
                       </div>
                     ) : (
                       <>
-                        <p className={`text-sm leading-relaxed ${isDeleted ? "text-[var(--color-text-muted)] italic" : "text-[var(--color-text-secondary)]"}`}>
-                          {comment.content}
-                        </p>
+                        {isDeleted ? (
+                          <p className="text-sm leading-relaxed text-[var(--color-text-muted)] italic">
+                            {comment.content}
+                          </p>
+                        ) : (
+                          <div className="prose-comment text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                            <ReactMarkdown
+                              allowedElements={[...MARKDOWN_ALLOWED]}
+                              unwrapDisallowed
+                              skipHtml
+                            >
+                              {comment.content}
+                            </ReactMarkdown>
+                          </div>
+                        )}
 
                         {confirmDeleteId === comment.id && (
                           <div className="mt-2 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-card)] p-2">
