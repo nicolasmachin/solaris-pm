@@ -3075,6 +3075,185 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return null;
   });
 
+  // ─── Detalle individual de tarea ───────────────────────────────────────────
+  //
+  // GET dedicado para el TaskDetailModal. Devuelve la tarea con sus
+  // relaciones (project, stage, substage, user). Permiso: ADMIN o asignado.
+  // Si la tarea es suelta (projectId null), cualquier autenticado puede
+  // verla si es el asignado.
+
+  app.get("/tasks/:id", async (request) => {
+    const user = ensureUser(request);
+    const params = z.object({ id: z.string() }).parse(request.params);
+
+    const task = await prisma.task.findFirst({
+      where: { id: params.id, deletedAt: null },
+      include: {
+        project: { select: { id: true, code: true, clientName: true } },
+        stage: { select: { id: true, name: true } },
+        substage: { select: { id: true, name: true } },
+        user: { select: { id: true, name: true, email: true } },
+      },
+    });
+    if (!task) throw notFound("TASK_NOT_FOUND", "Tarea no encontrada");
+
+    const isAdmin = user.role === "ADMIN";
+    if (!isAdmin && task.userId !== user.id) {
+      throw forbidden("No tenés permiso para ver esta tarea");
+    }
+
+    return {
+      id: task.id,
+      title: task.title,
+      description: task.description,
+      status: task.status,
+      priority: task.priority,
+      dueDate: serializeDateOnly(task.dueDate),
+      projectId: task.projectId,
+      project: task.project
+        ? { id: task.project.id, code: task.project.code, name: task.project.clientName }
+        : null,
+      stageId: task.stageId,
+      stage: task.stage,
+      substageId: task.substageId,
+      substage: task.substage,
+      userId: task.userId,
+      user: task.user,
+      completedAt: serializeDate(task.completedAt),
+      createdAt: serializeDate(task.createdAt),
+      updatedAt: serializeDate(task.updatedAt),
+    };
+  });
+
+  // ─── Comentarios de tareas ─────────────────────────────────────────────────
+  //
+  // Endpoints específicos /api/tasks/:taskId/comments[/...]. Conviven con
+  // los endpoints generales /api/comments/* pero con dos diferencias:
+  //   - aceptan tareas sueltas (projectId NULL) — los viejos las bloqueaban
+  //     con PROJECT_REQUIRED;
+  //   - PATCH/DELETE solo permiten al autor. ADMIN no tiene poder extra
+  //     sobre comentarios ajenos, a diferencia del flow viejo de
+  //     comentarios de proyecto/lead.
+  // Heredan el projectId de la tarea (puede ser null para sueltas) para
+  // que el comentario aparezca en los listados de proyecto también si
+  // corresponde.
+
+  async function findTaskForCommentOrThrow(taskId: string, user: { id: string; role: string }) {
+    const task = await prisma.task.findFirst({
+      where: { id: taskId, deletedAt: null },
+      select: { id: true, projectId: true, userId: true, title: true },
+    });
+    if (!task) throw notFound("TASK_NOT_FOUND", "Tarea no encontrada");
+    const isAdmin = user.role === "ADMIN";
+    if (!isAdmin && task.userId !== user.id) {
+      throw forbidden("No tenés permiso para acceder a los comentarios de esta tarea");
+    }
+    return task;
+  }
+
+  app.get("/tasks/:taskId/comments", async (request) => {
+    const user = ensureUser(request);
+    const params = z.object({ taskId: z.string() }).parse(request.params);
+    await findTaskForCommentOrThrow(params.taskId, user);
+
+    const comments = await prisma.comment.findMany({
+      where: { taskId: params.taskId, deletedAt: null },
+      include: { author: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "asc" },
+    });
+    return comments.map(serializeComment);
+  });
+
+  app.post("/tasks/:taskId/comments", async (request, reply) => {
+    const user = ensureUser(request);
+    const params = z.object({ taskId: z.string() }).parse(request.params);
+    const body = z
+      .object({ content: z.string().trim().min(1).max(5000) })
+      .strict()
+      .parse(request.body);
+    const task = await findTaskForCommentOrThrow(params.taskId, user);
+
+    const comment = await prisma.comment.create({
+      data: {
+        content: body.content,
+        authorId: user.id,
+        taskId: task.id,
+        // Heredamos projectId de la tarea para que el comentario aparezca
+        // también en /projects/:id/comments si la tarea pertenece a un
+        // proyecto. Tareas sueltas → projectId null.
+        projectId: task.projectId,
+      },
+      include: { author: { select: { id: true, name: true } } },
+    });
+
+    if (task.projectId) {
+      await createAuditEntry({
+        entityType: AuditEntityType.comment,
+        entityId: comment.id,
+        projectId: task.projectId,
+        userId: user.id,
+        action: AuditAction.comment_added,
+        description: `Agregó un comentario en la tarea '${task.title}'`,
+        metadata: { taskId: task.id },
+      });
+    }
+
+    reply.code(201);
+    return serializeComment(comment);
+  });
+
+  app.patch("/tasks/:taskId/comments/:commentId", async (request) => {
+    const user = ensureUser(request);
+    const params = z
+      .object({ taskId: z.string(), commentId: z.string() })
+      .parse(request.params);
+    const body = z
+      .object({ content: z.string().trim().min(1).max(5000) })
+      .strict()
+      .parse(request.body);
+    await findTaskForCommentOrThrow(params.taskId, user);
+
+    const existing = await prisma.comment.findFirst({
+      where: { id: params.commentId, taskId: params.taskId, deletedAt: null },
+    });
+    if (!existing) throw notFound("COMMENT_NOT_FOUND", "Comentario no encontrado");
+    // ADMIN no tiene poder extra acá. Solo el autor edita lo suyo.
+    if (existing.authorId !== user.id) {
+      throw forbidden("Solo podés editar tus propios comentarios");
+    }
+
+    const updated = await prisma.comment.update({
+      where: { id: existing.id },
+      data: { content: body.content, isEdited: true, editedAt: new Date() },
+      include: { author: { select: { id: true, name: true } } },
+    });
+    return serializeComment(updated);
+  });
+
+  app.delete("/tasks/:taskId/comments/:commentId", async (request, reply) => {
+    const user = ensureUser(request);
+    const params = z
+      .object({ taskId: z.string(), commentId: z.string() })
+      .parse(request.params);
+    await findTaskForCommentOrThrow(params.taskId, user);
+
+    const existing = await prisma.comment.findFirst({
+      where: { id: params.commentId, taskId: params.taskId, deletedAt: null },
+    });
+    if (!existing) throw notFound("COMMENT_NOT_FOUND", "Comentario no encontrado");
+    if (existing.authorId !== user.id) {
+      throw forbidden("Solo podés eliminar tus propios comentarios");
+    }
+
+    await prisma.comment.update({
+      where: { id: existing.id },
+      data: { deletedAt: new Date() },
+    });
+
+    reply.code(204);
+    return null;
+  });
+
   app.post("/projects/:projectId/files", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request, reply) => {
     const user = ensureUser(request);
     const params = z.object({ projectId: z.string() }).parse(request.params);
