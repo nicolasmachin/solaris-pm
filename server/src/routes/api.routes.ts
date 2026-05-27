@@ -4352,6 +4352,36 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return z.array(userActiveSchema).parse(flattened);
   });
 
+  // GET /api/users/assignable: usuarios activos elegibles para asignar a
+  // etapas, tareas y otros recursos internos. Excluye explícitamente a los
+  // CLIENT (clientes del portal) — esos viven en otro flujo (Tab "Clientes
+  // portal" del Admin) y nunca deben ser asignables. Mismo shape que
+  // /users/active para que UserSelect del frontend lo consuma sin cambios
+  // de tipos. Si el día de mañana cambia el criterio de "asignable" (por
+  // ejemplo agregar filtro por status), se cambia en un solo lugar.
+  app.get("/users/assignable", async () => {
+    const users = await prisma.user.findMany({
+      where: {
+        deletedAt: null,
+        role: { name: { not: "CLIENT" } },
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: { select: { name: true } },
+      },
+    });
+    const flattened = users.map((u) => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      role: u.role.name,
+    }));
+    flattened.sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }));
+    return z.array(userActiveSchema).parse(flattened);
+  });
+
   // Helper: valida que un userId corresponda a un usuario existente y activo.
   // Devuelve los campos mínimos útiles del usuario validado. Usado al asignar
   // responsables a Stage/Substage/Task y al consultar /my-tasks?userId=...
@@ -4995,10 +5025,24 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return serializeUserSummary(updatedUser);
   });
 
-  app.get("/users", { preHandler: authorize(Module.USUARIOS, Action.VIEW) }, async () => {
+  app.get("/users", { preHandler: authorize(Module.USUARIOS, Action.VIEW) }, async (request) => {
+    // excludePortalClients=true filtra los clientes del portal (role=CLIENT).
+    // Lo usa la tab "Usuarios" del Admin. Default false para preservar el
+    // contrato legacy del endpoint.
+    const query = z
+      .object({
+        excludePortalClients: z
+          .enum(["true", "false"])
+          .optional(),
+      })
+      .parse(request.query);
+
+    const excludeClients = query.excludePortalClients === "true";
+
     const users = await prisma.user.findMany({
       where: {
         deletedAt: null,
+        ...(excludeClients ? { role: { name: { not: "CLIENT" } } } : {}),
       },
       select: {
         id: true,
