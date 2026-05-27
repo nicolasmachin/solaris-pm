@@ -41,27 +41,17 @@ import { Spinner } from "../components/ui/Spinner";
 import { useAuthStore } from "../store/auth.store";
 import type { User } from "../types/api.types";
 import type { LeadDetail, LeadListItem, LeadProposal, LeadStageGroup, SalesStage } from "../types/leads.types";
-import { KANBAN_COLUMNS, STAGE_LABELS } from "../types/leads.types";
+import { KANBAN_COLUMNS, STAGE_COLORS, STAGE_LABELS } from "../types/leads.types";
 
 type SalesTab = "active" | "won" | "lost";
 
 const WON_STAGE = "CERRADO_GANADO";
 const LOST_STAGE = "CERRADO_PERDIDO";
 
-const COLUMN_COLORS: Record<SalesStage, { border: string; dot: string }> = {
-  NUEVO_LEAD: { border: "#334155", dot: "#94a3b8" },
-  PENDIENTE_COTIZAR: { border: "#b45309", dot: "#f59e0b" },
-  COTIZADO: { border: "#2563eb", dot: "#60a5fa" },
-  RECLAMADO: { border: "#ea580c", dot: "#fb923c" },
-  VOLVER_CONTACTAR: { border: "#6b7280", dot: "#cbd5e1" },
-  NEGOCIACION: { border: "#7c3aed", dot: "#c084fc" },
-  AGENDAR_VISITA: { border: "#0f766e", dot: "#2dd4bf" },
-  VISITADO: { border: "#4d7c0f", dot: "#a3e635" },
-  ONBOARDING: { border: "#4d7c0f", dot: "#a3e635" },
-  CERRADO_GANADO: { border: "#166534", dot: "#4ade80" },
-  CERRADO_PERDIDO: { border: "#991b1b", dot: "#f87171" },
-  MAS_ADELANTE: { border: "#64748b", dot: "#94a3b8" },
-};
+// Alias local: los colores ahora viven en leads.types para que también
+// los use la vista de lista. Se mantiene el nombre histórico para no
+// tocar los call sites del Kanban.
+const COLUMN_COLORS = STAGE_COLORS;
 
 function formatMoney(value: number | null) {
   if (value === null) return "—";

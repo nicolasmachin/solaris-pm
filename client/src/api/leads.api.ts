@@ -7,6 +7,50 @@ export async function getLeads(params?: { assignedTo?: "me"; search?: string }):
   return data;
 }
 
+// Vista de lista (flat=true): leads planos + paginación + filtros + sort.
+// Coexiste con getLeads(); el Kanban sigue usando el response default.
+export interface LeadFlatRow {
+  id: string;
+  code: string;
+  clientName: string;
+  stage: SalesStage;
+  address: string | null;
+  estimatedKwp: number | null;
+  estimatedBudgetUsd: number | null;
+  leadCreatedAt: string | null;
+  proposalSentAt: string | null;
+  visitScheduledAt: string | null;
+  visitCompletedAt: string | null;
+  closedAt: string | null;
+  assignedTo: { id: string; name: string } | null;
+  createdAt: string;
+}
+
+export interface LeadListResponse {
+  data: LeadFlatRow[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
+export interface GetLeadsFlatParams {
+  q?: string;
+  stage?: string; // CSV
+  ownerId?: string; // CSV ("unassigned" para no asignados)
+  dateField?: "leadCreatedAt" | "proposalSentAt" | "closedAt";
+  dateFrom?: string; // YYYY-MM-DD
+  dateTo?: string; // YYYY-MM-DD
+  sortBy?: "clientName" | "stage" | "leadCreatedAt" | "proposalSentAt" | "closedAt" | "owner";
+  sortOrder?: "asc" | "desc";
+  page?: number;
+  limit?: number;
+}
+
+export async function getLeadsFlat(params: GetLeadsFlatParams): Promise<LeadListResponse> {
+  const { data } = await api.get<LeadListResponse>("/api/leads", {
+    params: { flat: "true", ...params },
+  });
+  return data;
+}
+
 export async function getLead(id: string): Promise<LeadDetail> {
   const { data } = await api.get<LeadDetail>(`/api/leads/${id}`);
   return data;
