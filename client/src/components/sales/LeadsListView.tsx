@@ -1,11 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
-import { getLeadsFlat, type GetLeadsFlatParams, type LeadFlatRow } from "../../api/leads.api";
-import { STAGE_COLORS, STAGE_LABELS, type SalesStage } from "../../types/leads.types";
+import {
+  getLeadsFlat,
+  patchLeadStage,
+  type GetLeadsFlatParams,
+  type LeadFlatRow,
+  type LeadListResponse,
+} from "../../api/leads.api";
+import { STAGE_LABELS, type SalesStage } from "../../types/leads.types";
 import { Spinner } from "../ui/Spinner";
 import { UserSelect } from "../ui/UserSelect";
+import { StageSelect } from "./StageSelect";
+import { LostReasonModal } from "./LostReasonModal";
+import { MarkAsWonModal } from "./MarkAsWonModal";
+import { LeadToProjectModal } from "./LeadToProjectModal";
+
+const LOST_STAGE: SalesStage = "CERRADO_PERDIDO";
+const WON_STAGE: SalesStage = "CERRADO_GANADO";
 
 // Vista de lista (tabla) para el módulo Ventas. Estado fuente de verdad
 // vive en la URL (useSearchParams) para que sea compartible y sobreviva
@@ -139,6 +153,7 @@ export function LeadsListView({ onOpenLead }: Props) {
     [q, stage, ownerId, dateField, dateFrom, dateTo, sortBy, sortOrder, page],
   );
 
+  const qc = useQueryClient();
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ["leads-flat", params],
     queryFn: () => getLeadsFlat(params),
@@ -153,6 +168,85 @@ export function LeadsListView({ onOpenLead }: Props) {
   const clearFilters = () => {
     setSearchParams(new URLSearchParams(), { replace: true });
     setSearchDraft("");
+  };
+
+  // ─── Cambio de stage desde la lista ─────────────────────────────────────
+  // Para etapas intermedias: mutación directa con optimistic update.
+  // Para CERRADO_PERDIDO: abre LostReasonModal antes de mutar.
+  // Para CERRADO_GANADO: abre MarkAsWonModal antes de mutar; al confirmar
+  // muta y después abre LeadToProjectModal para crear el proyecto.
+
+  const [pendingLost, setPendingLost] = useState<string | null>(null);
+  const [pendingWon, setPendingWon] = useState<string | null>(null);
+  const [conversionFor, setConversionFor] = useState<string | null>(null);
+
+  const stageMutation = useMutation({
+    mutationFn: ({ leadId, stage, lostReason }: { leadId: string; stage: SalesStage; lostReason?: string | null }) =>
+      patchLeadStage(leadId, { stage, lostReason: lostReason ?? null }),
+    onMutate: async ({ leadId, stage }) => {
+      // Optimistic: actualizamos el stage del lead afectado en TODAS las
+      // queries de leads-flat en cache (con distintos params puede haber
+      // varias). El refetch en onSettled trae las fechas auto-rellenadas.
+      await qc.cancelQueries({ queryKey: ["leads-flat"] });
+      const previous = qc.getQueriesData<LeadListResponse>({ queryKey: ["leads-flat"] });
+      previous.forEach(([key, value]) => {
+        if (!value) return;
+        qc.setQueryData<LeadListResponse>(key, {
+          ...value,
+          data: value.data.map((lead) =>
+            lead.id === leadId ? { ...lead, stage } : lead,
+          ),
+        });
+      });
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      // Rollback
+      ctx?.previous?.forEach(([key, value]) => {
+        qc.setQueryData(key, value);
+      });
+      toast.error("No se pudo cambiar la etapa");
+    },
+    onSuccess: (_data, vars) => {
+      // Si era WON, abrir el modal de convertir a proyecto.
+      if (vars.stage === WON_STAGE) {
+        setConversionFor(vars.leadId);
+      }
+    },
+    onSettled: () => {
+      // Refetch para traer fechas actualizadas (visitScheduledAt si fue a
+      // AGENDAR_VISITA, closedAt si cerró, etc.). También invalida el
+      // Kanban en caso de que esté abierto en paralelo.
+      qc.invalidateQueries({ queryKey: ["leads-flat"] });
+      qc.invalidateQueries({ queryKey: ["lead-groups"] });
+    },
+  });
+
+  const handleStageChange = (leadId: string, newStage: SalesStage) => {
+    if (newStage === LOST_STAGE) {
+      setPendingLost(leadId);
+      return;
+    }
+    if (newStage === WON_STAGE) {
+      setPendingWon(leadId);
+      return;
+    }
+    stageMutation.mutate({ leadId, stage: newStage });
+  };
+
+  const confirmLost = (reason: string) => {
+    if (!pendingLost) return;
+    stageMutation.mutate(
+      { leadId: pendingLost, stage: LOST_STAGE, lostReason: reason },
+      { onSettled: () => setPendingLost(null) },
+    );
+  };
+
+  const confirmWon = () => {
+    if (!pendingWon) return;
+    const leadId = pendingWon;
+    setPendingWon(null);
+    stageMutation.mutate({ leadId, stage: WON_STAGE });
   };
 
   return (
@@ -294,7 +388,14 @@ export function LeadsListView({ onOpenLead }: Props) {
                   </td>
                 </tr>
               ) : (
-                rows.map((lead) => <LeadRow key={lead.id} lead={lead} onOpenLead={onOpenLead} />)
+                rows.map((lead) => (
+                  <LeadRow
+                    key={lead.id}
+                    lead={lead}
+                    onOpenLead={onOpenLead}
+                    onStageChange={handleStageChange}
+                  />
+                ))
               )}
             </tbody>
           </table>
@@ -327,12 +428,40 @@ export function LeadsListView({ onOpenLead }: Props) {
           </div>
         ) : null}
       </div>
+
+      <LostReasonModal
+        open={pendingLost !== null}
+        onCancel={() => setPendingLost(null)}
+        onConfirm={confirmLost}
+        isPending={stageMutation.isPending}
+      />
+
+      <MarkAsWonModal
+        open={pendingWon !== null}
+        onCancel={() => setPendingWon(null)}
+        onConfirm={confirmWon}
+        isPending={stageMutation.isPending}
+      />
+
+      {conversionFor ? (
+        <LeadToProjectModal
+          leadId={conversionFor}
+          onClose={() => setConversionFor(null)}
+        />
+      ) : null}
     </div>
   );
 }
 
-function LeadRow({ lead, onOpenLead }: { lead: LeadFlatRow; onOpenLead: (id: string) => void }) {
-  const stageColor = STAGE_COLORS[lead.stage];
+function LeadRow({
+  lead,
+  onOpenLead,
+  onStageChange,
+}: {
+  lead: LeadFlatRow;
+  onOpenLead: (id: string) => void;
+  onStageChange: (leadId: string, newStage: SalesStage) => void;
+}) {
   return (
     <tr
       onClick={() => onOpenLead(lead.id)}
@@ -345,16 +474,11 @@ function LeadRow({ lead, onOpenLead }: { lead: LeadFlatRow; onOpenLead: (id: str
         ) : null}
       </td>
       <td className="px-3 py-2">
-        <span
-          className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold"
-          style={{
-            borderColor: stageColor.border,
-            color: stageColor.dot,
-          }}
-        >
-          <span className="h-1.5 w-1.5 rounded-full" style={{ background: stageColor.dot }} />
-          {STAGE_LABELS[lead.stage]}
-        </span>
+        <StageSelect
+          currentStage={lead.stage}
+          onChange={(next) => onStageChange(lead.id, next)}
+          ariaLabel={`Etapa de ${lead.clientName} — ${STAGE_LABELS[lead.stage]}`}
+        />
       </td>
       <td className="px-3 py-2 tabular-nums text-[var(--color-text-secondary)]">{formatDate(lead.leadCreatedAt)}</td>
       <td className="px-3 py-2 tabular-nums text-[var(--color-text-secondary)]">{formatDate(lead.proposalSentAt)}</td>
