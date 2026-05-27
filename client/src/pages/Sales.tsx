@@ -42,6 +42,8 @@ import { useAuthStore } from "../store/auth.store";
 import type { User } from "../types/api.types";
 import type { LeadDetail, LeadListItem, LeadProposal, LeadStageGroup, SalesStage } from "../types/leads.types";
 import { KANBAN_COLUMNS, STAGE_COLORS, STAGE_LABELS } from "../types/leads.types";
+import { LeadsListView } from "../components/sales/LeadsListView";
+import { SalesViewToggle, useSalesView } from "../components/sales/SalesViewToggle";
 
 type SalesTab = "active" | "won" | "lost";
 
@@ -942,7 +944,7 @@ function Tabs({
   ];
 
   return (
-    <div className="mb-4 flex gap-2">
+    <div className="flex gap-2">
       {items.map((item) => (
         <button
           key={item.id}
@@ -964,6 +966,7 @@ export function Sales() {
   const [tab, setTab] = useState<SalesTab>("active");
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [showNewLead, setShowNewLead] = useState(false);
+  const [view, setView] = useSalesView();
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -1011,7 +1014,7 @@ export function Sales() {
 
   return (
     <div className="relative flex h-[calc(100vh-52px)] min-h-0 flex-col p-6">
-      <div className="mb-6 flex items-start justify-between gap-4">
+      <div className="mb-4 flex items-start justify-between gap-4">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Ventas</p>
           <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Pipeline comercial</h1>
@@ -1021,9 +1024,14 @@ export function Sales() {
         </CanAccess>
       </div>
 
-      <Tabs current={tab} onChange={setTab} />
+      <div className="mb-4 flex shrink-0 items-center gap-3">
+        <SalesViewToggle view={view} onChange={setView} />
+        {view === "kanban" ? <Tabs current={tab} onChange={setTab} /> : null}
+      </div>
 
-      {isLoading ? (
+      {view === "list" ? (
+        <LeadsListView onOpenLead={setSelectedLeadId} />
+      ) : isLoading ? (
         <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
           <Spinner size={18} /> Cargando pipeline...
         </div>
