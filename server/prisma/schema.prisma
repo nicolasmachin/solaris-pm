@@ -908,6 +908,11 @@ model SalesLead {
   roofType             String?
   notes                String?
   lostReason           String?
+  // Fecha de "alta comercial" del lead. Por default copia createdAt en
+  // los registros nuevos (auto-fill en el handler de POST), pero es
+  // editable desde el panel "Fechas del proceso" para corregir backfills
+  // manuales o fechas históricas.
+  leadCreatedAt        DateTime?            @db.Timestamptz(6)
   proposalSentAt       DateTime?            @db.Timestamptz(6)
   visitScheduledAt     DateTime?            @db.Timestamptz(6)
   visitCompletedAt     DateTime?            @db.Timestamptz(6)
