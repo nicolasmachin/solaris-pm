@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
-  closestCorners,
   DndContext,
   PointerSensor,
+  pointerWithin,
   useDroppable,
   useSensor,
   useSensors,
@@ -1056,12 +1056,25 @@ export function Sales() {
   });
 
   const handleDragEnd = (event: DragEndEvent) => {
+    if (!event.over) return;
     const activeId = String(event.active.id);
-    const overId = event.over ? String(event.over.id) : null;
-    if (!overId) return;
+
+    // El destino puede ser una card (SortableLeadCard expuso
+    // data={type:"lead", stage}) o la columna entera (KanbanColumn
+    // expuso data={type:"column", stage}). En ambos casos derivamos
+    // el stage destino del data.current — más robusto que comparar
+    // over.id contra KANBAN_COLUMNS, porque cuando se suelta sobre
+    // una card específica over.id es el id del lead, no el del stage.
+    const overData = event.over.data?.current as
+      | { type: "lead"; stage: SalesStage }
+      | { type: "column"; stage: SalesStage }
+      | undefined;
+    if (!overData || (overData.type !== "lead" && overData.type !== "column")) return;
+    const destStage = overData.stage;
+
     const lead = findLead(data, activeId);
-    if (!lead || !KANBAN_COLUMNS.includes(overId as SalesStage) || lead.stage === overId) return;
-    stageMutation.mutate({ leadId: lead.id, stage: overId as SalesStage });
+    if (!lead || lead.stage === destStage) return;
+    stageMutation.mutate({ leadId: lead.id, stage: destStage });
   };
 
   return (
@@ -1088,7 +1101,7 @@ export function Sales() {
           <Spinner size={18} /> Cargando pipeline...
         </div>
       ) : tab === "active" ? (
-        <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+        <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragEnd={handleDragEnd}>
           <div className="flex min-h-0 flex-1 gap-4 overflow-x-auto pb-4">
             {activeGroups.map((group) => (
               <KanbanColumn
