@@ -1,5 +1,55 @@
 # Novedades
 
+## v6.1
+
+### 27 de mayo de 2026
+
+#### Ventas — Fechas automáticas del proceso
+
+- En el panel **"Fechas del proceso"** del lead apareció el campo **"Fecha de creación"** (alta comercial). Se llena solo al crear el lead pero podés editarla después.
+- **Visita agendada** ahora se carga automática cuando movés el lead a la etapa "Agendar visita". Si ya la habías cargado a mano, no se pisa.
+- **Fecha de cierre** se llena/actualiza siempre que pasés el lead a "Cerrado ganado" o "Cerrado perdido". Si reabrís y volvés a cerrar, queda la fecha del último cierre.
+- Los leads viejos que no tenían fecha de alta comercial quedaron con la fecha original del día que se cargaron.
+
+#### Ventas — Modal "Alta comercial" más alto
+
+- En pantallas chicas (laptops o ventanas no maximizadas) el formulario nuevo lead se cortaba arriba y abajo. Ahora el header "NUEVO LEAD / Alta comercial" y los botones "Cancelar / Crear lead" quedan siempre visibles y los campos del medio scrollean internamente si no entran.
+
+#### Tareas — Vista unificada con comentarios
+
+- **Un solo modal "Detalle de tarea"** reemplaza a los dos modales viejos (uno para crear desde proyecto y otro para tareas sueltas). Sirve para crear y editar cualquier tarea.
+- **Comentarios con markdown** en cada tarea. Podés escribir `**en negrita**`, `*cursiva*`, listas con `- ítem` y `código inline`. Las menciones rotas y links externos no se renderizan, solo formato seguro.
+- Solo el autor edita o borra sus comentarios. Los administradores ya no tienen privilegio extra sobre comentarios ajenos en tareas.
+- **Click en una tarea de proyecto desde "Mis Tareas"** ya no te lleva al proyecto — abre el modal de detalle directamente y desde adentro hay un link "↗ Ir a {proyecto}" si querés navegar.
+- Click en subetapa sigue navegando al proyecto, sin cambio.
+
+### 26 de mayo de 2026
+
+#### Mis Tareas — Vista calendario
+
+- Toggle **Lista / Calendario** en el header de Mis Tareas. La vista lista no cambió.
+- **Calendario con dos modos**: Semana (7 columnas lun–dom) y Mes (grilla del mes con días vecinos atenuados).
+- Cada ítem aparece como pill con color por tipo: **azul = subetapa**, **violeta = tarea de proyecto**, **ámbar = tarea suelta**.
+- Click en un pill abre el modal/navegación correspondiente; click en un día vacío abre el modal de nueva tarea con la fecha pre-llenada.
+- Navegación con ← → para semanas/meses + botón "Hoy" para volver al día actual.
+- Items sin fecha o completados no aparecen en el calendario.
+
+### 25 de mayo de 2026
+
+#### Tareas sueltas en Mis Tareas
+
+- En la página "Mis Tareas" ahora hay un tercer bloque **"Tareas sueltas"** abajo de los dos existentes.
+- Botón **"+ Nueva"** para crear una tarea sin proyecto asociado. Podés ponerle título, descripción, fecha de vencimiento, asignarla a alguien y opcionalmente vincularla a un proyecto desde el selector.
+- Las tareas sueltas tienen estado **Pendiente / Completada**. Click en la fila abre el modal de edición; checkbox al lado marca completada y desaparece del listado.
+- Badge de fecha con color por urgencia (rojo si vencida, ámbar si es hoy/mañana, gris si es futura).
+
+#### Constructor de unifilares — Calibres editables y fix de inputs
+
+- **Calibres AC del ICP IMG son editables**: nueva sección "Protección AC" en el form con dropdowns para Térmica AC y Diferencial AC. Si los dejás en "Automático" el sistema elige el calibre según potencia del inversor y tipo de red. Si querés un valor específico, sobrescribís.
+- En **trifásico** la tabla automática usa calibres menores (la corriente por fase es ~1/√3 de la equivalente monofásica). Monofásica se mantiene como estaba.
+- El **calibre de protección DC** pasó de campo libre a dropdown editable con sugerencias 16A/25A/32A/40A/50A/63A (con polaridad 2P).
+- **Arreglo de inputs numéricos**: en el form del unifilar, antes si borrabas el campo de "Potencia panel" para escribir 580 desde cero, el valor se reseteaba al mínimo y no podías terminar de escribir el número. Ahora podés tipear libremente; el valor se confirma cuando salís del campo o presionás Enter.
+
 ## v6.0
 
 ### 25 de mayo de 2026

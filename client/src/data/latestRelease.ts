@@ -23,53 +23,49 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "6.0",
-  date: "13 de mayo de 2026",
+  version: "6.1",
+  date: "27 de mayo de 2026",
   sections: [
     {
-      title: "Finanzas — Asistente de plan de pagos",
+      title: "Mis Tareas — Tareas sueltas + vista calendario",
       items: [
-        'En cada proyecto con presupuesto, banner amarillo "Crear plan de pagos →" que abre un asistente con 4 cuotas pre-cargadas (seña USD 500 + 50/30/20).',
-        "Edición libre antes de confirmar: monto ↔ porcentaje se recalculan recíprocamente, fechas independientes, agregar o eliminar cuotas (eliminar redistribuye monto entre las restantes).",
-        "Indicador de suma en vivo: verde con ✓ si coincide con el presupuesto (±USD 1), rojo con \"Faltan X\" si no. No se puede confirmar hasta que cierre.",
-        "Crea todas las cuotas como cobros previstos en una sola operación. En modo edición, reemplaza el plan anterior sin tocar los previstos sueltos ni los cobros pagados.",
+        'Nuevo bloque "Tareas sueltas" en Mis Tareas: tareas sin proyecto asociado, asignables a cualquier usuario, con fecha de vencimiento opcional. Botón "+ Nueva" desde el bloque o desde un día vacío del calendario.',
+        "Toggle Lista / Calendario en el header. Vista calendario con dos modos: Semana (7 columnas) y Mes (grilla del mes). Pills con color por tipo: azul = subetapa, violeta = tarea de proyecto, ámbar = tarea suelta.",
+        'Click en pill abre el modal/navegación; click en día vacío abre "Nueva tarea" con la fecha pre-llenada. Navegación ← → + botón "Hoy".',
       ],
     },
     {
-      title: "Proyecto Final de Ingeniería — rediseño completo del PDF",
+      title: "Tareas — Modal unificado con comentarios",
       items: [
-        "Diseño nuevo con paleta Voltia (azul Francia + amarillo). Portada compacta con ficha del cliente y banda de KPIs en una sola página.",
-        "Datos congelados al aprobar cada versión: si cambia la capacidad después de aprobar v1, el PDF de v1 sigue mostrando los datos del momento.",
-        "Fusión real de PDFs adjuntos al final del documento, con separadores \"ANEXO A / B / C…\".",
-        "Toggle \"Incluir en PDF\" por cada adjunto para excluir los pesados o irrelevantes.",
-        "Sin código de proyecto ni caso UTE en el PDF, sin bug de ligaduras (\"fjos\" → \"fijos\"), sin páginas en blanco dispersas.",
+        "Un solo modal de detalle reemplaza los dos modales viejos (creación desde proyecto y tareas sueltas). Sirve para crear y editar cualquier tarea.",
+        'Comentarios con markdown básico: **negrita**, *cursiva*, listas con "- ítem" y `código inline`. Solo el autor edita o borra sus comentarios.',
+        'Click en una tarea de proyecto desde Mis Tareas ya no navega — abre el modal de detalle. Adentro hay un link "↗ Ir a {proyecto}" para ir igual al detalle del proyecto.',
       ],
     },
     {
-      title: "Materiales — Lista colaborativa entre Ingeniería y Operaciones",
+      title: "Ventas — Fechas automáticas del proceso",
       items: [
-        "Cada material se marca con estado de compra (Pendiente / Pedido / Recibido / En stock), se puede tachar, pintar la fila con un color libre y agregar notas internas.",
-        "Filtros multi-select de categoría / estado / color / agregado por + búsqueda libre. Chips de filtros activos con × individual. Stats clickeables arriba.",
-        "Filtros persisten en la URL: copiá el link y compartilo con los filtros aplicados.",
-        "Nuevo tab \"Compras\" en la ficha del proyecto, visible para usuarios de Ingeniería u Operaciones.",
-        "En el Consolidador, nueva \"Vista compras\" con estado agregado (Pendiente / Pedido / Recibido / En stock / Mixto) y cascada para cambiar el estado en todos los proyectos del consolidado de un click.",
+        'Panel "Fechas del proceso" del lead suma el campo "Fecha de creación" (alta comercial), editable.',
+        'Visita agendada se llena sola al pasar el lead a "Agendar visita". No pisa si ya tenía fecha cargada manual.',
+        'Fecha de cierre se actualiza siempre que el lead pase a "Cerrado ganado" o "Cerrado perdido". Volver atrás de un cerrado no borra la fecha; volver a cerrar la reescribe con la nueva.',
       ],
     },
     {
-      title: "Finanzas — Pendientes y proveedores",
+      title: "Constructor de unifilares — Calibres editables y fix de inputs",
       items: [
-        "Pendientes: materiales agrupados en 2 niveles (proyecto → categoría), botón \"+ Pendiente manual\" para gastos/cobros sin factura todavía, toggle Cobrado/Previsto en el modal de cobros.",
-        "Cargar facturas a pagar a proveedor desde el listado o la ficha de cada proveedor. La factura queda en \"A pagar\" y aparece automáticamente en Pendientes, cuenta corriente del proveedor y Flujo de fondos.",
-        "Pagos parciales/totales evolucionan el estado de la factura sin perder trazabilidad.",
+        'Nueva sección "Protección AC" con dropdowns para Térmica AC y Diferencial AC. En "Automático" el sistema elige según potencia y tipo de red; sobrescribís si necesitás un valor específico.',
+        "En trifásico la tabla automática usa calibres menores (corriente por fase ~1/√3). Monofásica queda igual que antes.",
+        "Calibre de protección DC pasa de campo libre a dropdown con sugerencias estándar (16A/25A/32A/40A/50A/63A con polaridad 2P).",
+        "Arreglo del input de potencia de paneles que no dejaba escribir 580 desde un valor previo: ahora podés tipear libremente y el valor se confirma al salir del campo.",
       ],
     },
     {
-      title: "Ventas — Generador de propuesta comercial integrado",
+      title: "Privacidad — fix de notificaciones a clientes",
       items: [
-        "El generador PDF de propuesta que antes corría en la PC del vendedor ahora vive en Voltia PM. Subís el Excel CALCULADORA desde la ficha del lead y en pocos segundos queda el PDF listo.",
-        "Versionado automático por lead (v1, v2, v3…). Cada versión se conserva.",
-        "El PDF también aparece en Adjuntos del lead con nombre legible \"Propuesta Comercial Voltia - {Cliente} v{N}.pdf\".",
-        "Indicador de progreso en vivo (Pendiente → Procesando → Completado) y error puntual si el Excel falla.",
+        'El campo "Email de notificación" del proyecto en realidad guardaba emails de clientes, y el sistema lo estaba usando para mandar notificaciones automáticas. Llegaron mails con info interna a 27 clientes.',
+        'El campo se renombró a "Email del cliente" (y "Teléfono del cliente"), con aclaración explícita: "Solo para contacto manual. No se usa para enviar notificaciones automáticas".',
+        'Se eliminaron las 6 notificaciones automáticas que iban por ese flujo (tarea por vencer, etapa retrasada, hito de progreso, subetapa bloqueada, proyecto con desvío, cambio de estado de etapa). Las notificaciones internas seguras (subetapa anterior completada, ingeniería completada, alertas de plazos) se conservan.',
+        "Guardrail nuevo: el envío de email y WhatsApp valida por default que el destinatario sea un usuario interno de Voltia. Para enviar a externos se necesita autorización explícita en el código.",
       ],
     },
   ],
@@ -84,6 +80,17 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "6.0",
+    shortDate: "13 may",
+    highlights: [
+      "Finanzas: asistente de plan de pagos (4 cuotas pre-cargadas, edición libre, suma en vivo, indicador verde/rojo).",
+      "Proyecto Final de Ingeniería: rediseño completo del PDF con paleta Voltia y fusión real de anexos.",
+      "Materiales: lista colaborativa con estado de compra, colores, filtros multi-select persistentes en URL, tab Compras.",
+      "Finanzas: pendientes en 2 niveles, facturas a pagar a proveedor con cuenta corriente integrada, pagos parciales.",
+      "Ventas: generador de PDF de propuesta comercial integrado, con versionado automático por lead.",
+    ],
+  },
   {
     version: "5.4",
     shortDate: "10 may",
