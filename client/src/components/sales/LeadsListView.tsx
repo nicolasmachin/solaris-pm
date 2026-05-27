@@ -76,31 +76,22 @@ export function LeadsListView({ onOpenLead }: Props) {
   const sortOrder = (searchParams.get("sortOrder") as SortOrder | null) ?? DEFAULT_SORT_ORDER;
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
 
-  // ── Búsqueda con debounce: estado local sincronizado con la URL ────────
-  const [searchDraft, setSearchDraft] = useState(q);
-  useEffect(() => {
-    if (searchDraft === q) return;
-    const t = setTimeout(() => {
-      updateParam("q", searchDraft || null);
-      updateParam("page", null); // reset paginación al buscar
-    }, 300);
-    return () => clearTimeout(t);
-    // updateParam usa el setSearchParams del hook, que es estable.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchDraft, q]);
-
-  // Si la URL cambia desde otro lado (ej. clear filters), resincronizar.
-  useEffect(() => {
-    setSearchDraft(q);
-  }, [q]);
-
-  const updateParam = useCallback(
-    (key: string, value: string | null) => {
+  // Aplica varios cambios a los search params en UNA SOLA llamada a
+  // setSearchParams. Importante: react-router v6 traduce setSearchParams
+  // a navigate() que es async; llamadas sucesivas en el mismo tick leen
+  // todas el `prev` desde la URL "vieja" (no se acumulan), entonces si
+  // hacíamos updateParam("sortBy", ...) seguido de updateParam("page",
+  // null), el segundo pisaba el primero. Agrupando en una sola llamada,
+  // el reducer aplica todos los cambios juntos.
+  const updateParams = useCallback(
+    (updates: Record<string, string | null>) => {
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
-          if (value === null || value === "") next.delete(key);
-          else next.set(key, value);
+          for (const [key, value] of Object.entries(updates)) {
+            if (value === null || value === "") next.delete(key);
+            else next.set(key, value);
+          }
           return next;
         },
         { replace: true },
@@ -109,31 +100,55 @@ export function LeadsListView({ onOpenLead }: Props) {
     [setSearchParams],
   );
 
+  // Versión singular para casos con un solo cambio (paginación). Se
+  // mantiene para no perder claridad de intención cuando el cambio es uno.
+  const updateParam = useCallback(
+    (key: string, value: string | null) => {
+      updateParams({ [key]: value });
+    },
+    [updateParams],
+  );
+
+  // ── Búsqueda con debounce: estado local sincronizado con la URL ────────
+  const [searchDraft, setSearchDraft] = useState(q);
+  useEffect(() => {
+    if (searchDraft === q) return;
+    const t = setTimeout(() => {
+      // q + reset de page en una sola llamada para evitar que el segundo
+      // updateParam pise al primero.
+      updateParams({ q: searchDraft || null, page: null });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchDraft, q, updateParams]);
+
+  // Si la URL cambia desde otro lado (ej. clear filters), resincronizar.
+  useEffect(() => {
+    setSearchDraft(q);
+  }, [q]);
+
   const setStage = (newStage: string) => {
-    updateParam("stage", newStage || null);
-    updateParam("page", null);
+    updateParams({ stage: newStage || null, page: null });
   };
   const setOwner = (newOwner: string | null) => {
-    updateParam("ownerId", newOwner ?? null);
-    updateParam("page", null);
+    updateParams({ ownerId: newOwner ?? null, page: null });
   };
   const setDateField = (v: string) => {
-    updateParam("dateField", v || null);
     if (!v) {
-      updateParam("dateFrom", null);
-      updateParam("dateTo", null);
+      updateParams({ dateField: null, dateFrom: null, dateTo: null, page: null });
+    } else {
+      updateParams({ dateField: v, page: null });
     }
-    updateParam("page", null);
   };
 
   const toggleSort = (key: SortKey) => {
     if (sortBy === key) {
-      updateParam("sortOrder", sortOrder === "asc" ? "desc" : "asc");
+      updateParams({
+        sortOrder: sortOrder === "asc" ? "desc" : "asc",
+        page: null,
+      });
     } else {
-      updateParam("sortBy", key);
-      updateParam("sortOrder", "asc");
+      updateParams({ sortBy: key, sortOrder: "asc", page: null });
     }
-    updateParam("page", null);
   };
 
   // ── Fetch ──────────────────────────────────────────────────────────────
@@ -309,20 +324,14 @@ export function LeadsListView({ onOpenLead }: Props) {
             <input
               type="date"
               value={dateFrom}
-              onChange={(e) => {
-                updateParam("dateFrom", e.target.value || null);
-                updateParam("page", null);
-              }}
+              onChange={(e) => updateParams({ dateFrom: e.target.value || null, page: null })}
               className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-xs text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
             />
             <span className="text-xs text-[var(--color-text-muted)]">a</span>
             <input
               type="date"
               value={dateTo}
-              onChange={(e) => {
-                updateParam("dateTo", e.target.value || null);
-                updateParam("page", null);
-              }}
+              onChange={(e) => updateParams({ dateTo: e.target.value || null, page: null })}
               className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-xs text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
             />
           </>
