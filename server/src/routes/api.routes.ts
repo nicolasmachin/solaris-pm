@@ -5800,30 +5800,146 @@ export async function registerApiRoutes(app: FastifyInstance) {
     .strict();
 
   // GET /api/leads
+  //
+  // Dos modos según el flag `flat`:
+  //  - default (Kanban): devuelve un array de LeadStageGroup, uno por
+  //    stage del enum, con las cards mínimas para el Kanban.
+  //  - flat=true (vista de lista): devuelve { data: Lead[], pagination }
+  //    con leads planos, todos los campos relevantes para la tabla y
+  //    paginación obligatoria. Soporta filtros completos y sort.
+  //
+  // El parámetro `search` se mantiene como alias deprecado de `q` para no
+  // romper callers viejos.
   app.get("/leads", { preHandler: authorize(Module.VENTAS, Action.VIEW) }, async (request) => {
     const user = ensureUser(request);
     const query = z
       .object({
+        flat: z.union([z.literal("true"), z.literal("false")]).optional(),
+        // Filtros (válidos en ambos modos)
         assignedTo: z.enum(["me"]).optional(),
-        search: z.string().trim().optional(),
+        q: z.string().trim().optional(),
+        search: z.string().trim().optional(), // alias deprecado de q
+        stage: z.string().trim().optional(), // CSV
+        ownerId: z.string().trim().optional(), // CSV; "unassigned" → null
+        dateField: z.enum(["leadCreatedAt", "proposalSentAt", "closedAt"]).optional(),
+        dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        sortBy: z
+          .enum(["clientName", "stage", "leadCreatedAt", "proposalSentAt", "closedAt", "owner"])
+          .optional(),
+        sortOrder: z.enum(["asc", "desc"]).optional(),
         page: z.coerce.number().int().positive().optional(),
-        limit: z.coerce.number().int().positive().max(100).optional(),
+        limit: z.coerce.number().int().positive().max(200).optional(),
       })
       .parse(request.query);
 
-    const where = {
+    const isFlat = query.flat === "true";
+    const textSearch = query.q ?? query.search;
+
+    // Filtro de ownerId: acepta múltiples IDs separados por coma y el
+    // literal "unassigned" para incluir leads sin asignar. Combinables.
+    const ownerFilter = (() => {
+      if (!query.ownerId) return undefined;
+      const ids = query.ownerId.split(",").map((s) => s.trim()).filter(Boolean);
+      const hasUnassigned = ids.includes("unassigned");
+      const realIds = ids.filter((id) => id !== "unassigned");
+      if (hasUnassigned && realIds.length === 0) return { assignedToId: null };
+      if (!hasUnassigned && realIds.length > 0) return { assignedToId: { in: realIds } };
+      if (hasUnassigned && realIds.length > 0) {
+        return {
+          OR: [{ assignedToId: { in: realIds } }, { assignedToId: null }],
+        };
+      }
+      return undefined;
+    })();
+
+    // Filtro de stage: CSV validado contra el enum, valores inválidos se ignoran.
+    const validStages = new Set(Object.values(SalesStage) as string[]);
+    const stageFilter = (() => {
+      if (!query.stage) return undefined;
+      const list = query.stage
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => validStages.has(s)) as SalesStage[];
+      if (list.length === 0) return undefined;
+      return { stage: { in: list } };
+    })();
+
+    // Filtro de fecha por campo elegido.
+    const dateFilter = (() => {
+      if (!query.dateField || (!query.dateFrom && !query.dateTo)) return undefined;
+      const range: { gte?: Date; lte?: Date } = {};
+      if (query.dateFrom) range.gte = new Date(`${query.dateFrom}T00:00:00.000Z`);
+      if (query.dateTo) range.lte = new Date(`${query.dateTo}T23:59:59.999Z`);
+      return { [query.dateField]: range };
+    })();
+
+    const where: Prisma.SalesLeadWhereInput = {
       deletedAt: null,
       ...(query.assignedTo === "me" ? { assignedToId: user.id } : {}),
-      ...(query.search
+      ...(textSearch
         ? {
-            clientName: {
-              contains: query.search,
-              mode: "insensitive" as const,
-            },
+            OR: [
+              { clientName: { contains: textSearch, mode: "insensitive" as const } },
+              { address: { contains: textSearch, mode: "insensitive" as const } },
+            ],
           }
         : {}),
+      ...(stageFilter ?? {}),
+      ...(ownerFilter ?? {}),
+      ...(dateFilter ?? {}),
     };
 
+    // ───── Modo flat (vista de lista) ─────
+    if (isFlat) {
+      const page = query.page ?? 1;
+      const limit = query.limit ?? 50;
+      const sortBy = query.sortBy ?? "leadCreatedAt";
+      const sortOrder = query.sortOrder ?? "desc";
+
+      const orderBy: Prisma.SalesLeadOrderByWithRelationInput =
+        sortBy === "owner"
+          ? { assignedTo: { name: sortOrder } }
+          : ({ [sortBy]: sortOrder } as Prisma.SalesLeadOrderByWithRelationInput);
+
+      const [flatLeads, total] = await Promise.all([
+        prisma.salesLead.findMany({
+          where,
+          orderBy,
+          include: { assignedTo: { select: { id: true, name: true } } },
+          skip: (page - 1) * limit,
+          take: limit,
+        }),
+        prisma.salesLead.count({ where }),
+      ]);
+
+      return {
+        data: flatLeads.map((lead) => ({
+          id: lead.id,
+          code: lead.code,
+          clientName: lead.clientName,
+          stage: lead.stage,
+          address: lead.address,
+          estimatedKwp: lead.estimatedKwp ? decimalToNumber(lead.estimatedKwp) : null,
+          estimatedBudgetUsd: lead.estimatedBudgetUsd ? decimalToNumber(lead.estimatedBudgetUsd) : null,
+          leadCreatedAt: serializeDate(lead.leadCreatedAt),
+          proposalSentAt: serializeDate(lead.proposalSentAt),
+          visitScheduledAt: serializeDate(lead.visitScheduledAt),
+          visitCompletedAt: serializeDate(lead.visitCompletedAt),
+          closedAt: serializeDate(lead.closedAt),
+          assignedTo: lead.assignedTo,
+          createdAt: serializeDate(lead.createdAt),
+        })),
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.max(1, Math.ceil(total / limit)),
+        },
+      };
+    }
+
+    // ───── Modo default (Kanban) ─────
     const leads = await prisma.salesLead.findMany({
       where,
       orderBy: [{ stage: "asc" }, { createdAt: "desc" }],
