@@ -19,8 +19,13 @@ export interface ActiveUser {
   role: string;
 }
 
+// Llama al endpoint que filtra clientes del portal. Ningún selector de
+// asignación debe mostrar PORTAL_CLIENTs — esa decisión está centralizada
+// en el backend (GET /api/users/assignable). Si en algún momento aparece
+// un caso donde un consumer SÍ necesita mostrar clientes del portal,
+// agregar una prop opcional aquí en lugar de volver a /users/active.
 async function getActiveUsers(): Promise<ActiveUser[]> {
-  const { data } = await apiClient.get<ActiveUser[]>("/api/users/active");
+  const { data } = await apiClient.get<ActiveUser[]>("/api/users/assignable");
   return data;
 }
 
@@ -125,8 +130,11 @@ export function UserSelect({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const optionsRef = useRef<HTMLLIElement[]>([]);
 
+  // queryKey "assignable" para que el cache no comparta con consumers
+  // que todavía consultan /api/users/active (ej. MisTareas usa esa key
+  // para el banner informativo y devuelve un shape distinto).
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["users", "active"],
+    queryKey: ["users", "assignable"],
     queryFn: getActiveUsers,
     staleTime: 5 * 60_000, // 5 min
   });

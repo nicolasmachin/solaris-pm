@@ -81,7 +81,13 @@ const ALL_ACTIONS = ["VIEW", "CREATE", "EDIT", "DELETE", "COMPLETE", "COMMENT"];
 
 // ─── API helpers ──────────────────────────────────────────────────────────────
 
-const fetchUsers = () => apiClient.get<AdminUser[]>("/api/users").then(r => r.data);
+// Excluye los clientes del portal: estos viven en la tab "Clientes portal"
+// con su propio CRUD vía /admin/clients. Sin este filtro, los CLIENT
+// aparecían mezclados en la gestión interna.
+const fetchUsers = () =>
+  apiClient
+    .get<AdminUser[]>("/api/users", { params: { excludePortalClients: "true" } })
+    .then((r) => r.data);
 const fetchSystemSettings = () => apiClient.get<SystemSetting[]>("/api/settings/system").then(r => r.data);
 const fetchAllPermissions = () =>
   Promise.all(ALL_ROLES.map(role =>
