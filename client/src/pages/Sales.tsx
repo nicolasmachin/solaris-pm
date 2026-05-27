@@ -33,7 +33,10 @@ import { getUsers } from "../api/users.api";
 import { CommentThread } from "../components/comments/CommentThread";
 import { LeadAttachments } from "../components/sales/LeadAttachments";
 import { LeadToProjectModal } from "../components/sales/LeadToProjectModal";
+import { LostReasonModal } from "../components/sales/LostReasonModal";
+import { MarkAsWonModal } from "../components/sales/MarkAsWonModal";
 import { ProposalPreviewModal } from "../components/sales/ProposalPreviewModal";
+import { StageSelect } from "../components/sales/StageSelect";
 import { usePermission } from "../hooks/usePermission";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -626,10 +629,10 @@ function LeadPanel({
   });
 
   const stageMutation = useMutation({
-    mutationFn: (stage: SalesStage) =>
+    mutationFn: ({ stage, reason }: { stage: SalesStage; reason?: string }) =>
       patchLeadStage(leadId, {
         stage,
-        lostReason: stage === LOST_STAGE ? lostReason : null,
+        lostReason: stage === LOST_STAGE ? (reason ?? lostReason) : null,
       }),
     onSuccess: () => {
       setPendingStage(null);
@@ -680,7 +683,7 @@ function LeadPanel({
       setConfirmConvert(true);
       return;
     }
-    stageMutation.mutate(value);
+    stageMutation.mutate({ stage: value });
   };
 
   const availableUsers = usersQuery.data ?? [];
@@ -693,7 +696,11 @@ function LeadPanel({
           <div>
             <div className="mb-1 flex items-center gap-2">
               <h2 className="font-display text-lg font-bold text-[var(--color-text-primary)]">{lead.clientName}</h2>
-              <Badge variant="default" label={STAGE_LABELS[lead.stage]} />
+              <StageSelect
+                currentStage={lead.stage}
+                onChange={selectStage}
+                disabled={stageMutation.isPending || markAsWonMutation.isPending}
+              />
             </div>
             <p className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">{lead.code}</p>
           </div>
@@ -918,40 +925,23 @@ function LeadPanel({
         <CommentThread leadId={lead.id} level="lead" />
       </aside>
 
-      {pendingStage === LOST_STAGE ? (
-        <div className="fixed inset-0 z-[96] flex items-center justify-center bg-black/60" onMouseDown={(event) => event.target === event.currentTarget && setPendingStage(null)}>
-          <div className="w-full max-w-md rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6">
-            <h3 className="mb-3 font-display text-lg font-bold text-[var(--color-text-primary)]">Cerrar como perdido</h3>
-            <textarea
-              className="min-h-[110px] w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
-              value={lostReason}
-              onChange={(event) => setLostReason(event.target.value)}
-            />
-            <div className="mt-4 flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setPendingStage(null)}>Cancelar</Button>
-              <Button disabled={!lostReason.trim()} onClick={() => stageMutation.mutate(LOST_STAGE)}>Confirmar</Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <LostReasonModal
+        open={pendingStage === LOST_STAGE}
+        initialReason={lostReason}
+        onCancel={() => setPendingStage(null)}
+        onConfirm={(reason) => {
+          setLostReason(reason);
+          stageMutation.mutate({ stage: LOST_STAGE, reason });
+        }}
+        isPending={stageMutation.isPending}
+      />
 
-      {confirmConvert ? (
-        <div className="fixed inset-0 z-[96] flex items-center justify-center bg-black/60" onMouseDown={(event) => event.target === event.currentTarget && setConfirmConvert(false)}>
-          <div className="w-full max-w-lg rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6">
-            <h3 className="mb-2 font-display text-lg font-bold text-[var(--color-text-primary)]">Marcar como Ganado</h3>
-            <p className="text-sm text-[var(--color-text-secondary)]">
-              El lead pasa a etapa Cerrado como Ganado. Después vas a poder completar los datos
-              que falten para crear el proyecto (ciudad, provincia, potencia, presupuesto).
-            </p>
-            <div className="mt-4 flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setConfirmConvert(false)}>Cancelar</Button>
-              <Button loading={markAsWonMutation.isPending} onClick={() => markAsWonMutation.mutate()}>
-                Confirmar
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <MarkAsWonModal
+        open={confirmConvert}
+        onCancel={() => setConfirmConvert(false)}
+        onConfirm={() => markAsWonMutation.mutate()}
+        isPending={markAsWonMutation.isPending}
+      />
 
       {showConversionModal ? (
         <LeadToProjectModal
