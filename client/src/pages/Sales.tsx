@@ -252,28 +252,41 @@ function SortableLeadCard({
         ? "var(--color-accent)"
         : "var(--color-text-muted)";
 
+  // El wrapper es <div role="button"> en lugar de <button> para evitar
+  // HTML inválido: la card tiene botones internos (acciones del lead) que
+  // no pueden anidarse dentro de <button>. Como contrapartida, el drag de
+  // dnd-kit se aplica al wrapper entero (no a un handle ⋮⋮ específico),
+  // así toda la card es agarrable. activationConstraint distance=8 en el
+  // PointerSensor distingue click de drag, así el onClick sigue abriendo
+  // el lead cuando el mouse no se mueve.
   return (
-    <button
+    <div
       ref={setNodeRef}
-      style={style}
-      className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3 text-left"
+      style={{ ...style, cursor: isDragging ? "grabbing" : "grab" }}
+      aria-label={`Abrir lead ${lead.clientName}`}
+      className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3 text-left focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
+      // dnd-kit ya inyecta role="button" y tabIndex={0} vía attributes.
+      {...attributes}
+      {...listeners}
       onClick={() => onOpen(lead.id)}
-      type="button"
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen(lead.id);
+        }
+      }}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-[var(--color-text-primary)]">{lead.clientName}</p>
           <p className="font-mono text-[10px] text-[var(--color-text-muted)]">{lead.estimatedKwp ?? "—"} kWp</p>
         </div>
-        <button
-          className="cursor-grab rounded p-1 text-[var(--color-text-muted)]"
-          {...attributes}
-          {...listeners}
-          onClick={(event) => event.stopPropagation()}
-          type="button"
+        <span
+          aria-hidden="true"
+          className="rounded p-1 text-[var(--color-text-muted)] select-none"
         >
           ⋮⋮
-        </button>
+        </span>
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-3">
@@ -291,7 +304,7 @@ function SortableLeadCard({
       <div className="mt-2 font-mono text-[10px]" style={{ color: daysColor }}>
         {lead.daysInStage} día{lead.daysInStage === 1 ? "" : "s"} en etapa
       </div>
-    </button>
+    </div>
   );
 }
 
