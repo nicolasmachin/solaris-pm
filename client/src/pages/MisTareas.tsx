@@ -18,7 +18,7 @@ import { StandaloneTasksBlock } from "../components/tasks/StandaloneTasksBlock";
 import { MyTasksCalendar } from "../components/my-tasks/MyTasksCalendar";
 import type { CalendarEvent } from "../hooks/useCalendarEvents";
 import { useCalendarEvents } from "../hooks/useCalendarEvents";
-import { StandaloneTaskModal } from "../components/tasks/StandaloneTaskModal";
+import { TaskDetailModal } from "../components/tasks/TaskDetailModal";
 import { apiClient } from "../api/axios";
 import { useAuthStore } from "../store/auth.store";
 import "./MisTareas.css";
@@ -222,6 +222,11 @@ export function MisTareas() {
     | null
   >(null);
 
+  // Modal de detalle de tarea de proyecto (click en TaskRow desde la
+  // vista lista). Antes navegaba al proyecto; ahora abre el modal
+  // unificado y desde el modal hay un link al proyecto.
+  const [taskListModal, setTaskListModal] = useState<string | null>(null);
+
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
     queryKey: ["my-tasks", effectiveUserId ?? "self", tasksScope],
     queryFn: () => getMyTasks({ userId: effectiveUserId, taskScope: tasksScope }),
@@ -423,13 +428,12 @@ export function MisTareas() {
           <MyTasksCalendar
             events={calendarEvents}
             onEventClick={(event: CalendarEvent) => {
-              if (event.type === "standalone") {
+              // Tareas (sueltas o de proyecto) → abren TaskDetailModal.
+              // Subetapas siguen navegando al proyecto como antes.
+              if (event.type === "standalone" || event.type === "task") {
                 setCalendarModal({ mode: "edit", taskId: event.originalId });
                 return;
               }
-              // task de proyecto y substage: navegamos al proyecto con
-              // stage/substage en query string, mismo patrón que la vista
-              // lista (TaskRow.onClick y goToStage).
               if (!event.projectId) return;
               const params = new URLSearchParams();
               if (event.stageId) params.set("stage", event.stageId);
@@ -511,13 +515,7 @@ export function MisTareas() {
                   <TaskRow
                     key={task.id}
                     task={task}
-                    onClick={() => {
-                      const params = new URLSearchParams();
-                      if (task.stageId) params.set("stage", task.stageId);
-                      if (task.substageId) params.set("substage", task.substageId);
-                      const qs = params.toString();
-                      navigate(`/projects/${task.projectId}${qs ? `?${qs}` : ""}`);
-                    }}
+                    onClick={() => setTaskListModal(task.id)}
                   />
                 ))}
               </ul>
@@ -538,22 +536,27 @@ export function MisTareas() {
       )}
 
       {calendarModal?.mode === "create" && (
-        <StandaloneTaskModal
+        <TaskDetailModal
+          isOpen
           defaultDueDate={calendarModal.date}
           onClose={() => setCalendarModal(null)}
         />
       )}
-      {calendarModal?.mode === "edit" && (() => {
-        const task = data?.standaloneTasks?.find((t) => t.id === calendarModal.taskId);
-        if (!task) {
-          // El refetch eliminó la tarea (o no era standalone). Cerramos el modal.
-          setCalendarModal(null);
-          return null;
-        }
-        return (
-          <StandaloneTaskModal task={task} onClose={() => setCalendarModal(null)} />
-        );
-      })()}
+      {calendarModal?.mode === "edit" && (
+        <TaskDetailModal
+          isOpen
+          taskId={calendarModal.taskId}
+          onClose={() => setCalendarModal(null)}
+        />
+      )}
+
+      {taskListModal && (
+        <TaskDetailModal
+          isOpen
+          taskId={taskListModal}
+          onClose={() => setTaskListModal(null)}
+        />
+      )}
     </div>
   );
 }

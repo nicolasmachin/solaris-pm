@@ -17,7 +17,7 @@ import { ProjectMaterialsList } from "../components/project/EngineeringMaterials
 import { TasksPanel } from "../components/project/TasksPanel";
 import { PortalClientsPanel } from "../components/project/PortalClientsPanel";
 import { ClienteDocsUpload } from "../components/projects/ClienteDocsUpload";
-import { TaskModal } from "../components/project/TaskModal";
+import { TaskDetailModal } from "../components/tasks/TaskDetailModal";
 import { SolarSystemModal } from "../components/project/SolarSystemModal";
 import { AuditHistory } from "../components/project/AuditHistory";
 import { ProjectGantt } from "../components/project/ProjectGantt";
@@ -949,9 +949,9 @@ export function ProjectDetail() {
 
       {/* Task modal */}
       {showTaskModal && (
-        <TaskModal
-          projectId={project.id}
-          stages={project.stages}
+        <TaskDetailModal
+          isOpen
+          defaultProjectId={project.id}
           onClose={() => setShowTaskModal(false)}
         />
       )}

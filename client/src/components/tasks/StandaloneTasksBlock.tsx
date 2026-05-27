@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Check, Plus, User as UserIcon } from "lucide-react";
 import type { StandaloneTaskItem } from "../../api/myTasks.api";
 import { useStandaloneTasks } from "../../hooks/useStandaloneTasks";
-import { StandaloneTaskModal } from "./StandaloneTaskModal";
+import { TaskDetailModal } from "./TaskDetailModal";
 
 interface Props {
   tasks: StandaloneTaskItem[];
@@ -136,10 +136,10 @@ export function StandaloneTasksBlock({ tasks, currentUserId }: Props) {
       )}
 
       {creating && (
-        <StandaloneTaskModal onClose={() => setCreating(false)} />
+        <TaskDetailModal isOpen onClose={() => setCreating(false)} />
       )}
       {editing && (
-        <StandaloneTaskModal task={editing} onClose={() => setEditing(null)} />
+        <TaskDetailModal isOpen taskId={editing.id} onClose={() => setEditing(null)} />
       )}
     </section>
   );
