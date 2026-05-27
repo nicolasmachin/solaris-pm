@@ -154,14 +154,14 @@ function NewLeadModal({
   });
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <div className="w-full max-w-xl rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6">
-        <div className="mb-5">
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <div className="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6">
+        <div className="mb-5 shrink-0">
           <p className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Nuevo lead</p>
           <h2 className="font-display text-lg font-bold text-[var(--color-text-primary)]">Alta comercial</h2>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid flex-1 gap-4 overflow-y-auto pr-1 md:grid-cols-2">
           {[
             ["Nombre del cliente", "clientName"],
             ["Email", "clientEmail"],
@@ -208,7 +208,7 @@ function NewLeadModal({
           </label>
         </div>
 
-        <div className="mt-5 flex justify-end gap-2">
+        <div className="mt-5 flex shrink-0 justify-end gap-2">
           <Button variant="ghost" onClick={onClose}>Cancelar</Button>
           <Button
             onClick={() => createMutation.mutate()}
