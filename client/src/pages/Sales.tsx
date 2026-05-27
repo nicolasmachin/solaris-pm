@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   closestCorners,
   DndContext,
@@ -304,11 +305,18 @@ function KanbanColumn({
   stage,
   leads,
   onOpen,
+  isCollapsed,
+  onToggle,
 }: {
   stage: SalesStage;
   leads: LeadListItem[];
   onOpen: (leadId: string) => void;
+  isCollapsed: boolean;
+  onToggle: () => void;
 }) {
+  // useDroppable se llama incondicionalmente: la columna nunca se
+  // desmonta, solo cambia su render. El ref de drop sigue activo aún
+  // colapsada, así un drag-over una barra fina sigue funcionando.
   const { setNodeRef, isOver } = useDroppable({
     id: stage,
     data: {
@@ -317,26 +325,68 @@ function KanbanColumn({
     },
   });
 
-  // Total presupuestado de la columna. Suma simple de los estimados;
-  // los leads sin presupuesto cargado suman 0. Aparece en el footer fijo
-  // junto a la cantidad de leads.
   const totalBudget = leads.reduce(
     (sum, lead) => sum + (lead.estimatedBudgetUsd ?? 0),
     0,
   );
 
+  const borderColor = isOver ? "var(--color-accent)" : COLUMN_COLORS[stage].border;
+
+  if (isCollapsed) {
+    // Barra fina vertical. Toda la columna es clickeable para expandir.
+    // El nombre se rota con writing-mode (más robusto que rotate(-90deg)
+    // porque respeta el flujo del layout y soporta ellipsis nativo).
+    return (
+      <div
+        ref={setNodeRef}
+        role="button"
+        tabIndex={0}
+        onClick={onToggle}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onToggle();
+          }
+        }}
+        title={`Expandir ${STAGE_LABELS[stage]}`}
+        aria-label={`Expandir ${STAGE_LABELS[stage]}`}
+        className="flex h-full w-12 shrink-0 cursor-pointer flex-col items-center justify-between rounded-xl border bg-[var(--color-bg-card)] py-3 transition-all duration-200 hover:bg-[var(--color-bg-card-hover)]/40 focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
+        style={{ borderColor }}
+      >
+        <div className="flex flex-col items-center gap-2">
+          <ChevronRight size={14} className="text-[var(--color-text-muted)]" />
+          <span className="h-2 w-2 rounded-full" style={{ background: COLUMN_COLORS[stage].dot }} />
+          <span className="text-xs font-semibold text-[var(--color-text-primary)]">{leads.length}</span>
+        </div>
+        <p
+          className="overflow-hidden font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]"
+          style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+        >
+          {STAGE_LABELS[stage]}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={setNodeRef}
-      className="flex h-full w-[280px] shrink-0 flex-col rounded-xl border bg-[var(--color-bg-card)] p-3"
-      style={{
-        borderColor: isOver ? "var(--color-accent)" : COLUMN_COLORS[stage].border,
-      }}
+      className="flex h-full w-[280px] shrink-0 flex-col rounded-xl border bg-[var(--color-bg-card)] p-3 transition-all duration-200"
+      style={{ borderColor }}
     >
       <div className="mb-3 flex shrink-0 items-center gap-2">
         <span className="h-2 w-2 rounded-full" style={{ background: COLUMN_COLORS[stage].dot }} />
         <p className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">{STAGE_LABELS[stage]}</p>
         <span className="ml-auto text-xs font-semibold text-[var(--color-text-primary)]">{leads.length}</span>
+        <button
+          type="button"
+          onClick={onToggle}
+          title={`Colapsar ${STAGE_LABELS[stage]}`}
+          aria-label={`Colapsar ${STAGE_LABELS[stage]}`}
+          className="rounded p-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-bg-app)] hover:text-[var(--color-text-primary)]"
+        >
+          <ChevronLeft size={14} />
+        </button>
       </div>
 
       <SortableContext items={leads.map((lead) => lead.id)} strategy={verticalListSortingStrategy}>
@@ -968,6 +1018,18 @@ export function Sales() {
   const [showNewLead, setShowNewLead] = useState(false);
   const [view, setView] = useSalesView();
 
+  // Set de stages con columna colapsada. No se persiste: cada refresh
+  // arranca con todas las columnas abiertas (decisión del usuario).
+  const [collapsedColumns, setCollapsedColumns] = useState<Set<SalesStage>>(new Set());
+  const toggleColumn = useCallback((stage: SalesStage) => {
+    setCollapsedColumns((prev) => {
+      const next = new Set(prev);
+      if (next.has(stage)) next.delete(stage);
+      else next.add(stage);
+      return next;
+    });
+  }, []);
+
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   const canListUsers = user?.role === "ADMIN";
@@ -1044,6 +1106,8 @@ export function Sales() {
                 stage={group.stage}
                 leads={group.leads}
                 onOpen={setSelectedLeadId}
+                isCollapsed={collapsedColumns.has(group.stage)}
+                onToggle={() => toggleColumn(group.stage)}
               />
             ))}
           </div>
