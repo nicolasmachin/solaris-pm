@@ -41,6 +41,7 @@ export async function patchLead(
     roofType?: string | null;
     notes?: string | null;
     assignedToId?: string | null;
+    leadCreatedAt?: string | null;
     proposalSentAt?: string | null;
     visitScheduledAt?: string | null;
     visitCompletedAt?: string | null;

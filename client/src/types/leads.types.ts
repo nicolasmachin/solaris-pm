@@ -95,6 +95,7 @@ export interface LeadDetail {
   roofType: string | null;
   notes: string | null;
   lostReason: string | null;
+  leadCreatedAt: string | null;
   proposalSentAt: string | null;
   visitScheduledAt: string | null;
   visitCompletedAt: string | null;

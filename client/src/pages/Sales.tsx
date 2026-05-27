@@ -472,7 +472,7 @@ function LeadPanel({
   const [pendingStage, setPendingStage] = useState<SalesStage | null>(null);
   const [confirmConvert, setConfirmConvert] = useState(false);
   const [showConversionModal, setShowConversionModal] = useState(false);
-  const [dates, setDates] = useState({ proposalSentAt: "", visitScheduledAt: "", visitCompletedAt: "", closedAt: "" });
+  const [dates, setDates] = useState({ leadCreatedAt: "", proposalSentAt: "", visitScheduledAt: "", visitCompletedAt: "", closedAt: "" });
 
   const { data: lead, isLoading } = useQuery({
     queryKey: ["lead-detail", leadId],
@@ -514,6 +514,7 @@ function LeadPanel({
     });
     setLostReason(lead.lostReason ?? "");
     setDates({
+      leadCreatedAt: lead.leadCreatedAt ? lead.leadCreatedAt.slice(0, 10) : "",
       proposalSentAt: lead.proposalSentAt ? lead.proposalSentAt.slice(0, 10) : "",
       visitScheduledAt: lead.visitScheduledAt ? lead.visitScheduledAt.slice(0, 10) : "",
       visitCompletedAt: lead.visitCompletedAt ? lead.visitCompletedAt.slice(0, 10) : "",
@@ -545,6 +546,7 @@ function LeadPanel({
   const datesMutation = useMutation({
     mutationFn: () =>
       patchLead(leadId, {
+        leadCreatedAt: dates.leadCreatedAt ? new Date(dates.leadCreatedAt).toISOString() : null,
         proposalSentAt: dates.proposalSentAt ? new Date(dates.proposalSentAt).toISOString() : null,
         visitScheduledAt: dates.visitScheduledAt ? new Date(dates.visitScheduledAt).toISOString() : null,
         visitCompletedAt: dates.visitCompletedAt ? new Date(dates.visitCompletedAt).toISOString() : null,
@@ -748,8 +750,9 @@ function LeadPanel({
           <div className="grid gap-3">
             {(
               [
+                { key: "leadCreatedAt", label: "Fecha de creación", auto: !!lead.leadCreatedAt },
                 { key: "proposalSentAt", label: "Propuesta enviada", auto: !!lead.proposalSentAt },
-                { key: "visitScheduledAt", label: "Visita agendada", auto: false },
+                { key: "visitScheduledAt", label: "Visita agendada", auto: !!lead.visitScheduledAt },
                 { key: "visitCompletedAt", label: "Visita realizada", auto: false },
                 { key: "closedAt", label: "Fecha de cierre", auto: !!lead.closedAt },
               ] as { key: keyof typeof dates; label: string; auto: boolean }[]
