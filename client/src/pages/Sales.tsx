@@ -325,22 +325,30 @@ function KanbanColumn({
     },
   });
 
+  // Total presupuestado de la columna. Suma simple de los estimados;
+  // los leads sin presupuesto cargado suman 0. Aparece en el footer fijo
+  // junto a la cantidad de leads.
+  const totalBudget = leads.reduce(
+    (sum, lead) => sum + (lead.estimatedBudgetUsd ?? 0),
+    0,
+  );
+
   return (
     <div
       ref={setNodeRef}
-      className="flex min-h-[520px] w-[280px] shrink-0 flex-col rounded-xl border bg-[var(--color-bg-card)] p-3"
+      className="flex h-full w-[280px] shrink-0 flex-col rounded-xl border bg-[var(--color-bg-card)] p-3"
       style={{
         borderColor: isOver ? "var(--color-accent)" : COLUMN_COLORS[stage].border,
       }}
     >
-      <div className="mb-3 flex items-center gap-2">
+      <div className="mb-3 flex shrink-0 items-center gap-2">
         <span className="h-2 w-2 rounded-full" style={{ background: COLUMN_COLORS[stage].dot }} />
         <p className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">{STAGE_LABELS[stage]}</p>
         <span className="ml-auto text-xs font-semibold text-[var(--color-text-primary)]">{leads.length}</span>
       </div>
 
       <SortableContext items={leads.map((lead) => lead.id)} strategy={verticalListSortingStrategy}>
-        <div className="space-y-2">
+        <div className="flex-1 space-y-2 overflow-y-auto pr-1">
           {leads.map((lead) => (
             <SortableLeadCard key={lead.id} lead={lead} onOpen={onOpen} />
           ))}
@@ -351,6 +359,10 @@ function KanbanColumn({
           ) : null}
         </div>
       </SortableContext>
+
+      <div className="mt-3 shrink-0 border-t border-[var(--color-border)] pt-2 font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
+        {formatMoney(totalBudget)} · {leads.length} lead{leads.length === 1 ? "" : "s"}
+      </div>
     </div>
   );
 }
@@ -1008,7 +1020,7 @@ export function Sales() {
   };
 
   return (
-    <div className="relative min-h-[calc(100vh-52px)] p-6">
+    <div className="relative flex h-[calc(100vh-52px)] min-h-0 flex-col p-6">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Ventas</p>
@@ -1027,7 +1039,7 @@ export function Sales() {
         </div>
       ) : tab === "active" ? (
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
-          <div className="flex gap-4 overflow-x-auto pb-4">
+          <div className="flex min-h-0 flex-1 gap-4 overflow-x-auto pb-4">
             {activeGroups.map((group) => (
               <KanbanColumn
                 key={group.stage}
