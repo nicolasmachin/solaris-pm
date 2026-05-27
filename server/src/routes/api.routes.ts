@@ -5721,6 +5721,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
     roofType: z.string().optional().nullable(),
     notes: z.string().optional().nullable(),
     assignedToId: z.string().optional().nullable(),
+    // Si viene, respeta lo que mandó el usuario (alta comercial con fecha
+    // pasada). Si no viene, el handler hace new Date() como default.
+    leadCreatedAt: z.string().datetime({ offset: true }).optional().nullable(),
   });
 
   const leadPatchSchema = z.object({
@@ -5734,6 +5737,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     roofType: z.string().optional().nullable(),
     notes: z.string().optional().nullable(),
     assignedToId: z.string().optional().nullable(),
+    leadCreatedAt: z.string().datetime({ offset: true }).optional().nullable(),
     proposalSentAt: z.string().datetime({ offset: true }).optional().nullable(),
     visitScheduledAt: z.string().datetime({ offset: true }).optional().nullable(),
     visitCompletedAt: z.string().datetime({ offset: true }).optional().nullable(),
@@ -5876,6 +5880,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       roofType: lead.roofType,
       notes: lead.notes,
       lostReason: lead.lostReason,
+      leadCreatedAt: lead.leadCreatedAt ? serializeDate(lead.leadCreatedAt) : null,
       proposalSentAt: lead.proposalSentAt ? serializeDate(lead.proposalSentAt) : null,
       visitScheduledAt: lead.visitScheduledAt ? serializeDate(lead.visitScheduledAt) : null,
       visitCompletedAt: lead.visitCompletedAt ? serializeDate(lead.visitCompletedAt) : null,
@@ -5929,6 +5934,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
         roofType: body.roofType ?? null,
         notes: body.notes ?? null,
         assignedToId: body.assignedToId ?? null,
+        // Auto-fill de la fecha de alta comercial. Si el body trajo una
+        // explícita (caso "cargar lead histórico con fecha pasada"),
+        // respetarla. Sino, now().
+        leadCreatedAt: body.leadCreatedAt ? new Date(body.leadCreatedAt) : new Date(),
         createdById: user.id,
       },
     });
@@ -5982,6 +5991,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         ...(body.roofType !== undefined && { roofType: body.roofType }),
         ...(body.notes !== undefined && { notes: body.notes }),
         ...(body.assignedToId !== undefined && { assignedToId: body.assignedToId }),
+        ...(body.leadCreatedAt !== undefined && { leadCreatedAt: body.leadCreatedAt ? new Date(body.leadCreatedAt) : null }),
         ...(body.proposalSentAt !== undefined && { proposalSentAt: body.proposalSentAt ? new Date(body.proposalSentAt) : null }),
         ...(body.visitScheduledAt !== undefined && { visitScheduledAt: body.visitScheduledAt ? new Date(body.visitScheduledAt) : null }),
         ...(body.visitCompletedAt !== undefined && { visitCompletedAt: body.visitCompletedAt ? new Date(body.visitCompletedAt) : null }),
@@ -6027,13 +6037,29 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
 
     const isClosed = body.stage === SalesStage.CERRADO_GANADO || body.stage === SalesStage.CERRADO_PERDIDO;
+    // Auto-fills disparados por el cambio de stage:
+    //  - AGENDAR_VISITA → setea visitScheduledAt si está vacío. Si el
+    //    usuario ya la cargó manualmente, NO se pisa.
+    //  - CERRADO_GANADO/PERDIDO → siempre pisa closedAt con now(). Esto
+    //    es intencional (decisión del usuario en mayo 2026): si el lead
+    //    se reabre y se vuelve a cerrar, queda la última fecha real.
+    // Pasar a otros stages no toca fechas. Volver atrás de un stage
+    // cerrado tampoco borra closedAt — solo se pisa al cerrar de nuevo.
+    const dateAutoFills: { visitScheduledAt?: Date; closedAt?: Date } = {};
+    if (body.stage === SalesStage.AGENDAR_VISITA && !existing.visitScheduledAt) {
+      dateAutoFills.visitScheduledAt = new Date();
+    }
+    if (isClosed) {
+      dateAutoFills.closedAt = new Date();
+    }
+
     const updatedLead = await prisma.salesLead.update({
       where: { id },
       data: {
         stage: body.stage,
         notes: body.notes !== undefined ? body.notes : existing.notes,
         lostReason: body.stage === SalesStage.CERRADO_PERDIDO ? body.lostReason ?? null : existing.lostReason,
-        ...(isClosed && !existing.closedAt && { closedAt: new Date() }),
+        ...dateAutoFills,
       },
     });
 
