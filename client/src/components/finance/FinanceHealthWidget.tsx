@@ -4,7 +4,7 @@ import { CheckCircle2, AlertTriangle } from 'lucide-react';
 import { getFinanceInvariantCheck } from '../../api/finance.api';
 import { fmtCurrency } from '../../lib/finance';
 
-/** Widget compacto para /admin: muestra el estado del invariante financiero. */
+/** Widget compacto que muestra el estado del invariante financiero. */
 export function FinanceHealthWidget() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['finance-invariant-check'],

@@ -29,7 +29,6 @@ import { TabCuentas } from "./AdminCuentas";
 import { TabDeadlineRules } from "./AdminDeadlineRules";
 import { TabClientes } from "./AdminClientes";
 import { TabCostosFijos } from "./AdminCostosFijos";
-import { FinanceHealthWidget } from "../components/finance/FinanceHealthWidget";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -3088,10 +3087,6 @@ export function Admin() {
         <p style={{ fontSize: 11, color: "var(--color-text-muted)", fontFamily: "var(--font-mono)", marginTop: 2 }}>
           Gestión de usuarios, permisos y configuración del sistema
         </p>
-      </div>
-
-      <div style={{ marginBottom: 16 }}>
-        <FinanceHealthWidget />
       </div>
 
       {/* Tabs */}
