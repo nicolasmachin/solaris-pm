@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
+import { Menu } from "lucide-react";
+import { AdminSidebar, ADMIN_TAB_IDS } from "../components/admin/AdminSidebar";
 import { apiClient } from "../api/axios";
 import { getGoals, upsertGoal, deleteGoal } from "../api/metrics.api";
 import { getSubcategories, createSubcategory, deleteSubcategory } from "../api/finance.api";
@@ -3058,68 +3061,79 @@ function ConfirmDialog({
   );
 }
 
-type Tab = "usuarios" | "permisos" | "configuracion" | "objetivos" | "finanzas" | "costos-fijos" | "equipos" | "pipeline" | "materiales" | "cuentas" | "deadlines" | "clientes";
+const DEFAULT_TAB = "usuarios";
 
 export function Admin() {
-  const [activeTab, setActiveTab] = useState<Tab>("usuarios");
+  // El tab activo vive en la URL (?tab=...). Refrescar mantiene la sección,
+  // se puede compartir el link, y nada se hardcodea en estado local.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawTab = searchParams.get("tab");
+  const activeTab = rawTab && ADMIN_TAB_IDS.has(rawTab) ? rawTab : DEFAULT_TAB;
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: "usuarios", label: "Usuarios" },
-    { id: "equipos", label: "Equipos instaladores" },
-    { id: "pipeline", label: "Pipeline default" },
-    { id: "permisos", label: "Permisos" },
-    { id: "configuracion", label: "Configuración del sistema" },
-    { id: "objetivos", label: "Objetivos" },
-    { id: "finanzas", label: "Subcategorías" },
-    { id: "costos-fijos", label: "Costos fijos" },
-    { id: "materiales", label: "Materiales" },
-    { id: "cuentas", label: "Cuentas" },
-    { id: "deadlines", label: "Reglas de Deadlines" },
-    { id: "clientes", label: "Clientes portal" },
-  ];
+  // Si el query param era inválido o estaba ausente, limpiamos la URL para
+  // que muestre el tab que efectivamente se está renderizando. Evita
+  // confusión entre URL y UI.
+  useEffect(() => {
+    if (rawTab !== activeTab) {
+      setSearchParams({ tab: activeTab }, { replace: true });
+    }
+    // setSearchParams es estable. activeTab y rawTab cubren todo lo necesario.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawTab, activeTab]);
+
+  const handleTabChange = (tab: string) => {
+    setSearchParams({ tab }, { replace: true });
+    setSidebarOpen(false);
+  };
+
+  // Drawer mobile.
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div style={{ padding: "24px 28px", minHeight: "100vh" }}>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: "var(--color-text-primary)", margin: 0, fontFamily: "var(--font-display)" }}>
-          Administración
-        </h1>
-        <p style={{ fontSize: 11, color: "var(--color-text-muted)", fontFamily: "var(--font-mono)", marginTop: 2 }}>
-          Gestión de usuarios, permisos y configuración del sistema
-        </p>
-      </div>
+    <div className="flex h-[calc(100vh-52px)] min-h-0 bg-[var(--color-bg-app)]">
+      <AdminSidebar
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-      {/* Tabs */}
-      <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--color-border)", marginBottom: 24 }}>
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            style={{
-              padding: "8px 18px", border: "none", background: "none", cursor: "pointer",
-              fontSize: 13, fontWeight: activeTab === tab.id ? 600 : 400,
-              color: activeTab === tab.id ? "var(--color-accent)" : "var(--color-text-secondary)",
-              borderBottom: activeTab === tab.id ? "2px solid var(--color-accent)" : "2px solid transparent",
-              marginBottom: -1, transition: "color 0.15s",
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <main className="relative flex-1 overflow-y-auto">
+        {/* Hamburger solo en mobile, posicionado dentro del main para no
+            chocar con el del Topbar. */}
+        <button
+          type="button"
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Abrir menú de administración"
+          className="md:hidden absolute left-4 top-4 z-20 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-card)] p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
+        >
+          <Menu size={16} />
+        </button>
 
-      {activeTab === "usuarios" && <TabUsuarios />}
-      {activeTab === "equipos" && <TabEquipos />}
-      {activeTab === "pipeline" && <TabPipeline />}
-      {activeTab === "permisos" && <TabPermisos />}
-      {activeTab === "configuracion" && <TabConfiguracion />}
-      {activeTab === "objetivos" && <TabObjetivos />}
-      {activeTab === "finanzas" && <TabFinanzas />}
-      {activeTab === "costos-fijos" && <TabCostosFijos />}
-      {activeTab === "materiales" && <TabMateriales />}
-      {activeTab === "cuentas" && <TabCuentas />}
-      {activeTab === "deadlines" && <TabDeadlineRules />}
-      {activeTab === "clientes" && <TabClientes />}
+        <div className="px-7 py-6 md:px-8 md:py-7">
+          <header className="mb-6 pl-12 md:pl-0">
+            <h1 className="font-display text-xl font-bold text-[var(--color-text-primary)]">
+              Administración
+            </h1>
+            <p className="mt-0.5 font-mono text-[11px] text-[var(--color-text-muted)]">
+              Gestión de usuarios, permisos y configuración del sistema
+            </p>
+          </header>
+
+          {activeTab === "usuarios" && <TabUsuarios />}
+          {activeTab === "equipos" && <TabEquipos />}
+          {activeTab === "pipeline" && <TabPipeline />}
+          {activeTab === "permisos" && <TabPermisos />}
+          {activeTab === "configuracion" && <TabConfiguracion />}
+          {activeTab === "objetivos" && <TabObjetivos />}
+          {activeTab === "finanzas" && <TabFinanzas />}
+          {activeTab === "costos-fijos" && <TabCostosFijos />}
+          {activeTab === "materiales" && <TabMateriales />}
+          {activeTab === "cuentas" && <TabCuentas />}
+          {activeTab === "deadlines" && <TabDeadlineRules />}
+          {activeTab === "clientes" && <TabClientes />}
+        </div>
+      </main>
     </div>
   );
 }
