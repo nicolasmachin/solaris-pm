@@ -1,5 +1,18 @@
 # Novedades
 
+## v6.2
+
+### 31 de mayo de 2026
+
+#### Finanzas — Estado de resultados en dólares
+
+- El **Estado de resultados** ahora muestra todos los montos en dólares (USD). Antes los convertía a pesos. Los movimientos cargados en pesos se convierten al tipo de cambio.
+
+#### Finanzas — Flujo de fondos
+
+- **Costos fijos proyectados:** se corrigió un error por el que los costos fijos que vencen a fin de mes (día 31) se "salteaban" un mes —aparecían recién el mes siguiente—. Ahora se proyectan en todos los meses.
+- **Filtro por tipo de movimiento:** podés prender y apagar los tipos (cobros pendientes, deuda a proveedores, costos fijos, materiales proyectados) para ver solo lo que te interesa, tanto en el listado como en el gráfico y los totales. Incluye atajos **"Todos"** y **"Ninguno"**.
+
 ## v6.1
 
 ### 27 de mayo de 2026

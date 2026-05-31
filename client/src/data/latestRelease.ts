@@ -23,49 +23,20 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "6.1",
-  date: "27 de mayo de 2026",
+  version: "6.2",
+  date: "31 de mayo de 2026",
   sections: [
     {
-      title: "Mis Tareas — Tareas sueltas + vista calendario",
+      title: "Finanzas — Estado de resultados en dólares",
       items: [
-        'Nuevo bloque "Tareas sueltas" en Mis Tareas: tareas sin proyecto asociado, asignables a cualquier usuario, con fecha de vencimiento opcional. Botón "+ Nueva" desde el bloque o desde un día vacío del calendario.',
-        "Toggle Lista / Calendario en el header. Vista calendario con dos modos: Semana (7 columnas) y Mes (grilla del mes). Pills con color por tipo: azul = subetapa, violeta = tarea de proyecto, ámbar = tarea suelta.",
-        'Click en pill abre el modal/navegación; click en día vacío abre "Nueva tarea" con la fecha pre-llenada. Navegación ← → + botón "Hoy".',
+        "El Estado de resultados ahora muestra todos los montos en dólares (USD). Antes los convertía a pesos. Los movimientos cargados en pesos se convierten al tipo de cambio.",
       ],
     },
     {
-      title: "Tareas — Modal unificado con comentarios",
+      title: "Finanzas — Flujo de fondos",
       items: [
-        "Un solo modal de detalle reemplaza los dos modales viejos (creación desde proyecto y tareas sueltas). Sirve para crear y editar cualquier tarea.",
-        'Comentarios con markdown básico: **negrita**, *cursiva*, listas con "- ítem" y `código inline`. Solo el autor edita o borra sus comentarios.',
-        'Click en una tarea de proyecto desde Mis Tareas ya no navega — abre el modal de detalle. Adentro hay un link "↗ Ir a {proyecto}" para ir igual al detalle del proyecto.',
-      ],
-    },
-    {
-      title: "Ventas — Fechas automáticas del proceso",
-      items: [
-        'Panel "Fechas del proceso" del lead suma el campo "Fecha de creación" (alta comercial), editable.',
-        'Visita agendada se llena sola al pasar el lead a "Agendar visita". No pisa si ya tenía fecha cargada manual.',
-        'Fecha de cierre se actualiza siempre que el lead pase a "Cerrado ganado" o "Cerrado perdido". Volver atrás de un cerrado no borra la fecha; volver a cerrar la reescribe con la nueva.',
-      ],
-    },
-    {
-      title: "Constructor de unifilares — Calibres editables y fix de inputs",
-      items: [
-        'Nueva sección "Protección AC" con dropdowns para Térmica AC y Diferencial AC. En "Automático" el sistema elige según potencia y tipo de red; sobrescribís si necesitás un valor específico.',
-        "En trifásico la tabla automática usa calibres menores (corriente por fase ~1/√3). Monofásica queda igual que antes.",
-        "Calibre de protección DC pasa de campo libre a dropdown con sugerencias estándar (16A/25A/32A/40A/50A/63A con polaridad 2P).",
-        "Arreglo del input de potencia de paneles que no dejaba escribir 580 desde un valor previo: ahora podés tipear libremente y el valor se confirma al salir del campo.",
-      ],
-    },
-    {
-      title: "Privacidad — fix de notificaciones a clientes",
-      items: [
-        'El campo "Email de notificación" del proyecto en realidad guardaba emails de clientes, y el sistema lo estaba usando para mandar notificaciones automáticas. Llegaron mails con info interna a 27 clientes.',
-        'El campo se renombró a "Email del cliente" (y "Teléfono del cliente"), con aclaración explícita: "Solo para contacto manual. No se usa para enviar notificaciones automáticas".',
-        'Se eliminaron las 6 notificaciones automáticas que iban por ese flujo (tarea por vencer, etapa retrasada, hito de progreso, subetapa bloqueada, proyecto con desvío, cambio de estado de etapa). Las notificaciones internas seguras (subetapa anterior completada, ingeniería completada, alertas de plazos) se conservan.',
-        "Guardrail nuevo: el envío de email y WhatsApp valida por default que el destinatario sea un usuario interno de Voltia. Para enviar a externos se necesita autorización explícita en el código.",
+        'Costos fijos proyectados: se corrigió un error por el que los costos que vencen a fin de mes (día 31) se "salteaban" un mes y aparecían recién el mes siguiente. Ahora se proyectan en todos los meses.',
+        'Filtro por tipo de movimiento: prendé y apagá cobros pendientes, deuda a proveedores, costos fijos y materiales proyectados para ver solo lo que te interesa en el listado, el gráfico y los totales. Con atajos "Todos" y "Ninguno".',
       ],
     },
   ],
@@ -80,6 +51,17 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "6.1",
+    shortDate: "27 may",
+    highlights: [
+      "Mis Tareas: tareas sueltas (sin proyecto) + vista calendario (semana/mes) con pills por tipo.",
+      "Tareas: modal de detalle unificado con comentarios en markdown.",
+      "Ventas: fechas del proceso automáticas (alta comercial, visita agendada, cierre).",
+      "Unifilares: calibres de protección AC/DC editables y fix de inputs.",
+      "Privacidad: fix de notificaciones que llegaban a clientes + guardrail de destinatarios internos.",
+    ],
+  },
   {
     version: "6.0",
     shortDate: "13 may",

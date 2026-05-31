@@ -98,7 +98,7 @@ export function FinanceResultsTab() {
 
       {data && (
         <p className="text-[11px] text-[var(--color-text-muted)] font-mono">
-          Montos en UYU. Movimientos en USD se convierten al TC actual ({data.fallbackUsdToUyu.toFixed(2)}).
+          Montos en USD. Movimientos en UYU se convierten al TC actual ({data.fallbackUsdToUyu.toFixed(2)}).
           Excluye AJUSTE_CONCILIACION. Solo movimientos PAGADO.
         </p>
       )}
@@ -177,7 +177,7 @@ function ResultsTable({ data }: { data: ResultsDto }) {
 
       <div className="px-4 py-3 bg-[var(--color-bg-app)] border-t border-[var(--color-border)] flex justify-between items-center text-sm font-semibold">
         <span>Total egresos</span>
-        <span className="tabular-nums text-red-400">-{fmtCurrency(e.total, "UYU")}</span>
+        <span className="tabular-nums text-red-400">-{fmtCurrency(e.total, "USD")}</span>
       </div>
 
       <div className="px-4 py-4 border-t-2 border-[var(--color-border-hover)] flex justify-between items-center">
@@ -188,7 +188,7 @@ function ResultsTable({ data }: { data: ResultsDto }) {
           }`}
         >
           {data.resultado >= 0 ? "+" : ""}
-          {fmtCurrency(data.resultado, "UYU")}
+          {fmtCurrency(data.resultado, "USD")}
         </span>
       </div>
       <div className="px-4 py-2 border-t border-[var(--color-border)] flex justify-between items-center text-sm">
@@ -256,7 +256,7 @@ function CategoryRow({
           }`}
         >
           {variant === "positive" ? "+" : "-"}
-          {fmtCurrency(value, "UYU")}
+          {fmtCurrency(value, "USD")}
         </span>
       </div>
 
@@ -327,7 +327,7 @@ function ProjectGroupRow({ group }: { group: ResultProjectGroup }) {
           )}
         </span>
         <span className="tabular-nums text-[var(--color-text-secondary)]">
-          {fmtCurrency(group.total, "UYU")}
+          {fmtCurrency(group.total, "USD")}
         </span>
       </div>
       {open && (

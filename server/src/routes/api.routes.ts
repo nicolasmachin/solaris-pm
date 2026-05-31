@@ -16666,9 +16666,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
   ): CashflowEvent[] {
     const events: CashflowEvent[] = [];
     for (let i = 0; i <= monthsAhead; i++) {
-      const ref = addMonths(now, i);
-      const mes = ref.getUTCMonth() + 1;
-      const anio = ref.getUTCFullYear();
+      // Avanzar mes a mes con aritmética de meses, NO con addMonths sobre la
+      // fecha con día: si "now" cae un 31 y el mes siguiente no tiene 31,
+      // setUTCMonth se desbordaba al mes subsiguiente y se salteaba un mes
+      // (p.ej. el 31/may proyectaba jul pero no jun).
+      const totalMonth = now.getUTCMonth() + i;
+      const anio = now.getUTCFullYear() + Math.floor(totalMonth / 12);
+      const mes = (totalMonth % 12) + 1;
       for (const fc of fixedCosts) {
         if (!appliesThisMonth(fc, mes)) continue;
         const key = `${fc.id}:${anio}-${mes}`;
@@ -17052,8 +17056,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
     const fallbackUsdToUyu =
       lastRate && Number(lastRate.usdToUyu) > 0 ? Number(lastRate.usdToUyu) : 1;
-    const toUyu = (amount: number, moneda: Moneda) =>
-      moneda === Moneda.USD ? amount * fallbackUsdToUyu : amount;
+    const toUsd = (amount: number, moneda: Moneda) =>
+      moneda === Moneda.UYU ? (fallbackUsdToUyu > 0 ? amount / fallbackUsdToUyu : amount) : amount;
 
     const movements = await prisma.financeMovement.findMany({
       where: {
@@ -17084,8 +17088,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       };
     }
 
-    const sumUyu = (rows: typeof movements) =>
-      rows.reduce((s, m) => s + toUyu(Number(m.monto), m.moneda), 0);
+    const sumUsd = (rows: typeof movements) =>
+      rows.reduce((s, m) => s + toUsd(Number(m.monto), m.moneda), 0);
 
     const ingresosRows = movements.filter((m) => m.tipoMovimiento === TipoMovimiento.INGRESO);
     const egresosRows = movements.filter((m) => m.tipoMovimiento === TipoMovimiento.GASTO);
@@ -17119,13 +17123,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
         };
         byProjectMap.set(key, g);
       }
-      g.total += toUyu(Number(m.monto), m.moneda);
+      g.total += toUsd(Number(m.monto), m.moneda);
       g.items.push(fmtItem(m));
     }
     const byProject = Array.from(byProjectMap.values()).sort((a, b) => b.total - a.total);
 
-    const totalIngresos = sumUyu(ingresosRows);
-    const totalEgresos = sumUyu(egresosRows);
+    const totalIngresos = sumUsd(ingresosRows);
+    const totalEgresos = sumUsd(egresosRows);
     const resultado = totalIngresos - totalEgresos;
     const rentabilidad = totalIngresos > 0 ? Math.round((resultado / totalIngresos) * 1000) / 10 : 0;
 
@@ -17141,17 +17145,17 @@ export async function registerApiRoutes(app: FastifyInstance) {
       egresos: {
         total: totalEgresos,
         costosFijos: {
-          total: sumUyu(fijos),
+          total: sumUsd(fijos),
           items: fijos.map((m) => ({
             ...fmtItem(m),
             descripcion: m.fixedCost?.nombre ?? m.descripcion,
           })),
         },
-        costosVariables: { total: sumUyu(variables), items: variables.map(fmtItem) },
-        salidasProyecto: { total: sumUyu(salidasProyecto), byProject },
-        pagoProveedores: { total: sumUyu(pagoProveedores), items: pagoProveedores.map(fmtItem) },
-        comprasStock: { total: sumUyu(comprasStock), items: comprasStock.map(fmtItem) },
-        otros: { total: sumUyu(otros), items: otros.map(fmtItem) },
+        costosVariables: { total: sumUsd(variables), items: variables.map(fmtItem) },
+        salidasProyecto: { total: sumUsd(salidasProyecto), byProject },
+        pagoProveedores: { total: sumUsd(pagoProveedores), items: pagoProveedores.map(fmtItem) },
+        comprasStock: { total: sumUsd(comprasStock), items: comprasStock.map(fmtItem) },
+        otros: { total: sumUsd(otros), items: otros.map(fmtItem) },
       },
       resultado,
       rentabilidad,

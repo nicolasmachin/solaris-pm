@@ -20,6 +20,7 @@ import {
   type CashflowDto,
   type CashflowEvent,
   type CashflowSourceType,
+  type CashflowTimelinePoint,
 } from "../api/cashflow.api";
 import { fmtCurrency, fmtDate } from "../lib/finance";
 
@@ -36,6 +37,22 @@ const SOURCE_TONE: Record<CashflowSourceType, string> = {
   SUPPLIER_DEBT: "bg-yellow-500/15 text-yellow-400",
   CLIENT_COBRO: "bg-green-500/15 text-green-400",
 };
+
+// Punto sólido para los chips del filtro (SOURCE_TONE usa fondo translúcido).
+const SOURCE_DOT: Record<CashflowSourceType, string> = {
+  FIXED_COST: "bg-zinc-400",
+  PROJECT_MATERIAL: "bg-blue-400",
+  SUPPLIER_DEBT: "bg-yellow-400",
+  CLIENT_COBRO: "bg-green-400",
+};
+
+// Orden estable de los tipos en el filtro.
+const TYPE_ORDER: CashflowSourceType[] = [
+  "CLIENT_COBRO",
+  "SUPPLIER_DEBT",
+  "FIXED_COST",
+  "PROJECT_MATERIAL",
+];
 
 function formatDateShort(iso: string): string {
   const d = new Date(iso);
@@ -57,6 +74,9 @@ export function FinanceCashflowTab() {
     refetchInterval: 60_000,
   });
 
+  // Tipos de evento ocultos por el filtro (vacío = se muestran todos).
+  const [hiddenTypes, setHiddenTypes] = useState<Set<CashflowSourceType>>(new Set());
+
   if (isLoading || !data) {
     return (
       <div className="text-sm text-[var(--color-text-muted)] text-center py-12">Cargando flujo de fondos…</div>
@@ -66,12 +86,51 @@ export function FinanceCashflowTab() {
   const tc = data.fallbackUsdToUyu;
   const toUsd = (monto: number, moneda: "USD" | "UYU") =>
     moneda === "UYU" ? (tc > 0 ? monto / tc : monto) : monto;
-  const entradasTotal = data.events
+
+  // Tipos presentes en la proyección, para armar el filtro.
+  const availableTypes = TYPE_ORDER.filter((t) => data.events.some((e) => e.tipo === t));
+  const toggleType = (t: CashflowSourceType) =>
+    setHiddenTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(t)) next.delete(t);
+      else next.add(t);
+      return next;
+    });
+
+  // Recalcular proyección + flags con los eventos visibles, partiendo del saldo
+  // actual. El histórico (pasado real) no se filtra. Los eventos vienen ya
+  // ordenados por fecha desde el backend.
+  const saldoInicialProy = data.projectionTimeline[0]?.saldo ?? 0;
+  const fechaInicialProy = data.projectionTimeline[0]?.fecha ?? data.historyFrom;
+  const projectionTimelineFiltrada: CashflowTimelinePoint[] = [
+    { fecha: fechaInicialProy, saldo: saldoInicialProy, descripcion: "Saldo actual" },
+  ];
+  const visibleEvents: CashflowEvent[] = [];
+  let saldoProy = saldoInicialProy;
+  let prevSaldoProy = saldoInicialProy;
+  for (const ev of data.events) {
+    if (hiddenTypes.has(ev.tipo)) continue;
+    saldoProy = Math.round((saldoProy + toUsd(ev.monto, ev.moneda) * (ev.impacto === "POSITIVO" ? 1 : -1)) * 100) / 100;
+    visibleEvents.push({ ...ev, causeNegative: saldoProy < 0 && prevSaldoProy >= 0 });
+    projectionTimelineFiltrada.push({ fecha: ev.fecha, saldo: saldoProy, descripcion: ev.descripcion });
+    prevSaldoProy = saldoProy;
+  }
+
+  const entradasTotal = visibleEvents
     .filter((e) => e.impacto === "POSITIVO")
     .reduce((s, e) => s + toUsd(e.monto, e.moneda), 0);
-  const salidasTotal = data.events
+  const salidasTotal = visibleEvents
     .filter((e) => e.impacto === "NEGATIVO")
     .reduce((s, e) => s + toUsd(e.monto, e.moneda), 0);
+
+  // Vista derivada para el gráfico y la tabla, ya filtrada.
+  const viewData: CashflowDto = {
+    ...data,
+    events: visibleEvents,
+    projectionTimeline: projectionTimelineFiltrada,
+    timelineUSD: projectionTimelineFiltrada,
+    alertaNegativo: projectionTimelineFiltrada.some((t) => t.saldo < 0),
+  };
 
   return (
     <div className="space-y-5">
@@ -92,7 +151,46 @@ export function FinanceCashflowTab() {
         />
       </div>
 
-      {data.alertaNegativo && (
+      {availableTypes.length > 0 && (
+        <div className="flex items-center flex-wrap gap-2">
+          <span className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider font-mono mr-1">
+            Mostrar:
+          </span>
+          {availableTypes.map((t) => {
+            const active = !hiddenTypes.has(t);
+            return (
+              <button
+                key={t}
+                onClick={() => toggleType(t)}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs transition-colors ${
+                  active
+                    ? "border-[var(--color-accent)] text-[var(--color-text-primary)]"
+                    : "border-[var(--color-border)] text-[var(--color-text-muted)] opacity-50"
+                }`}
+              >
+                <span className={`inline-block w-2 h-2 rounded-full ${SOURCE_DOT[t]}`} />
+                {SOURCE_LABEL[t]}
+              </button>
+            );
+          })}
+          <div className="flex gap-1 ml-1">
+            <button
+              onClick={() => setHiddenTypes(new Set())}
+              className="px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+            >
+              Todos
+            </button>
+            <button
+              onClick={() => setHiddenTypes(new Set(availableTypes))}
+              className="px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+            >
+              Ninguno
+            </button>
+          </div>
+        </div>
+      )}
+
+      {viewData.alertaNegativo && (
         <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
           <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
           <div className="flex-1">
@@ -107,13 +205,13 @@ export function FinanceCashflowTab() {
         </div>
       )}
 
-      <CashflowChart data={data} />
+      <CashflowChart data={viewData} />
 
       <div>
         <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">
-          Eventos proyectados ({data.events.length})
+          Eventos proyectados ({viewData.events.length})
         </h3>
-        <CashflowEventTable events={data.events} />
+        <CashflowEventTable events={viewData.events} />
       </div>
 
       <p className="text-[11px] text-[var(--color-text-muted)] font-mono">
