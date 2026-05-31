@@ -174,7 +174,7 @@ Sección "Documentos técnicos generados" del workspace junta los `FileAttachmen
 
 ## Política de versionado del producto
 
-- Versión actual en `client/src/version.ts` como string `"X.Y"` (hoy `"5.2"`). El footer de la app la muestra en todas las pantallas con un historial clickeable que lee `CHANGELOG.md`.
+- Versión actual en `client/src/version.ts` como string `"X.Y"` (hoy `"6.2"`). El footer de la app la muestra en todas las pantallas con un historial clickeable que lee `CHANGELOG.md`.
 - **NO bumpear por iniciativa propia**, aunque haya algo "publicable". Iteramos varios cambios chicos sobre la misma versión mientras probamos; bumpear cada vez ensucia el historial. Reportar el cambio y dejar la decisión al usuario.
 - Bumpear sólo cuando el usuario lo pide explícitamente: "nueva versión", "bumpeá", "pasemos a la X", "cerremos versión", "publicá".
 - Cuando lo pida:
@@ -217,7 +217,11 @@ Jerarquía exacta de headings:
 - [ ] Fase 5: Backups periódicos a Backblaze B2 + storage/ respaldado.
 - [ ] Fase 6: Migrar bot de Telegram al mismo VPS.
 
-## Última feature mergeada — v5.2 (5 de mayo de 2026)
+## Última feature mergeada — v6.2 (31 de mayo de 2026)
+
+**Finanzas — Estado de resultados en USD y mejoras de Flujo de fondos**: el "Estado de resultados" (pestaña `/finanzas/resultados`, endpoint `/finance/results`) ahora convierte UYU→USD y muestra todos los montos en dólares (antes los pasaba a pesos). En "Flujo de fondos" se corrigió la proyección de costos fijos que se salteaba un mes cuando el día actual es 31 (`buildFixedCostEventsForRange`, ahora avanza los meses con aritmética en vez de `addMonths` sobre la fecha con día) y se agregó un filtro por tipo de movimiento (toggle on/off, "Todos"/"Ninguno") que afecta el listado, el gráfico y los totales.
+
+### Feature anterior — v5.2 (5 de mayo de 2026)
 
 **Proyecto Final de Ingeniería (EFP)**: documento integrador que combina pre-ingeniería + visitas técnicas + criterio profesional. La IA arma el primer borrador (7 secciones predefinidas) y el proyectista lo refina inline con auto-save (debounce 1.5s). Versionado N: "Regenerar con IA" o "Snapshot" crea v2/v3/…; edición inline actualiza la versión actual sin crear una nueva. Soporta anexos extra (datasheets, planos), exporta PDF profesional con header Voltia.
 
