@@ -30,6 +30,7 @@ import {
   ModalidadPago,
   Module,
   Moneda,
+  ObraChecklistStatus,
   PhaseType,
   Prisma,
   ProjectStatus,
@@ -1765,6 +1766,171 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     return serializeSolarSystem(deletedSolarSystem);
+  });
+
+  // ─── Checklist de referencia por proyecto (obra) ──────────────────────────
+  // Plantilla maestra (ChecklistTemplate) → instancias por proyecto
+  // (ProjectChecklistItem). El GET hace lazy-init de las instancias la primera
+  // vez que se consulta un proyecto sin ítems.
+
+  type ProjectChecklistItemWithUser = Prisma.ProjectChecklistItemGetPayload<{
+    include: { completedBy: { select: { id: true; name: true } } };
+  }>;
+
+  const serializeProjectChecklistItem = (item: ProjectChecklistItemWithUser) => ({
+    id: item.id,
+    name: item.name,
+    description: item.description,
+    order: item.order,
+    status: item.status,
+    observation: item.observation,
+    isCustom: item.templateId === null,
+    completedBy: item.completedBy ? { id: item.completedBy.id, name: item.completedBy.name } : null,
+    completedAt: serializeDate(item.completedAt),
+  });
+
+  const projectChecklistInclude = {
+    completedBy: { select: { id: true, name: true } },
+  } satisfies Prisma.ProjectChecklistItemInclude;
+
+  async function findProjectChecklistItemOrThrow(projectId: string, itemId: string) {
+    const item = await prisma.projectChecklistItem.findFirst({
+      where: { id: itemId, projectId },
+      include: projectChecklistInclude,
+    });
+
+    if (!item) {
+      throw notFound("CHECKLIST_ITEM_NOT_FOUND", "Ítem de checklist no encontrado");
+    }
+
+    return item;
+  }
+
+  const projectChecklistItemCreateSchema = z.object({
+    name: z.string().min(1).max(200),
+    description: z.string().max(1000).optional(),
+  });
+
+  const projectChecklistItemPatchSchema = z.object({
+    status: z.enum(["OK", "PENDING"]).optional(),
+    observation: z.string().max(1000).nullable().optional(),
+  });
+
+  app.get("/projects/:projectId/checklist", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async (request) => {
+    const params = z.object({ projectId: z.string() }).parse(request.params);
+    await findProjectOrThrow(params.projectId);
+
+    const existingCount = await prisma.projectChecklistItem.count({
+      where: { projectId: params.projectId },
+    });
+
+    // Lazy init: si el proyecto no tiene ningún ítem, generarlos desde las
+    // plantillas activas (ordenadas por order ASC, createdAt ASC).
+    if (existingCount === 0) {
+      const templates = await prisma.checklistTemplate.findMany({
+        where: { isActive: true },
+        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+      });
+
+      if (templates.length > 0) {
+        await prisma.projectChecklistItem.createMany({
+          data: templates.map((template) => ({
+            projectId: params.projectId,
+            templateId: template.id,
+            name: template.name,
+            description: template.description,
+            order: template.order,
+            status: ObraChecklistStatus.PENDING,
+          })),
+        });
+      }
+    }
+
+    const items = await prisma.projectChecklistItem.findMany({
+      where: { projectId: params.projectId },
+      include: projectChecklistInclude,
+      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+    });
+
+    const total = items.length;
+    const completed = items.filter((item) => item.status === ObraChecklistStatus.OK).length;
+    const pending = total - completed;
+    const percentComplete = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+    return {
+      items: items.map(serializeProjectChecklistItem),
+      summary: { total, completed, pending, percentComplete },
+    };
+  });
+
+  app.post("/projects/:projectId/checklist", { preHandler: authorize(Module.OPERACIONES, Action.CREATE) }, async (request, reply) => {
+    const params = z.object({ projectId: z.string() }).parse(request.params);
+    const body = projectChecklistItemCreateSchema.parse(request.body);
+    await findProjectOrThrow(params.projectId);
+
+    const maxOrder = await prisma.projectChecklistItem.aggregate({
+      where: { projectId: params.projectId },
+      _max: { order: true },
+    });
+
+    const item = await prisma.projectChecklistItem.create({
+      data: {
+        projectId: params.projectId,
+        templateId: null,
+        name: body.name,
+        description: body.description ?? null,
+        order: (maxOrder._max.order ?? 0) + 1,
+        status: ObraChecklistStatus.PENDING,
+      },
+      include: projectChecklistInclude,
+    });
+
+    reply.code(201);
+    return serializeProjectChecklistItem(item);
+  });
+
+  app.patch("/projects/:projectId/checklist/:itemId", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
+    const user = ensureUser(request);
+    const params = z.object({ projectId: z.string(), itemId: z.string() }).parse(request.params);
+    const body = projectChecklistItemPatchSchema.parse(request.body);
+    await findProjectChecklistItemOrThrow(params.projectId, params.itemId);
+
+    const updateData: Prisma.ProjectChecklistItemUpdateInput = {};
+
+    if (body.status === "OK") {
+      updateData.status = ObraChecklistStatus.OK;
+      updateData.completedBy = { connect: { id: user.id } };
+      updateData.completedAt = new Date();
+    } else if (body.status === "PENDING") {
+      updateData.status = ObraChecklistStatus.PENDING;
+      updateData.completedBy = { disconnect: true };
+      updateData.completedAt = null;
+    }
+
+    if (body.observation !== undefined) {
+      updateData.observation = body.observation;
+    }
+
+    const updatedItem = await prisma.projectChecklistItem.update({
+      where: { id: params.itemId },
+      data: updateData,
+      include: projectChecklistInclude,
+    });
+
+    return serializeProjectChecklistItem(updatedItem);
+  });
+
+  app.delete("/projects/:projectId/checklist/:itemId", { preHandler: authorize(Module.OPERACIONES, Action.DELETE) }, async (request, reply) => {
+    const params = z.object({ projectId: z.string(), itemId: z.string() }).parse(request.params);
+    const item = await findProjectChecklistItemOrThrow(params.projectId, params.itemId);
+
+    if (item.templateId !== null) {
+      throw badRequest("CHECKLIST_ITEM_NOT_CUSTOM", "Solo se pueden eliminar ítems personalizados");
+    }
+
+    await prisma.projectChecklistItem.delete({ where: { id: item.id } });
+
+    return reply.code(204).send();
   });
 
   app.get("/projects/:projectId/stages", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async (request) => {
