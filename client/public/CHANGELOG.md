@@ -2,6 +2,14 @@
 
 ## v6.2
 
+### 1 de junio de 2026
+
+#### Obra — Accesos directos a la galería
+
+- Ahora llegás a las fotos de obra de un proyecto desde tres lugares, sin tener que buscar el tab: un botón amarillo **"Cargar fotos de obra"** en la ficha del proyecto (junto al equipo instalador), el mismo botón dentro del panel de la etapa **Operaciones**, y un acceso directo en el **inicio** (para Operaciones y administradores).
+- Desde el inicio, como no hay un proyecto elegido, se abre un buscador para elegirlo (por cliente, código o ciudad) y te lleva directo a su galería.
+- Al entrar por cualquiera de estos accesos, la página baja sola hasta la galería.
+
 ### 31 de mayo de 2026
 
 #### Obra — Galería de fotos y checklist
