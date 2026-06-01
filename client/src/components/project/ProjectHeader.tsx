@@ -38,8 +38,8 @@ export function ProjectHeader({ project, onEdit }: ProjectHeaderProps) {
   }
 
   return (
-    <div className="flex items-start justify-between gap-4 mb-5">
-      <div>
+    <div className="flex flex-col gap-4 mb-5 md:flex-row md:items-start md:justify-between">
+      <div className="min-w-0">
         <button
           onClick={() => navigate("/dashboard")}
           className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors mb-2 flex items-center gap-1"
