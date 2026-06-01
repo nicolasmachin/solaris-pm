@@ -4,6 +4,15 @@
 
 ### 31 de mayo de 2026
 
+#### Obra — Galería de fotos y checklist
+
+- Nuevo apartado **"Obra"** dentro de cada proyecto: arriba la galería de fotos y abajo el checklist de referencia.
+- **Subir fotos:** podés elegir varias a la vez (o sacarlas con la cámara del celular). Se comprimen solas antes de subir para que pesen poco, con un contador **"Subiendo X de N"**.
+- **Galería:** las fotos se ven en miniatura; al tocar una se abre a pantalla completa con flechas para pasar de una a otra. Cada foto se puede eliminar.
+- **Descargar todas:** un botón baja todas las fotos del proyecto en un ZIP.
+- **Checklist de referencia:** lista de puntos a verificar en obra con barra de progreso. Marcás cada ítem como OK o pendiente con un toque, podés dejar una observación, y agregar ítems propios al proyecto. Los ítems propios se pueden borrar; los de la plantilla, no.
+- **Plantilla de checklist (Administración):** en *Procesos y reglas → Plantilla de checklist* se administran los ítems base que se copian al checklist de cada proyecto nuevo. Se pueden crear, editar, reordenar y activar/desactivar.
+
 #### Finanzas — Estado de resultados en dólares
 
 - El **Estado de resultados** ahora muestra todos los montos en dólares (USD). Antes los convertía a pesos. Los movimientos cargados en pesos se convierten al tipo de cambio.
