@@ -330,56 +330,57 @@ enum ProposalStatus {
 // ─── Modelos existentes ───────────────────────────────────────────────────────
 
 model User {
-  id                             String                   @id @default(cuid())
-  email                          String                   @unique
+  id                             String                      @id @default(cuid())
+  email                          String                      @unique
   password                       String
   name                           String
   phone                          String?
   roleId                         String
-  role                           Role                     @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  role                           Role                        @relation(fields: [roleId], references: [id], onDelete: Restrict)
   tenantId                       String?
-  avatarUrl                      String?                  @map("avatar_url")
+  avatarUrl                      String?                     @map("avatar_url")
   notificationPreferences        UserNotificationPreference?
-  createdProjects                Project[]                @relation("ProjectCreatedBy")
-  projectsSalesperson            Project[]                @relation("ProjectSalesperson")
+  createdProjects                Project[]                   @relation("ProjectCreatedBy")
+  projectsSalesperson            Project[]                   @relation("ProjectSalesperson")
   assignedSubstages              Substage[]
-  assignedStages                 Stage[]                  @relation("StageResponsibleUser")
-  completedChecklistItems        ChecklistItem[]          @relation("ChecklistCompletedBy")
+  assignedStages                 Stage[]                     @relation("StageResponsibleUser")
+  completedChecklistItems        ChecklistItem[]             @relation("ChecklistCompletedBy")
+  obraChecklistCompletions       ProjectChecklistItem[]      @relation("ObraChecklistCompletedBy")
   assignedTasks                  Task[]
-  uploadedFiles                  FileAttachment[]         @relation("FileUploadedBy")
+  uploadedFiles                  FileAttachment[]            @relation("FileUploadedBy")
   auditLogs                      AuditLog[]
   notifications                  Notification[]
   comments                       Comment[]
-  settings                       Setting[]                @relation("SettingUser")
-  settingsUpdated                Setting[]                @relation("SettingUpdatedBy")
-  salesLeadsAssigned             SalesLead[]              @relation("LeadAssignedTo")
-  salesLeadsCreated              SalesLead[]              @relation("LeadCreatedBy")
+  settings                       Setting[]                   @relation("SettingUser")
+  settingsUpdated                Setting[]                   @relation("SettingUpdatedBy")
+  salesLeadsAssigned             SalesLead[]                 @relation("LeadAssignedTo")
+  salesLeadsCreated              SalesLead[]                 @relation("LeadCreatedBy")
   salesActivities                SalesActivity[]
-  proposals                      ProposalGeneration[]     @relation("ProposalGeneratedBy")
-  goals                          Goal[]                   @relation("GoalCreatedBy")
-  financeMovementsCreated        FinanceMovement[]        @relation("FinanceMovCreadoPor")
-  financeMovementsApproved       FinanceMovement[]        @relation("FinanceMovAprobadoPor")
+  proposals                      ProposalGeneration[]        @relation("ProposalGeneratedBy")
+  goals                          Goal[]                      @relation("GoalCreatedBy")
+  financeMovementsCreated        FinanceMovement[]           @relation("FinanceMovCreadoPor")
+  financeMovementsApproved       FinanceMovement[]           @relation("FinanceMovAprobadoPor")
   financeApprovalHistory         FinanceApprovalHistory[]
-  paymentsCreated                Payment[]                @relation("PaymentCreatedBy")
-  installationSchedulesConfirmed InstallationSchedule[]   @relation("InstallationConfirmedBy")
-  reconciliationsCreated         AccountReconciliation[]  @relation("ReconciliationCreatedBy")
+  paymentsCreated                Payment[]                   @relation("PaymentCreatedBy")
+  installationSchedulesConfirmed InstallationSchedule[]      @relation("InstallationConfirmedBy")
+  reconciliationsCreated         AccountReconciliation[]     @relation("ReconciliationCreatedBy")
   aiQueries                      AIQuery[]
   aiRateLimit                    AIRateLimit?
-  clientProjects                 Project[]                @relation("ProjectClient")
-  projectClients                 ProjectClient[]          @relation("ProjectClientUser")
-  projectClientsCreated          ProjectClient[]          @relation("ProjectClientCreatedBy")
-  technicalVisitsCreated         TechnicalVisit[]         @relation("TechnicalVisitCreator")
-  visitInputsCreated             VisitInput[]             @relation("VisitInputCreator")
-  visitReportsGenerated          VisitReport[]            @relation("VisitReportGenerator")
-  efpVersionsCreated             EFPVersion[]             @relation("EFPVersionCreator")
-  efpAttachmentsUploaded         EFPAttachment[]          @relation("EFPAttachmentUploader")
-  projectMaterialsAdded          ProjectMaterial[]        @relation("ProjectMaterialAddedBy")
-  projectMaterialsEdited         ProjectMaterial[]        @relation("ProjectMaterialLastEditedBy")
-  uteDocumentsGenerated          UteDocumentGeneration[]  @relation("UteDocsGeneratedBy")
-  passwordTemporary              Boolean                  @default(false)
-  deletedAt                      DateTime?                @db.Timestamptz(6)
-  createdAt                      DateTime                 @default(now()) @db.Timestamptz(6)
-  updatedAt                      DateTime                 @updatedAt @db.Timestamptz(6)
+  clientProjects                 Project[]                   @relation("ProjectClient")
+  projectClients                 ProjectClient[]             @relation("ProjectClientUser")
+  projectClientsCreated          ProjectClient[]             @relation("ProjectClientCreatedBy")
+  technicalVisitsCreated         TechnicalVisit[]            @relation("TechnicalVisitCreator")
+  visitInputsCreated             VisitInput[]                @relation("VisitInputCreator")
+  visitReportsGenerated          VisitReport[]               @relation("VisitReportGenerator")
+  efpVersionsCreated             EFPVersion[]                @relation("EFPVersionCreator")
+  efpAttachmentsUploaded         EFPAttachment[]             @relation("EFPAttachmentUploader")
+  projectMaterialsAdded          ProjectMaterial[]           @relation("ProjectMaterialAddedBy")
+  projectMaterialsEdited         ProjectMaterial[]           @relation("ProjectMaterialLastEditedBy")
+  uteDocumentsGenerated          UteDocumentGeneration[]     @relation("UteDocsGeneratedBy")
+  passwordTemporary              Boolean                     @default(false)
+  deletedAt                      DateTime?                   @db.Timestamptz(6)
+  createdAt                      DateTime                    @default(now()) @db.Timestamptz(6)
+  updatedAt                      DateTime                    @updatedAt @db.Timestamptz(6)
 
   @@index([deletedAt])
   @@index([tenantId])
@@ -387,80 +388,81 @@ model User {
 }
 
 model Project {
-  id                   String                @id @default(cuid())
-  code                 String                @unique
-  tenantId             String?
-  clientName           String
-  capacityKwp          Decimal               @db.Decimal(10, 2)
-  locationCity         String
-  locationProvince     String
-  status               ProjectStatus
-  startDate            DateTime              @db.Date
-  saleDate             DateTime?             @db.Date
-  plannedEndDate       DateTime?             @db.Date
-  actualEndDate        DateTime?             @db.Date
-  budgetUsd            Decimal?              @db.Decimal(14, 2)
-  executedUsd          Decimal               @db.Decimal(14, 2)
-  estimatedMwhYear     Decimal?              @db.Decimal(10, 2)
-  co2TonsAvoided       Decimal?              @db.Decimal(10, 2)
-  actualOnboardingEnd  DateTime?             @db.Date
-  actualEngineeringEnd DateTime?             @db.Date
-  actualUteStart       DateTime?             @db.Date
-  actualUteEnd         DateTime?             @db.Date
-  modalidadPago        ModalidadPago?
-  firstDateScheduledAt DateTime?             @db.Timestamptz(6)
-  clientEmail          String?
-  clientPhone          String?
-  clientAddress        String?
-  uteCodigoPS          String?
-  uteCodigoAS          String?
-  createdById          String
-  createdBy            User                  @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
-  salespersonId        String?
-  salesperson          User?                 @relation("ProjectSalesperson", fields: [salespersonId], references: [id], onDelete: SetNull)
-  clientUserId         String?
-  clientUser           User?                 @relation("ProjectClient", fields: [clientUserId], references: [id], onDelete: SetNull)
-  stages               Stage[]
-  substages            Substage[]
-  checklistItems       ChecklistItem[]
-  tasks                Task[]
-  files                FileAttachment[]
-  auditLogs            AuditLog[]
-  notifications        Notification[]
-  comments             Comment[]
-  settings             Setting[]             @relation("SettingProject")
-  convertedLeads       SalesLead[]           @relation("LeadConvertedTo")
-  proposals            ProposalGeneration[]  @relation("ProposalProject")
-  solarSystems         SolarSystem[]
-  financeMovements     FinanceMovement[]
-  projectMaterials     ProjectMaterial[]
-  stockMovements       StockMovement[]
-  installationSchedule InstallationSchedule?
-  uteProcesses         UteProcess[]
-  clients              ProjectClient[]
-  unifilarVersions     UnifilarVersion[]
-  preIngenieriaVersions PreIngenieriaVersion[]
-  technicalVisits      TechnicalVisit[]
+  id                      String                   @id @default(cuid())
+  code                    String                   @unique
+  tenantId                String?
+  clientName              String
+  capacityKwp             Decimal                  @db.Decimal(10, 2)
+  locationCity            String
+  locationProvince        String
+  status                  ProjectStatus
+  startDate               DateTime                 @db.Date
+  saleDate                DateTime?                @db.Date
+  plannedEndDate          DateTime?                @db.Date
+  actualEndDate           DateTime?                @db.Date
+  budgetUsd               Decimal?                 @db.Decimal(14, 2)
+  executedUsd             Decimal                  @db.Decimal(14, 2)
+  estimatedMwhYear        Decimal?                 @db.Decimal(10, 2)
+  co2TonsAvoided          Decimal?                 @db.Decimal(10, 2)
+  actualOnboardingEnd     DateTime?                @db.Date
+  actualEngineeringEnd    DateTime?                @db.Date
+  actualUteStart          DateTime?                @db.Date
+  actualUteEnd            DateTime?                @db.Date
+  modalidadPago           ModalidadPago?
+  firstDateScheduledAt    DateTime?                @db.Timestamptz(6)
+  clientEmail             String?
+  clientPhone             String?
+  clientAddress           String?
+  uteCodigoPS             String?
+  uteCodigoAS             String?
+  createdById             String
+  createdBy               User                     @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  salespersonId           String?
+  salesperson             User?                    @relation("ProjectSalesperson", fields: [salespersonId], references: [id], onDelete: SetNull)
+  clientUserId            String?
+  clientUser              User?                    @relation("ProjectClient", fields: [clientUserId], references: [id], onDelete: SetNull)
+  stages                  Stage[]
+  substages               Substage[]
+  checklistItems          ChecklistItem[]
+  obraChecklistItems      ProjectChecklistItem[]
+  tasks                   Task[]
+  files                   FileAttachment[]
+  auditLogs               AuditLog[]
+  notifications           Notification[]
+  comments                Comment[]
+  settings                Setting[]                @relation("SettingProject")
+  convertedLeads          SalesLead[]              @relation("LeadConvertedTo")
+  proposals               ProposalGeneration[]     @relation("ProposalProject")
+  solarSystems            SolarSystem[]
+  financeMovements        FinanceMovement[]
+  projectMaterials        ProjectMaterial[]
+  stockMovements          StockMovement[]
+  installationSchedule    InstallationSchedule?
+  uteProcesses            UteProcess[]
+  clients                 ProjectClient[]
+  unifilarVersions        UnifilarVersion[]
+  preIngenieriaVersions   PreIngenieriaVersion[]
+  technicalVisits         TechnicalVisit[]
   engineeringFinalProject EngineeringFinalProject?
-  uteDocumentConfig    UteDocumentConfig?
-  uteDocumentGenerations UteDocumentGeneration[]
+  uteDocumentConfig       UteDocumentConfig?
+  uteDocumentGenerations  UteDocumentGeneration[]
   // Datos del cliente que se cargan desde el form del proyecto y/o se
   // extraen de la cédula con IA. Ver feature ute-doc-extraction.
   // nombreCliente: nombre tal cual figura en la cédula, usado en los docs
   // UTE. Independiente de clientName (nombre del proyecto). Puede coincidir
   // pero la extracción de cédula sólo toca este campo, nunca clientName.
-  nombreCliente        String                @default("")
-  ciCliente            String                @default("")
-  calle                String                @default("")
-  numCalle             String                @default("")
-  personaFisica        Boolean               @default(true)
-  empresa              Boolean               @default(false)
+  nombreCliente           String                   @default("")
+  ciCliente               String                   @default("")
+  calle                   String                   @default("")
+  numCalle                String                   @default("")
+  personaFisica           Boolean                  @default(true)
+  empresa                 Boolean                  @default(false)
   // Rutas relativas dentro de STORAGE_PATH/projects/{id}/ute-docs/
-  cedulaPath           String?
-  facturaUtePath       String?
-  deletedAt            DateTime?             @db.Timestamptz(6)
-  createdAt            DateTime              @default(now()) @db.Timestamptz(6)
-  updatedAt            DateTime              @updatedAt @db.Timestamptz(6)
+  cedulaPath              String?
+  facturaUtePath          String?
+  deletedAt               DateTime?                @db.Timestamptz(6)
+  createdAt               DateTime                 @default(now()) @db.Timestamptz(6)
+  updatedAt               DateTime                 @updatedAt @db.Timestamptz(6)
 
   @@index([status])
   @@index([tenantId])
@@ -559,47 +561,47 @@ model Stage {
 }
 
 model Substage {
-  id                 String           @id @default(cuid())
-  stageId            String
-  projectId          String
-  order              Int
-  name               String
-  sopCode            String?
-  responsableRol     String?
-  status             SubstageStatus
-  progressPercent    Int              @default(0)
+  id                       String           @id @default(cuid())
+  stageId                  String
+  projectId                String
+  order                    Int
+  name                     String
+  sopCode                  String?
+  responsableRol           String?
+  status                   SubstageStatus
+  progressPercent          Int              @default(0)
   /// @deprecated usar userId + relación user. Se conserva como referencia del rol sugerido heredado del template.
-  responsible        String
-  userId             String?
-  user               User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
-  stage              Stage            @relation(fields: [stageId], references: [id], onDelete: Cascade)
-  project            Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  dueDate            DateTime?        @db.Date
-  plannedStartDate   DateTime?        @db.Date
-  plannedEndDate     DateTime?        @db.Date
-  actualStartDate    DateTime?        @db.Date
-  actualEndDate      DateTime?        @db.Date
-  actualDurationDays Int?
-  delayDays          Int?
-  notes              String?
-  isSystem           Boolean          @default(false)
-  isActive           Boolean          @default(true)
+  responsible              String
+  userId                   String?
+  user                     User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  stage                    Stage            @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  project                  Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  dueDate                  DateTime?        @db.Date
+  plannedStartDate         DateTime?        @db.Date
+  plannedEndDate           DateTime?        @db.Date
+  actualStartDate          DateTime?        @db.Date
+  actualEndDate            DateTime?        @db.Date
+  actualDurationDays       Int?
+  delayDays                Int?
+  notes                    String?
+  isSystem                 Boolean          @default(false)
+  isActive                 Boolean          @default(true)
   // Identifica una subetapa system-managed que representa una acción del
   // UteProcess (consultaSentAt, caseOpenedAt, …, finalizedAt). Sólo se setea
   // en subetapas de la stage HABILITACION_UTE generadas por el sync. Cuando
   // está set + isSystem=true, el endpoint bloquea cambios de nombre/orden.
-  uteAction          String?
-  checklistItems     ChecklistItem[]
-  tasks              Task[]
-  files              FileAttachment[]
-  comments           Comment[]
-  deadline                  DateTime? @db.Date
-  deadlineManuallySet       Boolean   @default(false)
-  deadlineNotificationSent  Boolean   @default(false)
-  deadlineNotifiedAt        DateTime? @db.Timestamptz(6)
-  deletedAt          DateTime?        @db.Timestamptz(6)
-  createdAt          DateTime         @default(now()) @db.Timestamptz(6)
-  updatedAt          DateTime         @updatedAt @db.Timestamptz(6)
+  uteAction                String?
+  checklistItems           ChecklistItem[]
+  tasks                    Task[]
+  files                    FileAttachment[]
+  comments                 Comment[]
+  deadline                 DateTime?        @db.Date
+  deadlineManuallySet      Boolean          @default(false)
+  deadlineNotificationSent Boolean          @default(false)
+  deadlineNotifiedAt       DateTime?        @db.Timestamptz(6)
+  deletedAt                DateTime?        @db.Timestamptz(6)
+  createdAt                DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt                DateTime         @updatedAt @db.Timestamptz(6)
 
   @@unique([stageId, order])
   @@index([stageId])
@@ -613,24 +615,24 @@ model Substage {
 }
 
 model UserNotificationPreference {
-  id                            String   @id @default(cuid())
-  userId                        String   @unique
-  user                          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Aviso 3 días antes de un deadline
-  deadlineWarning               Boolean  @default(true)
-  deadlineWarningInApp          Boolean  @default(true)
-  deadlineWarningEmail          Boolean  @default(false)
-  deadlineWarningWhatsapp       Boolean  @default(false)
+  deadlineWarning         Boolean @default(true)
+  deadlineWarningInApp    Boolean @default(true)
+  deadlineWarningEmail    Boolean @default(false)
+  deadlineWarningWhatsapp Boolean @default(false)
 
   // Aviso al completarse la subetapa anterior a la mía
-  prevSubstageCompleted         Boolean  @default(true)
-  prevSubstageCompletedInApp    Boolean  @default(true)
-  prevSubstageCompletedEmail    Boolean  @default(false)
-  prevSubstageCompletedWhatsapp Boolean  @default(false)
+  prevSubstageCompleted         Boolean @default(true)
+  prevSubstageCompletedInApp    Boolean @default(true)
+  prevSubstageCompletedEmail    Boolean @default(false)
+  prevSubstageCompletedWhatsapp Boolean @default(false)
 
-  createdAt                     DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt                     DateTime @updatedAt @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
 
   @@map("user_notification_preferences")
 }
@@ -694,6 +696,47 @@ model ChecklistItem {
   @@map("checklist_items")
 }
 
+enum ObraChecklistStatus {
+  PENDING
+  OK
+}
+
+model ChecklistTemplate {
+  id          String                 @id @default(cuid())
+  name        String
+  description String?
+  order       Int                    @default(0)
+  isActive    Boolean                @default(true)
+  createdAt   DateTime               @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime               @updatedAt @db.Timestamptz(6)
+  instances   ProjectChecklistItem[]
+
+  @@index([isActive, order])
+  @@map("checklist_templates")
+}
+
+model ProjectChecklistItem {
+  id            String              @id @default(cuid())
+  projectId     String
+  project       Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  templateId    String?
+  template      ChecklistTemplate?  @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  name          String
+  description   String?
+  order         Int                 @default(0)
+  status        ObraChecklistStatus @default(PENDING)
+  observation   String?
+  completedById String?
+  completedBy   User?               @relation("ObraChecklistCompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
+  completedAt   DateTime?           @db.Timestamptz(6)
+  createdAt     DateTime            @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime            @updatedAt @db.Timestamptz(6)
+
+  @@index([projectId])
+  @@index([projectId, status])
+  @@map("project_checklist_items")
+}
+
 model Task {
   id          String       @id @default(cuid())
   // Si projectId es null, es una "tarea suelta" (standalone) — no atada a un
@@ -730,37 +773,37 @@ model Task {
 }
 
 model FileAttachment {
-  id             String              @id @default(cuid())
+  id                     String                 @id @default(cuid())
   // Un FileAttachment debe estar ligado a UN owner: o un Project, o un
   // SalesLead. La validación (XOR) se hace a nivel de service.
-  projectId      String?
-  leadId         String?
-  stageId        String?
-  substageId     String?
-  filename       String
-  storedFilename String
-  mimeType       String
-  sizeBytes      Int
-  url            String
-  tipo           FileAttachmentTipo? // null = upload manual legacy
+  projectId              String?
+  leadId                 String?
+  stageId                String?
+  substageId             String?
+  filename               String
+  storedFilename         String
+  mimeType               String
+  sizeBytes              Int
+  url                    String
+  tipo                   FileAttachmentTipo? // null = upload manual legacy
   // Trazabilidad fina del origen para documentos generados por herramientas del
   // módulo Ingeniería. `tipo` queda como índice grueso (UNIFILAR, etc.); estos
   // campos permiten badges "Ingeniería: Unifilar v3" y filtros por origen.
-  toolSource     String?
-  toolVersion    Int?
-  toolEntityId   String?
-  uploadedById   String
-  uploadedBy     User                @relation("FileUploadedBy", fields: [uploadedById], references: [id], onDelete: Restrict)
-  project        Project?            @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  lead           SalesLead?          @relation("LeadAttachments", fields: [leadId], references: [id], onDelete: Cascade)
-  stage          Stage?              @relation(fields: [stageId], references: [id], onDelete: SetNull)
-  substage       Substage?           @relation(fields: [substageId], references: [id], onDelete: SetNull)
+  toolSource             String?
+  toolVersion            Int?
+  toolEntityId           String?
+  uploadedById           String
+  uploadedBy             User                   @relation("FileUploadedBy", fields: [uploadedById], references: [id], onDelete: Restrict)
+  project                Project?               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lead                   SalesLead?             @relation("LeadAttachments", fields: [leadId], references: [id], onDelete: Cascade)
+  stage                  Stage?                 @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  substage               Substage?              @relation(fields: [substageId], references: [id], onDelete: SetNull)
   preIngenieriaFotos     PreIngenieriaFoto[]
-  preIngenieriaMinutaFor PreIngenieriaVersion[]  @relation("MinutaSource")
-  efpAttachments         EFPAttachment[]         @relation("EFPAttachmentFile")
-  proposalGenerations    ProposalGeneration[]    @relation("ProposalAttachment")
-  deletedAt      DateTime?           @db.Timestamptz(6)
-  createdAt      DateTime            @default(now()) @db.Timestamptz(6)
+  preIngenieriaMinutaFor PreIngenieriaVersion[] @relation("MinutaSource")
+  efpAttachments         EFPAttachment[]        @relation("EFPAttachmentFile")
+  proposalGenerations    ProposalGeneration[]   @relation("ProposalAttachment")
+  deletedAt              DateTime?              @db.Timestamptz(6)
+  createdAt              DateTime               @default(now()) @db.Timestamptz(6)
 
   @@index([projectId])
   @@index([leadId])
@@ -1060,65 +1103,65 @@ model ExchangeRate {
 }
 
 model FinanceMovement {
-  id                  String                   @id @default(cuid())
-  fecha               DateTime
-  mes                 Int
-  anio                Int
-  tipoMovimiento      TipoMovimiento
-  categoriaPrincipal  CategoriaPrincipal
-  subcategoriaId      String?
-  subcategoria        FinanceSubcategory?      @relation(fields: [subcategoriaId], references: [id])
-  descripcion         String
-  monto               Decimal                  @db.Decimal(14, 2)
-  moneda              Moneda                   @default(USD)
-  ivaTasa             Float?                   @default(22.0)
-  tipoCambio          Decimal?                 @db.Decimal(10, 4)
-  pagado              Boolean                  @default(false)
-  cobrado             Boolean                  @default(false)
-  impactaFlujo        Boolean                  @default(true)
-  status              FinanceMovementStatus    @default(PAGADO)
-  expectedDate        DateTime?                @db.Date
-  dueDate             DateTime?                @db.Date
-  invoiceNumber       String?
-  sourceType          MovementSourceType       @default(MANUAL)
-  materialItemId      String?
-  materialItem        MaterialItem?            @relation(fields: [materialItemId], references: [id])
-  quantity            Decimal?                 @db.Decimal(10, 2)
-  unitPrice           Decimal?                 @db.Decimal(12, 2)
+  id                   String                   @id @default(cuid())
+  fecha                DateTime
+  mes                  Int
+  anio                 Int
+  tipoMovimiento       TipoMovimiento
+  categoriaPrincipal   CategoriaPrincipal
+  subcategoriaId       String?
+  subcategoria         FinanceSubcategory?      @relation(fields: [subcategoriaId], references: [id])
+  descripcion          String
+  monto                Decimal                  @db.Decimal(14, 2)
+  moneda               Moneda                   @default(USD)
+  ivaTasa              Float?                   @default(22.0)
+  tipoCambio           Decimal?                 @db.Decimal(10, 4)
+  pagado               Boolean                  @default(false)
+  cobrado              Boolean                  @default(false)
+  impactaFlujo         Boolean                  @default(true)
+  status               FinanceMovementStatus    @default(PAGADO)
+  expectedDate         DateTime?                @db.Date
+  dueDate              DateTime?                @db.Date
+  invoiceNumber        String?
+  sourceType           MovementSourceType       @default(MANUAL)
+  materialItemId       String?
+  materialItem         MaterialItem?            @relation(fields: [materialItemId], references: [id])
+  quantity             Decimal?                 @db.Decimal(10, 2)
+  unitPrice            Decimal?                 @db.Decimal(12, 2)
   // Desglose de factura → impacta stock cuando pasa a A_PAGAR
-  requiresItemDetail  Boolean                  @default(false)
-  hasItemDetail       Boolean                  @default(false)
-  noTieneMateriales   Boolean                  @default(false)
-  depositoIngresoId   String?
-  invoiceItems        InvoiceItem[]
-  projectId           String?
-  project             Project?                 @relation(fields: [projectId], references: [id])
-  supplierId          String?
-  supplier            Supplier?                @relation(fields: [supplierId], references: [id])
-  accountId           String?
-  account             Account?                 @relation(fields: [accountId], references: [id])
-  observaciones       String?
-  estadoAprobacion    EstadoAprobacion         @default(REGISTRADO)
-  archivoAdjuntoUrl   String?
-  paymentApplications PaymentApplication[]
-  comprobantes        FinanceComprobante[]
-  movimientosStock    StockMovement[]
-  historial           FinanceApprovalHistory[]
-  projectMaterials    ProjectMaterial[]
-  reconciliacionAjuste AccountReconciliation? @relation("ReconciliationAjuste")
+  requiresItemDetail   Boolean                  @default(false)
+  hasItemDetail        Boolean                  @default(false)
+  noTieneMateriales    Boolean                  @default(false)
+  depositoIngresoId    String?
+  invoiceItems         InvoiceItem[]
+  projectId            String?
+  project              Project?                 @relation(fields: [projectId], references: [id])
+  supplierId           String?
+  supplier             Supplier?                @relation(fields: [supplierId], references: [id])
+  accountId            String?
+  account              Account?                 @relation(fields: [accountId], references: [id])
+  observaciones        String?
+  estadoAprobacion     EstadoAprobacion         @default(REGISTRADO)
+  archivoAdjuntoUrl    String?
+  paymentApplications  PaymentApplication[]
+  comprobantes         FinanceComprobante[]
+  movimientosStock     StockMovement[]
+  historial            FinanceApprovalHistory[]
+  projectMaterials     ProjectMaterial[]
+  reconciliacionAjuste AccountReconciliation?   @relation("ReconciliationAjuste")
   // Para transferencias entre cuentas: par de movimientos (GASTO origen +
   // INGRESO destino) con el mismo transferGroupId. Permite eliminarlos juntos
   // y mostrarlos como una sola operación en la UI.
-  transferGroupId     String?
-  fixedCostId         String?
-  fixedCost           FixedCost?               @relation(fields: [fixedCostId], references: [id])
-  creadoPorId         String?
-  creadoPor           User?                    @relation("FinanceMovCreadoPor", fields: [creadoPorId], references: [id])
-  aprobadoPorId       String?
-  aprobadoPor         User?                    @relation("FinanceMovAprobadoPor", fields: [aprobadoPorId], references: [id])
-  deletedAt           DateTime?
-  createdAt           DateTime                 @default(now())
-  updatedAt           DateTime                 @updatedAt
+  transferGroupId      String?
+  fixedCostId          String?
+  fixedCost            FixedCost?               @relation(fields: [fixedCostId], references: [id])
+  creadoPorId          String?
+  creadoPor            User?                    @relation("FinanceMovCreadoPor", fields: [creadoPorId], references: [id])
+  aprobadoPorId        String?
+  aprobadoPor          User?                    @relation("FinanceMovAprobadoPor", fields: [aprobadoPorId], references: [id])
+  deletedAt            DateTime?
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
 
   @@index([fecha])
   @@index([mes, anio])
@@ -1166,12 +1209,12 @@ model FixedCost {
 // Skip de un mes específico de un costo fijo. Sirve para "borrar" el pendiente
 // del mes sin desactivar el costo fijo entero (que afectaría los próximos meses).
 model FixedCostSkip {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   fixedCostId String
   fixedCost   FixedCost @relation(fields: [fixedCostId], references: [id], onDelete: Cascade)
   mes         Int
   anio        Int
-  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
 
   @@unique([fixedCostId, mes, anio])
   @@map("fixed_cost_skips")
@@ -1513,9 +1556,9 @@ model ProjectMaterial {
 
   // ─── Lista colaborativa (Ingeniería + Operaciones) ─────────────────────
   // Estado de compra/recepción del ítem. Editable por ambas áreas.
-  status  MaterialStatus @default(PENDIENTE)
+  status   MaterialStatus @default(PENDIENTE)
   // Tachado: el ítem queda en la lista pero atravesado por una línea (legible).
-  crossed Boolean        @default(false)
+  crossed  Boolean        @default(false)
   // Color de fondo opcional para códigos de color personales. Valores
   // permitidos: yellow | green | blue | purple | red | gray | null.
   rowColor String?
@@ -1524,12 +1567,12 @@ model ProjectMaterial {
   addedById String?
   addedBy   User?   @relation("ProjectMaterialAddedBy", fields: [addedById], references: [id], onDelete: SetNull)
 
-  lastEditedAt    DateTime?
-  lastEditedById  String?
-  lastEditedBy    User?     @relation("ProjectMaterialLastEditedBy", fields: [lastEditedById], references: [id], onDelete: SetNull)
+  lastEditedAt   DateTime?
+  lastEditedById String?
+  lastEditedBy   User?     @relation("ProjectMaterialLastEditedBy", fields: [lastEditedById], references: [id], onDelete: SetNull)
   // Rol del último editor (ej "INGENIERIA", "OPERACIONES", "ADMIN") — sirve
   // para mostrar "Última edición {rol} hace 2h" sin joinear con User.
-  lastEditedRole  String?
+  lastEditedRole String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1708,25 +1751,25 @@ enum AIQueryStatus {
 }
 
 model AIQuery {
-  id           String         @id @default(cuid())
-  userId       String
-  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   question     String
-  generatedSQL String?        @db.Text
+  generatedSQL String? @db.Text
   result       Json?
-  response     String?        @db.Text
+  response     String? @db.Text
 
   status       AIQueryStatus
   errorMessage String?
 
   tokensInput  Int?
   tokensOutput Int?
-  costUSD      Decimal?       @db.Decimal(10, 6)
+  costUSD      Decimal? @db.Decimal(10, 6)
 
-  durationMs   Int?
+  durationMs Int?
 
-  createdAt    DateTime       @default(now()) @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
 
   @@index([userId, createdAt])
   @@index([status])
@@ -1734,17 +1777,17 @@ model AIQuery {
 }
 
 model AIRateLimit {
-  id              String  @id @default(cuid())
-  userId          String  @unique
-  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   queriesPerDay   Int     @default(100)
   costUSDPerMonth Decimal @default(50) @db.Decimal(10, 2)
 
-  enabled         Boolean @default(true)
+  enabled Boolean @default(true)
 
-  createdAt       DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
 
   @@map("ai_rate_limits")
 }
@@ -1769,9 +1812,9 @@ enum TipoProteccionDC {
 }
 
 model UnifilarVersion {
-  id            String   @id @default(cuid())
-  projectId     String
-  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   versionNumber Int
   label         String?
@@ -1792,22 +1835,22 @@ model UnifilarVersion {
   tipoProteccionDc     TipoProteccionDC @default(TERMOMAGNETICO)
 
   // Modelos de equipos (string libre)
-  modeloPanel             String?
-  modeloInversor          String
-  potenciaInversorKw      Float
-  modeloMedidorMonitoreo  String?
-  calibreProteccionDc     String           @default("25A 2P")
+  modeloPanel            String?
+  modeloInversor         String
+  potenciaInversorKw     Float
+  modeloMedidorMonitoreo String?
+  calibreProteccionDc    String  @default("25A 2P")
   // Overrides opcionales del calibre AC. Si son null, el SVG generator
   // usa la tabla de rules.ts en función de (potenciaInversorKw, tipoRed).
   // Si tienen valor, ese valor se imprime tal cual en el unifilar.
-  termicaAcCalibre        String?
-  diferencialAcCalibre    String?
+  termicaAcCalibre       String?
+  diferencialAcCalibre   String?
 
   // Longitudes (metros, int)
-  largoDcPanelesM      Int
-  largoDcEsLargo       Boolean @default(false)
-  largoAcInversorIcpM  Int
-  largoAcIcpTableroM   Int
+  largoDcPanelesM     Int
+  largoDcEsLargo      Boolean @default(false)
+  largoAcInversorIcpM Int
+  largoAcIcpTableroM  Int
 
   @@unique([projectId, versionNumber])
   @@index([projectId])
@@ -1818,10 +1861,10 @@ model UnifilarVersion {
 // UnifilarVersion: 1:N inmutable, snapshot del cliente al momento de crear, los
 // datos eléctricos son texto libre (soporta multi-instalación tipo COVITEJA).
 model PreIngenieriaVersion {
-  id            String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  projectId     String
-  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   versionNumber Int
   label         String?
@@ -1910,13 +1953,13 @@ model MaterialesConsolidadosVersion {
 }
 
 model PreIngenieriaFoto {
-  id               String                @id @default(cuid())
+  id               String               @id @default(cuid())
   versionId        String
-  version          PreIngenieriaVersion  @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  version          PreIngenieriaVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
   orden            Int
   etiqueta         String?
   fileAttachmentId String?
-  fileAttachment   FileAttachment?       @relation(fields: [fileAttachmentId], references: [id], onDelete: SetNull)
+  fileAttachment   FileAttachment?      @relation(fields: [fileAttachmentId], references: [id], onDelete: SetNull)
 
   @@index([versionId])
   @@index([fileAttachmentId])
@@ -1954,12 +1997,12 @@ enum TranscriptionStatus {
 }
 
 model TechnicalVisit {
-  id          String  @id @default(cuid())
-  projectId   String
-  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   createdById String
-  createdBy   User    @relation("TechnicalVisitCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy   User   @relation("TechnicalVisitCreator", fields: [createdById], references: [id], onDelete: Restrict)
 
   visitDate DateTime    @db.Timestamptz(6)
   visitType VisitType   @default(INICIAL)
@@ -2170,27 +2213,27 @@ model UteDocumentConfig {
 
   // Datos del trámite UTE específicos al expediente. Los datos generales
   // del cliente (CI, calle, persona física/empresa) viven en Project.
-  cuentaUte       String  @default("")
-  casoUte         String  @default("")
+  cuentaUte String @default("")
+  casoUte   String @default("")
 
   // Representante del cliente (si aplica)
-  representa    String @default("")
-  ciRepre       String @default("")
-  calidadRepre  String @default("TITULAR")
+  representa   String @default("")
+  ciRepre      String @default("")
+  calidadRepre String @default("TITULAR")
 
   // Datos de Voltia / técnico instalador / UTE
-  fi          String @default("MACHIN JUSTET NICOLAS FERNANDO")
-  rut         String @default("150733900014")
-  dirFi       String @default("Rondeau 2110")  // Dirección de la firma instaladora (Voltia)
-  ti          String @default("Nicolás Machín")
-  ciTi        String @default("4.139.492-7")
-  oficina     String @default("")
-  repUte      String @default("")
-  calidadUte  String @default("")
+  fi         String @default("MACHIN JUSTET NICOLAS FERNANDO")
+  rut        String @default("150733900014")
+  dirFi      String @default("Rondeau 2110") // Dirección de la firma instaladora (Voltia)
+  ti         String @default("Nicolás Machín")
+  ciTi       String @default("4.139.492-7")
+  oficina    String @default("")
+  repUte     String @default("")
+  calidadUte String @default("")
   // AS = Acuerdo de Servicio UTE. "asUte" porque `as` es palabra reservada en TS.
-  asUte       String @default("")
-  ps          String @default("")
-  x           String @default("")
+  asUte      String @default("")
+  ps         String @default("")
+  x          String @default("")
 
   // Datos técnicos del sistema (lo que no está en SolarSystem)
   potenciaNomSolicitudImg   String  @default("")
