@@ -17,6 +17,8 @@ import { CommentThread } from "../comments/CommentThread";
 import { EngineeringModuleSection } from "./EngineeringModuleSection";
 import { VisitasToolPanel } from "../ingenieria/visitas/VisitasToolPanel";
 import { VisitFloatingButton } from "../visitas/VisitFloatingButton";
+import { CanAccess } from "../ui/CanAccess";
+import { CargarFotosObraButton } from "../obra/CargarFotosObraButton";
 
 interface StageDrawerProps {
   stage: Stage;
@@ -1102,6 +1104,13 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
                 </div>
               )}
             </section>
+          )}
+
+          {/* Acceso directo a Obra (galería + checklist) — solo etapa Operaciones */}
+          {stage.name === "OPERACIONES" && (
+            <CanAccess module="OPERACIONES" action="VIEW">
+              <CargarFotosObraButton projectId={projectId} variant="block" />
+            </CanAccess>
           )}
 
           {/* Substages */}
