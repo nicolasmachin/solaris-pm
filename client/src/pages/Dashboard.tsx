@@ -2,7 +2,7 @@ import { Fragment, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import { AlertTriangle, ArrowRight, Mic } from "lucide-react";
+import { AlertTriangle, ArrowRight, Camera, Mic } from "lucide-react";
 import { useAuthStore } from "../store/auth.store";
 import { usePermission } from "../hooks/usePermission";
 import { getProjects } from "../api/projects.api";
@@ -13,6 +13,7 @@ import { getPendingDetailMovements } from "../api/finance.api";
 import { completeSubstage } from "../api/stages.api";
 import { LATEST_RELEASE, OLDER_RELEASES } from "../data/latestRelease";
 import { VersionHistoryModal } from "../components/layout/VersionFooter";
+import { SelectProyectoObraModal } from "../components/obra/SelectProyectoObraModal";
 import { getMyUpcomingDeadlines, type UpcomingDeadline } from "../api/deadline.api";
 import type { ProjectListItem } from "../types/api.types";
 import type { UteProcess, UteActionKey } from "../api/uteProcess.api";
@@ -80,6 +81,10 @@ export function Dashboard() {
   // Reduce la fricción del flujo "tomo el celu, abro la app, grabo".
   const isOperario = user?.role === "OPERACIONES";
 
+  // Acceso directo a "Cargar fotos de obra" para Operaciones y ADMIN. Como no
+  // hay proyecto en contexto, abre un selector y navega al tab Obra.
+  const [obraModalOpen, setObraModalOpen] = useState(false);
+
   return (
     <div>
       {isOperario && (
@@ -101,6 +106,29 @@ export function Dashboard() {
           <ArrowRight className="w-4 h-4 text-[var(--color-accent)] shrink-0" />
         </Link>
       )}
+
+      {(isOperario || isAdmin) && (
+        <button
+          type="button"
+          onClick={() => setObraModalOpen(true)}
+          className="mb-4 flex w-full items-center gap-3 bg-[var(--color-accent)]/15 border border-[var(--color-accent)]/40 rounded-xl px-5 py-4 hover:bg-[var(--color-accent)]/25 transition-colors text-left"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent)]/30">
+            <Camera className="w-5 h-5 text-[var(--color-accent)]" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+              Cargar fotos de obra
+            </p>
+            <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+              Elegí el proyecto y subí las fotos de obra a su galería.
+            </p>
+          </div>
+          <ArrowRight className="w-4 h-4 text-[var(--color-accent)] shrink-0" />
+        </button>
+      )}
+
+      <SelectProyectoObraModal isOpen={obraModalOpen} onClose={() => setObraModalOpen(false)} />
 
       {/* Banner de pendientes de desglose (existente) */}
       {canViewFinance && pendingDetail.length > 0 && (
