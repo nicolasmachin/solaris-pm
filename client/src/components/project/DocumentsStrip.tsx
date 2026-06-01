@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Lock, Trash2 } from "lucide-react";
 import { getProjectDocuments, deleteFile, type ProjectDocument } from "../../api/files.api";
+import { UteDocsGeneradosBlock } from "../ute/UteDocsGeneradosBlock";
+import { UteDocsFirmadosBlock } from "../ute/UteDocsFirmadosBlock";
 import { Spinner } from "../ui/Spinner";
 import { useAuthBlobUrl, downloadAuthenticated } from "../../hooks/useAuthBlobUrl";
 import { useAuthStore } from "../../store/auth.store";
@@ -93,7 +95,15 @@ export function DocumentsStrip({ projectId }: { projectId: string }) {
     return currentUser.role === "ADMIN" || doc.uploadedBy === currentUser.id;
   }
 
-  const allDocuments = data ?? [];
+  // Los documentos UTE (ZIP generado y firmados) se muestran en bloques
+  // destacados aparte; se excluyen de la lista general para no duplicar.
+  const allDocuments = useMemo(
+    () =>
+      (data ?? []).filter(
+        (d) => d.toolSource !== "ute-docs" && d.toolSource !== "ute-docs-firmados",
+      ),
+    [data],
+  );
   const documents = useMemo(
     () => allDocuments.filter((d) => matchesOrigin(d, originFilter)),
     [allDocuments, originFilter],
@@ -121,6 +131,12 @@ export function DocumentsStrip({ projectId }: { projectId: string }) {
 
   return (
     <>
+      {/* Bloques destacados de documentos UTE (arriba del listado general) */}
+      <div className="mb-4 grid gap-4 md:grid-cols-2">
+        <UteDocsGeneradosBlock projectId={projectId} />
+        <UteDocsFirmadosBlock projectId={projectId} />
+      </div>
+
       <section className="mb-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5">
         <div className="mb-3 flex items-baseline justify-between gap-2 flex-wrap">
           <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-text-muted)]">

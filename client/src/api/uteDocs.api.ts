@@ -116,3 +116,44 @@ export async function generateUteDocs(projectId: string, docs: UteDocKey[]): Pro
   );
   return response.data as Blob;
 }
+
+// ─── ZIP generado vigente + documentos firmados ────────────────────────────────
+
+export interface UteDocFile {
+  id: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  uploadedBy: { id: string; name: string | null } | null;
+  createdAt: string;
+  downloadUrl: string;
+}
+
+export async function getUteDocGenerado(projectId: string): Promise<UteDocFile | null> {
+  const { data } = await apiClient.get<{ generado: UteDocFile | null }>(
+    `/api/projects/${projectId}/ute-docs/generado`,
+  );
+  return data.generado;
+}
+
+export async function getUteDocsFirmados(projectId: string): Promise<UteDocFile[]> {
+  const { data } = await apiClient.get<{ firmados: UteDocFile[] }>(
+    `/api/projects/${projectId}/ute-docs/firmados`,
+  );
+  return data.firmados;
+}
+
+export async function uploadUteDocFirmado(projectId: string, file: File): Promise<UteDocFile> {
+  const form = new FormData();
+  form.append("file", file, file.name);
+  const { data } = await apiClient.post<{ firmados: UteDocFile[] }>(
+    `/api/projects/${projectId}/ute-docs/firmados`,
+    form,
+    { headers: { "Content-Type": "multipart/form-data" } },
+  );
+  return data.firmados[0];
+}
+
+export async function deleteUteDocFirmado(projectId: string, fileId: string): Promise<void> {
+  await apiClient.delete(`/api/projects/${projectId}/ute-docs/firmados/${fileId}`);
+}
