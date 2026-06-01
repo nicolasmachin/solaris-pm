@@ -68,6 +68,7 @@ import {
   deleteStoredFile,
   getStoredFilePath,
   saveUploadedFile,
+  saveBufferAsAttachment,
   saveObraPhoto,
   deriveObraThumbUrl,
   deleteObraPhotoFiles,
@@ -10310,11 +10311,59 @@ export async function registerApiRoutes(app: FastifyInstance) {
           .strict()
           .parse(request.body);
 
-        const { zipBuffer, zipFilename, docsGenerated } = await generateUteDocs({
-          projectId,
-          userId: user.id,
-          docs: body.docs,
-        });
+        const { zipBuffer, zipFilename, docsGenerated, generationId, projectCode } =
+          await generateUteDocs({
+            projectId,
+            userId: user.id,
+            docs: body.docs,
+          });
+
+        // Persistir el ZIP como FileAttachment del proyecto (toolSource
+        // "ute-docs"). Una sola versión vigente: al regenerar se soft-deletea
+        // la anterior y se borra el archivo físico. Mismo patrón que unifilar.
+        // Si la persistencia falla no se interrumpe la descarga.
+        try {
+          const previous = await prisma.fileAttachment.findMany({
+            where: { projectId, toolSource: "ute-docs", deletedAt: null },
+            select: { id: true, url: true },
+          });
+
+          const ymd = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+          const storedName = `voltia_ute_${projectCode}_${ymd}.zip`;
+          const stored = await saveBufferAsAttachment(
+            zipBuffer,
+            storedName,
+            "application/zip",
+            projectId,
+          );
+
+          await prisma.fileAttachment.create({
+            data: {
+              projectId,
+              filename: stored.filename,
+              storedFilename: stored.storedFilename,
+              mimeType: stored.mimeType,
+              sizeBytes: stored.sizeBytes,
+              url: stored.url,
+              tipo: FileAttachmentTipo.OTRO,
+              toolSource: "ute-docs",
+              toolEntityId: generationId,
+              uploadedById: user.id,
+            },
+          });
+
+          if (previous.length > 0) {
+            await prisma.fileAttachment.updateMany({
+              where: { id: { in: previous.map((p) => p.id) } },
+              data: { deletedAt: new Date() },
+            });
+            await Promise.all(
+              previous.map((p) => deleteStoredFile(p.url).catch(() => undefined)),
+            );
+          }
+        } catch (err) {
+          request.log.warn({ err }, "No se pudo persistir el ZIP UTE generado");
+        }
 
         await createAuditEntry({
           entityType: AuditEntityType.project,
@@ -10330,6 +10379,39 @@ export async function registerApiRoutes(app: FastifyInstance) {
           .header("Content-Type", "application/zip")
           .header("Content-Disposition", `attachment; filename="${zipFilename}"`)
           .send(zipBuffer);
+      },
+    );
+
+    // ZIP UTE generado vigente (uno solo). Lo consume el bloque "Documentos UTE
+    // generados". Visible para cualquiera con acceso al proyecto (VIEW).
+    app.get(
+      "/projects/:projectId/ute-docs/generado",
+      { preHandler: authorize(Module.OPERACIONES, Action.VIEW) },
+      async (request) => {
+        const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
+        await findProjectOrThrow(projectId);
+
+        const file = await prisma.fileAttachment.findFirst({
+          where: { projectId, toolSource: "ute-docs", deletedAt: null },
+          orderBy: { createdAt: "desc" },
+          include: { uploadedBy: { select: { id: true, name: true } } },
+        });
+
+        if (!file) return { generado: null };
+
+        return {
+          generado: {
+            id: file.id,
+            filename: file.filename,
+            mimeType: file.mimeType,
+            sizeBytes: file.sizeBytes,
+            uploadedBy: file.uploadedBy
+              ? { id: file.uploadedBy.id, name: file.uploadedBy.name }
+              : null,
+            createdAt: serializeDate(file.createdAt),
+            downloadUrl: `/api/files/${file.id}/preview`,
+          },
+        };
       },
     );
 

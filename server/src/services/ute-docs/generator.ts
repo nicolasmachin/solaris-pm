@@ -85,6 +85,10 @@ export type GenerateResult = {
   zipBuffer: Buffer;
   zipFilename: string;
   docsGenerated: UteDocKey[];
+  // Para que el endpoint persista el ZIP como FileAttachment (toolSource
+  // "ute-docs") con trazabilidad al log de generación (toolEntityId).
+  generationId: string;
+  projectCode: string;
 };
 
 export async function generateUteDocs(args: {
@@ -152,7 +156,7 @@ export async function generateUteDocs(args: {
   const zipBuffer = Buffer.concat(zipBufferChunks);
 
   // 3) Auditoría: snapshot completo de variables + lista de docs.
-  await prisma.uteDocumentGeneration.create({
+  const generation = await prisma.uteDocumentGeneration.create({
     data: {
       projectId,
       configSnapshot: variables as unknown as object,
@@ -165,7 +169,13 @@ export async function generateUteDocs(args: {
   const today = new Date().toISOString().slice(0, 10);
   const zipFilename = `docs_ute_${proyName}_${today}.zip`;
 
-  return { zipBuffer, zipFilename, docsGenerated: generated };
+  return {
+    zipBuffer,
+    zipFilename,
+    docsGenerated: generated,
+    generationId: generation.id,
+    projectCode: project.code,
+  };
 }
 
 export async function getOrCreateConfig(projectId: string) {
