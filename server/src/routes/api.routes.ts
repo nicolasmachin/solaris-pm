@@ -7011,6 +7011,127 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return { success: true };
   });
 
+  // ─── Plantillas de checklist de obra (maestro editable solo ADMIN/CONFIG) ──
+  // "Soft delete" = isActive=false; no se borran filas de verdad.
+
+  const checklistTemplateCreateSchema = z
+    .object({
+      name: z.string().min(1).max(200),
+      description: z.string().max(1000).optional(),
+      order: z.number().int().optional(),
+    })
+    .strict();
+
+  const checklistTemplatePatchSchema = z
+    .object({
+      name: z.string().min(1).max(200).optional(),
+      description: z.string().max(1000).nullable().optional(),
+      order: z.number().int().optional(),
+      isActive: z.boolean().optional(),
+    })
+    .strict();
+
+  const checklistTemplateReorderSchema = z
+    .object({
+      items: z
+        .array(
+          z.object({
+            id: z.string(),
+            order: z.number().int(),
+          }),
+        )
+        .min(1),
+    })
+    .strict();
+
+  app.get("/admin/checklist-templates", { preHandler: authorize(Module.CONFIGURACION, Action.VIEW) }, async () => {
+    return prisma.checklistTemplate.findMany({
+      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+    });
+  });
+
+  app.post("/admin/checklist-templates", { preHandler: authorize(Module.CONFIGURACION, Action.CREATE) }, async (request, reply) => {
+    const user = ensureUser(request);
+    const body = checklistTemplateCreateSchema.parse(request.body);
+    let order = body.order;
+    if (order === undefined) {
+      const last = await prisma.checklistTemplate.findFirst({ orderBy: { order: "desc" } });
+      order = (last?.order ?? 0) + 1;
+    }
+    const template = await prisma.checklistTemplate.create({
+      data: {
+        name: body.name,
+        description: body.description ?? null,
+        order,
+      },
+    });
+    await createAuditEntry({
+      entityType: AuditEntityType.setting,
+      entityId: template.id,
+      userId: user.id,
+      action: AuditAction.created,
+      description: `Creó plantilla de checklist: ${template.name}`,
+    });
+    return reply.code(201).send(template);
+  });
+
+  app.patch("/admin/checklist-templates/:id", { preHandler: authorize(Module.CONFIGURACION, Action.EDIT) }, async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const body = checklistTemplatePatchSchema.parse(request.body);
+    const existing = await prisma.checklistTemplate.findUnique({ where: { id } });
+    if (!existing) throw notFound("CHECKLIST_TEMPLATE_NOT_FOUND", "Plantilla de checklist no encontrada");
+
+    const updated = await prisma.checklistTemplate.update({
+      where: { id },
+      data: {
+        ...(body.name !== undefined ? { name: body.name } : {}),
+        ...(body.description !== undefined ? { description: body.description } : {}),
+        ...(body.order !== undefined ? { order: body.order } : {}),
+        ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
+      },
+    });
+    await createAuditEntry({
+      entityType: AuditEntityType.setting,
+      entityId: id,
+      userId: user.id,
+      action: AuditAction.updated,
+      description: `Actualizó plantilla de checklist ${updated.name}`,
+    });
+    return updated;
+  });
+
+  app.delete("/admin/checklist-templates/:id", { preHandler: authorize(Module.CONFIGURACION, Action.DELETE) }, async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const existing = await prisma.checklistTemplate.findUnique({ where: { id } });
+    if (!existing) throw notFound("CHECKLIST_TEMPLATE_NOT_FOUND", "Plantilla de checklist no encontrada");
+    const updated = await prisma.checklistTemplate.update({
+      where: { id },
+      data: { isActive: false },
+    });
+    await createAuditEntry({
+      entityType: AuditEntityType.setting,
+      entityId: id,
+      userId: user.id,
+      action: AuditAction.deleted,
+      description: `Desactivó plantilla de checklist ${updated.name}`,
+    });
+    return updated;
+  });
+
+  app.put("/admin/checklist-templates/reorder", { preHandler: authorize(Module.CONFIGURACION, Action.EDIT) }, async (request) => {
+    const body = checklistTemplateReorderSchema.parse(request.body);
+    await prisma.$transaction(
+      body.items.map((item) =>
+        prisma.checklistTemplate.update({ where: { id: item.id }, data: { order: item.order } }),
+      ),
+    );
+    return prisma.checklistTemplate.findMany({
+      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+    });
+  });
+
   // ─── Recálculo manual de deadlines a nivel proyecto (G.2) ─────────────────
   // Útil cuando se cambian reglas en Admin y se quiere aplicarlas al proyecto
   // sin esperar al próximo cambio de fecha de instalación.
