@@ -6,6 +6,7 @@ import { pipeline } from "node:stream/promises";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
+import archiver from "archiver";
 import bcrypt from "bcryptjs";
 import type { FastifyInstance } from "fastify";
 import {
@@ -63,7 +64,14 @@ import { createPlanPagos, getPlanPagos } from "../services/planPagos.service.js"
 import { generateUteDocs, getOrCreateConfig as getOrCreateUteDocConfig, upsertConfig as upsertUteDocConfig } from "../services/ute-docs/generator.js";
 import { UTE_DOC_KEYS, type UteDocKey } from "../services/ute-docs/coordinates.js";
 import { extractFromDocument } from "../services/ute-extract/index.js";
-import { deleteStoredFile, getStoredFilePath, saveUploadedFile } from "../services/file-storage.service.js";
+import {
+  deleteStoredFile,
+  getStoredFilePath,
+  saveUploadedFile,
+  saveObraPhoto,
+  deriveObraThumbUrl,
+  deleteObraPhotoFiles,
+} from "../services/file-storage.service.js";
 import { copyLeadAttachmentsToProject } from "../services/sales/sales.service.js";
 import {
   calculateProjectMetrics,
@@ -3690,6 +3698,219 @@ export async function registerApiRoutes(app: FastifyInstance) {
     reply.header("Content-Type", file.mimeType);
     reply.header("Content-Disposition", `inline; filename="${file.filename}"`);
     return reply.send(fs.createReadStream(absolutePath));
+  });
+
+  // Sirve el thumbnail de una foto de obra (JPEG 400px). Si no existe thumb en
+  // disco (archivos que no son de obra), hace fallback al archivo original.
+  app.get("/files/:fileId/thumbnail", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async (request, reply) => {
+    ensureUser(request);
+    const params = z.object({ fileId: z.string() }).parse(request.params);
+    const file = await findFileOrThrow(params.fileId);
+
+    const thumbPath = getStoredFilePath(deriveObraThumbUrl(file.url));
+    if (fs.existsSync(thumbPath)) {
+      reply.header("Content-Type", "image/jpeg");
+      reply.header("Content-Disposition", "inline");
+      return reply.send(fs.createReadStream(thumbPath));
+    }
+
+    // Fallback: servir el original (archivos sin thumbnail generado).
+    const originalPath = getStoredFilePath(file.url);
+    if (!fs.existsSync(originalPath)) {
+      throw notFound("FILE_NOT_FOUND", "El archivo no existe en storage");
+    }
+    reply.header("Content-Type", file.mimeType);
+    reply.header("Content-Disposition", "inline");
+    return reply.send(fs.createReadStream(originalPath));
+  });
+
+  // ============================================================
+  // GALERÍA DE FOTOS DE OBRA (PASO 4 + descarga ZIP PASO 4.5)
+  // ============================================================
+
+  type ObraPhotoRow = {
+    id: string;
+    filename: string;
+    sizeBytes: number;
+    createdAt: Date;
+    uploadedBy: { id: string; name: string | null } | null;
+  };
+
+  const mapObraPhoto = (photo: ObraPhotoRow) => ({
+    id: photo.id,
+    filename: photo.filename,
+    thumbnailUrl: `/api/files/${photo.id}/thumbnail`,
+    fullUrl: `/api/files/${photo.id}/preview`,
+    sizeBytes: photo.sizeBytes,
+    uploadedBy: photo.uploadedBy
+      ? { id: photo.uploadedBy.id, name: photo.uploadedBy.name }
+      : null,
+    createdAt: serializeDate(photo.createdAt),
+  });
+
+  app.get("/projects/:projectId/obra/photos", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async (request) => {
+    const params = z.object({ projectId: z.string() }).parse(request.params);
+    const project = await findProjectOrThrow(params.projectId);
+
+    const photos = await prisma.fileAttachment.findMany({
+      where: {
+        projectId: project.id,
+        toolSource: "obra-fotos",
+        deletedAt: null,
+      },
+      orderBy: { createdAt: "desc" },
+      include: { uploadedBy: { select: { id: true, name: true } } },
+    });
+
+    return {
+      photos: photos.map(mapObraPhoto),
+      count: photos.length,
+    };
+  });
+
+  app.post("/projects/:projectId/obra/photos", { preHandler: authorize(Module.OPERACIONES, Action.CREATE) }, async (request, reply) => {
+    const user = ensureUser(request);
+    const params = z.object({ projectId: z.string() }).parse(request.params);
+    const project = await findProjectOrThrow(params.projectId);
+
+    const parts = request.parts();
+    const created: ReturnType<typeof mapObraPhoto>[] = [];
+
+    // El cliente sube de a UNA foto por request, pero soportamos el loop por si
+    // llegan varias en un mismo multipart.
+    for await (const part of parts) {
+      if (part.type === "file") {
+        const savedPhoto = await saveObraPhoto(part, project.id);
+        const attachment = await prisma.fileAttachment.create({
+          data: {
+            projectId: project.id,
+            filename: savedPhoto.filename,
+            storedFilename: savedPhoto.storedFilename,
+            mimeType: savedPhoto.mimeType,
+            sizeBytes: savedPhoto.sizeBytes,
+            url: savedPhoto.url,
+            tipo: FileAttachmentTipo.OTRO,
+            toolSource: "obra-fotos",
+            uploadedById: user.id,
+          },
+          include: { uploadedBy: { select: { id: true, name: true } } },
+        });
+        created.push(mapObraPhoto(attachment));
+
+        await createAuditEntry({
+          entityType: AuditEntityType.file,
+          entityId: attachment.id,
+          projectId: project.id,
+          userId: user.id,
+          action: AuditAction.file_uploaded,
+          description: `Subió foto de obra '${savedPhoto.filename}'`,
+        });
+      }
+    }
+
+    if (created.length === 0) {
+      throw badRequest("PHOTO_REQUIRED", "Debés adjuntar al menos una foto");
+    }
+
+    reply.code(201);
+    return { photos: created };
+  });
+
+  app.delete("/projects/:projectId/obra/photos/:photoId", { preHandler: authorize(Module.OPERACIONES, Action.DELETE) }, async (request, reply) => {
+    const user = ensureUser(request);
+    const params = z.object({ projectId: z.string(), photoId: z.string() }).parse(request.params);
+
+    const photo = await prisma.fileAttachment.findFirst({
+      where: {
+        id: params.photoId,
+        projectId: params.projectId,
+        toolSource: "obra-fotos",
+        deletedAt: null,
+      },
+    });
+    if (!photo) {
+      throw notFound("PHOTO_NOT_FOUND", "Foto no encontrada");
+    }
+
+    await prisma.fileAttachment.update({
+      where: { id: photo.id },
+      data: { deletedAt: new Date() },
+    });
+
+    await deleteObraPhotoFiles(photo.url);
+
+    await createAuditEntry({
+      entityType: AuditEntityType.file,
+      entityId: photo.id,
+      projectId: params.projectId,
+      userId: user.id,
+      action: AuditAction.deleted,
+      description: `Eliminó foto de obra '${photo.filename}'`,
+    });
+
+    return reply.code(204).send();
+  });
+
+  // PASO 4.5: descarga de todas las fotos de obra en un ZIP (streaming).
+  app.get("/projects/:projectId/obra/photos/download-all", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async (request, reply) => {
+    ensureUser(request);
+    const params = z.object({ projectId: z.string() }).parse(request.params);
+    const project = await findProjectOrThrow(params.projectId);
+
+    const photos = await prisma.fileAttachment.findMany({
+      where: {
+        projectId: project.id,
+        toolSource: "obra-fotos",
+        deletedAt: null,
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    if (photos.length === 0) {
+      throw notFound("NO_PHOTOS", "No hay fotos para descargar");
+    }
+
+    const zipName = `obra_${project.code}_fotos.zip`;
+
+    // Tomamos control de la respuesta cruda para streamear el ZIP nosotros;
+    // así Fastify no intenta serializar el retorno.
+    reply.hijack();
+    reply.raw.writeHead(200, {
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename="${zipName}"`,
+    });
+
+    const archive = archiver("zip", { zlib: { level: 6 } });
+
+    archive.on("error", (err) => {
+      request.log.error({ err }, "Error armando ZIP de fotos de obra");
+      reply.raw.destroy(err);
+    });
+
+    archive.pipe(reply.raw);
+
+    // Detectar nombres duplicados para desambiguar con prefijo de índice.
+    const nameCounts = new Map<string, number>();
+    for (const p of photos) {
+      nameCounts.set(p.filename, (nameCounts.get(p.filename) ?? 0) + 1);
+    }
+
+    photos.forEach((photo, idx) => {
+      const absolutePath = getStoredFilePath(photo.url);
+      if (!fs.existsSync(absolutePath)) {
+        return;
+      }
+      let entryName = photo.filename;
+      if ((nameCounts.get(photo.filename) ?? 0) > 1) {
+        const padded = String(idx + 1).padStart(2, "0");
+        entryName = `foto_${padded}_${photo.filename}`;
+      }
+      archive.file(absolutePath, { name: entryName });
+    });
+
+    await archive.finalize();
+
+    return reply;
   });
 
   app.get("/projects/:projectId/audit", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async (request) => {

@@ -5,6 +5,7 @@ import { pipeline } from "node:stream/promises";
 import { randomUUID } from "node:crypto";
 
 import type { MultipartFile } from "@fastify/multipart";
+import sharp from "sharp";
 
 import { env } from "../config/env.js";
 import { badRequest } from "../utils/errors.js";
@@ -171,4 +172,93 @@ export function buildToolGeneratedFilename(params: {
   }
 
   return `${parts.join("_")}.${params.extension}`;
+}
+
+// ============================================================
+// OBRA PHOTOS — galería de fotos de obra
+// ============================================================
+
+const obraPhotoExtensions = new Set([".jpg", ".jpeg", ".png", ".webp"]);
+const OBRA_THUMB_WIDTH = 400;
+const OBRA_THUMB_QUALITY = 70;
+
+export interface SavedObraPhoto {
+  filename: string;
+  storedFilename: string;
+  mimeType: string;
+  sizeBytes: number;
+  url: string;
+  thumbnailUrl: string;
+}
+
+/**
+ * Guarda una foto de obra bajo `storage/<projectId>/obra/`, conservando el
+ * original tal cual (sin recomprimir) y generando un thumbnail JPEG de 400px
+ * de ancho en la misma carpeta (`thumb_<uuid>.jpg`).
+ */
+export async function saveObraPhoto(
+  file: MultipartFile,
+  projectId: string,
+): Promise<SavedObraPhoto> {
+  const extension = path.extname(file.filename).toLowerCase();
+  if (!obraPhotoExtensions.has(extension)) {
+    throw badRequest("INVALID_PHOTO_TYPE", "El tipo de imagen no está permitido");
+  }
+
+  const obraRoot = path.resolve(process.cwd(), "..", env.storagePath, projectId, "obra");
+  await fsPromises.mkdir(obraRoot, { recursive: true });
+
+  const uuid = randomUUID();
+  const storedFilename = `${uuid}${extension}`;
+  const absolutePath = path.join(obraRoot, storedFilename);
+
+  // Guardar el ORIGINAL tal cual (stream, sin re-comprimir).
+  const writeStream = fs.createWriteStream(absolutePath);
+  await pipeline(file.file, writeStream);
+
+  const stats = await fsPromises.stat(absolutePath);
+  const maxBytes = env.maxFileSizeMb * 1024 * 1024;
+  if (stats.size > maxBytes) {
+    await fsPromises.unlink(absolutePath).catch(() => undefined);
+    throw badRequest("FILE_TOO_LARGE", `El archivo supera el límite de ${env.maxFileSizeMb} MB`);
+  }
+
+  // Generar thumbnail en la misma carpeta obra.
+  const thumbStoredFilename = `thumb_${uuid}.jpg`;
+  const thumbAbsolutePath = path.join(obraRoot, thumbStoredFilename);
+  await sharp(absolutePath)
+    .rotate()
+    .resize({ width: OBRA_THUMB_WIDTH, withoutEnlargement: true })
+    .jpeg({ quality: OBRA_THUMB_QUALITY })
+    .toFile(thumbAbsolutePath);
+
+  return {
+    filename: file.filename,
+    storedFilename,
+    mimeType: file.mimetype || "application/octet-stream",
+    sizeBytes: stats.size,
+    url: `${projectId}/obra/${storedFilename}`,
+    thumbnailUrl: `${projectId}/obra/${thumbStoredFilename}`,
+  };
+}
+
+/**
+ * Dado un `url` de foto de obra (`<projectId>/obra/<uuid>.<ext>`), devuelve el
+ * url del thumbnail correspondiente (`<projectId>/obra/thumb_<uuid>.jpg`).
+ */
+export function deriveObraThumbUrl(url: string): string {
+  const dir = path.posix.dirname(url);
+  const base = path.posix.basename(url);
+  const baseNoExt = base.slice(0, base.length - path.posix.extname(base).length);
+  const thumbName = `thumb_${baseNoExt}.jpg`;
+  return dir === "." ? thumbName : `${dir}/${thumbName}`;
+}
+
+/**
+ * Borra del filesystem el original de una foto de obra y su thumbnail
+ * (best-effort: ignora si no existen).
+ */
+export async function deleteObraPhotoFiles(url: string): Promise<void> {
+  await deleteStoredFile(url);
+  await deleteStoredFile(deriveObraThumbUrl(url));
 }
