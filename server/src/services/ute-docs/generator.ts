@@ -6,11 +6,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-// @ts-expect-error archiver v8 es ESM con named exports en runtime
-// pero los @types/archiver siguen describiendo la API legacy (default export).
-// El import por named funciona en runtime; suprimimos el TS porque los tipos
-// están out of date. Si actualizamos @types/archiver, se puede quitar.
-import { ZipArchive } from "archiver";
+import archiver from "archiver";
 import { PassThrough } from "node:stream";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
@@ -129,7 +125,7 @@ export async function generateUteDocs(args: {
     passthrough.on("error", (err) => reject(err));
   });
 
-  const archive = new ZipArchive({ zlib: { level: 9 } });
+  const archive = archiver("zip", { zlib: { level: 9 } });
   archive.on("error", (err: unknown) => passthrough.destroy(err as Error));
   archive.pipe(passthrough);
 
