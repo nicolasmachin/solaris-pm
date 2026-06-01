@@ -28,7 +28,8 @@ import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
 import { CommentThread } from "../components/comments/CommentThread";
 import { UteProjectTab } from "../components/ute/UteProjectTab";
-import { ProjectObraSection } from "../components/obra/ProjectObraSection";
+import { ProjectObraDestacadoSection } from "../components/obra/ProjectObraDestacadoSection";
+import { CanAccess } from "../components/ui/CanAccess";
 import { getProjectGantt } from "../api/metrics.api";
 import { installationCheck } from "../api/calendar.api";
 import { usePermission } from "../hooks/usePermission";
@@ -655,7 +656,7 @@ export function ProjectDetail() {
   const [showEditProject, setShowEditProject] = useState(false);
   const [editingSolarSystemId, setEditingSolarSystemId] = useState<string | null>(null);
   const [showCreateSolarSystem, setShowCreateSolarSystem] = useState(false);
-  const [bottomTab, setBottomTab] = useState<"activity" | "comments" | "timeline" | "materiales" | "compras" | "ute" | "costos" | "obra">("activity");
+  const [bottomTab, setBottomTab] = useState<"activity" | "comments" | "timeline" | "materiales" | "compras" | "ute" | "costos">("activity");
   const canViewFinance = usePermission("FINANZAS", "VIEW");
   const canViewMetrics = usePermission("METRICAS", "VIEW");
   const canViewStock = usePermission("STOCK", "VIEW");
@@ -683,9 +684,8 @@ export function ProjectDetail() {
   // drawer automáticamente la primera vez que el proyecto esté disponible.
   const autoOpenedStageRef = useRef<string | null>(null);
 
-  // Deep-link a la galería de Obra (?tab=obra desde los accesos directos).
-  const bottomTabsRef = useRef<HTMLDivElement>(null);
-  const handledTabParamRef = useRef(false);
+  // Deep-link al bloque destacado de Obra (?focus=obra desde los accesos directos).
+  const obraSectionRef = useRef<HTMLDivElement>(null);
 
   const ganttQuery = useQuery({
     queryKey: ["project", id, "gantt"],
@@ -716,22 +716,20 @@ export function ProjectDetail() {
     setSearchParams(next, { replace: true });
   }, [project, searchParams, setSearchParams]);
 
-  // Abrir el tab Obra y hacer scroll a la sección cuando viene ?tab=obra
-  // (accesos directos desde drawer / header / dashboard). Solo si tiene permiso.
+  // Scroll al bloque destacado de Obra cuando viene ?tab=obra (accesos directos
+  // desde drawer / header / dashboard). Se limpia el param para re-scrollear en
+  // cada click y no re-scrollear al recargar.
   useEffect(() => {
     if (!project) return;
-    if (handledTabParamRef.current) return;
     if (searchParams.get("tab") !== "obra") return;
-    handledTabParamRef.current = true;
-    if (!canViewObra) return;
-    setBottomTab("obra");
-    // Esperar al render del tab antes de scrollear.
-    requestAnimationFrame(() => {
-      bottomTabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
     const next = new URLSearchParams(searchParams);
     next.delete("tab");
     setSearchParams(next, { replace: true });
+    if (!canViewObra) return;
+    // Esperar al render del bloque antes de scrollear.
+    requestAnimationFrame(() => {
+      obraSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }, [project, searchParams, setSearchParams, canViewObra]);
 
   // ── Error / loading states ────────────────────────────────────────────────
@@ -847,10 +845,17 @@ export function ProjectDetail() {
         onTasksChanged={invalidate}
       />
 
+      {/* Obra del proyecto — bloque destacado (galería + checklist) */}
+      <CanAccess module="OPERACIONES" action="VIEW">
+        <div ref={obraSectionRef}>
+          <ProjectObraDestacadoSection projectId={project.id} />
+        </div>
+      </CanAccess>
+
       {/* Clientes con acceso al portal — sólo admins (permiso USUARIOS.VIEW) */}
       {canViewClients && <PortalClientsPanel projectId={project.id} />}
 
-      <div ref={bottomTabsRef} className="mt-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
+      <div className="mt-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
         <div className="mb-4 flex gap-2 border-b border-[var(--color-border)] pb-3">
           <button
             className={`rounded-full px-3 py-1 text-xs ${bottomTab === "activity" ? "bg-[var(--color-accent)] text-black" : "text-[var(--color-text-secondary)]"}`}
@@ -866,15 +871,6 @@ export function ProjectDetail() {
           >
             Comentarios
           </button>
-          {canViewObra ? (
-            <button
-              className={`rounded-full px-3 py-1 text-xs ${bottomTab === "obra" ? "bg-[var(--color-accent)] text-black" : "text-[var(--color-text-secondary)]"}`}
-              onClick={() => setBottomTab("obra")}
-              type="button"
-            >
-              Obra
-            </button>
-          ) : null}
           {canViewMetrics ? (
             <button
               className={`rounded-full px-3 py-1 text-xs ${bottomTab === "timeline" ? "bg-[var(--color-accent)] text-black" : "text-[var(--color-text-secondary)]"}`}
@@ -962,8 +958,6 @@ export function ProjectDetail() {
           />
         ) : bottomTab === "costos" ? (
           <CostosTab projectId={project.id} budgetUsd={project.budgetUsd ?? null} />
-        ) : bottomTab === "obra" ? (
-          <ProjectObraSection projectId={project.id} />
         ) : (
           <CommentThread projectId={project.id} level="project" context={commentContext} />
         )}
