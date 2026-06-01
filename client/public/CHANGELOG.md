@@ -4,6 +4,13 @@
 
 ### 1 de junio de 2026
 
+#### Documentos UTE — Generados y firmados
+
+- Al generar los documentos UTE desde Ingeniería, el ZIP ahora **queda guardado** en el proyecto y aparece en un bloque **"Documentos UTE generados"** dentro de Documentos, con su fecha y un botón para descargarlo. Al regenerar, reemplaza al anterior (queda siempre el último).
+- Nuevo bloque **"Documentos UTE firmados"**: cuando Operaciones vuelve de la obra con los documentos firmados por el cliente, los sube ahí (PDF, fotos o un ZIP). Se pueden subir varios juntos y se van acumulando.
+- Cada firmado muestra quién lo subió y cuándo; lo elimina quien lo subió o un administrador.
+- Los documentos UTE no aparecen mezclados en el listado general de Documentos: tienen sus propios bloques destacados.
+
 #### Obra — Bloque destacado y carga de fotos
 
 - Las fotos de obra y el checklist ahora son un **bloque destacado "Obra del proyecto"** en la página del proyecto (debajo de Tareas), bien visible. Ya no están escondidos en una pestaña.
