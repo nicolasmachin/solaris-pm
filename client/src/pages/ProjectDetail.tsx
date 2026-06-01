@@ -683,6 +683,10 @@ export function ProjectDetail() {
   // drawer automáticamente la primera vez que el proyecto esté disponible.
   const autoOpenedStageRef = useRef<string | null>(null);
 
+  // Deep-link a la galería de Obra (?tab=obra desde los accesos directos).
+  const bottomTabsRef = useRef<HTMLDivElement>(null);
+  const handledTabParamRef = useRef(false);
+
   const ganttQuery = useQuery({
     queryKey: ["project", id, "gantt"],
     queryFn: () => getProjectGantt(id!),
@@ -711,6 +715,24 @@ export function ProjectDetail() {
     next.delete("substage");
     setSearchParams(next, { replace: true });
   }, [project, searchParams, setSearchParams]);
+
+  // Abrir el tab Obra y hacer scroll a la sección cuando viene ?tab=obra
+  // (accesos directos desde drawer / header / dashboard). Solo si tiene permiso.
+  useEffect(() => {
+    if (!project) return;
+    if (handledTabParamRef.current) return;
+    if (searchParams.get("tab") !== "obra") return;
+    handledTabParamRef.current = true;
+    if (!canViewObra) return;
+    setBottomTab("obra");
+    // Esperar al render del tab antes de scrollear.
+    requestAnimationFrame(() => {
+      bottomTabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    const next = new URLSearchParams(searchParams);
+    next.delete("tab");
+    setSearchParams(next, { replace: true });
+  }, [project, searchParams, setSearchParams, canViewObra]);
 
   // ── Error / loading states ────────────────────────────────────────────────
 
@@ -828,7 +850,7 @@ export function ProjectDetail() {
       {/* Clientes con acceso al portal — sólo admins (permiso USUARIOS.VIEW) */}
       {canViewClients && <PortalClientsPanel projectId={project.id} />}
 
-      <div className="mt-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
+      <div ref={bottomTabsRef} className="mt-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
         <div className="mb-4 flex gap-2 border-b border-[var(--color-border)] pb-3">
           <button
             className={`rounded-full px-3 py-1 text-xs ${bottomTab === "activity" ? "bg-[var(--color-accent)] text-black" : "text-[var(--color-text-secondary)]"}`}
