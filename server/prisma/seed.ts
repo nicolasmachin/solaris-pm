@@ -14,6 +14,7 @@ import {
   NotificationType,
   PhaseType,
   Prisma,
+  PrismaClient,
   ProjectStatus,
   SalesStage,
   SettingKey,
@@ -1852,6 +1853,27 @@ async function seedMaterialCategories() {
   }
 }
 
+async function seedChecklistTemplates(db: PrismaClient) {
+  const count = await db.checklistTemplate.count();
+  if (count > 0) {
+    console.log(`ℹ️  Plantillas de checklist ya existen (${count}), skip`);
+    return;
+  }
+  const templates = [
+    "Revisión de cableado DC",
+    "Verificación de torque en conexiones",
+    "Prueba de strings (medición de tensión)",
+    "Verificación de puesta a tierra",
+    "Inspección visual de montaje de paneles",
+  ];
+  for (const [idx, name] of templates.entries()) {
+    await db.checklistTemplate.create({
+      data: { name, order: idx + 1, isActive: true },
+    });
+  }
+  console.log(`✅ ${templates.length} plantillas de checklist creadas`);
+}
+
 async function run() {
   const roleIdByName = await seedSystemRoles();
   const { admin, operations, comercial, ingeniero } = await createUsers(roleIdByName);
@@ -1876,6 +1898,7 @@ async function run() {
   await seedMaterialCategories();
   await seedInstallationSchedules({ adminId: admin.id, project1Id, project2Id, project4Id });
   await seedUteProcesses(admin.id);
+  await seedChecklistTemplates(prisma);
 
   const project1 = await prisma.project.findUnique({
     where: { id: project1Id },
