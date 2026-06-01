@@ -4,6 +4,10 @@
 
 ### 1 de junio de 2026
 
+#### Documentos — Vista de lista
+
+- En la sección **Documentos** del proyecto ahora podés cambiar entre **grilla** (tarjetas) y **lista**. La vista de lista muestra cada archivo en una fila con el nombre completo bien visible, ideal para encontrar algo cuando hay muchos adjuntos. La app recuerda tu elección.
+
 #### Documentos UTE — Generados y firmados
 
 - Al generar los documentos UTE desde Ingeniería, el ZIP ahora **queda guardado** en el proyecto y aparece en un bloque **"Documentos UTE generados"** dentro de Documentos, con su fecha y un botón para descargarlo. Al regenerar, reemplaza al anterior (queda siempre el último).

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Lock, Trash2 } from "lucide-react";
+import { LayoutGrid, List, Lock, Trash2 } from "lucide-react";
 import { getProjectDocuments, deleteFile, type ProjectDocument } from "../../api/files.api";
 import { UteDocsGeneradosBlock } from "../ute/UteDocsGeneradosBlock";
 import { UteDocsFirmadosBlock } from "../ute/UteDocsFirmadosBlock";
@@ -64,8 +64,18 @@ function matchesOrigin(doc: ProjectDocument, filter: OriginFilter): boolean {
 export function DocumentsStrip({ projectId }: { projectId: string }) {
   const [previewDoc, setPreviewDoc] = useState<ProjectDocument | null>(null);
   const [originFilter, setOriginFilter] = useState<OriginFilter>("todos");
+  // Vista grilla (cards horizontales) o lista (filas verticales). La lista es
+  // más cómoda para buscar cuando hay muchos adjuntos. Se recuerda la elección.
+  const [viewMode, setViewMode] = useState<"grid" | "list">(
+    () => (localStorage.getItem("voltia-docs-view") === "list" ? "list" : "grid"),
+  );
   const currentUser = useAuthStore(s => s.user);
   const qc = useQueryClient();
+
+  function changeViewMode(mode: "grid" | "list") {
+    setViewMode(mode);
+    localStorage.setItem("voltia-docs-view", mode);
+  }
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["project-documents", projectId],
@@ -151,27 +161,58 @@ export function DocumentsStrip({ projectId }: { projectId: string }) {
           </p>
         </div>
 
-        {/* Filtros de origen — sólo se muestran si hay variedad */}
+        {/* Filtros de origen + toggle de vista — sólo si hay documentos */}
         {!isLoading && allDocuments.length > 0 && (
-          <div className="mb-3 inline-flex flex-wrap gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] p-0.5 text-[10px]">
-            {(Object.keys(ORIGIN_FILTER_LABEL) as OriginFilter[]).map((f) => {
-              const n = counts[f];
-              if (f !== "todos" && n === 0) return null;
-              return (
-                <button
-                  key={f}
-                  type="button"
-                  onClick={() => setOriginFilter(f)}
-                  className={`rounded px-2 py-0.5 transition-colors ${
-                    originFilter === f
-                      ? "bg-[var(--color-accent)] text-black font-semibold"
-                      : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-                  }`}
-                >
-                  {ORIGIN_FILTER_LABEL[f]} ({n})
-                </button>
-              );
-            })}
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="inline-flex flex-wrap gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] p-0.5 text-[10px]">
+              {(Object.keys(ORIGIN_FILTER_LABEL) as OriginFilter[]).map((f) => {
+                const n = counts[f];
+                if (f !== "todos" && n === 0) return null;
+                return (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setOriginFilter(f)}
+                    className={`rounded px-2 py-0.5 transition-colors ${
+                      originFilter === f
+                        ? "bg-[var(--color-accent)] text-black font-semibold"
+                        : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                    }`}
+                  >
+                    {ORIGIN_FILTER_LABEL[f]} ({n})
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="inline-flex gap-0.5 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] p-0.5">
+              <button
+                type="button"
+                onClick={() => changeViewMode("grid")}
+                aria-label="Vista de grilla"
+                title="Vista de grilla"
+                className={`rounded p-1 transition-colors ${
+                  viewMode === "grid"
+                    ? "bg-[var(--color-accent)] text-black"
+                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                }`}
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => changeViewMode("list")}
+                aria-label="Vista de lista"
+                title="Vista de lista"
+                className={`rounded p-1 transition-colors ${
+                  viewMode === "list"
+                    ? "bg-[var(--color-accent)] text-black"
+                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                }`}
+              >
+                <List className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         )}
 
@@ -187,6 +228,19 @@ export function DocumentsStrip({ projectId }: { projectId: string }) {
           <p className="py-8 text-center text-sm text-[var(--color-text-muted)]">
             Este proyecto no tiene documentos adjuntos todavía.
           </p>
+        ) : viewMode === "list" ? (
+          <div className="flex flex-col gap-1">
+            {documents.map((doc) => (
+              <DocumentRow
+                key={doc.id}
+                doc={doc}
+                onClick={() => setPreviewDoc(doc)}
+                canDelete={canDelete(doc)}
+                onDelete={() => handleDelete(doc)}
+                deleting={deleteMut.isPending && deleteMut.variables === doc.id}
+              />
+            ))}
+          </div>
         ) : (
           <div className="-mx-1 overflow-x-auto">
             <div className="flex gap-2 px-1 pb-1">
@@ -318,6 +372,91 @@ function DocumentCard({ doc, onClick, canDelete, onDelete, deleting }: {
           </span>
         ) : null}
       </button>
+    </div>
+  );
+}
+
+// Fila de la vista lista: ancho completo, nombre prominente y metadatos en una
+// línea — más cómoda para escanear/buscar cuando hay muchos adjuntos.
+function DocumentRow({ doc, onClick, canDelete, onDelete, deleting }: {
+  doc: ProjectDocument;
+  onClick: () => void;
+  canDelete: boolean;
+  onDelete: () => void;
+  deleting: boolean;
+}) {
+  const icon = iconFor(doc.mimeType);
+  const showThumb = isImage(doc.mimeType);
+  const isToolGenerated = doc.toolSource != null;
+  const toolBadgeLabel = isToolGenerated
+    ? `${doc.toolSource!.charAt(0).toUpperCase()}${doc.toolSource!.slice(1)}${
+        doc.toolVersion ? ` v${doc.toolVersion}` : ""
+      }`
+    : null;
+  const tipoBadge = !isToolGenerated && doc.tipo ? TIPO_BADGE[doc.tipo] : null;
+
+  return (
+    <div className="group flex items-center gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 transition-colors hover:border-[var(--color-text-secondary)]">
+      <button
+        type="button"
+        onClick={onClick}
+        title={`${doc.filename}\n${doc.sourceLabel}`}
+        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded bg-[var(--color-bg-card)]">
+          {showThumb ? (
+            <ImageThumb src={doc.previewUrl} alt="" />
+          ) : (
+            <span style={{ fontSize: 18, color: icon.color }}>{icon.emoji}</span>
+          )}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[13px] font-medium text-[var(--color-text-primary)]">
+            {doc.filename}
+          </span>
+          <span className="block truncate text-[10px] text-[var(--color-text-muted)]">
+            {doc.sourceLabel} · {formatSize(doc.sizeBytes)} · {formatShortDate(doc.uploadedAt)}
+          </span>
+        </span>
+        {toolBadgeLabel ? (
+          <span
+            className="ml-1 hidden shrink-0 rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider sm:inline-block"
+            style={{ background: "rgba(59,130,246,0.15)", color: "#60a5fa" }}
+          >
+            Ingeniería · {toolBadgeLabel}
+          </span>
+        ) : tipoBadge ? (
+          <span
+            className="ml-1 hidden shrink-0 rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider sm:inline-block"
+            style={{ background: `${tipoBadge.color}22`, color: tipoBadge.color }}
+          >
+            {tipoBadge.label}
+          </span>
+        ) : null}
+      </button>
+
+      {isToolGenerated ? (
+        <span
+          className="inline-flex shrink-0 items-center gap-0.5 rounded bg-[var(--color-bg-card)] px-1 py-0.5 text-[8px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]"
+          title="Documento generado automáticamente. Para reemplazarlo, creá una versión nueva desde la herramienta."
+        >
+          <Lock className="h-2.5 w-2.5" />
+          inmutable
+        </span>
+      ) : (
+        canDelete && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            disabled={deleting}
+            title="Eliminar archivo"
+            aria-label="Eliminar archivo"
+            className="shrink-0 rounded p-1 text-[var(--color-text-muted)] opacity-0 transition-opacity hover:bg-red-500/15 hover:text-red-500 group-hover:opacity-100 disabled:opacity-50"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        )
+      )}
     </div>
   );
 }
