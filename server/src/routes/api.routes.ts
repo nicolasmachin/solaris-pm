@@ -10415,6 +10415,138 @@ export async function registerApiRoutes(app: FastifyInstance) {
       },
     );
 
+    // ─── Documentos UTE firmados (subidos por Operaciones tras la obra) ─────
+    // Acumulativo: cada subida es una entrada más (no reemplaza). Acepta PDF,
+    // imágenes y ZIP. Multipart es files:1 → el cliente sube de a uno.
+    const UTE_FIRMADOS_EXTS = new Set([".pdf", ".jpg", ".jpeg", ".png", ".zip"]);
+
+    const mapFirmado = (file: {
+      id: string;
+      filename: string;
+      mimeType: string;
+      sizeBytes: number;
+      createdAt: Date;
+      uploadedBy: { id: string; name: string | null } | null;
+    }) => ({
+      id: file.id,
+      filename: file.filename,
+      mimeType: file.mimeType,
+      sizeBytes: file.sizeBytes,
+      uploadedBy: file.uploadedBy ? { id: file.uploadedBy.id, name: file.uploadedBy.name } : null,
+      createdAt: serializeDate(file.createdAt),
+      downloadUrl: `/api/files/${file.id}/preview`,
+    });
+
+    app.post(
+      "/projects/:projectId/ute-docs/firmados",
+      { preHandler: authorize(Module.OPERACIONES, Action.VIEW) },
+      async (request, reply) => {
+        const user = ensureUser(request);
+        const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
+        await findProjectOrThrow(projectId);
+
+        const created: ReturnType<typeof mapFirmado>[] = [];
+        for await (const part of request.parts()) {
+          if (part.type !== "file") continue;
+          const ext = path.extname(part.filename).toLowerCase();
+          if (!UTE_FIRMADOS_EXTS.has(ext)) {
+            // Drenar el stream para no colgar la request multipart.
+            await part.toBuffer().catch(() => undefined);
+            throw badRequest(
+              "INVALID_FILE_TYPE",
+              "Solo se permiten archivos PDF, JPG, PNG o ZIP",
+            );
+          }
+          const saved = await saveUploadedFile(part, projectId);
+          const attachment = await prisma.fileAttachment.create({
+            data: {
+              projectId,
+              filename: saved.filename,
+              storedFilename: saved.storedFilename,
+              mimeType: saved.mimeType,
+              sizeBytes: saved.sizeBytes,
+              url: saved.url,
+              tipo: FileAttachmentTipo.UPLOAD_MANUAL,
+              toolSource: "ute-docs-firmados",
+              uploadedById: user.id,
+            },
+            include: { uploadedBy: { select: { id: true, name: true } } },
+          });
+          created.push(mapFirmado(attachment));
+
+          await createAuditEntry({
+            entityType: AuditEntityType.file,
+            entityId: attachment.id,
+            projectId,
+            userId: user.id,
+            action: AuditAction.file_uploaded,
+            description: `Subió documento UTE firmado '${saved.filename}'`,
+          });
+        }
+
+        if (created.length === 0) {
+          throw badRequest("FILE_REQUIRED", "Debés adjuntar al menos un archivo");
+        }
+
+        reply.code(201);
+        return { firmados: created };
+      },
+    );
+
+    app.get(
+      "/projects/:projectId/ute-docs/firmados",
+      { preHandler: authorize(Module.OPERACIONES, Action.VIEW) },
+      async (request) => {
+        const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
+        await findProjectOrThrow(projectId);
+
+        const files = await prisma.fileAttachment.findMany({
+          where: { projectId, toolSource: "ute-docs-firmados", deletedAt: null },
+          orderBy: { createdAt: "desc" },
+          include: { uploadedBy: { select: { id: true, name: true } } },
+        });
+
+        return { firmados: files.map(mapFirmado) };
+      },
+    );
+
+    app.delete(
+      "/projects/:projectId/ute-docs/firmados/:fileId",
+      { preHandler: authorize(Module.OPERACIONES, Action.VIEW) },
+      async (request, reply) => {
+        const user = ensureUser(request);
+        const { projectId, fileId } = z
+          .object({ projectId: z.string().min(1), fileId: z.string().min(1) })
+          .parse(request.params);
+
+        const file = await prisma.fileAttachment.findFirst({
+          where: { id: fileId, projectId, toolSource: "ute-docs-firmados", deletedAt: null },
+        });
+        if (!file) throw notFound("FILE_NOT_FOUND", "Documento firmado no encontrado");
+
+        if (file.uploadedById !== user.id && user.role !== "ADMIN") {
+          throw new AppError(403, "FORBIDDEN", "Solo quien lo subió o un administrador puede eliminarlo");
+        }
+
+        await prisma.fileAttachment.update({
+          where: { id: file.id },
+          data: { deletedAt: new Date() },
+        });
+        await deleteStoredFile(file.url);
+
+        await createAuditEntry({
+          entityType: AuditEntityType.file,
+          entityId: file.id,
+          projectId,
+          userId: user.id,
+          action: AuditAction.deleted,
+          description: `Eliminó documento UTE firmado '${file.filename}'`,
+        });
+
+        return reply.code(204).send();
+      },
+    );
+
     // ─── Extracción de datos del cliente con IA (cédula / factura UTE) ──────
     // El cliente sube un archivo (multipart). El server lo guarda en
     // storage/projects/{id}/ute-docs/, lo manda a Claude Haiku para extraer
