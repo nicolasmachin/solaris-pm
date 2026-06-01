@@ -40,7 +40,7 @@ export function SelectProyectoObraModal({ isOpen, onClose }: Props) {
   function select(projectId: string) {
     onClose();
     setSearch("");
-    navigate(`/projects/${projectId}?tab=obra`);
+    navigate(`/projects/${projectId}?focus=obra`);
   }
 
   return (

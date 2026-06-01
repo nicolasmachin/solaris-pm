@@ -716,14 +716,14 @@ export function ProjectDetail() {
     setSearchParams(next, { replace: true });
   }, [project, searchParams, setSearchParams]);
 
-  // Scroll al bloque destacado de Obra cuando viene ?tab=obra (accesos directos
-  // desde drawer / header / dashboard). Se limpia el param para re-scrollear en
-  // cada click y no re-scrollear al recargar.
+  // Scroll al bloque destacado de Obra cuando viene ?focus=obra (accesos
+  // directos desde drawer / header / dashboard). Se limpia el param para
+  // re-scrollear en cada click y no re-scrollear al recargar.
   useEffect(() => {
     if (!project) return;
-    if (searchParams.get("tab") !== "obra") return;
+    if (searchParams.get("focus") !== "obra") return;
     const next = new URLSearchParams(searchParams);
-    next.delete("tab");
+    next.delete("focus");
     setSearchParams(next, { replace: true });
     if (!canViewObra) return;
     // Esperar al render del bloque antes de scrollear.

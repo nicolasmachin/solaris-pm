@@ -13,7 +13,9 @@ interface Props {
 
 // Acceso directo al tab "Obra" del proyecto (galería de fotos + checklist).
 // Mismo color amarillo de marca que "Guardar notas" (Button variant primary).
-// Navega con ?tab=obra; ProjectDetail abre el tab y hace scroll a la sección.
+// Navega con ?focus=obra; ProjectDetail scrollea al bloque destacado de Obra.
+// Si ya estás en /projects/:id, solo cambia el search param (no remonta) y el
+// effect dispara el scroll.
 export function CargarFotosObraButton({ projectId, variant = "block", className = "" }: Props) {
   const navigate = useNavigate();
 
@@ -21,7 +23,7 @@ export function CargarFotosObraButton({ projectId, variant = "block", className 
     <Button
       variant="primary"
       size={variant === "block" ? "md" : "sm"}
-      onClick={() => navigate(`/projects/${projectId}?tab=obra`)}
+      onClick={() => navigate(`/projects/${projectId}?focus=obra`)}
       className={`${variant === "block" ? "w-full justify-center" : ""} ${className}`}
     >
       <Camera size={variant === "block" ? 16 : 14} />
