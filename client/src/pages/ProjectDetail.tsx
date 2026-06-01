@@ -28,6 +28,7 @@ import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
 import { CommentThread } from "../components/comments/CommentThread";
 import { UteProjectTab } from "../components/ute/UteProjectTab";
+import { ProjectObraSection } from "../components/obra/ProjectObraSection";
 import { getProjectGantt } from "../api/metrics.api";
 import { installationCheck } from "../api/calendar.api";
 import { usePermission } from "../hooks/usePermission";
@@ -654,13 +655,14 @@ export function ProjectDetail() {
   const [showEditProject, setShowEditProject] = useState(false);
   const [editingSolarSystemId, setEditingSolarSystemId] = useState<string | null>(null);
   const [showCreateSolarSystem, setShowCreateSolarSystem] = useState(false);
-  const [bottomTab, setBottomTab] = useState<"activity" | "comments" | "timeline" | "materiales" | "compras" | "ute" | "costos">("activity");
+  const [bottomTab, setBottomTab] = useState<"activity" | "comments" | "timeline" | "materiales" | "compras" | "ute" | "costos" | "obra">("activity");
   const canViewFinance = usePermission("FINANZAS", "VIEW");
   const canViewMetrics = usePermission("METRICAS", "VIEW");
   const canViewStock = usePermission("STOCK", "VIEW");
   const canViewUte = usePermission("TRAMITES_UTE", "VIEW");
   const canCreateUte = usePermission("TRAMITES_UTE", "CREATE");
   const canViewClients = usePermission("USUARIOS", "VIEW");
+  const canViewObra = usePermission("OPERACIONES", "VIEW");
   // El tab "Compras" es la lista colaborativa de materiales (Ingeniería +
   // Operaciones). Mismo componente que se usa en /ingenieria/proyecto/:id.
   const canViewCompras = usePermission("INGENIERIA", "VIEW") || usePermission("OPERACIONES", "VIEW");
@@ -842,6 +844,15 @@ export function ProjectDetail() {
           >
             Comentarios
           </button>
+          {canViewObra ? (
+            <button
+              className={`rounded-full px-3 py-1 text-xs ${bottomTab === "obra" ? "bg-[var(--color-accent)] text-black" : "text-[var(--color-text-secondary)]"}`}
+              onClick={() => setBottomTab("obra")}
+              type="button"
+            >
+              Obra
+            </button>
+          ) : null}
           {canViewMetrics ? (
             <button
               className={`rounded-full px-3 py-1 text-xs ${bottomTab === "timeline" ? "bg-[var(--color-accent)] text-black" : "text-[var(--color-text-secondary)]"}`}
@@ -929,6 +940,8 @@ export function ProjectDetail() {
           />
         ) : bottomTab === "costos" ? (
           <CostosTab projectId={project.id} budgetUsd={project.budgetUsd ?? null} />
+        ) : bottomTab === "obra" ? (
+          <ProjectObraSection projectId={project.id} />
         ) : (
           <CommentThread projectId={project.id} level="project" context={commentContext} />
         )}
