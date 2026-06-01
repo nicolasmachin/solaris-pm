@@ -3,6 +3,8 @@ import { FileCheck, HardHat, Mail, MapPin, Phone } from "lucide-react";
 import type { Project } from "../../types/api.types";
 import { UTE_STAGE_LABEL, UTE_STATUS_LABEL } from "../../api/uteProcess.api";
 import { getProjectTeamColor, getProjectTeamName } from "./projectTeamColor";
+import { CanAccess } from "../ui/CanAccess";
+import { CargarFotosObraButton } from "../obra/CargarFotosObraButton";
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
   ACTIVE:      { bg: "var(--color-state-active-bg)", text: "var(--color-state-active-text)", label: "EN EJECUCIÓN" },
@@ -167,6 +169,11 @@ export function ProjectHeader({ project, onEdit }: ProjectHeaderProps) {
             </div>
           </div>
         ) : null}
+
+        {/* Acceso directo a Obra — siempre visible para OPERACIONES, haya o no equipo */}
+        <CanAccess module="OPERACIONES" action="VIEW">
+          <CargarFotosObraButton projectId={project.id} variant="block" className="min-w-[180px]" />
+        </CanAccess>
       </div>
     </div>
   );
