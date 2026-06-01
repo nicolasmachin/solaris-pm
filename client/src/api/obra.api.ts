@@ -113,3 +113,54 @@ export async function updateChecklistItem(
 export async function deleteChecklistItem(projectId: string, itemId: string): Promise<void> {
   await apiClient.delete(`/api/projects/${projectId}/checklist/${itemId}`);
 }
+
+// ─── Admin: plantillas de checklist (Module.CONFIGURACION) ──────────────────────
+
+export interface ChecklistTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  order: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getChecklistTemplates(): Promise<ChecklistTemplate[]> {
+  const { data } = await apiClient.get<ChecklistTemplate[]>("/api/admin/checklist-templates");
+  return data;
+}
+
+export async function createChecklistTemplate(body: {
+  name: string;
+  description?: string;
+}): Promise<ChecklistTemplate> {
+  const { data } = await apiClient.post<ChecklistTemplate>("/api/admin/checklist-templates", body);
+  return data;
+}
+
+export async function updateChecklistTemplate(
+  id: string,
+  body: { name?: string; description?: string | null; order?: number; isActive?: boolean },
+): Promise<ChecklistTemplate> {
+  const { data } = await apiClient.patch<ChecklistTemplate>(
+    `/api/admin/checklist-templates/${id}`,
+    body,
+  );
+  return data;
+}
+
+export async function deleteChecklistTemplate(id: string): Promise<ChecklistTemplate> {
+  const { data } = await apiClient.delete<ChecklistTemplate>(`/api/admin/checklist-templates/${id}`);
+  return data;
+}
+
+export async function reorderChecklistTemplates(
+  items: { id: string; order: number }[],
+): Promise<ChecklistTemplate[]> {
+  const { data } = await apiClient.put<ChecklistTemplate[]>(
+    "/api/admin/checklist-templates/reorder",
+    { items },
+  );
+  return data;
+}

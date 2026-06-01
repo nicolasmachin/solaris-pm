@@ -32,6 +32,7 @@ import { TabCuentas } from "./AdminCuentas";
 import { TabDeadlineRules } from "./AdminDeadlineRules";
 import { TabClientes } from "./AdminClientes";
 import { TabCostosFijos } from "./AdminCostosFijos";
+import { TabChecklistTemplates } from "./AdminChecklistTemplates";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -3132,6 +3133,7 @@ export function Admin() {
           {activeTab === "cuentas" && <TabCuentas />}
           {activeTab === "deadlines" && <TabDeadlineRules />}
           {activeTab === "clientes" && <TabClientes />}
+          {activeTab === "checklist-obra" && <TabChecklistTemplates />}
         </div>
       </main>
     </div>
