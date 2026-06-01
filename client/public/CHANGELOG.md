@@ -4,6 +4,15 @@
 
 ### 1 de junio de 2026
 
+#### Obra — Bloque destacado y carga de fotos
+
+- Las fotos de obra y el checklist ahora son un **bloque destacado "Obra del proyecto"** en la página del proyecto (debajo de Tareas), bien visible. Ya no están escondidos en una pestaña.
+- Al subir fotos podés **elegir entre cámara, galería o archivos** — antes, en el celular, abría directo la cámara.
+
+#### Arreglos
+
+- El botón **"Cargar fotos de obra"** de la ficha del proyecto no se podía tocar en algunos celulares (quedaba fuera de pantalla); ahora funciona bien en mobile.
+
 #### Obra — Accesos directos a la galería
 
 - Ahora llegás a las fotos de obra de un proyecto desde tres lugares, sin tener que buscar el tab: un botón amarillo **"Cargar fotos de obra"** en la ficha del proyecto (junto al equipo instalador), el mismo botón dentro del panel de la etapa **Operaciones**, y un acceso directo en el **inicio** (para Operaciones y administradores).
