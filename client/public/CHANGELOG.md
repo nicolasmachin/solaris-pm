@@ -2,6 +2,12 @@
 
 ## v6.2
 
+### 2 de junio de 2026
+
+#### Arreglos
+
+- **Mis Tareas:** las subetapas que tenían fecha límite (visible en el detalle de la etapa) aparecían como "Sin fecha" en Mis Tareas. Ahora muestran su fecha correctamente y se ordenan por urgencia.
+
 ### 1 de junio de 2026
 
 #### Documentos — Vista de lista
