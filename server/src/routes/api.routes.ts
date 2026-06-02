@@ -2397,6 +2397,24 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return serializeSubstage(substage);
   });
 
+  // Mantiene dueDate y deadline sincronizados (dueDate es espejo de deadline).
+  // Si el body trae `deadline`, manda deadline; si trae `dueDate`, lo replica a
+  // deadline; si trae ambos, prioriza deadline. En edición manual marca
+  // deadlineManuallySet=true para que el recálculo respete el override.
+  function syncDeadlineDueDate(patch: { deadline?: Date | null; dueDate?: Date | null }): {
+    deadline?: Date | null;
+    dueDate?: Date | null;
+    deadlineManuallySet?: boolean;
+  } {
+    if (patch.deadline !== undefined) {
+      return { deadline: patch.deadline, dueDate: patch.deadline, deadlineManuallySet: true };
+    }
+    if (patch.dueDate !== undefined) {
+      return { deadline: patch.dueDate, dueDate: patch.dueDate, deadlineManuallySet: true };
+    }
+    return {};
+  }
+
   app.patch("/projects/:projectId/stages/:stageId/substages/:substageId", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
     const user = ensureUser(request);
     const params = z
@@ -2463,7 +2481,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
       }
       updateData.userId = body.userId;
     }
-    if (body.dueDate !== undefined) updateData.dueDate = body.dueDate ? parseDateOnly(body.dueDate) : null;
+    if (body.dueDate !== undefined) {
+      // Editar dueDate sincroniza deadline (espejo) y marca override manual.
+      const parsedDue = body.dueDate ? parseDateOnly(body.dueDate) : null;
+      Object.assign(updateData, syncDeadlineDueDate({ dueDate: parsedDue }));
+    }
     if (body.plannedStartDate !== undefined) updateData.plannedStartDate = body.plannedStartDate ? parseDateOnly(body.plannedStartDate) : null;
     if (body.plannedEndDate !== undefined) updateData.plannedEndDate = body.plannedEndDate ? parseDateOnly(body.plannedEndDate) : null;
     if (body.notes !== undefined) updateData.notes = body.notes;
@@ -7584,6 +7606,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       where: { id },
       data: {
         deadline: newDeadline,
+        // dueDate es espejo de deadline (lo lee /my-tasks). null queda null.
+        dueDate: newDeadline,
         deadlineManuallySet: true,
         deadlineNotificationSent: false,
         deadlineNotifiedAt: null,
