@@ -155,6 +155,9 @@ export async function recalculateProjectDeadlines(
         where: { id: substage.id },
         data: {
           deadline: newDeadline,
+          // dueDate es espejo de deadline (lo lee /my-tasks). Si newDeadline es
+          // null, dueDate también queda null para mantener el invariante.
+          dueDate: newDeadline,
           deadlineManuallySet: false,
           ...(sameDate ? {} : { deadlineNotificationSent: false, deadlineNotifiedAt: null }),
         },

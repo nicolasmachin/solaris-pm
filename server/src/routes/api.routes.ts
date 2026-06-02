@@ -7638,6 +7638,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       where: { id },
       data: {
         deadline: newDeadline,
+        // dueDate es espejo de deadline (lo lee /my-tasks). null queda null.
+        dueDate: newDeadline,
         deadlineManuallySet: false,
         deadlineNotificationSent: false,
         deadlineNotifiedAt: null,
