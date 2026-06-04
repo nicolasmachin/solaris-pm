@@ -15,6 +15,12 @@ import { ACCOUNT_TYPE_LABEL } from '../types/accounts.types';
 import { todayLocalISO } from '../utils/date';
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
+
+// Las cuotas del plan de pagos guardan su descripción con prefijo "[PLAN] ".
+const PLAN_PREFIX = '[PLAN] ';
+function stripPlan(desc: string): string {
+  return desc.startsWith(PLAN_PREFIX) ? desc.slice(PLAN_PREFIX.length) : desc;
+}
 function getApiErr(err: unknown) {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
 }
@@ -146,14 +152,26 @@ export function FinanceCobroDetail() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--color-border)]">
-                  {cobros.map(c => (
-                    <tr key={c.id} className="hover:bg-[var(--color-bg-card-hover)] transition-colors">
-                      <td className="px-4 py-3 text-[var(--color-text-secondary)] tabular-nums">{fmtDate(c.fecha)}</td>
-                      <td className="px-4 py-3 text-[var(--color-text-primary)]">{c.descripcion}</td>
-                      <td className="px-4 py-3 text-right tabular-nums text-emerald-400">{fmtCurrency(c.monto, c.moneda)}</td>
-                      <td className="px-4 py-3 text-[var(--color-text-muted)] text-[11px]">{c.accountName ?? '—'}</td>
-                    </tr>
-                  ))}
+                  {cobros.map(c => {
+                    const isPrevisto = c.status === 'PREVISTO';
+                    return (
+                      <tr key={c.id} className="hover:bg-[var(--color-bg-card-hover)] transition-colors">
+                        <td className="px-4 py-3 text-[var(--color-text-secondary)] tabular-nums">{fmtDate(c.fecha ?? c.dueDate ?? '')}</td>
+                        <td className="px-4 py-3 text-[var(--color-text-primary)]">
+                          <span className="inline-flex items-center gap-2">
+                            {stripPlan(c.descripcion)}
+                            {isPrevisto && (
+                              <span className="rounded border border-amber-500/30 bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-mono font-semibold uppercase tracking-wider text-amber-300">
+                                Previsto
+                              </span>
+                            )}
+                          </span>
+                        </td>
+                        <td className={klass('px-4 py-3 text-right tabular-nums', isPrevisto ? 'text-amber-400/80' : 'text-emerald-400')}>{fmtCurrency(c.monto, c.moneda)}</td>
+                        <td className="px-4 py-3 text-[var(--color-text-muted)] text-[11px]">{c.accountName ?? '—'}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

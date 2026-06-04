@@ -575,6 +575,7 @@ export interface CobroDetail {
   cobros: Array<{
     id: string;
     fecha: string;
+    dueDate: string | null;
     descripcion: string;
     monto: number;
     moneda: Moneda;
@@ -583,6 +584,7 @@ export interface CobroDetail {
     accountName: string | null;
     accountMoneda: Moneda | null;
     observaciones: string | null;
+    status: FinanceMovementStatus;
   }>;
   estadoCuenta: Array<{
     fecha: string;

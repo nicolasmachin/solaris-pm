@@ -2,6 +2,13 @@
 
 ## v6.2
 
+### 4 de junio de 2026
+
+#### Finanzas — Cobros previstos en el detalle del cliente
+
+- En el detalle de cobros de un proyecto, la tabla ahora muestra los **cobros previstos** del plan de pagos junto con los ya cobrados, ordenados por fecha. Los previstos se distinguen con una etiqueta **PREVISTO** y el monto en ámbar.
+- Los totales y el estado de cuenta siguen contando solo lo efectivamente cobrado (los previstos no inflan el "Cobrado").
+
 ### 2 de junio de 2026
 
 #### Arreglos
