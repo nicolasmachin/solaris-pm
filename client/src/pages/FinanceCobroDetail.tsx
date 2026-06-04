@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import { ChevronLeft, Plus, ExternalLink, X, Sparkles, Pencil } from 'lucide-react';
 import { usePlanPagos } from '../hooks/usePlanPagos';
 import { PlanPagosModal } from '../components/finance/PlanPagosModal';
+import { PayManualPendingModal } from '../components/finance/PayManualPendingModal';
 import { Spinner } from '../components/ui/Spinner';
 import { getCobroProjectDetail, createMovement } from '../api/finance.api';
 import { getAccounts } from '../api/accounts.api';
@@ -48,6 +49,9 @@ export function FinanceCobroDetail() {
   const [tab, setTab] = useState<Tab>('cobros');
   const [showCobroModal, setShowCobroModal] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
+  // Id del cobro previsto que se está marcando como pagado (abre el modal).
+  const [payingId, setPayingId] = useState<string | null>(null);
+  const qc = useQueryClient();
   const planQ = usePlanPagos(projectId ?? '');
 
   const { data, isLoading, error } = useQuery({
@@ -168,7 +172,19 @@ export function FinanceCobroDetail() {
                           </span>
                         </td>
                         <td className={klass('px-4 py-3 text-right tabular-nums', isPrevisto ? 'text-amber-400/80' : 'text-emerald-400')}>{fmtCurrency(c.monto, c.moneda)}</td>
-                        <td className="px-4 py-3 text-[var(--color-text-muted)] text-[11px]">{c.accountName ?? '—'}</td>
+                        <td className="px-4 py-3 text-[var(--color-text-muted)] text-[11px]">
+                          {isPrevisto ? (
+                            <button
+                              type="button"
+                              onClick={() => setPayingId(c.id)}
+                              className="inline-flex items-center gap-1 rounded border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent)] hover:bg-[var(--color-accent)] hover:text-gray-900"
+                            >
+                              Marcar pagado
+                            </button>
+                          ) : (
+                            c.accountName ?? '—'
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
@@ -227,6 +243,23 @@ export function FinanceCobroDetail() {
           projectId={project.id}
           projectName={project.clientName}
           onClose={() => setShowCobroModal(false)}
+        />
+      )}
+
+      {payingId && (
+        <PayManualPendingModal
+          movementId={payingId}
+          onClose={() => setPayingId(null)}
+          onPaid={() => {
+            setPayingId(null);
+            qc.invalidateQueries({ queryKey: ['cobros-by-project'] });
+            qc.invalidateQueries({ queryKey: ['plan-pagos', project.id] });
+            qc.invalidateQueries({ queryKey: ['accounts'] });
+            qc.invalidateQueries({ queryKey: ['account-balance'] });
+            qc.invalidateQueries({ queryKey: ['finance-movements'] });
+            qc.invalidateQueries({ queryKey: ['finance-pending'] });
+            qc.invalidateQueries({ queryKey: ['finance-invariant-check'] });
+          }}
         />
       )}
     </div>

@@ -7,6 +7,7 @@
 #### Finanzas — Cobros previstos en el detalle del cliente
 
 - En el detalle de cobros de un proyecto, la tabla ahora muestra los **cobros previstos** del plan de pagos junto con los ya cobrados, ordenados por fecha. Los previstos se distinguen con una etiqueta **PREVISTO** y el monto en ámbar.
+- Cada previsto tiene un botón **"Marcar pagado"** que abre el mismo formulario que Pendientes (fecha del cobro + cuenta donde entró el dinero) y lo registra como cobrado sin salir del detalle.
 - Los totales y el estado de cuenta siguen contando solo lo efectivamente cobrado (los previstos no inflan el "Cobrado").
 
 ### 2 de junio de 2026
