@@ -10085,6 +10085,22 @@ export async function registerApiRoutes(app: FastifyInstance) {
         orderBy: { fecha: "asc" },
       });
 
+      // Cobros previstos del plan (status=PREVISTO, no cobrados). Se devuelven
+      // SOLO para la tabla (mezclados con los pagados). NO entran en KPIs /
+      // totales / estado de cuenta — esos siguen calculándose sobre `cobros`.
+      const previstos = await prisma.financeMovement.findMany({
+        where: {
+          deletedAt: null,
+          tipoMovimiento: TipoMovimiento.INGRESO,
+          status: FinanceMovementStatus.PREVISTO,
+          projectId,
+        },
+        include: {
+          account: { select: { id: true, nombre: true, moneda: true } },
+        },
+        orderBy: { fecha: "asc" },
+      });
+
       // KPIs por moneda.
       const kpisPorMoneda: Record<Moneda, { presupuesto: number; cobrado: number; pendiente: number; saldoAFavor: number }> = {
         [Moneda.USD]: { presupuesto: 0, cobrado: 0, pendiente: 0, saldoAFavor: 0 },
@@ -10155,18 +10171,25 @@ export async function registerApiRoutes(app: FastifyInstance) {
           estadoCobranza,
           cantidadCobros: cobros.length,
         },
-        cobros: cobros.map((c) => ({
-          id: c.id,
-          fecha: serializeDateOnly(c.fecha),
-          descripcion: c.descripcion,
-          monto: Number(c.monto),
-          moneda: c.moneda,
-          tipoCambio: c.tipoCambio ? Number(c.tipoCambio) : null,
-          accountId: c.accountId,
-          accountName: c.account?.nombre ?? null,
-          accountMoneda: c.account?.moneda ?? null,
-          observaciones: c.observaciones,
-        })),
+        // Tabla: pagados + previstos mezclados, ordenados por fecha ascendente.
+        // `status` distingue PAGADO vs PREVISTO; `dueDate` se incluye para que el
+        // front elija qué fecha mostrar.
+        cobros: [...cobros, ...previstos]
+          .map((c) => ({
+            id: c.id,
+            fecha: serializeDateOnly(c.fecha),
+            dueDate: serializeDateOnly(c.dueDate),
+            descripcion: c.descripcion,
+            monto: Number(c.monto),
+            moneda: c.moneda,
+            tipoCambio: c.tipoCambio ? Number(c.tipoCambio) : null,
+            accountId: c.accountId,
+            accountName: c.account?.nombre ?? null,
+            accountMoneda: c.account?.moneda ?? null,
+            observaciones: c.observaciones,
+            status: c.status,
+          }))
+          .sort((a, b) => (a.fecha ?? "").localeCompare(b.fecha ?? "")),
         estadoCuenta,
         tipoCambio: fallbackUsdToUyu,
       };
