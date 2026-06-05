@@ -105,13 +105,12 @@ export function DocumentsStrip({ projectId }: { projectId: string }) {
     return currentUser.role === "ADMIN" || doc.uploadedBy === currentUser.id;
   }
 
-  // Los documentos UTE (ZIP generado y firmados) se muestran en bloques
-  // destacados aparte; se excluyen de la lista general para no duplicar.
+  // Archivos de tools que tienen su propia sección dedicada (bloques UTE,
+  // galería de Obra) se excluyen de la lista general para no duplicar/ensuciar.
+  // Los docs de Ingeniería (unifilar, preing, etc.) SÍ se muestran acá a propósito.
+  const EXCLUDED_TOOL_SOURCES = ["ute-docs", "ute-docs-firmados", "obra-fotos"];
   const allDocuments = useMemo(
-    () =>
-      (data ?? []).filter(
-        (d) => d.toolSource !== "ute-docs" && d.toolSource !== "ute-docs-firmados",
-      ),
+    () => (data ?? []).filter((d) => !d.toolSource || !EXCLUDED_TOOL_SOURCES.includes(d.toolSource)),
     [data],
   );
   const documents = useMemo(
