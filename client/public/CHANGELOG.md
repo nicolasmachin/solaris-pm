@@ -4,6 +4,10 @@
 
 ### 5 de junio de 2026
 
+#### Pre-ingeniería — Nueva versión arranca con los datos de la anterior
+
+- Al crear una **nueva versión** de pre-ingeniería, el formulario ahora viene **pre-cargado con los datos de la última versión** (cliente, techo, datos eléctricos, red, notas). Solo ajustás lo que cambió en vez de cargar todo de cero. Las fotos no se copian (se agregan aparte si hacen falta).
+
 #### Unifilar — Calibre de protección DC
 
 - El campo **Calibre** de la protección DC ahora sugiere también las variantes **3P** (16A 3P, 25A 3P, etc.) además de las 2P. Igual que siempre, podés escribir cualquier valor a mano si necesitás uno que no está en la lista.

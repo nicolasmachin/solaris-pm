@@ -111,6 +111,7 @@ export function PreIngenieriaToolPanel({ projectId }: { projectId: string }) {
             locationProvince: projectQ.data.locationProvince ?? null,
             clientPhone: projectQ.data.clientPhone ?? null,
           }}
+          prefillVersionId={all[0]?.id ?? null}
           onClose={() => setFormOpen(false)}
           onSuccess={() => setFormOpen(false)}
         />

@@ -15,6 +15,7 @@ import {
 import {
   createPreIngenieriaVersion,
   extractMinutaFields,
+  getPreIngenieriaVersion,
   uploadPreIngenieriaFoto,
   type ExtractedMinutaFields,
   type PreIngenieriaFormInput,
@@ -25,6 +26,7 @@ import {
   type UnifilarVersionListItem,
 } from "../../../api/unifilar.api";
 import {
+  applyPreviousVersionPrefill,
   applyUnifilarPrefill,
   emptyForm,
   FormSection,
@@ -98,11 +100,15 @@ function AiBadge({ active }: { active: boolean }) {
 export function PreIngenieriaFormModal({
   projectId,
   defaults,
+  prefillVersionId,
   onClose,
   onSuccess,
 }: {
   projectId: string;
   defaults: ProjectDefaults;
+  // Si viene, el form arranca pre-cargado con los datos de esa versión previa
+  // (al crear una "nueva versión" se conserva lo que tenía la anterior).
+  prefillVersionId?: string | null;
   onClose: () => void;
   onSuccess: (created: { id: string; versionNumber: number }) => void;
 }) {
@@ -139,6 +145,22 @@ export function PreIngenieriaFormModal({
   });
   const unifilarVersions: UnifilarVersionListItem[] = unifilarVersionsQ.data ?? [];
   const [showVersionPicker, setShowVersionPicker] = useState(false);
+
+  // Pre-carga con la versión anterior de pre-ingeniería (si hay). Se aplica una
+  // sola vez cuando llega el detalle, antes de que el usuario edite.
+  const prevVersionQ = useQuery({
+    queryKey: ["preingenieria-version", prefillVersionId],
+    queryFn: () => getPreIngenieriaVersion(prefillVersionId!),
+    enabled: !!prefillVersionId,
+  });
+  const prefillAppliedRef = useRef(false);
+  useEffect(() => {
+    if (prefillAppliedRef.current) return;
+    const v = prevVersionQ.data;
+    if (!v) return;
+    prefillAppliedRef.current = true;
+    setForm((f) => applyPreviousVersionPrefill(f, v));
+  }, [prevVersionQ.data]);
 
   function setF<K extends keyof PreIngenieriaFormInput>(k: K, v: PreIngenieriaFormInput[K]) {
     setForm((f) => ({ ...f, [k]: v }));

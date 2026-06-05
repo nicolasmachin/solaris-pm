@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type {
   PreIngenieriaFormInput,
+  PreIngenieriaVersionFull,
   TipoTecho,
 } from "../../../api/preingenieria.api";
 import type { TipoRed, UnifilarVersionFull } from "../../../api/unifilar.api";
@@ -73,6 +74,44 @@ export function emptyForm(snapshotNombre: string): PreIngenieriaFormInput {
     unifilarVersionId: null,
     fotosOrden: [],
     fotosEtiquetas: {},
+  };
+}
+
+/**
+ * Pre-carga el formulario con los datos de una versión de pre-ingeniería
+ * existente (al crear una "nueva versión", arranca con lo que tenía la
+ * anterior). Copia todos los campos del formulario; NO copia las fotos
+ * (son uploads por versión) ni la trazabilidad de minuta/label.
+ */
+export function applyPreviousVersionPrefill(
+  form: PreIngenieriaFormInput,
+  v: PreIngenieriaVersionFull,
+): PreIngenieriaFormInput {
+  return {
+    ...form,
+    snapshotNombre: v.snapshotNombre || form.snapshotNombre,
+    snapshotDireccion: v.snapshotDireccion ?? "",
+    snapshotCiudad: v.snapshotCiudad ?? "",
+    snapshotCelular: v.snapshotCelular ?? "",
+    snapshotFechaPrevista: v.snapshotFechaPrevista ?? "",
+    tipoTecho: v.tipoTecho ?? null,
+    tipoTechoOtro: v.tipoTechoOtro ?? "",
+    infoTecho: v.infoTecho ?? "",
+    alturaTecho: v.alturaTecho ?? "",
+    cantidadPaneles: v.cantidadPaneles ?? "",
+    potenciaPaneles: v.potenciaPaneles ?? null,
+    inversor: v.inversor ?? "",
+    stringsLineasDc: v.stringsLineasDc ?? "",
+    cableAc: v.cableAc ?? "",
+    termicaAc: v.termicaAc ?? "",
+    diferencialAc: v.diferencialAc ?? "",
+    largoCablesAcMts: v.largoCablesAcMts ?? "",
+    largoCablesDcMts: v.largoCablesDcMts ?? "",
+    redMonofasica: v.redMonofasica,
+    redTrifasica230SN: v.redTrifasica230SN,
+    redTrifasica400CN: v.redTrifasica400CN,
+    notasAdicionales: v.notasAdicionales ?? "",
+    unifilarVersionId: v.unifilarVersionId ?? null,
   };
 }
 
