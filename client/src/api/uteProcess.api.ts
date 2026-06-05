@@ -129,6 +129,13 @@ export async function deleteUteProcess(id: string): Promise<void> {
   await apiClient.delete(`/api/ute-processes/${id}`);
 }
 
+// Cierre manual del trámite desde la etapa del proyecto: lo marca finalizado +
+// cerrado y completa la etapa HABILITACION_UTE, sin cargar las fechas de pasos.
+export async function finalizarUteFromStage(projectId: string): Promise<UteProcess> {
+  const { data } = await apiClient.post<UteProcess>(`/api/projects/${projectId}/ute/finalizar`);
+  return data;
+}
+
 // ─── Constantes de presentación ─────────────────────────────────────────────
 
 export const UTE_STAGE_ORDER: UteStage[] = [

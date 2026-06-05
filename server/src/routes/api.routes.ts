@@ -9210,6 +9210,62 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return serializeUteProcess(updated);
   });
 
+  // Cierre manual del trámite desde la etapa del proyecto: lo marca FINALIZADO
+  // + CERRADO y completa la etapa HABILITACION_UTE, SIN cargar las fechas de
+  // cada paso (esas alimentan los promedios de tiempo UTE). finalizedAt = fecha
+  // real de fin de la etapa Operaciones (o hoy si todavía no terminó).
+  app.post(
+    "/projects/:projectId/ute/finalizar",
+    { preHandler: authorize(Module.TRAMITES_UTE, Action.EDIT) },
+    async (request) => {
+      const user = ensureUser(request);
+      const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
+
+      const ute = await prisma.uteProcess.findFirst({
+        where: { projectId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!ute) {
+        throw badRequest(
+          "UTE_PROCESS_REQUIRED",
+          "El proyecto no tiene un trámite UTE. Creá el trámite antes de finalizarlo.",
+        );
+      }
+
+      const operaciones = await prisma.stage.findFirst({
+        where: { projectId, name: StageType.OPERACIONES, deletedAt: null },
+        select: { actualEndDate: true },
+      });
+      const finalizedAt = operaciones?.actualEndDate ?? todayUtc();
+
+      const updated = await prisma.uteProcess.update({
+        where: { id: ute.id },
+        data: {
+          currentStage: UteStage.FINALIZADO,
+          currentStatus: UteStatus.CERRADO,
+          stageManuallySet: true,
+          finalizedAt,
+        },
+        include: UTE_PROCESS_INCLUDE,
+      });
+
+      // Trámite CERRADO ⟹ las 11 subetapas pasan a COMPLETED ⟹ la etapa
+      // HABILITACION_UTE queda completada (sin tocar las fechas de cada paso).
+      await regenerateUteSubstages(prisma, updated);
+
+      await createAuditEntry({
+        entityType: AuditEntityType.project,
+        entityId: projectId,
+        projectId,
+        userId: user.id,
+        action: AuditAction.updated,
+        description: "Marcó el trámite UTE como finalizado (cierre manual desde la etapa)",
+      });
+
+      return serializeUteProcess(updated);
+    },
+  );
+
   app.delete("/ute-processes/:id", { preHandler: authorize(Module.TRAMITES_UTE, Action.DELETE) }, async (request) => {
     const { id } = z.object({ id: z.string() }).parse(request.params);
     const existing = await prisma.uteProcess.findFirst({ where: { id, deletedAt: null } });

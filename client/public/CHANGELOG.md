@@ -4,6 +4,11 @@
 
 ### 5 de junio de 2026
 
+#### Trámites UTE — Finalizar el trámite desde la etapa del proyecto
+
+- En la etapa **Habilitación UTE** de un proyecto ahora hay un botón **"Marcar trámite como finalizado"** que cierra el trámite (queda Finalizado y Cerrado) y **completa la etapa**, sin tener que cargar las fechas de cada paso del trámite.
+- La fecha de finalización del trámite se toma de la **fecha de fin de la etapa Operaciones**. No se cargan las fechas intermedias, así que los tiempos por paso del trámite no se ven afectados.
+
 #### Métricas — Instalaciones se cuentan al iniciar la obra
 
 - "Instalaciones realizadas" ahora cuenta el proyecto cuando la etapa **Operaciones arranca** (fecha de inicio real), no cuando se completa. Se agrupa por trimestre/año según la fecha de inicio de la obra.

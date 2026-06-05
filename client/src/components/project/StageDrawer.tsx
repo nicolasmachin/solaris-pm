@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import type { Stage, Substage, SubstageStatus, FileAttachment, ChecklistItem } from "../../types/api.types";
 import { patchSubstage, patchStage, createSubstage, deleteSubstage, completeSubstage, completeAllSubstages, getStageUnassignedSubstagesCount } from "../../api/stages.api";
 import { setSubstageDeadlineManual, resetSubstageDeadlineOverride } from "../../api/deadline.api";
+import { finalizarUteFromStage } from "../../api/uteProcess.api";
 import { useAuthStore } from "../../store/auth.store";
 import { apiClient } from "../../api/axios";
 import { uploadFile, getDownloadUrl } from "../../api/files.api";
@@ -715,6 +716,22 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
     onError: () => toast.error("Error al guardar notas"),
   });
 
+  // Cierre manual del trámite UTE desde la etapa: marca finalizado + cerrado y
+  // completa la etapa, sin cargar las fechas de cada paso.
+  const finalizarUteMut = useMutation({
+    mutationFn: () => finalizarUteFromStage(projectId),
+    onSuccess: () => {
+      toast.success("Trámite UTE finalizado y etapa completada");
+      invalidate();
+      qc.invalidateQueries({ queryKey: ["ute-processes"] });
+      qc.invalidateQueries({ queryKey: ["metrics"] });
+    },
+    onError: (err) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? "No se pudo finalizar el trámite");
+    },
+  });
+
   // Save stage dates (sólo fechas reales — admin — + responsable)
   const [confirmPropagate, setConfirmPropagate] = useState<{ count: number } | null>(null);
   const [checkingPropagation, setCheckingPropagation] = useState(false);
@@ -1164,6 +1181,26 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
                   desde el módulo <strong>Trámites UTE</strong>. Acá podés ver el estado y
                   asignar responsables, pero nombres, status y orden vienen del trámite.
                 </p>
+                {stage.status !== "COMPLETED" && (
+                  <CanAccess module="TRAMITES_UTE" action="EDIT">
+                    <div className="mt-3 flex flex-col gap-1.5">
+                      <Button
+                        size="sm"
+                        loading={finalizarUteMut.isPending}
+                        onClick={() => {
+                          if (confirm("¿Marcar el trámite UTE como finalizado y completar esta etapa?\n\nSe cierra el trámite sin cargar las fechas de cada paso (no afecta los tiempos de UTE).")) {
+                            finalizarUteMut.mutate();
+                          }
+                        }}
+                      >
+                        ✓ Marcar trámite como finalizado
+                      </Button>
+                      <p className="text-[10px] text-[var(--color-text-muted)]">
+                        Cierra el trámite y completa la etapa. No carga las fechas de cada paso.
+                      </p>
+                    </div>
+                  </CanAccess>
+                )}
               </div>
             )}
 

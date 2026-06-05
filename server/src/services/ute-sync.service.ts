@@ -147,6 +147,13 @@ export async function syncUteSubstages(
     select: { id: true, uteAction: true },
   });
 
+  // Trámite cerrado manualmente: la etapa se da por finalizada aunque no estén
+  // cargadas las fechas de cada paso. Forzamos las 11 subetapas a COMPLETED
+  // (sin inventar fechas) para que syncStageProgress complete la stage. Las
+  // métricas UTE leen las fechas del UteProcess, no el status de subetapas, así
+  // que esto no las afecta.
+  const closed = uteProcess.currentStatus === "CERRADO";
+
   // Calcular cuál es la "primera sin fecha" — esa va a IN_PROGRESS.
   let firstPendingIdx = UTE_SUBSTAGE_SPECS.length; // si están todas, no hay current
   for (let i = 0; i < UTE_SUBSTAGE_SPECS.length; i++) {
@@ -169,7 +176,13 @@ export async function syncUteSubstages(
     let actualStartDate: Date | null = prevDate;
     let actualEndDate: Date | null = null;
 
-    if (myDate) {
+    if (closed) {
+      // Cerrado: completar sin pisar/forzar fechas (se respeta la fecha de la
+      // acción si existe, sino queda null).
+      nextStatus = "COMPLETED" as SubstageStatus;
+      actualEndDate = myDate;
+      actualStartDate = prevDate ?? myDate;
+    } else if (myDate) {
       nextStatus = "COMPLETED" as SubstageStatus;
       actualEndDate = myDate;
       // start = la acción anterior con fecha (o la propia si no hay anterior).
