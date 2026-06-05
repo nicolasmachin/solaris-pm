@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { ArrowLeft, ArrowRight, Plus, Pencil, X, CheckCircle2, AlertTriangle, FileText } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, Pencil, X, CheckCircle2, AlertTriangle, FileText, Trash2 } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
-import { getSupplier, deleteSupplier } from '../api/finance.api';
+import { getSupplier, deleteSupplier, deleteMovement } from '../api/finance.api';
+import { usePermission } from '../hooks/usePermission';
 import { getSupplierAccountSummary } from '../api/payments.api';
 import { fmtCurrency, fmtDate } from '../lib/finance';
 import {
@@ -17,7 +18,7 @@ import { todayLocalISO } from '../utils/date';
 import { ApplyPaymentModal } from '../components/finance/ApplyPaymentModal';
 import { PaymentDetailPanel } from '../components/finance/PaymentDetailPanel';
 import { NewPaymentForSupplierModal } from '../components/finance/NewPaymentForSupplierModal';
-import { NewSupplierInvoiceModal } from '../components/finance/NewSupplierInvoiceModal';
+import { NewSupplierInvoiceModal, type EditableInvoice } from '../components/finance/NewSupplierInvoiceModal';
 import { SupplierForm } from './FinanceSuppliers';
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
@@ -35,7 +36,10 @@ export function FinanceSupplierDetail() {
   const [editing, setEditing] = useState(false);
   const [newPaymentOpen, setNewPaymentOpen] = useState(false);
   const [newInvoiceOpen, setNewInvoiceOpen] = useState(false);
+  const [editInvoice, setEditInvoice] = useState<EditableInvoice | null>(null);
   const [createdPaymentId, setCreatedPaymentId] = useState<string | null>(null);
+  const canEditFinance = usePermission('FINANZAS', 'EDIT');
+  const canDeleteFinance = usePermission('FINANZAS', 'DELETE');
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
   const [filterFacturas, setFilterFacturas] = useState<'all' | 'pending' | 'paid' | 'partial'>('all');
   const [filterPagos, setFilterPagos] = useState<'all' | 'with-balance' | 'applied'>('all');
@@ -60,6 +64,24 @@ export function FinanceSupplierDetail() {
       navigate('/finanzas/proveedores');
     },
     onError: (err) => toast.error(getApiErr(err) ?? 'No se pudo eliminar (puede tener movimientos asociados)'),
+  });
+
+  const deleteInvoiceMut = useMutation({
+    mutationFn: (invoiceId: string) => deleteMovement(invoiceId),
+    onSuccess: (res) => {
+      const freed = res?.liberatedApplications ?? 0;
+      toast.success(
+        freed > 0
+          ? `Factura eliminada · se liberaron ${freed} pago(s) como saldo a favor del proveedor`
+          : 'Factura eliminada',
+      );
+      qc.invalidateQueries({ queryKey: ['account-summary', id] });
+      qc.invalidateQueries({ queryKey: ['supplier', id] });
+      qc.invalidateQueries({ queryKey: ['finance-movements'] });
+      qc.invalidateQueries({ queryKey: ['finance-pending'] });
+      qc.invalidateQueries({ queryKey: ['finance-cashflow'] });
+    },
+    onError: (err) => toast.error(getApiErr(err) ?? 'No se pudo eliminar la factura'),
   });
 
   if (loadingSupplier || !supplier) {
@@ -179,6 +201,15 @@ export function FinanceSupplierDetail() {
               total={summary.facturas.length}
               filter={filterFacturas}
               onFilterChange={setFilterFacturas}
+              canEdit={canEditFinance}
+              canDelete={canDeleteFinance}
+              onEdit={(f) => setEditInvoice({ id: f.id, descripcion: f.descripcion, monto: f.monto, moneda: f.moneda, fecha: f.fecha.slice(0, 10), dueDate: f.dueDate })}
+              onDelete={(f) => {
+                if (confirm(`¿Eliminar la factura "${f.descripcion}"?${f.montoPagado > 0.005 ? '\n\nTiene pagos aplicados: se liberarán como saldo a favor del proveedor.' : ''}`)) {
+                  deleteInvoiceMut.mutate(f.id);
+                }
+              }}
+              deletingId={deleteInvoiceMut.isPending ? deleteInvoiceMut.variables ?? null : null}
             />
           )}
           {tab === 'pagos' && (
@@ -235,6 +266,16 @@ export function FinanceSupplierDetail() {
           supplierId={supplier.id}
           supplierName={supplier.nombre}
           onClose={() => setNewInvoiceOpen(false)}
+          onCreated={() => qc.invalidateQueries({ queryKey: ['account-summary', id] })}
+        />
+      )}
+
+      {/* Modal editar factura existente */}
+      {editInvoice && (
+        <NewSupplierInvoiceModal
+          supplierName={supplier.nombre}
+          invoice={editInvoice}
+          onClose={() => setEditInvoice(null)}
           onCreated={() => qc.invalidateQueries({ queryKey: ['account-summary', id] })}
         />
       )}
@@ -302,12 +343,20 @@ function BalanceCard({ label, usd, uyu, tone }: {
   );
 }
 
-function FacturasTab({ facturas, total, filter, onFilterChange }: {
-  facturas: { id: string; fecha: string; descripcion: string; monto: number; moneda: 'USD' | 'UYU'; montoPagado: number; saldoPendiente: number; status: FinanceMovementStatus; dueDate: string | null }[];
+type FacturaRow = { id: string; fecha: string; descripcion: string; monto: number; moneda: 'USD' | 'UYU'; montoPagado: number; saldoPendiente: number; status: FinanceMovementStatus; dueDate: string | null };
+
+function FacturasTab({ facturas, total, filter, onFilterChange, canEdit, canDelete, onEdit, onDelete, deletingId }: {
+  facturas: FacturaRow[];
   total: number;
   filter: 'all' | 'pending' | 'paid' | 'partial';
   onFilterChange: (f: 'all' | 'pending' | 'paid' | 'partial') => void;
+  canEdit: boolean;
+  canDelete: boolean;
+  onEdit: (f: FacturaRow) => void;
+  onDelete: (f: FacturaRow) => void;
+  deletingId: string | null;
 }) {
+  const showActions = canEdit || canDelete;
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 flex-wrap">
@@ -341,6 +390,7 @@ function FacturasTab({ facturas, total, filter, onFilterChange }: {
                 <th className="px-2 py-2 text-right font-medium w-32">Pagado</th>
                 <th className="px-2 py-2 text-right font-medium w-32">Saldo</th>
                 <th className="px-2 py-2 text-right font-medium w-32">Estado</th>
+                {showActions && <th className="px-2 py-2 text-right font-medium w-20">Acciones</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border)]">
@@ -366,6 +416,35 @@ function FacturasTab({ facturas, total, filter, onFilterChange }: {
                         {STATUS_LABEL[f.status]}
                       </span>
                     </td>
+                    {showActions && (
+                      <td className="px-2 py-2 text-right whitespace-nowrap">
+                        <div className="inline-flex items-center gap-1">
+                          {canEdit && (
+                            <button
+                              type="button"
+                              onClick={() => onEdit(f)}
+                              title="Editar factura"
+                              aria-label="Editar factura"
+                              className="p-1 rounded text-[var(--color-text-muted)] hover:bg-[var(--color-bg-card-hover)] hover:text-[var(--color-text-primary)]"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              type="button"
+                              onClick={() => onDelete(f)}
+                              disabled={deletingId === f.id}
+                              title="Eliminar factura"
+                              aria-label="Eliminar factura"
+                              className="p-1 rounded text-[var(--color-text-muted)] hover:bg-red-500/15 hover:text-red-400 disabled:opacity-50"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 );
               })}

@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { X } from "lucide-react";
 
-import { createSupplierInvoice, getSuppliers } from "../../api/finance.api";
+import { createSupplierInvoice, getSuppliers, patchMovement } from "../../api/finance.api";
 import { ProjectPicker } from "./ProjectPicker";
 import type { Moneda } from "../../types/finance.types";
 import { todayLocalISO } from "../../utils/date";
@@ -13,24 +13,37 @@ const inp =
 const lbl =
   "block text-[11px] uppercase tracking-wider text-[var(--color-text-muted)] mb-1 font-mono";
 
+// Factura existente a editar. Si viene, el modal entra en modo edición:
+// precarga los valores y guarda con patchMovement en vez de crear.
+export type EditableInvoice = {
+  id: string;
+  descripcion: string;
+  monto: number;
+  moneda: Moneda;
+  fecha: string; // fecha de emisión (yyyy-mm-dd)
+  dueDate: string | null;
+};
+
 type Props = {
   supplierId?: string;
   supplierName?: string;
+  invoice?: EditableInvoice;
   onClose: () => void;
   onCreated?: () => void;
 };
 
-export function NewSupplierInvoiceModal({ supplierId, supplierName, onClose, onCreated }: Props) {
+export function NewSupplierInvoiceModal({ supplierId, supplierName, invoice, onClose, onCreated }: Props) {
   const qc = useQueryClient();
+  const isEdit = !!invoice;
 
   const [form, setForm] = useState({
     supplierId: supplierId ?? "",
-    descripcion: "",
+    descripcion: invoice?.descripcion ?? "",
     invoiceNumber: "",
-    monto: "",
-    moneda: "UYU" as Moneda,
-    fechaEmision: todayLocalISO(),
-    fechaVencimiento: "",
+    monto: invoice ? String(invoice.monto) : "",
+    moneda: invoice?.moneda ?? ("UYU" as Moneda),
+    fechaEmision: invoice?.fecha ?? todayLocalISO(),
+    fechaVencimiento: invoice?.dueDate ?? "",
     projectId: "",
   });
   const [saving, setSaving] = useState(false);
@@ -38,26 +51,36 @@ export function NewSupplierInvoiceModal({ supplierId, supplierName, onClose, onC
   const { data: suppliers = [] } = useQuery({
     queryKey: ["suppliers", "active-for-invoice"],
     queryFn: () => getSuppliers({ activo: "true" }),
-    enabled: !supplierId,
+    enabled: !supplierId && !isEdit,
   });
 
-  const supplierBloqueado = !!supplierId;
+  // En edición no se cambia el proveedor; en alta queda bloqueado si vino preseleccionado.
+  const supplierBloqueado = !!supplierId || isEdit;
 
-  const createMut = useMutation({
+  const saveMut = useMutation({
     mutationFn: () =>
-      createSupplierInvoice({
-        supplierId: form.supplierId,
-        descripcion: form.descripcion.trim(),
-        monto: Number(form.monto),
-        moneda: form.moneda,
-        fechaEmision: form.fechaEmision || undefined,
-        fechaVencimiento: form.fechaVencimiento,
-        invoiceNumber: form.invoiceNumber.trim() || undefined,
-        projectId: form.projectId || undefined,
-      }),
+      isEdit
+        ? patchMovement(invoice!.id, {
+            descripcion: form.descripcion.trim(),
+            monto: Number(form.monto),
+            moneda: form.moneda,
+            fecha: form.fechaEmision || undefined,
+            dueDate: form.fechaVencimiento || undefined,
+          })
+        : createSupplierInvoice({
+            supplierId: form.supplierId,
+            descripcion: form.descripcion.trim(),
+            monto: Number(form.monto),
+            moneda: form.moneda,
+            fechaEmision: form.fechaEmision || undefined,
+            fechaVencimiento: form.fechaVencimiento,
+            invoiceNumber: form.invoiceNumber.trim() || undefined,
+            projectId: form.projectId || undefined,
+          }),
     onSuccess: () => {
-      toast.success("Factura creada correctamente");
+      toast.success(isEdit ? "Factura actualizada" : "Factura creada correctamente");
       qc.invalidateQueries({ queryKey: ["suppliers"] });
+      qc.invalidateQueries({ queryKey: ["supplier"] });
       qc.invalidateQueries({ queryKey: ["account-summary"] });
       qc.invalidateQueries({ queryKey: ["finance-movements"] });
       qc.invalidateQueries({ queryKey: ["finance-pending"] });
@@ -67,19 +90,19 @@ export function NewSupplierInvoiceModal({ supplierId, supplierName, onClose, onC
     },
     onError: (err) => {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(msg ?? "Error al crear la factura");
+      toast.error(msg ?? (isEdit ? "Error al actualizar la factura" : "Error al crear la factura"));
     },
   });
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.supplierId) return toast.error("Seleccioná un proveedor");
+    if (!isEdit && !form.supplierId) return toast.error("Seleccioná un proveedor");
     if (!form.descripcion.trim()) return toast.error("Ingresá una descripción");
     const n = Number(form.monto);
     if (!n || n <= 0) return toast.error("Ingresá un monto válido");
     if (!form.fechaVencimiento) return toast.error("Ingresá la fecha de vencimiento");
     setSaving(true);
-    createMut.mutate(undefined, { onSettled: () => setSaving(false) });
+    saveMut.mutate(undefined, { onSettled: () => setSaving(false) });
   }
 
   return (
@@ -92,7 +115,7 @@ export function NewSupplierInvoiceModal({ supplierId, supplierName, onClose, onC
       <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-[var(--color-text-primary)]">
-            Cargar factura a pagar
+            {isEdit ? "Editar factura" : "Cargar factura a pagar"}
           </h3>
           <button
             onClick={onClose}
@@ -137,16 +160,18 @@ export function NewSupplierInvoiceModal({ supplierId, supplierName, onClose, onC
             />
           </div>
 
-          <div>
-            <label className={lbl}>Número de factura</label>
-            <input
-              type="text"
-              value={form.invoiceNumber}
-              onChange={(e) => setForm({ ...form, invoiceNumber: e.target.value })}
-              placeholder="Ej: A-001234"
-              className={inp}
-            />
-          </div>
+          {!isEdit && (
+            <div>
+              <label className={lbl}>Número de factura</label>
+              <input
+                type="text"
+                value={form.invoiceNumber}
+                onChange={(e) => setForm({ ...form, invoiceNumber: e.target.value })}
+                placeholder="Ej: A-001234"
+                className={inp}
+              />
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -194,10 +219,12 @@ export function NewSupplierInvoiceModal({ supplierId, supplierName, onClose, onC
             </div>
           </div>
 
-          <div>
-            <label className={lbl}>Proyecto (opcional)</label>
-            <ProjectPicker value={form.projectId} onChange={(v) => setForm({ ...form, projectId: v })} />
-          </div>
+          {!isEdit && (
+            <div>
+              <label className={lbl}>Proyecto (opcional)</label>
+              <ProjectPicker value={form.projectId} onChange={(v) => setForm({ ...form, projectId: v })} />
+            </div>
+          )}
 
           <div className="flex gap-2 pt-2">
             <button
@@ -205,7 +232,7 @@ export function NewSupplierInvoiceModal({ supplierId, supplierName, onClose, onC
               disabled={saving}
               className="flex-1 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-60"
             >
-              {saving ? "Creando…" : "Cargar factura"}
+              {saving ? "Guardando…" : isEdit ? "Guardar cambios" : "Cargar factura"}
             </button>
             <button
               type="button"

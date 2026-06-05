@@ -2,6 +2,13 @@
 
 ## v6.2
 
+### 5 de junio de 2026
+
+#### Finanzas — Editar y eliminar facturas de proveedor
+
+- En el detalle de un proveedor, cada factura ahora tiene botones para **editar** (descripción, monto, moneda, fechas) y **eliminar**.
+- Al eliminar una factura que ya tenía pagos aplicados, esos pagos no se pierden: quedan como **saldo a favor del proveedor**, listos para reaplicar a otra factura (te avisa cuántos se liberaron).
+
 ### 4 de junio de 2026
 
 #### Finanzas — Cobros previstos en el detalle del cliente
