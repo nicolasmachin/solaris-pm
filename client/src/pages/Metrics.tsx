@@ -412,8 +412,8 @@ export function Metrics() {
 
         {/* ── KPIs ────────────────────────────────────────────────────────── */}
         <SLabel>Instalaciones</SLabel>
-        <p className="text-[11px] text-[var(--color-text-muted)] -mt-2 mb-3" title="Cuenta proyectos cuya etapa OPERACIONES está en estado COMPLETED. Incluye proyectos con trámite UTE o postventa todavía abiertos.">
-          Proyectos con la etapa OPERACIONES completada, independientemente del estado de etapas posteriores (trámites UTE, postventa).
+        <p className="text-[11px] text-[var(--color-text-muted)] -mt-2 mb-3" title="Cuenta proyectos cuya etapa OPERACIONES ya inició (tiene fecha de inicio real). Se agrupa por la fecha de inicio de la obra.">
+          Proyectos con la etapa OPERACIONES iniciada (obra arrancada), agrupados por la fecha de inicio.
         </p>
 
         {isLoading ? (

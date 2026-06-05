@@ -4,6 +4,10 @@
 
 ### 5 de junio de 2026
 
+#### Métricas — Instalaciones se cuentan al iniciar la obra
+
+- "Instalaciones realizadas" ahora cuenta el proyecto cuando la etapa **Operaciones arranca** (fecha de inicio real), no cuando se completa. Se agrupa por trimestre/año según la fecha de inicio de la obra.
+
 #### Pre-ingeniería — Nueva versión arranca con los datos de la anterior
 
 - Al crear una **nueva versión** de pre-ingeniería, el formulario ahora viene **pre-cargado con los datos de la última versión** (cliente, techo, datos eléctricos, red, notas). Solo ajustás lo que cambió en vez de cargar todo de cero. Las fotos no se copian (se agregan aparte si hacen falta).

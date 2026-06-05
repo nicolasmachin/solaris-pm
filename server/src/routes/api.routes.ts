@@ -4068,31 +4068,31 @@ export async function registerApiRoutes(app: FastifyInstance) {
       (project) => project.status === ProjectStatus.ACTIVE || project.status === ProjectStatus.COMPLETED,
     );
 
-    // "Instalación realizada" = el proyecto tiene la etapa OPERACIONES en
-    // status COMPLETED. No exigimos un sopCode específico de subetapa porque
-    // los pipelines varían (no todos tienen O2P/O2T como subetapas formales).
-    // La fecha que se usa para agrupar es el actualEndDate de esa stage.
-    const completedOperacionesStages = await prisma.stage.findMany({
+    // "Instalación realizada" = el proyecto tiene la etapa OPERACIONES
+    // INICIADA (actualStartDate cargado, i.e. status IN_PROGRESS o COMPLETED).
+    // No exigimos un sopCode específico de subetapa porque los pipelines varían
+    // (no todos tienen O2P/O2T como subetapas formales). La fecha que se usa
+    // para agrupar es el actualStartDate de esa stage (cuándo arrancó la obra).
+    const startedOperacionesStages = await prisma.stage.findMany({
       where: {
         deletedAt: null,
         name: StageType.OPERACIONES,
-        status: StageStatus.COMPLETED,
-        actualEndDate: { not: null },
+        actualStartDate: { not: null },
         project: { deletedAt: null },
       },
       select: {
         projectId: true,
-        actualEndDate: true,
+        actualStartDate: true,
         project: { select: { id: true, capacityKwp: true } },
       },
     });
 
     type Installed = { projectId: string; installedAt: Date; capacityKwp: number };
-    const installedAll: Installed[] = completedOperacionesStages
-      .filter((s) => s.actualEndDate != null && s.project != null)
+    const installedAll: Installed[] = startedOperacionesStages
+      .filter((s) => s.actualStartDate != null && s.project != null)
       .map((s) => ({
         projectId: s.projectId,
-        installedAt: s.actualEndDate as Date,
+        installedAt: s.actualStartDate as Date,
         capacityKwp: decimalToNumber(s.project!.capacityKwp) ?? 0,
       }));
 
