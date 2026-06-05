@@ -28,12 +28,19 @@ export const CALIBRES_DIFERENCIAL_AC = [
 
 // Calibre de la protección DC del campo solar (string libre con polaridad).
 // La polaridad ("2P", "3P", "4P") va embebida en el string del calibre porque
-// es lo que se imprime en el unifilar.
+// es lo que se imprime en el unifilar. La lista es solo sugerencia: el campo
+// (CalibreInput) acepta cualquier valor que tipee el usuario.
 export const CALIBRES_PROTECCION_DC = [
   "16A 2P",
+  "16A 3P",
   "25A 2P",
+  "25A 3P",
   "32A 2P",
+  "32A 3P",
   "40A 2P",
+  "40A 3P",
   "50A 2P",
+  "50A 3P",
   "63A 2P",
+  "63A 3P",
 ];

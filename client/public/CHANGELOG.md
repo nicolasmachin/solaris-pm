@@ -4,6 +4,11 @@
 
 ### 5 de junio de 2026
 
+#### Unifilar — Calibre de protección DC
+
+- El campo **Calibre** de la protección DC ahora sugiere también las variantes **3P** (16A 3P, 25A 3P, etc.) además de las 2P. Igual que siempre, podés escribir cualquier valor a mano si necesitás uno que no está en la lista.
+
+
 #### Finanzas — Editar y eliminar facturas de proveedor
 
 - En el detalle de un proveedor, cada factura ahora tiene botones para **editar** (descripción, monto, moneda, fechas) y **eliminar**.
