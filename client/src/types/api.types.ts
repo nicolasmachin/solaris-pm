@@ -270,6 +270,8 @@ export interface Project {
   code: string;
   clientName: string;
   capacityKwp: number;
+  /** Cuántas "obras" vale el proyecto para la métrica ponderada (default 1). */
+  pesoObra: number;
   locationCity: string;
   locationProvince: string;
   status: ProjectStatus;

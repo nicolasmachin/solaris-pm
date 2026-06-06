@@ -23,6 +23,7 @@ import { AuditHistory } from "../components/project/AuditHistory";
 import { ProjectGantt } from "../components/project/ProjectGantt";
 import { DocumentsStrip } from "../components/project/DocumentsStrip";
 import { MoreDataSection } from "../components/project/MoreDataSection";
+import { PesoObraCard } from "../components/project/PesoObraCard";
 import { Spinner } from "../components/ui/Spinner";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
@@ -833,6 +834,9 @@ export function ProjectDetail() {
 
       {/* KPIs (avance, días desde venta, etapa actual) */}
       <KpiCards project={project} />
+
+      {/* Peso de obra (métrica ponderada) — editable solo ADMIN */}
+      <PesoObraCard projectId={project.id} pesoObra={project.pesoObra} />
 
       {/* Documentos destacados */}
       <DocumentsStrip projectId={project.id} />

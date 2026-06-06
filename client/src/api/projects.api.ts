@@ -61,6 +61,7 @@ export async function patchProject(
   body: {
     clientName?: string;
     capacityKwp?: number;
+    pesoObra?: number;
     locationCity?: string;
     locationProvince?: string;
     status?: import("../types/api.types").ProjectStatus;
