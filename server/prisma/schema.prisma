@@ -393,6 +393,9 @@ model Project {
   tenantId                String?
   clientName              String
   capacityKwp             Decimal                  @db.Decimal(10, 2)
+  // Cuántas "obras" vale el proyecto para la métrica ponderada. Default 1;
+  // sólo ADMIN lo sube a mano desde la ficha (ej. una obra grande = 5).
+  pesoObra                Int                      @default(1)
   locationCity            String
   locationProvince        String
   status                  ProjectStatus
