@@ -4098,17 +4098,18 @@ export async function registerApiRoutes(app: FastifyInstance) {
       select: {
         projectId: true,
         actualStartDate: true,
-        project: { select: { id: true, capacityKwp: true } },
+        project: { select: { id: true, capacityKwp: true, pesoObra: true } },
       },
     });
 
-    type Installed = { projectId: string; installedAt: Date; capacityKwp: number };
+    type Installed = { projectId: string; installedAt: Date; capacityKwp: number; pesoObra: number };
     const installedAll: Installed[] = startedOperacionesStages
       .filter((s) => s.actualStartDate != null && s.project != null)
       .map((s) => ({
         projectId: s.projectId,
         installedAt: s.actualStartDate as Date,
         capacityKwp: decimalToNumber(s.project!.capacityKwp) ?? 0,
+        pesoObra: s.project!.pesoObra,
       }));
 
     const completedInYear = installedAll.filter(
@@ -4122,6 +4123,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     const installationsThisYear = completedInYear.length;
     const installationsThisQuarter = completedInQuarter.length;
+    // Obras ponderadas = suma de pesoObra sobre EL MISMO conjunto que el conteo.
+    const obrasRealizadasPonderadasThisYear = completedInYear.reduce((sum, p) => sum + p.pesoObra, 0);
+    const obrasRealizadasPonderadasThisQuarter = completedInQuarter.reduce((sum, p) => sum + p.pesoObra, 0);
     const kwpInstalledThisYear = Number(
       completedInYear.reduce((sum, p) => sum + p.capacityKwp, 0).toFixed(2),
     );
@@ -4193,6 +4197,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       completedProjects: projects.filter((project) => project.status === ProjectStatus.COMPLETED).length,
       installationsThisYear,
       installationsThisQuarter,
+      obrasRealizadasPonderadasThisYear,
+      obrasRealizadasPonderadasThisQuarter,
       kwpInstalledThisYear,
       kwpInstalledThisQuarter,
       avgDaysToScheduleFirstDate,
