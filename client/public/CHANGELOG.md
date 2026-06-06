@@ -4,6 +4,11 @@
 
 ### 5 de junio de 2026
 
+#### Métricas — Obras ponderadas
+
+- Cada proyecto tiene ahora un **"Peso de obra"** (cuántas obras vale, por defecto 1) que se edita desde la ficha del proyecto. Solo los **administradores** pueden cambiarlo; el resto lo ve en solo lectura.
+- En **Métricas** se agregó el KPI **"Obras ponderadas"** al lado de "Instalaciones realizadas": en vez de contar 1 por obra, suma el peso de cada una (ej. una obra grande con peso 5 suma 5). Con todos los pesos en 1 da igual al conteo simple. El conteo de instalaciones no cambia.
+
 #### Trámites UTE — Finalizar el trámite desde la etapa del proyecto
 
 - En la etapa **Habilitación UTE** de un proyecto ahora hay un botón **"Marcar trámite como finalizado"** que cierra el trámite (queda Finalizado y Cerrado) y **completa la etapa**, sin tener que cargar las fechas de cada paso del trámite.

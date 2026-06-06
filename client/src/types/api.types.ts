@@ -402,6 +402,8 @@ export interface MetricsOverview {
   completedProjects: number;
   installationsThisYear: number;
   installationsThisQuarter: number;
+  obrasRealizadasPonderadasThisYear: number;
+  obrasRealizadasPonderadasThisQuarter: number;
   kwpInstalledThisYear: number;
   kwpInstalledThisQuarter: number;
   avgDaysToScheduleFirstDate: number | null;

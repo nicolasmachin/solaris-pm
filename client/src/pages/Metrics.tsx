@@ -417,17 +417,24 @@ export function Metrics() {
         </p>
 
         {isLoading ? (
-          <div className="grid gap-3 md:grid-cols-4 mb-6">
-            {[0, 1, 2, 3].map((i) => <SkeletonCard key={i} />)}
+          <div className="grid gap-3 md:grid-cols-4 xl:grid-cols-5 mb-6">
+            {[0, 1, 2, 3, 4].map((i) => <SkeletonCard key={i} />)}
           </div>
         ) : overviewQ.data ? (
-          <div className="grid gap-3 md:grid-cols-4 mb-6">
+          <div className="grid gap-3 md:grid-cols-4 xl:grid-cols-5 mb-6">
             <MetricCard
               label="Instalaciones realizadas"
               valueQ={overviewQ.data.installationsThisQuarter}
               valueYear={overviewQ.data.installationsThisYear}
               goalQ={sg(overviewQ.data.goals, "INSTALLATIONS_COUNT", "QUARTERLY")}
               goalYear={sg(overviewQ.data.goals, "INSTALLATIONS_COUNT", "ANNUAL")}
+              mode={mode}
+              quarterLabel={qLabel}
+            />
+            <MetricCard
+              label="Obras ponderadas"
+              valueQ={overviewQ.data.obrasRealizadasPonderadasThisQuarter}
+              valueYear={overviewQ.data.obrasRealizadasPonderadasThisYear}
               mode={mode}
               quarterLabel={qLabel}
             />
