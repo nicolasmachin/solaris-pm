@@ -187,6 +187,9 @@ const projectPatchSchema = z
   .object({
     clientName: z.string().min(1).optional(),
     capacityKwp: z.coerce.number().positive().optional(),
+    // Peso de la obra para la métrica ponderada: entero ≥1, ≤999. .int() rechaza
+    // decimales. La restricción a ADMIN se aplica en el handler (no en el schema).
+    pesoObra: z.number().int().min(1).max(999).optional(),
     locationCity: z.string().min(1).optional(),
     locationProvince: z.string().min(1).optional(),
     status: z.nativeEnum(ProjectStatus).optional(),
@@ -603,6 +606,7 @@ function normalizeProjectInput(input: Record<string, unknown>) {
 
   if (source.clientName !== undefined) normalized.clientName = source.clientName;
   if (source.capacityKwp !== undefined) normalized.capacityKwp = new Prisma.Decimal(source.capacityKwp);
+  if (source.pesoObra !== undefined) normalized.pesoObra = source.pesoObra;
   if (source.locationCity !== undefined) normalized.locationCity = source.locationCity;
   if (source.locationProvince !== undefined) normalized.locationProvince = source.locationProvince;
   if (source.status !== undefined) normalized.status = source.status;
@@ -672,6 +676,7 @@ function normalizeSolarSystemInput(input: Record<string, unknown>) {
 const projectFieldLabels: Record<string, string> = {
   clientName: "cliente",
   capacityKwp: "potencia kWp",
+  pesoObra: "peso de la obra",
   locationCity: "ciudad",
   locationProvince: "provincia",
   status: "estado del proyecto",
@@ -1614,6 +1619,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const params = z.object({ id: z.string() }).parse(request.params);
     const body = projectPatchSchema.parse(request.body);
     const project = await findProjectOrThrow(params.id);
+
+    // pesoObra solo lo edita ADMIN. Comparamos contra el valor actual para no
+    // bloquear a un no-ADMIN que reenvía el peso sin cambiarlo (payload completo).
+    if (
+      body.pesoObra !== undefined &&
+      body.pesoObra !== project.pesoObra &&
+      user.role !== "ADMIN"
+    ) {
+      throw new AppError(403, "PESO_OBRA_ADMIN_ONLY", "Solo un administrador puede cambiar el peso de la obra");
+    }
 
     const updateData = normalizeProjectInput(body);
     const updatedProject = await prisma.project.update({

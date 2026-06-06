@@ -443,6 +443,7 @@ export function serializeProject(project: {
   code: string;
   clientName: string;
   capacityKwp: Prisma.Decimal;
+  pesoObra: number;
   locationCity: string;
   locationProvince: string;
   status: ProjectStatus;
