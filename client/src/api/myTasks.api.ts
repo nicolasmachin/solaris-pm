@@ -65,6 +65,7 @@ export interface StandaloneTaskItem {
   description: string | null;
   status: TaskStatus;
   dueDate: string | null;
+  completedAt: string | null;
   assignedUserId: string | null;
   assignedUser: { id: string; name: string; email: string } | null;
   urgencyRank: number;

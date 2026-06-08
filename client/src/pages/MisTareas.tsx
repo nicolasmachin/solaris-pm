@@ -531,6 +531,7 @@ export function MisTareas() {
           <StandaloneTasksBlock
             tasks={data?.standaloneTasks ?? []}
             currentUserId={effectiveUserId ?? currentUser?.id ?? null}
+            completed={tasksScope === "completed"}
           />
         </div>
       )}

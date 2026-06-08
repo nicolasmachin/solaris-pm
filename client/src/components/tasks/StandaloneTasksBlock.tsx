@@ -10,6 +10,17 @@ interface Props {
   // distinto al autenticado si un ADMIN abrió ?userId=). Sólo se usa para
   // decidir si mostrar el nombre del asignado o "(yo)".
   currentUserId: string | null;
+  // Si true, el bloque está mostrando tareas sueltas COMPLETADAS (sigue el
+  // mismo toggle Pendientes/Completadas que las tareas de proyecto).
+  completed?: boolean;
+}
+
+const MONTHS_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+function formatCompletedAt(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return `${String(d.getDate()).padStart(2, "0")} ${MONTHS_ES[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 type AlertKind = "overdue" | "today" | "upcoming" | "future" | "none";
@@ -53,8 +64,8 @@ function badgeText(iso: string | null, kind: AlertKind, daysAbs: number): string
   return `${dd}-${months[d.getMonth()]}`;
 }
 
-export function StandaloneTasksBlock({ tasks, currentUserId }: Props) {
-  const { completeTask } = useStandaloneTasks();
+export function StandaloneTasksBlock({ tasks, currentUserId, completed = false }: Props) {
+  const { completeTask, updateTask } = useStandaloneTasks();
   const [editing, setEditing] = useState<StandaloneTaskItem | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -66,7 +77,7 @@ export function StandaloneTasksBlock({ tasks, currentUserId }: Props) {
             Tareas sueltas
           </h2>
           <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
-            Pendientes sin proyecto asociado
+            {completed ? "Completadas, sin proyecto asociado" : "Pendientes sin proyecto asociado"}
           </p>
         </div>
         <button
@@ -81,13 +92,15 @@ export function StandaloneTasksBlock({ tasks, currentUserId }: Props) {
 
       {tasks.length === 0 ? (
         <div className="px-4 py-6 text-center text-[12px] text-[var(--color-text-muted)]">
-          No tenés tareas sueltas pendientes
+          {completed ? "Todavía no completaste tareas sueltas" : "No tenés tareas sueltas pendientes"}
         </div>
       ) : (
         <ul className="divide-y divide-[var(--color-border)]">
           {tasks.map((t) => {
             const alert = getAlertKind(t.dueDate);
             const isMine = !!t.assignedUserId && t.assignedUserId === currentUserId;
+            const isDone = t.status === "COMPLETED";
+            const toggling = completeTask.isPending || updateTask.isPending;
             return (
               <li
                 key={t.id}
@@ -96,18 +109,24 @@ export function StandaloneTasksBlock({ tasks, currentUserId }: Props) {
               >
                 <button
                   type="button"
-                  aria-label="Marcar como completada"
+                  aria-label={isDone ? "Reabrir tarea" : "Marcar como completada"}
+                  title={isDone ? "Reabrir tarea" : "Marcar como completada"}
                   onClick={(e) => {
                     e.stopPropagation();
-                    completeTask.mutate(t.id);
+                    if (isDone) updateTask.mutate({ id: t.id, body: { status: "PENDING" } });
+                    else completeTask.mutate(t.id);
                   }}
-                  disabled={completeTask.isPending}
-                  className="w-5 h-5 rounded border border-[var(--color-border)] flex items-center justify-center hover:border-[var(--color-accent)] transition-colors flex-shrink-0"
+                  disabled={toggling}
+                  className={`w-5 h-5 rounded border flex items-center justify-center transition-colors flex-shrink-0 ${
+                    isDone
+                      ? "border-emerald-500 bg-emerald-500 text-white"
+                      : "border-[var(--color-border)] hover:border-[var(--color-accent)]"
+                  }`}
                 >
-                  <Check size={12} className="text-[var(--color-text-muted)] opacity-0 group-hover:opacity-100" />
+                  <Check size={12} className={isDone ? "" : "text-[var(--color-text-muted)] opacity-0 group-hover:opacity-100"} />
                 </button>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm text-[var(--color-text-primary)] truncate">
+                  <div className={`text-sm truncate ${isDone ? "text-[var(--color-text-muted)] line-through" : "text-[var(--color-text-primary)]"}`}>
                     {t.title}
                   </div>
                   {t.description ? (
@@ -123,11 +142,17 @@ export function StandaloneTasksBlock({ tasks, currentUserId }: Props) {
                       {isMine ? "(yo)" : t.assignedUser.name}
                     </span>
                   ) : null}
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border ${badgeClassForAlert(alert.kind)}`}
-                  >
-                    {badgeText(t.dueDate, alert.kind, alert.daysAbs)}
-                  </span>
+                  {isDone ? (
+                    <span className="text-[10px] text-[var(--color-text-muted)]">
+                      {t.completedAt ? `Completada el ${formatCompletedAt(t.completedAt)}` : "Completada"}
+                    </span>
+                  ) : (
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border ${badgeClassForAlert(alert.kind)}`}
+                    >
+                      {badgeText(t.dueDate, alert.kind, alert.daysAbs)}
+                    </span>
+                  )}
                 </div>
               </li>
             );

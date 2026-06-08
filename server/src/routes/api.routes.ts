@@ -5133,19 +5133,25 @@ export async function registerApiRoutes(app: FastifyInstance) {
       });
 
     // 4. Tareas sueltas (standalone) del targetUser: projectId IS NULL,
-    //    asignadas al usuario, PENDING (no se exponen completadas en
-    //    standalone — el listado de Mis Tareas solo muestra pendientes).
+    //    asignadas al usuario. Respeta taskScope igual que las de proyecto:
+    //    "pending" muestra no-completadas, "completed" muestra las completadas.
     const standaloneTasksRaw = await prisma.task.findMany({
       where: {
         userId: targetUser.id,
         projectId: null,
         deletedAt: null,
-        status: TaskStatus.PENDING,
+        status:
+          query.taskScope === "completed"
+            ? TaskStatus.COMPLETED
+            : { not: TaskStatus.COMPLETED },
       },
       include: {
         user: { select: { id: true, name: true, email: true } },
       },
-      orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
+      orderBy:
+        query.taskScope === "completed"
+          ? [{ completedAt: "desc" }, { createdAt: "desc" }]
+          : [{ dueDate: "asc" }, { createdAt: "desc" }],
     });
 
     const standaloneTasks = standaloneTasksRaw.map((t) => ({
@@ -5154,6 +5160,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       description: t.description,
       status: t.status,
       dueDate: serializeDateOnly(t.dueDate),
+      completedAt: serializeDate(t.completedAt),
       assignedUserId: t.userId,
       assignedUser: t.user
         ? { id: t.user.id, name: t.user.name, email: t.user.email }

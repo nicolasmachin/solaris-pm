@@ -2,6 +2,12 @@
 
 ## v6.2
 
+### 8 de junio de 2026
+
+#### Mis Tareas — Ver tareas sueltas completadas
+
+- Las **tareas sueltas** ya no desaparecen al completarlas: con el toggle **"Completadas"** (el mismo de las tareas de proyecto) ahora podés ver las tareas sueltas que terminaste, ordenadas por fecha de finalización. Desde ahí podés reabrirlas si hace falta.
+
 ### 5 de junio de 2026
 
 #### Métricas — Obras ponderadas
