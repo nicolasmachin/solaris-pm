@@ -12100,7 +12100,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return serializeMaterialItem(item);
     });
 
-    app.post("/materials/items", { preHandler: authorize(Module.CONFIGURACION, Action.CREATE) }, async (request) => {
+    app.post("/materials/items", { preHandler: authorizeAny([{ module: Module.CONFIGURACION, action: Action.CREATE }, { module: Module.STOCK, action: Action.CREATE }]) }, async (request) => {
       const body = itemCreateSchema.parse(request.body);
       const cat = await prisma.materialCategory.findUnique({ where: { id: body.categoryId } });
       if (!cat || !cat.activa) throw badRequest("CATEGORY_INVALID", "La categoría no existe o está inactiva");
@@ -12118,7 +12118,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return serializeMaterialItem(item);
     });
 
-    app.patch("/materials/items/:id", { preHandler: authorize(Module.CONFIGURACION, Action.EDIT) }, async (request) => {
+    app.patch("/materials/items/:id", { preHandler: authorizeAny([{ module: Module.CONFIGURACION, action: Action.EDIT }, { module: Module.STOCK, action: Action.EDIT }]) }, async (request) => {
       const { id } = z.object({ id: z.string() }).parse(request.params);
       const body = itemPatchSchema.parse(request.body);
       const existing = await prisma.materialItem.findUnique({ where: { id } });
@@ -12141,7 +12141,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return serializeMaterialItem(updated);
     });
 
-    app.delete("/materials/items/:id", { preHandler: authorize(Module.CONFIGURACION, Action.DELETE) }, async (request) => {
+    app.delete("/materials/items/:id", { preHandler: authorizeAny([{ module: Module.CONFIGURACION, action: Action.DELETE }, { module: Module.STOCK, action: Action.DELETE }]) }, async (request) => {
       const { id } = z.object({ id: z.string() }).parse(request.params);
       const existing = await prisma.materialItem.findUnique({
         where: { id },
