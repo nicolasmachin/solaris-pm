@@ -2,6 +2,12 @@
 
 ## v6.2
 
+### 9 de junio de 2026
+
+#### Stock — Operaciones puede gestionar productos
+
+- **Arreglo:** crear, editar o eliminar productos en Stock dependía del permiso de **Configuración** (Admin), por eso un usuario con permiso de **Stock** no podía hacerlo aunque lo tuviera habilitado. Ahora alcanza con el permiso del módulo **Stock**. El rol **Operaciones** pasa a poder dar de alta y administrar productos y movimientos de stock.
+
 ### 8 de junio de 2026
 
 #### Mis Tareas — Ver tareas sueltas completadas
