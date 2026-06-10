@@ -1,6 +1,15 @@
 import axios from "axios";
 import { toast } from "react-hot-toast";
 
+// Permite que llamadas SECUNDARIAS (badges, contadores, polling de fondo) opten
+// por no disparar el logout global ante un 401. Una request principal sigue
+// tumbando la sesión como antes; una secundaria solo falla en silencio.
+declare module "axios" {
+  export interface AxiosRequestConfig {
+    skipAuthRedirect?: boolean;
+  }
+}
+
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 
 export const apiClient = axios.create({
@@ -44,12 +53,19 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status as number | undefined;
+    const skipAuthRedirect = Boolean(error.config?.skipAuthRedirect);
+    const alreadyOnLogin = window.location.pathname === "/login";
+
+    // Solo un 401 de una request PRINCIPAL invalida la sesión. Las secundarias
+    // (skipAuthRedirect) fallan en silencio. El guard de pathname evita el loop
+    // de re-login (borrar token → redirect → 401 → redirect…).
+    if (status === 401 && !skipAuthRedirect && !alreadyOnLogin) {
       localStorage.removeItem("voltia-token");
       localStorage.removeItem("voltia-user");
       localStorage.removeItem("voltia-permissions");
       window.location.href = "/login";
-    } else if (error.response?.status >= 500) {
+    } else if (status !== undefined && status >= 500) {
       toast.error("Error interno del servidor. Intentá de nuevo en unos momentos.");
     }
     return Promise.reject(error);

@@ -123,6 +123,9 @@ export async function borrarAdjuntoInforme(id: string, fileId: string): Promise<
 }
 
 export async function getInformesPendientesCount(): Promise<number> {
-  const { data } = await apiClient.get<{ count: number }>("/api/informes/pendientes/count");
+  // Llamada secundaria (badge): si fallara con 401 no debe tumbar la sesión.
+  const { data } = await apiClient.get<{ count: number }>("/api/informes/pendientes/count", {
+    skipAuthRedirect: true,
+  });
   return data.count;
 }
