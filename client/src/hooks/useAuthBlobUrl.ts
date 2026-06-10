@@ -69,3 +69,24 @@ export async function downloadAuthenticated(url: string, filename: string): Prom
   // Delay para dar tiempo a que el browser inicie la descarga antes de revocar
   setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
 }
+
+/**
+ * Abre un archivo protegido en el visor del navegador (pestaña nueva) vía blob
+ * autenticado. La pestaña se abre SINCRÓNICAMENTE dentro del click para no
+ * chocar con el bloqueador de popups; recién después se carga el blob.
+ * Tipos no previsualizables: el browser los descarga (comportamiento aceptable).
+ */
+export async function previewAuthenticated(url: string): Promise<void> {
+  const win = window.open("", "_blank");
+  try {
+    const res = await apiClient.get(url, { responseType: "blob" });
+    const objectUrl = URL.createObjectURL(res.data);
+    if (win) win.location.href = objectUrl;
+    else window.open(objectUrl, "_blank"); // fallback si el popup quedó bloqueado
+    // El visor necesita la URL viva mientras carga; revocamos con holgura.
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+  } catch (err) {
+    if (win) win.close();
+    throw err;
+  }
+}

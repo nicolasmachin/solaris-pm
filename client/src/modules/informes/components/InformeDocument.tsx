@@ -1,8 +1,9 @@
 import { useRef, useState } from "react";
-import { Download, Paperclip, Pencil, Send, Trash2, Upload, X, FileText } from "lucide-react";
+import { toast } from "react-hot-toast";
+import { Download, Eye, Paperclip, Pencil, Send, Trash2, Upload, X, FileText } from "lucide-react";
 
 import type { InformeDetail } from "../../../api/informes.api";
-import { downloadAuthenticated } from "../../../hooks/useAuthBlobUrl";
+import { downloadAuthenticated, previewAuthenticated } from "../../../hooks/useAuthBlobUrl";
 import { useInformeMutations } from "../../../hooks/useInformes";
 import { EstadoBadge } from "./EstadoBadge";
 
@@ -125,7 +126,20 @@ export function InformeDocument({ informe, onEditar, onBorrado }: Props) {
                 <span className="flex-1 truncate text-xs text-[var(--color-text-primary)]">{a.filename}</span>
                 <span className="text-[10px] text-[var(--color-text-muted)]">{tamano(a.sizeBytes)}</span>
                 <button
-                  onClick={() => downloadAuthenticated(a.downloadUrl, a.filename)}
+                  onClick={() =>
+                    previewAuthenticated(a.previewUrl).catch(() => toast.error("No se pudo abrir el archivo"))
+                  }
+                  className="rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-border)]/40 hover:text-[var(--color-text-primary)]"
+                  title="Ver"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() =>
+                    downloadAuthenticated(a.downloadUrl, a.filename).catch(() =>
+                      toast.error("No se pudo descargar el archivo"),
+                    )
+                  }
                   className="rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-border)]/40 hover:text-[var(--color-text-primary)]"
                   title="Descargar"
                 >
