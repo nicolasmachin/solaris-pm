@@ -2,16 +2,6 @@
 
 ## v6.2
 
-### 10 de junio de 2026
-
-#### Informes — Nuevo módulo de informes y revisiones
-
-- Nueva sección **Informes** en el menú: permite escribir un informe, elegir a quién va dirigido (uno o varios destinatarios) y, opcionalmente, asociarlo a una obra.
-- **Borradores:** mientras el informe no se envía, podés editar el título y el contenido, **adjuntar archivos** y borrarlo. Una vez enviado queda firme.
-- **Revisión dirigida:** cada destinatario puede **Aprobar** o **Devolver** el informe. Para devolver hay que dejar un comentario explicando por qué. La respuesta de cada uno es definitiva.
-- **Estado a la vista:** el informe muestra su estado general (Pendiente, Aprobado o Devuelto) y el detalle de qué respondió cada destinatario, con su comentario y fecha.
-- **Privacidad:** cada quien ve solo los informes que escribió o que recibió. El menú marca con un **contador** los informes que tenés pendientes de responder.
-
 ### 9 de junio de 2026
 
 #### Métricas — Obras ponderadas usa el objetivo de instalaciones

@@ -428,7 +428,6 @@ const MODULE_LABELS: Record<string, string> = {
   USUARIOS: "Usuarios",
   FINANZAS: "Finanzas",
   STOCK: "Stock",
-  INFORMES: "Informes",
 };
 
 // Key compuesta role+module+action → bool activo
