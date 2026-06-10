@@ -37,10 +37,17 @@ export function useInforme(id: string | null) {
   });
 }
 
-export function useInformesPendientesCount() {
+// Contador del badge. Es una llamada SECUNDARIA: nunca debe poder voltear la
+// sesión. Por eso:
+//  - `enabled`: solo se dispara si el caller confirma permiso INFORMES.VIEW
+//    (fallo seguro: sin permiso, el endpoint no se llama).
+//  - `retry: false`: si igual fallara, no reintenta y no genera ruido.
+export function useInformesPendientesCount(enabled = true) {
   return useQuery({
     queryKey: ["informes-pendientes-count"],
     queryFn: getInformesPendientesCount,
+    enabled,
+    retry: false,
     staleTime: 60_000,
   });
 }

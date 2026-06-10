@@ -4,6 +4,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { useAuthStore } from "../../store/auth.store";
 import { NotificationBell } from "../notifications/NotificationBell";
 import { CanAccess } from "../ui/CanAccess";
+import { usePermission } from "../../hooks/usePermission";
 import { useInformesPendientesCount } from "../../hooks/useInformes";
 
 function InformesNavLink({
@@ -11,7 +12,11 @@ function InformesNavLink({
 }: {
   navLinkClass: (p: { isActive: boolean }) => string;
 }) {
-  const { data: count = 0 } = useInformesPendientesCount();
+  // Doble candado: el componente ya se monta dentro de <CanAccess>, pero ademas
+  // gateamos la query del contador por el mismo permiso para que una llamada
+  // secundaria nunca se dispare sin INFORMES.VIEW.
+  const puedeVer = usePermission("INFORMES", "VIEW");
+  const { data: count = 0 } = useInformesPendientesCount(puedeVer);
   return (
     <NavLink to="/informes" className={({ isActive }) => `relative ${navLinkClass({ isActive })}`}>
       Informes
