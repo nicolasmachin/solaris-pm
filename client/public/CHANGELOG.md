@@ -4,6 +4,11 @@
 
 ### 9 de junio de 2026
 
+#### Ventas — Borrar leads y buscar en el Kanban
+
+- **Borrar lead:** dentro del detalle de un lead hay un botón **"Borrar lead"** (con confirmación). Disponible para quien tenga permiso de eliminar en Ventas.
+- **Búsqueda en el Kanban:** arriba del tablero hay un buscador para filtrar las tarjetas por texto y un toggle **"Solo míos"** para ver solo tus leads. (La vista **Lista** ya tenía búsqueda y filtros por etapa, responsable y fechas.)
+
 #### Stock — Operaciones puede gestionar productos
 
 - **Arreglo:** crear, editar o eliminar productos en Stock dependía del permiso de **Configuración** (Admin), por eso un usuario con permiso de **Stock** no podía hacerlo aunque lo tuviera habilitado. Ahora alcanza con el permiso del módulo **Stock**. El rol **Operaciones** pasa a poder dar de alta y administrar productos y movimientos de stock.

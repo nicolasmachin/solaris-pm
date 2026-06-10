@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, Trash2 } from "lucide-react";
 import {
   DndContext,
   PointerSensor,
@@ -89,10 +89,11 @@ function getAssigneeInitial(name?: string) {
     .join("");
 }
 
-function useLeadGroups() {
+function useLeadGroups(params: { search?: string; assignedTo?: "me" } = {}) {
+  const search = params.search?.trim() || undefined;
   return useQuery({
-    queryKey: ["lead-groups"],
-    queryFn: () => getLeads(),
+    queryKey: ["lead-groups", search ?? "", params.assignedTo ?? "all"],
+    queryFn: () => getLeads({ search, assignedTo: params.assignedTo }),
     staleTime: 30_000,
   });
 }
@@ -536,6 +537,17 @@ function LeadPanel({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const canEditSales = usePermission("VENTAS", "EDIT");
+  const canDeleteSales = usePermission("VENTAS", "DELETE");
+  const deleteLeadMut = useMutation({
+    mutationFn: () => deleteLead(leadId),
+    onSuccess: () => {
+      toast.success("Lead eliminado");
+      queryClient.invalidateQueries({ queryKey: ["lead-groups"] });
+      queryClient.invalidateQueries({ queryKey: ["leads-flat"] });
+      onClose();
+    },
+    onError: () => toast.error("No se pudo eliminar el lead"),
+  });
   const [showProposalModal, setShowProposalModal] = useState(false);
   const [previewProposal, setPreviewProposal] = useState<LeadProposal | null>(null);
   const [lostReason, setLostReason] = useState("");
@@ -923,6 +935,27 @@ function LeadPanel({
         </section>
 
         <CommentThread leadId={lead.id} level="lead" />
+
+        {canDeleteSales ? (
+          <section className="mt-5 rounded-lg border border-red-500/30 bg-red-500/5 p-4">
+            <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
+              Zona de peligro
+            </p>
+            <button
+              type="button"
+              disabled={deleteLeadMut.isPending}
+              onClick={() => {
+                if (confirm(`¿Eliminar el lead de "${lead.clientName}"? Esta acción no se puede deshacer.`)) {
+                  deleteLeadMut.mutate();
+                }
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/40 px-3 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/15 disabled:opacity-50"
+            >
+              <Trash2 className="h-4 w-4" />
+              {deleteLeadMut.isPending ? "Eliminando…" : "Borrar lead"}
+            </button>
+          </section>
+        ) : null}
       </aside>
 
       <LostReasonModal
@@ -1002,7 +1035,15 @@ function Tabs({
 export function Sales() {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
-  const { data = [], isLoading } = useLeadGroups();
+  // Búsqueda/filtro del Kanban (la vista Lista tiene los suyos en la URL).
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [onlyMine, setOnlyMine] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+  const { data = [], isLoading } = useLeadGroups({ search, assignedTo: onlyMine ? "me" : undefined });
   const [tab, setTab] = useState<SalesTab>("active");
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [showNewLead, setShowNewLead] = useState(false);
@@ -1046,14 +1087,6 @@ export function Sales() {
     onError: () => toast.error("No se pudo mover el lead"),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: deleteLead,
-    onSuccess: () => {
-      toast.success("Lead eliminado");
-      queryClient.invalidateQueries({ queryKey: ["lead-groups"] });
-      setSelectedLeadId(null);
-    },
-  });
 
   const handleDragEnd = (event: DragEndEvent) => {
     if (!event.over) return;
@@ -1089,9 +1122,32 @@ export function Sales() {
         </CanAccess>
       </div>
 
-      <div className="mb-4 flex shrink-0 items-center gap-3">
+      <div className="mb-4 flex shrink-0 flex-wrap items-center gap-3">
         <SalesViewToggle view={view} onChange={setView} />
-        {view === "kanban" ? <Tabs current={tab} onChange={setTab} /> : null}
+        {view === "kanban" ? (
+          <>
+            <Tabs current={tab} onChange={setTab} />
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--color-text-muted)]" />
+              <input
+                type="search"
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                placeholder="Buscar lead…"
+                className="w-52 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] py-1.5 pl-8 pr-2 text-xs text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+              />
+            </div>
+            <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-[var(--color-text-secondary)]">
+              <input
+                type="checkbox"
+                checked={onlyMine}
+                onChange={(event) => setOnlyMine(event.target.checked)}
+                className="cursor-pointer"
+              />
+              Solo míos
+            </label>
+          </>
+        ) : null}
       </div>
 
       {view === "list" ? (
