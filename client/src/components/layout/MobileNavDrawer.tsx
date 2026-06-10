@@ -11,6 +11,7 @@ import {
   Users,
   ListTodo,
   FileCheck,
+  FileText,
   HardHat,
   X,
   LogOut,
@@ -187,6 +188,12 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
             <NavLink to="/tramites-ute" className={linkClass}>
               <FileCheck size={18} className="shrink-0" />
               <span>Trámites UTE</span>
+            </NavLink>
+          </CanAccess>
+          <CanAccess module="INFORMES" action="VIEW">
+            <NavLink to="/informes" className={linkClass}>
+              <FileText size={18} className="shrink-0" />
+              <span>Informes</span>
             </NavLink>
           </CanAccess>
           <CanAccess module="METRICAS" action="VIEW">

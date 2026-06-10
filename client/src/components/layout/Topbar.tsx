@@ -4,6 +4,25 @@ import { useTheme } from "../../hooks/useTheme";
 import { useAuthStore } from "../../store/auth.store";
 import { NotificationBell } from "../notifications/NotificationBell";
 import { CanAccess } from "../ui/CanAccess";
+import { useInformesPendientesCount } from "../../hooks/useInformes";
+
+function InformesNavLink({
+  navLinkClass,
+}: {
+  navLinkClass: (p: { isActive: boolean }) => string;
+}) {
+  const { data: count = 0 } = useInformesPendientesCount();
+  return (
+    <NavLink to="/informes" className={({ isActive }) => `relative ${navLinkClass({ isActive })}`}>
+      Informes
+      {count > 0 && (
+        <span className="absolute -right-3 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-accent)] px-1 text-[9px] font-bold text-black">
+          {count > 9 ? "9+" : count}
+        </span>
+      )}
+    </NavLink>
+  );
+}
 
 function SunIcon() {
   return (
@@ -157,6 +176,9 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
             <NavLink to="/tramites-ute" className={navLinkClass}>
               Trámites UTE
             </NavLink>
+          </CanAccess>
+          <CanAccess module="INFORMES" action="VIEW">
+            <InformesNavLink navLinkClass={navLinkClass} />
           </CanAccess>
           <CanAccess module="METRICAS" action="VIEW">
             <NavLink to="/metrics" className={navLinkClass}>
