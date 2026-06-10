@@ -90,6 +90,7 @@ enum AuditEntityType {
   payment
   payment_application
   account
+  informe
 }
 
 enum AuditAction {
@@ -174,6 +175,7 @@ enum Module {
   STOCK
   TRAMITES_UTE
   PORTAL_CLIENTE
+  INFORMES
 }
 
 enum Moneda {
@@ -377,6 +379,8 @@ model User {
   projectMaterialsAdded          ProjectMaterial[]           @relation("ProjectMaterialAddedBy")
   projectMaterialsEdited         ProjectMaterial[]           @relation("ProjectMaterialLastEditedBy")
   uteDocumentsGenerated          UteDocumentGeneration[]     @relation("UteDocsGeneratedBy")
+  informesCreados                Informe[]                   @relation("InformesCreados")
+  informesRecibidos              InformeDestinatario[]       @relation("InformesRecibidos")
   passwordTemporary              Boolean                     @default(false)
   deletedAt                      DateTime?                   @db.Timestamptz(6)
   createdAt                      DateTime                    @default(now()) @db.Timestamptz(6)
@@ -449,6 +453,7 @@ model Project {
   engineeringFinalProject EngineeringFinalProject?
   uteDocumentConfig       UteDocumentConfig?
   uteDocumentGenerations  UteDocumentGeneration[]
+  informes                Informe[]                @relation("InformesDeProyecto")
   // Datos del cliente que se cargan desde el form del proyecto y/o se
   // extraen de la cédula con IA. Ver feature ute-doc-extraction.
   // nombreCliente: nombre tal cual figura en la cédula, usado en los docs
@@ -783,6 +788,10 @@ model FileAttachment {
   leadId                 String?
   stageId                String?
   substageId             String?
+  // Owner alternativo: adjunto de un Informe (módulo Informes). Parte del XOR
+  // de owner — la validación que exige exactamente uno de
+  // project/lead/stage/substage/informe se hace a nivel de service.
+  informeId              String?
   filename               String
   storedFilename         String
   mimeType               String
@@ -801,6 +810,7 @@ model FileAttachment {
   lead                   SalesLead?             @relation("LeadAttachments", fields: [leadId], references: [id], onDelete: Cascade)
   stage                  Stage?                 @relation(fields: [stageId], references: [id], onDelete: SetNull)
   substage               Substage?              @relation(fields: [substageId], references: [id], onDelete: SetNull)
+  informe                Informe?               @relation("InformeAdjuntos", fields: [informeId], references: [id], onDelete: Cascade)
   preIngenieriaFotos     PreIngenieriaFoto[]
   preIngenieriaMinutaFor PreIngenieriaVersion[] @relation("MinutaSource")
   efpAttachments         EFPAttachment[]        @relation("EFPAttachmentFile")
@@ -810,6 +820,7 @@ model FileAttachment {
 
   @@index([projectId])
   @@index([leadId])
+  @@index([informeId])
   @@index([uploadedById])
   @@index([deletedAt])
   @@index([toolSource])
@@ -825,6 +836,68 @@ enum FileAttachmentTipo {
   PRE_INGENIERIA
   MINUTA_RELEVAMIENTO
   OTRO
+}
+
+// ─── Módulo Informes ──────────────────────────────────────────────────────────
+// Informes con revisión dirigida y visibilidad row-level (autor + destinatarios).
+// Una sola pasada: BORRADOR → PENDIENTE → APROBADO | DEVUELTO. Ver SPEC.
+
+enum InformeEstado {
+  BORRADOR
+  PENDIENTE
+  APROBADO
+  DEVUELTO
+}
+
+enum InformeRespuesta {
+  PENDIENTE
+  APROBADO
+  DEVUELTO
+}
+
+model Informe {
+  id        String        @id @default(cuid())
+  titulo    String
+  cuerpo    String // texto del informe (markdown/plano)
+  // Estado consolidado MATERIALIZADO: se recalcula en cada respuesta/envío.
+  estado    InformeEstado @default(BORRADOR)
+
+  autorId String
+  autor   User   @relation("InformesCreados", fields: [autorId], references: [id], onDelete: Restrict)
+
+  projectId String? // vínculo OPCIONAL a obra
+  project   Project? @relation("InformesDeProyecto", fields: [projectId], references: [id], onDelete: SetNull)
+
+  destinatarios InformeDestinatario[]
+  adjuntos      FileAttachment[]      @relation("InformeAdjuntos")
+
+  enviadoAt DateTime? @db.Timestamptz(6) // null mientras BORRADOR
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(6)
+
+  @@index([autorId])
+  @@index([projectId])
+  @@index([estado])
+  @@map("informes")
+}
+
+model InformeDestinatario {
+  id        String  @id @default(cuid())
+  informeId String
+  informe   Informe @relation(fields: [informeId], references: [id], onDelete: Cascade)
+
+  usuarioId String
+  usuario   User   @relation("InformesRecibidos", fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  respuesta    InformeRespuesta @default(PENDIENTE)
+  comentario   String? // motivo de devolución o nota de aprobación
+  respondidoAt DateTime?        @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([informeId, usuarioId]) // un usuario no puede ser destinatario dos veces
+  @@index([usuarioId])
+  @@map("informe_destinatarios")
 }
 
 model AuditLog {
