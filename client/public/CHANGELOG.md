@@ -4,6 +4,10 @@
 
 ### 9 de junio de 2026
 
+#### Métricas — Obras ponderadas usa el objetivo de instalaciones
+
+- El KPI **"Obras ponderadas"** ahora se mide contra el **mismo objetivo** que "Instalaciones realizadas" (no necesita un objetivo propio): muestra el avance del valor ponderado contra esa meta del trimestre y del año.
+
 #### Ventas — Borrar leads y buscar en el Kanban
 
 - **Borrar lead:** dentro del detalle de un lead hay un botón **"Borrar lead"** (con confirmación). Disponible para quien tenga permiso de eliminar en Ventas.

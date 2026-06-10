@@ -435,6 +435,8 @@ export function Metrics() {
               label="Obras ponderadas"
               valueQ={overviewQ.data.obrasRealizadasPonderadasThisQuarter}
               valueYear={overviewQ.data.obrasRealizadasPonderadasThisYear}
+              goalQ={sg(overviewQ.data.goals, "INSTALLATIONS_COUNT", "QUARTERLY")}
+              goalYear={sg(overviewQ.data.goals, "INSTALLATIONS_COUNT", "ANNUAL")}
               mode={mode}
               quarterLabel={qLabel}
             />

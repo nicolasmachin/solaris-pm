@@ -88,7 +88,12 @@ export function MetricCard({
   const isQ = mode === "quarter";
   const primaryValue = isQ ? (valueQ ?? 0) : valueYear;
   const primaryGoal = isQ ? goalQ : goalYear;
-  const pct = primaryGoal?.percentAchieved ?? null;
+  // El % se calcula contra el valor mostrado en la card (no contra el
+  // actualValue del goal). Para las métricas comunes da igual (valor == actual),
+  // pero permite reusar el MISMO objetivo en métricas derivadas como "Obras
+  // ponderadas" y que el % refleje el valor ponderado, no el conteo simple.
+  const primaryTarget = primaryGoal?.targetValue ?? null;
+  const pct = primaryTarget != null && primaryTarget > 0 ? (primaryValue / primaryTarget) * 100 : null;
   const hasAnyGoal = !!primaryGoal;
 
   return (
