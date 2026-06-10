@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { Action, AuditAction, AuditEntityType, InformeEstado, Module } from "@prisma/client";
 
+import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
 import { badRequest, unauthorized } from "../utils/errors.js";
@@ -72,6 +73,13 @@ const listQuery = z
   .strict();
 
 export async function registerInformesRoutes(app: FastifyInstance) {
+  // Todas las rutas del módulo requieren usuario autenticado. El hook se aplica
+  // en el scope de este plugin (encapsulación Fastify), igual que el resto de
+  // los grupos de rutas. Sin esto `request.user` queda undefined y `authorize`
+  // responde 401 "No autenticado" en cada endpoint — lo que tumbaba la sesión
+  // del front al llamar al contador del badge.
+  app.addHook("preHandler", authenticate);
+
   // ─── Badge de pendientes (ruta estática antes que /:id) ─────────────────────
   app.get(
     "/informes/pendientes/count",
