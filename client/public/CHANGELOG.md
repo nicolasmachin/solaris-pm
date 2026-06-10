@@ -12,6 +12,12 @@
 - **Estado a la vista:** el informe muestra su estado general (Pendiente, Aprobado o Devuelto) y el detalle de qué respondió cada destinatario, con su comentario y fecha.
 - **Privacidad:** cada quien ve solo los informes que escribió o que recibió. El menú marca con un **contador** los informes que tenés pendientes de responder.
 
+#### Informes — Adjuntar al crear y ver/descargar archivos
+
+- Ahora podés **adjuntar varios archivos directamente al crear** el informe, en un solo paso: elegís los archivos en la ventana de "Nuevo informe" y al confirmar se suben solos (ya no hace falta guardar borrador primero y adjuntar después). El adjunto es opcional.
+- Si la subida se corta a la mitad, el informe **queda como borrador** con lo que sí se subió y te avisa para que lo completes — no se pierde nada ni se envía a medias.
+- En el informe, cada adjunto tiene **Ver** (lo abre en el visor del navegador) y **Descargar**.
+
 ### 9 de junio de 2026
 
 #### Métricas — Obras ponderadas usa el objetivo de instalaciones
