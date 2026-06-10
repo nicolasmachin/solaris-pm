@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { X, Search } from "lucide-react";
+import { toast } from "react-hot-toast";
+import { X, Search, Paperclip, Upload, FileText } from "lucide-react";
 
 import { getAssignableUsers } from "../../../api/users.api";
 import { ProjectPicker } from "../../../components/finance/ProjectPicker";
@@ -10,6 +11,34 @@ import type { InformeDetail } from "../../../api/informes.api";
 const inp =
   "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]";
 const lbl = "block text-[11px] uppercase tracking-wider text-[var(--color-text-muted)] mb-1 font-mono";
+
+// ESPEJO de la whitelist del server: server/src/services/file-storage.service.ts
+// (allowedExtensions) y MAX_FILE_SIZE_MB=20. Si cambian allá, sincronizar acá:
+// el server es la fuente de verdad y rechaza igual, esto es solo UX temprana.
+const EXT_PERMITIDAS = new Set([
+  ".jpg", ".jpeg", ".png", ".gif", ".webp",
+  ".webm", ".mp4", ".m4a", ".aac", ".mp3", ".ogg", ".oga", ".wav",
+  ".pdf", ".dwg", ".xlsx", ".docx", ".zip",
+]);
+const MAX_FILE_MB = 20;
+
+function extDe(nombre: string): string {
+  const i = nombre.lastIndexOf(".");
+  return i >= 0 ? nombre.slice(i).toLowerCase() : "";
+}
+
+// Devuelve mensaje de error si el archivo no pasa, o null si es válido.
+function validarArchivo(file: File): string | null {
+  if (!EXT_PERMITIDAS.has(extDe(file.name))) return `"${file.name}": tipo de archivo no permitido`;
+  if (file.size > MAX_FILE_MB * 1024 * 1024) return `"${file.name}" supera el límite de ${MAX_FILE_MB} MB`;
+  return null;
+}
+
+function tamano(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 interface Props {
   // Si viene, el modal edita ese borrador; si no, crea uno nuevo.
@@ -30,6 +59,10 @@ export function InformeCreateModal({ initial, currentUserId, onClose, onSaved }:
     () => new Set((initial?.destinatarios ?? []).map((d) => d.usuario.id)),
   );
   const [search, setSearch] = useState("");
+  // Adjuntos acumulados localmente (solo en creación). No se suben hasta tener
+  // informeId; eso pasa en la orquestación del submit (bloque 1.2).
+  const [archivos, setArchivos] = useState<File[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: usuarios = [] } = useQuery({
     queryKey: ["assignable-users"],
@@ -53,6 +86,29 @@ export function InformeCreateModal({ initial, currentUserId, onClose, onSaved }:
       else next.add(id);
       return next;
     });
+  }
+
+  function onPickFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const elegidos = Array.from(e.target.files ?? []);
+    const validos: File[] = [];
+    for (const f of elegidos) {
+      const err = validarArchivo(f);
+      if (err) toast.error(err);
+      else validos.push(f);
+    }
+    if (validos.length > 0) {
+      // Evita duplicados exactos (mismo nombre + tamaño) si re-eligen.
+      setArchivos((prev) => {
+        const clave = (f: File) => `${f.name}:${f.size}`;
+        const vistos = new Set(prev.map(clave));
+        return [...prev, ...validos.filter((f) => !vistos.has(clave(f)))];
+      });
+    }
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  function quitarArchivo(idx: number) {
+    setArchivos((prev) => prev.filter((_, i) => i !== idx));
   }
 
   function validar(): string | null {
@@ -143,12 +199,46 @@ export function InformeCreateModal({ initial, currentUserId, onClose, onSaved }:
                 ))
               )}
             </div>
-            {!isEdit && (
-              <p className="mt-1 text-[10px] text-[var(--color-text-muted)]">
-                Los adjuntos se agregan después, desde el informe (mientras esté en borrador).
-              </p>
-            )}
           </div>
+
+          {!isEdit && (
+            <div>
+              <label className={lbl}>Adjuntos (opcional)</label>
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--color-border)] px-3 py-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]/20"
+              >
+                <Upload className="h-3.5 w-3.5" /> Elegir archivos
+              </button>
+              <input ref={fileRef} type="file" multiple className="hidden" onChange={onPickFiles} />
+              {archivos.length > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {archivos.map((f, idx) => (
+                    <li
+                      key={`${f.name}:${f.size}:${idx}`}
+                      className="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)]/40 px-2.5 py-1.5"
+                    >
+                      <FileText className="h-3.5 w-3.5 flex-shrink-0 text-[var(--color-text-muted)]" />
+                      <span className="flex-1 truncate text-xs text-[var(--color-text-primary)]">{f.name}</span>
+                      <span className="text-[10px] text-[var(--color-text-muted)]">{tamano(f.size)}</span>
+                      <button
+                        type="button"
+                        onClick={() => quitarArchivo(idx)}
+                        className="rounded p-0.5 text-rose-500 hover:bg-rose-500/10"
+                        title="Quitar"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="mt-1 flex items-center gap-1 text-[10px] text-[var(--color-text-muted)]">
+                <Paperclip className="h-3 w-3" /> Hasta {MAX_FILE_MB} MB c/u. Imágenes, audio, PDF, DWG, XLSX, DOCX, ZIP.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end gap-2 border-t border-[var(--color-border)] px-5 py-3">
