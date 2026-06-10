@@ -155,6 +155,7 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "ADMIN", module: Module.FINANZAS,       actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { roleName: "ADMIN", module: Module.STOCK,          actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { roleName: "ADMIN", module: Module.TRAMITES_UTE,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { roleName: "ADMIN", module: Module.INFORMES,       actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
     { roleName: "ADMIN", module: Module.PORTAL_CLIENTE, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { roleName: "CLIENT", module: Module.PORTAL_CLIENTE, actions: [Action.VIEW] },
     { roleName: "ASESOR_COMERCIAL", module: Module.VENTAS,        actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMMENT] },

@@ -5188,6 +5188,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     { module: Module.FINANZAS,      actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { module: Module.STOCK,         actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { module: Module.TRAMITES_UTE,  actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { module: Module.INFORMES,      actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
   ];
 
   const roleNameSchema = z
