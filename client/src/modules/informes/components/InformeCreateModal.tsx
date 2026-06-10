@@ -1,12 +1,21 @@
 import { useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { X, Search, Paperclip, Upload, FileText } from "lucide-react";
 
 import { getAssignableUsers } from "../../../api/users.api";
 import { ProjectPicker } from "../../../components/finance/ProjectPicker";
 import { useInformeMutations } from "../../../hooks/useInformes";
-import type { InformeDetail } from "../../../api/informes.api";
+import {
+  crearInforme,
+  enviarInforme,
+  subirAdjuntoInforme,
+  type InformeDetail,
+} from "../../../api/informes.api";
+
+function apiErr(err: unknown): string | undefined {
+  return (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+}
 
 const inp =
   "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]";
@@ -50,7 +59,12 @@ interface Props {
 
 export function InformeCreateModal({ initial, currentUserId, onClose, onSaved }: Props) {
   const isEdit = !!initial;
-  const { crear, editar, enviar } = useInformeMutations(initial?.id ?? null);
+  const qc = useQueryClient();
+  // En edición seguimos usando las mutaciones (con sus toasts). La creación con
+  // adjuntos se orquesta con llamadas de API directas para un único toast final.
+  const { editar, enviar } = useInformeMutations(initial?.id ?? null);
+  const [procesando, setProcesando] = useState(false);
+  const [progreso, setProgreso] = useState<string | null>(null);
 
   const [titulo, setTitulo] = useState(initial?.titulo ?? "");
   const [cuerpo, setCuerpo] = useState(initial?.cuerpo ?? "");
@@ -77,7 +91,7 @@ export function InformeCreateModal({ initial, currentUserId, onClose, onSaved }:
       .filter((u) => !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
   }, [usuarios, currentUserId, search]);
 
-  const busy = crear.isPending || editar.isPending || enviar.isPending;
+  const busy = procesando || editar.isPending || enviar.isPending;
 
   function toggle(id: string) {
     setDestinatarios((prev) => {
@@ -118,29 +132,99 @@ export function InformeCreateModal({ initial, currentUserId, onClose, onSaved }:
     return null;
   }
 
-  async function guardar(opts: { enviar: boolean }) {
-    const err = validar();
-    if (err) return;
-    const body = {
+  function bodyActual() {
+    return {
       titulo: titulo.trim(),
       cuerpo: cuerpo.trim(),
       projectId: projectId || null,
       destinatariosIds: [...destinatarios],
     };
+  }
+
+  // Edición: flujo simple con las mutaciones (el toast lo manejan ellas).
+  async function guardarEdicion(opts: { enviar: boolean }) {
     try {
-      if (isEdit) {
-        await editar.mutateAsync({ id: initial!.id, body });
-        if (opts.enviar) await enviar.mutateAsync(initial!.id);
-        onSaved(initial!.id);
-      } else {
-        const creado = await crear.mutateAsync(body);
-        if (opts.enviar) await enviar.mutateAsync(creado.id);
-        onSaved(creado.id);
-      }
+      await editar.mutateAsync({ id: initial!.id, body: bodyActual() });
+      if (opts.enviar) await enviar.mutateAsync(initial!.id);
+      onSaved(initial!.id);
       onClose();
     } catch {
       // el toast de error lo maneja la mutación
     }
+  }
+
+  // Creación con adjuntos: crear → subir TODOS (secuencial) → recién ahí enviar.
+  // El orden es irreversible: un informe enviado es inmutable, así que no se
+  // puede enviar antes de terminar de subir. Red de seguridad: si algo falla
+  // post-creación, el informe queda BORRADOR con lo que sí subió, no se envía,
+  // y se deja seleccionado vía onSaved(id) para que el autor lo complete.
+  async function guardarCreacion(opts: { enviar: boolean }) {
+    setProcesando(true);
+    try {
+      // 1. Crear. Si falla acá no se creó nada → se puede reintentar.
+      setProgreso("Creando…");
+      let id: string;
+      try {
+        const creado = await crearInforme(bodyActual());
+        id = creado.id;
+      } catch (e) {
+        toast.error(apiErr(e) ?? "No se pudo crear el informe");
+        return;
+      }
+
+      // 2. Subir adjuntos en orden. Si uno falla, cortamos: queda borrador.
+      for (let i = 0; i < archivos.length; i++) {
+        setProgreso(`Subiendo ${i + 1} de ${archivos.length}…`);
+        try {
+          await subirAdjuntoInforme(id, archivos[i]);
+        } catch (e) {
+          qc.invalidateQueries({ queryKey: ["informes"] });
+          toast.error(
+            apiErr(e) ??
+              `Se creó el borrador con ${i} de ${archivos.length} adjuntos. Falló "${archivos[i].name}"; completalo desde el informe.`,
+          );
+          onSaved(id);
+          onClose();
+          return;
+        }
+      }
+
+      // 3. Enviar (solo si el usuario lo pidió). Si falla, queda borrador listo.
+      if (opts.enviar) {
+        setProgreso("Enviando…");
+        try {
+          await enviarInforme(id);
+        } catch (e) {
+          qc.invalidateQueries({ queryKey: ["informes"] });
+          toast.error(
+            apiErr(e) ?? "Se creó el borrador con los adjuntos, pero no se pudo enviar. Envialo desde el informe.",
+          );
+          onSaved(id);
+          onClose();
+          return;
+        }
+      }
+
+      // Éxito: invalidamos una sola vez y mostramos un único toast.
+      qc.invalidateQueries({ queryKey: ["informes"] });
+      qc.invalidateQueries({ queryKey: ["informes-pendientes-count"] });
+      toast.success(opts.enviar ? "Informe enviado" : "Borrador creado");
+      onSaved(id);
+      onClose();
+    } finally {
+      setProcesando(false);
+      setProgreso(null);
+    }
+  }
+
+  function guardar(opts: { enviar: boolean }) {
+    const err = validar();
+    if (err) {
+      toast.error(err);
+      return;
+    }
+    if (isEdit) void guardarEdicion(opts);
+    else void guardarCreacion(opts);
   }
 
   return (
@@ -241,7 +325,8 @@ export function InformeCreateModal({ initial, currentUserId, onClose, onSaved }:
           )}
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-[var(--color-border)] px-5 py-3">
+        <div className="flex items-center justify-end gap-2 border-t border-[var(--color-border)] px-5 py-3">
+          {progreso && <span className="mr-auto text-xs text-[var(--color-text-muted)]">{progreso}</span>}
           <button
             type="button"
             disabled={busy}
