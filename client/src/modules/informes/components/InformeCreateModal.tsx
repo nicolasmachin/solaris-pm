@@ -59,6 +59,8 @@ interface Props {
 
 export function InformeCreateModal({ initial, currentUserId, onClose, onSaved }: Props) {
   const isEdit = !!initial;
+  // Editando un informe ya enviado: solo se guardan cambios, no se re-envía.
+  const editandoEnviado = isEdit && initial!.estado !== "BORRADOR";
   const qc = useQueryClient();
   // En edición seguimos usando las mutaciones (con sus toasts). La creación con
   // adjuntos se orquesta con llamadas de API directas para un único toast final.
@@ -335,22 +337,35 @@ export function InformeCreateModal({ initial, currentUserId, onClose, onSaved }:
           >
             Cancelar
           </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => guardar({ enviar: false })}
-            className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-border)]/30 disabled:opacity-50"
-          >
-            {busy ? "Guardando…" : "Guardar borrador"}
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => guardar({ enviar: true })}
-            className="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50"
-          >
-            {isEdit ? "Guardar y enviar" : "Crear y enviar"}
-          </button>
+          {editandoEnviado ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => guardar({ enviar: false })}
+              className="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50"
+            >
+              {busy ? "Guardando…" : "Guardar cambios"}
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => guardar({ enviar: false })}
+                className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-border)]/30 disabled:opacity-50"
+              >
+                {busy ? "Guardando…" : "Guardar borrador"}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => guardar({ enviar: true })}
+                className="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50"
+              >
+                {isEdit ? "Guardar y enviar" : "Crear y enviar"}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

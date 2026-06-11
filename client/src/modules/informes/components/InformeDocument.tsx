@@ -28,7 +28,10 @@ export function InformeDocument({ informe, onEditar, onBorrado }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [subiendo, setSubiendo] = useState(false);
 
-  const editable = informe.esAutor && informe.estado === "BORRADOR";
+  // El autor puede Editar/Borrar en cualquier estado (control total). Adjuntar,
+  // Enviar y quitar adjuntos siguen reservados al borrador.
+  const esAutor = informe.esAutor;
+  const editable = esAutor && informe.estado === "BORRADOR";
 
   async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
@@ -73,7 +76,7 @@ export function InformeDocument({ informe, onEditar, onBorrado }: Props) {
         <span>{fechaLarga(informe.enviadoAt ?? informe.createdAt)}</span>
       </div>
 
-      {editable && (
+      {esAutor && (
         <div className="mb-6 flex flex-wrap items-center gap-2 rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-bg-card)]/50 px-3 py-2">
           <button
             onClick={onEditar}
@@ -81,14 +84,18 @@ export function InformeDocument({ informe, onEditar, onBorrado }: Props) {
           >
             <Pencil className="h-3.5 w-3.5" /> Editar
           </button>
-          <button
-            onClick={() => fileRef.current?.click()}
-            disabled={subiendo}
-            className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-2.5 py-1 text-xs text-[var(--color-text-primary)] hover:bg-[var(--color-border)]/30 disabled:opacity-50"
-          >
-            <Upload className="h-3.5 w-3.5" /> {subiendo ? "Subiendo…" : "Adjuntar"}
-          </button>
-          <input ref={fileRef} type="file" multiple className="hidden" onChange={onPickFile} />
+          {editable && (
+            <>
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={subiendo}
+                className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-2.5 py-1 text-xs text-[var(--color-text-primary)] hover:bg-[var(--color-border)]/30 disabled:opacity-50"
+              >
+                <Upload className="h-3.5 w-3.5" /> {subiendo ? "Subiendo…" : "Adjuntar"}
+              </button>
+              <input ref={fileRef} type="file" multiple className="hidden" onChange={onPickFile} />
+            </>
+          )}
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={onBorrar}
@@ -96,13 +103,15 @@ export function InformeDocument({ informe, onEditar, onBorrado }: Props) {
             >
               <Trash2 className="h-3.5 w-3.5" /> Borrar
             </button>
-            <button
-              onClick={onEnviar}
-              disabled={enviar.isPending || informe.destinatarios.length === 0}
-              className="flex items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-3 py-1 text-xs font-semibold text-black hover:opacity-90 disabled:opacity-50"
-            >
-              <Send className="h-3.5 w-3.5" /> {enviar.isPending ? "Enviando…" : "Enviar"}
-            </button>
+            {editable && (
+              <button
+                onClick={onEnviar}
+                disabled={enviar.isPending || informe.destinatarios.length === 0}
+                className="flex items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-3 py-1 text-xs font-semibold text-black hover:opacity-90 disabled:opacity-50"
+              >
+                <Send className="h-3.5 w-3.5" /> {enviar.isPending ? "Enviando…" : "Enviar"}
+              </button>
+            )}
           </div>
         </div>
       )}
