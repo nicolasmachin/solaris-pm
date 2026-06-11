@@ -2,10 +2,11 @@ import { useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { Download, Eye, Paperclip, Pencil, Send, Trash2, Upload, X, FileText } from "lucide-react";
 
-import type { InformeDetail } from "../../../api/informes.api";
-import { downloadAuthenticated, previewAuthenticated } from "../../../hooks/useAuthBlobUrl";
+import type { InformeAdjunto, InformeDetail } from "../../../api/informes.api";
+import { downloadAuthenticated } from "../../../hooks/useAuthBlobUrl";
 import { useInformeMutations } from "../../../hooks/useInformes";
 import { EstadoBadge } from "./EstadoBadge";
+import { InformeAdjuntoPreviewModal } from "./InformeAdjuntoPreviewModal";
 
 interface Props {
   informe: InformeDetail;
@@ -27,6 +28,7 @@ export function InformeDocument({ informe, onEditar, onBorrado }: Props) {
   const { enviar, borrar, subirAdjunto, borrarAdjunto } = useInformeMutations(informe.id);
   const fileRef = useRef<HTMLInputElement>(null);
   const [subiendo, setSubiendo] = useState(false);
+  const [preview, setPreview] = useState<InformeAdjunto | null>(null);
 
   // El autor puede Editar/Borrar en cualquier estado (control total). Adjuntar,
   // Enviar y quitar adjuntos siguen reservados al borrador.
@@ -135,9 +137,7 @@ export function InformeDocument({ informe, onEditar, onBorrado }: Props) {
                 <span className="flex-1 truncate text-xs text-[var(--color-text-primary)]">{a.filename}</span>
                 <span className="text-[10px] text-[var(--color-text-muted)]">{tamano(a.sizeBytes)}</span>
                 <button
-                  onClick={() =>
-                    previewAuthenticated(a.previewUrl).catch(() => toast.error("No se pudo abrir el archivo"))
-                  }
+                  onClick={() => setPreview(a)}
                   className="rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-border)]/40 hover:text-[var(--color-text-primary)]"
                   title="Ver"
                 >
@@ -168,6 +168,8 @@ export function InformeDocument({ informe, onEditar, onBorrado }: Props) {
           </ul>
         </section>
       )}
+
+      {preview && <InformeAdjuntoPreviewModal adjunto={preview} onClose={() => setPreview(null)} />}
     </div>
   );
 }
