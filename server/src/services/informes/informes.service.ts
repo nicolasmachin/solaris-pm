@@ -98,7 +98,12 @@ export async function crearInforme(
   return creado;
 }
 
-// ─── Editar (solo BORRADOR + autor) ───────────────────────────────────────────
+// ─── Editar (autor; cualquier estado) ─────────────────────────────────────────
+// Decisión de producto: el autor tiene control total sobre sus informes, también
+// los ya enviados. Para no destruir trazabilidad de gusto, los destinatarios se
+// editan con un DIFF: los que se mantienen conservan su respuesta; solo los
+// nuevos entran PENDIENTE y los quitados se eliminan. Si el set cambia en un
+// informe ya enviado, se recalcula el estado consolidado.
 export async function editarInforme(
   id: string,
   autorId: string,
@@ -107,26 +112,51 @@ export async function editarInforme(
   const existing = await prisma.informe.findUnique({ where: { id }, select: { id: true, autorId: true, estado: true } });
   if (!existing) throw notFound("INFORME_NOT_FOUND", "Informe no encontrado");
   if (existing.autorId !== autorId) throw forbidden("Solo el autor puede editar el informe");
-  if (existing.estado !== InformeEstado.BORRADOR) {
-    throw conflict("INFORME_NO_BORRADOR", "Solo se puede editar un informe en estado BORRADOR");
-  }
 
   if (input.destinatariosIds !== undefined) await validarDestinatarios(autorId, input.destinatariosIds);
   if (input.projectId !== undefined) await validarProyecto(input.projectId);
 
   return prisma.$transaction(async (tx) => {
+    let estadoFinal: InformeEstado | undefined;
+
     if (input.destinatariosIds !== undefined) {
-      await tx.informeDestinatario.deleteMany({ where: { informeId: id } });
-      await tx.informeDestinatario.createMany({
-        data: [...new Set(input.destinatariosIds)].map((usuarioId) => ({ informeId: id, usuarioId })),
+      const deseados = [...new Set(input.destinatariosIds)];
+      const actuales = await tx.informeDestinatario.findMany({
+        where: { informeId: id },
+        select: { usuarioId: true },
       });
+      const actualesSet = new Set(actuales.map((d) => d.usuarioId));
+      const deseadosSet = new Set(deseados);
+      const aAgregar = deseados.filter((u) => !actualesSet.has(u));
+      const aQuitar = [...actualesSet].filter((u) => !deseadosSet.has(u));
+
+      if (aQuitar.length > 0) {
+        await tx.informeDestinatario.deleteMany({ where: { informeId: id, usuarioId: { in: aQuitar } } });
+      }
+      if (aAgregar.length > 0) {
+        await tx.informeDestinatario.createMany({
+          data: aAgregar.map((usuarioId) => ({ informeId: id, usuarioId })),
+        });
+      }
+
+      // Si el set cambió y el informe NO es borrador, el estado consolidado pudo
+      // moverse (entran pendientes / salen respuestas). Recalcular.
+      if ((aAgregar.length > 0 || aQuitar.length > 0) && existing.estado !== InformeEstado.BORRADOR) {
+        const restantes = await tx.informeDestinatario.findMany({
+          where: { informeId: id },
+          select: { respuesta: true },
+        });
+        estadoFinal = calcularEstadoConsolidado(restantes);
+      }
     }
+
     return tx.informe.update({
       where: { id },
       data: {
         ...(input.titulo !== undefined ? { titulo: input.titulo } : {}),
         ...(input.cuerpo !== undefined ? { cuerpo: input.cuerpo } : {}),
         ...(input.projectId !== undefined ? { projectId: input.projectId } : {}),
+        ...(estadoFinal !== undefined ? { estado: estadoFinal } : {}),
       },
     });
   });
@@ -318,9 +348,8 @@ export async function borrarInforme(id: string, autorId: string): Promise<void> 
   });
   if (!informe) throw notFound("INFORME_NOT_FOUND", "Informe no encontrado");
   if (informe.autorId !== autorId) throw forbidden("Solo el autor puede borrar el informe");
-  if (informe.estado !== InformeEstado.BORRADOR) {
-    throw conflict("INFORME_NO_BORRADOR", "Solo se puede borrar un informe en borrador");
-  }
+  // Decisión de producto: el autor puede borrar su informe en cualquier estado,
+  // incluso enviado y con respuestas (control total).
 
   // Cascade borra destinatarios y filas FileAttachment; los archivos físicos NO,
   // así que se limpian a mano (best-effort).

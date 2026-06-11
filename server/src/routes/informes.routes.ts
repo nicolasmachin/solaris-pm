@@ -134,7 +134,7 @@ export async function registerInformesRoutes(app: FastifyInstance) {
       projectId: informe.projectId,
       userId: user.id,
       action: AuditAction.updated,
-      description: `Editó informe (borrador): ${informe.titulo}`,
+      description: `Editó informe: ${informe.titulo}`,
     });
     return informe;
   });
@@ -188,7 +188,7 @@ export async function registerInformesRoutes(app: FastifyInstance) {
       entityId: id,
       userId: user.id,
       action: AuditAction.deleted,
-      description: "Borró un informe en borrador",
+      description: "Borró un informe",
     });
     return reply.code(204).send();
   });
