@@ -16,7 +16,12 @@
 
 - Ahora podés **adjuntar varios archivos directamente al crear** el informe, en un solo paso: elegís los archivos en la ventana de "Nuevo informe" y al confirmar se suben solos (ya no hace falta guardar borrador primero y adjuntar después). El adjunto es opcional.
 - Si la subida se corta a la mitad, el informe **queda como borrador** con lo que sí se subió y te avisa para que lo completes — no se pierde nada ni se envía a medias.
-- En el informe, cada adjunto tiene **Ver** (lo abre en el visor del navegador) y **Descargar**.
+- En el informe, cada adjunto tiene **Ver** y **Descargar**. La vista previa abre el archivo en una ventana dentro de la misma pantalla (igual que las propuestas de Ventas); PDF e imágenes se ven ahí mismo.
+
+#### Informes — Editar y borrar tus informes en cualquier momento
+
+- Como autor ahora podés **editar y borrar** tus informes en cualquier estado, no solo en borrador. Editar un informe ya enviado guarda los cambios sin reenviarlo.
+- Al cambiar los destinatarios de un informe enviado, los que se mantienen **conservan su respuesta**; solo los nuevos quedan pendientes.
 
 ### 9 de junio de 2026
 
