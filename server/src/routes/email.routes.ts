@@ -23,6 +23,7 @@ import {
   type TemplateInput,
 } from "../services/email/template.service.js";
 import { prepareEmail, type EmailOverrides } from "../services/email/render.service.js";
+import { listEmailLogs, sendTemplatedEmail } from "../services/email/send.service.js";
 
 function ensureUser(request: FastifyRequest) {
   if (!request.user) throw unauthorized("No autenticado");
@@ -110,6 +111,29 @@ const prepareSchema = z
   })
   .strict();
 
+const sendSchema = z
+  .object({
+    templateKey: z.string().trim().min(1).optional(),
+    projectId: z.string().min(1).optional(),
+    leadId: z.string().min(1).optional(),
+    to: z.string().trim().min(1),
+    cc: z.string().trim().optional(),
+    bcc: z.string().trim().optional(),
+    subject: z.string().trim().min(1),
+    body: z.string().min(1),
+  })
+  .strict();
+
+const logsQuery = z
+  .object({
+    projectId: z.string().min(1).optional(),
+    leadId: z.string().min(1).optional(),
+    sentById: z.string().min(1).optional(),
+    page: z.coerce.number().int().min(1).optional(),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+  })
+  .strict();
+
 export async function registerEmailRoutes(app: FastifyInstance) {
   // Todas las rutas del módulo requieren usuario autenticado.
   app.addHook("preHandler", authenticate);
@@ -188,5 +212,19 @@ export async function registerEmailRoutes(app: FastifyInstance) {
       leadId: body.leadId,
       overrides: body.overrides as EmailOverrides | undefined,
     });
+  });
+
+  // ─── Enviar (con el SMTP del usuario logueado) ───────────────────────────────
+  app.post("/emails/send", async (request) => {
+    const user = ensureUser(request);
+    const body = sendSchema.parse(request.body);
+    return sendTemplatedEmail({ userId: user.id, ...body });
+  });
+
+  // ─── Historial ───────────────────────────────────────────────────────────────
+  app.get("/emails/logs", async (request) => {
+    ensureUser(request);
+    const q = logsQuery.parse(request.query);
+    return listEmailLogs(q);
   });
 }
