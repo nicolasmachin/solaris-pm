@@ -11,4 +11,7 @@ export const env = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "7d",
   storagePath: process.env.STORAGE_PATH ?? "./storage",
   maxFileSizeMb: Number(process.env.MAX_FILE_SIZE_MB ?? 20),
+  // Clave para cifrar las passwords SMTP por usuario (AES-256-GCM). Cualquier
+  // string sirve: se deriva a 32 bytes con SHA-256.
+  smtpEncryptionKey: process.env.SMTP_ENCRYPTION_KEY ?? "",
 };
