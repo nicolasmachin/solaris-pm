@@ -29,6 +29,7 @@ import {
   UteStage,
   UteStatus,
 } from "@prisma/client";
+import { seedConsultaUteTemplate } from "../src/services/email/seed-templates.js";
 
 import { prisma } from "../src/lib/prisma.js";
 import {
@@ -490,8 +491,8 @@ async function createProject(params: {
   executedUsd: number;
   estimatedMwhYear: number;
   modalidadPago?: ModalidadPago | null;
-  notificationEmail: string;
-  notificationPhone: string;
+  clientEmail: string;
+  clientPhone: string;
   createdById: string;
 }) {
   // Chequear si el proyecto ya existe ANTES del upsert.
@@ -512,8 +513,8 @@ async function createProject(params: {
     estimatedMwhYear: decimal(params.estimatedMwhYear),
     co2TonsAvoided: decimal(Number((params.estimatedMwhYear * 0.5).toFixed(2))),
     modalidadPago: params.modalidadPago ?? null,
-    notificationEmail: params.notificationEmail,
-    notificationPhone: params.notificationPhone,
+    clientEmail: params.clientEmail,
+    clientPhone: params.clientPhone,
   };
 
   const project = await prisma.project.upsert({
@@ -795,8 +796,8 @@ async function seedProject1(adminId: string, operationsId: string) {
     executedUsd: 156400,
     estimatedMwhYear: 398.6,
     modalidadPago: ModalidadPago.DIRECTO_50_50,
-    notificationEmail: "agroind@example.com",
-    notificationPhone: "+54 9 351 5555-0001",
+    clientEmail: "agroind@example.com",
+    clientPhone: "+54 9 351 5555-0001",
     createdById: adminId,
   });
 
@@ -890,8 +891,8 @@ async function seedProject2(adminId: string, operationsId: string) {
     executedUsd: 142500,
     estimatedMwhYear: 287.0,
     modalidadPago: ModalidadPago.FINANCIACION_BANCARIA,
-    notificationEmail: "frignorte@example.com",
-    notificationPhone: "+54 9 362 5555-0002",
+    clientEmail: "frignorte@example.com",
+    clientPhone: "+54 9 362 5555-0002",
     createdById: adminId,
   });
 
@@ -959,8 +960,8 @@ async function seedProject3(adminId: string, operationsId: string) {
     executedUsd: 18000,
     estimatedMwhYear: 98.4,
     modalidadPago: ModalidadPago.DIRECTO_50_50,
-    notificationEmail: "clinicavalle@example.com",
-    notificationPhone: "+54 9 381 5555-0003",
+    clientEmail: "clinicavalle@example.com",
+    clientPhone: "+54 9 381 5555-0003",
     createdById: adminId,
   });
 
@@ -1017,8 +1018,8 @@ async function seedProject4(adminId: string, operationsId: string) {
     executedUsd: 132000,
     estimatedMwhYear: 230.0,
     modalidadPago: ModalidadPago.DIRECTO_50_50,
-    notificationEmail: "bodegalacuesta@example.com",
-    notificationPhone: "+54 9 260 5555-0004",
+    clientEmail: "bodegalacuesta@example.com",
+    clientPhone: "+54 9 260 5555-0004",
     createdById: adminId,
   });
 
@@ -1900,6 +1901,7 @@ async function run() {
   await seedInstallationSchedules({ adminId: admin.id, project1Id, project2Id, project4Id });
   await seedUteProcesses(admin.id);
   await seedChecklistTemplates(prisma);
+  await seedConsultaUteTemplate(prisma);
 
   const project1 = await prisma.project.findUnique({
     where: { id: project1Id },
