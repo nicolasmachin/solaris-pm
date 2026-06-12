@@ -27,6 +27,7 @@
     "dotenv": "^16.4.5",
     "exceljs": "^4.4.0",
     "fastify": "^5.2.1",
+    "handlebars": "^4.7.9",
     "jsonwebtoken": "^9.0.2",
     "marked": "^18.0.3",
     "node-cron": "^4.2.1",

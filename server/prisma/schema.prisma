@@ -91,6 +91,7 @@ enum AuditEntityType {
   payment_application
   account
   informe
+  email_log
 }
 
 enum AuditAction {
@@ -111,6 +112,7 @@ enum AuditAction {
   setting_changed
   role_changed
   permission_changed
+  email_sent
 }
 
 enum NotificationType {
@@ -381,6 +383,8 @@ model User {
   uteDocumentsGenerated          UteDocumentGeneration[]     @relation("UteDocsGeneratedBy")
   informesCreados                Informe[]                   @relation("InformesCreados")
   informesRecibidos              InformeDestinatario[]       @relation("InformesRecibidos")
+  smtpConfig                     UserSmtpConfig?
+  emailsSent                     EmailLog[]                  @relation("EmailSentBy")
   passwordTemporary              Boolean                     @default(false)
   deletedAt                      DateTime?                   @db.Timestamptz(6)
   createdAt                      DateTime                    @default(now()) @db.Timestamptz(6)
@@ -454,6 +458,7 @@ model Project {
   uteDocumentConfig       UteDocumentConfig?
   uteDocumentGenerations  UteDocumentGeneration[]
   informes                Informe[]                @relation("InformesDeProyecto")
+  emailLogs               EmailLog[]               @relation("EmailLogProject")
   // Datos del cliente que se cargan desde el form del proyecto y/o se
   // extraen de la cédula con IA. Ver feature ute-doc-extraction.
   // nombreCliente: nombre tal cual figura en la cédula, usado en los docs
@@ -2366,4 +2371,97 @@ model UteDocumentGeneration {
   @@index([projectId])
   @@index([generatedById])
   @@map("ute_document_generations")
+}
+
+// ─── Sistema de mails ─────────────────────────────────────────────────────────
+
+// Configuración SMTP por usuario. La password se guarda cifrada (AES-256-GCM
+// con SMTP_ENCRYPTION_KEY); nunca se devuelve al cliente en claro.
+model UserSmtpConfig {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  host              String
+  port              Int
+  secure            Boolean @default(true) // true = 465 (SSL), false = 587 (STARTTLS)
+  username          String
+  passwordEncrypted String
+  fromName          String?
+  replyTo           String?
+
+  verifiedAt DateTime? @db.Timestamptz(6) // última vez que "Probar conexión" dio OK
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  @@map("user_smtp_configs")
+}
+
+// Plantilla de mail con motor Handlebars (variables + condicionales).
+model EmailTemplate {
+  id          String  @id @default(cuid())
+  key         String  @unique // slug estable para auto-selección (ej. "consulta_ute")
+  nombre      String
+  descripcion String?
+
+  modulo Module
+  scope  EmailTemplateScope @default(PROJECT)
+
+  toTemplate      String @default("")
+  ccTemplate      String @default("")
+  bccTemplate     String @default("")
+  subjectTemplate String
+  bodyTemplate    String @db.Text
+
+  activo   Boolean @default(true)
+  esSistema Boolean @default(false) // sembradas: editables pero no borrables
+
+  logs EmailLog[] @relation("EmailLogTemplate")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  @@map("email_templates")
+}
+
+enum EmailTemplateScope {
+  PROJECT
+  LEAD
+  GLOBAL
+}
+
+// Auditoría de cada envío. No guarda el cuerpo (decisión tomada).
+model EmailLog {
+  id          String         @id @default(cuid())
+  templateId  String?
+  template    EmailTemplate? @relation("EmailLogTemplate", fields: [templateId], references: [id], onDelete: SetNull)
+  templateKey String? // snapshot del key por si se borra la plantilla
+
+  projectId String?
+  project   Project? @relation("EmailLogProject", fields: [projectId], references: [id], onDelete: SetNull)
+  leadId    String?
+
+  sentById String
+  sentBy   User   @relation("EmailSentBy", fields: [sentById], references: [id], onDelete: Restrict)
+
+  toAddresses  String // CSV
+  ccAddresses  String?
+  bccAddresses String?
+  subject      String
+
+  status       EmailStatus
+  errorMessage String?
+
+  sentAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([projectId])
+  @@index([sentById])
+  @@index([sentAt])
+  @@map("email_logs")
+}
+
+enum EmailStatus {
+  SENT
+  FAILED
 }
