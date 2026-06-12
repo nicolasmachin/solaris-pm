@@ -22,6 +22,7 @@ import {
   updateTemplate,
   type TemplateInput,
 } from "../services/email/template.service.js";
+import { prepareEmail, type EmailOverrides } from "../services/email/render.service.js";
 
 function ensureUser(request: FastifyRequest) {
   if (!request.user) throw unauthorized("No autenticado");
@@ -74,6 +75,40 @@ const templateCreateSchema = z
 
 // La key no se edita (es estable para la auto-selección).
 const templateUpdateSchema = templateCreateSchema.omit({ key: true }).partial().strict();
+
+const tecnicaOverrideSchema = z
+  .object({
+    tension: z.string(),
+    potenciaGenerador: z.string(),
+    potenciaContratada: z.string(),
+    tarifa: z.string(),
+    acometida: z.string(),
+    destino: z.string(),
+    pasaLinea: z.string(),
+    certificadoCarga: z.string(),
+    cargaPerturbadora: z.string(),
+  })
+  .partial()
+  .strict();
+
+const prepareSchema = z
+  .object({
+    templateKey: z.string().trim().min(1),
+    projectId: z.string().min(1).optional(),
+    leadId: z.string().min(1).optional(),
+    overrides: z
+      .object({
+        tecnica: tecnicaOverrideSchema.optional(),
+        to: z.string().optional(),
+        cc: z.string().optional(),
+        bcc: z.string().optional(),
+        subject: z.string().optional(),
+        body: z.string().optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict();
 
 export async function registerEmailRoutes(app: FastifyInstance) {
   // Todas las rutas del módulo requieren usuario autenticado.
@@ -142,4 +177,16 @@ export async function registerEmailRoutes(app: FastifyInstance) {
       return reply.code(204).send();
     },
   );
+
+  // ─── Preparar mail (resuelve variables; NO envía) ────────────────────────────
+  app.post("/emails/prepare", async (request) => {
+    ensureUser(request);
+    const body = prepareSchema.parse(request.body);
+    return prepareEmail({
+      templateKey: body.templateKey,
+      projectId: body.projectId,
+      leadId: body.leadId,
+      overrides: body.overrides as EmailOverrides | undefined,
+    });
+  });
 }
