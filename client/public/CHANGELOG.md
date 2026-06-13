@@ -2,6 +2,18 @@
 
 ## v6.2
 
+### 13 de junio de 2026
+
+#### Mails — Enviar la consulta a UTE desde la app
+
+- Nueva pantalla para **enviar la Consulta de Nuevo Microgenerador a UTE** desde el proyecto: se abre con el botón **"Enviar consulta a UTE"** dentro de la subetapa **Consulta inicial UTE** del Onboarding.
+- El formulario viene **prellenado** con los datos del proyecto y muestra una **previsualización del mail en vivo** al costado: lo que ves es exactamente lo que se envía.
+- **Destinatarios con chips:** Para, Cc y Cco se editan agregando con Enter o coma y quitando con la cruz; las direcciones mal escritas se marcan en rojo.
+- **Persona física / empresa:** un toggle cambia el encabezado, el rótulo C.I./RUT y el destino del servicio.
+- **Cargar factura UTE:** desde la misma pantalla podés subir la factura y la IA completa cuenta, tarifa, potencia y más; revisás y ajustás antes de enviar.
+- **Configuración de correo:** cada usuario configura su **servidor SMTP** en **Configuración → Email** (con botón "Probar conexión"). La contraseña se guarda cifrada.
+- **Plantillas de email:** los administradores pueden editar la plantilla de la consulta (asunto, cuerpo, destinatarios) desde **Admin → Plantillas de email**.
+
 ### 10 de junio de 2026
 
 #### Informes — Nuevo módulo de informes y revisiones
