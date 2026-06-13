@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup — Enviar consulta a UTE</title>
+<!--
+  REFERENCIA DE LAYOUT Y COMPORTAMIENTO (no se importa ni se compila).
+  Pantalla objetivo: form a la izquierda (~46%) + preview del mail en vivo a la
+  derecha (~54%, sticky). Destinatarios como chips. Toggle persona/empresa.
+  Carga de factura UTE arriba. La pantalla real usa los tokens/tema de la app,
+  NO los colores hardcodeados de acá.
+-->
+<style>
+  :root{
+    --azul:#002395; --azul-700:#001f80; --amarillo:#FFD100;
+    --bg:#f4f4ef; --card:#ffffff; --line:#e2e2dc; --line-strong:#cfcfc7;
+    --txt:#1a1a1a; --txt-soft:#5a5a55; --txt-mute:#8a8a82; --ok:#1e7d4d;
+    --warn-bg:#fff6da; --warn-bd:#e7c64a; --warn-tx:#7a5c00; --err:#c0392b;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--txt);font-size:14px;}
+  .wrap{max-width:1280px;margin:0 auto;padding:20px;display:grid;grid-template-columns:minmax(0,46%) minmax(0,54%);gap:20px;align-items:start;}
+  @media (max-width:920px){.wrap{grid-template-columns:1fr;}}
+  .preview-shell{position:sticky;top:20px;}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel"><!-- FORM: plantilla, tipo cliente (seg), carga factura,
+      destinatarios (chips Para/Cc/Cco), asunto, datos cliente/suministro,
+      datos técnicos (tensión = select 3 opciones), aviso de faltantes,
+      Enviar / Guardar borrador --></div>
+    <div class="preview-shell"><div class="panel"><!-- PREVIEW en vivo:
+      De / Para / Cc / Cco / Asunto + cuerpo con negritas en rótulos "Datos…"
+      y en la etiqueta antes de ":" (misma regla que el send del backend) --></div></div>
+  </div>
+  <!-- Comportamiento de referencia completo en el adjunto original del prompt B. -->
+</body>
+</html>
