@@ -248,6 +248,7 @@ function SubstageRow({
   onQuickComplete: () => void;
   onChanged: () => void;
 }) {
+  const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(substage.name);
@@ -492,6 +493,18 @@ function SubstageRow({
                 </button>
               )}
             </div>
+
+            {/* Acción dedicada: enviar la consulta de microgenerador a UTE */}
+            {substage.name === "Consulta inicial UTE" && (
+              <CanAccess module="TRAMITES_UTE" action="VIEW">
+                <button
+                  onClick={() => navigate(`/proyecto/${projectId}/consulta-ute`)}
+                  className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-3 py-2 text-xs font-semibold text-black hover:opacity-90"
+                >
+                  ✉ Enviar consulta a UTE
+                </button>
+              </CanAccess>
+            )}
 
             {/* Checklist */}
             <ChecklistSection
