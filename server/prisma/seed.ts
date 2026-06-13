@@ -616,7 +616,11 @@ function getSubstage(project: ProjectGraph, stageType: StageType, substageName: 
   const stage = getStage(project, stageType);
   const substage = stage.substages.find((item) => item.name === substageName);
   if (!substage) {
-    throw new Error(`Subetapa '${substageName}' no encontrada en ${project.code}`);
+    // Resiliencia: una subetapa renombrada/ausente (deriva de pipeline-definitions
+    // sobre datos demo) no debe tumbar el seed. Se avisa y se omite la operación
+    // dependiente. Solo se usa en el seed (no exportada, sin uso en runtime).
+    console.warn(`⚠️  Subetapa '${substageName}' no encontrada en ${project.code} — se omite.`);
+    return null;
   }
   return substage;
 }
@@ -645,6 +649,7 @@ async function completeChecklistItems(params: {
   userId: string;
 }) {
   const substage = getSubstage(params.project, params.stageType, params.substageName);
+  if (!substage) return;
   const targetItems =
     params.labels && params.labels.length > 0
       ? substage.checklistItems.filter((item) => params.labels?.includes(item.label))
@@ -671,6 +676,7 @@ async function addFreeChecklistItems(params: {
   items: Array<{ label: string; completed?: boolean; completedAt?: string; userId?: string }>;
 }) {
   const substage = getSubstage(params.project, params.stageType, params.substageName);
+  if (!substage) return;
 
   for (const [index, item] of params.items.entries()) {
     const id = `seed-chkextra-${substage.id}-${slug(item.label)}-${index}`;
@@ -712,6 +718,7 @@ async function setSubstageState(params: {
   notes?: string | null;
 }) {
   const substage = getSubstage(params.project, params.stageType, params.substageName);
+  if (!substage) return;
   await prisma.substage.update({
     where: { id: substage.id },
     data: {
@@ -1090,7 +1097,7 @@ async function createTasksAndFiles(projectIds: string[], adminId: string, operat
       data: {
         projectId: project1Id,
         stageId: p1OpsStage.id,
-        substageId: p1Own.id,
+        substageId: p1Own?.id,
         title: "Coordinar técnico de puesta en marcha",
         description: "Agendar cierre de Fase 2 con ensayo anti-isla",
         status: TaskStatus.IN_PROGRESS,
@@ -1105,7 +1112,7 @@ async function createTasksAndFiles(projectIds: string[], adminId: string, operat
       data: {
         projectId: project1Id,
         stageId: p1OpsStage.id,
-        substageId: p1Own.id,
+        substageId: p1Own?.id,
         title: "Subir videos de ensayos pendientes",
         description: "Falta cargar evidencia final al expediente del proyecto",
         status: TaskStatus.PENDING,
@@ -1134,7 +1141,7 @@ async function createTasksAndFiles(projectIds: string[], adminId: string, operat
       data: {
         projectId: project3Id,
         stageId: p3Engineering.id,
-        substageId: p3O0.id,
+        substageId: p3O0?.id,
         title: "Cerrar informe técnico de relevamiento",
         description: "Faltan fotos de tablero y recorrido AC",
         status: TaskStatus.IN_PROGRESS,
@@ -1175,7 +1182,7 @@ async function createTasksAndFiles(projectIds: string[], adminId: string, operat
       data: {
         projectId: project1Id,
         stageId: p1OpsStage.id,
-        substageId: p1Own.id,
+        substageId: p1Own?.id,
         filename: "acta-avance-obra-propia.pdf",
         storedFilename: "seed-p1-acta.pdf",
         mimeType: "application/pdf",
@@ -1202,7 +1209,7 @@ async function createTasksAndFiles(projectIds: string[], adminId: string, operat
       data: {
         projectId: project3Id,
         stageId: p3Engineering.id,
-        substageId: p3O0.id,
+        substageId: p3O0?.id,
         filename: "fotos-relevamiento-clinica.zip",
         storedFilename: "seed-p3-relevamiento.zip",
         mimeType: "application/zip",
@@ -1251,7 +1258,7 @@ async function createAuditTrail(
   userId: string,
   entries: Array<{
     entityType: AuditEntityType;
-    entityId: string;
+    entityId: string | undefined;
     action: AuditAction;
     description: string;
     fieldChanged?: string | null;
@@ -1261,6 +1268,8 @@ async function createAuditTrail(
   }>,
 ) {
   for (const [index, entry] of entries.entries()) {
+    // Si la subetapa referida no existe (warn ya emitido por getSubstage), se omite.
+    if (!entry.entityId) continue;
     const id = `seed-audit-${projectCode}-${index + 1}`;
     const data = {
       entityType: entry.entityType,
@@ -1309,7 +1318,7 @@ async function createProjectAudits(projectId: string, userId: string) {
     },
     {
       entityType: AuditEntityType.substage,
-      entityId: getSubstage(project, StageType.ONBOARDING, "Cobro de seña (USD 500)").id,
+      entityId: getSubstage(project, StageType.ONBOARDING, "Cobro de seña (USD 500)")?.id,
       action: AuditAction.updated,
       fieldChanged: "completed",
       oldValue: "false",
@@ -1339,7 +1348,7 @@ async function createProjectAudits(projectId: string, userId: string) {
     },
     {
       entityType: AuditEntityType.substage,
-      entityId: getSubstage(project, StageType.INGENIERIA, "Proyecto Final de Ingeniería").id,
+      entityId: getSubstage(project, StageType.INGENIERIA, "Proyecto Final de Ingeniería")?.id,
       action: AuditAction.updated,
       fieldChanged: "completed",
       oldValue: "false",
@@ -1379,7 +1388,7 @@ async function createProjectAudits(projectId: string, userId: string) {
     },
     {
       entityType: AuditEntityType.substage,
-      entityId: getSubstage(project, StageType.OPERACIONES, "Planificación y Logística").id,
+      entityId: getSubstage(project, StageType.OPERACIONES, "Planificación y Logística")?.id,
       action: AuditAction.updated,
       fieldChanged: "status",
       oldValue: "PENDING",
@@ -1389,7 +1398,7 @@ async function createProjectAudits(projectId: string, userId: string) {
     },
     {
       entityType: AuditEntityType.substage,
-      entityId: getSubstage(project, StageType.OPERACIONES, "Ejecución de Obra Propia").id,
+      entityId: getSubstage(project, StageType.OPERACIONES, "Ejecución de Obra Propia")?.id,
       action: AuditAction.updated,
       fieldChanged: "status",
       oldValue: "PENDING",
