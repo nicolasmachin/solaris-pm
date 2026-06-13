@@ -4,6 +4,7 @@ import { toast } from "react-hot-toast";
 import { useAuthStore } from "../store/auth.store";
 import { apiClient } from "../api/axios";
 import { getNotificationPreferences, updateNotificationPreferences, type NotificationPreferences } from "../api/deadline.api";
+import { useSmtpConfig, useSmtpMutations } from "../hooks/useEmail";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -509,6 +510,184 @@ function SectionNotificaciones() {
 
 // ─── Settings Page ────────────────────────────────────────────────────────
 
+// ─── Section: Email (SMTP del usuario) ────────────────────────────────────
+function smtpErrorLegible(code: string): string {
+  const map: Record<string, string> = {
+    EAUTH: "Usuario o contraseña incorrectos (autenticación rechazada)",
+    ETIMEDOUT: "Tiempo de espera agotado: revisá host y puerto",
+    ECONNECTION: "No se pudo conectar: revisá host y puerto",
+    ECONNREFUSED: "Conexión rechazada por el servidor",
+    ESOCKET: "Error de conexión segura (probá cambiar SSL/STARTTLS)",
+    SMTP_NOT_CONFIGURED: "Todavía no guardaste una configuración para probar",
+    ENCRYPTION_NOT_CONFIGURED: "El servidor no tiene la clave de cifrado configurada (SMTP_ENCRYPTION_KEY)",
+  };
+  return map[code] ?? `Error: ${code}`;
+}
+
+function SectionEmailSmtp() {
+  const { data: config, isLoading } = useSmtpConfig();
+  const { guardar, probar } = useSmtpMutations();
+
+  const [host, setHost] = useState("");
+  const [port, setPort] = useState(587);
+  const [secure, setSecure] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [fromName, setFromName] = useState("");
+  const [replyTo, setReplyTo] = useState("");
+  const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  // Cargar la config guardada (la password nunca viene; se conserva si se deja vacía).
+  useEffect(() => {
+    if (!config) return;
+    setHost(config.host);
+    setPort(config.port);
+    setSecure(config.secure);
+    setUsername(config.username);
+    setFromName(config.fromName ?? "");
+    setReplyTo(config.replyTo ?? "");
+  }, [config]);
+
+  function buildBody() {
+    return {
+      host: host.trim(),
+      port,
+      secure,
+      username: username.trim(),
+      ...(password ? { password } : {}),
+      fromName: fromName.trim() || null,
+      replyTo: replyTo.trim() || null,
+    };
+  }
+
+  async function onGuardar() {
+    if (!host.trim() || !username.trim()) {
+      toast.error("Completá host y usuario");
+      return;
+    }
+    if (!config?.hasPassword && !password) {
+      toast.error("Ingresá la contraseña la primera vez");
+      return;
+    }
+    await guardar.mutateAsync(buildBody());
+    setPassword("");
+  }
+
+  async function onProbar() {
+    setTestResult(null);
+    // Si hay password tipeada, prueba el form completo; si no, prueba la guardada.
+    const res = await probar.mutateAsync(password ? buildBody() : undefined);
+    if (res.ok) setTestResult({ ok: true, msg: "Conexión exitosa: te llegó un mail de prueba" });
+    else setTestResult({ ok: false, msg: smtpErrorLegible(res.error) });
+  }
+
+  if (isLoading) {
+    return (
+      <div style={sectionStyle}>
+        <p style={{ fontSize: 13, color: "var(--color-text-muted)" }}>Cargando…</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={sectionStyle}>
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--color-text-muted)", marginBottom: 6 }}>
+        Email (SMTP)
+      </p>
+      <p style={{ fontSize: 12, color: "var(--color-text-secondary)", marginBottom: 18 }}>
+        Configurá tu servidor de correo para enviar mails desde la app (ej. la consulta a UTE). La contraseña se guarda cifrada.
+      </p>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div>
+          <label style={labelStyle}>Servidor (host) *</label>
+          <input style={inputStyle} value={host} onChange={(e) => setHost(e.target.value)} placeholder="smtp.gmail.com" />
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div>
+            <label style={labelStyle}>Puerto *</label>
+            <input style={inputStyle} type="number" value={port} onChange={(e) => setPort(Number(e.target.value))} />
+          </div>
+          <div>
+            <label style={labelStyle}>Seguridad</label>
+            <button
+              type="button"
+              onClick={() => setSecure((v) => !v)}
+              style={{ ...inputStyle, textAlign: "left", cursor: "pointer" }}
+            >
+              {secure ? "SSL (465)" : "STARTTLS (587)"}
+            </button>
+          </div>
+        </div>
+        <div>
+          <label style={labelStyle}>Usuario *</label>
+          <input style={inputStyle} value={username} onChange={(e) => setUsername(e.target.value)} placeholder="tu@correo.com" />
+        </div>
+        <div>
+          <label style={labelStyle}>Contraseña {config?.hasPassword ? "(guardada — dejá vacío para conservar)" : "*"}</label>
+          <input
+            style={inputStyle}
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={config?.hasPassword ? "••••••••" : "contraseña o app password"}
+          />
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div>
+            <label style={labelStyle}>Nombre del remitente</label>
+            <input style={inputStyle} value={fromName} onChange={(e) => setFromName(e.target.value)} placeholder="Nicolás Machín" />
+          </div>
+          <div>
+            <label style={labelStyle}>Reply-To</label>
+            <input style={inputStyle} value={replyTo} onChange={(e) => setReplyTo(e.target.value)} placeholder="opcional" />
+          </div>
+        </div>
+
+        {testResult && (
+          <div
+            style={{
+              fontSize: 12.5,
+              padding: "8px 12px",
+              borderRadius: 6,
+              border: `1px solid ${testResult.ok ? "var(--color-accent)" : "#f1b9b3"}`,
+              background: testResult.ok ? "rgba(255,216,77,0.12)" : "rgba(192,57,43,0.1)",
+              color: testResult.ok ? "var(--color-text-primary)" : "#c0392b",
+            }}
+          >
+            {testResult.ok ? "✓ " : "✗ "}
+            {testResult.msg}
+          </div>
+        )}
+        {config?.verifiedAt && !testResult && (
+          <p style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
+            Última verificación OK: {new Date(config.verifiedAt).toLocaleString("es-UY")}
+          </p>
+        )}
+
+        <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
+          <button
+            type="button"
+            onClick={onProbar}
+            disabled={probar.isPending}
+            style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid var(--color-border)", background: "none", color: "var(--color-text-primary)", fontSize: 13, cursor: "pointer", opacity: probar.isPending ? 0.6 : 1 }}
+          >
+            {probar.isPending ? "Probando…" : "Probar conexión"}
+          </button>
+          <button
+            type="button"
+            onClick={onGuardar}
+            disabled={guardar.isPending}
+            style={{ padding: "8px 16px", borderRadius: 6, border: "none", background: "var(--color-accent)", color: "#000", fontSize: 13, fontWeight: 600, cursor: "pointer", opacity: guardar.isPending ? 0.6 : 1 }}
+          >
+            {guardar.isPending ? "Guardando…" : "Guardar"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Settings() {
   return (
     <div style={{ padding: "24px 28px", minHeight: "100vh" }}>
@@ -522,6 +701,7 @@ export function Settings() {
       </div>
 
       <SectionPerfil />
+      <SectionEmailSmtp />
       <SectionPreferencias />
       <SectionNotificaciones />
     </div>
