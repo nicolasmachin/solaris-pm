@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Send, Sparkles, Upload } from "lucide-react";
 
 import { getProject } from "../api/projects.api";
 import { useAuthStore } from "../store/auth.store";
 import { useEmailTemplates, usePrepareEmail, useSendEmail } from "../hooks/useEmail";
+import { useUteExtract } from "../hooks/useUteExtract";
+import { UteExtractModal } from "../components/projects/UteExtractModal";
 import type { EmailTemplate, EmailTemplateContext } from "../api/email.api";
 import { RecipientChips } from "../components/email/RecipientChips";
 import { bodyToHtml, renderTemplate } from "../components/email/renderMailBody";
@@ -54,6 +56,8 @@ export default function ConsultaUte() {
 
   const prepare = usePrepareEmail();
   const send = useSendEmail();
+  const extractor = useUteExtract(projectId);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const [ctx, setCtx] = useState<EmailTemplateContext | null>(null);
   const [to, setTo] = useState<string[]>([]);
@@ -62,24 +66,50 @@ export default function ConsultaUte() {
   const [subjectOverride, setSubjectOverride] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
-  // Carga inicial: prepare trae el context del proyecto; los destinatarios se
-  // siembran renderizando los templates To/Cc/Bcc con ese context.
+  // Siembra el form desde un context (inicial o tras cargar factura): los
+  // destinatarios salen de renderizar los templates To/Cc/Bcc con ese context.
+  function seed(context: EmailTemplateContext) {
+    setCtx(context);
+    if (template) {
+      setTo(splitCsv(renderTemplate(template.toTemplate, context)));
+      setCc(splitCsv(renderTemplate(template.ccTemplate, context)));
+      setBcc(splitCsv(renderTemplate(template.bccTemplate, context)));
+    }
+    setSubjectOverride(null);
+  }
+
+  // Carga inicial: prepare trae el context del proyecto.
   useEffect(() => {
     if (!projectId || !template || ready) return;
     prepare.mutate(
       { templateKey: TEMPLATE_KEY, projectId },
       {
         onSuccess: (res) => {
-          setCtx(res.context);
-          setTo(splitCsv(renderTemplate(template.toTemplate, res.context)));
-          setCc(splitCsv(renderTemplate(template.ccTemplate, res.context)));
-          setBcc(splitCsv(renderTemplate(template.bccTemplate, res.context)));
+          seed(res.context);
           setReady(true);
         },
       },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, template]);
+
+  // Tras confirmar la factura (PATCH al proyecto), re-preparamos para refrescar
+  // el preview con los datos nuevos. Detectamos el fin del confirm (isConfirming
+  // true→false con el modal ya cerrado = éxito).
+  const prevConfirming = useRef(false);
+  useEffect(() => {
+    if (prevConfirming.current && !extractor.isConfirming && !extractor.modalOpen) {
+      prepare.mutate({ templateKey: TEMPLATE_KEY, projectId }, { onSuccess: (res) => seed(res.context) });
+    }
+    prevConfirming.current = extractor.isConfirming;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [extractor.isConfirming, extractor.modalOpen]);
+
+  function onPickFactura(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) extractor.uploadAndExtract(file, "factura_ute");
+    if (fileRef.current) fileRef.current.value = "";
+  }
 
   function setCliente<K extends keyof EmailTemplateContext["cliente"]>(k: K, v: EmailTemplateContext["cliente"][K]) {
     setCtx((c) => (c ? { ...c, cliente: { ...c.cliente, [k]: v } } : c));
@@ -168,6 +198,27 @@ export default function ConsultaUte() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Carga de factura UTE (IA) */}
+          <div className="flex items-center gap-3 rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/5 px-3 py-2.5">
+            <Sparkles className="h-5 w-5 flex-shrink-0 text-[var(--color-accent)]" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-[var(--color-text-primary)]">Cargar factura UTE</p>
+              <p className="text-[11px] leading-snug text-[var(--color-text-secondary)]">
+                {project?.facturaUtePath
+                  ? "Ya hay una factura cargada y sus datos ya están en el formulario. Subí otra para reemplazar."
+                  : "La IA lee la factura y completa cuenta, tarifa, potencia y más. Revisás y ajustás abajo."}
+              </p>
+            </div>
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={extractor.isExtracting}
+              className="flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-xs font-semibold text-black hover:opacity-90 disabled:opacity-50"
+            >
+              <Upload className="h-3.5 w-3.5" /> {extractor.isExtracting ? "Leyendo…" : project?.facturaUtePath ? "Reemplazar" : "Cargar factura"}
+            </button>
+            <input ref={fileRef} type="file" accept="image/jpeg,image/png,application/pdf" className="hidden" onChange={onPickFactura} />
           </div>
 
           <div className="border-t border-dashed border-[var(--color-border)] pt-3">
@@ -284,6 +335,17 @@ export default function ConsultaUte() {
           </div>
         </div>
       </div>
+
+      {extractor.modalOpen && extractor.extracted && extractor.tipoActual && (
+        <UteExtractModal
+          data={extractor.extracted}
+          tipo={extractor.tipoActual}
+          isSaving={extractor.isConfirming}
+          alreadyFilled={extractor.alreadyFilled}
+          onConfirm={(d) => extractor.confirmar(d)}
+          onCancel={extractor.cancelar}
+        />
+      )}
     </div>
   );
 }
