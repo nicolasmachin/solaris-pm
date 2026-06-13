@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { Menu } from "lucide-react";
 import { AdminSidebar, ADMIN_TAB_IDS } from "../components/admin/AdminSidebar";
+import { TabPlantillasEmail } from "../components/admin/TabPlantillasEmail";
 import { apiClient } from "../api/axios";
 import { getGoals, upsertGoal, deleteGoal } from "../api/metrics.api";
 import { getSubcategories, createSubcategory, deleteSubcategory } from "../api/finance.api";
@@ -3135,6 +3136,7 @@ export function Admin() {
           {activeTab === "deadlines" && <TabDeadlineRules />}
           {activeTab === "clientes" && <TabClientes />}
           {activeTab === "checklist-obra" && <TabChecklistTemplates />}
+          {activeTab === "plantillas-email" && <TabPlantillasEmail />}
         </div>
       </main>
     </div>

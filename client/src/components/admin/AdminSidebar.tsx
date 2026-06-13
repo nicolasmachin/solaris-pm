@@ -52,6 +52,7 @@ export const ADMIN_GROUPS: AdminSidebarGroup[] = [
       { tab: "pipeline", label: "Pipeline default" },
       { tab: "deadlines", label: "Reglas de Deadlines" },
       { tab: "checklist-obra", label: "Plantilla de checklist" },
+      { tab: "plantillas-email", label: "Plantillas de email" },
       { tab: "objetivos", label: "Objetivos" },
     ],
   },
