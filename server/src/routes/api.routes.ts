@@ -59,6 +59,7 @@ import { prisma } from "../lib/prisma.js";
 import { env } from "../config/env.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize, authorizeAny, clearPermissionCache } from "../middleware/authorize.middleware.js";
+import { authorizeByStageContext, authorizeProjectEditAnyPipeline } from "../middleware/authorize-by-stage.middleware.js";
 import { createAuditEntriesForChanges, createAuditEntry } from "../services/audit.service.js";
 import { createPlanPagos, getPlanPagos } from "../services/planPagos.service.js";
 import { generateUteDocs, getOrCreateConfig as getOrCreateUteDocConfig, upsertConfig as upsertUteDocConfig } from "../services/ute-docs/generator.js";
@@ -1615,7 +1616,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     };
   });
 
-  app.patch("/projects/:id", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
+  app.patch("/projects/:id", { preHandler: authorizeProjectEditAnyPipeline(Action.EDIT) }, async (request) => {
     const user = ensureUser(request);
     const params = z.object({ id: z.string() }).parse(request.params);
     const body = projectPatchSchema.parse(request.body);
@@ -1726,7 +1727,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return serializeSolarSystem(solarSystem);
   });
 
-  app.patch("/projects/:projectId/systems/:systemId", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
+  app.patch("/projects/:projectId/systems/:systemId", { preHandler: authorizeProjectEditAnyPipeline(Action.EDIT) }, async (request) => {
     const user = ensureUser(request);
     const params = z.object({
       projectId: z.string(),
@@ -1986,14 +1987,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }));
   });
 
-  app.patch("/projects/:projectId/stages/:stageId", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
+  app.patch("/projects/:projectId/stages/:stageId", { preHandler: authorizeByStageContext(Action.EDIT) }, async (request) => {
     const user = ensureUser(request);
     const params = z.object({ projectId: z.string(), stageId: z.string() }).parse(request.params);
     const body = stagePatchSchema.parse(request.body);
     const stage = await findStageOrThrow(params.projectId, params.stageId);
 
     if (body.status !== undefined) {
-      await authorize(Module.OPERACIONES, Action.COMPLETE)(request);
+      await authorizeByStageContext(Action.COMPLETE)(request);
     }
 
     // POSTVENTA es indefinida: no acepta ningún cambio de fecha (plan ni real)
@@ -2351,7 +2352,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     },
   );
 
-  app.post("/projects/:projectId/stages/:stageId/substages", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request, reply) => {
+  app.post("/projects/:projectId/stages/:stageId/substages", { preHandler: authorizeByStageContext(Action.EDIT) }, async (request, reply) => {
     const user = ensureUser(request);
     const params = z.object({ projectId: z.string(), stageId: z.string() }).parse(request.params);
     const body = substageCreateSchema.parse(request.body);
@@ -2431,7 +2432,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return {};
   }
 
-  app.patch("/projects/:projectId/stages/:stageId/substages/:substageId", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
+  app.patch("/projects/:projectId/stages/:stageId/substages/:substageId", { preHandler: authorizeByStageContext(Action.EDIT) }, async (request) => {
     const user = ensureUser(request);
     const params = z
       .object({ projectId: z.string(), stageId: z.string(), substageId: z.string() })
@@ -2466,7 +2467,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const updateData: Record<string, unknown> = {};
 
     if (body.status === SubstageStatus.COMPLETED) {
-      await authorize(Module.OPERACIONES, Action.COMPLETE)(request);
+      await authorizeByStageContext(Action.COMPLETE)(request);
     }
 
     // Regla 2: no permitir iniciar/completar subetapa de ejecución si OPERACIONES no está activa
@@ -2570,7 +2571,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     };
   });
 
-  app.patch("/substages/:substageId/complete", { preHandler: authorize(Module.OPERACIONES, Action.COMPLETE) }, async (request) => {
+  app.patch("/substages/:substageId/complete", { preHandler: authorizeByStageContext(Action.COMPLETE) }, async (request) => {
     const user = ensureUser(request);
     const params = z.object({ substageId: z.string() }).parse(request.params);
 
@@ -2677,7 +2678,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     };
   });
 
-  app.patch("/projects/:projectId/stages/:stageId/complete-all", { preHandler: authorize(Module.OPERACIONES, Action.COMPLETE) }, async (request) => {
+  app.patch("/projects/:projectId/stages/:stageId/complete-all", { preHandler: authorizeByStageContext(Action.COMPLETE) }, async (request) => {
     const user = ensureUser(request);
     const params = z.object({ projectId: z.string(), stageId: z.string() }).parse(request.params);
     const stage = await findStageOrThrow(params.projectId, params.stageId);
@@ -2779,7 +2780,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     };
   });
 
-  app.patch("/projects/:projectId/stages/:stageId/substages/reorder", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
+  app.patch("/projects/:projectId/stages/:stageId/substages/reorder", { preHandler: authorizeByStageContext(Action.EDIT) }, async (request) => {
     const user = ensureUser(request);
     const params = z.object({ projectId: z.string(), stageId: z.string() }).parse(request.params);
     const body = reorderSubstagesSchema.parse(request.body);
@@ -2814,7 +2815,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return { success: true };
   });
 
-  app.delete("/projects/:projectId/stages/:stageId/substages/:substageId", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
+  app.delete("/projects/:projectId/stages/:stageId/substages/:substageId", { preHandler: authorizeByStageContext(Action.EDIT) }, async (request) => {
     const user = ensureUser(request);
     const params = z
       .object({ projectId: z.string(), stageId: z.string(), substageId: z.string() })
@@ -2876,7 +2877,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }));
   });
 
-  app.post("/projects/:projectId/stages/:stageId/substages/:substageId/checklist", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request, reply) => {
+  app.post("/projects/:projectId/stages/:stageId/substages/:substageId/checklist", { preHandler: authorizeByStageContext(Action.EDIT) }, async (request, reply) => {
     const user = ensureUser(request);
     const params = z
       .object({ projectId: z.string(), stageId: z.string(), substageId: z.string() })
@@ -3096,7 +3097,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return serializeTask(task);
   });
 
-  app.patch("/projects/:projectId/tasks/:taskId", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
+  app.patch("/projects/:projectId/tasks/:taskId", { preHandler: authorizeByStageContext(Action.EDIT) }, async (request) => {
     const user = ensureUser(request);
     const params = z.object({ projectId: z.string(), taskId: z.string() }).parse(request.params);
     const body = taskPatchSchema.parse(request.body);
