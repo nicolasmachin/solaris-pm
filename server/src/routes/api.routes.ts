@@ -125,6 +125,7 @@ import {
 } from "../services/deadline.service.js";
 import { markSubstageActivity } from "../services/substage-activity.service.js";
 import { findNextSubstage, notifyNextSubstageOwner } from "../services/substage-notifications.service.js";
+import { accumulateSupplierSaldoAFavor } from "../services/supplier-balance.service.js";
 import { addDays, diffInDays, parseDateOnly, todayUtc, toDateOnlyString } from "../utils/dates.js";
 import { AppError, badRequest, conflict, forbidden, notFound } from "../utils/errors.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../utils/serialization.js";
@@ -11750,7 +11751,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
       type Agg = {
         facturasPendientesUSD: number; facturasPendientesUYU: number;
-        saldoAFavorUSD: number; saldoAFavorUYU: number;
         facturasPendientesCount: number;
         ultimaActividad: Date | null;
       };
@@ -11758,7 +11758,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       function getAgg(id: string): Agg {
         let a = aggBy.get(id);
         if (!a) {
-          a = { facturasPendientesUSD: 0, facturasPendientesUYU: 0, saldoAFavorUSD: 0, saldoAFavorUYU: 0, facturasPendientesCount: 0, ultimaActividad: null };
+          a = { facturasPendientesUSD: 0, facturasPendientesUYU: 0, facturasPendientesCount: 0, ultimaActividad: null };
           aggBy.set(id, a);
         }
         return a;
@@ -11780,24 +11780,20 @@ export async function registerApiRoutes(app: FastifyInstance) {
         }
         bumpFecha(a, m.fecha);
       }
+      // Saldo a favor por moneda: helper compartido (misma lógica que usa el
+      // flujo de fondos, para que ficha y flujo no diverjan).
+      const saldoAFavorMap = accumulateSupplierSaldoAFavor(payments);
       for (const p of payments) {
-        const a = getAgg(p.supplierId);
-        const monto = Number(p.monto);
-        const aplicado = p.applications.reduce((acc, ap) => acc + Number(ap.montoAplicado), 0);
-        const saldoAFavor = Math.max(0, monto - aplicado);
-        if (saldoAFavor > 0.005) {
-          if (p.moneda === Moneda.USD) a.saldoAFavorUSD += saldoAFavor;
-          else a.saldoAFavorUYU += saldoAFavor;
-        }
-        bumpFecha(a, p.fecha);
+        bumpFecha(getAgg(p.supplierId), p.fecha);
       }
 
       return base.map((s) => {
         const a = aggBy.get(s.id);
         const facturasPendientesUSD = a ? Math.round(a.facturasPendientesUSD * 100) / 100 : 0;
         const facturasPendientesUYU = a ? Math.round(a.facturasPendientesUYU * 100) / 100 : 0;
-        const saldoAFavorUSD = a ? Math.round(a.saldoAFavorUSD * 100) / 100 : 0;
-        const saldoAFavorUYU = a ? Math.round(a.saldoAFavorUYU * 100) / 100 : 0;
+        const saf = saldoAFavorMap.get(s.id);
+        const saldoAFavorUSD = saf ? Math.round(saf.USD * 100) / 100 : 0;
+        const saldoAFavorUYU = saf ? Math.round(saf.UYU * 100) / 100 : 0;
         return {
           ...s,
           balance: {
@@ -17637,24 +17633,67 @@ export async function registerApiRoutes(app: FastifyInstance) {
         },
       },
     });
-    const supplierDebtEvents: CashflowEvent[] = [];
+    // Recolectar las facturas candidatas (saldo > 0, dentro del horizonte) por proveedor.
+    type DebtInvoice = { m: (typeof supplierDebts)[number]; saldo: number; fechaRef: Date };
+    const invoicesBySupplier = new Map<string, DebtInvoice[]>();
     for (const m of supplierDebts) {
+      if (!m.supplierId) continue;
       const applied = m.paymentApplications.reduce((s, a) => s + Number(a.montoAplicado), 0);
       const saldo = Number(m.monto) - applied;
       if (saldo <= 0.005) continue;
       const fechaRef = m.dueDate ?? m.expectedDate ?? m.fecha;
       if (fechaRef > horizon) continue;
-      supplierDebtEvents.push({
-        id: `sd:${m.id}`,
-        fecha: serializeDateNonNull(fechaRef < now ? now : fechaRef),
-        descripcion: `${m.supplier?.nombre ?? "Proveedor"} — ${m.descripcion}`,
-        tipo: "SUPPLIER_DEBT",
-        monto: saldo,
-        moneda: m.moneda,
-        impacto: "NEGATIVO",
-        sourceType: "SUPPLIER_DEBT",
-        sourceId: m.id,
-      });
+      const arr = invoicesBySupplier.get(m.supplierId) ?? [];
+      arr.push({ m, saldo, fechaRef });
+      invoicesBySupplier.set(m.supplierId, arr);
+    }
+
+    // Saldo a favor (pagos no imputados) por proveedor y moneda — helper compartido
+    // con la ficha del proveedor para que ambos cálculos no diverjan.
+    //
+    // SUPUESTO DOCUMENTADO: el crédito se aplica SOLO a las facturas
+    // A_PAGAR/PARCIALMENTE_PAGADO que el flujo proyecta — NO a las COMPROMETIDO,
+    // que el flujo excluye por diseño. En el borde de un proveedor con factura
+    // comprometida + saldo a favor, el flujo puede netear de más respecto de la
+    // ficha; como el pago no está imputado a ninguna factura puntual, no hay una
+    // atribución "correcta" única. El total desembolsado proyectado queda bien.
+    const debtSupplierIds = [...invoicesBySupplier.keys()];
+    const debtPayments = debtSupplierIds.length
+      ? await prisma.payment.findMany({
+          where: { deletedAt: null, supplierId: { in: debtSupplierIds } },
+          select: {
+            supplierId: true,
+            monto: true,
+            moneda: true,
+            applications: { select: { montoAplicado: true } },
+          },
+        })
+      : [];
+    const saldoAFavorBySupplier = accumulateSupplierSaldoAFavor(debtPayments);
+
+    const supplierDebtEvents: CashflowEvent[] = [];
+    for (const [supplierId, invoices] of invoicesBySupplier) {
+      // Crédito disponible por moneda; se descuenta de la factura que vence primero.
+      const credito = { ...(saldoAFavorBySupplier.get(supplierId) ?? { USD: 0, UYU: 0 }) };
+      invoices.sort((a, b) => a.fechaRef.getTime() - b.fechaRef.getTime());
+      for (const inv of invoices) {
+        const curKey = inv.m.moneda === Moneda.USD ? "USD" : "UYU";
+        const descuento = Math.min(credito[curKey], inv.saldo);
+        credito[curKey] -= descuento;
+        const montoProyectado = inv.saldo - descuento;
+        if (montoProyectado <= 0.005) continue; // factura cubierta por el crédito → no se proyecta
+        supplierDebtEvents.push({
+          id: `sd:${inv.m.id}`,
+          fecha: serializeDateNonNull(inv.fechaRef < now ? now : inv.fechaRef),
+          descripcion: `${inv.m.supplier?.nombre ?? "Proveedor"} — ${inv.m.descripcion}`,
+          tipo: "SUPPLIER_DEBT",
+          monto: montoProyectado,
+          moneda: inv.m.moneda,
+          impacto: "NEGATIVO",
+          sourceType: "SUPPLIER_DEBT",
+          sourceId: inv.m.id,
+        });
+      }
     }
 
     // 5) Cobros pendientes de clientes: INGRESO con cobrado=false en el horizonte.

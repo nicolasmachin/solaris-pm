@@ -2,6 +2,14 @@
 
 ## v6.2
 
+### 14 de junio de 2026
+
+#### Finanzas — El flujo de fondos descuenta el saldo a favor de proveedores
+
+- En **Flujo de fondos**, la proyección de deuda a proveedores ahora resta el **saldo a favor** (pagos que tenés a favor sin imputar a una factura): proyecta el **saldo neto** que realmente vas a desembolsar, no el bruto de la factura.
+- El crédito se aplica a la factura que **vence primero** y por moneda (dólares con dólares, pesos con pesos). Si el saldo a favor cubre una factura entera, esa factura deja de proyectarse; si el crédito supera toda la deuda, el proveedor no proyecta salida.
+- Ejemplo (FIVISA): factura de USD 9.701 con USD 5.000 a favor → el flujo proyecta **-USD 4.701** (antes mostraba -9.701). Coincide con el saldo neto de la ficha del proveedor.
+
 ### 13 de junio de 2026
 
 #### Mails — Enviar la consulta a UTE desde la app
