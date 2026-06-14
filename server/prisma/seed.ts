@@ -143,10 +143,14 @@ async function createUsers(roleIdByName: Map<string, string>) {
 // ─── Permisos ─────────────────────────────────────────────────────────────────
 
 async function seedPermissions(roleIdByName: Map<string, string>) {
+  // Sincronizada con la matriz REAL de producción (137 filas de permisos).
+  // No se agregan ni quitan permisos respecto de prod (excepto INFORMES, que se
+  // preserva porque existe en prod y el snapshot de la spec §10 es anterior).
   const matrix: Array<{ roleName: string; module: Module; actions: Action[] }> = [
+    // ADMIN
     { roleName: "ADMIN", module: Module.VENTAS,         actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMMENT] },
     { roleName: "ADMIN", module: Module.ONBOARDING,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
-    { roleName: "ADMIN", module: Module.INGENIERIA,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT, Action.ACCESS] },
+    { roleName: "ADMIN", module: Module.INGENIERIA,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { roleName: "ADMIN", module: Module.OPERACIONES,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { roleName: "ADMIN", module: Module.HABILITACION,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { roleName: "ADMIN", module: Module.POSTVENTA,      actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
@@ -156,34 +160,47 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "ADMIN", module: Module.FINANZAS,       actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { roleName: "ADMIN", module: Module.STOCK,          actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { roleName: "ADMIN", module: Module.TRAMITES_UTE,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    // INFORMES: preservado de prod (existe en producción; el snapshot de la spec
+    // §10 es anterior al módulo Informes). No se remueve un permiso de prod.
     { roleName: "ADMIN", module: Module.INFORMES,       actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
     { roleName: "ADMIN", module: Module.PORTAL_CLIENTE, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+
+    // CLIENT
     { roleName: "CLIENT", module: Module.PORTAL_CLIENTE, actions: [Action.VIEW] },
-    { roleName: "ASESOR_COMERCIAL", module: Module.VENTAS,        actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMMENT] },
-    { roleName: "ASESOR_COMERCIAL", module: Module.ONBOARDING,    actions: [Action.VIEW, Action.COMMENT] },
-    { roleName: "ASESOR_COMERCIAL", module: Module.INGENIERIA,    actions: [Action.VIEW] },
-    { roleName: "ASESOR_COMERCIAL", module: Module.OPERACIONES,   actions: [Action.VIEW] },
-    { roleName: "ASESOR_COMERCIAL", module: Module.HABILITACION,  actions: [Action.VIEW] },
-    { roleName: "ASESOR_COMERCIAL", module: Module.POSTVENTA,     actions: [Action.VIEW] },
-    { roleName: "INGENIERIA", module: Module.ONBOARDING,    actions: [Action.VIEW, Action.COMMENT] },
-    { roleName: "INGENIERIA", module: Module.INGENIERIA,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT, Action.ACCESS] },
-    { roleName: "INGENIERIA", module: Module.OPERACIONES,   actions: [Action.VIEW, Action.COMMENT] },
-    { roleName: "INGENIERIA", module: Module.HABILITACION,  actions: [Action.VIEW, Action.COMMENT] },
-    { roleName: "INGENIERIA", module: Module.POSTVENTA,     actions: [Action.VIEW] },
-    { roleName: "INGENIERIA", module: Module.METRICAS,      actions: [Action.VIEW] },
-    { roleName: "OPERACIONES", module: Module.VENTAS,        actions: [Action.VIEW] },
-    { roleName: "OPERACIONES", module: Module.ONBOARDING,    actions: [Action.VIEW, Action.COMMENT] },
-    { roleName: "OPERACIONES", module: Module.INGENIERIA,    actions: [Action.VIEW, Action.EDIT] },
-    { roleName: "OPERACIONES", module: Module.OPERACIONES,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
-    { roleName: "OPERACIONES", module: Module.HABILITACION,  actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
-    { roleName: "OPERACIONES", module: Module.POSTVENTA,     actions: [Action.VIEW, Action.COMMENT] },
-    { roleName: "OPERACIONES", module: Module.METRICAS,      actions: [Action.VIEW] },
-    { roleName: "OPERACIONES", module: Module.STOCK,         actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
-    { roleName: "OPERACIONES", module: Module.TRAMITES_UTE,  actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
-    { roleName: "INGENIERIA", module: Module.TRAMITES_UTE,   actions: [Action.VIEW] },
+
+    // ASESOR_COMERCIAL
+    { roleName: "ASESOR_COMERCIAL", module: Module.VENTAS,       actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMMENT] },
+    { roleName: "ASESOR_COMERCIAL", module: Module.ONBOARDING,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { roleName: "ASESOR_COMERCIAL", module: Module.INGENIERIA,   actions: [Action.VIEW] },
+    { roleName: "ASESOR_COMERCIAL", module: Module.OPERACIONES,  actions: [Action.VIEW] },
+    { roleName: "ASESOR_COMERCIAL", module: Module.HABILITACION, actions: [Action.VIEW] },
+    { roleName: "ASESOR_COMERCIAL", module: Module.POSTVENTA,    actions: [Action.VIEW] },
     { roleName: "ASESOR_COMERCIAL", module: Module.TRAMITES_UTE, actions: [Action.VIEW] },
-    { roleName: "FINANZAS", module: Module.FINANZAS, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
-    { roleName: "FINANZAS", module: Module.STOCK,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+
+    // FINANZAS
+    { roleName: "FINANZAS", module: Module.FINANZAS,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { roleName: "FINANZAS", module: Module.STOCK,        actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { roleName: "FINANZAS", module: Module.TRAMITES_UTE, actions: [Action.VIEW] },
+
+    // INGENIERIA
+    { roleName: "INGENIERIA", module: Module.ONBOARDING,   actions: [Action.VIEW, Action.COMMENT] },
+    { roleName: "INGENIERIA", module: Module.INGENIERIA,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { roleName: "INGENIERIA", module: Module.OPERACIONES,  actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
+    { roleName: "INGENIERIA", module: Module.HABILITACION, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { roleName: "INGENIERIA", module: Module.POSTVENTA,    actions: [Action.VIEW] },
+    { roleName: "INGENIERIA", module: Module.METRICAS,     actions: [Action.VIEW] },
+    { roleName: "INGENIERIA", module: Module.TRAMITES_UTE, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+
+    // OPERACIONES
+    { roleName: "OPERACIONES", module: Module.VENTAS,       actions: [Action.VIEW] },
+    { roleName: "OPERACIONES", module: Module.ONBOARDING,   actions: [Action.VIEW, Action.COMMENT] },
+    { roleName: "OPERACIONES", module: Module.INGENIERIA,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT, Action.ACCESS] },
+    { roleName: "OPERACIONES", module: Module.OPERACIONES,  actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
+    { roleName: "OPERACIONES", module: Module.HABILITACION, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
+    { roleName: "OPERACIONES", module: Module.POSTVENTA,    actions: [Action.VIEW, Action.COMMENT] },
+    { roleName: "OPERACIONES", module: Module.METRICAS,     actions: [Action.VIEW] },
+    { roleName: "OPERACIONES", module: Module.STOCK,        actions: [Action.VIEW] },
+    { roleName: "OPERACIONES", module: Module.TRAMITES_UTE, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
   ];
 
   for (const entry of matrix) {
