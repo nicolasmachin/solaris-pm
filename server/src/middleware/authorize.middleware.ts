@@ -18,7 +18,7 @@ function buildCacheKey(roleName: string, module: Module, action: Action) {
   return `${roleName}:${module}:${action}`;
 }
 
-async function hasPermission(roleName: string, module: Module, action: Action) {
+export async function hasPermission(roleName: string, module: Module, action: Action) {
   const cacheKey = buildCacheKey(roleName, module, action);
   const cachedPermission = permissionsCache.get(cacheKey);
 
