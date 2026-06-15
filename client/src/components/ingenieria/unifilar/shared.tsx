@@ -64,6 +64,10 @@ export function emptyForm(): UnifilarFormInput {
     calibreProteccionDc: "25A 2P",
     termicaAcCalibre: null,
     diferencialAcCalibre: null,
+    seccionDcOverride: null,
+    seccionAcInvIcpOverride: null,
+    seccionAcCasaOverride: null,
+    seccionPeOverride: null,
     modeloMedidorMonitoreo: "",
     largoDcPanelesM: 15,
     largoDcEsLargo: false,
@@ -86,6 +90,10 @@ export function fromVersionAsForm(v: {
   calibreProteccionDc: string;
   termicaAcCalibre: string | null;
   diferencialAcCalibre: string | null;
+  seccionDcOverride: string | null;
+  seccionAcInvIcpOverride: string | null;
+  seccionAcCasaOverride: string | null;
+  seccionPeOverride: string | null;
   modeloMedidorMonitoreo: string | null;
   largoDcPanelesM: number;
   largoDcEsLargo: boolean;
@@ -106,6 +114,10 @@ export function fromVersionAsForm(v: {
     calibreProteccionDc: v.calibreProteccionDc,
     termicaAcCalibre: v.termicaAcCalibre,
     diferencialAcCalibre: v.diferencialAcCalibre,
+    seccionDcOverride: v.seccionDcOverride,
+    seccionAcInvIcpOverride: v.seccionAcInvIcpOverride,
+    seccionAcCasaOverride: v.seccionAcCasaOverride,
+    seccionPeOverride: v.seccionPeOverride,
     modeloMedidorMonitoreo: v.modeloMedidorMonitoreo ?? "",
     largoDcPanelesM: v.largoDcPanelesM,
     largoDcEsLargo: v.largoDcEsLargo,

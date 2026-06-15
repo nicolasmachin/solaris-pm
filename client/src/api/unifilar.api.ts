@@ -35,6 +35,10 @@ export interface UnifilarVersionFull {
   calibreProteccionDc: string;
   termicaAcCalibre: string | null;
   diferencialAcCalibre: string | null;
+  seccionDcOverride: string | null;
+  seccionAcInvIcpOverride: string | null;
+  seccionAcCasaOverride: string | null;
+  seccionPeOverride: string | null;
   modeloMedidorMonitoreo: string | null;
   largoDcPanelesM: number;
   largoDcEsLargo: boolean;
@@ -56,6 +60,10 @@ export interface UnifilarFormInput {
   calibreProteccionDc: string;
   termicaAcCalibre?: string | null;
   diferencialAcCalibre?: string | null;
+  seccionDcOverride?: string | null;
+  seccionAcInvIcpOverride?: string | null;
+  seccionAcCasaOverride?: string | null;
+  seccionPeOverride?: string | null;
   modeloMedidorMonitoreo?: string | null;
   largoDcPanelesM: number;
   largoDcEsLargo: boolean;

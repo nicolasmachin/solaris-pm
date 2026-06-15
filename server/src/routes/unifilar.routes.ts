@@ -32,6 +32,11 @@ const formSchema = z.object({
   // Overrides opcionales del calibre AC. Null/undefined = usar regla server.
   termicaAcCalibre: z.string().trim().max(50).optional().nullable(),
   diferencialAcCalibre: z.string().trim().max(50).optional().nullable(),
+  // Overrides opcionales de la sección de los cables (mm²). Null = regla server.
+  seccionDcOverride: z.string().trim().max(20).optional().nullable(),
+  seccionAcInvIcpOverride: z.string().trim().max(20).optional().nullable(),
+  seccionAcCasaOverride: z.string().trim().max(20).optional().nullable(),
+  seccionPeOverride: z.string().trim().max(20).optional().nullable(),
   modeloMedidorMonitoreo: z.string().trim().max(100).optional().nullable(),
   largoDcPanelesM: z.number().int().min(1).max(200),
   largoDcEsLargo: z.boolean().default(false),
@@ -70,6 +75,10 @@ function inputsFromVersion(v: {
   calibreProteccionDc: string;
   termicaAcCalibre: string | null;
   diferencialAcCalibre: string | null;
+  seccionDcOverride: string | null;
+  seccionAcInvIcpOverride: string | null;
+  seccionAcCasaOverride: string | null;
+  seccionPeOverride: string | null;
   modeloMedidorMonitoreo: string | null;
   largoDcPanelesM: number;
   largoDcEsLargo: boolean;
@@ -93,6 +102,10 @@ function inputsFromVersion(v: {
     calibreProteccionDc: v.calibreProteccionDc,
     termicaAcCalibre: v.termicaAcCalibre,
     diferencialAcCalibre: v.diferencialAcCalibre,
+    seccionDcOverride: v.seccionDcOverride,
+    seccionAcInvIcpOverride: v.seccionAcInvIcpOverride,
+    seccionAcCasaOverride: v.seccionAcCasaOverride,
+    seccionPeOverride: v.seccionPeOverride,
     modeloMedidorMonitoreo: v.modeloMedidorMonitoreo,
     largoDcPanelesM: v.largoDcPanelesM,
     largoDcEsLargo: v.largoDcEsLargo,
@@ -141,6 +154,12 @@ function serializeVersionFull(v: {
   potenciaInversorKw: number;
   tipoProteccionDc: TipoProteccionDC;
   calibreProteccionDc: string;
+  termicaAcCalibre: string | null;
+  diferencialAcCalibre: string | null;
+  seccionDcOverride: string | null;
+  seccionAcInvIcpOverride: string | null;
+  seccionAcCasaOverride: string | null;
+  seccionPeOverride: string | null;
   modeloMedidorMonitoreo: string | null;
   largoDcPanelesM: number;
   largoDcEsLargo: boolean;
@@ -244,6 +263,10 @@ export async function registerUnifilarRoutes(app: FastifyInstance) {
           calibreProteccionDc: body.calibreProteccionDc,
           termicaAcCalibre: body.termicaAcCalibre?.trim() || null,
           diferencialAcCalibre: body.diferencialAcCalibre?.trim() || null,
+          seccionDcOverride: body.seccionDcOverride?.trim() || null,
+          seccionAcInvIcpOverride: body.seccionAcInvIcpOverride?.trim() || null,
+          seccionAcCasaOverride: body.seccionAcCasaOverride?.trim() || null,
+          seccionPeOverride: body.seccionPeOverride?.trim() || null,
           modeloMedidorMonitoreo: body.modeloMedidorMonitoreo?.trim() || null,
           largoDcPanelesM: body.largoDcPanelesM,
           largoDcEsLargo: body.largoDcEsLargo,
@@ -388,6 +411,10 @@ export async function registerUnifilarRoutes(app: FastifyInstance) {
         calibreProteccionDc: body.calibreProteccionDc,
         termicaAcCalibre: body.termicaAcCalibre ?? null,
         diferencialAcCalibre: body.diferencialAcCalibre ?? null,
+        seccionDcOverride: body.seccionDcOverride ?? null,
+        seccionAcInvIcpOverride: body.seccionAcInvIcpOverride ?? null,
+        seccionAcCasaOverride: body.seccionAcCasaOverride ?? null,
+        seccionPeOverride: body.seccionPeOverride ?? null,
         modeloMedidorMonitoreo: body.modeloMedidorMonitoreo ?? null,
         largoDcPanelesM: body.largoDcPanelesM,
         largoDcEsLargo: body.largoDcEsLargo,

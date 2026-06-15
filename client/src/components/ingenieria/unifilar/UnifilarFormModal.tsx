@@ -23,7 +23,15 @@ import {
   CALIBRES_DIFERENCIAL_AC,
   CALIBRES_PROTECCION_DC,
   CALIBRES_TERMICA_AC,
+  SECCIONES_CABLE_MM,
 } from "../../ui/calibres";
+import {
+  autoLabel,
+  prefijoCable,
+  seccionAcSugerida,
+  seccionDcSugerida,
+  seccionPeSugerida,
+} from "./suggest";
 
 export function UnifilarFormModal({
   projectId,
@@ -43,6 +51,19 @@ export function UnifilarFormModal({
     () => Math.round((form.cantidadPaneles * form.potenciaPanelW) / 100) / 10,
     [form.cantidadPaneles, form.potenciaPanelW],
   );
+
+  // Calibres de cable que el sistema sugiere automáticamente (corriente
+  // admisible). Se muestran al lado de cada override para que el proyectista
+  // sepa qué saldría si deja el campo en automático.
+  const secSug = useMemo(() => {
+    const pref = prefijoCable(form.tipoRed);
+    return {
+      dc: `2x${seccionDcSugerida(form.largoDcEsLargo)}mm²`,
+      acInvIcp: `${pref}${seccionAcSugerida(form.potenciaInversorKw, form.tipoRed)}mm²`,
+      acCasa: `${pref}${seccionAcSugerida(form.potenciaContratadaKw, form.tipoRed)}mm²`,
+      pe: `${seccionPeSugerida(form.potenciaInversorKw, form.tipoRed)}mm² PE`,
+    };
+  }, [form.tipoRed, form.largoDcEsLargo, form.potenciaInversorKw, form.potenciaContratadaKw]);
 
   const [debouncedForm, setDebouncedForm] = useState(form);
   useEffect(() => {
@@ -241,6 +262,61 @@ export function UnifilarFormModal({
                   onChange={(e) => setF("largoDcEsLargo", e.target.checked)} />
                 Tramo DC largo (subir a 6mm² por caída de tensión)
               </label>
+            </FormSection>
+
+            <FormSection title="Calibre de cables (mm²)">
+              <p className="text-[10px] italic text-[var(--color-text-muted)]">
+                El sistema sugiere la sección por corriente admisible. Si dejás
+                un campo en automático usa esa sugerencia; sobrescribí el número
+                de mm² si necesitás ajustar por caída de tensión o material. El
+                prefijo (2x/3x/4x) y el PE se arman solos según el tipo de red.
+              </p>
+              <NumGrid>
+                <div>
+                  <label className={lbl}>Cable DC (paneles)</label>
+                  <CalibreInput
+                    value={form.seccionDcOverride ?? null}
+                    onChange={(v) => setF("seccionDcOverride", v)}
+                    predefined={SECCIONES_CABLE_MM}
+                    emptyOptionLabel={autoLabel(secSug.dc)}
+                    placeholder={`Automático (${secSug.dc})`}
+                    ariaLabel="Sección cable DC"
+                  />
+                </div>
+                <div>
+                  <label className={lbl}>Cable AC inversor → ICP IMG</label>
+                  <CalibreInput
+                    value={form.seccionAcInvIcpOverride ?? null}
+                    onChange={(v) => setF("seccionAcInvIcpOverride", v)}
+                    predefined={SECCIONES_CABLE_MM}
+                    emptyOptionLabel={autoLabel(secSug.acInvIcp)}
+                    placeholder={`Automático (${secSug.acInvIcp})`}
+                    ariaLabel="Sección cable AC inversor a ICP IMG"
+                  />
+                </div>
+                <div>
+                  <label className={lbl}>Cable AC ICP → tablero casa</label>
+                  <CalibreInput
+                    value={form.seccionAcCasaOverride ?? null}
+                    onChange={(v) => setF("seccionAcCasaOverride", v)}
+                    predefined={SECCIONES_CABLE_MM}
+                    emptyOptionLabel={autoLabel(secSug.acCasa)}
+                    placeholder={`Automático (${secSug.acCasa})`}
+                    ariaLabel="Sección cable AC ICP a tablero casa"
+                  />
+                </div>
+                <div>
+                  <label className={lbl}>Cable PE a jabalina</label>
+                  <CalibreInput
+                    value={form.seccionPeOverride ?? null}
+                    onChange={(v) => setF("seccionPeOverride", v)}
+                    predefined={SECCIONES_CABLE_MM}
+                    emptyOptionLabel={autoLabel(secSug.pe)}
+                    placeholder={`Automático (${secSug.pe})`}
+                    ariaLabel="Sección conductor PE a jabalina"
+                  />
+                </div>
+              </NumGrid>
             </FormSection>
 
             {error && (

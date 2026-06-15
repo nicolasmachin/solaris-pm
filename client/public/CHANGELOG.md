@@ -2,6 +2,14 @@
 
 ## v6.2
 
+### 15 de junio de 2026
+
+#### Ingeniería — Editar a mano el calibre de los cables del unifilar
+
+- En el **Plano Unifilar** ahora podés **modificar el calibre (sección en mm²) de los cables**, no solo de las protecciones. El sistema lo sigue **calculando y sugiriendo** por corriente admisible, pero podés sobrescribirlo cuando necesitás ajustar por **caída de tensión** o **material**, que el cálculo automático no contempla.
+- Se puede ajustar en **todos los tramos del plano**: cable **DC** (paneles ↔ tablero), cable **AC inversor → ICP de la IMG**, cable **AC ICP → tablero de la casa** y el **conductor PE a la jabalina**.
+- Cada campo arranca en **Automático** y muestra entre paréntesis el valor sugerido. Si lo dejás en automático usa esa sugerencia; si escribís un número, ese se imprime en el plano. El prefijo (2x/3x/4x) y el "PE" se siguen armando solos según el tipo de red.
+
 ### 14 de junio de 2026
 
 #### Finanzas — El flujo de fondos descuenta el saldo a favor de proveedores

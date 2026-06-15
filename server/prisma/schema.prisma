@@ -1926,6 +1926,16 @@ model UnifilarVersion {
   // Si tienen valor, ese valor se imprime tal cual en el unifilar.
   termicaAcCalibre       String?
   diferencialAcCalibre   String?
+  // Overrides opcionales de la SECCIÓN de los cables (mm², string libre).
+  // Si son null, el generador usa la regla de rules.ts (corriente admisible).
+  // Si tienen valor, ese valor se imprime tal cual — permite ajustar a mano
+  // por caída de tensión o material (Cu/Al) que la regla no considera.
+  // El prefijo de polaridad (2x/3x/4x) y el sufijo PE/solar siguen siendo
+  // automáticos según tipo de red; el override es sólo el número de mm².
+  seccionDcOverride       String? // cable DC (paneles ↔ tablero protecciones DC)
+  seccionAcInvIcpOverride String? // cable AC inversor → ICP de la IMG
+  seccionAcCasaOverride   String? // cable AC ICP → tablero general de la casa
+  seccionPeOverride       String? // conductor PE a la jabalina común
 
   // Longitudes (metros, int)
   largoDcPanelesM     Int

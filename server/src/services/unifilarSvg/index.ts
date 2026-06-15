@@ -68,6 +68,13 @@ export type UnifilarInputs = {
   // termicaCalibre()/diferencialCalibre() en rules.ts.
   termicaAcCalibre?: string | null;
   diferencialAcCalibre?: string | null;
+  // Si están definidos, sobreescriben la SECCIÓN del cable (mm²) que sale de
+  // seccionDc()/seccionAc()/seccionPeJabalina() en rules.ts. Es sólo el número
+  // de mm² — el prefijo (2x/3x/4x) y el sufijo PE/solar siguen automáticos.
+  seccionDcOverride?: string | null;
+  seccionAcInvIcpOverride?: string | null;
+  seccionAcCasaOverride?: string | null;
+  seccionPeOverride?: string | null;
   modeloMedidorMonitoreo?: string | null;
   largoDcPanelesM: number;
   largoDcEsLargo: boolean;
@@ -118,14 +125,19 @@ export function generateUnifilarSvg(p: UnifilarInputs): string {
   const pol = polaridad(p.tipoRed);
   const pref = prefijoCable(p.tipoRed);
   const esTri = esTrifasico(p.tipoRed);
-  const secDc = seccionDc(p.largoDcEsLargo);
-  const secAcInvIcp = seccionAc(p.potenciaInversorKw, p.tipoRed);
-  const secAcCasa = seccionAc(p.potenciaContratadaKw, p.tipoRed);
   // Override del usuario (form) > regla del server. Si el override es
-  // null/undefined, se cae a la tabla que considera potencia + tipo de red.
+  // null/undefined/vacío, se cae a la tabla que considera potencia, tipo de
+  // red y largo del tramo (corriente admisible). El override permite ajustar
+  // a mano por caída de tensión o material que la regla no contempla.
+  const secDc = p.seccionDcOverride?.trim() || seccionDc(p.largoDcEsLargo);
+  const secAcInvIcp =
+    p.seccionAcInvIcpOverride?.trim() || seccionAc(p.potenciaInversorKw, p.tipoRed);
+  const secAcCasa =
+    p.seccionAcCasaOverride?.trim() || seccionAc(p.potenciaContratadaKw, p.tipoRed);
   const termCal = p.termicaAcCalibre ?? termicaCalibre(p.potenciaInversorKw, p.tipoRed);
   const difCal = p.diferencialAcCalibre ?? diferencialCalibre(p.potenciaInversorKw, p.tipoRed);
-  const secPe = seccionPeJabalina(p.potenciaInversorKw, p.tipoRed);
+  const secPe =
+    p.seccionPeOverride?.trim() || String(seccionPeJabalina(p.potenciaInversorKw, p.tipoRed));
 
   // ─── Layout vertical ───
   const Y_TOP = MARGIN + HEADER_H + 18;
