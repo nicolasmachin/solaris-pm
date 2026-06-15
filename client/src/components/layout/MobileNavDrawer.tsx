@@ -17,6 +17,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { useAuthStore } from "../../store/auth.store";
+import { useIsMobile } from "../../hooks/useIsMobile";
 import { CanAccess } from "../ui/CanAccess";
 
 interface MobileNavDrawerProps {
@@ -28,6 +29,7 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
   const { user, clearAuth } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useIsMobile();
   const panelRef = useRef<HTMLDivElement>(null);
   const firstLinkRef = useRef<HTMLAnchorElement>(null);
 
@@ -48,13 +50,8 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
 
   // Si la pantalla pasa a desktop, cerrar automáticamente.
   useEffect(() => {
-    if (!open) return;
-    function onResize() {
-      if (window.innerWidth >= 768) onClose();
-    }
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, [open, onClose]);
+    if (open && !isMobile) onClose();
+  }, [open, isMobile, onClose]);
 
   // Cerrar al cambiar de ruta
   useEffect(() => {
