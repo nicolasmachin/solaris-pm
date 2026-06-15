@@ -113,6 +113,17 @@
   --color-table-header-text: #c8def8;
 }
 
+/* Touch target mínimo accesible (44x44px) para elementos tappables en móvil.
+   Uso: agregar la clase `tap-target` a botones/links/items táctiles. La
+   adopción amplia va en las fases de módulo; acá solo se define la utilidad. */
+@utility tap-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 :root {
   color-scheme: dark;
 }
