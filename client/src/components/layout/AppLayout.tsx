@@ -4,6 +4,7 @@ import { Topbar } from "./Topbar";
 import { Sidebar } from "./Sidebar";
 import { VersionFooter } from "./VersionFooter";
 import { MobileNavDrawer } from "./MobileNavDrawer";
+import { BottomTabBar } from "./BottomTabBar";
 import { FinanceInvariantBanner } from "../finance/FinanceInvariantBanner";
 import { AIFloatingButton } from "../ai/AIFloatingButton";
 import { EngineeringProjectsSidebar } from "../ingenieria/EngineeringProjectsSidebar";
@@ -42,11 +43,14 @@ export function AppLayout() {
             main { margin-left: 0 !important; }
           }
         `}</style>
-        <div className="p-6 pb-10">
+        {/* pb extra en móvil para que el bottom tab bar no tape el contenido
+            (alto del tab bar + safe area). En ≥md vuelve al pb-10 normal. */}
+        <div className="p-6 pb-[calc(72px+env(safe-area-inset-bottom))] md:pb-10">
           <FinanceInvariantBanner />
           <Outlet />
         </div>
       </main>
+      <BottomTabBar onMore={() => setMobileNavOpen(true)} />
       <VersionFooter />
       <AIFloatingButton />
     </div>

@@ -9,7 +9,7 @@ export function VersionFooter() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-2 right-3 z-30 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 py-0.5 font-mono text-[10px] tracking-wider text-[var(--color-text-muted)] shadow-sm hover:text-[var(--color-text-primary)] hover:border-[var(--color-accent)] transition-colors"
+        className="fixed bottom-[68px] right-3 z-30 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 py-0.5 font-mono text-[10px] tracking-wider text-[var(--color-text-muted)] shadow-sm hover:text-[var(--color-text-primary)] hover:border-[var(--color-accent)] transition-colors md:bottom-2"
         title="Ver historial de versiones"
       >
         v{VERSION}

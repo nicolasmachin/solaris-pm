@@ -16,7 +16,7 @@ export function AIFloatingButton() {
         onClick={() => setOpen(true)}
         aria-label="Abrir asistente IA"
         title="Asistente Voltia"
-        className="fixed bottom-6 right-6 z-40 flex items-center justify-center w-12 h-12 rounded-full bg-violet-600 text-white shadow-lg hover:bg-violet-700 transition-colors"
+        className="fixed bottom-20 right-6 z-40 flex items-center justify-center w-12 h-12 rounded-full bg-violet-600 text-white shadow-lg hover:bg-violet-700 transition-colors md:bottom-6"
       >
         <Sparkles className="w-5 h-5" />
       </button>
