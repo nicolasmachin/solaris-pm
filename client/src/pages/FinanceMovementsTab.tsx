@@ -14,7 +14,8 @@ import {
   isPaymentRow,
   patchMovement,
 } from "../api/finance.api";
-import type { FinanceMovement } from "../types/finance.types";
+import type { FinanceListItem, FinanceMovement } from "../types/finance.types";
+import { ResponsiveTable, type Column } from "../components/ui/ResponsiveTable";
 import { ProjectPicker } from "../components/finance/ProjectPicker";
 import { getAccounts } from "../api/accounts.api";
 import { getProjects } from "../api/projects.api";
@@ -181,6 +182,128 @@ export function FinanceMovementsTab() {
   const saldoUSD = data?.saldoActualUSD ?? 0;
   const saldoUYU = data?.saldoActualUYU ?? 0;
 
+  // Columnas declarativas para ResponsiveTable. El render ramifica por los type
+  // guards (pago = read-only; movimiento = con acciones). Desktop queda idéntico
+  // al markup anterior; en móvil cada fila es una card (title/highlight/label).
+  const columns: Column<FinanceListItem>[] = [
+    {
+      key: "fecha",
+      label: "Fecha",
+      className: "whitespace-nowrap text-[var(--color-text-secondary)] tabular-nums",
+      render: (it) => fmtDate(it.fecha),
+    },
+    {
+      key: "descripcion",
+      label: "Descripción",
+      cardRole: "title",
+      render: (it) => {
+        if (isPaymentRow(it)) {
+          const desc = it.descripcion || `Pago a ${it.supplier?.nombre ?? "proveedor"}`;
+          return (
+            <>
+              <p className="text-[var(--color-text-primary)]">{desc}</p>
+              {it.supplier && (
+                <p className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">{it.supplier.nombre}</p>
+              )}
+            </>
+          );
+        }
+        return (
+          <>
+            <p className="text-[var(--color-text-primary)]">{it.descripcion}</p>
+            {it.project && (
+              <p className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">{it.project.clientName}</p>
+            )}
+          </>
+        );
+      },
+    },
+    {
+      key: "categoria",
+      label: "Categoría",
+      render: (it) =>
+        isPaymentRow(it) ? (
+          <CategoryBadge categoria="PAGO_PROVEEDOR" />
+        ) : (
+          <CategoryBadge categoria={it.categoriaPrincipal} />
+        ),
+    },
+    {
+      key: "cuenta",
+      label: "Cuenta",
+      className: "text-[var(--color-text-secondary)]",
+      render: (it) => {
+        if (isPaymentRow(it)) {
+          return it.account?.nombre ?? (it.accountId && accountNameById.get(it.accountId)) ?? "—";
+        }
+        return (it.accountId && accountNameById.get(it.accountId)) ?? "—";
+      },
+    },
+    {
+      key: "monto",
+      label: "Monto",
+      align: "right",
+      cardRole: "highlight",
+      className: "tabular-nums",
+      render: (it) => {
+        if (isPaymentRow(it)) {
+          return (
+            <span className="font-semibold text-red-400">
+              {it.monto < 0 ? "+" : "-"}
+              {fmtCurrency(Math.abs(it.monto), it.moneda)}
+            </span>
+          );
+        }
+        return (
+          <span className={it.tipoMovimiento === "INGRESO" ? "font-semibold text-green-400" : "font-semibold text-red-400"}>
+            {it.tipoMovimiento === "INGRESO" ? "+" : "-"}
+            {fmtCurrency(it.monto, it.moneda)}
+          </span>
+        );
+      },
+    },
+    {
+      key: "acciones",
+      label: "Acciones",
+      align: "right",
+      cardRole: "hidden",
+      className: "w-20 whitespace-nowrap",
+      render: (it) => {
+        if (isPaymentRow(it)) {
+          return (
+            <span className="text-[11px] text-[var(--color-text-muted)]" title="Los pagos a proveedores se editan desde la cuenta del proveedor.">
+              Editar en Proveedores
+            </span>
+          );
+        }
+        return (
+          <div className="inline-flex items-center gap-1">
+            <button
+              onClick={() => setEditingMovement(it)}
+              title="Editar movimiento"
+              className="inline-flex items-center gap-1 rounded border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent)] hover:bg-[var(--color-accent)] hover:text-gray-900"
+            >
+              <Pencil className="h-3 w-3" />
+              Editar
+            </button>
+            <button
+              onClick={() => {
+                if (confirm(`¿Eliminar movimiento "${it.descripcion}" por ${fmtCurrency(it.monto, it.moneda)}?`)) {
+                  deleteMut.mutate(it.id);
+                }
+              }}
+              title="Eliminar movimiento"
+              disabled={deleteMut.isPending}
+              className="inline-flex items-center gap-1 rounded border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:border-red-500/40 hover:bg-red-500/15 hover:text-red-400 disabled:opacity-50"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          </div>
+        );
+      },
+    },
+  ];
+
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -287,126 +410,17 @@ export function FinanceMovementsTab() {
           <div className="flex items-center justify-center py-12">
             <span className="text-sm text-[var(--color-text-muted)]">Cargando…</span>
           </div>
-        ) : items.length === 0 ? (
-          <p className="text-sm text-[var(--color-text-muted)] text-center py-12">
-            Sin movimientos para los filtros seleccionados.
-          </p>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-[var(--color-bg-app)] text-xs text-[var(--color-text-muted)] uppercase tracking-wider">
-              <tr>
-                <th className="text-left px-4 py-2.5 font-medium">Fecha</th>
-                <th className="text-left px-4 py-2.5 font-medium">Descripción</th>
-                <th className="text-left px-4 py-2.5 font-medium">Categoría</th>
-                <th className="text-left px-4 py-2.5 font-medium">Cuenta</th>
-                <th className="text-right px-4 py-2.5 font-medium">Monto</th>
-                <th className="text-right px-4 py-2.5 font-medium w-20">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--color-border)]">
-              {items.map((it) => {
-                if (isPaymentRow(it)) {
-                  // Pago a proveedor — siempre es egreso.
-                  const accountName = it.account?.nombre ?? (it.accountId && accountNameById.get(it.accountId)) ?? "—";
-                  const desc = it.descripcion || `Pago a ${it.supplier?.nombre ?? "proveedor"}`;
-                  return (
-                    <tr key={`p-${it.id}`} className="hover:bg-[var(--color-bg-card-hover)]">
-                      <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-secondary)] tabular-nums">
-                        {fmtDate(it.fecha)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="text-[var(--color-text-primary)]">{desc}</p>
-                        {it.supplier && (
-                          <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
-                            {it.supplier.nombre}
-                          </p>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <CategoryBadge categoria="PAGO_PROVEEDOR" />
-                      </td>
-                      <td className="px-4 py-3 text-[var(--color-text-secondary)]">{accountName}</td>
-                      <td className="px-4 py-3 text-right tabular-nums">
-                        <span className="text-red-400 font-semibold">
-                          {it.monto < 0 ? "+" : "-"}
-                          {fmtCurrency(Math.abs(it.monto), it.moneda)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right text-[11px] text-[var(--color-text-muted)]">
-                        <span title="Los pagos a proveedores se editan desde la cuenta del proveedor.">
-                          Editar en Proveedores
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                }
-                if (isMovementRow(it)) {
-                  return (
-                    <tr key={`m-${it.id}`} className="hover:bg-[var(--color-bg-card-hover)]">
-                      <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-secondary)] tabular-nums">
-                        {fmtDate(it.fecha)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="text-[var(--color-text-primary)]">{it.descripcion}</p>
-                        {it.project && (
-                          <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
-                            {it.project.clientName}
-                          </p>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <CategoryBadge categoria={it.categoriaPrincipal} />
-                      </td>
-                      <td className="px-4 py-3 text-[var(--color-text-secondary)]">
-                        {(it.accountId && accountNameById.get(it.accountId)) ?? "—"}
-                      </td>
-                      <td className="px-4 py-3 text-right tabular-nums">
-                        <span
-                          className={
-                            it.tipoMovimiento === "INGRESO"
-                              ? "text-green-400 font-semibold"
-                              : "text-red-400 font-semibold"
-                          }
-                        >
-                          {it.tipoMovimiento === "INGRESO" ? "+" : "-"}
-                          {fmtCurrency(it.monto, it.moneda)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap">
-                        <div className="inline-flex items-center gap-1">
-                          <button
-                            onClick={() => setEditingMovement(it)}
-                            title="Editar movimiento"
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-accent)] hover:text-gray-900 hover:border-[var(--color-accent)] transition-colors"
-                          >
-                            <Pencil className="w-3 h-3" />
-                            Editar
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (
-                                confirm(
-                                  `¿Eliminar movimiento "${it.descripcion}" por ${fmtCurrency(it.monto, it.moneda)}?`,
-                                )
-                              ) {
-                                deleteMut.mutate(it.id);
-                              }
-                            }}
-                            title="Eliminar movimiento"
-                            disabled={deleteMut.isPending}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] hover:bg-red-500/15 hover:text-red-400 hover:border-red-500/40 transition-colors disabled:opacity-50"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                }
-                return null;
-              })}
-            </tbody>
-          </table>
+          <ResponsiveTable
+            columns={columns}
+            data={items}
+            rowKey={(it) => (isPaymentRow(it) ? `p-${it.id}` : `m-${it.id}`)}
+            onRowClick={(it) => {
+              if (isMovementRow(it)) setEditingMovement(it);
+            }}
+            isRowClickable={(it) => isMovementRow(it)}
+            emptyMessage="Sin movimientos para los filtros seleccionados."
+          />
         )}
       </div>
 
