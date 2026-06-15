@@ -5,6 +5,7 @@ import { X, Search, Paperclip, Upload, FileText } from "lucide-react";
 
 import { getAssignableUsers } from "../../../api/users.api";
 import { ProjectPicker } from "../../../components/finance/ProjectPicker";
+import { Sheet } from "../../../components/ui/Sheet";
 import { useInformeMutations } from "../../../hooks/useInformes";
 import {
   crearInforme,
@@ -229,22 +230,52 @@ export function InformeCreateModal({ initial, currentUserId, onClose, onSaved }:
     else void guardarCreacion(opts);
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 pt-[6vh]" onClick={onClose}>
-      <div
-        className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+  const footer = (
+    <>
+      {progreso && <span className="mr-auto text-xs text-[var(--color-text-muted)]">{progreso}</span>}
+      <button
+        type="button"
+        disabled={busy}
+        onClick={onClose}
+        className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]/30 disabled:opacity-50"
       >
-        <div className="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-3">
-          <h3 className="text-base font-semibold text-[var(--color-text-primary)]">
-            {isEdit ? "Editar borrador" : "Nuevo informe"}
-          </h3>
-          <button onClick={onClose} className="rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-border)]/40">
-            <X className="h-4 w-4" />
+        Cancelar
+      </button>
+      {editandoEnviado ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => guardar({ enviar: false })}
+          className="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50"
+        >
+          {busy ? "Guardando…" : "Guardar cambios"}
+        </button>
+      ) : (
+        <>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => guardar({ enviar: false })}
+            className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-border)]/30 disabled:opacity-50"
+          >
+            {busy ? "Guardando…" : "Guardar borrador"}
           </button>
-        </div>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => guardar({ enviar: true })}
+            className="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50"
+          >
+            {isEdit ? "Guardar y enviar" : "Crear y enviar"}
+          </button>
+        </>
+      )}
+    </>
+  );
 
-        <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
+  return (
+    <Sheet open onClose={onClose} title={isEdit ? "Editar borrador" : "Nuevo informe"} footer={footer}>
+      <div className="space-y-3">
           <div>
             <label className={lbl}>Título *</label>
             <input className={inp} value={titulo} maxLength={200} onChange={(e) => setTitulo(e.target.value)} autoFocus />
@@ -326,48 +357,6 @@ export function InformeCreateModal({ initial, currentUserId, onClose, onSaved }:
             </div>
           )}
         </div>
-
-        <div className="flex items-center justify-end gap-2 border-t border-[var(--color-border)] px-5 py-3">
-          {progreso && <span className="mr-auto text-xs text-[var(--color-text-muted)]">{progreso}</span>}
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onClose}
-            className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]/30 disabled:opacity-50"
-          >
-            Cancelar
-          </button>
-          {editandoEnviado ? (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => guardar({ enviar: false })}
-              className="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50"
-            >
-              {busy ? "Guardando…" : "Guardar cambios"}
-            </button>
-          ) : (
-            <>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => guardar({ enviar: false })}
-                className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-border)]/30 disabled:opacity-50"
-              >
-                {busy ? "Guardando…" : "Guardar borrador"}
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => guardar({ enviar: true })}
-                className="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50"
-              >
-                {isEdit ? "Guardar y enviar" : "Crear y enviar"}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+    </Sheet>
   );
 }

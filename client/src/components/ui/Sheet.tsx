@@ -35,7 +35,12 @@ export function Sheet({ open, onClose, title, children, footer }: SheetProps) {
     }
     document.addEventListener("keydown", onKey);
     const t = setTimeout(() => {
-      panelRef.current?.querySelector<HTMLElement>(FOCUSABLES)?.focus();
+      const panel = panelRef.current;
+      if (!panel) return;
+      // Respeta un autoFocus interno (ej. un input con autoFocus): solo mueve el
+      // foco si todavía no está dentro del panel.
+      if (panel.contains(document.activeElement)) return;
+      panel.querySelector<HTMLElement>(FOCUSABLES)?.focus();
     }, 40);
     return () => {
       document.removeEventListener("keydown", onKey);
