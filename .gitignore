@@ -6,3 +6,7 @@ build/
 storage/
 storage-stage2/
 .prisma/
+
+# Python
+__pycache__/
+*.pyc
