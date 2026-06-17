@@ -5,6 +5,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.utils import ImageReader
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter
 import tkinter as tk
 import pandas as pd
 from openpyxl.utils import coordinate_to_tuple
@@ -121,10 +122,16 @@ def generar_grafico_retorno(precio_total, ahorro_anual):
 
     ax.set_title('Retorno de Inversión en USD', fontsize=14, color='#336699', weight='bold')
     ax.set_xlabel('Años', fontsize=12, weight='medium', color='#1a1a1a')
-    ax.set_ylabel('Retorno', fontsize=12, weight='medium', color='#1a1a1a')
+    ax.set_ylabel('USD', fontsize=12, weight='medium', color='#1a1a1a')
 
     ax.tick_params(axis='x', colors='#1a1a1a', labelsize=11)
     ax.tick_params(axis='y', colors='#1a1a1a', labelsize=11)
+
+    # Sin notación científica ni offset; ticks con separador de miles uruguayo (.)
+    ax.ticklabel_format(useOffset=False, style='plain', axis='y')
+    ax.yaxis.set_major_formatter(
+        FuncFormatter(lambda x, _: f"{int(x):,}".replace(",", "."))
+    )
 
     for spine in ['top', 'right']:
         ax.spines[spine].set_visible(False)
@@ -138,7 +145,7 @@ def generar_grafico_retorno(precio_total, ahorro_anual):
         ax.text(
             rect.get_x() + rect.get_width() / 2.0,
             rect.get_height(),
-            f'{valor:,}',
+            f"{int(valor):,}".replace(",", "."),
             ha='center',
             va='bottom' if valor >= 0 else 'top',
             fontsize=10,
