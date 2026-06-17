@@ -2,6 +2,12 @@
 
 ## v6.2
 
+### 17 de junio de 2026
+
+#### Arreglos
+
+- **Propuesta comercial — gráfico de retorno de inversión:** en proyectos de montos altos (decenas o cientos de miles de dólares) el gráfico de "Retorno de Inversión" mostraba números sin escala y difíciles de leer. Ahora los montos arriba de cada barra y los del eje se muestran completos con separador de miles (por ejemplo `500.000`), igual de claros para proyectos chicos y grandes.
+
 ### 15 de junio de 2026
 
 #### Ingeniería — Editar a mano el calibre de los cables del unifilar
