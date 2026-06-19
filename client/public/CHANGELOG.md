@@ -4,6 +4,10 @@
 
 ### 19 de junio de 2026
 
+#### Finanzas — Copiar resumen de cobros para WhatsApp
+
+- En el detalle de cobros de un cliente hay un nuevo botón **"Copiar resumen"** (arriba, junto a "Registrar cobro" y "Ver proyecto"). Copia al portapapeles un mensaje ya formateado para pegar en WhatsApp: presupuesto, cobrado y pendiente, más el detalle de pagos recibidos y próximos pagos con sus fechas y montos. Las negritas de WhatsApp ya vienen aplicadas.
+
 #### Arreglos
 
 - **Métricas — objetivo de kWp instalados:** las tarjetas de Métricas mostraban "sin objetivo" cuando la métrica tenía cargado solo el objetivo **anual** (sin objetivo trimestral) y la pantalla estaba en vista de trimestre, como pasaba con los **kWp instalados**. Ahora, si no hay objetivo del trimestre, la tarjeta compara contra el objetivo anual en vez de decir que no hay objetivo.

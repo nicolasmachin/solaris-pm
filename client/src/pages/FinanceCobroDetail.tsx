@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { ChevronLeft, Plus, ExternalLink, X, Sparkles, Pencil } from 'lucide-react';
+import { ChevronLeft, Plus, ExternalLink, X, Sparkles, Pencil, Copy } from 'lucide-react';
 import { usePlanPagos } from '../hooks/usePlanPagos';
 import { PlanPagosModal } from '../components/finance/PlanPagosModal';
 import { PayManualPendingModal } from '../components/finance/PayManualPendingModal';
@@ -11,7 +11,7 @@ import { getCobroProjectDetail, createMovement } from '../api/finance.api';
 import { getAccounts } from '../api/accounts.api';
 import { fmtCurrency, fmtDate } from '../lib/finance';
 import type { Moneda } from '../types/finance.types';
-import type { EstadoCobranza } from '../api/finance.api';
+import type { EstadoCobranza, CobroDetail } from '../api/finance.api';
 import { ACCOUNT_TYPE_LABEL } from '../types/accounts.types';
 import { todayLocalISO } from '../utils/date';
 
@@ -24,6 +24,45 @@ function stripPlan(desc: string): string {
 }
 function getApiErr(err: unknown) {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+}
+
+// Arma el resumen formateado para pegar en WhatsApp (los `*...*` son la negrita
+// de WhatsApp y van literales). Totales en USD; cada fila de detalle usa la
+// moneda real del cobro. Reutiliza fmtCurrency/fmtDate de la tabla.
+function buildResumenWhatsApp(data: CobroDetail): string {
+  const { project, kpis, cobros } = data;
+  const usd = kpis.USD;
+  const fechaKey = (c: CobroDetail['cobros'][number]) => c.fecha ?? c.dueDate ?? '';
+  const fmtFila = (c: CobroDetail['cobros'][number], emoji: string) =>
+    `${emoji} ${fmtDate(fechaKey(c))} · ${stripPlan(c.descripcion)} · ${fmtCurrency(c.monto, c.moneda)}`;
+
+  const recibidos = cobros
+    .filter(c => c.status !== 'PREVISTO')
+    .sort((a, b) => fechaKey(a).localeCompare(fechaKey(b)));
+  const previstos = cobros
+    .filter(c => c.status === 'PREVISTO')
+    .sort((a, b) => fechaKey(a).localeCompare(fechaKey(b)));
+
+  const lines: string[] = [];
+  lines.push(`*Resumen de pagos — ${project.clientName}*`);
+  lines.push(`Obra ${project.code}${project.capacity ? ` · ${project.capacity} kWp` : ''}`);
+  lines.push('');
+  lines.push(`💰 *Presupuesto:* ${fmtCurrency(usd.presupuesto, 'USD')}`);
+  lines.push(`✅ *Cobrado:* ${fmtCurrency(usd.cobrado, 'USD')}`);
+  lines.push(`⏳ *Pendiente:* ${fmtCurrency(usd.pendiente, 'USD')}`);
+
+  if (recibidos.length > 0) {
+    lines.push('');
+    lines.push('*Pagos recibidos*');
+    recibidos.forEach(c => lines.push(fmtFila(c, '✅')));
+  }
+  if (previstos.length > 0) {
+    lines.push('');
+    lines.push('*Próximos pagos*');
+    previstos.forEach(c => lines.push(fmtFila(c, '⏳')));
+  }
+
+  return lines.join('\n');
 }
 
 const ESTADO_LABEL: Record<EstadoCobranza, string> = {
@@ -73,6 +112,15 @@ export function FinanceCobroDetail() {
 
   const { project, kpis, totals, cobros, estadoCuenta } = data;
 
+  const handleCopyResumen = async () => {
+    try {
+      await navigator.clipboard.writeText(buildResumenWhatsApp(data));
+      toast.success('Resumen copiado');
+    } catch {
+      toast.error('No se pudo copiar');
+    }
+  };
+
   return (
     <div className="p-6 space-y-5">
       <div>
@@ -95,6 +143,12 @@ export function FinanceCobroDetail() {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] transition-colors"
             >
               <Plus className="w-4 h-4" /> Registrar cobro
+            </button>
+            <button
+              onClick={handleCopyResumen}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
+            >
+              <Copy className="w-3.5 h-3.5" /> Copiar resumen
             </button>
             <Link
               to={`/projects/${project.id}`}
