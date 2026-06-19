@@ -68,9 +68,18 @@ def convertir_a_float(valor, default=0.0):
     texto = texto.replace("kWh", "").replace("kwh", "")
     texto = texto.replace(" ", "")
     if "," in texto and "." in texto:
+        # Formato europeo "46.616,50" → 46616.50
         texto = texto.replace(".", "").replace(",", ".")
     elif "," in texto:
+        # Solo coma → decimal europeo "46,50" → 46.50
         texto = texto.replace(",", ".")
+    elif "." in texto:
+        # Solo punto: ambiguo. Separador de miles uruguayo si hay varios grupos
+        # ("1.000.000") o un único grupo de 3 dígitos ("46.616"). Si no, es
+        # decimal inglés ("46.5", "46.50") y se deja como está.
+        partes = texto.split(".")
+        if len(partes) > 2 or (len(partes) == 2 and len(partes[1]) == 3 and partes[1].isdigit()):
+            texto = texto.replace(".", "")
     try:
         return float(texto)
     except ValueError:
