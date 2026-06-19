@@ -7,6 +7,7 @@
 #### Arreglos
 
 - **Propuesta comercial — gráfico de retorno de inversión:** en proyectos de montos altos (decenas o cientos de miles de dólares) el gráfico de "Retorno de Inversión" mostraba números sin escala y difíciles de leer. Ahora los montos arriba de cada barra y los del eje se muestran completos con separador de miles (por ejemplo `500.000`), igual de claros para proyectos chicos y grandes.
+- **Propuesta comercial — montos del Excel con separadores de miles:** corregido el gráfico de retorno de inversión cuando los montos del Excel usan separadores de miles uruguayos (el punto). Antes un valor como `USD 46.616` se interpretaba como 46 y el gráfico mostraba cifras mil veces más chicas; ahora se lee correctamente como 46.616.
 
 ### 15 de junio de 2026
 
