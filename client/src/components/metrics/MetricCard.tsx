@@ -87,14 +87,19 @@ export function MetricCard({
 }: MetricCardProps) {
   const isQ = mode === "quarter";
   const primaryValue = isQ ? (valueQ ?? 0) : valueYear;
-  const primaryGoal = isQ ? goalQ : goalYear;
   // El % se calcula contra el valor mostrado en la card (no contra el
   // actualValue del goal). Para las métricas comunes da igual (valor == actual),
   // pero permite reusar el MISMO objetivo en métricas derivadas como "Obras
   // ponderadas" y que el % refleje el valor ponderado, no el conteo simple.
-  const primaryTarget = primaryGoal?.targetValue ?? null;
-  const pct = primaryTarget != null && primaryTarget > 0 ? (primaryValue / primaryTarget) * 100 : null;
-  const hasAnyGoal = !!primaryGoal;
+  // En modo Q el objetivo destacado es el trimestral; si no se cargó objetivo
+  // trimestral se cae al anual (antes mostraba "sin objetivo" aunque existiera
+  // el objetivo anual).
+  const badgeUsesQuarter = isQ && !!goalQ;
+  const badgeGoal = badgeUsesQuarter ? goalQ : goalYear;
+  const badgeValue = badgeUsesQuarter ? (valueQ ?? 0) : valueYear;
+  const primaryTarget = badgeGoal?.targetValue ?? null;
+  const pct = primaryTarget != null && primaryTarget > 0 ? (badgeValue / primaryTarget) * 100 : null;
+  const hasAnyGoal = !!goalQ || !!goalYear;
 
   return (
     <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4 flex flex-col gap-3">
@@ -105,7 +110,7 @@ export function MetricCard({
           <span
             className={`inline-flex shrink-0 items-center px-2 py-0.5 rounded text-[10px] font-semibold ${pctBadgeClass(pct)}`}
           >
-            {fmt(pct, 1)}% {isQ ? "obj. Q" : "obj. año"}
+            {fmt(pct, 1)}% {badgeUsesQuarter ? "obj. Q" : "obj. año"}
           </span>
         ) : (
           <span className="inline-flex shrink-0 items-center px-2 py-0.5 rounded text-[10px] font-medium text-[var(--color-text-muted)] bg-[var(--color-border)]">

@@ -2,6 +2,12 @@
 
 ## v6.2
 
+### 19 de junio de 2026
+
+#### Arreglos
+
+- **Métricas — objetivo de kWp instalados:** las tarjetas de Métricas mostraban "sin objetivo" cuando la métrica tenía cargado solo el objetivo **anual** (sin objetivo trimestral) y la pantalla estaba en vista de trimestre, como pasaba con los **kWp instalados**. Ahora, si no hay objetivo del trimestre, la tarjeta compara contra el objetivo anual en vez de decir que no hay objetivo.
+
 ### 17 de junio de 2026
 
 #### Arreglos
