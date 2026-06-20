@@ -84,6 +84,7 @@ function slug(value: string): string {
 const SYSTEM_ROLES: Array<{ name: string; label: string }> = [
   { name: "ADMIN", label: "Administrador" },
   { name: "OPERACIONES", label: "Operaciones" },
+  { name: "POSTVENTA", label: "Postventa" },
   { name: "INGENIERIA", label: "Ingeniería" },
   { name: "ASESOR_COMERCIAL", label: "Asesor comercial" },
   { name: "FINANZAS", label: "Finanzas" },
