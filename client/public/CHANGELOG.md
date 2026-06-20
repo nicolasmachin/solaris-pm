@@ -2,6 +2,12 @@
 
 ## v6.2
 
+### 20 de junio de 2026
+
+#### Arreglos
+
+- **Proyectos — etapa al crear:** un proyecto nuevo ahora arranca con la etapa **Onboarding** activa (en curso) desde el momento de la creación. Antes nacía sin ninguna etapa marcada como actual, así que no se veía en qué etapa estaba parado el proyecto.
+
 ### 19 de junio de 2026
 
 #### Finanzas — Copiar resumen de cobros para WhatsApp
