@@ -338,7 +338,10 @@ export function buildInitialStages(
     return {
       order: stageConfig.order,
       name: stageConfig.name,
-      status: StageStatus.PENDING,
+      // El proyecto arranca activo en Onboarding: esa etapa nace IN_PROGRESS
+      // para que getCurrentStage la marque como etapa actual desde la creación.
+      // El resto de las etapas datadas quedan PENDING.
+      status: stageConfig.name === StageType.ONBOARDING ? StageStatus.IN_PROGRESS : StageStatus.PENDING,
       progressPercent: 0,
       tipoObra: null,
       plannedStartDate: plannedStartDate as Date | null,
