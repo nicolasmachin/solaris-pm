@@ -55,7 +55,8 @@ export function Pipeline({ stages, onStageClick }: PipelineProps) {
       >
         Pipeline de etapas
       </p>
-      <div style={{ display: "flex", gap: 8 }}>
+      {/* En < md las etapas se apilan (full-width); en >= md quedan en columnas. */}
+      <div className="flex flex-col gap-2 md:flex-row">
         {stages.map((stage) => (
           <StageColumn
             key={stage.id}
@@ -198,8 +199,8 @@ function StageColumn({ stage, onClick }: { stage: Stage; onClick: () => void }) 
   return (
     <button
       onClick={onClick}
+      className="w-full min-w-0 md:flex-1"
       style={{
-        flex: 1,
         textAlign: "left",
         background: "none",
         border: "none",
