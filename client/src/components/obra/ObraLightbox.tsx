@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 import type { ObraPhoto } from "../../api/obra.api";
@@ -18,6 +18,20 @@ export function ObraLightbox({ photos, index, onClose, onNavigate }: Props) {
   const photo = photos[index];
   const hasPrev = index > 0;
   const hasNext = index < photos.length - 1;
+  const touchStartX = useRef<number | null>(null);
+
+  // Swipe horizontal para pasar de foto (no toca flechas ni teclado).
+  function onTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0]?.clientX ?? null;
+  }
+  function onTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return;
+    const dx = (e.changedTouches[0]?.clientX ?? 0) - touchStartX.current;
+    touchStartX.current = null;
+    const THRESHOLD = 50;
+    if (dx > THRESHOLD && hasPrev) onNavigate(index - 1);
+    else if (dx < -THRESHOLD && hasNext) onNavigate(index + 1);
+  }
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -38,9 +52,10 @@ export function ObraLightbox({ photos, index, onClose, onNavigate }: Props) {
       role="dialog"
       aria-modal="true"
     >
-      {/* Barra superior: contador + cerrar */}
+      {/* Barra superior: contador + cerrar (respeta el notch con safe-area) */}
       <div
         className="flex items-center justify-between px-4 py-3 text-white"
+        style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top))" }}
         onClick={(e) => e.stopPropagation()}
       >
         <span className="font-mono text-xs text-white/70">
@@ -50,14 +65,18 @@ export function ObraLightbox({ photos, index, onClose, onNavigate }: Props) {
           type="button"
           onClick={onClose}
           aria-label="Cerrar"
-          className="rounded p-1.5 text-white/80 hover:bg-white/10 hover:text-white"
+          className="tap-target rounded text-white/80 hover:bg-white/10 hover:text-white"
         >
           <X size={20} />
         </button>
       </div>
 
       {/* Imagen + flechas */}
-      <div className="relative flex flex-1 items-center justify-center overflow-hidden px-4 pb-6">
+      <div
+        className="relative flex flex-1 items-center justify-center overflow-hidden px-4 pb-6"
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
         {hasPrev && (
           <button
             type="button"
@@ -66,7 +85,7 @@ export function ObraLightbox({ photos, index, onClose, onNavigate }: Props) {
               onNavigate(index - 1);
             }}
             aria-label="Anterior"
-            className="absolute left-3 z-10 rounded-full bg-black/40 p-2 text-white/90 hover:bg-black/70"
+            className="tap-target absolute left-3 z-10 rounded-full bg-black/40 text-white/90 hover:bg-black/70"
           >
             <ChevronLeft size={28} />
           </button>
@@ -86,7 +105,7 @@ export function ObraLightbox({ photos, index, onClose, onNavigate }: Props) {
               onNavigate(index + 1);
             }}
             aria-label="Siguiente"
-            className="absolute right-3 z-10 rounded-full bg-black/40 p-2 text-white/90 hover:bg-black/70"
+            className="tap-target absolute right-3 z-10 rounded-full bg-black/40 text-white/90 hover:bg-black/70"
           >
             <ChevronRight size={28} />
           </button>
