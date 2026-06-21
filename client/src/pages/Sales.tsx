@@ -38,6 +38,8 @@ import { MarkAsWonModal } from "../components/sales/MarkAsWonModal";
 import { ProposalPreviewModal } from "../components/sales/ProposalPreviewModal";
 import { StageSelect } from "../components/sales/StageSelect";
 import { usePermission } from "../hooks/usePermission";
+import { useIsMobile } from "../hooks/useIsMobile";
+import { Sheet } from "../components/ui/Sheet";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { CanAccess } from "../components/ui/CanAccess";
@@ -1061,7 +1063,14 @@ export function Sales() {
     });
   }, []);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  // En móvil el drag arranca con long-press (delay) para NO secuestrar el scroll
+  // vertical; en desktop con un pequeño desplazamiento (distance), como hoy.
+  const isMobile = useIsMobile();
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: isMobile ? { delay: 200, tolerance: 8 } : { distance: 8 },
+    }),
+  );
 
   const canListUsers = user?.role === "ADMIN";
   const usersQuery = useQuery({
