@@ -225,10 +225,15 @@ function NewLeadModal({
 function SortableLeadCard({
   lead,
   onOpen,
+  onMove,
 }: {
   lead: LeadListItem;
   onOpen: (leadId: string) => void;
+  onMove: (leadId: string, stage: SalesStage) => void;
 }) {
+  // En móvil el drag con long-press convive con un atajo por tap: el ⋮⋮ abre
+  // un sheet para elegir la etapa destino sin tener que arrastrar.
+  const [moveOpen, setMoveOpen] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: lead.id,
     data: {
@@ -259,6 +264,7 @@ function SortableLeadCard({
   // PointerSensor distingue click de drag, así el onClick sigue abriendo
   // el lead cuando el mouse no se mueve.
   return (
+    <>
     <div
       ref={setNodeRef}
       style={{ ...style, cursor: isDragging ? "grabbing" : "grab" }}
@@ -280,12 +286,21 @@ function SortableLeadCard({
           <p className="truncate text-sm font-medium text-[var(--color-text-primary)]">{lead.clientName}</p>
           <p className="font-mono text-[10px] text-[var(--color-text-muted)]">{lead.estimatedKwp ?? "—"} kWp</p>
         </div>
-        <span
-          aria-hidden="true"
-          className="rounded p-1 text-[var(--color-text-muted)] select-none"
+        <button
+          type="button"
+          aria-label="Mover a etapa…"
+          title="Mover a etapa…"
+          // Doble stopPropagation: onPointerDown evita que el wrapper arranque
+          // un drag de dnd-kit, onClick evita que se dispare onOpen (la card).
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            setMoveOpen(true);
+          }}
+          className="tap-target shrink-0 rounded text-[var(--color-text-muted)] select-none hover:bg-[var(--color-bg-app)] hover:text-[var(--color-text-primary)]"
         >
           ⋮⋮
-        </span>
+        </button>
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-3">
@@ -304,6 +319,30 @@ function SortableLeadCard({
         {lead.daysInStage} día{lead.daysInStage === 1 ? "" : "s"} en etapa
       </div>
     </div>
+
+    <Sheet open={moveOpen} onClose={() => setMoveOpen(false)} title="Mover a etapa…">
+      <p className="mb-3 text-[11px] text-[var(--color-text-muted)]">
+        {lead.clientName} · actualmente en {STAGE_LABELS[lead.stage]}
+      </p>
+      <ul className="space-y-1">
+        {KANBAN_COLUMNS.filter((stage) => stage !== lead.stage).map((stage) => (
+          <li key={stage}>
+            <button
+              type="button"
+              onClick={() => {
+                onMove(lead.id, stage);
+                setMoveOpen(false);
+              }}
+              className="tap-target flex w-full items-center gap-2 rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-left text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)]"
+            >
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: COLUMN_COLORS[stage].dot }} />
+              {STAGE_LABELS[stage]}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </Sheet>
+    </>
   );
 }
 
@@ -311,12 +350,14 @@ function KanbanColumn({
   stage,
   leads,
   onOpen,
+  onMove,
   isCollapsed,
   onToggle,
 }: {
   stage: SalesStage;
   leads: LeadListItem[];
   onOpen: (leadId: string) => void;
+  onMove: (leadId: string, stage: SalesStage) => void;
   isCollapsed: boolean;
   onToggle: () => void;
 }) {
@@ -398,7 +439,7 @@ function KanbanColumn({
       <SortableContext items={leads.map((lead) => lead.id)} strategy={verticalListSortingStrategy}>
         <div className="flex-1 space-y-2 overflow-y-auto pr-1">
           {leads.map((lead) => (
-            <SortableLeadCard key={lead.id} lead={lead} onOpen={onOpen} />
+            <SortableLeadCard key={lead.id} lead={lead} onOpen={onOpen} onMove={onMove} />
           ))}
           {leads.length === 0 ? (
             <div className="rounded-lg border border-dashed border-[var(--color-border)] px-3 py-6 text-center text-sm text-[var(--color-text-muted)]">
@@ -1174,6 +1215,7 @@ export function Sales() {
                 stage={group.stage}
                 leads={group.leads}
                 onOpen={setSelectedLeadId}
+                onMove={(leadId, stage) => stageMutation.mutate({ leadId, stage })}
                 isCollapsed={collapsedColumns.has(group.stage)}
                 onToggle={() => toggleColumn(group.stage)}
               />
