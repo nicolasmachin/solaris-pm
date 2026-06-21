@@ -397,7 +397,7 @@ function KanbanColumn({
         }}
         title={`Expandir ${STAGE_LABELS[stage]}`}
         aria-label={`Expandir ${STAGE_LABELS[stage]}`}
-        className="flex h-full w-12 shrink-0 cursor-pointer flex-col items-center justify-between rounded-xl border bg-[var(--color-bg-card)] py-3 transition-all duration-200 hover:bg-[var(--color-bg-card-hover)]/40 focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
+        className="flex h-full w-12 shrink-0 snap-start cursor-pointer flex-col items-center justify-between rounded-xl border bg-[var(--color-bg-card)] py-3 transition-all duration-200 hover:bg-[var(--color-bg-card-hover)]/40 focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
         style={{ borderColor }}
       >
         <div className="flex flex-col items-center gap-2">
@@ -418,7 +418,7 @@ function KanbanColumn({
   return (
     <div
       ref={setNodeRef}
-      className="flex h-full w-[280px] shrink-0 flex-col rounded-xl border bg-[var(--color-bg-card)] p-3 transition-all duration-200"
+      className="flex h-full w-[85vw] shrink-0 snap-start flex-col rounded-xl border bg-[var(--color-bg-card)] p-3 transition-all duration-200 md:w-[280px]"
       style={{ borderColor }}
     >
       <div className="mb-3 flex shrink-0 items-center gap-2">
@@ -1208,7 +1208,7 @@ export function Sales() {
         </div>
       ) : tab === "active" ? (
         <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragEnd={handleDragEnd}>
-          <div className="flex min-h-0 flex-1 gap-4 overflow-x-auto pb-4">
+          <div className="flex min-h-0 flex-1 snap-x snap-mandatory gap-4 overflow-x-auto pb-4">
             {activeGroups.map((group) => (
               <KanbanColumn
                 key={group.stage}
