@@ -2,6 +2,14 @@
 
 ## v6.2
 
+### 21 de junio de 2026
+
+#### Ventas — Kanban más cómodo en el celular
+
+- **Mover tarjetas sin arrastrar:** cada tarjeta del Kanban tiene ahora el ícono **⋮⋮** que abre una lista con las etapas para mandar el lead a otra columna con un solo toque. Ideal en el celular, donde arrastrar entre columnas es incómodo.
+- **Arrastrar ya no se pelea con el scroll:** en el celular el arrastre arranca con un **toque sostenido** (mantené el dedo apretado un instante sobre la tarjeta). Así podés deslizar la pantalla para arriba y para abajo sin que se "enganche" una tarjeta sin querer.
+- **Columnas de a una:** el tablero se desliza de costado mostrando **una columna por pantalla** (con un asomo de la siguiente) y se acomoda sola al soltar, para que siempre quede una columna prolija a la vista.
+
 ### 20 de junio de 2026
 
 #### Arreglos
