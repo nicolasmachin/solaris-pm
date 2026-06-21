@@ -73,7 +73,7 @@ export function ObraChecklistItem({ item, busy, onToggle, onSaveObservation, onD
               disabled={busy}
               onClick={onDelete}
               aria-label="Eliminar ítem"
-              className="shrink-0 rounded p-1 text-[var(--color-text-muted)] hover:bg-red-600/10 hover:text-red-500 disabled:opacity-50"
+              className="tap-target shrink-0 rounded text-[var(--color-text-muted)] hover:bg-red-600/10 hover:text-red-500 disabled:opacity-50"
             >
               <Trash2 size={14} />
             </button>

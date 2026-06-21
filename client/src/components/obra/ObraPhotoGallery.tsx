@@ -84,7 +84,7 @@ export function ObraPhotoGallery({ projectId }: Props) {
             type="button"
             disabled={count === 0 || downloading}
             onClick={handleDownloadAll}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-border)]/30 disabled:opacity-40"
+            className="tap-target inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-border)]/30 disabled:opacity-40"
           >
             <Download size={14} />
             {downloading ? "Preparando descarga…" : "Descargar todas"}

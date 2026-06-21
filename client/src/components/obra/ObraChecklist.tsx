@@ -143,7 +143,7 @@ export function ObraChecklist({ projectId }: Props) {
                   setNewName("");
                   setNewDesc("");
                 }}
-                className="rounded-lg border border-[var(--color-border)] px-3 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]/30 disabled:opacity-50"
+                className="tap-target rounded-lg border border-[var(--color-border)] px-3 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]/30 disabled:opacity-50"
               >
                 Cancelar
               </button>
@@ -151,7 +151,7 @@ export function ObraChecklist({ projectId }: Props) {
                 type="button"
                 disabled={createMut.isPending || !newName.trim()}
                 onClick={submitNew}
-                className="rounded-lg bg-[var(--color-accent)] px-3 py-1 text-xs font-semibold text-black hover:opacity-90 disabled:opacity-50"
+                className="tap-target rounded-lg bg-[var(--color-accent)] px-3 py-1 text-xs font-semibold text-black hover:opacity-90 disabled:opacity-50"
               >
                 {createMut.isPending ? "Agregando…" : "Agregar"}
               </button>
@@ -161,7 +161,7 @@ export function ObraChecklist({ projectId }: Props) {
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] hover:border-[var(--color-accent)] hover:text-[var(--color-text-primary)]"
+            className="tap-target inline-flex items-center gap-1.5 rounded-lg border border-dashed border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] hover:border-[var(--color-accent)] hover:text-[var(--color-text-primary)]"
           >
             <Plus size={14} />
             Agregar ítem de referencia
