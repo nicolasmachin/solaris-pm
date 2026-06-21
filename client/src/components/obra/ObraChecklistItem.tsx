@@ -24,19 +24,24 @@ export function ObraChecklistItem({ item, busy, onToggle, onSaveObservation, onD
 
   return (
     <div className="flex gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3">
-      {/* Checkbox de estado */}
+      {/* Checkbox de estado: área tappable de 44px con el check visual de 20px
+          centrado adentro (cómodo de marcar con el dedo). */}
       <button
         type="button"
         disabled={busy}
         onClick={() => onToggle(isOk ? "PENDING" : "OK")}
         aria-label={isOk ? "Marcar como pendiente" : "Marcar como OK"}
-        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors disabled:opacity-50 ${
-          isOk
-            ? "border-green-500 bg-green-500 text-white"
-            : "border-[var(--color-border)] bg-transparent hover:border-[var(--color-accent)]"
-        }`}
+        className="tap-target -my-2 -ml-2 shrink-0 self-start disabled:opacity-50"
       >
-        {isOk && <Check size={13} strokeWidth={3} />}
+        <span
+          className={`flex h-5 w-5 items-center justify-center rounded border transition-colors ${
+            isOk
+              ? "border-green-500 bg-green-500 text-white"
+              : "border-[var(--color-border)] bg-transparent"
+          }`}
+        >
+          {isOk && <Check size={13} strokeWidth={3} />}
+        </span>
       </button>
 
       <div className="min-w-0 flex-1">
