@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { Download, Trash2 } from "lucide-react";
+import { Download } from "lucide-react";
 
 import {
   deleteObraPhoto,
@@ -36,6 +36,8 @@ export function ObraPhotoGallery({ projectId }: Props) {
     onSuccess: () => {
       toast.success("Foto eliminada");
       setConfirmDelete(null);
+      // Cerrar el lightbox: la foto que se estaba viendo ya no existe.
+      setLightboxIndex(null);
       qc.invalidateQueries({ queryKey: ["obra-photos", projectId] });
     },
     onError: () => toast.error("No se pudo eliminar la foto"),
@@ -112,14 +114,6 @@ export function ObraPhotoGallery({ projectId }: Props) {
                 className="h-full w-full cursor-pointer object-cover"
                 onClick={() => setLightboxIndex(idx)}
               />
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(photo)}
-                aria-label="Eliminar foto"
-                className="absolute right-1 top-1 rounded-md bg-black/50 p-1 text-white opacity-0 transition-opacity hover:bg-red-600/80 group-hover:opacity-100"
-              >
-                <Trash2 size={13} />
-              </button>
             </div>
           ))}
         </div>
@@ -131,6 +125,7 @@ export function ObraPhotoGallery({ projectId }: Props) {
           index={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
           onNavigate={setLightboxIndex}
+          onDelete={(photo) => setConfirmDelete(photo)}
         />
       )}
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2, X } from "lucide-react";
 
 import type { ObraPhoto } from "../../api/obra.api";
 import { ProtectedImage } from "./ProtectedImage";
@@ -9,12 +9,13 @@ interface Props {
   index: number;
   onClose: () => void;
   onNavigate: (index: number) => void;
+  onDelete?: (photo: ObraPhoto) => void;
 }
 
 // Lightbox propio (sin librería): modal full-screen con navegación por
 // flechas/teclado y contador. Las imágenes van por ProtectedImage (fetch
 // autenticado).
-export function ObraLightbox({ photos, index, onClose, onNavigate }: Props) {
+export function ObraLightbox({ photos, index, onClose, onNavigate, onDelete }: Props) {
   const photo = photos[index];
   const hasPrev = index > 0;
   const hasNext = index < photos.length - 1;
@@ -61,14 +62,26 @@ export function ObraLightbox({ photos, index, onClose, onNavigate }: Props) {
         <span className="font-mono text-xs text-white/70">
           {index + 1} / {photos.length}
         </span>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Cerrar"
-          className="tap-target rounded text-white/80 hover:bg-white/10 hover:text-white"
-        >
-          <X size={20} />
-        </button>
+        <div className="flex items-center gap-1">
+          {onDelete && (
+            <button
+              type="button"
+              onClick={() => onDelete(photo)}
+              aria-label="Eliminar foto"
+              className="tap-target rounded text-white/80 hover:bg-red-600/40 hover:text-white"
+            >
+              <Trash2 size={18} />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar"
+            className="tap-target rounded text-white/80 hover:bg-white/10 hover:text-white"
+          >
+            <X size={20} />
+          </button>
+        </div>
       </div>
 
       {/* Imagen + flechas */}
