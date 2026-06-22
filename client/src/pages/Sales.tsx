@@ -500,11 +500,20 @@ function ProposalModal({
   });
 
   return (
-    <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/60" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <div className="w-full max-w-lg rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Propuesta comercial</p>
-        <h3 className="mb-4 font-display text-lg font-bold text-[var(--color-text-primary)]">Generar desde Excel</h3>
-
+    <>
+      <Sheet
+        open
+        onClose={onClose}
+        title="Generar propuesta desde Excel"
+        footer={
+          <>
+            <Button variant="ghost" onClick={onClose}>Cerrar</Button>
+            <Button onClick={() => generateMutation.mutate()} disabled={!file} loading={generateMutation.isPending}>
+              Generar propuesta
+            </Button>
+          </>
+        }
+      >
         <label className="flex min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-bg-app)] p-6 text-center">
           <input
             className="hidden"
@@ -547,14 +556,7 @@ function ProposalModal({
             </div>
           ) : null}
         </div>
-
-        <div className="mt-5 flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>Cerrar</Button>
-          <Button onClick={() => generateMutation.mutate()} disabled={!file} loading={generateMutation.isPending}>
-            Generar propuesta
-          </Button>
-        </div>
-      </div>
+      </Sheet>
 
       {proposalQuery.data?.status === "COMPLETED" ? (
         <ProposalPreviewModal
@@ -564,7 +566,7 @@ function ProposalModal({
           onClose={() => setShowPreview(false)}
         />
       ) : null}
-    </div>
+    </>
   );
 }
 
