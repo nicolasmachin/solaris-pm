@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Plus, X, Search, ArrowRight, FileText } from 'lucide-react';
+import { Plus, X, Search, FileText } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
+import { ResponsiveTable, type Column } from '../components/ui/ResponsiveTable';
 import {
   getSuppliers, createSupplier, patchSupplier,
 } from '../api/finance.api';
@@ -129,6 +130,7 @@ const FILTER_KEY = 'finance-suppliers-filters-v2';
 
 export function FinanceSuppliers() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [newModal, setNewModal] = useState(false);
   const [showNewInvoice, setShowNewInvoice] = useState(false);
   const [activoFilter, setActivoFilter] = useState<ActivoFilter>('true');
@@ -163,6 +165,38 @@ export function FinanceSuppliers() {
       || (s.email?.toLowerCase().includes(q) ?? false),
     );
   }, [suppliers, search]);
+
+  // Columnas declarativas para <ResponsiveTable>. En ≥md tabla equivalente;
+  // en <md cards (title=Nombre, highlight=Saldo neto, resto en cuerpo).
+  const columns: Column<Supplier>[] = [
+    {
+      key: 'nombre', label: 'Nombre', cardRole: 'title',
+      className: 'font-medium text-[var(--color-text-primary)]',
+      render: (s) => (
+        <Link to={`/finanzas/proveedores/${s.id}`} className="hover:underline">{s.nombre}</Link>
+      ),
+    },
+    { key: 'rut', label: 'RUT', className: 'text-[var(--color-text-muted)]', render: (s) => s.rut ?? '—' },
+    { key: 'contacto', label: 'Contacto', className: 'text-[var(--color-text-muted)]', render: (s) => s.contactoNombre ?? '—' },
+    { key: 'saldo', label: 'Saldo neto', cardRole: 'highlight', render: (s) => <SaldoNetoCell supplier={s} /> },
+    {
+      key: 'pendientes', label: 'Pendientes', className: 'text-[var(--color-text-muted)] tabular-nums',
+      render: (s) => (s.balance ? s.balance.facturasPendientesCount : '—'),
+    },
+    {
+      key: 'actividad', label: 'Últ. actividad', className: 'text-[var(--color-text-muted)] text-[11px]',
+      render: (s) => (s.balance?.ultimaActividad ? fmtDate(s.balance.ultimaActividad) : '—'),
+    },
+    {
+      key: 'estado', label: 'Estado',
+      render: (s) => (
+        <span className={klass('text-[10px] font-mono px-2 py-0.5 rounded uppercase',
+          s.activo ? 'bg-[var(--color-state-done-bg)] text-[var(--color-state-done-text)]' : 'bg-[var(--color-border)] text-[var(--color-text-muted)]')}>
+          {s.activo ? 'Activo' : 'Inactivo'}
+        </span>
+      ),
+    },
+  ];
 
   return (
     <div className="p-6 space-y-5">
@@ -221,44 +255,13 @@ export function FinanceSuppliers() {
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--color-border)] text-xs font-mono text-[var(--color-text-muted)] uppercase tracking-wider">
-                  {['Nombre', 'RUT', 'Contacto', 'Saldo neto', 'Pendientes', 'Últ. actividad', 'Estado', ''].map(h => (
-                    <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--color-border)]">
-                {filtered.map(s => (
-                  <tr key={s.id} className="hover:bg-[var(--color-bg-card-hover)] transition-colors">
-                    <td className="px-4 py-3 font-medium text-[var(--color-text-primary)]">
-                      <Link to={`/finanzas/proveedores/${s.id}`} className="hover:underline">{s.nombre}</Link>
-                    </td>
-                    <td className="px-4 py-3 text-[var(--color-text-muted)]">{s.rut ?? '—'}</td>
-                    <td className="px-4 py-3 text-[var(--color-text-muted)]">{s.contactoNombre ?? '—'}</td>
-                    <td className="px-4 py-3"><SaldoNetoCell supplier={s} /></td>
-                    <td className="px-4 py-3 text-[var(--color-text-muted)] tabular-nums">
-                      {s.balance ? s.balance.facturasPendientesCount : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-[var(--color-text-muted)] text-[11px]">
-                      {s.balance?.ultimaActividad ? fmtDate(s.balance.ultimaActividad) : '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={klass('text-[10px] font-mono px-2 py-0.5 rounded uppercase',
-                        s.activo ? 'bg-[var(--color-state-done-bg)] text-[var(--color-state-done-text)]' : 'bg-[var(--color-border)] text-[var(--color-text-muted)]')}>
-                        {s.activo ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link to={`/finanzas/proveedores/${s.id}`} className="inline-flex items-center gap-1 text-xs text-[var(--color-accent)] hover:underline">
-                        Ver <ArrowRight className="w-3 h-3" />
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <ResponsiveTable
+              columns={columns}
+              data={filtered}
+              rowKey={(s) => s.id}
+              onRowClick={(s) => navigate(`/finanzas/proveedores/${s.id}`)}
+              rowClickableOnDesktop
+            />
           </div>
         )}
       </div>
