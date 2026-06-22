@@ -416,7 +416,7 @@ function KanbanColumn({
   return (
     <div
       ref={setNodeRef}
-      className="flex h-full w-[85vw] shrink-0 snap-start flex-col rounded-xl border bg-[var(--color-bg-card)] p-3 transition-all duration-200 md:w-[280px]"
+      className="flex h-full w-[calc(100vw-5rem)] shrink-0 snap-start flex-col rounded-xl border bg-[var(--color-bg-card)] p-3 transition-all duration-200 md:w-[280px]"
       style={{ borderColor }}
     >
       <div className="mb-3 flex shrink-0 items-center gap-2">
