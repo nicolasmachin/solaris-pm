@@ -746,7 +746,7 @@ function LeadPanel({
   return (
     <>
       <div className="fixed inset-0 z-30 bg-black/40" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }} />
-      <aside className="fixed right-0 top-[52px] z-40 h-[calc(100vh-52px)] w-full max-w-[420px] overflow-y-auto border-l border-[var(--color-border)] bg-[var(--color-bg-sidebar)] p-5">
+      <aside className="fixed right-0 top-[52px] z-40 h-[calc(100vh-52px)] w-full max-w-[420px] overflow-y-auto border-l border-[var(--color-border)] bg-[var(--color-bg-sidebar)] p-5 pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-5">
         <div className="mb-5 flex items-start justify-between gap-3">
           <div>
             <div className="mb-1 flex items-center gap-2">
