@@ -16,6 +16,7 @@ import {
 } from "../api/finance.api";
 import type { FinanceListItem, FinanceMovement } from "../types/finance.types";
 import { ResponsiveTable, type Column } from "../components/ui/ResponsiveTable";
+import { Sheet } from "../components/ui/Sheet";
 import { ProjectPicker } from "../components/finance/ProjectPicker";
 import { getAccounts } from "../api/accounts.api";
 import { getProjects } from "../api/projects.api";
@@ -437,6 +438,8 @@ export function FinanceMovementsTab() {
         <EditMovementModal
           movement={editingMovement}
           onClose={() => setEditingMovement(null)}
+          onDelete={(id) => deleteMut.mutate(id, { onSuccess: () => setEditingMovement(null) })}
+          deleting={deleteMut.isPending}
         />
       )}
       {showTransfer && <NewTransferModal onClose={() => setShowTransfer(false)} />}
@@ -633,11 +636,17 @@ function NewTransferModal({ onClose }: { onClose: () => void }) {
 function EditMovementModal({
   movement,
   onClose,
+  onDelete,
+  deleting,
 }: {
   movement: FinanceMovement;
   onClose: () => void;
+  // Reutiliza el deleteMut del padre; al éxito el padre cierra el modal.
+  onDelete: (id: string) => void;
+  deleting: boolean;
 }) {
   const qc = useQueryClient();
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [descripcion, setDescripcion] = useState(movement.descripcion);
   const [monto, setMonto] = useState(String(movement.monto));
   const [moneda, setMoneda] = useState<Moneda>(movement.moneda);
@@ -690,20 +699,31 @@ function EditMovementModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-[var(--color-text-primary)]">Editar movimiento</h3>
-          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]">
-            <X className="w-4 h-4" />
+    <Sheet
+      open
+      onClose={onClose}
+      title="Editar movimiento"
+      footer={
+        <>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
+          >
+            Cancelar
           </button>
-        </div>
-        <form onSubmit={submit} className="space-y-3">
+          <button
+            type="submit"
+            form="edit-movement-form"
+            disabled={saving}
+            className="px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-60"
+          >
+            {saving ? "Guardando…" : "Guardar cambios"}
+          </button>
+        </>
+      }
+    >
+        <form id="edit-movement-form" onSubmit={submit} className="space-y-3">
           <Field label="Descripción">
             <input
               type="text"
@@ -788,25 +808,49 @@ function EditMovementModal({
           <Field label="Proyecto (opcional)">
             <ProjectPicker value={projectId} onChange={setProjectId} />
           </Field>
-          <div className="flex gap-2 pt-2">
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-60"
-            >
-              {saving ? "Guardando…" : "Guardar cambios"}
-            </button>
+        </form>
+
+        {/* Zona de peligro: borrar movimiento (reusa el deleteMut del padre,
+            que cierra el modal al éxito). Confirmación en dos pasos. */}
+        <div className="mt-5 rounded-lg border border-red-500/30 bg-red-500/5 p-3">
+          <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">
+            Zona de peligro
+          </p>
+          {confirmingDelete ? (
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs text-[var(--color-text-secondary)]">¿Eliminar este movimiento?</span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmingDelete(false)}
+                  disabled={deleting}
+                  className="tap-target rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDelete(movement.id)}
+                  disabled={deleting}
+                  className="tap-target rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                >
+                  {deleting ? "Eliminando…" : "Sí, eliminar"}
+                </button>
+              </div>
+            </div>
+          ) : (
             <button
               type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
+              onClick={() => setConfirmingDelete(true)}
+              disabled={deleting}
+              className="tap-target inline-flex items-center gap-1.5 rounded-lg border border-red-500/40 px-3 py-1.5 text-xs font-medium text-red-400 transition-colors hover:bg-red-500/15 disabled:opacity-50"
             >
-              Cancelar
+              <Trash2 className="h-3.5 w-3.5" />
+              Eliminar movimiento
             </button>
-          </div>
-        </form>
-      </div>
-    </div>
+          )}
+        </div>
+    </Sheet>
   );
 }
 
