@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Search, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 import {
   DndContext,
   PointerSensor,
@@ -1090,7 +1090,10 @@ export function Sales() {
   const [tab, setTab] = useState<SalesTab>("active");
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [showNewLead, setShowNewLead] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [view, setView] = useSalesView();
+  // Filtros activos del Kanban para el badge del botón "Filtros" en móvil.
+  const activeFilterCount = (searchInput.trim() ? 1 : 0) + (onlyMine ? 1 : 0);
 
   // Set de stages con columna colapsada. No se persiste: cada refresh
   // arranca con todas las columnas abiertas (decisión del usuario).
@@ -1177,7 +1180,8 @@ export function Sales() {
         {view === "kanban" ? (
           <>
             <Tabs current={tab} onChange={setTab} />
-            <div className="relative">
+            {/* Desktop: búsqueda + "Solo míos" inline. En móvil van al sheet. */}
+            <div className="relative hidden md:block">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--color-text-muted)]" />
               <input
                 type="search"
@@ -1187,7 +1191,7 @@ export function Sales() {
                 className="w-52 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] py-1.5 pl-8 pr-2 text-xs text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
               />
             </div>
-            <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-[var(--color-text-secondary)]">
+            <label className="hidden cursor-pointer items-center gap-1.5 text-xs text-[var(--color-text-secondary)] md:inline-flex">
               <input
                 type="checkbox"
                 checked={onlyMine}
@@ -1196,6 +1200,20 @@ export function Sales() {
               />
               Solo míos
             </label>
+            {/* Móvil: botón "Filtros" que abre el sheet (búsqueda + "Solo míos"). */}
+            <button
+              type="button"
+              onClick={() => setFiltersOpen(true)}
+              className="tap-target inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] md:hidden"
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              Filtros
+              {activeFilterCount > 0 ? (
+                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-accent)] px-1 text-[10px] font-bold text-black">
+                  {activeFilterCount}
+                </span>
+              ) : null}
+            </button>
           </>
         ) : null}
       </div>
@@ -1251,6 +1269,36 @@ export function Sales() {
 
       {selectedLeadId ? <LeadPanel leadId={selectedLeadId} onClose={() => setSelectedLeadId(null)} /> : null}
       {showNewLead ? <NewLeadModal onClose={() => setShowNewLead(false)} users={users} /> : null}
+
+      <Sheet
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        title="Filtros"
+        footer={<Button onClick={() => setFiltersOpen(false)}>Listo</Button>}
+      >
+        <label className="block">
+          <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Buscar lead</span>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--color-text-muted)]" />
+            <input
+              type="search"
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder="Buscar lead…"
+              className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] py-2 pl-8 pr-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+            />
+          </div>
+        </label>
+        <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+          <input
+            type="checkbox"
+            checked={onlyMine}
+            onChange={(event) => setOnlyMine(event.target.checked)}
+            className="h-4 w-4 cursor-pointer"
+          />
+          Solo míos
+        </label>
+      </Sheet>
     </div>
   );
 }
