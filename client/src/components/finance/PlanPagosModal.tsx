@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
-import { AlertTriangle, Plus, Trash2, X } from "lucide-react";
+import { AlertTriangle, Plus, Trash2 } from "lucide-react";
 
 import { useCreatePlanPagos, usePlanPagos, type PlanCuota } from "../../hooks/usePlanPagos";
 import { todayLocalISO } from "../../utils/date";
+import { Sheet } from "../ui/Sheet";
 
 // Tolerancia en USD entre suma de cuotas y presupuesto. Mismo valor que el
 // backend (SUM_TOLERANCE_USD). Si difiere por arriba, mostramos rojo.
@@ -186,63 +187,74 @@ export function PlanPagosModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="w-full max-w-3xl max-h-[92vh] flex flex-col rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-2xl overflow-hidden">
-        <div className="flex items-start justify-between px-5 py-3 border-b border-[var(--color-border)]">
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
-              {isEdit ? "Editar plan de pagos" : "Plan de pagos"}
-              <span className="text-[var(--color-text-muted)] font-normal"> — {projectName}</span>
-            </h3>
-            {presupuesto > 0 ? (
-              <p className="text-[11px] text-[var(--color-text-muted)] mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono">
-                <span>
-                  Presupuesto:{" "}
-                  <span className="text-[var(--color-text-secondary)] font-semibold tabular-nums">
-                    {fmtUsd(presupuesto)}
-                  </span>
-                </span>
-                <span className="text-[var(--color-border)]">|</span>
-                <span>
-                  Cobrado:{" "}
-                  <span className="text-emerald-400 font-semibold tabular-nums">
-                    {fmtUsd(totalCobrado)}
-                  </span>
-                </span>
-                <span className="text-[var(--color-border)]">|</span>
-                <span>
-                  Pendiente:{" "}
-                  <span
-                    className={`font-semibold tabular-nums ${
-                      saldoPendiente > 0
-                        ? "text-[var(--color-text-primary)]"
-                        : "text-[var(--color-text-muted)]"
-                    }`}
-                  >
-                    {fmtUsd(saldoPendiente)}
-                  </span>
-                </span>
-              </p>
-            ) : (
-              <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
-                Este proyecto no tiene presupuesto cargado.
-              </p>
-            )}
-          </div>
+    <Sheet
+      open
+      onClose={onClose}
+      size="wide"
+      title={isEdit ? "Editar plan de pagos" : "Plan de pagos"}
+      footer={
+        <>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1 rounded text-[var(--color-text-muted)] hover:bg-[var(--color-bg-card-hover)]"
+            className="px-3 py-1.5 rounded border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
           >
-            <X className="w-4 h-4" />
+            Cancelar
           </button>
+          <button
+            type="button"
+            disabled={!sumOk || seniaError || createMut.isPending || saldoPendiente <= 0 || rows.length === 0}
+            onClick={handleSubmit}
+            className="px-3 py-1.5 rounded bg-[var(--color-accent)] text-gray-900 text-xs font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {createMut.isPending
+              ? "Guardando…"
+              : isEdit
+                ? "Actualizar plan de pagos"
+                : "Crear plan de pagos"}
+          </button>
+        </>
+      }
+    >
+        {/* Resumen del proyecto + presupuesto (antes en el header del modal). */}
+        <div className="mb-4">
+          <p className="text-sm font-medium text-[var(--color-text-primary)]">{projectName}</p>
+          {presupuesto > 0 ? (
+            <p className="text-[11px] text-[var(--color-text-muted)] mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono">
+              <span>
+                Presupuesto:{" "}
+                <span className="text-[var(--color-text-secondary)] font-semibold tabular-nums">
+                  {fmtUsd(presupuesto)}
+                </span>
+              </span>
+              <span className="text-[var(--color-border)]">|</span>
+              <span>
+                Cobrado:{" "}
+                <span className="text-emerald-400 font-semibold tabular-nums">
+                  {fmtUsd(totalCobrado)}
+                </span>
+              </span>
+              <span className="text-[var(--color-border)]">|</span>
+              <span>
+                Pendiente:{" "}
+                <span
+                  className={`font-semibold tabular-nums ${
+                    saldoPendiente > 0
+                      ? "text-[var(--color-text-primary)]"
+                      : "text-[var(--color-text-muted)]"
+                  }`}
+                >
+                  {fmtUsd(saldoPendiente)}
+                </span>
+              </span>
+            </p>
+          ) : (
+            <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+              Este proyecto no tiene presupuesto cargado.
+            </p>
+          )}
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4">
           {planQ.isLoading || !planQ.data ? (
             <p className="text-xs text-[var(--color-text-muted)]">Cargando…</p>
           ) : presupuesto <= 0 ? (
@@ -376,30 +388,6 @@ export function PlanPagosModal({
               )}
             </>
           )}
-        </div>
-
-        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-[var(--color-border)] bg-[var(--color-bg-app)]/30">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-3 py-1.5 rounded border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            disabled={!sumOk || seniaError || createMut.isPending || saldoPendiente <= 0 || rows.length === 0}
-            onClick={handleSubmit}
-            className="px-3 py-1.5 rounded bg-[var(--color-accent)] text-gray-900 text-xs font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {createMut.isPending
-              ? "Guardando…"
-              : isEdit
-                ? "Actualizar plan de pagos"
-                : "Crear plan de pagos"}
-          </button>
-        </div>
-      </div>
-    </div>
+    </Sheet>
   );
 }
