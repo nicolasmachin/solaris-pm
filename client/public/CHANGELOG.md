@@ -2,6 +2,14 @@
 
 ## v6.2
 
+### 22 de junio de 2026
+
+#### Finanzas — Tablas más legibles en el celular
+
+- **Proveedores y Cobros como tarjetas:** en el celular, estas listas dejan de ser tablas anchas con scroll lateral y se muestran como **tarjetas apiladas**, con el nombre/cliente arriba y el saldo o pendiente destacado. Tocar una tarjeta abre el detalle. En la computadora se ven igual que antes.
+- **Flujo de fondos:** la tabla de eventos proyectados también se ve como tarjetas en el celular (la fecha se sigue pudiendo editar tocándola), y los KPIs y el gráfico siguen como estaban.
+- **Cuentas:** el historial de conciliaciones dentro del panel de una cuenta ya no se aprieta en pantallas chicas (ahora se desliza de costado para verlo completo).
+
 ### 21 de junio de 2026
 
 #### Ventas — Kanban más cómodo en el celular
