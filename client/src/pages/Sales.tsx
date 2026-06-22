@@ -153,61 +153,12 @@ function NewLeadModal({
   });
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <div className="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6">
-        <div className="mb-5 shrink-0">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Nuevo lead</p>
-          <h2 className="font-display text-lg font-bold text-[var(--color-text-primary)]">Alta comercial</h2>
-        </div>
-
-        <div className="grid flex-1 gap-4 overflow-y-auto pr-1 md:grid-cols-2">
-          {[
-            ["Nombre del cliente", "clientName"],
-            ["Email", "clientEmail"],
-            ["Teléfono", "clientPhone"],
-            ["Dirección", "address"],
-            ["kWp estimados", "estimatedKwp"],
-            ["Presupuesto estimado USD", "estimatedBudgetUsd"],
-            ["Factura UTE mensual USD", "uteBillMonthlyUsd"],
-            ["Tipo de techo", "roofType"],
-          ].map(([label, key]) => (
-            <label key={key} className={key === "address" || key === "roofType" ? "md:col-span-2" : ""}>
-              <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">{label}</span>
-              <input
-                className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
-                value={form[key as keyof typeof form]}
-                onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))}
-              />
-            </label>
-          ))}
-
-          <label className="md:col-span-2">
-            <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Asignar a</span>
-            <select
-              className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
-              value={form.assignedToId}
-              onChange={(event) => setForm((current) => ({ ...current, assignedToId: event.target.value }))}
-            >
-              <option value="">Sin asignar</option>
-              {users.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="md:col-span-2">
-            <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Notas iniciales</span>
-            <textarea
-              className="min-h-[96px] w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
-              value={form.notes}
-              onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
-            />
-          </label>
-        </div>
-
-        <div className="mt-5 flex shrink-0 justify-end gap-2">
+    <Sheet
+      open
+      onClose={onClose}
+      title="Nuevo lead"
+      footer={
+        <>
           <Button variant="ghost" onClick={onClose}>Cancelar</Button>
           <Button
             onClick={() => createMutation.mutate()}
@@ -216,9 +167,56 @@ function NewLeadModal({
           >
             Crear lead
           </Button>
-        </div>
+        </>
+      }
+    >
+      <div className="grid gap-4 md:grid-cols-2">
+        {[
+          ["Nombre del cliente", "clientName"],
+          ["Email", "clientEmail"],
+          ["Teléfono", "clientPhone"],
+          ["Dirección", "address"],
+          ["kWp estimados", "estimatedKwp"],
+          ["Presupuesto estimado USD", "estimatedBudgetUsd"],
+          ["Factura UTE mensual USD", "uteBillMonthlyUsd"],
+          ["Tipo de techo", "roofType"],
+        ].map(([label, key]) => (
+          <label key={key} className={key === "address" || key === "roofType" ? "md:col-span-2" : ""}>
+            <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">{label}</span>
+            <input
+              className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+              value={form[key as keyof typeof form]}
+              onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))}
+            />
+          </label>
+        ))}
+
+        <label className="md:col-span-2">
+          <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Asignar a</span>
+          <select
+            className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+            value={form.assignedToId}
+            onChange={(event) => setForm((current) => ({ ...current, assignedToId: event.target.value }))}
+          >
+            <option value="">Sin asignar</option>
+            {users.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="md:col-span-2">
+          <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Notas iniciales</span>
+          <textarea
+            className="min-h-[96px] w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+            value={form.notes}
+            onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
+          />
+        </label>
       </div>
-    </div>
+    </Sheet>
   );
 }
 
