@@ -13,6 +13,10 @@ interface SheetProps {
   // Eleva el z-index a z-[60] (default z-50). Para sheets que abren sobre
   // otra capa (ej. un panel lateral o un modal ya montado).
   elevated?: boolean;
+  // Ancho del modal centrado en `≥ md`. "default" = max-w-lg; "wide" =
+  // max-w-3xl (para contenido ancho, ej. tablas). En `< md` no aplica
+  // (siempre bottom sheet full-width).
+  size?: "default" | "wide";
 }
 
 const FOCUSABLES =
@@ -23,7 +27,7 @@ const FOCUSABLES =
 // `≥ md` como modal centrado. Cierre por botón, ESC y tap en overlay; focus-trap
 // y lock de body scroll propios (no toca el MobileNavDrawer). v1 sin
 // drag-to-dismiss. Deuda: unificar el focus-trap con el del drawer.
-export function Sheet({ open, onClose, title, children, footer, elevated = false }: SheetProps) {
+export function Sheet({ open, onClose, title, children, footer, elevated = false, size = "default" }: SheetProps) {
   const isMobile = useIsMobile();
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -71,7 +75,7 @@ export function Sheet({ open, onClose, title, children, footer, elevated = false
 
   const panelClass = isMobile
     ? "w-full max-h-[90vh] rounded-t-2xl"
-    : "mx-4 w-full max-w-lg max-h-[88vh] rounded-xl shadow-2xl";
+    : `mx-4 w-full ${size === "wide" ? "max-w-3xl" : "max-w-lg"} max-h-[88vh] rounded-xl shadow-2xl`;
 
   return (
     <div
