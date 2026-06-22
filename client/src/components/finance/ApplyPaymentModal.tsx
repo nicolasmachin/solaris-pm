@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { X, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
+import { Sheet } from '../ui/Sheet';
 import { applyPayment, getPayment } from '../../api/payments.api';
 import { getMovements, isMovementRow } from '../../api/finance.api';
 import { fmtCurrency, fmtDate } from '../../lib/finance';
@@ -134,34 +135,50 @@ export function ApplyPaymentModal({ paymentId, onClose, preselectMovementId }: P
 
   if (loadingPayment || !payment) {
     return (
-      <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-        <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl w-full max-w-2xl p-6">
-          <p className="text-sm text-[var(--color-text-muted)] text-center">Cargando…</p>
-        </div>
-      </div>
+      <Sheet open onClose={onClose} elevated size="wide" title="Aplicar pago a facturas">
+        <p className="text-sm text-[var(--color-text-muted)] text-center py-8">Cargando…</p>
+      </Sheet>
     );
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl">
-        <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
-          <div>
-            <p className="text-sm font-semibold text-[var(--color-text-primary)]">Aplicar pago a facturas</p>
-            <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-              Pago de <strong className="text-[var(--color-text-primary)] tabular-nums">{fmtCurrency(payment.monto, payment.moneda)}</strong>
-              <span className="mx-1">·</span>
-              Saldo sin aplicar: <strong className={klass('tabular-nums', saldoSinAplicar > 0 ? 'text-[var(--color-warning-text)]' : 'text-[var(--color-text-muted)]')}>
-                {fmtCurrency(saldoSinAplicar, payment.moneda)}
-              </strong>
-              <span className="mx-1">·</span>
-              Proveedor: <strong className="text-[var(--color-text-primary)]">{payment.supplier?.nombre ?? '—'}</strong>
-            </p>
-          </div>
-          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"><X className="w-5 h-5" /></button>
-        </div>
+    <Sheet
+      open
+      onClose={onClose}
+      elevated
+      size="wide"
+      title="Aplicar pago a facturas"
+      footer={
+        <>
+          <button onClick={onClose} className="px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]">
+            Cancelar
+          </button>
+          <button
+            onClick={() => applyMut.mutate()}
+            disabled={excede || seleccionadas === 0 || totalAAplicar <= 0 || applyMut.isPending}
+            className={klass(
+              'px-4 py-2 rounded-lg text-sm font-semibold transition-colors',
+              excede || seleccionadas === 0 || totalAAplicar <= 0 || applyMut.isPending
+                ? 'bg-[var(--color-border)] text-[var(--color-text-muted)] cursor-not-allowed'
+                : 'bg-[var(--color-accent)] text-gray-900 hover:bg-[var(--color-accent-hover)]',
+            )}
+          >
+            {applyMut.isPending ? 'Aplicando…' : 'Aplicar'}
+          </button>
+        </>
+      }
+    >
+        <p className="mb-3 text-xs text-[var(--color-text-muted)]">
+          Pago de <strong className="text-[var(--color-text-primary)] tabular-nums">{fmtCurrency(payment.monto, payment.moneda)}</strong>
+          <span className="mx-1">·</span>
+          Saldo sin aplicar: <strong className={klass('tabular-nums', saldoSinAplicar > 0 ? 'text-[var(--color-warning-text)]' : 'text-[var(--color-text-muted)]')}>
+            {fmtCurrency(saldoSinAplicar, payment.moneda)}
+          </strong>
+          <span className="mx-1">·</span>
+          Proveedor: <strong className="text-[var(--color-text-primary)]">{payment.supplier?.nombre ?? '—'}</strong>
+        </p>
 
-        <div className="flex-1 overflow-y-auto p-3">
+        <div>
           {loadingFacturas ? (
             <p className="text-sm text-[var(--color-text-muted)] text-center py-8">Cargando facturas…</p>
           ) : elegibles.length === 0 ? (
@@ -223,38 +240,18 @@ export function ApplyPaymentModal({ paymentId, onClose, preselectMovementId }: P
           )}
         </div>
 
-        <div className="px-4 py-3 border-t border-[var(--color-border)] flex items-center justify-between flex-wrap gap-3">
-          <div className="text-sm">
-            <span className="text-[var(--color-text-muted)]">Total a aplicar:</span>
-            <span className="ml-2 font-semibold text-[var(--color-text-primary)] tabular-nums">{fmtCurrency(totalAAplicar, payment.moneda)}</span>
-            <span className="ml-3 text-[var(--color-text-muted)]">Saldo después:</span>
-            <span className={klass(
-              'ml-2 font-semibold tabular-nums',
-              excede ? 'text-red-400' : saldoDespues === 0 ? 'text-[var(--color-state-done-text)]' : 'text-[var(--color-warning-text)]',
-            )}>
-              {fmtCurrency(saldoDespues, payment.moneda)}
-              {excede && <AlertTriangle className="w-3.5 h-3.5 inline ml-1 mb-0.5" />}
-            </span>
-          </div>
-          <div className="flex gap-2">
-            <button onClick={onClose} className="px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]">
-              Cancelar
-            </button>
-            <button
-              onClick={() => applyMut.mutate()}
-              disabled={excede || seleccionadas === 0 || totalAAplicar <= 0 || applyMut.isPending}
-              className={klass(
-                'px-4 py-2 rounded-lg text-sm font-semibold transition-colors',
-                excede || seleccionadas === 0 || totalAAplicar <= 0 || applyMut.isPending
-                  ? 'bg-[var(--color-border)] text-[var(--color-text-muted)] cursor-not-allowed'
-                  : 'bg-[var(--color-accent)] text-gray-900 hover:bg-[var(--color-accent-hover)]',
-              )}
-            >
-              {applyMut.isPending ? 'Aplicando…' : 'Aplicar'}
-            </button>
-          </div>
+        <div className="mt-3 border-t border-[var(--color-border)] pt-3 text-sm">
+          <span className="text-[var(--color-text-muted)]">Total a aplicar:</span>
+          <span className="ml-2 font-semibold text-[var(--color-text-primary)] tabular-nums">{fmtCurrency(totalAAplicar, payment.moneda)}</span>
+          <span className="ml-3 text-[var(--color-text-muted)]">Saldo después:</span>
+          <span className={klass(
+            'ml-2 font-semibold tabular-nums',
+            excede ? 'text-red-400' : saldoDespues === 0 ? 'text-[var(--color-state-done-text)]' : 'text-[var(--color-warning-text)]',
+          )}>
+            {fmtCurrency(saldoDespues, payment.moneda)}
+            {excede && <AlertTriangle className="w-3.5 h-3.5 inline ml-1 mb-0.5" />}
+          </span>
         </div>
-      </div>
-    </div>
+    </Sheet>
   );
 }
