@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import {
   getLeadsFlat,
   patchLeadStage,
@@ -11,6 +11,7 @@ import {
   type LeadListResponse,
 } from "../../api/leads.api";
 import { STAGE_LABELS, type SalesStage } from "../../types/leads.types";
+import { ResponsiveTable, type Column } from "../ui/ResponsiveTable";
 import { Spinner } from "../ui/Spinner";
 import { UserSelect } from "../ui/UserSelect";
 import { StageSelect } from "./StageSelect";
@@ -37,15 +38,6 @@ type DateField = NonNullable<GetLeadsFlatParams["dateField"]>;
 const DEFAULT_LIMIT = 50;
 const DEFAULT_SORT_BY: SortKey = "leadCreatedAt";
 const DEFAULT_SORT_ORDER: SortOrder = "desc";
-
-const COLUMNS: Array<{ key: SortKey; label: string }> = [
-  { key: "clientName", label: "Lead" },
-  { key: "stage", label: "Etapa" },
-  { key: "leadCreatedAt", label: "Fecha de creación" },
-  { key: "proposalSentAt", label: "Propuesta enviada" },
-  { key: "closedAt", label: "Fecha de cierre" },
-  { key: "owner", label: "Propietario" },
-];
 
 const DATE_FIELDS: Array<{ value: DateField; label: string }> = [
   { value: "leadCreatedAt", label: "Fecha de creación" },
@@ -264,6 +256,72 @@ export function LeadsListView({ onOpenLead }: Props) {
     stageMutation.mutate({ leadId, stage: WON_STAGE });
   };
 
+  // Columnas declarativas para <ResponsiveTable>. Las `key` coinciden con las
+  // SortKey para que el orden por header siga funcionando. La celda de etapa
+  // frena la propagación: tocar el <StageSelect> no debe abrir el lead.
+  const columns: Column<LeadFlatRow>[] = [
+    {
+      key: "clientName",
+      label: "Lead",
+      cardRole: "title",
+      sortable: true,
+      render: (lead) => (
+        <div className="min-w-0">
+          <div className="text-sm font-medium text-[var(--color-text-primary)]">{lead.clientName}</div>
+          {lead.address ? (
+            <div className="max-w-[280px] truncate text-[11px] text-[var(--color-text-muted)]">{lead.address}</div>
+          ) : null}
+        </div>
+      ),
+    },
+    {
+      key: "stage",
+      label: "Etapa",
+      sortable: true,
+      render: (lead) => (
+        <span
+          className="inline-block"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          <StageSelect
+            currentStage={lead.stage}
+            onChange={(next) => handleStageChange(lead.id, next)}
+            ariaLabel={`Etapa de ${lead.clientName} — ${STAGE_LABELS[lead.stage]}`}
+          />
+        </span>
+      ),
+    },
+    {
+      key: "leadCreatedAt",
+      label: "Fecha de creación",
+      sortable: true,
+      className: "tabular-nums text-[var(--color-text-secondary)]",
+      render: (lead) => formatDate(lead.leadCreatedAt),
+    },
+    {
+      key: "proposalSentAt",
+      label: "Propuesta enviada",
+      sortable: true,
+      className: "tabular-nums text-[var(--color-text-secondary)]",
+      render: (lead) => formatDate(lead.proposalSentAt),
+    },
+    {
+      key: "closedAt",
+      label: "Fecha de cierre",
+      sortable: true,
+      className: "tabular-nums text-[var(--color-text-secondary)]",
+      render: (lead) => formatDate(lead.closedAt),
+    },
+    {
+      key: "owner",
+      label: "Propietario",
+      sortable: true,
+      className: "text-[var(--color-text-secondary)]",
+      render: (lead) => lead.assignedTo?.name ?? "—",
+    },
+  ];
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
       {/* Toolbar de filtros */}
@@ -359,55 +417,25 @@ export function LeadsListView({ onOpenLead }: Props) {
       {/* Tabla */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)]">
         <div className="flex-1 overflow-auto">
-          <table className="w-full text-xs">
-            <thead className="sticky top-0 z-10 bg-[var(--color-bg-card)]">
-              <tr
-                className="border-b border-[var(--color-border)] text-[10px] font-mono uppercase tracking-widest"
-                style={{ color: "var(--color-text-muted)" }}
-              >
-                {COLUMNS.map((col) => {
-                  const active = sortBy === col.key;
-                  const Icon = active ? (sortOrder === "asc" ? ArrowUp : ArrowDown) : ArrowUpDown;
-                  return (
-                    <th
-                      key={col.key}
-                      onClick={() => toggleSort(col.key)}
-                      className="cursor-pointer select-none px-3 py-2 text-left font-semibold hover:text-[var(--color-text-secondary)]"
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        {col.label}
-                        <Icon size={11} className={active ? "text-[var(--color-accent)]" : "opacity-50"} />
-                      </span>
-                    </th>
-                  );
-                })}
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr>
-                  <td colSpan={COLUMNS.length} className="px-3 py-8 text-center">
-                    <Spinner />
-                  </td>
-                </tr>
-              ) : rows.length === 0 ? (
-                <tr>
-                  <td colSpan={COLUMNS.length} className="px-3 py-8 text-center text-[var(--color-text-muted)]">
-                    No hay leads que coincidan con los filtros.
-                  </td>
-                </tr>
-              ) : (
-                rows.map((lead) => (
-                  <LeadRow
-                    key={lead.id}
-                    lead={lead}
-                    onOpenLead={onOpenLead}
-                    onStageChange={handleStageChange}
-                  />
-                ))
-              )}
-            </tbody>
-          </table>
+          {isLoading ? (
+            <div className="py-8 text-center">
+              <Spinner />
+            </div>
+          ) : (
+            <ResponsiveTable
+              columns={columns}
+              data={rows}
+              rowKey={(lead) => lead.id}
+              onRowClick={(lead) => onOpenLead(lead.id)}
+              rowClickableOnDesktop
+              dense
+              stickyHeader
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onSort={(key) => toggleSort(key as SortKey)}
+              emptyMessage="No hay leads que coincidan con los filtros."
+            />
+          )}
         </div>
 
         {/* Paginación */}
@@ -459,40 +487,5 @@ export function LeadsListView({ onOpenLead }: Props) {
         />
       ) : null}
     </div>
-  );
-}
-
-function LeadRow({
-  lead,
-  onOpenLead,
-  onStageChange,
-}: {
-  lead: LeadFlatRow;
-  onOpenLead: (id: string) => void;
-  onStageChange: (leadId: string, newStage: SalesStage) => void;
-}) {
-  return (
-    <tr
-      onClick={() => onOpenLead(lead.id)}
-      className="cursor-pointer border-b border-[var(--color-border)] last:border-b-0 hover:bg-[var(--color-bg-card-hover)]/40"
-    >
-      <td className="px-3 py-2">
-        <div className="text-sm font-medium text-[var(--color-text-primary)]">{lead.clientName}</div>
-        {lead.address ? (
-          <div className="text-[11px] text-[var(--color-text-muted)] truncate max-w-[280px]">{lead.address}</div>
-        ) : null}
-      </td>
-      <td className="px-3 py-2">
-        <StageSelect
-          currentStage={lead.stage}
-          onChange={(next) => onStageChange(lead.id, next)}
-          ariaLabel={`Etapa de ${lead.clientName} — ${STAGE_LABELS[lead.stage]}`}
-        />
-      </td>
-      <td className="px-3 py-2 tabular-nums text-[var(--color-text-secondary)]">{formatDate(lead.leadCreatedAt)}</td>
-      <td className="px-3 py-2 tabular-nums text-[var(--color-text-secondary)]">{formatDate(lead.proposalSentAt)}</td>
-      <td className="px-3 py-2 tabular-nums text-[var(--color-text-secondary)]">{formatDate(lead.closedAt)}</td>
-      <td className="px-3 py-2 text-[var(--color-text-secondary)]">{lead.assignedTo?.name ?? "—"}</td>
-    </tr>
   );
 }
