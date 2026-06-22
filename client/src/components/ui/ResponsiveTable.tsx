@@ -27,6 +27,9 @@ interface ResponsiveTableProps<T> {
   // Qué filas son tappables (default: todas si hay onRowClick).
   isRowClickable?: (row: T) => boolean;
   emptyMessage?: ReactNode;
+  // Clases extra por fila (desktop `<tr>` y contenedor de card en móvil).
+  // Default = sin clases → consumidores existentes idénticos.
+  rowClassName?: (row: T) => string | undefined;
   // ── Extensiones opcionales (aditivas; defaults = comportamiento original) ──
   // Densidad compacta (text-xs / px-3 py-2) en la tabla desktop.
   dense?: boolean;
@@ -61,6 +64,7 @@ export function ResponsiveTable<T>({
   onRowClick,
   isRowClickable,
   emptyMessage,
+  rowClassName,
   dense = false,
   stickyHeader = false,
   sortBy,
@@ -104,7 +108,7 @@ export function ResponsiveTable<T>({
                     }
                   : undefined
               }
-              className={`px-4 py-3 ${clickable ? "cursor-pointer hover:bg-[var(--color-bg-card-hover)]" : ""}`}
+              className={`px-4 py-3 ${clickable ? "cursor-pointer hover:bg-[var(--color-bg-card-hover)]" : ""} ${rowClassName?.(row) ?? ""}`}
             >
               <div className="flex items-start justify-between gap-3">
                 {titleCol && <div className="min-w-0 flex-1">{cellContent(titleCol, row)}</div>}
@@ -180,7 +184,7 @@ export function ResponsiveTable<T>({
             <tr
               key={rowKey(row)}
               onClick={clickable ? () => onRowClick?.(row) : undefined}
-              className={`hover:bg-[var(--color-bg-card-hover)] ${clickable ? "cursor-pointer" : ""}`}
+              className={`hover:bg-[var(--color-bg-card-hover)] ${clickable ? "cursor-pointer" : ""} ${rowClassName?.(row) ?? ""}`}
             >
               {columns.map((col) => (
                 <td
