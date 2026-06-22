@@ -234,7 +234,7 @@ export function FinanceSuppliers() {
               key={val}
               onClick={() => setActivoFilter(val)}
               className={klass(
-                'px-3 py-2 transition-colors',
+                'tap-target px-3 py-2 transition-colors',
                 activoFilter === val
                   ? 'bg-[var(--color-accent)] text-gray-900 font-semibold'
                   : 'bg-[var(--color-bg-card)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]',

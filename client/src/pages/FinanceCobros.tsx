@@ -185,7 +185,7 @@ export function FinanceCobros() {
               key={val}
               onClick={() => setActivos(val)}
               className={klass(
-                'px-3 py-2 transition-colors',
+                'tap-target px-3 py-2 transition-colors',
                 activos === val
                   ? 'bg-[var(--color-accent)] text-gray-900 font-semibold'
                   : 'bg-[var(--color-bg-card)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]',
