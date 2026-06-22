@@ -10,6 +10,13 @@
 - **Arrastrar ya no se pelea con el scroll:** en el celular el arrastre arranca con un **toque sostenido** (mantené el dedo apretado un instante sobre la tarjeta). Así podés deslizar la pantalla para arriba y para abajo sin que se "enganche" una tarjeta sin querer.
 - **Columnas de a una:** el tablero se desliza de costado mostrando **una columna por pantalla** (con un asomo de la siguiente) y se acomoda sola al soltar, para que siempre quede una columna prolija a la vista.
 
+#### Ventas — Pantallas de ventas más cómodas en el celular
+
+- **Nuevo lead y "Generar propuesta desde Excel":** estos formularios ahora se abren como **panel desde abajo** en el celular (más cómodo de completar con una mano) y siguen como ventana centrada en la computadora.
+- **Filtros del Kanban:** en el celular el buscador y "Solo míos" pasaron a un botón **"Filtros"** que abre un panel; el botón muestra un contador cuando hay filtros activos. Los botones de **Nuevo lead** y el cambio entre **Kanban/Lista** quedan siempre a la vista.
+- **Vista Lista en el celular:** la tabla de leads se muestra como **tarjetas apiladas** y fáciles de leer en pantalla chica; en la computadora sigue siendo la misma tabla, con orden por columna y todo igual que antes.
+- **Detalle del lead:** al abrir un lead en el celular, los botones del fondo (como borrar o los comentarios) ya **no quedan tapados** por la barra de navegación inferior.
+
 ### 20 de junio de 2026
 
 #### Arreglos
