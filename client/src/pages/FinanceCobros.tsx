@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Search, ArrowRight } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
+import { ResponsiveTable, type Column } from '../components/ui/ResponsiveTable';
 import { getCobrosByProject } from '../api/finance.api';
 import type { EstadoCobranza } from '../api/finance.api';
 import { fmtCurrency, fmtDate } from '../lib/finance';
@@ -31,6 +32,7 @@ type EstadoFilter = 'all' | EstadoCobranza;
 type ActivosFilter = 'true' | 'all';
 
 export function FinanceCobros() {
+  const navigate = useNavigate();
   const [estado, setEstado] = useState<EstadoFilter>('all');
   const [activos, setActivos] = useState<ActivosFilter>('true');
   const [search, setSearch] = useState('');
@@ -65,6 +67,62 @@ export function FinanceCobros() {
     if (q) out = out.filter(p => p.clientName.toLowerCase().includes(q) || p.code.toLowerCase().includes(q));
     return out;
   }, [projects, estado, search]);
+
+  // Columnas declarativas para <ResponsiveTable>. En ≥md tabla equivalente;
+  // en <md cards (title=Cliente/Proyecto, highlight=Pendiente USD, resto cuerpo).
+  type CobroRow = (typeof projects)[number];
+  const columns: Column<CobroRow>[] = [
+    {
+      key: 'cliente', label: 'Cliente / Proyecto', cardRole: 'title',
+      render: (p) => (
+        <>
+          <Link to={`/finanzas/cobros/${p.id}`} className="font-medium text-[var(--color-text-primary)] hover:underline">
+            {p.clientName}
+          </Link>
+          <div className="text-[10px] text-[var(--color-text-muted)] font-mono">
+            {p.code} · {p.capacity} kWp · {p.status}
+          </div>
+        </>
+      ),
+    },
+    {
+      key: 'presupuesto', label: 'Presupuesto USD', align: 'right',
+      className: 'tabular-nums text-[var(--color-text-primary)]',
+      render: (p) => (p.presupuestoUSD != null ? fmtCurrency(p.presupuestoUSD, 'USD') : '—'),
+    },
+    {
+      key: 'cobrado', label: 'Cobrado USD', align: 'right',
+      className: 'tabular-nums text-emerald-400',
+      render: (p) => fmtCurrency(p.totalCobradoUSD, 'USD'),
+    },
+    {
+      key: 'pendiente', label: 'Pendiente USD', align: 'right', cardRole: 'highlight',
+      render: (p) => (
+        <span className={klass(
+          'tabular-nums',
+          p.estadoCobranza === 'EXCEDIDO' ? 'text-blue-400'
+            : p.saldoPendienteUSD > 0.005 ? 'text-amber-400'
+            : 'text-[var(--color-text-muted)]',
+        )}>
+          {p.estadoCobranza === 'EXCEDIDO'
+            ? `+${fmtCurrency(p.saldoAFavorUSD, 'USD')}`
+            : p.presupuestoUSD != null ? fmtCurrency(p.saldoPendienteUSD, 'USD') : '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'estado', label: 'Estado',
+      render: (p) => (
+        <span className={klass('text-[10px] font-mono px-2 py-0.5 rounded uppercase border', ESTADO_BADGE_CLASS[p.estadoCobranza])}>
+          {ESTADO_LABEL[p.estadoCobranza]}
+        </span>
+      ),
+    },
+    {
+      key: 'ultcobro', label: 'Últ. cobro', className: 'text-[var(--color-text-muted)] text-[11px]',
+      render: (p) => (p.ultimoCobro ? fmtDate(p.ultimoCobro) : '—'),
+    },
+  ];
 
   return (
     <div className="p-6 space-y-5">
@@ -148,62 +206,13 @@ export function FinanceCobros() {
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--color-border)] text-xs font-mono text-[var(--color-text-muted)] uppercase tracking-wider">
-                  <th className="px-4 py-3 text-left font-medium">Cliente / Proyecto</th>
-                  <th className="px-4 py-3 text-right font-medium">Presupuesto USD</th>
-                  <th className="px-4 py-3 text-right font-medium">Cobrado USD</th>
-                  <th className="px-4 py-3 text-right font-medium">Pendiente USD</th>
-                  <th className="px-4 py-3 text-left font-medium">Estado</th>
-                  <th className="px-4 py-3 text-left font-medium">Últ. cobro</th>
-                  <th className="px-4 py-3" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--color-border)]">
-                {filtered.map(p => (
-                  <tr key={p.id} className="hover:bg-[var(--color-bg-card-hover)] transition-colors">
-                    <td className="px-4 py-3">
-                      <Link to={`/finanzas/cobros/${p.id}`} className="font-medium text-[var(--color-text-primary)] hover:underline">
-                        {p.clientName}
-                      </Link>
-                      <div className="text-[10px] text-[var(--color-text-muted)] font-mono">
-                        {p.code} · {p.capacity} kWp · {p.status}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-[var(--color-text-primary)]">
-                      {p.presupuestoUSD != null ? fmtCurrency(p.presupuestoUSD, 'USD') : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-emerald-400">
-                      {fmtCurrency(p.totalCobradoUSD, 'USD')}
-                    </td>
-                    <td className={klass(
-                      'px-4 py-3 text-right tabular-nums',
-                      p.estadoCobranza === 'EXCEDIDO' ? 'text-blue-400'
-                        : p.saldoPendienteUSD > 0.005 ? 'text-amber-400'
-                        : 'text-[var(--color-text-muted)]',
-                    )}>
-                      {p.estadoCobranza === 'EXCEDIDO'
-                        ? `+${fmtCurrency(p.saldoAFavorUSD, 'USD')}`
-                        : p.presupuestoUSD != null ? fmtCurrency(p.saldoPendienteUSD, 'USD') : '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={klass('text-[10px] font-mono px-2 py-0.5 rounded uppercase border', ESTADO_BADGE_CLASS[p.estadoCobranza])}>
-                        {ESTADO_LABEL[p.estadoCobranza]}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-[var(--color-text-muted)] text-[11px]">
-                      {p.ultimoCobro ? fmtDate(p.ultimoCobro) : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link to={`/finanzas/cobros/${p.id}`} className="inline-flex items-center gap-1 text-xs text-[var(--color-accent)] hover:underline">
-                        Ver <ArrowRight className="w-3 h-3" />
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <ResponsiveTable
+              columns={columns}
+              data={filtered}
+              rowKey={(p) => p.id}
+              onRowClick={(p) => navigate(`/finanzas/cobros/${p.id}`)}
+              rowClickableOnDesktop
+            />
           </div>
         )}
       </div>
