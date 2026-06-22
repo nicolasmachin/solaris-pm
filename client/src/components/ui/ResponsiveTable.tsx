@@ -1,4 +1,5 @@
 import { type ReactNode } from "react";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 
 import { useIsMobile } from "../../hooks/useIsMobile";
 
@@ -13,17 +14,30 @@ export interface Column<T> {
   // Rol en modo card (`< md`): title = encabezado; highlight = valor destacado;
   // hidden = no se muestra en card; sin rol = par label/valor.
   cardRole?: CardRole;
+  // Header clickeable para ordenar (solo desktop, requiere `onSort` en la tabla).
+  sortable?: boolean;
 }
 
 interface ResponsiveTableProps<T> {
   columns: Column<T>[];
   data: T[];
   rowKey: (row: T) => string | number;
-  // Tap en la card (solo móvil; en desktop las filas no son clickeables).
+  // Tap en la card (móvil) y, si `rowClickableOnDesktop`, también la fila en desktop.
   onRowClick?: (row: T) => void;
-  // Qué filas son tappables en móvil (default: todas si hay onRowClick).
+  // Qué filas son tappables (default: todas si hay onRowClick).
   isRowClickable?: (row: T) => boolean;
   emptyMessage?: ReactNode;
+  // ── Extensiones opcionales (aditivas; defaults = comportamiento original) ──
+  // Densidad compacta (text-xs / px-3 py-2) en la tabla desktop.
+  dense?: boolean;
+  // thead pegajoso al hacer scroll vertical.
+  stickyHeader?: boolean;
+  // Orden por columna (desktop): header clickeable con flecha.
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+  onSort?: (key: string) => void;
+  // Hace clickeable la fila en desktop (no solo la card en móvil).
+  rowClickableOnDesktop?: boolean;
 }
 
 const alignClass: Record<NonNullable<Column<unknown>["align"]>, string> = {
@@ -47,6 +61,12 @@ export function ResponsiveTable<T>({
   onRowClick,
   isRowClickable,
   emptyMessage,
+  dense = false,
+  stickyHeader = false,
+  sortBy,
+  sortOrder,
+  onSort,
+  rowClickableOnDesktop = false,
 }: ResponsiveTableProps<T>) {
   const isMobile = useIsMobile();
 
@@ -113,31 +133,66 @@ export function ResponsiveTable<T>({
     );
   }
 
-  // ─── Desktop: tabla (idéntica al patrón actual) ───────────────────────────
+  // ─── Desktop: tabla ───────────────────────────────────────────────────────
+  const thPad = dense ? "px-3 py-2" : "px-4 py-2.5";
+  const tdPad = dense ? "px-3 py-2" : "px-4 py-3";
+
   return (
-    <table className="w-full text-sm">
-      <thead className="bg-[var(--color-bg-app)] text-xs uppercase tracking-wider text-[var(--color-text-muted)]">
+    <table className={`w-full ${dense ? "text-xs" : "text-sm"}`}>
+      <thead
+        className={`bg-[var(--color-bg-app)] text-xs uppercase tracking-wider text-[var(--color-text-muted)] ${
+          stickyHeader ? "sticky top-0 z-10" : ""
+        }`}
+      >
         <tr>
-          {columns.map((col) => (
-            <th key={col.key} className={`px-4 py-2.5 font-medium ${col.align ? alignClass[col.align] : "text-left"}`}>
-              {col.label}
-            </th>
-          ))}
+          {columns.map((col) => {
+            const alignCls = col.align ? alignClass[col.align] : "text-left";
+            const sortable = !!onSort && col.sortable;
+            if (!sortable) {
+              return (
+                <th key={col.key} className={`${thPad} font-medium ${alignCls}`}>
+                  {col.label}
+                </th>
+              );
+            }
+            const active = sortBy === col.key;
+            const Icon = active ? (sortOrder === "asc" ? ArrowUp : ArrowDown) : ArrowUpDown;
+            return (
+              <th key={col.key} className={`${thPad} font-medium ${alignCls}`}>
+                <button
+                  type="button"
+                  onClick={() => onSort?.(col.key)}
+                  className="inline-flex items-center gap-1 select-none uppercase tracking-wider hover:text-[var(--color-text-secondary)]"
+                >
+                  {col.label}
+                  <Icon size={11} className={active ? "text-[var(--color-accent)]" : "opacity-50"} />
+                </button>
+              </th>
+            );
+          })}
         </tr>
       </thead>
       <tbody className="divide-y divide-[var(--color-border)]">
-        {data.map((row) => (
-          <tr key={rowKey(row)} className="hover:bg-[var(--color-bg-card-hover)]">
-            {columns.map((col) => (
-              <td
-                key={col.key}
-                className={`px-4 py-3 ${col.align ? alignClass[col.align] : ""} ${col.className ?? ""}`}
-              >
-                {cellContent(col, row)}
-              </td>
-            ))}
-          </tr>
-        ))}
+        {data.map((row) => {
+          const clickable =
+            rowClickableOnDesktop && !!onRowClick && (isRowClickable ? isRowClickable(row) : true);
+          return (
+            <tr
+              key={rowKey(row)}
+              onClick={clickable ? () => onRowClick?.(row) : undefined}
+              className={`hover:bg-[var(--color-bg-card-hover)] ${clickable ? "cursor-pointer" : ""}`}
+            >
+              {columns.map((col) => (
+                <td
+                  key={col.key}
+                  className={`${tdPad} ${col.align ? alignClass[col.align] : ""} ${col.className ?? ""}`}
+                >
+                  {cellContent(col, row)}
+                </td>
+              ))}
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );
