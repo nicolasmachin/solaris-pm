@@ -10,6 +10,11 @@
 - **Flujo de fondos:** la tabla de eventos proyectados también se ve como tarjetas en el celular (la fecha se sigue pudiendo editar tocándola), y los KPIs y el gráfico siguen como estaban.
 - **Cuentas:** el historial de conciliaciones dentro del panel de una cuenta ya no se aprieta en pantallas chicas (ahora se desliza de costado para verlo completo).
 
+#### Finanzas — Borrar movimientos desde el celular y ventanas más cómodas
+
+- **Borrar un movimiento desde el celular:** al abrir un movimiento para editarlo, ahora hay abajo una **zona de peligro** con el botón **"Eliminar movimiento"** (pide confirmación). Antes solo se podía borrar desde la computadora.
+- **Ventanas como panel desde abajo:** "Editar movimiento", "Plan de pagos" y "Aplicar pago a facturas" se abren como **panel desde abajo** en el celular (más cómodos de usar con una mano) y siguen centrados en la computadora.
+
 ### 21 de junio de 2026
 
 #### Ventas — Kanban más cómodo en el celular
