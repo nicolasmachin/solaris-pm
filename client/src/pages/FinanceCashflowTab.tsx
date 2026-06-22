@@ -23,6 +23,7 @@ import {
   type CashflowTimelinePoint,
 } from "../api/cashflow.api";
 import { fmtCurrency, fmtDate } from "../lib/finance";
+import { ResponsiveTable, type Column } from "../components/ui/ResponsiveTable";
 
 const SOURCE_LABEL: Record<CashflowSourceType, string> = {
   FIXED_COST: "Costo fijo",
@@ -431,106 +432,108 @@ function CashflowEventTable({ events }: { events: CashflowEvent[] }) {
     );
   }
 
+  const columns: Column<CashflowEvent>[] = [
+    {
+      key: "fecha", label: "Fecha", className: "whitespace-nowrap",
+      render: (ev) => {
+        const isFixedCost = ev.sourceType === "FIXED_COST";
+        const isEditing = editingId === ev.id;
+        return isEditing ? (
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={editFecha}
+              onChange={(e) => setEditFecha(e.target.value)}
+              className="rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1 text-xs text-[var(--color-text-primary)]"
+            />
+            <button
+              onClick={() => updateMut.mutate({ ev, fecha: editFecha })}
+              disabled={updateMut.isPending}
+              className="tap-target text-xs text-[var(--color-accent)] hover:underline disabled:opacity-50"
+            >
+              Guardar
+            </button>
+            <button
+              onClick={() => setEditingId(null)}
+              className="tap-target text-xs text-[var(--color-text-muted)] hover:underline"
+            >
+              Cancelar
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              if (isFixedCost) {
+                toast(
+                  "La fecha de un costo fijo se cambia desde Administración → Costos fijos.",
+                  { icon: "ℹ️" },
+                );
+                return;
+              }
+              setEditingId(ev.id);
+              setEditFecha(ev.fecha.slice(0, 10));
+            }}
+            className={`tabular-nums ${
+              isFixedCost
+                ? "text-[var(--color-text-secondary)] cursor-not-allowed"
+                : "text-[var(--color-text-primary)] hover:underline"
+            }`}
+          >
+            {fmtDate(ev.fecha)}
+          </button>
+        );
+      },
+    },
+    {
+      key: "descripcion", label: "Descripción", cardRole: "title",
+      className: "text-[var(--color-text-primary)]",
+      render: (ev) => (
+        <>
+          <span>{ev.descripcion}</span>
+          {ev.causeNegative && (
+            <div className="text-[11px] text-red-400">← saldo en rojo</div>
+          )}
+        </>
+      ),
+    },
+    {
+      key: "tipo", label: "Tipo",
+      render: (ev) => (
+        <span
+          className={`text-[10px] font-medium uppercase tracking-wide px-2 py-0.5 rounded ${SOURCE_TONE[ev.tipo]}`}
+        >
+          {SOURCE_LABEL[ev.tipo]}
+        </span>
+      ),
+    },
+    {
+      key: "impacto", label: "Impacto", align: "right", cardRole: "highlight",
+      render: (ev) => (
+        <span
+          className={
+            ev.impacto === "POSITIVO"
+              ? "text-green-400 font-semibold"
+              : "text-red-400 font-semibold"
+          }
+        >
+          {ev.impacto === "POSITIVO" ? "+" : "-"}
+          {fmtCurrency(ev.monto, ev.moneda)}
+        </span>
+      ),
+    },
+  ];
+
   return (
     <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl overflow-hidden">
-      <table className="w-full text-sm">
-        <thead className="bg-[var(--color-bg-app)] text-xs text-[var(--color-text-muted)] uppercase tracking-wider">
-          <tr>
-            <th className="text-left px-4 py-2.5 font-medium">Fecha</th>
-            <th className="text-left px-4 py-2.5 font-medium">Descripción</th>
-            <th className="text-left px-4 py-2.5 font-medium">Tipo</th>
-            <th className="text-right px-4 py-2.5 font-medium">Impacto</th>
-            <th className="text-left px-4 py-2.5 font-medium"></th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-[var(--color-border)]">
-          {events.map((ev) => {
-            const isFixedCost = ev.sourceType === "FIXED_COST";
-            const isEditing = editingId === ev.id;
-            return (
-              <tr
-                key={ev.id}
-                className={`hover:bg-[var(--color-bg-card-hover)] ${
-                  ev.causeNegative ? "bg-red-500/5" : ""
-                }`}
-              >
-                <td className="px-4 py-3 whitespace-nowrap">
-                  {isEditing ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="date"
-                        value={editFecha}
-                        onChange={(e) => setEditFecha(e.target.value)}
-                        className="rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1 text-xs text-[var(--color-text-primary)]"
-                      />
-                      <button
-                        onClick={() => updateMut.mutate({ ev, fecha: editFecha })}
-                        disabled={updateMut.isPending}
-                        className="text-xs text-[var(--color-accent)] hover:underline disabled:opacity-50"
-                      >
-                        Guardar
-                      </button>
-                      <button
-                        onClick={() => setEditingId(null)}
-                        className="text-xs text-[var(--color-text-muted)] hover:underline"
-                      >
-                        Cancelar
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (isFixedCost) {
-                          toast(
-                            "La fecha de un costo fijo se cambia desde Administración → Costos fijos.",
-                            { icon: "ℹ️" },
-                          );
-                          return;
-                        }
-                        setEditingId(ev.id);
-                        setEditFecha(ev.fecha.slice(0, 10));
-                      }}
-                      className={`tabular-nums ${
-                        isFixedCost
-                          ? "text-[var(--color-text-secondary)] cursor-not-allowed"
-                          : "text-[var(--color-text-primary)] hover:underline"
-                      }`}
-                    >
-                      {fmtDate(ev.fecha)}
-                    </button>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-[var(--color-text-primary)]">{ev.descripcion}</td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`text-[10px] font-medium uppercase tracking-wide px-2 py-0.5 rounded ${SOURCE_TONE[ev.tipo]}`}
-                  >
-                    {SOURCE_LABEL[ev.tipo]}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums">
-                  <span
-                    className={
-                      ev.impacto === "POSITIVO"
-                        ? "text-green-400 font-semibold"
-                        : "text-red-400 font-semibold"
-                    }
-                  >
-                    {ev.impacto === "POSITIVO" ? "+" : "-"}
-                    {fmtCurrency(ev.monto, ev.moneda)}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  {ev.causeNegative && (
-                    <span className="text-[11px] text-red-400">← saldo en rojo</span>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <div className="overflow-x-auto">
+        <ResponsiveTable
+          columns={columns}
+          data={events}
+          rowKey={(ev) => ev.id}
+          rowClassName={(ev) => (ev.causeNegative ? "bg-red-500/5" : undefined)}
+        />
+      </div>
     </div>
   );
 }
