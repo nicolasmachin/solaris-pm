@@ -307,8 +307,8 @@ function AccountDrawer({ accountId, onClose }: { accountId: string; onClose: () 
         {reconciliations.length > 0 && (
           <div className="p-5 border-b border-[var(--color-border)]">
             <p className="text-xs font-semibold text-[var(--color-text-primary)] mb-3">Historial de conciliaciones ({reconciliations.length})</p>
-            <div className="rounded-lg border border-[var(--color-border)] overflow-hidden">
-              <table className="w-full text-[11px]">
+            <div className="rounded-lg border border-[var(--color-border)] overflow-x-auto">
+              <table className="w-full min-w-[440px] text-[11px]">
                 <thead>
                   <tr className="bg-[var(--color-bg-app)] text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]">
                     <th className="px-2 py-1.5 text-left">Fecha</th>
