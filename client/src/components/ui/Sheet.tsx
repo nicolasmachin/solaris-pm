@@ -10,6 +10,9 @@ interface SheetProps {
   title?: string;
   children: ReactNode;
   footer?: ReactNode;
+  // Eleva el z-index a z-[60] (default z-50). Para sheets que abren sobre
+  // otra capa (ej. un panel lateral o un modal ya montado).
+  elevated?: boolean;
 }
 
 const FOCUSABLES =
@@ -20,7 +23,7 @@ const FOCUSABLES =
 // `≥ md` como modal centrado. Cierre por botón, ESC y tap en overlay; focus-trap
 // y lock de body scroll propios (no toca el MobileNavDrawer). v1 sin
 // drag-to-dismiss. Deuda: unificar el focus-trap con el del drawer.
-export function Sheet({ open, onClose, title, children, footer }: SheetProps) {
+export function Sheet({ open, onClose, title, children, footer, elevated = false }: SheetProps) {
   const isMobile = useIsMobile();
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -72,7 +75,7 @@ export function Sheet({ open, onClose, title, children, footer }: SheetProps) {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex bg-black/60 ${isMobile ? "items-end" : "items-center justify-center"}`}
+      className={`fixed inset-0 ${elevated ? "z-[60]" : "z-50"} flex bg-black/60 ${isMobile ? "items-end" : "items-center justify-center"}`}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
