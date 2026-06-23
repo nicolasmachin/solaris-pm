@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { X } from "lucide-react";
+import { Sheet } from "../ui/Sheet";
 
 import { createManualPending } from "../../api/pending.api";
 import { ProjectPicker } from "./ProjectPicker";
@@ -62,22 +62,31 @@ export function ManualPendingModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div
-      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-[var(--color-text-primary)]">
-            Agregar pendiente manual
-          </h3>
-          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]">
-            <X className="w-4 h-4" />
+    <Sheet
+      open
+      onClose={onClose}
+      title="Agregar pendiente manual"
+      footer={
+        <>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
+          >
+            Cancelar
           </button>
-        </div>
-        <form onSubmit={submit} className="space-y-3">
+          <button
+            type="submit"
+            form="manual-pending-form"
+            disabled={saving}
+            className="px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-60"
+          >
+            {saving ? "Creando…" : "Crear pendiente"}
+          </button>
+        </>
+      }
+    >
+        <form id="manual-pending-form" onSubmit={submit} className="space-y-3">
           <div>
             <label className={lbl}>Tipo *</label>
             <div className="flex gap-2">
@@ -169,24 +178,7 @@ export function ManualPendingModal({ onClose }: { onClose: () => void }) {
             <ProjectPicker value={projectId} onChange={setProjectId} />
           </div>
 
-          <div className="flex gap-2 pt-2">
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-60"
-            >
-              {saving ? "Creando…" : "Crear pendiente"}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
-            >
-              Cancelar
-            </button>
-          </div>
         </form>
-      </div>
-    </div>
+    </Sheet>
   );
 }
