@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { X } from "lucide-react";
+import { Sheet } from "../ui/Sheet";
 
 import { createSupplierInvoice, getSuppliers, patchMovement } from "../../api/finance.api";
 import { ProjectPicker } from "./ProjectPicker";
@@ -106,26 +106,31 @@ export function NewSupplierInvoiceModal({ supplierId, supplierName, invoice, onC
   }
 
   return (
-    <div
-      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-[var(--color-text-primary)]">
-            {isEdit ? "Editar factura" : "Cargar factura a pagar"}
-          </h3>
+    <Sheet
+      open
+      onClose={onClose}
+      title={isEdit ? "Editar factura" : "Cargar factura a pagar"}
+      footer={
+        <>
           <button
+            type="button"
             onClick={onClose}
-            className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+            className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
           >
-            <X className="w-4 h-4" />
+            Cancelar
           </button>
-        </div>
-
-        <form onSubmit={submit} className="space-y-3">
+          <button
+            type="submit"
+            form="supplier-invoice-form"
+            disabled={saving}
+            className="px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-60"
+          >
+            {saving ? "Guardando…" : isEdit ? "Guardar cambios" : "Cargar factura"}
+          </button>
+        </>
+      }
+    >
+        <form id="supplier-invoice-form" onSubmit={submit} className="space-y-3">
           <div>
             <label className={lbl}>Proveedor *</label>
             {supplierBloqueado ? (
@@ -226,24 +231,7 @@ export function NewSupplierInvoiceModal({ supplierId, supplierName, invoice, onC
             </div>
           )}
 
-          <div className="flex gap-2 pt-2">
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-60"
-            >
-              {saving ? "Guardando…" : isEdit ? "Guardar cambios" : "Cargar factura"}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
-            >
-              Cancelar
-            </button>
-          </div>
         </form>
-      </div>
-    </div>
+    </Sheet>
   );
 }
