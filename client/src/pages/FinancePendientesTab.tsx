@@ -855,7 +855,7 @@ function MaterialActions({
         type="button"
         onClick={startEdit}
         title="Reagendar todos a una fecha"
-        className="p-1 rounded text-[var(--color-text-muted)] hover:bg-[var(--color-accent)]/15 hover:text-[var(--color-accent)] transition-colors"
+        className="tap-target rounded text-[var(--color-text-muted)] hover:bg-[var(--color-accent)]/15 hover:text-[var(--color-accent)] transition-colors"
       >
         <CalendarDays className={iconSize} />
       </button>
@@ -863,7 +863,7 @@ function MaterialActions({
         type="button"
         onClick={deleteAll}
         title="Sacar de Pendientes (no borra del proyecto)"
-        className="p-1 rounded text-[var(--color-text-muted)] hover:bg-red-500/15 hover:text-red-400 transition-colors"
+        className="tap-target rounded text-[var(--color-text-muted)] hover:bg-red-500/15 hover:text-red-400 transition-colors"
       >
         <Trash2 className={iconSize} />
       </button>
