@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { X } from "lucide-react";
+import { Sheet } from "../ui/Sheet";
 
 import { getMovement, transitionMovement } from "../../api/finance.api";
 import { getAccounts } from "../../api/accounts.api";
@@ -69,26 +69,34 @@ export function PayManualPendingModal({
     : "";
 
   return (
-    <div
-      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-md shadow-2xl">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-[var(--color-text-primary)]">
-            {isIngreso ? "Registrar cobro" : "Registrar pago"}
-          </h3>
-          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]">
-            <X className="w-4 h-4" />
+    <Sheet
+      open
+      onClose={onClose}
+      title={isIngreso ? "Registrar cobro" : "Registrar pago"}
+      footer={
+        <>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
+          >
+            Cancelar
           </button>
-        </div>
-
+          <button
+            type="submit"
+            form="pay-pending-form"
+            disabled={transitionMut.isPending || !accountId}
+            className="px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-60"
+          >
+            {transitionMut.isPending ? "Guardando…" : "Confirmar"}
+          </button>
+        </>
+      }
+    >
         {isLoading || !movement ? (
           <p className="text-sm text-[var(--color-text-muted)] text-center py-6">Cargando…</p>
         ) : (
-          <form onSubmit={submit} className="space-y-3">
+          <form id="pay-pending-form" onSubmit={submit} className="space-y-3">
             <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)]/50 px-3 py-2">
               <p className="text-[11px] uppercase tracking-wider text-[var(--color-text-muted)] font-mono">
                 Previsto
@@ -135,25 +143,8 @@ export function PayManualPendingModal({
               )}
             </div>
 
-            <div className="flex gap-2 pt-2">
-              <button
-                type="submit"
-                disabled={transitionMut.isPending || !accountId}
-                className="flex-1 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-60"
-              >
-                {transitionMut.isPending ? "Guardando…" : "Confirmar"}
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
-              >
-                Cancelar
-              </button>
-            </div>
           </form>
         )}
-      </div>
-    </div>
+    </Sheet>
   );
 }
