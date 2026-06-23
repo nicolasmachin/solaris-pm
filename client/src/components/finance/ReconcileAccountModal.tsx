@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { X, Scale, ArrowUpCircle, ArrowDownCircle, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { ArrowUpCircle, ArrowDownCircle, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Sheet } from '../ui/Sheet';
 import { getAccountBalance } from '../../api/accounts.api';
 import { reconcileAccount } from '../../api/accounts.api';
 import type { Account } from '../../types/accounts.types';
@@ -71,19 +72,31 @@ export function ReconcileAccountModal({ account, onClose }: { account: Account; 
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-md max-h-[92vh] overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-2xl">
-        <div className="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-3">
-          <div className="flex items-center gap-2">
-            <Scale className="h-4 w-4 text-[var(--color-accent)]" />
-            <p className="text-sm font-semibold text-[var(--color-text-primary)]">Conciliar {account.nombre}</p>
-          </div>
-          <button onClick={onClose} className="rounded p-1 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]" aria-label="Cerrar">
-            <X className="h-4 w-4" />
+    <Sheet
+      open
+      onClose={onClose}
+      title={`Conciliar ${account.nombre}`}
+      footer={
+        <>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-app)]"
+          >
+            Cancelar
           </button>
-        </div>
-
-        <div className="px-5 py-4 space-y-4">
+          <button
+            type="button"
+            onClick={() => mut.mutate()}
+            disabled={!saldoRealValido || mut.isPending}
+            className="rounded-md bg-[var(--color-accent)] px-3 py-1.5 text-sm font-semibold text-[var(--color-bg-app)] hover:opacity-90 disabled:opacity-50"
+          >
+            {mut.isPending ? 'Guardando…' : 'Confirmar conciliación'}
+          </button>
+        </>
+      }
+    >
+        <div className="space-y-4">
           <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2.5">
             <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]">Saldo según el sistema</p>
             <p className="text-xl font-bold tabular-nums text-[var(--color-text-primary)]">{fmt(saldoCalculado, account.moneda)}</p>
@@ -162,25 +175,6 @@ export function ReconcileAccountModal({ account, onClose }: { account: Account; 
             />
           </div>
         </div>
-
-        <div className="flex justify-end gap-2 border-t border-[var(--color-border)] px-5 py-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-app)]"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={() => mut.mutate()}
-            disabled={!saldoRealValido || mut.isPending}
-            className="rounded-md bg-[var(--color-accent)] px-3 py-1.5 text-sm font-semibold text-[var(--color-bg-app)] hover:opacity-90 disabled:opacity-50"
-          >
-            {mut.isPending ? 'Guardando…' : 'Confirmar conciliación'}
-          </button>
-        </div>
-      </div>
-    </div>
+    </Sheet>
   );
 }
