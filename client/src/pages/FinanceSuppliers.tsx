@@ -2,9 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Plus, X, Search, FileText } from 'lucide-react';
+import { Plus, Search, FileText } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
 import { ResponsiveTable, type Column } from '../components/ui/ResponsiveTable';
+import { Sheet } from '../components/ui/Sheet';
 import {
   getSuppliers, createSupplier, patchSupplier,
 } from '../api/finance.api';
@@ -267,18 +268,12 @@ export function FinanceSuppliers() {
       </div>
 
       {newModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-lg shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-semibold text-[var(--color-text-primary)]">Nuevo proveedor</p>
-              <button onClick={() => setNewModal(false)} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"><X className="w-5 h-5" /></button>
-            </div>
-            <SupplierForm
-              onSuccess={() => { setNewModal(false); qc.invalidateQueries({ queryKey: ['suppliers'] }); }}
-              onCancel={() => setNewModal(false)}
-            />
-          </div>
-        </div>
+        <Sheet open onClose={() => setNewModal(false)} title="Nuevo proveedor">
+          <SupplierForm
+            onSuccess={() => { setNewModal(false); qc.invalidateQueries({ queryKey: ['suppliers'] }); }}
+            onCancel={() => setNewModal(false)}
+          />
+        </Sheet>
       )}
 
       {showNewInvoice && (

@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { ArrowLeft, ArrowRight, Plus, Pencil, X, CheckCircle2, AlertTriangle, FileText, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, Pencil, CheckCircle2, AlertTriangle, FileText, Trash2 } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
+import { Sheet } from '../components/ui/Sheet';
 import { getSupplier, deleteSupplier, deleteMovement } from '../api/finance.api';
 import { usePermission } from '../hooks/usePermission';
 import { getSupplierAccountSummary } from '../api/payments.api';
@@ -232,32 +233,26 @@ export function FinanceSupplierDetail() {
 
       {/* Edit modal */}
       {editing && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-lg shadow-2xl max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-semibold text-[var(--color-text-primary)]">Editar proveedor</p>
-              <button onClick={() => setEditing(false)} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"><X className="w-5 h-5" /></button>
-            </div>
-            <SupplierForm
-              initial={supplier}
-              supplierId={supplier.id}
-              onSuccess={() => {
-                setEditing(false);
-                qc.invalidateQueries({ queryKey: ['supplier', id] });
-                qc.invalidateQueries({ queryKey: ['suppliers'] });
-              }}
-              onCancel={() => setEditing(false)}
-            />
-            <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
-              <button
-                onClick={() => { if (confirm('¿Eliminar este proveedor?')) deleteMut.mutate(); }}
-                className="w-full py-2 rounded-lg bg-red-500/15 text-red-400 text-sm font-semibold hover:bg-red-500/25 transition-colors"
-              >
-                Eliminar proveedor
-              </button>
-            </div>
+        <Sheet open onClose={() => setEditing(false)} title="Editar proveedor">
+          <SupplierForm
+            initial={supplier}
+            supplierId={supplier.id}
+            onSuccess={() => {
+              setEditing(false);
+              qc.invalidateQueries({ queryKey: ['supplier', id] });
+              qc.invalidateQueries({ queryKey: ['suppliers'] });
+            }}
+            onCancel={() => setEditing(false)}
+          />
+          <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
+            <button
+              onClick={() => { if (confirm('¿Eliminar este proveedor?')) deleteMut.mutate(); }}
+              className="w-full py-2 rounded-lg bg-red-500/15 text-red-400 text-sm font-semibold hover:bg-red-500/25 transition-colors"
+            >
+              Eliminar proveedor
+            </button>
           </div>
-        </div>
+        </Sheet>
       )}
 
       {/* Modal cargar factura a pagar (proveedor prefijado) */}
