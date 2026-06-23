@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { CalendarDays, ChevronDown, ChevronRight, ExternalLink, Pencil, Plus, Trash2, X } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronRight, ExternalLink, Pencil, Plus, SlidersHorizontal, Trash2, X } from "lucide-react";
 
 import {
   deletePendingItem,
@@ -11,6 +11,7 @@ import {
   type PendingItemSourceType,
   type ProjectMaterialGroup,
 } from "../api/pending.api";
+import { Sheet } from "../components/ui/Sheet";
 import { fmtCurrency, fmtDate } from "../lib/finance";
 import { getMovement, patchMovement, transitionMovement } from "../api/finance.api";
 import { updateCashflowEventFecha, type EditableEventSourceType } from "../api/cashflow.api";
@@ -48,6 +49,9 @@ export function FinancePendientesTab() {
   const [filtroOrigen, setFiltroOrigen] = useState<"" | PendingItemSourceType>("");
   const [filtroProyecto, setFiltroProyecto] = useState<string>("");
   const [filtroProveedor, setFiltroProveedor] = useState<string>("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  // Filtros activos (≠ "todos") para el badge del botón "Filtros" en móvil.
+  const activeFilterCount = (filtroOrigen ? 1 : 0) + (filtroProyecto ? 1 : 0) + (filtroProveedor ? 1 : 0);
 
   const items = data?.items ?? [];
   const projectMaterialGroups = data?.projectMaterialGroups ?? [];
@@ -229,6 +233,51 @@ export function FinancePendientesTab() {
     }
   }
 
+  // Los 3 selects de filtro, reusados inline en ≥md y dentro del Sheet en <md.
+  const filterSelects = (selectClass: string) => (
+    <>
+      <select
+        value={filtroOrigen}
+        onChange={(e) => setFiltroOrigen(e.target.value as "" | PendingItemSourceType)}
+        className={selectClass}
+      >
+        <option value="">Todos los tipos</option>
+        <option value="FIXED_COST">Costos fijos</option>
+        <option value="PROJECT_MATERIAL">Materiales de obras</option>
+        <option value="SUPPLIER_DEBT">Deuda proveedores</option>
+        <option value="COMMITTED_EXPENSE">Otros compromisos</option>
+        <option value="MANUAL_PENDING">Pendientes manuales</option>
+      </select>
+      <select
+        value={filtroProyecto}
+        onChange={(e) => setFiltroProyecto(e.target.value)}
+        className={selectClass}
+      >
+        <option value="">Todos los proyectos</option>
+        {proyectos.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.code} · {p.clientName}
+          </option>
+        ))}
+      </select>
+      <select
+        value={filtroProveedor}
+        onChange={(e) => setFiltroProveedor(e.target.value)}
+        className={selectClass}
+      >
+        <option value="">Todos los proveedores</option>
+        {proveedores.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.nombre}
+          </option>
+        ))}
+      </select>
+    </>
+  );
+
+  const selectClassInline = "rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)]";
+  const selectClassSheet = "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)]";
+
   return (
     <div className="space-y-5">
       <p className="text-sm text-[var(--color-text-secondary)]">
@@ -246,42 +295,24 @@ export function FinancePendientesTab() {
 
       <div className="flex items-center gap-2 flex-wrap justify-between">
         <div className="flex items-center gap-2 flex-wrap">
-          <select
-            value={filtroOrigen}
-            onChange={(e) => setFiltroOrigen(e.target.value as "" | PendingItemSourceType)}
-            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+          {/* Desktop: selects inline. En móvil van al sheet. */}
+          <div className="hidden md:flex items-center gap-2 flex-wrap">
+            {filterSelects(selectClassInline)}
+          </div>
+          {/* Móvil: botón "Filtros" que abre el sheet. */}
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(true)}
+            className="tap-target inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] md:hidden"
           >
-            <option value="">Todos los tipos</option>
-            <option value="FIXED_COST">Costos fijos</option>
-            <option value="PROJECT_MATERIAL">Materiales de obras</option>
-            <option value="SUPPLIER_DEBT">Deuda proveedores</option>
-            <option value="COMMITTED_EXPENSE">Otros compromisos</option>
-            <option value="MANUAL_PENDING">Pendientes manuales</option>
-          </select>
-          <select
-            value={filtroProyecto}
-            onChange={(e) => setFiltroProyecto(e.target.value)}
-            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
-          >
-            <option value="">Todos los proyectos</option>
-            {proyectos.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.code} · {p.clientName}
-              </option>
-            ))}
-          </select>
-          <select
-            value={filtroProveedor}
-            onChange={(e) => setFiltroProveedor(e.target.value)}
-            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
-          >
-            <option value="">Todos los proveedores</option>
-            {proveedores.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nombre}
-              </option>
-            ))}
-          </select>
+            <SlidersHorizontal className="w-4 h-4" />
+            Filtros
+            {activeFilterCount > 0 ? (
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--color-accent)] px-1 text-[10px] font-bold text-gray-900">
+                {activeFilterCount}
+              </span>
+            ) : null}
+          </button>
         </div>
         <button
           onClick={() => setShowManual(true)}
@@ -290,6 +321,17 @@ export function FinancePendientesTab() {
           <Plus className="w-4 h-4" /> Pendiente manual
         </button>
       </div>
+
+      <Sheet
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        title="Filtros"
+        footer={<button type="button" onClick={() => setFiltersOpen(false)} className="px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)]">Listo</button>}
+      >
+        <div className="space-y-3">
+          {filterSelects(selectClassSheet)}
+        </div>
+      </Sheet>
 
       {isLoading ? (
         <p className="text-sm text-[var(--color-text-muted)] text-center py-12">Cargando…</p>
