@@ -236,7 +236,7 @@ export function FinancePendientesTab() {
         facturas a proveedores y otros compromisos (sueldos, comisiones).
       </p>
 
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Metric label="Costos fijos" value={fmtCurrency(totals.FIXED_COST, "UYU")} />
         <Metric label="Materiales de obras" value={fmtCurrency(totals.PROJECT_MATERIAL, "UYU")} />
         <Metric label="Deuda proveedores" value={fmtCurrency(totals.SUPPLIER_DEBT, "UYU")} />
