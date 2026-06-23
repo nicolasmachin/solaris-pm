@@ -1,6 +1,6 @@
 # Novedades
 
-## v6.2
+## v6.3
 
 ### 22 de junio de 2026
 
@@ -29,6 +29,8 @@
 - **Filtros del Kanban:** en el celular el buscador y "Solo míos" pasaron a un botón **"Filtros"** que abre un panel; el botón muestra un contador cuando hay filtros activos. Los botones de **Nuevo lead** y el cambio entre **Kanban/Lista** quedan siempre a la vista.
 - **Vista Lista en el celular:** la tabla de leads se muestra como **tarjetas apiladas** y fáciles de leer en pantalla chica; en la computadora sigue siendo la misma tabla, con orden por columna y todo igual que antes.
 - **Detalle del lead:** al abrir un lead en el celular, los botones del fondo (como borrar o los comentarios) ya **no quedan tapados** por la barra de navegación inferior.
+
+## v6.2
 
 ### 20 de junio de 2026
 

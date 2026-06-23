@@ -23,20 +23,23 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "6.2",
-  date: "31 de mayo de 2026",
+  version: "6.3",
+  date: "22 de junio de 2026",
   sections: [
     {
-      title: "Finanzas — Estado de resultados en dólares",
+      title: "Ventas — Kanban más cómodo en el celular",
       items: [
-        "El Estado de resultados ahora muestra todos los montos en dólares (USD). Antes los convertía a pesos. Los movimientos cargados en pesos se convierten al tipo de cambio.",
+        "Mover tarjetas sin arrastrar: el ícono ⋮⋮ de cada tarjeta abre una lista de etapas para mandar el lead a otra columna con un toque.",
+        'Arrastrar ya no se pelea con el scroll: en el celular el arrastre arranca con un "toque sostenido", así podés deslizar la pantalla sin que se enganche una tarjeta.',
+        "El tablero muestra una columna por pantalla (con un asomo de la siguiente) y se acomoda solo al soltar.",
       ],
     },
     {
-      title: "Finanzas — Flujo de fondos",
+      title: "Finanzas — Más cómodo en el celular",
       items: [
-        'Costos fijos proyectados: se corrigió un error por el que los costos que vencen a fin de mes (día 31) se "salteaban" un mes y aparecían recién el mes siguiente. Ahora se proyectan en todos los meses.',
-        'Filtro por tipo de movimiento: prendé y apagá cobros pendientes, deuda a proveedores, costos fijos y materiales proyectados para ver solo lo que te interesa en el listado, el gráfico y los totales. Con atajos "Todos" y "Ninguno".',
+        "Proveedores, Cobros y la tabla de Flujo de fondos se ven como tarjetas apiladas en el celular (en la computadora, igual que antes).",
+        "Ahora se puede borrar un movimiento desde el celular: al editarlo hay abajo una zona de peligro con \"Eliminar movimiento\" (pide confirmación).",
+        '"Editar movimiento", "Plan de pagos" y "Aplicar pago a facturas" se abren como panel desde abajo en el celular y centrados en la computadora.',
       ],
     },
   ],
@@ -51,6 +54,14 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "6.2",
+    shortDate: "31 may",
+    highlights: [
+      "Finanzas: Estado de resultados en dólares (USD).",
+      "Finanzas: Flujo de fondos con fix de costos fijos de fin de mes y filtro por tipo de movimiento.",
+    ],
+  },
   {
     version: "6.1",
     shortDate: "27 may",
