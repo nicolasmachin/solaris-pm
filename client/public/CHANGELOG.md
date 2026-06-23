@@ -2,6 +2,12 @@
 
 ## v6.3
 
+### 23 de junio de 2026
+
+#### Finanzas — Más ventanas cómodas en el celular
+
+- El resto de las ventanas de Finanzas (nuevo movimiento, transferencia entre cuentas, factura a pagar, pago y pendiente manual, conciliar cuenta, registrar cobro, alta y edición de proveedor) ahora se abren como **panel desde abajo** en el celular y siguen centradas en la computadora.
+
 ### 22 de junio de 2026
 
 #### Finanzas — Tablas más legibles en el celular
