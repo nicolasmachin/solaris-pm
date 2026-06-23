@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { X } from 'lucide-react';
+import { Sheet } from '../ui/Sheet';
 import { createPayment } from '../../api/payments.api';
 import { getAccounts } from '../../api/accounts.api';
 import { ACCOUNT_TYPE_LABEL } from '../../types/accounts.types';
@@ -102,13 +102,22 @@ export function NewPaymentForSupplierModal({
   const lblStyle = 'block text-xs font-mono text-[var(--color-text-muted)] mb-1 uppercase tracking-wider';
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 overflow-y-auto" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-lg my-8 shadow-2xl">
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-sm font-semibold text-[var(--color-text-primary)]">Pago a {supplierName}</p>
-          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"><X className="w-5 h-5" /></button>
-        </div>
-        <form onSubmit={submit} className="space-y-4">
+    <Sheet
+      open
+      onClose={onClose}
+      title={`Pago a ${supplierName}`}
+      footer={
+        <>
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]">
+            Cancelar
+          </button>
+          <button type="submit" form="supplier-payment-form" disabled={saving} className="px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-60">
+            {saving ? 'Guardando…' : 'Registrar pago'}
+          </button>
+        </>
+      }
+    >
+        <form id="supplier-payment-form" onSubmit={submit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div><label className={lblStyle}>Fecha *</label><input type="date" className={inpStyle} value={form.fecha} onChange={e => setF('fecha', e.target.value)} required /></div>
             <div>
@@ -158,16 +167,7 @@ export function NewPaymentForSupplierModal({
             Aplicar a facturas ahora
           </label>
           {error && <p className="text-sm text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{error}</p>}
-          <div className="flex gap-3">
-            <button type="submit" disabled={saving} className="flex-1 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-60">
-              {saving ? 'Guardando…' : 'Registrar pago'}
-            </button>
-            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]">
-              Cancelar
-            </button>
-          </div>
         </form>
-      </div>
-    </div>
+    </Sheet>
   );
 }
