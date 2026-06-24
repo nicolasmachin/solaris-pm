@@ -667,6 +667,101 @@ function PendingRow({
   );
 }
 
+// ─── Card móvil de un pendiente (sección plana) + sheet de acciones ───────
+
+// Verbo de borrado por tipo (mismo texto que el title de la tabla desktop).
+const DELETE_LABEL: Record<PendingItemSourceType, string> = {
+  FIXED_COST: "Saltear este mes",
+  PROJECT_MATERIAL: "Quitar fecha",
+  SUPPLIER_DEBT: "Anular factura",
+  COMMITTED_EXPENSE: "Eliminar compromiso",
+  MANUAL_PENDING: "Eliminar pendiente",
+};
+
+function PendingActionsSheet({
+  item,
+  open,
+  onClose,
+  onPay,
+  onEdit,
+  onDelete,
+  onReschedule,
+  isRescheduling,
+}: {
+  item: PendingItem;
+  open: boolean;
+  onClose: () => void;
+  onPay: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  onReschedule: (fecha: string) => void;
+  isRescheduling: boolean;
+}) {
+  const [mode, setMode] = useState<"actions" | "reschedule">("actions");
+  const [fecha, setFecha] = useState(item.fecha.slice(0, 10));
+  // FIXED_COST no se reagenda acá (su fecha se cambia desde Administración).
+  const canReschedule = item.sourceType !== "FIXED_COST";
+
+  const btn =
+    "tap-target w-full flex items-center justify-start rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)]";
+
+  return (
+    <Sheet open={open} onClose={onClose} title={item.descripcion}>
+      {mode === "actions" ? (
+        <div className="space-y-2">
+          <button type="button" className={btn} onClick={() => { onClose(); onPay(); }}>
+            Marcar pagado
+          </button>
+          <button type="button" className={btn} onClick={() => { onClose(); onEdit(); }}>
+            Editar
+          </button>
+          {canReschedule && (
+            <button type="button" className={btn} onClick={() => setMode("reschedule")}>
+              Reagendar fecha
+            </button>
+          )}
+          <button
+            type="button"
+            className="tap-target w-full flex items-center justify-start rounded-lg border border-red-500/40 bg-red-500/5 px-3 text-sm font-medium text-red-400 hover:bg-red-500/15"
+            onClick={() => { onClose(); onDelete(); }}
+          >
+            {DELETE_LABEL[item.sourceType]}
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <label className="block">
+            <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Nueva fecha esperada</span>
+            <input
+              type="date"
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+            />
+          </label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setMode("actions")}
+              className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
+            >
+              Volver
+            </button>
+            <button
+              type="button"
+              disabled={isRescheduling || !fecha}
+              onClick={() => { onReschedule(fecha); onClose(); }}
+              className="flex-1 px-4 py-2 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] disabled:opacity-60"
+            >
+              {isRescheduling ? "Guardando…" : "Guardar"}
+            </button>
+          </div>
+        </div>
+      )}
+    </Sheet>
+  );
+}
+
 // ─── Tarjeta de materiales proyectados (proyecto → categoría → ítems) ────
 
 type MaterialMutations = {
