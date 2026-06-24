@@ -23,23 +23,37 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "6.3",
-  date: "22 de junio de 2026",
+  version: "7.0",
+  date: "24 de junio de 2026",
   sections: [
     {
-      title: "Ventas — Kanban más cómodo en el celular",
+      title: "Ya podés instalar Voltia PM como app en el celular",
       items: [
-        "Mover tarjetas sin arrastrar: el ícono ⋮⋮ de cada tarjeta abre una lista de etapas para mandar el lead a otra columna con un toque.",
-        'Arrastrar ya no se pelea con el scroll: en el celular el arrastre arranca con un "toque sostenido", así podés deslizar la pantalla sin que se enganche una tarjeta.',
-        "El tablero muestra una columna por pantalla (con un asomo de la siguiente) y se acomoda solo al soltar.",
+        'Desde el celular: en Android, Chrome ofrece "Instalar app"; en iPhone, Safari → Compartir → "Agregar a inicio".',
+        "Queda con su ícono propio en la pantalla de inicio y abre a pantalla completa, sin la barra del navegador.",
+        "Cierre de la adaptación a móvil: las secciones de campo (Ventas, Operaciones y Finanzas) quedan cómodas en el celular.",
+      ],
+    },
+    {
+      title: "Ventas — Kanban táctil en el celular",
+      items: [
+        "Mover tarjetas sin arrastrar: el ícono ⋮⋮ abre una lista de etapas para mandar el lead a otra columna con un toque.",
+        'El arrastre arranca con un "toque sostenido" (no se pelea con el scroll), y el tablero muestra una columna por pantalla.',
       ],
     },
     {
       title: "Finanzas — Más cómodo en el celular",
       items: [
-        "Proveedores, Cobros y la tabla de Flujo de fondos se ven como tarjetas apiladas en el celular (en la computadora, igual que antes).",
-        "Ahora se puede borrar un movimiento desde el celular: al editarlo hay abajo una zona de peligro con \"Eliminar movimiento\" (pide confirmación).",
-        '"Editar movimiento", "Plan de pagos" y "Aplicar pago a facturas" se abren como panel desde abajo en el celular y centrados en la computadora.',
+        "Proveedores, Cobros, Flujo de fondos y el resto de las tablas se ven como tarjetas en el celular; las ventanas se abren como panel desde abajo.",
+        'La pestaña Pendientes se ve como tarjetas (no una tabla ancha): el botón "⋯" abre las acciones (marcar pagado, editar, reagendar, eliminar). Filtros en un panel "Filtros".',
+        'Se puede borrar un movimiento desde el celular (zona de peligro con "Eliminar movimiento").',
+      ],
+    },
+    {
+      title: "Portal de cliente — Trámite UTE más claro",
+      items: [
+        "Las fechas de cada hito coinciden con las cargadas por el equipo (antes salían con un día menos).",
+        'La etapa que se está esperando se ve como pendiente (no cumplida); el último hito con fecha lleva el rótulo "Último avance".',
       ],
     },
   ],

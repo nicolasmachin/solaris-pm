@@ -1,6 +1,13 @@
 # Novedades
 
-## v6.3
+## v7.0
+
+### 24 de junio de 2026
+
+#### Ya podés instalar Voltia PM como app en el celular
+
+- **Voltia PM ahora se instala como una app.** Desde el celular: en Android, Chrome ofrece **"Instalar app"**; en iPhone, Safari → Compartir → **"Agregar a inicio"**. Queda con su **ícono propio** en la pantalla de inicio y abre **a pantalla completa**, sin la barra del navegador.
+- Cierre de la adaptación a móvil: las secciones de uso en campo (Ventas, Operaciones y Finanzas) quedan cómodas en el celular y la app se siente como una aplicación instalada.
 
 ### 23 de junio de 2026
 
