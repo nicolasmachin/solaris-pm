@@ -10,7 +10,15 @@ import { useAuthStore } from '../store/auth.store';
 function fmtDate(iso: string | null): string {
   if (!iso) return '';
   const d = new Date(iso);
-  return d.toLocaleDateString('es-UY', { day: '2-digit', month: 'short', year: 'numeric' });
+  // Las fechas de hitos se guardan como fecha-sólo (medianoche UTC). Formateamos
+  // en UTC para mostrar el día tal como fue cargado, sin que la TZ local (UTC−3)
+  // lo retroceda un día.
+  return d.toLocaleDateString('es-UY', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
 }
 
 export function PortalProjectUte() {
