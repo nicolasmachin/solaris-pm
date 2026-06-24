@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, Clock, Mail, Phone } from 'lucide-react';
+import { ArrowLeft, Check, Mail, Phone } from 'lucide-react';
 import {
   getPortalProjectUte,
   type PortalTimelineItem,
@@ -125,6 +125,9 @@ function Timeline({ items }: { items: PortalTimelineItem[] }) {
     <ol className="relative">
       {items.map((item, i) => {
         const isLast = i === items.length - 1;
+        // Modelo binario: hito con fecha = cumplido (verde); sin fecha = pendiente
+        // (gris). No hay estado "en espera" destacado.
+        const done = item.status === 'completed';
         return (
           <li key={item.key} className="relative pl-8 pb-5 last:pb-0">
             {/* Línea vertical */}
@@ -132,10 +135,8 @@ function Timeline({ items }: { items: PortalTimelineItem[] }) {
               <span
                 aria-hidden="true"
                 className={
-                  item.status === 'completed'
+                  done
                     ? 'absolute left-[10px] top-5 bottom-0 w-0.5 bg-emerald-500/40'
-                    : item.status === 'current'
-                    ? 'absolute left-[10px] top-5 bottom-0 w-0.5 bg-blue-500/40'
                     : 'absolute left-[10px] top-5 bottom-0 w-0.5 bg-[var(--color-border)]'
                 }
               />
@@ -144,26 +145,21 @@ function Timeline({ items }: { items: PortalTimelineItem[] }) {
             <span
               aria-hidden="true"
               className={
-                item.status === 'completed'
+                done
                   ? 'absolute left-1 top-1.5 w-[18px] h-[18px] rounded-full bg-emerald-500 flex items-center justify-center'
-                  : item.status === 'current'
-                  ? 'absolute left-0 top-0.5 w-[22px] h-[22px] rounded-full bg-blue-500 flex items-center justify-center ring-4 ring-blue-500/25'
                   : 'absolute left-1.5 top-2 w-[14px] h-[14px] rounded-full border border-[var(--color-border)] bg-[var(--color-bg-app)]'
               }
             >
-              {item.status === 'completed' && <Check className="w-3 h-3 text-white" />}
-              {item.status === 'current' && (
-                <Clock className="w-3 h-3 text-white" />
-              )}
+              {done && <Check className="w-3 h-3 text-white" />}
             </span>
             {/* Contenido */}
             <div>
               <div className="flex items-baseline justify-between gap-2 flex-wrap">
                 <p
                   className={
-                    item.status === 'pending'
-                      ? 'text-sm text-[var(--color-text-muted)]'
-                      : 'text-sm font-medium text-[var(--color-text-primary)]'
+                    done
+                      ? 'text-sm font-medium text-[var(--color-text-primary)]'
+                      : 'text-sm text-[var(--color-text-muted)]'
                   }
                 >
                   {item.label}
@@ -176,25 +172,13 @@ function Timeline({ items }: { items: PortalTimelineItem[] }) {
               </div>
               <p
                 className={
-                  item.status === 'pending'
-                    ? 'text-[11px] text-[var(--color-text-muted)] mt-0.5 italic'
-                    : 'text-[11px] text-[var(--color-text-muted)] mt-0.5'
+                  done
+                    ? 'text-[11px] text-[var(--color-text-muted)] mt-0.5'
+                    : 'text-[11px] text-[var(--color-text-muted)] mt-0.5 italic'
                 }
               >
                 {item.description}
               </p>
-              {item.status === 'current' && (
-                <div className="mt-2 rounded-md bg-blue-500/10 border border-blue-500/30 p-3">
-                  <p className="text-xs text-[var(--color-text-primary)]">
-                    {item.explanation}
-                  </p>
-                  {item.daysInStage != null && (
-                    <p className="text-[10px] text-[var(--color-text-muted)] mt-1 font-mono">
-                      Hace {item.daysInStage} {item.daysInStage === 1 ? 'día' : 'días'} en esta etapa
-                    </p>
-                  )}
-                </div>
-              )}
             </div>
           </li>
         );
