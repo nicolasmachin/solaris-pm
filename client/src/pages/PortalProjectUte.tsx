@@ -121,6 +121,13 @@ export function PortalProjectUte() {
 }
 
 function Timeline({ items }: { items: PortalTimelineItem[] }) {
+  // Índice del último hito con fecha cargada. Solo marcamos "Último avance"
+  // mientras el trámite no esté finalizado (queda al menos un hito sin fecha);
+  // si están todos cumplidos, no se muestra.
+  const lastDoneIndex = items.reduce((acc, it, idx) => (it.completedAt ? idx : acc), -1);
+  const allDone = items.length > 0 && items.every((it) => it.completedAt);
+  const lastAdvanceIndex = !allDone ? lastDoneIndex : -1;
+
   return (
     <ol className="relative">
       {items.map((item, i) => {
@@ -163,6 +170,11 @@ function Timeline({ items }: { items: PortalTimelineItem[] }) {
                   }
                 >
                   {item.label}
+                  {i === lastAdvanceIndex && (
+                    <span className="ml-2 align-middle rounded-full bg-[var(--color-bg-app)] border border-[var(--color-border)] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-[var(--color-text-secondary)]">
+                      Último avance
+                    </span>
+                  )}
                 </p>
                 {item.completedAt && (
                   <span className="text-[10px] font-mono text-[var(--color-text-muted)]">

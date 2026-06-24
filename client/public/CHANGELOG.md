@@ -8,6 +8,11 @@
 
 - El resto de las ventanas de Finanzas (nuevo movimiento, transferencia entre cuentas, factura a pagar, pago y pendiente manual, conciliar cuenta, registrar cobro, alta y edición de proveedor) ahora se abren como **panel desde abajo** en el celular y siguen centradas en la computadora.
 
+#### Finanzas — Pendientes en el celular
+
+- La pestaña **Pendientes** ahora se ve cómoda en el celular: cada compromiso se muestra como **tarjeta** (fecha, monto destacado, descripción) en vez de una tabla ancha que se salía de pantalla. El botón **"⋯"** de cada tarjeta abre las acciones (marcar pagado, editar, reagendar fecha, y eliminar con su texto correcto según el tipo: "Saltear este mes", "Anular factura", etc.).
+- Los **filtros** (tipo, proyecto, proveedor) pasan a un panel **"Filtros"** con contador, y las métricas de arriba se acomodan en 2 columnas. En la computadora se ve igual que antes.
+
 ### 22 de junio de 2026
 
 #### Finanzas — Tablas más legibles en el celular
