@@ -4,6 +4,12 @@
 
 ### 23 de junio de 2026
 
+#### Portal de cliente — Seguimiento del trámite UTE más claro
+
+- **Fechas correctas:** las fechas de cada hito del trámite ahora coinciden exactamente con las que carga el equipo (antes se mostraban con un día menos).
+- **La etapa que se está esperando ya no parece cumplida:** el hito en el que está parado el trámite se ve como pendiente (gris), igual que los que faltan. Cada hito tiene dos estados nada más: hecho (con su fecha) o pendiente.
+- **"Último avance":** el último hito con fecha lleva un rótulo chiquito **"Último avance"** para que se note de un vistazo dónde está el trámite. No aparece cuando el trámite ya está finalizado.
+
 #### Finanzas — Más ventanas cómodas en el celular
 
 - El resto de las ventanas de Finanzas (nuevo movimiento, transferencia entre cuentas, factura a pagar, pago y pendiente manual, conciliar cuenta, registrar cobro, alta y edición de proveedor) ahora se abren como **panel desde abajo** en el celular y siguen centradas en la computadora.
