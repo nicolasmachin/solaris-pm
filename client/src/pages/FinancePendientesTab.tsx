@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { CalendarDays, ChevronDown, ChevronRight, ExternalLink, Pencil, Plus, SlidersHorizontal, Trash2, X } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronRight, ExternalLink, MoreHorizontal, Pencil, Plus, SlidersHorizontal, Trash2, X } from "lucide-react";
 
 import {
   deletePendingItem,
@@ -12,6 +12,7 @@ import {
   type ProjectMaterialGroup,
 } from "../api/pending.api";
 import { Sheet } from "../components/ui/Sheet";
+import { useIsMobile } from "../hooks/useIsMobile";
 import { fmtCurrency, fmtDate } from "../lib/finance";
 import { getMovement, patchMovement, transitionMovement } from "../api/finance.api";
 import { updateCashflowEventFecha, type EditableEventSourceType } from "../api/cashflow.api";
@@ -40,6 +41,7 @@ const SOURCE_TONE: Record<PendingItemSourceType, string> = {
 export function FinancePendientesTab() {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const isMobile = useIsMobile();
   const { data, isLoading } = useQuery({
     queryKey: ["finance-pending"],
     queryFn: getPendingItems,
@@ -193,6 +195,20 @@ export function FinancePendientesTab() {
     };
     if (!confirm(messages[item.sourceType])) return;
     deletePendingMut.mutate({ type: item.sourceType, id: item.sourceId });
+  }
+
+  // Editar: COMMITTED/MANUAL abren EditCommittedModal; el resto navega.
+  // Misma decisión que el botón Editar de PendingRow (tabla desktop).
+  function handleEdit(item: PendingItem) {
+    if (item.sourceType === "COMMITTED_EXPENSE" || item.sourceType === "MANUAL_PENDING") {
+      setEditingCommittedId(item.sourceId);
+    } else if (item.sourceType === "FIXED_COST") {
+      navigate("/admin");
+    } else if (item.sourceType === "PROJECT_MATERIAL" && item.project) {
+      navigate(`/projects/${item.project.id}`);
+    } else if (item.sourceType === "SUPPLIER_DEBT" && item.supplier) {
+      navigate(`/finanzas/proveedores/${item.supplier.id}`);
+    }
   }
 
   function handlePay(item: PendingItem) {
@@ -390,6 +406,28 @@ export function FinancePendientesTab() {
                 </button>
 
                 {isOpen && (
+                  isMobile ? (
+                    // < md: cards compactas con sheet de acciones (sin tabla ni w-72).
+                    <div className="border-t border-[var(--color-border)] divide-y divide-[var(--color-border)]">
+                      {g.items.map((it) => (
+                        <PendingCard
+                          key={it.id}
+                          item={it}
+                          onPay={() => handlePay(it)}
+                          onEdit={() => handleEdit(it)}
+                          onDelete={() => deletePending(it)}
+                          onReschedule={(fecha) =>
+                            editFechaMut.mutate({
+                              sourceType: it.sourceType,
+                              sourceId: it.sourceId,
+                              fecha,
+                            })
+                          }
+                          isRescheduling={editFechaMut.isPending}
+                        />
+                      ))}
+                    </div>
+                  ) : (
                   <div className="border-t border-[var(--color-border)]">
                     <table className="w-full text-sm">
                       <thead className="bg-[var(--color-bg-app)] text-xs text-[var(--color-text-muted)] uppercase tracking-wider">
@@ -431,6 +469,7 @@ export function FinancePendientesTab() {
                       </tbody>
                     </table>
                   </div>
+                  )
                 )}
               </div>
             );
@@ -759,6 +798,84 @@ function PendingActionsSheet({
         </div>
       )}
     </Sheet>
+  );
+}
+
+// Card compacta de un pendiente para `< md` (escaneo): fecha + monto arriba,
+// descripción/origen debajo, categoría secundaria y "⋯" → sheet de acciones.
+function PendingCard({
+  item,
+  onPay,
+  onEdit,
+  onDelete,
+  onReschedule,
+  isRescheduling,
+}: {
+  item: PendingItem;
+  onPay: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  onReschedule: (fecha: string) => void;
+  isRescheduling: boolean;
+}) {
+  const [actionsOpen, setActionsOpen] = useState(false);
+  return (
+    <div className={`px-4 py-3 ${item.isOverdue ? "bg-red-500/5" : ""}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span
+              className={`text-xs tabular-nums ${
+                item.isOverdue ? "text-red-400 font-semibold" : "text-[var(--color-text-secondary)]"
+              }`}
+            >
+              {fmtDate(item.fecha)}
+            </span>
+            {item.isOverdue && <span className="text-[10px] font-medium text-red-400">Vencido</span>}
+          </div>
+          <p className="mt-0.5 text-sm text-[var(--color-text-primary)]">{item.descripcion}</p>
+          {item.project && (
+            <p className="text-[11px] text-[var(--color-text-muted)]">
+              {item.project.code} · {item.project.clientName}
+            </p>
+          )}
+          {item.supplier && !item.project && (
+            <p className="text-[11px] text-[var(--color-text-muted)]">{item.supplier.nombre}</p>
+          )}
+          <p className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">{item.categoria}</p>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <span
+            className={`text-base font-semibold tabular-nums ${
+              item.tipoMovimiento === "INGRESO" ? "text-green-400" : "text-red-400"
+            }`}
+          >
+            {item.tipoMovimiento === "INGRESO" ? "+" : "-"}
+            {fmtCurrency(item.monto, item.moneda)}
+          </span>
+          <button
+            type="button"
+            onClick={() => setActionsOpen(true)}
+            aria-label="Acciones"
+            className="tap-target rounded text-[var(--color-text-muted)] hover:bg-[var(--color-bg-card-hover)] hover:text-[var(--color-text-primary)]"
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+      {actionsOpen && (
+        <PendingActionsSheet
+          item={item}
+          open
+          onClose={() => setActionsOpen(false)}
+          onPay={onPay}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onReschedule={onReschedule}
+          isRescheduling={isRescheduling}
+        />
+      )}
+    </div>
   );
 }
 
