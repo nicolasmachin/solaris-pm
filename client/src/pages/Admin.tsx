@@ -34,6 +34,7 @@ import { TabDeadlineRules } from "./AdminDeadlineRules";
 import { TabClientes } from "./AdminClientes";
 import { TabCostosFijos } from "./AdminCostosFijos";
 import { TabChecklistTemplates } from "./AdminChecklistTemplates";
+import { ProposalDefaultsPage } from "./admin/ProposalDefaultsPage";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -3137,6 +3138,7 @@ export function Admin() {
           {activeTab === "clientes" && <TabClientes />}
           {activeTab === "checklist-obra" && <TabChecklistTemplates />}
           {activeTab === "plantillas-email" && <TabPlantillasEmail />}
+          {activeTab === "proposal-defaults" && <ProposalDefaultsPage />}
         </div>
       </main>
     </div>

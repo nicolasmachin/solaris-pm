@@ -53,6 +53,7 @@ export const ADMIN_GROUPS: AdminSidebarGroup[] = [
       { tab: "deadlines", label: "Reglas de Deadlines" },
       { tab: "checklist-obra", label: "Plantilla de checklist" },
       { tab: "plantillas-email", label: "Plantillas de email" },
+      { tab: "proposal-defaults", label: "Defaults de propuestas" },
       { tab: "objetivos", label: "Objetivos" },
     ],
   },
