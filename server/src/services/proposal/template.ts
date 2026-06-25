@@ -101,7 +101,10 @@ function buildRoiChart(retornoInversion16Anios: number[]) {
       label: isPos ? fmtNum(v) : `−${fmtNum(-v)}`,
     };
   });
-  return { zeroPct, botPct, bars };
+  // Retorno acumulado al año 15, redondeado hacia abajo a miles ("supera los USD 22.000").
+  const ultimo = retornoInversion16Anios[retornoInversion16Anios.length - 1] ?? 0;
+  const finalMilUsd = Math.max(0, Math.floor(ultimo / 1000) * 1000);
+  return { zeroPct, botPct, bars, finalMilUsd };
 }
 
 export interface RenderContext {
