@@ -1,11 +1,13 @@
-// Endpoint de preview del generador de propuestas v2 (Fase B).
-//   POST /api/proposals-v2/preview  → VENTAS:VIEW
-// Read-only: lee el singleton ProposalDefaults, calcula y devuelve
-// { calculated, debugHtml }. El flujo de caja del negocio se incluye en
-// `calculated` solo si el usuario es ADMIN (gating acá, no en el calculator).
+// Endpoints del generador de propuestas v2.
+//   POST /api/proposals-v2/preview       → VENTAS:VIEW  → { calculated, html }
+//   POST /api/proposals-v2/generate-pdf  → VENTAS:VIEW  → PDF binario
+// Read-only: lee el singleton ProposalDefaults y calcula. El flujo de caja del
+// negocio se incluye en el `calculated` devuelto solo si el usuario es ADMIN
+// (gating acá, no en el calculator). El HTML/PDF nunca contiene el flujo de caja,
+// así que renderizar con el calculated completo no filtra datos sensibles.
 
 import { Action, Module } from "@prisma/client";
-import type { FastifyRequest } from "fastify";
+import type { FastifyReply, FastifyRequest } from "fastify";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
@@ -14,6 +16,10 @@ import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import {
   calculate,
+  generateProposalFullPdf,
+  generateProposalSummaryPdf,
+  renderProposalFull,
+  renderProposalSummary,
   resolveDefaults,
   type ProposalCalculated,
   type ProposalData,
@@ -79,7 +85,12 @@ const dataSchema = z
   })
   .strict();
 
-const bodySchema = z.object({ data: dataSchema }).strict();
+const bodySchema = z
+  .object({
+    data: dataSchema,
+    mode: z.enum(["full", "summary"]).default("full"),
+  })
+  .strict();
 
 // Claves del flujo de caja del negocio (solo ADMIN).
 const FLUJO_KEYS = [
@@ -100,69 +111,57 @@ function stripBusinessFlow(calc: ProposalCalculated): Partial<ProposalCalculated
   return copy as Partial<ProposalCalculated>;
 }
 
-const fmtUsd = (n: number) => `USD ${n.toLocaleString("es-UY", { maximumFractionDigits: 2 })}`;
-const fmtNum = (n: number) => n.toLocaleString("es-UY", { maximumFractionDigits: 2 });
-
-function buildDebugHtml(c: ProposalCalculated, isAdmin: boolean): string {
-  const rows: [string, string][] = [
-    ["Potencia total", `${fmtNum(c.potenciaTotalKwp)} kWp`],
-    ["Energía mensual", `${fmtNum(c.energiaMensualKwh)} kWh`],
-    ["Energía anual", `${fmtNum(c.energiaAnualKwh)} kWh`],
-    ["Costo equipamiento (sin IVA)", fmtUsd(c.costoEquipamientoSinIva)],
-    ["Costo total (sin IVA)", fmtUsd(c.costoTotalSinIva)],
-    ["Mano de obra (sin IVA)", fmtUsd(c.manoDeObraUsdSinIva)],
-    ["Subtotal (sin IVA)", fmtUsd(c.subtotalSinIva)],
-    ["Total con IVA", fmtUsd(c.totalConIva)],
-    ["Total final con IVA (con ítems)", fmtUsd(c.totalFinalConIva)],
-    ["USD/W", fmtNum(c.usdPorWatt)],
-    ["Ahorro mensual", `$ ${fmtNum(c.ahorroMensualPesos)} (${fmtUsd(c.ahorroMensualUsd)})`],
-    ["Ahorro anual", fmtUsd(c.ahorroAnualUsd)],
-    ["Paga nuevo UTE", `$ ${fmtNum(c.pagaNuevoUtePesos)}`],
-    ["TIR", `${fmtNum(c.tir * 100)} %`],
-    ["PRI", `${fmtNum(c.priAnios)} años`],
-    ["Cuota 24m", fmtUsd(c.cuota24m)],
-    ["Cuota 36m", fmtUsd(c.cuota36m)],
-    ["Cuota 60m", fmtUsd(c.cuota60m)],
-  ];
-  if (isAdmin) {
-    rows.push(
-      ["— Flujo de caja —", ""],
-      ["Margen", `${fmtNum(c.margen * 100)} %`],
-      ["Ganancia final", fmtUsd(c.gananciaFinal)],
+async function resolveData(data: ProposalData) {
+  const defaultsRow = await prisma.proposalDefaults.findUnique({ where: { id: "singleton" } });
+  if (!defaultsRow) {
+    throw badRequest(
+      "PROPOSAL_DEFAULTS_NOT_SEEDED",
+      "Los defaults de propuestas no están cargados — corré el seed",
     );
   }
-  const trs = rows
-    .map(([k, v]) => `<tr><td style="padding:4px 8px">${k}</td><td style="padding:4px 8px;text-align:right">${v}</td></tr>`)
-    .join("");
-  return `<div style="font-family:monospace;padding:20px"><h2>Debug — cálculos de la propuesta</h2><table border="1" style="border-collapse:collapse">${trs}</table></div>`;
+  const defaults = resolveDefaults(defaultsRow.data);
+  return calculate(data, defaults);
 }
 
 export async function registerProposalsV2PreviewRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authenticate);
 
+  // Preview: calcula y devuelve el HTML renderizado (para previsualizar en el front).
   app.post(
     "/proposals-v2/preview",
     { preHandler: authorize(Module.VENTAS, Action.VIEW) },
     async (request) => {
       const user = ensureUser(request);
-      const { data } = bodySchema.parse(request.body);
-
-      const defaultsRow = await prisma.proposalDefaults.findUnique({ where: { id: "singleton" } });
-      if (!defaultsRow) {
-        throw badRequest(
-          "PROPOSAL_DEFAULTS_NOT_SEEDED",
-          "Los defaults de propuestas no están cargados — corré el seed",
-        );
-      }
-
-      const defaults = resolveDefaults(defaultsRow.data);
-      const calculated = calculate(data as ProposalData, defaults);
-
+      const { data, mode } = bodySchema.parse(request.body);
+      const calculated = await resolveData(data as ProposalData);
+      const ctx = { data: data as ProposalData, calculated };
+      const html = mode === "summary" ? renderProposalSummary(ctx) : renderProposalFull(ctx);
       const isAdmin = user.role === "ADMIN";
       return {
         calculated: isAdmin ? calculated : stripBusinessFlow(calculated),
-        debugHtml: buildDebugHtml(calculated, isAdmin),
+        html,
       };
+    },
+  );
+
+  // Generación del PDF (binario).
+  app.post(
+    "/proposals-v2/generate-pdf",
+    { preHandler: authorize(Module.VENTAS, Action.VIEW) },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      ensureUser(request);
+      const { data, mode } = bodySchema.parse(request.body);
+      const calculated = await resolveData(data as ProposalData);
+      const ctx = { data: data as ProposalData, calculated };
+      const pdf =
+        mode === "summary"
+          ? await generateProposalSummaryPdf(ctx)
+          : await generateProposalFullPdf(ctx);
+      const filename = mode === "summary" ? "propuesta-resumen.pdf" : "propuesta-completa.pdf";
+      return reply
+        .header("Content-Type", "application/pdf")
+        .header("Content-Disposition", `inline; filename="${filename}"`)
+        .send(pdf);
     },
   );
 }
