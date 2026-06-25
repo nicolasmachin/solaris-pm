@@ -46,12 +46,14 @@ export async function renderGeneracionMensualChart(generacionMensualKwh: number[
         },
       },
       scales: {
-        y: {
-          title: { display: true, text: "kWh por mes", color: "#6b7280", font: { size: 11 } },
-          ticks: { color: "#9aa3b2", font: { size: 10 } },
-          grid: { color: "#eef0f4" },
+        // Eje Y oculto: la referencia muestra solo barras + valores (el "kWh por mes"
+        // va como caption HTML en el partial).
+        y: { display: false, grace: "12%" },
+        x: {
+          ticks: { color: "#6b7280", font: { size: 11 } },
+          grid: { display: false },
+          border: { color: "#e3e6ee" },
         },
-        x: { ticks: { color: "#6b7280", font: { size: 11 } }, grid: { display: false } },
       },
     },
   });
@@ -62,7 +64,7 @@ export async function renderRetornoInversionChart(retornoInversion16Anios: numbe
   return canvas.renderToDataURL({
     type: "bar",
     data: {
-      labels: retornoInversion16Anios.map((_, i) => String(i)),
+      labels: retornoInversion16Anios.map((_, i) => `A${i}`),
       datasets: [{ data: retornoInversion16Anios, backgroundColor: colors, borderRadius: 3 }],
     },
     options: {
@@ -79,16 +81,21 @@ export async function renderRetornoInversionChart(retornoInversion16Anios: numbe
         },
       },
       scales: {
+        // Eje Y sin ticks/título: se dibuja únicamente la línea de equilibrio (y=0).
         y: {
-          title: { display: true, text: "USD acumulado", color: "#6b7280", font: { size: 11 } },
-          ticks: { color: "#9aa3b2", font: { size: 10 } },
-          // Resalta la línea de equilibrio (y=0).
-          grid: { color: (ctx: ScriptableScaleContext) => (ctx.tick.value === 0 ? "#9fb0cf" : "#eef0f4") },
+          grace: "8%",
+          ticks: { display: false },
+          title: { display: false },
+          border: { display: false },
+          grid: {
+            color: (ctx: ScriptableScaleContext) => (ctx.tick.value === 0 ? "#9fb0cf" : "transparent"),
+            lineWidth: (ctx: ScriptableScaleContext) => (ctx.tick.value === 0 ? 1.5 : 0),
+          },
         },
         x: {
-          title: { display: true, text: "Año", color: "#6b7280", font: { size: 11 } },
           ticks: { color: "#6b7280", font: { size: 10 } },
           grid: { display: false },
+          border: { display: false },
         },
       },
     },
