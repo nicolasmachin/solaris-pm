@@ -1,0 +1,71 @@
+<div class="pg" style="width:794px; height:1123px; background:#fff; position:relative; overflow:hidden; padding:54px 56px; display:flex; flex-direction:column;">
+  <div style="font-size:11px; font-weight:700; letter-spacing:.14em; color:#1836B2; text-transform:uppercase;">Cotización</div>
+  <h2 style="margin:10px 0 0; font-size:30px; font-weight:700; letter-spacing:-.02em; color:#10131f;">Tu inversión</h2>
+
+  <p style="margin:14px 0 0; font-size:12px; color:#6b7188; line-height:1.55;">La cotización base incluye el sistema llave en mano. Según las necesidades del proyecto se pueden sumar ítems adicionales opcionales. Cotización de referencia del dólar: ${{number data.cotizacion.cotizacionDolar}}, IVA incluido en el total. Propuesta emitida el {{calculated.fechaTextoLargo}}, vigente por 60 días.</p>
+
+  <!-- Variante A -->
+  <div style="margin-top:22px; display:flex; align-items:center; gap:10px;">
+    <span style="font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#10131f;">Variante A</span>
+    <span style="font-size:11.5px; color:#7b8198;">Sistema base, sin ítems adicionales</span>
+  </div>
+  <div style="margin-top:10px; border:1px solid #e6e8f2; border-radius:14px; overflow:hidden;">
+    <div style="display:grid; grid-template-columns:1fr 86px 160px; background:#f4f6fc; border-bottom:1px solid #e6e8f2;">
+      <div style="padding:11px 18px; font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#7b8198;">Ítem</div>
+      <div style="padding:11px 10px; font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#7b8198; text-align:right;">Pot. (W)</div>
+      <div style="padding:11px 18px; font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#7b8198; text-align:right;">Precio</div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 86px 160px; align-items:center;">
+      <div style="padding:14px 18px;"><div style="font-size:13.5px; font-weight:700; color:#10131f;">Sistema solar fotovoltaico on-grid</div><div style="font-size:11.5px; color:#6b7188; margin-top:2px;">{{data.sistema.cantidadPaneles}} paneles · inversor · estructura · instalación · tramitación</div></div>
+      <div style="padding:14px 10px; font-size:13px; color:#3a3e50; text-align:right;">{{number (mult calculated.potenciaTotalKwp 1000)}}</div>
+      <div style="padding:14px 18px; font-size:13px; color:#3a3e50; text-align:right; white-space:nowrap;">{{currency calculated.subtotalSinIva}} + IVA</div>
+    </div>
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; background:#eaf0fc; border-top:1px solid #d9e4f8; padding:16px 20px;">
+      <div style="font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#5a6b9a;">Total con IVA incluido</div>
+      <div style="font-size:26px; font-weight:700; color:#1836B2; letter-spacing:-.01em; white-space:nowrap;">{{currency calculated.totalConIva}}</div>
+    </div>
+  </div>
+
+  {{#if data.itemsAdicionales.length}}
+  <!-- Variante B -->
+  <div style="margin-top:22px; display:flex; align-items:center; gap:10px;">
+    <span style="font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#10131f;">Variante B</span>
+    <span style="font-size:11.5px; color:#7b8198;">Con ítems adicionales opcionales</span>
+  </div>
+  <div style="margin-top:10px; border:1px solid #e6e8f2; border-radius:14px; overflow:hidden;">
+    <div style="display:grid; grid-template-columns:1fr 86px 160px; background:#f4f6fc; border-bottom:1px solid #e6e8f2;">
+      <div style="padding:11px 18px; font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#7b8198;">Ítem</div>
+      <div style="padding:11px 10px; font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#7b8198; text-align:right;">Pot. (W)</div>
+      <div style="padding:11px 18px; font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#7b8198; text-align:right;">Precio</div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 86px 160px; align-items:center; border-bottom:1px solid #eef0f6;">
+      <div style="padding:13px 18px;"><div style="font-size:13px; font-weight:700; color:#10131f;">Sistema solar fotovoltaico on-grid</div><div style="font-size:11px; color:#6b7188; margin-top:2px;">{{data.sistema.cantidadPaneles}} paneles · inversor · estructura · instalación · tramitación</div></div>
+      <div style="padding:13px 10px; font-size:13px; color:#3a3e50; text-align:right;">{{number (mult calculated.potenciaTotalKwp 1000)}}</div>
+      <div style="padding:13px 18px; font-size:13px; color:#3a3e50; text-align:right; white-space:nowrap;">{{currency calculated.subtotalSinIva}} + IVA</div>
+    </div>
+    {{#each data.itemsAdicionales}}
+    <div style="display:grid; grid-template-columns:1fr 86px 160px; align-items:center; border-bottom:1px solid #eef0f6;">
+      <div style="padding:13px 18px;"><div style="font-size:13px; font-weight:700; color:#10131f;">{{this.nombre}}</div><div style="font-size:11px; color:#6b7188; margin-top:2px;">{{this.descripcion}}</div></div>
+      <div style="padding:13px 10px; font-size:13px; color:#9aa0b4; text-align:right;">{{#if this.potenciaW}}{{number this.potenciaW}}{{else}}—{{/if}}</div>
+      <div style="padding:13px 18px; font-size:13px; color:#3a3e50; text-align:right; white-space:nowrap;">{{currency this.precioSinIvaUsd}} + IVA</div>
+    </div>
+    {{/each}}
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; background:#eaf0fc; border-top:1px solid #d9e4f8; padding:16px 20px;">
+      <div><div style="font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#5a6b9a;">Total con IVA incluido</div><div style="font-size:10.5px; color:#8a90a6; margin-top:2px;">Sistema base + ítems adicionales</div></div>
+      <div style="font-size:26px; font-weight:700; color:#1836B2; letter-spacing:-.01em; white-space:nowrap;">{{currency calculated.totalFinalConIva}}</div>
+    </div>
+  </div>
+  {{/if}}
+
+  <div style="margin-top:26px; font-size:11px; font-weight:700; letter-spacing:.14em; color:#1836B2; text-transform:uppercase;">Condiciones generales</div>
+  <div style="margin-top:14px; display:grid; grid-template-columns:1fr 1fr; gap:12px 24px;">
+    <div style="display:flex; gap:13px; align-items:flex-start;"><div style="width:26px; height:26px; flex:none; border-radius:8px; background:#eef1fb; color:#1836B2; display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:700;">1</div><div><div style="font-size:13px; font-weight:700; color:#10131f;">Validez de la propuesta</div><div style="font-size:11.5px; line-height:1.5; color:#6b7188; margin-top:2px;">60 días a partir de la fecha de emisión.</div></div></div>
+    <div style="display:flex; gap:13px; align-items:flex-start;"><div style="width:26px; height:26px; flex:none; border-radius:8px; background:#eef1fb; color:#1836B2; display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:700;">2</div><div><div style="font-size:13px; font-weight:700; color:#10131f;">Pago inicial</div><div style="font-size:11.5px; line-height:1.5; color:#6b7188; margin-top:2px;">50% del total al confirmar el servicio.</div></div></div>
+    <div style="display:flex; gap:13px; align-items:flex-start;"><div style="width:26px; height:26px; flex:none; border-radius:8px; background:#eef1fb; color:#1836B2; display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:700;">3</div><div><div style="font-size:13px; font-weight:700; color:#10131f;">Saldo restante</div><div style="font-size:11.5px; line-height:1.5; color:#6b7188; margin-top:2px;">Al finalizar técnicamente la instalación. La habilitación de UTE puede demorar hasta 8 semanas más.</div></div></div>
+    <div style="display:flex; gap:13px; align-items:flex-start;"><div style="width:26px; height:26px; flex:none; border-radius:8px; background:#eef1fb; color:#1836B2; display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:700;">4</div><div><div style="font-size:13px; font-weight:700; color:#10131f;">Financiación</div><div style="font-size:11.5px; line-height:1.5; color:#6b7188; margin-top:2px;">Convenio con BBVA: hasta 100% financiado (ver página siguiente).</div></div></div>
+  </div>
+
+  <div style="margin-top:auto; padding-top:16px; border-top:1px solid #eef0f6; display:flex; align-items:center; justify-content:center;">
+    <img src="{{logoMarkBlue}}" alt="Voltia" style="height:40px; width:40px; object-fit:contain; display:block;">
+  </div>
+</div>
