@@ -1,0 +1,63 @@
+/* Base: reset, tipografías, scaffolding A4. Tomado del mockup Imagine validado. */
+@page { size: A4; margin: 0; }
+
+:root {
+  --blue: #1836B2;
+  --blue-dark: #122a8f;
+  --blue-light: #A7C7E7;
+  --accent: #F5B700;
+  --ink: #1a2233;
+  --muted: #6b7280;
+  --muted-2: #9aa3b2;
+  --line: #e5e7eb;
+  --line-soft: #eef0f4;
+  --bg: #EEF1F6;
+  --tint: #f4f6fb;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background: #fff;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.45;
+}
+
+/* Página A4 */
+.page {
+  position: relative;
+  width: 794px;
+  min-height: 1123px;
+  background: #fff;
+  padding: 54px 48px 70px;
+  overflow: hidden;
+}
+
+/* Pie de página */
+.pfoot {
+  position: absolute;
+  left: 48px; right: 48px; bottom: 26px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 9px; color: var(--muted-2);
+  letter-spacing: .04em;
+}
+.pfoot .wm { display: flex; align-items: center; gap: 7px; font-weight: 600; color: var(--muted); letter-spacing: .18em; }
+.pfoot .wm .logo-mark { width: 16px; height: 16px; }
+
+/* Tipografía */
+.eyebrow { font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--blue); font-weight: 700; margin: 0 0 6px; }
+h1.sec { font-size: 30px; font-weight: 800; letter-spacing: -.01em; margin: 0 0 4px; color: var(--ink); }
+h2.sub { font-size: 18px; font-weight: 700; margin: 0 0 10px; color: var(--blue-dark); }
+.lead { font-size: 14px; color: #36405a; max-width: 62ch; }
+.note { font-size: 11px; color: var(--muted); }
+.rule { height: 3px; width: 54px; background: var(--blue); border-radius: 3px; margin: 10px 0 22px; }
+
+/* Logo */
+.logo { display: inline-flex; align-items: center; gap: 11px; }
+.logo .logo-mark { width: 34px; height: 34px; }
+.logo .word { font-weight: 800; font-size: 22px; letter-spacing: .16em; color: var(--blue); }
+
+/* Íconos */
+.ic { width: 24px; height: 24px; stroke: var(--blue); stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }

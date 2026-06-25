@@ -1,0 +1,11 @@
+/* Reglas de impresión (Puppeteer / @media print). */
+@media print {
+  body { background: #fff; }
+  /* Forzar colores de fondo (gradientes, bloques azules) en el PDF */
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* Cada página top-level arranca en hoja nueva */
+  .page { page-break-after: always; }
+  .page:last-child { page-break-after: auto; }
+  /* El flujo de caja del negocio nunca se imprime */
+  .business-flow { display: none !important; }
+}
