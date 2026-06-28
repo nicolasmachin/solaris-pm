@@ -16,10 +16,13 @@ import { ResponsiveTable, type Column } from "../../../components/ui/ResponsiveT
 import { Sheet } from "../../../components/ui/Sheet";
 import { Spinner } from "../../../components/ui/Spinner";
 import { useIsMobile } from "../../../hooks/useIsMobile";
+import { usePermission } from "../../../hooks/usePermission";
 import { ActiveFilterChips, ClientesFilters } from "../components/ClientesFilters";
+import { EditableCell } from "../components/EditableCell";
 import { EtapaChip } from "../components/EtapaChip";
 import { ESTADO_LABELS } from "../constants";
 import { useClientes } from "../hooks/useClientes";
+import { useUpdateCliente } from "../hooks/useUpdateCliente";
 
 const PAGE_SIZE = 50;
 const SORTABLE: Record<string, ClienteSortBy> = {
@@ -80,6 +83,13 @@ export function ClientesPage() {
   );
 
   const { data, isLoading, isError } = useClientes(filters, page, PAGE_SIZE);
+
+  // Edición inline (mail/teléfono/fecha). Solo con permiso EDIT.
+  const canEdit = usePermission("EXPERIENCIA_CLIENTES", "EDIT");
+  const updateCliente = useUpdateCliente();
+  function saveField(projectId: string, patch: Parameters<typeof updateCliente.mutateAsync>[0]["patch"]) {
+    return updateCliente.mutateAsync({ projectId, patch }).then(() => undefined);
+  }
 
   // Filtros que vienen del componente (excepto search, que se maneja con debounce).
   function patchFilters(patch: Partial<Filters>) {
@@ -160,19 +170,44 @@ export function ClientesPage() {
       label: "Entrega",
       sortable: true,
       className: "text-[var(--color-text-muted)] text-[11px]",
-      render: (c) => fmtDate(c.fechaEntrega),
+      render: (c) => (
+        <EditableCell
+          value={c.fechaEntrega}
+          type="date"
+          canEdit={canEdit}
+          ariaLabel="fecha de entrega"
+          render={(v) => (v ? fmtDate(v) : <span className="text-[var(--color-text-muted)]">—</span>)}
+          onSave={(v) => saveField(c.projectId, { fechaEntrega: v })}
+        />
+      ),
     },
     {
       key: "telefono",
       label: "Teléfono",
       className: "text-[var(--color-text-muted)]",
-      render: (c) => c.telefono ?? "—",
+      render: (c) => (
+        <EditableCell
+          value={c.telefono}
+          type="tel"
+          canEdit={canEdit}
+          ariaLabel="teléfono"
+          onSave={(v) => saveField(c.projectId, { telefono: v })}
+        />
+      ),
     },
     {
       key: "mail",
       label: "Mail",
       className: "text-[var(--color-text-muted)]",
-      render: (c) => c.mail ?? "—",
+      render: (c) => (
+        <EditableCell
+          value={c.mail}
+          type="email"
+          canEdit={canEdit}
+          ariaLabel="mail"
+          onSave={(v) => saveField(c.projectId, { mail: v })}
+        />
+      ),
     },
   ];
 

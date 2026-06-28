@@ -86,6 +86,22 @@ export async function getClienteFicha(projectId: string): Promise<ClienteFicha> 
   return data;
 }
 
+// Edición inline desde el listado: SOLO mail / teléfono / fecha de entrega.
+// Devuelve el ClienteListItem actualizado (para refrescar la fila sin refetch).
+export interface PatchClientePayload {
+  mail?: string | null;
+  telefono?: string | null;
+  fechaEntrega?: string | null;
+}
+
+export async function patchCliente(
+  projectId: string,
+  body: PatchClientePayload,
+): Promise<ClienteListItem> {
+  const { data } = await apiClient.patch<ClienteListItem>(`/api/clientes/${projectId}`, body);
+  return data;
+}
+
 export async function createInteraction(
   projectId: string,
   body: { channel: InteractionChannel; content: string },
