@@ -158,7 +158,7 @@ export function ClienteFichaPage() {
       ) : (
         <div className="space-y-4">
           {canCreate && projectId && <ClienteInteractionForm projectId={projectId} />}
-          <ClienteInteractionList interacciones={ficha.interacciones} />
+          <ClienteInteractionList interacciones={ficha.interacciones} projectId={projectId ?? ""} />
         </div>
       )}
     </div>
