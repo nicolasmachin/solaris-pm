@@ -10,3 +10,10 @@ storage-stage2/
 # Python
 __pycache__/
 *.pyc
+
+# Backups locales y artefactos de macOS / TS
+.DS_Store
+**/.DS_Store
+*.sql
+backup_*
+client/tsconfig.tsbuildinfo
