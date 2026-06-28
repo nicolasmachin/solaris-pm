@@ -18,7 +18,7 @@
 // memoria (getCurrentStage no es expresable en SQL); por eso ordenamos y
 // paginamos también en memoria. La cartera es de cientos de proyectos.
 
-import { Prisma, ProjectStatus, type InteractionChannel, type StageType } from "@prisma/client";
+import { Prisma, ProjectStatus, UteStage, type InteractionChannel, type StageType } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { getStageLabel } from "../pipeline-definitions.js";
@@ -119,6 +119,14 @@ const LIST_SELECT = {
     where: { deletedAt: null },
     select: { name: true, status: true, order: true },
   },
+  // Último trámite UTE (no borrado): si está finalizado, el cliente pasa a E3
+  // aunque la etapa Habilitación UTE del pipeline siga abierta.
+  uteProcesses: {
+    where: { deletedAt: null },
+    orderBy: { updatedAt: "desc" },
+    take: 1,
+    select: { currentStage: true, finalizedAt: true },
+  },
 } satisfies Prisma.ProjectSelect;
 
 type ProjectListRow = Prisma.ProjectGetPayload<{ select: typeof LIST_SELECT }>;
@@ -138,11 +146,19 @@ function estadoFromStatus(status: ProjectStatus): ClienteEstado {
   }
 }
 
-function buildEtapa(stages: ProjectListRow["stages"]): EtapaInfo | null {
+// El trámite UTE finalizado = el cliente ya está habilitado → recorrido E3.
+function isUteFinalizado(uteProcesses: ProjectListRow["uteProcesses"]): boolean {
+  const u = uteProcesses[0];
+  return !!u && (u.currentStage === UteStage.FINALIZADO || u.finalizedAt !== null);
+}
+
+function buildEtapa(stages: ProjectListRow["stages"], uteFinalizado: boolean): EtapaInfo | null {
   if (!stages || stages.length === 0) return null;
   const current = getCurrentStage(stages);
   if (!current) return null;
-  const codigo = RECORRIDO_BY_STAGE[current.name];
+  // La habilitación UTE terminada empuja al cliente a E3 (post-habilitación),
+  // aunque la etapa Habilitación UTE del pipeline todavía no se haya cerrado.
+  const codigo: ClienteRecorrido = uteFinalizado ? "E3" : RECORRIDO_BY_STAGE[current.name];
   return {
     recorrido: {
       codigo,
@@ -163,7 +179,7 @@ function toListItem(p: ProjectListRow): ClienteListItem {
     potenciaKwp: decimalToNumber(p.capacityKwp),
     fechaEntrega: serializeDateOnly(p.actualEndDate ?? p.plannedEndDate),
     asesor: p.salesperson ? { id: p.salesperson.id, nombre: p.salesperson.name } : null,
-    etapa: buildEtapa(p.stages),
+    etapa: buildEtapa(p.stages, isUteFinalizado(p.uteProcesses)),
     estado: estadoFromStatus(p.status),
   };
 }
