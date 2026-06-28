@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { FileCheck, HardHat, Mail, MapPin, Phone } from "lucide-react";
+import { Contact, FileCheck, HardHat, Mail, MapPin, Phone } from "lucide-react";
 import type { Project } from "../../types/api.types";
 import { UTE_STAGE_LABEL, UTE_STATUS_LABEL } from "../../api/uteProcess.api";
 import { getProjectTeamColor, getProjectTeamName } from "./projectTeamColor";
@@ -70,6 +70,16 @@ export function ProjectHeader({ project, onEdit }: ProjectHeaderProps) {
             <span>📅</span>
             <span>{hasInstallation ? "Ver en calendario" : "Agendar instalación"}</span>
           </button>
+          <CanAccess module="EXPERIENCIA_CLIENTES" action="VIEW">
+            <button
+              onClick={() => navigate(`/clientes/${project.id}`)}
+              className="inline-flex items-center gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 py-0.5 text-[11px] font-mono uppercase tracking-wider text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-accent)] transition-colors"
+              title="Ver ficha del cliente en Experiencia de Clientes"
+            >
+              <Contact size={12} className="shrink-0" />
+              <span>Ver ficha del cliente</span>
+            </button>
+          </CanAccess>
         </div>
         <p className="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">
           {project.capacityKwp} kWp · {project.locationCity},{" "}
