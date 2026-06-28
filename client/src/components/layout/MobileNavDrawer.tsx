@@ -13,6 +13,7 @@ import {
   FileCheck,
   FileText,
   HardHat,
+  Contact,
   X,
   LogOut,
 } from "lucide-react";
@@ -167,6 +168,12 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
             <NavLink to="/ventas" className={linkClass}>
               <TrendingUp size={18} className="shrink-0" />
               <span>Ventas</span>
+            </NavLink>
+          </CanAccess>
+          <CanAccess module="EXPERIENCIA_CLIENTES" action="VIEW">
+            <NavLink to="/clientes" className={linkClass}>
+              <Contact size={18} className="shrink-0" />
+              <span>Experiencia de Clientes</span>
             </NavLink>
           </CanAccess>
           <CanAccess module="FINANZAS" action="VIEW">

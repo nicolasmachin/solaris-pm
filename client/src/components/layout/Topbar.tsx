@@ -167,6 +167,11 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
               Ventas
             </NavLink>
           </CanAccess>
+          <CanAccess module="EXPERIENCIA_CLIENTES" action="VIEW">
+            <NavLink to="/clientes" className={navLinkClass}>
+              Clientes
+            </NavLink>
+          </CanAccess>
           <CanAccess module="FINANZAS" action="VIEW">
             <NavLink to="/finanzas" className={navLinkClass}>
               Finanzas

@@ -2,6 +2,20 @@
 
 ## v7.0
 
+### 28 de junio de 2026
+
+#### Experiencia de Clientes — Nueva sección para ver toda la cartera
+
+- **Nueva sección "Clientes"** (menú Experiencia de Clientes): un listado con todos los clientes para ver de un vistazo en qué anda cada uno. Se puede **buscar** por nombre, mail o teléfono y **filtrar** por estado, etapa, asesor y departamento, además de **ordenar** por nombre, etapa, potencia o fecha de entrega.
+- **Etapa en dos niveles:** cada cliente muestra en qué **etapa del recorrido** está (E1 Pre-obra, E2 Habilitación, E3 Postventa) y, debajo, la **etapa puntual** del proyecto (Onboarding, Ingeniería, Operaciones, Habilitación UTE o Postventa).
+- **Cartera enfocada:** por defecto se ven los clientes **activos y finalizados**; los que están en cotización o archivados quedan fuera salvo que los pidas con el filtro de estado.
+- **Ficha del cliente:** al entrar se ven sus datos (contacto, potencia, fecha de entrega, dirección, asesor), el **estado del trámite UTE** (etapa actual y desde cuándo) y una **bitácora de interacciones** para registrar cada contacto (WhatsApp, mail, llamada, visita u otro). Incluye botón para **ir al proyecto**.
+- **Exportar:** botón para bajar el listado filtrado a un archivo (abre bien en Excel), con columnas separadas de **Recorrido** y **Etapa**.
+
+#### Pendiente de activación (acción de un administrador)
+
+- Para que el equipo de Experiencia de Clientes vea esta sección, un administrador debe **habilitar los permisos del módulo** y **asignar el rol Postventa** a la persona a cargo (Alejandra). Hasta que se haga, la sección no aparece para ese usuario. *(Paso manual pendiente — no se ejecutó automáticamente.)*
+
 ### 24 de junio de 2026
 
 #### Ya podés instalar Voltia PM como app en el celular

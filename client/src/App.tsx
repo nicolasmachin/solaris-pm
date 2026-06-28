@@ -62,6 +62,8 @@ const PortalProjects = lazy(() => import("./pages/PortalProjects").then((module)
 const PortalProjectUte = lazy(() => import("./pages/PortalProjectUte").then((module) => ({ default: module.PortalProjectUte })));
 const PortalLayout = lazy(() => import("./components/layout/PortalLayout").then((module) => ({ default: module.PortalLayout })));
 const ChangePassword = lazy(() => import("./pages/ChangePassword").then((module) => ({ default: module.ChangePassword })));
+const Clientes = lazy(() => import("./modules/clientes/pages/ClientesPage").then((module) => ({ default: module.ClientesPage })));
+const ClienteFicha = lazy(() => import("./modules/clientes/pages/ClienteFichaPage").then((module) => ({ default: module.ClienteFichaPage })));
 
 function RouteFallback() {
   return (
@@ -317,6 +319,22 @@ export function App() {
           element={
             <PermissionRoute module="INFORMES" action="VIEW">
               <InformesPage />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/clientes"
+          element={
+            <PermissionRoute module="EXPERIENCIA_CLIENTES" action="VIEW">
+              <Clientes />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/clientes/:projectId"
+          element={
+            <PermissionRoute module="EXPERIENCIA_CLIENTES" action="VIEW">
+              <ClienteFicha />
             </PermissionRoute>
           }
         />
