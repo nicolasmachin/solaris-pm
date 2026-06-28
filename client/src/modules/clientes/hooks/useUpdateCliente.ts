@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
   patchCliente,
+  type ClienteFicha,
   type ClienteListItem,
   type ClientesListResponse,
   type PatchClientePayload,
@@ -35,15 +36,21 @@ export function useUpdateCliente() {
   return useMutation({
     mutationFn: ({ projectId, patch }: Vars) => patchCliente(projectId, patch),
     onMutate: async ({ projectId, patch }) => {
+      const fichaKey = ["cliente", projectId];
       await qc.cancelQueries({ queryKey: ["clientes"] });
-      const prev = qc.getQueriesData<ClientesListResponse>({ queryKey: ["clientes"] });
+      await qc.cancelQueries({ queryKey: fichaKey });
+      // Optimistic en el listado (todas las páginas) y en la ficha (si está abierta).
+      const prevList = qc.getQueriesData<ClientesListResponse>({ queryKey: ["clientes"] });
+      const prevFicha = qc.getQueryData<ClienteFicha>(fichaKey);
       qc.setQueriesData<ClientesListResponse>({ queryKey: ["clientes"] }, (old) =>
         patchRowInCache(old, projectId, patch),
       );
-      return { prev };
+      if (prevFicha) qc.setQueryData<ClienteFicha>(fichaKey, { ...prevFicha, ...patch });
+      return { prevList, prevFicha };
     },
-    onError: (_err, _vars, ctx) => {
-      ctx?.prev?.forEach(([key, data]) => qc.setQueryData(key, data));
+    onError: (_err, { projectId }, ctx) => {
+      ctx?.prevList?.forEach(([key, data]) => qc.setQueryData(key, data));
+      if (ctx?.prevFicha) qc.setQueryData(["cliente", projectId], ctx.prevFicha);
     },
     onSuccess: (item, { projectId }) => {
       qc.setQueriesData<ClientesListResponse>({ queryKey: ["clientes"] }, (old) =>
