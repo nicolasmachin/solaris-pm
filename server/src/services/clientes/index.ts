@@ -285,6 +285,7 @@ const INTERACTION_SELECT = {
   channel: true,
   content: true,
   createdAt: true,
+  updatedAt: true,
   author: { select: { id: true, name: true } },
 } satisfies Prisma.ClientInteractionSelect;
 
@@ -297,6 +298,7 @@ function serializeInteraction(i: InteractionRow) {
     content: i.content,
     autor: { id: i.author.id, nombre: i.author.name },
     createdAt: serializeDate(i.createdAt),
+    updatedAt: serializeDate(i.updatedAt),
   };
 }
 
@@ -360,6 +362,30 @@ export async function createInteraction(
     select: INTERACTION_SELECT,
   });
   return serializeInteraction(row);
+}
+
+// Interacción activa (no borrada) con lo necesario para ownership + auditoría.
+export async function getActiveInteraction(id: string) {
+  return prisma.clientInteraction.findFirst({
+    where: { id, deletedAt: null },
+    select: { id: true, authorId: true, projectId: true, content: true, channel: true },
+  });
+}
+
+export async function updateInteraction(id: string, content: string, channel?: InteractionChannel) {
+  const row = await prisma.clientInteraction.update({
+    where: { id },
+    data: { content, ...(channel ? { channel } : {}) },
+    select: INTERACTION_SELECT,
+  });
+  return serializeInteraction(row);
+}
+
+export async function softDeleteInteraction(id: string, userId: string) {
+  await prisma.clientInteraction.update({
+    where: { id },
+    data: { deletedAt: new Date(), deletedBy: userId },
+  });
 }
 
 // ─── Export CSV ──────────────────────────────────────────────────────────────

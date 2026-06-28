@@ -15,21 +15,32 @@ import { createAuditEntry } from "../services/audit.service.js";
 import {
   buildClientesCsv,
   createInteraction,
+  getActiveInteraction,
   getClienteFicha,
   getClienteListItem,
   listClientes,
   listClientesForExport,
   listInteractions,
   projectExists,
+  softDeleteInteraction,
+  updateInteraction,
   type ClienteFiltros,
 } from "../services/clientes/index.js";
 import { updateProjectClientFields } from "../services/project-fields.service.js";
-import { notFound, unauthorized } from "../utils/errors.js";
+import { forbidden, notFound, unauthorized } from "../utils/errors.js";
 import { clientEmailValue, clientPhoneValue, dateOnlyValue } from "../validators/projectFields.js";
 
 function ensureUser(request: FastifyRequest) {
   if (!request.user) throw unauthorized("No autenticado");
   return request.user;
+}
+
+// Ownership compartido por PATCH y DELETE de interacciones: el autor puede tocar
+// la suya; ADMIN puede tocar cualquiera. Caso contrario, 403.
+function ensureCanModifyInteraction(user: { id: string; role: string }, authorId: string) {
+  if (user.id !== authorId && user.role !== "ADMIN") {
+    throw forbidden("No podés modificar una interacción de otro usuario");
+  }
 }
 
 // Filtros compartidos por listado y export. `etapa` = recorrido del cliente
@@ -178,6 +189,71 @@ export async function registerClientesRoutes(app: FastifyInstance) {
 
       reply.code(201);
       return interaction;
+    },
+  );
+
+  // ─── Bitácora: editar interacción ─────────────────────────────────────────
+  app.patch(
+    "/clientes/interacciones/:id",
+    { preHandler: authorize(Module.EXPERIENCIA_CLIENTES, Action.EDIT) },
+    async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string().min(1) }).parse(request.params);
+      const body = z
+        .object({
+          content: z.string().trim().min(1).max(2000),
+          channel: z.nativeEnum(InteractionChannel).optional(),
+        })
+        .parse(request.body);
+
+      const existing = await getActiveInteraction(id);
+      if (!existing) throw notFound("INTERACTION_NOT_FOUND", "Interacción no encontrada");
+      ensureCanModifyInteraction(user, existing.authorId);
+
+      const updated = await updateInteraction(id, body.content, body.channel);
+
+      await createAuditEntry({
+        entityType: AuditEntityType.client_interaction,
+        entityId: id,
+        projectId: existing.projectId,
+        userId: user.id,
+        action: AuditAction.updated,
+        fieldChanged: "content",
+        oldValue: existing.content,
+        newValue: body.content,
+        description: `Editó una interacción en Experiencia de Clientes`,
+      });
+
+      return updated;
+    },
+  );
+
+  // ─── Bitácora: borrar interacción (soft delete) ───────────────────────────
+  app.delete(
+    "/clientes/interacciones/:id",
+    { preHandler: authorize(Module.EXPERIENCIA_CLIENTES, Action.DELETE) },
+    async (request, reply) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string().min(1) }).parse(request.params);
+
+      // Idempotente: si no existe o ya estaba borrada → 404.
+      const existing = await getActiveInteraction(id);
+      if (!existing) throw notFound("INTERACTION_NOT_FOUND", "Interacción no encontrada");
+      ensureCanModifyInteraction(user, existing.authorId);
+
+      await softDeleteInteraction(id, user.id);
+
+      await createAuditEntry({
+        entityType: AuditEntityType.client_interaction,
+        entityId: id,
+        projectId: existing.projectId,
+        userId: user.id,
+        action: AuditAction.deleted,
+        description: `Borró una interacción en Experiencia de Clientes`,
+      });
+
+      reply.code(204);
+      return null;
     },
   );
 }
