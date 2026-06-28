@@ -13,6 +13,7 @@
     "prisma:studio": "prisma studio",
     "db:seed": "node --import tsx prisma/seed.ts",
     "test:proposal": "node --import tsx --test src/services/proposal/calculator.test.ts",
+    "test:project-fields": "node --import tsx --test src/validators/projectFields.test.ts",
     "save": "bash scripts/save.sh"
   },
   "dependencies": {
