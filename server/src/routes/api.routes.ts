@@ -130,10 +130,12 @@ import { accumulateSupplierSaldoAFavor } from "../services/supplier-balance.serv
 import { addDays, diffInDays, parseDateOnly, todayUtc, toDateOnlyString } from "../utils/dates.js";
 import { AppError, badRequest, conflict, forbidden, notFound } from "../utils/errors.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../utils/serialization.js";
+import { clientEmailValue, clientPhoneValue, dateOnlyValue } from "../validators/projectFields.js";
 
 const execFileAsync = promisify(execFile);
 
-const dateOnlySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Debe tener formato YYYY-MM-DD");
+// Validador de fecha YYYY-MM-DD, compartido con el módulo de validadores.
+const dateOnlySchema = dateOnlyValue;
 
 const solarSystemBaseSchema = z.object({
   description: z.string().trim().min(1).nullable().optional(),
@@ -176,8 +178,8 @@ const projectCreateSchema = z
     estimatedMwhYear: z.coerce.number().positive().nullable().optional(),
     salespersonId: z.string().optional(),
     modalidadPago: z.nativeEnum(ModalidadPago).optional(),
-    clientEmail: z.string().email().nullable().optional(),
-    clientPhone: z.string().nullable().optional(),
+    clientEmail: clientEmailValue.nullable().optional(),
+    clientPhone: clientPhoneValue.nullable().optional(),
     clientAddress: z.string().nullable().optional(),
     startDate: dateOnlySchema.optional(),
     saleDate: dateOnlySchema.optional(),
@@ -203,8 +205,8 @@ const projectPatchSchema = z
     executedUsd: z.coerce.number().nonnegative().optional(),
     estimatedMwhYear: z.coerce.number().positive().nullable().optional(),
     modalidadPago: z.nativeEnum(ModalidadPago).nullable().optional(),
-    clientEmail: z.union([z.string().email(), z.literal("")]).nullable().optional(),
-    clientPhone: z.string().nullable().optional(),
+    clientEmail: clientEmailValue.nullable().optional(),
+    clientPhone: clientPhoneValue.nullable().optional(),
     clientAddress: z.string().nullable().optional(),
     firstDateScheduledAt: z.string().datetime({ offset: true }).nullable().optional(),
     // Códigos PS/AS provistos por UTE. Solo dígitos o null para limpiar.

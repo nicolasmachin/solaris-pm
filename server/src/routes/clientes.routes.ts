@@ -16,13 +16,16 @@ import {
   buildClientesCsv,
   createInteraction,
   getClienteFicha,
+  getClienteListItem,
   listClientes,
   listClientesForExport,
   listInteractions,
   projectExists,
   type ClienteFiltros,
 } from "../services/clientes/index.js";
+import { updateProjectClientFields } from "../services/project-fields.service.js";
 import { notFound, unauthorized } from "../utils/errors.js";
+import { clientEmailValue, clientPhoneValue, dateOnlyValue } from "../validators/projectFields.js";
 
 function ensureUser(request: FastifyRequest) {
   if (!request.user) throw unauthorized("No autenticado");
@@ -57,6 +60,17 @@ function toFiltros(q: z.infer<typeof filtersSchema>): ClienteFiltros {
     sortDir: q.sortDir,
   };
 }
+
+// Edición inline desde el listado: SOLO mail / teléfono / fecha de entrega.
+// .strict() → cualquier otro campo en el body es un error de validación. Los
+// valores reusan los validadores compartidos con el módulo Proyectos.
+const patchClienteBodySchema = z
+  .object({
+    mail: clientEmailValue.nullable().optional(),
+    telefono: clientPhoneValue.nullable().optional(),
+    fechaEntrega: dateOnlyValue.nullable().optional(),
+  })
+  .strict();
 
 export async function registerClientesRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authenticate);
@@ -98,6 +112,29 @@ export async function registerClientesRoutes(app: FastifyInstance) {
       const ficha = await getClienteFicha(projectId);
       if (!ficha) throw notFound("CLIENTE_NOT_FOUND", "Cliente no encontrado");
       return ficha;
+    },
+  );
+
+  // ─── Edición inline de mail / teléfono / fecha de entrega ─────────────────
+  // Escribe el dato canónico en Project (clientEmail / clientPhone /
+  // plannedEndDate) reusando validadores y auditoría del módulo Proyectos.
+  app.patch(
+    "/clientes/:projectId",
+    { preHandler: authorize(Module.EXPERIENCIA_CLIENTES, Action.EDIT) },
+    async (request) => {
+      const user = ensureUser(request);
+      const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
+      const body = patchClienteBodySchema.parse(request.body);
+
+      const updated = await updateProjectClientFields(
+        projectId,
+        { clientEmail: body.mail, clientPhone: body.telefono, plannedEndDate: body.fechaEntrega },
+        user.id,
+        "experiencia_clientes",
+      );
+      if (!updated) throw notFound("CLIENTE_NOT_FOUND", "Cliente no encontrado");
+
+      return getClienteListItem(projectId);
     },
   );
 

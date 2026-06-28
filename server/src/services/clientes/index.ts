@@ -255,6 +255,13 @@ export async function listClientesForExport(f: ClienteFiltros): Promise<ClienteL
   return projectAndFilter(f);
 }
 
+// Proyección de un solo cliente (fila del listado). Para devolver tras un PATCH
+// sin que el front tenga que refetchear todo el listado.
+export async function getClienteListItem(projectId: string): Promise<ClienteListItem | null> {
+  const p = await prisma.project.findFirst({ where: { id: projectId, deletedAt: null }, select: LIST_SELECT });
+  return p ? toListItem(p) : null;
+}
+
 // ─── Ficha 360 ───────────────────────────────────────────────────────────────
 
 const UTE_FICHA_SELECT = {
