@@ -92,6 +92,7 @@ enum AuditEntityType {
   account
   informe
   email_log
+  client_interaction
 }
 
 enum AuditAction {
@@ -178,6 +179,7 @@ enum Module {
   TRAMITES_UTE
   PORTAL_CLIENTE
   INFORMES
+  EXPERIENCIA_CLIENTES
 }
 
 enum Moneda {
@@ -388,6 +390,7 @@ model User {
   proposalDraftsUpdated          ProposalDraft[]             @relation("ProposalDraftUpdatedBy")
   proposalVersionsCreated        ProposalVersion[]           @relation("ProposalVersionCreatedBy")
   proposalDefaultsUpdated        ProposalDefaults[]          @relation("ProposalDefaultsUpdatedBy")
+  clientInteractions             ClientInteraction[]         @relation("ClientInteractionAuthor")
   passwordTemporary              Boolean                     @default(false)
   deletedAt                      DateTime?                   @db.Timestamptz(6)
   createdAt                      DateTime                    @default(now()) @db.Timestamptz(6)
@@ -462,6 +465,7 @@ model Project {
   uteDocumentGenerations  UteDocumentGeneration[]
   informes                Informe[]                @relation("InformesDeProyecto")
   emailLogs               EmailLog[]               @relation("EmailLogProject")
+  clientInteractions      ClientInteraction[]
   // Datos del cliente que se cargan desde el form del proyecto y/o se
   // extraen de la cédula con IA. Ver feature ute-doc-extraction.
   // nombreCliente: nombre tal cual figura en la cédula, usado en los docs
@@ -1553,6 +1557,35 @@ model UteProcess {
   @@index([currentStatus])
   @@index([deletedAt])
   @@map("ute_processes")
+}
+
+// ─── Experiencia de Clientes ─────────────────────────────────────────────────
+// Bitácora de interacciones del módulo Experiencia de Clientes (Ola 1 / MVP).
+// El "cliente" es el proyecto (relación 1:1), por eso se cuelga de projectId.
+// Diseñada para migración ADITIVA futura: cuando lleguen las olas 2-4 se agregan
+// `direction` (ENTRANTE/SALIENTE) y `reason` (BIENVENIDA/SEGUIMIENTO/…) como
+// columnas nullable nuevas, sin reinterpretar los registros viejos.
+enum InteractionChannel {
+  WHATSAPP
+  EMAIL
+  LLAMADA
+  VISITA
+  OTRO
+}
+
+model ClientInteraction {
+  id        String             @id @default(cuid())
+  projectId String
+  project   Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  channel   InteractionChannel
+  content   String             @db.Text
+  authorId  String
+  author    User               @relation("ClientInteractionAuthor", fields: [authorId], references: [id])
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@index([projectId, createdAt])
+  @@map("client_interactions")
 }
 
 // ─── Catálogo de materiales ──────────────────────────────────────────────────
