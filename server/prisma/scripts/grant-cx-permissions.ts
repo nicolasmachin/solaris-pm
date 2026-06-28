@@ -16,8 +16,8 @@ const prisma = new PrismaClient();
 
 const ROLES = ["ADMIN", "POSTVENTA", "ASESOR_COMERCIAL"] as const;
 // VIEW (listado/ficha/export/bitácora) · CREATE (registrar interacción) ·
-// EDIT (edición inline de mail/teléfono/fecha de entrega).
-const ACTIONS: Action[] = [Action.VIEW, Action.CREATE, Action.EDIT];
+// EDIT (edición inline + editar interacción propia) · DELETE (borrar interacción).
+const ACTIONS: Action[] = [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE];
 const MODULE = Module.EXPERIENCIA_CLIENTES;
 
 async function main() {
