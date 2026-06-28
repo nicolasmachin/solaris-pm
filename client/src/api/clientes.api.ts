@@ -35,6 +35,7 @@ export interface ClienteInteraction {
   content: string;
   autor: { id: string; nombre: string };
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface ClienteFicha extends ClienteListItem {
@@ -111,6 +112,18 @@ export async function createInteraction(
     body,
   );
   return data;
+}
+
+export async function patchInteraction(
+  id: string,
+  body: { content: string; channel?: InteractionChannel },
+): Promise<ClienteInteraction> {
+  const { data } = await apiClient.patch<ClienteInteraction>(`/api/clientes/interacciones/${id}`, body);
+  return data;
+}
+
+export async function deleteInteraction(id: string): Promise<void> {
+  await apiClient.delete(`/api/clientes/interacciones/${id}`);
 }
 
 // Descarga el CSV respetando los filtros activos. Usa el token del interceptor
