@@ -364,6 +364,11 @@ export async function createInteraction(
   return serializeInteraction(row);
 }
 
+// Ownership: el autor puede modificar su interacción; ADMIN cualquiera.
+export function canModifyInteraction(user: { id: string; role: string }, authorId: string): boolean {
+  return user.id === authorId || user.role === "ADMIN";
+}
+
 // Interacción activa (no borrada) con lo necesario para ownership + auditoría.
 export async function getActiveInteraction(id: string) {
   return prisma.clientInteraction.findFirst({

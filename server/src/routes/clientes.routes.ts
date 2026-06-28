@@ -14,6 +14,7 @@ import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
 import {
   buildClientesCsv,
+  canModifyInteraction,
   createInteraction,
   getActiveInteraction,
   getClienteFicha,
@@ -38,7 +39,7 @@ function ensureUser(request: FastifyRequest) {
 // Ownership compartido por PATCH y DELETE de interacciones: el autor puede tocar
 // la suya; ADMIN puede tocar cualquiera. Caso contrario, 403.
 function ensureCanModifyInteraction(user: { id: string; role: string }, authorId: string) {
-  if (user.id !== authorId && user.role !== "ADMIN") {
+  if (!canModifyInteraction(user, authorId)) {
     throw forbidden("No podés modificar una interacción de otro usuario");
   }
 }
