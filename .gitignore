@@ -16,4 +16,7 @@ __pycache__/
 **/.DS_Store
 *.sql
 backup_*
+# Excepción: las migraciones de Prisma SÍ se versionan (el *.sql de arriba las
+# atrapaba y las dejaba sin trackear → el deploy no las aplicaría).
+!server/prisma/migrations/**
 client/tsconfig.tsbuildinfo

@@ -165,7 +165,7 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     // §10 es anterior al módulo Informes). No se remueve un permiso de prod.
     { roleName: "ADMIN", module: Module.INFORMES,       actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
     { roleName: "ADMIN", module: Module.PORTAL_CLIENTE, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
-    { roleName: "ADMIN", module: Module.EXPERIENCIA_CLIENTES, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
+    { roleName: "ADMIN", module: Module.EXPERIENCIA_CLIENTES, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
 
     // CLIENT
     { roleName: "CLIENT", module: Module.PORTAL_CLIENTE, actions: [Action.VIEW] },
@@ -178,7 +178,7 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "ASESOR_COMERCIAL", module: Module.HABILITACION, actions: [Action.VIEW] },
     { roleName: "ASESOR_COMERCIAL", module: Module.POSTVENTA,    actions: [Action.VIEW] },
     { roleName: "ASESOR_COMERCIAL", module: Module.TRAMITES_UTE, actions: [Action.VIEW] },
-    { roleName: "ASESOR_COMERCIAL", module: Module.EXPERIENCIA_CLIENTES, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
+    { roleName: "ASESOR_COMERCIAL", module: Module.EXPERIENCIA_CLIENTES, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
 
     // FINANZAS
     { roleName: "FINANZAS", module: Module.FINANZAS,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
@@ -218,7 +218,7 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "POSTVENTA", module: Module.METRICAS,     actions: [Action.VIEW] },
     { roleName: "POSTVENTA", module: Module.STOCK,        actions: [Action.VIEW] },
     { roleName: "POSTVENTA", module: Module.TRAMITES_UTE, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
-    { roleName: "POSTVENTA", module: Module.EXPERIENCIA_CLIENTES, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
+    { roleName: "POSTVENTA", module: Module.EXPERIENCIA_CLIENTES, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
   ];
 
   for (const entry of matrix) {

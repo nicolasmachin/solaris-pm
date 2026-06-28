@@ -313,6 +313,7 @@ export async function getClienteFicha(projectId: string) {
         select: UTE_FICHA_SELECT,
       },
       clientInteractions: {
+        where: { deletedAt: null },
         orderBy: { createdAt: "desc" },
         select: INTERACTION_SELECT,
       },
@@ -341,7 +342,7 @@ export async function projectExists(projectId: string): Promise<boolean> {
 
 export async function listInteractions(projectId: string) {
   const rows = await prisma.clientInteraction.findMany({
-    where: { projectId },
+    where: { projectId, deletedAt: null },
     orderBy: { createdAt: "desc" },
     select: INTERACTION_SELECT,
   });

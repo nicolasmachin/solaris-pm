@@ -391,6 +391,7 @@ model User {
   proposalVersionsCreated        ProposalVersion[]           @relation("ProposalVersionCreatedBy")
   proposalDefaultsUpdated        ProposalDefaults[]          @relation("ProposalDefaultsUpdatedBy")
   clientInteractions             ClientInteraction[]         @relation("ClientInteractionAuthor")
+  clientInteractionsDeleted      ClientInteraction[]         @relation("ClientInteractionDeletedBy")
   passwordTemporary              Boolean                     @default(false)
   deletedAt                      DateTime?                   @db.Timestamptz(6)
   createdAt                      DateTime                    @default(now()) @db.Timestamptz(6)
@@ -1583,8 +1584,14 @@ model ClientInteraction {
   author    User               @relation("ClientInteractionAuthor", fields: [authorId], references: [id])
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
+  // Soft delete: la interacción deja de mostrarse en la UI pero queda en la DB.
+  // deletedBy queda como rastro extra (el quién también va en la auditoría).
+  deletedAt DateTime?          @db.Timestamptz(6)
+  deletedBy String?
+  deletedByUser User?          @relation("ClientInteractionDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
 
   @@index([projectId, createdAt])
+  @@index([deletedAt])
   @@map("client_interactions")
 }
 
