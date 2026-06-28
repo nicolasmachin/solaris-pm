@@ -244,13 +244,17 @@ export function ClientesPage() {
             No se pudo cargar el listado de clientes.
           </p>
         ) : (
-          <div className="overflow-x-auto">
+          // Contenedor de scroll con altura acotada: el thead sticky se ancla a
+          // ESTE div (no al viewport, roto por <main overflow-y-auto>).
+          // overflow-auto cubre scroll vertical (sticky) y horizontal a la vez.
+          <div className="max-h-[calc(100vh-18rem)] overflow-auto">
             <ResponsiveTable
               columns={columns}
               data={items}
               rowKey={(c) => c.projectId}
               onRowClick={(c) => navigate(`/clientes/${c.projectId}`)}
               rowClickableOnDesktop
+              stickyHeader
               sortBy={filters.sortBy}
               sortOrder={filters.sortDir}
               onSort={handleSort}
