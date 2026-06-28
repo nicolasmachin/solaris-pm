@@ -35,7 +35,7 @@ export const STAGE_LABELS: Record<StageType, string> = {
   [StageType.INGENIERIA]: "Ingeniería",
   [StageType.OPERACIONES]: "Operaciones",
   [StageType.HABILITACION_UTE]: "Habilitación UTE",
-  [StageType.POSTVENTA]: "Postventa",
+  [StageType.POSTVENTA]: "Post-Habilitación",
 };
 
 export const TIPO_OBRA_LABELS: Record<TipoObra, string> = {

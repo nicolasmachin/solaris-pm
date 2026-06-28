@@ -4,10 +4,14 @@
 
 ### 28 de junio de 2026
 
+#### Recorrido del cliente — "Postventa" pasa a llamarse "Post-Habilitación"
+
+- La etapa final del recorrido del cliente y del pipeline, antes **"Postventa"**, ahora se llama **"Post-Habilitación"** en toda la app: el chip del cliente (E3), los filtros y tableros del módulo Proyectos, y la ficha del proyecto. Refleja mejor que es la etapa que arranca una vez habilitado el sistema y se extiende en el tiempo (mantenimientos, reportes). *(Solo cambia el nombre visible; la lógica y los datos quedan igual.)*
+
 #### Experiencia de Clientes — Nueva sección para ver toda la cartera
 
 - **Nueva sección "Clientes"** (menú Experiencia de Clientes): un listado con todos los clientes para ver de un vistazo en qué anda cada uno. Se puede **buscar** por nombre, mail o teléfono y **filtrar** por estado, etapa, asesor y departamento, además de **ordenar** por nombre, etapa, potencia o fecha de entrega.
-- **Etapa en dos niveles:** cada cliente muestra en qué **etapa del recorrido** está (E1 Pre-obra, E2 Habilitación, E3 Postventa) y, debajo, la **etapa puntual** del proyecto (Onboarding, Ingeniería, Operaciones, Habilitación UTE o Postventa).
+- **Etapa en dos niveles:** cada cliente muestra en qué **etapa del recorrido** está (E1 Pre-obra, E2 Habilitación, E3 Post-Habilitación) y, debajo, la **etapa puntual** del proyecto (Onboarding, Ingeniería, Operaciones, Habilitación UTE o Post-Habilitación).
 - **Cartera enfocada:** por defecto se ven los clientes **activos y finalizados**; los que están en cotización o archivados quedan fuera salvo que los pidas con el filtro de estado.
 - **Ficha del cliente:** al entrar se ven sus datos (contacto, potencia, fecha de entrega, dirección, asesor), el **estado del trámite UTE** (etapa actual y desde cuándo) y una **bitácora de interacciones** para registrar cada contacto (WhatsApp, mail, llamada, visita u otro). Incluye botón para **ir al proyecto**.
 - **Exportar:** botón para bajar el listado filtrado a un archivo (abre bien en Excel), con columnas separadas de **Recorrido** y **Etapa**.

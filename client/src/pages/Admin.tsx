@@ -424,7 +424,7 @@ const MODULE_LABELS: Record<string, string> = {
   INGENIERIA: "Ingeniería",
   OPERACIONES: "Operaciones",
   HABILITACION: "Habilitación UTE",
-  POSTVENTA: "Postventa",
+  POSTVENTA: "Post-Habilitación",
   METRICAS: "Métricas",
   CONFIGURACION: "Configuración",
   USUARIOS: "Usuarios",
@@ -1994,7 +1994,7 @@ const STAGE_LABELS_PIPELINE: Record<string, string> = {
   INGENIERIA: "Ingeniería",
   OPERACIONES: "Operaciones",
   HABILITACION_UTE: "Habilitación UTE",
-  POSTVENTA: "Postventa",
+  POSTVENTA: "Post-Habilitación",
 };
 
 // Lista fija de roles de negocio usada en el select de "Responsable" de subetapa.

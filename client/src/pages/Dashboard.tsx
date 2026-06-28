@@ -31,7 +31,7 @@ const STAGE_LABEL: Record<StageName, string> = {
   INGENIERIA: "Ingeniería",
   OPERACIONES: "Operaciones",
   HABILITACION_UTE: "Habilitación",
-  POSTVENTA: "Postventa",
+  POSTVENTA: "Post-Habilitación",
 };
 
 const ACTION_SIDE: Record<UteActionKey, "ours" | "ute"> = Object.fromEntries(

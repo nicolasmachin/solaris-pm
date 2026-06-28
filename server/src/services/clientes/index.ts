@@ -55,7 +55,7 @@ const RECORRIDO_RANK: Record<ClienteRecorrido, number> = { E1: 1, E2: 2, E3: 3 }
 const RECORRIDO_NOMBRE_CORTO: Record<ClienteRecorrido, string> = {
   E1: "Pre-obra",
   E2: "Habilitación",
-  E3: "Postventa",
+  E3: "Post-Habilitación",
 };
 
 const RECORRIDO_NOMBRE_LARGO: Record<ClienteRecorrido, string> = {

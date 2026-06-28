@@ -1,7 +1,7 @@
 import type { ClienteRecorrido, EtapaInfo } from "../../../api/clientes.api";
 
 // Cada etapa del recorrido con su color, para distinguirlas de un vistazo:
-//   E1 (pre-obra) azul · E2 (habilitación, mayor fricción) ámbar · E3 (postventa) verde.
+//   E1 (pre-obra) azul · E2 (habilitación, mayor fricción) ámbar · E3 (post-habilitación) verde.
 const RECORRIDO_COLOR: Record<ClienteRecorrido, string> = {
   E1: "bg-[var(--color-info-bg)] text-[var(--color-info-text)]",
   E2: "bg-[var(--color-warning-bg)] text-[var(--color-warning-text)]",

@@ -48,7 +48,7 @@ const STAGE_OPTIONS: { value: StageFilter; label: string }[] = [
   { value: "INGENIERIA", label: "Ingeniería" },
   { value: "OPERACIONES", label: "Operaciones" },
   { value: "HABILITACION_UTE", label: "Habilitación UTE" },
-  { value: "POSTVENTA", label: "Postventa" },
+  { value: "POSTVENTA", label: "Post-Habilitación" },
 ];
 
 const STAGE_LABELS: Record<string, string> = {
@@ -56,7 +56,7 @@ const STAGE_LABELS: Record<string, string> = {
   INGENIERIA: "Ingeniería",
   OPERACIONES: "Operaciones",
   HABILITACION_UTE: "Habilitación UTE",
-  POSTVENTA: "Postventa",
+  POSTVENTA: "Post-Habilitación",
 };
 
 // Persistencia en localStorage

@@ -945,7 +945,7 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
                 Fechas
               </p>
               <p className="text-xs text-[var(--color-text-muted)] italic">
-                La etapa Postventa no tiene fechas asociadas por ser indefinida.
+                La etapa Post-Habilitación no tiene fechas asociadas por ser indefinida.
               </p>
             </section>
           ) : (

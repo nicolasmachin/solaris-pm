@@ -46,5 +46,5 @@ export const STAGE_TYPE_LABEL: Record<StageType, string> = {
   INGENIERIA: 'Ingeniería',
   OPERACIONES: 'Operaciones',
   HABILITACION_UTE: 'Habilitación UTE',
-  POSTVENTA: 'Postventa',
+  POSTVENTA: 'Post-Habilitación',
 };

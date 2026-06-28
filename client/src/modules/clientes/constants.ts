@@ -23,7 +23,7 @@ export const RECORRIDO_LABELS: Record<ClienteRecorrido, string> = {
 export const RECORRIDO_SHORT: Record<ClienteRecorrido, string> = {
   E1: "E1 · Pre-obra",
   E2: "E2 · Habilitación",
-  E3: "E3 · Postventa",
+  E3: "E3 · Post-Habilitación",
 };
 
 export const RECORRIDO_OPTIONS: ClienteRecorrido[] = ["E1", "E2", "E3"];

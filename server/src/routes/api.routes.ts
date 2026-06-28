@@ -2008,7 +2008,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     if (stage.name === StageType.POSTVENTA && touchesAnyDate) {
       throw badRequest(
         "POSTVENTA_NO_DATES",
-        "La etapa Postventa no tiene fechas asociadas por ser indefinida",
+        "La etapa Post-Habilitación no tiene fechas asociadas por ser indefinida",
       );
     }
 
