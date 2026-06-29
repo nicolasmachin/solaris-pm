@@ -23,37 +23,20 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "7.0",
-  date: "24 de junio de 2026",
+  version: "7.1",
+  date: "28 de junio de 2026",
   sections: [
     {
-      title: "Ya podés instalar Voltia PM como app en el celular",
+      title: "Proyectos — Cierre automático al finalizar el trámite UTE",
       items: [
-        'Desde el celular: en Android, Chrome ofrece "Instalar app"; en iPhone, Safari → Compartir → "Agregar a inicio".',
-        "Queda con su ícono propio en la pantalla de inicio y abre a pantalla completa, sin la barra del navegador.",
-        "Cierre de la adaptación a móvil: las secciones de campo (Ventas, Operaciones y Finanzas) quedan cómodas en el celular.",
+        "Al marcar el trámite UTE como finalizado, el proyecto avanza solo a la etapa Post-Habilitación y queda en estado Finalizado, con la fecha real del trámite (no la del día en que se procesa).",
+        "En la sección Clientes, esos proyectos pasan a E3 · Post-Habilitación automáticamente, derivado del avance real del proyecto.",
       ],
     },
     {
-      title: "Ventas — Kanban táctil en el celular",
+      title: "Arreglos",
       items: [
-        "Mover tarjetas sin arrastrar: el ícono ⋮⋮ abre una lista de etapas para mandar el lead a otra columna con un toque.",
-        'El arrastre arranca con un "toque sostenido" (no se pelea con el scroll), y el tablero muestra una columna por pantalla.',
-      ],
-    },
-    {
-      title: "Finanzas — Más cómodo en el celular",
-      items: [
-        "Proveedores, Cobros, Flujo de fondos y el resto de las tablas se ven como tarjetas en el celular; las ventanas se abren como panel desde abajo.",
-        'La pestaña Pendientes se ve como tarjetas (no una tabla ancha): el botón "⋯" abre las acciones (marcar pagado, editar, reagendar, eliminar). Filtros en un panel "Filtros".',
-        'Se puede borrar un movimiento desde el celular (zona de peligro con "Eliminar movimiento").',
-      ],
-    },
-    {
-      title: "Portal de cliente — Trámite UTE más claro",
-      items: [
-        "Las fechas de cada hito coinciden con las cargadas por el equipo (antes salían con un día menos).",
-        'La etapa que se está esperando se ve como pendiente (no cumplida); el último hito con fecha lleva el rótulo "Último avance".',
+        'Filtro de etapa en Proyectos: filtrar por "Post-Habilitación" ahora trae también los proyectos ya completados que están en esa etapa (antes devolvía 0).',
       ],
     },
   ],
@@ -68,6 +51,16 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "7.0",
+    shortDate: "28 jun",
+    highlights: [
+      "Nueva sección Clientes: cartera completa con búsqueda, filtros, recorrido E1/E2/E3 y bitácora de interacciones.",
+      'Renombre de la etapa final del recorrido y del pipeline: "Postventa" pasó a llamarse "Post-Habilitación".',
+      "Voltia PM se instala como app en el celular (Android/iPhone), con ícono propio y a pantalla completa.",
+      "Ventas con kanban táctil y Finanzas con tablas como tarjetas en el celular.",
+    ],
+  },
   {
     version: "6.2",
     shortDate: "31 may",

@@ -1,5 +1,20 @@
 # Novedades
 
+## v7.1
+
+### 28 de junio de 2026
+
+#### Proyectos — Cierre automático al finalizar el trámite UTE
+
+- Cuando se marca el **trámite UTE como finalizado**, el proyecto **avanza solo a la etapa Post-Habilitación** y queda en estado **Finalizado**, usando la **fecha real del trámite** (no la del día en que se procesa). Antes había que cerrarlo a mano y varios quedaban "colgados" en Habilitación UTE.
+- En la sección **Clientes**, esos proyectos pasan a **E3 · Post-Habilitación** automáticamente, derivado del avance real del proyecto.
+
+#### Arreglos
+
+- **Filtro de etapa en Proyectos:** filtrar por **"Post-Habilitación"** ahora trae también los proyectos ya completados que están en esa etapa (antes devolvía 0 aunque se vieran en el listado). El filtro quedó alineado con la etapa que se muestra.
+
+<!-- Nota interna (Ola 3): el filtro de "Mis tareas" oculta tareas de proyectos en estado Finalizado/Completado. Revisar cuando Post-Habilitación empiece a generar tareas (mantenimientos, etc.), porque esas tareas quedarían ocultas. -->
+
 ## v7.0
 
 ### 28 de junio de 2026
