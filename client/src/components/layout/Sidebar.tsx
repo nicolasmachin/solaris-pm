@@ -99,7 +99,13 @@ function matchesStatus(p: ProjectListItem, filter: StatusFilter): boolean {
 
 function matchesStage(p: ProjectListItem, filter: StageFilter): boolean {
   if (filter === "all") return true;
-  return (p.currentStages ?? []).includes(filter);
+  // currentStages son sólo las etapas IN_PROGRESS. Si no hay ninguna en curso
+  // (p. ej. POSTVENTA quedó COMPLETED tras finalizar el trámite UTE), matcheamos
+  // contra la etapa computada que se muestra (getCurrentStage), así filtro y
+  // display no divergen.
+  const inProgress = p.currentStages ?? [];
+  if (inProgress.length > 0) return inProgress.includes(filter);
+  return p.currentStage?.name === filter;
 }
 
 function sortProjects(list: ProjectListItem[], key: SortKey): ProjectListItem[] {

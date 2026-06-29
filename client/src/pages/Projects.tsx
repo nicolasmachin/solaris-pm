@@ -305,8 +305,16 @@ export function Projects() {
       // Si no hay estados seleccionados, no se muestra nada (interpretación
       // razonable: el usuario explícitamente vació el filtro).
       const matchesStatus = statusFilters.has(project.status as ProjectStatus);
+      // currentStages son sólo etapas IN_PROGRESS. Si no hay ninguna en curso
+      // (p. ej. POSTVENTA COMPLETED tras finalizar el trámite UTE), matcheamos
+      // contra la etapa computada que se muestra (getCurrentStage).
+      const inProgressStages = project.currentStages ?? [];
       const matchesStageFilter =
-        stageFilter === "all" ? true : (project.currentStages ?? []).includes(stageFilter);
+        stageFilter === "all"
+          ? true
+          : inProgressStages.length > 0
+            ? inProgressStages.includes(stageFilter)
+            : project.currentStage?.name === stageFilter;
       const matchesQuery = term
         ? project.clientName.toLowerCase().includes(term) || project.code.toLowerCase().includes(term)
         : true;
