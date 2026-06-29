@@ -12,9 +12,14 @@
 //   - dueDate, userId, notes, deadline → NO se pisan en re-sync (editables)
 //   - Nombre y orden de las 11 subetapas system son fijos (no editables)
 
-import type { Prisma, PrismaClient, SubstageStatus, UteProcess } from "@prisma/client";
+import type { Prisma, PrismaClient, StageStatus, SubstageStatus, UteProcess } from "@prisma/client";
 
-import { calculateProjectProgress, syncStageProgress } from "./project.service.js";
+import { prisma } from "../lib/prisma.js";
+import {
+  calculateProjectProgress,
+  completeProjectIfAllStagesDone,
+  syncStageProgress,
+} from "./project.service.js";
 import { UTE_ACTION_KEYS, type UteActionKey } from "./uteProcess.service.js";
 
 export type UteSubstageSpec = {
@@ -228,8 +233,121 @@ export async function regenerateUteSubstages(
   const stage = await findHabilitacionStage(tx, uteProcess.projectId);
   if (stage) {
     await syncStageProgress(stage.id);
+    await advancePostventaOnUteFinalizado(uteProcess);
     await calculateProjectProgress(uteProcess.projectId);
   }
+}
+
+/**
+ * Avance automático del pipeline al finalizar el trámite UTE.
+ *
+ * Cuando el trámite quedó finalizado, completa la etapa POSTVENTA (Post-
+ * Habilitación) del pipeline con la fecha de finalización del trámite y, si con
+ * eso TODAS las etapas quedan COMPLETED, marca el proyecto como COMPLETED
+ * (reusando completeProjectIfAllStagesDone, la misma regla de cierre que usa
+ * syncStageProgress).
+ *
+ * Reglas:
+ *   - "Finalizado" = currentStage FINALIZADO o finalizedAt presente. Misma
+ *     condición robusta que isUteFinalizado (clientes) y que el backfill: cubre
+ *     ambos caminos de finalización (botón "finalizar" y carga de la fecha).
+ *   - Idempotente: si POSTVENTA ya está COMPLETED, no hace nada.
+ *   - Guarda: sólo avanza si HABILITACION_UTE ya está COMPLETED. POSTVENTA es
+ *     "post-habilitación": nunca debe cerrarse antes que la habilitación. En el
+ *     flujo normal syncStageProgress ya completó HABILITACION_UTE justo antes.
+ *   - Fecha en cascada: finalizedAt ?? HABILITACION_UTE.actualEndDate ??
+ *     OPERACIONES.actualEndDate. Si las tres son null NO inventa la fecha de hoy:
+ *     loguea un warning y saltea el proyecto (caso a revisar a mano).
+ *
+ * Usa el `prisma` global (no `tx`), igual que syncStageProgress, con el que
+ * comparte la suposición de que los callers pasan el cliente global.
+ */
+// Forma mínima de etapa que necesita la decisión de avance (testeable sin DB).
+export type StageForAdvance = {
+  id: string;
+  name: string;
+  status: string;
+  actualStartDate: Date | null;
+  actualEndDate: Date | null;
+};
+
+export type PostventaAdvancePlan =
+  | { action: "skip"; reason: PostventaSkipReason }
+  | { action: "advance"; postventaId: string; completedAt: Date };
+
+export type PostventaSkipReason =
+  | "tramite-no-finalizado"
+  | "sin-etapa-postventa"
+  | "postventa-ya-completada"
+  | "habilitacion-no-completada"
+  | "sin-fecha";
+
+/**
+ * Decisión PURA (sin DB) del avance de POSTVENTA al finalizar el trámite UTE.
+ * Separada de la escritura para poder testear todas las ramas sin tocar la base.
+ * La explicación de cada regla está en advancePostventaOnUteFinalizado.
+ */
+export function planPostventaAdvance(
+  ute: { currentStage: string; finalizedAt: Date | null },
+  stages: StageForAdvance[],
+): PostventaAdvancePlan {
+  const finalizado = ute.currentStage === "FINALIZADO" || ute.finalizedAt !== null;
+  if (!finalizado) return { action: "skip", reason: "tramite-no-finalizado" };
+
+  const postventa = stages.find((s) => s.name === "POSTVENTA");
+  if (!postventa) return { action: "skip", reason: "sin-etapa-postventa" };
+  if (postventa.status === "COMPLETED") return { action: "skip", reason: "postventa-ya-completada" };
+
+  const habilitacion = stages.find((s) => s.name === "HABILITACION_UTE");
+  if (!habilitacion || habilitacion.status !== "COMPLETED") {
+    return { action: "skip", reason: "habilitacion-no-completada" };
+  }
+
+  const operaciones = stages.find((s) => s.name === "OPERACIONES");
+  const completedAt =
+    ute.finalizedAt ?? habilitacion.actualEndDate ?? operaciones?.actualEndDate ?? null;
+  if (!completedAt) return { action: "skip", reason: "sin-fecha" };
+
+  return { action: "advance", postventaId: postventa.id, completedAt };
+}
+
+export async function advancePostventaOnUteFinalizado(uteProcess: UteProcess): Promise<void> {
+  // Early-out barato (sin DB) para el caso común: la mayoría de los updates de
+  // UTE no finalizan el trámite y regenerateUteSubstages corre en cada uno.
+  if (uteProcess.currentStage !== "FINALIZADO" && uteProcess.finalizedAt === null) return;
+
+  const stages = await prisma.stage.findMany({
+    where: { projectId: uteProcess.projectId, deletedAt: null },
+    select: { id: true, name: true, status: true, actualStartDate: true, actualEndDate: true },
+  });
+
+  const plan = planPostventaAdvance(uteProcess, stages);
+  if (plan.action === "skip") {
+    if (plan.reason === "sin-fecha") {
+      console.warn(
+        `[ute-sync] POSTVENTA no avanzada para proyecto ${uteProcess.projectId}: trámite ` +
+          `finalizado pero sin fecha (finalizedAt / HABILITACION_UTE.actualEndDate / ` +
+          `OPERACIONES.actualEndDate todas null). Se saltea — revisar a mano.`,
+      );
+    }
+    return;
+  }
+
+  const postventa = stages.find((s) => s.id === plan.postventaId);
+
+  await prisma.stage.update({
+    where: { id: plan.postventaId },
+    data: {
+      status: "COMPLETED" as StageStatus,
+      actualStartDate: postventa?.actualStartDate ?? plan.completedAt,
+      actualEndDate: plan.completedAt,
+      progressPercent: 100,
+    },
+  });
+
+  // Ahora todas las etapas pueden estar COMPLETED → cerrar el proyecto con la
+  // fecha del trámite (NO la de hoy).
+  await completeProjectIfAllStagesDone(uteProcess.projectId, plan.completedAt);
 }
 
 /**

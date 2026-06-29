@@ -155,30 +155,44 @@ export async function syncStageProgress(stageId: string) {
   // COMPLETED pero el proyecto no se marcó por un flow previo que falló.
   const finalStatus = (updateData.status as StageStatus | undefined) ?? stage.status;
   if (finalStatus === StageStatus.COMPLETED) {
-    const allProjectStages = await prisma.stage.findMany({
-      where: { projectId: stage.projectId },
-      select: { status: true },
-    });
-    const allStagesDone =
-      allProjectStages.length > 0 && allProjectStages.every((s) => s.status === StageStatus.COMPLETED);
-    if (allStagesDone) {
-      const project = await prisma.project.findUnique({
-        where: { id: stage.projectId },
-        select: { status: true, actualEndDate: true },
-      });
-      if (project && (project.status !== ProjectStatus.COMPLETED || !project.actualEndDate)) {
-        await prisma.project.update({
-          where: { id: stage.projectId },
-          data: {
-            status: ProjectStatus.COMPLETED,
-            actualEndDate: project.actualEndDate ?? now,
-          },
-        });
-      }
-    }
+    await completeProjectIfAllStagesDone(stage.projectId, now);
   }
 
   return updatedStage;
+}
+
+/**
+ * Marca el proyecto como COMPLETED si TODAS sus etapas están COMPLETED y todavía
+ * no quedó cerrado. `completedAt` se usa como actualEndDate sólo si el proyecto
+ * no tenía ya una fecha previa. Idempotente: si ya está COMPLETED con fecha, no
+ * hace nada.
+ *
+ * Extraído de syncStageProgress para reusarlo desde el avance automático de
+ * POSTVENTA al finalizar el trámite UTE (ute-sync.service), evitando duplicar la
+ * regla de cierre del proyecto.
+ */
+export async function completeProjectIfAllStagesDone(projectId: string, completedAt: Date) {
+  const allProjectStages = await prisma.stage.findMany({
+    where: { projectId },
+    select: { status: true },
+  });
+  const allStagesDone =
+    allProjectStages.length > 0 && allProjectStages.every((s) => s.status === StageStatus.COMPLETED);
+  if (!allStagesDone) return;
+
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { status: true, actualEndDate: true },
+  });
+  if (project && (project.status !== ProjectStatus.COMPLETED || !project.actualEndDate)) {
+    await prisma.project.update({
+      where: { id: projectId },
+      data: {
+        status: ProjectStatus.COMPLETED,
+        actualEndDate: project.actualEndDate ?? completedAt,
+      },
+    });
+  }
 }
 
 export async function syncSubstageProgress(substageId: string) {
