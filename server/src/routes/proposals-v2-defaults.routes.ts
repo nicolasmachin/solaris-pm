@@ -19,6 +19,7 @@ import {
   getStoredFilePath,
   saveBufferAsAttachment,
 } from "../services/file-storage.service.js";
+import { applyCoverOverlay } from "../services/proposal/coverOverlay.js";
 import { badRequest, forbidden, unauthorized } from "../utils/errors.js";
 import { serializeDate } from "../utils/serialization.js";
 
@@ -118,6 +119,9 @@ const putBodySchema = z
     coverOverlay: coverOverlaySchema,
   })
   .strict();
+
+// Body de la vista previa: el overlay que el admin está probando (sin guardar).
+const coverPreviewBodySchema = z.object({ config: coverOverlaySchema }).strict();
 
 export async function registerProposalsV2DefaultsRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authenticate);
@@ -312,6 +316,49 @@ export async function registerProposalsV2DefaultsRoutes(app: FastifyInstance) {
       reply.header("Content-Disposition", 'inline; filename="tapa.pdf"');
       reply.header("Cache-Control", "no-store");
       return reply.send(buf);
+    },
+  );
+
+  // ─── Vista previa de la tapa con overlay (solo ADMIN) ────────────────────
+  // Aplica el `config` que el admin está probando (no el guardado) sobre la
+  // tapa actual, con datos de ejemplo. Permite iterar coordenadas sin guardar.
+  app.post(
+    "/proposals-v2/defaults/cover/preview",
+    { preHandler: authorize(Module.VENTAS, Action.VIEW) },
+    async (request, reply) => {
+      const user = ensureUser(request);
+      if (user.role !== "ADMIN") {
+        throw forbidden("Solo un administrador puede previsualizar la tapa");
+      }
+
+      const { config } = coverPreviewBodySchema.parse(request.body);
+
+      const row = await prisma.proposalDefaults.findUnique({
+        where: { id: SINGLETON_ID },
+        select: { coverPdfAttachment: { select: { url: true } } },
+      });
+      const url = row?.coverPdfAttachment?.url;
+      if (!url) {
+        return reply.status(404).send({ message: "No hay tapa configurada" });
+      }
+
+      let bytes: Buffer;
+      try {
+        bytes = await fsPromises.readFile(getStoredFilePath(url));
+      } catch {
+        return reply.status(404).send({ message: "El archivo de tapa no está disponible" });
+      }
+
+      const out = await applyCoverOverlay(bytes, config, {
+        clientName: "Jose Gonzalez",
+        city: "El Pinar, Uruguay.",
+        date: "19 de junio de 2026",
+      });
+
+      reply.header("Content-Type", "application/pdf");
+      reply.header("Content-Disposition", 'inline; filename="tapa-preview.pdf"');
+      reply.header("Cache-Control", "no-store");
+      return reply.send(out);
     },
   );
 }
