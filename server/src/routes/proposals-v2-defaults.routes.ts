@@ -113,12 +113,18 @@ const coverOverlaySchema = z
   })
   .strict();
 
+// Payload parcial: el singleton pega en TODAS las propuestas, así que cada
+// sección se guarda por separado. `data` y `coverOverlay` son opcionales pero se
+// exige al menos uno (si no, no habría nada que guardar).
 const putBodySchema = z
   .object({
-    data: dataSchema,
-    coverOverlay: coverOverlaySchema,
+    data: dataSchema.optional(),
+    coverOverlay: coverOverlaySchema.optional(),
   })
-  .strict();
+  .strict()
+  .refine((b) => b.data !== undefined || b.coverOverlay !== undefined, {
+    message: "Se requiere al menos `data` o `coverOverlay`",
+  });
 
 // Body de la vista previa: el overlay que el admin está probando (sin guardar).
 const coverPreviewBodySchema = z.object({ config: coverOverlaySchema }).strict();
@@ -165,32 +171,61 @@ export async function registerProposalsV2DefaultsRoutes(app: FastifyInstance) {
       const body = putBodySchema.parse(request.body);
 
       const existing = await prisma.proposalDefaults.findUnique({ where: { id: SINGLETON_ID } });
+      if (!existing) {
+        // El form solo se muestra cuando el singleton está seedeado, así que un
+        // PUT sin singleton es un estado inválido (no inventamos un singleton
+        // parcial que pisaría con defaults vacíos).
+        throw badRequest(
+          "PROPOSAL_DEFAULTS_NOT_SEEDED",
+          "Los defaults de propuestas no están cargados.",
+        );
+      }
 
-      const row = await prisma.proposalDefaults.upsert({
+      // Update dinámico: solo se escriben las claves que vinieron en el body.
+      // Nunca pisamos `data` ni `coverOverlay` con undefined.
+      const updateData: Prisma.ProposalDefaultsUncheckedUpdateInput = { updatedById: user.id };
+      const changed: string[] = [];
+      if (body.data !== undefined) {
+        updateData.data = body.data;
+        changed.push("data");
+      }
+      if (body.coverOverlay !== undefined) {
+        updateData.coverOverlay = body.coverOverlay;
+        changed.push("cover_overlay");
+      }
+
+      const row = await prisma.proposalDefaults.update({
         where: { id: SINGLETON_ID },
-        create: {
-          id: SINGLETON_ID,
-          data: body.data,
-          coverOverlay: body.coverOverlay,
-          updatedById: user.id,
-        },
-        update: {
-          data: body.data,
-          coverOverlay: body.coverOverlay,
-          updatedById: user.id,
-        },
+        data: updateData,
       });
+
+      const tocoData = changed.includes("data");
+      const tocoOverlay = changed.includes("cover_overlay");
+      const descripcion =
+        tocoData && tocoOverlay
+          ? "Actualizó los defaults y el overlay de la tapa"
+          : tocoData
+            ? "Actualizó los defaults del generador de propuestas"
+            : "Actualizó el overlay de la tapa";
 
       await createAuditEntry({
         entityType: AuditEntityType.setting,
         entityId: SINGLETON_ID,
         userId: user.id,
         action: AuditAction.updated,
-        fieldChanged: "proposal_defaults",
-        description: "Actualizó los defaults del generador de propuestas",
+        // Refleja la(s) sección(es) tocada(s): "data", "cover_overlay" o ambas.
+        fieldChanged: changed.join(","),
+        description: descripcion,
         metadata: {
-          before: existing?.data ?? null,
-          after: body.data,
+          sections: changed,
+          before: {
+            ...(tocoData ? { data: existing.data } : {}),
+            ...(tocoOverlay ? { coverOverlay: existing.coverOverlay } : {}),
+          },
+          after: {
+            ...(tocoData ? { data: body.data } : {}),
+            ...(tocoOverlay ? { coverOverlay: body.coverOverlay } : {}),
+          },
         } as unknown as Prisma.InputJsonValue,
       });
 
