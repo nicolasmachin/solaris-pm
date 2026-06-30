@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "../../components/ui/Button";
 import { Spinner } from "../../components/ui/Spinner";
@@ -21,10 +21,16 @@ export function ProposalDefaultsPage() {
   const [data, setData] = useState<ProposalDefaultsData>({});
   const [coverOverlay, setCoverOverlay] = useState<CoverOverlay | null>(null);
 
+  // Inicializa el form UNA sola vez, recién cuando hay datos válidos (seeded).
+  // A partir de ahí el estado local es la fuente de verdad: actualizaciones
+  // posteriores de la cache (tras guardar una sección) NO pisan los inputs en
+  // progreso de la otra. Ojo el orden: marcar el ref solo después de setear.
+  const initialized = useRef(false);
   useEffect(() => {
-    if (defaults?.seeded) {
+    if (defaults?.seeded && !initialized.current) {
       setData(defaults.data);
       setCoverOverlay(defaults.coverOverlay);
+      initialized.current = true;
     }
   }, [defaults]);
 
@@ -54,9 +60,13 @@ export function ProposalDefaultsPage() {
     );
   }
 
-  function handleSave() {
+  // Cada botón guarda SOLO su sección (payload parcial → no pisa la otra en BD).
+  function handleSaveData() {
+    updateMut.mutate({ data });
+  }
+  function handleSaveCover() {
     if (!coverOverlay) return;
-    updateMut.mutate({ data, coverOverlay });
+    updateMut.mutate({ coverOverlay });
   }
 
   return (
@@ -73,7 +83,7 @@ export function ProposalDefaultsPage() {
           )}
         </div>
         {isAdmin && (
-          <Button onClick={handleSave} loading={updateMut.isPending} disabled={!coverOverlay}>
+          <Button onClick={handleSaveData} loading={updateMut.isPending}>
             Guardar cambios
           </Button>
         )}
@@ -85,7 +95,7 @@ export function ProposalDefaultsPage() {
         updatedAt={defaults.updatedAt}
         isAdmin={isAdmin}
         onChangeOverlay={setCoverOverlay}
-        onSaveConfig={handleSave}
+        onSaveConfig={handleSaveCover}
         savingConfig={updateMut.isPending}
       />
 

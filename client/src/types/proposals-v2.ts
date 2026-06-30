@@ -38,10 +38,11 @@ export interface ProposalDefaultsResponse {
   updatedAt: string | null;
 }
 
-/** Body de PUT /proposals-v2/defaults. */
+/** Body de PUT /proposals-v2/defaults. Parcial: cada sección se guarda por
+ *  separado (variables vs overlay). El backend exige al menos una. */
 export interface ProposalDefaultsUpdateInput {
-  data: ProposalDefaultsData;
-  coverOverlay: CoverOverlay;
+  data?: ProposalDefaultsData;
+  coverOverlay?: CoverOverlay;
 }
 
 /** Type guard: distingue una variable flagged de un subobjeto. */
