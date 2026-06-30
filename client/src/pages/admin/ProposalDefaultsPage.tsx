@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { Button } from "../../components/ui/Button";
 import { Spinner } from "../../components/ui/Spinner";
+import { CoverSection } from "../../components/admin/proposal-defaults/CoverSection";
 import { ProposalDefaultsForm } from "../../components/admin/proposal-defaults/ProposalDefaultsForm";
 import { useProposalDefaults, useUpdateProposalDefaults } from "../../hooks/useProposalDefaults";
 import { usePermission } from "../../hooks/usePermission";
@@ -78,12 +79,17 @@ export function ProposalDefaultsPage() {
         )}
       </div>
 
-      <ProposalDefaultsForm
-        data={data}
+      <CoverSection
         coverOverlay={coverOverlay}
-        onChange={setData}
-        disabled={!isAdmin}
+        coverPdfAttachmentId={defaults.coverPdfAttachmentId}
+        updatedAt={defaults.updatedAt}
+        isAdmin={isAdmin}
+        onChangeOverlay={setCoverOverlay}
+        onSaveConfig={handleSave}
+        savingConfig={updateMut.isPending}
       />
+
+      <ProposalDefaultsForm data={data} onChange={setData} disabled={!isAdmin} />
     </div>
   );
 }

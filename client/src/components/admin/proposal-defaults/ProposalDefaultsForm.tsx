@@ -1,5 +1,4 @@
 import type {
-  CoverOverlay,
   FlaggedValue,
   NestedFlagged,
   ProposalDefaultsData,
@@ -125,12 +124,10 @@ function labelFor(key: string): string {
 
 export function ProposalDefaultsForm({
   data,
-  coverOverlay,
   onChange,
   disabled,
 }: {
   data: ProposalDefaultsData;
-  coverOverlay: CoverOverlay | null;
   onChange: (next: ProposalDefaultsData) => void;
   disabled: boolean;
 }) {
@@ -144,23 +141,6 @@ export function ProposalDefaultsForm({
 
   return (
     <div className="space-y-3">
-      {/* Tapa: placeholder hasta Fase D */}
-      <details className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4" open>
-        <summary className="cursor-pointer text-sm font-semibold text-[var(--color-text-primary)]">Tapa</summary>
-        <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-          Próximamente: upload de tapa PDF en Fase D. Coordenadas del overlay (solo lectura por ahora):
-        </p>
-        {coverOverlay ? (
-          <ul className="mt-2 space-y-0.5 font-mono text-[11px] text-[var(--color-text-secondary)]">
-            <li>Nombre: x={coverOverlay.clientName.x}, y={coverOverlay.clientName.y}, size={coverOverlay.clientName.fontSize}</li>
-            <li>Ciudad: x={coverOverlay.city.x}, y={coverOverlay.city.y}, size={coverOverlay.city.fontSize}</li>
-            <li>Fecha: x={coverOverlay.date.x}, y={coverOverlay.date.y}, size={coverOverlay.date.fontSize}</li>
-          </ul>
-        ) : (
-          <p className="mt-2 text-[11px] text-[var(--color-text-muted)]">Sin coordenadas configuradas.</p>
-        )}
-      </details>
-
       {SECTIONS.map((section) => (
         <details
           key={section.title}
