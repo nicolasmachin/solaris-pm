@@ -1,0 +1,52 @@
+// Zod del `snapshot` de una versión publicada (Fase E, sección 6 de la spec).
+// Contiene todo lo necesario para regenerar el PDF idéntico sin depender del
+// estado actual del sistema. Se valida al construirlo (atrapa drift) y al
+// leerlo para regenerar.
+
+import { z } from "zod";
+
+import { draftDataSchema } from "./draft.schema.js";
+
+// Config del overlay de la tapa (mismo shape que ProposalDefaults.coverOverlay).
+const overlayTextSchema = z
+  .object({
+    x: z.number(),
+    y: z.number(),
+    fontSize: z.number(),
+    color: z.string(),
+    fontWeight: z.enum(["regular", "bold"]),
+  })
+  .strict();
+
+export const snapshotCoverOverlaySchema = z
+  .object({
+    clientName: overlayTextSchema,
+    city: overlayTextSchema,
+    date: overlayTextSchema,
+  })
+  .strict();
+
+export const SNAPSHOT_VERSION = 1;
+export const TEMPLATE_VERSION = "fase-C-post-D";
+
+export const snapshotSchema = z
+  .object({
+    // Versión del schema del snapshot, para migraciones futuras.
+    version: z.literal(SNAPSHOT_VERSION),
+    // Inputs del borrador tal cual al publicar.
+    data: draftDataSchema,
+    // Defaults resueltos (números y algún string de marca) al momento.
+    defaults: z.record(z.string(), z.union([z.number(), z.string()])),
+    // Config de la tapa al momento.
+    coverOverlay: snapshotCoverOverlaySchema,
+    coverPdfAttachmentId: z.string().nullable(),
+    // Salida completa de la calculadora (Fase B). Se guarda para no re-correrla
+    // al regenerar; su shape es amplio (100+ campos) así que no se valida campo
+    // a campo, solo que sea un objeto.
+    calc: z.record(z.string(), z.unknown()),
+    templateVersion: z.string(),
+    renderedAt: z.string(), // ISO 8601
+  })
+  .strict();
+
+export type ProposalV2Snapshot = z.infer<typeof snapshotSchema>;
