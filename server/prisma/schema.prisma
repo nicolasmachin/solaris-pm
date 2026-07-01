@@ -114,6 +114,11 @@ enum AuditAction {
   role_changed
   permission_changed
   email_sent
+  proposal_v2_draft_updated
+  proposal_v2_version_published
+  proposal_v2_version_discarded
+  proposal_v2_version_restored
+  proposal_v2_version_pdf_regenerated
 }
 
 enum NotificationType {
@@ -387,8 +392,10 @@ model User {
   informesRecibidos              InformeDestinatario[]       @relation("InformesRecibidos")
   smtpConfig                     UserSmtpConfig?
   emailsSent                     EmailLog[]                  @relation("EmailSentBy")
-  proposalDraftsUpdated          ProposalDraft[]             @relation("ProposalDraftUpdatedBy")
-  proposalVersionsCreated        ProposalVersion[]           @relation("ProposalVersionCreatedBy")
+  proposalV2DraftsCreated        ProposalV2Draft[]           @relation("ProposalV2DraftCreatedBy")
+  proposalV2DraftsUpdated        ProposalV2Draft[]           @relation("ProposalV2DraftUpdatedBy")
+  proposalV2VersionsPublished    ProposalV2Version[]         @relation("ProposalV2VersionPublishedBy")
+  proposalV2VersionsDiscarded    ProposalV2Version[]         @relation("ProposalV2VersionDiscardedBy")
   proposalDefaultsUpdated        ProposalDefaults[]          @relation("ProposalDefaultsUpdatedBy")
   clientInteractions             ClientInteraction[]         @relation("ClientInteractionAuthor")
   clientInteractionsDeleted      ClientInteraction[]         @relation("ClientInteractionDeletedBy")
@@ -828,8 +835,6 @@ model FileAttachment {
   preIngenieriaMinutaFor PreIngenieriaVersion[] @relation("MinutaSource")
   efpAttachments         EFPAttachment[]        @relation("EFPAttachmentFile")
   proposalGenerations    ProposalGeneration[]   @relation("ProposalAttachment")
-  proposalV2FullPdf      ProposalVersion?       @relation("ProposalV2FullPdf")
-  proposalV2SummaryPdf   ProposalVersion?       @relation("ProposalV2SummaryPdf")
   proposalV2Covers       ProposalDefaults[]     @relation("ProposalV2Cover")
   deletedAt              DateTime?              @db.Timestamptz(6)
   createdAt              DateTime               @default(now()) @db.Timestamptz(6)
@@ -1061,8 +1066,8 @@ model SalesLead {
   createdBy            User                 @relation("LeadCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   activities           SalesActivity[]
   proposals            ProposalGeneration[] @relation("ProposalLead")
-  proposalDraft        ProposalDraft?
-  proposalVersions     ProposalVersion[]
+  proposalV2Draft      ProposalV2Draft?
+  proposalV2Versions   ProposalV2Version[]
   comments             Comment[]
   attachments          FileAttachment[]     @relation("LeadAttachments")
   deletedAt            DateTime?            @db.Timestamptz(6)
@@ -2528,47 +2533,63 @@ enum EmailStatus {
 // Constructor interactivo que reemplaza progresivamente al generador Excel+Python
 // (ProposalGeneration). Ver docs/features/proposals-v2/SPEC.md.
 
-model ProposalDraft {
-  id          String    @id @default(cuid())
-  leadId      String    @unique
-  lead        SalesLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
-
-  data        Json
-
-  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
-  updatedAt   DateTime  @updatedAt @db.Timestamptz(6)
-  updatedById String?
-  updatedBy   User?     @relation("ProposalDraftUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-
-  @@index([leadId])
-  @@map("proposal_drafts")
+enum ProposalV2VersionStatus {
+  PUBLISHED
+  DISCARDED // soft-delete
 }
 
-model ProposalVersion {
-  id            String    @id @default(cuid())
-  leadId        String
-  lead          SalesLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+// Borrador de propuesta v2: uno por lead, mutable, sin PDF persistido.
+// La propuesta se genera durante la venta (fase lead), antes de que exista
+// proyecto. Ver docs/features/proposals-v2/FASE_E_SPEC.md.
+model ProposalV2Draft {
+  id        String    @id @default(cuid())
+  leadId    String    @unique
+  lead      SalesLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
-  versionNumber Int
-
-  data          Json
-  calculated    Json
-  advisor       Json // Snapshot: {userId, name, jobTitle, email, phone}
-
-  // Dos PDFs: completo + resumen
-  fullPdfAttachmentId    String         @unique
-  fullPdfAttachment      FileAttachment @relation("ProposalV2FullPdf", fields: [fullPdfAttachmentId], references: [id])
-
-  summaryPdfAttachmentId String         @unique
-  summaryPdfAttachment   FileAttachment @relation("ProposalV2SummaryPdf", fields: [summaryPdfAttachmentId], references: [id])
+  // Inputs editables (calculadora + template). Shape validado por Zod en el
+  // borde (draftDataSchema), no en la BD.
+  data Json
 
   createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
   createdById String
-  createdBy   User     @relation("ProposalVersionCreatedBy", fields: [createdById], references: [id])
+  createdBy   User     @relation("ProposalV2DraftCreatedBy", fields: [createdById], references: [id])
+  updatedById String
+  updatedBy   User     @relation("ProposalV2DraftUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([leadId])
+  @@map("proposal_v2_drafts")
+}
+
+// Versión publicada: inmutable en contenido, numerada por lead, soft-deleteable.
+// Snapshot completo + 2 PDFs persistidos en disco (paths relativos a STORAGE_PATH).
+model ProposalV2Version {
+  id            String                  @id @default(cuid())
+  leadId        String
+  lead          SalesLead               @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  versionNumber Int
+  status        ProposalV2VersionStatus @default(PUBLISHED)
+
+  // Todo lo necesario para regenerar el PDF idéntico (ver spec sección 6).
+  snapshot Json
+
+  // Paths relativos a STORAGE_PATH.
+  fullPdfPath    String
+  summaryPdfPath String
+
+  publishedAt   DateTime @default(now()) @db.Timestamptz(6)
+  publishedById String
+  publishedBy   User     @relation("ProposalV2VersionPublishedBy", fields: [publishedById], references: [id])
+
+  // Soft-delete.
+  discardedAt   DateTime? @db.Timestamptz(6)
+  discardedById String?
+  discardedBy   User?     @relation("ProposalV2VersionDiscardedBy", fields: [discardedById], references: [id], onDelete: SetNull)
+  discardReason String?
 
   @@unique([leadId, versionNumber])
-  @@index([leadId, versionNumber])
-  @@map("proposal_versions")
+  @@index([leadId, status])
+  @@map("proposal_v2_versions")
 }
 
 model ProposalDefaults {
