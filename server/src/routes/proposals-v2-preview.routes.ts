@@ -6,8 +6,6 @@
 // (gating acá, no en el calculator). El HTML/PDF nunca contiene el flujo de caja,
 // así que renderizar con el calculated completo no filtra datos sensibles.
 
-import { promises as fsPromises } from "node:fs";
-
 import { Action, Module } from "@prisma/client";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { FastifyInstance } from "fastify";
@@ -16,41 +14,17 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
-import { getStoredFilePath } from "../services/file-storage.service.js";
 import {
-  applyCoverOverlay,
   calculate,
-  concatPdfs,
-  generateProposalFullPdf,
+  generateFullPdfWithCover,
   generateProposalSummaryPdf,
   renderProposalFull,
   renderProposalSummary,
   resolveDefaults,
-  type CoverOverlayConfig,
   type ProposalCalculated,
   type ProposalData,
 } from "../services/proposal/index.js";
 import { badRequest, unauthorized } from "../utils/errors.js";
-
-// Validación de borde del overlay guardado en el singleton (Json). Si está
-// malformado preferimos generar sin tapa antes que romper toda la propuesta.
-const overlayTextSchema = z
-  .object({
-    x: z.number(),
-    y: z.number(),
-    fontSize: z.number(),
-    color: z.string(),
-    fontWeight: z.enum(["regular", "bold"]),
-  })
-  .strict();
-
-const coverOverlayConfigSchema = z
-  .object({
-    clientName: overlayTextSchema,
-    city: overlayTextSchema,
-    date: overlayTextSchema,
-  })
-  .strict();
 
 function ensureUser(request: FastifyRequest) {
   if (!request.user) throw unauthorized("No autenticado");
@@ -147,49 +121,6 @@ async function resolveData(data: ProposalData) {
   }
   const defaults = resolveDefaults(defaultsRow.data);
   return calculate(data, defaults);
-}
-
-// Lee la tapa configurada en el singleton y su overlay. Devuelve null (→ sin
-// tapa, la propuesta arranca por la carta) si no hay tapa cargada, si el overlay
-// está malformado o si el archivo físico no está disponible.
-async function loadCoverForProposal(): Promise<{
-  bytes: Buffer;
-  config: CoverOverlayConfig;
-} | null> {
-  const row = await prisma.proposalDefaults.findUnique({
-    where: { id: "singleton" },
-    select: { coverOverlay: true, coverPdfAttachment: { select: { url: true } } },
-  });
-  const url = row?.coverPdfAttachment?.url;
-  if (!url) return null;
-
-  const parsed = coverOverlayConfigSchema.safeParse(row?.coverOverlay);
-  if (!parsed.success) return null;
-
-  try {
-    const bytes = await fsPromises.readFile(getStoredFilePath(url));
-    return { bytes, config: parsed.data };
-  } catch {
-    return null;
-  }
-}
-
-// Cuerpo (Puppeteer) + tapa (con overlay) si está configurada. Si no hay tapa,
-// devuelve solo el cuerpo sin romper.
-async function generateFullPdfWithCover(ctx: {
-  data: ProposalData;
-  calculated: ProposalCalculated;
-}): Promise<Buffer> {
-  const body = await generateProposalFullPdf(ctx);
-  const cover = await loadCoverForProposal();
-  if (!cover) return body;
-
-  const overlaid = await applyCoverOverlay(cover.bytes, cover.config, {
-    clientName: ctx.data.cliente.nombre,
-    city: ctx.data.cliente.ciudad,
-    date: ctx.calculated.fechaTextoLargo,
-  });
-  return concatPdfs(overlaid, body);
 }
 
 export async function registerProposalsV2PreviewRoutes(app: FastifyInstance) {
