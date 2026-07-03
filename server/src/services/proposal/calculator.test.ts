@@ -10,7 +10,7 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
 
-import { calculate, getCuadrillaEscalon } from "./calculator.js";
+import { calculate, getCuadrillaEscalon, pmt } from "./calculator.js";
 import type { ProposalData, ProposalDefaultsResolved } from "./types.js";
 
 const input: ProposalData = {
@@ -99,6 +99,15 @@ test("getCuadrillaEscalon: bordes de cada escalón", () => {
     assert.equal(getCuadrillaEscalon(paneles), esperado, `${paneles} paneles → cuadrilla ${esperado}`);
   }
 });
+
+// ─── PMT (cuota francesa) ───────────────────────────────────────────────────
+test("pmt: tasa 0 = capital / cuotas", () => approx(pmt(1000, 0, 10), 100, 1e-9, "pmt tasa 0"));
+test("pmt: caso conocido 100k @ 1% x 12", () => approx(pmt(100000, 0.01, 12), 8884.88, 0.01, "pmt 1%"));
+
+// ─── Cuotas BBVA: valores del Excel "Financiacion BBVA" (Gonzalez) ──────────
+test("cuota BBVA 24 meses", () => approx(r.cuota24m, 22450, 5, "cuota24m"));
+test("cuota BBVA 36 meses", () => approx(r.cuota36m, 15453, 5, "cuota36m"));
+test("cuota BBVA 60 meses", () => approx(r.cuota60m, 10543, 5, "cuota60m"));
 
 // ─── Caso Gonzalez: valores exactos del Excel ───────────────────────────────
 test("potencia total kWp", () => approx(r.potenciaTotalKwp, 6.49, 0.001, "potenciaTotalKwp"));

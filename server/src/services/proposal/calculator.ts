@@ -37,6 +37,14 @@ export function getCuadrillaEscalon(cantidadPaneles: number): number {
   return 8;
 }
 
+// Cuota de un préstamo francés (equivalente a PMT del Excel, con signo
+// positivo). `tasaMensual` es la tasa por período; si es 0, es capital/cuotas.
+export function pmt(principal: number, tasaMensual: number, cuotas: number): number {
+  if (tasaMensual === 0) return principal / cuotas;
+  const factor = Math.pow(1 + tasaMensual, -cuotas);
+  return (principal * tasaMensual) / (1 - factor);
+}
+
 // Cálculo puro del negocio. No hace I/O; recibe todo por parámetro. Fórmulas
 // reconstruidas de la hoja CALCULADORA del Excel (validadas contra el caso
 // Jose Gonzalez). Ver docs/features/proposals-v2/SPEC.md §6.
@@ -144,11 +152,19 @@ export function calculate(
   const priMeses = totalConIva / ahorroMensualUsd;
   const priAnios = priMeses / 12;
 
-  // ── 7. Financiación BBVA (simple, sobre totalFinalConIva) ──
-  // TODO: refinar con la fórmula real de la hoja "Financiacion BBVA" del Excel.
-  const cuota24m = (totalFinalConIva / 24) * (1 + defaults.bbva24mInteresUI);
-  const cuota36m = (totalFinalConIva / 36) * (1 + defaults.bbva36mInteresUI);
-  const cuota60m = (totalFinalConIva / 60) * (1 + defaults.bbva60mInteresUI);
+  // ── 7. Financiación BBVA (modelo Excel "Financiacion BBVA": UI + PMT) ──
+  // El monto a financiar se expresa en Unidades Indexadas, se le suma un % de
+  // gastos administrativos sobre el capital, se calcula la cuota con PMT y se
+  // aplica un factor por plazo; el resultado se vuelve a pesos con el valor UI.
+  const capitalLiquidoUI = (totalFinalConIva * dolar) / defaults.cotizacionUI;
+  const cuotaBbvaPesos = (cuotas: number, gastosAdminCapital: number, tasaAnual: number, factorCuota: number) => {
+    const capitalTotalUI = capitalLiquidoUI * (1 + gastosAdminCapital);
+    const cuotaBaseUI = pmt(capitalTotalUI, tasaAnual / 12, cuotas);
+    return cuotaBaseUI * factorCuota * defaults.cotizacionUI;
+  };
+  const cuota24m = cuotaBbvaPesos(24, defaults.bbva24mGastosAdminCapital, defaults.bbva24mInteresUI, defaults.bbva24mFactorCuota);
+  const cuota36m = cuotaBbvaPesos(36, defaults.bbva36mGastosAdminCapital, defaults.bbva36mInteresUI, defaults.bbva36mFactorCuota);
+  const cuota60m = cuotaBbvaPesos(60, defaults.bbva60mGastosAdminCapital, defaults.bbva60mInteresUI, defaults.bbva60mFactorCuota);
 
   // ── 8. Flujo de caja del negocio (USD) ──
   const cobroAdelantoCliente = totalConIva / 2;
