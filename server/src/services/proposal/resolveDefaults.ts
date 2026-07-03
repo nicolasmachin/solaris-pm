@@ -55,6 +55,10 @@ export function resolveDefaults(rawDefaults: unknown): ProposalDefaultsResolved 
     comisionVendedorPorcentaje: num("comisionVendedorPorcentaje"),
     comisionBbvaPorcentaje: num("comisionBbvaPorcentaje"),
 
+    factorAhorroSimple: num("factorAhorroSimple"),
+    factorAhorroDoble: num("factorAhorroDoble"),
+    factorAhorroTriple: num("factorAhorroTriple"),
+
     bbva24mInteresUI: num("bbva24mInteresUI"),
     bbva36mInteresUI: num("bbva36mInteresUI"),
     bbva60mInteresUI: num("bbva60mInteresUI"),

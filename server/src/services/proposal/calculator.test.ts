@@ -68,6 +68,9 @@ const defaults: ProposalDefaultsResolved = {
   horasManoDeObraPorInstalacion: 10,
   comisionVendedorPorcentaje: 0.04,
   comisionBbvaPorcentaje: 0.04,
+  factorAhorroSimple: 1.05,
+  factorAhorroDoble: 0.88,
+  factorAhorroTriple: 0.88,
   bbva24mInteresUI: 0,
   bbva36mInteresUI: 0,
   bbva60mInteresUI: 0.05,
@@ -141,4 +144,26 @@ test("generación mensual: 12 valores que suman ≈ anual", () => {
 test("fechas formateadas", () => {
   assert.equal(r.fechaTextoLargo, "3 de julio de 2026");
   assert.equal(r.mesYAnio, "Julio 2026");
+});
+
+// ─── Factor de ahorro por tarifa (Excel J16) ────────────────────────────────
+// potenciaTotalW = 11 × 590 = 6490; ahorroMensualPesos = potenciaTotalW × factor.
+const conTarifa = (tarifa: "Simple" | "Doble" | "Triple", defs = defaults) =>
+  calculate({ ...input, factura: { ...input.factura, tarifa } }, defs);
+
+test("tarifa Simple → factor 1.05 (matchea Excel: 6490 × 1.05)", () =>
+  approx(conTarifa("Simple").ahorroMensualPesos, 6490 * 1.05, 0.01, "ahorro Simple"));
+test("tarifa Doble → factor 0.88 (matchea Excel: 6490 × 0.88)", () =>
+  approx(conTarifa("Doble").ahorroMensualPesos, 6490 * 0.88, 0.01, "ahorro Doble"));
+test("tarifa Triple → factor 0.88 placeholder (6490 × 0.88)", () =>
+  approx(conTarifa("Triple").ahorroMensualPesos, 6490 * 0.88, 0.01, "ahorro Triple"));
+
+test("Doble y Triple hoy dan lo mismo (placeholder), pero por variables distintas", () =>
+  approx(conTarifa("Doble").ahorroMensualPesos, conTarifa("Triple").ahorroMensualPesos, 1e-9, "Doble=Triple placeholder"));
+
+test("estructural: editar factorAhorroTriple lo usa la calculadora (no hardcode)", () => {
+  const defsTriple90 = { ...defaults, factorAhorroTriple: 0.9 };
+  approx(conTarifa("Triple", defsTriple90).ahorroMensualPesos, 6490 * 0.9, 0.01, "ahorro Triple 0.90");
+  // y no afecta a Doble
+  approx(conTarifa("Doble", defsTriple90).ahorroMensualPesos, 6490 * 0.88, 0.01, "Doble intacto");
 });

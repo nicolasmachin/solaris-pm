@@ -142,7 +142,14 @@ export function calculate(
   const totalFinalConIva = totalConIva + itemsAdicionalesTotalConIva;
 
   // ── 6. Económico para el cliente ──
-  const factorAhorro = data.factura.tarifa === "Simple" ? 1.05 : 0.85;
+  // Factor de ahorro por tarifa (Excel J16). Discrimina las tres tarifas vía
+  // defaults editables; hoy Doble = Triple = 0.88 (Triple es placeholder).
+  const factoresPorTarifa: Record<ProposalData["factura"]["tarifa"], number> = {
+    Simple: defaults.factorAhorroSimple,
+    Doble: defaults.factorAhorroDoble,
+    Triple: defaults.factorAhorroTriple,
+  };
+  const factorAhorro = factoresPorTarifa[data.factura.tarifa];
   const ahorroMensualPesos = potenciaTotalW * factorAhorro;
   const ahorroMensualUsd = ahorroMensualPesos / dolar;
   const ahorroAnualUsd = ahorroMensualUsd * 12;

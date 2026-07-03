@@ -71,6 +71,11 @@ const DEFAULT_DATA: Record<string, Flagged | Record<string, Flagged>> = {
   comisionVendedorPorcentaje: { value: 0.04, asesorCanOverride: false },
   comisionBbvaPorcentaje: { value: 0.04, asesorCanOverride: false },
 
+  // ── Factor de ahorro por tarifa (Excel J16: IF Simple→1.05, else→0.88) ──
+  factorAhorroSimple: { value: 1.05, asesorCanOverride: false },
+  factorAhorroDoble: { value: 0.88, asesorCanOverride: false },
+  factorAhorroTriple: { value: 0.88, asesorCanOverride: false }, // placeholder (= Doble hasta definir el real)
+
   // ── Defaults de cotización ──
   cotizacionDolarDefault: { value: 40, asesorCanOverride: true }, // Excel C12
   markupPorcentajeDefault: { value: 0.15, asesorCanOverride: false }, // C13

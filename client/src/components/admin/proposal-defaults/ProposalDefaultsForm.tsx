@@ -37,6 +37,9 @@ const LABELS: Record<string, string> = {
   horasManoDeObraPorInstalacion: "Horas por instalación",
   comisionVendedorPorcentaje: "Comisión vendedor (%)",
   comisionBbvaPorcentaje: "Comisión BBVA (%)",
+  factorAhorroSimple: "Factor ahorro tarifa Simple",
+  factorAhorroDoble: "Factor ahorro tarifa Doble",
+  factorAhorroTriple: "Factor ahorro tarifa Triple",
   cotizacionDolarDefault: "Cotización dólar por defecto",
   markupPorcentajeDefault: "Markup por defecto (%)",
   distanciaInstalacionKmDefault: "Distancia instalación por defecto (km)",
@@ -106,6 +109,10 @@ const SECTIONS: { title: string; keys?: string[]; nested?: string }[] = [
     ],
   },
   { title: "Comisiones", keys: ["comisionVendedorPorcentaje", "comisionBbvaPorcentaje"] },
+  {
+    title: "Factor de ahorro por tarifa",
+    keys: ["factorAhorroSimple", "factorAhorroDoble", "factorAhorroTriple"],
+  },
   { title: "Plazos de entrega", nested: "plazos" },
   {
     title: "Financiación BBVA",

@@ -149,6 +149,11 @@ export interface ProposalDefaultsResolved {
   comisionVendedorPorcentaje: number;
   comisionBbvaPorcentaje: number;
 
+  // Factor de ahorro por tarifa (potenciaTotalW × factor = ahorro mensual $)
+  factorAhorroSimple: number;
+  factorAhorroDoble: number;
+  factorAhorroTriple: number;
+
   // Financiación BBVA (modelo UI + PMT)
   bbva24mInteresUI: number; // tasa anual nominal PMT
   bbva36mInteresUI: number;
