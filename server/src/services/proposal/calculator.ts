@@ -37,6 +37,15 @@ export function getCuadrillaEscalon(cantidadPaneles: number): number {
   return 8;
 }
 
+// Interpreta el markup aceptando ambas unidades (compat con snapshots viejos):
+// decimal (≤1, ej. 0.2 = 20%) o porcentaje (>1, ej. 20 = 20%). Devuelve SIEMPRE
+// el multiplicador decimal. Los drafts nuevos guardan porcentaje (20); los
+// snapshots publicados antes de la migración tienen decimal (0.2) y siguen
+// dando el mismo resultado. Ver FASE_G_SPEC.md §4.1.3.
+export function interpretarMarkup(valor: number): number {
+  return valor > 1 ? valor / 100 : valor;
+}
+
 // Cuota de un préstamo francés (equivalente a PMT del Excel, con signo
 // positivo). `tasaMensual` es la tasa por período; si es 0, es capital/cuotas.
 export function pmt(principal: number, tasaMensual: number, cuotas: number): number {
@@ -118,7 +127,7 @@ export function calculate(
 
   // ── 4. Pricing ──
   const markupUsdSinIva =
-    (costoTotalSinIva + manoDeObraUsdSinIva) * data.cotizacion.markupPorcentaje;
+    (costoTotalSinIva + manoDeObraUsdSinIva) * interpretarMarkup(data.cotizacion.markupPorcentaje);
   const baseComision = costoTotalSinIva + manoDeObraUsdSinIva + markupUsdSinIva;
   const comisionVentasUsdSinIva = baseComision * defaults.comisionVendedorPorcentaje;
   const comisionBbvaUsdSinIva = baseComision * defaults.comisionBbvaPorcentaje;

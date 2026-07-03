@@ -49,7 +49,7 @@ export function buildInitialDraftData(
     cotizacion: {
       distanciaInstalacionKm: numDefault(defaults, "distanciaInstalacionKmDefault", 0),
       cotizacionDolar: numDefault(defaults, "cotizacionDolarDefault", 40),
-      markupPorcentaje: numDefault(defaults, "markupPorcentajeDefault", 0.15),
+      markupPorcentaje: numDefault(defaults, "markupPorcentajeDefault", 15),
       plazoEntrega: plazoDefault(defaults),
     },
     sistema: {

@@ -52,7 +52,8 @@ export const draftDataPublishSchema = z
       .object({
         distanciaInstalacionKm: z.number().min(0),
         cotizacionDolar: z.number().gt(0),
-        markupPorcentaje: z.number().min(0).max(1),
+        // Acepta decimal (0.2) o porcentaje (20); la calc lo interpreta por magnitud.
+        markupPorcentaje: z.number().min(0).max(100),
         // Plazo de entrega (Fase F): precargado de ProposalDefaults.plazos al
         // crear el draft; obligatorio para publicar.
         plazoEntrega: z.string().min(1),

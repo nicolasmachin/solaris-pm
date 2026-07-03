@@ -70,6 +70,7 @@ export function NumberField({
   disabled,
   step,
   min,
+  max,
 }: {
   label: string;
   value: number;
@@ -79,6 +80,7 @@ export function NumberField({
   disabled?: boolean;
   step?: number;
   min?: number;
+  max?: number;
 }) {
   return (
     <Wrap label={label} hint={hint} error={error}>
@@ -88,6 +90,7 @@ export function NumberField({
         value={Number.isFinite(value) ? value : ""}
         step={step}
         min={min}
+        max={max}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value === "" ? 0 : Number(e.target.value))}
       />

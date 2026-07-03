@@ -144,6 +144,11 @@ function labelFor(key: string): string {
   return LABELS[key] ?? key;
 }
 
+// Sufijo / rango visual por variable (solo donde aporta claridad).
+const FIELD_META: Record<string, { suffix?: string; min?: number; max?: number }> = {
+  markupPorcentajeDefault: { suffix: "%", min: 0, max: 100 },
+};
+
 export function ProposalDefaultsForm({
   data,
   onChange,
@@ -191,6 +196,9 @@ export function ProposalDefaultsForm({
                       label={labelFor(key)}
                       entry={entry}
                       disabled={disabled}
+                      suffix={FIELD_META[key]?.suffix}
+                      min={FIELD_META[key]?.min}
+                      max={FIELD_META[key]?.max}
                       onChange={(next) => updateVar(key, next)}
                     />
                   );

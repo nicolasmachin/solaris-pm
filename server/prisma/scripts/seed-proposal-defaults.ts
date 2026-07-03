@@ -78,7 +78,7 @@ const DEFAULT_DATA: Record<string, Flagged | Record<string, Flagged>> = {
 
   // ── Defaults de cotización ──
   cotizacionDolarDefault: { value: 40, asesorCanOverride: true }, // Excel C12
-  markupPorcentajeDefault: { value: 0.15, asesorCanOverride: false }, // C13
+  markupPorcentajeDefault: { value: 15, asesorCanOverride: false }, // C13 (porcentaje: 15 = 15%)
   distanciaInstalacionKmDefault: { value: 0, asesorCanOverride: true },
 
   // ── Financiación BBVA (modelo Excel "Financiacion BBVA" con UI + PMT) ──

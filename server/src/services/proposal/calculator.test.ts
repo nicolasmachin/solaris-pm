@@ -10,7 +10,7 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
 
-import { calculate, getCuadrillaEscalon, pmt } from "./calculator.js";
+import { calculate, getCuadrillaEscalon, interpretarMarkup, pmt } from "./calculator.js";
 import type { ProposalData, ProposalDefaultsResolved } from "./types.js";
 
 const input: ProposalData = {
@@ -144,6 +144,21 @@ test("generación mensual: 12 valores que suman ≈ anual", () => {
 test("fechas formateadas", () => {
   assert.equal(r.fechaTextoLargo, "3 de julio de 2026");
   assert.equal(r.mesYAnio, "Julio 2026");
+});
+
+// ─── interpretarMarkup: acepta decimal y porcentaje ─────────────────────────
+test("interpretarMarkup: decimal (≤1) se usa tal cual", () => {
+  approx(interpretarMarkup(0.2), 0.2, 1e-9, "0.2");
+  approx(interpretarMarkup(0.5), 0.5, 1e-9, "0.5");
+});
+test("interpretarMarkup: porcentaje (>1) se divide por 100", () => {
+  approx(interpretarMarkup(20), 0.2, 1e-9, "20");
+  approx(interpretarMarkup(50), 0.5, 1e-9, "50");
+});
+test("markup 20 (porcentaje) da el mismo markup que 0.2 (decimal)", () => {
+  const con = (m: number) =>
+    calculate({ ...input, cotizacion: { ...input.cotizacion, markupPorcentaje: m } }, defaults).markupUsdSinIva;
+  approx(con(20), con(0.2), 1e-9, "markup 20 == 0.2");
 });
 
 // ─── Factor de ahorro por tarifa (Excel J16) ────────────────────────────────

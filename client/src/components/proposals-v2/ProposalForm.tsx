@@ -97,7 +97,7 @@ export function ProposalForm({
         <h2 className={H2}>Cotización base (Variante A)</h2>
         <div className={GRID}>
           <NumberField label="Cotización dólar" value={data.cotizacion.cotizacionDolar} onChange={(v) => setCotiz({ cotizacionDolar: v })} min={0} step={0.1} disabled={!canOverride("cotizacionDolarDefault")} hint={fixedHint("cotizacionDolarDefault")} error={errors["cotizacion.cotizacionDolar"]} />
-          <NumberField label="Markup (0–1)" value={data.cotizacion.markupPorcentaje} onChange={(v) => setCotiz({ markupPorcentaje: v })} min={0} step={0.01} disabled={!canOverride("markupPorcentajeDefault")} hint={fixedHint("markupPorcentajeDefault")} error={errors["cotizacion.markupPorcentaje"]} />
+          <NumberField label="Markup (%)" value={data.cotizacion.markupPorcentaje} onChange={(v) => setCotiz({ markupPorcentaje: v })} min={0} max={100} step={1} disabled={!canOverride("markupPorcentajeDefault")} hint={fixedHint("markupPorcentajeDefault")} error={errors["cotizacion.markupPorcentaje"]} />
           <NumberField label="Distancia instalación (km)" value={data.cotizacion.distanciaInstalacionKm} onChange={(v) => setCotiz({ distanciaInstalacionKm: v })} min={0} disabled={!canOverride("distanciaInstalacionKmDefault")} hint={fixedHint("distanciaInstalacionKmDefault")} error={errors["cotizacion.distanciaInstalacionKm"]} />
           <TextField label="Plazo de entrega" value={data.cotizacion.plazoEntrega} onChange={(v) => setCotiz({ plazoEntrega: v })} placeholder="6 a 8 semanas" error={errors["cotizacion.plazoEntrega"]} />
         </div>

@@ -59,7 +59,8 @@ const dataSchema = z
       .object({
         distanciaInstalacionKm: z.number().min(0),
         cotizacionDolar: z.number().gt(0),
-        markupPorcentaje: z.number().min(0).max(1),
+        // Acepta decimal (0.2) o porcentaje (20); la calc lo interpreta por magnitud.
+        markupPorcentaje: z.number().min(0).max(100),
       })
       .strict(),
     sistema: z
