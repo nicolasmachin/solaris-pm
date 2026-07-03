@@ -10,6 +10,7 @@ import { ProposalForm } from "../components/proposals-v2/ProposalForm";
 import { ProposalPreview } from "../components/proposals-v2/ProposalPreview";
 import { PublishButton } from "../components/proposals-v2/PublishButton";
 import { PublishModal } from "../components/proposals-v2/PublishModal";
+import { VersionsList } from "../components/proposals-v2/VersionsList";
 import { Button } from "../components/ui/Button";
 import { Spinner } from "../components/ui/Spinner";
 import { useDraftAutosave } from "../hooks/useDraftAutosave";
@@ -21,10 +22,6 @@ import type { ProposalDraftData } from "../types/proposals-v2";
 function errMsg(e: unknown): string | undefined {
   return (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
 }
-
-const H2 = "mb-3 text-sm font-bold uppercase tracking-wide text-[var(--color-text-primary)]";
-const PLACEHOLDER =
-  "rounded-lg border border-dashed border-[var(--color-border)] p-4 text-sm text-[var(--color-text-muted)]";
 
 export function ProposalBuilderPage() {
   const { leadId = "" } = useParams();
@@ -191,8 +188,7 @@ export function ProposalBuilderPage() {
             errors={errors}
           />
           <section id="seccion-versiones" className="scroll-mt-28 mt-8">
-            <h2 className={H2}>Versiones publicadas</h2>
-            <div className={PLACEHOLDER}>Próximamente</div>
+            <VersionsList leadId={leadId} />
           </section>
         </div>
 
