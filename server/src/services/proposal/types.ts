@@ -139,14 +139,10 @@ export interface ProposalDefaultsResolved {
   costoViaticosPesos: number;
   costoOtrosPesos: number;
 
-  // Mano de obra
-  horasCatAPorKwp: number;
-  horasCatCPorKwp: number;
-  horasCatDPorKwp: number;
+  // Mano de obra (modelo Excel: (elec+capataz+catD) × horas × cuadrilla / dólar)
   tarifaCatAPorHora: number; // Electricista ($/h)
   tarifaCatCPorHora: number; // Capataz ($/h)
   tarifaCatDPorHora: number; // CAT D ($/h)
-  margenManoDeObra: number;
   horasManoDeObraPorInstalacion: number;
 
   // Comisiones

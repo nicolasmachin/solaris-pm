@@ -47,13 +47,9 @@ export function resolveDefaults(rawDefaults: unknown): ProposalDefaultsResolved 
     costoViaticosPesos: num("costoViaticosPesos"),
     costoOtrosPesos: num("costoOtrosPesos"),
 
-    horasCatAPorKwp: num("horasCatAPorKwp"),
-    horasCatCPorKwp: num("horasCatCPorKwp"),
-    horasCatDPorKwp: num("horasCatDPorKwp"),
     tarifaCatAPorHora: num("tarifaCatAPorHora"),
     tarifaCatCPorHora: num("tarifaCatCPorHora"),
     tarifaCatDPorHora: num("tarifaCatDPorHora"),
-    margenManoDeObra: num("margenManoDeObra"),
     horasManoDeObraPorInstalacion: num("horasManoDeObraPorInstalacion"),
 
     comisionVendedorPorcentaje: num("comisionVendedorPorcentaje"),

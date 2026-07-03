@@ -24,6 +24,19 @@ function formatFecha(iso: string): { fechaTextoLargo: string; mesYAnio: string }
   };
 }
 
+// Escalón de cuadrilla por cantidad de paneles (Excel CALCULADORA, celda U3 /
+// función IFS). Representa la cantidad de operarios/jornadas que escalan de
+// forma discreta con el tamaño del sistema. Función pura, testeable.
+export function getCuadrillaEscalon(cantidadPaneles: number): number {
+  if (cantidadPaneles <= 12) return 2;
+  if (cantidadPaneles <= 18) return 3;
+  if (cantidadPaneles <= 30) return 4;
+  if (cantidadPaneles <= 50) return 5;
+  if (cantidadPaneles <= 75) return 6;
+  if (cantidadPaneles <= 100) return 7;
+  return 8;
+}
+
 // Cálculo puro del negocio. No hace I/O; recibe todo por parámetro. Fórmulas
 // reconstruidas de la hoja CALCULADORA del Excel (validadas contra el caso
 // Jose Gonzalez). Ver docs/features/proposals-v2/SPEC.md §6.
@@ -84,13 +97,15 @@ export function calculate(
   const costoTotalConIva =
     costoEquipamientoConIva + costoFijoAsignadoUsdConIva + costoVariableUsdConIva;
 
-  // ── 3. Mano de obra ──
+  // ── 3. Mano de obra (modelo Excel J4: cuadrilla × horas × tarifas/hora) ──
+  // (tarifaElec + tarifaCapataz + tarifaCatD) [$/h] × horas fijas × cuadrilla,
+  // donde la cuadrilla escala por cantidad de paneles (escalón discreto). No
+  // escala por kWp. Resultado en pesos → USD dividiendo por el dólar.
+  const cuadrilla = getCuadrillaEscalon(cantidadPaneles);
   const manoDeObraPesos =
-    potenciaTotalKwp *
-    (defaults.horasCatAPorKwp * defaults.tarifaCatAPorHora +
-      defaults.horasCatCPorKwp * defaults.tarifaCatCPorHora +
-      defaults.horasCatDPorKwp * defaults.tarifaCatDPorHora) *
-    defaults.margenManoDeObra;
+    (defaults.tarifaCatAPorHora + defaults.tarifaCatCPorHora + defaults.tarifaCatDPorHora) *
+    defaults.horasManoDeObraPorInstalacion *
+    cuadrilla;
   const manoDeObraUsdSinIva = manoDeObraPesos / dolar;
 
   // ── 4. Pricing ──

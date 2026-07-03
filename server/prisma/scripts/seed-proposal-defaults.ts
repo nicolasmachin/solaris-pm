@@ -66,11 +66,6 @@ const DEFAULT_DATA: Record<string, Flagged | Record<string, Flagged>> = {
   tarifaCatCPorHora: { value: 947, asesorCanOverride: false }, // Capataz ($/h) — W3
   tarifaCatDPorHora: { value: 543, asesorCanOverride: false }, // CAT D ($/h) — W4
   horasManoDeObraPorInstalacion: { value: 10, asesorCanOverride: false }, // Excel J4 "×10"
-  // Variables del modelo viejo (por-kWp) — se eliminan al migrar la fórmula.
-  horasCatAPorKwp: { value: 0.8, asesorCanOverride: false },
-  horasCatCPorKwp: { value: 6, asesorCanOverride: false },
-  horasCatDPorKwp: { value: 6, asesorCanOverride: false },
-  margenManoDeObra: { value: 1.2, asesorCanOverride: false },
 
   // ── Comisiones ──
   comisionVendedorPorcentaje: { value: 0.04, asesorCanOverride: false },
