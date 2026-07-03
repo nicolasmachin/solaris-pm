@@ -908,7 +908,14 @@ function LeadPanel({
         <section className="mb-5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
           <div className="mb-3 flex items-center justify-between">
             <p className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Propuestas comerciales</p>
-            <Button size="sm" onClick={() => setShowProposalModal(true)}>Generar propuesta comercial</Button>
+            <div className="flex items-center gap-2">
+              {canEditSales && (
+                <Button size="sm" variant="secondary" onClick={() => navigate(`/leads/${leadId}/propuesta`)}>
+                  Armar propuesta
+                </Button>
+              )}
+              <Button size="sm" onClick={() => setShowProposalModal(true)}>Generar propuesta comercial</Button>
+            </div>
           </div>
           <div className="space-y-2">
             {lead.proposals.length === 0 ? (
