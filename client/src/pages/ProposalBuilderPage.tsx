@@ -172,7 +172,7 @@ export function ProposalBuilderPage() {
             Propuesta · {lead.clientName}
           </span>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <AutosaveIndicator
             status={autosave.status}
             lastSavedAt={autosave.lastSavedAt}
@@ -182,9 +182,15 @@ export function ProposalBuilderPage() {
             Ver preview
           </Button>
           {isAdmin ? (
-            <Button size="sm" variant="secondary" onClick={() => setDebugOpen(true)}>
-              <Bug size={16} className="mr-1.5" />
-              Debug
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setDebugOpen(true)}
+              aria-label="Debug"
+              title="Debug"
+            >
+              <Bug size={16} className="sm:mr-1.5" />
+              <span className="hidden sm:inline">Debug</span>
             </Button>
           ) : null}
           <PublishButton
