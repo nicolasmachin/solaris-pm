@@ -346,6 +346,7 @@ model User {
   password                       String
   name                           String
   phone                          String?
+  jobTitle                       String?
   roleId                         String
   role                           Role                        @relation(fields: [roleId], references: [id], onDelete: Restrict)
   tenantId                       String?

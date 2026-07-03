@@ -4849,7 +4849,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       }),
       prisma.user.findUnique({
         where: { id: user.id },
-        select: { passwordTemporary: true },
+        select: { passwordTemporary: true, jobTitle: true, phone: true },
       }),
     ]);
 
@@ -4858,6 +4858,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       name: user.name,
       email: user.email,
       role: user.role,
+      jobTitle: dbUser?.jobTitle ?? null,
+      phone: dbUser?.phone ?? null,
       passwordTemporary: dbUser?.passwordTemporary ?? false,
       permissions: groupPermissionsByModule(permissions),
     };
@@ -5421,6 +5423,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const body = z.object({
       name: z.string().min(1).optional(),
       email: z.string().email().optional(),
+      jobTitle: z.string().max(120).optional(),
+      phone: z.string().max(40).optional(),
     }).strict().parse(request.body);
 
     const existingUser = await prisma.user.findFirst({
@@ -5428,14 +5432,21 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
     if (!existingUser) throw notFound("USER_NOT_FOUND", "Usuario no encontrado");
 
+    // Vacío/whitespace → null, para que el fallback del PDF ("Asesor Comercial")
+    // funcione (jobTitle ?? fallback no atrapa el string vacío).
+    const nextJobTitle = body.jobTitle !== undefined ? body.jobTitle.trim() || null : undefined;
+    const nextPhone = body.phone !== undefined ? body.phone.trim() || null : undefined;
+
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
         ...(body.name !== undefined && { name: body.name }),
         ...(body.email !== undefined && { email: body.email }),
+        ...(nextJobTitle !== undefined && { jobTitle: nextJobTitle }),
+        ...(nextPhone !== undefined && { phone: nextPhone }),
       },
       select: {
-        id: true, name: true, email: true, createdAt: true,
+        id: true, name: true, email: true, createdAt: true, jobTitle: true, phone: true,
         role: { select: { id: true, name: true, label: true } },
       },
     });
@@ -5464,8 +5475,32 @@ export async function registerApiRoutes(app: FastifyInstance) {
         description: `Actualizó su propio email`,
       });
     }
+    if (nextJobTitle !== undefined && nextJobTitle !== existingUser.jobTitle) {
+      await createAuditEntry({
+        entityType: AuditEntityType.user,
+        entityId: user.id,
+        userId: user.id,
+        action: AuditAction.updated,
+        fieldChanged: "jobTitle",
+        oldValue: existingUser.jobTitle,
+        newValue: nextJobTitle,
+        description: `Actualizó su propio cargo`,
+      });
+    }
+    if (nextPhone !== undefined && nextPhone !== existingUser.phone) {
+      await createAuditEntry({
+        entityType: AuditEntityType.user,
+        entityId: user.id,
+        userId: user.id,
+        action: AuditAction.updated,
+        fieldChanged: "phone",
+        oldValue: existingUser.phone,
+        newValue: nextPhone,
+        description: `Actualizó su propio teléfono`,
+      });
+    }
 
-    return serializeUserSummary(updatedUser);
+    return { ...serializeUserSummary(updatedUser), jobTitle: updatedUser.jobTitle, phone: updatedUser.phone };
   });
 
   app.get("/users", { preHandler: authorize(Module.USUARIOS, Action.VIEW) }, async (request) => {
