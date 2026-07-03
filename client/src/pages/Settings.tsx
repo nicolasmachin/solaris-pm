@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { useAuthStore } from "../store/auth.store";
@@ -177,23 +177,47 @@ function SectionPerfil() {
   const { user, setAuth, token, permissions } = useAuthStore();
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
+  const [jobTitle, setJobTitle] = useState("");
+  const [phone, setPhone] = useState("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
 
+  // jobTitle/phone no viven en el auth store (que sale del login): los traemos de
+  // /users/me al montar y guardamos el baseline para el dirty tracking.
+  const loadedRef = useRef({ jobTitle: "", phone: "" });
+  useEffect(() => {
+    apiClient
+      .get("/api/users/me")
+      .then(({ data }) => {
+        setJobTitle(data.jobTitle ?? "");
+        setPhone(data.phone ?? "");
+        loadedRef.current = { jobTitle: data.jobTitle ?? "", phone: data.phone ?? "" };
+      })
+      .catch(() => undefined);
+  }, []);
+
   // Track dirty state
   useEffect(() => {
-    setDirty(name !== (user?.name ?? "") || email !== (user?.email ?? ""));
-  }, [name, email, user]);
+    setDirty(
+      name !== (user?.name ?? "") ||
+        email !== (user?.email ?? "") ||
+        jobTitle !== loadedRef.current.jobTitle ||
+        phone !== loadedRef.current.phone,
+    );
+  }, [name, email, jobTitle, phone, user]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return;
     setSaving(true);
     try {
-      const { data } = await apiClient.patch(`/api/users/me`, { name, email });
+      const { data } = await apiClient.patch(`/api/users/me`, { name, email, jobTitle, phone });
       // Update auth store with new name/email
       setAuth(token!, { ...user, name: data.name, email: data.email }, permissions);
+      loadedRef.current = { jobTitle: data.jobTitle ?? "", phone: data.phone ?? "" };
+      setJobTitle(data.jobTitle ?? "");
+      setPhone(data.phone ?? "");
       toast.success("Perfil actualizado");
       setDirty(false);
     } catch (err: unknown) {
@@ -231,6 +255,24 @@ function SectionPerfil() {
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
+          />
+        </div>
+        <div>
+          <label style={labelStyle}>Cargo (aparece en la firma de las propuestas)</label>
+          <input
+            style={inputStyle}
+            value={jobTitle}
+            onChange={e => setJobTitle(e.target.value)}
+            placeholder="Asesor Comercial"
+          />
+        </div>
+        <div>
+          <label style={labelStyle}>Teléfono</label>
+          <input
+            style={inputStyle}
+            value={phone}
+            onChange={e => setPhone(e.target.value)}
+            placeholder="099 123 456"
           />
         </div>
         <div>
