@@ -19,6 +19,7 @@ import {
   getStoredFilePath,
   saveBufferAsAttachment,
 } from "../services/file-storage.service.js";
+import { buildMemoriaSingletonValues } from "../services/proposal/calculator-memoria.js";
 import { applyCoverOverlay } from "../services/proposal/coverOverlay.js";
 import { badRequest, forbidden, unauthorized } from "../utils/errors.js";
 import { serializeDate } from "../utils/serialization.js";
@@ -155,6 +156,16 @@ export async function registerProposalsV2DefaultsRoutes(app: FastifyInstance) {
         coverPdfAttachmentId: row.coverPdfAttachmentId,
         updatedAt: serializeDate(row.updatedAt),
       };
+    },
+  );
+
+  // ─── Memoria de cálculo: valores del singleton (VENTAS:ACCESS_MEMORIA) ────
+  app.get(
+    "/proposals-v2/calculator-memoria",
+    { preHandler: authorize(Module.VENTAS, Action.ACCESS_MEMORIA) },
+    async () => {
+      const row = await prisma.proposalDefaults.findUnique({ where: { id: SINGLETON_ID } });
+      return { singletonValues: buildMemoriaSingletonValues(row?.data ?? {}) };
     },
   );
 
