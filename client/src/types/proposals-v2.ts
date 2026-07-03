@@ -10,6 +10,19 @@ export interface FlaggedValue {
 /** Subobjeto de variables flagged (ej. `plazos`). */
 export type NestedFlagged = Record<string, FlaggedValue>;
 
+/** Unidad de un intermedio de la calculadora (mirror de CalcUnidad del server). */
+export type CalcUnidad = "USD" | "pesos" | "UI" | "%" | "kWh" | "unidades" | "";
+
+/** Fila del drawer de debug: metadata (del server) + valor calculado. */
+export interface CalcDebugRow {
+  key: string;
+  label: string;
+  descripcion: string;
+  unidad: CalcUnidad;
+  orden: number;
+  valor: number | number[];
+}
+
 /** Estructura del JSON `data` de ProposalDefaults: cada clave es una variable
  *  flagged o un subobjeto de flagged. */
 export type ProposalDefaultsData = Record<string, FlaggedValue | NestedFlagged>;

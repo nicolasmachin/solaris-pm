@@ -2,6 +2,7 @@ import axios from "axios";
 
 import { apiClient as api } from "./axios";
 import type {
+  CalcDebugRow,
   ProposalDraftData,
   ProposalDraftResponse,
   ProposalVersionDetail,
@@ -61,6 +62,13 @@ export const proposalsV2BuilderApi = {
       responseType: "blob",
     });
     return data;
+  },
+
+  // Debug de cálculo del borrador (solo admin): filas ya armadas
+  // (label/descripción/unidad/valor/orden). 400 si el borrador no valida strict.
+  getDraftCalc: async (leadId: string): Promise<CalcDebugRow[]> => {
+    const { data } = await api.get<{ rows: CalcDebugRow[] }>(`${P}/leads/${leadId}/draft/calc`);
+    return data.rows;
   },
 
   // Descarga un PDF de versión (mismo tema de auth: blob + <a download>).
