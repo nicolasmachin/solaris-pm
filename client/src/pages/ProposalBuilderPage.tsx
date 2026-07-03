@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 
 import { getLead } from "../api/leads.api";
@@ -9,13 +9,18 @@ import { AutosaveIndicator } from "../components/proposals-v2/AutosaveIndicator"
 import { ProposalForm } from "../components/proposals-v2/ProposalForm";
 import { ProposalPreview } from "../components/proposals-v2/ProposalPreview";
 import { PublishButton } from "../components/proposals-v2/PublishButton";
+import { PublishModal } from "../components/proposals-v2/PublishModal";
 import { Button } from "../components/ui/Button";
 import { Spinner } from "../components/ui/Spinner";
 import { useDraftAutosave } from "../hooks/useDraftAutosave";
 import { useDraftPreview } from "../hooks/useDraftPreview";
 import { useProposalDefaults } from "../hooks/useProposalDefaults";
-import { buildInitialDraftData, mergeDraft, validateDraft } from "../lib/proposalDraft";
+import { buildInitialDraftData, draftEquals, mergeDraft, validateDraft } from "../lib/proposalDraft";
 import type { ProposalDraftData } from "../types/proposals-v2";
+
+function errMsg(e: unknown): string | undefined {
+  return (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+}
 
 const H2 = "mb-3 text-sm font-bold uppercase tracking-wide text-[var(--color-text-primary)]";
 const PLACEHOLDER =
@@ -88,6 +93,43 @@ export function ProposalBuilderPage() {
   );
   const autosaveBlocked = autosave.status === "error" || autosave.status === "error-final";
 
+  // ─── Publicación ───────────────────────────────────────────────────────────
+  const qc = useQueryClient();
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
+
+  const latestPublished = useMemo(
+    () =>
+      (versionsQuery.data ?? [])
+        .filter((v) => v.status === "PUBLISHED")
+        .sort((a, b) => b.versionNumber - a.versionNumber)[0],
+    [versionsQuery.data],
+  );
+  // Snapshot de la última versión publicada — sólo se pide al abrir el modal.
+  const latestVersionQuery = useQuery({
+    queryKey: ["proposal-version", latestPublished?.id],
+    queryFn: () => proposalsV2BuilderApi.getVersion(latestPublished!.id),
+    enabled: publishOpen && Boolean(latestPublished),
+  });
+  const hasChanges =
+    !latestVersionQuery.data || !(data && draftEquals(data, latestVersionQuery.data.snapshot.data));
+
+  const publishMut = useMutation({
+    mutationFn: () => proposalsV2BuilderApi.publishVersion(leadId),
+    onSuccess: () => {
+      toast.success(`Versión V${nextVersion} publicada`);
+      qc.invalidateQueries({ queryKey: ["proposal-versions", leadId] });
+      setPublishOpen(false);
+      setPublishError(null);
+    },
+    onError: (e) => setPublishError(errMsg(e) ?? "No se pudo publicar la versión."),
+  });
+
+  function openPublish() {
+    setPublishError(null);
+    setPublishOpen(true);
+  }
+
   if (leadQuery.isLoading || defaultsQuery.isLoading || draftQuery.isLoading || !data) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
@@ -134,7 +176,7 @@ export function ProposalBuilderPage() {
             missing={validation.missing}
             blocked={!validation.ok || autosaveBlocked}
             blockedReason={autosaveBlocked ? "Esperá a que se guarde el borrador (hay un error de guardado)." : undefined}
-            onPublish={() => toast.success("Todo listo para publicar (el modal se conecta en el próximo commit).")}
+            onPublish={openPublish}
           />
         </div>
       </div>
@@ -162,6 +204,16 @@ export function ProposalBuilderPage() {
           <ProposalPreview blobUrl={preview.blobUrl} status={preview.status} errorMsg={preview.errorMsg} />
         </div>
       </div>
+
+      <PublishModal
+        open={publishOpen}
+        versionLabel={`V${nextVersion}`}
+        hasChanges={hasChanges}
+        publishing={publishMut.isPending}
+        error={publishError}
+        onConfirm={() => publishMut.mutate()}
+        onClose={() => setPublishOpen(false)}
+      />
     </div>
   );
 }

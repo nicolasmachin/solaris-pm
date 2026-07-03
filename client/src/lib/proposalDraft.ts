@@ -96,6 +96,23 @@ export function validateDraft(d: ProposalDraftData): { ok: boolean; missing: Mis
   return { ok: missing.length === 0, missing };
 }
 
+// Igualdad estable (independiente del orden de las keys) para la detección de
+// "sin cambios" del draft vs el snapshot de la última versión publicada.
+export function draftEquals(a: ProposalDraftData, b: ProposalDraftData): boolean {
+  const stable = (v: unknown): string =>
+    JSON.stringify(v, (_k, val) =>
+      val && typeof val === "object" && !Array.isArray(val)
+        ? Object.keys(val as Record<string, unknown>)
+            .sort()
+            .reduce((o: Record<string, unknown>, k) => {
+              o[k] = (val as Record<string, unknown>)[k];
+              return o;
+            }, {})
+        : val,
+    );
+  return stable(a) === stable(b);
+}
+
 // Mergea el draft guardado (parcial, lenient) sobre la base inicial.
 export function mergeDraft(
   base: ProposalDraftData,
