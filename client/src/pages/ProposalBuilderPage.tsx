@@ -127,6 +127,8 @@ export function ProposalBuilderPage() {
     setPublishOpen(true);
   }
 
+  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+
   if (leadQuery.isLoading || defaultsQuery.isLoading || draftQuery.isLoading || !data) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
@@ -168,6 +170,9 @@ export function ProposalBuilderPage() {
             lastSavedAt={autosave.lastSavedAt}
             onRetry={autosave.retryNow}
           />
+          <Button size="sm" variant="secondary" className="md:hidden" onClick={() => setMobilePreviewOpen(true)}>
+            Ver preview
+          </Button>
           <PublishButton
             label={`Publicar V${nextVersion}`}
             missing={validation.missing}
@@ -194,12 +199,30 @@ export function ProposalBuilderPage() {
 
         {/* Preview (derecha, sticky) */}
         <div
-          className="sticky top-[104px] hidden w-[45%] shrink-0 lg:block"
+          className="sticky top-[104px] hidden shrink-0 md:block md:w-[38%] xl:w-[45%]"
           style={{ height: "calc(100vh - 148px)" }}
         >
           <ProposalPreview blobUrl={preview.blobUrl} status={preview.status} errorMsg={preview.errorMsg} />
         </div>
       </div>
+
+      {/* Preview a pantalla completa en móvil */}
+      {mobilePreviewOpen ? (
+        <div className="fixed inset-0 z-40 flex flex-col bg-[var(--color-bg-app)] md:hidden">
+          <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-2.5">
+            <span className="text-sm font-semibold text-[var(--color-text-primary)]">Preview</span>
+            <button
+              onClick={() => setMobilePreviewOpen(false)}
+              className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+            >
+              Cerrar
+            </button>
+          </div>
+          <div className="min-h-0 flex-1 p-3">
+            <ProposalPreview blobUrl={preview.blobUrl} status={preview.status} errorMsg={preview.errorMsg} />
+          </div>
+        </div>
+      ) : null}
 
       <PublishModal
         open={publishOpen}
