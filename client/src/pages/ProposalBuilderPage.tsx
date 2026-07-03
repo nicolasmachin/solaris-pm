@@ -6,9 +6,11 @@ import { getLead } from "../api/leads.api";
 import { proposalsV2BuilderApi } from "../api/proposals-v2-builder.api";
 import { AutosaveIndicator } from "../components/proposals-v2/AutosaveIndicator";
 import { ProposalForm } from "../components/proposals-v2/ProposalForm";
+import { ProposalPreview } from "../components/proposals-v2/ProposalPreview";
 import { Button } from "../components/ui/Button";
 import { Spinner } from "../components/ui/Spinner";
 import { useDraftAutosave } from "../hooks/useDraftAutosave";
+import { useDraftPreview } from "../hooks/useDraftPreview";
 import { useProposalDefaults } from "../hooks/useProposalDefaults";
 import { buildInitialDraftData, mergeDraft } from "../lib/proposalDraft";
 import type { ProposalDraftData } from "../types/proposals-v2";
@@ -59,6 +61,13 @@ export function ProposalBuilderPage() {
   ]);
 
   const autosave = useDraftAutosave({ leadId, data, enabled: data !== null, draftExisted });
+  // El preview arranca recién cuando hay un draft persistido (cargado o creado
+  // por el primer autosave), para no pegarle antes de que exista.
+  const preview = useDraftPreview({
+    leadId,
+    savedTick: autosave.savedTick,
+    enabled: data !== null && (draftExisted || autosave.savedTick > 0),
+  });
 
   if (leadQuery.isLoading || defaultsQuery.isLoading || draftQuery.isLoading || !data) {
     return (
@@ -127,9 +136,7 @@ export function ProposalBuilderPage() {
           className="sticky top-[104px] hidden w-[45%] shrink-0 lg:block"
           style={{ height: "calc(100vh - 148px)" }}
         >
-          <div className="flex h-full items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)]">
-            <p className="text-sm text-[var(--color-text-muted)]">Cargando preview…</p>
-          </div>
+          <ProposalPreview blobUrl={preview.blobUrl} status={preview.status} errorMsg={preview.errorMsg} />
         </div>
       </div>
     </div>
