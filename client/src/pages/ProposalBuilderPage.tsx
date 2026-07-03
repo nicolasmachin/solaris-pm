@@ -1,18 +1,20 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 
 import { getLead } from "../api/leads.api";
 import { proposalsV2BuilderApi } from "../api/proposals-v2-builder.api";
 import { AutosaveIndicator } from "../components/proposals-v2/AutosaveIndicator";
 import { ProposalForm } from "../components/proposals-v2/ProposalForm";
 import { ProposalPreview } from "../components/proposals-v2/ProposalPreview";
+import { PublishButton } from "../components/proposals-v2/PublishButton";
 import { Button } from "../components/ui/Button";
 import { Spinner } from "../components/ui/Spinner";
 import { useDraftAutosave } from "../hooks/useDraftAutosave";
 import { useDraftPreview } from "../hooks/useDraftPreview";
 import { useProposalDefaults } from "../hooks/useProposalDefaults";
-import { buildInitialDraftData, mergeDraft } from "../lib/proposalDraft";
+import { buildInitialDraftData, mergeDraft, validateDraft } from "../lib/proposalDraft";
 import type { ProposalDraftData } from "../types/proposals-v2";
 
 const H2 = "mb-3 text-sm font-bold uppercase tracking-wide text-[var(--color-text-primary)]";
@@ -69,6 +71,23 @@ export function ProposalBuilderPage() {
     enabled: data !== null && (draftExisted || autosave.savedTick > 0),
   });
 
+  // Versiones (incluye descartadas) para calcular el próximo número.
+  const versionsQuery = useQuery({
+    queryKey: ["proposal-versions", leadId, true],
+    queryFn: () => proposalsV2BuilderApi.listVersions(leadId, true),
+    enabled: Boolean(leadId),
+  });
+  const nextVersion = versionsQuery.data?.length
+    ? Math.max(...versionsQuery.data.map((v) => v.versionNumber)) + 1
+    : 1;
+
+  const validation = useMemo(() => (data ? validateDraft(data) : { ok: false, missing: [] }), [data]);
+  const errors = useMemo(
+    () => Object.fromEntries(validation.missing.map((m) => [m.path, "Requerido"])),
+    [validation],
+  );
+  const autosaveBlocked = autosave.status === "error" || autosave.status === "error-final";
+
   if (leadQuery.isLoading || defaultsQuery.isLoading || draftQuery.isLoading || !data) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
@@ -110,9 +129,13 @@ export function ProposalBuilderPage() {
             lastSavedAt={autosave.lastSavedAt}
             onRetry={autosave.retryNow}
           />
-          <Button size="sm" disabled>
-            Publicar
-          </Button>
+          <PublishButton
+            label={`Publicar V${nextVersion}`}
+            missing={validation.missing}
+            blocked={!validation.ok || autosaveBlocked}
+            blockedReason={autosaveBlocked ? "Esperá a que se guarde el borrador (hay un error de guardado)." : undefined}
+            onPublish={() => toast.success("Todo listo para publicar (el modal se conecta en el próximo commit).")}
+          />
         </div>
       </div>
 
@@ -123,7 +146,7 @@ export function ProposalBuilderPage() {
             data={data}
             onChange={setData}
             defaults={defaultsQuery.data?.data ?? {}}
-            errors={{}}
+            errors={errors}
           />
           <section id="seccion-versiones" className="scroll-mt-28 mt-8">
             <h2 className={H2}>Versiones publicadas</h2>
