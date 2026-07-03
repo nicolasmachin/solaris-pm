@@ -35,6 +35,16 @@ Handlebars.registerHelper("percent", (value: number, decimals = 1) =>
   `${fmtNum(value * 100, typeof decimals === "number" ? decimals : 1)} %`,
 );
 Handlebars.registerHelper("mult", (a: number, b: number) => (Number(a) || 0) * (Number(b) || 0));
+// Nombre de la tarifa UTE para mostrar en los textos (el enum es Simple/Doble/
+// Triple; UTE las llama "Doble Horario"/"Triple Horario").
+Handlebars.registerHelper("tarifaLabel", (tarifa: string): string => {
+  const map: Record<string, string> = {
+    Simple: "Simple",
+    Doble: "Doble Horario",
+    Triple: "Triple Horario",
+  };
+  return map[tarifa] ?? tarifa;
+});
 Handlebars.registerHelper("dateLong", (iso: string) => {
   const [y, m, d] = String(iso).slice(0, 10).split("-").map((p) => Number.parseInt(p, 10));
   return `${d} de ${MESES_LARGOS[(m ?? 1) - 1] ?? ""} de ${y}`;
