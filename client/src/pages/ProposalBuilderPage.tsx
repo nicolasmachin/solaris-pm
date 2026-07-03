@@ -1,12 +1,17 @@
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 import { getLead } from "../api/leads.api";
+import { proposalsV2BuilderApi } from "../api/proposals-v2-builder.api";
+import { AutosaveIndicator } from "../components/proposals-v2/AutosaveIndicator";
 import { Button } from "../components/ui/Button";
 import { Spinner } from "../components/ui/Spinner";
+import { useDraftAutosave } from "../hooks/useDraftAutosave";
+import { useProposalDefaults } from "../hooks/useProposalDefaults";
+import { buildInitialDraftData, mergeDraft } from "../lib/proposalDraft";
+import type { ProposalDraftData } from "../types/proposals-v2";
 
-// Secciones del form (columna izquierda). Cada una es ancla de scroll
-// (id="seccion-*") para la navegación desde la lista de faltantes (1.10).
 const FORM_SECTIONS = [
   { id: "cliente", label: "Cliente" },
   { id: "tecnicos", label: "Datos técnicos del sistema" },
@@ -20,27 +25,57 @@ const H2 = "mb-3 text-sm font-bold uppercase tracking-wide text-[var(--color-tex
 const PLACEHOLDER =
   "rounded-lg border border-dashed border-[var(--color-border)] p-4 text-sm text-[var(--color-text-muted)]";
 
-// Constructor de propuestas v2. Página dedicada por lead: form izquierda +
-// preview PDF en vivo derecha. Esqueleto de Fase F/1.6; las secciones, el
-// autosave, el preview y la publicación llegan en los commits siguientes.
 export function ProposalBuilderPage() {
   const { leadId = "" } = useParams();
   const navigate = useNavigate();
 
-  const { data: lead, isLoading, isError } = useQuery({
+  const leadQuery = useQuery({
     queryKey: ["lead-detail", leadId],
     queryFn: () => getLead(leadId),
     enabled: Boolean(leadId),
   });
+  const defaultsQuery = useProposalDefaults();
+  const draftQuery = useQuery({
+    queryKey: ["proposal-draft", leadId],
+    queryFn: () => proposalsV2BuilderApi.getDraft(leadId),
+    enabled: Boolean(leadId),
+  });
 
-  if (isLoading) {
+  // Estado del form. Se inicializa una sola vez cuando lead + defaults + draft
+  // están cargados (draft guardado mergeado sobre la base de defaults+lead).
+  const [data, setData] = useState<ProposalDraftData | null>(null);
+  const [draftExisted, setDraftExisted] = useState(false);
+  const initialized = useRef(false);
+
+  useEffect(() => {
+    if (initialized.current) return;
+    if (leadQuery.isLoading || defaultsQuery.isLoading || draftQuery.isLoading) return;
+    const lead = leadQuery.data;
+    const defaults = defaultsQuery.data;
+    if (!lead || !defaults?.data) return;
+    const base = buildInitialDraftData(defaults.data, lead);
+    setData(mergeDraft(base, draftQuery.data?.data));
+    setDraftExisted(Boolean(draftQuery.data));
+    initialized.current = true;
+  }, [
+    leadQuery.data,
+    leadQuery.isLoading,
+    defaultsQuery.data,
+    defaultsQuery.isLoading,
+    draftQuery.data,
+    draftQuery.isLoading,
+  ]);
+
+  const autosave = useDraftAutosave({ leadId, data, enabled: data !== null, draftExisted });
+
+  if (leadQuery.isLoading || defaultsQuery.isLoading || draftQuery.isLoading || !data) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <Spinner />
       </div>
     );
   }
-  if (isError || !lead) {
+  if (leadQuery.isError || !leadQuery.data) {
     return (
       <div className="space-y-3">
         <p className="text-sm text-[var(--color-text-muted)]">No se encontró el lead.</p>
@@ -51,9 +86,11 @@ export function ProposalBuilderPage() {
     );
   }
 
+  const lead = leadQuery.data;
+
   return (
     <div className="-m-6">
-      {/* Sub-header sticky (bajo el header global de 52px) */}
+      {/* Sub-header sticky */}
       <div className="sticky top-[52px] z-20 flex items-center justify-between gap-4 border-b border-[var(--color-border)] bg-[var(--color-bg-app)]/95 px-6 py-2.5 backdrop-blur">
         <div className="flex min-w-0 items-center gap-3">
           <button
@@ -67,7 +104,11 @@ export function ProposalBuilderPage() {
           </span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-xs text-[var(--color-text-muted)]">Autosave —</span>
+          <AutosaveIndicator
+            status={autosave.status}
+            lastSavedAt={autosave.lastSavedAt}
+            onRetry={autosave.retryNow}
+          />
           <Button size="sm" disabled>
             Publicar
           </Button>
@@ -75,7 +116,7 @@ export function ProposalBuilderPage() {
       </div>
 
       <div className="flex items-start gap-6 px-6 py-6">
-        {/* Form (izquierda, flujo normal: scrollea con la página) */}
+        {/* Form (izquierda) */}
         <div className="min-w-0 flex-1 space-y-8">
           {FORM_SECTIONS.map((s) => (
             <section key={s.id} id={`seccion-${s.id}`} className="scroll-mt-28">
@@ -89,7 +130,7 @@ export function ProposalBuilderPage() {
           </section>
         </div>
 
-        {/* Preview (derecha, sticky bajo el sub-header) */}
+        {/* Preview (derecha, sticky) */}
         <div
           className="sticky top-[104px] hidden w-[45%] shrink-0 lg:block"
           style={{ height: "calc(100vh - 148px)" }}
