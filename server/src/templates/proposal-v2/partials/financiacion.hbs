@@ -2,9 +2,8 @@
   <div style="font-size:11px; font-weight:700; letter-spacing:.14em; color:#1836B2; text-transform:uppercase;">Financiación BBVA</div>
   <h2 style="margin:10px 0 0; font-size:30px; font-weight:700; letter-spacing:-.02em; color:#10131f;">Opciones de pago en cuotas</h2>
 
-  {{!-- Cuota: placeholder de Fase B (USD) convertido a pesos al dólar de referencia
-        para mostrarse en la moneda del diseño. Columna Interés estática (acuerdo BBVA).
-        TODO: reemplazar por la fórmula BBVA real en pesos/UI. --}}
+  {{!-- Cuota: ya viene en PESOS desde calculate() (modelo BBVA UI+PMT). Se
+        muestra tal cual. Columna Interés estática (acuerdo BBVA). --}}
   <div style="margin-top:22px; border:1px solid #e6e8f2; border-radius:14px; overflow:hidden;">
     <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1.2fr; background:#f4f6fc; border-bottom:1px solid #e6e8f2;">
       <div style="padding:13px 20px; font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#7b8198;">Plazo</div>
@@ -12,9 +11,9 @@
       <div style="padding:13px 14px; font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#7b8198;">Moneda</div>
       <div style="padding:13px 20px; font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#7b8198; text-align:right;">Cuota mensual</div>
     </div>
-    <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1.2fr; border-bottom:1px solid #eef0f6;"><div style="padding:17px 20px; font-size:14px; font-weight:600; color:#10131f;">24 cuotas</div><div style="padding:17px 14px; font-size:14px; color:#3a3e50;">0% UI</div><div style="padding:17px 14px; font-size:14px; color:#3a3e50;">UI</div><div style="padding:17px 20px; font-size:16px; font-weight:700; color:#1836B2; text-align:right;">{{pesos (mult calculated.cuota24m data.cotizacion.cotizacionDolar)}}</div></div>
-    <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1.2fr; border-bottom:1px solid #eef0f6;"><div style="padding:17px 20px; font-size:14px; font-weight:600; color:#10131f;">36 cuotas</div><div style="padding:17px 14px; font-size:14px; color:#3a3e50;">0% UI</div><div style="padding:17px 14px; font-size:14px; color:#3a3e50;">UI</div><div style="padding:17px 20px; font-size:16px; font-weight:700; color:#1836B2; text-align:right;">{{pesos (mult calculated.cuota36m data.cotizacion.cotizacionDolar)}}</div></div>
-    <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1.2fr;"><div style="padding:17px 20px; font-size:14px; font-weight:600; color:#10131f;">60 cuotas</div><div style="padding:17px 14px; font-size:14px; color:#3a3e50;">5% UI</div><div style="padding:17px 14px; font-size:14px; color:#3a3e50;">UI</div><div style="padding:17px 20px; font-size:16px; font-weight:700; color:#1836B2; text-align:right;">{{pesos (mult calculated.cuota60m data.cotizacion.cotizacionDolar)}}</div></div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1.2fr; border-bottom:1px solid #eef0f6;"><div style="padding:17px 20px; font-size:14px; font-weight:600; color:#10131f;">24 cuotas</div><div style="padding:17px 14px; font-size:14px; color:#3a3e50;">0% UI</div><div style="padding:17px 14px; font-size:14px; color:#3a3e50;">UI</div><div style="padding:17px 20px; font-size:16px; font-weight:700; color:#1836B2; text-align:right;">{{pesos calculated.cuota24m}}</div></div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1.2fr; border-bottom:1px solid #eef0f6;"><div style="padding:17px 20px; font-size:14px; font-weight:600; color:#10131f;">36 cuotas</div><div style="padding:17px 14px; font-size:14px; color:#3a3e50;">0% UI</div><div style="padding:17px 14px; font-size:14px; color:#3a3e50;">UI</div><div style="padding:17px 20px; font-size:16px; font-weight:700; color:#1836B2; text-align:right;">{{pesos calculated.cuota36m}}</div></div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1.2fr;"><div style="padding:17px 20px; font-size:14px; font-weight:600; color:#10131f;">60 cuotas</div><div style="padding:17px 14px; font-size:14px; color:#3a3e50;">5% UI</div><div style="padding:17px 14px; font-size:14px; color:#3a3e50;">UI</div><div style="padding:17px 20px; font-size:16px; font-weight:700; color:#1836B2; text-align:right;">{{pesos calculated.cuota60m}}</div></div>
   </div>
   <p style="margin:14px 0 0; font-size:10.5px; line-height:1.55; color:#9aa0b4;">Nota: los cálculos de cuota tienen carácter meramente orientativo y son sólo una referencia. La variación de la cotización del dólar y de la Unidad Indexada modificará los montos informados en esta simulación. El otorgamiento del préstamo está sujeto al análisis crediticio, y las condiciones aquí expresadas podrán variar.</p>
 
