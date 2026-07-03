@@ -1,6 +1,6 @@
 <div class="pg" style="width:794px; height:1123px; background:#fff; position:relative; overflow:hidden; padding:54px 56px; display:flex; flex-direction:column;">
   <div style="font-size:11px; font-weight:700; letter-spacing:.14em; color:#1836B2; text-transform:uppercase;">Carta de presentación</div>
-  <h2 style="margin:10px 0 0; font-size:30px; font-weight:700; letter-spacing:-.02em; color:#10131f;">{{data.cliente.dirigidoA}}</h2>
+  <h2 style="margin:10px 0 0; font-size:30px; font-weight:700; letter-spacing:-.02em; color:#10131f;">{{#if data.cliente.dirigidoA}}{{data.cliente.dirigidoA}}{{else}}Estimado/a cliente,{{/if}}</h2>
 
   <div style="margin-top:18px; display:flex; flex-direction:column; gap:13px; max-width:600px; font-size:13.5px; line-height:1.62; color:#3a3e50;">
     <p style="margin:0;">Es un gusto presentarte esta propuesta para la instalación de un sistema solar fotovoltaico en tu hogar de {{data.cliente.ciudad}}. La diseñamos a medida de tu consumo, buscando el mejor equilibrio entre generación, ahorro y retorno de la inversión.</p>
@@ -29,7 +29,7 @@
     </div>
     <div style="display:flex; align-items:center; gap:16px; padding:9px 4px; border-bottom:1px solid #edeff5;">
       <div style="width:42px; height:42px; flex:none; border-radius:11px; background:#eef1fb; display:flex; align-items:center; justify-content:center; color:#1836B2;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"></path></svg></div>
-      <div><div style="font-size:14px; font-weight:700; color:#10131f;">Superficie ocupada</div><div style="font-size:12.5px; color:#6b7188; margin-top:2px;">~{{number calculated.metrosCuadradosPaneles}} m² sobre {{data.techo.descripcion}} con subestructura</div></div>
+      <div><div style="font-size:14px; font-weight:700; color:#10131f;">Superficie y montaje</div><div style="font-size:12.5px; color:#6b7188; margin-top:2px;">~{{number calculated.metrosCuadradosPaneles}} m² · {{data.sistema.tipoMontaje}} · sobre {{data.techo.descripcion}}</div></div>
     </div>
     <div style="display:flex; align-items:center; gap:16px; padding:9px 4px;">
       <div style="width:42px; height:42px; flex:none; border-radius:11px; background:#eef1fb; display:flex; align-items:center; justify-content:center; color:#1836B2;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"></path></svg></div>
