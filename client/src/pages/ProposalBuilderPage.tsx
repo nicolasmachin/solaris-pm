@@ -2,10 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
+import { Bug } from "lucide-react";
 
 import { getLead } from "../api/leads.api";
 import { proposalsV2BuilderApi } from "../api/proposals-v2-builder.api";
 import { AutosaveIndicator } from "../components/proposals-v2/AutosaveIndicator";
+import { CalculatorDebugDrawer } from "../components/proposals-v2/CalculatorDebugDrawer";
 import { ProposalForm } from "../components/proposals-v2/ProposalForm";
 import { ProposalPreview } from "../components/proposals-v2/ProposalPreview";
 import { PublishButton } from "../components/proposals-v2/PublishButton";
@@ -16,6 +18,7 @@ import { Spinner } from "../components/ui/Spinner";
 import { useDraftAutosave } from "../hooks/useDraftAutosave";
 import { useDraftPreview } from "../hooks/useDraftPreview";
 import { useProposalDefaults } from "../hooks/useProposalDefaults";
+import { useAuthStore } from "../store/auth.store";
 import { buildInitialDraftData, draftEquals, mergeDraft, validateDraft } from "../lib/proposalDraft";
 import type { ProposalDraftData } from "../types/proposals-v2";
 
@@ -129,6 +132,11 @@ export function ProposalBuilderPage() {
 
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
 
+  // Drawer de debug de calculadora (solo admin).
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === "ADMIN";
+  const [debugOpen, setDebugOpen] = useState(false);
+
   if (leadQuery.isLoading || defaultsQuery.isLoading || draftQuery.isLoading || !data) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
@@ -173,6 +181,12 @@ export function ProposalBuilderPage() {
           <Button size="sm" variant="secondary" className="md:hidden" onClick={() => setMobilePreviewOpen(true)}>
             Ver preview
           </Button>
+          {isAdmin ? (
+            <Button size="sm" variant="secondary" onClick={() => setDebugOpen(true)}>
+              <Bug size={16} className="mr-1.5" />
+              Debug
+            </Button>
+          ) : null}
           <PublishButton
             label={`Publicar V${nextVersion}`}
             missing={validation.missing}
@@ -233,6 +247,17 @@ export function ProposalBuilderPage() {
         onConfirm={() => publishMut.mutate()}
         onClose={() => setPublishOpen(false)}
       />
+
+      {isAdmin ? (
+        <CalculatorDebugDrawer
+          open={debugOpen}
+          onClose={() => setDebugOpen(false)}
+          leadId={leadId}
+          leadName={lead.clientName}
+          savedTick={autosave.savedTick}
+          autosaveError={autosaveBlocked}
+        />
+      ) : null}
     </div>
   );
 }
