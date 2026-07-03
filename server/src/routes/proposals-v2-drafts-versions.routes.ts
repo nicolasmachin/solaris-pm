@@ -14,7 +14,8 @@ import { z } from "zod";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
-import { getDraft, upsertDraft } from "../services/proposal/draft.service.js";
+import type { CalcDebugRow } from "../services/proposal/calculator-labels.js";
+import { computeDraftCalcRows, getDraft, upsertDraft } from "../services/proposal/draft.service.js";
 import { readVersionPdf } from "../services/proposal/proposal-storage.js";
 import { draftDataStorageSchema } from "../services/proposal/schemas/draft.schema.js";
 import type { ProposalV2Snapshot } from "../services/proposal/schemas/snapshot.schema.js";
@@ -33,6 +34,19 @@ import { badRequest, forbidden, notFound, unauthorized } from "../utils/errors.j
 function ensureUser(request: FastifyRequest) {
   if (!request.user) throw unauthorized("No autenticado");
   return request.user;
+}
+
+// Handler del endpoint de debug de cálculo. Fábrica con inyección del service
+// (getRows) para poder testear el gating (rol/draft) sin tocar la BD.
+export function makeDraftCalcHandler(getRows: (leadId: string) => Promise<CalcDebugRow[]>) {
+  return async (request: FastifyRequest) => {
+    const user = ensureUser(request);
+    if (user.role !== "ADMIN") {
+      throw forbidden("Solo un administrador puede ver el detalle de cálculo del borrador.");
+    }
+    const { leadId } = leadParams.parse(request.params);
+    return { rows: await getRows(leadId) };
+  };
 }
 
 const leadParams = z.object({ leadId: z.string().min(1) }).strict();
@@ -105,6 +119,14 @@ export async function registerProposalsV2DraftsVersionsRoutes(app: FastifyInstan
       reply.header("Cache-Control", "no-store");
       return reply.send(pdf);
     },
+  );
+
+  // Cálculo del borrador para el drawer de debug (solo ADMIN). Devuelve las
+  // filas ya armadas (label/descripción/unidad/valor/orden). ~50ms, sin PDF.
+  app.get(
+    "/proposals-v2/leads/:leadId/draft/calc",
+    { preHandler: authorize(Module.VENTAS, Action.VIEW) },
+    makeDraftCalcHandler(computeDraftCalcRows),
   );
 
   app.put(
