@@ -17,6 +17,9 @@ const ProposalBuilderPage = lazy(() => import("./pages/ProposalBuilderPage").the
 const Metrics = lazy(() => import("./pages/Metrics").then((module) => ({ default: module.Metrics })));
 const Settings = lazy(() => import("./pages/Settings").then((module) => ({ default: module.Settings })));
 const Admin = lazy(() => import("./pages/Admin").then((module) => ({ default: module.Admin })));
+const CalculatorMemoryPage = lazy(() =>
+  import("./pages/CalculatorMemoryPage").then((module) => ({ default: module.CalculatorMemoryPage })),
+);
 const Notifications = lazy(() => import("./pages/Notifications").then((module) => ({ default: module.Notifications })));
 const NotFound = lazy(() => import("./pages/NotFound").then((module) => ({ default: module.NotFound })));
 const Finance = lazy(() => import("./pages/Finance").then((module) => ({ default: module.Finance })));
@@ -220,6 +223,14 @@ export function App() {
           element={
             <PermissionRoute module="USUARIOS" action="VIEW">
               <Admin />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/admin/propuestas/memoria-calculo"
+          element={
+            <PermissionRoute module="VENTAS" action="ACCESS_MEMORIA">
+              <CalculatorMemoryPage />
             </PermissionRoute>
           }
         />

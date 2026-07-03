@@ -13,6 +13,13 @@ export type NestedFlagged = Record<string, FlaggedValue>;
 /** Unidad de un intermedio de la calculadora (mirror de CalcUnidad del server). */
 export type CalcUnidad = "USD" | "pesos" | "UI" | "%" | "kWh" | "unidades" | "";
 
+/** Valor de una variable del singleton para la memoria de cálculo. */
+export interface MemoriaSingletonValue {
+  value: number | null; // null si la variable no existe en el singleton (drift)
+  label: string;
+  unidad: CalcUnidad;
+}
+
 /** Fila del drawer de debug: metadata (del server) + valor calculado. */
 export interface CalcDebugRow {
   key: string;

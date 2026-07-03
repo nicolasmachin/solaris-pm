@@ -3,6 +3,7 @@ import axios from "axios";
 import { apiClient as api } from "./axios";
 import type {
   CalcDebugRow,
+  MemoriaSingletonValue,
   ProposalDraftData,
   ProposalDraftResponse,
   ProposalVersionDetail,
@@ -69,6 +70,14 @@ export const proposalsV2BuilderApi = {
   getDraftCalc: async (leadId: string): Promise<CalcDebugRow[]> => {
     const { data } = await api.get<{ rows: CalcDebugRow[] }>(`${P}/leads/${leadId}/draft/calc`);
     return data.rows;
+  },
+
+  // Memoria de cálculo: valores en vivo del singleton (VENTAS:ACCESS_MEMORIA).
+  getCalculatorMemoria: async (): Promise<Record<string, MemoriaSingletonValue>> => {
+    const { data } = await api.get<{ singletonValues: Record<string, MemoriaSingletonValue> }>(
+      `${P}/calculator-memoria`,
+    );
+    return data.singletonValues;
   },
 
   // Descarga un PDF de versión (mismo tema de auth: blob + <a download>).
