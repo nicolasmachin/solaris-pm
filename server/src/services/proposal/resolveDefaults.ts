@@ -54,6 +54,7 @@ export function resolveDefaults(rawDefaults: unknown): ProposalDefaultsResolved 
     tarifaCatCPorHora: num("tarifaCatCPorHora"),
     tarifaCatDPorHora: num("tarifaCatDPorHora"),
     margenManoDeObra: num("margenManoDeObra"),
+    horasManoDeObraPorInstalacion: num("horasManoDeObraPorInstalacion"),
 
     comisionVendedorPorcentaje: num("comisionVendedorPorcentaje"),
     comisionBbvaPorcentaje: num("comisionBbvaPorcentaje"),
@@ -61,5 +62,12 @@ export function resolveDefaults(rawDefaults: unknown): ProposalDefaultsResolved 
     bbva24mInteresUI: num("bbva24mInteresUI"),
     bbva36mInteresUI: num("bbva36mInteresUI"),
     bbva60mInteresUI: num("bbva60mInteresUI"),
+    cotizacionUI: num("cotizacionUI"),
+    bbva24mGastosAdminCapital: num("bbva24mGastosAdminCapital"),
+    bbva36mGastosAdminCapital: num("bbva36mGastosAdminCapital"),
+    bbva60mGastosAdminCapital: num("bbva60mGastosAdminCapital"),
+    bbva24mFactorCuota: num("bbva24mFactorCuota"),
+    bbva36mFactorCuota: num("bbva36mFactorCuota"),
+    bbva60mFactorCuota: num("bbva60mFactorCuota"),
   };
 }

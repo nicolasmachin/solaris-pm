@@ -69,11 +69,19 @@ const defaults: ProposalDefaultsResolved = {
   tarifaCatCPorHora: 800,
   tarifaCatDPorHora: 800,
   margenManoDeObra: 1.2,
+  horasManoDeObraPorInstalacion: 10,
   comisionVendedorPorcentaje: 0.04,
   comisionBbvaPorcentaje: 0.04,
   bbva24mInteresUI: 0,
   bbva36mInteresUI: 0,
   bbva60mInteresUI: 0.05,
+  cotizacionUI: 6.33,
+  bbva24mGastosAdminCapital: 0.025,
+  bbva36mGastosAdminCapital: 0.045,
+  bbva60mGastosAdminCapital: 0.015,
+  bbva24mFactorCuota: 1.023,
+  bbva36mFactorCuota: 1.036,
+  bbva60mFactorCuota: 1.071,
 };
 
 const r = calculate(input, defaults);

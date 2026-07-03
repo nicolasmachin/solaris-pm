@@ -143,17 +143,25 @@ export interface ProposalDefaultsResolved {
   horasCatAPorKwp: number;
   horasCatCPorKwp: number;
   horasCatDPorKwp: number;
-  tarifaCatAPorHora: number;
-  tarifaCatCPorHora: number;
-  tarifaCatDPorHora: number;
+  tarifaCatAPorHora: number; // Electricista ($/h)
+  tarifaCatCPorHora: number; // Capataz ($/h)
+  tarifaCatDPorHora: number; // CAT D ($/h)
   margenManoDeObra: number;
+  horasManoDeObraPorInstalacion: number;
 
   // Comisiones
   comisionVendedorPorcentaje: number;
   comisionBbvaPorcentaje: number;
 
-  // Tasas BBVA en UI
-  bbva24mInteresUI: number;
+  // Financiación BBVA (modelo UI + PMT)
+  bbva24mInteresUI: number; // tasa anual nominal PMT
   bbva36mInteresUI: number;
   bbva60mInteresUI: number;
+  cotizacionUI: number; // valor de la Unidad Indexada
+  bbva24mGastosAdminCapital: number; // % sobre capital
+  bbva36mGastosAdminCapital: number;
+  bbva60mGastosAdminCapital: number;
+  bbva24mFactorCuota: number; // factor sobre la cuota PMT
+  bbva36mFactorCuota: number;
+  bbva60mFactorCuota: number;
 }

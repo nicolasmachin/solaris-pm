@@ -26,10 +26,10 @@ type Flagged = { value: number | string; asesorCanOverride: boolean };
 // Estructura del JSON `data`. Cada variable es { value, asesorCanOverride }.
 const DEFAULT_DATA: Record<string, Flagged | Record<string, Flagged>> = {
   // ── Precios equipamiento (USD sin IVA) ──
-  precioPanelUsdSinIva: { value: 105, asesorCanOverride: false }, // Excel Costos B3
+  precioPanelUsdSinIva: { value: 100, asesorCanOverride: false }, // Excel Costos B3 (100; ver pendiente 100 vs 105)
   precioEstructuraUsdSinIva: { value: 90, asesorCanOverride: false }, // B4
-  precioElectricaMonoUsdSinIva: { value: 492, asesorCanOverride: false }, // B5
-  precioElectricaTriUsdSinIva: { value: 492, asesorCanOverride: false }, // = mono (ajustar)
+  precioElectricaMonoUsdSinIva: { value: 492, asesorCanOverride: false }, // B5 mono
+  precioElectricaTriUsdSinIva: { value: 750, asesorCanOverride: false }, // B5 trifásico
 
   // ── Inversor por red + potencia ──
   precioInversorMonoSub7Usd: { value: 1000, asesorCanOverride: false },
@@ -42,8 +42,8 @@ const DEFAULT_DATA: Record<string, Flagged | Record<string, Flagged>> = {
   precioInversorTriMas: { value: 8000, asesorCanOverride: false },
 
   // ── Meter ──
-  precioMeterMonoUsd: { value: 110, asesorCanOverride: false }, // B7
-  precioMeterTriUsd: { value: 110, asesorCanOverride: false }, // = mono (ajustar)
+  precioMeterMonoUsd: { value: 110, asesorCanOverride: false }, // B7 mono
+  precioMeterTriUsd: { value: 220, asesorCanOverride: false }, // B7 trifásico
 
   // ── Marcas (editables por asesor) ──
   marcaPanelesDefault: { value: "Resun", asesorCanOverride: true },
@@ -60,13 +60,16 @@ const DEFAULT_DATA: Record<string, Flagged | Record<string, Flagged>> = {
   costoViaticosPesos: { value: 3000, asesorCanOverride: false }, // M7
   costoOtrosPesos: { value: 2000, asesorCanOverride: false }, // M4
 
-  // ── Mano de obra ──
+  // ── Mano de obra (modelo Excel: (elec+capataz+catD) × horas × cuadrilla / dólar) ──
+  // Tarifas horarias en PESOS por rol (Excel CALCULADORA W2/W3/W4).
+  tarifaCatAPorHora: { value: 814, asesorCanOverride: false }, // Electricista ($/h) — W2
+  tarifaCatCPorHora: { value: 947, asesorCanOverride: false }, // Capataz ($/h) — W3
+  tarifaCatDPorHora: { value: 543, asesorCanOverride: false }, // CAT D ($/h) — W4
+  horasManoDeObraPorInstalacion: { value: 10, asesorCanOverride: false }, // Excel J4 "×10"
+  // Variables del modelo viejo (por-kWp) — se eliminan al migrar la fórmula.
   horasCatAPorKwp: { value: 0.8, asesorCanOverride: false },
   horasCatCPorKwp: { value: 6, asesorCanOverride: false },
   horasCatDPorKwp: { value: 6, asesorCanOverride: false },
-  tarifaCatAPorHora: { value: 800, asesorCanOverride: false },
-  tarifaCatCPorHora: { value: 800, asesorCanOverride: false },
-  tarifaCatDPorHora: { value: 800, asesorCanOverride: false },
   margenManoDeObra: { value: 1.2, asesorCanOverride: false },
 
   // ── Comisiones ──
@@ -78,10 +81,21 @@ const DEFAULT_DATA: Record<string, Flagged | Record<string, Flagged>> = {
   markupPorcentajeDefault: { value: 0.15, asesorCanOverride: false }, // C13
   distanciaInstalacionKmDefault: { value: 0, asesorCanOverride: true },
 
-  // ── Tasas BBVA (interés en UI) ──
-  bbva24mInteresUI: { value: 0, asesorCanOverride: false }, // BBVA B1
+  // ── Financiación BBVA (modelo Excel "Financiacion BBVA" con UI + PMT) ──
+  // Tasa anual nominal del PMT por plazo (Excel B1/D1/F1).
+  bbva24mInteresUI: { value: 0, asesorCanOverride: false }, // B1
   bbva36mInteresUI: { value: 0, asesorCanOverride: false }, // D1
   bbva60mInteresUI: { value: 0.05, asesorCanOverride: false }, // F1
+  // Cotización de la Unidad Indexada (Excel B4).
+  cotizacionUI: { value: 6.33, asesorCanOverride: false },
+  // Gastos admin sobre el capital, por plazo (Excel B6/D6/F6).
+  bbva24mGastosAdminCapital: { value: 0.025, asesorCanOverride: false },
+  bbva36mGastosAdminCapital: { value: 0.045, asesorCanOverride: false },
+  bbva60mGastosAdminCapital: { value: 0.015, asesorCanOverride: false },
+  // Factor sobre la cuota PMT, por plazo (Excel ×1.023 / ×1.036 / ×1.071).
+  bbva24mFactorCuota: { value: 1.023, asesorCanOverride: false },
+  bbva36mFactorCuota: { value: 1.036, asesorCanOverride: false },
+  bbva60mFactorCuota: { value: 1.071, asesorCanOverride: false },
 
   // ── Plazos de entrega (días + textos) ──
   plazos: {
