@@ -10,6 +10,7 @@ import { prisma } from "../../lib/prisma.js";
 import { createAuditEntry } from "../audit.service.js";
 import { getStoredFilePath } from "../file-storage.service.js";
 import { AppError, badRequest, notFound } from "../../utils/errors.js";
+import { buildAdvisor, resolveAdvisorForUser } from "./advisor.js";
 import { calculate } from "./calculator.js";
 import { concatPdfs } from "./concatPdfs.js";
 import { applyCoverOverlay } from "./coverOverlay.js";
@@ -28,6 +29,7 @@ import {
   getVersionPdfPaths,
   writeVersionPdfs,
 } from "./proposal-storage.js";
+import type { ProposalAdvisor } from "./template.js";
 import type { ProposalCalculated, ProposalData } from "./types.js";
 
 const PUBLISH_MAX_RETRIES = 3;
@@ -63,6 +65,7 @@ export function buildSnapshot(params: {
   coverPdfAttachmentId: string | null;
   calc: unknown;
   renderedAt: string;
+  advisor?: unknown;
 }): ProposalV2Snapshot {
   return snapshotSchema.parse({
     version: SNAPSHOT_VERSION,
@@ -73,6 +76,7 @@ export function buildSnapshot(params: {
     calc: params.calc,
     templateVersion: TEMPLATE_VERSION,
     renderedAt: params.renderedAt,
+    advisor: params.advisor,
   });
 }
 
@@ -96,10 +100,12 @@ async function loadCoverBytesById(attachmentId: string): Promise<Buffer | null> 
 // la tapa actual del sistema haya cambiado.
 async function renderPdfsFromSnapshot(
   snapshot: ProposalV2Snapshot,
+  advisor: ProposalAdvisor,
 ): Promise<{ fullBuffer: Buffer; summaryBuffer: Buffer }> {
   const ctx = {
     data: snapshot.data as ProposalData,
     calculated: snapshot.calc as unknown as ProposalCalculated,
+    advisor,
   };
   const summaryBuffer = await generateProposalSummaryPdf(ctx);
   const body = await generateProposalFullPdf(ctx);
@@ -136,6 +142,17 @@ export async function publishVersion(leadId: string, userId: string) {
   const defaults = resolveDefaults(defaultsRow.data);
   const calc = calculate(data, defaults);
 
+  // Asesor que publica: crudo (jobTitle nullable) para el snapshot, resuelto
+  // (con fallback) para el render.
+  const rawAdvisor = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true, jobTitle: true, email: true },
+  });
+  const snapshotAdvisor = rawAdvisor
+    ? { name: rawAdvisor.name, jobTitle: rawAdvisor.jobTitle, email: rawAdvisor.email }
+    : undefined;
+  const renderAdvisor = buildAdvisor(rawAdvisor ?? {});
+
   const snapshot = buildSnapshot({
     data,
     defaults,
@@ -143,11 +160,12 @@ export async function publishVersion(leadId: string, userId: string) {
     coverPdfAttachmentId: defaultsRow.coverPdfAttachmentId,
     calc,
     renderedAt: new Date().toISOString(),
+    advisor: snapshotAdvisor,
   });
   const snapshotJson = snapshot as unknown as Prisma.InputJsonValue;
 
   // Render con la tapa ACTUAL (== la del snapshot en este instante).
-  const ctx = { data, calculated: calc };
+  const ctx = { data, calculated: calc, advisor: renderAdvisor };
   const fullBuffer = await generateFullPdfWithCover(ctx);
   const summaryBuffer = await generateProposalSummaryPdf(ctx);
 
@@ -312,7 +330,12 @@ export async function regeneratePdf(versionId: string, userId: string) {
   if (!v) throw notFound("VERSION_NOT_FOUND", "La versión no existe.");
 
   const snapshot = snapshotSchema.parse(v.snapshot);
-  const { fullBuffer, summaryBuffer } = await renderPdfsFromSnapshot(snapshot);
+  // Advisor: del snapshot si lo tiene (Fase F+); si no (versiones viejas), del
+  // publishedBy con fallback a "Asesor Comercial".
+  const advisor = snapshot.advisor
+    ? buildAdvisor(snapshot.advisor)
+    : await resolveAdvisorForUser(v.publishedById);
+  const { fullBuffer, summaryBuffer } = await renderPdfsFromSnapshot(snapshot, advisor);
 
   // Sobrescribe los archivos existentes (no cambia paths, snapshot ni número).
   await fsPromises.writeFile(getStoredFilePath(v.fullPdfPath), fullBuffer);

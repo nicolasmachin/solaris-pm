@@ -11,6 +11,7 @@ import { getStoredFilePath } from "../file-storage.service.js";
 import { concatPdfs } from "./concatPdfs.js";
 import { applyCoverOverlay, type CoverOverlayConfig } from "./coverOverlay.js";
 import { generateProposalFullPdf } from "./pdfGenerator.js";
+import type { RenderContext } from "./template.js";
 import type { ProposalCalculated, ProposalData } from "./types.js";
 
 // Validación de borde del overlay guardado en el singleton (Json). Si está
@@ -60,10 +61,7 @@ export async function loadCoverForProposal(): Promise<{
 
 // Cuerpo (Puppeteer) + tapa (con overlay) si está configurada. Si no hay tapa,
 // devuelve solo el cuerpo sin romper.
-export async function generateFullPdfWithCover(ctx: {
-  data: ProposalData;
-  calculated: ProposalCalculated;
-}): Promise<Buffer> {
+export async function generateFullPdfWithCover(ctx: RenderContext): Promise<Buffer> {
   const body = await generateProposalFullPdf(ctx);
   const cover = await loadCoverForProposal();
   if (!cover) return body;

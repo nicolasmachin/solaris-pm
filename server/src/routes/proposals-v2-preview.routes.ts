@@ -20,6 +20,7 @@ import {
   generateProposalSummaryPdf,
   renderProposalFull,
   renderProposalSummary,
+  resolveAdvisorForUser,
   resolveDefaults,
   type ProposalCalculated,
   type ProposalData,
@@ -134,7 +135,8 @@ export async function registerProposalsV2PreviewRoutes(app: FastifyInstance) {
       const user = ensureUser(request);
       const { data, mode } = bodySchema.parse(request.body);
       const calculated = await resolveData(data as ProposalData);
-      const ctx = { data: data as ProposalData, calculated };
+      const advisor = await resolveAdvisorForUser(user.id);
+      const ctx = { data: data as ProposalData, calculated, advisor };
       const html = mode === "summary" ? renderProposalSummary(ctx) : renderProposalFull(ctx);
       const isAdmin = user.role === "ADMIN";
       return {
@@ -149,10 +151,11 @@ export async function registerProposalsV2PreviewRoutes(app: FastifyInstance) {
     "/proposals-v2/generate-pdf",
     { preHandler: authorize(Module.VENTAS, Action.VIEW) },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      ensureUser(request);
+      const user = ensureUser(request);
       const { data, mode } = bodySchema.parse(request.body);
       const calculated = await resolveData(data as ProposalData);
-      const ctx = { data: data as ProposalData, calculated };
+      const advisor = await resolveAdvisorForUser(user.id);
+      const ctx = { data: data as ProposalData, calculated, advisor };
       // El resumen NO lleva tapa (es solo el cuerpo de 1-2 páginas). La completa
       // arranca con la tapa (con overlay) si hay una configurada.
       const pdf =

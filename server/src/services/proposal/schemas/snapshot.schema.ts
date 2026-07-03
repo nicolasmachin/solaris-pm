@@ -46,6 +46,15 @@ export const snapshotSchema = z
     calc: z.record(z.string(), z.unknown()),
     templateVersion: z.string(),
     renderedAt: z.string(), // ISO 8601
+    // Asesor que publicó (Fase F). Opcional: las versiones publicadas antes de
+    // Fase F no lo tienen y caen al fallback (publishedBy) al regenerar.
+    advisor: z
+      .object({
+        name: z.string(),
+        jobTitle: z.string().nullable(),
+        email: z.string(),
+      })
+      .optional(),
   })
   .strict();
 

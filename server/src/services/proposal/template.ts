@@ -107,9 +107,19 @@ function buildRoiChart(retornoInversion16Anios: number[]) {
   return { zeroPct, botPct, bars, finalMilUsd };
 }
 
+// Datos del asesor que firman la carta de presentación. Los valores ya vienen
+// resueltos con fallback (ver services/proposal/advisor.ts): jobTitle nunca es
+// null acá, name nunca vacío.
+export interface ProposalAdvisor {
+  name: string;
+  jobTitle: string;
+  email: string;
+}
+
 export interface RenderContext {
   data: ProposalData;
   calculated: ProposalCalculated;
+  advisor: ProposalAdvisor;
 }
 
 function render(templateFile: string, ctx: RenderContext): string {

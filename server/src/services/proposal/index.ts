@@ -7,3 +7,4 @@ export * from "./pdfGenerator.js";
 export * from "./coverOverlay.js";
 export * from "./concatPdfs.js";
 export * from "./full-with-cover.service.js";
+export * from "./advisor.js";
