@@ -5,21 +5,13 @@ import { useQuery } from "@tanstack/react-query";
 import { getLead } from "../api/leads.api";
 import { proposalsV2BuilderApi } from "../api/proposals-v2-builder.api";
 import { AutosaveIndicator } from "../components/proposals-v2/AutosaveIndicator";
+import { ProposalForm } from "../components/proposals-v2/ProposalForm";
 import { Button } from "../components/ui/Button";
 import { Spinner } from "../components/ui/Spinner";
 import { useDraftAutosave } from "../hooks/useDraftAutosave";
 import { useProposalDefaults } from "../hooks/useProposalDefaults";
 import { buildInitialDraftData, mergeDraft } from "../lib/proposalDraft";
 import type { ProposalDraftData } from "../types/proposals-v2";
-
-const FORM_SECTIONS = [
-  { id: "cliente", label: "Cliente" },
-  { id: "tecnicos", label: "Datos técnicos del sistema" },
-  { id: "cotizacion", label: "Cotización base (Variante A)" },
-  { id: "items", label: "Ítems adicionales (Variante B)" },
-  { id: "financiacion", label: "Financiación" },
-  { id: "notas", label: "Notas del asesor" },
-];
 
 const H2 = "mb-3 text-sm font-bold uppercase tracking-wide text-[var(--color-text-primary)]";
 const PLACEHOLDER =
@@ -117,14 +109,14 @@ export function ProposalBuilderPage() {
 
       <div className="flex items-start gap-6 px-6 py-6">
         {/* Form (izquierda) */}
-        <div className="min-w-0 flex-1 space-y-8">
-          {FORM_SECTIONS.map((s) => (
-            <section key={s.id} id={`seccion-${s.id}`} className="scroll-mt-28">
-              <h2 className={H2}>{s.label}</h2>
-              <div className={PLACEHOLDER}>Próximamente</div>
-            </section>
-          ))}
-          <section id="seccion-versiones" className="scroll-mt-28">
+        <div className="min-w-0 flex-1">
+          <ProposalForm
+            data={data}
+            onChange={setData}
+            defaults={defaultsQuery.data?.data ?? {}}
+            errors={{}}
+          />
+          <section id="seccion-versiones" className="scroll-mt-28 mt-8">
             <h2 className={H2}>Versiones publicadas</h2>
             <div className={PLACEHOLDER}>Próximamente</div>
           </section>
