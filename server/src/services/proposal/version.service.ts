@@ -125,6 +125,27 @@ async function renderPdfsFromSnapshot(
   return { fullBuffer, summaryBuffer };
 }
 
+// ─── Preview del borrador (al vuelo, sin persistir) ──────────────────────────
+
+// Genera el PDF full del borrador actual con el mismo pipeline que la
+// publicación (defaults + calc + tapa + firma del asesor logueado). No cachea.
+// 404 si no hay draft; 400 (ZodError) si el draft no valida.
+export async function generateDraftPreviewPdf(leadId: string, userId: string): Promise<Buffer> {
+  const draft = await prisma.proposalV2Draft.findUnique({ where: { leadId } });
+  if (!draft) throw notFound("DRAFT_NOT_FOUND", "El lead no tiene borrador.");
+  const data = draftDataSchema.parse(draft.data);
+
+  const defaultsRow = await prisma.proposalDefaults.findUnique({ where: { id: "singleton" } });
+  if (!defaultsRow) {
+    throw badRequest("PROPOSAL_DEFAULTS_NOT_SEEDED", "Los defaults de propuestas no están cargados.");
+  }
+  const defaults = resolveDefaults(defaultsRow.data);
+  const calc = calculate(data, defaults);
+  const advisor = await resolveAdvisorForUser(userId);
+
+  return generateFullPdfWithCover({ data, calculated: calc, advisor });
+}
+
 // ─── Publicar ────────────────────────────────────────────────────────────────
 
 export async function publishVersion(leadId: string, userId: string) {

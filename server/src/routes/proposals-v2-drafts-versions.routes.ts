@@ -20,6 +20,7 @@ import { draftDataSchema } from "../services/proposal/schemas/draft.schema.js";
 import type { ProposalV2Snapshot } from "../services/proposal/schemas/snapshot.schema.js";
 import {
   discardVersion,
+  generateDraftPreviewPdf,
   getVersionById,
   listVersions,
   publishVersion,
@@ -88,6 +89,21 @@ export async function registerProposalsV2DraftsVersionsRoutes(app: FastifyInstan
       const draft = await getDraft(leadId);
       if (!draft) throw notFound("DRAFT_NOT_FOUND", "El lead no tiene borrador.");
       return draft;
+    },
+  );
+
+  // Preview del PDF del borrador (al vuelo, inline, sin cache).
+  app.get(
+    "/proposals-v2/leads/:leadId/draft/preview.pdf",
+    { preHandler: authorize(Module.VENTAS, Action.VIEW) },
+    async (request, reply) => {
+      const user = ensureUser(request);
+      const { leadId } = leadParams.parse(request.params);
+      const pdf = await generateDraftPreviewPdf(leadId, user.id);
+      reply.header("Content-Type", "application/pdf");
+      reply.header("Content-Disposition", 'inline; filename="preview.pdf"');
+      reply.header("Cache-Control", "no-store");
+      return reply.send(pdf);
     },
   );
 
