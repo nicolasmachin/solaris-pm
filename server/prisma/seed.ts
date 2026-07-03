@@ -149,7 +149,7 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
   // preserva porque existe en prod y el snapshot de la spec §10 es anterior).
   const matrix: Array<{ roleName: string; module: Module; actions: Action[] }> = [
     // ADMIN
-    { roleName: "ADMIN", module: Module.VENTAS,         actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMMENT] },
+    { roleName: "ADMIN", module: Module.VENTAS,         actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMMENT, Action.ACCESS_MEMORIA] },
     { roleName: "ADMIN", module: Module.ONBOARDING,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { roleName: "ADMIN", module: Module.INGENIERIA,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { roleName: "ADMIN", module: Module.OPERACIONES,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },

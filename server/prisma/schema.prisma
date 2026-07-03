@@ -295,6 +295,9 @@ enum Action {
   // etc.). Usado p.ej. para gatear el top-nav del módulo Ingeniería sin
   // afectar la visibilidad de datos legacy del proyecto.
   ACCESS
+  // ACCESS_MEMORIA = gate de la memoria de cálculo de propuestas
+  // (/admin/propuestas/memoria-calculo). Feature admin-only por default.
+  ACCESS_MEMORIA
 }
 
 enum SettingLevel {
