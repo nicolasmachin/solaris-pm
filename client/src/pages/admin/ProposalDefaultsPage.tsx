@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { Button } from "../../components/ui/Button";
+import { CanAccess } from "../../components/ui/CanAccess";
 import { Spinner } from "../../components/ui/Spinner";
 import { CoverSection } from "../../components/admin/proposal-defaults/CoverSection";
 import { ProposalDefaultsForm } from "../../components/admin/proposal-defaults/ProposalDefaultsForm";
@@ -78,6 +80,14 @@ export function ProposalDefaultsPage() {
             Valores y costos del generador de propuestas. El switch define si cada variable la puede
             modificar el asesor o queda fija desde administración.
           </p>
+          <CanAccess module="VENTAS" action="ACCESS_MEMORIA">
+            <Link
+              to="/admin/propuestas/memoria-calculo"
+              className="mt-1 inline-block text-sm font-medium text-[var(--color-accent)] hover:underline"
+            >
+              Ver memoria de cálculo →
+            </Link>
+          </CanAccess>
           {!isAdmin && (
             <p className="mt-1 text-xs text-[var(--color-text-muted)]">Solo lectura — únicamente un administrador puede editar.</p>
           )}
