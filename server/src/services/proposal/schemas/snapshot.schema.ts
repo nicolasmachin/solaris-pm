@@ -5,7 +5,7 @@
 
 import { z } from "zod";
 
-import { draftDataSchema } from "./draft.schema.js";
+import { draftDataPublishSchema } from "./draft.schema.js";
 
 // Config del overlay de la tapa (mismo shape que ProposalDefaults.coverOverlay).
 const overlayTextSchema = z
@@ -34,7 +34,7 @@ export const snapshotSchema = z
     // Versión del schema del snapshot, para migraciones futuras.
     version: z.literal(SNAPSHOT_VERSION),
     // Inputs del borrador tal cual al publicar.
-    data: draftDataSchema,
+    data: draftDataPublishSchema,
     // Defaults resueltos (números y algún string de marca) al momento.
     defaults: z.record(z.string(), z.union([z.number(), z.string()])),
     // Config de la tapa al momento.

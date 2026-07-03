@@ -16,7 +16,7 @@ import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
 import { getDraft, upsertDraft } from "../services/proposal/draft.service.js";
 import { readVersionPdf } from "../services/proposal/proposal-storage.js";
-import { draftDataSchema } from "../services/proposal/schemas/draft.schema.js";
+import { draftDataStorageSchema } from "../services/proposal/schemas/draft.schema.js";
 import type { ProposalV2Snapshot } from "../services/proposal/schemas/snapshot.schema.js";
 import {
   discardVersion,
@@ -37,7 +37,7 @@ function ensureUser(request: FastifyRequest) {
 
 const leadParams = z.object({ leadId: z.string().min(1) }).strict();
 const idParams = z.object({ id: z.string().min(1) }).strict();
-const putDraftBody = z.object({ data: draftDataSchema }).strict();
+const putDraftBody = z.object({ data: draftDataStorageSchema }).strict();
 const discardBody = z.object({ reason: z.string().optional() }).strict();
 
 function clientNameFromSnapshot(snapshot: Prisma.JsonValue): string {

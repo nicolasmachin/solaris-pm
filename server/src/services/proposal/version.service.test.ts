@@ -23,8 +23,8 @@ const validDraft = {
   cliente: { nombre: "Jose Gonzalez", dirigidoA: "Estimado Jose Gonzalez,", ciudad: "El Pinar, Uruguay." },
   factura: { pagaMensualPesos: 9000, tarifa: "Doble", suministro: "monofásico", potenciaContratadaKw: 6.6 },
   techo: { descripcion: "de tejas", tamanoM2: 32 },
-  cotizacion: { distanciaInstalacionKm: 35, cotizacionDolar: 40, markupPorcentaje: 0.15 },
-  sistema: { cantidadPaneles: 16, potenciaPanelW: 590, marcaPaneles: "Resun", potenciaInversorKw: 10, marcaInversor: "Growatt" },
+  cotizacion: { distanciaInstalacionKm: 35, cotizacionDolar: 40, markupPorcentaje: 0.15, plazoEntrega: "6 a 8 semanas" },
+  sistema: { cantidadPaneles: 16, potenciaPanelW: 590, marcaPaneles: "Resun", potenciaInversorKw: 10, marcaInversor: "Growatt", tipoMontaje: "Techo chapa" },
   fecha: "2026-06-19",
   itemsAdicionales: [],
 };

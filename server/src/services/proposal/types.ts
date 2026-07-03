@@ -1,9 +1,11 @@
 // Tipos del calculator del generador de propuestas v2.
 // Ver docs/features/proposals-v2/SPEC.md.
 
-// ─── Input del usuario (mirror del JSON `data` del ProposalDraft) ───────────
+// Mirror de draftDataPublishSchema (schemas/draft.schema.ts) — mantener en
+// sincronía. dirigidoA opcional; tipoMontaje/plazoEntrega/notas se agregaron en
+// Fase F.
 export interface ProposalData {
-  cliente: { nombre: string; dirigidoA: string; ciudad: string };
+  cliente: { nombre: string; dirigidoA?: string; ciudad: string };
   factura: {
     pagaMensualPesos: number;
     tarifa: "Simple" | "Doble" | "Triple";
@@ -15,6 +17,7 @@ export interface ProposalData {
     distanciaInstalacionKm: number;
     cotizacionDolar: number;
     markupPorcentaje: number;
+    plazoEntrega: string;
   };
   sistema: {
     cantidadPaneles: number;
@@ -22,8 +25,10 @@ export interface ProposalData {
     marcaPaneles: string;
     potenciaInversorKw: number;
     marcaInversor: string;
+    tipoMontaje: string;
   };
   fecha: string; // ISO date
+  notas?: string;
   itemsAdicionales: ProposalItemAdicional[];
 }
 

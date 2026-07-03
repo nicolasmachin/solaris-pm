@@ -17,7 +17,7 @@ import { applyCoverOverlay } from "./coverOverlay.js";
 import { generateFullPdfWithCover } from "./full-with-cover.service.js";
 import { generateProposalFullPdf, generateProposalSummaryPdf } from "./pdfGenerator.js";
 import { resolveDefaults } from "./resolveDefaults.js";
-import { draftDataSchema } from "./schemas/draft.schema.js";
+import { draftDataPublishSchema } from "./schemas/draft.schema.js";
 import {
   SNAPSHOT_VERSION,
   TEMPLATE_VERSION,
@@ -133,7 +133,7 @@ async function renderPdfsFromSnapshot(
 export async function generateDraftPreviewPdf(leadId: string, userId: string): Promise<Buffer> {
   const draft = await prisma.proposalV2Draft.findUnique({ where: { leadId } });
   if (!draft) throw notFound("DRAFT_NOT_FOUND", "El lead no tiene borrador.");
-  const data = draftDataSchema.parse(draft.data);
+  const data = draftDataPublishSchema.parse(draft.data);
 
   const defaultsRow = await prisma.proposalDefaults.findUnique({ where: { id: "singleton" } });
   if (!defaultsRow) {
@@ -154,7 +154,7 @@ export async function publishVersion(leadId: string, userId: string) {
     throw badRequest("DRAFT_NOT_FOUND", "El lead no tiene borrador de propuesta para publicar.");
   }
   // Valida el draft.data (ZodError → 400). Defensivo: el data es Json en la BD.
-  const data = draftDataSchema.parse(draft.data);
+  const data = draftDataPublishSchema.parse(draft.data);
 
   const defaultsRow = await prisma.proposalDefaults.findUnique({ where: { id: "singleton" } });
   if (!defaultsRow) {
@@ -350,7 +350,19 @@ export async function regeneratePdf(versionId: string, userId: string) {
   const v = await prisma.proposalV2Version.findUnique({ where: { id: versionId } });
   if (!v) throw notFound("VERSION_NOT_FOUND", "La versión no existe.");
 
-  const snapshot = snapshotSchema.parse(v.snapshot);
+  // No re-validamos snapshots viejos "por las dudas"; pero regenerar SÍ necesita
+  // que el snapshot cumpla el schema actual. Si una versión se publicó antes de
+  // que un campo fuera obligatorio, queda no-regenerable con mensaje claro (sin
+  // backfill — el PDF ya está congelado en disco).
+  let snapshot: ProposalV2Snapshot;
+  try {
+    snapshot = snapshotSchema.parse(v.snapshot);
+  } catch {
+    throw badRequest(
+      "VERSION_SNAPSHOT_OUTDATED",
+      "Esta versión fue publicada con un formato anterior (faltan campos obligatorios agregados después). No es posible regenerar automáticamente.",
+    );
+  }
   // Advisor: del snapshot si lo tiene (Fase F+); si no (versiones viejas), del
   // publishedBy con fallback a "Asesor Comercial".
   const advisor = snapshot.advisor
