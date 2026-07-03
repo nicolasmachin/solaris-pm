@@ -243,16 +243,23 @@ adicionales como filas y total que los suma).
 
 ## 6. Cálculos del negocio
 
-Idéntico a la spec v1. No se cambió ningún algoritmo. Implementado en
-`server/src/services/proposal/calculator.ts`.
+Implementado en `server/src/services/proposal/calculator.ts`. Documentación
+detallada de cada intermedio (fórmula + variables del singleton + ejemplo):
+memoria de cálculo en `/admin/propuestas/memoria-calculo`.
 
-Caso de referencia (Jose Gonzalez) para validar:
-- 16 paneles × 590W → 9.44 kWp
-- Inversor 10 kW monofásico
-- Total con IVA: USD 14.029
-- TIR: 17.2%
-- PRI: 5.8 años
-- Cuotas BBVA: $24.517 / $16.875 / $11.514
+Definiciones que suelen confundirse:
+
+- **margen** = `gananciaFinal / subtotalSinIva` (NO es un % sobre el total con
+  IVA). Es la ganancia neta del negocio sobre el subtotal sin IVA.
+- **markup**: se guarda en porcentaje (20 = 20%); la calculadora lo interpreta
+  por magnitud (≤1 decimal, >1 porcentaje) para soportar snapshots viejos.
+
+Caso de referencia (Jose Gonzalez, post fix BBVA + tarifas) para validar:
+- 11 paneles × 590W → 6.49 kWp
+- Inversor 6 kW trifásico, dólar 40, markup 20%, tarifa Simple
+- Subtotal sin IVA: USD 10.530 · Total con IVA: **USD 12.846**
+- TIR: 15.9% · PRI: 6.3 años · margen: 15.4%
+- Cuotas BBVA: **$22.450 / $15.453 / $10.543**
 
 ---
 
