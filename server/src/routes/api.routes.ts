@@ -10959,7 +10959,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         return {
           id: m.id,
           _type: "MOVEMENT",
-          fecha: serializeDateOnly(m.fecha),
+          fecha: serializeDateOnly(m.fecha) ?? "",
           descripcion: m.descripcion,
           monto: decimalToNumber(m.monto) ?? 0,
           moneda: m.moneda,
@@ -11021,7 +11021,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         const mov: PnLMovement = {
           id: p.id,
           _type: "PAYMENT",
-          fecha: serializeDateOnly(p.fecha),
+          fecha: serializeDateOnly(p.fecha) ?? "",
           descripcion: `Pago a ${p.supplier?.nombre ?? "proveedor"}${p.referencia ? ` · ${p.referencia}` : ""}`,
           monto,
           moneda: p.moneda,
