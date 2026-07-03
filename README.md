@@ -361,6 +361,16 @@ Eso ya te da una pasada bastante completa por los módulos principales.
 - La arquitectura ya quedó preparada para una futura evolución SaaS.
 - Las métricas y el cronograma dependen de que el backend esté actualizado y reiniciado.
 
+## Documentación y specs
+
+- **Deploy a producción**: [docs/DEPLOY.md](docs/DEPLOY.md)
+- **Rollback / runbook de emergencia**: [docs/ROLLBACK.md](docs/ROLLBACK.md)
+- **Checklist de QA visual pre-deploy**: [docs/QA_CHECKLIST_PRE_DEPLOY.md](docs/QA_CHECKLIST_PRE_DEPLOY.md)
+- **Generador de propuestas v2** (spec madre): [docs/features/proposals-v2/SPEC.md](docs/features/proposals-v2/SPEC.md)
+  - Fases: [E (drafts+versiones)](docs/features/proposals-v2/FASE_E_SPEC.md) · [F (constructor)](docs/features/proposals-v2/FASE_F_SPEC.md) · [G (pulido pre-deploy)](docs/features/proposals-v2/FASE_G_SPEC.md)
+  - Memoria de cálculo viva: `/admin/propuestas/memoria-calculo` (requiere `VENTAS:ACCESS_MEMORIA`)
+- **Pendientes técnicos**: [docs/pendientes/](docs/pendientes/)
+
 ## Roadmap SaaS
 
 La preparación para multi-tenant está documentada en:
