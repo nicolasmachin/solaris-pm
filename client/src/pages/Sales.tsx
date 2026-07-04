@@ -36,6 +36,7 @@ import { LeadToProjectModal } from "../components/sales/LeadToProjectModal";
 import { LostReasonModal } from "../components/sales/LostReasonModal";
 import { MarkAsWonModal } from "../components/sales/MarkAsWonModal";
 import { LeadProposalsList } from "../components/sales/LeadProposalsList";
+import { ProposalBuilderModal } from "../components/proposals-v2/ProposalBuilderModal";
 import { ProposalPreviewModal } from "../components/sales/ProposalPreviewModal";
 import { StageSelect } from "../components/sales/StageSelect";
 import { usePermission } from "../hooks/usePermission";
@@ -593,6 +594,7 @@ function LeadPanel({
     onError: () => toast.error("No se pudo eliminar el lead"),
   });
   const [showProposalModal, setShowProposalModal] = useState(false);
+  const [isBuilderOpen, setIsBuilderOpen] = useState(false);
   const [previewProposal, setPreviewProposal] = useState<LeadProposal | null>(null);
   const [lostReason, setLostReason] = useState("");
   const [pendingStage, setPendingStage] = useState<SalesStage | null>(null);
@@ -911,7 +913,7 @@ function LeadPanel({
             <p className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Propuestas comerciales</p>
             <div className="flex items-center gap-2">
               {canEditSales && (
-                <Button size="sm" variant="secondary" onClick={() => navigate(`/leads/${leadId}/propuesta`)}>
+                <Button size="sm" variant="secondary" onClick={() => setIsBuilderOpen(true)}>
                   Armar propuesta
                 </Button>
               )}
@@ -1005,6 +1007,10 @@ function LeadPanel({
           pdfUrl={`/api/proposals/${previewProposal.id}/download`}
           title={proposalFilename(lead.clientName, previewProposal.version)}
         />
+      ) : null}
+
+      {isBuilderOpen ? (
+        <ProposalBuilderModal leadId={leadId} onClose={() => setIsBuilderOpen(false)} />
       ) : null}
     </>
   );
