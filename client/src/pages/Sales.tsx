@@ -560,10 +560,10 @@ function ProposalModal({
 
       {proposalQuery.data?.status === "COMPLETED" ? (
         <ProposalPreviewModal
-          proposalId={proposalQuery.data.id}
-          filename={proposalFilename(clientName, proposalQuery.data.version)}
           open={showPreview}
           onClose={() => setShowPreview(false)}
+          pdfUrl={`/api/proposals/${proposalQuery.data.id}/download`}
+          title={proposalFilename(clientName, proposalQuery.data.version)}
         />
       ) : null}
     </>
@@ -1043,10 +1043,10 @@ function LeadPanel({
 
       {previewProposal ? (
         <ProposalPreviewModal
-          proposalId={previewProposal.id}
-          filename={proposalFilename(lead.clientName, previewProposal.version)}
           open={true}
           onClose={() => setPreviewProposal(null)}
+          pdfUrl={`/api/proposals/${previewProposal.id}/download`}
+          title={proposalFilename(lead.clientName, previewProposal.version)}
         />
       ) : null}
     </>
