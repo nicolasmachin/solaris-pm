@@ -42,13 +42,12 @@ import { StageSelect } from "../components/sales/StageSelect";
 import { usePermission } from "../hooks/usePermission";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { Sheet } from "../components/ui/Sheet";
-import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { CanAccess } from "../components/ui/CanAccess";
 import { Spinner } from "../components/ui/Spinner";
 import { useAuthStore } from "../store/auth.store";
 import type { User } from "../types/api.types";
-import type { LeadDetail, LeadListItem, LeadProposal, LeadStageGroup, SalesStage } from "../types/leads.types";
+import type { LeadDetail, LeadListItem, LeadStageGroup, SalesStage } from "../types/leads.types";
 import { KANBAN_COLUMNS, STAGE_COLORS, STAGE_LABELS } from "../types/leads.types";
 import { LeadsListView } from "../components/sales/LeadsListView";
 import { SalesViewToggle, useSalesView } from "../components/sales/SalesViewToggle";
@@ -595,7 +594,6 @@ function LeadPanel({
   });
   const [showProposalModal, setShowProposalModal] = useState(false);
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
-  const [previewProposal, setPreviewProposal] = useState<LeadProposal | null>(null);
   const [lostReason, setLostReason] = useState("");
   const [pendingStage, setPendingStage] = useState<SalesStage | null>(null);
   const [confirmConvert, setConfirmConvert] = useState(false);
@@ -997,15 +995,6 @@ function LeadPanel({
           leadId={lead.id}
           clientName={lead.clientName}
           onClose={() => setShowProposalModal(false)}
-        />
-      ) : null}
-
-      {previewProposal ? (
-        <ProposalPreviewModal
-          open={true}
-          onClose={() => setPreviewProposal(null)}
-          pdfUrl={`/api/proposals/${previewProposal.id}/download`}
-          title={proposalFilename(lead.clientName, previewProposal.version)}
         />
       ) : null}
 
