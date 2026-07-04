@@ -16,6 +16,7 @@
     "test:proposal-template": "node --import tsx --test src/services/proposal/template.test.ts",
     "test:proposal-draft-calc": "node --import tsx --test src/routes/proposals-v2-draft-calc.test.ts",
     "test:proposal-memoria": "node --import tsx --test src/services/proposal/calculator-memoria.test.ts",
+    "test:lead-proposals": "node --import tsx --test src/services/proposal/lead-proposals.service.test.ts",
     "test:project-fields": "node --import tsx --test src/validators/projectFields.test.ts",
     "test:interaction-ownership": "node --import tsx --test src/services/clientes/ownership.test.ts",
     "save": "bash scripts/save.sh"

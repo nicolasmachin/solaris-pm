@@ -61,6 +61,7 @@ import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize, authorizeAny, clearPermissionCache } from "../middleware/authorize.middleware.js";
 import { authorizeByStageContext, authorizeProjectEditAnyPipeline } from "../middleware/authorize-by-stage.middleware.js";
 import { createAuditEntriesForChanges, createAuditEntry } from "../services/audit.service.js";
+import { listLeadProposals } from "../services/proposal/lead-proposals.service.js";
 import { createPlanPagos, getPlanPagos } from "../services/planPagos.service.js";
 import { generateUteDocs, getOrCreateConfig as getOrCreateUteDocConfig, upsertConfig as upsertUteDocConfig } from "../services/ute-docs/generator.js";
 import { UTE_DOC_KEYS, type UteDocKey } from "../services/ute-docs/coordinates.js";
@@ -7130,34 +7131,21 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return reply.send(fs.createReadStream(proposal.outputFilePath));
   });
 
+  // Lista UNIFICADA: propuestas nuevas (ProposalV2Version) + viejas
+  // (ProposalGeneration) mezcladas por fecha DESC. Ver lead-proposals.service.
   app.get("/leads/:leadId/proposals", { preHandler: authorize(Module.VENTAS, Action.VIEW) }, async (request) => {
     const params = z.object({ leadId: z.string() }).parse(request.params);
+    const query = z.object({ includeDiscarded: z.enum(["true", "false"]).optional() }).parse(request.query);
+
     const lead = await prisma.salesLead.findFirst({
       where: { id: params.leadId, deletedAt: null },
+      select: { clientName: true },
     });
-
     if (!lead) {
       throw notFound("LEAD_NOT_FOUND", "Lead no encontrado");
     }
 
-    const proposals = await prisma.proposalGeneration.findMany({
-      where: {
-        leadId: params.leadId,
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    return proposals.map((proposal) => ({
-      id: proposal.id,
-      version: proposal.version,
-      status: proposal.status,
-      errorMessage: proposal.errorMessage,
-      attachmentId: proposal.attachmentId,
-      completedAt: proposal.completedAt ? serializeDate(proposal.completedAt) : null,
-      createdAt: serializeDate(proposal.createdAt),
-      updatedAt: serializeDate(proposal.updatedAt),
-      downloadUrl: proposal.status === "COMPLETED" ? `/api/proposals/${proposal.id}/download` : null,
-    }));
+    return listLeadProposals(params.leadId, query.includeDiscarded === "true", lead.clientName);
   });
 
   // ─── Equipos instaladores ────────────────────────────────────────────────────
