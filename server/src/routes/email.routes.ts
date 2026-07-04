@@ -204,13 +204,14 @@ export async function registerEmailRoutes(app: FastifyInstance) {
 
   // ─── Preparar mail (resuelve variables; NO envía) ────────────────────────────
   app.post("/emails/prepare", async (request) => {
-    ensureUser(request);
+    const user = ensureUser(request);
     const body = prepareSchema.parse(request.body);
     return prepareEmail({
       templateKey: body.templateKey,
       projectId: body.projectId,
       leadId: body.leadId,
       overrides: body.overrides as EmailOverrides | undefined,
+      senderUserId: user.id,
     });
   });
 

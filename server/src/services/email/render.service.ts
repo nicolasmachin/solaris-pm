@@ -1,7 +1,12 @@
 import Handlebars from "handlebars";
 import type { EmailTemplate } from "@prisma/client";
 
-import { buildEmailContext, emptyContext, type EmailTemplateContext } from "./context.service.js";
+import {
+  buildEmailContext,
+  emptyContext,
+  resolveFirmaContext,
+  type EmailTemplateContext,
+} from "./context.service.js";
 import { getTemplateByKey } from "./template.service.js";
 
 export interface EmailOverrides {
@@ -36,17 +41,20 @@ export async function prepareEmail(params: {
   projectId?: string;
   leadId?: string;
   overrides?: EmailOverrides;
+  // Usuario que prepara la consulta: su firma (nombre/cargo/tel/email) va al cuerpo.
+  senderUserId?: string;
 }): Promise<PreparedEmail> {
   const template: EmailTemplate = await getTemplateByKey(params.templateKey);
 
   let context: EmailTemplateContext;
   let missingVariables: string[];
   if (params.projectId) {
-    const built = await buildEmailContext(params.projectId);
+    const built = await buildEmailContext(params.projectId, params.senderUserId);
     context = built.context;
     missingVariables = built.missingVariables;
   } else {
-    context = emptyContext();
+    // Sin proyecto: contexto vacío, pero la firma del remitente igual se resuelve.
+    context = { ...emptyContext(), firma: await resolveFirmaContext(params.senderUserId) };
     missingVariables = [];
   }
 

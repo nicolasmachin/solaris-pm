@@ -28,6 +28,30 @@ export interface EmailTemplateContext {
     certificadoCarga: string;
     cargaPerturbadora: string;
   };
+  // Firma de cortesía = datos del usuario que prepara/envía la consulta. Campos
+  // crudos del User (string vacío si faltan) para que la plantilla omita líneas.
+  firma: {
+    nombre: string;
+    cargo: string;
+    telefono: string;
+    email: string;
+  };
+}
+
+// Resuelve la firma del remitente desde el User (crudo, sin fallback: cargo y
+// teléfono vacíos si no están cargados, para que el condicional los omita).
+export async function resolveFirmaContext(senderUserId?: string): Promise<EmailTemplateContext["firma"]> {
+  if (!senderUserId) return { nombre: "", cargo: "", telefono: "", email: "" };
+  const u = await prisma.user.findUnique({
+    where: { id: senderUserId },
+    select: { name: true, jobTitle: true, phone: true, email: true },
+  });
+  return {
+    nombre: u?.name ?? "",
+    cargo: u?.jobTitle ?? "",
+    telefono: u?.phone ?? "",
+    email: u?.email ?? "",
+  };
 }
 
 export interface BuiltContext {
@@ -46,7 +70,7 @@ function derivarTension(ute: { fasesMono: boolean; fasesTri: boolean } | null): 
 // Construye el contexto del mail joineando Project + UteDocumentConfig (los datos
 // están repartidos entre ambos). Los campos derivables con default no se marcan
 // como faltantes; sí los datos de fuente directa que salgan vacíos.
-export async function buildEmailContext(projectId: string): Promise<BuiltContext> {
+export async function buildEmailContext(projectId: string, senderUserId?: string): Promise<BuiltContext> {
   const project = await prisma.project.findFirst({
     where: { id: projectId, deletedAt: null },
     select: {
@@ -99,6 +123,7 @@ export async function buildEmailContext(projectId: string): Promise<BuiltContext
       certificadoCarga: "No",
       cargaPerturbadora: "No",
     },
+    firma: await resolveFirmaContext(senderUserId),
   };
 
   // Faltantes = datos de fuente directa vacíos (no los que tienen default).
@@ -136,5 +161,6 @@ export function emptyContext(): EmailTemplateContext {
       certificadoCarga: "No",
       cargaPerturbadora: "No",
     },
+    firma: { nombre: "", cargo: "", telefono: "", email: "" },
   };
 }
