@@ -35,6 +35,7 @@ import { LeadAttachments } from "../components/sales/LeadAttachments";
 import { LeadToProjectModal } from "../components/sales/LeadToProjectModal";
 import { LostReasonModal } from "../components/sales/LostReasonModal";
 import { MarkAsWonModal } from "../components/sales/MarkAsWonModal";
+import { LeadProposalsList } from "../components/sales/LeadProposalsList";
 import { ProposalPreviewModal } from "../components/sales/ProposalPreviewModal";
 import { StageSelect } from "../components/sales/StageSelect";
 import { usePermission } from "../hooks/usePermission";
@@ -917,51 +918,7 @@ function LeadPanel({
               <Button size="sm" onClick={() => setShowProposalModal(true)}>Generar propuesta comercial</Button>
             </div>
           </div>
-          <div className="space-y-2">
-            {lead.proposals.length === 0 ? (
-              <p className="text-sm text-[var(--color-text-muted)]">Sin propuestas generadas todavía.</p>
-            ) : (
-              lead.proposals.map((proposal) => (
-                <div key={proposal.id} className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-                        v{proposal.version} <span className="font-normal text-[var(--color-text-secondary)]">· {formatRelative(proposal.createdAt)}</span>
-                      </p>
-                      <p className="font-mono text-[10px] text-[var(--color-text-muted)]">{proposal.id}</p>
-                    </div>
-                    <Badge variant="default" label={proposal.status} />
-                  </div>
-                  {proposal.errorMessage ? (
-                    <p className="mt-2 text-xs text-red-300">{proposal.errorMessage}</p>
-                  ) : null}
-                  {proposal.status === "COMPLETED" ? (
-                    <div className="mt-2 flex items-center gap-3 text-sm">
-                      <button
-                        type="button"
-                        className="text-[var(--color-accent)] hover:underline"
-                        onClick={() => setPreviewProposal(proposal)}
-                      >
-                        Previsualizar
-                      </button>
-                      <button
-                        type="button"
-                        className="text-[var(--color-accent)] hover:underline"
-                        onClick={() =>
-                          void downloadProposal(
-                            proposal.id,
-                            proposalFilename(lead.clientName, proposal.version),
-                          ).catch(() => toast.error("No se pudo descargar el PDF"))
-                        }
-                      >
-                        Descargar PDF
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              ))
-            )}
-          </div>
+          <LeadProposalsList leadId={leadId} clientName={lead.clientName} />
         </section>
 
         <section className="mb-5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">

@@ -97,6 +97,28 @@ export interface LeadProposal {
   downloadUrl?: string | null;
 }
 
+// Lista unificada de propuestas del lead (viejas + nuevas). Mirror del backend
+// (lead-proposals.service.ts).
+export interface ProposalActions {
+  canDownloadFull: boolean;
+  canDownloadSummary: boolean;
+  canDownloadExcel: boolean;
+  canPreview: boolean;
+  canDiscard: boolean;
+  canRestore: boolean;
+}
+
+export interface ProposalListItem {
+  id: string;
+  tipo: "vieja" | "nueva";
+  createdAt: string;
+  versionNumber?: number;
+  clientName: string;
+  status: "activa" | "descartada" | null;
+  totalConIva?: number;
+  actions: ProposalActions;
+}
+
 export interface LeadDetail {
   id: string;
   code: string;

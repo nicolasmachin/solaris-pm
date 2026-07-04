@@ -1,5 +1,5 @@
 import { apiClient as api } from "./axios";
-import type { LeadDetail, LeadProposal, LeadStageGroup, SalesStage } from "../types/leads.types";
+import type { LeadDetail, LeadProposal, LeadStageGroup, ProposalListItem, SalesStage } from "../types/leads.types";
 import type { Project } from "../types/api.types";
 
 export async function getLeads(params?: { assignedTo?: "me"; search?: string }): Promise<LeadStageGroup[]> {
@@ -134,8 +134,13 @@ export async function deleteLead(id: string): Promise<void> {
   await api.delete(`/api/leads/${id}`);
 }
 
-export async function getLeadProposals(leadId: string): Promise<LeadProposal[]> {
-  const { data } = await api.get<LeadProposal[]>(`/api/leads/${leadId}/proposals`);
+export async function getLeadProposals(
+  leadId: string,
+  includeDiscarded = false,
+): Promise<ProposalListItem[]> {
+  const { data } = await api.get<ProposalListItem[]>(`/api/leads/${leadId}/proposals`, {
+    params: { includeDiscarded: includeDiscarded ? "true" : "false" },
+  });
   return data;
 }
 
