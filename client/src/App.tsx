@@ -13,7 +13,6 @@ const Dashboard = lazy(() => import("./pages/Dashboard").then((module) => ({ def
 const Projects = lazy(() => import("./pages/Projects").then((module) => ({ default: module.Projects })));
 const ProjectDetail = lazy(() => import("./pages/ProjectDetail").then((module) => ({ default: module.ProjectDetail })));
 const Sales = lazy(() => import("./pages/Sales").then((module) => ({ default: module.Sales })));
-const ProposalBuilderPage = lazy(() => import("./pages/ProposalBuilderPage").then((module) => ({ default: module.ProposalBuilderPage })));
 const Metrics = lazy(() => import("./pages/Metrics").then((module) => ({ default: module.Metrics })));
 const Settings = lazy(() => import("./pages/Settings").then((module) => ({ default: module.Settings })));
 const Admin = lazy(() => import("./pages/Admin").then((module) => ({ default: module.Admin })));
@@ -202,14 +201,9 @@ export function App() {
           }
         />
         <Route path="/sales" element={<Navigate to="/ventas" replace />} />
-        <Route
-          path="/leads/:leadId/propuesta"
-          element={
-            <PermissionRoute module="VENTAS" action="EDIT">
-              <ProposalBuilderPage />
-            </PermissionRoute>
-          }
-        />
+        {/* El constructor dejó de ser página (ahora es modal en el panel del lead).
+            Links viejos a esta ruta redirigen a Ventas. */}
+        <Route path="/leads/:leadId/propuesta" element={<Navigate to="/ventas" replace />} />
         <Route
           path="/metrics"
           element={
