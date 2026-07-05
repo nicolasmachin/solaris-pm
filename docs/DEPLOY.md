@@ -27,7 +27,18 @@ Copiar `.env.example` a `.env` en la raíz y completar. Claves críticas:
 | `BASE_URL` | URL pública del backend (para links en emails/PDFs) |
 | `ANTHROPIC_API_KEY` | IA (Claude) |
 | `OPENAI_API_KEY` | transcripción de audios (Whisper) |
+| `SMTP_ENCRYPTION_KEY` | **cifra las credenciales SMTP por usuario** (AES-256-GCM). Sin esto, guardar el SMTP falla y no se puede mandar mail. Generar con `openssl rand -base64 32` y **no cambiarla nunca** (rompe lo ya cifrado). |
 | `SMTP_*` / `TWILIO_*` | email / WhatsApp (opcionales: si faltan, se loguea y no rompe) |
+
+> ⚠️ **Gap conocido del compose de prod**: el bloque `server.environment` de
+> `docker-compose.prod.yml` hoy solo forwardea 7 variables (`NODE_ENV`,
+> `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `STORAGE_PATH`,
+> `MAX_FILE_SIZE_MB`, `BASE_URL`). La imagen se buildea sin `.env` (está en
+> `.dockerignore`), así que **cualquier variable que no esté en ese bloque no
+> llega al contenedor**. Antes del primer deploy, **agregar al compose**
+> (`VAR: ${VAR}`): `SMTP_ENCRYPTION_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`,
+> `SMTP_HOST/PORT/USER/PASS/FROM`, `TWILIO_*`. Luego recrear: `docker compose -f
+> docker-compose.prod.yml up -d server`.
 
 > **NODE_ENV=production** en prod: activa el guard del seed (aborta) y el modo
 > productivo. Confirmar que esté seteado en el compose/entorno de prod.
@@ -90,6 +101,12 @@ docker compose -f docker-compose.prod.yml exec server npx tsx prisma/scripts/gra
 docker compose -f docker-compose.prod.yml exec server npx tsx prisma/scripts/grant-markup-porcentaje.ts
 # Permiso de memoria de cálculo (ADMIN → VENTAS:ACCESS_MEMORIA)
 docker compose -f docker-compose.prod.yml exec server npx tsx prisma/scripts/grant-permission-access-memoria.ts
+
+# Plantilla de email "Consulta UTE": crear si no está + aplicar la firma dinámica.
+# El seed general no corre en prod (guard NODE_ENV) y es create-if-absent, así que
+# hay que correr estos dos a mano (viven en server/scripts/, no en prisma/scripts/):
+docker compose -f docker-compose.prod.yml exec server npx tsx scripts/seed-email-templates.ts
+docker compose -f docker-compose.prod.yml exec server npx tsx scripts/update-consulta-ute-template.ts
 ```
 
 > Tras un grant de **permisos**, reiniciar el server para invalidar el cache de

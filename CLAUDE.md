@@ -217,6 +217,25 @@ Jerarquía exacta de headings:
 - [ ] Fase 5: Backups periódicos a Backblaze B2 + storage/ respaldado.
 - [ ] Fase 6: Migrar bot de Telegram al mismo VPS.
 
+## Estado de Propuestas v2 (v7.1 — trabajo reciente)
+
+Handoff completo con lo hecho, lo pendiente (deploy/negocio/deuda) y los archivos
+clave: **`docs/pendientes/estado-proposals-v2.md`**. Puntos que suelen morder:
+
+- El **constructor ya no es página**: es un **modal** (`ProposalBuilderModal` +
+  `LargeModal`); `/leads/:leadId/propuesta` se eliminó (redirige a `/ventas`).
+- El **panel del lead** es un `LargeModal` centrado (no `<aside>`), con dos columnas.
+- `GET /api/leads/:leadId/proposals` devuelve la **lista unificada** (propuestas
+  nuevas `ProposalV2Version` + viejas `ProposalGeneration`).
+- **Adjuntos por lead** viven en `FileAttachment` (campo `leadId`), no hay modelo
+  dedicado; se copian al proyecto al convertir (`copyLeadAttachmentsToProject`).
+- Cálculo: `/draft/calc` es **admin-only**; `/draft/viability` es **VENTAS:VIEW**.
+- **Baseline `tsc` server = 5** (no 7). Suites de test nuevas: `npm run
+  test:proposal*`, `test:lead-proposals`, `test:viability`, `test:lead-attachments`.
+- **Prod**: el `docker-compose.prod.yml` solo forwardea 7 env al server — faltan
+  `SMTP_ENCRYPTION_KEY`, `ANTHROPIC/OPENAI_API_KEY`, `SMTP_*`, `TWILIO_*` (ver
+  DEPLOY.md §2), y hay scripts one-off de plantilla de email a correr (DEPLOY.md §6).
+
 ## Última feature mergeada — v6.2 (31 de mayo de 2026)
 
 **Finanzas — Estado de resultados en USD y mejoras de Flujo de fondos**: el "Estado de resultados" (pestaña `/finanzas/resultados`, endpoint `/finance/results`) ahora convierte UYU→USD y muestra todos los montos en dólares (antes los pasaba a pesos). En "Flujo de fondos" se corrigió la proyección de costos fijos que se salteaba un mes cuando el día actual es 31 (`buildFixedCostEventsForRange`, ahora avanza los meses con aritmética en vez de `addMonths` sobre la fecha con día) y se agregó un filtro por tipo de movimiento (toggle on/off, "Todos"/"Ninguno") que afecta el listado, el gráfico y los totales.
