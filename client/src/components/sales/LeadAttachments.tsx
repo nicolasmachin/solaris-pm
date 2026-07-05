@@ -10,6 +10,12 @@ import {
   uploadLeadAttachment,
   type LeadAttachment,
 } from "../../api/leads.api";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
+
+// Whitelist alineada con el server (Tanda 1): PDF, imágenes, Word, Excel. 10 MB.
+const LEAD_ATTACH_ACCEPT = ".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx";
+const LEAD_ATTACH_EXTS = [".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx", ".xls", ".xlsx"];
+const LEAD_ATTACH_MAX_MB = 10;
 
 const MONTHS_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
@@ -44,6 +50,7 @@ export function LeadAttachments({ leadId, canEdit }: { leadId: string; canEdit: 
   const qc = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<LeadAttachment | null>(null);
 
   const { data: attachments = [], isLoading } = useQuery({
     queryKey: ["lead-attachments", leadId],
@@ -73,14 +80,22 @@ export function LeadAttachments({ leadId, canEdit }: { leadId: string; canEdit: 
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    if (inputRef.current) inputRef.current.value = "";
     if (!file) return;
+
+    // Validación en cliente (el server re-valida, autoritativo).
+    const ext = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+    if (!LEAD_ATTACH_EXTS.includes(ext)) {
+      toast.error("Tipo de archivo no soportado. Se permiten: PDF, JPG, PNG, Word, Excel.");
+      return;
+    }
+    if (file.size > LEAD_ATTACH_MAX_MB * 1024 * 1024) {
+      toast.error(`El archivo supera el límite de ${LEAD_ATTACH_MAX_MB} MB.`);
+      return;
+    }
+
     setUploading(true);
-    uploadMut.mutate(file, {
-      onSettled: () => {
-        setUploading(false);
-        if (inputRef.current) inputRef.current.value = "";
-      },
-    });
+    uploadMut.mutate(file, { onSettled: () => setUploading(false) });
   }
 
   function handleDownload(att: LeadAttachment) {
@@ -89,9 +104,9 @@ export function LeadAttachments({ leadId, canEdit }: { leadId: string; canEdit: 
     );
   }
 
-  function handleDelete(att: LeadAttachment) {
-    if (!confirm(`¿Eliminar "${att.filename}"?`)) return;
-    deleteMut.mutate(att.id);
+  function confirmDelete() {
+    if (!deleteTarget) return;
+    deleteMut.mutate(deleteTarget.id, { onSettled: () => setDeleteTarget(null) });
   }
 
   return (
@@ -107,7 +122,7 @@ export function LeadAttachments({ leadId, canEdit }: { leadId: string; canEdit: 
               ref={inputRef}
               type="file"
               hidden
-              accept=".xlsx,.xls,.pdf,.doc,.docx,.pptx,.ppt,.png,.jpg,.jpeg,.zip,.txt,.csv"
+              accept={LEAD_ATTACH_ACCEPT}
               onChange={handleFileSelect}
               disabled={uploading}
             />
@@ -165,7 +180,7 @@ export function LeadAttachments({ leadId, canEdit }: { leadId: string; canEdit: 
                     </button>
                     {canEdit && (
                       <button
-                        onClick={() => handleDelete(a)}
+                        onClick={() => setDeleteTarget(a)}
                         disabled={deleteMut.isPending}
                         title="Eliminar"
                         className="text-[var(--color-text-muted)] hover:text-red-400 p-1 ml-1 disabled:opacity-50"
@@ -180,6 +195,19 @@ export function LeadAttachments({ leadId, canEdit }: { leadId: string; canEdit: 
           </table>
         </div>
       )}
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+        title="Borrar adjunto"
+        description={
+          deleteTarget ? `¿Borrar ${deleteTarget.filename}? Esta acción no se puede deshacer.` : ""
+        }
+        confirmLabel="Borrar"
+        destructive
+        loading={deleteMut.isPending}
+      />
     </div>
   );
 }

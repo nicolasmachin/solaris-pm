@@ -13,19 +13,37 @@ import type { MultipartFile } from "@fastify/multipart";
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { env } from "../../config/env.js";
-import { badRequest } from "../../utils/errors.js";
+import { AppError, badRequest } from "../../utils/errors.js";
 
-// Mismas extensiones que para proyectos (file-storage.service.ts) + un par
-// útiles para ventas (xls, doc, ppt).
-const ALLOWED_LEAD_EXTENSIONS = new Set([
-  ".jpg", ".jpeg", ".png", ".gif", ".webp",
-  ".pdf",
-  ".xlsx", ".xls",
-  ".docx", ".doc",
-  ".pptx", ".ppt",
-  ".zip",
-  ".txt", ".csv",
-]);
+// Whitelist de adjuntos de lead (Tanda 1): solo PDF, imágenes, Word y Excel.
+// Extensión → mimes válidos; se exige que coincidan para resistir renombres.
+const LEAD_ATTACHMENT_TYPES: Record<string, string[]> = {
+  ".pdf": ["application/pdf"],
+  ".jpg": ["image/jpeg"],
+  ".jpeg": ["image/jpeg"],
+  ".png": ["image/png"],
+  ".doc": ["application/msword"],
+  ".docx": ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+  ".xls": ["application/vnd.ms-excel"],
+  ".xlsx": ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+};
+const LEAD_ATTACHMENT_MAX_MB = 10;
+const LEAD_ATTACHMENT_TYPE_ERROR =
+  "Tipo de archivo no soportado. Se permiten: PDF, JPG, PNG, Word, Excel.";
+
+// Valida extensión + mime de un adjunto de lead. Tira badRequest si no matchea.
+// Pura (testeable). Acepta octet-stream cayendo en la extensión.
+export function assertAllowedLeadFile(filename: string, mimetype: string | undefined): void {
+  const extension = path.extname(filename).toLowerCase();
+  const allowedMimes = LEAD_ATTACHMENT_TYPES[extension];
+  if (!allowedMimes) {
+    throw badRequest("INVALID_FILE_TYPE", LEAD_ATTACHMENT_TYPE_ERROR);
+  }
+  const mime = (mimetype || "").toLowerCase();
+  if (mime && mime !== "application/octet-stream" && !allowedMimes.includes(mime)) {
+    throw badRequest("INVALID_FILE_TYPE", LEAD_ATTACHMENT_TYPE_ERROR);
+  }
+}
 
 function storageRootForLead(leadId: string): string {
   return path.resolve(process.cwd(), "..", env.storagePath, "leads", leadId);
@@ -44,10 +62,8 @@ function absolutePathFromUrl(relativeUrl: string): string {
  * para insertar el FileAttachment correspondiente.
  */
 export async function saveLeadAttachment(file: MultipartFile, leadId: string) {
+  assertAllowedLeadFile(file.filename, file.mimetype);
   const extension = path.extname(file.filename).toLowerCase();
-  if (!ALLOWED_LEAD_EXTENSIONS.has(extension)) {
-    throw badRequest("INVALID_FILE_TYPE", "El tipo de archivo no está permitido");
-  }
 
   const dir = storageRootForLead(leadId);
   await fsPromises.mkdir(dir, { recursive: true });
@@ -59,10 +75,10 @@ export async function saveLeadAttachment(file: MultipartFile, leadId: string) {
   await pipeline(file.file, writeStream);
 
   const stats = await fsPromises.stat(absolutePath);
-  const maxBytes = env.maxFileSizeMb * 1024 * 1024;
+  const maxBytes = LEAD_ATTACHMENT_MAX_MB * 1024 * 1024;
   if (stats.size > maxBytes) {
     await fsPromises.unlink(absolutePath).catch(() => undefined);
-    throw badRequest("FILE_TOO_LARGE", `El archivo supera el límite de ${env.maxFileSizeMb} MB`);
+    throw new AppError(413, "FILE_TOO_LARGE", `El archivo supera el límite de ${LEAD_ATTACHMENT_MAX_MB} MB.`);
   }
 
   return {
