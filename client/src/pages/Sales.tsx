@@ -36,6 +36,7 @@ import { LeadToProjectModal } from "../components/sales/LeadToProjectModal";
 import { LostReasonModal } from "../components/sales/LostReasonModal";
 import { MarkAsWonModal } from "../components/sales/MarkAsWonModal";
 import { LeadProposalsList } from "../components/sales/LeadProposalsList";
+import { LargeModal } from "../components/ui/LargeModal";
 import { ProposalBuilderModal } from "../components/proposals-v2/ProposalBuilderModal";
 import { ProposalPreviewModal } from "../components/sales/ProposalPreviewModal";
 import { StageSelect } from "../components/sales/StageSelect";
@@ -722,11 +723,11 @@ function LeadPanel({
 
   if (isLoading || !lead) {
     return (
-      <aside className="fixed right-0 top-[52px] z-40 h-[calc(100vh-52px)] w-full max-w-[420px] border-l border-[var(--color-border)] bg-[var(--color-bg-card)] p-6">
-        <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+      <LargeModal open onClose={onClose} size="wide" ariaLabel="Detalle del lead">
+        <div className="flex h-full items-center justify-center gap-2 text-sm text-[var(--color-text-secondary)]">
           <Spinner size={18} /> Cargando lead...
         </div>
-      </aside>
+      </LargeModal>
     );
   }
 
@@ -746,9 +747,9 @@ function LeadPanel({
 
   return (
     <>
-      <div className="fixed inset-0 z-30 bg-black/40" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }} />
-      <aside className="fixed right-0 top-[52px] z-40 h-[calc(100vh-52px)] w-full max-w-[420px] overflow-y-auto border-l border-[var(--color-border)] bg-[var(--color-bg-sidebar)] p-5 pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-5">
-        <div className="mb-5 flex items-start justify-between gap-3">
+      <LargeModal open onClose={onClose} size="wide" ariaLabel="Detalle del lead">
+        <div className="flex h-full flex-col">
+        <div className="shrink-0 border-b border-[var(--color-border)] px-5 py-3">
           <div>
             <div className="mb-1 flex items-center gap-2">
               <h2 className="font-display text-lg font-bold text-[var(--color-text-primary)]">{lead.clientName}</h2>
@@ -760,8 +761,6 @@ function LeadPanel({
             </div>
             <p className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">{lead.code}</p>
           </div>
-          <button className="rounded p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-bg-card)]" onClick={onClose} type="button">✕</button>
-        </div>
 
         {lead.stage === WON_STAGE || lead.stage === LOST_STAGE ? (
           <div className="mb-5 flex flex-col items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
@@ -808,6 +807,10 @@ function LeadPanel({
             </button>
           </div>
         )}
+        </div>
+
+        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-2">
+        <div className="min-h-0 overflow-y-auto border-b border-[var(--color-border)] p-5 lg:border-b-0 lg:border-r">
 
         <section className="mb-5 space-y-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
           <div className="grid gap-3">
@@ -905,6 +908,9 @@ function LeadPanel({
             Guardar fechas
           </Button>
         </section>
+        </div>
+
+        <div className="min-h-0 overflow-y-auto p-5">
 
         <section className="mb-5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
           <div className="mb-3 flex items-center justify-between">
@@ -921,6 +927,11 @@ function LeadPanel({
           <LeadProposalsList leadId={leadId} clientName={lead.clientName} />
         </section>
 
+        <section className="mb-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
+          <h3 className="mb-3 text-sm font-semibold text-[var(--color-text-primary)]">Adjuntos</h3>
+          <LeadAttachments leadId={lead.id} canEdit={canEditSales} />
+        </section>
+
         <section className="mb-5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
           <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Historial de actividad</p>
           <div className="space-y-2">
@@ -934,11 +945,6 @@ function LeadPanel({
               </div>
             ))}
           </div>
-        </section>
-
-        <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
-          <h3 className="mb-3 text-sm font-semibold text-[var(--color-text-primary)]">Adjuntos</h3>
-          <LeadAttachments leadId={lead.id} canEdit={canEditSales} />
         </section>
 
         <CommentThread leadId={lead.id} level="lead" />
@@ -963,7 +969,10 @@ function LeadPanel({
             </button>
           </section>
         ) : null}
-      </aside>
+        </div>
+        </div>
+        </div>
+      </LargeModal>
 
       <LostReasonModal
         open={pendingStage === LOST_STAGE}

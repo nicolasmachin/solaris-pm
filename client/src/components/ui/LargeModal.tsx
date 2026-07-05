@@ -10,14 +10,20 @@ export function LargeModal({
   onClose,
   children,
   ariaLabel,
+  size = "full",
 }: {
   open: boolean;
   onClose: () => void;
   children: ReactNode;
   ariaLabel?: string;
+  // "full" = ~90% viewport (constructor). "wide" = centrado max-w-6xl (panel del lead).
+  size?: "full" | "wide";
 }) {
   useLockBodyScroll(open);
   if (!open) return null;
+
+  const panelSize =
+    size === "wide" ? "h-[90vh] w-full max-w-6xl" : "h-[94vh] w-[94vw] xl:h-[90vh] xl:w-[90vw]";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
@@ -27,7 +33,7 @@ export function LargeModal({
         role="dialog"
         aria-modal="true"
         aria-label={ariaLabel}
-        className="relative flex h-[94vh] w-[94vw] flex-col overflow-hidden rounded-xl bg-[var(--color-bg-app)] shadow-2xl xl:h-[90vh] xl:w-[90vw]"
+        className={`relative flex ${panelSize} flex-col overflow-hidden rounded-xl bg-[var(--color-bg-app)] shadow-2xl`}
       >
         <div className="flex h-10 shrink-0 items-center justify-end border-b border-[var(--color-border)] px-2">
           <button
