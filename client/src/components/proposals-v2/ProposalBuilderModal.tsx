@@ -9,6 +9,7 @@ import { buildInitialDraftData, draftEquals, mergeDraft, validateDraft } from ".
 import { useDraftAutosave } from "../../hooks/useDraftAutosave";
 import { useDraftPreview } from "../../hooks/useDraftPreview";
 import { useProposalDefaults } from "../../hooks/useProposalDefaults";
+import { useViabilityIndicators } from "../../hooks/useViabilityIndicators";
 import { useAuthStore } from "../../store/auth.store";
 import type { ProposalDraftData } from "../../types/proposals-v2";
 import { Button } from "../ui/Button";
@@ -20,6 +21,7 @@ import { ProposalForm } from "./ProposalForm";
 import { ProposalPreview } from "./ProposalPreview";
 import { PublishButton } from "./PublishButton";
 import { PublishModal } from "./PublishModal";
+import { ViabilityIndicators } from "./ViabilityIndicators";
 
 function errMsg(e: unknown): string | undefined {
   return (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
@@ -131,6 +133,14 @@ export function ProposalBuilderModal({ leadId, onClose }: { leadId: string; onCl
   const isAdmin = user?.role === "ADMIN";
   const [debugOpen, setDebugOpen] = useState(false);
 
+  // Indicadores de viabilidad (ahorro % + espacio) en el sub-header.
+  const viability = useViabilityIndicators({
+    leadId,
+    savedTick: autosave.savedTick,
+    enabled: Boolean(leadId),
+    autosaveError: autosaveBlocked,
+  });
+
   const loading = leadQuery.isLoading || defaultsQuery.isLoading || draftQuery.isLoading || !data;
   const lead = leadQuery.data;
 
@@ -160,6 +170,7 @@ export function ProposalBuilderModal({ leadId, onClose }: { leadId: string; onCl
                 lastSavedAt={autosave.lastSavedAt}
                 onRetry={autosave.retryNow}
               />
+              <ViabilityIndicators data={viability.data} stale={viability.stale} />
               <Button size="sm" variant="secondary" className="md:hidden" onClick={() => setMobilePreviewOpen(true)}>
                 Ver preview
               </Button>

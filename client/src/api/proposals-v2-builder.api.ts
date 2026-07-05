@@ -8,6 +8,7 @@ import type {
   ProposalDraftResponse,
   ProposalVersionDetail,
   ProposalVersionListItem,
+  ViabilityResult,
 } from "../types/proposals-v2";
 
 const P = "/api/proposals-v2";
@@ -62,6 +63,12 @@ export const proposalsV2BuilderApi = {
     const { data } = await api.get<Blob>(`${P}/leads/${leadId}/draft/preview.pdf`, {
       responseType: "blob",
     });
+    return data;
+  },
+
+  // Viabilidad del borrador (VENTAS:VIEW): ahorro % + espacio para el sub-header.
+  getDraftViability: async (leadId: string): Promise<ViabilityResult> => {
+    const { data } = await api.get<ViabilityResult>(`${P}/leads/${leadId}/draft/viability`);
     return data;
   },
 

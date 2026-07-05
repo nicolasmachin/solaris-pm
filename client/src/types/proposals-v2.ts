@@ -20,6 +20,14 @@ export interface MemoriaSingletonValue {
   unidad: CalcUnidad;
 }
 
+/** Indicadores de viabilidad del borrador (mirror del backend). */
+export interface ViabilityResult {
+  ahorroPorcentaje: number | null;
+  espacioOcupado: number | null;
+  espacioDisponible: number | null;
+  estado: "ok" | "warning" | "error" | "unknown";
+}
+
 /** Fila del drawer de debug: metadata (del server) + valor calculado. */
 export interface CalcDebugRow {
   key: string;
