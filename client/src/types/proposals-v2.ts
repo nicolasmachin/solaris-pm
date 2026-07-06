@@ -25,6 +25,7 @@ export interface ViabilityResult {
   ahorroPorcentaje: number | null;
   espacioOcupado: number | null;
   espacioDisponible: number | null;
+  potenciaPicoKwp: number | null;
   priAnios: number | null;
   precioPorKwConIva: number | null;
   estado: "ok" | "warning" | "error" | "unknown";

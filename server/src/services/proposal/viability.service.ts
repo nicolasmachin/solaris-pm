@@ -11,6 +11,8 @@ export interface ViabilityResult {
   ahorroPorcentaje: number | null;
   espacioOcupado: number | null;
   espacioDisponible: number | null;
+  // Potencia pico del sistema (kWp) = cantidadPaneles × potenciaPanelW / 1000.
+  potenciaPicoKwp: number | null;
   // Tiempo de retorno (PRI) en años y precio por kW con IVA — info del sub-header.
   priAnios: number | null;
   precioPorKwConIva: number | null;
@@ -24,6 +26,7 @@ export function computeViability(input: {
   tamanoM2: number | null;
   pagaMensualPesos: number | null;
   ahorroMensualPesos: number | null;
+  potenciaPanelW?: number | null;
   priAnios?: number | null;
   precioPorKwConIva?: number | null;
 }): ViabilityResult {
@@ -54,10 +57,17 @@ export function computeViability(input: {
     ahorroPorcentaje = Math.round((ahorro / paga) * 100);
   }
 
+  const potenciaPicoKwp =
+    typeof input.cantidadPaneles === "number" && Number.isFinite(input.cantidadPaneles) &&
+    typeof input.potenciaPanelW === "number" && Number.isFinite(input.potenciaPanelW)
+      ? Math.round((input.cantidadPaneles * input.potenciaPanelW) / 10) / 100 // kWp con 2 decimales
+      : null;
+
   return {
     ahorroPorcentaje,
     espacioOcupado,
     espacioDisponible,
+    potenciaPicoKwp,
     priAnios: input.priAnios ?? null,
     precioPorKwConIva: input.precioPorKwConIva ?? null,
     estado,
@@ -70,7 +80,7 @@ export function computeViability(input: {
 export async function computeDraftViability(leadId: string): Promise<ViabilityResult> {
   const draft = await prisma.proposalV2Draft.findUnique({ where: { leadId } });
   const raw = (draft?.data ?? {}) as {
-    sistema?: { cantidadPaneles?: unknown };
+    sistema?: { cantidadPaneles?: unknown; potenciaPanelW?: unknown };
     techo?: { tamanoM2?: unknown };
     factura?: { pagaMensualPesos?: unknown };
   };
@@ -96,6 +106,7 @@ export async function computeDraftViability(leadId: string): Promise<ViabilityRe
     tamanoM2: numOrNull(raw?.techo?.tamanoM2),
     pagaMensualPesos: numOrNull(raw?.factura?.pagaMensualPesos),
     ahorroMensualPesos,
+    potenciaPanelW: numOrNull(raw?.sistema?.potenciaPanelW),
     priAnios,
     precioPorKwConIva,
   });

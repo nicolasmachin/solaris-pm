@@ -10,6 +10,7 @@ export function ViabilityIndicators({ data, stale }: { data: ViabilityResult | u
   const ahorro = data?.ahorroPorcentaje ?? null;
   const ocupado = data?.espacioOcupado ?? null;
   const disponible = data?.espacioDisponible ?? null;
+  const potenciaKwp = data?.potenciaPicoKwp ?? null;
   const priAnios = data?.priAnios ?? null;
   const precioKw = data?.precioPorKwConIva ?? null;
   const estado = data?.estado ?? "unknown";
@@ -35,6 +36,9 @@ export function ViabilityIndicators({ data, stale }: { data: ViabilityResult | u
       <span className="inline-flex items-center gap-1 whitespace-nowrap">
         {icon}
         {espacioOk ? `Espacio ${ocupado}/${disponible} m²` : "Espacio —"}
+      </span>
+      <span className="whitespace-nowrap">
+        {potenciaKwp == null ? "Potencia —" : `Potencia ${potenciaKwp.toLocaleString("es-UY", { maximumFractionDigits: 2 })} kWp`}
       </span>
       <span className="whitespace-nowrap">
         {priAnios == null ? "Retorno —" : `Retorno ${priAnios.toLocaleString("es-UY", { maximumFractionDigits: 1 })} años`}

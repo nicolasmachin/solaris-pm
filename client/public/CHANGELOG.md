@@ -21,7 +21,7 @@
 
 - **Propuestas viejas (Excel)**: desde el panel del lead ahora se puede **descargar el Excel** de una propuesta vieja y **descartarla o restaurarla** (con confirmación), igual que las nuevas.
 - **Admin → Propuestas → Defaults**: se agregó la sección **"Generación y dimensionamiento"** para editar el rendimiento anual, los metros cuadrados por panel y los **factores estacionales de generación** (los 12 meses) sin tocar código.
-- **Constructor de propuestas**: la barra de indicadores de arriba ahora muestra también el **tiempo de retorno** (en años) y el **precio por kW con IVA**, además del ahorro y el espacio.
+- **Constructor de propuestas**: la barra de indicadores de arriba ahora muestra también la **potencia pico** (kWp), el **tiempo de retorno** (en años) y el **precio por kW con IVA**, además del ahorro y el espacio.
 
 ### 28 de junio de 2026
 
