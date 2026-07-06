@@ -22,6 +22,22 @@ export function resolveDefaults(rawDefaults: unknown): ProposalDefaultsResolved 
     return value;
   }
 
+  function numArray(key: string, length: number): number[] {
+    const entry = raw[key];
+    if (typeof entry !== "object" || entry === null || !("value" in entry)) {
+      throw new Error(`Falta la variable de defaults "${key}" — corré el seed de propuestas`);
+    }
+    const value = (entry as { value: unknown }).value;
+    if (
+      !Array.isArray(value) ||
+      value.length !== length ||
+      value.some((v) => typeof v !== "number" || Number.isNaN(v))
+    ) {
+      throw new Error(`La variable de defaults "${key}" debe ser un array de ${length} números`);
+    }
+    return value as number[];
+  }
+
   return {
     precioPanelUsdSinIva: num("precioPanelUsdSinIva"),
     precioEstructuraUsdSinIva: num("precioEstructuraUsdSinIva"),
@@ -37,6 +53,10 @@ export function resolveDefaults(rawDefaults: unknown): ProposalDefaultsResolved 
     precioInversorTriMas: num("precioInversorTriMas"),
     precioMeterMonoUsd: num("precioMeterMonoUsd"),
     precioMeterTriUsd: num("precioMeterTriUsd"),
+
+    rendimientoAnualKwhPorKwp: num("rendimientoAnualKwhPorKwp"),
+    metrosCuadradosPorPanel: num("metrosCuadradosPorPanel"),
+    factoresGeneracionMensual: numArray("factoresGeneracionMensual", 12),
 
     costoFijoTotalPesosMes: num("costoFijoTotalPesosMes"),
     negociosPromedioMes: num("negociosPromedioMes"),

@@ -15,6 +15,9 @@ const ProjectDetail = lazy(() => import("./pages/ProjectDetail").then((module) =
 const Sales = lazy(() => import("./pages/Sales").then((module) => ({ default: module.Sales })));
 const Metrics = lazy(() => import("./pages/Metrics").then((module) => ({ default: module.Metrics })));
 const Settings = lazy(() => import("./pages/Settings").then((module) => ({ default: module.Settings })));
+const ComisionesAsesor = lazy(() =>
+  import("./pages/ComisionesAsesor").then((module) => ({ default: module.ComisionesAsesor })),
+);
 const Admin = lazy(() => import("./pages/Admin").then((module) => ({ default: module.Admin })));
 const CalculatorMemoryPage = lazy(() =>
   import("./pages/CalculatorMemoryPage").then((module) => ({ default: module.CalculatorMemoryPage })),
@@ -201,6 +204,14 @@ export function App() {
           }
         />
         <Route path="/sales" element={<Navigate to="/ventas" replace />} />
+        <Route
+          path="/comisiones"
+          element={
+            <PermissionRoute module="COMISIONES" action="VIEW">
+              <ComisionesAsesor />
+            </PermissionRoute>
+          }
+        />
         {/* El constructor dejó de ser página (ahora es modal en el panel del lead).
             Links viejos a esta ruta redirigen a Ventas. */}
         <Route path="/leads/:leadId/propuesta" element={<Navigate to="/ventas" replace />} />

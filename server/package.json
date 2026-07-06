@@ -21,6 +21,7 @@
     "test:lead-attachments": "node --import tsx --test src/services/sales/sales.service.test.ts",
     "test:project-fields": "node --import tsx --test src/validators/projectFields.test.ts",
     "test:interaction-ownership": "node --import tsx --test src/services/clientes/ownership.test.ts",
+    "test:commission": "node --import tsx --test src/services/commission/commission.service.test.ts",
     "save": "bash scripts/save.sh"
   },
   "dependencies": {

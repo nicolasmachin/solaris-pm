@@ -4,6 +4,7 @@ import type {
   ProposalDefaultsData,
 } from "../../../types/proposals-v2";
 import { isFlaggedValue } from "../../../types/proposals-v2";
+import { SeasonalFactorsInput } from "./SeasonalFactorsInput";
 import { VariableInput } from "./VariableInput";
 
 // Etiquetas legibles por variable.
@@ -22,6 +23,8 @@ const LABELS: Record<string, string> = {
   precioInversorTriMas: "Inversor tri ≥51 kW (USD)",
   precioMeterMonoUsd: "Meter monofásico (USD)",
   precioMeterTriUsd: "Meter trifásico (USD)",
+  rendimientoAnualKwhPorKwp: "Rendimiento anual (kWh/kWp)",
+  metrosCuadradosPorPanel: "Metros cuadrados por panel (m²)",
   marcaPanelesDefault: "Marca paneles por defecto",
   marcaInversorDefault: "Marca inversor por defecto",
   costoFijoTotalPesosMes: "Costo fijo total ($/mes)",
@@ -66,7 +69,7 @@ const LABELS: Record<string, string> = {
 };
 
 // Secciones colapsables y qué claves van en cada una.
-const SECTIONS: { title: string; keys?: string[]; nested?: string }[] = [
+const SECTIONS: { title: string; keys?: string[]; nested?: string; custom?: "seasonal" }[] = [
   {
     title: "Precios de equipamiento",
     keys: [
@@ -87,6 +90,11 @@ const SECTIONS: { title: string; keys?: string[]; nested?: string }[] = [
     ],
   },
   { title: "Marcas por defecto", keys: ["marcaPanelesDefault", "marcaInversorDefault"] },
+  {
+    title: "Generación y dimensionamiento",
+    keys: ["rendimientoAnualKwhPorKwp", "metrosCuadradosPorPanel"],
+    custom: "seasonal",
+  },
   {
     title: "Costos del negocio",
     keys: [
@@ -203,6 +211,15 @@ export function ProposalDefaultsForm({
                     />
                   );
                 })}
+            {section.custom === "seasonal" &&
+            data.factoresGeneracionMensual &&
+            isFlaggedValue(data.factoresGeneracionMensual) ? (
+              <SeasonalFactorsInput
+                entry={data.factoresGeneracionMensual}
+                disabled={disabled}
+                onChange={(next) => updateVar("factoresGeneracionMensual", next)}
+              />
+            ) : null}
           </div>
         </details>
       ))}

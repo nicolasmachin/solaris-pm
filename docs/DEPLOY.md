@@ -101,6 +101,13 @@ docker compose -f docker-compose.prod.yml exec server npx tsx prisma/scripts/gra
 docker compose -f docker-compose.prod.yml exec server npx tsx prisma/scripts/grant-markup-porcentaje.ts
 # Permiso de memoria de cálculo (ADMIN → VENTAS:ACCESS_MEMORIA)
 docker compose -f docker-compose.prod.yml exec server npx tsx prisma/scripts/grant-permission-access-memoria.ts
+# Permiso del drawer de debug de calculadora (ADMIN → VENTAS:DEBUG_CALCULADORA)
+docker compose -f docker-compose.prod.yml exec server npx tsx prisma/scripts/grant-permission-debug-calculadora.ts
+# Permisos de Comisiones (ADMIN/FINANZAS/ASESOR → COMISIONES:VIEW) + subcategoría "Comisiones ventas"
+docker compose -f docker-compose.prod.yml exec server npx tsx prisma/scripts/grant-comisiones-permissions.ts
+# Nuevos defaults de calculadora (rendimiento anual, m²/panel, factores estacionales):
+# re-correr el seed de defaults (idempotente, solo agrega las claves que falten).
+docker compose -f docker-compose.prod.yml exec server npx tsx prisma/scripts/seed-proposal-defaults.ts
 
 # Plantilla de email "Consulta UTE": crear si no está + aplicar la firma dinámica.
 # El seed general no corre en prod (guard NODE_ENV) y es create-if-absent, así que

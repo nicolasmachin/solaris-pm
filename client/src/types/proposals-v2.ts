@@ -3,7 +3,7 @@
 
 /** Cada variable de defaults: valor + si el asesor puede sobrescribirlo. */
 export interface FlaggedValue {
-  value: number | string;
+  value: number | string | number[];
   asesorCanOverride: boolean;
 }
 

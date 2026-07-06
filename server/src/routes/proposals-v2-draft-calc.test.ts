@@ -66,20 +66,12 @@ test("buildCalcDebugRows: ordenado por orden, arrays incluidos, cobertura comple
   assert.ok(!rows.some((r) => r.key === "fechaTextoLargo" || r.key === "mesYAnio"));
 });
 
-// ─── makeDraftCalcHandler (gating) ──────────────────────────────────────────
-test("handler: sin usuario → 401", async () => {
-  const handler = makeDraftCalcHandler(async () => okRows);
-  await assert.rejects(() => handler(req(undefined)), (e) => statusOf(e) === 401);
-});
+// ─── makeDraftCalcHandler ───────────────────────────────────────────────────
+// El gating de permiso (VENTAS:DEBUG_CALCULADORA) lo hace el middleware
+// authorize en el registro de la ruta, no el handler. Acá solo se testea la
+// propagación de errores del service y el happy path.
 
-test("handler: usuario no-admin → 403 y no llama al service", async () => {
-  let called = false;
-  const handler = makeDraftCalcHandler(async () => { called = true; return okRows; });
-  await assert.rejects(() => handler(req({ id: "u1", role: "ASESOR_COMERCIAL" })), (e) => statusOf(e) === 403);
-  assert.equal(called, false);
-});
-
-test("handler: admin + draft inexistente → propaga 404", async () => {
+test("handler: draft inexistente → propaga 404", async () => {
   const handler = makeDraftCalcHandler(async () => { throw new AppError(404, "DRAFT_NOT_FOUND", "no hay"); });
   await assert.rejects(() => handler(req({ id: "u1", role: "ADMIN" })), (e) => statusOf(e) === 404);
 });

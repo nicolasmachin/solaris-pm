@@ -18,6 +18,7 @@ import {
   createInteraction,
   getActiveInteraction,
   getClienteFicha,
+  getClienteTimeline,
   getClienteListItem,
   listClientes,
   listClientesForExport,
@@ -124,6 +125,16 @@ export async function registerClientesRoutes(app: FastifyInstance) {
       const ficha = await getClienteFicha(projectId);
       if (!ficha) throw notFound("CLIENTE_NOT_FOUND", "Cliente no encontrado");
       return ficha;
+    },
+  );
+
+  // ─── Timeline unificado (Ventas + Proyecto + Cliente), solo lectura ───────
+  app.get(
+    "/clientes/:projectId/timeline",
+    { preHandler: authorize(Module.EXPERIENCIA_CLIENTES, Action.VIEW) },
+    async (request) => {
+      const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
+      return getClienteTimeline(projectId);
     },
   );
 

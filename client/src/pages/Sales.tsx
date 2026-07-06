@@ -35,6 +35,8 @@ import { LeadAttachments } from "../components/sales/LeadAttachments";
 import { LeadToProjectModal } from "../components/sales/LeadToProjectModal";
 import { LostReasonModal } from "../components/sales/LostReasonModal";
 import { MarkAsWonModal } from "../components/sales/MarkAsWonModal";
+import { CommissionCaptureModal } from "../components/sales/CommissionCaptureModal";
+import { getLeadCommission } from "../api/comisiones.api";
 import { LeadProposalsList } from "../components/sales/LeadProposalsList";
 import { LargeModal } from "../components/ui/LargeModal";
 import { ProposalBuilderModal } from "../components/proposals-v2/ProposalBuilderModal";
@@ -45,6 +47,7 @@ import { useIsMobile } from "../hooks/useIsMobile";
 import { Sheet } from "../components/ui/Sheet";
 import { Button } from "../components/ui/Button";
 import { CanAccess } from "../components/ui/CanAccess";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { Spinner } from "../components/ui/Spinner";
 import { useAuthStore } from "../store/auth.store";
 import type { User } from "../types/api.types";
@@ -599,6 +602,17 @@ function LeadPanel({
   const [pendingStage, setPendingStage] = useState<SalesStage | null>(null);
   const [confirmConvert, setConfirmConvert] = useState(false);
   const [showConversionModal, setShowConversionModal] = useState(false);
+  const [showCommissionModal, setShowCommissionModal] = useState(false);
+  // Etapa destino pendiente de confirmar al reabrir un lead ganado con comisión.
+  const [reopenTarget, setReopenTarget] = useState<SalesStage | null>(null);
+  // ADMIN/FINANZAS pueden cargar la comisión manual (propuestas viejas).
+  const canManualCommission = usePermission("FINANZAS", "VIEW");
+
+  // Comisión del lead (para el aviso al reabrir un ganado).
+  const leadCommissionQuery = useQuery({
+    queryKey: ["lead-commission", leadId],
+    queryFn: () => getLeadCommission(leadId),
+  });
   const [dates, setDates] = useState({ leadCreatedAt: "", proposalSentAt: "", visitScheduledAt: "", visitCompletedAt: "", closedAt: "" });
 
   const { data: lead, isLoading } = useQuery({
@@ -712,7 +726,9 @@ function LeadPanel({
       queryClient.invalidateQueries({ queryKey: ["lead-detail", leadId] });
       queryClient.invalidateQueries({ queryKey: ["lead-groups"] });
       setConfirmConvert(false);
-      setShowConversionModal(true);
+      // Etapa 2: primero capturar la comisión; al cerrar ese modal se ofrece
+      // convertir a proyecto.
+      setShowCommissionModal(true);
     },
     onError: (err) => {
       const msg =
@@ -738,6 +754,12 @@ function LeadPanel({
     }
     if (value === WON_STAGE) {
       setConfirmConvert(true);
+      return;
+    }
+    // Reapertura de un lead ganado con comisión registrada: avisar (la comisión
+    // y su pendiente en Finanzas se mantienen).
+    if (lead.stage === WON_STAGE && leadCommissionQuery.data) {
+      setReopenTarget(value);
       return;
     }
     stageMutation.mutate({ stage: value });
@@ -786,6 +808,25 @@ function LeadPanel({
               >
                 Convertir a proyecto
               </button>
+            ) : null}
+            {lead.stage === WON_STAGE ? (
+              leadCommissionQuery.data ? (
+                <p className="text-xs text-[var(--color-text-secondary)]">
+                  Comisión:{" "}
+                  <span className="font-semibold text-[var(--color-text-primary)]">
+                    US$ {leadCommissionQuery.data.montoUsd.toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>{" "}
+                  · {leadCommissionQuery.data.status === "PAGADA" ? "Pagada" : "Pendiente"}
+                </p>
+              ) : canEditSales ? (
+                <button
+                  type="button"
+                  onClick={() => setShowCommissionModal(true)}
+                  className="text-xs text-[var(--color-accent)] hover:underline"
+                >
+                  Registrar comisión del asesor
+                </button>
+              ) : null
             ) : null}
           </div>
         ) : (
@@ -990,6 +1031,31 @@ function LeadPanel({
         onCancel={() => setConfirmConvert(false)}
         onConfirm={() => markAsWonMutation.mutate()}
         isPending={markAsWonMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={reopenTarget !== null}
+        title="Reabrir lead ganado"
+        description="Este lead tiene una comisión registrada. Se mantiene junto con su pendiente en Finanzas; revisala si corresponde. ¿Reabrir igual?"
+        confirmLabel="Reabrir"
+        loading={stageMutation.isPending}
+        onConfirm={() => {
+          if (reopenTarget) stageMutation.mutate({ stage: reopenTarget });
+          setReopenTarget(null);
+        }}
+        onClose={() => setReopenTarget(null)}
+      />
+
+      <CommissionCaptureModal
+        open={showCommissionModal}
+        leadId={lead.id}
+        leadClientName={lead.clientName}
+        canManual={canManualCommission}
+        onClose={() => {
+          setShowCommissionModal(false);
+          // Si el lead aún no fue convertido, ofrecer la conversión a proyecto.
+          if (!lead.convertedToProject) setShowConversionModal(true);
+        }}
       />
 
       {showConversionModal ? (

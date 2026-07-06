@@ -21,7 +21,7 @@ import { PrismaClient, Prisma } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-type Flagged = { value: number | string; asesorCanOverride: boolean };
+type Flagged = { value: number | string | number[]; asesorCanOverride: boolean };
 
 // Estructura del JSON `data`. Cada variable es { value, asesorCanOverride }.
 const DEFAULT_DATA: Record<string, Flagged | Record<string, Flagged>> = {
@@ -44,6 +44,15 @@ const DEFAULT_DATA: Record<string, Flagged | Record<string, Flagged>> = {
   // ── Meter ──
   precioMeterMonoUsd: { value: 110, asesorCanOverride: false }, // B7 mono
   precioMeterTriUsd: { value: 220, asesorCanOverride: false }, // B7 trifásico
+
+  // ── Generación / dimensionamiento (editables desde Admin) ──
+  rendimientoAnualKwhPorKwp: { value: 1479, asesorCanOverride: false }, // kWh/kWp/año (Uruguay)
+  metrosCuadradosPorPanel: { value: 3, asesorCanOverride: false }, // m² por panel
+  factoresGeneracionMensual: {
+    // Factores estacionales Ene→Dic (SPEC §6.9). Suman 1.0.
+    value: [0.105, 0.095, 0.092, 0.08, 0.07, 0.062, 0.066, 0.074, 0.082, 0.09, 0.092, 0.092],
+    asesorCanOverride: false,
+  },
 
   // ── Marcas (editables por asesor) ──
   marcaPanelesDefault: { value: "Resun", asesorCanOverride: true },

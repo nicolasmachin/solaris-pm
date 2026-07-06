@@ -2,6 +2,25 @@
 
 ## v7.1
 
+### 6 de julio de 2026
+
+#### Comisiones del asesor comercial
+
+- **Nueva sección "Comisiones"** en el menú: cada asesor ve sus comisiones (pendientes y pagadas) con el **saldo total a cobrar** destacado, lo **cobrado en el año**, la **cantidad de ventas cerradas**, un **gráfico mensual** (cobradas vs. proyectadas) y una **tabla** con filtros (todas / pendientes / pagas) y orden por fecha o monto. Un asesor ve solo las suyas; Administración y Finanzas ven las de todos.
+- **Al marcar un lead como Ganado** se abre un paso para **elegir qué propuesta aceptó el cliente** (por defecto la última) y así **registrar la comisión**: se calcula automáticamente sobre esa propuesta y queda **congelada**. Si la venta se cerró con una propuesta vieja, un administrador puede **cargar el monto a mano**.
+- La comisión genera un **pendiente en Finanzas**. Cuando Finanzas lo marca como **pagado**, la comisión pasa sola a **Pagada**. Ese movimiento **no se puede borrar** desde Finanzas (se gestiona desde Comisiones).
+- Si se **reabre** un lead que ya estaba ganado y tenía comisión, se muestra un **aviso** (la comisión y su pendiente se mantienen).
+
+#### Ficha del cliente — Fecha de venta e Historial
+
+- La ficha del cliente ahora muestra la **Fecha de venta** (el momento en que se cerró el lead como ganado), además de la Fecha de entrega. Se completa automáticamente al convertir el lead en proyecto.
+- Nueva pestaña **"Historial"** en la ficha: un único hilo con todo lo que pasó con ese cliente —cambios de etapa en Ventas, comentarios del lead y del proyecto, e interacciones— ordenado por fecha y con una etiqueta que indica de dónde viene cada cosa (Ventas / Proyecto / Cliente).
+
+#### Propuestas y calculadora
+
+- **Propuestas viejas (Excel)**: desde el panel del lead ahora se puede **descargar el Excel** de una propuesta vieja y **descartarla o restaurarla** (con confirmación), igual que las nuevas.
+- **Admin → Propuestas → Defaults**: se agregó la sección **"Generación y dimensionamiento"** para editar el rendimiento anual, los metros cuadrados por panel y los **factores estacionales de generación** (los 12 meses) sin tocar código.
+
 ### 28 de junio de 2026
 
 #### Proyectos — Cierre automático al finalizar el trámite UTE

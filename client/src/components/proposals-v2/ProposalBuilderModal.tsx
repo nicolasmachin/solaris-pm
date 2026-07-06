@@ -10,7 +10,7 @@ import { useDraftAutosave } from "../../hooks/useDraftAutosave";
 import { useDraftPreview } from "../../hooks/useDraftPreview";
 import { useProposalDefaults } from "../../hooks/useProposalDefaults";
 import { useViabilityIndicators } from "../../hooks/useViabilityIndicators";
-import { useAuthStore } from "../../store/auth.store";
+import { usePermission } from "../../hooks/usePermission";
 import type { ProposalDraftData } from "../../types/proposals-v2";
 import { Button } from "../ui/Button";
 import { LargeModal } from "../ui/LargeModal";
@@ -128,9 +128,8 @@ export function ProposalBuilderModal({ leadId, onClose }: { leadId: string; onCl
 
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
 
-  // Drawer de debug de calculadora (solo admin).
-  const { user } = useAuthStore();
-  const isAdmin = user?.role === "ADMIN";
+  // Drawer de debug de calculadora (gate declarativo VENTAS:DEBUG_CALCULADORA).
+  const canDebug = usePermission("VENTAS", "DEBUG_CALCULADORA");
   const [debugOpen, setDebugOpen] = useState(false);
 
   // Indicadores de viabilidad (ahorro % + espacio) en el sub-header.
@@ -174,7 +173,7 @@ export function ProposalBuilderModal({ leadId, onClose }: { leadId: string; onCl
               <Button size="sm" variant="secondary" className="md:hidden" onClick={() => setMobilePreviewOpen(true)}>
                 Ver preview
               </Button>
-              {isAdmin ? (
+              {canDebug ? (
                 <Button
                   size="sm"
                   variant="secondary"
@@ -235,7 +234,7 @@ export function ProposalBuilderModal({ leadId, onClose }: { leadId: string; onCl
             onClose={() => setPublishOpen(false)}
           />
 
-          {isAdmin ? (
+          {canDebug ? (
             <CalculatorDebugDrawer
               open={debugOpen}
               onClose={() => setDebugOpen(false)}

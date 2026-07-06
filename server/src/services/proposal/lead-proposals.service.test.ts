@@ -14,8 +14,8 @@ const input = {
     { id: "v-dis", versionNumber: 2, status: "DISCARDED" as const, publishedAt: d("2026-03-05T12:00:00Z"), clientName: "Jose", totalConIva: 9000 },
   ],
   generations: [
-    { id: "g-done", version: 1, status: "COMPLETED", outputFilePath: "/x.pdf", createdAt: d("2026-03-08T12:00:00Z") },
-    { id: "g-fail", version: 1, status: "FAILED", outputFilePath: null, createdAt: d("2026-03-01T12:00:00Z") },
+    { id: "g-done", version: 1, status: "COMPLETED", outputFilePath: "/x.pdf", inputFilePath: "/x.xlsx", discardedAt: null, createdAt: d("2026-03-08T12:00:00Z") },
+    { id: "g-fail", version: 1, status: "FAILED", outputFilePath: null, inputFilePath: null, discardedAt: null, createdAt: d("2026-03-01T12:00:00Z") },
   ],
   leadClientName: "Jose Gonzalez",
 };
@@ -46,18 +46,37 @@ test("nueva descartada: solo restore", () => {
   });
 });
 
-test("vieja COMPLETED: full + preview; status null; clientName del lead", () => {
+test("vieja COMPLETED con Excel: full + preview + excel + discard; status activa", () => {
   const r = mapProposalListItems(input).find((x) => x.id === "g-done")!;
-  assert.equal(r.status, null);
+  assert.equal(r.status, "activa");
   assert.equal(r.clientName, "Jose Gonzalez");
   assert.equal(r.actions.canDownloadFull, true);
   assert.equal(r.actions.canPreview, true);
-  assert.equal(r.actions.canDownloadExcel, false);
-  assert.equal(r.actions.canDiscard, false);
+  assert.equal(r.actions.canDownloadExcel, true);
+  assert.equal(r.actions.canDiscard, true);
+  assert.equal(r.actions.canRestore, false);
 });
 
-test("vieja FAILED / sin PDF: sin acciones", () => {
+test("vieja FAILED / sin PDF ni Excel: sin descargas, pero descartable", () => {
   const r = mapProposalListItems(input).find((x) => x.id === "g-fail")!;
   assert.equal(r.actions.canDownloadFull, false);
   assert.equal(r.actions.canPreview, false);
+  assert.equal(r.actions.canDownloadExcel, false);
+  assert.equal(r.actions.canDiscard, true);
+});
+
+test("vieja descartada: solo restore", () => {
+  const rows = mapProposalListItems({
+    versions: [],
+    generations: [
+      { id: "g-disc", version: 1, status: "COMPLETED", outputFilePath: "/x.pdf", inputFilePath: "/x.xlsx", discardedAt: d("2026-03-09T12:00:00Z"), createdAt: d("2026-03-08T12:00:00Z") },
+    ],
+    leadClientName: "Jose Gonzalez",
+  });
+  const r = rows[0];
+  assert.equal(r.status, "descartada");
+  assert.deepEqual(r.actions, {
+    canDownloadFull: false, canDownloadSummary: false, canDownloadExcel: false,
+    canPreview: false, canDiscard: false, canRestore: true,
+  });
 });

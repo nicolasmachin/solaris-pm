@@ -40,6 +40,7 @@ export interface ClienteInteraction {
 
 export interface ClienteFicha extends ClienteListItem {
   direccion: string | null;
+  fechaVenta: string | null; // ISO date (YYYY-MM-DD) — cierre del lead como ganado
   tramiteUte: { etapa: string; desde: string | null } | null;
   interacciones: ClienteInteraction[];
   proyectoUrl: string;
@@ -79,6 +80,21 @@ export async function getClientes(
   const { data } = await apiClient.get<ClientesListResponse>("/api/clientes", {
     params: cleanParams({ ...filters, page, pageSize }),
   });
+  return data;
+}
+
+export interface TimelineItem {
+  id: string;
+  source: "sales" | "project" | "client";
+  kind: "stage_change" | "comment" | "interaction";
+  text: string;
+  autor: { id: string; nombre: string } | null;
+  createdAt: string;
+  meta?: Record<string, unknown>;
+}
+
+export async function getClienteTimeline(projectId: string): Promise<TimelineItem[]> {
+  const { data } = await apiClient.get<TimelineItem[]>(`/api/clientes/${projectId}/timeline`);
   return data;
 }
 

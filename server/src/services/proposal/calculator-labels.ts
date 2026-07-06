@@ -33,12 +33,6 @@ export const calculatorLabels = {
     unidad: "",
     orden: 10,
   },
-  energiaMensualKwh: {
-    label: "Energía mensual",
-    descripcion: "Estimación de generación por mes (potencia × 900).",
-    unidad: "kWh",
-    orden: 20,
-  },
   energiaAnualKwh: {
     label: "Energía anual",
     descripcion: "Estimación de generación por año (potencia × 1479).",

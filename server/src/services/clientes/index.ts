@@ -113,6 +113,7 @@ const LIST_SELECT = {
   capacityKwp: true,
   actualEndDate: true,
   plannedEndDate: true,
+  saleDate: true,
   status: true,
   salesperson: { select: { id: true, name: true } },
   stages: {
@@ -316,10 +317,104 @@ export async function getClienteFicha(projectId: string) {
   return {
     ...toListItem(p),
     direccion: p.clientAddress ?? null,
+    // Fecha de venta (cierre del lead como ganado) — se muestra junto a la de entrega.
+    fechaVenta: serializeDateOnly(p.saleDate),
     tramiteUte: ute ? { etapa: ute.currentStage, desde: serializeDateOnly(lastActionAt(ute)) } : null,
     interacciones: p.clientInteractions.map(serializeInteraction),
     proyectoUrl: `/projects/${p.id}`,
   };
+}
+
+// ─── Timeline unificado del cliente ──────────────────────────────────────────
+// Junta las 3 fuentes de historia del cliente en un solo feed ordenado por
+// fecha DESC: actividades de Ventas (del lead), comentarios (lead + proyecto) e
+// interacciones del cliente. Solo lectura.
+
+export interface TimelineItem {
+  id: string;
+  source: "sales" | "project" | "client";
+  kind: "stage_change" | "comment" | "interaction";
+  text: string;
+  autor: { id: string; nombre: string } | null;
+  createdAt: string; // ISO
+  meta?: Record<string, unknown>;
+}
+
+export async function getClienteTimeline(projectId: string): Promise<TimelineItem[]> {
+  const lead = await prisma.salesLead.findFirst({
+    where: { convertedToProjectId: projectId },
+    select: { id: true },
+  });
+
+  const items: TimelineItem[] = [];
+
+  // 1. Actividades de Ventas (del lead que originó el proyecto).
+  if (lead) {
+    const acts = await prisma.salesActivity.findMany({
+      where: { leadId: lead.id },
+      select: {
+        id: true, action: true, notes: true, fromStage: true, toStage: true, createdAt: true,
+        user: { select: { id: true, name: true } },
+      },
+    });
+    for (const a of acts) {
+      const text = a.notes ?? (a.toStage ? `Cambió de etapa a ${a.toStage}` : a.action);
+      items.push({
+        id: `sa-${a.id}`,
+        source: "sales",
+        kind: "stage_change",
+        text,
+        autor: a.user ? { id: a.user.id, nombre: a.user.name } : null,
+        createdAt: serializeDate(a.createdAt) ?? "",
+        meta: { action: a.action, fromStage: a.fromStage, toStage: a.toStage },
+      });
+    }
+  }
+
+  // 2. Comentarios: del lead + del proyecto (solo de nivel superior, sin
+  //    stage/substage/checklist/task).
+  const comments = await prisma.comment.findMany({
+    where: {
+      deletedAt: null,
+      OR: [
+        ...(lead ? [{ leadId: lead.id }] : []),
+        { projectId, stageId: null, substageId: null, checklistItemId: null, taskId: null },
+      ],
+    },
+    select: {
+      id: true, content: true, leadId: true, createdAt: true,
+      author: { select: { id: true, name: true } },
+    },
+  });
+  for (const c of comments) {
+    items.push({
+      id: `cm-${c.id}`,
+      source: c.leadId ? "sales" : "project",
+      kind: "comment",
+      text: c.content,
+      autor: c.author ? { id: c.author.id, nombre: c.author.name } : null,
+      createdAt: serializeDate(c.createdAt) ?? "",
+    });
+  }
+
+  // 3. Interacciones del cliente (de la ficha).
+  const interactions = await prisma.clientInteraction.findMany({
+    where: { projectId, deletedAt: null },
+    select: INTERACTION_SELECT,
+  });
+  for (const i of interactions) {
+    items.push({
+      id: `ci-${i.id}`,
+      source: "client",
+      kind: "interaction",
+      text: i.content,
+      autor: { id: i.author.id, nombre: i.author.name },
+      createdAt: serializeDate(i.createdAt) ?? "",
+      meta: { channel: i.channel },
+    });
+  }
+
+  return items.sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
 }
 
 // ─── Bitácora ────────────────────────────────────────────────────────────────

@@ -6,6 +6,7 @@ import {
   Calendar,
   TrendingUp,
   Wallet,
+  Coins,
   Package,
   BarChart3,
   Users,
@@ -180,6 +181,12 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
             <NavLink to="/finanzas" className={linkClass}>
               <Wallet size={18} className="shrink-0" />
               <span>Finanzas</span>
+            </NavLink>
+          </CanAccess>
+          <CanAccess module="COMISIONES" action="VIEW">
+            <NavLink to="/comisiones" className={linkClass}>
+              <Coins size={18} className="shrink-0" />
+              <span>Comisiones</span>
             </NavLink>
           </CanAccess>
           <CanAccess module="STOCK" action="VIEW">

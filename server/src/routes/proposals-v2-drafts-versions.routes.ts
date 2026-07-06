@@ -37,14 +37,10 @@ function ensureUser(request: FastifyRequest) {
   return request.user;
 }
 
-// Handler del endpoint de debug de cálculo. Fábrica con inyección del service
-// (getRows) para poder testear el gating (rol/draft) sin tocar la BD.
+// Handler del endpoint de debug de cálculo. El gating de permiso lo hace el
+// middleware authorize(VENTAS, DEBUG_CALCULADORA) en el registro de la ruta.
 export function makeDraftCalcHandler(getRows: (leadId: string) => Promise<CalcDebugRow[]>) {
   return async (request: FastifyRequest) => {
-    const user = ensureUser(request);
-    if (user.role !== "ADMIN") {
-      throw forbidden("Solo un administrador puede ver el detalle de cálculo del borrador.");
-    }
     const { leadId } = leadParams.parse(request.params);
     return { rows: await getRows(leadId) };
   };
@@ -126,7 +122,7 @@ export async function registerProposalsV2DraftsVersionsRoutes(app: FastifyInstan
   // filas ya armadas (label/descripción/unidad/valor/orden). ~50ms, sin PDF.
   app.get(
     "/proposals-v2/leads/:leadId/draft/calc",
-    { preHandler: authorize(Module.VENTAS, Action.VIEW) },
+    { preHandler: authorize(Module.VENTAS, Action.DEBUG_CALCULADORA) },
     makeDraftCalcHandler(computeDraftCalcRows),
   );
 

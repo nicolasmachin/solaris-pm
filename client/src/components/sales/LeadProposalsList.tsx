@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { Download, Eye, FileText, RotateCcw, Trash2 } from "lucide-react";
+import { Download, Eye, FileSpreadsheet, FileText, RotateCcw, Trash2 } from "lucide-react";
 
-import { downloadProposal } from "../../api/leads.api";
+import { discardProposal, downloadProposal, downloadProposalExcel, restoreProposal } from "../../api/leads.api";
 import { proposalsV2BuilderApi } from "../../api/proposals-v2-builder.api";
 import { useLeadProposals } from "../../hooks/useLeadProposals";
 import type { ProposalListItem } from "../../types/leads.types";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { Spinner } from "../ui/Spinner";
 import { ProposalPreviewModal } from "./ProposalPreviewModal";
 
@@ -51,20 +52,27 @@ function IconBtn({ title, onClick, danger, children }: { title: string; onClick:
 export function LeadProposalsList({ leadId, clientName }: { leadId: string; clientName: string }) {
   const [includeDiscarded, setIncludeDiscarded] = useState(false);
   const [preview, setPreview] = useState<{ url: string; title: string } | null>(null);
+  const [confirmDiscard, setConfirmDiscard] = useState<ProposalListItem | null>(null);
   const q = useLeadProposals(leadId, includeDiscarded);
   const qc = useQueryClient();
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["lead-proposals", leadId] });
   const discardMut = useMutation({
-    mutationFn: (id: string) => proposalsV2BuilderApi.discardVersion(id),
-    onSuccess: () => { toast.success("Propuesta descartada"); invalidate(); },
+    mutationFn: (p: ProposalListItem) =>
+      p.tipo === "nueva" ? proposalsV2BuilderApi.discardVersion(p.id) : discardProposal(p.id),
+    onSuccess: () => { toast.success("Propuesta descartada"); invalidate(); setConfirmDiscard(null); },
     onError: () => toast.error("No se pudo descartar"),
   });
   const restoreMut = useMutation({
-    mutationFn: (id: string) => proposalsV2BuilderApi.restoreVersion(id),
+    mutationFn: (p: ProposalListItem) =>
+      p.tipo === "nueva" ? proposalsV2BuilderApi.restoreVersion(p.id) : restoreProposal(p.id),
     onSuccess: () => { toast.success("Propuesta restaurada"); invalidate(); },
     onError: () => toast.error("No se pudo restaurar"),
   });
+
+  function downloadExcel(p: ProposalListItem) {
+    downloadProposalExcel(p.id, `${fileBase(p)}.xlsx`).catch(() => toast.error("No se pudo descargar el Excel"));
+  }
 
   const fileBase = (p: ProposalListItem) =>
     `propuesta-${sanitize(clientName)}${p.versionNumber != null ? `-v${p.versionNumber}` : ""}`;
@@ -151,13 +159,18 @@ export function LeadProposalsList({ leadId, clientName }: { leadId: string; clie
                       <FileText size={15} /> Resumen
                     </IconBtn>
                   )}
+                  {p.actions.canDownloadExcel && (
+                    <IconBtn title="Descargar Excel" onClick={() => downloadExcel(p)}>
+                      <FileSpreadsheet size={15} /> Excel
+                    </IconBtn>
+                  )}
                   {p.actions.canDiscard && (
-                    <IconBtn title="Descartar" danger onClick={() => discardMut.mutate(p.id)}>
+                    <IconBtn title="Descartar" danger onClick={() => setConfirmDiscard(p)}>
                       <Trash2 size={15} />
                     </IconBtn>
                   )}
                   {p.actions.canRestore && (
-                    <IconBtn title="Restaurar" onClick={() => restoreMut.mutate(p.id)}>
+                    <IconBtn title="Restaurar" onClick={() => restoreMut.mutate(p)}>
                       <RotateCcw size={15} />
                     </IconBtn>
                   )}
@@ -173,6 +186,17 @@ export function LeadProposalsList({ leadId, clientName }: { leadId: string; clie
         onClose={() => setPreview(null)}
         pdfUrl={preview?.url ?? ""}
         title={preview?.title ?? ""}
+      />
+
+      <ConfirmDialog
+        open={confirmDiscard !== null}
+        title="Descartar propuesta"
+        description="La propuesta se marca como descartada. Podés restaurarla después con el toggle 'Ver descartadas'."
+        confirmLabel="Descartar"
+        destructive
+        loading={discardMut.isPending}
+        onConfirm={() => confirmDiscard && discardMut.mutate(confirmDiscard)}
+        onClose={() => setConfirmDiscard(null)}
       />
     </div>
   );

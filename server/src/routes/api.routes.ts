@@ -61,6 +61,7 @@ import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize, authorizeAny, clearPermissionCache } from "../middleware/authorize.middleware.js";
 import { authorizeByStageContext, authorizeProjectEditAnyPipeline } from "../middleware/authorize-by-stage.middleware.js";
 import { createAuditEntriesForChanges, createAuditEntry } from "../services/audit.service.js";
+import { syncCommissionFromMovement } from "../services/commission/sync-commission-status.js";
 import { listLeadProposals } from "../services/proposal/lead-proposals.service.js";
 import { createPlanPagos, getPlanPagos } from "../services/planPagos.service.js";
 import { generateUteDocs, getOrCreateConfig as getOrCreateUteDocConfig, upsertConfig as upsertUteDocConfig } from "../services/ute-docs/generator.js";
@@ -6871,6 +6872,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         clientAddress,
         status: ProjectStatus.ACTIVE,
         startDate,
+        // Fecha de venta = momento en que se cerró el lead como ganado (Tanda 3).
+        saleDate: lead.closedAt ?? null,
         plannedEndDate,
         budgetUsd: new Prisma.Decimal(budgetUsdFinal),
         executedUsd: new Prisma.Decimal(0),
@@ -7129,6 +7132,55 @@ export async function registerApiRoutes(app: FastifyInstance) {
     reply.header("Content-Type", "application/pdf");
     reply.header("Content-Disposition", `attachment; filename=\"propuesta-${proposal.id}.pdf\"`);
     return reply.send(fs.createReadStream(proposal.outputFilePath));
+  });
+
+  // Descarga del Excel de entrada de una propuesta vieja (inputFilePath). 404
+  // claro si no está disponible. Ruta absoluta en disco.
+  app.get("/proposals/:id/download-excel", { preHandler: authorize(Module.VENTAS, Action.VIEW) }, async (request, reply) => {
+    const params = z.object({ id: z.string() }).parse(request.params);
+    const proposal = await prisma.proposalGeneration.findUnique({ where: { id: params.id } });
+    if (!proposal) throw notFound("PROPOSAL_NOT_FOUND", "Propuesta no encontrada");
+    if (!proposal.inputFilePath) throw notFound("PROPOSAL_EXCEL_NOT_FOUND", "El Excel de esta propuesta no está disponible.");
+    if (!fs.existsSync(proposal.inputFilePath)) throw notFound("PROPOSAL_EXCEL_FILE_NOT_FOUND", "El archivo Excel no existe en disco.");
+    const ext = path.extname(proposal.inputFilePath).toLowerCase() || ".xlsx";
+    const ctype = ext === ".xls"
+      ? "application/vnd.ms-excel"
+      : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    reply.header("Content-Type", ctype);
+    reply.header("Content-Disposition", `attachment; filename=\"propuesta-${proposal.id}${ext}\"`);
+    return reply.send(fs.createReadStream(proposal.inputFilePath));
+  });
+
+  // Descartar / restaurar una propuesta vieja (soft-delete, paridad con las nuevas).
+  app.delete("/proposals/:id", { preHandler: authorize(Module.VENTAS, Action.DELETE) }, async (request) => {
+    const user = ensureUser(request);
+    const params = z.object({ id: z.string() }).parse(request.params);
+    const proposal = await prisma.proposalGeneration.findUnique({ where: { id: params.id } });
+    if (!proposal) throw notFound("PROPOSAL_NOT_FOUND", "Propuesta no encontrada");
+    if (proposal.status === "PROCESSING") throw badRequest("PROPOSAL_PROCESSING", "No se puede descartar una propuesta en proceso.");
+    if (!proposal.discardedAt) {
+      await prisma.proposalGeneration.update({ where: { id: params.id }, data: { discardedAt: new Date() } });
+      await createAuditEntry({
+        entityType: AuditEntityType.proposal, entityId: proposal.id, projectId: proposal.projectId,
+        userId: user.id, action: AuditAction.deleted, description: `Descartó propuesta vieja v${proposal.version}`,
+      });
+    }
+    return { success: true };
+  });
+
+  app.post("/proposals/:id/restore", { preHandler: authorize(Module.VENTAS, Action.EDIT) }, async (request) => {
+    const user = ensureUser(request);
+    const params = z.object({ id: z.string() }).parse(request.params);
+    const proposal = await prisma.proposalGeneration.findUnique({ where: { id: params.id } });
+    if (!proposal) throw notFound("PROPOSAL_NOT_FOUND", "Propuesta no encontrada");
+    if (proposal.discardedAt) {
+      await prisma.proposalGeneration.update({ where: { id: params.id }, data: { discardedAt: null } });
+      await createAuditEntry({
+        entityType: AuditEntityType.proposal, entityId: proposal.id, projectId: proposal.projectId,
+        userId: user.id, action: AuditAction.updated, description: `Restauró propuesta vieja v${proposal.version}`,
+      });
+    }
+    return { success: true };
   });
 
   // Lista UNIFICADA: propuestas nuevas (ProposalV2Version) + viejas
@@ -13404,7 +13456,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
               },
               orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
             })
-          : prisma.payment.findMany({ where: { id: "__never__" } }),
+          : prisma.payment.findMany({
+              where: { id: "__never__" },
+              include: {
+                supplier: { select: { id: true, nombre: true } },
+                account: { select: { id: true, nombre: true, moneda: true } },
+                applications: {
+                  include: { movement: { select: { id: true, descripcion: true, monto: true, moneda: true } } },
+                },
+              },
+            }),
         prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } }),
       ]);
 
@@ -14247,6 +14308,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
         }
       }
 
+      // Espejo del estado de la comisión si cambió el status del movimiento.
+      if (body.status !== undefined && body.status !== existing.status) {
+        await syncCommissionFromMovement(prisma, id, effectiveStatus, {
+          paidDate: effectiveStatus === FinanceMovementStatus.PAGADO ? updated.fecha : null,
+          userId: user.id,
+        });
+      }
       await createAuditEntry({
         entityType: AuditEntityType.finance_movement,
         entityId: id,
@@ -14279,6 +14347,19 @@ export async function registerApiRoutes(app: FastifyInstance) {
         },
       });
       if (!existing) throw notFound("MOVEMENT_NOT_FOUND", "Movimiento no encontrado");
+
+      // Bloqueo: si el movimiento corresponde a una comisión, no se borra desde
+      // Finanzas (se gestiona desde el módulo Comisiones).
+      const linkedCommission = await prisma.commission.findUnique({
+        where: { financeMovementId: id },
+        select: { id: true },
+      });
+      if (linkedCommission) {
+        throw conflict(
+          "MOVEMENT_HAS_COMMISSION",
+          "Este movimiento corresponde a una comisión de asesor; no se puede borrar desde Finanzas.",
+        );
+      }
 
       const apps = existing.paymentApplications;
       const liberadoTotal = apps.reduce((acc, a) => acc + Number(a.montoAplicado), 0);
@@ -14472,6 +14553,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
       }
 
       const updated = await prisma.financeMovement.update({ where: { id }, data });
+      // Espejo del estado de la comisión (si el movimiento es de una comisión).
+      await syncCommissionFromMovement(prisma, id, body.newStatus, {
+        paidDate: body.newStatus === FinanceMovementStatus.PAGADO ? (data.fecha as Date) : null,
+        userId: user.id,
+      });
       await createAuditEntry({
         entityType: AuditEntityType.finance_movement,
         entityId: id,

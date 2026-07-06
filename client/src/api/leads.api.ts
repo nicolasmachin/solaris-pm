@@ -172,6 +172,28 @@ export async function downloadProposal(id: string, filename: string): Promise<vo
   URL.revokeObjectURL(blobUrl);
 }
 
+// Propuestas viejas (ProposalGeneration): descarga del Excel de entrada +
+// descartar / restaurar (soft-delete, paridad con las nuevas).
+export async function downloadProposalExcel(id: string, filename: string): Promise<void> {
+  const response = await api.get<Blob>(`/api/proposals/${id}/download-excel`, { responseType: "blob" });
+  const blobUrl = URL.createObjectURL(response.data);
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(blobUrl);
+}
+
+export async function discardProposal(id: string): Promise<void> {
+  await api.delete(`/api/proposals/${id}`);
+}
+
+export async function restoreProposal(id: string): Promise<void> {
+  await api.post(`/api/proposals/${id}/restore`, {});
+}
+
 // ─── Adjuntos del lead ────────────────────────────────────────────────────
 
 export interface LeadAttachment {

@@ -84,7 +84,8 @@ function ensureUser(request: FastifyRequest) {
 // Cada variable de defaults es { value, asesorCanOverride }.
 const flaggedSchema = z
   .object({
-    value: z.union([z.number(), z.string()]),
+    // number | string | number[] (los factores estacionales son un array de 12).
+    value: z.union([z.number(), z.string(), z.array(z.number())]),
     asesorCanOverride: z.boolean(),
   })
   .strict();

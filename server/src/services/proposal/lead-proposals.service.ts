@@ -50,6 +50,8 @@ export interface MapProposalsInput {
     version: number;
     status: string; // ProposalStatus (PENDING/PROCESSING/COMPLETED/FAILED)
     outputFilePath: string | null;
+    inputFilePath: string | null;
+    discardedAt: Date | null;
     createdAt: Date;
   }>;
   leadClientName: string;
@@ -74,6 +76,7 @@ export function mapProposalListItems(input: MapProposalsInput): ProposalListItem
   });
 
   const viejas: ProposalListItem[] = input.generations.map((g) => {
+    const descartada = g.discardedAt != null;
     const ready = g.status === "COMPLETED" && Boolean(g.outputFilePath);
     return {
       id: g.id,
@@ -81,8 +84,17 @@ export function mapProposalListItems(input: MapProposalsInput): ProposalListItem
       createdAt: g.createdAt.toISOString(),
       versionNumber: g.version,
       clientName: input.leadClientName,
-      status: null, // las viejas no tienen concepto activa/descartada
-      actions: { ...NO_ACTIONS, canDownloadFull: ready, canPreview: ready },
+      status: descartada ? "descartada" : "activa",
+      // Descartada → solo restaurar (se ocultan las descargas), igual que las nuevas.
+      actions: descartada
+        ? { ...NO_ACTIONS, canRestore: true }
+        : {
+            ...NO_ACTIONS,
+            canDownloadFull: ready,
+            canPreview: ready,
+            canDownloadExcel: Boolean(g.inputFilePath),
+            canDiscard: g.status !== "PROCESSING",
+          },
     };
   });
 
@@ -90,7 +102,7 @@ export function mapProposalListItems(input: MapProposalsInput): ProposalListItem
 }
 
 // Carga las propuestas del lead y devuelve la lista unificada. `includeDiscarded`
-// afecta solo a las nuevas (las viejas no tienen soft-delete y van siempre).
+// afecta a nuevas y viejas (ambas soportan soft-delete).
 export async function listLeadProposals(
   leadId: string,
   includeDiscarded: boolean,
@@ -98,9 +110,12 @@ export async function listLeadProposals(
 ): Promise<ProposalListItem[]> {
   const versions = await listVersions(leadId, { includeDiscarded });
   const generations = await prisma.proposalGeneration.findMany({
-    where: { leadId },
+    where: includeDiscarded ? { leadId } : { leadId, discardedAt: null },
     orderBy: { createdAt: "desc" },
-    select: { id: true, version: true, status: true, outputFilePath: true, createdAt: true },
+    select: {
+      id: true, version: true, status: true, outputFilePath: true,
+      inputFilePath: true, discardedAt: true, createdAt: true,
+    },
   });
 
   return mapProposalListItems({

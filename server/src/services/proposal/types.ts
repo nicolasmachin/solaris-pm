@@ -44,7 +44,6 @@ export interface ProposalItemAdicional {
 export interface ProposalCalculated {
   // Helpers básicos
   potenciaTotalKwp: number;
-  energiaMensualKwh: number;
   energiaAnualKwh: number;
   metrosCuadradosPaneles: number;
 
@@ -127,6 +126,11 @@ export interface ProposalDefaultsResolved {
   precioInversorTriMas: number;
   precioMeterMonoUsd: number;
   precioMeterTriUsd: number;
+
+  // Generación / dimensionamiento (editables desde Admin)
+  rendimientoAnualKwhPorKwp: number; // kWh generados al año por kWp (Uruguay ≈ 1479)
+  metrosCuadradosPorPanel: number; // m² que ocupa cada panel (≈ 3)
+  factoresGeneracionMensual: number[]; // 12 factores estacionales (Ene→Dic), suman 1.0
 
   // Costos fijos en pesos
   costoFijoTotalPesosMes: number;

@@ -3,10 +3,8 @@ import type { ProposalCalculated, ProposalData, ProposalDefaultsResolved } from 
 
 const IVA = 0.22;
 
-// Factores estacionales de generación (SPEC §6.9). Suman 1.0.
-const GENERACION_FACTORES = [
-  0.105, 0.095, 0.092, 0.08, 0.07, 0.062, 0.066, 0.074, 0.082, 0.09, 0.092, 0.092,
-];
+// Factores estacionales de generación (SPEC §6.9). Ahora editables desde el
+// singleton ProposalDefaults (defaults.factoresGeneracionMensual).
 
 const MESES_ES = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",
@@ -68,9 +66,8 @@ export function calculate(
   // ── 1. Helpers básicos ──
   const potenciaTotalKwp = (cantidadPaneles * potenciaPanelW) / 1000;
   const potenciaTotalW = potenciaTotalKwp * 1000;
-  const energiaMensualKwh = potenciaTotalKwp * 900;
-  const energiaAnualKwh = potenciaTotalKwp * 1479;
-  const metrosCuadradosPaneles = cantidadPaneles * 3;
+  const energiaAnualKwh = potenciaTotalKwp * defaults.rendimientoAnualKwhPorKwp;
+  const metrosCuadradosPaneles = cantidadPaneles * defaults.metrosCuadradosPorPanel;
 
   // ── 2. Costos en USD sin IVA ──
   const precioElectrica =
@@ -203,7 +200,9 @@ export function calculate(
   const margen = gananciaFinal / subtotalSinIva;
 
   // ── 9. Gráficos ──
-  const generacionMensualKwh = GENERACION_FACTORES.map((f) => Math.round(energiaAnualKwh * f));
+  const generacionMensualKwh = defaults.factoresGeneracionMensual.map((f) =>
+    Math.round(energiaAnualKwh * f),
+  );
   const retornoInversion16Anios: number[] = [];
   for (let anio = 0; anio <= 15; anio++) {
     retornoInversion16Anios.push(Math.round(-totalFinalConIva + anio * ahorroAnualUsd));
@@ -214,7 +213,6 @@ export function calculate(
 
   return {
     potenciaTotalKwp,
-    energiaMensualKwh,
     energiaAnualKwh,
     metrosCuadradosPaneles,
 

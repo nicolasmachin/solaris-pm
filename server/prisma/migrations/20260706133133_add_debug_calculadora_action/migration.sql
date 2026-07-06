@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "Action" ADD VALUE 'DEBUG_CALCULADORA';

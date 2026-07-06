@@ -245,6 +245,14 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
               >
                 Configuración
               </button>
+              <CanAccess module="COMISIONES" action="VIEW">
+                <button
+                  onClick={() => { setUserMenuOpen(false); navigate("/comisiones"); }}
+                  className="w-full text-left px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors"
+                >
+                  Comisiones
+                </button>
+              </CanAccess>
               <button
                 onClick={() => {
                   clearAuth();

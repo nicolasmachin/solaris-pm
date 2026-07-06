@@ -93,6 +93,7 @@ enum AuditEntityType {
   informe
   email_log
   client_interaction
+  commission
 }
 
 enum AuditAction {
@@ -119,6 +120,8 @@ enum AuditAction {
   proposal_v2_version_discarded
   proposal_v2_version_restored
   proposal_v2_version_pdf_regenerated
+  commission_created
+  commission_paid
 }
 
 enum NotificationType {
@@ -185,6 +188,7 @@ enum Module {
   PORTAL_CLIENTE
   INFORMES
   EXPERIENCIA_CLIENTES
+  COMISIONES
 }
 
 enum Moneda {
@@ -298,6 +302,9 @@ enum Action {
   // ACCESS_MEMORIA = gate de la memoria de cálculo de propuestas
   // (/admin/propuestas/memoria-calculo). Feature admin-only por default.
   ACCESS_MEMORIA
+  // DEBUG_CALCULADORA = gate del drawer de debug de cálculo del borrador
+  // (constructor de propuestas v2). Feature admin-only por default.
+  DEBUG_CALCULADORA
 }
 
 enum SettingLevel {
@@ -403,6 +410,8 @@ model User {
   proposalDefaultsUpdated        ProposalDefaults[]          @relation("ProposalDefaultsUpdatedBy")
   clientInteractions             ClientInteraction[]         @relation("ClientInteractionAuthor")
   clientInteractionsDeleted      ClientInteraction[]         @relation("ClientInteractionDeletedBy")
+  commissions                    Commission[]                @relation("CommissionAsesor")
+  commissionsCreated             Commission[]                @relation("CommissionCreatedBy")
   passwordTemporary              Boolean                     @default(false)
   deletedAt                      DateTime?                   @db.Timestamptz(6)
   createdAt                      DateTime                    @default(now()) @db.Timestamptz(6)
@@ -1072,6 +1081,7 @@ model SalesLead {
   proposals            ProposalGeneration[] @relation("ProposalLead")
   proposalV2Draft      ProposalV2Draft?
   proposalV2Versions   ProposalV2Version[]
+  commission           Commission?
   comments             Comment[]
   attachments          FileAttachment[]     @relation("LeadAttachments")
   deletedAt            DateTime?            @db.Timestamptz(6)
@@ -1143,6 +1153,8 @@ model ProposalGeneration {
   generatedById  String
   generatedBy    User            @relation("ProposalGeneratedBy", fields: [generatedById], references: [id], onDelete: Restrict)
   completedAt    DateTime?       @db.Timestamptz(6)
+  // Soft-delete (descartar/restaurar) — paridad con ProposalV2Version.
+  discardedAt    DateTime?       @db.Timestamptz(6)
   createdAt      DateTime        @default(now()) @db.Timestamptz(6)
   updatedAt      DateTime        @updatedAt @db.Timestamptz(6)
 
@@ -1252,6 +1264,7 @@ model FinanceMovement {
   historial            FinanceApprovalHistory[]
   projectMaterials     ProjectMaterial[]
   reconciliacionAjuste AccountReconciliation?   @relation("ReconciliationAjuste")
+  commission           Commission?
   // Para transferencias entre cuentas: par de movimientos (GASTO origen +
   // INGRESO destino) con el mismo transferGroupId. Permite eliminarlos juntos
   // y mostrarlos como una sola operación en la UI.
@@ -2591,9 +2604,69 @@ model ProposalV2Version {
   discardedBy   User?     @relation("ProposalV2VersionDiscardedBy", fields: [discardedById], references: [id], onDelete: SetNull)
   discardReason String?
 
+  commissions Commission[]
+
   @@unique([leadId, versionNumber])
   @@index([leadId, status])
   @@map("proposal_v2_versions")
+}
+
+enum CommissionStatus {
+  PENDIENTE
+  PAGADA
+}
+
+// Comisión del asesor por una venta cerrada (lead CERRADO_GANADO). El monto se
+// congela del snapshot de la propuesta ganadora (snapshot.calc.comisionVentasUsdSinIva)
+// y se refleja como un FinanceMovement PREVISTO en Finanzas. El estado
+// (PENDIENTE/PAGADA) es espejo del status del movimiento (fuente de verdad = Finanzas).
+model Commission {
+  id String @id @default(cuid())
+
+  // Asesor beneficiario (SalesLead.assignedTo al cerrar).
+  asesorId String
+  asesor   User   @relation("CommissionAsesor", fields: [asesorId], references: [id], onDelete: Restrict)
+
+  // Lead ganado: una comisión por lead.
+  leadId String    @unique
+  lead   SalesLead @relation(fields: [leadId], references: [id], onDelete: Restrict)
+
+  // Propuesta ganadora. Nullable: si el cliente aceptó una propuesta vieja
+  // (ProposalGeneration, sin snapshot) el monto se carga manual y acá queda null,
+  // con la traza en proposalGenerationId.
+  proposalVersionId    String?
+  proposalVersion      ProposalV2Version? @relation(fields: [proposalVersionId], references: [id], onDelete: SetNull)
+  proposalGenerationId String?
+
+  // Monto congelado (snapshot.calc.comisionVentasUsdSinIva) o carga manual admin.
+  montoUsd Decimal @db.Decimal(14, 2)
+  // % aplicado (defaults.comisionVendedorPorcentaje). Null si monto manual.
+  porcentaje Decimal? @db.Decimal(6, 4)
+  // True si el monto se cargó a mano (propuesta vieja sin snapshot).
+  origenManual Boolean @default(false)
+
+  // Fecha de venta = SalesLead.closedAt. dueDate = día 1 del mes siguiente.
+  fechaVenta DateTime @db.Timestamptz(6)
+  dueDate    DateTime @db.Date
+
+  // Estado espejo del FinanceMovement linkeado.
+  status CommissionStatus @default(PENDIENTE)
+  paidAt DateTime?        @db.Timestamptz(6)
+
+  // Pendiente/pago en Finanzas.
+  financeMovementId String?          @unique
+  financeMovement   FinanceMovement? @relation(fields: [financeMovementId], references: [id], onDelete: SetNull)
+
+  createdById String
+  createdBy   User   @relation("CommissionCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  @@index([asesorId])
+  @@index([status])
+  @@index([fechaVenta])
+  @@map("commissions")
 }
 
 model ProposalDefaults {

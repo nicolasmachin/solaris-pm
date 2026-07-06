@@ -6,6 +6,7 @@ import { Spinner } from "../../../components/ui/Spinner";
 import { usePermission } from "../../../hooks/usePermission";
 import { ClienteInteractionForm } from "../components/ClienteInteractionForm";
 import { ClienteInteractionList } from "../components/ClienteInteractionList";
+import { ClienteTimeline } from "../components/ClienteTimeline";
 import { ClienteTramiteUteCard } from "../components/ClienteTramiteUteCard";
 import { EditableCell } from "../components/EditableCell";
 import { EtapaChip } from "../components/EtapaChip";
@@ -13,7 +14,7 @@ import { ESTADO_LABELS } from "../constants";
 import { useClienteFicha } from "../hooks/useClienteFicha";
 import { useUpdateCliente } from "../hooks/useUpdateCliente";
 
-type Tab = "resumen" | "interacciones";
+type Tab = "resumen" | "interacciones" | "historial";
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
@@ -119,6 +120,7 @@ export function ClienteFichaPage() {
         {([
           ["resumen", "Resumen"],
           ["interacciones", "Interacciones"],
+          ["historial", "Historial"],
         ] as const).map(([key, label]) => (
           <button
             key={key}
@@ -145,6 +147,16 @@ export function ClienteFichaPage() {
               <DataItem
                 label="Potencia"
                 value={ficha.potenciaKwp != null ? `${ficha.potenciaKwp} kWp` : "—"}
+              />
+              <DataItem
+                label="Fecha de venta"
+                value={
+                  ficha.fechaVenta ? (
+                    fmtDate(ficha.fechaVenta)
+                  ) : (
+                    <span className="text-[var(--color-text-muted)]">—</span>
+                  )
+                }
               />
               <DataItem
                 label="Fecha de entrega"
@@ -198,10 +210,14 @@ export function ClienteFichaPage() {
           </div>
           <ClienteTramiteUteCard tramiteUte={ficha.tramiteUte} />
         </div>
-      ) : (
+      ) : tab === "interacciones" ? (
         <div className="space-y-4">
           {canCreate && projectId && <ClienteInteractionForm projectId={projectId} />}
           <ClienteInteractionList interacciones={ficha.interacciones} projectId={projectId ?? ""} />
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <ClienteTimeline projectId={projectId ?? ""} />
         </div>
       )}
     </div>

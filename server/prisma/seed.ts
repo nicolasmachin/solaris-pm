@@ -149,7 +149,7 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
   // preserva porque existe en prod y el snapshot de la spec §10 es anterior).
   const matrix: Array<{ roleName: string; module: Module; actions: Action[] }> = [
     // ADMIN
-    { roleName: "ADMIN", module: Module.VENTAS,         actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMMENT, Action.ACCESS_MEMORIA] },
+    { roleName: "ADMIN", module: Module.VENTAS,         actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMMENT, Action.ACCESS_MEMORIA, Action.DEBUG_CALCULADORA] },
     { roleName: "ADMIN", module: Module.ONBOARDING,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { roleName: "ADMIN", module: Module.INGENIERIA,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { roleName: "ADMIN", module: Module.OPERACIONES,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
@@ -166,6 +166,7 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "ADMIN", module: Module.INFORMES,       actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
     { roleName: "ADMIN", module: Module.PORTAL_CLIENTE, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { roleName: "ADMIN", module: Module.EXPERIENCIA_CLIENTES, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { roleName: "ADMIN", module: Module.COMISIONES,    actions: [Action.VIEW] },
 
     // CLIENT
     { roleName: "CLIENT", module: Module.PORTAL_CLIENTE, actions: [Action.VIEW] },
@@ -179,11 +180,13 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "ASESOR_COMERCIAL", module: Module.POSTVENTA,    actions: [Action.VIEW] },
     { roleName: "ASESOR_COMERCIAL", module: Module.TRAMITES_UTE, actions: [Action.VIEW] },
     { roleName: "ASESOR_COMERCIAL", module: Module.EXPERIENCIA_CLIENTES, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { roleName: "ASESOR_COMERCIAL", module: Module.COMISIONES,   actions: [Action.VIEW] },
 
     // FINANZAS
     { roleName: "FINANZAS", module: Module.FINANZAS,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { roleName: "FINANZAS", module: Module.STOCK,        actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { roleName: "FINANZAS", module: Module.TRAMITES_UTE, actions: [Action.VIEW] },
+    { roleName: "FINANZAS", module: Module.COMISIONES,   actions: [Action.VIEW] },
 
     // INGENIERIA
     { roleName: "INGENIERIA", module: Module.ONBOARDING,   actions: [Action.VIEW, Action.COMMENT] },
@@ -1595,6 +1598,7 @@ async function seedFinanceAndStock(
   const subCompra = await upsertSubcat("Compra paneles", CategoriaPrincipal.COMPRA_STOCK);
   await upsertSubcat("Materiales de obra", CategoriaPrincipal.PROYECTO_SALIDA);
   await upsertSubcat("Consumo en obra", CategoriaPrincipal.CONSUMO_STOCK);
+  await upsertSubcat("Comisiones ventas", CategoriaPrincipal.VARIABLE);
 
   // FinanceMovements
   async function upsertMov(

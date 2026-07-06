@@ -19,6 +19,9 @@ export function VariableInput({
   max?: number;
 }) {
   const isNumber = typeof entry.value === "number";
+  // Este input es solo para valores escalares; los arrays (factores estacionales)
+  // se editan con SeasonalFactorsInput. Guarda defensiva para el tipo.
+  const scalarValue = Array.isArray(entry.value) ? "" : entry.value;
 
   return (
     <div className="flex flex-wrap items-center gap-3 py-1.5">
@@ -29,7 +32,7 @@ export function VariableInput({
           step="any"
           min={isNumber ? min : undefined}
           max={isNumber ? max : undefined}
-          value={entry.value}
+          value={scalarValue}
           disabled={disabled}
           onChange={(e) =>
             onChange({
