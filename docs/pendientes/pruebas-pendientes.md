@@ -17,6 +17,7 @@ Estado backend: verificado por API end-to-end (crear, idempotencia, sync a pagad
 - [ ] Gráfico mensual: barras **cobradas (verde)** por mes de pago y **proyectadas (azul)** por mes de vencimiento.
 - [ ] Tabla: filtros **Todas / Pendientes / Pagas** y orden **Por fecha / Por monto** funcionan.
 - [ ] Estado vacío (sin comisiones) se ve prolijo.
+- [ ] **Comisión manual (admin)**: botón "Agregar comisión manual" (visible solo con FINANZAS:CREATE) → elegir asesor + monto + fecha + concepto → aparece en el listado (columna "Cliente" muestra el concepto) y en las métricas; genera pendiente en Finanzas; se puede pagar (sync a Pagada) y no se puede borrar el movimiento (409).
 
 ### Captura al marcar Ganado (en Ventas)
 - [ ] Marcar un lead como **Ganado** → se abre el modal de comisión.
@@ -57,4 +58,6 @@ Estado backend: verificado por API end-to-end (crear, idempotencia, sync a pagad
 - [ ] **Admin → Propuestas → Defaults**: nueva sección **"Generación y dimensionamiento"** con rendimiento anual (1479), m²/panel (3) y la **grilla de 12 factores estacionales** (con indicador de suma = 1.0). Cambiar un valor, guardar, recargar → persiste, y el cálculo de la propuesta lo usa.
 - [ ] **Propuestas viejas** en el panel del lead: botón **"Excel"** descarga el archivo de entrada; **descartar** (con confirmación) y **restaurar** funcionan; el toggle "Ver descartadas" las muestra.
 - [ ] Calculadora sigue dando los mismos números (sacar `energiaMensualKwh` y mover constantes al singleton no cambió resultados).
+- [ ] **Publicar una propuesta nueva funciona** (regresión de T4.7: el snapshot rechazaba el array de factores estacionales). Con un borrador completo, "Publicar" genera la versión sin error.
+- [ ] **Constructor**: la barra de arriba muestra, con un borrador completo, **Retorno N años** y **US$ N/kW c/IVA** (además de Ahorro y Espacio).
 - [ ] (Interno, no visible) Baseline TypeScript del server ahora en **0** (era 5).

@@ -14,10 +14,12 @@ import { authorize, hasPermission } from "../middleware/authorize.middleware.js"
 import {
   commissionMetrics,
   confirmCommission,
+  createManualCommission,
   getLeadCommission,
   listCommissions,
   listEligibleProposals,
 } from "../services/commission/commission.service.js";
+import { parseDateOnly } from "../utils/dates.js";
 import { notFound, unauthorized } from "../utils/errors.js";
 
 // ¿El usuario puede ver comisiones de todos los asesores? (ADMIN/FINANZAS).
@@ -48,6 +50,14 @@ function ensureUser(request: FastifyRequest) {
 }
 
 const leadParams = z.object({ leadId: z.string().min(1) }).strict();
+const manualBody = z
+  .object({
+    asesorId: z.string().min(1),
+    montoUsd: z.number().positive(),
+    fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    concepto: z.string().max(200).optional(),
+  })
+  .strict();
 const confirmBody = z
   .object({
     proposalVersionId: z.string().min(1).optional(),
@@ -96,6 +106,23 @@ export async function registerCommissionRoutes(app: FastifyInstance) {
         proposalVersionId: body.proposalVersionId,
         montoManualUsd: body.montoManualUsd,
         proposalGenerationId: body.proposalGenerationId,
+      });
+    },
+  );
+
+  // Comisión manual cargada por un admin (sin lead). ADMIN/FINANZAS.
+  app.post(
+    "/commissions",
+    { preHandler: authorize(Module.FINANZAS, Action.CREATE) },
+    async (request) => {
+      const user = ensureUser(request);
+      const body = manualBody.parse(request.body);
+      return createManualCommission({
+        asesorId: body.asesorId,
+        montoUsd: body.montoUsd,
+        fecha: parseDateOnly(body.fecha),
+        concepto: body.concepto,
+        userId: user.id,
       });
     },
   );

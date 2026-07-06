@@ -51,7 +51,8 @@ type CommissionRow = Prisma.CommissionGetPayload<Record<string, never>>;
 export interface SerializedCommission {
   id: string;
   asesorId: string;
-  leadId: string;
+  leadId: string | null;
+  concepto: string | null;
   proposalVersionId: string | null;
   proposalGenerationId: string | null;
   montoUsd: number;
@@ -70,6 +71,7 @@ export function serializeCommission(c: CommissionRow): SerializedCommission {
     id: c.id,
     asesorId: c.asesorId,
     leadId: c.leadId,
+    concepto: c.concepto,
     proposalVersionId: c.proposalVersionId,
     proposalGenerationId: c.proposalGenerationId,
     montoUsd: Number(c.montoUsd),
@@ -273,6 +275,92 @@ export async function confirmCommission(input: ConfirmCommissionInput): Promise<
   return { commission: serializeCommission(commission), created: true };
 }
 
+// ─── Comisión manual (cargada por un admin, sin lead) ────────────────────────
+
+export interface CreateManualCommissionInput {
+  asesorId: string;
+  montoUsd: number;
+  fecha: Date;
+  concepto?: string;
+  userId: string;
+}
+
+export async function createManualCommission(
+  input: CreateManualCommissionInput,
+): Promise<SerializedCommission> {
+  const { asesorId, montoUsd, fecha, userId } = input;
+  const concepto = input.concepto?.trim() || null;
+
+  if (!(montoUsd > 0)) throw badRequest("MONTO_INVALIDO", "El monto de comisión debe ser mayor a 0.");
+
+  const asesor = await prisma.user.findFirst({
+    where: { id: asesorId, deletedAt: null, role: { name: { not: "CLIENT" } } },
+    select: { id: true, name: true },
+  });
+  if (!asesor) throw badRequest("INVALID_ASESOR", "El asesor indicado no es un usuario válido.");
+
+  const dueDate = firstDayOfNextMonth(fecha);
+  const descripcion = `Comisión manual — ${asesor.name}${concepto ? ` (${concepto})` : ""}`;
+
+  const subcat = await prisma.financeSubcategory.upsert({
+    where: { nombre_categoria: { nombre: SUBCAT_NOMBRE, categoria: SUBCAT_CATEGORIA } },
+    create: { nombre: SUBCAT_NOMBRE, categoria: SUBCAT_CATEGORIA },
+    update: {},
+  });
+
+  const { commission, movement } = await prisma.$transaction(async (tx) => {
+    const movement = await tx.financeMovement.create({
+      data: {
+        fecha,
+        mes: fecha.getUTCMonth() + 1,
+        anio: fecha.getUTCFullYear(),
+        tipoMovimiento: TipoMovimiento.GASTO,
+        categoriaPrincipal: SUBCAT_CATEGORIA,
+        subcategoriaId: subcat.id,
+        descripcion,
+        monto: new Prisma.Decimal(montoUsd),
+        moneda: Moneda.USD,
+        status: FinanceMovementStatus.PREVISTO,
+        pagado: false,
+        impactaFlujo: true,
+        dueDate,
+        creadoPorId: userId,
+        observaciones: `Comisión manual del asesor ${asesor.name}`,
+      },
+    });
+
+    const commission = await tx.commission.create({
+      data: {
+        asesorId: asesor.id,
+        leadId: null,
+        concepto,
+        proposalVersionId: null,
+        montoUsd: new Prisma.Decimal(montoUsd),
+        porcentaje: null,
+        origenManual: true,
+        fechaVenta: fecha,
+        dueDate,
+        status: CommissionStatus.PENDIENTE,
+        financeMovementId: movement.id,
+        createdById: userId,
+      },
+    });
+
+    return { commission, movement };
+  });
+
+  await createAuditEntry({
+    entityType: AuditEntityType.commission,
+    entityId: commission.id,
+    userId,
+    action: AuditAction.commission_created,
+    description: `Comisión manual para ${asesor.name} (USD ${montoUsd.toFixed(2)})`,
+    metadata: { asesorId: asesor.id, financeMovementId: movement.id, concepto },
+  });
+
+  return serializeCommission(commission);
+}
+
 // ─── Listados / métricas (dashboard) ─────────────────────────────────────────
 
 export interface CommissionListItem extends SerializedCommission {
@@ -308,7 +396,8 @@ export async function listCommissions(filter: ListCommissionsFilter): Promise<Co
 
   return rows.map((r) => ({
     ...serializeCommission(r),
-    leadClientName: r.lead?.clientName ?? "",
+    // Para las manuales (sin lead) mostramos el concepto.
+    leadClientName: r.lead?.clientName ?? r.concepto ?? "Comisión manual",
     asesorName: r.asesor?.name ?? "",
   }));
 }

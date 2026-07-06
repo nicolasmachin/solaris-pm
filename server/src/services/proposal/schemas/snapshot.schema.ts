@@ -35,8 +35,9 @@ export const snapshotSchema = z
     version: z.literal(SNAPSHOT_VERSION),
     // Inputs del borrador tal cual al publicar.
     data: draftDataPublishSchema,
-    // Defaults resueltos (números y algún string de marca) al momento.
-    defaults: z.record(z.string(), z.union([z.number(), z.string()])),
+    // Defaults resueltos al momento: números, algún string de marca y algún
+    // array de números (ej. factoresGeneracionMensual, 12 factores estacionales).
+    defaults: z.record(z.string(), z.union([z.number(), z.string(), z.array(z.number())])),
     // Config de la tapa al momento.
     coverOverlay: snapshotCoverOverlaySchema,
     coverPdfAttachmentId: z.string().nullable(),

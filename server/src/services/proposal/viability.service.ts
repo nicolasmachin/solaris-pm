@@ -11,6 +11,9 @@ export interface ViabilityResult {
   ahorroPorcentaje: number | null;
   espacioOcupado: number | null;
   espacioDisponible: number | null;
+  // Tiempo de retorno (PRI) en años y precio por kW con IVA — info del sub-header.
+  priAnios: number | null;
+  precioPorKwConIva: number | null;
   estado: "ok" | "warning" | "error" | "unknown";
 }
 
@@ -21,6 +24,8 @@ export function computeViability(input: {
   tamanoM2: number | null;
   pagaMensualPesos: number | null;
   ahorroMensualPesos: number | null;
+  priAnios?: number | null;
+  precioPorKwConIva?: number | null;
 }): ViabilityResult {
   const espacioOcupado =
     typeof input.cantidadPaneles === "number" && Number.isFinite(input.cantidadPaneles)
@@ -49,7 +54,14 @@ export function computeViability(input: {
     ahorroPorcentaje = Math.round((ahorro / paga) * 100);
   }
 
-  return { ahorroPorcentaje, espacioOcupado, espacioDisponible, estado };
+  return {
+    ahorroPorcentaje,
+    espacioOcupado,
+    espacioDisponible,
+    priAnios: input.priAnios ?? null,
+    precioPorKwConIva: input.precioPorKwConIva ?? null,
+    estado,
+  };
 }
 
 // Carga el borrador del lead y devuelve los indicadores. El espacio se saca de
@@ -65,12 +77,17 @@ export async function computeDraftViability(leadId: string): Promise<ViabilityRe
   const numOrNull = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
   let ahorroMensualPesos: number | null = null;
+  let priAnios: number | null = null;
+  let precioPorKwConIva: number | null = null;
   const parsed = draft ? draftDataPublishSchema.safeParse(draft.data) : null;
   if (parsed?.success) {
     const defaultsRow = await prisma.proposalDefaults.findUnique({ where: { id: "singleton" } });
     if (defaultsRow) {
       const calc = calculate(parsed.data, resolveDefaults(defaultsRow.data));
       ahorroMensualPesos = calc.ahorroMensualPesos;
+      priAnios = Number.isFinite(calc.priAnios) ? calc.priAnios : null;
+      // Precio por kW con IVA = USD por Watt (totalConIva / potencia W) × 1000.
+      precioPorKwConIva = Number.isFinite(calc.usdPorWatt) ? Math.round(calc.usdPorWatt * 1000) : null;
     }
   }
 
@@ -79,5 +96,7 @@ export async function computeDraftViability(leadId: string): Promise<ViabilityRe
     tamanoM2: numOrNull(raw?.techo?.tamanoM2),
     pagaMensualPesos: numOrNull(raw?.factura?.pagaMensualPesos),
     ahorroMensualPesos,
+    priAnios,
+    precioPorKwConIva,
   });
 }

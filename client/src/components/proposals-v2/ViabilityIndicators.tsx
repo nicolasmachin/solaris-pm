@@ -2,13 +2,16 @@ import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 
 import type { ViabilityResult } from "../../types/proposals-v2";
 
-// Dos indicadores de viabilidad para el sub-header: "Ahorro N%" (sin ícono) y
-// "Espacio {ocupado}/{disponible} m²" con ícono según estado. Muestra "—" si
-// falta el dato. Se apaga (60%) cuando el autosave está fallando (stale).
+// Indicadores de viabilidad para el sub-header: "Ahorro N%", "Espacio
+// {ocupado}/{disponible} m²" (con ícono según estado), "Retorno N años" y
+// "US$ N/kW c/IVA". Muestra "—" si falta el dato. Se apaga (60%) cuando el
+// autosave está fallando (stale).
 export function ViabilityIndicators({ data, stale }: { data: ViabilityResult | undefined; stale: boolean }) {
   const ahorro = data?.ahorroPorcentaje ?? null;
   const ocupado = data?.espacioOcupado ?? null;
   const disponible = data?.espacioDisponible ?? null;
+  const priAnios = data?.priAnios ?? null;
+  const precioKw = data?.precioPorKwConIva ?? null;
   const estado = data?.estado ?? "unknown";
 
   const espacioOk = ocupado != null && disponible != null;
@@ -32,6 +35,12 @@ export function ViabilityIndicators({ data, stale }: { data: ViabilityResult | u
       <span className="inline-flex items-center gap-1 whitespace-nowrap">
         {icon}
         {espacioOk ? `Espacio ${ocupado}/${disponible} m²` : "Espacio —"}
+      </span>
+      <span className="whitespace-nowrap">
+        {priAnios == null ? "Retorno —" : `Retorno ${priAnios.toLocaleString("es-UY", { maximumFractionDigits: 1 })} años`}
+      </span>
+      <span className="whitespace-nowrap">
+        {precioKw == null ? "US$/kW —" : `US$ ${precioKw.toLocaleString("es-UY")}/kW c/IVA`}
       </span>
     </div>
   );

@@ -10,6 +10,7 @@
 - **Al marcar un lead como Ganado** se abre un paso para **elegir qué propuesta aceptó el cliente** (por defecto la última) y así **registrar la comisión**: se calcula automáticamente sobre esa propuesta y queda **congelada**. Si la venta se cerró con una propuesta vieja, un administrador puede **cargar el monto a mano**.
 - La comisión genera un **pendiente en Finanzas**. Cuando Finanzas lo marca como **pagado**, la comisión pasa sola a **Pagada**. Ese movimiento **no se puede borrar** desde Finanzas (se gestiona desde Comisiones).
 - Si se **reabre** un lead que ya estaba ganado y tenía comisión, se muestra un **aviso** (la comisión y su pendiente se mantienen).
+- **Comisión manual**: desde el dashboard de Comisiones, Administración/Finanzas pueden **cargar una comisión suelta a un asesor** (monto, fecha y concepto), sin necesidad de un lead. Genera su pendiente en Finanzas igual que las demás.
 
 #### Ficha del cliente — Fecha de venta e Historial
 
@@ -20,6 +21,7 @@
 
 - **Propuestas viejas (Excel)**: desde el panel del lead ahora se puede **descargar el Excel** de una propuesta vieja y **descartarla o restaurarla** (con confirmación), igual que las nuevas.
 - **Admin → Propuestas → Defaults**: se agregó la sección **"Generación y dimensionamiento"** para editar el rendimiento anual, los metros cuadrados por panel y los **factores estacionales de generación** (los 12 meses) sin tocar código.
+- **Constructor de propuestas**: la barra de indicadores de arriba ahora muestra también el **tiempo de retorno** (en años) y el **precio por kW con IVA**, además del ahorro y el espacio.
 
 ### 28 de junio de 2026
 

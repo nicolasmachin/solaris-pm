@@ -2627,9 +2627,14 @@ model Commission {
   asesorId String
   asesor   User   @relation("CommissionAsesor", fields: [asesorId], references: [id], onDelete: Restrict)
 
-  // Lead ganado: una comisión por lead.
-  leadId String    @unique
-  lead   SalesLead @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  // Lead ganado: una comisión por lead. Nullable: las comisiones manuales
+  // cargadas por un admin no están atadas a un lead (leadId null → se etiquetan
+  // con `concepto`). El @unique nullable permite varios NULL en Postgres.
+  leadId String?    @unique
+  lead   SalesLead? @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  // Etiqueta libre para comisiones manuales sin lead (ej. "Bono Q2", "Venta externa").
+  concepto String?
 
   // Propuesta ganadora. Nullable: si el cliente aceptó una propuesta vieja
   // (ProposalGeneration, sin snapshot) el monto se carga manual y acá queda null,

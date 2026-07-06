@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 
 import { getCommissionMetrics, getCommissions, type CommissionStatus } from "../api/comisiones.api";
 import { ComisionesEvolutionChart } from "../components/comisiones/ComisionesEvolutionChart";
+import { ManualCommissionModal } from "../components/comisiones/ManualCommissionModal";
+import { Button } from "../components/ui/Button";
 import { usePermission } from "../hooks/usePermission";
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -62,10 +64,12 @@ function StatusBadge({ status }: { status: CommissionStatus }) {
 export function ComisionesAsesor() {
   // ADMIN/FINANZAS ven todas; el resto ve solo las propias.
   const canSeeAll = usePermission("FINANZAS", "VIEW");
+  const canCreate = usePermission("FINANZAS", "CREATE");
   const scope = canSeeAll ? "all" : "mine";
   const [year] = useState(CURRENT_YEAR);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("todas");
   const [sort, setSort] = useState<SortKey>("fecha");
+  const [manualOpen, setManualOpen] = useState(false);
 
   const metricsQ = useQuery({
     queryKey: ["commission-metrics", year, scope],
@@ -87,11 +91,16 @@ export function ComisionesAsesor() {
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Comisiones</h1>
-        <p className="text-sm text-[var(--color-text-muted)]">
-          {canSeeAll ? "Comisiones de todos los asesores." : "Tus comisiones por ventas cerradas."}
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Comisiones</h1>
+          <p className="text-sm text-[var(--color-text-muted)]">
+            {canSeeAll ? "Comisiones de todos los asesores." : "Tus comisiones por ventas cerradas."}
+          </p>
+        </div>
+        {canCreate && (
+          <Button onClick={() => setManualOpen(true)}>Agregar comisión manual</Button>
+        )}
       </div>
 
       {/* Métricas */}
@@ -178,6 +187,8 @@ export function ComisionesAsesor() {
           </div>
         )}
       </div>
+
+      <ManualCommissionModal open={manualOpen} onClose={() => setManualOpen(false)} />
     </div>
   );
 }

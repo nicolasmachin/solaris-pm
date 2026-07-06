@@ -5,7 +5,8 @@ export type CommissionStatus = "PENDIENTE" | "PAGADA";
 export interface SerializedCommission {
   id: string;
   asesorId: string;
-  leadId: string;
+  leadId: string | null;
+  concepto: string | null;
   proposalVersionId: string | null;
   proposalGenerationId: string | null;
   montoUsd: number;
@@ -88,5 +89,16 @@ export async function confirmCommission(
   body: { proposalVersionId?: string; montoManualUsd?: number; proposalGenerationId?: string },
 ): Promise<{ commission: SerializedCommission; created: boolean }> {
   const { data } = await api.post(`/api/leads/${leadId}/commission`, body);
+  return data;
+}
+
+// Comisión manual cargada por un admin (sin lead).
+export async function createManualCommission(body: {
+  asesorId: string;
+  montoUsd: number;
+  fecha: string; // YYYY-MM-DD
+  concepto?: string;
+}): Promise<SerializedCommission> {
+  const { data } = await api.post<SerializedCommission>("/api/commissions", body);
   return data;
 }
