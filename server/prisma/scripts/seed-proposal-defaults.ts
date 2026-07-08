@@ -30,6 +30,8 @@ const DEFAULT_DATA: Record<string, Flagged | Record<string, Flagged>> = {
   precioEstructuraUsdSinIva: { value: 90, asesorCanOverride: false }, // B4
   precioElectricaMonoUsdSinIva: { value: 492, asesorCanOverride: false }, // B5 mono
   precioElectricaTriUsdSinIva: { value: 750, asesorCanOverride: false }, // B5 trifásico
+  // Multiplicador del costo eléctrico por tramo de paneles (≤10, ≤20, ≤30, ≤40, ≤50, ≤100, 101+).
+  multiplicadorElectricaEscalones: { value: [1, 2, 3, 4, 5, 8, 10], asesorCanOverride: false },
 
   // ── Inversor por red + potencia ──
   precioInversorMonoSub7Usd: { value: 1000, asesorCanOverride: false },
@@ -87,7 +89,7 @@ const DEFAULT_DATA: Record<string, Flagged | Record<string, Flagged>> = {
 
   // ── Defaults de cotización ──
   cotizacionDolarDefault: { value: 40, asesorCanOverride: true }, // Excel C12
-  markupPorcentajeDefault: { value: 15, asesorCanOverride: false }, // C13 (porcentaje: 15 = 15%)
+  markupPorcentajeDefault: { value: 15, asesorCanOverride: true }, // C13 (porcentaje: 15 = 15%); el asesor puede ajustarlo en el cotizador
   distanciaInstalacionKmDefault: { value: 0, asesorCanOverride: true },
 
   // ── Financiación BBVA (modelo Excel "Financiacion BBVA" con UI + PMT) ──

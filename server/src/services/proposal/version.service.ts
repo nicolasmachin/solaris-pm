@@ -36,25 +36,24 @@ const PUBLISH_MAX_RETRIES = 3;
 
 // ─── Helpers puros (testeables sin DB) ───────────────────────────────────────
 
-// Último token del nombre, saneado para nombre de archivo (sin acentos ni
-// símbolos). "Jose Gonzalez" → "Gonzalez".
-export function clientLastName(nombre: string): string {
-  const parts = nombre.trim().split(/\s+/);
-  const last = parts[parts.length - 1] ?? "";
-  const clean = last
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-zA-Z0-9]/g, "");
-  return clean || "cliente";
+// Nombre completo del cliente saneado para nombre de archivo: conserva espacios
+// y solo saca los caracteres inválidos de filesystem. "Jose Gonzalez" → "Jose Gonzalez".
+export function sanitizeClientName(nombre: string): string {
+  const clean = (nombre ?? "")
+    .replace(/[/\\:*?"<>|]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return clean || "Cliente";
 }
 
+// Formato: "Propuesta Comercial Voltia - {cliente} - V{n}[ - Resumen].pdf".
 export function versionPdfFilename(
   kind: "full" | "summary",
   nombre: string,
   versionNumber: number,
 ): string {
-  const prefix = kind === "full" ? "propuesta" : "resumen";
-  return `${prefix}-${clientLastName(nombre)}-v${versionNumber}.pdf`;
+  const resumen = kind === "summary" ? " - Resumen" : "";
+  return `Propuesta Comercial Voltia - ${sanitizeClientName(nombre)} - V${versionNumber}${resumen}.pdf`;
 }
 
 // Ensambla y VALIDA el snapshot (snapshotSchema tira si algo no cuadra).

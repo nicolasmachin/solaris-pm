@@ -35,6 +35,21 @@ export function getCuadrillaEscalon(cantidadPaneles: number): number {
   return 8;
 }
 
+// Multiplicador del costo de instalación eléctrica según cantidad de paneles.
+// Las instalaciones más grandes requieren más trabajo/material eléctrico, así que
+// el costo base (mono/tri) se escala por tramos. Cota superior INCLUSIVA (el
+// redondo cierra el tramo, <=); el 7º tramo (101+) usa el último factor. La tabla
+// de multiplicadores es editable desde Admin (defaults.multiplicadorElectricaEscalones,
+// 7 valores). Función pura, testeable.
+export const TRAMOS_ELECTRICA_MAX_PANELES = [10, 20, 30, 40, 50, 100] as const;
+
+export function getMultiplicadorElectrica(cantidadPaneles: number, multiplicadores: number[]): number {
+  for (let i = 0; i < TRAMOS_ELECTRICA_MAX_PANELES.length; i++) {
+    if (cantidadPaneles <= TRAMOS_ELECTRICA_MAX_PANELES[i]) return multiplicadores[i] ?? 1;
+  }
+  return multiplicadores[multiplicadores.length - 1] ?? 1;
+}
+
 // Interpreta el markup aceptando ambas unidades (compat con snapshots viejos):
 // decimal (≤1, ej. 0.2 = 20%) o porcentaje (>1, ej. 20 = 20%). Devuelve SIEMPRE
 // el multiplicador decimal. Los drafts nuevos guardan porcentaje (20); los
@@ -70,10 +85,12 @@ export function calculate(
   const metrosCuadradosPaneles = cantidadPaneles * defaults.metrosCuadradosPorPanel;
 
   // ── 2. Costos en USD sin IVA ──
-  const precioElectrica =
+  const precioElectricaBase =
     suministro === "monofásico"
       ? defaults.precioElectricaMonoUsdSinIva
       : defaults.precioElectricaTriUsdSinIva;
+  const precioElectrica =
+    precioElectricaBase * getMultiplicadorElectrica(cantidadPaneles, defaults.multiplicadorElectricaEscalones);
   const precioMeter =
     suministro === "monofásico" ? defaults.precioMeterMonoUsd : defaults.precioMeterTriUsd;
   const precioInversor = obtenerPrecioInversor(

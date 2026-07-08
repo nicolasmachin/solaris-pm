@@ -28,6 +28,7 @@ export interface ViabilityResult {
   potenciaPicoKwp: number | null;
   priAnios: number | null;
   precioPorKwConIva: number | null;
+  precioFinalConIva: number | null;
   estado: "ok" | "warning" | "error" | "unknown";
 }
 

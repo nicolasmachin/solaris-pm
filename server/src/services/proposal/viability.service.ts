@@ -16,6 +16,8 @@ export interface ViabilityResult {
   // Tiempo de retorno (PRI) en años y precio por kW con IVA — info del sub-header.
   priAnios: number | null;
   precioPorKwConIva: number | null;
+  // Precio final de la propuesta con IVA (incluye ítems adicionales).
+  precioFinalConIva: number | null;
   estado: "ok" | "warning" | "error" | "unknown";
 }
 
@@ -29,6 +31,7 @@ export function computeViability(input: {
   potenciaPanelW?: number | null;
   priAnios?: number | null;
   precioPorKwConIva?: number | null;
+  precioFinalConIva?: number | null;
 }): ViabilityResult {
   const espacioOcupado =
     typeof input.cantidadPaneles === "number" && Number.isFinite(input.cantidadPaneles)
@@ -70,6 +73,7 @@ export function computeViability(input: {
     potenciaPicoKwp,
     priAnios: input.priAnios ?? null,
     precioPorKwConIva: input.precioPorKwConIva ?? null,
+    precioFinalConIva: input.precioFinalConIva ?? null,
     estado,
   };
 }
@@ -89,6 +93,7 @@ export async function computeDraftViability(leadId: string): Promise<ViabilityRe
   let ahorroMensualPesos: number | null = null;
   let priAnios: number | null = null;
   let precioPorKwConIva: number | null = null;
+  let precioFinalConIva: number | null = null;
   const parsed = draft ? draftDataPublishSchema.safeParse(draft.data) : null;
   if (parsed?.success) {
     const defaultsRow = await prisma.proposalDefaults.findUnique({ where: { id: "singleton" } });
@@ -98,6 +103,8 @@ export async function computeDraftViability(leadId: string): Promise<ViabilityRe
       priAnios = Number.isFinite(calc.priAnios) ? calc.priAnios : null;
       // Precio por kW con IVA = USD por Watt (totalConIva / potencia W) × 1000.
       precioPorKwConIva = Number.isFinite(calc.usdPorWatt) ? Math.round(calc.usdPorWatt * 1000) : null;
+      // Precio final con IVA (incluye ítems adicionales).
+      precioFinalConIva = Number.isFinite(calc.totalFinalConIva) ? Math.round(calc.totalFinalConIva) : null;
     }
   }
 
@@ -109,5 +116,6 @@ export async function computeDraftViability(leadId: string): Promise<ViabilityRe
     potenciaPanelW: numOrNull(raw?.sistema?.potenciaPanelW),
     priAnios,
     precioPorKwConIva,
+    precioFinalConIva,
   });
 }

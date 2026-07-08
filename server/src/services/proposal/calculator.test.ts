@@ -10,7 +10,13 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
 
-import { calculate, getCuadrillaEscalon, interpretarMarkup, pmt } from "./calculator.js";
+import {
+  calculate,
+  getCuadrillaEscalon,
+  getMultiplicadorElectrica,
+  interpretarMarkup,
+  pmt,
+} from "./calculator.js";
 import type { ProposalData, ProposalDefaultsResolved } from "./types.js";
 
 const input: ProposalData = {
@@ -45,6 +51,9 @@ const defaults: ProposalDefaultsResolved = {
   precioEstructuraUsdSinIva: 90,
   precioElectricaMonoUsdSinIva: 492,
   precioElectricaTriUsdSinIva: 750,
+  // Neutro (×1 en todos los tramos): mantiene el espejo exacto del Excel Gonzalez.
+  // El escalonado real [1,2,3,4,5,8,10] se testea aparte más abajo.
+  multiplicadorElectricaEscalones: [1, 1, 1, 1, 1, 1, 1],
   precioInversorMonoSub7Usd: 1000,
   precioInversorMonoSup7Usd: 1300,
   precioInversorTriSub11Usd: 1750,
@@ -104,6 +113,29 @@ test("getCuadrillaEscalon: bordes de cada escalón", () => {
   for (const [paneles, esperado] of cases) {
     assert.equal(getCuadrillaEscalon(paneles), esperado, `${paneles} paneles → cuadrilla ${esperado}`);
   }
+});
+
+// ─── Multiplicador eléctrico por tramo de paneles (editable en Admin) ───────
+test("getMultiplicadorElectrica: bordes de cada tramo (el redondo cierra, <=)", () => {
+  const tabla = [1, 2, 3, 4, 5, 8, 10];
+  const cases: [number, number][] = [
+    [1, 1], [10, 1], [11, 2], [20, 2], [21, 3], [30, 3], [31, 4], [40, 4],
+    [41, 5], [50, 5], [51, 8], [100, 8], [101, 10], [500, 10],
+  ];
+  for (const [paneles, esperado] of cases) {
+    assert.equal(
+      getMultiplicadorElectrica(paneles, tabla),
+      esperado,
+      `${paneles} paneles → multiplicador ${esperado}`,
+    );
+  }
+});
+
+test("multiplicador eléctrico ×2 (11 paneles) sube el equipamiento exactamente +750", () => {
+  const conEscalon = { ...defaults, multiplicadorElectricaEscalones: [1, 2, 3, 4, 5, 8, 10] };
+  const rEscalon = calculate(input, conEscalon); // 11 paneles trifásico → tramo ≤20 → ×2
+  // Base tri 750 → ×2 = 1500; delta sobre el caso neutro (×1) = +750.
+  approx(rEscalon.costoEquipamientoSinIva, r.costoEquipamientoSinIva + 750, 1e-9, "delta eléctrica ×2");
 });
 
 // ─── PMT (cuota francesa) ───────────────────────────────────────────────────

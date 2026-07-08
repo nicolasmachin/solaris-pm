@@ -43,6 +43,7 @@ export function resolveDefaults(rawDefaults: unknown): ProposalDefaultsResolved 
     precioEstructuraUsdSinIva: num("precioEstructuraUsdSinIva"),
     precioElectricaMonoUsdSinIva: num("precioElectricaMonoUsdSinIva"),
     precioElectricaTriUsdSinIva: num("precioElectricaTriUsdSinIva"),
+    multiplicadorElectricaEscalones: numArray("multiplicadorElectricaEscalones", 7),
     precioInversorMonoSub7Usd: num("precioInversorMonoSub7Usd"),
     precioInversorMonoSup7Usd: num("precioInversorMonoSup7Usd"),
     precioInversorTriSub11Usd: num("precioInversorTriSub11Usd"),

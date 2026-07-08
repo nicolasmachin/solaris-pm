@@ -5,6 +5,7 @@ import { Download, Eye, FileSpreadsheet, FileText, RotateCcw, Trash2 } from "luc
 
 import { discardProposal, downloadProposal, downloadProposalExcel, restoreProposal } from "../../api/leads.api";
 import { proposalsV2BuilderApi } from "../../api/proposals-v2-builder.api";
+import { proposalExcelFilename, proposalPdfFilename } from "../../lib/proposalFilename";
 import { useLeadProposals } from "../../hooks/useLeadProposals";
 import type { ProposalListItem } from "../../types/leads.types";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
@@ -22,17 +23,6 @@ function relative(iso: string): string {
   if (d < 30) return `hace ${d} día${d === 1 ? "" : "s"}`;
   const mo = Math.round(d / 30);
   return `hace ${mo} mes${mo === 1 ? "" : "es"}`;
-}
-
-function sanitize(name: string): string {
-  return (
-    name
-      .trim()
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
-      .replace(/[^a-zA-Z0-9]+/g, "-")
-      .replace(/^-|-$/g, "") || "cliente"
-  );
 }
 
 function IconBtn({ title, onClick, danger, children }: { title: string; onClick: () => void; danger?: boolean; children: React.ReactNode }) {
@@ -71,14 +61,13 @@ export function LeadProposalsList({ leadId, clientName }: { leadId: string; clie
   });
 
   function downloadExcel(p: ProposalListItem) {
-    downloadProposalExcel(p.id, `${fileBase(p)}.xlsx`).catch(() => toast.error("No se pudo descargar el Excel"));
+    downloadProposalExcel(p.id, proposalExcelFilename(clientName, p.versionNumber)).catch(() =>
+      toast.error("No se pudo descargar el Excel"),
+    );
   }
 
-  const fileBase = (p: ProposalListItem) =>
-    `propuesta-${sanitize(clientName)}${p.versionNumber != null ? `-v${p.versionNumber}` : ""}`;
-
   function downloadFull(p: ProposalListItem) {
-    const fn = `${fileBase(p)}.pdf`;
+    const fn = proposalPdfFilename(clientName, p.versionNumber, "full");
     const task = p.tipo === "nueva"
       ? proposalsV2BuilderApi.downloadVersionPdf(p.id, "full", fn)
       : downloadProposal(p.id, fn);
@@ -86,12 +75,12 @@ export function LeadProposalsList({ leadId, clientName }: { leadId: string; clie
   }
   function downloadSummary(p: ProposalListItem) {
     proposalsV2BuilderApi
-      .downloadVersionPdf(p.id, "summary", `${fileBase(p)}-resumen.pdf`)
+      .downloadVersionPdf(p.id, "summary", proposalPdfFilename(clientName, p.versionNumber, "summary"))
       .catch(() => toast.error("No se pudo descargar el resumen"));
   }
   function openPreview(p: ProposalListItem) {
     const url = p.tipo === "nueva" ? `/api/proposals-v2/versions/${p.id}/pdf/full` : `/api/proposals/${p.id}/download`;
-    setPreview({ url, title: `${fileBase(p)}.pdf` });
+    setPreview({ url, title: proposalPdfFilename(clientName, p.versionNumber, "full") });
   }
 
   const rows = q.data ?? [];

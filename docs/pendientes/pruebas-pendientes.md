@@ -4,6 +4,18 @@
 > es una prueba manual que falta validar en la UI. Lo verificado por API/código se
 > marca como tal, pero igual conviene la pasada visual.
 
+## Cotizador — eléctrica por tamaño, precio final, markup, filename (8-jul-2026)
+
+Backend: typecheck 0, tests calculator 34/34 (bordes + delta), viability 11/11,
+version 4/4. Smoke del multiplicador contra el singleton real OK (saltos por tramo).
+**Falta validación visual.**
+
+- [ ] **Multiplicador eléctrico**: en el cotizador, subir la cantidad de paneles cruzando cada borde (10→11, 20→21, 50→51, 100→101) sube el **precio final** (el costo eléctrico se multiplica ×1/×2/×3/×4/×5/×8/×10 según el tramo; el redondo cierra el tramo).
+- [ ] **Admin → Propuestas → Defaults → "Instalación eléctrica — multiplicador por tamaño"**: se ven los 7 tramos con su multiplicador; editar uno, guardar, recargar → persiste y el cálculo lo usa.
+- [ ] **Precio final con IVA** aparece destacado en la barra de indicadores del cotizador y cambia al editar el borrador.
+- [ ] **Markup editable**: en el cotizador el campo "Markup (%)" se puede editar (no queda bloqueado). En **prod** el flag `asesorCanOverride` de "Markup por defecto (%)" hay que tildarlo en Admin (el seed solo aplica a instalaciones nuevas).
+- [ ] **Nombre de archivo**: descargar el PDF (full y resumen) y el Excel de una propuesta → el archivo se llama **"Propuesta Comercial Voltia - {Nombre del cliente} - V{n}"** (resumen agrega " - Resumen"). Verificar con nombres con acentos y espacios.
+
 ## Tanda 2 — Comisiones del asesor (v7.1, implementado 6-jul-2026)
 
 Estado backend: verificado por API end-to-end (crear, idempotencia, sync a pagada,

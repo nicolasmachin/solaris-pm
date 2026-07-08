@@ -116,6 +116,9 @@ export interface ProposalDefaultsResolved {
   precioEstructuraUsdSinIva: number;
   precioElectricaMonoUsdSinIva: number;
   precioElectricaTriUsdSinIva: number;
+  // Multiplicador del costo de instalación eléctrica por tramo de cantidad de
+  // paneles (7 valores: ≤10, ≤20, ≤30, ≤40, ≤50, ≤100, 101+). Editable en Admin.
+  multiplicadorElectricaEscalones: number[];
   precioInversorMonoSub7Usd: number;
   precioInversorMonoSup7Usd: number;
   precioInversorTriSub11Usd: number;

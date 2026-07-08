@@ -2,6 +2,22 @@
 
 ## v7.1
 
+### 8 de julio de 2026
+
+#### Cotizador — costo de instalación eléctrica por tamaño
+
+- El **costo de instalación eléctrica** ahora **escala con el tamaño del sistema**: cuantos más paneles, mayor el costo (antes era un valor fijo por tipo de suministro, sin importar la cantidad). Se aplica por tramos de cantidad de paneles.
+- La **tabla de multiplicadores es editable** desde **Admin → Propuestas → Defaults**, en la nueva sección **"Instalación eléctrica — multiplicador por tamaño"** (7 tramos: 1–10, 11–20, 21–30, 31–40, 41–50, 51–100 y 101+).
+
+#### Cotizador — más información arriba
+
+- La barra de indicadores del cotizador ahora muestra también el **precio final con IVA** (destacado), además del ahorro, el espacio, la potencia pico, el retorno y el precio por kW.
+- El **markup** vuelve a poder **editarse desde el cotizador** por el asesor.
+
+#### Propuestas — nombre del archivo
+
+- El PDF (y el Excel) de la propuesta se descargan con un nombre claro: **"Propuesta Comercial Voltia - {Nombre del cliente} - V{número de versión}"** (el resumen agrega "- Resumen"). Antes usaba un nombre corto con solo el apellido.
+
 ### 6 de julio de 2026
 
 #### Comisiones del asesor comercial

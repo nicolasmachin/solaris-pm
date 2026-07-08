@@ -4,6 +4,7 @@ import type {
   ProposalDefaultsData,
 } from "../../../types/proposals-v2";
 import { isFlaggedValue } from "../../../types/proposals-v2";
+import { ElectricaMultiplierInput } from "./ElectricaMultiplierInput";
 import { SeasonalFactorsInput } from "./SeasonalFactorsInput";
 import { VariableInput } from "./VariableInput";
 
@@ -69,7 +70,7 @@ const LABELS: Record<string, string> = {
 };
 
 // Secciones colapsables y qué claves van en cada una.
-const SECTIONS: { title: string; keys?: string[]; nested?: string; custom?: "seasonal" }[] = [
+const SECTIONS: { title: string; keys?: string[]; nested?: string; custom?: "seasonal" | "electrica" }[] = [
   {
     title: "Precios de equipamiento",
     keys: [
@@ -88,6 +89,10 @@ const SECTIONS: { title: string; keys?: string[]; nested?: string; custom?: "sea
       "precioMeterMonoUsd",
       "precioMeterTriUsd",
     ],
+  },
+  {
+    title: "Instalación eléctrica — multiplicador por tamaño",
+    custom: "electrica",
   },
   { title: "Marcas por defecto", keys: ["marcaPanelesDefault", "marcaInversorDefault"] },
   {
@@ -218,6 +223,15 @@ export function ProposalDefaultsForm({
                 entry={data.factoresGeneracionMensual}
                 disabled={disabled}
                 onChange={(next) => updateVar("factoresGeneracionMensual", next)}
+              />
+            ) : null}
+            {section.custom === "electrica" &&
+            data.multiplicadorElectricaEscalones &&
+            isFlaggedValue(data.multiplicadorElectricaEscalones) ? (
+              <ElectricaMultiplierInput
+                entry={data.multiplicadorElectricaEscalones}
+                disabled={disabled}
+                onChange={(next) => updateVar("multiplicadorElectricaEscalones", next)}
               />
             ) : null}
           </div>

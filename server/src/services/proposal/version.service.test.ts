@@ -6,17 +6,21 @@ import { strict as assert } from "node:assert";
 import { test } from "node:test";
 
 import { SNAPSHOT_VERSION, TEMPLATE_VERSION } from "./schemas/snapshot.schema.js";
-import { buildSnapshot, clientLastName, versionPdfFilename } from "./version.service.js";
+import { buildSnapshot, sanitizeClientName, versionPdfFilename } from "./version.service.js";
 
-test("clientLastName: último token, sin acentos ni símbolos", () => {
-  assert.equal(clientLastName("Jose Gonzalez"), "Gonzalez");
-  assert.equal(clientLastName("María Núñez"), "Nunez");
-  assert.equal(clientLastName("  "), "cliente");
+test("sanitizeClientName: conserva nombre completo y espacios, saca inválidos", () => {
+  assert.equal(sanitizeClientName("Jose Gonzalez"), "Jose Gonzalez");
+  assert.equal(sanitizeClientName("María Núñez"), "María Núñez");
+  assert.equal(sanitizeClientName('Ana/Luis: "X"'), "AnaLuis X");
+  assert.equal(sanitizeClientName("  "), "Cliente");
 });
 
-test("versionPdfFilename: prefijo por tipo + apellido + versión", () => {
-  assert.equal(versionPdfFilename("full", "Jose Gonzalez", 1), "propuesta-Gonzalez-v1.pdf");
-  assert.equal(versionPdfFilename("summary", "Jose Gonzalez", 3), "resumen-Gonzalez-v3.pdf");
+test("versionPdfFilename: 'Propuesta Comercial Voltia - {cliente} - V{n}'", () => {
+  assert.equal(versionPdfFilename("full", "Jose Gonzalez", 1), "Propuesta Comercial Voltia - Jose Gonzalez - V1.pdf");
+  assert.equal(
+    versionPdfFilename("summary", "Jose Gonzalez", 3),
+    "Propuesta Comercial Voltia - Jose Gonzalez - V3 - Resumen.pdf",
+  );
 });
 
 const validDraft = {

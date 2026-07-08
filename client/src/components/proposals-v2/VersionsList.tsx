@@ -5,6 +5,7 @@ import { Download, FileText, RotateCcw, Trash2 } from "lucide-react";
 
 import { proposalsV2BuilderApi } from "../../api/proposals-v2-builder.api";
 import { getUsers } from "../../api/users.api";
+import { proposalPdfFilename } from "../../lib/proposalFilename";
 import { Button } from "../ui/Button";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { Sheet } from "../ui/Sheet";
@@ -24,16 +25,6 @@ function relative(iso: string): string {
   if (d < 30) return `hace ${d} día${d === 1 ? "" : "s"}`;
   const mo = Math.round(d / 30);
   return `hace ${mo} mes${mo === 1 ? "" : "es"}`;
-}
-
-function sanitizeLast(name: string): string {
-  const last = name.trim().split(/\s+/).pop() ?? "cliente";
-  return (
-    last
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
-      .replace(/[^a-zA-Z0-9]/g, "") || "cliente"
-  );
 }
 
 function IconBtn({
@@ -96,9 +87,8 @@ export function VersionsList({ leadId }: { leadId: string }) {
   });
 
   function download(v: ProposalVersionListItem, kind: "full" | "summary") {
-    const prefix = kind === "full" ? "propuesta" : "resumen";
     proposalsV2BuilderApi
-      .downloadVersionPdf(v.id, kind, `${prefix}-${sanitizeLast(v.clientName ?? "cliente")}-v${v.versionNumber}.pdf`)
+      .downloadVersionPdf(v.id, kind, proposalPdfFilename(v.clientName, v.versionNumber, kind))
       .catch(() => toast.error("No se pudo descargar el PDF"));
   }
 
