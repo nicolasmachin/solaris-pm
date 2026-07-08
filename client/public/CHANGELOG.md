@@ -4,6 +4,11 @@
 
 ### 8 de julio de 2026
 
+#### Onboarding — Generador de contrato
+
+- Nueva herramienta en la subetapa **Contrato** del onboarding: un **generador de contrato** con el mismo estilo que el de propuestas —formulario a la izquierda con los datos **precargados** del cliente, el sistema y el precio, y la **vista previa del contrato en vivo** a la derecha. Lo que falte se completa a mano (los campos obligatorios se marcan).
+- Con **"Generar contrato"** se crea una **versión** en PDF; cada generación queda **listada** en la subetapa para **previsualizar** o **descargar** y enviársela al cliente. El archivo se llama "Contrato Voltia - {cliente} - V{n}".
+
 #### Cotizador — costo de instalación eléctrica por tamaño
 
 - El **costo de instalación eléctrica** ahora **escala con el tamaño del sistema**: cuantos más paneles, mayor el costo (antes era un valor fijo por tipo de suministro, sin importar la cantidad). Se aplica por tramos de cantidad de paneles.

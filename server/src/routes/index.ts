@@ -5,6 +5,7 @@ import { registerAuthRoutes } from "./auth.routes.js";
 import { registerClientesRoutes } from "./clientes.routes.js";
 import { registerCommissionRoutes } from "./commission.routes.js";
 import { registerConsolidadorRoutes } from "./consolidador.routes.js";
+import { registerContractRoutes } from "./contract.routes.js";
 import { registerEFPRoutes } from "./efp.routes.js";
 import { registerEmailRoutes } from "./email.routes.js";
 import { registerInformesRoutes } from "./informes.routes.js";
@@ -44,4 +45,5 @@ export async function registerRoutes(app: FastifyInstance) {
   await app.register(registerEmailRoutes, { prefix: "/api" });
   await app.register(registerClientesRoutes, { prefix: "/api" });
   await app.register(registerCommissionRoutes, { prefix: "/api" });
+  await app.register(registerContractRoutes, { prefix: "/api" });
 }

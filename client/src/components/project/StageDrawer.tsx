@@ -20,6 +20,8 @@ import { VisitasToolPanel } from "../ingenieria/visitas/VisitasToolPanel";
 import { VisitFloatingButton } from "../visitas/VisitFloatingButton";
 import { CanAccess } from "../ui/CanAccess";
 import { CargarFotosObraButton } from "../obra/CargarFotosObraButton";
+import { ContractBuilderModal } from "../contract/ContractBuilderModal";
+import { ContractVersionsList } from "../contract/ContractVersionsList";
 
 interface StageDrawerProps {
   stage: Stage;
@@ -258,6 +260,7 @@ function SubstageRow({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [checklistPendingItems, setChecklistPendingItems] = useState<{ id: string; label: string }[]>([]);
   const [showDeadlineModal, setShowDeadlineModal] = useState(false);
+  const [contractOpen, setContractOpen] = useState(false);
 
   const currentUser = useAuthStore((s) => s.user);
   const canEditDeadline = currentUser?.role === "ADMIN" || currentUser?.role === "OPERACIONES";
@@ -503,6 +506,22 @@ function SubstageRow({
                 >
                   ✉ Enviar consulta a UTE
                 </button>
+              </CanAccess>
+            )}
+
+            {/* Acción dedicada: generador de contrato */}
+            {substage.name === "Contrato" && (
+              <CanAccess module="ONBOARDING" action="EDIT">
+                <button
+                  onClick={() => setContractOpen(true)}
+                  className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-3 py-2 text-xs font-semibold text-black hover:opacity-90"
+                >
+                  📄 Generar contrato
+                </button>
+                <ContractVersionsList projectId={projectId} />
+                {contractOpen && (
+                  <ContractBuilderModal projectId={projectId} onClose={() => setContractOpen(false)} />
+                )}
               </CanAccess>
             )}
 

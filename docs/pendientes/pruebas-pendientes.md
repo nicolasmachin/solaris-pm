@@ -4,6 +4,22 @@
 > es una prueba manual que falta validar en la UI. Lo verificado por API/código se
 > marca como tal, pero igual conviene la pasada visual.
 
+## Generador de contrato — subetapa Contrato (8-jul-2026)
+
+Backend validado end-to-end por API (context/precarga, draft, preview 404/400/200,
+publish V1→V2, list, download). Template REAL del contrato de Voltia cargado (5
+páginas: contrato + Anexo), verificado renderizando el PDF. Cliente: typecheck 0 +
+build OK. **Falta la validación visual en la UI.**
+
+- [ ] En un **proyecto**, abrir la etapa **Onboarding** → subetapa **Contrato** → botón **"Generar contrato"** abre el modal de dos columnas.
+- [ ] **Precarga**: el formulario trae nombre/documento/domicilio del cliente, datos del sistema (paneles/inversor/kWp) y —si hay propuesta aceptada— precio y pagos. Lo que falta se completa a mano.
+- [ ] **Preview en vivo**: al editar el formulario, la vista previa del contrato a la derecha se actualiza (con overlay "Actualizando…"). Con campos obligatorios faltantes muestra "Completá los campos obligatorios".
+- [ ] **Faltantes**: el botón "Generar" queda deshabilitado y al pasar el mouse lista los campos que faltan, agrupados por sección, con scroll al hacer clic.
+- [ ] **Generar** crea la versión (V1, V2, …) y aparece en la lista "Contratos generados" con **Previsualizar** y **Descargar**; el archivo se llama "Contrato Voltia - {cliente} - V{n}.pdf".
+- [ ] **Descartar / restaurar** una versión funciona; el toggle "Ver descartadas" las muestra.
+- [ ] Permisos: sólo roles con ONBOARDING:EDIT ven el botón y la lista (ADMIN, ASESOR_COMERCIAL, OPERACIONES).
+- [ ] **PENDIENTE DE NEGOCIO**: reemplazar el template provisional por el **texto real del contrato** (Nicolás lo pasa) y confirmar los datos fijos de Voltia (razón social, RUT, domicilio, representante).
+
 ## Cotizador — eléctrica por tamaño, precio final, markup, filename (8-jul-2026)
 
 Backend: typecheck 0, tests calculator 34/34 (bordes + delta), viability 11/11,
