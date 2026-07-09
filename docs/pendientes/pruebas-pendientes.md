@@ -4,6 +4,20 @@
 > es una prueba manual que falta validar en la UI. Lo verificado por API/código se
 > marca como tal, pero igual conviene la pasada visual.
 
+## Generador de proforma BBVA — subetapa "Modalidad de pago definida" (8-jul-2026)
+
+Backend validado por API (context/precarga, draft, preview, publish, list, download).
+Template branded del diseño (olas SVG, logo, tabla, descripción, firma, pie) verificado
+renderizando el PDF. Cliente: typecheck 0 + build OK. **Falta la validación visual en la UI.**
+
+- [ ] Proyecto → **Onboarding** → subetapa **Modalidad de pago definida** → botón **"Generar proforma BBVA"** abre el modal (form + preview en vivo).
+- [ ] **Precarga**: cliente (nombre/CI/dirección/tel/mail) y producto (paneles/potencia/inversor). El **monto solicitado** arranca vacío (se carga a mano); plazo 36 y tasa 0% por defecto.
+- [ ] **Preview en vivo**: al editar, la proforma se actualiza a la derecha. Con monto en 0 o faltantes, el botón "Generar" queda bloqueado y lista los campos.
+- [ ] **Generar** crea la versión (V1, V2…) listada en "Proformas generadas" con **Previsualizar** y **Descargar**; el archivo se llama "Proforma BBVA Voltia - {cliente} - V{n}.pdf".
+- [ ] El PDF coincide con el diseño: olas azules, logo, "DATOS DEL CLIENTE", tabla (Concepto/Monto/Plazo/Tasa), "Descripción del producto" con la potencia y los ítems, nota de validez, firma de Nicolás y pie con RUT/Cuenta BBVA/contactos.
+- [ ] **Descartar / restaurar** una versión funciona.
+- [ ] (Cosmético) El logo del encabezado trae su propio recuadro blanco (es el asset "badge"); confirmar si va bien así o se prefiere sin recuadro.
+
 ## Generador de contrato — subetapa Contrato (8-jul-2026)
 
 Backend validado end-to-end por API (context/precarga, draft, preview 404/400/200,

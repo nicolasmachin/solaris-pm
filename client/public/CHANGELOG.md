@@ -4,6 +4,11 @@
 
 ### 8 de julio de 2026
 
+#### Onboarding — Generador de proforma BBVA
+
+- Nueva herramienta en la subetapa **Modalidad de pago definida** del onboarding: un **generador de proforma** para solicitar financiación al banco (BBVA), con el mismo estilo que el contrato —formulario a la izquierda con datos **precargados** del cliente y del sistema, y **vista previa en vivo** a la derecha. El **monto solicitado** se carga a mano; el resto se completa o ajusta.
+- Con **"Generar proforma BBVA"** se crea una **versión** en PDF (documento branded con el diseño de Voltia: logo, tabla de financiación, descripción del sistema, firma y datos de la empresa). Cada generación queda **listada** para **previsualizar** o **descargar** y enviar al banco. El archivo se llama "Proforma BBVA Voltia - {cliente} - V{n}".
+
 #### Onboarding — Generador de contrato
 
 - Nueva herramienta en la subetapa **Contrato** del onboarding: un **generador de contrato** con el mismo estilo que el de propuestas —formulario a la izquierda con los datos **precargados** del cliente, el sistema y el precio, y la **vista previa del contrato en vivo** a la derecha. Lo que falte se completa a mano (los campos obligatorios se marcan).

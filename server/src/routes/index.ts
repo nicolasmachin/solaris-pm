@@ -11,6 +11,7 @@ import { registerEmailRoutes } from "./email.routes.js";
 import { registerInformesRoutes } from "./informes.routes.js";
 import { registerIngenieriaRoutes } from "./ingenieria.routes.js";
 import { registerPortalRoutes } from "./portal.routes.js";
+import { registerProformaRoutes } from "./proforma.routes.js";
 import { registerPreIngenieriaRoutes } from "./preingenieria.routes.js";
 import { registerProposalsV2DefaultsRoutes } from "./proposals-v2-defaults.routes.js";
 import { registerProposalsV2DraftsVersionsRoutes } from "./proposals-v2-drafts-versions.routes.js";
@@ -46,4 +47,5 @@ export async function registerRoutes(app: FastifyInstance) {
   await app.register(registerClientesRoutes, { prefix: "/api" });
   await app.register(registerCommissionRoutes, { prefix: "/api" });
   await app.register(registerContractRoutes, { prefix: "/api" });
+  await app.register(registerProformaRoutes, { prefix: "/api" });
 }

@@ -95,6 +95,7 @@ enum AuditEntityType {
   client_interaction
   commission
   contract
+  proforma
 }
 
 enum AuditAction {
@@ -127,6 +128,10 @@ enum AuditAction {
   contract_version_published
   contract_version_discarded
   contract_version_restored
+  proforma_draft_updated
+  proforma_version_published
+  proforma_version_discarded
+  proforma_version_restored
 }
 
 enum NotificationType {
@@ -415,6 +420,9 @@ model User {
   contractDraftsCreated          ContractDraft[]             @relation("ContractDraftCreatedBy")
   contractDraftsUpdated          ContractDraft[]             @relation("ContractDraftUpdatedBy")
   contractVersionsPublished      ContractVersion[]           @relation("ContractVersionPublishedBy")
+  proformaDraftsCreated          ProformaDraft[]             @relation("ProformaDraftCreatedBy")
+  proformaDraftsUpdated          ProformaDraft[]             @relation("ProformaDraftUpdatedBy")
+  proformaVersionsPublished      ProformaVersion[]           @relation("ProformaVersionPublishedBy")
   proposalDefaultsUpdated        ProposalDefaults[]          @relation("ProposalDefaultsUpdatedBy")
   clientInteractions             ClientInteraction[]         @relation("ClientInteractionAuthor")
   clientInteractionsDeleted      ClientInteraction[]         @relation("ClientInteractionDeletedBy")
@@ -490,6 +498,8 @@ model Project {
   preIngenieriaVersions   PreIngenieriaVersion[]
   contractDraft           ContractDraft?
   contractVersions        ContractVersion[]
+  proformaDraft           ProformaDraft?
+  proformaVersions        ProformaVersion[]
   technicalVisits         TechnicalVisit[]
   engineeringFinalProject EngineeringFinalProject?
   uteDocumentConfig       UteDocumentConfig?
@@ -2672,6 +2682,58 @@ model ContractVersion {
   @@unique([projectId, versionNumber])
   @@index([projectId, status])
   @@map("contract_versions")
+}
+
+enum ProformaVersionStatus {
+  PUBLISHED
+  DISCARDED
+}
+
+// Borrador de la proforma BBVA: uno por proyecto, mutable, sin PDF persistido. Se
+// edita en la subetapa "Modalidad de pago definida" del onboarding con el mismo
+// generador que el contrato (form + preview en vivo).
+model ProformaDraft {
+  id        String  @id @default(cuid())
+  projectId String  @unique
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  data Json
+
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+  createdById String
+  createdBy   User     @relation("ProformaDraftCreatedBy", fields: [createdById], references: [id])
+  updatedById String
+  updatedBy   User     @relation("ProformaDraftUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([projectId])
+  @@map("proforma_drafts")
+}
+
+// Versión publicada de la proforma: inmutable, numerada por proyecto,
+// soft-deleteable. Snapshot + 1 PDF en disco (path relativo a STORAGE_PATH).
+model ProformaVersion {
+  id            String                @id @default(cuid())
+  projectId     String
+  project       Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  versionNumber Int
+  status        ProformaVersionStatus @default(PUBLISHED)
+
+  snapshot Json
+  pdfPath  String
+  label    String?
+
+  publishedAt   DateTime @default(now()) @db.Timestamptz(6)
+  publishedById String
+  publishedBy   User     @relation("ProformaVersionPublishedBy", fields: [publishedById], references: [id])
+
+  discardedAt   DateTime? @db.Timestamptz(6)
+  discardedById String?
+  discardReason String?
+
+  @@unique([projectId, versionNumber])
+  @@index([projectId, status])
+  @@map("proforma_versions")
 }
 
 enum CommissionStatus {

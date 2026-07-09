@@ -29,9 +29,16 @@ async function getBrowser(): Promise<Browser> {
 }
 
 export type RenderOptions = {
-  headerHtml: string;
-  footerHtml: string;
+  headerHtml?: string;
+  footerHtml?: string;
+  // Por defecto true (header/footer del template). Poner false para documentos
+  // full-bleed sin header/footer (ej. proforma con diseño a sangre).
+  displayHeaderFooter?: boolean;
+  // Por defecto los márgenes del EFP/contrato. Pasar {0,0,0,0} para full-bleed.
+  margin?: { top: string; right: string; bottom: string; left: string };
 };
+
+const DEFAULT_MARGIN = { top: "22mm", right: "18mm", bottom: "22mm", left: "18mm" };
 
 export async function renderHtmlToPdf(
   html: string,
@@ -47,18 +54,14 @@ export async function renderHtmlToPdf(
       // Silenciar timeout: con load+domcontentloaded basta para el render.
     });
 
+    const displayHeaderFooter = options.displayHeaderFooter ?? true;
     const buffer = await page.pdf({
       format: "A4",
       printBackground: true,
-      displayHeaderFooter: true,
-      headerTemplate: options.headerHtml,
-      footerTemplate: options.footerHtml,
-      margin: {
-        top: "22mm",
-        right: "18mm",
-        bottom: "22mm",
-        left: "18mm",
-      },
+      displayHeaderFooter,
+      headerTemplate: options.headerHtml ?? "<span></span>",
+      footerTemplate: options.footerHtml ?? "<span></span>",
+      margin: options.margin ?? DEFAULT_MARGIN,
       preferCSSPageSize: false,
     });
     return Buffer.from(buffer);
