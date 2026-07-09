@@ -51,7 +51,21 @@ son **volúmenes nombrados** de Docker. **Nunca** correr `docker compose down -v
 
 ## 4. Deploy paso a paso
 
-> Si se arma un `deploy.sh`, debe encapsular exactamente estos pasos.
+> **En producción ya existe `~/voltia-pm/deploy.sh`** (en el VPS `voltia@Voltia1`),
+> que encapsula estos pasos. **No está versionado en el repo** (vive solo en el
+> server). Nicolás deploya con `./deploy.sh`. Su flujo (con `set -eo pipefail` +
+> `trap ERR` de rollback automático): (1) aborta si hay cambios sin commitear en el
+> server, (2) backup DB pre-deploy a `/home/voltia/backups/` (retención 14 días),
+> (3) `git pull --ff-only`, (4) `docker compose -f docker-compose.prod.yml --env-file
+> .env up -d --build`, (5) `prisma migrate deploy`, (6) health check a
+> `https://app.voltia.com.uy` (si falla → restaura el backup y aborta).
+>
+> Cubre `--build` **y** `migrate deploy`, así que para features **aditivas** alcanza
+> con `./deploy.sh`. Como hace `git pull` de `origin/main`, **todo lo nuevo tiene que
+> estar pusheado antes** (`save.sh` local; verificar `git status` sin commits sin
+> pushear). Ver §9 para cuándo NO alcanza (migraciones riesgosas).
+
+Equivalente manual (si no se usa el script):
 
 ```bash
 # 0. Backup PRE-deploy de la DB (imprescindible, ver §5)
@@ -141,3 +155,27 @@ docker compose -f docker-compose.prod.yml exec server npx prisma migrate deploy
 
 `migrate deploy` aplica solo migraciones pendientes, sin generar nuevas ni
 resetear. **Nunca** usar `migrate dev` ni `migrate reset` en producción.
+
+## 9. Criterio de migraciones: aditiva vs. riesgosa
+
+`./deploy.sh` es confiable para migraciones **aditivas / compatibles hacia atrás**
+(el 90% de los casos): tablas nuevas, columnas **nullable** o con **default**,
+índices, enums nuevos. El código viejo sigue andando mientras se aplica.
+
+Es **riesgoso** (puede fallar o dejar estado inconsistente) cuando la migración:
+
+- agrega una columna **NOT NULL sin default** a una tabla ya poblada,
+- pone un **unique** sobre datos con duplicados,
+- **borra / renombra / cambia el tipo** de columnas o tablas,
+- requiere **backfill** de datos para no romper.
+
+Límites del rollback automático del script en esos casos: restaura la **DB** pero
+**no el código** (queda código nuevo + base vieja); el restore (`gunzip | psql` sin
+`--clean`) puede fallar si el objeto ya existe; y una migración a medio aplicar
+queda marcada *failed* en `_prisma_migrations` → hay que resolverla a mano
+(`prisma migrate resolve`).
+
+Para cambios riesgosos: probar la migración sobre una **copia** primero, hacerla en
+dos pasos (**expand/contract**: agregar → backfill → luego quitar lo viejo), y tener
+el backup a mano. Quien prepare el cambio debe **avisar explícitamente** que la
+migración es riesgosa antes del deploy.
