@@ -48,6 +48,16 @@ const RECORRIDO_BY_STAGE: Record<StageType, ClienteRecorrido> = {
   OPERACIONES: "E1",
   HABILITACION_UTE: "E2",
   POSTVENTA: "E3",
+  // Pipeline expandido a 8 etapas (Traspasos v1): E1 hasta que la obra queda
+  // montada, E2 durante la tramitación UTE, E3 post-habilitación.
+  PRE_INGENIERIA: "E1",
+  REVISION_CAPATAZ: "E1",
+  VALIDACION_OPERACIONES: "E1",
+  INGENIERIA_FINAL: "E1",
+  COMPRAS: "E1",
+  EJECUCION_OBRA: "E1",
+  TRAMITACION_UTE: "E2",
+  POST_HABILITACION: "E3",
 };
 
 const RECORRIDO_RANK: Record<ClienteRecorrido, number> = { E1: 1, E2: 2, E3: 3 };

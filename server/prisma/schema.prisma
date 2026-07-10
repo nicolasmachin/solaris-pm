@@ -26,6 +26,20 @@ enum StageType {
   OPERACIONES
   HABILITACION_UTE
   POSTVENTA
+  // Pipeline expandido a 8 etapas (módulo Traspasos v1). Los 4 valores viejos
+  // (INGENIERIA, OPERACIONES, HABILITACION_UTE, POSTVENTA) quedan temporalmente
+  // para no romper filas Stage existentes; se eliminan después de la migración
+  // de datos que divide/renombra los bloques (Fase 5 del plan Traspasos).
+  // REVISION_CAPATAZ quedó reemplazado por VALIDACION_OPERACIONES (spec v3, C6);
+  // se mantiene temporalmente (sin uso) y se elimina también en la Fase 5.
+  PRE_INGENIERIA
+  REVISION_CAPATAZ
+  VALIDACION_OPERACIONES
+  INGENIERIA_FINAL
+  COMPRAS
+  EJECUCION_OBRA
+  TRAMITACION_UTE
+  POST_HABILITACION
 }
 
 enum TipoObra {
@@ -49,6 +63,10 @@ enum SubstageStatus {
   IN_PROGRESS
   COMPLETED
   BLOCKED
+  // NO_APLICA: sub-tarea condicional que no corresponde a este proyecto (spec
+  // v3, C13; ej. logística de envío si el equipo de obra no es tercerizado).
+  // Cuenta como resuelta a efectos del disparo del traspaso de cierre de etapa.
+  NO_APLICA
 }
 
 enum TaskStatus {
@@ -96,6 +114,7 @@ enum AuditEntityType {
   commission
   contract
   proforma
+  traspaso
 }
 
 enum AuditAction {
@@ -132,6 +151,9 @@ enum AuditAction {
   proforma_version_published
   proforma_version_discarded
   proforma_version_restored
+  traspaso_confirmado
+  traspaso_escalado
+  traspaso_cancelado
 }
 
 enum NotificationType {
@@ -139,6 +161,44 @@ enum NotificationType {
   deadline_warning
   prev_substage_completed
   engineering_completed
+  traspaso_asignado
+  traspaso_escalado
+}
+
+// ─── Traspasos entre áreas (módulo Traspasos v1) ─────────────────────────────
+
+enum TraspasoTipo {
+  T1_ONBOARDING_COMPLETADO
+  T2_PREINGENIERIA_PRONTA
+  T3_VALIDACION_OPERACIONES_A_INGENIERIA
+  T4_VALIDACION_OPERACIONES_A_ATENCION_CLIENTE
+  T5_INGENIERIA_FINAL_COMPLETADA
+  T6_MATERIALES_RECIBIDOS_EN_DEPOSITO
+  T7_OBRA_TERMINADA
+  T8_TRAMITE_UTE_FINALIZADO
+  T9_TICKET_DERIVADO
+  T10_TICKET_RESUELTO
+  T11_ENCUESTA_NOTA_BAJA
+  T12_CLIENTE_AUTOAGENDO_MANTENIMIENTO
+  T13_MANTENIMIENTO_EJECUTADO
+}
+
+enum TraspasoEstado {
+  PENDIENTE_CONFIRMACION
+  CONFIRMADO
+  ESCALADO
+  CANCELADO
+}
+
+enum SubRolOperaciones {
+  CAPATACIA
+  COMPRAS
+  GERENTE
+}
+
+enum PostHabilitacionSubFase {
+  E3_A_COMPROMISO_COMERCIAL
+  E3_B_VIDA_UTIL_EXTENDIDA
 }
 
 enum GoalArea {
@@ -199,6 +259,7 @@ enum Module {
   INFORMES
   EXPERIENCIA_CLIENTES
   COMISIONES
+  TRASPASOS
 }
 
 enum Moneda {
@@ -315,6 +376,11 @@ enum Action {
   // DEBUG_CALCULADORA = gate del drawer de debug de cálculo del borrador
   // (constructor de propuestas v2). Feature admin-only por default.
   DEBUG_CALCULADORA
+  // CONFIRM = confirmar un traspaso (acuse humano del modal). Módulo TRASPASOS.
+  CONFIRM
+  // ADMIN_REPORT = ver los reportes agregados de traspasos. Módulo TRASPASOS,
+  // admin-only por default.
+  ADMIN_REPORT
 }
 
 enum SettingLevel {
@@ -428,6 +494,12 @@ model User {
   clientInteractionsDeleted      ClientInteraction[]         @relation("ClientInteractionDeletedBy")
   commissions                    Commission[]                @relation("CommissionAsesor")
   commissionsCreated             Commission[]                @relation("CommissionCreatedBy")
+  // Sub-roles dentro de OPERACIONES (Capatacía/Compras/Gerente). Solo aplica a
+  // usuarios con rol OPERACIONES; un usuario puede tener varios. Módulo Traspasos.
+  subRolesOperaciones            SubRolOperaciones[]
+  traspasosComoModal             Traspaso[]                  @relation("TraspasoModalUsuario")
+  traspasosConfirmados           Traspaso[]                  @relation("TraspasoConfirmadoPor")
+  traspasosRecibidos             TraspasoDestinatario[]      @relation("TraspasoDestinatarioUsuario")
   passwordTemporary              Boolean                     @default(false)
   deletedAt                      DateTime?                   @db.Timestamptz(6)
   createdAt                      DateTime                    @default(now()) @db.Timestamptz(6)
@@ -507,6 +579,16 @@ model Project {
   informes                Informe[]                @relation("InformesDeProyecto")
   emailLogs               EmailLog[]               @relation("EmailLogProject")
   clientInteractions      ClientInteraction[]
+  traspasos               Traspaso[]
+  // Sub-fase del E3 (Post-Habilitación). Solo se setea cuando el proyecto llega
+  // a POST_HABILITACION (T7). E3-A = compromiso comercial (año 0-2); E3-B = vida
+  // útil extendida (año 2-25). Es un flag interno para reportes, no cambia la etapa.
+  postHabilitacionSubFase         PostHabilitacionSubFase?
+  postHabilitacionInicioEn        DateTime?                @db.Timestamptz(6)
+  postHabilitacionFechaAproximada Boolean                  @default(false)
+  // Equipo de obra tercerizado vs propio. Condiciona sub-tareas del pipeline
+  // (ej. logística de envío en Compras). Spec v3, C13.
+  equipoTercerizado               Boolean                  @default(false)
   // Datos del cliente que se cargan desde el form del proyecto y/o se
   // extraen de la cédula con IA. Ver feature ute-doc-extraction.
   // nombreCliente: nombre tal cual figura en la cédula, usado en los docs
@@ -534,6 +616,67 @@ model Project {
   @@index([saleDate])
   @@index([deletedAt])
   @@map("projects")
+}
+
+// ─── Traspasos entre áreas ───────────────────────────────────────────────────
+// Evento formal, persistente y auditable por el cual un área transfiere trabajo
+// a otra: condición detectada → modal al actor → confirmación humana → notifica
+// a los destinatarios. Red de seguridad: escalación a ADMIN por SLA vencido.
+
+model Traspaso {
+  id                   String                 @id @default(cuid())
+  tipo                 TraspasoTipo
+  estado               TraspasoEstado         @default(PENDIENTE_CONFIRMACION)
+
+  projectId            String
+  project              Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Payload flexible del contexto (ej. flags del reporte de capataz, nota del emisor).
+  payload              Json?
+
+  condicionDetectadaEn DateTime               @default(now()) @db.Timestamptz(6)
+
+  // Usuario al que se le muestra el modal (el actor que ejecutó la acción).
+  modalUsuarioId       String
+  modalUsuario         User                   @relation("TraspasoModalUsuario", fields: [modalUsuarioId], references: [id], onDelete: Restrict)
+  modalMostradoEn      DateTime?              @db.Timestamptz(6)
+
+  confirmadoEn         DateTime?              @db.Timestamptz(6)
+  confirmadoPorId      String?
+  confirmadoPor        User?                  @relation("TraspasoConfirmadoPor", fields: [confirmadoPorId], references: [id], onDelete: SetNull)
+  notaAlReceptor       String?
+
+  escaladoEn           DateTime?              @db.Timestamptz(6)
+
+  destinatarios        TraspasoDestinatario[]
+
+  createdAt            DateTime               @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime               @updatedAt @db.Timestamptz(6)
+
+  @@index([projectId])
+  @@index([estado])
+  @@index([modalUsuarioId, estado])
+  @@index([tipo, condicionDetectadaEn])
+  @@map("traspasos")
+}
+
+model TraspasoDestinatario {
+  id              String   @id @default(cuid())
+  traspasoId      String
+  traspaso        Traspaso @relation(fields: [traspasoId], references: [id], onDelete: Cascade)
+  usuarioId       String
+  usuario         User     @relation("TraspasoDestinatarioUsuario", fields: [usuarioId], references: [id], onDelete: Cascade)
+  // true si entra solo por regla de copia (Gerente de Operaciones o ADMIN).
+  esCopia         Boolean  @default(false)
+  notificadoInApp Boolean  @default(false)
+  notificadoEmail Boolean  @default(false)
+  leidoEn         DateTime? @db.Timestamptz(6)
+
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([traspasoId, usuarioId])
+  @@index([usuarioId, leidoEn])
+  @@map("traspaso_destinatarios")
 }
 
 // Relación many-to-many entre Project y User (rol CLIENT). Reemplaza al

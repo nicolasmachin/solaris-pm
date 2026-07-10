@@ -89,6 +89,10 @@ const SYSTEM_ROLES: Array<{ name: string; label: string }> = [
   { name: "ASESOR_COMERCIAL", label: "Asesor comercial" },
   { name: "FINANZAS", label: "Finanzas" },
   { name: "CLIENT", label: "Cliente" },
+  // Roles del protocolo de entrega (módulo Traspasos v1). Todavía no se asignan
+  // a usuarios; existen para el cálculo de destinatarios de los traspasos.
+  { name: "TRAMITACION_UTE", label: "Tramitación UTE" },
+  { name: "ATENCION_AL_CLIENTE", label: "Atención al Cliente" },
 ];
 
 async function seedSystemRoles(): Promise<Map<string, string>> {
@@ -222,6 +226,32 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "POSTVENTA", module: Module.STOCK,        actions: [Action.VIEW] },
     { roleName: "POSTVENTA", module: Module.TRAMITES_UTE, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
     { roleName: "POSTVENTA", module: Module.EXPERIENCIA_CLIENTES, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+
+    // ─── Módulo Traspasos v1 (adiciones netas respecto de los 137 de prod) ───
+    // Bandeja de pendientes + confirmación para los roles internos que
+    // participan del ciclo de entrega. ADMIN además ve los reportes agregados.
+    { roleName: "ADMIN", module: Module.TRASPASOS, actions: [Action.VIEW, Action.CONFIRM, Action.ADMIN_REPORT] },
+    { roleName: "ASESOR_COMERCIAL", module: Module.TRASPASOS, actions: [Action.VIEW, Action.CONFIRM] },
+    { roleName: "INGENIERIA", module: Module.TRASPASOS, actions: [Action.VIEW, Action.CONFIRM] },
+    { roleName: "OPERACIONES", module: Module.TRASPASOS, actions: [Action.VIEW, Action.CONFIRM] },
+    { roleName: "POSTVENTA", module: Module.TRASPASOS, actions: [Action.VIEW, Action.CONFIRM] },
+
+    // TRAMITACION_UTE — rol nuevo. Base funcional (trámite UTE + habilitación) + traspasos.
+    { roleName: "TRAMITACION_UTE", module: Module.VENTAS,       actions: [Action.VIEW] },
+    { roleName: "TRAMITACION_UTE", module: Module.TRAMITES_UTE, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
+    { roleName: "TRAMITACION_UTE", module: Module.HABILITACION, actions: [Action.VIEW, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
+    { roleName: "TRAMITACION_UTE", module: Module.POSTVENTA,    actions: [Action.VIEW] },
+    { roleName: "TRAMITACION_UTE", module: Module.METRICAS,     actions: [Action.VIEW] },
+    { roleName: "TRAMITACION_UTE", module: Module.TRASPASOS,    actions: [Action.VIEW, Action.CONFIRM] },
+
+    // ATENCION_AL_CLIENTE — rol nuevo. Hub del ciclo post-venta (bitácora + portal) + traspasos.
+    { roleName: "ATENCION_AL_CLIENTE", module: Module.VENTAS,               actions: [Action.VIEW] },
+    { roleName: "ATENCION_AL_CLIENTE", module: Module.EXPERIENCIA_CLIENTES, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { roleName: "ATENCION_AL_CLIENTE", module: Module.PORTAL_CLIENTE,       actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
+    { roleName: "ATENCION_AL_CLIENTE", module: Module.POSTVENTA,            actions: [Action.VIEW, Action.COMMENT] },
+    { roleName: "ATENCION_AL_CLIENTE", module: Module.TRAMITES_UTE,         actions: [Action.VIEW] },
+    { roleName: "ATENCION_AL_CLIENTE", module: Module.METRICAS,             actions: [Action.VIEW] },
+    { roleName: "ATENCION_AL_CLIENTE", module: Module.TRASPASOS,            actions: [Action.VIEW, Action.CONFIRM] },
   ];
 
   for (const entry of matrix) {

@@ -36,6 +36,15 @@ export const STAGE_LABELS: Record<StageType, string> = {
   [StageType.OPERACIONES]: "Operaciones",
   [StageType.HABILITACION_UTE]: "Habilitación UTE",
   [StageType.POSTVENTA]: "Post-Habilitación",
+  // Pipeline expandido a 8 etapas (Traspasos v1).
+  [StageType.PRE_INGENIERIA]: "Pre-Ingeniería",
+  [StageType.REVISION_CAPATAZ]: "Revisión del Capataz",
+  [StageType.VALIDACION_OPERACIONES]: "Validación de Operaciones",
+  [StageType.INGENIERIA_FINAL]: "Ingeniería Final",
+  [StageType.COMPRAS]: "Compras",
+  [StageType.EJECUCION_OBRA]: "Ejecución de Obra",
+  [StageType.TRAMITACION_UTE]: "Tramitación UTE",
+  [StageType.POST_HABILITACION]: "Post-Habilitación",
 };
 
 export const TIPO_OBRA_LABELS: Record<TipoObra, string> = {

@@ -119,6 +119,7 @@ import {
 } from "../services/pipeline-definitions.js";
 import { createNotificationIfNotExists } from "../services/notification.service.js";
 import { notifyEngineeringCompleted } from "../services/notify.service.js";
+import { crearTraspasoSiNoExiste, STAGE_TO_TRASPASO } from "../services/traspasos/index.js";
 import { fetchBcuRatePreview } from "../services/exchange-rate.service.js";
 import {
   applyDeadlineRulesToProject,
@@ -2308,6 +2309,19 @@ export async function registerApiRoutes(app: FastifyInstance) {
         projectId: params.projectId,
         trigger: "stage_completed",
       });
+    }
+
+    // Traspaso entre áreas al completar una etapa del pipeline expandido (T1–T7).
+    // Idempotente por (proyecto, tipo). Best-effort: no interrumpe el avance.
+    if (body.status && body.status !== stage.status && body.status === StageStatus.COMPLETED) {
+      const tipoTraspaso = STAGE_TO_TRASPASO[stage.name];
+      if (tipoTraspaso) {
+        await crearTraspasoSiNoExiste({
+          tipo: tipoTraspaso,
+          projectId: params.projectId,
+          actorUserId: user.id,
+        });
+      }
     }
 
     await refreshStageProgressAndProject(stage.id, params.projectId);
@@ -4879,6 +4893,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
     [StageType.OPERACIONES]: Module.OPERACIONES,
     [StageType.HABILITACION_UTE]: Module.HABILITACION,
     [StageType.POSTVENTA]: Module.POSTVENTA,
+    [StageType.PRE_INGENIERIA]: Module.INGENIERIA,
+    [StageType.REVISION_CAPATAZ]: Module.OPERACIONES,
+    [StageType.VALIDACION_OPERACIONES]: Module.OPERACIONES,
+    [StageType.INGENIERIA_FINAL]: Module.INGENIERIA,
+    [StageType.COMPRAS]: Module.OPERACIONES,
+    [StageType.EJECUCION_OBRA]: Module.OPERACIONES,
+    [StageType.TRAMITACION_UTE]: Module.HABILITACION,
+    [StageType.POST_HABILITACION]: Module.POSTVENTA,
   };
 
   function computeInitials(name: string): string {
