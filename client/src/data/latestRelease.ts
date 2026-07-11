@@ -23,20 +23,39 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "7.1",
-  date: "28 de junio de 2026",
+  version: "8.0",
+  date: "10 de julio de 2026",
   sections: [
     {
-      title: "Proyectos — Cierre automático al finalizar el trámite UTE",
+      title: 'Experiencia Solar (antes "Atención al Cliente")',
       items: [
-        "Al marcar el trámite UTE como finalizado, el proyecto avanza solo a la etapa Post-Habilitación y queda en estado Finalizado, con la fecha real del trámite (no la del día en que se procesa).",
-        "En la sección Clientes, esos proyectos pasan a E3 · Post-Habilitación automáticamente, derivado del avance real del proyecto.",
+        "El área de atención al cliente pasa a llamarse Experiencia Solar, y a los clientes ahora los llamamos Generadores. El cambio se ve en el menú, en el portal (\"Portal de Generadores\") y en las comunicaciones del área.",
       ],
     },
     {
-      title: "Arreglos",
+      title: "Pipeline del proyecto — 8 etapas + Experiencia Solar en paralelo",
       items: [
-        'Filtro de etapa en Proyectos: filtrar por "Post-Habilitación" ahora trae también los proyectos ya completados que están en esa etapa (antes devolvía 0).',
+        "La vista del proyecto muestra el pipeline expandido a 8 etapas, con color por área. Las etapas completadas se ven en verde y la etapa en curso queda resaltada.",
+        "Debajo, en paralelo, aparecen los bloques de Experiencia Solar (Seguimiento Preobra y Habilitación): son clickeables y tienen sus propias sub-tareas para acompañar al Generador. (Aplica a proyectos nuevos.)",
+      ],
+    },
+    {
+      title: "Traspasos entre áreas",
+      items: [
+        'Al cerrar una etapa se genera un traspaso hacia el área que sigue. Llega una notificación para confirmarlo desde la nueva sección "Pendientes"; recién al confirmarlo se avisa al área correspondiente.',
+      ],
+    },
+    {
+      title: "Experiencia Solar — importar y editar Generadores",
+      items: [
+        "Nuevo botón \"Importar\": subís un CSV con Generadores anteriores, ves una vista previa con los duplicados marcados y confirmás (se cargan sin crear el proyecto completo).",
+        "En el listado ahora se pueden editar todos los datos con un clic (nombre, departamento, potencia, asesor, estado y etapa con desplegables, además de mail/teléfono/entrega).",
+      ],
+    },
+    {
+      title: "Aviso de habilitación al Generador",
+      items: [
+        "Cuando UTE finaliza el trámite, si en 24 a 48 horas no se registró el aviso al Generador, Experiencia Solar recibe un recordatorio (y a las 48 h se escala). El listado marca a los Generadores con aviso pendiente.",
       ],
     },
   ],
@@ -51,6 +70,15 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "7.1",
+    shortDate: "8 jul",
+    highlights: [
+      "Onboarding: generador de contrato y generador de proforma bancaria (BBVA) en PDF, con datos precargados y vista previa en vivo.",
+      "Cotizador: el costo de instalación eléctrica escala con el tamaño del sistema (tabla de multiplicadores editable) y muestra el precio final con IVA.",
+      'Propuestas: el PDF/Excel se descarga con nombre claro "Propuesta Comercial Voltia - {cliente} - V{n}".',
+    ],
+  },
   {
     version: "7.0",
     shortDate: "28 jun",

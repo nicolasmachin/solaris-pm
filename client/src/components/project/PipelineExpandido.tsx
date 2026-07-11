@@ -5,7 +5,6 @@ import {
   AREA_COLOR,
   AREA_LABEL,
   PARALLEL_SPAN,
-  STAGE_TRASPASO,
   isParallelStage,
   stageArea,
   stageLabel,
@@ -30,34 +29,36 @@ function subDotColor(status: Stage["substages"][number]["status"]): string {
   return "var(--color-text-muted)";
 }
 
-const chipStyle: CSSProperties = {
-  background: "var(--color-bg-card-hover)",
-  border: "1px solid var(--color-border)",
-  color: "var(--color-accent)",
-  fontWeight: 700,
-  borderRadius: 4,
-  padding: "1px 6px",
-  fontSize: 10,
-  fontFamily: "var(--font-mono)",
+// Fondo/borde de la card según el estado. Completada = verde (claramente
+// identificable), en curso = acento, bloqueada = rojo, pendiente = neutra.
+const CARD_BG: Record<Stage["status"], string> = {
+  COMPLETED: "var(--color-pipe-done-bg)",
+  IN_PROGRESS: "var(--color-pipe-active-bg)",
+  BLOCKED: "var(--color-danger-bg)",
+  PENDING: "var(--color-bg-card)",
+};
+const CARD_BORDER: Record<Stage["status"], string> = {
+  COMPLETED: "var(--color-pipe-done-border)",
+  IN_PROGRESS: "var(--color-accent)",
+  BLOCKED: "color-mix(in srgb, var(--color-danger-text) 40%, transparent)",
+  PENDING: "var(--color-border)",
 };
 
-function StageCard({ stage, onClick }: { stage: Stage; onClick: () => void }) {
+function StageCard({ stage, onClick, gridColumn }: { stage: Stage; onClick: () => void; gridColumn?: string }) {
   const display = deriveDisplayStatus(stage);
   const area = stageArea(stage.name);
   const isActive = display === "IN_PROGRESS";
   const isDone = display === "COMPLETED";
-  const traspaso = STAGE_TRASPASO[stage.name];
 
   return (
     <button
       onClick={onClick}
       style={{
+        gridColumn,
         textAlign: "left",
         cursor: "pointer",
-        background: "var(--color-bg-card)",
-        border: isActive
-          ? "1px solid var(--color-accent)"
-          : "1px solid var(--color-border)",
+        background: CARD_BG[display],
+        border: `1px solid ${CARD_BORDER[display]}`,
         boxShadow: isActive ? "0 0 0 1px var(--color-accent)" : "none",
         borderRadius: 8,
         overflow: "hidden",
@@ -120,53 +121,6 @@ function StageCard({ stage, onClick }: { stage: Stage; onClick: () => void }) {
             ))}
         </ul>
       </div>
-
-      {traspaso && (
-        <div
-          style={{
-            borderTop: "1px solid var(--color-border)",
-            padding: "5px 9px",
-            fontSize: 9,
-            color: "var(--color-text-muted)",
-          }}
-        >
-          <span style={chipStyle}>{traspaso}</span>
-        </div>
-      )}
-    </button>
-  );
-}
-
-// Carril clickeable de una etapa paralela de Experiencia Solar. Abre el drawer
-// (con sus sub-etapas) igual que las etapas del pipeline.
-function CxLane({ stage, start, end, onClick }: { stage: Stage; start: number; end: number; onClick: () => void }) {
-  const display = deriveDisplayStatus(stage);
-  const done = stage.substages.filter((s) => s.status === "COMPLETED").length;
-  const estado =
-    display === "COMPLETED" ? " · ✓" : display === "IN_PROGRESS" ? ` · ${stage.progressPercent}%` : "";
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        gridColumn: `${start + 1} / ${end + 2}`,
-        background: AREA_COLOR.CX,
-        opacity: display === "PENDING" ? 0.72 : 1,
-        border: "1px solid rgba(255,255,255,0.18)",
-        borderRadius: 8,
-        padding: "8px 10px",
-        color: "#fff",
-        textAlign: "left",
-        cursor: "pointer",
-        minHeight: 44,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-      }}
-    >
-      <span style={{ fontSize: 10.5, fontWeight: 700, lineHeight: 1.25 }}>{stageLabel(stage.name)}</span>
-      <span style={{ fontSize: 8.5, fontWeight: 500, opacity: 0.92, marginTop: 2 }}>
-        {done}/{stage.substages.length} sub-tareas{estado} · clic para abrir
-      </span>
     </button>
   );
 }
@@ -229,20 +183,17 @@ export function PipelineExpandido({ stages, onStageClick }: Props) {
             ))}
           </div>
 
-          {/* Conectores de traspaso */}
-          <div style={{ ...gridCols, margin: "4px 0" }}>
-            {linear.map((s) => (
-              <div key={s.id} style={{ display: "flex", justifyContent: "center", minHeight: 16 }}>
-                {STAGE_TRASPASO[s.name] && <span style={chipStyle}>{STAGE_TRASPASO[s.name]}</span>}
-              </div>
-            ))}
-          </div>
-
-          {/* Carriles paralelos de Experiencia Solar (clickeables, con sub-etapas) */}
+          {/* Etapas paralelas de Experiencia Solar: mismo diseño (StageCard),
+              posicionadas como carriles que abarcan varias columnas. */}
           {lanes.length > 0 && (
-            <div style={{ ...gridCols, gap: 6, marginTop: 2 }}>
+            <div style={{ ...gridCols, marginTop: 6 }}>
               {lanes.map(({ p, start, end }) => (
-                <CxLane key={p.id} stage={p} start={start} end={end} onClick={() => onStageClick(p)} />
+                <StageCard
+                  key={p.id}
+                  stage={p}
+                  onClick={() => onStageClick(p)}
+                  gridColumn={`${start + 1} / ${end + 2}`}
+                />
               ))}
             </div>
           )}

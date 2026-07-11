@@ -1,6 +1,6 @@
 # Novedades
 
-## v7.1
+## v8.0
 
 ### 10 de julio de 2026
 
@@ -12,6 +12,7 @@
 
 - La vista del proyecto muestra el **pipeline expandido a 8 etapas** (Onboarding, Pre-Ingeniería, Validación de Operaciones, Ingeniería Final, Compras, Ejecución de Obra, Tramitación UTE y Post-Habilitación), con **color por área** y la etapa en curso resaltada.
 - Debajo, en **paralelo**, aparecen los bloques de **Experiencia Solar** (Seguimiento Preobra y Habilitación): son **clickeables** y tienen sus propias sub-tareas para llevar el acompañamiento del Generador durante todo el proceso.
+- Las **etapas completadas se ven en verde**, claramente identificables de un vistazo; la etapa en curso queda resaltada.
 - (Aplica a los proyectos nuevos.)
 
 #### Traspasos entre áreas
@@ -26,6 +27,8 @@
 #### Aviso de habilitación al Generador
 
 - Cuando UTE finaliza el trámite, si en **24 a 48 horas** no se registró el aviso al Generador, Experiencia Solar recibe un recordatorio (y a las 48 h se escala a administración). El listado marca a los Generadores con **aviso pendiente**.
+
+## v7.1
 
 ### 8 de julio de 2026
 
