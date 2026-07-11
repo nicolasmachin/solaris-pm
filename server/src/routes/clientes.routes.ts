@@ -5,10 +5,11 @@
 // El "cliente" es una proyección sobre `Project` (relación 1:1). Toda la lógica
 // vive en services/clientes/. Ver EXPERIENCIA_CLIENTES_SPEC.md.
 
-import { Action, AuditAction, AuditEntityType, InteractionChannel, Module } from "@prisma/client";
+import { Action, AuditAction, AuditEntityType, InteractionChannel, InteractionDirection, InteractionReason, Module, ProjectStatus } from "@prisma/client";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
 
+import { prisma } from "../lib/prisma.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
@@ -29,8 +30,27 @@ import {
   type ClienteFiltros,
 } from "../services/clientes/index.js";
 import { updateProjectClientFields } from "../services/project-fields.service.js";
-import { forbidden, notFound, unauthorized } from "../utils/errors.js";
-import { clientEmailValue, clientPhoneValue, dateOnlyValue } from "../validators/projectFields.js";
+import { confirmImport, previewImport } from "../services/clientes/import.service.js";
+import { badRequest, forbidden, notFound, unauthorized } from "../utils/errors.js";
+import {
+  addressValue,
+  capacityValue,
+  clienteEstadoValue,
+  clientEmailValue,
+  clientNameValue,
+  clientPhoneValue,
+  dateOnlyValue,
+  provinceValue,
+} from "../validators/projectFields.js";
+
+// El "estado" del CRM mapea a ProjectStatus (ACTIVO cubre ACTIVE/PAUSED: al
+// setearlo se escribe ACTIVE).
+const ESTADO_TO_STATUS: Record<"ACTIVO" | "FINALIZADO" | "ARCHIVADO" | "PROSPECTO", ProjectStatus> = {
+  ACTIVO: ProjectStatus.ACTIVE,
+  FINALIZADO: ProjectStatus.COMPLETED,
+  ARCHIVADO: ProjectStatus.ARCHIVED,
+  PROSPECTO: ProjectStatus.PROSPECT,
+};
 
 function ensureUser(request: FastifyRequest) {
   if (!request.user) throw unauthorized("No autenticado");
@@ -82,6 +102,14 @@ const patchClienteBodySchema = z
     mail: clientEmailValue.nullable().optional(),
     telefono: clientPhoneValue.nullable().optional(),
     fechaEntrega: dateOnlyValue.nullable().optional(),
+    nombre: clientNameValue.optional(),
+    departamento: provinceValue.optional(),
+    potencia: capacityValue.optional(),
+    asesor: z.string().min(1).nullable().optional(),
+    estado: clienteEstadoValue.optional(),
+    direccion: addressValue.nullable().optional(),
+    fechaVenta: dateOnlyValue.nullable().optional(),
+    etapa: z.enum(["E1", "E2", "E3"]).nullable().optional(),
   })
   .strict();
 
@@ -113,6 +141,55 @@ export async function registerClientesRoutes(app: FastifyInstance) {
         .header("Content-Type", "text/csv; charset=utf-8")
         .header("Content-Disposition", `attachment; filename="clientes_voltia_${fecha}.csv"`);
       return reply.send(csv);
+    },
+  );
+
+  // ─── Importación desde CSV (registros livianos, sin pipeline) ────────────
+  app.post(
+    "/clientes/import/preview",
+    { preHandler: authorize(Module.EXPERIENCIA_CLIENTES, Action.CREATE) },
+    async (request) => {
+      const parts = request.parts();
+      let text: string | null = null;
+      for await (const part of parts) {
+        if (part.type === "file") {
+          const buf = await part.toBuffer();
+          text = buf.toString("utf-8");
+          break;
+        }
+      }
+      if (text === null) throw badRequest("NO_FILE", "Subí un archivo CSV");
+      const result = await previewImport(text);
+      if ("error" in result) throw badRequest("CSV_PARSE_ERROR", result.error ?? "CSV inválido");
+      return result;
+    },
+  );
+
+  const importConfirmSchema = z.object({
+    rows: z
+      .array(
+        z.object({
+          nombre: z.string().min(1),
+          mail: z.string().nullable().optional(),
+          telefono: z.string().nullable().optional(),
+          departamento: z.string().nullable().optional(),
+          potenciaKwp: z.number().nullable().optional(),
+          status: z.nativeEnum(ProjectStatus).optional(),
+          fechaEntrega: z.string().nullable().optional(),
+          asesorId: z.string().nullable().optional(),
+        }),
+      )
+      .min(1)
+      .max(2000),
+  });
+
+  app.post(
+    "/clientes/import/confirm",
+    { preHandler: authorize(Module.EXPERIENCIA_CLIENTES, Action.CREATE) },
+    async (request) => {
+      const user = ensureUser(request);
+      const body = importConfirmSchema.parse(request.body);
+      return confirmImport(body.rows, user.id);
     },
   );
 
@@ -149,9 +226,30 @@ export async function registerClientesRoutes(app: FastifyInstance) {
       const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
       const body = patchClienteBodySchema.parse(request.body);
 
+      // Validar que el asesor exista (si se está asignando uno).
+      if (body.asesor) {
+        const asesor = await prisma.user.findFirst({
+          where: { id: body.asesor, deletedAt: null },
+          select: { id: true },
+        });
+        if (!asesor) throw badRequest("ASESOR_NOT_FOUND", "El asesor seleccionado no existe");
+      }
+
       const updated = await updateProjectClientFields(
         projectId,
-        { clientEmail: body.mail, clientPhone: body.telefono, plannedEndDate: body.fechaEntrega },
+        {
+          clientEmail: body.mail,
+          clientPhone: body.telefono,
+          plannedEndDate: body.fechaEntrega,
+          clientName: body.nombre,
+          locationProvince: body.departamento,
+          capacityKwp: body.potencia,
+          salespersonId: body.asesor,
+          status: body.estado ? ESTADO_TO_STATUS[body.estado] : undefined,
+          clientAddress: body.direccion,
+          saleDate: body.fechaVenta,
+          recorridoManual: body.etapa,
+        },
         user.id,
         "experiencia_clientes",
       );
@@ -183,12 +281,17 @@ export async function registerClientesRoutes(app: FastifyInstance) {
         .object({
           channel: z.nativeEnum(InteractionChannel),
           content: z.string().trim().min(1).max(2000),
+          direction: z.nativeEnum(InteractionDirection).optional(),
+          reason: z.nativeEnum(InteractionReason).optional(),
         })
         .parse(request.body);
 
       if (!(await projectExists(projectId))) throw notFound("CLIENTE_NOT_FOUND", "Cliente no encontrado");
 
-      const interaction = await createInteraction(projectId, body.channel, body.content, user.id);
+      const interaction = await createInteraction(projectId, body.channel, body.content, user.id, {
+        direction: body.direction,
+        reason: body.reason,
+      });
 
       await createAuditEntry({
         entityType: AuditEntityType.client_interaction,
@@ -196,7 +299,7 @@ export async function registerClientesRoutes(app: FastifyInstance) {
         projectId,
         userId: user.id,
         action: AuditAction.created,
-        description: `Registró una interacción (${body.channel}) en Experiencia de Clientes`,
+        description: `Registró una interacción (${body.channel}) en Experiencia Solar`,
       });
 
       reply.code(201);
@@ -233,7 +336,7 @@ export async function registerClientesRoutes(app: FastifyInstance) {
         fieldChanged: "content",
         oldValue: existing.content,
         newValue: body.content,
-        description: `Editó una interacción en Experiencia de Clientes`,
+        description: `Editó una interacción en Experiencia Solar`,
       });
 
       return updated;
@@ -261,7 +364,7 @@ export async function registerClientesRoutes(app: FastifyInstance) {
         projectId: existing.projectId,
         userId: user.id,
         action: AuditAction.deleted,
-        description: `Borró una interacción en Experiencia de Clientes`,
+        description: `Borró una interacción en Experiencia Solar`,
       });
 
       reply.code(204);

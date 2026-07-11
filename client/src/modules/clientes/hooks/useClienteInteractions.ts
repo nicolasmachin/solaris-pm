@@ -6,17 +6,25 @@ import {
   patchInteraction,
   type ClienteFicha,
   type InteractionChannel,
+  type InteractionDirection,
+  type InteractionReason,
 } from "../../../api/clientes.api";
 
 // Crear interacción → invalida la ficha (que ya trae las interacciones) para
-// que la bitácora se refresque sin un fetch extra.
+// que la bitácora se refresque sin un fetch extra. También invalida la lista de
+// clientes (el "último contacto" y el badge de aviso pendiente viven ahí).
 export function useCreateInteraction(projectId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { channel: InteractionChannel; content: string }) =>
-      createInteraction(projectId, body),
+    mutationFn: (body: {
+      channel: InteractionChannel;
+      content: string;
+      direction?: InteractionDirection;
+      reason?: InteractionReason;
+    }) => createInteraction(projectId, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["cliente", projectId] });
+      qc.invalidateQueries({ queryKey: ["clientes"] });
     },
   });
 }

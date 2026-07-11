@@ -71,7 +71,7 @@ export function PortalLayout() {
         <Outlet />
       </main>
       <footer className="border-t border-[var(--color-border)] py-3 text-center text-[10px] text-[var(--color-text-muted)] font-mono">
-        Voltia · Portal de clientes
+        Voltia · Portal de Generadores
       </footer>
     </div>
   );

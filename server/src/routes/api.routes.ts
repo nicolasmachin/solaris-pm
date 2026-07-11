@@ -116,6 +116,7 @@ import {
   getStageLabel,
   getTipoObraLabel,
   getOperationVisibility,
+  isParallelStage,
 } from "../services/pipeline-definitions.js";
 import { createNotificationIfNotExists } from "../services/notification.service.js";
 import { notifyEngineeringCompleted } from "../services/notify.service.js";
@@ -2063,7 +2064,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
 
     if (body.status && body.status !== stage.status) {
-      if (body.status === StageStatus.IN_PROGRESS) {
+      // Las etapas paralelas de Experiencia Solar no participan del orden lineal.
+      if (body.status === StageStatus.IN_PROGRESS && !isParallelStage(stage.name)) {
         const previousStage = await prisma.stage.findFirst({
           where: {
             projectId: params.projectId,
@@ -4901,6 +4903,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
     [StageType.EJECUCION_OBRA]: Module.OPERACIONES,
     [StageType.TRAMITACION_UTE]: Module.HABILITACION,
     [StageType.POST_HABILITACION]: Module.POSTVENTA,
+    [StageType.SEGUIMIENTO_PREOBRA]: Module.EXPERIENCIA_CLIENTES,
+    [StageType.SEGUIMIENTO_HABILITACION]: Module.EXPERIENCIA_CLIENTES,
   };
 
   function computeInitials(name: string): string {

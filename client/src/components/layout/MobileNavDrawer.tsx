@@ -174,7 +174,7 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
           <CanAccess module="EXPERIENCIA_CLIENTES" action="VIEW">
             <NavLink to="/clientes" className={linkClass}>
               <Contact size={18} className="shrink-0" />
-              <span>Experiencia de Clientes</span>
+              <span>Experiencia Solar</span>
             </NavLink>
           </CanAccess>
           <CanAccess module="FINANZAS" action="VIEW">

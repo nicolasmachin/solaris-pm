@@ -11,7 +11,13 @@ import {
 } from "@prisma/client";
 
 import { prisma } from "../lib/prisma.js";
-import { PIPELINE_DEFINITIONS, getActivePipelineTemplate, getStageLabel } from "./pipeline-definitions.js";
+import {
+  PARALLEL_STAGE_TYPES,
+  PIPELINE_DEFINITIONS,
+  getActivePipelineTemplate,
+  getStageLabel,
+  isParallelStage,
+} from "./pipeline-definitions.js";
 import { addDays, diffInDays, startOfUtcDay, todayUtc } from "../utils/dates.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../utils/serialization.js";
 
@@ -173,7 +179,7 @@ export async function syncStageProgress(stageId: string) {
  */
 export async function completeProjectIfAllStagesDone(projectId: string, completedAt: Date) {
   const allProjectStages = await prisma.stage.findMany({
-    where: { projectId },
+    where: { projectId, name: { notIn: PARALLEL_STAGE_TYPES } },
     select: { status: true },
   });
   const allStagesDone =
@@ -226,7 +232,7 @@ export async function syncSubstageProgress(substageId: string) {
 
 export async function calculateProjectProgress(projectId: string) {
   const stages = await prisma.stage.findMany({
-    where: { projectId },
+    where: { projectId, name: { notIn: PARALLEL_STAGE_TYPES } },
     orderBy: { order: "asc" },
   });
 
@@ -252,13 +258,15 @@ export async function sumProjectDelayDays(projectId: string) {
   return result._sum.delayDays ?? 0;
 }
 
-export function getCurrentStage<T extends { status: StageStatus; order: number }>(stages: T[]) {
+export function getCurrentStage<T extends { status: StageStatus; order: number; name: string }>(stages: T[]) {
+  // Las etapas paralelas de Experiencia Solar no cuentan como "etapa en curso".
+  const linear = stages.filter((stage) => !isParallelStage(stage.name));
   return (
-    stages.find((stage) => stage.status === StageStatus.IN_PROGRESS) ??
-    [...stages]
+    linear.find((stage) => stage.status === StageStatus.IN_PROGRESS) ??
+    [...linear]
       .filter((stage) => stage.status === StageStatus.COMPLETED)
       .sort((a, b) => b.order - a.order)[0] ??
-    [...stages].sort((a, b) => a.order - b.order)[0] ??
+    [...linear].sort((a, b) => a.order - b.order)[0] ??
     null
   );
 }
@@ -295,10 +303,12 @@ export function buildInitialStages(
 ) {
   const activeTemplate = template ?? PIPELINE_DEFINITIONS;
   const totalDays = Math.max(1, diffInDays(startDate, plannedEndDate) + 1);
-  // POSTVENTA es indefinida: no tiene fechas y no consume tiempo del cronograma.
-  // Los días totales se distribuyen sólo entre las etapas "datadas", usando los
-  // weights relativos entre ellas.
-  const datedDefs = activeTemplate.filter((s) => s.name !== StageType.POSTVENTA);
+  // POST_HABILITACION (ex POSTVENTA) es indefinida: no tiene fechas y no consume
+  // tiempo del cronograma. Los días totales se distribuyen sólo entre las etapas
+  // "datadas", usando los weights relativos entre ellas.
+  const datedDefs = activeTemplate.filter(
+    (s) => s.name !== StageType.POST_HABILITACION && s.name !== StageType.POSTVENTA && !isParallelStage(s.name),
+  );
   const totalWeight = datedDefs.reduce((sum, s) => sum + s.weight, 0);
 
   let cursor = startOfUtcDay(startDate);
@@ -325,7 +335,11 @@ export function buildInitialStages(
       })),
     }));
 
-    if (stageConfig.name === StageType.POSTVENTA) {
+    if (
+      stageConfig.name === StageType.POST_HABILITACION ||
+      stageConfig.name === StageType.POSTVENTA ||
+      isParallelStage(stageConfig.name)
+    ) {
       return {
         order: stageConfig.order,
         name: stageConfig.name,

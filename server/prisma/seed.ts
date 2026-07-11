@@ -88,11 +88,11 @@ const SYSTEM_ROLES: Array<{ name: string; label: string }> = [
   { name: "INGENIERIA", label: "Ingeniería" },
   { name: "ASESOR_COMERCIAL", label: "Asesor comercial" },
   { name: "FINANZAS", label: "Finanzas" },
-  { name: "CLIENT", label: "Cliente" },
+  { name: "CLIENT", label: "Generador" },
   // Roles del protocolo de entrega (módulo Traspasos v1). Todavía no se asignan
   // a usuarios; existen para el cálculo de destinatarios de los traspasos.
   { name: "TRAMITACION_UTE", label: "Tramitación UTE" },
-  { name: "ATENCION_AL_CLIENTE", label: "Atención al Cliente" },
+  { name: "EXPERIENCIA_SOLAR", label: "Responsable de Experiencia Solar" },
 ];
 
 async function seedSystemRoles(): Promise<Map<string, string>> {
@@ -244,14 +244,14 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "TRAMITACION_UTE", module: Module.METRICAS,     actions: [Action.VIEW] },
     { roleName: "TRAMITACION_UTE", module: Module.TRASPASOS,    actions: [Action.VIEW, Action.CONFIRM] },
 
-    // ATENCION_AL_CLIENTE — rol nuevo. Hub del ciclo post-venta (bitácora + portal) + traspasos.
-    { roleName: "ATENCION_AL_CLIENTE", module: Module.VENTAS,               actions: [Action.VIEW] },
-    { roleName: "ATENCION_AL_CLIENTE", module: Module.EXPERIENCIA_CLIENTES, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
-    { roleName: "ATENCION_AL_CLIENTE", module: Module.PORTAL_CLIENTE,       actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
-    { roleName: "ATENCION_AL_CLIENTE", module: Module.POSTVENTA,            actions: [Action.VIEW, Action.COMMENT] },
-    { roleName: "ATENCION_AL_CLIENTE", module: Module.TRAMITES_UTE,         actions: [Action.VIEW] },
-    { roleName: "ATENCION_AL_CLIENTE", module: Module.METRICAS,             actions: [Action.VIEW] },
-    { roleName: "ATENCION_AL_CLIENTE", module: Module.TRASPASOS,            actions: [Action.VIEW, Action.CONFIRM] },
+    // EXPERIENCIA_SOLAR — rol nuevo. Hub del ciclo post-venta (bitácora + portal) + traspasos.
+    { roleName: "EXPERIENCIA_SOLAR", module: Module.VENTAS,               actions: [Action.VIEW] },
+    { roleName: "EXPERIENCIA_SOLAR", module: Module.EXPERIENCIA_CLIENTES, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { roleName: "EXPERIENCIA_SOLAR", module: Module.PORTAL_CLIENTE,       actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
+    { roleName: "EXPERIENCIA_SOLAR", module: Module.POSTVENTA,            actions: [Action.VIEW, Action.COMMENT] },
+    { roleName: "EXPERIENCIA_SOLAR", module: Module.TRAMITES_UTE,         actions: [Action.VIEW] },
+    { roleName: "EXPERIENCIA_SOLAR", module: Module.METRICAS,             actions: [Action.VIEW] },
+    { roleName: "EXPERIENCIA_SOLAR", module: Module.TRASPASOS,            actions: [Action.VIEW, Action.CONFIRM] },
   ];
 
   for (const entry of matrix) {

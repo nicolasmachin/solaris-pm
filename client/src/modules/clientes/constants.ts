@@ -1,4 +1,10 @@
-import type { InteractionChannel, ClienteEstado, ClienteRecorrido } from "../../api/clientes.api";
+import type {
+  InteractionChannel,
+  InteractionDirection,
+  InteractionReason,
+  ClienteEstado,
+  ClienteRecorrido,
+} from "../../api/clientes.api";
 
 // Etiquetas en español de los canales de la bitácora.
 export const CHANNEL_LABELS: Record<InteractionChannel, string> = {
@@ -10,6 +16,28 @@ export const CHANNEL_LABELS: Record<InteractionChannel, string> = {
 };
 
 export const CHANNEL_OPTIONS: InteractionChannel[] = ["WHATSAPP", "EMAIL", "LLAMADA", "VISITA", "OTRO"];
+
+// Dirección y motivo de la interacción (seguimientos paralelos de CX).
+export const DIRECTION_LABELS: Record<InteractionDirection, string> = {
+  ENTRANTE: "Entrante",
+  SALIENTE: "Saliente",
+};
+export const DIRECTION_OPTIONS: InteractionDirection[] = ["SALIENTE", "ENTRANTE"];
+
+export const REASON_LABELS: Record<InteractionReason, string> = {
+  BIENVENIDA: "Bienvenida",
+  SEGUIMIENTO: "Seguimiento",
+  AVISO_HABILITACION: "Aviso de habilitación",
+  CONSULTA: "Consulta",
+  OTRO: "Otro",
+};
+export const REASON_OPTIONS: InteractionReason[] = [
+  "SEGUIMIENTO",
+  "BIENVENIDA",
+  "AVISO_HABILITACION",
+  "CONSULTA",
+  "OTRO",
+];
 
 // "Etapa" del CRM = recorrido del cliente en 3 etapas (E1/E2/E3), derivado del
 // pipeline operativo. Ver EXPERIENCIA_CLIENTES_ROADMAP.md.

@@ -10,7 +10,7 @@ import { todayLocalISO } from "../utils/date";
 
 import { ProjectHeader } from "../components/project/ProjectHeader";
 import { KpiCards } from "../components/project/KpiCards";
-import { Pipeline } from "../components/project/Pipeline";
+import { PipelineExpandido } from "../components/project/PipelineExpandido";
 import { StageDrawer } from "../components/project/StageDrawer";
 import { CostosTab } from "../components/project/CostosTab";
 import { ProjectMaterialsList } from "../components/project/EngineeringMaterials";
@@ -819,8 +819,8 @@ export function ProjectDetail() {
         onCreate={() => setShowCreateSolarSystem(true)}
       />
 
-      {/* Pipeline */}
-      <Pipeline
+      {/* Pipeline (vista expandida: 8 etapas + carriles de Experiencia Solar) */}
+      <PipelineExpandido
         stages={project.stages}
         onStageClick={(stage) => setSelectedStage(stage)}
       />

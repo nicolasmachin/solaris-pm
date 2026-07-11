@@ -10,6 +10,7 @@ import { checkGoalsConfigured, startGoalsCheckJob } from "./services/alerts.serv
 import { startBcuRateJob, syncBcuRate } from "./services/exchange-rate.service.js";
 import { startDeadlineWarningsJob } from "./services/deadline-warnings.service.js";
 import { startTraspasosJobs } from "./services/traspasos/index.js";
+import { startAvisoHabilitacionJob } from "./services/clientes/aviso-habilitacion.service.js";
 import { formatErrorPayload } from "./utils/errors.js";
 
 if (process.env.NODE_ENV === "production") {
@@ -56,6 +57,7 @@ async function start() {
   startBcuRateJob();
   startDeadlineWarningsJob();
   startTraspasosJobs();
+  startAvisoHabilitacionJob();
 
   // Startup check: notify admins if no goals for current quarter
   checkGoalsConfigured().catch((err) => console.error("[startup] checkGoalsConfigured failed:", err));

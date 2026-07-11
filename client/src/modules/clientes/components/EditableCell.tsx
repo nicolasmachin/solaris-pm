@@ -7,7 +7,7 @@ function getApiErr(err: unknown): string | undefined {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
 }
 
-type FieldType = "email" | "tel" | "date";
+type FieldType = "email" | "tel" | "date" | "text" | "number";
 
 interface EditableCellProps {
   value: string | null;
@@ -16,6 +16,8 @@ interface EditableCellProps {
   // Guarda el valor nuevo (null = vaciar). Debe rechazar (throw) en error para
   // que la celda muestre el mensaje del server.
   onSave: (newValue: string | null) => Promise<void>;
+  // Si viene, la celda edita con un <select> de estas opciones (en vez de input).
+  options?: { value: string; label: string }[];
   // Render en modo lectura (default: el valor crudo o el placeholder).
   render?: (value: string | null) => ReactNode;
   placeholder?: string;
@@ -30,6 +32,7 @@ export function EditableCell({
   type,
   canEdit,
   onSave,
+  options,
   render,
   placeholder = "—",
   ariaLabel,
@@ -40,6 +43,7 @@ export function EditableCell({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const selectRef = useRef<HTMLSelectElement>(null);
   // Evita un commit espurio del blur que dispara el desmontaje del input (tras
   // guardar o cancelar con Esc).
   const skipBlurRef = useRef(false);
@@ -48,9 +52,9 @@ export function EditableCell({
     if (!editing) return;
     setDraft(value ?? "");
     setError(null);
-    const t = setTimeout(() => inputRef.current?.focus(), 0);
+    const t = setTimeout(() => (options ? selectRef.current : inputRef.current)?.focus(), 0);
     return () => clearTimeout(t);
-  }, [editing, value]);
+  }, [editing, value, options]);
 
   function startEdit(e: React.MouseEvent) {
     e.stopPropagation();
@@ -63,8 +67,9 @@ export function EditableCell({
     setError(null);
   }
 
-  async function commit() {
-    const normalized = draft.trim();
+  async function commit(explicit?: string) {
+    const raw = explicit !== undefined ? explicit : draft;
+    const normalized = raw.trim();
     const newValue = normalized === "" ? null : normalized;
     if ((value ?? "") === (newValue ?? "")) {
       closeNoSave();
@@ -80,7 +85,7 @@ export function EditableCell({
     } catch (err) {
       setSaving(false);
       setError(getApiErr(err) ?? "No se pudo guardar");
-      inputRef.current?.focus();
+      (options ? selectRef.current : inputRef.current)?.focus();
     }
   }
 
@@ -88,31 +93,64 @@ export function EditableCell({
     return (
       <div className="min-w-[130px]" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-1">
-          <input
-            ref={inputRef}
-            type={type}
-            value={draft}
-            disabled={saving}
-            aria-label={ariaLabel}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void commit();
-              } else if (e.key === "Escape") {
-                e.preventDefault();
+          {options ? (
+            <select
+              ref={selectRef}
+              value={draft}
+              disabled={saving}
+              aria-label={ariaLabel}
+              onChange={(e) => {
+                setDraft(e.target.value);
+                void commit(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  closeNoSave();
+                }
+              }}
+              onBlur={() => {
+                if (skipBlurRef.current) {
+                  skipBlurRef.current = false;
+                  return;
+                }
                 closeNoSave();
-              }
-            }}
-            onBlur={() => {
-              if (skipBlurRef.current) {
-                skipBlurRef.current = false;
-                return;
-              }
-              if (!saving) void commit();
-            }}
-            className="w-full rounded border border-[var(--color-accent)] bg-[var(--color-bg-app)] px-1.5 py-1 text-xs text-[var(--color-text-primary)] focus:outline-none"
-          />
+              }}
+              className="w-full rounded border border-[var(--color-accent)] bg-[var(--color-bg-app)] px-1.5 py-1 text-xs text-[var(--color-text-primary)] focus:outline-none"
+            >
+              {options.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              ref={inputRef}
+              type={type}
+              value={draft}
+              disabled={saving}
+              aria-label={ariaLabel}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void commit();
+                } else if (e.key === "Escape") {
+                  e.preventDefault();
+                  closeNoSave();
+                }
+              }}
+              onBlur={() => {
+                if (skipBlurRef.current) {
+                  skipBlurRef.current = false;
+                  return;
+                }
+                if (!saving) void commit();
+              }}
+              className="w-full rounded border border-[var(--color-accent)] bg-[var(--color-bg-app)] px-1.5 py-1 text-xs text-[var(--color-text-primary)] focus:outline-none"
+            />
+          )}
           {saving && (
             <span className="h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-[var(--color-accent)] border-t-transparent" />
           )}

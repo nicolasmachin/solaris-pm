@@ -18,3 +18,16 @@ export const clientPhoneValue = z.union([
 
 // Fecha en formato YYYY-MM-DD.
 export const dateOnlyValue = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Debe tener formato YYYY-MM-DD");
+
+// Nombre del cliente/proyecto: requerido, no vacío.
+export const clientNameValue = z.string().trim().min(1, "El nombre no puede estar vacío").max(200);
+
+// Potencia en kWp: número no negativo.
+export const capacityValue = z.number().nonnegative("La potencia no puede ser negativa");
+
+// Departamento / dirección: texto libre (o "" para limpiar).
+export const provinceValue = z.string().trim().max(120);
+export const addressValue = z.string().trim().max(300);
+
+// Estado del CRM (se mapea a ProjectStatus en la capa de ruta).
+export const clienteEstadoValue = z.enum(["ACTIVO", "FINALIZADO", "ARCHIVADO", "PROSPECTO"]);

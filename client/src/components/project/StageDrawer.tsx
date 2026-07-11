@@ -24,6 +24,18 @@ import { ContractBuilderModal } from "../contract/ContractBuilderModal";
 import { ContractVersionsList } from "../contract/ContractVersionsList";
 import { ProformaBuilderModal } from "../proforma/ProformaBuilderModal";
 import { ProformaVersionsList } from "../proforma/ProformaVersionsList";
+import { stageLabel } from "../../constants/stages";
+
+// Conjuntos de etapas por área. Incluyen los nombres viejos (5 etapas) y los
+// nuevos (8 etapas) para que las herramientas embebidas sigan apareciendo en
+// proyectos existentes y en los del pipeline expandido.
+const OBRA_STAGES = ["OPERACIONES", "EJECUCION_OBRA"];
+const UTE_STAGES = ["HABILITACION_UTE", "TRAMITACION_UTE"];
+const POSTVENTA_STAGES = ["POSTVENTA", "POST_HABILITACION"];
+const ENGINEERING_STAGES = ["INGENIERIA", "PRE_INGENIERIA", "INGENIERIA_FINAL"];
+// El informe del capataz (audio+IA) se mueve de Ingeniería a Validación de
+// Operaciones en el pipeline nuevo; se mantiene en INGENIERIA para los viejos.
+const CAPATAZ_STAGES = ["INGENIERIA", "VALIDACION_OPERACIONES"];
 
 interface StageDrawerProps {
   stage: Stage;
@@ -700,7 +712,7 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
 
   const currentUser = useAuthStore((s) => s.user);
   const isAdmin = currentUser?.role === "ADMIN";
-  const isPostventa = stage.name === "POSTVENTA";
+  const isPostventa = POSTVENTA_STAGES.includes(stage.name);
 
   // New substage form
   const [showSubForm, setShowSubForm] = useState(false);
@@ -961,7 +973,7 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
               Etapa {stage.order}
             </p>
             <h2 className="font-display font-bold text-base text-[var(--color-text-primary)] mt-0.5">
-              {stage.name}
+              {stageLabel(stage.name)}
             </h2>
             <div className="mt-1">
               <Badge variant={stage.status} />
@@ -1174,8 +1186,8 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
             </section>
           )}
 
-          {/* Acceso directo a Obra (galería + checklist) — solo etapa Operaciones */}
-          {stage.name === "OPERACIONES" && (
+          {/* Acceso directo a Obra (galería + checklist) — etapa de Ejecución de Obra */}
+          {OBRA_STAGES.includes(stage.name) && (
             <CanAccess module="OPERACIONES" action="VIEW">
               <CargarFotosObraButton projectId={projectId} variant="block" />
             </CanAccess>
@@ -1188,7 +1200,7 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
                 Subetapas ({stage.substages.filter(s => s.status === "COMPLETED").length}/{stage.substages.length})
               </p>
               <div className="flex gap-2">
-                {stage.name === "HABILITACION_UTE" ? (
+                {UTE_STAGES.includes(stage.name) ? (
                   <a
                     href={`/tramites-ute?projectId=${projectId}`}
                     onClick={(e) => {
@@ -1225,7 +1237,7 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
               </div>
             </div>
 
-            {stage.name === "HABILITACION_UTE" && (
+            {UTE_STAGES.includes(stage.name) && (
               <div className="mb-3 rounded-lg bg-blue-500/5 border border-blue-500/20 p-3">
                 <p className="text-[11px] text-blue-300">
                   Las subetapas de Trámite UTE se generan y sincronizan automáticamente
@@ -1255,7 +1267,7 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
               </div>
             )}
 
-            {showSubForm && stage.name !== "HABILITACION_UTE" && (
+            {showSubForm && !UTE_STAGES.includes(stage.name) && (
               <div className="mb-3 p-3 rounded-lg bg-[var(--color-bg-card)] border border-[var(--color-border)] space-y-2">
                 <div>
                   <p className="font-mono text-[9px] text-[var(--color-text-muted)] mb-0.5">Nombre</p>
@@ -1327,14 +1339,19 @@ export function StageDrawer({ stage, projectId, files, onClose }: StageDrawerPro
           {/* Módulo Ingeniería: link al workspace + documentos generados (read-only).
               Las herramientas del módulo (unifilar, lista de materiales,
               calculadora de triángulos) viven ahora en /ingenieria/proyecto/:id. */}
-          {stage.name === "INGENIERIA" && (
+          {ENGINEERING_STAGES.includes(stage.name) && (
             <div className="mt-3 space-y-3">
               <EngineeringModuleSection projectId={projectId} />
-              {/* Visita técnica con IA — accesible para OPERACIONES también
-                  (operario carga audios/fotos/notas y la IA arma el informe). */}
+            </div>
+          )}
+
+          {/* Informe del capataz (audio + IA). En el pipeline nuevo vive en
+              Validación de Operaciones; en los proyectos viejos, en Ingeniería. */}
+          {CAPATAZ_STAGES.includes(stage.name) && (
+            <div className="mt-3 space-y-3">
               <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
                 <p className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] mb-2">
-                  Visita técnica (IA)
+                  Informe del capataz / Visita técnica (IA)
                 </p>
                 <VisitasToolPanel projectId={projectId} />
               </section>

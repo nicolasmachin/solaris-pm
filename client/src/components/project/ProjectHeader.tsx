@@ -74,7 +74,7 @@ export function ProjectHeader({ project, onEdit }: ProjectHeaderProps) {
             <button
               onClick={() => navigate(`/clientes/${project.id}`)}
               className="inline-flex items-center gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 py-0.5 text-[11px] font-mono uppercase tracking-wider text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-accent)] transition-colors"
-              title="Ver ficha del cliente en Experiencia de Clientes"
+              title="Ver ficha del Generador en Experiencia Solar"
             >
               <Contact size={12} className="shrink-0" />
               <span>Ver ficha del cliente</span>

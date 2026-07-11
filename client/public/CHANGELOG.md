@@ -2,6 +2,31 @@
 
 ## v7.1
 
+### 10 de julio de 2026
+
+#### Experiencia Solar (antes "Atención al Cliente")
+
+- El área de atención al cliente pasa a llamarse **Experiencia Solar**, y a los clientes ahora los llamamos **Generadores**. El cambio se ve en el menú, en el portal (**"Portal de Generadores"**) y en las comunicaciones del área.
+
+#### Pipeline del proyecto — 8 etapas + Experiencia Solar en paralelo
+
+- La vista del proyecto muestra el **pipeline expandido a 8 etapas** (Onboarding, Pre-Ingeniería, Validación de Operaciones, Ingeniería Final, Compras, Ejecución de Obra, Tramitación UTE y Post-Habilitación), con **color por área** y la etapa en curso resaltada.
+- Debajo, en **paralelo**, aparecen los bloques de **Experiencia Solar** (Seguimiento Preobra y Habilitación): son **clickeables** y tienen sus propias sub-tareas para llevar el acompañamiento del Generador durante todo el proceso.
+- (Aplica a los proyectos nuevos.)
+
+#### Traspasos entre áreas
+
+- Al cerrar una etapa se genera un **traspaso** hacia el área que sigue. Llega una notificación para **confirmarlo** desde la nueva sección **"Pendientes"**; recién al confirmarlo se avisa al área correspondiente. Así ninguna entrega entre áreas se traspapela.
+
+#### Experiencia Solar — importar y editar Generadores
+
+- Nuevo botón **"Importar"**: subís un **CSV** con Generadores anteriores (la misma estructura que el "Exportar"), ves una **vista previa** con los **duplicados marcados** y las columnas faltantes avisadas, y confirmás. Se cargan sin tener que crear el proyecto completo.
+- En el **listado** ahora se pueden editar **todos los datos** con un clic: nombre, departamento, potencia, asesor, estado y etapa (con desplegables), además de mail, teléfono y fecha de entrega.
+
+#### Aviso de habilitación al Generador
+
+- Cuando UTE finaliza el trámite, si en **24 a 48 horas** no se registró el aviso al Generador, Experiencia Solar recibe un recordatorio (y a las 48 h se escala a administración). El listado marca a los Generadores con **aviso pendiente**.
+
 ### 8 de julio de 2026
 
 #### Onboarding — Generador de proforma BBVA

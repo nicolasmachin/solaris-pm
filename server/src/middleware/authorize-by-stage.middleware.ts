@@ -24,6 +24,8 @@ export const STAGE_TYPE_TO_MODULE: Record<StageType, Module> = {
   [StageType.EJECUCION_OBRA]: Module.OPERACIONES,
   [StageType.TRAMITACION_UTE]: Module.HABILITACION,
   [StageType.POST_HABILITACION]: Module.POSTVENTA,
+  [StageType.SEGUIMIENTO_PREOBRA]: Module.EXPERIENCIA_CLIENTES,
+  [StageType.SEGUIMIENTO_HABILITACION]: Module.EXPERIENCIA_CLIENTES,
 };
 
 // Módulos que componen el pipeline de un proyecto. Para endpoints que solo tienen

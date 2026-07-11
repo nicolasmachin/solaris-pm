@@ -80,7 +80,7 @@ export function AdminClientes() {
       <header className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">
-            Clientes del portal
+            Generadores del portal
           </h1>
           <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
             Usuarios con acceso al portal para ver el avance de su trámite UTE.

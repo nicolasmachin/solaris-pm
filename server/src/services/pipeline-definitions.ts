@@ -45,7 +45,19 @@ export const STAGE_LABELS: Record<StageType, string> = {
   [StageType.EJECUCION_OBRA]: "Ejecución de Obra",
   [StageType.TRAMITACION_UTE]: "Tramitación UTE",
   [StageType.POST_HABILITACION]: "Post-Habilitación",
+  [StageType.SEGUIMIENTO_PREOBRA]: "Experiencia Solar · Preobra",
+  [StageType.SEGUIMIENTO_HABILITACION]: "Experiencia Solar · Habilitación",
 };
+
+// Etapas PARALELAS de Experiencia Solar: corren al costado del pipeline y NO
+// participan del orden lineal, el progreso ni el cierre del proyecto.
+export const PARALLEL_STAGE_TYPES: StageType[] = [
+  StageType.SEGUIMIENTO_PREOBRA,
+  StageType.SEGUIMIENTO_HABILITACION,
+];
+export function isParallelStage(name: StageType | string): boolean {
+  return name === StageType.SEGUIMIENTO_PREOBRA || name === StageType.SEGUIMIENTO_HABILITACION;
+}
 
 export const TIPO_OBRA_LABELS: Record<TipoObra, string> = {
   [TipoObra.PROPIA]: "Propia",
@@ -197,7 +209,22 @@ export const PIPELINE_DEFINITIONS: StageTemplate[] = [
         ],
       },
       {
+        // Nueva sub-tarea (spec v3 C8): Ventas agenda la fecha tentativa de obra
+        // antes de comunicar al cliente. El evento de calendario nace "tentativo"
+        // (C9) y luego el gerente lo confirma en Validación de Operaciones.
         order: 9,
+        name: "Fecha tentativa de obra",
+        sopCode: "V3",
+        responsableRol: "Asesor Comercial",
+        responsible: "Asesor Comercial",
+        isSystem: true,
+        checklist: [
+          { label: "Fecha tentativa de obra definida", isRequired: true },
+          { label: "Evento tentativo agendado en el calendario", isRequired: true },
+        ],
+      },
+      {
+        order: 10,
         name: "Comunicación al cliente",
         sopCode: "V3",
         responsableRol: "Asesor Comercial",
@@ -211,10 +238,13 @@ export const PIPELINE_DEFINITIONS: StageTemplate[] = [
       },
     ],
   },
+  // ─── Etapa 2: Pre-Ingeniería (Ingeniería) ──────────────────────────────────
+  // Pipeline expandido a 8 etapas (Traspasos). Carga el Relevamiento Técnico
+  // (SOP O0) que antes vivía en la etapa INGENIERIA. Cierre → T2.
   {
     order: 2,
-    name: StageType.INGENIERIA,
-    weight: 22,
+    name: StageType.PRE_INGENIERIA,
+    weight: 11,
     substages: [
       {
         order: 1,
@@ -249,9 +279,120 @@ export const PIPELINE_DEFINITIONS: StageTemplate[] = [
           { label: "Proyectista notificado", isRequired: true },
         ],
       },
+      // Entregables de diseño de la pre-ingeniería (guía del diagrama de pipeline
+      // v3). Checklists mínimos por ahora; el workspace de Ingeniería (Unifilar,
+      // pre-ingeniería, materiales) se abre a nivel etapa desde la UI.
       {
         order: 2,
-        name: "Proyecto Final de Ingeniería",
+        name: "Documento pre-ingeniería",
+        responsableRol: "Proyectista",
+        responsible: "Proyectista",
+        isSystem: true,
+        checklist: [{ label: "Documento de pre-ingeniería generado", isRequired: true }],
+      },
+      {
+        order: 3,
+        name: "Unifilar",
+        responsableRol: "Proyectista",
+        responsible: "Proyectista",
+        isSystem: true,
+        checklist: [{ label: "Diagrama unifilar preliminar generado", isRequired: true }],
+      },
+      {
+        order: 4,
+        name: "Memoria descriptiva",
+        responsableRol: "Proyectista",
+        responsible: "Proyectista",
+        isSystem: true,
+        checklist: [{ label: "Memoria descriptiva redactada", isRequired: true }],
+      },
+      {
+        order: 5,
+        name: "Memoria de cálculo",
+        responsableRol: "Proyectista",
+        responsible: "Proyectista",
+        isSystem: true,
+        checklist: [{ label: "Memoria de cálculo completada", isRequired: true }],
+      },
+      {
+        order: 6,
+        name: "Planos aéreos",
+        responsableRol: "Proyectista",
+        responsible: "Proyectista",
+        isSystem: true,
+        checklist: [{ label: "Planos aéreos completados", isRequired: true }],
+      },
+      {
+        order: 7,
+        name: "Planos estructurales",
+        responsableRol: "Proyectista",
+        responsible: "Proyectista",
+        isSystem: true,
+        checklist: [{ label: "Planos estructurales completados", isRequired: true }],
+      },
+      {
+        order: 8,
+        name: "Lista de materiales preliminar",
+        responsableRol: "Proyectista",
+        responsible: "Proyectista",
+        isSystem: true,
+        checklist: [{ label: "Lista de materiales preliminar armada", isRequired: true }],
+      },
+    ],
+  },
+  // ─── Etapa 3: Validación de Operaciones (Operaciones · Capatacía/Gerente) ───
+  // Unifica el informe del capataz (audio+IA, se mueve desde Ingeniería) con la
+  // confirmación de la fecha real de obra. Disparador compuesto → T3 + T4 (v3 C7/C12).
+  // Sub-tareas mínimas: el detalle fino se define con la gerencia (a definir).
+  {
+    order: 3,
+    name: StageType.VALIDACION_OPERACIONES,
+    weight: 11,
+    substages: [
+      {
+        order: 1,
+        name: "Informe del capataz",
+        responsableRol: "Gerente de Operaciones",
+        responsible: "Gerente de Operaciones",
+        isSystem: true,
+        checklist: [
+          { label: "Visita técnica del capataz realizada (o no aplica)", isRequired: true },
+          { label: "Lista de materiales validada (OK o con modificaciones)", isRequired: true },
+          { label: "Informe cargado (texto/audio/fotos, procesado por IA)", isRequired: true },
+        ],
+      },
+      {
+        order: 2,
+        name: "Fecha de obra confirmada",
+        responsableRol: "Gerente de Operaciones",
+        responsible: "Gerente de Operaciones",
+        isSystem: true,
+        checklist: [
+          { label: "Fecha real de obra confirmada", isRequired: true },
+          { label: "Evento de calendario marcado como confirmado", isRequired: true },
+        ],
+      },
+    ],
+  },
+  // ─── Etapa 4: Ingeniería Final (Ingeniería) ────────────────────────────────
+  // Carga el Proyecto Final de Ingeniería (SOP I2). Cierre → T5.
+  {
+    order: 4,
+    name: StageType.INGENIERIA_FINAL,
+    weight: 11,
+    substages: [
+      {
+        order: 1,
+        name: "Revisar informe del capataz",
+        responsableRol: "Proyectista",
+        responsible: "Proyectista",
+        isSystem: true,
+        checklist: [{ label: "Informe del capataz revisado e incorporado", isRequired: true }],
+      },
+      {
+        // Hereda el checklist SOP del Proyecto Final de Ingeniería (I2).
+        order: 2,
+        name: "Validar/ajustar paquete de ingeniería",
         sopCode: "I2",
         responsableRol: "Proyectista",
         responsible: "Proyectista",
@@ -288,12 +429,67 @@ export const PIPELINE_DEFINITIONS: StageTemplate[] = [
           { label: "Estado cambiado a listo para planificación", isRequired: true },
         ],
       },
+      {
+        order: 3,
+        name: "Cerrar lista definitiva",
+        responsableRol: "Proyectista",
+        responsible: "Proyectista",
+        isSystem: true,
+        checklist: [{ label: "Lista definitiva de materiales cerrada y versionada", isRequired: true }],
+      },
     ],
   },
+  // ─── Etapa 5: Compras (Operaciones · Compras) ──────────────────────────────
+  // Regla de Oro: lista definitiva 7 días hábiles antes de obra; materiales
+  // recibidos y verificados 3 días hábiles antes. Cierre (materiales) → T6.
+  // "Logística de envío" es condicional (NO_APLICA si el equipo no es tercerizado, C13).
   {
-    order: 3,
-    name: StageType.OPERACIONES,
-    weight: 30,
+    order: 5,
+    name: StageType.COMPRAS,
+    weight: 10,
+    substages: [
+      {
+        order: 1,
+        name: "Materiales listos (stock + comprados)",
+        responsableRol: "Compras",
+        responsible: "Compras",
+        isSystem: true,
+        checklist: [
+          { label: "Lista definitiva recibida de Ingeniería", isRequired: true },
+          { label: "Documentación técnica para UTE incluida en la lista", isRequired: true },
+          { label: "Stock controlado y faltantes comprados", isRequired: true },
+        ],
+      },
+      {
+        order: 2,
+        name: "Logística de envío",
+        responsableRol: "Compras",
+        responsible: "Compras",
+        isSystem: true,
+        checklist: [
+          { label: "Envío coordinado (si el equipo de obra es tercerizado)", isRequired: true },
+        ],
+      },
+      {
+        order: 3,
+        name: "Materiales recibidos en depósito",
+        responsableRol: "Compras",
+        responsible: "Compras",
+        isSystem: true,
+        checklist: [
+          { label: "Materiales recibidos en depósito", isRequired: true },
+          { label: "Materiales verificados (cantidad y estado)", isRequired: true, isBlocker: true },
+        ],
+      },
+    ],
+  },
+  // ─── Etapa 6: Ejecución de Obra (Operaciones) ──────────────────────────────
+  // Carga Planificación/Logística (O1), Ejecución Propia/Tercerizada (O2P/O2T)
+  // y Control de Costos (O4, v3 C14). Cierre → T7.
+  {
+    order: 6,
+    name: StageType.EJECUCION_OBRA,
+    weight: 20,
     substages: [
       {
         order: 1,
@@ -402,9 +598,11 @@ export const PIPELINE_DEFINITIONS: StageTemplate[] = [
       },
     ],
   },
+  // ─── Etapa 7: Tramitación UTE ──────────────────────────────────────────────
+  // Sub-etapas gestionadas por ute-sync (uteAction). Cierre → T8.
   {
-    order: 4,
-    name: StageType.HABILITACION_UTE,
+    order: 7,
+    name: StageType.TRAMITACION_UTE,
     weight: 15,
     substages: [
       {
@@ -430,9 +628,11 @@ export const PIPELINE_DEFINITIONS: StageTemplate[] = [
       },
     ],
   },
+  // ─── Etapa 8: Post-Habilitación (Experiencia Solar) ────────────────────────
+  // Etapa indefinida (E3-A / E3-B), sin fechas. No dispara traspaso de cierre.
   {
-    order: 5,
-    name: StageType.POSTVENTA,
+    order: 8,
+    name: StageType.POST_HABILITACION,
     weight: 15,
     substages: [
       {
@@ -452,6 +652,71 @@ export const PIPELINE_DEFINITIONS: StageTemplate[] = [
         name: "Garantías y documentación final",
         responsible: "Equipo Postventa",
         isSystem: true,
+      },
+    ],
+  },
+  // ─── Etapas PARALELAS de Experiencia Solar (§10) ───────────────────────────
+  // Corren al costado del pipeline técnico: no tienen fechas, no participan del
+  // orden lineal ni del cierre del proyecto. Se operan por sus sub-etapas.
+  {
+    order: 9,
+    name: StageType.SEGUIMIENTO_PREOBRA,
+    weight: 0,
+    substages: [
+      {
+        order: 1,
+        name: "Mensaje de bienvenida al Generador",
+        responsableRol: "Experiencia Solar",
+        responsible: "Experiencia Solar",
+        isSystem: true,
+        checklist: [{ label: "Bienvenida enviada al Generador", isRequired: true }],
+      },
+      {
+        order: 2,
+        name: "Seguimiento semanal (preobra)",
+        responsableRol: "Experiencia Solar",
+        responsible: "Experiencia Solar",
+        isSystem: true,
+        checklist: [{ label: "Contacto semanal al día", isRequired: true }],
+      },
+      {
+        order: 3,
+        name: "Registro en bitácora",
+        responsableRol: "Experiencia Solar",
+        responsible: "Experiencia Solar",
+        isSystem: true,
+        checklist: [{ label: "Interacciones registradas en la bitácora", isRequired: true }],
+      },
+    ],
+  },
+  {
+    order: 10,
+    name: StageType.SEGUIMIENTO_HABILITACION,
+    weight: 0,
+    substages: [
+      {
+        order: 1,
+        name: "Aviso de inicio de trámite UTE al Generador",
+        responsableRol: "Experiencia Solar",
+        responsible: "Experiencia Solar",
+        isSystem: true,
+        checklist: [{ label: "Generador informado del inicio del trámite", isRequired: true }],
+      },
+      {
+        order: 2,
+        name: "Seguimiento semanal (habilitación)",
+        responsableRol: "Experiencia Solar",
+        responsible: "Experiencia Solar",
+        isSystem: true,
+        checklist: [{ label: "Contacto semanal al día", isRequired: true }],
+      },
+      {
+        order: 3,
+        name: "Aviso de habilitación otorgada (Regla de Oro 24-48h)",
+        responsableRol: "Experiencia Solar",
+        responsible: "Experiencia Solar",
+        isSystem: true,
+        checklist: [{ label: "Generador avisado de que puede encender", isRequired: true, isBlocker: true }],
       },
     ],
   },

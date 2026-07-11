@@ -3,6 +3,8 @@ import { apiClient } from "./axios";
 // ─── Tipos del módulo Experiencia de Clientes (Ola 1 / MVP) ──────────────────
 
 export type InteractionChannel = "WHATSAPP" | "EMAIL" | "LLAMADA" | "VISITA" | "OTRO";
+export type InteractionDirection = "ENTRANTE" | "SALIENTE";
+export type InteractionReason = "BIENVENIDA" | "SEGUIMIENTO" | "AVISO_HABILITACION" | "CONSULTA" | "OTRO";
 export type ClienteEstado = "ACTIVO" | "FINALIZADO" | "ARCHIVADO" | "PROSPECTO";
 // "Etapa" del CRM = recorrido del cliente en 3 etapas (E1/E2/E3).
 export type ClienteRecorrido = "E1" | "E2" | "E3";
@@ -27,11 +29,15 @@ export interface ClienteListItem {
   asesor: { id: string; nombre: string } | null;
   etapa: EtapaInfo | null;
   estado: ClienteEstado;
+  ultimoContactoEn: string | null; // ISO datetime de la última interacción
+  avisoHabilitacionPendiente: boolean; // Regla de Oro: UTE finalizó y CX no avisó
 }
 
 export interface ClienteInteraction {
   id: string;
   channel: InteractionChannel;
+  direction: InteractionDirection | null;
+  reason: InteractionReason | null;
   content: string;
   autor: { id: string; nombre: string };
   createdAt: string;
@@ -103,12 +109,20 @@ export async function getClienteFicha(projectId: string): Promise<ClienteFicha> 
   return data;
 }
 
-// Edición inline desde el listado: SOLO mail / teléfono / fecha de entrega.
-// Devuelve el ClienteListItem actualizado (para refrescar la fila sin refetch).
+// Edición inline desde el listado. Devuelve el ClienteListItem actualizado
+// (para refrescar la fila sin refetch).
 export interface PatchClientePayload {
   mail?: string | null;
   telefono?: string | null;
   fechaEntrega?: string | null;
+  nombre?: string;
+  departamento?: string;
+  potencia?: number;
+  asesor?: string | null; // salespersonId
+  estado?: ClienteEstado;
+  direccion?: string | null;
+  fechaVenta?: string | null;
+  etapa?: ClienteRecorrido | null; // override manual E1/E2/E3
 }
 
 export async function patchCliente(
@@ -119,9 +133,64 @@ export async function patchCliente(
   return data;
 }
 
+// ─── Importación CSV ─────────────────────────────────────────────────────────
+
+export interface ImportRowData {
+  nombre: string;
+  mail: string | null;
+  telefono: string | null;
+  departamento: string | null;
+  potenciaKwp: number | null;
+  status: string;
+  fechaEntrega: string | null;
+  asesorId: string | null;
+  asesorNombre: string | null;
+  warnings: string[];
+  duplicado: boolean;
+}
+
+export interface ImportPreviewResponse {
+  headersEsperados: string[];
+  headersUsables: string[];
+  headersIgnorados: string[];
+  headersFaltantes: string[];
+  rows: ImportRowData[];
+  resumen: { total: number; importables: number; duplicados: number; sinNombre: number };
+}
+
+export async function importPreview(file: File): Promise<ImportPreviewResponse> {
+  const form = new FormData();
+  form.append("file", file);
+  const { data } = await apiClient.post<ImportPreviewResponse>("/api/clientes/import/preview", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
+export type ImportConfirmRow = {
+  nombre: string;
+  mail?: string | null;
+  telefono?: string | null;
+  departamento?: string | null;
+  potenciaKwp?: number | null;
+  status?: string;
+  fechaEntrega?: string | null;
+  asesorId?: string | null;
+};
+
+export async function importConfirm(rows: ImportConfirmRow[]): Promise<{ creados: number; errores: string[] }> {
+  const { data } = await apiClient.post<{ creados: number; errores: string[] }>("/api/clientes/import/confirm", { rows });
+  return data;
+}
+
 export async function createInteraction(
   projectId: string,
-  body: { channel: InteractionChannel; content: string },
+  body: {
+    channel: InteractionChannel;
+    content: string;
+    direction?: InteractionDirection;
+    reason?: InteractionReason;
+  },
 ): Promise<ClienteInteraction> {
   const { data } = await apiClient.post<ClienteInteraction>(
     `/api/clientes/${projectId}/interacciones`,

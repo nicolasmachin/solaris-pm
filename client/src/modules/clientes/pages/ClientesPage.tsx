@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { Download, Search, SlidersHorizontal } from "lucide-react";
+import { Download, Search, SlidersHorizontal, Upload } from "lucide-react";
 
 import {
   exportClientes,
   type ClienteEstado,
   type ClienteListItem,
+  type ClienteRecorrido,
   type ClientesFilters as Filters,
   type ClienteSortBy,
 } from "../../../api/clientes.api";
@@ -19,8 +20,9 @@ import { useIsMobile } from "../../../hooks/useIsMobile";
 import { usePermission } from "../../../hooks/usePermission";
 import { ActiveFilterChips, ClientesFilters } from "../components/ClientesFilters";
 import { EditableCell } from "../components/EditableCell";
+import { ImportClientesModal } from "../components/ImportClientesModal";
 import { EtapaChip } from "../components/EtapaChip";
-import { ESTADO_LABELS } from "../constants";
+import { DEPARTAMENTOS_UY, ESTADO_LABELS, RECORRIDO_SHORT } from "../constants";
 import { useClientes } from "../hooks/useClientes";
 import { useUpdateCliente } from "../hooks/useUpdateCliente";
 
@@ -35,6 +37,11 @@ const SORTABLE: Record<string, ClienteSortBy> = {
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString("es-UY", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+function daysSince(iso: string | null): number | null {
+  if (!iso) return null;
+  return Math.floor((Date.now() - new Date(iso).getTime()) / (24 * 60 * 60 * 1000));
 }
 
 const ESTADO_PILL: Record<ClienteEstado, string> = {
@@ -84,8 +91,10 @@ export function ClientesPage() {
 
   const { data, isLoading, isError } = useClientes(filters, page, PAGE_SIZE);
 
-  // Edición inline (mail/teléfono/fecha). Solo con permiso EDIT.
+  // Edición inline. Solo con permiso EDIT.
   const canEdit = usePermission("EXPERIENCIA_CLIENTES", "EDIT");
+  const canCreate = usePermission("EXPERIENCIA_CLIENTES", "CREATE");
+  const [importOpen, setImportOpen] = useState(false);
   const updateCliente = useUpdateCliente();
   function saveField(projectId: string, patch: Parameters<typeof updateCliente.mutateAsync>[0]["patch"]) {
     return updateCliente.mutateAsync({ projectId, patch }).then(() => undefined);
@@ -129,6 +138,23 @@ export function ClientesPage() {
   // El search vive en searchInput; el resto en filters.
   const filtersForChips: Filters = { ...filters, search: searchInput.trim() || undefined };
 
+  const deptOptions = [
+    { value: "", label: "— Sin departamento —" },
+    ...DEPARTAMENTOS_UY.map((d) => ({ value: d, label: d })),
+  ];
+  const asesorOptions = [
+    { value: "", label: "Sin asignar" },
+    ...asesores.map((a) => ({ value: a.id, label: a.nombre })),
+  ];
+  const estadoOptions = (Object.keys(ESTADO_LABELS) as ClienteEstado[]).map((e) => ({
+    value: e,
+    label: ESTADO_LABELS[e],
+  }));
+  const etapaOptions = [
+    { value: "", label: "— Sin etapa —" },
+    ...(["E1", "E2", "E3"] as ClienteRecorrido[]).map((r) => ({ value: r, label: RECORRIDO_SHORT[r] })),
+  ];
+
   const columns: Column<ClienteListItem>[] = [
     {
       key: "nombre",
@@ -136,34 +162,123 @@ export function ClientesPage() {
       cardRole: "title",
       sortable: true,
       className: "font-medium text-[var(--color-text-primary)]",
+      render: (c) => (
+        <EditableCell
+          value={c.nombre}
+          type="text"
+          canEdit={canEdit}
+          ariaLabel="nombre"
+          onSave={(v) => saveField(c.projectId, { nombre: v ?? "" })}
+        />
+      ),
     },
-    { key: "estado", label: "Estado", render: (c) => <EstadoPill estado={c.estado} /> },
+    {
+      key: "estado",
+      label: "Estado",
+      render: (c) => (
+        <EditableCell
+          value={c.estado}
+          type="text"
+          options={estadoOptions}
+          canEdit={canEdit}
+          ariaLabel="estado"
+          render={(v) => <EstadoPill estado={(v ?? c.estado) as ClienteEstado} />}
+          onSave={(v) => saveField(c.projectId, { estado: (v ?? c.estado) as ClienteEstado })}
+        />
+      ),
+    },
     {
       key: "etapa",
       label: "Etapa",
       sortable: true,
-      render: (c) => <EtapaChip etapa={c.etapa} />,
+      render: (c) => (
+        <EditableCell
+          value={c.etapa?.recorrido.codigo ?? null}
+          type="text"
+          options={etapaOptions}
+          canEdit={canEdit}
+          ariaLabel="etapa"
+          render={() => <EtapaChip etapa={c.etapa} />}
+          onSave={(v) => saveField(c.projectId, { etapa: (v as ClienteRecorrido) ?? null })}
+        />
+      ),
+    },
+    {
+      key: "ultimoContactoEn",
+      label: "Último contacto",
+      className: "text-[11px]",
+      render: (c) => {
+        const d = daysSince(c.ultimoContactoEn);
+        const overdue = d != null && d > 7;
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span
+              className={
+                overdue
+                  ? "font-medium text-[var(--color-warning-text)]"
+                  : "text-[var(--color-text-muted)]"
+              }
+            >
+              {c.ultimoContactoEn
+                ? `${fmtDate(c.ultimoContactoEn)}${d != null ? ` · ${d}d` : ""}`
+                : "Sin contacto"}
+            </span>
+            {c.avisoHabilitacionPendiente && (
+              <span className="inline-flex w-fit items-center rounded px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide bg-[var(--color-warning-bg)] text-[var(--color-warning-text)]">
+                ⚠ Aviso pendiente
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "asesor",
       label: "Asesor",
       className: "text-[var(--color-text-muted)]",
-      render: (c) => c.asesor?.nombre ?? "—",
+      render: (c) => (
+        <EditableCell
+          value={c.asesor?.id ?? null}
+          type="text"
+          options={asesorOptions}
+          canEdit={canEdit}
+          ariaLabel="asesor"
+          render={(v) => asesores.find((a) => a.id === v)?.nombre ?? c.asesor?.nombre ?? "—"}
+          onSave={(v) => saveField(c.projectId, { asesor: v })}
+        />
+      ),
     },
     {
       key: "departamento",
       label: "Departamento",
       className: "text-[var(--color-text-muted)]",
-      render: (c) => c.departamento ?? "—",
+      render: (c) => (
+        <EditableCell
+          value={c.departamento}
+          type="text"
+          options={deptOptions}
+          canEdit={canEdit}
+          ariaLabel="departamento"
+          onSave={(v) => saveField(c.projectId, { departamento: v ?? "" })}
+        />
+      ),
     },
     {
       key: "potenciaKwp",
       label: "Potencia",
-      align: "right",
       sortable: true,
       cardRole: "highlight",
       className: "tabular-nums",
-      render: (c) => (c.potenciaKwp != null ? `${c.potenciaKwp} kWp` : "—"),
+      render: (c) => (
+        <EditableCell
+          value={c.potenciaKwp != null ? String(c.potenciaKwp) : null}
+          type="number"
+          canEdit={canEdit}
+          ariaLabel="potencia"
+          render={(v) => (v != null && v !== "" ? `${v} kWp` : <span className="text-[var(--color-text-muted)]">—</span>)}
+          onSave={(v) => saveField(c.projectId, { potencia: v ? Number(v) : 0 })}
+        />
+      ),
     },
     {
       key: "fechaEntrega",
@@ -220,19 +335,31 @@ export function ClientesPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">
-            Experiencia de Clientes
+            Experiencia Solar
           </h1>
           <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">
-            {total} cliente{total !== 1 ? "s" : ""}
+            {total} Generador{total !== 1 ? "es" : ""}
           </p>
         </div>
-        <button
-          onClick={handleExport}
-          className="inline-flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-2 text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-bg-card-hover)]"
-        >
-          <Download className="h-4 w-4" /> Exportar
-        </button>
+        <div className="flex items-center gap-2">
+          {canCreate && (
+            <button
+              onClick={() => setImportOpen(true)}
+              className="inline-flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-2 text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-bg-card-hover)]"
+            >
+              <Upload className="h-4 w-4" /> Importar
+            </button>
+          )}
+          <button
+            onClick={handleExport}
+            className="inline-flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-2 text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-bg-card-hover)]"
+          >
+            <Download className="h-4 w-4" /> Exportar
+          </button>
+        </div>
       </div>
+
+      {importOpen && <ImportClientesModal open={importOpen} onClose={() => setImportOpen(false)} />}
 
       {/* Filtros: inline en desktop, en Sheet en mobile */}
       {isMobile ? (

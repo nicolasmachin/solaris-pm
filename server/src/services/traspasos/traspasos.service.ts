@@ -7,9 +7,12 @@ import {
   TraspasoTipo,
 } from "@prisma/client";
 
+import { NotificationType } from "@prisma/client";
+
 import { prisma } from "../../lib/prisma.js";
 import { badRequest, forbidden, notFound } from "../../utils/errors.js";
 import { createAuditEntry } from "../audit.service.js";
+import { createNotification } from "../notification.service.js";
 import { TRASPASO_LABEL } from "./catalogo.js";
 import { calcularDestinatarios } from "./destinatarios.js";
 import { notificarDestinatarios } from "./notificar.js";
@@ -23,7 +26,7 @@ export async function crearTraspaso(params: {
   actorUserId: string;
   payload?: Prisma.InputJsonValue;
 }) {
-  return prisma.traspaso.create({
+  const traspaso = await prisma.traspaso.create({
     data: {
       tipo: params.tipo,
       projectId: params.projectId,
@@ -31,6 +34,26 @@ export async function crearTraspaso(params: {
       payload: params.payload ?? undefined,
     },
   });
+
+  // Acuse: se notifica al actor (in-app) que tiene un traspaso para confirmar.
+  // Recién al confirmarlo se notifica al área destino (ver confirmarTraspaso).
+  try {
+    const project = await prisma.project.findUnique({
+      where: { id: params.projectId },
+      select: { clientName: true },
+    });
+    await createNotification({
+      userId: params.actorUserId,
+      projectId: params.projectId,
+      type: NotificationType.traspaso_por_confirmar,
+      title: `Confirmá el traspaso: ${TRASPASO_LABEL[params.tipo]}`,
+      message: `Disparaste un traspaso en "${project?.clientName ?? ""}". Entrá a Pendientes para confirmarlo y notificar al área correspondiente.`,
+    });
+  } catch (err) {
+    console.error("[traspasos] no se pudo notificar al actor:", err);
+  }
+
+  return traspaso;
 }
 
 // Crea un traspaso solo si no existe ya uno del mismo (proyecto, tipo) en estado

@@ -40,6 +40,10 @@ enum StageType {
   EJECUCION_OBRA
   TRAMITACION_UTE
   POST_HABILITACION
+  // Etapas PARALELAS de Experiencia Solar (no participan del orden lineal ni del
+  // progreso/cierre del proyecto). Ver isParallelStage / PARALLEL_STAGE_TYPES.
+  SEGUIMIENTO_PREOBRA
+  SEGUIMIENTO_HABILITACION
 }
 
 enum TipoObra {
@@ -163,6 +167,8 @@ enum NotificationType {
   engineering_completed
   traspaso_asignado
   traspaso_escalado
+  traspaso_por_confirmar
+  aviso_habilitacion_pendiente
 }
 
 // ─── Traspasos entre áreas (módulo Traspasos v1) ─────────────────────────────
@@ -589,6 +595,13 @@ model Project {
   // Equipo de obra tercerizado vs propio. Condiciona sub-tareas del pipeline
   // (ej. logística de envío en Compras). Spec v3, C13.
   equipoTercerizado               Boolean                  @default(false)
+  // Regla de Oro del aviso post-habilitación (§8.2): se setea cuando CX registra
+  // el aviso al cliente de que ya puede encender. Mientras esté null y
+  // postHabilitacionInicioEn tenga valor, el cron alerta a las 24/48hs.
+  avisoHabilitacionEn             DateTime?                @db.Timestamptz(6)
+  // Override manual del recorrido E1/E2/E3 en Experiencia Solar (útil para
+  // clientes importados sin pipeline). Si está seteado, pisa el derivado.
+  recorridoManual                 String?
   // Datos del cliente que se cargan desde el form del proyecto y/o se
   // extraen de la cédula con IA. Ver feature ute-doc-extraction.
   // nombreCliente: nombre tal cual figura en la cédula, usado en los docs
@@ -1759,11 +1772,28 @@ enum InteractionChannel {
   OTRO
 }
 
+// Dirección y motivo de la interacción (seguimientos paralelos de CX, §10).
+// Nullable: los registros viejos quedan sin reinterpretar.
+enum InteractionDirection {
+  ENTRANTE
+  SALIENTE
+}
+
+enum InteractionReason {
+  BIENVENIDA
+  SEGUIMIENTO
+  AVISO_HABILITACION
+  CONSULTA
+  OTRO
+}
+
 model ClientInteraction {
   id        String             @id @default(cuid())
   projectId String
   project   Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
   channel   InteractionChannel
+  direction InteractionDirection?
+  reason    InteractionReason?
   content   String             @db.Text
   authorId  String
   author    User               @relation("ClientInteractionAuthor", fields: [authorId], references: [id])

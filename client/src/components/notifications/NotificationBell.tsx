@@ -16,6 +16,13 @@ function getTypeIcon(type: NotificationType): string {
       return "✅";
     case "engineering_completed":
       return "⚡";
+    case "traspaso_por_confirmar":
+      return "✋";
+    case "traspaso_asignado":
+      return "🔔";
+    case "traspaso_escalado":
+    case "aviso_habilitacion_pendiente":
+      return "⚠️";
     case "progress_milestone":
     case "goals_not_configured":
       return "🎯";
@@ -92,6 +99,8 @@ export function NotificationBell() {
     setOpen(false);
     if (type === "goals_not_configured") {
       navigate("/admin");
+    } else if (type === "traspaso_por_confirmar") {
+      navigate("/pendientes");
     } else if (projectId) {
       navigate(`/projects/${projectId}`);
     }

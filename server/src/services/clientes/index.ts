@@ -18,7 +18,7 @@
 // memoria (getCurrentStage no es expresable en SQL); por eso ordenamos y
 // paginamos también en memoria. La cartera es de cientos de proyectos.
 
-import { Prisma, ProjectStatus, type InteractionChannel, type StageType } from "@prisma/client";
+import { Prisma, ProjectStatus, InteractionReason, type InteractionChannel, type InteractionDirection, type StageType } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { getStageLabel } from "../pipeline-definitions.js";
@@ -37,7 +37,7 @@ export type SortDir = "asc" | "desc";
 
 export type EtapaInfo = {
   recorrido: { codigo: ClienteRecorrido; nombreCorto: string; nombreLargo: string };
-  pipeline: { stage: StageType; label: string };
+  pipeline: { stage: string; label: string };
 };
 
 // Mapeo pipeline → recorrido. E1 hasta que la obra queda montada (Operaciones
@@ -58,6 +58,9 @@ const RECORRIDO_BY_STAGE: Record<StageType, ClienteRecorrido> = {
   EJECUCION_OBRA: "E1",
   TRAMITACION_UTE: "E2",
   POST_HABILITACION: "E3",
+  // Paralelas (excluidas de getCurrentStage; no afectan el recorrido derivado).
+  SEGUIMIENTO_PREOBRA: "E1",
+  SEGUIMIENTO_HABILITACION: "E2",
 };
 
 const RECORRIDO_RANK: Record<ClienteRecorrido, number> = { E1: 1, E2: 2, E3: 3 };
@@ -100,6 +103,8 @@ export type ClienteListItem = {
   asesor: { id: string; nombre: string } | null;
   etapa: EtapaInfo | null; // recorrido (E1/E2/E3) + sub-etapa del pipeline en curso
   estado: ClienteEstado;
+  ultimoContactoEn: string | null; // ISO datetime de la última interacción de bitácora
+  avisoHabilitacionPendiente: boolean; // Regla de Oro: UTE finalizó y CX aún no avisó
 };
 
 export type ClienteFiltros = {
@@ -130,6 +135,16 @@ const LIST_SELECT = {
     where: { deletedAt: null },
     select: { name: true, status: true, order: true },
   },
+  // Seguimientos CX: aviso post-habilitación (Regla de Oro) + último contacto.
+  postHabilitacionInicioEn: true,
+  avisoHabilitacionEn: true,
+  recorridoManual: true,
+  clientInteractions: {
+    where: { deletedAt: null },
+    orderBy: { createdAt: "desc" },
+    take: 1,
+    select: { createdAt: true },
+  },
 } satisfies Prisma.ProjectSelect;
 
 type ProjectListRow = Prisma.ProjectGetPayload<{ select: typeof LIST_SELECT }>;
@@ -149,21 +164,23 @@ function estadoFromStatus(status: ProjectStatus): ClienteEstado {
   }
 }
 
-function buildEtapa(stages: ProjectListRow["stages"]): EtapaInfo | null {
-  if (!stages || stages.length === 0) return null;
-  const current = getCurrentStage(stages);
-  if (!current) return null;
-  // El recorrido se deriva 100% de la etapa en curso del pipeline. La
-  // habilitación UTE finalizada ya avanza el pipeline a POSTVENTA (→ E3) de
-  // forma automática, así que no hace falta forzarlo desde el trámite.
-  const codigo: ClienteRecorrido = RECORRIDO_BY_STAGE[current.name];
+function buildEtapa(stages: ProjectListRow["stages"], recorridoManual: string | null): EtapaInfo | null {
+  const current = stages && stages.length > 0 ? getCurrentStage(stages) : null;
+  const derivado = current ? RECORRIDO_BY_STAGE[current.name] : null;
+  // El override manual pisa el derivado (útil para importados sin pipeline).
+  const codigo = (["E1", "E2", "E3"].includes(recorridoManual ?? "")
+    ? (recorridoManual as ClienteRecorrido)
+    : derivado) as ClienteRecorrido | null;
+  if (!codigo) return null;
   return {
     recorrido: {
       codigo,
       nombreCorto: RECORRIDO_NOMBRE_CORTO[codigo],
       nombreLargo: RECORRIDO_NOMBRE_LARGO[codigo],
     },
-    pipeline: { stage: current.name, label: getStageLabel(current.name) },
+    pipeline: current
+      ? { stage: current.name, label: getStageLabel(current.name) }
+      : { stage: "MANUAL", label: "Sin pipeline (manual)" },
   };
 }
 
@@ -177,8 +194,10 @@ function toListItem(p: ProjectListRow): ClienteListItem {
     potenciaKwp: decimalToNumber(p.capacityKwp),
     fechaEntrega: serializeDateOnly(p.actualEndDate ?? p.plannedEndDate),
     asesor: p.salesperson ? { id: p.salesperson.id, nombre: p.salesperson.name } : null,
-    etapa: buildEtapa(p.stages),
+    etapa: buildEtapa(p.stages, p.recorridoManual),
     estado: estadoFromStatus(p.status),
+    ultimoContactoEn: p.clientInteractions[0] ? serializeDate(p.clientInteractions[0].createdAt) : null,
+    avisoHabilitacionPendiente: p.postHabilitacionInicioEn != null && p.avisoHabilitacionEn == null,
   };
 }
 
@@ -281,6 +300,8 @@ const UTE_FICHA_SELECT = {
 const INTERACTION_SELECT = {
   id: true,
   channel: true,
+  direction: true,
+  reason: true,
   content: true,
   createdAt: true,
   updatedAt: true,
@@ -293,6 +314,8 @@ function serializeInteraction(i: InteractionRow) {
   return {
     id: i.id,
     channel: i.channel,
+    direction: i.direction,
+    reason: i.reason,
     content: i.content,
     autor: { id: i.author.id, nombre: i.author.name },
     createdAt: serializeDate(i.createdAt),
@@ -448,11 +471,27 @@ export async function createInteraction(
   channel: InteractionChannel,
   content: string,
   authorId: string,
+  opts?: { direction?: InteractionDirection; reason?: InteractionReason },
 ) {
   const row = await prisma.clientInteraction.create({
-    data: { projectId, channel, content, authorId },
+    data: {
+      projectId,
+      channel,
+      content,
+      authorId,
+      direction: opts?.direction ?? null,
+      reason: opts?.reason ?? null,
+    },
     select: INTERACTION_SELECT,
   });
+  // Regla de Oro: si se registra el aviso de habilitación al cliente, se marca
+  // en el proyecto para cortar las alertas del cron (idempotente: no repisa).
+  if (opts?.reason === InteractionReason.AVISO_HABILITACION) {
+    await prisma.project.updateMany({
+      where: { id: projectId, avisoHabilitacionEn: null },
+      data: { avisoHabilitacionEn: new Date() },
+    });
+  }
   return serializeInteraction(row);
 }
 

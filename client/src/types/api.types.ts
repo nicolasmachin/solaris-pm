@@ -35,7 +35,11 @@ export type NotificationType =
   | "goals_not_configured"
   | "deadline_warning"
   | "prev_substage_completed"
-  | "engineering_completed";
+  | "engineering_completed"
+  | "traspaso_asignado"
+  | "traspaso_escalado"
+  | "traspaso_por_confirmar"
+  | "aviso_habilitacion_pendiente";
 export type PhaseType = "MONOFASICO" | "TRIFASICO_230" | "TRIFASICO_400";
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
