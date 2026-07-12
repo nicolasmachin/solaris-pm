@@ -20,6 +20,8 @@ function getTypeIcon(type: NotificationType): string {
       return "✋";
     case "traspaso_asignado":
       return "🔔";
+    case "ticket_actualizado":
+      return "🎫";
     case "traspaso_escalado":
     case "aviso_habilitacion_pendiente":
       return "⚠️";
@@ -101,6 +103,8 @@ export function NotificationBell() {
       navigate("/admin");
     } else if (type === "traspaso_por_confirmar") {
       navigate("/mis-tareas/pendientes");
+    } else if (type === "ticket_actualizado") {
+      navigate("/mis-tareas/tickets");
     } else if (projectId) {
       navigate(`/projects/${projectId}`);
     }

@@ -39,7 +39,8 @@ export type NotificationType =
   | "traspaso_asignado"
   | "traspaso_escalado"
   | "traspaso_por_confirmar"
-  | "aviso_habilitacion_pendiente";
+  | "aviso_habilitacion_pendiente"
+  | "ticket_actualizado";
 export type PhaseType = "MONOFASICO" | "TRIFASICO_230" | "TRIFASICO_400";
 
 // ─── Auth ────────────────────────────────────────────────────────────────────

@@ -71,6 +71,7 @@ const PortalLayout = lazy(() => import("./components/layout/PortalLayout").then(
 const ChangePassword = lazy(() => import("./pages/ChangePassword").then((module) => ({ default: module.ChangePassword })));
 const Clientes = lazy(() => import("./modules/clientes/pages/ClientesPage").then((module) => ({ default: module.ClientesPage })));
 const PendientesSection = lazy(() => import("./modules/traspasos/pages/PendientesSection").then((module) => ({ default: module.PendientesSection })));
+const TicketsSection = lazy(() => import("./modules/tickets/TicketsSection").then((module) => ({ default: module.TicketsSection })));
 const ClienteFicha = lazy(() => import("./modules/clientes/pages/ClienteFichaPage").then((module) => ({ default: module.ClienteFichaPage })));
 
 function RouteFallback() {
@@ -206,7 +207,7 @@ export function App() {
             path="tickets"
             element={
               <PermissionRoute module="TICKETS" action="VIEW">
-                <FinancePlaceholder title="Tickets" />
+                <TicketsSection />
               </PermissionRoute>
             }
           />
