@@ -191,6 +191,7 @@ export async function confirmImport(rows: ConfirmImportRow[], userId: string) {
           clientPhone: row.telefono || null,
           salespersonId: row.asesorId || null,
           createdById: userId,
+          importedFromCsv: true, // liviano: no aparece en la lista de Proyectos
         },
         select: { id: true, code: true },
       });

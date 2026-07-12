@@ -1216,6 +1216,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     const whereClause = {
       deletedAt: null,
+      // Los Generadores "livianos" importados por CSV (Experiencia Solar) no son
+      // proyectos con obra: se excluyen de esta lista. Siguen visibles en /clientes.
+      importedFromCsv: false,
       status: query.status,
       ...(query.search
         ? {
@@ -4095,10 +4098,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
       quarterEnd = new Date(filterYear, filterQuarter * 3, 1);
     }
 
-    const projects = await prisma.project.findMany({
+    const allProjects = await prisma.project.findMany({
       where: { deletedAt: null },
       include: { stages: { orderBy: { order: "asc" } } },
     });
+    // Generadores "livianos" importados por CSV (Experiencia Solar, sin pipeline):
+    // NO son parte del portafolio activo. Se excluyen de todos los conteos de
+    // proyectos y se suman aparte como obras realizadas por su Fecha entrega.
+    const projects = allProjects.filter((p) => !p.importedFromCsv);
+    const livianoProjects = allProjects.filter((p) => p.importedFromCsv);
 
     const metricsByProject = projects.map((project) => calculateProjectMetrics(project));
     const activeAndCompletedProjects = projects.filter(
@@ -4133,6 +4141,18 @@ export async function registerApiRoutes(app: FastifyInstance) {
         capacityKwp: decimalToNumber(s.project!.capacityKwp) ?? 0,
         pesoObra: s.project!.pesoObra,
       }));
+
+    // Obras históricas importadas por CSV: se cuentan como realizadas en la fecha
+    // de entrega cargada (plannedEndDate), ya que no tienen etapa Operaciones.
+    const livianoInstalled: Installed[] = livianoProjects
+      .filter((p) => p.plannedEndDate != null)
+      .map((p) => ({
+        projectId: p.id,
+        installedAt: p.plannedEndDate as Date,
+        capacityKwp: decimalToNumber(p.capacityKwp) ?? 0,
+        pesoObra: p.pesoObra,
+      }));
+    installedAll.push(...livianoInstalled);
 
     const completedInYear = installedAll.filter(
       (p) => p.installedAt >= yearStart && p.installedAt < yearEnd,
@@ -4342,7 +4362,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
   app.get("/metrics/projects", { preHandler: authorize(Module.METRICAS, Action.VIEW) }, async () => {
     const projects = await prisma.project.findMany({
-      where: { deletedAt: null },
+      // Livianos importados (Experiencia Solar, sin pipeline) fuera del tablero.
+      where: { deletedAt: null, importedFromCsv: false },
       include: {
         stages: {
           orderBy: { order: "asc" },

@@ -39,6 +39,7 @@ import { CommissionCaptureModal } from "../components/sales/CommissionCaptureMod
 import { getLeadCommission } from "../api/comisiones.api";
 import { LeadProposalsList } from "../components/sales/LeadProposalsList";
 import { LargeModal } from "../components/ui/LargeModal";
+import { DeleteConfirmModal } from "../components/ui/DeleteConfirmModal";
 import { ProposalBuilderModal } from "../components/proposals-v2/ProposalBuilderModal";
 import { ProposalPreviewModal } from "../components/sales/ProposalPreviewModal";
 import { StageSelect } from "../components/sales/StageSelect";
@@ -597,6 +598,7 @@ function LeadPanel({
     onError: () => toast.error("No se pudo eliminar el lead"),
   });
   const [showProposalModal, setShowProposalModal] = useState(false);
+  const [showDeleteLead, setShowDeleteLead] = useState(false);
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
   const [lostReason, setLostReason] = useState("");
   const [pendingStage, setPendingStage] = useState<SalesStage | null>(null);
@@ -998,11 +1000,7 @@ function LeadPanel({
             <button
               type="button"
               disabled={deleteLeadMut.isPending}
-              onClick={() => {
-                if (confirm(`¿Eliminar el lead de "${lead.clientName}"? Esta acción no se puede deshacer.`)) {
-                  deleteLeadMut.mutate();
-                }
-              }}
+              onClick={() => setShowDeleteLead(true)}
               className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/40 px-3 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/15 disabled:opacity-50"
             >
               <Trash2 className="h-4 w-4" />
@@ -1014,6 +1012,15 @@ function LeadPanel({
         </div>
         </div>
       </LargeModal>
+
+      <DeleteConfirmModal
+        open={showDeleteLead}
+        title="Borrar lead"
+        description={`Se va a borrar el lead de "${lead.clientName}". Desaparece de todas las listas de la app (queda recuperable en la base).`}
+        loading={deleteLeadMut.isPending}
+        onConfirm={() => deleteLeadMut.mutate()}
+        onClose={() => !deleteLeadMut.isPending && setShowDeleteLead(false)}
+      />
 
       <LostReasonModal
         open={pendingStage === LOST_STAGE}

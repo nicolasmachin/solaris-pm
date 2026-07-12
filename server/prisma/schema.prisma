@@ -616,11 +616,16 @@ model Project {
   // Rutas relativas dentro de STORAGE_PATH/projects/{id}/ute-docs/
   cedulaPath              String?
   facturaUtePath          String?
+  // Generador "liviano" cargado por CSV en Experiencia Solar: existe como cliente
+  // pero sin pipeline/obra. Se excluye de la lista de Proyectos (solo vive en
+  // Experiencia Solar) hasta que, si alguna vez, se lo convierta en proyecto real.
+  importedFromCsv         Boolean                  @default(false)
   deletedAt               DateTime?                @db.Timestamptz(6)
   createdAt               DateTime                 @default(now()) @db.Timestamptz(6)
   updatedAt               DateTime                 @updatedAt @db.Timestamptz(6)
 
   @@index([status])
+  @@index([importedFromCsv])
   @@index([tenantId])
   @@index([createdById])
   @@index([salespersonId])

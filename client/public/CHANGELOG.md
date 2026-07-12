@@ -4,12 +4,18 @@
 
 ### 11 de julio de 2026
 
-#### Borrar proyectos y Generadores
+#### Generadores importados por CSV — fuera de Proyectos, contados como obras históricas
+
+- Los Generadores que se cargan por **CSV** en Experiencia Solar son registros **livianos** (un cliente, sin obra ni pipeline). Ahora **dejan de aparecer en la lista de Proyectos** —donde figuraban sin instalador y ensuciaban la vista— y quedan **solo en Experiencia Solar**.
+- En **Métricas**, estos importados **ya no cuentan** como proyectos activos, pero **sí se suman como obras realizadas** en el año de su **Fecha entrega** cargada (2023, 2024…), para poder medir las obras de años anteriores.
+- Se aplicó también a los **ya cargados** anteriormente.
+
+#### Borrar proyectos, Generadores y leads
 
 - Ahora se puede **borrar un proyecto** desde su ficha: al lado del lápiz de editar aparece un botón de papelera.
 - En **Experiencia Solar**, cada Generador del listado tiene un botón de **papelera** para borrarlo.
-- Para evitar borrados accidentales, la confirmación pide **escribir en letras un número** que se muestra en pantalla (ej. "tres"). Mismo criterio en la lista de proyectos (antes había que tipear el código completo).
-- En todos los casos es un **borrado que se puede deshacer**: el proyecto/Generador desaparece de todas las listas de la app, pero queda guardado por si hace falta recuperarlo. Solo lo ven quienes tienen permiso para borrar.
+- Para evitar borrados accidentales, la confirmación pide **escribir en letras un número** que se muestra en pantalla (ej. "tres"). Mismo criterio en la **lista de proyectos** (antes había que tipear el código completo) y al **borrar un lead** en Ventas (antes un cartelito del navegador).
+- En todos los casos es un **borrado que se puede deshacer**: el proyecto/Generador/lead desaparece de todas las listas de la app, pero queda guardado por si hace falta recuperarlo. Solo lo ven quienes tienen permiso para borrar.
 
 ### 10 de julio de 2026
 
