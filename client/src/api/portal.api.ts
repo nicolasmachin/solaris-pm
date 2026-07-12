@@ -1,4 +1,5 @@
 import { apiClient } from "./axios";
+import type { TicketDetalle, TicketEstado, TicketPrioridad } from "./tickets.api";
 
 export interface PortalProjectListItem {
   id: string;
@@ -53,5 +54,42 @@ export async function getPortalProjectUte(projectId: string): Promise<PortalProj
   const { data } = await apiClient.get<PortalProjectUte>(
     `/api/client/projects/${projectId}/ute`,
   );
+  return data;
+}
+
+// ─── Tickets del cliente (portal) ────────────────────────────────────────────
+
+export interface PortalTicketRow {
+  id: string;
+  projectId: string;
+  projectName: string;
+  projectCode: string;
+  titulo: string;
+  estado: TicketEstado;
+  prioridad: TicketPrioridad;
+  createdAt: string;
+}
+
+export async function getPortalTickets(): Promise<PortalTicketRow[]> {
+  const { data } = await apiClient.get<PortalTicketRow[]>("/api/client/tickets");
+  return data;
+}
+
+export async function getPortalTicket(id: string): Promise<TicketDetalle> {
+  const { data } = await apiClient.get<TicketDetalle>(`/api/client/tickets/${id}`);
+  return data;
+}
+
+export async function createPortalTicket(body: {
+  projectId: string;
+  titulo: string;
+  descripcion: string;
+}): Promise<TicketDetalle> {
+  const { data } = await apiClient.post<TicketDetalle>("/api/client/tickets", body);
+  return data;
+}
+
+export async function comentarPortalTicket(id: string, contenido: string): Promise<TicketDetalle> {
+  const { data } = await apiClient.post<TicketDetalle>(`/api/client/tickets/${id}/comentarios`, { contenido });
   return data;
 }

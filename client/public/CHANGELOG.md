@@ -4,9 +4,15 @@
 
 ### 12 de julio de 2026
 
+#### Tickets — nuevo sistema de reclamos y consultas
+
+- Se agregó un **sistema de tickets** para seguir reclamos y consultas sobre una instalación. Vive en **"Mis tareas → Tickets"**.
+- **Cualquiera del equipo** puede **abrir un ticket** contra un proyecto (con prioridad), **derivarlo** a Ingeniería u Operaciones (les llega el aviso desde **Pendientes**), marcarlo **en progreso**, **resolverlo** (avisa a Experiencia Solar) y **cerrarlo**. Cada ticket tiene una conversación, con la opción de **notas internas** que el cliente no ve.
+- **El cliente** también puede, desde su **portal** ("Mis tickets"), **abrir un ticket** y seguir la conversación con el equipo. Es la primera vez que el Generador puede escribirnos desde el portal (todo dentro de la app, sin mails).
+
 #### Menú — "Pendientes" ahora vive dentro de "Mis tareas"
 
-- "Mis tareas" pasa a tener **pestañas**: **Tareas**, **Pendientes** y (próximamente) **Tickets**. La bandeja de traspasos por confirmar, que antes era un ítem aparte en el menú principal, ahora es la pestaña **"Pendientes"** dentro de "Mis tareas". Los enlaces y avisos que llevaban a Pendientes siguen funcionando.
+- "Mis tareas" pasa a tener **pestañas**: **Tareas**, **Pendientes** y **Tickets**. La bandeja de traspasos por confirmar, que antes era un ítem aparte en el menú principal, ahora es la pestaña **"Pendientes"** dentro de "Mis tareas". Los enlaces y avisos que llevaban a Pendientes siguen funcionando.
 
 #### Traspasos — el cierre del trámite UTE avisa solo a Experiencia Solar
 

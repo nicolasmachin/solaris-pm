@@ -1,4 +1,4 @@
-import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { ChevronDown, KeyRound, LogOut } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
@@ -66,6 +66,28 @@ export function PortalLayout() {
             )}
           </div>
         </div>
+        <nav className="max-w-3xl mx-auto flex items-center gap-1 px-4">
+          {[
+            { to: "/portal", label: "Mis proyectos", end: true },
+            { to: "/portal/tickets", label: "Mis tickets", end: false },
+          ].map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) =>
+                [
+                  "px-3 py-2 text-sm border-b-2 -mb-[1px] transition-colors",
+                  isActive
+                    ? "border-[var(--color-accent)] text-[var(--color-text-primary)] font-medium"
+                    : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]",
+                ].join(" ")
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
       </header>
       <main className="flex-1 px-4 py-6">
         <Outlet />

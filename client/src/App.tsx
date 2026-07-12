@@ -67,6 +67,8 @@ const VisitaTecnica = lazy(() => import("./pages/VisitaTecnica").then((module) =
 const VisitaRapida = lazy(() => import("./pages/VisitaRapida").then((module) => ({ default: module.VisitaRapida })));
 const PortalProjects = lazy(() => import("./pages/PortalProjects").then((module) => ({ default: module.PortalProjects })));
 const PortalProjectUte = lazy(() => import("./pages/PortalProjectUte").then((module) => ({ default: module.PortalProjectUte })));
+const PortalTickets = lazy(() => import("./pages/PortalTickets").then((module) => ({ default: module.PortalTickets })));
+const PortalTicketDetail = lazy(() => import("./pages/PortalTicketDetail").then((module) => ({ default: module.PortalTicketDetail })));
 const PortalLayout = lazy(() => import("./components/layout/PortalLayout").then((module) => ({ default: module.PortalLayout })));
 const ChangePassword = lazy(() => import("./pages/ChangePassword").then((module) => ({ default: module.ChangePassword })));
 const Clientes = lazy(() => import("./modules/clientes/pages/ClientesPage").then((module) => ({ default: module.ClientesPage })));
@@ -180,6 +182,8 @@ export function App() {
         }
       >
         <Route path="/portal" element={<PortalProjects />} />
+        <Route path="/portal/tickets" element={<PortalTickets />} />
+        <Route path="/portal/tickets/:id" element={<PortalTicketDetail />} />
         <Route path="/portal/:id" element={<PortalProjectUte />} />
       </Route>
 
