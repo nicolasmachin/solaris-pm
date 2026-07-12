@@ -9294,6 +9294,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
   });
 
   app.patch("/ute-processes/:id", { preHandler: authorize(Module.TRAMITES_UTE, Action.EDIT) }, async (request) => {
+    const user = ensureUser(request);
     const { id } = z.object({ id: z.string() }).parse(request.params);
     const body = uteProcessPatchSchema.parse(request.body);
 
@@ -9378,8 +9379,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     // Re-syncea status/fechas de las 11 subetapas system. ensureUteSubstages
-    // también corre por si una migración previa quedó incompleta.
-    await regenerateUteSubstages(prisma, updated);
+    // también corre por si una migración previa quedó incompleta. Pasa el actor:
+    // si este PATCH finaliza el trámite (carga de finalizedAt → CERRADO), dispara
+    // el traspaso de cierre T8. Si no lo finaliza, no dispara nada (idempotente).
+    await regenerateUteSubstages(prisma, updated, user.id);
 
     return serializeUteProcess(updated);
   });
@@ -9429,7 +9432,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
       // Trámite CERRADO ⟹ las 11 subetapas pasan a COMPLETED ⟹ la etapa
       // HABILITACION_UTE queda completada (sin tocar las fechas de cada paso).
-      await regenerateUteSubstages(prisma, updated);
+      // Pasa el actor para que se dispare el traspaso de cierre T8.
+      await regenerateUteSubstages(prisma, updated, user.id);
 
       await createAuditEntry({
         entityType: AuditEntityType.project,

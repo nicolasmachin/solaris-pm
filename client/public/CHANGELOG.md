@@ -4,6 +4,10 @@
 
 ### 12 de julio de 2026
 
+#### Traspasos — el cierre del trámite UTE avisa solo a Experiencia Solar
+
+- Al **finalizar un trámite UTE** (con el botón de la etapa o cargando la fecha de finalización), ahora se genera automáticamente el **traspaso a Experiencia Solar** (queda en **Pendientes** para confirmar) para avisar al Generador que ya puede empezar a producir su energía. Antes ese aviso no se disparaba solo al cerrar el trámite y había que gatillarlo a mano.
+
 #### Costos de obra — no-material y costo por kW
 
 - En la pestaña **Costos** de un proyecto se agregó una sección **"Costo no-material"** para cargar a mano los costos que no salen del stock: **mano de obra, tercerizados, fletes**, etc. (concepto, monto, moneda y fecha opcional). Se pueden agregar y eliminar, y quedan registrados en el historial del proyecto.

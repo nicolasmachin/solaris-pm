@@ -235,13 +235,18 @@ export async function syncUteSubstages(
 export async function regenerateUteSubstages(
   tx: Tx,
   uteProcess: UteProcess,
+  // Actor humano que gatilló el cambio. Se propaga a syncStageProgress para que,
+  // si el trámite recién se finaliza (la etapa TRAMITACION_UTE pasa a COMPLETED),
+  // se dispare el traspaso de cierre T8 (→ Experiencia Solar). Sin actor no se
+  // dispara (evita traspasos "fantasma" desde jobs/sync sin responsable).
+  actorUserId?: string,
 ): Promise<void> {
   await ensureUteSubstages(tx, uteProcess.projectId);
   await syncUteSubstages(tx, uteProcess);
 
   const stage = await findHabilitacionStage(tx, uteProcess.projectId);
   if (stage) {
-    await syncStageProgress(stage.id);
+    await syncStageProgress(stage.id, actorUserId ? { actorUserId } : undefined);
     await advancePostventaOnUteFinalizado(uteProcess);
     await calculateProjectProgress(uteProcess.projectId);
   }
