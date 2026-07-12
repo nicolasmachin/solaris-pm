@@ -25,7 +25,9 @@ function getAreaDerivada(payload: unknown): string | null {
   return null;
 }
 
-async function usuariosPorRoles(roles: string[]): Promise<Array<{ id: string; roleName: string }>> {
+type UsuarioMin = { id: string; roleName: string };
+
+async function usuariosPorRoles(roles: string[]): Promise<UsuarioMin[]> {
   if (roles.length === 0) return [];
   const users = await prisma.user.findMany({
     where: { deletedAt: null, role: { name: { in: roles } } },
@@ -36,7 +38,7 @@ async function usuariosPorRoles(roles: string[]): Promise<Array<{ id: string; ro
 
 async function usuariosOperacionesConSubRol(
   subRol: SubRolOperaciones,
-): Promise<Array<{ id: string; roleName: string }>> {
+): Promise<UsuarioMin[]> {
   const users = await prisma.user.findMany({
     where: {
       deletedAt: null,
@@ -47,6 +49,15 @@ async function usuariosOperacionesConSubRol(
   });
   return users.map((u) => ({ id: u.id, roleName: u.role.name }));
 }
+
+// Fetchers de usuarios inyectables (para tests unitarios sin DB). En producción
+// se usan los que consultan Prisma; los tests pasan implementaciones falsas.
+export type DestinatarioDeps = {
+  usuariosPorRoles: (roles: string[]) => Promise<UsuarioMin[]>;
+  usuariosOperacionesConSubRol: (subRol: SubRolOperaciones) => Promise<UsuarioMin[]>;
+};
+
+const DEFAULT_DEPS: DestinatarioDeps = { usuariosPorRoles, usuariosOperacionesConSubRol };
 
 // Calcula los destinatarios de un traspaso aplicando, en orden:
 //   1. Roles primarios del catálogo.
@@ -61,6 +72,7 @@ async function usuariosOperacionesConSubRol(
 export async function calcularDestinatarios(
   tipo: TraspasoTipo,
   opts: CalcularOpts = {},
+  deps: DestinatarioDeps = DEFAULT_DEPS,
 ): Promise<DestinatarioCalculado[]> {
   const entry = TRASPASO_CATALOGO[tipo];
 
@@ -77,16 +89,16 @@ export async function calcularDestinatarios(
     (tipo === TraspasoTipo.T9_TICKET_DERIVADO && areaDerivada === ROLE.OPERACIONES);
 
   const primary = new Map<string, string>();
-  for (const u of await usuariosPorRoles(rolesPrimarios)) primary.set(u.id, u.roleName);
+  for (const u of await deps.usuariosPorRoles(rolesPrimarios)) primary.set(u.id, u.roleName);
   for (const subRol of entry.subRolesPrimarios) {
-    for (const u of await usuariosOperacionesConSubRol(subRol)) primary.set(u.id, u.roleName);
+    for (const u of await deps.usuariosOperacionesConSubRol(subRol)) primary.set(u.id, u.roleName);
   }
 
   const copia = new Map<string, string>();
   if (gerenteCopia) {
-    for (const u of await usuariosOperacionesConSubRol(SubRolOperaciones.GERENTE)) copia.set(u.id, u.roleName);
+    for (const u of await deps.usuariosOperacionesConSubRol(SubRolOperaciones.GERENTE)) copia.set(u.id, u.roleName);
   }
-  for (const u of await usuariosPorRoles([ROLE.ADMIN])) copia.set(u.id, u.roleName);
+  for (const u of await deps.usuariosPorRoles([ROLE.ADMIN])) copia.set(u.id, u.roleName);
 
   const result: DestinatarioCalculado[] = [];
   const seen = new Set<string>();
@@ -105,8 +117,12 @@ export async function calcularDestinatarios(
 
 // Resumen legible de destinatarios para la preview del modal / bandeja,
 // agrupado por rol con conteo. Ej: ["Ingeniería (2)", "ADMIN (1)"].
-export async function previewDestinatarios(tipo: TraspasoTipo, opts: CalcularOpts = {}): Promise<string[]> {
-  const dests = await calcularDestinatarios(tipo, opts);
+export async function previewDestinatarios(
+  tipo: TraspasoTipo,
+  opts: CalcularOpts = {},
+  deps: DestinatarioDeps = DEFAULT_DEPS,
+): Promise<string[]> {
+  const dests = await calcularDestinatarios(tipo, opts, deps);
   const counts = new Map<string, number>();
   for (const d of dests) {
     const key = d.esCopia ? `${d.roleName} (copia)` : d.roleName;
