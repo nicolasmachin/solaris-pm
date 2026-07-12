@@ -18,12 +18,22 @@ import {
   getStageLabel,
   isParallelStage,
 } from "./pipeline-definitions.js";
+import { STAGE_TO_TRASPASO, STAGE_TO_TRASPASO_EXTRA } from "./traspasos/catalogo.js";
+import { crearTraspasoSiNoExiste } from "./traspasos/traspasos.service.js";
 import { addDays, diffInDays, startOfUtcDay, todayUtc } from "../utils/dates.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../utils/serialization.js";
+
+// Una subetapa cuenta como "resuelta" (a efectos del cierre de la etapa y del
+// disparo del traspaso) si está COMPLETED o NO_APLICA. NO_APLICA es el escape
+// para sub-tareas condicionales que no corresponden en este proyecto.
+function isSubstageResolved(status: SubstageStatus) {
+  return status === SubstageStatus.COMPLETED || status === SubstageStatus.NO_APLICA;
+}
 
 function substageStatusWeight(status: SubstageStatus) {
   switch (status) {
     case SubstageStatus.COMPLETED:
+    case SubstageStatus.NO_APLICA:
       return 100;
     case SubstageStatus.IN_PROGRESS:
       return 45;
@@ -53,6 +63,11 @@ export function calculateSubstageProgress(params: {
   }>;
   modalidadPago?: ModalidadPago | null;
 }) {
+  // NO_APLICA es "resuelta" sin importar el checklist (la sub-tarea no corresponde).
+  if (params.status === SubstageStatus.NO_APLICA) {
+    return 100;
+  }
+
   const applicableItems =
     params.checklistItems?.filter((item) => isChecklistItemApplicable(item, params.modalidadPago)) ?? [];
 
@@ -89,7 +104,7 @@ export function calculateStageProgress(
   }
 
   const completedSubstages = activeSubstages.filter(
-    (substage) => substage.status === "COMPLETED"
+    (substage) => isSubstageResolved(substage.status)
   ).length;
   const progressPercent = Math.round(
     (completedSubstages / activeSubstages.length) * 100
@@ -98,7 +113,7 @@ export function calculateStageProgress(
   return progressPercent;
 }
 
-export async function syncStageProgress(stageId: string) {
+export async function syncStageProgress(stageId: string, opts?: { actorUserId?: string }) {
   const stage = await prisma.stage.findUnique({
     where: { id: stageId },
     include: {
@@ -126,25 +141,32 @@ export async function syncStageProgress(stageId: string) {
   const now = todayUtc();
   const subs = stage.substages;
   const hasAny = subs.length > 0;
-  const allCompleted = hasAny && subs.every((s) => s.status === "COMPLETED");
-  const anyCompleted = hasAny && subs.some((s) => s.status === "COMPLETED");
+  // Una etapa se completa cuando TODAS sus sub-tareas activas están "resueltas"
+  // (COMPLETED o NO_APLICA). No hay flag de obligatoriedad por subetapa: toda
+  // subetapa activa es obligatoria y NO_APLICA es el escape para las condicionales.
+  const allResolved = hasAny && subs.every((s) => isSubstageResolved(s.status));
+  const anyResolved = hasAny && subs.some((s) => isSubstageResolved(s.status));
 
-  if (allCompleted) {
-    // Todas completadas → COMPLETED
+  // ¿Esta llamada transiciona la etapa a COMPLETED? (para disparar el traspaso).
+  let justCompleted = false;
+
+  if (allResolved) {
+    // Todas resueltas → COMPLETED
     if (stage.status !== StageStatus.COMPLETED) {
       updateData.status = StageStatus.COMPLETED;
       if (!stage.actualStartDate) updateData.actualStartDate = now;
       if (!stage.actualEndDate) updateData.actualEndDate = now;
+      justCompleted = true;
     }
-  } else if (anyCompleted) {
-    // Al menos una completada → IN_PROGRESS
+  } else if (anyResolved) {
+    // Al menos una resuelta → IN_PROGRESS
     if (stage.status === StageStatus.PENDING || stage.status === StageStatus.COMPLETED) {
       updateData.status = StageStatus.IN_PROGRESS;
       if (!stage.actualStartDate) updateData.actualStartDate = now;
       updateData.actualEndDate = null;
     }
   } else {
-    // Ninguna completada → volver a PENDING
+    // Ninguna resuelta → volver a PENDING
     if (stage.status === StageStatus.IN_PROGRESS || stage.status === StageStatus.COMPLETED) {
       updateData.status = StageStatus.PENDING;
       updateData.actualEndDate = null;
@@ -164,7 +186,26 @@ export async function syncStageProgress(stageId: string) {
     await completeProjectIfAllStagesDone(stage.projectId, now);
   }
 
+  // Traspaso entre áreas: se dispara cuando la etapa se COMPLETA por sus sub-tareas
+  // (todas resueltas), no por marcado manual. Requiere un actor (quien resolvió la
+  // última sub-tarea) porque es quien queda como responsable de la confirmación.
+  // Idempotente por (proyecto, tipo) y best-effort (nunca interrumpe el sync).
+  if (justCompleted && opts?.actorUserId) {
+    await fireStageTraspasos(updatedStage.name, stage.projectId, opts.actorUserId);
+  }
+
   return updatedStage;
+}
+
+// Dispara el/los traspaso(s) de cierre de una etapa (principal + extra, ej.
+// VALIDACION_OPERACIONES dispara T3 y además T4). Idempotente y best-effort.
+async function fireStageTraspasos(stageName: StageType, projectId: string, actorUserId: string) {
+  const tipos = [STAGE_TO_TRASPASO[stageName], STAGE_TO_TRASPASO_EXTRA[stageName]].filter(
+    (t): t is NonNullable<typeof t> => Boolean(t),
+  );
+  for (const tipo of tipos) {
+    await crearTraspasoSiNoExiste({ tipo, projectId, actorUserId });
+  }
 }
 
 /**
@@ -523,7 +564,9 @@ export function serializeProject(project: {
   // La "fecha fin del proyecto" a mostrar en la UI deriva de Habilitación UTE,
   // NO de Postventa (que es indefinida) ni del campo Project.plannedEndDate
   // cuando éste pudo haber quedado desincronizado.
-  const uteStage = stages?.find((s) => s.name === StageType.HABILITACION_UTE);
+  const uteStage = stages?.find(
+    (s) => s.name === StageType.HABILITACION_UTE || s.name === StageType.TRAMITACION_UTE,
+  );
   const displayedPlannedEnd = uteStage?.plannedEndDate ?? rest.plannedEndDate;
   const displayedActualEnd =
     uteStage?.actualEndDate ?? rest.actualUteEnd ?? rest.actualEndDate;

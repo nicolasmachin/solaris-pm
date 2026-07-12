@@ -120,7 +120,7 @@ import {
 } from "../services/pipeline-definitions.js";
 import { createNotificationIfNotExists } from "../services/notification.service.js";
 import { notifyEngineeringCompleted } from "../services/notify.service.js";
-import { crearTraspasoSiNoExiste, STAGE_TO_TRASPASO } from "../services/traspasos/index.js";
+import { crearTraspasoSiNoExiste, STAGE_TO_TRASPASO, STAGE_TO_TRASPASO_EXTRA } from "../services/traspasos/index.js";
 import { fetchBcuRatePreview } from "../services/exchange-rate.service.js";
 import {
   applyDeadlineRulesToProject,
@@ -590,8 +590,14 @@ async function getPendingBlockers(stageId: string, modalidadPago?: ModalidadPago
   });
 }
 
-async function refreshStageProgressAndProject(stageId: string, projectId: string) {
-  const syncedStage = await syncStageProgress(stageId);
+async function refreshStageProgressAndProject(
+  stageId: string,
+  projectId: string,
+  actorUserId?: string,
+) {
+  // actorUserId: si se pasa, al completarse la etapa por sus sub-tareas se dispara
+  // el traspaso de cierre (con ese usuario como responsable de la confirmación).
+  const syncedStage = await syncStageProgress(stageId, { actorUserId });
   const projectProgressPercent = await calculateProjectProgress(projectId);
   const projectDelayDays = await sumProjectDelayDays(projectId);
 
@@ -1282,9 +1288,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
         project.stages.length > 0
           ? Math.round(project.stages.reduce((sum, stage) => sum + stage.progressPercent, 0) / project.stages.length)
           : 0;
-      // completionPercent: % de etapas completadas excluyendo POSTVENTA
-      // (POSTVENTA es indefinida; si alcanzamos Habilitación UTE cerrada → 100%).
-      const countedStages = project.stages.filter((s) => s.name !== StageType.POSTVENTA);
+      // completionPercent: % de etapas completadas excluyendo la etapa
+      // Post-Habilitación (indefinida) y los carriles CX en paralelo.
+      const countedStages = project.stages.filter(
+        (s) =>
+          s.name !== StageType.POSTVENTA &&
+          s.name !== StageType.POST_HABILITACION &&
+          !isParallelStage(s.name),
+      );
       const completedCount = countedStages.filter((s) => s.status === StageStatus.COMPLETED).length;
       const completionPercent = countedStages.length > 0
         ? Math.round((completedCount / countedStages.length) * 100)
@@ -2012,7 +2023,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
       body.plannedEndDate !== undefined ||
       body.actualStartDate !== undefined ||
       body.actualEndDate !== undefined;
-    if (stage.name === StageType.POSTVENTA && touchesAnyDate) {
+    if (
+      (stage.name === StageType.POSTVENTA || stage.name === StageType.POST_HABILITACION) &&
+      touchesAnyDate
+    ) {
       throw badRequest(
         "POSTVENTA_NO_DATES",
         "La etapa Post-Habilitación no tiene fechas asociadas por ser indefinida",
@@ -2255,10 +2269,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
       if (stage.name === StageType.ONBOARDING) {
         projectSync.actualOnboardingEnd = stageAfter.actualEndDate;
       }
-      if (stage.name === StageType.INGENIERIA) {
+      if (stage.name === StageType.INGENIERIA || stage.name === StageType.INGENIERIA_FINAL) {
         projectSync.actualEngineeringEnd = stageAfter.actualEndDate;
       }
-      if (stage.name === StageType.HABILITACION_UTE) {
+      if (stage.name === StageType.HABILITACION_UTE || stage.name === StageType.TRAMITACION_UTE) {
         projectSync.actualUteStart = stageAfter.actualStartDate;
         projectSync.actualUteEnd = stageAfter.actualEndDate;
       }
@@ -2307,7 +2321,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     if (
       body.status &&
       body.status !== stage.status &&
-      stage.name === StageType.INGENIERIA &&
+      (stage.name === StageType.INGENIERIA || stage.name === StageType.INGENIERIA_FINAL) &&
       body.status === StageStatus.COMPLETED
     ) {
       await notifyEngineeringCompleted({
@@ -2316,16 +2330,17 @@ export async function registerApiRoutes(app: FastifyInstance) {
       });
     }
 
-    // Traspaso entre áreas al completar una etapa del pipeline expandido (T1–T7).
+    // Traspaso entre áreas al completar una etapa a mano (force-complete). El
+    // camino normal (completar las sub-tareas) dispara el traspaso desde
+    // syncStageProgress; acá cubrimos el marcado manual explícito de la etapa.
     // Idempotente por (proyecto, tipo). Best-effort: no interrumpe el avance.
+    // Incluye el traspaso extra (ej. VALIDACION_OPERACIONES dispara T3 y T4).
     if (body.status && body.status !== stage.status && body.status === StageStatus.COMPLETED) {
-      const tipoTraspaso = STAGE_TO_TRASPASO[stage.name];
-      if (tipoTraspaso) {
-        await crearTraspasoSiNoExiste({
-          tipo: tipoTraspaso,
-          projectId: params.projectId,
-          actorUserId: user.id,
-        });
+      const tipos = [STAGE_TO_TRASPASO[stage.name], STAGE_TO_TRASPASO_EXTRA[stage.name]].filter(
+        (t): t is NonNullable<typeof t> => Boolean(t),
+      );
+      for (const tipo of tipos) {
+        await crearTraspasoSiNoExiste({ tipo, projectId: params.projectId, actorUserId: user.id });
       }
     }
 
@@ -2381,7 +2396,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const body = substageCreateSchema.parse(request.body);
     const stage = await findStageOrThrow(params.projectId, params.stageId);
 
-    if (stage.name === "HABILITACION_UTE") {
+    if (stage.name === "HABILITACION_UTE" || stage.name === "TRAMITACION_UTE") {
       throw badRequest(
         "UTE_SUBSTAGES_AUTOMATIC",
         "Las subetapas de Trámite UTE se generan automáticamente desde el módulo Trámites UTE. No se pueden crear manualmente.",
@@ -2422,7 +2437,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       },
     });
 
-    await refreshStageProgressAndProject(params.stageId, params.projectId);
+    await refreshStageProgressAndProject(params.stageId, params.projectId, user.id);
 
     await createAuditEntry({
       entityType: AuditEntityType.substage,
@@ -2573,7 +2588,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
 
     const syncedSubstage = await syncSubstageProgress(substage.id);
-    let syncedStage = await syncStageProgress(params.stageId);
+    let syncedStage = await syncStageProgress(params.stageId, { actorUserId: user.id });
     await calculateProjectProgress(params.projectId);
 
     await createAuditEntriesForChanges({
@@ -2678,7 +2693,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     const syncedSubstage = await syncSubstageProgress(substage.id);
-    const { syncedStage } = await refreshStageProgressAndProject(substage.stageId, substage.projectId);
+    const { syncedStage } = await refreshStageProgressAndProject(substage.stageId, substage.projectId, user.id);
 
     await createAuditEntry({
       entityType: AuditEntityType.substage,
@@ -2764,7 +2779,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     // Actualizar progreso de la etapa y del proyecto
-    await syncStageProgress(stage.id);
+    await syncStageProgress(stage.id, { actorUserId: user.id });
     await calculateProjectProgress(params.projectId);
 
     // Audit entries
@@ -2809,7 +2824,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const body = reorderSubstagesSchema.parse(request.body);
     const stage = await findStageOrThrow(params.projectId, params.stageId);
 
-    if (stage.name === "HABILITACION_UTE") {
+    if (stage.name === "HABILITACION_UTE" || stage.name === "TRAMITACION_UTE") {
       throw badRequest(
         "UTE_SUBSTAGES_AUTOMATIC",
         "El orden de las subetapas de Trámite UTE no se puede cambiar manualmente.",
@@ -2857,7 +2872,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       data: { deletedAt: new Date() },
     });
 
-    await refreshStageProgressAndProject(params.stageId, params.projectId);
+    await refreshStageProgressAndProject(params.stageId, params.projectId, user.id);
 
     await createAuditEntry({
       entityType: AuditEntityType.substage,
@@ -2927,7 +2942,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     const syncedSubstage = await syncSubstageProgress(substage.id);
-    const { syncedStage } = await refreshStageProgressAndProject(params.stageId, params.projectId);
+    const { syncedStage } = await refreshStageProgressAndProject(params.stageId, params.projectId, user.id);
 
     await createAuditEntry({
       entityType: AuditEntityType.substage,
@@ -2992,7 +3007,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     const syncedSubstage = await syncSubstageProgress(item.substageId);
-    const { syncedStage } = await refreshStageProgressAndProject(item.substage.stageId, item.projectId);
+    const { syncedStage } = await refreshStageProgressAndProject(item.substage.stageId, item.projectId, user.id);
 
     await createAuditEntriesForChanges({
       entityType: AuditEntityType.substage,
@@ -3035,7 +3050,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     const syncedSubstage = await syncSubstageProgress(item.substageId);
-    const { syncedStage } = await refreshStageProgressAndProject(item.substage.stageId, item.projectId);
+    const { syncedStage } = await refreshStageProgressAndProject(item.substage.stageId, item.projectId, user.id);
 
     await createAuditEntry({
       entityType: AuditEntityType.substage,
@@ -4314,7 +4329,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       where: {
         project: { deletedAt: null },
         status: StageStatus.COMPLETED,
-        name: { not: StageType.POSTVENTA },
+        name: { notIn: [StageType.POSTVENTA, StageType.POST_HABILITACION] },
         ...(fechaFilter ? { actualEndDate: fechaFilter } : {}),
       },
       orderBy: [{ order: "asc" }, { createdAt: "asc" }],
@@ -4328,7 +4343,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
 
     return (Object.values(StageType) as StageType[])
-      .filter((stageName) => stageName !== StageType.POSTVENTA)
+      .filter((stageName) => stageName !== StageType.POSTVENTA && stageName !== StageType.POST_HABILITACION)
       .map((stageName) => {
         const items = grouped.get(stageName) ?? [];
         const completedCount = items.length;

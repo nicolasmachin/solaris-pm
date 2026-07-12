@@ -1,5 +1,6 @@
-// Sincroniza las subetapas de la stage HABILITACION_UTE de un proyecto con
-// el estado de su UteProcess. La fuente de verdad son los 11 campos de fecha
+// Sincroniza las subetapas de la stage de tramitación UTE de un proyecto con
+// el estado de su UteProcess (etapa TRAMITACION_UTE en el pipeline nuevo, o la
+// vieja HABILITACION_UTE en proyectos sin migrar). La fuente de verdad son los 11 campos de fecha
 // del UteProcess (consultaSentAt … finalizedAt). Cada subetapa "system" se
 // genera 1-a-1 con una de esas acciones (campo Substage.uteAction).
 //
@@ -13,6 +14,7 @@
 //   - Nombre y orden de las 11 subetapas system son fijos (no editables)
 
 import type { Prisma, PrismaClient, StageStatus, SubstageStatus, UteProcess } from "@prisma/client";
+import { StageType } from "@prisma/client";
 
 import { prisma } from "../lib/prisma.js";
 import {
@@ -56,9 +58,16 @@ export const UTE_SUBSTAGE_SPECS: UteSubstageSpec[] = [
 
 type Tx = Prisma.TransactionClient | PrismaClient;
 
+// Post-v8.0 conviven los nombres de etapa nuevos (pipeline de 8 etapas) con los
+// viejos (proyectos que no se migraron). El sync UTE tiene que reconocer ambos.
+const UTE_STAGE_TYPES = [StageType.TRAMITACION_UTE, StageType.HABILITACION_UTE];
+const UTE_STAGE_NAMES: string[] = ["TRAMITACION_UTE", "HABILITACION_UTE"];
+const POST_HABILITACION_NAMES: string[] = ["POST_HABILITACION", "POSTVENTA"];
+const ULTIMA_OPERACIONES_NAMES: string[] = ["EJECUCION_OBRA", "OPERACIONES"];
+
 async function findHabilitacionStage(tx: Tx, projectId: string) {
   return tx.stage.findFirst({
-    where: { projectId, name: "HABILITACION_UTE", deletedAt: null },
+    where: { projectId, name: { in: UTE_STAGE_TYPES }, deletedAt: null },
     select: { id: true, projectId: true },
   });
 }
@@ -294,16 +303,16 @@ export function planPostventaAdvance(
   const finalizado = ute.currentStage === "FINALIZADO" || ute.finalizedAt !== null;
   if (!finalizado) return { action: "skip", reason: "tramite-no-finalizado" };
 
-  const postventa = stages.find((s) => s.name === "POSTVENTA");
+  const postventa = stages.find((s) => POST_HABILITACION_NAMES.includes(s.name));
   if (!postventa) return { action: "skip", reason: "sin-etapa-postventa" };
   if (postventa.status === "COMPLETED") return { action: "skip", reason: "postventa-ya-completada" };
 
-  const habilitacion = stages.find((s) => s.name === "HABILITACION_UTE");
+  const habilitacion = stages.find((s) => UTE_STAGE_NAMES.includes(s.name));
   if (!habilitacion || habilitacion.status !== "COMPLETED") {
     return { action: "skip", reason: "habilitacion-no-completada" };
   }
 
-  const operaciones = stages.find((s) => s.name === "OPERACIONES");
+  const operaciones = stages.find((s) => ULTIMA_OPERACIONES_NAMES.includes(s.name));
   const completedAt =
     ute.finalizedAt ?? habilitacion.actualEndDate ?? operaciones?.actualEndDate ?? null;
   if (!completedAt) return { action: "skip", reason: "sin-fecha" };

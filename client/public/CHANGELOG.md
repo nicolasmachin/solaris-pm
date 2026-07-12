@@ -17,6 +17,15 @@
 - Para evitar borrados accidentales, la confirmación pide **escribir en letras un número** que se muestra en pantalla (ej. "tres"). Mismo criterio en la **lista de proyectos** (antes había que tipear el código completo) y al **borrar un lead** en Ventas (antes un cartelito del navegador).
 - En todos los casos es un **borrado que se puede deshacer**: el proyecto/Generador/lead desaparece de todas las listas de la app, pero queda guardado por si hace falta recuperarlo. Solo lo ven quienes tienen permiso para borrar.
 
+#### Traspasos que se disparan al completar las tareas
+
+- El **traspaso al área siguiente** ahora se genera **cuando se completan las sub-tareas** de la etapa, no cuando alguien marca la etapa entera a mano. Al resolver la última tarea, la etapa se cierra y queda el traspaso **pendiente de confirmar** en "Pendientes".
+- Las sub-tareas marcadas **"No aplica"** cuentan como resueltas (antes dejaban la etapa trabada sin poder cerrarse).
+
+#### Arreglos
+
+- **Habilitación UTE → cierre del proyecto**: con el pipeline nuevo de 8 etapas, los proyectos cuyo trámite UTE ya estaba **finalizado** no avanzaban solos a Post-Habilitación ni quedaban marcados como **Completados**. Ahora vuelve a hacerlo automáticamente, usando la **fecha real de finalización** del trámite (no la de hoy), y se corrigieron los proyectos que habían quedado trabados.
+
 ### 10 de julio de 2026
 
 #### Experiencia Solar (antes "Atención al Cliente")

@@ -101,3 +101,48 @@ test("borde: proyecto sin etapa POSTVENTA → skip", () => {
   );
   assert.deepEqual(plan, { action: "skip", reason: "sin-etapa-postventa" });
 });
+
+// ── Pipeline nuevo (8 etapas, v8.0): TRAMITACION_UTE / POST_HABILITACION /
+//    EJECUCION_OBRA. El fix debe reconocer estos nombres igual que los viejos. ──
+function stagesNuevo(overrides: Partial<Record<string, Partial<StageForAdvance>>> = {}): StageForAdvance[] {
+  const base: Record<string, StageForAdvance> = {
+    ONBOARDING: { id: "n1", name: "ONBOARDING", status: "COMPLETED", actualStartDate: null, actualEndDate: null },
+    EJECUCION_OBRA: { id: "n2", name: "EJECUCION_OBRA", status: "COMPLETED", actualStartDate: null, actualEndDate: OPERACIONES_END },
+    TRAMITACION_UTE: { id: "n3", name: "TRAMITACION_UTE", status: "COMPLETED", actualStartDate: null, actualEndDate: HABILITACION_END },
+    POST_HABILITACION: { id: "n4", name: "POST_HABILITACION", status: "PENDING", actualStartDate: null, actualEndDate: null },
+    SEGUIMIENTO_PREOBRA: { id: "n5", name: "SEGUIMIENTO_PREOBRA", status: "PENDING", actualStartDate: null, actualEndDate: null },
+  };
+  for (const [name, patch] of Object.entries(overrides)) {
+    base[name] = { ...base[name], ...patch };
+  }
+  return Object.values(base);
+}
+
+test("pipeline nuevo: finalizado → avanza POST_HABILITACION con fecha = finalizedAt", () => {
+  const plan = planPostventaAdvance(
+    { currentStage: "FINALIZADO", finalizedAt: FINALIZED_AT },
+    stagesNuevo(),
+  );
+  assert.equal(plan.action, "advance");
+  if (plan.action !== "advance") return;
+  assert.equal(plan.postventaId, "n4");
+  assert.equal(plan.completedAt.getTime(), FINALIZED_AT.getTime());
+});
+
+test("pipeline nuevo: cascada a EJECUCION_OBRA cuando finalizedAt y TRAMITACION_UTE.actualEndDate son null", () => {
+  const plan = planPostventaAdvance(
+    { currentStage: "FINALIZADO", finalizedAt: null },
+    stagesNuevo({ TRAMITACION_UTE: { actualEndDate: null } }),
+  );
+  assert.equal(plan.action, "advance");
+  if (plan.action !== "advance") return;
+  assert.equal(plan.completedAt.getTime(), OPERACIONES_END.getTime());
+});
+
+test("pipeline nuevo: guarda TRAMITACION_UTE no COMPLETED → no avanza", () => {
+  const plan = planPostventaAdvance(
+    { currentStage: "FINALIZADO", finalizedAt: FINALIZED_AT },
+    stagesNuevo({ TRAMITACION_UTE: { status: "IN_PROGRESS" } }),
+  );
+  assert.deepEqual(plan, { action: "skip", reason: "habilitacion-no-completada" });
+});
