@@ -15324,6 +15324,79 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return serializePayment(payment, balance ?? undefined);
     });
 
+    /**
+     * Aplica un Payment automáticamente (FIFO) a las facturas adeudadas del
+     * proveedor —de la más vieja a la más nueva— hasta agotar su saldo sin aplicar.
+     * El remanente queda como saldo a favor del proveedor. Mismo criterio de orden
+     * ("más vieja" = `fecha` asc) que el estado de cuenta del proveedor.
+     * Devuelve el resumen de lo aplicado. Debe correr dentro de una transacción.
+     */
+    async function autoApplyPaymentFifo(
+      tx: Prisma.TransactionClient,
+      paymentId: string,
+    ): Promise<{ totalAplicado: number; facturasAfectadas: number; saldoAFavor: number }> {
+      const payment = await tx.payment.findFirst({
+        where: { id: paymentId, deletedAt: null },
+        include: { applications: { include: { movement: { select: { deletedAt: true } } } } },
+      });
+      if (!payment) return { totalAplicado: 0, facturasAfectadas: 0, saldoAFavor: 0 };
+
+      const montoPago = Number(payment.monto);
+      const activasDelPago = payment.applications.filter((a) => !a.movement || a.movement.deletedAt === null);
+      const yaAplicado = activasDelPago.reduce((s, a) => s + Number(a.montoAplicado), 0);
+      let saldoSinAplicar = roundMoney(montoPago - yaAplicado);
+      if (saldoSinAplicar <= 0.005) {
+        return { totalAplicado: 0, facturasAfectadas: 0, saldoAFavor: roundMoney(Math.max(saldoSinAplicar, 0)) };
+      }
+
+      // Movimientos ya aplicados desde este pago: la unique (paymentId, movementId)
+      // impide crear una segunda application al mismo movimiento.
+      const yaAplicadosDeEstePago = new Set(activasDelPago.map((a) => a.movementId));
+
+      // Facturas adeudadas del proveedor (misma moneda), más viejas primero.
+      const facturas = await tx.financeMovement.findMany({
+        where: {
+          deletedAt: null,
+          supplierId: payment.supplierId,
+          moneda: payment.moneda,
+          tipoMovimiento: TipoMovimiento.GASTO,
+          status: { in: [
+            FinanceMovementStatus.COMPROMETIDO,
+            FinanceMovementStatus.A_PAGAR,
+            FinanceMovementStatus.PARCIALMENTE_PAGADO,
+          ] },
+        },
+        include: { paymentApplications: { include: { payment: { select: { deletedAt: true } } } } },
+        orderBy: [{ fecha: "asc" }, { createdAt: "asc" }],
+      });
+
+      let totalAplicado = 0;
+      let facturasAfectadas = 0;
+      for (const f of facturas) {
+        if (saldoSinAplicar <= 0.005) break;
+        if (yaAplicadosDeEstePago.has(f.id)) continue;
+        const activeApps = f.paymentApplications.filter((a) => !a.payment.deletedAt);
+        const pagado = activeApps.reduce((s, a) => s + Number(a.montoAplicado), 0);
+        const saldoPendiente = roundMoney(Number(f.monto) - pagado);
+        if (saldoPendiente <= 0.005) continue;
+        const aplicar = roundMoney(Math.min(saldoSinAplicar, saldoPendiente));
+        if (aplicar <= 0.005) continue;
+        await tx.paymentApplication.create({
+          data: {
+            paymentId,
+            movementId: f.id,
+            montoAplicado: new Prisma.Decimal(aplicar),
+          },
+        });
+        await recalcMovementStatus(tx, f.id);
+        saldoSinAplicar = roundMoney(saldoSinAplicar - aplicar);
+        totalAplicado = roundMoney(totalAplicado + aplicar);
+        facturasAfectadas += 1;
+      }
+
+      return { totalAplicado, facturasAfectadas, saldoAFavor: roundMoney(saldoSinAplicar) };
+    }
+
     // ─── Payments: CRUD ──────────────────────────────────────────────────────
 
     const paymentCreateSchema = z.object({
@@ -15336,6 +15409,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       metodo: z.nativeEnum(MetodoPago).default(MetodoPago.TRANSFERENCIA),
       referencia: z.string().optional(),
       notas: z.string().optional(),
+      // Si true (default), el pago se aplica automáticamente FIFO a las facturas
+      // adeudadas más viejas del proveedor. Si false, queda como saldo a favor.
+      autoAplicar: z.boolean().default(true),
     }).strict();
 
     const paymentPatchSchema = z.object({
@@ -15371,32 +15447,58 @@ export async function registerApiRoutes(app: FastifyInstance) {
       if (!supplier) throw badRequest("SUPPLIER_INVALID", "Proveedor no existe o está eliminado");
       await validateAccountForPayment(body.accountId, body.moneda);
 
-      const payment = await prisma.payment.create({
-        data: {
-          supplierId: body.supplierId,
-          accountId: body.accountId,
-          fecha: parseDateOnly(body.fecha),
-          monto: new Prisma.Decimal(body.monto),
-          moneda: body.moneda,
-          metodo: body.metodo,
-          referencia: body.referencia,
-          notas: body.notas,
-          createdById: user.id,
-        },
-        include: { supplier: { select: { id: true, nombre: true } }, applications: true },
+      // Auto-aplicación FIFO: sólo tiene sentido para pagos positivos (un monto
+      // negativo es una nota de crédito y no cancela facturas).
+      const doAutoApply = body.autoAplicar && body.monto > 0;
+
+      const { paymentId, aplicacion } = await prisma.$transaction(async (tx) => {
+        const created = await tx.payment.create({
+          data: {
+            supplierId: body.supplierId,
+            accountId: body.accountId,
+            fecha: parseDateOnly(body.fecha),
+            monto: new Prisma.Decimal(body.monto),
+            moneda: body.moneda,
+            metodo: body.metodo,
+            referencia: body.referencia,
+            notas: body.notas,
+            createdById: user.id,
+          },
+        });
+        const resumen = doAutoApply
+          ? await autoApplyPaymentFifo(tx, created.id)
+          : { totalAplicado: 0, facturasAfectadas: 0, saldoAFavor: roundMoney(body.monto) };
+        return { paymentId: created.id, aplicacion: resumen };
       });
+
       const isNegative = body.monto < 0;
       await createAuditEntry({
         entityType: AuditEntityType.payment,
-        entityId: payment.id,
+        entityId: paymentId,
         userId: user.id,
         action: AuditAction.created,
         description: isNegative
           ? `Pago negativo de ${body.monto.toFixed(2)} ${body.moneda} a ${supplier.nombre} (nota de crédito)`
-          : `Registró pago de ${body.monto.toFixed(2)} ${body.moneda} a ${supplier.nombre}`,
+          : `Registró pago de ${body.monto.toFixed(2)} ${body.moneda} a ${supplier.nombre}`
+            + (aplicacion.facturasAfectadas > 0
+                ? ` · aplicado a ${aplicacion.facturasAfectadas} factura(s) por ${aplicacion.totalAplicado.toFixed(2)} ${body.moneda}`
+                : ""),
       });
-      void checkInvariantOrWarn("create payment", { paymentId: payment.id });
-      return serializePayment(payment, { monto: Number(payment.monto), montoAplicado: 0, saldoSinAplicar: Number(payment.monto) });
+      void checkInvariantOrWarn("create payment", { paymentId });
+
+      const payment = await prisma.payment.findUnique({
+        where: { id: paymentId },
+        include: {
+          supplier: { select: { id: true, nombre: true } },
+          account: { select: { id: true, nombre: true, tipo: true, moneda: true } },
+          applications: {
+            include: { movement: { select: { id: true, descripcion: true, monto: true, moneda: true, status: true, fecha: true, dueDate: true } } },
+            orderBy: { createdAt: "asc" },
+          },
+        },
+      });
+      const balance = await getPaymentBalance(paymentId);
+      return { ...serializePayment(payment!, balance ?? undefined), aplicacion };
     });
 
     app.patch("/finance/payments/:id", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {

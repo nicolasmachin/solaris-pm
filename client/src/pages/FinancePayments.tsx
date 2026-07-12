@@ -284,7 +284,7 @@ function NewPaymentModal({ suppliers, onClose, onCreatedAndApply }: {
     accountId: '',
     referencia: '',
     notas: '',
-    aplicarAhora: true,
+    autoAplicar: true,
   });
   const [showSupplierList, setShowSupplierList] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -324,6 +324,7 @@ function NewPaymentModal({ suppliers, onClose, onCreatedAndApply }: {
         monto,
         moneda: form.moneda,
         metodo: form.metodo,
+        autoAplicar: form.autoAplicar,
         ...(form.referencia ? { referencia: form.referencia } : {}),
         ...(form.notas ? { notas: form.notas } : {}),
       });
@@ -332,12 +333,19 @@ function NewPaymentModal({ suppliers, onClose, onCreatedAndApply }: {
       qc.invalidateQueries({ queryKey: ['accounts-summary'] });
       qc.invalidateQueries({ queryKey: ['finance-movements'] });
       qc.invalidateQueries({ queryKey: ['finance-dashboard'] });
-      if (form.aplicarAhora) {
+      if (form.autoAplicar) {
+        // El backend ya aplicó FIFO a las facturas más viejas del proveedor.
+        const { facturasAfectadas, totalAplicado, saldoAFavor } = created.aplicacion;
+        if (facturasAfectadas > 0) {
+          const extra = saldoAFavor > 0.005 ? ` · ${fmtCurrency(saldoAFavor, form.moneda)} a favor` : '';
+          toast.success(`Pago aplicado a ${facturasAfectadas} factura(s) (${fmtCurrency(totalAplicado, form.moneda)})${extra}`);
+        } else {
+          toast.success(`Pago registrado · ${fmtCurrency(saldoAFavor, form.moneda)} a favor del proveedor (sin facturas pendientes)`);
+        }
+        onClose();
+      } else {
         toast.success('Pago registrado · aplicalo a facturas');
         onCreatedAndApply(created.id);
-      } else {
-        toast.success('Pago registrado. Aplicalo desde el detalle del pago o del proveedor.');
-        onClose();
       }
     } catch (err) {
       setError(getApiErr(err) ?? 'Error al guardar');
@@ -453,9 +461,14 @@ function NewPaymentModal({ suppliers, onClose, onCreatedAndApply }: {
           <div><label className={lbl}>Referencia</label><input className={inpStyle} value={form.referencia} onChange={e => setF('referencia', e.target.value)} placeholder="N° transferencia, cheque, etc." /></div>
           <div><label className={lbl}>Notas</label><textarea className={klass(inpStyle, 'resize-none')} rows={2} value={form.notas} onChange={e => setF('notas', e.target.value)} /></div>
 
-          <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer pt-1">
-            <input type="checkbox" checked={form.aplicarAhora} onChange={e => setF('aplicarAhora', e.target.checked)} className="accent-[var(--color-accent)]" />
-            Aplicar a facturas ahora
+          <label className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer pt-1">
+            <input type="checkbox" checked={form.autoAplicar} onChange={e => setF('autoAplicar', e.target.checked)} className="accent-[var(--color-accent)] mt-0.5" />
+            <span>
+              Aplicar automáticamente a las facturas más viejas
+              <span className="block text-[11px] text-[var(--color-text-muted)]">
+                Descuenta el pago del estado de cuenta (facturas más antiguas primero). El sobrante queda a favor del proveedor.
+              </span>
+            </span>
           </label>
 
           {error && <p className="text-sm text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{error}</p>}

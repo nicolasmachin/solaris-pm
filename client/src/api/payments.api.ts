@@ -15,6 +15,15 @@ export const getPayments = (params?: {
 export const getPayment = (id: string) =>
   apiClient.get<Payment>(`/api/finance/payments/${id}`).then(r => r.data);
 
+/** Resumen de la auto-aplicación FIFO que devuelve el backend al crear un pago. */
+export interface PaymentApplyResult {
+  totalAplicado: number;
+  facturasAfectadas: number;
+  saldoAFavor: number;
+}
+
+export type CreatePaymentResult = Payment & { aplicacion: PaymentApplyResult };
+
 export const createPayment = (body: {
   supplierId: string;
   accountId: string;
@@ -24,7 +33,9 @@ export const createPayment = (body: {
   metodo?: MetodoPago;
   referencia?: string;
   notas?: string;
-}) => apiClient.post<Payment>('/api/finance/payments', body).then(r => r.data);
+  /** Default true en backend: aplica FIFO a las facturas adeudadas más viejas. */
+  autoAplicar?: boolean;
+}) => apiClient.post<CreatePaymentResult>('/api/finance/payments', body).then(r => r.data);
 
 export const patchPayment = (id: string, body: Partial<{
   fecha: string;

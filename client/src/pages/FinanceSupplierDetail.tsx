@@ -281,6 +281,10 @@ export function FinanceSupplierDetail() {
           supplierId={supplier.id}
           supplierName={supplier.nombre}
           onClose={() => setNewPaymentOpen(false)}
+          onCreated={() => {
+            setNewPaymentOpen(false);
+            qc.invalidateQueries({ queryKey: ['account-summary', id] });
+          }}
           onCreatedAndApply={(paymentId) => {
             setNewPaymentOpen(false);
             setCreatedPaymentId(paymentId);

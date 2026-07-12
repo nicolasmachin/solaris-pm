@@ -6,6 +6,7 @@ import { createPayment } from '../../api/payments.api';
 import { getAccounts } from '../../api/accounts.api';
 import { ACCOUNT_TYPE_LABEL } from '../../types/accounts.types';
 import type { MetodoPago, Moneda } from '../../types/finance.types';
+import { fmtCurrency } from '../../lib/finance';
 import { todayLocalISO } from '../../utils/date';
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
@@ -18,10 +19,13 @@ interface Props {
   supplierName: string;
   defaultAmount?: number;
   defaultMoneda?: Moneda;
+  /** Valor inicial del check "aplicar automáticamente". Default true.
+   *  Poner false cuando se paga una factura puntual (aplicación dirigida). */
+  defaultAutoAplicar?: boolean;
   onClose: () => void;
-  /** Se llama con el id del payment recién creado si el usuario eligió "aplicar ahora". */
+  /** Se llama con el id del payment recién creado si el usuario eligió aplicación manual. */
   onCreatedAndApply: (paymentId: string) => void;
-  /** Se llama con el id sin abrir el modal de aplicación. */
+  /** Se llama con el id sin abrir el modal de aplicación (ej. tras auto-aplicar). */
   onCreated?: (paymentId: string) => void;
 }
 
@@ -30,6 +34,7 @@ export function NewPaymentForSupplierModal({
   supplierName,
   defaultAmount,
   defaultMoneda,
+  defaultAutoAplicar = true,
   onClose,
   onCreatedAndApply,
   onCreated,
@@ -44,7 +49,7 @@ export function NewPaymentForSupplierModal({
     accountId: '',
     referencia: '',
     notas: '',
-    aplicarAhora: true,
+    autoAplicar: defaultAutoAplicar,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -74,6 +79,7 @@ export function NewPaymentForSupplierModal({
         monto,
         moneda: form.moneda,
         metodo: form.metodo,
+        autoAplicar: form.autoAplicar,
         ...(form.referencia ? { referencia: form.referencia } : {}),
         ...(form.notas ? { notas: form.notas } : {}),
       });
@@ -83,13 +89,20 @@ export function NewPaymentForSupplierModal({
       qc.invalidateQueries({ queryKey: ['finance-movements'] });
       qc.invalidateQueries({ queryKey: ['finance-dashboard'] });
       qc.invalidateQueries({ queryKey: ['suppliers'] });
-      if (form.aplicarAhora) {
-        toast.success('Pago registrado · aplicalo a facturas');
-        onCreatedAndApply(created.id);
-      } else {
-        toast.success('Pago registrado');
+      if (form.autoAplicar) {
+        // El backend ya aplicó FIFO a las facturas más viejas.
+        const { facturasAfectadas, totalAplicado, saldoAFavor } = created.aplicacion;
+        if (facturasAfectadas > 0) {
+          const extra = saldoAFavor > 0.005 ? ` · ${fmtCurrency(saldoAFavor, form.moneda)} a favor` : '';
+          toast.success(`Pago aplicado a ${facturasAfectadas} factura(s) (${fmtCurrency(totalAplicado, form.moneda)})${extra}`);
+        } else {
+          toast.success(`Pago registrado · ${fmtCurrency(saldoAFavor, form.moneda)} a favor del proveedor (sin facturas pendientes)`);
+        }
         if (onCreated) onCreated(created.id);
         else onClose();
+      } else {
+        toast.success('Pago registrado · aplicalo a facturas');
+        onCreatedAndApply(created.id);
       }
     } catch (err) {
       setError(getApiErr(err) ?? 'Error al guardar');
@@ -162,9 +175,14 @@ export function NewPaymentForSupplierModal({
           )}
           <div><label className={lblStyle}>Referencia</label><input className={inpStyle} value={form.referencia} onChange={e => setF('referencia', e.target.value)} /></div>
           <div><label className={lblStyle}>Notas</label><textarea className={klass(inpStyle, 'resize-none')} rows={2} value={form.notas} onChange={e => setF('notas', e.target.value)} /></div>
-          <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
-            <input type="checkbox" checked={form.aplicarAhora} onChange={e => setF('aplicarAhora', e.target.checked)} className="accent-[var(--color-accent)]" />
-            Aplicar a facturas ahora
+          <label className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
+            <input type="checkbox" checked={form.autoAplicar} onChange={e => setF('autoAplicar', e.target.checked)} className="accent-[var(--color-accent)] mt-0.5" />
+            <span>
+              Aplicar automáticamente a las facturas más viejas
+              <span className="block text-[11px] text-[var(--color-text-muted)]">
+                Descuenta el pago del estado de cuenta (facturas más antiguas primero). El sobrante queda a favor del proveedor.
+              </span>
+            </span>
           </label>
           {error && <p className="text-sm text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{error}</p>}
         </form>

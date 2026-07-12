@@ -1538,6 +1538,7 @@ export function FinanceMovements() {
           supplierName={payForMov.supplier.nombre}
           defaultAmount={payForMov.saldoPendiente > 0 ? payForMov.saldoPendiente : payForMov.monto}
           defaultMoneda={payForMov.moneda}
+          defaultAutoAplicar={false}
           onClose={() => setPayForMov(null)}
           onCreatedAndApply={(paymentId) => {
             setPreselectMovementForPay(payForMov.id);

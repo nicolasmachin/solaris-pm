@@ -22,6 +22,12 @@
 - El **traspaso al área siguiente** ahora se genera **cuando se completan las sub-tareas** de la etapa, no cuando alguien marca la etapa entera a mano. Al resolver la última tarea, la etapa se cierra y queda el traspaso **pendiente de confirmar** en "Pendientes".
 - Las sub-tareas marcadas **"No aplica"** cuentan como resueltas (antes dejaban la etapa trabada sin poder cerrarse).
 
+#### Finanzas — el pago a proveedor se descuenta solo del estado de cuenta
+
+- Al **registrar un pago a un proveedor** (desde la ficha del proveedor o desde Pagos), el pago ahora se **descuenta automáticamente de las facturas adeudadas, de la más vieja a la más nueva**, sin tener que elegir factura por factura. Si el pago supera la deuda, el sobrante queda **a favor del proveedor**.
+- Antes, un pago registrado desde el proveedor quedaba **"sin aplicar"** si no se seleccionaban las facturas a mano: no descontaba la deuda y **no aparecía en el Estado de resultados**. Ahora aparece en el mes del pago, como corresponde.
+- El pago hecho desde **Movimientos** (aplicado a una factura puntual) sigue funcionando igual que antes.
+
 #### Arreglos
 
 - **Habilitación UTE → cierre del proyecto**: con el pipeline nuevo de 8 etapas, los proyectos cuyo trámite UTE ya estaba **finalizado** no avanzaban solos a Post-Habilitación ni quedaban marcados como **Completados**. Ahora vuelve a hacerlo automáticamente, usando la **fecha real de finalización** del trámite (no la de hoy), y se corrigieron los proyectos que habían quedado trabados.
