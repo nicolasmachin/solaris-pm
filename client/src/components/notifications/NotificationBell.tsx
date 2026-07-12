@@ -100,7 +100,7 @@ export function NotificationBell() {
     if (type === "goals_not_configured") {
       navigate("/admin");
     } else if (type === "traspaso_por_confirmar") {
-      navigate("/pendientes");
+      navigate("/mis-tareas/pendientes");
     } else if (projectId) {
       navigate(`/projects/${projectId}`);
     }

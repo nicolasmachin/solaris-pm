@@ -172,11 +172,6 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
               Experiencia Solar
             </NavLink>
           </CanAccess>
-          <CanAccess module="TRASPASOS" action="VIEW">
-            <NavLink to="/pendientes" className={navLinkClass}>
-              Pendientes
-            </NavLink>
-          </CanAccess>
           <CanAccess module="FINANZAS" action="VIEW">
             <NavLink to="/finanzas" className={navLinkClass}>
               Finanzas

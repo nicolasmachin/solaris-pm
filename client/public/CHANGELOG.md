@@ -4,6 +4,10 @@
 
 ### 12 de julio de 2026
 
+#### Menú — "Pendientes" ahora vive dentro de "Mis tareas"
+
+- "Mis tareas" pasa a tener **pestañas**: **Tareas**, **Pendientes** y (próximamente) **Tickets**. La bandeja de traspasos por confirmar, que antes era un ítem aparte en el menú principal, ahora es la pestaña **"Pendientes"** dentro de "Mis tareas". Los enlaces y avisos que llevaban a Pendientes siguen funcionando.
+
 #### Traspasos — el cierre del trámite UTE avisa solo a Experiencia Solar
 
 - Al **finalizar un trámite UTE** (con el botón de la etapa o cargando la fecha de finalización), ahora se genera automáticamente el **traspaso a Experiencia Solar** (queda en **Pendientes** para confirmar) para avisar al Generador que ya puede empezar a producir su energía. Antes ese aviso no se disparaba solo al cerrar el trámite y había que gatillarlo a mano.

@@ -309,12 +309,9 @@ export function MisTareas() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="mb-5">
-        <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">
-          Mis tareas
-        </h1>
-        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+      {/* El título "Mis tareas" y las tabs los aporta MisTareasLayout. */}
+      <div className="mb-4">
+        <p className="text-sm text-[var(--color-text-secondary)]">
           {SUBTITLE_BY_SORT[sort]}
         </p>
       </div>

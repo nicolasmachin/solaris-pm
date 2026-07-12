@@ -89,7 +89,10 @@ function TraspasoCard({ t }: { t: TraspasoPendiente }) {
   );
 }
 
-export function BandejaPage() {
+// Contenido de la tab "Pendientes" de Mis tareas: la bandeja de traspasos que el
+// usuario disparó y todavía no confirmó. Sin wrapper de página/título propio (el
+// MisTareasLayout aporta el header "Mis tareas" y la barra de tabs).
+export function PendientesSection() {
   const { data, isLoading } = useQuery({
     queryKey: ["traspasos-pendientes"],
     queryFn: getTraspasosPendientes,
@@ -97,13 +100,10 @@ export function BandejaPage() {
   });
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 p-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Pendientes</h1>
-        <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">
-          Traspasos que disparaste y todavía no confirmaste. Al confirmar, se notifica al área correspondiente.
-        </p>
-      </div>
+    <div className="max-w-3xl space-y-4">
+      <p className="text-sm text-[var(--color-text-muted)]">
+        Traspasos que disparaste y todavía no confirmaste. Al confirmar, se notifica al área correspondiente.
+      </p>
 
       {isLoading ? (
         <div className="flex justify-center py-12">

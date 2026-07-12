@@ -56,6 +56,7 @@ const InformesPage = lazy(() => import("./pages/InformesPage"));
 const ConsultaUte = lazy(() => import("./pages/ConsultaUte"));
 const Calendar = lazy(() => import("./pages/Calendar").then((module) => ({ default: module.Calendar })));
 const MisTareas = lazy(() => import("./pages/MisTareas").then((module) => ({ default: module.MisTareas })));
+const MisTareasLayout = lazy(() => import("./pages/MisTareasLayout").then((module) => ({ default: module.MisTareasLayout })));
 const TramitesUte = lazy(() => import("./pages/TramitesUte").then((module) => ({ default: module.TramitesUte })));
 const Ingenieria = lazy(() => import("./pages/Ingenieria").then((module) => ({ default: module.Ingenieria })));
 const IngenieriaWorkspace = lazy(() => import("./pages/IngenieriaWorkspace").then((module) => ({ default: module.IngenieriaWorkspace })));
@@ -69,7 +70,7 @@ const PortalProjectUte = lazy(() => import("./pages/PortalProjectUte").then((mod
 const PortalLayout = lazy(() => import("./components/layout/PortalLayout").then((module) => ({ default: module.PortalLayout })));
 const ChangePassword = lazy(() => import("./pages/ChangePassword").then((module) => ({ default: module.ChangePassword })));
 const Clientes = lazy(() => import("./modules/clientes/pages/ClientesPage").then((module) => ({ default: module.ClientesPage })));
-const Bandeja = lazy(() => import("./modules/traspasos/pages/BandejaPage").then((module) => ({ default: module.BandejaPage })));
+const PendientesSection = lazy(() => import("./modules/traspasos/pages/PendientesSection").then((module) => ({ default: module.PendientesSection })));
 const ClienteFicha = lazy(() => import("./modules/clientes/pages/ClienteFichaPage").then((module) => ({ default: module.ClienteFichaPage })));
 
 function RouteFallback() {
@@ -190,7 +191,26 @@ export function App() {
         }
       >
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/mis-tareas" element={<MisTareas />} />
+        {/* Mis tareas: layout con tabs por URL (Tareas / Pendientes / Tickets). */}
+        <Route path="/mis-tareas" element={<MisTareasLayout />}>
+          <Route index element={<MisTareas />} />
+          <Route
+            path="pendientes"
+            element={
+              <PermissionRoute module="TRASPASOS" action="VIEW">
+                <PendientesSection />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="tickets"
+            element={
+              <PermissionRoute module="TICKETS" action="VIEW">
+                <FinancePlaceholder title="Tickets" />
+              </PermissionRoute>
+            }
+          />
+        </Route>
         <Route path="/projects" element={<Projects />} />
         <Route path="/projects/:id" element={<ProjectDetail />} />
         <Route path="/settings" element={<Settings />} />
@@ -348,14 +368,8 @@ export function App() {
             </PermissionRoute>
           }
         />
-        <Route
-          path="/pendientes"
-          element={
-            <PermissionRoute module="TRASPASOS" action="VIEW">
-              <Bandeja />
-            </PermissionRoute>
-          }
-        />
+        {/* Pendientes se mudó a una tab dentro de Mis tareas. */}
+        <Route path="/pendientes" element={<Navigate to="/mis-tareas/pendientes" replace />} />
         <Route
           path="/clientes"
           element={
