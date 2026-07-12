@@ -133,6 +133,12 @@ export async function patchCliente(
   return data;
 }
 
+// Borra (lógicamente) un Generador. Desaparece del listado; queda recuperable
+// en la base. Requiere permiso EXPERIENCIA_CLIENTES:DELETE.
+export async function deleteCliente(projectId: string): Promise<void> {
+  await apiClient.delete(`/api/clientes/${projectId}`);
+}
+
 // ─── Importación CSV ─────────────────────────────────────────────────────────
 
 export interface ImportRowData {

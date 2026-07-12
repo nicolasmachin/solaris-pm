@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { getProject, patchProject } from "../api/projects.api";
+import { deleteProject, getProject, patchProject } from "../api/projects.api";
 import { getStockMovements, createStockMovement, getStockProducts } from "../api/stock.api";
 import type { StockMovement } from "../types/finance.types";
 import type { Project, Stage } from "../types/api.types";
@@ -25,6 +25,7 @@ import { DocumentsStrip } from "../components/project/DocumentsStrip";
 import { MoreDataSection } from "../components/project/MoreDataSection";
 import { PesoObraCard } from "../components/project/PesoObraCard";
 import { Spinner } from "../components/ui/Spinner";
+import { DeleteConfirmModal } from "../components/ui/DeleteConfirmModal";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
 import { CommentThread } from "../components/comments/CommentThread";
@@ -650,9 +651,11 @@ function InstallationCoherenceBanner({
 
 export function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const qc = useQueryClient();
   const [selectedStage, setSelectedStage] = useState<Stage | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showEditProject, setShowEditProject] = useState(false);
   const [editingSolarSystemId, setEditingSolarSystemId] = useState<string | null>(null);
@@ -665,6 +668,8 @@ export function ProjectDetail() {
   const canCreateUte = usePermission("TRAMITES_UTE", "CREATE");
   const canViewClients = usePermission("USUARIOS", "VIEW");
   const canViewObra = usePermission("OPERACIONES", "VIEW");
+  // Borrado lógico del proyecto: el endpoint DELETE /projects/:id exige OPERACIONES:EDIT.
+  const canDeleteProject = usePermission("OPERACIONES", "EDIT");
   // El tab "Compras" es la lista colaborativa de materiales (Ingeniería +
   // Operaciones). Mismo componente que se usa en /ingenieria/proyecto/:id.
   const canViewCompras = usePermission("INGENIERIA", "VIEW") || usePermission("OPERACIONES", "VIEW");
@@ -698,6 +703,17 @@ export function ProjectDetail() {
     queryKey: ["project", id, "installation-check"],
     queryFn: () => installationCheck(id!),
     enabled: !!id,
+  });
+
+  const deleteProjectMutation = useMutation({
+    mutationFn: () => deleteProject(id!),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      toast.success("Proyecto borrado");
+      setShowDeleteConfirm(false);
+      navigate("/projects");
+    },
+    onError: () => toast.error("No se pudo borrar el proyecto"),
   });
 
   // Abrir drawer automáticamente cuando viene ?stage=<id> (desde Mis Tareas)
@@ -796,6 +812,16 @@ export function ProjectDetail() {
       <ProjectHeader
         project={project}
         onEdit={() => setShowEditProject(true)}
+        onDelete={canDeleteProject ? () => setShowDeleteConfirm(true) : undefined}
+      />
+
+      <DeleteConfirmModal
+        open={showDeleteConfirm}
+        title="Borrar proyecto"
+        description={`Se va a borrar "${project.clientName}" (${project.code}). Desaparece de todas las listas de la app (queda recuperable en la base).`}
+        loading={deleteProjectMutation.isPending}
+        onConfirm={() => deleteProjectMutation.mutate()}
+        onClose={() => !deleteProjectMutation.isPending && setShowDeleteConfirm(false)}
       />
 
       {project.installationSchedule && project.installationSchedule.plannedWorkStart && project.installationSchedule.plannedWorkEnd ? (

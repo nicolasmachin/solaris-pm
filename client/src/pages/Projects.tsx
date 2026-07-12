@@ -6,6 +6,7 @@ import { deleteProject, getProjects, patchProject } from "../api/projects.api";
 import { NewProjectModal } from "../components/project/NewProjectModal";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
+import { DeleteConfirmModal } from "../components/ui/DeleteConfirmModal";
 import { EmptyState } from "../components/ui/EmptyState";
 import { ProgressBar } from "../components/ui/ProgressBar";
 import { Spinner } from "../components/ui/Spinner";
@@ -471,14 +472,18 @@ export function Projects() {
 
       {showNewProject ? <NewProjectModal onClose={() => setShowNewProject(false)} /> : null}
 
-      {projectToDelete ? (
-        <DeleteProjectModal
-          project={projectToDelete}
-          onCancel={() => setProjectToDelete(null)}
-          onConfirm={() => deleteMutation.mutate(projectToDelete.id)}
-          isDeleting={deleteMutation.isPending}
-        />
-      ) : null}
+      <DeleteConfirmModal
+        open={projectToDelete !== null}
+        title="Eliminar proyecto"
+        description={
+          projectToDelete
+            ? `Se va a borrar "${projectToDelete.clientName}" (${projectToDelete.code}). Se oculta de todas las vistas y métricas (queda recuperable en la base).`
+            : undefined
+        }
+        loading={deleteMutation.isPending}
+        onConfirm={() => projectToDelete && deleteMutation.mutate(projectToDelete.id)}
+        onClose={() => !deleteMutation.isPending && setProjectToDelete(null)}
+      />
     </div>
   );
 }
@@ -713,80 +718,5 @@ function ProjectGroupTable({
         </table>
       </div>
     </section>
-  );
-}
-
-function DeleteProjectModal({
-  project,
-  onCancel,
-  onConfirm,
-  isDeleting,
-}: {
-  project: ProjectListItem;
-  onCancel: () => void;
-  onConfirm: () => void;
-  isDeleting: boolean;
-}) {
-  const [typedCode, setTypedCode] = useState("");
-  const canConfirm = typedCode.trim().toUpperCase() === project.code.toUpperCase();
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      onClick={onCancel}
-    >
-      <div
-        className="w-full max-w-md rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6 shadow-xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500/20 text-red-400">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-          </div>
-          <div className="min-w-0 flex-1">
-            <h2 className="font-display text-lg font-semibold text-[var(--color-text-primary)]">
-              Eliminar proyecto
-            </h2>
-            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-              Vas a eliminar <strong>{project.clientName}</strong> ({project.code}).
-              Se ocultará de todas las vistas y métricas. Esta acción no se puede deshacer desde la aplicación.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-5">
-          <label className="block text-xs text-[var(--color-text-muted)] mb-1.5">
-            Para confirmar, escribí el código del proyecto: <span className="font-mono text-[var(--color-text-primary)]">{project.code}</span>
-          </label>
-          <input
-            type="text"
-            autoFocus
-            value={typedCode}
-            onChange={(event) => setTypedCode(event.target.value)}
-            placeholder={project.code}
-            className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm font-mono text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-red-500 focus:outline-none"
-            disabled={isDeleting}
-          />
-        </div>
-
-        <div className="mt-6 flex justify-end gap-2">
-          <Button variant="secondary" onClick={onCancel} disabled={isDeleting}>
-            Cancelar
-          </Button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={!canConfirm || isDeleting}
-            className="rounded-md bg-red-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isDeleting ? "Eliminando..." : "Eliminar definitivamente"}
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }

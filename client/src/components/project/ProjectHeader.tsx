@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Contact, FileCheck, HardHat, Mail, MapPin, Phone } from "lucide-react";
+import { Contact, FileCheck, HardHat, Mail, MapPin, Phone, Trash2 } from "lucide-react";
 import type { Project } from "../../types/api.types";
 import { UTE_STAGE_LABEL, UTE_STATUS_LABEL } from "../../api/uteProcess.api";
 import { getProjectTeamColor, getProjectTeamName } from "./projectTeamColor";
@@ -20,9 +20,10 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }>
 interface ProjectHeaderProps {
   project: Project;
   onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-export function ProjectHeader({ project, onEdit }: ProjectHeaderProps) {
+export function ProjectHeader({ project, onEdit, onDelete }: ProjectHeaderProps) {
   const navigate = useNavigate();
   const style = STATUS_STYLES[project.status] ?? STATUS_STYLES.ACTIVE;
   const hasInstallation = !!project.installationSchedule;
@@ -60,6 +61,15 @@ export function ProjectHeader({ project, onEdit }: ProjectHeaderProps) {
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={onDelete}
+              className="p-1 rounded text-[var(--color-text-muted)] hover:bg-[var(--color-danger-bg)] hover:text-[var(--color-danger-text)] transition-colors"
+              title="Borrar proyecto"
+            >
+              <Trash2 size={13} />
             </button>
           )}
           <button

@@ -2,6 +2,15 @@
 
 ## v8.0
 
+### 11 de julio de 2026
+
+#### Borrar proyectos y Generadores
+
+- Ahora se puede **borrar un proyecto** desde su ficha: al lado del lápiz de editar aparece un botón de papelera.
+- En **Experiencia Solar**, cada Generador del listado tiene un botón de **papelera** para borrarlo.
+- Para evitar borrados accidentales, la confirmación pide **escribir en letras un número** que se muestra en pantalla (ej. "tres"). Mismo criterio en la lista de proyectos (antes había que tipear el código completo).
+- En todos los casos es un **borrado que se puede deshacer**: el proyecto/Generador desaparece de todas las listas de la app, pero queda guardado por si hace falta recuperarlo. Solo lo ven quienes tienen permiso para borrar.
+
 ### 10 de julio de 2026
 
 #### Experiencia Solar (antes "Atención al Cliente")

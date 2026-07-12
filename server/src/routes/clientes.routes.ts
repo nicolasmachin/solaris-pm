@@ -259,6 +259,42 @@ export async function registerClientesRoutes(app: FastifyInstance) {
     },
   );
 
+  // ─── Borrar Generador (soft delete del Project) ───────────────────────────
+  // Borrado lógico: marca deletedAt y desaparece de todas las listas de la app,
+  // pero la fila queda en la base (recuperable a mano). No es hard delete.
+  app.delete(
+    "/clientes/:projectId",
+    { preHandler: authorize(Module.EXPERIENCIA_CLIENTES, Action.DELETE) },
+    async (request, reply) => {
+      const user = ensureUser(request);
+      const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
+
+      // Idempotente: solo actúa sobre un proyecto vivo.
+      const existing = await prisma.project.findFirst({
+        where: { id: projectId, deletedAt: null },
+        select: { id: true, code: true, clientName: true },
+      });
+      if (!existing) throw notFound("CLIENTE_NOT_FOUND", "Cliente no encontrado");
+
+      await prisma.project.update({
+        where: { id: projectId },
+        data: { deletedAt: new Date() },
+      });
+
+      await createAuditEntry({
+        entityType: AuditEntityType.project,
+        entityId: projectId,
+        projectId,
+        userId: user.id,
+        action: AuditAction.deleted,
+        description: `Eliminó lógicamente el Generador ${existing.code} (${existing.clientName}) desde Experiencia Solar`,
+      });
+
+      reply.code(204);
+      return null;
+    },
+  );
+
   // ─── Bitácora: listar ────────────────────────────────────────────────────
   app.get(
     "/clientes/:projectId/interacciones",

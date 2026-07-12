@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { Download, Search, SlidersHorizontal, Upload } from "lucide-react";
+import { Download, Search, SlidersHorizontal, Trash2, Upload } from "lucide-react";
 
 import {
+  deleteCliente,
   exportClientes,
   type ClienteEstado,
   type ClienteListItem,
@@ -13,6 +14,7 @@ import {
   type ClienteSortBy,
 } from "../../../api/clientes.api";
 import { getAssignableUsers } from "../../../api/users.api";
+import { DeleteConfirmModal } from "../../../components/ui/DeleteConfirmModal";
 import { ResponsiveTable, type Column } from "../../../components/ui/ResponsiveTable";
 import { Sheet } from "../../../components/ui/Sheet";
 import { Spinner } from "../../../components/ui/Spinner";
@@ -94,11 +96,25 @@ export function ClientesPage() {
   // Edición inline. Solo con permiso EDIT.
   const canEdit = usePermission("EXPERIENCIA_CLIENTES", "EDIT");
   const canCreate = usePermission("EXPERIENCIA_CLIENTES", "CREATE");
+  const canDelete = usePermission("EXPERIENCIA_CLIENTES", "DELETE");
   const [importOpen, setImportOpen] = useState(false);
   const updateCliente = useUpdateCliente();
   function saveField(projectId: string, patch: Parameters<typeof updateCliente.mutateAsync>[0]["patch"]) {
     return updateCliente.mutateAsync({ projectId, patch }).then(() => undefined);
   }
+
+  // Borrado lógico del Generador (desaparece del listado; recuperable en la base).
+  const qc = useQueryClient();
+  const [toDelete, setToDelete] = useState<ClienteListItem | null>(null);
+  const deleteMutation = useMutation({
+    mutationFn: (projectId: string) => deleteCliente(projectId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["clientes"] });
+      toast.success("Generador borrado");
+      setToDelete(null);
+    },
+    onError: () => toast.error("No se pudo borrar el Generador"),
+  });
 
   // Filtros que vienen del componente (excepto search, que se maneja con debounce).
   function patchFilters(patch: Partial<Filters>) {
@@ -326,6 +342,28 @@ export function ClientesPage() {
     },
   ];
 
+  if (canDelete) {
+    columns.push({
+      key: "acciones",
+      label: "",
+      className: "w-10 text-right",
+      render: (c) => (
+        <button
+          type="button"
+          aria-label={`Borrar ${c.nombre}`}
+          title="Borrar Generador"
+          onClick={(e) => {
+            e.stopPropagation();
+            setToDelete(c);
+          }}
+          className="rounded p-1.5 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-danger-bg)] hover:text-[var(--color-danger-text)]"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      ),
+    });
+  }
+
   const items = data?.items ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -360,6 +398,19 @@ export function ClientesPage() {
       </div>
 
       {importOpen && <ImportClientesModal open={importOpen} onClose={() => setImportOpen(false)} />}
+
+      <DeleteConfirmModal
+        open={toDelete !== null}
+        title="Borrar Generador"
+        description={
+          toDelete
+            ? `Se va a borrar "${toDelete.nombre}". Desaparece de todas las listas de la app (queda recuperable en la base).`
+            : undefined
+        }
+        loading={deleteMutation.isPending}
+        onConfirm={() => toDelete && deleteMutation.mutate(toDelete.projectId)}
+        onClose={() => !deleteMutation.isPending && setToDelete(null)}
+      />
 
       {/* Filtros: inline en desktop, en Sheet en mobile */}
       {isMobile ? (
