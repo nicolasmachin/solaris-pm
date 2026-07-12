@@ -119,6 +119,7 @@ enum AuditEntityType {
   contract
   proforma
   traspaso
+  ticket
 }
 
 enum AuditAction {
@@ -169,6 +170,7 @@ enum NotificationType {
   traspaso_escalado
   traspaso_por_confirmar
   aviso_habilitacion_pendiente
+  ticket_actualizado
 }
 
 // ─── Traspasos entre áreas (módulo Traspasos v1) ─────────────────────────────
@@ -266,6 +268,7 @@ enum Module {
   EXPERIENCIA_CLIENTES
   COMISIONES
   TRASPASOS
+  TICKETS
 }
 
 enum Moneda {
@@ -569,6 +572,7 @@ model Project {
   financeMovements        FinanceMovement[]
   projectMaterials        ProjectMaterial[]
   nonMaterialCosts        ProjectNonMaterialCost[]
+  tickets                 Ticket[]
   stockMovements          StockMovement[]
   installationSchedule    InstallationSchedule?
   uteProcesses            UteProcess[]
@@ -696,6 +700,74 @@ model TraspasoDestinatario {
   @@unique([traspasoId, usuarioId])
   @@index([usuarioId, leidoEn])
   @@map("traspaso_destinatarios")
+}
+
+// ─── Tickets (reclamos/consultas; fase E3 del protocolo) ─────────────────────
+// Los abre cualquier área interna o el propio cliente desde el portal. Al
+// derivarse a un área técnica dispara T9; al resolverse dispara T10 (motor de
+// traspasos). Cuelgan de un Project (= Generador). Comunicación in-app; NUNCA
+// email al cliente (guardrail post-incidente mayo 2026).
+
+enum TicketEstado {
+  ABIERTO
+  DERIVADO
+  EN_PROGRESO
+  RESUELTO
+  CERRADO
+}
+
+enum TicketPrioridad {
+  BAJA
+  MEDIA
+  ALTA
+}
+
+model Ticket {
+  id            String          @id @default(cuid())
+  projectId     String
+  project       Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  titulo        String
+  descripcion   String
+  estado        TicketEstado    @default(ABIERTO)
+  prioridad     TicketPrioridad @default(MEDIA)
+  // "INGENIERIA" | "OPERACIONES" cuando el ticket está derivado a un área técnica.
+  areaDerivada  String?
+  // true si lo abrió el cliente desde su portal (vs un usuario interno).
+  origenCliente Boolean         @default(false)
+
+  // Ids de usuario sin relación (mismo criterio que ProjectNonMaterialCost):
+  // el nombre se resuelve en el service con un lookup puntual.
+  creadoPorId   String
+  asignadoAId   String?
+  resueltoEn    DateTime?       @db.Timestamptz(6)
+  resueltoPorId String?
+  cerradoEn     DateTime?       @db.Timestamptz(6)
+
+  comentarios   TicketComment[]
+
+  createdAt     DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime        @updatedAt @db.Timestamptz(6)
+  deletedAt     DateTime?       @db.Timestamptz(6)
+
+  @@index([projectId])
+  @@index([estado])
+  @@map("tickets")
+}
+
+model TicketComment {
+  id        String   @id @default(cuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  autorId   String
+  contenido String
+  // Nota interna del staff que el cliente NO ve en el portal.
+  esInterno Boolean  @default(false)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([ticketId])
+  @@map("ticket_comments")
 }
 
 // Relación many-to-many entre Project y User (rol CLIENT). Reemplaza al

@@ -172,8 +172,8 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "ADMIN", module: Module.EXPERIENCIA_CLIENTES, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { roleName: "ADMIN", module: Module.COMISIONES,    actions: [Action.VIEW] },
 
-    // CLIENT
-    { roleName: "CLIENT", module: Module.PORTAL_CLIENTE, actions: [Action.VIEW] },
+    // CLIENT — portal de lectura + abrir/comentar sus propios tickets.
+    { roleName: "CLIENT", module: Module.PORTAL_CLIENTE, actions: [Action.VIEW, Action.CREATE, Action.COMMENT] },
 
     // ASESOR_COMERCIAL
     { roleName: "ASESOR_COMERCIAL", module: Module.VENTAS,       actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMMENT] },
@@ -252,6 +252,16 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "EXPERIENCIA_SOLAR", module: Module.TRAMITES_UTE,         actions: [Action.VIEW] },
     { roleName: "EXPERIENCIA_SOLAR", module: Module.METRICAS,             actions: [Action.VIEW] },
     { roleName: "EXPERIENCIA_SOLAR", module: Module.TRASPASOS,            actions: [Action.VIEW, Action.CONFIRM] },
+
+    // ─── Módulo Tickets (fase E3) — cualquier área interna abre/gestiona ─────
+    { roleName: "ADMIN",             module: Module.TICKETS, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
+    { roleName: "ASESOR_COMERCIAL",  module: Module.TICKETS, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
+    { roleName: "FINANZAS",          module: Module.TICKETS, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
+    { roleName: "INGENIERIA",        module: Module.TICKETS, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
+    { roleName: "OPERACIONES",       module: Module.TICKETS, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
+    { roleName: "POSTVENTA",         module: Module.TICKETS, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
+    { roleName: "TRAMITACION_UTE",   module: Module.TICKETS, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
+    { roleName: "EXPERIENCIA_SOLAR", module: Module.TICKETS, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
   ];
 
   for (const entry of matrix) {

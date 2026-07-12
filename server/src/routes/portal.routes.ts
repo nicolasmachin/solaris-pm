@@ -7,6 +7,11 @@ import { prisma } from "../lib/prisma.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
+import {
+  agregarComentario,
+  crearTicket,
+  serializeTicket,
+} from "../services/tickets/tickets.service.js";
 import { calculateTimes } from "../services/uteProcess.service.js";
 import { badRequest, forbidden, notFound, unauthorized } from "../utils/errors.js";
 import { serializeDate } from "../utils/serialization.js";
@@ -681,6 +686,104 @@ export async function registerPortalRoutes(app: FastifyInstance) {
           : null,
         timeline,
       };
+    },
+  );
+
+  // ─── Tickets del cliente (in-app, sin email) ────────────────────────────
+  // El cliente abre/ve/comenta sus propios tickets. Ownership: el ticket cuelga
+  // de un proyecto donde el cliente figura en ProjectClient.
+
+  app.get(
+    "/client/tickets",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.VIEW) },
+    async (request) => {
+      const user = ensureUser(request);
+      const rows = await prisma.ticket.findMany({
+        where: {
+          deletedAt: null,
+          project: { deletedAt: null, clients: { some: { userId: user.id } } },
+        },
+        include: { project: { select: { id: true, clientName: true, code: true } } },
+        orderBy: { createdAt: "desc" },
+      });
+      return rows.map((t) => ({
+        id: t.id,
+        projectId: t.projectId,
+        projectName: t.project.clientName,
+        projectCode: t.project.code,
+        titulo: t.titulo,
+        estado: t.estado,
+        prioridad: t.prioridad,
+        createdAt: t.createdAt.toISOString(),
+      }));
+    },
+  );
+
+  app.get(
+    "/client/tickets/:id",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.VIEW) },
+    async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const t = await prisma.ticket.findFirst({
+        where: {
+          id,
+          deletedAt: null,
+          project: { clients: { some: { userId: user.id } } },
+        },
+        include: { comentarios: true },
+      });
+      if (!t) throw notFound("TICKET_NOT_FOUND", "Ticket no encontrado");
+      // El cliente NO ve comentarios internos.
+      return serializeTicket(t, { includeInternalComments: false });
+    },
+  );
+
+  app.post(
+    "/client/tickets",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.CREATE) },
+    async (request) => {
+      const user = ensureUser(request);
+      const body = z
+        .object({
+          projectId: z.string(),
+          titulo: z.string().trim().min(1).max(200),
+          descripcion: z.string().trim().min(1).max(4000),
+        })
+        .parse(request.body);
+      // Ownership: el proyecto debe ser del cliente.
+      const project = await prisma.project.findFirst({
+        where: { id: body.projectId, deletedAt: null, clients: { some: { userId: user.id } } },
+        select: { id: true },
+      });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+      const t = await crearTicket({
+        projectId: body.projectId,
+        titulo: body.titulo,
+        descripcion: body.descripcion,
+        creadoPorId: user.id,
+        origenCliente: true,
+      });
+      return serializeTicket(t, { includeInternalComments: false });
+    },
+  );
+
+  app.post(
+    "/client/tickets/:id/comentarios",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.COMMENT) },
+    async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const body = z.object({ contenido: z.string().trim().min(1).max(4000) }).parse(request.body);
+      // Ownership.
+      const owned = await prisma.ticket.findFirst({
+        where: { id, deletedAt: null, project: { clients: { some: { userId: user.id } } } },
+        select: { id: true },
+      });
+      if (!owned) throw notFound("TICKET_NOT_FOUND", "Ticket no encontrado");
+      // El cliente nunca crea comentarios internos.
+      const t = await agregarComentario({ ticketId: id, autorId: user.id, contenido: body.contenido, esInterno: false });
+      return serializeTicket(t, { includeInternalComments: false });
     },
   );
 
