@@ -2,6 +2,19 @@
 
 ## v8.0
 
+### 12 de julio de 2026
+
+#### Calendario — fecha de obra tentativa vs. confirmada
+
+- En el **Calendario de instalaciones**, las obras ahora se distinguen visualmente según estén **confirmadas o no**: las **tentativas** (la fecha que agenda Ventas al inicio, todavía sin confirmar) se ven **rayadas y con borde punteado**; las **confirmadas** (que el responsable de Operaciones confirma más adelante) se ven con **relleno lleno**.
+- Se agregó una **referencia** arriba del calendario que explica los dos estados, y al pasar el mouse por una obra tentativa el globo aclara "Fecha tentativa (sin confirmar)".
+- Además, en el pipeline nuevo de 8 etapas, el calendario vuelve a **reconocer correctamente la etapa de obra** (para pintar en verde las obras ya terminadas y para los avisos de coherencia de fechas), que había dejado de detectarse con el cambio de etapas.
+
+#### Estado de resultados — los pagos a proveedores del mes ahora se ven siempre
+
+- El **Estado de resultados** ahora muestra los **pagos a proveedores según la fecha en que se pagaron**, por su monto real. Antes, si pagabas **una parte** de una factura grande (o una cuenta con varias facturas), ese pago **no aparecía** hasta saldar la factura completa, y cuando aparecía lo hacía con la fecha de la factura, no la del pago.
+- Ahora cada pago cae en el mes en que salió la plata, aunque la factura siga parcialmente pendiente. Así el resultado del mes refleja **todas las salidas reales** a proveedores.
+
 ### 11 de julio de 2026
 
 #### Generadores importados por CSV — fuera de Proyectos, contados como obras históricas

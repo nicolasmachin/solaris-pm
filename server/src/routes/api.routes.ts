@@ -8258,7 +8258,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
     plannedWorkEnd: Date,
   ): Promise<InstallationValidationResult> {
     const operations = await prisma.stage.findFirst({
-      where: { projectId, name: StageType.OPERACIONES },
+      // Pipeline nuevo (8 etapas) usa EJECUCION_OBRA; los proyectos viejos aún
+      // tienen OPERACIONES. Conviven, matcheamos ambos.
+      where: { projectId, name: { in: [StageType.EJECUCION_OBRA, StageType.OPERACIONES] } },
       select: {
         actualStartDate: true,
         actualEndDate: true,
@@ -8300,7 +8302,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     substageName: string,
     stage: { name: StageType },
   ): boolean {
-    if (stage.name !== StageType.OPERACIONES) return false;
+    if (stage.name !== StageType.OPERACIONES && stage.name !== StageType.EJECUCION_OBRA) return false;
     return substageName.toLowerCase().includes("ejecución de obra");
   }
 
@@ -8359,7 +8361,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       stages?: Array<{ name: StageType; tipoObra: TipoObra | null; status: StageStatus }>;
     };
   }) {
-    const operationsStage = s.project?.stages?.find((st) => st.name === StageType.OPERACIONES);
+    const operationsStage = s.project?.stages?.find(
+      (st) => st.name === StageType.EJECUCION_OBRA || st.name === StageType.OPERACIONES,
+    );
     const workType = operationsStage?.tipoObra ?? null;
     const operationsCompleted = operationsStage?.status === StageStatus.COMPLETED;
     const sortedSegments = [...s.segments].sort(
@@ -8707,7 +8711,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           include: { segments: { orderBy: { startDate: "asc" } } },
         },
         stages: {
-          where: { name: StageType.OPERACIONES },
+          where: { name: { in: [StageType.EJECUCION_OBRA, StageType.OPERACIONES] } },
           select: {
             status: true,
             plannedStartDate: true,
@@ -9403,7 +9407,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
       }
 
       const operaciones = await prisma.stage.findFirst({
-        where: { projectId, name: StageType.OPERACIONES, deletedAt: null },
+        where: {
+          projectId,
+          name: { in: [StageType.EJECUCION_OBRA, StageType.OPERACIONES] },
+          deletedAt: null,
+        },
         select: { actualEndDate: true },
       });
       const finalizedAt = operaciones?.actualEndDate ?? todayUtc();
@@ -18237,6 +18245,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
         fecha: { gte: fechaInicio, lt: fechaFin },
         // Excluir ajustes de conciliación: no son operación, son ruido contable.
         categoriaPrincipal: { not: CategoriaPrincipal.AJUSTE_CONCILIACION },
+        // Los gastos pagados vía Payment (facturas de proveedor) se cuentan por
+        // el pago real del mes (ver query `payments` más abajo), no por el
+        // movimiento — así se reflejan los pagos parciales y en el mes en que
+        // efectivamente salió la plata. Se excluyen acá para no duplicar.
+        paymentApplications: { none: { payment: { deletedAt: null } } },
       },
       include: {
         project: { select: { id: true, code: true, clientName: true } },
@@ -18245,6 +18258,28 @@ export async function registerApiRoutes(app: FastifyInstance) {
       },
       orderBy: { fecha: "asc" },
     });
+
+    // Pagos reales del período (criterio caja): cada Payment cuenta como salida
+    // a proveedor en el mes de su fecha, por su monto completo (incluye pagos
+    // parciales de facturas grandes y anticipos). Esto es lo que hace que un
+    // pago a proveedor aparezca en el Estado de resultados aunque la factura
+    // asociada siga parcialmente pendiente.
+    const payments = await prisma.payment.findMany({
+      where: { deletedAt: null, fecha: { gte: fechaInicio, lt: fechaFin } },
+      include: { supplier: { select: { nombre: true } } },
+      orderBy: { fecha: "asc" },
+    });
+    const paymentItems: ResultItem[] = payments.map((p) => ({
+      id: p.id,
+      fecha: serializeDateNonNull(p.fecha),
+      descripcion: `Pago a ${p.supplier?.nombre ?? "proveedor"}${p.referencia ? ` · ${p.referencia}` : ""}`,
+      monto: Number(p.monto),
+      moneda: p.moneda,
+      projectClientName: null,
+      projectCode: null,
+      supplierName: p.supplier?.nombre ?? null,
+    }));
+    const paymentsTotalUsd = payments.reduce((s, p) => s + toUsd(Number(p.monto), p.moneda), 0);
 
     function fmtItem(m: typeof movements[number]): ResultItem {
       return {
@@ -18299,8 +18334,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
     const byProject = Array.from(byProjectMap.values()).sort((a, b) => b.total - a.total);
 
+    // Pago a proveedores = movimientos PAGO_PROVEEDOR residuales (marcados
+    // pagados sin Payment asociado, caso raro) + los pagos reales del mes.
+    const pagoProveedoresItems = [...pagoProveedores.map(fmtItem), ...paymentItems];
+    const pagoProveedoresTotal = sumUsd(pagoProveedores) + paymentsTotalUsd;
+
     const totalIngresos = sumUsd(ingresosRows);
-    const totalEgresos = sumUsd(egresosRows);
+    // egresosRows ya excluye lo pagado vía Payment; sumamos los pagos reales aparte.
+    const totalEgresos = sumUsd(egresosRows) + paymentsTotalUsd;
     const resultado = totalIngresos - totalEgresos;
     const rentabilidad = totalIngresos > 0 ? Math.round((resultado / totalIngresos) * 1000) / 10 : 0;
 
@@ -18324,7 +18365,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         },
         costosVariables: { total: sumUsd(variables), items: variables.map(fmtItem) },
         salidasProyecto: { total: sumUsd(salidasProyecto), byProject },
-        pagoProveedores: { total: sumUsd(pagoProveedores), items: pagoProveedores.map(fmtItem) },
+        pagoProveedores: { total: pagoProveedoresTotal, items: pagoProveedoresItems },
         comprasStock: { total: sumUsd(comprasStock), items: comprasStock.map(fmtItem) },
         otros: { total: sumUsd(otros), items: otros.map(fmtItem) },
       },

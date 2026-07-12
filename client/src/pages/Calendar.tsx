@@ -68,6 +68,25 @@ function displayTeamName(schedule: InstallationSchedule): string {
   return `${schedule.teamName} (eliminado)`;
 }
 
+// C9 (Traspasos): la obra nace "tentativa" (agendada por Ventas en Onboarding,
+// sin confirmar) y luego el gerente la confirma en Validación de Operaciones. La
+// tentativa se pinta rayada + punteada; la confirmada, sólida.
+function blockBackground(schedule: InstallationSchedule): string {
+  const color = effectiveColor(schedule);
+  if (schedule.confirmedAt) return color;
+  const stripe = isColorDark(color) ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.5)";
+  return `repeating-linear-gradient(45deg, ${color} 0, ${color} 6px, ${stripe} 6px, ${stripe} 12px)`;
+}
+
+// Borde punteado del evento tentativo. Usa outline para no alterar el layout de
+// la grilla. Devuelve undefined si ya está confirmado (borde sólido implícito).
+function tentativeOutline(schedule: InstallationSchedule): string | undefined {
+  if (schedule.confirmedAt) return undefined;
+  const color = effectiveColor(schedule);
+  const line = isColorDark(color) ? "rgba(255,255,255,0.9)" : "rgba(12,59,110,0.7)";
+  return `1.5px dashed ${line}`;
+}
+
 const MONTHS_ES = [
   "enero",
   "febrero",
@@ -1045,6 +1064,26 @@ export function Calendar() {
           </div>
         )}
 
+        {/* Leyenda tentativa/confirmada (C9) */}
+        <div className="md:shrink-0 flex items-center gap-4 text-[11px] text-[var(--color-text-muted)]">
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              className="h-2.5 w-5 rounded"
+              style={{
+                background:
+                  "repeating-linear-gradient(45deg, var(--color-text-muted) 0, var(--color-text-muted) 4px, transparent 4px, transparent 8px)",
+                outline: "1px dashed var(--color-text-muted)",
+                outlineOffset: "-1px",
+              }}
+            />
+            <span>Fecha tentativa (sin confirmar)</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-5 rounded" style={{ background: "var(--color-text-muted)" }} />
+            <span>Fecha confirmada</span>
+          </span>
+        </div>
+
         <div className="flex gap-5 flex-col lg:flex-row md:flex-1 md:min-h-0">
           {/* Columna izquierda: calendario */}
           <div className="flex-1 min-w-0 md:min-h-0">
@@ -1545,13 +1584,13 @@ function MonthTrackBlock({
   const style: CSSProperties = {
     gridColumn: `${segment.startDayIndex + 1} / span ${segment.span}`,
     gridRow: `${slotIndex + 1} / span 1`,
-    background: color,
+    background: blockBackground(schedule),
     borderTopLeftRadius: segment.isFirstOfSegment ? 6 : 2,
     borderBottomLeftRadius: segment.isFirstOfSegment ? 6 : 2,
     borderTopRightRadius: segment.isLastOfSegment ? 6 : 2,
     borderBottomRightRadius: segment.isLastOfSegment ? 6 : 2,
-    outline: isSelected ? "2px solid var(--color-accent)" : undefined,
-    outlineOffset: isSelected ? "-2px" : undefined,
+    outline: isSelected ? "2px solid var(--color-accent)" : tentativeOutline(schedule),
+    outlineOffset: isSelected ? "-2px" : tentativeOutline(schedule) ? "-1.5px" : undefined,
     pointerEvents: "auto",
     opacity: isDragging ? 0.4 : 1,
     minHeight: 0,
@@ -1574,7 +1613,7 @@ function MonthTrackBlock({
           onClick();
         }
       }}
-      title={`${clientName} · ${displayTeamName(schedule)}`}
+      title={`${clientName} · ${displayTeamName(schedule)}${schedule.confirmedAt ? "" : " · Fecha tentativa (sin confirmar)"}`}
       className={`flex items-center overflow-hidden ${
         isDraggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
       }`}
@@ -2065,14 +2104,14 @@ function YearTrackBlock({
 
   const style: CSSProperties = {
     gridColumn: `${segment.startDayIndex + 1} / span ${segment.span}`,
-    background: color,
+    background: blockBackground(schedule),
     height: slotHeight,
     borderTopLeftRadius: segment.isFirstOfSegment ? 3 : 1,
     borderBottomLeftRadius: segment.isFirstOfSegment ? 3 : 1,
     borderTopRightRadius: segment.isLastOfSegment ? 3 : 1,
     borderBottomRightRadius: segment.isLastOfSegment ? 3 : 1,
-    outline: isSelected ? "1.5px solid var(--color-accent)" : undefined,
-    outlineOffset: isSelected ? "-1.5px" : undefined,
+    outline: isSelected ? "1.5px solid var(--color-accent)" : tentativeOutline(schedule),
+    outlineOffset: isSelected ? "-1.5px" : tentativeOutline(schedule) ? "-1px" : undefined,
     pointerEvents: resizingSomething ? "none" : "auto",
     opacity: isDragging ? 0.4 : 1,
     position: "relative",
@@ -2095,7 +2134,7 @@ function YearTrackBlock({
           onClick();
         }
       }}
-      title={`${clientName} · ${displayTeamName(schedule)} · ${formatRangeShort(segment.segmentStart, segment.segmentEnd)}`}
+      title={`${clientName} · ${displayTeamName(schedule)} · ${formatRangeShort(segment.segmentStart, segment.segmentEnd)}${schedule.confirmedAt ? "" : " · Fecha tentativa (sin confirmar)"}`}
       className={`flex items-center overflow-hidden ${
         isDraggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
       }`}
