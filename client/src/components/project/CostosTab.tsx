@@ -1,7 +1,17 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
+import { Trash2 } from 'lucide-react';
 import { Spinner } from '../ui/Spinner';
-import { getProjectCostSummary } from '../../api/finance.api';
+import { usePermission } from '../../hooks/usePermission';
+import {
+  getProjectCostSummary,
+  createNonMaterialCost,
+  deleteNonMaterialCost,
+  type CostSummaryNoMaterial,
+} from '../../api/finance.api';
+import type { Moneda } from '../../types/finance.types';
 import { fmtCurrency, fmtDate } from '../../lib/finance';
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
@@ -11,6 +21,7 @@ export function CostosTab({ projectId }: { projectId: string; budgetUsd?: number
     queryKey: ['project-cost-summary', projectId],
     queryFn: () => getProjectCostSummary(projectId),
   });
+  const canEdit = usePermission('OPERACIONES', 'EDIT');
 
   if (isLoading) return <div className="flex items-center justify-center py-12"><Spinner /></div>;
   if (error || !data) return <p className="text-sm text-[var(--color-text-muted)] text-center py-6">No se pudo cargar el resumen de costos</p>;
@@ -26,7 +37,7 @@ export function CostosTab({ projectId }: { projectId: string; budgetUsd?: number
   return (
     <div className="space-y-6">
       {/* KPI superior: presupuesto + desviación previsto vs real */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KpiBox
           label="Presupuesto"
           value={tieneBudget ? fmtCurrency(data.budgetUsd!, 'USD') : '—'}
@@ -50,12 +61,30 @@ export function CostosTab({ projectId }: { projectId: string; budgetUsd?: number
         <KpiBox
           label="Margen real estimado"
           value={
-            data.margenRealUSD != null
-              ? `${fmtCurrency(data.margenRealUSD, 'USD')}${data.margenRealPercent != null ? ` (${data.margenRealPercent.toFixed(1)}%)` : ''}`
+            data.margenRealObraUSD != null
+              ? `${fmtCurrency(data.margenRealObraUSD, 'USD')}${data.margenRealObraPercent != null ? ` (${data.margenRealObraPercent.toFixed(1)}%)` : ''}`
               : '—'
           }
-          subtitle={data.margenRealUSD == null ? 'requiere presupuesto' : data.margenRealUSD >= 0 ? 'positivo' : 'negativo'}
-          tone={data.margenRealUSD == null ? 'muted' : data.margenRealUSD >= 0 ? 'success' : 'danger'}
+          subtitle={
+            data.margenRealObraUSD == null
+              ? 'requiere presupuesto'
+              : data.costoNoMaterialTotalUSD > 0
+                ? 'incluye costo no-material'
+                : data.margenRealObraUSD >= 0 ? 'positivo' : 'negativo'
+          }
+          tone={data.margenRealObraUSD == null ? 'muted' : data.margenRealObraUSD >= 0 ? 'success' : 'danger'}
+        />
+        <KpiBox
+          label="Costo real por kW"
+          value={data.costoRealPorKwUSD != null ? `${fmtCurrency(data.costoRealPorKwUSD, 'USD')}/kW` : '—'}
+          subtitle={
+            data.capacityKwp == null || data.capacityKwp <= 0
+              ? 'sin potencia cargada'
+              : data.costoPrevistoPorKwUSD != null
+                ? `previsto ${fmtCurrency(data.costoPrevistoPorKwUSD, 'USD')}/kW · ${data.capacityKwp} kWp`
+                : `${data.capacityKwp} kWp`
+          }
+          tone="muted"
         />
       </div>
 
@@ -132,6 +161,14 @@ export function CostosTab({ projectId }: { projectId: string; budgetUsd?: number
           </div>
         </section>
       </div>
+
+      {/* Costo no-material (cargas manuales: mano de obra, tercerizados, fletes) */}
+      <NoMaterialCostsSection
+        projectId={projectId}
+        items={data.costosNoMaterial}
+        totalUSD={data.costoNoMaterialTotalUSD}
+        canEdit={canEdit}
+      />
 
       {/* Comparación item por item */}
       <div className="rounded-lg border border-[var(--color-border)] overflow-hidden">
@@ -250,6 +287,7 @@ export function CostosTab({ projectId }: { projectId: string; budgetUsd?: number
         Cómo se calcula: el <span className="font-medium">costo previsto</span> sale de la lista de materiales cargada por Ingeniería (cantidad × precio unitario).
         El <span className="font-medium">costo real</span> sale de los egresos de stock vinculados al proyecto, valorados al costo unitario que tenían al consumirse;
         si no hay costo grabado, se usa el precio sugerido del catálogo (marcado <span className="font-mono">cat.</span>).
+        Los <span className="font-medium">costos no-material</span> (mano de obra, tercerizados, fletes) se cargan a mano y se suman al costo real de obra, al margen real y al costo por kW.
         UYU se convierte a USD con el último tipo de cambio
         {data.exchangeRate ? ` (1 USD = ${data.exchangeRate.usdToUyu.toLocaleString('es-UY', { minimumFractionDigits: 2 })} UYU del ${fmtDate(data.exchangeRate.date)})` : ''}.
       </p>
@@ -301,6 +339,168 @@ function KpiBox({ label, value, subtitle, tone }: { label: string; value: string
       <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">{label}</p>
       <p className={klass('text-sm font-semibold tabular-nums', valColor)}>{value}</p>
       {subtitle && <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5">{subtitle}</p>}
+    </div>
+  );
+}
+
+function NoMaterialCostsSection({
+  projectId,
+  items,
+  totalUSD,
+  canEdit,
+}: {
+  projectId: string;
+  items: CostSummaryNoMaterial[];
+  totalUSD: number;
+  canEdit: boolean;
+}) {
+  const qc = useQueryClient();
+  const [concepto, setConcepto] = useState('');
+  const [monto, setMonto] = useState('');
+  const [moneda, setMoneda] = useState<Moneda>('USD');
+  const [fecha, setFecha] = useState('');
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['project-cost-summary', projectId] });
+
+  const createMut = useMutation({
+    mutationFn: () =>
+      createNonMaterialCost(projectId, {
+        concepto: concepto.trim(),
+        monto: Number(monto),
+        moneda,
+        fecha: fecha || undefined,
+      }),
+    onSuccess: () => {
+      toast.success('Costo agregado');
+      setConcepto(''); setMonto(''); setFecha('');
+      invalidate();
+    },
+    onError: () => toast.error('No se pudo agregar el costo'),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (costId: string) => deleteNonMaterialCost(projectId, costId),
+    onSuccess: () => { toast.success('Costo eliminado'); invalidate(); },
+    onError: () => toast.error('No se pudo eliminar'),
+  });
+
+  const montoNum = Number(monto);
+  const canSubmit = concepto.trim().length > 0 && montoNum > 0 && !createMut.isPending;
+
+  return (
+    <div className="rounded-lg border border-[var(--color-border)] overflow-hidden">
+      <div className="px-3 py-2 bg-[var(--color-bg-card-hover)] flex items-center justify-between">
+        <p className="text-xs font-mono uppercase tracking-wider text-[var(--color-text-muted)]">
+          Costo no-material ({items.length})
+        </p>
+        <p className="text-xs font-semibold tabular-nums text-[var(--color-text-primary)]">
+          {totalUSD > 0 ? fmtCurrency(totalUSD, 'USD') : '—'}
+        </p>
+      </div>
+
+      {canEdit && (
+        <form
+          onSubmit={(e) => { e.preventDefault(); if (canSubmit) createMut.mutate(); }}
+          className="flex flex-wrap items-end gap-2 px-3 py-3 border-b border-[var(--color-border)]"
+        >
+          <div className="flex-1 min-w-[160px]">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Concepto</label>
+            <input
+              type="text"
+              value={concepto}
+              onChange={(e) => setConcepto(e.target.value)}
+              placeholder="Mano de obra, flete, tercerizado…"
+              className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+            />
+          </div>
+          <div className="w-28">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Monto</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={monto}
+              onChange={(e) => setMonto(e.target.value)}
+              placeholder="0.00"
+              className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] tabular-nums focus:border-[var(--color-accent)] focus:outline-none"
+            />
+          </div>
+          <div className="w-20">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Moneda</label>
+            <select
+              value={moneda}
+              onChange={(e) => setMoneda(e.target.value as Moneda)}
+              className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+            >
+              <option value="USD">USD</option>
+              <option value="UYU">UYU</option>
+            </select>
+          </div>
+          <div className="w-36">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Fecha (opc.)</label>
+            <input
+              type="date"
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
+              className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            className="rounded bg-[var(--color-accent)] px-3 py-1.5 text-sm font-medium text-gray-900 hover:bg-[var(--color-accent-hover,var(--color-accent))] disabled:opacity-40"
+          >
+            Agregar
+          </button>
+        </form>
+      )}
+
+      {items.length === 0 ? (
+        <p className="text-sm text-[var(--color-text-muted)] text-center py-6">
+          Sin costos no-material cargados.
+          {canEdit && <><br /><span className="text-xs">Agregá mano de obra, tercerizados o fletes con el formulario de arriba.</span></>}
+        </p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[var(--color-border)] text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]">
+                <th className="px-3 py-2 text-left font-medium">Concepto</th>
+                <th className="px-2 py-2 text-right font-medium">Monto</th>
+                <th className="px-2 py-2 text-right font-medium">USD</th>
+                <th className="px-2 py-2 text-right font-medium">Fecha</th>
+                {canEdit && <th className="px-2 py-2"></th>}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--color-border)]">
+              {items.map((c) => (
+                <tr key={c.id} className="hover:bg-[var(--color-bg-card-hover)]">
+                  <td className="px-3 py-2 text-[var(--color-text-primary)]">
+                    <div className="font-medium">{c.concepto}</div>
+                    {c.notas && <div className="text-[10px] text-[var(--color-text-muted)]">{c.notas}</div>}
+                  </td>
+                  <td className="px-2 py-2 text-right tabular-nums text-[var(--color-text-secondary)]">{fmtCurrency(c.monto, c.moneda)}</td>
+                  <td className="px-2 py-2 text-right tabular-nums font-semibold text-[var(--color-text-primary)]">{fmtCurrency(c.montoUSD, 'USD')}</td>
+                  <td className="px-2 py-2 text-right text-[var(--color-text-muted)] text-[11px]">{c.fecha ? fmtDate(c.fecha) : '—'}</td>
+                  {canEdit && (
+                    <td className="px-2 py-2 text-right">
+                      <button
+                        type="button"
+                        onClick={() => deleteMut.mutate(c.id)}
+                        disabled={deleteMut.isPending}
+                        title="Eliminar costo"
+                        className="text-[var(--color-text-muted)] hover:text-red-400 disabled:opacity-40"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

@@ -416,6 +416,16 @@ export interface CostSummaryComparacion {
   subtotalDiffConIvaUSD?: number;
 }
 
+export interface CostSummaryNoMaterial {
+  id: string;
+  concepto: string;
+  monto: number;
+  moneda: Moneda;
+  montoUSD: number;
+  fecha: string | null;
+  notas: string | null;
+}
+
 export interface CostSummary {
   project: { id: string; code: string; clientName: string };
   budgetUsd: number | null;
@@ -440,6 +450,20 @@ export interface CostSummary {
   margenRealUSD: number | null;
   margenRealPercent: number | null;
 
+  // NO-MATERIAL (cargas manuales) + costo real de obra (materiales + no-material)
+  costoNoMaterialUSD: number;
+  costoNoMaterialUYU: number;
+  costoNoMaterialTotalUSD: number;
+  costoRealObraTotalUSD: number;
+  margenRealObraUSD: number | null;
+  margenRealObraPercent: number | null;
+  costosNoMaterial: CostSummaryNoMaterial[];
+
+  // Costo por kW (potencia instalada; costo real de obra = mat + no-material)
+  capacityKwp: number | null;
+  costoPrevistoPorKwUSD: number | null;
+  costoRealPorKwUSD: number | null;
+
   // Compat con UI vieja
   totalUsedUSD: number;
   totalUsedUYU: number;
@@ -461,6 +485,14 @@ export interface CostSummary {
 
 export const getProjectCostSummary = (projectId: string) =>
   apiClient.get<CostSummary>(`/api/projects/${projectId}/cost-summary`).then(r => r.data);
+
+export const createNonMaterialCost = (
+  projectId: string,
+  body: { concepto: string; monto: number; moneda: Moneda; fecha?: string; notas?: string },
+) => apiClient.post<CostSummaryNoMaterial>(`/api/projects/${projectId}/non-material-costs`, body).then(r => r.data);
+
+export const deleteNonMaterialCost = (projectId: string, costId: string) =>
+  apiClient.delete(`/api/projects/${projectId}/non-material-costs/${costId}`).then(r => r.data);
 
 export const getPrevistosPendientes = (params?: { categoryId?: string; supplierId?: string; from?: string; to?: string }) =>
   apiClient.get<PrevistoPendiente[]>('/api/finance/movements/previstos-pendientes', { params }).then(r => r.data);

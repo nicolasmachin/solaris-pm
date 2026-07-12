@@ -568,6 +568,7 @@ model Project {
   solarSystems            SolarSystem[]
   financeMovements        FinanceMovement[]
   projectMaterials        ProjectMaterial[]
+  nonMaterialCosts        ProjectNonMaterialCost[]
   stockMovements          StockMovement[]
   installationSchedule    InstallationSchedule?
   uteProcesses            UteProcess[]
@@ -1932,6 +1933,29 @@ model ProjectMaterial {
   @@index([expectedDate])
   @@index([status])
   @@map("project_materials")
+}
+
+// Costos de obra NO-material cargados a mano (mano de obra, tercerizados,
+// fletes, etc.). C14 "Control de Costos": complementan los consumos de stock
+// (materiales) para el costo real total de la obra. Independientes de Finanzas.
+model ProjectNonMaterialCost {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  concepto String
+  monto    Decimal @db.Decimal(14, 2)
+  moneda   Moneda  @default(USD)
+  fecha    DateTime? @db.Date
+  notas    String?
+
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([projectId])
+  @@map("project_non_material_costs")
 }
 
 enum MaterialStatus {

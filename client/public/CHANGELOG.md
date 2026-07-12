@@ -4,6 +4,11 @@
 
 ### 12 de julio de 2026
 
+#### Costos de obra — no-material y costo por kW
+
+- En la pestaña **Costos** de un proyecto se agregó una sección **"Costo no-material"** para cargar a mano los costos que no salen del stock: **mano de obra, tercerizados, fletes**, etc. (concepto, monto, moneda y fecha opcional). Se pueden agregar y eliminar, y quedan registrados en el historial del proyecto.
+- Estos costos se **suman al costo real de la obra**, por lo que ahora el **margen real** y el nuevo indicador **"Costo real por kW"** (costo total dividido por la potencia instalada) reflejan el costo completo, no solo los materiales. El costo por kW muestra además el **previsto por kW** y la potencia como referencia, para comparar la eficiencia entre obras de distinto tamaño.
+
 #### Calendario — fecha de obra tentativa vs. confirmada
 
 - En el **Calendario de instalaciones**, las obras ahora se distinguen visualmente según estén **confirmadas o no**: las **tentativas** (la fecha que agenda Ventas al inicio, todavía sin confirmar) se ven **rayadas y con borde punteado**; las **confirmadas** (que el responsable de Operaciones confirma más adelante) se ven con **relleno lleno**.

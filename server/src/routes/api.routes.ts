@@ -13086,7 +13086,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const { id } = z.object({ id: z.string() }).parse(request.params);
       const project = await prisma.project.findFirst({
         where: { id, deletedAt: null },
-        select: { id: true, code: true, clientName: true, budgetUsd: true },
+        select: { id: true, code: true, clientName: true, budgetUsd: true, capacityKwp: true },
       });
       if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
 
@@ -13272,6 +13272,42 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const margenRealUSD = budgetUsd != null ? r2(budgetUsd - costoRealTotalUSD) : null;
       const margenRealPercent = budgetUsd != null && budgetUsd > 0 ? Math.round((margenRealUSD! / budgetUsd) * 1000) / 10 : null;
 
+      // ───── COSTO NO-MATERIAL: cargas manuales (C14, mano de obra/fletes/etc.) ─
+      const nonMaterialCosts = await prisma.projectNonMaterialCost.findMany({
+        where: { projectId: id, deletedAt: null },
+        orderBy: { createdAt: "desc" },
+      });
+      let costoNoMaterialUSD = 0;
+      let costoNoMaterialUYU = 0;
+      const costosNoMaterial = nonMaterialCosts.map((c) => {
+        const monto = Number(c.monto);
+        const montoUSD = toUsd(monto, c.moneda);
+        if (c.moneda === Moneda.USD) costoNoMaterialUSD += monto;
+        else costoNoMaterialUYU += monto;
+        return {
+          id: c.id,
+          concepto: c.concepto,
+          monto: r2(monto),
+          moneda: c.moneda,
+          montoUSD: r2(montoUSD),
+          fecha: serializeDateOnly(c.fecha),
+          notas: c.notas,
+        };
+      });
+      const costoNoMaterialTotalUSD = costoNoMaterialUSD + toUsd(costoNoMaterialUYU, Moneda.UYU);
+
+      // ───── COSTO REAL DE OBRA = materiales (stock) + no-material (manual) ─────
+      const costoRealObraTotalUSD = costoRealTotalUSD + costoNoMaterialTotalUSD;
+      const margenRealObraUSD = budgetUsd != null ? r2(budgetUsd - costoRealObraTotalUSD) : null;
+      const margenRealObraPercent = budgetUsd != null && budgetUsd > 0 ? Math.round((margenRealObraUSD! / budgetUsd) * 1000) / 10 : null;
+
+      // ───── Métricas de costo por kW (checklist O4 "Control de Costos") ───────
+      // Costo total de obra (sin IVA, en USD, materiales + no-material) dividido
+      // por la potencia instalada. Null si el proyecto no tiene potencia (evita /0).
+      const capacityKwp = project.capacityKwp != null ? decimalToNumber(project.capacityKwp) : null;
+      const costoPrevistoPorKwUSD = capacityKwp && capacityKwp > 0 ? r2(costoPrevistoTotalUSD / capacityKwp) : null;
+      const costoRealPorKwUSD = capacityKwp && capacityKwp > 0 ? r2(costoRealObraTotalUSD / capacityKwp) : null;
+
       // ───── Comparación por ítem (previsto vs real) ──────────────────────────
       const allItemIds = new Set<string>([...previstoByItem.keys(), ...realByItem.keys()]);
       const comparacionPorItem = Array.from(allItemIds).map((itemId) => {
@@ -13324,6 +13360,18 @@ export async function registerApiRoutes(app: FastifyInstance) {
         costoRealTotalConIvaUSD: r2(costoRealTotalConIvaUSD),
         margenRealUSD,
         margenRealPercent,
+        // NO-MATERIAL (cargas manuales) + COSTO REAL DE OBRA (materiales + no-material)
+        costoNoMaterialUSD: r2(costoNoMaterialUSD),
+        costoNoMaterialUYU: r2(costoNoMaterialUYU),
+        costoNoMaterialTotalUSD: r2(costoNoMaterialTotalUSD),
+        costoRealObraTotalUSD: r2(costoRealObraTotalUSD),
+        margenRealObraUSD,
+        margenRealObraPercent,
+        costosNoMaterial,
+        // Costo por kW (potencia instalada; costo real de obra = mat + no-material)
+        capacityKwp,
+        costoPrevistoPorKwUSD,
+        costoRealPorKwUSD,
         // Compatibilidad: campos viejos que la UI antigua todavía consume
         totalUsedUSD: r2(costoRealUSD),
         totalUsedUYU: r2(costoRealUYU),
@@ -13349,6 +13397,92 @@ export async function registerApiRoutes(app: FastifyInstance) {
         })),
         movements,
       };
+    });
+
+    // ─── Costos no-material de obra (C14 "Control de Costos") ──────────────────
+    // Cargas manuales (mano de obra, tercerizados, fletes) que complementan los
+    // consumos de stock para el costo real total de la obra.
+    app.get("/projects/:id/non-material-costs", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const rows = await prisma.projectNonMaterialCost.findMany({
+        where: { projectId: id, deletedAt: null },
+        orderBy: { createdAt: "desc" },
+      });
+      return rows.map((c) => ({
+        id: c.id,
+        concepto: c.concepto,
+        monto: decimalToNumber(c.monto),
+        moneda: c.moneda,
+        fecha: serializeDateOnly(c.fecha),
+        notas: c.notas,
+        createdAt: serializeDate(c.createdAt),
+      }));
+    });
+
+    app.post("/projects/:id/non-material-costs", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const body = z.object({
+        concepto: z.string().trim().min(1, "Concepto requerido").max(200),
+        monto: z.number().positive("El monto debe ser mayor a 0"),
+        moneda: z.nativeEnum(Moneda).default(Moneda.USD),
+        fecha: z.coerce.date().optional(),
+        notas: z.string().trim().max(500).optional(),
+      }).parse(request.body);
+
+      const project = await prisma.project.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+
+      const created = await prisma.projectNonMaterialCost.create({
+        data: {
+          projectId: id,
+          concepto: body.concepto,
+          monto: body.monto,
+          moneda: body.moneda,
+          fecha: body.fecha ?? null,
+          notas: body.notas ?? null,
+          createdById: user.id,
+        },
+      });
+      await createAuditEntry({
+        entityType: AuditEntityType.project,
+        entityId: id,
+        projectId: id,
+        userId: user.id,
+        action: AuditAction.created,
+        description: `Costo no-material agregado: ${body.concepto} (${body.monto} ${body.moneda})`,
+      });
+      return {
+        id: created.id,
+        concepto: created.concepto,
+        monto: decimalToNumber(created.monto),
+        moneda: created.moneda,
+        fecha: serializeDateOnly(created.fecha),
+        notas: created.notas,
+        createdAt: serializeDate(created.createdAt),
+      };
+    });
+
+    app.delete("/projects/:id/non-material-costs/:costId", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request, reply) => {
+      const user = ensureUser(request);
+      const { id, costId } = z.object({ id: z.string(), costId: z.string() }).parse(request.params);
+      const existing = await prisma.projectNonMaterialCost.findFirst({
+        where: { id: costId, projectId: id, deletedAt: null },
+      });
+      if (!existing) throw notFound("COST_NOT_FOUND", "Costo no encontrado");
+      await prisma.projectNonMaterialCost.update({
+        where: { id: costId },
+        data: { deletedAt: new Date() },
+      });
+      await createAuditEntry({
+        entityType: AuditEntityType.project,
+        entityId: id,
+        projectId: id,
+        userId: user.id,
+        action: AuditAction.deleted,
+        description: `Costo no-material eliminado: ${existing.concepto}`,
+      });
+      return reply.code(204).send();
     });
 
     // ─── Finance: Movements ───────────────────────────────────────────────────
