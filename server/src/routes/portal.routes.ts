@@ -787,6 +787,103 @@ export async function registerPortalRoutes(app: FastifyInstance) {
     },
   );
 
+  // ─── Notificaciones del cliente (in-app, sin email) ─────────────────────────
+  // El Generador ve sus propias notificaciones (hoy: updates de tickets). Ownership
+  // estricto por userId. NO se incluyen las globales (userId:null) porque son avisos
+  // internos que no deben llegarle al cliente.
+
+  app.get(
+    "/client/notifications",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.VIEW) },
+    async (request, reply) => {
+      const user = ensureUser(request);
+      const query = z
+        .object({
+          unread: z
+            .enum(["true", "false"])
+            .transform((value) => value === "true")
+            .optional(),
+        })
+        .parse(request.query);
+
+      const [notifications, unreadCount] = await Promise.all([
+        prisma.notification.findMany({
+          where: { userId: user.id, ...(query.unread ? { read: false } : {}) },
+          include: { project: { select: { id: true, clientName: true, code: true } } },
+          orderBy: { createdAt: "desc" },
+        }),
+        prisma.notification.count({ where: { userId: user.id, read: false } }),
+      ]);
+
+      reply.header("X-Unread-Count", String(unreadCount));
+      return notifications.map((notification) => ({
+        ...notification,
+        createdAt: serializeDate(notification.createdAt),
+      }));
+    },
+  );
+
+  app.patch(
+    "/client/notifications/:id/read",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.VIEW) },
+    async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const notification = await prisma.notification.findFirst({
+        where: { id, userId: user.id },
+      });
+      if (!notification) throw notFound("NOTIFICATION_NOT_FOUND", "Notificación no encontrada");
+
+      const updated = await prisma.notification.update({
+        where: { id: notification.id },
+        data: { read: true },
+      });
+      await createAuditEntry({
+        entityType: AuditEntityType.notification,
+        entityId: notification.id,
+        projectId: notification.projectId,
+        userId: user.id,
+        action: AuditAction.updated,
+        fieldChanged: "read",
+        oldValue: String(notification.read),
+        newValue: "true",
+        description: `Marcó como leída la notificación '${notification.title}'`,
+      });
+      return { ...updated, createdAt: serializeDate(updated.createdAt) };
+    },
+  );
+
+  app.patch(
+    "/client/notifications/read-all",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.VIEW) },
+    async (request) => {
+      const user = ensureUser(request);
+      const targets = await prisma.notification.findMany({
+        where: { userId: user.id, read: false },
+      });
+      await prisma.notification.updateMany({
+        where: { userId: user.id, read: false },
+        data: { read: true },
+      });
+      await Promise.all(
+        targets.map((notification) =>
+          createAuditEntry({
+            entityType: AuditEntityType.notification,
+            entityId: notification.id,
+            projectId: notification.projectId,
+            userId: user.id,
+            action: AuditAction.updated,
+            fieldChanged: "read",
+            oldValue: "false",
+            newValue: "true",
+            description: `Marcó como leída la notificación '${notification.title}'`,
+          }),
+        ),
+      );
+      return { success: true };
+    },
+  );
+
   // No-op para suprimir warnings de imports no usados en futuros refactors.
   void forbidden;
 }

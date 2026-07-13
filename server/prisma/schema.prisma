@@ -454,6 +454,7 @@ model User {
   completedChecklistItems        ChecklistItem[]             @relation("ChecklistCompletedBy")
   obraChecklistCompletions       ProjectChecklistItem[]      @relation("ObraChecklistCompletedBy")
   assignedTasks                  Task[]
+  taskAssignments                TaskAssignee[]
   uploadedFiles                  FileAttachment[]            @relation("FileUploadedBy")
   auditLogs                      AuditLog[]
   notifications                  Notification[]
@@ -1046,11 +1047,16 @@ model Task {
   priority    TaskPriority
   /// @deprecated usar userId + relación user. Se conserva como referencia legacy.
   responsible String
+  // userId = asignado "primario" (legacy). Se mantiene sincronizado con el
+  // primer elemento de `assignees` para retrocompat; la fuente de verdad de la
+  // asignación es la tabla `assignees` (many-to-many), que permite varios
+  // responsables por tarea. Cualquiera de ellos puede resolverla.
   userId      String?
-  user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
-  project     Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  stage       Stage?       @relation(fields: [stageId], references: [id], onDelete: SetNull)
-  substage    Substage?    @relation(fields: [substageId], references: [id], onDelete: SetNull)
+  user        User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  assignees   TaskAssignee[]
+  project     Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stage       Stage?         @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  substage    Substage?      @relation(fields: [substageId], references: [id], onDelete: SetNull)
   comments    Comment[]
   dueDate     DateTime?    @db.Date
   completedAt DateTime?    @db.Timestamptz(6)
@@ -1065,6 +1071,24 @@ model Task {
   @@index([dueDate])
   @@index([deletedAt])
   @@map("tasks")
+}
+
+// Asignados de una tarea (many-to-many Task ↔ User). Una tarea puede tener
+// varios responsables y cualquiera puede resolverla. Reemplaza al único
+// `Task.userId` como fuente de verdad de la asignación (el userId se mantiene
+// como "primario" legacy sincronizado con el primer assignee).
+model TaskAssignee {
+  id        String   @id @default(cuid())
+  taskId    String
+  userId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([taskId, userId])
+  @@index([userId])
+  @@index([taskId])
+  @@map("task_assignees")
 }
 
 model FileAttachment {

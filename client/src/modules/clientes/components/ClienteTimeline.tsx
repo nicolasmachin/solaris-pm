@@ -1,20 +1,38 @@
 import { useQuery } from "@tanstack/react-query";
-import { GitBranch, MessageSquare, Phone } from "lucide-react";
+import { ArrowLeftRight, FileText, GitBranch, MessageSquare, Phone, Ticket } from "lucide-react";
 
 import { getClienteTimeline, type TimelineItem } from "../../../api/clientes.api";
 import { Spinner } from "../../../components/ui/Spinner";
+import { CHANNEL_LABELS, DIRECTION_LABELS, REASON_LABELS } from "../constants";
 
-// Feed unificado (solo lectura): actividades de Ventas + comentarios + interacciones.
+// Feed unificado (solo lectura): Ventas + comentarios + interacciones CX +
+// avances de etapa + documentos + traspasos + tickets.
 const SOURCE_META: Record<TimelineItem["source"], { label: string; className: string }> = {
   sales: { label: "Ventas", className: "bg-blue-500/15 text-blue-400" },
   project: { label: "Proyecto", className: "bg-purple-500/15 text-purple-400" },
   client: { label: "Cliente", className: "bg-emerald-500/15 text-emerald-400" },
+  ticket: { label: "Ticket", className: "bg-amber-500/15 text-amber-500" },
 };
 
 function KindIcon({ kind }: { kind: TimelineItem["kind"] }) {
-  if (kind === "stage_change") return <GitBranch size={14} className="text-[var(--color-text-muted)]" />;
-  if (kind === "interaction") return <Phone size={14} className="text-[var(--color-text-muted)]" />;
-  return <MessageSquare size={14} className="text-[var(--color-text-muted)]" />;
+  const cls = "text-[var(--color-text-muted)]";
+  if (kind === "stage_change") return <GitBranch size={14} className={cls} />;
+  if (kind === "interaction") return <Phone size={14} className={cls} />;
+  if (kind === "document") return <FileText size={14} className={cls} />;
+  if (kind === "handoff") return <ArrowLeftRight size={14} className={cls} />;
+  if (kind === "ticket") return <Ticket size={14} className={cls} />;
+  return <MessageSquare size={14} className={cls} />;
+}
+
+// Sub-línea "Canal · Dirección · Motivo" para las interacciones CX.
+function interactionMeta(meta: TimelineItem["meta"]): string | null {
+  if (!meta) return null;
+  const parts = [
+    meta.channel ? CHANNEL_LABELS[meta.channel] : null,
+    meta.direction ? DIRECTION_LABELS[meta.direction] : null,
+    meta.reason ? REASON_LABELS[meta.reason] : null,
+  ].filter(Boolean);
+  return parts.length ? parts.join(" · ") : null;
 }
 
 function fmtDateTime(iso: string): string {
@@ -44,6 +62,7 @@ export function ClienteTimeline({ projectId }: { projectId: string }) {
     <ol className="space-y-2">
       {items.map((it) => {
         const src = SOURCE_META[it.source];
+        const metaLine = it.kind === "interaction" ? interactionMeta(it.meta) : null;
         return (
           <li
             key={it.id}
@@ -61,6 +80,9 @@ export function ClienteTimeline({ projectId }: { projectId: string }) {
                   {it.autor?.nombre ?? "—"} · {fmtDateTime(it.createdAt)}
                 </span>
               </div>
+              {metaLine && (
+                <p className="mb-0.5 text-[11px] font-medium text-[var(--color-text-secondary)]">{metaLine}</p>
+              )}
               <p className="whitespace-pre-wrap break-words text-sm text-[var(--color-text-primary)]">{it.text}</p>
             </div>
           </li>

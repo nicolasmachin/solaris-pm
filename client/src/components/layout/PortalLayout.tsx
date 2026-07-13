@@ -2,6 +2,7 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { ChevronDown, KeyRound, LogOut } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
+import { PortalNotificationBell } from './PortalNotificationBell';
 
 export function PortalLayout() {
   const { user, clearAuth } = useAuthStore();
@@ -34,7 +35,9 @@ export function PortalLayout() {
               VOLTIA
             </span>
           </Link>
-          <div className="relative">
+          <div className="flex items-center gap-1">
+            <PortalNotificationBell />
+            <div className="relative">
             <button
               onClick={() => setOpen((v) => !v)}
               className="flex items-center gap-2 rounded-md px-2.5 py-1.5 hover:bg-[var(--color-bg-card-hover)] text-sm text-[var(--color-text-secondary)]"
@@ -64,6 +67,7 @@ export function PortalLayout() {
                 </div>
               </>
             )}
+            </div>
           </div>
         </div>
         <nav className="max-w-3xl mx-auto flex items-center gap-1 px-4">

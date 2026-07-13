@@ -2,7 +2,25 @@
 
 ## v8.0
 
+### 13 de julio de 2026
+
+#### Mis tareas — una tarea, varios responsables
+
+- Ahora una **tarea** (tanto las **sueltas** como las asociadas a un proyecto) se puede **asignar a varias personas** a la vez. No se duplica la tarea: es **la misma**, compartida, y **cualquiera de los asignados puede resolverla**, editarla o eliminarla.
+- La tarea aparece en **"Mis tareas"** de **cada** persona asignada. Al crearla o editarla, el campo de asignación permite **elegir varios** con buscador; se muestran como etiquetas y se quitan con un toque.
+- Las tareas que ya tenías siguen igual: su responsable actual queda como asignado.
+
 ### 12 de julio de 2026
+
+#### Portal del Generador — campana de avisos
+
+- El **portal del Generador** ahora tiene su propia **campana de notificaciones** en el encabezado, con un contador de avisos sin leer. Hasta ahora el cliente solo veía el estado de su instalación en la lista; ya no necesita entrar a buscar si hubo novedades.
+- Muestra los avisos dirigidos al Generador (por ejemplo, cuando **cambia el estado de uno de sus tickets**). Al tocar un aviso queda marcado como leído y lleva directo a la sección correspondiente; también se pueden **marcar todas como leídas**. Todo dentro de la app, sin mails.
+
+#### Ficha del cliente — Historial más completo
+
+- El **Historial** de la ficha del cliente (Experiencia Solar) ahora **unifica más fuentes** en un solo feed cronológico. Además de las actividades de Ventas, los comentarios y las interacciones, ahora incluye: los **avances de etapa del proyecto** (cuándo arrancó/terminó cada etapa de la obra), los **traspasos entre áreas**, la **apertura y resolución de tickets** y los **documentos generados** para el cliente (contrato, proforma, propuesta).
+- Cada evento se distingue con su **color de origen** (Ventas / Proyecto / Cliente / Ticket) y su ícono. Las **interacciones** ahora muestran además el **canal, la dirección (entrante/saliente) y el motivo** que antes no se veían en el historial.
 
 #### Tickets — nuevo sistema de reclamos y consultas
 

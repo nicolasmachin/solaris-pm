@@ -57,6 +57,7 @@ export interface MyTaskItem {
   stageLabel: string | null;
   substageId: string | null;
   substageName: string | null;
+  assignees: { id: string; name: string }[];
 }
 
 export interface StandaloneTaskItem {
@@ -66,8 +67,11 @@ export interface StandaloneTaskItem {
   status: TaskStatus;
   dueDate: string | null;
   completedAt: string | null;
+  /** @deprecated primer asignado; usar `assignees` */
   assignedUserId: string | null;
+  /** @deprecated primer asignado; usar `assignees` */
   assignedUser: { id: string; name: string; email: string } | null;
+  assignees: { id: string; name: string; email: string | null }[];
   urgencyRank: number;
   createdAt: string;
   updatedAt: string;

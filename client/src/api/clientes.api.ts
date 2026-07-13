@@ -91,12 +91,17 @@ export async function getClientes(
 
 export interface TimelineItem {
   id: string;
-  source: "sales" | "project" | "client";
-  kind: "stage_change" | "comment" | "interaction";
+  source: "sales" | "project" | "client" | "ticket";
+  kind: "stage_change" | "comment" | "interaction" | "document" | "handoff" | "ticket";
   text: string;
   autor: { id: string; nombre: string } | null;
   createdAt: string;
-  meta?: Record<string, unknown>;
+  meta?: {
+    channel?: InteractionChannel;
+    direction?: InteractionDirection | null;
+    reason?: InteractionReason | null;
+    [key: string]: unknown;
+  };
 }
 
 export async function getClienteTimeline(projectId: string): Promise<TimelineItem[]> {

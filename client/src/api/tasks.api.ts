@@ -10,9 +10,11 @@ export async function createTask(
   projectId: string,
   body: {
     title: string;
-    /** @deprecated usar userId */
+    /** @deprecated usar assignedUserIds */
     responsible?: string;
+    /** @deprecated usar assignedUserIds */
     userId?: string | null;
+    assignedUserIds?: string[];
     description?: string | null;
     priority?: Task["priority"];
     stageId?: string | null;
@@ -31,9 +33,11 @@ export async function patchTask(
     description?: string | null;
     status?: Task["status"];
     priority?: Task["priority"];
-    /** @deprecated usar userId */
+    /** @deprecated usar assignedUserIds */
     responsible?: string | null;
+    /** @deprecated usar assignedUserIds */
     userId?: string | null;
+    assignedUserIds?: string[];
     dueDate?: string | null;
   }
 ): Promise<Task> {

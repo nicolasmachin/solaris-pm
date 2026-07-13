@@ -16,8 +16,12 @@ export interface TaskDetail {
   stage: { id: string; name: string } | null;
   substageId: string | null;
   substage: { id: string; name: string } | null;
+  /** @deprecated primer asignado. Usar `assignees`. */
   userId: string | null;
+  /** @deprecated primer asignado. Usar `assignees`. */
   user: { id: string; name: string; email: string } | null;
+  // Fuente de verdad de la asignación: varios responsables por tarea.
+  assignees: { id: string; name: string; email: string | null }[];
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -37,7 +41,9 @@ export interface CreateStandaloneTaskBody {
   description?: string | null;
   dueDate?: string | null;
   projectId?: string | null;
+  /** @deprecated usar assignedUserIds */
   assignedUserId?: string | null;
+  assignedUserIds?: string[];
 }
 
 export interface UpdateStandaloneTaskBody {
@@ -45,7 +51,9 @@ export interface UpdateStandaloneTaskBody {
   description?: string | null;
   dueDate?: string | null;
   projectId?: string | null;
+  /** @deprecated usar assignedUserIds */
   assignedUserId?: string | null;
+  assignedUserIds?: string[];
   status?: "PENDING" | "COMPLETED";
 }
 

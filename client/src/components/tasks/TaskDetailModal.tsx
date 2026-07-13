@@ -10,7 +10,7 @@ import {
   updateStandaloneTask,
 } from "../../api/standaloneTasks.api";
 import { Button } from "../ui/Button";
-import { UserSelect } from "../ui/UserSelect";
+import { MultiUserSelect } from "../ui/MultiUserSelect";
 import { Spinner } from "../ui/Spinner";
 import { CommentThread } from "../comments/CommentThread";
 import toast from "react-hot-toast";
@@ -62,7 +62,7 @@ export function TaskDetailModal({
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [projectId, setProjectId] = useState<string>("");
-  const [assignedUserId, setAssignedUserId] = useState<string | null>(null);
+  const [assignedUserIds, setAssignedUserIds] = useState<string[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Re-seed cuando se abre el modal o cambia la tarea cargada.
@@ -74,14 +74,14 @@ export function TaskDetailModal({
       setDescription(t.description ?? "");
       setDueDate(t.dueDate ?? "");
       setProjectId(t.projectId ?? "");
-      setAssignedUserId(t.userId);
+      setAssignedUserIds(t.assignees?.map((a) => a.id) ?? (t.userId ? [t.userId] : []));
       setConfirmDelete(false);
     } else if (!isEdit) {
       setTitle("");
       setDescription("");
       setDueDate(defaultDueDate ?? "");
       setProjectId(defaultProjectId ?? "");
-      setAssignedUserId(null);
+      setAssignedUserIds([]);
       setConfirmDelete(false);
     }
   }, [isOpen, isEdit, taskQuery.data, defaultProjectId, defaultDueDate]);
@@ -101,7 +101,7 @@ export function TaskDetailModal({
         description: description.trim() || null,
         dueDate: dueDate || null,
         projectId: projectId || null,
-        assignedUserId: assignedUserId ?? null,
+        assignedUserIds,
       }),
     onSuccess: () => {
       toast.success("Tarea creada");
@@ -119,7 +119,7 @@ export function TaskDetailModal({
         description: description.trim() || null,
         dueDate: dueDate || null,
         projectId: projectId || null,
-        assignedUserId: assignedUserId ?? null,
+        assignedUserIds,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["task", taskId] });
@@ -277,12 +277,12 @@ export function TaskDetailModal({
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
-                    Asignado a
+                    Asignados
                   </label>
-                  <UserSelect
-                    value={assignedUserId}
-                    onChange={setAssignedUserId}
-                    ariaLabel="Asignado a"
+                  <MultiUserSelect
+                    value={assignedUserIds}
+                    onChange={setAssignedUserIds}
+                    ariaLabel="Asignados a la tarea"
                   />
                 </div>
               </div>

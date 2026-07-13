@@ -244,10 +244,14 @@ export interface Task {
   description: string | null;
   status: TaskStatus;
   priority: TaskPriority;
-  /** @deprecated texto legacy; usar userId + user */
+  /** @deprecated texto legacy; usar assignees */
   responsible: string | null;
+  /** @deprecated primer asignado; usar assignees */
   userId: string | null;
+  /** @deprecated primer asignado; usar assignees */
   user: AssignedUserRef | null;
+  // Fuente de verdad de la asignación: varios responsables por tarea.
+  assignees?: { id: string; name: string; email: string | null }[];
   dueDate: string | null;
   completedAt: string | null;
   deletedAt: string | null;

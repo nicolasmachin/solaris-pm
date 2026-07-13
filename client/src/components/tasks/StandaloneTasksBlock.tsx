@@ -98,7 +98,21 @@ export function StandaloneTasksBlock({ tasks, currentUserId, completed = false }
         <ul className="divide-y divide-[var(--color-border)]">
           {tasks.map((t) => {
             const alert = getAlertKind(t.dueDate);
-            const isMine = !!t.assignedUserId && t.assignedUserId === currentUserId;
+            const assignees = t.assignees ?? [];
+            const isMine = assignees.some((a) => a.id === currentUserId);
+            // Etiqueta de asignados: "(yo)", "(yo) +2", "Juan", "Juan +1"…
+            let assigneeLabel: string | null = null;
+            if (assignees.length > 0) {
+              const others = assignees.filter((a) => a.id !== currentUserId);
+              if (isMine) {
+                assigneeLabel = others.length > 0 ? `(yo) +${others.length}` : "(yo)";
+              } else {
+                assigneeLabel =
+                  assignees.length > 1
+                    ? `${assignees[0].name} +${assignees.length - 1}`
+                    : assignees[0].name;
+              }
+            }
             const isDone = t.status === "COMPLETED";
             const toggling = completeTask.isPending || updateTask.isPending;
             return (
@@ -136,10 +150,13 @@ export function StandaloneTasksBlock({ tasks, currentUserId, completed = false }
                   ) : null}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  {t.assignedUser ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] text-[var(--color-text-muted)]">
+                  {assigneeLabel ? (
+                    <span
+                      title={assignees.map((a) => a.name).join(", ")}
+                      className="inline-flex items-center gap-1 text-[11px] text-[var(--color-text-muted)]"
+                    >
                       <UserIcon size={11} />
-                      {isMine ? "(yo)" : t.assignedUser.name}
+                      {assigneeLabel}
                     </span>
                   ) : null}
                   {isDone ? (

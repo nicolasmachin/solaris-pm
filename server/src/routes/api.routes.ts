@@ -91,6 +91,7 @@ import {
   serializeStage,
   serializeSubstage,
   serializeTask,
+  taskAssigneesInclude,
   sumProjectDelayDays,
   syncStageProgress,
   syncSubstageProgress,
@@ -326,7 +327,10 @@ const taskCreateSchema = z
     priority: z.nativeEnum(TaskPriority).default(TaskPriority.NORMAL),
     /** @deprecated usar userId. Se acepta por retrocompat. */
     responsible: z.string().optional(),
+    /** @deprecated usar assignedUserIds. Primer asignado. */
     userId: z.string().nullable().optional(),
+    // Fuente de verdad de la asignación: varios responsables por tarea.
+    assignedUserIds: z.array(z.string().min(1)).optional(),
     stageId: z.string().nullable().optional(),
     substageId: z.string().nullable().optional(),
     dueDate: dateOnlySchema.nullable().optional(),
@@ -340,7 +344,9 @@ const taskPatchSchema = z
     status: z.nativeEnum(TaskStatus).optional(),
     priority: z.nativeEnum(TaskPriority).optional(),
     responsible: z.string().min(1).optional(),
+    /** @deprecated usar assignedUserIds. Primer asignado. */
     userId: z.string().nullable().optional(),
+    assignedUserIds: z.array(z.string().min(1)).optional(),
     stageId: z.string().nullable().optional(),
     substageId: z.string().nullable().optional(),
     dueDate: dateOnlySchema.nullable().optional(),
@@ -501,6 +507,63 @@ async function findTaskOrThrow(projectId: string, taskId: string) {
   }
 
   return task;
+}
+
+// Valida que cada id de asignado corresponda a un usuario activo (no borrado).
+// Devuelve la lista deduplicada preservando el orden (el primero es el
+// "primario" legacy que se guarda en task.userId).
+async function validateAssigneeIds(ids: string[]): Promise<string[]> {
+  const unique = [...new Set(ids)];
+  if (unique.length > 0) {
+    const found = await prisma.user.findMany({
+      where: { id: { in: unique }, deletedAt: null },
+      select: { id: true },
+    });
+    if (found.length !== unique.length) {
+      throw badRequest(
+        "INVALID_USER_ID",
+        "Uno o más asignados no corresponden a usuarios activos",
+      );
+    }
+  }
+  return unique;
+}
+
+// Reemplaza el conjunto de asignados de una tarea (fuente de verdad =
+// task_assignees). Asume que `uniqueIds` ya fue validado y deduplicado. NO
+// toca `task.userId`: cada caller lo setea a uniqueIds[0] en su create/update
+// para mantener el primario legacy sincronizado.
+async function replaceTaskAssignees(taskId: string, uniqueIds: string[]): Promise<void> {
+  await prisma.$transaction([
+    prisma.taskAssignee.deleteMany({ where: { taskId } }),
+    ...(uniqueIds.length > 0
+      ? [prisma.taskAssignee.createMany({ data: uniqueIds.map((userId) => ({ taskId, userId })) })]
+      : []),
+  ]);
+}
+
+// Trae una tarea con user primario + asignados, lista para serializeTask.
+async function fetchTaskForSerialize(id: string) {
+  return prisma.task.findUnique({
+    where: { id },
+    include: {
+      user: { select: { id: true, name: true, role: { select: { name: true } } } },
+      ...taskAssigneesInclude,
+    },
+  });
+}
+
+// ¿El usuario puede ver/editar/completar esta tarea? ADMIN siempre; en otro
+// caso, si es uno de los asignados (o el primario legacy). La tarea debe venir
+// con `assignees: { select: { userId } }` (o el include canónico) para el
+// chequeo fino.
+function userCanAccessTask(
+  task: { userId: string | null; assignees?: Array<{ userId: string }> },
+  user: { id: string; role: string },
+): boolean {
+  if (user.role === "ADMIN") return true;
+  if (task.userId === user.id) return true;
+  return (task.assignees ?? []).some((a) => a.userId === user.id);
 }
 
 async function findFileOrThrow(fileId: string) {
@@ -3090,6 +3153,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       },
       include: {
         user: { select: { id: true, name: true, role: { select: { name: true } } } },
+        ...taskAssigneesInclude,
       },
       orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
     });
@@ -3103,9 +3167,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const body = taskCreateSchema.parse(request.body);
     await findProjectOrThrow(params.projectId);
 
-    if (body.userId) {
-      await assertUserActiveOrThrow(body.userId, "userId");
-    }
+    // Asignados: `assignedUserIds` (fuente de verdad) o el `userId` legacy.
+    const assigneeIds = await validateAssigneeIds(
+      body.assignedUserIds ?? (body.userId ? [body.userId] : []),
+    );
 
     const task = await prisma.task.create({
       data: {
@@ -3117,10 +3182,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
         status: body.status,
         priority: body.priority,
         responsible: body.responsible ?? "",
-        userId: body.userId ?? null,
+        userId: assigneeIds[0] ?? null,
         dueDate: body.dueDate ? parseDateOnly(body.dueDate) : null,
       },
     });
+    await replaceTaskAssignees(task.id, assigneeIds);
 
     await createAuditEntry({
       entityType: AuditEntityType.task,
@@ -3132,7 +3198,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     reply.code(201);
-    return serializeTask(task);
+    return serializeTask((await fetchTaskForSerialize(task.id))!);
   });
 
   app.patch("/projects/:projectId/tasks/:taskId", { preHandler: authorizeByStageContext(Action.EDIT) }, async (request) => {
@@ -3146,11 +3212,22 @@ export async function registerApiRoutes(app: FastifyInstance) {
     if (body.description !== undefined) updateData.description = body.description;
     if (body.priority !== undefined) updateData.priority = body.priority;
     if (body.responsible !== undefined) updateData.responsible = body.responsible;
-    if (body.userId !== undefined) {
-      if (body.userId !== null) {
-        await assertUserActiveOrThrow(body.userId, "userId");
-      }
-      updateData.userId = body.userId;
+
+    // Asignación: `assignedUserIds` (fuente de verdad) o el `userId` legacy.
+    // Si ninguno vino, no se toca la asignación. Se valida antes de escribir
+    // para no dejar la tarea en estado parcial.
+    const wantsAssigneeChange =
+      body.assignedUserIds !== undefined || body.userId !== undefined;
+    let assigneeIds: string[] = [];
+    if (wantsAssigneeChange) {
+      assigneeIds = await validateAssigneeIds(
+        body.assignedUserIds !== undefined
+          ? body.assignedUserIds
+          : body.userId
+            ? [body.userId]
+            : [],
+      );
+      updateData.userId = assigneeIds[0] ?? null;
     }
     if (body.stageId !== undefined) updateData.stageId = body.stageId;
     if (body.substageId !== undefined) updateData.substageId = body.substageId;
@@ -3166,6 +3243,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       where: { id: task.id },
       data: updateData,
     });
+    if (wantsAssigneeChange) {
+      await replaceTaskAssignees(task.id, assigneeIds);
+    }
 
     await createAuditEntriesForChanges({
       entityType: AuditEntityType.task,
@@ -3179,7 +3259,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         `Actualizó ${label} de tarea '${task.title}' de ${oldValue ?? "vacío"} a ${newValue ?? "vacío"}`,
     });
 
-    return serializeTask(updatedTask);
+    return serializeTask((await fetchTaskForSerialize(updatedTask.id))!);
   });
 
   app.delete("/projects/:projectId/tasks/:taskId", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
@@ -3219,7 +3299,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
         description: z.string().max(2000).nullable().optional(),
         dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
         projectId: z.string().min(1).nullable().optional(),
+        /** @deprecated usar assignedUserIds. Se acepta por retrocompat. */
         assignedUserId: z.string().min(1).nullable().optional(),
+        assignedUserIds: z.array(z.string().min(1)).optional(),
       })
       .strict()
       .parse(request.body);
@@ -3234,14 +3316,18 @@ export async function registerApiRoutes(app: FastifyInstance) {
       }
     }
 
-    if (body.assignedUserId) {
-      await assertUserActiveOrThrow(body.assignedUserId, "assignedUserId");
+    // Asignados. Prioridad: `assignedUserIds` (fuente de verdad) > el
+    // `assignedUserId` legacy > default al creador. Un array vacío explícito
+    // deja la tarea sin asignar.
+    let assigneeIds: string[];
+    if (body.assignedUserIds !== undefined) {
+      assigneeIds = body.assignedUserIds;
+    } else if (body.assignedUserId !== undefined) {
+      assigneeIds = body.assignedUserId ? [body.assignedUserId] : [];
+    } else {
+      assigneeIds = [user.id];
     }
-
-    // Default de asignado: el usuario que crea la tarea. Si vino explícito
-    // (incluido `null` para crearla sin asignar), respetar lo que vino.
-    const assignedUserId =
-      body.assignedUserId === undefined ? user.id : body.assignedUserId;
+    const validated = await validateAssigneeIds(assigneeIds);
 
     const task = await prisma.task.create({
       data: {
@@ -3251,10 +3337,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
         status: TaskStatus.PENDING,
         priority: TaskPriority.NORMAL,
         responsible: "",
-        userId: assignedUserId,
+        userId: validated[0] ?? null,
         dueDate: body.dueDate ? parseDateOnly(body.dueDate) : null,
       },
     });
+    await replaceTaskAssignees(task.id, validated);
 
     if (task.projectId) {
       await createAuditEntry({
@@ -3268,7 +3355,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
 
     reply.code(201);
-    return serializeTask(task);
+    return serializeTask((await fetchTaskForSerialize(task.id))!);
   });
 
   app.patch("/tasks/:id", async (request) => {
@@ -3280,7 +3367,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
         description: z.string().max(2000).nullable().optional(),
         dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
         projectId: z.string().min(1).nullable().optional(),
+        /** @deprecated usar assignedUserIds. */
         assignedUserId: z.string().min(1).nullable().optional(),
+        assignedUserIds: z.array(z.string().min(1)).optional(),
         status: z.enum([TaskStatus.PENDING, TaskStatus.COMPLETED]).optional(),
       })
       .strict()
@@ -3288,14 +3377,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     const task = await prisma.task.findFirst({
       where: { id: params.id, deletedAt: null },
+      include: { assignees: { select: { userId: true } } },
     });
     if (!task) throw notFound("TASK_NOT_FOUND", "Tarea no encontrada");
 
     // Permisos: ADMIN puede editar cualquiera. No-ADMIN solo puede editar las
-    // tareas que tiene asignadas (userId === me). No hay concepto de "creador"
-    // en el modelo Task — se decidió no agregarlo en esta iteración.
-    const isAdmin = user.role === "ADMIN";
-    if (!isAdmin && task.userId !== user.id) {
+    // tareas que tiene asignadas (es uno de los assignees). No hay concepto de
+    // "creador" en el modelo Task — cualquiera de los asignados puede resolverla.
+    if (!userCanAccessTask(task, user)) {
       throw forbidden("No tenés permiso para modificar esta tarea");
     }
 
@@ -3309,8 +3398,19 @@ export async function registerApiRoutes(app: FastifyInstance) {
       }
     }
 
-    if (body.assignedUserId !== undefined && body.assignedUserId !== null) {
-      await assertUserActiveOrThrow(body.assignedUserId, "assignedUserId");
+    // Asignación: `assignedUserIds` (fuente de verdad) o el `assignedUserId`
+    // legacy. Si ninguno vino, no se toca. Validar antes de escribir.
+    const wantsAssigneeChange =
+      body.assignedUserIds !== undefined || body.assignedUserId !== undefined;
+    let assigneeIds: string[] = [];
+    if (wantsAssigneeChange) {
+      assigneeIds = await validateAssigneeIds(
+        body.assignedUserIds !== undefined
+          ? body.assignedUserIds
+          : body.assignedUserId
+            ? [body.assignedUserId]
+            : [],
+      );
     }
 
     const updateData: Record<string, unknown> = {};
@@ -3326,7 +3426,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         updateData.substageId = null;
       }
     }
-    if (body.assignedUserId !== undefined) updateData.userId = body.assignedUserId;
+    if (wantsAssigneeChange) updateData.userId = assigneeIds[0] ?? null;
     if (body.status !== undefined) {
       updateData.status = body.status;
       updateData.completedAt = body.status === TaskStatus.COMPLETED ? new Date() : null;
@@ -3336,6 +3436,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       where: { id: task.id },
       data: updateData,
     });
+    if (wantsAssigneeChange) {
+      await replaceTaskAssignees(task.id, assigneeIds);
+    }
 
     if (updatedTask.projectId) {
       await createAuditEntry({
@@ -3348,7 +3451,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       });
     }
 
-    return serializeTask(updatedTask);
+    return serializeTask((await fetchTaskForSerialize(updatedTask.id))!);
   });
 
   app.delete("/tasks/:id", async (request, reply) => {
@@ -3357,11 +3460,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     const task = await prisma.task.findFirst({
       where: { id: params.id, deletedAt: null },
+      include: { assignees: { select: { userId: true } } },
     });
     if (!task) throw notFound("TASK_NOT_FOUND", "Tarea no encontrada");
 
-    const isAdmin = user.role === "ADMIN";
-    if (!isAdmin && task.userId !== user.id) {
+    if (!userCanAccessTask(task, user)) {
       throw forbidden("No tenés permiso para eliminar esta tarea");
     }
 
@@ -3392,12 +3495,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
         stage: { select: { id: true, name: true } },
         substage: { select: { id: true, name: true } },
         user: { select: { id: true, name: true, email: true } },
+        ...taskAssigneesInclude,
       },
     });
     if (!task) throw notFound("TASK_NOT_FOUND", "Tarea no encontrada");
 
-    const isAdmin = user.role === "ADMIN";
-    if (!isAdmin && task.userId !== user.id) {
+    if (!userCanAccessTask(task, user)) {
       throw forbidden("No tenés permiso para ver esta tarea");
     }
 
@@ -3418,6 +3521,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
       substage: task.substage,
       userId: task.userId,
       user: task.user,
+      assignees: task.assignees.map((a) => ({
+        id: a.user.id,
+        name: a.user.name,
+        email: a.user.email,
+      })),
       completedAt: serializeDate(task.completedAt),
       createdAt: serializeDate(task.createdAt),
       updatedAt: serializeDate(task.updatedAt),
@@ -3440,11 +3548,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
   async function findTaskForCommentOrThrow(taskId: string, user: { id: string; role: string }) {
     const task = await prisma.task.findFirst({
       where: { id: taskId, deletedAt: null },
-      select: { id: true, projectId: true, userId: true, title: true },
+      select: {
+        id: true,
+        projectId: true,
+        userId: true,
+        title: true,
+        assignees: { select: { userId: true } },
+      },
     });
     if (!task) throw notFound("TASK_NOT_FOUND", "Tarea no encontrada");
-    const isAdmin = user.role === "ADMIN";
-    if (!isAdmin && task.userId !== user.id) {
+    if (!userCanAccessTask(task, user)) {
       throw forbidden("No tenés permiso para acceder a los comentarios de esta tarea");
     }
     return task;
@@ -5146,7 +5259,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
     //    Proyecto · Tarea suelta).
     const tasksRaw = await prisma.task.findMany({
       where: {
-        userId: targetUser.id,
+        // Asignada al target: por la nueva relación many-to-many o, por
+        // robustez con datos legacy, por el userId primario.
+        OR: [
+          { assignees: { some: { userId: targetUser.id } } },
+          { userId: targetUser.id },
+        ],
         deletedAt: null,
         // Solo tareas de proyecto. Las sueltas (projectId NULL) van en
         // standaloneTasks más abajo.
@@ -5164,6 +5282,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         project: { select: { id: true, code: true, clientName: true } },
         stage: { select: { id: true, name: true } },
         substage: { select: { id: true, name: true } },
+        ...taskAssigneesInclude,
       },
     });
 
@@ -5185,6 +5304,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         stageLabel: t.stage ? getStageLabel(t.stage.name) : null,
         substageId: t.substage?.id ?? null,
         substageName: t.substage?.name ?? null,
+        assignees: t.assignees.map((a) => ({ id: a.user.id, name: a.user.name })),
       }))
       .sort((a, b) => {
         // Completadas: orden descendente por completedAt (más reciente primero).
@@ -5207,7 +5327,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
     //    "pending" muestra no-completadas, "completed" muestra las completadas.
     const standaloneTasksRaw = await prisma.task.findMany({
       where: {
-        userId: targetUser.id,
+        OR: [
+          { assignees: { some: { userId: targetUser.id } } },
+          { userId: targetUser.id },
+        ],
         projectId: null,
         deletedAt: null,
         status:
@@ -5217,6 +5340,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       },
       include: {
         user: { select: { id: true, name: true, email: true } },
+        ...taskAssigneesInclude,
       },
       orderBy:
         query.taskScope === "completed"
@@ -5231,10 +5355,17 @@ export async function registerApiRoutes(app: FastifyInstance) {
       status: t.status,
       dueDate: serializeDateOnly(t.dueDate),
       completedAt: serializeDate(t.completedAt),
+      // Compat: primer asignado como "assignedUser" singular; `assignees` es la
+      // lista completa (fuente de verdad).
       assignedUserId: t.userId,
       assignedUser: t.user
         ? { id: t.user.id, name: t.user.name, email: t.user.email }
         : null,
+      assignees: t.assignees.map((a) => ({
+        id: a.user.id,
+        name: a.user.name,
+        email: a.user.email,
+      })),
       urgencyRank: urgencyRank(t.dueDate),
       createdAt: serializeDate(t.createdAt),
       updatedAt: serializeDate(t.updatedAt),

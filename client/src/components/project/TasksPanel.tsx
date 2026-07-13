@@ -5,7 +5,7 @@ import { Check } from "lucide-react";
 import type { Task } from "../../types/api.types";
 import { patchTask, deleteTask } from "../../api/tasks.api";
 import { Button } from "../ui/Button";
-import { UserSelect } from "../ui/UserSelect";
+import { MultiUserSelect } from "../ui/MultiUserSelect";
 import { AssigneeLabel } from "../ui/AssigneeLabel";
 import { CommentThread } from "../comments/CommentThread";
 
@@ -61,7 +61,9 @@ function TaskRow({
   const [description, setDescription] = useState(task.description ?? "");
   const [status, setStatus] = useState<Task["status"]>(task.status);
   const [priority, setPriority] = useState<Task["priority"]>(task.priority);
-  const [userId, setUserId] = useState<string | null>(task.userId ?? null);
+  const [assignedUserIds, setAssignedUserIds] = useState<string[]>(
+    task.assignees?.map((a) => a.id) ?? (task.userId ? [task.userId] : []),
+  );
   const [dueDate, setDueDate] = useState(task.dueDate?.slice(0, 10) ?? "");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -72,7 +74,7 @@ function TaskRow({
   const { mutate: saveEdit, isPending: saving } = useMutation({
     mutationFn: () => patchTask(projectId, task.id, {
       title, description: description || null, status, priority,
-      userId, dueDate: dueDate || null,
+      assignedUserIds, dueDate: dueDate || null,
     }),
     onSuccess: () => {
       toast.success("Tarea actualizada");
@@ -205,8 +207,14 @@ function TaskRow({
             <span>Estado: <span style={{ color: "var(--color-text-secondary)" }}>{STATUS_LABELS[task.status]}</span></span>
             <span>Prioridad: <span style={{ color: "var(--color-text-secondary)" }}>{PRIORITY_LABELS[task.priority]}</span></span>
             <span>
-              Responsable:{" "}
-              <AssigneeLabel user={task.user} legacyText={task.responsible} />
+              {task.assignees && task.assignees.length > 1 ? "Responsables: " : "Responsable: "}
+              {task.assignees && task.assignees.length > 0 ? (
+                <span style={{ color: "var(--color-text-secondary)" }}>
+                  {task.assignees.map((a) => a.name).join(", ")}
+                </span>
+              ) : (
+                <AssigneeLabel user={task.user} legacyText={task.responsible} />
+              )}
             </span>
             {task.dueDate && <span>Vence: <span style={{ color: "var(--color-text-secondary)" }}>{formatDue(task.dueDate)}</span></span>}
           </div>
@@ -247,13 +255,13 @@ function TaskRow({
               </select>
             </div>
             <div>
-              <div style={{ fontSize: 10, color: "var(--color-text-muted)", marginBottom: 2 }}>Responsable</div>
-              <UserSelect
-                value={userId}
-                onChange={setUserId}
-                ariaLabel="Responsable de la tarea"
+              <div style={{ fontSize: 10, color: "var(--color-text-muted)", marginBottom: 2 }}>Responsables</div>
+              <MultiUserSelect
+                value={assignedUserIds}
+                onChange={setAssignedUserIds}
+                ariaLabel="Responsables de la tarea"
               />
-              {!userId && task.responsible && task.responsible.trim() !== "" ? (
+              {assignedUserIds.length === 0 && task.responsible && task.responsible.trim() !== "" ? (
                 <p style={{ marginTop: 4, fontSize: 10, color: "var(--color-text-muted)" }}>
                   Texto legacy: <span style={{ fontStyle: "italic" }}>{task.responsible}</span>
                 </p>

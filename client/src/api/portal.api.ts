@@ -1,5 +1,6 @@
 import { apiClient } from "./axios";
 import type { TicketDetalle, TicketEstado, TicketPrioridad } from "./tickets.api";
+import type { Notification } from "../types/api.types";
 
 export interface PortalProjectListItem {
   id: string;
@@ -92,4 +93,19 @@ export async function createPortalTicket(body: {
 export async function comentarPortalTicket(id: string, contenido: string): Promise<TicketDetalle> {
   const { data } = await apiClient.post<TicketDetalle>(`/api/client/tickets/${id}/comentarios`, { contenido });
   return data;
+}
+
+// ─── Notificaciones del cliente (portal) ─────────────────────────────────────
+
+export async function getPortalNotifications(): Promise<Notification[]> {
+  const { data } = await apiClient.get<Notification[]>("/api/client/notifications");
+  return data;
+}
+
+export async function markPortalNotificationRead(id: string): Promise<void> {
+  await apiClient.patch(`/api/client/notifications/${id}/read`);
+}
+
+export async function markAllPortalNotificationsRead(): Promise<void> {
+  await apiClient.patch("/api/client/notifications/read-all");
 }

@@ -743,6 +743,15 @@ export function serializeChecklistItem(item: {
   };
 }
 
+// Include canónico para traer los asignados de una tarea listos para
+// serializeTask. Usar en cada query cuyo resultado se pase a serializeTask.
+export const taskAssigneesInclude = {
+  assignees: {
+    include: { user: { select: { id: true, name: true, email: true } } },
+    orderBy: { createdAt: "asc" },
+  },
+} as const;
+
 export function serializeTask(task: {
   id: string;
   projectId: string | null;
@@ -755,16 +764,30 @@ export function serializeTask(task: {
   responsible: string;
   userId: string | null;
   user?: ResponsibleUserRef | null;
+  assignees?: Array<{ user: { id: string; name: string; email?: string } }> | null;
   dueDate: Date | null;
   completedAt: Date | null;
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }) {
-  const { user, ...rest } = task;
+  const { user, assignees, ...rest } = task;
   return {
     ...rest,
     user: serializeResponsibleUser(user),
+    // `assignees` = fuente de verdad de la asignación (varios responsables).
+    // Se serializa como array plano de usuarios. Si la query no incluyó la
+    // relación (assignees === undefined), se omite el campo para no romper a
+    // los consumidores que todavía leen `user`.
+    ...(assignees !== undefined
+      ? {
+          assignees: (assignees ?? []).map((a) => ({
+            id: a.user.id,
+            name: a.user.name,
+            email: a.user.email ?? null,
+          })),
+        }
+      : {}),
     dueDate: serializeDateOnly(task.dueDate),
     completedAt: serializeDate(task.completedAt),
     deletedAt: serializeDate(task.deletedAt),

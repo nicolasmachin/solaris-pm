@@ -512,6 +512,7 @@ export function MisTareas() {
                   <TaskRow
                     key={task.id}
                     task={task}
+                    currentUserId={effectiveUserId ?? currentUser?.id ?? null}
                     onClick={() => setTaskListModal(task.id)}
                   />
                 ))}
@@ -559,7 +560,15 @@ export function MisTareas() {
   );
 }
 
-function TaskRow({ task, onClick }: { task: MyTaskItem; onClick: () => void }) {
+function TaskRow({
+  task,
+  currentUserId,
+  onClick,
+}: {
+  task: MyTaskItem;
+  currentUserId: string | null;
+  onClick: () => void;
+}) {
   const qc = useQueryClient();
   const isCompleted = task.status === "COMPLETED";
   const urgency = URGENCY[task.urgencyRank] ?? URGENCY[3];
@@ -673,6 +682,7 @@ function TaskRow({ task, onClick }: { task: MyTaskItem; onClick: () => void }) {
             ) : null}
           </div>
           {!isCompleted && <DueBadge alert={alert} />}
+          <AssigneeCluster assignees={task.assignees ?? []} currentUserId={currentUserId} />
           <ChevronRight size={14} className="shrink-0 text-[var(--color-text-muted)]" />
         </button>
         {isCompleted && (
@@ -1027,6 +1037,54 @@ function DueBadge({ alert }: { alert: AlertInfo }) {
       style={style}
     >
       {label}
+    </span>
+  );
+}
+
+// Iniciales para el avatar (mismo criterio que el backend: primera + última).
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+// Cluster de avatares de asignados para una tarea. Resalta al usuario actual,
+// muestra hasta 3 y colapsa el resto en "+N". Si no hay asignados, no renderiza.
+function AssigneeCluster({
+  assignees,
+  currentUserId,
+}: {
+  assignees: { id: string; name: string }[];
+  currentUserId: string | null;
+}) {
+  if (assignees.length === 0) return null;
+  const MAX = 3;
+  const shown = assignees.slice(0, MAX);
+  const extra = assignees.length - shown.length;
+  const title = assignees.map((a) => a.name).join(", ");
+  return (
+    <span className="flex shrink-0 items-center -space-x-1.5" title={title}>
+      {shown.map((a) => {
+        const isMe = !!currentUserId && a.id === currentUserId;
+        return (
+          <span
+            key={a.id}
+            className={`flex h-7 w-7 items-center justify-center rounded-full border-2 border-[var(--color-bg-card)] text-[10px] font-bold ${
+              isMe
+                ? "bg-[var(--color-accent)] text-black"
+                : "bg-[var(--color-border)] text-[var(--color-text-secondary)]"
+            }`}
+          >
+            {initialsOf(a.name)}
+          </span>
+        );
+      })}
+      {extra > 0 ? (
+        <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-[var(--color-bg-card)] bg-[var(--color-bg-app)] text-[10px] font-bold text-[var(--color-text-muted)]">
+          +{extra}
+        </span>
+      ) : null}
     </span>
   );
 }

@@ -18,13 +18,14 @@
 // memoria (getCurrentStage no es expresable en SQL); por eso ordenamos y
 // paginamos también en memoria. La cartera es de cientos de proyectos.
 
-import { Prisma, ProjectStatus, InteractionReason, type InteractionChannel, type InteractionDirection, type StageType } from "@prisma/client";
+import { Prisma, ProjectStatus, InteractionReason, AuditAction, type InteractionChannel, type InteractionDirection, type StageType } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { getStageLabel } from "../pipeline-definitions.js";
 import { getCurrentStage } from "../project.service.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../../utils/serialization.js";
 import { lastActionAt } from "../uteProcess.service.js";
+import { TRASPASO_LABEL } from "../traspasos/catalogo.js";
 
 export type ClienteEstado = "ACTIVO" | "FINALIZADO" | "ARCHIVADO" | "PROSPECTO";
 // "Etapa" del CRM = recorrido del cliente en 3 etapas (E1/E2/E3), derivado de la
@@ -359,14 +360,18 @@ export async function getClienteFicha(projectId: string) {
 }
 
 // ─── Timeline unificado del cliente ──────────────────────────────────────────
-// Junta las 3 fuentes de historia del cliente en un solo feed ordenado por
-// fecha DESC: actividades de Ventas (del lead), comentarios (lead + proyecto) e
-// interacciones del cliente. Solo lectura.
+// Junta las fuentes de historia del cliente en un solo feed ordenado por fecha
+// DESC. Solo lectura. Fuentes:
+//   - Ventas: actividades del lead que originó el proyecto (cambios de etapa).
+//   - Proyecto: comentarios, avances de etapa del pipeline, documentos generados
+//     (contrato/proforma/propuesta) y traspasos entre áreas.
+//   - Cliente: interacciones de la ficha (con dirección y motivo).
+//   - Ticket: apertura/resolución de reclamos y consultas.
 
 export interface TimelineItem {
   id: string;
-  source: "sales" | "project" | "client";
-  kind: "stage_change" | "comment" | "interaction";
+  source: "sales" | "project" | "client" | "ticket";
+  kind: "stage_change" | "comment" | "interaction" | "document" | "handoff" | "ticket";
   text: string;
   autor: { id: string; nombre: string } | null;
   createdAt: string; // ISO
@@ -443,8 +448,108 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
       text: i.content,
       autor: { id: i.author.id, nombre: i.author.name },
       createdAt: serializeDate(i.createdAt) ?? "",
-      meta: { channel: i.channel },
+      meta: { channel: i.channel, direction: i.direction, reason: i.reason },
     });
+  }
+
+  // 4. Auditoría del proyecto: avances de etapa del pipeline y documentos
+  //    generados/enviados al cliente (contrato, proforma, propuesta). La
+  //    `description` de la auditoría ya viene legible en español.
+  const audits = await prisma.auditLog.findMany({
+    where: {
+      projectId,
+      action: {
+        in: [
+          AuditAction.stage_advanced,
+          AuditAction.contract_version_published,
+          AuditAction.proforma_version_published,
+          AuditAction.proposal_v2_version_published,
+        ],
+      },
+    },
+    select: {
+      id: true, action: true, description: true, timestamp: true,
+      user: { select: { id: true, name: true } },
+    },
+  });
+  for (const a of audits) {
+    items.push({
+      id: `au-${a.id}`,
+      source: "project",
+      kind: a.action === AuditAction.stage_advanced ? "stage_change" : "document",
+      text: a.description,
+      autor: a.user ? { id: a.user.id, nombre: a.user.name } : null,
+      createdAt: serializeDate(a.timestamp) ?? "",
+      meta: { action: a.action },
+    });
+  }
+
+  // 5. Traspasos entre áreas (handoffs del recorrido interno del cliente).
+  const traspasos = await prisma.traspaso.findMany({
+    where: { projectId },
+    select: {
+      id: true, tipo: true, estado: true, notaAlReceptor: true, createdAt: true,
+      modalUsuario: { select: { id: true, name: true } },
+    },
+  });
+  for (const t of traspasos) {
+    const label = TRASPASO_LABEL[t.tipo];
+    const nota = t.notaAlReceptor?.trim();
+    items.push({
+      id: `tr-${t.id}`,
+      source: "project",
+      kind: "handoff",
+      text: nota ? `Traspaso: ${label} — ${nota}` : `Traspaso: ${label}`,
+      autor: t.modalUsuario ? { id: t.modalUsuario.id, nombre: t.modalUsuario.name } : null,
+      createdAt: serializeDate(t.createdAt) ?? "",
+      meta: { tipo: t.tipo, estado: t.estado },
+    });
+  }
+
+  // 6. Tickets: apertura y (si corresponde) resolución. `creadoPorId` y
+  //    `resueltoPorId` son ids sueltos (sin relación); se resuelven en un lookup.
+  const tickets = await prisma.ticket.findMany({
+    where: { projectId, deletedAt: null },
+    select: {
+      id: true, titulo: true, estado: true, origenCliente: true,
+      creadoPorId: true, resueltoPorId: true, createdAt: true, resueltoEn: true,
+    },
+  });
+  if (tickets.length > 0) {
+    const uids = new Set<string>();
+    for (const t of tickets) {
+      uids.add(t.creadoPorId);
+      if (t.resueltoPorId) uids.add(t.resueltoPorId);
+    }
+    const users = await prisma.user.findMany({
+      where: { id: { in: [...uids] } },
+      select: { id: true, name: true },
+    });
+    const nameById = new Map(users.map((u) => [u.id, u.name]));
+    for (const t of tickets) {
+      items.push({
+        id: `tk-${t.id}`,
+        source: "ticket",
+        kind: "ticket",
+        text: `${t.origenCliente ? "El Generador abrió" : "Se abrió"} un ticket: "${t.titulo}"`,
+        autor: { id: t.creadoPorId, nombre: nameById.get(t.creadoPorId) ?? "—" },
+        createdAt: serializeDate(t.createdAt) ?? "",
+        meta: { estado: t.estado },
+      });
+      if (t.resueltoEn) {
+        items.push({
+          id: `tk-${t.id}-res`,
+          source: "ticket",
+          kind: "ticket",
+          text: `Se resolvió el ticket: "${t.titulo}"`,
+          autor: t.resueltoPorId
+            ? { id: t.resueltoPorId, nombre: nameById.get(t.resueltoPorId) ?? "—" }
+            : null,
+          createdAt: serializeDate(t.resueltoEn) ?? "",
+          meta: { estado: t.estado },
+        });
+      }
+    }
   }
 
   return items.sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
