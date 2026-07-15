@@ -7,11 +7,11 @@ import {
   cancelarTraspaso,
   confirmarTraspaso,
   getTraspasosPendientes,
+  posponerTraspaso,
   type TraspasoPendiente,
 } from "../../../api/traspasos.api";
 import { Button } from "../../../components/ui/Button";
 import { Spinner } from "../../../components/ui/Spinner";
-import { useAuthStore } from "../../../store/auth.store";
 
 function getApiErr(err: unknown): string | undefined {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
@@ -24,7 +24,6 @@ function fmt(dateStr: string): string {
 function TraspasoCard({ t }: { t: TraspasoPendiente }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const isAdmin = useAuthStore((s) => s.user?.role === "ADMIN");
   const [nota, setNota] = useState("");
 
   const confirmar = useMutation({
@@ -44,6 +43,15 @@ function TraspasoCard({ t }: { t: TraspasoPendiente }) {
       qc.invalidateQueries({ queryKey: ["traspasos-pendientes"] });
     },
     onError: (err) => toast.error(getApiErr(err) ?? "No se pudo cancelar"),
+  });
+
+  const posponer = useMutation({
+    mutationFn: () => posponerTraspaso(t.id),
+    onSuccess: () => {
+      toast.success("Pospuesto 6 horas");
+      qc.invalidateQueries({ queryKey: ["traspasos-pendientes"] });
+    },
+    onError: (err) => toast.error(getApiErr(err) ?? "No se pudo posponer"),
   });
 
   return (
@@ -75,11 +83,12 @@ function TraspasoCard({ t }: { t: TraspasoPendiente }) {
       <div className="mt-2 flex items-center justify-between">
         <span className="text-[11px] text-[var(--color-text-muted)]">Detectado {fmt(t.condicionDetectadaEn)}</span>
         <div className="flex gap-2">
-          {isAdmin && (
-            <Button variant="ghost" size="sm" loading={cancelar.isPending} onClick={() => cancelar.mutate()}>
-              Cancelar
-            </Button>
-          )}
+          <Button variant="secondary" size="sm" loading={posponer.isPending} onClick={() => posponer.mutate()}>
+            Posponer 6 hs
+          </Button>
+          <Button variant="ghost" size="sm" loading={cancelar.isPending} onClick={() => cancelar.mutate()}>
+            Cancelar
+          </Button>
           <Button size="sm" loading={confirmar.isPending} onClick={() => confirmar.mutate()}>
             Confirmar y notificar
           </Button>

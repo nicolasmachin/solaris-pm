@@ -86,6 +86,36 @@ export async function ensureUteSubstages(
   const stage = await findHabilitacionStage(tx, projectId);
   if (!stage) return; // proyecto sin etapa HABILITACION_UTE; no hay nada que sincronizar.
 
+  // Limpieza de legacy: versiones viejas del template sembraban 3 subetapas
+  // isSystem SIN uteAction ("Trámite de microgeneración UTE", "Inspección y
+  // aprobación UTE", "Medidor bidireccional"). Hoy esta etapa la puebla
+  // íntegramente este servicio con las 11 subetapas uteAction, así que esas 3
+  // quedaban DUPLICANDO la etapa. Las soft-deleteamos y las sacamos de su `order`
+  // (el unique [stageId, order] cuenta también las soft-deleted, así que hay que
+  // liberar los slots 1/2/3 para las canónicas). No tocamos subetapas custom
+  // (isSystem=false) que el usuario haya podido agregar.
+  const legacyOrphans = await tx.substage.findMany({
+    where: { stageId: stage.id, isSystem: true, uteAction: null, deletedAt: null },
+    select: { id: true },
+  });
+  if (legacyOrphans.length > 0) {
+    // Órdenes negativos por debajo del mínimo actual de la etapa (incluye
+    // soft-deleted) para no chocar con el unique [stageId, order] contra filas
+    // ya descartadas en corridas previas.
+    const minAgg = await tx.substage.aggregate({
+      where: { stageId: stage.id },
+      _min: { order: true },
+    });
+    let nextOrder = Math.min(minAgg._min.order ?? 0, 0) - 1;
+    for (const orphan of legacyOrphans) {
+      await tx.substage.update({
+        where: { id: orphan.id },
+        data: { deletedAt: new Date(), order: nextOrder },
+      });
+      nextOrder--;
+    }
+  }
+
   const existing = await tx.substage.findMany({
     where: {
       stageId: stage.id,

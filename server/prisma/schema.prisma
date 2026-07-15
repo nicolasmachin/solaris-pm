@@ -160,6 +160,7 @@ enum AuditAction {
   traspaso_confirmado
   traspaso_escalado
   traspaso_cancelado
+  traspaso_pospuesto
 }
 
 enum NotificationType {
@@ -675,6 +676,10 @@ model Traspaso {
   notaAlReceptor       String?
 
   escaladoEn           DateTime?              @db.Timestamptz(6)
+
+  // "Posponer 6 hs": mientras pospuestoHasta > now, el traspaso se oculta del
+  // popup y de la bandeja de Pendientes, y no escala. Al vencer, reaparece.
+  pospuestoHasta       DateTime?              @db.Timestamptz(6)
 
   destinatarios        TraspasoDestinatario[]
 

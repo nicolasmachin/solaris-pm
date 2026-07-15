@@ -30,3 +30,8 @@ export async function cancelarTraspaso(id: string, motivo?: string): Promise<{ t
   const { data } = await apiClient.post(`/api/traspasos/${id}/cancelar`, { motivo: motivo || undefined });
   return data;
 }
+
+export async function posponerTraspaso(id: string): Promise<{ traspasoId: string; pospuestoHasta: string }> {
+  const { data } = await apiClient.post(`/api/traspasos/${id}/posponer`);
+  return data;
+}

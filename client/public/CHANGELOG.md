@@ -4,10 +4,21 @@
 
 ### 15 de julio de 2026
 
+#### Traspasos — aviso en el momento
+
+- Cuando una acción **dispara un traspaso**, ahora aparece un **popup al instante** para confirmarlo, sin tener que entrar a la campana ni a la bandeja de Pendientes.
+- Desde el popup (y también desde la bandeja) podés **Confirmar y notificar**, **Cancelar** (lo puede hacer quien disparó el traspaso o un admin) o **Posponer 6 hs**. Al posponer, el traspaso se oculta del popup y de Pendientes durante 6 horas y después vuelve a aparecer; mientras tanto no escala.
+
 #### Finanzas — ingreso de movimientos más rápido
 
 - Al cargar un **gasto**, la categoría por defecto ahora es **"Salida proyecto"** (antes venía en "Costo variable"), que es la más habitual.
 - La **cuenta de banco** dejó de ser obligatoria en cobros y pagos: podés registrar un movimiento **sin elegir cuenta**. Si elegís una, se sigue validando que la moneda coincida.
+
+#### Arreglos
+
+- **Admin · Pipeline por defecto** — el editor mostraba las **etapas viejas** (5) y no dejaba editar las subetapas nuevas. Ahora refleja el **pipeline actual completo** (las 8 etapas + los 2 bloques de Experiencia Solar) y permite editar y guardar sus subetapas, checklists, responsables y pesos.
+- **Finanzas** — un **gasto asociado a un proveedor** cargado desde Movimientos ahora se registra como **pago concretado** (factura y pago en un solo acto) y ya **no aparece como deuda pendiente** en el estado de cuenta del proveedor. Las facturas pendientes de pagar se siguen ingresando solo desde Proveedores. Los movimientos que habían quedado mal se corrigen solos.
+- **Trámites UTE** — la etapa mostraba **subetapas repetidas**: convivían las que administra el módulo de Trámites UTE con otras que se cargaban por defecto de plantillas viejas. Ahora la etapa queda con **un único juego de pasos** (los 11 del trámite) y se limpiaron los duplicados en los proyectos existentes.
 
 ### 14 de julio de 2026
 

@@ -1,13 +1,12 @@
 import { apiClient } from "./axios";
+import type { StageType } from "../types/deadline.types";
 
 export type PipelineModalidadPago = "CONTADO" | "FINANCIADO" | "DIRECTO_50_50";
 export type PipelineTipoObra = "PROPIA" | "TERCERIZADA";
-export type PipelineStageName =
-  | "ONBOARDING"
-  | "INGENIERIA"
-  | "OPERACIONES"
-  | "HABILITACION_UTE"
-  | "POSTVENTA";
+// Cualquier StageType del pipeline actual (8 etapas + bloques CX). El backend
+// valida que el set coincida con el pipeline por defecto; el editor no está
+// atado a un número fijo de etapas.
+export type PipelineStageName = StageType;
 
 export interface PipelineChecklistItem {
   label: string;

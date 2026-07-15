@@ -9,7 +9,18 @@ export type StageType =
   | 'INGENIERIA'
   | 'OPERACIONES'
   | 'HABILITACION_UTE'
-  | 'POSTVENTA';
+  | 'POSTVENTA'
+  // Pipeline expandido a 8 etapas + 2 bloques CX paralelos (Traspasos v1).
+  | 'PRE_INGENIERIA'
+  | 'REVISION_CAPATAZ'
+  | 'VALIDACION_OPERACIONES'
+  | 'INGENIERIA_FINAL'
+  | 'COMPRAS'
+  | 'EJECUCION_OBRA'
+  | 'TRAMITACION_UTE'
+  | 'POST_HABILITACION'
+  | 'SEGUIMIENTO_PREOBRA'
+  | 'SEGUIMIENTO_HABILITACION';
 
 export interface DeadlineRule {
   id: string;
@@ -47,4 +58,14 @@ export const STAGE_TYPE_LABEL: Record<StageType, string> = {
   OPERACIONES: 'Operaciones',
   HABILITACION_UTE: 'Habilitación UTE',
   POSTVENTA: 'Post-Habilitación',
+  PRE_INGENIERIA: 'Pre-Ingeniería',
+  REVISION_CAPATAZ: 'Revisión del Capataz',
+  VALIDACION_OPERACIONES: 'Validación de Operaciones',
+  INGENIERIA_FINAL: 'Ingeniería Final',
+  COMPRAS: 'Compras',
+  EJECUCION_OBRA: 'Ejecución de Obra',
+  TRAMITACION_UTE: 'Tramitación UTE',
+  POST_HABILITACION: 'Post-Habilitación',
+  SEGUIMIENTO_PREOBRA: 'Experiencia Solar · Preobra',
+  SEGUIMIENTO_HABILITACION: 'Experiencia Solar · Habilitación',
 };

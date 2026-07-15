@@ -21,7 +21,11 @@ export async function escalarVencidos(): Promise<{ checked: number; escalated: n
   const now = new Date();
 
   const pendientes = await prisma.traspaso.findMany({
-    where: { estado: TraspasoEstado.PENDIENTE_CONFIRMACION },
+    // Los pospuestos vigentes no escalan hasta que venza `pospuestoHasta`.
+    where: {
+      estado: TraspasoEstado.PENDIENTE_CONFIRMACION,
+      OR: [{ pospuestoHasta: null }, { pospuestoHasta: { lte: now } }],
+    },
     include: {
       project: { select: { id: true, clientName: true } },
       modalUsuario: { select: { name: true } },

@@ -118,6 +118,7 @@ import {
   getTipoObraLabel,
   getOperationVisibility,
   isParallelStage,
+  PIPELINE_DEFINITIONS,
 } from "../services/pipeline-definitions.js";
 import { createNotificationIfNotExists } from "../services/notification.service.js";
 import { notifyEngineeringCompleted } from "../services/notify.service.js";
@@ -7473,7 +7474,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
   }).strict();
 
   const pipelineTemplatePutSchema = z.object({
-    stages: z.array(pipelineStageSchema).length(5, "El template debe tener las 5 etapas"),
+    stages: z.array(pipelineStageSchema).min(1, "El template debe tener al menos una etapa"),
   }).strict();
 
   app.get("/pipeline-template", { preHandler: authorize(Module.CONFIGURACION, Action.VIEW) }, async () => {
@@ -7495,21 +7496,24 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
     const body = pipelineTemplatePutSchema.parse(request.body);
 
-    // Validar que las 5 etapas sean las esperadas, sin duplicados
+    // El editor sólo permite modificar subetapas/checklists/labels/pesos, no
+    // agregar ni quitar etapas macro. Validamos que el set de etapas coincida
+    // exactamente con el del pipeline por defecto del código (sea el que sea:
+    // hoy 8 etapas + 2 bloques CX). Así el editor no queda atado a un número fijo.
     const stageNames = new Set(body.stages.map((s) => s.name));
-    if (stageNames.size !== 5) {
-      throw badRequest("INVALID_TEMPLATE", "El template debe tener las 5 etapas únicas (ONBOARDING, INGENIERIA, OPERACIONES, HABILITACION_UTE, POSTVENTA)");
+    if (stageNames.size !== body.stages.length) {
+      throw badRequest("INVALID_TEMPLATE", "Hay etapas duplicadas en el template.");
     }
-    const expected: StageType[] = [
-      StageType.ONBOARDING,
-      StageType.INGENIERIA,
-      StageType.OPERACIONES,
-      StageType.HABILITACION_UTE,
-      StageType.POSTVENTA,
-    ];
-    for (const name of expected) {
+    const expectedStageNames = PIPELINE_DEFINITIONS.map((s) => s.name);
+    const expectedSet = new Set(expectedStageNames);
+    for (const name of expectedStageNames) {
       if (!stageNames.has(name)) {
-        throw badRequest("INVALID_TEMPLATE", `Falta la etapa ${name} en el template`);
+        throw badRequest("INVALID_TEMPLATE", `Falta la etapa ${name} en el template.`);
+      }
+    }
+    for (const name of stageNames) {
+      if (!expectedSet.has(name)) {
+        throw badRequest("INVALID_TEMPLATE", `La etapa ${name} no pertenece al pipeline actual.`);
       }
     }
 
@@ -12055,7 +12059,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
         const a = getAgg(m.supplierId);
         const monto = Number(m.monto);
         const pagado = m.paymentApplications.reduce((acc, ap) => acc + Number(ap.montoAplicado), 0);
-        const saldo = Math.max(0, monto - pagado);
+        // Un GASTO PAGADO es un movimiento saldado (pago/cobro concretado), no una
+        // factura pendiente. Las facturas a pagar viven en estados COMPROMETIDO/
+        // A_PAGAR/PARCIALMENTE_PAGADO (se ingresan desde Proveedores). Así un
+        // movimiento con proveedor nunca genera deuda pendiente.
+        const saldo = m.status === FinanceMovementStatus.PAGADO ? 0 : Math.max(0, monto - pagado);
         if (saldo > 0.005) {
           if (m.moneda === Moneda.USD) a.facturasPendientesUSD += saldo;
           else a.facturasPendientesUYU += saldo;
@@ -16270,7 +16278,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
         const monto = Number(m.monto);
         const activeApps = m.paymentApplications.filter((a) => !a.payment.deletedAt);
         const pagado = activeApps.reduce((acc, a) => acc + Number(a.montoAplicado), 0);
-        const saldo = Math.round((monto - pagado) * 100) / 100;
+        // Un GASTO PAGADO está saldado por definición (movimiento = factura+pago
+        // en un acto): saldoPendiente 0, no genera deuda. Los estados de deuda
+        // real son COMPROMETIDO/A_PAGAR/PARCIALMENTE_PAGADO (Proveedores).
+        const settled = m.status === FinanceMovementStatus.PAGADO;
+        const saldo = settled ? 0 : Math.round((monto - pagado) * 100) / 100;
         return {
           id: m.id,
           fecha: serializeDateOnly(m.fecha),
@@ -16350,6 +16362,23 @@ export async function registerApiRoutes(app: FastifyInstance) {
           descripcion: `Pago${p.referencia ? ` ref. ${p.referencia}` : ""} (${p.metodo})`,
           saldoAcumuladoUSD: 0,
         });
+      }
+      // Movimientos saldados en un solo acto (GASTO PAGADO sin un Payment que los
+      // cubra, ej. cargados desde "Movimientos" sin cuenta): sintetizamos su pago
+      // para que la línea de tiempo netee a 0 y no figuren como deuda.
+      for (const f of facturasFiltradas) {
+        if (!f.fecha || f.status !== FinanceMovementStatus.PAGADO) continue;
+        const autoSaldado = Math.round((f.monto - f.montoPagado) * 100) / 100;
+        if (autoSaldado > 0.005) {
+          eventos.push({
+            tipo: "pago",
+            fecha: f.fecha,
+            monto: autoSaldado,
+            moneda: f.moneda,
+            descripcion: "Pago del movimiento",
+            saldoAcumuladoUSD: 0,
+          });
+        }
       }
       eventos.sort((a, b) => (a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0));
       let acum = 0;

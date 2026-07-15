@@ -1995,6 +1995,17 @@ const STAGE_LABELS_PIPELINE: Record<string, string> = {
   OPERACIONES: "Operaciones",
   HABILITACION_UTE: "Habilitación UTE",
   POSTVENTA: "Post-Habilitación",
+  // Pipeline expandido a 8 etapas + 2 bloques CX paralelos (Traspasos v1).
+  PRE_INGENIERIA: "Pre-Ingeniería",
+  REVISION_CAPATAZ: "Revisión del Capataz",
+  VALIDACION_OPERACIONES: "Validación de Operaciones",
+  INGENIERIA_FINAL: "Ingeniería Final",
+  COMPRAS: "Compras",
+  EJECUCION_OBRA: "Ejecución de Obra",
+  TRAMITACION_UTE: "Tramitación UTE",
+  POST_HABILITACION: "Post-Habilitación",
+  SEGUIMIENTO_PREOBRA: "Experiencia Solar · Preobra",
+  SEGUIMIENTO_HABILITACION: "Experiencia Solar · Habilitación",
 };
 
 // Lista fija de roles de negocio usada en el select de "Responsable" de subetapa.
@@ -2014,14 +2025,6 @@ const MODALIDAD_OPTIONS: Array<{ value: "" | "CONTADO" | "FINANCIADO" | "DIRECTO
   { value: "CONTADO", label: "Contado" },
   { value: "FINANCIADO", label: "Financiado" },
   { value: "DIRECTO_50_50", label: "Directo 50/50" },
-];
-
-const FIXED_STAGE_ORDER: PipelineStage["name"][] = [
-  "ONBOARDING",
-  "INGENIERIA",
-  "OPERACIONES",
-  "HABILITACION_UTE",
-  "POSTVENTA",
 ];
 
 // Tipos locales con IDs estables para React keys (se strippean antes de guardar)
@@ -2058,44 +2061,33 @@ type DraftStage = {
 };
 
 function hydrate(stages: PipelineStage[]): DraftStage[] {
-  // Respeta el orden fijo por slug, no el order server (por las dudas)
-  const byName = new Map(stages.map((s) => [s.name, s]));
-  return FIXED_STAGE_ORDER.map((name, idx) => {
-    const s = byName.get(name);
-    if (!s) {
-      return {
-        order: idx + 1,
-        name,
-        label: STAGE_LABELS_PIPELINE[name] ?? name,
-        weight: 0,
-        substages: [],
-      };
-    }
-    return {
-      order: idx + 1,
-      name: s.name,
-      label: (s.label ?? "").trim() || STAGE_LABELS_PIPELINE[s.name] || s.name,
-      weight: s.weight,
-      substages: s.substages.map((sub) => ({
+  // Renderiza las etapas que devuelve el server, en su orden (soporta el
+  // pipeline nuevo de 8 etapas + bloques CX; no está atado a un set fijo).
+  const sorted = [...stages].sort((a, b) => a.order - b.order);
+  return sorted.map((s, idx) => ({
+    order: idx + 1,
+    name: s.name,
+    label: (s.label ?? "").trim() || STAGE_LABELS_PIPELINE[s.name] || s.name,
+    weight: s.weight,
+    substages: s.substages.map((sub) => ({
+      _localId: genLocalId(),
+      order: sub.order,
+      name: sub.name,
+      sopCode: sub.sopCode ?? null,
+      responsableRol: sub.responsableRol ?? null,
+      responsible: sub.responsible,
+      isSystem: sub.isSystem,
+      isActive: sub.isActive,
+      operationVariant: sub.operationVariant ?? null,
+      checklist: (sub.checklist ?? []).map((item) => ({
         _localId: genLocalId(),
-        order: sub.order,
-        name: sub.name,
-        sopCode: sub.sopCode ?? null,
-        responsableRol: sub.responsableRol ?? null,
-        responsible: sub.responsible,
-        isSystem: sub.isSystem,
-        isActive: sub.isActive,
-        operationVariant: sub.operationVariant ?? null,
-        checklist: (sub.checklist ?? []).map((item) => ({
-          _localId: genLocalId(),
-          label: item.label,
-          isRequired: item.isRequired,
-          isBlocker: item.isBlocker,
-          appliesWhenModalidadPago: item.appliesWhenModalidadPago ?? null,
-        })),
+        label: item.label,
+        isRequired: item.isRequired,
+        isBlocker: item.isBlocker,
+        appliesWhenModalidadPago: item.appliesWhenModalidadPago ?? null,
       })),
-    };
-  });
+    })),
+  }));
 }
 
 function dehydrate(stages: DraftStage[]): PipelineStage[] {

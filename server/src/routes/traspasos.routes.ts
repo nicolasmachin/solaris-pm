@@ -13,11 +13,12 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
-import { badRequest, forbidden } from "../utils/errors.js";
+import { badRequest } from "../utils/errors.js";
 import {
   buildModalTexto,
   cancelarTraspaso,
   confirmarTraspaso,
+  posponerTraspaso,
   previewDestinatarios,
   TRASPASO_LABEL,
 } from "../services/traspasos/index.js";
@@ -38,8 +39,13 @@ export async function registerTraspasosRoutes(app: FastifyInstance) {
   // Bandeja de pendientes del usuario autenticado.
   app.get("/traspasos/pendientes", async (request) => {
     const user = ensureUser(request);
+    // Excluye los pospuestos vigentes (pospuestoHasta en el futuro): reaparecen al vencer.
     const pendientes = await prisma.traspaso.findMany({
-      where: { modalUsuarioId: user.id, estado: TraspasoEstado.PENDIENTE_CONFIRMACION },
+      where: {
+        modalUsuarioId: user.id,
+        estado: TraspasoEstado.PENDIENTE_CONFIRMACION,
+        OR: [{ pospuestoHasta: null }, { pospuestoHasta: { lte: new Date() } }],
+      },
       include: { project: { select: { id: true, clientName: true } } },
       orderBy: { condicionDetectadaEn: "asc" },
     });
@@ -99,13 +105,24 @@ export async function registerTraspasosRoutes(app: FastifyInstance) {
     return result;
   });
 
-  // Cancelar (excepcional): solo ADMIN.
+  // Cancelar (excepcional): el usuario que lo originó o un ADMIN (se valida en el servicio).
   app.post("/traspasos/:id/cancelar", async (request) => {
     const user = ensureUser(request);
-    if (user.role !== "ADMIN") throw forbidden("Solo ADMIN puede cancelar un traspaso.");
     const { id } = z.object({ id: z.string() }).parse(request.params);
     const body = cancelarSchema.parse(request.body ?? {});
-    return cancelarTraspaso({ traspasoId: id, userId: user.id, motivo: body.motivo ?? null });
+    return cancelarTraspaso({
+      traspasoId: id,
+      userId: user.id,
+      isAdmin: user.role === "ADMIN",
+      motivo: body.motivo ?? null,
+    });
+  });
+
+  // Posponer 6 hs (solo el usuario que lo originó; se valida en el servicio).
+  app.post("/traspasos/:id/posponer", async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    return posponerTraspaso({ traspasoId: id, userId: user.id });
   });
 
   // Historial de traspasos de un proyecto.

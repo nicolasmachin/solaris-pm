@@ -599,34 +599,14 @@ export const PIPELINE_DEFINITIONS: StageTemplate[] = [
     ],
   },
   // ─── Etapa 7: Tramitación UTE ──────────────────────────────────────────────
-  // Sub-etapas gestionadas por ute-sync (uteAction). Cierre → T8.
+  // Las subetapas las puebla ÍNTEGRAMENTE ute-sync (las 11 subetapas system con
+  // uteAction, ver ensureUteSubstages). NO sembrar subetapas acá: hacerlo
+  // duplicaba la etapa (3 del template + 11 del módulo de trámites). Cierre → T8.
   {
     order: 7,
     name: StageType.TRAMITACION_UTE,
     weight: 15,
-    substages: [
-      {
-        order: 1,
-        name: "Trámite de microgeneración UTE",
-        responsableRol: "Gerente de Operaciones",
-        responsible: "Gerente de Operaciones",
-        isSystem: true,
-      },
-      {
-        order: 2,
-        name: "Inspección y aprobación UTE",
-        responsableRol: "Gerente de Operaciones",
-        responsible: "Gerente de Operaciones",
-        isSystem: true,
-      },
-      {
-        order: 3,
-        name: "Medidor bidireccional",
-        responsableRol: "Gerente de Operaciones",
-        responsible: "Gerente de Operaciones",
-        isSystem: true,
-      },
-    ],
+    substages: [],
   },
   // ─── Etapa 8: Post-Habilitación (Experiencia Solar) ────────────────────────
   // Etapa indefinida (E3-A / E3-B), sin fechas. No dispara traspaso de cierre.

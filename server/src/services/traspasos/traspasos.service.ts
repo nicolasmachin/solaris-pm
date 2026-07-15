@@ -169,13 +169,55 @@ export async function confirmarTraspaso(params: {
   return { traspasoId: traspaso.id, notificacionesEnviadas: destinatarios.length };
 }
 
-// Cancela un traspaso (caso excepcional: la condición se revirtió). La
-// autorización a ADMIN se hace en la ruta.
-export async function cancelarTraspaso(params: { traspasoId: string; userId: string; motivo?: string | null }) {
+// Horas que dura el "posponer" antes de que el traspaso vuelva a aparecer.
+export const POSPONER_HORAS = 6;
+
+// Pospone un traspaso: lo oculta del popup y de la bandeja durante POSPONER_HORAS
+// y evita que escale en ese lapso. Solo el usuario al que se le muestra el modal
+// puede posponerlo. Al vencer `pospuestoHasta`, reaparece.
+export async function posponerTraspaso(params: { traspasoId: string; userId: string }) {
+  const traspaso = await prisma.traspaso.findUnique({ where: { id: params.traspasoId } });
+  if (!traspaso) throw notFound("TRASPASO_NOT_FOUND", "El traspaso no existe.");
+  if (traspaso.estado !== TraspasoEstado.PENDIENTE_CONFIRMACION) {
+    throw badRequest("TRASPASO_ESTADO_INVALIDO", `El traspaso ya está en estado ${traspaso.estado}.`);
+  }
+  if (traspaso.modalUsuarioId !== params.userId) {
+    throw forbidden("Solo el usuario que originó el traspaso puede posponerlo.");
+  }
+
+  const pospuestoHasta = new Date(Date.now() + POSPONER_HORAS * 60 * 60 * 1000);
+  await prisma.traspaso.update({
+    where: { id: traspaso.id },
+    data: { pospuestoHasta },
+  });
+
+  await createAuditEntry({
+    entityType: AuditEntityType.traspaso,
+    entityId: traspaso.id,
+    projectId: traspaso.projectId,
+    userId: params.userId,
+    action: AuditAction.traspaso_pospuesto,
+    description: `Pospuso el traspaso "${TRASPASO_LABEL[traspaso.tipo]}" ${POSPONER_HORAS} horas.`,
+  });
+
+  return { traspasoId: traspaso.id, pospuestoHasta };
+}
+
+// Cancela un traspaso (caso excepcional: la condición se revirtió). Autorizado
+// al usuario que lo originó (modalUsuario) o a un ADMIN.
+export async function cancelarTraspaso(params: {
+  traspasoId: string;
+  userId: string;
+  isAdmin?: boolean;
+  motivo?: string | null;
+}) {
   const traspaso = await prisma.traspaso.findUnique({ where: { id: params.traspasoId } });
   if (!traspaso) throw notFound("TRASPASO_NOT_FOUND", "El traspaso no existe.");
   if (traspaso.estado === TraspasoEstado.CANCELADO) {
     throw badRequest("TRASPASO_YA_CANCELADO", "El traspaso ya estaba cancelado.");
+  }
+  if (!params.isAdmin && traspaso.modalUsuarioId !== params.userId) {
+    throw forbidden("Solo el usuario que originó el traspaso o un ADMIN pueden cancelarlo.");
   }
 
   await prisma.traspaso.update({
