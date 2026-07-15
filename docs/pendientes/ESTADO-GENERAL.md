@@ -18,7 +18,8 @@
 |---|---|---|
 | Tests de integración con DB (crear/confirmar, escalación) | ⬜ | `estado-traspasos.md` §4 (E). Ruteo ya testeado (14 tests). |
 | T8 para 3 proyectos legacy con nombre viejo de etapa | ⬜ | Borde; ya finalizados. Resto de la migración 5→8 ya reconciliada (0 trabados). |
-| T11 (encuesta nota baja), T12 (auto-agendó mant.), T13 (mant. ejecutado) | 🟠 | Enum + catálogo sin disparador. Requieren motor de encuestas + calendario. |
+| T11 (encuesta nota baja) | ✅ | **Disparado (Ola 3a, 2026-07-14).** Lo genera `responderEncuesta` cuando la nota ≤3; actor = responsable de Experiencia Solar (fallback ADMIN). Falta validación visual + deploy prod. |
+| T12 (mant. agendado), T13 (mant. ejecutado) | 🟠 | Ola 3b. **Cambio de decisión (2026-07-14): NO auto-agenda.** Listado interno de mantenimientos (próximos/en plazo/vencidos, orden por prioridad) y Operaciones agenda manual. T12 se reinterpreta como "agendado por Operaciones". |
 | Afinados de traspasos (config SLA por-traspaso desde UI, transición auto E3-A→E3-B, feriados en días hábiles) | ⬜ | Fuera del MVP. |
 
 📄 Detalle: `docs/pendientes/estado-traspasos.md` (ojo: desfasado, subestima Tickets/T8).
@@ -33,8 +34,9 @@
 
 | Ola / Ítem | Estado | Nota |
 |---|---|---|
-| Ola 3 — encuestas / aniversario / mantenimientos | 🟡 | **No hay motor de encuestas.** Recordatorios al cliente por no auto-agendar y WhatsApp fuera de MVP (manual). |
-| Ola 4 — encuestas E1/E2/E3 + T11 (nota baja) | 🟠 | Depende del motor de encuestas (inexistente). |
+| Ola 3a — motor de encuestas + aniversario + T11 | ✅ | **Hecho (2026-07-14).** Encuestas OBRA/HABILITACION (por hito de etapa) + ANIVERSARIO (cron, cap 2 años). Nota 1-5, ≤3 dispara T11. Portal `/portal/encuestas` (in-app) + panel interno `/encuestas` + timeline. Falta validación visual + deploy prod. |
+| Ola 3b — mantenimientos (T12/T13) | 🟠 | **NO auto-agenda** (decisión 2026-07-14). Listado interno para Operaciones (próximos/en plazo/vencidos, prioridad por plazo), agenda manual. Sin calendario por ahora. |
+| Ola 4 — encuestas E1/E2/E3 (nota baja) | 🟡 | Desbloqueada: el motor de encuestas ya existe (Ola 3a). Falta el detalle E1/E2/E3 del protocolo. |
 | Ola 5+ — reporte mensual · dashboard · fabricantes | 🟡 | Tickets ya hechos (ver Parte B). Reporte mensual puliéndose en otro chat. Dashboard y fabricantes sin diseñar. |
 | Unificar interacciones en la ficha del cliente | ✅ | Historial ahora junta Ventas + comentarios + interacciones (con canal/dirección/motivo) + avances de etapa del proyecto + traspasos + tickets (apertura/resolución) + documentos publicados (contrato/proforma/propuesta). `getClienteTimeline` en `services/clientes/index.ts` + `ClienteTimeline.tsx`. Verificado por API 2026-07-12; falta validación visual. |
 | Portal auto-agendamiento de mantenimiento (calendario in-house) | ❌ | No existe modelo de mantenimiento ni self-schedule en el portal. |

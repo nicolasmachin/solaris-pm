@@ -2,6 +2,30 @@
 
 ## v8.0
 
+### 15 de julio de 2026
+
+#### Finanzas — ingreso de movimientos más rápido
+
+- Al cargar un **gasto**, la categoría por defecto ahora es **"Salida proyecto"** (antes venía en "Costo variable"), que es la más habitual.
+- La **cuenta de banco** dejó de ser obligatoria en cobros y pagos: podés registrar un movimiento **sin elegir cuenta**. Si elegís una, se sigue validando que la moneda coincida.
+
+### 14 de julio de 2026
+
+#### Encuestas de satisfacción del Generador
+
+- Ahora el Generador puede **calificar su experiencia** en distintos momentos: al **terminar la instalación**, al **finalizar la habilitación de UTE** y en **cada aniversario** de la puesta en marcha. Cada encuesta aparece sola en la nueva sección **"Encuestas"** de su portal, con un aviso en la campana; se responde con una **nota de 1 a 5 estrellas** y un comentario opcional. Todo dentro de la app, sin mails.
+- Cuando un Generador deja una **nota baja (3 o menos)**, se genera automáticamente un aviso al equipo de **Experiencia Solar** (aparece en Pendientes) para que lo contacte y atienda su inquietud.
+- El equipo cuenta con una nueva pestaña **"Encuestas"** dentro de **Experiencia Solar** para ver todas las respuestas, filtrarlas por tipo, estado o **solo notas bajas**, y entrar a la ficha del Generador. Las encuestas respondidas también quedan registradas en el **historial** del cliente.
+
+#### Proyectos — una sola fecha (Venta) y orden para planificar
+
+- En la lista de **Proyectos** se quitó la columna **"Inicio"**, que confundía a la hora de planificar. Queda la **fecha de Venta**, que es la fecha en que se cerró el lead como ganado (o la que se define al crear el proyecto, precargada con esa fecha de cierre cuando viene de Ventas).
+- La lista ahora se **ordena por fecha de venta, de la más vieja a la más nueva** por defecto, para ver primero qué obra hay que agendar. Podés invertir el orden tocando el encabezado **"Venta"**.
+
+#### Arreglos
+
+- **Ingeniería** volvía a aparecer vacío (sin proyectos en la lista ni en el buscador lateral, y las herramientas no se podían abrir). El módulo seguía buscando la etapa de ingeniería con el nombre del **pipeline viejo**, y como los proyectos nuevos usan las etapas **Pre-ingeniería** e **Ingeniería final**, ninguno aparecía. Ahora reconoce las etapas nuevas y muestra cada proyecto con su estado (En cola / En proceso / Completada).
+
 ### 13 de julio de 2026
 
 #### Mis tareas — una tarea, varios responsables

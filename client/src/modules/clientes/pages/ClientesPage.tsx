@@ -369,13 +369,10 @@ export function ClientesPage() {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
-    <div className="space-y-5 p-6">
+    <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">
-            Experiencia Solar
-          </h1>
-          <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">
+          <p className="text-sm text-[var(--color-text-muted)]">
             {total} Generador{total !== 1 ? "es" : ""}
           </p>
         </div>

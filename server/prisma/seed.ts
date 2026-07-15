@@ -262,6 +262,16 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "POSTVENTA",         module: Module.TICKETS, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
     { roleName: "TRAMITACION_UTE",   module: Module.TICKETS, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
     { roleName: "EXPERIENCIA_SOLAR", module: Module.TICKETS, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
+
+    // ─── Módulo Encuestas (Ola 3a) — panel interno de solo lectura. Las genera
+    //     el sistema (hitos + cron) y las responde el cliente desde el portal.
+    { roleName: "ADMIN",             module: Module.ENCUESTAS, actions: [Action.VIEW] },
+    { roleName: "ASESOR_COMERCIAL",  module: Module.ENCUESTAS, actions: [Action.VIEW] },
+    { roleName: "INGENIERIA",        module: Module.ENCUESTAS, actions: [Action.VIEW] },
+    { roleName: "OPERACIONES",       module: Module.ENCUESTAS, actions: [Action.VIEW] },
+    { roleName: "POSTVENTA",         module: Module.ENCUESTAS, actions: [Action.VIEW] },
+    { roleName: "TRAMITACION_UTE",   module: Module.ENCUESTAS, actions: [Action.VIEW] },
+    { roleName: "EXPERIENCIA_SOLAR", module: Module.ENCUESTAS, actions: [Action.VIEW] },
   ];
 
   for (const entry of matrix) {

@@ -120,6 +120,7 @@ enum AuditEntityType {
   proforma
   traspaso
   ticket
+  survey
 }
 
 enum AuditAction {
@@ -171,6 +172,7 @@ enum NotificationType {
   traspaso_por_confirmar
   aviso_habilitacion_pendiente
   ticket_actualizado
+  encuesta_disponible
 }
 
 // ─── Traspasos entre áreas (módulo Traspasos v1) ─────────────────────────────
@@ -269,6 +271,7 @@ enum Module {
   COMISIONES
   TRASPASOS
   TICKETS
+  ENCUESTAS
 }
 
 enum Moneda {
@@ -574,6 +577,7 @@ model Project {
   projectMaterials        ProjectMaterial[]
   nonMaterialCosts        ProjectNonMaterialCost[]
   tickets                 Ticket[]
+  surveys                 SatisfactionSurvey[]
   stockMovements          StockMovement[]
   installationSchedule    InstallationSchedule?
   uteProcesses            UteProcess[]
@@ -769,6 +773,52 @@ model TicketComment {
 
   @@index([ticketId])
   @@map("ticket_comments")
+}
+
+// ─── Encuestas de satisfacción (Experiencia Solar — Ola 3a) ──────────────────
+
+enum SurveyTipo {
+  OBRA          // al cerrar la obra (E1→E2)
+  HABILITACION  // al finalizar el trámite UTE (E2→E3, = T8)
+  ANIVERSARIO   // en cada aniversario de la puesta en marcha (E3)
+}
+
+enum SurveyEstado {
+  PENDIENTE
+  RESPONDIDA
+}
+
+model SatisfactionSurvey {
+  id            String       @id @default(cuid())
+  projectId     String
+  project       Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  tipo          SurveyTipo
+  estado        SurveyEstado @default(PENDIENTE)
+  // 0 para OBRA/HABILITACION; 1,2,… para cada aniversario. Permite el @@unique
+  // que hace idempotente la generación (una por proyecto+tipo+edición).
+  edicion       Int          @default(0)
+
+  // Nota 1-5 (null hasta que el cliente responde) + comentario opcional.
+  nota          Int?
+  comentario    String?
+  respondidaEn  DateTime?    @db.Timestamptz(6)
+  // Id de usuario CLIENT que respondió (sin relación; lookup puntual en el service).
+  respondidaPorId String?
+
+  // Link al T11 disparado si la nota fue baja (≤3). Null si no aplicó.
+  traspasoId    String?
+  // Null si la generó un job/hook de sistema (hito de etapa o cron de aniversario).
+  createdById   String?
+
+  createdAt     DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime     @updatedAt @db.Timestamptz(6)
+  deletedAt     DateTime?    @db.Timestamptz(6)
+
+  @@unique([projectId, tipo, edicion])
+  @@index([projectId])
+  @@index([estado])
+  @@map("satisfaction_surveys")
 }
 
 // Relación many-to-many entre Project y User (rol CLIENT). Reemplaza al

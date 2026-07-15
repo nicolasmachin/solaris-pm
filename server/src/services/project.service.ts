@@ -20,6 +20,7 @@ import {
 } from "./pipeline-definitions.js";
 import { STAGE_TO_TRASPASO, STAGE_TO_TRASPASO_EXTRA } from "./traspasos/catalogo.js";
 import { crearTraspasoSiNoExiste } from "./traspasos/traspasos.service.js";
+import { fireStageSurveys } from "./encuestas/encuestas.service.js";
 import { addDays, diffInDays, startOfUtcDay, todayUtc } from "../utils/dates.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../utils/serialization.js";
 
@@ -190,8 +191,13 @@ export async function syncStageProgress(stageId: string, opts?: { actorUserId?: 
   // (todas resueltas), no por marcado manual. Requiere un actor (quien resolvió la
   // última sub-tarea) porque es quien queda como responsable de la confirmación.
   // Idempotente por (proyecto, tipo) y best-effort (nunca interrumpe el sync).
-  if (justCompleted && opts?.actorUserId) {
-    await fireStageTraspasos(updatedStage.name, stage.projectId, opts.actorUserId);
+  if (justCompleted) {
+    if (opts?.actorUserId) {
+      await fireStageTraspasos(updatedStage.name, stage.projectId, opts.actorUserId);
+    }
+    // Encuestas de satisfacción por hito (obra / habilitación). No requieren
+    // actor (las genera el sistema). Idempotente y best-effort.
+    await fireStageSurveys(updatedStage.name, stage.projectId);
   }
 
   return updatedStage;

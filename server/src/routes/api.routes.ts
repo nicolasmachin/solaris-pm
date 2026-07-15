@@ -14125,18 +14125,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
       moneda: Moneda;
       accountId: string | null | undefined;
     }) {
-      const concretaDinero =
-        (args.tipoMovimiento === TipoMovimiento.GASTO && args.status === FinanceMovementStatus.PAGADO) ||
-        (args.tipoMovimiento === TipoMovimiento.INGRESO && args.cobrado);
-      if (!concretaDinero) return;
-      if (!args.accountId) {
-        throw badRequest(
-          "ACCOUNT_REQUIRED",
-          args.tipoMovimiento === TipoMovimiento.INGRESO
-            ? "Para registrar un ingreso cobrado tenés que indicar la cuenta donde entró el dinero."
-            : "Para registrar un gasto pagado tenés que indicar la cuenta de donde salió el dinero.",
-        );
-      }
+      // La cuenta de banco ya no es obligatoria: hoy no se usa el módulo de cuentas.
+      // Si no viene cuenta, no validamos nada; si viene, chequeamos que exista,
+      // esté activa y la moneda coincida.
+      if (!args.accountId) return;
       const account = await prisma.account.findFirst({ where: { id: args.accountId, deletedAt: null } });
       if (!account) throw badRequest("ACCOUNT_INVALID", "La cuenta seleccionada no existe");
       if (!account.activa) throw badRequest("ACCOUNT_INACTIVE", "La cuenta está inactiva");

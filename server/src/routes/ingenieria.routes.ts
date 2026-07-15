@@ -28,11 +28,57 @@ type EngineeringStageSlim = {
   substages: { id: string; status: string }[];
 };
 
-function computeEstado(stage: EngineeringStageSlim | null): "Sin etapa" | "Sin iniciar" | "En proceso" | "Completada" {
-  if (!stage) return "Sin etapa";
-  if (stage.status === StageStatus.COMPLETED) return "Completada";
-  if (stage.status === StageStatus.IN_PROGRESS) return "En proceso";
+// Etapas que constituyen "Ingeniería" de un proyecto. El pipeline viejo usaba
+// una sola etapa `INGENIERIA`; el nuevo la divide en `PRE_INGENIERIA` +
+// `INGENIERIA_FINAL`. El módulo agrega el estado de todas las presentes.
+const ENGINEERING_STAGE_TYPES: StageType[] = [
+  StageType.INGENIERIA,
+  StageType.PRE_INGENIERIA,
+  StageType.INGENIERIA_FINAL,
+];
+
+// Estado agregado de la ingeniería de un proyecto a partir de sus etapas de
+// ingeniería (0, 1 o 2). null = el proyecto no tiene ninguna etapa de
+// ingeniería (no debería pasar en proyectos con pipeline).
+function aggregateEngineeringStatus(stages: { status: StageStatus }[]): StageStatus | null {
+  if (stages.length === 0) return null;
+  if (stages.every((s) => s.status === StageStatus.COMPLETED)) return StageStatus.COMPLETED;
+  if (stages.some((s) => s.status === StageStatus.IN_PROGRESS)) return StageStatus.IN_PROGRESS;
+  // Alguna completada + alguna pendiente ⇒ ingeniería arrancó pero no terminó.
+  if (stages.some((s) => s.status === StageStatus.COMPLETED)) return StageStatus.IN_PROGRESS;
+  return StageStatus.PENDING;
+}
+
+function estadoFromStatus(status: StageStatus | null): "Sin etapa" | "Sin iniciar" | "En proceso" | "Completada" {
+  if (!status) return "Sin etapa";
+  if (status === StageStatus.COMPLETED) return "Completada";
+  if (status === StageStatus.IN_PROGRESS) return "En proceso";
   return "Sin iniciar";
+}
+
+// Agrega métricas de las etapas de ingeniería en un único "stage virtual".
+function aggregateEngineeringStages(stages: EngineeringStageSlim[]) {
+  if (stages.length === 0) return null;
+  const substages = stages.flatMap((s) => s.substages);
+  const minDate = (dates: (Date | null)[]) =>
+    dates.filter((d): d is Date => !!d).sort((a, b) => a.getTime() - b.getTime())[0] ?? null;
+  const maxDate = (dates: (Date | null)[]) =>
+    dates.filter((d): d is Date => !!d).sort((a, b) => b.getTime() - a.getTime())[0] ?? null;
+  return {
+    // stageId representativo: la etapa en proceso, si no la primera.
+    id: (stages.find((s) => s.status === StageStatus.IN_PROGRESS) ?? stages[0]).id,
+    status: aggregateEngineeringStatus(stages)!,
+    progressPercent: Math.round(
+      stages.reduce((acc, s) => acc + s.progressPercent, 0) / stages.length,
+    ),
+    plannedStartDate: minDate(stages.map((s) => s.plannedStartDate)),
+    plannedEndDate: maxDate(stages.map((s) => s.plannedEndDate)),
+    actualStartDate: minDate(stages.map((s) => s.actualStartDate)),
+    actualEndDate: maxDate(stages.map((s) => s.actualEndDate)),
+    responsibleUserId:
+      (stages.find((s) => s.status === StageStatus.IN_PROGRESS) ?? stages[0]).responsibleUserId,
+    substages,
+  };
 }
 
 function countCompletedSubstages(substages: { status: string }[]) {
@@ -93,7 +139,7 @@ export async function registerIngenieriaRoutes(app: FastifyInstance) {
           capacityKwp: true,
           status: true,
           stages: {
-            where: { name: StageType.INGENIERIA, deletedAt: null },
+            where: { name: { in: ENGINEERING_STAGE_TYPES }, deletedAt: null },
             select: {
               id: true,
               status: true,
@@ -108,14 +154,14 @@ export async function registerIngenieriaRoutes(app: FastifyInstance) {
                 select: { id: true, status: true },
               },
             },
-            take: 1,
+            orderBy: { order: "asc" },
           },
         },
         orderBy: { code: "desc" },
       });
 
       const rows = projects.map((p) => {
-        const stage = p.stages[0] ?? null;
+        const stage = aggregateEngineeringStages(p.stages);
         const completed = stage ? countCompletedSubstages(stage.substages) : 0;
         const total = stage ? stage.substages.length : 0;
         return {
@@ -128,7 +174,7 @@ export async function registerIngenieriaRoutes(app: FastifyInstance) {
           subetapasTotales: total,
           progressPercent: stage?.progressPercent ?? 0,
           stageStatus: stage?.status ?? null,
-          estado: computeEstado(stage),
+          estado: estadoFromStatus(stage?.status ?? null),
           actualStartDate: serializeDateOnly(stage?.actualStartDate ?? null),
           actualEndDate: serializeDateOnly(stage?.actualEndDate ?? null),
           plannedEndDate: serializeDateOnly(stage?.plannedEndDate ?? null),
@@ -175,7 +221,7 @@ export async function registerIngenieriaRoutes(app: FastifyInstance) {
           capacityKwp: true,
           status: true,
           stages: {
-            where: { name: StageType.INGENIERIA, deletedAt: null },
+            where: { name: { in: ENGINEERING_STAGE_TYPES }, deletedAt: null },
             select: {
               id: true,
               status: true,
@@ -190,13 +236,13 @@ export async function registerIngenieriaRoutes(app: FastifyInstance) {
                 select: { id: true, status: true },
               },
             },
-            take: 1,
+            orderBy: { order: "asc" },
           },
         },
       });
       if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
 
-      const stage = project.stages[0] ?? null;
+      const stage = aggregateEngineeringStages(project.stages);
       const completed = stage ? countCompletedSubstages(stage.substages) : 0;
       const total = stage ? stage.substages.length : 0;
 
@@ -372,7 +418,7 @@ export async function registerIngenieriaRoutes(app: FastifyInstance) {
           progressPercent: stage?.progressPercent ?? 0,
           subetapasCompletas: completed,
           subetapasTotales: total,
-          estado: computeEstado(stage),
+          estado: estadoFromStatus(stage?.status ?? null),
           plannedStartDate: serializeDateOnly(stage?.plannedStartDate ?? null),
           plannedEndDate: serializeDateOnly(stage?.plannedEndDate ?? null),
           actualStartDate: serializeDateOnly(stage?.actualStartDate ?? null),

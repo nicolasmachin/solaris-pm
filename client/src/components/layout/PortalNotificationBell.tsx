@@ -13,6 +13,8 @@ function getTypeIcon(type: NotificationType): string {
   switch (type) {
     case "ticket_actualizado":
       return "🎫";
+    case "encuesta_disponible":
+      return "⭐";
     case "engineering_completed":
       return "⚡";
     case "aviso_habilitacion_pendiente":
@@ -74,6 +76,8 @@ export function PortalNotificationBell() {
     setOpen(false);
     if (type === "ticket_actualizado") {
       navigate("/portal/tickets");
+    } else if (type === "encuesta_disponible") {
+      navigate("/portal/encuestas");
     } else if (projectId) {
       navigate(`/portal/${projectId}`);
     }

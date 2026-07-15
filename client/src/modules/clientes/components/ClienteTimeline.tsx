@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeftRight, FileText, GitBranch, MessageSquare, Phone, Ticket } from "lucide-react";
+import { ArrowLeftRight, FileText, GitBranch, MessageSquare, Phone, Star, Ticket } from "lucide-react";
 
 import { getClienteTimeline, type TimelineItem } from "../../../api/clientes.api";
 import { Spinner } from "../../../components/ui/Spinner";
@@ -12,6 +12,7 @@ const SOURCE_META: Record<TimelineItem["source"], { label: string; className: st
   project: { label: "Proyecto", className: "bg-purple-500/15 text-purple-400" },
   client: { label: "Cliente", className: "bg-emerald-500/15 text-emerald-400" },
   ticket: { label: "Ticket", className: "bg-amber-500/15 text-amber-500" },
+  survey: { label: "Encuesta", className: "bg-teal-500/15 text-teal-400" },
 };
 
 function KindIcon({ kind }: { kind: TimelineItem["kind"] }) {
@@ -21,6 +22,7 @@ function KindIcon({ kind }: { kind: TimelineItem["kind"] }) {
   if (kind === "document") return <FileText size={14} className={cls} />;
   if (kind === "handoff") return <ArrowLeftRight size={14} className={cls} />;
   if (kind === "ticket") return <Ticket size={14} className={cls} />;
+  if (kind === "survey") return <Star size={14} className={cls} />;
   return <MessageSquare size={14} className={cls} />;
 }
 
@@ -84,6 +86,9 @@ export function ClienteTimeline({ projectId }: { projectId: string }) {
                 <p className="mb-0.5 text-[11px] font-medium text-[var(--color-text-secondary)]">{metaLine}</p>
               )}
               <p className="whitespace-pre-wrap break-words text-sm text-[var(--color-text-primary)]">{it.text}</p>
+              {it.kind === "survey" && typeof it.meta?.comentario === "string" && it.meta.comentario && (
+                <p className="mt-0.5 text-[12px] italic text-[var(--color-text-muted)]">“{it.meta.comentario}”</p>
+              )}
             </div>
           </li>
         );

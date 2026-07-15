@@ -12,6 +12,7 @@ import {
   crearTicket,
   serializeTicket,
 } from "../services/tickets/tickets.service.js";
+import { responderEncuesta, serializeSurvey } from "../services/encuestas/encuestas.service.js";
 import { calculateTimes } from "../services/uteProcess.service.js";
 import { badRequest, forbidden, notFound, unauthorized } from "../utils/errors.js";
 import { serializeDate } from "../utils/serialization.js";
@@ -784,6 +785,62 @@ export async function registerPortalRoutes(app: FastifyInstance) {
       // El cliente nunca crea comentarios internos.
       const t = await agregarComentario({ ticketId: id, autorId: user.id, contenido: body.contenido, esInterno: false });
       return serializeTicket(t, { includeInternalComments: false });
+    },
+  );
+
+  // ─── Encuestas de satisfacción del cliente (in-app, sin email) ──────────
+  // El cliente ve y responde sus encuestas. Ownership: la encuesta cuelga de un
+  // proyecto donde el cliente figura en ProjectClient.
+
+  app.get(
+    "/client/surveys",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.VIEW) },
+    async (request) => {
+      const user = ensureUser(request);
+      const rows = await prisma.satisfactionSurvey.findMany({
+        where: {
+          deletedAt: null,
+          project: { deletedAt: null, clients: { some: { userId: user.id } } },
+        },
+        include: { project: { select: { id: true, clientName: true, code: true } } },
+        orderBy: [{ estado: "asc" }, { createdAt: "desc" }],
+      });
+      return rows.map((s) => ({
+        id: s.id,
+        projectId: s.projectId,
+        projectName: s.project.clientName,
+        projectCode: s.project.code,
+        tipo: s.tipo,
+        estado: s.estado,
+        edicion: s.edicion,
+        nota: s.nota,
+        comentario: s.comentario,
+        respondidaEn: s.respondidaEn?.toISOString() ?? null,
+        createdAt: s.createdAt.toISOString(),
+      }));
+    },
+  );
+
+  app.post(
+    "/client/surveys/:id/responder",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.COMMENT) },
+    async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const body = z
+        .object({
+          nota: z.number().int().min(1).max(5),
+          comentario: z.string().trim().max(2000).optional(),
+        })
+        .parse(request.body);
+      // Ownership + estado se validan dentro del service (responderEncuesta).
+      const s = await responderEncuesta({
+        surveyId: id,
+        userId: user.id,
+        nota: body.nota,
+        comentario: body.comentario,
+      });
+      return serializeSurvey(s);
     },
   );
 

@@ -174,6 +174,8 @@ export function buildModalTexto(tipo: TraspasoTipo, projectName: string): string
       return `Marcaste la obra como terminada para ${p}, incluyendo ensayos. Al confirmar, se notifica a Experiencia Solar y a Tramitación UTE.`;
     case TraspasoTipo.T8_TRAMITE_UTE_FINALIZADO:
       return `Marcaste el trámite UTE como finalizado para ${p}. Al confirmar, se notifica a Experiencia Solar para que avise al Generador que ya puede empezar a producir su propia energía.`;
+    case TraspasoTipo.T11_ENCUESTA_NOTA_BAJA:
+      return `El Generador de ${p} respondió una encuesta con nota baja. Al confirmar, se notifica al equipo de Experiencia Solar para que lo contacte y atienda su insatisfacción.`;
     default:
       return `Confirmá el traspaso "${TRASPASO_LABEL[tipo]}" para ${p}.`;
   }

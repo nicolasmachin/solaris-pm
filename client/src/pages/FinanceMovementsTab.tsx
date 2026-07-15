@@ -857,8 +857,9 @@ function NewMovementModal({
 }) {
   const qc = useQueryClient();
 
-  // Si vinimos con fixedCostId, arrancamos en categoría FIJO.
-  const initialCategoria: CategoriaPrincipal = prefill?.fixedCostId ? "FIJO" : "VARIABLE";
+  // Si vinimos con fixedCostId, arrancamos en categoría FIJO; si no, por defecto
+  // un gasto es "Salida proyecto" (la categoría más habitual).
+  const initialCategoria: CategoriaPrincipal = prefill?.fixedCostId ? "FIJO" : "PROYECTO_SALIDA";
 
   const [tipo, setTipo] = useState<TipoMovimiento>("GASTO");
   const [categoria, setCategoria] = useState<CategoriaPrincipal>(initialCategoria);
@@ -935,7 +936,7 @@ function NewMovementModal({
         descripcion: descripcion.trim(),
         monto: Number(monto),
         moneda,
-        accountId,
+        ...(accountId ? { accountId } : {}),
         status: "PAGADO",
         pagado: true,
         cobrado: tipo === "INGRESO",
@@ -969,7 +970,6 @@ function NewMovementModal({
     if (!descripcion.trim()) return toast.error("Falta la descripción");
     const n = Number(monto);
     if (!n || n <= 0) return toast.error("Monto inválido");
-    if (!accountId) return toast.error("Elegí una cuenta");
     setSaving(true);
     createMut.mutate(undefined, { onSettled: () => setSaving(false) });
   }
@@ -1105,13 +1105,13 @@ function NewMovementModal({
             </Field>
           </div>
 
-          <Field label="Cuenta">
+          <Field label="Cuenta (opcional)">
             <select
               value={accountId}
               onChange={(e) => setAccountId(e.target.value)}
               className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             >
-              <option value="">Elegí una cuenta…</option>
+              <option value="">Sin cuenta</option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.nombre} ({a.moneda})

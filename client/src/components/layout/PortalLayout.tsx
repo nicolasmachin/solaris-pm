@@ -74,6 +74,7 @@ export function PortalLayout() {
           {[
             { to: "/portal", label: "Mis proyectos", end: true },
             { to: "/portal/tickets", label: "Mis tickets", end: false },
+            { to: "/portal/encuestas", label: "Encuestas", end: false },
           ].map((item) => (
             <NavLink
               key={item.to}

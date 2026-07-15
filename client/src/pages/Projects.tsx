@@ -28,7 +28,6 @@ type SortKey =
   | "installationDate"
   | "inverter"
   | "panels"
-  | "dates"
   | "saleDate";
 type SortDirection = "asc" | "desc";
 
@@ -71,7 +70,11 @@ const STAGE_LABELS: Record<string, string> = {
 
 // Persistencia local de filtros de la página
 const PAGE_FILTER_KEY = "projects-page-filter";
+// v2: el orden por defecto pasó a "Venta, más vieja primero" (para planificar
+// qué obra agendar primero) y se eliminó la columna/orden "Inicio".
+const PAGE_FILTER_VERSION = 2;
 interface PagePersistedFilter {
+  version?: number;
   // Antes era single value; ahora multi-select como array.
   statusFilters: ProjectStatus[];
   stageFilter: StageFilter;
@@ -84,7 +87,17 @@ function loadPageFilter(): PagePersistedFilter | null {
   try {
     const raw = window.localStorage.getItem(PAGE_FILTER_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as PagePersistedFilter;
+    const parsed = JSON.parse(raw) as PagePersistedFilter;
+    // Migración a v2: forzamos el nuevo orden por defecto una sola vez,
+    // respetando los filtros de estado/etapa que el usuario haya guardado.
+    if ((parsed.version ?? 1) < PAGE_FILTER_VERSION) {
+      parsed.sortKey = "saleDate";
+      parsed.sortDirection = "asc";
+      parsed.version = PAGE_FILTER_VERSION;
+    }
+    // El sortKey "dates" (columna Inicio) fue eliminado: coerción defensiva.
+    if ((parsed.sortKey as string) === "dates") parsed.sortKey = "saleDate";
+    return parsed;
   } catch {
     return null;
   }
@@ -177,9 +190,6 @@ function sortProjects(projects: ProjectListItem[], sortKey: SortKey, direction: 
       case "panels":
         result = (solarA?.panelQuantity ?? 0) - (solarB?.panelQuantity ?? 0) || (solarA?.panelPowerW ?? 0) - (solarB?.panelPowerW ?? 0);
         break;
-      case "dates":
-        result = new Date(a.startDate ?? "2100-01-01").getTime() - new Date(b.startDate ?? "2100-01-01").getTime();
-        break;
       case "saleDate":
         // null va al final independientemente de la dirección
         if (a.saleDate && b.saleDate) result = a.saleDate < b.saleDate ? -1 : a.saleDate > b.saleDate ? 1 : 0;
@@ -253,13 +263,14 @@ export function Projects() {
     () => new Set(persisted?.statusFilters ?? DEFAULT_STATUSES),
   );
   const [stageFilter, setStageFilter] = useState<StageFilter>(persisted?.stageFilter ?? "all");
-  const [sortKey, setSortKey] = useState<SortKey>(persisted?.sortKey ?? "client");
+  const [sortKey, setSortKey] = useState<SortKey>(persisted?.sortKey ?? "saleDate");
   const [sortDirection, setSortDirection] = useState<SortDirection>(persisted?.sortDirection ?? "asc");
   const [showNewProject, setShowNewProject] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<ProjectListItem | null>(null);
 
   useEffect(() => {
     savePageFilter({
+      version: PAGE_FILTER_VERSION,
       statusFilters: Array.from(statusFilters),
       stageFilter,
       sortKey,
@@ -347,14 +358,9 @@ export function Projects() {
     // Direcciones default por tipo de columna:
     // - progress → mayor avance primero (desc)
     // - installationDate → próxima primero (asc)
-    // - saleDate → venta más reciente primero (desc)
+    // - saleDate → venta más vieja primero (asc), para ver qué agendar primero
     // - resto → asc
-    const defaultDir: SortDirection =
-      nextKey === "progress" || nextKey === "saleDate"
-        ? "desc"
-        : nextKey === "installationDate"
-          ? "asc"
-          : "asc";
+    const defaultDir: SortDirection = nextKey === "progress" ? "desc" : "asc";
     setSortDirection(defaultDir);
   }
 
@@ -539,7 +545,6 @@ function ProjectGroupTable({
               <th className="px-4 py-3"><SortHeader label="Inversor" sortKey="inverter" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
               <th className="px-4 py-3"><SortHeader label="Paneles" sortKey="panels" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
               <th className="px-4 py-3"><SortHeader label="Instalación" sortKey="installationDate" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
-              <th className="px-4 py-3"><SortHeader label="Inicio" sortKey="dates" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
               <th className="px-4 py-3"><SortHeader label="Venta" sortKey="saleDate" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
               <th className="px-4 py-3 text-left text-[11px] font-mono uppercase tracking-widest text-[var(--color-table-header-text)]">Acciones</th>
             </tr>
@@ -647,9 +652,6 @@ function ProjectGroupTable({
                     ) : (
                       <span className="text-sm text-[var(--color-text-muted)]">Sin agendar</span>
                     )}
-                  </td>
-                  <td className="px-4 py-4 align-top">
-                    <div className="text-sm text-[var(--color-text-primary)]">{formatDate(project.startDate)}</div>
                   </td>
                   <td className="px-4 py-4 align-top">
                     {project.saleDate ? (

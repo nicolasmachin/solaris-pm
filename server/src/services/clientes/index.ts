@@ -370,8 +370,8 @@ export async function getClienteFicha(projectId: string) {
 
 export interface TimelineItem {
   id: string;
-  source: "sales" | "project" | "client" | "ticket";
-  kind: "stage_change" | "comment" | "interaction" | "document" | "handoff" | "ticket";
+  source: "sales" | "project" | "client" | "ticket" | "survey";
+  kind: "stage_change" | "comment" | "interaction" | "document" | "handoff" | "ticket" | "survey";
   text: string;
   autor: { id: string; nombre: string } | null;
   createdAt: string; // ISO
@@ -549,6 +549,38 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
           meta: { estado: t.estado },
         });
       }
+    }
+  }
+
+  // 7. Encuestas de satisfacción respondidas (nota + comentario).
+  const surveys = await prisma.satisfactionSurvey.findMany({
+    where: { projectId, deletedAt: null, estado: "RESPONDIDA" },
+    select: {
+      id: true, tipo: true, edicion: true, nota: true, comentario: true,
+      respondidaEn: true, respondidaPorId: true,
+    },
+  });
+  if (surveys.length > 0) {
+    const uids = [...new Set(surveys.map((s) => s.respondidaPorId).filter((x): x is string => !!x))];
+    const users = await prisma.user.findMany({ where: { id: { in: uids } }, select: { id: true, name: true } });
+    const nameById = new Map(users.map((u) => [u.id, u.name]));
+    const tipoLabel: Record<string, string> = { OBRA: "instalación", HABILITACION: "habilitación", ANIVERSARIO: "aniversario" };
+    for (const s of surveys) {
+      const etiqueta =
+        s.tipo === "ANIVERSARIO" && s.edicion > 0
+          ? `aniversario (año ${s.edicion})`
+          : tipoLabel[s.tipo] ?? s.tipo;
+      items.push({
+        id: `sv-${s.id}`,
+        source: "survey",
+        kind: "survey",
+        text: `El Generador respondió la encuesta de ${etiqueta}: ${s.nota}/5`,
+        autor: s.respondidaPorId
+          ? { id: s.respondidaPorId, nombre: nameById.get(s.respondidaPorId) ?? "—" }
+          : null,
+        createdAt: serializeDate(s.respondidaEn) ?? "",
+        meta: { nota: s.nota, comentario: s.comentario, tipo: s.tipo },
+      });
     }
   }
 

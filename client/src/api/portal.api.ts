@@ -1,5 +1,6 @@
 import { apiClient } from "./axios";
 import type { TicketDetalle, TicketEstado, TicketPrioridad } from "./tickets.api";
+import type { EncuestaDetalle, SurveyEstado, SurveyTipo } from "./encuestas.api";
 import type { Notification } from "../types/api.types";
 
 export interface PortalProjectListItem {
@@ -92,6 +93,35 @@ export async function createPortalTicket(body: {
 
 export async function comentarPortalTicket(id: string, contenido: string): Promise<TicketDetalle> {
   const { data } = await apiClient.post<TicketDetalle>(`/api/client/tickets/${id}/comentarios`, { contenido });
+  return data;
+}
+
+// ─── Encuestas del cliente (portal) ──────────────────────────────────────────
+
+export interface PortalSurveyRow {
+  id: string;
+  projectId: string;
+  projectName: string;
+  projectCode: string;
+  tipo: SurveyTipo;
+  estado: SurveyEstado;
+  edicion: number;
+  nota: number | null;
+  comentario: string | null;
+  respondidaEn: string | null;
+  createdAt: string;
+}
+
+export async function getPortalSurveys(): Promise<PortalSurveyRow[]> {
+  const { data } = await apiClient.get<PortalSurveyRow[]>("/api/client/surveys");
+  return data;
+}
+
+export async function responderPortalSurvey(
+  id: string,
+  body: { nota: number; comentario?: string },
+): Promise<EncuestaDetalle> {
+  const { data } = await apiClient.post<EncuestaDetalle>(`/api/client/surveys/${id}/responder`, body);
   return data;
 }
 
