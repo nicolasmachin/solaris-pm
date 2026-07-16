@@ -10,6 +10,7 @@ import { prisma } from "../../lib/prisma.js";
 import { createAuditEntry } from "../audit.service.js";
 import { getStoredFilePath } from "../file-storage.service.js";
 import { AppError, badRequest, notFound } from "../../utils/errors.js";
+import { autoPromoteLeadToCotizado } from "./promote-lead.service.js";
 import { buildAdvisor, resolveAdvisorForUser } from "./advisor.js";
 import { calculate } from "./calculator.js";
 import { concatPdfs } from "./concatPdfs.js";
@@ -229,6 +230,18 @@ export async function publishVersion(leadId: string, userId: string) {
           versionId: created.id,
         } as unknown as Prisma.InputJsonValue,
       });
+
+      // Auto-avance del lead a COTIZADO (forward-only) + fecha de la primera
+      // propuesta. Best-effort: no debe hacer fallar la publicación.
+      try {
+        await autoPromoteLeadToCotizado({
+          leadId,
+          userId,
+          motivo: `Promovido a COTIZADO automáticamente al generar la propuesta v${created.versionNumber}`,
+        });
+      } catch (err) {
+        console.error("[proposal-v2] no se pudo auto-promover el lead a COTIZADO:", err);
+      }
 
       return created;
     } catch (err) {

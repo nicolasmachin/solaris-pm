@@ -122,6 +122,7 @@ import {
 } from "../services/pipeline-definitions.js";
 import { createNotificationIfNotExists } from "../services/notification.service.js";
 import { notifyEngineeringCompleted } from "../services/notify.service.js";
+import { autoPromoteLeadToCotizado } from "../services/proposal/promote-lead.service.js";
 import { crearTraspasoSiNoExiste, STAGE_TO_TRASPASO, STAGE_TO_TRASPASO_EXTRA } from "../services/traspasos/index.js";
 import { fetchBcuRatePreview } from "../services/exchange-rate.service.js";
 import {
@@ -1138,59 +1139,14 @@ async function processProposalGeneration(params: {
       },
     });
 
-    // Auto-set proposalSentAt + auto-promover stage del lead asociado.
-    // proposalSentAt: solo si está vacía (preserva edición manual).
-    // stage: solo promueve si el lead todavía está en NUEVO_LEAD o
-    // PENDIENTE_COTIZAR. Si ya está en una etapa posterior
-    // (NEGOCIACION, VISITADO, CERRADO_*, etc.) NO retrocede — el caso
-    // típico es regenerar la propuesta v2/v3 de un lead que ya está
-    // negociando o cerrado. El usuario puede revertir el stage a mano
-    // desde el Kanban.
+    // Auto-set proposalSentAt (fecha de la primera propuesta) + auto-promover
+    // stage del lead a COTIZADO (forward-only). Ver autoPromoteLeadToCotizado.
     if (proposal.leadId) {
-      const lead = await prisma.salesLead.findFirst({
-        where: { id: proposal.leadId, deletedAt: null },
-        select: { id: true, stage: true, proposalSentAt: true, clientName: true },
+      await autoPromoteLeadToCotizado({
+        leadId: proposal.leadId,
+        userId: params.generatedById,
+        motivo: `Promovido a COTIZADO automáticamente al generar la propuesta v${proposal.version}`,
       });
-
-      if (lead) {
-        const shouldPromote =
-          lead.stage === SalesStage.NUEVO_LEAD ||
-          lead.stage === SalesStage.PENDIENTE_COTIZAR;
-        const updates: { proposalSentAt?: Date; stage?: SalesStage } = {};
-        if (!lead.proposalSentAt) updates.proposalSentAt = new Date();
-        if (shouldPromote) updates.stage = SalesStage.COTIZADO;
-
-        if (Object.keys(updates).length > 0) {
-          await prisma.salesLead.update({
-            where: { id: lead.id },
-            data: updates,
-          });
-        }
-
-        if (shouldPromote) {
-          await prisma.salesActivity.create({
-            data: {
-              leadId: lead.id,
-              userId: params.generatedById,
-              fromStage: lead.stage,
-              toStage: SalesStage.COTIZADO,
-              action: "stage_changed",
-              notes: `Promovido a COTIZADO automáticamente al generar la propuesta v${proposal.version}`,
-            },
-          });
-
-          await createAuditEntry({
-            entityType: AuditEntityType.lead,
-            entityId: lead.id,
-            userId: params.generatedById,
-            action: AuditAction.lead_stage_changed,
-            fieldChanged: "stage",
-            oldValue: lead.stage,
-            newValue: SalesStage.COTIZADO,
-            description: `Lead '${lead.clientName}' movido a COTIZADO automáticamente al generar la propuesta v${proposal.version}`,
-          });
-        }
-      }
     }
 
     await createAuditEntry({

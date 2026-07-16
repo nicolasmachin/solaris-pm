@@ -2,6 +2,7 @@ import cron from "node-cron";
 import { SurveyTipo } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
+import { aniversariosCumplidos } from "../../utils/aniversario.js";
 import { crearEncuestaSiNoExiste } from "./encuestas.service.js";
 
 // Genera la encuesta de aniversario (E3) en cada aniversario de la puesta en
@@ -16,16 +17,6 @@ import { crearEncuestaSiNoExiste } from "./encuestas.service.js";
 function anioAniversarioMax(): number {
   const raw = parseInt(process.env.ENCUESTAS_ANIVERSARIO_MAX_ANIOS || "2", 10);
   return Number.isFinite(raw) && raw > 0 ? raw : 2;
-}
-
-// Cantidad de aniversarios ya cumplidos entre `ancla` y `now` (años completos).
-function aniversariosCumplidos(ancla: Date, now: Date): number {
-  let anios = now.getUTCFullYear() - ancla.getUTCFullYear();
-  const antesDelDia =
-    now.getUTCMonth() < ancla.getUTCMonth() ||
-    (now.getUTCMonth() === ancla.getUTCMonth() && now.getUTCDate() < ancla.getUTCDate());
-  if (antesDelDia) anios -= 1;
-  return anios;
 }
 
 export async function chequearAniversarios(

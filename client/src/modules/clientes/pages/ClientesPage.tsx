@@ -34,6 +34,7 @@ const SORTABLE: Record<string, ClienteSortBy> = {
   etapa: "etapa",
   potenciaKwp: "potenciaKwp",
   fechaEntrega: "fechaEntrega",
+  proximoMantenimiento: "proximoMantenimiento",
 };
 
 function fmtDate(iso: string | null): string {
@@ -311,6 +312,29 @@ export function ClientesPage() {
           onSave={(v) => saveField(c.projectId, { fechaEntrega: v })}
         />
       ),
+    },
+    {
+      key: "proximoMantenimiento",
+      label: "Próx. mantenimiento",
+      sortable: true,
+      className: "text-[11px]",
+      render: (c) => {
+        const m = c.mantenimiento;
+        if (!m) return <span className="text-[var(--color-text-muted)]">—</span>;
+        const inminente = m.diasRestantes <= 30;
+        const falta = m.diasRestantes === 0 ? "hoy" : `en ${m.diasRestantes} d`;
+        return (
+          <span
+            className={
+              inminente
+                ? "font-medium text-[var(--color-warning-text)]"
+                : "text-[var(--color-text-muted)]"
+            }
+          >
+            cumple {m.aniosQueCumple} {m.aniosQueCumple === 1 ? "año" : "años"} · {falta}
+          </span>
+        );
+      },
     },
     {
       key: "telefono",

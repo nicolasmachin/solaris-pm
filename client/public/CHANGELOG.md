@@ -2,6 +2,19 @@
 
 ## v8.0
 
+### 16 de julio de 2026
+
+#### Experiencia Solar — próximos mantenimientos
+
+- En el listado de **Generadores** se agregó la columna **"Próx. mantenimiento"**: muestra qué **aniversario** de la puesta en marcha cumple cada cliente y **cuánto falta** (ej. "cumple 2 años · en 4 d"). Los que aún no están habilitados muestran "—".
+- La columna es **ordenable**: podés listar los clientes por proximidad al próximo aniversario para ver a quién le toca mantenimiento primero.
+
+#### Ventas — pase automático a "Cotizado"
+
+- Cuando un lead tiene una **propuesta comercial generada**, ahora pasa **automáticamente a la etapa "Cotizado"** (antes solo ocurría con el generador viejo; el nuevo no lo hacía). Solo avanza: no mueve leads que ya estén negociando, visitados o cerrados.
+- La **fecha de cotización** ("Propuesta enviada") queda registrada con la fecha de la **primera propuesta** generada del lead.
+- Se corrigieron los leads existentes que ya tenían propuesta pero habían quedado sin pasar a "Cotizado".
+
 ### 15 de julio de 2026
 
 #### Traspasos — aviso en el momento

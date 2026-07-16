@@ -8,8 +8,16 @@ export type InteractionReason = "BIENVENIDA" | "SEGUIMIENTO" | "AVISO_HABILITACI
 export type ClienteEstado = "ACTIVO" | "FINALIZADO" | "ARCHIVADO" | "PROSPECTO";
 // "Etapa" del CRM = recorrido del cliente en 3 etapas (E1/E2/E3).
 export type ClienteRecorrido = "E1" | "E2" | "E3";
-export type ClienteSortBy = "nombre" | "fechaEntrega" | "potenciaKwp" | "etapa";
+export type ClienteSortBy = "nombre" | "fechaEntrega" | "potenciaKwp" | "etapa" | "proximoMantenimiento";
 export type SortDir = "asc" | "desc";
+
+// Próximo mantenimiento = próximo aniversario de la puesta en marcha. null si el
+// cliente aún no está habilitado.
+export interface MantenimientoInfo {
+  aniosQueCumple: number;
+  proximoAniversario: string; // ISO date (YYYY-MM-DD)
+  diasRestantes: number;
+}
 
 // Etapa con dos niveles: recorrido del cliente (E1/E2/E3) + sub-etapa del
 // pipeline operativo en curso.
@@ -31,6 +39,7 @@ export interface ClienteListItem {
   estado: ClienteEstado;
   ultimoContactoEn: string | null; // ISO datetime de la última interacción
   avisoHabilitacionPendiente: boolean; // Regla de Oro: UTE finalizó y CX no avisó
+  mantenimiento: MantenimientoInfo | null; // próximo aniversario (mantenimiento)
 }
 
 export interface ClienteInteraction {

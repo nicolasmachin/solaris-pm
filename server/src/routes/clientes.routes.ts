@@ -73,7 +73,7 @@ const filtersSchema = z.object({
   asesorId: z.string().min(1).optional(),
   departamento: z.string().min(1).optional(),
   etapa: z.enum(["E1", "E2", "E3"]).optional(),
-  sortBy: z.enum(["nombre", "fechaEntrega", "potenciaKwp", "etapa"]).optional(),
+  sortBy: z.enum(["nombre", "fechaEntrega", "potenciaKwp", "etapa", "proximoMantenimiento"]).optional(),
   sortDir: z.enum(["asc", "desc"]).optional(),
 });
 

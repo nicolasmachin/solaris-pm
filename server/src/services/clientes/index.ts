@@ -24,6 +24,7 @@ import { prisma } from "../../lib/prisma.js";
 import { getStageLabel } from "../pipeline-definitions.js";
 import { getCurrentStage } from "../project.service.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../../utils/serialization.js";
+import { getAnclaMantenimiento, proximoMantenimiento } from "../../utils/aniversario.js";
 import { lastActionAt } from "../uteProcess.service.js";
 import { TRASPASO_LABEL } from "../traspasos/catalogo.js";
 
@@ -33,8 +34,17 @@ export type ClienteEstado = "ACTIVO" | "FINALIZADO" | "ARCHIVADO" | "PROSPECTO";
 // (código + nombres) y la sub-etapa del pipeline en curso. Ver
 // EXPERIENCIA_CLIENTES_ROADMAP.md.
 export type ClienteRecorrido = "E1" | "E2" | "E3";
-export type ClienteSortBy = "nombre" | "fechaEntrega" | "potenciaKwp" | "etapa";
+export type ClienteSortBy = "nombre" | "fechaEntrega" | "potenciaKwp" | "etapa" | "proximoMantenimiento";
 export type SortDir = "asc" | "desc";
+
+// Próximo mantenimiento = próximo aniversario de la puesta en marcha (año 0 =
+// postHabilitacionInicioEn, fallback actualUteEnd). null si el cliente aún no
+// está habilitado. Se calcula al vuelo, no se persiste.
+export type MantenimientoInfo = {
+  aniosQueCumple: number; // qué aniversario cumple (1°, 2°, 3°…)
+  proximoAniversario: string; // ISO date (YYYY-MM-DD)
+  diasRestantes: number; // días desde hoy hasta el aniversario (>= 0)
+};
 
 export type EtapaInfo = {
   recorrido: { codigo: ClienteRecorrido; nombreCorto: string; nombreLargo: string };
@@ -106,6 +116,7 @@ export type ClienteListItem = {
   estado: ClienteEstado;
   ultimoContactoEn: string | null; // ISO datetime de la última interacción de bitácora
   avisoHabilitacionPendiente: boolean; // Regla de Oro: UTE finalizó y CX aún no avisó
+  mantenimiento: MantenimientoInfo | null; // próximo aniversario (mantenimiento)
 };
 
 export type ClienteFiltros = {
@@ -138,6 +149,7 @@ const LIST_SELECT = {
   },
   // Seguimientos CX: aviso post-habilitación (Regla de Oro) + último contacto.
   postHabilitacionInicioEn: true,
+  actualUteEnd: true,
   avisoHabilitacionEn: true,
   recorridoManual: true,
   clientInteractions: {
@@ -199,6 +211,21 @@ function toListItem(p: ProjectListRow): ClienteListItem {
     estado: estadoFromStatus(p.status),
     ultimoContactoEn: p.clientInteractions[0] ? serializeDate(p.clientInteractions[0].createdAt) : null,
     avisoHabilitacionPendiente: p.postHabilitacionInicioEn != null && p.avisoHabilitacionEn == null,
+    mantenimiento: buildMantenimiento(p),
+  };
+}
+
+function buildMantenimiento(p: ProjectListRow): MantenimientoInfo | null {
+  const ancla = getAnclaMantenimiento({
+    postHabilitacionInicioEn: p.postHabilitacionInicioEn,
+    actualUteEnd: p.actualUteEnd,
+  });
+  if (!ancla) return null;
+  const prox = proximoMantenimiento(ancla);
+  return {
+    aniosQueCumple: prox.aniosQueCumple,
+    proximoAniversario: serializeDateOnly(prox.proximoAniversario)!,
+    diasRestantes: prox.diasRestantes,
   };
 }
 
@@ -239,6 +266,13 @@ function sortItems(items: ClienteListItem[], sortBy: ClienteSortBy, sortDir: Sor
         return compareNullable(a.potenciaKwp, b.potenciaKwp, dir);
       case "fechaEntrega":
         return compareNullable(a.fechaEntrega, b.fechaEntrega, dir);
+      case "proximoMantenimiento":
+        // Ordena por proximidad al aniversario (días restantes). Sin ancla → al final.
+        return compareNullable(
+          a.mantenimiento?.diasRestantes ?? null,
+          b.mantenimiento?.diasRestantes ?? null,
+          dir,
+        );
       case "etapa":
         return compareNullable(
           a.etapa ? RECORRIDO_RANK[a.etapa.recorrido.codigo] : null,
