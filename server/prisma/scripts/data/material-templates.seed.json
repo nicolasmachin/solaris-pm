@@ -1,0 +1,439 @@
+[
+  {
+    "nombre": "Monofásico (MONO 230)",
+    "descripcion": "Base de materiales para instalación monofásica. Derivada del uso histórico (ítems presentes en la mayoría de los proyectos mono).",
+    "phaseType": "MONOFASICO",
+    "items": [
+      {
+        "categoria": "Paneles solares",
+        "item": "Paneles Resun 590 W"
+      },
+      {
+        "categoria": "Inversores Monofasicos",
+        "item": "SPM Smart Meter Mono Growatt"
+      },
+      {
+        "categoria": "Inversores Monofasicos",
+        "item": "Shine WiFi-X"
+      },
+      {
+        "categoria": "Estructuras",
+        "item": " SUJETADOR FINAL de Paneles "
+      },
+      {
+        "categoria": "Estructuras",
+        "item": "PERFIL P 4.800MM"
+      },
+      {
+        "categoria": "Estructuras",
+        "item": "Perfil \"C\" 2.00 mm de 80x40x15 - Largo 6m"
+      },
+      {
+        "categoria": "Estructuras",
+        "item": "SUJETADOR INTERMEDIO de Paneles"
+      },
+      {
+        "categoria": "Estructuras",
+        "item": "Sellador PU"
+      },
+      {
+        "categoria": "Estructuras",
+        "item": "Silicona Neutra"
+      },
+      {
+        "categoria": "Estructuras",
+        "item": "Taco de 8 c/tornillo"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "BORNERA CAJA DE TERMINALES 2P Monofasica"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Bornera PAT (Tierra) 7 tornillos RIEL DIN"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "CAÑO GALVANIZADO 1\" 1/4 X 3 MTS"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "CODO GALVANIZADO 1\" 1/4"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "CUPLA GALVANIZADA 1\" 1/4"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Cable Multifilar Blanco 6mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Cable Multifilar Celeste 6mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Cable Multifilar Tierra 4mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Cable Multifilar Tierra 6mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Cable Superplastico  2x6mm  "
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Cable UTP exterior"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Cable solar NEGRO 4mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Cable solar ROJO 4mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Caja ciega de registro 12x16 "
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Camara de registro con tapa 20x20cm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Conector MC4 Macho-Hembra"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Conector p/caño metalico 1'' 1/4 c/arandela rosca"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Conector para Corrugado metalico 1'' 1/4"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Corrugado metalico 1'' 1/4"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "DESCARGADOR ATMOSFERICO AC - 2P"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "DESCARGADOR ATMOSFERICO DC - 2P - 600V"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Disyuntor Diferencial 40A  300mA  2P"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Grampa p/caño metalico 1'' 1/4 c/tapa"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Interruptor DC 16A"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Jabalina c/morceto"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "PG varios"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Precintos 30 cm (x100u)"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Tablero estanco IP65  12 Modulos"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Terminal Ojal 4mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Terminal Ojal 6mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Terminal Pino 6mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Terminal Pino Doble 6mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Tornillo c/arandela y tuerca p/Tierra"
+      }
+    ]
+  },
+  {
+    "nombre": "Trifásico 230 (TRI 230 SN)",
+    "descripcion": "Base de materiales para instalación trifásica 230V (sin neutro). Derivada del uso histórico.",
+    "phaseType": "TRIFASICO_230",
+    "items": [
+      {
+        "categoria": "Paneles solares",
+        "item": "Paneles Resun 590 W"
+      },
+      {
+        "categoria": "Inversores Monofasicos",
+        "item": "Shine WiFi-X"
+      },
+      {
+        "categoria": "Inversores Trifasicos",
+        "item": "Inversor Growatt 10 kW Trifasico 230"
+      },
+      {
+        "categoria": "Inversores Trifasicos",
+        "item": "TPM-CT-E - SMART METER TRIFASICO Growatt"
+      },
+      {
+        "categoria": "Estructuras",
+        "item": " SUJETADOR FINAL de Paneles "
+      },
+      {
+        "categoria": "Estructuras",
+        "item": "SUJETADOR INTERMEDIO de Paneles"
+      },
+      {
+        "categoria": "Estructuras",
+        "item": "Sellador PU"
+      },
+      {
+        "categoria": "Estructuras",
+        "item": "Taco de 8 c/tornillo"
+      },
+      {
+        "categoria": "Estructuras",
+        "item": "Tornillo punta mecha cabeza exagonal 12x1"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "BORNERA CAJA DE TERMINALES 4P"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Bornera PAT (Tierra) 7 tornillos RIEL DIN"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "CODO PVC 40mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Cable Multifilar Blanco 10mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Cable Multifilar Blanco 6mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Cable Multifilar Marron 10mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Cable Multifilar Marron 6mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Cable Multifilar Rojo 10mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Cable Multifilar Rojo 6mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Cable Multifilar Tierra 4mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Cable Multifilar Tierra 6mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Cable Superplastico 3x6mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Cable UTP exterior"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Cable solar NEGRO 4mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Cable solar ROJO 4mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Caja ciega de registro 12x16 "
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Camara de registro con tapa 20x20cm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Caño PCV 40mm  3mts"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Conector MC4 Macho-Hembra"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "DESCARGADOR ATMOSFERICO AC - 3P"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "DESCARGADOR ATMOSFERICO DC - 2P - 600V"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Disyuntor Diferencial 40A  300mA  4P"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Interruptor DC 16A"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Jabalina c/morceto"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "PG varios"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Precintos 30 cm (x100u)"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Tablero estanco IP65  12 Modulos"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Tablero estanco IP65  18 Modulos"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Terminal Pino 10mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Terminal Pino 4mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Terminal Pino 6mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Terminal Pino Doble 6mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Tornillo c/arandela y tuerca p/Tierra"
+      },
+      {
+        "categoria": "Otros",
+        "item": "Documentos de UTE"
+      }
+    ]
+  },
+  {
+    "nombre": "Trifásico 400 (TRI 400 CN)",
+    "descripcion": "Base reducida para instalación trifásica 400V (con neutro): inversor/medidor, protecciones 4P/DC, tablero y cableado estándar. Ampliar según el proyecto.",
+    "phaseType": "TRIFASICO_400",
+    "items": [
+      {
+        "categoria": "Inversores Monofasicos",
+        "item": "Smart Dongle 4G HUAWEI"
+      },
+      {
+        "categoria": "Inversores Trifasicos",
+        "item": "HUAWEI SUN2000-50K Trifasico 400"
+      },
+      {
+        "categoria": "Inversores Trifasicos",
+        "item": "Smart Meter Huawei 250A Trifasico"
+      },
+      {
+        "categoria": "Estructuras",
+        "item": " SUJETADOR FINAL de Paneles "
+      },
+      {
+        "categoria": "Estructuras",
+        "item": "SUJETADOR INTERMEDIO de Paneles"
+      },
+      {
+        "categoria": "Estructuras",
+        "item": "Sellador PU"
+      },
+      {
+        "categoria": "Estructuras",
+        "item": "Silicona Neutra"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Bornera PAT (Tierra) 7 tornillos RIEL DIN"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Cable solar NEGRO 4mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Cable solar ROJO 4mm"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Conector MC4 Macho-Hembra"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "DESCARGADOR ATMOSFERICO AC - 4P"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Disyuntor Diferencial 80A 300mA 4P"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Interruptor DC 32 A, 1000V"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Interruptor Termomagnetico 80A 4P"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Jabalina c/morceto"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Riel Din x metro"
+      },
+      {
+        "categoria": "Electrica",
+        "item": "Tablero Metalico IP66 400x300x200"
+      }
+    ]
+  }
+]

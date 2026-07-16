@@ -29,6 +29,7 @@ import type { GoalArea, GoalMetric, GoalPeriod, GoalData } from "../types/api.ty
 import type { CategoriaPrincipal } from "../types/finance.types";
 import { CATEGORIA_LABEL } from "../types/finance.types";
 import { TabMateriales } from "./AdminMateriales";
+import { TabMaterialTemplates } from "./AdminMaterialTemplates";
 import { TabCuentas } from "./AdminCuentas";
 import { TabDeadlineRules } from "./AdminDeadlineRules";
 import { TabClientes } from "./AdminClientes";
@@ -3125,6 +3126,7 @@ export function Admin() {
           {activeTab === "finanzas" && <TabFinanzas />}
           {activeTab === "costos-fijos" && <TabCostosFijos />}
           {activeTab === "materiales" && <TabMateriales />}
+          {activeTab === "plantillas-materiales" && <TabMaterialTemplates />}
           {activeTab === "cuentas" && <TabCuentas />}
           {activeTab === "deadlines" && <TabDeadlineRules />}
           {activeTab === "clientes" && <TabClientes />}

@@ -2012,10 +2012,11 @@ model MaterialItem {
   stockMinimo       Decimal? @db.Decimal(10, 2)
   ubicacionDeposito String?
 
-  projectMaterials ProjectMaterial[]
-  movimientos      FinanceMovement[]
-  stockMovements   StockMovement[]
-  invoiceItems     InvoiceItem[]
+  projectMaterials      ProjectMaterial[]
+  movimientos           FinanceMovement[]
+  stockMovements        StockMovement[]
+  invoiceItems          InvoiceItem[]
+  materialTemplateItems MaterialTemplateItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2024,6 +2025,42 @@ model MaterialItem {
   @@index([activo])
   @@index([gestionaStock])
   @@map("material_items")
+}
+
+// Plantillas de lista de materiales: set reutilizable de ítems del catálogo
+// (típicamente por tipo de instalación: Monofásico / Trifásico 230 / 400) que se
+// aplica sobre la lista de un proyecto para precargar la base habitual en un click.
+// Patrón espejo de ChecklistTemplate → ProjectChecklistItem.
+model MaterialTemplate {
+  id          String                 @id @default(cuid())
+  nombre      String                 @unique
+  descripcion String?
+  phaseType   PhaseType?
+  orden       Int                    @default(0)
+  activa      Boolean                @default(true)
+  items       MaterialTemplateItem[]
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  @@index([activa, orden])
+  @@map("material_templates")
+}
+
+model MaterialTemplateItem {
+  id             String           @id @default(cuid())
+  templateId     String
+  template       MaterialTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  materialItemId String
+  materialItem   MaterialItem     @relation(fields: [materialItemId], references: [id], onDelete: Cascade)
+  quantity       Decimal          @default(1) @db.Decimal(10, 2)
+  orden          Int              @default(0)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@unique([templateId, materialItemId])
+  @@index([templateId])
+  @@index([materialItemId])
+  @@map("material_template_items")
 }
 
 model ProjectMaterial {

@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { ChevronDown, DollarSign, FileText, Plus, RefreshCw, Search, Sparkles, X } from 'lucide-react';
+import { ChevronDown, DollarSign, FileText, LayoutTemplate, Plus, RefreshCw, Search, Sparkles, X } from 'lucide-react';
 import {
   getProjectMaterials, createProjectMaterial,
   generateProjectPrevistos, regenerateProjectPrevistos, exportMaterialsPdf,
   getMaterialCategories, getMaterialItems, getRegenerateImpact,
 } from '../../api/materials.api';
+import { getMaterialTemplates, applyMaterialTemplate } from '../../api/materialTemplates.api';
 import type { MaterialItem, ProjectMaterial } from '../../types/materials.types';
+import { PHASE_TYPE_LABELS } from '../../types/materials.types';
 import { useAuthStore } from '../../store/auth.store';
 import { usePermission } from '../../hooks/usePermission';
 import { todayLocalISO } from '../../utils/date';
@@ -316,6 +318,90 @@ function AddItemModal({ projectId, existingItemIds, onClose }: { projectId: stri
   );
 }
 
+// ─── Modal: Aplicar plantilla ──────────────────────────────────────────────────
+
+function ApplyTemplateModal({ projectId, existingCount, onClose }: { projectId: string; existingCount: number; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [applyingId, setApplyingId] = useState<string | null>(null);
+
+  const { data: templates = [], isLoading } = useQuery({
+    queryKey: ['material-templates'],
+    queryFn: () => getMaterialTemplates({ activa: 'true' }),
+  });
+
+  async function handleApply(templateId: string) {
+    setApplyingId(templateId);
+    try {
+      const res = await applyMaterialTemplate(projectId, templateId);
+      await qc.invalidateQueries({ queryKey: ['project-materials', projectId] });
+      if (res.agregados === 0) {
+        toast(`Todos los ítems de "${res.plantilla}" ya estaban cargados`);
+      } else {
+        toast.success(
+          `${res.agregados} material${res.agregados === 1 ? '' : 'es'} agregado${res.agregados === 1 ? '' : 's'}` +
+            (res.salteados > 0 ? ` (${res.salteados} ya estaban)` : ''),
+        );
+      }
+      onClose();
+    } catch (err) {
+      toast.error(getApiErr(err) ?? 'Error al aplicar la plantilla');
+    } finally {
+      setApplyingId(null);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl">
+        <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
+          <p className="text-sm font-semibold text-[var(--color-text-primary)]">Usar plantilla de materiales</p>
+          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"><X className="w-5 h-5" /></button>
+        </div>
+
+        <div className="px-4 py-3 border-b border-[var(--color-border)]">
+          <p className="text-xs text-[var(--color-text-muted)]">
+            Precarga la base de materiales de la plantilla. Solo se agregan los ítems que aún no están en la lista
+            {existingCount > 0 ? ` (hoy tenés ${existingCount} cargado${existingCount === 1 ? '' : 's'})` : ''}; las cantidades las ajustás después.
+          </p>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          {isLoading ? (
+            <p className="text-sm text-[var(--color-text-muted)] text-center py-8">Cargando plantillas...</p>
+          ) : templates.length === 0 ? (
+            <p className="text-sm text-[var(--color-text-muted)] text-center py-8">No hay plantillas activas. Se administran desde Admin → Plantillas de materiales.</p>
+          ) : (
+            templates.map(t => (
+              <div key={t.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)]">
+                <LayoutTemplate className="w-4 h-4 text-[var(--color-accent)] shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{t.nombre}</p>
+                  <p className="text-xs text-[var(--color-text-muted)]">
+                    {t.phaseType ? `${PHASE_TYPE_LABELS[t.phaseType]} · ` : ''}{t.itemCount} ítem{t.itemCount === 1 ? '' : 's'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleApply(t.id)}
+                  disabled={applyingId !== null}
+                  className="px-3 py-1.5 rounded text-xs font-semibold bg-[var(--color-accent)] text-gray-900 hover:bg-[var(--color-accent-hover)] disabled:opacity-60 shrink-0"
+                >
+                  {applyingId === t.id ? 'Aplicando…' : 'Aplicar'}
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="p-3 border-t border-[var(--color-border)] flex justify-end">
+          <button onClick={onClose} className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] text-sm font-medium hover:bg-[var(--color-bg-card-hover)] transition-colors">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Componente principal ──────────────────────────────────────────────────────
 
 export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectId: string; plannedWorkStart?: string | null }) {
@@ -330,6 +416,7 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
   const canViewCatalog = usePermission('CONFIGURACION', 'VIEW') || isAdmin;
 
   const [showAdd, setShowAdd] = useState(false);
+  const [showTemplate, setShowTemplate] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [isRegenerateMode, setIsRegenerateMode] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -537,6 +624,15 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
             )}
             {canEdit && (
               <button
+                onClick={() => setShowTemplate(true)}
+                className="flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-md border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
+                title="Precargar materiales desde una plantilla"
+              >
+                <LayoutTemplate className="w-3 h-3" /> Usar plantilla
+              </button>
+            )}
+            {canEdit && (
+              <button
                 onClick={() => setShowAdd(true)}
                 className="flex items-center gap-1 text-[11px] px-3 py-1.5 rounded-md bg-[var(--color-accent)] text-gray-900 font-semibold hover:bg-[var(--color-accent-hover)]"
               >
@@ -559,12 +655,21 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
               <div className="text-center py-8 rounded-lg border border-dashed border-[var(--color-border)]">
                 <p className="text-xs text-[var(--color-text-muted)] mb-2">Sin materiales cargados</p>
                 {canEdit && (
-                  <button
-                    onClick={() => setShowAdd(true)}
-                    className="inline-flex items-center gap-1 text-xs text-[var(--color-accent)] hover:underline"
-                  >
-                    <Plus className="w-3 h-3" /> Agregar primer ítem
-                  </button>
+                  <div className="flex items-center justify-center gap-3">
+                    <button
+                      onClick={() => setShowTemplate(true)}
+                      className="inline-flex items-center gap-1 text-xs text-[var(--color-accent)] hover:underline"
+                    >
+                      <LayoutTemplate className="w-3 h-3" /> Usar plantilla
+                    </button>
+                    <span className="text-[var(--color-text-muted)]">·</span>
+                    <button
+                      onClick={() => setShowAdd(true)}
+                      className="inline-flex items-center gap-1 text-xs text-[var(--color-accent)] hover:underline"
+                    >
+                      <Plus className="w-3 h-3" /> Agregar primer ítem
+                    </button>
+                  </div>
                 )}
               </div>
             ) : (
@@ -584,6 +689,14 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
           projectId={projectId}
           existingItemIds={existingItemIds}
           onClose={() => setShowAdd(false)}
+        />
+      )}
+
+      {showTemplate && (
+        <ApplyTemplateModal
+          projectId={projectId}
+          existingCount={materials.length}
+          onClose={() => setShowTemplate(false)}
         />
       )}
 

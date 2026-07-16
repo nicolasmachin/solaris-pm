@@ -43,6 +43,42 @@ export const MATERIAL_STATUSES: ReadonlyArray<MaterialStatus> = [
   'PENDIENTE', 'PEDIDO', 'RECIBIDO', 'EN_STOCK',
 ];
 
+// ─── Plantillas de lista de materiales ───────────────────────────────────────
+
+export type PhaseType = 'MONOFASICO' | 'TRIFASICO_230' | 'TRIFASICO_400';
+export const PHASE_TYPE_LABELS: Record<PhaseType, string> = {
+  MONOFASICO: 'Monofásico',
+  TRIFASICO_230: 'Trifásico 230',
+  TRIFASICO_400: 'Trifásico 400',
+};
+
+export interface MaterialTemplateItem {
+  id: string;
+  materialItemId: string;
+  quantity: number;
+  orden: number;
+  materialItem?: {
+    id: string;
+    nombre: string;
+    unidad: string;
+    activo: boolean;
+    category: { id: string; nombre: string; orden: number };
+  };
+}
+
+export interface MaterialTemplate {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  phaseType: PhaseType | null;
+  orden: number;
+  activa: boolean;
+  itemCount: number;
+  items: MaterialTemplateItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ProjectMaterial {
   id: string;
   projectId: string;

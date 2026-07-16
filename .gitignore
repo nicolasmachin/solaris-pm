@@ -15,6 +15,7 @@ __pycache__/
 .DS_Store
 **/.DS_Store
 *.sql
+*.dump
 backup_*
 # Excepción: las migraciones de Prisma SÍ se versionan (el *.sql de arriba las
 # atrapaba y las dejaba sin trackear → el deploy no las aplicaría).

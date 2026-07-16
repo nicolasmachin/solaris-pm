@@ -42,6 +42,7 @@ export const ADMIN_GROUPS: AdminSidebarGroup[] = [
       { tab: "finanzas", label: "Subcategorías" },
       { tab: "costos-fijos", label: "Costos fijos" },
       { tab: "materiales", label: "Materiales" },
+      { tab: "plantillas-materiales", label: "Plantillas de materiales" },
       { tab: "cuentas", label: "Cuentas" },
     ],
   },

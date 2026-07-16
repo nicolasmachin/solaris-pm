@@ -10,6 +10,7 @@ import { registerEFPRoutes } from "./efp.routes.js";
 import { registerEmailRoutes } from "./email.routes.js";
 import { registerInformesRoutes } from "./informes.routes.js";
 import { registerIngenieriaRoutes } from "./ingenieria.routes.js";
+import { registerMaterialTemplatesRoutes } from "./material-templates.routes.js";
 import { registerPortalRoutes } from "./portal.routes.js";
 import { registerProformaRoutes } from "./proforma.routes.js";
 import { registerPreIngenieriaRoutes } from "./preingenieria.routes.js";
@@ -39,6 +40,7 @@ export async function registerRoutes(app: FastifyInstance) {
   await app.register(registerIngenieriaRoutes, { prefix: "/api" });
   await app.register(registerPreIngenieriaRoutes, { prefix: "/api" });
   await app.register(registerConsolidadorRoutes, { prefix: "/api" });
+  await app.register(registerMaterialTemplatesRoutes, { prefix: "/api" });
   await app.register(registerVisitasRoutes, { prefix: "/api" });
   await app.register(registerEFPRoutes, { prefix: "/api" });
   await app.register(registerSalesRoutes, { prefix: "/api" });

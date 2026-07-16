@@ -4,6 +4,13 @@
 
 ### 16 de julio de 2026
 
+#### Ingeniería — plantillas de lista de materiales
+
+- En la herramienta **Lista de materiales** de cada proyecto se sumó el botón **"Usar plantilla"**: precarga de una sola vez la base de materiales que se repite en casi todas las obras, en lugar de agregar los ítems uno por uno.
+- Vienen **tres plantillas** listas según el tipo de instalación — **Monofásico**, **Trifásico 230** y **Trifásico 400** — armadas a partir de los materiales realmente usados en los proyectos anteriores.
+- Al aplicar una plantilla se **agregan solo los ítems que faltan**: si ya tenías algunos cargados, respeta sus cantidades y no duplica nada. Las cantidades las ajustás después como siempre.
+- Nueva sección **Admin → Plantillas de materiales** para crear y editar plantillas: elegís los ítems del catálogo, fijás cantidades y activás o desactivás cada plantilla.
+
 #### Experiencia Solar — próximos mantenimientos
 
 - En el listado de **Generadores** se agregó la columna **"Próx. mantenimiento"**: muestra qué **aniversario** de la puesta en marcha cumple cada cliente y **cuánto falta** (ej. "cumple 2 años · en 4 d"). Los que aún no están habilitados muestran "—".

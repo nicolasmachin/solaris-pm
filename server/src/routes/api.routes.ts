@@ -12579,6 +12579,73 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return { success: true, previstoEliminado: !!existing.movementId };
     });
 
+    // ─── Materiales: aplicar plantilla ────────────────────────────────────────
+    // Precarga en la lista del proyecto los ítems de una plantilla, agregando
+    // SOLO los que aún no están cargados (respeta cantidades ya editadas y no
+    // duplica). Hereda precio/moneda/iva/proveedor del catálogo, igual que el
+    // alta manual de materiales.
+    app.post("/projects/:id/materials/apply-template", { preHandler: authorizeAny(materialPermsEdit) }, async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const { templateId } = z.object({ templateId: z.string() }).strict().parse(request.body);
+
+      const project = await prisma.project.findFirst({ where: { id, deletedAt: null } });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+
+      const template = await prisma.materialTemplate.findFirst({
+        where: { id: templateId, activa: true },
+        include: {
+          items: {
+            orderBy: { orden: "asc" },
+            include: {
+              materialItem: {
+                select: {
+                  id: true, activo: true, precioSugerido: true, moneda: true,
+                  ivaTasa: true, defaultSupplierId: true,
+                },
+              },
+            },
+          },
+        },
+      });
+      if (!template) throw notFound("MATERIAL_TEMPLATE_NOT_FOUND", "Plantilla no encontrada o inactiva");
+
+      const existing = await prisma.projectMaterial.findMany({
+        where: { projectId: id },
+        select: { materialItemId: true },
+      });
+      const existingIds = new Set(existing.map((m) => m.materialItemId));
+
+      const now = new Date();
+      const toCreate = template.items
+        .filter((ti) => ti.materialItem?.activo && !existingIds.has(ti.materialItemId))
+        .map((ti) => {
+          const mi = ti.materialItem!;
+          return {
+            projectId: id,
+            materialItemId: ti.materialItemId,
+            quantity: ti.quantity,
+            unitPrice: mi.precioSugerido ?? 0,
+            moneda: mi.moneda,
+            ivaTasa: mi.ivaTasa,
+            supplierId: mi.defaultSupplierId ?? null,
+            status: MaterialStatus.PENDIENTE,
+            addedById: user.id,
+            lastEditedAt: now,
+            lastEditedById: user.id,
+            lastEditedRole: user.role,
+          };
+        });
+
+      if (toCreate.length > 0) {
+        await prisma.projectMaterial.createMany({ data: toCreate });
+      }
+
+      // salteados = ítems de la plantilla que ya estaban o cuyo ítem está inactivo
+      const salteados = template.items.length - toCreate.length;
+      return { agregados: toCreate.length, salteados, plantilla: template.nombre };
+    });
+
     // ─── Materiales: Generación / regeneración de previstos ───────────────────
 
     async function generatePrevistosForProject(projectId: string, userId: string | undefined, expectedDate: Date) {
