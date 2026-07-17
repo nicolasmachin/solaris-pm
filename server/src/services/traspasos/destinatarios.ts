@@ -7,6 +7,14 @@ export type DestinatarioCalculado = {
   usuarioId: string;
   esCopia: boolean;
   roleName: string;
+  nombre: string;
+};
+
+// Persona concreta para listar en el popup/bandeja (sin exponer el id).
+export type DestinatarioListado = {
+  nombre: string;
+  roleName: string;
+  esCopia: boolean;
 };
 
 type CalcularOpts = {
@@ -25,15 +33,17 @@ function getAreaDerivada(payload: unknown): string | null {
   return null;
 }
 
-type UsuarioMin = { id: string; roleName: string };
+// `name` es opcional para que los fakes de test (que devuelven solo id+roleName)
+// sigan tipando; en producción los fetchers de Prisma siempre lo traen.
+type UsuarioMin = { id: string; roleName: string; name?: string };
 
 async function usuariosPorRoles(roles: string[]): Promise<UsuarioMin[]> {
   if (roles.length === 0) return [];
   const users = await prisma.user.findMany({
     where: { deletedAt: null, role: { name: { in: roles } } },
-    select: { id: true, role: { select: { name: true } } },
+    select: { id: true, name: true, role: { select: { name: true } } },
   });
-  return users.map((u) => ({ id: u.id, roleName: u.role.name }));
+  return users.map((u) => ({ id: u.id, name: u.name, roleName: u.role.name }));
 }
 
 async function usuariosOperacionesConSubRol(
@@ -45,9 +55,9 @@ async function usuariosOperacionesConSubRol(
       role: { name: ROLE.OPERACIONES },
       subRolesOperaciones: { has: subRol },
     },
-    select: { id: true, role: { select: { name: true } } },
+    select: { id: true, name: true, role: { select: { name: true } } },
   });
-  return users.map((u) => ({ id: u.id, roleName: u.role.name }));
+  return users.map((u) => ({ id: u.id, name: u.name, roleName: u.role.name }));
 }
 
 // Fetchers de usuarios inyectables (para tests unitarios sin DB). En producción
@@ -88,31 +98,56 @@ export async function calcularDestinatarios(
     entry.gerenteCopia ||
     (tipo === TraspasoTipo.T9_TICKET_DERIVADO && areaDerivada === ROLE.OPERACIONES);
 
-  const primary = new Map<string, string>();
-  for (const u of await deps.usuariosPorRoles(rolesPrimarios)) primary.set(u.id, u.roleName);
+  type UserInfo = { roleName: string; nombre: string };
+  const primary = new Map<string, UserInfo>();
+  for (const u of await deps.usuariosPorRoles(rolesPrimarios)) primary.set(u.id, { roleName: u.roleName, nombre: u.name ?? "" });
   for (const subRol of entry.subRolesPrimarios) {
-    for (const u of await deps.usuariosOperacionesConSubRol(subRol)) primary.set(u.id, u.roleName);
+    for (const u of await deps.usuariosOperacionesConSubRol(subRol)) primary.set(u.id, { roleName: u.roleName, nombre: u.name ?? "" });
   }
 
-  const copia = new Map<string, string>();
+  const copia = new Map<string, UserInfo>();
   if (gerenteCopia) {
-    for (const u of await deps.usuariosOperacionesConSubRol(SubRolOperaciones.GERENTE)) copia.set(u.id, u.roleName);
+    for (const u of await deps.usuariosOperacionesConSubRol(SubRolOperaciones.GERENTE)) copia.set(u.id, { roleName: u.roleName, nombre: u.name ?? "" });
   }
-  for (const u of await deps.usuariosPorRoles([ROLE.ADMIN])) copia.set(u.id, u.roleName);
+  for (const u of await deps.usuariosPorRoles([ROLE.ADMIN])) copia.set(u.id, { roleName: u.roleName, nombre: u.name ?? "" });
 
   const result: DestinatarioCalculado[] = [];
   const seen = new Set<string>();
-  for (const [id, roleName] of primary) {
+  for (const [id, info] of primary) {
     if (id === opts.excludeUserId) continue;
-    result.push({ usuarioId: id, esCopia: false, roleName });
+    result.push({ usuarioId: id, esCopia: false, roleName: info.roleName, nombre: info.nombre });
     seen.add(id);
   }
-  for (const [id, roleName] of copia) {
+  for (const [id, info] of copia) {
     if (id === opts.excludeUserId || seen.has(id)) continue;
-    result.push({ usuarioId: id, esCopia: true, roleName });
+    result.push({ usuarioId: id, esCopia: true, roleName: info.roleName, nombre: info.nombre });
     seen.add(id);
   }
   return result;
+}
+
+// Resumen por rol con conteo a partir de una lista ya calculada.
+// Ej: ["INGENIERIA (2)", "ADMIN (copia) (1)"]. Función pura (sin DB).
+export function resumirPorRol(dests: DestinatarioCalculado[]): string[] {
+  const counts = new Map<string, number>();
+  for (const d of dests) {
+    const key = d.esCopia ? `${d.roleName} (copia)` : d.roleName;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return Array.from(counts.entries()).map(([rol, n]) => `${rol} (${n})`);
+}
+
+// Lista de personas concretas (nombre + rol + esCopia), ordenada: primero los
+// destinatarios directos, luego las copias; dentro de cada grupo por rol y
+// nombre. Función pura (sin DB).
+export function listarPersonas(dests: DestinatarioCalculado[]): DestinatarioListado[] {
+  return dests
+    .map((d) => ({ nombre: d.nombre, roleName: d.roleName, esCopia: d.esCopia }))
+    .sort((a, b) =>
+      Number(a.esCopia) - Number(b.esCopia) ||
+      a.roleName.localeCompare(b.roleName) ||
+      a.nombre.localeCompare(b.nombre),
+    );
 }
 
 // Resumen legible de destinatarios para la preview del modal / bandeja,
@@ -122,11 +157,5 @@ export async function previewDestinatarios(
   opts: CalcularOpts = {},
   deps: DestinatarioDeps = DEFAULT_DEPS,
 ): Promise<string[]> {
-  const dests = await calcularDestinatarios(tipo, opts, deps);
-  const counts = new Map<string, number>();
-  for (const d of dests) {
-    const key = d.esCopia ? `${d.roleName} (copia)` : d.roleName;
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-  return Array.from(counts.entries()).map(([rol, n]) => `${rol} (${n})`);
+  return resumirPorRol(await calcularDestinatarios(tipo, opts, deps));
 }

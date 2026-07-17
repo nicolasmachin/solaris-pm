@@ -16,7 +16,7 @@ import { todayLocalISO } from '../../utils/date';
 
 import { MaterialsFilters } from './materials/MaterialsFilters';
 import { MaterialsTable } from './materials/MaterialsTable';
-import { applyFilters } from './materials/types';
+import { applyFilters, hasAnyFilter } from './materials/types';
 import { useMaterialsFilters } from './materials/useMaterialsFilters';
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
@@ -402,6 +402,86 @@ function ApplyTemplateModal({ projectId, existingCount, onClose }: { projectId: 
   );
 }
 
+// ─── Control de costos por categoría (sin IVA) ──────────────────────────────────
+
+function CostBreakdown({ projectId, rows, filtersActive }: { projectId: string; rows: ProjectMaterial[]; filtersActive: boolean }) {
+  const storageKey = `materials-costs-collapsed-${projectId}`;
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem(storageKey) === '1'; } catch { return false; }
+  });
+  function toggleCollapsed() {
+    setCollapsed(c => {
+      const next = !c;
+      try { localStorage.setItem(storageKey, next ? '1' : '0'); } catch { /* ignore */ }
+      return next;
+    });
+  }
+
+  const { byCategory, totals } = useMemo(() => {
+    const cats = new Map<string, { nombre: string; orden: number; sums: Record<string, number>; count: number }>();
+    const tot: Record<string, number> = {};
+    for (const m of rows) {
+      const cat = m.materialItem?.category;
+      const id = cat?.id ?? '__none__';
+      const nombre = cat?.nombre ?? 'Sin categoría';
+      const orden = cat?.orden ?? 9999;
+      const e = cats.get(id) ?? { nombre, orden, sums: {}, count: 0 };
+      e.sums[m.moneda] = (e.sums[m.moneda] ?? 0) + m.subtotal;
+      e.count += 1;
+      cats.set(id, e);
+      tot[m.moneda] = (tot[m.moneda] ?? 0) + m.subtotal;
+    }
+    return { byCategory: Array.from(cats.values()).sort((a, b) => a.orden - b.orden), totals: tot };
+  }, [rows]);
+
+  function fmtSums(sums: Record<string, number>) {
+    const parts = Object.entries(sums)
+      .filter(([, v]) => v !== 0)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([cur, v]) => fmtMoney(v, cur));
+    return parts.length ? parts.join('  +  ') : fmtMoney(0, 'USD');
+  }
+
+  return (
+    <div className="px-4 py-3 bg-[var(--color-bg-app)]/40 border-b border-[var(--color-border)]">
+      <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] overflow-hidden">
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          className="w-full flex items-center gap-2 px-3 py-2 hover:bg-[var(--color-bg-card-hover)] transition-colors"
+        >
+          <DollarSign className="w-3.5 h-3.5 text-[var(--color-accent)]" />
+          <span className="text-[11px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]">
+            Control de costos{filtersActive ? ' (filtrado)' : ''} · sin IVA
+          </span>
+          <span className="ml-auto text-sm font-bold tabular-nums text-[var(--color-text-primary)]">{fmtSums(totals)}</span>
+          <ChevronDown className={klass('w-4 h-4 text-[var(--color-text-muted)] transition-transform', !collapsed && 'rotate-180')} />
+        </button>
+
+        {!collapsed && (
+          <div className="border-t border-[var(--color-border)] divide-y divide-[var(--color-border)]">
+            {byCategory.length === 0 ? (
+              <p className="px-3 py-3 text-xs text-[var(--color-text-muted)] text-center">Sin materiales</p>
+            ) : (
+              byCategory.map((c) => (
+                <div key={c.nombre} className="flex items-center gap-3 px-3 py-1.5">
+                  <span className="text-xs text-[var(--color-text-secondary)] truncate">{c.nombre}</span>
+                  <span className="text-[10px] text-[var(--color-text-muted)] tabular-nums">{c.count}</span>
+                  <span className="ml-auto text-xs tabular-nums text-[var(--color-text-primary)]">{fmtSums(c.sums)}</span>
+                </div>
+              ))
+            )}
+            <div className="flex items-center gap-3 px-3 py-2 bg-[var(--color-bg-app)]/40">
+              <span className="text-xs font-semibold text-[var(--color-text-primary)]">Total{filtersActive ? ' filtrado' : ''}</span>
+              <span className="ml-auto text-sm font-bold tabular-nums text-[var(--color-text-primary)]">{fmtSums(totals)}</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Componente principal ──────────────────────────────────────────────────────
 
 export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectId: string; plannedWorkStart?: string | null }) {
@@ -646,6 +726,10 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
       {!collapsed && (
         <>
           <MaterialsFilters materials={materials} filtered={filtered} />
+
+          {materials.length > 0 && (
+            <CostBreakdown projectId={projectId} rows={filtered} filtersActive={hasAnyFilter(filterState)} />
+          )}
 
           {/* Tabla */}
           <div className="p-4">

@@ -12,6 +12,7 @@ import {
 } from "../../../api/traspasos.api";
 import { Button } from "../../../components/ui/Button";
 import { Spinner } from "../../../components/ui/Spinner";
+import { DestinatariosDisclosure } from "../../../components/traspasos/DestinatariosDisclosure";
 
 function getApiErr(err: unknown): string | undefined {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
@@ -68,11 +69,7 @@ function TraspasoCard({ t }: { t: TraspasoPendiente }) {
         </button>
       </div>
       <p className="text-sm text-[var(--color-text-primary)]">{t.modalTexto}</p>
-      {t.destinatariosPreview.length > 0 && (
-        <p className="mt-2 text-[12px] text-[var(--color-text-muted)]">
-          Se notifica a: {t.destinatariosPreview.join(" · ")}
-        </p>
-      )}
+      <DestinatariosDisclosure preview={t.destinatariosPreview} destinatarios={t.destinatarios} />
       <textarea
         rows={2}
         value={nota}

@@ -16,10 +16,12 @@ import { authorize } from "../middleware/authorize.middleware.js";
 import { badRequest } from "../utils/errors.js";
 import {
   buildModalTexto,
+  calcularDestinatarios,
   cancelarTraspaso,
   confirmarTraspaso,
+  listarPersonas,
   posponerTraspaso,
-  previewDestinatarios,
+  resumirPorRol,
   TRASPASO_LABEL,
 } from "../services/traspasos/index.js";
 
@@ -51,16 +53,21 @@ export async function registerTraspasosRoutes(app: FastifyInstance) {
     });
 
     const traspasos = await Promise.all(
-      pendientes.map(async (t) => ({
-        id: t.id,
-        tipo: t.tipo,
-        label: TRASPASO_LABEL[t.tipo],
-        projectId: t.projectId,
-        projectName: t.project.clientName,
-        modalTexto: buildModalTexto(t.tipo, t.project.clientName),
-        destinatariosPreview: await previewDestinatarios(t.tipo, { payload: t.payload, excludeUserId: user.id }),
-        condicionDetectadaEn: t.condicionDetectadaEn,
-      })),
+      pendientes.map(async (t) => {
+        // Se calcula una sola vez y se derivan el resumen por rol y la lista de personas.
+        const dests = await calcularDestinatarios(t.tipo, { payload: t.payload, excludeUserId: user.id });
+        return {
+          id: t.id,
+          tipo: t.tipo,
+          label: TRASPASO_LABEL[t.tipo],
+          projectId: t.projectId,
+          projectName: t.project.clientName,
+          modalTexto: buildModalTexto(t.tipo, t.project.clientName),
+          destinatariosPreview: resumirPorRol(dests),
+          destinatarios: listarPersonas(dests),
+          condicionDetectadaEn: t.condicionDetectadaEn,
+        };
+      }),
     );
 
     return { traspasos };

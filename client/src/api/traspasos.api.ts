@@ -1,5 +1,11 @@
 import { apiClient } from "./axios";
 
+export interface TraspasoDestinatario {
+  nombre: string;
+  roleName: string;
+  esCopia: boolean;
+}
+
 export interface TraspasoPendiente {
   id: string;
   tipo: string;
@@ -8,6 +14,7 @@ export interface TraspasoPendiente {
   projectName: string;
   modalTexto: string;
   destinatariosPreview: string[];
+  destinatarios: TraspasoDestinatario[];
   condicionDetectadaEn: string;
 }
 

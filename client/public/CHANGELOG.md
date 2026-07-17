@@ -11,6 +11,15 @@
 - Al aplicar una plantilla se **agregan solo los ítems que faltan**: si ya tenías algunos cargados, respeta sus cantidades y no duplica nada. Las cantidades las ajustás después como siempre.
 - Nueva sección **Admin → Plantillas de materiales** para crear y editar plantillas: elegís los ítems del catálogo, fijás cantidades y activás o desactivás cada plantilla.
 
+#### Ingeniería — control de costos en la lista de materiales
+
+- En la herramienta **Lista de materiales** se sumó un panel **"Control de costos"** que muestra el **subtotal sin IVA de cada categoría** y el total general, actualizándose en vivo a medida que ajustás cantidades.
+- Si hay precios en distintas monedas, los muestra separados (USD y UYU). El panel es colapsable y respeta los filtros activos (si filtrás por categoría o estado, el total refleja lo mostrado).
+
+#### Traspasos — ver a quiénes se notifica
+
+- En el **popup de confirmación de traspaso** (y en la bandeja de **Pendientes**), además del resumen por área ("Se notifica a: ADMIN (copia) 4…") ahora hay un desplegable **"ver N"** que lista **las personas concretas** que van a recibir la notificación: nombre, área y una etiqueta **"copia"** para quienes van en copia.
+
 #### Experiencia Solar — próximos mantenimientos
 
 - En el listado de **Generadores** se agregó la columna **"Próx. mantenimiento"**: muestra qué **aniversario** de la puesta en marcha cumple cada cliente y **cuánto falta** (ej. "cumple 2 años · en 4 d"). Los que aún no están habilitados muestran "—".

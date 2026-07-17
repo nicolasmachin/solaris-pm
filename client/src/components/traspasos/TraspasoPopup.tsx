@@ -12,6 +12,7 @@ import {
 } from "../../api/traspasos.api";
 import { Button } from "../ui/Button";
 import { useAuthStore } from "../../store/auth.store";
+import { DestinatariosDisclosure } from "./DestinatariosDisclosure";
 
 function getApiErr(err: unknown): string | undefined {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
@@ -146,11 +147,7 @@ export function TraspasoPopup() {
             {activo.projectName} →
           </button>
           <p className="text-sm text-[var(--color-text-primary)]">{activo.modalTexto}</p>
-          {activo.destinatariosPreview.length > 0 && (
-            <p className="mt-2 text-[12px] text-[var(--color-text-muted)]">
-              Se notifica a: {activo.destinatariosPreview.join(" · ")}
-            </p>
-          )}
+          <DestinatariosDisclosure preview={activo.destinatariosPreview} destinatarios={activo.destinatarios} />
           <textarea
             rows={2}
             value={nota}
