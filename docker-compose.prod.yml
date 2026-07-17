@@ -33,6 +33,17 @@ services:
       STORAGE_PATH: ${STORAGE_PATH}
       MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB}
       BASE_URL: ${BASE_URL}
+      # SMTP (correo) — sin estas, sendEmail corta con "SMTP no configurado" y no
+      # salen los mails internos (traspasos, avisos, etc.). Ver DEPLOY.md §2.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_ENCRYPTION_KEY: ${SMTP_ENCRYPTION_KEY:-}
+      # IA (Claude) y transcripción de audios (Whisper).
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     volumes:
       - voltia_storage:/app/storage
     ports:
