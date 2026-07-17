@@ -8,6 +8,7 @@ import { usePermission } from "../hooks/usePermission";
 import { getProjects } from "../api/projects.api";
 import { getMyTasks } from "../api/myTasks.api";
 import { getUteProcesses, UTE_STAGE_LABEL, UTE_STATUS_LABEL, UTE_ACTIONS_ORDERED } from "../api/uteProcess.api";
+import { STAGE_AREA } from "../constants/stages";
 import { getCalendarMonth } from "../api/calendar.api";
 import { getPendingDetailMovements } from "../api/finance.api";
 import { completeSubstage } from "../api/stages.api";
@@ -24,14 +25,17 @@ import type { InstallationSchedule } from "../api/calendar.api";
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(" "); }
 
-const STAGE_ORDER = ["ONBOARDING", "INGENIERIA", "OPERACIONES", "HABILITACION_UTE", "POSTVENTA"] as const;
-type StageName = (typeof STAGE_ORDER)[number];
-const STAGE_LABEL: Record<StageName, string> = {
-  ONBOARDING: "Onboarding",
+// "Mis proyectos por etapa" agrupa por ÁREA (5 tiles), no por etapa puntual, para
+// que los proyectos del pipeline nuevo (8 etapas) caigan en el área correcta en
+// vez de perderse. El mapeo etapa→área es el central (constants/stages).
+const AREA_ORDER = ["VENTAS", "INGENIERIA", "OPERACIONES", "UTE", "CX"] as const;
+type AreaName = (typeof AREA_ORDER)[number];
+const AREA_TILE_LABEL: Record<AreaName, string> = {
+  VENTAS: "Ventas",
   INGENIERIA: "Ingeniería",
   OPERACIONES: "Operaciones",
-  HABILITACION_UTE: "Habilitación",
-  POSTVENTA: "Post-Habilitación",
+  UTE: "Trámite UTE",
+  CX: "Experiencia Solar",
 };
 
 const ACTION_SIDE: Record<UteActionKey, "ours" | "ute"> = Object.fromEntries(
@@ -182,18 +186,19 @@ function ProjectsByStageCard({ userId, isAdmin }: { userId: string | null; isAdm
   });
 
   const counts = useMemo(() => {
-    const result: Record<StageName, number> = {
-      ONBOARDING: 0, INGENIERIA: 0, OPERACIONES: 0, HABILITACION_UTE: 0, POSTVENTA: 0,
+    const result: Record<AreaName, number> = {
+      VENTAS: 0, INGENIERIA: 0, OPERACIONES: 0, UTE: 0, CX: 0,
     };
     for (const p of projects) {
       const cs = p.currentStage;
       if (!cs) continue;
-      const stageName = cs.name as StageName;
-      if (!STAGE_ORDER.includes(stageName)) continue;
+      // Etapa (nueva o vieja) → área. Si no está mapeada, se saltea.
+      const area = STAGE_AREA[cs.name] as AreaName | undefined;
+      if (!area || !(area in result)) continue;
       // Filtro de "mis proyectos": admin ve todo; otros sólo si son responsables
       // de la etapa actual.
       if (!isAdmin && cs.responsibleUserId !== userId) continue;
-      result[stageName] += 1;
+      result[area] += 1;
     }
     return result;
   }, [projects, userId, isAdmin]);
@@ -211,13 +216,13 @@ function ProjectsByStageCard({ userId, isAdmin }: { userId: string | null; isAdm
         <div className="h-20 rounded-lg bg-[var(--color-border)]/30 animate-pulse" />
       ) : (
         <div className="flex gap-1.5 items-stretch">
-          {STAGE_ORDER.map((stage, i) => {
-            const count = counts[stage];
+          {AREA_ORDER.map((area, i) => {
+            const count = counts[area];
             const isHighlight = max > 0 && count === max;
             return (
               <Link
-                key={stage}
-                to={`/projects?stageInProgress=${stage}`}
+                key={area}
+                to="/projects"
                 className={klass(
                   "flex-1 rounded-lg border p-2.5 text-center transition-all relative cursor-pointer",
                   isHighlight
@@ -229,7 +234,7 @@ function ProjectsByStageCard({ userId, isAdmin }: { userId: string | null; isAdm
                   "text-[9px] font-bold uppercase tracking-widest mb-1",
                   isHighlight ? "text-amber-900 dark:text-amber-300" : "text-[var(--color-text-muted)]",
                 )}>
-                  {STAGE_LABEL[stage]}
+                  {AREA_TILE_LABEL[area]}
                 </div>
                 <div className={klass(
                   "text-2xl font-extrabold tabular-nums leading-none",
@@ -237,7 +242,7 @@ function ProjectsByStageCard({ userId, isAdmin }: { userId: string | null; isAdm
                 )}>
                   {count}
                 </div>
-                {i < STAGE_ORDER.length - 1 && (
+                {i < AREA_ORDER.length - 1 && (
                   <span className="absolute -right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] text-sm z-10 pointer-events-none">
                     ›
                   </span>

@@ -12,6 +12,7 @@
 
 #### Arreglos
 
+- **Dashboard "Mis proyectos por etapa"**: ahora agrupa los proyectos por **área** (Ventas, Ingeniería, Operaciones, Trámite UTE, Experiencia Solar). Antes usaba las etapas viejas, así que los proyectos en las etapas nuevas no se contaban y varios tiles quedaban en "0".
 - **Filtro de proyectos por etapa**: el desplegable ahora lista las **8 etapas nuevas** (Onboarding, Pre-Ingeniería, Validación de Operaciones, Ingeniería Final, Compras, Ejecución de Obra, Tramitación UTE, Post-Habilitación). Antes tenía las 5 viejas, así que los proyectos en las etapas nuevas no se podían filtrar.
 - **Datos técnicos**: ahora se pueden **eliminar los sistemas adicionales** cargados por error. Cada sistema extra tiene un botón "Eliminar" (el sistema principal no se borra desde ahí).
 
