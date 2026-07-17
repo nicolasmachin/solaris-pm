@@ -1,6 +1,6 @@
 # Novedades
 
-## v8.0
+## v8.1
 
 ### 17 de julio de 2026
 
@@ -159,6 +159,8 @@
 #### Arreglos
 
 - **Habilitación UTE → cierre del proyecto**: con el pipeline nuevo de 8 etapas, los proyectos cuyo trámite UTE ya estaba **finalizado** no avanzaban solos a Post-Habilitación ni quedaban marcados como **Completados**. Ahora vuelve a hacerlo automáticamente, usando la **fecha real de finalización** del trámite (no la de hoy), y se corrigieron los proyectos que habían quedado trabados.
+
+## v8.0
 
 ### 10 de julio de 2026
 

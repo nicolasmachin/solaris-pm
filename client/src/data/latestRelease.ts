@@ -23,39 +23,50 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "8.0",
-  date: "10 de julio de 2026",
+  version: "8.1",
+  date: "17 de julio de 2026",
   sections: [
     {
-      title: 'Experiencia Solar (antes "Atención al Cliente")',
+      title: "Ingeniería — plantillas y control de costos de materiales",
       items: [
-        "El área de atención al cliente pasa a llamarse Experiencia Solar, y a los clientes ahora los llamamos Generadores. El cambio se ve en el menú, en el portal (\"Portal de Generadores\") y en las comunicaciones del área.",
+        'En la lista de materiales, botón "Usar plantilla": precarga la base de materiales habitual (Monofásico / Trifásico 230 / Trifásico 400) en un click, en vez de agregar los ítems uno por uno. Se administran desde Admin → Plantillas de materiales.',
+        'Nuevo panel "Control de costos" con el subtotal sin IVA de cada categoría y el total, actualizándose en vivo.',
       ],
     },
     {
-      title: "Pipeline del proyecto — 8 etapas + Experiencia Solar en paralelo",
+      title: "Traspasos entre áreas — más control",
       items: [
-        "La vista del proyecto muestra el pipeline expandido a 8 etapas, con color por área. Las etapas completadas se ven en verde y la etapa en curso queda resaltada.",
-        "Debajo, en paralelo, aparecen los bloques de Experiencia Solar (Seguimiento Preobra y Habilitación): son clickeables y tienen sus propias sub-tareas para acompañar al Generador. (Aplica a proyectos nuevos.)",
+        "Al disparar un traspaso aparece un popup en el momento para confirmarlo, posponerlo 6 hs o cancelarlo, sin tener que entrar a la bandeja.",
+        'El popup muestra "ver N" con las personas concretas que se notifican (nombre y área), y ofrece avanzar la etapa del proyecto a la que sigue (tildado por defecto).',
       ],
     },
     {
-      title: "Traspasos entre áreas",
+      title: "Etapa del proyecto modificable a mano",
       items: [
-        'Al cerrar una etapa se genera un traspaso hacia el área que sigue. Llega una notificación para confirmarlo desde la nueva sección "Pendientes"; recién al confirmarlo se avisa al área correspondiente.',
+        'En el detalle del proyecto podés fijar la etapa mostrada hacia adelante aunque quede alguna sub-tarea pendiente (control "Etapa mostrada"). Antes la etapa quedaba clavada hasta completar todo.',
       ],
     },
     {
-      title: "Experiencia Solar — importar y editar Generadores",
+      title: "Tickets y encuestas del Generador",
       items: [
-        "Nuevo botón \"Importar\": subís un CSV con Generadores anteriores, ves una vista previa con los duplicados marcados y confirmás (se cargan sin crear el proyecto completo).",
-        "En el listado ahora se pueden editar todos los datos con un clic (nombre, departamento, potencia, asesor, estado y etapa con desplegables, además de mail/teléfono/entrega).",
+        "Nuevo sistema de Tickets (reclamos y consultas) con bandeja interna y apertura desde el portal del Generador.",
+        "Encuestas de satisfacción por hitos y aniversario de la puesta en marcha, con portal y panel interno.",
       ],
     },
     {
-      title: "Aviso de habilitación al Generador",
+      title: "Portal, ficha y Mis tareas",
       items: [
-        "Cuando UTE finaliza el trámite, si en 24 a 48 horas no se registró el aviso al Generador, Experiencia Solar recibe un recordatorio (y a las 48 h se escala). El listado marca a los Generadores con aviso pendiente.",
+        "Portal del Generador con campana de avisos y ficha del cliente con historial más completo.",
+        'Mis tareas: una tarea puede tener varios responsables y "Pendientes" ahora vive dentro de Mis tareas.',
+        "Proyectos: una sola fecha (Venta) con orden para planificar, e importación de Generadores por CSV.",
+      ],
+    },
+    {
+      title: "Arreglos",
+      items: [
+        "El filtro de proyectos y el Dashboard \"Mis proyectos por etapa\" ahora reflejan las 8 etapas / áreas nuevas (antes varios quedaban sin contar).",
+        "Se pueden eliminar los sistemas adicionales cargados por error en los datos técnicos.",
+        "Finanzas: el pago a proveedor se descuenta solo del estado de cuenta e ingreso de movimientos más rápido.",
       ],
     },
   ],
@@ -70,6 +81,16 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "8.0",
+    shortDate: "10 jul",
+    highlights: [
+      'Experiencia Solar: "Atención al Cliente" pasó a llamarse Experiencia Solar y los clientes son "Generadores".',
+      "Pipeline del proyecto expandido a 8 etapas con Experiencia Solar en paralelo.",
+      "Traspasos entre áreas al cerrar cada etapa, con confirmación desde Pendientes.",
+      "Importar y editar Generadores; aviso de habilitación al Generador con recordatorio.",
+    ],
+  },
   {
     version: "7.1",
     shortDate: "8 jul",
