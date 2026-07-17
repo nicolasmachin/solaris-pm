@@ -137,6 +137,21 @@ export const STAGE_TO_TRASPASO_EXTRA: Partial<Record<StageType, TraspasoTipo>> =
   VALIDACION_OPERACIONES: TraspasoTipo.T4_VALIDACION_OPERACIONES_A_ATENCION_CLIENTE,
 };
 
+// Etapa a la que "avanza" la vista del proyecto al confirmar cada traspaso de
+// cierre de etapa (la SIGUIENTE del pipeline lineal). Se usa para el toggle
+// "Avanzar la etapa mostrada" del popup. Los traspasos que no cierran una etapa
+// del pipeline (tickets, encuestas) no avanzan y no están en el mapa.
+export const TRASPASO_ADVANCE_STAGE: Partial<Record<TraspasoTipo, StageType>> = {
+  [TraspasoTipo.T1_ONBOARDING_COMPLETADO]: StageType.PRE_INGENIERIA,
+  [TraspasoTipo.T2_PREINGENIERIA_PRONTA]: StageType.VALIDACION_OPERACIONES,
+  [TraspasoTipo.T3_VALIDACION_OPERACIONES_A_INGENIERIA]: StageType.INGENIERIA_FINAL,
+  [TraspasoTipo.T4_VALIDACION_OPERACIONES_A_ATENCION_CLIENTE]: StageType.INGENIERIA_FINAL,
+  [TraspasoTipo.T5_INGENIERIA_FINAL_COMPLETADA]: StageType.COMPRAS,
+  [TraspasoTipo.T6_MATERIALES_RECIBIDOS_EN_DEPOSITO]: StageType.EJECUCION_OBRA,
+  [TraspasoTipo.T7_OBRA_TERMINADA]: StageType.TRAMITACION_UTE,
+  [TraspasoTipo.T8_TRAMITE_UTE_FINALIZADO]: StageType.POST_HABILITACION,
+};
+
 // Etiqueta corta y legible del traspaso (para notificaciones y reportes).
 export const TRASPASO_LABEL: Record<TraspasoTipo, string> = {
   T1_ONBOARDING_COMPLETADO: "Onboarding completado",

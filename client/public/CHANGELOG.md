@@ -4,6 +4,12 @@
 
 ### 17 de julio de 2026
 
+#### Pipeline — cambiar la etapa del proyecto a mano
+
+- Ahora podés **fijar la etapa mostrada del proyecto a mano**, para avanzarlo aunque quede alguna sub-tarea pendiente (antes la etapa quedaba "clavada" hasta completar todo). En el detalle del proyecto, debajo del pipeline, hay un control **"Etapa mostrada"** con la opción **"Cambiar etapa…"** (solo hacia adelante) y **"Volver a automático"**.
+- Es un **empujón hacia adelante**: si después el trabajo real avanza más que lo que fijaste, se muestra la etapa más adelantada; nunca se muestra una etapa anterior a la real. Los proyectos con etapa fijada a mano se marcan con una etiqueta **"manual"** en la lista.
+- Al **confirmar un traspaso de etapa**, el popup ahora pregunta si querés **avanzar la etapa mostrada** a la que sigue (viene **tildado por defecto**); podés destildarlo para cambiarla después a mano.
+
 #### Arreglos
 
 - **Filtro de proyectos por etapa**: el desplegable ahora lista las **8 etapas nuevas** (Onboarding, Pre-Ingeniería, Validación de Operaciones, Ingeniería Final, Compras, Ejecución de Obra, Tramitación UTE, Post-Habilitación). Antes tenía las 5 viejas, así que los proyectos en las etapas nuevas no se podían filtrar.

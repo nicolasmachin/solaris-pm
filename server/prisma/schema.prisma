@@ -603,6 +603,11 @@ model Project {
   postHabilitacionSubFase         PostHabilitacionSubFase?
   postHabilitacionInicioEn        DateTime?                @db.Timestamptz(6)
   postHabilitacionFechaAproximada Boolean                  @default(false)
+  // Etapa fijada a mano para la vista (dashboard/lista). "Empujón hacia
+  // adelante": la etapa mostrada es la MÁS AVANZADA entre la derivada de las
+  // sub-tareas y esta. Permite avanzar aunque quede un ítem pendiente. Se setea
+  // al confirmar un traspaso (por defecto) o manualmente; null = 100% automático.
+  stageOverride                   StageType?
   // Equipo de obra tercerizado vs propio. Condiciona sub-tareas del pipeline
   // (ej. logística de envío en Compras). Spec v3, C13.
   equipoTercerizado               Boolean                  @default(false)

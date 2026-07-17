@@ -84,6 +84,7 @@ import {
   createInitialPipeline,
   generateProjectCode,
   getCurrentStage,
+  getDisplayStage,
   serializeFile,
   serializeChecklistItem,
   serializeProject,
@@ -1303,7 +1304,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     let items = projects.map((project) => {
-      const currentStage = getCurrentStage(project.stages);
+      const currentStage = getDisplayStage(project.stages, project.stageOverride);
       const progressPercent =
         project.stages.length > 0
           ? Math.round(project.stages.reduce((sum, stage) => sum + stage.progressPercent, 0) / project.stages.length)
@@ -1350,6 +1351,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         progressPercent,
         completionPercent,
         currentStages,
+        stageOverride: project.stageOverride ?? null,
         plannedWorkStart,
         installationTeamColor,
         installationTeamName,
@@ -1529,8 +1531,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       installationSchedule,
       solarSystems: project.solarSystems.map(serializeSolarSystem),
       metrics,
+      stageOverride: project.stageOverride ?? null,
       currentStage: (() => {
-        const currentStage = getCurrentStage(project.stages.map((stage) => ({ ...stage })));
+        const currentStage = getDisplayStage(project.stages.map((stage) => ({ ...stage })), project.stageOverride);
         return currentStage ? serializeStage(currentStage) : null;
       })(),
       stages: project.stages.map((stage) => ({
@@ -1833,6 +1836,46 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     return serializeSolarSystem(deletedSolarSystem);
   });
+
+  // Fijar/limpiar la etapa MOSTRADA a mano ("empujón hacia adelante"). null = volver
+  // a automático. La regla de "más avanzada gana" se aplica al serializar (getDisplayStage).
+  app.patch(
+    "/projects/:projectId/stage-override",
+    { preHandler: authorize(Module.OPERACIONES, Action.EDIT) },
+    async (request) => {
+      const user = ensureUser(request);
+      const params = z.object({ projectId: z.string() }).parse(request.params);
+      const body = z.object({ stage: z.nativeEnum(StageType).nullable() }).strict().parse(request.body);
+      const project = await findProjectOrThrow(params.projectId);
+
+      if (body.stage) {
+        const stageInPipeline = await prisma.stage.findFirst({
+          where: { projectId: params.projectId, name: body.stage },
+        });
+        if (!stageInPipeline) {
+          throw badRequest("STAGE_NOT_IN_PIPELINE", "La etapa no existe en el pipeline del proyecto");
+        }
+      }
+
+      const updated = await prisma.project.update({
+        where: { id: params.projectId },
+        data: { stageOverride: body.stage },
+      });
+
+      await createAuditEntry({
+        entityType: AuditEntityType.project,
+        entityId: project.id,
+        projectId: project.id,
+        userId: user.id,
+        action: AuditAction.updated,
+        description: body.stage
+          ? `Fijó la etapa mostrada en "${getStageLabel(body.stage)}"`
+          : "Volvió la etapa mostrada a automático",
+      });
+
+      return { stageOverride: updated.stageOverride };
+    },
+  );
 
   // ─── Checklist de referencia por proyecto (obra) ──────────────────────────
   // Plantilla maestra (ChecklistTemplate) → instancias por proyecto

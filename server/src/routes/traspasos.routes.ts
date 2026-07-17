@@ -22,8 +22,10 @@ import {
   listarPersonas,
   posponerTraspaso,
   resumirPorRol,
+  TRASPASO_ADVANCE_STAGE,
   TRASPASO_LABEL,
 } from "../services/traspasos/index.js";
+import { getStageLabel } from "../services/pipeline-definitions.js";
 
 function ensureUser(request: FastifyRequest) {
   if (!request.user) {
@@ -32,7 +34,13 @@ function ensureUser(request: FastifyRequest) {
   return request.user;
 }
 
-const confirmarSchema = z.object({ notaAlReceptor: z.string().max(2000).optional() }).strict();
+const confirmarSchema = z
+  .object({
+    notaAlReceptor: z.string().max(2000).optional(),
+    // Si true (default), al confirmar avanza la etapa mostrada del proyecto.
+    avanzarEtapa: z.boolean().optional(),
+  })
+  .strict();
 const cancelarSchema = z.object({ motivo: z.string().max(2000).optional() }).strict();
 
 export async function registerTraspasosRoutes(app: FastifyInstance) {
@@ -65,6 +73,9 @@ export async function registerTraspasosRoutes(app: FastifyInstance) {
           modalTexto: buildModalTexto(t.tipo, t.project.clientName),
           destinatariosPreview: resumirPorRol(dests),
           destinatarios: listarPersonas(dests),
+          // Etapa a la que avanzaría la vista del proyecto al confirmar (para el toggle).
+          nuevaEtapa: TRASPASO_ADVANCE_STAGE[t.tipo] ?? null,
+          nuevaEtapaLabel: TRASPASO_ADVANCE_STAGE[t.tipo] ? getStageLabel(TRASPASO_ADVANCE_STAGE[t.tipo]!) : null,
           condicionDetectadaEn: t.condicionDetectadaEn,
         };
       }),
@@ -108,6 +119,7 @@ export async function registerTraspasosRoutes(app: FastifyInstance) {
       traspasoId: id,
       userId: user.id,
       notaAlReceptor: body.notaAlReceptor ?? null,
+      avanzarEtapa: body.avanzarEtapa,
     });
     return result;
   });

@@ -1,4 +1,5 @@
 import type { Project, Stage } from "../../types/api.types";
+import { stageLabel } from "../../constants/stages";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -50,9 +51,10 @@ export function KpiCards({ project }: { project: Project }) {
   const completed = stages.filter((s) => s.status === "COMPLETED").length;
   const progressPercent = project.metrics?.progressPercent ?? 0;
   const daysFromSale = daysSince(project.createdAt);
-  const currentStage = pickCurrentStage(stages);
-  const currentStageName =
-    currentStage?.label ?? currentStage?.name ?? "—";
+  // La etapa MOSTRADA viene resuelta del backend (respeta el override manual);
+  // si no vino, se deriva localmente.
+  const currentStage = project.currentStage ?? pickCurrentStage(stages);
+  const currentStageName = currentStage ? stageLabel(currentStage.name) : "—";
   const currentStageDays =
     currentStage?.status === "IN_PROGRESS"
       ? daysSince(currentStage.actualStartDate)

@@ -15,4 +15,4 @@ export {
   posponerTraspaso,
 } from "./traspasos.service.js";
 export { calcularDestinatarios, previewDestinatarios, resumirPorRol, listarPersonas } from "./destinatarios.js";
-export { STAGE_TO_TRASPASO, STAGE_TO_TRASPASO_EXTRA, buildModalTexto, TRASPASO_LABEL } from "./catalogo.js";
+export { STAGE_TO_TRASPASO, STAGE_TO_TRASPASO_EXTRA, TRASPASO_ADVANCE_STAGE, buildModalTexto, TRASPASO_LABEL } from "./catalogo.js";

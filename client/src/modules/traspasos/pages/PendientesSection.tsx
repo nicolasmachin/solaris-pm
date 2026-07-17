@@ -26,9 +26,10 @@ function TraspasoCard({ t }: { t: TraspasoPendiente }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [nota, setNota] = useState("");
+  const [avanzarEtapa, setAvanzarEtapa] = useState(true);
 
   const confirmar = useMutation({
-    mutationFn: () => confirmarTraspaso(t.id, nota),
+    mutationFn: () => confirmarTraspaso(t.id, nota, avanzarEtapa),
     onSuccess: (r) => {
       toast.success(`Confirmado · ${r.notificacionesEnviadas} notificados`);
       qc.invalidateQueries({ queryKey: ["traspasos-pendientes"] });
@@ -70,6 +71,17 @@ function TraspasoCard({ t }: { t: TraspasoPendiente }) {
       </div>
       <p className="text-sm text-[var(--color-text-primary)]">{t.modalTexto}</p>
       <DestinatariosDisclosure preview={t.destinatariosPreview} destinatarios={t.destinatarios} />
+      {t.nuevaEtapaLabel && (
+        <label className="mt-2 flex items-center gap-2 text-[13px] text-[var(--color-text-primary)] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={avanzarEtapa}
+            onChange={(e) => setAvanzarEtapa(e.target.checked)}
+            className="accent-[var(--color-accent)]"
+          />
+          Avanzar la etapa del proyecto a <strong>{t.nuevaEtapaLabel}</strong>
+        </label>
+      )}
       <textarea
         rows={2}
         value={nota}

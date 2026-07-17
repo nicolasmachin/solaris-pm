@@ -49,6 +49,10 @@ export function TraspasoPopup() {
   const [nota, setNota] = useState("");
   const notaRef = useRef<string>("");
   notaRef.current = nota;
+  // Avanzar la etapa mostrada del proyecto al confirmar (por defecto sí).
+  const [avanzarEtapa, setAvanzarEtapa] = useState(true);
+  const avanzarEtapaRef = useRef<boolean>(true);
+  avanzarEtapaRef.current = avanzarEtapa;
 
   const lista = pendientes ?? [];
   const activo: TraspasoPendiente | undefined = useMemo(
@@ -57,9 +61,10 @@ export function TraspasoPopup() {
   );
   const restantes = lista.filter((t) => !dismissed.has(t.id)).length;
 
-  // Al cambiar de traspaso activo, limpiar la nota.
+  // Al cambiar de traspaso activo, limpiar la nota y resetear el toggle de avance.
   useEffect(() => {
     setNota("");
+    setAvanzarEtapa(true);
   }, [activo?.id]);
 
   const invalidar = () => {
@@ -68,7 +73,7 @@ export function TraspasoPopup() {
   };
 
   const confirmar = useMutation({
-    mutationFn: (id: string) => confirmarTraspaso(id, notaRef.current),
+    mutationFn: (id: string) => confirmarTraspaso(id, notaRef.current, avanzarEtapaRef.current),
     onSuccess: (r) => {
       toast.success(`Confirmado · ${r.notificacionesEnviadas} notificados`);
       invalidar();
@@ -148,6 +153,22 @@ export function TraspasoPopup() {
           </button>
           <p className="text-sm text-[var(--color-text-primary)]">{activo.modalTexto}</p>
           <DestinatariosDisclosure preview={activo.destinatariosPreview} destinatarios={activo.destinatarios} />
+          {activo.nuevaEtapaLabel && (
+            <label className="mt-3 flex items-start gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-[13px] text-[var(--color-text-primary)] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={avanzarEtapa}
+                onChange={(e) => setAvanzarEtapa(e.target.checked)}
+                className="mt-0.5 accent-[var(--color-accent)]"
+              />
+              <span>
+                Avanzar la etapa del proyecto a <strong>{activo.nuevaEtapaLabel}</strong>
+                <span className="block text-[11px] text-[var(--color-text-muted)]">
+                  Podés destildarlo si preferís cambiarla después a mano.
+                </span>
+              </span>
+            </label>
+          )}
           <textarea
             rows={2}
             value={nota}

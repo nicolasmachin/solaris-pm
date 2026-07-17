@@ -93,3 +93,9 @@ export async function deleteSolarSystem(projectId: string, solarSystemId: string
   const { data } = await apiClient.delete<SolarSystem>(`/api/projects/${projectId}/systems/${solarSystemId}`);
   return data;
 }
+
+// Fija (o limpia con null) la etapa mostrada del proyecto a mano.
+export async function setProjectStageOverride(projectId: string, stage: string | null): Promise<{ stageOverride: string | null }> {
+  const { data } = await apiClient.patch(`/api/projects/${projectId}/stage-override`, { stage });
+  return data;
+}

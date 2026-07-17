@@ -325,9 +325,8 @@ export function Projects() {
       const matchesStageFilter =
         stageFilter === "all"
           ? true
-          : inProgressStages.length > 0
-            ? inProgressStages.includes(stageFilter)
-            : project.currentStage?.name === stageFilter;
+          : // Matchea la etapa MOSTRADA (resuelta, con override) o cualquiera real en curso.
+            project.currentStage?.name === stageFilter || inProgressStages.includes(stageFilter);
       const matchesQuery = term
         ? project.clientName.toLowerCase().includes(term) || project.code.toLowerCase().includes(term)
         : true;
@@ -587,16 +586,24 @@ function ProjectGroupTable({
                     <Badge variant={project.status} />
                   </td>
                   <td className="px-4 py-4 align-top">
-                    {project.currentStages && project.currentStages.length > 0 ? (
+                    {project.currentStage ? (
                       <div>
                         <div className="text-sm text-[var(--color-text-primary)]">
-                          {stageLabel(project.currentStages[0])}
+                          {stageLabel(project.currentStage.name)}
+                          {project.stageOverride ? (
+                            <span className="ml-1.5 rounded bg-[var(--color-border)] px-1 py-0.5 text-[9px] font-medium uppercase tracking-wider text-[var(--color-text-muted)]" title="Etapa fijada a mano">
+                              manual
+                            </span>
+                          ) : null}
                         </div>
-                        {project.currentStages.length > 1 ? (
-                          <div className="mt-0.5 text-[10px] text-[var(--color-text-muted)]">
-                            +{project.currentStages.length - 1} en paralelo
-                          </div>
-                        ) : null}
+                        {(() => {
+                          const parallel = (project.currentStages ?? []).filter((s) => s !== project.currentStage!.name).length;
+                          return parallel > 0 ? (
+                            <div className="mt-0.5 text-[10px] text-[var(--color-text-muted)]">
+                              +{parallel} en paralelo
+                            </div>
+                          ) : null;
+                        })()}
                       </div>
                     ) : (
                       <span className="text-sm text-[var(--color-text-muted)]">—</span>

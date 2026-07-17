@@ -13,7 +13,7 @@ import { prisma } from "../../lib/prisma.js";
 import { badRequest, forbidden, notFound } from "../../utils/errors.js";
 import { createAuditEntry } from "../audit.service.js";
 import { createNotification } from "../notification.service.js";
-import { TRASPASO_LABEL } from "./catalogo.js";
+import { TRASPASO_ADVANCE_STAGE, TRASPASO_LABEL } from "./catalogo.js";
 import { calcularDestinatarios } from "./destinatarios.js";
 import { notificarDestinatarios } from "./notificar.js";
 
@@ -88,6 +88,9 @@ export async function confirmarTraspaso(params: {
   traspasoId: string;
   userId: string;
   notaAlReceptor?: string | null;
+  // Por defecto (true) avanza la etapa MOSTRADA del proyecto a la siguiente
+  // (empujón hacia adelante). El usuario puede destildarlo en el popup.
+  avanzarEtapa?: boolean;
 }): Promise<{ traspasoId: string; notificacionesEnviadas: number }> {
   const traspaso = await prisma.traspaso.findUnique({
     where: { id: params.traspasoId },
@@ -130,18 +133,27 @@ export async function confirmarTraspaso(params: {
       });
     }
 
+    // Actualización del proyecto: avance de etapa mostrada (si corresponde) +
+    // efecto-consecuencia de T8. Se agrupa en un solo update.
+    const projectData: Prisma.ProjectUpdateInput = {};
+
+    // "Empujón hacia adelante": fija la etapa mostrada en la siguiente del
+    // pipeline. Por defecto sí; getDisplayStage nunca la muestra hacia atrás.
+    const avanzarEtapa = params.avanzarEtapa ?? true;
+    const nuevaEtapa = avanzarEtapa ? TRASPASO_ADVANCE_STAGE[traspaso.tipo] : undefined;
+    if (nuevaEtapa) projectData.stageOverride = nuevaEtapa;
+
     // Efecto-consecuencia de T8 (trámite UTE finalizado): arranca la sub-fase
     // E3-A del Post-Habilitación. Idempotente: no pisa una fecha ya seteada.
     // TODO(v3 C10): reconciliar con el auto-avance de ute-sync.service.ts para
     // no duplicar el avance a POSTVENTA (se resuelve en el item A / pipeline).
     if (traspaso.tipo === TraspasoTipo.T8_TRAMITE_UTE_FINALIZADO) {
-      await tx.project.update({
-        where: { id: traspaso.projectId },
-        data: {
-          postHabilitacionSubFase: PostHabilitacionSubFase.E3_A_COMPROMISO_COMERCIAL,
-          postHabilitacionInicioEn: traspaso.project.postHabilitacionInicioEn ?? new Date(),
-        },
-      });
+      projectData.postHabilitacionSubFase = PostHabilitacionSubFase.E3_A_COMPROMISO_COMERCIAL;
+      projectData.postHabilitacionInicioEn = traspaso.project.postHabilitacionInicioEn ?? new Date();
+    }
+
+    if (Object.keys(projectData).length > 0) {
+      await tx.project.update({ where: { id: traspaso.projectId }, data: projectData });
     }
   });
 

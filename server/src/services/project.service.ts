@@ -318,6 +318,22 @@ export function getCurrentStage<T extends { status: StageStatus; order: number; 
   );
 }
 
+// Etapa MOSTRADA del proyecto, aplicando el override manual con la regla
+// "empujón hacia adelante": es la más avanzada entre la etapa derivada de las
+// sub-tareas y la fijada a mano (`stageOverride`). Nunca muestra una etapa
+// anterior a la real; si el trabajo real ya pasó el override, gana lo real.
+export function getDisplayStage<T extends { status: StageStatus; order: number; name: string }>(
+  stages: T[],
+  stageOverride: string | null | undefined,
+) {
+  const derived = getCurrentStage(stages);
+  if (!stageOverride) return derived;
+  const overrideStage = stages.find((s) => s.name === stageOverride && !isParallelStage(s.name));
+  if (!overrideStage) return derived;
+  if (!derived) return overrideStage;
+  return overrideStage.order > derived.order ? overrideStage : derived;
+}
+
 export async function generateProjectCode() {
   const year = new Date().getUTCFullYear();
   const prefix = `PRY-${year}-`;

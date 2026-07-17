@@ -93,6 +93,8 @@ export interface ProjectListItem {
   completionPercent: number;
   /** Nombres (StageType) de las etapas actualmente IN_PROGRESS. */
   currentStages: string[];
+  /** Etapa fijada a mano para la vista (StageType) o null si es automático. */
+  stageOverride?: string | null;
   /** Fecha de inicio de instalación (primer segment del schedule) si existe. */
   plannedWorkStart: string | null;
   /** Snapshot del color del equipo de instalación asignado, si existe. */
@@ -320,6 +322,8 @@ export interface Project {
   files: FileAttachment[];
   metrics: ProjectMetrics;
   currentStage: Stage | null;
+  /** Etapa fijada a mano para la vista (StageType) o null si es automático. */
+  stageOverride?: string | null;
   recentTasks: Task[];
   recentFiles: FileAttachment[];
   installationSchedule?: {

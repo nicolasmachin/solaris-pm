@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { deleteProject, deleteSolarSystem, getProject, patchProject } from "../api/projects.api";
+import { deleteProject, deleteSolarSystem, getProject, patchProject, setProjectStageOverride } from "../api/projects.api";
+import { stageLabel, isParallelStage } from "../constants/stages";
 import { getStockMovements, createStockMovement, getStockProducts } from "../api/stock.api";
 import type { StockMovement } from "../types/finance.types";
 import type { Project, Stage } from "../types/api.types";
@@ -659,6 +660,83 @@ function InstallationCoherenceBanner({
   );
 }
 
+// Control para fijar/limpiar a mano la etapa MOSTRADA del proyecto ("empujón
+// hacia adelante"): solo ofrece etapas por delante de la actual + "automático".
+function StageOverrideControl({
+  projectId,
+  stages,
+  currentStageName,
+  stageOverride,
+  canEdit,
+}: {
+  projectId: string;
+  stages: Stage[];
+  currentStageName: string | null | undefined;
+  stageOverride: string | null | undefined;
+  canEdit: boolean;
+}) {
+  const qc = useQueryClient();
+  const linear = [...stages]
+    .filter((s) => !isParallelStage(s.name))
+    .sort((a, b) => a.order - b.order);
+  const shown = linear.find((s) => s.name === currentStageName) ?? null;
+  const shownOrder = shown?.order ?? -Infinity;
+  const forward = linear.filter((s) => s.order > shownOrder);
+
+  const mut = useMutation({
+    mutationFn: (stage: string | null) => setProjectStageOverride(projectId, stage),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["project", projectId] });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      toast.success("Etapa actualizada");
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? "No se pudo cambiar la etapa");
+    },
+  });
+
+  if (!canEdit) return null;
+
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-3">
+      <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+        Etapa mostrada
+      </span>
+      <span className="text-sm font-medium text-[var(--color-text-primary)]">
+        {shown ? stageLabel(shown.name) : "—"}
+      </span>
+      {stageOverride ? (
+        <span
+          className="rounded bg-[var(--color-border)] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-[var(--color-text-muted)]"
+          title="Fijada a mano"
+        >
+          manual
+        </span>
+      ) : null}
+      <select
+        value=""
+        disabled={mut.isPending}
+        onChange={(e) => {
+          const v = e.target.value;
+          if (!v) return;
+          mut.mutate(v === "__auto__" ? null : v);
+          e.target.value = "";
+        }}
+        className="ml-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+      >
+        <option value="">Cambiar etapa…</option>
+        {forward.map((s) => (
+          <option key={s.name} value={s.name}>
+            Avanzar a {stageLabel(s.name)}
+          </option>
+        ))}
+        {stageOverride ? <option value="__auto__">Volver a automático</option> : null}
+      </select>
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export function ProjectDetail() {
@@ -884,6 +962,15 @@ export function ProjectDetail() {
       <PipelineExpandido
         stages={project.stages}
         onStageClick={(stage) => setSelectedStage(stage)}
+      />
+
+      {/* Etapa mostrada: fijar/limpiar a mano (empujón hacia adelante) */}
+      <StageOverrideControl
+        projectId={project.id}
+        stages={project.stages}
+        currentStageName={project.currentStage?.name}
+        stageOverride={project.stageOverride}
+        canEdit={canDeleteProject}
       />
 
       {/* Documentos del cliente — extracción con IA */}

@@ -15,6 +15,9 @@ export interface TraspasoPendiente {
   modalTexto: string;
   destinatariosPreview: string[];
   destinatarios: TraspasoDestinatario[];
+  // Etapa a la que avanzaría la vista del proyecto al confirmar (null si el traspaso no avanza etapa).
+  nuevaEtapa: string | null;
+  nuevaEtapaLabel: string | null;
   condicionDetectadaEn: string;
 }
 
@@ -26,9 +29,11 @@ export async function getTraspasosPendientes(): Promise<TraspasoPendiente[]> {
 export async function confirmarTraspaso(
   id: string,
   notaAlReceptor?: string,
+  avanzarEtapa?: boolean,
 ): Promise<{ traspasoId: string; notificacionesEnviadas: number }> {
   const { data } = await apiClient.post(`/api/traspasos/${id}/confirmar`, {
     notaAlReceptor: notaAlReceptor || undefined,
+    ...(avanzarEtapa === undefined ? {} : { avanzarEtapa }),
   });
   return data;
 }
