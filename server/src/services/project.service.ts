@@ -308,12 +308,26 @@ export async function sumProjectDelayDays(projectId: string) {
 export function getCurrentStage<T extends { status: StageStatus; order: number; name: string }>(stages: T[]) {
   // Las etapas paralelas de Experiencia Solar no cuentan como "etapa en curso".
   const linear = stages.filter((stage) => !isParallelStage(stage.name));
+
+  // Tramitación UTE arranca desde el momento uno (el trámite avanza en paralelo y
+  // el sync le marca subetapas), así que su estado IN_PROGRESS NO debe adelantar
+  // la etapa actual: solo cuenta como etapa actual una vez que la Obra
+  // (Ejecución) está COMPLETADA. Antes de eso se ignora para el cálculo.
+  const obraCompletada = linear.some(
+    (s) => s.name === StageType.EJECUCION_OBRA && s.status === StageStatus.COMPLETED,
+  );
+  const elegibles = (
+    obraCompletada ? linear : linear.filter((s) => s.name !== StageType.TRAMITACION_UTE)
+  );
+  const ordenadas = [...elegibles].sort((a, b) => a.order - b.order);
+
   return (
-    linear.find((stage) => stage.status === StageStatus.IN_PROGRESS) ??
-    [...linear]
-      .filter((stage) => stage.status === StageStatus.COMPLETED)
-      .sort((a, b) => b.order - a.order)[0] ??
-    [...linear].sort((a, b) => a.order - b.order)[0] ??
+    // 1) la primera etapa en curso (la frontera activa del pipeline lineal)
+    ordenadas.find((stage) => stage.status === StageStatus.IN_PROGRESS) ??
+    // 2) si ninguna está en curso, la primera NO completada (la próxima a arrancar)
+    ordenadas.find((stage) => stage.status !== StageStatus.COMPLETED) ??
+    // 3) todas completadas → la última
+    ordenadas[ordenadas.length - 1] ??
     null
   );
 }
