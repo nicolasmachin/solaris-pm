@@ -12,6 +12,7 @@ import { ProgressBar } from "../components/ui/ProgressBar";
 import { Spinner } from "../components/ui/Spinner";
 import { MultiSelectFilter } from "../components/ui/MultiSelectFilter";
 import type { ProjectListItem, ProjectStatus, SolarSystem } from "../types/api.types";
+import { stageLabel } from "../constants/stages";
 import { getProjectTeamColor, getProjectTeamName, getProjectTeamType } from "../components/project/projectTeamColor";
 import {
   formatSolarSystemPanels,
@@ -31,13 +32,20 @@ type SortKey =
   | "saleDate";
 type SortDirection = "asc" | "desc";
 
-type StageFilter =
-  | "all"
-  | "ONBOARDING"
-  | "INGENIERIA"
-  | "OPERACIONES"
-  | "HABILITACION_UTE"
-  | "POSTVENTA";
+// Etapas del pipeline nuevo (8), en orden. El filtro ofrece estas; el label sale
+// de la constante central (constants/stages.ts) para no duplicar.
+const FILTERABLE_STAGES = [
+  "ONBOARDING",
+  "PRE_INGENIERIA",
+  "VALIDACION_OPERACIONES",
+  "INGENIERIA_FINAL",
+  "COMPRAS",
+  "EJECUCION_OBRA",
+  "TRAMITACION_UTE",
+  "POST_HABILITACION",
+] as const;
+
+type StageFilter = "all" | (typeof FILTERABLE_STAGES)[number];
 
 const STATUS_OPTIONS: Array<{ value: ProjectStatus; label: string }> = [
   { value: "ACTIVE", label: "Activos" },
@@ -53,20 +61,10 @@ const DEFAULT_STATUSES: ProjectStatus[] = ["PROSPECT", "ACTIVE", "PAUSED", "ARCH
 
 const STAGE_OPTIONS: Array<{ value: StageFilter; label: string }> = [
   { value: "all", label: "Todas las etapas" },
-  { value: "ONBOARDING", label: "Onboarding" },
-  { value: "INGENIERIA", label: "Ingeniería" },
-  { value: "OPERACIONES", label: "Operaciones" },
-  { value: "HABILITACION_UTE", label: "Habilitación UTE" },
-  { value: "POSTVENTA", label: "Post-Habilitación" },
+  ...FILTERABLE_STAGES.map((s) => ({ value: s, label: stageLabel(s) })),
 ];
 
-const STAGE_LABELS: Record<string, string> = {
-  ONBOARDING: "Onboarding",
-  INGENIERIA: "Ingeniería",
-  OPERACIONES: "Operaciones",
-  HABILITACION_UTE: "Habilitación UTE",
-  POSTVENTA: "Post-Habilitación",
-};
+const VALID_STAGE_FILTERS = new Set<string>(["all", ...FILTERABLE_STAGES]);
 
 // Persistencia local de filtros de la página
 const PAGE_FILTER_KEY = "projects-page-filter";
@@ -97,6 +95,9 @@ function loadPageFilter(): PagePersistedFilter | null {
     }
     // El sortKey "dates" (columna Inicio) fue eliminado: coerción defensiva.
     if ((parsed.sortKey as string) === "dates") parsed.sortKey = "saleDate";
+    // Etapa persistida de una versión vieja del pipeline (5 etapas): si ya no es
+    // una opción válida, se cae a "all" para no dejar el select en un valor muerto.
+    if (!VALID_STAGE_FILTERS.has(parsed.stageFilter as string)) parsed.stageFilter = "all";
     return parsed;
   } catch {
     return null;
@@ -589,7 +590,7 @@ function ProjectGroupTable({
                     {project.currentStages && project.currentStages.length > 0 ? (
                       <div>
                         <div className="text-sm text-[var(--color-text-primary)]">
-                          {STAGE_LABELS[project.currentStages[0]] ?? project.currentStages[0]}
+                          {stageLabel(project.currentStages[0])}
                         </div>
                         {project.currentStages.length > 1 ? (
                           <div className="mt-0.5 text-[10px] text-[var(--color-text-muted)]">

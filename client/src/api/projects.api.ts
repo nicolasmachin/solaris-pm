@@ -88,3 +88,8 @@ export async function patchSolarSystem(projectId: string, solarSystemId: string,
   const { data } = await apiClient.patch<SolarSystem>(`/api/projects/${projectId}/systems/${solarSystemId}`, body);
   return data;
 }
+
+export async function deleteSolarSystem(projectId: string, solarSystemId: string): Promise<SolarSystem> {
+  const { data } = await apiClient.delete<SolarSystem>(`/api/projects/${projectId}/systems/${solarSystemId}`);
+  return data;
+}

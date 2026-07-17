@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { deleteProject, getProject, patchProject } from "../api/projects.api";
+import { deleteProject, deleteSolarSystem, getProject, patchProject } from "../api/projects.api";
 import { getStockMovements, createStockMovement, getStockProducts } from "../api/stock.api";
 import type { StockMovement } from "../types/finance.types";
 import type { Project, Stage } from "../types/api.types";
@@ -254,10 +254,14 @@ function SolarSystemsSection({
   project,
   onEdit,
   onCreate,
+  onDelete,
+  canDelete,
 }: {
   project: Project;
   onEdit: (systemId: string) => void;
   onCreate: () => void;
+  onDelete: (systemId: string) => void;
+  canDelete: boolean;
 }) {
   const systems = project.solarSystems ?? [];
 
@@ -295,7 +299,7 @@ function SolarSystemsSection({
         </div>
       ) : (
         <div className="mt-4 space-y-3">
-          {systems.map((system) => (
+          {systems.map((system, index) => (
             <div key={system.id} className="flex flex-col gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)]/30 p-4 md:flex-row md:items-center md:justify-between">
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -309,9 +313,17 @@ function SolarSystemsSection({
                   {getPhaseTypeLabel(system.inverterPhaseType)} · {formatSolarSystemPanels(system)}
                 </div>
               </div>
-              <Button size="sm" variant="ghost" onClick={() => onEdit(system.id)}>
-                ✎ Editar sistema
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="ghost" onClick={() => onEdit(system.id)}>
+                  ✎ Editar sistema
+                </Button>
+                {/* El primer sistema (principal) no se borra desde acá; solo los adicionales. */}
+                {canDelete && index > 0 && (
+                  <Button size="sm" variant="ghost" onClick={() => onDelete(system.id)} title="Eliminar este sistema">
+                    🗑 Eliminar
+                  </Button>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -660,6 +672,7 @@ export function ProjectDetail() {
   const [showEditProject, setShowEditProject] = useState(false);
   const [editingSolarSystemId, setEditingSolarSystemId] = useState<string | null>(null);
   const [showCreateSolarSystem, setShowCreateSolarSystem] = useState(false);
+  const [deletingSolarSystemId, setDeletingSolarSystemId] = useState<string | null>(null);
   const [bottomTab, setBottomTab] = useState<"activity" | "comments" | "timeline" | "materiales" | "compras" | "ute" | "costos">("activity");
   const canViewFinance = usePermission("FINANZAS", "VIEW");
   const canViewMetrics = usePermission("METRICAS", "VIEW");
@@ -670,6 +683,8 @@ export function ProjectDetail() {
   const canViewObra = usePermission("OPERACIONES", "VIEW");
   // Borrado lógico del proyecto: el endpoint DELETE /projects/:id exige OPERACIONES:EDIT.
   const canDeleteProject = usePermission("OPERACIONES", "EDIT");
+  // Borrar un sistema fotovoltaico adicional: el endpoint DELETE exige OPERACIONES:DELETE.
+  const canDeleteSystem = usePermission("OPERACIONES", "DELETE");
   // El tab "Compras" es la lista colaborativa de materiales (Ingeniería +
   // Operaciones). Mismo componente que se usa en /ingenieria/proyecto/:id.
   const canViewCompras = usePermission("INGENIERIA", "VIEW") || usePermission("OPERACIONES", "VIEW");
@@ -714,6 +729,19 @@ export function ProjectDetail() {
       navigate("/projects");
     },
     onError: () => toast.error("No se pudo borrar el proyecto"),
+  });
+
+  const deleteSolarSystemMutation = useMutation({
+    mutationFn: (systemId: string) => deleteSolarSystem(id!, systemId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["project", id] });
+      toast.success("Sistema eliminado");
+      setDeletingSolarSystemId(null);
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ?? "No se pudo eliminar el sistema");
+    },
   });
 
   // Abrir drawer automáticamente cuando viene ?stage=<id> (desde Mis Tareas)
@@ -807,6 +835,11 @@ export function ProjectDetail() {
       ? project.solarSystems.find((system) => system.id === editingSolarSystemId) ?? null
       : null;
 
+  const deletingSolarSystem =
+    deletingSolarSystemId != null
+      ? project.solarSystems.find((system) => system.id === deletingSolarSystemId) ?? null
+      : null;
+
   return (
     <div className="relative">
       <ProjectHeader
@@ -843,6 +876,8 @@ export function ProjectDetail() {
         project={project}
         onEdit={(systemId) => setEditingSolarSystemId(systemId)}
         onCreate={() => setShowCreateSolarSystem(true)}
+        onDelete={(systemId) => setDeletingSolarSystemId(systemId)}
+        canDelete={canDeleteSystem}
       />
 
       {/* Pipeline (vista expandida: 8 etapas + carriles de Experiencia Solar) */}
@@ -1039,6 +1074,19 @@ export function ProjectDetail() {
           onClose={() => setEditingSolarSystemId(null)}
         />
       ) : null}
+
+      <DeleteConfirmModal
+        open={deletingSolarSystem != null}
+        title="Eliminar sistema"
+        description={
+          deletingSolarSystem
+            ? `Se va a eliminar "${deletingSolarSystem.description || `Sistema ${deletingSolarSystem.order}`}" de ${project.code}. Desaparece de los datos técnicos (queda recuperable en la base).`
+            : ""
+        }
+        loading={deleteSolarSystemMutation.isPending}
+        onConfirm={() => deletingSolarSystemId && deleteSolarSystemMutation.mutate(deletingSolarSystemId)}
+        onClose={() => !deleteSolarSystemMutation.isPending && setDeletingSolarSystemId(null)}
+      />
     </div>
   );
 }
