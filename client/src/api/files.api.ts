@@ -9,12 +9,14 @@ export async function getFiles(projectId: string): Promise<FileAttachment[]> {
 export async function uploadFile(
   projectId: string,
   file: File,
-  stageId: string,
+  // Opcional: si se omite (o es null), el adjunto queda a nivel proyecto
+  // (sin etapa). El backend ya acepta subir con solo projectId.
+  stageId?: string | null,
   onProgress?: (pct: number) => void
 ): Promise<FileAttachment> {
   const form = new FormData();
   form.append("file", file);
-  form.append("stageId", stageId);
+  if (stageId) form.append("stageId", stageId);
 
   const { data } = await apiClient.post<FileAttachment>(
     `/api/projects/${projectId}/files`,

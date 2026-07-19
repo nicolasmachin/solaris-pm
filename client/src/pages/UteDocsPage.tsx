@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
@@ -127,6 +127,69 @@ export function UteDocsPage() {
   const [projectFields, setProjectFields] = useState<ProjectFields | null>(null);
   const [solarFields, setSolarFields] = useState<SolarFields | null>(null);
   const [selectedDocs, setSelectedDocs] = useState<Set<UteDocKey>>(new Set(UTE_DOC_KEYS));
+
+  // ── Autoguardado (debounce 1,5s) ──────────────────────────────────────────
+  // Reusa saveAll() (que difea y sólo persiste lo cambiado) para no perder lo
+  // tipeado si se cierra sin apretar "Guardar/Generar". No dispara en la
+  // hidratación inicial: se siembra el baseline y sólo se guarda tras editar.
+  // Anti-solape: 1 request en curso + 1 pendiente con el estado más reciente.
+  type AutosaveStatus = "idle" | "saving" | "saved" | "error";
+  const [autosaveStatus, setAutosaveStatus] = useState<AutosaveStatus>("idle");
+  const [autosaveAt, setAutosaveAt] = useState<number | null>(null);
+  const latest = useRef<{ form: ConfigForm | null; projectFields: ProjectFields | null; solarFields: SolarFields | null }>({ form, projectFields, solarFields });
+  latest.current = { form, projectFields, solarFields };
+  const saveAllRef = useRef<(() => Promise<unknown>) | null>(null);
+  const autosaveBaseline = useRef<string | null>(null);
+  const autosaveInFlight = useRef(false);
+  const autosavePending = useRef(false);
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const runAutosave = useCallback(async () => {
+    if (!saveAllRef.current) return;
+    if (autosaveInFlight.current) {
+      autosavePending.current = true;
+      return;
+    }
+    autosaveInFlight.current = true;
+    setAutosaveStatus("saving");
+    try {
+      await saveAllRef.current();
+      autosaveBaseline.current = JSON.stringify(latest.current);
+      setAutosaveAt(Date.now());
+      setAutosaveStatus("saved");
+    } catch {
+      setAutosaveStatus("error");
+    } finally {
+      autosaveInFlight.current = false;
+      if (autosavePending.current) {
+        autosavePending.current = false;
+        void runAutosave();
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const hydrated = form !== null && projectFields !== null && solarFields !== null;
+    if (!hydrated) {
+      autosaveBaseline.current = null; // tras un reset se re-siembra al re-hidratar
+      return;
+    }
+    const snapshot = JSON.stringify({ form, projectFields, solarFields });
+    if (autosaveBaseline.current === null) {
+      autosaveBaseline.current = snapshot; // seed: no guardar el estado hidratado
+      return;
+    }
+    if (snapshot === autosaveBaseline.current) return; // sin cambios reales
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = setTimeout(() => void runAutosave(), 1500);
+  }, [form, projectFields, solarFields, runAutosave]);
+
+  useEffect(
+    () => () => {
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    },
+    [],
+  );
 
   // Hidratar el form de la config cuando llega. NO prefilleamos Representa
   // / CI Repre — se muestra el valor del cliente en vivo cuando el campo
@@ -300,6 +363,16 @@ export function UteDocsPage() {
     return { projectChanged: !!projectPatch, solarChanged: !!solarPatch };
   }
 
+  // El autosave dispara saveAll() con el estado más reciente (vía closure fresco
+  // en cada render). Se sincroniza el baseline en cada guardado explícito para
+  // no re-disparar un autosave redundante justo después.
+  saveAllRef.current = saveAll;
+  function syncAutosaveBaseline() {
+    autosaveBaseline.current = JSON.stringify(latest.current);
+    setAutosaveAt(Date.now());
+    setAutosaveStatus("saved");
+  }
+
   // Reset: BORRA la config UTE persistida (incluye lo que el usuario haya
   // guardado a mano) y vuelve a hidratar desde el server. El próximo GET
   // recrea la config con los defaults del schema (FI, RUT, normas, etc.)
@@ -326,6 +399,7 @@ export function UteDocsPage() {
     if (!form || !projectFields || !solarFields) return;
     try {
       const { projectChanged, solarChanged } = await saveAll();
+      syncAutosaveBaseline();
       const parts = ["Configuración UTE"];
       if (projectChanged) parts.push("datos del proyecto");
       if (solarChanged) parts.push("sistema FV");
@@ -344,6 +418,7 @@ export function UteDocsPage() {
     try {
       // Guardar primero, después generar (asegura que el ZIP usa lo último).
       await saveAll();
+      syncAutosaveBaseline();
       const docs = UTE_DOC_KEYS.filter((k) => selectedDocs.has(k));
       const { docsCount } = await generateMut.mutateAsync({
         docs,
@@ -378,7 +453,7 @@ export function UteDocsPage() {
       </div>
 
       <p className="text-xs text-[var(--color-text-secondary)] bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded p-3">
-        Los datos del cliente, sistema fotovoltaico y trámite UTE se cargan acá. Algunos vienen del proyecto (cliente, dirección, capacidad) y otros son específicos del trámite. Revisá y completá lo que falte antes de generar el ZIP.
+        Los datos del cliente, sistema fotovoltaico y trámite UTE se cargan acá. Algunos vienen del proyecto (cliente, dirección, capacidad) y otros son específicos del trámite. Los cambios se <strong>autoguardan</strong>, así que si cerrás y volvés a entrar, el formulario reabre con lo último cargado. Revisá y completá lo que falte antes de generar el ZIP.
       </p>
 
       {/* Datos del proyecto — editables. Los cambios se guardan al proyecto
@@ -631,7 +706,8 @@ export function UteDocsPage() {
       </Section>
 
       {/* Botones de la config */}
-      <div className="flex justify-end gap-2">
+      <div className="flex items-center justify-end gap-2">
+        <AutosaveStatusText status={autosaveStatus} savedAt={autosaveAt} />
         <button
           type="button"
           onClick={handleReset}
@@ -694,6 +770,36 @@ export function UteDocsPage() {
       />
     </div>
   );
+}
+
+// Indicador de autoguardado, en línea con los botones de la config. Refresca el
+// "hace Xs" una vez por segundo mientras está en estado "guardado".
+function AutosaveStatusText({
+  status,
+  savedAt,
+}: {
+  status: "idle" | "saving" | "saved" | "error";
+  savedAt: number | null;
+}) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (status !== "saved") return;
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [status]);
+
+  if (status === "saving") {
+    return <span className="text-xs text-[var(--color-text-muted)]">Guardando…</span>;
+  }
+  if (status === "error") {
+    return <span className="text-xs text-[var(--color-danger-text,#ef4444)]">No se pudo autoguardar</span>;
+  }
+  if (status === "saved" && savedAt) {
+    const s = Math.max(0, Math.round((Date.now() - savedAt) / 1000));
+    const rel = s < 5 ? "recién" : s < 60 ? `hace ${s}s` : `hace ${Math.round(s / 60)} min`;
+    return <span className="text-xs text-[var(--color-text-muted)]">Autoguardado {rel}</span>;
+  }
+  return null;
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

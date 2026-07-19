@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { LayoutGrid, List, Lock, Trash2 } from "lucide-react";
-import { getProjectDocuments, deleteFile, type ProjectDocument } from "../../api/files.api";
+import { LayoutGrid, List, Lock, Trash2, Upload } from "lucide-react";
+import { getProjectDocuments, deleteFile, uploadFile, type ProjectDocument } from "../../api/files.api";
 import { UteDocsGeneradosBlock } from "../ute/UteDocsGeneradosBlock";
 import { UteDocsFirmadosBlock } from "../ute/UteDocsFirmadosBlock";
 import { Spinner } from "../ui/Spinner";
@@ -71,6 +71,38 @@ export function DocumentsStrip({ projectId }: { projectId: string }) {
   );
   const currentUser = useAuthStore(s => s.user);
   const qc = useQueryClient();
+
+  // Subida de adjuntos a nivel proyecto (sin etapa). Antes solo se podía subir
+  // desde dentro de cada etapa (StageDrawer); esto permite hacerlo desde la
+  // vista general. El backend ya acepta subir con solo projectId.
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadPct, setUploadPct] = useState<number | null>(null);
+
+  async function handleUpload(file: File) {
+    try {
+      setUploadPct(0);
+      await uploadFile(projectId, file, null, setUploadPct);
+      toast.success("Archivo subido");
+      qc.invalidateQueries({ queryKey: ["project-documents", projectId] });
+    } catch {
+      toast.error("No se pudo subir el archivo");
+    } finally {
+      setUploadPct(null);
+    }
+  }
+
+  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) void handleUpload(file);
+    e.target.value = ""; // permite re-subir el mismo archivo
+  }
+
+  function onDrop(e: React.DragEvent) {
+    e.preventDefault();
+    if (uploadPct !== null) return;
+    const file = e.dataTransfer.files?.[0];
+    if (file) void handleUpload(file);
+  }
 
   function changeViewMode(mode: "grid" | "list") {
     setViewMode(mode);
@@ -146,19 +178,36 @@ export function DocumentsStrip({ projectId }: { projectId: string }) {
         <UteDocsFirmadosBlock projectId={projectId} />
       </div>
 
-      <section className="mb-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5">
-        <div className="mb-3 flex items-baseline justify-between gap-2 flex-wrap">
+      <section
+        className="mb-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5"
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={onDrop}
+      >
+        <div className="mb-3 flex items-center justify-between gap-2 flex-wrap">
           <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
             Documentos
           </p>
-          <p className="text-[11px] text-[var(--color-text-muted)]">
-            {isLoading
-              ? "Cargando…"
-              : `${documents.length} ${documents.length === 1 ? "documento" : "documentos"}${
-                  originFilter !== "todos" ? ` · filtrado: ${ORIGIN_FILTER_LABEL[originFilter]}` : ""
-                }`}
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-[11px] text-[var(--color-text-muted)]">
+              {isLoading
+                ? "Cargando…"
+                : `${documents.length} ${documents.length === 1 ? "documento" : "documentos"}${
+                    originFilter !== "todos" ? ` · filtrado: ${ORIGIN_FILTER_LABEL[originFilter]}` : ""
+                  }`}
+            </p>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadPct !== null}
+              className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2.5 py-1 text-[11px] font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-text-primary)] disabled:opacity-60"
+              title="Subir un archivo a este proyecto"
+            >
+              <Upload className="h-3.5 w-3.5" />
+              {uploadPct !== null ? `Subiendo… ${uploadPct}%` : "Subir archivo"}
+            </button>
+          </div>
         </div>
+        <input ref={fileInputRef} type="file" className="hidden" onChange={onFileChange} />
 
         {/* Filtros de origen + toggle de vista — sólo si hay documentos */}
         {!isLoading && allDocuments.length > 0 && (
@@ -224,9 +273,23 @@ export function DocumentsStrip({ projectId }: { projectId: string }) {
             No se pudieron cargar los documentos.
           </p>
         ) : documents.length === 0 ? (
-          <p className="py-8 text-center text-sm text-[var(--color-text-muted)]">
-            Este proyecto no tiene documentos adjuntos todavía.
-          </p>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadPct !== null}
+            className="flex w-full flex-col items-center gap-1 rounded-lg border border-dashed border-[var(--color-border)] py-8 text-center transition-colors hover:border-[var(--color-accent)] disabled:opacity-60"
+          >
+            <span className="text-sm text-[var(--color-text-muted)]">
+              {uploadPct !== null
+                ? `Subiendo… ${uploadPct}%`
+                : "Este proyecto no tiene documentos adjuntos todavía."}
+            </span>
+            {uploadPct === null && (
+              <span className="text-xs text-[var(--color-text-muted)]">
+                Arrastrá un archivo acá o hacé clic para subir.
+              </span>
+            )}
+          </button>
         ) : viewMode === "list" ? (
           <div className="flex flex-col gap-1">
             {documents.map((doc) => (

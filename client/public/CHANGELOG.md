@@ -2,6 +2,18 @@
 
 ## v8.1
 
+### 19 de julio de 2026
+
+#### Proyecto — subir adjuntos desde la vista general
+
+- Ahora podés **subir archivos al proyecto directamente desde su vista general**, en la sección **"Documentos"**: hay un botón **"Subir archivo"** y también podés **arrastrar y soltar** el archivo sobre la sección. Antes solo se podía adjuntar entrando a una etapa puntual.
+- El archivo subido así queda asociado al proyecto (etiqueta **"Proyecto"**) y aparece en el mismo listado de documentos, junto con los de cada etapa y los generados por las herramientas.
+
+#### Documentos UTE — autoguardado
+
+- El generador de **Documentos UTE** ahora **autoguarda** los cambios mientras completás el formulario (cliente, sistema fotovoltaico, trámite, potencias, fechas). Si se te cierra o recargás la página, al volver a entrar **reabre con lo último cargado** para ese proyecto, sin depender de que hayas apretado "Guardar".
+- Junto a los botones aparece un indicador de estado (**"Guardando…"** / **"Autoguardado hace un rato"**) para que sepas que quedó guardado. El botón "Guardar configuración" sigue estando para forzar el guardado cuando quieras.
+
 ### 17 de julio de 2026
 
 #### Pipeline — cambiar la etapa del proyecto a mano
