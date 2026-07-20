@@ -4,6 +4,7 @@ import { prisma } from "../../lib/prisma.js";
 import { createAuditEntry } from "../audit.service.js";
 import { AppError, badRequest } from "../../utils/errors.js";
 import { buildTransporter, getSmtpCredentials } from "./smtp.service.js";
+import { redirectInDev } from "./dev-redirect.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -108,15 +109,25 @@ export async function sendTemplatedEmail(input: SendEmailInput): Promise<{ id: s
 
   try {
     const transporter = buildTransporter(creds);
-    await transporter.sendMail({
-      from,
+    // En desarrollo, redirigir la entrega a la casilla de testing (el emailLog
+    // de más abajo sigue registrando los destinatarios reales `to`/`cc`/`bcc`).
+    const dest = redirectInDev({
       to,
       cc: cc.length ? cc : undefined,
       bcc: bcc.length ? bcc : undefined,
-      replyTo: creds.replyTo ?? undefined,
       subject: input.subject,
       text: input.body,
       html: bodyToHtml(input.body),
+    });
+    await transporter.sendMail({
+      from,
+      to: dest.to,
+      cc: dest.cc,
+      bcc: dest.bcc,
+      replyTo: creds.replyTo ?? undefined,
+      subject: dest.subject,
+      text: dest.text,
+      html: dest.html,
     });
     const log = await registrar(EmailStatus.SENT);
     return { id: log.id, status: "SENT" };

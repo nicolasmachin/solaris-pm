@@ -14,4 +14,9 @@ export const env = {
   // Clave para cifrar las passwords SMTP por usuario (AES-256-GCM). Cualquier
   // string sirve: se deriva a 32 bytes con SHA-256.
   smtpEncryptionKey: process.env.SMTP_ENCRYPTION_KEY ?? "",
+  // Redirección de correo en desarrollo: si está seteada (y NO estamos en
+  // producción), TODOS los mails salientes se redirigen a esta casilla en vez
+  // de a los destinatarios reales, para no spamear al equipo mientras se
+  // testea. En producción se ignora aunque esté seteada (doble red).
+  devEmailRedirectTo: process.env.DEV_EMAIL_REDIRECT_TO ?? "",
 };

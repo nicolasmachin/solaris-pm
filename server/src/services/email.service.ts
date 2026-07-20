@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { prisma } from "../lib/prisma.js";
+import { redirectInDev } from "./email/dev-redirect.js";
 
 /**
  * Servicio de envío de email.
@@ -71,15 +72,27 @@ export async function sendEmail(params: SendEmailParams): Promise<boolean> {
 
   try {
     const transporter = getTransporter();
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
+    // En desarrollo, redirigir la entrega a la casilla de testing. El guardrail
+    // interno de arriba ya validó el destinatario real; acá solo cambia a dónde
+    // se entrega efectivamente.
+    const dest = redirectInDev({
       to: params.to,
       subject: params.subject,
       html: params.html,
       text: params.text,
     });
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
+      to: dest.to,
+      subject: dest.subject,
+      html: dest.html,
+      text: dest.text,
+    });
 
-    console.log(`[email] Enviado a ${params.to}: ${params.subject}`);
+    console.log(
+      `[email] Enviado a ${Array.isArray(dest.to) ? dest.to.join(", ") : dest.to}` +
+        `${dest.to === params.to ? "" : ` (original: ${params.to})`}: ${params.subject}`,
+    );
     return true;
   } catch (err) {
     console.error(`[email] Error enviando a ${params.to}:`, err);

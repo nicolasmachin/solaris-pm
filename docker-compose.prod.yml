@@ -26,7 +26,10 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      NODE_ENV: ${NODE_ENV}
+      # Default a production si el .env de prod no lo define: evita que la
+      # redirección de mails de dev (y otros comportamientos gateados por
+      # NODE_ENV, como el guard del seed) queden activos por un env incompleto.
+      NODE_ENV: ${NODE_ENV:-production}
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}

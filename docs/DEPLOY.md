@@ -40,8 +40,20 @@ Copiar `.env.example` a `.env` en la raíz y completar. Claves críticas:
 > `SMTP_HOST/PORT/USER/PASS/FROM`, `TWILIO_*`. Luego recrear: `docker compose -f
 > docker-compose.prod.yml up -d server`.
 
-> **NODE_ENV=production** en prod: activa el guard del seed (aborta) y el modo
-> productivo. Confirmar que esté seteado en el compose/entorno de prod.
+> **NODE_ENV=production** en prod: activa el guard del seed (aborta), apaga la
+> redirección de mails de dev (ver abajo) y el modo productivo. El compose de
+> prod ya lo defaultea a `production` (`NODE_ENV: ${NODE_ENV:-production}`), así
+> que aunque el `.env` no lo defina queda en producción; igual conviene setearlo
+> explícito.
+
+> ⚠️ **`DEV_EMAIL_REDIRECT_TO` es SOLO de desarrollo — NUNCA en prod.** En local
+> (`docker-compose.yml`) esta variable redirige **todos** los mails salientes a
+> una casilla de testing y les agrega un banner "CORREO DE PRUEBA", para no
+> spamear al equipo mientras se testea. Dos barreras impiden que llegue a prod:
+> (1) **no** está en el `server.environment` de `docker-compose.prod.yml` (ni hay
+> `env_file`), así que aunque alguien la ponga en el `.env` de prod **no se pasa
+> al contenedor**; y (2) el código la ignora si `NODE_ENV=production`. **No
+> agregar `DEV_EMAIL_REDIRECT_TO` al compose de prod bajo ninguna circunstancia.**
 
 ## 3. Volumen de storage
 

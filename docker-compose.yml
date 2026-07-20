@@ -45,6 +45,10 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-}
+      # DEV: redirige TODOS los mails salientes a esta casilla en local, para no
+      # spamear al equipo mientras se testea. Vacío = sin redirección. En prod
+      # nunca se setea (además el código la ignora si NODE_ENV=production).
+      DEV_EMAIL_REDIRECT_TO: ${DEV_EMAIL_REDIRECT_TO:-nfmj@hotmail.com}
     ports:
       - "4000:4000"
     volumes:
