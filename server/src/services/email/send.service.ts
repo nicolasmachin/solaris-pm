@@ -5,6 +5,7 @@ import { createAuditEntry } from "../audit.service.js";
 import { AppError, badRequest } from "../../utils/errors.js";
 import { buildTransporter, getSmtpCredentials } from "./smtp.service.js";
 import { redirectInDev } from "./dev-redirect.js";
+import { renderEmailLayout } from "./layout.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -117,7 +118,11 @@ export async function sendTemplatedEmail(input: SendEmailInput): Promise<{ id: s
       bcc: bcc.length ? bcc : undefined,
       subject: input.subject,
       text: input.body,
-      html: bodyToHtml(input.body),
+      html: renderEmailLayout({
+        title: input.subject,
+        kicker: "Voltia PM",
+        contentHtml: bodyToHtml(input.body),
+      }),
     });
     await transporter.sendMail({
       from,

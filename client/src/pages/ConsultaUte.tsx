@@ -132,10 +132,15 @@ export default function ConsultaUte() {
   const subject = ctx ? (subjectOverride ?? renderTemplate(template?.subjectTemplate ?? "", ctx)) : "";
   const bodyText = ctx ? renderTemplate(template?.bodyTemplate ?? "", ctx) : "";
   const faltantes = ctx ? calcularFaltantes(ctx, bcc) : [];
+  const potenciaGeneradorVacia = !ctx?.tecnica.potenciaGenerador.trim();
 
   async function onEnviar() {
     if (to.length === 0) {
       toast.error("Falta el destinatario (Para)");
+      return;
+    }
+    if (potenciaGeneradorVacia) {
+      toast.error("Completá la Pot. comprometida generador (obligatoria)");
       return;
     }
     try {
@@ -280,7 +285,7 @@ export default function ConsultaUte() {
                     {TENSIONES.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
-                <div><label className={lbl}>Pot. comprometida generador</label><input className={inp} value={ctx.tecnica.potenciaGenerador} placeholder="(completar)" onChange={(e) => setTecnica("potenciaGenerador", e.target.value)} /></div>
+                <div><label className={lbl}>Pot. comprometida generador <span className="text-red-500">*</span></label><input className={`${inp}${potenciaGeneradorVacia ? " border-red-500 focus:border-red-500" : ""}`} value={ctx.tecnica.potenciaGenerador} placeholder="(obligatorio)" onChange={(e) => setTecnica("potenciaGenerador", e.target.value)} /></div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div><label className={lbl}>Potencia contratada</label><input className={inp} value={ctx.tecnica.potenciaContratada} onChange={(e) => setTecnica("potenciaContratada", e.target.value)} /></div>
@@ -307,7 +312,8 @@ export default function ConsultaUte() {
           <div className="flex items-center gap-2 border-t border-[var(--color-border)] pt-3">
             <button
               onClick={onEnviar}
-              disabled={send.isPending}
+              disabled={send.isPending || potenciaGeneradorVacia}
+              title={potenciaGeneradorVacia ? "Completá la Pot. comprometida generador" : undefined}
               className="flex items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50"
             >
               <Send className="h-4 w-4" /> {send.isPending ? "Enviando…" : "Enviar consulta"}

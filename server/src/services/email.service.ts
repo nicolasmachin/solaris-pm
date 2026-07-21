@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import { prisma } from "../lib/prisma.js";
 import { redirectInDev } from "./email/dev-redirect.js";
+import { isFullHtmlDoc, renderEmailLayout } from "./email/layout.js";
 
 /**
  * Servicio de envío de email.
@@ -75,10 +76,16 @@ export async function sendEmail(params: SendEmailParams): Promise<boolean> {
     // En desarrollo, redirigir la entrega a la casilla de testing. El guardrail
     // interno de arriba ya validó el destinatario real; acá solo cambia a dónde
     // se entrega efectivamente.
+    // Formato de marca para TODOS los mails: si el html no es ya un documento
+    // completo (algunas plantillas ricas lo son), se envuelve en el layout
+    // compartido usando el subject como título/referencia.
+    const brandedHtml = isFullHtmlDoc(params.html)
+      ? params.html
+      : renderEmailLayout({ title: params.subject, contentHtml: params.html });
     const dest = redirectInDev({
       to: params.to,
       subject: params.subject,
-      html: params.html,
+      html: brandedHtml,
       text: params.text,
     });
     await transporter.sendMail({

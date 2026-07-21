@@ -50,6 +50,18 @@ function htmlBanner(resumen: string): string {
   );
 }
 
+// Inserta el banner justo después de <body …> si el html es un documento
+// completo; si no, lo antepone. Evita meter markup antes del <!doctype>.
+function injectHtmlBanner(html: string, resumen: string): string {
+  const banner = htmlBanner(resumen);
+  const m = html.match(/<body[^>]*>/i);
+  if (m && m.index != null) {
+    const at = m.index + m[0].length;
+    return html.slice(0, at) + banner + html.slice(at);
+  }
+  return banner + html;
+}
+
 // Banner equivalente para la parte de texto plano.
 function textBanner(resumen: string): string {
   return (
@@ -73,7 +85,7 @@ export function redirectInDev(mail: RedirectableMail): RedirectableMail {
     cc: undefined,
     bcc: undefined,
     subject: `[PRUEBA · para: ${resumen}] ${mail.subject}`,
-    html: mail.html != null ? htmlBanner(resumen) + mail.html : mail.html,
+    html: mail.html != null ? injectHtmlBanner(mail.html, resumen) : mail.html,
     text: mail.text != null ? textBanner(resumen) + mail.text : mail.text,
   };
 }

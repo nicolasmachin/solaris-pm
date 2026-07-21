@@ -2,6 +2,23 @@
 
 ## v8.1
 
+### 20 de julio de 2026
+
+#### Métricas de Operaciones — obras realizadas bien contadas
+
+- Se corrigió el conteo de **"Instalaciones realizadas"** (y con él **kWp instalados** y **obras ponderadas**). Ahora una obra cuenta como realizada cuando su etapa **"Ejecución de obra" está finalizada**; en su defecto, cuando el **proyecto está marcado como finalizado**. La fecha usada es la de finalización de la obra (o, si no la tiene, la de finalización del proyecto).
+- Antes se miraba una etapa vieja del pipeline que casi ningún proyecto usa ya, por lo que **subcontaba muchísimo** (mostraba apenas unas pocas obras en todo el año). Como todo daba valores mínimos, además **parecía que el filtro por trimestre no cambiaba**; ahora los números reflejan la realidad y cambian bien al elegir otro trimestre.
+- Efecto secundario: los **objetivos de kWp instalados** vuelven a mostrar su avance real (antes se veían casi en cero por el subconteo).
+
+#### Consulta a UTE (Onboarding) — potencia del generador obligatoria
+
+- En el generador de **consulta a UTE**, el campo **"Pot. comprometida generador"** ahora es **obligatorio**: aparece marcado con un asterisco y no deja **enviar la consulta** hasta completarlo (el botón queda deshabilitado y avisa si falta).
+
+#### Correos — formato nuevo y más claro
+
+- Todos los correos automáticos (traspasos de etapa, recordatorios de deadline, escalaciones, reportes, avisos de habilitación, "listo para Operaciones", etc.) ahora salen con un **diseño de marca Voltia**: encabezado, título grande con la **referencia clara de lo que se está informando** y el contenido bien legible, para que no se pierda entre el texto.
+- Antes solo un tipo de correo tenía formato lindo y el resto llegaban como texto plano; ahora **todos** comparten el mismo estilo.
+
 ### 19 de julio de 2026
 
 #### Proyecto — subir adjuntos desde la vista general

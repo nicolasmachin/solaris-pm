@@ -4241,34 +4241,36 @@ export async function registerApiRoutes(app: FastifyInstance) {
       (project) => project.status === ProjectStatus.ACTIVE || project.status === ProjectStatus.COMPLETED,
     );
 
-    // "Instalación realizada" = el proyecto tiene la etapa OPERACIONES
-    // INICIADA (actualStartDate cargado, i.e. status IN_PROGRESS o COMPLETED).
-    // No exigimos un sopCode específico de subetapa porque los pipelines varían
-    // (no todos tienen O2P/O2T como subetapas formales). La fecha que se usa
-    // para agrupar es el actualStartDate de esa stage (cuándo arrancó la obra).
-    const startedOperacionesStages = await prisma.stage.findMany({
-      where: {
-        deletedAt: null,
-        name: StageType.OPERACIONES,
-        actualStartDate: { not: null },
-        project: { deletedAt: null },
-      },
-      select: {
-        projectId: true,
-        actualStartDate: true,
-        project: { select: { id: true, capacityKwp: true, pesoObra: true } },
-      },
-    });
-
+    // "Obra realizada" (definición del negocio):
+    //   1) el proyecto tiene la etapa "Ejecución de obra" (EJECUCION_OBRA)
+    //      FINALIZADA (status COMPLETED con actualEndDate), o
+    //   2) en su defecto, el proyecto está marcado como finalizado (status
+    //      COMPLETED) aunque la etapa de obra no figure cerrada.
+    // La FECHA para agrupar por período es la de EJECUCION_OBRA finalizada; si
+    // no la tiene, la fecha de finalización del proyecto (actualEndDate).
+    // Nota: antes se contaba la etapa vieja OPERACIONES iniciada, que el pipeline
+    // nuevo ya no usa (la obra vive en EJECUCION_OBRA), por eso subcontaba.
     type Installed = { projectId: string; installedAt: Date; capacityKwp: number; pesoObra: number };
-    const installedAll: Installed[] = startedOperacionesStages
-      .filter((s) => s.actualStartDate != null && s.project != null)
-      .map((s) => ({
-        projectId: s.projectId,
-        installedAt: s.actualStartDate as Date,
-        capacityKwp: decimalToNumber(s.project!.capacityKwp) ?? 0,
-        pesoObra: s.project!.pesoObra,
-      }));
+    const installedAll: Installed[] = [];
+    for (const project of projects) {
+      const ejecObra = project.stages.find(
+        (s) =>
+          s.name === StageType.EJECUCION_OBRA &&
+          s.status === StageStatus.COMPLETED &&
+          s.actualEndDate != null,
+      );
+      const proyectoFinalizado = project.status === ProjectStatus.COMPLETED;
+      if (!ejecObra && !proyectoFinalizado) continue;
+      // La fecha de obra finalizada manda; si no hay, la de finalización del proyecto.
+      const installedAt = ejecObra?.actualEndDate ?? project.actualEndDate;
+      if (installedAt == null) continue; // sin fecha ubicable en un período
+      installedAll.push({
+        projectId: project.id,
+        installedAt,
+        capacityKwp: decimalToNumber(project.capacityKwp) ?? 0,
+        pesoObra: project.pesoObra,
+      });
+    }
 
     // Obras históricas importadas por CSV: se cuentan como realizadas en la fecha
     // de entrega cargada (plannedEndDate), ya que no tienen etapa Operaciones.
