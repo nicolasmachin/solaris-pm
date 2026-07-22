@@ -23,50 +23,39 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "8.1",
-  date: "17 de julio de 2026",
+  version: "8.2",
+  date: "20 de julio de 2026",
   sections: [
     {
-      title: "Ingeniería — plantillas y control de costos de materiales",
+      title: "Métricas de Operaciones — obras realizadas bien contadas",
       items: [
-        'En la lista de materiales, botón "Usar plantilla": precarga la base de materiales habitual (Monofásico / Trifásico 230 / Trifásico 400) en un click, en vez de agregar los ítems uno por uno. Se administran desde Admin → Plantillas de materiales.',
-        'Nuevo panel "Control de costos" con el subtotal sin IVA de cada categoría y el total, actualizándose en vivo.',
+        'Se corrigió el conteo de "Instalaciones realizadas" (y con él kWp instalados y obras ponderadas): una obra cuenta como realizada cuando su etapa "Ejecución de obra" está finalizada, o el proyecto está marcado como finalizado. Antes miraba una etapa vieja del pipeline y subcontaba muchísimo.',
+        "Al corregir el conteo, el filtro por trimestre ahora cambia bien y los objetivos de kWp instalados vuelven a mostrar su avance real.",
       ],
     },
     {
-      title: "Traspasos entre áreas — más control",
+      title: "Correos — formato nuevo y más claro",
       items: [
-        "Al disparar un traspaso aparece un popup en el momento para confirmarlo, posponerlo 6 hs o cancelarlo, sin tener que entrar a la bandeja.",
-        'El popup muestra "ver N" con las personas concretas que se notifican (nombre y área), y ofrece avanzar la etapa del proyecto a la que sigue (tildado por defecto).',
+        'Todos los correos automáticos (traspasos, recordatorios, escalaciones, reportes, avisos de habilitación, "listo para Operaciones", etc.) ahora salen con un diseño de marca Voltia: encabezado, título con la referencia clara de lo que se informa y contenido bien legible.',
+        "Antes solo un tipo de correo tenía formato lindo y el resto llegaban como texto plano; ahora todos comparten el mismo estilo.",
       ],
     },
     {
-      title: "Etapa del proyecto modificable a mano",
+      title: "Proyecto — subir adjuntos desde la vista general",
       items: [
-        'En el detalle del proyecto podés fijar la etapa mostrada hacia adelante aunque quede alguna sub-tarea pendiente (control "Etapa mostrada"). Antes la etapa quedaba clavada hasta completar todo.',
+        'Ahora podés subir archivos al proyecto directamente desde su vista general, en la sección "Documentos" (botón "Subir archivo" o arrastrar y soltar). Antes solo se podía adjuntar entrando a una etapa puntual.',
       ],
     },
     {
-      title: "Tickets y encuestas del Generador",
+      title: "Documentos UTE — autoguardado",
       items: [
-        "Nuevo sistema de Tickets (reclamos y consultas) con bandeja interna y apertura desde el portal del Generador.",
-        "Encuestas de satisfacción por hitos y aniversario de la puesta en marcha, con portal y panel interno.",
+        "El generador de Documentos UTE ahora autoguarda mientras completás el formulario y reabre con lo último cargado para ese proyecto, sin depender de apretar Guardar. Un indicador muestra el estado del guardado.",
       ],
     },
     {
-      title: "Portal, ficha y Mis tareas",
+      title: "Consulta a UTE — potencia del generador obligatoria",
       items: [
-        "Portal del Generador con campana de avisos y ficha del cliente con historial más completo.",
-        'Mis tareas: una tarea puede tener varios responsables y "Pendientes" ahora vive dentro de Mis tareas.',
-        "Proyectos: una sola fecha (Venta) con orden para planificar, e importación de Generadores por CSV.",
-      ],
-    },
-    {
-      title: "Arreglos",
-      items: [
-        "El filtro de proyectos y el Dashboard \"Mis proyectos por etapa\" ahora reflejan las 8 etapas / áreas nuevas (antes varios quedaban sin contar).",
-        "Se pueden eliminar los sistemas adicionales cargados por error en los datos técnicos.",
-        "Finanzas: el pago a proveedor se descuenta solo del estado de cuenta e ingreso de movimientos más rápido.",
+        'En el generador de consulta a UTE, el campo "Pot. comprometida generador" ahora es obligatorio: no deja enviar la consulta hasta completarlo.',
       ],
     },
   ],
@@ -81,6 +70,16 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "8.1",
+    shortDate: "17 jul",
+    highlights: [
+      'Ingeniería: plantillas de lista de materiales (Monofásico / Trifásico 230 / Trifásico 400) y panel "Control de costos" en vivo.',
+      'Etapa del proyecto modificable a mano ("empujón" hacia adelante) y traspasos que muestran a quiénes se notifica.',
+      "Tickets del Generador y encuestas de satisfacción por hitos y aniversario.",
+      "Dashboard y filtros de proyecto actualizados a las 8 etapas / áreas nuevas.",
+    ],
+  },
   {
     version: "8.0",
     shortDate: "10 jul",

@@ -1,6 +1,6 @@
 # Novedades
 
-## v8.1
+## v8.2
 
 ### 20 de julio de 2026
 
@@ -30,6 +30,8 @@
 
 - El generador de **Documentos UTE** ahora **autoguarda** los cambios mientras completás el formulario (cliente, sistema fotovoltaico, trámite, potencias, fechas). Si se te cierra o recargás la página, al volver a entrar **reabre con lo último cargado** para ese proyecto, sin depender de que hayas apretado "Guardar".
 - Junto a los botones aparece un indicador de estado (**"Guardando…"** / **"Autoguardado hace un rato"**) para que sepas que quedó guardado. El botón "Guardar configuración" sigue estando para forzar el guardado cuando quieras.
+
+## v8.1
 
 ### 17 de julio de 2026
 
