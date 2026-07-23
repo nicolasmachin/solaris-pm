@@ -19,10 +19,10 @@ export async function getFirstProposalAt(leadId: string): Promise<Date | null> {
 // Auto-promueve un lead a COTIZADO cuando tiene una propuesta comercial generada.
 //
 // Reglas:
-//  - Forward-only: solo promueve si el lead está en NUEVO_LEAD o
-//    PENDIENTE_COTIZAR. Si ya está en una etapa posterior (NEGOCIACION,
-//    VISITADO, CERRADO_*, etc.) NO retrocede — el caso típico es regenerar la
-//    propuesta de un lead que ya está negociando o cerrado.
+//  - Forward-only: solo promueve si el lead está en NUEVO_LEAD. Si ya está en
+//    una etapa posterior (RECLAMADO, AGENDAR_VISITA, VISITADO, CERRADO_*, etc.)
+//    NO retrocede — el caso típico es regenerar la propuesta de un lead que ya
+//    está más avanzado o cerrado.
 //  - proposalSentAt (fecha de cotización) se setea a la fecha de la PRIMERA
 //    propuesta del lead, y solo si estaba vacía (preserva edición manual).
 //
@@ -38,8 +38,7 @@ export async function autoPromoteLeadToCotizado(params: {
   });
   if (!lead) return false;
 
-  const shouldPromote =
-    lead.stage === SalesStage.NUEVO_LEAD || lead.stage === SalesStage.PENDIENTE_COTIZAR;
+  const shouldPromote = lead.stage === SalesStage.NUEVO_LEAD;
 
   const firstProposalAt = await getFirstProposalAt(params.leadId);
   const updates: { proposalSentAt?: Date; stage?: SalesStage } = {};

@@ -24,8 +24,16 @@ export type Release = {
 
 export const LATEST_RELEASE: Release = {
   version: "8.2",
-  date: "20 de julio de 2026",
+  date: "22 de julio de 2026",
   sections: [
+    {
+      title: "Ventas — pipeline más simple, vista priorizada y reclamos",
+      items: [
+        "Menos etapas en el pipeline: Nuevo lead → Cotizado → Reclamado → Agendar visita → Visitado, más Cerrados. Los leads en etapas viejas se reubicaron solos según su avance.",
+        'Nueva vista "Priorizada" (junto a Kanban y Lista): los leads activos ordenados de más avanzado a menos, para atacarlos por prioridad.',
+        'Contador de reclamos "xR" en cada tarjeta, con un botón "+" para sumar un reclamo al instante. La pestaña de cerrados unifica ganados y perdidos.',
+      ],
+    },
     {
       title: "Métricas de Operaciones — obras realizadas bien contadas",
       items: [

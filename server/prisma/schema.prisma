@@ -417,17 +417,12 @@ enum SettingKey {
 
 enum SalesStage {
   NUEVO_LEAD
-  PENDIENTE_COTIZAR
   COTIZADO
   RECLAMADO
-  VOLVER_CONTACTAR
-  NEGOCIACION
   AGENDAR_VISITA
   VISITADO
-  ONBOARDING
   CERRADO_GANADO
   CERRADO_PERDIDO
-  MAS_ADELANTE
 }
 
 enum ProposalStatus {
@@ -1399,6 +1394,11 @@ model SalesLead {
   roofType             String?
   notes                String?
   lostReason           String?
+  // Contador de reclamos (insistencias) hechos al lead. Es transversal a la
+  // etapa: un lead en cualquier stage puede acumular reclamos. Se muestra como
+  // "xR" en la tarjeta y se incrementa con el botón "+" desde el kanban.
+  reclamosCount        Int                  @default(0)
+  lastReclamoAt        DateTime?            @db.Timestamptz(6)
   // Fecha de "alta comercial" del lead. Por default copia createdAt en
   // los registros nuevos (auto-fill en el handler de POST), pero es
   // editable desde el panel "Fechas del proceso" para corregir backfills

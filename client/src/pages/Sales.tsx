@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { HTMLAttributes } from "react";
 import { ChevronLeft, ChevronRight, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 import {
   DndContext,
@@ -19,6 +20,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import {
+  addReclamo,
   createLead,
   deleteLead,
   downloadProposal,
@@ -56,8 +58,9 @@ import type { LeadDetail, LeadListItem, LeadStageGroup, SalesStage } from "../ty
 import { KANBAN_COLUMNS, STAGE_COLORS, STAGE_LABELS } from "../types/leads.types";
 import { LeadsListView } from "../components/sales/LeadsListView";
 import { SalesViewToggle, useSalesView } from "../components/sales/SalesViewToggle";
-
-type SalesTab = "active" | "won" | "lost";
+import { PriorityView } from "../components/sales/PriorityView";
+import { LeadRow } from "../components/sales/LeadRow";
+import { LeadCard } from "../components/sales/LeadCard";
 
 const WON_STAGE = "CERRADO_GANADO";
 const LOST_STAGE = "CERRADO_PERDIDO";
@@ -87,21 +90,12 @@ function formatRelative(value: string) {
   return `hace ${days} día${days === 1 ? "" : "s"}`;
 }
 
-function getAssigneeInitial(name?: string) {
-  if (!name) return "—";
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-}
-
-function useLeadGroups(params: { search?: string; assignedTo?: "me" } = {}) {
+function useLeadGroups(params: { search?: string; assignedTo?: "me"; ownerId?: string } = {}) {
   const search = params.search?.trim() || undefined;
+  const ownerId = params.ownerId || undefined;
   return useQuery({
-    queryKey: ["lead-groups", search ?? "", params.assignedTo ?? "all"],
-    queryFn: () => getLeads({ search, assignedTo: params.assignedTo }),
+    queryKey: ["lead-groups", search ?? "", params.assignedTo ?? "all", ownerId ?? "all"],
+    queryFn: () => getLeads({ search, assignedTo: params.assignedTo, ownerId }),
     staleTime: 30_000,
   });
 }
@@ -226,127 +220,34 @@ function NewLeadModal({
   );
 }
 
-function SortableLeadCard({
-  lead,
-  onOpen,
-  onMove,
-}: {
+function SortableLeadCard(props: {
   lead: LeadListItem;
   onOpen: (leadId: string) => void;
   onMove: (leadId: string, stage: SalesStage) => void;
+  onReclamo: (leadId: string) => void;
+  onCloseRequest: (leadId: string) => void;
 }) {
-  // En móvil el drag con long-press convive con un atajo por tap: el ⋮⋮ abre
-  // un sheet para elegir la etapa destino sin tener que arrastrar.
-  const [moveOpen, setMoveOpen] = useState(false);
+  // Wrapper draggable: usa la misma LeadCard visual que la vista priorizada,
+  // pasándole los bindings de dnd-kit. activationConstraint distance=8 en el
+  // PointerSensor distingue click de drag, así el onClick sigue abriendo el
+  // lead cuando el mouse no se mueve.
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: lead.id,
-    data: {
-      type: "lead",
-      leadId: lead.id,
-      stage: lead.stage,
-    },
+    id: props.lead.id,
+    data: { type: "lead", leadId: props.lead.id, stage: props.lead.stage },
   });
-
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.6 : 1,
   };
-
-  const daysColor =
-    lead.daysInStage > 14
-      ? "#f87171"
-      : lead.daysInStage > 7
-        ? "var(--color-accent)"
-        : "var(--color-text-muted)";
-
-  // El wrapper es <div role="button"> en lugar de <button> para evitar
-  // HTML inválido: la card tiene botones internos (acciones del lead) que
-  // no pueden anidarse dentro de <button>. Como contrapartida, el drag de
-  // dnd-kit se aplica al wrapper entero (no a un handle ⋮⋮ específico),
-  // así toda la card es agarrable. activationConstraint distance=8 en el
-  // PointerSensor distingue click de drag, así el onClick sigue abriendo
-  // el lead cuando el mouse no se mueve.
   return (
-    <>
-    <div
-      ref={setNodeRef}
-      style={{ ...style, cursor: isDragging ? "grabbing" : "grab" }}
-      aria-label={`Abrir lead ${lead.clientName}`}
-      className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3 text-left focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
-      // dnd-kit ya inyecta role="button" y tabIndex={0} vía attributes.
-      {...attributes}
-      {...listeners}
-      onClick={() => onOpen(lead.id)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onOpen(lead.id);
-        }
-      }}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-[var(--color-text-primary)]">{lead.clientName}</p>
-          <p className="font-mono text-[10px] text-[var(--color-text-muted)]">{lead.estimatedKwp ?? "—"} kWp</p>
-        </div>
-        <button
-          type="button"
-          aria-label="Mover a etapa…"
-          title="Mover a etapa…"
-          // Doble stopPropagation: onPointerDown evita que el wrapper arranque
-          // un drag de dnd-kit, onClick evita que se dispare onOpen (la card).
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={(event) => {
-            event.stopPropagation();
-            setMoveOpen(true);
-          }}
-          className="tap-target shrink-0 rounded text-[var(--color-text-muted)] select-none hover:bg-[var(--color-bg-app)] hover:text-[var(--color-text-primary)]"
-        >
-          ⋮⋮
-        </button>
-      </div>
-
-      <div className="mt-3 flex items-center justify-between gap-3">
-        <div className="text-xs text-[var(--color-text-secondary)]">{formatMoney(lead.estimatedBudgetUsd)}</div>
-        {lead.assignedTo ? (
-          <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-accent)] text-[10px] font-bold text-black">
-              {getAssigneeInitial(lead.assignedTo.name)}
-            </span>
-            <span className="text-[11px] text-[var(--color-text-muted)]">{lead.assignedTo.name}</span>
-          </div>
-        ) : null}
-      </div>
-
-      <div className="mt-2 font-mono text-[10px]" style={{ color: daysColor }}>
-        {lead.daysInStage} día{lead.daysInStage === 1 ? "" : "s"} en etapa
-      </div>
-    </div>
-
-    <Sheet open={moveOpen} onClose={() => setMoveOpen(false)} title="Mover a etapa…">
-      <p className="mb-3 text-[11px] text-[var(--color-text-muted)]">
-        {lead.clientName} · actualmente en {STAGE_LABELS[lead.stage]}
-      </p>
-      <ul className="space-y-1">
-        {KANBAN_COLUMNS.filter((stage) => stage !== lead.stage).map((stage) => (
-          <li key={stage}>
-            <button
-              type="button"
-              onClick={() => {
-                onMove(lead.id, stage);
-                setMoveOpen(false);
-              }}
-              className="tap-target flex w-full items-center gap-2 rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-left text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)]"
-            >
-              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: COLUMN_COLORS[stage].dot }} />
-              {STAGE_LABELS[stage]}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </Sheet>
-    </>
+    <LeadCard
+      {...props}
+      dragRef={setNodeRef}
+      dragStyle={style}
+      dragProps={{ ...attributes, ...listeners } as HTMLAttributes<HTMLDivElement>}
+      isDragging={isDragging}
+    />
   );
 }
 
@@ -355,6 +256,8 @@ function KanbanColumn({
   leads,
   onOpen,
   onMove,
+  onReclamo,
+  onCloseRequest,
   isCollapsed,
   onToggle,
 }: {
@@ -362,6 +265,8 @@ function KanbanColumn({
   leads: LeadListItem[];
   onOpen: (leadId: string) => void;
   onMove: (leadId: string, stage: SalesStage) => void;
+  onReclamo: (leadId: string) => void;
+  onCloseRequest: (leadId: string) => void;
   isCollapsed: boolean;
   onToggle: () => void;
 }) {
@@ -443,7 +348,7 @@ function KanbanColumn({
       <SortableContext items={leads.map((lead) => lead.id)} strategy={verticalListSortingStrategy}>
         <div className="flex-1 space-y-2 overflow-y-auto pr-1">
           {leads.map((lead) => (
-            <SortableLeadCard key={lead.id} lead={lead} onOpen={onOpen} onMove={onMove} />
+            <SortableLeadCard key={lead.id} lead={lead} onOpen={onOpen} onMove={onMove} onReclamo={onReclamo} onCloseRequest={onCloseRequest} />
           ))}
           {leads.length === 0 ? (
             <div className="rounded-lg border border-dashed border-[var(--color-border)] px-3 py-6 text-center text-sm text-[var(--color-text-muted)]">
@@ -455,6 +360,44 @@ function KanbanColumn({
 
       <div className="mt-3 shrink-0 border-t border-[var(--color-border)] pt-2 font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
         {formatMoney(totalBudget)} · {leads.length} lead{leads.length === 1 ? "" : "s"}
+      </div>
+    </div>
+  );
+}
+
+// Columna "Cerrado" del kanban: agrupa ganados + perdidos (cada tarjeta con su
+// badge). Es un drop-zone: al soltar un lead activo, no mueve el stage directo,
+// sino que dispara el selector Ganado/Perdido (data.type="closed" lo detecta
+// handleDragEnd). Las tarjetas cerradas no son arrastrables.
+function ClosedColumn({
+  leads,
+  onOpen,
+}: {
+  leads: LeadListItem[];
+  onOpen: (leadId: string) => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: "__CLOSED__", data: { type: "closed" } });
+  const borderColor = isOver ? "var(--color-accent)" : "var(--color-border)";
+  return (
+    <div
+      ref={setNodeRef}
+      className="flex h-full w-[calc(100vw-5rem)] shrink-0 snap-start flex-col rounded-xl border bg-[var(--color-bg-card)] p-3 transition-all duration-200 md:w-[280px]"
+      style={{ borderColor }}
+    >
+      <div className="mb-3 flex shrink-0 items-center gap-2">
+        <span className="h-2 w-2 rounded-full bg-[var(--color-text-muted)]" />
+        <p className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Cerrado</p>
+        <span className="ml-auto text-xs font-semibold text-[var(--color-text-primary)]">{leads.length}</span>
+      </div>
+      <div className="flex-1 space-y-2 overflow-y-auto pr-1">
+        {leads.map((lead) => (
+          <LeadRow key={lead.id} lead={lead} onOpen={onOpen} showStageBadge />
+        ))}
+        {leads.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-[var(--color-border)] px-3 py-6 text-center text-sm text-[var(--color-text-muted)]">
+            Arrastrá un lead acá para cerrarlo
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -579,9 +522,14 @@ function ProposalModal({
 function LeadPanel({
   leadId,
   onClose,
+  initialClose = null,
 }: {
   leadId: string;
   onClose: () => void;
+  // Intención de cierre disparada desde afuera (al mandar el lead a la columna
+  // "Cerrado" del kanban): abre el flujo de cierre apenas carga el lead —
+  // "lost" pide el motivo, "won" abre la captura de comisión + pase a proyecto.
+  initialClose?: "won" | "lost" | null;
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -621,6 +569,18 @@ function LeadPanel({
     queryKey: ["lead-detail", leadId],
     queryFn: () => getLead(leadId),
   });
+
+  // Dispara el flujo de cierre cuando el lead se abre con una intención de
+  // cierre (desde la columna "Cerrado" del kanban). Solo una vez y solo si el
+  // lead todavía no está cerrado.
+  const closeTriggered = useRef(false);
+  useEffect(() => {
+    if (closeTriggered.current || !initialClose || !lead) return;
+    if (lead.stage === WON_STAGE || lead.stage === LOST_STAGE) return;
+    closeTriggered.current = true;
+    if (initialClose === "lost") setPendingStage(LOST_STAGE);
+    else setConfirmConvert(true);
+  }, [initialClose, lead]);
 
   const usersQuery = useQuery({
     queryKey: ["sales-users-panel"],
@@ -1087,35 +1047,6 @@ function LeadPanel({
   );
 }
 
-function Tabs({
-  current,
-  onChange,
-}: {
-  current: SalesTab;
-  onChange: (tab: SalesTab) => void;
-}) {
-  const items: Array<{ id: SalesTab; label: string }> = [
-    { id: "active", label: "Activos" },
-    { id: "won", label: "Ganados" },
-    { id: "lost", label: "Perdidos" },
-  ];
-
-  return (
-    <div className="flex gap-2">
-      {items.map((item) => (
-        <button
-          key={item.id}
-          className={`rounded-full px-3 py-1.5 text-sm ${current === item.id ? "bg-[var(--color-accent)] text-black" : "text-[var(--color-text-secondary)]"}`}
-          onClick={() => onChange(item.id)}
-          type="button"
-        >
-          {item.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function Sales() {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -1123,18 +1054,28 @@ export function Sales() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [onlyMine, setOnlyMine] = useState(false);
+  // Filtro por vendedor asignado ("" = todos, "unassigned" = sin asignar, o userId).
+  const [ownerId, setOwnerId] = useState("");
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput.trim()), 300);
     return () => clearTimeout(t);
   }, [searchInput]);
-  const { data = [], isLoading } = useLeadGroups({ search, assignedTo: onlyMine ? "me" : undefined });
-  const [tab, setTab] = useState<SalesTab>("active");
+  const { data = [], isLoading } = useLeadGroups({
+    search,
+    assignedTo: onlyMine ? "me" : undefined,
+    ownerId: ownerId || undefined,
+  });
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [showNewLead, setShowNewLead] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [view, setView] = useSalesView();
+  // Cierre desde la columna "Cerrado" del kanban: `closeSelector` es el leadId
+  // al que se le está por elegir Ganado/Perdido; `closeIntent` es la intención
+  // que se pasa al panel del lead para disparar el flujo de cierre.
+  const [closeSelector, setCloseSelector] = useState<string | null>(null);
+  const [closeIntent, setCloseIntent] = useState<{ leadId: string; kind: "won" | "lost" } | null>(null);
   // Filtros activos del Kanban para el badge del botón "Filtros" en móvil.
-  const activeFilterCount = (searchInput.trim() ? 1 : 0) + (onlyMine ? 1 : 0);
+  const activeFilterCount = (searchInput.trim() ? 1 : 0) + (onlyMine ? 1 : 0) + (ownerId ? 1 : 0);
 
   // Set de stages con columna colapsada. No se persiste: cada refresh
   // arranca con todas las columnas abiertas (decisión del usuario).
@@ -1164,12 +1105,22 @@ export function Sales() {
     enabled: canListUsers,
   });
 
-  const users = canListUsers ? usersQuery.data ?? [] : user ? [user] : [];
+  // Solo usuarios internos: se excluyen los del portal (rol CLIENT), que no son
+  // vendedores ni asignables a un lead.
+  const users = (canListUsers ? usersQuery.data ?? [] : user ? [user] : []).filter(
+    (u) => u.role !== "CLIENT",
+  );
 
   const stageMap = useMemo(() => new Map(data.map((group) => [group.stage, group])), [data]);
   const activeGroups = KANBAN_COLUMNS.map((stage) => stageMap.get(stage) ?? { stage, count: 0, leads: [] });
   const wonLeads = stageMap.get(WON_STAGE)?.leads ?? [];
   const lostLeads = stageMap.get(LOST_STAGE)?.leads ?? [];
+  // Una sola pestaña "Cerrados": ganados + perdidos juntos, cada uno con su
+  // badge de estado. Ordenados por días (más recientes en la etapa arriba).
+  const closedLeads = useMemo(
+    () => [...wonLeads, ...lostLeads].sort((a, b) => a.daysInStage - b.daysInStage),
+    [wonLeads, lostLeads],
+  );
 
   const stageMutation = useMutation({
     mutationFn: ({ leadId, stage }: { leadId: string; stage: SalesStage }) => patchLeadStage(leadId, { stage }),
@@ -1180,6 +1131,17 @@ export function Sales() {
     },
     onError: () => toast.error("No se pudo mover el lead"),
   });
+
+  const reclamoMutation = useMutation({
+    mutationFn: (leadId: string) => addReclamo(leadId),
+    onSuccess: (res) => {
+      toast.success(`Reclamo registrado (${res.reclamosCount})`);
+      queryClient.invalidateQueries({ queryKey: ["lead-groups"] });
+      if (selectedLeadId) queryClient.invalidateQueries({ queryKey: ["lead-detail", selectedLeadId] });
+    },
+    onError: () => toast.error("No se pudo registrar el reclamo"),
+  });
+  const handleReclamo = useCallback((leadId: string) => reclamoMutation.mutate(leadId), [reclamoMutation]);
 
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -1195,12 +1157,24 @@ export function Sales() {
     const overData = event.over.data?.current as
       | { type: "lead"; stage: SalesStage }
       | { type: "column"; stage: SalesStage }
+      | { type: "closed" }
       | undefined;
-    if (!overData || (overData.type !== "lead" && overData.type !== "column")) return;
-    const destStage = overData.stage;
+    if (!overData) return;
 
     const lead = findLead(data, activeId);
-    if (!lead || lead.stage === destStage) return;
+    if (!lead) return;
+
+    // Soltar sobre la columna "Cerrado": no se mueve el stage directo — se abre
+    // el selector Ganado/Perdido, que luego abre el lead con su flujo de cierre.
+    if (overData.type === "closed") {
+      if (lead.stage === WON_STAGE || lead.stage === LOST_STAGE) return; // ya cerrado
+      setCloseSelector(lead.id);
+      return;
+    }
+
+    if (overData.type !== "lead" && overData.type !== "column") return;
+    const destStage = overData.stage;
+    if (lead.stage === destStage) return;
     stageMutation.mutate({ leadId: lead.id, stage: destStage });
   };
 
@@ -1218,9 +1192,10 @@ export function Sales() {
 
       <div className="mb-4 flex shrink-0 flex-wrap items-center gap-3">
         <SalesViewToggle view={view} onChange={setView} />
-        {view === "kanban" ? (
+        {/* Kanban y Priorizada comparten los mismos filtros (search + Solo
+            míos) porque leen el mismo dataset. La vista Lista tiene los suyos. */}
+        {view !== "list" ? (
           <>
-            <Tabs current={tab} onChange={setTab} />
             {/* Desktop: búsqueda + "Solo míos" inline. En móvil van al sheet. */}
             <div className="relative hidden md:block">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--color-text-muted)]" />
@@ -1241,6 +1216,20 @@ export function Sales() {
               />
               Solo míos
             </label>
+            {canListUsers && users.length > 1 ? (
+              <select
+                value={ownerId}
+                onChange={(event) => setOwnerId(event.target.value)}
+                title="Filtrar por vendedor asignado"
+                className="hidden rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] py-1.5 px-2 text-xs text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none md:block"
+              >
+                <option value="">Todos los vendedores</option>
+                <option value="unassigned">Sin asignar</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+              </select>
+            ) : null}
             {/* Móvil: botón "Filtros" que abre el sheet (búsqueda + "Solo míos"). */}
             <button
               type="button"
@@ -1265,7 +1254,15 @@ export function Sales() {
         <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
           <Spinner size={18} /> Cargando pipeline...
         </div>
-      ) : tab === "active" ? (
+      ) : view === "priority" ? (
+        <PriorityView
+          groups={data}
+          onOpenLead={setSelectedLeadId}
+          onMove={(leadId, stage) => stageMutation.mutate({ leadId, stage })}
+          onReclamo={handleReclamo}
+          onCloseRequest={setCloseSelector}
+        />
+      ) : (
         <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragEnd={handleDragEnd}>
           <div className="flex min-h-0 flex-1 snap-x snap-mandatory gap-4 overflow-x-auto pb-4">
             {activeGroups.map((group) => (
@@ -1275,40 +1272,66 @@ export function Sales() {
                 leads={group.leads}
                 onOpen={setSelectedLeadId}
                 onMove={(leadId, stage) => stageMutation.mutate({ leadId, stage })}
+                onReclamo={handleReclamo}
+                onCloseRequest={setCloseSelector}
                 isCollapsed={collapsedColumns.has(group.stage)}
                 onToggle={() => toggleColumn(group.stage)}
               />
             ))}
+            <ClosedColumn leads={closedLeads} onOpen={setSelectedLeadId} />
           </div>
         </DndContext>
-      ) : (
-        <div className="space-y-3">
-          {(tab === "won" ? wonLeads : lostLeads).map((lead) => (
-            <button
-              key={lead.id}
-              className="flex w-full items-center justify-between rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4 text-left"
-              onClick={() => setSelectedLeadId(lead.id)}
-              type="button"
-            >
-              <div>
-                <p className="text-sm font-medium text-[var(--color-text-primary)]">{lead.clientName}</p>
-                <p className="font-mono text-[10px] text-[var(--color-text-muted)]">{lead.estimatedKwp ?? "—"} kWp</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-[var(--color-text-secondary)]">{formatMoney(lead.estimatedBudgetUsd)}</p>
-                <p className="text-[11px] text-[var(--color-text-muted)]">{lead.daysInStage} días</p>
-              </div>
-            </button>
-          ))}
-          {(tab === "won" ? wonLeads : lostLeads).length === 0 ? (
-            <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6 text-sm text-[var(--color-text-muted)]">
-              No hay leads en esta pestaña.
-            </div>
-          ) : null}
-        </div>
       )}
 
-      {selectedLeadId ? <LeadPanel leadId={selectedLeadId} onClose={() => setSelectedLeadId(null)} /> : null}
+      {selectedLeadId ? (
+        <LeadPanel
+          leadId={selectedLeadId}
+          onClose={() => {
+            setSelectedLeadId(null);
+            setCloseIntent(null);
+          }}
+          initialClose={closeIntent && closeIntent.leadId === selectedLeadId ? closeIntent.kind : null}
+        />
+      ) : null}
+
+      {/* Selector Ganado/Perdido al mandar un lead a la columna "Cerrado". */}
+      <Sheet open={closeSelector != null} onClose={() => setCloseSelector(null)} title="Cerrar lead">
+        <p className="mb-3 text-[11px] text-[var(--color-text-muted)]">
+          ¿Cómo querés cerrar este lead? Se abre el lead para completar el cierre.
+        </p>
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => {
+              const id = closeSelector;
+              setCloseSelector(null);
+              if (id) {
+                setCloseIntent({ leadId: id, kind: "won" });
+                setSelectedLeadId(id);
+              }
+            }}
+            className="flex w-full items-center gap-2 rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-left text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)]"
+          >
+            <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: STAGE_COLORS.CERRADO_GANADO.dot }} />
+            Cerrar como <strong>Ganado</strong>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const id = closeSelector;
+              setCloseSelector(null);
+              if (id) {
+                setCloseIntent({ leadId: id, kind: "lost" });
+                setSelectedLeadId(id);
+              }
+            }}
+            className="flex w-full items-center gap-2 rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-left text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)]"
+          >
+            <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: STAGE_COLORS.CERRADO_PERDIDO.dot }} />
+            Cerrar como <strong>Perdido</strong>
+          </button>
+        </div>
+      </Sheet>
       {showNewLead ? <NewLeadModal onClose={() => setShowNewLead(false)} users={users} /> : null}
 
       <Sheet
@@ -1339,6 +1362,22 @@ export function Sales() {
           />
           Solo míos
         </label>
+        {canListUsers && users.length > 1 ? (
+          <label className="mt-4 block">
+            <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Vendedor asignado</span>
+            <select
+              value={ownerId}
+              onChange={(event) => setOwnerId(event.target.value)}
+              className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] py-2 px-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+            >
+              <option value="">Todos los vendedores</option>
+              <option value="unassigned">Sin asignar</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
       </Sheet>
     </div>
   );

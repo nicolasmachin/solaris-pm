@@ -381,14 +381,14 @@ async function seedLeads(comercialId: string, adminId: string, projectId: string
     lead: { connect: { id: lead2.id } },
     user: { connect: { id: comercialId } },
     fromStage: SalesStage.NUEVO_LEAD,
-    toStage: SalesStage.PENDIENTE_COTIZAR,
+    toStage: SalesStage.COTIZADO,
     action: "REUNION",
     notes: "Visita técnica a la bodega. Se tomaron medidas del techo y se relevó medidor.",
   });
   await upsertActivity(`seed-sa-${lead2.code}-2`, {
     lead: { connect: { id: lead2.id } },
     user: { connect: { id: comercialId } },
-    fromStage: SalesStage.PENDIENTE_COTIZAR,
+    fromStage: SalesStage.NUEVO_LEAD,
     toStage: SalesStage.COTIZADO,
     action: "EMAIL",
     notes: "Envío de cotización formal con 3 opciones de capacidad: 250, 320 y 400 kWp.",
@@ -401,7 +401,7 @@ async function seedLeads(comercialId: string, adminId: string, projectId: string
     address: "Bariloche, Río Negro",
     estimatedKwp: new Prisma.Decimal(90),
     estimatedBudgetUsd: new Prisma.Decimal(48000),
-    stage: SalesStage.NEGOCIACION,
+    stage: SalesStage.VISITADO,
     assignedTo: { connect: { id: comercialId } },
     createdBy: { connect: { id: adminId } },
     proposalSentAt: new Date("2026-03-12T11:00:00Z"),
@@ -413,7 +413,7 @@ async function seedLeads(comercialId: string, adminId: string, projectId: string
     lead: { connect: { id: lead3.id } },
     user: { connect: { id: comercialId } },
     fromStage: SalesStage.COTIZADO,
-    toStage: SalesStage.NEGOCIACION,
+    toStage: SalesStage.VISITADO,
     action: "REUNION",
     notes: "Segunda reunión presencial. El cliente quiere cerrar antes de fin de mes.",
   });
@@ -451,7 +451,7 @@ async function seedLeads(comercialId: string, adminId: string, projectId: string
   await upsertActivity(`seed-sa-${lead4.code}-2`, {
     lead: { connect: { id: lead4.id } },
     user: { connect: { id: adminId } },
-    fromStage: SalesStage.NEGOCIACION,
+    fromStage: SalesStage.VISITADO,
     toStage: SalesStage.CERRADO_GANADO,
     action: "CONTRATO",
     notes: "Firma de contrato y pago de anticipo del 50%. Lead convertido a proyecto.",

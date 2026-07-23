@@ -6646,6 +6646,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
           visitScheduledAt: serializeDate(lead.visitScheduledAt),
           visitCompletedAt: serializeDate(lead.visitCompletedAt),
           closedAt: serializeDate(lead.closedAt),
+          reclamosCount: lead.reclamosCount,
+          lastReclamoAt: serializeDate(lead.lastReclamoAt),
           assignedTo: lead.assignedTo,
           createdAt: serializeDate(lead.createdAt),
         })),
@@ -6691,6 +6693,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
             estimatedBudgetUsd: lead.estimatedBudgetUsd ? decimalToNumber(lead.estimatedBudgetUsd) : null,
             assignedTo: lead.assignedTo,
             daysInStage: Math.max(0, diffInDays(latestActivityDate, new Date())),
+            reclamosCount: lead.reclamosCount,
+            lastReclamoAt: serializeDate(lead.lastReclamoAt),
           };
         });
 
@@ -6767,6 +6771,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       visitScheduledAt: lead.visitScheduledAt ? serializeDate(lead.visitScheduledAt) : null,
       visitCompletedAt: lead.visitCompletedAt ? serializeDate(lead.visitCompletedAt) : null,
       closedAt: lead.closedAt ? serializeDate(lead.closedAt) : null,
+      reclamosCount: lead.reclamosCount,
+      lastReclamoAt: lead.lastReclamoAt ? serializeDate(lead.lastReclamoAt) : null,
       assignedTo: lead.assignedTo,
       convertedToProject: lead.convertedToProject,
       convertedAt: lead.convertedAt,
@@ -6981,6 +6987,49 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
 
     return { success: true };
+  });
+
+  // Registra un reclamo (insistencia) al lead: incrementa el contador que se
+  // muestra como "xR" en la tarjeta. Es transversal a la etapa — no cambia el
+  // stage. Deja traza en SalesActivity + auditoría con la fecha del reclamo.
+  app.post("/leads/:id/reclamo", { preHandler: authorize(Module.VENTAS, Action.EDIT) }, async (request) => {
+    const user = ensureUser(request);
+    const { id } = request.params as { id: string };
+
+    const existing = await prisma.salesLead.findFirst({ where: { id, deletedAt: null } });
+    if (!existing) throw notFound("LEAD_NOT_FOUND", "Lead no encontrado");
+
+    const now = new Date();
+    const updatedLead = await prisma.salesLead.update({
+      where: { id },
+      data: { reclamosCount: { increment: 1 }, lastReclamoAt: now },
+    });
+
+    await prisma.salesActivity.create({
+      data: {
+        leadId: updatedLead.id,
+        userId: user.id,
+        action: "reclamo_added",
+        notes: `Reclamo #${updatedLead.reclamosCount}`,
+      },
+    });
+
+    await createAuditEntry({
+      entityType: AuditEntityType.lead,
+      entityId: updatedLead.id,
+      userId: user.id,
+      action: AuditAction.updated,
+      fieldChanged: "reclamosCount",
+      oldValue: String(existing.reclamosCount),
+      newValue: String(updatedLead.reclamosCount),
+      description: `Registró un reclamo al lead '${existing.clientName}' (total: ${updatedLead.reclamosCount})`,
+    });
+
+    return {
+      success: true,
+      reclamosCount: updatedLead.reclamosCount,
+      lastReclamoAt: serializeDate(updatedLead.lastReclamoAt),
+    };
   });
 
   const leadConvertBodySchema = z

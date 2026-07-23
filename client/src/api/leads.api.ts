@@ -2,7 +2,11 @@ import { apiClient as api } from "./axios";
 import type { LeadDetail, LeadProposal, LeadStageGroup, ProposalListItem, SalesStage } from "../types/leads.types";
 import type { Project } from "../types/api.types";
 
-export async function getLeads(params?: { assignedTo?: "me"; search?: string }): Promise<LeadStageGroup[]> {
+export async function getLeads(params?: {
+  assignedTo?: "me";
+  search?: string;
+  ownerId?: string; // filtrar por vendedor asignado (userId; "unassigned" = sin asignar)
+}): Promise<LeadStageGroup[]> {
   const { data } = await api.get<LeadStageGroup[]>("/api/leads", { params });
   return data;
 }
@@ -22,6 +26,8 @@ export interface LeadFlatRow {
   visitScheduledAt: string | null;
   visitCompletedAt: string | null;
   closedAt: string | null;
+  reclamosCount: number;
+  lastReclamoAt: string | null;
   assignedTo: { id: string; name: string } | null;
   createdAt: string;
 }
@@ -104,6 +110,17 @@ export async function patchLeadStage(
   },
 ): Promise<void> {
   await api.patch(`/api/leads/${id}/stage`, body);
+}
+
+// Registra un reclamo (insistencia) al lead. Incrementa el contador "xR".
+export async function addReclamo(
+  id: string,
+): Promise<{ success: boolean; reclamosCount: number; lastReclamoAt: string | null }> {
+  const { data } = await api.post<{ success: boolean; reclamosCount: number; lastReclamoAt: string | null }>(
+    `/api/leads/${id}/reclamo`,
+    {},
+  );
+  return data;
 }
 
 export interface ConvertLeadBody {

@@ -1,21 +1,25 @@
 import { useCallback, useEffect, useState } from "react";
-import { LayoutGrid, List } from "lucide-react";
+import { LayoutGrid, List, ListChecks } from "lucide-react";
 
-// Toggle visual entre la vista Kanban (default) y la vista de lista de
-// Ventas. La preferencia se persiste en localStorage clave
+// Toggle visual entre la vista Kanban (default), la vista de lista y la vista
+// priorizada de Ventas. La preferencia se persiste en localStorage clave
 // `voltia.sales.view` para que sobreviva al refresh de la página y
 // entre sesiones distintas del usuario.
 
 const STORAGE_KEY = "voltia.sales.view";
 const DEFAULT_VIEW: SalesView = "kanban";
 
-export type SalesView = "list" | "kanban";
+export type SalesView = "list" | "kanban" | "priority";
+
+function isSalesView(v: string | null): v is SalesView {
+  return v === "list" || v === "kanban" || v === "priority";
+}
 
 function readStored(): SalesView {
   if (typeof window === "undefined") return DEFAULT_VIEW;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw === "list" || raw === "kanban") return raw;
+    if (isSalesView(raw)) return raw;
   } catch {
     // localStorage puede estar bloqueado (modo incógnito estricto, etc.).
   }
@@ -33,7 +37,7 @@ export function useSalesView(): [SalesView, (v: SalesView) => void] {
   // storage events. No es crítico pero evita estados divergentes.
   useEffect(() => {
     const handler = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY && (e.newValue === "list" || e.newValue === "kanban")) {
+      if (e.key === STORAGE_KEY && isSalesView(e.newValue)) {
         setView(e.newValue);
       }
     };
@@ -95,6 +99,21 @@ export function SalesViewToggle({
       >
         <LayoutGrid size={14} />
         Kanban
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={view === "priority"}
+        title="Vista priorizada"
+        onClick={() => onChange("priority")}
+        className={`flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs transition-colors ${
+          view === "priority"
+            ? "bg-[var(--color-bg-card)] text-[var(--color-text-primary)] shadow-sm"
+            : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+        }`}
+      >
+        <ListChecks size={14} />
+        Priorizada
       </button>
     </div>
   );

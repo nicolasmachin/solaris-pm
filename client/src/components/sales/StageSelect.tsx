@@ -23,15 +23,10 @@ interface Props {
 // vía la lógica de su onChange.
 const ALL_STAGES: SalesStage[] = [
   "NUEVO_LEAD",
-  "PENDIENTE_COTIZAR",
   "COTIZADO",
   "RECLAMADO",
-  "VOLVER_CONTACTAR",
-  "NEGOCIACION",
   "AGENDAR_VISITA",
   "VISITADO",
-  "ONBOARDING",
-  "MAS_ADELANTE",
   "CERRADO_GANADO",
   "CERRADO_PERDIDO",
 ];

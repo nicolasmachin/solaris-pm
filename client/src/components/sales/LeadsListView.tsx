@@ -353,7 +353,7 @@ export function LeadsListView({ onOpenLead }: Props) {
           ))}
         </select>
 
-        <div className="w-44">
+        <div className="w-64">
           <UserSelect
             value={ownerId === "unassigned" ? null : ownerId || null}
             onChange={(id) => setOwner(id)}

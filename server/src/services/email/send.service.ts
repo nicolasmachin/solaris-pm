@@ -5,7 +5,6 @@ import { createAuditEntry } from "../audit.service.js";
 import { AppError, badRequest } from "../../utils/errors.js";
 import { buildTransporter, getSmtpCredentials } from "./smtp.service.js";
 import { redirectInDev } from "./dev-redirect.js";
-import { renderEmailLayout } from "./layout.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -118,11 +117,11 @@ export async function sendTemplatedEmail(input: SendEmailInput): Promise<{ id: s
       bcc: bcc.length ? bcc : undefined,
       subject: input.subject,
       text: input.body,
-      html: renderEmailLayout({
-        title: input.subject,
-        kicker: "Voltia PM",
-        contentHtml: bodyToHtml(input.body),
-      }),
+      // Correos compuestos por el usuario con plantilla (ej. consulta a UTE):
+      // van SIN el layout de marca de notificaciones. Son cartas del usuario
+      // hacia terceros, no notificaciones automáticas del sistema; se envían
+      // con el HTML simple del cuerpo (WYSIWYG del preview), como antes.
+      html: bodyToHtml(input.body),
     });
     await transporter.sendMail({
       from,

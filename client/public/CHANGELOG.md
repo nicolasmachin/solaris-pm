@@ -2,6 +2,25 @@
 
 ## v8.2
 
+### 22 de julio de 2026
+
+#### Ventas — pipeline más simple, vista priorizada y reclamos
+
+- Se **redujeron las etapas** del pipeline comercial a las que se usan de verdad: **Nuevo lead → Cotizado → Reclamado → Agendar visita → Visitado**, más **Cerrados**. Los leads que estaban en etapas viejas se **reubicaron solos** según su avance real (si tenían visita, cotización, etc.).
+- Nueva vista **"Priorizada"** (botón al lado de Kanban y Lista): lista los leads activos **de más avanzado a menos** — Visitados, Agendar visita, Cotizados, Reclamados y Nuevos — para atacarlos por prioridad. Dentro de cada grupo, primero los que esperan hace más tiempo. Usa **las mismas tarjetas que el Kanban** (con nombre, monto, responsable, días y reclamos) acomodadas varias por fila.
+- La **búsqueda** y el filtro **"Solo míos"** ahora también funcionan en la vista Priorizada (antes solo estaban en el Kanban).
+- Nuevo filtro **por vendedor asignado** en el Kanban y la Priorizada: un desplegable para ver los leads de un vendedor puntual, de todos, o los **"Sin asignar"** (muestra solo usuarios internos del equipo, no clientes del portal). Y podés **colapsar cada etapa** en la vista Priorizada tocando su título.
+
+#### Arreglos
+
+- **Ventas — filtro por propietario (vista Lista)**: se ensanchó el desplegable para que se lea el nombre completo del vendedor (antes quedaba cortado).
+- El kanban suma una **columna "Cerrado"** al final (junta ganados y perdidos, cada uno con su etiqueta). Para cerrar un lead **arrastralo a esa columna** —o usá **"Cerrar lead…"** en el menú de la tarjeta— y elegí **Ganado** o **Perdido**: se abre el lead con el cierre listo (Perdido pide el motivo; Ganado abre la comisión y el pase a proyecto).
+- **Contador de reclamos**: cada tarjeta muestra **"xR"** con la cantidad de reclamos hechos al lead, y un botón **"+"** para **sumar un reclamo al instante** desde la propia tarjeta (o desde la vista priorizada), sin abrir el lead.
+
+#### Arreglos
+
+- **Consulta a UTE**: el correo de consulta a UTE volvió a salir **sin el formato de marca** de las notificaciones automáticas. Ese mail es una carta que enviás a UTE desde tu propia casilla, así que va con el texto simple como antes (el diseño nuevo queda solo para las notificaciones internas automáticas del sistema).
+
 ### 20 de julio de 2026
 
 #### Métricas de Operaciones — obras realizadas bien contadas

@@ -2,56 +2,38 @@ import type { Comment, ProjectListItem } from "./api.types";
 
 export type SalesStage =
   | "NUEVO_LEAD"
-  | "PENDIENTE_COTIZAR"
   | "COTIZADO"
   | "RECLAMADO"
-  | "VOLVER_CONTACTAR"
-  | "NEGOCIACION"
   | "AGENDAR_VISITA"
   | "VISITADO"
-  | "ONBOARDING"
   | "CERRADO_GANADO"
-  | "CERRADO_PERDIDO"
-  | "MAS_ADELANTE";
+  | "CERRADO_PERDIDO";
 
 export const STAGE_LABELS: Record<SalesStage, string> = {
   NUEVO_LEAD: "Nuevo lead",
-  PENDIENTE_COTIZAR: "Pendiente cotizar",
   COTIZADO: "Cotizado",
   RECLAMADO: "Reclamado",
-  VOLVER_CONTACTAR: "Volver a contactar",
-  NEGOCIACION: "Negociación",
   AGENDAR_VISITA: "Agendar visita",
   VISITADO: "Visitado",
-  ONBOARDING: "Onboarding",
   CERRADO_GANADO: "Ganado",
   CERRADO_PERDIDO: "Perdido",
-  MAS_ADELANTE: "Más adelante",
 };
 
 // Colores por stage compartidos entre Kanban y vista de lista.
 export const STAGE_COLORS: Record<SalesStage, { border: string; dot: string }> = {
   NUEVO_LEAD: { border: "#334155", dot: "#94a3b8" },
-  PENDIENTE_COTIZAR: { border: "#b45309", dot: "#f59e0b" },
   COTIZADO: { border: "#2563eb", dot: "#60a5fa" },
   RECLAMADO: { border: "#ea580c", dot: "#fb923c" },
-  VOLVER_CONTACTAR: { border: "#6b7280", dot: "#cbd5e1" },
-  NEGOCIACION: { border: "#7c3aed", dot: "#c084fc" },
   AGENDAR_VISITA: { border: "#0f766e", dot: "#2dd4bf" },
   VISITADO: { border: "#4d7c0f", dot: "#a3e635" },
-  ONBOARDING: { border: "#4d7c0f", dot: "#a3e635" },
   CERRADO_GANADO: { border: "#166534", dot: "#4ade80" },
   CERRADO_PERDIDO: { border: "#991b1b", dot: "#f87171" },
-  MAS_ADELANTE: { border: "#64748b", dot: "#94a3b8" },
 };
 
 export const KANBAN_COLUMNS: SalesStage[] = [
   "NUEVO_LEAD",
-  "PENDIENTE_COTIZAR",
   "COTIZADO",
   "RECLAMADO",
-  "VOLVER_CONTACTAR",
-  "NEGOCIACION",
   "AGENDAR_VISITA",
   "VISITADO",
 ];
@@ -65,6 +47,8 @@ export interface LeadListItem {
   estimatedBudgetUsd: number | null;
   assignedTo: { id: string; name: string } | null;
   daysInStage: number;
+  reclamosCount: number;
+  lastReclamoAt: string | null;
 }
 
 export interface LeadStageGroup {
@@ -138,6 +122,8 @@ export interface LeadDetail {
   visitScheduledAt: string | null;
   visitCompletedAt: string | null;
   closedAt: string | null;
+  reclamosCount: number;
+  lastReclamoAt: string | null;
   assignedTo: { id: string; name: string } | null;
   convertedToProject: Pick<ProjectListItem, "id" | "code" | "clientName"> | null;
   convertedAt: string | null;
