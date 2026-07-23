@@ -13,6 +13,7 @@
 
 #### Arreglos
 
+- **Proyectos — filtro por "Etapa actual"**: al filtrar por una etapa (p. ej. "Onboarding") ya **no aparecen mezclados** proyectos que muestran otra etapa. Ahora el filtro respeta exactamente la etapa que se ve en la columna "Etapa actual" (antes también traía proyectos que tenían esa etapa u otra corriendo en paralelo, como Tramitación UTE, aunque su etapa mostrada fuera otra).
 - **Ventas — filtro por propietario (vista Lista)**: se ensanchó el desplegable para que se lea el nombre completo del vendedor (antes quedaba cortado).
 - El kanban suma una **columna "Cerrado"** al final (junta ganados y perdidos, cada uno con su etiqueta). Para cerrar un lead **arrastralo a esa columna** —o usá **"Cerrar lead…"** en el menú de la tarjeta— y elegí **Ganado** o **Perdido**: se abre el lead con el cierre listo (Perdido pide el motivo; Ganado abre la comisión y el pase a proyecto).
 - **Contador de reclamos**: cada tarjeta muestra **"xR"** con la cantidad de reclamos hechos al lead, y un botón **"+"** para **sumar un reclamo al instante** desde la propia tarjeta (o desde la vista priorizada), sin abrir el lead.

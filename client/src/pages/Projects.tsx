@@ -318,15 +318,14 @@ export function Projects() {
       // Si no hay estados seleccionados, no se muestra nada (interpretación
       // razonable: el usuario explícitamente vació el filtro).
       const matchesStatus = statusFilters.has(project.status as ProjectStatus);
-      // currentStages son sólo etapas IN_PROGRESS. Si no hay ninguna en curso
-      // (p. ej. POSTVENTA COMPLETED tras finalizar el trámite UTE), matcheamos
-      // contra la etapa computada que se muestra (getCurrentStage).
-      const inProgressStages = project.currentStages ?? [];
+      // El filtro matchea SOLO la etapa MOSTRADA (la que se ve en la columna
+      // "Etapa actual", resuelta con override). NO usamos currentStages (todas
+      // las IN_PROGRESS) porque incluye carriles en paralelo y Tramitación UTE
+      // (en curso desde el día uno) y etapas que quedaron sin cerrar: eso hacía
+      // que, p. ej., filtrar "Onboarding" trajera proyectos que muestran otra
+      // etapa pero tenían Onboarding aún en curso en paralelo.
       const matchesStageFilter =
-        stageFilter === "all"
-          ? true
-          : // Matchea la etapa MOSTRADA (resuelta, con override) o cualquiera real en curso.
-            project.currentStage?.name === stageFilter || inProgressStages.includes(stageFilter);
+        stageFilter === "all" ? true : project.currentStage?.name === stageFilter;
       const matchesQuery = term
         ? project.clientName.toLowerCase().includes(term) || project.code.toLowerCase().includes(term)
         : true;
