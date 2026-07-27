@@ -633,6 +633,22 @@ export interface CobroDetail {
 export const getCobroProjectDetail = (projectId: string) =>
   apiClient.get<CobroDetail>(`/api/finance/cobros-by-project/${projectId}`).then(r => r.data);
 
+// Cobros a clientes — escritura acotada (accesible por Experiencia Solar o
+// Finanzas). Solo operan sobre ingresos de proyecto, no gastos.
+export const registrarCobroCliente = (body: {
+  projectId: string;
+  descripcion: string;
+  monto: number;
+  moneda?: Moneda;
+  fecha: string;
+  modo?: 'COBRADO' | 'PREVISTO';
+}) => apiClient.post<{ id: string }>('/api/finance/cobros', body).then(r => r.data);
+
+export const patchCobroCliente = (
+  movementId: string,
+  body: { monto?: number; descripcion?: string; fecha?: string; estado?: 'PREVISTO' | 'PAGADO' },
+) => apiClient.patch(`/api/finance/cobros/${movementId}`, body).then(r => r.data);
+
 // ─── Saldo a favor del proveedor ─────────────────────────────────────────────
 
 export interface SaldoAFavorPaymentItem {

@@ -10383,7 +10383,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return "PARCIAL";
     }
 
-    app.get("/finance/cobros-by-project", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+    // Cobros a clientes: lectura compartida con Experiencia Solar (Atención al
+    // cliente) sin darle acceso al resto de Finanzas. Solo expone ingresos de
+    // proyecto, no gastos.
+    const cobrosReadGuard = authorizeAny([
+      { module: Module.EXPERIENCIA_CLIENTES, action: Action.VIEW },
+      { module: Module.FINANZAS, action: Action.VIEW },
+    ]);
+
+    app.get("/finance/cobros-by-project", { preHandler: cobrosReadGuard }, async (request) => {
       const query = z.object({
         estado: z.enum(["PENDIENTE", "PARCIAL", "COMPLETO", "EXCEDIDO", "SIN_PRESUPUESTO"]).optional(),
         clientName: z.string().optional(),
@@ -10496,7 +10504,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       };
     });
 
-    app.get("/finance/cobros-by-project/:projectId", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+    app.get("/finance/cobros-by-project/:projectId", { preHandler: cobrosReadGuard }, async (request) => {
       const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
 
       const project = await prisma.project.findFirst({
@@ -10631,6 +10639,129 @@ export async function registerApiRoutes(app: FastifyInstance) {
           .sort((a, b) => (a.fecha ?? "").localeCompare(b.fecha ?? "")),
         estadoCuenta,
         tipoCambio: fallbackUsdToUyu,
+      };
+    });
+
+    // ─── Cobros a clientes: escritura acotada (Experiencia Solar o Finanzas) ──
+    // Endpoints dedicados que SOLO operan sobre ingresos de proyecto
+    // (tipoMovimiento INGRESO + categoría PROYECTO_ENTRADA). Así el rol de
+    // Atención al cliente puede registrar/editar/marcar cobros sin tocar gastos
+    // ni el resto de Finanzas. Es la misma tabla `finance_movements`, así que
+    // los cambios se reflejan en la vista de Cobros y en Movimientos por igual.
+    const cobrosWriteCreateGuard = authorizeAny([
+      { module: Module.EXPERIENCIA_CLIENTES, action: Action.CREATE },
+      { module: Module.FINANZAS, action: Action.CREATE },
+    ]);
+    const cobrosWriteEditGuard = authorizeAny([
+      { module: Module.EXPERIENCIA_CLIENTES, action: Action.EDIT },
+      { module: Module.FINANZAS, action: Action.EDIT },
+    ]);
+
+    app.post("/finance/cobros", { preHandler: cobrosWriteCreateGuard }, async (request, reply) => {
+      const user = ensureUser(request);
+      const body = z.object({
+        projectId: z.string().min(1),
+        descripcion: z.string().min(1).max(200),
+        monto: z.coerce.number().positive(),
+        moneda: z.nativeEnum(Moneda).default(Moneda.USD),
+        fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        modo: z.enum(["COBRADO", "PREVISTO"]).default("COBRADO"),
+      }).strict().parse(request.body);
+
+      const project = await findProjectOrThrow(body.projectId);
+      const esPrevisto = body.modo === "PREVISTO";
+      const fecha = parseDateOnly(body.fecha);
+
+      const created = await prisma.financeMovement.create({
+        data: {
+          fecha,
+          mes: fecha.getUTCMonth() + 1,
+          anio: fecha.getUTCFullYear(),
+          tipoMovimiento: TipoMovimiento.INGRESO,
+          categoriaPrincipal: CategoriaPrincipal.PROYECTO_ENTRADA,
+          descripcion: body.descripcion.trim(),
+          monto: new Prisma.Decimal(body.monto),
+          moneda: body.moneda,
+          pagado: false,
+          cobrado: !esPrevisto,
+          impactaFlujo: true,
+          status: esPrevisto ? FinanceMovementStatus.PREVISTO : FinanceMovementStatus.PAGADO,
+          sourceType: MovementSourceType.MANUAL,
+          estadoAprobacion: EstadoAprobacion.REGISTRADO,
+          dueDate: esPrevisto ? fecha : null,
+          projectId: body.projectId,
+          accountId: null,
+          creadoPorId: user.id,
+        },
+      });
+
+      await createAuditEntry({
+        entityType: AuditEntityType.finance_movement,
+        entityId: created.id,
+        projectId: body.projectId,
+        userId: user.id,
+        action: AuditAction.created,
+        description: esPrevisto
+          ? `Registró un cobro previsto (${body.moneda} ${body.monto}) en ${project.code}`
+          : `Registró un cobro (${body.moneda} ${body.monto}) en ${project.code}`,
+      });
+
+      reply.code(201);
+      return { id: created.id };
+    });
+
+    app.patch("/finance/cobros/:movementId", { preHandler: cobrosWriteEditGuard }, async (request) => {
+      const user = ensureUser(request);
+      const { movementId } = z.object({ movementId: z.string() }).parse(request.params);
+      const body = z.object({
+        monto: z.coerce.number().positive().optional(),
+        descripcion: z.string().min(1).max(200).optional(),
+        fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        estado: z.enum(["PREVISTO", "PAGADO"]).optional(),
+      }).strict().parse(request.body);
+
+      const mov = await prisma.financeMovement.findFirst({ where: { id: movementId, deletedAt: null } });
+      if (!mov) throw notFound("MOVEMENT_NOT_FOUND", "Cobro no encontrado");
+      // Guard de alcance: esta ruta SOLO toca cobros a clientes.
+      if (
+        mov.tipoMovimiento !== TipoMovimiento.INGRESO ||
+        mov.categoriaPrincipal !== CategoriaPrincipal.PROYECTO_ENTRADA
+      ) {
+        throw badRequest("NOT_A_COBRO", "Este movimiento no es un cobro a cliente");
+      }
+
+      const data: Prisma.FinanceMovementUpdateInput = {};
+      if (body.descripcion !== undefined) data.descripcion = body.descripcion.trim();
+      if (body.monto !== undefined) data.monto = new Prisma.Decimal(body.monto);
+      if (body.fecha !== undefined) {
+        const fecha = parseDateOnly(body.fecha);
+        data.fecha = fecha;
+        data.mes = fecha.getUTCMonth() + 1;
+        data.anio = fecha.getUTCFullYear();
+      }
+      if (body.estado !== undefined) {
+        const esPagado = body.estado === "PAGADO";
+        data.status = esPagado ? FinanceMovementStatus.PAGADO : FinanceMovementStatus.PREVISTO;
+        data.cobrado = esPagado;
+        if (!esPagado && !mov.dueDate) data.dueDate = mov.fecha;
+      }
+
+      const updated = await prisma.financeMovement.update({ where: { id: movementId }, data });
+
+      await createAuditEntry({
+        entityType: AuditEntityType.finance_movement,
+        entityId: movementId,
+        projectId: mov.projectId ?? null,
+        userId: user.id,
+        action: AuditAction.updated,
+        description: `Actualizó un cobro a cliente (${updated.descripcion})`,
+      });
+
+      return {
+        id: updated.id,
+        status: updated.status,
+        monto: Number(updated.monto),
+        cobrado: updated.cobrado,
       };
     });
 

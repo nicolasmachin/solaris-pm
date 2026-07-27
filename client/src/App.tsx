@@ -79,6 +79,7 @@ const TicketsSection = lazy(() => import("./modules/tickets/TicketsSection").the
 const ClienteFicha = lazy(() => import("./modules/clientes/pages/ClienteFichaPage").then((module) => ({ default: module.ClienteFichaPage })));
 const EncuestasPage = lazy(() => import("./modules/encuestas/EncuestasPage").then((module) => ({ default: module.EncuestasPage })));
 const ExperienciaSolarLayout = lazy(() => import("./modules/clientes/pages/ExperienciaSolarLayout").then((module) => ({ default: module.ExperienciaSolarLayout })));
+const ClientesCobros = lazy(() => import("./modules/clientes/pages/ClientesCobros").then((module) => ({ default: module.ClientesCobros })));
 
 function RouteFallback() {
   return (
@@ -390,6 +391,7 @@ export function App() {
           }
         >
           <Route index element={<Clientes />} />
+          <Route path="cobros" element={<ClientesCobros />} />
           <Route path="encuestas" element={<EncuestasPage />} />
         </Route>
         <Route

@@ -10,6 +10,13 @@
 - El check y la nota se cargan al **crear un proyecto** y también se pueden editar después desde la ficha del proyecto (botón **Editar**).
 - En la pestaña Facturación ves la lista de proyectos que llevan factura, filtrable entre **Pendientes**, **Emitidas** y **Todas**. Cuando emitís una factura, la marcás con **"Marcar emitida"** (queda registrada con la fecha) y sale de las pendientes; si te equivocaste, podés **Revertir**. La nota se puede editar directo desde el listado.
 
+#### Experiencia Solar — Cobros a clientes
+
+- **Experiencia Solar** ahora tiene su propia pestaña **Cobros**, para revisar y gestionar los pagos de los clientes **sin entrar a Finanzas** (no ve gastos ni el resto de la parte financiera).
+- Muestra el listado de clientes con lo **cobrado**, lo **pendiente** y el estado de cobranza. Tocando un cliente se abren sus cobros, donde podés: **registrar un cobro nuevo** (pagado o pendiente), **marcarlo como pagado**, y **editar el monto** si el cliente pagó de más o de menos.
+- Botón **"Copiar resumen (WhatsApp)"**: copia un resumen prolijo de pagos (presupuesto, cobrado, pendiente y el detalle) listo para pegarle al cliente por WhatsApp.
+- Es la **misma información que Finanzas**: cualquier cambio hecho desde Experiencia Solar se ve al instante en Finanzas (Cobros y Movimientos), y al revés.
+
 #### Arreglos
 
 - **Cobros — planes de pago que no se podían editar**: en muchos proyectos el asistente de plan de pagos te obligaba a "crear el plan desde cero" en vez de dejarte **editar** los cobros que ya tenías, y al recrearlo quedaban cuotas duplicadas. Ahora el plan de pagos es, simplemente, **todos los cobros pendientes (previstos) del proyecto**, sin importar si los cargaste con el asistente o a mano desde "Registrar cobro". Así siempre podés **editarlos** desde el asistente y, al guardar, reemplaza los pendientes sin duplicar.
