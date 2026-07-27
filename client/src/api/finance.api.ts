@@ -753,3 +753,31 @@ export const getIncomeStatementYearlyBreakdown = (anio: number) =>
   apiClient
     .get<IncomeStatementYearlyBreakdown>('/api/finance/income-statement/yearly-breakdown', { params: { anio } })
     .then(r => r.data);
+
+// ─── Facturación al cliente (facturas pendientes de emisión) ────────────────
+
+export interface FacturacionRow {
+  id: string;
+  code: string;
+  clientName: string;
+  status: string;
+  budgetUsd: number | null;
+  saleDate: string | null;
+  facturaEmitida: boolean;
+  facturaEmitidaEn: string | null;
+  nota: string | null;
+  salesperson: { id: string; name: string } | null;
+}
+
+export interface FacturacionResponse {
+  projects: FacturacionRow[];
+  totales: { pendientes: number; emitidas: number };
+}
+
+export const getFacturacion = (params?: { estado?: 'pendiente' | 'emitida' | 'todas'; clientName?: string }) =>
+  apiClient.get<FacturacionResponse>('/api/finance/facturacion', { params }).then(r => r.data);
+
+export const patchFacturacion = (
+  projectId: string,
+  body: { facturaEmitida?: boolean; facturaNota?: string | null },
+) => apiClient.patch(`/api/finance/facturacion/${projectId}`, body).then(r => r.data);

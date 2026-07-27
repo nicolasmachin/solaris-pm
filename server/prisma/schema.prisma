@@ -631,12 +631,21 @@ model Project {
   // pero sin pipeline/obra. Se excluye de la lista de Proyectos (solo vive en
   // Experiencia Solar) hasta que, si alguna vez, se lo convierta en proyecto real.
   importedFromCsv         Boolean                  @default(false)
+  // Facturación al cliente. No todos los clientes "llevan factura" (algunos exigen
+  // factura fiscal y otros no). Una sola factura por proyecto: el estado de emisión
+  // vive en el propio proyecto. El check y la nota se editan al crear/editar el
+  // proyecto; "marcar emitida" es una acción del módulo Finanzas.
+  llevaFactura            Boolean                  @default(false)
+  facturaNota             String?
+  facturaEmitida          Boolean                  @default(false)
+  facturaEmitidaEn        DateTime?                @db.Timestamptz(6)
   deletedAt               DateTime?                @db.Timestamptz(6)
   createdAt               DateTime                 @default(now()) @db.Timestamptz(6)
   updatedAt               DateTime                 @updatedAt @db.Timestamptz(6)
 
   @@index([status])
   @@index([importedFromCsv])
+  @@index([llevaFactura])
   @@index([tenantId])
   @@index([createdById])
   @@index([salespersonId])

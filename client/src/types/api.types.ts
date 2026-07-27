@@ -46,13 +46,25 @@ export type PhaseType = "MONOFASICO" | "TRIFASICO_230" | "TRIFASICO_400";
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
+// Los roles son datos (tabla `roles`), no un enum cerrado: el string genérico
+// cubre roles creados desde Admin. Se listan los conocidos para autocompletado,
+// pero se admite cualquier otro nombre de rol.
 export type UserRole =
   | "ADMIN"
   | "ASESOR_COMERCIAL"
   | "INGENIERIA"
   | "OPERACIONES"
   | "FINANZAS"
-  | "CLIENT";
+  | "CLIENT"
+  | "POSTVENTA"
+  | "TRAMITACION_UTE"
+  | "EXPERIENCIA_SOLAR"
+  | "GERENTE_OPERACIONES"
+  | "GERENTE_COMERCIAL"
+  | "GERENTE_INGENIERIA"
+  | "GERENTE_FINANZAS"
+  | "LOGISTICA"
+  | (string & {});
 
 export interface User {
   id: string;
@@ -310,6 +322,11 @@ export interface Project {
   empresa: boolean;
   cedulaPath: string | null;
   facturaUtePath: string | null;
+  // Facturación al cliente. No todos los clientes "llevan factura".
+  llevaFactura: boolean;
+  facturaNota: string | null;
+  facturaEmitida: boolean;
+  facturaEmitidaEn: string | null;
   createdById: string;
   salespersonId: string | null;
   salesperson: { id: string; name: string } | null;

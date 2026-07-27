@@ -300,39 +300,6 @@ export function Metrics() {
               mode={mode}
               quarterLabel={qLabel}
             />
-
-            {/* Tasa de conversión — métrica calculada, sin objetivo */}
-            <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4 flex flex-col gap-3">
-              <p className="text-[11px] text-[var(--color-text-muted)]">
-                Tasa de conversión lead → cierre
-              </p>
-              {salesQ.data.conversionRate != null ? (
-                <>
-                  <div>
-                    <div className="flex items-baseline gap-1 leading-none">
-                      <span className="font-display text-3xl font-bold text-[var(--color-text-primary)]">
-                        {safe(salesQ.data.conversionRate, 1)}
-                      </span>
-                      <span className="text-xs text-[var(--color-text-muted)]">%</span>
-                    </div>
-                    <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5">
-                      {isQ ? qLabel : "este año"}
-                    </p>
-                  </div>
-                  <p className="text-xs text-[var(--color-text-secondary)] mt-auto">
-                    {salesQ.data.closedWonThisYear} ganados de{" "}
-                    {salesQ.data.closedWonThisYear + (salesQ.data.closedLostThisYear ?? 0)} cerrados
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="font-display text-3xl font-bold text-[var(--color-text-muted)]">—</p>
-                  <p className="text-xs text-[var(--color-text-muted)] mt-auto">
-                    Sin datos suficientes
-                  </p>
-                </>
-              )}
-            </div>
           </div>
         ) : null}
 

@@ -14,6 +14,7 @@ import { z } from "zod";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
+import { contentDisposition } from "../utils/content-disposition.js";
 import type { CalcDebugRow } from "../services/proposal/calculator-labels.js";
 import { computeDraftCalcRows, getDraft, upsertDraft } from "../services/proposal/draft.service.js";
 import { computeDraftViability } from "../services/proposal/viability.service.js";
@@ -83,7 +84,7 @@ async function sendVersionPdf(
 
   const filename = versionPdfFilename(kind, clientNameFromSnapshot(version.snapshot), version.versionNumber);
   reply.header("Content-Type", "application/pdf");
-  reply.header("Content-Disposition", `attachment; filename="${filename}"`);
+  reply.header("Content-Disposition", contentDisposition("attachment", filename));
   reply.header("Cache-Control", "no-store");
   return reply.send(buf);
 }

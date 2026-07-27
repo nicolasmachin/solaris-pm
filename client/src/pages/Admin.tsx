@@ -67,19 +67,48 @@ interface UserMe {
   permissions: UserMePermissionEntry[];
 }
 
-const ROLE_LABELS: Record<UserRole, string> = {
+// Colores curados de los roles "clásicos". Cualquier otro rol (gerencias,
+// logística, o roles creados desde Admin) cae al color derivado del nombre.
+const ROLE_COLORS: Record<string, { bg: string; color: string }> = {
+  ADMIN: { bg: "var(--color-warning-bg)", color: "var(--color-warning-text)" },
+  ASESOR_COMERCIAL: { bg: "var(--color-info-bg)", color: "var(--color-info-text)" },
+  INGENIERIA: { bg: "var(--color-state-done-bg)", color: "var(--color-state-done-text)" },
+  OPERACIONES: { bg: "var(--color-state-active-bg)", color: "var(--color-state-active-text)" },
+};
+
+// Etiquetas curadas; el resto se prettifica desde el nombre.
+const ROLE_LABELS: Record<string, string> = {
   ADMIN: "Administrador",
   ASESOR_COMERCIAL: "Asesor Comercial",
   INGENIERIA: "Ingeniería",
   OPERACIONES: "Operaciones",
 };
 
-const ROLE_COLORS: Record<UserRole, { bg: string; color: string }> = {
-  ADMIN: { bg: "var(--color-warning-bg)", color: "var(--color-warning-text)" },
-  ASESOR_COMERCIAL: { bg: "var(--color-info-bg)", color: "var(--color-info-text)" },
-  INGENIERIA: { bg: "var(--color-state-done-bg)", color: "var(--color-state-done-text)" },
-  OPERACIONES: { bg: "var(--color-state-active-bg)", color: "var(--color-state-active-text)" },
-};
+// Paleta para roles sin color curado, elegida de forma estable por hash del
+// nombre (mismo rol → siempre el mismo color).
+const ROLE_FALLBACK_PALETTE: Array<{ bg: string; color: string }> = [
+  { bg: "var(--color-state-done-bg)", color: "var(--color-state-done-text)" },
+  { bg: "var(--color-info-bg)", color: "var(--color-info-text)" },
+  { bg: "var(--color-warning-bg)", color: "var(--color-warning-text)" },
+  { bg: "var(--color-state-active-bg)", color: "var(--color-state-active-text)" },
+];
+
+function roleLabel(role: string): string {
+  if (ROLE_LABELS[role]) return ROLE_LABELS[role];
+  // "GERENTE_OPERACIONES" → "Gerente Operaciones"
+  return role
+    .toLowerCase()
+    .split("_")
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(" ");
+}
+
+function roleColor(role: string): { bg: string; color: string } {
+  if (ROLE_COLORS[role]) return ROLE_COLORS[role];
+  let hash = 0;
+  for (let i = 0; i < role.length; i++) hash = (hash * 31 + role.charCodeAt(i)) >>> 0;
+  return ROLE_FALLBACK_PALETTE[hash % ROLE_FALLBACK_PALETTE.length];
+}
 
 const ALL_MODULES = ["VENTAS", "ONBOARDING", "INGENIERIA", "OPERACIONES", "HABILITACION", "POSTVENTA", "METRICAS", "CONFIGURACION", "USUARIOS"];
 const ALL_ROLES: UserRole[] = ["ADMIN", "ASESOR_COMERCIAL", "INGENIERIA", "OPERACIONES"];
@@ -135,7 +164,7 @@ const labelStyle: React.CSSProperties = {
 };
 
 function RoleBadge({ role }: { role: UserRole }) {
-  const c = ROLE_COLORS[role] ?? { bg: "var(--color-bg-card-hover)", color: "var(--color-text-muted)" };
+  const c = roleColor(role);
   return (
     <span style={{
       background: c.bg, color: c.color,
@@ -144,7 +173,7 @@ function RoleBadge({ role }: { role: UserRole }) {
       fontWeight: 600, textTransform: "uppercase",
       letterSpacing: "0.05em",
     }}>
-      {ROLE_LABELS[role] ?? role}
+      {roleLabel(role)}
     </span>
   );
 }

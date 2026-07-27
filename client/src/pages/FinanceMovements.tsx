@@ -986,6 +986,7 @@ export function FinanceMovements() {
       qc.invalidateQueries({ queryKey: ['finance-dashboard'] });
       qc.invalidateQueries({ queryKey: ['comprobantes-widget'] });
       qc.invalidateQueries({ queryKey: ['pending-detail'] });
+      qc.invalidateQueries({ queryKey: ['cobros-by-project'] });
       if (r.requiresItemDetail) {
         toast.success('Estado actualizado · cargá el desglose de la factura');
         setDesgloseMovId(r.id);
@@ -1011,6 +1012,7 @@ export function FinanceMovements() {
       qc.invalidateQueries({ queryKey: ['pending-detail'] });
       qc.invalidateQueries({ queryKey: ['stock-products'] });
       qc.invalidateQueries({ queryKey: ['stock-alerts'] });
+      qc.invalidateQueries({ queryKey: ['cobros-by-project'] });
       setDetailMov(null);
     },
     onError: (err: unknown) => {
@@ -1043,6 +1045,7 @@ export function FinanceMovements() {
       qc.invalidateQueries({ queryKey: ['finance-movements'] });
       qc.invalidateQueries({ queryKey: ['payments'] });
       qc.invalidateQueries({ queryKey: ['finance-dashboard'] });
+      qc.invalidateQueries({ queryKey: ['cobros-by-project'] });
       setDetailMov(null);
     },
     onError: () => toast.error('Error al eliminar'),
@@ -1051,6 +1054,9 @@ export function FinanceMovements() {
   function handleSuccess() {
     qc.invalidateQueries({ queryKey: ['finance-movements'] });
     qc.invalidateQueries({ queryKey: ['finance-dashboard'] });
+    // Un INGRESO cobrado alimenta la vista de Cobros por proyecto (lista y
+    // detalle, ambos con prefijo ['cobros-by-project']); refrescarla al editar.
+    qc.invalidateQueries({ queryKey: ['cobros-by-project'] });
     setNewModal(false);
     setEditMov(null);
     setDetailMov(null);

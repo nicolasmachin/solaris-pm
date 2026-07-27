@@ -8,6 +8,7 @@ import { Action, AuditAction, AuditEntityType, InformeEstado, Module } from "@pr
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
+import { contentDisposition } from "../utils/content-disposition.js";
 import { badRequest, unauthorized } from "../utils/errors.js";
 import {
   borrarInforme,
@@ -232,7 +233,7 @@ export async function registerInformesRoutes(app: FastifyInstance) {
       const { id, fileId } = adjuntoParams.parse(request.params);
       const file = await obtenerAdjuntoDescarga(id, fileId, user);
       reply.header("Content-Type", file.mimeType);
-      reply.header("Content-Disposition", `inline; filename="${file.filename}"`);
+      reply.header("Content-Disposition", contentDisposition("inline", file.filename));
       return reply.send(fs.createReadStream(file.absolutePath));
     },
   );
@@ -245,7 +246,7 @@ export async function registerInformesRoutes(app: FastifyInstance) {
       const { id, fileId } = adjuntoParams.parse(request.params);
       const file = await obtenerAdjuntoDescarga(id, fileId, user);
       reply.header("Content-Type", file.mimeType);
-      reply.header("Content-Disposition", `attachment; filename="${file.filename}"`);
+      reply.header("Content-Disposition", contentDisposition("attachment", file.filename));
       return reply.send(fs.createReadStream(file.absolutePath));
     },
   );

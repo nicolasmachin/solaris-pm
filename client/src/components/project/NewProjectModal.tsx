@@ -25,6 +25,8 @@ interface NewProjectForm {
   clientPhone: string;
   clientAddress: string;
   saleDate: string;
+  llevaFactura: boolean;
+  facturaNota: string;
 }
 
 function buildEmptyForm(): NewProjectForm {
@@ -39,6 +41,8 @@ function buildEmptyForm(): NewProjectForm {
     clientPhone: "",
     clientAddress: "",
     saleDate: todayLocalISO(),
+    llevaFactura: false,
+    facturaNota: "",
   };
 }
 
@@ -122,6 +126,8 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
         clientPhone: form.clientPhone.trim() || undefined,
         clientAddress: form.clientAddress.trim() || undefined,
         saleDate: form.saleDate || undefined,
+        llevaFactura: form.llevaFactura,
+        facturaNota: form.facturaNota.trim() || undefined,
         solarSystem: solarPayload,
       });
     },
@@ -221,6 +227,30 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
                 ))}
               </select>
             </Field>
+
+            <div className="rounded-xl border border-[var(--color-border)] px-4 py-3 space-y-3">
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.llevaFactura}
+                  onChange={(event) => setForm((current) => ({ ...current, llevaFactura: event.target.checked }))}
+                  className="h-4 w-4 rounded border-[var(--color-border)] accent-[var(--color-accent)]"
+                />
+                <span className="text-sm text-[var(--color-text-primary)]">Lleva factura</span>
+                <span className="text-[10px] text-[var(--color-text-muted)]">— el cliente exige factura fiscal</span>
+              </label>
+              {form.llevaFactura ? (
+                <Field label="Nota de facturación">
+                  <textarea
+                    className={input()}
+                    rows={2}
+                    placeholder="RUT, razón social, a nombre de quién facturar, etc."
+                    value={form.facturaNota}
+                    onChange={(event) => updateField("facturaNota", event.target.value)}
+                  />
+                </Field>
+              ) : null}
+            </div>
           </div>
 
           <div className="space-y-4">

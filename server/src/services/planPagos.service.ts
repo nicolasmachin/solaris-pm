@@ -87,12 +87,13 @@ function toCuotaOutput(m: FinanceMovement): PlanCuotaOutput {
 }
 
 /**
- * Lee los previstos del plan vigente de un proyecto.
- * Filtro:
+ * Lee el plan de pagos de un proyecto = TODOS sus cobros previstos (pendientes).
+ * El plan no es una entidad separada: son los cobros de proyecto que todavía no
+ * se cobraron, sin importar si se cargaron con el asistente o a mano (desde
+ * "Registrar cobro" en modo Previsto). Filtro:
  *   - tipoMovimiento INGRESO, categoría PROYECTO_ENTRADA
- *   - status PREVISTO (no cobrado todavía)
- *   - sourceType MANUAL (consistente con el resto de previstos manuales)
- *   - descripcion empieza con "[PLAN] "
+ *   - status PREVISTO (las cuotas ya cobradas salen del plan editable)
+ *   - sourceType MANUAL (excluye previstos generados por procesos automáticos)
  *   - deletedAt null
  *
  * Las cuotas se ordenan por dueDate asc (luego createdAt como tiebreaker).
@@ -112,7 +113,6 @@ export async function getPlanPagos(projectId: string): Promise<GetPlanResult> {
         categoriaPrincipal: CategoriaPrincipal.PROYECTO_ENTRADA,
         status: FinanceMovementStatus.PREVISTO,
         sourceType: MovementSourceType.MANUAL,
-        descripcion: { startsWith: PLAN_PREFIX },
         deletedAt: null,
       },
       orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }],
@@ -150,11 +150,11 @@ export type CreatePlanResult = {
  *    sentido matemático). El warning de seña > 50% se valida en el cliente
  *    (es un soft warning, no bloquea).
  *
- * Atomic: soft-deletea los previstos [PLAN] anteriores (sourceType MANUAL,
- * status PREVISTO, prefix [PLAN], deletedAt null) y crea las nuevas cuotas
- * en una sola transacción. No toca:
- *   - previstos sueltos sin prefijo (de RegisterCobroModal)
- *   - cobros ya pagados (status != PREVISTO)
+ * Atomic: soft-deletea TODOS los cobros previstos vigentes del proyecto
+ * (INGRESO, PROYECTO_ENTRADA, status PREVISTO, MANUAL, deletedAt null) y crea
+ * las nuevas cuotas en una sola transacción. Así "editar el plan" reconcilia
+ * todos los pendientes en un solo set, sin duplicar. No toca:
+ *   - cobros ya cobrados (status != PREVISTO)
  */
 export async function createPlanPagos(args: {
   projectId: string;
@@ -234,7 +234,6 @@ export async function createPlanPagos(args: {
         categoriaPrincipal: CategoriaPrincipal.PROYECTO_ENTRADA,
         status: FinanceMovementStatus.PREVISTO,
         sourceType: MovementSourceType.MANUAL,
-        descripcion: { startsWith: PLAN_PREFIX },
         deletedAt: null,
       },
       select: { id: true },

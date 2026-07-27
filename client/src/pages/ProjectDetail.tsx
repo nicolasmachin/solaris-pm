@@ -136,6 +136,8 @@ function EditProjectModal({
     project.firstDateScheduledAt ? project.firstDateScheduledAt.slice(0, 10) : ""
   );
   const [saleDate, setSaleDate] = useState(project.saleDate ?? "");
+  const [llevaFactura, setLlevaFactura] = useState(project.llevaFactura);
+  const [facturaNota, setFacturaNota] = useState(project.facturaNota ?? "");
 
   const { mutate, isPending } = useMutation({
     mutationFn: () => {
@@ -154,6 +156,8 @@ function EditProjectModal({
           ? new Date(firstDateScheduledAt).toISOString()
           : null,
         saleDate: saleDate || null,
+        llevaFactura,
+        facturaNota: facturaNota.trim() || null,
       });
     },
     onSuccess: () => {
@@ -231,6 +235,30 @@ function EditProjectModal({
                 Solo para contacto manual. No se usa para enviar WhatsApps automáticos.
               </p>
             </div>
+          </div>
+          <div style={{ border: "1px solid var(--color-border)", borderRadius: 8, padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={llevaFactura}
+                onChange={e => setLlevaFactura(e.target.checked)}
+                style={{ width: 16, height: 16, accentColor: "var(--color-accent)" }}
+              />
+              <span style={{ fontSize: 13, color: "var(--color-text-primary)" }}>Lleva factura</span>
+              <span style={{ fontSize: 10, color: "var(--color-text-muted)" }}>— el cliente exige factura fiscal</span>
+            </label>
+            {llevaFactura ? (
+              <div>
+                <label style={labelStyle}>Nota de facturación</label>
+                <textarea
+                  style={{ ...inputStyle, minHeight: 52, resize: "vertical" }}
+                  rows={2}
+                  placeholder="RUT, razón social, a nombre de quién facturar, etc."
+                  value={facturaNota}
+                  onChange={e => setFacturaNota(e.target.value)}
+                />
+              </div>
+            ) : null}
           </div>
         </div>
 

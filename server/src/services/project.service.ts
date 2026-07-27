@@ -577,6 +577,10 @@ export function serializeProject(project: {
   empresa?: boolean;
   cedulaPath?: string | null;
   facturaUtePath?: string | null;
+  llevaFactura?: boolean;
+  facturaNota?: string | null;
+  facturaEmitida?: boolean;
+  facturaEmitidaEn?: Date | null;
   salespersonId: string | null;
   salesperson?: { id: string; name: string } | null;
   firstDateScheduledAt?: Date | null;
@@ -628,6 +632,7 @@ export function serializeProject(project: {
     salesperson: rest.salesperson || null,
     uteCodigoPS: rest.uteCodigoPS ?? null,
     uteCodigoAS: rest.uteCodigoAS ?? null,
+    facturaEmitidaEn: rest.facturaEmitidaEn ? serializeDate(rest.facturaEmitidaEn) : null,
   };
 }
 

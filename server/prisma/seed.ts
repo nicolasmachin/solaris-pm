@@ -93,7 +93,22 @@ const SYSTEM_ROLES: Array<{ name: string; label: string }> = [
   // a usuarios; existen para el cálculo de destinatarios de los traspasos.
   { name: "TRAMITACION_UTE", label: "Tramitación UTE" },
   { name: "EXPERIENCIA_SOLAR", label: "Responsable de Experiencia Solar" },
+  // Gerencias: cada una arranca como copia de su rol base (ver seedPermissions)
+  // y luego se ajusta desde Admin → Permisos. Logística es un rol operativo nuevo.
+  { name: "GERENTE_OPERACIONES", label: "Gerente de Operaciones" },
+  { name: "GERENTE_COMERCIAL", label: "Gerente Comercial" },
+  { name: "GERENTE_INGENIERIA", label: "Gerente de Ingeniería" },
+  { name: "GERENTE_FINANZAS", label: "Gerente de Finanzas" },
+  { name: "LOGISTICA", label: "Logística" },
 ];
+
+// Gerencia → rol base del que clona sus permisos en el seed.
+const GERENTE_BASE: Record<string, string> = {
+  GERENTE_OPERACIONES: "OPERACIONES",
+  GERENTE_COMERCIAL: "ASESOR_COMERCIAL",
+  GERENTE_INGENIERIA: "INGENIERIA",
+  GERENTE_FINANZAS: "FINANZAS",
+};
 
 async function seedSystemRoles(): Promise<Map<string, string>> {
   // Upsert por name (idempotente). Mantiene isSystem=true sin pisar labels si el admin renombró.
@@ -272,7 +287,22 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "POSTVENTA",         module: Module.ENCUESTAS, actions: [Action.VIEW] },
     { roleName: "TRAMITACION_UTE",   module: Module.ENCUESTAS, actions: [Action.VIEW] },
     { roleName: "EXPERIENCIA_SOLAR", module: Module.ENCUESTAS, actions: [Action.VIEW] },
+
+    // ─── Logística — rol operativo nuevo. Núcleo en Stock; lectura de
+    //     Operaciones y de Ingeniería (materiales consolidados / compras).
+    { roleName: "LOGISTICA", module: Module.STOCK,       actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { roleName: "LOGISTICA", module: Module.OPERACIONES, actions: [Action.VIEW] },
+    { roleName: "LOGISTICA", module: Module.INGENIERIA,  actions: [Action.VIEW] },
   ];
+
+  // Gerencias: se generan clonando 1:1 los permisos del rol base. Arrancan igual
+  // que su equipo; los "permisos propios" (Métricas, Finanzas, etc.) se ajustan
+  // después desde Admin → Permisos.
+  for (const [gerente, base] of Object.entries(GERENTE_BASE)) {
+    for (const entry of matrix.filter((e) => e.roleName === base)) {
+      matrix.push({ roleName: gerente, module: entry.module, actions: [...entry.actions] });
+    }
+  }
 
   for (const entry of matrix) {
     const roleId = roleIdByName.get(entry.roleName);

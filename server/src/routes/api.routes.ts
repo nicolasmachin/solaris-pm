@@ -135,6 +135,7 @@ import {
 import { markSubstageActivity } from "../services/substage-activity.service.js";
 import { findNextSubstage, notifyNextSubstageOwner } from "../services/substage-notifications.service.js";
 import { accumulateSupplierSaldoAFavor } from "../services/supplier-balance.service.js";
+import { contentDisposition } from "../utils/content-disposition.js";
 import { addDays, diffInDays, parseDateOnly, todayUtc, toDateOnlyString } from "../utils/dates.js";
 import { AppError, badRequest, conflict, forbidden, notFound } from "../utils/errors.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../utils/serialization.js";
@@ -192,6 +193,10 @@ const projectCreateSchema = z
     startDate: dateOnlySchema.optional(),
     saleDate: dateOnlySchema.optional(),
     solarSystem: solarSystemCreateSchema.optional(),
+    // Facturación al cliente (ver modelo Project). El check y la nota; la emisión
+    // se maneja aparte desde Finanzas.
+    llevaFactura: z.boolean().optional(),
+    facturaNota: z.string().max(2000).nullable().optional(),
   })
   .strict();
 
@@ -238,6 +243,10 @@ const projectPatchSchema = z
     empresa: z.boolean().optional(),
     cedulaPath: z.string().nullable().optional(),
     facturaUtePath: z.string().nullable().optional(),
+    // Facturación al cliente. facturaEmitida/facturaEmitidaEn NO se exponen acá:
+    // la emisión es una acción del módulo Finanzas (endpoint propio).
+    llevaFactura: z.boolean().optional(),
+    facturaNota: z.string().max(2000).nullable().optional(),
   })
   .strict();
 
@@ -727,6 +736,9 @@ function normalizeProjectInput(input: Record<string, unknown>) {
   if (source.empresa !== undefined) normalized.empresa = Boolean(source.empresa);
   if (source.cedulaPath !== undefined) normalized.cedulaPath = source.cedulaPath || null;
   if (source.facturaUtePath !== undefined) normalized.facturaUtePath = source.facturaUtePath || null;
+  // Facturación al cliente (check + nota). La emisión se maneja aparte en Finanzas.
+  if (source.llevaFactura !== undefined) normalized.llevaFactura = Boolean(source.llevaFactura);
+  if (source.facturaNota !== undefined) normalized.facturaNota = source.facturaNota || null;
 
   return normalized;
 }
@@ -772,6 +784,8 @@ const projectFieldLabels: Record<string, string> = {
   clientEmail: "email del cliente",
   clientPhone: "teléfono del cliente",
   clientAddress: "dirección del cliente",
+  llevaFactura: "lleva factura",
+  facturaNota: "nota de facturación",
 };
 
 const solarSystemFieldLabels: Record<string, string> = {
@@ -1586,6 +1600,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         clientPhone: body.clientPhone || null,
         clientAddress: body.clientAddress || null,
         salespersonId: body.salespersonId ?? null,
+        llevaFactura: body.llevaFactura ?? false,
+        facturaNota: body.facturaNota || null,
         createdById: user.id,
         ...(body.solarSystem
           ? {
@@ -3755,7 +3771,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
 
     reply.header("Content-Type", file.mimeType);
-    reply.header("Content-Disposition", `attachment; filename="${file.filename}"`);
+    reply.header("Content-Disposition", contentDisposition("attachment", file.filename));
     return reply.send(fs.createReadStream(absolutePath));
   });
 
@@ -3887,7 +3903,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
 
     reply.header("Content-Type", file.mimeType);
-    reply.header("Content-Disposition", `inline; filename="${file.filename}"`);
+    reply.header("Content-Disposition", contentDisposition("inline", file.filename));
     return reply.send(fs.createReadStream(absolutePath));
   });
 
@@ -4068,7 +4084,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     reply.hijack();
     reply.raw.writeHead(200, {
       "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="${zipName}"`,
+      "Content-Disposition": contentDisposition("attachment", zipName),
     });
 
     const archive = archiver("zip", { zlib: { level: 6 } });
@@ -10618,6 +10634,111 @@ export async function registerApiRoutes(app: FastifyInstance) {
       };
     });
 
+    // ─── Facturación al cliente (facturas pendientes de emisión) ───────────
+    // Lista los proyectos que "llevan factura" y su estado de emisión. El check
+    // y la nota se cargan al crear/editar el proyecto; marcar "emitida" es una
+    // acción propia de Finanzas (por eso no pasa por el PATCH de proyecto, que
+    // exigiría permiso de Operaciones al rol Finanzas).
+
+    app.get("/finance/facturacion", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
+      const query = z.object({
+        estado: z.enum(["pendiente", "emitida", "todas"]).optional().default("pendiente"),
+        clientName: z.string().optional(),
+      }).parse(request.query);
+
+      const where: Prisma.ProjectWhereInput = { llevaFactura: true, deletedAt: null };
+      if (query.estado === "pendiente") where.facturaEmitida = false;
+      if (query.estado === "emitida") where.facturaEmitida = true;
+      if (query.clientName && query.clientName.trim().length > 0) {
+        where.clientName = { contains: query.clientName.trim(), mode: "insensitive" };
+      }
+
+      const projects = await prisma.project.findMany({
+        where,
+        select: {
+          id: true, code: true, clientName: true, status: true, budgetUsd: true,
+          saleDate: true, facturaEmitida: true, facturaEmitidaEn: true, facturaNota: true,
+          salesperson: { select: { id: true, name: true } },
+        },
+        // Pendientes primero, luego por fecha de venta más reciente.
+        orderBy: [{ facturaEmitida: "asc" }, { saleDate: "desc" }, { createdAt: "desc" }],
+      });
+
+      const items = projects.map((p) => ({
+        id: p.id,
+        code: p.code,
+        clientName: p.clientName,
+        status: p.status,
+        budgetUsd: p.budgetUsd != null ? Number(p.budgetUsd) : null,
+        saleDate: p.saleDate ? serializeDateOnly(p.saleDate) : null,
+        facturaEmitida: p.facturaEmitida,
+        facturaEmitidaEn: p.facturaEmitidaEn ? serializeDate(p.facturaEmitidaEn) : null,
+        nota: p.facturaNota,
+        salesperson: p.salesperson ?? null,
+      }));
+
+      return {
+        projects: items,
+        totales: {
+          pendientes: items.filter((p) => !p.facturaEmitida).length,
+          emitidas: items.filter((p) => p.facturaEmitida).length,
+        },
+      };
+    });
+
+    // Marcar/revertir emisión y editar la nota, con permiso de Finanzas.
+    app.patch("/finance/facturacion/:projectId", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
+      const user = ensureUser(request);
+      const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
+      const body = z.object({
+        facturaEmitida: z.boolean().optional(),
+        facturaNota: z.string().max(2000).nullable().optional(),
+      }).parse(request.body);
+
+      const project = await findProjectOrThrow(projectId);
+      if (!project.llevaFactura) {
+        throw new AppError(400, "PROJECT_SIN_FACTURA", "El proyecto no está marcado como que lleva factura");
+      }
+
+      const data: Prisma.ProjectUpdateInput = {};
+      if (body.facturaEmitida !== undefined) {
+        data.facturaEmitida = body.facturaEmitida;
+        data.facturaEmitidaEn = body.facturaEmitida ? new Date() : null;
+      }
+      if (body.facturaNota !== undefined) {
+        data.facturaNota = body.facturaNota || null;
+      }
+
+      const updated = await prisma.project.update({ where: { id: projectId }, data });
+
+      if (body.facturaEmitida !== undefined && body.facturaEmitida !== project.facturaEmitida) {
+        await createAuditEntry({
+          entityType: AuditEntityType.project,
+          entityId: projectId,
+          projectId,
+          userId: user.id,
+          action: AuditAction.updated,
+          fieldChanged: "facturaEmitida",
+          description: body.facturaEmitida
+            ? `Marcó la factura como emitida en el proyecto ${project.code}`
+            : `Revirtió la emisión de la factura en el proyecto ${project.code}`,
+        });
+      }
+      if (body.facturaNota !== undefined && (body.facturaNota || null) !== (project.facturaNota || null)) {
+        await createAuditEntry({
+          entityType: AuditEntityType.project,
+          entityId: projectId,
+          projectId,
+          userId: user.id,
+          action: AuditAction.updated,
+          fieldChanged: "facturaNota",
+          description: `Actualizó la nota de facturación en el proyecto ${project.code}`,
+        });
+      }
+
+      return serializeProject(updated);
+    });
+
     // ─── Asistente Plan de Pagos Previstos ─────────────────────────────────
     // Crea cobros previstos estructurados (seña + cuotas) a partir del
     // presupuesto del proyecto en una sola transacción. Identificación del
@@ -10849,7 +10970,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
         reply
           .header("Content-Type", "application/zip")
-          .header("Content-Disposition", `attachment; filename="${zipFilename}"`)
+          .header("Content-Disposition", contentDisposition("attachment", zipFilename))
           .send(zipBuffer);
       },
     );
@@ -13144,7 +13265,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       });
 
       reply.header("Content-Type", "application/pdf");
-      reply.header("Content-Disposition", `attachment; filename="${displayName}.pdf"`);
+      reply.header("Content-Disposition", contentDisposition("attachment", `${displayName}.pdf`));
       reply.header("X-File-Id", attachment.id);
       return reply.send(fs.createReadStream(absolutePath));
     });

@@ -16,6 +16,7 @@ import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
 import { buildContractContext } from "../services/contract/contract-context.service.js";
+import { contentDisposition } from "../utils/content-disposition.js";
 import { getDraft, upsertDraft } from "../services/contract/contract-draft.service.js";
 import {
   discardVersion,
@@ -64,7 +65,7 @@ async function sendVersionPdf(
   const buf = await readVersionPdfById(id);
   const filename = contractPdfFilename(clientNameFromSnapshot(version.snapshot), version.versionNumber);
   reply.header("Content-Type", "application/pdf");
-  reply.header("Content-Disposition", `${disposition}; filename="${filename}"`);
+  reply.header("Content-Disposition", contentDisposition(disposition, filename));
   reply.header("Cache-Control", "no-store");
   return reply.send(buf);
 }

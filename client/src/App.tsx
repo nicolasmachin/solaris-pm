@@ -49,6 +49,7 @@ const FinancePayments = lazy(() => import("./pages/FinancePayments").then((modul
 const FinanceSupplierDetail = lazy(() => import("./pages/FinanceSupplierDetail").then((module) => ({ default: module.FinanceSupplierDetail })));
 const FinanceCuentas = lazy(() => import("./pages/FinanceCuentas").then((module) => ({ default: module.FinanceCuentas })));
 const FinanceCobros = lazy(() => import("./pages/FinanceCobros").then((module) => ({ default: module.FinanceCobros })));
+const FinanceFacturacionTab = lazy(() => import("./pages/FinanceFacturacionTab").then((module) => ({ default: module.FinanceFacturacionTab })));
 const FinanceCobroDetail = lazy(() => import("./pages/FinanceCobroDetail").then((module) => ({ default: module.FinanceCobroDetail })));
 const FinanceIncomeStatement = lazy(() => import("./pages/FinanceIncomeStatement").then((module) => ({ default: module.FinanceIncomeStatement })));
 const Stock = lazy(() => import("./pages/Stock").then((module) => ({ default: module.Stock })));
@@ -283,6 +284,7 @@ export function App() {
           <Route path="pendientes" element={<FinancePendientesTab />} />
           <Route path="proveedores" element={<FinanceSuppliers />} />
           <Route path="cobros" element={<FinanceCobros />} />
+          <Route path="facturacion" element={<FinanceFacturacionTab />} />
           <Route path="flujo" element={<FinanceCashflowTab />} />
           <Route path="resultados" element={<FinanceResultsTab />} />
           <Route path="cuentas" element={<FinanceCuentas />} />

@@ -9,6 +9,7 @@ import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
 import { buildProformaContext } from "../services/proforma/proforma-context.service.js";
+import { contentDisposition } from "../utils/content-disposition.js";
 import { getDraft, upsertDraft } from "../services/proforma/proforma-draft.service.js";
 import {
   discardVersion,
@@ -57,7 +58,7 @@ async function sendVersionPdf(
   const buf = await readVersionPdfById(id);
   const filename = proformaPdfFilename(clientNameFromSnapshot(version.snapshot), version.versionNumber);
   reply.header("Content-Type", "application/pdf");
-  reply.header("Content-Disposition", `${disposition}; filename="${filename}"`);
+  reply.header("Content-Disposition", contentDisposition(disposition, filename));
   reply.header("Cache-Control", "no-store");
   return reply.send(buf);
 }

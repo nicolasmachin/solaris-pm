@@ -13,6 +13,7 @@ import { prisma } from "../lib/prisma.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
+import { contentDisposition } from "../utils/content-disposition.js";
 import {
   deleteLeadAttachmentFile,
   leadAttachmentAbsolutePath,
@@ -135,10 +136,7 @@ export async function registerSalesRoutes(app: FastifyInstance) {
       }
 
       reply.header("Content-Type", attachment.mimeType);
-      reply.header(
-        "Content-Disposition",
-        `attachment; filename="${encodeURIComponent(attachment.filename)}"`,
-      );
+      reply.header("Content-Disposition", contentDisposition("attachment", attachment.filename));
       return reply.send(fs.createReadStream(absolutePath));
     },
   );

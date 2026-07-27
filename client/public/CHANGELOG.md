@@ -2,6 +2,33 @@
 
 ## v8.2
 
+### 26 de julio de 2026
+
+#### Finanzas — Facturación al cliente (facturas pendientes de emitir)
+
+- Nueva pestaña **Facturación** en Finanzas para llevar el control de qué facturas **tenés pendientes de emitir**. No todos los clientes llevan factura, así que ahora cada proyecto tiene un check **"Lleva factura"** y una **nota** libre (para anotar RUT, razón social, a nombre de quién facturar, etc.).
+- El check y la nota se cargan al **crear un proyecto** y también se pueden editar después desde la ficha del proyecto (botón **Editar**).
+- En la pestaña Facturación ves la lista de proyectos que llevan factura, filtrable entre **Pendientes**, **Emitidas** y **Todas**. Cuando emitís una factura, la marcás con **"Marcar emitida"** (queda registrada con la fecha) y sale de las pendientes; si te equivocaste, podés **Revertir**. La nota se puede editar directo desde el listado.
+
+#### Arreglos
+
+- **Cobros — planes de pago que no se podían editar**: en muchos proyectos el asistente de plan de pagos te obligaba a "crear el plan desde cero" en vez de dejarte **editar** los cobros que ya tenías, y al recrearlo quedaban cuotas duplicadas. Ahora el plan de pagos es, simplemente, **todos los cobros pendientes (previstos) del proyecto**, sin importar si los cargaste con el asistente o a mano desde "Registrar cobro". Así siempre podés **editarlos** desde el asistente y, al guardar, reemplaza los pendientes sin duplicar.
+- **Cobros — al editar un movimiento el cambio ahora se refleja al instante**: si corregías el monto (o el estado) de un cobro desde la pantalla de Movimientos, la vista de **Cobros por proyecto** seguía mostrando el valor viejo hasta recargar la página. Ahora se actualiza sola.
+
+### 25 de julio de 2026
+
+#### Arreglos
+
+- **Documentos con tildes o caracteres especiales en el nombre**: los archivos cuyo nombre tenía tildes, emojis, guiones largos o comillas curvas (típico de nombres armados en Mac) daban error al abrir la vista previa o descargarlos. Ahora **abren y se descargan bien**, conservando el nombre original con sus acentos. Aplica a documentos de proyecto, adjuntos de informes y de leads, y a los PDF y ZIP que genera el sistema.
+
+### 23 de julio de 2026
+
+#### Roles nuevos — Gerencias y Logística
+
+- Se agregaron **roles de gerencia**: **Gerente de Operaciones, Gerente Comercial, Gerente de Ingeniería** y **Gerente de Finanzas**. Cada uno arranca con **los mismos permisos que su equipo** y se puede ajustar aparte desde **Admin → Permisos** (por ejemplo, darle acceso a Métricas o a Finanzas) sin tocar el rol base.
+- Nuevo rol **Logística**, con acceso a **Stock** (gestión completa) y lectura de **Operaciones** e **Ingeniería** (para ver materiales y compras).
+- Los roles nuevos ya aparecen al **crear o editar un usuario** y en la matriz de permisos. Cada rol se muestra con su propia **etiqueta y color** en el listado de usuarios.
+
 ### 22 de julio de 2026
 
 #### Ventas — pipeline más simple, vista priorizada y reclamos
@@ -13,6 +40,7 @@
 
 #### Arreglos
 
+- **Métricas — Ventas**: se quitó la tarjeta **"Tasa de conversión lead → cierre"** del panel de ventas.
 - **Proyectos — filtro por "Etapa actual"**: al filtrar por una etapa (p. ej. "Onboarding") ya **no aparecen mezclados** proyectos que muestran otra etapa. Ahora el filtro respeta exactamente la etapa que se ve en la columna "Etapa actual" (antes también traía proyectos que tenían esa etapa u otra corriendo en paralelo, como Tramitación UTE, aunque su etapa mostrada fuera otra).
 - **Ventas — filtro por propietario (vista Lista)**: se ensanchó el desplegable para que se lea el nombre completo del vendedor (antes quedaba cortado).
 - El kanban suma una **columna "Cerrado"** al final (junta ganados y perdidos, cada uno con su etiqueta). Para cerrar un lead **arrastralo a esa columna** —o usá **"Cerrar lead…"** en el menú de la tarjeta— y elegí **Ganado** o **Perdido**: se abre el lead con el cierre listo (Perdido pide el motivo; Ganado abre la comisión y el pase a proyecto).

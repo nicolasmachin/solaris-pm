@@ -46,6 +46,8 @@ export async function createProject(body: {
   clientPhone?: string;
   clientAddress?: string;
   saleDate?: string;
+  llevaFactura?: boolean;
+  facturaNota?: string | null;
   solarSystem?: SolarSystemPayload;
 }): Promise<Project> {
   const { data } = await apiClient.post<Project>("/api/projects", body);
@@ -73,6 +75,8 @@ export async function patchProject(
     saleDate?: string | null;
     uteCodigoPS?: string | null;
     uteCodigoAS?: string | null;
+    llevaFactura?: boolean;
+    facturaNota?: string | null;
   }
 ): Promise<Project> {
   const { data } = await apiClient.patch<Project>(`/api/projects/${id}`, body);
