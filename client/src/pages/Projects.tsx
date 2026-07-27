@@ -26,7 +26,7 @@ type SortKey =
   | "status"
   | "progress"
   | "currentStage"
-  | "installationDate"
+  | "salesperson"
   | "inverter"
   | "panels"
   | "saleDate";
@@ -95,6 +95,8 @@ function loadPageFilter(): PagePersistedFilter | null {
     }
     // El sortKey "dates" (columna Inicio) fue eliminado: coerción defensiva.
     if ((parsed.sortKey as string) === "dates") parsed.sortKey = "saleDate";
+    // La columna "Instalación" (installationDate) fue reemplazada por "Asesor".
+    if ((parsed.sortKey as string) === "installationDate") parsed.sortKey = "saleDate";
     // Etapa persistida de una versión vieja del pipeline (5 etapas): si ya no es
     // una opción válida, se cae a "all" para no dejar el select en un valor muerto.
     if (!VALID_STAGE_FILTERS.has(parsed.stageFilter as string)) parsed.stageFilter = "all";
@@ -178,13 +180,16 @@ function sortProjects(projects: ProjectListItem[], sortKey: SortKey, direction: 
         else result = 0;
         break;
       }
-      case "installationDate":
-        if (a.plannedWorkStart && b.plannedWorkStart) {
-          result = a.plannedWorkStart < b.plannedWorkStart ? -1 : a.plannedWorkStart > b.plannedWorkStart ? 1 : 0;
-        } else if (a.plannedWorkStart) result = -1;
-        else if (b.plannedWorkStart) result = 1;
+      case "salesperson": {
+        // null (sin asesor) al final independientemente de la dirección.
+        const aName = a.salespersonName ?? "";
+        const bName = b.salespersonName ?? "";
+        if (aName && bName) result = compareText(aName, bName);
+        else if (aName) result = -1;
+        else if (bName) result = 1;
         else result = 0;
         break;
+      }
       case "inverter":
         result = compareText(formatSolarSystemPrimary(solarA ?? emptySolarSystem), formatSolarSystemPrimary(solarB ?? emptySolarSystem));
         break;
@@ -543,7 +548,7 @@ function ProjectGroupTable({
               <th className="px-4 py-3"><SortHeader label="Avance" sortKey="progress" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
               <th className="px-4 py-3"><SortHeader label="Inversor" sortKey="inverter" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
               <th className="px-4 py-3"><SortHeader label="Paneles" sortKey="panels" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
-              <th className="px-4 py-3"><SortHeader label="Instalación" sortKey="installationDate" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th className="px-4 py-3"><SortHeader label="Asesor" sortKey="salesperson" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
               <th className="px-4 py-3"><SortHeader label="Venta" sortKey="saleDate" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
               <th className="px-4 py-3 text-left text-[11px] font-mono uppercase tracking-widest text-[var(--color-table-header-text)]">Acciones</th>
             </tr>
@@ -652,12 +657,12 @@ function ProjectGroupTable({
                     </span>
                   </td>
                   <td className="px-4 py-4 align-top">
-                    {project.plannedWorkStart ? (
+                    {project.salespersonName ? (
                       <div className="text-sm text-[var(--color-text-primary)]">
-                        {formatDate(project.plannedWorkStart)}
+                        {project.salespersonName}
                       </div>
                     ) : (
-                      <span className="text-sm text-[var(--color-text-muted)]">Sin agendar</span>
+                      <span className="text-sm text-[var(--color-text-muted)]">—</span>
                     )}
                   </td>
                   <td className="px-4 py-4 align-top">

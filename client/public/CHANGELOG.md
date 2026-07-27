@@ -2,6 +2,12 @@
 
 ## v8.2
 
+### 27 de julio de 2026
+
+#### Proyectos — columna "Asesor" en la vista general
+
+- En la vista general de **Proyectos**, la columna **"Instalación"** se reemplazó por **"Asesor"**: ahora se ve de un vistazo **qué asesor comercial vendió** cada proyecto. La columna es **ordenable** (los proyectos sin asesor quedan al final).
+
 ### 26 de julio de 2026
 
 #### Finanzas — Facturación al cliente (facturas pendientes de emitir)

@@ -115,6 +115,8 @@ export interface ProjectListItem {
   installationTeamName?: string | null;
   /** Tipo del equipo de instalación asignado, si existe. */
   installationTeamType?: "PROPIO" | "TERCERIZADO" | null;
+  /** Nombre del asesor comercial que vendió el proyecto (salesperson), o null. */
+  salespersonName?: string | null;
   startDate: string | null;
   saleDate: string | null;
   plannedEndDate: string | null;

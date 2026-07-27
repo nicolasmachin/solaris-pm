@@ -1307,6 +1307,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           where: { deletedAt: null },
           include: { segments: { orderBy: { startDate: "asc" }, take: 1 } },
         },
+        salesperson: { select: { id: true, name: true } },
       },
       orderBy: baseOrder,
       ...(query.page || query.limit
@@ -1370,6 +1371,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         installationTeamColor,
         installationTeamName,
         installationTeamType,
+        salespersonName: project.salesperson?.name ?? null,
         delayDays,
         hasOverdueStage,
         startDate: serializeDateOnly(project.startDate),
