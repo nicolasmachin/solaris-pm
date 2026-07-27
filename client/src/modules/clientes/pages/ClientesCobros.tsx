@@ -64,8 +64,11 @@ function buildResumenWhatsApp(data: CobroDetail): string {
   return lines.join('\n');
 }
 
+type EstadoFilter = 'all' | EstadoCobranza;
+
 export function ClientesCobros() {
   const [activos, setActivos] = useState<'true' | 'all'>('true');
+  const [estado, setEstado] = useState<EstadoFilter>('all');
   const [search, setSearch] = useState('');
   const [detailProject, setDetailProject] = useState<{ id: string; clientName: string } | null>(null);
 
@@ -78,10 +81,12 @@ export function ClientesCobros() {
   const totales = data?.totales;
 
   const filtered = useMemo(() => {
+    let out = projects;
+    if (estado !== 'all') out = out.filter(p => p.estadoCobranza === estado);
     const q = search.trim().toLowerCase();
-    if (!q) return projects;
-    return projects.filter(p => p.clientName.toLowerCase().includes(q) || p.code.toLowerCase().includes(q));
-  }, [projects, search]);
+    if (q) out = out.filter(p => p.clientName.toLowerCase().includes(q) || p.code.toLowerCase().includes(q));
+    return out;
+  }, [projects, estado, search]);
 
   const columns: Column<CobroProjectItem>[] = [
     {
@@ -153,6 +158,18 @@ export function ClientesCobros() {
             className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
           />
         </div>
+        <select
+          value={estado}
+          onChange={e => setEstado(e.target.value as EstadoFilter)}
+          className="px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] text-sm text-[var(--color-text-primary)]"
+        >
+          <option value="all">Todos los estados</option>
+          <option value="PENDIENTE">Pendientes</option>
+          <option value="PARCIAL">Parciales</option>
+          <option value="COMPLETO">Completos</option>
+          <option value="EXCEDIDO">Excedidos</option>
+          <option value="SIN_PRESUPUESTO">Sin presupuesto</option>
+        </select>
         <div className="flex rounded-lg border border-[var(--color-border)] overflow-hidden text-xs font-mono uppercase tracking-wider">
           {([['true', 'Activos'], ['all', 'Todos']] as const).map(([val, label]) => (
             <button key={val} onClick={() => setActivos(val)}

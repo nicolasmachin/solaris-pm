@@ -13,7 +13,7 @@
 #### Experiencia Solar — Cobros a clientes
 
 - **Experiencia Solar** ahora tiene su propia pestaña **Cobros**, para revisar y gestionar los pagos de los clientes **sin entrar a Finanzas** (no ve gastos ni el resto de la parte financiera).
-- Muestra el listado de clientes con lo **cobrado**, lo **pendiente** y el estado de cobranza. Tocando un cliente se abren sus cobros, donde podés: **registrar un cobro nuevo** (pagado o pendiente), **marcarlo como pagado**, y **editar el monto** si el cliente pagó de más o de menos.
+- Muestra el listado de clientes con lo **cobrado**, lo **pendiente** y el estado de cobranza, con **buscador** y **filtros** (por estado de cobranza y por activos/todos). Tocando un cliente se abren sus cobros, donde podés: **registrar un cobro nuevo** (pagado o pendiente), **marcarlo como pagado**, y **editar el monto** si el cliente pagó de más o de menos.
 - Botón **"Copiar resumen (WhatsApp)"**: copia un resumen prolijo de pagos (presupuesto, cobrado, pendiente y el detalle) listo para pegarle al cliente por WhatsApp.
 - Es la **misma información que Finanzas**: cualquier cambio hecho desde Experiencia Solar se ve al instante en Finanzas (Cobros y Movimientos), y al revés.
 
