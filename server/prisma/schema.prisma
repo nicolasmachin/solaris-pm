@@ -121,6 +121,10 @@ enum AuditEntityType {
   traspaso
   ticket
   survey
+  tarifa_ute_version
+  reporte_fv_config
+  reporte_fv_lectura
+  reporte_fv_emision
 }
 
 enum AuditAction {
@@ -509,6 +513,13 @@ model User {
   traspasosComoModal             Traspaso[]                  @relation("TraspasoModalUsuario")
   traspasosConfirmados           Traspaso[]                  @relation("TraspasoConfirmadoPor")
   traspasosRecibidos             TraspasoDestinatario[]      @relation("TraspasoDestinatarioUsuario")
+  tarifaUteVersionsCreadas       TarifaUteVersion[]          @relation("TarifaUteVersionCreadaPor")
+  reporteFvConfigsActualizadas   ReporteFvConfig[]           @relation("ReporteFvConfigActualizadaPor")
+  reporteFvLecturasEditadas      ReporteFvLectura[]          @relation("ReporteFvLecturaEditadaPor")
+  reporteFvIngestasLanzadas      ReporteFvIngesta[]          @relation("ReporteFvIngestaLanzadaPor")
+  reporteFvEmisionesGeneradas    ReporteFvEmision[]          @relation("ReporteFvEmisionGeneradaPor")
+  reporteFvEnviosRealizados      ReporteFvEnvio[]            @relation("ReporteFvEnvioEnviadoPor")
+  growattPlantsVinculadas        GrowattPlant[]              @relation("GrowattPlantVinculadaPor")
   passwordTemporary              Boolean                     @default(false)
   deletedAt                      DateTime?                   @db.Timestamptz(6)
   createdAt                      DateTime                    @default(now()) @db.Timestamptz(6)
@@ -592,6 +603,11 @@ model Project {
   emailLogs               EmailLog[]               @relation("EmailLogProject")
   clientInteractions      ClientInteraction[]
   traspasos               Traspaso[]
+  reporteFvConfig         ReporteFvConfig?
+  reporteFvLecturas       ReporteFvLectura[]
+  reporteFvCalculos       ReporteFvCalculo[]
+  reporteFvEmisiones      ReporteFvEmision[]
+  growattPlant            GrowattPlant?
   // Sub-fase del E3 (Post-Habilitación). Solo se setea cuando el proyecto llega
   // a POST_HABILITACION (T7). E3-A = compromiso comercial (año 0-2); E3-B = vida
   // útil extendida (año 2-25). Es un flag interno para reportes, no cambia la etapa.
@@ -1191,6 +1207,7 @@ model FileAttachment {
   efpAttachments         EFPAttachment[]        @relation("EFPAttachmentFile")
   proposalGenerations    ProposalGeneration[]   @relation("ProposalAttachment")
   proposalV2Covers       ProposalDefaults[]     @relation("ProposalV2Cover")
+  reporteFvEmisiones     ReporteFvEmision[]     @relation("ReporteFvPdf")
   deletedAt              DateTime?              @db.Timestamptz(6)
   createdAt              DateTime               @default(now()) @db.Timestamptz(6)
 
@@ -1211,6 +1228,7 @@ enum FileAttachmentTipo {
   UNIFILAR
   PRE_INGENIERIA
   MINUTA_RELEVAMIENTO
+  REPORTE_FOTOVOLTAICO
   OTRO
 }
 
@@ -3220,4 +3238,541 @@ model ProposalDefaults {
   updatedBy   User?    @relation("ProposalDefaultsUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 
   @@map("proposal_defaults")
+}
+
+// ─── Reportes fotovoltaicos mensuales ────────────────────────────────────────
+// Reemplaza el sistema Python standalone (Reporte_Fotovoltaico) que producía los
+// reportes mensuales de generación a partir de 4 planillas Excel.
+//
+// Las capas están deliberadamente separadas — la planilla original mezclaba dato
+// crudo con resultado calculado y por eso no se podía recalcular nada:
+//
+//   Maestros  ReporteFvConfig / ReporteFvDestinatario   humano, no regenerable
+//   Tarifas   TarifaUteVersion + hijas                  humano, versionado
+//   Crudo     ReporteFvLectura                          Growatt o humano
+//   Calculado ReporteFvCalculo + ...Tarifa              motor, SIEMPRE regenerable
+//   Emitido   ReporteFvEmision                          congelado + snapshot
+//   Enviado   ReporteFvEnvio                            historial de intentos
+//
+// Regla de oro: todo lo calculado es derivable de (lecturas + config + tarifa
+// vigente + tipo de cambio). Todo lo emitido es inmutable y lleva su snapshot,
+// para que un reporte de 2025 se regenere idéntico aunque cambien las tarifas.
+
+enum TarifaUte {
+  SIMPLE
+  DOBLE
+  TRIPLE
+  ZAFRAL
+}
+
+enum FranjaHoraria {
+  PUNTA
+  LLANO
+  VALLE
+  FUERA_PUNTA // solo tarifa doble
+}
+
+enum ReporteFvTipoCliente {
+  RESIDENCIAL
+  EMPRESA
+}
+
+// Origen de cada valor de una lectura. Se guarda POR CAMPO, no por fila: es lo
+// que permite que un consumo cargado a mano (porque el smart meter falló) no lo
+// pise la próxima ingesta de Growatt.
+enum ReporteFvFuente {
+  GROWATT
+  MANUAL
+  IMPORT_LEGACY
+}
+
+// De dónde salen las lecturas de este cliente. No todos los generadores tienen
+// Growatt: los de otras marcas (sin API disponible todavía) se cargan a mano
+// todos los meses. La ingesta los saltea y el panel los agrupa aparte, así
+// "falta el dato" no se confunde con "falló la ingesta".
+enum ReporteFvOrigenDatos {
+  GROWATT
+  MANUAL
+}
+
+enum ReporteFvIngestaModo {
+  CRON
+  MANUAL
+  BACKFILL
+}
+
+enum ReporteFvIngestaEstado {
+  EN_CURSO
+  OK
+  PARCIAL
+  ERROR
+  CANCELADA
+}
+
+enum ReporteFvEmisionEstado {
+  BORRADOR
+  LISTO
+  ENVIADO
+  ANULADO
+}
+
+enum ReporteFvEnvioEstado {
+  ENVIADO
+  FALLIDO
+  DRY_RUN
+  OMITIDO
+}
+
+// ─── Tarifas UTE (versionadas por vigencia) ──────────────────────────────────
+// UTE ajusta el pliego periódicamente. Cada cuadro tarifario es una versión con
+// fecha de vigencia; ReporteFvCalculo congela cuál usó, así un reporte viejo se
+// reproduce con el precio que regía ese mes.
+
+model TarifaUteVersion {
+  id           String    @id @default(cuid())
+  nombre       String // "UTE 2026-01", "Legacy Excel"
+  vigenteDesde DateTime  @db.Date // inclusive
+  vigenteHasta DateTime? @db.Date // null = vigente hoy; se cierra al publicar la siguiente
+
+  ivaPct  Decimal @default(0.2200) @db.Decimal(6, 4)
+  irpfPct Decimal @default(0.1200) @db.Decimal(6, 4)
+
+  // Borrador editable vs congelada. Solo las publicadas resuelven vigencia.
+  publicada Boolean @default(false)
+  notas     String?
+
+  creadaPorId String
+  creadaPor   User   @relation("TarifaUteVersionCreadaPor", fields: [creadaPorId], references: [id], onDelete: Restrict)
+
+  cargos   TarifaUteCargo[]
+  tramos   TarifaUteTramo[]
+  franjas  TarifaUteFranja[]
+  calculos ReporteFvCalculo[]
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  @@unique([vigenteDesde])
+  @@index([publicada, vigenteDesde])
+  @@map("tarifa_ute_versiones")
+}
+
+// Cargo fijo y cargo por potencia contratada, por tarifa (hoja `parametros`).
+model TarifaUteCargo {
+  id        String           @id @default(cuid())
+  versionId String
+  version   TarifaUteVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  tarifa          TarifaUte
+  cargoFijo       Decimal   @db.Decimal(12, 4)
+  cargoPotenciaKw Decimal   @db.Decimal(12, 4)
+
+  @@unique([versionId, tarifa])
+  @@map("tarifa_ute_cargos")
+}
+
+// Tramos escalonados de consumo (hoja `precios_simple`). Genérico por tarifa por
+// si alguna otra pasa a escalonar.
+model TarifaUteTramo {
+  id        String           @id @default(cuid())
+  versionId String
+  version   TarifaUteVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  tarifa    TarifaUte
+  orden     Int
+  desdeKwh  Int
+  hastaKwh  Int // 9999999 = sin tope (igual que la planilla original)
+  precioKwh Decimal @db.Decimal(12, 4)
+
+  @@unique([versionId, tarifa, orden])
+  @@map("tarifa_ute_tramos")
+}
+
+// Precio por franja horaria (hojas `precios_doble`, `precios_triple`, `zafral`).
+model TarifaUteFranja {
+  id        String           @id @default(cuid())
+  versionId String
+  version   TarifaUteVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  tarifa    TarifaUte
+  franja    FranjaHoraria
+  precioKwh Decimal       @db.Decimal(12, 4)
+
+  @@unique([versionId, tarifa, franja])
+  @@map("tarifa_ute_franjas")
+}
+
+// ─── Config del reporte por proyecto ─────────────────────────────────────────
+// Los campos que YA viven en Project son nullable a propósito: null significa
+// "usar el del proyecto". Solo se persiste el valor si alguien lo pisa a mano.
+// Así el dato tiene una sola fuente de verdad y no se desincroniza — que es
+// justamente lo que pasaba con la hoja `constantes` del Excel.
+//
+//   potenciaInstaladaKwp  null → Project.capacityKwp
+//   inversionUsd          null → Project.budgetUsd
+//   mesInicio             null → Project.postHabilitacionInicioEn ?? actualUteEnd
+//   destinatarios vacío        → Project.clientEmail
+//
+// Lo que NO existe en Project y por eso es obligatorio acá: la potencia
+// contratada a UTE, el reparto de consumo por franja horaria y la tarifa.
+
+model ReporteFvConfig {
+  id        String  @id @default(cuid())
+  projectId String  @unique
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Equivale a la columna `reporte` (1/0) de la planilla.
+  habilitado  Boolean              @default(true)
+  tipoCliente ReporteFvTipoCliente @default(RESIDENCIAL)
+  // Obligatoria si tipoCliente = EMPRESA. Los residenciales ven las 3 tarifas
+  // comparadas y el ROI se calcula con la simple.
+  tarifaContratada TarifaUte?
+
+  potenciaContratadaKw Decimal @db.Decimal(8, 2)
+
+  // Reparto horario del consumo. Se guarda SIEMPRE normalizado 0..1 y debe sumar
+  // 1.0 ± 0.001. Es una estimación: el reporte lo aclara al cliente.
+  pctPunta Decimal @db.Decimal(6, 4)
+  pctLlano Decimal @db.Decimal(6, 4)
+  pctValle Decimal @db.Decimal(6, 4)
+
+  // Overrides de datos del proyecto. Ver comentario del bloque.
+  inversionUsd         Decimal?  @db.Decimal(12, 2)
+  potenciaInstaladaKwp Decimal?  @db.Decimal(8, 2)
+  mesInicio            DateTime? @db.Date // día 1 del mes; ancla del ROI
+
+  // GROWATT = la ingesta trae las lecturas sola. MANUAL = generador de otra marca
+  // sin API; alguien carga generación/consumo/exportación todos los meses desde
+  // el panel. La marca del inversor vive en SolarSystem.inverterBrand.
+  origenDatos ReporteFvOrigenDatos @default(GROWATT)
+
+  // Denormalizado desde GrowattPlant para no joinear en cada consulta del panel.
+  // La vinculación real (y la unicidad) vive en GrowattPlant.projectId.
+  growattPlantId BigInt?
+
+  envioAutomatico Boolean @default(false)
+  notasFijas      String?
+
+  destinatarios ReporteFvDestinatario[]
+
+  actualizadoPorId String?
+  actualizadoPor   User?   @relation("ReporteFvConfigActualizadaPor", fields: [actualizadoPorId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  @@index([habilitado])
+  @@map("reporte_fv_configs")
+}
+
+model ReporteFvDestinatario {
+  id       String          @id @default(cuid())
+  configId String
+  config   ReporteFvConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  email   String
+  nombre  String?
+  esCopia Boolean @default(false) // false = To, true = Cc
+  activo  Boolean @default(true)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([configId, email])
+  @@map("reporte_fv_destinatarios")
+}
+
+// ─── Catálogo de plantas Growatt ─────────────────────────────────────────────
+// El plantId es la ENTIDAD CANÓNICA del sistema de reportes. La planilla unía
+// sus 4 fuentes por nombre de persona y eso ya había roto ~17 vínculos.
+// El matching por nombre queda solo como sugerencia en la UI, nunca en runtime.
+//
+// La "allowlist" del script pasa a ser: projectId != null AND ignorada = false.
+
+model GrowattPlant {
+  id      String @id @default(cuid())
+  plantId BigInt @unique
+  name    String
+
+  status      String?
+  peakPowerKw Decimal? @db.Decimal(10, 2)
+  city        String?
+  country     String?
+
+  // null = planta detectada en la API pero todavía sin vincular a un proyecto.
+  projectId String?  @unique
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  // Planta que no corresponde a un cliente (demo, instalación propia, etc.).
+  ignorada  Boolean  @default(false)
+
+  vinculadaPorId String?
+  vinculadaPor   User?     @relation("GrowattPlantVinculadaPor", fields: [vinculadaPorId], references: [id], onDelete: SetNull)
+  vinculadaEn    DateTime? @db.Timestamptz(6)
+
+  primeraVezEn DateTime @default(now()) @db.Timestamptz(6)
+  ultimaVezEn  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([projectId])
+  @@index([ignorada])
+  @@map("growatt_plants")
+}
+
+// ─── Lecturas mensuales (dato crudo) ─────────────────────────────────────────
+// Históricamente el 63% de las lecturas llegó sin consumo ni exportación (el
+// smart meter falla seguido), así que la carga manual es parte del flujo normal,
+// no una excepción. De ahí la fuente por campo.
+
+model ReporteFvLectura {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  periodo   DateTime @db.Date // SIEMPRE día 1 del mes
+
+  generacionKwh  Decimal? @db.Decimal(12, 2)
+  // consumo = generación + importación medida - exportación
+  consumoKwh     Decimal? @db.Decimal(12, 2)
+  exportacionKwh Decimal? @db.Decimal(12, 2)
+  // Crudo del smart meter. No entra al cálculo (la importación de red se deriva
+  // del consumo) pero se guarda para poder auditar de dónde salió el consumo.
+  importacionMedidaKwh Decimal? @db.Decimal(12, 2)
+
+  generacionFuente  ReporteFvFuente?
+  consumoFuente     ReporteFvFuente?
+  exportacionFuente ReporteFvFuente?
+
+  // Por qué faltan datos: "sin datalogger tipo 3", "sin muestras útiles", etc.
+  motivoFaltante String?
+  nota           String?
+
+  editadoPorId String?
+  editadoPor   User?     @relation("ReporteFvLecturaEditadaPor", fields: [editadoPorId], references: [id], onDelete: SetNull)
+  editadoEn    DateTime? @db.Timestamptz(6)
+
+  ingestaItemId String?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  @@unique([projectId, periodo])
+  @@index([periodo])
+  @@map("reporte_fv_lecturas")
+}
+
+// ─── Corridas de ingesta ─────────────────────────────────────────────────────
+// Cada item se escribe apenas termina su planta, no al final: si el proceso
+// muere a mitad de camino el estado parcial ya quedó persistido y la próxima
+// corrida saltea lo que ya está completo.
+
+model ReporteFvIngesta {
+  id      String               @id @default(cuid())
+  periodo DateTime             @db.Date
+  modo    ReporteFvIngestaModo
+
+  estado      ReporteFvIngestaEstado @default(EN_CURSO)
+  iniciadaEn  DateTime               @default(now()) @db.Timestamptz(6)
+  terminadaEn DateTime?              @db.Timestamptz(6)
+
+  plantasTotal Int @default(0)
+  plantasOk    Int @default(0)
+  plantasError Int @default(0)
+  requests     Int @default(0)
+
+  lanzadaPorId String?
+  lanzadaPor   User?   @relation("ReporteFvIngestaLanzadaPor", fields: [lanzadaPorId], references: [id], onDelete: SetNull)
+  errorMessage String?
+
+  items ReporteFvIngestaItem[]
+
+  @@index([periodo])
+  @@map("reporte_fv_ingestas")
+}
+
+model ReporteFvIngestaItem {
+  id        String           @id @default(cuid())
+  ingestaId String
+  ingesta   ReporteFvIngesta @relation(fields: [ingestaId], references: [id], onDelete: Cascade)
+
+  growattPlantId BigInt
+  projectId      String?
+  ok             Boolean @default(false)
+
+  generacionKwh  Decimal? @db.Decimal(12, 2)
+  consumoKwh     Decimal? @db.Decimal(12, 2)
+  exportacionKwh Decimal? @db.Decimal(12, 2)
+
+  requests     Int     @default(0)
+  duracionMs   Int?
+  errorMessage String?
+
+  @@unique([ingestaId, growattPlantId])
+  @@map("reporte_fv_ingesta_items")
+}
+
+// ─── Resultado calculado ─────────────────────────────────────────────────────
+// Se regenera entero cada vez que cambia una lectura, la config o la tarifa: la
+// cuenta corriente UTE es acumulativa y arrastra saldo mes a mes, así que
+// recalcular la serie completa del cliente es la única forma de no dejar saldos
+// huérfanos al corregir un mes viejo. Son ~25 periodos por cliente: milisegundos.
+
+model ReporteFvCalculo {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  periodo   DateTime @db.Date
+
+  // Congelados: con qué tarifa y qué cotización se calculó este mes.
+  tarifaVersionId String
+  tarifaVersion   TarifaUteVersion @relation(fields: [tarifaVersionId], references: [id], onDelete: Restrict)
+  tipoCambioUsd   Decimal          @db.Decimal(10, 4)
+  // Tarifa sobre la que se reportan el ahorro y el ROI: la contratada si es
+  // empresa, SIMPLE si es residencial.
+  tarifaPrincipal TarifaUte
+
+  // Energía derivada del mes
+  autoconsumoKwh            Decimal @db.Decimal(12, 2)
+  importacionRedKwh         Decimal @db.Decimal(12, 2)
+  // Los créditos por exportación se valúan con lo exportado el mes ANTERIOR.
+  exportacionMesAnteriorKwh Decimal @db.Decimal(12, 2)
+
+  // Resultado de la tarifa principal (equivale a una fila del histórico Excel)
+  ahorroAutoconsumo Decimal @db.Decimal(14, 2)
+  ahorroVenta       Decimal @db.Decimal(14, 2)
+  ahorroTotal       Decimal @db.Decimal(14, 2)
+  ahorroTotalUsd    Decimal @db.Decimal(14, 2)
+  irpf              Decimal @db.Decimal(14, 2)
+
+  // Acumulados congelados, para que el panel y el portal no recomputen la serie.
+  ahorroAcumulado            Decimal   @db.Decimal(14, 2)
+  ahorroAcumuladoUsd         Decimal   @db.Decimal(14, 2)
+  irpfAcumulado              Decimal   @db.Decimal(14, 2)
+  ahorroPromedioHistorico    Decimal   @db.Decimal(14, 2)
+  ahorroPromedioHistoricoUsd Decimal   @db.Decimal(14, 2)
+  mesesConDatosUsd           Int
+  retornoInversionPct        Decimal   @db.Decimal(7, 2)
+  mesRetornoEstimado         DateTime? @db.Date
+
+  // Control UTE: la exportación anual no debe superar la importación anual.
+  exportacionAcumuladaAnio Decimal @db.Decimal(14, 2)
+  importacionAcumuladaAnio Decimal @db.Decimal(14, 2)
+  ratioUte                 Decimal @db.Decimal(7, 2)
+  estadoUte                String // OK | ALERTA | EXCEDIDO - SIN RIESGO | EXCEDIDO - CON RIESGO
+
+  // Config efectiva usada (ya resueltos los fallbacks al proyecto).
+  configSnapshot Json
+  // Notas dinámicas del reporte (ej. alerta de consumo excesivo).
+  notas          Json
+
+  tarifas   ReporteFvCalculoTarifa[]
+  emisiones ReporteFvEmision[]
+
+  calculadoEn DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([projectId, periodo])
+  @@index([periodo])
+  @@map("reporte_fv_calculos")
+}
+
+// Una fila por tarifa comparada. El reporte residencial muestra 3; el de empresa,
+// solo la contratada. Las 4 se calculan siempre.
+model ReporteFvCalculoTarifa {
+  id        String           @id @default(cuid())
+  calculoId String
+  calculo   ReporteFvCalculo @relation(fields: [calculoId], references: [id], onDelete: Cascade)
+  tarifa    TarifaUte
+
+  // Factura hipotética SIN paneles
+  sinTotalNeto    Decimal @db.Decimal(14, 2)
+  sinCargoEnergia Decimal @db.Decimal(14, 2)
+
+  // Factura real CON paneles (post cuenta corriente)
+  conTotalBruto      Decimal @db.Decimal(14, 2)
+  conTotalNeto       Decimal @db.Decimal(14, 2)
+  conCargoEnergia    Decimal @db.Decimal(14, 2)
+  conIva             Decimal @db.Decimal(14, 2)
+  conIrpf            Decimal @db.Decimal(14, 2)
+  creditoExportacion Decimal @db.Decimal(14, 2)
+
+  // Cuenta corriente UTE (arrastre mes a mes, por tarifa)
+  saldoInicial     Decimal @db.Decimal(14, 2)
+  saldoAplicado    Decimal @db.Decimal(14, 2)
+  saldoGeneradoMes Decimal @db.Decimal(14, 2)
+  saldoFinal       Decimal @db.Decimal(14, 2)
+
+  // Desglose del ahorro
+  ahorroAutoconsumo   Decimal @db.Decimal(14, 2)
+  ahorroVenta         Decimal @db.Decimal(14, 2)
+  ahorroTotalDesglose Decimal @db.Decimal(14, 2)
+  // El total que muestra la tabla comparativa. Difiere de ahorroTotalDesglose
+  // porque el original lo calcula pre-cuenta-corriente mientras que el "total
+  // con paneles" de la misma columna es post. Se replica tal cual: cambiarlo
+  // desalinearía todos los reportes ya enviados.
+  ahorroTotalTabla    Decimal @db.Decimal(14, 2)
+  pctAutoconsumo      Decimal @db.Decimal(6, 2)
+  pctVenta            Decimal @db.Decimal(6, 2)
+
+  @@unique([calculoId, tarifa])
+  @@map("reporte_fv_calculo_tarifas")
+}
+
+// ─── Emisión (PDF congelado) ─────────────────────────────────────────────────
+// Regenerar crea una versión nueva, igual que UnifilarVersion/EFPVersion.
+// snapshotJson guarda el view-model completo: con eso el PDF se reproduce
+// idéntico años después aunque hayan cambiado tarifas, config o motor.
+
+model ReporteFvEmision {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  periodo   DateTime @db.Date
+  version   Int
+
+  calculoId String
+  calculo   ReporteFvCalculo @relation(fields: [calculoId], references: [id], onDelete: Restrict)
+
+  estado       ReporteFvEmisionEstado @default(BORRADOR)
+  snapshotJson Json
+
+  fileAttachmentId String?
+  fileAttachment   FileAttachment? @relation("ReporteFvPdf", fields: [fileAttachmentId], references: [id], onDelete: SetNull)
+
+  publicadoEnPortal Boolean   @default(false)
+  publicadoEn       DateTime? @db.Timestamptz(6)
+
+  // CLAIM de idempotencia del envío. Se setea con un updateMany condicional
+  // (where enviadoEn: null) para que dos procesos concurrentes —cron y botón
+  // manual, por ejemplo— no puedan mandar el mismo reporte dos veces. Si el
+  // envío falla se revierte a null para poder reintentar.
+  enviadoEn DateTime? @db.Timestamptz(6)
+
+  generadoPorId String?
+  generadoPor   User?    @relation("ReporteFvEmisionGeneradaPor", fields: [generadoPorId], references: [id], onDelete: SetNull)
+  generadoEn    DateTime @default(now()) @db.Timestamptz(6)
+
+  envios ReporteFvEnvio[]
+
+  @@unique([projectId, periodo, version])
+  @@index([periodo, estado])
+  @@index([publicadoEnPortal])
+  @@map("reporte_fv_emisiones")
+}
+
+// Historial de cada intento de envío, incluidos los dry-run y los omitidos por
+// no pasar las guardas. La planilla original tenía un CSV de log que nadie leía,
+// y por eso re-correr el script reenviaba todo duplicado.
+model ReporteFvEnvio {
+  id        String           @id @default(cuid())
+  emisionId String
+  emision   ReporteFvEmision @relation(fields: [emisionId], references: [id], onDelete: Cascade)
+
+  estado        ReporteFvEnvioEstado
+  destinatarios String // CSV de los destinatarios reales (aunque en dev se redirija)
+  emailLogId    String?
+  errorMessage  String?
+  esDryRun      Boolean              @default(false)
+
+  enviadoPorId String?
+  enviadoPor   User?    @relation("ReporteFvEnvioEnviadoPor", fields: [enviadoPorId], references: [id], onDelete: SetNull)
+  enviadoEn    DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([emisionId])
+  @@map("reporte_fv_envios")
 }
