@@ -17,6 +17,11 @@
 - Botón **"Copiar resumen (WhatsApp)"**: copia un resumen prolijo de pagos (presupuesto, cobrado, pendiente y el detalle) listo para pegarle al cliente por WhatsApp.
 - Es la **misma información que Finanzas**: cualquier cambio hecho desde Experiencia Solar se ve al instante en Finanzas (Cobros y Movimientos), y al revés.
 
+#### Experiencia Solar — Ver la respuesta de una encuesta
+
+- En **Experiencia Solar → Encuestas**, al tocar una encuesta ahora se abre una **ficha con la respuesta completa** del Generador: la calificación en estrellas, el comentario entero, y quién respondió y cuándo. Antes el clic te sacaba directo a la ficha del cliente y no podías ver lo que había contestado.
+- Si la nota fue baja, la ficha lo avisa (recordá que eso genera un seguimiento). Desde la misma ficha tenés un botón **"Ver ficha del cliente"** por si querés ir al proyecto.
+
 #### Arreglos
 
 - **Cobros — planes de pago que no se podían editar**: en muchos proyectos el asistente de plan de pagos te obligaba a "crear el plan desde cero" en vez de dejarte **editar** los cobros que ya tenías, y al recrearlo quedaban cuotas duplicadas. Ahora el plan de pagos es, simplemente, **todos los cobros pendientes (previstos) del proyecto**, sin importar si los cargaste con el asistente o a mano desde "Registrar cobro". Así siempre podés **editarlos** desde el asistente y, al guardar, reemplaza los pendientes sin duplicar.
