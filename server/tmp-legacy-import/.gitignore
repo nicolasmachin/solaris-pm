@@ -1,0 +1,5 @@
+# Planillas del sistema Python legacy, copiadas acá sólo para que el contenedor
+# las vea durante la migración. Contienen datos personales de clientes (mails):
+# NO se versionan. Se pueden borrar una vez migrado.
+*
+!.gitignore

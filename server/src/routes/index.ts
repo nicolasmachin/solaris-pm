@@ -17,6 +17,7 @@ import { registerPreIngenieriaRoutes } from "./preingenieria.routes.js";
 import { registerProposalsV2DefaultsRoutes } from "./proposals-v2-defaults.routes.js";
 import { registerProposalsV2DraftsVersionsRoutes } from "./proposals-v2-drafts-versions.routes.js";
 import { registerProposalsV2PreviewRoutes } from "./proposals-v2-preview.routes.js";
+import { registerReportesFvRoutes } from "./reportes-fv.routes.js";
 import { registerSalesRoutes } from "./sales.routes.js";
 import { registerTicketsRoutes } from "./tickets.routes.js";
 import { registerEncuestasRoutes } from "./encuestas.routes.js";
@@ -56,4 +57,5 @@ export async function registerRoutes(app: FastifyInstance) {
   await app.register(registerTraspasosRoutes, { prefix: "/api" });
   await app.register(registerTicketsRoutes, { prefix: "/api" });
   await app.register(registerEncuestasRoutes, { prefix: "/api" });
+  await app.register(registerReportesFvRoutes, { prefix: "/api" });
 }

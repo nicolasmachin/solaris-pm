@@ -44,6 +44,7 @@ export const ADMIN_GROUPS: AdminSidebarGroup[] = [
       { tab: "materiales", label: "Materiales" },
       { tab: "plantillas-materiales", label: "Plantillas de materiales" },
       { tab: "cuentas", label: "Cuentas" },
+      { tab: "tarifas-ute", label: "Tarifas UTE" },
     ],
   },
   {
