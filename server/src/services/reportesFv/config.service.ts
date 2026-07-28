@@ -27,8 +27,20 @@ export interface ConfigEfectiva extends ConfigSerie {
   growattPlantId: string | null;
   /** Qué campos salen del proyecto en vez de estar pisados a mano. */
   heredados: string[];
-  /** Motivos por los que este proyecto todavía no puede generar reporte. */
-  bloqueos: string[];
+  /**
+   * Impiden CALCULAR: sin esto los números saldrían mal, no incompletos.
+   */
+  bloqueosCalculo: string[];
+  /**
+   * Impiden ENVIAR pero no calcular. El reporte se puede generar y revisar
+   * igual; lo que falta es a quién mandárselo.
+   */
+  bloqueosEnvio: string[];
+  /**
+   * El reporte sale, pero con alguna sección degradada (por ejemplo, sin monto
+   * invertido no se puede mostrar el retorno de la inversión).
+   */
+  advertencias: string[];
   destinatarios: Array<{ email: string; nombre: string | null; esCopia: boolean }>;
 }
 
@@ -63,7 +75,9 @@ export function resolverConfigEfectiva(
   proyecto: ProyectoParaConfig,
 ): ConfigEfectiva {
   const heredados: string[] = [];
-  const bloqueos: string[] = [];
+  const bloqueosCalculo: string[] = [];
+  const bloqueosEnvio: string[] = [];
+  const advertencias: string[] = [];
 
   // ─── Campos con fallback al proyecto ───
   let potenciaInstaladaKwp = dec(config.potenciaInstaladaKwp);
@@ -96,23 +110,36 @@ export function resolverConfigEfectiva(
   }
 
   // ─── Validaciones ───
+  // Sólo bloquea el cálculo lo que haría que los números salieran MAL. Lo que
+  // apenas degrada una sección del reporte va como advertencia, y lo que impide
+  // mandarlo pero no calcularlo va aparte: un generador sin mail tiene que poder
+  // verse igual en el panel.
   const potenciaContratadaKw = Number(config.potenciaContratadaKw);
-  if (!(potenciaContratadaKw > 0)) bloqueos.push("falta la potencia contratada a UTE");
+  if (!(potenciaContratadaKw > 0)) {
+    bloqueosCalculo.push("falta la potencia contratada a UTE");
+  }
 
   const pctPunta = Number(config.pctPunta);
   const pctLlano = Number(config.pctLlano);
   const pctValle = Number(config.pctValle);
   if (Math.abs(pctPunta + pctLlano + pctValle - 1) > 0.001) {
-    bloqueos.push("el reparto por franja horaria no suma 100%");
+    bloqueosCalculo.push("el reparto por franja horaria no suma 100%");
   }
 
   const tipoCliente = config.tipoCliente === "EMPRESA" ? "empresa" : "residencial";
   if (tipoCliente === "empresa" && !config.tarifaContratada) {
-    bloqueos.push("es cliente empresa y no tiene tarifa contratada");
+    bloqueosCalculo.push("es cliente empresa y no tiene tarifa contratada");
   }
-  if (!mesInicio) bloqueos.push("no se sabe desde cuándo genera (falta la fecha de habilitación)");
-  if (!(inversionUsd > 0)) bloqueos.push("falta el monto invertido (no se puede calcular el retorno)");
-  if (destinatarios.length === 0) bloqueos.push("no tiene a quién enviarle el reporte");
+
+  if (!(inversionUsd > 0)) {
+    advertencias.push("sin monto invertido: el reporte sale sin el retorno de la inversión");
+  }
+  if (!mesInicio) {
+    advertencias.push("sin fecha de habilitación: el retorno se estima con los meses que haya de datos");
+  }
+  if (destinatarios.length === 0) {
+    bloqueosEnvio.push("no tiene a quién enviarle el reporte");
+  }
 
   return {
     projectId: proyecto.id,
@@ -130,7 +157,10 @@ export function resolverConfigEfectiva(
     tipoCliente,
     tarifaContratada: config.tarifaContratada ? tarifaAKey(config.tarifaContratada) : null,
     heredados,
-    bloqueos,
+    bloqueosCalculo,
+    // Todo lo que impide calcular también impide enviar.
+    bloqueosEnvio: [...bloqueosCalculo, ...bloqueosEnvio],
+    advertencias,
     destinatarios,
   };
 }
@@ -172,12 +202,23 @@ export async function listarConfigsEfectivas(opts: { soloHabilitados?: boolean }
     .sort((a, b) => a.clientName.localeCompare(b.clientName, "es"));
 }
 
-/** Igual que resolver, pero tira si la config no alcanza para calcular. */
+/** Tira si la config no alcanza para calcular los números. */
 export function exigirConfigCompleta(config: ConfigEfectiva): ConfigEfectiva {
-  if (config.bloqueos.length > 0) {
+  if (config.bloqueosCalculo.length > 0) {
     throw badRequest(
       "REPORTE_FV_CONFIG_INCOMPLETA",
-      `No se puede generar el reporte de ${config.clientName}: ${config.bloqueos.join("; ")}.`,
+      `No se puede calcular el reporte de ${config.clientName}: ${config.bloqueosCalculo.join("; ")}.`,
+    );
+  }
+  return config;
+}
+
+/** Tira si falta algo para poder mandarle el reporte al cliente. */
+export function exigirConfigEnviable(config: ConfigEfectiva): ConfigEfectiva {
+  if (config.bloqueosEnvio.length > 0) {
+    throw badRequest(
+      "REPORTE_FV_NO_ENVIABLE",
+      `No se puede enviar el reporte de ${config.clientName}: ${config.bloqueosEnvio.join("; ")}.`,
     );
   }
   return config;

@@ -2,6 +2,14 @@
 
 ## v8.2
 
+### 28 de julio de 2026
+
+#### Tarifas de UTE
+
+- Nueva pantalla en **Administración → Configuración del negocio → Tarifas UTE** para cargar los cuadros tarifarios: cargo fijo y cargo por potencia contratada de cada tarifa, los tramos de consumo de la tarifa simple y los precios por franja horaria (punta, llano, valle).
+- Los cuadros se guardan **con fecha de vigencia**. Cuando UTE ajusta las tarifas no se pisan las anteriores: se duplica el cuadro vigente, se cargan los precios nuevos y se publica con la fecha en que empezaron a regir. Así los reportes viejos se siguen viendo con los precios que tenían.
+- Un cuadro arranca como **borrador**, que se puede editar libremente, y al **publicarlo** queda fijo. Antes de publicar se avisa cuántos reportes ya calculados dependen del cuadro anterior.
+
 ### 27 de julio de 2026
 
 #### Proyectos — columna "Asesor" en la vista general

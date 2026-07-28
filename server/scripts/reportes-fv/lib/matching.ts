@@ -53,6 +53,10 @@ export const ALIAS_MANUAL: Record<string, string> = {
   shangrila: "nicolas pence",
   barenof: "barenof sa",
   "riverol santiago": "santiago riverol",
+  // Mismo suministro cargado con dos nombres distintos. Confirmado por el
+  // usuario: comparten el mail y es el mismo generador, aunque la potencia de la
+  // planilla (4.6 kWp) no coincida con la del proyecto (2.76 kWp).
+  "antonio costa vital": "alicia grunwald",
 };
 
 /**

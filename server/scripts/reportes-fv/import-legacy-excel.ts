@@ -13,9 +13,10 @@
 // sistema nuevo coinciden con las 282 filas del histórico, entonces el matching,
 // las tarifas, el motor y la persistencia están bien.
 
-import { FranjaHoraria, TarifaUte } from "@prisma/client";
+import { AuditAction, AuditEntityType, FranjaHoraria, Prisma, ProjectStatus, TarifaUte } from "@prisma/client";
 
 import { prisma } from "../../src/lib/prisma.js";
+import { createAuditEntry } from "../../src/services/audit.service.js";
 import { recalcularSerieConConfig } from "../../src/services/reportesFv/calculo.service.js";
 import { resolverConfigEfectiva, SELECT_PROYECTO_CONFIG } from "../../src/services/reportesFv/config.service.js";
 import { periodoADate } from "../../src/services/reportesFv/periodo.js";
@@ -516,21 +517,41 @@ async function main() {
 
   let calculados = 0;
   const bloqueados: Array<{ nombre: string; motivos: string[] }> = [];
+  const sinDestino: string[] = [];
+  const conAdvertencia: Array<{ nombre: string; motivos: string[] }> = [];
 
   for (const config of configs) {
     const efectiva = resolverConfigEfectiva(config, config.project);
-    if (efectiva.bloqueos.length > 0) {
-      bloqueados.push({ nombre: efectiva.clientName, motivos: efectiva.bloqueos });
+    if (efectiva.bloqueosCalculo.length > 0) {
+      bloqueados.push({ nombre: efectiva.clientName, motivos: efectiva.bloqueosCalculo });
       continue;
     }
     const r = await recalcularSerieConConfig(efectiva);
     calculados += r.periodosCalculados;
+
+    if (efectiva.advertencias.length > 0) {
+      conAdvertencia.push({ nombre: efectiva.clientName, motivos: efectiva.advertencias });
+    }
+    if (efectiva.destinatarios.length === 0) sinDestino.push(efectiva.clientName);
   }
 
   console.log(`  ${c.ok(`${calculados} periodos calculados`)} sobre ${configs.length} generadores`);
+
   if (bloqueados.length > 0) {
-    console.log(`  ${c.warn(`${bloqueados.length} generadores no se pudieron calcular:`)}`);
-    for (const b of bloqueados) console.log(`    ${b.nombre.slice(0, 34).padEnd(36)} ${c.dim(b.motivos.join("; "))}`);
+    console.log(`\n  ${c.warn(`${bloqueados.length} sin calcular`)} ${c.dim("(les falta un dato que haría salir mal los números)")}`);
+    for (const b of bloqueados) {
+      console.log(`    ${b.nombre.slice(0, 34).padEnd(36)} ${c.dim(b.motivos.join("; "))}`);
+    }
+  }
+  if (conAdvertencia.length > 0) {
+    console.log(`\n  ${c.dim(`${conAdvertencia.length} calculados con el reporte degradado:`)}`);
+    for (const a of conAdvertencia) {
+      console.log(`    ${a.nombre.slice(0, 34).padEnd(36)} ${c.dim(a.motivos.join("; "))}`);
+    }
+  }
+  if (sinDestino.length > 0) {
+    console.log(`\n  ${c.dim(`${sinDestino.length} calculados pero sin destinatario (no se les puede enviar):`)}`);
+    console.log(`    ${c.dim(sinDestino.join(", "))}`);
   }
 
   // ─── 9. Verificación ───
@@ -614,18 +635,38 @@ async function verificar(historico: FilaHistorico[], matches: Map<string, Match>
     return;
   }
 
-  const clientesAfectados = new Set(diferencias.map((d) => d.cliente));
+  // Se separan por magnitud: unos centavos es redondeo, decenas o cientos de
+  // pesos es que el dato de origen cambió entre corridas.
+  const UMBRAL_REDONDEO = 0.1;
+  const redondeo = diferencias.filter((d) => Math.abs(d.obt - d.esp) < UMBRAL_REDONDEO);
+  const reales = diferencias.filter((d) => Math.abs(d.obt - d.esp) >= UMBRAL_REDONDEO);
+
+  if (redondeo.length > 0) {
+    const clientes = new Set(redondeo.map((d) => d.cliente));
+    console.log(
+      `  ${c.dim(`${redondeo.length} de redondeo (< $${UMBRAL_REDONDEO})`)} en ${clientes.size} ` +
+        `${clientes.size === 1 ? "generador" : "generadores"}: ` +
+        c.dim("la planilla tenía kWh imputados con 13 decimales y la base los guarda con 2"),
+    );
+  }
+
+  if (reales.length === 0) {
+    console.log(c.ok("  ✓ Sin diferencias de fondo: la migración reproduce los reportes ya emitidos."));
+    return;
+  }
+
+  const clientesAfectados = new Set(reales.map((d) => d.cliente));
   console.log(
-    `  ${c.warn(`${diferencias.length} diferencias`)} en ${clientesAfectados.size} generadores ` +
+    `  ${c.warn(`${reales.length} diferencias de fondo`)} en ${clientesAfectados.size} generadores ` +
       `${c.dim("(esperable: el histórico se armó con una corrida por mes y la planilla cambió entre corridas)")}`,
   );
   console.log(`\n  ${"cliente".padEnd(30)}${"periodo".padEnd(10)}${"campo".padEnd(20)}${"histórico".padStart(13)}${"ahora".padStart(13)}`);
-  for (const d of diferencias.slice(0, 30)) {
+  for (const d of reales.slice(0, 30)) {
     console.log(
       `  ${d.cliente.slice(0, 28).padEnd(30)}${d.periodo.padEnd(10)}${d.campo.padEnd(20)}${d.esp.toFixed(2).padStart(13)}${d.obt.toFixed(2).padStart(13)}`,
     );
   }
-  if (diferencias.length > 30) console.log(c.dim(`  … y ${diferencias.length - 30} más`));
+  if (reales.length > 30) console.log(c.dim(`  … y ${reales.length - 30} más`));
 }
 
 // ─── Generadores livianos ────────────────────────────────────────────────────
@@ -647,17 +688,30 @@ async function crearGeneradorLiviano(fila: FilaConstantes, userId: string): Prom
       code,
       clientName: fila.cliente,
       capacityKwp: fila.potenciaInstaladaKwp ?? 0,
-      locationCity: "",
-      locationProvince: "",
+      locationCity: "Sin especificar",
+      locationProvince: "Sin especificar",
       startDate: inicio,
-      status: "COMPLETED",
+      saleDate: inicio,
+      status: ProjectStatus.COMPLETED,
+      executedUsd: new Prisma.Decimal(0),
       importedFromCsv: true,
       budgetUsd: fila.inversionUsd ?? null,
+      // El generador ya está habilitado y generando: el ancla del año 0 es la
+      // fecha de instalación de la planilla, marcada como aproximada.
       postHabilitacionInicioEn: inicio,
       postHabilitacionFechaAproximada: true,
       createdById: userId,
     },
     select: { id: true, code: true, clientName: true, clientEmail: true, importedFromCsv: true, capacityKwp: true },
+  });
+
+  await createAuditEntry({
+    entityType: AuditEntityType.project,
+    entityId: p.id,
+    projectId: p.id,
+    userId,
+    action: AuditAction.created,
+    description: `Generador creado por la migración de reportes fotovoltaicos: ${fila.cliente}`,
   });
 
   return { ...p, capacityKwp: p.capacityKwp == null ? null : Number(p.capacityKwp) };

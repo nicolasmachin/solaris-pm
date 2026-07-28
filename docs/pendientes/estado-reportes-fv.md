@@ -1,7 +1,7 @@
 # Estado — Reportes fotovoltaicos mensuales
 
 Migración del sistema Python standalone (`~/Dev/Reporte_Fotovoltaico`) a Voltia PM.
-Última actualización: **27 de julio de 2026, 21:00**.
+Última actualización: **28 de julio de 2026, 00:15**.
 
 ## Qué se hizo
 
@@ -67,6 +67,69 @@ no los "arregles"):
 - **`round()` de Python es half-to-even sobre el valor decimal exacto.**
   `Math.round(x*100)/100` difiere en los empates. Ver `round2()`.
 
+### Fase 3 — Tarifas UTE versionadas ✅
+
+`server/src/services/reportesFv/tarifas/tarifas.service.ts` + rutas en
+`reportes-fv.routes.ts` (bajo `CONFIGURACION`) + UI en **Admin → Configuración
+del negocio → Tarifas UTE** (`client/src/components/admin/TabTarifasUte.tsx`).
+
+Ciclo: se crea un BORRADOR (normalmente duplicando el vigente), se edita, y al
+PUBLICAR queda inmutable y cierra la vigencia del anterior. Un borrador nunca
+resuelve vigencia, así que se puede preparar el cuadro nuevo sin afectar los
+cálculos en curso. `validarCuadroCompleto()` chequea al publicar que los tramos
+de la simple no tengan huecos ni solapes.
+
+### Fase 9 — Migración de datos legacy ✅ (aplicada en local)
+
+`server/scripts/reportes-fv/import-legacy-excel.ts`. **Dry-run por default**;
+`--commit` aplica y `--crear-faltantes` da de alta los generadores sin proyecto.
+Idempotente: se puede volver a correr.
+
+Estado resultante en la base local:
+
+```
+Cuadros tarifarios     1  ("Legacy Excel", publicado, vigente desde 2024-01-01)
+Plantas Growatt      148  (44 vinculadas a un proyecto)
+Configuraciones       55  (35 con reporte activo, 11 de carga manual)
+Destinatarios         40
+Lecturas             645  (293 completas, 352 a completar a mano)
+Periodos calculados  279  (2024-09 → 2026-06)
+```
+
+**Verificación contra el histórico emitido: 259 filas comparadas, 8 diferencias**
+— exactamente las mismas que ya estaban documentadas en el golden test. Más 2 de
+redondeo por debajo de $0,10 (la planilla tenía kWh imputados con 13 decimales;
+la base los guarda con 2, que es la precisión real de un medidor).
+
+**Falsos positivos de matching que atrapó el dry-run** (por eso el dry-run):
+
+- `Antonio Costa Vital` → `Alicia Grunwald`: compartían el mail pero el nombre no
+  se parecía en nada. Regla nueva: el match por email exige además que los
+  nombres compartan un token de ≥4 letras. El usuario confirmó que **sí** es el
+  mismo suministro, así que quedó como alias explícito.
+- `Fernando` → `Fernando Ciaran`: `Fernando` tiene inversión, potencia y fecha
+  **idénticas a `Raij`** — es una fila duplicada de la planilla, no el proyecto de
+  Fernando Ciaran (6,38 kWp vs 4,25). Regla nueva: el match por prefijo exige 2
+  tokens. Quedó en `DESCARTAR` con su motivo.
+
+**Bloqueos vs advertencias** (`config.service.ts`): sólo impide CALCULAR lo que
+haría salir mal los números (potencia contratada, franjas que no suman 100%,
+empresa sin tarifa). Faltar el mail impide ENVIAR pero no calcular; faltar la
+inversión sólo degrada la sección de retorno. Antes estaba todo junto y dejaba
+19 generadores sin calcular; ahora son 11, todos por la misma causa.
+
+**Lo que falta cargar a mano** (lo va a mostrar el panel de la Fase 6):
+
+- **11 generadores sin potencia contratada a UTE** → no se pueden calcular:
+  Daniel Cabrera, Martín González, Hotel LAMAS 1 y 2, Gonzalo Gil, Carlos Barba,
+  German Fernandez, Rafael Figueroa, Alejandro Ramirez, José Percovich, Roberto
+  Mezquita.
+- **6 sin destinatario** → se calculan pero no se les puede enviar: Alberto Mora,
+  Robert de Souza, Susana Guerrico, Edgar Valdés, Diego Trias, Daniel Trias.
+- **2 sin monto invertido** → el reporte sale sin retorno de la inversión:
+  Santiago Riverol, Sebastián de Rienzo.
+- **352 lecturas incompletas** (falta consumo y/o exportación).
+
 ## Hallazgos sobre los datos (importantes para la migración)
 
 1. **El histórico Excel es la única copia de 134 valores de consumo/exportación**
@@ -90,13 +153,14 @@ no los "arregles"):
 
 | Fase | Estado |
 |---|---|
-| 3 — Tarifas UTE (service + UI admin) | pendiente |
-| 9 — Migración de datos legacy (dry-run) | pendiente |
 | 5 — PDF (port del template Jinja) | pendiente |
 | 4 — Ingesta Growatt (+ spike de rango) | pendiente |
 | 6 — API + panel y dashboard en Experiencia Solar | pendiente |
 | 7 — Envío por email + portal del cliente | pendiente |
 | 8 — Crons mensuales | pendiente |
+
+Con las fases 1, 2, 3 y 9 hechas ya hay **datos reales calculados en la base**:
+falta la cara visible (PDF y panel) y la ingesta automática.
 
 ### Pendientes concretos
 
