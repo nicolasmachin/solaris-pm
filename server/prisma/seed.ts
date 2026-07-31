@@ -100,20 +100,18 @@ const SYSTEM_ROLES: Array<{ name: string; label: string }> = [
   { name: "GERENTE_INGENIERIA", label: "Gerente de Ingeniería" },
   { name: "GERENTE_FINANZAS", label: "Gerente de Finanzas" },
   { name: "LOGISTICA", label: "Logística" },
-  // Sub-roles operativos: arrancan como copia de Operaciones y se ajustan aparte
-  // desde Admin → Permisos (ver seedPermissions / SUBROL_BASE).
-  { name: "COMPRAS", label: "Compras" },
+  // Sub-rol operativo: arranca como copia de Operaciones y se ajusta aparte
+  // desde Admin → Permisos (ver seedPermissions).
   { name: "CAPATAZ", label: "Capataz" },
 ];
 
 // Rol nuevo → rol base del que clona sus permisos en el seed. Incluye las
-// gerencias y los sub-roles operativos (Compras, Capataz).
+// gerencias y el sub-rol operativo Capataz.
 const GERENTE_BASE: Record<string, string> = {
   GERENTE_OPERACIONES: "OPERACIONES",
   GERENTE_COMERCIAL: "ASESOR_COMERCIAL",
   GERENTE_INGENIERIA: "INGENIERIA",
   GERENTE_FINANZAS: "FINANZAS",
-  COMPRAS: "OPERACIONES",
   CAPATAZ: "OPERACIONES",
 };
 

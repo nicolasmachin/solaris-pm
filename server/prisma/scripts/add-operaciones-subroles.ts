@@ -1,10 +1,11 @@
 /**
- * Script ad-hoc idempotente: provisiona los sub-roles operativos COMPRAS y
- * CAPATAZ en una base ya migrada (local o producción).
+ * Script ad-hoc idempotente: provisiona el sub-rol operativo CAPATAZ en una
+ * base ya migrada (local o producción).
  *
- * Cada uno arranca como CLON de los permisos actuales de OPERACIONES (se leen
- * de la DB en vez de hardcodearlos, para quedar siempre en sync). Después se
- * ajustan por separado desde Admin → Permisos.
+ * Arranca como CLON de los permisos actuales de OPERACIONES (se leen de la DB
+ * en vez de hardcodearlos, para quedar siempre en sync). Después se ajusta por
+ * separado desde Admin → Permisos. (Compras se descartó: Logística cumple esa
+ * función.)
  *
  * - Idempotente: upsert por `name` (rol) y por la key compuesta
  *   `roleId_module_action` (permiso). Se puede correr varias veces.
@@ -25,7 +26,6 @@ const prisma = new PrismaClient();
 
 const BASE_ROLE = "OPERACIONES";
 const NEW_ROLES: Array<{ name: string; label: string }> = [
-  { name: "COMPRAS", label: "Compras" },
   { name: "CAPATAZ", label: "Capataz" },
 ];
 

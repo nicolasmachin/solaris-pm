@@ -482,7 +482,7 @@ const MODULE_LABELS: Record<string, string> = {
 const ROLE_GROUPS: Array<{ base: string; subs: string[] }> = [
   { base: "ASESOR_COMERCIAL", subs: ["GERENTE_COMERCIAL"] },
   { base: "INGENIERIA", subs: ["GERENTE_INGENIERIA"] },
-  { base: "OPERACIONES", subs: ["GERENTE_OPERACIONES", "COMPRAS", "CAPATAZ"] },
+  { base: "OPERACIONES", subs: ["GERENTE_OPERACIONES", "CAPATAZ", "LOGISTICA"] },
   { base: "FINANZAS", subs: ["GERENTE_FINANZAS"] },
 ];
 
