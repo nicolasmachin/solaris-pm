@@ -1242,6 +1242,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
         page: z.coerce.number().int().positive().optional(),
         limit: z.coerce.number().int().positive().max(100).optional(),
         schedulable: z.coerce.boolean().optional(),
+        // Opt-in: incluir generadores livianos (Experiencia Solar / CSV). Se usa
+        // en el selector de tickets, donde sí se les puede abrir un ticket.
+        includeLivianos: z.coerce.boolean().optional(),
       })
       .parse(request.query);
 
@@ -1263,7 +1266,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       deletedAt: null,
       // Los Generadores "livianos" importados por CSV (Experiencia Solar) no son
       // proyectos con obra: se excluyen de esta lista. Siguen visibles en /clientes.
-      importedFromCsv: false,
+      // Con includeLivianos=true (selector de tickets) se incluyen.
+      ...(query.includeLivianos ? {} : { importedFromCsv: false }),
       status: query.status,
       ...(query.search
         ? {

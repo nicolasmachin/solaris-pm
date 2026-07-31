@@ -14,6 +14,8 @@ type Props = {
   placeholder?: string;
   /** Texto que aparece cuando no hay nada elegido. */
   emptyLabel?: string;
+  /** Incluir generadores livianos (Experiencia Solar / CSV) en la lista. */
+  includeLivianos?: boolean;
 };
 
 export function ProjectPicker({
@@ -21,10 +23,11 @@ export function ProjectPicker({
   onChange,
   placeholder = "Buscar proyecto por cliente o código…",
   emptyLabel = "Sin proyecto",
+  includeLivianos = false,
 }: Props) {
   const { data: projects = [] } = useQuery({
-    queryKey: ["projects-list-finance"],
-    queryFn: () => getProjects(),
+    queryKey: ["projects-list-finance", { includeLivianos }],
+    queryFn: () => getProjects(includeLivianos ? { includeLivianos: true } : undefined),
   });
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");

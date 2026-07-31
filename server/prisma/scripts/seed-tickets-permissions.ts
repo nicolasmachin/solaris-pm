@@ -38,6 +38,11 @@ async function main() {
       rows.push({ roleId, module: Module.TICKETS, action });
     }
   }
+  // Eliminar tickets: acción destructiva, solo ADMIN.
+  const adminId = idByName.get("ADMIN");
+  if (adminId) {
+    rows.push({ roleId: adminId, module: Module.TICKETS, action: Action.DELETE });
+  }
   const created = await prisma.permission.createMany({ data: rows, skipDuplicates: true });
   console.log(`[seed-tickets] permisos TICKETS creados: ${created.count} (de ${rows.length} intentados)`);
 

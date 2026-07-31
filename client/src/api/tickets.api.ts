@@ -71,6 +71,18 @@ export async function createTicket(body: {
   return data;
 }
 
+export async function updateTicket(
+  id: string,
+  body: { titulo?: string; descripcion?: string; prioridad?: TicketPrioridad },
+): Promise<TicketDetalle> {
+  const { data } = await apiClient.patch<TicketDetalle>(`/api/tickets/${id}`, body);
+  return data;
+}
+
+export async function deleteTicket(id: string): Promise<void> {
+  await apiClient.delete(`/api/tickets/${id}`);
+}
+
 export async function addComentario(id: string, contenido: string, esInterno: boolean): Promise<TicketDetalle> {
   const { data } = await apiClient.post<TicketDetalle>(`/api/tickets/${id}/comentarios`, { contenido, esInterno });
   return data;

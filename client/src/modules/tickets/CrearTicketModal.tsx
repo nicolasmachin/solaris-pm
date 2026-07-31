@@ -74,7 +74,7 @@ export function CrearTicketModal({
           {!presetProjectId && (
             <div>
               <label className="mb-1 block text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]">Proyecto / Generador</label>
-              <ProjectPicker value={projectId} onChange={setProjectId} emptyLabel="Elegí un proyecto" />
+              <ProjectPicker value={projectId} onChange={setProjectId} emptyLabel="Elegí un proyecto" includeLivianos />
             </div>
           )}
           <div>

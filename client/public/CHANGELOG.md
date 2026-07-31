@@ -4,6 +4,15 @@
 
 ### 31 de julio de 2026
 
+#### Tickets — abrir tickets a clientes de Experiencia Solar
+
+- Al abrir un ticket, el selector de proyecto ahora **también incluye a los generadores de Experiencia Solar** (los cargados por planilla), no solo los proyectos con obra. Así podés abrirles y seguirles reclamos a esos clientes (por ejemplo, los que todavía no tenían un proyecto formal en el sistema).
+
+#### Tickets — editar y eliminar
+
+- Desde el detalle de un ticket ahora se puede **editar** el título, la descripción y la prioridad.
+- Un **administrador** puede **eliminar** un ticket (por ejemplo, los que se cargaron de prueba). El resto de los roles puede editar pero no eliminar.
+
 #### Ventas — al pasar un lead a proyecto se hereda más información
 
 - Cuando convertís un lead ganado en proyecto, ahora la **propuesta comercial** del lead pasa **como adjunto** al proyecto (los dos PDF: la propuesta completa y el resumen). Antes quedaba solo en el lead.

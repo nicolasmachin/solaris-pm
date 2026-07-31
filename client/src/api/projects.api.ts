@@ -22,6 +22,8 @@ export interface GetProjectsParams {
   sortBy?: "recent" | "createdAt" | "clientName" | "installationDate" | "progress";
   sortOrder?: "asc" | "desc";
   schedulable?: boolean;
+  /** Incluir generadores livianos (Experiencia Solar / CSV). Solo enviar true. */
+  includeLivianos?: boolean;
 }
 
 export async function getProjects(params?: GetProjectsParams): Promise<ProjectListItem[]> {

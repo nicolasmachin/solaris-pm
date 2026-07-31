@@ -2,19 +2,24 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { Link } from "react-router-dom";
+import { Pencil, Trash2 } from "lucide-react";
 
 import {
   addComentario,
   cerrarTicket,
+  deleteTicket,
   derivarTicket,
   enProgresoTicket,
   getTicket,
   resolverTicket,
+  updateTicket,
   type AreaDerivable,
+  type TicketPrioridad,
 } from "../../api/tickets.api";
 import { Button } from "../../components/ui/Button";
 import { LargeModal } from "../../components/ui/LargeModal";
 import { Spinner } from "../../components/ui/Spinner";
+import { usePermission } from "../../hooks/usePermission";
 import { EstadoBadge, PrioridadBadge, fmtFecha } from "./ticketUi";
 
 const inputClass =
@@ -35,6 +40,14 @@ export function TicketDetail({ ticketId, onClose }: { ticketId: string; onClose:
   const [esInterno, setEsInterno] = useState(false);
   const [area, setArea] = useState<AreaDerivable>("INGENIERIA");
 
+  // Edición inline y confirmación de borrado.
+  const canDelete = usePermission("TICKETS", "DELETE");
+  const [editing, setEditing] = useState(false);
+  const [editTitulo, setEditTitulo] = useState("");
+  const [editDescripcion, setEditDescripcion] = useState("");
+  const [editPrioridad, setEditPrioridad] = useState<TicketPrioridad>("MEDIA");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   function invalidate() {
     qc.invalidateQueries({ queryKey: ["ticket", ticketId] });
     qc.invalidateQueries({ queryKey: ["tickets"] });
@@ -51,6 +64,25 @@ export function TicketDetail({ ticketId, onClose }: { ticketId: string; onClose:
   const enProgreso = useMutation({ mutationFn: () => enProgresoTicket(ticketId), onSuccess: () => invalidate(), onError: onErr });
   const resolver = useMutation({ mutationFn: () => resolverTicket(ticketId), onSuccess: () => { toast.success("Resuelto"); invalidate(); }, onError: onErr });
   const cerrar = useMutation({ mutationFn: () => cerrarTicket(ticketId), onSuccess: () => { toast.success("Cerrado"); invalidate(); }, onError: onErr });
+
+  const guardarEdit = useMutation({
+    mutationFn: () => updateTicket(ticketId, { titulo: editTitulo.trim(), descripcion: editDescripcion.trim(), prioridad: editPrioridad }),
+    onSuccess: () => { toast.success("Ticket actualizado"); setEditing(false); invalidate(); },
+    onError: onErr,
+  });
+  const eliminar = useMutation({
+    mutationFn: () => deleteTicket(ticketId),
+    onSuccess: () => { toast.success("Ticket eliminado"); qc.invalidateQueries({ queryKey: ["tickets"] }); onClose(); },
+    onError: onErr,
+  });
+
+  function startEdit() {
+    if (!t) return;
+    setEditTitulo(t.titulo);
+    setEditDescripcion(t.descripcion);
+    setEditPrioridad(t.prioridad);
+    setEditing(true);
+  }
 
   const acting = derivar.isPending || enProgreso.isPending || resolver.isPending || cerrar.isPending;
   const cerrado = t?.estado === "CERRADO";
@@ -73,19 +105,76 @@ export function TicketDetail({ ticketId, onClose }: { ticketId: string; onClose:
               {t.areaDerivada && (
                 <span className="rounded-full border border-[var(--color-border)] px-2 py-0.5 text-[11px] text-[var(--color-text-muted)]">Área: {t.areaDerivada}</span>
               )}
+              {!editing && (
+                <div className="ml-auto flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={startEdit}
+                    className="flex items-center gap-1 rounded-md px-2 py-1 text-[12px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] hover:text-[var(--color-text-primary)]"
+                  >
+                    <Pencil size={13} /> Editar
+                  </button>
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(true)}
+                      className="flex items-center gap-1 rounded-md px-2 py-1 text-[12px] text-red-400 hover:bg-red-500/10"
+                    >
+                      <Trash2 size={13} /> Eliminar
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
-            <h1 className="font-display text-xl font-bold text-[var(--color-text-primary)]">{t.titulo}</h1>
-            <p className="mt-1 text-[12px] text-[var(--color-text-muted)]">
-              Abierto por {t.creadoPorNombre ?? "—"} · {fmtFecha(t.createdAt)} ·{" "}
-              <Link to={`/projects/${t.projectId}`} className="text-[var(--color-accent)] hover:underline" onClick={onClose}>
-                Ver proyecto →
-              </Link>
-            </p>
+
+            {editing ? (
+              <div className="space-y-2">
+                <input value={editTitulo} onChange={(e) => setEditTitulo(e.target.value)} maxLength={200} placeholder="Título" className={inputClass} />
+                <select value={editPrioridad} onChange={(e) => setEditPrioridad(e.target.value as TicketPrioridad)} className={`${inputClass} w-auto`}>
+                  <option value="BAJA">Baja</option>
+                  <option value="MEDIA">Media</option>
+                  <option value="ALTA">Alta</option>
+                </select>
+              </div>
+            ) : (
+              <>
+                <h1 className="font-display text-xl font-bold text-[var(--color-text-primary)]">{t.titulo}</h1>
+                <p className="mt-1 text-[12px] text-[var(--color-text-muted)]">
+                  Abierto por {t.creadoPorNombre ?? "—"} · {fmtFecha(t.createdAt)} ·{" "}
+                  <Link to={`/projects/${t.projectId}`} className="text-[var(--color-accent)] hover:underline" onClick={onClose}>
+                    Ver proyecto →
+                  </Link>
+                </p>
+              </>
+            )}
           </div>
 
-          <p className="whitespace-pre-wrap rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3 text-sm text-[var(--color-text-primary)]">
-            {t.descripcion}
-          </p>
+          {editing ? (
+            <div className="space-y-2">
+              <textarea value={editDescripcion} onChange={(e) => setEditDescripcion(e.target.value)} rows={4} maxLength={4000} placeholder="Descripción" className={`${inputClass} resize-none`} />
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>Cancelar</Button>
+                <Button size="sm" loading={guardarEdit.isPending} disabled={guardarEdit.isPending || editTitulo.trim().length === 0 || editDescripcion.trim().length === 0} onClick={() => guardarEdit.mutate()}>
+                  Guardar cambios
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <p className="whitespace-pre-wrap rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3 text-sm text-[var(--color-text-primary)]">
+              {t.descripcion}
+            </p>
+          )}
+
+          {/* Confirmación de borrado */}
+          {confirmDelete && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-red-500/40 bg-red-500/10 p-3">
+              <span className="text-sm text-[var(--color-text-primary)]">¿Eliminar este ticket? Esta acción lo saca del listado.</span>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setConfirmDelete(false)}>Cancelar</Button>
+                <Button size="sm" loading={eliminar.isPending} disabled={eliminar.isPending} onClick={() => eliminar.mutate()}>Eliminar</Button>
+              </div>
+            </div>
+          )}
 
           {/* Acciones */}
           {!cerrado && (

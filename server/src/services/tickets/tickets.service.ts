@@ -274,6 +274,56 @@ export async function cerrarTicket(params: {
   return loadTicket(params.ticketId);
 }
 
+export async function actualizarTicket(params: {
+  ticketId: string;
+  titulo?: string;
+  descripcion?: string;
+  prioridad?: TicketPrioridad;
+  actorUserId: string;
+}): Promise<TicketWithComments> {
+  const ticket = await loadTicket(params.ticketId);
+
+  const data: Prisma.TicketUpdateInput = {};
+  if (params.titulo !== undefined) data.titulo = params.titulo;
+  if (params.descripcion !== undefined) data.descripcion = params.descripcion;
+  if (params.prioridad !== undefined) data.prioridad = params.prioridad;
+  if (Object.keys(data).length === 0) return ticket;
+
+  await prisma.ticket.update({ where: { id: ticket.id }, data });
+
+  await createAuditEntry({
+    entityType: AuditEntityType.ticket,
+    entityId: ticket.id,
+    projectId: ticket.projectId,
+    userId: params.actorUserId,
+    action: AuditAction.updated,
+    description: `Ticket editado: "${params.titulo ?? ticket.titulo}"`,
+  });
+
+  return loadTicket(params.ticketId);
+}
+
+export async function eliminarTicket(params: {
+  ticketId: string;
+  actorUserId: string;
+}): Promise<void> {
+  const ticket = await loadTicket(params.ticketId);
+
+  await prisma.ticket.update({
+    where: { id: ticket.id },
+    data: { deletedAt: new Date() },
+  });
+
+  await createAuditEntry({
+    entityType: AuditEntityType.ticket,
+    entityId: ticket.id,
+    projectId: ticket.projectId,
+    userId: params.actorUserId,
+    action: AuditAction.deleted,
+    description: `Ticket eliminado: "${ticket.titulo}"`,
+  });
+}
+
 // Aviso in-app al cliente (NUNCA email — guardrail). userId = creador del ticket.
 async function notifyCliente(ticket: TicketWithComments, title: string, message: string) {
   try {

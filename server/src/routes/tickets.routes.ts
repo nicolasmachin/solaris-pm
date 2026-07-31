@@ -17,10 +17,12 @@ import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { badRequest } from "../utils/errors.js";
 import {
+  actualizarTicket,
   agregarComentario,
   cerrarTicket,
   crearTicket,
   derivarTicket,
+  eliminarTicket,
   esAreaDerivable,
   marcarEnProgreso,
   resolverTicket,
@@ -102,6 +104,30 @@ export async function registerTicketsRoutes(app: FastifyInstance) {
       .parse(request.body);
     const t = await crearTicket({ ...body, creadoPorId: user.id });
     return serializeTicket(t, { includeInternalComments: true });
+  });
+
+  // Editar título/descripción/prioridad. Reusa TICKETS:EDIT (roles internos).
+  app.patch("/tickets/:id", { preHandler: authorize(Module.TICKETS, Action.EDIT) }, async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const body = z
+      .object({
+        titulo: z.string().trim().min(1).max(200).optional(),
+        descripcion: z.string().trim().min(1).max(4000).optional(),
+        prioridad: z.nativeEnum(TicketPrioridad).optional(),
+      })
+      .parse(request.body);
+    const t = await actualizarTicket({ ticketId: id, ...body, actorUserId: user.id });
+    return serializeTicket(t, { includeInternalComments: true });
+  });
+
+  // Eliminar (borrado suave). Solo ADMIN vía permiso TICKETS:DELETE.
+  app.delete("/tickets/:id", { preHandler: authorize(Module.TICKETS, Action.DELETE) }, async (request, reply) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    await eliminarTicket({ ticketId: id, actorUserId: user.id });
+    reply.code(204);
+    return null;
   });
 
   app.post("/tickets/:id/comentarios", { preHandler: authorize(Module.TICKETS, Action.EDIT) }, async (request) => {
