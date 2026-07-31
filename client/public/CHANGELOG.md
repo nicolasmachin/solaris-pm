@@ -4,6 +4,12 @@
 
 ### 31 de julio de 2026
 
+#### Permisos — pantalla rediseñada, más cómoda
+
+- La pantalla de **Administración → Permisos** dejó de ser una tabla gigante con todos los roles y módulos a la vez. Ahora **elegís un rol de una lista** (a la izquierda, agrupada por área con sus sub-roles) y **ajustás solo sus permisos**, en **tarjetas por módulo** con botones claros de cada acción.
+- Cada módulo muestra cuántas acciones tenés activas (ej. "3/5") y un botón para **marcar/desmarcar todo el módulo**. Hay un **buscador de módulos** y un botón **"Copiar permisos de…"** otro rol (ideal para armar un rol nuevo partiendo de otro).
+- Se agregaron a la pantalla **módulos que antes no se podían configurar** (Tickets, Encuestas, Experiencia Solar, Traspasos, Comisiones, Portal del cliente): ahora todos sus permisos son visibles y editables.
+
 #### Roles — Compras y Capataz dentro de Operaciones
 
 - Se agregaron dos **roles nuevos del área de Operaciones**: **Compras** y **Capataz**. Cada uno **arranca con los mismos permisos que Operaciones** y se puede **ajustar por separado** desde **Administración → Permisos** (por ejemplo, dejarle a Capataz solo lo que necesita en obra).

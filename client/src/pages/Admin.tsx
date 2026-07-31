@@ -447,6 +447,11 @@ const ACTION_LABELS: Record<string, string> = {
   DELETE: "Eliminar",
   COMPLETE: "Completar",
   COMMENT: "Comentar",
+  ACCESS: "Acceso al módulo",
+  CONFIRM: "Confirmar",
+  ACCESS_MEMORIA: "Acceso a memoria",
+  DEBUG_CALCULADORA: "Debug calculadora",
+  ADMIN_REPORT: "Reporte admin",
 };
 
 const MODULE_LABELS: Record<string, string> = {
@@ -455,7 +460,14 @@ const MODULE_LABELS: Record<string, string> = {
   INGENIERIA: "Ingeniería",
   OPERACIONES: "Operaciones",
   HABILITACION: "Habilitación UTE",
+  TRAMITES_UTE: "Trámites UTE",
   POSTVENTA: "Post-Habilitación",
+  EXPERIENCIA_CLIENTES: "Experiencia Solar",
+  PORTAL_CLIENTE: "Portal del cliente",
+  TICKETS: "Tickets",
+  ENCUESTAS: "Encuestas",
+  TRASPASOS: "Traspasos",
+  COMISIONES: "Comisiones",
   METRICAS: "Métricas",
   CONFIGURACION: "Configuración",
   USUARIOS: "Usuarios",
@@ -463,6 +475,16 @@ const MODULE_LABELS: Record<string, string> = {
   STOCK: "Stock",
   INFORMES: "Informes",
 };
+
+// Agrupación de roles por área para el panel izquierdo: cada rol base con sus
+// sub-roles derivados (gerencias + sub-roles operativos). Solo afecta la
+// presentación; los permisos de cada rol son 100% independientes.
+const ROLE_GROUPS: Array<{ base: string; subs: string[] }> = [
+  { base: "ASESOR_COMERCIAL", subs: ["GERENTE_COMERCIAL"] },
+  { base: "INGENIERIA", subs: ["GERENTE_INGENIERIA"] },
+  { base: "OPERACIONES", subs: ["GERENTE_OPERACIONES", "COMPRAS", "CAPATAZ"] },
+  { base: "FINANZAS", subs: ["GERENTE_FINANZAS"] },
+];
 
 // Key compuesta role+module+action → bool activo
 type PermsMap = Record<string, Record<string, Record<string, boolean>>>;
@@ -502,6 +524,9 @@ function TabPermisos() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingRole, setEditingRole] = useState<RoleData | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<RoleData | null>(null);
+  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
+  const [moduleSearch, setModuleSearch] = useState("");
+  const [copySource, setCopySource] = useState("");
 
   // Hydrate draft cuando llegan los roles, si no hay cambios pendientes
   useEffect(() => {
@@ -608,6 +633,18 @@ function TabPermisos() {
     });
   }
 
+  // Copia (en el draft) el set completo de permisos de otro rol al rol destino.
+  function copyFrom(targetRoleId: string, sourceRoleId: string) {
+    if (roles.find((r) => r.id === targetRoleId)?.name === "ADMIN") return;
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const src = prev[sourceRoleId] ?? {};
+      const clone: Record<string, Record<string, boolean>> = {};
+      for (const m of Object.keys(src)) clone[m] = { ...src[m]! };
+      return { ...prev, [targetRoleId]: clone };
+    });
+  }
+
   function discard() {
     if (rolesQuery.data) {
       const fresh = buildPermsMap(rolesQuery.data);
@@ -643,103 +680,182 @@ function TabPermisos() {
     return c;
   })();
 
+  // Rol seleccionado (default: primer rol editable). origMap para "dirty" por rol.
+  const selRole = roles.find((r) => r.id === selectedRoleId) ?? editableRoles[0] ?? adminRole ?? null;
+  const isAdminSel = selRole?.name === "ADMIN";
+  const origMap = buildPermsMap(roles);
+  const roleDirty = (id: string) => JSON.stringify(origMap[id] ?? {}) !== JSON.stringify(draft[id] ?? {});
+  const roleActionCount = (id: string) => rolePermsToArray(draft[id]).length;
+
+  // Estructura del panel izquierdo: grupos (base + sub-roles) y luego sueltos.
+  const grouped = new Set<string>();
+  ROLE_GROUPS.forEach((g) => {
+    grouped.add(g.base);
+    g.subs.forEach((s) => grouped.add(s));
+  });
+  const byName = new Map(roles.map((r) => [r.name, r] as const));
+  const standaloneRoles = editableRoles.filter((r) => !grouped.has(r.name));
+
+  // Un botón de rol en la lista izquierda.
+  function renderRoleBtn(role: RoleData, indent?: boolean) {
+    const active = selRole?.id === role.id;
+    const dirty = roleDirty(role.id);
+    return (
+      <button
+        key={role.id}
+        onClick={() => { setSelectedRoleId(role.id); setCopySource(""); }}
+        style={{
+          display: "flex", alignItems: "center", gap: 6, width: "100%", textAlign: "left",
+          padding: indent ? "6px 10px 6px 24px" : "7px 10px",
+          background: active ? "var(--color-accent)" : "transparent",
+          color: active ? "var(--color-bg-app)" : "var(--color-text-secondary)",
+          border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12,
+          fontWeight: active ? 600 : 500,
+        }}
+      >
+        {indent && <span style={{ opacity: 0.5 }}>↳</span>}
+        <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{role.label}</span>
+        {dirty && <span title="Cambios sin guardar" style={{ width: 6, height: 6, borderRadius: 999, background: active ? "var(--color-bg-app)" : "var(--color-accent)" }} />}
+        <span style={{ fontSize: 10, opacity: 0.7 }}>{role.userCount}</span>
+      </button>
+    );
+  }
+
   return (
     <div>
-      {/* Admin notice + botón nuevo rol */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, gap: 12 }}>
-        <div>
-          <p style={{ fontSize: 12, color: "var(--color-text-muted)", marginBottom: 4 }}>
-            Matriz de permisos por rol. Los cambios se aplican al clickear "Guardar".
-            El rol <strong>ADMIN</strong> tiene acceso completo y no se puede modificar.
-          </p>
-          {adminRole && (
-            <p style={{ fontSize: 11, color: "var(--color-text-muted)", fontFamily: "var(--font-mono)" }}>
-              ADMIN: {adminRole.permissions.reduce((s, p) => s + p.actions.length, 0)} permisos · {adminRole.userCount} usuario(s)
-            </p>
-          )}
-        </div>
+      {/* Encabezado */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, gap: 12 }}>
+        <p style={{ fontSize: 12, color: "var(--color-text-muted)", margin: 0 }}>
+          Elegí un rol a la izquierda y ajustá sus permisos por módulo. Se guardan al clickear "Guardar".
+          El rol <strong>ADMIN</strong> tiene acceso completo y no se edita.
+        </p>
         <button
           onClick={() => setShowCreateModal(true)}
-          style={{ background: "var(--color-accent)", color: "var(--color-bg-app)", padding: "7px 14px", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+          style={{ background: "var(--color-accent)", color: "var(--color-bg-app)", padding: "7px 14px", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
         >
           + Nuevo rol
         </button>
       </div>
 
-      {/* Tabla matriz */}
-      <div style={{ overflowX: "auto", borderRadius: 8, border: "1px solid var(--color-border)" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-          <thead>
-            <tr style={{ background: "var(--color-bg-card)", borderBottom: "1px solid var(--color-border)" }}>
-              <th style={{ textAlign: "left", padding: "10px 14px", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", width: 200 }}>
-                Módulo / Acción
-              </th>
-              {editableRoles.map((r) => (
-                <th key={r.id} style={{ padding: "8px 10px", minWidth: 130 }}>
-                  <RoleHeaderCell
-                    role={r}
-                    onEdit={() => setEditingRole(r)}
-                    onDelete={() => setConfirmDelete(r)}
-                    onToggleAll={() => toggleAllForRole(r.id)}
-                  />
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {catalog.map((mod) => {
-              return (
-                <>
-                  {/* Fila del módulo (con checkboxes de módulo completo) */}
-                  <tr key={`mod-${mod.module}`} style={{ background: "var(--color-bg-app)", borderTop: "1px solid var(--color-border)" }}>
-                    <td colSpan={1} style={{ padding: "8px 14px", fontSize: 11, fontWeight: 600, color: "var(--color-text-primary)", fontFamily: "var(--font-mono)" }}>
-                      {MODULE_LABELS[mod.module] ?? mod.module}
-                    </td>
-                    {editableRoles.map((r) => {
-                      const allChecked = mod.actions.every((a) => draft[r.id]?.[mod.module]?.[a]);
-                      const someChecked = mod.actions.some((a) => draft[r.id]?.[mod.module]?.[a]);
-                      return (
-                        <td key={`mod-${mod.module}-${r.id}`} style={{ padding: "6px 10px", textAlign: "center" }}>
-                          <input
-                            type="checkbox"
-                            checked={allChecked}
-                            ref={(el) => {
-                              if (el) el.indeterminate = !allChecked && someChecked;
-                            }}
-                            onChange={() => toggleModule(r.id, mod.module, mod.actions)}
-                            title={`Marcar/desmarcar todo ${MODULE_LABELS[mod.module] ?? mod.module}`}
-                            style={{ cursor: "pointer", accentColor: "var(--color-accent)" }}
-                          />
-                        </td>
-                      );
-                    })}
-                  </tr>
-                  {/* Filas por acción */}
-                  {mod.actions.map((action) => (
-                    <tr key={`${mod.module}-${action}`} style={{ borderTop: "1px solid var(--color-border)" }}>
-                      <td style={{ padding: "7px 14px 7px 30px", fontSize: 11, color: "var(--color-text-secondary)" }}>
-                        {ACTION_LABELS[action] ?? action}
-                      </td>
-                      {editableRoles.map((r) => {
-                        const checked = draft[r.id]?.[mod.module]?.[action] ?? false;
-                        return (
-                          <td key={`${mod.module}-${action}-${r.id}`} style={{ padding: "4px 10px", textAlign: "center" }}>
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => toggle(r.id, mod.module, action)}
-                              style={{ cursor: "pointer", accentColor: "var(--color-accent)" }}
-                            />
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </>
-              );
-            })}
-          </tbody>
-        </table>
+      {/* Editor de dos paneles */}
+      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+        {/* IZQUIERDA: lista de roles agrupada */}
+        <aside style={{ width: 240, flexShrink: 0, border: "1px solid var(--color-border)", borderRadius: 8, padding: 8, maxHeight: "calc(100vh - 230px)", overflowY: "auto" }}>
+          {ROLE_GROUPS.map((g) => {
+            const base = byName.get(g.base);
+            const subs = g.subs.map((s) => byName.get(s)).filter((r): r is RoleData => Boolean(r));
+            if (!base && subs.length === 0) return null;
+            return (
+              <div key={g.base} style={{ marginBottom: 4 }}>
+                {base && renderRoleBtn(base)}
+                {subs.map((s) => renderRoleBtn(s, true))}
+              </div>
+            );
+          })}
+          {standaloneRoles.length > 0 && (
+            <div style={{ marginTop: 6, borderTop: "1px solid var(--color-border)", paddingTop: 6 }}>
+              {standaloneRoles.map((r) => renderRoleBtn(r))}
+            </div>
+          )}
+          {adminRole && (
+            <div style={{ marginTop: 6, borderTop: "1px solid var(--color-border)", paddingTop: 6 }}>
+              {renderRoleBtn(adminRole)}
+            </div>
+          )}
+        </aside>
+
+        {/* DERECHA: permisos del rol seleccionado */}
+        <section style={{ flex: 1, minWidth: 0 }}>
+          {!selRole ? (
+            <p style={{ fontSize: 12, color: "var(--color-text-muted)" }}>Elegí un rol.</p>
+          ) : (
+            <>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
+                <div>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text-primary)", margin: 0 }}>{selRole.label}</h3>
+                  <p style={{ fontSize: 11, color: "var(--color-text-muted)", fontFamily: "var(--font-mono)", marginTop: 2 }}>
+                    {selRole.name} · {roleActionCount(selRole.id)} permisos · {selRole.userCount} usuario(s)
+                  </p>
+                </div>
+                {!isAdminSel && (
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                    <select
+                      value={copySource}
+                      onChange={(e) => { const id = e.target.value; if (id) { copyFrom(selRole.id, id); setCopySource(""); } }}
+                      style={{ fontSize: 11, padding: "5px 8px", borderRadius: 6, border: "1px solid var(--color-border)", background: "var(--color-bg-app)", color: "var(--color-text-secondary)", cursor: "pointer" }}
+                    >
+                      <option value="">Copiar permisos de…</option>
+                      {roles.filter((r) => r.id !== selRole.id).map((r) => (
+                        <option key={r.id} value={r.id}>{r.label}</option>
+                      ))}
+                    </select>
+                    <button onClick={() => toggleAllForRole(selRole.id)} style={{ fontSize: 11, padding: "5px 10px", borderRadius: 6, border: "1px solid var(--color-border)", background: "transparent", color: "var(--color-text-secondary)", cursor: "pointer" }}>Marcar/quitar todo</button>
+                    <button onClick={() => setEditingRole(selRole)} style={{ fontSize: 11, padding: "5px 10px", borderRadius: 6, border: "1px solid var(--color-border)", background: "transparent", color: "var(--color-text-secondary)", cursor: "pointer" }}>Editar</button>
+                    {!selRole.isSystem && (
+                      <button onClick={() => setConfirmDelete(selRole)} style={{ fontSize: 11, padding: "5px 10px", borderRadius: 6, border: "1px solid var(--color-danger-text)", background: "transparent", color: "var(--color-danger-text)", cursor: "pointer" }}>Borrar</button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {isAdminSel ? (
+                <div style={{ fontSize: 12, color: "var(--color-text-muted)", padding: "10px 12px", border: "1px solid var(--color-border)", borderRadius: 8, background: "var(--color-bg-card)" }}>
+                  El rol <strong>ADMIN</strong> tiene acceso completo a todos los módulos y no se puede editar.
+                </div>
+              ) : (
+                <input
+                  placeholder="Buscar módulo…"
+                  value={moduleSearch}
+                  onChange={(e) => setModuleSearch(e.target.value)}
+                  style={{ width: "100%", maxWidth: 320, fontSize: 12, padding: "7px 10px", borderRadius: 6, border: "1px solid var(--color-border)", background: "var(--color-bg-app)", color: "var(--color-text-primary)" }}
+                />
+              )}
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10, marginTop: 12 }}>
+                {catalog
+                  .filter((mod) => {
+                    const label = (MODULE_LABELS[mod.module] ?? mod.module).toLowerCase();
+                    return !moduleSearch.trim() || label.includes(moduleSearch.trim().toLowerCase());
+                  })
+                  .map((mod) => {
+                    const acts = mod.actions;
+                    const onCount = acts.filter((a) => draft[selRole.id]?.[mod.module]?.[a]).length;
+                    const allOn = onCount === acts.length && acts.length > 0;
+                    return (
+                      <div key={mod.module} style={{ border: "1px solid var(--color-border)", borderRadius: 8, padding: "10px 12px", background: "var(--color-bg-card)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 8 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-primary)" }}>{MODULE_LABELS[mod.module] ?? mod.module}</span>
+                          <button
+                            disabled={isAdminSel}
+                            onClick={() => toggleModule(selRole.id, mod.module, acts)}
+                            title="Marcar/desmarcar todo el módulo"
+                            style={{ fontSize: 10, padding: "2px 8px", borderRadius: 999, border: `1px solid ${allOn ? "var(--color-accent)" : "var(--color-border)"}`, background: allOn ? "var(--color-accent)" : "transparent", color: allOn ? "var(--color-bg-app)" : "var(--color-text-muted)", cursor: isAdminSel ? "default" : "pointer", whiteSpace: "nowrap" }}
+                          >
+                            {onCount}/{acts.length}
+                          </button>
+                        </div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          {acts.map((a) => {
+                            const on = isAdminSel ? true : (draft[selRole.id]?.[mod.module]?.[a] ?? false);
+                            return (
+                              <button
+                                key={a}
+                                disabled={isAdminSel}
+                                onClick={() => toggle(selRole.id, mod.module, a)}
+                                style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, cursor: isAdminSel ? "default" : "pointer", border: `1px solid ${on ? "var(--color-accent)" : "var(--color-border)"}`, background: on ? "var(--color-accent)" : "transparent", color: on ? "var(--color-bg-app)" : "var(--color-text-secondary)" }}
+                              >
+                                {ACTION_LABELS[a] ?? a}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </>
+          )}
+        </section>
       </div>
 
       {/* Barra flotante de cambios pendientes */}
@@ -805,64 +921,6 @@ function TabPermisos() {
           onConfirm={() => deleteMut.mutate(confirmDelete.id)}
         />
       )}
-    </div>
-  );
-}
-
-function RoleHeaderCell({
-  role,
-  onEdit,
-  onDelete,
-  onToggleAll,
-}: {
-  role: RoleData;
-  onEdit: () => void;
-  onDelete: () => void;
-  onToggleAll: () => void;
-}) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-        <span
-          style={{
-            fontSize: 11, color: "var(--color-text-primary)", fontWeight: 600,
-            whiteSpace: "nowrap", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis",
-          }}
-          title={`${role.label} (${role.name})`}
-        >
-          {role.label}
-        </span>
-        <button
-          onClick={onEdit}
-          title="Editar etiqueta y descripción"
-          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-muted)", fontSize: 11, padding: 0 }}
-        >
-          ✎
-        </button>
-        {!role.isSystem && (
-          <button
-            onClick={onDelete}
-            title="Eliminar rol"
-            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-danger-text)", fontSize: 11, padding: 0 }}
-          >
-            🗑
-          </button>
-        )}
-      </div>
-      <div style={{ fontSize: 9, color: "var(--color-text-muted)", fontFamily: "var(--font-mono)" }}>
-        {role.userCount} user{role.userCount === 1 ? "" : "s"}
-      </div>
-      <button
-        onClick={onToggleAll}
-        title="Marcar / desmarcar todo"
-        style={{
-          background: "none", border: "1px solid var(--color-border)",
-          color: "var(--color-text-muted)", padding: "2px 6px", borderRadius: 3,
-          fontSize: 9, cursor: "pointer", fontFamily: "var(--font-mono)",
-        }}
-      >
-        Todos
-      </button>
     </div>
   );
 }

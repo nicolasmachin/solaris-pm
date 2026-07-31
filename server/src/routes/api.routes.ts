@@ -5405,19 +5405,25 @@ export async function registerApiRoutes(app: FastifyInstance) {
   // ─── Roles dinámicos y matriz de permisos ────────────────────────────────────
 
   const PERMISSION_CATALOG: Array<{ module: Module; actions: Action[] }> = [
-    { module: Module.VENTAS,        actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMMENT] },
-    { module: Module.ONBOARDING,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
-    { module: Module.INGENIERIA,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT, Action.ACCESS] },
-    { module: Module.OPERACIONES,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
-    { module: Module.HABILITACION,  actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
-    { module: Module.POSTVENTA,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
-    { module: Module.METRICAS,      actions: [Action.VIEW] },
-    { module: Module.CONFIGURACION, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
-    { module: Module.USUARIOS,      actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
-    { module: Module.FINANZAS,      actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
-    { module: Module.STOCK,         actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
-    { module: Module.TRAMITES_UTE,  actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
-    { module: Module.INFORMES,      actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
+    { module: Module.VENTAS,              actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMMENT] },
+    { module: Module.ONBOARDING,          actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { module: Module.INGENIERIA,          actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT, Action.ACCESS] },
+    { module: Module.OPERACIONES,         actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { module: Module.HABILITACION,        actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { module: Module.TRAMITES_UTE,        actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { module: Module.POSTVENTA,           actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { module: Module.EXPERIENCIA_CLIENTES, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { module: Module.TICKETS,             actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMMENT] },
+    { module: Module.ENCUESTAS,           actions: [Action.VIEW] },
+    { module: Module.TRASPASOS,           actions: [Action.VIEW, Action.CONFIRM] },
+    { module: Module.PORTAL_CLIENTE,      actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMMENT] },
+    { module: Module.COMISIONES,          actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { module: Module.STOCK,               actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { module: Module.FINANZAS,            actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { module: Module.METRICAS,            actions: [Action.VIEW] },
+    { module: Module.INFORMES,            actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
+    { module: Module.USUARIOS,            actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    { module: Module.CONFIGURACION,       actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
   ];
 
   const roleNameSchema = z
@@ -5459,7 +5465,29 @@ export async function registerApiRoutes(app: FastifyInstance) {
   }
 
   app.get("/permissions/catalog", { preHandler: authorize(Module.USUARIOS, Action.VIEW) }, async () => {
-    return PERMISSION_CATALOG;
+    // Catálogo curado (orden + set de acciones por módulo) UNIDO con cualquier
+    // par (módulo, acción) que exista realmente en la base. Así ningún permiso
+    // asignado a un rol queda invisible/no editable en la UI (evita, además,
+    // que "marcar todo/nada" borre permisos que la pantalla no mostraba).
+    const byModule = new Map<Module, Action[]>();
+    const order: Module[] = [];
+    for (const { module, actions } of PERMISSION_CATALOG) {
+      byModule.set(module, [...actions]);
+      order.push(module);
+    }
+    const distinct = await prisma.permission.findMany({
+      distinct: ["module", "action"],
+      select: { module: true, action: true },
+    });
+    for (const { module, action } of distinct) {
+      if (!byModule.has(module)) {
+        byModule.set(module, []);
+        order.push(module);
+      }
+      const acts = byModule.get(module)!;
+      if (!acts.includes(action)) acts.push(action);
+    }
+    return order.map((module) => ({ module, actions: byModule.get(module)! }));
   });
 
   app.get("/roles", { preHandler: authorize(Module.USUARIOS, Action.VIEW) }, async () => {
