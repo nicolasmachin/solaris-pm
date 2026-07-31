@@ -147,6 +147,17 @@ export async function convertLead(id: string): Promise<Project> {
   return data;
 }
 
+export interface ConversionDefaults {
+  capacityKwp: number | null;
+  budgetUsd: number | null;
+  source: "proposal" | "lead" | null;
+}
+
+export async function getConversionDefaults(id: string): Promise<ConversionDefaults> {
+  const { data } = await api.get<ConversionDefaults>(`/api/leads/${id}/conversion-defaults`);
+  return data;
+}
+
 export async function deleteLead(id: string): Promise<void> {
   await api.delete(`/api/leads/${id}`);
 }

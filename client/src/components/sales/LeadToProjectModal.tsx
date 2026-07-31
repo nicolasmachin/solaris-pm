@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { X } from "lucide-react";
 
-import { convertLeadWithBody, getLead } from "../../api/leads.api";
+import { convertLeadWithBody, getConversionDefaults, getLead } from "../../api/leads.api";
 
 const inp =
   "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]";
@@ -17,6 +17,17 @@ export function LeadToProjectModal({ leadId, onClose }: { leadId: string; onClos
   const { data: lead, isLoading } = useQuery({
     queryKey: ["lead-detail", leadId],
     queryFn: () => getLead(leadId),
+  });
+
+  // Potencia y cotización a pre-cargar: salen de la última propuesta publicada
+  // (con fallback al estimado del lead, resuelto en el backend).
+  const {
+    data: defaults,
+    isSuccess: defaultsReady,
+    isError: defaultsFailed,
+  } = useQuery({
+    queryKey: ["lead-conversion-defaults", leadId],
+    queryFn: () => getConversionDefaults(leadId),
   });
 
   // Form state, se hidrata 1 vez cuando llega `lead`.
@@ -32,15 +43,21 @@ export function LeadToProjectModal({ leadId, onClose }: { leadId: string; onClos
   const [plannedEndDate, setPlannedEndDate] = useState("");
   const [saving, setSaving] = useState(false);
 
-  if (lead && !hydrated) {
+  // Hidratar 1 vez, esperando también a los defaults (o a que fallen, para no
+  // trabar el modal si el endpoint no responde).
+  if (lead && (defaultsReady || defaultsFailed) && !hydrated) {
     setClientName(lead.clientName ?? "");
     setClientAddress(lead.address ?? "");
     setClientEmail(lead.clientEmail ?? "");
     setClientPhone(lead.clientPhone ?? "");
-    setCapacityKwp(lead.estimatedKwp != null ? String(lead.estimatedKwp) : "");
-    setBudgetUsd(lead.estimatedBudgetUsd != null ? String(lead.estimatedBudgetUsd) : "");
+    const kwp = defaults?.capacityKwp ?? lead.estimatedKwp ?? null;
+    const budget = defaults?.budgetUsd ?? lead.estimatedBudgetUsd ?? null;
+    setCapacityKwp(kwp != null ? String(kwp) : "");
+    setBudgetUsd(budget != null ? String(budget) : "");
     setHydrated(true);
   }
+
+  const fromProposal = defaults?.source === "proposal";
 
   const convertMut = useMutation({
     mutationFn: () =>
@@ -104,7 +121,8 @@ export function LeadToProjectModal({ leadId, onClose }: { leadId: string; onClos
             <p className="text-xs text-[var(--color-text-muted)] mb-4">
               El lead está en Cerrado como Ganado. Los datos cargados en el lead aparecen
               precargados acá — completá lo que falte (ciudad, provincia, potencia) y dale crear.
-              Los adjuntos del lead se copian automáticamente al proyecto.
+              Los adjuntos, la propuesta comercial y los comentarios del lead se copian
+              automáticamente al proyecto.
             </p>
             <form onSubmit={submit} className="space-y-3">
               <div>
@@ -192,6 +210,11 @@ export function LeadToProjectModal({ leadId, onClose }: { leadId: string; onClos
                   />
                 </div>
               </div>
+              {fromProposal && (
+                <p className="text-[10px] text-[var(--color-text-muted)] -mt-1">
+                  Potencia y presupuesto tomados de la propuesta comercial. Podés editarlos.
+                </p>
+              )}
               <div>
                 <label className={lbl}>Fecha estimada fin obra</label>
                 <input

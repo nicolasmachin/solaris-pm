@@ -78,6 +78,10 @@ import {
 } from "../services/file-storage.service.js";
 import { copyLeadAttachmentsToProject } from "../services/sales/sales.service.js";
 import {
+  copyLatestProposalToProject,
+  getLatestPublishedQuote,
+} from "../services/proposal/latest-proposal.service.js";
+import {
   calculateProjectMetrics,
   calculateProjectProgress,
   calculateStageProgress,
@@ -7050,6 +7054,32 @@ export async function registerApiRoutes(app: FastifyInstance) {
     };
   });
 
+  // Defaults para pre-cargar el modal de conversión: potencia y cotización de la
+  // última propuesta publicada, con fallback al estimado grueso del lead.
+  app.get("/leads/:id/conversion-defaults", { preHandler: authorize(Module.VENTAS, Action.VIEW) }, async (request) => {
+    const { id } = request.params as { id: string };
+    const lead = await prisma.salesLead.findFirst({
+      where: { id, deletedAt: null },
+      select: { estimatedKwp: true, estimatedBudgetUsd: true },
+    });
+    if (!lead) throw notFound("LEAD_NOT_FOUND", "Lead no encontrado");
+
+    const quote = await getLatestPublishedQuote(id);
+    const estKwp = lead.estimatedKwp ? decimalToNumber(lead.estimatedKwp) : null;
+    const estBudget = lead.estimatedBudgetUsd ? decimalToNumber(lead.estimatedBudgetUsd) : null;
+
+    const capacityKwp = quote?.potenciaKwp ?? estKwp ?? null;
+    const budgetUsd = quote?.precioUsd ?? estBudget ?? null;
+    const source: "proposal" | "lead" | null =
+      quote && (quote.potenciaKwp != null || quote.precioUsd != null)
+        ? "proposal"
+        : capacityKwp != null || budgetUsd != null
+          ? "lead"
+          : null;
+
+    return { capacityKwp, budgetUsd, source };
+  });
+
   const leadConvertBodySchema = z
     .object({
       clientName: z.string().min(1).optional(),
@@ -7094,12 +7124,19 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const clientAddress = body.clientAddress ?? lead.address ?? null;
     const clientEmail = body.clientEmail ?? lead.clientEmail ?? null;
     const clientPhone = body.clientPhone ?? lead.clientPhone ?? null;
+    // Cotización y potencia: prioridad body (lo que el usuario editó en el modal)
+    // > última propuesta publicada > estimado grueso del lead.
+    const quote = await getLatestPublishedQuote(lead.id);
     const capacityKwpFinal =
-      body.capacityKwp ?? (lead.estimatedKwp ? decimalToNumber(lead.estimatedKwp) ?? 0 : 0);
+      body.capacityKwp ??
+      quote?.potenciaKwp ??
+      (lead.estimatedKwp ? decimalToNumber(lead.estimatedKwp) ?? 0 : 0);
     const locationCity = body.locationCity?.trim() ?? "";
     const locationProvince = body.locationProvince?.trim() ?? "";
     const budgetUsdFinal =
-      body.budgetUsd ?? (lead.estimatedBudgetUsd ? decimalToNumber(lead.estimatedBudgetUsd) ?? 0 : 0);
+      body.budgetUsd ??
+      quote?.precioUsd ??
+      (lead.estimatedBudgetUsd ? decimalToNumber(lead.estimatedBudgetUsd) ?? 0 : 0);
 
     const missing: string[] = [];
     if (!clientName) missing.push("nombre del cliente");
@@ -7217,6 +7254,46 @@ export async function registerApiRoutes(app: FastifyInstance) {
       }
     } catch (err) {
       request.log.error({ err, leadId: lead.id, projectId: project.id }, "copy lead attachments failed");
+    }
+
+    // Copia la propuesta comercial (última versión publicada) como adjunto del
+    // proyecto. La v2 guarda los PDF sueltos en disco (sin FileAttachment), por
+    // eso no la agarra copyLeadAttachmentsToProject. Best-effort igual que arriba.
+    try {
+      const { copied } = await copyLatestProposalToProject(lead.id, project.id, user.id);
+      if (copied > 0) {
+        await createAuditEntry({
+          entityType: AuditEntityType.file,
+          entityId: project.id,
+          projectId: project.id,
+          userId: user.id,
+          action: AuditAction.file_uploaded,
+          description: `Copió la propuesta comercial del lead al proyecto (${copied} PDF)`,
+        });
+      }
+    } catch (err) {
+      request.log.error({ err, leadId: lead.id, projectId: project.id }, "copy lead proposal failed");
+    }
+
+    // Vincula los comentarios del lead al proyecto (relink: preserva autor y
+    // fecha; el leadId se conserva, así quedan visibles en el lead y el proyecto).
+    try {
+      const { count } = await prisma.comment.updateMany({
+        where: { leadId: lead.id, projectId: null, deletedAt: null },
+        data: { projectId: project.id },
+      });
+      if (count > 0) {
+        await createAuditEntry({
+          entityType: AuditEntityType.project,
+          entityId: project.id,
+          projectId: project.id,
+          userId: user.id,
+          action: AuditAction.comment_added,
+          description: `Vinculó ${count} comentario${count === 1 ? "" : "s"} del lead al proyecto`,
+        });
+      }
+    } catch (err) {
+      request.log.error({ err, leadId: lead.id, projectId: project.id }, "relink lead comments failed");
     }
 
     const projectWithStages = await prisma.project.findUniqueOrThrow({

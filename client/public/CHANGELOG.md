@@ -2,6 +2,14 @@
 
 ## v8.2
 
+### 31 de julio de 2026
+
+#### Ventas — al pasar un lead a proyecto se hereda más información
+
+- Cuando convertís un lead ganado en proyecto, ahora la **propuesta comercial** del lead pasa **como adjunto** al proyecto (los dos PDF: la propuesta completa y el resumen). Antes quedaba solo en el lead.
+- Los **comentarios** que se cargaron en el lead ahora **también aparecen en el proyecto**, con su autor y fecha originales. Se siguen viendo en el lead.
+- La **potencia (kWp)** y la **cotización (USD)** se **pre-cargan desde la propuesta comercial** (los mismos números de los que sale la comisión del vendedor), en vez del estimado grueso del lead. Siguen siendo **editables** antes de crear el proyecto.
+
 ### 28 de julio de 2026
 
 #### Tarifas de UTE
