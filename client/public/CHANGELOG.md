@@ -1,6 +1,6 @@
 # Novedades
 
-## v8.2
+## v8.3
 
 ### 31 de julio de 2026
 
@@ -83,6 +83,8 @@
 - Se agregaron **roles de gerencia**: **Gerente de Operaciones, Gerente Comercial, Gerente de Ingeniería** y **Gerente de Finanzas**. Cada uno arranca con **los mismos permisos que su equipo** y se puede ajustar aparte desde **Admin → Permisos** (por ejemplo, darle acceso a Métricas o a Finanzas) sin tocar el rol base.
 - Nuevo rol **Logística**, con acceso a **Stock** (gestión completa) y lectura de **Operaciones** e **Ingeniería** (para ver materiales y compras).
 - Los roles nuevos ya aparecen al **crear o editar un usuario** y en la matriz de permisos. Cada rol se muestra con su propia **etiqueta y color** en el listado de usuarios.
+
+## v8.2
 
 ### 22 de julio de 2026
 

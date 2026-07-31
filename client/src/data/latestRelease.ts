@@ -23,47 +23,41 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "8.2",
-  date: "22 de julio de 2026",
+  version: "8.3",
+  date: "31 de julio de 2026",
   sections: [
     {
-      title: "Ventas — pipeline más simple, vista priorizada y reclamos",
+      title: "Experiencia Solar — crear el acceso del cliente al portal",
       items: [
-        "Menos etapas en el pipeline: Nuevo lead → Cotizado → Reclamado → Agendar visita → Visitado, más Cerrados. Los leads en etapas viejas se reubicaron solos según su avance.",
-        'Nueva vista "Priorizada" (junto a Kanban y Lista): los leads activos ordenados de más avanzado a menos, para atacarlos por prioridad.',
-        'Contador de reclamos "xR" en cada tarjeta, con un botón "+" para sumar un reclamo al instante. La pestaña de cerrados unifica ganados y perdidos.',
+        'El listado de Experiencia Solar ahora muestra una columna "Usuario": ves de un vistazo qué clientes ya tienen acceso al portal y a cuáles les falta.',
+        'En los que no tienen, el botón "Crear usuario" abre una ventana pre-cargada con el nombre, el mail y el teléfono del cliente, genera una contraseña temporal y crea el acceso, listo para copiar y compartir.',
+        "Funciona también para los clientes cargados por planilla, así pueden abrir tickets y responder encuestas. Lo pueden hacer los roles de Experiencia Solar y Postventa.",
       ],
     },
     {
-      title: "Métricas de Operaciones — obras realizadas bien contadas",
+      title: "Tickets — editar, eliminar y abrir a clientes de Experiencia Solar",
       items: [
-        'Se corrigió el conteo de "Instalaciones realizadas" (y con él kWp instalados y obras ponderadas): una obra cuenta como realizada cuando su etapa "Ejecución de obra" está finalizada, o el proyecto está marcado como finalizado. Antes miraba una etapa vieja del pipeline y subcontaba muchísimo.',
-        "Al corregir el conteo, el filtro por trimestre ahora cambia bien y los objetivos de kWp instalados vuelven a mostrar su avance real.",
+        "Desde el detalle de un ticket se puede editar el título, la descripción y la prioridad. El administrador puede eliminar tickets (por ejemplo, los de prueba).",
+        "Al abrir un ticket, el selector de proyecto también incluye a los generadores de Experiencia Solar cargados por planilla.",
       ],
     },
     {
-      title: "Correos — formato nuevo y más claro",
+      title: "Ventas — al pasar un lead a proyecto se hereda más información",
       items: [
-        'Todos los correos automáticos (traspasos, recordatorios, escalaciones, reportes, avisos de habilitación, "listo para Operaciones", etc.) ahora salen con un diseño de marca Voltia: encabezado, título con la referencia clara de lo que se informa y contenido bien legible.',
-        "Antes solo un tipo de correo tenía formato lindo y el resto llegaban como texto plano; ahora todos comparten el mismo estilo.",
+        "La propuesta comercial del lead pasa como adjunto al proyecto (los dos PDF), y los comentarios del lead aparecen también en el proyecto con su autor y fecha originales.",
+        "La potencia (kWp) y la cotización (USD) se pre-cargan desde la propuesta comercial (los mismos números de la comisión del vendedor) y siguen siendo editables antes de crear el proyecto.",
       ],
     },
     {
-      title: "Proyecto — subir adjuntos desde la vista general",
+      title: "Tarifas de UTE — configuración de cuadros tarifarios",
       items: [
-        'Ahora podés subir archivos al proyecto directamente desde su vista general, en la sección "Documentos" (botón "Subir archivo" o arrastrar y soltar). Antes solo se podía adjuntar entrando a una etapa puntual.',
+        "Nueva pantalla en Administración → Configuración del negocio → Tarifas UTE para cargar el cargo fijo, el cargo por potencia contratada, los tramos de la tarifa simple y los precios por franja horaria (punta, llano, valle).",
       ],
     },
     {
-      title: "Documentos UTE — autoguardado",
+      title: "Roles nuevos — Gerencias y Logística",
       items: [
-        "El generador de Documentos UTE ahora autoguarda mientras completás el formulario y reabre con lo último cargado para ese proyecto, sin depender de apretar Guardar. Un indicador muestra el estado del guardado.",
-      ],
-    },
-    {
-      title: "Consulta a UTE — potencia del generador obligatoria",
-      items: [
-        'En el generador de consulta a UTE, el campo "Pot. comprometida generador" ahora es obligatorio: no deja enviar la consulta hasta completarlo.',
+        "Se agregaron roles de gerencia (Operaciones, Comercial, Ingeniería y Finanzas), cada uno con los permisos de su equipo y ajustables aparte. Nuevo rol Logística, con acceso a Stock y lectura de Operaciones e Ingeniería.",
       ],
     },
   ],
@@ -78,6 +72,16 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "8.2",
+    shortDate: "22 jul",
+    highlights: [
+      'Ventas: pipeline más simple (menos etapas), vista "Priorizada" y contador de reclamos "xR".',
+      'Métricas de Operaciones: se corrigió el conteo de "Instalaciones realizadas" (kWp instalados y obras ponderadas).',
+      "Correos automáticos unificados con el diseño de marca Voltia.",
+      "Proyecto: subir adjuntos desde la vista general. Documentos UTE con autoguardado.",
+    ],
+  },
   {
     version: "8.1",
     shortDate: "17 jul",

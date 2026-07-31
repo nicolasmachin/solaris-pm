@@ -1,35 +1,15 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { Check, Copy, KeyRound, RefreshCw, User, X } from "lucide-react";
+import { Check, Copy, KeyRound, User, X } from "lucide-react";
 
 import { crearPortalUser, type ClienteListItem, type CrearPortalUserResult } from "../../../api/clientes.api";
 import { Button } from "../../../components/ui/Button";
 import { useLockBodyScroll } from "../../../hooks/useLockBodyScroll";
 
-// Genera una contraseña temporal legible (sin caracteres ambiguos). Mismo
-// criterio que el panel de Admin. La comparte manualmente quien crea el acceso.
-function generatePassword(length = 12): string {
-  const lower = "abcdefghjkmnpqrstuvwxyz";
-  const upper = "ABCDEFGHJKMNPQRSTUVWXYZ";
-  const digits = "23456789";
-  const symbols = "!@#$%";
-  const all = lower + upper + digits + symbols;
-  const required = [
-    lower[Math.floor(Math.random() * lower.length)],
-    upper[Math.floor(Math.random() * upper.length)],
-    digits[Math.floor(Math.random() * digits.length)],
-    symbols[Math.floor(Math.random() * symbols.length)],
-  ];
-  const rest: string[] = [];
-  for (let i = required.length; i < length; i++) rest.push(all[Math.floor(Math.random() * all.length)]);
-  const chars = [...required, ...rest];
-  for (let i = chars.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [chars[i], chars[j]] = [chars[j], chars[i]];
-  }
-  return chars.join("");
-}
+// Contraseña temporal por defecto. El cliente la cambia en el primer ingreso
+// (el usuario se crea con passwordTemporary=true). Editable por si se quiere otra.
+const DEFAULT_PASSWORD = "12345678";
 
 function getApiErr(err: unknown): string | undefined {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
@@ -46,7 +26,7 @@ export function CrearUsuarioModal({ cliente, onClose }: { cliente: ClienteListIt
   const [name, setName] = useState(cliente.nombre ?? "");
   const [email, setEmail] = useState(cliente.mail ?? "");
   const [phone, setPhone] = useState(cliente.telefono ?? "");
-  const [password, setPassword] = useState(() => generatePassword());
+  const [password, setPassword] = useState(DEFAULT_PASSWORD);
   const [done, setDone] = useState<CrearPortalUserResult | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -169,23 +149,20 @@ export function CrearUsuarioModal({ cliente, onClose }: { cliente: ClienteListIt
             </div>
             <div>
               <label className={labelClass}>Contraseña temporal</label>
-              <div className="flex items-center gap-2">
-                <div className="flex flex-1 items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2">
-                  <KeyRound size={14} className="text-[var(--color-text-muted)]" />
-                  <span className="flex-1 font-mono text-sm text-[var(--color-text-primary)]">{password}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setPassword(generatePassword())}
-                  title="Regenerar"
-                  className="rounded-lg border border-[var(--color-border)] p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card)] hover:text-[var(--color-text-primary)]"
-                >
-                  <RefreshCw size={14} />
-                </button>
+              <div className="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 focus-within:ring-2 focus-within:ring-[var(--color-accent)]">
+                <KeyRound size={14} className="text-[var(--color-text-muted)]" />
+                <input
+                  className="flex-1 bg-transparent py-2 font-mono text-sm text-[var(--color-text-primary)] focus:outline-none"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
               </div>
+              {password.length < 8 && (
+                <p className="mt-1 text-[11px] text-[var(--color-danger-text)]">Mínimo 8 caracteres.</p>
+              )}
               <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">
-                Si el email ya pertenece a un Generador existente, se lo vincula a este proyecto y esta contraseña
-                se ignora.
+                Por defecto <span className="font-mono">12345678</span>; el cliente la cambia en el primer ingreso.
+                Si el email ya pertenece a un Generador existente, se lo vincula a este proyecto y esta contraseña se ignora.
               </p>
             </div>
             <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-3">
