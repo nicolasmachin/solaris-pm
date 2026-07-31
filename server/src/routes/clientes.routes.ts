@@ -31,6 +31,7 @@ import {
 } from "../services/clientes/index.js";
 import { updateProjectClientFields } from "../services/project-fields.service.js";
 import { confirmImport, previewImport } from "../services/clientes/import.service.js";
+import { createPortalUserForProject } from "../services/clientes/portal-user.service.js";
 import { badRequest, forbidden, notFound, unauthorized } from "../utils/errors.js";
 import {
   addressValue,
@@ -190,6 +191,35 @@ export async function registerClientesRoutes(app: FastifyInstance) {
       const user = ensureUser(request);
       const body = importConfirmSchema.parse(request.body);
       return confirmImport(body.rows, user.id);
+    },
+  );
+
+  // ─── Crear (o vincular) el usuario de portal del cliente ─────────────────
+  // Acceso rápido: crea el Generador con la password temporal generada en el
+  // front y lo vincula al proyecto. Gateado por EXPERIENCIA_CLIENTES.CREATE.
+  const crearPortalUserSchema = z.object({
+    name: z.string().min(1).max(200),
+    email: z.string().email(),
+    temporaryPassword: z.string().min(8),
+    phone: z.string().max(50).nullable().optional(),
+  });
+  app.post(
+    "/clientes/:projectId/portal-user",
+    { preHandler: authorize(Module.EXPERIENCIA_CLIENTES, Action.CREATE) },
+    async (request, reply) => {
+      const user = ensureUser(request);
+      const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
+      const body = crearPortalUserSchema.parse(request.body);
+      const result = await createPortalUserForProject({
+        projectId,
+        name: body.name,
+        email: body.email,
+        temporaryPassword: body.temporaryPassword,
+        phone: body.phone ?? null,
+        actorUserId: user.id,
+      });
+      reply.code(201);
+      return result;
     },
   );
 

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { Download, Search, SlidersHorizontal, Trash2, Upload } from "lucide-react";
+import { Download, Search, SlidersHorizontal, Trash2, Upload, UserCheck, UserPlus } from "lucide-react";
 
 import {
   deleteCliente,
@@ -23,6 +23,7 @@ import { usePermission } from "../../../hooks/usePermission";
 import { ActiveFilterChips, ClientesFilters } from "../components/ClientesFilters";
 import { EditableCell } from "../components/EditableCell";
 import { ImportClientesModal } from "../components/ImportClientesModal";
+import { CrearUsuarioModal } from "../components/CrearUsuarioModal";
 import { EtapaChip } from "../components/EtapaChip";
 import { DEPARTAMENTOS_UY, ESTADO_LABELS, RECORRIDO_SHORT } from "../constants";
 import { useClientes } from "../hooks/useClientes";
@@ -99,6 +100,7 @@ export function ClientesPage() {
   const canCreate = usePermission("EXPERIENCIA_CLIENTES", "CREATE");
   const canDelete = usePermission("EXPERIENCIA_CLIENTES", "DELETE");
   const [importOpen, setImportOpen] = useState(false);
+  const [crearUserFor, setCrearUserFor] = useState<ClienteListItem | null>(null);
   const updateCliente = useUpdateCliente();
   function saveField(projectId: string, patch: Parameters<typeof updateCliente.mutateAsync>[0]["patch"]) {
     return updateCliente.mutateAsync({ projectId, patch }).then(() => undefined);
@@ -364,6 +366,31 @@ export function ClientesPage() {
         />
       ),
     },
+    {
+      key: "usuario",
+      label: "Usuario",
+      render: (c) =>
+        c.hasPortalUser ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-green-500/15 px-2 py-0.5 text-[11px] font-medium text-green-400">
+            <UserCheck className="h-3.5 w-3.5" /> Con acceso
+          </span>
+        ) : canCreate ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setCrearUserFor(c);
+            }}
+            className="inline-flex items-center gap-1 rounded-full border border-[var(--color-accent)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/10"
+          >
+            <UserPlus className="h-3.5 w-3.5" /> Crear usuario
+          </button>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-[11px] text-[var(--color-text-muted)]">
+            <UserPlus className="h-3.5 w-3.5" /> Sin acceso
+          </span>
+        ),
+    },
   ];
 
   if (canDelete) {
@@ -419,6 +446,10 @@ export function ClientesPage() {
       </div>
 
       {importOpen && <ImportClientesModal open={importOpen} onClose={() => setImportOpen(false)} />}
+
+      {crearUserFor && (
+        <CrearUsuarioModal cliente={crearUserFor} onClose={() => setCrearUserFor(null)} />
+      )}
 
       <DeleteConfirmModal
         open={toDelete !== null}

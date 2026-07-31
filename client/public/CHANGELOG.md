@@ -4,6 +4,14 @@
 
 ### 31 de julio de 2026
 
+#### Experiencia Solar — Crear el acceso del cliente al portal desde el listado
+
+- En el listado de **Experiencia Solar** ahora hay una columna **Usuario** que muestra de un vistazo qué clientes **ya tienen acceso al portal** (etiqueta verde "Con acceso") y cuáles **todavía no**. Así detectás al toque a quién le falta el usuario.
+- En los que no tienen, aparece el botón **"Crear usuario"**: con un clic se abre una ventana ya **pre-cargada con el nombre, el mail y el teléfono** que tenga ese cliente, genera una contraseña temporal y crea el acceso. Al terminar te muestra las credenciales listas para **copiar** y compartir; el cliente deberá cambiar la contraseña en el primer ingreso.
+- Funciona también para los clientes cargados de forma rápida por planilla, así pueden **abrir tickets y responder encuestas** como cualquier otro.
+- Si el mail ya pertenece a un cliente existente, en vez de duplicar, **se lo vincula** a este proyecto (útil para un mismo titular con varios generadores).
+- Pueden crear estos accesos los roles de **Experiencia Solar** y **Postventa** (además del administrador), directo desde su módulo, sin entrar a la administración de usuarios.
+
 #### Tickets — abrir tickets a clientes de Experiencia Solar
 
 - Al abrir un ticket, el selector de proyecto ahora **también incluye a los generadores de Experiencia Solar** (los cargados por planilla), no solo los proyectos con obra. Así podés abrirles y seguirles reclamos a esos clientes (por ejemplo, los que todavía no tenían un proyecto formal en el sistema).
@@ -18,6 +26,10 @@
 - Cuando convertís un lead ganado en proyecto, ahora la **propuesta comercial** del lead pasa **como adjunto** al proyecto (los dos PDF: la propuesta completa y el resumen). Antes quedaba solo en el lead.
 - Los **comentarios** que se cargaron en el lead ahora **también aparecen en el proyecto**, con su autor y fecha originales. Se siguen viendo en el lead.
 - La **potencia (kWp)** y la **cotización (USD)** se **pre-cargan desde la propuesta comercial** (los mismos números de los que sale la comisión del vendedor), en vez del estimado grueso del lead. Siguen siendo **editables** antes de crear el proyecto.
+
+#### Arreglos
+
+- **Tickets — el administrador no podía eliminarlos**: al intentar borrar un ticket aparecía "no tenés permiso" aun siendo administrador. Corregido: el rol administrador vuelve a poder eliminar tickets.
 
 ### 28 de julio de 2026
 

@@ -269,7 +269,7 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "EXPERIENCIA_SOLAR", module: Module.TRASPASOS,            actions: [Action.VIEW, Action.CONFIRM] },
 
     // ─── Módulo Tickets (fase E3) — cualquier área interna abre/gestiona ─────
-    { roleName: "ADMIN",             module: Module.TICKETS, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
+    { roleName: "ADMIN",             module: Module.TICKETS, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { roleName: "ASESOR_COMERCIAL",  module: Module.TICKETS, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
     { roleName: "FINANZAS",          module: Module.TICKETS, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
     { roleName: "INGENIERIA",        module: Module.TICKETS, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },

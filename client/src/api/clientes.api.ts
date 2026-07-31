@@ -40,6 +40,7 @@ export interface ClienteListItem {
   ultimoContactoEn: string | null; // ISO datetime de la última interacción
   avisoHabilitacionPendiente: boolean; // Regla de Oro: UTE finalizó y CX no avisó
   mantenimiento: MantenimientoInfo | null; // próximo aniversario (mantenimiento)
+  hasPortalUser: boolean; // ya tiene usuario de portal (Generador) creado/vinculado
 }
 
 export interface ClienteInteraction {
@@ -151,6 +152,35 @@ export async function patchCliente(
 // en la base. Requiere permiso EXPERIENCIA_CLIENTES:DELETE.
 export async function deleteCliente(projectId: string): Promise<void> {
   await apiClient.delete(`/api/clientes/${projectId}`);
+}
+
+// ─── Usuario de portal (Generador) del cliente ───────────────────────────────
+
+export interface CrearPortalUserPayload {
+  name: string;
+  email: string;
+  temporaryPassword: string;
+  phone?: string | null;
+}
+
+export interface CrearPortalUserResult {
+  userId: string;
+  name: string;
+  email: string;
+  linked: boolean; // true → se vinculó un Generador existente; false → recién creado
+}
+
+// Crea (o vincula) el usuario de portal del cliente para un proyecto.
+// Requiere permiso EXPERIENCIA_CLIENTES:CREATE.
+export async function crearPortalUser(
+  projectId: string,
+  body: CrearPortalUserPayload,
+): Promise<CrearPortalUserResult> {
+  const { data } = await apiClient.post<CrearPortalUserResult>(
+    `/api/clientes/${projectId}/portal-user`,
+    body,
+  );
+  return data;
 }
 
 // ─── Importación CSV ─────────────────────────────────────────────────────────

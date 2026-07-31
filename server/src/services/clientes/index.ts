@@ -117,6 +117,7 @@ export type ClienteListItem = {
   ultimoContactoEn: string | null; // ISO datetime de la última interacción de bitácora
   avisoHabilitacionPendiente: boolean; // Regla de Oro: UTE finalizó y CX aún no avisó
   mantenimiento: MantenimientoInfo | null; // próximo aniversario (mantenimiento)
+  hasPortalUser: boolean; // ya tiene usuario de portal (Generador) creado/vinculado
 };
 
 export type ClienteFiltros = {
@@ -158,6 +159,10 @@ const LIST_SELECT = {
     take: 1,
     select: { createdAt: true },
   },
+  // ¿Tiene ya un usuario de portal (Generador)? Vínculo m2m actual (con el user
+  // vivo) o el legacy 1-a-1. Se usa para el badge "Con acceso" del listado.
+  clientUserId: true,
+  _count: { select: { clients: { where: { user: { deletedAt: null } } } } },
 } satisfies Prisma.ProjectSelect;
 
 type ProjectListRow = Prisma.ProjectGetPayload<{ select: typeof LIST_SELECT }>;
@@ -212,6 +217,7 @@ function toListItem(p: ProjectListRow): ClienteListItem {
     ultimoContactoEn: p.clientInteractions[0] ? serializeDate(p.clientInteractions[0].createdAt) : null,
     avisoHabilitacionPendiente: p.postHabilitacionInicioEn != null && p.avisoHabilitacionEn == null,
     mantenimiento: buildMantenimiento(p),
+    hasPortalUser: p._count.clients > 0 || p.clientUserId != null,
   };
 }
 
