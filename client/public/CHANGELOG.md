@@ -4,6 +4,11 @@
 
 ### 31 de julio de 2026
 
+#### Roles — Compras y Capataz dentro de Operaciones
+
+- Se agregaron dos **roles nuevos del área de Operaciones**: **Compras** y **Capataz**. Cada uno **arranca con los mismos permisos que Operaciones** y se puede **ajustar por separado** desde **Administración → Permisos** (por ejemplo, dejarle a Capataz solo lo que necesita en obra).
+- Ya aparecen al **crear o editar un usuario** y en la pantalla de permisos, como cualquier otro rol.
+
 #### Experiencia Solar — Crear el acceso del cliente al portal desde el listado
 
 - En el listado de **Experiencia Solar** ahora hay una columna **Usuario** que muestra de un vistazo qué clientes **ya tienen acceso al portal** (etiqueta verde "Con acceso") y cuáles **todavía no**. Así detectás al toque a quién le falta el usuario.

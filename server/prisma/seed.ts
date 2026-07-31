@@ -100,14 +100,21 @@ const SYSTEM_ROLES: Array<{ name: string; label: string }> = [
   { name: "GERENTE_INGENIERIA", label: "Gerente de Ingeniería" },
   { name: "GERENTE_FINANZAS", label: "Gerente de Finanzas" },
   { name: "LOGISTICA", label: "Logística" },
+  // Sub-roles operativos: arrancan como copia de Operaciones y se ajustan aparte
+  // desde Admin → Permisos (ver seedPermissions / SUBROL_BASE).
+  { name: "COMPRAS", label: "Compras" },
+  { name: "CAPATAZ", label: "Capataz" },
 ];
 
-// Gerencia → rol base del que clona sus permisos en el seed.
+// Rol nuevo → rol base del que clona sus permisos en el seed. Incluye las
+// gerencias y los sub-roles operativos (Compras, Capataz).
 const GERENTE_BASE: Record<string, string> = {
   GERENTE_OPERACIONES: "OPERACIONES",
   GERENTE_COMERCIAL: "ASESOR_COMERCIAL",
   GERENTE_INGENIERIA: "INGENIERIA",
   GERENTE_FINANZAS: "FINANZAS",
+  COMPRAS: "OPERACIONES",
+  CAPATAZ: "OPERACIONES",
 };
 
 async function seedSystemRoles(): Promise<Map<string, string>> {
@@ -295,12 +302,12 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "LOGISTICA", module: Module.INGENIERIA,  actions: [Action.VIEW] },
   ];
 
-  // Gerencias: se generan clonando 1:1 los permisos del rol base. Arrancan igual
-  // que su equipo; los "permisos propios" (Métricas, Finanzas, etc.) se ajustan
-  // después desde Admin → Permisos.
-  for (const [gerente, base] of Object.entries(GERENTE_BASE)) {
+  // Gerencias y sub-roles operativos (Compras, Capataz): se generan clonando 1:1
+  // los permisos del rol base. Arrancan igual que su equipo; los "permisos
+  // propios" se ajustan después desde Admin → Permisos.
+  for (const [derivado, base] of Object.entries(GERENTE_BASE)) {
     for (const entry of matrix.filter((e) => e.roleName === base)) {
-      matrix.push({ roleName: gerente, module: entry.module, actions: [...entry.actions] });
+      matrix.push({ roleName: derivado, module: entry.module, actions: [...entry.actions] });
     }
   }
 
