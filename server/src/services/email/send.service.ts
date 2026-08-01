@@ -3,8 +3,10 @@ import { AuditAction, AuditEntityType, EmailStatus } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { createAuditEntry } from "../audit.service.js";
 import { AppError, badRequest } from "../../utils/errors.js";
+import { todayUtc } from "../../utils/dates.js";
 import { buildTransporter, getSmtpCredentials } from "./smtp.service.js";
 import { redirectInDev } from "./dev-redirect.js";
+import { CONSULTA_UTE_KEY } from "./seed-templates.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -134,6 +136,20 @@ export async function sendTemplatedEmail(input: SendEmailInput): Promise<{ id: s
       html: dest.html,
     });
     const log = await registrar(EmailStatus.SENT);
+    // Ayuda (no bloqueante): al enviar con éxito la "Consulta UTE" desde
+    // Onboarding, se completa automáticamente la fecha de consulta del proceso
+    // UTE del proyecto SI todavía está vacía. Es solo una ayuda: no pisa una
+    // fecha ya cargada y la carga/edición manual sigue funcionando igual.
+    if (input.templateKey === CONSULTA_UTE_KEY && input.projectId) {
+      try {
+        await prisma.uteProcess.updateMany({
+          where: { projectId: input.projectId, deletedAt: null, consultaSentAt: null },
+          data: { consultaSentAt: todayUtc() },
+        });
+      } catch {
+        // El mail ya salió; nunca fallar el envío por la auto-captura de fecha.
+      }
+    }
     return { id: log.id, status: "SENT" };
   } catch (err) {
     const message = (err as { message?: string }).message ?? "Error desconocido del SMTP";

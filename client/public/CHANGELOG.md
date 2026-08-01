@@ -2,6 +2,13 @@
 
 ## v8.3
 
+### 1 de agosto de 2026
+
+#### Trámites UTE — la fecha de consulta se completa sola
+
+- Cuando se **envía la consulta a UTE** desde el Onboarding (botón "Enviar consulta a UTE"), la **fecha de consulta** del módulo de Trámites UTE ahora se **completa automáticamente** con el día del envío. Es solo una ayuda: **no reemplaza la carga manual** y podés **modificarla después** cuando quieras.
+- Solo se autocompleta si estaba **vacía** (nunca pisa una fecha ya cargada). Para los clientes que ya tenían la consulta hecha pero sin la fecha cargada, se completó hacia atrás con la fecha real del envío (o, si no la había, con la fecha en que se marcó la subetapa de consulta como completada).
+
 ### 31 de julio de 2026
 
 #### Asistente Voltia con IA — quitado
