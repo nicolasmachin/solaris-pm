@@ -6,7 +6,6 @@ import { VersionFooter } from "./VersionFooter";
 import { MobileNavDrawer } from "./MobileNavDrawer";
 import { BottomTabBar } from "./BottomTabBar";
 import { FinanceInvariantBanner } from "../finance/FinanceInvariantBanner";
-import { AIFloatingButton } from "../ai/AIFloatingButton";
 import { EngineeringProjectsSidebar } from "../ingenieria/EngineeringProjectsSidebar";
 import { TraspasoPopup } from "../traspasos/TraspasoPopup";
 
@@ -53,7 +52,6 @@ export function AppLayout() {
       </main>
       <BottomTabBar onMore={() => setMobileNavOpen(true)} />
       <VersionFooter />
-      <AIFloatingButton />
       <TraspasoPopup />
     </div>
   );

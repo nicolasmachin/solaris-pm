@@ -4,6 +4,10 @@
 
 ### 31 de julio de 2026
 
+#### Asistente Voltia con IA — quitado
+
+- Se **removió el botón del Asistente Voltia con IA** (el que consultaba la base de datos) de todas las pantallas.
+
 #### Permisos — pantalla rediseñada, más cómoda
 
 - La pantalla de **Administración → Permisos** dejó de ser una tabla gigante con todos los roles y módulos a la vez. Ahora **elegís un rol de una lista** (a la izquierda, agrupada por área con sus sub-roles) y **ajustás solo sus permisos**, en **tarjetas por módulo** con botones claros de cada acción.
