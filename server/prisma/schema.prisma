@@ -3530,7 +3530,16 @@ model ReporteFvLectura {
   consumoFuente     ReporteFvFuente?
   exportacionFuente ReporteFvFuente?
 
-  // Por qué faltan datos: "sin datalogger tipo 3", "sin muestras útiles", etc.
+  // Cobertura del smart meter en el mes. El total de consumo/exportación se arma
+  // sumando el máximo diario de cada día que reportó; un mes con días faltantes
+  // produce un total parcial que parece completo. Guardar cuántos días de cuántos
+  // reportaron es lo que permite distinguir un dato confiable de uno subestimado.
+  // La ingesta descarta consumo/exportación si la cobertura no llega al 90%.
+  // Null en las lecturas cargadas a mano o migradas (no vienen del medidor).
+  diasConDatos  Int?
+  diasEsperados Int?
+
+  // Por qué faltan datos: "sin datalogger tipo 3", "cobertura 5/30", etc.
   motivoFaltante String?
   nota           String?
 

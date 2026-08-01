@@ -97,3 +97,27 @@ export function normalizarPeriodo(valor: string | Date | null | undefined): Peri
   if (mes < 1 || mes > 12) return null;
   return `${m[1]}-${String(mes).padStart(2, "0")}`;
 }
+
+/**
+ * Proporción de días hábiles (lunes a viernes) del mes.
+ *
+ * UTE cobra la hora punta al precio caro sólo de lunes a viernes; sábados y
+ * domingos se facturan al precio de fuera de punta (tarifa doble) o de llano
+ * (triple y zafral). El motor usa esta fracción para reasignar la porción de
+ * punta que cae en fin de semana.
+ *
+ * Port literal de `fraccion_dias_habiles` del sistema Python: NO descuenta
+ * feriados (el docstring original los menciona pero el código sólo mira
+ * `weekday() < 5`). No cambiar sin re-verificar contra el motor original.
+ */
+export function fraccionDiasHabiles(p: Periodo): number {
+  const { anio, mes } = parsePeriodo(p);
+  const diasMes = new Date(Date.UTC(anio, mes, 0)).getUTCDate();
+  let habiles = 0;
+  for (let dia = 1; dia <= diasMes; dia++) {
+    // getUTCDay: 0 = domingo, 6 = sábado. Hábil = lunes(1) a viernes(5).
+    const dow = new Date(Date.UTC(anio, mes - 1, dia)).getUTCDay();
+    if (dow >= 1 && dow <= 5) habiles++;
+  }
+  return habiles / diasMes;
+}

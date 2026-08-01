@@ -97,65 +97,84 @@ async function migrarTarifas(userId: string): Promise<string> {
     console.log(`    ${tarifa.padEnd(8)} ${Object.entries(fs).map(([f, p]) => `${f}=${p}`).join("  ")}`);
   }
 
-  const yaExiste = await prisma.tarifaUteVersion.findFirst({ where: { nombre: "Legacy Excel" } });
-  if (yaExiste) {
-    console.log(c.dim("  Ya existe el cuadro \"Legacy Excel\", se reutiliza."));
-    return yaExiste.id;
-  }
+  const NOMBRE = "UTE 2026";
+  const VIGENTE_DESDE = new Date("2024-01-01T00:00:00.000Z");
+  const NOTAS =
+    "Pliego Tarifario UTE vigente desde 01/01/2026, cargado desde tarifas.xlsx. Los cargos son " +
+    "iguales para todo el país (no varían por zona). Cuando UTE publique un pliego nuevo, duplicar " +
+    "este cuadro y publicar una versión con la vigencia correspondiente.";
+
+  const cargosData = Object.entries(cuadro.cargos)
+    .filter(([t]) => TARIFA_ENUM[t])
+    .map(([t, v]) => ({ tarifa: TARIFA_ENUM[t], cargoFijo: v.cargoFijo, cargoPotenciaKw: v.cargoPotenciaKw }));
+  const tramosData = cuadro.tramosSimple.map((t, i) => ({
+    tarifa: TarifaUte.SIMPLE,
+    orden: i,
+    desdeKwh: Math.round(t.desdeKwh),
+    hastaKwh: Math.round(t.hastaKwh),
+    precioKwh: t.precioKwh,
+  }));
+  const franjasData = Object.entries(cuadro.franjas).flatMap(([tarifa, fs]) =>
+    Object.entries(fs)
+      .filter(([f]) => FRANJA_ENUM[f])
+      .map(([f, precio]) => ({ tarifa: TARIFA_ENUM[tarifa], franja: FRANJA_ENUM[f], precioKwh: precio })),
+  );
+
+  // Idempotente: reusa el cuadro que ya cubre 2024-01-01 (creado por una corrida
+  // anterior, aunque tenga otro nombre) y le refresca los precios, en vez de
+  // crear un duplicado que chocaría con @@unique([vigenteDesde]).
+  const existente = await prisma.tarifaUteVersion.findUnique({ where: { vigenteDesde: VIGENTE_DESDE } });
 
   if (!COMMIT) {
-    console.log(c.warn("  [dry-run] se crearía el cuadro \"Legacy Excel\" vigente desde 2024-01-01"));
-    return "";
+    console.log(
+      c.warn(
+        existente
+          ? `  [dry-run] se actualizaría el cuadro existente ("${existente.nombre}") con el pliego 2026`
+          : `  [dry-run] se crearía el cuadro "${NOMBRE}" vigente desde 2024-01-01`,
+      ),
+    );
+    return existente?.id ?? "";
   }
 
-  const version = await prisma.tarifaUteVersion.create({
-    data: {
-      nombre: "Legacy Excel",
-      // Cubre todos los periodos migrados. Los precios de simple y doble son los
-      // de la planilla; se sabe que parecen placeholders y se corrigen desde la
-      // UI con una versión nueva, para no desalinear el histórico ya emitido.
-      vigenteDesde: new Date("2024-01-01T00:00:00.000Z"),
-      publicada: true,
-      notas:
-        "Importado de tarifas.xlsx del sistema Python. Los precios de las tarifas simple y doble " +
-        "parecen placeholders (valores redondos): revisar contra el pliego real de UTE y publicar " +
-        "una versión nueva con la vigencia que corresponda.",
-      creadaPorId: userId,
-      cargos: {
-        create: Object.entries(cuadro.cargos)
-          .filter(([t]) => TARIFA_ENUM[t])
-          .map(([t, v]) => ({
-            tarifa: TARIFA_ENUM[t],
-            cargoFijo: v.cargoFijo,
-            cargoPotenciaKw: v.cargoPotenciaKw,
-          })),
+  let versionId: string;
+  if (existente) {
+    await prisma.$transaction([
+      prisma.tarifaUteCargo.deleteMany({ where: { versionId: existente.id } }),
+      prisma.tarifaUteTramo.deleteMany({ where: { versionId: existente.id } }),
+      prisma.tarifaUteFranja.deleteMany({ where: { versionId: existente.id } }),
+      prisma.tarifaUteVersion.update({
+        where: { id: existente.id },
+        data: {
+          nombre: NOMBRE,
+          publicada: true,
+          notas: NOTAS,
+          cargos: { create: cargosData },
+          tramos: { create: tramosData },
+          franjas: { create: franjasData },
+        },
+      }),
+    ]);
+    versionId = existente.id;
+    console.log(c.ok(`  Cuadro "${NOMBRE}" actualizado con el pliego 2026 (${versionId})`));
+  } else {
+    const version = await prisma.tarifaUteVersion.create({
+      data: {
+        nombre: NOMBRE,
+        vigenteDesde: VIGENTE_DESDE,
+        publicada: true,
+        notas: NOTAS,
+        creadaPorId: userId,
+        cargos: { create: cargosData },
+        tramos: { create: tramosData },
+        franjas: { create: franjasData },
       },
-      tramos: {
-        create: cuadro.tramosSimple.map((t, i) => ({
-          tarifa: TarifaUte.SIMPLE,
-          orden: i,
-          desdeKwh: Math.round(t.desdeKwh),
-          hastaKwh: Math.round(t.hastaKwh),
-          precioKwh: t.precioKwh,
-        })),
-      },
-      franjas: {
-        create: Object.entries(cuadro.franjas).flatMap(([tarifa, fs]) =>
-          Object.entries(fs)
-            .filter(([f]) => FRANJA_ENUM[f])
-            .map(([f, precio]) => ({
-              tarifa: TARIFA_ENUM[tarifa],
-              franja: FRANJA_ENUM[f],
-              precioKwh: precio,
-            })),
-        ),
-      },
-    },
-  });
+    });
+    versionId = version.id;
+    console.log(c.ok(`  Cuadro "${NOMBRE}" creado y publicado (${versionId})`));
+  }
 
   clearTarifasCache();
-  console.log(c.ok(`  Cuadro "Legacy Excel" creado y publicado (${version.id})`));
-  return version.id;
+  return versionId;
 }
 
 // ─── Main ────────────────────────────────────────────────────────────────────
@@ -672,6 +691,16 @@ async function verificar(historico: FilaHistorico[], matches: Map<string, Match>
 // ─── Generadores livianos ────────────────────────────────────────────────────
 
 async function crearGeneradorLiviano(fila: FilaConstantes, userId: string): Promise<ProyectoCandidato> {
+  // Idempotente: si una corrida anterior ya creó este generador liviano, se
+  // reutiliza en vez de crear un GEN- duplicado.
+  const yaExiste = await prisma.project.findFirst({
+    where: { deletedAt: null, importedFromCsv: true, clientName: fila.cliente },
+    select: { id: true, code: true, clientName: true, clientEmail: true, importedFromCsv: true, capacityKwp: true },
+  });
+  if (yaExiste) {
+    return { ...yaExiste, capacityKwp: yaExiste.capacityKwp == null ? null : Number(yaExiste.capacityKwp) };
+  }
+
   // Mismo patrón que el import CSV de Experiencia Solar: proyecto sin pipeline,
   // marcado con importedFromCsv para que no ensucie Proyectos ni las métricas.
   const ultimo = await prisma.project.findFirst({

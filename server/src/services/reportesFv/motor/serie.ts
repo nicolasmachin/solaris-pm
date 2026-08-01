@@ -38,7 +38,14 @@ import type {
   TarifaSnapshot,
 } from "./types.js";
 import { TARIFAS } from "./types.js";
-import { anioDePeriodo, mesDePeriodo, mesesEntre, type Periodo, sumarMeses } from "../periodo.js";
+import {
+  anioDePeriodo,
+  fraccionDiasHabiles,
+  mesDePeriodo,
+  mesesEntre,
+  type Periodo,
+  sumarMeses,
+} from "../periodo.js";
 
 export interface ConfigSerie {
   potenciaContratadaKw: number;
@@ -174,28 +181,56 @@ function num(v: number | null | undefined): number {
   return v == null ? N : v;
 }
 
+/** Reparto de franjas ya ajustado por días hábiles (ver franjasHabiles). */
+interface FranjasEfectivas {
+  pctPunta: number;
+  pctLlano: number;
+  pctValle: number;
+}
+
 function costoEnergia(
   tarifa: TarifaKey,
   kwh: number,
-  cfg: ConfigSerie,
+  f: FranjasEfectivas,
   t: TarifaSnapshot,
 ): number {
   switch (tarifa) {
     case "simple":
+      // La simple va por tramos de consumo, no por franjas: días hábiles no aplica.
       return calcularCostoEnergiaSimple(kwh, t.tramosSimple);
     case "doble":
-      return calcularCostoEnergiaDoble(kwh, cfg.pctPunta, t.franjasDoble.punta, t.franjasDoble.fuera_punta);
+      return calcularCostoEnergiaDoble(kwh, f.pctPunta, t.franjasDoble.punta, t.franjasDoble.fuera_punta);
     case "triple":
       return calcularCostoEnergiaTriple(
-        kwh, cfg.pctPunta, cfg.pctLlano, cfg.pctValle,
+        kwh, f.pctPunta, f.pctLlano, f.pctValle,
         t.franjasTriple.punta, t.franjasTriple.llano, t.franjasTriple.valle,
       );
     case "zafral":
       return calcularCostoEnergiaTriple(
-        kwh, cfg.pctPunta, cfg.pctLlano, cfg.pctValle,
+        kwh, f.pctPunta, f.pctLlano, f.pctValle,
         t.franjasZafral.punta, t.franjasZafral.llano, t.franjasZafral.valle,
       );
   }
+}
+
+/**
+ * Reasigna la porción de punta que cae en fin de semana.
+ *
+ * UTE cobra la punta al precio caro sólo de lunes a viernes. La fracción de
+ * punta correspondiente a sábados y domingos se factura a precio de fuera de
+ * punta (doble) o de llano (triple/zafral). Port de `main.py`:
+ *
+ *   pct_punta_habil = pct_punta * fraccion_dias_habiles(mes)
+ *   pct_llano_habil = pct_llano + (pct_punta - pct_punta_habil)
+ *
+ * En la doble el excedente cae solo a "fuera de punta" (que se calcula como el
+ * complemento de la punta), así que basta con reducir pct_punta; en triple y
+ * zafral el excedente se mueve explícitamente a llano.
+ */
+function franjasHabiles(cfg: ConfigSerie, fraccion: number): FranjasEfectivas {
+  const pctPuntaHabil = cfg.pctPunta * fraccion;
+  const pctLlanoHabil = cfg.pctLlano + (cfg.pctPunta - pctPuntaHabil);
+  return { pctPunta: pctPuntaHabil, pctLlano: pctLlanoHabil, pctValle: cfg.pctValle };
 }
 
 function creditoExportacion(tarifa: TarifaKey, kwhMesAnterior: number, t: TarifaSnapshot): number {
@@ -287,6 +322,10 @@ export function calcularSerie(entrada: EntradaSerie): ResultadoPeriodo[] {
     const autoconsumo = calcularAutoconsumo(generacion, exportacion);
     const importacionRed = calcularImportacionRed(consumo, generacion, exportacion);
 
+    // La porción de punta que cae en fin de semana se factura a precio de fuera
+    // de punta / llano según la tarifa. Se calcula una vez por periodo.
+    const franjas = franjasHabiles(config, fraccionDiasHabiles(periodo));
+
     // Las 4 tarifas se calculan siempre; el reporte muestra 3 (residencial) o 1
     // (empresa). Tenerlas todas permite cambiar de tarifa sin recalcular nada.
     const tarifas = {} as Record<TarifaKey, ResultadoTarifa>;
@@ -298,7 +337,7 @@ export function calcularSerie(entrada: EntradaSerie): ResultadoPeriodo[] {
       const facturaSin = calcularFactura({
         cargoFijo: cargos.cargoFijo,
         cargoPotencia,
-        cargoEnergia: costoEnergia(tarifa, consumo, config, tarifaSnapshot),
+        cargoEnergia: costoEnergia(tarifa, consumo, franjas, tarifaSnapshot),
         creditoExportacion: 0,
         tasaIva: tarifaSnapshot.ivaPct,
         tasaIrpf: tarifaSnapshot.irpfPct,
@@ -307,7 +346,7 @@ export function calcularSerie(entrada: EntradaSerie): ResultadoPeriodo[] {
       const facturaCon = calcularFactura({
         cargoFijo: cargos.cargoFijo,
         cargoPotencia,
-        cargoEnergia: costoEnergia(tarifa, importacionRed, config, tarifaSnapshot),
+        cargoEnergia: costoEnergia(tarifa, importacionRed, franjas, tarifaSnapshot),
         creditoExportacion: credito,
         tasaIva: tarifaSnapshot.ivaPct,
         tasaIrpf: tarifaSnapshot.irpfPct,

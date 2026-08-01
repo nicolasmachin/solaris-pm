@@ -1,7 +1,48 @@
 # Estado — Reportes fotovoltaicos mensuales
 
 Migración del sistema Python standalone (`~/Dev/Reporte_Fotovoltaico`) a Voltia PM.
-Última actualización: **28 de julio de 2026, 00:15**.
+Última actualización: **1 de agosto de 2026, 00:45**.
+
+## Puesta al día (bitácora 31/07) ✅
+
+El 31/07 Nicolás envió los reportes de junio 2026 con el sistema Python y en esa
+sesión corrigió datos, actualizó precios y ajustó el cálculo
+(`~/Dev/Reporte_Fotovoltaico/.../BITACORA_2026-07-31.md`). Se incorporó todo a
+Voltia PM para que reproduzca exactamente lo que se envió:
+
+- **Motor — hora punta por días hábiles.** UTE cobra la punta cara sólo de lunes
+  a viernes; el fin de semana cae a fuera de punta (doble) o llano (triple/zafral).
+  `fraccionDiasHabiles` en `periodo.ts` + `franjasHabiles` en `serie.ts`. La simple
+  no cambia (va por tramos, no por franjas). Cubierto por `diasHabiles.test.ts`
+  (la doble no tenía cliente en el golden) y por BARENOF (zafral) en el golden.
+- **Pliego UTE 2026** cargado como cuadro "UTE 2026" (reemplaza "Legacy Excel"),
+  vigente desde 2024-01-01 — los precios pre-2026 eran placeholders, nunca reales.
+  El script de migración ahora es idempotente sobre el cuadro (lo actualiza por
+  `vigenteDesde`, no crea duplicados).
+- **Potencia contratada faltante → 5 kW estimado.** `config.service.ts` ya no la
+  bloquea: se calcula con 5 kW, se marca `potenciaEstimada` y va como advertencia
+  (el panel/envío lo tratan como "requiere confirmación"). Afecta a 8 generadores.
+- **Cobertura de datos** en el schema: `diasConDatos` / `diasEsperados` en
+  `ReporteFvLectura` (migración `20260801031941_reporte_fv_cobertura`, aditiva).
+  Los llena la ingesta (Fase 4); null en las lecturas migradas.
+- **Datos corregidos re-migrados**: Vanoli (cons 718,3 / exp 293 / pct_punta 18%),
+  Tello, Henderson, Pons + potencias/inversiones de Cabrera y González. Verificado
+  contra la base: Vanoli quedó exacto.
+
+**Re-verificación (todo verde):**
+- `test:reportes-fv-golden` → equivalencia con el Python actual **211 filas × 10
+  campos sin diferencias**; histórico emitido **205 filas, 0 diferencias de fondo**
+  (3 de redondeo < $0,10 por kWh imputados con 13 decimales). El histórico se
+  reconstruyó de una corrida coherente, así que se **vaciaron las excepciones**
+  que arrastraba el test.
+- `test:reportes-fv` (11) + `test:reportes-fv-habiles` (3) pasan. tsc server+client en 0.
+- La migración ahora vincula **44 generadores por `plant_id`** (antes por nombre).
+
+**Nota para la ingesta (Fase 4)** — la bitácora resolvió el spike pendiente:
+`meter_data` de Growatt **devuelve sólo el último día de un rango** → hay que
+iterar día por día; usar `perpage=100` (devuelve 20 por página); rate limit
+`error_code=10012`, pausa ~0,7s con backoff. Regla de cobertura: si <90% de los
+días del mes reportaron, se descartan consumo y exportación (quedan null).
 
 ## Qué se hizo
 

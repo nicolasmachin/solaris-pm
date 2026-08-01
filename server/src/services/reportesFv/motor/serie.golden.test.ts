@@ -78,48 +78,21 @@ const CAMPOS: Array<[enFixture: string, enResultado: string]> = [
 /**
  * Filas del histórico emitido que NO se pueden reproducir con los datos de hoy.
  *
- * Causa verificada: el histórico no es un snapshot coherente. Se armó con una
- * corrida por mes y cada fila quedó calculada con el estado que tenía la hoja
- * `datos` en SU momento. Cuando después se cargó o corrigió un valor, la fila
- * vieja no se regeneró. Se comprobó corriendo el motor Python original con los
- * datos actuales: produce exactamente los mismos números que el port (test de
- * equivalencia), no los del histórico archivado.
+ * En la sesión del 31/07 el histórico se reconstruyó de una sola corrida
+ * coherente (`generar_historico.py` completo, con precios 2026 + días hábiles +
+ * datos corregidos), así que ya no arrastra las inconsistencias que tenía cuando
+ * se armaba mes a mes. El set quedó vacío: si vuelve a aparecer una diferencia,
+ * hay que entenderla, no agregarla acá sin más.
  *
- * Clave: "cliente|periodo|campo" para los casos sueltos.
+ * Clave: "cliente|periodo|campo".
  */
-const EXCEPCIONES = new Set<string>([
-  // El crédito por exportación se valúa con lo exportado el mes anterior. Estas
-  // filas se emitieron cuando el mes anterior aún no estaba cargado en `datos`.
-  "Luis Henderson|2026-01|ahorroVenta",
-  "Luis Henderson|2026-01|ahorroTotal",
-  "Luis Henderson|2026-01|ahorroTotalUsd",
-  "Gabriel Irigaray|2026-03|ahorroVenta",
-  "Gabriel Irigaray|2026-03|ahorroTotal",
-  "Gabriel Irigaray|2026-03|ahorroTotalUsd",
-  "Gabriel Irigaray|2026-03|saldoGeneradoMes",
-  "Susana Guerrico|2026-01|ahorroVenta", // $0,44 de diferencia
-  "Susana Guerrico|2026-01|ahorroTotal",
-]);
+const EXCEPCIONES = new Set<string>([]);
 
 /**
- * Clientes cuyo arrastre de saldo de cuenta corriente diverge del histórico a
- * partir de cierto mes, por la misma causa. Una vez que el saldo se desvía, todo
- * el resto de la serie arrastra la diferencia, así que se listan por cliente y
- * periodo-desde en vez de fila por fila.
- *
- * Los campos de energía y ahorro de estos mismos clientes SÍ coinciden: la
- * divergencia es sólo del saldo acumulado.
+ * Clientes cuyo saldo de cuenta corriente divergía del histórico por la misma
+ * causa. Vaciado tras la reconstrucción coherente del 31/07.
  */
-const DESVIO_SALDO_DESDE: Record<string, string> = {
-  "Antonio Costa Vital": "2026-03", // fila corrupta en el origen (todo NaN salvo generación)
-  "Bettina Posada": "2026-06",
-  "Gabriel Irigaray": "2026-03",
-  "Gabriel Mai": "2026-04",
-  "Jorge Tello": "2026-03",
-  Raij: "2026-05",
-  "Rodrigo Alvarez": "2026-04",
-  "Rubén Penedo": "2026-04",
-};
+const DESVIO_SALDO_DESDE: Record<string, string> = {};
 
 const CAMPOS_SALDO = new Set(["saldoInicial", "saldoAplicado", "saldoGeneradoMes", "saldoFinal"]);
 
@@ -262,6 +235,9 @@ test("reproduce el histórico realmente emitido a los clientes", () => {
   reportar(diferencias, filasComparadas);
 
   assert.equal(diferencias.length, 0, "hay filas del histórico emitido que el motor no reproduce");
-  assert.equal(filasComparadas, 282, `se compararon ${filasComparadas} filas, se esperaban 282`);
+  // El conteo se compara contra el propio fixture (el histórico cambia de tamaño
+  // cada vez que se regenera; hoy los meses de cobertura incompleta se descartan).
+  const filasFixture = fixture.clientes.reduce((n, c) => n + c.esperado.length, 0);
+  assert.equal(filasComparadas, filasFixture, `se compararon ${filasComparadas} de ${filasFixture} filas`);
   console.log(`  ${filasComparadas} filas del histórico reproducidas`);
 });

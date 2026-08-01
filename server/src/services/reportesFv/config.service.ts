@@ -19,6 +19,15 @@ import type { ConfigSerie } from "./motor/serie.js";
 
 const dec = (v: Prisma.Decimal | null | undefined): number | null => (v == null ? null : Number(v));
 
+/**
+ * Potencia contratada de referencia cuando el generador no la tiene registrada.
+ * El reporte se calcula igual, con una nota al cliente aclarando que el cargo
+ * por potencia se estimó. Mismo criterio que el sistema Python
+ * (POTENCIA_CONTRATADA_POR_DEFECTO). No dejar sin potencia bloquea a demasiados
+ * generadores; 5 kW es un valor intermedio razonable para el parque residencial.
+ */
+export const POTENCIA_CONTRATADA_DEFAULT = 5.0;
+
 export interface ConfigEfectiva extends ConfigSerie {
   projectId: string;
   clientName: string;
@@ -41,6 +50,11 @@ export interface ConfigEfectiva extends ConfigSerie {
    * invertido no se puede mostrar el retorno de la inversión).
    */
   advertencias: string[];
+  /**
+   * La potencia contratada no estaba registrada y se usó el valor por defecto.
+   * El reporte lleva una nota y el envío requiere confirmación.
+   */
+  potenciaEstimada: boolean;
   destinatarios: Array<{ email: string; nombre: string | null; esCopia: boolean }>;
 }
 
@@ -114,9 +128,16 @@ export function resolverConfigEfectiva(
   // apenas degrada una sección del reporte va como advertencia, y lo que impide
   // mandarlo pero no calcularlo va aparte: un generador sin mail tiene que poder
   // verse igual en el panel.
-  const potenciaContratadaKw = Number(config.potenciaContratadaKw);
+  // Si falta la potencia contratada, se estima en 5 kW y el reporte lo aclara.
+  // No bloquea el cálculo, pero queda marcado para que no se envíe sin confirmar.
+  let potenciaContratadaKw = Number(config.potenciaContratadaKw);
+  let potenciaEstimada = false;
   if (!(potenciaContratadaKw > 0)) {
-    bloqueosCalculo.push("falta la potencia contratada a UTE");
+    potenciaContratadaKw = POTENCIA_CONTRATADA_DEFAULT;
+    potenciaEstimada = true;
+    advertencias.push(
+      `sin potencia contratada registrada: se estima en ${POTENCIA_CONTRATADA_DEFAULT} kW (el reporte lo aclara)`,
+    );
   }
 
   const pctPunta = Number(config.pctPunta);
@@ -157,6 +178,7 @@ export function resolverConfigEfectiva(
     tipoCliente,
     tarifaContratada: config.tarifaContratada ? tarifaAKey(config.tarifaContratada) : null,
     heredados,
+    potenciaEstimada,
     bloqueosCalculo,
     // Todo lo que impide calcular también impide enviar.
     bloqueosEnvio: [...bloqueosCalculo, ...bloqueosEnvio],
