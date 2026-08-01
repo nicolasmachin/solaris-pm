@@ -1,7 +1,7 @@
-import { SubRolOperaciones, TraspasoTipo } from "@prisma/client";
+import { TraspasoTipo } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
-import { ROLE, TRASPASO_CATALOGO } from "./catalogo.js";
+import { AREA_ROLES, ROLE, TRASPASO_CATALOGO } from "./catalogo.js";
 
 export type DestinatarioCalculado = {
   usuarioId: string;
@@ -46,38 +46,23 @@ async function usuariosPorRoles(roles: string[]): Promise<UsuarioMin[]> {
   return users.map((u) => ({ id: u.id, name: u.name, roleName: u.role.name }));
 }
 
-async function usuariosOperacionesConSubRol(
-  subRol: SubRolOperaciones,
-): Promise<UsuarioMin[]> {
-  const users = await prisma.user.findMany({
-    where: {
-      deletedAt: null,
-      role: { name: ROLE.OPERACIONES },
-      subRolesOperaciones: { has: subRol },
-    },
-    select: { id: true, name: true, role: { select: { name: true } } },
-  });
-  return users.map((u) => ({ id: u.id, name: u.name, roleName: u.role.name }));
-}
-
-// Fetchers de usuarios inyectables (para tests unitarios sin DB). En producción
-// se usan los que consultan Prisma; los tests pasan implementaciones falsas.
+// Fetcher de usuarios inyectable (para tests unitarios sin DB). En producción
+// consulta Prisma; los tests pasan una implementación falsa.
 export type DestinatarioDeps = {
   usuariosPorRoles: (roles: string[]) => Promise<UsuarioMin[]>;
-  usuariosOperacionesConSubRol: (subRol: SubRolOperaciones) => Promise<UsuarioMin[]>;
 };
 
-const DEFAULT_DEPS: DestinatarioDeps = { usuariosPorRoles, usuariosOperacionesConSubRol };
+const DEFAULT_DEPS: DestinatarioDeps = { usuariosPorRoles };
 
 // Calcula los destinatarios de un traspaso aplicando, en orden:
-//   1. Roles primarios del catálogo.
-//   2. Sub-roles de Operaciones primarios (Capatacía/Compras).
-//   3. Gerente de Operaciones en copia (si la entrada lo indica).
-//   4. ADMIN siempre en copia.
-//   5. Deduplicar: un usuario aparece una sola vez; esCopia=true solo si entra
-//      únicamente por regla 3 o 4.
+//   1. Roles primarios del catálogo (ya expandidos por área cuando corresponde).
+//   2. Roles en copia del catálogo.
+//   3. ADMIN siempre en copia.
+//   4. Deduplicar: un usuario aparece una sola vez; esCopia=true solo si entra
+//      únicamente por regla 2 o 3.
 //
-// Nota: la notificación va a TODOS los usuarios del rol/sub-rol (red de
+// El ruteo es 100% por ROL real (se eliminó el mecanismo de sub-roles de
+// Operaciones). La notificación va a TODOS los usuarios de cada rol (red de
 // seguridad), sin filtrar por asignación al proyecto — decisión del MVP.
 export async function calcularDestinatarios(
   tipo: TraspasoTipo,
@@ -86,29 +71,20 @@ export async function calcularDestinatarios(
 ): Promise<DestinatarioCalculado[]> {
   const entry = TRASPASO_CATALOGO[tipo];
 
-  // T8 resuelve el rol primario desde el payload (área derivada).
+  // T9 resuelve los roles primarios desde el payload (área técnica derivada):
+  // se expande a TODOS los roles del área (incluye su gerente).
   let rolesPrimarios = entry.rolesPrimarios;
   const areaDerivada = getAreaDerivada(opts.payload);
   if (tipo === TraspasoTipo.T9_TICKET_DERIVADO && areaDerivada) {
-    rolesPrimarios = [areaDerivada];
+    rolesPrimarios = AREA_ROLES[areaDerivada] ?? [areaDerivada];
   }
-
-  // Gerente en copia también si T8 se derivó a Operaciones.
-  const gerenteCopia =
-    entry.gerenteCopia ||
-    (tipo === TraspasoTipo.T9_TICKET_DERIVADO && areaDerivada === ROLE.OPERACIONES);
 
   type UserInfo = { roleName: string; nombre: string };
   const primary = new Map<string, UserInfo>();
   for (const u of await deps.usuariosPorRoles(rolesPrimarios)) primary.set(u.id, { roleName: u.roleName, nombre: u.name ?? "" });
-  for (const subRol of entry.subRolesPrimarios) {
-    for (const u of await deps.usuariosOperacionesConSubRol(subRol)) primary.set(u.id, { roleName: u.roleName, nombre: u.name ?? "" });
-  }
 
   const copia = new Map<string, UserInfo>();
-  if (gerenteCopia) {
-    for (const u of await deps.usuariosOperacionesConSubRol(SubRolOperaciones.GERENTE)) copia.set(u.id, { roleName: u.roleName, nombre: u.name ?? "" });
-  }
+  for (const u of await deps.usuariosPorRoles(entry.rolesCopia)) copia.set(u.id, { roleName: u.roleName, nombre: u.name ?? "" });
   for (const u of await deps.usuariosPorRoles([ROLE.ADMIN])) copia.set(u.id, { roleName: u.roleName, nombre: u.name ?? "" });
 
   const result: DestinatarioCalculado[] = [];

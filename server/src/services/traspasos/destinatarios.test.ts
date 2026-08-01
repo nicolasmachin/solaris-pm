@@ -1,15 +1,17 @@
 // Tests del motor de ruteo de traspasos: calcularDestinatarios (roles primarios,
-// sub-roles de Operaciones, copia del Gerente, ADMIN siempre en copia, dedupe,
-// exclusión del actor, área derivada de T9) + invariantes del catálogo.
+// expansión por área incluyendo gerencias, roles en copia, ADMIN siempre en
+// copia, dedupe, exclusión del actor, área derivada de T9) + invariantes del
+// catálogo.
 //
-// Los fetchers de usuarios se inyectan (DestinatarioDeps) desde un directorio
-// falso, así el test es unitario sin tocar la DB. Runner builtin (node:test):
+// El ruteo es 100% por ROL real (se eliminó el mecanismo viejo de sub-roles de
+// Operaciones). El fetcher de usuarios se inyecta (DestinatarioDeps) desde un
+// directorio falso, así el test es unitario sin tocar la DB. Runner builtin:
 //   node --import tsx --test src/services/traspasos/destinatarios.test.ts
 
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
 
-import { SubRolOperaciones, TraspasoTipo } from "@prisma/client";
+import { TraspasoTipo } from "@prisma/client";
 
 import {
   calcularDestinatarios,
@@ -23,19 +25,15 @@ import {
   TRASPASO_LABEL,
 } from "./catalogo.js";
 
-type FakeUser = { id: string; roleName: string; subRoles?: SubRolOperaciones[] };
+type FakeUser = { id: string; roleName: string };
 
 // Arma unos DestinatarioDeps que resuelven contra un directorio de usuarios
-// falso, replicando el filtrado que hace la versión Prisma (por rol o sub-rol).
+// falso, replicando el filtrado por rol que hace la versión Prisma.
 function depsFrom(users: FakeUser[]): DestinatarioDeps {
   return {
     usuariosPorRoles: async (roles) =>
       users
         .filter((u) => roles.includes(u.roleName))
-        .map((u) => ({ id: u.id, roleName: u.roleName })),
-    usuariosOperacionesConSubRol: async (subRol) =>
-      users
-        .filter((u) => u.roleName === "OPERACIONES" && (u.subRoles ?? []).includes(subRol))
         .map((u) => ({ id: u.id, roleName: u.roleName })),
   };
 }
@@ -45,84 +43,101 @@ const primarios = (r: Array<{ usuarioId: string; esCopia: boolean }>) =>
 const copias = (r: Array<{ usuarioId: string; esCopia: boolean }>) =>
   r.filter((d) => d.esCopia).map((d) => d.usuarioId).sort();
 
-// Usuarios base reutilizables
+// Usuarios base reutilizables (cada uno con UN solo rol real).
 const ADMIN: FakeUser = { id: "admin1", roleName: "ADMIN" };
 const ING1: FakeUser = { id: "ing1", roleName: "INGENIERIA" };
 const ING2: FakeUser = { id: "ing2", roleName: "INGENIERIA" };
+const GERING: FakeUser = { id: "gering1", roleName: "GERENTE_INGENIERIA" };
 const EXP1: FakeUser = { id: "exp1", roleName: "EXPERIENCIA_SOLAR" };
 const UTE1: FakeUser = { id: "ute1", roleName: "TRAMITACION_UTE" };
-const GERENTE: FakeUser = { id: "gerente1", roleName: "OPERACIONES", subRoles: [SubRolOperaciones.GERENTE] };
-const COMPRAS: FakeUser = { id: "compras1", roleName: "OPERACIONES", subRoles: [SubRolOperaciones.COMPRAS] };
-const CAPATAZ: FakeUser = { id: "capataz1", roleName: "OPERACIONES", subRoles: [SubRolOperaciones.CAPATACIA] };
+const GEROPS: FakeUser = { id: "gerops1", roleName: "GERENTE_OPERACIONES" };
+const LOGIS: FakeUser = { id: "logis1", roleName: "LOGISTICA" };
+const CAPA: FakeUser = { id: "capa1", roleName: "CAPATAZ" };
+const OPS1: FakeUser = { id: "ops1", roleName: "OPERACIONES" };
 
-test("T1: primarios Ingeniería + Experiencia Solar, ADMIN en copia", async () => {
+test("T1: primarios área Ingeniería (incluye su gerente) + Experiencia Solar, ADMIN copia", async () => {
   const r = await calcularDestinatarios(
     TraspasoTipo.T1_ONBOARDING_COMPLETADO,
     {},
-    depsFrom([ADMIN, ING1, EXP1, CAPATAZ]),
+    depsFrom([ADMIN, ING1, GERING, EXP1, CAPA]),
   );
-  assert.deepEqual(primarios(r), ["exp1", "ing1"]);
+  // El área Ingeniería incluye al Gerente de Ingeniería.
+  assert.deepEqual(primarios(r), ["exp1", "gering1", "ing1"]);
   assert.deepEqual(copias(r), ["admin1"]);
-  // Un usuario de Operaciones sin rol destinatario no entra.
-  assert.ok(!r.some((d) => d.usuarioId === "capataz1"));
+  // Un rol de Operaciones (Capataz) no entra en un traspaso a Ingeniería/ExpSolar.
+  assert.ok(!r.some((d) => d.usuarioId === "capa1"));
 });
 
-test("T2: primario Gerente (sub-rol), no incluye Compras; ADMIN copia", async () => {
+test("T2: primario sólo Gerente de Operaciones (rol puntual); ADMIN copia", async () => {
   const r = await calcularDestinatarios(
     TraspasoTipo.T2_PREINGENIERIA_PRONTA,
     {},
-    depsFrom([ADMIN, GERENTE, COMPRAS]),
+    depsFrom([ADMIN, GEROPS, LOGIS, OPS1]),
   );
-  assert.deepEqual(primarios(r), ["gerente1"]);
+  assert.deepEqual(primarios(r), ["gerops1"]);
   assert.deepEqual(copias(r), ["admin1"]);
-  assert.ok(!r.some((d) => d.usuarioId === "compras1"));
+  // No es toda el área: Logística y Operaciones base no reciben.
+  assert.ok(!r.some((d) => d.usuarioId === "logis1"));
+  assert.ok(!r.some((d) => d.usuarioId === "ops1"));
 });
 
-test("T3: primario Ingeniería, Gerente y ADMIN en copia", async () => {
+test("T3: primario área Ingeniería, Gerente de Operaciones y ADMIN en copia", async () => {
   const r = await calcularDestinatarios(
     TraspasoTipo.T3_VALIDACION_OPERACIONES_A_INGENIERIA,
     {},
-    depsFrom([ADMIN, ING1, GERENTE]),
+    depsFrom([ADMIN, ING1, GERING, GEROPS]),
   );
-  assert.deepEqual(primarios(r), ["ing1"]);
-  assert.deepEqual(copias(r), ["admin1", "gerente1"]);
+  assert.deepEqual(primarios(r), ["gering1", "ing1"]);
+  assert.deepEqual(copias(r), ["admin1", "gerops1"]);
 });
 
-test("T5: primario Compras (sub-rol), Gerente + ADMIN en copia", async () => {
+test("T5: primario Logística, Gerente de Operaciones + ADMIN en copia", async () => {
   const r = await calcularDestinatarios(
     TraspasoTipo.T5_INGENIERIA_FINAL_COMPLETADA,
     {},
-    depsFrom([ADMIN, COMPRAS, GERENTE]),
+    depsFrom([ADMIN, LOGIS, GEROPS]),
   );
-  assert.deepEqual(primarios(r), ["compras1"]);
-  assert.deepEqual(copias(r), ["admin1", "gerente1"]);
+  assert.deepEqual(primarios(r), ["logis1"]);
+  assert.deepEqual(copias(r), ["admin1", "gerops1"]);
 });
 
-test("T7: primarios Experiencia Solar + Tramitación UTE, Gerente + ADMIN copia", async () => {
+test("T6: primario sólo Gerente de Operaciones; ADMIN copia", async () => {
+  const r = await calcularDestinatarios(
+    TraspasoTipo.T6_MATERIALES_RECIBIDOS_EN_DEPOSITO,
+    {},
+    depsFrom([ADMIN, GEROPS, OPS1, LOGIS]),
+  );
+  assert.deepEqual(primarios(r), ["gerops1"]);
+  assert.deepEqual(copias(r), ["admin1"]);
+  assert.ok(!r.some((d) => d.usuarioId === "ops1"));
+});
+
+test("T7: primarios Experiencia Solar + Tramitación UTE, Gerente de Operaciones + ADMIN copia", async () => {
   const r = await calcularDestinatarios(
     TraspasoTipo.T7_OBRA_TERMINADA,
     {},
-    depsFrom([ADMIN, EXP1, UTE1, GERENTE]),
+    depsFrom([ADMIN, EXP1, UTE1, GEROPS]),
   );
   assert.deepEqual(primarios(r), ["exp1", "ute1"]);
-  assert.deepEqual(copias(r), ["admin1", "gerente1"]);
+  assert.deepEqual(copias(r), ["admin1", "gerops1"]);
 });
 
-test("dedupe: un Operaciones con sub-roles COMPRAS y GERENTE entra una sola vez como primario en T5", async () => {
-  const opsGC: FakeUser = {
-    id: "opsGC",
-    roleName: "OPERACIONES",
-    subRoles: [SubRolOperaciones.COMPRAS, SubRolOperaciones.GERENTE],
+test("dedupe: un usuario que cae en primario y en copia aparece una vez como primario", async () => {
+  // deps que devuelve el mismo usuario tanto para el rol primario como para ADMIN,
+  // forzando el solapamiento primario/copia.
+  const dup: FakeUser = { id: "dup1", roleName: "GERENTE_OPERACIONES" };
+  const deps: DestinatarioDeps = {
+    usuariosPorRoles: async (roles) => {
+      const out: Array<{ id: string; roleName: string }> = [];
+      if (roles.includes("GERENTE_OPERACIONES")) out.push(dup);
+      if (roles.includes("ADMIN")) out.push(dup);
+      return out;
+    },
   };
-  const r = await calcularDestinatarios(
-    TraspasoTipo.T5_INGENIERIA_FINAL_COMPLETADA,
-    {},
-    depsFrom([ADMIN, opsGC]),
-  );
-  const apariciones = r.filter((d) => d.usuarioId === "opsGC");
+  const r = await calcularDestinatarios(TraspasoTipo.T2_PREINGENIERIA_PRONTA, {}, deps);
+  const apariciones = r.filter((d) => d.usuarioId === "dup1");
   assert.equal(apariciones.length, 1, "debe aparecer exactamente una vez");
   assert.equal(apariciones[0].esCopia, false, "primario gana sobre copia");
-  assert.deepEqual(copias(r), ["admin1"]);
 });
 
 test("exclude actor: el usuario que confirma no se auto-notifica (primario)", async () => {
@@ -145,25 +160,24 @@ test("exclude actor: si el actor es ADMIN, no queda en copia", async () => {
   assert.deepEqual(copias(r), []);
 });
 
-test("T9 con área derivada INGENIERIA: primario Ingeniería, sin copia de Gerente", async () => {
+test("T9 con área derivada INGENIERIA: primario área Ingeniería (con su gerente), ADMIN copia", async () => {
   const r = await calcularDestinatarios(
     TraspasoTipo.T9_TICKET_DERIVADO,
     { payload: { areaDerivada: "INGENIERIA" } },
-    depsFrom([ADMIN, ING1, GERENTE]),
+    depsFrom([ADMIN, ING1, GERING, GEROPS]),
   );
-  assert.deepEqual(primarios(r), ["ing1"]);
+  assert.deepEqual(primarios(r), ["gering1", "ing1"]);
+  // El gerente de Operaciones no pertenece al área Ingeniería.
   assert.deepEqual(copias(r), ["admin1"]);
 });
 
-test("T9 con área derivada OPERACIONES: primario Operaciones + copia de Gerente", async () => {
-  const ops1: FakeUser = { id: "ops1", roleName: "OPERACIONES" };
+test("T9 con área derivada OPERACIONES: primario todo el área (incluye Gerente/Capataz/Logística)", async () => {
   const r = await calcularDestinatarios(
     TraspasoTipo.T9_TICKET_DERIVADO,
     { payload: { areaDerivada: "OPERACIONES" } },
-    depsFrom([ADMIN, ops1]),
+    depsFrom([ADMIN, OPS1, GEROPS, CAPA, LOGIS]),
   );
-  assert.deepEqual(primarios(r), ["ops1"]);
-  // gerenteCopia se activa por la derivación a Operaciones (aunque acá no haya gerente cargado)
+  assert.deepEqual(primarios(r), ["capa1", "gerops1", "logis1", "ops1"]);
   assert.deepEqual(copias(r), ["admin1"]);
 });
 

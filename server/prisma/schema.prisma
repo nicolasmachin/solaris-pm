@@ -205,12 +205,6 @@ enum TraspasoEstado {
   CANCELADO
 }
 
-enum SubRolOperaciones {
-  CAPATACIA
-  COMPRAS
-  GERENTE
-}
-
 enum PostHabilitacionSubFase {
   E3_A_COMPROMISO_COMERCIAL
   E3_B_VIDA_UTIL_EXTENDIDA
@@ -507,9 +501,6 @@ model User {
   clientInteractionsDeleted      ClientInteraction[]         @relation("ClientInteractionDeletedBy")
   commissions                    Commission[]                @relation("CommissionAsesor")
   commissionsCreated             Commission[]                @relation("CommissionCreatedBy")
-  // Sub-roles dentro de OPERACIONES (Capatacía/Compras/Gerente). Solo aplica a
-  // usuarios con rol OPERACIONES; un usuario puede tener varios. Módulo Traspasos.
-  subRolesOperaciones            SubRolOperaciones[]
   traspasosComoModal             Traspaso[]                  @relation("TraspasoModalUsuario")
   traspasosConfirmados           Traspaso[]                  @relation("TraspasoConfirmadoPor")
   traspasosRecibidos             TraspasoDestinatario[]      @relation("TraspasoDestinatarioUsuario")

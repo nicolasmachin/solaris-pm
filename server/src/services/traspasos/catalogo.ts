@@ -1,13 +1,18 @@
-import { StageType, SubRolOperaciones, TraspasoTipo } from "@prisma/client";
+import { StageType, TraspasoTipo } from "@prisma/client";
 
 // Catálogo declarativo de los traspasos entre áreas. Fuente de verdad de:
-//   - quién recibe la notificación (roles / sub-roles primarios + copia gerente)
+//   - quién recibe la notificación (roles primarios + roles en copia)
 //   - el texto del modal de confirmación
 //   - el mapeo etapa del pipeline → traspaso
 //
 // Basado en el catálogo de la Sección 11 del PROTOCOLO_OPERATIVO_ENTREGA_SERVICIO
 // y el registro de cambios v3 (13 traspasos, T4 nuevo, T2→Gerente, etapa 3 =
 // VALIDACION_OPERACIONES). ADMIN va SIEMPRE en copia (regla transversal).
+//
+// MODELO DE ROLES (unificado, jul-2026): el ruteo es 100% por ROL real de la
+// tabla `roles` — se eliminó el mecanismo viejo de `subRolesOperaciones` (nunca
+// se asignaba en ningún lado). Cada persona es "Gerente de Operaciones",
+// "Capataz" o "Logística" por su ROL, no por una marca dentro de Operaciones.
 
 // Nombres de rol tal cual figuran en la tabla `roles` (role.name).
 export const ROLE = {
@@ -15,71 +20,85 @@ export const ROLE = {
   ASESOR_COMERCIAL: "ASESOR_COMERCIAL",
   INGENIERIA: "INGENIERIA",
   OPERACIONES: "OPERACIONES",
+  FINANZAS: "FINANZAS",
   TRAMITACION_UTE: "TRAMITACION_UTE",
   EXPERIENCIA_SOLAR: "EXPERIENCIA_SOLAR",
+  GERENTE_OPERACIONES: "GERENTE_OPERACIONES",
+  GERENTE_COMERCIAL: "GERENTE_COMERCIAL",
+  GERENTE_INGENIERIA: "GERENTE_INGENIERIA",
+  GERENTE_FINANZAS: "GERENTE_FINANZAS",
+  LOGISTICA: "LOGISTICA",
+  CAPATAZ: "CAPATAZ",
 } as const;
 
+// Un ÁREA agrupa el rol base + su gerencia + sub-roles. Notificar a un área
+// incluye a TODOS estos roles (decisión jul-2026: el gerente ve todos los
+// traspasos de su área). Para apuntar SÓLO al gerente/logística, se usa el rol
+// puntual en la entrada del catálogo, no el área.
+export const AREA_ROLES: Record<string, string[]> = {
+  OPERACIONES: [ROLE.OPERACIONES, ROLE.GERENTE_OPERACIONES, ROLE.CAPATAZ, ROLE.LOGISTICA],
+  INGENIERIA: [ROLE.INGENIERIA, ROLE.GERENTE_INGENIERIA],
+  COMERCIAL: [ROLE.ASESOR_COMERCIAL, ROLE.GERENTE_COMERCIAL],
+  FINANZAS: [ROLE.FINANZAS, ROLE.GERENTE_FINANZAS],
+  EXPERIENCIA_SOLAR: [ROLE.EXPERIENCIA_SOLAR],
+  TRAMITACION_UTE: [ROLE.TRAMITACION_UTE],
+};
+
 export type CatalogoEntry = {
-  // Roles cuyos usuarios reciben la notificación como destinatarios primarios.
+  // Roles (ya expandidos) cuyos usuarios reciben como destinatarios primarios.
   rolesPrimarios: string[];
-  // Sub-roles de OPERACIONES cuyos usuarios reciben como primarios.
-  subRolesPrimarios: SubRolOperaciones[];
-  // Si el Gerente de Operaciones va en copia (según §11 del protocolo / v3).
-  gerenteCopia: boolean;
+  // Roles que reciben en copia (ADMIN se agrega SIEMPRE aparte, no va acá).
+  rolesCopia: string[];
   // Etiqueta corta del área destinataria (para el modal y la preview).
   areaDestino: string;
 };
 
 export const TRASPASO_CATALOGO: Record<TraspasoTipo, CatalogoEntry> = {
   T1_ONBOARDING_COMPLETADO: {
-    rolesPrimarios: [ROLE.INGENIERIA, ROLE.EXPERIENCIA_SOLAR],
-    subRolesPrimarios: [],
-    gerenteCopia: false,
+    rolesPrimarios: [...AREA_ROLES.INGENIERIA, ...AREA_ROLES.EXPERIENCIA_SOLAR],
+    rolesCopia: [],
     areaDestino: "Ingeniería y Experiencia Solar",
   },
-  // v3 C5: T2 pasa de Capatacía a Gerente de Operaciones.
+  // v3 C5: T2 va al Gerente de Operaciones (rol puntual, no toda el área).
   T2_PREINGENIERIA_PRONTA: {
-    rolesPrimarios: [],
-    subRolesPrimarios: [SubRolOperaciones.GERENTE],
-    gerenteCopia: false,
+    rolesPrimarios: [ROLE.GERENTE_OPERACIONES],
+    rolesCopia: [],
     areaDestino: "Gerente de Operaciones",
   },
   // v3 C12: cierre de la etapa 3 genera DOS traspasos (T3 a Ingeniería, T4 a
   // Experiencia Solar) desde un solo acto de confirmación del gerente.
   T3_VALIDACION_OPERACIONES_A_INGENIERIA: {
-    rolesPrimarios: [ROLE.INGENIERIA],
-    subRolesPrimarios: [],
-    gerenteCopia: true,
+    rolesPrimarios: [...AREA_ROLES.INGENIERIA],
+    rolesCopia: [ROLE.GERENTE_OPERACIONES],
     areaDestino: "Ingeniería",
   },
   T4_VALIDACION_OPERACIONES_A_ATENCION_CLIENTE: {
-    rolesPrimarios: [ROLE.EXPERIENCIA_SOLAR],
-    subRolesPrimarios: [],
-    gerenteCopia: false,
+    rolesPrimarios: [...AREA_ROLES.EXPERIENCIA_SOLAR],
+    rolesCopia: [],
     areaDestino: "Experiencia Solar",
   },
+  // Ingeniería final → Logística (antes "Compras", rol eliminado; Logística cubre
+  // compras/materiales). Gerente de Operaciones en copia.
   T5_INGENIERIA_FINAL_COMPLETADA: {
-    rolesPrimarios: [],
-    subRolesPrimarios: [SubRolOperaciones.COMPRAS],
-    gerenteCopia: true,
-    areaDestino: "Compras",
+    rolesPrimarios: [ROLE.LOGISTICA],
+    rolesCopia: [ROLE.GERENTE_OPERACIONES],
+    areaDestino: "Logística",
   },
+  // El aviso de materiales recibidos va al Gerente de Operaciones (no a
+  // Operaciones en general); ADMIN queda en copia como en todos.
   T6_MATERIALES_RECIBIDOS_EN_DEPOSITO: {
-    rolesPrimarios: [ROLE.OPERACIONES],
-    subRolesPrimarios: [],
-    gerenteCopia: true,
-    areaDestino: "Operaciones",
+    rolesPrimarios: [ROLE.GERENTE_OPERACIONES],
+    rolesCopia: [],
+    areaDestino: "Gerente de Operaciones",
   },
   T7_OBRA_TERMINADA: {
-    rolesPrimarios: [ROLE.EXPERIENCIA_SOLAR, ROLE.TRAMITACION_UTE],
-    subRolesPrimarios: [],
-    gerenteCopia: true,
+    rolesPrimarios: [...AREA_ROLES.EXPERIENCIA_SOLAR, ...AREA_ROLES.TRAMITACION_UTE],
+    rolesCopia: [ROLE.GERENTE_OPERACIONES],
     areaDestino: "Experiencia Solar y Tramitación UTE",
   },
   T8_TRAMITE_UTE_FINALIZADO: {
-    rolesPrimarios: [ROLE.EXPERIENCIA_SOLAR],
-    subRolesPrimarios: [],
-    gerenteCopia: false,
+    rolesPrimarios: [...AREA_ROLES.EXPERIENCIA_SOLAR],
+    rolesCopia: [],
     areaDestino: "Experiencia Solar",
   },
   // T9–T13: segunda fase (tickets/encuestas/mantenimientos). Se dejan definidos
@@ -87,32 +106,28 @@ export const TRASPASO_CATALOGO: Record<TraspasoTipo, CatalogoEntry> = {
   // el payload (Ingeniería u Operaciones) en calcularDestinatarios.
   T9_TICKET_DERIVADO: {
     rolesPrimarios: [],
-    subRolesPrimarios: [],
-    gerenteCopia: false,
+    rolesCopia: [],
     areaDestino: "Área técnica derivada",
   },
   T10_TICKET_RESUELTO: {
-    rolesPrimarios: [ROLE.EXPERIENCIA_SOLAR],
-    subRolesPrimarios: [],
-    gerenteCopia: false,
+    rolesPrimarios: [...AREA_ROLES.EXPERIENCIA_SOLAR],
+    rolesCopia: [],
     areaDestino: "Experiencia Solar",
   },
   T11_ENCUESTA_NOTA_BAJA: {
-    rolesPrimarios: [ROLE.EXPERIENCIA_SOLAR],
-    subRolesPrimarios: [],
-    gerenteCopia: false,
+    rolesPrimarios: [...AREA_ROLES.EXPERIENCIA_SOLAR],
+    rolesCopia: [],
     areaDestino: "Experiencia Solar",
   },
+  // El área Operaciones ya incluye al Gerente (y Capataz/Logística) como primario.
   T12_CLIENTE_AUTOAGENDO_MANTENIMIENTO: {
-    rolesPrimarios: [ROLE.OPERACIONES],
-    subRolesPrimarios: [],
-    gerenteCopia: true,
+    rolesPrimarios: [...AREA_ROLES.OPERACIONES],
+    rolesCopia: [],
     areaDestino: "Operaciones",
   },
   T13_MANTENIMIENTO_EJECUTADO: {
-    rolesPrimarios: [ROLE.EXPERIENCIA_SOLAR],
-    subRolesPrimarios: [],
-    gerenteCopia: true,
+    rolesPrimarios: [...AREA_ROLES.EXPERIENCIA_SOLAR],
+    rolesCopia: [],
     areaDestino: "Experiencia Solar",
   },
 };
@@ -182,9 +197,9 @@ export function buildModalTexto(tipo: TraspasoTipo, projectName: string): string
     case TraspasoTipo.T4_VALIDACION_OPERACIONES_A_ATENCION_CLIENTE:
       return `Confirmaste la fecha de obra para ${p}. Al confirmar, se notifica a Experiencia Solar para que confirme la fecha con el Generador y coordine la recepción del equipo.`;
     case TraspasoTipo.T5_INGENIERIA_FINAL_COMPLETADA:
-      return `Marcaste la ingeniería final completada para ${p}. La documentación técnica para UTE queda incluida en la lista de materiales. Al confirmar, se notifica a Compras.`;
+      return `Marcaste la ingeniería final completada para ${p}. La documentación técnica para UTE queda incluida en la lista de materiales. Al confirmar, se notifica a Logística para la compra/pedido de materiales.`;
     case TraspasoTipo.T6_MATERIALES_RECIBIDOS_EN_DEPOSITO:
-      return `Marcaste los materiales como recibidos y verificados en depósito para ${p}. Al confirmar, se notifica a Operaciones que la obra puede arrancar con todos los materiales disponibles.`;
+      return `Marcaste los materiales como recibidos y verificados en depósito para ${p}. Al confirmar, se notifica al Gerente de Operaciones que la obra puede arrancar con todos los materiales disponibles.`;
     case TraspasoTipo.T7_OBRA_TERMINADA:
       return `Marcaste la obra como terminada para ${p}, incluyendo ensayos. Al confirmar, se notifica a Experiencia Solar y a Tramitación UTE.`;
     case TraspasoTipo.T8_TRAMITE_UTE_FINALIZADO:

@@ -8,6 +8,13 @@
 
 - Se **removió el botón del Asistente Voltia con IA** (el que consultaba la base de datos) de todas las pantallas.
 
+#### Traspasos — avisos unificados por rol
+
+- Los avisos de traspaso ahora se dirigen **según el rol real** de cada persona (Gerente de Operaciones, Logística, etc.), no por marcas internas que había que configurar aparte. Cambios concretos:
+  - **Materiales recibidos en depósito** → avisa al **Gerente de Operaciones** (antes iba a todo Operaciones).
+  - **Ingeniería final completada** → avisa a **Logística** (para la compra/pedido de materiales).
+- Cuando un aviso va a un **área** (ej. Ingeniería), ahora **incluye también a su Gerente**, para que la gerencia tenga visibilidad de lo que pasa en su área.
+
 #### Permisos — pantalla rediseñada, más cómoda
 
 - La pantalla de **Administración → Permisos** dejó de ser una tabla gigante con todos los roles y módulos a la vez. Ahora **elegís un rol de una lista** (a la izquierda, agrupada por área con sus sub-roles) y **ajustás solo sus permisos**, en **tarjetas por módulo** con botones claros de cada acción.
