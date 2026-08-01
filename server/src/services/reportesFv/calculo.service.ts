@@ -44,22 +44,22 @@ export async function recalcularSerie(projectId: string): Promise<ResultadoRecal
   return recalcularSerieConConfig(config);
 }
 
-export async function recalcularSerieConConfig(config: ConfigEfectiva): Promise<ResultadoRecalculo> {
-  const { projectId } = config;
-
+/**
+ * Calcula la serie de un proyecto SIN persistir. Carga sus lecturas, resuelve
+ * tarifas y tipo de cambio, y corre el motor. Lo usan tanto el recálculo (que
+ * después persiste) como la generación del PDF (que sólo lee un periodo).
+ */
+export async function computarSerieDeProyecto(config: ConfigEfectiva): Promise<{
+  serie: ResultadoPeriodo[];
+  versionIdPorPeriodo: (periodo: Periodo) => string;
+}> {
   const lecturasDb = await prisma.reporteFvLectura.findMany({
-    where: { projectId },
+    where: { projectId: config.projectId },
     orderBy: { periodo: "asc" },
   });
 
   if (lecturasDb.length === 0) {
-    return {
-      projectId,
-      clientName: config.clientName,
-      periodosCalculados: 0,
-      periodosOmitidos: 0,
-      omitidos: [],
-    };
+    return { serie: [], versionIdPorPeriodo: () => "" };
   }
 
   const lecturas: LecturaSerie[] = lecturasDb.map((l) => ({
@@ -79,6 +79,24 @@ export async function recalcularSerieConConfig(config: ConfigEfectiva): Promise<
     tarifaPorPeriodo: tarifas.tarifaPorPeriodo,
     tipoCambioPorPeriodo: tipoCambio.tipoCambioPorPeriodo,
   });
+
+  return { serie, versionIdPorPeriodo: tarifas.versionIdPorPeriodo };
+}
+
+export async function recalcularSerieConConfig(config: ConfigEfectiva): Promise<ResultadoRecalculo> {
+  const { projectId } = config;
+
+  const { serie, versionIdPorPeriodo } = await computarSerieDeProyecto(config);
+
+  if (serie.length === 0) {
+    return {
+      projectId,
+      clientName: config.clientName,
+      periodosCalculados: 0,
+      periodosOmitidos: 0,
+      omitidos: [],
+    };
+  }
 
   const calculables = serie.filter((r) => !r.omitido);
   const omitidos = serie
@@ -108,7 +126,7 @@ export async function recalcularSerieConConfig(config: ConfigEfectiva): Promise<
     });
 
     for (const r of calculables) {
-      const data = filaCalculo(r, tarifas.versionIdPorPeriodo(r.periodo), snapshotConfig);
+      const data = filaCalculo(r, versionIdPorPeriodo(r.periodo), snapshotConfig);
 
       const calculo = await tx.reporteFvCalculo.upsert({
         where: { projectId_periodo: { projectId, periodo: periodoADate(r.periodo) } },

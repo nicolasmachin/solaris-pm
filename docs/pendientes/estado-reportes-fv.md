@@ -1,7 +1,54 @@
 # Estado — Reportes fotovoltaicos mensuales
 
 Migración del sistema Python standalone (`~/Dev/Reporte_Fotovoltaico`) a Voltia PM.
-Última actualización: **1 de agosto de 2026, 00:45**.
+Última actualización: **1 de agosto de 2026, 02:30**.
+
+## Fase 5 — Generación del PDF ✅
+
+`server/src/services/reportesFv/pdf/` — port del template Jinja (1129 líneas) a
+un template literal de TS, renderizado con el Puppeteer de `efpPdf/v2` (misma
+instancia de Chromium). Archivos:
+
+- `styles.ts` — el `<style>` del Jinja extraído **literal** (`String.raw`).
+- `template.html.ts` — cuerpo portado: `{% for %}`→`.map().join`, `{% if %}`→
+  ternarios, filtros Jinja a mano. `esc()` en todo texto libre.
+- `types.ts` / `viewModel.ts` — view-model plano (todo strings ya formateados) +
+  el traductor `ResultadoPeriodo → ReporteFvPdfInput`.
+- `logo.ts` — logo Voltia como constante base64 (NO un .png: `tsc` no copia
+  assets a `dist/`, así el logo viaja con el código en prod).
+- `index.ts` — `generarReporteFvPdf(input) → Buffer`.
+- `format.ts` (en la raíz del módulo) — `fmtInt`/`fmtDecimal`/`mesEs`/
+  `duracionMeses`, verificados contra el Python (incluido el half-even: `1234.5 → 1.234`).
+
+**Persistencia** — `emision.service.ts`: `generarEmision(projectId, periodo,
+userId)` recalcula la serie, genera el PDF, lo guarda con `saveBufferAsAttachment`
+como `FileAttachment` (`tipo: REPORTE_FOTOVOLTAICO`, `toolSource: "reporte-fv"`,
+`toolVersion`, `toolEntityId`) y crea una `ReporteFvEmision` versionada con el
+view-model como snapshot. Regenerar crea versión nueva (v1, v2, …).
+`regenerarPdfDesdeSnapshot(emisionId)` reproduce el PDF desde el snapshot.
+
+**Verificación visual contra los PDFs ya enviados** (3 escenarios, todos fieles):
+- **Residencial** (Daniel Vanoli): las 4 páginas coinciden con el PDF Python.
+- **Empresa** (BARENOF, zafral): 1 sola columna de tarifa, header condicional.
+- **Potencia estimada** (Hotel LAMAS): la nota "se estimaron con 5,0 kW" aparece.
+
+Dos diferencias respecto del PDF Python, ambas correctas:
+1. **`irpf_acumulado` ahora aparece** (ej. $1.113) — el Python lo dejaba vacío
+   por un bug (nunca lo pasaba al template).
+2. Se corrigió un **bug del port en el motor** que el PDF destapó (el golden test
+   no cubría el acumulado USD): el crédito por exportación usa lo exportado el
+   mes anterior; si ese mes EXISTE como lectura pero con exportación vacía, el
+   Python propaga NaN (ahorro del mes NaN, excluido del acumulado), mientras que
+   el port lo tomaba como 0 y calculaba un ahorro espurio. Corregido en
+   `serie.ts` (distinguir "no hay lectura previa"→0 de "hay lectura con export
+   null"→NaN). Con el fix, el ROI de Vanoli pasó de 10% (erróneo) a 8% (= Python).
+   Los 3 suites de tests siguen verdes.
+
+Nuevo helper reusable: `computarSerieDeProyecto(config)` en `calculo.service.ts`
+(calcula la serie sin persistir; lo usan el recálculo y la emisión).
+
+Falta para exponerlo: endpoint de descarga/preview (Fase 6) y el disparo desde
+el panel.
 
 ## Puesta al día (bitácora 31/07) ✅
 
@@ -194,14 +241,14 @@ inversión sólo degrada la sección de retorno. Antes estaba todo junto y dejab
 
 | Fase | Estado |
 |---|---|
-| 5 — PDF (port del template Jinja) | pendiente |
 | 4 — Ingesta Growatt (+ spike de rango) | pendiente |
 | 6 — API + panel y dashboard en Experiencia Solar | pendiente |
 | 7 — Envío por email + portal del cliente | pendiente |
 | 8 — Crons mensuales | pendiente |
 
-Con las fases 1, 2, 3 y 9 hechas ya hay **datos reales calculados en la base**:
-falta la cara visible (PDF y panel) y la ingesta automática.
+Con las fases 1, 2, 3, 5 y 9 hechas ya hay **datos reales calculados y PDFs
+generables** desde la base. Falta el panel (disparar/ver desde la UI), la
+ingesta automática de Growatt, el envío y los crons.
 
 ### Pendientes concretos
 
