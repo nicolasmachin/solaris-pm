@@ -2,6 +2,15 @@
 
 ## v8.3
 
+### 2 de agosto de 2026
+
+#### Experiencia Solar — Reportes fotovoltaicos
+
+- Nueva pestaña **Reportes FV** dentro de Experiencia Solar para gestionar los reportes mensuales de generación de cada cliente.
+- El panel lista **todos los generadores**, distinguiendo los que ya están **dados de alta** en la herramienta de los que no, con un semáforo de estado por mes (sin lectura, datos incompletos, calculado, PDF listo, enviado) y los KPIs del período de un vistazo.
+- Desde el detalle de cada generador se puede: **darlo de alta** o editar su configuración (potencia contratada, reparto por franja horaria, tarifa, inversión, destinatarios), **cargar a mano la lectura del mes** (para los que no tienen Growatt o cuando el medidor falló), y **generar y previsualizar el PDF** del reporte, que queda versionado.
+- Los generadores sin potencia contratada registrada se calculan con un valor estimado y quedan marcados, sin frenar el resto.
+
 ### 1 de agosto de 2026
 
 #### Trámites UTE — la fecha de consulta se completa sola

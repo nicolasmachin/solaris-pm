@@ -9,13 +9,15 @@
 // Esta función es el único lugar donde se resuelven esos fallbacks. Todo lo que
 // necesite la config (cálculo, PDF, panel, envío) pasa por acá.
 
-import type { Prisma, ReporteFvConfig, Project } from "@prisma/client";
+import { AuditAction, AuditEntityType, type Prisma, type ReporteFvConfig, type Project } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
+import { createAuditEntry } from "../audit.service.js";
 import { badRequest, notFound } from "../../utils/errors.js";
-import { dateAPeriodo, type Periodo } from "./periodo.js";
-import { tarifaAKey } from "./tarifas/tarifas.service.js";
+import { dateAPeriodo, type Periodo, periodoADate } from "./periodo.js";
+import { KEY_A_TARIFA, tarifaAKey } from "./tarifas/tarifas.service.js";
 import type { ConfigSerie } from "./motor/serie.js";
+import type { TarifaKey } from "./motor/types.js";
 
 const dec = (v: Prisma.Decimal | null | undefined): number | null => (v == null ? null : Number(v));
 
@@ -222,6 +224,125 @@ export async function listarConfigsEfectivas(opts: { soloHabilitados?: boolean }
     .filter((c) => c.project.id)
     .map((c) => resolverConfigEfectiva(c, c.project))
     .sort((a, b) => a.clientName.localeCompare(b.clientName, "es"));
+}
+
+export interface DestinatarioInput {
+  email: string;
+  nombre?: string | null;
+  esCopia?: boolean;
+}
+
+export interface UpsertConfigInput {
+  habilitado?: boolean;
+  tipoCliente?: "residencial" | "empresa";
+  tarifaContratada?: TarifaKey | null;
+  potenciaContratadaKw?: number | null;
+  pctPunta?: number | null;
+  pctLlano?: number | null;
+  pctValle?: number | null;
+  inversionUsd?: number | null;
+  potenciaInstaladaKwp?: number | null;
+  mesInicio?: string | null; // "YYYY-MM"
+  origenDatos?: "GROWATT" | "MANUAL";
+  growattPlantId?: string | null;
+  notasFijas?: string | null;
+  /** Si viene, reemplaza el set completo de destinatarios. */
+  destinatarios?: DestinatarioInput[];
+}
+
+const TIPO_A_ENUM = { residencial: "RESIDENCIAL", empresa: "EMPRESA" } as const;
+
+/**
+ * Da de alta o edita la config de un generador. Para dar de alta (primera vez)
+ * alcanza con la potencia contratada y el reparto de franjas; el resto hereda
+ * del proyecto mientras quede en null. Tras guardar, recalcular es responsabilidad
+ * del caller (para no crear un ciclo de imports con calculo.service).
+ */
+export async function upsertConfig(
+  projectId: string,
+  input: UpsertConfigInput,
+  userId: string,
+): Promise<void> {
+  const proyecto = await prisma.project.findFirst({
+    where: { id: projectId, deletedAt: null },
+    select: { id: true },
+  });
+  if (!proyecto) throw notFound("PROYECTO_NO_ENCONTRADO", "El proyecto no existe");
+
+  const existente = await prisma.reporteFvConfig.findUnique({ where: { projectId } });
+
+  // Normaliza el reparto de franjas: acepta 0..1 o 0..100 (se guarda 0..1).
+  const norm = (v: number | null | undefined): number | undefined =>
+    v == null ? undefined : v > 1 ? v / 100 : v;
+
+  const data = {
+    habilitado: input.habilitado,
+    tipoCliente: input.tipoCliente ? TIPO_A_ENUM[input.tipoCliente] : undefined,
+    tarifaContratada:
+      input.tarifaContratada === undefined
+        ? undefined
+        : input.tarifaContratada
+          ? KEY_A_TARIFA[input.tarifaContratada]
+          : null,
+    inversionUsd: input.inversionUsd === undefined ? undefined : input.inversionUsd,
+    potenciaInstaladaKwp: input.potenciaInstaladaKwp === undefined ? undefined : input.potenciaInstaladaKwp,
+    mesInicio:
+      input.mesInicio === undefined ? undefined : input.mesInicio ? periodoADate(input.mesInicio) : null,
+    origenDatos: input.origenDatos,
+    growattPlantId:
+      input.growattPlantId === undefined ? undefined : input.growattPlantId ? BigInt(input.growattPlantId) : null,
+    notasFijas: input.notasFijas === undefined ? undefined : input.notasFijas,
+    actualizadoPorId: userId,
+  };
+
+  // Los 4 obligatorios (potencia + reparto de franjas) se manejan aparte: en
+  // update sólo si vienen, en create con default 0 (la config puede quedar
+  // incompleta a propósito mientras se cargan los datos).
+  const obligatoriosUpdate = {
+    ...(input.potenciaContratadaKw != null ? { potenciaContratadaKw: input.potenciaContratadaKw } : {}),
+    ...(norm(input.pctPunta) != null ? { pctPunta: norm(input.pctPunta) } : {}),
+    ...(norm(input.pctLlano) != null ? { pctLlano: norm(input.pctLlano) } : {}),
+    ...(norm(input.pctValle) != null ? { pctValle: norm(input.pctValle) } : {}),
+  };
+
+  await prisma.$transaction(async (tx) => {
+    const config = existente
+      ? await tx.reporteFvConfig.update({ where: { projectId }, data: { ...data, ...obligatoriosUpdate } })
+      : await tx.reporteFvConfig.create({
+          data: {
+            projectId,
+            potenciaContratadaKw: input.potenciaContratadaKw ?? 0,
+            pctPunta: norm(input.pctPunta) ?? 0,
+            pctLlano: norm(input.pctLlano) ?? 0,
+            pctValle: norm(input.pctValle) ?? 0,
+            ...data,
+          },
+        });
+
+    if (input.destinatarios) {
+      await tx.reporteFvDestinatario.deleteMany({ where: { configId: config.id } });
+      const vistos = new Set<string>();
+      for (const d of input.destinatarios) {
+        const email = d.email.trim().toLowerCase();
+        if (!email || vistos.has(email)) continue;
+        vistos.add(email);
+        await tx.reporteFvDestinatario.create({
+          data: { configId: config.id, email, nombre: d.nombre ?? null, esCopia: d.esCopia ?? false },
+        });
+      }
+    }
+  });
+
+  await createAuditEntry({
+    entityType: AuditEntityType.reporte_fv_config,
+    entityId: projectId,
+    projectId,
+    userId,
+    action: existente ? AuditAction.updated : AuditAction.created,
+    description: existente
+      ? `Editó la config de reporte fotovoltaico`
+      : `Dio de alta el reporte fotovoltaico del generador`,
+  });
 }
 
 /** Tira si la config no alcanza para calcular los números. */

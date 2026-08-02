@@ -1,7 +1,49 @@
 # Estado — Reportes fotovoltaicos mensuales
 
 Migración del sistema Python standalone (`~/Dev/Reporte_Fotovoltaico`) a Voltia PM.
-Última actualización: **1 de agosto de 2026, 02:30**.
+Última actualización: **2 de agosto de 2026**.
+
+## Fase 6 — Panel de gestión en Experiencia Solar ✅ (verificado por API)
+
+Pestaña **Reportes FV** en Experiencia Solar (`/clientes/reportes`).
+
+**Backend** (`server/src/services/reportesFv/` + `reportes-fv.routes.ts`):
+- `panel.service.ts` — `getPanel(periodo)` lista TODOS los generadores (dados de
+  alta y no) con estado semáforo + KPIs; `getDetalleGenerador(projectId)`;
+  `periodosConDatos()`. El universo son los proyectos con config, los livianos
+  (`importedFromCsv`) o los que llegaron a habilitación UTE.
+- `lecturas.service.ts` — `upsertLecturaManual` (fuente MANUAL, no la pisa Growatt).
+- `config.service.ts` — `upsertConfig` (dar de alta / editar + destinatarios).
+- Endpoints (todos `authorize(EXPERIENCIA_CLIENTES, ...)`): `GET /panel`,
+  `GET /periodos`, `GET /generadores/:id`, `PUT .../config`, `PUT .../lecturas/:periodo`,
+  `POST .../recalcular`, `POST .../emitir`, `GET /emisiones/:id/pdf`. Editar
+  config o lectura dispara recálculo. El PDF se sirve por stream (o se regenera
+  desde el snapshot si falta el archivo).
+
+**Frontend** (`client/src/modules/clientes/`):
+- `pages/ReportesFvPanel.tsx` — selector de periodo, 7 KPIs, tabla con semáforo,
+  búsqueda y filtro "solo con pendientes".
+- `components/ReporteFvDetalle.tsx` — modal con 3 tabs: Configuración (alta/edición
+  + destinatarios), Lectura del mes (carga manual), Reporte/PDF (generar + preview
+  en iframe + descargar). Reusa `useAuthBlobUrl`.
+- Tab agregada en `ExperienciaSolarLayout.tsx` + ruta en `App.tsx`.
+
+Permisos: el rol `EXPERIENCIA_SOLAR` ya tiene VIEW/CREATE/EDIT/DELETE en
+`EXPERIENCIA_CLIENTES` — no hizo falta seed nuevo.
+
+**Bug corregido de la Fase 3**: `reportesFv.api.ts` llamaba a `/reportes-fv/...`
+sin el prefijo `/api` (el backend monta con `/api`), así que la pantalla de
+tarifas estaba rota. Corregido; ahora todo usa `/api/reportes-fv/...`.
+
+**Verificación**: todos los endpoints probados por API (panel 69 generadores /
+55 alta / 14 sin alta; alta de un generador; carga de lectura → recálculo →
+CALCULADO; PDF por stream 200). tsc server+client en 0. El screenshot automático
+del navegador no funcionó por el polling de la SPA (limitación del extension, no
+del código) — **queda validación visual pendiente por Nicolás**.
+
+Falta del panel (menor): mostrar la cobertura de días en la tab de lectura;
+disparo masivo (recalcular/generar todos); dashboard de métricas agregadas del
+parque. El envío queda para la Fase 7.
 
 ## Fase 5 — Generación del PDF ✅
 
@@ -241,8 +283,7 @@ inversión sólo degrada la sección de retorno. Antes estaba todo junto y dejab
 
 | Fase | Estado |
 |---|---|
-| 4 — Ingesta Growatt (+ spike de rango) | pendiente |
-| 6 — API + panel y dashboard en Experiencia Solar | pendiente |
+| 4 — Ingesta Growatt (+ Huawei/Fronius a futuro) | pendiente |
 | 7 — Envío por email + portal del cliente | pendiente |
 | 8 — Crons mensuales | pendiente |
 
@@ -252,20 +293,27 @@ ingesta automática de Growatt, el envío y los crons.
 
 ### Pendientes concretos
 
-- **Spike Growatt (media jornada, antes de escribir la ingesta):** el script
-  original pide `meter_data` día por día (~30 requests/planta/mes), pero el
-  endpoint recibe `start_date` y `end_date`. Si acepta rango mensual, el costo
-  baja de ~1.500 a ~150 requests/mes.
-- **Precios reales de UTE** para las tarifas simple (hoy 5/8/11) y doble (12/6):
-  son placeholders. Se migran tal cual para no desalinear el histórico y se
-  corrigen después desde la UI de admin, con vigencia nueva.
-- **2 nombres ambiguos** a resolver al revisar el dry-run de la migración:
-  `suarez - dalmas` (¿Alejandro o Sofía Dalmas?) y `fernando` (parece gemelo de
-  `raij`: misma inversión, misma fecha, misma potencia).
-- **7 clientes sin proyecto en Voltia PM** se crean como generadores livianos
-  (`importedFromCsv`).
+- **Ingesta multi-marca (Fase 4 y más allá): Huawei y Fronius.** Hay clientes con
+  inversores Huawei y Fronius, además de los Growatt. La ingesta hay que
+  diseñarla con la marca como estrategia intercambiable (una interfaz de
+  "proveedor de generación" por marca), no acoplada a Growatt. El modelo ya lo
+  contempla en parte: `ReporteFvConfig.origenDatos` (hoy GROWATT | MANUAL) se
+  extiende a HUAWEI | FRONIUS, y `SolarSystem.inverterBrand` ya tiene la marca.
+  El plant/planta-id por marca vive hoy en `growattPlantId` (BigInt); al agregar
+  marcas conviene un identificador de monitoreo genérico (string) o una tabla de
+  vínculo por proveedor. Growatt primero; Huawei/Fronius después, reusando el
+  mismo pipeline de cobertura/lecturas/cálculo.
+- **Growatt — spike ya resuelto por la bitácora del 31/07**: `meter_data` NO
+  acepta rango (devuelve solo el último día) → iterar día por día, `perpage=100`,
+  pausa ~0,7s, backoff en `error_code=10012`. Regla de cobertura: <90% de días →
+  se descartan consumo/exportación del mes.
+- **Precios UTE** (RESUELTO 1/8): se cargó el pliego 2026 real como cuadro "UTE
+  2026". Ya no son placeholders.
+- **Nombres ambiguos** (RESUELTO): `fernando` descartado (duplicado de Raij),
+  `antonio costa vital`→`alicia grunwald` y `suarez-dalmas`→`alejandro dalmas`
+  confirmados por el usuario. `Fernando` queda descartado en `matching.ts`.
 - `sendEmail()` **no soporta adjuntos**: hay que extenderlo con `attachments` y
-  `bcc` (~6 líneas, sin tocar el guardrail `client_facing`).
+  `bcc` (~6 líneas, sin tocar el guardrail `client_facing`). Pendiente Fase 7.
 - `EmailLog.sentById` es obligatorio con `onDelete: Restrict` — no hay usuario de
   sistema. Es otra razón por la que el envío arranca con aprobación humana.
 

@@ -8,6 +8,7 @@ import { NavLink, Outlet } from "react-router-dom";
 export function ExperienciaSolarLayout() {
   const tabs = [
     { to: "", label: "Generadores", end: true },
+    { to: "reportes", label: "Reportes FV", end: false },
     { to: "cobros", label: "Cobros", end: false },
     { to: "encuestas", label: "Encuestas", end: false },
   ];
