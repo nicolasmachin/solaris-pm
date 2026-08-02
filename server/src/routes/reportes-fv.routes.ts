@@ -26,6 +26,7 @@ import { upsertConfig } from "../services/reportesFv/config.service.js";
 import { upsertLecturaManual } from "../services/reportesFv/lecturas.service.js";
 import { recalcularSerie } from "../services/reportesFv/calculo.service.js";
 import { generarEmision, regenerarPdfDesdeSnapshot } from "../services/reportesFv/emision.service.js";
+import { enviarEmision, enviarLote } from "../services/reportesFv/envio.service.js";
 
 const periodoSchema = z
   .string()
@@ -297,6 +298,36 @@ export async function registerReportesFvRoutes(app: FastifyInstance) {
         if (fs.existsSync(absolutePath)) return reply.send(fs.createReadStream(absolutePath));
       }
       return reply.send(await regenerarPdfDesdeSnapshot(emisionId));
+    },
+  );
+
+  // ─── Envío al cliente ────────────────────────────────────────────────────────
+  // COMPLETE = aprobar y enviar: la acción irreversible del módulo.
+
+  // Enviar una emisión (o dry-run: simula sin mandar).
+  app.post(
+    "/reportes-fv/emisiones/:emisionId/enviar",
+    { preHandler: authorize(EXP, Action.COMPLETE) },
+    async (request) => {
+      const { emisionId } = z.object({ emisionId: z.string() }).parse(request.params);
+      const { dryRun } = z.object({ dryRun: z.boolean().optional() }).parse(request.body ?? {});
+      return enviarEmision(emisionId, { dryRun, userId: request.user!.id });
+    },
+  );
+
+  // Enviar en lote las emisiones LISTO de un periodo (o un subconjunto).
+  app.post(
+    "/reportes-fv/envios/lote",
+    { preHandler: authorize(EXP, Action.COMPLETE) },
+    async (request) => {
+      const { periodo, projectIds, dryRun } = z
+        .object({
+          periodo: periodoSchema,
+          projectIds: z.array(z.string()).optional(),
+          dryRun: z.boolean().optional(),
+        })
+        .parse(request.body);
+      return enviarLote(periodo, { projectIds, dryRun, userId: request.user!.id });
     },
   );
 }

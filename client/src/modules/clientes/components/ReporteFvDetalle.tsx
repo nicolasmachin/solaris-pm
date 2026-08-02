@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Check, Download, FileText, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { AlertTriangle, Check, Download, FileText, Plus, RefreshCw, Send, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 import { usePermission } from "../../../hooks/usePermission";
@@ -9,6 +9,7 @@ import { LargeModal } from "../../../components/ui/LargeModal";
 import { Spinner } from "../../../components/ui/Spinner";
 import {
   emitirReporte,
+  enviarReporte,
   getDetalleGenerador,
   guardarConfig,
   guardarLectura,
@@ -35,6 +36,7 @@ interface Props {
 export function ReporteFvDetalle({ projectId, periodo, onClose }: Props) {
   const canEdit = usePermission("EXPERIENCIA_CLIENTES", "EDIT");
   const canCreate = usePermission("EXPERIENCIA_CLIENTES", "CREATE");
+  const canSend = usePermission("EXPERIENCIA_CLIENTES", "COMPLETE");
   const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>("config");
 
@@ -98,7 +100,13 @@ export function ReporteFvDetalle({ projectId, periodo, onClose }: Props) {
               />
             )}
             {tab === "pdf" && (
-              <PdfTab detalle={detalle} periodo={periodo} canCreate={canCreate} onEmitido={invalidar} />
+              <PdfTab
+                detalle={detalle}
+                periodo={periodo}
+                canCreate={canCreate}
+                canSend={canSend}
+                onEmitido={invalidar}
+              />
             )}
           </div>
         </>
@@ -477,11 +485,13 @@ function PdfTab({
   detalle,
   periodo,
   canCreate,
+  canSend,
   onEmitido,
 }: {
   detalle: DetalleGenerador;
   periodo: string;
   canCreate: boolean;
+  canSend: boolean;
   onEmitido: () => void;
 }) {
   const qc = useQueryClient();
@@ -493,15 +503,31 @@ function PdfTab({
     setPreviewId(vigente?.id ?? null);
   }, [vigente?.id]);
 
+  const refrescar = () => {
+    qc.invalidateQueries({ queryKey: ["reportes-fv", "detalle", detalle.projectId] });
+    qc.invalidateQueries({ queryKey: ["reportes-fv", "panel"] });
+  };
+
   const emitir = useMutation({
     mutationFn: () => emitirReporte(detalle.projectId, periodo),
     onSuccess: (r) => {
       toast.success(`Reporte generado (v${r.version})`);
-      qc.invalidateQueries({ queryKey: ["reportes-fv", "detalle", detalle.projectId] });
-      qc.invalidateQueries({ queryKey: ["reportes-fv", "panel"] });
+      refrescar();
       setPreviewId(r.emisionId);
     },
     onError: (e: any) => toast.error(e?.response?.data?.message ?? "No se pudo generar el reporte"),
+  });
+
+  const enviar = useMutation({
+    mutationFn: (dryRun: boolean) => enviarReporte(vigente!.id, dryRun),
+    onSuccess: (r) => {
+      if (r.estado === "ENVIADO") toast.success(`Enviado a ${r.destinatarios.join(", ")}`);
+      else if (r.estado === "DRY_RUN") toast.success(`Prueba OK — se enviaría a ${r.destinatarios.join(", ")}`);
+      else if (r.estado === "OMITIDO") toast.error(`No se envió: ${r.motivo}`);
+      else toast.error(`Falló el envío: ${r.motivo}`);
+      refrescar();
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message ?? "No se pudo enviar"),
   });
 
   // El hook usa apiClient (relative url); reporteFvPdfUrl da la absoluta con
@@ -541,6 +567,40 @@ function PdfTab({
           </span>
         )}
       </div>
+
+      {/* Envío al cliente */}
+      {canSend && vigente && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3">
+          <span className="text-sm font-medium text-[var(--color-text-primary)]">Enviar al cliente</span>
+          <span className="text-xs text-[var(--color-text-muted)]">
+            {detalle.config?.efectivo.destinatariosEfectivos.map((d) => d.email).join(", ") || "sin destinatario"}
+          </span>
+          <div className="ml-auto flex gap-2">
+            <button
+              type="button"
+              disabled={enviar.isPending}
+              onClick={() => enviar.mutate(true)}
+              className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)]"
+            >
+              Prueba (dry-run)
+            </button>
+            <button
+              type="button"
+              disabled={enviar.isPending || vigente.enviado}
+              onClick={() => {
+                const dest =
+                  detalle.config?.efectivo.destinatariosEfectivos.map((d) => d.email).join(", ") ?? "";
+                if (window.confirm(`¿Enviar el reporte de ${periodo} a ${dest}? Esta acción manda el email.`)) {
+                  enviar.mutate(false);
+                }
+              }}
+              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+            >
+              <Send size={14} /> {vigente.enviado ? "Ya enviado" : "Enviar"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {bloqueado && (
         <div className="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-400">

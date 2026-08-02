@@ -139,3 +139,26 @@ export async function markPortalNotificationRead(id: string): Promise<void> {
 export async function markAllPortalNotificationsRead(): Promise<void> {
   await apiClient.patch("/api/client/notifications/read-all");
 }
+
+// ─── Reportes fotovoltaicos ──────────────────────────────────────────────────
+
+export interface PortalReporteRow {
+  id: string;
+  projectId: string;
+  projectName: string;
+  periodo: string; // "YYYY-MM"
+  anio: number;
+  ahorroTotal: number | null;
+  ahorroAcumuladoUsd: number | null;
+}
+
+export async function getPortalReportes(): Promise<PortalReporteRow[]> {
+  const { data } = await apiClient.get<{ reportes: PortalReporteRow[] }>("/api/client/reportes");
+  return data.reportes;
+}
+
+/** URL absoluta del PDF de un reporte del portal (para iframe / descarga con auth). */
+export function portalReportePdfUrl(id: string): string {
+  const base = apiClient.defaults.baseURL ?? "";
+  return `${base}/api/client/reportes/${id}/pdf`;
+}

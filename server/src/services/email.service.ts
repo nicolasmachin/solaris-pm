@@ -26,12 +26,21 @@ import { isFullHtmlDoc, renderEmailLayout } from "./email/layout.js";
 
 export type EmailType = "internal" | "client_facing";
 
+export interface EmailAttachment {
+  filename: string;
+  content: Buffer;
+  contentType?: string;
+}
+
 interface SendEmailParams {
-  to: string;
+  to: string | string[];
+  cc?: string | string[];
+  bcc?: string | string[];
   subject: string;
   html: string;
   text?: string;
   type?: EmailType;
+  attachments?: EmailAttachment[];
 }
 
 function getTransporter() {
@@ -48,22 +57,25 @@ function getTransporter() {
 
 export async function sendEmail(params: SendEmailParams): Promise<boolean> {
   const { to, type = "internal" } = params;
+  const destinatarios = Array.isArray(to) ? to : [to];
 
   if (type === "internal") {
-    const user = await prisma.user.findFirst({
-      where: { email: to, deletedAt: null },
-      select: { id: true },
+    // El guardrail exige que TODOS los destinatarios sean usuarios internos.
+    const users = await prisma.user.findMany({
+      where: { email: { in: destinatarios }, deletedAt: null },
+      select: { email: true },
     });
-
-    if (!user) {
+    const internos = new Set(users.map((u) => u.email));
+    const externos = destinatarios.filter((e) => !internos.has(e));
+    if (externos.length > 0) {
       console.error(
-        `[email] BLOQUEADO: ${to} no es usuario interno. ` +
+        `[email] BLOQUEADO: ${externos.join(", ")} no ${externos.length === 1 ? "es usuario interno" : "son usuarios internos"}. ` +
           `Para enviar a externos usar type: 'client_facing' explícitamente.`,
       );
       return false;
     }
   } else {
-    console.log(`[email] Envío client_facing a ${to}`);
+    console.log(`[email] Envío client_facing a ${destinatarios.join(", ")}`);
   }
 
   if (!process.env.SMTP_HOST) {
@@ -84,6 +96,8 @@ export async function sendEmail(params: SendEmailParams): Promise<boolean> {
       : renderEmailLayout({ title: params.subject, contentHtml: params.html });
     const dest = redirectInDev({
       to: params.to,
+      cc: params.cc,
+      bcc: params.bcc,
       subject: params.subject,
       html: brandedHtml,
       text: params.text,
@@ -91,14 +105,17 @@ export async function sendEmail(params: SendEmailParams): Promise<boolean> {
     await transporter.sendMail({
       from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
       to: dest.to,
+      cc: dest.cc,
+      bcc: dest.bcc,
       subject: dest.subject,
       html: dest.html,
       text: dest.text,
+      attachments: params.attachments,
     });
 
     console.log(
-      `[email] Enviado a ${Array.isArray(dest.to) ? dest.to.join(", ") : dest.to}` +
-        `${dest.to === params.to ? "" : ` (original: ${params.to})`}: ${params.subject}`,
+      `[email] Enviado a ${Array.isArray(dest.to) ? dest.to.join(", ") : dest.to}: ${params.subject}` +
+        `${params.attachments?.length ? ` (+${params.attachments.length} adjunto)` : ""}`,
     );
     return true;
   } catch (err) {

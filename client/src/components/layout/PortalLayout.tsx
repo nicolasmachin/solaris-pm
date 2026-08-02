@@ -73,6 +73,7 @@ export function PortalLayout() {
         <nav className="max-w-3xl mx-auto flex items-center gap-1 px-4">
           {[
             { to: "/portal", label: "Mis proyectos", end: true },
+            { to: "/portal/reportes", label: "Reportes", end: false },
             { to: "/portal/tickets", label: "Mis tickets", end: false },
             { to: "/portal/encuestas", label: "Encuestas", end: false },
           ].map((item) => (

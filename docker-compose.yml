@@ -49,6 +49,10 @@ services:
       # spamear al equipo mientras se testea. Vacío = sin redirección. En prod
       # nunca se setea (además el código la ignora si NODE_ENV=production).
       DEV_EMAIL_REDIRECT_TO: ${DEV_EMAIL_REDIRECT_TO:-nfmj@hotmail.com}
+      # BCC interno de cada reporte fotovoltaico enviado a un cliente (copia de
+      # control). Vacío = sin copia.
+      REPORTES_FV_BCC: ${REPORTES_FV_BCC:-}
+      GROWATT_API_TOKEN: ${GROWATT_API_TOKEN:-}
     ports:
       - "4000:4000"
     volumes:

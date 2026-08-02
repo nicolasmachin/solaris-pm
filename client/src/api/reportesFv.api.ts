@@ -284,3 +284,34 @@ export function reporteFvPdfUrl(emisionId: string): string {
   const base = apiClient.defaults.baseURL ?? "";
   return `${base}/api/reportes-fv/emisiones/${emisionId}/pdf`;
 }
+
+// ─── Envío ───────────────────────────────────────────────────────────────────
+
+export interface ResultadoEnvio {
+  emisionId: string;
+  estado: "ENVIADO" | "FALLIDO" | "DRY_RUN" | "OMITIDO";
+  destinatarios: string[];
+  motivo?: string;
+}
+
+export async function enviarReporte(
+  emisionId: string,
+  dryRun = false,
+): Promise<ResultadoEnvio> {
+  const { data } = await apiClient.post<ResultadoEnvio>(
+    `/api/reportes-fv/emisiones/${emisionId}/enviar`,
+    { dryRun },
+  );
+  return data;
+}
+
+export async function enviarLote(
+  periodo: string,
+  opts: { projectIds?: string[]; dryRun?: boolean } = {},
+): Promise<{ resultados: ResultadoEnvio[]; resumen: Record<string, number> }> {
+  const { data } = await apiClient.post<{ resultados: ResultadoEnvio[]; resumen: Record<string, number> }>(
+    "/api/reportes-fv/envios/lote",
+    { periodo, ...opts },
+  );
+  return data;
+}

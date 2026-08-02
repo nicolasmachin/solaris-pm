@@ -3,6 +3,45 @@
 Migración del sistema Python standalone (`~/Dev/Reporte_Fotovoltaico`) a Voltia PM.
 Última actualización: **2 de agosto de 2026**.
 
+## Fase 7 — Envío por email + portal del cliente ✅ (verificado por API)
+
+**Email** (`server/src/services/email.service.ts`): `sendEmail` extendido con
+`attachments`, `cc`, `bcc` y destinatarios múltiples, sin tocar el guardrail
+`client_facing`. El reporte se manda con `type: "client_facing"` (guardrail
+exige el flag para externos).
+
+**`envio.service.ts`**: `enviarEmision(emisionId, {dryRun, userId})` y
+`enviarLote(periodo, {...})`. Flujo: valida guardas duras → dry-run registra sin
+mandar → **claim transaccional** sobre `enviadoEn` (idempotencia; dos clicks o
+dos crons no mandan dos veces) → `sendEmail` con PDF adjunto + BCC interno →
+`EmailLog` + `ReporteFvEnvio` + `publicadoEnPortal=true` + auditoría. Si el SMTP
+falla, revierte el claim para reintentar. Guardas: habilitado, sin bloqueos de
+envío, ≥1 destinatario, emisión LISTO, PDF >20KB, y un **sanity check** del
+ahorro (fuera de [0.2×,5×] del promedio con ≥3 meses → OMITIDO, no se manda en
+lote). Cuerpo del mail en `emailBody.ts` (port del Python, marca Voltia).
+
+**Endpoints**: `POST /emisiones/:id/enviar` (dryRun opcional) y `POST /envios/lote`,
+ambos `authorize(EXPERIENCIA_CLIENTES, COMPLETE)`. **Permiso nuevo**: se agregó
+`COMPLETE` a EXPERIENCIA_SOLAR con `prisma/scripts/seed-reportes-fv-permissions.ts`
+(idempotente; **correr en prod** + reiniciar server). ADMIN ya lo tenía.
+
+**Portal del cliente** (`portal.routes.ts`): `GET /client/reportes` (los
+publicados de mis proyectos, agrupados por año) y `GET /client/reportes/:id/pdf`
+(ownership por `clients: { some: { userId } }`). Frontend: `PortalReportes.tsx`
+en `/portal/reportes` + item "Reportes" en el nav del portal.
+
+**Frontend del envío**: botón Enviar + Prueba (dry-run) en la tab PDF del
+`ReporteFvDetalle`, con confirmación. Sólo visible con permiso COMPLETE.
+
+**Verificación**: envío real de prueba de punta a punta (Vanoli → redirigido a
+`nfmj@hotmail.com`, guardrail client_facing OK, PDF adjunto, asunto correcto);
+idempotencia (reenviar → OMITIDO); dry-run; portal (ownership + aislamiento entre
+clientes verificado; residuo revertido). tsc server+client en 0, golden verde.
+Falta validación visual de Nicolás (el screenshot del navegador no anda por el
+polling de la SPA). En local todo mail va redirigido a `nfmj@hotmail.com`.
+
+Nuevo env: `REPORTES_FV_BCC` (BCC interno de cada envío; vacío = sin copia).
+
 ## Fase 6 — Panel de gestión en Experiencia Solar ✅ (verificado por API)
 
 Pestaña **Reportes FV** en Experiencia Solar (`/clientes/reportes`).
@@ -284,8 +323,16 @@ inversión sólo degrada la sección de retorno. Antes estaba todo junto y dejab
 | Fase | Estado |
 |---|---|
 | 4 — Ingesta Growatt (+ Huawei/Fronius a futuro) | pendiente |
-| 7 — Envío por email + portal del cliente | pendiente |
 | 8 — Crons mensuales | pendiente |
+
+Con 1, 2, 3, 5, 6, 7 y 9 hechas, el ciclo manual está completo: dar de alta,
+cargar datos, calcular, generar PDF, **enviar al cliente** y que lo **vea en el
+portal**. Falta automatizar la ingesta (Growatt) y el cron mensual.
+
+**Pendiente de deploy a prod**: correr `seed-reportes-fv-permissions.ts` (permiso
+COMPLETE) tras el próximo deploy, y las migraciones `add_reportes_fv` +
+`reporte_fv_cobertura`. Setear env `GROWATT_API_TOKEN` y (opcional)
+`REPORTES_FV_BCC` en `docker-compose.prod.yml`.
 
 Con las fases 1, 2, 3, 5 y 9 hechas ya hay **datos reales calculados y PDFs
 generables** desde la base. Falta el panel (disparar/ver desde la UI), la

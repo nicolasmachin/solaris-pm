@@ -4,6 +4,12 @@
 
 ### 2 de agosto de 2026
 
+#### Reportes fotovoltaicos — envío al cliente y portal
+
+- Desde el panel de Reportes FV ahora se puede **enviar el reporte al cliente por email**, con el PDF adjunto. El envío requiere confirmación (no se manda solo) y tiene un botón de **prueba** que simula el envío sin mandar nada, para chequear a quién iría.
+- Un reporte enviado no se puede volver a mandar por error: queda marcado y el botón se bloquea.
+- El cliente ve sus reportes en el **portal**, en una nueva sección **Reportes**: los encuentra agrupados por año, con el ahorro del mes, y puede verlos en pantalla o descargarlos.
+
 #### Experiencia Solar — Reportes fotovoltaicos
 
 - Nueva pestaña **Reportes FV** dentro de Experiencia Solar para gestionar los reportes mensuales de generación de cada cliente.

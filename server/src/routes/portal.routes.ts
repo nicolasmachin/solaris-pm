@@ -16,6 +16,10 @@ import { responderEncuesta, serializeSurvey } from "../services/encuestas/encues
 import { calculateTimes } from "../services/uteProcess.service.js";
 import { badRequest, forbidden, notFound, unauthorized } from "../utils/errors.js";
 import { serializeDate } from "../utils/serialization.js";
+import { contentDisposition } from "../utils/content-disposition.js";
+import { getStoredFilePath } from "../services/file-storage.service.js";
+import { regenerarPdfDesdeSnapshot } from "../services/reportesFv/emision.service.js";
+import fs from "node:fs";
 
 // ─── Schemas ────────────────────────────────────────────────────────────────
 
@@ -938,6 +942,86 @@ export async function registerPortalRoutes(app: FastifyInstance) {
         ),
       );
       return { success: true };
+    },
+  );
+
+  // ─── Reportes fotovoltaicos del cliente ──────────────────────────────────────
+
+  // Reportes publicados en el portal de los proyectos del cliente, agrupados por
+  // año (más reciente primero). Sólo los que ya se enviaron/publicaron.
+  app.get(
+    "/client/reportes",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.VIEW) },
+    async (request) => {
+      const user = ensureUser(request);
+      const emisiones = await prisma.reporteFvEmision.findMany({
+        where: {
+          publicadoEnPortal: true,
+          project: { deletedAt: null, clients: { some: { userId: user.id } } },
+        },
+        orderBy: [{ periodo: "desc" }, { version: "desc" }],
+        select: {
+          id: true,
+          periodo: true,
+          version: true,
+          project: { select: { id: true, clientName: true } },
+          calculo: { select: { ahorroTotal: true, ahorroAcumuladoUsd: true } },
+        },
+      });
+
+      // Una sola (la última versión) por proyecto+periodo.
+      const vistos = new Set<string>();
+      const items = emisiones
+        .filter((e) => {
+          const k = `${e.project.id}|${e.periodo.toISOString().slice(0, 7)}`;
+          if (vistos.has(k)) return false;
+          vistos.add(k);
+          return true;
+        })
+        .map((e) => ({
+          id: e.id,
+          projectId: e.project.id,
+          projectName: e.project.clientName,
+          periodo: e.periodo.toISOString().slice(0, 7),
+          anio: e.periodo.getUTCFullYear(),
+          ahorroTotal: e.calculo ? Number(e.calculo.ahorroTotal) : null,
+          ahorroAcumuladoUsd: e.calculo ? Number(e.calculo.ahorroAcumuladoUsd) : null,
+        }));
+      return { reportes: items };
+    },
+  );
+
+  // PDF de un reporte propio (ownership verificado).
+  app.get(
+    "/client/reportes/:id/pdf",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.VIEW) },
+    async (request, reply) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const emision = await prisma.reporteFvEmision.findFirst({
+        where: {
+          id,
+          publicadoEnPortal: true,
+          project: { clients: { some: { userId: user.id } } },
+        },
+        select: {
+          fileAttachment: { select: { url: true } },
+          periodo: true,
+          project: { select: { clientName: true } },
+        },
+      });
+      if (!emision) throw notFound("REPORTE_NO_ENCONTRADO", "El reporte no existe o no es tuyo");
+
+      const nombre = `reporte-fotovoltaico-${emision.periodo.toISOString().slice(0, 7)}.pdf`;
+      reply.header("Content-Type", "application/pdf");
+      reply.header("Content-Disposition", contentDisposition("inline", nombre));
+
+      const url = emision.fileAttachment?.url;
+      if (url) {
+        const absolutePath = getStoredFilePath(url);
+        if (fs.existsSync(absolutePath)) return reply.send(fs.createReadStream(absolutePath));
+      }
+      return reply.send(await regenerarPdfDesdeSnapshot(id));
     },
   );
 
