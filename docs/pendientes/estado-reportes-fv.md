@@ -3,7 +3,7 @@
 Migración del sistema Python standalone (`~/Dev/Reporte_Fotovoltaico`) a Voltia PM.
 Última actualización: **2 de agosto de 2026 (tarde)**.
 
-## Fase 4 — Ingesta Growatt ✅ construida (falta corrida real contra la API)
+## Fase 4 — Ingesta Growatt ✅ verificada contra la API real
 
 `server/src/services/reportesFv/growatt/`:
 - `metricas.ts` — lógica pura (port de growatt_clientes.py): `resumirHistorialDiario`
@@ -33,15 +33,19 @@ Frontend: botón **"Traer datos de Growatt"** en el panel (dispara + polling del
 progreso) y modal **Plantas Growatt** (`PlantasGrowattModal.tsx`: sincronizar,
 vincular con sugerencias, ignorar).
 
-**Verificado**: 7 tests de la lógica pura; catálogo de plantas (148: 44
-vinculadas, 5 sin vincular con sugerencias, 99 ignoradas); tsc server+client en 0.
+**Verificado contra la API real (3 ago 2026)**: con `GROWATT_API_TOKEN` seteado
+en el `.env` local (copiado del proyecto Python; `.env` está gitignoreado):
+- `POST /growatt/sincronizar` → 152 plantas en 4s (trajo 4 nuevas vs las 148 de
+  la migración).
+- Ingesta de un generador (Germán Fernández, junio, force) → **33 requests**
+  (1 generación + 1 device_list + 1 meter_list + 30 días de meter_data), ~38s,
+  estado OK. La lectura quedó con fuente GROWATT, cobertura 30/30, consumo derivado
+  correcto, y disparó el recálculo. Una corrida de las 44 plantas serían ~28 min.
+- 7 tests de la lógica pura; tsc server+client en 0.
 
-**FALTA — corrida real contra la API de Growatt**: necesita `GROWATT_API_TOKEN`
-(hoy vacío en local). El token de Voltia estaba hardcodeado en el script Python
-(`bqp7dd06...`) — NO se migró por ser un secreto. Setearlo en `docker-compose.yml`
-(o `.env`) y en prod. Una ingesta completa son ~30 requests × N plantas (~20 min
-para 44 plantas con el rate limit). Probar primero con `POST /growatt/sincronizar`
-(1-2 requests) y luego una ingesta de un `projectId` puntual antes del lote.
+**Para prod**: setear `GROWATT_API_TOKEN` en `docker-compose.prod.yml`. El token
+NO está en el repo (era el hardcodeado del script Python; vive sólo en los `.env`
+locales, ignorados por git).
 
 **Futuro — multi-marca (Huawei, Fronius)**: hay clientes con esas marcas. El
 diseño ya separa la lógica pura (`metricas.ts`, reusable) del cliente HTTP

@@ -4,6 +4,13 @@
 
 ### 2 de agosto de 2026
 
+#### Reportes fotovoltaicos — datos automáticos desde Growatt
+
+- Nuevo botón **"Traer datos de Growatt"** en el panel de Reportes FV: trae la generación, el consumo y la exportación del mes de cada generador directamente desde Growatt, sin cargarlos a mano. Muestra el progreso mientras corre.
+- Si a un mes le faltan días de datos del medidor (menos del 90%), se descarta ese mes en vez de mostrar un total incompleto, y queda señalado para completarlo a mano.
+- Los datos cargados a mano no se pisan con los de Growatt.
+- Nuevo panel **Plantas Growatt** para vincular cada planta con su generador (con sugerencias automáticas por nombre) y marcar las que no son de clientes.
+
 #### Reportes fotovoltaicos — envío al cliente y portal
 
 - Desde el panel de Reportes FV ahora se puede **enviar el reporte al cliente por email**, con el PDF adjunto. El envío requiere confirmación (no se manda solo) y tiene un botón de **prueba** que simula el envío sin mandar nada, para chequear a quién iría.
