@@ -1,17 +1,21 @@
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, FileText, Search, Send } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, Download, FileText, Search, Send } from "lucide-react";
+import toast from "react-hot-toast";
 
 import { usePermission } from "../../../hooks/usePermission";
 import { ResponsiveTable, type Column } from "../../../components/ui/ResponsiveTable";
 import { Spinner } from "../../../components/ui/Spinner";
 import {
+  dispararIngesta,
+  getIngesta,
   getPanel,
   getPeriodos,
   type EstadoGenerador,
   type FilaPanel,
 } from "../../../api/reportesFv.api";
 import { ReporteFvDetalle } from "../components/ReporteFvDetalle";
+import { PlantasGrowattModal } from "../components/PlantasGrowattModal";
 
 // El semáforo de estados: mismo patrón de tokens que el resto del módulo.
 const ESTADO_BADGE: Record<EstadoGenerador, string> = {
@@ -54,10 +58,15 @@ function KpiCard({ label, value, tone }: { label: string; value: number; tone?: 
 
 export function ReportesFvPanel() {
   const canView = usePermission("EXPERIENCIA_CLIENTES", "VIEW");
+  const canCreate = usePermission("EXPERIENCIA_CLIENTES", "CREATE");
+  const qc = useQueryClient();
   const [periodo, setPeriodo] = useState<string>("");
   const [search, setSearch] = useState("");
   const [soloConProblemas, setSoloConProblemas] = useState(false);
   const [detalleId, setDetalleId] = useState<string | null>(null);
+  const [plantasAbierto, setPlantasAbierto] = useState(false);
+  const [ingestaId, setIngestaId] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { data: periodos = [] } = useQuery({
     queryKey: ["reportes-fv", "periodos"],
@@ -73,6 +82,40 @@ export function ReportesFvPanel() {
     queryFn: () => getPanel(periodoActivo),
     enabled: canView && Boolean(periodoActivo),
   });
+
+  // Ingesta: dispara y hace polling del progreso hasta que termina.
+  const [ingestaProgreso, setIngestaProgreso] = useState<string | null>(null);
+  useEffect(() => {
+    if (!ingestaId) return;
+    pollRef.current = setInterval(async () => {
+      const i = await getIngesta(ingestaId);
+      setIngestaProgreso(`${i.plantasOk + i.plantasError}/${i.plantasTotal} plantas`);
+      if (i.estado !== "EN_CURSO") {
+        if (pollRef.current) clearInterval(pollRef.current);
+        setIngestaId(null);
+        setIngestaProgreso(null);
+        const detalle = i.plantasError > 0 ? ` (${i.plantasError} con error)` : "";
+        if (i.estado === "OK") toast.success(`Ingesta completa: ${i.plantasOk} plantas`);
+        else if (i.estado === "PARCIAL") toast.success(`Ingesta parcial: ${i.plantasOk} ok${detalle}`);
+        else toast.error(`Ingesta con error${i.errorMessage ? `: ${i.errorMessage}` : detalle}`);
+        qc.invalidateQueries({ queryKey: ["reportes-fv", "panel"] });
+      }
+    }, 3000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [ingestaId, qc]);
+
+  async function iniciarIngesta() {
+    try {
+      const { ingestaId: id } = await dispararIngesta(periodoActivo);
+      setIngestaId(id);
+      setIngestaProgreso("iniciando…");
+      toast.success("Ingesta iniciada — trayendo datos de Growatt");
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message ?? "No se pudo iniciar la ingesta");
+    }
+  }
 
   const generadores = useMemo(() => {
     let items = panel?.generadores ?? [];
@@ -199,6 +242,31 @@ export function ReportesFvPanel() {
           />
           Solo con pendientes
         </label>
+
+        {canCreate && (
+          <div className="ml-auto flex items-center gap-2">
+            {ingestaProgreso && (
+              <span className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+                <Spinner size={13} /> {ingestaProgreso}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => setPlantasAbierto(true)}
+              className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)]"
+            >
+              Plantas Growatt
+            </button>
+            <button
+              type="button"
+              disabled={Boolean(ingestaId)}
+              onClick={iniciarIngesta}
+              className="flex items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+            >
+              <Download size={14} /> Traer datos de Growatt
+            </button>
+          </div>
+        )}
       </div>
 
       {/* KPIs */}
@@ -240,6 +308,8 @@ export function ReportesFvPanel() {
           onClose={() => setDetalleId(null)}
         />
       )}
+
+      {plantasAbierto && <PlantasGrowattModal onClose={() => setPlantasAbierto(false)} />}
     </div>
   );
 }

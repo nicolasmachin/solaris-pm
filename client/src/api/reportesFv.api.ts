@@ -315,3 +315,65 @@ export async function enviarLote(
   );
   return data;
 }
+
+// ─── Ingesta Growatt ─────────────────────────────────────────────────────────
+
+export interface IngestaEstado {
+  id: string;
+  periodo: string;
+  estado: "EN_CURSO" | "OK" | "PARCIAL" | "ERROR" | "CANCELADA";
+  plantasTotal: number;
+  plantasOk: number;
+  plantasError: number;
+  requests: number;
+  iniciadaEn: string;
+  terminadaEn: string | null;
+  errorMessage: string | null;
+  errores: Array<{ plantId: string; projectId: string | null; error: string | null }>;
+}
+
+export interface PlantaGrowattRow {
+  plantId: string;
+  name: string;
+  status: string | null;
+  peakPowerKw: number | null;
+  ignorada: boolean;
+  projectId: string | null;
+  projectName: string | null;
+  sugerencias: Array<{ id: string; clientName: string }>;
+}
+
+export async function dispararIngesta(
+  periodo: string,
+  opts: { projectIds?: string[]; force?: boolean } = {},
+): Promise<{ ingestaId: string }> {
+  const { data } = await apiClient.post<{ ingestaId: string }>("/api/reportes-fv/ingesta", {
+    periodo,
+    ...opts,
+  });
+  return data;
+}
+
+export async function getIngesta(id: string): Promise<IngestaEstado> {
+  const { data } = await apiClient.get<IngestaEstado>(`/api/reportes-fv/ingesta/${id}`);
+  return data;
+}
+
+export async function getPlantasGrowatt(): Promise<PlantaGrowattRow[]> {
+  const { data } = await apiClient.get<{ plantas: PlantaGrowattRow[] }>("/api/reportes-fv/growatt/plantas");
+  return data.plantas;
+}
+
+export async function sincronizarPlantas(): Promise<{ total: number; nuevas: number }> {
+  const { data } = await apiClient.post<{ total: number; nuevas: number }>(
+    "/api/reportes-fv/growatt/sincronizar",
+  );
+  return data;
+}
+
+export async function vincularPlanta(
+  plantId: string,
+  input: { projectId: string | null; ignorada?: boolean },
+): Promise<void> {
+  await apiClient.post(`/api/reportes-fv/growatt/plantas/${plantId}/vincular`, input);
+}

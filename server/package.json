@@ -14,6 +14,7 @@
     "db:seed": "node --import tsx prisma/seed.ts",
     "test:reportes-fv": "node --import tsx --test src/services/reportesFv/motor/metrics.test.ts",
     "test:reportes-fv-habiles": "node --import tsx --test src/services/reportesFv/motor/diasHabiles.test.ts",
+    "test:reportes-fv-growatt": "node --import tsx --test src/services/reportesFv/growatt/metricas.test.ts",
     "test:reportes-fv-golden": "node --import tsx --test src/services/reportesFv/motor/serie.golden.test.ts",
     "test:proposal": "node --import tsx --test src/services/proposal/calculator.test.ts",
     "test:proposal-template": "node --import tsx --test src/services/proposal/template.test.ts",

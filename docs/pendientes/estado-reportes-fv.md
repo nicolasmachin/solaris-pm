@@ -1,7 +1,52 @@
 # Estado — Reportes fotovoltaicos mensuales
 
 Migración del sistema Python standalone (`~/Dev/Reporte_Fotovoltaico`) a Voltia PM.
-Última actualización: **2 de agosto de 2026**.
+Última actualización: **2 de agosto de 2026 (tarde)**.
+
+## Fase 4 — Ingesta Growatt ✅ construida (falta corrida real contra la API)
+
+`server/src/services/reportesFv/growatt/`:
+- `metricas.ts` — lógica pura (port de growatt_clientes.py): `resumirHistorialDiario`
+  (suma del máximo diario de cada día), `diasConMuestras`, `contarDiasEsperados`,
+  `derivarMetricas` (consumo = generación + importación − exportación; descarta el
+  mes si la cobertura < 90%). **7 unit tests** (`test:reportes-fv-growatt`).
+- `client.ts` — cliente HTTP fetch de la Open API v1. Token **obligatorio por env**
+  (`GROWATT_API_TOKEN`), sin default. Retry con backoff, pausa entre llamadas
+  (rate limit 10012). Endpoints: `plant/list` (paginado perpage=100), `plant/energy`
+  (generación mensual), `device/list` (dataloggers type===3), `device/ammeter/meter_list`,
+  `device/ammeter/meter_data` (día por día — la API devuelve sólo el último día de
+  un rango).
+- `plantas.service.ts` — `sincronizarPlantas` (catálogo → GrowattPlant),
+  `listarPlantasConSugerencias` (matching por nombre sólo como sugerencia),
+  `vincularPlanta`.
+- `ingesta.service.ts` — `ingerirPeriodo` (in-process, devuelve id + polling) /
+  `ejecutarIngesta`. Resumible: cada planta se persiste apenas termina, y una
+  corrida saltea las que ya tienen lectura completa (salvo force). Concurrencia
+  entre plantas (env `REPORTES_FV_GROWATT_CONCURRENCIA`, default 3). Merge que
+  respeta MANUAL (Growatt no pisa un valor cargado a mano salvo force). Al final
+  recalcula las series tocadas.
+
+Endpoints: `GET /growatt/plantas`, `POST /growatt/sincronizar`, `POST
+/growatt/plantas/:id/vincular`, `POST /ingesta`, `GET /ingesta/:id`.
+
+Frontend: botón **"Traer datos de Growatt"** en el panel (dispara + polling del
+progreso) y modal **Plantas Growatt** (`PlantasGrowattModal.tsx`: sincronizar,
+vincular con sugerencias, ignorar).
+
+**Verificado**: 7 tests de la lógica pura; catálogo de plantas (148: 44
+vinculadas, 5 sin vincular con sugerencias, 99 ignoradas); tsc server+client en 0.
+
+**FALTA — corrida real contra la API de Growatt**: necesita `GROWATT_API_TOKEN`
+(hoy vacío en local). El token de Voltia estaba hardcodeado en el script Python
+(`bqp7dd06...`) — NO se migró por ser un secreto. Setearlo en `docker-compose.yml`
+(o `.env`) y en prod. Una ingesta completa son ~30 requests × N plantas (~20 min
+para 44 plantas con el rate limit). Probar primero con `POST /growatt/sincronizar`
+(1-2 requests) y luego una ingesta de un `projectId` puntual antes del lote.
+
+**Futuro — multi-marca (Huawei, Fronius)**: hay clientes con esas marcas. El
+diseño ya separa la lógica pura (`metricas.ts`, reusable) del cliente HTTP
+(`client.ts`, específico de Growatt). Para agregar una marca: nuevo `client` por
+proveedor + extender `origenDatos` y el selector de proveedor en la ingesta.
 
 ## Fase 7 — Envío por email + portal del cliente ✅ (verificado por API)
 
@@ -322,7 +367,6 @@ inversión sólo degrada la sección de retorno. Antes estaba todo junto y dejab
 
 | Fase | Estado |
 |---|---|
-| 4 — Ingesta Growatt (+ Huawei/Fronius a futuro) | pendiente |
 | 8 — Crons mensuales | pendiente |
 
 Con 1, 2, 3, 5, 6, 7 y 9 hechas, el ciclo manual está completo: dar de alta,

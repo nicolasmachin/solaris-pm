@@ -27,6 +27,13 @@ import { upsertLecturaManual } from "../services/reportesFv/lecturas.service.js"
 import { recalcularSerie } from "../services/reportesFv/calculo.service.js";
 import { generarEmision, regenerarPdfDesdeSnapshot } from "../services/reportesFv/emision.service.js";
 import { enviarEmision, enviarLote } from "../services/reportesFv/envio.service.js";
+import { getIngesta, ingerirPeriodo } from "../services/reportesFv/growatt/ingesta.service.js";
+import {
+  listarPlantasConSugerencias,
+  sincronizarPlantas,
+  vincularPlanta,
+} from "../services/reportesFv/growatt/plantas.service.js";
+import { ReporteFvIngestaModo } from "@prisma/client";
 
 const periodoSchema = z
   .string()
@@ -328,6 +335,71 @@ export async function registerReportesFvRoutes(app: FastifyInstance) {
         })
         .parse(request.body);
       return enviarLote(periodo, { projectIds, dryRun, userId: request.user!.id });
+    },
+  );
+
+  // ─── Ingesta Growatt ─────────────────────────────────────────────────────────
+
+  // Catálogo de plantas Growatt + sugerencias de vínculo.
+  app.get(
+    "/reportes-fv/growatt/plantas",
+    { preHandler: authorize(EXP, Action.VIEW) },
+    async () => ({ plantas: await listarPlantasConSugerencias() }),
+  );
+
+  // Sincronizar el catálogo con la API (trae plantas nuevas).
+  app.post(
+    "/reportes-fv/growatt/sincronizar",
+    { preHandler: authorize(EXP, Action.EDIT) },
+    async () => sincronizarPlantas(),
+  );
+
+  // Vincular / desvincular / ignorar una planta.
+  app.post(
+    "/reportes-fv/growatt/plantas/:plantId/vincular",
+    { preHandler: authorize(EXP, Action.EDIT) },
+    async (request) => {
+      const { plantId } = z.object({ plantId: z.string().regex(/^\d+$/) }).parse(request.params);
+      const body = z
+        .object({ projectId: z.string().nullable(), ignorada: z.boolean().optional() })
+        .parse(request.body);
+      await vincularPlanta(plantId, body, request.user!.id);
+      return { ok: true };
+    },
+  );
+
+  // Disparar la ingesta de un periodo (corre en background; devuelve el id).
+  app.post(
+    "/reportes-fv/ingesta",
+    { preHandler: authorize(EXP, Action.CREATE) },
+    async (request, reply) => {
+      const body = z
+        .object({
+          periodo: periodoSchema,
+          projectIds: z.array(z.string()).optional(),
+          force: z.boolean().optional(),
+        })
+        .parse(request.body);
+      const { ingestaId } = await ingerirPeriodo({
+        periodo: body.periodo,
+        modo: ReporteFvIngestaModo.MANUAL,
+        projectIds: body.projectIds,
+        force: body.force,
+        userId: request.user!.id,
+      });
+      return reply.code(202).send({ ingestaId });
+    },
+  );
+
+  // Progreso de una corrida de ingesta (para polling).
+  app.get(
+    "/reportes-fv/ingesta/:id",
+    { preHandler: authorize(EXP, Action.VIEW) },
+    async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const ingesta = await getIngesta(id);
+      if (!ingesta) throw notFound("INGESTA_NO_ENCONTRADA", "La corrida de ingesta no existe");
+      return ingesta;
     },
   );
 }
