@@ -18,7 +18,7 @@ import { useAuthStore } from "../store/auth.store";
 const CURRENT_YEAR = new Date().getFullYear();
 
 type StatusFilter = "todas" | "PENDIENTE" | "PAGADA";
-type SortKey = "fecha" | "monto";
+type SortKey = "fecha" | "monto" | "cliente";
 
 function fmtUsd(v: number) {
   return "US$ " + v.toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -178,6 +178,7 @@ export function ComisionesAsesor() {
             {([
               ["fecha", "Por fecha"],
               ["monto", "Por monto"],
+              ["cliente", "Por cliente"],
             ] as const).map(([v, l]) => (
               <button key={v} onClick={() => setSort(v)} className={filterBtn(sort === v)}>
                 {l}

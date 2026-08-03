@@ -24,6 +24,11 @@
 #### Comisiones — la gerencia comercial ve las de todo el equipo
 
 - **Gerencia comercial** (y administración) ahora ve las comisiones de **todos los asesores** y puede **filtrar por persona** con un selector arriba de la pantalla ("Todos los asesores" o uno en particular). Cada asesor sigue viendo solo las suyas.
+- El listado se puede **ordenar por cliente** (alfabético), además de por fecha y por monto.
+
+#### Comisiones — cargar la comisión desde el proyecto (solo admin)
+
+- En la vista de un proyecto, el **administrador** ve una tarjeta **"Comisión del asesor"** (visible solo para admin) que precarga la comisión con el **asesor que cerró la venta** y el **3% del presupuesto** del proyecto. Al cargarla se abre el formulario con esos valores ya puestos, pero **editables** (asesor, monto, fecha). Si el proyecto ya tiene una comisión, avisa para no duplicar.
 
 #### Portal del cliente — panel "Mi energía"
 

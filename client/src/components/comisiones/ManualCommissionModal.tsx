@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
@@ -13,17 +13,38 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+// Valores con los que abrir el modal precargado (ej. desde la vista de proyecto:
+// asesor de la venta + 3% del presupuesto). Todos editables por el usuario.
+export interface ManualCommissionInitial {
+  asesorId?: string;
+  montoUsd?: number | null;
+  fecha?: string; // YYYY-MM-DD
+  concepto?: string;
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
+  initial?: ManualCommissionInitial;
 }
 
-export function ManualCommissionModal({ open, onClose }: Props) {
+export function ManualCommissionModal({ open, onClose, initial }: Props) {
   const qc = useQueryClient();
   const [asesorId, setAsesorId] = useState("");
   const [monto, setMonto] = useState("");
   const [fecha, setFecha] = useState(today());
   const [concepto, setConcepto] = useState("");
+
+  // Al abrir, precargar desde `initial` (si viene). Se hace en un effect para que
+  // reabrir el modal con otros valores los refresque.
+  useEffect(() => {
+    if (!open) return;
+    setAsesorId(initial?.asesorId ?? "");
+    setMonto(initial?.montoUsd != null ? String(initial.montoUsd) : "");
+    setFecha(initial?.fecha || today());
+    setConcepto(initial?.concepto ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const asesoresQ = useQuery({
     queryKey: ["assignable-users"],

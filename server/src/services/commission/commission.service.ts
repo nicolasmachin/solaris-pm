@@ -367,6 +367,64 @@ export async function createManualCommission(
   return serializeCommission(commission);
 }
 
+// ─── Preview de comisión desde la vista de proyecto (admin) ──────────────────
+
+/** Porcentaje de comisión sugerido al cargarla desde un proyecto. */
+export const COMISION_PORCENTAJE_SUGERIDO = 3;
+
+export interface ProjectCommissionPreview {
+  clientName: string;
+  budgetUsd: number | null;
+  porcentajeSugerido: number;
+  montoSugeridoUsd: number | null;
+  asesorId: string | null;
+  asesorName: string | null;
+  fechaVenta: string | null; // YYYY-MM-DD
+  yaExisteComision: boolean;
+}
+
+// Datos para precargar el modal de comisión manual desde un proyecto: el asesor
+// que cerró la venta (del lead convertido) y el 3% del presupuesto. Todo editable
+// después en el modal.
+export async function getProjectCommissionPreview(projectId: string): Promise<ProjectCommissionPreview> {
+  const project = await prisma.project.findFirst({
+    where: { id: projectId, deletedAt: null },
+    select: { id: true, clientName: true, budgetUsd: true, saleDate: true },
+  });
+  if (!project) throw notFound("PROJECT_NOT_FOUND", "El proyecto no existe");
+
+  const lead = await prisma.salesLead.findFirst({
+    where: { convertedToProjectId: projectId, assignedToId: { not: null } },
+    orderBy: { createdAt: "asc" },
+    select: { assignedToId: true, assignedTo: { select: { name: true } } },
+  });
+
+  const budget = project.budgetUsd != null ? Number(project.budgetUsd) : null;
+  const montoSugerido =
+    budget != null ? Math.round(budget * COMISION_PORCENTAJE_SUGERIDO) / 100 : null;
+
+  // ¿El/los lead(s) convertido(s) ya tienen comisión (auto-congelada al ganar)?
+  const leadIds = (
+    await prisma.salesLead.findMany({
+      where: { convertedToProjectId: projectId },
+      select: { id: true },
+    })
+  ).map((l) => l.id);
+  const yaExisteComision =
+    leadIds.length > 0 && (await prisma.commission.count({ where: { leadId: { in: leadIds } } })) > 0;
+
+  return {
+    clientName: project.clientName,
+    budgetUsd: budget,
+    porcentajeSugerido: COMISION_PORCENTAJE_SUGERIDO,
+    montoSugeridoUsd: montoSugerido,
+    asesorId: lead?.assignedToId ?? null,
+    asesorName: lead?.assignedTo?.name ?? null,
+    fechaVenta: project.saleDate ? project.saleDate.toISOString().slice(0, 10) : null,
+    yaExisteComision,
+  };
+}
+
 // ─── Edición / borrado (admin) ───────────────────────────────────────────────
 
 function fmtFechaCorta(d: Date): string {
@@ -528,7 +586,7 @@ export interface ListCommissionsFilter {
   asesorId?: string;
   status?: CommissionStatus;
   year?: number;
-  sort?: "fecha" | "monto";
+  sort?: "fecha" | "monto" | "cliente";
 }
 
 export async function listCommissions(filter: ListCommissionsFilter): Promise<CommissionListItem[]> {
@@ -550,12 +608,20 @@ export async function listCommissions(filter: ListCommissionsFilter): Promise<Co
     include: { lead: { select: { clientName: true } }, asesor: { select: { name: true } } },
   });
 
-  return rows.map((r) => ({
+  const items = rows.map((r) => ({
     ...serializeCommission(r),
     // Para las manuales (sin lead) mostramos el concepto.
     leadClientName: r.lead?.clientName ?? r.concepto ?? "Comisión manual",
     asesorName: r.asesor?.name ?? "",
   }));
+
+  // El orden por cliente se hace acá (no en Prisma) porque el nombre mostrado es
+  // derivado: lead.clientName para las de venta, concepto para las manuales.
+  if (filter.sort === "cliente") {
+    items.sort((a, b) => a.leadClientName.localeCompare(b.leadClientName, "es", { sensitivity: "base" }));
+  }
+
+  return items;
 }
 
 // Comisión de un lead puntual (o null). Para el panel del lead y el aviso al reabrir.

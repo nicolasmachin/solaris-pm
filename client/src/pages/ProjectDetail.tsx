@@ -25,6 +25,7 @@ import { ProjectGantt } from "../components/project/ProjectGantt";
 import { DocumentsStrip } from "../components/project/DocumentsStrip";
 import { MoreDataSection } from "../components/project/MoreDataSection";
 import { PesoObraCard } from "../components/project/PesoObraCard";
+import { ProjectCommissionCard } from "../components/project/ProjectCommissionCard";
 import { Spinner } from "../components/ui/Spinner";
 import { DeleteConfirmModal } from "../components/ui/DeleteConfirmModal";
 import { Button } from "../components/ui/Button";
@@ -36,6 +37,7 @@ import { CanAccess } from "../components/ui/CanAccess";
 import { getProjectGantt } from "../api/metrics.api";
 import { installationCheck } from "../api/calendar.api";
 import { usePermission } from "../hooks/usePermission";
+import { useAuthStore } from "../store/auth.store";
 import {
   formatSolarSystemPanels,
   formatSolarSystemPrimary,
@@ -789,6 +791,7 @@ export function ProjectDetail() {
   const canViewObra = usePermission("OPERACIONES", "VIEW");
   // Borrado lógico del proyecto: el endpoint DELETE /projects/:id exige OPERACIONES:EDIT.
   const canDeleteProject = usePermission("OPERACIONES", "EDIT");
+  const isAdmin = useAuthStore((s) => s.user?.role === "ADMIN");
   // Borrar un sistema fotovoltaico adicional: el endpoint DELETE exige OPERACIONES:DELETE.
   const canDeleteSystem = usePermission("OPERACIONES", "DELETE");
   // El tab "Compras" es la lista colaborativa de materiales (Ingeniería +
@@ -1013,6 +1016,9 @@ export function ProjectDetail() {
 
       {/* Peso de obra (métrica ponderada) — editable solo ADMIN */}
       <PesoObraCard projectId={project.id} pesoObra={project.pesoObra} />
+
+      {/* Comisión del asesor (3% del presupuesto) — solo ADMIN */}
+      {isAdmin && <ProjectCommissionCard projectId={project.id} />}
 
       {/* Documentos destacados */}
       <DocumentsStrip projectId={project.id} />

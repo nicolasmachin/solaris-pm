@@ -52,7 +52,7 @@ export interface EligibleProposalsResult {
 
 export interface CommissionListParams {
   status?: CommissionStatus;
-  sort?: "fecha" | "monto";
+  sort?: "fecha" | "monto" | "cliente";
   year?: number;
   asesorId?: string;
   // "mine" (propias) o "all" (todas, para ADMIN/FINANZAS).
@@ -116,6 +116,23 @@ export async function updateCommission(
 }
 
 // Borrar una comisión y su movimiento en Finanzas (solo ADMIN).
+export interface ProjectCommissionPreview {
+  clientName: string;
+  budgetUsd: number | null;
+  porcentajeSugerido: number;
+  montoSugeridoUsd: number | null;
+  asesorId: string | null;
+  asesorName: string | null;
+  fechaVenta: string | null;
+  yaExisteComision: boolean;
+}
+
+// Preview admin-only para precargar la comisión desde la vista de proyecto.
+export async function getProjectCommissionPreview(projectId: string): Promise<ProjectCommissionPreview> {
+  const { data } = await api.get<ProjectCommissionPreview>(`/api/projects/${projectId}/commission-preview`);
+  return data;
+}
+
 export async function deleteCommission(id: string): Promise<{ liberatedApplications: number }> {
   const { data } = await api.delete<{ liberatedApplications: number }>(`/api/commissions/${id}`);
   return data;

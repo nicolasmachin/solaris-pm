@@ -17,6 +17,7 @@ import {
   createManualCommission,
   deleteCommission,
   getLeadCommission,
+  getProjectCommissionPreview,
   listCommissions,
   listEligibleProposals,
   updateCommission,
@@ -42,7 +43,7 @@ const listQuery = z
   .object({
     asesorId: z.string().min(1).optional(),
     status: z.nativeEnum(CommissionStatus).optional(),
-    sort: z.enum(["fecha", "monto"]).optional(),
+    sort: z.enum(["fecha", "monto", "cliente"]).optional(),
     year: z.coerce.number().int().optional(),
   })
   .strict();
@@ -218,6 +219,20 @@ export async function registerCommissionRoutes(app: FastifyInstance) {
       const asesorId = seeAll ? q.asesorId : user.id;
       const year = q.year ?? new Date().getUTCFullYear();
       return commissionMetrics({ asesorId, year });
+    },
+  );
+
+  // Preview para cargar la comisión desde la vista de proyecto. Solo ADMIN.
+  // Devuelve el asesor de la venta y el 3% del presupuesto para precargar el
+  // modal manual (todo editable después).
+  app.get(
+    "/projects/:projectId/commission-preview",
+    { preHandler: authorize(Module.COMISIONES, Action.VIEW) },
+    async (request) => {
+      const user = ensureUser(request);
+      if (user.role !== "ADMIN") throw forbidden("Solo un administrador puede cargar comisiones desde el proyecto.");
+      const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
+      return getProjectCommissionPreview(projectId);
     },
   );
 }
