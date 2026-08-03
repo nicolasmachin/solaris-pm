@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { Download, Search, SlidersHorizontal, Trash2, Upload, UserCheck, UserPlus } from "lucide-react";
+import { Download, Search, Send, SlidersHorizontal, Trash2, Upload, UserCheck, UserPlus } from "lucide-react";
 
 import {
   deleteCliente,
@@ -24,6 +24,7 @@ import { ActiveFilterChips, ClientesFilters } from "../components/ClientesFilter
 import { EditableCell } from "../components/EditableCell";
 import { ImportClientesModal } from "../components/ImportClientesModal";
 import { CrearUsuarioModal } from "../components/CrearUsuarioModal";
+import { ReenviarAccesoModal } from "../components/ReenviarAccesoModal";
 import { EtapaChip } from "../components/EtapaChip";
 import { DEPARTAMENTOS_UY, ESTADO_LABELS, RECORRIDO_SHORT } from "../constants";
 import { useClientes } from "../hooks/useClientes";
@@ -101,6 +102,7 @@ export function ClientesPage() {
   const canDelete = usePermission("EXPERIENCIA_CLIENTES", "DELETE");
   const [importOpen, setImportOpen] = useState(false);
   const [crearUserFor, setCrearUserFor] = useState<ClienteListItem | null>(null);
+  const [reenviarAccesoFor, setReenviarAccesoFor] = useState<ClienteListItem | null>(null);
   const updateCliente = useUpdateCliente();
   function saveField(projectId: string, patch: Parameters<typeof updateCliente.mutateAsync>[0]["patch"]) {
     return updateCliente.mutateAsync({ projectId, patch }).then(() => undefined);
@@ -371,9 +373,24 @@ export function ClientesPage() {
       label: "Usuario",
       render: (c) =>
         c.hasPortalUser ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-green-500/15 px-2 py-0.5 text-[11px] font-medium text-green-400">
-            <UserCheck className="h-3.5 w-3.5" /> Con acceso
-          </span>
+          <div className="inline-flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 rounded-full bg-green-500/15 px-2 py-0.5 text-[11px] font-medium text-green-400">
+              <UserCheck className="h-3.5 w-3.5" /> Con acceso
+            </span>
+            {canCreate && (
+              <button
+                type="button"
+                title="Reenviar acceso (resetea la contraseña y arma el mensaje)"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setReenviarAccesoFor(c);
+                }}
+                className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-card-hover)] hover:text-[var(--color-text-primary)]"
+              >
+                <Send className="h-3 w-3" /> Reenviar
+              </button>
+            )}
+          </div>
         ) : canCreate ? (
           <button
             type="button"
@@ -449,6 +466,10 @@ export function ClientesPage() {
 
       {crearUserFor && (
         <CrearUsuarioModal cliente={crearUserFor} onClose={() => setCrearUserFor(null)} />
+      )}
+
+      {reenviarAccesoFor && (
+        <ReenviarAccesoModal cliente={reenviarAccesoFor} onClose={() => setReenviarAccesoFor(null)} />
       )}
 
       <DeleteConfirmModal

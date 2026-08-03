@@ -32,6 +32,69 @@ export type CreatePortalUserResult = {
   linked: boolean;
 };
 
+export type ResetPortalUserParams = {
+  projectId: string;
+  newPassword: string;
+  actorUserId: string;
+};
+
+export type ResetPortalUserResult = {
+  userId: string;
+  name: string;
+  email: string;
+};
+
+// Resetea la contraseña del usuario de portal (Generador) vinculado al proyecto,
+// dejándola como temporal (el cliente la cambia en el próximo ingreso). Sirve
+// para reenviar el acceso: como la contraseña original no se guarda en texto
+// plano, "reenviar" implica generar una nueva. Mismo gate que crear
+// (EXPERIENCIA_CLIENTES.CREATE). Espejo del reset de Admin.
+export async function resetPortalUserPassword(
+  params: ResetPortalUserParams,
+): Promise<ResetPortalUserResult> {
+  const result = await prisma.$transaction(async (tx) => {
+    const project = await tx.project.findFirst({
+      where: { id: params.projectId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!project) throw notFound("PROJECT_NOT_FOUND", "El proyecto no existe o está borrado");
+
+    const links = await tx.projectClient.findMany({
+      where: { projectId: project.id, user: { deletedAt: null, role: { name: "CLIENT" } } },
+      include: { user: { select: { id: true, name: true, email: true } } },
+    });
+    if (links.length === 0) {
+      throw badRequest("NO_PORTAL_USER", "Este generador no tiene un usuario de portal");
+    }
+    if (links.length > 1) {
+      throw badRequest(
+        "AMBIGUOUS_PORTAL_USER",
+        "El generador tiene más de un usuario de portal; reseteá la contraseña desde Admin",
+      );
+    }
+    const target = links[0].user;
+
+    const hashed = await bcrypt.hash(params.newPassword, 10);
+    const updated = await tx.user.update({
+      where: { id: target.id },
+      data: { password: hashed, passwordTemporary: true },
+      select: { id: true, name: true, email: true },
+    });
+    return updated;
+  });
+
+  await createAuditEntry({
+    entityType: AuditEntityType.user,
+    entityId: result.id,
+    projectId: params.projectId,
+    userId: params.actorUserId,
+    action: AuditAction.updated,
+    description: `Reseteó la contraseña del usuario de portal '${result.name}' (${result.email}) desde Experiencia Solar`,
+  });
+
+  return { userId: result.id, name: result.name, email: result.email };
+}
+
 export async function createPortalUserForProject(
   params: CreatePortalUserParams,
 ): Promise<CreatePortalUserResult> {

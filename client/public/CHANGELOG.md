@@ -21,10 +21,19 @@
 
 - En la **evolución mensual** de comisiones, la barra azul ahora muestra lo **generado cada mes** (por fecha de venta, cuando se ganó el proyecto) en lugar de lo proyectado por mes de vencimiento. La barra verde de lo **cobrado** queda igual.
 
+#### Experiencia Solar — reenviar el acceso al portal
+
+- En el listado de Generadores, los clientes que **ya tienen acceso** ahora muestran un botón **"Reenviar"** al lado de "Con acceso". Sirve para volver a mandar el mensaje de WhatsApp cuando el cliente lo perdió o nunca lo usó: genera una **nueva contraseña temporal** y arma el mensaje listo para copiar (antes, el botón para copiar el mensaje solo aparecía en el momento de crear la cuenta y después ya no se podía recuperar).
+
 #### Reportes fotovoltaicos — tarifas por año y corrección de históricos
 
 - Los reportes ahora usan el **pliego tarifario de UTE del año de cada mes** (2024, 2025 o 2026), en vez de aplicar los precios de 2026 a todos los meses. Esto corrige el ahorro histórico y el retorno de la inversión, que quedaban inflados en los clientes con meses de años anteriores.
 - Se **reincorporaron meses de historial que se habían perdido** en varios generadores, con lo que el retorno acumulado vuelve a reflejar toda la trayectoria del cliente (por ejemplo, un cliente pasó de mostrar 8 meses a sus 19 reales).
+
+#### Arreglos
+
+- **Los permisos ahora se actualizan solos.** Cuando un administrador le agrega (o le quita) un permiso a un rol, el cambio toma efecto en la **próxima vez que la persona recarga la app**, sin necesidad de cerrar sesión y volver a entrar. Antes los permisos quedaban "congelados" desde el login, así que un permiso recién otorgado no aparecía hasta re-loguear.
+- Al crear el acceso al portal de un cliente desde **Experiencia Solar**, el mensaje para copiar y enviar por WhatsApp ahora es **el mismo** que el de Admin (saludo con el nombre, email, contraseña temporal y link al portal), en vez de un texto más escueto y distinto.
 
 ## v8.3
 

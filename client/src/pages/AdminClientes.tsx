@@ -13,6 +13,7 @@ import {
   type ClientCreateInput,
   type ClientPatchInput,
 } from '../api/clients.api';
+import { buildPortalWelcomeMessage } from '../lib/portalWelcomeMessage';
 
 function klass(...p: (string | false | undefined)[]) {
   return p.filter(Boolean).join(' ');
@@ -550,16 +551,7 @@ function CredentialsModal({
 }) {
   const [copied, setCopied] = useState(false);
   const portalUrl = `${window.location.origin}/portal`;
-  const message = `Hola ${name.split(' ')[0]},
-
-Te creamos un acceso al portal de Voltia para que veas el avance de tu trámite UTE.
-
-Email: ${email}
-Contraseña temporal: ${password}
-Link: ${portalUrl}
-
-Te pedirá cambiar la contraseña al ingresar.
-Cualquier duda, escribinos.`;
+  const message = buildPortalWelcomeMessage({ name, email, password });
 
   function copy() {
     navigator.clipboard.writeText(message).then(() => {

@@ -183,6 +183,25 @@ export async function crearPortalUser(
   return data;
 }
 
+export interface ResetPortalUserResult {
+  userId: string;
+  name: string;
+  email: string;
+}
+
+// Resetea la contraseña del usuario de portal del proyecto a una nueva temporal
+// (para reenviar el acceso). Requiere permiso EXPERIENCIA_CLIENTES:CREATE.
+export async function resetPortalUser(
+  projectId: string,
+  temporaryPassword: string,
+): Promise<ResetPortalUserResult> {
+  const { data } = await apiClient.post<ResetPortalUserResult>(
+    `/api/clientes/${projectId}/portal-user/reset`,
+    { temporaryPassword },
+  );
+  return data;
+}
+
 // ─── Importación CSV ─────────────────────────────────────────────────────────
 
 export interface ImportRowData {

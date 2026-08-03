@@ -129,24 +129,36 @@ function PermissionRoute({
 }
 
 export function App() {
-  const { token, user, permissions, setAuth, clearAuth } = useAuthStore();
+  const { token, user, permissions } = useAuthStore();
   const [bootstrappingAuth, setBootstrappingAuth] = useState(false);
 
   useEffect(() => {
     if (!token) return;
-    if (user && (user.role === "ADMIN" || permissions.length > 0)) return;
 
     let cancelled = false;
-    setBootstrappingAuth(true);
+
+    // Si ya hay auth cacheada (usuario + permisos, o ADMIN) la usamos para el
+    // render inmediato, pero IGUAL revalidamos contra /users/me en cada carga.
+    // Así un permiso que un admin agregó (o quitó) al rol toma efecto en la
+    // próxima carga de la app, sin tener que desloguear y volver a entrar.
+    // Antes se retornaba temprano cuando había permisos cacheados y quedaban
+    // congelados en localStorage indefinidamente.
+    const snap = useAuthStore.getState();
+    const teniaAuth = Boolean(snap.user && (snap.user.role === "ADMIN" || snap.permissions.length > 0));
+    if (!teniaAuth) setBootstrappingAuth(true);
 
     getMe()
       .then((me) => {
         if (cancelled) return;
-        setAuth(token, { id: me.id, name: me.name, email: me.email, role: me.role as UserRole }, me.permissions);
+        useAuthStore
+          .getState()
+          .setAuth(token, { id: me.id, name: me.name, email: me.email, role: me.role as UserRole }, me.permissions);
       })
       .catch(() => {
         if (cancelled) return;
-        clearAuth();
+        // Un error transitorio de red no debe desloguear a alguien con auth
+        // válida cacheada: sólo limpiamos si no teníamos nada para mostrar.
+        if (!teniaAuth) useAuthStore.getState().clearAuth();
       })
       .finally(() => {
         if (!cancelled) setBootstrappingAuth(false);
@@ -155,7 +167,9 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, [token, user, permissions, setAuth, clearAuth]);
+    // Sólo al montar / cambiar el token. NO dependemos de user/permissions para
+    // no re-disparar en loop cuando setAuth los actualiza (los leemos con getState).
+  }, [token]);
 
   if (token && bootstrappingAuth && (!user || (user.role !== "ADMIN" && permissions.length === 0))) {
     return null;

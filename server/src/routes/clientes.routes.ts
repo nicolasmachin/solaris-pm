@@ -31,7 +31,7 @@ import {
 } from "../services/clientes/index.js";
 import { updateProjectClientFields } from "../services/project-fields.service.js";
 import { confirmImport, previewImport } from "../services/clientes/import.service.js";
-import { createPortalUserForProject } from "../services/clientes/portal-user.service.js";
+import { createPortalUserForProject, resetPortalUserPassword } from "../services/clientes/portal-user.service.js";
 import { badRequest, forbidden, notFound, unauthorized } from "../utils/errors.js";
 import {
   addressValue,
@@ -220,6 +220,24 @@ export async function registerClientesRoutes(app: FastifyInstance) {
       });
       reply.code(201);
       return result;
+    },
+  );
+
+  // Reenviar acceso: resetea la contraseña del usuario de portal del proyecto a
+  // una nueva temporal. Gateado por EXPERIENCIA_CLIENTES.CREATE (igual que crear).
+  const resetPortalUserSchema = z.object({ temporaryPassword: z.string().min(8) });
+  app.post(
+    "/clientes/:projectId/portal-user/reset",
+    { preHandler: authorize(Module.EXPERIENCIA_CLIENTES, Action.CREATE) },
+    async (request) => {
+      const user = ensureUser(request);
+      const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
+      const body = resetPortalUserSchema.parse(request.body);
+      return resetPortalUserPassword({
+        projectId,
+        newPassword: body.temporaryPassword,
+        actorUserId: user.id,
+      });
     },
   );
 

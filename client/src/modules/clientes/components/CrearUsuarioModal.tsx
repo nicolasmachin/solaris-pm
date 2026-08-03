@@ -5,6 +5,7 @@ import { Check, Copy, KeyRound, User, X } from "lucide-react";
 
 import { crearPortalUser, type ClienteListItem, type CrearPortalUserResult } from "../../../api/clientes.api";
 import { Button } from "../../../components/ui/Button";
+import { buildPortalWelcomeMessage } from "../../../lib/portalWelcomeMessage";
 import { useLockBodyScroll } from "../../../hooks/useLockBodyScroll";
 
 // Contraseña temporal por defecto. El cliente la cambia en el primer ingreso
@@ -50,10 +51,15 @@ export function CrearUsuarioModal({ cliente, onClose }: { cliente: ClienteListIt
   const puedeCrear = name.trim().length > 0 && emailValido && password.length >= 8;
 
   async function copiarCredenciales() {
-    const texto = `Acceso a Voltia PM\nUsuario: ${done?.email ?? email.trim()}\nContraseña temporal: ${password}\nIngresá en el portal y cambiala en el primer ingreso.`;
+    const texto = buildPortalWelcomeMessage({
+      name,
+      email: done?.email ?? email.trim(),
+      password,
+    });
     try {
       await navigator.clipboard.writeText(texto);
       setCopied(true);
+      toast.success("Mensaje copiado");
       setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.error("No se pudo copiar");
@@ -112,7 +118,7 @@ export function CrearUsuarioModal({ cliente, onClose }: { cliente: ClienteListIt
                 </div>
                 <Button variant="secondary" size="sm" onClick={copiarCredenciales} className="w-full">
                   {copied ? <Check size={14} className="mr-1.5" /> : <Copy size={14} className="mr-1.5" />}
-                  {copied ? "Copiado" : "Copiar credenciales"}
+                  {copied ? "Copiado" : "Copiar mensaje"}
                 </Button>
               </>
             )}
