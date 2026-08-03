@@ -40,6 +40,12 @@ export interface ReporteFvPdfInput {
   tarifaContratadaLabel: string; // vacío si residencial
   mes: string; // "junio 2026"
   mesAnterior: string;
+  /**
+   * Cómo se describe el período cubierto. Mes calendario → false + textos vacíos.
+   * Con día de corte → true + `periodoTexto` ("del 24 de mayo al 23 de junio").
+   */
+  tienePeriodoMedidor: boolean;
+  periodoTexto: string;
   fechaInst: string;
   potencia: string;
   potInst: string;

@@ -1,8 +1,40 @@
 # Novedades
 
+## v8.4
+
+### 3 de agosto de 2026
+
+#### Reporte semanal de indicadores por email
+
+- Todos los **lunes a las 00:01** (hora de Uruguay), al arrancar la semana, llega un email con los **indicadores de la semana que cerró** (lunes a domingo), tomados de los datos de la app: leads, propuestas enviadas, nuevas ventas, facturación vendida, visitas comerciales, gastos registrados e instalaciones habilitadas (con kWp).
+- Las **ventas cerradas** y las **visitas** vienen **listadas** una por una (cliente y asesor; en las ventas también el monto de la cotización con IVA). El resto son totales.
+- Incluye el **avance de las metas** del trimestre en curso (leads, propuestas, cierres, instalaciones, kWp) frente al objetivo cargado, marcando en verde lo que va en ritmo.
+- En **Métricas** hay una nueva pestaña **"Reporte semanal"** que muestra este informe en pantalla, y desde ahí un administrador puede **enviar el mail del momento** con un botón (útil para probar sin esperar al lunes).
+
+#### Comisiones — editar, borrar y ajustar fechas
+
+- El administrador ahora puede **editar y borrar** las comisiones de los asesores desde el listado de Comisiones (botón "Editar" en cada fila).
+- Se pueden ajustar las **dos fechas**: la **fecha vendida** (define a qué mes se carga la comisión) y la **fecha de pago prevista** (por defecto el 1° del mes siguiente; si se cambia a mano, deja de recalcularse sola). También se puede corregir el monto.
+- Cada cambio **re-sincroniza** el pendiente en Finanzas y queda **registrado** (con quién y cuándo lo modificó); la comisión muestra una marca "editada".
+
 ## v8.3
 
 ### 3 de agosto de 2026
+
+#### Reportes fotovoltaicos — historial de reportes del cliente
+
+- En la ficha de cada generador, la pestaña **Reporte / PDF** ahora muestra el **historial completo de reportes** de ese cliente: cualquier mes generado, con su versión y estado, para **verlo en pantalla o descargar el PDF** al instante. Ya no hace falta cambiar de período para llegar a un reporte viejo.
+
+#### Reportes fotovoltaicos — filtros en el listado
+
+- El listado de generadores del panel de Reportes FV ahora tiene **filtros completos**: por estado (varios a la vez, con chips), por alta (dados de alta / sin alta), origen de datos (Growatt / manual), tipo de cliente (residencial / empresa), envío (enviados / pendientes) y PDF (con o sin PDF generado), más los atajos "potencia estimada", "sin destinatario" y "con pendientes".
+- Se puede combinar cualquier filtro con la búsqueda por nombre. Un contador muestra cuántos generadores quedan visibles y un botón **Limpiar filtros** vuelve todo a cero.
+
+#### Reportes fotovoltaicos — alinear con tu factura de UTE
+
+- Cada reporte puede seguir el **ciclo de facturación de UTE** en vez del mes calendario. Si se carga el **día de corte del medidor**, el reporte cubre ese período (por ejemplo, del 24 de mayo al 23 de junio) para que los kWh se parezcan más a los de la factura; cuando se usa el ciclo, el sistema pide a Growatt los datos día por día y controla que la suma cierre con el mes.
+- El día de corte se puede cargar desde el **panel interno** (en la configuración del generador) o, mejor aún, lo carga el **propio cliente desde el portal**: en la sección "Mis reportes solares" ahora hay un lugar para ingresarlo. Si no se carga nada, se sigue usando el mes calendario.
+- La nota del PDF que explica por qué los montos pueden no coincidir con la factura ahora **invita al cliente a cargar su día de corte en app.voltia.com.uy**; cuando ya está cargado, el reporte aclara el período exacto que abarca.
 
 #### Reportes fotovoltaicos — manual de uso
 

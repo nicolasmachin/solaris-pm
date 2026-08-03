@@ -46,6 +46,54 @@ export async function getProjectGantt(projectId: string): Promise<ProjectGanttRe
   return data;
 }
 
+// ─── Reporte semanal ─────────────────────────────────────────────────────────
+
+export interface WeeklyReportVenta {
+  cliente: string;
+  asesor: string | null;
+  montoUsd: number | null;
+}
+
+export interface WeeklyReportVisita {
+  cliente: string;
+  asesor: string | null;
+}
+
+export interface WeeklyReportMeta {
+  etiqueta: string;
+  actual: number;
+  objetivo: number;
+  porcentaje: number;
+  enRitmo: boolean;
+}
+
+export interface WeeklyReport {
+  semana: { inicio: string; fin: string; semanaIso: number; anioIso: number; etiqueta: string };
+  trimestre: { inicio: string; fin: string; anio: number; trimestre: number };
+  leads: number;
+  propuestasEnviadas: number;
+  ventas: WeeklyReportVenta[];
+  facturacionVendidaUsd: number;
+  visitas: WeeklyReportVisita[];
+  gastosRegistrados: number;
+  instalaciones: number;
+  kwp: number;
+  metas: WeeklyReportMeta[];
+  destinatario: string;
+}
+
+export async function getWeeklyReport(): Promise<WeeklyReport> {
+  const { data } = await apiClient.get<WeeklyReport>("/api/metrics/weekly-report");
+  return data;
+}
+
+export async function sendWeeklyReport(): Promise<{ ok: boolean; destinatario?: string; message?: string }> {
+  const { data } = await apiClient.post<{ ok: boolean; destinatario?: string; message?: string }>(
+    "/api/metrics/weekly-report/send",
+  );
+  return data;
+}
+
 // ─── Goals ───────────────────────────────────────────────────────────────────
 
 export async function getGoals(params?: { area?: GoalArea; year?: number }): Promise<Record<string, GoalData[]>> {

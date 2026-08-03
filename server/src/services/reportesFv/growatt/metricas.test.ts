@@ -11,6 +11,7 @@ import {
   resumirHistorialDiario,
   type MuestraMedidor,
 } from "./metricas.js";
+import { rangoDelPeriodo } from "../periodo.js";
 
 function muestra(dia: string, imp: number, exp: number): MuestraMedidor {
   return { time: `${dia} 12:00:00`, positiveActiveTodayEnergy: imp, reverseActiveTodayEnergy: exp };
@@ -93,4 +94,34 @@ test("derivarMetricas deja consumo null si falta generación", () => {
   });
   assert.equal(r.consumoKwh, null);
   assert.equal(r.exportacionKwh, 50); // exportación sí se mide
+});
+
+test("rangoDelPeriodo sin día de corte = mes calendario", () => {
+  const r = rangoDelPeriodo("2026-06", null);
+  assert.equal(r.desde, "2026-06-01");
+  assert.equal(r.hasta, "2026-06-30");
+  assert.equal(r.dias, 30);
+  assert.equal(r.esCalendario, true);
+});
+
+test("rangoDelPeriodo con día de corte = ciclo del medidor", () => {
+  // Día de corte 23: el reporte de junio va del 24 de mayo al 23 de junio.
+  const r = rangoDelPeriodo("2026-06", 23);
+  assert.equal(r.desde, "2026-05-24");
+  assert.equal(r.hasta, "2026-06-23");
+  assert.equal(r.esCalendario, false);
+  assert.equal(r.dias, 31); // 24-31 mayo (8) + 1-23 junio (23) = 31
+});
+
+test("rangoDelPeriodo acota el día de corte a meses cortos", () => {
+  // Día de corte 31 en febrero → se acota al último día de cada mes.
+  const r = rangoDelPeriodo("2026-02", 31);
+  assert.equal(r.hasta, "2026-02-28"); // febrero se acota a 28
+  assert.equal(r.desde, "2026-02-01"); // 31 de enero + 1 = 1 de febrero
+});
+
+test("rangoDelPeriodo cruza el año", () => {
+  const r = rangoDelPeriodo("2026-01", 23);
+  assert.equal(r.desde, "2025-12-24");
+  assert.equal(r.hasta, "2026-01-23");
 });

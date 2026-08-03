@@ -3203,6 +3203,14 @@ model Commission {
   createdById String
   createdBy   User   @relation("CommissionCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
 
+  // Edición admin de una comisión ya congelada (fechas / monto). Deja registro
+  // visible de que fue modificada; el detalle fino va al audit log.
+  editadoAt   DateTime? @db.Timestamptz(6)
+  notaEdicion String?
+  // True si el admin fijó la fecha de pago prevista a mano: al cambiar la fecha
+  // de venta ya no se recalcula sola al 1° del mes siguiente.
+  dueDateManual Boolean @default(false)
+
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 
@@ -3443,6 +3451,14 @@ model ReporteFvConfig {
 
   envioAutomatico Boolean @default(false)
   notasFijas      String?
+
+  // Día de corte del medidor de UTE (1-31, aproximado). null = el reporte cubre
+  // el mes calendario (default). Si está seteado, el ciclo va del día siguiente
+  // al corte del mes anterior hasta el corte del mes en curso, así los kWh del
+  // reporte coinciden con el período que factura UTE. Lo puede cargar el cliente
+  // desde el portal o el equipo desde el panel. UTE corre la lectura por fines de
+  // semana/feriados, por eso es aproximado.
+  diaCorteMedidor Int?
 
   destinatarios ReporteFvDestinatario[]
 

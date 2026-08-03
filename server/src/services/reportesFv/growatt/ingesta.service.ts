@@ -17,8 +17,16 @@ import {
 
 import { prisma } from "../../../lib/prisma.js";
 import { recalcularSerie } from "../calculo.service.js";
-import { mesDePeriodo, anioDePeriodo, type Periodo, periodoADate, ultimoDiaDelPeriodo } from "../periodo.js";
-import { dataloggersSmartMeter, generacionMensual, growattDormir, growattPausaMs, medidoresDeDatalogger, muestrasDelDia } from "./client.js";
+import { type Periodo, periodoADate, rangoDelPeriodo, ultimoDiaDelPeriodo } from "../periodo.js";
+import {
+  dataloggersSmartMeter,
+  generacionDiaria,
+  generacionMensual,
+  growattDormir,
+  growattPausaMs,
+  medidoresDeDatalogger,
+  muestrasDelDia,
+} from "./client.js";
 import { contarDiasEsperados, derivarMetricas, type MuestraMedidor } from "./metricas.js";
 
 const CONCURRENCIA = Math.max(1, Number(process.env.REPORTES_FV_GROWATT_CONCURRENCIA ?? 3));
@@ -99,12 +107,21 @@ export async function ejecutarIngesta(ingestaId: string, opts: OpcionesIngesta):
     select: { plantId: true, projectId: true, name: true },
   });
 
+  const projectIds = plantas.map((p) => p.projectId!).filter(Boolean);
+
   // Skip inteligente: las que ya tienen lectura completa del periodo se saltean.
   const lecturas = await prisma.reporteFvLectura.findMany({
-    where: { periodo: fecha, projectId: { in: plantas.map((p) => p.projectId!).filter(Boolean) } },
+    where: { periodo: fecha, projectId: { in: projectIds } },
     select: { projectId: true, generacionKwh: true, consumoKwh: true, exportacionKwh: true, generacionFuente: true, consumoFuente: true, exportacionFuente: true },
   });
   const lecturaPorProyecto = new Map(lecturas.map((l) => [l.projectId, l]));
+
+  // Día de corte del medidor por proyecto (null = mes calendario).
+  const configs = await prisma.reporteFvConfig.findMany({
+    where: { projectId: { in: projectIds } },
+    select: { projectId: true, diaCorteMedidor: true },
+  });
+  const diaCortePorProyecto = new Map(configs.map((c) => [c.projectId, c.diaCorteMedidor]));
 
   const objetivo = plantas.filter((p) => {
     if (opts.force) return true;
@@ -134,9 +151,7 @@ export async function ejecutarIngesta(ingestaId: string, opts: OpcionesIngesta):
           plantId: planta.plantId.toString(),
           projectId: planta.projectId!,
           periodo: opts.periodo,
-          inicioStr,
-          finStr,
-          diasEsperados,
+          diaCorte: diaCortePorProyecto.get(planta.projectId!) ?? null,
           force: opts.force ?? false,
           onRequest: () => requests++,
         });
@@ -200,13 +215,11 @@ async function ingerirPlanta(params: {
   plantId: string;
   projectId: string;
   periodo: Periodo;
-  inicioStr: string;
-  finStr: string;
-  diasEsperados: number;
+  diaCorte: number | null;
   force: boolean;
   onRequest: () => void;
 }) {
-  const { plantId, inicioStr, finStr, diasEsperados, onRequest } = params;
+  const { plantId, periodo, diaCorte, onRequest } = params;
   let requests = 0;
   const req = <T>(p: Promise<T>): Promise<T> => {
     requests++;
@@ -214,27 +227,73 @@ async function ingerirPlanta(params: {
     return p;
   };
 
-  const generacion = await req(generacionMensual(plantId, inicioStr, finStr));
-  await growattDormir(growattPausaMs);
+  // El rango que cubre el reporte: mes calendario (default) o ciclo del medidor.
+  const rango = rangoDelPeriodo(periodo, diaCorte);
+  const diasEsperados = contarDiasEsperados(rango.desdeDate, rango.hastaDate, new Date());
+  let notaValidacion: string | null = null;
+  let generacion: number | null;
 
-  // Smart meter: dataloggers tipo 3 → medidores → muestras día por día.
+  if (rango.esCalendario) {
+    // Mes calendario: la generación mensual directa es más barata (1 request).
+    generacion = await req(generacionMensual(plantId, rango.desde, rango.hasta));
+    await growattDormir(growattPausaMs);
+  } else {
+    // Ciclo del medidor: se necesita generación DIARIA. Se pide un rango que
+    // cubre el ciclo Y el mes calendario del periodo, para validar la suma
+    // contra la generación mensual conocida.
+    const finMesCal = ultimoDiaDelPeriodo(periodo).toISOString().slice(0, 10);
+    const finPedido = rango.hasta > finMesCal ? rango.hasta : finMesCal;
+    const diaria = await generacionDiaria(plantId, rango.desde, finPedido, () => req(Promise.resolve()));
+
+    // Suma del ciclo → lo que va al reporte.
+    generacion = 0;
+    for (const [dia, kwh] of diaria) {
+      if (dia >= rango.desde && dia <= rango.hasta) generacion += kwh;
+    }
+    generacion = Math.round(generacion * 100) / 100;
+
+    // Validación: la suma diaria del mes calendario vs la generación mensual.
+    const mensualCal = await req(generacionMensual(plantId, `${periodo}-01`, finMesCal));
+    await growattDormir(growattPausaMs);
+    let sumaCal = 0;
+    let tieneCal = false;
+    for (const [dia, kwh] of diaria) {
+      if (dia.startsWith(periodo)) {
+        sumaCal += kwh;
+        tieneCal = true;
+      }
+    }
+    if (mensualCal != null && mensualCal > 0 && tieneCal) {
+      const dif = Math.abs(sumaCal - mensualCal);
+      if (dif / mensualCal > 0.05) {
+        notaValidacion =
+          `Aviso: la suma diaria del mes calendario (${sumaCal.toFixed(1)} kWh) difiere ` +
+          `${Math.round((dif / mensualCal) * 100)}% de la generación mensual de Growatt ` +
+          `(${mensualCal.toFixed(1)} kWh). Revisar los datos diarios.`;
+      }
+    }
+  }
+
+  // Smart meter: dataloggers tipo 3 → medidores → muestras día por día del rango.
   const dataloggers = await req(dataloggersSmartMeter(plantId));
   await growattDormir(growattPausaMs);
 
   const muestras: MuestraMedidor[] = [];
-  let motivoSinMedidor: string | null = dataloggers.length === 0 ? "la planta no tiene smart meter/datalogger tipo 3 visible" : null;
+  const motivoSinMedidor: string | null =
+    dataloggers.length === 0 ? "la planta no tiene smart meter/datalogger tipo 3 visible" : null;
 
   for (const datalogSn of dataloggers) {
     const medidores = await req(medidoresDeDatalogger(datalogSn));
     await growattDormir(growattPausaMs);
     for (const address of medidores) {
-      // meter_data devuelve sólo el último día de un rango → iterar día a día.
-      const [anio, mes] = [anioDePeriodo(params.periodo), mesDePeriodo(params.periodo)];
-      const diasMes = new Date(Date.UTC(anio, mes, 0)).getUTCDate();
-      for (let dia = 1; dia <= diasMes; dia++) {
-        const diaStr = `${params.periodo}-${String(dia).padStart(2, "0")}`;
+      // meter_data devuelve sólo el último día de un rango → iterar día a día
+      // sobre el rango del reporte (ciclo o mes calendario).
+      const dia = new Date(rango.desdeDate);
+      while (dia <= rango.hastaDate) {
+        const diaStr = dia.toISOString().slice(0, 10);
         const delDia = await req(muestrasDelDia(datalogSn, address, diaStr));
         muestras.push(...delDia);
+        dia.setUTCDate(dia.getUTCDate() + 1);
         await growattDormir(growattPausaMs);
       }
     }
@@ -248,7 +307,7 @@ async function ingerirPlanta(params: {
   });
   if (motivoSinMedidor && !metricas.motivoDescarte) metricas.motivoDescarte = motivoSinMedidor;
 
-  await guardarLecturaIngesta(params.projectId, params.periodo, metricas, params.force);
+  await guardarLecturaIngesta(params.projectId, periodo, metricas, params.force, notaValidacion);
   return { metricas, requests };
 }
 
@@ -270,6 +329,7 @@ async function guardarLecturaIngesta(
     motivoDescarte: string | null;
   },
   force: boolean,
+  notaValidacion: string | null = null,
 ): Promise<void> {
   const fecha = periodoADate(periodo);
   const existente = await prisma.reporteFvLectura.findUnique({
@@ -320,6 +380,9 @@ async function guardarLecturaIngesta(
     diasConDatos: metricas.diasConDatos,
     diasEsperados: metricas.diasEsperados,
     motivoFaltante: metricas.motivoDescarte,
+    // La nota de validación (suma diaria vs mensual) sólo se escribe si Growatt
+    // no la desactivó por MANUAL. Se conserva la nota manual si el usuario la puso.
+    ...(notaValidacion ? { nota: notaValidacion } : {}),
   };
 
   await prisma.reporteFvLectura.upsert({
@@ -336,6 +399,7 @@ async function guardarLecturaIngesta(
       diasConDatos: metricas.diasConDatos,
       diasEsperados: metricas.diasEsperados,
       motivoFaltante: metricas.motivoDescarte,
+      ...(notaValidacion ? { nota: notaValidacion } : {}),
     },
   });
 }

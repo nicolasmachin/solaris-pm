@@ -7,8 +7,19 @@ import { fmtDecimal, fmtInt, mesEs, duracionMeses } from "../format.js";
 import { type ConfigEfectiva, POTENCIA_CONTRATADA_DEFAULT } from "../config.service.js";
 import type { ResultadoPeriodo } from "../motor/serie.js";
 import type { TarifaKey } from "../motor/types.js";
-import { periodoAnterior } from "../periodo.js";
+import { periodoAnterior, rangoDelPeriodo } from "../periodo.js";
 import type { NotaPdf, ReporteFvPdfInput, TarifaPdf } from "./types.js";
+
+const MESES_TEXTO = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+];
+
+/** "del 24 de mayo al 23 de junio" a partir de un rango de ciclo. */
+function textoRango(rango: { desdeDate: Date; hastaDate: Date }): string {
+  const fmt = (d: Date) => `${d.getUTCDate()} de ${MESES_TEXTO[d.getUTCMonth()]}`;
+  return `del ${fmt(rango.desdeDate)} al ${fmt(rango.hastaDate)}`;
+}
 
 const ETIQUETA_TARIFA: Record<TarifaKey, string> = {
   simple: "Tarifa simple",
@@ -29,6 +40,8 @@ export interface ContextoPdf {
   mesInicio: string | null;
   /** La potencia se estimó en el valor por defecto (falta el dato real). */
   potenciaEstimada: boolean;
+  /** Día de corte del medidor (1-31), o null si el reporte es mes calendario. */
+  diaCorteMedidor?: number | null;
 }
 
 /** Contexto del PDF derivado de la config efectiva del generador. */
@@ -42,6 +55,7 @@ export function contextoDesdeConfig(config: ConfigEfectiva): ContextoPdf {
     inversionUsd: config.inversionUsd,
     mesInicio: config.mesInicio,
     potenciaEstimada: config.potenciaEstimada,
+    diaCorteMedidor: config.diaCorteMedidor,
   };
 }
 
@@ -103,12 +117,20 @@ export function construirPdfInput(r: ResultadoPeriodo, ctx: ContextoPdf): Report
   const tiempoTotalRetorno = r.mesesTotalesRetorno != null ? duracionMeses(r.mesesTotalesRetorno) : "-";
   const mesRetornoEstimado = r.mesRetornoEstimado ? mesEs(r.mesRetornoEstimado) : "-";
 
+  // Descripción del período: mes calendario (default) o ciclo del medidor.
+  const tienePeriodoMedidor = ctx.diaCorteMedidor != null;
+  const periodoTexto = tienePeriodoMedidor
+    ? textoRango(rangoDelPeriodo(r.periodo, ctx.diaCorteMedidor))
+    : "";
+
   return {
     cliente: ctx.cliente,
     esEmpresa: ctx.esEmpresa,
     tarifaContratadaLabel: ctx.esEmpresa && ctx.tarifaContratada ? ETIQUETA_TARIFA[ctx.tarifaContratada] : "",
     mes: mesEs(r.periodo),
     mesAnterior: mesEs(periodoAnterior(r.periodo)),
+    tienePeriodoMedidor,
+    periodoTexto,
     fechaInst: ctx.mesInicio ? mesEs(ctx.mesInicio) : "-",
     potencia: fmtInt(ctx.potenciaContratadaKw),
     potInst: fmtDecimal(ctx.potenciaInstaladaKwp, 2),

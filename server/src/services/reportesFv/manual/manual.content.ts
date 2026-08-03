@@ -4,7 +4,7 @@
 // una entrada al tope de MANUAL_CAMBIOS. La versión y el changelog salen impresos
 // en el PDF. El nombre del archivo descargado incluye la versión.
 
-export const MANUAL_VERSION = "1.0";
+export const MANUAL_VERSION = "1.1";
 export const MANUAL_ACTUALIZADO = "3 de agosto de 2026";
 
 export interface CambioManual {
@@ -15,6 +15,13 @@ export interface CambioManual {
 
 // Más reciente arriba.
 export const MANUAL_CAMBIOS: CambioManual[] = [
+  {
+    version: "1.1",
+    fecha: "3 de agosto de 2026",
+    cambios: [
+      "Nueva sección sobre el día de corte del medidor: alinear el reporte al ciclo de facturación de UTE, desde el panel o desde el portal del cliente.",
+    ],
+  },
   {
     version: "1.0",
     fecha: "3 de agosto de 2026",
@@ -85,6 +92,27 @@ comparadas y el retorno se calcula con la simple.
 
 Cuando guardás, el generador queda dado de alta y el sistema recalcula sus
 números al instante.
+
+### Día de corte del medidor (opcional)
+
+Por defecto el reporte cubre el **mes calendario** (del día 1 al último). Pero
+UTE no factura así: factura el período entre dos lecturas del medidor, que suele
+ir de mitad de mes a mitad del mes siguiente. Por eso los montos del reporte y
+los de la factura casi nunca coinciden exactamente.
+
+Si cargás el **día de corte del medidor** (el día en que UTE lee el medidor, que
+figura en la factura), el reporte pasa a cubrir **ese ciclo** en vez del mes
+calendario (por ejemplo, del 24 de mayo al 23 de junio). Así los kWh se parecen
+mucho más a los de la factura. Cuando usás el ciclo, el sistema le pide a Growatt
+los datos **día por día** y controla que la suma cierre con el total del mes.
+
+Hay dos formas de cargarlo:
+
+- **Desde el panel**, en la configuración del generador (campo *Día de corte del
+  medidor*). Dejalo vacío para volver al mes calendario.
+- **Desde el portal del cliente**: en "Mis reportes solares" el cliente tiene un
+  lugar para ingresar su propio día de corte. Es lo ideal, porque él tiene la
+  factura a mano. La nota del PDF ya lo invita a hacerlo.
 
 ---
 

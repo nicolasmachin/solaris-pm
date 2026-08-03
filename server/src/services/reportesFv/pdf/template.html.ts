@@ -146,7 +146,16 @@ export function renderReporteFvHtml(input: ReporteFvPdfInput): string {
                     </div>
                 </div>
                 <div class="note-box" style="margin-top: 14px;">
-                    <strong>¿Por qué estos montos no coinciden con mi factura de UTE?</strong>
+                    ${
+                      input.tienePeriodoMedidor
+                        ? `<strong>Sobre las diferencias con su factura de UTE.</strong>
+                    Este reporte cubre el período <strong>${esc(input.periodoTexto)}</strong>, alineado con su ciclo de
+                    lectura del medidor de UTE, para que los kWh se acerquen a los de su factura. Puede haber pequeñas
+                    diferencias porque UTE corre la fecha de lectura por fines de semana y feriados.
+                    Los precios utilizados son los del pliego tarifario vigente de UTE.
+                    A esto pueden sumarse conceptos ajenos al consumo que la factura incluye y este reporte no
+                    contempla, como multas o recargos por pagos fuera de fecha, o cargos de terceros.`
+                        : `<strong>¿Por qué estos montos no coinciden con mi factura de UTE?</strong>
                     Porque no cubren los mismos días. Este reporte analiza el <strong>mes calendario completo</strong>
                     (${esc(input.mes)}, del día 1 al último), mientras que UTE factura el período entre dos lecturas del
                     medidor, que normalmente va de mitad de mes a mitad del mes siguiente. Su factura, entonces,
@@ -156,6 +165,10 @@ export function renderReporteFvHtml(input: ReporteFvPdfInput): string {
                     Los precios utilizados son los del pliego tarifario vigente de UTE.
                     A esto pueden sumarse conceptos ajenos al consumo que la factura incluye y este reporte no
                     contempla, como multas o recargos por pagos fuera de fecha, o cargos de terceros.
+                    <br><br>¿Querés que este reporte quede alineado con las fechas de tu factura? Ingresá a
+                    <strong>app.voltia.com.uy</strong> y cargá tu día de corte del medidor (lo encontrás en tu
+                    factura de UTE); a partir del próximo reporte usaremos ese ciclo en lugar del mes calendario.`
+                    }
                 </div>
             </div>
         </div>

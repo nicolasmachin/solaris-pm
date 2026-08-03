@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Check, Download, FileText, Plus, RefreshCw, Send, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -24,6 +24,16 @@ const inp =
   "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]";
 const lbl = "block text-[11px] uppercase tracking-wider text-[var(--color-text-muted)] mb-1 font-mono";
 const num = `${inp} text-right tabular-nums`;
+
+const MESES_CORTO = [
+  "ene", "feb", "mar", "abr", "may", "jun",
+  "jul", "ago", "sep", "oct", "nov", "dic",
+];
+/** "jun 2026" a partir de un periodo "YYYY-MM". */
+function mesLabel(periodo: string): string {
+  const [a, m] = periodo.split("-");
+  return `${MESES_CORTO[Number(m) - 1] ?? m} ${a}`;
+}
 
 type Tab = "config" | "lectura" | "pdf";
 
@@ -141,6 +151,7 @@ function ConfigTab({
     mesInicio: c?.mesInicio ?? null,
     growattPlantId: c?.growattPlantId ?? null,
     notasFijas: c?.notasFijas ?? null,
+    diaCorteMedidor: c?.diaCorteMedidor ?? null,
   }));
   const [destinatarios, setDestinatarios] = useState<DestinatarioDto[]>(c?.destinatarios ?? []);
 
@@ -325,6 +336,22 @@ function ConfigTab({
             onChange={(e) => set("mesInicio", e.target.value || null)}
           />
         </div>
+        <div>
+          <label className={lbl}>Día de corte del medidor</label>
+          <input
+            className={inp}
+            type="number"
+            min={1}
+            max={31}
+            value={form.diaCorteMedidor ?? ""}
+            disabled={!canEdit}
+            placeholder="Mes calendario"
+            onChange={(e) => set("diaCorteMedidor", numeroOrNull(e.target.value))}
+          />
+          <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">
+            Vacío = mes calendario (1 al último). Con día de corte, el reporte cubre el ciclo de facturación de UTE.
+          </p>
+        </div>
       </div>
 
       {/* Destinatarios */}
@@ -499,6 +526,18 @@ function PdfTab({
   const vigente = emisionPeriodo[0] ?? null; // ya vienen ordenadas desc por version
   const [previewId, setPreviewId] = useState<string | null>(vigente?.id ?? null);
 
+  // Historial: la última versión de cada mes con reporte (todas las emisiones
+  // vienen ordenadas por periodo desc, version desc, así que la primera de cada
+  // periodo es la vigente).
+  const historial = useMemo(() => {
+    const vistos = new Set<string>();
+    return detalle.emisiones.filter((e) => {
+      if (vistos.has(e.periodo)) return false;
+      vistos.add(e.periodo);
+      return true;
+    });
+  }, [detalle.emisiones]);
+
   useEffect(() => {
     setPreviewId(vigente?.id ?? null);
   }, [vigente?.id]);
@@ -606,6 +645,59 @@ function PdfTab({
         <div className="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-400">
           <AlertTriangle size={14} className="mt-0.5 shrink-0" />
           No se puede generar el reporte hasta resolver los bloqueos en la pestaña Configuración.
+        </div>
+      )}
+
+      {/* Historial: todos los reportes del cliente, cualquier mes, descargables */}
+      {historial.length > 0 && (
+        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)]">
+          <div className="border-b border-[var(--color-border)] px-3 py-2 font-mono text-[11px] uppercase tracking-wider text-[var(--color-text-muted)]">
+            Historial de reportes ({historial.length})
+          </div>
+          <div className="max-h-40 divide-y divide-[var(--color-border)] overflow-auto">
+            {historial.map((e) => (
+              <div
+                key={e.id}
+                className={`flex items-center gap-2 px-3 py-1.5 text-sm ${
+                  e.id === previewId ? "bg-[var(--color-accent)]/5" : ""
+                }`}
+              >
+                <span className="w-20 font-medium capitalize text-[var(--color-text-primary)]">
+                  {mesLabel(e.periodo)}
+                </span>
+                <span className="text-xs text-[var(--color-text-muted)]">
+                  v{e.version} · {e.estado.toLowerCase()}
+                </span>
+                {e.enviado && (
+                  <span title="Enviado al cliente">
+                    <Check size={12} className="text-emerald-400" />
+                  </span>
+                )}
+                <div className="ml-auto flex items-center gap-1">
+                  {e.tienePdf ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewId(e.id)}
+                        className="rounded px-2 py-0.5 text-xs text-[var(--color-accent)] hover:underline"
+                      >
+                        Ver
+                      </button>
+                      <a
+                        href={reporteFvPdfUrl(e.id) + "?download=1"}
+                        title="Descargar PDF"
+                        className="rounded p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                      >
+                        <Download size={13} />
+                      </a>
+                    </>
+                  ) : (
+                    <span className="text-xs text-[var(--color-text-muted)]">sin PDF</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

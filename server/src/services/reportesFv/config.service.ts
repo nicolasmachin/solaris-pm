@@ -57,6 +57,8 @@ export interface ConfigEfectiva extends ConfigSerie {
    * El reporte lleva una nota y el envío requiere confirmación.
    */
   potenciaEstimada: boolean;
+  /** Día de corte del medidor (1-31), o null = el reporte cubre el mes calendario. */
+  diaCorteMedidor: number | null;
   destinatarios: Array<{ email: string; nombre: string | null; esCopia: boolean }>;
 }
 
@@ -181,6 +183,7 @@ export function resolverConfigEfectiva(
     tarifaContratada: config.tarifaContratada ? tarifaAKey(config.tarifaContratada) : null,
     heredados,
     potenciaEstimada,
+    diaCorteMedidor: config.diaCorteMedidor ?? null,
     bloqueosCalculo,
     // Todo lo que impide calcular también impide enviar.
     bloqueosEnvio: [...bloqueosCalculo, ...bloqueosEnvio],
@@ -246,6 +249,8 @@ export interface UpsertConfigInput {
   origenDatos?: "GROWATT" | "MANUAL";
   growattPlantId?: string | null;
   notasFijas?: string | null;
+  /** Día de corte del medidor de UTE (1-31). null = mes calendario. */
+  diaCorteMedidor?: number | null;
   /** Si viene, reemplaza el set completo de destinatarios. */
   destinatarios?: DestinatarioInput[];
 }
@@ -292,6 +297,12 @@ export async function upsertConfig(
     growattPlantId:
       input.growattPlantId === undefined ? undefined : input.growattPlantId ? BigInt(input.growattPlantId) : null,
     notasFijas: input.notasFijas === undefined ? undefined : input.notasFijas,
+    diaCorteMedidor:
+      input.diaCorteMedidor === undefined
+        ? undefined
+        : input.diaCorteMedidor == null
+          ? null
+          : Math.min(Math.max(Math.round(input.diaCorteMedidor), 1), 31),
     actualizadoPorId: userId,
   };
 
@@ -343,6 +354,50 @@ export async function upsertConfig(
       ? `Editó la config de reporte fotovoltaico`
       : `Dio de alta el reporte fotovoltaico del generador`,
   });
+}
+
+/**
+ * Setea SÓLO el día de corte del medidor. Pensado para el portal del cliente:
+ * el cliente ajusta a qué día corta su ciclo de facturación de UTE sin poder
+ * tocar ningún otro campo de la config. `null` vuelve a mes calendario.
+ */
+export async function setDiaCorteMedidorCliente(
+  projectId: string,
+  diaCorte: number | null,
+  userId: string,
+): Promise<number | null> {
+  const valor =
+    diaCorte == null ? null : Math.min(Math.max(Math.round(diaCorte), 1), 31);
+
+  await prisma.reporteFvConfig.upsert({
+    where: { projectId },
+    update: { diaCorteMedidor: valor, actualizadoPorId: userId },
+    // La rama create casi nunca corre (si hay reportes, ya hay config); los 4
+    // obligatorios quedan en 0 hasta que se complete la config desde el panel.
+    create: {
+      projectId,
+      diaCorteMedidor: valor,
+      actualizadoPorId: userId,
+      potenciaContratadaKw: 0,
+      pctPunta: 0,
+      pctLlano: 0,
+      pctValle: 0,
+    },
+  });
+
+  await createAuditEntry({
+    entityType: AuditEntityType.reporte_fv_config,
+    entityId: projectId,
+    projectId,
+    userId,
+    action: AuditAction.updated,
+    description:
+      valor == null
+        ? `El cliente volvió el reporte a mes calendario`
+        : `El cliente fijó el día de corte del medidor en ${valor}`,
+  });
+
+  return valor;
 }
 
 /** Tira si la config no alcanza para calcular los números. */

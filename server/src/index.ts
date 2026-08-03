@@ -13,6 +13,7 @@ import { startTraspasosJobs } from "./services/traspasos/index.js";
 import { startAvisoHabilitacionJob } from "./services/clientes/aviso-habilitacion.service.js";
 import { startEncuestasAniversarioJob } from "./services/encuestas/aniversario.job.js";
 import { startReportesFvJobs } from "./services/reportesFv/reportes-fv.job.js";
+import { startReporteSemanalJob } from "./services/reporteSemanal/reporte-semanal.job.js";
 import { formatErrorPayload } from "./utils/errors.js";
 
 if (process.env.NODE_ENV === "production") {
@@ -62,6 +63,7 @@ async function start() {
   startAvisoHabilitacionJob();
   startEncuestasAniversarioJob();
   startReportesFvJobs();
+  startReporteSemanalJob();
 
   // Startup check: notify admins if no goals for current quarter
   checkGoalsConfigured().catch((err) => console.error("[startup] checkGoalsConfigured failed:", err));

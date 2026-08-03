@@ -191,6 +191,7 @@ export interface DetalleGenerador {
     potenciaInstaladaKwp: number | null;
     mesInicio: string | null;
     notasFijas: string | null;
+    diaCorteMedidor: number | null;
     destinatarios: DestinatarioDto[];
     efectivo: {
       potenciaEstimada: boolean;
@@ -227,6 +228,7 @@ export interface GuardarConfigInput {
   origenDatos?: "GROWATT" | "MANUAL";
   growattPlantId?: string | null;
   notasFijas?: string | null;
+  diaCorteMedidor?: number | null;
   destinatarios?: DestinatarioDto[];
 }
 

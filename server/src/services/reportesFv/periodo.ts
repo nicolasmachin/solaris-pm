@@ -98,6 +98,69 @@ export function normalizarPeriodo(valor: string | Date | null | undefined): Peri
   return `${m[1]}-${String(mes).padStart(2, "0")}`;
 }
 
+export interface RangoCiclo {
+  /** Primer día del ciclo (inclusive), YYYY-MM-DD. */
+  desde: string;
+  /** Último día del ciclo (inclusive), YYYY-MM-DD. */
+  hasta: string;
+  desdeDate: Date;
+  hastaDate: Date;
+  /** Cantidad de días del ciclo (inclusive ambos extremos). */
+  dias: number;
+  /** true si es el mes calendario (sin día de corte). */
+  esCalendario: boolean;
+}
+
+/** Día D acotado a la cantidad de días del mes (anio, mes 1-based). */
+function diaValido(anio: number, mes: number, dia: number): number {
+  const diasMes = new Date(Date.UTC(anio, mes, 0)).getUTCDate();
+  return Math.min(Math.max(dia, 1), diasMes);
+}
+
+/**
+ * Rango de fechas que cubre el reporte de un periodo.
+ *
+ * Sin día de corte → el mes calendario completo (default).
+ * Con día de corte D → del día siguiente al corte del mes anterior hasta el
+ * corte del mes en curso, para que coincida con lo que factura UTE. El periodo
+ * se identifica por el mes de CIERRE (el del corte). Ej: periodo "2026-06",
+ * D=23 → del 2026-05-24 al 2026-06-23.
+ */
+export function rangoDelPeriodo(periodo: Periodo, diaCorte?: number | null): RangoCiclo {
+  const { anio, mes } = parsePeriodo(periodo);
+
+  if (diaCorte == null) {
+    const desdeDate = new Date(Date.UTC(anio, mes - 1, 1));
+    const hastaDate = ultimoDiaDelPeriodo(periodo);
+    return {
+      desde: desdeDate.toISOString().slice(0, 10),
+      hasta: hastaDate.toISOString().slice(0, 10),
+      desdeDate,
+      hastaDate,
+      dias: hastaDate.getUTCDate(),
+      esCalendario: true,
+    };
+  }
+
+  // Cierre = día de corte del mes del periodo (acotado a los días del mes).
+  const hastaDate = new Date(Date.UTC(anio, mes - 1, diaValido(anio, mes, diaCorte)));
+  // Inicio = día siguiente al corte del mes anterior.
+  const anteriorAnio = mes === 1 ? anio - 1 : anio;
+  const anteriorMes = mes === 1 ? 12 : mes - 1;
+  const corteAnterior = diaValido(anteriorAnio, anteriorMes, diaCorte);
+  const desdeDate = new Date(Date.UTC(anteriorAnio, anteriorMes - 1, corteAnterior + 1));
+
+  const dias = Math.floor((hastaDate.getTime() - desdeDate.getTime()) / 86_400_000) + 1;
+  return {
+    desde: desdeDate.toISOString().slice(0, 10),
+    hasta: hastaDate.toISOString().slice(0, 10),
+    desdeDate,
+    hastaDate,
+    dias,
+    esCalendario: false,
+  };
+}
+
 /**
  * Proporción de días hábiles (lunes a viernes) del mes.
  *

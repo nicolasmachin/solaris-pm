@@ -19,6 +19,7 @@ import { serializeDate } from "../utils/serialization.js";
 import { contentDisposition } from "../utils/content-disposition.js";
 import { getStoredFilePath } from "../services/file-storage.service.js";
 import { regenerarPdfDesdeSnapshot } from "../services/reportesFv/emision.service.js";
+import { setDiaCorteMedidorCliente } from "../services/reportesFv/config.service.js";
 import fs from "node:fs";
 
 // ─── Schemas ────────────────────────────────────────────────────────────────
@@ -1022,6 +1023,53 @@ export async function registerPortalRoutes(app: FastifyInstance) {
         if (fs.existsSync(absolutePath)) return reply.send(fs.createReadStream(absolutePath));
       }
       return reply.send(await regenerarPdfDesdeSnapshot(id));
+    },
+  );
+
+  // Día de corte del medidor de cada generador del cliente. Vacío = mes
+  // calendario. Le sirve al cliente para alinear el reporte a su ciclo de UTE.
+  app.get(
+    "/client/reportes/dia-corte",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.VIEW) },
+    async (request) => {
+      const user = ensureUser(request);
+      const configs = await prisma.reporteFvConfig.findMany({
+        where: { project: { deletedAt: null, clients: { some: { userId: user.id } } } },
+        select: {
+          diaCorteMedidor: true,
+          project: { select: { id: true, clientName: true } },
+        },
+        orderBy: { project: { clientName: "asc" } },
+      });
+      return {
+        generadores: configs.map((c) => ({
+          projectId: c.project.id,
+          projectName: c.project.clientName,
+          diaCorteMedidor: c.diaCorteMedidor,
+        })),
+      };
+    },
+  );
+
+  // El cliente fija (o borra) el día de corte de uno de sus generadores.
+  app.put(
+    "/client/reportes/:projectId/dia-corte",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.VIEW) },
+    async (request) => {
+      const user = ensureUser(request);
+      const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
+      const { diaCorteMedidor } = z
+        .object({ diaCorteMedidor: z.number().int().min(1).max(31).nullable() })
+        .parse(request.body);
+
+      const owned = await prisma.project.findFirst({
+        where: { id: projectId, deletedAt: null, clients: { some: { userId: user.id } } },
+        select: { id: true },
+      });
+      if (!owned) throw notFound("GENERADOR_NO_ENCONTRADO", "El generador no existe o no es tuyo");
+
+      const valor = await setDiaCorteMedidorCliente(projectId, diaCorteMedidor, user.id);
+      return { diaCorteMedidor: valor };
     },
   );
 

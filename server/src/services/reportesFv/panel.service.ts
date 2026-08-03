@@ -303,6 +303,7 @@ export async function getDetalleGenerador(projectId: string) {
           potenciaInstaladaKwp: dec(config.potenciaInstaladaKwp),
           mesInicio: config.mesInicio ? dateAPeriodo(config.mesInicio) : null,
           notasFijas: config.notasFijas,
+          diaCorteMedidor: config.diaCorteMedidor,
           destinatarios: config.destinatarios.map((d) => ({
             email: d.email,
             nombre: d.nombre,

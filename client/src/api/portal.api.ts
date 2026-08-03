@@ -162,3 +162,27 @@ export function portalReportePdfUrl(id: string): string {
   const base = apiClient.defaults.baseURL ?? "";
   return `${base}/api/client/reportes/${id}/pdf`;
 }
+
+export interface PortalDiaCorteRow {
+  projectId: string;
+  projectName: string;
+  diaCorteMedidor: number | null;
+}
+
+export async function getPortalDiaCorte(): Promise<PortalDiaCorteRow[]> {
+  const { data } = await apiClient.get<{ generadores: PortalDiaCorteRow[] }>(
+    "/api/client/reportes/dia-corte",
+  );
+  return data.generadores;
+}
+
+export async function setPortalDiaCorte(
+  projectId: string,
+  diaCorteMedidor: number | null,
+): Promise<number | null> {
+  const { data } = await apiClient.put<{ diaCorteMedidor: number | null }>(
+    `/api/client/reportes/${projectId}/dia-corte`,
+    { diaCorteMedidor },
+  );
+  return data.diaCorteMedidor;
+}

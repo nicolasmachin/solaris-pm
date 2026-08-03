@@ -130,6 +130,7 @@ import { notifyEngineeringCompleted } from "../services/notify.service.js";
 import { autoPromoteLeadToCotizado } from "../services/proposal/promote-lead.service.js";
 import { crearTraspasoSiNoExiste, STAGE_TO_TRASPASO, STAGE_TO_TRASPASO_EXTRA } from "../services/traspasos/index.js";
 import { fetchBcuRatePreview } from "../services/exchange-rate.service.js";
+import { recolectarDatos as recolectarReporteSemanal, ejecutarReporteSemanal } from "../services/reporteSemanal/reporte-semanal.job.js";
 import {
   applyDeadlineRulesToProject,
   countProjectManualOverrides,
@@ -4743,6 +4744,36 @@ export async function registerApiRoutes(app: FastifyInstance) {
       avgProposalToClose,
       goals: goalsData,
     };
+  });
+
+  // ─── Reporte semanal de indicadores ─────────────────────────────────────────
+  // Vista + envío manual del mismo informe que el cron manda los lunes 00:01
+  // (hora Uruguay). El envío siempre va al destinatario configurado
+  // (REPORTE_SEMANAL_EMAIL, default la casilla del owner), no al usuario actual.
+
+  app.get("/metrics/weekly-report", { preHandler: authorize(Module.METRICAS, Action.VIEW) }, async () => {
+    const datos = await recolectarReporteSemanal(new Date());
+    return {
+      ...datos,
+      destinatario: process.env.REPORTE_SEMANAL_EMAIL || "nfmj@hotmail.com",
+    };
+  });
+
+  app.post("/metrics/weekly-report/send", { preHandler: authorize(Module.METRICAS, Action.VIEW) }, async (request, reply) => {
+    const user = ensureUser(request);
+    // El mail se dispara a la casilla del owner: lo dejamos solo para ADMIN.
+    if (user.role !== "ADMIN") {
+      throw new AppError(403, "SOLO_ADMIN", "Solo un administrador puede disparar el envío del reporte semanal");
+    }
+    const ok = await ejecutarReporteSemanal(new Date());
+    if (!ok) {
+      return reply.status(502).send({
+        ok: false,
+        message: "No se pudo enviar el mail (¿SMTP configurado?). Revisá los logs del servidor.",
+      });
+    }
+    const destinatario = process.env.REPORTE_SEMANAL_EMAIL || "nfmj@hotmail.com";
+    return { ok: true, destinatario };
   });
 
   // ─── Goals CRUD ─────────────────────────────────────────────────────────────

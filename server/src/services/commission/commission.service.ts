@@ -63,6 +63,9 @@ export interface SerializedCommission {
   status: CommissionStatus;
   paidAt: string | null;
   financeMovementId: string | null;
+  editadoAt: string | null;
+  notaEdicion: string | null;
+  dueDateManual: boolean;
   createdAt: string;
 }
 
@@ -82,6 +85,9 @@ export function serializeCommission(c: CommissionRow): SerializedCommission {
     status: c.status,
     paidAt: c.paidAt ? c.paidAt.toISOString() : null,
     financeMovementId: c.financeMovementId,
+    editadoAt: c.editadoAt ? c.editadoAt.toISOString() : null,
+    notaEdicion: c.notaEdicion,
+    dueDateManual: c.dueDateManual,
     createdAt: c.createdAt.toISOString(),
   };
 }
@@ -359,6 +365,156 @@ export async function createManualCommission(
   });
 
   return serializeCommission(commission);
+}
+
+// ─── Edición / borrado (admin) ───────────────────────────────────────────────
+
+function fmtFechaCorta(d: Date): string {
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  return `${dd}/${mm}/${d.getUTCFullYear()}`;
+}
+
+export interface UpdateCommissionInput {
+  commissionId: string;
+  userId: string;
+  userName: string;
+  montoUsd?: number;
+  fechaVenta?: Date; // date-only en UTC
+  dueDate?: Date; // date-only en UTC
+  motivo?: string; // nota libre opcional del admin
+}
+
+// Edita una comisión ya congelada y re-sincroniza su movimiento en Finanzas.
+// - fechaVenta → mueve el movimiento a ese mes; si la fecha de pago no fue fijada
+//   a mano, se recalcula al 1° del mes siguiente.
+// - dueDate explícito → marca la fecha de pago como manual (ya no se recalcula).
+// - montoUsd → actualiza monto de la comisión y del movimiento.
+// Deja registro visible (editadoAt + notaEdicion) y una entrada de auditoría.
+export async function updateCommission(input: UpdateCommissionInput): Promise<SerializedCommission> {
+  const { commissionId, userId, userName } = input;
+
+  const commission = await prisma.commission.findUnique({
+    where: { id: commissionId },
+    include: { lead: { select: { clientName: true, convertedToProjectId: true } } },
+  });
+  if (!commission) throw notFound("COMMISSION_NOT_FOUND", "La comisión no existe.");
+
+  const nuevaFechaVenta = input.fechaVenta ?? commission.fechaVenta;
+
+  let dueDateManual = commission.dueDateManual;
+  let nuevaDueDate: Date;
+  if (input.dueDate) {
+    nuevaDueDate = input.dueDate;
+    dueDateManual = true;
+  } else if (input.fechaVenta && !dueDateManual) {
+    nuevaDueDate = firstDayOfNextMonth(nuevaFechaVenta);
+  } else {
+    nuevaDueDate = commission.dueDate;
+  }
+
+  const montoActual = Number(commission.montoUsd);
+  const nuevoMonto = input.montoUsd ?? montoActual;
+  if (!(nuevoMonto > 0)) throw badRequest("MONTO_INVALIDO", "El monto de comisión debe ser mayor a 0.");
+
+  // Nota de edición (registro visible).
+  const cambios: string[] = [];
+  if (input.montoUsd != null && input.montoUsd !== montoActual) cambios.push(`monto → USD ${nuevoMonto.toFixed(2)}`);
+  if (input.fechaVenta) cambios.push(`fecha vendida → ${fmtFechaCorta(nuevaFechaVenta)}`);
+  if (input.dueDate) cambios.push(`fecha de pago → ${fmtFechaCorta(nuevaDueDate)}`);
+  const now = new Date();
+  const notaBase = `Editada por ${userName} el ${fmtFechaCorta(now)}${cambios.length ? `: ${cambios.join(", ")}` : ""}`;
+  const nota = input.motivo?.trim() ? `${notaBase}. Motivo: ${input.motivo.trim()}` : notaBase;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.commission.update({
+      where: { id: commissionId },
+      data: {
+        montoUsd: new Prisma.Decimal(nuevoMonto),
+        fechaVenta: nuevaFechaVenta,
+        dueDate: nuevaDueDate,
+        dueDateManual,
+        editadoAt: now,
+        notaEdicion: nota,
+      },
+    });
+    if (commission.financeMovementId) {
+      await tx.financeMovement.update({
+        where: { id: commission.financeMovementId },
+        data: {
+          monto: new Prisma.Decimal(nuevoMonto),
+          fecha: nuevaFechaVenta,
+          mes: nuevaFechaVenta.getUTCMonth() + 1,
+          anio: nuevaFechaVenta.getUTCFullYear(),
+          dueDate: nuevaDueDate,
+        },
+      });
+    }
+  });
+
+  await createAuditEntry({
+    entityType: AuditEntityType.commission,
+    entityId: commissionId,
+    projectId: commission.lead?.convertedToProjectId ?? null,
+    userId,
+    action: AuditAction.updated,
+    description: nota,
+    metadata: { financeMovementId: commission.financeMovementId, montoAnterior: montoActual, montoNuevo: nuevoMonto },
+  });
+
+  const updated = await prisma.commission.findUnique({ where: { id: commissionId } });
+  return serializeCommission(updated!);
+}
+
+// Borra una comisión y su movimiento de Finanzas. Si el movimiento tenía pagos
+// aplicados (FIFO), libera las aplicaciones (el saldo del pago vuelve a estar
+// disponible). El movimiento se soft-deletea; la comisión se borra.
+export async function deleteCommission(input: {
+  commissionId: string;
+  userId: string;
+}): Promise<{ liberatedApplications: number }> {
+  const { commissionId, userId } = input;
+
+  const commission = await prisma.commission.findUnique({
+    where: { id: commissionId },
+    include: {
+      lead: { select: { clientName: true, convertedToProjectId: true } },
+      financeMovement: {
+        include: {
+          paymentApplications: {
+            where: { payment: { deletedAt: null } },
+            select: { id: true },
+          },
+        },
+      },
+    },
+  });
+  if (!commission) throw notFound("COMMISSION_NOT_FOUND", "La comisión no existe.");
+
+  const mov = commission.financeMovement;
+  const apps = mov?.paymentApplications ?? [];
+
+  await prisma.$transaction(async (tx) => {
+    if (mov) {
+      if (apps.length > 0) await tx.paymentApplication.deleteMany({ where: { movementId: mov.id } });
+      await tx.financeMovement.update({ where: { id: mov.id }, data: { deletedAt: new Date() } });
+    }
+    await tx.commission.delete({ where: { id: commissionId } });
+  });
+
+  const nombre = commission.lead?.clientName ?? commission.concepto ?? "manual";
+  await createAuditEntry({
+    entityType: AuditEntityType.commission,
+    entityId: commissionId,
+    projectId: commission.lead?.convertedToProjectId ?? null,
+    userId,
+    action: AuditAction.deleted,
+    description: `Eliminó comisión de ${nombre} (USD ${Number(commission.montoUsd).toFixed(2)})${
+      apps.length > 0 ? ` · liberó ${apps.length} aplicación(es) de pago` : ""
+    }`,
+  });
+
+  return { liberatedApplications: apps.length };
 }
 
 // ─── Listados / métricas (dashboard) ─────────────────────────────────────────

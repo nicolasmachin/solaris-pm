@@ -1,8 +1,15 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Download, FileText, Sun } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Download, FileText, Sun, CalendarClock } from "lucide-react";
+import toast from "react-hot-toast";
 
-import { getPortalReportes, portalReportePdfUrl, type PortalReporteRow } from "../api/portal.api";
+import {
+  getPortalReportes,
+  portalReportePdfUrl,
+  getPortalDiaCorte,
+  setPortalDiaCorte,
+  type PortalReporteRow,
+} from "../api/portal.api";
 import { useAuthBlobUrl, downloadAuthenticated } from "../hooks/useAuthBlobUrl";
 import { Spinner } from "../components/ui/Spinner";
 
@@ -18,6 +25,90 @@ function mesEs(periodo: string): string {
 
 const fmtPesos = (v: number | null) =>
   v == null ? null : `$${new Intl.NumberFormat("es-UY", { maximumFractionDigits: 0 }).format(v)}`;
+
+/** Panel donde el cliente alinea el reporte a su ciclo de facturación de UTE. */
+function DiaCorteSection() {
+  const qc = useQueryClient();
+  const { data: generadores = [] } = useQuery({
+    queryKey: ["portal-dia-corte"],
+    queryFn: getPortalDiaCorte,
+  });
+  const [editando, setEditando] = useState<Record<string, string>>({});
+
+  const mutation = useMutation({
+    mutationFn: ({ projectId, valor }: { projectId: string; valor: number | null }) =>
+      setPortalDiaCorte(projectId, valor),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["portal-dia-corte"] });
+      toast.success("Día de corte actualizado");
+    },
+    onError: () => toast.error("No se pudo guardar el día de corte"),
+  });
+
+  if (generadores.length === 0) return null;
+
+  const guardar = (projectId: string) => {
+    const raw = (editando[projectId] ?? "").trim();
+    if (raw === "") {
+      mutation.mutate({ projectId, valor: null });
+      return;
+    }
+    const n = Number(raw);
+    if (!Number.isInteger(n) || n < 1 || n > 31) {
+      toast.error("Ingresá un día entre 1 y 31");
+      return;
+    }
+    mutation.mutate({ projectId, valor: n });
+  };
+
+  return (
+    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
+      <div className="mb-1 flex items-center gap-2">
+        <CalendarClock size={16} className="text-[var(--color-accent)]" />
+        <h2 className="font-display font-semibold text-[var(--color-text-primary)]">
+          Alineá tus reportes con tu factura de UTE
+        </h2>
+      </div>
+      <p className="mb-3 text-sm text-[var(--color-text-muted)]">
+        Por defecto el reporte cubre el mes calendario (del 1 al último día). Si cargás el día en que UTE lee
+        tu medidor (lo ves en tu factura), a partir del próximo reporte usaremos tu ciclo de facturación para
+        que los números se parezcan más a lo que pagás. Dejalo vacío para volver al mes calendario.
+      </p>
+      <div className="space-y-2">
+        {generadores.map((g) => {
+          const valorActual = editando[g.projectId] ?? (g.diaCorteMedidor?.toString() ?? "");
+          return (
+            <div
+              key={g.projectId}
+              className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--color-border)] p-2"
+            >
+              <span className="flex-1 text-sm text-[var(--color-text-secondary)]">{g.projectName}</span>
+              <input
+                type="number"
+                min={1}
+                max={31}
+                placeholder="Mes calendario"
+                value={valorActual}
+                onChange={(e) =>
+                  setEditando((s) => ({ ...s, [g.projectId]: e.target.value }))
+                }
+                className="w-36 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1 text-sm text-[var(--color-text-primary)]"
+              />
+              <button
+                type="button"
+                disabled={mutation.isPending}
+                onClick={() => guardar(g.projectId)}
+                className="rounded-lg bg-[var(--color-accent)] px-3 py-1 text-sm font-medium text-white disabled:opacity-60"
+              >
+                Guardar
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export function PortalReportes() {
   const { data: reportes = [], isLoading } = useQuery({
@@ -109,6 +200,8 @@ export function PortalReportes() {
           </div>
         ))
       )}
+
+      {reportes.length > 0 && <DiaCorteSection />}
 
       {/* Visor del PDF */}
       {abierto && (

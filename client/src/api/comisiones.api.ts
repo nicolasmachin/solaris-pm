@@ -17,6 +17,9 @@ export interface SerializedCommission {
   status: CommissionStatus;
   paidAt: string | null;
   financeMovementId: string | null;
+  editadoAt: string | null;
+  notaEdicion: string | null;
+  dueDateManual: boolean;
   createdAt: string;
 }
 
@@ -100,5 +103,20 @@ export async function createManualCommission(body: {
   concepto?: string;
 }): Promise<SerializedCommission> {
   const { data } = await api.post<SerializedCommission>("/api/commissions", body);
+  return data;
+}
+
+// Editar una comisión ya congelada (solo ADMIN). Fechas en YYYY-MM-DD.
+export async function updateCommission(
+  id: string,
+  body: { montoUsd?: number; fechaVenta?: string; dueDate?: string; motivo?: string },
+): Promise<SerializedCommission> {
+  const { data } = await api.patch<SerializedCommission>(`/api/commissions/${id}`, body);
+  return data;
+}
+
+// Borrar una comisión y su movimiento en Finanzas (solo ADMIN).
+export async function deleteCommission(id: string): Promise<{ liberatedApplications: number }> {
+  const { data } = await api.delete<{ liberatedApplications: number }>(`/api/commissions/${id}`);
   return data;
 }

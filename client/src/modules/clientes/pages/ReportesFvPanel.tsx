@@ -48,6 +48,47 @@ const fmtKwh = (v: number | null) =>
 const fmtPesos = (v: number | null) =>
   v == null ? "—" : `$${new Intl.NumberFormat("es-UY", { maximumFractionDigits: 0 }).format(v)}`;
 
+// Orden de los estados en la fila de chips (de "peor" a "mejor").
+const ESTADO_ORDER: EstadoGenerador[] = [
+  "SIN_ALTA",
+  "DESHABILITADO",
+  "BLOQUEADO",
+  "SIN_LECTURA",
+  "LECTURA_INCOMPLETA",
+  "CALCULADO",
+  "PDF_LISTO",
+  "ENVIADO",
+];
+
+function FiltroSelect<T extends string>({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: T;
+  onChange: (v: T) => void;
+  options: { value: T; label: string }[];
+}) {
+  return (
+    <label className="flex items-center gap-1.5 text-[11px] text-[var(--color-text-muted)]">
+      <span className="font-mono uppercase tracking-wider">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as T)}
+        className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1 text-sm text-[var(--color-text-primary)]"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 function KpiCard({ label, value, tone }: { label: string; value: number; tone?: string }) {
   return (
     <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3">
@@ -66,6 +107,14 @@ export function ReportesFvPanel() {
   const [periodo, setPeriodo] = useState<string>("");
   const [search, setSearch] = useState("");
   const [soloConProblemas, setSoloConProblemas] = useState(false);
+  const [estados, setEstados] = useState<Set<EstadoGenerador>>(new Set());
+  const [alta, setAlta] = useState<"todos" | "alta" | "sin_alta">("todos");
+  const [origen, setOrigen] = useState<"todos" | "GROWATT" | "MANUAL">("todos");
+  const [tipo, setTipo] = useState<"todos" | "residencial" | "empresa">("todos");
+  const [envio, setEnvio] = useState<"todos" | "enviados" | "pendientes">("todos");
+  const [pdf, setPdf] = useState<"todos" | "con" | "sin">("todos");
+  const [soloPotenciaEstimada, setSoloPotenciaEstimada] = useState(false);
+  const [soloSinDestinatario, setSoloSinDestinatario] = useState(false);
   const [detalleId, setDetalleId] = useState<string | null>(null);
   const [plantasAbierto, setPlantasAbierto] = useState(false);
   const [ingestaId, setIngestaId] = useState<string | null>(null);
@@ -126,10 +175,24 @@ export function ReportesFvPanel() {
     }
   }
 
+  const total = panel?.generadores.length ?? 0;
+
   const generadores = useMemo(() => {
     let items = panel?.generadores ?? [];
     const q = search.trim().toLowerCase();
     if (q) items = items.filter((g) => g.clientName.toLowerCase().includes(q));
+    if (estados.size) items = items.filter((g) => estados.has(g.estado));
+    if (alta === "alta") items = items.filter((g) => g.dadoDeAlta);
+    else if (alta === "sin_alta") items = items.filter((g) => !g.dadoDeAlta);
+    if (origen !== "todos") items = items.filter((g) => g.origenDatos === origen);
+    if (tipo !== "todos") items = items.filter((g) => g.tipoCliente === tipo);
+    if (envio === "enviados") items = items.filter((g) => g.enviado);
+    else if (envio === "pendientes") items = items.filter((g) => !g.enviado);
+    if (pdf === "con") items = items.filter((g) => g.emisionId != null);
+    else if (pdf === "sin") items = items.filter((g) => g.emisionId == null);
+    if (soloPotenciaEstimada) items = items.filter((g) => g.potenciaEstimada);
+    if (soloSinDestinatario)
+      items = items.filter((g) => g.dadoDeAlta && g.habilitado && !g.tieneDestinatario);
     if (soloConProblemas) {
       items = items.filter(
         (g) =>
@@ -141,7 +204,53 @@ export function ReportesFvPanel() {
       );
     }
     return items;
-  }, [panel, search, soloConProblemas]);
+  }, [
+    panel,
+    search,
+    estados,
+    alta,
+    origen,
+    tipo,
+    envio,
+    pdf,
+    soloPotenciaEstimada,
+    soloSinDestinatario,
+    soloConProblemas,
+  ]);
+
+  const hayFiltros =
+    Boolean(search) ||
+    estados.size > 0 ||
+    alta !== "todos" ||
+    origen !== "todos" ||
+    tipo !== "todos" ||
+    envio !== "todos" ||
+    pdf !== "todos" ||
+    soloPotenciaEstimada ||
+    soloSinDestinatario ||
+    soloConProblemas;
+
+  function limpiarFiltros() {
+    setSearch("");
+    setEstados(new Set());
+    setAlta("todos");
+    setOrigen("todos");
+    setTipo("todos");
+    setEnvio("todos");
+    setPdf("todos");
+    setSoloPotenciaEstimada(false);
+    setSoloSinDestinatario(false);
+    setSoloConProblemas(false);
+  }
+
+  function toggleEstado(e: EstadoGenerador) {
+    setEstados((prev) => {
+      const next = new Set(prev);
+      if (next.has(e)) next.delete(e);
+      else next.add(e);
+      return next;
+    });
+  }
 
   const columns: Column<FilaPanel>[] = [
     {
@@ -260,15 +369,6 @@ export function ReportesFvPanel() {
           />
         </div>
 
-        <label className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)]">
-          <input
-            type="checkbox"
-            checked={soloConProblemas}
-            onChange={(e) => setSoloConProblemas(e.target.checked)}
-          />
-          Solo con pendientes
-        </label>
-
         {canCreate && (
           <div className="ml-auto flex items-center gap-2">
             {ingestaProgreso && (
@@ -293,6 +393,126 @@ export function ReportesFvPanel() {
             </button>
           </div>
         )}
+      </div>
+
+      {/* Filtros */}
+      <div className="space-y-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <FiltroSelect
+            label="Alta"
+            value={alta}
+            onChange={setAlta}
+            options={[
+              { value: "todos", label: "Todas" },
+              { value: "alta", label: "Dados de alta" },
+              { value: "sin_alta", label: "Sin alta" },
+            ]}
+          />
+          <FiltroSelect
+            label="Origen"
+            value={origen}
+            onChange={setOrigen}
+            options={[
+              { value: "todos", label: "Todos" },
+              { value: "GROWATT", label: "Growatt" },
+              { value: "MANUAL", label: "Manual" },
+            ]}
+          />
+          <FiltroSelect
+            label="Tipo"
+            value={tipo}
+            onChange={setTipo}
+            options={[
+              { value: "todos", label: "Todos" },
+              { value: "residencial", label: "Residencial" },
+              { value: "empresa", label: "Empresa" },
+            ]}
+          />
+          <FiltroSelect
+            label="Envío"
+            value={envio}
+            onChange={setEnvio}
+            options={[
+              { value: "todos", label: "Todos" },
+              { value: "enviados", label: "Enviados" },
+              { value: "pendientes", label: "Pendientes" },
+            ]}
+          />
+          <FiltroSelect
+            label="PDF"
+            value={pdf}
+            onChange={setPdf}
+            options={[
+              { value: "todos", label: "Todos" },
+              { value: "con", label: "Con PDF" },
+              { value: "sin", label: "Sin PDF" },
+            ]}
+          />
+          <label className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)]">
+            <input
+              type="checkbox"
+              checked={soloPotenciaEstimada}
+              onChange={(e) => setSoloPotenciaEstimada(e.target.checked)}
+            />
+            Potencia estimada
+          </label>
+          <label className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)]">
+            <input
+              type="checkbox"
+              checked={soloSinDestinatario}
+              onChange={(e) => setSoloSinDestinatario(e.target.checked)}
+            />
+            Sin destinatario
+          </label>
+          <label className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)]">
+            <input
+              type="checkbox"
+              checked={soloConProblemas}
+              onChange={(e) => setSoloConProblemas(e.target.checked)}
+            />
+            Con pendientes
+          </label>
+        </div>
+
+        {/* Chips de estado (multi-selección) */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 font-mono text-[11px] uppercase tracking-wider text-[var(--color-text-muted)]">
+            Estado
+          </span>
+          {ESTADO_ORDER.map((e) => {
+            const activo = estados.has(e);
+            return (
+              <button
+                key={e}
+                type="button"
+                onClick={() => toggleEstado(e)}
+                className={`rounded px-2 py-0.5 font-mono text-[10px] uppercase transition ${
+                  activo
+                    ? ESTADO_BADGE[e]
+                    : "border border-[var(--color-border)] text-[var(--color-text-muted)] opacity-60 hover:opacity-100"
+                }`}
+              >
+                {ESTADO_LABEL[e]}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center justify-between pt-0.5">
+          <span className="text-xs text-[var(--color-text-muted)]">
+            Mostrando <strong className="text-[var(--color-text-secondary)]">{generadores.length}</strong> de{" "}
+            {total}
+          </span>
+          {hayFiltros && (
+            <button
+              type="button"
+              onClick={limpiarFiltros}
+              className="text-xs text-[var(--color-accent)] hover:underline"
+            >
+              Limpiar filtros
+            </button>
+          )}
+        </div>
       </div>
 
       {/* KPIs */}

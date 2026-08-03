@@ -135,6 +135,48 @@ export async function generacionMensual(
   return Number.isFinite(e) ? e : null;
 }
 
+/**
+ * Generación diaria (kWh por día) de un rango, vía plant/energy time_unit=day.
+ * La API sólo acepta rangos de ≤7 días, así que se itera en tramos. Devuelve un
+ * mapa día(YYYY-MM-DD) → kWh. Requests: ceil(dias/7).
+ */
+export async function generacionDiaria(
+  plantId: string,
+  desde: string,
+  hasta: string,
+  onRequest?: () => void,
+): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  let inicio = new Date(`${desde}T00:00:00.000Z`);
+  const fin = new Date(`${hasta}T00:00:00.000Z`);
+
+  while (inicio <= fin) {
+    // Tramo de hasta 7 días.
+    const tramoFin = new Date(inicio);
+    tramoFin.setUTCDate(tramoFin.getUTCDate() + 6);
+    const tramoFinReal = tramoFin > fin ? fin : tramoFin;
+
+    onRequest?.();
+    const data = await get("plant/energy", {
+      plant_id: plantId,
+      start_date: inicio.toISOString().slice(0, 10),
+      end_date: tramoFinReal.toISOString().slice(0, 10),
+      time_unit: "day",
+    });
+    const energys: any[] = data?.energys ?? [];
+    for (const e of energys) {
+      const dia = String(e?.date ?? e?.time ?? "").slice(0, 10);
+      const kwh = Number(e?.energy);
+      if (dia && Number.isFinite(kwh)) out.set(dia, kwh);
+    }
+
+    inicio = new Date(tramoFinReal);
+    inicio.setUTCDate(inicio.getUTCDate() + 1);
+    await dormir(PAUSA_MS);
+  }
+  return out;
+}
+
 /** Dataloggers de smart meter (type === 3) de una planta. */
 export async function dataloggersSmartMeter(plantId: string): Promise<string[]> {
   const data = await get("device/list", { plant_id: plantId });

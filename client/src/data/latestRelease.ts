@@ -23,41 +23,22 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "8.3",
-  date: "31 de julio de 2026",
+  version: "8.4",
+  date: "3 de agosto de 2026",
   sections: [
     {
-      title: "Experiencia Solar — crear el acceso del cliente al portal",
+      title: "Reporte semanal de indicadores por email",
       items: [
-        'El listado de Experiencia Solar ahora muestra una columna "Usuario": ves de un vistazo qué clientes ya tienen acceso al portal y a cuáles les falta.',
-        'En los que no tienen, el botón "Crear usuario" abre una ventana pre-cargada con el nombre, el mail y el teléfono del cliente, genera una contraseña temporal y crea el acceso, listo para copiar y compartir.',
-        "Funciona también para los clientes cargados por planilla, así pueden abrir tickets y responder encuestas. Lo pueden hacer los roles de Experiencia Solar y Postventa.",
+        "Todos los lunes a las 00:01 (hora de Uruguay) llega un email con los indicadores de la semana que cerró: leads, propuestas enviadas, nuevas ventas, facturación vendida, visitas comerciales, gastos registrados e instalaciones habilitadas (con kWp).",
+        "Las ventas cerradas y las visitas vienen listadas una por una (cliente y asesor; en las ventas también el monto de la cotización con IVA). Incluye el avance de las metas del trimestre, marcando en verde lo que va en ritmo.",
+        'En Métricas hay una nueva pestaña "Reporte semanal" que muestra este informe en pantalla, con un botón para enviar el mail del momento y probarlo sin esperar al lunes.',
       ],
     },
     {
-      title: "Tickets — editar, eliminar y abrir a clientes de Experiencia Solar",
+      title: "Comisiones — editar, borrar y ajustar fechas",
       items: [
-        "Desde el detalle de un ticket se puede editar el título, la descripción y la prioridad. El administrador puede eliminar tickets (por ejemplo, los de prueba).",
-        "Al abrir un ticket, el selector de proyecto también incluye a los generadores de Experiencia Solar cargados por planilla.",
-      ],
-    },
-    {
-      title: "Ventas — al pasar un lead a proyecto se hereda más información",
-      items: [
-        "La propuesta comercial del lead pasa como adjunto al proyecto (los dos PDF), y los comentarios del lead aparecen también en el proyecto con su autor y fecha originales.",
-        "La potencia (kWp) y la cotización (USD) se pre-cargan desde la propuesta comercial (los mismos números de la comisión del vendedor) y siguen siendo editables antes de crear el proyecto.",
-      ],
-    },
-    {
-      title: "Tarifas de UTE — configuración de cuadros tarifarios",
-      items: [
-        "Nueva pantalla en Administración → Configuración del negocio → Tarifas UTE para cargar el cargo fijo, el cargo por potencia contratada, los tramos de la tarifa simple y los precios por franja horaria (punta, llano, valle).",
-      ],
-    },
-    {
-      title: "Roles nuevos — Gerencias y Logística",
-      items: [
-        "Se agregaron roles de gerencia (Operaciones, Comercial, Ingeniería y Finanzas), cada uno con los permisos de su equipo y ajustables aparte. Nuevo rol Logística, con acceso a Stock y lectura de Operaciones e Ingeniería.",
+        'El administrador ahora puede editar y borrar las comisiones de los asesores desde el listado de Comisiones (botón "Editar" en cada fila).',
+        "Se ajustan las dos fechas —la vendida (define a qué mes se carga) y la de pago prevista (por defecto el 1° del mes siguiente; editable a mano)— y el monto. Cada cambio re-sincroniza el pendiente en Finanzas y queda registrado con quién y cuándo lo modificó.",
       ],
     },
   ],
@@ -72,6 +53,16 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "8.3",
+    shortDate: "31 jul",
+    highlights: [
+      "Reportes fotovoltaicos mensuales: datos automáticos desde Growatt, preparación mensual automática, envío al cliente y portal con historial por año.",
+      'Experiencia Solar: columna "Usuario" y botón "Crear usuario" para dar acceso al portal (también a los cargados por planilla).',
+      "Tickets: editar título/descripción/prioridad y eliminar; abrir tickets a generadores de Experiencia Solar.",
+      "Tarifas de UTE configurables (cargo fijo, potencia, tramos y franjas) y nuevos roles de Gerencia y Logística.",
+    ],
+  },
   {
     version: "8.2",
     shortDate: "22 jul",

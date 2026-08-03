@@ -15,12 +15,14 @@ import {
   commissionMetrics,
   confirmCommission,
   createManualCommission,
+  deleteCommission,
   getLeadCommission,
   listCommissions,
   listEligibleProposals,
+  updateCommission,
 } from "../services/commission/commission.service.js";
 import { parseDateOnly } from "../utils/dates.js";
-import { notFound, unauthorized } from "../utils/errors.js";
+import { forbidden, notFound, unauthorized } from "../utils/errors.js";
 
 // ¿El usuario puede ver comisiones de todos los asesores? (ADMIN/FINANZAS).
 // Los que no, solo ven las propias. Se apoya en FINANZAS:VIEW (ADMIN lo tiene).
@@ -124,6 +126,52 @@ export async function registerCommissionRoutes(app: FastifyInstance) {
         concepto: body.concepto,
         userId: user.id,
       });
+    },
+  );
+
+  // Editar una comisión ya congelada (fechas / monto). Solo ADMIN.
+  const commissionIdParams = z.object({ id: z.string().min(1) }).strict();
+  const updateBody = z
+    .object({
+      montoUsd: z.number().positive().optional(),
+      fechaVenta: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      motivo: z.string().max(300).optional(),
+    })
+    .strict()
+    .refine((b) => b.montoUsd != null || b.fechaVenta != null || b.dueDate != null, {
+      message: "Nada para actualizar.",
+    });
+
+  app.patch(
+    "/commissions/:id",
+    { preHandler: authorize(Module.FINANZAS, Action.EDIT) },
+    async (request) => {
+      const user = ensureUser(request);
+      if (user.role !== "ADMIN") throw forbidden("Solo un administrador puede editar comisiones.");
+      const { id } = commissionIdParams.parse(request.params);
+      const body = updateBody.parse(request.body);
+      return updateCommission({
+        commissionId: id,
+        userId: user.id,
+        userName: user.name,
+        montoUsd: body.montoUsd,
+        fechaVenta: body.fechaVenta ? parseDateOnly(body.fechaVenta) : undefined,
+        dueDate: body.dueDate ? parseDateOnly(body.dueDate) : undefined,
+        motivo: body.motivo,
+      });
+    },
+  );
+
+  // Borrar una comisión (y su movimiento en Finanzas). Solo ADMIN.
+  app.delete(
+    "/commissions/:id",
+    { preHandler: authorize(Module.FINANZAS, Action.DELETE) },
+    async (request) => {
+      const user = ensureUser(request);
+      if (user.role !== "ADMIN") throw forbidden("Solo un administrador puede borrar comisiones.");
+      const { id } = commissionIdParams.parse(request.params);
+      return deleteCommission({ commissionId: id, userId: user.id });
     },
   );
 

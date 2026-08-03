@@ -1,11 +1,18 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import { getCommissionMetrics, getCommissions, type CommissionStatus } from "../api/comisiones.api";
+import {
+  getCommissionMetrics,
+  getCommissions,
+  type CommissionListItem,
+  type CommissionStatus,
+} from "../api/comisiones.api";
 import { ComisionesEvolutionChart } from "../components/comisiones/ComisionesEvolutionChart";
 import { ManualCommissionModal } from "../components/comisiones/ManualCommissionModal";
+import { EditCommissionModal } from "../components/comisiones/EditCommissionModal";
 import { Button } from "../components/ui/Button";
 import { usePermission } from "../hooks/usePermission";
+import { useAuthStore } from "../store/auth.store";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -65,11 +72,13 @@ export function ComisionesAsesor() {
   // ADMIN/FINANZAS ven todas; el resto ve solo las propias.
   const canSeeAll = usePermission("FINANZAS", "VIEW");
   const canCreate = usePermission("FINANZAS", "CREATE");
+  const isAdmin = useAuthStore((s) => s.user?.role === "ADMIN");
   const scope = canSeeAll ? "all" : "mine";
   const [year] = useState(CURRENT_YEAR);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("todas");
   const [sort, setSort] = useState<SortKey>("fecha");
   const [manualOpen, setManualOpen] = useState(false);
+  const [editing, setEditing] = useState<CommissionListItem | null>(null);
 
   const metricsQ = useQuery({
     queryKey: ["commission-metrics", year, scope],
@@ -90,7 +99,7 @@ export function ComisionesAsesor() {
   const rows = listQ.data ?? [];
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
+    <div className="max-w-6xl mx-auto p-4 sm:p-6 pb-24 space-y-6">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Comisiones</h1>
@@ -154,6 +163,7 @@ export function ComisionesAsesor() {
                   <th className="px-3 py-2 font-medium">Vence</th>
                   <th className="px-3 py-2 font-medium text-right">Monto</th>
                   <th className="px-3 py-2 font-medium">Estado</th>
+                  {isAdmin && <th className="px-3 py-2 font-medium text-right">Acciones</th>}
                 </tr>
               </thead>
               <tbody>
@@ -163,6 +173,14 @@ export function ComisionesAsesor() {
                       {c.leadClientName}
                       {c.origenManual && (
                         <span className="ml-1 text-[10px] text-[var(--color-text-muted)]">(manual)</span>
+                      )}
+                      {c.editadoAt && (
+                        <span
+                          className="ml-1 text-[10px] text-amber-300/90"
+                          title={c.notaEdicion ?? "Comisión editada"}
+                        >
+                          ✎ editada
+                        </span>
                       )}
                     </td>
                     {canSeeAll && (
@@ -180,6 +198,16 @@ export function ComisionesAsesor() {
                     <td className="px-3 py-2">
                       <StatusBadge status={c.status} />
                     </td>
+                    {isAdmin && (
+                      <td className="px-3 py-2 text-right whitespace-nowrap">
+                        <button
+                          onClick={() => setEditing(c)}
+                          className="text-xs font-medium text-[var(--color-accent)] hover:underline"
+                        >
+                          Editar
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -189,6 +217,7 @@ export function ComisionesAsesor() {
       </div>
 
       <ManualCommissionModal open={manualOpen} onClose={() => setManualOpen(false)} />
+      <EditCommissionModal commission={editing} onClose={() => setEditing(null)} />
     </div>
   );
 }

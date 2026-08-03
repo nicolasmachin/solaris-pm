@@ -1,12 +1,17 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
   getMetricsOverview,
   getMetricsProjects,
   getMetricsSales,
   getMetricsStages,
+  getWeeklyReport,
+  sendWeeklyReport,
 } from "../api/metrics.api";
+import type { WeeklyReport } from "../api/metrics.api";
+import { useAuthStore } from "../store/auth.store";
 import { MetricCard } from "../components/metrics/MetricCard";
 import { PeriodSelector } from "../components/metrics/PeriodSelector";
 import { StageTimingChart } from "../components/metrics/StageTimingChart";
@@ -161,6 +166,7 @@ function TimingCard({
 
 export function Metrics() {
   const thisYear = new Date().getFullYear();
+  const [tab, setTab] = useState<"panel" | "semanal">("panel");
 
   const [period, setPeriod] = useState<PeriodValue>({
     year: thisYear,
@@ -229,12 +235,40 @@ export function Metrics() {
             Métricas
           </h1>
           <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-            Operaciones y ventas — {qLabel}
+            {tab === "panel" ? `Operaciones y ventas — ${qLabel}` : "Reporte semanal de indicadores"}
           </p>
         </div>
-        <PeriodSelector value={period} onChange={setPeriod} />
+        {tab === "panel" && <PeriodSelector value={period} onChange={setPeriod} />}
       </div>
 
+      {/* ── Tabs ─────────────────────────────────────────────────────────── */}
+      <div className="flex gap-1 border-b border-[var(--color-border)]">
+        {([
+          { key: "panel", label: "Panel" },
+          { key: "semanal", label: "Reporte semanal" },
+        ] as const).map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setTab(t.key)}
+            className={`relative px-4 py-2 text-sm font-medium transition-colors ${
+              tab === t.key
+                ? "text-[var(--color-accent)]"
+                : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+            }`}
+          >
+            {t.label}
+            {tab === t.key && (
+              <span className="absolute inset-x-0 -bottom-px h-0.5 bg-[var(--color-accent)]" />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {tab === "semanal" && <WeeklyReportTab />}
+
+      {tab === "panel" && (
+      <>
       {/* ── Error ─────────────────────────────────────────────────────────── */}
       {hasError && (
         <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 text-sm text-[var(--color-text-secondary)] flex items-center justify-between gap-4">
@@ -568,6 +602,196 @@ export function Metrics() {
           )}
         </section>
       ) : null}
+      </>
+      )}
+    </div>
+  );
+}
+
+// ─── Reporte semanal ────────────────────────────────────────────────────────
+
+function usd(n: number): string {
+  return `US$ ${n.toLocaleString("es-UY", { maximumFractionDigits: 0 })}`;
+}
+
+function WeeklyKpi({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
+      <p className="text-[11px] uppercase tracking-widest text-[var(--color-text-muted)]">{label}</p>
+      <p className="mt-1 font-display text-2xl font-bold text-[var(--color-text-primary)]">{value}</p>
+    </div>
+  );
+}
+
+function WeeklyReportTab() {
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.role === "ADMIN";
+
+  const reportQ = useQuery<WeeklyReport>({
+    queryKey: ["metrics", "weekly-report"],
+    queryFn: getWeeklyReport,
+    staleTime: 60_000,
+  });
+
+  const sendM = useMutation({
+    mutationFn: sendWeeklyReport,
+    onSuccess: (res) => {
+      if (res.ok) toast.success(`Reporte enviado a ${res.destinatario ?? "el destinatario configurado"}`);
+      else toast.error(res.message ?? "No se pudo enviar el reporte");
+    },
+    onError: () => toast.error("No se pudo enviar el reporte. Revisá los logs del servidor."),
+  });
+
+  if (reportQ.isLoading) {
+    return <SkeletonBlock className="h-80" />;
+  }
+  if (reportQ.isError || !reportQ.data) {
+    return (
+      <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 text-sm text-[var(--color-text-secondary)] flex items-center justify-between gap-4">
+        <span>No se pudo cargar el reporte semanal.</span>
+        <button onClick={() => void reportQ.refetch()} className="shrink-0 text-[var(--color-accent)] hover:underline">
+          Reintentar
+        </button>
+      </div>
+    );
+  }
+
+  const d = reportQ.data;
+
+  return (
+    <div className="space-y-6">
+      {/* Encabezado del reporte + botón */}
+      <div className="flex flex-col gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-[10px] font-mono uppercase tracking-widest text-[var(--color-text-muted)]">
+            Semana ISO {d.semana.semanaIso} · {d.semana.anioIso}
+          </p>
+          <p className="mt-1 text-lg font-semibold text-[var(--color-text-primary)]">{d.semana.etiqueta}</p>
+          <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
+            Es el mismo informe que se envía automáticamente los lunes 00:01 (hora Uruguay) a{" "}
+            <span className="font-mono">{d.destinatario}</span>.
+          </p>
+        </div>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => sendM.mutate()}
+            disabled={sendM.isPending}
+            className="shrink-0 rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {sendM.isPending ? "Enviando…" : "📧 Enviar el mail ahora"}
+          </button>
+        )}
+      </div>
+
+      {/* KPIs */}
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+        <WeeklyKpi label="Leads" value={String(d.leads)} />
+        <WeeklyKpi label="Propuestas" value={String(d.propuestasEnviadas)} />
+        <WeeklyKpi label="Nuevas ventas" value={String(d.ventas.length)} />
+        <WeeklyKpi label="Facturación vendida" value={usd(d.facturacionVendidaUsd)} />
+        <WeeklyKpi label="Visitas" value={String(d.visitas.length)} />
+        <WeeklyKpi label="Gastos registrados" value={String(d.gastosRegistrados)} />
+        <WeeklyKpi label="Instalaciones" value={String(d.instalaciones)} />
+        <WeeklyKpi label="kWp instalados" value={d.kwp.toLocaleString("es-UY")} />
+      </div>
+
+      {/* Ventas cerradas (listado) */}
+      <div>
+        <SLabel>Ventas cerradas</SLabel>
+        {d.ventas.length ? (
+          <div className="overflow-hidden rounded-lg border border-[var(--color-border)]">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-[var(--color-bg-card)] text-[11px] uppercase tracking-wider text-[var(--color-text-muted)]">
+                  <th className="px-3 py-2 text-left font-medium">Cliente</th>
+                  <th className="px-3 py-2 text-left font-medium">Asesor</th>
+                  <th className="px-3 py-2 text-right font-medium">Monto c/IVA</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--color-border)]">
+                {d.ventas.map((v, i) => (
+                  <tr key={i} className="bg-[var(--color-bg-app)]">
+                    <td className="px-3 py-2 text-[var(--color-text-primary)]">{v.cliente}</td>
+                    <td className="px-3 py-2 text-[var(--color-text-secondary)]">{v.asesor ?? "—"}</td>
+                    <td className="px-3 py-2 text-right font-mono text-[var(--color-text-primary)]">
+                      {v.montoUsd != null ? usd(v.montoUsd) : "s/dato"}
+                    </td>
+                  </tr>
+                ))}
+                <tr className="bg-[var(--color-bg-card)] font-semibold">
+                  <td className="px-3 py-2 text-right text-[var(--color-text-secondary)]" colSpan={2}>
+                    Facturación vendida
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono text-[var(--color-accent)]">
+                    {usd(d.facturacionVendidaUsd)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-sm text-[var(--color-text-muted)]">Sin ventas cerradas esta semana.</p>
+        )}
+      </div>
+
+      {/* Visitas (listado) */}
+      <div>
+        <SLabel>Visitas comerciales</SLabel>
+        {d.visitas.length ? (
+          <div className="overflow-hidden rounded-lg border border-[var(--color-border)]">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-[var(--color-bg-card)] text-[11px] uppercase tracking-wider text-[var(--color-text-muted)]">
+                  <th className="px-3 py-2 text-left font-medium">Cliente</th>
+                  <th className="px-3 py-2 text-left font-medium">Asesor</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--color-border)]">
+                {d.visitas.map((v, i) => (
+                  <tr key={i} className="bg-[var(--color-bg-app)]">
+                    <td className="px-3 py-2 text-[var(--color-text-primary)]">{v.cliente}</td>
+                    <td className="px-3 py-2 text-[var(--color-text-secondary)]">{v.asesor ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-sm text-[var(--color-text-muted)]">Sin visitas comerciales esta semana.</p>
+        )}
+      </div>
+
+      {/* Avance de metas */}
+      <div>
+        <SLabel>Avance de metas — Q{d.trimestre.trimestre} {d.trimestre.anio}</SLabel>
+        {d.metas.length ? (
+          <div className="space-y-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
+            {d.metas.map((m, i) => (
+              <div key={i} className="flex items-center justify-between text-sm">
+                <span className="text-[var(--color-text-secondary)]">{m.etiqueta}</span>
+                <span className="font-mono text-[var(--color-text-primary)]">
+                  {m.actual.toLocaleString("es-UY")} / {m.objetivo.toLocaleString("es-UY")}
+                  <span className={`ml-2 font-semibold ${m.enRitmo ? "text-green-400" : "text-red-400"}`}>
+                    {m.porcentaje}%
+                  </span>
+                </span>
+              </div>
+            ))}
+            <p className="pt-1 text-[10px] text-[var(--color-text-muted)]">
+              Acumulado del trimestre vs objetivo. Verde = en ritmo.
+            </p>
+          </div>
+        ) : (
+          <p className="text-sm text-[var(--color-text-muted)]">No hay metas trimestrales cargadas.</p>
+        )}
+      </div>
+
+      {!isAdmin && (
+        <p className="text-xs text-[var(--color-text-muted)]">
+          El envío manual del mail está reservado para administradores.
+        </p>
+      )}
     </div>
   );
 }
