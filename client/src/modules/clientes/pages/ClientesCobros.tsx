@@ -1,14 +1,16 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Search, Copy, X } from 'lucide-react';
+import { Search, Copy, X, Trash2 } from 'lucide-react';
 import { Spinner } from '../../../components/ui/Spinner';
+import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
 import { ResponsiveTable, type Column } from '../../../components/ui/ResponsiveTable';
 import {
   getCobrosByProject,
   getCobroProjectDetail,
   registrarCobroCliente,
   patchCobroCliente,
+  deleteCobroCliente,
   type EstadoCobranza,
   type CobroProjectItem,
   type CobroDetail,
@@ -212,6 +214,7 @@ function CobroDetailModal({ projectId, onClose }: { projectId: string; onClose: 
   const [showRegistrar, setShowRegistrar] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [editMonto, setEditMonto] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; descripcion: string } | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['cobros-by-project', projectId],
@@ -230,6 +233,12 @@ function CobroDetailModal({ projectId, onClose }: { projectId: string; onClose: 
     mutationFn: (v: { id: string; monto: number }) => patchCobroCliente(v.id, { monto: v.monto }),
     onSuccess: () => { toast.success('Monto actualizado'); setEditId(null); invalidate(); },
     onError: (e: unknown) => toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'No se pudo actualizar'),
+  });
+
+  const eliminar = useMutation({
+    mutationFn: (id: string) => deleteCobroCliente(id),
+    onSuccess: () => { toast.success('Cobro eliminado'); setDeleteTarget(null); invalidate(); },
+    onError: (e: unknown) => toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'No se pudo eliminar'),
   });
 
   function copiarResumen() {
@@ -322,6 +331,9 @@ function CobroDetailModal({ projectId, onClose }: { projectId: string; onClose: 
                                   <button onClick={() => marcarPagado.mutate(c.id)} disabled={marcarPagado.isPending}
                                     className="text-[11px] px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 disabled:opacity-50">Marcar pagado</button>
                                 )}
+                                <button onClick={() => setDeleteTarget({ id: c.id, descripcion: stripPlan(c.descripcion) })}
+                                  title="Eliminar cobro"
+                                  className="p-1 rounded text-[var(--color-text-muted)] hover:bg-red-500/10 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
                               </>
                             )}
                           </div>
@@ -334,6 +346,17 @@ function CobroDetailModal({ projectId, onClose }: { projectId: string; onClose: 
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Eliminar cobro"
+        description={deleteTarget ? `Se va a eliminar "${deleteTarget.descripcion}". Esta acción no se puede deshacer.` : undefined}
+        confirmLabel="Eliminar"
+        destructive
+        loading={eliminar.isPending}
+        onConfirm={() => deleteTarget && eliminar.mutate(deleteTarget.id)}
+        onClose={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

@@ -43,8 +43,13 @@
 - Los reportes ahora usan el **pliego tarifario de UTE del año de cada mes** (2024, 2025 o 2026), en vez de aplicar los precios de 2026 a todos los meses. Esto corrige el ahorro histórico y el retorno de la inversión, que quedaban inflados en los clientes con meses de años anteriores.
 - Se **reincorporaron meses de historial que se habían perdido** en varios generadores, con lo que el retorno acumulado vuelve a reflejar toda la trayectoria del cliente (por ejemplo, un cliente pasó de mostrar 8 meses a sus 19 reales).
 
+#### Cobros a clientes — borrar cobros
+
+- En **Cobros a clientes** (tanto en Finanzas como en la vista de Experiencia Solar) ahora se puede **eliminar un cobro** con el botón de la papelera en cada fila, pidiendo confirmación antes. Sirve para limpiar cobros previstos que quedaron mal cargados o pagos de clientes viejos que ya no corresponden. El cambio se refleja al instante en Movimientos y en los totales.
+
 #### Arreglos
 
+- En **Cobros a clientes** ya **no aparecen los proyectos eliminados** (por ejemplo, obras de prueba que se borraron): el listado ahora muestra solo los proyectos vigentes.
 - **Los permisos ahora se actualizan solos.** Cuando un administrador le agrega (o le quita) un permiso a un rol, el cambio toma efecto en la **próxima vez que la persona recarga la app**, sin necesidad de cerrar sesión y volver a entrar. Antes los permisos quedaban "congelados" desde el login, así que un permiso recién otorgado no aparecía hasta re-loguear.
 - Al crear el acceso al portal de un cliente desde **Experiencia Solar**, el mensaje para copiar y enviar por WhatsApp ahora es **el mismo** que el de Admin (saludo con el nombre, email, contraseña temporal y link al portal), en vez de un texto más escueto y distinto.
 

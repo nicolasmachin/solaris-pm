@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { ChevronLeft, Plus, ExternalLink, X, Sparkles, Pencil, Copy } from 'lucide-react';
+import { ChevronLeft, Plus, ExternalLink, X, Sparkles, Pencil, Copy, Trash2 } from 'lucide-react';
 import { usePlanPagos } from '../hooks/usePlanPagos';
 import { PlanPagosModal } from '../components/finance/PlanPagosModal';
 import { PayManualPendingModal } from '../components/finance/PayManualPendingModal';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { Spinner } from '../components/ui/Spinner';
 import { Sheet } from '../components/ui/Sheet';
-import { getCobroProjectDetail, createMovement } from '../api/finance.api';
+import { getCobroProjectDetail, createMovement, deleteCobroCliente } from '../api/finance.api';
 import { getAccounts } from '../api/accounts.api';
 import { fmtCurrency, fmtDate } from '../lib/finance';
 import type { Moneda } from '../types/finance.types';
@@ -91,8 +92,24 @@ export function FinanceCobroDetail() {
   const [showPlanModal, setShowPlanModal] = useState(false);
   // Id del cobro previsto que se está marcando como pagado (abre el modal).
   const [payingId, setPayingId] = useState<string | null>(null);
+  // Cobro que se está por borrar (abre el confirm).
+  const [deleting, setDeleting] = useState<{ id: string; descripcion: string } | null>(null);
   const qc = useQueryClient();
   const planQ = usePlanPagos(projectId ?? '');
+
+  const deleteMut = useMutation({
+    mutationFn: (movementId: string) => deleteCobroCliente(movementId),
+    onSuccess: () => {
+      toast.success('Cobro eliminado');
+      qc.invalidateQueries({ queryKey: ['cobros-by-project'] });
+      qc.invalidateQueries({ queryKey: ['plan-pagos', projectId] });
+      qc.invalidateQueries({ queryKey: ['finance-movements'] });
+      qc.invalidateQueries({ queryKey: ['finance-pending'] });
+      qc.invalidateQueries({ queryKey: ['finance-cashflow'] });
+      setDeleting(null);
+    },
+    onError: (err) => toast.error(getApiErr(err) ?? 'No se pudo eliminar'),
+  });
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['cobros-by-project', projectId],
@@ -208,6 +225,7 @@ export function FinanceCobroDetail() {
                     <th className="px-4 py-3 text-left font-medium">Descripción</th>
                     <th className="px-4 py-3 text-right font-medium">Monto</th>
                     <th className="px-4 py-3 text-left font-medium">Cuenta</th>
+                    <th className="px-4 py-3 text-right font-medium sr-only">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--color-border)]">
@@ -239,6 +257,16 @@ export function FinanceCobroDetail() {
                           ) : (
                             c.accountName ?? '—'
                           )}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            type="button"
+                            onClick={() => setDeleting({ id: c.id, descripcion: stripPlan(c.descripcion) })}
+                            title="Eliminar cobro"
+                            className="inline-flex items-center justify-center rounded p-1.5 text-[var(--color-text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </td>
                       </tr>
                     );
@@ -300,6 +328,17 @@ export function FinanceCobroDetail() {
           onClose={() => setShowCobroModal(false)}
         />
       )}
+
+      <ConfirmDialog
+        open={!!deleting}
+        title="Eliminar cobro"
+        description={deleting ? `Se va a eliminar "${deleting.descripcion}". Esta acción no se puede deshacer.` : undefined}
+        confirmLabel="Eliminar"
+        destructive
+        loading={deleteMut.isPending}
+        onConfirm={() => deleting && deleteMut.mutate(deleting.id)}
+        onClose={() => setDeleting(null)}
+      />
 
       {payingId && (
         <PayManualPendingModal

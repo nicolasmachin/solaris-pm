@@ -649,6 +649,9 @@ export const patchCobroCliente = (
   body: { monto?: number; descripcion?: string; fecha?: string; estado?: 'PREVISTO' | 'PAGADO' },
 ) => apiClient.patch(`/api/finance/cobros/${movementId}`, body).then(r => r.data);
 
+export const deleteCobroCliente = (movementId: string) =>
+  apiClient.delete(`/api/finance/cobros/${movementId}`).then(r => r.data);
+
 // ─── Saldo a favor del proveedor ─────────────────────────────────────────────
 
 export interface SaldoAFavorPaymentItem {

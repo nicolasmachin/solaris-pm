@@ -10543,7 +10543,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
       const fallbackUsdToUyu = lastRate ? (decimalToNumber(lastRate.usdToUyu) ?? 1) : 1;
 
-      const where: Prisma.ProjectWhereInput = {};
+      const where: Prisma.ProjectWhereInput = { deletedAt: null };
       if (query.activos === "true") where.status = ProjectStatus.ACTIVE;
       if (query.clientName && query.clientName.trim().length > 0) {
         where.clientName = { contains: query.clientName.trim(), mode: "insensitive" };
@@ -10650,7 +10650,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
 
       const project = await prisma.project.findFirst({
-        where: { id: projectId },
+        where: { id: projectId, deletedAt: null },
         select: {
           id: true, code: true, clientName: true,
           capacityKwp: true, budgetUsd: true, status: true,
@@ -10905,6 +10905,37 @@ export async function registerApiRoutes(app: FastifyInstance) {
         monto: Number(updated.monto),
         cobrado: updated.cobrado,
       };
+    });
+
+    app.delete("/finance/cobros/:movementId", { preHandler: cobrosWriteEditGuard }, async (request) => {
+      const user = ensureUser(request);
+      const { movementId } = z.object({ movementId: z.string() }).parse(request.params);
+
+      const mov = await prisma.financeMovement.findFirst({ where: { id: movementId, deletedAt: null } });
+      if (!mov) throw notFound("MOVEMENT_NOT_FOUND", "Cobro no encontrado");
+      // Guard de alcance: esta ruta SOLO borra cobros a clientes.
+      if (
+        mov.tipoMovimiento !== TipoMovimiento.INGRESO ||
+        mov.categoriaPrincipal !== CategoriaPrincipal.PROYECTO_ENTRADA
+      ) {
+        throw badRequest("NOT_A_COBRO", "Este movimiento no es un cobro a cliente");
+      }
+
+      await prisma.financeMovement.update({
+        where: { id: movementId },
+        data: { deletedAt: new Date() },
+      });
+
+      await createAuditEntry({
+        entityType: AuditEntityType.finance_movement,
+        entityId: movementId,
+        projectId: mov.projectId ?? null,
+        userId: user.id,
+        action: AuditAction.deleted,
+        description: `Borró un cobro a cliente (${mov.descripcion})`,
+      });
+
+      return { id: movementId, deleted: true };
     });
 
     // ─── Facturación al cliente (facturas pendientes de emisión) ───────────
