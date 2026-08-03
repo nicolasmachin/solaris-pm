@@ -568,7 +568,7 @@ export interface CommissionMetrics {
   saldoAcobrarUsd: number;
   cobradoEnAnioUsd: number;
   ventasCerradas: number;
-  evolucion: Array<{ mes: number; cobradas: number; proyectadas: number }>;
+  evolucion: Array<{ mes: number; cobradas: number; generadas: number }>;
 }
 
 export async function commissionMetrics(filter: { asesorId?: string; year: number }): Promise<CommissionMetrics> {
@@ -593,20 +593,21 @@ export async function commissionMetrics(filter: { asesorId?: string; year: numbe
   });
   const cobradoEnAnioUsd = pagadasAnio.reduce((a, c) => a + Number(c.montoUsd), 0);
 
-  // Ventas cerradas del año (fechaVenta en el año).
-  const ventasCerradas = await prisma.commission.count({
+  // Comisiones generadas en el año (por fechaVenta, sin importar el estado).
+  const generadasAnio = await prisma.commission.findMany({
     where: { ...baseWhere, fechaVenta: { gte: yearStart, lt: yearEnd } },
+    select: { montoUsd: true, fechaVenta: true },
   });
+  const ventasCerradas = generadasAnio.length;
 
-  // Evolución mensual: cobradas por paidAt, proyectadas por dueDate de PENDIENTE.
-  const evolucion = Array.from({ length: 12 }, (_, i) => ({ mes: i + 1, cobradas: 0, proyectadas: 0 }));
+  // Evolución mensual: cobradas por paidAt (mes de pago), generadas por
+  // fechaVenta (mes en que se ganó el proyecto y se congeló la comisión).
+  const evolucion = Array.from({ length: 12 }, (_, i) => ({ mes: i + 1, cobradas: 0, generadas: 0 }));
   for (const c of pagadasAnio) {
     if (c.paidAt) evolucion[c.paidAt.getUTCMonth()].cobradas += Number(c.montoUsd);
   }
-  for (const c of pendientes) {
-    if (c.dueDate >= yearStart && c.dueDate < yearEnd) {
-      evolucion[c.dueDate.getUTCMonth()].proyectadas += Number(c.montoUsd);
-    }
+  for (const c of generadasAnio) {
+    evolucion[c.fechaVenta.getUTCMonth()].generadas += Number(c.montoUsd);
   }
 
   return { saldoAcobrarUsd, cobradoEnAnioUsd, ventasCerradas, evolucion };

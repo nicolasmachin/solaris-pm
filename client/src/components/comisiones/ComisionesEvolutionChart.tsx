@@ -13,7 +13,7 @@ import type { CommissionMetrics } from "../../api/comisiones.api";
 
 const MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 const COLOR_COBRADA = "#10b981"; // verde
-const COLOR_PROYECTADA = "#3b82f6"; // azul
+const COLOR_GENERADA = "#3b82f6"; // azul
 
 function fmtUsd(v: number) {
   return "US$ " + v.toLocaleString("es-UY", { maximumFractionDigits: 0 });
@@ -23,15 +23,15 @@ export function ComisionesEvolutionChart({ evolucion }: { evolucion: CommissionM
   const data = evolucion.map((e) => ({
     mes: MESES[e.mes - 1] ?? String(e.mes),
     Cobradas: e.cobradas,
-    Proyectadas: e.proyectadas,
+    Generadas: e.generadas,
   }));
-  const hasData = evolucion.some((e) => e.cobradas || e.proyectadas);
+  const hasData = evolucion.some((e) => e.cobradas || e.generadas);
 
   return (
     <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5">
       <p className="text-sm font-semibold text-[var(--color-text-primary)]">Evolución mensual</p>
       <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5 mb-3">
-        Cobradas por mes de pago · proyectadas por mes de vencimiento.
+        Cobradas por mes de pago · generadas por mes de venta.
       </p>
       {!hasData ? (
         <p className="py-10 text-center text-sm text-[var(--color-text-muted)]">
@@ -71,7 +71,7 @@ export function ComisionesEvolutionChart({ evolucion }: { evolucion: CommissionM
               />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar dataKey="Cobradas" fill={COLOR_COBRADA} radius={[4, 4, 0, 0]} isAnimationActive={false} />
-              <Bar dataKey="Proyectadas" fill={COLOR_PROYECTADA} radius={[4, 4, 0, 0]} isAnimationActive={false} />
+              <Bar dataKey="Generadas" fill={COLOR_GENERADA} radius={[4, 4, 0, 0]} isAnimationActive={false} />
             </BarChart>
           </ResponsiveContainer>
         </div>

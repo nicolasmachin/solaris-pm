@@ -32,7 +32,7 @@ export interface CommissionMetrics {
   saldoAcobrarUsd: number;
   cobradoEnAnioUsd: number;
   ventasCerradas: number;
-  evolucion: Array<{ mes: number; cobradas: number; proyectadas: number }>;
+  evolucion: Array<{ mes: number; cobradas: number; generadas: number }>;
 }
 
 export interface EligibleProposal {

@@ -17,6 +17,15 @@
 - Se pueden ajustar las **dos fechas**: la **fecha vendida** (define a qué mes se carga la comisión) y la **fecha de pago prevista** (por defecto el 1° del mes siguiente; si se cambia a mano, deja de recalcularse sola). También se puede corregir el monto.
 - Cada cambio **re-sincroniza** el pendiente en Finanzas y queda **registrado** (con quién y cuándo lo modificó); la comisión muestra una marca "editada".
 
+#### Comisiones — la gráfica muestra lo generado por mes
+
+- En la **evolución mensual** de comisiones, la barra azul ahora muestra lo **generado cada mes** (por fecha de venta, cuando se ganó el proyecto) en lugar de lo proyectado por mes de vencimiento. La barra verde de lo **cobrado** queda igual.
+
+#### Reportes fotovoltaicos — tarifas por año y corrección de históricos
+
+- Los reportes ahora usan el **pliego tarifario de UTE del año de cada mes** (2024, 2025 o 2026), en vez de aplicar los precios de 2026 a todos los meses. Esto corrige el ahorro histórico y el retorno de la inversión, que quedaban inflados en los clientes con meses de años anteriores.
+- Se **reincorporaron meses de historial que se habían perdido** en varios generadores, con lo que el retorno acumulado vuelve a reflejar toda la trayectoria del cliente (por ejemplo, un cliente pasó de mostrar 8 meses a sus 19 reales).
+
 ## v8.3
 
 ### 3 de agosto de 2026

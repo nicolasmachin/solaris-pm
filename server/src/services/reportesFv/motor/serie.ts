@@ -317,13 +317,13 @@ export function calcularSerie(entrada: EntradaSerie): ResultadoPeriodo[] {
     }
 
     // Crédito por exportación: se valúa con lo exportado el MES ANTERIOR.
-    // Distinción fiel al Python: si NO hay lectura del mes anterior, es 0; pero
-    // si la lectura EXISTE con exportación vacía, se propaga NaN (el crédito y el
-    // ahorro del mes quedan NaN y no suman al acumulado). Es lo que pasa en el
-    // primer mes con datos, cuyo mes anterior existe pero sin lectura del medidor.
+    // La exportación ausente se trata como 0, exista o no la lectura del mes
+    // anterior. Corrige el bug del sistema Python (bitácora 03/08 §3.1): antes
+    // se propagaba NaN cuando la lectura previa existía sin exportación, y eso
+    // hacía desaparecer en silencio el primer mes de la serie del acumulado
+    // (afectaba a 22 clientes). El fix del Python usa 0.0; replicamos eso.
     const lecturaAnterior = porPeriodo.get(sumarMeses(periodo, -1));
-    const exportacionMesAnterior =
-      lecturaAnterior === undefined ? 0 : (lecturaAnterior.exportacionKwh ?? N);
+    const exportacionMesAnterior = lecturaAnterior?.exportacionKwh ?? 0;
 
     const autoconsumo = calcularAutoconsumo(generacion, exportacion);
     const importacionRed = calcularImportacionRed(consumo, generacion, exportacion);

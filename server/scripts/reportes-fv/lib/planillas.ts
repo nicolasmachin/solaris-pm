@@ -298,19 +298,44 @@ export function leerCsvPlantas(dir: string, archivo: string): FilaPlanta[] {
   return out;
 }
 
-export async function leerTarifas(dir: string): Promise<CuadroLegacy> {
+/** Un pliego tarifario con la fecha desde la que rige ("YYYY-MM"). */
+export interface PliegoLegacy {
+  vigenciaDesde: string;
+  cuadro: CuadroLegacy;
+}
+
+/**
+ * Lee `tarifas.xlsx` agrupando por la columna `vigencia_desde` de cada hoja, así
+ * que devuelve todos los pliegos (2024, 2025, 2026…) para cargarlos cada uno con
+ * su vigencia. Si una hoja no tiene esa columna (planillas viejas de un solo
+ * pliego), todo cae en "2024-01".
+ */
+export async function leerTarifasPorVigencia(dir: string): Promise<PliegoLegacy[]> {
   const wb = await abrir(dir, "tarifas.xlsx");
 
-  // Hoja `parametros`: (tarifa, concepto, valor)
+  const vigDe = (row: ExcelJS.Row, h: Map<string, number>): string => {
+    const col = h.get("vigencia_desde");
+    const v = col ? normalizar(texto(row.getCell(col).value)) : "";
+    return v || "2024-01";
+  };
+
+  const porVig = new Map<string, CuadroLegacy>();
+  const cuadroDe = (vig: string): CuadroLegacy => {
+    let c = porVig.get(vig);
+    if (!c) porVig.set(vig, (c = { cargos: {}, tramosSimple: [], franjas: {} }));
+    return c;
+  };
+
+  // Hoja `parametros`: (tarifa, concepto, valor, vigencia_desde)
   const par = hoja(wb, "parametros");
   const hp = encabezados(par);
-  const cargos: CuadroLegacy["cargos"] = {};
   par.eachRow((row, i) => {
     if (i === 1) return;
     const tarifa = normalizar(texto(row.getCell(hp.get("tarifa") ?? 1).value));
     const concepto = normalizar(texto(row.getCell(hp.get("concepto") ?? 2).value));
     const valor = numero(row.getCell(hp.get("valor") ?? 3).value);
     if (!tarifa || valor == null) return;
+    const cargos = cuadroDe(vigDe(row, hp)).cargos;
     cargos[tarifa] ??= { cargoFijo: 0, cargoPotenciaKw: 0 };
     if (concepto === "cargo_fijo") cargos[tarifa].cargoFijo = valor;
     if (concepto === "potencia_cont") cargos[tarifa].cargoPotenciaKw = valor;
@@ -321,19 +346,16 @@ export async function leerTarifas(dir: string): Promise<CuadroLegacy> {
   const sim = hoja(wb, "precios_simple");
   const hs = encabezados(sim);
   const colPrecio = hs.get("precio") ?? hs.get("precio_kwh");
-  const tramosSimple: CuadroLegacy["tramosSimple"] = [];
   sim.eachRow((row, i) => {
     if (i === 1) return;
     const desdeKwh = numero(row.getCell(hs.get("desde_kwh") ?? 1).value);
     const hastaKwh = numero(row.getCell(hs.get("hasta_kwh") ?? 2).value);
     const precioKwh = colPrecio ? numero(row.getCell(colPrecio).value) : null;
     if (desdeKwh == null || hastaKwh == null || precioKwh == null) return;
-    tramosSimple.push({ desdeKwh, hastaKwh, precioKwh });
+    cuadroDe(vigDe(row, hs)).tramosSimple.push({ desdeKwh, hastaKwh, precioKwh });
   });
-  tramosSimple.sort((a, b) => a.desdeKwh - b.desdeKwh);
 
   // Hojas de franjas. `zafral` no lleva el prefijo `precios_`.
-  const franjas: CuadroLegacy["franjas"] = {};
   for (const [tarifa, nombreHoja] of [
     ["doble", "precios_doble"],
     ["triple", "precios_triple"],
@@ -341,15 +363,26 @@ export async function leerTarifas(dir: string): Promise<CuadroLegacy> {
   ] as const) {
     const s = hoja(wb, nombreHoja);
     const hf = encabezados(s);
-    franjas[tarifa] = {};
     s.eachRow((row, i) => {
       if (i === 1) return;
       const franja = normalizar(texto(row.getCell(hf.get("franja") ?? 1).value));
       const precio = numero(row.getCell(hf.get("precio_kwh") ?? 2).value);
       if (!franja || precio == null) return;
-      franjas[tarifa][franja] = precio;
+      const franjas = cuadroDe(vigDe(row, hf)).franjas;
+      (franjas[tarifa] ??= {})[franja] = precio;
     });
   }
 
-  return { cargos, tramosSimple, franjas };
+  return [...porVig.entries()]
+    .map(([vigenciaDesde, cuadro]) => {
+      cuadro.tramosSimple.sort((a, b) => a.desdeKwh - b.desdeKwh);
+      return { vigenciaDesde, cuadro };
+    })
+    .sort((a, b) => a.vigenciaDesde.localeCompare(b.vigenciaDesde));
+}
+
+/** El cuadro más reciente (mayor vigencia). Compat con usos de un solo pliego. */
+export async function leerTarifas(dir: string): Promise<CuadroLegacy> {
+  const pliegos = await leerTarifasPorVigencia(dir);
+  return pliegos[pliegos.length - 1]?.cuadro ?? { cargos: {}, tramosSimple: [], franjas: {} };
 }

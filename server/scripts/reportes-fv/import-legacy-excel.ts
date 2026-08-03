@@ -27,8 +27,9 @@ import {
   leerDatos,
   leerEmails,
   leerHistorico,
-  leerTarifas,
+  leerTarifasPorVigencia,
   leerTipoCambio,
+  type CuadroLegacy,
   normalizar,
   type FilaConstantes,
   type FilaHistorico,
@@ -81,100 +82,99 @@ const FRANJA_ENUM: Record<string, FranjaHoraria> = {
   fuera_punta: FranjaHoraria.FUERA_PUNTA,
 };
 
-async function migrarTarifas(userId: string): Promise<string> {
-  const cuadro = await leerTarifas(DIR);
+/** "2024-01" → Date UTC del primer día de ese mes. */
+function vigenciaADate(vig: string): Date {
+  const [a, m] = vig.split("-");
+  return new Date(`${a}-${(m ?? "01").padStart(2, "0")}-01T00:00:00.000Z`);
+}
 
-  console.log("  Cargos por tarifa:");
-  for (const [t, v] of Object.entries(cuadro.cargos)) {
-    console.log(`    ${t.padEnd(8)} fijo ${String(v.cargoFijo).padStart(8)}   por kW ${String(v.cargoPotenciaKw).padStart(8)}`);
-  }
-  console.log("  Tramos de la simple:");
-  for (const t of cuadro.tramosSimple) {
-    console.log(`    ${String(t.desdeKwh).padStart(7)} – ${String(t.hastaKwh).padStart(7)} kWh  →  $${t.precioKwh}/kWh`);
-  }
-  console.log("  Franjas:");
-  for (const [tarifa, fs] of Object.entries(cuadro.franjas)) {
-    console.log(`    ${tarifa.padEnd(8)} ${Object.entries(fs).map(([f, p]) => `${f}=${p}`).join("  ")}`);
-  }
-
-  const NOMBRE = "UTE 2026";
-  const VIGENTE_DESDE = new Date("2024-01-01T00:00:00.000Z");
-  const NOTAS =
-    "Pliego Tarifario UTE vigente desde 01/01/2026, cargado desde tarifas.xlsx. Los cargos son " +
-    "iguales para todo el país (no varían por zona). Cuando UTE publique un pliego nuevo, duplicar " +
-    "este cuadro y publicar una versión con la vigencia correspondiente.";
-
-  const cargosData = Object.entries(cuadro.cargos)
+function datosDelCuadro(cuadro: CuadroLegacy) {
+  const cargos = Object.entries(cuadro.cargos)
     .filter(([t]) => TARIFA_ENUM[t])
     .map(([t, v]) => ({ tarifa: TARIFA_ENUM[t], cargoFijo: v.cargoFijo, cargoPotenciaKw: v.cargoPotenciaKw }));
-  const tramosData = cuadro.tramosSimple.map((t, i) => ({
+  const tramos = cuadro.tramosSimple.map((t, i) => ({
     tarifa: TarifaUte.SIMPLE,
     orden: i,
     desdeKwh: Math.round(t.desdeKwh),
     hastaKwh: Math.round(t.hastaKwh),
     precioKwh: t.precioKwh,
   }));
-  const franjasData = Object.entries(cuadro.franjas).flatMap(([tarifa, fs]) =>
+  const franjas = Object.entries(cuadro.franjas).flatMap(([tarifa, fs]) =>
     Object.entries(fs)
       .filter(([f]) => FRANJA_ENUM[f])
       .map(([f, precio]) => ({ tarifa: TARIFA_ENUM[tarifa], franja: FRANJA_ENUM[f], precioKwh: precio })),
   );
+  return { cargos, tramos, franjas };
+}
 
-  // Idempotente: reusa el cuadro que ya cubre 2024-01-01 (creado por una corrida
-  // anterior, aunque tenga otro nombre) y le refresca los precios, en vez de
-  // crear un duplicado que chocaría con @@unique([vigenteDesde]).
-  const existente = await prisma.tarifaUteVersion.findUnique({ where: { vigenteDesde: VIGENTE_DESDE } });
+async function migrarTarifas(userId: string): Promise<void> {
+  const pliegos = await leerTarifasPorVigencia(DIR);
 
-  if (!COMMIT) {
+  console.log(`  ${pliegos.length} pliego(s) en la planilla: ${pliegos.map((p) => p.vigenciaDesde).join(", ")}`);
+  for (const { vigenciaDesde, cuadro } of pliegos) {
+    const simple = cuadro.cargos["simple"];
     console.log(
-      c.warn(
-        existente
-          ? `  [dry-run] se actualizaría el cuadro existente ("${existente.nombre}") con el pliego 2026`
-          : `  [dry-run] se crearía el cuadro "${NOMBRE}" vigente desde 2024-01-01`,
-      ),
+      `    ${c.bold(vigenciaDesde)}  simple: fijo ${simple?.cargoFijo ?? "-"} · ` +
+        `tramos ${cuadro.tramosSimple.map((t) => t.precioKwh).join("/")}`,
     );
-    return existente?.id ?? "";
   }
 
-  let versionId: string;
-  if (existente) {
-    await prisma.$transaction([
-      prisma.tarifaUteCargo.deleteMany({ where: { versionId: existente.id } }),
-      prisma.tarifaUteTramo.deleteMany({ where: { versionId: existente.id } }),
-      prisma.tarifaUteFranja.deleteMany({ where: { versionId: existente.id } }),
-      prisma.tarifaUteVersion.update({
-        where: { id: existente.id },
+  if (!COMMIT) {
+    console.log(c.warn(`  [dry-run] se cargarían ${pliegos.length} cuadros (uno por vigencia)`));
+    return;
+  }
+
+  for (const { vigenciaDesde, cuadro } of pliegos) {
+    const anio = vigenciaDesde.slice(0, 4);
+    const NOMBRE = `UTE ${anio}`;
+    const VIGENTE_DESDE = vigenciaADate(vigenciaDesde);
+    const NOTAS =
+      `Pliego Tarifario UTE vigente desde 01/${vigenciaDesde.slice(5, 7)}/${anio}, cargado desde ` +
+      `tarifas.xlsx. Los cargos son iguales para todo el país. Cuando UTE publique un pliego nuevo, ` +
+      `agregar filas con su vigencia_desde y re-correr esta migración.`;
+    const { cargos, tramos, franjas } = datosDelCuadro(cuadro);
+
+    // Idempotente por vigencia: reusa el cuadro que ya cubre esa fecha (aunque
+    // tenga otro nombre, p.ej. el viejo "UTE 2026" vigente desde 2024-01-01) y le
+    // refresca precios y nombre, en vez de chocar con @@unique([vigenteDesde]).
+    const existente = await prisma.tarifaUteVersion.findUnique({ where: { vigenteDesde: VIGENTE_DESDE } });
+
+    if (existente) {
+      await prisma.$transaction([
+        prisma.tarifaUteCargo.deleteMany({ where: { versionId: existente.id } }),
+        prisma.tarifaUteTramo.deleteMany({ where: { versionId: existente.id } }),
+        prisma.tarifaUteFranja.deleteMany({ where: { versionId: existente.id } }),
+        prisma.tarifaUteVersion.update({
+          where: { id: existente.id },
+          data: {
+            nombre: NOMBRE,
+            publicada: true,
+            notas: NOTAS,
+            cargos: { create: cargos },
+            tramos: { create: tramos },
+            franjas: { create: franjas },
+          },
+        }),
+      ]);
+      console.log(c.ok(`  Cuadro "${NOMBRE}" actualizado (vigente desde ${vigenciaDesde})`));
+    } else {
+      await prisma.tarifaUteVersion.create({
         data: {
           nombre: NOMBRE,
+          vigenteDesde: VIGENTE_DESDE,
           publicada: true,
           notas: NOTAS,
-          cargos: { create: cargosData },
-          tramos: { create: tramosData },
-          franjas: { create: franjasData },
+          creadaPorId: userId,
+          cargos: { create: cargos },
+          tramos: { create: tramos },
+          franjas: { create: franjas },
         },
-      }),
-    ]);
-    versionId = existente.id;
-    console.log(c.ok(`  Cuadro "${NOMBRE}" actualizado con el pliego 2026 (${versionId})`));
-  } else {
-    const version = await prisma.tarifaUteVersion.create({
-      data: {
-        nombre: NOMBRE,
-        vigenteDesde: VIGENTE_DESDE,
-        publicada: true,
-        notas: NOTAS,
-        creadaPorId: userId,
-        cargos: { create: cargosData },
-        tramos: { create: tramosData },
-        franjas: { create: franjasData },
-      },
-    });
-    versionId = version.id;
-    console.log(c.ok(`  Cuadro "${NOMBRE}" creado y publicado (${versionId})`));
+      });
+      console.log(c.ok(`  Cuadro "${NOMBRE}" creado y publicado (vigente desde ${vigenciaDesde})`));
+    }
   }
 
   clearTarifasCache();
-  return versionId;
 }
 
 // ─── Main ────────────────────────────────────────────────────────────────────
@@ -215,7 +215,7 @@ async function main() {
 
   // ─── 2. Tarifas ───
   titulo("2. Cuadro tarifario");
-  const tarifaVersionId = await migrarTarifas(admin.id);
+  await migrarTarifas(admin.id);
 
   // ─── 3. Matching ───
   titulo("3. Vinculación con proyectos");
