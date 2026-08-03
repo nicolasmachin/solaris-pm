@@ -1073,6 +1073,99 @@ export async function registerPortalRoutes(app: FastifyInstance) {
     },
   );
 
+  // Dashboard de energía del cliente: serie mensual de generación, consumo,
+  // ahorro y retorno, para los meses que ya tiene publicados en el portal (mismo
+  // gate que los reportes). Junta ReporteFvCalculo (ahorro/ROI/autoconsumo) con
+  // ReporteFvLectura (generación/consumo/exportación crudas).
+  app.get(
+    "/client/energia",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.VIEW) },
+    async (request) => {
+      const user = ensureUser(request);
+
+      const emisiones = await prisma.reporteFvEmision.findMany({
+        where: {
+          publicadoEnPortal: true,
+          project: { deletedAt: null, clients: { some: { userId: user.id } } },
+        },
+        select: { periodo: true, project: { select: { id: true, clientName: true } } },
+      });
+      if (emisiones.length === 0) return { generadores: [] };
+
+      const dia = (d: Date) => d.toISOString().slice(0, 10);
+      const publicadosPorProyecto = new Map<string, { name: string; periodos: Set<string> }>();
+      for (const e of emisiones) {
+        let entry = publicadosPorProyecto.get(e.project.id);
+        if (!entry) {
+          publicadosPorProyecto.set(e.project.id, (entry = { name: e.project.clientName, periodos: new Set() }));
+        }
+        entry.periodos.add(dia(e.periodo));
+      }
+      const projectIds = [...publicadosPorProyecto.keys()];
+
+      const [calculos, lecturas] = await Promise.all([
+        prisma.reporteFvCalculo.findMany({
+          where: { projectId: { in: projectIds } },
+          select: {
+            projectId: true,
+            periodo: true,
+            autoconsumoKwh: true,
+            importacionRedKwh: true,
+            ahorroTotal: true,
+            ahorroTotalUsd: true,
+            ahorroAcumulado: true,
+            ahorroAcumuladoUsd: true,
+            retornoInversionPct: true,
+          },
+        }),
+        prisma.reporteFvLectura.findMany({
+          where: { projectId: { in: projectIds } },
+          select: { projectId: true, periodo: true, generacionKwh: true, consumoKwh: true, exportacionKwh: true },
+        }),
+      ]);
+
+      const lecturaByKey = new Map(lecturas.map((l) => [`${l.projectId}|${dia(l.periodo)}`, l]));
+
+      const generadores = projectIds
+        .map((pid) => {
+          const { name, periodos } = publicadosPorProyecto.get(pid)!;
+          const meses = calculos
+            .filter((c) => c.projectId === pid && periodos.has(dia(c.periodo)))
+            .sort((a, b) => a.periodo.getTime() - b.periodo.getTime())
+            .map((c) => {
+              const lec = lecturaByKey.get(`${pid}|${dia(c.periodo)}`);
+              const autoconsumo = Number(c.autoconsumoKwh);
+              const importacion = Number(c.importacionRedKwh);
+              const exportacion = lec?.exportacionKwh != null ? Number(lec.exportacionKwh) : null;
+              const generacion =
+                lec?.generacionKwh != null
+                  ? Number(lec.generacionKwh)
+                  : exportacion != null
+                    ? autoconsumo + exportacion
+                    : null;
+              const consumo = lec?.consumoKwh != null ? Number(lec.consumoKwh) : autoconsumo + importacion;
+              return {
+                periodo: dia(c.periodo).slice(0, 7),
+                generacionKwh: generacion,
+                consumoKwh: consumo,
+                autoconsumoKwh: autoconsumo,
+                exportacionKwh: exportacion,
+                importacionRedKwh: importacion,
+                ahorroTotal: Number(c.ahorroTotal),
+                ahorroTotalUsd: Number(c.ahorroTotalUsd),
+                ahorroAcumulado: Number(c.ahorroAcumulado),
+                ahorroAcumuladoUsd: Number(c.ahorroAcumuladoUsd),
+                retornoInversionPct: Number(c.retornoInversionPct),
+              };
+            });
+          return { projectId: pid, projectName: name, meses };
+        })
+        .filter((g) => g.meses.length > 0);
+
+      return { generadores };
+    },
+  );
+
   // No-op para suprimir warnings de imports no usados en futuros refactors.
   void forbidden;
 }

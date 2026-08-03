@@ -25,6 +25,10 @@
 
 - **Gerencia comercial** (y administración) ahora ve las comisiones de **todos los asesores** y puede **filtrar por persona** con un selector arriba de la pantalla ("Todos los asesores" o uno en particular). Cada asesor sigue viendo solo las suyas.
 
+#### Portal del cliente — panel "Mi energía"
+
+- En la sección **Reportes** del portal, el cliente ahora ve arriba un **panel con su energía**: tarjetas con el ahorro del mes, el ahorro acumulado en dólares, la generación del mes y el retorno de la inversión, más dos gráficos —**generación vs. consumo por mes** y **ahorro acumulado en el tiempo**—. Toma los datos de los reportes que ya recibió. Si tiene más de un generador, puede elegir cuál ver.
+
 #### Experiencia Solar — reenviar el acceso al portal
 
 - En el listado de Generadores, los clientes que **ya tienen acceso** ahora muestran un botón **"Reenviar"** al lado de "Con acceso". Sirve para volver a mandar el mensaje de WhatsApp cuando el cliente lo perdió o nunca lo usó: genera una **nueva contraseña temporal** y arma el mensaje listo para copiar (antes, el botón para copiar el mensaje solo aparecía en el momento de crear la cuenta y después ya no se podía recuperar).

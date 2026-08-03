@@ -12,6 +12,7 @@ import {
 } from "../api/portal.api";
 import { useAuthBlobUrl, downloadAuthenticated } from "../hooks/useAuthBlobUrl";
 import { Spinner } from "../components/ui/Spinner";
+import { PortalEnergiaDashboard } from "../components/portal/PortalEnergiaDashboard";
 
 const MESES = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",
@@ -144,6 +145,8 @@ export function PortalReportes() {
           El detalle mensual de tu generación, consumo y ahorro.
         </p>
       </div>
+
+      <PortalEnergiaDashboard />
 
       {reportes.length === 0 ? (
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-8 text-center">

@@ -163,6 +163,33 @@ export function portalReportePdfUrl(id: string): string {
   return `${base}/api/client/reportes/${id}/pdf`;
 }
 
+export interface PortalEnergiaMes {
+  periodo: string; // "YYYY-MM"
+  generacionKwh: number | null;
+  consumoKwh: number | null;
+  autoconsumoKwh: number;
+  exportacionKwh: number | null;
+  importacionRedKwh: number;
+  ahorroTotal: number;
+  ahorroTotalUsd: number;
+  ahorroAcumulado: number;
+  ahorroAcumuladoUsd: number;
+  retornoInversionPct: number;
+}
+
+export interface PortalEnergiaGenerador {
+  projectId: string;
+  projectName: string;
+  meses: PortalEnergiaMes[];
+}
+
+export async function getPortalEnergia(): Promise<PortalEnergiaGenerador[]> {
+  const { data } = await apiClient.get<{ generadores: PortalEnergiaGenerador[] }>(
+    "/api/client/energia",
+  );
+  return data.generadores;
+}
+
 export interface PortalDiaCorteRow {
   projectId: string;
   projectName: string;
