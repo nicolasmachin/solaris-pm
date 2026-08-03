@@ -2,6 +2,12 @@
 
 ## v8.3
 
+### 3 de agosto de 2026
+
+#### Reportes fotovoltaicos — manual de uso
+
+- Nuevo botón **"Manual de uso"** en el panel de Reportes FV: descarga un PDF con el instructivo completo de la herramienta, de punta a punta (dar de alta, traer datos de Growatt, cargar a mano, generar, enviar, portal, automatización, tarifas y problemas frecuentes). El manual muestra su versión y lleva un historial de cambios.
+
 ### 2 de agosto de 2026
 
 #### Reportes fotovoltaicos — preparación automática cada mes

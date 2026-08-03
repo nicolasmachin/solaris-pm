@@ -34,6 +34,7 @@ import {
   vincularPlanta,
 } from "../services/reportesFv/growatt/plantas.service.js";
 import { ReporteFvIngestaModo } from "@prisma/client";
+import { generarManualPdf, MANUAL_ACTUALIZADO, MANUAL_VERSION } from "../services/reportesFv/manual/manual.pdf.js";
 
 const periodoSchema = z
   .string()
@@ -159,6 +160,27 @@ export async function registerReportesFvRoutes(app: FastifyInstance) {
   // ─── Panel de gestión (Experiencia Solar) ───────────────────────────────────
 
   const EXP = Module.EXPERIENCIA_CLIENTES;
+
+  // Manual de uso: versión vigente (para el botón) + PDF descargable.
+  app.get(
+    "/reportes-fv/manual",
+    { preHandler: authorize(EXP, Action.VIEW) },
+    async () => ({ version: MANUAL_VERSION, actualizado: MANUAL_ACTUALIZADO }),
+  );
+
+  app.get(
+    "/reportes-fv/manual/pdf",
+    { preHandler: authorize(EXP, Action.VIEW) },
+    async (_request, reply) => {
+      const pdf = await generarManualPdf();
+      reply.header("Content-Type", "application/pdf");
+      reply.header(
+        "Content-Disposition",
+        contentDisposition("inline", `manual-reportes-fv-v${MANUAL_VERSION}.pdf`),
+      );
+      return reply.send(pdf);
+    },
+  );
 
   // Listado de generadores (dados de alta y no) con estado del periodo + KPIs.
   app.get(

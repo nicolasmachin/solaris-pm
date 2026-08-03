@@ -377,3 +377,16 @@ export async function vincularPlanta(
 ): Promise<void> {
   await apiClient.post(`/api/reportes-fv/growatt/plantas/${plantId}/vincular`, input);
 }
+
+// ─── Manual de uso ───────────────────────────────────────────────────────────
+
+export async function getManualInfo(): Promise<{ version: string; actualizado: string }> {
+  const { data } = await apiClient.get<{ version: string; actualizado: string }>("/api/reportes-fv/manual");
+  return data;
+}
+
+/** URL absoluta del PDF del manual (para descarga con auth). */
+export function manualPdfUrl(): string {
+  const base = apiClient.defaults.baseURL ?? "";
+  return `${base}/api/reportes-fv/manual/pdf`;
+}
