@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import {
@@ -7,6 +7,7 @@ import {
   type CommissionListItem,
   type CommissionStatus,
 } from "../api/comisiones.api";
+import { getAssignableUsers } from "../api/users.api";
 import { ComisionesEvolutionChart } from "../components/comisiones/ComisionesEvolutionChart";
 import { ManualCommissionModal } from "../components/comisiones/ManualCommissionModal";
 import { EditCommissionModal } from "../components/comisiones/EditCommissionModal";
@@ -69,28 +70,48 @@ function StatusBadge({ status }: { status: CommissionStatus }) {
 }
 
 export function ComisionesAsesor() {
-  // ADMIN/FINANZAS ven todas; el resto ve solo las propias.
-  const canSeeAll = usePermission("FINANZAS", "VIEW");
+  // Admin/finanzas (FINANZAS:VIEW) y gerencia comercial (COMISIONES:EDIT) ven las
+  // comisiones de todos y pueden filtrar por persona; el resto ve solo las propias.
+  const canSeeAll = usePermission("FINANZAS", "VIEW") || usePermission("COMISIONES", "EDIT");
   const canCreate = usePermission("FINANZAS", "CREATE");
   const isAdmin = useAuthStore((s) => s.user?.role === "ADMIN");
   const scope = canSeeAll ? "all" : "mine";
   const [year] = useState(CURRENT_YEAR);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("todas");
   const [sort, setSort] = useState<SortKey>("fecha");
+  const [asesorId, setAsesorId] = useState<string>(""); // "" = todos
   const [manualOpen, setManualOpen] = useState(false);
   const [editing, setEditing] = useState<CommissionListItem | null>(null);
 
+  // Lista de asesores para el filtro por persona (solo si ve todas).
+  const asesoresQ = useQuery({
+    queryKey: ["assignable-users"],
+    queryFn: getAssignableUsers,
+    enabled: canSeeAll,
+  });
+  const asesores = useMemo(
+    () =>
+      (asesoresQ.data ?? [])
+        .filter((u) => u.role === "ASESOR_COMERCIAL" || u.role === "GERENTE_COMERCIAL")
+        .sort((a, b) => a.name.localeCompare(b.name, "es")),
+    [asesoresQ.data],
+  );
+
+  // El filtro por persona solo aplica cuando se ven todas.
+  const asesorFilter = canSeeAll && asesorId ? asesorId : undefined;
+
   const metricsQ = useQuery({
-    queryKey: ["commission-metrics", year, scope],
-    queryFn: () => getCommissionMetrics({ year }),
+    queryKey: ["commission-metrics", year, scope, asesorFilter],
+    queryFn: () => getCommissionMetrics({ year, asesorId: asesorFilter }),
   });
   const listQ = useQuery({
-    queryKey: ["commissions", scope, year, statusFilter, sort],
+    queryKey: ["commissions", scope, year, statusFilter, sort, asesorFilter],
     queryFn: () =>
       getCommissions({
         scope,
         year,
         sort,
+        asesorId: asesorFilter,
         status: statusFilter === "todas" ? undefined : statusFilter,
       }),
   });
@@ -107,9 +128,26 @@ export function ComisionesAsesor() {
             {canSeeAll ? "Comisiones de todos los asesores." : "Tus comisiones por ventas cerradas."}
           </p>
         </div>
-        {canCreate && (
-          <Button onClick={() => setManualOpen(true)}>Agregar comisión manual</Button>
-        )}
+        <div className="flex items-center gap-2">
+          {canSeeAll && (
+            <select
+              value={asesorId}
+              onChange={(e) => setAsesorId(e.target.value)}
+              aria-label="Filtrar por asesor"
+              className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-1.5 text-sm text-[var(--color-text-primary)]"
+            >
+              <option value="">Todos los asesores</option>
+              {asesores.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          )}
+          {canCreate && (
+            <Button onClick={() => setManualOpen(true)}>Agregar comisión manual</Button>
+          )}
+        </div>
       </div>
 
       {/* Métricas */}

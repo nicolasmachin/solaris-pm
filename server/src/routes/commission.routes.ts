@@ -26,8 +26,16 @@ import { forbidden, notFound, unauthorized } from "../utils/errors.js";
 
 // ¿El usuario puede ver comisiones de todos los asesores? (ADMIN/FINANZAS).
 // Los que no, solo ven las propias. Se apoya en FINANZAS:VIEW (ADMIN lo tiene).
-function canSeeAll(role: string) {
-  return hasPermission(role, Module.FINANZAS, Action.VIEW);
+// "Ver todas las comisiones del equipo" (no solo las propias). Dos señales, ambas
+// gestionables desde la matriz de permisos, sin hardcodear roles:
+//  - FINANZAS:VIEW → finanzas y admin (necesitan verlas para los pagos).
+//  - COMISIONES:EDIT → gerencia comercial (oversight del equipo comercial).
+async function canSeeAll(role: string) {
+  const [finanzas, comisiones] = await Promise.all([
+    hasPermission(role, Module.FINANZAS, Action.VIEW),
+    hasPermission(role, Module.COMISIONES, Action.EDIT),
+  ]);
+  return finanzas || comisiones;
 }
 
 const listQuery = z

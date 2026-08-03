@@ -21,6 +21,10 @@
 
 - En la **evolución mensual** de comisiones, la barra azul ahora muestra lo **generado cada mes** (por fecha de venta, cuando se ganó el proyecto) en lugar de lo proyectado por mes de vencimiento. La barra verde de lo **cobrado** queda igual.
 
+#### Comisiones — la gerencia comercial ve las de todo el equipo
+
+- **Gerencia comercial** (y administración) ahora ve las comisiones de **todos los asesores** y puede **filtrar por persona** con un selector arriba de la pantalla ("Todos los asesores" o uno en particular). Cada asesor sigue viendo solo las suyas.
+
 #### Experiencia Solar — reenviar el acceso al portal
 
 - En el listado de Generadores, los clientes que **ya tienen acceso** ahora muestran un botón **"Reenviar"** al lado de "Con acceso". Sirve para volver a mandar el mensaje de WhatsApp cuando el cliente lo perdió o nunca lo usó: genera una **nueva contraseña temporal** y arma el mensaje listo para copiar (antes, el botón para copiar el mensaje solo aparecía en el momento de crear la cuenta y después ya no se podía recuperar).

@@ -30,7 +30,11 @@ export function ManualCommissionModal({ open, onClose }: Props) {
     queryFn: getAssignableUsers,
     enabled: open,
   });
-  const asesores = (asesoresQ.data ?? []).filter((u) => u.role === "ASESOR_COMERCIAL");
+  // Asesores comerciales y gerencia comercial: ambos cierran ventas y pueden
+  // tener comisiones.
+  const asesores = (asesoresQ.data ?? []).filter(
+    (u) => u.role === "ASESOR_COMERCIAL" || u.role === "GERENTE_COMERCIAL",
+  );
 
   const mut = useMutation({
     mutationFn: () =>
