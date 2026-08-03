@@ -3,6 +3,29 @@
 Migración del sistema Python standalone (`~/Dev/Reporte_Fotovoltaico`) a Voltia PM.
 Última actualización: **2 de agosto de 2026 (tarde)**.
 
+## Fase 8 — Crons mensuales ✅
+
+`server/src/services/reportesFv/reportes-fv.job.ts` (patrón de
+`encuestas/aniversario.job.ts`: función pura testeable + wrapper con env var).
+Registrado en `index.ts` (`startReportesFvJobs`). Tres jobs escalonados sobre el
+**mes anterior**:
+
+- **Ingesta** `CRON_REPORTES_FV_INGESTA` (default `0 6 2,4,6 * *`): trae los datos
+  de Growatt. Los días 4 y 6 reintentan lo incompleto (skip inteligente gratis).
+- **Emisión** `CRON_REPORTES_FV_EMISION` (default `0 8 7 * *`): recalcula y genera
+  los PDF de los generadores habilitados con lectura completa y sin bloqueos;
+  clasifica el resto (esperando datos / bloqueados / ya emitidos) y **notifica al
+  equipo por email interno** con el resumen. No regenera los ya emitidos.
+- **Envío** `CRON_REPORTES_FV_ENVIO` (default `0 12 9 * *`): **desactivado** salvo
+  `REPORTES_FV_ENVIO_AUTO=true`. El envío arranca con aprobación humana.
+
+Actor de los jobs: el primer ADMIN activo (no hay usuario de sistema).
+`ejecutarEmisionMensual` acepta `projectIds` para reintentar puntualmente.
+
+**Verificado**: emisión mensual de un generador (now=julio → periodo junio →
+generó v1 LISTO, resumen correcto, limpiado); server arranca limpio con los 3
+crons; tsc 0.
+
 ## Fase 4 — Ingesta Growatt ✅ verificada contra la API real
 
 `server/src/services/reportesFv/growatt/`:
@@ -367,20 +390,26 @@ inversión sólo degrada la sección de retorno. Antes estaba todo junto y dejab
 4. La fila `Antonio Costa Vital 2026-03` del histórico está corrupta (todo NaN
    salvo generación).
 
-## Qué falta
+## Estado: TODAS LAS FASES COMPLETAS ✅
 
-| Fase | Estado |
-|---|---|
-| 8 — Crons mensuales | pendiente |
+Las 9 fases (1-9) están hechas y verificadas. El ciclo funciona de punta a punta,
+manual y automático: ingesta Growatt → cálculo → PDF → envío al cliente → portal,
+con los crons mensuales orquestando todo.
 
-Con 1, 2, 3, 5, 6, 7 y 9 hechas, el ciclo manual está completo: dar de alta,
-cargar datos, calcular, generar PDF, **enviar al cliente** y que lo **vea en el
-portal**. Falta automatizar la ingesta (Growatt) y el cron mensual.
+**Pendiente de deploy a prod** (todo lo demás está en el repo):
+1. Migraciones: `add_reportes_fv` + `reporte_fv_cobertura` (ambas aditivas).
+2. `docker compose exec server npx tsx prisma/scripts/seed-reportes-fv-permissions.ts`
+   (permiso COMPLETE para enviar) + reiniciar server.
+3. Env en `docker-compose.prod.yml`: `GROWATT_API_TOKEN` (obligatorio para la
+   ingesta), `REPORTES_FV_BCC` (opcional, copia interna de cada envío),
+   y opcionalmente los `CRON_REPORTES_FV_*` si se quieren otros horarios.
+4. Cargar el pliego UTE actual desde Admin → Tarifas UTE si cambió respecto de 2026.
+5. El envío automático arranca APAGADO: prender `REPORTES_FV_ENVIO_AUTO=true`
+   sólo cuando el pipeline lleve unos meses estable.
 
-**Pendiente de deploy a prod**: correr `seed-reportes-fv-permissions.ts` (permiso
-COMPLETE) tras el próximo deploy, y las migraciones `add_reportes_fv` +
-`reporte_fv_cobertura`. Setear env `GROWATT_API_TOKEN` y (opcional)
-`REPORTES_FV_BCC` en `docker-compose.prod.yml`.
+**Roadmap futuro**: ingesta multi-marca (Huawei, Fronius — la lógica pura de
+`metricas.ts` se reusa, sólo cambia el `client` por proveedor); día de lectura del
+medidor por cliente para alinear al ciclo real de facturación (bitácora §10.5).
 
 Con las fases 1, 2, 3, 5 y 9 hechas ya hay **datos reales calculados y PDFs
 generables** desde la base. Falta el panel (disparar/ver desde la UI), la

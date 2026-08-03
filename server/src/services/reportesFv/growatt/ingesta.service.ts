@@ -65,6 +65,23 @@ export async function ingerirPeriodo(opts: OpcionesIngesta): Promise<{ ingestaId
   return { ingestaId: ingesta.id };
 }
 
+/**
+ * Crea la corrida y la ejecuta esperando a que termine. Para el cron y los
+ * scripts, que necesitan el resultado antes de seguir.
+ */
+export async function ingerirPeriodoSincrono(opts: OpcionesIngesta): Promise<string> {
+  const ingesta = await prisma.reporteFvIngesta.create({
+    data: {
+      periodo: periodoADate(opts.periodo),
+      modo: opts.modo,
+      estado: ReporteFvIngestaEstado.EN_CURSO,
+      lanzadaPorId: opts.userId ?? null,
+    },
+  });
+  await ejecutarIngesta(ingesta.id, opts);
+  return ingesta.id;
+}
+
 /** Ejecuta la ingesta de forma síncrona (para cron/scripts que esperan). */
 export async function ejecutarIngesta(ingestaId: string, opts: OpcionesIngesta): Promise<void> {
   const fecha = periodoADate(opts.periodo);

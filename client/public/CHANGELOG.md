@@ -4,6 +4,11 @@
 
 ### 2 de agosto de 2026
 
+#### Reportes fotovoltaicos — preparación automática cada mes
+
+- Cada mes el sistema **prepara los reportes solo**: trae los datos de Growatt a principios de mes, calcula y deja los PDF listos alrededor del día 7, y **avisa al equipo por email** con el resumen (cuántos quedaron listos, cuántos esperan datos). Solo falta que una persona revise y apriete "Enviar".
+- El envío al cliente sigue siendo manual a propósito, hasta que la preparación automática lleve unos meses probada.
+
 #### Reportes fotovoltaicos — datos automáticos desde Growatt
 
 - Nuevo botón **"Traer datos de Growatt"** en el panel de Reportes FV: trae la generación, el consumo y la exportación del mes de cada generador directamente desde Growatt, sin cargarlos a mano. Muestra el progreso mientras corre.
