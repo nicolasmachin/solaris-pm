@@ -40,7 +40,8 @@ export const LATEST_RELEASE: Release = {
     {
       title: "Checklist de fotos a mano",
       items: [
-        'En "Fotos de Obra" hay un botón nuevo, "Checklist de fotos", que abre el checklist oficial de fotos para entrega de obra. Se puede consultar desde el celular en la obra o imprimir para llevarlo en papel.',
+        'En "Fotos de Obra" hay un botón nuevo, "Checklist de fotos", que muestra las 23 fotos obligatorias para la entrega de obra, agrupadas por sección y con el detalle de qué tiene que verse en cada una.',
+        "Se abre dentro de la app y se cierra con la X, para consultarlo desde el celular arriba de la obra. Desde ahí mismo se descarga el PDF para imprimirlo y firmarlo.",
       ],
     },
   ],

@@ -97,10 +97,11 @@ export function ProjectVideoUpload({ projectId }: Props) {
       <input
         ref={inputRef}
         type="file"
-        // `capture` abre directo la cámara en el celular; en la computadora el
-        // navegador lo ignora y muestra el selector de archivos normal.
+        // Sin `capture`: ese atributo fuerza la cámara en iOS y hace desaparecer
+        // la opción de elegir un video ya grabado del carrete. Sin él, el iPhone
+        // ofrece las dos cosas (Fototeca / grabar en el momento), que es lo que
+        // hace falta — el operario graba con la cámara nativa y sube después.
         accept="video/*"
-        capture="environment"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];

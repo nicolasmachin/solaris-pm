@@ -10,6 +10,7 @@ import {
   type ObraPhoto,
 } from "../../api/obra.api";
 import { ObraPhotoUpload } from "./ObraPhotoUpload";
+import { ChecklistFotosModal } from "./ChecklistFotosModal";
 import { ObraLightbox } from "./ObraLightbox";
 import { ProtectedImage } from "./ProtectedImage";
 
@@ -22,6 +23,7 @@ export function ObraPhotoGallery({ projectId }: Props) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ObraPhoto | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [checklistOpen, setChecklistOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["obra-photos", projectId],
@@ -82,18 +84,18 @@ export function ObraPhotoGallery({ projectId }: Props) {
           </span>
         </h3>
         <div className="flex items-center gap-2">
-          {/* Guía de qué fotos hay que sacar. Es un PDF estático servido desde
-              `client/public`, así que viaja con el build y no necesita permisos
-              ni endpoint: se abre en una pestaña para verlo o imprimirlo. */}
-          <a
-            href="/checklist-fotos-entrega-obra.pdf"
-            target="_blank"
-            rel="noopener noreferrer"
+          {/* Se abre dentro de la app y no como PDF: con la app instalada en el
+              iPhone (PWA standalone), abrir un PDF deja al operario sin barra de
+              navegación y sin forma de volver. La descarga del PDF para firmar
+              está dentro del modal. */}
+          <button
+            type="button"
+            onClick={() => setChecklistOpen(true)}
             className="tap-target inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-border)]/30"
           >
             <FileText size={14} />
             Checklist de fotos
-          </a>
+          </button>
           <button
             type="button"
             disabled={count === 0 || downloading}
@@ -130,6 +132,8 @@ export function ObraPhotoGallery({ projectId }: Props) {
           ))}
         </div>
       )}
+
+      {checklistOpen && <ChecklistFotosModal onClose={() => setChecklistOpen(false)} />}
 
       {lightboxIndex !== null && photos[lightboxIndex] && (
         <ObraLightbox

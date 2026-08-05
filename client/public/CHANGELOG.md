@@ -6,7 +6,9 @@
 
 #### Checklist de fotos a mano
 
-- En **Fotos de Obra** hay un botón nuevo, **"Checklist de fotos"**, que abre el checklist oficial de fotos para entrega de obra. Se puede consultar desde el celular en la obra o imprimir para llevarlo en papel.
+- En **Fotos de Obra** hay un botón nuevo, **"Checklist de fotos"**, que muestra las **23 fotos obligatorias** para la entrega de obra, agrupadas por sección y con el detalle de qué tiene que verse en cada una.
+- Se abre **dentro de la app**, así que se cierra con la X y se vuelve al proyecto: pensado para consultarlo desde el celular arriba de la obra.
+- Desde ahí mismo se puede **descargar el PDF** para imprimirlo y firmarlo.
 
 #### Videos — ahora también desde la visita técnica
 
@@ -15,6 +17,10 @@
 - Cada video muestra una **etiqueta de color sobre la miniatura** que dice qué es: los ensayos en amarillo y los de visita técnica en violeta, para distinguirlos de un vistazo.
 - Los dos ensayos ahora se llaman **"Ensayo anti-isla"** y **"Ensayo encendido"**.
 - Los ítems del checklist de obra se siguen marcando **solo con un video de ensayo**: subir uno de visita técnica no los da por cumplidos.
+
+#### Arreglos
+
+- **iPhone**: al tocar "Subir video" se abría directo la cámara y no dejaba elegir un video ya grabado. Ahora ofrece las dos opciones, la fototeca y grabar en el momento.
 
 ### 4 de agosto de 2026
 

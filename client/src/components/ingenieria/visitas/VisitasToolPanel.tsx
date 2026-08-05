@@ -189,8 +189,9 @@ export function VisitasToolPanel({ projectId }: { projectId: string }) {
       <input
         ref={videoInputRef}
         type="file"
+        // Sin `capture`: en iOS ese atributo fuerza la cámara y saca la opción de
+        // elegir un video del carrete.
         accept="video/*"
-        capture="environment"
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];
