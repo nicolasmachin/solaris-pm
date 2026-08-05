@@ -1,8 +1,9 @@
 # Videos del proyecto
 
 Videos que documentan el proyecto: los **ensayos** de obra (anti-isla y
-encendido), que son evidencia con retención permanente y respaldo ante UTE, y los
-que graba el operario durante una **visita técnica**.
+encendido), que son evidencia con retención permanente y respaldo ante UTE, los
+que graba el operario en una **visita técnica**, y los del relevamiento de la
+**visita de ventas**, que se cargan en el lead y pasan al proyecto al ganarlo.
 
 ## Por qué existe
 
@@ -15,10 +16,13 @@ no soportaba *range requests*, sin los cuales un `<video>` no reproduce.
 
 ## La decisión que sostiene todo: comprimir, no escalar el storage
 
-Un video de celular crudo pesa ~150 MB/min (más en 4K60). Comprimido al perfil de
-archivo queda en ~6-23 MB/min según cuánto movimiento tenga. Con 1-3 videos cortos
-por proyecto, eso es ~100 MB/proyecto en el peor caso, o sea unos 15-30 GB/año —
-que el disco de 150 GB del VPS aguanta durante años.
+Un video de celular crudo pesa ~150 MB/min. Comprimido al perfil de archivo queda
+en ~5 MB/min.
+
+Los dos ensayos duran **siempre unos 4 minutos** —UTE exige ver los 180 segundos
+de reconexión más lo previo y lo posterior, así que no se pueden acortar—, o sea
+unos 20 MB cada uno: **~40 MB por proyecto**. A 300 proyectos por año son 12 GB,
+que el disco de 150 GB del VPS aguanta más de una década.
 
 Por eso **no** se migró a object storage: `env.storagePath` se usa crudo en ~19
 lugares y `getStoredFilePath()` devuelve un path de filesystem que ~8 archivos de
@@ -63,20 +67,20 @@ sumarlo ahí también o el checklist no lo va a reconocer.
 
 ## Flujo
 
-1. **Subida** (`POST /api/projects/:projectId/ensayos/videos`, OPERACIONES.CREATE)
-   guarda el original en `storage/<projectId>/ensayos/.tmp/`, crea el
-   `EnsayoVideo` en `PENDING` y responde **202**. El límite es propio de la ruta
+1. **Subida** — guarda el original en `storage/<owner>/videos/.tmp/`, crea el
+   `ProjectVideo` en `PENDING` y responde **202**. `<owner>` es `<projectId>` o
+   `leads/<leadId>` (ver `videoOwnerDir`). El límite es propio de la ruta
    (`MAX_VIDEO_SIZE_MB`, default 500) vía `request.file({ limits })`; el techo
    global de 20 MB no se toca.
 2. **Compresión** en una cola serial en memoria (`video-queue.service.ts`,
    concurrencia 1). Escribe en `.tmp/out_*` y recién al terminar mueve el
-   resultado a `storage/<projectId>/ensayos/`, para que un proceso interrumpido no
+   resultado a `storage/<owner>/videos/`, para que un proceso interrumpido no
    deje archivos sueltos entre los buenos.
-3. Al quedar `READY` se crea el `FileAttachment` (`toolSource: "ensayos-video"`),
-   se borra el original y **se marcan solos** los ítems de checklist con
-   `evidenceKind = "ensayo-video"`.
+3. Al quedar `READY` se crea el `FileAttachment` (`toolSource: "project-video"`),
+   se borra el original y —solo si es un ensayo de un proyecto— **se marcan
+   solos** los ítems de checklist con `evidenceKind = "ensayo-video"`.
 4. **Reproducción**: el front pide un token de 15 min
-   (`POST /api/ensayos/videos/:id/stream-token`) y lo pone en la URL del `<video>`.
+   (`POST /api/videos/:id/stream-token`) y lo pone en la URL del `<video>`.
 
 ## Perfil de compresión
 
@@ -174,6 +178,6 @@ sintéticos y reporta tamaños y tiempos.
   eso, no por descuido.
 - El gate del checklist alcanza a **79 ítems pendientes** en proyectos en curso
   (los 81 ya tildados no se ven afectados). Avisar a Operaciones antes del deploy.
-- `recoverPendingEnsayoVideos()` reencola por proyecto y, si hubiera más de un
+- `recoverPendingProjectVideos()` reencola por dueño y, si hubiera más de un
   video pendiente del mismo proyecto, aparea originales por antigüedad. Con el
   volumen real no se cruza, pero no es unívoco.
