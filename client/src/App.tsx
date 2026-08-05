@@ -5,6 +5,7 @@ import { AppLayout } from "./components/layout/AppLayout";
 import { Spinner } from "./components/ui/Spinner";
 import { useAuthStore } from "./store/auth.store";
 import { usePermission } from "./hooks/usePermission";
+import { useTravelViewer } from "./hooks/useTravelViewer";
 import { getMe } from "./api/auth.api";
 import type { UserRole } from "./types/api.types";
 
@@ -17,6 +18,9 @@ const Metrics = lazy(() => import("./pages/Metrics").then((module) => ({ default
 const Settings = lazy(() => import("./pages/Settings").then((module) => ({ default: module.Settings })));
 const ComisionesAsesor = lazy(() =>
   import("./pages/ComisionesAsesor").then((module) => ({ default: module.ComisionesAsesor })),
+);
+const ViajeSaoPaulo = lazy(() =>
+  import("./pages/ViajeSaoPaulo").then((module) => ({ default: module.ViajeSaoPaulo })),
 );
 const Admin = lazy(() => import("./pages/Admin").then((module) => ({ default: module.Admin })));
 const CalculatorMemoryPage = lazy(() =>
@@ -124,6 +128,13 @@ function PermissionRoute({
     }
   }, [allowed, location.pathname]);
 
+  if (!allowed) return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+}
+
+// Gate del módulo provisional "Guía de viaje São Paulo": solo Nicolás y Gabriel.
+function TravelRoute({ children }: { children: ReactNode }) {
+  const allowed = useTravelViewer();
   if (!allowed) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
@@ -259,6 +270,14 @@ export function App() {
             <PermissionRoute module="COMISIONES" action="VIEW">
               <ComisionesAsesor />
             </PermissionRoute>
+          }
+        />
+        <Route
+          path="/viaje-sao-paulo"
+          element={
+            <TravelRoute>
+              <ViajeSaoPaulo />
+            </TravelRoute>
           }
         />
         {/* El constructor dejó de ser página (ahora es modal en el panel del lead).

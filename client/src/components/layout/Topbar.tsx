@@ -5,6 +5,7 @@ import { useAuthStore } from "../../store/auth.store";
 import { NotificationBell } from "../notifications/NotificationBell";
 import { CanAccess } from "../ui/CanAccess";
 import { usePermission } from "../../hooks/usePermission";
+import { useTravelViewer } from "../../hooks/useTravelViewer";
 import { useInformesPendientesCount } from "../../hooks/useInformes";
 
 function InformesNavLink({
@@ -71,6 +72,7 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
   const { mode, toggle } = useTheme();
   const { user, clearAuth } = useAuthStore();
   const navigate = useNavigate();
+  const canTravel = useTravelViewer();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -253,6 +255,14 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
                   Comisiones
                 </button>
               </CanAccess>
+              {canTravel && (
+                <button
+                  onClick={() => { setUserMenuOpen(false); navigate("/viaje-sao-paulo"); }}
+                  className="w-full text-left px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors"
+                >
+                  ✈ Viaje São Paulo
+                </button>
+              )}
               <button
                 onClick={() => {
                   clearAuth();
