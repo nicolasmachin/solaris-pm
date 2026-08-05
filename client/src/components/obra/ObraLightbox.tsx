@@ -1,21 +1,37 @@
 import { useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Trash2, X } from "lucide-react";
 
-import type { ObraPhoto } from "../../api/obra.api";
 import { ProtectedImage } from "./ProtectedImage";
 
-interface Props {
-  photos: ObraPhoto[];
+/** Lo único que el lightbox necesita de una foto. */
+interface LightboxPhoto {
+  filename: string;
+  fullUrl: string;
+}
+
+interface Props<T extends LightboxPhoto> {
+  photos: T[];
   index: number;
   onClose: () => void;
   onNavigate: (index: number) => void;
-  onDelete?: (photo: ObraPhoto) => void;
+  onDelete?: (photo: T) => void;
 }
 
 // Lightbox propio (sin librería): modal full-screen con navegación por
 // flechas/teclado y contador. Las imágenes van por ProtectedImage (fetch
-// autenticado).
-export function ObraLightbox({ photos, index, onClose, onNavigate, onDelete }: Props) {
+// autenticado): abrirlas en una pestaña nueva no funciona, porque una navegación
+// del navegador no manda el header Authorization y la ruta responde 401.
+//
+// Lo usan la galería de obra y las fotos de la visita de ventas (el panel del
+// lead). Es genérico sobre el tipo de foto para que `onDelete` reciba el objeto
+// completo de cada lado y no una versión recortada.
+export function ObraLightbox<T extends LightboxPhoto>({
+  photos,
+  index,
+  onClose,
+  onNavigate,
+  onDelete,
+}: Props<T>) {
   const photo = photos[index];
   const hasPrev = index > 0;
   const hasNext = index < photos.length - 1;

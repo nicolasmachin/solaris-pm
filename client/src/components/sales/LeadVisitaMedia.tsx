@@ -13,6 +13,7 @@ import {
 import { usePermission } from "../../hooks/usePermission";
 import { compressImage } from "../../utils/compressImage";
 import { ACCEPT_FOTOS } from "../../utils/fileAccept";
+import { ObraLightbox } from "../obra/ObraLightbox";
 import { ProtectedImage } from "../obra/ProtectedImage";
 import { ProjectVideoCard } from "../videos/ProjectVideoCard";
 import { ProjectVideoPlayer } from "../videos/ProjectVideoPlayer";
@@ -42,6 +43,7 @@ export function LeadVisitaMedia({ leadId, canEdit }: Props) {
     null,
   );
   const [confirmarVideo, setConfirmarVideo] = useState<ProjectVideo | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const canDeleteVideo = usePermission("VENTAS", "DELETE");
 
   const fotosQ = useQuery({
@@ -70,6 +72,8 @@ export function LeadVisitaMedia({ leadId, canEdit }: Props) {
     onSuccess: () => {
       toast.success("Foto eliminada");
       setConfirmarBorrado(null);
+      // La foto que se estaba viendo ya no existe: cerrar el visor.
+      setLightboxIndex(null);
       qc.invalidateQueries({ queryKey: ["lead-fotos", leadId] });
     },
     onError: () => toast.error("No se pudo eliminar la foto"),
@@ -202,7 +206,7 @@ export function LeadVisitaMedia({ leadId, canEdit }: Props) {
             Fotos · {fotos.length}
           </p>
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
-            {fotos.map((foto) => (
+            {fotos.map((foto, idx) => (
               <div
                 key={foto.id}
                 className="group relative aspect-square overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)]"
@@ -211,14 +215,20 @@ export function LeadVisitaMedia({ leadId, canEdit }: Props) {
                   src={foto.thumbnailUrl}
                   alt={foto.filename}
                   className="h-full w-full cursor-pointer object-cover"
-                  onClick={() => window.open(`${foto.fullUrl}`, "_blank")}
+                  // Lightbox y no `window.open`: abrir la URL en una pestaña
+                  // nueva es una navegación del navegador, que no manda el
+                  // header Authorization y hace que la ruta responda 401.
+                  onClick={() => setLightboxIndex(idx)}
                 />
                 {canEdit && (
                   <button
                     type="button"
                     aria-label="Eliminar foto"
                     onClick={() => setConfirmarBorrado({ id: foto.id, nombre: foto.filename })}
-                    className="absolute right-1 top-1 rounded bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                    // Visible por defecto y oculto-hasta-hover solo en desktop:
+                    // en el celular no hay hover, así que con `opacity-0` el
+                    // botón quedaba invisible pero igual clickeable.
+                    className="absolute right-1 top-1 rounded bg-black/60 p-1 text-white transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                   >
                     <Trash2 size={12} />
                   </button>
@@ -246,6 +256,18 @@ export function LeadVisitaMedia({ leadId, canEdit }: Props) {
             ))}
           </div>
         </div>
+      )}
+
+      {lightboxIndex !== null && fotos[lightboxIndex] && (
+        <ObraLightbox
+          photos={fotos}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onNavigate={setLightboxIndex}
+          // Sin borrado desde el visor: el ConfirmDialog se monta sobre Sheet
+          // (z-50) y quedaría debajo del lightbox (z-100). Se borra desde la
+          // grilla, que es donde ya está el botón.
+        />
       )}
 
       {playing && <ProjectVideoPlayer video={playing} onClose={() => setPlaying(null)} />}

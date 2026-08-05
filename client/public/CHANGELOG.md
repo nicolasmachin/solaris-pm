@@ -43,6 +43,8 @@
 
 #### Arreglos
 
+- **Las fotos de la visita del lead ya se abren.** Al tocarlas daba un error de sesión y solo dejaba descargarlas. Ahora se ven a pantalla completa dentro de la app, con flechas y deslizando para pasar de una a otra, igual que en Fotos de Obra.
+- En el celular, el botón de **borrar una foto del lead** ahora se ve: antes quedaba invisible porque solo aparecía al pasar el mouse por encima.
 - En la pantalla de **Permisos** se sacó la casilla **"Acceso al módulo"** de Ingeniería: no hacía nada. Tildarla o destildarla no cambiaba quién entraba al módulo, que se sigue gobernando con "Ver".
 - **Borrar videos ya no es exclusivo del administrador**: ahora lo decide la matriz de permisos, como todo lo demás. Quien tenga "Eliminar" en Operaciones puede borrar los videos del proyecto, y quien lo tenga en Ventas, los de la visita comercial. Antes el Gerente de Operaciones tenía el permiso habilitado y aun así el botón no le aparecía.
 - En el panel del lead ahora también se pueden **borrar los videos**, igual que las fotos.
