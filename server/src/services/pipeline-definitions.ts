@@ -5,6 +5,12 @@ export type ChecklistTemplate = {
   label: string;
   isRequired?: boolean;
   isBlocker?: boolean;
+  /**
+   * Tipo de evidencia que respalda el ítem. Cuando está seteado, deja de ser una
+   * casilla de confianza: se marca solo cuando la evidencia existe y no se puede
+   * tildar a mano sin ella. Único valor hoy: "ensayo-video".
+   */
+  evidenceKind?: string;
   appliesWhenModalidadPago?: ModalidadPago;
 };
 
@@ -538,14 +544,19 @@ export const PIPELINE_DEFINITIONS: StageTemplate[] = [
           { label: "Sistema encendido", isRequired: true },
           { label: "Planta creada en servidor", isRequired: true },
           { label: "Parámetros configurados", isRequired: true },
-          { label: "Ensayo anti-isla realizado y grabado", isRequired: true, isBlocker: true },
+          {
+            label: "Ensayo anti-isla realizado y grabado",
+            isRequired: true,
+            isBlocker: true,
+            evidenceKind: "ensayo-video",
+          },
           { label: "Checklist técnico completo", isRequired: true },
           { label: "Recorrido y explicación al cliente", isRequired: true },
           { label: "Firma del cliente en checklist", isRequired: true },
           { label: "Fotos generales subidas", isRequired: true },
           { label: "Fotos de tablero y protecciones subidas", isRequired: true },
           { label: "Fotos de puesta a tierra subidas", isRequired: true },
-          { label: "Videos de ensayos subidos", isRequired: true },
+          { label: "Videos de ensayos subidos", isRequired: true, evidenceKind: "ensayo-video" },
           { label: "Checklist firmado subido", isRequired: true },
           { label: "Documentación UTE firmada subida", isRequired: true },
         ],
@@ -571,7 +582,11 @@ export const PIPELINE_DEFINITIONS: StageTemplate[] = [
           { label: "Estándares de seguridad verificados", isRequired: true },
           { label: "Proyecto respetado sin modificaciones no autorizadas", isRequired: true, isBlocker: true },
           { label: "Fotos completas recibidas y subidas", isRequired: true },
-          { label: "Videos de ensayos recibidos y subidos", isRequired: true },
+          {
+            label: "Videos de ensayos recibidos y subidos",
+            isRequired: true,
+            evidenceKind: "ensayo-video",
+          },
           { label: "Checklist firmado recibido", isRequired: true },
           { label: "Documentación UTE firmada recibida", isRequired: true },
           { label: "Todo cargado en carpeta compartida", isRequired: true },

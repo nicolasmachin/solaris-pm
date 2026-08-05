@@ -127,6 +127,13 @@ Correrlo **antes y después de tareas grandes** y antes de aplicar migraciones q
 - Archivos físicos en `storage/<projectId>/<uuid>.<ext>` (volume `voltia_storage` en Docker).
 - Borrar input/visita debe soft-deletear el `FileAttachment` (`deletedAt`) y borrar el archivo físico — patrón establecido en visitas técnicas.
 - Extensiones permitidas en `file-storage.service.ts`: imágenes, audio (incluye `webm`, `m4a`, `mp4` para iOS Safari), PDF, DWG, XLSX, DOCX, ZIP.
+- **Videos del proyecto** (ensayos y visitas) tienen su propia allowlist y su propio límite
+  (`MAX_VIDEO_SIZE_MB`, default 500), aplicado por ruta con `request.file({ limits })`:
+  **no subir el `MAX_FILE_SIZE_MB` global** para que entre un video. Se comprimen
+  con ffmpeg a H.264 720p antes de guardarse y el original se descarta
+  (ver `docs/features/videos-proyecto/SPEC.md`).
+- El storage de producción se respalda a Backblaze B2 con el servicio `backup` del
+  compose de prod (`docs/DEPLOY.md` §3).
 
 ### Auditoría
 

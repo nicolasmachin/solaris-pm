@@ -35,6 +35,10 @@ services:
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
       STORAGE_PATH: ${STORAGE_PATH}
       MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB}
+      # Límite aparte para videos de ensayos: son órdenes de magnitud más pesados
+      # que el resto de los adjuntos, y el límite alto se aplica SOLO en esa ruta
+      # (no sube el techo global de MAX_FILE_SIZE_MB).
+      MAX_VIDEO_SIZE_MB: ${MAX_VIDEO_SIZE_MB:-500}
       BASE_URL: ${BASE_URL}
       # SMTP (correo) — sin estas, sendEmail corta con "SMTP no configurado" y no
       # salen los mails internos (traspasos, avisos, etc.). Ver DEPLOY.md §2.
@@ -66,6 +70,54 @@ services:
     ports:
       - "127.0.0.1:5173:5173"
     # No exponemos el puerto al host: Caddy va a proxear internamente
+
+  # Respaldo off-site del storage (Roadmap infra, Fase 5).
+  #
+  # `voltia_storage` guarda uploads de usuario que NO se pueden regenerar: fotos
+  # de obra, videos de ensayos, documentación firmada. Los PDFs generados por las
+  # herramientas sí se pueden re-emitir desde su snapshot, pero un upload perdido
+  # se perdió. Sin este servicio, todo eso vive en un solo disco sin copia.
+  #
+  # Sincroniza cada 6 h contra Backblaze B2. Monta el volumen en :ro — el backup
+  # nunca escribe sobre el storage.
+  backup:
+    image: rclone/rclone:latest
+    container_name: voltia-backup
+    restart: unless-stopped
+    volumes:
+      - voltia_storage:/data:ro
+    environment:
+      RCLONE_CONFIG_B2_TYPE: b2
+      RCLONE_CONFIG_B2_ACCOUNT: ${B2_ACCOUNT_ID:-}
+      RCLONE_CONFIG_B2_KEY: ${B2_APPLICATION_KEY:-}
+      B2_BUCKET: ${B2_BUCKET:-voltia-storage}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-21600}
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        if [ -z "$${RCLONE_CONFIG_B2_ACCOUNT}" ] || [ -z "$${RCLONE_CONFIG_B2_KEY}" ]; then
+          echo "[backup] B2_ACCOUNT_ID / B2_APPLICATION_KEY sin configurar: el respaldo del storage NO está corriendo."
+          echo "[backup] Ver docs/DEPLOY.md sección 'Respaldo off-site del storage'."
+          # Dormir en vez de salir: un exit dejaría al contenedor en crash-loop y
+          # ensuciaría los logs del deploy sin aportar nada.
+          while true; do sleep 3600; done
+        fi
+        while true; do
+          echo "[backup] sync -> b2:$${B2_BUCKET}"
+          # --backup-dir es OBLIGATORIO: sin él, un archivo borrado localmente se
+          # borra también en B2, y el respaldo replicaría fielmente la pérdida de
+          # evidencia en lugar de protegerla. Con él, los borrados se archivan por
+          # fecha en un bucket aparte y se pueden recuperar.
+          rclone sync /data "b2:$${B2_BUCKET}" \
+            --backup-dir "b2:$${B2_BUCKET}-deleted/$$(date +%F)" \
+            --exclude '**/.tmp/**' \
+            --transfers 2 --checkers 4 \
+            --bwlimit 5M \
+            --log-level INFO \
+            || echo "[backup] sync falló (reintenta en el próximo ciclo)"
+          sleep "$${BACKUP_INTERVAL_SECONDS}"
+        done
 
 volumes:
   postgres_data:

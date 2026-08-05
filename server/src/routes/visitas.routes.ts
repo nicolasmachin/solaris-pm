@@ -9,6 +9,10 @@
 //        mensaje claro.
 // Foto: multipart/form-data → FileAttachment + VisitInput.
 // Nota: JSON con noteText.
+// Video: multipart/form-data → ProjectVideo (tipo VISITA) atado a la visita. NO
+//        crea VisitInput: no se transcribe, así que no alimenta el informe. Se
+//        comprime igual que los videos de ensayos y aparece en la sección
+//        Videos del proyecto.
 
 import { promises as fsPromises } from "node:fs";
 
@@ -18,6 +22,7 @@ import {
   AuditEntityType,
   FileAttachmentTipo,
   Module,
+  TipoVideo,
   type VisitInputType,
   type VisitType,
 } from "@prisma/client";
@@ -28,7 +33,14 @@ import { prisma } from "../lib/prisma.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
-import { deleteStoredFile, getStoredFilePath, saveUploadedFile } from "../services/file-storage.service.js";
+import {
+  deleteStoredFile,
+  getStoredFilePath,
+  saveProjectVideoUpload,
+  saveUploadedFile,
+} from "../services/file-storage.service.js";
+import { enqueueProjectVideo } from "../services/project-video.service.js";
+import { env } from "../config/env.js";
 import {
   consolidateVisitReport,
   generateVisitReport,
@@ -650,6 +662,73 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
 
       reply.code(201);
       return { ...serializeInput(input), visitId: visit.id };
+    },
+  );
+
+  // ── Subir video de la visita ───────────────────────────────────────────
+  //
+  // No crea un `VisitInput`: el video no alimenta el informe de la IA (no se
+  // transcribe) y meterlo como input obligaría a extender el motor de informes
+  // para un tipo que no aporta texto. Se guarda como `ProjectVideo` con el
+  // `visitId`, así queda asociado a la visita y aparece —ya comprimido— en la
+  // sección Videos del proyecto, junto a los ensayos.
+  app.post(
+    "/projects/:projectId/visit-inputs/video",
+    { preHandler: authorize(Module.OPERACIONES, Action.EDIT) },
+    async (request, reply) => {
+      const user = ensureUser(request);
+      const params = z.object({ projectId: z.string().min(1) }).parse(request.params);
+      const project = await prisma.project.findFirst({
+        where: { id: params.projectId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+
+      // Límite propio de video, muy por encima del global de adjuntos.
+      const part = await request.file({
+        limits: { fileSize: env.maxVideoSizeMb * 1024 * 1024 },
+      });
+      if (!part) throw badRequest("MISSING_FILE", "No se envió ningún archivo");
+
+      const description =
+        (part.fields.description as { value?: string } | undefined)?.value?.trim() || null;
+
+      const visit = await getOrCreateActiveVisit(params.projectId, user.id);
+      const stored = await saveProjectVideoUpload(part, params.projectId);
+
+      const video = await prisma.projectVideo.create({
+        data: {
+          projectId: params.projectId,
+          visitId: visit.id,
+          tipoVideo: TipoVideo.VISITA,
+          descripcion: description,
+          originalFilename: stored.filename,
+          originalSizeBytes: stored.sizeBytes,
+          originalMimeType: stored.mimeType,
+          uploadedById: user.id,
+        },
+        select: { id: true, processingStatus: true, createdAt: true },
+      });
+
+      enqueueProjectVideo(video.id, stored.absolutePath);
+
+      await createAuditEntry({
+        entityType: AuditEntityType.ensayo_video,
+        entityId: video.id,
+        projectId: params.projectId,
+        userId: user.id,
+        action: AuditAction.file_uploaded,
+        description: `Subió un video en la visita técnica (${stored.filename})`,
+        metadata: {
+          visitId: visit.id,
+          originalFilename: stored.filename,
+          originalSizeBytes: stored.sizeBytes,
+        },
+      });
+
+      // 202: el archivo llegó pero todavía se está comprimiendo.
+      reply.code(202);
+      return { video: { ...video, visitId: visit.id } };
     },
   );
 

@@ -11,6 +11,16 @@ export const env = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "7d",
   storagePath: process.env.STORAGE_PATH ?? "./storage",
   maxFileSizeMb: Number(process.env.MAX_FILE_SIZE_MB ?? 20),
+  // Límite propio para los videos de ensayos. Se aplica SOLO en la ruta de
+  // videos (vía `request.file({ limits })`), no toca el techo global de
+  // `maxFileSizeMb`: un video crudo de celular pesa dos órdenes de magnitud más
+  // que cualquier otro adjunto, y subir el límite global abriría la puerta a que
+  // entren archivos gigantes por cualquier endpoint.
+  maxVideoSizeMb: Number(process.env.MAX_VIDEO_SIZE_MB ?? 500),
+  // Binarios de ffmpeg (vienen en la imagen Docker del server). Configurables
+  // para poder correr los tests o un script suelto fuera del contenedor.
+  ffmpegPath: process.env.FFMPEG_PATH ?? "ffmpeg",
+  ffprobePath: process.env.FFPROBE_PATH ?? "ffprobe",
   // Clave para cifrar las passwords SMTP por usuario (AES-256-GCM). Cualquier
   // string sirve: se deriva a 32 bytes con SHA-256.
   smtpEncryptionKey: process.env.SMTP_ENCRYPTION_KEY ?? "",

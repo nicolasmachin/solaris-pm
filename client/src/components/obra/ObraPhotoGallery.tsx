@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { Download } from "lucide-react";
+import { Download, FileText } from "lucide-react";
 
 import {
   deleteObraPhoto,
@@ -82,6 +82,18 @@ export function ObraPhotoGallery({ projectId }: Props) {
           </span>
         </h3>
         <div className="flex items-center gap-2">
+          {/* Guía de qué fotos hay que sacar. Es un PDF estático servido desde
+              `client/public`, así que viaja con el build y no necesita permisos
+              ni endpoint: se abre en una pestaña para verlo o imprimirlo. */}
+          <a
+            href="/checklist-fotos-entrega-obra.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="tap-target inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-border)]/30"
+          >
+            <FileText size={14} />
+            Checklist de fotos
+          </a>
           <button
             type="button"
             disabled={count === 0 || downloading}

@@ -38,6 +38,8 @@ services:
       JWT_EXPIRES_IN: 7d
       STORAGE_PATH: /app/storage
       MAX_FILE_SIZE_MB: 20
+      # Límite aparte para los videos de ensayos: se aplica solo en esa ruta.
+      MAX_VIDEO_SIZE_MB: ${MAX_VIDEO_SIZE_MB:-500}
       BASE_URL: http://localhost:5173
       # SMTP (correo) — leídos del .env raíz del repo
       SMTP_HOST: ${SMTP_HOST:-}

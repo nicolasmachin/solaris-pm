@@ -61,6 +61,10 @@ import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize, authorizeAny, clearPermissionCache } from "../middleware/authorize.middleware.js";
 import { authorizeByStageContext, authorizeProjectEditAnyPipeline } from "../middleware/authorize-by-stage.middleware.js";
 import { createAuditEntriesForChanges, createAuditEntry } from "../services/audit.service.js";
+import {
+  ENSAYO_VIDEO_EVIDENCE_KIND,
+  hasReadyEnsayoVideo,
+} from "../services/project-video.service.js";
 import { syncCommissionFromMovement } from "../services/commission/sync-commission-status.js";
 import { listLeadProposals } from "../services/proposal/lead-proposals.service.js";
 import { createPlanPagos, getPlanPagos } from "../services/planPagos.service.js";
@@ -3061,6 +3065,21 @@ export async function registerApiRoutes(app: FastifyInstance) {
       throw forbidden("No tenés permiso para realizar esta acción");
     }
 
+    // Los ítems respaldados por evidencia no se pueden tildar "de palabra": hace
+    // falta que el video exista. Es el punto de la feature — antes eran casillas
+    // que se marcaban sin que nadie hubiera subido nada.
+    if (
+      body.completed === true &&
+      item.evidenceKind === ENSAYO_VIDEO_EVIDENCE_KIND &&
+      user.role !== "ADMIN" &&
+      !(await hasReadyEnsayoVideo(item.projectId))
+    ) {
+      throw new AppError(
+        422,
+        "EVIDENCE_REQUIRED",
+        "Para marcar este ítem hay que subir antes el video del ensayo, en la sección Obra del proyecto.",
+      );
+    }
 
     const updateData: Record<string, unknown> = {};
 

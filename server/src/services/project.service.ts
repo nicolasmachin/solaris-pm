@@ -408,6 +408,7 @@ export function buildInitialStages(
         label: item.label,
         isRequired: item.isRequired ?? false,
         isBlocker: item.isBlocker ?? false,
+        evidenceKind: item.evidenceKind ?? null,
         appliesWhenModalidadPago: item.appliesWhenModalidadPago ?? null,
       })),
     }));
@@ -508,6 +509,7 @@ export async function createInitialPipeline(
             label: item.label,
             isRequired: item.isRequired,
             isBlocker: item.isBlocker,
+            evidenceKind: item.evidenceKind,
             appliesWhenModalidadPago: item.appliesWhenModalidadPago,
           })),
         });
@@ -772,6 +774,7 @@ export function serializeChecklistItem(item: {
   isRequired: boolean;
   isBlocker: boolean;
   isCustom: boolean;
+  evidenceKind?: string | null;
   appliesWhenModalidadPago: ModalidadPago | null;
   createdAt: Date;
   updatedAt: Date;

@@ -86,17 +86,35 @@ JSON `data`), **no** en migraciones. Para revertir un valor:
 
 - **Nunca** correr `docker compose down -v` (borra `voltia_storage` **y**
   `postgres_data`).
-- Restaurar el volumen desde el último backup de `storage/` (fuera del VPS).
+- Restaurar desde Backblaze B2, que es donde el servicio `backup` sincroniza el
+  volumen cada 6 h (ver DEPLOY.md §3):
+
+  ```bash
+  # Restauración completa del volumen
+  docker compose -f docker-compose.prod.yml run --rm --entrypoint sh backup \
+    -c 'rclone copy "b2:$B2_BUCKET" /data --progress'
+  ```
+
+  El servicio monta `/data` en solo-lectura, así que para restaurar hay que
+  levantarlo con el volumen montado de escritura (quitar el `:ro` temporalmente) o
+  usar un contenedor `rclone` aparte apuntando al mismo volumen.
+
+- Un archivo borrado por error **no se perdió**: `--backup-dir` lo archiva en
+  `b2:<bucket>-deleted/<fecha>`. Buscarlo ahí antes de darlo por perdido.
 - Los `FileAttachment` de la DB apuntan a los archivos: si el volumen se pierde
   sin backup, las filas quedan pero los archivos físicos no. Los PDFs de versiones
   publicadas se pueden **regenerar** desde el snapshot (endpoint admin de
-  regenerate); los uploads originales no.
+  regenerate); los uploads originales (fotos de obra, videos de ensayos,
+  documentación firmada) **no**.
 
 ## 7. Contactos de emergencia
 
 - **Hosting / VPS**: (proveedor + panel) — completar.
 - **DNS / dominio**: (registrar + panel) — completar.
-- **Base de datos / backups**: OneDrive / Backblaze — completar.
+- **Base de datos**: dumps pre-deploy en `/home/voltia/backups/` (VPS, 14 días) +
+  `save.sh` a OneDrive en dev.
+- **Storage (uploads)**: Backblaze B2, bucket `voltia-storage` — sincronizado cada
+  6 h por el servicio `backup`. Borrados archivados en `voltia-storage-deleted/`.
 - **Responsable técnico**: Nicolás — completar.
 
 > Completar esta sección con los datos reales antes del primer deploy productivo.

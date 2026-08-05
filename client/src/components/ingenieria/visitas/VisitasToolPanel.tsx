@@ -10,6 +10,7 @@ import {
   StickyNote,
   Trash2,
   User,
+  Video,
 } from "lucide-react";
 import {
   deleteVisita,
@@ -19,6 +20,7 @@ import {
   type VisitListItem,
   type VisitType,
 } from "../../../api/visitas.api";
+import { uploadVisitVideo } from "../../../api/videos.api";
 import { useAuthStore } from "../../../store/auth.store";
 
 const MONTHS_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
@@ -45,8 +47,10 @@ function getApiErr(err: unknown): string | undefined {
  * existe o tiene >7 días). Los demás operarios tienen sus propias visitas.
  *
  * UI:
- *  - 3 botones directos (Audio / Foto / Nota) — el backend resuelve a qué
- *    visita van.
+ *  - Botones directos (Foto / Video / Nota; el audio vive en el FAB global) —
+ *    el backend resuelve a qué visita van.
+ *  - El video no es un input de la visita: se guarda como video del proyecto
+ *    (tipo "Visita técnica") y se ve en la sección Videos, ya comprimido.
  *  - Lista de TODAS las visitas del proyecto (de cualquier operario), con
  *    nombre del dueño y status.
  */
@@ -56,11 +60,14 @@ export function VisitasToolPanel({ projectId }: { projectId: string }) {
   const currentUser = useAuthStore((s) => s.user);
   const isAdmin = currentUser?.role === "ADMIN";
 
-  const [mode, setMode] = useState<"none" | "photo" | "note">("none");
+  const [mode, setMode] = useState<"none" | "photo" | "video" | "note">("none");
   const [noteText, setNoteText] = useState("");
   const [noteDesc, setNoteDesc] = useState("");
   const [photoDesc, setPhotoDesc] = useState("");
+  const [videoDesc, setVideoDesc] = useState("");
+  const [videoPercent, setVideoPercent] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const videoInputRef = useRef<HTMLInputElement | null>(null);
 
   const visitsQ = useQuery({
     queryKey: ["technical-visits", projectId],
@@ -100,6 +107,26 @@ export function VisitasToolPanel({ projectId }: { projectId: string }) {
     onError: (err) => toast.error(getApiErr(err) ?? "No se pudo subir la foto"),
   });
 
+  // El video no genera un input de la visita (no se transcribe, así que no
+  // alimenta el informe): se guarda como video del proyecto asociado a esta
+  // visita y aparece en la sección Videos.
+  const videoMut = useMutation({
+    mutationFn: (file: File) =>
+      uploadVisitVideo(projectId, {
+        file,
+        descripcion: videoDesc.trim() || undefined,
+        onProgress: setVideoPercent,
+      }),
+    onSuccess: () => {
+      toast.success("Video subido · se está preparando para ver");
+      setVideoDesc("");
+      setMode("none");
+      qc.invalidateQueries({ queryKey: ["project-videos", projectId] });
+    },
+    onError: (err) => toast.error(getApiErr(err) ?? "No se pudo subir el video"),
+    onSettled: () => setVideoPercent(null),
+  });
+
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteVisita(id),
     onSuccess: () => {
@@ -123,14 +150,15 @@ export function VisitasToolPanel({ projectId }: { projectId: string }) {
   return (
     <div className="space-y-3">
       <p className="text-xs text-[var(--color-text-muted)]">
-        Cargá fotos o notas durante la visita. Para grabar audio usá el botón flotante amarillo.
+        Cargá fotos, videos o notas durante la visita. Para grabar audio usá el botón flotante
+        amarillo.
         Cada operario tiene su propia visita en el proyecto (la IA arma un informe por operario,
         no se mezclan).
       </p>
 
       {/* Botones directos: Audio queda en el FAB global */}
       {mode === "none" && (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <button
             onClick={() => {
               setMode("photo");
@@ -142,12 +170,65 @@ export function VisitasToolPanel({ projectId }: { projectId: string }) {
             Foto
           </button>
           <button
+            onClick={() => setMode("video")}
+            className="inline-flex flex-col items-center gap-1 rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] p-3 text-[11px] hover:bg-[var(--color-bg-card-hover)]"
+          >
+            <Video className="w-5 h-5 text-purple-400" />
+            Video
+          </button>
+          <button
             onClick={() => setMode("note")}
             className="inline-flex flex-col items-center gap-1 rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] p-3 text-[11px] hover:bg-[var(--color-bg-card-hover)]"
           >
             <StickyNote className="w-5 h-5 text-yellow-400" />
             Nota
           </button>
+        </div>
+      )}
+
+      <input
+        ref={videoInputRef}
+        type="file"
+        accept="video/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) videoMut.mutate(f);
+          if (videoInputRef.current) videoInputRef.current.value = "";
+        }}
+      />
+      {mode === "video" && (
+        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] p-3 space-y-2">
+          <input
+            className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-xs"
+            placeholder="Descripción del video (opcional)"
+            value={videoDesc}
+            onChange={(e) => setVideoDesc(e.target.value)}
+            maxLength={200}
+            disabled={videoMut.isPending}
+          />
+          <p className="text-[10px] leading-snug text-[var(--color-text-muted)]">
+            Se comprime al subirlo y queda en la sección Videos del proyecto.
+          </p>
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setMode("none")}
+              disabled={videoMut.isPending}
+              className="rounded border border-[var(--color-border)] px-2.5 py-1 text-[11px] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => videoInputRef.current?.click()}
+              disabled={videoMut.isPending}
+              className="rounded bg-[var(--color-accent)] px-2.5 py-1 text-[11px] font-semibold text-black hover:opacity-90 disabled:opacity-50"
+            >
+              {videoMut.isPending
+                ? `Subiendo… ${videoPercent ?? 0}%`
+                : "Elegir video"}
+            </button>
+          </div>
         </div>
       )}
 

@@ -8,7 +8,7 @@ interface Props {
 
 // Bloque destacado de "Obra del proyecto" (sección de primer nivel de la
 // página del proyecto, debajo de Tareas): header con título + ícono y, dentro,
-// la galería de fotos + checklist (ProjectObraSection).
+// la galería de fotos + videos + checklist (ProjectObraSection).
 export function ProjectObraDestacadoSection({ projectId }: Props) {
   return (
     <section className="mt-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5">
@@ -21,7 +21,7 @@ export function ProjectObraDestacadoSection({ projectId }: Props) {
             Obra del proyecto
           </h2>
           <p className="text-[11px] text-[var(--color-text-muted)]">
-            Fotos de obra y checklist de referencia.
+            Fotos de obra, videos y checklist de referencia.
           </p>
         </div>
       </div>

@@ -61,6 +61,42 @@ Copiar `.env.example` a `.env` en la raíz y completar. Claves críticas:
 son **volúmenes nombrados** de Docker. **Nunca** correr `docker compose down -v`
 (el `-v` borra ambos). Para frenar sin perder datos: `docker compose stop`.
 
+### Respaldo off-site del storage
+
+El servicio `backup` del compose de prod sincroniza `voltia_storage` a Backblaze
+B2 cada 6 horas con `rclone`. Es lo que sostiene la promesa de retención de los
+uploads que **no se pueden regenerar** (fotos de obra, videos de ensayos,
+documentación firmada); los PDFs de las herramientas sí se re-emiten desde su
+snapshot.
+
+Variables en el `.env` del VPS:
+
+| Variable | Valor |
+|---|---|
+| `B2_ACCOUNT_ID` | Key ID de la application key de B2 |
+| `B2_APPLICATION_KEY` | Secret de la application key |
+| `B2_BUCKET` | Nombre del bucket (default `voltia-storage`) |
+| `BACKUP_INTERVAL_SECONDS` | Opcional, default `21600` (6 h) |
+
+Puesta en marcha:
+
+1. En Backblaze, crear el bucket **privado** `voltia-storage` y una *application
+   key* restringida a ese bucket. Crear también `voltia-storage-deleted`, donde se
+   archivan los borrados.
+2. Cargar las variables en el `.env` del VPS y levantar: `docker compose -f
+   docker-compose.prod.yml --env-file .env up -d backup`.
+3. Seguir el primer sync (el inicial arrastra todo lo existente, conviene fuera de
+   horario): `docker compose -f docker-compose.prod.yml logs -f backup`.
+4. **Probar una restauración** antes de darlo por terminado — ver ROLLBACK.md §6.
+
+Si faltan las credenciales el servicio no rompe el deploy: loguea el aviso y queda
+inactivo. Verificar con `docker compose -f docker-compose.prod.yml logs backup`
+que **no** diga "sin configurar".
+
+> **`--backup-dir` no es opcional.** Sin ese flag, `rclone sync` borra en B2 lo que
+> se borró localmente, y el respaldo replicaría la pérdida de evidencia en lugar de
+> protegerla.
+
 ## 4. Deploy paso a paso
 
 > **En producción ya existe `~/voltia-pm/deploy.sh`** (en el VPS `voltia@Voltia1`),

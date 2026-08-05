@@ -11,6 +11,11 @@ FROM node:20-bookworm-slim
 #   y PUPPETEER_EXECUTABLE_PATH coordinan que la lib npm no intente descargar.
 # - fonts-liberation: tipos genéricos para que el PDF renderice bien aun si
 #   el CSS pide Inter y la red no carga Google Fonts.
+# - ffmpeg: comprime los videos de ensayos que sube Operaciones. Un video crudo
+#   de celular pesa ~150 MB/min; recomprimido a H.264 720p queda en ~12 MB/min.
+#   Trae también ffprobe (metadata del original) y libzimg/zscale, necesario para
+#   convertir a SDR el HDR de los iPhone. El de Debian se usa en vez de un build
+#   estático de terceros porque recibe parches de seguridad.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
        openssl \
@@ -22,6 +27,7 @@ RUN apt-get update \
        libjpeg62-turbo \
        libpng16-16 \
        fonts-liberation \
+       ffmpeg \
        chromium \
        chromium-sandbox \
   && rm -rf /var/lib/apt/lists/*

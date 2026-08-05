@@ -242,6 +242,105 @@ export async function saveObraPhoto(
   };
 }
 
+// ============================================================
+// VIDEOS DE ENSAYOS — evidencia de obra (anti-isla, encendido)
+// ============================================================
+
+/**
+ * Allowlist propia, separada de `allowedExtensions`. `.mp4` y `.webm` ya están
+ * en la global pero como contenedores de AUDIO (visitas técnicas); acá se suman
+ * los formatos que realmente salen de una cámara — sobre todo `.mov`, que es el
+ * default del iPhone y hoy la global rechaza.
+ */
+const projectVideoExtensions = new Set([".mp4", ".mov", ".m4v", ".webm", ".mkv", ".3gp", ".avi"]);
+
+/**
+ * Mimetypes aceptados, comparados por su base para tolerar el sufijo
+ * `;codecs=...` que agregan algunos navegadores. Mismo criterio que usan las
+ * visitas técnicas para el audio.
+ *
+ * A diferencia del resto de los uploads —donde el mimetype del cliente se
+ * persiste sin mirar— acá sí se valida: el archivo va a pasar por ffmpeg, y
+ * conviene rechazar temprano lo que obviamente no es un video.
+ */
+const ALLOWED_VIDEO_BASE_MIMES = new Set([
+  "video/mp4",
+  "video/quicktime",
+  "video/x-m4v",
+  "video/webm",
+  "video/x-matroska",
+  "video/3gpp",
+  "video/x-msvideo",
+  // Algunos clientes (y varios navegadores en Android) mandan esto para un
+  // archivo que sí es video; la validación real la hace ffprobe después.
+  "application/octet-stream",
+]);
+
+export interface SavedProjectVideoUpload {
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  absolutePath: string;
+}
+
+/**
+ * Guarda el video **original** en `storage/<projectId>/videos/.tmp/`, a la
+ * espera de que la cola lo comprima. Es intencional que quede en un directorio
+ * aparte: `.tmp/` está excluido del respaldo a B2 (no tiene sentido subir a la
+ * nube un archivo que se va a descartar en minutos) y hace evidente qué sobró si
+ * un proceso muere a mitad de camino.
+ *
+ * El original se borra apenas la compresión termina bien.
+ */
+export async function saveProjectVideoUpload(
+  file: MultipartFile,
+  projectId: string,
+): Promise<SavedProjectVideoUpload> {
+  const extension = path.extname(file.filename).toLowerCase();
+  if (!projectVideoExtensions.has(extension)) {
+    throw badRequest(
+      "INVALID_VIDEO_TYPE",
+      "El formato de video no está permitido. Formatos aceptados: MP4, MOV, WEBM, MKV, 3GP, AVI",
+    );
+  }
+
+  const baseMime = (file.mimetype || "").split(";")[0].trim().toLowerCase();
+  if (baseMime && !ALLOWED_VIDEO_BASE_MIMES.has(baseMime)) {
+    throw badRequest("INVALID_VIDEO_TYPE", "El archivo no parece ser un video");
+  }
+
+  const tmpRoot = path.resolve(process.cwd(), "..", env.storagePath, projectId, "videos", ".tmp");
+  await fsPromises.mkdir(tmpRoot, { recursive: true });
+
+  const absolutePath = path.join(tmpRoot, `${randomUUID()}${extension}`);
+  const writeStream = fs.createWriteStream(absolutePath);
+  await pipeline(file.file, writeStream);
+
+  const stats = await fsPromises.stat(absolutePath);
+  const maxBytes = env.maxVideoSizeMb * 1024 * 1024;
+  if (stats.size > maxBytes) {
+    await fsPromises.unlink(absolutePath).catch(() => undefined);
+    throw badRequest(
+      "FILE_TOO_LARGE",
+      `El video supera el límite de ${env.maxVideoSizeMb} MB. Probá grabar en 1080p en vez de 4K, o subir un clip más corto.`,
+    );
+  }
+
+  return {
+    filename: file.filename,
+    mimeType: file.mimetype || "application/octet-stream",
+    sizeBytes: stats.size,
+    absolutePath,
+  };
+}
+
+/** Carpeta definitiva de los videos ya comprimidos de un proyecto. */
+export async function ensureProjectVideoDir(projectId: string): Promise<string> {
+  const dir = path.resolve(process.cwd(), "..", env.storagePath, projectId, "videos");
+  await fsPromises.mkdir(dir, { recursive: true });
+  return dir;
+}
+
 /**
  * Dado un `url` de foto de obra (`<projectId>/obra/<uuid>.<ext>`), devuelve el
  * url del thumbnail correspondiente (`<projectId>/obra/thumb_<uuid>.jpg`).

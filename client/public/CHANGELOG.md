@@ -2,6 +2,32 @@
 
 ## v8.4
 
+### 5 de agosto de 2026
+
+#### Checklist de fotos a mano
+
+- En **Fotos de Obra** hay un botón nuevo, **"Checklist de fotos"**, que abre el checklist oficial de fotos para entrega de obra. Se puede consultar desde el celular en la obra o imprimir para llevarlo en papel.
+
+#### Videos — ahora también desde la visita técnica
+
+- La sección pasa a llamarse **"Videos"** (antes "Videos de ensayos"), porque ya no son solo de ensayos.
+- En el panel de **Visita técnica** hay un botón nuevo de **Video**: el operario sube la filmación desde la obra y queda guardada en la visita. El video aparece después en la sección **Videos** del proyecto, ya comprimido, como uno más.
+- Cada video muestra una **etiqueta de color sobre la miniatura** que dice qué es: los ensayos en amarillo y los de visita técnica en violeta, para distinguirlos de un vistazo.
+- Los dos ensayos ahora se llaman **"Ensayo anti-isla"** y **"Ensayo encendido"**.
+- Los ítems del checklist de obra se siguen marcando **solo con un video de ensayo**: subir uno de visita técnica no los da por cumplidos.
+
+### 4 de agosto de 2026
+
+#### Videos de ensayos
+
+- En **Obra del proyecto** hay una sección nueva, **"Videos de ensayos"**, para subir la filmación de los ensayos de **anti-isla** y **encendido**. Se elige de qué ensayo se trata y se puede agregar una nota corta.
+- Los videos **se comprimen solos al subirlos**: un video de celular que pesa cientos de megas queda en unos pocos, sin que se deje de leer la pantalla del inversor. Así se pueden guardar de forma permanente sin llenar el servidor.
+- Se aceptan los videos tal como salen del celular, incluidos los del **iPhone**, que antes el sistema rechazaba.
+- Cada video se ve como una **miniatura** con su duración, y se reproduce en pantalla completa sin salir del proyecto.
+- Los ítems del checklist de obra **"Ensayo anti-isla realizado y grabado"**, **"Videos de ensayos subidos"** y **"Videos de ensayos recibidos y subidos"** ahora **se marcan solos** cuando se sube el video, y ya **no se pueden tildar sin haberlo subido**.
+- Por tratarse de evidencia de obra, **solo un administrador puede eliminar** un video, y aun así el archivo se conserva en el respaldo.
+- Mientras el video se prepara, la tarjeta lo indica y se actualiza sola cuando queda listo. Si el envío se corta por un reinicio del sistema, el video **se retoma automáticamente**.
+
 ### 3 de agosto de 2026
 
 #### Reporte semanal de indicadores por email
