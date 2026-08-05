@@ -23,22 +23,24 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "8.4",
-  date: "3 de agosto de 2026",
+  version: "8.5",
+  date: "5 de agosto de 2026",
   sections: [
     {
-      title: "Reporte semanal de indicadores por email",
+      title: "Videos de obra y de visita técnica",
       items: [
-        "Todos los lunes a las 00:01 (hora de Uruguay) llega un email con los indicadores de la semana que cerró: leads, propuestas enviadas, nuevas ventas, facturación vendida, visitas comerciales, gastos registrados e instalaciones habilitadas (con kWp).",
-        "Las ventas cerradas y las visitas vienen listadas una por una (cliente y asesor; en las ventas también el monto de la cotización con IVA). Incluye el avance de las metas del trimestre, marcando en verde lo que va en ritmo.",
-        'En Métricas hay una nueva pestaña "Reporte semanal" que muestra este informe en pantalla, con un botón para enviar el mail del momento y probarlo sin esperar al lunes.',
+        'En "Obra del proyecto" hay una sección nueva, "Videos", para subir la filmación de los ensayos de anti-isla y encendido. Se elige de qué se trata y se puede agregar una nota corta.',
+        "Los videos se comprimen solos al subirlos: un video de celular que pesa cientos de megas queda en unos pocos, sin que se deje de leer la pantalla del inversor. Así se pueden guardar de forma permanente sin llenar el servidor.",
+        "Se aceptan los videos tal como salen del celular, incluidos los del iPhone, que antes el sistema rechazaba.",
+        "En el panel de Visita técnica hay un botón nuevo de Video: el operario sube la filmación desde la obra y aparece después en la sección Videos del proyecto, ya comprimida. Una etiqueta de color sobre la miniatura distingue los ensayos (amarillo) de los de visita técnica (violeta).",
+        'Los ítems del checklist de obra "Ensayo anti-isla realizado y grabado" y "Videos de ensayos subidos" ahora se marcan solos cuando se sube el video, y ya no se pueden tildar sin haberlo subido. Un video de visita técnica no los da por cumplidos.',
+        "Por tratarse de evidencia de obra, solo un administrador puede eliminar un video, y aun así el archivo se conserva en el respaldo.",
       ],
     },
     {
-      title: "Comisiones — editar, borrar y ajustar fechas",
+      title: "Checklist de fotos a mano",
       items: [
-        'El administrador ahora puede editar y borrar las comisiones de los asesores desde el listado de Comisiones (botón "Editar" en cada fila).',
-        "Se ajustan las dos fechas —la vendida (define a qué mes se carga) y la de pago prevista (por defecto el 1° del mes siguiente; editable a mano)— y el monto. Cada cambio re-sincroniza el pendiente en Finanzas y queda registrado con quién y cuándo lo modificó.",
+        'En "Fotos de Obra" hay un botón nuevo, "Checklist de fotos", que abre el checklist oficial de fotos para entrega de obra. Se puede consultar desde el celular en la obra o imprimir para llevarlo en papel.',
       ],
     },
   ],
@@ -53,6 +55,15 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "8.4",
+    shortDate: "3 ago",
+    highlights: [
+      "Reporte semanal de indicadores por email todos los lunes, con ventas y visitas listadas una por una y el avance de las metas del trimestre.",
+      'En Métricas, pestaña "Reporte semanal" para verlo en pantalla y enviarlo del momento.',
+      "Comisiones: editar y borrar desde el listado, ajustando la fecha vendida, la de pago prevista y el monto.",
+    ],
+  },
   {
     version: "8.3",
     shortDate: "31 jul",

@@ -182,8 +182,15 @@ Sección "Documentos técnicos generados" del workspace junta los `FileAttachmen
 ## Política de versionado del producto
 
 - Versión actual en `client/src/version.ts` como string `"X.Y"` (hoy `"6.2"`). El footer de la app la muestra en todas las pantallas con un historial clickeable que lee `CHANGELOG.md`.
-- **NO bumpear por iniciativa propia**, aunque haya algo "publicable". Iteramos varios cambios chicos sobre la misma versión mientras probamos; bumpear cada vez ensucia el historial. Reportar el cambio y dejar la decisión al usuario.
-- Bumpear sólo cuando el usuario lo pide explícitamente: "nueva versión", "bumpeá", "pasemos a la X", "cerremos versión", "publicá".
+- **Corte diario (automático).** Al empezar a trabajar en un día nuevo, si el CHANGELOG
+  tiene entradas de días anteriores acumuladas bajo la versión ya publicada, **bumpear
+  +0.1 sin preguntar** y mover esas entradas bajo la cabecera nueva. La versión cierra
+  el día: lo del día anterior ya se probó, así que se publica.
+- **Dentro del mismo día, NO bumpear por iniciativa propia**, aunque haya algo
+  "publicable". Se iteran varios cambios chicos sobre la misma versión mientras se
+  prueba; bumpear cada vez ensucia el historial. Reportar el cambio y seguir.
+- Además se bumpea cuando el usuario lo pide explícitamente: "nueva versión", "bumpeá",
+  "pasemos a la X", "cerremos versión", "publicá", "version".
 - Cuando lo pida:
   1. Reportar la versión actual.
   2. Proponer **+0.1** por defecto (ej. 5.2 → 5.3).

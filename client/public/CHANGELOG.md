@@ -1,6 +1,6 @@
 # Novedades
 
-## v8.4
+## v8.5
 
 ### 5 de agosto de 2026
 
@@ -27,6 +27,8 @@
 - Los ítems del checklist de obra **"Ensayo anti-isla realizado y grabado"**, **"Videos de ensayos subidos"** y **"Videos de ensayos recibidos y subidos"** ahora **se marcan solos** cuando se sube el video, y ya **no se pueden tildar sin haberlo subido**.
 - Por tratarse de evidencia de obra, **solo un administrador puede eliminar** un video, y aun así el archivo se conserva en el respaldo.
 - Mientras el video se prepara, la tarjeta lo indica y se actualiza sola cuando queda listo. Si el envío se corta por un reinicio del sistema, el video **se retoma automáticamente**.
+
+## v8.4
 
 ### 3 de agosto de 2026
 
