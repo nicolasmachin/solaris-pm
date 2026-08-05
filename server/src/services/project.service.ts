@@ -594,6 +594,11 @@ export function serializeProject(project: {
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
+  // Ampliación de una obra existente: el vínculo con el proyecto original. El
+  // padre viaja embebido cuando la query lo incluye, para que la UI muestre el
+  // link sin pedir un fetch aparte.
+  parentProjectId?: string | null;
+  parentProject?: { id: string; code: string; clientName: string } | null;
   stages?: Array<{
     name: StageType;
     plannedStartDate: Date | null;
@@ -632,6 +637,8 @@ export function serializeProject(project: {
     updatedAt: serializeDate(rest.updatedAt),
     deletedAt: serializeDate(rest.deletedAt),
     salesperson: rest.salesperson || null,
+    parentProjectId: rest.parentProjectId ?? null,
+    parentProject: rest.parentProject ?? null,
     uteCodigoPS: rest.uteCodigoPS ?? null,
     uteCodigoAS: rest.uteCodigoAS ?? null,
     facturaEmitidaEn: rest.facturaEmitidaEn ? serializeDate(rest.facturaEmitidaEn) : null,

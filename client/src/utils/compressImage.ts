@@ -3,11 +3,37 @@
 // Reduce drásticamente el peso de las fotos tomadas desde el celular del
 // técnico en obra (típicamente 3-6 MB → ~300 KB) sin sacrificar utilidad.
 
+export interface ImagenComprimida {
+  blob: Blob;
+  /** Nombre con el que subir, ya con la extensión que corresponde al blob. */
+  filename: string;
+}
+
+/**
+ * Devuelve el archivo listo para subir.
+ *
+ * Si el navegador no puede decodificar la imagen, se sube el original sin
+ * comprimir en vez de fallar. El caso real es el HEIC del iPhone: Safari lo
+ * decodifica (así que ahí se comprime como cualquier foto), pero Chrome y
+ * Firefox no, y antes eso hacía que la foto se perdiera con un error genérico.
+ * El servidor lo convierte a JPEG al recibirlo.
+ */
 export async function compressImage(
   file: File,
   maxWidth: number = 1600,
   quality: number = 0.8,
-): Promise<Blob> {
+): Promise<ImagenComprimida> {
+  const sinExtension = file.name.replace(/\.[^.]+$/, "");
+
+  try {
+    const blob = await redibujarComoJpeg(file, maxWidth, quality);
+    return { blob, filename: `${sinExtension}.jpg` };
+  } catch {
+    return { blob: file, filename: file.name };
+  }
+}
+
+function redibujarComoJpeg(file: File, maxWidth: number, quality: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const objectUrl = URL.createObjectURL(file);
     const img = new Image();

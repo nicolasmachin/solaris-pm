@@ -27,6 +27,22 @@ export const LATEST_RELEASE: Release = {
   date: "5 de agosto de 2026",
   sections: [
     {
+      title: "Fotos del iPhone (HEIC) en toda la app",
+      items: [
+        "Ya se pueden subir las fotos tal como salen del iPhone, sin convertirlas antes. Antes el formato HEIC se rechazaba o la foto se perdía sin decir por qué.",
+        "Anda en todos los lugares donde se suben fotos: Fotos de Obra, la visita de ventas y sus adjuntos, la visita técnica, Pre-ingeniería, el Proyecto Final, los documentos UTE firmados y la lectura de cédula y factura con IA.",
+        "La app las convierte solas a JPG al recibirlas, así que se ven en cualquier navegador, entran a los PDF y las lee la IA. También funciona arrastrando un HEIC desde la computadora.",
+      ],
+    },
+    {
+      title: "Ampliaciones de instalaciones existentes",
+      items: [
+        'Cuando a un cliente se le agregan paneles o un inversor sobre una instalación que ya está hecha, ya no hay que cargar un proyecto desde cero: en el proyecto original hay un botón "Crear ampliación".',
+        "La ampliación hereda todo lo del cliente —nombre, ubicación, dirección, contacto, vendedor, cédula y códigos de UTE— y solo pide lo propio de la obra nueva. Arranca con el pipeline completo y su propio trámite UTE.",
+        "Queda linkeada al original en los dos sentidos, y el código lo dice solo: PRY-2026-045-A1. Los clientes que ya tenían acceso al portal también ven la ampliación.",
+      ],
+    },
+    {
       title: "Videos de obra y de visita técnica",
       items: [
         'En "Obra del proyecto" hay una sección nueva, "Videos", para subir la filmación de los ensayos de anti-isla y encendido. Se elige de qué se trata y se puede agregar una nota corta.',
@@ -50,6 +66,12 @@ export const LATEST_RELEASE: Release = {
       items: [
         'En "Fotos de Obra" hay un botón nuevo, "Checklist de fotos", que muestra las 23 fotos obligatorias para la entrega de obra, agrupadas por sección y con el detalle de qué tiene que verse en cada una.',
         "Se abre dentro de la app y se cierra con la X, para consultarlo desde el celular arriba de la obra. Desde ahí mismo se descarga el PDF para imprimirlo y firmarlo.",
+      ],
+    },
+    {
+      title: "Permisos",
+      items: [
+        'Se sacó la casilla "Acceso al módulo" de Ingeniería: no hacía nada. Tildarla o destildarla no cambiaba quién entraba al módulo, que se sigue gobernando con "Ver".',
       ],
     },
   ],

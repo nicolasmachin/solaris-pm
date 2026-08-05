@@ -127,6 +127,16 @@ Correrlo **antes y después de tareas grandes** y antes de aplicar migraciones q
 - Archivos físicos en `storage/<projectId>/<uuid>.<ext>` (volume `voltia_storage` en Docker).
 - Borrar input/visita debe soft-deletear el `FileAttachment` (`deletedAt`) y borrar el archivo físico — patrón establecido en visitas técnicas.
 - Extensiones permitidas en `file-storage.service.ts`: imágenes, audio (incluye `webm`, `m4a`, `mp4` para iOS Safari), PDF, DWG, XLSX, DOCX, ZIP.
+- **HEIC/HEIF** (el formato nativo del iPhone) se acepta en todos los caminos de
+  subida pero **nunca se guarda así**: `heic.service.ts` lo convierte a JPEG al
+  entrar (`esHeic()` + `convertirArchivoHeicAJpeg()`), y se reescriben
+  `filename`, `storedFilename`, `mimeType` y `sizeBytes`. Es obligatorio, no una
+  comodidad: sharp no decodifica HEIC (rompería las miniaturas y el PDF de
+  pre-ingeniería), Chrome y Firefox no lo muestran en un `<img>`, y la API de
+  Claude —que lee cédulas y facturas— solo acepta jpeg/png/gif/webp. Al agregar
+  un endpoint nuevo que reciba fotos, sumar `esHeic()` a su allowlist de
+  mimetypes: hay navegadores que mandan `application/octet-stream`, así que
+  filtrar solo por mimetype lo deja afuera.
 - **Videos del proyecto** (ensayos y visitas) tienen su propia allowlist y su propio límite
   (`MAX_VIDEO_SIZE_MB`, default 500), aplicado por ruta con `request.file({ limits })`:
   **no subir el `MAX_FILE_SIZE_MB` global** para que entre un video. Se comprimen

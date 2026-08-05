@@ -6,10 +6,11 @@ import { deleteProject, deleteSolarSystem, getProject, patchProject, setProjectS
 import { stageLabel, isParallelStage } from "../constants/stages";
 import { getStockMovements, createStockMovement, getStockProducts } from "../api/stock.api";
 import type { StockMovement } from "../types/finance.types";
-import type { Project, Stage } from "../types/api.types";
+import type { Project, ProjectAmpliacion, Stage } from "../types/api.types";
 import { todayLocalISO } from "../utils/date";
 
 import { ProjectHeader } from "../components/project/ProjectHeader";
+import { AmpliacionModal } from "../components/project/AmpliacionModal";
 import { KpiCards } from "../components/project/KpiCards";
 import { PipelineExpandido } from "../components/project/PipelineExpandido";
 import { StageDrawer } from "../components/project/StageDrawer";
@@ -767,6 +768,38 @@ function StageOverrideControl({
   );
 }
 
+// Ampliaciones hechas sobre esta obra. Va arriba de todo porque cambia cómo se
+// lee el resto de la ficha: la potencia y la plata de acá son solo las del
+// proyecto original, lo que se sumó después vive en cada ampliación.
+function AmpliacionesRow({
+  ampliaciones,
+  onOpen,
+}: {
+  ampliaciones: ProjectAmpliacion[];
+  onOpen: (id: string) => void;
+}) {
+  return (
+    <div className="mb-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-3">
+      <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
+        Ampliaciones de esta obra · {ampliaciones.length}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {ampliaciones.map((a) => (
+          <button
+            key={a.id}
+            type="button"
+            onClick={() => onOpen(a.id)}
+            className="inline-flex items-center gap-2 rounded-md border border-[var(--color-border)] px-2.5 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-text-primary)]"
+          >
+            <span className="font-mono">{a.code}</span>
+            <span className="text-[var(--color-text-muted)]">{a.capacityKwp} kWp</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export function ProjectDetail() {
@@ -778,6 +811,7 @@ export function ProjectDetail() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showEditProject, setShowEditProject] = useState(false);
+  const [showAmpliacion, setShowAmpliacion] = useState(false);
   const [editingSolarSystemId, setEditingSolarSystemId] = useState<string | null>(null);
   const [showCreateSolarSystem, setShowCreateSolarSystem] = useState(false);
   const [deletingSolarSystemId, setDeletingSolarSystemId] = useState<string | null>(null);
@@ -955,7 +989,18 @@ export function ProjectDetail() {
         project={project}
         onEdit={() => setShowEditProject(true)}
         onDelete={canDeleteProject ? () => setShowDeleteConfirm(true) : undefined}
+        // Mismo permiso que el alta de proyecto (POST /projects), para que quien
+        // puede crear una obra pueda crear una ampliación.
+        onAmpliar={canViewObra ? () => setShowAmpliacion(true) : undefined}
       />
+
+      {project.ampliaciones && project.ampliaciones.length > 0 && (
+        <AmpliacionesRow ampliaciones={project.ampliaciones} onOpen={(id) => navigate(`/projects/${id}`)} />
+      )}
+
+      {showAmpliacion && (
+        <AmpliacionModal project={project} onClose={() => setShowAmpliacion(false)} />
+      )}
 
       <DeleteConfirmModal
         open={showDeleteConfirm}

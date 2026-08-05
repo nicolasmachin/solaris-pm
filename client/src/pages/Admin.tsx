@@ -447,7 +447,6 @@ const ACTION_LABELS: Record<string, string> = {
   DELETE: "Eliminar",
   COMPLETE: "Completar",
   COMMENT: "Comentar",
-  ACCESS: "Acceso al módulo",
   CONFIRM: "Confirmar",
   ACCESS_MEMORIA: "Acceso a memoria",
   DEBUG_CALCULADORA: "Debug calculadora",

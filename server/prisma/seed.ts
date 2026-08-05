@@ -224,7 +224,7 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     // OPERACIONES
     { roleName: "OPERACIONES", module: Module.VENTAS,       actions: [Action.VIEW] },
     { roleName: "OPERACIONES", module: Module.ONBOARDING,   actions: [Action.VIEW, Action.COMMENT] },
-    { roleName: "OPERACIONES", module: Module.INGENIERIA,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT, Action.ACCESS] },
+    { roleName: "OPERACIONES", module: Module.INGENIERIA,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { roleName: "OPERACIONES", module: Module.OPERACIONES,  actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
     { roleName: "OPERACIONES", module: Module.HABILITACION, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
     { roleName: "OPERACIONES", module: Module.POSTVENTA,    actions: [Action.VIEW, Action.COMMENT] },
@@ -233,12 +233,11 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "OPERACIONES", module: Module.TRAMITES_UTE, actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
 
     // POSTVENTA — clonación 1:1 estricta de OPERACIONES (mismas filas, mismas
-    // acciones, mismo Action.ACCESS en INGENIERIA). El rol todavía no se asigna
-    // a usuarios; existe para que en el futuro pueda manejar la etapa Postventa
-    // igual que hoy lo hace Operaciones.
+    // acciones). El rol todavía no se asigna a usuarios; existe para que en el
+    // futuro pueda manejar la etapa Postventa igual que hoy lo hace Operaciones.
     { roleName: "POSTVENTA", module: Module.VENTAS,       actions: [Action.VIEW] },
     { roleName: "POSTVENTA", module: Module.ONBOARDING,   actions: [Action.VIEW, Action.COMMENT] },
-    { roleName: "POSTVENTA", module: Module.INGENIERIA,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT, Action.ACCESS] },
+    { roleName: "POSTVENTA", module: Module.INGENIERIA,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { roleName: "POSTVENTA", module: Module.OPERACIONES,  actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
     { roleName: "POSTVENTA", module: Module.HABILITACION, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMPLETE, Action.COMMENT] },
     { roleName: "POSTVENTA", module: Module.POSTVENTA,    actions: [Action.VIEW, Action.COMMENT] },

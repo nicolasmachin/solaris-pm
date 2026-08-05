@@ -96,6 +96,8 @@ export interface ProjectListItem {
   id: string;
   code: string;
   clientName: string;
+  /** Si tiene valor, el proyecto es una ampliación de esa obra. */
+  parentProjectId?: string | null;
   locationCity: string;
   locationProvince: string;
   status: ProjectStatus;
@@ -291,6 +293,15 @@ export interface FileAttachment {
   createdAt: string;
 }
 
+/** Ampliación listada desde el proyecto original. */
+export interface ProjectAmpliacion {
+  id: string;
+  code: string;
+  capacityKwp: number;
+  status: ProjectStatus;
+  createdAt: string;
+}
+
 export interface Project {
   id: string;
   code: string;
@@ -324,6 +335,9 @@ export interface Project {
   empresa: boolean;
   cedulaPath: string | null;
   facturaUtePath: string | null;
+  /** Códigos de la conexión en UTE (punto de suministro / abonado). */
+  uteCodigoPS: string | null;
+  uteCodigoAS: string | null;
   // Facturación al cliente. No todos los clientes "llevan factura".
   llevaFactura: boolean;
   facturaNota: string | null;
@@ -332,6 +346,12 @@ export interface Project {
   createdById: string;
   salespersonId: string | null;
   salesperson: { id: string; name: string } | null;
+  // Ampliaciones. `parentProject` con valor = este proyecto ES una ampliación;
+  // `ampliaciones` son las que se le hicieron a él. El árbol es plano: una
+  // ampliación nunca tiene ampliaciones propias, se cuelgan todas de la raíz.
+  parentProjectId: string | null;
+  parentProject: { id: string; code: string; clientName: string } | null;
+  ampliaciones?: ProjectAmpliacion[];
   deletedAt: string | null;
   createdAt: string;
   updatedAt: string;

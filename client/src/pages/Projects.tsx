@@ -569,7 +569,14 @@ function ProjectGroupTable({
                   className="cursor-pointer border-b border-[var(--color-border)]/70 transition-colors hover:bg-[var(--color-row-hover)]"
                 >
                   <td className="px-4 py-4 align-top">
-                    <div className="font-medium text-[var(--color-text-primary)]">{project.clientName}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-[var(--color-text-primary)]">{project.clientName}</span>
+                      {project.parentProjectId ? (
+                        <span className="shrink-0 rounded border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider text-[var(--color-text-secondary)]">
+                          Ampliación
+                        </span>
+                      ) : null}
+                    </div>
                     {teamColor && teamName ? (
                       <div
                         className="mt-2 inline-flex items-center gap-2 rounded-md border px-2.5 py-1"

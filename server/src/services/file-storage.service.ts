@@ -9,14 +9,18 @@ import sharp from "sharp";
 
 import { env } from "../config/env.js";
 import { badRequest } from "../utils/errors.js";
+import { convertirArchivoHeicAJpeg, esHeic, renombrarAJpeg } from "./heic.service.js";
 
 const allowedExtensions = new Set([
-  // Imágenes
+  // Imágenes. `.heic`/`.heif` (el formato nativo del iPhone) se aceptan pero no
+  // se guardan así: se convierten a JPEG al entrar (ver heic.service.ts).
   ".jpg",
   ".jpeg",
   ".png",
   ".gif",
   ".webp",
+  ".heic",
+  ".heif",
   // Audio (visitas técnicas — iOS Safari graba en m4a/mp4, otros browsers en webm)
   ".webm",
   ".mp4",
@@ -43,8 +47,8 @@ export async function saveUploadedFile(file: MultipartFile, projectId: string) {
   const storageRoot = path.resolve(process.cwd(), "..", env.storagePath, projectId);
   await fsPromises.mkdir(storageRoot, { recursive: true });
 
-  const storedFilename = `${randomUUID()}${extension}`;
-  const absolutePath = path.join(storageRoot, storedFilename);
+  let storedFilename = `${randomUUID()}${extension}`;
+  let absolutePath = path.join(storageRoot, storedFilename);
   const writeStream = fs.createWriteStream(absolutePath);
 
   await pipeline(file.file, writeStream);
@@ -56,11 +60,27 @@ export async function saveUploadedFile(file: MultipartFile, projectId: string) {
     throw badRequest("FILE_TOO_LARGE", `El archivo supera el límite de ${env.maxFileSizeMb} MB`);
   }
 
+  // El límite se controla sobre lo que subió el usuario; recién después se
+  // convierte, para no gastar CPU decodificando un archivo que igual se rechaza.
+  const heic = esHeic({ filename: file.filename, mimetype: file.mimetype });
+  let filename = file.filename;
+  let mimeType = file.mimetype || "application/octet-stream";
+  let sizeBytes = stats.size;
+
+  if (heic) {
+    const convertido = await convertirArchivoHeicAJpeg(absolutePath);
+    absolutePath = convertido.absolutePath;
+    storedFilename = convertido.storedFilename;
+    sizeBytes = convertido.sizeBytes;
+    filename = renombrarAJpeg(file.filename);
+    mimeType = "image/jpeg";
+  }
+
   return {
-    filename: file.filename,
+    filename,
     storedFilename,
-    mimeType: file.mimetype || "application/octet-stream",
-    sizeBytes: stats.size,
+    mimeType,
+    sizeBytes,
     absolutePath,
     url: `${projectId}/${storedFilename}`,
   };
@@ -178,7 +198,9 @@ export function buildToolGeneratedFilename(params: {
 // OBRA PHOTOS — galería de fotos de obra
 // ============================================================
 
-const obraPhotoExtensions = new Set([".jpg", ".jpeg", ".png", ".webp"]);
+// `.heic`/`.heif` entran acá igual que en la allowlist global: se aceptan al
+// subir y se convierten a JPEG antes de guardarse.
+const obraPhotoExtensions = new Set([".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"]);
 const OBRA_THUMB_WIDTH = 400;
 const OBRA_THUMB_QUALITY = 70;
 
@@ -209,8 +231,8 @@ export async function saveObraPhoto(
   await fsPromises.mkdir(obraRoot, { recursive: true });
 
   const uuid = randomUUID();
-  const storedFilename = `${uuid}${extension}`;
-  const absolutePath = path.join(obraRoot, storedFilename);
+  let storedFilename = `${uuid}${extension}`;
+  let absolutePath = path.join(obraRoot, storedFilename);
 
   // Guardar el ORIGINAL tal cual (stream, sin re-comprimir).
   const writeStream = fs.createWriteStream(absolutePath);
@@ -223,6 +245,22 @@ export async function saveObraPhoto(
     throw badRequest("FILE_TOO_LARGE", `El archivo supera el límite de ${env.maxFileSizeMb} MB`);
   }
 
+  // El HEIC del iPhone se convierte antes de la miniatura: sharp no lo
+  // decodifica, así que sin esto el thumbnail fallaría y la foto quedaría
+  // guardada pero invisible en la galería.
+  let filename = file.filename;
+  let mimeType = file.mimetype || "application/octet-stream";
+  let sizeBytes = stats.size;
+
+  if (esHeic({ filename: file.filename, mimetype: file.mimetype })) {
+    const convertido = await convertirArchivoHeicAJpeg(absolutePath);
+    absolutePath = convertido.absolutePath;
+    storedFilename = convertido.storedFilename;
+    sizeBytes = convertido.sizeBytes;
+    filename = renombrarAJpeg(file.filename);
+    mimeType = "image/jpeg";
+  }
+
   // Generar thumbnail en la misma carpeta obra.
   const thumbStoredFilename = `thumb_${uuid}.jpg`;
   const thumbAbsolutePath = path.join(obraRoot, thumbStoredFilename);
@@ -233,10 +271,10 @@ export async function saveObraPhoto(
     .toFile(thumbAbsolutePath);
 
   return {
-    filename: file.filename,
+    filename,
     storedFilename,
-    mimeType: file.mimetype || "application/octet-stream",
-    sizeBytes: stats.size,
+    mimeType,
+    sizeBytes,
     url: `${projectId}/obra/${storedFilename}`,
     thumbnailUrl: `${projectId}/obra/${thumbStoredFilename}`,
   };
@@ -375,8 +413,8 @@ export async function saveLeadPhoto(
   await fsPromises.mkdir(root, { recursive: true });
 
   const uuid = randomUUID();
-  const storedFilename = `${uuid}${extension}`;
-  const absolutePath = path.join(root, storedFilename);
+  let storedFilename = `${uuid}${extension}`;
+  let absolutePath = path.join(root, storedFilename);
 
   const writeStream = fs.createWriteStream(absolutePath);
   await pipeline(file.file, writeStream);
@@ -388,6 +426,19 @@ export async function saveLeadPhoto(
     throw badRequest("FILE_TOO_LARGE", `El archivo supera el límite de ${env.maxFileSizeMb} MB`);
   }
 
+  let filename = file.filename;
+  let mimeType = file.mimetype || "application/octet-stream";
+  let sizeBytes = stats.size;
+
+  if (esHeic({ filename: file.filename, mimetype: file.mimetype })) {
+    const convertido = await convertirArchivoHeicAJpeg(absolutePath);
+    absolutePath = convertido.absolutePath;
+    storedFilename = convertido.storedFilename;
+    sizeBytes = convertido.sizeBytes;
+    filename = renombrarAJpeg(file.filename);
+    mimeType = "image/jpeg";
+  }
+
   const thumbStoredFilename = `thumb_${uuid}.jpg`;
   await sharp(absolutePath)
     .rotate()
@@ -396,10 +447,10 @@ export async function saveLeadPhoto(
     .toFile(path.join(root, thumbStoredFilename));
 
   return {
-    filename: file.filename,
+    filename,
     storedFilename,
-    mimeType: file.mimetype || "application/octet-stream",
-    sizeBytes: stats.size,
+    mimeType,
+    sizeBytes,
     url: `leads/${leadId}/fotos/${storedFilename}`,
     thumbnailUrl: `leads/${leadId}/fotos/${thumbStoredFilename}`,
   };

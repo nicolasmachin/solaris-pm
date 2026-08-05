@@ -4,6 +4,7 @@ import { toast } from "react-hot-toast";
 import { Camera } from "lucide-react";
 
 import { compressImage } from "../../utils/compressImage";
+import { ACCEPT_FOTOS } from "../../utils/fileAccept";
 import { uploadObraPhoto } from "../../api/obra.api";
 
 interface Props {
@@ -32,8 +33,7 @@ export function ObraPhotoUpload({ projectId }: Props) {
     for (let i = 0; i < list.length; i++) {
       const file = list[i];
       try {
-        const blob = await compressImage(file);
-        const filename = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+        const { blob, filename } = await compressImage(file);
         await uploadObraPhoto(projectId, blob, filename);
         ok++;
       } catch (err) {
@@ -63,7 +63,7 @@ export function ObraPhotoUpload({ projectId }: Props) {
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept={ACCEPT_FOTOS}
         multiple
         className="hidden"
         onChange={(e) => {

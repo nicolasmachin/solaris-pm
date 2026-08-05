@@ -13,8 +13,9 @@ import {
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 
 // Whitelist alineada con el server (Tanda 1): PDF, imágenes, Word, Excel. 10 MB.
-const LEAD_ATTACH_ACCEPT = ".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx";
-const LEAD_ATTACH_EXTS = [".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx", ".xls", ".xlsx"];
+// `.heic`/`.heif` (fotos del iPhone) se aceptan y el servidor las convierte a JPEG.
+const LEAD_ATTACH_ACCEPT = ".pdf,.jpg,.jpeg,.png,.heic,.heif,.doc,.docx,.xls,.xlsx";
+const LEAD_ATTACH_EXTS = [".pdf", ".jpg", ".jpeg", ".png", ".heic", ".heif", ".doc", ".docx", ".xls", ".xlsx"];
 const LEAD_ATTACH_MAX_MB = 10;
 
 const MONTHS_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];

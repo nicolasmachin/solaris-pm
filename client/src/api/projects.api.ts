@@ -56,6 +56,30 @@ export async function createProject(body: {
   return data;
 }
 
+/**
+ * Crea una ampliación del proyecto: una obra nueva sobre una instalación que ya
+ * existe. Solo se manda lo propio de la ampliación — el cliente, la ubicación,
+ * el contacto y los datos UTE los hereda del original en el backend.
+ *
+ * Si se llama parado sobre una ampliación, el backend la cuelga igual de la obra
+ * raíz: el árbol es plano.
+ */
+export async function createAmpliacion(
+  projectId: string,
+  body: {
+    capacityKwp: number;
+    startDate?: string;
+    saleDate?: string;
+    plannedEndDate?: string | null;
+    budgetUsd?: number | null;
+    estimatedMwhYear?: number | null;
+    solarSystem?: SolarSystemPayload;
+  },
+): Promise<Project> {
+  const { data } = await apiClient.post<Project>(`/api/projects/${projectId}/ampliaciones`, body);
+  return data;
+}
+
 export async function deleteProject(id: string): Promise<void> {
   await apiClient.delete(`/api/projects/${id}`);
 }

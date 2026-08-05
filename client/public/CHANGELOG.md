@@ -4,6 +4,22 @@
 
 ### 5 de agosto de 2026
 
+#### Fotos del iPhone (HEIC) en toda la app
+
+- Ya se pueden subir las fotos **tal como salen del iPhone**, sin convertirlas antes. Antes el formato HEIC se rechazaba o, peor, la foto se perdía sin decir por qué.
+- Anda en **todos los lugares donde se suben fotos**: Fotos de Obra, la visita de ventas y sus adjuntos, la visita técnica, Pre-ingeniería, el Proyecto Final, los documentos UTE firmados y la lectura de cédula y factura con IA.
+- La app las convierte sola a JPG al recibirlas, así que se ven en cualquier navegador y computadora, entran a los PDF y las lee la IA.
+- También funciona **arrastrando un HEIC desde la computadora**, no solo desde el celular.
+
+#### Ampliaciones de instalaciones existentes
+
+- Cuando a un cliente se le agregan paneles o un inversor sobre una instalación que ya está hecha, ya no hay que cargar un proyecto desde cero: en el proyecto original hay un botón **"Crear ampliación"**.
+- La ampliación **hereda todo lo del cliente** —nombre, ubicación, dirección, contacto, vendedor, cédula y códigos de UTE— y solo pide lo propio de la obra nueva: qué se agrega, las fechas y el presupuesto.
+- Arranca **como una obra nueva**: pipeline completo desde Onboarding y su propio trámite UTE.
+- Queda **linkeada al original en los dos sentidos**: la ampliación muestra de qué obra sale y el proyecto original lista las ampliaciones que se le hicieron, con un clic para saltar de una a la otra. El código lo dice solo: `PRY-2026-045-A1`.
+- Los clientes que tenían acceso al portal del proyecto original **también ven la ampliación**.
+- Cuenta como una obra más en las métricas y las metas.
+
 #### Fotos y videos en la visita de ventas
 
 - En el panel del lead hay una sección nueva, **"Fotos y videos de la visita"**, para cargar el relevamiento de la visita comercial, antes de cerrar la venta.
@@ -27,6 +43,7 @@
 
 #### Arreglos
 
+- En la pantalla de **Permisos** se sacó la casilla **"Acceso al módulo"** de Ingeniería: no hacía nada. Tildarla o destildarla no cambiaba quién entraba al módulo, que se sigue gobernando con "Ver".
 - **Borrar videos ya no es exclusivo del administrador**: ahora lo decide la matriz de permisos, como todo lo demás. Quien tenga "Eliminar" en Operaciones puede borrar los videos del proyecto, y quien lo tenga en Ventas, los de la visita comercial. Antes el Gerente de Operaciones tenía el permiso habilitado y aun así el botón no le aparecía.
 - En el panel del lead ahora también se pueden **borrar los videos**, igual que las fotos.
 - **iPhone**: al tocar "Subir video" se abría directo la cámara y no dejaba elegir un video ya grabado. Ahora ofrece las dos opciones, la fototeca y grabar en el momento.

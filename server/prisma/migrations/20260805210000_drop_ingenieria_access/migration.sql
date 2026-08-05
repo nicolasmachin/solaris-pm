@@ -1,0 +1,14 @@
+-- Limpia las filas de INGENIERIA:ACCESS, que nunca hicieron nada.
+--
+-- La acción ACCESS se agregó para gatear la entrada al módulo Ingeniería por
+-- separado de los permisos de lectura, pero eso jamás se implementó: todo
+-- Ingeniería (menú, rutas y bloque dentro del proyecto) se gatea con VIEW.
+-- Quedó como una casilla en la pantalla de permisos que se podía tildar sin
+-- efecto alguno, y el seed se la daba a OPERACIONES y POSTVENTA.
+--
+-- Se borran las filas además de sacarla del catálogo para que, si algún día se
+-- implementa ACCESS, no arranque ya concedida a roles que nadie eligió.
+--
+-- El valor ACCESS se conserva en el enum Action: Postgres no permite quitar un
+-- valor de un enum sin recrear el tipo, y no vale el riesgo por algo inerte.
+DELETE FROM permissions WHERE action = 'ACCESS';

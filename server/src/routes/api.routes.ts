@@ -80,10 +80,12 @@ import {
   deriveObraThumbUrl,
   deleteObraPhotoFiles,
 } from "../services/file-storage.service.js";
+import { convertirHeicABufferJpeg, esHeic } from "../services/heic.service.js";
 import {
   copyLeadAttachmentsToProject,
   moveLeadMediaToProject,
 } from "../services/sales/sales.service.js";
+import { crearAmpliacion, resolveRootProject } from "../services/ampliacion.service.js";
 import {
   copyLatestProposalToProject,
   getLatestPublishedQuote,
@@ -209,6 +211,21 @@ const projectCreateSchema = z
     // se maneja aparte desde Finanzas.
     llevaFactura: z.boolean().optional(),
     facturaNota: z.string().max(2000).nullable().optional(),
+  })
+  .strict();
+
+// Ampliación: solo lo propio de la obra nueva. Todo lo del cliente (nombre,
+// ubicación, contacto, datos y códigos UTE) se hereda del proyecto original —
+// que es justamente el punto de la feature.
+const ampliacionCreateSchema = z
+  .object({
+    capacityKwp: z.coerce.number().positive(),
+    startDate: dateOnlySchema.optional(),
+    saleDate: dateOnlySchema.optional(),
+    plannedEndDate: dateOnlySchema.nullable().optional(),
+    budgetUsd: z.coerce.number().positive().nullable().optional(),
+    estimatedMwhYear: z.coerce.number().positive().nullable().optional(),
+    solarSystem: solarSystemCreateSchema.optional(),
   })
   .strict();
 
@@ -1375,6 +1392,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
         id: project.id,
         code: project.code,
         clientName: project.clientName,
+        // Ampliación de una obra existente: alcanza con saber que tiene padre
+        // para marcarla en la lista; el código ya lleva el sufijo -A1.
+        parentProjectId: project.parentProjectId,
         locationCity: project.locationCity,
         locationProvince: project.locationProvince,
         capacityKwp: decimalToNumber(project.capacityKwp),
@@ -1470,6 +1490,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
         salesperson: {
           select: { id: true, name: true },
         },
+        // Ampliaciones: el proyecto original del que cuelga (si es una) y las
+        // que se le hicieron a éste. Van juntas para resolver el vínculo en los
+        // dos sentidos con la misma query.
+        parentProject: { select: { id: true, code: true, clientName: true } },
+        ampliaciones: {
+          where: { deletedAt: null },
+          select: { id: true, code: true, capacityKwp: true, status: true, createdAt: true },
+          orderBy: { code: "asc" },
+        },
         stages: {
           orderBy: { order: "asc" },
           include: {
@@ -1562,6 +1591,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
       ...serializeProject(project),
       installationSchedule,
       solarSystems: project.solarSystems.map(serializeSolarSystem),
+      ampliaciones: project.ampliaciones.map((a) => ({
+        id: a.id,
+        code: a.code,
+        capacityKwp: Number(a.capacityKwp),
+        status: a.status,
+        createdAt: serializeDate(a.createdAt),
+      })),
       metrics,
       stageOverride: project.stageOverride ?? null,
       currentStage: (() => {
@@ -1692,6 +1728,93 @@ export async function registerApiRoutes(app: FastifyInstance) {
       stages: projectWithStages.stages.map(serializeStage),
     };
   });
+
+  // Ampliación de una instalación existente: proyecto hijo que hereda los datos
+  // del original y arranca su pipeline como una obra nueva. Mismo permiso que
+  // crear un proyecto, para que quien puede una cosa pueda la otra.
+  app.post(
+    "/projects/:id/ampliaciones",
+    { preHandler: authorize(Module.OPERACIONES, Action.VIEW) },
+    async (request, reply) => {
+      const user = ensureUser(request);
+      const params = z.object({ id: z.string() }).parse(request.params);
+      const body = ampliacionCreateSchema.parse(request.body);
+
+      // Se cuelga de la RAÍZ, no del proyecto sobre el que se paró el usuario:
+      // el árbol de ampliaciones es plano.
+      const root = await resolveRootProject(params.id);
+      if (!root) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+
+      const startDate = body.startDate ? parseDateOnly(body.startDate) : todayUtc();
+      const plannedEndDate = body.plannedEndDate ? parseDateOnly(body.plannedEndDate) : null;
+
+      const { ampliacion, uteProcess } = await crearAmpliacion({
+        root,
+        userId: user.id,
+        input: {
+          capacityKwp: body.capacityKwp,
+          startDate,
+          plannedEndDate,
+          saleDate: body.saleDate ? parseDateOnly(body.saleDate) : todayUtc(),
+          budgetUsd: body.budgetUsd ?? null,
+          estimatedMwhYear: body.estimatedMwhYear ?? null,
+          solarSystemData: body.solarSystem
+            ? ({
+                order: body.solarSystem.order ?? 1,
+                ...normalizeSolarSystemInput(body.solarSystem),
+              } as Prisma.SolarSystemCreateWithoutProjectInput)
+            : undefined,
+        },
+      });
+
+      // Mismo armado que un proyecto nuevo: el pipeline es idéntico por ahora.
+      // Si el plannedEndDate no vino, se usa el mismo placeholder de 90 días que
+      // POST /projects para poder repartir las etapas.
+      await createInitialPipeline(
+        ampliacion.id,
+        startDate,
+        plannedEndDate ?? addDays(startDate, 90),
+        ampliacion.modalidadPago ?? null,
+      );
+      await applyDeadlineRulesToProject(ampliacion.id);
+      await regenerateUteSubstages(prisma, uteProcess);
+
+      // Se audita en los DOS proyectos. Que el historial del original registre
+      // que se le hizo una ampliación es la mitad del valor de la feature.
+      await createAuditEntry({
+        entityType: AuditEntityType.project,
+        entityId: ampliacion.id,
+        projectId: ampliacion.id,
+        userId: user.id,
+        action: AuditAction.created,
+        description: `Creó la ampliación ${ampliacion.code} sobre ${root.code}`,
+      });
+      await createAuditEntry({
+        entityType: AuditEntityType.project,
+        entityId: root.id,
+        projectId: root.id,
+        userId: user.id,
+        action: AuditAction.updated,
+        description: `Se creó la ampliación ${ampliacion.code}`,
+      });
+
+      const conEtapas = await prisma.project.findUniqueOrThrow({
+        where: { id: ampliacion.id },
+        include: {
+          stages: { orderBy: { order: "asc" } },
+          solarSystems: { where: { deletedAt: null }, orderBy: { order: "asc" } },
+          parentProject: { select: { id: true, code: true, clientName: true } },
+        },
+      });
+
+      reply.code(201);
+      return {
+        ...serializeProject(conEtapas),
+        solarSystems: conEtapas.solarSystems.map(serializeSolarSystem),
+        stages: conEtapas.stages.map(serializeStage),
+      };
+    },
+  );
 
   app.patch("/projects/:id", { preHandler: authorizeProjectEditAnyPipeline(Action.EDIT) }, async (request) => {
     const user = ensureUser(request);
@@ -5460,7 +5583,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
   const PERMISSION_CATALOG: Array<{ module: Module; actions: Action[] }> = [
     { module: Module.VENTAS,              actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMMENT] },
     { module: Module.ONBOARDING,          actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
-    { module: Module.INGENIERIA,          actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT, Action.ACCESS] },
+    { module: Module.INGENIERIA,          actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { module: Module.OPERACIONES,         actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { module: Module.HABILITACION,        actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { module: Module.TRAMITES_UTE,        actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
@@ -11363,7 +11486,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // ─── Documentos UTE firmados (subidos por Operaciones tras la obra) ─────
     // Acumulativo: cada subida es una entrada más (no reemplaza). Acepta PDF,
     // imágenes y ZIP. Multipart es files:1 → el cliente sube de a uno.
-    const UTE_FIRMADOS_EXTS = new Set([".pdf", ".jpg", ".jpeg", ".png", ".zip"]);
+    // `.heic`/`.heif`: la foto del documento firmado se saca con el celular.
+    // `saveUploadedFile` la convierte a JPEG antes de guardarla.
+    const UTE_FIRMADOS_EXTS = new Set([".pdf", ".jpg", ".jpeg", ".png", ".zip", ".heic", ".heif"]);
 
     const mapFirmado = (file: {
       id: string;
@@ -11399,7 +11524,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
             await part.toBuffer().catch(() => undefined);
             throw badRequest(
               "INVALID_FILE_TYPE",
-              "Solo se permiten archivos PDF, JPG, PNG o ZIP",
+              "Solo se permiten archivos PDF, JPG, PNG, HEIC o ZIP",
             );
           }
           const saved = await saveUploadedFile(part, projectId);
@@ -11497,7 +11622,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // storage/projects/{id}/ute-docs/, lo manda a Claude Haiku para extraer
     // los datos, y devuelve el JSON al cliente. El cliente valida los datos
     // en un modal y los persiste vía PATCH /projects/:id si confirma.
-    const UTE_EXTRACT_ALLOWED_MIME = ["image/jpeg", "image/png", "application/pdf"] as const;
+    const UTE_EXTRACT_ALLOWED_MIME = [
+      "image/jpeg",
+      "image/png",
+      "application/pdf",
+      // El HEIC del iPhone se acepta y se convierte a JPEG antes de guardarlo y
+      // de mandárselo a Claude, que solo lee jpeg/png/gif/webp.
+      "image/heic",
+      "image/heif",
+    ] as const;
     const UTE_EXTRACT_MAX_SIZE = 10 * 1024 * 1024; // 10MB
     app.post(
       "/projects/:projectId/ute-extract",
@@ -11518,11 +11651,17 @@ export async function registerApiRoutes(app: FastifyInstance) {
         if (!filePart) {
           throw badRequest("NO_FILE", "No se recibió ningún archivo en el campo 'file'");
         }
-        const mime = filePart.mimetype;
-        if (!UTE_EXTRACT_ALLOWED_MIME.includes(mime as (typeof UTE_EXTRACT_ALLOWED_MIME)[number])) {
+        // El HEIC se detecta también por extensión: varios navegadores de
+        // escritorio no lo reconocen y mandan `application/octet-stream`.
+        const heic = esHeic({ filename: filePart.filename, mimetype: filePart.mimetype });
+        const mimeOriginal = filePart.mimetype;
+        if (
+          !heic &&
+          !UTE_EXTRACT_ALLOWED_MIME.includes(mimeOriginal as (typeof UTE_EXTRACT_ALLOWED_MIME)[number])
+        ) {
           throw badRequest(
             "FILE_TYPE_INVALID",
-            `Formato no soportado (${mime}). Usá JPG, PNG o PDF.`,
+            `Formato no soportado (${mimeOriginal}). Usá JPG, PNG, HEIC o PDF.`,
           );
         }
 
@@ -11537,7 +11676,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
           }
           chunks.push(Buffer.from(chunk));
         }
-        const fileBuffer = Buffer.concat(chunks);
+
+        // A partir de acá el HEIC deja de existir: se guarda y se le manda a
+        // Claude un JPEG, que es lo único que la API de visión acepta.
+        const mime = heic ? "image/jpeg" : mimeOriginal;
+        const fileBuffer = heic
+          ? await convertirHeicABufferJpeg(Buffer.concat(chunks))
+          : Buffer.concat(chunks);
 
         // Guardar en storage/projects/{id}/ute-docs/{tipo}.{ext}. Sobrescribe
         // si ya existía. Mismo path resolution que file-storage.service.ts.

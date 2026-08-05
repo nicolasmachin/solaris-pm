@@ -22,6 +22,7 @@ import {
 } from "../../../api/visitas.api";
 import { uploadVisitVideo } from "../../../api/videos.api";
 import { useAuthStore } from "../../../store/auth.store";
+import { ACCEPT_FOTOS } from "../../../utils/fileAccept";
 
 const MONTHS_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 function fmtDate(iso: string): string {
@@ -236,7 +237,7 @@ export function VisitasToolPanel({ projectId }: { projectId: string }) {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept={ACCEPT_FOTOS}
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];

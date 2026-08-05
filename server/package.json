@@ -46,6 +46,7 @@
     "exceljs": "^4.4.0",
     "fastify": "^5.2.1",
     "handlebars": "^4.7.9",
+    "heic-convert": "^2.1.0",
     "jsonwebtoken": "^9.0.2",
     "marked": "^18.0.3",
     "node-cron": "^4.2.1",
@@ -62,6 +63,7 @@
   },
   "devDependencies": {
     "@types/archiver": "^7.0.0",
+    "@types/heic-convert": "^2.1.1",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^22.15.3",
     "@types/nodemailer": "^8.0.0",

@@ -12,6 +12,7 @@ import {
 } from "../../api/videos.api";
 import { usePermission } from "../../hooks/usePermission";
 import { compressImage } from "../../utils/compressImage";
+import { ACCEPT_FOTOS } from "../../utils/fileAccept";
 import { ProtectedImage } from "../obra/ProtectedImage";
 import { ProjectVideoCard } from "../videos/ProjectVideoCard";
 import { ProjectVideoPlayer } from "../videos/ProjectVideoPlayer";
@@ -95,8 +96,8 @@ export function LeadVisitaMedia({ leadId, canEdit }: Props) {
 
     for (let i = 0; i < lista.length; i++) {
       try {
-        const blob = await compressImage(lista[i]);
-        await uploadLeadFoto(leadId, blob, lista[i].name.replace(/\.[^.]+$/, "") + ".jpg");
+        const { blob, filename } = await compressImage(lista[i]);
+        await uploadLeadFoto(leadId, blob, filename);
         ok++;
       } catch (err) {
         console.error("Error subiendo foto del lead:", lista[i].name, err);
@@ -146,7 +147,7 @@ export function LeadVisitaMedia({ leadId, canEdit }: Props) {
           <input
             ref={fotoInputRef}
             type="file"
-            accept="image/*"
+            accept={ACCEPT_FOTOS}
             multiple
             className="hidden"
             onChange={(e) => {

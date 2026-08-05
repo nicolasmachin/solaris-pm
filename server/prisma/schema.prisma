@@ -377,10 +377,13 @@ enum Action {
   DELETE
   COMPLETE
   COMMENT
-  // ACCESS = "puede entrar al módulo / sección" — gate de feature gruesa,
-  // independiente de los permisos de lectura/escritura granulares (VIEW, EDIT,
-  // etc.). Usado p.ej. para gatear el top-nav del módulo Ingeniería sin
-  // afectar la visibilidad de datos legacy del proyecto.
+  // ACCESS = SIN USO. Se pensó como gate grueso de "puede entrar al módulo",
+  // separado de los permisos granulares, pero nunca se implementó: Ingeniería
+  // (menú, rutas y bloque dentro del proyecto) se gatea entera con VIEW. Se
+  // sacó del catálogo de la pantalla de permisos y sus filas se borraron
+  // (migración 20260805210000). El valor queda porque Postgres no deja quitar
+  // un valor de un enum sin recrear el tipo. Si se reusa, elegir otro nombre o
+  // confirmar que ningún rol lo tenga heredado.
   ACCESS
   // ACCESS_MEMORIA = gate de la memoria de cálculo de propuestas
   // (/admin/propuestas/memoria-calculo). Feature admin-only por default.
@@ -642,6 +645,17 @@ model Project {
   // pero sin pipeline/obra. Se excluye de la lista de Proyectos (solo vive en
   // Experiencia Solar) hasta que, si alguna vez, se lo convierta en proyecto real.
   importedFromCsv                 Boolean                  @default(false)
+  // Ampliación de una instalación ya existente. "Es una ampliación" se deriva de
+  // que este campo tenga valor: no hay un enum aparte que pueda quedar
+  // desincronizado con el vínculo. El árbol es PLANO — una ampliación de una
+  // ampliación se cuelga de la misma raíz, nunca del hermano (ver
+  // `resolveRootProject` en ampliacion.service.ts).
+  //
+  // SetNull y no Cascade: borrar la obra original no puede arrastrar la
+  // ampliación, que tiene su propia plata, sus materiales y su trámite UTE.
+  parentProjectId                 String?
+  parentProject                   Project?                 @relation("ProjectAmpliacion", fields: [parentProjectId], references: [id], onDelete: SetNull)
+  ampliaciones                    Project[]                @relation("ProjectAmpliacion")
   // Facturación al cliente. No todos los clientes "llevan factura" (algunos exigen
   // factura fiscal y otros no). Una sola factura por proyecto: el estado de emisión
   // vive en el propio proyecto. El check y la nota se editan al crear/editar el
@@ -656,6 +670,7 @@ model Project {
 
   @@index([status])
   @@index([importedFromCsv])
+  @@index([parentProjectId])
   @@index([llevaFactura])
   @@index([tenantId])
   @@index([createdById])

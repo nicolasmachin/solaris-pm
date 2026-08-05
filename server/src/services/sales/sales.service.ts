@@ -13,6 +13,7 @@ import type { MultipartFile } from "@fastify/multipart";
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { env } from "../../config/env.js";
+import { convertirArchivoHeicAJpeg, esHeic, renombrarAJpeg } from "../heic.service.js";
 import { AppError, badRequest } from "../../utils/errors.js";
 
 // Whitelist de adjuntos de lead (Tanda 1): solo PDF, imágenes, Word y Excel.
@@ -22,6 +23,10 @@ const LEAD_ATTACHMENT_TYPES: Record<string, string[]> = {
   ".jpg": ["image/jpeg"],
   ".jpeg": ["image/jpeg"],
   ".png": ["image/png"],
+  // Fotos del iPhone. Se convierten a JPEG al guardarse; el mimetype se lista
+  // igual porque varios navegadores no reconocen el formato y no mandan ninguno.
+  ".heic": ["image/heic", "image/heif"],
+  ".heif": ["image/heic", "image/heif"],
   ".doc": ["application/msword"],
   ".docx": ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
   ".xls": ["application/vnd.ms-excel"],
@@ -29,7 +34,7 @@ const LEAD_ATTACHMENT_TYPES: Record<string, string[]> = {
 };
 const LEAD_ATTACHMENT_MAX_MB = 10;
 const LEAD_ATTACHMENT_TYPE_ERROR =
-  "Tipo de archivo no soportado. Se permiten: PDF, JPG, PNG, Word, Excel.";
+  "Tipo de archivo no soportado. Se permiten: PDF, JPG, PNG, HEIC, Word, Excel.";
 
 // Valida extensión + mime de un adjunto de lead. Tira badRequest si no matchea.
 // Pura (testeable). Acepta octet-stream cayendo en la extensión.
@@ -68,8 +73,8 @@ export async function saveLeadAttachment(file: MultipartFile, leadId: string) {
   const dir = storageRootForLead(leadId);
   await fsPromises.mkdir(dir, { recursive: true });
 
-  const storedFilename = `${randomUUID()}${extension}`;
-  const absolutePath = path.join(dir, storedFilename);
+  let storedFilename = `${randomUUID()}${extension}`;
+  let absolutePath = path.join(dir, storedFilename);
   const writeStream = fs.createWriteStream(absolutePath);
 
   await pipeline(file.file, writeStream);
@@ -81,11 +86,26 @@ export async function saveLeadAttachment(file: MultipartFile, leadId: string) {
     throw new AppError(413, "FILE_TOO_LARGE", `El archivo supera el límite de ${LEAD_ATTACHMENT_MAX_MB} MB.`);
   }
 
+  let filename = file.filename;
+  let mimeType = file.mimetype || "application/octet-stream";
+  let sizeBytes = stats.size;
+
+  // El HEIC del iPhone se guarda como JPEG: si no, el adjunto no se vería en la
+  // vista previa del lead ni en ningún navegador que no sea Safari.
+  if (esHeic({ filename: file.filename, mimetype: file.mimetype })) {
+    const convertido = await convertirArchivoHeicAJpeg(absolutePath);
+    absolutePath = convertido.absolutePath;
+    storedFilename = convertido.storedFilename;
+    sizeBytes = convertido.sizeBytes;
+    filename = renombrarAJpeg(file.filename);
+    mimeType = "image/jpeg";
+  }
+
   return {
-    filename: file.filename,
+    filename,
     storedFilename,
-    mimeType: file.mimetype || "application/octet-stream",
-    sizeBytes: stats.size,
+    mimeType,
+    sizeBytes,
     url: `leads/${leadId}/${storedFilename}`,
   };
 }

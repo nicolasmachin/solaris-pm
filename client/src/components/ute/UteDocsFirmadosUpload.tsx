@@ -4,6 +4,7 @@ import { toast } from "react-hot-toast";
 import { Upload } from "lucide-react";
 
 import { uploadUteDocFirmado } from "../../api/uteDocs.api";
+import { ACCEPT_FOTOS } from "../../utils/fileAccept";
 
 interface Props {
   projectId: string;
@@ -59,7 +60,7 @@ export function UteDocsFirmadosUpload({ projectId }: Props) {
       <input
         ref={inputRef}
         type="file"
-        accept=".pdf,image/*,.zip"
+        accept={`.pdf,image/*,.zip,${ACCEPT_FOTOS}`}
         multiple
         className="hidden"
         onChange={(e) => {

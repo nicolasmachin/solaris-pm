@@ -36,6 +36,7 @@ import {
   lbl,
   TIPO_TECHO_OPTIONS,
 } from "./shared";
+import { ACCEPT_FOTOS } from "../../../utils/fileAccept";
 
 interface ProjectDefaults {
   clientName: string;
@@ -684,7 +685,7 @@ export function PreIngenieriaFormModal({
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept={ACCEPT_FOTOS}
               multiple
               className="hidden"
               onChange={(e) => {

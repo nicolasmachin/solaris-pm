@@ -39,6 +39,7 @@ import {
   saveProjectVideoUpload,
   saveUploadedFile,
 } from "../services/file-storage.service.js";
+import { esHeic } from "../services/heic.service.js";
 import { enqueueProjectVideo } from "../services/project-video.service.js";
 import { env } from "../config/env.js";
 import {
@@ -80,6 +81,15 @@ function isAllowedAudioMime(mime: string): boolean {
   return ALLOWED_AUDIO_BASE_MIMES.has(base);
 }
 const ALLOWED_PHOTO_MIMES = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
+
+/**
+ * El HEIC del iPhone se acepta aparte de la lista: no alcanza con mirar el
+ * mimetype porque varios navegadores no lo reconocen y mandan
+ * `application/octet-stream`. `saveUploadedFile` lo convierte a JPEG al guardar.
+ */
+function esFotoPermitida(part: { filename: string; mimetype: string }): boolean {
+  return ALLOWED_PHOTO_MIMES.has(part.mimetype.toLowerCase()) || esHeic(part);
+}
 
 const visitTypeEnum = z.enum(["INICIAL", "REVISION", "COMPLEMENTARIA"]) satisfies z.ZodType<VisitType>;
 
@@ -625,7 +635,7 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
 
       const part = await request.file();
       if (!part) throw badRequest("MISSING_FILE", "No se envió ningún archivo");
-      if (!ALLOWED_PHOTO_MIMES.has(part.mimetype.toLowerCase())) {
+      if (!esFotoPermitida(part)) {
         throw badRequest("INVALID_PHOTO_MIMETYPE", `Foto no soportada: ${part.mimetype}`);
       }
       const description = (part.fields.description as { value?: string } | undefined)?.value ?? null;
@@ -747,7 +757,7 @@ export async function registerVisitasRoutes(app: FastifyInstance) {
 
       const part = await request.file();
       if (!part) throw badRequest("MISSING_FILE", "No se envió ningún archivo");
-      if (!ALLOWED_PHOTO_MIMES.has(part.mimetype.toLowerCase())) {
+      if (!esFotoPermitida(part)) {
         throw badRequest("INVALID_PHOTO_MIMETYPE", `Foto no soportada: ${part.mimetype}`);
       }
       const description = (part.fields.description as { value?: string } | undefined)?.value ?? null;

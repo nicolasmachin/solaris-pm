@@ -30,6 +30,7 @@ import {
   isMinutaExtractionEnabled,
 } from "../services/minutaExtraction/index.js";
 import { createAuditEntry } from "../services/audit.service.js";
+import { esHeic } from "../services/heic.service.js";
 import { badRequest, notFound, unauthorized } from "../utils/errors.js";
 import { serializeDate } from "../utils/serialization.js";
 
@@ -164,10 +165,13 @@ export async function registerPreIngenieriaRoutes(app: FastifyInstance) {
       const part = await request.file();
       if (!part) throw badRequest("MISSING_FILE", "No se envió ningún archivo");
 
-      if (!ALLOWED_PHOTO_MIMETYPES.has(part.mimetype.toLowerCase())) {
+      // El HEIC del iPhone pasa aunque no esté en la lista de mimetypes: hay
+      // navegadores que no lo reconocen y mandan `application/octet-stream`, así
+      // que se mira también la extensión. `saveUploadedFile` lo convierte a JPEG.
+      if (!ALLOWED_PHOTO_MIMETYPES.has(part.mimetype.toLowerCase()) && !esHeic(part)) {
         throw badRequest(
           "INVALID_PHOTO_MIMETYPE",
-          `Tipo de imagen no permitido: ${part.mimetype}. Usá JPG, PNG o WEBP.`,
+          `Tipo de imagen no permitido: ${part.mimetype}. Usá JPG, PNG, WEBP o HEIC.`,
         );
       }
 

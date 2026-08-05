@@ -16,6 +16,7 @@ import { prisma } from "../lib/prisma.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
+import { esHeic } from "../services/heic.service.js";
 import {
   buildEFPSnapshots,
   EFP_SECTION_KEYS,
@@ -450,10 +451,13 @@ export async function registerEFPRoutes(app: FastifyInstance) {
       const part = await request.file();
       if (!part) throw badRequest("MISSING_FILE", "No se envió ningún archivo");
 
-      if (!ALLOWED_ATTACHMENT_MIMETYPES.has(part.mimetype.toLowerCase())) {
+      // El HEIC del iPhone pasa aunque no esté en la lista: varios navegadores
+      // no lo reconocen y mandan `application/octet-stream`, así que se mira
+      // también la extensión. `saveUploadedFile` lo convierte a JPEG.
+      if (!ALLOWED_ATTACHMENT_MIMETYPES.has(part.mimetype.toLowerCase()) && !esHeic(part)) {
         throw badRequest(
           "INVALID_MIMETYPE",
-          `Tipo de archivo no permitido: ${part.mimetype}. Usá JPG, PNG, WEBP o PDF.`,
+          `Tipo de archivo no permitido: ${part.mimetype}. Usá JPG, PNG, WEBP, HEIC o PDF.`,
         );
       }
 

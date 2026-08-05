@@ -12,6 +12,7 @@ import { UteExtractModal } from "../components/projects/UteExtractModal";
 import type { EmailTemplate, EmailTemplateContext } from "../api/email.api";
 import { RecipientChips } from "../components/email/RecipientChips";
 import { bodyToHtml, renderTemplate } from "../components/email/renderMailBody";
+import { ACCEPT_FOTOS_Y_PDF } from "../utils/fileAccept";
 
 const TEMPLATE_KEY = "consulta_ute";
 const TENSIONES = ["BT Monofásico 230V", "BT Trifásico 230V", "BT Trifásico 400V"];
@@ -223,7 +224,7 @@ export default function ConsultaUte() {
             >
               <Upload className="h-3.5 w-3.5" /> {extractor.isExtracting ? "Leyendo…" : project?.facturaUtePath ? "Reemplazar" : "Cargar factura"}
             </button>
-            <input ref={fileRef} type="file" accept="image/jpeg,image/png,application/pdf" className="hidden" onChange={onPickFactura} />
+            <input ref={fileRef} type="file" accept={ACCEPT_FOTOS_Y_PDF} className="hidden" onChange={onPickFactura} />
           </div>
 
           <div className="border-t border-dashed border-[var(--color-border)] pt-3">

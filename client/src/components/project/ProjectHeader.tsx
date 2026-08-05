@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Contact, FileCheck, HardHat, Mail, MapPin, Phone, Trash2 } from "lucide-react";
+import { Contact, FileCheck, GitBranch, HardHat, Mail, MapPin, Phone, Plus, Trash2 } from "lucide-react";
 import type { Project } from "../../types/api.types";
 import { UTE_STAGE_LABEL, UTE_STATUS_LABEL } from "../../api/uteProcess.api";
 import { getProjectTeamColor, getProjectTeamName } from "./projectTeamColor";
@@ -21,9 +21,11 @@ interface ProjectHeaderProps {
   project: Project;
   onEdit?: () => void;
   onDelete?: () => void;
+  /** Abre el alta de ampliación. Ausente si el usuario no puede crear obras. */
+  onAmpliar?: () => void;
 }
 
-export function ProjectHeader({ project, onEdit, onDelete }: ProjectHeaderProps) {
+export function ProjectHeader({ project, onEdit, onDelete, onAmpliar }: ProjectHeaderProps) {
   const navigate = useNavigate();
   const style = STATUS_STYLES[project.status] ?? STATUS_STYLES.ACTIVE;
   const hasInstallation = !!project.installationSchedule;
@@ -90,7 +92,32 @@ export function ProjectHeader({ project, onEdit, onDelete }: ProjectHeaderProps)
               <span>Ver ficha del cliente</span>
             </button>
           </CanAccess>
+          {onAmpliar && (
+            <button
+              onClick={onAmpliar}
+              className="inline-flex items-center gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-card)] px-2 py-0.5 text-[11px] font-mono uppercase tracking-wider text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-accent)] transition-colors"
+              title="Crear una obra nueva sobre esta instalación"
+            >
+              <Plus size={12} className="shrink-0" />
+              <span>Crear ampliación</span>
+            </button>
+          )}
         </div>
+
+        {/* Ampliación: de qué obra cuelga. Se muestra bajo el nombre porque es
+            lo primero que hay que entender al abrir el proyecto. */}
+        {project.parentProject && (
+          <button
+            onClick={() => navigate(`/projects/${project.parentProject!.id}`)}
+            className="mt-1.5 inline-flex items-center gap-1.5 rounded-md border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-2 py-0.5 text-[11px] text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-text-primary)]"
+            title="Ir a la obra original"
+          >
+            <GitBranch size={12} className="shrink-0" />
+            <span>
+              Ampliación de <span className="font-mono">{project.parentProject.code}</span>
+            </span>
+          </button>
+        )}
         <p className="font-mono text-[10px] text-[var(--color-text-muted)] mt-1">
           {project.capacityKwp} kWp · {project.locationCity},{" "}
           {project.locationProvince}

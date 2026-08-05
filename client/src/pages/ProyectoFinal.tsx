@@ -36,6 +36,7 @@ import {
 } from "../api/efp.api";
 import { getVisitas, type VisitListItem } from "../api/visitas.api";
 import { usePermission } from "../hooks/usePermission";
+import { ACCEPT_FOTOS_Y_PDF } from "../utils/fileAccept";
 
 const MONTHS_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 function fmt(iso: string): string {
@@ -606,7 +607,7 @@ function AttachmentsBlock({
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*,application/pdf"
+              accept={ACCEPT_FOTOS_Y_PDF}
               onChange={handleUpload}
               className="hidden"
             />
