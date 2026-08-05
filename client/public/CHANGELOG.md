@@ -4,6 +4,13 @@
 
 ### 5 de agosto de 2026
 
+#### Fotos y videos en la visita de ventas
+
+- En el panel del lead hay una sección nueva, **"Fotos y videos de la visita"**, para cargar el relevamiento de la visita comercial, antes de cerrar la venta.
+- Las **fotos** se suben de a varias, se comprimen solas en el celular y se ven en miniatura.
+- Los **videos** se comprimen igual que los de obra, así que se puede grabar el techo o el tablero sin preocuparse por el peso.
+- Al **ganar el lead**, todo eso pasa solo al proyecto nuevo: las fotos a Fotos de Obra y los videos a la sección Videos, junto con los adjuntos que ya se copiaban.
+
 #### Checklist de fotos a mano
 
 - En **Fotos de Obra** hay un botón nuevo, **"Checklist de fotos"**, que muestra las **23 fotos obligatorias** para la entrega de obra, agrupadas por sección y con el detalle de qué tiene que verse en cada una.

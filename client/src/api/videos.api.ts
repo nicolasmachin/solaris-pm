@@ -145,3 +145,37 @@ export async function getVideoStreamUrl(videoId: string): Promise<string> {
   );
   return `${API_BASE}/api/videos/${videoId}/stream?t=${encodeURIComponent(data.token)}`;
 }
+
+// ─── Videos de la visita de ventas (leads) ────────────────────────────────────
+
+export async function getLeadVideos(leadId: string): Promise<ProjectVideo[]> {
+  const { data } = await apiClient.get<{ videos: ProjectVideo[] }>(`/api/leads/${leadId}/videos`);
+  return data.videos;
+}
+
+/**
+ * Sube un video de la visita comercial. Lo tipa el backend como `VISITA`: no es
+ * un ensayo, así que no cuenta como evidencia para el checklist de obra.
+ */
+export async function uploadLeadVideo(
+  leadId: string,
+  params: { file: File; descripcion?: string; onProgress?: (percent: number) => void },
+): Promise<{ id: string }> {
+  const form = new FormData();
+  if (params.descripcion) form.append("descripcion", params.descripcion);
+  form.append("file", params.file, params.file.name);
+
+  const { data } = await apiClient.post<{ video: { id: string } }>(
+    `/api/leads/${leadId}/videos`,
+    form,
+    {
+      headers: { "Content-Type": "multipart/form-data" },
+      onUploadProgress: (event) => {
+        if (!params.onProgress || !event.total) return;
+        params.onProgress(Math.round((event.loaded / event.total) * 100));
+      },
+    },
+  );
+
+  return data.video;
+}

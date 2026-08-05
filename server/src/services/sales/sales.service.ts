@@ -112,7 +112,15 @@ export async function copyLeadAttachmentsToProject(
   userIdFallback: string,
 ): Promise<{ copied: number }> {
   const attachments = await tx.fileAttachment.findMany({
-    where: { leadId, deletedAt: null },
+    // Las fotos y los videos de la visita de ventas quedan afuera: los mueve
+    // `moveLeadMediaToProject`, que además los deja donde el proyecto los
+    // muestra (galería de obra y sección Videos) en vez de sueltos entre los
+    // documentos.
+    where: {
+      leadId,
+      deletedAt: null,
+      OR: [{ toolSource: null }, { toolSource: { notIn: MEDIA_TOOL_SOURCES } }],
+    },
   });
   if (attachments.length === 0) return { copied: 0 };
 
@@ -174,4 +182,136 @@ export async function copyLeadAttachmentsToProjectWithDefaultClient(
   return prisma.$transaction((tx) =>
     copyLeadAttachmentsToProject(tx, leadId, projectId, userIdFallback),
   );
+}
+
+/** `toolSource` de las fotos y videos de la visita de ventas. */
+export const LEAD_FOTO_TOOL_SOURCE = "lead-fotos";
+const PROJECT_VIDEO_TOOL_SOURCE = "project-video";
+const MEDIA_TOOL_SOURCES = [LEAD_FOTO_TOOL_SOURCE, PROJECT_VIDEO_TOOL_SOURCE];
+
+/**
+ * Pasa al proyecto las fotos y los videos que se cargaron en la visita de ventas.
+ *
+ * Va aparte de `copyLeadAttachmentsToProject` porque no alcanza con copiar el
+ * archivo: cada uno tiene que quedar donde el proyecto lo muestra —las fotos en
+ * la galería de obra (con su miniatura), los videos en la sección Videos— y el
+ * `ProjectVideo` tiene que pasar a apuntar al proyecto.
+ *
+ * Los videos se **mueven** en vez de copiarse: son decenas de MB y el original
+ * del lead ya no se necesita. `leadId` se conserva como rastro de dónde salió.
+ */
+export async function moveLeadMediaToProject(
+  tx: Prisma.TransactionClient,
+  leadId: string,
+  projectId: string,
+  userIdFallback: string,
+): Promise<{ fotos: number; videos: number }> {
+  let fotos = 0;
+  let videos = 0;
+
+  // ── Fotos → galería de obra ──────────────────────────────────────────────
+  const fotosLead = await tx.fileAttachment.findMany({
+    where: { leadId, toolSource: LEAD_FOTO_TOOL_SOURCE, deletedAt: null },
+  });
+
+  if (fotosLead.length > 0) {
+    const obraDir = path.join(storageRootForProject(projectId), "obra");
+    await fsPromises.mkdir(obraDir, { recursive: true });
+
+    for (const foto of fotosLead) {
+      const srcAbs = absolutePathFromUrl(foto.url);
+      try {
+        await fsPromises.access(srcAbs);
+      } catch {
+        continue;
+      }
+
+      const extension = path.extname(foto.storedFilename) || "";
+      const uuid = randomUUID();
+      const nuevoNombre = `${uuid}${extension}`;
+      await fsPromises.copyFile(srcAbs, path.join(obraDir, nuevoNombre));
+
+      // La miniatura ya existe al lado del original: se copia con el nombre que
+      // espera la galería en vez de volver a generarla.
+      const thumbSrc = absolutePathFromUrl(deriveThumbUrl(foto.url));
+      await fsPromises
+        .copyFile(thumbSrc, path.join(obraDir, `thumb_${uuid}.jpg`))
+        .catch(() => undefined);
+
+      await tx.fileAttachment.create({
+        data: {
+          projectId,
+          filename: foto.filename,
+          storedFilename: nuevoNombre,
+          mimeType: foto.mimeType,
+          sizeBytes: foto.sizeBytes,
+          url: `${projectId}/obra/${nuevoNombre}`,
+          toolSource: "obra-fotos",
+          uploadedById: foto.uploadedById ?? userIdFallback,
+        },
+      });
+      fotos++;
+    }
+  }
+
+  // ── Videos → sección Videos del proyecto ─────────────────────────────────
+  const videosLead = await tx.projectVideo.findMany({
+    where: { leadId, projectId: null, deletedAt: null },
+    select: { id: true, posterUrl: true, fileAttachmentId: true, fileAttachment: true },
+  });
+
+  if (videosLead.length > 0) {
+    const videosDir = path.join(storageRootForProject(projectId), "videos");
+    await fsPromises.mkdir(videosDir, { recursive: true });
+
+    for (const video of videosLead) {
+      let nuevaUrl: string | null = null;
+
+      if (video.fileAttachment) {
+        const srcAbs = absolutePathFromUrl(video.fileAttachment.url);
+        const nombre = video.fileAttachment.storedFilename;
+        try {
+          await fsPromises.rename(srcAbs, path.join(videosDir, nombre));
+          nuevaUrl = `${projectId}/videos/${nombre}`;
+        } catch {
+          // Si el archivo no está, el video queda apuntando al proyecto igual:
+          // perder el vínculo sería peor que un adjunto roto.
+        }
+      }
+
+      let nuevoPoster: string | null = null;
+      if (video.posterUrl) {
+        const nombrePoster = path.basename(video.posterUrl);
+        await fsPromises
+          .rename(absolutePathFromUrl(video.posterUrl), path.join(videosDir, nombrePoster))
+          .then(() => {
+            nuevoPoster = `${projectId}/videos/${nombrePoster}`;
+          })
+          .catch(() => undefined);
+      }
+
+      await tx.projectVideo.update({
+        where: { id: video.id },
+        data: { projectId, posterUrl: nuevoPoster ?? video.posterUrl },
+      });
+
+      if (video.fileAttachmentId && nuevaUrl) {
+        await tx.fileAttachment.update({
+          where: { id: video.fileAttachmentId },
+          data: { projectId, leadId: null, url: nuevaUrl },
+        });
+      }
+      videos++;
+    }
+  }
+
+  return { fotos, videos };
+}
+
+/** `<dir>/<uuid>.<ext>` → `<dir>/thumb_<uuid>.jpg` (convención de la galería). */
+function deriveThumbUrl(url: string): string {
+  const dir = path.posix.dirname(url);
+  const base = path.posix.basename(url);
+  const sinExt = base.slice(0, base.length - path.posix.extname(base).length);
+  return dir === "." ? `thumb_${sinExt}.jpg` : `${dir}/thumb_${sinExt}.jpg`;
 }

@@ -284,17 +284,28 @@ export interface SavedProjectVideoUpload {
 }
 
 /**
- * Guarda el video **original** en `storage/<projectId>/videos/.tmp/`, a la
- * espera de que la cola lo comprima. Es intencional que quede en un directorio
- * aparte: `.tmp/` está excluido del respaldo a B2 (no tiene sentido subir a la
- * nube un archivo que se va a descartar en minutos) y hace evidente qué sobró si
- * un proceso muere a mitad de camino.
+ * Carpeta del dueño del video dentro de `storage/`: `<projectId>` cuando es de
+ * un proyecto, `leads/<leadId>` cuando se grabó en la visita de ventas y el
+ * proyecto todavía no existe.
+ */
+export function videoOwnerDir(owner: { projectId?: string | null; leadId?: string | null }): string {
+  if (owner.projectId) return owner.projectId;
+  if (owner.leadId) return `leads/${owner.leadId}`;
+  throw badRequest("VIDEO_SIN_DUENO", "El video tiene que pertenecer a un proyecto o a un lead");
+}
+
+/**
+ * Guarda el video **original** en `storage/<owner>/videos/.tmp/`, a la espera de
+ * que la cola lo comprima. Es intencional que quede en un directorio aparte:
+ * `.tmp/` está excluido del respaldo a B2 (no tiene sentido subir a la nube un
+ * archivo que se va a descartar en minutos) y hace evidente qué sobró si un
+ * proceso muere a mitad de camino.
  *
  * El original se borra apenas la compresión termina bien.
  */
 export async function saveProjectVideoUpload(
   file: MultipartFile,
-  projectId: string,
+  ownerDir: string,
 ): Promise<SavedProjectVideoUpload> {
   const extension = path.extname(file.filename).toLowerCase();
   if (!projectVideoExtensions.has(extension)) {
@@ -309,7 +320,7 @@ export async function saveProjectVideoUpload(
     throw badRequest("INVALID_VIDEO_TYPE", "El archivo no parece ser un video");
   }
 
-  const tmpRoot = path.resolve(process.cwd(), "..", env.storagePath, projectId, "videos", ".tmp");
+  const tmpRoot = path.resolve(process.cwd(), "..", env.storagePath, ownerDir, "videos", ".tmp");
   await fsPromises.mkdir(tmpRoot, { recursive: true });
 
   const absolutePath = path.join(tmpRoot, `${randomUUID()}${extension}`);
@@ -334,11 +345,64 @@ export async function saveProjectVideoUpload(
   };
 }
 
-/** Carpeta definitiva de los videos ya comprimidos de un proyecto. */
-export async function ensureProjectVideoDir(projectId: string): Promise<string> {
-  const dir = path.resolve(process.cwd(), "..", env.storagePath, projectId, "videos");
+/** Carpeta definitiva de los videos ya comprimidos de un proyecto o un lead. */
+export async function ensureProjectVideoDir(ownerDir: string): Promise<string> {
+  const dir = path.resolve(process.cwd(), "..", env.storagePath, ownerDir, "videos");
   await fsPromises.mkdir(dir, { recursive: true });
   return dir;
+}
+
+// ============================================================
+// FOTOS DE LEAD — relevamiento de la visita de ventas
+// ============================================================
+
+/**
+ * Guarda una foto de la visita de ventas bajo `storage/leads/<leadId>/fotos/`,
+ * con su miniatura al lado. Mismo criterio que las fotos de obra: el original se
+ * conserva tal cual (ya viene comprimido desde el navegador) y la miniatura es
+ * lo que carga la galería.
+ */
+export async function saveLeadPhoto(
+  file: MultipartFile,
+  leadId: string,
+): Promise<SavedObraPhoto> {
+  const extension = path.extname(file.filename).toLowerCase();
+  if (!obraPhotoExtensions.has(extension)) {
+    throw badRequest("INVALID_PHOTO_TYPE", "El tipo de imagen no está permitido");
+  }
+
+  const root = path.resolve(process.cwd(), "..", env.storagePath, "leads", leadId, "fotos");
+  await fsPromises.mkdir(root, { recursive: true });
+
+  const uuid = randomUUID();
+  const storedFilename = `${uuid}${extension}`;
+  const absolutePath = path.join(root, storedFilename);
+
+  const writeStream = fs.createWriteStream(absolutePath);
+  await pipeline(file.file, writeStream);
+
+  const stats = await fsPromises.stat(absolutePath);
+  const maxBytes = env.maxFileSizeMb * 1024 * 1024;
+  if (stats.size > maxBytes) {
+    await fsPromises.unlink(absolutePath).catch(() => undefined);
+    throw badRequest("FILE_TOO_LARGE", `El archivo supera el límite de ${env.maxFileSizeMb} MB`);
+  }
+
+  const thumbStoredFilename = `thumb_${uuid}.jpg`;
+  await sharp(absolutePath)
+    .rotate()
+    .resize({ width: OBRA_THUMB_WIDTH, withoutEnlargement: true })
+    .jpeg({ quality: OBRA_THUMB_QUALITY })
+    .toFile(path.join(root, thumbStoredFilename));
+
+  return {
+    filename: file.filename,
+    storedFilename,
+    mimeType: file.mimetype || "application/octet-stream",
+    sizeBytes: stats.size,
+    url: `leads/${leadId}/fotos/${storedFilename}`,
+    thumbnailUrl: `leads/${leadId}/fotos/${thumbStoredFilename}`,
+  };
 }
 
 /**

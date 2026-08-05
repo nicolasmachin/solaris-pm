@@ -31,7 +31,7 @@ import { z } from "zod";
 import { env } from "../config/env.js";
 import { prisma } from "../lib/prisma.js";
 import { authenticate } from "../middleware/auth.middleware.js";
-import { authorize } from "../middleware/authorize.middleware.js";
+import { authorize, authorizeAny } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
 import { enqueueProjectVideo } from "../services/project-video.service.js";
 import { getStoredFilePath, saveProjectVideoUpload } from "../services/file-storage.service.js";
@@ -125,6 +125,36 @@ function parseRange(
   return { start, end: Math.min(end, size - 1) };
 }
 
+/** Campos que se devuelven al listar videos, iguales para proyecto y para lead. */
+const VIDEO_LIST_SELECT = {
+  id: true,
+  tipoVideo: true,
+  descripcion: true,
+  visitId: true,
+  posterUrl: true,
+  durationSeconds: true,
+  width: true,
+  height: true,
+  sizeBytes: true,
+  processingStatus: true,
+  processingError: true,
+  originalFilename: true,
+  originalSizeBytes: true,
+  createdAt: true,
+  processedAt: true,
+  uploadedBy: { select: { id: true, name: true } },
+} as const;
+
+/**
+ * Lee un campo de texto del multipart. Solo llegan los que el cliente mandó
+ * ANTES del archivo: el parseo es en streaming y se corta al encontrarlo.
+ */
+function campoDeTexto(fields: unknown, nombre: string): string | null {
+  const campo = (fields as Record<string, unknown> | undefined)?.[nombre];
+  if (!campo || typeof campo !== "object" || !("value" in campo)) return null;
+  return String((campo as { value: unknown }).value).trim() || null;
+}
+
 const uploadParamsSchema = z.object({ projectId: z.string().min(1) });
 const videoParamsSchema = z.object({ id: z.string().min(1) });
 
@@ -138,6 +168,24 @@ const videoParamsSchema = z.object({ id: z.string().min(1) });
  */
 function protegida(action: Action) {
   return [authenticate, authorize(Module.OPERACIONES, action)];
+}
+
+/**
+ * Ver y reproducir: lo habilita Operaciones **o** Ventas.
+ *
+ * Los videos de la visita comercial cuelgan de un lead y los sube un asesor, que
+ * no tiene permisos sobre Operaciones; sin esto no podría ni ver lo que él mismo
+ * grabó. Son todos usuarios internos, así que alcanza con exigir uno de los dos
+ * módulos en vez de resolver el permiso según el dueño de cada video.
+ */
+function protegidaVerVideo() {
+  return [
+    authenticate,
+    authorizeAny([
+      { module: Module.OPERACIONES, action: Action.VIEW },
+      { module: Module.VENTAS, action: Action.VIEW },
+    ]),
+  ];
 }
 
 export async function registerVideosRoutes(app: FastifyInstance) {
@@ -177,27 +225,80 @@ export async function registerVideosRoutes(app: FastifyInstance) {
       const videos = await prisma.projectVideo.findMany({
         where: { projectId: params.projectId, deletedAt: null },
         orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          tipoVideo: true,
-          descripcion: true,
-          visitId: true,
-          posterUrl: true,
-          durationSeconds: true,
-          width: true,
-          height: true,
-          sizeBytes: true,
-          processingStatus: true,
-          processingError: true,
-          originalFilename: true,
-          originalSizeBytes: true,
-          createdAt: true,
-          processedAt: true,
-          uploadedBy: { select: { id: true, name: true } },
-        },
+        select: VIDEO_LIST_SELECT,
       });
 
       return { videos };
+    },
+  );
+
+  // ── Videos de la visita de ventas (cuelgan del lead) ──────────────────────
+  // Mismo pipeline de compresión y la misma UI; lo único distinto es el dueño y
+  // el módulo que da el permiso. Al ganarse el lead se reasignan al proyecto.
+  app.get(
+    "/leads/:leadId/videos",
+    { preHandler: [authenticate, authorize(Module.VENTAS, Action.VIEW)] },
+    async (request) => {
+      const params = z.object({ leadId: z.string().min(1) }).parse(request.params);
+
+      const videos = await prisma.projectVideo.findMany({
+        where: { leadId: params.leadId, deletedAt: null },
+        orderBy: { createdAt: "desc" },
+        select: VIDEO_LIST_SELECT,
+      });
+
+      return { videos };
+    },
+  );
+
+  app.post(
+    "/leads/:leadId/videos",
+    { preHandler: [authenticate, authorize(Module.VENTAS, Action.CREATE)] },
+    async (request, reply) => {
+      const user = ensureUser(request);
+      const params = z.object({ leadId: z.string().min(1) }).parse(request.params);
+
+      const lead = await prisma.salesLead.findFirst({
+        where: { id: params.leadId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!lead) throw notFound("LEAD_NOT_FOUND", "El lead no existe");
+
+      const file = await request.file({
+        limits: { fileSize: env.maxVideoSizeMb * 1024 * 1024 },
+      });
+      if (!file) throw badRequest("NO_FILE", "No se recibió ningún archivo");
+
+      const descripcion = campoDeTexto(file.fields, "descripcion");
+      const stored = await saveProjectVideoUpload(file, `leads/${params.leadId}`);
+
+      const video = await prisma.projectVideo.create({
+        data: {
+          leadId: params.leadId,
+          // El video de una visita comercial es relevamiento, no un ensayo: no
+          // debe contar como evidencia cuando el lead se convierta en proyecto.
+          tipoVideo: TipoVideo.VISITA,
+          descripcion,
+          originalFilename: stored.filename,
+          originalSizeBytes: stored.sizeBytes,
+          originalMimeType: stored.mimeType,
+          uploadedById: user.id,
+        },
+        select: { id: true, processingStatus: true, createdAt: true },
+      });
+
+      enqueueProjectVideo(video.id, stored.absolutePath);
+
+      await createAuditEntry({
+        entityType: AuditEntityType.ensayo_video,
+        entityId: video.id,
+        userId: user.id,
+        action: AuditAction.file_uploaded,
+        description: `Subió un video en la visita de ventas del lead (${stored.filename})`,
+        metadata: { leadId: params.leadId, originalSizeBytes: stored.sizeBytes },
+      });
+
+      return reply.code(202).send({ video });
     },
   );
 
@@ -222,28 +323,13 @@ export async function registerVideosRoutes(app: FastifyInstance) {
       });
       if (!file) throw badRequest("NO_FILE", "No se recibió ningún archivo");
 
-      const rawTipo = (file.fields as Record<string, unknown> | undefined)?.tipoVideo;
-      const tipoValue =
-        rawTipo && typeof rawTipo === "object" && "value" in rawTipo
-          ? String((rawTipo as { value: unknown }).value)
-          : undefined;
-      const rawDescripcion = (file.fields as Record<string, unknown> | undefined)?.descripcion;
-      const descripcion =
-        rawDescripcion && typeof rawDescripcion === "object" && "value" in rawDescripcion
-          ? String((rawDescripcion as { value: unknown }).value).trim() || null
-          : null;
-
+      const descripcion = campoDeTexto(file.fields, "descripcion");
+      const substageId = campoDeTexto(file.fields, "substageId");
       const tipoVideo = z
         .nativeEnum(TipoVideo, {
-          errorMap: () => ({ message: "Elegí qué ensayo documenta el video" }),
+          errorMap: () => ({ message: "Elegí qué documenta el video" }),
         })
-        .parse(tipoValue);
-
-      const rawSubstage = (file.fields as Record<string, unknown> | undefined)?.substageId;
-      const substageId =
-        rawSubstage && typeof rawSubstage === "object" && "value" in rawSubstage
-          ? String((rawSubstage as { value: unknown }).value) || null
-          : null;
+        .parse(campoDeTexto(file.fields, "tipoVideo") ?? undefined);
 
       const stored = await saveProjectVideoUpload(file, params.projectId);
 
@@ -286,7 +372,7 @@ export async function registerVideosRoutes(app: FastifyInstance) {
   // Permiso de reproducción
   app.post(
     "/videos/:id/stream-token",
-    { preHandler: protegida(Action.VIEW) },
+    { preHandler: protegidaVerVideo() },
     async (request) => {
       const user = ensureUser(request);
       const params = videoParamsSchema.parse(request.params);
@@ -328,7 +414,7 @@ export async function registerVideosRoutes(app: FastifyInstance) {
   // Miniatura
   app.get(
     "/videos/:id/poster",
-    { preHandler: protegida(Action.VIEW) },
+    { preHandler: protegidaVerVideo() },
     async (request, reply) => {
       const params = videoParamsSchema.parse(request.params);
 

@@ -13,7 +13,7 @@ import {
 import { env } from "../config/env.js";
 import { prisma } from "../lib/prisma.js";
 import { createAuditEntry } from "./audit.service.js";
-import { ensureProjectVideoDir } from "./file-storage.service.js";
+import { ensureProjectVideoDir, videoOwnerDir } from "./file-storage.service.js";
 import {
   calculateProjectProgress,
   syncStageProgress,
@@ -51,8 +51,8 @@ const MAX_ATTEMPTS = 3;
  */
 const OUTPUT_PREFIX = "out_";
 
-function projectVideoTmpDir(projectId: string): string {
-  return path.resolve(process.cwd(), "..", env.storagePath, projectId, "videos", ".tmp");
+function projectVideoTmpDir(ownerDir: string): string {
+  return path.resolve(process.cwd(), "..", env.storagePath, ownerDir, "videos", ".tmp");
 }
 
 /**
@@ -80,6 +80,7 @@ export async function processProjectVideo(projectVideoId: string, originalPath?:
     select: {
       id: true,
       projectId: true,
+      leadId: true,
       substageId: true,
       tipoVideo: true,
       originalFilename: true,
@@ -95,7 +96,8 @@ export async function processProjectVideo(projectVideoId: string, originalPath?:
   // El path del original no se persiste: es un archivo efímero que existe solo
   // entre la subida y la compresión. En el flujo normal lo pasa quien encola; al
   // recuperar tras un reinicio hay que reconstruirlo desde `.tmp/`.
-  const inputPath = originalPath ?? (await findOriginalInTmp(video.projectId, projectVideoId));
+  const ownerDir = videoOwnerDir(video);
+  const inputPath = originalPath ?? (await findOriginalInTmp(ownerDir, projectVideoId));
 
   if (!inputPath) {
     await failVideo(
@@ -115,8 +117,8 @@ export async function processProjectVideo(projectVideoId: string, originalPath?:
     },
   });
 
-  const dir = await ensureProjectVideoDir(video.projectId);
-  const tmpDir = projectVideoTmpDir(video.projectId);
+  const dir = await ensureProjectVideoDir(ownerDir);
+  const tmpDir = projectVideoTmpDir(ownerDir);
   const uuid = randomUUID();
   const outputName = `${uuid}.mp4`;
   const posterName = `poster_${uuid}.jpg`;
@@ -146,7 +148,7 @@ export async function processProjectVideo(projectVideoId: string, originalPath?:
     try {
       await extractPoster(outputPath, posterPath);
       await fsPromises.rename(posterPath, finalPosterPath);
-      posterUrl = `${video.projectId}/videos/${posterName}`;
+      posterUrl = `${ownerDir}/videos/${posterName}`;
     } catch (error) {
       // La miniatura es prescindible: sin ella la tarjeta muestra un ícono. No
       // vale la pena descartar un video que se comprimió bien.
@@ -159,12 +161,13 @@ export async function processProjectVideo(projectVideoId: string, originalPath?:
     const attachment = await prisma.fileAttachment.create({
       data: {
         projectId: video.projectId,
+        leadId: video.leadId,
         substageId: video.substageId,
         filename: buildFinalFilename(video.originalFilename),
         storedFilename: outputName,
         mimeType: "video/mp4",
         sizeBytes,
-        url: `${video.projectId}/videos/${outputName}`,
+        url: `${ownerDir}/videos/${outputName}`,
         tipo: FileAttachmentTipo.OTRO,
         toolSource: PROJECT_VIDEO_TOOL_SOURCE,
         toolEntityId: projectVideoId,
@@ -197,7 +200,8 @@ export async function processProjectVideo(projectVideoId: string, originalPath?:
 
     // Solo un video DE ENSAYO destraba el checklist. Uno de visita técnica es
     // documentación del relevamiento, no prueba de que el ensayo se hizo.
-    if (TIPOS_DE_ENSAYO.includes(video.tipoVideo)) {
+    // Solo aplica a videos de un proyecto: un lead todavía no tiene checklist.
+    if (video.projectId && TIPOS_DE_ENSAYO.includes(video.tipoVideo)) {
       await autoCompleteEnsayoChecklist(video.projectId, video.uploadedById);
     }
   } catch (error) {
@@ -251,14 +255,14 @@ function buildFinalFilename(originalFilename: string): string {
  * trabajos después de un reinicio: mientras el proceso vive, el path viaja en la
  * llamada.
  */
-async function findOriginalInTmp(projectId: string, projectVideoId: string): Promise<string | null> {
+async function findOriginalInTmp(ownerDir: string, projectVideoId: string): Promise<string | null> {
   const marker = await prisma.projectVideo.findUnique({
     where: { id: projectVideoId },
     select: { originalFilename: true },
   });
   if (!marker) return null;
 
-  const tmpDir = projectVideoTmpDir(projectId);
+  const tmpDir = projectVideoTmpDir(ownerDir);
 
   const entries = (await fsPromises.readdir(tmpDir).catch(() => [] as string[])).filter(
     // Los `out_*` son restos de una compresión interrumpida, no originales.
@@ -298,7 +302,7 @@ export async function recoverPendingProjectVideos(): Promise<void> {
       deletedAt: null,
       processingStatus: { in: [VideoProcessingStatus.PENDING, VideoProcessingStatus.PROCESSING] },
     },
-    select: { id: true, processingAttempts: true, projectId: true },
+    select: { id: true, processingAttempts: true, projectId: true, leadId: true },
     orderBy: { createdAt: "asc" },
   });
 
@@ -306,7 +310,7 @@ export async function recoverPendingProjectVideos(): Promise<void> {
 
   // Un reinicio a mitad de una compresión deja el archivo a medio escribir. Se
   // borran antes de reencolar, para que no se acumulen deploy tras deploy.
-  await limpiarParcialesInterrumpidos([...new Set(pendientes.map((v) => v.projectId))]);
+  await limpiarParcialesInterrumpidos([...new Set(pendientes.map((v) => videoOwnerDir(v)))]);
 
   for (const video of pendientes) {
     if (video.processingAttempts >= MAX_ATTEMPTS) {
@@ -324,9 +328,9 @@ export async function recoverPendingProjectVideos(): Promise<void> {
 }
 
 /** Borra los archivos a medio comprimir que dejó un proceso interrumpido. */
-async function limpiarParcialesInterrumpidos(projectIds: string[]): Promise<void> {
-  for (const projectId of projectIds) {
-    const tmpDir = projectVideoTmpDir(projectId);
+async function limpiarParcialesInterrumpidos(ownerDirs: string[]): Promise<void> {
+  for (const ownerDir of ownerDirs) {
+    const tmpDir = projectVideoTmpDir(ownerDir);
     const entries = await fsPromises.readdir(tmpDir).catch(() => [] as string[]);
 
     for (const name of entries.filter((entry) => entry.startsWith(OUTPUT_PREFIX))) {

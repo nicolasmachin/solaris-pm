@@ -1454,6 +1454,7 @@ model SalesLead {
   commission           Commission?
   comments             Comment[]
   attachments          FileAttachment[]     @relation("LeadAttachments")
+  videos               ProjectVideo[]       @relation("SalesLeadVideos")
   deletedAt            DateTime?            @db.Timestamptz(6)
   createdAt            DateTime             @default(now()) @db.Timestamptz(6)
   updatedAt            DateTime             @updatedAt @db.Timestamptz(6)
@@ -3834,8 +3835,15 @@ enum VideoProcessingStatus {
 
 model ProjectVideo {
   id         String          @id @default(cuid())
-  projectId  String
-  project    Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  // Dueño: un proyecto, o un lead cuando el video se grabó en la visita de
+  // ventas (antes de que el proyecto exista). Exactamente uno de los dos; la
+  // validación es a nivel de service, igual que en `FileAttachment`. Al ganarse
+  // el lead el video se reasigna al proyecto y `leadId` queda como rastro de
+  // dónde salió.
+  projectId  String?
+  project    Project?        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  leadId     String?
+  lead       SalesLead?      @relation("SalesLeadVideos", fields: [leadId], references: [id], onDelete: Cascade)
   // Subetapa de obra (O2P / O2T) desde la que se cargó, cuando se conoce.
   substageId String?
   substage   Substage?       @relation("ProjectVideoSubstage", fields: [substageId], references: [id], onDelete: SetNull)
@@ -3884,6 +3892,7 @@ model ProjectVideo {
   processedAt DateTime? @db.Timestamptz(6)
 
   @@index([projectId])
+  @@index([leadId])
   @@index([substageId])
   @@index([visitId])
   @@index([processingStatus])

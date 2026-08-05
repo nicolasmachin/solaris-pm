@@ -38,6 +38,14 @@ export const LATEST_RELEASE: Release = {
       ],
     },
     {
+      title: "Fotos y videos en la visita de ventas",
+      items: [
+        'En el panel del lead hay una sección nueva, "Fotos y videos de la visita", para cargar el relevamiento de la visita comercial antes de cerrar la venta.',
+        "Las fotos se suben de a varias y se comprimen solas en el celular; los videos se comprimen igual que los de obra.",
+        "Al ganar el lead, todo eso pasa solo al proyecto nuevo: las fotos a Fotos de Obra y los videos a la sección Videos.",
+      ],
+    },
+    {
       title: "Checklist de fotos a mano",
       items: [
         'En "Fotos de Obra" hay un botón nuevo, "Checklist de fotos", que muestra las 23 fotos obligatorias para la entrega de obra, agrupadas por sección y con el detalle de qué tiene que verse en cada una.',

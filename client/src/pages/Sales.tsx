@@ -34,6 +34,7 @@ import {
 import { getUsers } from "../api/users.api";
 import { CommentThread } from "../components/comments/CommentThread";
 import { LeadAttachments } from "../components/sales/LeadAttachments";
+import { LeadVisitaMedia } from "../components/sales/LeadVisitaMedia";
 import { LeadToProjectModal } from "../components/sales/LeadToProjectModal";
 import { LostReasonModal } from "../components/sales/LostReasonModal";
 import { MarkAsWonModal } from "../components/sales/MarkAsWonModal";
@@ -928,6 +929,17 @@ function LeadPanel({
             </div>
           </div>
           <LeadProposalsList leadId={leadId} clientName={lead.clientName} />
+        </section>
+
+        <section className="mb-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
+          <h3 className="mb-1 text-sm font-semibold text-[var(--color-text-primary)]">
+            Fotos y videos de la visita
+          </h3>
+          <p className="mb-3 text-[11px] text-[var(--color-text-muted)]">
+            Relevamiento de la visita comercial. Al ganar el lead pasa al proyecto: las fotos a la
+            galería de obra y los videos a la sección Videos.
+          </p>
+          <LeadVisitaMedia leadId={lead.id} canEdit={canEditSales} />
         </section>
 
         <section className="mb-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">

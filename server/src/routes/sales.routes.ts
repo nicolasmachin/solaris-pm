@@ -1,4 +1,4 @@
-// Endpoints del módulo Ventas — por ahora solo gestión de adjuntos de leads.
+// Endpoints del módulo Ventas — adjuntos y fotos de leads.
 // El resto de la API de leads (CRUD, conversión, stage transitions, métricas,
 // proposals) vive todavía en api.routes.ts; el refactor a este archivo
 // queda pendiente como segunda fase.
@@ -19,6 +19,12 @@ import {
   leadAttachmentAbsolutePath,
   saveLeadAttachment,
 } from "../services/sales/sales.service.js";
+import {
+  deleteObraPhotoFiles,
+  deriveObraThumbUrl,
+  getStoredFilePath,
+  saveLeadPhoto,
+} from "../services/file-storage.service.js";
 import { badRequest, notFound, unauthorized } from "../utils/errors.js";
 import { serializeDate } from "../utils/serialization.js";
 
@@ -171,6 +177,146 @@ export async function registerSalesRoutes(app: FastifyInstance) {
         userId: user.id,
         action: AuditAction.deleted,
         description: `Eliminó adjunto "${attachment.filename}" del lead`,
+      });
+
+      reply.code(204);
+      return;
+    },
+  );
+
+  // ── Fotos de la visita de ventas ──────────────────────────────────────────
+  //
+  // Galería propia y no la lista de adjuntos: en una visita se sacan diez fotos
+  // y hace falta verlas en miniatura, no como filas de archivos. Se guardan como
+  // FileAttachment del lead con `toolSource` propio, así el traspaso al proyecto
+  // (cuando el lead se gana) las arrastra igual que al resto de los adjuntos.
+  const LEAD_FOTO_TOOL_SOURCE = "lead-fotos";
+
+  app.get(
+    "/leads/:leadId/fotos",
+    { preHandler: [authenticate, authorize(Module.VENTAS, Action.VIEW)] },
+    async (request) => {
+      const params = z.object({ leadId: z.string().min(1) }).parse(request.params);
+
+      const fotos = await prisma.fileAttachment.findMany({
+        where: { leadId: params.leadId, toolSource: LEAD_FOTO_TOOL_SOURCE, deletedAt: null },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          filename: true,
+          sizeBytes: true,
+          createdAt: true,
+          uploadedBy: { select: { id: true, name: true } },
+        },
+      });
+
+      return {
+        fotos: fotos.map((f) => ({
+          ...f,
+          createdAt: serializeDate(f.createdAt),
+          thumbnailUrl: `/api/leads/${params.leadId}/fotos/${f.id}/thumb`,
+          fullUrl: `/api/leads/${params.leadId}/fotos/${f.id}/full`,
+        })),
+        count: fotos.length,
+      };
+    },
+  );
+
+  app.post(
+    "/leads/:leadId/fotos",
+    { preHandler: [authenticate, authorize(Module.VENTAS, Action.CREATE)] },
+    async (request, reply) => {
+      const user = ensureUser(request);
+      const params = z.object({ leadId: z.string().min(1) }).parse(request.params);
+
+      const lead = await prisma.salesLead.findFirst({
+        where: { id: params.leadId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!lead) throw notFound("LEAD_NOT_FOUND", "El lead no existe");
+
+      const file = await request.file();
+      if (!file) throw badRequest("NO_FILE", "No se recibió ningún archivo");
+
+      const stored = await saveLeadPhoto(file, params.leadId);
+
+      const created = await prisma.fileAttachment.create({
+        data: {
+          leadId: params.leadId,
+          filename: stored.filename,
+          storedFilename: stored.storedFilename,
+          mimeType: stored.mimeType,
+          sizeBytes: stored.sizeBytes,
+          url: stored.url,
+          toolSource: LEAD_FOTO_TOOL_SOURCE,
+          uploadedById: user.id,
+        },
+        select: { id: true, filename: true, sizeBytes: true, createdAt: true },
+      });
+
+      reply.code(201);
+      return { ...created, createdAt: serializeDate(created.createdAt) };
+    },
+  );
+
+  // Miniatura y original. Van por endpoint autenticado (no estático) para que
+  // las fotos de un lead no queden accesibles por URL a cualquiera.
+  for (const [sufijo, esThumb] of [
+    ["thumb", true],
+    ["full", false],
+  ] as const) {
+    app.get(
+      `/leads/:leadId/fotos/:fotoId/${sufijo}`,
+      { preHandler: [authenticate, authorize(Module.VENTAS, Action.VIEW)] },
+      async (request, reply) => {
+        const params = z
+          .object({ leadId: z.string().min(1), fotoId: z.string().min(1) })
+          .parse(request.params);
+
+        const foto = await prisma.fileAttachment.findFirst({
+          where: { id: params.fotoId, leadId: params.leadId, deletedAt: null },
+          select: { url: true, mimeType: true },
+        });
+        if (!foto) throw notFound("FOTO_NOT_FOUND", "La foto no existe");
+
+        const url = esThumb ? deriveObraThumbUrl(foto.url) : foto.url;
+        const absolutePath = getStoredFilePath(url);
+
+        return reply
+          .header("Content-Type", esThumb ? "image/jpeg" : foto.mimeType)
+          .header("Cache-Control", "private, max-age=3600")
+          .send(fs.createReadStream(absolutePath));
+      },
+    );
+  }
+
+  app.delete(
+    "/leads/:leadId/fotos/:fotoId",
+    { preHandler: [authenticate, authorize(Module.VENTAS, Action.DELETE)] },
+    async (request, reply) => {
+      const user = ensureUser(request);
+      const params = z
+        .object({ leadId: z.string().min(1), fotoId: z.string().min(1) })
+        .parse(request.params);
+
+      const foto = await prisma.fileAttachment.findFirst({
+        where: { id: params.fotoId, leadId: params.leadId, deletedAt: null },
+        select: { id: true, url: true, filename: true },
+      });
+      if (!foto) throw notFound("FOTO_NOT_FOUND", "La foto no existe");
+
+      await prisma.fileAttachment.update({
+        where: { id: foto.id },
+        data: { deletedAt: new Date() },
+      });
+      await deleteObraPhotoFiles(foto.url);
+
+      await createAuditEntry({
+        entityType: AuditEntityType.file,
+        entityId: foto.id,
+        userId: user.id,
+        action: AuditAction.deleted,
+        description: `Eliminó la foto "${foto.filename}" de la visita del lead`,
       });
 
       reply.code(204);

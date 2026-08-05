@@ -26,15 +26,31 @@ rutas leen directo. Reescribir todo eso, y encima resolver los rangos contra S3,
 no se justifica para ese volumen. Backblaze B2 entra como **respaldo**
 (ver `docs/DEPLOY.md` §3), no como almacenamiento primario.
 
-## Los dos caminos de entrada
+## Los tres caminos de entrada
 
-| | Desde la sección Videos | Desde la visita técnica |
-|---|---|---|
-| Endpoint | `POST /api/projects/:id/videos` | `POST /api/projects/:id/visit-inputs/video` |
-| Permiso | `OPERACIONES:CREATE` | `OPERACIONES:EDIT` (igual que foto y nota) |
-| Tipo | lo elige el usuario (los dos ensayos u "Otro") | siempre `VISITA`, no se elige |
-| `visitId` | vacío | la visita activa del operario |
-| ¿Destraba el checklist? | solo si es un ensayo | **no** |
+| | Sección Videos del proyecto | Visita técnica | Visita de ventas (lead) |
+|---|---|---|---|
+| Endpoint | `POST /api/projects/:id/videos` | `POST /api/projects/:id/visit-inputs/video` | `POST /api/leads/:id/videos` |
+| Permiso | `OPERACIONES:CREATE` | `OPERACIONES:EDIT` | `VENTAS:CREATE` |
+| Tipo | lo elige el usuario | siempre `VISITA` | siempre `VISITA` |
+| Dueño | `projectId` | `projectId` + `visitId` | `leadId` |
+| ¿Destraba el checklist? | solo si es un ensayo | **no** | **no** |
+
+Reproducir y ver la miniatura lo habilita **Operaciones o Ventas**
+(`protegidaVerVideo`): el asesor que graba en la visita comercial no tiene
+permisos sobre Operaciones y sin eso no podría ver lo que él mismo subió.
+
+### Del lead al proyecto
+
+Al ganarse el lead, `moveLeadMediaToProject` (en `sales/sales.service.ts`) deja
+cada cosa donde el proyecto la muestra: las fotos van a la galería de obra con su
+miniatura y `toolSource: "obra-fotos"`, y los videos se **mueven** (no se copian,
+son decenas de MB) a `storage/<projectId>/videos/`, con el `ProjectVideo`
+apuntando al proyecto. `leadId` se conserva como rastro, así que el lead los
+sigue mostrando — a propósito: es el registro de lo que se relevó en esa visita.
+
+Esos dos tipos quedan **excluidos** de `copyLeadAttachmentsToProject`, que si no
+los duplicaría sueltos entre los documentos del proyecto.
 
 El video de visita **no crea un `VisitInput`**: no se transcribe, así que no
 aportaría nada al informe de la IA, y meterlo como input obligaría a extender el

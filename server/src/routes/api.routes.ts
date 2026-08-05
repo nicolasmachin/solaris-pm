@@ -80,7 +80,10 @@ import {
   deriveObraThumbUrl,
   deleteObraPhotoFiles,
 } from "../services/file-storage.service.js";
-import { copyLeadAttachmentsToProject } from "../services/sales/sales.service.js";
+import {
+  copyLeadAttachmentsToProject,
+  moveLeadMediaToProject,
+} from "../services/sales/sales.service.js";
 import {
   copyLatestProposalToProject,
   getLatestPublishedQuote,
@@ -7336,6 +7339,32 @@ export async function registerApiRoutes(app: FastifyInstance) {
       }
     } catch (err) {
       request.log.error({ err, leadId: lead.id, projectId: project.id }, "copy lead attachments failed");
+    }
+
+    // Fotos y videos de la visita de ventas: van aparte porque cada uno tiene
+    // que quedar donde el proyecto lo muestra (galería de obra / sección
+    // Videos), no sueltos entre los documentos. Mismo criterio que arriba: si
+    // falla, el proyecto ya está creado y eso es lo que importa.
+    try {
+      const { fotos, videos } = await prisma.$transaction((tx) =>
+        moveLeadMediaToProject(tx, lead.id, project.id, user.id),
+      );
+      if (fotos > 0 || videos > 0) {
+        const partes = [
+          fotos > 0 ? `${fotos} foto${fotos === 1 ? "" : "s"}` : null,
+          videos > 0 ? `${videos} video${videos === 1 ? "" : "s"}` : null,
+        ].filter(Boolean);
+        await createAuditEntry({
+          entityType: AuditEntityType.file,
+          entityId: project.id,
+          projectId: project.id,
+          userId: user.id,
+          action: AuditAction.file_uploaded,
+          description: `Pasó ${partes.join(" y ")} de la visita de ventas al proyecto`,
+        });
+      }
+    } catch (err) {
+      request.log.error({ err, leadId: lead.id, projectId: project.id }, "move lead media failed");
     }
 
     // Copia la propuesta comercial (última versión publicada) como adjunto del
