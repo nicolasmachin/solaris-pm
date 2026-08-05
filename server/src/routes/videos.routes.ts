@@ -4,9 +4,11 @@
 //   - CREATE subir un video
 //   - DELETE borrar (borrado suave; el archivo físico se conserva)
 //
-// El borrado exige además rol ADMIN, por encima del permiso de módulo: los roles
-// de obra tienen DELETE sobre OPERACIONES en la matriz, y quien graba el ensayo
-// no debería poder hacer desaparecer la evidencia de que lo hizo.
+// El borrado se rige solo por la matriz, como el resto del módulo: un video es
+// una cosa más dentro del proyecto, y quien puede borrar en Operaciones puede
+// borrarlo. Que el operario o el capataz no borren la evidencia del ensayo que
+// grabaron se resuelve no dándoles DELETE en la matriz, no con un guard aparte.
+// La red de seguridad es que el borrado es suave y el .mp4 nunca se toca.
 //
 // Los videos que se suben desde una visita técnica entran por
 // `visitas.routes.ts` y quedan con `visitId` seteado, pero se listan y se
@@ -31,7 +33,7 @@ import { z } from "zod";
 import { env } from "../config/env.js";
 import { prisma } from "../lib/prisma.js";
 import { authenticate } from "../middleware/auth.middleware.js";
-import { authorize, authorizeAny } from "../middleware/authorize.middleware.js";
+import { authorize, authorizeAny, hasPermission } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
 import { enqueueProjectVideo } from "../services/project-video.service.js";
 import { getStoredFilePath, saveProjectVideoUpload } from "../services/file-storage.service.js";
@@ -184,6 +186,20 @@ function protegidaVerVideo() {
     authorizeAny([
       { module: Module.OPERACIONES, action: Action.VIEW },
       { module: Module.VENTAS, action: Action.VIEW },
+    ]),
+  ];
+}
+
+/**
+ * Borrar: filtro grueso acá y el módulo exacto en el handler, que es el único
+ * lugar donde ya se sabe si el video cuelga de un proyecto o de un lead.
+ */
+function protegidaBorrarVideo() {
+  return [
+    authenticate,
+    authorizeAny([
+      { module: Module.OPERACIONES, action: Action.DELETE },
+      { module: Module.VENTAS, action: Action.DELETE },
     ]),
   ];
 }
@@ -442,22 +458,10 @@ export async function registerVideosRoutes(app: FastifyInstance) {
   // Borrar (suave)
   app.delete(
     "/videos/:id",
-    { preHandler: protegida(Action.DELETE) },
+    { preHandler: protegidaBorrarVideo() },
     async (request) => {
       const user = ensureUser(request);
       const params = videoParamsSchema.parse(request.params);
-
-      // Restricción explícita a ADMIN, además del permiso de módulo.
-      //
-      // La matriz da DELETE sobre OPERACIONES a los roles de obra (OPERACIONES,
-      // CAPATAZ, GERENTE_OPERACIONES), que es razonable para lo demás del módulo
-      // pero no para esto: quien graba el ensayo no debería poder hacer
-      // desaparecer la evidencia de que lo hizo. Y como la matriz es editable
-      // desde la UI de administración, apoyarse solo en ella dejaría la garantía
-      // sujeta a un cambio de permisos hecho con otra intención.
-      if (user.role !== "ADMIN") {
-        throw forbidden("Solo un administrador puede borrar un video de ensayo");
-      }
 
       const video = await prisma.projectVideo.findFirst({
         where: { id: params.id, deletedAt: null },
@@ -470,6 +474,14 @@ export async function registerVideosRoutes(app: FastifyInstance) {
         },
       });
       if (!video) throw notFound("VIDEO_NOT_FOUND", "El video no existe");
+
+      // El módulo que manda depende de dónde vive el video: uno del proyecto lo
+      // borra Operaciones; uno que todavía cuelga de un lead, Ventas. El
+      // preHandler solo garantiza que tenga uno de los dos.
+      const moduloDelVideo = video.projectId ? Module.OPERACIONES : Module.VENTAS;
+      if (!(await hasPermission(user.role, moduloDelVideo, Action.DELETE))) {
+        throw forbidden("No tenés permiso para borrar este video");
+      }
 
       const now = new Date();
 

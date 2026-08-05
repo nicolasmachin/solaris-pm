@@ -34,7 +34,7 @@ export const LATEST_RELEASE: Release = {
         "Se aceptan los videos tal como salen del celular, incluidos los del iPhone, que antes el sistema rechazaba.",
         "En el panel de Visita técnica hay un botón nuevo de Video: el operario sube la filmación desde la obra y aparece después en la sección Videos del proyecto, ya comprimida. Una etiqueta de color sobre la miniatura distingue los ensayos (amarillo) de los de visita técnica (violeta).",
         'Los ítems del checklist de obra "Ensayo anti-isla realizado y grabado" y "Videos de ensayos subidos" ahora se marcan solos cuando se sube el video, y ya no se pueden tildar sin haberlo subido. Un video de visita técnica no los da por cumplidos.',
-        "Por tratarse de evidencia de obra, solo un administrador puede eliminar un video, y aun así el archivo se conserva en el respaldo.",
+        'Eliminar un video lo habilita el permiso "Eliminar" del módulo: Operaciones para los videos del proyecto y Ventas para los de la visita comercial. Por tratarse de evidencia de obra, el archivo se conserva igual en el respaldo.',
       ],
     },
     {

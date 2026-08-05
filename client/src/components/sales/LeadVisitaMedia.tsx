@@ -4,7 +4,13 @@ import { toast } from "react-hot-toast";
 import { Camera, Trash2, Video } from "lucide-react";
 
 import { deleteLeadFoto, getLeadFotos, uploadLeadFoto } from "../../api/leadFotos.api";
-import { getLeadVideos, uploadLeadVideo, type ProjectVideo } from "../../api/videos.api";
+import {
+  deleteProjectVideo,
+  getLeadVideos,
+  uploadLeadVideo,
+  type ProjectVideo,
+} from "../../api/videos.api";
+import { usePermission } from "../../hooks/usePermission";
 import { compressImage } from "../../utils/compressImage";
 import { ProtectedImage } from "../obra/ProtectedImage";
 import { ProjectVideoCard } from "../videos/ProjectVideoCard";
@@ -34,6 +40,8 @@ export function LeadVisitaMedia({ leadId, canEdit }: Props) {
   const [confirmarBorrado, setConfirmarBorrado] = useState<{ id: string; nombre: string } | null>(
     null,
   );
+  const [confirmarVideo, setConfirmarVideo] = useState<ProjectVideo | null>(null);
+  const canDeleteVideo = usePermission("VENTAS", "DELETE");
 
   const fotosQ = useQuery({
     queryKey: ["lead-fotos", leadId],
@@ -64,6 +72,16 @@ export function LeadVisitaMedia({ leadId, canEdit }: Props) {
       qc.invalidateQueries({ queryKey: ["lead-fotos", leadId] });
     },
     onError: () => toast.error("No se pudo eliminar la foto"),
+  });
+
+  const borrarVideoMut = useMutation({
+    mutationFn: (videoId: string) => deleteProjectVideo(videoId),
+    onSuccess: () => {
+      toast.success("Video eliminado");
+      setConfirmarVideo(null);
+      qc.invalidateQueries({ queryKey: ["lead-videos", leadId] });
+    },
+    onError: () => toast.error("No se pudo eliminar el video"),
   });
 
   // Las fotos se comprimen en el celular antes de subir (de ~4 MB a ~300 KB):
@@ -220,9 +238,9 @@ export function LeadVisitaMedia({ leadId, canEdit }: Props) {
               <ProjectVideoCard
                 key={video.id}
                 video={video}
-                canDelete={false}
+                canDelete={canDeleteVideo}
                 onPlay={() => setPlaying(video)}
-                onDelete={() => undefined}
+                onDelete={() => setConfirmarVideo(video)}
               />
             ))}
           </div>
@@ -240,6 +258,17 @@ export function LeadVisitaMedia({ leadId, canEdit }: Props) {
         loading={borrarFotoMut.isPending}
         onClose={() => setConfirmarBorrado(null)}
         onConfirm={() => confirmarBorrado && borrarFotoMut.mutate(confirmarBorrado.id)}
+      />
+
+      <ConfirmDialog
+        open={confirmarVideo !== null}
+        title="Eliminar video"
+        description={`¿Eliminar "${confirmarVideo?.originalFilename ?? ""}"? No se puede deshacer.`}
+        confirmLabel="Eliminar"
+        destructive
+        loading={borrarVideoMut.isPending}
+        onClose={() => setConfirmarVideo(null)}
+        onConfirm={() => confirmarVideo && borrarVideoMut.mutate(confirmarVideo.id)}
       />
     </div>
   );

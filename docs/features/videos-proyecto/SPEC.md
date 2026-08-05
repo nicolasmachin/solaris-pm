@@ -38,6 +38,7 @@ no se justifica para ese volumen. Backblaze B2 entra como **respaldo**
 | Permiso | `OPERACIONES:CREATE` | `OPERACIONES:EDIT` | `VENTAS:CREATE` |
 | Tipo | lo elige el usuario | siempre `VISITA` | siempre `VISITA` |
 | Dueño | `projectId` | `projectId` + `visitId` | `leadId` |
+| Borrar | `OPERACIONES:DELETE` | `OPERACIONES:DELETE` | `VENTAS:DELETE` |
 | ¿Destraba el checklist? | solo si es un ensayo | **no** | **no** |
 
 Reproducir y ver la miniatura lo habilita **Operaciones o Ventas**
@@ -138,12 +139,17 @@ sintéticos y reporta tamaños y tiempos.
   antes del primer frame. Sí para el poster, que reusa `ProtectedImage`.
 - `Cache-Control: private, max-age=0, must-revalidate`, **no `no-store`**: el
   reproductor de Chrome se apoya en el caché HTTP para bufferear.
-- **Borrar exige rol ADMIN**, además del permiso de módulo. La matriz le da
-  `OPERACIONES:DELETE` a los roles de obra, y quien graba el ensayo no debería
-  poder hacer desaparecer la evidencia de que lo hizo. Como la matriz es editable
-  desde la UI, apoyarse solo en ella dejaría la garantía al azar.
+- **Borrar se rige solo por la matriz**, como el resto del módulo. Al principio
+  había un guard extra de rol ADMIN para que el operario no pudiera borrar la
+  evidencia del ensayo que grabó, pero era incoherente: un video es una cosa más
+  dentro del proyecto, y un gerente con `OPERACIONES:DELETE` no podía borrarlo.
+  Eso se resuelve en la matriz —hoy el capataz no tiene DELETE— y no con una
+  excepción escondida en el código. El módulo que se exige depende del dueño del
+  video: `OPERACIONES:DELETE` si ya cuelga de un proyecto, `VENTAS:DELETE` si
+  todavía está en el lead.
 - El borrado es **suave y no toca el archivo físico** — divergencia deliberada
-  respecto de las fotos de obra, que sí hacen `unlink`.
+  respecto de las fotos de obra, que sí hacen `unlink`. Es la red que hace que
+  abrir el borrado a más roles no sea perder evidencia.
 - Cadena de custodia: se conservan `originalSha256`, `originalProbe` (ffprobe
   completo), tamaño y mimetype del archivo descartado, más el `sha256` del
   comprimido.

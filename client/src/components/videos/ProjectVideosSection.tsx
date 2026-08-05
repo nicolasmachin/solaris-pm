@@ -4,7 +4,6 @@ import { toast } from "react-hot-toast";
 
 import { deleteProjectVideo, getProjectVideos, type ProjectVideo } from "../../api/videos.api";
 import { usePermission } from "../../hooks/usePermission";
-import { useAuthStore } from "../../store/auth.store";
 import { ProjectVideoCard } from "./ProjectVideoCard";
 import { ProjectVideoPlayer } from "./ProjectVideoPlayer";
 import { ProjectVideoUpload } from "./ProjectVideoUpload";
@@ -15,7 +14,6 @@ interface Props {
 
 export function ProjectVideosSection({ projectId }: Props) {
   const qc = useQueryClient();
-  const user = useAuthStore((s) => s.user);
   const canUpload = usePermission("OPERACIONES", "CREATE");
   const [playing, setPlaying] = useState<ProjectVideo | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ProjectVideo | null>(null);
@@ -33,9 +31,7 @@ export function ProjectVideosSection({ projectId }: Props) {
     },
   });
 
-  // El borrado de evidencia está restringido a ADMIN en el backend, más allá del
-  // permiso de módulo. Se refleja acá para no mostrar un botón que va a fallar.
-  const canDelete = user?.role === "ADMIN";
+  const canDelete = usePermission("OPERACIONES", "DELETE");
 
   const deleteMut = useMutation({
     mutationFn: (videoId: string) => deleteProjectVideo(videoId),
