@@ -21,6 +21,7 @@
 #### Arreglos
 
 - **iPhone**: al tocar "Subir video" se abría directo la cámara y no dejaba elegir un video ya grabado. Ahora ofrece las dos opciones, la fototeca y grabar en el momento.
+- **Los videos del iPhone casi no se achicaban** (uno de 45 MB quedaba en 38 MB) y tardaban varios minutos en prepararse. Ahora ese mismo video queda en unos 19 MB y se prepara en segundos. Tené en cuenta que un video largo pesa igual: cuatro minutos son unos 19 MB, así que conviene grabar clips cortos.
 
 ### 4 de agosto de 2026
 

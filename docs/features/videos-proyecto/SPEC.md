@@ -64,20 +64,43 @@ sumarlo ahí también o el checklist no lo va a reconocer.
 
 ## Perfil de compresión
 
-`server/src/services/video-transcode.service.ts`. H.264 High@4.0, 720p (lado
-largo capeado en 1280 respetando orientación), CRF 21, `maxrate 3M`, 30 fps, AAC
-mono 64k, `+faststart`.
+`server/src/services/video-transcode.service.ts`. H.264 High@4.0, lado largo
+capeado en 1280 respetando orientación, CRF 23, techo de bitrate **proporcional a
+la resolución**, tope de 30 fps, AAC mono 64k, `+faststart`.
 
 Lo que no es negociable:
 
 | | Por qué |
 |---|---|
+| **Techo de bitrate proporcional** (`BITS_POR_PIXEL`) | Es lo que hace que el archivo pese poco. Un techo fijo no comprime nada cuando el video ya viene chico — ver más abajo |
 | `-pix_fmt yuv420p` | Los iPhone graban HEVC de 10 bits; sin forzar 8 bits 4:2:0 el resultado no reproduce en Safari ni QuickTime |
 | `+faststart` | Sin esto el navegador baja el archivo entero antes del primer frame y los rangos no sirven de nada |
 | Tonemapping HDR | Dolby Vision/HLG convertido de forma ingenua queda lavado, que es justo lo que arruina la legibilidad de un display |
 | Conservar el audio | La narración del operario es parte de la evidencia del ensayo |
 | libx264 (no HEVC/AV1) | Tiene que abrirse en cualquier máquina dentro de diez años |
-| CRF 21 y 720p | 480p no alcanza para leer un display de inversor; CRF 21 da margen sobre el 23 por defecto |
+
+### Lo que enseñó el primer uso real (5 de agosto de 2026)
+
+**iOS ya transcodifica el video cuando se sube desde la fototeca.** No llega el
+original de la cámara: llegan ~478x850 a ~1,5 Mbps. Eso rompió los tres supuestos
+del perfil original, que estaba calibrado para video crudo:
+
+- El escalado a 1280 no hacía nada (ya venía más chico).
+- El `fps=30` tampoco (ya venía a 29,6), pero **sí costaba muchísimo tiempo**:
+  ffprobe reporta `r_frame_rate=90000/1` en esos archivos —el timebase del
+  contenedor, no los cuadros por segundo— y el filtro trabajaba contra ese
+  número. Un video de 4 minutos tardaba más de 5 en comprimirse. Por eso el fps
+  se lee de `avg_frame_rate` y el filtro se aplica solo si hace falta.
+- El techo fijo de 3 Mbps era el doble de lo que el archivo ya traía, así que
+  entraba entero: 45 MB salían 38 MB. Ahora el techo se calcula sobre los píxeles
+  de salida (~1,4 Mbps en 720p, ~600 kbps en 478x850) y ese mismo caso da 19 MB.
+
+Si el resultado igual no achica, se descarta y se usa el original remuxeado con
+`+faststart` (`puedeUsarseSinRecodificar`): guardar una recompresión que pesa lo
+mismo es perder calidad a cambio de nada.
+
+**Un video largo pesa, no hay vuelta.** 4 minutos dan ~19 MB aun comprimiendo
+bien. Lo que más ayuda es grabar clips cortos, no tocar el perfil.
 
 Para recalibrar: `docker compose exec server node --import tsx
 scripts/probar-compresion-video.ts [ruta-a-un-video]`. Sin argumento genera clips
@@ -123,9 +146,12 @@ sintéticos y reporta tamaños y tiempos.
   parciales, 416, HEAD, rango sufijo). Safari es el caso que más depende de
   `+faststart`, de `yuv420p` y del manejo de rangos, así que conviene confirmarlo
   aparte antes de darlo por cerrado en obra.
-- Falta probar con un `.mov` real de iPhone, vertical y HDR, filmando un display
-  de inversor, y confirmar que los caracteres se leen. Si no, subir a CRF 19 o a
-  1600px.
+- Falta confirmar la **legibilidad de un display de inversor** con el perfil
+  actual (CRF 23 + techo proporcional). Si no se lee, bajar el CRF o subir
+  `BITS_POR_PIXEL`; el script de prueba mide qué se paga en tamaño.
+- Los videos subidos a producción **antes** del 5 de agosto de 2026 quedaron con
+  el perfil viejo (pesan de más). No hay reprocesamiento: para arreglarlos hay
+  que borrarlos y volver a subirlos.
 - Ojo si se toca el `Cache-Control` del streaming: con `no-store` el reproductor
   de Chrome se queda cargando para siempre **sin dar error**, porque necesita el
   caché HTTP para bufferear. Está en `private, max-age=0, must-revalidate` por

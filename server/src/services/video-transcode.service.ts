@@ -37,6 +37,9 @@ export interface VideoProbe {
   codecName: string | null;
   colorTransfer: string | null;
   isHdr: boolean;
+  /** Cuadros por segundo reales. Ver `parseFrameRate` para por qué no es trivial. */
+  fps: number | null;
+  pixFmt: string | null;
   /** Salida cruda de ffprobe, se persiste como parte de la cadena de custodia. */
   raw: unknown;
 }
@@ -130,9 +133,9 @@ export async function probeVideo(absolutePath: string): Promise<VideoProbe> {
       "-select_streams",
       "v:0",
       "-show_entries",
-      "stream=width,height,codec_name,color_transfer,color_primaries,r_frame_rate",
+      "stream=width,height,codec_name,color_transfer,color_primaries,r_frame_rate,avg_frame_rate,pix_fmt",
       "-show_entries",
-      "format=duration,format_name",
+      "format=duration,format_name,bit_rate",
       "-of",
       "json",
       absolutePath,
@@ -146,6 +149,9 @@ export async function probeVideo(absolutePath: string): Promise<VideoProbe> {
       height?: number;
       codec_name?: string;
       color_transfer?: string;
+      pix_fmt?: string;
+      r_frame_rate?: string;
+      avg_frame_rate?: string;
     }>;
     format?: { duration?: string };
   };
@@ -173,8 +179,27 @@ export async function probeVideo(absolutePath: string): Promise<VideoProbe> {
     codecName: stream.codec_name ?? null,
     colorTransfer,
     isHdr: colorTransfer != null && HDR_TRANSFERS.has(colorTransfer),
+    // `avg_frame_rate` primero: en los videos que sube iOS, `r_frame_rate`
+    // devuelve el timebase del contenedor (90000) en vez de los cuadros por
+    // segundo, y tomarlo en serio lleva a decisiones absurdas.
+    fps: parseFrameRate(stream.avg_frame_rate) ?? parseFrameRate(stream.r_frame_rate),
+    pixFmt: stream.pix_fmt ?? null,
     raw: parsed,
   };
+}
+
+/**
+ * Convierte una fracción tipo "30000/1001" a número, descartando valores que no
+ * pueden ser un framerate real (ffprobe devuelve "0/0" cuando no lo sabe, y el
+ * timebase 90000/1 cuando el contenedor no lo declara).
+ */
+function parseFrameRate(value: string | undefined): number | null {
+  if (!value) return null;
+  const [num, den] = value.split("/").map(Number);
+  if (!Number.isFinite(num) || !Number.isFinite(den) || den === 0) return null;
+
+  const fps = num / den;
+  return fps > 0 && fps <= 240 ? fps : null;
 }
 
 /**
@@ -187,9 +212,61 @@ export async function probeVideo(absolutePath: string): Promise<VideoProbe> {
  * `fps=30` porque muchos celulares graban a 60: bajarlo corta el bitrate a la
  * mitad sin perder nada de legibilidad en un plano casi estático.
  */
+/** Lado largo máximo del video de archivo. */
+const MAX_LADO = 1280;
+
+/** Cuadros por segundo máximos. */
+const MAX_FPS = 30;
+
+/**
+ * Bits por píxel y por cuadro que se le permiten al video de archivo.
+ *
+ * Es lo que define cuánto termina pesando, y **tiene que ser proporcional a la
+ * resolución**: un techo fijo (antes eran 3 Mbps, pensados para 720p) no
+ * comprime nada cuando el video ya viene chico. Los que sube un iPhone desde la
+ * fototeca llegan transcodificados por iOS a ~478x850 y ~1,5 Mbps: con el techo
+ * viejo entraban enteros y salían pesando casi lo mismo.
+ *
+ * 0,05 bpp da ~1,4 Mbps en 720p y ~600 kbps en 478x850. Alcanza de sobra para
+ * contenido de obra, que tiene poco movimiento.
+ */
+const BITS_POR_PIXEL = 0.05;
+
+const MIN_BITRATE_KBPS = 350;
+const MAX_BITRATE_KBPS = 3000;
+
+/** Dimensiones que va a tener la salida después del escalado. */
+function dimensionesDeSalida(probe: VideoProbe): { width: number; height: number } {
+  const w = probe.width ?? 1280;
+  const h = probe.height ?? 720;
+  const ladoLargo = Math.max(w, h);
+
+  if (ladoLargo <= MAX_LADO) return { width: w, height: h };
+
+  const factor = MAX_LADO / ladoLargo;
+  // Pares: yuv420p no admite dimensiones impares.
+  return {
+    width: Math.round((w * factor) / 2) * 2,
+    height: Math.round((h * factor) / 2) * 2,
+  };
+}
+
+/** Techo de bitrate en kbps, según la resolución y los cuadros de salida. */
+function maxBitrateKbps(probe: VideoProbe): number {
+  const { width, height } = dimensionesDeSalida(probe);
+  const fps = Math.min(probe.fps ?? MAX_FPS, MAX_FPS);
+  const bitrate = (width * height * fps * BITS_POR_PIXEL) / 1000;
+
+  return Math.round(Math.min(Math.max(bitrate, MIN_BITRATE_KBPS), MAX_BITRATE_KBPS));
+}
+
 function buildVideoFilter(probe: VideoProbe): string {
+  // El filtro `fps` solo se aplica si el video viene a más de 30: agregarlo
+  // cuando ya está en 30 o menos hace trabajo de más y puede duplicar cuadros.
+  const necesitaBajarFps = (probe.fps ?? 0) > MAX_FPS;
   const scaleAndFps =
-    "scale='min(1280,iw)':'min(1280,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2,fps=30";
+    `scale='min(${MAX_LADO},iw)':'min(${MAX_LADO},ih)':force_original_aspect_ratio=decrease:force_divisible_by=2` +
+    (necesitaBajarFps ? `,fps=${MAX_FPS}` : "");
 
   if (!probe.isHdr) return scaleAndFps;
 
@@ -220,6 +297,8 @@ export async function transcodeToStandard(
   outputPath: string,
   probe: VideoProbe,
 ): Promise<TranscodeResult> {
+  const maxBitrate = maxBitrateKbps(probe);
+
   const ffmpegArgs = [
     "-hide_banner",
     "-nostdin",
@@ -237,13 +316,15 @@ export async function transcodeToStandard(
     "-preset",
     "medium",
     "-crf",
-    "21",
-    // Techo duro de bitrate: sin esto, un paneo a mano alzada por el tablero puede
-    // escalar a 8 Mbps y generar un archivo de 100 MB.
+    "23",
+    // Techo duro, proporcional a la resolución de salida (ver BITS_POR_PIXEL).
+    // Es lo que efectivamente hace que el archivo pese poco: el CRF por sí solo
+    // reproduce la calidad de la fuente, y si la fuente ya venía comprimida
+    // termina gastando bits en preservar sus propios artefactos.
     "-maxrate",
-    "3M",
+    `${maxBitrate}k`,
     "-bufsize",
-    "6M",
+    `${maxBitrate * 2}k`,
     // Sin forzar 8 bits 4:2:0, el MP4 que sale de un original HEVC de 10 bits no
     // reproduce en Safari ni en QuickTime.
     "-pix_fmt",
@@ -275,9 +356,58 @@ export async function transcodeToStandard(
     label: "ffmpeg (compresión)",
   });
 
-  const stats = await fsPromises.stat(outputPath);
+  const original = await fsPromises.stat(inputPath);
+  let stats = await fsPromises.stat(outputPath);
+
+  // Red de seguridad: si el "comprimido" no achicó nada, guardar eso sería
+  // perder calidad a cambio de nada. Cuando el original ya cumple el perfil de
+  // archivo (H.264 8 bits), se lo remuxea con +faststart y se usa tal cual.
+  if (stats.size >= original.size && puedeUsarseSinRecodificar(probe)) {
+    const remuxPath = `${outputPath}.remux.mp4`;
+    try {
+      await run(
+        "nice",
+        [
+          "-n",
+          "10",
+          env.ffmpegPath,
+          ...["-hide_banner", "-nostdin", "-y", "-i", inputPath],
+          ...["-c", "copy", "-movflags", "+faststart", remuxPath],
+        ],
+        { timeoutMs: TRANSCODE_TIMEOUT_MS, label: "ffmpeg (remux)" },
+      );
+
+      const remuxStats = await fsPromises.stat(remuxPath);
+      if (remuxStats.size < stats.size) {
+        await fsPromises.rename(remuxPath, outputPath);
+        stats = await fsPromises.stat(outputPath);
+      } else {
+        await fsPromises.unlink(remuxPath).catch(() => undefined);
+      }
+    } catch {
+      // El remux es una mejora oportunista: si falla, el comprimido sirve igual.
+      await fsPromises.unlink(remuxPath).catch(() => undefined);
+    }
+  }
+
   const sha256 = await sha256File(outputPath);
   return { sizeBytes: stats.size, sha256 };
+}
+
+/**
+ * ¿El original se puede servir tal cual, sin recodificar?
+ *
+ * Solo si ya es H.264 de 8 bits y no es HDR: cualquier otra cosa (HEVC de los
+ * iPhone, 10 bits, Dolby Vision) no reproduce en todos los navegadores, que es
+ * justo lo que la recompresión viene a garantizar.
+ */
+function puedeUsarseSinRecodificar(probe: VideoProbe): boolean {
+  if (probe.isHdr) return false;
+  if (probe.codecName !== "h264") return false;
+  if (probe.pixFmt != null && probe.pixFmt !== "yuv420p") return false;
+
+  const ladoLargo = Math.max(probe.width ?? 0, probe.height ?? 0);
+  return ladoLargo > 0 && ladoLargo <= MAX_LADO;
 }
 
 /**
