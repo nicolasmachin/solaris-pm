@@ -85,6 +85,13 @@ import {
   copyLeadAttachmentsToProject,
   moveLeadMediaToProject,
 } from "../services/sales/sales.service.js";
+import {
+  buildLeadSearchFilter,
+  crearLead,
+  editarLead,
+  generateLeadCode,
+  moverEtapaLead,
+} from "../services/sales/leads.service.js";
 import { crearAmpliacion, resolveRootProject } from "../services/ampliacion.service.js";
 import {
   copyLatestProposalToProject,
@@ -375,6 +382,8 @@ const taskCreateSchema = z
     stageId: z.string().nullable().optional(),
     substageId: z.string().nullable().optional(),
     dueDate: dateOnlySchema.nullable().optional(),
+    waitingReason: z.string().max(500).nullable().optional(),
+    followUpAt: dateOnlySchema.nullable().optional(),
   })
   .strict();
 
@@ -391,6 +400,8 @@ const taskPatchSchema = z
     stageId: z.string().nullable().optional(),
     substageId: z.string().nullable().optional(),
     dueDate: dateOnlySchema.nullable().optional(),
+    waitingReason: z.string().max(500).nullable().optional(),
+    followUpAt: dateOnlySchema.nullable().optional(),
   })
   .strict();
 
@@ -589,6 +600,7 @@ async function fetchTaskForSerialize(id: string) {
     where: { id },
     include: {
       user: { select: { id: true, name: true, role: { select: { name: true } } } },
+      lead: { select: { id: true, code: true, clientName: true } },
       ...taskAssigneesInclude,
     },
   });
@@ -605,6 +617,48 @@ function userCanAccessTask(
   if (user.role === "ADMIN") return true;
   if (task.userId === user.id) return true;
   return (task.assignees ?? []).some((a) => a.userId === user.id);
+}
+
+// Valida que el lead exista y no esté borrado, para colgarle un pendiente.
+async function findLeadForTaskOrThrow(leadId: string) {
+  const lead = await prisma.salesLead.findFirst({
+    where: { id: leadId, deletedAt: null },
+    select: { id: true, code: true, clientName: true },
+  });
+  if (!lead) throw badRequest("LEAD_NOT_FOUND", "El lead especificado no existe");
+  return lead;
+}
+
+/**
+ * Campos que acompañan al estado WAITING. Una tarea en espera tiene que decir
+ * qué espera: sin motivo vuelve a ser indistinguible de una pendiente, que es
+ * justamente lo que el estado viene a evitar. Al salir de la espera los dos
+ * campos se limpian para no dejarlos colgados de un estado que ya no aplica.
+ */
+function applyWaitingFields(
+  updateData: Record<string, unknown>,
+  nextStatus: TaskStatus | undefined,
+  currentStatus: TaskStatus,
+  body: { waitingReason?: string | null; followUpAt?: string | null },
+) {
+  const status = nextStatus ?? currentStatus;
+
+  if (status === TaskStatus.WAITING) {
+    if (body.waitingReason !== undefined) updateData.waitingReason = body.waitingReason;
+    if (body.followUpAt !== undefined) {
+      updateData.followUpAt = body.followUpAt ? parseDateOnly(body.followUpAt) : null;
+    }
+    // Al entrar en espera sin decir qué se espera, el estado no aporta nada.
+    if (nextStatus === TaskStatus.WAITING && !updateData.waitingReason) {
+      throw badRequest("WAITING_REASON_REQUIRED", "Indicá qué se está esperando");
+    }
+    return;
+  }
+
+  if (nextStatus !== undefined && currentStatus === TaskStatus.WAITING) {
+    updateData.waitingReason = null;
+    updateData.followUpAt = null;
+  }
 }
 
 async function findFileOrThrow(fileId: string) {
@@ -1050,29 +1104,6 @@ async function resolveSettings(params: { userId: string; projectId?: string | nu
   return resolved;
 }
 
-async function generateLeadCode() {
-  const year = new Date().getUTCFullYear();
-  const prefix = `LEAD-${year}-`;
-
-  const leads = await prisma.salesLead.findMany({
-    where: {
-      code: {
-        startsWith: prefix,
-      },
-    },
-    select: {
-      code: true,
-    },
-  });
-
-  const maxSequence = leads.reduce((max, lead) => {
-    const parsed = Number(lead.code.split("-")[2]);
-    return Number.isFinite(parsed) ? Math.max(max, parsed) : max;
-  }, 0);
-
-  return `${prefix}${String(maxSequence + 1).padStart(3, "0")}`;
-}
-
 async function saveProposalInputFile(file: import("@fastify/multipart").MultipartFile) {
   const extension = path.extname(file.filename).toLowerCase();
   if (![".xlsx", ".xls"].includes(extension)) {
@@ -1241,6 +1272,9 @@ const taskFieldLabels: Record<string, string> = {
   completedAt: "fecha de completado",
   stageId: "etapa asociada",
   substageId: "subetapa asociada",
+  leadId: "lead asociado",
+  waitingReason: "motivo de la espera",
+  followUpAt: "fecha de recontacto",
 };
 
 export async function registerApiRoutes(app: FastifyInstance) {
@@ -3410,6 +3444,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         updateData.completedAt = new Date();
       }
     }
+    applyWaitingFields(updateData, body.status, task.status, body);
 
     const updatedTask = await prisma.task.update({
       where: { id: task.id },
@@ -3471,6 +3506,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         description: z.string().max(2000).nullable().optional(),
         dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
         projectId: z.string().min(1).nullable().optional(),
+        leadId: z.string().min(1).nullable().optional(),
         /** @deprecated usar assignedUserIds. Se acepta por retrocompat. */
         assignedUserId: z.string().min(1).nullable().optional(),
         assignedUserIds: z.array(z.string().min(1)).optional(),
@@ -3486,6 +3522,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
       if (!project) {
         throw badRequest("PROJECT_NOT_FOUND", "El proyecto especificado no existe");
       }
+    }
+
+    if (body.leadId) {
+      await findLeadForTaskOrThrow(body.leadId);
     }
 
     // Asignados. Prioridad: `assignedUserIds` (fuente de verdad) > el
@@ -3504,6 +3544,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const task = await prisma.task.create({
       data: {
         projectId: body.projectId ?? null,
+        leadId: body.leadId ?? null,
         title: body.title,
         description: body.description ?? null,
         status: TaskStatus.PENDING,
@@ -3539,10 +3580,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
         description: z.string().max(2000).nullable().optional(),
         dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
         projectId: z.string().min(1).nullable().optional(),
+        leadId: z.string().min(1).nullable().optional(),
         /** @deprecated usar assignedUserIds. */
         assignedUserId: z.string().min(1).nullable().optional(),
         assignedUserIds: z.array(z.string().min(1)).optional(),
-        status: z.enum([TaskStatus.PENDING, TaskStatus.COMPLETED]).optional(),
+        status: z
+          .enum([TaskStatus.PENDING, TaskStatus.COMPLETED, TaskStatus.WAITING])
+          .optional(),
+        waitingReason: z.string().max(500).nullable().optional(),
+        followUpAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
       })
       .strict()
       .parse(request.body);
@@ -3568,6 +3614,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
       if (!project) {
         throw badRequest("PROJECT_NOT_FOUND", "El proyecto especificado no existe");
       }
+    }
+
+    if (body.leadId !== undefined && body.leadId !== null) {
+      await findLeadForTaskOrThrow(body.leadId);
     }
 
     // Asignación: `assignedUserIds` (fuente de verdad) o el `assignedUserId`
@@ -3598,11 +3648,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
         updateData.substageId = null;
       }
     }
+    if (body.leadId !== undefined) updateData.leadId = body.leadId;
     if (wantsAssigneeChange) updateData.userId = assigneeIds[0] ?? null;
     if (body.status !== undefined) {
       updateData.status = body.status;
       updateData.completedAt = body.status === TaskStatus.COMPLETED ? new Date() : null;
     }
+    applyWaitingFields(updateData, body.status, task.status, body);
 
     const updatedTask = await prisma.task.update({
       where: { id: task.id },
@@ -3664,6 +3716,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       where: { id: params.id, deletedAt: null },
       include: {
         project: { select: { id: true, code: true, clientName: true } },
+        lead: { select: { id: true, code: true, clientName: true } },
         stage: { select: { id: true, name: true } },
         substage: { select: { id: true, name: true } },
         user: { select: { id: true, name: true, email: true } },
@@ -3683,9 +3736,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
       status: task.status,
       priority: task.priority,
       dueDate: serializeDateOnly(task.dueDate),
+      origin: task.origin,
+      waitingReason: task.waitingReason,
+      followUpAt: serializeDateOnly(task.followUpAt),
       projectId: task.projectId,
       project: task.project
         ? { id: task.project.id, code: task.project.code, name: task.project.clientName }
+        : null,
+      leadId: task.leadId,
+      lead: task.lead
+        ? { id: task.lead.id, code: task.lead.code, name: task.lead.clientName }
         : null,
       stageId: task.stageId,
       stage: task.stage,
@@ -5260,6 +5320,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
     [StageType.SEGUIMIENTO_HABILITACION]: Module.EXPERIENCIA_CLIENTES,
   };
 
+  // Filtro de estado según el scope pedido. "pending" excluye WAITING a
+  // propósito: una tarea que espera a un tercero no es acción de hoy, y
+  // mezclarla con los pendientes es exactamente lo que el estado viene a
+  // evitar.
+  function taskStatusFilterForScope(scope: "pending" | "completed" | "waiting") {
+    if (scope === "completed") return TaskStatus.COMPLETED;
+    if (scope === "waiting") return TaskStatus.WAITING;
+    return { notIn: [TaskStatus.COMPLETED, TaskStatus.WAITING] };
+  }
+
   function computeInitials(name: string): string {
     const parts = name.trim().split(/\s+/).filter(Boolean);
     if (parts.length === 0) return "?";
@@ -5272,13 +5342,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     // Admins pueden consultar tareas de otro usuario vía ?userId=. Para no
     // admins el param se ignora silenciosamente (no es error).
-    // taskScope: "pending" (default) muestra tareas no-completadas, "completed"
-    // muestra sólo las ya cerradas (con completedAt). Sólo afecta a la lista
-    // `tasks`; el listado de etapas/subetapas siempre es el mismo.
+    // taskScope: "pending" (default) muestra las que son acción de hoy,
+    // "completed" sólo las ya cerradas (con completedAt) y "waiting" las que
+    // dependen de un tercero. Sólo afecta a la lista `tasks`; el listado de
+    // etapas/subetapas siempre es el mismo.
     const query = z
       .object({
         userId: z.string().min(1).optional(),
-        taskScope: z.enum(["pending", "completed"]).optional().default("pending"),
+        taskScope: z.enum(["pending", "completed", "waiting"]).optional().default("pending"),
       })
       .parse(request.query);
     const isAdmin = currentUser.role === "ADMIN";
@@ -5473,10 +5544,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         // Solo tareas de proyecto. Las sueltas (projectId NULL) van en
         // standaloneTasks más abajo.
         projectId: { not: null },
-        status:
-          query.taskScope === "completed"
-            ? TaskStatus.COMPLETED
-            : { not: TaskStatus.COMPLETED },
+        status: taskStatusFilterForScope(query.taskScope),
         project: {
           deletedAt: null,
           status: { notIn: [ProjectStatus.ARCHIVED, ProjectStatus.COMPLETED] },
@@ -5499,7 +5567,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
         priority: t.priority,
         dueDate: serializeDateOnly(t.dueDate),
         completedAt: serializeDate(t.completedAt),
-        urgencyRank: urgencyRank(t.dueDate),
+        waitingReason: t.waitingReason,
+        followUpAt: serializeDateOnly(t.followUpAt),
+        // En espera lo que ordena es cuándo hay que reconsultar, no el
+        // vencimiento original.
+        urgencyRank: urgencyRank(
+          query.taskScope === "waiting" ? (t.followUpAt ?? t.dueDate) : t.dueDate,
+        ),
         projectId: t.project!.id,
         projectCode: t.project!.code,
         projectName: t.project!.clientName,
@@ -5537,19 +5611,20 @@ export async function registerApiRoutes(app: FastifyInstance) {
         ],
         projectId: null,
         deletedAt: null,
-        status:
-          query.taskScope === "completed"
-            ? TaskStatus.COMPLETED
-            : { not: TaskStatus.COMPLETED },
+        status: taskStatusFilterForScope(query.taskScope),
       },
       include: {
         user: { select: { id: true, name: true, email: true } },
+        lead: { select: { id: true, code: true, clientName: true } },
         ...taskAssigneesInclude,
       },
       orderBy:
         query.taskScope === "completed"
           ? [{ completedAt: "desc" }, { createdAt: "desc" }]
-          : [{ dueDate: "asc" }, { createdAt: "desc" }],
+          : query.taskScope === "waiting"
+            ? // En espera: primero lo que hay que reconsultar antes.
+              [{ followUpAt: "asc" }, { createdAt: "desc" }]
+            : [{ dueDate: "asc" }, { createdAt: "desc" }],
     });
 
     const standaloneTasks = standaloneTasksRaw.map((t) => ({
@@ -5559,6 +5634,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
       status: t.status,
       dueDate: serializeDateOnly(t.dueDate),
       completedAt: serializeDate(t.completedAt),
+      origin: t.origin,
+      waitingReason: t.waitingReason,
+      followUpAt: serializeDateOnly(t.followUpAt),
+      leadId: t.leadId,
+      lead: t.lead ? { id: t.lead.id, code: t.lead.code, name: t.lead.clientName } : null,
       // Compat: primer asignado como "assignedUser" singular; `assignees` es la
       // lista completa (fuente de verdad).
       assignedUserId: t.userId,
@@ -6823,17 +6903,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return { [query.dateField]: range };
     })();
 
+    // Busca por nombre, dirección, email, código y teléfono (este último
+    // ignorando espacios y guiones). Ver buildLeadSearchFilter.
+    const searchFilter = textSearch ? await buildLeadSearchFilter(textSearch) : null;
+
     const where: Prisma.SalesLeadWhereInput = {
       deletedAt: null,
       ...(query.assignedTo === "me" ? { assignedToId: user.id } : {}),
-      ...(textSearch
-        ? {
-            OR: [
-              { clientName: { contains: textSearch, mode: "insensitive" as const } },
-              { address: { contains: textSearch, mode: "insensitive" as const } },
-            ],
-          }
-        : {}),
+      ...(searchFilter ?? {}),
       ...(stageFilter ?? {}),
       ...(ownerFilter ?? {}),
       ...(dateFilter ?? {}),
@@ -7037,46 +7114,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
   app.post("/leads", { preHandler: authorize(Module.VENTAS, Action.CREATE) }, async (request) => {
     const user = ensureUser(request);
     const body = leadCreateSchema.parse(request.body);
-    const code = await generateLeadCode();
 
-    const lead = await prisma.salesLead.create({
-      data: {
-        code,
-        clientName: body.clientName,
-        clientEmail: body.clientEmail ?? null,
-        clientPhone: body.clientPhone ?? null,
-        address: body.address ?? null,
-        estimatedKwp: body.estimatedKwp ? new Prisma.Decimal(body.estimatedKwp) : null,
-        estimatedBudgetUsd: body.estimatedBudgetUsd ? new Prisma.Decimal(body.estimatedBudgetUsd) : null,
-        uteBillMonthlyUsd: body.uteBillMonthlyUsd ? new Prisma.Decimal(body.uteBillMonthlyUsd) : null,
-        roofType: body.roofType ?? null,
-        notes: body.notes ?? null,
-        assignedToId: body.assignedToId ?? null,
-        // Auto-fill de la fecha de alta comercial. Si el body trajo una
-        // explícita (caso "cargar lead histórico con fecha pasada"),
-        // respetarla. Sino, now().
-        leadCreatedAt: body.leadCreatedAt ? new Date(body.leadCreatedAt) : new Date(),
-        createdById: user.id,
-      },
-    });
-
-    await prisma.salesActivity.create({
-      data: {
-        leadId: lead.id,
-        userId: user.id,
-        toStage: lead.stage,
-        action: "lead_created",
-        notes: `Lead creado por ${user.name}`,
-      },
-    });
-
-    await createAuditEntry({
-      entityType: AuditEntityType.lead,
-      entityId: lead.id,
-      userId: user.id,
-      action: AuditAction.lead_created,
-      description: `Creó lead '${lead.clientName}' con código ${lead.code}`,
-    });
+    const lead = await crearLead({ data: body, actor: user });
 
     return { id: lead.id, code: lead.code };
   });
@@ -7087,57 +7126,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const body = leadPatchSchema.parse(request.body);
 
-    const existing = await prisma.salesLead.findFirst({ where: { id, deletedAt: null } });
-    if (!existing) throw notFound("LEAD_NOT_FOUND", "Lead no encontrado");
-
-    const lead = await prisma.salesLead.update({
-      where: { id },
-      data: {
-        ...(body.clientName !== undefined && { clientName: body.clientName }),
-        ...(body.clientEmail !== undefined && { clientEmail: body.clientEmail }),
-        ...(body.clientPhone !== undefined && { clientPhone: body.clientPhone }),
-        ...(body.address !== undefined && { address: body.address }),
-        ...(body.estimatedKwp !== undefined && {
-          estimatedKwp: body.estimatedKwp ? new Prisma.Decimal(body.estimatedKwp) : null,
-        }),
-        ...(body.estimatedBudgetUsd !== undefined && {
-          estimatedBudgetUsd: body.estimatedBudgetUsd ? new Prisma.Decimal(body.estimatedBudgetUsd) : null,
-        }),
-        ...(body.uteBillMonthlyUsd !== undefined && {
-          uteBillMonthlyUsd: body.uteBillMonthlyUsd ? new Prisma.Decimal(body.uteBillMonthlyUsd) : null,
-        }),
-        ...(body.roofType !== undefined && { roofType: body.roofType }),
-        ...(body.notes !== undefined && { notes: body.notes }),
-        ...(body.assignedToId !== undefined && { assignedToId: body.assignedToId }),
-        ...(body.leadCreatedAt !== undefined && { leadCreatedAt: body.leadCreatedAt ? new Date(body.leadCreatedAt) : null }),
-        ...(body.proposalSentAt !== undefined && { proposalSentAt: body.proposalSentAt ? new Date(body.proposalSentAt) : null }),
-        ...(body.visitScheduledAt !== undefined && { visitScheduledAt: body.visitScheduledAt ? new Date(body.visitScheduledAt) : null }),
-        ...(body.visitCompletedAt !== undefined && { visitCompletedAt: body.visitCompletedAt ? new Date(body.visitCompletedAt) : null }),
-        ...(body.closedAt !== undefined && { closedAt: body.closedAt ? new Date(body.closedAt) : null }),
-      },
-    });
-
-    await createAuditEntriesForChanges({
-      entityType: AuditEntityType.lead,
-      entityId: lead.id,
-      userId: user.id,
-      oldData: existing,
-      newData: {
-        ...existing,
-        clientName: lead.clientName,
-        clientEmail: lead.clientEmail,
-        clientPhone: lead.clientPhone,
-        address: lead.address,
-        estimatedKwp: lead.estimatedKwp,
-        estimatedBudgetUsd: lead.estimatedBudgetUsd,
-        uteBillMonthlyUsd: lead.uteBillMonthlyUsd,
-        roofType: lead.roofType,
-        notes: lead.notes,
-        assignedToId: lead.assignedToId,
-      },
-      formatter: ({ label, oldValue, newValue }) =>
-        `Actualizó ${label} del lead '${existing.clientName}' de ${oldValue ?? "vacío"} a ${newValue ?? "vacío"}`,
-    });
+    await editarLead({ leadId: id, data: body, actor: user });
 
     return { success: true };
   });
@@ -7147,74 +7136,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const body = leadStagePatchSchema.parse(request.body);
 
-    const existing = await prisma.salesLead.findFirst({ where: { id, deletedAt: null } });
-    if (!existing) throw notFound("LEAD_NOT_FOUND", "Lead no encontrado");
-
-    if (body.stage === SalesStage.CERRADO_PERDIDO && !body.lostReason?.trim()) {
-      throw badRequest("LOST_REASON_REQUIRED", "Debés indicar el motivo de pérdida");
-    }
-
-    const isClosed = body.stage === SalesStage.CERRADO_GANADO || body.stage === SalesStage.CERRADO_PERDIDO;
-    // Auto-fills disparados por el cambio de stage:
-    //  - AGENDAR_VISITA → setea visitScheduledAt si está vacío. Si el
-    //    usuario ya la cargó manualmente, NO se pisa.
-    //  - CERRADO_GANADO/PERDIDO → siempre pisa closedAt con now(). Esto
-    //    es intencional (decisión del usuario en mayo 2026): si el lead
-    //    se reabre y se vuelve a cerrar, queda la última fecha real.
-    // Pasar a otros stages no toca fechas. Volver atrás de un stage
-    // cerrado tampoco borra closedAt — solo se pisa al cerrar de nuevo.
-    const dateAutoFills: { visitScheduledAt?: Date; closedAt?: Date } = {};
-    if (body.stage === SalesStage.AGENDAR_VISITA && !existing.visitScheduledAt) {
-      dateAutoFills.visitScheduledAt = new Date();
-    }
-    if (isClosed) {
-      dateAutoFills.closedAt = new Date();
-    }
-
-    const updatedLead = await prisma.salesLead.update({
-      where: { id },
-      data: {
-        stage: body.stage,
-        notes: body.notes !== undefined ? body.notes : existing.notes,
-        lostReason: body.stage === SalesStage.CERRADO_PERDIDO ? body.lostReason ?? null : existing.lostReason,
-        ...dateAutoFills,
-      },
+    await moverEtapaLead({
+      leadId: id,
+      stage: body.stage,
+      notes: body.notes,
+      lostReason: body.lostReason,
+      actor: user,
     });
-
-    await prisma.salesActivity.create({
-      data: {
-        leadId: updatedLead.id,
-        userId: user.id,
-        fromStage: existing.stage,
-        toStage: body.stage,
-        action: "stage_changed",
-        notes: body.notes ?? null,
-      },
-    });
-
-    await createAuditEntry({
-      entityType: AuditEntityType.lead,
-      entityId: updatedLead.id,
-      userId: user.id,
-      action: AuditAction.lead_stage_changed,
-      fieldChanged: "stage",
-      oldValue: existing.stage,
-      newValue: body.stage,
-      description: `Movió el lead '${existing.clientName}' de ${existing.stage} a ${body.stage}`,
-    });
-
-    if (body.stage === SalesStage.CERRADO_PERDIDO) {
-      await createAuditEntry({
-        entityType: AuditEntityType.lead,
-        entityId: updatedLead.id,
-        userId: user.id,
-        action: AuditAction.updated,
-        fieldChanged: "lostReason",
-        oldValue: existing.lostReason,
-        newValue: body.lostReason ?? null,
-        description: `Registró motivo de pérdida para el lead '${existing.clientName}'`,
-      });
-    }
 
     return { success: true };
   });

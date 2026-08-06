@@ -1,5 +1,37 @@
 # Novedades
 
+## v8.6
+
+### 6 de agosto de 2026
+
+#### Voltia PM desde el chat de Claude
+
+- Se puede **consultar y cargar información de ventas conversando con Claude**, desde la computadora o el celular. Sirve para lo de siempre: mirar la ficha de un cliente antes de una visita y dejar anotado lo que salió, sin abrir la aplicación.
+- **Buscar un cliente potencial** por nombre, teléfono, email, dirección o código. El teléfono se puede decir con o sin espacios.
+- **Ver la ficha completa**: contacto, etapa, fechas, notas, propuestas y pendientes abiertos.
+- **Ver los números de una propuesta** —precio final, potencia, paneles, ahorro, retorno y cuotas— y recibir un enlace para abrir el PDF, que dura 15 minutos.
+- **Dar de alta un cliente, corregir sus datos, moverlo de etapa y dejar comentarios.**
+- **Manejar los pendientes**: verlos, crearlos, completarlos y ponerlos en espera.
+- Todo se hace **con tu usuario y tus permisos**: lo que no podés hacer en la aplicación, tampoco desde el chat. Cada cambio queda registrado indicando que se hizo por esta vía.
+- **Solo se conectan los usuarios habilitados a mano.** Tener usuario en Voltia PM no alcanza.
+- Se agrega una sola vez desde la configuración de Claude en la computadora; después funciona también desde el celular.
+
+#### Buscador de clientes potenciales
+
+- En Ventas, el buscador ahora encuentra también **por teléfono, email y código**, no solo por nombre y dirección. El teléfono matchea aunque esté guardado con espacios o guiones y se busque sin ellos.
+
+#### Tareas en espera
+
+- Las tareas tienen un estado nuevo, **"En espera"**, para lo que depende de otro: que conteste el cliente, que salga un permiso municipal, que responda un proveedor. Ya no hay que elegir entre dejarlas como pendientes —y que tapen lo que sí es acción de hoy— o completarlas y perderlas de vista.
+- Al ponerla en espera se anota **qué se está esperando** y, si corresponde, **cuándo reconsultarlo**. El motivo es obligatorio: sin él la tarea vuelve a ser indistinguible de una pendiente.
+- En "Mis tareas" hay una pestaña **"En espera"** al lado de Pendientes y Completadas. Las tareas en espera **ya no aparecen entre las pendientes**, y se ordenan por la fecha de recontacto, así lo primero que se ve es lo que hay que retomar antes.
+- Al sacarlas de la espera, el motivo y la fecha se limpian solos.
+
+#### Tareas atadas a un cliente potencial
+
+- Una tarea ahora puede colgar de un **cliente potencial**, no solo de un proyecto. Es para los pendientes comerciales de alguien a quien todavía no se le vendió.
+- En el listado de tareas sueltas se ve **de qué cliente es cada una**, y el detalle de la tarea muestra el cliente y su código.
+
 ## v8.5
 
 ### 5 de agosto de 2026

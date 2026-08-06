@@ -501,6 +501,9 @@ export function MisTareas() {
                 <FilterButton active={tasksScope === "pending"} onClick={() => setTasksScope("pending")}>
                   Pendientes
                 </FilterButton>
+                <FilterButton active={tasksScope === "waiting"} onClick={() => setTasksScope("waiting")}>
+                  En espera
+                </FilterButton>
                 <FilterButton active={tasksScope === "completed"} onClick={() => setTasksScope("completed")}>
                   Completadas
                 </FilterButton>
@@ -521,7 +524,9 @@ export function MisTareas() {
               <p className="rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-bg-card)] p-4 text-center text-xs text-[var(--color-text-muted)]">
                 {tasksScope === "pending"
                   ? "No tenés tareas pendientes."
-                  : "Aún no completaste ninguna tarea."}
+                  : tasksScope === "waiting"
+                    ? "No tenés tareas esperando a un tercero."
+                    : "Aún no completaste ninguna tarea."}
               </p>
             )}
           </section>
@@ -529,7 +534,7 @@ export function MisTareas() {
           <StandaloneTasksBlock
             tasks={data?.standaloneTasks ?? []}
             currentUserId={effectiveUserId ?? currentUser?.id ?? null}
-            completed={tasksScope === "completed"}
+            scope={tasksScope}
           />
         </div>
       )}

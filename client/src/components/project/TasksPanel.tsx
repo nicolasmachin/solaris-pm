@@ -27,11 +27,14 @@ const inputStyle: React.CSSProperties = {
   outline: "none",
 };
 
+// WAITING no se ofrece acá: poner una tarea en espera exige decir qué se
+// espera, y eso vive en el modal de detalle, no en este select rápido.
 const STATUS_OPTIONS: Task["status"][] = ["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
 const STATUS_LABELS: Record<Task["status"], string> = {
   PENDING: "Pendiente",
   IN_PROGRESS: "En progreso",
   COMPLETED: "Completado",
+  WAITING: "En espera",
   CANCELLED: "Cancelado",
 };
 

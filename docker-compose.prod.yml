@@ -51,6 +51,18 @@ services:
       # IA (Claude) y transcripción de audios (Whisper).
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      # Conector MCP (Voltia PM dentro del chat de Claude).
+      #
+      # MCP_PUBLIC_URL tiene que coincidir EXACTO con la dirección que se tipea
+      # al agregar el conector, sin barra final: se publica en el documento de
+      # descubrimiento y Claude compara los dos strings. Si difieren, la
+      # conexión falla sin un error que lo explique.
+      #
+      # MCP_ALLOWED_EMAILS es la lista de habilitados. Vacía deshabilita el
+      # conector entero, que es el default deseado: tener usuario en la app no
+      # alcanza para exponer los datos por fuera de ella.
+      MCP_PUBLIC_URL: ${MCP_PUBLIC_URL:-}
+      MCP_ALLOWED_EMAILS: ${MCP_ALLOWED_EMAILS:-}
     volumes:
       - voltia_storage:/app/storage
     ports:

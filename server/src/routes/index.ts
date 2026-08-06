@@ -12,6 +12,7 @@ import { registerVideosRoutes } from "./videos.routes.js";
 import { registerInformesRoutes } from "./informes.routes.js";
 import { registerIngenieriaRoutes } from "./ingenieria.routes.js";
 import { registerMaterialTemplatesRoutes } from "./material-templates.routes.js";
+import { registerMcpRoutes } from "./mcp/index.js";
 import { registerPortalRoutes } from "./portal.routes.js";
 import { registerProformaRoutes } from "./proforma.routes.js";
 import { registerPreIngenieriaRoutes } from "./preingenieria.routes.js";
@@ -36,6 +37,9 @@ export async function registerRoutes(app: FastifyInstance) {
   });
 
   await registerAuthRoutes(app);
+  // El conector MCP va sin prefijo: los documentos de descubrimiento de OAuth
+  // tienen que colgar de la raíz del dominio. Trae su propia autenticación.
+  await app.register(registerMcpRoutes);
   await app.register(registerApiRoutes, { prefix: "/api" });
   await app.register(registerPortalRoutes, { prefix: "/api" });
   await app.register(registerUnifilarRoutes, { prefix: "/api" });

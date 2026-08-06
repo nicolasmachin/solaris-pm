@@ -64,6 +64,12 @@ export function TaskDetailModal({
   const [projectId, setProjectId] = useState<string>("");
   const [assignedUserIds, setAssignedUserIds] = useState<string[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Panel de "poner en espera". Se despliega al elegir el estado: el motivo es
+  // obligatorio (el server lo exige) porque sin él la espera no se distingue de
+  // un pendiente.
+  const [waitingOpen, setWaitingOpen] = useState(false);
+  const [waitingReason, setWaitingReason] = useState("");
+  const [followUpAt, setFollowUpAt] = useState("");
 
   // Re-seed cuando se abre el modal o cambia la tarea cargada.
   useEffect(() => {
@@ -76,6 +82,9 @@ export function TaskDetailModal({
       setProjectId(t.projectId ?? "");
       setAssignedUserIds(t.assignees?.map((a) => a.id) ?? (t.userId ? [t.userId] : []));
       setConfirmDelete(false);
+      setWaitingReason(t.waitingReason ?? "");
+      setFollowUpAt(t.followUpAt ?? "");
+      setWaitingOpen(t.status === "WAITING");
     } else if (!isEdit) {
       setTitle("");
       setDescription("");
@@ -83,6 +92,9 @@ export function TaskDetailModal({
       setProjectId(defaultProjectId ?? "");
       setAssignedUserIds([]);
       setConfirmDelete(false);
+      setWaitingReason("");
+      setFollowUpAt("");
+      setWaitingOpen(false);
     }
   }, [isOpen, isEdit, taskQuery.data, defaultProjectId, defaultDueDate]);
 
@@ -133,10 +145,22 @@ export function TaskDetailModal({
   // Toggle de estado: completar/reabrir inmediato (sin pasar por el botón
   // Guardar). Útil para marcar completada sin tener que tocar el resto.
   const statusMut = useMutation({
-    mutationFn: (next: "PENDING" | "COMPLETED") =>
-      updateStandaloneTask(taskId as string, { status: next }),
+    mutationFn: (next: "PENDING" | "COMPLETED" | "WAITING") =>
+      updateStandaloneTask(taskId as string, {
+        status: next,
+        ...(next === "WAITING"
+          ? { waitingReason: waitingReason.trim(), followUpAt: followUpAt || null }
+          : {}),
+      }),
     onSuccess: (_, next) => {
-      toast.success(next === "COMPLETED" ? "Marcada como completada" : "Reabierta");
+      const msg =
+        next === "COMPLETED"
+          ? "Marcada como completada"
+          : next === "WAITING"
+            ? "Queda en espera"
+            : "Reabierta";
+      toast.success(msg);
+      if (next !== "WAITING") setWaitingOpen(false);
       qc.invalidateQueries({ queryKey: ["task", taskId] });
       qc.invalidateQueries({ queryKey: ["my-tasks"] });
       qc.invalidateQueries({ queryKey: ["dashboard-my-tasks"] });
@@ -161,6 +185,8 @@ export function TaskDetailModal({
   const canSubmit = title.trim().length > 0 && !submitting;
   const status = taskQuery.data?.status ?? "PENDING";
   const isCompleted = status === "COMPLETED";
+  const isWaiting = status === "WAITING";
+  const isPending = !isCompleted && !isWaiting;
 
   return (
     <div
@@ -220,17 +246,31 @@ export function TaskDetailModal({
                     <button
                       type="button"
                       onClick={() => {
-                        if (!isCompleted) return;
+                        if (isPending) return;
                         statusMut.mutate("PENDING");
                       }}
                       disabled={statusMut.isPending}
                       className={`px-3 py-1 rounded transition-colors ${
-                        !isCompleted
+                        isPending
                           ? "bg-[var(--color-bg-card)] text-[var(--color-text-primary)] font-medium"
                           : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
                       }`}
                     >
                       Pendiente
+                    </button>
+                    <button
+                      type="button"
+                      // No dispara el cambio: despliega el panel, porque sin
+                      // motivo el server rechaza la transición.
+                      onClick={() => setWaitingOpen(true)}
+                      disabled={statusMut.isPending}
+                      className={`px-3 py-1 rounded transition-colors ${
+                        isWaiting
+                          ? "bg-amber-500/20 text-amber-300 font-medium"
+                          : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+                      }`}
+                    >
+                      En espera
                     </button>
                     <button
                       type="button"
@@ -248,8 +288,67 @@ export function TaskDetailModal({
                       Completada
                     </button>
                   </div>
+
+                  {waitingOpen && (
+                    <div className="mt-2 space-y-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
+                      <div>
+                        <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+                          ¿Qué se está esperando? *
+                        </label>
+                        <input
+                          value={waitingReason}
+                          onChange={(e) => setWaitingReason(e.target.value)}
+                          maxLength={500}
+                          placeholder="Respuesta del cliente, permiso municipal…"
+                          className="w-full px-3 py-2 rounded-md text-sm bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+                          Reconsultar el
+                        </label>
+                        <input
+                          type="date"
+                          value={followUpAt}
+                          onChange={(e) => setFollowUpAt(e.target.value)}
+                          className="w-full px-3 py-2 rounded-md text-sm bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => statusMut.mutate("WAITING")}
+                          disabled={statusMut.isPending || waitingReason.trim().length === 0}
+                          className="rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-gray-900 disabled:opacity-50"
+                        >
+                          {isWaiting ? "Actualizar espera" : "Poner en espera"}
+                        </button>
+                        {!isWaiting && (
+                          <button
+                            type="button"
+                            onClick={() => setWaitingOpen(false)}
+                            className="rounded-md border border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)]"
+                          >
+                            Cancelar
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
+
+              {isEdit && taskQuery.data?.lead ? (
+                <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-xs">
+                  <span className="text-[var(--color-text-muted)]">Cliente potencial: </span>
+                  <span className="text-[var(--color-text-primary)]">
+                    {taskQuery.data.lead.name}
+                  </span>
+                  <span className="ml-1 font-mono text-[10px] text-[var(--color-text-muted)]">
+                    {taskQuery.data.lead.code}
+                  </span>
+                </div>
+              ) : null}
 
               <div>
                 <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">

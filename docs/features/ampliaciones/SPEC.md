@@ -1,5 +1,11 @@
 # Ampliaciones
 
+> ⚠️ **Documento histórico — no es fuente de verdad.**
+> Esto es el diseño que se escribió *antes* de construir la funcionalidad, y
+> puede diferir de lo que finalmente se implementó. Sirve para entender por qué
+> se decidieron las cosas, no para saber cómo funcionan hoy.
+> **Cómo funciona hoy: [`docs/manual/`](../../manual/README.md).**
+
 Obra nueva sobre una instalación que **ya existe y ya está cargada en la app**:
 se agregan paneles, se suma un inversor. Nace como un proyecto hijo que hereda
 los datos del original en vez de retipearlos.

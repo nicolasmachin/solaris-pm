@@ -1,5 +1,11 @@
 # Videos del proyecto
 
+> ⚠️ **Documento histórico — no es fuente de verdad.**
+> Esto es el diseño que se escribió *antes* de construir la funcionalidad, y
+> puede diferir de lo que finalmente se implementó. Sirve para entender por qué
+> se decidieron las cosas, no para saber cómo funcionan hoy.
+> **Cómo funciona hoy: [`docs/manual/`](../../manual/README.md).**
+
 Videos que documentan el proyecto: los **ensayos** de obra (anti-isla y
 encendido), que son evidencia con retención permanente y respaldo ante UTE, los
 que graba el operario en una **visita técnica**, y los del relevamiento de la

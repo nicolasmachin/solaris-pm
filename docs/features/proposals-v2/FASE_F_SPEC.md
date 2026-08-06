@@ -1,5 +1,11 @@
 # Propuestas v2 — Fase F — Especificación Técnica
 
+> ⚠️ **Documento histórico — no es fuente de verdad.**
+> Esto es el diseño que se escribió *antes* de construir la funcionalidad, y
+> puede diferir de lo que finalmente se implementó. Sirve para entender por qué
+> se decidieron las cosas, no para saber cómo funcionan hoy.
+> **Cómo funciona hoy: [`docs/manual/`](../../manual/README.md).**
+
 > Constructor UI del asesor: página dedicada con formulario + preview en vivo,
 > autosave, publicación con validación, lista de versiones y edición del
 > jobTitle desde Mi cuenta. Spec madre: `docs/features/proposals-v2/SPEC.md`.

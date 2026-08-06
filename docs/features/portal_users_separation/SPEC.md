@@ -1,5 +1,11 @@
 # Separación visual de usuarios internos vs clientes portal
 
+> ⚠️ **Documento histórico — no es fuente de verdad.**
+> Esto es el diseño que se escribió *antes* de construir la funcionalidad, y
+> puede diferir de lo que finalmente se implementó. Sirve para entender por qué
+> se decidieron las cosas, no para saber cómo funcionan hoy.
+> **Cómo funciona hoy: [`docs/manual/`](../../manual/README.md).**
+
 Implementado con filtro `role.name != "CLIENT"` en endpoint dedicado
 `GET /api/users/assignable` y query param `excludePortalClients` en
 `GET /api/users`. UserSelect consume el endpoint nuevo, lo que arregla

@@ -77,11 +77,24 @@ enum TaskStatus {
   PENDING
   IN_PROGRESS
   COMPLETED
+  // WAITING: la tarea depende de un tercero (una gestión municipal, una
+  // respuesta del cliente, un proveedor). No es pendiente —no hay nada que
+  // hacer hoy— ni completada. Sin este estado se marca como pendiente y
+  // ensucia la lista de acción, o se completa y se pierde de vista.
+  WAITING
 }
 
 enum TaskPriority {
   NORMAL
   URGENT
+}
+
+// De dónde salió la tarea. Permite medir si lo que se crea por fuera de la app
+// (dictado por el conector, extraído de una minuta) acierta o genera ruido.
+enum TaskOrigin {
+  MANUAL
+  MINUTA
+  MCP
 }
 
 enum AuditEntityType {
@@ -517,6 +530,8 @@ model User {
   growattPlantsVinculadas        GrowattPlant[]              @relation("GrowattPlantVinculadaPor")
   projectVideosSubidos           ProjectVideo[]              @relation("ProjectVideoUploadedBy")
   projectVideosBorrados          ProjectVideo[]              @relation("ProjectVideoDeletedBy")
+  mcpAuthCodes                   McpAuthCode[]
+  mcpRefreshTokens               McpRefreshToken[]
   passwordTemporary              Boolean                     @default(false)
   deletedAt                      DateTime?                   @db.Timestamptz(6)
   createdAt                      DateTime                    @default(now()) @db.Timestamptz(6)
@@ -1138,12 +1153,23 @@ model Task {
   // proyecto. Se gestiona desde "Mis Tareas". Las tareas atadas a un proyecto
   // mantienen el comportamiento anterior (cascade delete con el proyecto).
   projectId   String?
+  // Un pendiente comercial cuelga de un lead en lugar de un proyecto. Conviven:
+  // una ampliación sobre una instalación existente tiene proyecto, un reclamo
+  // previo a la venta tiene lead. La regla "nunca huérfano" se valida en la capa
+  // que crea (conector, minutas), no acá: las tareas sueltas de Mis Tareas son
+  // legítimamente `projectId: null` sin lead.
+  leadId      String?
   stageId     String?
   substageId  String?
   title       String
   description String?
   status      TaskStatus
   priority    TaskPriority
+  origin      TaskOrigin     @default(MANUAL)
+  // Qué se está esperando y cuándo reconsultar. Solo tienen sentido con
+  // status WAITING.
+  waitingReason String?
+  followUpAt    DateTime?    @db.Date
   /// @deprecated usar userId + relación user. Se conserva como referencia legacy.
   responsible String
   // userId = asignado "primario" (legacy). Se mantiene sincronizado con el
@@ -1154,6 +1180,7 @@ model Task {
   user        User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
   assignees   TaskAssignee[]
   project     Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lead        SalesLead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
   stage       Stage?         @relation(fields: [stageId], references: [id], onDelete: SetNull)
   substage    Substage?      @relation(fields: [substageId], references: [id], onDelete: SetNull)
   comments    Comment[]
@@ -1164,6 +1191,7 @@ model Task {
   updatedAt   DateTime       @updatedAt @db.Timestamptz(6)
 
   @@index([projectId])
+  @@index([leadId])
   @@index([status])
   @@index([projectId, status])
   @@index([userId])
@@ -1188,6 +1216,61 @@ model TaskAssignee {
   @@index([userId])
   @@index([taskId])
   @@map("task_assignees")
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Conector MCP: piezas del OAuth propio
+//
+// El conector expone Voltia PM como herramientas dentro del chat de Claude. La
+// autorización es un OAuth 2.1 mínimo sobre el mismo login de la app: el
+// usuario entra con su email y contraseña, autoriza, y Claude recibe un token.
+//
+// Sólo se persisten las dos piezas que no pueden ser stateless: el código de
+// autorización (un solo uso) y el refresh token (revocable). El access token es
+// un JWT con `typ: "mcp"` y no necesita tabla.
+// ───────────────────────────────────────────────────────────────────────────
+
+/// Código de autorización OAuth. Vida corta y un solo uso: se marca `usedAt` al
+/// canjearlo. Se guarda el hash, no el código, para que una filtración de la
+/// base no permita canjearlos.
+model McpAuthCode {
+  id            String    @id @default(cuid())
+  codeHash      String    @unique
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId      String
+  redirectUri   String
+  /// PKCE S256: el desafío que el cliente tiene que poder resolver al canjear.
+  codeChallenge String
+  scope         String
+  expiresAt     DateTime  @db.Timestamptz(6)
+  usedAt        DateTime? @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("mcp_auth_codes")
+}
+
+/// Refresh token del conector. Se rota en cada uso —lo exige la spec para
+/// clientes públicos—: al canjear uno se marca `revokedAt` y se apunta al que
+/// lo reemplazó, así queda la cadena para auditar.
+model McpRefreshToken {
+  id          String    @id @default(cuid())
+  tokenHash   String    @unique
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId    String
+  scope       String
+  expiresAt   DateTime  @db.Timestamptz(6)
+  revokedAt   DateTime? @db.Timestamptz(6)
+  /// Id del token que lo reemplazó al rotar. Null si nunca se usó.
+  rotatedToId String?
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("mcp_refresh_tokens")
 }
 
 model FileAttachment {
@@ -1468,6 +1551,7 @@ model SalesLead {
   proposalV2Versions   ProposalV2Version[]
   commission           Commission?
   comments             Comment[]
+  tasks                Task[]
   attachments          FileAttachment[]     @relation("LeadAttachments")
   videos               ProjectVideo[]       @relation("SalesLeadVideos")
   deletedAt            DateTime?            @db.Timestamptz(6)

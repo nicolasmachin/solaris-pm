@@ -1,5 +1,11 @@
 # Propuestas v2 — Fase E — Especificación Técnica (v2)
 
+> ⚠️ **Documento histórico — no es fuente de verdad.**
+> Esto es el diseño que se escribió *antes* de construir la funcionalidad, y
+> puede diferir de lo que finalmente se implementó. Sirve para entender por qué
+> se decidieron las cosas, no para saber cómo funcionan hoy.
+> **Cómo funciona hoy: [`docs/manual/`](../../manual/README.md).**
+
 > Drafts + versiones inmutables + persistencia de PDFs. Backend puro,
 > sin UI nueva. Spec madre: `docs/features/proposals-v2/SPEC.md`. Versión: 2.
 >

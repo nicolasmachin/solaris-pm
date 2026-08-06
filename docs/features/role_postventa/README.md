@@ -1,5 +1,11 @@
 # Rol POSTVENTA
 
+> ⚠️ **Documento histórico — no es fuente de verdad.**
+> Esto es el diseño que se escribió *antes* de construir la funcionalidad, y
+> puede diferir de lo que finalmente se implementó. Sirve para entender por qué
+> se decidieron las cosas, no para saber cómo funcionan hoy.
+> **Cómo funciona hoy: [`docs/manual/`](../../manual/README.md).**
+
 ## Qué hace este rol
 
 `POSTVENTA` es un rol del sistema (`isSystem=true`, label "Postventa") pensado

@@ -1,5 +1,11 @@
 # Tanda 1 — Panel de viabilidad + Rediseño panel del lead + Adjuntos
 
+> ⚠️ **Documento histórico — no es fuente de verdad.**
+> Esto es el diseño que se escribió *antes* de construir la funcionalidad, y
+> puede diferir de lo que finalmente se implementó. Sirve para entender por qué
+> se decidieron las cosas, no para saber cómo funcionan hoy.
+> **Cómo funciona hoy: [`docs/manual/`](../../manual/README.md).**
+
 > Batch único: indicadores de viabilidad en el sub-header del constructor,
 > panel del lead ampliado a ~50% (Opción A: datos+notas | propuestas+adjuntos),
 > y adjuntos por lead. Spec madre: `docs/features/proposals-v2/SPEC.md`. Versión: 1.

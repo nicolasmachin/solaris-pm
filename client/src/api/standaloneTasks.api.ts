@@ -7,11 +7,17 @@ export interface TaskDetail {
   id: string;
   title: string;
   description: string | null;
-  status: "PENDING" | "IN_PROGRESS" | "COMPLETED";
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "WAITING";
   priority: "NORMAL" | "URGENT";
   dueDate: string | null;
+  origin: "MANUAL" | "MINUTA" | "MCP";
+  // Sólo con status WAITING: qué se espera y cuándo reconsultar.
+  waitingReason: string | null;
+  followUpAt: string | null;
   projectId: string | null;
   project: { id: string; code: string; name: string } | null;
+  leadId: string | null;
+  lead: { id: string; code: string; name: string } | null;
   stageId: string | null;
   stage: { id: string; name: string } | null;
   substageId: string | null;
@@ -41,6 +47,7 @@ export interface CreateStandaloneTaskBody {
   description?: string | null;
   dueDate?: string | null;
   projectId?: string | null;
+  leadId?: string | null;
   /** @deprecated usar assignedUserIds */
   assignedUserId?: string | null;
   assignedUserIds?: string[];
@@ -51,10 +58,14 @@ export interface UpdateStandaloneTaskBody {
   description?: string | null;
   dueDate?: string | null;
   projectId?: string | null;
+  leadId?: string | null;
   /** @deprecated usar assignedUserIds */
   assignedUserId?: string | null;
   assignedUserIds?: string[];
-  status?: "PENDING" | "COMPLETED";
+  status?: "PENDING" | "COMPLETED" | "WAITING";
+  // Obligatorio al pasar a WAITING. Se limpian solos al salir de la espera.
+  waitingReason?: string | null;
+  followUpAt?: string | null;
 }
 
 export async function createStandaloneTask(body: CreateStandaloneTaskBody): Promise<Task> {

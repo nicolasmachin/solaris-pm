@@ -23,59 +23,41 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "8.5",
-  date: "5 de agosto de 2026",
+  version: "8.6",
+  date: "6 de agosto de 2026",
   sections: [
     {
-      title: "Fotos del iPhone (HEIC) en toda la app",
+      title: "Voltia PM desde el chat de Claude",
       items: [
-        "Ya se pueden subir las fotos tal como salen del iPhone, sin convertirlas antes. Antes el formato HEIC se rechazaba o la foto se perdía sin decir por qué.",
-        "Anda en todos los lugares donde se suben fotos: Fotos de Obra, la visita de ventas y sus adjuntos, la visita técnica, Pre-ingeniería, el Proyecto Final, los documentos UTE firmados y la lectura de cédula y factura con IA.",
-        "La app las convierte solas a JPG al recibirlas, así que se ven en cualquier navegador, entran a los PDF y las lee la IA. También funciona arrastrando un HEIC desde la computadora.",
+        "Se puede consultar y cargar información de ventas conversando con Claude, desde la computadora o el celular: mirar la ficha de un cliente antes de una visita y dejar anotado lo que salió, sin abrir la aplicación.",
+        "Buscar clientes potenciales por nombre, teléfono, email o código; ver la ficha completa; ver los números de una propuesta y recibir un enlace al PDF; dar de alta, corregir datos, mover de etapa y comentar; y manejar los pendientes.",
+        "Todo se hace con tu usuario y tus permisos, y cada cambio queda registrado. Solo se conectan los usuarios habilitados a mano.",
       ],
     },
     {
-      title: "Ampliaciones de instalaciones existentes",
+      title: "Buscador de clientes potenciales",
       items: [
-        'Cuando a un cliente se le agregan paneles o un inversor sobre una instalación que ya está hecha, ya no hay que cargar un proyecto desde cero: en el proyecto original hay un botón "Crear ampliación".',
-        "La ampliación hereda todo lo del cliente —nombre, ubicación, dirección, contacto, vendedor, cédula y códigos de UTE— y solo pide lo propio de la obra nueva. Arranca con el pipeline completo y su propio trámite UTE.",
-        "Queda linkeada al original en los dos sentidos, y el código lo dice solo: PRY-2026-045-A1. Los clientes que ya tenían acceso al portal también ven la ampliación.",
+        "En Ventas, el buscador ahora encuentra también por teléfono, email y código, no solo por nombre y dirección. El teléfono matchea aunque esté guardado con espacios o guiones y se busque sin ellos.",
       ],
     },
     {
-      title: "Videos de obra y de visita técnica",
+      title: "Tareas en espera",
       items: [
-        'En "Obra del proyecto" hay una sección nueva, "Videos", para subir la filmación de los ensayos de anti-isla y encendido. Se elige de qué se trata y se puede agregar una nota corta.',
-        "Los videos se comprimen solos al subirlos: un video de celular que pesa cientos de megas queda en unos pocos, sin que se deje de leer la pantalla del inversor. Así se pueden guardar de forma permanente sin llenar el servidor.",
-        "Se aceptan los videos tal como salen del celular, incluidos los del iPhone, que antes el sistema rechazaba.",
-        "En el panel de Visita técnica hay un botón nuevo de Video: el operario sube la filmación desde la obra y aparece después en la sección Videos del proyecto, ya comprimida. Una etiqueta de color sobre la miniatura distingue los ensayos (amarillo) de los de visita técnica (violeta).",
-        'Los ítems del checklist de obra "Ensayo anti-isla realizado y grabado" y "Videos de ensayos subidos" ahora se marcan solos cuando se sube el video, y ya no se pueden tildar sin haberlo subido. Un video de visita técnica no los da por cumplidos.',
-        'Eliminar un video lo habilita el permiso "Eliminar" del módulo: Operaciones para los videos del proyecto y Ventas para los de la visita comercial. Por tratarse de evidencia de obra, el archivo se conserva igual en el respaldo.',
+        "Las tareas tienen un estado nuevo, \"En espera\", para lo que depende de otro: que conteste el cliente, que salga un permiso municipal, que responda un proveedor. Ya no hay que elegir entre dejarlas como pendientes y que tapen lo que sí es acción de hoy, o completarlas y perderlas de vista.",
+        "Al ponerla en espera se anota qué se está esperando y cuándo reconsultarlo. El motivo es obligatorio: sin él la tarea vuelve a ser indistinguible de una pendiente.",
+        'En "Mis tareas" hay una pestaña "En espera" al lado de Pendientes y Completadas. Las tareas en espera ya no aparecen entre las pendientes, y se ordenan por la fecha de recontacto.',
       ],
     },
     {
-      title: "Fotos y videos en la visita de ventas",
+      title: "Tareas atadas a un cliente potencial",
       items: [
-        'En el panel del lead hay una sección nueva, "Fotos y videos de la visita", para cargar el relevamiento de la visita comercial antes de cerrar la venta.',
-        "Las fotos se suben de a varias y se comprimen solas en el celular; los videos se comprimen igual que los de obra.",
-        "Al ganar el lead, todo eso pasa solo al proyecto nuevo: las fotos a Fotos de Obra y los videos a la sección Videos.",
-      ],
-    },
-    {
-      title: "Checklist de fotos a mano",
-      items: [
-        'En "Fotos de Obra" hay un botón nuevo, "Checklist de fotos", que muestra las 23 fotos obligatorias para la entrega de obra, agrupadas por sección y con el detalle de qué tiene que verse en cada una.',
-        "Se abre dentro de la app y se cierra con la X, para consultarlo desde el celular arriba de la obra. Desde ahí mismo se descarga el PDF para imprimirlo y firmarlo.",
-      ],
-    },
-    {
-      title: "Permisos",
-      items: [
-        'Se sacó la casilla "Acceso al módulo" de Ingeniería: no hacía nada. Tildarla o destildarla no cambiaba quién entraba al módulo, que se sigue gobernando con "Ver".',
+        "Una tarea ahora puede colgar de un cliente potencial, no solo de un proyecto. Es para los pendientes comerciales de alguien a quien todavía no se le vendió.",
+        "En el listado de tareas sueltas se ve de qué cliente es cada una, y el detalle de la tarea muestra el cliente y su código.",
       ],
     },
   ],
 };
+
 
 
 /** Versiones anteriores para mostrar en el sidebar de novedades. */
@@ -86,6 +68,16 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "8.5",
+    shortDate: "5 ago",
+    highlights: [
+      "Ya se pueden subir las fotos tal como salen del iPhone (HEIC) en todos los lugares donde se suben fotos: la app las convierte solas a JPG al recibirlas.",
+      'Ampliaciones de instalaciones existentes: desde el proyecto original, el botón "Crear ampliación" hereda todo lo del cliente y arranca una obra nueva linkeada a la original.',
+      'Videos de obra y de visita técnica, con compresión automática, y fotos y videos en la visita de ventas que pasan solos al proyecto al ganar el lead.',
+      'En Fotos de Obra, el "Checklist de fotos" con las 23 fotos obligatorias para la entrega.',
+    ],
+  },
   {
     version: "8.4",
     shortDate: "3 ago",

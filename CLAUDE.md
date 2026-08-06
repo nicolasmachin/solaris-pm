@@ -36,6 +36,11 @@ voltia-pm/
 │       ├── schema.prisma   # 1991 líneas, fuente de verdad
 │       ├── migrations/
 │       └── seed.ts
+├── docs/
+│   ├── manual/             # CÓMO FUNCIONA la app — referencia viva, un capítulo por módulo
+│   ├── features/           # SPECs históricos (diseño previo, NO fuente de verdad)
+│   ├── pendientes/         # qué falta hacer
+│   └── DEPLOY.md, ROLLBACK.md, QA_CHECKLIST_PRE_DEPLOY.md
 ├── storage/                # uploads en filesystem (volume Docker `voltia_storage`)
 ├── docker-compose.yml      # local
 ├── docker-compose.prod.yml # prod
@@ -231,6 +236,35 @@ Jerarquía exacta de headings:
 - Los bug fixes van en `#### Arreglos` al final del día.
 - Cambios puramente internos / refactors / docs que no afectan al usuario pueden omitirse.
 - Mantener el CHANGELOG **al cerrar cada cambio funcional**, antes de cerrar la respuesta — no esperar al bump.
+
+## Manual de la aplicación (`docs/manual/`) — OBLIGATORIO
+
+El CHANGELOG dice **qué** cambió para el usuario. El manual dice **cómo
+funciona**: es la referencia detallada de cada funcionalidad, para consultar
+cuando algo no se entiende o se retoma un módulo meses después.
+
+**Al cerrar cada funcionalidad hay que actualizar su capítulo del manual**, en la
+misma tanda que el CHANGELOG y antes de dar el trabajo por terminado. No es
+opcional ni se pospone a "cuando haya tiempo".
+
+- Índice y convenciones: `docs/manual/README.md`. Un capítulo por módulo.
+- Si la funcionalidad **modifica algo ya documentado**, se **corrige el capítulo
+  existente**. No se agrega una sección nueva que conviva con la vieja diciendo
+  lo contrario: el manual describe el presente, no acumula historia.
+- Si el capítulo todavía es un esqueleto (marcado ⬜ en el índice) y se trabajó
+  sobre ese módulo, se escribe la parte que corresponde y se actualiza el estado
+  en el índice.
+- Plantilla de cada capítulo: Para qué existe · Cómo se usa · Cómo funciona ·
+  Permisos · Reglas y decisiones · Casos borde.
+- **Referenciar archivos y funciones, no números de línea** (`version.service.ts`
+  → `publishVersion()`), que envejecen con el primer cambio de arriba.
+- **Lo que no se verificó no se afirma.** Si algo se supone pero no se leyó del
+  código, se dice que es una suposición o no se escribe.
+- Incluir lo que sorprende: limitaciones conocidas, agujeros, decisiones que
+  parecen raras y su porqué. Es la parte que más se consulta.
+
+Los `docs/features/*/SPEC.md` son **históricos**: diseño previo a construir, ya
+marcados como tales. No son fuente de verdad y no se actualizan.
 
 ## Roadmap de infraestructura (en curso)
 

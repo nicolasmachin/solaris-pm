@@ -29,4 +29,13 @@ export const env = {
   // de a los destinatarios reales, para no spamear al equipo mientras se
   // testea. En producción se ignora aunque esté seteada (doble red).
   devEmailRedirectTo: process.env.DEV_EMAIL_REDIRECT_TO ?? "",
+  // ── Conector MCP ────────────────────────────────────────────────────────
+  // URL pública del servidor, tal cual la tipea el usuario al agregar el
+  // conector. Tiene que coincidir EXACTO con lo que se publica en el
+  // documento de metadata: si no coincide, Claude no completa la conexión.
+  mcpPublicUrl: process.env.MCP_PUBLIC_URL ?? "http://localhost:4000",
+  // Emails habilitados a conectar, separados por coma. Vacío = nadie puede.
+  // Es una allowlist explícita a propósito: tener usuario en la app no alcanza
+  // para exponer los datos por fuera de ella.
+  mcpAllowedEmails: process.env.MCP_ALLOWED_EMAILS ?? "",
 };

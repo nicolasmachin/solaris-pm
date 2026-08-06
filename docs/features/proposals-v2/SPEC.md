@@ -1,5 +1,11 @@
 # Generador de Propuestas Comerciales — Especificación Técnica
 
+> ⚠️ **Documento histórico — no es fuente de verdad.**
+> Esto es el diseño que se escribió *antes* de construir la funcionalidad, y
+> puede diferir de lo que finalmente se implementó. Sirve para entender por qué
+> se decidieron las cosas, no para saber cómo funcionan hoy.
+> **Cómo funciona hoy: [`docs/manual/`](../../manual/README.md).**
+
 > **Feature:** Constructor interactivo de propuestas comerciales FV on-grid
 > **Ubicación:** Módulo Ventas (`/ventas/lead/:leadId/propuesta`)
 > **Reemplaza progresivamente a:** Generador actual basado en Excel + script Python

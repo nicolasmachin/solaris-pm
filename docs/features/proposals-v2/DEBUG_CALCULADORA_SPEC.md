@@ -1,5 +1,11 @@
 # Debug de Cálculos — Especificación Técnica
 
+> ⚠️ **Documento histórico — no es fuente de verdad.**
+> Esto es el diseño que se escribió *antes* de construir la funcionalidad, y
+> puede diferir de lo que finalmente se implementó. Sirve para entender por qué
+> se decidieron las cosas, no para saber cómo funcionan hoy.
+> **Cómo funciona hoy: [`docs/manual/`](../../manual/README.md).**
+
 > Drawer solo-admin en el constructor de propuestas que muestra los
 > intermedios de la calculadora en tiempo real. Herramienta interna de
 > diagnóstico para detectar divergencias como la del caso Gonzalez.

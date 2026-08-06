@@ -48,6 +48,9 @@ export interface MyTaskItem {
   priority: TaskPriority;
   dueDate: string | null;
   completedAt: string | null;
+  // Sólo con status WAITING: qué se espera y cuándo reconsultar.
+  waitingReason: string | null;
+  followUpAt: string | null;
   urgencyRank: number;
   projectId: string;
   projectCode: string;
@@ -60,6 +63,8 @@ export interface MyTaskItem {
   assignees: { id: string; name: string }[];
 }
 
+export type TaskOrigin = "MANUAL" | "MINUTA" | "MCP";
+
 export interface StandaloneTaskItem {
   id: string;
   title: string;
@@ -67,6 +72,13 @@ export interface StandaloneTaskItem {
   status: TaskStatus;
   dueDate: string | null;
   completedAt: string | null;
+  origin: TaskOrigin;
+  // Sólo con status WAITING: qué se espera y cuándo reconsultar.
+  waitingReason: string | null;
+  followUpAt: string | null;
+  // Pendiente comercial colgado de un lead en lugar de un proyecto.
+  leadId: string | null;
+  lead: { id: string; code: string; name: string } | null;
   /** @deprecated primer asignado; usar `assignees` */
   assignedUserId: string | null;
   /** @deprecated primer asignado; usar `assignees` */
@@ -83,7 +95,7 @@ export interface MyTasksResponse {
   standaloneTasks: StandaloneTaskItem[];
 }
 
-export type TaskScope = "pending" | "completed";
+export type TaskScope = "pending" | "completed" | "waiting";
 
 export async function getMyTasks(params?: {
   userId?: string | null;

@@ -1,5 +1,11 @@
 # Módulo Informes — Especificación Técnica
 
+> ⚠️ **Documento histórico — no es fuente de verdad.**
+> Esto es el diseño que se escribió *antes* de construir la funcionalidad, y
+> puede diferir de lo que finalmente se implementó. Sirve para entender por qué
+> se decidieron las cosas, no para saber cómo funcionan hoy.
+> **Cómo funciona hoy: [`docs/manual/`](../../manual/README.md).**
+
 > Sistema de informes con revisión dirigida y visibilidad row-level (autor + destinatarios).
 > Ubicación: `client/src/modules/informes/`, `server/src/routes/informes.routes.ts`, `server/src/services/informes/`.
 > Spec madre: ninguna (feature nuevo). Versión: 1.0 (draft para validación).

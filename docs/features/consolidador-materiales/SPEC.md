@@ -1,5 +1,11 @@
 # Consolidador de Materiales — Especificación Técnica
 
+> ⚠️ **Documento histórico — no es fuente de verdad.**
+> Esto es el diseño que se escribió *antes* de construir la funcionalidad, y
+> puede diferir de lo que finalmente se implementó. Sirve para entender por qué
+> se decidieron las cosas, no para saber cómo funcionan hoy.
+> **Cómo funciona hoy: [`docs/manual/`](../../manual/README.md).**
+
 > **Feature:** Herramienta para unificar listas de materiales de múltiples proyectos en una sola lista para compras
 > **Producto:** Voltia PM
 > **Ubicación:** Dashboard del **Módulo Ingeniería** (no atada a un proyecto específico)

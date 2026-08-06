@@ -1,5 +1,11 @@
 # Propuestas v2 — Rework post-Fase G — Especificación Técnica
 
+> ⚠️ **Documento histórico — no es fuente de verdad.**
+> Esto es el diseño que se escribió *antes* de construir la funcionalidad, y
+> puede diferir de lo que finalmente se implementó. Sirve para entender por qué
+> se decidieron las cosas, no para saber cómo funcionan hoy.
+> **Cómo funciona hoy: [`docs/manual/`](../../manual/README.md).**
+
 > Cambio de UX del constructor y unificación de propuestas viejas y
 > nuevas en el panel del lead. Spec madre:
 > `docs/features/proposals-v2/SPEC.md`. Versión: 1.

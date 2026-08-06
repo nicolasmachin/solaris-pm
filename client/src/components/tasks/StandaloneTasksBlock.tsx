@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Check, Plus, User as UserIcon } from "lucide-react";
-import type { StandaloneTaskItem } from "../../api/myTasks.api";
+import { Check, PauseCircle, Plus, User as UserIcon } from "lucide-react";
+import type { StandaloneTaskItem, TaskScope } from "../../api/myTasks.api";
 import { useStandaloneTasks } from "../../hooks/useStandaloneTasks";
 import { TaskDetailModal } from "./TaskDetailModal";
 
@@ -10,9 +10,9 @@ interface Props {
   // distinto al autenticado si un ADMIN abrió ?userId=). Sólo se usa para
   // decidir si mostrar el nombre del asignado o "(yo)".
   currentUserId: string | null;
-  // Si true, el bloque está mostrando tareas sueltas COMPLETADAS (sigue el
-  // mismo toggle Pendientes/Completadas que las tareas de proyecto).
-  completed?: boolean;
+  // Qué lista se está mostrando. Sigue el mismo toggle que las tareas de
+  // proyecto (Pendientes / En espera / Completadas).
+  scope?: TaskScope;
 }
 
 const MONTHS_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
@@ -64,10 +64,23 @@ function badgeText(iso: string | null, kind: AlertKind, daysAbs: number): string
   return `${dd}-${months[d.getMonth()]}`;
 }
 
-export function StandaloneTasksBlock({ tasks, currentUserId, completed = false }: Props) {
+const SUBTITLE_BY_SCOPE: Record<TaskScope, string> = {
+  pending: "Pendientes sin proyecto asociado",
+  waiting: "Esperando a un tercero",
+  completed: "Completadas, sin proyecto asociado",
+};
+
+const EMPTY_BY_SCOPE: Record<TaskScope, string> = {
+  pending: "No tenés tareas sueltas pendientes",
+  waiting: "No tenés tareas sueltas esperando a un tercero",
+  completed: "Todavía no completaste tareas sueltas",
+};
+
+export function StandaloneTasksBlock({ tasks, currentUserId, scope = "pending" }: Props) {
   const { completeTask, updateTask } = useStandaloneTasks();
   const [editing, setEditing] = useState<StandaloneTaskItem | null>(null);
   const [creating, setCreating] = useState(false);
+  const completed = scope === "completed";
 
   return (
     <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] overflow-hidden">
@@ -77,7 +90,7 @@ export function StandaloneTasksBlock({ tasks, currentUserId, completed = false }
             Tareas sueltas
           </h2>
           <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
-            {completed ? "Completadas, sin proyecto asociado" : "Pendientes sin proyecto asociado"}
+            {SUBTITLE_BY_SCOPE[scope]}
           </p>
         </div>
         <button
@@ -92,12 +105,15 @@ export function StandaloneTasksBlock({ tasks, currentUserId, completed = false }
 
       {tasks.length === 0 ? (
         <div className="px-4 py-6 text-center text-[12px] text-[var(--color-text-muted)]">
-          {completed ? "Todavía no completaste tareas sueltas" : "No tenés tareas sueltas pendientes"}
+          {EMPTY_BY_SCOPE[scope]}
         </div>
       ) : (
         <ul className="divide-y divide-[var(--color-border)]">
           {tasks.map((t) => {
-            const alert = getAlertKind(t.dueDate);
+            // En espera lo que marca el ritmo es cuándo hay que reconsultar,
+            // no el vencimiento original.
+            const alertDate = t.status === "WAITING" ? (t.followUpAt ?? t.dueDate) : t.dueDate;
+            const alert = getAlertKind(alertDate);
             const assignees = t.assignees ?? [];
             const isMine = assignees.some((a) => a.id === currentUserId);
             // Etiqueta de asignados: "(yo)", "(yo) +2", "Juan", "Juan +1"…
@@ -114,6 +130,7 @@ export function StandaloneTasksBlock({ tasks, currentUserId, completed = false }
               }
             }
             const isDone = t.status === "COMPLETED";
+            const isWaiting = t.status === "WAITING";
             const toggling = completeTask.isPending || updateTask.isPending;
             return (
               <li
@@ -143,13 +160,28 @@ export function StandaloneTasksBlock({ tasks, currentUserId, completed = false }
                   <div className={`text-sm truncate ${isDone ? "text-[var(--color-text-muted)] line-through" : "text-[var(--color-text-primary)]"}`}>
                     {t.title}
                   </div>
-                  {t.description ? (
+                  {/* En espera, lo que importa es qué se está esperando; la
+                      descripción pasa a segundo plano. */}
+                  {isWaiting && t.waitingReason ? (
+                    <div className="mt-0.5 flex items-center gap-1 text-[11px] text-amber-400 truncate">
+                      <PauseCircle size={11} className="flex-shrink-0" />
+                      {t.waitingReason}
+                    </div>
+                  ) : t.description ? (
                     <div className="text-[11px] text-[var(--color-text-muted)] truncate mt-0.5">
                       {t.description}
                     </div>
                   ) : null}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {t.lead ? (
+                    <span
+                      title={`Lead ${t.lead.code}`}
+                      className="hidden sm:inline-flex items-center max-w-[10rem] truncate rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-0.5 text-[10px] text-[var(--color-text-muted)]"
+                    >
+                      {t.lead.name}
+                    </span>
+                  ) : null}
                   {assigneeLabel ? (
                     <span
                       title={assignees.map((a) => a.name).join(", ")}
@@ -165,9 +197,11 @@ export function StandaloneTasksBlock({ tasks, currentUserId, completed = false }
                     </span>
                   ) : (
                     <span
+                      title={isWaiting ? "Fecha de recontacto" : "Vencimiento"}
                       className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border ${badgeClassForAlert(alert.kind)}`}
                     >
-                      {badgeText(t.dueDate, alert.kind, alert.daysAbs)}
+                      {isWaiting ? "Reconsultar " : ""}
+                      {badgeText(alertDate, alert.kind, alert.daysAbs)}
                     </span>
                   )}
                 </div>

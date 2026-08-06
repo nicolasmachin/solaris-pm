@@ -1,5 +1,11 @@
 # Fix de Autorización por Módulo Dinámico — Especificación Técnica
 
+> ⚠️ **Documento histórico — no es fuente de verdad.**
+> Esto es el diseño que se escribió *antes* de construir la funcionalidad, y
+> puede diferir de lo que finalmente se implementó. Sirve para entender por qué
+> se decidieron las cosas, no para saber cómo funcionan hoy.
+> **Cómo funciona hoy: [`docs/manual/`](../../manual/README.md).**
+
 > Refactor del sistema de permisos en endpoints de stages/substages/projects que hoy chequean `OPERACIONES` hardcoded, para que resuelvan dinámicamente el módulo correcto según la etapa involucrada. Sincronización del seed con la matriz de permisos real de producción.
 > Ubicación: `server/src/middleware/`, `server/src/routes/api.routes.ts`, `server/prisma/seed.ts`.
 > Spec madre: no aplica. Versión: 1.1 (incluye §2.3 con hallazgos del PASO 0).

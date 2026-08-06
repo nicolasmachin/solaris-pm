@@ -55,6 +55,11 @@ services:
       # control). Vacío = sin copia.
       REPORTES_FV_BCC: ${REPORTES_FV_BCC:-}
       GROWATT_API_TOKEN: ${GROWATT_API_TOKEN:-}
+      # ── Conector MCP (Voltia PM dentro del chat de Claude) ───────────────
+      # URL pública del servidor, tal cual se tipea al agregar el conector.
+      MCP_PUBLIC_URL: ${MCP_PUBLIC_URL:-http://localhost:4000}
+      # Emails habilitados a conectar, separados por coma. Vacío = nadie.
+      MCP_ALLOWED_EMAILS: ${MCP_ALLOWED_EMAILS:-}
     ports:
       - "4000:4000"
     volumes:

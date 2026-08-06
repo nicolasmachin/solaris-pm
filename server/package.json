@@ -36,6 +36,7 @@
     "@fastify/cors": "^11.2.0",
     "@fastify/multipart": "^9.0.3",
     "@fontsource/roboto": "^5.2.10",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@prisma/client": "^6.7.0",
     "@resvg/resvg-js": "^2.6.2",
     "@types/pdfkit": "^0.17.6",

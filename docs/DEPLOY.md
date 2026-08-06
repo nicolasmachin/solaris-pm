@@ -181,6 +181,94 @@ docker compose -f docker-compose.prod.yml exec server npx tsx scripts/update-con
 > Tras un grant de **permisos**, reiniciar el server para invalidar el cache de
 > permisos (TTL 5 min): `docker compose -f docker-compose.prod.yml restart server`.
 
+## 6b. Conector MCP (Voltia PM dentro del chat de Claude)
+
+El conector expone rutas **fuera de `/api`**, así que hay tres cosas a
+verificar más allá del deploy normal. Detalle de cómo funciona:
+[`docs/manual/13-conector-mcp.md`](manual/13-conector-mcp.md).
+
+### 1. Variables en el `.env` del VPS
+
+```bash
+MCP_PUBLIC_URL=https://app.voltia.com.uy
+MCP_ALLOWED_EMAILS=alguien@voltia.com.uy,otro@voltia.com.uy
+```
+
+- `MCP_PUBLIC_URL` **sin barra final** y **idéntica** a la dirección que se tipea
+  al agregar el conector. Se publica en el documento de descubrimiento y Claude
+  compara los dos strings: si difieren, la conexión falla sin decir por qué.
+- `MCP_ALLOWED_EMAILS` vacía **deshabilita el conector entero**. Es el default
+  deseado hasta que se decida quién entra.
+
+Ya están en `docker-compose.prod.yml`. Después de cargarlas hay que **recrear**
+el contenedor, no solo reiniciarlo:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env up -d server
+```
+
+### 2. Ruteo en Caddy — **el punto que rompe el deploy**
+
+Caddy tiene que mandar al backend (`127.0.0.1:4000`) estas rutas, que **no
+empiezan con `/api`**:
+
+```
+/mcp*
+/oauth/*
+/.well-known/oauth-protected-resource*
+/.well-known/oauth-authorization-server*
+```
+
+Si el `Caddyfile` rutea solo `/api/*` al server y todo lo demás al frontend,
+esas rutas caen en la SPA y el conector no funciona. Ejemplo del bloque:
+
+```
+app.voltia.com.uy {
+    handle /api/* {
+        reverse_proxy 127.0.0.1:4000
+    }
+    handle /auth/* {
+        reverse_proxy 127.0.0.1:4000
+    }
+    # Conector MCP
+    handle /mcp* {
+        reverse_proxy 127.0.0.1:4000
+    }
+    handle /oauth/* {
+        reverse_proxy 127.0.0.1:4000
+    }
+    handle /.well-known/oauth-* {
+        reverse_proxy 127.0.0.1:4000
+    }
+    handle {
+        reverse_proxy 127.0.0.1:5173
+    }
+}
+```
+
+Ojo con el orden: en Caddy, `handle` toma el primero que matchea.
+
+### 3. Verificación
+
+```bash
+# Tiene que devolver 401 CON el header WWW-Authenticate
+curl -i -X POST https://app.voltia.com.uy/mcp \
+  -H 'Content-Type: application/json' -d '{}' | head -5
+
+# Tiene que devolver JSON con "resource": "https://app.voltia.com.uy/mcp"
+curl -s https://app.voltia.com.uy/.well-known/oauth-protected-resource
+
+# Tiene que devolver JSON con code_challenge_methods_supported: ["S256"]
+curl -s https://app.voltia.com.uy/.well-known/oauth-authorization-server
+```
+
+Si alguno devuelve HTML, es el frontend contestando: falta el ruteo en Caddy.
+
+Después, desde Claude en la web: Configuración → Conectores → agregar
+`https://app.voltia.com.uy/mcp`. Se abre la pantalla de autorización de Voltia
+PM, se entra con email y contraseña, y queda. **Desde el celular no se puede
+agregar, pero sí usar** una vez agregado desde la computadora.
+
 ## 7. Verificar que el deploy salió bien
 
 ```bash

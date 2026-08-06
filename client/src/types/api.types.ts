@@ -17,7 +17,7 @@ export type SubstageStatus =
   | "IN_PROGRESS"
   | "COMPLETED"
   | "BLOCKED";
-export type TaskStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+export type TaskStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "WAITING";
 export type TaskPriority = "LOW" | "NORMAL" | "MEDIUM" | "HIGH" | "URGENT";
 export type NotificationType =
   | "STAGE_COMPLETED"

@@ -1,5 +1,11 @@
 # Galería de Fotos de Obra + Checklist de Referencia — Especificación Técnica
 
+> ⚠️ **Documento histórico — no es fuente de verdad.**
+> Esto es el diseño que se escribió *antes* de construir la funcionalidad, y
+> puede diferir de lo que finalmente se implementó. Sirve para entender por qué
+> se decidieron las cosas, no para saber cómo funcionan hoy.
+> **Cómo funciona hoy: [`docs/manual/`](../../manual/README.md).**
+
 > Galería única de fotos por proyecto (sin límites, sin vínculo a ítems) +
 > checklist de referencia con estado manual. Dos componentes independientes
 > en la sección Operaciones del proyecto.

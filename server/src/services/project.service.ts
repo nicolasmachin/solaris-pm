@@ -6,6 +6,7 @@ import {
   StageStatus,
   StageType,
   SubstageStatus,
+  TaskOrigin,
   TaskStatus,
   TipoObra,
 } from "@prisma/client";
@@ -816,13 +817,20 @@ export function serializeTask(task: {
   userId: string | null;
   user?: ResponsibleUserRef | null;
   assignees?: Array<{ user: { id: string; name: string; email?: string } }> | null;
+  // Pendiente colgado de un lead comercial en vez de un proyecto. `lead` solo
+  // viene si la query incluyó la relación; el campo se omite si no.
+  leadId?: string | null;
+  lead?: { id: string; code: string; clientName: string } | null;
+  origin?: TaskOrigin;
+  waitingReason?: string | null;
+  followUpAt?: Date | null;
   dueDate: Date | null;
   completedAt: Date | null;
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }) {
-  const { user, assignees, ...rest } = task;
+  const { user, assignees, lead, ...rest } = task;
   return {
     ...rest,
     user: serializeResponsibleUser(user),
@@ -839,7 +847,11 @@ export function serializeTask(task: {
           })),
         }
       : {}),
+    ...(lead !== undefined
+      ? { lead: lead ? { id: lead.id, code: lead.code, clientName: lead.clientName } : null }
+      : {}),
     dueDate: serializeDateOnly(task.dueDate),
+    followUpAt: serializeDateOnly(task.followUpAt ?? null),
     completedAt: serializeDate(task.completedAt),
     deletedAt: serializeDate(task.deletedAt),
     createdAt: serializeDate(task.createdAt),
