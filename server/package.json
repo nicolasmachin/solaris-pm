@@ -16,6 +16,7 @@
     "test:reportes-fv-habiles": "node --import tsx --test src/services/reportesFv/motor/diasHabiles.test.ts",
     "test:reportes-fv-growatt": "node --import tsx --test src/services/reportesFv/growatt/metricas.test.ts",
     "test:reportes-fv-golden": "node --import tsx --test src/services/reportesFv/motor/serie.golden.test.ts",
+    "test:fv-monitor": "node --import tsx --test src/services/reportesFv/monitor/diagnostico.test.ts",
     "test:proposal": "node --import tsx --test src/services/proposal/calculator.test.ts",
     "test:proposal-template": "node --import tsx --test src/services/proposal/template.test.ts",
     "test:proposal-draft-calc": "node --import tsx --test src/routes/proposals-v2-draft-calc.test.ts",

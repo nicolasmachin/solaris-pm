@@ -138,6 +138,7 @@ enum AuditEntityType {
   reporte_fv_config
   reporte_fv_lectura
   reporte_fv_emision
+  fv_incidencia
   ensayo_video
 }
 
@@ -528,6 +529,9 @@ model User {
   reporteFvEmisionesGeneradas    ReporteFvEmision[]          @relation("ReporteFvEmisionGeneradaPor")
   reporteFvEnviosRealizados      ReporteFvEnvio[]            @relation("ReporteFvEnvioEnviadoPor")
   growattPlantsVinculadas        GrowattPlant[]              @relation("GrowattPlantVinculadaPor")
+  growattPlantsSilenciadas       GrowattPlant[]              @relation("GrowattPlantMonitoreoSilenciadaPor")
+  fvMonitorCorridasLanzadas      FvMonitorCorrida[]          @relation("FvMonitorCorridaLanzadaPor")
+  fvIncidenciasRevisadas         FvIncidencia[]              @relation("FvIncidenciaRevisadaPor")
   projectVideosSubidos           ProjectVideo[]              @relation("ProjectVideoUploadedBy")
   projectVideosBorrados          ProjectVideo[]              @relation("ProjectVideoDeletedBy")
   mcpAuthCodes                   McpAuthCode[]
@@ -619,7 +623,9 @@ model Project {
   reporteFvLecturas               ReporteFvLectura[]
   reporteFvCalculos               ReporteFvCalculo[]
   reporteFvEmisiones              ReporteFvEmision[]
+  reporteFvGeneracionesDiarias    ReporteFvGeneracionDiaria[]
   growattPlant                    GrowattPlant?
+  fvIncidencias                   FvIncidencia[]
   projectVideos                   ProjectVideo[]
   // Sub-fase del E3 (Post-Habilitación). Solo se setea cuando el proyecto llega
   // a POST_HABILITACION (T7). E3-A = compromiso comercial (año 0-2); E3-B = vida
@@ -3630,12 +3636,69 @@ model GrowattPlant {
   vinculadaPor   User?     @relation("GrowattPlantVinculadaPor", fields: [vinculadaPorId], references: [id], onDelete: SetNull)
   vinculadaEn    DateTime? @db.Timestamptz(6)
 
+  // Silenciar el monitoreo diario (mantenimiento programado, caso ya
+  // gestionado, cliente que se va). Fecha y no booleano a propósito: un
+  // silencio permanente se olvida y mata el monitoreo sin que nadie se entere.
+  // Para "no mirarla nunca más" ya está `ignorada`.
+  monitoreoSilenciadoHasta  DateTime? @db.Date
+  monitoreoSilenciadoMotivo String?
+  monitoreoSilenciadoPorId  String?
+  monitoreoSilenciadoPor    User?     @relation("GrowattPlantMonitoreoSilenciadaPor", fields: [monitoreoSilenciadoPorId], references: [id], onDelete: SetNull)
+
   primeraVezEn DateTime @default(now()) @db.Timestamptz(6)
   ultimaVezEn  DateTime @default(now()) @db.Timestamptz(6)
+
+  devices     GrowattDevice[]
+  incidencias FvIncidencia[]
 
   @@index([projectId])
   @@index([ignorada])
   @@map("growatt_plants")
+}
+
+// ─── Dispositivos de la planta ───────────────────────────────────────────────
+// `device/list` ya se llamaba en cada ingesta y se tiraba todo salvo el
+// datalogger_sn del type 3. Persistir el resto no cuesta un request extra y es
+// lo que permite distinguir "el equipo no comunica" de "comunica pero no
+// genera" — que para el cliente son dos problemas completamente distintos.
+
+model GrowattDevice {
+  id String @id @default(cuid())
+
+  // FK contra `plantId` (que es @unique) y no contra `id`: el plantId es la
+  // entidad canónica del módulo y se evita un join en cada consulta del monitor.
+  growattPlantId BigInt
+  plant          GrowattPlant @relation(fields: [growattPlantId], references: [plantId], onDelete: Cascade)
+
+  deviceSn     String
+  dataloggerSn String?
+  // Crudo de la API: 1=inverter, 3=other (el medidor), 4=max, 5=sph, 7=min/TLX.
+  // Int y no enum: Growatt agrega tipos y un enum se rompería con hardware nuevo.
+  tipo         Int
+  model        String?
+
+  // Último snapshot de device/list. OJO con `lost`: el datalogger se alimenta
+  // del inversor y sólo transmite con sol (~08:00–18:30), así que de noche
+  // "perdido" es lo normal. Por eso el monitoreo mide horas desde `ultimoDatoEn`
+  // en vez de creerle al booleano.
+  lost         Boolean?
+  statusRaw    Int?
+  ultimoDatoEn DateTime? @db.Timestamptz(6)
+
+  // De device/tlx/tlx_last_data (POST), sólo para inversores sospechosos.
+  // statusText/errorText/warnText vienen en inglés desde Growatt.
+  faultCode  Int?
+  warnCode   Int?
+  faultTexto String?
+  statusText String?
+
+  primeraVezEn    DateTime  @default(now()) @db.Timestamptz(6)
+  ultimaVezEn     DateTime  @default(now()) @db.Timestamptz(6)
+  ultimoChequeoEn DateTime? @db.Timestamptz(6)
+
+  @@unique([growattPlantId, deviceSn])
+  @@index([growattPlantId])
+  @@map("growatt_devices")
 }
 
 // ─── Lecturas mensuales (dato crudo) ─────────────────────────────────────────
@@ -3906,6 +3969,167 @@ model ReporteFvEnvio {
 
   @@index([emisionId])
   @@map("reporte_fv_envios")
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// MONITOREO DIARIO DE PLANTAS
+// ═════════════════════════════════════════════════════════════════════════════
+// Antes de esto, que la planta de un cliente dejara de generar se descubría
+// cuando el cliente llamaba, o al armar el reporte del mes siguiente. Podía
+// pasar un mes entero apagada. Un cron diario revisa que cada planta haya
+// generado ayer y, si no, clasifica el motivo.
+
+// Serie diaria de generación. Tiene DOS consumidores: el monitoreo (necesita
+// los últimos días para saber si la planta está viva) y el gráfico del portal
+// del cliente. Sólo generación: consumo y exportación diarios costarían ~30
+// requests por planta por mes contra el smart meter, que ya falla seguido.
+model ReporteFvGeneracionDiaria {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  fecha     DateTime @db.Date
+
+  generacionKwh Decimal         @db.Decimal(10, 2)
+  fuente        ReporteFvFuente @default(GROWATT)
+
+  // Denormalizado para poder trazar de qué planta salió el dato: el vínculo
+  // planta↔proyecto puede cambiar con el tiempo.
+  growattPlantId BigInt?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  @@unique([projectId, fecha])
+  @@index([fecha])
+  @@map("reporte_fv_generaciones_diarias")
+}
+
+enum FvDiagnostico {
+  OK
+  GENERACION_BAJA // reservado: necesita ≥1 año de serie para tener sentido
+  SIN_GENERACION // ~0 kWh con el equipo comunicando → falla del equipo
+  SIN_COMUNICACION // el datalogger no reporta hace ≥N horas (WiFi, o apagada)
+  ERROR_DISPOSITIVO // el inversor reporta un código de falla
+  ESPERANDO_HABILITACION // todavía no pasó la habilitación UTE: no es un problema
+  SILENCIADA
+  SIN_DATOS_API // Growatt no respondió: problema NUESTRO, no del cliente
+}
+
+enum FvIncidenciaEstado {
+  ABIERTA
+  RESUELTA
+  DESCARTADA
+}
+
+enum FvMonitorCorridaModo {
+  CRON
+  MANUAL
+}
+
+enum FvMonitorCorridaEstado {
+  EN_CURSO
+  OK
+  PARCIAL
+  ERROR
+}
+
+model FvMonitorCorrida {
+  id String @id @default(cuid())
+
+  // Día EVALUADO (el anterior), no el día en que corrió el cron. Es lo que se
+  // filtra y lo que hay que mirar para saber si falta una corrida.
+  fecha  DateTime               @db.Date
+  modo   FvMonitorCorridaModo
+  estado FvMonitorCorridaEstado @default(EN_CURSO)
+
+  iniciadaEn  DateTime  @default(now()) @db.Timestamptz(6)
+  terminadaEn DateTime? @db.Timestamptz(6)
+
+  plantasTotal Int @default(0)
+  plantasOk    Int @default(0)
+  plantasError Int @default(0)
+  requests     Int @default(0)
+
+  incidenciasAbiertas Int     @default(0)
+  incidenciasCerradas Int     @default(0)
+  emailEnviado        Boolean @default(false)
+
+  lanzadaPorId String?
+  lanzadaPor   User?   @relation("FvMonitorCorridaLanzadaPor", fields: [lanzadaPorId], references: [id], onDelete: SetNull)
+  errorMessage String?
+
+  items FvMonitorItem[]
+
+  @@index([fecha])
+  @@map("fv_monitor_corridas")
+}
+
+model FvMonitorItem {
+  id        String           @id @default(cuid())
+  corridaId String
+  corrida   FvMonitorCorrida @relation(fields: [corridaId], references: [id], onDelete: Cascade)
+
+  growattPlantId BigInt
+  projectId      String?
+
+  diagnostico       FvDiagnostico
+  generacionKwh     Decimal?      @db.Decimal(10, 2)
+  diasSinGeneracion Int?
+  detalle           String?
+
+  ok           Boolean @default(true)
+  requests     Int     @default(0)
+  duracionMs   Int?
+  errorMessage String?
+
+  @@unique([corridaId, growattPlantId])
+  @@index([growattPlantId])
+  @@map("fv_monitor_items")
+}
+
+// El aviso no se manda "cuando algo está mal" sino "cuando algo EMPIEZA a estar
+// mal": sin este ciclo de vida, una planta rota generaría el mismo mail todos
+// los días hasta que alguien la arregle, y el mail se volvería ruido de fondo.
+model FvIncidencia {
+  id             String       @id @default(cuid())
+  growattPlantId BigInt
+  plant          GrowattPlant @relation(fields: [growattPlantId], references: [plantId], onDelete: Cascade)
+  projectId      String?
+  project        Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  diagnostico FvDiagnostico
+  estado      FvIncidenciaEstado @default(ABIERTA)
+
+  primeraDeteccionEn DateTime  @db.Date
+  ultimaDeteccionEn  DateTime  @db.Date
+  resueltaEn         DateTime? @db.Date
+
+  diasAfectados      Int       @default(1)
+  detalle            String?
+  // Último día con generación antes de romperse: es el dato que más se mira
+  // para saber desde cuándo el cliente está perdiendo plata.
+  ultimaGeneracionEn DateTime? @db.Date
+
+  revisadaPorId String?
+  revisadaPor   User?     @relation("FvIncidenciaRevisadaPor", fields: [revisadaPorId], references: [id], onDelete: SetNull)
+  revisadaEn    DateTime? @db.Timestamptz(6)
+  nota          String?
+
+  // Se avisó por mail hasta acá. Con notificadaEn != null la incidencia no
+  // vuelve nunca a la sección "nuevas" del digest, corra el cron las veces que
+  // corra. Éste es el candado real contra el aviso repetido.
+  notificadaEn DateTime? @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  // OJO: la migración agrega a mano un índice único PARCIAL
+  // (growattPlantId, diagnostico) WHERE estado = 'ABIERTA', que Prisma no sabe
+  // expresar. Sin él, dos corridas concurrentes duplican la incidencia.
+  @@index([growattPlantId, estado])
+  @@index([estado, diagnostico])
+  @@index([projectId])
+  @@map("fv_incidencias")
 }
 
 // ─── Videos del proyecto ──────────────────────────────────────────────────────

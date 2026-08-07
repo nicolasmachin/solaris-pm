@@ -13,6 +13,7 @@ import { startTraspasosJobs } from "./services/traspasos/index.js";
 import { startAvisoHabilitacionJob } from "./services/clientes/aviso-habilitacion.service.js";
 import { startEncuestasAniversarioJob } from "./services/encuestas/aniversario.job.js";
 import { startReportesFvJobs } from "./services/reportesFv/reportes-fv.job.js";
+import { startFvMonitorJob } from "./services/reportesFv/monitor/monitor.job.js";
 import { startReporteSemanalJob } from "./services/reporteSemanal/reporte-semanal.job.js";
 import { recoverPendingProjectVideos } from "./services/project-video.service.js";
 import { formatErrorPayload } from "./utils/errors.js";
@@ -89,6 +90,7 @@ async function start() {
   startAvisoHabilitacionJob();
   startEncuestasAniversarioJob();
   startReportesFvJobs();
+  startFvMonitorJob();
   startReporteSemanalJob();
 
   // La cola de compresión de videos vive en memoria: un reinicio la vacía. Sin

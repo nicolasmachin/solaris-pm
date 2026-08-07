@@ -1,6 +1,8 @@
 import axios from "axios";
 import { toast } from "react-hot-toast";
 
+import { getPortalPreviewProjectId } from "../store/portalPreview.store";
+
 // Permite que llamadas SECUNDARIAS (badges, contadores, polling de fondo) opten
 // por no disparar el logout global ante un 401. Una request principal sigue
 // tumbando la sesión como antes; una secundaria solo falla en silencio.
@@ -24,6 +26,14 @@ apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem("voltia-token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  // Modo "ver el portal como el cliente": el backend resuelve las consultas del
+  // portal con el usuario del cliente en lugar del interno. Sólo afecta a
+  // /api/client/*; el backend ignora la cabecera en el resto y rechaza todo lo
+  // que no sea lectura.
+  const preview = getPortalPreviewProjectId();
+  if (preview && config.url?.includes("/client")) {
+    config.headers["X-Portal-Preview"] = preview;
   }
   return config;
 });

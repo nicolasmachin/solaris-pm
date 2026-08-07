@@ -33,7 +33,22 @@ import {
   sincronizarPlantas,
   vincularPlanta,
 } from "../services/reportesFv/growatt/plantas.service.js";
-import { ReporteFvIngestaModo } from "@prisma/client";
+import { ReporteFvIngestaModo, FvDiagnostico, FvIncidenciaEstado } from "@prisma/client";
+import {
+  getEstadoMonitor,
+  listarCorridas,
+  silenciarPlanta,
+} from "../services/reportesFv/monitor/panel.service.js";
+import {
+  descartarIncidencia,
+  listarIncidencias,
+  marcarRevisada,
+} from "../services/reportesFv/monitor/incidencias.service.js";
+import { lanzarMonitorEnBackground } from "../services/reportesFv/monitor/monitor.service.js";
+import { leerGeneracionDiaria } from "../services/reportesFv/monitor/generacion-diaria.service.js";
+import { esDiaValido } from "../services/reportesFv/monitor/dias.js";
+import { createAuditEntry } from "../services/audit.service.js";
+import { AuditAction, AuditEntityType } from "@prisma/client";
 import { generarManualPdf, MANUAL_ACTUALIZADO, MANUAL_VERSION } from "../services/reportesFv/manual/manual.pdf.js";
 
 const periodoSchema = z
@@ -423,6 +438,152 @@ export async function registerReportesFvRoutes(app: FastifyInstance) {
       const ingesta = await getIngesta(id);
       if (!ingesta) throw notFound("INGESTA_NO_ENCONTRADA", "La corrida de ingesta no existe");
       return ingesta;
+    },
+  );
+
+  // ─── Monitoreo diario de plantas ────────────────────────────────────────────
+  // Sin acciones COMPLETE ni DELETE a propósito: no hay nada irreversible ni
+  // nada que salga hacia el cliente, así que alcanza con los permisos que los
+  // roles del módulo ya tienen y la feature no agrega un seed al deploy.
+
+  const diaSchema = z.string().refine(esDiaValido, "Se espera una fecha YYYY-MM-DD");
+
+  // Estado actual de cada planta + KPIs + info de la última corrida.
+  app.get(
+    "/reportes-fv/monitor/estado",
+    { preHandler: authorize(EXP, Action.VIEW) },
+    async () => getEstadoMonitor(),
+  );
+
+  // Historial de incidencias.
+  app.get(
+    "/reportes-fv/monitor/incidencias",
+    { preHandler: authorize(EXP, Action.VIEW) },
+    async (request) => {
+      const q = z
+        .object({
+          estado: z.nativeEnum(FvIncidenciaEstado).optional(),
+          diagnostico: z.nativeEnum(FvDiagnostico).optional(),
+          projectId: z.string().optional(),
+          desde: diaSchema.optional(),
+          hasta: diaSchema.optional(),
+          limit: z.coerce.number().int().min(1).max(500).optional(),
+        })
+        .parse(request.query);
+      return { incidencias: await listarIncidencias(q) };
+    },
+  );
+
+  // Últimas corridas: sirve para confirmar que el cron está vivo.
+  app.get(
+    "/reportes-fv/monitor/corridas",
+    { preHandler: authorize(EXP, Action.VIEW) },
+    async (request) => {
+      const { limit } = z
+        .object({ limit: z.coerce.number().int().min(1).max(100).optional() })
+        .parse(request.query);
+      return { corridas: await listarCorridas(limit) };
+    },
+  );
+
+  // Serie diaria de generación de un generador (para el detalle y el gráfico).
+  app.get(
+    "/reportes-fv/generadores/:projectId/generacion-diaria",
+    { preHandler: authorize(EXP, Action.VIEW) },
+    async (request) => {
+      const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
+      const { desde, hasta } = z
+        .object({ desde: diaSchema, hasta: diaSchema })
+        .parse(request.query);
+      return { dias: await leerGeneracionDiaria(projectId, desde, hasta) };
+    },
+  );
+
+  // Corrida manual. Devuelve 202: el trabajo sigue en background.
+  app.post(
+    "/reportes-fv/monitor/correr",
+    { preHandler: authorize(EXP, Action.CREATE) },
+    async (request, reply) => {
+      const body = z
+        .object({
+          fecha: diaSchema.optional(),
+          plantIds: z.array(z.string()).optional(),
+          enviarEmail: z.boolean().optional(),
+        })
+        .parse(request.body ?? {});
+      const { corridaId } = await lanzarMonitorEnBackground({
+        fecha: body.fecha,
+        plantIds: body.plantIds?.map((p) => BigInt(p)),
+        enviarEmail: body.enviarEmail,
+        userId: request.user!.id,
+      });
+      return reply.code(202).send({ corridaId });
+    },
+  );
+
+  // "Ya la vi": NO cierra la incidencia, que sigue abierta hasta que la planta
+  // vuelva a generar. Ver y resolver son cosas distintas.
+  app.post(
+    "/reportes-fv/monitor/incidencias/:id/revisar",
+    { preHandler: authorize(EXP, Action.EDIT) },
+    async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const { nota } = z.object({ nota: z.string().max(2000).optional() }).parse(request.body ?? {});
+      const incidencia = await marcarRevisada(id, request.user!.id, nota ?? null);
+      await createAuditEntry({
+        entityType: AuditEntityType.fv_incidencia,
+        entityId: id,
+        action: AuditAction.updated,
+        userId: request.user!.id,
+        description: `Incidencia revisada: ${incidencia.clientName ?? incidencia.plantName}`,
+      });
+      return incidencia;
+    },
+  );
+
+  // Falso positivo o caso que no amerita seguimiento. La nota es obligatoria:
+  // sin el motivo, descartar es indistinguible de esconder el problema.
+  app.post(
+    "/reportes-fv/monitor/incidencias/:id/descartar",
+    { preHandler: authorize(EXP, Action.EDIT) },
+    async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const { nota } = z.object({ nota: z.string().min(3).max(2000) }).parse(request.body);
+      const incidencia = await descartarIncidencia(id, request.user!.id, nota);
+      await createAuditEntry({
+        entityType: AuditEntityType.fv_incidencia,
+        entityId: id,
+        action: AuditAction.status_changed,
+        userId: request.user!.id,
+        description: `Incidencia descartada: ${nota}`,
+      });
+      return incidencia;
+    },
+  );
+
+  // Silenciar el monitoreo de una planta hasta cierta fecha (hasta: null lo quita).
+  app.post(
+    "/reportes-fv/monitor/plantas/:plantId/silenciar",
+    { preHandler: authorize(EXP, Action.EDIT) },
+    async (request) => {
+      const { plantId } = z.object({ plantId: z.string() }).parse(request.params);
+      const body = z
+        .object({ hasta: diaSchema.nullable(), motivo: z.string().max(500).optional() })
+        .parse(request.body);
+      if (body.hasta && !body.motivo) {
+        throw badRequest("MOTIVO_REQUERIDO", "Indicá por qué se silencia la planta.");
+      }
+      await silenciarPlanta(BigInt(plantId), body.hasta, body.motivo ?? null, request.user!.id);
+      await createAuditEntry({
+        entityType: AuditEntityType.fv_incidencia,
+        entityId: plantId,
+        action: AuditAction.updated,
+        userId: request.user!.id,
+        description: body.hasta
+          ? `Monitoreo silenciado hasta ${body.hasta}: ${body.motivo}`
+          : "Monitoreo reactivado",
+      });
+      return { ok: true };
     },
   );
 }

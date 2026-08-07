@@ -51,6 +51,25 @@ services:
       # IA (Claude) y transcripción de audios (Whisper).
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      # Growatt Open API. Sin el token, la ingesta mensual de reportes
+      # fotovoltaicos y el monitoreo diario de plantas fallan con
+      # GROWATT_NOT_CONFIGURED en cada planta.
+      GROWATT_API_TOKEN: ${GROWATT_API_TOKEN:-}
+      GROWATT_API_BASE: ${GROWATT_API_BASE:-}
+      REPORTES_FV_GROWATT_PAUSA_MS: ${REPORTES_FV_GROWATT_PAUSA_MS:-}
+      REPORTES_FV_GROWATT_CONCURRENCIA: ${REPORTES_FV_GROWATT_CONCURRENCIA:-}
+      # Monitoreo diario de plantas. Conviene arrancar con
+      # FV_MONITOR_EMAIL_ENABLED=false la primera semana: hasta ver el reparto
+      # real de diagnósticos no se sabe cuántos falsos positivos trae, y un
+      # primer mail con 40 alertas hace que nadie abra el segundo.
+      FV_MONITOR_ENABLED: ${FV_MONITOR_ENABLED:-}
+      FV_MONITOR_EMAIL: ${FV_MONITOR_EMAIL:-}
+      FV_MONITOR_EMAIL_ENABLED: ${FV_MONITOR_EMAIL_ENABLED:-}
+      CRON_FV_MONITOR: ${CRON_FV_MONITOR:-}
+      FV_MONITOR_CONCURRENCIA: ${FV_MONITOR_CONCURRENCIA:-}
+      FV_MONITOR_DIAS: ${FV_MONITOR_DIAS:-}
+      FV_MONITOR_KWH_MIN: ${FV_MONITOR_KWH_MIN:-}
+      FV_MONITOR_HORAS_SIN_COMS: ${FV_MONITOR_HORAS_SIN_COMS:-}
       # Conector MCP (Voltia PM dentro del chat de Claude).
       #
       # MCP_PUBLIC_URL tiene que coincidir EXACTO con la dirección que se tipea

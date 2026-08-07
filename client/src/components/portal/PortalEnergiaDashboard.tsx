@@ -13,7 +13,11 @@ import {
   YAxis,
 } from "recharts";
 
-import { getPortalEnergia, type PortalEnergiaMes } from "../../api/portal.api";
+import {
+  getPortalEnergia,
+  getPortalEnergiaDiaria,
+  type PortalEnergiaMes,
+} from "../../api/portal.api";
 
 const MESES = [
   "ene", "feb", "mar", "abr", "may", "jun",
@@ -73,6 +77,34 @@ export function PortalEnergiaDashboard() {
     [generadores, sel],
   );
 
+  // Mes que muestra el gráfico diario. Arranca en el mes en curso y no deja
+  // avanzar más allá: no hay datos del futuro.
+  const mesActual = new Date().toISOString().slice(0, 7);
+  const [mesDiario, setMesDiario] = useState(mesActual);
+  const { data: diarios = [] } = useQuery({
+    queryKey: ["portal-energia-diaria", mesDiario],
+    queryFn: () => getPortalEnergiaDiaria(mesDiario),
+  });
+  const diario = useMemo(
+    () => diarios.find((d) => d.projectId === generador?.projectId) ?? null,
+    [diarios, generador],
+  );
+  const datosDiarios = useMemo(
+    () =>
+      (diario?.dias ?? []).map((d) => ({
+        dia: String(Number(d.fecha.slice(8, 10))),
+        Generación: d.generacionKwh,
+      })),
+    [diario],
+  );
+  const moverMes = (delta: number) => {
+    const [a, m] = mesDiario.split("-").map(Number);
+    const total = a * 12 + (m - 1) + delta;
+    const nuevo = `${Math.floor(total / 12)}-${String((total % 12) + 1).padStart(2, "0")}`;
+    if (nuevo > mesActual) return;
+    setMesDiario(nuevo);
+  };
+
   const chartData = useMemo(
     () =>
       (generador?.meses ?? []).map((m: PortalEnergiaMes) => ({
@@ -115,6 +147,74 @@ export function PortalEnergiaDashboard() {
         <Kpi label={`Generación ${mesCorto(ultimo.periodo)}`} value={fmtKwh(ultimo.generacionKwh)} />
         <Kpi label="Retorno de la inversión" value={`${ultimo.retornoInversionPct.toFixed(0)}%`} />
       </div>
+
+      {/* Generación día a día. Se oculta si no hay serie: el dashboard mensual
+          tiene que seguir viéndose completo aunque este dato no exista. */}
+      {datosDiarios.length > 0 && (
+        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+              Generación día a día — {mesCorto(mesDiario)}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => moverMes(-1)}
+                aria-label="Mes anterior"
+                className="rounded-lg border border-[var(--color-border)] px-2 py-0.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+              >
+                ‹
+              </button>
+              <button
+                onClick={() => moverMes(1)}
+                aria-label="Mes siguiente"
+                disabled={mesDiario >= mesActual}
+                className="rounded-lg border border-[var(--color-border)] px-2 py-0.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] disabled:opacity-40"
+              >
+                ›
+              </button>
+            </div>
+          </div>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={datosDiarios} margin={{ top: 8, right: 8, bottom: 4, left: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                <XAxis
+                  dataKey="dia"
+                  tick={{ fontSize: 10, fill: "var(--color-text-muted)" }}
+                  interval="preserveStartEnd"
+                />
+                <YAxis tick={{ fontSize: 10, fill: "var(--color-text-muted)" }} width={38} />
+                <Tooltip {...chartTooltip} formatter={(v) => fmtKwh(Number(v ?? 0))} />
+                <Bar dataKey="Generación" fill={COLOR_GEN} isAnimationActive={false} radius={[2, 2, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">Total del mes</p>
+              <p className="font-semibold text-[var(--color-text-primary)]">{fmtKwh(diario?.totalKwh ?? 0)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">Promedio por día</p>
+              <p className="font-semibold text-[var(--color-text-primary)]">{fmtKwh(diario?.promedioKwh ?? 0)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">Mejor día</p>
+              <p className="font-semibold text-[var(--color-text-primary)]">
+                {diario?.mejorDia
+                  ? `${Number(diario.mejorDia.fecha.slice(8, 10))} · ${fmtKwh(diario.mejorDia.generacionKwh)}`
+                  : "—"}
+              </p>
+            </div>
+          </div>
+          {diario?.dias.length ? (
+            <p className="mt-2 text-[11px] text-[var(--color-text-muted)]">
+              Datos actualizados al {Number(diario.dias[diario.dias.length - 1].fecha.slice(8, 10))} de{" "}
+              {mesCorto(mesDiario)}. La información del día se procesa a la mañana siguiente.
+            </p>
+          ) : null}
+        </div>
+      )}
 
       {/* Generación vs consumo */}
       <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">

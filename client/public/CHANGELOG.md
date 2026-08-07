@@ -1,5 +1,32 @@
 # Novedades
 
+## v8.8
+
+### 7 de agosto de 2026
+
+#### Control diario de las plantas de los clientes
+
+- Todas las mañanas el sistema **revisa que cada planta haya generado el día anterior**. Si no generó, busca la causa y avisa. Antes esto se descubría cuando llamaba el cliente, o al armar el reporte del mes siguiente: podía pasar un mes entero con la planta apagada.
+- Distingue entre **falla del equipo** (el inversor está prendido y reporta un error, por ejemplo de aislación o del lado de alterna), **sin conexión** (el equipo dejó de comunicarse: casi siempre el wifi de la casa, un cambio de router o de clave) y **todavía sin habilitar**, que no es un problema y por eso no genera aviso.
+- Hay una pestaña nueva, **Monitoreo**, dentro de Experiencia Solar. Muestra el estado de cada planta, cuántos días lleva sin generar, desde cuándo, y el historial de todo lo que fue pasando. Se puede filtrar por tipo de problema y buscar por cliente.
+- Al hacer clic en una planta se abre el detalle con **el gráfico de generación de los últimos 30 días** y el historial de esa planta.
+- Cada problema se puede **marcar como revisado** (con una nota de qué se hizo), **descartar** si fue una falsa alarma, o **silenciar la planta hasta una fecha** —por ejemplo, si está en mantenimiento—. El silencio siempre vence: nunca queda una planta sin vigilar para siempre.
+- Se puede **forzar una revisión en el momento** con el botón "Revisar ahora", sin esperar a la del día siguiente.
+- Además llega **un mail diario** con lo nuevo. Sólo avisa cuando un problema **empieza** o cuando se resuelve; lo que sigue igual no se repite todos los días, para que el correo no se vuelva ruido.
+- Si un día no genera casi ninguna planta —un temporal, un corte general—, el sistema se da cuenta y **no abre decenas de alertas**: avisa una sola vez que pasó algo general.
+
+#### Generación día a día en el portal del cliente
+
+- El cliente ahora ve, además de sus números mensuales, **cuánta energía generó cada día del mes**, con el total del mes, el promedio diario y su mejor día. Puede moverse a meses anteriores.
+- Los datos llegan hasta el día anterior: la información de cada día se procesa a la mañana siguiente, y la pantalla lo aclara.
+
+#### Ver el portal como lo ve el cliente
+
+- Desde el listado de Generadores hay un **botón nuevo con forma de ojo**, al lado del de borrar, para **entrar al portal de ese cliente y ver exactamente lo que ve él**. Sirve para responderle sin pedirle capturas ni saber su contraseña.
+- Mientras se está ahí, una **franja arriba de la pantalla lo deja claro** en todo momento, y se sale con un clic.
+- Es **sólo lectura**: no se puede abrir un ticket ni responder una encuesta en nombre del cliente.
+- El botón aparece únicamente si ese generador ya tiene usuario de portal creado.
+
 ## v8.7
 
 ### 6 de agosto de 2026

@@ -23,15 +23,29 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "8.7",
-  date: "6 de agosto de 2026",
+  version: "8.8",
+  date: "7 de agosto de 2026",
   sections: [
     {
-      title: "Pendientes dentro de la ficha del cliente potencial",
+      title: "Control diario de las plantas de los clientes",
       items: [
-        'La ficha de un cliente potencial ahora tiene una sección "Pendientes" con las tareas que cuelgan de ese cliente. Antes solo se veían en "Mis tareas", y solo si eran propias.',
-        "Se muestran las de todo el equipo: quien puede ver el cliente ve todo su trabajo pendiente, con el responsable, la fecha de vencimiento y, si está en espera, qué se está esperando.",
-        'Desde ahí se puede crear un pendiente nuevo —queda atado al cliente automáticamente—, completarlo o reabrirlo con un clic, y abrir el detalle para editarlo. Con "Ver completadas" aparece también lo ya resuelto.',
+        "Todas las mañanas el sistema revisa que cada planta haya generado el día anterior. Si no generó, busca la causa y avisa: falla del equipo, sin conexión a internet, o todavía sin habilitar.",
+        "Pestaña nueva Monitoreo en Experiencia Solar: estado de cada planta, cuántos días lleva sin generar, historial y gráfico de los últimos 30 días.",
+        "Cada problema se puede marcar como revisado, descartar si fue falsa alarma, o silenciar la planta hasta una fecha. El silencio siempre vence.",
+        "Llega un mail diario, pero sólo cuando un problema empieza o se resuelve: lo que sigue igual no se repite todos los días.",
+      ],
+    },
+    {
+      title: "Generación día a día en el portal del cliente",
+      items: [
+        "El cliente ve cuánta energía generó cada día del mes, con el total, el promedio diario y su mejor día, y puede moverse a meses anteriores.",
+      ],
+    },
+    {
+      title: "Ver el portal como lo ve el cliente",
+      items: [
+        "Desde el listado de Generadores, un botón con forma de ojo entra al portal de ese cliente para ver exactamente lo que ve él. Una franja arriba lo deja claro en todo momento.",
+        "Es sólo lectura: no se puede abrir un ticket ni responder una encuesta en su nombre.",
       ],
     },
   ],
@@ -45,6 +59,14 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "8.7",
+    shortDate: "6 ago",
+    highlights: [
+      'La ficha de un cliente potencial tiene una sección "Pendientes" con las tareas de todo el equipo que cuelgan de ese cliente.',
+      "Desde ahí se crean, completan y reabren pendientes, que quedan atados al cliente automáticamente.",
+    ],
+  },
   {
     version: "8.6",
     shortDate: "6 ago",

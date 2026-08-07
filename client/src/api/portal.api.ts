@@ -190,6 +190,33 @@ export async function getPortalEnergia(): Promise<PortalEnergiaGenerador[]> {
   return data.generadores;
 }
 
+export interface PortalEnergiaDia {
+  fecha: string; // "YYYY-MM-DD"
+  generacionKwh: number;
+}
+
+export interface PortalEnergiaDiariaGenerador {
+  projectId: string;
+  projectName: string;
+  periodo: string; // "YYYY-MM"
+  dias: PortalEnergiaDia[];
+  totalKwh: number;
+  promedioKwh: number;
+  mejorDia: PortalEnergiaDia | null;
+  actualizadoEn: string | null;
+}
+
+/** Generación día a día. Sin `periodo`, el mes en curso. */
+export async function getPortalEnergiaDiaria(
+  periodo?: string,
+): Promise<PortalEnergiaDiariaGenerador[]> {
+  const { data } = await apiClient.get<{ generadores: PortalEnergiaDiariaGenerador[] }>(
+    "/api/client/energia/diaria",
+    { params: periodo ? { periodo } : undefined },
+  );
+  return data.generadores;
+}
+
 export interface PortalDiaCorteRow {
   projectId: string;
   projectName: string;

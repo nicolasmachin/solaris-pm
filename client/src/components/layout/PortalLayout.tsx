@@ -1,21 +1,54 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { ChevronDown, KeyRound, LogOut } from 'lucide-react';
+import { ChevronDown, Eye, KeyRound, LogOut, X } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
+import { usePortalPreviewStore } from '../../store/portalPreview.store';
 import { PortalNotificationBell } from './PortalNotificationBell';
 
 export function PortalLayout() {
   const { user, clearAuth } = useAuthStore();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const { preview, salir } = usePortalPreviewStore();
 
   function logout() {
     clearAuth();
     navigate('/login', { replace: true });
   }
 
+  function salirDeLaVista() {
+    salir();
+    navigate('/clientes', { replace: true });
+    // Recarga dura: hay consultas del portal ya cacheadas con los datos del
+    // cliente, y arrastrarlas de vuelta al panel interno confunde más que
+    // esperar un segundo.
+    window.location.reload();
+  }
+
   return (
     <div className="min-h-screen bg-[var(--color-bg-app)] flex flex-col">
+      {/* Cartel imposible de pasar por alto: mientras esté, lo que se ve NO es
+          la pantalla propia sino la del cliente. */}
+      {preview && (
+        <div className="sticky top-0 z-30 border-b border-amber-500/40 bg-amber-500/15 px-4 py-2">
+          <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-sm text-amber-200">
+              <Eye className="h-4 w-4 shrink-0" />
+              <span>
+                Estás viendo esta pantalla <strong>tal como la ve el cliente</strong>
+                {preview.clientName ? `: ${preview.clientName}` : ''}. Es sólo lectura.
+              </span>
+            </div>
+            <button
+              onClick={salirDeLaVista}
+              className="flex items-center gap-1 rounded-lg border border-amber-500/50 px-2.5 py-1 text-xs font-medium text-amber-100 hover:bg-amber-500/20"
+            >
+              <X className="h-3.5 w-3.5" />
+              Salir de la vista del cliente
+            </button>
+          </div>
+        </div>
+      )}
       <header className="border-b border-[var(--color-border)] bg-[var(--color-bg-card)]">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/portal" className="flex items-center gap-2">
@@ -42,28 +75,44 @@ export function PortalLayout() {
               onClick={() => setOpen((v) => !v)}
               className="flex items-center gap-2 rounded-md px-2.5 py-1.5 hover:bg-[var(--color-bg-card-hover)] text-sm text-[var(--color-text-secondary)]"
             >
-              <span className="hidden sm:inline">{user?.name ?? 'Mi cuenta'}</span>
+              {/* En la vista del cliente se muestra el nombre del cliente: ver
+                  el propio nombre acá haría dudar de qué se está mirando. */}
+              <span className="hidden sm:inline">{preview?.clientName ?? user?.name ?? 'Mi cuenta'}</span>
               <ChevronDown className="w-4 h-4" />
             </button>
             {open && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
                 <div className="absolute right-0 mt-1 w-56 rounded-md bg-[var(--color-bg-card)] border border-[var(--color-border)] shadow-lg z-20">
-                  <Link
-                    to="/cambiar-password"
-                    onClick={() => setOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)]"
-                  >
-                    <KeyRound className="w-4 h-4" />
-                    Cambiar contraseña
-                  </Link>
-                  <button
-                    onClick={logout}
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)] w-full text-left"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Cerrar sesión
-                  </button>
+                  {preview ? (
+                    // Cambiar contraseña o cerrar sesión acá afectaría al usuario
+                    // interno, no al cliente. La única salida es volver al panel.
+                    <button
+                      onClick={salirDeLaVista}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)]"
+                    >
+                      <X className="w-4 h-4" />
+                      Salir de la vista del cliente
+                    </button>
+                  ) : (
+                    <>
+                      <Link
+                        to="/cambiar-password"
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)]"
+                      >
+                        <KeyRound className="w-4 h-4" />
+                        Cambiar contraseña
+                      </Link>
+                      <button
+                        onClick={logout}
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)] w-full text-left"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Cerrar sesión
+                      </button>
+                    </>
+                  )}
                 </div>
               </>
             )}

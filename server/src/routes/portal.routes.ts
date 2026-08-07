@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { prisma } from "../lib/prisma.js";
 import { authenticate } from "../middleware/auth.middleware.js";
-import { authorize } from "../middleware/authorize.middleware.js";
+import { authorize, hasPermission } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
 import {
   agregarComentario,
@@ -303,8 +303,92 @@ function buildTimeline(
 
 // ─── Registro de rutas ──────────────────────────────────────────────────────
 
+/**
+ * "Ver el portal como lo ve el cliente", para usuarios internos.
+ *
+ * Truco central: cuando el request trae la cabecera `X-Portal-Preview`, este
+ * hook **reemplaza `request.user` por el usuario del cliente**. Todos los
+ * endpoints del portal filtran por `clients.some.userId`, así que con eso
+ * funcionan sin tocar ni una consulta, y no hay riesgo de que alguno se olvide
+ * de contemplar el modo vista previa y filtre datos de otro cliente.
+ *
+ * Es de SÓLO LECTURA y no es negociable: se rechaza cualquier método que no sea
+ * GET. Ver la pantalla del cliente es una cosa; abrir un ticket o responder una
+ * encuesta en su nombre es otra, y quedaría registrada como si la hubiera hecho
+ * él. Quien mira de verdad queda en `request.portalPreview`.
+ */
+async function portalPreviewHook(
+  request: import("fastify").FastifyRequest,
+  reply: import("fastify").FastifyReply,
+) {
+  const header = request.headers["x-portal-preview"];
+  const projectId = Array.isArray(header) ? header[0] : header;
+  if (!projectId) return;
+
+  // Este archivo también registra las rutas de administración de clientes
+  // (/admin/*), que un interno usa con su propio usuario. Suplantar ahí lo
+  // dejaría sin permisos a mitad de camino.
+  const ruta = (request.routeOptions?.url ?? request.url).split("?")[0];
+  if (!ruta.includes("/client/") && !ruta.endsWith("/client")) return;
+
+  const interno = request.user;
+  if (!interno) throw unauthorized("No autenticado");
+
+  // Mismo permiso que hace falta para ver el listado de generadores desde el
+  // que se entra: quien puede ver la ficha del cliente puede ver su pantalla.
+  const puede = await hasPermission(interno.role, Module.EXPERIENCIA_CLIENTES, Action.VIEW);
+  if (!puede) throw forbidden("Sin permiso para ver el portal de un cliente");
+
+  if (request.method !== "GET") {
+    throw forbidden(
+      "Estás viendo el portal como lo ve el cliente. Es sólo lectura: no se puede hacer nada en su nombre.",
+    );
+  }
+
+  const proyecto = await prisma.project.findFirst({
+    where: { id: projectId, deletedAt: null },
+    select: {
+      id: true,
+      clients: {
+        // Un proyecto puede tener varios usuarios de cliente; se toma el
+        // primero: el portal muestra lo mismo para todos ellos.
+        where: { user: { deletedAt: null } },
+        select: {
+          user: { select: { id: true, email: true, name: true, role: { select: { name: true } } } },
+        },
+        orderBy: { createdAt: "asc" },
+        take: 1,
+      },
+    },
+  });
+  if (!proyecto) throw notFound("PROJECT_NOT_FOUND", "El generador no existe");
+
+  const cliente = proyecto.clients[0]?.user;
+  if (!cliente) {
+    throw badRequest(
+      "SIN_USUARIO_PORTAL",
+      "Este generador todavía no tiene un usuario de portal creado, así que no hay pantalla de cliente que mirar.",
+    );
+  }
+
+  request.portalPreview = {
+    projectId: proyecto.id,
+    internoId: interno.id,
+    internoNombre: interno.name,
+    internoRole: interno.role,
+  };
+  request.user = {
+    id: cliente.id,
+    email: cliente.email,
+    name: cliente.name,
+    role: cliente.role?.name ?? "CLIENT",
+  };
+  void reply;
+}
+
 export async function registerPortalRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authenticate);
+  app.addHook("preHandler", portalPreviewHook);
 
   // ════════════════════════════════════════════════════════════════════════
   // ADMIN: gestión de clientes
@@ -1161,6 +1245,88 @@ export async function registerPortalRoutes(app: FastifyInstance) {
           return { projectId: pid, projectName: name, meses };
         })
         .filter((g) => g.meses.length > 0);
+
+      return { generadores };
+    },
+  );
+
+  // Generación día a día del mes pedido (default: el mes en curso).
+  //
+  // Gate propio, más laxo que el de /client/energia a propósito. Aquel exige
+  // `publicadoEnPortal` porque el reporte mensual lleva números económicos
+  // (ahorro, ROI, tarifa) que alguien tiene que revisar antes de mostrárselos al
+  // cliente. Esto son kWh crudos del inversor, el mismo dato que el cliente ya
+  // ve en la app de Growatt si tiene la cuenta. Además el mes en curso NUNCA va
+  // a tener reporte publicado —el de agosto se emite el 7 de septiembre—, así
+  // que con aquel gate esta pantalla no mostraría nada nunca.
+  app.get(
+    "/client/energia/diaria",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.VIEW) },
+    async (request) => {
+      const user = ensureUser(request);
+      const { periodo } = z
+        .object({ periodo: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).optional() })
+        .parse(request.query);
+
+      const hoy = new Date();
+      const mes = periodo ?? hoy.toISOString().slice(0, 7);
+      const [anio, m] = mes.split("-").map(Number);
+      const desde = new Date(Date.UTC(anio, m - 1, 1));
+      const hasta = new Date(Date.UTC(anio, m, 0));
+
+      const proyectos = await prisma.project.findMany({
+        where: {
+          deletedAt: null,
+          clients: { some: { userId: user.id } },
+          growattPlant: { ignorada: false },
+          // `habilitado` acá NO es la habilitación de UTE: es el switch de
+          // "mandarle el reporte mensual". Se reusa como opt-out —si no le
+          // reportamos, no le mostramos el detalle— pero no se exige que la
+          // config exista: un generador vinculado y andando ve su gráfico igual.
+          // Se escribe con OR y no con NOT: en Prisma, un NOT sobre una relación
+          // opcional también descarta las filas que no tienen esa relación.
+          OR: [{ reporteFvConfig: { is: null } }, { reporteFvConfig: { habilitado: true } }],
+        },
+        select: { id: true, clientName: true },
+      });
+      if (proyectos.length === 0) return { generadores: [] };
+
+      const series = await prisma.reporteFvGeneracionDiaria.findMany({
+        where: { projectId: { in: proyectos.map((p) => p.id) }, fecha: { gte: desde, lte: hasta } },
+        orderBy: { fecha: "asc" },
+        select: { projectId: true, fecha: true, generacionKwh: true, updatedAt: true },
+      });
+
+      const generadores = proyectos
+        .map((p) => {
+          const dias = series
+            .filter((s) => s.projectId === p.id)
+            .map((s) => ({
+              fecha: s.fecha.toISOString().slice(0, 10),
+              generacionKwh: Number(s.generacionKwh),
+            }));
+          const totalKwh = dias.reduce((a, d) => a + d.generacionKwh, 0);
+          const mejorDia = dias.reduce<(typeof dias)[number] | null>(
+            (mejor, d) => (mejor == null || d.generacionKwh > mejor.generacionKwh ? d : mejor),
+            null,
+          );
+          const actualizado = series
+            .filter((s) => s.projectId === p.id)
+            .reduce<Date | null>((max, s) => (!max || s.updatedAt > max ? s.updatedAt : max), null);
+          return {
+            projectId: p.id,
+            projectName: p.clientName,
+            periodo: mes,
+            dias,
+            totalKwh: Math.round(totalKwh * 10) / 10,
+            promedioKwh: dias.length > 0 ? Math.round((totalKwh / dias.length) * 10) / 10 : 0,
+            mejorDia,
+            // El último día disponible es siempre ayer: la revisión corre a la
+            // mañana. Se informa para que el cliente no crea que está roto.
+            actualizadoEn: actualizado?.toISOString() ?? null,
+          };
+        })
+        .filter((g) => g.dias.length > 0);
 
       return { generadores };
     },

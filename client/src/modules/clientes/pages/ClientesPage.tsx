@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { Download, Search, Send, SlidersHorizontal, Trash2, Upload, UserCheck, UserPlus } from "lucide-react";
+import { Download, Eye, Search, Send, SlidersHorizontal, Trash2, Upload, UserCheck, UserPlus } from "lucide-react";
 
 import {
   deleteCliente,
@@ -27,6 +27,7 @@ import { CrearUsuarioModal } from "../components/CrearUsuarioModal";
 import { ReenviarAccesoModal } from "../components/ReenviarAccesoModal";
 import { EtapaChip } from "../components/EtapaChip";
 import { DEPARTAMENTOS_UY, ESTADO_LABELS, RECORRIDO_SHORT } from "../constants";
+import { usePortalPreviewStore } from "../../../store/portalPreview.store";
 import { useClientes } from "../hooks/useClientes";
 import { useUpdateCliente } from "../hooks/useUpdateCliente";
 
@@ -69,6 +70,7 @@ function EstadoPill({ estado }: { estado: ClienteEstado }) {
 
 export function ClientesPage() {
   const navigate = useNavigate();
+  const activarPreview = usePortalPreviewStore((s) => s.activar);
   const isMobile = useIsMobile();
 
   const [filters, setFilters] = useState<Filters>({ sortBy: "nombre", sortDir: "asc" });
@@ -410,27 +412,45 @@ export function ClientesPage() {
     },
   ];
 
-  if (canDelete) {
-    columns.push({
-      key: "acciones",
-      label: "",
-      className: "w-10 text-right",
-      render: (c) => (
-        <button
-          type="button"
-          aria-label={`Borrar ${c.nombre}`}
-          title="Borrar Generador"
-          onClick={(e) => {
-            e.stopPropagation();
-            setToDelete(c);
-          }}
-          className="rounded p-1.5 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-danger-bg)] hover:text-[var(--color-danger-text)]"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
-      ),
-    });
-  }
+  columns.push({
+    key: "acciones",
+    label: "",
+    className: "w-20 text-right",
+    cardRole: "hidden",
+    render: (c) => (
+      <div className="flex items-center justify-end gap-0.5">
+        {c.hasPortalUser && (
+          <button
+            type="button"
+            aria-label={`Ver el portal de ${c.nombre}`}
+            title="Ver la pantalla como la ve el cliente"
+            onClick={(e) => {
+              e.stopPropagation();
+              activarPreview({ projectId: c.projectId, clientName: c.nombre });
+              navigate(`/portal/${c.projectId}`);
+            }}
+            className="rounded p-1.5 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-bg-card-hover)] hover:text-[var(--color-accent)]"
+          >
+            <Eye className="h-4 w-4" />
+          </button>
+        )}
+        {canDelete && (
+          <button
+            type="button"
+            aria-label={`Borrar ${c.nombre}`}
+            title="Borrar Generador"
+            onClick={(e) => {
+              e.stopPropagation();
+              setToDelete(c);
+            }}
+            className="rounded p-1.5 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-danger-bg)] hover:text-[var(--color-danger-text)]"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+    ),
+  });
 
   const items = data?.items ?? [];
   const total = data?.total ?? 0;

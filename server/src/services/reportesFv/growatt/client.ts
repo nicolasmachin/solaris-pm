@@ -44,10 +44,16 @@ export interface PlantaGrowatt {
  * `{ error_code, error_msg, data }`. error_code 0 = ok. `data` es lo que
  * devolvemos. Reintenta ante error de red o error_code != 0 (incluye rate limit).
  */
-async function get(endpoint: string, params: Record<string, string | number>): Promise<any> {
+async function pedir(
+  metodo: "GET" | "POST",
+  endpoint: string,
+  params: Record<string, string | number>,
+): Promise<any> {
   const token = requireToken();
   const url = new URL(`${BASE}/${endpoint}`);
-  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, String(v));
+  if (metodo === "GET") {
+    for (const [k, v] of Object.entries(params)) url.searchParams.set(k, String(v));
+  }
 
   let ultimoError: unknown = null;
   for (let intento = 1; intento <= REINTENTOS; intento++) {
@@ -56,7 +62,15 @@ async function get(endpoint: string, params: Record<string, string | number>): P
       const timeout = setTimeout(() => controller.abort(), 30_000);
       let payload: any;
       try {
-        const res = await fetch(url, { headers: { Token: token }, signal: controller.signal });
+        const init: RequestInit = { headers: { Token: token }, signal: controller.signal };
+        if (metodo === "POST") {
+          const body = new URLSearchParams();
+          for (const [k, v] of Object.entries(params)) body.set(k, String(v));
+          init.method = "POST";
+          init.headers = { Token: token, "Content-Type": "application/x-www-form-urlencoded" };
+          init.body = body;
+        }
+        const res = await fetch(url, init);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         payload = await res.json();
       } finally {
@@ -71,7 +85,15 @@ async function get(endpoint: string, params: Record<string, string | number>): P
       return payload?.data ?? payload;
     } catch (err) {
       ultimoError = err;
-      if (intento < REINTENTOS) await dormir(Math.min(1500 * intento, 5000));
+      if (intento < REINTENTOS) {
+        // El rate limit de Growatt es MUCHO más duro de lo que sugiere su
+        // documentación: medido contra la API real, una corrida de 44 plantas a
+        // ~1,4 req/s hizo que 40 fallaran con 10012 incluso reintentando. Hay
+        // que darle segundos de aire, no milisegundos; para el resto de los
+        // errores (red, 5xx) el backoff corto de siempre alcanza.
+        const esRateLimit = err instanceof Error && err.message.includes("10012");
+        await dormir(esRateLimit ? Math.min(4000 * intento, 20_000) : Math.min(1500 * intento, 5000));
+      }
     }
   }
   throw new AppError(
@@ -82,6 +104,12 @@ async function get(endpoint: string, params: Record<string, string | number>): P
     }`,
   );
 }
+
+const get = (endpoint: string, params: Record<string, string | number>) =>
+  pedir("GET", endpoint, params);
+
+const post = (endpoint: string, params: Record<string, string | number>) =>
+  pedir("POST", endpoint, params);
 
 /** Inventario completo de plantas visibles con el token, paginado. */
 export async function listarPlantas(): Promise<PlantaGrowatt[]> {
@@ -177,17 +205,108 @@ export async function generacionDiaria(
   return out;
 }
 
-/** Dataloggers de smart meter (type === 3) de una planta. */
-export async function dataloggersSmartMeter(plantId: string): Promise<string[]> {
+export interface DispositivoGrowatt {
+  deviceSn: string;
+  dataloggerSn: string | null;
+  /** 1=inverter, 3=other (el medidor), 4=max, 5=sph, 7=min/TLX. */
+  tipo: number;
+  model: string | null;
+  /** El servidor de Growatt no ve el equipo. De noche es NORMAL: el datalogger
+   *  se alimenta del inversor y sólo transmite con sol. */
+  lost: boolean | null;
+  status: number | null;
+  ultimoDatoEn: Date | null;
+}
+
+/**
+ * Todos los dispositivos de una planta. Un único request que sirve para dos
+ * cosas: encontrar los dataloggers del smart meter (lo que se hacía antes) y
+ * conocer el estado del inversor, que antes se descartaba.
+ */
+export async function listarDispositivos(plantId: string): Promise<DispositivoGrowatt[]> {
   const data = await get("device/list", { plant_id: plantId });
   const devices: any[] = data?.devices ?? [];
+  return devices.map((d) => ({
+    deviceSn: String(d?.device_sn ?? "").trim(),
+    dataloggerSn: d?.datalogger_sn ? String(d.datalogger_sn).trim() : null,
+    tipo: Number(d?.type),
+    model: d?.model ? String(d.model) : null,
+    lost: typeof d?.lost === "boolean" ? d.lost : null,
+    status: d?.status != null && d.status !== "" ? Number(d.status) : null,
+    ultimoDatoEn: parsearFechaGrowatt(d?.last_update_time),
+  }));
+}
+
+/**
+ * "2026-08-07 12:16:22" en hora local de la planta (Uruguay, GMT-3 fijo, sin
+ * horario de verano). Se interpreta explícitamente en -03:00 en vez de dejarlo
+ * al TZ del proceso, que en Docker es UTC.
+ */
+function parsearFechaGrowatt(v: unknown): Date | null {
+  if (typeof v !== "string" || v.trim() === "") return null;
+  const m = v.trim().match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (!m) return null;
+  const d = new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6] ?? "00"}-03:00`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** Dataloggers de smart meter (type === 3) de una planta. */
+export async function dataloggersSmartMeter(plantId: string): Promise<string[]> {
+  const devices = await listarDispositivos(plantId);
   const out: string[] = [];
   for (const d of devices) {
-    if (d?.type !== 3) continue;
-    const sn = String(d?.datalogger_sn ?? "").trim();
-    if (sn && !out.includes(sn)) out.push(sn);
+    if (d.tipo !== 3) continue;
+    if (d.dataloggerSn && !out.includes(d.dataloggerSn)) out.push(d.dataloggerSn);
   }
   return out;
+}
+
+export interface EstadoInversorGrowatt {
+  faultCode: number | null;
+  warnCode: number | null;
+  /** Texto de Growatt, en inglés. "Unknown" cuando no hay falla. */
+  faultTexto: string | null;
+  warnTexto: string | null;
+  /** "Normal", "Waiting", "Fault"… */
+  statusText: string | null;
+  status: number | null;
+  ultimoDatoEn: Date | null;
+}
+
+/**
+ * Estado detallado de un inversor MIN/TLX. Es el único endpoint de la Open API
+ * v1 que expone códigos de falla (no existe `inverter/alarm` ni `device/fault`),
+ * y es **POST con form body**: por GET devuelve HTTP 405.
+ *
+ * Se pide sólo para inversores ya sospechosos, no para toda la flota: es un
+ * request extra y el rate limit de Growatt es agresivo.
+ */
+export async function estadoInversor(deviceSn: string): Promise<EstadoInversorGrowatt | null> {
+  const data = await post("device/tlx/tlx_last_data", { tlx_sn: deviceSn });
+  // La API envuelve la muestra en un objeto cuyo nombre varía según el modelo.
+  const d = data?.tlx ?? data?.data ?? data;
+  if (!d || typeof d !== "object") return null;
+
+  const num = (v: unknown): number | null => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+  // "Unknown" es lo que devuelve Growatt cuando NO hay falla: tratarlo como
+  // texto real llenaría el panel de "Unknown" sin significar nada.
+  const texto = (v: unknown): string | null => {
+    const s = typeof v === "string" ? v.trim() : "";
+    return s === "" || s.toLowerCase() === "unknown" ? null : s;
+  };
+
+  return {
+    faultCode: num(d.faultCode ?? d.faultType ?? d.fault_code),
+    warnCode: num(d.warnCode ?? d.newWarnCode ?? d.warn_code),
+    faultTexto: texto(d.faultText ?? d.errorText),
+    warnTexto: texto(d.warnText),
+    statusText: texto(d.statusText),
+    status: num(d.status),
+    ultimoDatoEn: parsearFechaGrowatt(d.time ?? d.lastUpdateTimeText),
+  };
 }
 
 /** Direcciones de medidores de un datalogger. */
