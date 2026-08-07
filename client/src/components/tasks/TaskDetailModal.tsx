@@ -29,6 +29,8 @@ interface Props {
   // Creación: pre-fills opcionales.
   defaultProjectId?: string | null;
   defaultDueDate?: string;
+  // Creación desde el panel de un lead: la tarea nace colgada de ese lead.
+  defaultLeadId?: string | null;
 }
 
 export function TaskDetailModal({
@@ -37,6 +39,7 @@ export function TaskDetailModal({
   taskId,
   defaultProjectId,
   defaultDueDate,
+  defaultLeadId,
 }: Props) {
   const isEdit = Boolean(taskId);
   const qc = useQueryClient();
@@ -106,6 +109,14 @@ export function TaskDetailModal({
   });
   const projectOptions = useMemo(() => projectsQuery.data ?? [], [projectsQuery.data]);
 
+  // Los pendientes de un lead se listan en el panel del lead además de en
+  // "Mis tareas", así que cualquier cambio tiene que refrescar las dos.
+  const invalidateTaskLists = () => {
+    qc.invalidateQueries({ queryKey: ["my-tasks"] });
+    qc.invalidateQueries({ queryKey: ["dashboard-my-tasks"] });
+    qc.invalidateQueries({ queryKey: ["lead-tasks"] });
+  };
+
   const createMut = useMutation({
     mutationFn: () =>
       createStandaloneTask({
@@ -113,12 +124,12 @@ export function TaskDetailModal({
         description: description.trim() || null,
         dueDate: dueDate || null,
         projectId: projectId || null,
+        leadId: defaultLeadId ?? null,
         assignedUserIds,
       }),
     onSuccess: () => {
       toast.success("Tarea creada");
-      qc.invalidateQueries({ queryKey: ["my-tasks"] });
-      qc.invalidateQueries({ queryKey: ["dashboard-my-tasks"] });
+      invalidateTaskLists();
       onClose();
     },
     onError: () => toast.error("No se pudo crear la tarea"),
@@ -135,8 +146,7 @@ export function TaskDetailModal({
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["task", taskId] });
-      qc.invalidateQueries({ queryKey: ["my-tasks"] });
-      qc.invalidateQueries({ queryKey: ["dashboard-my-tasks"] });
+      invalidateTaskLists();
       onClose();
     },
     onError: () => toast.error("No se pudo guardar"),
@@ -162,8 +172,7 @@ export function TaskDetailModal({
       toast.success(msg);
       if (next !== "WAITING") setWaitingOpen(false);
       qc.invalidateQueries({ queryKey: ["task", taskId] });
-      qc.invalidateQueries({ queryKey: ["my-tasks"] });
-      qc.invalidateQueries({ queryKey: ["dashboard-my-tasks"] });
+      invalidateTaskLists();
     },
     onError: () => toast.error("No se pudo cambiar el estado"),
   });
@@ -172,8 +181,7 @@ export function TaskDetailModal({
     mutationFn: () => deleteStandaloneTask(taskId as string),
     onSuccess: () => {
       toast.success("Tarea eliminada");
-      qc.invalidateQueries({ queryKey: ["my-tasks"] });
-      qc.invalidateQueries({ queryKey: ["dashboard-my-tasks"] });
+      invalidateTaskLists();
       onClose();
     },
     onError: () => toast.error("No se pudo eliminar"),

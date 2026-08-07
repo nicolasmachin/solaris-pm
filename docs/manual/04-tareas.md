@@ -79,8 +79,10 @@ Una tarea puede colgar de un proyecto (`projectId`), de un cliente potencial
 - **De un proyecto**: aparece en el panel de tareas del proyecto y se borra con
   él (cascade).
 - **De un cliente potencial**: es el pendiente comercial de alguien a quien
-  todavía no se le vendió. Se ve en el listado de tareas sueltas con el nombre
-  del cliente, y en el detalle con su código.
+  todavía no se le vendió. Se ve en tres lugares: en la sección **Pendientes** de
+  la ficha del cliente potencial (todos los del lead, sean de quien sean), en el
+  listado de tareas sueltas de "Mis tareas" con el nombre del cliente (solo las
+  propias), y en el detalle de la tarea con su código.
 - **De nada**: es una tarea suelta. Sigue siendo válido y es lo que hace la
   mayoría de la gente para una nota rápida.
 
@@ -157,10 +159,23 @@ que el PATCH resuelve el módulo según la etapa de la tarea.
 | Método y ruta | Permiso |
 |---|---|
 | `POST /api/tasks` | Autenticado |
-| `GET /api/tasks/:id` | Autenticado + `userCanAccessTask` |
+| `GET /api/tasks/:id` | Autenticado + `userCanAccessTask`, **o** `VENTAS:VIEW` si la tarea cuelga de un lead |
 | `PATCH /api/tasks/:id` | Autenticado + `userCanAccessTask` |
 | `DELETE /api/tasks/:id` | Autenticado + `userCanAccessTask` |
 | `GET /api/my-tasks` | Autenticado |
+| `GET /api/leads/:id/tasks` | `VENTAS:VIEW` |
+
+`GET /api/leads/:id/tasks` devuelve **todos** los pendientes del lead, sin filtrar
+por asignado, con la misma forma que los `standaloneTasks` de `/api/my-tasks`
+(salvo el `urgencyRank`, que no incluye: el orden lo fija el backend — abiertas
+primero por vencimiento, completadas al fondo). Por defecto excluye las
+completadas; `?includeCompleted=true` las trae.
+
+La lectura de `GET /api/tasks/:id` se relajó para que ese listado sea coherente:
+si la tarea tiene `leadId` y el usuario tiene `VENTAS:VIEW`, puede abrir el
+detalle aunque no sea asignado. **La escritura no**: `PATCH` y `DELETE` siguen
+exigiendo `userCanAccessTask`, así que un no-asignado ve la tarea pero recibe 403
+si intenta modificarla.
 
 **Comentarios de tareas**:
 
@@ -256,6 +271,33 @@ botón de confirmar queda deshabilitado hasta que haya texto.
 Si la tarea cuelga de un cliente potencial, el modal lo muestra con su código.
 **No linkea**: en Ventas el lead abierto es estado interno del componente y no
 está en la URL, así que no hay a dónde apuntar.
+
+Al abrirlo con `defaultLeadId` (lo hace la ficha del lead), la tarea creada nace
+colgada de ese lead. **No hay selector de cliente potencial en el formulario**:
+el vínculo se hereda del lugar desde donde se creó, o se cambia por API.
+
+### Pendientes en la ficha del cliente potencial
+
+`client/src/components/sales/LeadTasks.tsx`, dentro del panel del lead
+(`client/src/pages/Sales.tsx`, columna derecha, debajo de las propuestas).
+
+Lista los pendientes del lead **de todo el equipo**, no solo los del usuario que
+mira: el trabajo pendiente de un lead es información del lead, igual que sus
+comentarios o adjuntos. Cada fila muestra título, descripción (o el motivo de
+espera si está `WAITING`), asignados y una insignia de vencimiento —o de fecha de
+recontacto, si está en espera— con los mismos colores que "Mis tareas".
+
+- El **checkbox** completa o reabre en el acto, y **solo aparece habilitado para
+  los responsables de esa tarea (o ADMIN)**: el servidor rechaza el cambio a
+  cualquier otro, así que no se ofrece.
+- El **clic en la fila** abre `TaskDetailModal` para editar.
+- **"Nueva"** —solo con `VENTAS:EDIT`, el mismo permiso que gobierna el resto de
+  la edición del lead— crea un pendiente ya atado al lead.
+- **"Ver completadas"** alterna `includeCompleted`.
+
+Las mutaciones invalidan `["lead-tasks"]` además de `["my-tasks"]` y
+`["dashboard-my-tasks"]` (en `useStandaloneTasks` y en `TaskDetailModal`), para
+que las dos vistas queden en sincronía.
 
 ---
 

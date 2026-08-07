@@ -23,42 +23,19 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "8.6",
+  version: "8.7",
   date: "6 de agosto de 2026",
   sections: [
     {
-      title: "Voltia PM desde el chat de Claude",
+      title: "Pendientes dentro de la ficha del cliente potencial",
       items: [
-        "Se puede consultar y cargar información de ventas conversando con Claude, desde la computadora o el celular: mirar la ficha de un cliente antes de una visita y dejar anotado lo que salió, sin abrir la aplicación.",
-        "Buscar clientes potenciales por nombre, teléfono, email o código; ver la ficha completa; ver los números de una propuesta y recibir un enlace al PDF; dar de alta, corregir datos, mover de etapa y comentar; y manejar los pendientes.",
-        "Todo se hace con tu usuario y tus permisos, y cada cambio queda registrado. Solo se conectan los usuarios habilitados a mano.",
-      ],
-    },
-    {
-      title: "Buscador de clientes potenciales",
-      items: [
-        "En Ventas, el buscador ahora encuentra también por teléfono, email y código, no solo por nombre y dirección. El teléfono matchea aunque esté guardado con espacios o guiones y se busque sin ellos.",
-      ],
-    },
-    {
-      title: "Tareas en espera",
-      items: [
-        "Las tareas tienen un estado nuevo, \"En espera\", para lo que depende de otro: que conteste el cliente, que salga un permiso municipal, que responda un proveedor. Ya no hay que elegir entre dejarlas como pendientes y que tapen lo que sí es acción de hoy, o completarlas y perderlas de vista.",
-        "Al ponerla en espera se anota qué se está esperando y cuándo reconsultarlo. El motivo es obligatorio: sin él la tarea vuelve a ser indistinguible de una pendiente.",
-        'En "Mis tareas" hay una pestaña "En espera" al lado de Pendientes y Completadas. Las tareas en espera ya no aparecen entre las pendientes, y se ordenan por la fecha de recontacto.',
-      ],
-    },
-    {
-      title: "Tareas atadas a un cliente potencial",
-      items: [
-        "Una tarea ahora puede colgar de un cliente potencial, no solo de un proyecto. Es para los pendientes comerciales de alguien a quien todavía no se le vendió.",
-        "En el listado de tareas sueltas se ve de qué cliente es cada una, y el detalle de la tarea muestra el cliente y su código.",
+        'La ficha de un cliente potencial ahora tiene una sección "Pendientes" con las tareas que cuelgan de ese cliente. Antes solo se veían en "Mis tareas", y solo si eran propias.',
+        "Se muestran las de todo el equipo: quien puede ver el cliente ve todo su trabajo pendiente, con el responsable, la fecha de vencimiento y, si está en espera, qué se está esperando.",
+        'Desde ahí se puede crear un pendiente nuevo —queda atado al cliente automáticamente—, completarlo o reabrirlo con un clic, y abrir el detalle para editarlo. Con "Ver completadas" aparece también lo ya resuelto.',
       ],
     },
   ],
 };
-
-
 
 /** Versiones anteriores para mostrar en el sidebar de novedades. */
 export type OldRelease = {
@@ -68,6 +45,16 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "8.6",
+    shortDate: "6 ago",
+    highlights: [
+      "Voltia PM desde el chat de Claude: consultar y cargar información de ventas conversando, con tu usuario y tus permisos, solo para los usuarios habilitados a mano.",
+      "En Ventas, el buscador encuentra también por teléfono, email y código, no solo por nombre y dirección.",
+      'Estado nuevo "En espera" para las tareas que dependen de un tercero, con el motivo y la fecha de recontacto, y su propia pestaña en "Mis tareas".',
+      "Una tarea puede colgar de un cliente potencial, no solo de un proyecto.",
+    ],
+  },
   {
     version: "8.5",
     shortDate: "5 ago",

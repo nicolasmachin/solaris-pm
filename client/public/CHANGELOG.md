@@ -1,5 +1,17 @@
 # Novedades
 
+## v8.7
+
+### 6 de agosto de 2026
+
+#### Pendientes dentro de la ficha del cliente potencial
+
+- La ficha de un cliente potencial ahora tiene una sección **"Pendientes"** con las tareas que cuelgan de ese cliente. Antes solo se veían en "Mis tareas", y solo si eran propias.
+- Se muestran **las de todo el equipo**, no solo las tuyas: quien puede ver el cliente ve todo su trabajo pendiente, con el responsable, la fecha de vencimiento y, si está en espera, qué se está esperando.
+- Desde ahí se puede **crear un pendiente nuevo** —queda atado al cliente automáticamente—, **completarlo o reabrirlo** con un clic, y abrir el detalle para editarlo.
+- Por defecto se ven las abiertas; con **"Ver completadas"** aparece también lo ya resuelto.
+- Editar o eliminar una tarea sigue siendo solo para sus responsables (y administradores); el resto la ve en modo lectura.
+
 ## v8.6
 
 ### 6 de agosto de 2026

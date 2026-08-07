@@ -41,6 +41,7 @@ import { MarkAsWonModal } from "../components/sales/MarkAsWonModal";
 import { CommissionCaptureModal } from "../components/sales/CommissionCaptureModal";
 import { getLeadCommission } from "../api/comisiones.api";
 import { LeadProposalsList } from "../components/sales/LeadProposalsList";
+import { LeadTasks } from "../components/sales/LeadTasks";
 import { LargeModal } from "../components/ui/LargeModal";
 import { DeleteConfirmModal } from "../components/ui/DeleteConfirmModal";
 import { ProposalBuilderModal } from "../components/proposals-v2/ProposalBuilderModal";
@@ -930,6 +931,8 @@ function LeadPanel({
           </div>
           <LeadProposalsList leadId={leadId} clientName={lead.clientName} />
         </section>
+
+        <LeadTasks leadId={lead.id} canEdit={canEditSales} />
 
         <section className="mb-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
           <h3 className="mb-1 text-sm font-semibold text-[var(--color-text-primary)]">

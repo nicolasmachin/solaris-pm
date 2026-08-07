@@ -58,7 +58,12 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { env } from "../config/env.js";
 import { authenticate } from "../middleware/auth.middleware.js";
-import { authorize, authorizeAny, clearPermissionCache } from "../middleware/authorize.middleware.js";
+import {
+  authorize,
+  authorizeAny,
+  clearPermissionCache,
+  hasPermission,
+} from "../middleware/authorize.middleware.js";
 import { authorizeByStageContext, authorizeProjectEditAnyPipeline } from "../middleware/authorize-by-stage.middleware.js";
 import { createAuditEntriesForChanges, createAuditEntry } from "../services/audit.service.js";
 import {
@@ -3725,7 +3730,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
     if (!task) throw notFound("TASK_NOT_FOUND", "Tarea no encontrada");
 
-    if (!userCanAccessTask(task, user)) {
+    // Lectura: además de los asignados y ADMIN, un pendiente colgado de un lead
+    // lo puede abrir cualquiera que pueda ver Ventas — se lista en el panel del
+    // lead y sería incoherente mostrarlo ahí y negar el detalle. La escritura
+    // (PATCH/DELETE) sigue restringida a asignados/ADMIN.
+    const canReadAsLeadTask =
+      Boolean(task.leadId) && (await hasPermission(user.role, Module.VENTAS, Action.VIEW));
+    if (!userCanAccessTask(task, user) && !canReadAsLeadTask) {
       throw forbidden("No tenés permiso para ver esta tarea");
     }
 
@@ -7214,6 +7225,67 @@ export async function registerApiRoutes(app: FastifyInstance) {
           : null;
 
     return { capacityKwp, budgetUsd, source };
+  });
+
+  // Pendientes colgados de un lead. A diferencia de /my-tasks (que filtra por
+  // asignado), acá se listan TODOS los del lead: quien puede ver el lead ve su
+  // trabajo pendiente completo, igual que ve sus comentarios y adjuntos, sin
+  // importar a quién esté asignado.
+  app.get("/leads/:id/tasks", { preHandler: authorize(Module.VENTAS, Action.VIEW) }, async (request) => {
+    const { id } = request.params as { id: string };
+    const query = z
+      .object({ includeCompleted: z.coerce.boolean().optional() })
+      .parse(request.query ?? {});
+
+    const lead = await prisma.salesLead.findFirst({
+      where: { id, deletedAt: null },
+      select: { id: true },
+    });
+    if (!lead) throw notFound("LEAD_NOT_FOUND", "Lead no encontrado");
+
+    const tasks = await prisma.task.findMany({
+      where: {
+        leadId: id,
+        deletedAt: null,
+        ...(query.includeCompleted ? {} : { status: { not: TaskStatus.COMPLETED } }),
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        lead: { select: { id: true, code: true, clientName: true } },
+        ...taskAssigneesInclude,
+      },
+    });
+
+    return tasks
+      .map((t) => ({
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        status: t.status,
+        dueDate: serializeDateOnly(t.dueDate),
+        completedAt: serializeDate(t.completedAt),
+        origin: t.origin,
+        waitingReason: t.waitingReason,
+        followUpAt: serializeDateOnly(t.followUpAt),
+        leadId: t.leadId,
+        lead: t.lead ? { id: t.lead.id, code: t.lead.code, name: t.lead.clientName } : null,
+        assignedUserId: t.userId,
+        assignedUser: t.user ? { id: t.user.id, name: t.user.name, email: t.user.email } : null,
+        assignees: t.assignees.map((a) => ({ id: a.user.id, name: a.user.name, email: a.user.email })),
+        createdAt: serializeDate(t.createdAt),
+        updatedAt: serializeDate(t.updatedAt),
+      }))
+      // Las completadas al fondo; el resto por vencimiento (sin fecha al final).
+      .sort((a, b) => {
+        const aDone = a.status === TaskStatus.COMPLETED;
+        const bDone = b.status === TaskStatus.COMPLETED;
+        if (aDone !== bDone) return aDone ? 1 : -1;
+        if (aDone && bDone) return (b.completedAt ?? "").localeCompare(a.completedAt ?? "");
+        if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+        if (a.dueDate) return -1;
+        if (b.dueDate) return 1;
+        return (b.createdAt ?? "").localeCompare(a.createdAt ?? "");
+      });
   });
 
   const leadConvertBodySchema = z

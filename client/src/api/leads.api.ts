@@ -255,3 +255,38 @@ export async function deleteLeadAttachment(leadId: string, attachmentId: string)
 export function leadAttachmentDownloadUrl(leadId: string, attachmentId: string): string {
   return `${api.defaults.baseURL}/api/leads/${leadId}/attachments/${attachmentId}/download`;
 }
+
+// ─── Pendientes del lead ─────────────────────────────────────────────────────
+// Todas las tareas colgadas del lead, sin filtrar por asignado (a diferencia de
+// /api/my-tasks). Misma forma que `StandaloneTaskItem` de myTasks.api salvo el
+// `urgencyRank`, que acá no se usa: el orden lo define el backend.
+export interface LeadTaskItem {
+  id: string;
+  title: string;
+  description: string | null;
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "WAITING";
+  dueDate: string | null;
+  completedAt: string | null;
+  origin: "MANUAL" | "MINUTA" | "MCP";
+  waitingReason: string | null;
+  followUpAt: string | null;
+  leadId: string | null;
+  lead: { id: string; code: string; name: string } | null;
+  /** @deprecated primer asignado; usar `assignees` */
+  assignedUserId: string | null;
+  /** @deprecated primer asignado; usar `assignees` */
+  assignedUser: { id: string; name: string; email: string } | null;
+  assignees: { id: string; name: string; email: string | null }[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getLeadTasks(
+  leadId: string,
+  params?: { includeCompleted?: boolean },
+): Promise<LeadTaskItem[]> {
+  const { data } = await api.get<LeadTaskItem[]>(`/api/leads/${leadId}/tasks`, {
+    params: params?.includeCompleted ? { includeCompleted: true } : undefined,
+  });
+  return data;
+}

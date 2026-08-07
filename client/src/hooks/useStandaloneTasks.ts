@@ -17,6 +17,8 @@ export function useStandaloneTasks() {
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["my-tasks"] });
     qc.invalidateQueries({ queryKey: ["dashboard-my-tasks"] });
+    // Los pendientes colgados de un lead también se listan en el panel del lead.
+    qc.invalidateQueries({ queryKey: ["lead-tasks"] });
   };
 
   const createMut = useMutation({
