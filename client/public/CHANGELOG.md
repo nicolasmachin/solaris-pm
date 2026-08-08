@@ -18,6 +18,12 @@
 - Está disponible tanto en **Reportes FV** como en la pestaña **Monitoreo**.
 - Se sumaron capítulos nuevos: el control diario de las plantas —qué significa cada estado y cómo gestionar un problema—, la generación día a día que ve el cliente, y cómo mirar el portal tal como lo ve él.
 
+#### Ordenar y filtrar el listado de Reportes FV
+
+- **Se puede ordenar por cualquier columna**: generador, estado, habilitado, de alta, calculado, PDF, enviado, generación, consumo, exportación y ahorro. Un clic ordena, el segundo invierte y el tercero vuelve al orden normal. Los generadores sin dato quedan siempre al final, ordenes como ordenes: uno sin ahorro no es "el que menos ahorró", es uno del que no se sabe.
+- Los filtros pasaron de menús desplegables a **botones que se prenden y apagan**, con todas las opciones a la vista: de alta / sin alta, habilitados / deshabilitados, con lectura / incompleta / sin lectura, calculados / sin calcular, con PDF / sin PDF, enviados / sin enviar, Growatt / manual, residencial / empresa.
+- Antes había que abrir cinco menús para entender qué estaba filtrado; ahora se ve de un vistazo.
+
 #### Aviso cuando una planta genera pero no inyecta
 
 - El control diario ahora detecta también las plantas que **generan con normalidad pero no están inyectando a la red**, señal de que la inyección quedó limitada en el inversor. Antes esto era invisible: la planta se veía "Funcionando" porque producía, mientras el cliente perdía todos los días el excedente que debería acreditársele.

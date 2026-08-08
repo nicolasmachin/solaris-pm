@@ -58,34 +58,76 @@ const ESTADO_ORDER: EstadoGenerador[] = [
   "ENVIADO",
 ];
 
-function FiltroSelect<T extends string>({
+/**
+ * Filtro de dos o más opciones excluyentes, como botones que se prenden y
+ * apagan. Volver a apretar el que está activo lo apaga y muestra todo.
+ *
+ * Se prefirió esto a un desplegable porque deja **ver todas las opciones sin
+ * abrir nada**: de un vistazo se sabe qué se puede filtrar y qué está filtrado.
+ * Con selects había que abrir cinco menús para entender el estado del listado.
+ */
+function ToggleFiltro<T extends string>({
   label,
   value,
   onChange,
   options,
+  todos,
 }: {
   label: string;
   value: T;
   onChange: (v: T) => void;
   options: { value: T; label: string }[];
+  /** Valor que significa "sin filtrar". */
+  todos: T;
 }) {
   return (
-    <label className="flex items-center gap-1.5 text-[11px] text-[var(--color-text-muted)]">
-      <span className="font-mono uppercase tracking-wider">{label}</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value as T)}
-        className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1 text-sm text-[var(--color-text-primary)]"
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
+    <div className="flex items-center gap-1.5">
+      <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">
+        {label}
+      </span>
+      {options.map((o) => {
+        const activo = value === o.value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            aria-pressed={activo}
+            onClick={() => onChange(activo ? todos : o.value)}
+            className={`rounded px-2 py-0.5 text-[11px] transition ${
+              activo
+                ? "bg-[var(--color-accent)] font-medium text-white"
+                : "border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+            }`}
+          >
             {o.label}
-          </option>
-        ))}
-      </select>
-    </label>
+          </button>
+        );
+      })}
+    </div>
   );
 }
+
+/**
+ * Cómo se ordena cada columna. Los booleanos se comparan como número (false=0),
+ * así que ascendente deja arriba los "no" — que suele ser lo que se busca:
+ * "mostrame los que todavía NO tienen PDF".
+ *
+ * El estado no se ordena alfabéticamente sino por avance del proceso, que es lo
+ * que uno espera al hacer clic: de lo más atrasado a lo más terminado.
+ */
+const VALOR_ORDEN: Record<string, (g: FilaPanel) => string | number | boolean | null> = {
+  clientName: (g) => g.clientName,
+  estado: (g) => ESTADO_ORDER.indexOf(g.estado),
+  f_habilitado: (g) => g.habilitado,
+  f_alta: (g) => g.dadoDeAlta,
+  f_calculado: (g) => g.ahorroTotal != null,
+  f_pdf: (g) => g.emisionId != null,
+  f_enviado: (g) => g.enviado,
+  gen: (g) => g.generacionKwh,
+  cons: (g) => g.consumoKwh,
+  exp: (g) => g.exportacionKwh,
+  ahorro: (g) => g.ahorroTotal,
+};
 
 /** Tick verde o cruz roja. El title da el detalle sin ocupar lugar en la tabla. */
 function SiNo({ v, titulo }: { v: boolean; titulo?: string }) {
@@ -124,8 +166,12 @@ export function ReportesFvPanel() {
   const [tipo, setTipo] = useState<"todos" | "residencial" | "empresa">("todos");
   const [envio, setEnvio] = useState<"todos" | "enviados" | "pendientes">("todos");
   const [pdf, setPdf] = useState<"todos" | "con" | "sin">("todos");
+  const [habilitado, setHabilitado] = useState<"todos" | "si" | "no">("todos");
+  const [lectura, setLectura] = useState<"todos" | "completa" | "incompleta" | "sin">("todos");
+  const [calculo, setCalculo] = useState<"todos" | "si" | "no">("todos");
   const [soloPotenciaEstimada, setSoloPotenciaEstimada] = useState(false);
   const [soloSinDestinatario, setSoloSinDestinatario] = useState(false);
+  const [orden, setOrden] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
   const [detalleId, setDetalleId] = useState<string | null>(null);
   const [plantasAbierto, setPlantasAbierto] = useState(false);
   const [ingestaId, setIngestaId] = useState<string | null>(null);
@@ -201,6 +247,14 @@ export function ReportesFvPanel() {
     if (tipo !== "todos") items = items.filter((g) => g.tipoCliente === tipo);
     if (envio === "enviados") items = items.filter((g) => g.enviado);
     else if (envio === "pendientes") items = items.filter((g) => !g.enviado);
+    if (habilitado === "si") items = items.filter((g) => g.habilitado);
+    else if (habilitado === "no") items = items.filter((g) => !g.habilitado);
+    if (lectura === "completa") items = items.filter((g) => g.lecturaCompleta);
+    else if (lectura === "incompleta")
+      items = items.filter((g) => !g.lecturaCompleta && g.generacionKwh != null);
+    else if (lectura === "sin") items = items.filter((g) => g.generacionKwh == null);
+    if (calculo === "si") items = items.filter((g) => g.ahorroTotal != null);
+    else if (calculo === "no") items = items.filter((g) => g.ahorroTotal == null);
     if (pdf === "con") items = items.filter((g) => g.emisionId != null);
     else if (pdf === "sin") items = items.filter((g) => g.emisionId == null);
     if (soloPotenciaEstimada) items = items.filter((g) => g.potenciaEstimada);
@@ -216,8 +270,33 @@ export function ReportesFvPanel() {
           (g.dadoDeAlta && g.habilitado && !g.tieneDestinatario),
       );
     }
+
+    if (orden) {
+      const valor = VALOR_ORDEN[orden.key];
+      if (valor) {
+        const signo = orden.dir === "asc" ? 1 : -1;
+        items = [...items].sort((a, b) => {
+          const x = valor(a);
+          const y = valor(b);
+          // Los vacíos van siempre al final, ordene como ordene: un generador
+          // sin ahorro no es "el que menos ahorró", es uno del que no se sabe.
+          if (x == null && y == null) return 0;
+          if (x == null) return 1;
+          if (y == null) return -1;
+          if (typeof x === "string" && typeof y === "string") {
+            return x.localeCompare(y, "es", { sensitivity: "base" }) * signo;
+          }
+          return (Number(x) - Number(y)) * signo;
+        });
+      }
+    }
+
     return items;
   }, [
+    orden,
+    habilitado,
+    lectura,
+    calculo,
     panel,
     search,
     estados,
@@ -254,6 +333,10 @@ export function ReportesFvPanel() {
     setSoloPotenciaEstimada(false);
     setSoloSinDestinatario(false);
     setSoloConProblemas(false);
+    setHabilitado("todos");
+    setLectura("todos");
+    setCalculo("todos");
+    setOrden(null);
   }
 
   function toggleEstado(e: EstadoGenerador) {
@@ -265,9 +348,19 @@ export function ReportesFvPanel() {
     });
   }
 
+  // Un clic ordena ascendente, el segundo invierte, el tercero vuelve al orden
+  // natural (alfabético por generador). Sin esa tercera vuelta no hay forma de
+  // deshacer un orden sin recargar la página.
+  function ordenarPor(key: string) {
+    if (orden?.key !== key) return setOrden({ key, dir: "asc" });
+    if (orden.dir === "asc") return setOrden({ key, dir: "desc" });
+    return setOrden(null);
+  }
+
   const columns: Column<FilaPanel>[] = [
     {
       key: "clientName",
+      sortable: true,
       label: "Generador",
       cardRole: "title",
       render: (g) => (
@@ -288,6 +381,7 @@ export function ReportesFvPanel() {
     },
     {
       key: "estado",
+      sortable: true,
       label: "Estado",
       render: (g) => (
         <span
@@ -301,10 +395,11 @@ export function ReportesFvPanel() {
     // Estado resume la situación en una palabra, pero al resumir esconde el
     // detalle: un "Sin lectura" no dice si además está dado de alta o si ya se
     // le mandó algo el mes pasado. Acá se ve todo de un vistazo.
-    { key: "f_habilitado", label: "Habilitado", align: "center", cardRole: "hidden", render: (g) => <SiNo v={g.habilitado} /> },
-    { key: "f_alta", label: "De alta", align: "center", cardRole: "hidden", render: (g) => <SiNo v={g.dadoDeAlta} /> },
+    { key: "f_habilitado", sortable: true, label: "Habilitado", align: "center", cardRole: "hidden", render: (g) => <SiNo v={g.habilitado} /> },
+    { key: "f_alta", sortable: true, label: "De alta", align: "center", cardRole: "hidden", render: (g) => <SiNo v={g.dadoDeAlta} /> },
     {
       key: "f_calculado",
+      sortable: true,
       label: "Calculado",
       align: "center",
       cardRole: "hidden",
@@ -312,17 +407,19 @@ export function ReportesFvPanel() {
     },
     {
       key: "f_pdf",
+      sortable: true,
       label: "PDF",
       align: "center",
       cardRole: "hidden",
       render: (g) => <SiNo v={Boolean(g.emisionId)} titulo={g.emisionVersion ? `PDF v${g.emisionVersion}` : undefined} />,
     },
-    { key: "f_enviado", label: "Enviado", align: "center", cardRole: "hidden", render: (g) => <SiNo v={g.enviado} /> },
-    { key: "gen", label: "Generación", className: "tabular-nums", render: (g) => fmtKwh(g.generacionKwh) },
-    { key: "cons", label: "Consumo", className: "tabular-nums", render: (g) => fmtKwh(g.consumoKwh) },
-    { key: "exp", label: "Exportación", className: "tabular-nums", render: (g) => fmtKwh(g.exportacionKwh) },
+    { key: "f_enviado", sortable: true, label: "Enviado", align: "center", cardRole: "hidden", render: (g) => <SiNo v={g.enviado} /> },
+    { key: "gen", sortable: true, label: "Generación", className: "tabular-nums", render: (g) => fmtKwh(g.generacionKwh) },
+    { key: "cons", sortable: true, label: "Consumo", className: "tabular-nums", render: (g) => fmtKwh(g.consumoKwh) },
+    { key: "exp", sortable: true, label: "Exportación", className: "tabular-nums", render: (g) => fmtKwh(g.exportacionKwh) },
     {
       key: "ahorro",
+      sortable: true,
       label: "Ahorro mes",
       cardRole: "highlight",
       className: "tabular-nums",
@@ -441,54 +538,85 @@ export function ReportesFvPanel() {
       {/* Filtros */}
       <div className="space-y-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <FiltroSelect
+          <ToggleFiltro
             label="Alta"
             value={alta}
             onChange={setAlta}
+            todos="todos"
             options={[
-              { value: "todos", label: "Todas" },
-              { value: "alta", label: "Dados de alta" },
+              { value: "alta", label: "De alta" },
               { value: "sin_alta", label: "Sin alta" },
             ]}
           />
-          <FiltroSelect
+          <ToggleFiltro
+            label="Envío de reporte"
+            value={habilitado}
+            onChange={setHabilitado}
+            todos="todos"
+            options={[
+              { value: "si", label: "Habilitados" },
+              { value: "no", label: "Deshabilitados" },
+            ]}
+          />
+          <ToggleFiltro
+            label="Lectura"
+            value={lectura}
+            onChange={setLectura}
+            todos="todos"
+            options={[
+              { value: "completa", label: "Con lectura" },
+              { value: "incompleta", label: "Incompleta" },
+              { value: "sin", label: "Sin lectura" },
+            ]}
+          />
+          <ToggleFiltro
+            label="Cálculo"
+            value={calculo}
+            onChange={setCalculo}
+            todos="todos"
+            options={[
+              { value: "si", label: "Calculados" },
+              { value: "no", label: "Sin calcular" },
+            ]}
+          />
+          <ToggleFiltro
+            label="PDF"
+            value={pdf}
+            onChange={setPdf}
+            todos="todos"
+            options={[
+              { value: "con", label: "Con PDF" },
+              { value: "sin", label: "Sin PDF" },
+            ]}
+          />
+          <ToggleFiltro
+            label="Envío"
+            value={envio}
+            onChange={setEnvio}
+            todos="todos"
+            options={[
+              { value: "enviados", label: "Enviados" },
+              { value: "pendientes", label: "Sin enviar" },
+            ]}
+          />
+          <ToggleFiltro
             label="Origen"
             value={origen}
             onChange={setOrigen}
+            todos="todos"
             options={[
-              { value: "todos", label: "Todos" },
               { value: "GROWATT", label: "Growatt" },
               { value: "MANUAL", label: "Manual" },
             ]}
           />
-          <FiltroSelect
+          <ToggleFiltro
             label="Tipo"
             value={tipo}
             onChange={setTipo}
+            todos="todos"
             options={[
-              { value: "todos", label: "Todos" },
               { value: "residencial", label: "Residencial" },
               { value: "empresa", label: "Empresa" },
-            ]}
-          />
-          <FiltroSelect
-            label="Envío"
-            value={envio}
-            onChange={setEnvio}
-            options={[
-              { value: "todos", label: "Todos" },
-              { value: "enviados", label: "Enviados" },
-              { value: "pendientes", label: "Pendientes" },
-            ]}
-          />
-          <FiltroSelect
-            label="PDF"
-            value={pdf}
-            onChange={setPdf}
-            options={[
-              { value: "todos", label: "Todos" },
-              { value: "con", label: "Con PDF" },
-              { value: "sin", label: "Sin PDF" },
             ]}
           />
           <label className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)]">
@@ -581,6 +709,9 @@ export function ReportesFvPanel() {
               columns={columns}
               data={generadores}
               rowKey={(g) => g.projectId}
+        sortBy={orden?.key}
+        sortOrder={orden?.dir}
+        onSort={ordenarPor}
               onRowClick={(g) => setDetalleId(g.projectId)}
               rowClickableOnDesktop
               stickyHeader
