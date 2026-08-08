@@ -35,7 +35,7 @@ import {
   type FilaHistorico,
   type FilaLectura,
 } from "./lib/planillas.js";
-import { resolverMatch, type Match, type ProyectoCandidato } from "./lib/matching.js";
+import { ALIAS_MANUAL, resolverMatch, type Match, type ProyectoCandidato } from "./lib/matching.js";
 
 // ─── Args ────────────────────────────────────────────────────────────────────
 
@@ -340,8 +340,18 @@ async function main() {
   for (const [plantId, nombre] of todasLasPlantas) {
     let projectId: string | null = null;
     if (nombre && enAllowlist.has(plantId)) {
+      // El nombre de la planta y el del cliente en la planilla no siempre
+      // coinciden: la allowlist puede tener a la titular de la cuenta ("Adriana
+      // Gambaro") y la planilla al titular del suministro ("Daniel Cabrera").
+      // Por eso se busca también por alias, con las mismas equivalencias que ya
+      // usa el matcher de clientes; si no, la planta queda huérfana aunque el
+      // cliente sí haya vinculado.
+      const nombrePlanta = normalizar(nombre);
       const m = matches.get(
-        [...matches.keys()].find((k) => normalizar(k) === normalizar(nombre)) ?? "",
+        [...matches.keys()].find((k) => {
+          const kn = normalizar(k);
+          return kn === nombrePlanta || ALIAS_MANUAL[kn] === nombrePlanta;
+        }) ?? "",
       );
       if (m?.proyecto && !plantasPorProyecto.has(m.proyecto.id)) {
         projectId = m.proyecto.id;
