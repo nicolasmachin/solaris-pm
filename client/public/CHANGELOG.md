@@ -28,6 +28,21 @@
 - Los filtros pasaron de menús desplegables a **botones que se prenden y apagan**, con todas las opciones a la vista: de alta / sin alta, habilitados / deshabilitados, con lectura / incompleta / sin lectura, calculados / sin calcular, con PDF / sin PDF, enviados / sin enviar, Growatt / manual, residencial / empresa.
 - Antes había que abrir cinco menús para entender qué estaba filtrado; ahora se ve de un vistazo.
 
+#### El reporte sale igual aunque el medidor no haya medido todo el mes
+
+- Hasta ahora, si el medidor cubría menos del 90% del mes, el sistema **descartaba** el consumo y la exportación y ese generador quedaba sin reporte hasta que alguien cargara los números a mano. En la práctica eso significaba meses sin mandarle nada al cliente.
+- Ahora **el reporte se genera y se envía igual**, con los datos que sí se midieron y **una nota que lo aclara**: cuántos días registró el medidor de los que tenía el mes, y que por eso el consumo y el ahorro pueden no coincidir con los reales.
+- Si el medidor cubrió **menos de la mitad del mes**, la nota pasa a ser un **aviso destacado**, advirtiendo que los valores son orientativos.
+- La nota no dice si el número quedó por encima o por debajo del real, porque depende de cada caso: si el cliente importa más de lo que inyecta, queda por debajo; si inyecta más de lo que importa, por encima.
+- Cuando el medidor **no reportó ningún día**, no hay nada que calcular y el reporte sigue esperando la carga manual.
+
+#### Filtros del listado de Reportes FV, sin repeticiones
+
+- Se sacó la fila de chips de "Estado": **siete de sus ocho opciones ya estaban** en los filtros de arriba, y además daban resultados confusos —filtrar por "PDF listo" escondía los ya enviados, que también tienen PDF—. Lo único que aportaba, **Bloqueados**, se sumó a un grupo nuevo llamado "Revisar".
+- Cada filtro ahora es una **columna**: la etiqueta arriba y sus opciones una debajo de otra, para leer cada dimensión de un vistazo.
+- "Envío de reporte" pasó a llamarse **"Reporte"** y "Envío" a **"Enviado"**, que se confundían entre sí.
+- Los filtros se combinan entre sí: se puede pedir "de alta **y** sin PDF".
+
 #### Aviso cuando una planta genera pero no inyecta
 
 - El control diario ahora detecta también las plantas que **generan con normalidad pero no están inyectando a la red**, señal de que la inyección quedó limitada en el inversor. Antes esto era invisible: la planta se veía "Funcionando" porque producía, mientras el cliente perdía todos los días el excedente que debería acreditársele.

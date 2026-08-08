@@ -102,13 +102,16 @@ export function derivarMetricas(params: {
   let exportacion = resumirHistorialDiario(muestras, "reverseActiveTodayEnergy");
   const diasConDatos = diasConMuestras(muestras).size;
 
+  // Antes, una cobertura por debajo del mínimo BORRABA importación y
+  // exportación, y el generador se quedaba sin reporte hasta que alguien
+  // cargara los números a mano. En la práctica eso significaba no mandarle nada
+  // al cliente durante meses. Ahora el dato se conserva y se marca como parcial:
+  // vale más un reporte con una aclaración que ningún reporte.
   let motivoDescarte: string | null = null;
   if (diasEsperados > 0 && diasConDatos < Math.round(diasEsperados * coberturaMinima)) {
     motivoDescarte =
       `sólo ${diasConDatos} de ${diasEsperados} días con datos del smart meter ` +
       `(mínimo ${Math.round(coberturaMinima * 100)}%)`;
-    importacion = null;
-    exportacion = null;
   }
 
   // consumo = generación + lo que igual se compró a la red - lo exportado.

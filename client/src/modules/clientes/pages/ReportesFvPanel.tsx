@@ -81,7 +81,7 @@ function ToggleFiltro<T extends string>({
   todos: T;
 }) {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex min-w-[7.5rem] flex-col gap-1">
       <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">
         {label}
       </span>
@@ -93,7 +93,7 @@ function ToggleFiltro<T extends string>({
             type="button"
             aria-pressed={activo}
             onClick={() => onChange(activo ? todos : o.value)}
-            className={`rounded px-2 py-0.5 text-[11px] transition ${
+            className={`rounded px-2 py-0.5 text-left text-[11px] transition ${
               activo
                 ? "bg-[var(--color-accent)] font-medium text-white"
                 : "border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
@@ -169,6 +169,7 @@ export function ReportesFvPanel() {
   const [habilitado, setHabilitado] = useState<"todos" | "si" | "no">("todos");
   const [lectura, setLectura] = useState<"todos" | "completa" | "incompleta" | "sin">("todos");
   const [calculo, setCalculo] = useState<"todos" | "si" | "no">("todos");
+  const [soloBloqueados, setSoloBloqueados] = useState(false);
   const [soloPotenciaEstimada, setSoloPotenciaEstimada] = useState(false);
   const [soloSinDestinatario, setSoloSinDestinatario] = useState(false);
   const [orden, setOrden] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
@@ -257,6 +258,7 @@ export function ReportesFvPanel() {
     else if (calculo === "no") items = items.filter((g) => g.ahorroTotal == null);
     if (pdf === "con") items = items.filter((g) => g.emisionId != null);
     else if (pdf === "sin") items = items.filter((g) => g.emisionId == null);
+    if (soloBloqueados) items = items.filter((g) => g.estado === "BLOQUEADO");
     if (soloPotenciaEstimada) items = items.filter((g) => g.potenciaEstimada);
     if (soloSinDestinatario)
       items = items.filter((g) => g.dadoDeAlta && g.habilitado && !g.tieneDestinatario);
@@ -294,6 +296,7 @@ export function ReportesFvPanel() {
     return items;
   }, [
     orden,
+    soloBloqueados,
     habilitado,
     lectura,
     calculo,
@@ -333,6 +336,7 @@ export function ReportesFvPanel() {
     setSoloPotenciaEstimada(false);
     setSoloSinDestinatario(false);
     setSoloConProblemas(false);
+    setSoloBloqueados(false);
     setHabilitado("todos");
     setLectura("todos");
     setCalculo("todos");
@@ -537,7 +541,7 @@ export function ReportesFvPanel() {
 
       {/* Filtros */}
       <div className="space-y-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
           <ToggleFiltro
             label="Alta"
             value={alta}
@@ -549,7 +553,7 @@ export function ReportesFvPanel() {
             ]}
           />
           <ToggleFiltro
-            label="Envío de reporte"
+            label="Reporte"
             value={habilitado}
             onChange={setHabilitado}
             todos="todos"
@@ -590,7 +594,7 @@ export function ReportesFvPanel() {
             ]}
           />
           <ToggleFiltro
-            label="Envío"
+            label="Enviado"
             value={envio}
             onChange={setEnvio}
             todos="todos"
@@ -619,54 +623,33 @@ export function ReportesFvPanel() {
               { value: "empresa", label: "Empresa" },
             ]}
           />
-          <label className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)]">
-            <input
-              type="checkbox"
-              checked={soloPotenciaEstimada}
-              onChange={(e) => setSoloPotenciaEstimada(e.target.checked)}
-            />
-            Potencia estimada
-          </label>
-          <label className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)]">
-            <input
-              type="checkbox"
-              checked={soloSinDestinatario}
-              onChange={(e) => setSoloSinDestinatario(e.target.checked)}
-            />
-            Sin destinatario
-          </label>
-          <label className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)]">
-            <input
-              type="checkbox"
-              checked={soloConProblemas}
-              onChange={(e) => setSoloConProblemas(e.target.checked)}
-            />
-            Con pendientes
-          </label>
-        </div>
-
-        {/* Chips de estado (multi-selección) */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 font-mono text-[11px] uppercase tracking-wider text-[var(--color-text-muted)]">
-            Estado
-          </span>
-          {ESTADO_ORDER.map((e) => {
-            const activo = estados.has(e);
-            return (
+          <div className="flex min-w-[7.5rem] flex-col gap-1">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">
+              Revisar
+            </span>
+            {(
+              [
+                ["Bloqueados", soloBloqueados, setSoloBloqueados],
+                ["Potencia estimada", soloPotenciaEstimada, setSoloPotenciaEstimada],
+                ["Sin destinatario", soloSinDestinatario, setSoloSinDestinatario],
+                ["Con pendientes", soloConProblemas, setSoloConProblemas],
+              ] as [string, boolean, (v: boolean) => void][]
+            ).map(([label, activo, set]) => (
               <button
-                key={e}
+                key={label}
                 type="button"
-                onClick={() => toggleEstado(e)}
-                className={`rounded px-2 py-0.5 font-mono text-[10px] uppercase transition ${
+                aria-pressed={activo}
+                onClick={() => set(!activo)}
+                className={`rounded px-2 py-0.5 text-left text-[11px] transition ${
                   activo
-                    ? ESTADO_BADGE[e]
-                    : "border border-[var(--color-border)] text-[var(--color-text-muted)] opacity-60 hover:opacity-100"
+                    ? "bg-[var(--color-accent)] font-medium text-white"
+                    : "border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
                 }`}
               >
-                {ESTADO_LABEL[e]}
+                {label}
               </button>
-            );
-          })}
+            ))}
+          </div>
         </div>
 
         <div className="flex items-center justify-between pt-0.5">

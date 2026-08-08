@@ -65,7 +65,20 @@ export async function generarEmision(
     throw notFound("REPORTE_FV_SIN_CALCULO", "No se encontró el cálculo del periodo recién generado");
   }
 
-  const input = construirPdfInput(resultado, contextoDesdeConfig(config));
+  // La cobertura del medidor no está en la configuración sino en la lectura del
+  // mes: se pasa aparte para que el PDF pueda aclarar cuando la medición fue
+  // parcial. Sin esto el cliente recibiría números calculados sobre medio mes
+  // sin ninguna advertencia.
+  const lectura = await prisma.reporteFvLectura.findFirst({
+    where: { projectId: config.projectId, periodo: periodoADate(periodo) },
+    select: { diasConDatos: true, diasEsperados: true },
+  });
+
+  const input = construirPdfInput(resultado, {
+    ...contextoDesdeConfig(config),
+    diasConDatos: lectura?.diasConDatos ?? null,
+    diasEsperados: lectura?.diasEsperados ?? null,
+  });
   const pdf = await generarReporteFvPdf(input);
 
   const version =

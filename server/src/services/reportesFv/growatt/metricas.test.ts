@@ -66,8 +66,11 @@ test("derivarMetricas calcula consumo = generación + importación - exportació
   assert.equal(r.motivoDescarte, null);
 });
 
-test("derivarMetricas descarta el mes si la cobertura no llega al 90%", () => {
-  // 5 días con datos de 30 esperados = 17% < 90% → descarta consumo/exportación.
+test("derivarMetricas conserva los datos aunque la cobertura sea baja, y lo marca", () => {
+  // 5 días de 30 = 17%. Antes se borraban consumo y exportación y el generador
+  // se quedaba sin reporte hasta que alguien los cargara a mano — en la práctica,
+  // meses sin mandarle nada al cliente. Ahora el dato se conserva y el reporte
+  // sale con una nota que aclara que la medición fue parcial.
   const muestras = Array.from({ length: 5 }, (_, i) =>
     muestra(`2026-06-0${i + 1}`, 10, 5),
   );
@@ -78,11 +81,42 @@ test("derivarMetricas descarta el mes si la cobertura no llega al 90%", () => {
     coberturaMinima: 0.9,
   });
   assert.equal(r.diasConDatos, 5);
+  // importación 5×10 = 50, exportación 5×5 = 25 → consumo 500 + 50 − 25.
+  assert.equal(r.consumoKwh, 525);
+  assert.equal(r.exportacionKwh, 25);
+  assert.equal(r.importacionMedidaKwh, 50);
+  // El motivo queda registrado: es lo que dispara la nota del PDF y lo que se
+  // ve en el panel.
+  assert.ok(r.motivoDescarte?.includes("5 de 30"));
+  assert.equal(r.generacionKwh, 500);
+});
+
+test("derivarMetricas no marca nada cuando la cobertura alcanza", () => {
+  const muestras = Array.from({ length: 30 }, (_, i) =>
+    muestra(`2026-06-${String(i + 1).padStart(2, "0")}`, 10, 5),
+  );
+  const r = derivarMetricas({
+    generacionKwh: 500,
+    muestras,
+    diasEsperados: 30,
+    coberturaMinima: 0.9,
+  });
+  assert.equal(r.motivoDescarte, null);
+  assert.equal(r.diasConDatos, 30);
+});
+
+test("sin ninguna muestra del medidor no hay consumo que reportar", () => {
+  // Distinto del caso anterior: acá no es medición parcial, es medición nula.
+  // El reporte no puede salir porque no hay ningún dato de consumo.
+  const r = derivarMetricas({
+    generacionKwh: 500,
+    muestras: [],
+    diasEsperados: 30,
+    coberturaMinima: 0.9,
+  });
   assert.equal(r.consumoKwh, null);
   assert.equal(r.exportacionKwh, null);
-  assert.ok(r.motivoDescarte?.includes("5 de 30"));
-  // La generación se conserva (viene de otra fuente, no del medidor).
-  assert.equal(r.generacionKwh, 500);
+  assert.equal(r.diasConDatos, 0);
 });
 
 test("derivarMetricas deja consumo null si falta generación", () => {

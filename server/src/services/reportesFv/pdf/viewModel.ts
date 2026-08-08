@@ -42,6 +42,9 @@ export interface ContextoPdf {
   potenciaEstimada: boolean;
   /** Día de corte del medidor (1-31), o null si el reporte es mes calendario. */
   diaCorteMedidor?: number | null;
+  /** Días que el smart meter alcanzó a medir, y los que tenía el período. */
+  diasConDatos?: number | null;
+  diasEsperados?: number | null;
 }
 
 /** Contexto del PDF derivado de la config efectiva del generador. */
@@ -94,6 +97,37 @@ function construirNotas(r: ResultadoPeriodo, ctx: ContextoPdf): NotaPdf[] {
         `${fmtDecimal(POTENCIA_CONTRATADA_DEFAULT)} kW. Al confirmarse la potencia real ` +
         `contratada, los importes de este reporte pueden variar.`,
     });
+  }
+
+  // Medición parcial del mes.
+  //
+  // El consumo se calcula como generación + importación − exportación. La
+  // generación viene del inversor y está completa; las otras dos vienen del
+  // medidor y les faltan días. Por eso el desvío puede ir para cualquier lado:
+  // si el cliente importa más de lo que inyecta, el consumo queda por debajo del
+  // real; si inyecta más de lo que importa, por encima. La nota NO afirma una
+  // dirección porque depende de cada caso.
+  const { diasConDatos, diasEsperados } = ctx;
+  if (diasConDatos != null && diasEsperados != null && diasEsperados > 0 && diasConDatos < diasEsperados) {
+    const cobertura = diasConDatos / diasEsperados;
+    const faltantes = diasEsperados - diasConDatos;
+    const base =
+      `El medidor de este servicio registró ${diasConDatos} de los ${diasEsperados} días del ` +
+      `período (faltan ${faltantes}). El consumo y el ahorro de este reporte se calcularon con ` +
+      `esa medición parcial, por lo que pueden no coincidir con los valores reales.`;
+
+    if (cobertura < 0.5) {
+      // Menos de la mitad del mes medido: el número existe pero es endeble, y
+      // el cliente tiene que verlo antes de sacar conclusiones.
+      notas.push({
+        tipo: "alerta",
+        texto:
+          `${base} Al faltar más de la mitad del período, estos valores son ` +
+          `orientativos: tomalos con reserva. Estamos trabajando para normalizar la medición.`,
+      });
+    } else {
+      notas.push({ tipo: "nota", texto: base });
+    }
   }
 
   // Notas dinámicas del motor (ej. alerta de consumo excesivo). El motor usa
