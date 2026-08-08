@@ -33,6 +33,34 @@ objeto `dateAutoFills` según la etapa de destino:
 | `VISITADO` | visita realizada | no |
 | `CERRADO_GANADO` / `CERRADO_PERDIDO` | fecha de cierre | **sí, siempre** |
 
+**Sólo se aplica si la etapa realmente cambia.** Reconfirmar la misma etapa no es
+un hito nuevo: mover un lead de Visitado a Visitado no significa que se lo haya
+visitado hoy otra vez, y estampar la fecha de hoy sobre un hito de hace semanas
+queda peor que el campo vacío.
+
+### Qué significa cada fecha de visita
+
+Son dos cosas distintas y se confunden fácil:
+
+- **Visita agendada**: el día en que se **acordó** la visita con el cliente, no el
+  día en que se va a hacer. Si hoy 8 se coordina para el 9, queda el 8.
+- **Visita realizada**: el día en que efectivamente se visitó.
+
+### El bot de minutas
+
+Cargar la minuta **es** el hito de visita realizada: si hay minuta, la visita se
+hizo. Por eso, al publicar una minuta en un lead, el bot de Telegram
+(`minutas-bot`, repo aparte) hace dos cosas contra la API:
+
+1. `PATCH /api/leads/:id` con `visitCompletedAt` = **la fecha que figura en la
+   minuta**, no la de hoy. La minuta puede subirse días después de la visita.
+2. `PATCH /api/leads/:id/stage` con `VISITADO`, si el lead no está ya ahí.
+
+En ese orden: si la fecha se setea primero, el autocompletado de la etapa no la
+pisa (sólo actúa sobre campos vacíos). Un lead **ya cerrado no se toca**: una
+minuta que llega tarde no lo devuelve a Visitado. Ambos pasos son no bloqueantes
+— si fallan, la minuta igual quedó subida y el bot lo reporta como advertencia.
+
 La edición manual va por `PATCH /api/leads/:id` (no hay endpoint aparte de
 fechas) y acepta `null` para vaciar cualquiera de ellas.
 

@@ -29,7 +29,8 @@ export const LATEST_RELEASE: Release = {
     {
       title: "Fecha de visita realizada, en Ventas",
       items: [
-        'Al mover un cliente potencial a la etapa Visitado, la fecha de "Visita realizada" se completa sola. Antes había que acordarse de cargarla a mano y quedaba vacía, lo que desarmaba los indicadores de cuánto tarda una visita en convertirse en venta.',
+        'Al subir la minuta desde el bot de Telegram, el cliente potencial pasa solo a "Visitado" y queda cargada la fecha de la visita: la que figura en la minuta, no la del día en que se sube.',
+        'Moviendo la etapa a mano también se completa sola. Antes había que acordarse de cargarla y quedaba vacía, lo que desarmaba los indicadores de cuánto tarda una visita en convertirse en venta.',
         'Se puede corregir en cualquier momento desde "Fechas del proceso", y una vez cargada el sistema no la pisa.',
       ],
     },

@@ -6,7 +6,8 @@
 
 #### Fecha de visita realizada, en Ventas
 
-- Al mover un cliente potencial a la etapa **Visitado**, la fecha de "Visita realizada" **se completa sola**. Hasta ahora había que acordarse de cargarla a mano, y en la práctica quedaba vacía: eso desarmaba los indicadores de cuánto tarda una visita en convertirse en venta.
+- **Al subir la minuta desde el bot de Telegram, el cliente potencial pasa solo a "Visitado" y queda cargada la fecha de la visita.** Se usa la fecha que figura en la minuta, no la del día en que se sube: si la visita fue el martes y la minuta se carga el jueves, queda el martes. Un cliente ya cerrado (ganado o perdido) no se toca.
+- Al mover un cliente potencial a la etapa **Visitado** a mano, la fecha de "Visita realizada" también **se completa sola**. Hasta ahora había que acordarse de cargarla, y en la práctica quedaba vacía: eso desarmaba los indicadores de cuánto tarda una visita en convertirse en venta.
 - **Se puede corregir en cualquier momento** desde "Fechas del proceso", en el panel del cliente potencial. Es lo habitual: la visita se hizo el martes y el lead se movió el viernes.
 - Una vez cargada, **el sistema no la pisa**: si sacás el cliente de Visitado y lo volvés a poner, la fecha que escribiste se respeta. Solo se completa sola cuando está vacía.
 
