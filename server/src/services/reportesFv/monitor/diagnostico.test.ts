@@ -134,6 +134,32 @@ test("leerUmbrales toma los valores del entorno y descarta la basura", () => {
   assert.equal(malo.generacionMinimaKwh, UMBRALES_DEFAULT.generacionMinimaKwh);
 });
 
+test("leerUmbrales trata la cadena vacía como no configurada, no como cero", () => {
+  // Regresión real de producción: docker-compose pasa "" cuando el compose
+  // declara ${VAR:-} y el .env no define VAR. Como Number("") es 0, el umbral
+  // de generación quedaba en 0 kWh y una planta muerta (que genera exactamente
+  // 0) pasaba como "funcionando". El monitoreo se volvía ciego en silencio.
+  const vacias = leerUmbrales({
+    FV_MONITOR_KWH_MIN: "",
+    FV_MONITOR_DIAS: "",
+    FV_MONITOR_HORAS_SIN_COMS: "",
+    FV_MONITOR_DIAS_GRACIA: "",
+    FV_MONITOR_DIAS_SIN_DATOS_API: "",
+  } as NodeJS.ProcessEnv);
+  assert.deepEqual(vacias, UMBRALES_DEFAULT);
+  // Sólo espacios es lo mismo que vacío.
+  assert.equal(leerUmbrales({ FV_MONITOR_KWH_MIN: "   " } as NodeJS.ProcessEnv).generacionMinimaKwh, 0.5);
+});
+
+test("una planta que generó exactamente 0 kWh NO puede dar OK", () => {
+  // El caso que se escapó en producción: Growatt devolvió 0.00 kWh para una
+  // planta caída hacía meses y el diagnóstico dijo "Generó 0.0 kWh. OK".
+  const r = diagnosticar(entrada({ historial: serie([12, 10, 0]), generacionKwh: 0 }));
+  assert.notEqual(r.diagnostico, "OK");
+  assert.equal(r.alerta, true);
+  assert.ok(r.diasSinGeneracion >= 1);
+});
+
 // ─── Árbol de decisión ──────────────────────────────────────────────────────
 
 test("planta generando → OK sin alerta", () => {

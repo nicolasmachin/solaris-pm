@@ -7,14 +7,28 @@
 export const CRON_DEFAULT = "0 8 * * *";
 
 /**
+ * Lee una variable numérica tratando la cadena vacía como "no configurada".
+ *
+ * Docker Compose pasa "" cuando el compose declara `${VAR:-}` y el .env no
+ * define VAR. Como `Number("")` es 0, sin este guard un rango que acepte el
+ * cero se queda con el cero en vez de con su default — que fue exactamente el
+ * bug que dejó el umbral de generación en 0 kWh en producción.
+ */
+function envNum(clave: string, def: number, valido: (v: number) => boolean): number {
+  const raw = process.env[clave];
+  if (raw == null || raw.trim() === "") return def;
+  const v = Number(raw);
+  return Number.isFinite(v) && valido(v) ? v : def;
+}
+
+/**
  * Concurrencia entre plantas. Baja a propósito: el spike contra la API real
  * mostró que el rate limit (error_code 10012) aparece mucho antes de lo que
  * decía la documentación, incluso con la pausa de 700 ms entre requests. El
  * cron no tiene apuro — 150 plantas a este ritmo son unos pocos minutos.
  */
 export function concurrencia(): number {
-  const v = Number(process.env.FV_MONITOR_CONCURRENCIA);
-  return Number.isFinite(v) && v >= 1 ? Math.floor(v) : 1;
+  return Math.floor(envNum("FV_MONITOR_CONCURRENCIA", 1, (v) => v >= 1));
 }
 
 /** ¿Está habilitado el cron? */
@@ -50,14 +64,12 @@ export function destinatariosMonitor(): string[] {
  * el problema es del clima o de Growatt, no de 60 clientes a la vez.
  */
 export function pctAlertaMasiva(): number {
-  const v = Number(process.env.FV_MONITOR_ALERTA_MASIVA_PCT);
-  return Number.isFinite(v) && v > 0 && v <= 1 ? v : 0.4;
+  return envNum("FV_MONITOR_ALERTA_MASIVA_PCT", 0.4, (v) => v > 0 && v <= 1);
 }
 
 /** Fracción de plantas que puede fallar antes de dar la corrida por rota. */
 export function pctErrorMasivo(): number {
-  const v = Number(process.env.FV_MONITOR_ERROR_MASIVO_PCT);
-  return Number.isFinite(v) && v > 0 && v <= 1 ? v : 0.3;
+  return envNum("FV_MONITOR_ERROR_MASIVO_PCT", 0.3, (v) => v > 0 && v <= 1);
 }
 
 /**
@@ -66,6 +78,8 @@ export function pctErrorMasivo(): number {
  * 1 = lunes (JS: 0 = domingo).
  */
 export function diaResumenSemanal(): number {
-  const v = Number(process.env.FV_MONITOR_DIGEST_SEMANAL_DOW);
-  return Number.isFinite(v) && v >= 0 && v <= 6 ? v : 1;
+  // Acá el cero es un valor legítimo (domingo), así que el guard de cadena
+  // vacía no es un detalle: sin él, en producción el resumen semanal se
+  // mudaba del lunes al domingo sin que nadie lo pidiera.
+  return envNum("FV_MONITOR_DIGEST_SEMANAL_DOW", 1, (v) => v >= 0 && v <= 6);
 }

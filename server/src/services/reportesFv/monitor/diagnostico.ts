@@ -185,7 +185,15 @@ export function fallaActiva(dispositivos: EstadoDispositivo[]): FallaInversor | 
 
 export function leerUmbrales(env: NodeJS.ProcessEnv = process.env): UmbralesMonitor {
   const num = (clave: string, def: number): number => {
-    const v = Number(env[clave]);
+    // La cadena vacía NO es un cero: es "la variable no está configurada".
+    // Docker Compose pasa "" cuando el compose declara `${VAR:-}` y el .env no
+    // define VAR, y `Number("")` es 0. Sin este guard, en producción el umbral
+    // de generación quedaba en 0 kWh y una planta muerta —que genera
+    // exactamente 0— pasaba como "funcionando": el monitoreo se volvía ciego
+    // sin dar ninguna señal de que algo andaba mal.
+    const raw = env[clave];
+    if (raw == null || String(raw).trim() === "") return def;
+    const v = Number(raw);
     return Number.isFinite(v) && v >= 0 ? v : def;
   };
   return {
