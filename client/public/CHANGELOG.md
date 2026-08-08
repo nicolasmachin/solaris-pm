@@ -28,6 +28,14 @@
 - Los filtros pasaron de menús desplegables a **botones que se prenden y apagan**, con todas las opciones a la vista: de alta / sin alta, habilitados / deshabilitados, con lectura / incompleta / sin lectura, calculados / sin calcular, con PDF / sin PDF, enviados / sin enviar, Growatt / manual, residencial / empresa.
 - Antes había que abrir cinco menús para entender qué estaba filtrado; ahora se ve de un vistazo.
 
+#### El cliente puede cargar sus datos de UTE desde el portal
+
+- En la sección de reportes del portal, ahora se llama **"Mis datos de UTE"** y el cliente puede cargar él mismo tres datos que están en su factura: la **tarifa contratada**, la **potencia contratada en kW** y el **día en que UTE lee su medidor**.
+- Son datos que el cliente tiene a mano y nosotros muchas veces no: sin la potencia, el reporte se calcula con una estimación de 5 kW; sin la tarifa, a los clientes empresa directamente no se les puede calcular.
+- La pantalla aclara que **si no los carga igual recibe su reporte**, con valores de referencia y la aclaración correspondiente.
+- Cada carga queda registrada indicando que la hizo el cliente.
+- El reparto de franjas horarias (punta, llano, valle) **no** lo toca el cliente: es una estimación técnica nuestra, no un dato de su factura.
+
 #### El reporte sale igual aunque el medidor no haya medido todo el mes
 
 - Hasta ahora, si el medidor cubría menos del 90% del mes, el sistema **descartaba** el consumo y la exportación y ese generador quedaba sin reporte hasta que alguien cargara los números a mano. En la práctica eso significaba meses sin mandarle nada al cliente.

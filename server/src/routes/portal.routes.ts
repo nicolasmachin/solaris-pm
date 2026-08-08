@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { Action, AuditAction, AuditEntityType, Module } from "@prisma/client";
+import { Action, AuditAction, AuditEntityType, Module, TarifaUte } from "@prisma/client";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
@@ -19,7 +19,10 @@ import { serializeDate } from "../utils/serialization.js";
 import { contentDisposition } from "../utils/content-disposition.js";
 import { getStoredFilePath } from "../services/file-storage.service.js";
 import { regenerarPdfDesdeSnapshot } from "../services/reportesFv/emision.service.js";
-import { setDiaCorteMedidorCliente } from "../services/reportesFv/config.service.js";
+import {
+  setDatosUteCliente,
+  setDiaCorteMedidorCliente,
+} from "../services/reportesFv/config.service.js";
 import fs from "node:fs";
 
 // ─── Schemas ────────────────────────────────────────────────────────────────
@@ -1121,16 +1124,26 @@ export async function registerPortalRoutes(app: FastifyInstance) {
         where: { project: { deletedAt: null, clients: { some: { userId: user.id } } } },
         select: {
           diaCorteMedidor: true,
+          tarifaContratada: true,
+          potenciaContratadaKw: true,
           project: { select: { id: true, clientName: true } },
         },
         orderBy: { project: { clientName: "asc" } },
       });
       return {
-        generadores: configs.map((c) => ({
-          projectId: c.project.id,
-          projectName: c.project.clientName,
-          diaCorteMedidor: c.diaCorteMedidor,
-        })),
+        generadores: configs.map((c) => {
+          const potencia = Number(c.potenciaContratadaKw);
+          return {
+            projectId: c.project.id,
+            projectName: c.project.clientName,
+            diaCorteMedidor: c.diaCorteMedidor,
+            tarifaContratada: c.tarifaContratada,
+            // Cero en la base significa "no lo sabemos" y el reporte se calcula
+            // con una estimación; hacia el cliente se muestra vacío para que
+            // entienda que falta cargarlo.
+            potenciaContratadaKw: potencia > 0 ? potencia : null,
+          };
+        }),
       };
     },
   );
@@ -1154,6 +1167,32 @@ export async function registerPortalRoutes(app: FastifyInstance) {
 
       const valor = await setDiaCorteMedidorCliente(projectId, diaCorteMedidor, user.id);
       return { diaCorteMedidor: valor };
+    },
+  );
+
+  // Datos de la factura de UTE que el cliente puede cargar él mismo. Los tiene
+  // en su factura y nosotros muchas veces no: hoy, sin la potencia contratada,
+  // el reporte se calcula con una estimación de 5 kW y sale con una nota.
+  app.put(
+    "/client/reportes/:projectId/datos-ute",
+    { preHandler: authorize(Module.PORTAL_CLIENTE, Action.VIEW) },
+    async (request) => {
+      const user = ensureUser(request);
+      const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
+      const body = z
+        .object({
+          tarifaContratada: z.nativeEnum(TarifaUte).nullable(),
+          potenciaContratadaKw: z.number().positive().max(1000).nullable(),
+        })
+        .parse(request.body);
+
+      const owned = await prisma.project.findFirst({
+        where: { id: projectId, deletedAt: null, clients: { some: { userId: user.id } } },
+        select: { id: true },
+      });
+      if (!owned) throw notFound("GENERADOR_NO_ENCONTRADO", "El generador no existe o no es tuyo");
+
+      return setDatosUteCliente(projectId, body, user.id);
     },
   );
 

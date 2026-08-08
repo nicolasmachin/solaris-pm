@@ -9,7 +9,14 @@
 // Esta función es el único lugar donde se resuelven esos fallbacks. Todo lo que
 // necesite la config (cálculo, PDF, panel, envío) pasa por acá.
 
-import { AuditAction, AuditEntityType, type Prisma, type ReporteFvConfig, type Project } from "@prisma/client";
+import {
+  AuditAction,
+  AuditEntityType,
+  type Prisma,
+  type Project,
+  type ReporteFvConfig,
+  type TarifaUte,
+} from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { createAuditEntry } from "../audit.service.js";
@@ -398,6 +405,82 @@ export async function setDiaCorteMedidorCliente(
   });
 
   return valor;
+}
+
+export interface DatosUteCliente {
+  tarifaContratada: TarifaUte | null;
+  potenciaContratadaKw: number | null;
+}
+
+/**
+ * Datos de la factura de UTE cargados por el propio cliente desde el portal.
+ *
+ * Los tiene él en la factura y nosotros muchas veces no: hoy, cuando falta la
+ * potencia contratada el sistema estima 5 kW y el reporte sale con una nota
+ * aclarándolo. Dejar que la cargue el titular es más rápido y más confiable que
+ * perseguir el dato.
+ *
+ * Lo que el cliente NO toca es el reparto de franjas horarias (punta/llano/
+ * valle): eso es una estimación técnica nuestra sobre su perfil de consumo, no
+ * un dato que figure en su factura.
+ */
+export async function setDatosUteCliente(
+  projectId: string,
+  datos: DatosUteCliente,
+  userId: string,
+): Promise<DatosUteCliente> {
+  const potencia =
+    datos.potenciaContratadaKw == null || datos.potenciaContratadaKw <= 0
+      ? null
+      : Math.round(datos.potenciaContratadaKw * 100) / 100;
+
+  const previa = await prisma.reporteFvConfig.findUnique({
+    where: { projectId },
+    select: { tarifaContratada: true, potenciaContratadaKw: true },
+  });
+
+  await prisma.reporteFvConfig.upsert({
+    where: { projectId },
+    update: {
+      tarifaContratada: datos.tarifaContratada,
+      // Una potencia vacía no borra la que ya estaba: si el cliente deja el
+      // campo en blanco es que no la sabe, no que sea cero.
+      ...(potencia != null ? { potenciaContratadaKw: potencia } : {}),
+      actualizadoPorId: userId,
+    },
+    create: {
+      projectId,
+      tarifaContratada: datos.tarifaContratada,
+      potenciaContratadaKw: potencia ?? 0,
+      actualizadoPorId: userId,
+      pctPunta: 0,
+      pctLlano: 0,
+      pctValle: 0,
+    },
+  });
+
+  const cambios: string[] = [];
+  if (previa?.tarifaContratada !== datos.tarifaContratada) {
+    cambios.push(`tarifa ${datos.tarifaContratada ?? "sin especificar"}`);
+  }
+  if (potencia != null && Number(previa?.potenciaContratadaKw ?? 0) !== potencia) {
+    cambios.push(`potencia contratada ${potencia} kW`);
+  }
+  if (cambios.length > 0) {
+    await createAuditEntry({
+      entityType: AuditEntityType.reporte_fv_config,
+      entityId: projectId,
+      projectId,
+      userId,
+      action: AuditAction.updated,
+      description: `El cliente cargó sus datos de UTE: ${cambios.join(", ")}`,
+    });
+  }
+
+  return {
+    tarifaContratada: datos.tarifaContratada,
+    potenciaContratadaKw: potencia ?? (previa ? Number(previa.potenciaContratadaKw) || null : null),
+  };
 }
 
 /** Tira si la config no alcanza para calcular los números. */

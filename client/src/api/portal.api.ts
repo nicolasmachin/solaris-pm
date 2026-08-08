@@ -217,10 +217,14 @@ export async function getPortalEnergiaDiaria(
   return data.generadores;
 }
 
+export type PortalTarifaUte = "SIMPLE" | "DOBLE" | "TRIPLE" | "ZAFRAL";
+
 export interface PortalDiaCorteRow {
   projectId: string;
   projectName: string;
   diaCorteMedidor: number | null;
+  tarifaContratada: PortalTarifaUte | null;
+  potenciaContratadaKw: number | null;
 }
 
 export async function getPortalDiaCorte(): Promise<PortalDiaCorteRow[]> {
@@ -228,6 +232,18 @@ export async function getPortalDiaCorte(): Promise<PortalDiaCorteRow[]> {
     "/api/client/reportes/dia-corte",
   );
   return data.generadores;
+}
+
+/** Datos que el cliente lee de su factura de UTE y carga él mismo. */
+export async function setPortalDatosUte(
+  projectId: string,
+  datos: { tarifaContratada: PortalTarifaUte | null; potenciaContratadaKw: number | null },
+): Promise<{ tarifaContratada: PortalTarifaUte | null; potenciaContratadaKw: number | null }> {
+  const { data } = await apiClient.put<{
+    tarifaContratada: PortalTarifaUte | null;
+    potenciaContratadaKw: number | null;
+  }>(`/api/client/reportes/${projectId}/datos-ute`, datos);
+  return data;
 }
 
 export async function setPortalDiaCorte(

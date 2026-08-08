@@ -7,6 +7,8 @@ import {
   getPortalReportes,
   portalReportePdfUrl,
   getPortalDiaCorte,
+  setPortalDatosUte,
+  type PortalTarifaUte,
   setPortalDiaCorte,
   type PortalReporteRow,
 } from "../api/portal.api";
@@ -27,39 +29,88 @@ function mesEs(periodo: string): string {
 const fmtPesos = (v: number | null) =>
   v == null ? null : `$${new Intl.NumberFormat("es-UY", { maximumFractionDigits: 0 }).format(v)}`;
 
-/** Panel donde el cliente alinea el reporte a su ciclo de facturación de UTE. */
-function DiaCorteSection() {
+const TARIFAS: Array<{ value: PortalTarifaUte; label: string; ayuda: string }> = [
+  { value: "SIMPLE", label: "Simple", ayuda: "Un solo precio todo el día" },
+  { value: "DOBLE", label: "Doble horario", ayuda: "Punta y fuera de punta" },
+  { value: "TRIPLE", label: "Triple horario", ayuda: "Punta, llano y valle" },
+  { value: "ZAFRAL", label: "Zafral", ayuda: "Tarifa de temporada" },
+];
+
+/**
+ * Datos que el cliente tiene en su factura de UTE y nosotros muchas veces no.
+ *
+ * Sin la potencia contratada el reporte se calcula con una estimación de 5 kW y
+ * sale con una nota aclarándolo; sin la tarifa, a las empresas directamente no
+ * se les puede calcular. Que los cargue el titular es más rápido y más confiable
+ * que perseguir el dato.
+ */
+function MisDatosUteSection() {
   const qc = useQueryClient();
   const { data: generadores = [] } = useQuery({
     queryKey: ["portal-dia-corte"],
     queryFn: getPortalDiaCorte,
   });
-  const [editando, setEditando] = useState<Record<string, string>>({});
+  const [corte, setCorte] = useState<Record<string, string>>({});
+  const [potencia, setPotencia] = useState<Record<string, string>>({});
 
-  const mutation = useMutation({
+  const invalidar = () => qc.invalidateQueries({ queryKey: ["portal-dia-corte"] });
+
+  const mutCorte = useMutation({
     mutationFn: ({ projectId, valor }: { projectId: string; valor: number | null }) =>
       setPortalDiaCorte(projectId, valor),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["portal-dia-corte"] });
+      invalidar();
       toast.success("Día de corte actualizado");
     },
     onError: () => toast.error("No se pudo guardar el día de corte"),
   });
 
+  const mutDatos = useMutation({
+    mutationFn: ({
+      projectId,
+      tarifaContratada,
+      potenciaContratadaKw,
+    }: {
+      projectId: string;
+      tarifaContratada: PortalTarifaUte | null;
+      potenciaContratadaKw: number | null;
+    }) => setPortalDatosUte(projectId, { tarifaContratada, potenciaContratadaKw }),
+    onSuccess: () => {
+      invalidar();
+      toast.success("Datos actualizados");
+    },
+    onError: () => toast.error("No se pudieron guardar los datos"),
+  });
+
   if (generadores.length === 0) return null;
 
-  const guardar = (projectId: string) => {
-    const raw = (editando[projectId] ?? "").trim();
-    if (raw === "") {
-      mutation.mutate({ projectId, valor: null });
-      return;
-    }
+  const guardarCorte = (projectId: string, actual: number | null) => {
+    const raw = (corte[projectId] ?? actual?.toString() ?? "").trim();
+    if (raw === "") return mutCorte.mutate({ projectId, valor: null });
     const n = Number(raw);
     if (!Number.isInteger(n) || n < 1 || n > 31) {
       toast.error("Ingresá un día entre 1 y 31");
       return;
     }
-    mutation.mutate({ projectId, valor: n });
+    mutCorte.mutate({ projectId, valor: n });
+  };
+
+  const guardarPotencia = (
+    projectId: string,
+    actual: number | null,
+    tarifa: PortalTarifaUte | null,
+  ) => {
+    const raw = (potencia[projectId] ?? actual?.toString() ?? "").trim();
+    if (raw !== "") {
+      const n = Number(raw.replace(",", "."));
+      if (!Number.isFinite(n) || n <= 0) {
+        toast.error("Ingresá la potencia en kW, por ejemplo 5.5");
+        return;
+      }
+      mutDatos.mutate({ projectId, tarifaContratada: tarifa, potenciaContratadaKw: n });
+      return;
+    }
+    mutDatos.mutate({ projectId, tarifaContratada: tarifa, potenciaContratadaKw: null });
   };
 
   return (
@@ -67,45 +118,107 @@ function DiaCorteSection() {
       <div className="mb-1 flex items-center gap-2">
         <CalendarClock size={16} className="text-[var(--color-accent)]" />
         <h2 className="font-display font-semibold text-[var(--color-text-primary)]">
-          Alineá tus reportes con tu factura de UTE
+          Mis datos de UTE
         </h2>
       </div>
-      <p className="mb-3 text-sm text-[var(--color-text-muted)]">
-        Por defecto el reporte cubre el mes calendario (del 1 al último día). Si cargás el día en que UTE lee
-        tu medidor (lo ves en tu factura), a partir del próximo reporte usaremos tu ciclo de facturación para
-        que los números se parezcan más a lo que pagás. Dejalo vacío para volver al mes calendario.
+      <p className="mb-4 text-sm text-[var(--color-text-muted)]">
+        Estos tres datos están en tu factura de UTE y hacen que tu reporte sea más preciso. Si no los
+        cargás, igual recibís el reporte: usamos valores de referencia y te lo aclaramos ahí mismo.
       </p>
-      <div className="space-y-2">
-        {generadores.map((g) => {
-          const valorActual = editando[g.projectId] ?? (g.diaCorteMedidor?.toString() ?? "");
-          return (
-            <div
-              key={g.projectId}
-              className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--color-border)] p-2"
-            >
-              <span className="flex-1 text-sm text-[var(--color-text-secondary)]">{g.projectName}</span>
-              <input
-                type="number"
-                min={1}
-                max={31}
-                placeholder="Mes calendario"
-                value={valorActual}
-                onChange={(e) =>
-                  setEditando((s) => ({ ...s, [g.projectId]: e.target.value }))
-                }
-                className="w-36 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1 text-sm text-[var(--color-text-primary)]"
-              />
-              <button
-                type="button"
-                disabled={mutation.isPending}
-                onClick={() => guardar(g.projectId)}
-                className="rounded-lg bg-[var(--color-accent)] px-3 py-1 text-sm font-medium text-white disabled:opacity-60"
-              >
-                Guardar
-              </button>
+
+      <div className="space-y-4">
+        {generadores.map((g) => (
+          <div key={g.projectId} className="rounded-lg border border-[var(--color-border)] p-3">
+            {generadores.length > 1 && (
+              <p className="mb-2 text-sm font-medium text-[var(--color-text-primary)]">
+                {g.projectName}
+              </p>
+            )}
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="text-sm">
+                <span className="mb-1 block text-[var(--color-text-secondary)]">
+                  Tarifa contratada
+                </span>
+                <select
+                  value={g.tarifaContratada ?? ""}
+                  onChange={(e) =>
+                    mutDatos.mutate({
+                      projectId: g.projectId,
+                      tarifaContratada: (e.target.value || null) as PortalTarifaUte | null,
+                      potenciaContratadaKw: g.potenciaContratadaKw,
+                    })
+                  }
+                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+                >
+                  <option value="">No la sé</option>
+                  {TARIFAS.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label} — {t.ayuda}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="text-sm">
+                <span className="mb-1 block text-[var(--color-text-secondary)]">
+                  Potencia contratada (kW)
+                </span>
+                <div className="flex gap-2">
+                  <input
+                    inputMode="decimal"
+                    placeholder="Ej: 5.5"
+                    value={potencia[g.projectId] ?? g.potenciaContratadaKw?.toString() ?? ""}
+                    onChange={(e) =>
+                      setPotencia((s) => ({ ...s, [g.projectId]: e.target.value }))
+                    }
+                    className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm text-[var(--color-text-primary)]"
+                  />
+                  <button
+                    type="button"
+                    disabled={mutDatos.isPending}
+                    onClick={() =>
+                      guardarPotencia(g.projectId, g.potenciaContratadaKw, g.tarifaContratada)
+                    }
+                    className="shrink-0 rounded-lg bg-[var(--color-accent)] px-3 py-1 text-sm font-medium text-white disabled:opacity-60"
+                  >
+                    Guardar
+                  </button>
+                </div>
+              </label>
+
+              <label className="text-sm sm:col-span-2">
+                <span className="mb-1 block text-[var(--color-text-secondary)]">
+                  Día en que UTE lee tu medidor
+                </span>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={31}
+                    placeholder="Mes calendario"
+                    value={corte[g.projectId] ?? g.diaCorteMedidor?.toString() ?? ""}
+                    onChange={(e) => setCorte((s) => ({ ...s, [g.projectId]: e.target.value }))}
+                    className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] sm:w-48"
+                  />
+                  <button
+                    type="button"
+                    disabled={mutCorte.isPending}
+                    onClick={() => guardarCorte(g.projectId, g.diaCorteMedidor)}
+                    className="shrink-0 rounded-lg bg-[var(--color-accent)] px-3 py-1 text-sm font-medium text-white disabled:opacity-60"
+                  >
+                    Guardar
+                  </button>
+                </div>
+                <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+                  Si lo cargás, el reporte va a cubrir tu ciclo de facturación en vez del mes
+                  calendario, y los números se van a parecer más a lo que pagás. Dejalo vacío para
+                  volver al mes calendario.
+                </span>
+              </label>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -204,7 +317,7 @@ export function PortalReportes() {
         ))
       )}
 
-      {reportes.length > 0 && <DiaCorteSection />}
+      {reportes.length > 0 && <MisDatosUteSection />}
 
       {/* Visor del PDF */}
       {abierto && (
