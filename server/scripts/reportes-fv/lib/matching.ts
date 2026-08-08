@@ -27,6 +27,32 @@ export interface ProyectoCandidato {
   clientEmail: string | null;
   importedFromCsv: boolean;
   capacityKwp: number | null;
+  /** Si tiene valor, este proyecto es una ampliación de otro. */
+  parentProjectId?: string | null;
+}
+
+/**
+ * Dos proyectos con el mismo nombre no siempre son un problema de datos: lo
+ * habitual es que el segundo sea una **ampliación** del primero (código
+ * `-A1`, `parentProjectId` apuntando al original). Físicamente es UNA sola
+ * instalación con UNA sola planta Growatt, así que el reporte va al proyecto
+ * original y la ambigüedad es aparente.
+ *
+ * Devuelve la raíz si todos los candidatos son el mismo árbol; null si son
+ * clientes realmente distintos, que es cuando hay que mirarlo a mano.
+ */
+export function resolverAmpliaciones(
+  candidatos: ProyectoCandidato[],
+): ProyectoCandidato | null {
+  if (candidatos.length < 2) return null;
+  const raices = candidatos.filter((p) => !p.parentProjectId);
+  if (raices.length !== 1) return null;
+  const raiz = raices[0];
+  // Todos los demás tienen que colgar de esa raíz. El árbol de ampliaciones es
+  // plano (una ampliación de una ampliación cuelga de la misma raíz), así que
+  // alcanza con comparar el padre directo.
+  const resto = candidatos.filter((p) => p.id !== raiz.id);
+  return resto.every((p) => p.parentProjectId === raiz.id) ? raiz : null;
 }
 
 export interface Match {
@@ -146,6 +172,10 @@ export function resolverMatch(
     const cs = encontrar((p) => normalizar(p.clientName) === alias);
     if (cs.length === 1) return { ...base, proyecto: cs[0], metodo: "alias_manual" };
     if (cs.length > 1) {
+      const raiz = resolverAmpliaciones(cs);
+      if (raiz) {
+        return { ...base, proyecto: raiz, metodo: "alias_manual", nota: "el resto son ampliaciones" };
+      }
       return { ...base, proyecto: null, metodo: null, ambiguo: cs, nota: `alias "${alias}" es ambiguo` };
     }
   }
@@ -154,8 +184,18 @@ export function resolverMatch(
   const exactos = encontrar((p) => normalizar(p.clientName) === norm);
   if (exactos.length === 1) return { ...base, proyecto: exactos[0], metodo: "nombre_exacto" };
 
-  // 3b. Homónimos: el email desempata (es el caso del "Santiago Pons" duplicado).
+  // 3b. Homónimos. Antes de darlos por ambiguos: si son el mismo cliente con una
+  // ampliación, es una sola instalación y el reporte va al proyecto original.
   if (exactos.length > 1) {
+    const raiz = resolverAmpliaciones(exactos);
+    if (raiz) {
+      return {
+        ...base,
+        proyecto: raiz,
+        metodo: "nombre_exacto",
+        nota: `${exactos.length - 1} ampliación(es) del mismo generador`,
+      };
+    }
     if (entrada.email) {
       const porEmail = exactos.filter(
         (p) => p.clientEmail && p.clientEmail.toLowerCase() === entrada.email!.toLowerCase(),

@@ -223,7 +223,7 @@ async function main() {
   const proyectos: ProyectoCandidato[] = (
     await prisma.project.findMany({
       where: { deletedAt: null },
-      select: { id: true, code: true, clientName: true, clientEmail: true, importedFromCsv: true, capacityKwp: true },
+      select: { id: true, code: true, clientName: true, clientEmail: true, importedFromCsv: true, capacityKwp: true, parentProjectId: true },
     })
   ).map((p) => ({ ...p, capacityKwp: p.capacityKwp == null ? null : Number(p.capacityKwp) }));
   console.log(`  ${proyectos.length} proyectos en la base`);
@@ -695,7 +695,7 @@ async function crearGeneradorLiviano(fila: FilaConstantes, userId: string): Prom
   // reutiliza en vez de crear un GEN- duplicado.
   const yaExiste = await prisma.project.findFirst({
     where: { deletedAt: null, importedFromCsv: true, clientName: fila.cliente },
-    select: { id: true, code: true, clientName: true, clientEmail: true, importedFromCsv: true, capacityKwp: true },
+    select: { id: true, code: true, clientName: true, clientEmail: true, importedFromCsv: true, capacityKwp: true, parentProjectId: true },
   });
   if (yaExiste) {
     return { ...yaExiste, capacityKwp: yaExiste.capacityKwp == null ? null : Number(yaExiste.capacityKwp) };
@@ -731,7 +731,7 @@ async function crearGeneradorLiviano(fila: FilaConstantes, userId: string): Prom
       postHabilitacionFechaAproximada: true,
       createdById: userId,
     },
-    select: { id: true, code: true, clientName: true, clientEmail: true, importedFromCsv: true, capacityKwp: true },
+    select: { id: true, code: true, clientName: true, clientEmail: true, importedFromCsv: true, capacityKwp: true, parentProjectId: true },
   });
 
   await createAuditEntry({
