@@ -365,6 +365,24 @@ async function main() {
         },
         update: { name: nombre ?? `Planta ${plantId}`, ultimaVezEn: new Date() },
       });
+
+      // El `update` de arriba NO toca projectId a propósito: una vinculación
+      // hecha a mano desde la UI no se pisa. Pero una planta que quedó SIN
+      // vincular (porque en una corrida anterior el match era ambiguo) sí hay
+      // que completarla, o el script deja de ser idempotente justo para lo que
+      // se lo vuelve a correr.
+      if (projectId) {
+        const ocupada = await prisma.growattPlant.findFirst({
+          where: { projectId, plantId: { not: BigInt(plantId) } },
+          select: { plantId: true },
+        });
+        if (!ocupada) {
+          await prisma.growattPlant.updateMany({
+            where: { plantId: BigInt(plantId), projectId: null },
+            data: { projectId, vinculadaPorId: admin.id, vinculadaEn: new Date() },
+          });
+        }
+      }
     }
   }
   console.log(`  ${todasLasPlantas.size} plantas conocidas · ${enAllowlist.size} en la allowlist · ${c.ok(`${plantasVinculadas} vinculadas a un proyecto`)}`);
