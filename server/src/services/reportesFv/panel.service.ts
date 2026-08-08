@@ -9,7 +9,13 @@
 import type { Prisma } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
-import { dateAPeriodo, type Periodo, periodoADate, periodoMesAnterior } from "./periodo.js";
+import {
+  dateAPeriodo,
+  type Periodo,
+  periodoADate,
+  periodoMesAnterior,
+  sumarMeses,
+} from "./periodo.js";
 import { resolverConfigEfectiva, SELECT_PROYECTO_CONFIG } from "./config.service.js";
 
 /** Estado de un generador para un periodo. Ordenados de "peor" a "listo". */
@@ -339,13 +345,32 @@ export async function getDetalleGenerador(projectId: string) {
  * todavía vacío). Si no hay ninguno, se ofrece el mes anterior al actual para no
  * dejar el selector vacío.
  */
+/**
+ * Meses que ofrece el selector del panel.
+ *
+ * Incluye los que ya tienen lecturas MÁS los últimos meses aunque estén vacíos.
+ * Listar sólo los que tienen datos parecía razonable pero dejaba un círculo
+ * vicioso: para traer los datos de un mes hay que seleccionarlo, y no se podía
+ * seleccionar hasta que tuviera datos. En la práctica el mes en curso nunca
+ * aparecía y no había forma de arrancar el mes desde la pantalla.
+ */
 export async function periodosConDatos(): Promise<Periodo[]> {
   const filas = await prisma.reporteFvLectura.findMany({
     distinct: ["periodo"],
     select: { periodo: true },
     orderBy: { periodo: "desc" },
   });
-  const periodos = filas.map((f) => dateAPeriodo(f.periodo));
-  if (periodos.length === 0) periodos.push(periodoMesAnterior());
-  return periodos;
+
+  const periodos = new Set(filas.map((f) => dateAPeriodo(f.periodo)));
+
+  // Los últimos 12 meses cerrados, siempre disponibles para poder ingerirlos.
+  // No se ofrece el mes en curso: todavía no terminó y su reporte no tiene
+  // sentido hasta que cierre.
+  let mes = periodoMesAnterior();
+  for (let i = 0; i < 12; i++) {
+    periodos.add(mes);
+    mes = sumarMeses(mes, -1);
+  }
+
+  return [...periodos].sort().reverse();
 }

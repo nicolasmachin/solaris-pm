@@ -156,12 +156,20 @@ export function ReportesFvPanel() {
     };
   }, [ingestaId, qc]);
 
-  async function iniciarIngesta() {
+  // Por defecto se saltean los generadores que ya tienen la lectura completa del
+  // mes: no tiene sentido volver a preguntarle a Growatt algo que ya está, y el
+  // rate limit de su API es ajustado. Con `force` se re-consulta todo, que es lo
+  // que hace falta cuando se sospecha que un dato quedó mal.
+  async function iniciarIngesta(force = false) {
     try {
-      const { ingestaId: id } = await dispararIngesta(periodoActivo);
+      const { ingestaId: id } = await dispararIngesta(periodoActivo, { force });
       setIngestaId(id);
       setIngestaProgreso("iniciando…");
-      toast.success("Ingesta iniciada — trayendo datos de Growatt");
+      toast.success(
+        force
+          ? "Trayendo todo de nuevo desde Growatt"
+          : "Trayendo de Growatt lo que falta del mes",
+      );
     } catch (e: any) {
       toast.error(e?.response?.data?.message ?? "No se pudo iniciar la ingesta");
     }
@@ -369,14 +377,32 @@ export function ReportesFvPanel() {
             <button
               type="button"
               disabled={Boolean(ingestaId)}
-              onClick={iniciarIngesta}
+              onClick={() => iniciarIngesta(false)}
+              title="Trae de Growatt sólo los generadores a los que les falta algún dato del mes"
               className="flex items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
             >
               <Download size={14} /> Traer datos de Growatt
             </button>
+            <button
+              type="button"
+              disabled={Boolean(ingestaId)}
+              onClick={() => iniciarIngesta(true)}
+              title="Vuelve a consultar TODOS los generadores, incluso los que ya tienen la lectura completa. Tarda bastante más."
+              className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] disabled:opacity-50"
+            >
+              Traer todo de nuevo
+            </button>
           </div>
         )}
       </div>
+
+      {/* El salteo de los ya completos es deliberado, pero invisible: sin este
+          aviso, "trajo 14 de 57" parece un error y no una optimización. */}
+      <p className="text-[11px] text-[var(--color-text-muted)]">
+        "Traer datos de Growatt" consulta sólo los generadores a los que les falta algún dato del mes
+        elegido; los que ya están completos se saltean para no gastar consultas de más. Si necesitás
+        rehacer un mes entero, usá "Traer todo de nuevo".
+      </p>
 
       {/* Filtros */}
       <div className="space-y-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3">

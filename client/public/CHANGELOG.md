@@ -18,6 +18,12 @@
 - Está disponible tanto en **Reportes FV** como en la pestaña **Monitoreo**.
 - Se sumaron capítulos nuevos: el control diario de las plantas —qué significa cada estado y cómo gestionar un problema—, la generación día a día que ve el cliente, y cómo mirar el portal tal como lo ve él.
 
+#### Arreglos en Reportes FV
+
+- **El selector de mes ahora muestra los últimos 12 meses**, tengan datos o no. Antes solo listaba los meses que ya tenían información cargada, así que un mes nuevo nunca aparecía y no había forma de traerlo: para poder traer los datos de julio, julio ya tenía que tener datos.
+- Al traer datos de Growatt, la pantalla **aclara que solo consulta los generadores a los que les falta algo** del mes elegido. Los que ya están completos se saltean para no gastar consultas de más, y antes eso parecía un error ("trajo 14 de 57").
+- Botón nuevo **"Traer todo de nuevo"** para rehacer un mes entero, incluidos los generadores que ya tenían la lectura completa.
+
 #### Plantas nuevas de Growatt
 
 - El sistema ahora **busca plantas nuevas todos los días** por su cuenta, sin que haya que apretar ningún botón.
