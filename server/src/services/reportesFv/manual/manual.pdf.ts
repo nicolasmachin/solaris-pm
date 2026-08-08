@@ -7,6 +7,12 @@ import { marked } from "marked";
 import { renderHtmlToPdf } from "../../efpPdf/v2/pdfRenderer.js";
 import { LOGO_VOLTIA_DATA_URI } from "../pdf/logo.js";
 import { MANUAL_ACTUALIZADO, MANUAL_CAMBIOS, MANUAL_MARKDOWN, MANUAL_VERSION } from "./manual.content.js";
+import {
+  OPERACION_ACTUALIZADO,
+  OPERACION_CAMBIOS,
+  OPERACION_MARKDOWN,
+  OPERACION_VERSION,
+} from "./operacion.content.js";
 
 marked.setOptions({ gfm: true, breaks: false });
 
@@ -70,4 +76,40 @@ export async function generarManualPdf(): Promise<Buffer> {
   });
 }
 
+/**
+ * Guía de operación mensual: el paso a paso que se sigue una vez por mes.
+ *
+ * Documento aparte del manual de uso a propósito. Uno explica cómo funciona la
+ * herramienta; el otro es la receta de qué apretar hoy. Mezclarlos obliga a
+ * buscar cinco pasos entre treinta páginas.
+ */
+export async function generarOperacionPdf(): Promise<Buffer> {
+  const contenido = marked.parse(OPERACION_MARKDOWN, { async: false }) as string;
+  const cambios = OPERACION_CAMBIOS.map(
+    (c) =>
+      `<div class="rel"><div class="rel-head">v${esc(c.version)} · ${esc(c.fecha)}</div>` +
+      `<ul>${c.cambios.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>`,
+  ).join("");
+
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
+<title>Operación mensual — Reportes Fotovoltaicos</title><style>${ESTILOS}</style></head>
+<body>
+  <div class="cover">
+    <img src="${LOGO_VOLTIA_DATA_URI}" alt="Voltia">
+    <h1>Reportes Fotovoltaicos</h1>
+    <div class="sub">Paso a paso de cada mes</div>
+    <div class="ver">Versión ${OPERACION_VERSION} · ${OPERACION_ACTUALIZADO}</div>
+  </div>
+  ${contenido}
+  <div class="changelog"><h2>Historial de versiones</h2>${cambios}</div>
+  <div class="footer">Voltia · Operación mensual v${OPERACION_VERSION} · voltia.com.uy</div>
+</body></html>`;
+
+  return renderHtmlToPdf(html, {
+    displayHeaderFooter: false,
+    margin: { top: "0", right: "0", bottom: "0", left: "0" },
+  });
+}
+
 export { MANUAL_VERSION, MANUAL_ACTUALIZADO } from "./manual.content.js";
+export { OPERACION_VERSION, OPERACION_ACTUALIZADO } from "./operacion.content.js";

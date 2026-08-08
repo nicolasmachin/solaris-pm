@@ -37,6 +37,7 @@ export const LATEST_RELEASE: Release = {
     {
       title: "Manual de la herramienta de reportes",
       items: [
+        'Documento nuevo "Paso a paso mensual", con su propio botón: qué apretar cada mes para emitir y enviar los reportes, y cómo activar un generador que está apagado.',
         'El botón "Manual de uso" ahora abre el manual en pantalla en vez de descargarlo, con la descarga adentro. Está en Reportes FV y en Monitoreo.',
         "Se sumaron capítulos sobre el control diario de las plantas, la generación día a día del cliente y cómo mirar el portal como lo ve él.",
       ],

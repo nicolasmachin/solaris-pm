@@ -387,6 +387,17 @@ export async function getManualInfo(): Promise<{ version: string; actualizado: s
   return data;
 }
 
+export async function getOperacionInfo(): Promise<{ version: string; actualizado: string }> {
+  const { data } = await apiClient.get<{ version: string; actualizado: string }>("/api/reportes-fv/operacion");
+  return data;
+}
+
+/** URL absoluta del PDF de la guía de operación mensual. */
+export function operacionPdfUrl(): string {
+  const base = apiClient.defaults.baseURL ?? "";
+  return `${base}/api/reportes-fv/operacion/pdf`;
+}
+
 /** URL absoluta del PDF del manual (para descarga con auth). */
 export function manualPdfUrl(): string {
   const base = apiClient.defaults.baseURL ?? "";

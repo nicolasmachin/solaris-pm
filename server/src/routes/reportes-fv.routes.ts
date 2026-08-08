@@ -49,7 +49,14 @@ import { leerGeneracionDiaria } from "../services/reportesFv/monitor/generacion-
 import { esDiaValido } from "../services/reportesFv/monitor/dias.js";
 import { createAuditEntry } from "../services/audit.service.js";
 import { AuditAction, AuditEntityType } from "@prisma/client";
-import { generarManualPdf, MANUAL_ACTUALIZADO, MANUAL_VERSION } from "../services/reportesFv/manual/manual.pdf.js";
+import {
+  generarManualPdf,
+  generarOperacionPdf,
+  MANUAL_ACTUALIZADO,
+  MANUAL_VERSION,
+  OPERACION_ACTUALIZADO,
+  OPERACION_VERSION,
+} from "../services/reportesFv/manual/manual.pdf.js";
 
 const periodoSchema = z
   .string()
@@ -192,6 +199,28 @@ export async function registerReportesFvRoutes(app: FastifyInstance) {
       reply.header(
         "Content-Disposition",
         contentDisposition("inline", `manual-reportes-fv-v${MANUAL_VERSION}.pdf`),
+      );
+      return reply.send(pdf);
+    },
+  );
+
+  // Guía de operación mensual: el paso a paso de qué apretar cada mes. Va
+  // aparte del manual porque se consulta en otro momento y con otra urgencia.
+  app.get(
+    "/reportes-fv/operacion",
+    { preHandler: authorize(EXP, Action.VIEW) },
+    async () => ({ version: OPERACION_VERSION, actualizado: OPERACION_ACTUALIZADO }),
+  );
+
+  app.get(
+    "/reportes-fv/operacion/pdf",
+    { preHandler: authorize(EXP, Action.VIEW) },
+    async (_request, reply) => {
+      const pdf = await generarOperacionPdf();
+      reply.header("Content-Type", "application/pdf");
+      reply.header(
+        "Content-Disposition",
+        contentDisposition("inline", `operacion-mensual-reportes-fv-v${OPERACION_VERSION}.pdf`),
       );
       return reply.send(pdf);
     },

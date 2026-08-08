@@ -13,7 +13,8 @@
 
 #### Manual de la herramienta de reportes
 
-- El botón **"Manual de uso"** ahora abre el manual **en pantalla** en vez de descargarlo directo. Se lee ahí mismo y, si lo querés guardar, el botón de descarga está dentro.
+- Hay un documento nuevo, **"Paso a paso mensual"**, con su propio botón al lado del manual: la receta de qué apretar cada mes para emitir y enviar los reportes, qué hace el sistema solo y en qué momento, cómo resolver los generadores que quedan incompletos, y **cómo activar uno que está apagado**.
+- El botón **"Manual de uso"** ahora abre el manual **en pantalla** en vez de descargarlo directo. Se lee ahí mismo y, si lo querés guardar, el botón de descarga está dentro. Lo mismo el paso a paso.
 - Está disponible tanto en **Reportes FV** como en la pestaña **Monitoreo**.
 - Se sumaron capítulos nuevos: el control diario de las plantas —qué significa cada estado y cómo gestionar un problema—, la generación día a día que ve el cliente, y cómo mirar el portal tal como lo ve él.
 

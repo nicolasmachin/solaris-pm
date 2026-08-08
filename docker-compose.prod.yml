@@ -55,6 +55,10 @@ services:
       # fotovoltaicos y el monitoreo diario de plantas fallan con
       # GROWATT_NOT_CONFIGURED en cada planta.
       GROWATT_API_TOKEN: ${GROWATT_API_TOKEN:-}
+      # Cuenta propia de Growatt. El token alcanza también plantas de otra
+      # empresa instaladora (87 de las 152 visibles); con esto sólo se traen y
+      # se guardan las nuestras, y no se gastan llamadas en las ajenas.
+      GROWATT_USER_ID: ${GROWATT_USER_ID:-}
       GROWATT_API_BASE: ${GROWATT_API_BASE:-}
       REPORTES_FV_GROWATT_PAUSA_MS: ${REPORTES_FV_GROWATT_PAUSA_MS:-}
       REPORTES_FV_GROWATT_CONCURRENCIA: ${REPORTES_FV_GROWATT_CONCURRENCIA:-}
