@@ -18,6 +18,10 @@
 - Está disponible tanto en **Reportes FV** como en la pestaña **Monitoreo**.
 - Se sumaron capítulos nuevos: el control diario de las plantas —qué significa cada estado y cómo gestionar un problema—, la generación día a día que ve el cliente, y cómo mirar el portal tal como lo ve él.
 
+#### Arreglos
+
+- **La pestaña Monitoreo no mostraba ninguna planta.** Las consultas se hacían contra una dirección equivocada y devolvían vacío, así que la pantalla se veía con todos los contadores en cero y el mensaje "no hay plantas". Los datos siempre estuvieron bien guardados: era solo la consulta.
+
 #### Ordenar y filtrar el listado de Reportes FV
 
 - **Se puede ordenar por cualquier columna**: generador, estado, habilitado, de alta, calculado, PDF, enviado, generación, consumo, exportación y ahorro. Un clic ordena, el segundo invierte y el tercero vuelve al orden normal. Los generadores sin dato quedan siempre al final, ordenes como ordenes: uno sin ahorro no es "el que menos ahorró", es uno del que no se sabe.

@@ -134,7 +134,7 @@ export interface FilaCorridaMonitor extends CorridaMonitor {
 }
 
 export async function getEstadoMonitor(): Promise<EstadoMonitor> {
-  const { data } = await apiClient.get<EstadoMonitor>("/reportes-fv/monitor/estado");
+  const { data } = await apiClient.get<EstadoMonitor>("/api/reportes-fv/monitor/estado");
   return data;
 }
 
@@ -145,7 +145,7 @@ export async function getIncidencias(params: {
   limit?: number;
 } = {}): Promise<IncidenciaFv[]> {
   const { data } = await apiClient.get<{ incidencias: IncidenciaFv[] }>(
-    "/reportes-fv/monitor/incidencias",
+    "/api/reportes-fv/monitor/incidencias",
     { params },
   );
   return data.incidencias;
@@ -153,7 +153,7 @@ export async function getIncidencias(params: {
 
 export async function getCorridasMonitor(limit = 30): Promise<FilaCorridaMonitor[]> {
   const { data } = await apiClient.get<{ corridas: FilaCorridaMonitor[] }>(
-    "/reportes-fv/monitor/corridas",
+    "/api/reportes-fv/monitor/corridas",
     { params: { limit } },
   );
   return data.corridas;
@@ -165,7 +165,7 @@ export async function getGeneracionDiaria(
   hasta: string,
 ): Promise<Array<{ fecha: string; generacionKwh: number }>> {
   const { data } = await apiClient.get<{ dias: Array<{ fecha: string; generacionKwh: number }> }>(
-    `/reportes-fv/generadores/${projectId}/generacion-diaria`,
+    `/api/reportes-fv/generadores/${projectId}/generacion-diaria`,
     { params: { desde, hasta } },
   );
   return data.dias;
@@ -173,7 +173,7 @@ export async function getGeneracionDiaria(
 
 export async function correrMonitor(params: { fecha?: string; enviarEmail?: boolean } = {}) {
   const { data } = await apiClient.post<{ corridaId: string }>(
-    "/reportes-fv/monitor/correr",
+    "/api/reportes-fv/monitor/correr",
     params,
   );
   return data;
@@ -181,7 +181,7 @@ export async function correrMonitor(params: { fecha?: string; enviarEmail?: bool
 
 export async function revisarIncidencia(id: string, nota?: string): Promise<IncidenciaFv> {
   const { data } = await apiClient.post<IncidenciaFv>(
-    `/reportes-fv/monitor/incidencias/${id}/revisar`,
+    `/api/reportes-fv/monitor/incidencias/${id}/revisar`,
     { nota },
   );
   return data;
@@ -189,7 +189,7 @@ export async function revisarIncidencia(id: string, nota?: string): Promise<Inci
 
 export async function descartarIncidencia(id: string, nota: string): Promise<IncidenciaFv> {
   const { data } = await apiClient.post<IncidenciaFv>(
-    `/reportes-fv/monitor/incidencias/${id}/descartar`,
+    `/api/reportes-fv/monitor/incidencias/${id}/descartar`,
     { nota },
   );
   return data;
@@ -200,5 +200,5 @@ export async function silenciarPlanta(
   hasta: string | null,
   motivo?: string,
 ): Promise<void> {
-  await apiClient.post(`/reportes-fv/monitor/plantas/${plantId}/silenciar`, { hasta, motivo });
+  await apiClient.post(`/api/reportes-fv/monitor/plantas/${plantId}/silenciar`, { hasta, motivo });
 }
