@@ -47,12 +47,12 @@ Al hacer clic en una fila se abre el detalle: gráfico de los últimos 30 días,
 historial de la planta y las acciones de gestión (marcar revisada, descartar,
 silenciar).
 
-Además, todos los días sale un **mail** con lo nuevo. Hoy va sólo a la casilla
-de `FV_MONITOR_EMAIL`.
+Además, todos los días sale un **mail** con lo nuevo, a la casilla de
+`FV_MONITOR_EMAIL` (hoy `nmachin@voltia.com.uy`, sólo Nicolás).
 
 ## Cómo funciona
 
-Un cron diario a las **09:30 hora de Uruguay** (`monitor.job.ts`) evalúa **el día
+Un cron diario a las **08:00 hora de Uruguay** (`monitor.job.ts`) evalúa **el día
 anterior completo** de todas las plantas Growatt vinculadas a un proyecto y no
 marcadas como ignoradas.
 
@@ -100,11 +100,12 @@ funcionalidad no necesitó un seed de permisos nuevo ni agrega pasos al deploy.
 - **Se evalúa siempre el día anterior, nunca el de hoy.** El datalogger se
   alimenta del inversor y sólo transmite con luz solar (~08:00–18:30), así que el
   día en curso está incompleto por definición hasta la tarde.
-- **La hora del cron es 09:30 y no 06:00.** A las 06:00 *todas* las plantas
-  parecerían incomunicadas, porque los dataloggers todavía no arrancaron.
-- **La falta de comunicación se mide en 36 h, no en 24.** A las 09:30, un equipo
-  sano transmitió ayer 18:30 (14,5 h) y uno muerto anteayer lleva 38,5 h. Con 24 h
-  cualquier día nublado de arranque tardío daría falso positivo.
+- **La falta de comunicación se mide en 36 h, no en 24.** Con el cron a las
+  08:00, un equipo sano transmitió ayer 18:30 (13,5 h) y uno muerto anteayer
+  lleva 37,5 h. Con 24 h, cualquier día nublado de arranque tardío daría falso
+  positivo. Ese margen es lo que permite correr el cron temprano sin que las
+  plantas sanas —que a esa hora todavía no transmitieron— aparezcan como caídas;
+  lo que no conviene es correrlo de madrugada, donde la ventana se acorta de más.
 - **El umbral de generación es 0,5 kWh y es intencionalmente bajísimo.** En
   Uruguay una planta sana da más que eso incluso el peor día nublado de junio;
   sólo da cero si algo está roto. Por eso el criterio funciona igual en invierno
@@ -171,8 +172,8 @@ funcionalidad no necesitó un seed de permisos nuevo ni agrega pasos al deploy.
 | Variable | Default | Qué hace |
 |---|---|---|
 | `FV_MONITOR_ENABLED` | `true` | `false` no agenda el cron |
-| `CRON_FV_MONITOR` | `30 9 * * *` | Expresión cron (timezone America/Montevideo) |
-| `FV_MONITOR_EMAIL` | `nfmj@hotmail.com` | Destinatarios del digest, separados por coma |
+| `CRON_FV_MONITOR` | `0 8 * * *` | Expresión cron (timezone America/Montevideo) |
+| `FV_MONITOR_EMAIL` | `nmachin@voltia.com.uy` | Destinatarios del digest, separados por coma. Tienen que ser usuarios internos vivos: el digest se manda como `internal` |
 | `FV_MONITOR_EMAIL_ENABLED` | `true` | `false` corre pero no manda mail |
 | `FV_MONITOR_CONCURRENCIA` | `1` | Plantas en paralelo |
 | `FV_MONITOR_DIAS` | `1` | Días sin generar para alertar |

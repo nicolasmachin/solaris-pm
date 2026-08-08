@@ -201,11 +201,13 @@ export async function enviarDigest(r: ResumenMonitor, ahora: Date = new Date()):
   const destinatarios = destinatariosMonitor();
   const ok = await sendEmail({
     to: destinatarios,
-    // client_facing y no internal a propósito: es una casilla personal externa
-    // y el guardrail de sendEmail bloquea (en silencio, devolviendo false) todo
-    // destinatario que no sea un usuario interno vivo. Mismo caso que el
-    // reporte semanal de indicadores. NO cambiar a "internal".
-    type: "client_facing",
+    // internal: el destinatario es una casilla de la empresa y usuario vivo de
+    // la aplicación, así que el guardrail de sendEmail sirve de red de
+    // seguridad —si alguien pone acá un mail que no es del equipo, el envío se
+    // corta— en lugar de estorbar. Si en el futuro hiciera falta mandarlo a una
+    // casilla externa, hay que pasarlo a "client_facing"; si no, deja de salir
+    // en silencio (sendEmail devuelve false, no lanza).
+    type: "internal",
     subject: asuntoDigest(r),
     html: renderDigestHtml(r),
     text: renderDigestTexto(r),

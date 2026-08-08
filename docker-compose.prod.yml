@@ -58,10 +58,9 @@ services:
       GROWATT_API_BASE: ${GROWATT_API_BASE:-}
       REPORTES_FV_GROWATT_PAUSA_MS: ${REPORTES_FV_GROWATT_PAUSA_MS:-}
       REPORTES_FV_GROWATT_CONCURRENCIA: ${REPORTES_FV_GROWATT_CONCURRENCIA:-}
-      # Monitoreo diario de plantas. Conviene arrancar con
-      # FV_MONITOR_EMAIL_ENABLED=false la primera semana: hasta ver el reparto
-      # real de diagnósticos no se sabe cuántos falsos positivos trae, y un
-      # primer mail con 40 alertas hace que nadie abra el segundo.
+      # Monitoreo diario de plantas. El digest sale prendido, a la casilla de
+      # FV_MONITOR_EMAIL (default nmachin@voltia.com.uy). Si algún día genera
+      # ruido, FV_MONITOR_EMAIL_ENABLED=false lo apaga sin frenar el monitoreo.
       FV_MONITOR_ENABLED: ${FV_MONITOR_ENABLED:-}
       FV_MONITOR_EMAIL: ${FV_MONITOR_EMAIL:-}
       FV_MONITOR_EMAIL_ENABLED: ${FV_MONITOR_EMAIL_ENABLED:-}

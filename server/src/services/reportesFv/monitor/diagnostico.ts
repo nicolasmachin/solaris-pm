@@ -54,9 +54,11 @@ export const UMBRALES_DEFAULT: UmbralesMonitor = {
   // verano, sin comparar contra ningún histórico.
   generacionMinimaKwh: 0.5,
   diasSinGeneracion: 1,
-  // 36 y no 24: con el cron a las 09:30, un datalogger sano transmitió ayer
-  // 18:30 (14,5 h) y uno muerto anteayer lleva 38,5 h. 24 h daría falso
-  // positivo cualquier día nublado con arranque tardío.
+  // 36 y no 24: con el cron a las 08:00, un datalogger sano transmitió ayer
+  // 18:30 (13,5 h) y uno muerto anteayer lleva 37,5 h. 24 h daría falso
+  // positivo cualquier día nublado con arranque tardío. Este margen es lo que
+  // permite correr el cron temprano sin que las plantas sanas —que a esa hora
+  // todavía no transmitieron— aparezcan como caídas.
   horasSinComunicacion: 36,
   diasGraciaHabilitacion: 3,
   diasSinDatosApi: 3,

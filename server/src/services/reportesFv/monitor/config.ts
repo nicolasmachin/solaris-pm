@@ -4,7 +4,7 @@
 // costó una tarde encontrar todos. Acá no: todo lo que se puede tocar por env
 // se lee desde acá.
 
-export const CRON_DEFAULT = "30 9 * * *";
+export const CRON_DEFAULT = "0 8 * * *";
 
 /**
  * Concurrencia entre plantas. Baja a propósito: el spike contra la API real
@@ -23,21 +23,25 @@ export function monitorHabilitado(): boolean {
 }
 
 /**
- * ¿Se manda el digest? Se arranca en producción con esto en "false" durante la
- * primera semana: hasta ver el reparto real de diagnósticos no sabemos cuántos
- * falsos positivos trae, y un primer mail con 40 alertas hace que nadie vuelva
- * a abrir el segundo.
+ * ¿Se manda el digest? Kill-switch por si algún día genera ruido; se arranca
+ * prendido.
  */
 export function emailHabilitado(): boolean {
   return process.env.FV_MONITOR_EMAIL_ENABLED !== "false";
 }
 
 /**
- * Destinatarios del digest. Por ahora sólo la casilla de Nicolás: el monitoreo
- * es interno y todavía no está validado como para avisarle al equipo.
+ * Destinatarios del digest. Por ahora sólo Nicolás: el monitoreo es interno y
+ * todavía no está validado como para avisarle al resto del equipo.
+ *
+ * OJO al cambiarlo: el digest se manda como `internal`, y ese modo de
+ * `sendEmail` BLOQUEA (devolviendo false, en silencio) cualquier destinatario
+ * que no sea un usuario vivo de la aplicación. Si acá se pone una casilla
+ * externa, hay que pasar el envío a `client_facing` en `digest.email.ts` o el
+ * mail deja de salir sin que nadie se entere.
  */
 export function destinatariosMonitor(): string[] {
-  const raw = process.env.FV_MONITOR_EMAIL || "nfmj@hotmail.com";
+  const raw = process.env.FV_MONITOR_EMAIL || "nmachin@voltia.com.uy";
   return [...new Set(raw.split(",").map((s) => s.trim()).filter(Boolean))];
 }
 

@@ -8,13 +8,15 @@ import { enviarDigest } from "./digest.email.js";
 import { ejecutarMonitorDiario } from "./monitor.service.js";
 
 /**
- * Todos los días a las 09:30 de Uruguay, evaluando el día anterior completo.
+ * Todos los días a las 08:00 de Uruguay, evaluando el día anterior completo.
  *
- * La hora no es arbitraria: a las 06:00 TODAS las plantas parecerían
- * incomunicadas, porque el datalogger se alimenta del inversor y no vuelve a
- * transmitir hasta que sale el sol. A las 09:30 las sanas ya reportaron y la
- * señal discrimina de verdad. Además deja margen con la ingesta mensual, que
- * corre los días 2, 4 y 6 a las 06:00.
+ * Que a esa hora el datalogger todavía no haya arrancado (se alimenta del
+ * inversor y sólo transmite con sol) NO rompe el diagnóstico: la falta de
+ * comunicación se mide contra `ultimoDatoEn` con una ventana de 36 h, así que un
+ * equipo sano que transmitió ayer 18:30 lleva 13,5 h y sigue dando OK. Lo que
+ * importa es no correrlo de madrugada, donde esa ventana sí se acorta de más.
+ * Además deja margen con la ingesta mensual, que corre los días 2, 4 y 6 a las
+ * 06:00.
  *
  * Va con su propia env (CRON_FV_MONITOR) y no dentro de startReportesFvJobs()
  * para que su kill-switch sea independiente del pipeline mensual.
