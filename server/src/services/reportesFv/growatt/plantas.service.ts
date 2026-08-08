@@ -6,7 +6,7 @@ import { prisma } from "../../../lib/prisma.js";
 import { AuditAction, AuditEntityType } from "@prisma/client";
 import { createAuditEntry } from "../../audit.service.js";
 import { notFound } from "../../../utils/errors.js";
-import { listarPlantas } from "./client.js";
+import { detallePlanta, growattDormir, growattPausaMs, listarPlantas } from "./client.js";
 
 /** Normaliza un nombre para comparar (sin tildes, minúsculas, sin "~"/espacios). */
 function normalizar(v: string): string {
@@ -20,20 +20,81 @@ function normalizar(v: string): string {
 }
 
 /**
+ * Cuenta de Growatt propia. Si está configurada, la sincronización descarta las
+ * plantas de otras cuentas.
+ *
+ * Hace falta porque el token de la Open API no está acotado a una cuenta:
+ * alcanza a todas las que cuelgan de la misma jerarquía. En el catálogo real,
+ * 87 de 152 plantas visibles son de otra empresa instaladora — nombres de
+ * personas que no son clientes nuestros y que no tenemos por qué guardar.
+ */
+function cuentaPropia(): number | null {
+  const v = Number(process.env.GROWATT_USER_ID);
+  return Number.isFinite(v) && v > 0 ? v : null;
+}
+
+export interface ResultadoSincronizacion {
+  total: number;
+  nuevas: number;
+  /** Descartadas por pertenecer a otra cuenta de Growatt. */
+  ajenas: number;
+  /** Plantas propias que todavía no están vinculadas a un proyecto. */
+  sinVincular: number;
+}
+
+/**
  * Trae el inventario de la API y lo upsertea en GrowattPlant. Las plantas nuevas
  * quedan sin vincular; las conocidas actualizan nombre y `ultimaVezEn`. No toca
  * las vinculaciones existentes.
+ *
+ * Para saber de qué cuenta es cada planta hay que pedir `plant/details`, porque
+ * `plant/list` no trae el dueño. Se hace UNA sola vez por planta (las que ya
+ * tienen `ownerUserId` no se vuelven a consultar), así que el costo se paga
+ * sólo la primera vez y no en cada corrida.
  */
-export async function sincronizarPlantas(): Promise<{ total: number; nuevas: number }> {
+export async function sincronizarPlantas(): Promise<ResultadoSincronizacion> {
   const plantas = await listarPlantas();
-  const existentes = new Set(
-    (await prisma.growattPlant.findMany({ select: { plantId: true } })).map((p) => p.plantId.toString()),
+  const conocidas = new Map(
+    (await prisma.growattPlant.findMany({ select: { plantId: true, ownerUserId: true } })).map((p) => [
+      p.plantId.toString(),
+      p.ownerUserId,
+    ]),
   );
+  const propia = cuentaPropia();
 
   let nuevas = 0;
+  let ajenas = 0;
+
   for (const p of plantas) {
-    const esNueva = !existentes.has(p.plantId);
-    if (esNueva) nuevas++;
+    const yaConocida = conocidas.has(p.plantId);
+    let owner = conocidas.get(p.plantId) ?? null;
+
+    // Sólo se averigua el dueño si todavía no se sabe.
+    if (owner == null) {
+      try {
+        owner = (await detallePlanta(p.plantId)).userId;
+        await growattDormir(growattPausaMs);
+      } catch {
+        // Si la API no responde, se sigue sin el dato: se completa la próxima vez.
+      }
+    }
+
+    if (propia != null && owner != null && owner !== propia) {
+      ajenas++;
+      // No se crea ni se actualiza: no es nuestra y no la queremos en la base.
+      // Si ya existía (migrada de la planilla vieja), se la marca para que no
+      // aparezca como pendiente de vincular, pero no se borra: borrar datos es
+      // una decisión aparte y explícita.
+      if (yaConocida) {
+        await prisma.growattPlant.updateMany({
+          where: { plantId: BigInt(p.plantId), projectId: null },
+          data: { ownerUserId: owner, ignorada: true },
+        });
+      }
+      continue;
+    }
+
+    if (!yaConocida) nuevas++;
     await prisma.growattPlant.upsert({
       where: { plantId: BigInt(p.plantId) },
       create: {
@@ -43,15 +104,31 @@ export async function sincronizarPlantas(): Promise<{ total: number; nuevas: num
         peakPowerKw: p.peakPowerKw ?? null,
         city: p.city ?? null,
         country: p.country ?? null,
+        ownerUserId: owner,
       },
       update: {
         name: p.name,
         status: p.status ?? null,
         ultimaVezEn: new Date(),
+        // Se completan los que faltaban sin pisar lo que ya estaba cargado.
+        ...(owner != null ? { ownerUserId: owner } : {}),
+        ...(p.peakPowerKw != null ? { peakPowerKw: p.peakPowerKw } : {}),
+        ...(p.city != null ? { city: p.city } : {}),
       },
     });
   }
-  return { total: plantas.length, nuevas };
+
+  const sinVincular = await contarPendientesDeVincular();
+  return { total: plantas.length, nuevas, ajenas, sinVincular };
+}
+
+/**
+ * Plantas propias listas para vincular a un proyecto. Es el número que se
+ * muestra en el panel: si nadie lo ve, las plantas nuevas se acumulan sin que
+ * nadie las vincule, que es exactamente lo que venía pasando.
+ */
+export async function contarPendientesDeVincular(): Promise<number> {
+  return prisma.growattPlant.count({ where: { projectId: null, ignorada: false } });
 }
 
 /**

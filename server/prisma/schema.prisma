@@ -3626,6 +3626,18 @@ model GrowattPlant {
   city        String?
   country     String?
 
+  // Cuenta de Growatt dueña de la planta (`user_id` de plant/details).
+  //
+  // El token de la Open API no está acotado a una sola cuenta: alcanza a todas
+  // las que cuelgan de la misma jerarquía. Medido sobre el catálogo real, 87 de
+  // las 152 plantas visibles pertenecen a OTRA empresa instaladora. Guardar el
+  // dueño es lo que permite quedarse sólo con las propias (GROWATT_USER_ID) sin
+  // depender de que Growatt cambie el alcance del token.
+  //
+  // Nullable porque las plantas migradas de la planilla vieja no lo traían: se
+  // completa de a poco, cuando la sincronización pasa por cada una.
+  ownerUserId Int?
+
   // null = planta detectada en la API pero todavía sin vincular a un proyecto.
   projectId String?  @unique
   project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
@@ -3653,6 +3665,7 @@ model GrowattPlant {
 
   @@index([projectId])
   @@index([ignorada])
+  @@index([ownerUserId])
   @@map("growatt_plants")
 }
 

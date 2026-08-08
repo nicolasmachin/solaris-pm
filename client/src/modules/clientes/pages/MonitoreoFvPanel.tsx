@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, RefreshCw, Search } from "lucide-react";
+import { AlertTriangle, Link2, RefreshCw, Search } from "lucide-react";
 import toast from "react-hot-toast";
 
 import {
@@ -19,6 +19,7 @@ import { Spinner } from "../../../components/ui/Spinner";
 import { usePermission } from "../../../hooks/usePermission";
 import { MonitorPlantaDrawer } from "../components/MonitorPlantaDrawer";
 import { ManualReportesFvButton } from "../components/ManualReportesFvButton";
+import { PlantasGrowattModal } from "../components/PlantasGrowattModal";
 
 type FiltroSilencio = "ocultar" | "mostrar" | "solo";
 
@@ -79,6 +80,7 @@ export function MonitoreoFvPanel() {
   const [silencio, setSilencio] = useState<FiltroSilencio>("mostrar");
   const [soloSinRevisar, setSoloSinRevisar] = useState(false);
   const [seleccionada, setSeleccionada] = useState<FilaMonitor | null>(null);
+  const [plantasAbierto, setPlantasAbierto] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["monitor-fv", "estado"],
@@ -249,6 +251,27 @@ export function MonitoreoFvPanel() {
           )}
         </div>
       </div>
+
+      {/* Una planta sin vincular no genera datos ni alertas. Si no se avisa acá,
+          se acumulan en silencio: es exactamente lo que venía pasando. */}
+      {(data?.plantasSinVincular ?? 0) > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">
+          <div className="flex items-start gap-2">
+            <Link2 className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              Hay <strong>{data!.plantasSinVincular}</strong>{" "}
+              {data!.plantasSinVincular === 1 ? "planta detectada en Growatt" : "plantas detectadas en Growatt"}{" "}
+              sin generador asignado. Hasta que se vinculen no se controlan ni guardan sus datos.
+            </span>
+          </div>
+          <button
+            onClick={() => setPlantasAbierto(true)}
+            className="shrink-0 rounded-lg border border-amber-500/50 px-2.5 py-1 text-xs font-medium text-amber-100 hover:bg-amber-500/20"
+          >
+            Vincular ahora
+          </button>
+        </div>
+      )}
 
       {corrida?.estado === "ERROR" && (
         <div className="flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
@@ -458,6 +481,8 @@ export function MonitoreoFvPanel() {
       {seleccionada && (
         <MonitorPlantaDrawer planta={seleccionada} onClose={() => setSeleccionada(null)} />
       )}
+
+      {plantasAbierto && <PlantasGrowattModal onClose={() => setPlantasAbierto(false)} />}
     </div>
   );
 }

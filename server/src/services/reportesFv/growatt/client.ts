@@ -145,6 +145,43 @@ export async function listarPlantas(): Promise<PlantaGrowatt[]> {
   return plantas;
 }
 
+export interface DetallePlanta {
+  /** Cuenta de Growatt dueña de la planta. */
+  userId: number | null;
+  name: string | null;
+  peakPowerKw: number | null;
+  city: string | null;
+  country: string | null;
+  /** Alta de la planta en Growatt (YYYY-MM-DD). */
+  creadaEn: string | null;
+}
+
+/**
+ * Detalle de una planta. Es el único endpoint que dice de QUÉ CUENTA es:
+ * `plant/list` no devuelve el dueño, así que sin esto no hay forma de
+ * distinguir las plantas propias de las de otra empresa que el token también
+ * alcanza. Se pide una sola vez por planta, no en cada sincronización.
+ */
+export async function detallePlanta(plantId: string): Promise<DetallePlanta> {
+  const d = await get("plant/details", { plant_id: plantId });
+  const num = (v: unknown): number | null => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+  const texto = (v: unknown): string | null => {
+    const s = typeof v === "string" ? v.trim() : "";
+    return s === "" ? null : s;
+  };
+  return {
+    userId: num(d?.user_id),
+    name: texto(d?.name),
+    peakPowerKw: num(d?.peak_power),
+    city: texto(d?.city),
+    country: texto(d?.country),
+    creadaEn: texto(d?.create_date),
+  };
+}
+
 /** Generación mensual (kWh) de una planta para el rango [inicio, fin] del mes. */
 export async function generacionMensual(
   plantId: string,

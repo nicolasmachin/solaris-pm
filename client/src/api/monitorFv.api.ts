@@ -93,6 +93,8 @@ export interface CorridaMonitor {
 }
 
 export interface EstadoMonitor {
+  /** Plantas propias detectadas en Growatt que todavía no tienen proyecto. */
+  plantasSinVincular: number;
   ultimaCorrida: CorridaMonitor | null;
   kpis: KpisMonitor;
   plantas: FilaMonitor[];

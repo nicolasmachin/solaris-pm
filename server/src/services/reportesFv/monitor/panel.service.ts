@@ -46,6 +46,8 @@ export interface KpisMonitor {
 }
 
 export interface EstadoMonitor {
+  /** Plantas propias detectadas en Growatt que todavía no tienen proyecto. */
+  plantasSinVincular: number;
   ultimaCorrida: {
     id: string;
     fecha: Dia;
@@ -145,7 +147,14 @@ export async function getEstadoMonitor(): Promise<EstadoMonitor> {
     sinRevisar: incidencias.filter((i) => i.revisadaEn == null).length,
   };
 
+  // Una planta sin vincular no genera datos ni alertas: es trabajo pendiente
+  // que hay que hacer visible o se acumula en silencio.
+  const plantasSinVincular = await prisma.growattPlant.count({
+    where: { projectId: null, ignorada: false },
+  });
+
   return {
+    plantasSinVincular,
     ultimaCorrida: corrida
       ? {
           id: corrida.id,

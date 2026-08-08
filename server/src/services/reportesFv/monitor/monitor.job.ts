@@ -6,6 +6,7 @@ import { FvMonitorCorridaModo } from "@prisma/client";
 import { CRON_DEFAULT, monitorHabilitado } from "./config.js";
 import { enviarDigest } from "./digest.email.js";
 import { ejecutarMonitorDiario } from "./monitor.service.js";
+import { sincronizarPlantas } from "../growatt/plantas.service.js";
 
 /**
  * Todos los días a las 08:00 de Uruguay, evaluando el día anterior completo.
@@ -31,6 +32,21 @@ export function startFvMonitorJob() {
     expr,
     async () => {
       try {
+        // Sincronizar primero: una planta instalada ayer entra al monitoreo hoy
+        // sin que nadie tenga que apretar un botón. Si falla, el monitoreo sigue
+        // igual con el catálogo que ya tiene.
+        try {
+          const s = await sincronizarPlantas();
+          if (s.nuevas > 0 || s.ajenas > 0) {
+            console.log(
+              `[fv-monitor] catálogo: ${s.nuevas} plantas nuevas, ${s.ajenas} de otra cuenta descartadas, ` +
+                `${s.sinVincular} sin vincular`,
+            );
+          }
+        } catch (err) {
+          console.error("[fv-monitor] no se pudo sincronizar el catálogo:", err);
+        }
+
         const resumen = await ejecutarMonitorDiario(new Date(), { modo: FvMonitorCorridaModo.CRON });
         await enviarDigest(resumen);
       } catch (err) {
