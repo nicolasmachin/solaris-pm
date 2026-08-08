@@ -83,6 +83,10 @@ export const ALIAS_MANUAL: Record<string, string> = {
   // usuario: comparten el mail y es el mismo generador, aunque la potencia de la
   // planilla (4.6 kWp) no coincida con la del proyecto (2.76 kWp).
   "antonio costa vital": "alicia grunwald",
+  // Mismo cliente con dos nombres: la planilla lo tiene como el titular del
+  // suministro y el proyecto como la titular de la cuenta. Comparten el mail.
+  // Confirmado por el usuario el 8/8/2026.
+  "daniel cabrera": "adriana gambaro",
 };
 
 /**
