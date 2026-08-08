@@ -4,8 +4,8 @@
 // una entrada al tope de MANUAL_CAMBIOS. La versión y el changelog salen impresos
 // en el PDF. El nombre del archivo descargado incluye la versión.
 
-export const MANUAL_VERSION = "1.1";
-export const MANUAL_ACTUALIZADO = "3 de agosto de 2026";
+export const MANUAL_VERSION = "1.2";
+export const MANUAL_ACTUALIZADO = "8 de agosto de 2026";
 
 export interface CambioManual {
   version: string;
@@ -15,6 +15,15 @@ export interface CambioManual {
 
 // Más reciente arriba.
 export const MANUAL_CAMBIOS: CambioManual[] = [
+  {
+    version: "1.2",
+    fecha: "8 de agosto de 2026",
+    cambios: [
+      "Monitoreo diario de plantas: qué revisa, qué significa cada estado y cómo gestionar un problema.",
+      "Generación día a día en el portal del cliente.",
+      "Ver el portal como lo ve el cliente, desde el listado de Generadores.",
+    ],
+  },
   {
     version: "1.1",
     fecha: "3 de agosto de 2026",
@@ -195,6 +204,27 @@ El cliente entra a su portal y encuentra una sección **Reportes**, con todos su
 reportes agrupados por año. De cada uno ve el ahorro del mes y puede abrirlo en
 pantalla o descargarlo. Cada cliente ve **solo los suyos**.
 
+Además, en su pantalla de energía ve **cuánta energía generó cada día del mes**,
+con el total del mes, el promedio por día y su mejor día. Puede moverse a meses
+anteriores con las flechas. Los datos llegan **hasta el día anterior**: lo de cada
+día se procesa a la mañana siguiente, y la pantalla lo aclara.
+
+Ese gráfico diario se muestra aunque todavía no se le haya enviado el reporte del
+mes. Son kilovatios crudos del inversor, sin interpretación económica —el mismo
+dato que vería en la aplicación de Growatt—, así que no necesita revisión previa.
+Si a un generador le apagás el switch **"Enviar reporte"** en Configuración,
+tampoco ve el detalle diario.
+
+### Ver su pantalla, sin pedirle capturas
+
+En el listado de **Generadores** hay un botón con forma de ojo, al lado del de
+borrar. Entra al portal de ese cliente y muestra **exactamente lo que ve él**.
+
+Mientras estás ahí, una franja arriba lo aclara en todo momento, y salís con un
+clic. Es **solo lectura**: no se puede abrir un ticket ni responder una encuesta
+en su nombre. El botón aparece únicamente si ese generador ya tiene usuario de
+portal creado.
+
 ---
 
 ## 10. Qué hace el sistema solo cada mes
@@ -259,4 +289,82 @@ atención.
   franjas no suman 100% o falta la tarifa de una empresa.
 - **El cliente no ve un reporte**: se ve en el portal recién cuando lo **enviás**
   (o lo publicás). Antes de eso queda solo del lado interno.
+
+---
+
+## 14. Monitoreo diario de las plantas
+
+Hasta ahora, que la planta de un cliente dejara de funcionar se descubría cuando
+el cliente llamaba, o al armar el reporte del mes siguiente. Podía pasar un mes
+entero apagada, con el cliente perdiendo plata.
+
+**Todas las mañanas a las 8** el sistema revisa que cada planta haya generado el
+día anterior. Si no generó, busca la causa. Vive en la pestaña **Monitoreo**.
+
+### Qué significa cada estado
+
+- **Funcionando**: generó con normalidad. No hay nada que hacer.
+- **No genera**: el equipo está comunicando —o sea, prendido y con internet— pero
+  no produjo energía. Suele ser una falla del inversor o un corte del lado de
+  alterna. Es el caso más urgente: el equipo está vivo y aun así no genera.
+- **Falla del equipo**: además, el inversor está reportando un código de error
+  concreto (por ejemplo una falla de aislación). El detalle muestra el código y
+  el texto que devuelve el equipo.
+- **Sin comunicación**: el equipo dejó de reportar. Casi siempre es el wifi de la
+  casa: cambiaron el router o la clave. También puede ser que la planta esté
+  apagada. El detalle dice desde cuándo no reporta.
+- **Esperando habilitación**: el generador todavía no completó el trámite de UTE,
+  o se habilitó hace menos de tres días. **No genera alerta**: es lo esperable.
+- **Silenciada**: alguien pidió no vigilarla por un tiempo.
+- **Sin datos**: Growatt no respondió. Es un problema nuestro, no del cliente, y
+  solo llama la atención si se repite tres días seguidos.
+
+### Cómo se gestiona un problema
+
+Al hacer clic en una planta se abre el detalle, con el gráfico de los últimos 30
+días y el historial de esa planta. Desde ahí:
+
+- **Marcar revisada** deja constancia de que ya lo viste, con una nota de lo que
+  hiciste o con quién hablaste. **No cierra el problema**: la incidencia sigue
+  abierta hasta que la planta vuelva a generar sola. Ver y resolver son cosas
+  distintas.
+- **Descartar** es para una falsa alarma. Pide un motivo obligatorio: sin él,
+  descartar sería indistinguible de esconder el problema.
+- **Silenciar** deja de vigilar la planta **hasta una fecha**, con un motivo
+  (mantenimiento programado, por ejemplo). Nunca es para siempre: un silencio
+  permanente se olvida y la planta queda sin vigilar sin que nadie se entere.
+
+El botón **Revisar ahora** fuerza una revisión en el momento, sin esperar a la
+mañana siguiente. Tarda unos minutos.
+
+### El mail diario
+
+Llega un correo con lo que pasó, pero **solo cuando algo cambia**: un problema
+que empieza, uno que se resuelve, o plantas que no se pudieron consultar. Si el
+estado es el mismo de ayer, no llega nada. Un correo diario que repite siempre lo
+mismo deja de leerse en una semana.
+
+La excepción son los lunes: si hay problemas abiertos, el correo sale igual, para
+que ninguno se pudra en silencio durante semanas.
+
+### Dos protecciones que conviene conocer
+
+- **Si un día no genera casi ninguna planta** —un temporal, un corte general—, el
+  sistema no abre decenas de alertas: avisa una sola vez que pasó algo general.
+- **Si Growatt no responde** para buena parte de la flota, la revisión se marca
+  como fallida y **no abre ni cierra nada**. Las pocas plantas que sí
+  contestaron no alcanzan para sacar conclusiones, y una caída de la API no puede
+  "arreglar" por omisión las plantas que estaban rotas.
+
+### Preguntas frecuentes
+
+- **¿Por qué avisa recién al día siguiente?** Porque el equipo transmite solo con
+  luz solar, así que el día en curso está incompleto hasta la tarde. Se evalúa
+  siempre el día anterior completo.
+- **¿Un día nublado dispara alertas?** No. El umbral es de medio kilovatio hora:
+  una planta sana supera eso incluso el peor día de invierno. Cero kWh es
+  siempre señal de que algo está roto.
+- **¿Por qué una planta aparece como "Esperando habilitación" si ya funciona?**
+  Porque no tiene fecha de habilitación ni mes de inicio de reportes cargado. Con
+  cargar el mes de inicio en Configuración empieza a vigilarse.
 `;

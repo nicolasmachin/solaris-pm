@@ -18,6 +18,7 @@ import { ResponsiveTable, type Column } from "../../../components/ui/ResponsiveT
 import { Spinner } from "../../../components/ui/Spinner";
 import { usePermission } from "../../../hooks/usePermission";
 import { MonitorPlantaDrawer } from "../components/MonitorPlantaDrawer";
+import { ManualReportesFvButton } from "../components/ManualReportesFvButton";
 
 type FiltroSilencio = "ocultar" | "mostrar" | "solo";
 
@@ -234,16 +235,19 @@ export function MonitoreoFvPanel() {
             </p>
           )}
         </div>
-        {canCreate && (
-          <button
-            onClick={() => correr.mutate()}
-            disabled={correr.isPending}
-            className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] disabled:opacity-50"
-          >
-            <RefreshCw className={`h-4 w-4 ${correr.isPending ? "animate-spin" : ""}`} />
-            Revisar ahora
-          </button>
-        )}
+        <div className="flex shrink-0 items-center gap-2">
+          <ManualReportesFvButton />
+          {canCreate && (
+            <button
+              onClick={() => correr.mutate()}
+              disabled={correr.isPending}
+              className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 ${correr.isPending ? "animate-spin" : ""}`} />
+              Revisar ahora
+            </button>
+          )}
+        </div>
       </div>
 
       {corrida?.estado === "ERROR" && (

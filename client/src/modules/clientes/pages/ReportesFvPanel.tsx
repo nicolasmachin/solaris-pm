@@ -1,24 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, BookOpen, Download, FileText, Search, Send } from "lucide-react";
+import { AlertTriangle, Download, FileText, Search, Send } from "lucide-react";
 import toast from "react-hot-toast";
 
 import { usePermission } from "../../../hooks/usePermission";
-import { downloadAuthenticated } from "../../../hooks/useAuthBlobUrl";
 import { ResponsiveTable, type Column } from "../../../components/ui/ResponsiveTable";
 import { Spinner } from "../../../components/ui/Spinner";
 import {
   dispararIngesta,
   getIngesta,
-  getManualInfo,
   getPanel,
   getPeriodos,
-  manualPdfUrl,
   type EstadoGenerador,
   type FilaPanel,
 } from "../../../api/reportesFv.api";
 import { ReporteFvDetalle } from "../components/ReporteFvDetalle";
 import { PlantasGrowattModal } from "../components/PlantasGrowattModal";
+import { ManualReportesFvButton } from "../components/ManualReportesFvButton";
 
 // El semáforo de estados: mismo patrón de tokens que el resto del módulo.
 const ESTADO_BADGE: Record<EstadoGenerador, string> = {
@@ -123,12 +121,6 @@ export function ReportesFvPanel() {
   const { data: periodos = [] } = useQuery({
     queryKey: ["reportes-fv", "periodos"],
     queryFn: getPeriodos,
-    enabled: canView,
-  });
-
-  const { data: manual } = useQuery({
-    queryKey: ["reportes-fv", "manual"],
-    queryFn: getManualInfo,
     enabled: canView,
   });
 
@@ -328,16 +320,7 @@ export function ReportesFvPanel() {
         <p className="text-sm text-[var(--color-text-muted)]">
           Gestión de los reportes mensuales de generación de cada cliente.
         </p>
-        <button
-          type="button"
-          onClick={() =>
-            downloadAuthenticated(manualPdfUrl(), `manual-reportes-fv-v${manual?.version ?? ""}.pdf`)
-          }
-          title={manual ? `Manual v${manual.version} · ${manual.actualizado}` : "Manual de uso"}
-          className="flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)]"
-        >
-          <BookOpen size={14} /> Manual de uso{manual ? ` (v${manual.version})` : ""}
-        </button>
+        <ManualReportesFvButton />
       </div>
 
       {/* Controles */}
