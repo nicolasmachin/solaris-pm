@@ -190,6 +190,32 @@ export async function enviarDigest(r: ResumenMonitor, ahora: Date = new Date()):
     console.log("[fv-monitor] digest deshabilitado por FV_MONITOR_EMAIL_ENABLED=false");
     return false;
   }
+
+  // Una incidencia abierta que todavía NO se avisó cuenta como nueva, aunque se
+  // haya detectado en una corrida anterior. Sin esto se pierden para siempre:
+  // pasan a "sigue abierta" en la segunda corrida y esa sección no dispara el
+  // envío, así que nadie se entera nunca. Pasa de verdad cuando la primera
+  // corrida se hace con el mail apagado, o cuando el SMTP falla ese día.
+  const sinAvisar = await prisma.fvIncidencia.findMany({
+    where: {
+      id: { in: r.incidenciasAbiertas.map((f) => f.incidenciaId) },
+      notificadaEn: null,
+      estado: FvIncidenciaEstado.ABIERTA,
+    },
+    select: { id: true },
+  });
+  if (sinAvisar.length > 0) {
+    const ids = new Set(sinAvisar.map((i) => i.id));
+    r = {
+      ...r,
+      incidenciasNuevas: [
+        ...r.incidenciasNuevas,
+        ...r.incidenciasAbiertas.filter((f) => ids.has(f.incidenciaId)),
+      ],
+      incidenciasAbiertas: r.incidenciasAbiertas.filter((f) => !ids.has(f.incidenciaId)),
+    };
+  }
+
   if (!ameritaDigest(r, ahora)) return false;
 
   const claim = await prisma.fvMonitorCorrida.updateMany({
