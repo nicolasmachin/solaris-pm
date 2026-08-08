@@ -334,6 +334,7 @@ export const DIAGNOSTICO_LABEL: Record<FvDiagnostico, string> = {
   SIN_GENERACION: "No genera",
   SIN_COMUNICACION: "Sin comunicación",
   ERROR_DISPOSITIVO: "Falla del equipo",
+  SIN_EXPORTACION: "No inyecta a la red",
   ESPERANDO_HABILITACION: "Esperando habilitación",
   SILENCIADA: "Silenciada",
   SIN_DATOS_API: "Sin datos de Growatt",

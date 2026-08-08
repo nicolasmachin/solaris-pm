@@ -17,6 +17,7 @@
     "test:reportes-fv-growatt": "node --import tsx --test src/services/reportesFv/growatt/metricas.test.ts",
     "test:reportes-fv-golden": "node --import tsx --test src/services/reportesFv/motor/serie.golden.test.ts",
     "test:fv-monitor": "node --import tsx --test src/services/reportesFv/monitor/diagnostico.test.ts",
+    "test:fv-exportacion": "node --import tsx --test src/services/reportesFv/monitor/exportacion.test.ts",
     "test:fv-matching": "node --import tsx --test scripts/reportes-fv/lib/matching.test.ts",
     "test:proposal": "node --import tsx --test src/services/proposal/calculator.test.ts",
     "test:proposal-template": "node --import tsx --test src/services/proposal/template.test.ts",

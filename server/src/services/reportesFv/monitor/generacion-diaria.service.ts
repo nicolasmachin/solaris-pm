@@ -17,6 +17,21 @@ import { diaADate, dateADia, type Dia } from "./dias.js";
  * Un valor MANUAL no se pisa con GROWATT: si alguien corrigió un día a mano fue
  * porque el dato de la API estaba mal.
  */
+/** Exportación del día. Se guarda aparte porque viene de otra consulta. */
+export async function guardarExportacionDiaria(
+  projectId: string,
+  dia: Dia,
+  exportacionKwh: number,
+): Promise<void> {
+  // Sólo actualiza si la fila ya existe: la exportación cuelga de un día que ya
+  // tiene generación. Sin generación registrada, un dato de exportación suelto
+  // no se puede interpretar.
+  await prisma.reporteFvGeneracionDiaria.updateMany({
+    where: { projectId, fecha: diaADate(dia) },
+    data: { exportacionKwh: new Prisma.Decimal(exportacionKwh.toFixed(2)) },
+  });
+}
+
 export async function guardarGeneracionDiaria(
   projectId: string,
   growattPlantId: bigint | null,
@@ -86,4 +101,26 @@ export async function leerHistorial(
 ): Promise<Map<Dia, number>> {
   const filas = await leerGeneracionDiaria(projectId, desde, hasta);
   return new Map(filas.map((f) => [f.fecha, f.generacionKwh]));
+}
+
+/** Generación + exportación por día, para evaluar si la planta está inyectando. */
+export async function leerHistorialConExportacion(
+  projectId: string,
+  desde: Dia,
+  hasta: Dia,
+): Promise<Map<Dia, { generacionKwh: number | null; exportacionKwh: number | null }>> {
+  const filas = await prisma.reporteFvGeneracionDiaria.findMany({
+    where: { projectId, fecha: { gte: diaADate(desde), lte: diaADate(hasta) } },
+    orderBy: { fecha: "asc" },
+    select: { fecha: true, generacionKwh: true, exportacionKwh: true },
+  });
+  return new Map(
+    filas.map((f) => [
+      dateADia(f.fecha),
+      {
+        generacionKwh: Number(f.generacionKwh),
+        exportacionKwh: f.exportacionKwh != null ? Number(f.exportacionKwh) : null,
+      },
+    ]),
+  );
 }

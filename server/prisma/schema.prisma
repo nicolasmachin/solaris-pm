@@ -3698,6 +3698,11 @@ model GrowattDevice {
   statusRaw    Int?
   ultimoDatoEn DateTime? @db.Timestamptz(6)
 
+  // Dirección del medidor colgado de este datalogger (device/ammeter/meter_list).
+  // Se cachea porque redescubrirla cuesta un request por planta por día, y no
+  // cambia salvo que se toque el hardware.
+  meterAddress String?
+
   // De device/tlx/tlx_last_data (POST), sólo para inversores sospechosos.
   // statusText/errorText/warnText vienen en inglés desde Growatt.
   faultCode  Int?
@@ -4005,6 +4010,12 @@ model ReporteFvGeneracionDiaria {
   generacionKwh Decimal         @db.Decimal(10, 2)
   fuente        ReporteFvFuente @default(GROWATT)
 
+  // Exportación del día, del smart meter. null = el medidor no reportó ese día,
+  // que NO es lo mismo que haber exportado cero: el cero real significa que la
+  // planta genera y no inyecta (inyección limitada en el inversor), y el null
+  // sólo que no medimos. Confundirlos llena el panel de alertas falsas.
+  exportacionKwh Decimal? @db.Decimal(10, 2)
+
   // Denormalizado para poder trazar de qué planta salió el dato: el vínculo
   // planta↔proyecto puede cambiar con el tiempo.
   growattPlantId BigInt?
@@ -4023,6 +4034,11 @@ enum FvDiagnostico {
   SIN_GENERACION // ~0 kWh con el equipo comunicando → falla del equipo
   SIN_COMUNICACION // el datalogger no reporta hace ≥N horas (WiFi, o apagada)
   ERROR_DISPOSITIVO // el inversor reporta un código de falla
+  // Genera normal pero no inyecta a la red: señal de que la inyección quedó
+  // limitada en el inversor. El cliente produce energía que no se le acredita,
+  // y desde afuera se ve como una planta sana. Es mensual, no diario: la
+  // exportación viene del smart meter y sólo se conoce tras la ingesta.
+  SIN_EXPORTACION
   ESPERANDO_HABILITACION // todavía no pasó la habilitación UTE: no es un problema
   SILENCIADA
   SIN_DATOS_API // Growatt no respondió: problema NUESTRO, no del cliente

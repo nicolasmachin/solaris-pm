@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Download, FileText, Search, Send } from "lucide-react";
+import { AlertTriangle, Check, Download, FileText, Search, Send, X } from "lucide-react";
 import toast from "react-hot-toast";
 
 import { usePermission } from "../../../hooks/usePermission";
@@ -84,6 +84,19 @@ function FiltroSelect<T extends string>({
         ))}
       </select>
     </label>
+  );
+}
+
+/** Tick verde o cruz roja. El title da el detalle sin ocupar lugar en la tabla. */
+function SiNo({ v, titulo }: { v: boolean; titulo?: string }) {
+  return (
+    <span title={titulo ?? (v ? "Sí" : "No")} aria-label={v ? "Sí" : "No"}>
+      {v ? (
+        <Check size={15} className="mx-auto text-emerald-400" />
+      ) : (
+        <X size={15} className="mx-auto text-red-400/70" />
+      )}
+    </span>
   );
 }
 
@@ -284,6 +297,27 @@ export function ReportesFvPanel() {
         </span>
       ),
     },
+    // Las cinco condiciones del generador, cada una en su columna. El badge de
+    // Estado resume la situación en una palabra, pero al resumir esconde el
+    // detalle: un "Sin lectura" no dice si además está dado de alta o si ya se
+    // le mandó algo el mes pasado. Acá se ve todo de un vistazo.
+    { key: "f_habilitado", label: "Habilitado", align: "center", cardRole: "hidden", render: (g) => <SiNo v={g.habilitado} /> },
+    { key: "f_alta", label: "De alta", align: "center", cardRole: "hidden", render: (g) => <SiNo v={g.dadoDeAlta} /> },
+    {
+      key: "f_calculado",
+      label: "Calculado",
+      align: "center",
+      cardRole: "hidden",
+      render: (g) => <SiNo v={g.ahorroTotal != null} />,
+    },
+    {
+      key: "f_pdf",
+      label: "PDF",
+      align: "center",
+      cardRole: "hidden",
+      render: (g) => <SiNo v={Boolean(g.emisionId)} titulo={g.emisionVersion ? `PDF v${g.emisionVersion}` : undefined} />,
+    },
+    { key: "f_enviado", label: "Enviado", align: "center", cardRole: "hidden", render: (g) => <SiNo v={g.enviado} /> },
     { key: "gen", label: "Generación", className: "tabular-nums", render: (g) => fmtKwh(g.generacionKwh) },
     { key: "cons", label: "Consumo", className: "tabular-nums", render: (g) => fmtKwh(g.consumoKwh) },
     { key: "exp", label: "Exportación", className: "tabular-nums", render: (g) => fmtKwh(g.exportacionKwh) },

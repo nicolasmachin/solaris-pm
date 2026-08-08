@@ -353,6 +353,28 @@ export async function medidoresDeDatalogger(datalogSn: string): Promise<string[]
   return meters.map((m) => String(m?.address ?? "").trim()).filter(Boolean);
 }
 
+/**
+ * Exportación (kWh inyectados a la red) de un día concreto.
+ *
+ * El medidor no da un total: da un acumulador que se reinicia cada día y sube a
+ * lo largo de la jornada. El valor del día es el MÁXIMO de las muestras. Si el
+ * datalogger no transmitió, devuelve null — que no es lo mismo que cero: cero
+ * significa que la planta no inyectó, null que no medimos.
+ */
+export async function exportacionDelDia(
+  datalogSn: string,
+  address: string,
+  dia: string,
+): Promise<number | null> {
+  const muestras = await muestrasDelDia(datalogSn, address, dia);
+  let max: number | null = null;
+  for (const m of muestras) {
+    const v = Number(m?.reverseActiveTodayEnergy);
+    if (Number.isFinite(v) && (max == null || v > max)) max = v;
+  }
+  return max;
+}
+
 /** Muestras de un medidor en un día concreto. */
 export async function muestrasDelDia(
   datalogSn: string,

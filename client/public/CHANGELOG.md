@@ -18,6 +18,17 @@
 - Está disponible tanto en **Reportes FV** como en la pestaña **Monitoreo**.
 - Se sumaron capítulos nuevos: el control diario de las plantas —qué significa cada estado y cómo gestionar un problema—, la generación día a día que ve el cliente, y cómo mirar el portal tal como lo ve él.
 
+#### Aviso cuando una planta genera pero no inyecta
+
+- El control diario ahora detecta también las plantas que **generan con normalidad pero no están inyectando a la red**, señal de que la inyección quedó limitada en el inversor. Antes esto era invisible: la planta se veía "Funcionando" porque producía, mientras el cliente perdía todos los días el excedente que debería acreditársele.
+- **Hace falta que el patrón se repita dos días seguidos** para avisar. Un día suelto sin inyectar no significa nada: puede haber sido un día de mucho consumo en la casa, donde se autoconsumió todo.
+- Si el medidor no reportó ese día, **no se avisa**: no es lo mismo "inyectó cero" que "no sabemos cuánto inyectó". El primero es un problema del cliente; el segundo, un medidor que no midió.
+- Aparece como **"No inyecta a la red"** en la pestaña Monitoreo, con el detalle de cuántos días lleva y cuánta energía generó mientras tanto.
+
+#### Columnas de control en el listado de Reportes FV
+
+- El listado suma cinco columnas con **tick verde o cruz roja**: si el generador está **habilitado**, si está **dado de alta**, si está **calculado**, si tiene **PDF** y si se **envió**. El estado en una palabra sigue estando, pero ahora se ve el detalle de cada condición sin abrir la ficha.
+
 #### Arreglos en Reportes FV
 
 - **El selector de mes ahora muestra los últimos 12 meses**, tengan datos o no. Antes solo listaba los meses que ya tenían información cargada, así que un mes nuevo nunca aparecía y no había forma de traerlo: para poder traer los datos de julio, julio ya tenía que tener datos.

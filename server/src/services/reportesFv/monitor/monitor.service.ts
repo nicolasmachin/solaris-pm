@@ -19,13 +19,17 @@ import {
 
 import { prisma } from "../../../lib/prisma.js";
 import {
+  dataloggersSmartMeter,
   estadoInversor,
+  exportacionDelDia,
   generacionDiaria,
   growattDormir,
   growattPausaMs,
   listarDispositivos,
+  medidoresDeDatalogger,
   type DispositivoGrowatt,
 } from "../growatt/client.js";
+import { evaluarExportacion, leerUmbralesExportacion } from "./exportacion.js";
 import { concurrencia, pctAlertaMasiva, pctErrorMasivo } from "./config.js";
 import { dateADia, diaAEvaluar, diaADate, sumarDias, type Dia } from "./dias.js";
 import {
@@ -34,7 +38,11 @@ import {
   type EstadoDispositivo,
   type ResultadoDiagnostico,
 } from "./diagnostico.js";
-import { guardarGeneracionDiaria } from "./generacion-diaria.service.js";
+import {
+  guardarExportacionDiaria,
+  guardarGeneracionDiaria,
+  leerHistorialConExportacion,
+} from "./generacion-diaria.service.js";
 import { resolverHabilitadoEn, resolverOperativaDesde, ETAPAS_UTE } from "./habilitacion.js";
 import { registrarDeteccion, resolverIncidencias, serializarIncidencia } from "./incidencias.service.js";
 
@@ -206,6 +214,51 @@ interface ResultadoPlanta {
   requests: number;
 }
 
+/**
+ * Datalogger y dirección del medidor de una planta, cacheados en GrowattDevice.
+ *
+ * Descubrirlos cuesta dos requests (device/list + meter_list) y no cambian salvo
+ * que se toque el hardware. Sin este caché, preguntar por la exportación diaria
+ * costaría tres pedidos por planta por día en vez de uno — con 57 plantas, la
+ * diferencia entre 57 y 171 llamadas contra una API que ya nos limitó.
+ *
+ * Devuelve null si la planta no tiene medidor: hay clientes que directamente no
+ * lo tienen, y para ellos no hay exportación que consultar nunca.
+ */
+async function resolverMedidor(
+  plantId: bigint,
+  onRequest: () => void,
+): Promise<{ dataloggerSn: string; address: string } | null> {
+  const cacheado = await prisma.growattDevice.findFirst({
+    where: { growattPlantId: plantId, dataloggerSn: { not: null }, meterAddress: { not: null } },
+    select: { dataloggerSn: true, meterAddress: true },
+  });
+  if (cacheado?.dataloggerSn && cacheado.meterAddress) {
+    return { dataloggerSn: cacheado.dataloggerSn, address: cacheado.meterAddress };
+  }
+
+  // No está cacheado: descubrirlo una vez y guardarlo.
+  const dataloggers = await dataloggersSmartMeter(plantId.toString());
+  onRequest();
+  if (dataloggers.length === 0) return null;
+
+  for (const sn of dataloggers) {
+    await growattDormir(growattPausaMs);
+    onRequest();
+    const direcciones = await medidoresDeDatalogger(sn).catch(() => [] as string[]);
+    if (direcciones.length === 0) continue;
+
+    await prisma.growattDevice
+      .updateMany({
+        where: { growattPlantId: plantId, dataloggerSn: sn },
+        data: { meterAddress: direcciones[0] },
+      })
+      .catch(() => undefined);
+    return { dataloggerSn: sn, address: direcciones[0] };
+  }
+  return null;
+}
+
 async function evaluarPlanta(
   planta: PlantaObjetivo,
   dia: Dia,
@@ -300,6 +353,23 @@ async function evaluarPlanta(
     }
   }
 
+  // 4. Exportación del día. Sólo si la planta generó: si no generó, ya hay una
+  //    alerta más grave y preguntar por la inyección no aporta.
+  if (generoOk && planta.projectId) {
+    try {
+      const medidor = await resolverMedidor(planta.plantId, () => requests++);
+      if (medidor) {
+        await growattDormir(growattPausaMs);
+        requests++;
+        const exp = await exportacionDelDia(medidor.dataloggerSn, medidor.address, dia);
+        if (exp != null) await guardarExportacionDiaria(planta.projectId, dia, exp);
+      }
+    } catch {
+      // Sin dato del medidor no se afirma nada: el día queda en null y la racha
+      // de "no exporta" se corta sola.
+    }
+  }
+
   const resultado = diagnosticar({
     dia,
     generacionKwh,
@@ -311,6 +381,29 @@ async function evaluarPlanta(
     umbrales,
     ahora,
   });
+
+  // Una planta que genera bien pero no inyecta se ve "OK" desde la generación.
+  // El chequeo de exportación es lo único que la delata, así que pisa el OK.
+  if (resultado.diagnostico === FvDiagnostico.OK && planta.projectId) {
+    const conExport = await leerHistorialConExportacion(planta.projectId, desde, dia);
+    const veredicto = evaluarExportacion({
+      dia,
+      historial: conExport,
+      umbrales: leerUmbralesExportacion(),
+    });
+    if (veredicto.alerta) {
+      return {
+        resultado: {
+          ...resultado,
+          diagnostico: FvDiagnostico.SIN_EXPORTACION,
+          detalle: veredicto.detalle!,
+          alerta: true,
+        },
+        generacionKwh,
+        requests,
+      };
+    }
+  }
 
   if (apiCaida && resultado.diagnostico !== FvDiagnostico.SIN_DATOS_API && historial.size === 0) {
     // Defensa: si la API cayó y no hay nada guardado, nunca reportar "no genera".

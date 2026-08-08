@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "FvDiagnostico" ADD VALUE 'SIN_EXPORTACION';
