@@ -4,7 +4,7 @@
 // una entrada al tope de MANUAL_CAMBIOS. La versión y el changelog salen impresos
 // en el PDF. El nombre del archivo descargado incluye la versión.
 
-export const MANUAL_VERSION = "1.2";
+export const MANUAL_VERSION = "1.3";
 export const MANUAL_ACTUALIZADO = "8 de agosto de 2026";
 
 export interface CambioManual {
@@ -15,6 +15,13 @@ export interface CambioManual {
 
 // Más reciente arriba.
 export const MANUAL_CAMBIOS: CambioManual[] = [
+  {
+    version: "1.3",
+    fecha: "8 de agosto de 2026",
+    cambios: [
+      "Las plantas nuevas de Growatt se detectan solas todos los días y el panel avisa cuando alguna quedó sin vincular.",
+    ],
+  },
   {
     version: "1.2",
     fecha: "8 de agosto de 2026",
@@ -137,6 +144,16 @@ estar vinculado a su planta. Entrá a **Plantas Growatt** (botón del panel):
   marcala como **Ignorar** para que no aparezca como pendiente.
 
 Una planta bien vinculada es lo que permite traer sus datos automáticamente.
+
+**No hace falta acordarse de sincronizar.** Todas las mañanas, antes del control
+diario, el sistema busca plantas nuevas por su cuenta. Si aparece alguna sin
+generador asignado, la pestaña **Monitoreo** lo avisa con un cartel y un acceso
+directo para vincularla. El botón de sincronizar sigue estando para cuando
+acabás de instalar y no querés esperar al día siguiente.
+
+Sólo se traen las plantas de la cuenta de Voltia. El acceso a la API alcanza
+también instalaciones de otras empresas, y ésas se descartan: no son clientes
+nuestros y no tenemos por qué guardar sus datos.
 
 ---
 

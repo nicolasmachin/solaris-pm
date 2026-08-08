@@ -1,5 +1,27 @@
 # Novedades
 
+## v8.9
+
+### 8 de agosto de 2026
+
+#### Fecha de visita realizada, en Ventas
+
+- Al mover un cliente potencial a la etapa **Visitado**, la fecha de "Visita realizada" **se completa sola**. Hasta ahora había que acordarse de cargarla a mano, y en la práctica quedaba vacía: eso desarmaba los indicadores de cuánto tarda una visita en convertirse en venta.
+- **Se puede corregir en cualquier momento** desde "Fechas del proceso", en el panel del cliente potencial. Es lo habitual: la visita se hizo el martes y el lead se movió el viernes.
+- Una vez cargada, **el sistema no la pisa**: si sacás el cliente de Visitado y lo volvés a poner, la fecha que escribiste se respeta. Solo se completa sola cuando está vacía.
+
+#### Manual de la herramienta de reportes
+
+- El botón **"Manual de uso"** ahora abre el manual **en pantalla** en vez de descargarlo directo. Se lee ahí mismo y, si lo querés guardar, el botón de descarga está dentro.
+- Está disponible tanto en **Reportes FV** como en la pestaña **Monitoreo**.
+- Se sumaron capítulos nuevos: el control diario de las plantas —qué significa cada estado y cómo gestionar un problema—, la generación día a día que ve el cliente, y cómo mirar el portal tal como lo ve él.
+
+#### Plantas nuevas de Growatt
+
+- El sistema ahora **busca plantas nuevas todos los días** por su cuenta, sin que haya que apretar ningún botón.
+- Si aparece alguna sin generador asignado, **avisa en el panel de Monitoreo** con un acceso directo para vincularla. Antes había que acordarse de ir a buscarlas, y mientras tanto esas plantas no se controlaban ni guardaban datos.
+- El listado dejó de mezclar instalaciones que no son de Voltia, así que lo que aparece pendiente es siempre trabajo real.
+
 ## v8.8
 
 ### 7 de agosto de 2026

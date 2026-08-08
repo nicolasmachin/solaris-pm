@@ -23,29 +23,28 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "8.8",
-  date: "7 de agosto de 2026",
+  version: "8.9",
+  date: "8 de agosto de 2026",
   sections: [
     {
-      title: "Control diario de las plantas de los clientes",
+      title: "Fecha de visita realizada, en Ventas",
       items: [
-        "Todas las mañanas el sistema revisa que cada planta haya generado el día anterior. Si no generó, busca la causa y avisa: falla del equipo, sin conexión a internet, o todavía sin habilitar.",
-        "Pestaña nueva Monitoreo en Experiencia Solar: estado de cada planta, cuántos días lleva sin generar, historial y gráfico de los últimos 30 días.",
-        "Cada problema se puede marcar como revisado, descartar si fue falsa alarma, o silenciar la planta hasta una fecha. El silencio siempre vence.",
-        "Llega un mail diario, pero sólo cuando un problema empieza o se resuelve: lo que sigue igual no se repite todos los días.",
+        'Al mover un cliente potencial a la etapa Visitado, la fecha de "Visita realizada" se completa sola. Antes había que acordarse de cargarla a mano y quedaba vacía, lo que desarmaba los indicadores de cuánto tarda una visita en convertirse en venta.',
+        'Se puede corregir en cualquier momento desde "Fechas del proceso", y una vez cargada el sistema no la pisa.',
       ],
     },
     {
-      title: "Generación día a día en el portal del cliente",
+      title: "Manual de la herramienta de reportes",
       items: [
-        "El cliente ve cuánta energía generó cada día del mes, con el total, el promedio diario y su mejor día, y puede moverse a meses anteriores.",
+        'El botón "Manual de uso" ahora abre el manual en pantalla en vez de descargarlo, con la descarga adentro. Está en Reportes FV y en Monitoreo.',
+        "Se sumaron capítulos sobre el control diario de las plantas, la generación día a día del cliente y cómo mirar el portal como lo ve él.",
       ],
     },
     {
-      title: "Ver el portal como lo ve el cliente",
+      title: "Plantas nuevas de Growatt",
       items: [
-        "Desde el listado de Generadores, un botón con forma de ojo entra al portal de ese cliente para ver exactamente lo que ve él. Una franja arriba lo deja claro en todo momento.",
-        "Es sólo lectura: no se puede abrir un ticket ni responder una encuesta en su nombre.",
+        "El sistema busca plantas nuevas todos los días solo, y avisa en el panel de Monitoreo si alguna quedó sin generador asignado.",
+        "El listado dejó de mezclar instalaciones que no son de Voltia: lo que aparece pendiente es siempre trabajo real.",
       ],
     },
   ],
@@ -59,6 +58,16 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "8.8",
+    shortDate: "7 ago",
+    highlights: [
+      "Control diario de las plantas: todas las mañanas se revisa que cada una haya generado, y se avisa por mail solo cuando un problema empieza o se resuelve.",
+      "Pestaña nueva Monitoreo en Experiencia Solar, con el estado de cada planta y su historial.",
+      "El cliente ve en su portal cuánta energía generó cada día del mes.",
+      "Botón para ver el portal tal como lo ve el cliente, desde el listado de Generadores.",
+    ],
+  },
   {
     version: "8.7",
     shortDate: "6 ago",

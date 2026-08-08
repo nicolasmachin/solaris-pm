@@ -272,14 +272,20 @@ export async function moverEtapaLead(params: {
   const isClosed = stage === SalesStage.CERRADO_GANADO || stage === SalesStage.CERRADO_PERDIDO;
 
   // Fechas que se completan solas al cambiar de etapa:
-  //  - AGENDAR_VISITA completa la fecha de visita SI está vacía. Si el usuario
-  //    ya la cargó a mano, no se pisa.
+  //  - AGENDAR_VISITA completa la fecha de visita agendada SI está vacía. Si el
+  //    usuario ya la cargó a mano, no se pisa.
+  //  - VISITADO completa la fecha de visita realizada, con el mismo criterio.
   //  - Cerrar (ganado o perdido) SIEMPRE pisa la fecha de cierre: si el lead se
   //    reabre y se vuelve a cerrar, queda la última real.
   // Ninguna otra etapa toca fechas, y volver atrás no borra la de cierre.
-  const dateAutoFills: { visitScheduledAt?: Date; closedAt?: Date } = {};
+  const dateAutoFills: { visitScheduledAt?: Date; visitCompletedAt?: Date; closedAt?: Date } = {};
   if (stage === SalesStage.AGENDAR_VISITA && !existing.visitScheduledAt) {
     dateAutoFills.visitScheduledAt = new Date();
+  }
+  // No pisa un valor cargado a mano: la visita pudo hacerse días antes de que
+  // alguien moviera el lead de etapa, y esa fecha real vale más que la de hoy.
+  if (stage === SalesStage.VISITADO && !existing.visitCompletedAt) {
+    dateAutoFills.visitCompletedAt = new Date();
   }
   if (isClosed) {
     dateAutoFills.closedAt = new Date();

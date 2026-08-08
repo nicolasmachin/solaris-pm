@@ -891,7 +891,7 @@ function LeadPanel({
                 { key: "leadCreatedAt", label: "Fecha de creación", auto: !!lead.leadCreatedAt },
                 { key: "proposalSentAt", label: "Propuesta enviada", auto: !!lead.proposalSentAt },
                 { key: "visitScheduledAt", label: "Visita agendada", auto: !!lead.visitScheduledAt },
-                { key: "visitCompletedAt", label: "Visita realizada", auto: false },
+                { key: "visitCompletedAt", label: "Visita realizada", auto: !!lead.visitCompletedAt },
                 { key: "closedAt", label: "Fecha de cierre", auto: !!lead.closedAt },
               ] as { key: keyof typeof dates; label: string; auto: boolean }[]
             ).map(({ key, label, auto }) => (
