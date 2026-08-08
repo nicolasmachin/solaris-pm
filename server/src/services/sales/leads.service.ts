@@ -278,15 +278,23 @@ export async function moverEtapaLead(params: {
   //  - Cerrar (ganado o perdido) SIEMPRE pisa la fecha de cierre: si el lead se
   //    reabre y se vuelve a cerrar, queda la última real.
   // Ninguna otra etapa toca fechas, y volver atrás no borra la de cierre.
+  // Reconfirmar la misma etapa NO es un hito nuevo: mover un lead de Visitado a
+  // Visitado no significa que se lo haya visitado hoy otra vez. Sin esta guarda,
+  // reconfirmar una etapa vieja estampa la fecha de hoy sobre un hito que
+  // ocurrió semanas atrás, y queda peor que el campo vacío.
+  const cambioDeEtapa = existing.stage !== stage;
+
   const dateAutoFills: { visitScheduledAt?: Date; visitCompletedAt?: Date; closedAt?: Date } = {};
-  if (stage === SalesStage.AGENDAR_VISITA && !existing.visitScheduledAt) {
+  if (cambioDeEtapa && stage === SalesStage.AGENDAR_VISITA && !existing.visitScheduledAt) {
     dateAutoFills.visitScheduledAt = new Date();
   }
   // No pisa un valor cargado a mano: la visita pudo hacerse días antes de que
   // alguien moviera el lead de etapa, y esa fecha real vale más que la de hoy.
-  if (stage === SalesStage.VISITADO && !existing.visitCompletedAt) {
+  if (cambioDeEtapa && stage === SalesStage.VISITADO && !existing.visitCompletedAt) {
     dateAutoFills.visitCompletedAt = new Date();
   }
+  // El cierre sí se re-sella aunque la etapa no cambie: pasar de ganado a ganado
+  // es raro, pero si ocurre, la fecha del último cierre sigue siendo la correcta.
   if (isClosed) {
     dateAutoFills.closedAt = new Date();
   }
