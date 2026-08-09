@@ -62,6 +62,9 @@ services:
       GROWATT_API_BASE: ${GROWATT_API_BASE:-}
       REPORTES_FV_GROWATT_PAUSA_MS: ${REPORTES_FV_GROWATT_PAUSA_MS:-}
       REPORTES_FV_GROWATT_CONCURRENCIA: ${REPORTES_FV_GROWATT_CONCURRENCIA:-}
+      # Copia oculta de TODO reporte que se le manda a un cliente. Oculta y no
+      # CC: el cliente no tiene por qué ver a quién más le llega su reporte.
+      REPORTES_FV_BCC: ${REPORTES_FV_BCC:-}
       # Monitoreo diario de plantas. El digest sale prendido, a la casilla de
       # FV_MONITOR_EMAIL (default nmachin@voltia.com.uy). Si algún día genera
       # ruido, FV_MONITOR_EMAIL_ENABLED=false lo apaga sin frenar el monitoreo.

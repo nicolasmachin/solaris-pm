@@ -4,6 +4,11 @@
 
 ### 8 de agosto de 2026
 
+#### Copia oculta de los reportes que se mandan al cliente
+
+- Todo reporte fotovoltaico que se le envía a un cliente ahora llega también a **nmachin@voltia.com.uy**, en copia oculta. La función existía en el sistema pero **nunca había estado activada en producción**, así que hasta ahora no llegaba copia de nada.
+- Va en copia **oculta**: el cliente no ve quién más lo recibe.
+
 #### Arreglado: nadie podía enviar los reportes
 
 - **El envío de reportes al cliente estaba bloqueado para todos los roles, incluido el de administrador**, desde que existe el módulo. El permiso que las pantallas de envío exigen no estaba dado de alta para nadie y tampoco aparecía en la matriz de permisos, así que no había forma de habilitarlo. Ahora está disponible para Administrador y Experiencia Solar, y el resto de los roles se puede habilitar desde Configuración → Permisos.
