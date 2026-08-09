@@ -6,6 +6,9 @@
 
 #### Arreglos y detalles
 
+- **Un generador eliminado ya no sigue generando reportes.** El listado del cierre mensual no estaba descartando los generadores dados de baja, así que una instalación cargada dos veces podía derivar en dos reportes del mismo mes para el mismo cliente.
+
+
 - **Se arregló el contraste de los botones amarillos**: tenían letras blancas sobre fondo amarillo y prácticamente no se leían. Ahora van en gris oscuro. Estaban así en Reportes FV, Métricas, Notificaciones, Calendario, Comisiones, Tarifas de UTE y **también en el portal del cliente**.
 - El botón **"Traer datos de Growatt" pasó a llamarse "Traer datos de las plantas"**: consulta Growatt y Huawei de una sola vez, no hay que traerlas por separado.
 - El **manual** (v1.4) y el **paso a paso mensual** (v1.1) quedaron actualizados con los generadores Huawei y con el botón de generar todos los PDF juntos.

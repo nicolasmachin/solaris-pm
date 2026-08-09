@@ -223,7 +223,14 @@ export async function getConfigEfectiva(projectId: string): Promise<ConfigEfecti
 /** Todas las configs de una, para el panel y las corridas masivas. */
 export async function listarConfigsEfectivas(opts: { soloHabilitados?: boolean } = {}) {
   const configs = await prisma.reporteFvConfig.findMany({
-    where: opts.soloHabilitados ? { habilitado: true } : {},
+    // Un proyecto dado de baja no debe seguir generando reportes. Sin este
+    // filtro, borrar un generador duplicado no alcanzaba: su config seguía
+    // entrando a la emisión mensual y el cliente podía recibir dos reportes de
+    // la misma instalación.
+    where: {
+      project: { deletedAt: null },
+      ...(opts.soloHabilitados ? { habilitado: true } : {}),
+    },
     include: {
       destinatarios: true,
       project: { select: SELECT_PROYECTO_CONFIG },
