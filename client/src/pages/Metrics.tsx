@@ -677,7 +677,7 @@ function WeeklyReportTab() {
             type="button"
             onClick={() => sendM.mutate()}
             disabled={sendM.isPending}
-            className="shrink-0 rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="shrink-0 rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-gray-900 transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {sendM.isPending ? "Enviando…" : "📧 Enviar el mail ahora"}
           </button>

@@ -395,7 +395,7 @@ export function ConsolidatedTableView({ id, onClose }: { id: string; onClose: ()
 
               {grouped.map((group) => (
                 <section key={group.categoria}>
-                  <h4 className="font-mono text-[10px] uppercase tracking-widest text-white bg-[var(--color-accent)] px-3 py-1.5 rounded-t">
+                  <h4 className="font-mono text-[10px] uppercase tracking-widest text-gray-900 bg-[var(--color-accent)] px-3 py-1.5 rounded-t">
                     {group.categoria}
                   </h4>
                   <div className="overflow-x-auto rounded-b border border-t-0 border-[var(--color-border)]">

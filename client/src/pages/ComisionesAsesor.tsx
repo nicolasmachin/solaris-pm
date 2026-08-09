@@ -30,7 +30,7 @@ function fmtDate(iso: string | null) {
 function filterBtn(active: boolean) {
   return `px-2.5 py-1 rounded text-xs font-medium ${
     active
-      ? "bg-[var(--color-accent)] text-white"
+      ? "bg-[var(--color-accent)] text-gray-900"
       : "text-[var(--color-text-muted)] hover:bg-[var(--color-bg-card-hover)]"
   }`;
 }

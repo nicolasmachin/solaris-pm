@@ -431,7 +431,7 @@ function ConfigTab({
             type="button"
             disabled={guardar.isPending}
             onClick={() => guardar.mutate()}
-            className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-gray-900 disabled:opacity-50"
           >
             {guardar.isPending ? "Guardando…" : detalle.dadoDeAlta ? "Guardar cambios" : "Dar de alta"}
           </button>
@@ -509,7 +509,7 @@ function LecturaTab({
           type="button"
           disabled={guardar.isPending || (gen === "" && cons === "" && exp === "" && nota === "")}
           onClick={() => guardar.mutate()}
-          className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-gray-900 disabled:opacity-50"
         >
           {guardar.isPending ? "Guardando…" : "Guardar lectura"}
         </button>
@@ -597,7 +597,7 @@ function PdfTab({
             disabled={emitir.isPending || bloqueado}
             onClick={() => emitir.mutate()}
             title={bloqueado ? "Resolvé los bloqueos de configuración primero" : undefined}
-            className="flex items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-gray-900 disabled:opacity-50"
           >
             <RefreshCw size={14} />
             {emitir.isPending ? "Generando…" : vigente ? "Regenerar PDF" : "Generar PDF"}

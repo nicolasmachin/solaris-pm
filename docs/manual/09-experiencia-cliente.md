@@ -182,6 +182,13 @@ que el mail y el listado de incidencias muestran las dos marcas juntas.
   parcial propio para Huawei — el gemelo del de Growatt, contra corridas
   concurrentes duplicadas.
 
+**Vinculación:** el panel tiene el modal "Plantas Growatt" pero **no hay
+equivalente para Huawei**: el catálogo se sincroniza y se vincula con
+`scripts/reportes-fv/sync-huawei.ts`. En la práctica molesta poco, porque el
+alcance es por empresa y las plantas nuevas entran solas — pero si aparece una
+que el matcheo por nombre no resuelve (pasó en producción con Barenof, que tiene
+el proyecto original y una ampliación `-A1`), hay que vincularla por script.
+
 **Limitación conocida:** la tabla de plantas del panel de Monitoreo sigue
 listando sólo las Growatt; las incidencias Huawei aparecen en la lista de
 incidencias y en el mail, pero la planta no tiene fila propia. Silenciar una

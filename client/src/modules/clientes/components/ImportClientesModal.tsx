@@ -163,7 +163,7 @@ export function ImportClientesModal({ open, onClose }: { open: boolean; onClose:
               type="file"
               accept=".csv,text/csv"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              className="text-sm text-[var(--color-text-secondary)] file:mr-3 file:rounded-md file:border-0 file:bg-[var(--color-accent)] file:px-3 file:py-1.5 file:text-sm file:text-white"
+              className="text-sm text-[var(--color-text-secondary)] file:mr-3 file:rounded-md file:border-0 file:bg-[var(--color-accent)] file:px-3 file:py-1.5 file:text-sm file:text-gray-900"
             />
 
             <div className="flex justify-end gap-2">

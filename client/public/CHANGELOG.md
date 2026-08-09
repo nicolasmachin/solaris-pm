@@ -4,6 +4,12 @@
 
 ### 8 de agosto de 2026
 
+#### Arreglos y detalles
+
+- **Se arregló el contraste de los botones amarillos**: tenían letras blancas sobre fondo amarillo y prácticamente no se leían. Ahora van en gris oscuro. Estaban así en Reportes FV, Métricas, Notificaciones, Calendario, Comisiones, Tarifas de UTE y **también en el portal del cliente**.
+- El botón **"Traer datos de Growatt" pasó a llamarse "Traer datos de las plantas"**: consulta Growatt y Huawei de una sola vez, no hay que traerlas por separado.
+- El **manual** (v1.4) y el **paso a paso mensual** (v1.1) quedaron actualizados con los generadores Huawei y con el botón de generar todos los PDF juntos.
+
 #### El monitoreo diario ahora también vigila las plantas Huawei
 
 - El aviso diario de plantas caídas **ya no es solo de las Growatt**: las 6 Huawei entran al mismo control y aparecen en el mismo mail, mezcladas con el resto. Para el que lo lee no cambia nada: dice qué cliente tiene el problema y desde cuándo.

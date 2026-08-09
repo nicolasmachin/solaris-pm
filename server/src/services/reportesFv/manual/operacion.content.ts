@@ -8,7 +8,7 @@
 // CONTROL DE VERSIONES: al actualizarla, subí OPERACION_VERSION y agregá una
 // entrada al tope de OPERACION_CAMBIOS.
 
-export const OPERACION_VERSION = "1.0";
+export const OPERACION_VERSION = "1.1";
 export const OPERACION_ACTUALIZADO = "8 de agosto de 2026";
 
 export interface CambioOperacion {
@@ -18,6 +18,13 @@ export interface CambioOperacion {
 }
 
 export const OPERACION_CAMBIOS: CambioOperacion[] = [
+  {
+    version: "1.1",
+    fecha: "8 de agosto de 2026",
+    cambios: [
+      "El botón ahora se llama \"Traer datos de las plantas\" y trae Growatt y Huawei juntos.",
+    ],
+  },
   {
     version: "1.0",
     fecha: "8 de agosto de 2026",
@@ -42,7 +49,7 @@ nada.
 | Cuándo | Qué hace | ¿Sale algo al cliente? |
 |---|---|---|
 | Todos los días, 8:00 | Revisa que cada planta esté funcionando | No |
-| Días 2, 4 y 6, 6:00 | Trae de Growatt los datos del mes anterior | No |
+| Días 2, 4 y 6, 6:00 | Trae de Growatt y de Huawei los datos del mes anterior | No |
 | Día 7, 8:00 | Arma los PDF de los que tienen todos los datos y te avisa por mail | No |
 | — | **Enviar al cliente** | **Sólo si lo hacés vos** |
 
@@ -59,8 +66,13 @@ Para el día 7 el sistema ya trajo los datos y armó los PDF. Te llega un mail c
 el resumen: cuántos quedaron listos, cuántos esperando datos y cuántos trabados.
 
 Si querés adelantarte, entrá a **Experiencia Solar → Reportes FV**, elegí el mes
-arriba a la izquierda y apretá **"Traer de Growatt"**. Tarda unos minutos y podés
-seguir trabajando mientras corre.
+arriba a la izquierda y apretá **"Traer datos de las plantas"**. Ese botón
+consulta **las dos marcas, Growatt y Huawei**: no hay que traerlas por separado.
+Tarda unos minutos y podés seguir trabajando mientras corre.
+
+Si querés generar los PDF de todos de una vez en lugar de uno por uno, usá
+**"Generar PDF de todos"**: arma los de todos los generadores que tengan los
+datos completos y te dice qué pasó con el resto.
 
 ### 2. Mirá el semáforo
 
@@ -80,6 +92,8 @@ Hacé clic en el generador para abrir su ficha:
 
 - Si falta el **consumo o la exportación**, cargalos a mano en *Lectura del mes*.
   Es lo normal en los generadores que no tienen medidor inteligente.
+- Lo que cargues a mano **no se pisa** cuando se vuelven a traer los datos, así
+  que podés corregir tranquilo.
 - Si está **bloqueado**, andá a la pestaña *Configuración*: casi siempre es que
   las franjas horarias no suman 100% o que a una empresa le falta la tarifa.
 - Si la planta estuvo **sin comunicación** parte del mes, el dato va a estar

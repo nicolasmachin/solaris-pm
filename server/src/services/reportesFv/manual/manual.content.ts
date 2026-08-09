@@ -4,7 +4,7 @@
 // una entrada al tope de MANUAL_CAMBIOS. La versión y el changelog salen impresos
 // en el PDF. El nombre del archivo descargado incluye la versión.
 
-export const MANUAL_VERSION = "1.3";
+export const MANUAL_VERSION = "1.4";
 export const MANUAL_ACTUALIZADO = "8 de agosto de 2026";
 
 export interface CambioManual {
@@ -15,6 +15,15 @@ export interface CambioManual {
 
 // Más reciente arriba.
 export const MANUAL_CAMBIOS: CambioManual[] = [
+  {
+    version: "1.4",
+    fecha: "8 de agosto de 2026",
+    cambios: [
+      "Los generadores Huawei (FusionSolar) traen los datos solos, igual que los Growatt.",
+      "El botón pasó a llamarse \"Traer datos de las plantas\": consulta las dos marcas.",
+      "El monitoreo diario también vigila las plantas Huawei.",
+    ],
+  },
   {
     version: "1.3",
     fecha: "8 de agosto de 2026",
@@ -132,7 +141,7 @@ Hay dos formas de cargarlo:
 
 ---
 
-## 4. Plantas de Growatt
+## 4. Plantas de Growatt y de Huawei
 
 Para que los datos vengan solos, cada generador con inversor **Growatt** tiene que
 estar vinculado a su planta. Entrá a **Plantas Growatt** (botón del panel):
@@ -155,22 +164,42 @@ Sólo se traen las plantas de la cuenta de Voltia. El acceso a la API alcanza
 también instalaciones de otras empresas, y ésas se descartan: no son clientes
 nuestros y no tenemos por qué guardar sus datos.
 
+### Generadores Huawei (FusionSolar)
+
+Los clientes con inversor **Huawei** funcionan igual: los datos vienen solos. En
+la ficha del generador, "Origen de datos" queda en **Huawei / FusionSolar
+(automático)**, y el listado se puede filtrar por esa opción.
+
+Hay dos diferencias respecto de Growatt, las dos a favor:
+
+- Las plantas **nuevas entran solas**, sin vincular nada: el acceso está dado a
+  nivel empresa y todo lo que aparece es nuestro.
+- El consumo y la exportación vienen **junto con la generación**, así que no
+  dependen de que el medidor haya reportado bien todo el mes.
+
+Hoy la vinculación de una planta Huawei a su generador se hace desde el sistema,
+no desde el panel: si aparece una planta nueva y no ves sus datos, avisá.
+
 ---
 
-## 5. Traer los datos de Growatt
+## 5. Traer los datos de las plantas
 
-Con las plantas vinculadas, el botón **Traer datos de Growatt** del panel trae la
-generación, el consumo y la exportación del mes seleccionado, para todos los
-generadores con planta. Vas a ver el progreso mientras corre (puede tardar varios
-minutos si son muchas plantas).
+Con las plantas vinculadas, el botón **Traer datos de las plantas** del panel
+trae la generación, el consumo y la exportación del mes seleccionado, **de
+Growatt y de Huawei**, para todos los generadores con planta. Vas a ver el
+progreso mientras corre (puede tardar varios minutos si son muchas plantas).
 
 **Cobertura de datos**: si a un mes le faltan días de datos del medidor (menos del
 90% de los días), el sistema **descarta** ese mes en lugar de mostrar un total
 incompleto que engañaría al cliente. Ese generador queda como *datos incompletos*,
 esperando que completes el dato a mano.
 
-Los datos que hayas **cargado a mano no se pisan** con los de Growatt: si corregiste
-un valor, queda.
+Un caso particular de Huawei: si la planta **no tiene medidor**, se guarda sólo la
+generación. Antes se hubiera registrado como "consumo cero", que da un ahorro
+equivocado.
+
+Los datos que hayas **cargado a mano no se pisan**: si corregiste un valor, queda.
+Vale también para los meses viejos que estimaste vos.
 
 ---
 
@@ -317,6 +346,10 @@ entero apagada, con el cliente perdiendo plata.
 
 **Todas las mañanas a las 8** el sistema revisa que cada planta haya generado el
 día anterior. Si no generó, busca la causa. Vive en la pestaña **Monitoreo**.
+
+El control cubre las plantas **Growatt y Huawei** por igual, y las mezcla en el
+mismo aviso: lo que importa es qué cliente tiene el problema, no qué marca de
+inversor tiene.
 
 ### Qué significa cada estado
 

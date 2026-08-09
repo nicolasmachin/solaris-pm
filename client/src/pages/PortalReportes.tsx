@@ -180,7 +180,7 @@ function MisDatosUteSection() {
                     onClick={() =>
                       guardarPotencia(g.projectId, g.potenciaContratadaKw, g.tarifaContratada)
                     }
-                    className="shrink-0 rounded-lg bg-[var(--color-accent)] px-3 py-1 text-sm font-medium text-white disabled:opacity-60"
+                    className="shrink-0 rounded-lg bg-[var(--color-accent)] px-3 py-1 text-sm font-medium text-gray-900 disabled:opacity-60"
                   >
                     Guardar
                   </button>
@@ -205,7 +205,7 @@ function MisDatosUteSection() {
                     type="button"
                     disabled={mutCorte.isPending}
                     onClick={() => guardarCorte(g.projectId, g.diaCorteMedidor)}
-                    className="shrink-0 rounded-lg bg-[var(--color-accent)] px-3 py-1 text-sm font-medium text-white disabled:opacity-60"
+                    className="shrink-0 rounded-lg bg-[var(--color-accent)] px-3 py-1 text-sm font-medium text-gray-900 disabled:opacity-60"
                   >
                     Guardar
                   </button>
@@ -295,7 +295,7 @@ export function PortalReportes() {
                     <button
                       type="button"
                       onClick={() => setAbierto(r.id)}
-                      className="flex-1 rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-medium text-white"
+                      className="flex-1 rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-medium text-gray-900"
                     >
                       Ver
                     </button>

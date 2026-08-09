@@ -1231,7 +1231,7 @@ function ViewToggle({ view, onChange }: { view: CalendarView; onChange: (v: Cale
           onClick={() => onChange(v)}
           className={`rounded px-2.5 py-1 font-medium transition-colors ${
             view === v
-              ? "bg-[var(--color-accent)] text-white"
+              ? "bg-[var(--color-accent)] text-gray-900"
               : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
           }`}
         >

@@ -199,7 +199,7 @@ export function TabTarifasUte() {
             <button
               type="button"
               onClick={() => empezarNuevo(null)}
-              className="flex items-center gap-1 rounded-lg bg-[var(--color-accent)] px-2 py-1 text-xs font-medium text-white"
+              className="flex items-center gap-1 rounded-lg bg-[var(--color-accent)] px-2 py-1 text-xs font-medium text-gray-900"
             >
               <Plus size={12} /> Nuevo
             </button>
@@ -518,7 +518,7 @@ export function TabTarifasUte() {
                 type="button"
                 disabled={guardar.isPending || !draft.nombre}
                 onClick={() => guardar.mutate()}
-                className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-gray-900 disabled:opacity-50"
               >
                 {guardar.isPending ? "Guardando…" : creando ? "Crear borrador" : "Guardar cambios"}
               </button>

@@ -187,7 +187,7 @@ export function Notifications() {
             onClick={() => { setTypeFilter(""); setPage(1); }}
             className={`px-2 py-1 text-xs rounded-full border transition-colors ${
               typeFilter === ""
-                ? "bg-[var(--color-accent)] text-white border-[var(--color-accent)]"
+                ? "bg-[var(--color-accent)] text-gray-900 border-[var(--color-accent)]"
                 : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent)]"
             }`}
           >
@@ -199,7 +199,7 @@ export function Notifications() {
               onClick={() => { setTypeFilter(type); setPage(1); }}
               className={`px-2 py-1 text-xs rounded-full border transition-colors flex items-center gap-1 ${
                 typeFilter === type
-                  ? "bg-[var(--color-accent)] text-white border-[var(--color-accent)]"
+                  ? "bg-[var(--color-accent)] text-gray-900 border-[var(--color-accent)]"
                   : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent)]"
               }`}
             >

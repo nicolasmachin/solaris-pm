@@ -96,7 +96,7 @@ function ToggleFiltro<T extends string>({
             onClick={() => onChange(activo ? todos : o.value)}
             className={`rounded px-2 py-0.5 text-left text-[11px] transition ${
               activo
-                ? "bg-[var(--color-accent)] font-medium text-white"
+                ? "bg-[var(--color-accent)] font-medium text-gray-900"
                 : "border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
             }`}
           >
@@ -228,8 +228,8 @@ export function ReportesFvPanel() {
       setIngestaProgreso("iniciando…");
       toast.success(
         force
-          ? "Trayendo todo de nuevo desde Growatt"
-          : "Trayendo de Growatt lo que falta del mes",
+          ? "Trayendo todo de nuevo desde Growatt y Huawei"
+          : "Trayendo de Growatt y Huawei lo que falta del mes",
       );
     } catch (e: any) {
       toast.error(e?.response?.data?.message ?? "No se pudo iniciar la ingesta");
@@ -535,17 +535,17 @@ export function ReportesFvPanel() {
               type="button"
               disabled={Boolean(ingestaId)}
               onClick={() => iniciarIngesta(false)}
-              title="Trae de Growatt sólo los generadores a los que les falta algún dato del mes"
-              className="flex items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+              title="Trae de Growatt y de Huawei sólo los generadores a los que les falta algún dato del mes"
+              className="flex items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-medium text-gray-900 disabled:opacity-50"
             >
-              <Download size={14} /> Traer datos de Growatt
+              <Download size={14} /> Traer datos de las plantas
             </button>
             <button
               type="button"
               disabled={emitirTodos.isPending || Boolean(ingestaId)}
               onClick={() => emitirTodos.mutate()}
               title="Genera el PDF de todos los generadores que tengan los datos del mes completos"
-              className="flex items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-medium text-gray-900 disabled:opacity-50"
             >
               <FileText size={14} />
               {emitirTodos.isPending ? "Generando…" : "Generar PDF de todos"}
@@ -566,7 +566,7 @@ export function ReportesFvPanel() {
       {/* El salteo de los ya completos es deliberado, pero invisible: sin este
           aviso, "trajo 14 de 57" parece un error y no una optimización. */}
       <p className="text-[11px] text-[var(--color-text-muted)]">
-        "Traer datos de Growatt" consulta sólo los generadores a los que les falta algún dato del mes
+        "Traer datos de las plantas" consulta Growatt y Huawei, sólo para los generadores a los que les falta algún dato del mes
         elegido; los que ya están completos se saltean para no gastar consultas de más. Si necesitás
         rehacer un mes entero, usá "Traer todo de nuevo".
       </p>
@@ -675,7 +675,7 @@ export function ReportesFvPanel() {
                 onClick={() => set(!activo)}
                 className={`rounded px-2 py-0.5 text-left text-[11px] transition ${
                   activo
-                    ? "bg-[var(--color-accent)] font-medium text-white"
+                    ? "bg-[var(--color-accent)] font-medium text-gray-900"
                     : "border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
                 }`}
               >

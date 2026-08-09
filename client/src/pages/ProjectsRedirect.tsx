@@ -31,7 +31,7 @@ export function ProjectsRedirect() {
         <p className="text-[var(--color-text-secondary)]">No hay proyectos activos</p>
         <button
           onClick={() => navigate("/dashboard")}
-          className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+          className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-gray-900 hover:opacity-90 transition-opacity"
         >
           Crear proyecto
         </button>
