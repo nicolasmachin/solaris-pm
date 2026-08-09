@@ -1120,24 +1120,35 @@ export async function registerPortalRoutes(app: FastifyInstance) {
     { preHandler: authorize(Module.PORTAL_CLIENTE, Action.VIEW) },
     async (request) => {
       const user = ensureUser(request);
-      const configs = await prisma.reporteFvConfig.findMany({
-        where: { project: { deletedAt: null, clients: { some: { userId: user.id } } } },
+
+      // Se parte de los PROYECTOS del cliente, no de sus configuraciones de
+      // reporte. Partir de la configuración dejaba fuera justamente a los
+      // clientes que todavía no están dados de alta en la herramienta — es
+      // decir, a los que más falta les hace cargar estos datos.
+      const proyectos = await prisma.project.findMany({
+        where: { deletedAt: null, clients: { some: { userId: user.id } } },
         select: {
-          diaCorteMedidor: true,
-          tarifaContratada: true,
-          potenciaContratadaKw: true,
-          project: { select: { id: true, clientName: true } },
+          id: true,
+          clientName: true,
+          reporteFvConfig: {
+            select: {
+              diaCorteMedidor: true,
+              tarifaContratada: true,
+              potenciaContratadaKw: true,
+            },
+          },
         },
-        orderBy: { project: { clientName: "asc" } },
+        orderBy: { clientName: "asc" },
       });
+
       return {
-        generadores: configs.map((c) => {
-          const potencia = Number(c.potenciaContratadaKw);
+        generadores: proyectos.map((p) => {
+          const potencia = Number(p.reporteFvConfig?.potenciaContratadaKw ?? 0);
           return {
-            projectId: c.project.id,
-            projectName: c.project.clientName,
-            diaCorteMedidor: c.diaCorteMedidor,
-            tarifaContratada: c.tarifaContratada,
+            projectId: p.id,
+            projectName: p.clientName,
+            diaCorteMedidor: p.reporteFvConfig?.diaCorteMedidor ?? null,
+            tarifaContratada: p.reporteFvConfig?.tarifaContratada ?? null,
             // Cero en la base significa "no lo sabemos" y el reporte se calcula
             // con una estimación; hacia el cliente se muestra vacío para que
             // entienda que falta cargarlo.

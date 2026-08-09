@@ -26,6 +26,7 @@ import { upsertConfig } from "../services/reportesFv/config.service.js";
 import { upsertLecturaManual } from "../services/reportesFv/lecturas.service.js";
 import { recalcularSerie } from "../services/reportesFv/calculo.service.js";
 import { generarEmision, regenerarPdfDesdeSnapshot } from "../services/reportesFv/emision.service.js";
+import { ejecutarEmisionMensual } from "../services/reportesFv/reportes-fv.job.js";
 import { enviarEmision, enviarLote } from "../services/reportesFv/envio.service.js";
 import { getIngesta, ingerirPeriodo } from "../services/reportesFv/growatt/ingesta.service.js";
 import {
@@ -386,6 +387,36 @@ export async function registerReportesFvRoutes(app: FastifyInstance) {
       const { emisionId } = z.object({ emisionId: z.string() }).parse(request.params);
       const { dryRun } = z.object({ dryRun: z.boolean().optional() }).parse(request.body ?? {});
       return enviarEmision(emisionId, { dryRun, userId: request.user!.id });
+    },
+  );
+
+  // Generar los PDF de todo un período de una vez.
+  //
+  // Con 57 generadores, hacerlo de a uno no es viable. Reusa la misma lógica que
+  // corre el cron mensual: saltea los que tienen la configuración incompleta o
+  // les falta la lectura del mes, y devuelve el detalle de qué pasó con cada
+  // grupo para que el panel lo muestre.
+  app.post(
+    "/reportes-fv/emisiones/lote",
+    { preHandler: authorize(EXP, Action.CREATE) },
+    async (request) => {
+      const body = z
+        .object({
+          periodo: periodoSchema,
+          projectIds: z.array(z.string()).optional(),
+          /** Regenerar también los que ya tienen PDF. */
+          forzar: z.boolean().optional(),
+        })
+        .parse(request.body);
+
+      return ejecutarEmisionMensual(new Date(), {
+        periodo: body.periodo,
+        projectIds: body.projectIds,
+        forzar: body.forzar,
+        userId: request.user!.id,
+        // El mail de resumen es del cron; acá el resultado se ve en pantalla.
+        notificar: false,
+      });
     },
   );
 

@@ -317,7 +317,10 @@ export function PortalReportes() {
         ))
       )}
 
-      {reportes.length > 0 && <MisDatosUteSection />}
+      {/* Sin condicionar a que ya tenga reportes: un cliente que todavía no
+          recibió ninguno es justamente el que más necesita cargar estos datos,
+          porque son los que faltan para poder calcularle el primero. */}
+      <MisDatosUteSection />
 
       {/* Visor del PDF */}
       {abierto && (

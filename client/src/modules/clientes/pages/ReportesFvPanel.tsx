@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Check, Download, FileText, Search, Send, X } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -8,6 +8,7 @@ import { ResponsiveTable, type Column } from "../../../components/ui/ResponsiveT
 import { Spinner } from "../../../components/ui/Spinner";
 import {
   dispararIngesta,
+  emitirLote,
   getIngesta,
   getPanel,
   getPeriodos,
@@ -234,6 +235,27 @@ export function ReportesFvPanel() {
       toast.error(e?.response?.data?.message ?? "No se pudo iniciar la ingesta");
     }
   }
+
+  // Generar los PDF de a uno con 57 generadores no es viable. Este botón usa la
+  // misma lógica que el cron mensual: saltea los que tienen la configuración
+  // incompleta o les falta la lectura del mes, y reporta qué pasó con cada grupo
+  // en vez de fallar en silencio.
+  const emitirTodos = useMutation({
+    mutationFn: () => emitirLote(periodoActivo),
+    onSuccess: (r) => {
+      const partes = [
+        r.generados ? `${r.generados} generados` : null,
+        r.yaEmitidos ? `${r.yaEmitidos} ya tenían PDF` : null,
+        r.esperandoDatos ? `${r.esperandoDatos} sin datos del mes` : null,
+        r.bloqueados ? `${r.bloqueados} con configuración incompleta` : null,
+        r.errores ? `${r.errores} con error` : null,
+      ].filter(Boolean);
+      if (r.generados > 0) toast.success(`PDF: ${partes.join(" · ")}`, { duration: 6000 });
+      else toast(`No se generó ninguno: ${partes.join(" · ") || "nada pendiente"}`, { duration: 6000 });
+      qc.invalidateQueries({ queryKey: ["reportes-fv", "panel"] });
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message ?? "No se pudieron generar los PDF"),
+  });
 
   const total = panel?.generadores.length ?? 0;
 
@@ -517,6 +539,16 @@ export function ReportesFvPanel() {
               className="flex items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
             >
               <Download size={14} /> Traer datos de Growatt
+            </button>
+            <button
+              type="button"
+              disabled={emitirTodos.isPending || Boolean(ingestaId)}
+              onClick={() => emitirTodos.mutate()}
+              title="Genera el PDF de todos los generadores que tengan los datos del mes completos"
+              className="flex items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+            >
+              <FileText size={14} />
+              {emitirTodos.isPending ? "Generando…" : "Generar PDF de todos"}
             </button>
             <button
               type="button"

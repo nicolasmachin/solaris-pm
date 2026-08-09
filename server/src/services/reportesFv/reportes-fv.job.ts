@@ -73,10 +73,19 @@ export interface ResumenEmision {
 
 export async function ejecutarEmisionMensual(
   now: Date = new Date(),
-  opts: { projectIds?: string[]; notificar?: boolean } = {},
+  opts: {
+    projectIds?: string[];
+    notificar?: boolean;
+    /** Período a emitir. Por defecto el mes anterior, que es lo que hace el cron. */
+    periodo?: Periodo;
+    /** Regenerar los que ya tienen PDF. El cron nunca lo hace; el panel sí. */
+    forzar?: boolean;
+    /** Quién dispara. Sin esto se usa el usuario de sistema (el cron). */
+    userId?: string;
+  } = {},
 ): Promise<ResumenEmision> {
-  const periodo = periodoMesAnterior(now);
-  const userId = await usuarioSistema();
+  const periodo = opts.periodo ?? periodoMesAnterior(now);
+  const userId = opts.userId ?? (await usuarioSistema());
   const resumen: ResumenEmision = {
     periodo,
     generados: 0,
@@ -113,7 +122,7 @@ export async function ejecutarEmisionMensual(
       where: { projectId: config.projectId, periodo: fecha },
       select: { id: true },
     });
-    if (yaEmitida) {
+    if (yaEmitida && !opts.forzar) {
       resumen.yaEmitidos++;
       continue;
     }

@@ -48,12 +48,23 @@ export function ReporteFvDetalle({ projectId, periodo, onClose }: Props) {
   const canCreate = usePermission("EXPERIENCIA_CLIENTES", "CREATE");
   const canSend = usePermission("EXPERIENCIA_CLIENTES", "COMPLETE");
   const qc = useQueryClient();
-  const [tab, setTab] = useState<Tab>("config");
+  const [tab, setTab] = useState<Tab | null>(null);
 
   const { data: detalle, isLoading } = useQuery({
     queryKey: ["reportes-fv", "detalle", projectId],
     queryFn: () => getDetalleGenerador(projectId),
   });
+
+  // Con qué pestaña abrir: la que corresponde a lo que hay que hacer con este
+  // generador. Abrir siempre en Configuración escondía la acción principal
+  // —generar el PDF— detrás de dos clics, y con la configuración ya resuelta
+  // esa pestaña no aporta nada.
+  const tabInicial: Tab = !detalle
+    ? "config"
+    : !detalle.dadoDeAlta || (detalle.config?.efectivo.bloqueosCalculo.length ?? 0) > 0
+      ? "config"
+      : "pdf";
+  const tabActiva = tab ?? tabInicial;
 
   const invalidar = () => {
     qc.invalidateQueries({ queryKey: ["reportes-fv", "detalle", projectId] });
@@ -87,7 +98,7 @@ export function ReporteFvDetalle({ projectId, periodo, onClose }: Props) {
                 key={t}
                 onClick={() => setTab(t)}
                 className={`border-b-2 px-3 py-2 text-sm transition-colors ${
-                  tab === t
+                  tabActiva === t
                     ? "border-[var(--color-accent)] font-medium text-[var(--color-text-primary)]"
                     : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
                 }`}
@@ -98,10 +109,10 @@ export function ReporteFvDetalle({ projectId, periodo, onClose }: Props) {
           </div>
 
           <div className="flex-1 overflow-auto p-5">
-            {tab === "config" && (
+            {tabActiva === "config" && (
               <ConfigTab detalle={detalle} canEdit={canEdit} onSaved={invalidar} />
             )}
-            {tab === "lectura" && (
+            {tabActiva === "lectura" && (
               <LecturaTab
                 detalle={detalle}
                 periodo={periodo}
@@ -109,7 +120,7 @@ export function ReporteFvDetalle({ projectId, periodo, onClose }: Props) {
                 onSaved={invalidar}
               />
             )}
-            {tab === "pdf" && (
+            {tabActiva === "pdf" && (
               <PdfTab
                 detalle={detalle}
                 periodo={periodo}

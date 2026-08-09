@@ -28,6 +28,12 @@
 - Los filtros pasaron de menús desplegables a **botones que se prenden y apagan**, con todas las opciones a la vista: de alta / sin alta, habilitados / deshabilitados, con lectura / incompleta / sin lectura, calculados / sin calcular, con PDF / sin PDF, enviados / sin enviar, Growatt / manual, residencial / empresa.
 - Antes había que abrir cinco menús para entender qué estaba filtrado; ahora se ve de un vistazo.
 
+#### Generar todos los PDF del mes de una vez
+
+- Botón nuevo **"Generar PDF de todos"** en Reportes FV: arma los PDF de todos los generadores que tengan los datos del mes completos. Antes había que entrar generador por generador, algo inviable con 57.
+- Al terminar avisa qué pasó con cada grupo: cuántos se generaron, cuántos ya tenían PDF, cuántos están esperando los datos del mes y cuántos tienen la configuración incompleta.
+- Al abrir la ficha de un generador, ahora se abre directamente en la pestaña que corresponde: en **Reporte / PDF** si ya está todo listo, o en **Configuración** si le falta algo. Antes abría siempre en Configuración y el botón de generar quedaba escondido dos clics más adentro.
+
 #### El cliente puede cargar sus datos de UTE desde el portal
 
 - En la sección de reportes del portal, ahora se llama **"Mis datos de UTE"** y el cliente puede cargar él mismo tres datos que están en su factura: la **tarifa contratada**, la **potencia contratada en kW** y el **día en que UTE lee su medidor**.
@@ -35,6 +41,7 @@
 - La pantalla aclara que **si no los carga igual recibe su reporte**, con valores de referencia y la aclaración correspondiente.
 - Cada carga queda registrada indicando que la hizo el cliente.
 - El reparto de franjas horarias (punta, llano, valle) **no** lo toca el cliente: es una estimación técnica nuestra, no un dato de su factura.
+- La sección se muestra a **todos** los clientes, incluso a los que todavía no recibieron ningún reporte: son justamente los que más necesitan cargar estos datos, porque son los que faltan para poder calcularles el primero.
 
 #### El reporte sale igual aunque el medidor no haya medido todo el mes
 

@@ -345,6 +345,27 @@ export interface PlantaGrowattRow {
   sugerencias: Array<{ id: string; clientName: string }>;
 }
 
+export interface ResumenEmisionLote {
+  periodo: string;
+  generados: number;
+  yaEmitidos: number;
+  esperandoDatos: number;
+  bloqueados: number;
+  errores: number;
+}
+
+/** Genera los PDF de todo un período de una vez. */
+export async function emitirLote(
+  periodo: string,
+  opts: { projectIds?: string[]; forzar?: boolean } = {},
+): Promise<ResumenEmisionLote> {
+  const { data } = await apiClient.post<ResumenEmisionLote>("/api/reportes-fv/emisiones/lote", {
+    periodo,
+    ...opts,
+  });
+  return data;
+}
+
 export async function dispararIngesta(
   periodo: string,
   opts: { projectIds?: string[]; force?: boolean } = {},
