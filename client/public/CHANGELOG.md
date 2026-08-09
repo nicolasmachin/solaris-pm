@@ -4,6 +4,16 @@
 
 ### 8 de agosto de 2026
 
+#### Los generadores Huawei ya traen los datos solos
+
+- Los clientes con inversor **Huawei** (FusionSolar) pasan a funcionar como los Growatt: **la app trae sola la generación, el consumo y la exportación de cada mes**, y con eso arma el reporte. Hasta ahora había que cargar los tres valores a mano todos los meses.
+- Son 6 generadores: Cidel–Barenof, Jorge Alvarez, Marianela Indart, Alejandro Fiermarin, Estilo y Rodolfo Sosa. Los nuevos que se instalen entran solos, sin configurar nada.
+- Se comprobó contra los meses cargados a mano: **los números coinciden** (julio de Barenof daba 733 kWh a mano y la API trae 731).
+- En la ficha del generador, "Origen de datos" ahora tiene la opción **Huawei / FusionSolar (automático)**, y el listado se puede filtrar por ella.
+- **Lo que cargaste a mano no se pisa nunca.** Si un mes tiene valores escritos por una persona —incluidos los estimados de meses viejos— la app los respeta y no los reemplaza por los de la API.
+- Los meses **incompletos no se cargan a medias**: si a un generador le faltan días (por ejemplo el medidor estaba mal conectado), se guarda la generación pero no el consumo ni la exportación, y queda anotado por qué.
+- Un generador **sin medidor** (como Fiermarin) guarda solo la generación: antes se hubiera registrado como "consumo cero", que habría dado un ahorro equivocado.
+
 #### Fecha de visita realizada, en Ventas
 
 - **Al subir la minuta desde el bot de Telegram, el cliente potencial pasa solo a "Visitado" y queda cargada la fecha de la visita.** Se usa la fecha que figura en la minuta, no la del día en que se sube: si la visita fue el martes y la minuta se carga el jueves, queda el martes. Un cliente ya cerrado (ganado o perdido) no se toca.

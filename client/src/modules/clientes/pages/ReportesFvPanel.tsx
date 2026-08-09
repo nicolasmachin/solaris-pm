@@ -163,7 +163,7 @@ export function ReportesFvPanel() {
   const [soloConProblemas, setSoloConProblemas] = useState(false);
   const [estados, setEstados] = useState<Set<EstadoGenerador>>(new Set());
   const [alta, setAlta] = useState<"todos" | "alta" | "sin_alta">("todos");
-  const [origen, setOrigen] = useState<"todos" | "GROWATT" | "MANUAL">("todos");
+  const [origen, setOrigen] = useState<"todos" | "GROWATT" | "HUAWEI" | "MANUAL">("todos");
   const [tipo, setTipo] = useState<"todos" | "residencial" | "empresa">("todos");
   const [envio, setEnvio] = useState<"todos" | "enviados" | "pendientes">("todos");
   const [pdf, setPdf] = useState<"todos" | "con" | "sin">("todos");
@@ -642,6 +642,7 @@ export function ReportesFvPanel() {
             todos="todos"
             options={[
               { value: "GROWATT", label: "Growatt" },
+              { value: "HUAWEI", label: "Huawei" },
               { value: "MANUAL", label: "Manual" },
             ]}
           />

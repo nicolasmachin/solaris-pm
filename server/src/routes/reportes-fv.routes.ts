@@ -29,6 +29,7 @@ import { generarEmision, regenerarPdfDesdeSnapshot } from "../services/reportesF
 import { ejecutarEmisionMensual } from "../services/reportesFv/reportes-fv.job.js";
 import { enviarEmision, enviarLote } from "../services/reportesFv/envio.service.js";
 import { getIngesta, ingerirPeriodo } from "../services/reportesFv/growatt/ingesta.service.js";
+import { ingerirPeriodoHuawei } from "../services/reportesFv/huawei/ingesta.service.js";
 import {
   listarPlantasConSugerencias,
   sincronizarPlantas,
@@ -485,6 +486,22 @@ export async function registerReportesFvRoutes(app: FastifyInstance) {
         force: body.force,
         userId: request.user!.id,
       });
+      // Las plantas Huawei van por otra API y no entran en ReporteFvIngesta (que
+      // cuenta plantas de Growatt). Se lanzan aparte y sin await: son 6 plantas y
+      // una sola llamada, y su demora no debe retrasar el 202 del panel.
+      void ingerirPeriodoHuawei(body.periodo, {
+        force: body.force,
+        projectIds: body.projectIds,
+      })
+        .then((h) => {
+          if (h.plantas) {
+            request.log.info(
+              `[reportes-fv] Huawei ${body.periodo}: ${h.guardadas} guardadas, ${h.omitidas} omitidas`,
+            );
+          }
+        })
+        .catch((err) => request.log.error({ err }, "[reportes-fv] ingesta Huawei falló"));
+
       return reply.code(202).send({ ingestaId });
     },
   );

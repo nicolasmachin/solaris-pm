@@ -121,7 +121,7 @@ export interface FilaPanel {
   clientName: string;
   dadoDeAlta: boolean;
   habilitado: boolean;
-  origenDatos: "GROWATT" | "MANUAL" | null;
+  origenDatos: "GROWATT" | "HUAWEI" | "MANUAL" | null;
   tipoCliente: "residencial" | "empresa" | null;
   potenciaEstimada: boolean;
   bloqueosCalculo: string[];
@@ -181,7 +181,7 @@ export interface DetalleGenerador {
     habilitado: boolean;
     tipoCliente: "residencial" | "empresa";
     tarifaContratada: "simple" | "doble" | "triple" | "zafral" | null;
-    origenDatos: "GROWATT" | "MANUAL";
+    origenDatos: "GROWATT" | "HUAWEI" | "MANUAL";
     growattPlantId: string | null;
     potenciaContratadaKw: number | null;
     pctPunta: number | null;
@@ -225,7 +225,7 @@ export interface GuardarConfigInput {
   inversionUsd?: number | null;
   potenciaInstaladaKwp?: number | null;
   mesInicio?: string | null;
-  origenDatos?: "GROWATT" | "MANUAL";
+  origenDatos?: "GROWATT" | "HUAWEI" | "MANUAL";
   growattPlantId?: string | null;
   notasFijas?: string | null;
   diaCorteMedidor?: number | null;

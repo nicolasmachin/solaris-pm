@@ -1,7 +1,7 @@
 # 09 · Experiencia del cliente
 
-> **Capítulo parcial.** La sección "Monitoreo diario de plantas" está escrita y
-> al día. El resto del módulo funciona en producción pero todavía no está
+> **Capítulo parcial.** Las secciones "Monitoreo diario de plantas" e "Ingesta
+> de generadores Huawei" están escritas y al día. El resto del módulo funciona en producción pero todavía no está
 > documentado; se completa cuando se trabaje sobre cada parte.
 
 Post-habilitación: interacciones, encuestas, mantenimientos y reportes fotovoltaicos.
@@ -182,6 +182,135 @@ funcionalidad no necesitó un seed de permisos nuevo ni agrega pasos al deploy.
 | `FV_MONITOR_DIAS_GRACIA` | `3` | Gracia tras la habilitación |
 | `FV_MONITOR_ALERTA_MASIVA_PCT` | `0.4` | Umbral de "esto es el clima" |
 | `FV_MONITOR_ERROR_MASIVO_PCT` | `0.3` | Umbral de "la corrida no vale" |
+
+---
+
+---
+
+# Ingesta de generadores Huawei (FusionSolar)
+
+## Para qué existe
+
+Seis clientes tienen inversor Huawei en vez de Growatt. Hasta agosto de 2026 sus
+lecturas se cargaban a mano todos los meses, y en la práctica se atrasaban o se
+copiaban de un mes al otro. Esta ingesta trae generación, consumo y exportación
+de la Northbound API de FusionSolar y las escribe en la misma
+`ReporteFvLectura` que usa Growatt, así que el cálculo, el PDF y el portal no se
+enteran de la marca del inversor.
+
+## Cómo se usa
+
+Nada nuevo en la UI: el generador se marca con **Origen de datos = Huawei /
+FusionSolar** y el resto del circuito (recalcular, emitir, enviar) es el de
+siempre. El listado de Reportes FV filtra por ese origen.
+
+La ingesta corre sola con el cron mensual de los días 2, 4 y 6, después de la de
+Growatt. El botón "Traer todo de nuevo" del panel también la dispara.
+
+Para el catálogo y la vinculación hay un script:
+
+```bash
+docker compose exec server npx tsx scripts/reportes-fv/sync-huawei.ts            # lista y sugiere
+docker compose exec server npx tsx scripts/reportes-fv/sync-huawei.ts --vincular # aplica
+docker compose exec server npx tsx scripts/reportes-fv/sync-huawei.ts --ingerir 2026-07
+```
+
+Sin `--vincular` sólo muestra qué haría: vincular la planta al proyecto
+equivocado le manda a un cliente el consumo de otro, así que se confirma a mano.
+
+## Cómo funciona
+
+Autenticación por **sesión**, no por token fijo: `POST /thirdData/login` con el
+usuario Northbound devuelve una cookie `XSRF-TOKEN` que dura unos 30 minutos y
+viaja como header. `client.ts` la cachea 20 minutos y la renueva sola; los
+errores llegan con **HTTP 200 y `failCode` en el body**, no con status HTTP.
+
+El corazón es `getKpiStationDay`, que devuelve **el mes entero de hasta 100
+plantas en una sola llamada**, y por cada día trae generación, consumo,
+exportación e importación juntos. Es la diferencia grande con Growatt, donde
+consumo y exportación salen del smart meter día por día y fallan seguido. La
+ingesta suma los días y guarda los totales.
+
+Se verificó que el `use_power` de Huawei cuadra exacto con la definición de
+consumo del sistema (generación − exportación + importación): 7,46 − 0,85 +
+30,09 = 36,7.
+
+## Permisos
+
+Ninguno nuevo. La ingesta se dispara desde `POST /reportes-fv/ingesta`
+(`EXPERIENCIA_CLIENTES:CREATE`, igual que Growatt) o desde el cron. El catálogo y
+la vinculación hoy sólo se tocan por script, no hay endpoint.
+
+## Reglas y decisiones
+
+- **La ingesta no pisa lo que cargó una persona.** A diferencia de Growatt, que
+  sólo protege `MANUAL`, acá también se respeta `IMPORT_LEGACY`: son
+  estimaciones hechas a mano para meses en que el medidor estaba mal conectado, y
+  para esos meses la API tiene *menos* días que la estimación. Sólo `force` las
+  reemplaza.
+- **Cobertura mínima del 90%** (`HUAWEI_MIN_COVERAGE`). Por debajo se guarda la
+  generación pero se descartan consumo y exportación: con días faltantes los
+  totales salen incoherentes — mayo de Marianela Indart daba 141 kWh generados
+  contra 874 exportados, que es imposible.
+- **Sin medidor no es consumo cero.** FusionSolar devuelve `use_power` en 0 todo
+  el mes cuando la planta no tiene smart meter (Alejandro Fiermarin). Guardar ese
+  0 diría que el cliente no consumió nada y daría un ahorro equivocado; se guarda
+  `null` con el motivo anotado.
+- **Un mes sin ningún día con datos no genera lectura**, ni siquiera en cero: es
+  "no sabemos", no "generó 0". De eso avisa el monitoreo diario.
+- **Tabla propia (`huawei_plants`), no un campo `proveedor` en `growatt_plants`.**
+  El identificador de Huawei es un string (`"NE=36611488"`) contra el BigInt de
+  Growatt, y dispositivos, incidencias y monitoreo ya cuelgan de ese BigInt.
+  Unificarlas sería un refactor grande de algo que funciona: los dos catálogos se
+  cruzan por `projectId`, que es lo que importa.
+- **Si FusionSolar falla, la ingesta de Growatt sigue.** Corre en su propio
+  `try/catch` después, porque las ~150 plantas Growatt son el grueso.
+- **Capacidad 0 se guarda como null.** FusionSolar deja la capacidad en 0 cuando
+  no la cargaron (Estilo, Rodolfo Sosa); 0 no es un dato, es un campo vacío.
+
+## Casos borde
+
+- **`real_health_state = 1` NO significa planta rota**, significa sin
+  comunicación. Verificado en campo: Rodolfo Sosa da 1 y la planta está sana — lo
+  que falla es el wifi del inversor. Importa para cuando se enganche el
+  monitoreo diario.
+- **`getAlarmList` está sin verificar.** Era el motivo original de mirar Huawei
+  (Growatt no tiene endpoint de alarmas), pero en la única prueba devolvió lista
+  vacía, y no se puede distinguir "no hay alarmas" de "el endpoint necesita otros
+  parámetros". Hay que reprobarlo con una planta en falla antes de apoyar
+  cualquier diagnóstico ahí.
+- **El rate limit real no es el documentado.** La doc habla de 1 llamada cada 5
+  minutos por interfaz; medido, dos llamadas separadas 177 ms dan `failCode 407` y
+  separadas ~2 s pasan siempre. `HUAWEI_PAUSA_MS` está en 2500 y hay backoff.
+- **El dominio es regional** y la cuenta existe en uno solo: el nuestro es
+  `la5.fusionsolar.huawei.com`. Con el dominio equivocado el login falla sin
+  explicar por qué.
+- **Plantas parciales por ser nuevas.** La API ya recorta los días a partir de la
+  conexión a red (Fiermarin dio 20/20 en mayo, conectado el 12), así que un
+  generador que arrancó a mitad de mes no figura como si le faltaran datos.
+- **El monitoreo diario todavía no cubre estas plantas**: es sólo ingesta
+  mensual. Una planta Huawei caída no dispara incidencia.
+
+## Archivos
+
+- Cliente: `reportesFv/huawei/client.ts` — `listarPlantas()`,
+  `serieDiariaDelMes()`, `estadoActual()`.
+- Catálogo: `reportesFv/huawei/plantas.service.ts` — `sincronizarPlantasHuawei()`,
+  `vincularPlantaHuawei()`, `marcarOrigenHuawei()`.
+- Ingesta: `reportesFv/huawei/ingesta.service.ts` — `ingerirPeriodoHuawei()`.
+- Script: `scripts/reportes-fv/sync-huawei.ts`.
+- Spike descartable con el que se decidió todo esto:
+  `scripts/reportes-fv/spike-huawei-fusionsolar.ts`.
+
+## Variables de entorno
+
+| Variable | Default | Para qué |
+|---|---|---|
+| `HUAWEI_API_USER` | — | usuario Northbound (`voltia_api`) |
+| `HUAWEI_API_PASSWORD` | — | su contraseña; sin esto la ingesta no corre |
+| `HUAWEI_API_BASE` | `https://la5.fusionsolar.huawei.com` | dominio regional |
+| `HUAWEI_PAUSA_MS` | 2500 | pausa entre llamadas |
+| `HUAWEI_MIN_COVERAGE` | 0.9 | cobertura mínima del mes |
 
 ---
 

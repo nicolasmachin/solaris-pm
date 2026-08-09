@@ -529,6 +529,7 @@ model User {
   reporteFvEmisionesGeneradas    ReporteFvEmision[]          @relation("ReporteFvEmisionGeneradaPor")
   reporteFvEnviosRealizados      ReporteFvEnvio[]            @relation("ReporteFvEnvioEnviadoPor")
   growattPlantsVinculadas        GrowattPlant[]              @relation("GrowattPlantVinculadaPor")
+  huaweiPlantsVinculadas          HuaweiPlant[]           @relation("HuaweiPlantVinculadaPor")
   growattPlantsSilenciadas       GrowattPlant[]              @relation("GrowattPlantMonitoreoSilenciadaPor")
   fvMonitorCorridasLanzadas      FvMonitorCorrida[]          @relation("FvMonitorCorridaLanzadaPor")
   fvIncidenciasRevisadas         FvIncidencia[]              @relation("FvIncidenciaRevisadaPor")
@@ -625,6 +626,7 @@ model Project {
   reporteFvEmisiones              ReporteFvEmision[]
   reporteFvGeneracionesDiarias    ReporteFvGeneracionDiaria[]
   growattPlant                    GrowattPlant?
+  huaweiPlant                     HuaweiPlant?
   fvIncidencias                   FvIncidencia[]
   projectVideos                   ProjectVideo[]
   // Sub-fase del E3 (Post-Habilitación). Solo se setea cuando el proyecto llega
@@ -3402,6 +3404,7 @@ enum ReporteFvTipoCliente {
 // pise la próxima ingesta de Growatt.
 enum ReporteFvFuente {
   GROWATT
+  HUAWEI
   MANUAL
   IMPORT_LEGACY
 }
@@ -3412,6 +3415,7 @@ enum ReporteFvFuente {
 // "falta el dato" no se confunde con "falló la ingesta".
 enum ReporteFvOrigenDatos {
   GROWATT
+  HUAWEI
   MANUAL
 }
 
@@ -3615,6 +3619,45 @@ model ReporteFvDestinatario {
 // El matching por nombre queda solo como sugerencia en la UI, nunca en runtime.
 //
 // La "allowlist" del script pasa a ser: projectId != null AND ignorada = false.
+
+/// Planta de FusionSolar (Huawei). Tabla aparte de GrowattPlant y no un campo
+/// `proveedor` en aquélla: el identificador de Huawei es un string ("NE=36611488")
+/// contra el BigInt de Growatt, y dispositivos/incidencias/monitoreo ya cuelgan
+/// de ese BigInt. Unificarlas sería un refactor grande de algo que funciona para
+/// ganar poco: los dos catálogos se cruzan por projectId, que es lo que importa.
+model HuaweiPlant {
+  id        String @id @default(cuid())
+  plantCode String @unique // "NE=36611488"
+  name      String
+
+  capacityKwp        Decimal?  @db.Decimal(10, 2)
+  gridConnectionDate DateTime? @db.Date
+  address            String?
+
+  /// `real_health_state` de getStationRealKpi: 1 = DESCONECTADA (el inversor no
+  /// llega a internet; NO significa que esté rota — caso verificado: Rodolfo Sosa
+  /// funciona pero no tiene wifi), 2 = con falla, 3 = sana. A diferencia de
+  /// Growatt, acá el estado lo dice la API y no hay que inferirlo de "comunica
+  /// pero no genera".
+  healthState    Int?
+  ultimoEstadoEn DateTime? @db.Timestamptz(6)
+
+  /// null = planta vista en la API pero todavía sin vincular a un proyecto.
+  projectId String?  @unique
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  ignorada  Boolean  @default(false)
+
+  vinculadaPorId String?
+  vinculadaPor   User?     @relation("HuaweiPlantVinculadaPor", fields: [vinculadaPorId], references: [id], onDelete: SetNull)
+  vinculadaEn    DateTime? @db.Timestamptz(6)
+
+  primeraVezEn DateTime @default(now()) @db.Timestamptz(6)
+  ultimaVezEn  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([projectId])
+  @@index([ignorada])
+  @@map("huawei_plants")
+}
 
 model GrowattPlant {
   id      String @id @default(cuid())

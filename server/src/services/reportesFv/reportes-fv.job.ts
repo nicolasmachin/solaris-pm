@@ -22,6 +22,7 @@ import { listarConfigsEfectivas } from "./config.service.js";
 import { generarEmision } from "./emision.service.js";
 import { enviarLote } from "./envio.service.js";
 import { ingerirPeriodoSincrono } from "./growatt/ingesta.service.js";
+import { ingerirPeriodoHuawei } from "./huawei/ingesta.service.js";
 import { mesEs } from "./format.js";
 import { dateAPeriodo, type Periodo, periodoADate, periodoMesAnterior } from "./periodo.js";
 
@@ -45,6 +46,22 @@ export async function ejecutarIngestaMensual(now: Date = new Date()): Promise<{ 
     modo: ReporteFvIngestaModo.CRON,
     userId,
   });
+
+  // Las plantas Huawei corren después y por separado: son otra API, escriben en
+  // las mismas lecturas y no comparten el registro de corrida (ReporteFvIngesta
+  // cuenta plantas de Growatt). Que falle FusionSolar no puede tumbar la ingesta
+  // de las ~150 plantas Growatt, que es el grueso.
+  try {
+    const h = await ingerirPeriodoHuawei(periodo);
+    if (h.plantas) {
+      console.log(
+        `[reportes-fv] Huawei ${periodo}: ${h.guardadas} guardadas, ${h.omitidas} omitidas de ${h.plantas}`,
+      );
+    }
+  } catch (err) {
+    console.error("[reportes-fv] ingesta Huawei error:", err);
+  }
+
   return { periodo, ingestaId };
 }
 

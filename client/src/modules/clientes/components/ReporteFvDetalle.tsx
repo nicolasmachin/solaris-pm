@@ -228,9 +228,10 @@ function ConfigTab({
             className={inp}
             value={form.origenDatos}
             disabled={!canEdit}
-            onChange={(e) => set("origenDatos", e.target.value as "GROWATT" | "MANUAL")}
+            onChange={(e) => set("origenDatos", e.target.value as "GROWATT" | "HUAWEI" | "MANUAL")}
           >
             <option value="GROWATT">Growatt (automático)</option>
+            <option value="HUAWEI">Huawei / FusionSolar (automático)</option>
             <option value="MANUAL">Manual (otra marca)</option>
           </select>
         </div>

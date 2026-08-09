@@ -41,7 +41,7 @@ export interface ConfigEfectiva extends ConfigSerie {
   projectId: string;
   clientName: string;
   habilitado: boolean;
-  origenDatos: "GROWATT" | "MANUAL";
+  origenDatos: "GROWATT" | "HUAWEI" | "MANUAL";
   growattPlantId: string | null;
   /** Qué campos salen del proyecto en vez de estar pisados a mano. */
   heredados: string[];
@@ -253,7 +253,7 @@ export interface UpsertConfigInput {
   inversionUsd?: number | null;
   potenciaInstaladaKwp?: number | null;
   mesInicio?: string | null; // "YYYY-MM"
-  origenDatos?: "GROWATT" | "MANUAL";
+  origenDatos?: "GROWATT" | "HUAWEI" | "MANUAL";
   growattPlantId?: string | null;
   notasFijas?: string | null;
   /** Día de corte del medidor de UTE (1-31). null = mes calendario. */

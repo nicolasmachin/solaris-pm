@@ -34,7 +34,7 @@ export interface FilaPanel {
   clientName: string;
   dadoDeAlta: boolean;
   habilitado: boolean;
-  origenDatos: "GROWATT" | "MANUAL" | null;
+  origenDatos: "GROWATT" | "HUAWEI" | "MANUAL" | null;
   tipoCliente: "residencial" | "empresa" | null;
   potenciaEstimada: boolean;
   /** Motivos que impiden calcular (vacío si OK). */

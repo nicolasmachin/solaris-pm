@@ -73,6 +73,12 @@ services:
       FV_MONITOR_DIAS: ${FV_MONITOR_DIAS:-}
       FV_MONITOR_KWH_MIN: ${FV_MONITOR_KWH_MIN:-}
       FV_MONITOR_HORAS_SIN_COMS: ${FV_MONITOR_HORAS_SIN_COMS:-}
+
+      # Huawei FusionSolar (Northbound API) — usuario voltia_api, alcance empresa.
+      # Todavía sin uso en el server: por ahora sólo lo consume el spike local.
+      HUAWEI_API_USER: ${HUAWEI_API_USER:-}
+      HUAWEI_API_PASSWORD: ${HUAWEI_API_PASSWORD:-}
+      HUAWEI_API_BASE: ${HUAWEI_API_BASE:-}
       # Conector MCP (Voltia PM dentro del chat de Claude).
       #
       # MCP_PUBLIC_URL tiene que coincidir EXACTO con la dirección que se tipea
