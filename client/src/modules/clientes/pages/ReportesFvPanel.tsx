@@ -133,6 +133,19 @@ const VALOR_ORDEN: Record<string, (g: FilaPanel) => string | number | boolean | 
 };
 
 /**
+ * Los tres pasos del cierre mensual. Amarillo más saturado que el acento de la
+ * app (#ffd84d, pensado para detalles finos y no para superficies grandes): en
+ * un botón lleno se lavaba y no se distinguía del fondo claro.
+ */
+const BTN_PASO =
+  "flex items-center gap-1.5 rounded-lg bg-[#f2b705] px-3 py-1.5 text-sm font-semibold text-gray-900 " +
+  "hover:bg-[#e0a800] transition-colors disabled:opacity-50";
+
+const BTN_SECUNDARIO =
+  "rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] " +
+  "hover:text-[var(--color-text-primary)] disabled:opacity-50";
+
+/**
  * Porcentaje de la inversión ya recuperado, acumulado desde el primer mes.
  * Se colorea para que se lea de un vistazo quién va bien y quién viene lento;
  * al 100% la instalación terminó de pagarse sola.
@@ -559,50 +572,54 @@ export function ReportesFvPanel() {
                 <Spinner size={13} /> {ingestaProgreso}
               </span>
             )}
-            <button
-              type="button"
-              onClick={() => setPlantasAbierto(true)}
-              className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)]"
-            >
-              Plantas Growatt
-            </button>
+            {/* En el orden real de uso del cierre mensual: traer los datos,
+                generar los PDF, enviarlos. Las dos acciones secundarias
+                (reintentar la traída completa y el catálogo de plantas) van
+                al final para no competir con el flujo principal. */}
             <button
               type="button"
               disabled={Boolean(ingestaId)}
               onClick={() => iniciarIngesta(false)}
               title="Trae de Growatt y de Huawei sólo los generadores a los que les falta algún dato del mes"
-              className="flex items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-medium text-gray-900 disabled:opacity-50"
+              className={BTN_PASO}
             >
-              <Download size={14} /> Traer datos de las plantas
+              <Download size={14} /> 1. Traer datos
+            </button>
+            <button
+              type="button"
+              disabled={emitirTodos.isPending || Boolean(ingestaId)}
+              onClick={() => emitirTodos.mutate()}
+              title="Genera el PDF de todos los generadores que tengan los datos del mes completos"
+              className={BTN_PASO}
+            >
+              <FileText size={14} />
+              {emitirTodos.isPending ? "Generando…" : "2. Generar PDF"}
             </button>
             {canEnviar && (
               <button
                 type="button"
                 onClick={() => setEnvioAbierto(true)}
                 title="Envía por mail los reportes ya generados de este período; primero muestra a quién"
-                className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm font-medium disabled:opacity-50"
+                className={BTN_PASO}
               >
-                <Send size={14} /> Enviar todos
+                <Send size={14} /> 3. Enviar todos
               </button>
             )}
-            <button
-              type="button"
-              disabled={emitirTodos.isPending || Boolean(ingestaId)}
-              onClick={() => emitirTodos.mutate()}
-              title="Genera el PDF de todos los generadores que tengan los datos del mes completos"
-              className="flex items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-medium text-gray-900 disabled:opacity-50"
-            >
-              <FileText size={14} />
-              {emitirTodos.isPending ? "Generando…" : "Generar PDF de todos"}
-            </button>
             <button
               type="button"
               disabled={Boolean(ingestaId)}
               onClick={() => iniciarIngesta(true)}
               title="Vuelve a consultar TODOS los generadores, incluso los que ya tienen la lectura completa. Tarda bastante más."
-              className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] disabled:opacity-50"
+              className={BTN_SECUNDARIO}
             >
               Traer todo de nuevo
+            </button>
+            <button
+              type="button"
+              onClick={() => setPlantasAbierto(true)}
+              className={BTN_SECUNDARIO}
+            >
+              Plantas Growatt
             </button>
           </div>
         )}

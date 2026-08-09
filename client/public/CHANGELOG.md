@@ -4,6 +4,15 @@
 
 ### 8 de agosto de 2026
 
+#### Arreglado: nadie podía enviar los reportes
+
+- **El envío de reportes al cliente estaba bloqueado para todos los roles, incluido el de administrador**, desde que existe el módulo. El permiso que las pantallas de envío exigen no estaba dado de alta para nadie y tampoco aparecía en la matriz de permisos, así que no había forma de habilitarlo. Ahora está disponible para Administrador y Experiencia Solar, y el resto de los roles se puede habilitar desde Configuración → Permisos.
+
+#### Los botones del cierre mensual, en orden
+
+- Los botones de Reportes FV quedaron ordenados **según el flujo real**: **1. Traer datos → 2. Generar PDF → 3. Enviar todos**, numerados. "Traer todo de nuevo" y "Plantas Growatt" pasaron al final por ser acciones ocasionales.
+- Los tres pasos ahora usan un **amarillo más fuerte**: el de la marca es un tono suave pensado para detalles, y en un botón lleno se lavaba contra el fondo.
+
 #### Columna de retorno de la inversión
 
 - El listado de **Reportes FV** tiene una columna nueva, **"Retorno"**: qué porcentaje de la inversión ya recuperó cada cliente en ahorro, acumulado desde que su instalación arrancó (no del mes solo).

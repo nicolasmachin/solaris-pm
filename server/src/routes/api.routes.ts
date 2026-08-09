@@ -5679,7 +5679,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
     { module: Module.HABILITACION,        actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { module: Module.TRAMITES_UTE,        actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { module: Module.POSTVENTA,           actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
-    { module: Module.EXPERIENCIA_CLIENTES, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    // COMPLETE = enviar el reporte al cliente. Estaba fuera del catálogo, así que
+    // no se podía tildar en la matriz y el envío quedaba bloqueado para todos.
+    { module: Module.EXPERIENCIA_CLIENTES, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE] },
     { module: Module.TICKETS,             actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMMENT] },
     { module: Module.ENCUESTAS,           actions: [Action.VIEW] },
     { module: Module.TRASPASOS,           actions: [Action.VIEW, Action.CONFIRM] },
