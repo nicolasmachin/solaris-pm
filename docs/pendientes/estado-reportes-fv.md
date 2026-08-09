@@ -1,7 +1,7 @@
 # Estado — Reportes fotovoltaicos mensuales
 
 Migración del sistema Python standalone (`~/Dev/Reporte_Fotovoltaico`) a Voltia PM.
-Última actualización: **2 de agosto de 2026 (tarde)**.
+Última actualización: **9 de agosto de 2026**.
 
 ## Fase 8 — Crons mensuales ✅
 
@@ -389,6 +389,24 @@ inversión sólo degrada la sección de retorno. Antes estaba todo junto y dejab
    produjo el cálculo. El test aplica la misma normalización para comparar.
 4. La fila `Antonio Costa Vital 2026-03` del histórico está corrupta (todo NaN
    salvo generación).
+
+## PENDIENTE — Revisar texto y diseño del mail al cliente (9/8/2026)
+
+**Lo pidió Nicolás tras el primer envío masivo real** (43 reportes de julio,
+9-ago-2026 00:36): el mail que sale hoy desde Voltia PM **no es el mismo** que
+usaba antes, cuando los reportes se mandaban por fuera del sistema. Hay que
+recuperar/rehacer el texto y el diseño buenos.
+
+- Qué mirar: `server/src/services/reportesFv/emailBody.ts` —
+  `asuntoReporteFv()`, `cuerpoHtmlReporteFv()`, `cuerpoTextoReporteFv()`.
+- El layout general lo envuelve `email/layout.ts` (`renderEmailLayout`).
+- Para ver cómo sale sin molestar a un cliente:
+  `scripts/reportes-fv/reenviar-copia-interna.ts [emisionId] [destino]` manda
+  una copia exacta a una casilla interna sin tocar el estado del envío.
+- Conviene comparar contra alguno de los mails viejos que Nicolás tenga en su
+  casilla, que son la referencia de cómo debería verse.
+
+---
 
 ## Estado: TODAS LAS FASES COMPLETAS ✅
 
