@@ -4,6 +4,13 @@
 
 ### 8 de agosto de 2026
 
+#### El monitoreo diario ahora también vigila las plantas Huawei
+
+- El aviso diario de plantas caídas **ya no es solo de las Growatt**: las 6 Huawei entran al mismo control y aparecen en el mismo mail, mezcladas con el resto. Para el que lo lee no cambia nada: dice qué cliente tiene el problema y desde cuándo.
+- En la primera corrida detectó a **Rodolfo Sosa sin comunicación**, junto a Irigaray y Crudelli.
+- Con Huawei el diagnóstico es **más preciso**: la propia plataforma informa si el equipo está sano, en falla o incomunicado, así que no hay que deducirlo. Cuando dice "sin comunicación" el aviso aclara que **suele ser el wifi de la casa y no el inversor**, que es el error de interpretación más caro.
+- Los clientes con Huawei pasan a tener también el **gráfico de generación día a día** en su portal.
+
 #### Los generadores Huawei ya traen los datos solos
 
 - Los clientes con inversor **Huawei** (FusionSolar) pasan a funcionar como los Growatt: **la app trae sola la generación, el consumo y la exportación de cada mes**, y con eso arma el reporte. Hasta ahora había que cargar los tres valores a mano todos los meses.

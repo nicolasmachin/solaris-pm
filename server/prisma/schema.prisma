@@ -530,6 +530,7 @@ model User {
   reporteFvEnviosRealizados      ReporteFvEnvio[]            @relation("ReporteFvEnvioEnviadoPor")
   growattPlantsVinculadas        GrowattPlant[]              @relation("GrowattPlantVinculadaPor")
   huaweiPlantsVinculadas          HuaweiPlant[]           @relation("HuaweiPlantVinculadaPor")
+  huaweiPlantsSilenciadas         HuaweiPlant[]           @relation("HuaweiPlantMonitoreoSilenciadaPor")
   growattPlantsSilenciadas       GrowattPlant[]              @relation("GrowattPlantMonitoreoSilenciadaPor")
   fvMonitorCorridasLanzadas      FvMonitorCorrida[]          @relation("FvMonitorCorridaLanzadaPor")
   fvIncidenciasRevisadas         FvIncidencia[]              @relation("FvIncidenciaRevisadaPor")
@@ -3651,8 +3652,17 @@ model HuaweiPlant {
   vinculadaPor   User?     @relation("HuaweiPlantVinculadaPor", fields: [vinculadaPorId], references: [id], onDelete: SetNull)
   vinculadaEn    DateTime? @db.Timestamptz(6)
 
+  /// Silenciar el monitoreo diario. Fecha y no booleano, misma razón que en
+  /// GrowattPlant: un silencio permanente se olvida y mata el monitoreo.
+  monitoreoSilenciadoHasta  DateTime? @db.Date
+  monitoreoSilenciadoMotivo String?
+  monitoreoSilenciadoPorId  String?
+  monitoreoSilenciadoPor    User?     @relation("HuaweiPlantMonitoreoSilenciadaPor", fields: [monitoreoSilenciadoPorId], references: [id], onDelete: SetNull)
+
   primeraVezEn DateTime @default(now()) @db.Timestamptz(6)
   ultimaVezEn  DateTime @default(now()) @db.Timestamptz(6)
+
+  incidencias FvIncidencia[]
 
   @@index([projectId])
   @@index([ignorada])
@@ -4163,9 +4173,16 @@ model FvMonitorItem {
 // mal": sin este ciclo de vida, una planta rota generaría el mismo mail todos
 // los días hasta que alguien la arregle, y el mail se volvería ruido de fondo.
 model FvIncidencia {
-  id             String       @id @default(cuid())
-  growattPlantId BigInt
-  plant          GrowattPlant @relation(fields: [growattPlantId], references: [plantId], onDelete: Cascade)
+  id String @id @default(cuid())
+
+  // Una y sólo una de las dos está seteada: la incidencia es de una planta
+  // Growatt o de una Huawei. Se modela con dos FK nullables y no con una tabla
+  // por marca para que el mail y el panel las muestren juntas — al que mira el
+  // monitoreo no le importa de qué marca es el inversor que se cayó.
+  growattPlantId BigInt?
+  plant          GrowattPlant? @relation(fields: [growattPlantId], references: [plantId], onDelete: Cascade)
+  huaweiPlantId  String?
+  huaweiPlant    HuaweiPlant?  @relation(fields: [huaweiPlantId], references: [id], onDelete: Cascade)
   projectId      String?
   project        Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
@@ -4199,6 +4216,7 @@ model FvIncidencia {
   // (growattPlantId, diagnostico) WHERE estado = 'ABIERTA', que Prisma no sabe
   // expresar. Sin él, dos corridas concurrentes duplican la incidencia.
   @@index([growattPlantId, estado])
+  @@index([huaweiPlantId, estado])
   @@index([estado, diagnostico])
   @@index([projectId])
   @@map("fv_incidencias")

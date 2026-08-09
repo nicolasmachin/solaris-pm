@@ -97,6 +97,9 @@ export async function getEstadoMonitor(): Promise<EstadoMonitor> {
   // La primera incidencia abierta de cada planta: la más vieja es la que importa.
   const incidenciaPorPlanta = new Map<string, (typeof incidencias)[number]>();
   for (const i of incidencias) {
+    // Este panel lista plantas Growatt; las incidencias de Huawei no tienen
+    // dónde colgarse acá y se descartan (el mail sí las incluye).
+    if (i.growattPlantId == null) continue;
     const k = i.growattPlantId.toString();
     if (!incidenciaPorPlanta.has(k)) incidenciaPorPlanta.set(k, i);
   }

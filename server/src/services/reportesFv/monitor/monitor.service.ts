@@ -45,13 +45,21 @@ import {
 } from "./generacion-diaria.service.js";
 import { resolverHabilitadoEn, resolverOperativaDesde, ETAPAS_UTE } from "./habilitacion.js";
 import { registrarDeteccion, resolverIncidencias, serializarIncidencia } from "./incidencias.service.js";
+import {
+  ejecutarMonitorHuawei,
+  type FilaHuawei,
+  type ResumenMonitorHuawei,
+} from "./monitor-huawei.service.js";
 
 /** Días de historial que se piden a Growatt. 7 = un solo request. */
 const VENTANA_DIAS = 7;
 
 export interface FilaResumen {
   incidenciaId: string;
+  /** Id de la planta en su propia API. Con marca=HUAWEI es el id de HuaweiPlant. */
   growattPlantId: string;
+  /** Qué API la reportó. Ausente = GROWATT, por compatibilidad con lo ya guardado. */
+  marca?: "GROWATT" | "HUAWEI";
   plantName: string;
   projectId: string | null;
   clientName: string | null;
@@ -546,7 +554,7 @@ export async function ejecutarMonitorDiario(
     for (const { planta, resultado } of evaluadas) {
       if (resultado.alerta) {
         const r = await registrarDeteccion({
-          growattPlantId: planta.plantId,
+          planta: { growattPlantId: planta.plantId },
           projectId: planta.projectId,
           dia: fecha,
           resultado,
@@ -566,7 +574,7 @@ export async function ejecutarMonitorDiario(
         else abiertas.push(fila);
       } else if (resultado.diagnostico !== FvDiagnostico.SIN_DATOS_API) {
         // Sólo cierra quien se pudo evaluar de verdad.
-        const cerradas = await resolverIncidencias(planta.plantId, fecha);
+        const cerradas = await resolverIncidencias({ growattPlantId: planta.plantId }, fecha);
         for (const id of cerradas) {
           resueltas.push({
             incidenciaId: id,
@@ -608,15 +616,46 @@ export async function ejecutarMonitorDiario(
     },
   });
 
+  // ─── Plantas Huawei ───────────────────────────────────────────────────────
+  //
+  // Van al MISMO resumen para que el mail y el panel las muestren juntas. Corre
+  // al final y aislado: son 6 plantas y 2 requests, y si FusionSolar está caído
+  // no puede arruinar la corrida de las ~150 de Growatt, que es el grueso.
+  // Tampoco corre si la corrida de Growatt se rompió: en ese escenario no se
+  // toca ninguna incidencia de ninguna marca.
+  let huawei: ResumenMonitorHuawei | null = null;
+  if (!opts.plantIds && !corridaRota) {
+    try {
+      huawei = await ejecutarMonitorHuawei(fecha);
+      nuevas.push(...huawei.nuevas.map(aFilaResumen));
+      abiertas.push(...huawei.abiertas.map(aFilaResumen));
+      resueltas.push(...huawei.resueltas.map(aFilaResumen));
+      requestsTotal += huawei.requests;
+      for (const [d, n] of Object.entries(huawei.porDiagnostico) as [FvDiagnostico, number][]) {
+        porDiagnostico[d] = (porDiagnostico[d] ?? 0) + (n ?? 0);
+      }
+      if (huawei.error) {
+        erroresConsulta.push({
+          plantName: "FusionSolar (Huawei)",
+          clientName: null,
+          error: huawei.error,
+        });
+      }
+    } catch (err) {
+      console.error("[fv-monitor] monitoreo Huawei falló:", err);
+    }
+  }
+
   console.log(
     `[fv-monitor] ${fecha}: ${ok} ok, ${error} con error, ${nuevas.length} incidencias nuevas, ` +
-      `${resueltas.length} resueltas (${requestsTotal} requests)`,
+      `${resueltas.length} resueltas (${requestsTotal} requests)` +
+      (huawei ? ` · Huawei: ${huawei.plantasTotal} plantas` : ""),
   );
 
   return {
     corridaId: corrida.id,
     fecha,
-    plantasTotal: objetivo.length,
+    plantasTotal: objetivo.length + (huawei?.plantasTotal ?? 0),
     plantasOk: ok - sinDatos,
     plantasError: error + sinDatos,
     requests: requestsTotal,
@@ -627,6 +666,22 @@ export async function ejecutarMonitorDiario(
     erroresConsulta,
     fallaMasiva,
     corridaRota,
+  };
+}
+
+/** Traduce una fila del monitoreo Huawei al formato común del resumen. */
+function aFilaResumen(f: FilaHuawei): FilaResumen {
+  return {
+    incidenciaId: f.incidenciaId,
+    growattPlantId: f.huaweiPlantId,
+    marca: "HUAWEI",
+    plantName: f.plantName,
+    projectId: f.projectId,
+    clientName: f.clientName,
+    diagnostico: f.diagnostico,
+    detalle: f.detalle,
+    diasAfectados: f.diasAfectados,
+    ultimaGeneracionEn: f.ultimaGeneracionEn,
   };
 }
 

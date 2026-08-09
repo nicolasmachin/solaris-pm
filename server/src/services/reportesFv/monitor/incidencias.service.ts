@@ -11,6 +11,13 @@ import { prisma } from "../../../lib/prisma.js";
 import { diaADate, dateADia, diasEntre, type Dia } from "./dias.js";
 import type { ResultadoDiagnostico } from "./diagnostico.js";
 
+/**
+ * Identifica la planta de una incidencia. Discriminada y no dos parámetros
+ * opcionales: la base tiene un CHECK que exige exactamente una de las dos, así
+ * que el tipo hace imposible construir el caso que la base rechazaría.
+ */
+export type ClavePlanta = { growattPlantId: bigint } | { huaweiPlantId: string };
+
 export interface DeteccionRegistrada {
   incidenciaId: string;
   /** Recién abierta en esta corrida (lo que va a la sección "nuevas" del mail). */
@@ -27,17 +34,17 @@ export interface DeteccionRegistrada {
  * resuelve el anterior y se abre uno nuevo. Eso es información real, no ruido.
  */
 export async function registrarDeteccion(params: {
-  growattPlantId: bigint;
+  planta: ClavePlanta;
   projectId: string | null;
   dia: Dia;
   resultado: ResultadoDiagnostico;
 }): Promise<DeteccionRegistrada> {
-  const { growattPlantId, projectId, dia, resultado } = params;
+  const { planta, projectId, dia, resultado } = params;
   const fecha = diaADate(dia);
   const ultimaGeneracion = resultado.ultimaGeneracionEn ? diaADate(resultado.ultimaGeneracionEn) : null;
 
   const abiertas = await prisma.fvIncidencia.findMany({
-    where: { growattPlantId, estado: FvIncidenciaEstado.ABIERTA },
+    where: { ...planta, estado: FvIncidenciaEstado.ABIERTA },
   });
 
   const misma = abiertas.find((i) => i.diagnostico === resultado.diagnostico);
@@ -70,7 +77,7 @@ export async function registrarDeteccion(params: {
   try {
     const creada = await prisma.fvIncidencia.create({
       data: {
-        growattPlantId,
+        ...planta,
         projectId,
         diagnostico: resultado.diagnostico,
         estado: FvIncidenciaEstado.ABIERTA,
@@ -87,7 +94,7 @@ export async function registrarDeteccion(params: {
     // carrera con otra corrida. La que ganó ya dejó la incidencia; no es error.
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
       const existente = await prisma.fvIncidencia.findFirst({
-        where: { growattPlantId, diagnostico: resultado.diagnostico, estado: FvIncidenciaEstado.ABIERTA },
+        where: { ...planta, diagnostico: resultado.diagnostico, estado: FvIncidenciaEstado.ABIERTA },
       });
       if (existente) {
         return { incidenciaId: existente.id, esNueva: false, cambioDeDiagnostico: otras.length > 0 };
@@ -104,9 +111,9 @@ export async function registrarDeteccion(params: {
  * Una planta que no se pudo consultar nunca cierra su incidencia por omisión —
  * si no, una caída de la API "arreglaría" todas las plantas rotas.
  */
-export async function resolverIncidencias(growattPlantId: bigint, dia: Dia): Promise<string[]> {
+export async function resolverIncidencias(planta: ClavePlanta, dia: Dia): Promise<string[]> {
   const abiertas = await prisma.fvIncidencia.findMany({
-    where: { growattPlantId, estado: FvIncidenciaEstado.ABIERTA },
+    where: { ...planta, estado: FvIncidenciaEstado.ABIERTA },
     select: { id: true },
   });
   if (abiertas.length === 0) return [];
@@ -120,7 +127,10 @@ export async function resolverIncidencias(growattPlantId: bigint, dia: Dia): Pro
 
 export interface FilaIncidencia {
   id: string;
-  growattPlantId: string;
+  /** Sólo una de las dos viene con valor; `marca` dice cuál mirar. */
+  growattPlantId: string | null;
+  huaweiPlantId: string | null;
+  marca: "GROWATT" | "HUAWEI";
   plantName: string;
   projectId: string | null;
   clientName: string | null;
@@ -141,6 +151,7 @@ export interface FilaIncidencia {
 
 const INCLUDE_FILA = {
   plant: { select: { name: true } },
+  huaweiPlant: { select: { name: true } },
   project: { select: { clientName: true } },
   revisadaPor: { select: { name: true } },
 } as const;
@@ -151,8 +162,10 @@ export function serializarIncidencia(i: IncidenciaConRelaciones): FilaIncidencia
   return {
     id: i.id,
     // BigInt no sobrevive a JSON.stringify: siempre string en el borde.
-    growattPlantId: i.growattPlantId.toString(),
-    plantName: i.plant?.name ?? "—",
+    growattPlantId: i.growattPlantId?.toString() ?? null,
+    huaweiPlantId: i.huaweiPlantId,
+    marca: i.huaweiPlantId ? "HUAWEI" : "GROWATT",
+    plantName: i.plant?.name ?? i.huaweiPlant?.name ?? "—",
     projectId: i.projectId,
     clientName: i.project?.clientName ?? null,
     diagnostico: i.diagnostico,

@@ -36,6 +36,8 @@ export async function guardarGeneracionDiaria(
   projectId: string,
   growattPlantId: bigint | null,
   serie: Map<Dia, number>,
+  /** De qué API salió. Huawei escribe en la misma tabla que Growatt. */
+  fuente: ReporteFvFuente = ReporteFvFuente.GROWATT,
 ): Promise<number> {
   if (serie.size === 0) return 0;
 
@@ -61,10 +63,10 @@ export async function guardarGeneracionDiaria(
         projectId,
         fecha: diaADate(dia),
         generacionKwh: valor,
-        fuente: ReporteFvFuente.GROWATT,
+        fuente,
         growattPlantId,
       },
-      update: { generacionKwh: valor, fuente: ReporteFvFuente.GROWATT, growattPlantId },
+      update: { generacionKwh: valor, fuente, growattPlantId },
     });
     escritos++;
   }

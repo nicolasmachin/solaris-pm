@@ -154,6 +154,40 @@ funcionalidad no necesitó un seed de permisos nuevo ni agrega pasos al deploy.
 - **Si cambia el diagnóstico** (volvió el wifi pero el inversor sigue muerto) se
   cierra la incidencia anterior y se abre una nueva. Es información, no ruido.
 
+### Plantas Huawei en el monitoreo
+
+Desde el 8 de agosto de 2026 el monitoreo diario cubre también las plantas
+Huawei. Corren en la misma corrida y alimentan **las mismas incidencias**, así
+que el mail y el listado de incidencias muestran las dos marcas juntas.
+
+- El diagnóstico vive aparte, en `monitor/diagnostico-huawei.ts`, porque las
+  señales de entrada son distintas: en Growatt hay que **inferir** la falla
+  ("comunica pero no genera"), mientras que FusionSolar la **declara** con
+  `real_health_state`. Forzar las dos en una función obligaría a inventar campos
+  vacíos de los dos lados.
+- Traducción: `2` → `ERROR_DISPOSITIVO`, `1` → `SIN_COMUNICACION`, `3` + sin
+  generar → `SIN_GENERACION`. **El `1` no es planta rota**: es el inversor sin
+  llegar a internet, y el detalle del mail lo aclara.
+- Cuesta **2 requests para toda la flota Huawei** (serie diaria del mes + estado
+  actual), contra ~2 por planta en Growatt. Por eso no tiene corrida propia ni
+  concurrencia.
+- Corre **al final y aislado**: si FusionSolar está caído no arruina la corrida
+  de las ~150 plantas Growatt. Y **no corre si la de Growatt se rompió**: en ese
+  escenario no se toca ninguna incidencia de ninguna marca.
+- De paso guarda la generación diaria en `ReporteFvGeneracionDiaria` con fuente
+  `HUAWEI`, que es lo que alimenta el gráfico día a día del portal. Sale gratis:
+  la serie ya vino en la misma llamada.
+- `FvIncidencia` tiene ahora **dos FK nullables** (`growattPlantId`,
+  `huaweiPlantId`) con un CHECK que exige exactamente una, más un índice único
+  parcial propio para Huawei — el gemelo del de Growatt, contra corridas
+  concurrentes duplicadas.
+
+**Limitación conocida:** la tabla de plantas del panel de Monitoreo sigue
+listando sólo las Growatt; las incidencias Huawei aparecen en la lista de
+incidencias y en el mail, pero la planta no tiene fila propia. Silenciar una
+planta Huawei tampoco tiene botón todavía (los campos existen en el modelo).
+
+
 ## Archivos
 
 - Backend: `server/src/services/reportesFv/monitor/` — `diagnostico.ts` (puro),
