@@ -16,6 +16,7 @@ import {
   type FilaPanel,
 } from "../../../api/reportesFv.api";
 import { ReporteFvDetalle } from "../components/ReporteFvDetalle";
+import { EnviarLoteModal } from "../components/EnviarLoteModal";
 import { PlantasGrowattModal } from "../components/PlantasGrowattModal";
 import { ManualReportesFvButton } from "../components/ManualReportesFvButton";
 
@@ -128,7 +129,28 @@ const VALOR_ORDEN: Record<string, (g: FilaPanel) => string | number | boolean | 
   cons: (g) => g.consumoKwh,
   exp: (g) => g.exportacionKwh,
   ahorro: (g) => g.ahorroTotal,
+  roi: (g) => g.retornoInversionPct,
 };
+
+/**
+ * Porcentaje de la inversión ya recuperado, acumulado desde el primer mes.
+ * Se colorea para que se lea de un vistazo quién va bien y quién viene lento;
+ * al 100% la instalación terminó de pagarse sola.
+ */
+function Retorno({ pct }: { pct: number | null }) {
+  if (pct == null) return <span className="text-[var(--color-text-muted)]">—</span>;
+  const color =
+    pct >= 100
+      ? "text-emerald-400"
+      : pct >= 50
+        ? "text-[var(--color-accent)]"
+        : "text-[var(--color-text-secondary)]";
+  return (
+    <span className={color} title="Porcentaje de la inversión recuperado hasta este mes">
+      {pct.toFixed(1)}%
+    </span>
+  );
+}
 
 /** Tick verde o cruz roja. El title da el detalle sin ocupar lugar en la tabla. */
 function SiNo({ v, titulo }: { v: boolean; titulo?: string }) {
@@ -157,6 +179,8 @@ function KpiCard({ label, value, tone }: { label: string; value: number; tone?: 
 export function ReportesFvPanel() {
   const canView = usePermission("EXPERIENCIA_CLIENTES", "VIEW");
   const canCreate = usePermission("EXPERIENCIA_CLIENTES", "CREATE");
+  // Enviar es COMPLETE, no CREATE: es la única acción del módulo que sale al cliente.
+  const canEnviar = usePermission("EXPERIENCIA_CLIENTES", "COMPLETE");
   const qc = useQueryClient();
   const [periodo, setPeriodo] = useState<string>("");
   const [search, setSearch] = useState("");
@@ -176,6 +200,7 @@ export function ReportesFvPanel() {
   const [orden, setOrden] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
   const [detalleId, setDetalleId] = useState<string | null>(null);
   const [plantasAbierto, setPlantasAbierto] = useState(false);
+  const [envioAbierto, setEnvioAbierto] = useState(false);
   const [ingestaId, setIngestaId] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -452,6 +477,16 @@ export function ReportesFvPanel() {
       render: (g) => fmtPesos(g.ahorroTotal),
     },
     {
+      key: "roi",
+      sortable: true,
+      label: "Retorno",
+      align: "right",
+      className: "tabular-nums",
+      // Acumulado desde que el generador arrancó, no del mes: es cuánto de la
+      // inversión ya se recuperó en ahorro.
+      render: (g) => <Retorno pct={g.retornoInversionPct} />,
+    },
+    {
       key: "flags",
       label: "",
       render: (g) => (
@@ -540,6 +575,16 @@ export function ReportesFvPanel() {
             >
               <Download size={14} /> Traer datos de las plantas
             </button>
+            {canEnviar && (
+              <button
+                type="button"
+                onClick={() => setEnvioAbierto(true)}
+                title="Envía por mail los reportes ya generados de este período; primero muestra a quién"
+                className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm font-medium disabled:opacity-50"
+              >
+                <Send size={14} /> Enviar todos
+              </button>
+            )}
             <button
               type="button"
               disabled={emitirTodos.isPending || Boolean(ingestaId)}
@@ -746,6 +791,20 @@ export function ReportesFvPanel() {
       )}
 
       {plantasAbierto && <PlantasGrowattModal onClose={() => setPlantasAbierto(false)} />}
+      {envioAbierto && (
+        <EnviarLoteModal
+          periodo={periodoActivo}
+          nombrePorEmision={
+            new Map(
+              (panel?.generadores ?? [])
+                .filter((g) => g.emisionId)
+                .map((g) => [g.emisionId as string, g.clientName]),
+            )
+          }
+          onClose={() => setEnvioAbierto(false)}
+          onEnviado={() => qc.invalidateQueries({ queryKey: ["reportes-fv", "panel"] })}
+        />
+      )}
     </div>
   );
 }

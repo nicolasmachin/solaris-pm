@@ -22,6 +22,8 @@ export const MANUAL_CAMBIOS: CambioManual[] = [
       "Los generadores Huawei (FusionSolar) traen los datos solos, igual que los Growatt.",
       "El botón pasó a llamarse \"Traer datos de las plantas\": consulta las dos marcas.",
       "El monitoreo diario también vigila las plantas Huawei.",
+      "Botón \"Enviar todos\" para mandar los reportes del mes juntos, con confirmación previa.",
+      "Columna \"Retorno\" en el listado: cuánto de la inversión recuperó cada cliente.",
     ],
   },
   {
@@ -242,6 +244,16 @@ enviado y el botón se bloquea. Si el envío falla, podés reintentarlo.
 
 Al enviarlo, el reporte queda **publicado en el portal** del cliente.
 
+### Enviar todos juntos
+
+En la barra de arriba del listado está **"Enviar todos"**: manda de una vez los
+reportes ya generados del período elegido. Antes de mandar nada te muestra la
+**lista completa de clientes y direcciones** a las que iría, y los que quedan
+afuera con el motivo. Los correos salen recién cuando confirmás en esa pantalla.
+
+Sólo lo ven los roles con permiso para enviar; el resto puede generar los PDF
+pero no mandarlos.
+
 ---
 
 ## 9. Lo que ve el cliente
@@ -302,6 +314,18 @@ Configuración del negocio → Tarifas UTE**. Cuando UTE actualiza las tarifas:
 
 Los reportes viejos se siguen viendo con los precios que tenían: cada reporte
 recuerda con qué tarifa se calculó.
+
+---
+
+### La columna "Retorno"
+
+Muestra qué porcentaje de la inversión recuperó ese cliente en ahorro,
+**acumulado desde que su instalación arrancó** — no el ahorro del mes. Se puede
+ordenar por ahí para ver quiénes vienen mejor y quiénes más lento.
+
+Va en verde cuando pasó el 100% (la instalación ya se pagó sola) y en amarillo
+del 50% para arriba. Un guion significa que todavía no se puede calcular: falta
+la inversión del proyecto o no hay meses calculados.
 
 ---
 

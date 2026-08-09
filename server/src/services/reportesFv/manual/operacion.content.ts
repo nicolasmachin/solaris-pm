@@ -23,6 +23,7 @@ export const OPERACION_CAMBIOS: CambioOperacion[] = [
     fecha: "8 de agosto de 2026",
     cambios: [
       "El botón ahora se llama \"Traer datos de las plantas\" y trae Growatt y Huawei juntos.",
+      "Cómo enviar todos los reportes juntos con \"Enviar todos\".",
     ],
   },
   {
@@ -108,8 +109,12 @@ sobre todo el ahorro del mes y el acumulado.
 
 ### 5. Enviá
 
-Desde la ficha, **"Enviar al cliente"**. También podés seleccionar varios y usar
-el envío en lote. Cada envío queda registrado con fecha y destinatario, y el
+Para mandarlos **todos juntos**, usá **"Enviar todos"** en la barra de arriba:
+primero te muestra la lista de clientes y direcciones a las que iría, y recién
+cuando confirmás salen los correos. Los que no tienen PDF listo quedan afuera y
+te dice por qué.
+
+Para uno solo, desde la ficha: **"Enviar al cliente"**. Cada envío queda registrado con fecha y destinatario, y el
 sistema **no deja mandar dos veces el mismo reporte**.
 
 Una vez enviado, el cliente lo ve en su portal, en la sección *Reportes*.

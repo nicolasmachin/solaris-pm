@@ -4,6 +4,18 @@
 
 ### 8 de agosto de 2026
 
+#### Columna de retorno de la inversión
+
+- El listado de **Reportes FV** tiene una columna nueva, **"Retorno"**: qué porcentaje de la inversión ya recuperó cada cliente en ahorro, acumulado desde que su instalación arrancó (no del mes solo).
+- Se puede **ordenar** por esa columna, y se colorea para leerla de un vistazo: verde cuando ya pasó el 100% —la instalación se pagó sola— y amarillo del 50% para arriba.
+- Los generadores sin inversión cargada o sin meses calculados muestran un guion.
+
+#### Enviar todos los reportes juntos
+
+- Botón **"Enviar todos"** en Reportes FV: manda de una vez los reportes ya generados del período. Antes había que entrar cliente por cliente.
+- **Muestra primero a quién le va a llegar** —la lista completa de clientes y direcciones— y los correos salen recién cuando confirmás en esa pantalla. Los que no tienen el PDF listo quedan afuera, con el motivo.
+- Solo aparece para quien tiene permiso de envío; el resto puede generar los PDF pero no mandarlos.
+
 #### Arreglos y detalles
 
 - **Un generador eliminado ya no sigue generando reportes.** El listado del cierre mensual no estaba descartando los generadores dados de baja, así que una instalación cargada dos veces podía derivar en dos reportes del mismo mes para el mismo cliente.
