@@ -91,6 +91,33 @@ export function handoffStart(
   return null;
 }
 
+// Arranque de la cuenta para la ETAPA ACTUAL (la que muestra la ficha). A
+// diferencia de handoffStart (estricto, para el pipeline), esta versión SIEMPRE
+// da una fecha: la etapa actual tiene que mostrar su cuenta aunque las etapas
+// previas no estén todas cerradas (p. ej. cuando hay un stageOverride que
+// adelanta la etapa, o una etapa previa quedó IN_PROGRESS). Toma el último
+// cierre previo disponible y, si no hay ninguno, la fecha de inicio del proyecto.
+export function currentStageStart(
+  target: { order: number },
+  allStages: Array<{
+    name: StageType;
+    order: number;
+    status: StageStatus;
+    actualEndDate: Date | null;
+  }>,
+  projectStart?: Date | null,
+): Date | null {
+  let best: Date | null = null;
+  for (const s of allStages) {
+    if (isParallelStage(s.name)) continue;
+    if (s.order >= target.order) continue;
+    if (s.status === StageStatus.COMPLETED && s.actualEndDate) {
+      if (!best || s.actualEndDate > best) best = s.actualEndDate;
+    }
+  }
+  return best ?? projectStart ?? null;
+}
+
 // Calcula la cuenta regresiva de una etapa contra su SLA.
 // Devuelve null si: no hay SLA activo para ese tipo, o no hay fecha de arranque
 // (ni actualStartDate propio ni handoff de la etapa previa).

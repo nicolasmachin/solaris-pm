@@ -164,7 +164,7 @@ import { findNextSubstage, notifyNextSubstageOwner } from "../services/substage-
 import { accumulateSupplierSaldoAFavor } from "../services/supplier-balance.service.js";
 import { contentDisposition } from "../utils/content-disposition.js";
 import { addDays, diffInDays, parseDateOnly, startOfUtcDay, todayUtc, toDateOnlyString } from "../utils/dates.js";
-import { clearStageSlaCache, getSlaMap, countdownForStage, handoffStart } from "../services/stage-sla.service.js";
+import { clearStageSlaCache, getSlaMap, countdownForStage, handoffStart, currentStageStart } from "../services/stage-sla.service.js";
 import { businessDaysBetween } from "../utils/business-days.js";
 import {
   ALL_NOTIFICATION_TYPES,
@@ -1476,15 +1476,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
               progressPercent: currentStage.progressPercent,
               responsibleUserId: currentStage.responsibleUserId,
               actualStartDate: serializeDateOnly(currentStage.actualStartDate),
-              // Cuenta regresiva de plazo (días hábiles) de la etapa actual. Si
-              // la etapa todavía no tiene actualStartDate propio, arranca desde
-              // el handoff (cierre de la etapa previa) o, si es la primera, desde
-              // la fecha de inicio del proyecto; así no desaparece al resolver la
-              // etapa anterior.
+              // Cuenta regresiva de plazo (días hábiles) de la etapa actual.
+              // Como es la etapa vigente, siempre arranca: usa su actualStartDate
+              // o, si no tiene, el último cierre previo / la fecha del proyecto.
               countdown: countdownForStage(
                 currentStage,
                 slaMap,
-                handoffStart(currentStage, project.stages, project.saleDate ?? project.startDate ?? project.createdAt),
+                currentStageStart(currentStage, project.stages, project.saleDate ?? project.startDate ?? project.createdAt),
               ),
             }
           : null,
@@ -1623,6 +1621,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // Fecha de arranque del proyecto: fallback de la cuenta regresiva para la
     // primera etapa (sin handoff previo).
     const detailProjectStart = project.saleDate ?? project.startDate ?? project.createdAt;
+    // Id de la etapa vigente (respeta stageOverride): esa etapa usa el arranque
+    // "lenient" en el pipeline para que su cuenta coincida con la de la ficha.
+    const detailCurrentStageId = getDisplayStage(
+      project.stages.map((stage) => ({ ...stage })),
+      project.stageOverride,
+    )?.id ?? null;
 
     const installationSchedule = project.installationSchedule
       ? (() => {
@@ -1672,12 +1676,20 @@ export async function registerApiRoutes(app: FastifyInstance) {
           ? serializeStage(
               currentStage,
               detailSlaMap.get(currentStage.name),
-              handoffStart(currentStage, project.stages, detailProjectStart),
+              currentStageStart(currentStage, project.stages, detailProjectStart),
             )
           : null;
       })(),
       stages: project.stages.map((stage) => ({
-        ...serializeStage(stage, detailSlaMap.get(stage.name), handoffStart(stage, project.stages, detailProjectStart)),
+        // La etapa vigente usa el arranque "lenient" (siempre cuenta); las demás,
+        // el handoff estricto (una etapa futura no muestra cuenta corriendo).
+        ...serializeStage(
+          stage,
+          detailSlaMap.get(stage.name),
+          stage.id === detailCurrentStageId
+            ? currentStageStart(stage, project.stages, detailProjectStart)
+            : handoffStart(stage, project.stages, detailProjectStart),
+        ),
         substages: stage.substages.map((sub) => ({
           ...serializeSubstage(sub),
           checklistItems: sub.checklistItems.map(serializeChecklistItem),
