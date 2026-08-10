@@ -48,16 +48,30 @@ NODE_EXTRA_CA_CERTS=/root/.ccr/ca-bundle.crt node inspect.js
 ```
 
 - `node inspect.js` — muestra pestañas y las primeras filas de cada una **con
-  fórmulas**. Es el primer paso: revela los nombres reales de pestaña y si las
-  columnas nutricionales del registro son fórmulas o valores.
+  fórmulas**. Sirve para auditar la estructura.
 - `node inspect.js --tab='Nombre' --range='A2:T2'` — lectura puntual con fórmulas.
-- `node registrar.js ...` — registra comidas en el registro diario (se documenta
-  su interfaz final una vez confirmada la estructura con `inspect.js`).
+- `node registrar.js` — registra comidas en la pestaña **Registro Diario**:
 
-## Estructura de la planilla (leída, resumen)
+  ```bash
+  node registrar.js --fecha=2026-08-10 \
+    --items='[{"comida":"Cafe con leche","cantidad":1,"tipo":"Desayuno"},
+              {"comida":"Alfajor","cantidad":2}]'
+  ```
 
-- **Base de alimentos**: catálogo con valores nutricionales *por porción*.
-- **Registro diario**: una fila por alimento consumido; columnas nutricionales =
-  `Cantidad × valor de la base`. Es donde se escribe.
-- **Dashboard mensual** y **Etapa 1** (peso/grasa/objetivos): calculadas/manuales,
-  no se escriben.
+  - `--fecha` acepta `YYYY-MM-DD` o `DD/MM/YYYY` (default: hoy).
+  - Cada item: `comida` (obligatorio), `cantidad` (obligatorio), `tipo?`, `hora?`.
+  - `--dry-run` muestra el preview sin escribir. `--clear` limpia el rango que
+    escribiría (para deshacer una prueba).
+  - La `comida` se resuelve al nombre exacto de **Datos** (match tolerante a
+    acentos/mayúsculas). Si no hay match claro, no escribe nada y sugiere opciones.
+
+## Estructura real de la planilla
+
+- **Datos**: base de alimentos. Comidas en columna **D (filas 3–385)**, valores
+  *por porción* en E–O. Es la tabla del VLOOKUP.
+- **Registro Diario**: **única pestaña de entrada**, una fila por alimento. Solo se
+  escriben `E=Fecha` (nº de serie), `F=Hora?`, `G=Tipo?`, `H=Comida`, `I=Cantidad`.
+  Las columnas `A–D` (día/mes/año) y `J–T` (nutrientes = `VLOOKUP × Cantidad`) son
+  **fórmulas ya pre-cargadas** que se calculan solas al completar la Comida.
+- **Enero 26 … Agosto 26 / INDICADORES**: dashboards que agregan desde Registro
+  Diario con `SUMIFS` por mes/año. **No se escriben.**
