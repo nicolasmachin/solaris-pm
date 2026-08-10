@@ -70,18 +70,25 @@ export function handoffStart(
     status: StageStatus;
     actualEndDate: Date | null;
   }>,
+  projectStart?: Date | null,
 ): Date | null {
   let best: Date | null = null;
+  let hadPriorLinear = false;
   for (const s of allStages) {
     if (isParallelStage(s.name)) continue;
     if (s.order >= target.order) continue;
+    hadPriorLinear = true;
     // Sólo la etapa "frontera" (todas las lineales previas COMPLETED) hereda el
     // handoff. Si alguna previa no está cerrada, `target` es una etapa futura y
     // no debe mostrar cuenta corriendo.
     if (s.status !== StageStatus.COMPLETED) return null;
     if (s.actualEndDate && (!best || s.actualEndDate > best)) best = s.actualEndDate;
   }
-  return best;
+  if (best) return best;
+  // Primera etapa (sin etapa previa): la cuenta arranca en la fecha de inicio
+  // del proyecto, así ONBOARDING muestra su contador desde el día uno.
+  if (!hadPriorLinear) return projectStart ?? null;
+  return null;
 }
 
 // Calcula la cuenta regresiva de una etapa contra su SLA.

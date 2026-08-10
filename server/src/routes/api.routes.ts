@@ -1478,9 +1478,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
               actualStartDate: serializeDateOnly(currentStage.actualStartDate),
               // Cuenta regresiva de plazo (días hábiles) de la etapa actual. Si
               // la etapa todavía no tiene actualStartDate propio, arranca desde
-              // el handoff (cierre de la etapa previa), así no desaparece al
-              // resolver la etapa anterior.
-              countdown: countdownForStage(currentStage, slaMap, handoffStart(currentStage, project.stages)),
+              // el handoff (cierre de la etapa previa) o, si es la primera, desde
+              // la fecha de inicio del proyecto; así no desaparece al resolver la
+              // etapa anterior.
+              countdown: countdownForStage(
+                currentStage,
+                slaMap,
+                handoffStart(currentStage, project.stages, project.saleDate ?? project.startDate ?? project.createdAt),
+              ),
             }
           : null,
         updatedAt: serializeDate(project.updatedAt),
@@ -1615,6 +1620,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     const metrics = calculateProjectMetrics(project);
     const detailSlaMap = await getSlaMap();
+    // Fecha de arranque del proyecto: fallback de la cuenta regresiva para la
+    // primera etapa (sin handoff previo).
+    const detailProjectStart = project.saleDate ?? project.startDate ?? project.createdAt;
 
     const installationSchedule = project.installationSchedule
       ? (() => {
@@ -1664,12 +1672,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
           ? serializeStage(
               currentStage,
               detailSlaMap.get(currentStage.name),
-              handoffStart(currentStage, project.stages),
+              handoffStart(currentStage, project.stages, detailProjectStart),
             )
           : null;
       })(),
       stages: project.stages.map((stage) => ({
-        ...serializeStage(stage, detailSlaMap.get(stage.name), handoffStart(stage, project.stages)),
+        ...serializeStage(stage, detailSlaMap.get(stage.name), handoffStart(stage, project.stages, detailProjectStart)),
         substages: stage.substages.map((sub) => ({
           ...serializeSubstage(sub),
           checklistItems: sub.checklistItems.map(serializeChecklistItem),
