@@ -129,13 +129,29 @@ export function computeStageCountdown(
   fallbackStart?: Date | null,
 ): StageCountdown | null {
   if (!slaDias || slaDias <= 0) return null;
-  const startSource = stage.actualStartDate ?? fallbackStart ?? null;
+
+  const isCompleted = stage.status === StageStatus.COMPLETED && !!stage.actualEndDate;
+
+  // Fecha de arranque de la cuenta.
+  // - Completada: histórica (actualStartDate, o el fallback si faltara).
+  // - Activa: el MÁS TEMPRANO entre actualStartDate y el handoff. Así la cuenta
+  //   no se reinicia cuando el operario empieza a trabajar y recién ahí se setea
+  //   actualStartDate=hoy: hasta ese momento venía corriendo desde el handoff
+  //   (cierre de la etapa previa) y debe seguir anclada ahí.
+  let startSource: Date | null;
+  if (isCompleted) {
+    startSource = stage.actualStartDate ?? fallbackStart ?? null;
+  } else {
+    const cands = [stage.actualStartDate, fallbackStart ?? null].filter(
+      (d): d is Date => !!d,
+    );
+    startSource = cands.length ? cands.reduce((a, b) => (a < b ? a : b)) : null;
+  }
   if (!startSource) return null;
 
   const start = startOfUtcDay(startSource);
   const deadline = addBusinessDays(start, slaDias);
 
-  const isCompleted = stage.status === StageStatus.COMPLETED && !!stage.actualEndDate;
   const reference = isCompleted ? startOfUtcDay(stage.actualEndDate as Date) : todayUtc();
 
   const elapsedBusinessDays = businessDaysBetween(start, reference);
