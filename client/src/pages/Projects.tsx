@@ -11,6 +11,7 @@ import { EmptyState } from "../components/ui/EmptyState";
 import { ProgressBar } from "../components/ui/ProgressBar";
 import { Spinner } from "../components/ui/Spinner";
 import { MultiSelectFilter } from "../components/ui/MultiSelectFilter";
+import { CountdownBadge } from "../components/ui/StageTimeBadge";
 import type { ProjectListItem, ProjectStatus, SolarSystem } from "../types/api.types";
 import { stageLabel } from "../constants/stages";
 import { getProjectTeamColor, getProjectTeamName, getProjectTeamType } from "../components/project/projectTeamColor";
@@ -26,6 +27,7 @@ type SortKey =
   | "status"
   | "progress"
   | "currentStage"
+  | "stageCountdown"
   | "salesperson"
   | "inverter"
   | "panels"
@@ -78,6 +80,8 @@ interface PagePersistedFilter {
   stageFilter: StageFilter;
   sortKey: SortKey;
   sortDirection: SortDirection;
+  /** Solo proyectos con la etapa actual vencida (plazo cumplido). */
+  overdueOnly?: boolean;
 }
 
 function loadPageFilter(): PagePersistedFilter | null {
@@ -180,6 +184,17 @@ function sortProjects(projects: ProjectListItem[], sortKey: SortKey, direction: 
         else result = 0;
         break;
       }
+      case "stageCountdown": {
+        // Urgencia = días hábiles restantes de la etapa actual. asc = más
+        // urgente primero (vencidas, más negativo, arriba). Sin plazo → al final.
+        const aVal = a.currentStage?.countdown?.remainingBusinessDays;
+        const bVal = b.currentStage?.countdown?.remainingBusinessDays;
+        if (aVal != null && bVal != null) result = aVal - bVal;
+        else if (aVal != null) result = -1;
+        else if (bVal != null) result = 1;
+        else result = 0;
+        break;
+      }
       case "salesperson": {
         // null (sin asesor) al final independientemente de la dirección.
         const aName = a.salespersonName ?? "";
@@ -271,6 +286,7 @@ export function Projects() {
   const [stageFilter, setStageFilter] = useState<StageFilter>(persisted?.stageFilter ?? "all");
   const [sortKey, setSortKey] = useState<SortKey>(persisted?.sortKey ?? "saleDate");
   const [sortDirection, setSortDirection] = useState<SortDirection>(persisted?.sortDirection ?? "asc");
+  const [overdueOnly, setOverdueOnly] = useState<boolean>(persisted?.overdueOnly ?? false);
   const [showNewProject, setShowNewProject] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<ProjectListItem | null>(null);
 
@@ -281,8 +297,9 @@ export function Projects() {
       stageFilter,
       sortKey,
       sortDirection,
+      overdueOnly,
     });
-  }, [statusFilters, stageFilter, sortKey, sortDirection]);
+  }, [statusFilters, stageFilter, sortKey, sortDirection, overdueOnly]);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["projects"],
@@ -334,11 +351,14 @@ export function Projects() {
       const matchesQuery = term
         ? project.clientName.toLowerCase().includes(term) || project.code.toLowerCase().includes(term)
         : true;
-      return matchesStatus && matchesStageFilter && matchesQuery;
+      const matchesOverdue = overdueOnly
+        ? project.currentStage?.countdown?.status === "overdue"
+        : true;
+      return matchesStatus && matchesStageFilter && matchesQuery && matchesOverdue;
     });
 
     return sortProjects(filtered, sortKey, sortDirection);
-  }, [projects, query, sortKey, sortDirection, statusFilters, stageFilter]);
+  }, [projects, query, sortKey, sortDirection, statusFilters, stageFilter, overdueOnly]);
 
   const ownTeamProjects = useMemo(
     () => filteredProjects.filter((project) => getProjectTeamType(project) === "PROPIO"),
@@ -425,6 +445,20 @@ export function Projects() {
               </option>
             ))}
           </select>
+          <button
+            type="button"
+            onClick={() => setOverdueOnly((v) => !v)}
+            aria-pressed={overdueOnly}
+            className="rounded-md border px-3 py-2 text-sm font-medium transition-colors focus:outline-none"
+            style={{
+              borderColor: overdueOnly ? "var(--color-danger-text)" : "var(--color-border)",
+              background: overdueOnly ? "var(--color-danger-bg)" : "var(--color-bg-app)",
+              color: overdueOnly ? "var(--color-danger-text)" : "var(--color-text-secondary)",
+            }}
+            title="Mostrar solo proyectos con la etapa actual vencida"
+          >
+            Solo vencidos
+          </button>
           <Button onClick={() => setShowNewProject(true)}>Nuevo proyecto</Button>
         </div>
       </div>
@@ -545,6 +579,7 @@ function ProjectGroupTable({
               <th className="px-4 py-3"><SortHeader label="Ubicación" sortKey="location" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
               <th className="px-4 py-3"><SortHeader label="Estado" sortKey="status" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
               <th className="px-4 py-3"><SortHeader label="Etapa actual" sortKey="currentStage" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th className="px-4 py-3"><SortHeader label="Plazo etapa" sortKey="stageCountdown" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
               <th className="px-4 py-3"><SortHeader label="Avance" sortKey="progress" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
               <th className="px-4 py-3"><SortHeader label="Inversor" sortKey="inverter" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
               <th className="px-4 py-3"><SortHeader label="Paneles" sortKey="panels" currentSortKey={sortKey} direction={sortDirection} onSort={onSort} /></th>
@@ -616,6 +651,13 @@ function ProjectGroupTable({
                           ) : null;
                         })()}
                       </div>
+                    ) : (
+                      <span className="text-sm text-[var(--color-text-muted)]">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-4 align-top">
+                    {project.currentStage?.countdown ? (
+                      <CountdownBadge countdown={project.currentStage.countdown} />
                     ) : (
                       <span className="text-sm text-[var(--color-text-muted)]">—</span>
                     )}

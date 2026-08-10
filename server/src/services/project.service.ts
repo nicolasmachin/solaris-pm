@@ -24,6 +24,7 @@ import { crearTraspasoSiNoExiste } from "./traspasos/traspasos.service.js";
 import { fireStageSurveys } from "./encuestas/encuestas.service.js";
 import { addDays, diffInDays, startOfUtcDay, todayUtc } from "../utils/dates.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../utils/serialization.js";
+import { computeStageCountdown } from "./stage-sla.service.js";
 
 // Una subetapa cuenta como "resuelta" (a efectos del cierre de la etapa y del
 // disparo del traspaso) si está COMPLETED o NO_APLICA. NO_APLICA es el escape
@@ -706,7 +707,7 @@ export function serializeStage(stage: {
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
-}) {
+}, slaDias?: number) {
   const { responsibleUser, ...rest } = stage;
   return {
     ...rest,
@@ -717,6 +718,9 @@ export function serializeStage(stage: {
     plannedEndDate: serializeDateOnly(stage.plannedEndDate),
     actualStartDate: serializeDateOnly(stage.actualStartDate),
     actualEndDate: serializeDateOnly(stage.actualEndDate),
+    // Cuenta regresiva de plazo (días hábiles). null si no se pasó SLA o la
+    // etapa no arrancó. Ver stage-sla.service.
+    countdown: computeStageCountdown(stage, slaDias),
     createdAt: serializeDate(stage.createdAt),
     updatedAt: serializeDate(stage.updatedAt),
   };

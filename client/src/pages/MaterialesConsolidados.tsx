@@ -123,8 +123,8 @@ export function MaterialesConsolidados() {
   }
 
   function handleGenerate() {
-    if (orderedSelected.length < 2) {
-      toast.error("Seleccioná al menos 2 proyectos");
+    if (orderedSelected.length < 1) {
+      toast.error("Seleccioná al menos 1 proyecto");
       return;
     }
     createMut.mutate();
@@ -146,7 +146,7 @@ export function MaterialesConsolidados() {
           </h1>
         </div>
         <p className="text-[11px] text-[var(--color-text-muted)] font-mono mt-0.5">
-          Unificá listas de materiales de varios proyectos para hacer las compras.
+          Unificá listas de materiales de uno o varios proyectos para hacer las compras.
         </p>
       </header>
 
@@ -165,7 +165,7 @@ export function MaterialesConsolidados() {
           </p>
           <button
             onClick={handleGenerate}
-            disabled={selectedCount < 2 || createMut.isPending}
+            disabled={selectedCount < 1 || createMut.isPending}
             className="inline-flex items-center gap-1 rounded bg-[var(--color-accent)] px-2.5 py-1 text-[11px] font-semibold text-black hover:opacity-90 disabled:opacity-50"
           >
             <Plus className="w-3 h-3" /> {createMut.isPending ? "Generando…" : `Generar (${selectedCount})`}
@@ -269,7 +269,7 @@ export function MaterialesConsolidados() {
                     {v.label && <span className="text-[var(--color-text-muted)]"> · {v.label}</span>}
                   </p>
                   <p className="text-[10px] text-[var(--color-text-muted)] font-mono mt-0.5">
-                    {fmt(v.createdAt)} · {v.cantidadProyectos} proyectos · {v.cantidadItems} ítems
+                    {fmt(v.createdAt)} · {v.cantidadProyectos} proyecto{v.cantidadProyectos === 1 ? "" : "s"} · {v.cantidadItems} ítems
                   </p>
                 </div>
                 <button

@@ -9,6 +9,7 @@ import {
   stageArea,
   stageLabel,
 } from "../../constants/stages";
+import { CountdownBadge, StageDoneBadge } from "../ui/StageTimeBadge";
 
 interface Props {
   stages: Stage[];
@@ -88,6 +89,19 @@ function StageCard({ stage, onClick, gridColumn }: { stage: Stage; onClick: () =
           {isActive && ` · ${stage.progressPercent}%`}
           {isDone && " · ✓"}
         </div>
+
+        {/* Tiempo / plazo de la etapa: cuenta regresiva si está en curso,
+            duración + cumplimiento si está completada. */}
+        {isActive && stage.countdown && (
+          <div style={{ marginBottom: 6 }}>
+            <CountdownBadge countdown={stage.countdown} />
+          </div>
+        )}
+        {isDone && (
+          <div style={{ marginBottom: 6 }}>
+            <StageDoneBadge actualDurationDays={stage.actualDurationDays} countdown={stage.countdown} />
+          </div>
+        )}
 
         <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
           {stage.substages

@@ -1,4 +1,5 @@
 import type { Project } from "../../types/api.types";
+import { CountdownHero } from "../ui/StageTimeBadge";
 
 function daysBetween(fromIso: string | null, to: Date): number | null {
   if (!fromIso) return null;
@@ -53,9 +54,20 @@ export function ProjectTimelineIndicators({ project }: { project: Project }) {
         <div className="font-display text-2xl font-bold text-[var(--color-text-primary)]">
           {currentStage ? (currentStage.label || currentStage.name) : "—"}
         </div>
-        <p className="mt-2 text-xs text-[var(--color-text-secondary)]">
-          {currentStage ? `${currentStage.progressPercent}% de avance en esta etapa` : "Sin etapa en curso"}
-        </p>
+        {currentStage?.countdown ? (
+          <div className="mt-2">
+            <CountdownHero countdown={currentStage.countdown} />
+            <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">
+              Plazo: {currentStage.countdown.slaDiasHabiles} días hábiles · {currentStage.progressPercent}% de avance
+            </p>
+          </div>
+        ) : (
+          <p className="mt-2 text-xs text-[var(--color-text-secondary)]">
+            {currentStage
+              ? `${currentStage.progressPercent}% de avance en esta etapa`
+              : "Sin etapa en curso"}
+          </p>
+        )}
       </section>
     </div>
   );

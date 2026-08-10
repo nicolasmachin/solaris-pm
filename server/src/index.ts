@@ -15,6 +15,7 @@ import { startEncuestasAniversarioJob } from "./services/encuestas/aniversario.j
 import { startReportesFvJobs } from "./services/reportesFv/reportes-fv.job.js";
 import { startFvMonitorJob } from "./services/reportesFv/monitor/monitor.job.js";
 import { startReporteSemanalJob } from "./services/reporteSemanal/reporte-semanal.job.js";
+import { startDailyDigestJob } from "./services/digest/daily-digest.job.js";
 import { recoverPendingProjectVideos } from "./services/project-video.service.js";
 import { formatErrorPayload } from "./utils/errors.js";
 
@@ -92,6 +93,7 @@ async function start() {
   startReportesFvJobs();
   startFvMonitorJob();
   startReporteSemanalJob();
+  startDailyDigestJob();
 
   // La cola de compresión de videos vive en memoria: un reinicio la vacía. Sin
   // esto, un video subido justo antes de un deploy quedaría "procesando" para

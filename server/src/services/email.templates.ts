@@ -42,3 +42,55 @@ export function emailEngineeringCompleted(params: {
     text: `Proyecto ${params.projectName} listo para Operaciones (${triggerLabel}).\nVer: ${projectLink(params.projectId)}`,
   };
 }
+
+// ─── Resumen diario (digest) ────────────────────────────────────────────────
+// Un solo mail por persona con lo que pasó en sus proyectos en las últimas 24h.
+// Reemplaza los mails por evento (traspasos, escalaciones, ingeniería, avisos)
+// para bajar el ruido; las notificaciones in-app siguen siendo inmediatas.
+
+export interface DigestGroup {
+  projectName: string | null;
+  projectId: string | null;
+  items: Array<{ title: string; message: string }>;
+}
+
+export function emailDailyDigest(params: {
+  userName: string;
+  groups: DigestGroup[];
+  totalCount: number;
+}) {
+  const groupsHtml = params.groups
+    .map((g) => {
+      const header = g.projectName
+        ? `<div style="margin:18px 0 6px;font-size:13px;font-weight:700;color:#12151c;">${escapeHtml(g.projectName)}</div>`
+        : `<div style="margin:18px 0 6px;font-size:13px;font-weight:700;color:#12151c;">General</div>`;
+      const rows = g.items
+        .map(
+          (it) =>
+            `<li style="margin:0 0 8px;"><strong>${escapeHtml(it.title)}</strong>` +
+            `<div style="color:#5a616b;font-size:13px;">${escapeHtml(it.message)}</div></li>`,
+        )
+        .join("");
+      return `${header}<ul style="margin:0;padding-left:18px;">${rows}</ul>`;
+    })
+    .join("");
+
+  const contentHtml =
+    `<p style="margin:0 0 4px;">Hola ${escapeHtml(params.userName)}, esto es lo que pasó en tus proyectos en las últimas 24 horas ` +
+    `(<strong>${params.totalCount}</strong> novedad${params.totalCount === 1 ? "" : "es"}):</p>` +
+    groupsHtml +
+    `<p style="margin:18px 0 0;color:#8a9099;font-size:12px;">Ves este resumen una vez al día. Cada novedad ya está también en la campana de Voltia PM apenas ocurre.</p>`;
+
+  const plural = params.totalCount === 1 ? "novedad" : "novedades";
+  return {
+    subject: `[Voltia PM] Resumen del día — ${params.totalCount} ${plural}`,
+    html: renderEmailLayout({
+      title: "Resumen del día",
+      kicker: "Digest diario",
+      preheader: `${params.totalCount} ${plural} en tus proyectos.`,
+      contentHtml,
+      cta: { label: "Abrir Voltia PM", url: BASE_URL },
+    }),
+    text: `Resumen del día: ${params.totalCount} ${plural} en tus proyectos. Entrá a ${BASE_URL} para el detalle.`,
+  };
+}

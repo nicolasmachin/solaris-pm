@@ -33,6 +33,8 @@ import { TabMateriales } from "./AdminMateriales";
 import { TabMaterialTemplates } from "./AdminMaterialTemplates";
 import { TabCuentas } from "./AdminCuentas";
 import { TabDeadlineRules } from "./AdminDeadlineRules";
+import { TabStageSlas } from "./admin/StageSlasPage";
+import { TabDigestConfig } from "./admin/DigestConfigPage";
 import { TabClientes } from "./AdminClientes";
 import { TabCostosFijos } from "./AdminCostosFijos";
 import { TabChecklistTemplates } from "./AdminChecklistTemplates";
@@ -3215,6 +3217,8 @@ export function Admin() {
           {activeTab === "materiales" && <TabMateriales />}
           {activeTab === "plantillas-materiales" && <TabMaterialTemplates />}
           {activeTab === "cuentas" && <TabCuentas />}
+          {activeTab === "plazos-etapa" && <TabStageSlas />}
+          {activeTab === "resumen-diario" && <TabDigestConfig />}
           {activeTab === "deadlines" && <TabDeadlineRules />}
           {activeTab === "clientes" && <TabClientes />}
           {activeTab === "checklist-obra" && <TabChecklistTemplates />}

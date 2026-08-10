@@ -1,5 +1,5 @@
 // Consolidador de materiales: herramienta global del módulo Ingeniería que
-// agrupa las listas de materiales de varios proyectos en una sola tabla
+// agrupa las listas de materiales de uno o varios proyectos en una sola tabla
 // (ítem × proyecto + total) y produce PDF + Excel descargables.
 //
 // A diferencia de las herramientas por proyecto (unifilar, pre-ing, etc.),
@@ -162,16 +162,18 @@ function generateConsolidadoPdf(
     doc.moveDown(0.4);
     doc.font("Helvetica").fontSize(9).fillColor("#000");
     doc.text(
-      `Proyectos incluidos (${projects.length}): ${projects
+      `${projects.length === 1 ? "Proyecto incluido" : `Proyectos incluidos (${projects.length})`}: ${projects
         .map((p) => `${p.nombreCliente} (${p.potenciaKwp} kWp)`)
         .join(" · ")}`,
     );
     doc.moveDown(0.6);
 
     // ── Tabla por categoría
+    // Con un solo proyecto la columna TOTAL repetiría la del proyecto: se omite.
+    const showTotal = projects.length > 1;
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
     const colItem = Math.floor(pageWidth * 0.35);
-    const colTotal = 60;
+    const colTotal = showTotal ? 60 : 0;
     const colsForProjects = pageWidth - colItem - colTotal;
     const colProjectW = Math.floor(colsForProjects / projects.length);
 
@@ -225,11 +227,13 @@ function generateConsolidadoPdf(
         });
         xCursor += colProjectW;
       }
-      doc.text("TOTAL", xCursor + 2, y + 5, {
-        width: colTotal - 4,
-        align: "right",
-        lineBreak: false,
-      });
+      if (showTotal) {
+        doc.text("TOTAL", xCursor + 2, y + 5, {
+          width: colTotal - 4,
+          align: "right",
+          lineBreak: false,
+        });
+      }
       doc.restore();
       doc.y = y + ROW_H;
     }
@@ -255,12 +259,14 @@ function generateConsolidadoPdf(
         });
         xCursor += colProjectW;
       }
-      doc.font("Helvetica-Bold").fontSize(9);
-      doc.text(formatQty(item.cantidadTotal), xCursor + 2, y + 5, {
-        width: colTotal - 4,
-        align: "right",
-        lineBreak: false,
-      });
+      if (showTotal) {
+        doc.font("Helvetica-Bold").fontSize(9);
+        doc.text(formatQty(item.cantidadTotal), xCursor + 2, y + 5, {
+          width: colTotal - 4,
+          align: "right",
+          lineBreak: false,
+        });
+      }
       doc.restore();
       doc.y = y + ROW_H;
     }
@@ -306,17 +312,21 @@ async function generateConsolidadoXlsx(
     views: [{ state: "frozen", ySplit: 5 }],
   });
 
+  // Con un solo proyecto la columna TOTAL repetiría la del proyecto: se omite.
+  const showTotal = projects.length > 1;
+  const lastCol = 2 + projects.length + (showTotal ? 1 : 0);
+
   // Header
-  sheet.mergeCells(1, 1, 1, 2 + projects.length + 1);
+  sheet.mergeCells(1, 1, 1, lastCol);
   sheet.getCell(1, 1).value = `VOLTIA · Consolidado v${versionNumber}${label ? ` — ${label}` : ""}`;
   sheet.getCell(1, 1).font = { bold: true, size: 14, color: { argb: "FF1E40AF" } };
 
-  sheet.mergeCells(2, 1, 2, 2 + projects.length + 1);
+  sheet.mergeCells(2, 1, 2, lastCol);
   sheet.getCell(2, 1).value = `Generado: ${new Date().toLocaleDateString("es-UY", {
     day: "2-digit",
     month: "long",
     year: "numeric",
-  })} · ${projects.length} proyectos · ${items.length} ítems distintos`;
+  })} · ${projects.length} proyecto${projects.length === 1 ? "" : "s"} · ${items.length} ítems distintos`;
   sheet.getCell(2, 1).font = { italic: true, size: 10, color: { argb: "FF555555" } };
 
   // Espaciado
@@ -327,7 +337,7 @@ async function generateConsolidadoXlsx(
     "Ítem",
     "Unidad",
     ...projects.map((p) => p.nombreCliente),
-    "TOTAL",
+    ...(showTotal ? ["TOTAL"] : []),
   ]);
   headerRow.font = { bold: true };
   headerRow.fill = {
@@ -358,24 +368,24 @@ async function generateConsolidadoXlsx(
   });
 
   for (const [cat, catItems] of categories) {
-    const catRow = sheet.addRow([cat.toUpperCase(), ...Array(1 + projects.length + 1).fill("")]);
+    const catRow = sheet.addRow([cat.toUpperCase(), ...Array(lastCol - 1).fill("")]);
     catRow.font = { bold: true, color: { argb: "FF1E3A5F" } };
     catRow.fill = {
       type: "pattern",
       pattern: "solid",
       fgColor: { argb: "FFEEF2FF" },
     };
-    sheet.mergeCells(catRow.number, 1, catRow.number, 2 + projects.length + 1);
+    sheet.mergeCells(catRow.number, 1, catRow.number, lastCol);
 
     for (const it of catItems) {
       const rowValues: (string | number)[] = [it.nombre, it.unidad];
       for (const p of projects) {
         rowValues.push(it.cantidadesPorProyecto[p.id] ?? 0);
       }
-      rowValues.push(it.cantidadTotal);
+      if (showTotal) rowValues.push(it.cantidadTotal);
       const dataRow = sheet.addRow(rowValues);
       // Total en negrita
-      dataRow.getCell(2 + projects.length + 1).font = { bold: true };
+      if (showTotal) dataRow.getCell(lastCol).font = { bold: true };
     }
   }
 
@@ -385,7 +395,7 @@ async function generateConsolidadoXlsx(
   for (let i = 0; i < projects.length; i++) {
     sheet.getColumn(3 + i).width = Math.max(12, projects[i].nombreCliente.length + 2);
   }
-  sheet.getColumn(2 + projects.length + 1).width = 10;
+  if (showTotal) sheet.getColumn(lastCol).width = 10;
 
   const arrayBuffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(arrayBuffer as ArrayBuffer);
@@ -395,7 +405,7 @@ async function generateConsolidadoXlsx(
 
 const createBodySchema = z.object({
   label: z.string().trim().max(80).optional().nullable(),
-  projectIds: z.array(z.string().min(1)).min(2, "Seleccioná al menos 2 proyectos"),
+  projectIds: z.array(z.string().min(1)).min(1, "Seleccioná al menos 1 proyecto"),
 });
 
 // ─── Rutas ──────────────────────────────────────────────────────────────────

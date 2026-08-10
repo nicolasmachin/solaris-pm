@@ -31,6 +31,7 @@ import {
   ModalidadPago,
   Module,
   Moneda,
+  NotificationType,
   ObraChecklistStatus,
   PhaseType,
   Prisma,
@@ -162,7 +163,16 @@ import { markSubstageActivity } from "../services/substage-activity.service.js";
 import { findNextSubstage, notifyNextSubstageOwner } from "../services/substage-notifications.service.js";
 import { accumulateSupplierSaldoAFavor } from "../services/supplier-balance.service.js";
 import { contentDisposition } from "../utils/content-disposition.js";
-import { addDays, diffInDays, parseDateOnly, todayUtc, toDateOnlyString } from "../utils/dates.js";
+import { addDays, diffInDays, parseDateOnly, startOfUtcDay, todayUtc, toDateOnlyString } from "../utils/dates.js";
+import { clearStageSlaCache, getSlaMap, countdownForStage } from "../services/stage-sla.service.js";
+import { businessDaysBetween } from "../utils/business-days.js";
+import {
+  ALL_NOTIFICATION_TYPES,
+  NOTIFICATION_TYPE_META,
+  getDigestSendHour,
+  getEnabledByRole,
+  setDigestPreference,
+} from "../services/digest/digest-config.service.js";
 import { AppError, badRequest, conflict, forbidden, notFound } from "../utils/errors.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../utils/serialization.js";
 import { clientEmailValue, clientPhoneValue, dateOnlyValue } from "../validators/projectFields.js";
@@ -1390,6 +1400,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         : {}),
     });
 
+    const slaMap = await getSlaMap();
+
     let items = projects.map((project) => {
       const currentStage = getDisplayStage(project.stages, project.stageOverride);
       const progressPercent =
@@ -1463,6 +1475,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
               status: currentStage.status,
               progressPercent: currentStage.progressPercent,
               responsibleUserId: currentStage.responsibleUserId,
+              actualStartDate: serializeDateOnly(currentStage.actualStartDate),
+              // Cuenta regresiva de plazo (días hábiles) de la etapa actual.
+              countdown: countdownForStage(currentStage, slaMap),
             }
           : null,
         updatedAt: serializeDate(project.updatedAt),
@@ -1596,6 +1611,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       : null;
 
     const metrics = calculateProjectMetrics(project);
+    const detailSlaMap = await getSlaMap();
 
     const installationSchedule = project.installationSchedule
       ? (() => {
@@ -1641,10 +1657,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
       stageOverride: project.stageOverride ?? null,
       currentStage: (() => {
         const currentStage = getDisplayStage(project.stages.map((stage) => ({ ...stage })), project.stageOverride);
-        return currentStage ? serializeStage(currentStage) : null;
+        return currentStage ? serializeStage(currentStage, detailSlaMap.get(currentStage.name)) : null;
       })(),
       stages: project.stages.map((stage) => ({
-        ...serializeStage(stage),
+        ...serializeStage(stage, detailSlaMap.get(stage.name)),
         substages: stage.substages.map((sub) => ({
           ...serializeSubstage(sub),
           checklistItems: sub.checklistItems.map(serializeChecklistItem),
@@ -4700,6 +4716,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       grouped.set(stage.name, bucket);
     }
 
+    const slaMap = await getSlaMap();
+
     return (Object.values(StageType) as StageType[])
       .filter((stageName) => stageName !== StageType.POSTVENTA && stageName !== StageType.POST_HABILITACION)
       .map((stageName) => {
@@ -4722,6 +4740,26 @@ export async function registerApiRoutes(app: FastifyInstance) {
         const minActualDays = durations.length > 0 ? Math.min(...durations) : 0;
         const maxActualDays = durations.length > 0 ? Math.max(...durations) : 0;
 
+        // Cumplimiento contra el SLA (días hábiles). Solo cuenta las etapas con
+        // ambas fechas reales; el desvío es actual(hábiles) - SLA (negativo = a
+        // tiempo o antes). complianceRate = % dentro del plazo.
+        const slaDiasHabiles = slaMap.get(stageName) ?? null;
+        let withinSlaCount = 0;
+        let overSlaCount = 0;
+        let deltaSum = 0;
+        let slaObs = 0;
+        if (slaDiasHabiles) {
+          for (const s of items) {
+            if (s.actualStartDate == null || s.actualEndDate == null) continue;
+            const biz = businessDaysBetween(startOfUtcDay(s.actualStartDate), startOfUtcDay(s.actualEndDate));
+            const delta = biz - slaDiasHabiles;
+            slaObs++;
+            deltaSum += delta;
+            if (delta <= 0) withinSlaCount++;
+            else overSlaCount++;
+          }
+        }
+
         return {
           stageName,
           stageLabel: getStageLabel(stageName),
@@ -4729,6 +4767,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
           minActualDays,
           maxActualDays,
           completedCount,
+          slaDiasHabiles,
+          withinSlaCount,
+          overSlaCount,
+          complianceRate: slaObs > 0 ? Math.round((withinSlaCount / slaObs) * 100) : null,
+          avgDelayBusinessDays: slaObs > 0 ? Number((deltaSum / slaObs).toFixed(1)) : null,
         };
       });
   });
@@ -8105,6 +8148,132 @@ export async function registerApiRoutes(app: FastifyInstance) {
       description: `Eliminó regla de deadline ${id}`,
     });
     return { success: true };
+  });
+
+  // ─── Plazos por etapa (SLA en días hábiles) — Administración ───────────────
+  // Global: una fila por StageType. Alimenta la cuenta regresiva y la métrica de
+  // cumplimiento. GET devuelve TODOS los tipos de etapa (con o sin fila) para que
+  // el admin los edite en una tabla; PUT upsertea por stageType.
+
+  // Tipos de etapa que participan del plazo (lineales/datados). Se excluyen las
+  // paralelas e indefinidas, que no tienen cuenta regresiva.
+  const STAGE_TYPES_CON_SLA: StageType[] = [
+    StageType.ONBOARDING,
+    StageType.PRE_INGENIERIA,
+    StageType.VALIDACION_OPERACIONES,
+    StageType.INGENIERIA,
+    StageType.INGENIERIA_FINAL,
+    StageType.COMPRAS,
+    StageType.EJECUCION_OBRA,
+    StageType.TRAMITACION_UTE,
+    StageType.HABILITACION_UTE,
+    StageType.OPERACIONES,
+  ];
+
+  app.get("/admin/stage-slas", { preHandler: authorize(Module.CONFIGURACION, Action.VIEW) }, async () => {
+    const rows = await prisma.stageSla.findMany();
+    const byType = new Map(rows.map((r) => [r.stageType, r]));
+    // Devuelve una entrada por cada tipo de etapa "con SLA", exista o no la fila.
+    return STAGE_TYPES_CON_SLA.map((stageType) => {
+      const row = byType.get(stageType);
+      return {
+        stageType,
+        diasHabiles: row?.diasHabiles ?? null,
+        activo: row?.activo ?? false,
+        configured: !!row,
+      };
+    });
+  });
+
+  const stageSlaPutSchema = z
+    .object({
+      diasHabiles: z.number().int().min(1).max(365),
+      activo: z.boolean().optional(),
+    })
+    .strict();
+
+  app.put("/admin/stage-slas/:stageType", { preHandler: authorize(Module.CONFIGURACION, Action.EDIT) }, async (request) => {
+    const user = ensureUser(request);
+    const { stageType } = z.object({ stageType: z.nativeEnum(StageType) }).parse(request.params);
+    const body = stageSlaPutSchema.parse(request.body);
+    const activo = body.activo ?? true;
+
+    const saved = await prisma.stageSla.upsert({
+      where: { stageType },
+      create: { stageType, diasHabiles: body.diasHabiles, activo },
+      update: { diasHabiles: body.diasHabiles, activo },
+    });
+    clearStageSlaCache();
+    await createAuditEntry({
+      entityType: AuditEntityType.setting,
+      entityId: saved.id,
+      userId: user.id,
+      action: AuditAction.updated,
+      description: `Definió plazo de etapa ${stageType}: ${body.diasHabiles} días hábiles${activo ? "" : " (inactivo)"}`,
+    });
+    return saved;
+  });
+
+  // ─── Resumen diario (digest): qué recibe cada rol + hora de envío ──────────
+  // Matriz opt-in Rol × Tipo de notificación. La hora es única para todos.
+
+  app.get("/admin/digest-config", { preHandler: authorize(Module.CONFIGURACION, Action.VIEW) }, async () => {
+    const [sendHour, enabledByRole] = await Promise.all([getDigestSendHour(), getEnabledByRole()]);
+    const enabled: Array<{ roleName: string; notificationType: NotificationType }> = [];
+    for (const [roleName, set] of enabledByRole) {
+      for (const t of set) enabled.push({ roleName, notificationType: t });
+    }
+    return {
+      sendHour,
+      types: ALL_NOTIFICATION_TYPES.map((t) => ({
+        type: t,
+        label: NOTIFICATION_TYPE_META[t].label,
+        description: NOTIFICATION_TYPE_META[t].description,
+      })),
+      enabled,
+    };
+  });
+
+  app.put("/admin/digest-config/hour", { preHandler: authorize(Module.CONFIGURACION, Action.EDIT) }, async (request) => {
+    const user = ensureUser(request);
+    const { hour } = z.object({ hour: z.number().int().min(0).max(23) }).parse(request.body);
+    const { previousValue, setting } = await upsertSetting({
+      level: SettingLevel.SYSTEM,
+      key: SettingKey.DIGEST_SEND_HOUR,
+      value: String(hour),
+      updatedById: user.id,
+    });
+    await createAuditEntry({
+      entityType: AuditEntityType.setting,
+      entityId: setting.id,
+      userId: user.id,
+      action: AuditAction.setting_changed,
+      fieldChanged: "DIGEST_SEND_HOUR",
+      oldValue: previousValue,
+      newValue: String(hour),
+      description: `Definió la hora del resumen diario a las ${String(hour).padStart(2, "0")}:00 (hora Uruguay)`,
+    });
+    return { sendHour: hour };
+  });
+
+  app.put("/admin/digest-config/toggle", { preHandler: authorize(Module.CONFIGURACION, Action.EDIT) }, async (request) => {
+    const user = ensureUser(request);
+    const body = z
+      .object({
+        roleName: z.string().min(1),
+        notificationType: z.nativeEnum(NotificationType),
+        enabled: z.boolean(),
+      })
+      .parse(request.body);
+    await setDigestPreference(body.roleName, body.notificationType, body.enabled);
+    await createAuditEntry({
+      entityType: AuditEntityType.setting,
+      entityId: `${body.roleName}:${body.notificationType}`,
+      userId: user.id,
+      action: AuditAction.updated,
+      description: `${body.enabled ? "Activó" : "Desactivó"} la notificación "${NOTIFICATION_TYPE_META[body.notificationType].label}" en el resumen diario del rol ${body.roleName}`,
+    });
+    return { ok: true };
   });
 
   // ─── Plantillas de checklist de obra (maestro editable solo ADMIN/CONFIG) ──

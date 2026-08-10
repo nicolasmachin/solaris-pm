@@ -1,8 +1,6 @@
 import { NotificationType } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { createNotificationByUniqueKey } from "./notification.service.js";
-import { sendEmail } from "./email.service.js";
-import { emailEngineeringCompleted } from "./email.templates.js";
 
 // Ingeniería completada → avisar a Operaciones + Admin
 //
@@ -39,10 +37,10 @@ export async function notifyEngineeringCompleted(params: {
     const title = `Proyecto ${project.clientName} listo para Operaciones`;
     const message = `${project.clientName}${project.code ? ` (${project.code})` : ""} completó Ingeniería y está listo para que Operaciones inicie la planificación de la instalación.`;
 
+    // Solo in-app (dedupe por uniqueKey): el aviso viaja al resumen diario.
     for (const user of recipients) {
       const uniqueKey = `engineering_completed_${project.id}_${user.id}`;
-
-      const { notification, created } = await createNotificationByUniqueKey({
+      await createNotificationByUniqueKey({
         projectId: project.id,
         userId: user.id,
         type: NotificationType.engineering_completed,
@@ -50,24 +48,6 @@ export async function notifyEngineeringCompleted(params: {
         message,
         uniqueKey,
       });
-
-      if (!created) continue;
-
-      if (user.email) {
-        const template = emailEngineeringCompleted({
-          projectName: project.clientName,
-          projectCode: project.code,
-          projectId: project.id,
-          trigger: params.trigger,
-        });
-        const ok = await sendEmail({ to: user.email, ...template });
-        if (ok) {
-          await prisma.notification.update({
-            where: { id: notification.id },
-            data: { sentEmail: true },
-          });
-        }
-      }
     }
   } catch (err) {
     console.error("[notify] Error en notifyEngineeringCompleted:", err);

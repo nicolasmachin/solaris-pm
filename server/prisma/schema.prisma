@@ -429,6 +429,8 @@ enum SettingKey {
   CO2_FACTOR
   PROPOSAL_SCRIPT_PATH
   PIPELINE_TEMPLATE
+  // Hora (0-23, hora Uruguay) a la que se manda el resumen diario de mails.
+  DIGEST_SEND_HOUR
 }
 
 enum SalesStage {
@@ -1076,6 +1078,38 @@ model DeadlineRule {
   @@index([stageType])
   @@index([activa])
   @@map("deadline_rules")
+}
+
+// Plazo objetivo (SLA) por tipo de etapa, en días hábiles. Global: una fila por
+// StageType, aplica a todos los proyectos. Alimenta la cuenta regresiva del
+// pipeline y la métrica de cumplimiento. Las etapas paralelas/indefinidas
+// (POST_HABILITACION, POSTVENTA, SEGUIMIENTO_*) pueden quedar sin fila o con
+// `activo=false` → sin cuenta regresiva. Se edita en Administración.
+model StageSla {
+  id          String    @id @default(cuid())
+  stageType   StageType @unique
+  diasHabiles Int
+  activo      Boolean   @default(true)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6)
+
+  @@map("stage_slas")
+}
+
+// Qué tipos de notificación entran al resumen diario (digest) de cada rol.
+// Modelo OPT-IN: la existencia de una fila = ese rol recibe ese tipo. Sin fila
+// = no lo recibe (un tipo nuevo arranca apagado para todos hasta que se tilde
+// en Administración → Resumen diario). `roleName` es el name del rol (tabla
+// roles es dinámica, no un enum).
+model DigestPreference {
+  id               String           @id @default(cuid())
+  roleName         String
+  notificationType NotificationType
+  createdAt        DateTime         @default(now()) @db.Timestamptz(6)
+
+  @@unique([roleName, notificationType])
+  @@index([roleName])
+  @@map("digest_preferences")
 }
 
 model ChecklistItem {

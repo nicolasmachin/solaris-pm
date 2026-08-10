@@ -1,4 +1,6 @@
 import bcrypt from "bcryptjs";
+import { seedStageSlas } from "./scripts/seed-stage-slas.js";
+import { seedDigestPreferences } from "./scripts/seed-digest-preferences.js";
 import {
   Action,
   AuditAction,
@@ -2052,6 +2054,12 @@ async function run() {
       project1.tasks[0].id,
     );
   }
+
+  const slasCreados = await seedStageSlas(prisma);
+  console.log(`✅ Plazos por etapa (SLA) sembrados: ${slasCreados} (existentes respetados)`);
+
+  const digestPrefs = await seedDigestPreferences(prisma);
+  console.log(`✅ Preferencias de resumen diario (ADMIN) sembradas: ${digestPrefs} (existentes respetadas)`);
 
   console.log("Seed completado (idempotente: upsert por claves únicas, sin borrar datos existentes).");
 }

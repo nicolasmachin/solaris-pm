@@ -161,6 +161,8 @@ export function ConsolidatedTableView({ id, onClose }: { id: string; onClose: ()
 
   const projects: ProjectSnapshot[] = versionQ.data?.projectsSnapshot ?? [];
   const v = versionQ.data;
+  // Con un solo proyecto la columna TOTAL repetiría la del proyecto: se omite.
+  const showTotal = projects.length > 1;
 
   const filtersActive = comprasOn && (q.trim() !== "" || statusFilter.length > 0 || crossedFilter !== "all");
 
@@ -182,7 +184,7 @@ export function ConsolidatedTableView({ id, onClose }: { id: string; onClose: ()
             </h3>
             {v && (
               <p className="text-[10px] text-[var(--color-text-muted)] font-mono mt-0.5">
-                {fmt(v.createdAt)} · {projects.length} proyectos · {v.itemsSnapshot.length} ítems
+                {fmt(v.createdAt)} · {projects.length} proyecto{projects.length === 1 ? "" : "s"} · {v.itemsSnapshot.length} ítems
                 {filtersActive && ` · mostrando ${filteredCount}`}
               </p>
             )}
@@ -382,7 +384,9 @@ export function ConsolidatedTableView({ id, onClose }: { id: string; onClose: ()
           ) : (
             <div className="space-y-4">
               <div className="rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2">
-                <p className="text-[11px] font-mono text-[var(--color-text-muted)] mb-1">Proyectos incluidos:</p>
+                <p className="text-[11px] font-mono text-[var(--color-text-muted)] mb-1">
+                  {projects.length === 1 ? "Proyecto incluido:" : "Proyectos incluidos:"}
+                </p>
                 <ul className="text-xs space-y-0.5">
                   {projects.map((p) => (
                     <li key={p.id}>
@@ -407,7 +411,7 @@ export function ConsolidatedTableView({ id, onClose }: { id: string; onClose: ()
                           {projects.map((p) => (
                             <th key={p.id} className="px-2 py-1.5 text-right tabular-nums">{p.nombreCliente}</th>
                           ))}
-                          <th className="px-2 py-1.5 text-right font-bold tabular-nums">TOTAL</th>
+                          {showTotal && <th className="px-2 py-1.5 text-right font-bold tabular-nums">TOTAL</th>}
                           {comprasOn && <th className="px-2 py-1.5 w-32">Estado</th>}
                           {comprasOn && <th className="px-2 py-1.5 w-12 text-center">✓</th>}
                         </tr>
@@ -437,9 +441,11 @@ export function ConsolidatedTableView({ id, onClose }: { id: string; onClose: ()
                                   </td>
                                 );
                               })}
-                              <td className="px-2 py-1.5 text-right tabular-nums font-bold text-[var(--color-text-primary)]">
-                                <span className="crossable">{formatQty(item.cantidadTotal)}</span>
-                              </td>
+                              {showTotal && (
+                                <td className="px-2 py-1.5 text-right tabular-nums font-bold text-[var(--color-text-primary)]">
+                                  <span className="crossable">{formatQty(item.cantidadTotal)}</span>
+                                </td>
+                              )}
                               {comprasOn && (
                                 <td className="px-2 py-1.5">
                                   {aggregated === null ? (

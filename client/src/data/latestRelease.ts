@@ -23,30 +23,14 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "8.9",
-  date: "8 de agosto de 2026",
+  version: "9.1",
+  date: "10 de agosto de 2026",
   sections: [
     {
-      title: "Fecha de visita realizada, en Ventas",
+      title: "El consolidador de materiales ya funciona con un solo proyecto",
       items: [
-        'Al subir la minuta desde el bot de Telegram, el cliente potencial pasa solo a "Visitado" y queda cargada la fecha de la visita: la que figura en la minuta, no la del día en que se sube.',
-        'Moviendo la etapa a mano también se completa sola. Antes había que acordarse de cargarla y quedaba vacía, lo que desarmaba los indicadores de cuánto tarda una visita en convertirse en venta.',
-        'Se puede corregir en cualquier momento desde "Fechas del proceso", y una vez cargada el sistema no la pisa.',
-      ],
-    },
-    {
-      title: "Manual de la herramienta de reportes",
-      items: [
-        'Documento nuevo "Paso a paso mensual", con su propio botón: qué apretar cada mes para emitir y enviar los reportes, y cómo activar un generador que está apagado.',
-        'El botón "Manual de uso" ahora abre el manual en pantalla en vez de descargarlo, con la descarga adentro. Está en Reportes FV y en Monitoreo.',
-        "Se sumaron capítulos sobre el control diario de las plantas, la generación día a día del cliente y cómo mirar el portal como lo ve él.",
-      ],
-    },
-    {
-      title: "Plantas nuevas de Growatt",
-      items: [
-        "El sistema busca plantas nuevas todos los días solo, y avisa en el panel de Monitoreo si alguna quedó sin generador asignado.",
-        "El listado dejó de mezclar instalaciones que no son de Voltia: lo que aparece pendiente es siempre trabajo real.",
+        "Antes había que elegir al menos dos proyectos para generar un consolidado. Ahora alcanza con uno: sirve para armar la lista de compra de una obra puntual con el mismo formato, el mismo PDF y el mismo Excel.",
+        "Cuando el consolidado tiene un solo proyecto, la columna TOTAL deja de mostrarse (repetía la del proyecto) tanto en pantalla como en el PDF y el Excel.",
       ],
     },
   ],
@@ -60,6 +44,28 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "9.0",
+    shortDate: "9 ago",
+    highlights: [
+      "Cada proyecto muestra una cuenta regresiva de la etapa en la que está, con semáforo verde/amarillo/rojo, en la ficha, el pipeline y el listado.",
+      "Nueva pantalla Administración → Plazos por etapa para definir en días hábiles cuánto debería durar cada etapa.",
+      "En Métricas, cada etapa muestra el porcentaje de proyectos cerrados en plazo y el desvío promedio.",
+      "Los mails por cada movimiento se reemplazaron por un único resumen diario por persona; la campana sigue avisando al instante.",
+      "Nueva pantalla Administración → Resumen diario (mails) para elegir qué recibe cada rol y a qué hora.",
+    ],
+  },
+  {
+    version: "8.9",
+    shortDate: "8 ago",
+    highlights: [
+      'Al subir la minuta desde el bot de Telegram, el cliente potencial pasa solo a "Visitado" con la fecha de la visita cargada.',
+      "Todo reporte fotovoltaico enviado al cliente llega también en copia oculta a nmachin@voltia.com.uy.",
+      "Se destrabó el envío de reportes al cliente (estaba bloqueado para todos los roles) y quedó habilitado para Administrador y Experiencia Solar.",
+      'Botón "Enviar todos" en Reportes FV, columna de retorno de la inversión y botones del cierre mensual ordenados por el flujo real.',
+      "El monitoreo diario ahora también vigila las 6 plantas Huawei, que además traen sus datos solas cada mes.",
+    ],
+  },
   {
     version: "8.8",
     shortDate: "7 ago",

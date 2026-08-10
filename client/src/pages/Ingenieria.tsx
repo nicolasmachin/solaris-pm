@@ -106,7 +106,7 @@ export function Ingenieria() {
               Consolidador de materiales
             </p>
             <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
-              Unificá listas de materiales de varios proyectos para hacer las compras.
+              Unificá listas de materiales de uno o varios proyectos para hacer las compras.
             </p>
           </div>
           <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />

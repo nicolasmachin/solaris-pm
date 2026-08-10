@@ -83,6 +83,18 @@ export interface AuthResponse {
 
 // ─── Projects list ───────────────────────────────────────────────────────────
 
+/** Cuenta regresiva de plazo (SLA en días hábiles) de una etapa. La calcula el
+ * backend (stage-sla.service). null si la etapa no tiene SLA o no arrancó. */
+export type CountdownStatus = "ok" | "warning" | "overdue";
+export interface StageCountdown {
+  slaDiasHabiles: number;
+  deadline: string;
+  /** Días hábiles restantes. Negativo = vencida y creciente. */
+  remainingBusinessDays: number;
+  elapsedBusinessDays: number;
+  status: CountdownStatus;
+}
+
 export interface ProjectCurrentStage {
   id: string;
   name: string;
@@ -90,6 +102,8 @@ export interface ProjectCurrentStage {
   status: StageStatus;
   progressPercent: number;
   responsibleUserId?: string | null;
+  actualStartDate?: string | null;
+  countdown?: StageCountdown | null;
 }
 
 export interface ProjectListItem {
@@ -119,6 +133,10 @@ export interface ProjectListItem {
   installationTeamType?: "PROPIO" | "TERCERIZADO" | null;
   /** Nombre del asesor comercial que vendió el proyecto (salesperson), o null. */
   salespersonName?: string | null;
+  /** Suma de días de desvío de las etapas completadas. */
+  delayDays?: number;
+  /** true si alguna etapa en curso ya pasó su plannedEndDate. */
+  hasOverdueStage?: boolean;
   startDate: string | null;
   saleDate: string | null;
   plannedEndDate: string | null;
@@ -244,6 +262,8 @@ export interface Stage {
   actualDurationDays: number | null;
   delayDays: number | null;
   actualDatesManuallyEdited?: boolean;
+  /** Cuenta regresiva de plazo (SLA en días hábiles). null si no aplica. */
+  countdown?: StageCountdown | null;
   /** @deprecated texto legacy; usar responsibleUserId + responsibleUser */
   responsibleName?: string | null;
   responsibleUserId?: string | null;
@@ -526,6 +546,16 @@ export interface MetricsStageRow {
   minActualDays: number;
   maxActualDays: number;
   completedCount: number;
+  /** Plazo objetivo (SLA) en días hábiles, o null si no está configurado. */
+  slaDiasHabiles: number | null;
+  /** Etapas que cumplieron el plazo (duración ≤ SLA). */
+  withinSlaCount: number;
+  /** Etapas que se pasaron del plazo. */
+  overSlaCount: number;
+  /** % de etapas dentro del plazo (0–100), o null si no hay SLA/observaciones. */
+  complianceRate: number | null;
+  /** Desvío promedio en días hábiles (negativo = a tiempo), o null. */
+  avgDelayBusinessDays: number | null;
 }
 
 export interface MetricsProjectRow {

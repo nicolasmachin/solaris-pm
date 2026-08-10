@@ -1,6 +1,47 @@
 # Novedades
 
-## v8.9
+## v9.1
+
+### 10 de agosto de 2026
+
+#### El consolidador de materiales ya funciona con un solo proyecto
+
+- Antes había que elegir **al menos dos** proyectos para generar un consolidado. Ahora alcanza con **uno**: sirve para armar la lista de compra de una obra puntual con el mismo formato, el mismo PDF y el mismo Excel.
+- Cuando el consolidado tiene un solo proyecto, la columna **TOTAL** deja de mostrarse (repetía la del proyecto) tanto en pantalla como en el PDF y el Excel.
+
+## v9.0
+
+### 9 de agosto de 2026
+
+#### Cuenta regresiva de plazo en cada etapa
+
+- Cada proyecto muestra ahora una **cuenta regresiva** de la etapa en la que está: los días hábiles que faltan para cumplir su plazo. **Verde** cuando falta, **amarillo** cuando falta poco y **rojo** cuando ya se pasó, con los días de atraso creciendo.
+- Se ve arriba en la ficha del proyecto (recuadro "Etapa actual") y en el **pipeline**, debajo de cada etapa.
+- Las etapas ya terminadas muestran **cuánto tardaron** y si cerraron **en plazo** o con atraso.
+
+#### Plazos por etapa configurables
+
+- Nueva pantalla en **Administración → Plazos por etapa** para definir, en días hábiles, cuánto debería durar cada etapa. Es lo que alimenta la cuenta regresiva y las métricas de cumplimiento.
+
+#### El listado de proyectos muestra la urgencia
+
+- El listado suma la columna **"Plazo etapa"** con la cuenta regresiva de cada proyecto.
+- Se puede **ordenar por urgencia** (los vencidos primero) y filtrar con **"Solo vencidos"**.
+
+#### Métricas de cumplimiento de tiempos
+
+- En **Métricas**, cada etapa muestra qué **porcentaje** de proyectos la cerró dentro del plazo y el **desvío promedio** en días hábiles.
+
+#### Menos correos: un solo resumen diario
+
+- Los correos que salían por **cada** movimiento (traspasos, escalaciones, avisos internos) se reemplazaron por **un único resumen diario** por persona, con todo lo que pasó en sus proyectos en las últimas 24 horas.
+- Las novedades **siguen apareciendo al instante en la campana**; lo que cambia es que el mail deja de ser uno por evento y pasa a ser uno por día. Quien no tuvo novedades no recibe nada.
+
+#### El resumen diario ahora se configura
+
+- Nueva pantalla en **Administración → Resumen diario (mails)**: una grilla para decidir **qué tipo de notificación entra al resumen de cada rol** (por ejemplo, que a un vendedor le lleguen unas cosas y a un gerente de operaciones otras) y **a qué hora** se envía.
+- Cada notificación tiene un ícono **ⓘ** que, al pasar el mouse, explica qué es.
+- Arranca **apagado**: se tilda lo que cada rol tiene que recibir. Los tipos de notificación nuevos que se agreguen en el futuro empiezan apagados hasta que se habiliten.
 
 ### 8 de agosto de 2026
 

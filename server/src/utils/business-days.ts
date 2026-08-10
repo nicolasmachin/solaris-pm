@@ -40,3 +40,12 @@ export function businessDaysBetween(from: Date, to: Date): number {
 export function isOlderThanBusinessDays(date: Date, businessDays: number, now: Date = new Date()): boolean {
   return businessDaysBetween(date, now) >= businessDays;
 }
+
+// Diferencia de días hábiles con signo entre `from` y `to`.
+// Positivo si `to` está en el futuro respecto de `from` (faltan días hábiles),
+// negativo si está en el pasado (vencido). 0 si caen el mismo día.
+// Se usa para la cuenta regresiva de plazo por etapa: remaining = diff(hoy, deadline).
+export function signedBusinessDaysBetween(from: Date, to: Date): number {
+  if (to.getTime() === from.getTime()) return 0;
+  return to > from ? businessDaysBetween(from, to) : -businessDaysBetween(to, from);
+}

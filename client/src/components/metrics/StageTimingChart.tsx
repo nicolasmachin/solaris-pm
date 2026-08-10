@@ -53,6 +53,28 @@ export function StageTimingChart({ stages }: StageTimingChartProps) {
                   <span className="ml-2 text-[10px] text-[var(--color-text-muted)]">
                     {stage.completedCount} etapas completadas
                   </span>
+                  {stage.complianceRate != null && (
+                    <span
+                      className="ml-2 rounded px-1.5 py-0.5 text-[10px] font-semibold"
+                      style={{
+                        background:
+                          stage.complianceRate >= 80
+                            ? "var(--color-success-bg-soft)"
+                            : stage.complianceRate >= 50
+                              ? "var(--color-warning-bg)"
+                              : "var(--color-danger-bg)",
+                        color:
+                          stage.complianceRate >= 80
+                            ? "var(--color-success-text-strong)"
+                            : stage.complianceRate >= 50
+                              ? "var(--color-warning-text)"
+                              : "var(--color-danger-text)",
+                      }}
+                      title={`${stage.withinSlaCount} en plazo · ${stage.overSlaCount} fuera de plazo (SLA ${stage.slaDiasHabiles} días háb.)`}
+                    >
+                      {stage.complianceRate}% en plazo
+                    </span>
+                  )}
                 </div>
                 <span className="text-sm font-semibold tabular-nums text-[var(--color-text-primary)]">
                   {fmt(stage.avgActualDays)}d
@@ -78,6 +100,25 @@ export function StageTimingChart({ stages }: StageTimingChartProps) {
               </div>
               <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5 flex justify-between">
                 <span>min {fmt(stage.minActualDays)}d</span>
+                {stage.slaDiasHabiles != null && (
+                  <span>
+                    plazo {stage.slaDiasHabiles} días háb.
+                    {stage.avgDelayBusinessDays != null && (
+                      <span
+                        style={{
+                          color:
+                            stage.avgDelayBusinessDays > 0
+                              ? "var(--color-danger-text)"
+                              : "var(--color-success-text-strong)",
+                        }}
+                      >
+                        {" "}
+                        · desvío prom. {stage.avgDelayBusinessDays > 0 ? "+" : ""}
+                        {fmt(stage.avgDelayBusinessDays)}d háb.
+                      </span>
+                    )}
+                  </span>
+                )}
                 <span>max {fmt(stage.maxActualDays)}d</span>
               </p>
             </div>

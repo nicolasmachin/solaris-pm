@@ -4,7 +4,6 @@ import { AuditAction, AuditEntityType, NotificationType, TraspasoEstado } from "
 import { prisma } from "../../lib/prisma.js";
 import { createAuditEntry } from "../audit.service.js";
 import { createNotification } from "../notification.service.js";
-import { sendEmail } from "../email.service.js";
 import { isOlderThanBusinessDays } from "../../utils/business-days.js";
 import { TRASPASO_LABEL } from "./catalogo.js";
 
@@ -52,6 +51,8 @@ export async function escalarVencidos(): Promise<{ checked: number; escalated: n
         `El traspaso "${TRASPASO_LABEL[t.tipo]}" del proyecto "${t.project.clientName}" ` +
         `lleva más de ${umbral} días hábiles sin confirmar (responsable: ${t.modalUsuario.name}).`;
 
+      // Solo in-app: la escalación viaja al resumen diario (digest). Aparece
+      // destacada arriba porque es de las novedades más relevantes del día.
       for (const admin of admins) {
         await createNotification({
           userId: admin.id,
@@ -60,9 +61,6 @@ export async function escalarVencidos(): Promise<{ checked: number; escalated: n
           title,
           message,
         });
-        if (admin.email) {
-          await sendEmail({ to: admin.email, subject: title, html: `<p>${message}</p>`, text: message, type: "internal" });
-        }
       }
 
       await createAuditEntry({

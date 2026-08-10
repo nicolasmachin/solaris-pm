@@ -94,19 +94,13 @@ export async function reporteSemanalAdmin(now: Date = new Date()): Promise<{ sen
   return { sent, total };
 }
 
-// Cron: diario días hábiles 08:00 + semanal lunes 08:00 (configurables).
+// Cron: solo el resumen SEMANAL lunes 08:00 (configurable). El reporte DIARIO de
+// escalados se descontinuó: las escalaciones ya llegan a cada ADMIN como
+// notificación in-app y viajan en su resumen diario (digest). El semanal se
+// mantiene porque es analítico (métricas de la semana), no una repetición de
+// eventos. `reporteDiarioAdmin` queda disponible por si se quiere invocar a mano.
 export function startTraspasosReportesJobs() {
   const jobs: cron.ScheduledTask[] = [];
-  jobs.push(
-    cron.schedule(process.env.CRON_REPORTE_DIARIO || "0 8 * * 1-5", async () => {
-      try {
-        const r = await reporteDiarioAdmin();
-        if (r.count > 0) console.log(`[traspasos-reporte-diario] ${r.count} escalados, enviado a ${r.sent} admins`);
-      } catch (err) {
-        console.error("[traspasos-reporte-diario] job error:", err);
-      }
-    }),
-  );
   jobs.push(
     cron.schedule(process.env.CRON_REPORTE_SEMANAL || "0 8 * * 1", async () => {
       try {

@@ -3,7 +3,6 @@ import { NotificationType } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { createNotificationByUniqueKey } from "../notification.service.js";
-import { sendEmail } from "../email.service.js";
 
 // Regla de Oro del aviso post-habilitación (§8.2 del protocolo).
 // Cuando el trámite UTE finaliza (T8 setea Project.postHabilitacionInicioEn),
@@ -32,6 +31,8 @@ async function alertar(
 ): Promise<boolean> {
   // Dedupe global por uniqueKey (una sola notificación de por vida por hito).
   // Como createNotificationByUniqueKey es por-fila, usamos una key por usuario.
+  // Solo in-app (dedupe de por vida por uniqueKey): el aviso viaja al resumen
+  // diario. La campana lo muestra al instante.
   let created = false;
   for (const u of destinatarios) {
     const { created: c } = await createNotificationByUniqueKey({
@@ -42,12 +43,7 @@ async function alertar(
       message,
       uniqueKey: `${uniqueKey}:${u.id}`,
     });
-    if (c) {
-      created = true;
-      if (u.email) {
-        await sendEmail({ to: u.email, subject: title, html: `<p>${message}</p>`, text: message, type: "internal" });
-      }
-    }
+    if (c) created = true;
   }
   return created;
 }
