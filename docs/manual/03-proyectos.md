@@ -51,12 +51,20 @@ faltan pocos días hábiles (umbral por defecto 2, env `STAGE_SLA_WARNING_DIAS`)
 - Modelo `StageSla` (`server/prisma/schema.prisma`, tabla `stage_slas`): una fila
   por `StageType`, campo `diasHabiles` + `activo`. Global a todos los proyectos.
 - Servicio `stage-sla.service.ts`: `getSlaMap()` (cache de 5 min, se invalida con
-  `clearStageSlaCache()` al guardar) y `computeStageCountdown(stage, slaDias)`,
-  que ancla en `actualStartDate`, calcula `deadline = addBusinessDays(...)` y el
-  `remainingBusinessDays` con `signedBusinessDaysBetween` (utils `business-days.ts`).
+  `clearStageSlaCache()` al guardar) y `computeStageCountdown(stage, slaDias, fallbackStart?)`,
+  que ancla en `actualStartDate` (o el `fallbackStart` si la etapa aún no arrancó),
+  calcula `deadline = addBusinessDays(...)` y el `remainingBusinessDays` con
+  `signedBusinessDaysBetween` (utils `business-days.ts`).
+- **Arranque de la cuenta al cambiar de etapa** (`handoffStart`): la etapa
+  frontera (todas las lineales previas COMPLETED) hereda como inicio la fecha de
+  cierre de la etapa anterior; si es la primera etapa del pipeline, arranca en la
+  fecha de venta/inicio del proyecto. Así, al resolver una etapa, la siguiente
+  muestra su contador de inmediato en vez de quedar en blanco hasta que alguien
+  toque una subtarea (que es cuando se setea `actualStartDate`). Las etapas
+  futuras (con alguna previa sin cerrar) NO heredan handoff → sin contador.
 - El countdown se expone en `GET /api/projects` (dentro de `currentStage`) y en
-  `GET /api/projects/:id` (en cada `stage` vía `serializeStage`, que ahora acepta
-  el SLA como segundo argumento).
+  `GET /api/projects/:id` (en cada `stage` vía `serializeStage`, que acepta el SLA
+  y el `fallbackStart` de handoff como argumentos).
 - Rutas admin `GET/PUT /api/admin/stage-slas` en `api.routes.ts`, guard
   `authorize(Module.CONFIGURACION, ...)` (igual que las reglas de deadline).
 - La métrica de cumplimiento vive en `GET /api/metrics/stages`: compara la
