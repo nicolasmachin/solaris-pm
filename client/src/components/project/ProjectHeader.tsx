@@ -194,7 +194,10 @@ export function ProjectHeader({ project, onEdit, onDelete, onAmpliar }: ProjectH
       <div className="shrink-0 mt-1 flex flex-col items-end gap-2">
         <div className="flex items-center gap-3">
           {project.currentStage?.countdown ? (
-            <LiveStageCountdown countdown={project.currentStage.countdown} />
+            <LiveStageCountdown
+              countdown={project.currentStage.countdown}
+              stageLabel={project.currentStage.label || project.currentStage.name}
+            />
           ) : null}
           <span
             className="px-2.5 py-1 rounded text-[10px] font-mono font-bold uppercase tracking-wider"

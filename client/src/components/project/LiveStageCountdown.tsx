@@ -105,7 +105,13 @@ const TONE: Record<LiveStatus, { text: string; border: string; bg: string; glow:
   },
 };
 
-export function LiveStageCountdown({ countdown }: { countdown: StageCountdown }) {
+export function LiveStageCountdown({
+  countdown,
+  stageLabel,
+}: {
+  countdown: StageCountdown;
+  stageLabel?: string;
+}) {
   const deadline = deadlineInstant(countdown.deadline);
   const [now, setNow] = useState(() => new Date());
 
@@ -142,10 +148,12 @@ export function LiveStageCountdown({ countdown }: { countdown: StageCountdown })
       <div className="flex items-center gap-1">
         <Clock size={11} style={{ color: tone.text }} className="shrink-0" />
         <span
-          className="text-[9px] font-bold uppercase tracking-[0.14em]"
+          className="max-w-[220px] truncate text-[10px] font-bold uppercase tracking-[0.1em]"
           style={{ color: tone.text }}
+          title={stageLabel}
         >
-          {p.overdue ? "Vencida" : "Tiempo de etapa"}
+          {stageLabel || (p.overdue ? "Etapa vencida" : "Tiempo de etapa")}
+          {stageLabel && p.overdue ? " · Vencida" : ""}
         </span>
       </div>
       <div className="flex items-end gap-1.5" style={{ color: tone.text }}>
