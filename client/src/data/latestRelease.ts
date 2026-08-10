@@ -27,6 +27,14 @@ export const LATEST_RELEASE: Release = {
   date: "10 de agosto de 2026",
   sections: [
     {
+      title: "Cronómetro en vivo de la etapa en el proyecto",
+      items: [
+        "Al abrir un proyecto, junto al estado aparece un cronómetro grande que corre en tiempo real (días, horas, minutos y segundos) con el tiempo que falta para cumplir el plazo de la etapa actual.",
+        "Cambia de color como la cuenta regresiva: verde cuando falta, amarillo cuando falta poco y rojo cuando ya venció.",
+        "Se pausa los fines de semana: sólo descuenta tiempo de lunes a viernes.",
+      ],
+    },
+    {
       title: "El consolidador de materiales ya funciona con un solo proyecto",
       items: [
         "Antes había que elegir al menos dos proyectos para generar un consolidado. Ahora alcanza con uno: sirve para armar la lista de compra de una obra puntual con el mismo formato, el mismo PDF y el mismo Excel.",

@@ -5,6 +5,7 @@ import { UTE_STAGE_LABEL, UTE_STATUS_LABEL } from "../../api/uteProcess.api";
 import { getProjectTeamColor, getProjectTeamName } from "./projectTeamColor";
 import { CanAccess } from "../ui/CanAccess";
 import { CargarFotosObraButton } from "../obra/CargarFotosObraButton";
+import { LiveStageCountdown } from "./LiveStageCountdown";
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
   ACTIVE:      { bg: "var(--color-state-active-bg)", text: "var(--color-state-active-text)", label: "EN EJECUCIÓN" },
@@ -191,12 +192,17 @@ export function ProjectHeader({ project, onEdit, onDelete, onAmpliar }: ProjectH
       </div>
 
       <div className="shrink-0 mt-1 flex flex-col items-end gap-2">
-        <span
-          className="px-2.5 py-1 rounded text-[10px] font-mono font-bold uppercase tracking-wider"
-          style={{ background: style.bg, color: style.text }}
-        >
-          {style.label}
-        </span>
+        <div className="flex items-center gap-3">
+          {project.currentStage?.countdown ? (
+            <LiveStageCountdown countdown={project.currentStage.countdown} />
+          ) : null}
+          <span
+            className="px-2.5 py-1 rounded text-[10px] font-mono font-bold uppercase tracking-wider"
+            style={{ background: style.bg, color: style.text }}
+          >
+            {style.label}
+          </span>
+        </div>
         {installerTeamColor && installerTeamName ? (
           <div
             className="min-w-[180px] rounded-lg border px-3 py-2 text-right"

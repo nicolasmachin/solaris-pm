@@ -28,7 +28,12 @@ regresiva** con semáforo y una **métrica de cumplimiento**.
   en días hábiles + un toggle de activo. Editar y "Guardar" por fila. Una etapa
   inactiva o sin plazo no muestra cuenta regresiva.
 - **Ficha del proyecto**: el recuadro "Etapa actual" muestra la cuenta regresiva
-  grande (días hábiles restantes, o negativos si está vencida).
+  grande (días hábiles restantes, o negativos si está vencida). Además, en la
+  cabecera del proyecto (al lado del estado "En ejecución") corre un **cronómetro
+  en vivo** (`LiveStageCountdown.tsx`) con días/horas/minutos/segundos actualizado
+  cada segundo, mismo semáforo de color, que **se pausa los fines de semana** (sólo
+  descuenta ms de lun-vie; el `deadline` del countdown es el fin del día hábil
+  objetivo). Sólo aparece en la vista de proyecto abierto y si la etapa tiene SLA.
 - **Pipeline**: debajo de cada tarjeta de etapa, la etapa en curso muestra la
   cuenta regresiva y las completadas muestran cuánto duraron y si cerraron en
   plazo.
