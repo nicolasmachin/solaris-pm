@@ -133,19 +133,17 @@ export function computeStageCountdown(
   const isCompleted = stage.status === StageStatus.COMPLETED && !!stage.actualEndDate;
 
   // Fecha de arranque de la cuenta.
+  // - Activa: la cuenta arranca cuando la etapa se RECIBE (el handoff / traspaso
+  //   de la etapa previa, o el inicio del proyecto para la primera), NO cuando el
+  //   operario la empieza a mirar. A efectos del cumplimiento de plazos, cuándo se
+  //   setea `actualStartDate` (al resolver la primera subtarea) es irrelevante: por
+  //   eso se prefiere el handoff, y así completar una subetapa NO reinicia la cuenta.
   // - Completada: histórica (actualStartDate, o el fallback si faltara).
-  // - Activa: el MÁS TEMPRANO entre actualStartDate y el handoff. Así la cuenta
-  //   no se reinicia cuando el operario empieza a trabajar y recién ahí se setea
-  //   actualStartDate=hoy: hasta ese momento venía corriendo desde el handoff
-  //   (cierre de la etapa previa) y debe seguir anclada ahí.
   let startSource: Date | null;
   if (isCompleted) {
     startSource = stage.actualStartDate ?? fallbackStart ?? null;
   } else {
-    const cands = [stage.actualStartDate, fallbackStart ?? null].filter(
-      (d): d is Date => !!d,
-    );
-    startSource = cands.length ? cands.reduce((a, b) => (a < b ? a : b)) : null;
+    startSource = fallbackStart ?? stage.actualStartDate ?? null;
   }
   if (!startSource) return null;
 
