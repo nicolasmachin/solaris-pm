@@ -94,6 +94,12 @@ services:
       # alcanza para exponer los datos por fuera de ella.
       MCP_PUBLIC_URL: ${MCP_PUBLIC_URL:-}
       MCP_ALLOWED_EMAILS: ${MCP_ALLOWED_EMAILS:-}
+      # Resumen de novedades al equipo (lun y jue 7am hora Uruguay). El cron y los
+      # destinatarios tienen default en código; NOVEDADES_START_YMD posterga el
+      # primer envío automático para no duplicar un envío manual el mismo día.
+      NOVEDADES_START_YMD: ${NOVEDADES_START_YMD:-}
+      NOVEDADES_RECIPIENTS: ${NOVEDADES_RECIPIENTS:-}
+      CRON_NOVEDADES: ${CRON_NOVEDADES:-}
     volumes:
       - voltia_storage:/app/storage
     ports:
