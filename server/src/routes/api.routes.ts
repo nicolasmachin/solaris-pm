@@ -164,7 +164,7 @@ import { findNextSubstage, notifyNextSubstageOwner } from "../services/substage-
 import { accumulateSupplierSaldoAFavor } from "../services/supplier-balance.service.js";
 import { contentDisposition } from "../utils/content-disposition.js";
 import { addDays, diffInDays, parseDateOnly, startOfUtcDay, todayUtc, toDateOnlyString } from "../utils/dates.js";
-import { clearStageSlaCache, getSlaMap, countdownForStage } from "../services/stage-sla.service.js";
+import { clearStageSlaCache, getSlaMap, countdownForStage, handoffStart } from "../services/stage-sla.service.js";
 import { businessDaysBetween } from "../utils/business-days.js";
 import {
   ALL_NOTIFICATION_TYPES,
@@ -1476,8 +1476,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
               progressPercent: currentStage.progressPercent,
               responsibleUserId: currentStage.responsibleUserId,
               actualStartDate: serializeDateOnly(currentStage.actualStartDate),
-              // Cuenta regresiva de plazo (días hábiles) de la etapa actual.
-              countdown: countdownForStage(currentStage, slaMap),
+              // Cuenta regresiva de plazo (días hábiles) de la etapa actual. Si
+              // la etapa todavía no tiene actualStartDate propio, arranca desde
+              // el handoff (cierre de la etapa previa), así no desaparece al
+              // resolver la etapa anterior.
+              countdown: countdownForStage(currentStage, slaMap, handoffStart(currentStage, project.stages)),
             }
           : null,
         updatedAt: serializeDate(project.updatedAt),
@@ -1657,10 +1660,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
       stageOverride: project.stageOverride ?? null,
       currentStage: (() => {
         const currentStage = getDisplayStage(project.stages.map((stage) => ({ ...stage })), project.stageOverride);
-        return currentStage ? serializeStage(currentStage, detailSlaMap.get(currentStage.name)) : null;
+        return currentStage
+          ? serializeStage(
+              currentStage,
+              detailSlaMap.get(currentStage.name),
+              handoffStart(currentStage, project.stages),
+            )
+          : null;
       })(),
       stages: project.stages.map((stage) => ({
-        ...serializeStage(stage, detailSlaMap.get(stage.name)),
+        ...serializeStage(stage, detailSlaMap.get(stage.name), handoffStart(stage, project.stages)),
         substages: stage.substages.map((sub) => ({
           ...serializeSubstage(sub),
           checklistItems: sub.checklistItems.map(serializeChecklistItem),
@@ -1780,7 +1789,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return {
       ...serializeProject(projectWithStages),
       solarSystems: projectWithStages.solarSystems.map(serializeSolarSystem),
-      stages: projectWithStages.stages.map(serializeStage),
+      stages: projectWithStages.stages.map((stage) => serializeStage(stage)),
     };
   });
 
@@ -1866,7 +1875,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return {
         ...serializeProject(conEtapas),
         solarSystems: conEtapas.solarSystems.map(serializeSolarSystem),
-        stages: conEtapas.stages.map(serializeStage),
+        stages: conEtapas.stages.map((stage) => serializeStage(stage)),
       };
     },
   );

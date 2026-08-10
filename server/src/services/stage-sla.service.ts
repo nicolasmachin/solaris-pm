@@ -1,6 +1,7 @@
 import { StageStatus, StageType } from "@prisma/client";
 
 import { prisma } from "../lib/prisma.js";
+import { isParallelStage } from "./pipeline-definitions.js";
 import { addBusinessDays, signedBusinessDaysBetween, businessDaysBetween } from "../utils/business-days.js";
 import { startOfUtcDay, todayUtc } from "../utils/dates.js";
 
@@ -56,18 +57,48 @@ function toDateStr(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
+// Fecha de handoff: cuándo la etapa actual pasó a ser la etapa vigente, aunque
+// todavía no tenga actualStartDate propio. Es la fecha de cierre (actualEndDate)
+// de la última etapa lineal COMPLETED anterior en el orden. Sirve para que, al
+// resolver una etapa, la cuenta regresiva de la siguiente arranque de inmediato
+// (desde el handoff) en vez de desaparecer hasta que alguien toque una subtarea.
+export function handoffStart(
+  target: { order: number },
+  allStages: Array<{
+    name: StageType;
+    order: number;
+    status: StageStatus;
+    actualEndDate: Date | null;
+  }>,
+): Date | null {
+  let best: Date | null = null;
+  for (const s of allStages) {
+    if (isParallelStage(s.name)) continue;
+    if (s.order >= target.order) continue;
+    // Sólo la etapa "frontera" (todas las lineales previas COMPLETED) hereda el
+    // handoff. Si alguna previa no está cerrada, `target` es una etapa futura y
+    // no debe mostrar cuenta corriendo.
+    if (s.status !== StageStatus.COMPLETED) return null;
+    if (s.actualEndDate && (!best || s.actualEndDate > best)) best = s.actualEndDate;
+  }
+  return best;
+}
+
 // Calcula la cuenta regresiva de una etapa contra su SLA.
-// Devuelve null si: no hay SLA activo para ese tipo, o la etapa no arrancó.
+// Devuelve null si: no hay SLA activo para ese tipo, o no hay fecha de arranque
+// (ni actualStartDate propio ni handoff de la etapa previa).
 // Para etapas COMPLETED se calcula igual (elapsed = start→end) para saber si
 // cumplió el plazo; para etapas en curso, elapsed = start→hoy.
 export function computeStageCountdown(
   stage: CountdownStageInput,
   slaDias: number | undefined,
+  fallbackStart?: Date | null,
 ): StageCountdown | null {
   if (!slaDias || slaDias <= 0) return null;
-  if (!stage.actualStartDate) return null;
+  const startSource = stage.actualStartDate ?? fallbackStart ?? null;
+  if (!startSource) return null;
 
-  const start = startOfUtcDay(stage.actualStartDate);
+  const start = startOfUtcDay(startSource);
   const deadline = addBusinessDays(start, slaDias);
 
   const isCompleted = stage.status === StageStatus.COMPLETED && !!stage.actualEndDate;
@@ -94,6 +125,7 @@ export function computeStageCountdown(
 export function countdownForStage(
   stage: CountdownStageInput,
   slaMap: Map<StageType, number>,
+  fallbackStart?: Date | null,
 ): StageCountdown | null {
-  return computeStageCountdown(stage, slaMap.get(stage.name));
+  return computeStageCountdown(stage, slaMap.get(stage.name), fallbackStart);
 }

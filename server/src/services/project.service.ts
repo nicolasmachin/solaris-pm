@@ -707,7 +707,7 @@ export function serializeStage(stage: {
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
-}, slaDias?: number) {
+}, slaDias?: number, fallbackStart?: Date | null) {
   const { responsibleUser, ...rest } = stage;
   return {
     ...rest,
@@ -719,8 +719,8 @@ export function serializeStage(stage: {
     actualStartDate: serializeDateOnly(stage.actualStartDate),
     actualEndDate: serializeDateOnly(stage.actualEndDate),
     // Cuenta regresiva de plazo (días hábiles). null si no se pasó SLA o la
-    // etapa no arrancó. Ver stage-sla.service.
-    countdown: computeStageCountdown(stage, slaDias),
+    // etapa no arrancó (ni tiene handoff). Ver stage-sla.service.
+    countdown: computeStageCountdown(stage, slaDias, fallbackStart),
     createdAt: serializeDate(stage.createdAt),
     updatedAt: serializeDate(stage.updatedAt),
   };
