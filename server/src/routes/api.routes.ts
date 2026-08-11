@@ -8186,18 +8186,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
   // Tipos de etapa que participan del plazo (lineales/datados). Se excluyen las
   // paralelas e indefinidas, que no tienen cuenta regresiva.
-  const STAGE_TYPES_CON_SLA: StageType[] = [
-    StageType.ONBOARDING,
-    StageType.PRE_INGENIERIA,
-    StageType.VALIDACION_OPERACIONES,
-    StageType.INGENIERIA,
-    StageType.INGENIERIA_FINAL,
-    StageType.COMPRAS,
-    StageType.EJECUCION_OBRA,
-    StageType.TRAMITACION_UTE,
-    StageType.HABILITACION_UTE,
-    StageType.OPERACIONES,
-  ];
+  // Se deriva del pipeline REAL para no desalinearse: las etapas del template,
+  // menos las paralelas (Seguimiento, Experiencia Solar) y menos Post-Habilitación
+  // (indefinida). Así no aparecen etapas fantasma de pipelines viejos
+  // (INGENIERIA, HABILITACION_UTE, OPERACIONES) que ya no usa ningún proyecto vivo.
+  const STAGE_TYPES_CON_SLA: StageType[] = PIPELINE_DEFINITIONS.map((d) => d.name).filter(
+    (name) => !isParallelStage(name) && name !== StageType.POST_HABILITACION,
+  );
 
   app.get("/admin/stage-slas", { preHandler: authorize(Module.CONFIGURACION, Action.VIEW) }, async () => {
     const rows = await prisma.stageSla.findMany();
