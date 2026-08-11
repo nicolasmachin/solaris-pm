@@ -51,6 +51,13 @@
 
 ### 8 de agosto de 2026
 
+#### El ahorro se calcula con la tarifa que tiene el cliente
+
+- Hasta ahora, a **todos los clientes residenciales el ahorro se les calculaba con tarifa Residencial Simple**, aunque tuvieran Doble o Triple. El reporte les mostraba un ahorro que no era el suyo.
+- Ahora, **si sabemos qué tarifa tiene contratada, el ahorro se calcula con ésa**, y las otras dos se siguen mostrando al lado como comparación. Es el dato que el cliente puede cargar desde su portal.
+- Detectado comparando el reporte de un cliente contra su factura de UTE: tiene Residencial Triple y el reporte le mostraba **un 88% más de ahorro** del que realmente tuvo.
+- Los clientes que todavía no tienen la tarifa cargada siguen viendo la comparación de las tres, con la simple como referencia, igual que antes.
+
 #### Copia oculta de los reportes que se mandan al cliente
 
 - Todo reporte fotovoltaico que se le envía a un cliente ahora llega también a **nmachin@voltia.com.uy**, en copia oculta. La función existía en el sistema pero **nunca había estado activada en producción**, así que hasta ahora no llegaba copia de nada.

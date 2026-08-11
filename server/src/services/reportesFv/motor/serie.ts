@@ -279,12 +279,29 @@ export function calcularSerie(entrada: EntradaSerie): ResultadoPeriodo[] {
   const lecturas = [...entrada.lecturas].sort((a, b) => a.periodo.localeCompare(b.periodo));
   const porPeriodo = new Map(lecturas.map((l) => [l.periodo, l]));
 
+  // Qué tarifas se comparan en el reporte y cuál manda.
+  //
+  // La PRIMERA de la lista es la principal: de ella salen el ahorro del mes, el
+  // acumulado y el retorno de la inversión. Las otras se muestran al lado, como
+  // comparación.
+  //
+  // Al residencial se le muestran las tres, pero si sabemos cuál tiene
+  // contratada, ésa es la principal. Antes la principal era SIEMPRE la simple, y
+  // a un cliente con doble o triple el reporte le mostraba un ahorro que no era
+  // el suyo: verificado contra la factura de UTE de José Percovich (Residencial
+  // Triple, ciclo 7-jul a 6-ago-2026), donde el ahorro calculado con simple daba
+  // ~88% más que el que realmente tuvo.
+  const RESIDENCIALES: TarifaKey[] = ["simple", "doble", "triple"];
+  const contratada = config.tarifaContratada;
+
   const tarifasMostradas: TarifaKey[] =
     config.tipoCliente === "empresa"
-      ? config.tarifaContratada
-        ? [config.tarifaContratada]
+      ? contratada
+        ? [contratada]
         : []
-      : ["simple", "doble", "triple"];
+      : contratada && RESIDENCIALES.includes(contratada)
+        ? [contratada, ...RESIDENCIALES.filter((t) => t !== contratada)]
+        : RESIDENCIALES;
   const tarifaPrincipal: TarifaKey = tarifasMostradas[0] ?? "simple";
 
   // Saldo de cuenta corriente arrastrado, uno por tarifa.

@@ -24,6 +24,7 @@ export const MANUAL_CAMBIOS: CambioManual[] = [
       "El monitoreo diario también vigila las plantas Huawei.",
       "Botón \"Enviar todos\" para mandar los reportes del mes juntos, con confirmación previa.",
       "Columna \"Retorno\" en el listado: cuánto de la inversión recuperó cada cliente.",
+      "El ahorro se calcula con la tarifa contratada del cliente, no siempre con la simple.",
     ],
   },
   {
@@ -300,6 +301,22 @@ El sistema prepara los reportes automáticamente, sobre el **mes anterior**:
 
 Así, cuando entrás a principios de mes, la mayoría de los reportes ya están
 armados esperándote.
+
+---
+
+### Con qué tarifa se calcula el ahorro
+
+La tarifa que manda es la **contratada**, si está cargada. De ella salen el ahorro
+del mes, el acumulado y el retorno de la inversión; las otras aparecen al lado
+como comparación.
+
+Si el generador **no tiene tarifa cargada**, al residencial se le muestran las
+tres y se usa la **simple** como referencia. Vale la pena cargarla: hasta agosto
+de 2026 el cálculo usaba siempre la simple, y a un cliente con Triple eso le
+mostraba bastante más ahorro del real (en el caso que lo destapó, un 88% más).
+
+El cliente puede cargar su tarifa desde el portal, o el equipo desde la ficha.
+Está en la primera hoja de la factura de UTE, arriba a la izquierda.
 
 ---
 
