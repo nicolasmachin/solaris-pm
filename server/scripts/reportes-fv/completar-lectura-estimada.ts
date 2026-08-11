@@ -16,12 +16,23 @@
  * `--solo-importacion` deja la exportación como se midió. Útil cuando la
  * exportación medida ya coincide con la factura y proyectarla la empeoraría
  * (pasa en invierno: los días perdidos casi no exportaron).
+ *
+ * `--recalcular` sólo recalcula la serie, sin tocar los valores. Sirve para
+ * refrescar el cálculo cuando cambió algo de la configuración (por ejemplo la
+ * tarifa contratada) y la lectura ya está como se quiere.
+ *
+ * Es idempotente: una lectura ya completada no se vuelve a proyectar. Sin ese
+ * guard, correrlo dos veces aplicaría el factor sobre valores ya proyectados y
+ * el consumo se iría inflando en cada corrida.
  */
 
 import { Prisma, ReporteFvFuente } from "@prisma/client";
 
 import { prisma } from "../../src/lib/prisma.js";
 import { recalcularSerie } from "../../src/services/reportesFv/calculo.service.js";
+
+/** Firma de la nota que deja este script; es lo que lo hace idempotente. */
+const MARCA_ESTIMADO = "días faltantes se completaron con el promedio";
 
 function n(v: Prisma.Decimal | null): number | null {
   return v == null ? null : Number(v);
@@ -31,6 +42,7 @@ async function main() {
   const args = process.argv.slice(2);
   const soloImportacion = args.includes("--solo-importacion");
   const dryRun = args.includes("--dry-run");
+  const soloRecalcular = args.includes("--recalcular");
   const [codigo, periodo] = args.filter((a) => !a.startsWith("--"));
 
   if (!codigo || !periodo) {
@@ -54,6 +66,21 @@ async function main() {
   if (!lectura) {
     console.error(`No hay lectura de ${periodo} para ${proyecto.clientName}`);
     process.exit(1);
+  }
+
+  if (soloRecalcular) {
+    console.log(`${proyecto.clientName} — ${periodo}: recalculando sin tocar la lectura…`);
+    await recalcularSerie(proyecto.id);
+    await imprimirResultado(proyecto.id, fecha);
+    return;
+  }
+
+  if (lectura.nota?.includes(MARCA_ESTIMADO)) {
+    console.log(
+      `${proyecto.clientName} — ${periodo}: la lectura YA fue completada antes.\n` +
+        "  No se vuelve a proyectar (duplicaría la estimación). Usá --recalcular para refrescar el cálculo.",
+    );
+    process.exit(0);
   }
 
   const conDatos = lectura.diasConDatos;
@@ -92,8 +119,8 @@ async function main() {
   }
 
   const nota =
-    `Estimado: el medidor reportó ${conDatos} de ${esperados} días. Los ${esperados - conDatos} días ` +
-    `faltantes se completaron con el promedio diario de los días medidos.`;
+    `Estimado: el medidor reportó ${conDatos} de ${esperados} días. Los ${esperados - conDatos} ` +
+    `${MARCA_ESTIMADO} diario de los días medidos.`;
 
   await prisma.reporteFvLectura.update({
     where: { id: lectura.id },
@@ -113,16 +140,18 @@ async function main() {
 
   console.log("\nRecalculando la serie…");
   await recalcularSerie(proyecto.id);
+  await imprimirResultado(proyecto.id, fecha);
+}
 
+async function imprimirResultado(projectId: string, fecha: Date) {
   const calculo = await prisma.reporteFvCalculo.findUnique({
-    where: { projectId_periodo: { projectId: proyecto.id, periodo: fecha } },
+    where: { projectId_periodo: { projectId, periodo: fecha } },
   });
-  if (calculo) {
-    console.log("\nResultado del reporte:");
-    console.log(`  ahorro del mes        $ ${n(calculo.ahorroTotal)}`);
-    console.log(`  ahorro acumulado USD  ${n(calculo.ahorroAcumuladoUsd)}`);
-    console.log(`  retorno inversión     ${n(calculo.retornoInversionPct)}%`);
-  }
+  if (!calculo) return;
+  console.log("\nResultado del reporte:");
+  console.log(`  ahorro del mes        $ ${n(calculo.ahorroTotal)}`);
+  console.log(`  ahorro acumulado USD  ${n(calculo.ahorroAcumuladoUsd)}`);
+  console.log(`  retorno inversión     ${n(calculo.retornoInversionPct)}%`);
 }
 
 main()
