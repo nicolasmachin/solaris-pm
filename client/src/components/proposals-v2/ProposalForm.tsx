@@ -1,4 +1,5 @@
 import { Button } from "../ui/Button";
+import { saludoPara } from "../../lib/salutation";
 import { NumberField, SelectField, TextAreaField, TextField } from "./fields";
 import {
   isFlaggedValue,
@@ -26,7 +27,12 @@ export function ProposalForm({
   defaults: ProposalDefaultsData;
   errors: Record<string, string>;
 }) {
-  const setCliente = (p: Partial<ProposalDraftData["cliente"]>) => onChange({ ...data, cliente: { ...data.cliente, ...p } });
+  // El saludo de la carta se deriva del nombre; no es un campo editable.
+  const setCliente = (p: Partial<ProposalDraftData["cliente"]>) => {
+    const cliente = { ...data.cliente, ...p };
+    if (p.nombre !== undefined) cliente.dirigidoA = saludoPara(cliente.nombre);
+    onChange({ ...data, cliente });
+  };
   const setFactura = (p: Partial<ProposalDraftData["factura"]>) => onChange({ ...data, factura: { ...data.factura, ...p } });
   const setTecho = (p: Partial<ProposalDraftData["techo"]>) => onChange({ ...data, techo: { ...data.techo, ...p } });
   const setCotiz = (p: Partial<ProposalDraftData["cotizacion"]>) => onChange({ ...data, cotizacion: { ...data.cotizacion, ...p } });
@@ -50,7 +56,15 @@ export function ProposalForm({
         <div className={GRID}>
           <TextField label="Nombre" value={data.cliente.nombre} onChange={(v) => setCliente({ nombre: v })} error={errors["cliente.nombre"]} />
           <TextField label="Ciudad" value={data.cliente.ciudad} onChange={(v) => setCliente({ ciudad: v })} error={errors["cliente.ciudad"]} />
-          <TextField label="Dirigido a (opcional)" value={data.cliente.dirigidoA} onChange={(v) => setCliente({ dirigidoA: v })} placeholder="Estimado/a …," hint="Si lo dejás vacío, la carta dice “Estimado/a cliente,”." />
+          <div className="block">
+            <span className={labelCls}>Saludo de la carta</span>
+            <div className="w-full rounded-md border border-dashed border-[var(--color-border)] bg-[var(--color-bg-card)] px-3 py-2 text-sm text-[var(--color-text-primary)]">
+              {saludoPara(data.cliente.nombre)}
+            </div>
+            <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">
+              Se arma solo con el nombre de arriba.
+            </p>
+          </div>
           <label className="block">
             <span className={labelCls}>Fecha de la propuesta</span>
             <input
@@ -78,7 +92,7 @@ export function ProposalForm({
         <p className={SUB}>Sistema</p>
         <div className={GRID}>
           <NumberField label="Cantidad de paneles" value={data.sistema.cantidadPaneles} onChange={(v) => setSistema({ cantidadPaneles: v })} min={1} error={errors["sistema.cantidadPaneles"]} />
-          <NumberField label="Potencia por panel (W)" value={data.sistema.potenciaPanelW} onChange={(v) => setSistema({ potenciaPanelW: v })} min={0} error={errors["sistema.potenciaPanelW"]} />
+          <NumberField label="Potencia por panel (W)" value={data.sistema.potenciaPanelW} onChange={(v) => setSistema({ potenciaPanelW: v })} min={0} disabled={!canOverride("potenciaPanelWDefault")} hint={fixedHint("potenciaPanelWDefault")} error={errors["sistema.potenciaPanelW"]} />
           <TextField label="Marca de paneles" value={data.sistema.marcaPaneles} onChange={(v) => setSistema({ marcaPaneles: v })} disabled={!canOverride("marcaPanelesDefault")} hint={fixedHint("marcaPanelesDefault")} error={errors["sistema.marcaPaneles"]} />
           <NumberField label="Potencia inversor (kW)" value={data.sistema.potenciaInversorKw} onChange={(v) => setSistema({ potenciaInversorKw: v })} min={0} step={0.1} error={errors["sistema.potenciaInversorKw"]} />
           <TextField label="Marca de inversor" value={data.sistema.marcaInversor} onChange={(v) => setSistema({ marcaInversor: v })} disabled={!canOverride("marcaInversorDefault")} hint={fixedHint("marcaInversorDefault")} error={errors["sistema.marcaInversor"]} />

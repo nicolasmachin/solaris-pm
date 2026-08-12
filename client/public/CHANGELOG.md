@@ -4,6 +4,12 @@
 
 ### 12 de agosto de 2026
 
+#### Cotizador de propuestas
+
+- **La potencia de los paneles ya se configura como valor por defecto.** En Administración → Defaults de propuestas, la sección "Equipos por defecto" suma "Potencia por panel (W)" junto a las marcas, y queda en **590 W**. Al abrir el cotizador viene precargada, y el asesor la puede cambiar salvo que se fije desde administración.
+- **El saludo de la carta se escribe solo.** Ya no hay que completar "Dirigido a": la propuesta arma el saludo con el nombre del cliente y elige "Estimado" o "Estimada" según corresponda. En el formulario se ve el resultado debajo del nombre, para controlarlo de un vistazo.
+- Si por el nombre no se puede deducir el género, la carta dice "Estimado/a Nombre,". Si el cliente es una empresa (SRL, S.A., cooperativa), dice "Estimados,".
+
 #### El aviso diario de plantas ahora le llega también a Gabriel
 
 - El mail del **monitoreo diario** —el que avisa qué plantas dejaron de generar o se quedaron sin comunicación— pasa a llegarle también a **Gabriel Vera**, además de a Nicolás.

@@ -2,6 +2,7 @@
 // los defaults del singleton + el lead, y mergear el draft guardado (parcial)
 // sobre esa base.
 
+import { saludoPara } from "./salutation";
 import type { LeadDetail } from "../types/leads.types";
 import {
   isFlaggedValue,
@@ -43,7 +44,7 @@ export function buildInitialDraftData(
   lead: Pick<LeadDetail, "clientName" | "roofType" | "notes">,
 ): ProposalDraftData {
   return {
-    cliente: { nombre: lead.clientName, dirigidoA: "", ciudad: "" },
+    cliente: { nombre: lead.clientName, dirigidoA: saludoPara(lead.clientName), ciudad: "" },
     factura: { pagaMensualPesos: 0, tarifa: "Simple", suministro: "monofásico", potenciaContratadaKw: 0 },
     techo: { descripcion: lead.roofType ?? "", tamanoM2: 0 },
     cotizacion: {
@@ -54,7 +55,7 @@ export function buildInitialDraftData(
     },
     sistema: {
       cantidadPaneles: 0,
-      potenciaPanelW: 0,
+      potenciaPanelW: numDefault(defaults, "potenciaPanelWDefault", 0),
       marcaPaneles: strDefault(defaults, "marcaPanelesDefault", ""),
       potenciaInversorKw: 0,
       marcaInversor: strDefault(defaults, "marcaInversorDefault", ""),
@@ -119,8 +120,12 @@ export function mergeDraft(
   stored: Partial<ProposalDraftData> | undefined | null,
 ): ProposalDraftData {
   if (!stored) return base;
+  const cliente = { ...base.cliente, ...stored.cliente };
+  // El saludo se deriva siempre del nombre, incluso en drafts viejos que lo
+  // traen tipeado a mano: es dato calculado, no un campo más del formulario.
+  cliente.dirigidoA = saludoPara(cliente.nombre);
   return {
-    cliente: { ...base.cliente, ...stored.cliente },
+    cliente,
     factura: { ...base.factura, ...stored.factura },
     techo: { ...base.techo, ...stored.techo },
     cotizacion: { ...base.cotizacion, ...stored.cotizacion },

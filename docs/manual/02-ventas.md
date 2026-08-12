@@ -1,7 +1,8 @@
 # 02 · Ventas
 
-> **Capítulo parcial.** Está escrita la sección "Fechas del proceso". El resto
-> del módulo funciona en producción pero todavía no está documentado.
+> **Capítulo parcial.** Están escritas las secciones "Fechas del proceso" y
+> "Cotizador de propuestas: precargas y saludo de la carta". El resto del módulo
+> funciona en producción pero todavía no está documentado.
 
 Leads, pipeline comercial, reclamos, propuestas, conversión a proyecto y comisiones.
 
@@ -86,11 +87,85 @@ fechas) y acepta `null` para vaciar cualquiera de ellas.
 
 ---
 
+# Cotizador de propuestas: precargas y saludo de la carta
+
+## Para qué existe
+
+Lo que el asesor escribe en el cotizador debería ser solo lo que cambia de un
+cliente a otro. Todo lo demás —la marca y la potencia de los paneles que se
+venden hoy, la cotización del dólar, el markup— sale del singleton
+`ProposalDefaults`, editable en **Admin → Defaults de propuestas**. Cada variable
+es `{ value, asesorCanOverride }`: el flag decide si el asesor la puede pisar en
+el cotizador o si el campo aparece deshabilitado con "Fijado por administración".
+
+## Cómo se usa
+
+En Admin, la sección **"Equipos por defecto"** agrupa marca de paneles, **potencia
+por panel (W)** y marca de inversor. Al abrir el cotizador de un lead nuevo, esos
+tres valores vienen precargados.
+
+El **saludo de la carta** no se escribe: se arma solo con el nombre del cliente y
+se muestra en el formulario como texto de solo lectura, debajo del nombre.
+
+## Cómo funciona
+
+- `client/src/lib/proposalDraft.ts` → `buildInitialDraftData()` lee las claves del
+  singleton (`potenciaPanelWDefault`, `marcaPanelesDefault`, `cotizacionDolarDefault`…)
+  y arma el borrador inicial. `mergeDraft()` superpone el borrador guardado.
+- La clave `potenciaPanelWDefault` se siembra en
+  `server/prisma/scripts/seed-proposal-defaults.ts` (valor inicial **590 W**,
+  `asesorCanOverride: true`). El seed es idempotente: agrega solo las claves que
+  faltan y no pisa lo que ya se editó desde Admin. **Al agregar una variable nueva
+  hay que correrlo de nuevo en cada ambiente**, porque el formulario de Admin solo
+  renderiza las claves que existen en el JSON `data`.
+- El saludo lo calcula `client/src/lib/salutation.ts` → `saludoPara(nombre)`, y se
+  escribe en `cliente.dirigidoA` del borrador en tres momentos: al armar el
+  borrador inicial, al mergear uno guardado, y cada vez que cambia el nombre en el
+  formulario. La plantilla del PDF (`carta.hbs`) sigue leyendo `dirigidoA`, así que
+  el backend no cambió.
+
+### Cómo infiere el género
+
+`saludoPara()` mira el **primer nombre**: primero dos listas explícitas (femeninos
+que no terminan en -a como Beatriz o Nair; masculinos frecuentes que terminan en
+consonante como Miguel o Daniel, y los que terminan en -a como Luca), después la
+terminación (-a → femenino, -o → masculino). **Si no hay señal confiable escribe
+"Estimado/a Nombre,"** — un tratamiento neutro es preferible a errarle al género
+en la primera línea de la propuesta. Los ambiguos en Uruguay (Ariel, Noel, Cruz)
+quedan a propósito fuera de las listas para que caigan ahí.
+
+Casos especiales: nombre vacío → "Estimado/a cliente,"; razón social (SRL, S.A.,
+Ltda., cooperativa…) → "Estimados,"; nombre todo en mayúsculas o todo en
+minúsculas → se capitaliza ("SOFÍA" → "Estimada Sofía,").
+
+## Reglas y decisiones
+
+- **El saludo dejó de ser editable a mano.** Era un campo que repetía un dato ya
+  ingresado y la falla típica era dejar el nombre de otro cliente al reutilizar un
+  borrador.
+- **La lógica del saludo vive solo en el cliente**, que es quien arma el borrador,
+  para no duplicar las listas de nombres en el servidor. El fallback del backend
+  ("Estimado/a cliente,") queda como red por si llegara un `dirigidoA` vacío.
+- **Los borradores viejos se normalizan al abrirse**: `mergeDraft()` recalcula el
+  saludo aunque el guardado traiga uno tipeado a mano. Las versiones ya publicadas
+  no se tocan (su PDF ya está generado).
+
+## Casos borde
+
+- Un nombre extranjero fuera de las listas y terminado en consonante (Kevin ya
+  está; Bjorn no) sale como "Estimado/a". Se corrige agregándolo a la lista de
+  `salutation.ts`, no desde la interfaz.
+- Un nombre con apellido primero ("Vanoli Daniel") saluda al apellido: la función
+  siempre toma la primera palabra.
+
+---
+
 ## Qué falta cubrir en este capítulo
 
 - El pipeline de 7 etapas y qué significa cada una
 - Reclamos: el contador transversal y su diferencia con la etapa RECLAMADO
 - Propuestas v2: borrador, cálculo, viabilidad, publicación y versionado
+  (los defaults del cotizador y el saludo ya están documentados arriba)
 - Propuestas v1 (generador viejo por Excel) y la lista unificada
 - Conversión de lead a proyecto: precondiciones y qué se copia
 - Comisiones del asesor: congelamiento al ganar y pago

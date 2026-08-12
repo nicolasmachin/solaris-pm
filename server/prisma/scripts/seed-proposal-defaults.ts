@@ -56,8 +56,11 @@ const DEFAULT_DATA: Record<string, Flagged | Record<string, Flagged>> = {
     asesorCanOverride: false,
   },
 
-  // ── Marcas (editables por asesor) ──
+  // ── Equipos por defecto (editables por asesor) ──
   marcaPanelesDefault: { value: "Resun", asesorCanOverride: true },
+  // Potencia del panel que se vende hoy. Precarga el cotizador; el asesor la
+  // puede pisar salvo que se apague el flag desde Admin.
+  potenciaPanelWDefault: { value: 590, asesorCanOverride: true },
   marcaInversorDefault: { value: "Growatt", asesorCanOverride: true },
 
   // ── Costos fijos del negocio (pesos) ──

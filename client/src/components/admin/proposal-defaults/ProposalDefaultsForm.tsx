@@ -27,6 +27,7 @@ const LABELS: Record<string, string> = {
   rendimientoAnualKwhPorKwp: "Rendimiento anual (kWh/kWp)",
   metrosCuadradosPorPanel: "Metros cuadrados por panel (m²)",
   marcaPanelesDefault: "Marca paneles por defecto",
+  potenciaPanelWDefault: "Potencia por panel por defecto (W)",
   marcaInversorDefault: "Marca inversor por defecto",
   costoFijoTotalPesosMes: "Costo fijo total ($/mes)",
   negociosPromedioMes: "Negocios promedio por mes",
@@ -94,7 +95,10 @@ const SECTIONS: { title: string; keys?: string[]; nested?: string; custom?: "sea
     title: "Instalación eléctrica — multiplicador por tamaño",
     custom: "electrica",
   },
-  { title: "Marcas por defecto", keys: ["marcaPanelesDefault", "marcaInversorDefault"] },
+  {
+    title: "Equipos por defecto",
+    keys: ["marcaPanelesDefault", "potenciaPanelWDefault", "marcaInversorDefault"],
+  },
   {
     title: "Generación y dimensionamiento",
     keys: ["rendimientoAnualKwhPorKwp", "metrosCuadradosPorPanel"],
@@ -160,6 +164,7 @@ function labelFor(key: string): string {
 // Sufijo / rango visual por variable (solo donde aporta claridad).
 const FIELD_META: Record<string, { suffix?: string; min?: number; max?: number }> = {
   markupPorcentajeDefault: { suffix: "%", min: 0, max: 100 },
+  potenciaPanelWDefault: { suffix: "W", min: 100, max: 1000 },
 };
 
 export function ProposalDefaultsForm({
