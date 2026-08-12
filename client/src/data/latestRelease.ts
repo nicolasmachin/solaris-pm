@@ -23,22 +23,36 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "9.1",
-  date: "10 de agosto de 2026",
+  version: "9.2",
+  date: "12 de agosto de 2026",
   sections: [
     {
-      title: "Cronómetro en vivo de la etapa en el proyecto",
+      title: "El ahorro se calcula con la tarifa que tiene el cliente",
       items: [
-        "Al abrir un proyecto, junto al estado aparece un cronómetro grande que corre en tiempo real (días, horas, minutos y segundos) con el tiempo que falta para cumplir el plazo de la etapa actual.",
-        "Cambia de color como la cuenta regresiva: verde cuando falta, amarillo cuando falta poco y rojo cuando ya venció.",
-        "Se pausa los fines de semana: sólo descuenta tiempo de lunes a viernes.",
+        "Hasta ahora a todos los residenciales se les calculaba el ahorro con tarifa Simple, aunque tuvieran Doble o Triple.",
+        "Ahora manda la tarifa contratada, si está cargada, y las otras se muestran al lado como comparación.",
+        "Detectado contra la factura de un cliente con Triple: el reporte le mostraba un 88% más de ahorro del real.",
       ],
     },
     {
-      title: "El consolidador de materiales ya funciona con un solo proyecto",
+      title: "Los meses con días faltantes ahora se estiman",
       items: [
-        "Antes había que elegir al menos dos proyectos para generar un consolidado. Ahora alcanza con uno: sirve para armar la lista de compra de una obra puntual con el mismo formato, el mismo PDF y el mismo Excel.",
-        "Cuando el consolidado tiene un solo proyecto, la columna TOTAL deja de mostrarse (repetía la del proyecto) tanto en pantalla como en el PDF y el Excel.",
+        "Si al medidor le faltan días pero midió al menos la mitad del período, los faltantes se completan con el promedio diario y el reporte lo aclara.",
+        "Si falta más de la mitad, no se genera el reporte: queda pendiente para cargar los datos a mano.",
+        "La generación nunca se estima: la informa el inversor, que no pierde días.",
+      ],
+    },
+    {
+      title: "Arreglado: el botón de descargar el PDF no hacía nada",
+      items: [
+        "En la ficha del generador, \"Descargar\" no bajaba el archivo: se abría sin la sesión iniciada y el servidor lo rechazaba.",
+        "Afectaba también al ícono de descarga de cada versión. El portal del cliente no estaba afectado.",
+      ],
+    },
+    {
+      title: "El aviso diario de plantas también le llega a Gabriel",
+      items: [
+        "El mail del monitoreo diario pasa a llegarle también a Gabriel Vera, además de a Nicolás.",
       ],
     },
   ],
@@ -52,6 +66,14 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "9.1",
+    shortDate: "10 ago",
+    highlights: [
+      "Cronómetro en vivo de la etapa en la ficha del proyecto, que se pausa los fines de semana.",
+      "El consolidador de materiales ahora funciona con un solo proyecto.",
+    ],
+  },
   {
     version: "9.0",
     shortDate: "9 ago",

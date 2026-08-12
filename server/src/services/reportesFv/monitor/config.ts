@@ -45,8 +45,9 @@ export function emailHabilitado(): boolean {
 }
 
 /**
- * Destinatarios del digest. Por ahora sólo Nicolás: el monitoreo es interno y
- * todavía no está validado como para avisarle al resto del equipo.
+ * Destinatarios del digest, separados por coma en FV_MONITOR_EMAIL. En
+ * producción hoy van Nicolás (nmachin) y Gabriel Vera (gvera), que es quien
+ * sigue las plantas desde Operaciones.
  *
  * OJO al cambiarlo: el digest se manda como `internal`, y ese modo de
  * `sendEmail` BLOQUEA (devolviendo false, en silencio) cualquier destinatario

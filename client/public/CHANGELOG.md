@@ -1,5 +1,34 @@
 # Novedades
 
+## v9.2
+
+### 12 de agosto de 2026
+
+#### El aviso diario de plantas ahora le llega también a Gabriel
+
+- El mail del **monitoreo diario** —el que avisa qué plantas dejaron de generar o se quedaron sin comunicación— pasa a llegarle también a **Gabriel Vera**, además de a Nicolás.
+
+### 11 de agosto de 2026
+
+#### Arreglado: el botón de descargar el PDF no hacía nada
+
+- En la ficha del generador, **"Descargar"** no descargaba nada: el botón abría el archivo sin la sesión iniciada, el servidor lo rechazaba y no pasaba nada visible. Pasaba con todos los generadores, no con algunos.
+- Afectaba también al ícono de descarga de cada versión del reporte. El portal del cliente no estaba afectado.
+
+#### Los meses con días faltantes ahora se estiman
+
+- Cuando el medidor de un cliente **pierde días**, el reporte ya no sale con un total incompleto: los días faltantes **se completan con el promedio diario de los días que sí se midieron**, y el reporte lo aclara.
+- **Si falta más de la mitad del período, no se genera el reporte.** Con tan pocos días no hay forma de estimar el mes sin inventar, así que el generador queda pendiente en el panel para cargar los datos a mano.
+- Antes se cargaba el total parcial tal cual, y el cliente recibía un consumo y un ahorro más bajos que los reales sin más aviso que una nota al pie.
+- La **generación nunca se estima**: la informa el inversor, que no pierde días.
+
+#### El ahorro se calcula con la tarifa que tiene el cliente
+
+- Hasta ahora, a **todos los clientes residenciales el ahorro se les calculaba con tarifa Residencial Simple**, aunque tuvieran Doble o Triple. El reporte les mostraba un ahorro que no era el suyo.
+- Ahora, **si sabemos qué tarifa tiene contratada, el ahorro se calcula con ésa**, y las otras dos se siguen mostrando al lado como comparación. Es el dato que el cliente puede cargar desde su portal.
+- Detectado comparando el reporte de un cliente contra su factura de UTE: tiene Residencial Triple y el reporte le mostraba **un 88% más de ahorro** del que realmente tuvo.
+- Los clientes que todavía no tienen la tarifa cargada siguen viendo la comparación de las tres, con la simple como referencia, igual que antes.
+
 ## v9.1
 
 ### 10 de agosto de 2026
@@ -50,25 +79,6 @@
 - Arranca **apagado**: se tilda lo que cada rol tiene que recibir. Los tipos de notificación nuevos que se agreguen en el futuro empiezan apagados hasta que se habiliten.
 
 ### 8 de agosto de 2026
-
-#### Arreglado: el botón de descargar el PDF no hacía nada
-
-- En la ficha del generador, **"Descargar"** no descargaba nada: el botón abría el archivo sin la sesión iniciada, el servidor lo rechazaba y no pasaba nada visible. Pasaba con todos los generadores, no con algunos.
-- Afectaba también al ícono de descarga de cada versión del reporte. El portal del cliente no estaba afectado.
-
-#### Los meses con días faltantes ahora se estiman
-
-- Cuando el medidor de un cliente **pierde días**, el reporte ya no sale con un total incompleto: los días faltantes **se completan con el promedio diario de los días que sí se midieron**, y el reporte lo aclara.
-- **Si falta más de la mitad del período, no se genera el reporte.** Con tan pocos días no hay forma de estimar el mes sin inventar, así que el generador queda pendiente en el panel para cargar los datos a mano.
-- Antes se cargaba el total parcial tal cual, y el cliente recibía un consumo y un ahorro más bajos que los reales sin más aviso que una nota al pie.
-- La **generación nunca se estima**: la informa el inversor, que no pierde días.
-
-#### El ahorro se calcula con la tarifa que tiene el cliente
-
-- Hasta ahora, a **todos los clientes residenciales el ahorro se les calculaba con tarifa Residencial Simple**, aunque tuvieran Doble o Triple. El reporte les mostraba un ahorro que no era el suyo.
-- Ahora, **si sabemos qué tarifa tiene contratada, el ahorro se calcula con ésa**, y las otras dos se siguen mostrando al lado como comparación. Es el dato que el cliente puede cargar desde su portal.
-- Detectado comparando el reporte de un cliente contra su factura de UTE: tiene Residencial Triple y el reporte le mostraba **un 88% más de ahorro** del que realmente tuvo.
-- Los clientes que todavía no tienen la tarifa cargada siguen viendo la comparación de las tres, con la simple como referencia, igual que antes.
 
 #### Copia oculta de los reportes que se mandan al cliente
 
