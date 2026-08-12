@@ -66,11 +66,10 @@ test("derivarMetricas calcula consumo = generación + importación - exportació
   assert.equal(r.motivoDescarte, null);
 });
 
-test("derivarMetricas conserva los datos aunque la cobertura sea baja, y lo marca", () => {
-  // 5 días de 30 = 17%. Antes se borraban consumo y exportación y el generador
-  // se quedaba sin reporte hasta que alguien los cargara a mano — en la práctica,
-  // meses sin mandarle nada al cliente. Ahora el dato se conserva y el reporte
-  // sale con una nota que aclara que la medición fue parcial.
+test("derivarMetricas descarta el mes si midió menos de la mitad de los días", () => {
+  // 5 de 30 = 17%. Con tan pocos días no hay forma de estimar el mes sin
+  // inventar: se descartan consumo y exportación, y sin ellos el reporte no se
+  // emite. Queda pendiente en el panel para que alguien cargue los números.
   const muestras = Array.from({ length: 5 }, (_, i) =>
     muestra(`2026-06-0${i + 1}`, 10, 5),
   );
@@ -78,17 +77,50 @@ test("derivarMetricas conserva los datos aunque la cobertura sea baja, y lo marc
     generacionKwh: 500,
     muestras,
     diasEsperados: 30,
-    coberturaMinima: 0.9,
+    coberturaMinima: 0.5,
   });
   assert.equal(r.diasConDatos, 5);
-  // importación 5×10 = 50, exportación 5×5 = 25 → consumo 500 + 50 − 25.
-  assert.equal(r.consumoKwh, 525);
-  assert.equal(r.exportacionKwh, 25);
-  assert.equal(r.importacionMedidaKwh, 50);
-  // El motivo queda registrado: es lo que dispara la nota del PDF y lo que se
-  // ve en el panel.
+  assert.equal(r.consumoKwh, null);
+  assert.equal(r.exportacionKwh, null);
+  assert.equal(r.importacionMedidaKwh, null);
   assert.ok(r.motivoDescarte?.includes("5 de 30"));
+  // La generación sale del inversor y no se toca nunca.
   assert.equal(r.generacionKwh, 500);
+});
+
+test("derivarMetricas estima los días faltantes si midió al menos la mitad", () => {
+  // 20 de 30 = 67%. Los 10 días faltantes se completan con el promedio diario
+  // de los 20 medidos: factor 30/20 = 1,5.
+  const muestras = Array.from({ length: 20 }, (_, i) =>
+    muestra(`2026-06-${String(i + 1).padStart(2, "0")}`, 10, 5),
+  );
+  const r = derivarMetricas({
+    generacionKwh: 500,
+    muestras,
+    diasEsperados: 30,
+    coberturaMinima: 0.5,
+  });
+  assert.equal(r.diasConDatos, 20);
+  // medido 20×10 = 200 → estimado 300; exportación 20×5 = 100 → 150.
+  assert.equal(r.importacionMedidaKwh, 300);
+  assert.equal(r.exportacionKwh, 150);
+  assert.equal(r.consumoKwh, 650); // 500 + 300 − 150
+  assert.ok(r.motivoDescarte?.includes("se estimaron"));
+  assert.equal(r.generacionKwh, 500);
+});
+
+test("derivarMetricas en el borde exacto de la mitad estima, no descarta", () => {
+  const muestras = Array.from({ length: 15 }, (_, i) =>
+    muestra(`2026-06-${String(i + 1).padStart(2, "0")}`, 10, 0),
+  );
+  const r = derivarMetricas({
+    generacionKwh: 100,
+    muestras,
+    diasEsperados: 30,
+    coberturaMinima: 0.5,
+  });
+  assert.equal(r.importacionMedidaKwh, 300); // 150 × 2
+  assert.ok(r.motivoDescarte?.includes("se estimaron"));
 });
 
 test("derivarMetricas no marca nada cuando la cobertura alcanza", () => {

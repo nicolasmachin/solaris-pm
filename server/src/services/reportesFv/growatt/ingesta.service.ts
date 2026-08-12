@@ -30,7 +30,10 @@ import {
 import { contarDiasEsperados, derivarMetricas, type MuestraMedidor } from "./metricas.js";
 
 const CONCURRENCIA = Math.max(1, Number(process.env.REPORTES_FV_GROWATT_CONCURRENCIA ?? 3));
-const COBERTURA_MINIMA = Number(process.env.GROWATT_MIN_COVERAGE ?? 0.9);
+// Piso para poder estimar un mes: la mitad del período. Con al menos la mitad
+// de los días medidos, los faltantes se completan con el promedio; por debajo no
+// se reporta el mes. Antes era 0.9 y sólo servía para marcarlo como parcial.
+const COBERTURA_MINIMA = Number(process.env.GROWATT_MIN_COVERAGE || "") || 0.5;
 
 export interface OpcionesIngesta {
   periodo: Periodo;

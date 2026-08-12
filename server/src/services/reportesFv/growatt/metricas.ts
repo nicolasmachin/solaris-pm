@@ -94,7 +94,8 @@ export function derivarMetricas(params: {
   generacionKwh: number | null;
   muestras: MuestraMedidor[];
   diasEsperados: number;
-  coberturaMinima: number; // 0..1, típicamente 0.9
+  /** Por debajo de esto el mes no se reporta. 0..1 — hoy 0.5, media. */
+  coberturaMinima: number;
 }): MetricasMes {
   const { generacionKwh, muestras, diasEsperados, coberturaMinima } = params;
 
@@ -102,16 +103,37 @@ export function derivarMetricas(params: {
   let exportacion = resumirHistorialDiario(muestras, "reverseActiveTodayEnergy");
   const diasConDatos = diasConMuestras(muestras).size;
 
-  // Antes, una cobertura por debajo del mínimo BORRABA importación y
-  // exportación, y el generador se quedaba sin reporte hasta que alguien
-  // cargara los números a mano. En la práctica eso significaba no mandarle nada
-  // al cliente durante meses. Ahora el dato se conserva y se marca como parcial:
-  // vale más un reporte con una aclaración que ningún reporte.
+  // Qué hacer cuando el smart meter perdió días. Tres tramos:
+  //
+  //   mes completo        → el dato es una medición, se usa tal cual.
+  //   faltan pero >= 50%  → se PROYECTA: los días faltantes se completan con el
+  //                         promedio diario de los medidos. Deja de ser una
+  //                         medición y pasa a ser una estimación, así que se
+  //                         anota y el PDF lo aclara.
+  //   menos del 50%       → no alcanza para estimar nada creíble: se descartan
+  //                         consumo y exportación, y sin ellos el mes no se
+  //                         puede emitir. El generador queda visible como
+  //                         pendiente en el panel.
+  //
+  // La generación NO entra en esto: la da el inversor, que no pierde días.
   let motivoDescarte: string | null = null;
-  if (diasEsperados > 0 && diasConDatos < Math.round(diasEsperados * coberturaMinima)) {
-    motivoDescarte =
-      `sólo ${diasConDatos} de ${diasEsperados} días con datos del smart meter ` +
-      `(mínimo ${Math.round(coberturaMinima * 100)}%)`;
+  const cobertura = diasEsperados > 0 ? diasConDatos / diasEsperados : 1;
+
+  if (diasEsperados > 0 && diasConDatos < diasEsperados) {
+    if (cobertura < coberturaMinima) {
+      motivoDescarte =
+        `sólo ${diasConDatos} de ${diasEsperados} días con datos del smart meter ` +
+        `(menos de la mitad del período): no se puede estimar el mes`;
+      importacion = null;
+      exportacion = null;
+    } else {
+      const factor = diasEsperados / diasConDatos;
+      if (importacion != null) importacion = round2(importacion * factor);
+      if (exportacion != null) exportacion = round2(exportacion * factor);
+      motivoDescarte =
+        `el medidor reportó ${diasConDatos} de ${diasEsperados} días; los ` +
+        `${diasEsperados - diasConDatos} faltantes se estimaron con el promedio diario`;
+    }
   }
 
   // consumo = generación + lo que igual se compró a la red - lo exportado.

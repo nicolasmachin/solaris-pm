@@ -51,6 +51,13 @@
 
 ### 8 de agosto de 2026
 
+#### Los meses con días faltantes ahora se estiman
+
+- Cuando el medidor de un cliente **pierde días**, el reporte ya no sale con un total incompleto: los días faltantes **se completan con el promedio diario de los días que sí se midieron**, y el reporte lo aclara.
+- **Si falta más de la mitad del período, no se genera el reporte.** Con tan pocos días no hay forma de estimar el mes sin inventar, así que el generador queda pendiente en el panel para cargar los datos a mano.
+- Antes se cargaba el total parcial tal cual, y el cliente recibía un consumo y un ahorro más bajos que los reales sin más aviso que una nota al pie.
+- La **generación nunca se estima**: la informa el inversor, que no pierde días.
+
 #### El ahorro se calcula con la tarifa que tiene el cliente
 
 - Hasta ahora, a **todos los clientes residenciales el ahorro se les calculaba con tarifa Residencial Simple**, aunque tuvieran Doble o Triple. El reporte les mostraba un ahorro que no era el suyo.

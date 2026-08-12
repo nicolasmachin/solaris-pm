@@ -109,25 +109,23 @@ function construirNotas(r: ResultadoPeriodo, ctx: ContextoPdf): NotaPdf[] {
   // dirección porque depende de cada caso.
   const { diasConDatos, diasEsperados } = ctx;
   if (diasConDatos != null && diasEsperados != null && diasEsperados > 0 && diasConDatos < diasEsperados) {
-    const cobertura = diasConDatos / diasEsperados;
     const faltantes = diasEsperados - diasConDatos;
-    const base =
-      `El medidor de este servicio registró ${diasConDatos} de los ${diasEsperados} días del ` +
-      `período (faltan ${faltantes}). El consumo y el ahorro de este reporte se calcularon con ` +
-      `esa medición parcial, por lo que pueden no coincidir con los valores reales.`;
-
-    if (cobertura < 0.5) {
-      // Menos de la mitad del mes medido: el número existe pero es endeble, y
-      // el cliente tiene que verlo antes de sacar conclusiones.
-      notas.push({
-        tipo: "alerta",
-        texto:
-          `${base} Al faltar más de la mitad del período, estos valores son ` +
-          `orientativos: tomalos con reserva. Estamos trabajando para normalizar la medición.`,
-      });
-    } else {
-      notas.push({ tipo: "nota", texto: base });
-    }
+    // Con al menos la mitad del período medido, los días faltantes se completan
+    // con el promedio diario de los medidos, así que el total ya NO es parcial:
+    // es una estimación del mes entero. Decirle al cliente que "faltan días" sin
+    // aclarar que se estimaron lo dejaría pensando que el número está incompleto.
+    //
+    // Por debajo de la mitad no se estima y el mes no se emite, así que esta nota
+    // no debería llegar a imprimirse en ese caso; queda el texto por si una
+    // lectura vieja o cargada a mano cae acá.
+    notas.push({
+      tipo: "nota",
+      texto:
+        `El medidor de este servicio registró ${diasConDatos} de los ${diasEsperados} días del ` +
+        `período. Los ${faltantes} días faltantes se estimaron con el promedio diario de los días ` +
+        `medidos, así que el consumo y el ahorro de este reporte son aproximados. Estamos ` +
+        `trabajando para normalizar la medición.`,
+    });
   }
 
   // Notas dinámicas del motor (ej. alerta de consumo excesivo). El motor usa

@@ -25,6 +25,7 @@ export const MANUAL_CAMBIOS: CambioManual[] = [
       "Botón \"Enviar todos\" para mandar los reportes del mes juntos, con confirmación previa.",
       "Columna \"Retorno\" en el listado: cuánto de la inversión recuperó cada cliente.",
       "El ahorro se calcula con la tarifa contratada del cliente, no siempre con la simple.",
+      "Los meses con días faltantes del medidor se estiman; con menos de la mitad no se genera reporte.",
     ],
   },
   {
@@ -192,10 +193,17 @@ trae la generación, el consumo y la exportación del mes seleccionado, **de
 Growatt y de Huawei**, para todos los generadores con planta. Vas a ver el
 progreso mientras corre (puede tardar varios minutos si son muchas plantas).
 
-**Cobertura de datos**: si a un mes le faltan días de datos del medidor (menos del
-90% de los días), el sistema **descarta** ese mes en lugar de mostrar un total
-incompleto que engañaría al cliente. Ese generador queda como *datos incompletos*,
-esperando que completes el dato a mano.
+**Cuando al medidor le faltan días**, el sistema resuelve así:
+
+- **Faltan algunos, pero hay al menos la mitad del período medido** → los días
+  faltantes se **estiman** con el promedio diario de los medidos. El reporte sale
+  y lleva impresa una nota que lo aclara al cliente.
+- **Falta más de la mitad** → no se estima nada y **el mes no se puede emitir**.
+  El generador queda como *datos incompletos*, esperando que cargues los números
+  a mano.
+
+La **generación no se estima nunca**: la informa el inversor, que no pierde días.
+Lo que se estima es lo que mide el smart meter (consumo y exportación).
 
 Un caso particular de Huawei: si la planta **no tiene medidor**, se guarda sólo la
 generación. Antes se hubiera registrado como "consumo cero", que da un ahorro

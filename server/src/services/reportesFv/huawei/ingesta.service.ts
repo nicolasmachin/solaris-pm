@@ -11,10 +11,12 @@
 //      mano para meses en que el medidor estaba mal conectado (caso verificado:
 //      Marianela Indart, mayo y junio de 2026) y la API para esos meses tiene
 //      menos días que la estimación. Se pisan sólo con `force`.
-//   2. Consumo y exportación se descartan si la cobertura del mes no llega al
-//      mínimo. Con días faltantes los totales salen incoherentes — mayo de
-//      Marianela daba 141 kWh generados contra 874 exportados, que es imposible.
-//      La generación sí se guarda: es un contador del inversor, no del medidor.
+//   2. Si al mes le faltan días pero hay al menos la mitad medidos, los
+//      faltantes se ESTIMAN con el promedio diario. Por debajo de la mitad no
+//      se estima nada: se descartan consumo y exportación y el mes no se emite,
+//      porque los totales salen incoherentes — mayo de Marianela daba 141 kWh
+//      generados contra 874 exportados, que es imposible.
+//      La generación nunca se toca: es un contador del inversor, no del medidor.
 
 import { ReporteFvFuente } from "@prisma/client";
 
@@ -23,7 +25,7 @@ import { periodoADate, type Periodo } from "../periodo.js";
 import { serieDiariaDelMes } from "./client.js";
 import { plantasHuaweiVinculadas } from "./plantas.service.js";
 
-const COBERTURA_MINIMA = Number(process.env.HUAWEI_MIN_COVERAGE || "") || 0.9;
+const COBERTURA_MINIMA = Number(process.env.HUAWEI_MIN_COVERAGE || "") || 0.5;
 
 export interface ItemIngestaHuawei {
   plantCode: string;
@@ -116,17 +118,24 @@ export async function ingerirPeriodoHuawei(
 
     const cobertura = diasEsperados > 0 ? diasConDatos / diasEsperados : 1;
     const suficiente = cobertura >= COBERTURA_MINIMA && !sinMedidor;
+    // Completa los días que el medidor no reportó con el promedio de los que sí.
+    const factor = suficiente && diasConDatos > 0 ? diasEsperados / diasConDatos : 1;
+    const escalar = (campo: "consumoKwh" | "exportacionKwh" | "importacionKwh") =>
+      Number((suma(campo) * factor).toFixed(2));
+
     const motivo = sinMedidor
       ? "la planta no tiene medidor: sólo se registra la generación"
-      : cobertura >= COBERTURA_MINIMA
-        ? null
-        : `sólo ${diasConDatos} de ${diasEsperados} días con datos (mínimo ${Math.round(COBERTURA_MINIMA * 100)}%)`;
+      : !suficiente
+        ? `sólo ${diasConDatos} de ${diasEsperados} días con datos (menos de la mitad del período): no se puede estimar el mes`
+        : factor > 1
+          ? `el medidor reportó ${diasConDatos} de ${diasEsperados} días; los ${diasEsperados - diasConDatos} faltantes se estimaron con el promedio diario`
+          : null;
 
     const item: ItemIngestaHuawei = {
       ...base,
       generacionKwh: suma("generacionKwh"),
-      consumoKwh: suficiente ? suma("consumoKwh") : null,
-      exportacionKwh: suficiente ? suma("exportacionKwh") : null,
+      consumoKwh: suficiente ? escalar("consumoKwh") : null,
+      exportacionKwh: suficiente ? escalar("exportacionKwh") : null,
       motivo,
       omitido: null,
     };
@@ -138,7 +147,7 @@ export async function ingerirPeriodoHuawei(
         generacionKwh: item.generacionKwh,
         consumoKwh: item.consumoKwh,
         exportacionKwh: item.exportacionKwh,
-        importacionMedidaKwh: suficiente ? suma("importacionKwh") : null,
+        importacionMedidaKwh: suficiente ? escalar("importacionKwh") : null,
         diasConDatos,
         diasEsperados,
         motivo,
