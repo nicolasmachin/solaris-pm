@@ -51,6 +51,11 @@
 
 ### 8 de agosto de 2026
 
+#### Arreglado: el botón de descargar el PDF no hacía nada
+
+- En la ficha del generador, **"Descargar"** no descargaba nada: el botón abría el archivo sin la sesión iniciada, el servidor lo rechazaba y no pasaba nada visible. Pasaba con todos los generadores, no con algunos.
+- Afectaba también al ícono de descarga de cada versión del reporte. El portal del cliente no estaba afectado.
+
 #### Los meses con días faltantes ahora se estiman
 
 - Cuando el medidor de un cliente **pierde días**, el reporte ya no sale con un total incompleto: los días faltantes **se completan con el promedio diario de los días que sí se midieron**, y el reporte lo aclara.

@@ -4,7 +4,7 @@ import { AlertTriangle, Check, Download, FileText, Plus, RefreshCw, Send, Trash2
 import toast from "react-hot-toast";
 
 import { usePermission } from "../../../hooks/usePermission";
-import { useAuthBlobUrl } from "../../../hooks/useAuthBlobUrl";
+import { downloadAuthenticated, useAuthBlobUrl } from "../../../hooks/useAuthBlobUrl";
 import { LargeModal } from "../../../components/ui/LargeModal";
 import { Spinner } from "../../../components/ui/Spinner";
 import {
@@ -586,6 +586,24 @@ function PdfTab({
   const relativeUrl = previewId ? `/api/reportes-fv/emisiones/${previewId}/pdf` : null;
   const { blobUrl, loading } = useAuthBlobUrl(relativeUrl);
 
+  /**
+   * Descarga el PDF pidiéndolo con el token.
+   *
+   * Antes esto era un `<a href>` al endpoint: el navegador navegaba sin el
+   * header Authorization, el servidor devolvía 401 y el botón no hacía nada
+   * visible. Hay que pedirlo por apiClient y bajar el blob.
+   */
+  async function descargarPdf(emisionId: string) {
+    try {
+      await downloadAuthenticated(
+        `/api/reportes-fv/emisiones/${emisionId}/pdf?download=1`,
+        `reporte-fotovoltaico-${detalle.clientName}-${periodo}.pdf`.replace(/\s+/g, "-"),
+      );
+    } catch {
+      toast.error("No se pudo descargar el PDF");
+    }
+  }
+
   const bloqueado = (detalle.config?.efectivo.bloqueosCalculo.length ?? 0) > 0;
 
   return (
@@ -604,12 +622,13 @@ function PdfTab({
           </button>
         )}
         {previewId && (
-          <a
-            href={reporteFvPdfUrl(previewId) + "?download=1"}
+          <button
+            type="button"
+            onClick={() => descargarPdf(previewId)}
             className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm text-[var(--color-text-secondary)]"
           >
             <Download size={14} /> Descargar
-          </a>
+          </button>
         )}
         {vigente && (
           <span className="flex items-center gap-1 text-xs text-[var(--color-text-muted)]">
@@ -695,13 +714,14 @@ function PdfTab({
                       >
                         Ver
                       </button>
-                      <a
-                        href={reporteFvPdfUrl(e.id) + "?download=1"}
+                      <button
+                        type="button"
+                        onClick={() => descargarPdf(e.id)}
                         title="Descargar PDF"
                         className="rounded p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                       >
                         <Download size={13} />
-                      </a>
+                      </button>
                     </>
                   ) : (
                     <span className="text-xs text-[var(--color-text-muted)]">sin PDF</span>
