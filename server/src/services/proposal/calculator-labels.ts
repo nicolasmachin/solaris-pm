@@ -115,11 +115,38 @@ export const calculatorLabels = {
     unidad: "USD",
     orden: 200,
   },
+  markupExcedenteUsdSinIva: {
+    label: "Markup excedente (B2B)",
+    descripcion:
+      "Markup conseguido por encima de la referencia B2B, en USD. Siempre 0 en propuestas residenciales.",
+    unidad: "USD",
+    orden: 202,
+  },
+  comisionVentasBaseUsdSinIva: {
+    label: "Comisión ventas — base",
+    descripcion:
+      "Parte porcentual de la comisión, sobre (costo + mano de obra + markup). En B2B usa el % base propio.",
+    unidad: "USD",
+    orden: 204,
+  },
+  comisionVentasExcedenteUsdSinIva: {
+    label: "Comisión ventas — excedente (B2B)",
+    descripcion: "Tajada del markup excedente que se lleva el asesor. Solo en propuestas a empresas.",
+    unidad: "USD",
+    orden: 206,
+  },
   comisionVentasUsdSinIva: {
     label: "Comisión ventas",
-    descripcion: "Comisión del vendedor sobre la base (costo + mano de obra + markup).",
+    descripcion: "Comisión del vendedor: la parte base más, en B2B, la tajada del markup excedente.",
     unidad: "USD",
     orden: 210,
+  },
+  comisionVentasPctEfectivo: {
+    label: "Comisión ventas — % efectivo",
+    descripcion:
+      "Qué porcentaje de la base terminó representando la comisión. Es el que se congela al ganar el lead.",
+    unidad: "%",
+    orden: 212,
   },
   comisionBbvaUsdSinIva: {
     label: "Comisión BBVA",

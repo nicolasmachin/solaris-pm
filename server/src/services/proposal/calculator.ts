@@ -140,10 +140,35 @@ export function calculate(
   const manoDeObraUsdSinIva = manoDeObraPesos / dolar;
 
   // ── 4. Pricing ──
-  const markupUsdSinIva =
-    (costoTotalSinIva + manoDeObraUsdSinIva) * interpretarMarkup(data.cotizacion.markupPorcentaje);
-  const baseComision = costoTotalSinIva + manoDeObraUsdSinIva + markupUsdSinIva;
-  const comisionVentasUsdSinIva = baseComision * defaults.comisionVendedorPorcentaje;
+  const esEmpresa = data.variante === "EMPRESA";
+  const baseCostoMo = costoTotalSinIva + manoDeObraUsdSinIva;
+  const markupPct = interpretarMarkup(data.cotizacion.markupPorcentaje);
+  const markupUsdSinIva = baseCostoMo * markupPct;
+  const baseComision = baseCostoMo + markupUsdSinIva;
+
+  // Comisión del asesor. En residencial es el porcentaje plano de siempre. En
+  // las propuestas a empresas se le suma una tajada del "markup excedente": lo
+  // que el asesor consiguió por encima del markup de referencia. Sin eso, quien
+  // negocia el precio es casi indiferente al resultado — subir el markup 10
+  // puntos le mueve la comisión menos de un 10%, mientras la ganancia de la
+  // empresa (que es exactamente markupUsdSinIva) sube a la par del markup.
+  //
+  // La comisión sigue siendo un costo dentro del precio, no un descuento sobre
+  // la ganancia: la identidad gananciaFinal ≡ markupUsdSinIva del flujo de caja
+  // (§8) se mantiene intacta para cualquier comisión.
+  const markupExcedenteUsdSinIva = esEmpresa
+    ? Math.max(0, markupPct - defaults.b2bMarkupReferenciaPorcentaje / 100) * baseCostoMo
+    : 0;
+  const comisionVentasBaseUsdSinIva =
+    baseComision *
+    (esEmpresa ? defaults.b2bComisionBasePorcentaje : defaults.comisionVendedorPorcentaje);
+  const comisionVentasExcedenteUsdSinIva = esEmpresa
+    ? markupExcedenteUsdSinIva * defaults.b2bComisionExcedentePorcentaje
+    : 0;
+  const comisionVentasUsdSinIva =
+    comisionVentasBaseUsdSinIva + comisionVentasExcedenteUsdSinIva;
+  const comisionVentasPctEfectivo =
+    baseComision > 0 ? comisionVentasUsdSinIva / baseComision : 0;
   const comisionBbvaUsdSinIva = baseComision * defaults.comisionBbvaPorcentaje;
   const subtotalSinIva =
     costoTotalSinIva +
@@ -244,7 +269,11 @@ export function calculate(
 
     manoDeObraUsdSinIva,
     markupUsdSinIva,
+    markupExcedenteUsdSinIva,
+    comisionVentasBaseUsdSinIva,
+    comisionVentasExcedenteUsdSinIva,
     comisionVentasUsdSinIva,
+    comisionVentasPctEfectivo,
     comisionBbvaUsdSinIva,
     subtotalSinIva,
     iva,

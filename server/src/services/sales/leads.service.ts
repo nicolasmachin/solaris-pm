@@ -8,7 +8,7 @@
 // Cada función recibe un `actor` —quién la ejecuta— y un `metadata` opcional
 // que viaja a la auditoría. El conector lo usa para marcar `source: "mcp"`.
 
-import { AuditAction, AuditEntityType, Prisma, SalesStage } from "@prisma/client";
+import { AuditAction, AuditEntityType, Prisma, ProposalVariante, SalesStage } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { createAuditEntriesForChanges, createAuditEntry } from "../audit.service.js";
@@ -95,6 +95,7 @@ export async function buildLeadSearchFilter(
 
 export interface CrearLeadInput {
   clientName: string;
+  tipoCliente?: ProposalVariante;
   clientEmail?: string | null;
   clientPhone?: string | null;
   address?: string | null;
@@ -119,6 +120,7 @@ export async function crearLead(params: {
     data: {
       code,
       clientName: data.clientName,
+      tipoCliente: data.tipoCliente ?? ProposalVariante.RESIDENCIAL,
       clientEmail: data.clientEmail ?? null,
       clientPhone: data.clientPhone ?? null,
       address: data.address ?? null,
@@ -208,6 +210,7 @@ export async function editarLead(params: {
           : null,
       }),
       ...(data.roofType !== undefined && { roofType: data.roofType }),
+      ...(data.tipoCliente !== undefined && { tipoCliente: data.tipoCliente }),
       ...(data.notes !== undefined && { notes: data.notes }),
       ...(data.assignedToId !== undefined && { assignedToId: data.assignedToId }),
       ...(data.leadCreatedAt !== undefined && { leadCreatedAt: toDateOrNull(data.leadCreatedAt) }),
@@ -237,6 +240,7 @@ export async function editarLead(params: {
       estimatedBudgetUsd: lead.estimatedBudgetUsd,
       uteBillMonthlyUsd: lead.uteBillMonthlyUsd,
       roofType: lead.roofType,
+      tipoCliente: lead.tipoCliente,
       notes: lead.notes,
       assignedToId: lead.assignedToId,
     },

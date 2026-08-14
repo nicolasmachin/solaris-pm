@@ -43,6 +43,13 @@ export const singletonLabels = {
   // Pricing
   markupPorcentajeDefault: { label: "Markup por defecto", unidad: "%" },
   comisionVendedorPorcentaje: { label: "Comisión vendedor (fracción)", unidad: "" },
+
+  // Comisión variable de las propuestas a empresas. Van con notación de punto
+  // porque viven en el subobjeto `b2b` del singleton, y porque
+  // `markupPorcentajeDefault` también existe suelto (el del residencial).
+  "b2b.markupReferenciaPorcentaje": { label: "B2B · Markup de referencia", unidad: "%" },
+  "b2b.comisionBasePorcentaje": { label: "B2B · Comisión base (fracción)", unidad: "" },
+  "b2b.comisionExcedentePorcentaje": { label: "B2B · Tajada del excedente (fracción)", unidad: "" },
   comisionBbvaPorcentaje: { label: "Comisión BBVA (fracción)", unidad: "" },
   // Ahorro por tarifa (multiplicadores)
   factorAhorroSimple: { label: "Factor ahorro Simple", unidad: "" },
@@ -76,7 +83,16 @@ export function buildMemoriaSingletonValues(
   const data = (typeof rawData === "object" && rawData !== null ? rawData : {}) as Record<string, unknown>;
   const out: Record<string, MemoriaSingletonValue> = {};
   for (const [key, meta] of Object.entries(singletonLabels)) {
-    const entry = data[key];
+    // "grupo.clave" busca dentro del subobjeto correspondiente.
+    const entry = key.includes(".")
+      ? (() => {
+          const [group, child] = key.split(".");
+          const node = data[group];
+          return typeof node === "object" && node !== null
+            ? (node as Record<string, unknown>)[child]
+            : undefined;
+        })()
+      : data[key];
     const rawValue =
       typeof entry === "object" && entry !== null && "value" in entry
         ? (entry as { value: unknown }).value

@@ -1,6 +1,7 @@
 import { apiClient as api } from "./axios";
 import type { LeadDetail, LeadProposal, LeadStageGroup, ProposalListItem, SalesStage } from "../types/leads.types";
 import type { Project } from "../types/api.types";
+import type { ProposalVariante } from "../types/proposals-v2";
 
 export async function getLeads(params?: {
   assignedTo?: "me";
@@ -64,6 +65,7 @@ export async function getLead(id: string): Promise<LeadDetail> {
 
 export async function createLead(body: {
   clientName: string;
+  tipoCliente?: ProposalVariante;
   clientEmail?: string | null;
   clientPhone?: string | null;
   address?: string | null;
@@ -82,6 +84,7 @@ export async function patchLead(
   id: string,
   body: {
     clientName?: string;
+    tipoCliente?: ProposalVariante;
     clientEmail?: string | null;
     clientPhone?: string | null;
     address?: string | null;

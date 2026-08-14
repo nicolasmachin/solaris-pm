@@ -1,8 +1,59 @@
 # Novedades
 
+## v9.3
+
+### 13 de agosto de 2026
+
+#### Armar la propuesta desde el chat
+
+- Ya se puede **cotizar una propuesta residencial conversando con Claude**, desde el celular. Se dictan los datos que faltan, muestra el precio final, el ahorro y las cuotas, y solo emite el PDF cuando se confirma.
+- De todo lo que lleva una propuesta, en la práctica hay que dictar cinco cosas: **la ciudad, cuánto paga de UTE por mes, cuántos paneles, los metros de techo y la potencia del inversor**. El resto lo completa con los valores por defecto del cotizador y lo que ya sabe del cliente.
+- **No emite nada sin confirmación.** Primero muestra los números, y recién con el visto bueno genera el PDF.
+- **La cotización del dólar no se puede tocar desde el chat**; el markup sí, que es el margen del asesor.
+- Es solo para propuestas **residenciales**: las de empresa se siguen armando desde la aplicación.
+
+#### El chat ahora contesta sobre obras y clientes instalados
+
+- **"¿Qué tengo hoy?"** — el embudo propio, las visitas de hoy y mañana, quiénes reclamaron, los clientes trabados hace más de dos semanas y los pendientes que vencen.
+- **Proyectos**: buscar una obra, ver en qué etapa está y si va en plazo, el detalle de etapas y subetapas con lo que falta, el trámite de UTE con sus hitos y cuántos días son nuestros y cuántos de UTE, materiales, fotos, documentos con enlace para abrirlos, el historial completo y los pendientes de la obra.
+- **Experiencia Solar**: buscar un generador —incluidos los cargados por planilla, que no aparecen en Proyectos—, ver su ficha con el próximo mantenimiento, y consultar el último reporte fotovoltaico con su PDF.
+- Se puede **comentar en una obra y registrar una llamada o un WhatsApp** con un cliente instalado, sin abrir la aplicación.
+- Todo respeta los permisos de cada rol: quien no tiene acceso a un módulo recibe un aviso claro en vez de datos.
+
+#### Se distingue si el chat está tocando la base real
+
+- Al conectarse, el chat **avisa si está apuntando a producción o a un entorno de prueba**, y lo repite si se le pregunta cómo está la conexión. Antes las dos instalaciones se veían idénticas.
+
+#### Arreglos en el cotizador
+
+- **El guardado automático ya no falla al abrir una propuesta nueva.** Al entrar al cotizador de un cliente sin cotización previa, el indicador de guardado se ponía en error y no se recuperaba hasta completar la ciudad y la cantidad de paneles. Ahora guarda desde el primer momento, con la propuesta a medio llenar.
+- **Las propuestas armadas de noche ya no salen fechadas al día siguiente.** A partir de las nueve de la noche, la fecha que se imprime en el PDF se adelantaba un día.
+
 ## v9.2
 
 ### 12 de agosto de 2026
+
+#### Cotizador B2B: propuestas para empresas
+
+- **Botón nuevo "Cotizador B2B"** en la ficha del cliente potencial, al lado de "Armar propuesta". Son dos cotizadores separados: cada uno guarda su propio borrador, así que se puede tener una cotización residencial y una de empresa para el mismo cliente sin que se pisen.
+- En la ficha se marca el **Tipo de cliente (Residencial / Empresa)**. Eso precarga y resalta el cotizador que corresponde, pero no restringe: desde cualquier cliente se puede usar cualquiera de los dos.
+- El cotizador B2B suma la sección **"Datos de la empresa"**: razón social, RUT, contacto y cargo. Razón social y RUT son obligatorios para publicar.
+
+#### La propuesta a empresas ya no está escrita para una casa
+
+- La carta trata a la empresa de usted, habla de sus instalaciones y presenta el sistema como un **activo de la empresa**. Debajo aparece un recuadro con **razón social y RUT**.
+- **Se sacó la mención al 12% de IRPF**, que es un impuesto de persona física y no aplica a una empresa. En su lugar dice que se descuentan los impuestos que correspondan según la situación fiscal de la empresa.
+- Los títulos y textos dejan el tuteo: "La inversión", "El retorno", "la factura de UTE", y en el diagrama "Tu casa" pasa a ser "La empresa".
+- Se puede cargar una **tapa propia para las propuestas a empresas** (Administración → Defaults de propuestas). Si no se carga ninguna, se usa la de siempre. En la tapa B2B se imprime la razón social.
+- **Los nombres largos ya no se salen de la tapa**: una razón social que no entra se acomoda en dos líneas en lugar de desbordar o cortarse.
+
+#### Comisión del asesor según el markup negociado (solo B2B)
+
+- En las propuestas a empresas la comisión deja de ser un porcentaje fijo: el asesor cobra la comisión de siempre **más una parte del markup que consiga por encima del markup de referencia**. Si negocia mejor, gana más él y gana más la empresa.
+- Con los valores iniciales (referencia 20%, comisión base 4%, 30% del excedente): al 20% de markup la comisión es la misma de siempre; al 30% pasa de US$ 422 a US$ 666 en el ejemplo de referencia.
+- En el cotizador hay un panel **"Tu comisión"** que muestra el desglose con los números de esa propuesta y cuánto es más que cotizando al markup de referencia.
+- Los tres valores se configuran en **Administración → Defaults de propuestas → Propuestas a empresas (B2B)**. Cambiarlos no afecta a las propuestas ya publicadas: cada una congela su comisión al emitirse.
+- **Las propuestas residenciales no cambian**: siguen con el 4% de siempre.
 
 #### Cotizador de propuestas
 

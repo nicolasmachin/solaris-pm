@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
 import { proposalsV2BuilderApi } from "../api/proposals-v2-builder.api";
+import type { ProposalVariante } from "../types/proposals-v2";
 import type { CalcDebugRow } from "../types/proposals-v2";
 
 export type DraftCalcStatus = "loading" | "success" | "error" | "invalid";
@@ -36,12 +37,13 @@ export function useDraftCalc(params: {
   savedTick: number;
   enabled: boolean;
   autosaveError: boolean;
+  variante: ProposalVariante;
 }): UseDraftCalcResult {
-  const { leadId, savedTick, enabled, autosaveError } = params;
+  const { leadId, savedTick, enabled, autosaveError, variante } = params;
 
   const query = useQuery({
-    queryKey: ["proposal-draft-calc", leadId, savedTick],
-    queryFn: () => proposalsV2BuilderApi.getDraftCalc(leadId),
+    queryKey: ["proposal-draft-calc", leadId, variante, savedTick],
+    queryFn: () => proposalsV2BuilderApi.getDraftCalc(leadId, variante),
     enabled,
     staleTime: 0,
     retry: false,

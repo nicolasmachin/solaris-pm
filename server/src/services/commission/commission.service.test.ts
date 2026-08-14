@@ -47,3 +47,27 @@ test("readComisionFromSnapshot: sin comisión → null (dispara carga manual)", 
   assert.equal(montoUsd, null);
   assert.equal(porcentaje, null);
 });
+
+// ─── % efectivo: el snapshot manda sobre el default global ──────────────────
+//
+// Con el cotizador B2B la comisión dejó de ser un % fijo: crece con el markup
+// negociado. El porcentaje que se congela tiene que ser el que efectivamente se
+// aplicó, no el del singleton.
+
+test("snapshot nuevo: usa el % efectivo del cálculo, no el default", () => {
+  const r = readComisionFromSnapshot({
+    calc: { comisionVentasUsdSinIva: 1481.14, comisionVentasPctEfectivo: 0.0631 },
+    defaults: { comisionVendedorPorcentaje: 0.04 },
+  } as never);
+  assert.equal(r.montoUsd, 1481.14);
+  assert.equal(r.porcentaje, 0.0631);
+});
+
+test("snapshot viejo sin % efectivo: cae al default del singleton", () => {
+  const r = readComisionFromSnapshot({
+    calc: { comisionVentasUsdSinIva: 389.99 },
+    defaults: { comisionVendedorPorcentaje: 0.04 },
+  } as never);
+  assert.equal(r.montoUsd, 389.99);
+  assert.equal(r.porcentaje, 0.04);
+});

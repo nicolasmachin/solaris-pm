@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { proposalsV2BuilderApi } from "../api/proposals-v2-builder.api";
-import type { ViabilityResult } from "../types/proposals-v2";
+import type { ProposalVariante, ViabilityResult } from "../types/proposals-v2";
 
 // Indicadores de viabilidad del sub-header del constructor. El cálculo lo hace el
 // server; el cliente refetchea al cambiar el savedTick del autosave, con debounce
@@ -12,8 +12,9 @@ export function useViabilityIndicators(params: {
   savedTick: number;
   enabled: boolean;
   autosaveError: boolean;
+  variante: ProposalVariante;
 }): { data: ViabilityResult | undefined; stale: boolean } {
-  const { leadId, savedTick, enabled, autosaveError } = params;
+  const { leadId, savedTick, enabled, autosaveError, variante } = params;
 
   const [debouncedTick, setDebouncedTick] = useState(savedTick);
   useEffect(() => {
@@ -22,8 +23,8 @@ export function useViabilityIndicators(params: {
   }, [savedTick]);
 
   const query = useQuery({
-    queryKey: ["draft-viability", leadId, debouncedTick],
-    queryFn: () => proposalsV2BuilderApi.getDraftViability(leadId),
+    queryKey: ["draft-viability", leadId, variante, debouncedTick],
+    queryFn: () => proposalsV2BuilderApi.getDraftViability(leadId, variante),
     enabled,
     staleTime: 0,
     retry: false,

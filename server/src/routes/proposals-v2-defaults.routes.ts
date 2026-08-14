@@ -6,7 +6,15 @@
 
 import { promises as fsPromises } from "node:fs";
 
-import { Action, AuditAction, AuditEntityType, FileAttachmentTipo, Module, Prisma } from "@prisma/client";
+import {
+  Action,
+  AuditAction,
+  AuditEntityType,
+  FileAttachmentTipo,
+  Module,
+  Prisma,
+  ProposalVariante,
+} from "@prisma/client";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { PDFDocument } from "pdf-lib";
 import { z } from "zod";
@@ -25,6 +33,13 @@ import { badRequest, forbidden, unauthorized } from "../utils/errors.js";
 import { serializeDate } from "../utils/serialization.js";
 
 const SINGLETON_ID = "singleton";
+
+// Qué tapa se está manipulando. Sin el parámetro, la residencial de siempre.
+const varianteQuery = z
+  .object({ variante: z.nativeEnum(ProposalVariante).default(ProposalVariante.RESIDENCIAL) })
+  .passthrough();
+const parseVariante = (query: unknown): ProposalVariante =>
+  varianteQuery.parse(query ?? {}).variante;
 
 // La tapa es un PDF de Canva: 1 página, A4 vertical. Validamos contra las
 // dimensiones A4 estándar (595.28 × 841.89 pt) con tolerancia, porque los
@@ -122,11 +137,16 @@ const putBodySchema = z
   .object({
     data: dataSchema.optional(),
     coverOverlay: coverOverlaySchema.optional(),
+    // Overlay propio de la tapa B2B. `null` lo limpia: la tapa de empresa pasa
+    // a usar las coordenadas de la residencial.
+    coverEmpresaOverlay: coverOverlaySchema.nullable().optional(),
   })
   .strict()
-  .refine((b) => b.data !== undefined || b.coverOverlay !== undefined, {
-    message: "Se requiere al menos `data` o `coverOverlay`",
-  });
+  .refine(
+    (b) =>
+      b.data !== undefined || b.coverOverlay !== undefined || b.coverEmpresaOverlay !== undefined,
+    { message: "Se requiere al menos `data`, `coverOverlay` o `coverEmpresaOverlay`" },
+  );
 
 // Body de la vista previa: el overlay que el admin está probando (sin guardar).
 const coverPreviewBodySchema = z.object({ config: coverOverlaySchema }).strict();
@@ -147,6 +167,8 @@ export async function registerProposalsV2DefaultsRoutes(app: FastifyInstance) {
           data: {},
           coverOverlay: null,
           coverPdfAttachmentId: null,
+          coverEmpresaOverlay: null,
+          coverEmpresaPdfAttachmentId: null,
           updatedAt: null,
         };
       }
@@ -155,6 +177,8 @@ export async function registerProposalsV2DefaultsRoutes(app: FastifyInstance) {
         data: row.data,
         coverOverlay: row.coverOverlay,
         coverPdfAttachmentId: row.coverPdfAttachmentId,
+        coverEmpresaOverlay: row.coverEmpresaOverlay,
+        coverEmpresaPdfAttachmentId: row.coverEmpresaPdfAttachmentId,
         updatedAt: serializeDate(row.updatedAt),
       };
     },
@@ -205,6 +229,10 @@ export async function registerProposalsV2DefaultsRoutes(app: FastifyInstance) {
         updateData.coverOverlay = body.coverOverlay;
         changed.push("cover_overlay");
       }
+      if (body.coverEmpresaOverlay !== undefined) {
+        updateData.coverEmpresaOverlay = body.coverEmpresaOverlay ?? Prisma.DbNull;
+        changed.push("cover_empresa_overlay");
+      }
 
       const row = await prisma.proposalDefaults.update({
         where: { id: SINGLETON_ID },
@@ -246,6 +274,8 @@ export async function registerProposalsV2DefaultsRoutes(app: FastifyInstance) {
         data: row.data,
         coverOverlay: row.coverOverlay,
         coverPdfAttachmentId: row.coverPdfAttachmentId,
+        coverEmpresaOverlay: row.coverEmpresaOverlay,
+        coverEmpresaPdfAttachmentId: row.coverEmpresaPdfAttachmentId,
         updatedAt: serializeDate(row.updatedAt),
       };
     },
@@ -264,6 +294,7 @@ export async function registerProposalsV2DefaultsRoutes(app: FastifyInstance) {
         throw forbidden("Solo un administrador puede subir la tapa de propuestas");
       }
 
+      const varianteTapa = parseVariante(request.query);
       const existing = await prisma.proposalDefaults.findUnique({ where: { id: SINGLETON_ID } });
       if (!existing) {
         throw badRequest(
@@ -314,7 +345,10 @@ export async function registerProposalsV2DefaultsRoutes(app: FastifyInstance) {
 
       const row = await prisma.proposalDefaults.update({
         where: { id: SINGLETON_ID },
-        data: { coverPdfAttachmentId: attachment.id, updatedById: user.id },
+        data:
+          varianteTapa === ProposalVariante.EMPRESA
+            ? { coverEmpresaPdfAttachmentId: attachment.id, updatedById: user.id }
+            : { coverPdfAttachmentId: attachment.id, updatedById: user.id },
       });
 
       await createAuditEntry({
@@ -322,8 +356,14 @@ export async function registerProposalsV2DefaultsRoutes(app: FastifyInstance) {
         entityId: SINGLETON_ID,
         userId: user.id,
         action: AuditAction.file_uploaded,
-        fieldChanged: "cover_pdf_attachment",
-        description: "Subió un nuevo PDF de tapa para propuestas",
+        fieldChanged:
+          varianteTapa === ProposalVariante.EMPRESA
+            ? "cover_empresa_pdf_attachment"
+            : "cover_pdf_attachment",
+        description:
+          varianteTapa === ProposalVariante.EMPRESA
+            ? "Subió un nuevo PDF de tapa para propuestas a empresas"
+            : "Subió un nuevo PDF de tapa para propuestas",
         metadata: {
           attachmentId: attachment.id,
           filename: stored.filename,
@@ -342,12 +382,21 @@ export async function registerProposalsV2DefaultsRoutes(app: FastifyInstance) {
   app.get(
     "/proposals-v2/defaults/cover",
     { preHandler: authorize(Module.VENTAS, Action.VIEW) },
-    async (_request, reply) => {
+    async (request, reply) => {
+      const variante = parseVariante(request.query);
       const row = await prisma.proposalDefaults.findUnique({
         where: { id: SINGLETON_ID },
-        select: { coverPdfAttachment: { select: { url: true } } },
+        select: {
+          coverPdfAttachment: { select: { url: true } },
+          coverEmpresaPdfAttachment: { select: { url: true } },
+        },
       });
-      const url = row?.coverPdfAttachment?.url;
+      // Sin fallback acá a propósito: el Admin tiene que poder ver si la tapa
+      // de empresa está cargada o no, no la residencial disfrazada.
+      const url =
+        variante === ProposalVariante.EMPRESA
+          ? row?.coverEmpresaPdfAttachment?.url
+          : row?.coverPdfAttachment?.url;
       if (!url) {
         return reply.status(404).send({ message: "No hay tapa configurada" });
       }
@@ -379,12 +428,19 @@ export async function registerProposalsV2DefaultsRoutes(app: FastifyInstance) {
       }
 
       const { config } = coverPreviewBodySchema.parse(request.body);
+      const variante = parseVariante(request.query);
 
       const row = await prisma.proposalDefaults.findUnique({
         where: { id: SINGLETON_ID },
-        select: { coverPdfAttachment: { select: { url: true } } },
+        select: {
+          coverPdfAttachment: { select: { url: true } },
+          coverEmpresaPdfAttachment: { select: { url: true } },
+        },
       });
-      const url = row?.coverPdfAttachment?.url;
+      const url =
+        variante === ProposalVariante.EMPRESA
+          ? (row?.coverEmpresaPdfAttachment?.url ?? row?.coverPdfAttachment?.url)
+          : row?.coverPdfAttachment?.url;
       if (!url) {
         return reply.status(404).send({ message: "No hay tapa configurada" });
       }
@@ -396,9 +452,14 @@ export async function registerProposalsV2DefaultsRoutes(app: FastifyInstance) {
         return reply.status(404).send({ message: "El archivo de tapa no está disponible" });
       }
 
+      // Datos de ejemplo: para la tapa B2B se usa una razón social larga a
+      // propósito, que es el caso que rompe el encuadre.
       const out = await applyCoverOverlay(bytes, config, {
-        clientName: "Jose Gonzalez",
-        city: "El Pinar, Uruguay.",
+        clientName:
+          variante === ProposalVariante.EMPRESA
+            ? "Cooperativa Agraria del Litoral S.A."
+            : "Jose Gonzalez",
+        city: variante === ProposalVariante.EMPRESA ? "Paysandú, Uruguay." : "El Pinar, Uruguay.",
         date: "19 de junio de 2026",
       });
 

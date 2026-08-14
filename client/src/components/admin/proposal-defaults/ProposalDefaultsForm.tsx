@@ -59,6 +59,13 @@ const LABELS: Record<string, string> = {
   bbva36mFactorCuota: "BBVA 36 cuotas — factor cuota",
   bbva60mFactorCuota: "BBVA 60 cuotas — factor cuota",
   precioSeguroGranizoUsdPorPanelAno: "Seguro granizo (USD/panel/año)",
+  // b2b (nested). Van con el prefijo del grupo porque
+  // `markupPorcentajeDefault` también existe a nivel plano (el residencial) y
+  // si no, las dos mostrarían la misma etiqueta.
+  "b2b.markupPorcentajeDefault": "Markup con el que arranca el cotizador B2B (%)",
+  "b2b.markupReferenciaPorcentaje": "Markup de referencia — desde acá se comparte el excedente (%)",
+  "b2b.comisionBasePorcentaje": "Comisión base del asesor (fracción: 0,04 = 4%)",
+  "b2b.comisionExcedentePorcentaje": "Tajada del excedente para el asesor (fracción: 0,3 = 30%)",
   // plazos (nested)
   diasPagoInicial: "Días pago inicial",
   diasCoordinacion: "Días coordinación",
@@ -131,6 +138,7 @@ const SECTIONS: { title: string; keys?: string[]; nested?: string; custom?: "sea
     keys: ["factorAhorroSimple", "factorAhorroDoble", "factorAhorroTriple"],
   },
   { title: "Plazos de entrega", nested: "plazos" },
+  { title: "Propuestas a empresas (B2B)", nested: "b2b" },
   {
     title: "Financiación BBVA",
     keys: [
@@ -157,7 +165,10 @@ const SECTIONS: { title: string; keys?: string[]; nested?: string; custom?: "sea
   },
 ];
 
-function labelFor(key: string): string {
+// En los subobjetos (`plazos`, `b2b`) se busca primero "grupo.clave": permite
+// que una clave repetida entre grupos tenga su propia etiqueta.
+function labelFor(key: string, group?: string): string {
+  if (group && LABELS[`${group}.${key}`]) return LABELS[`${group}.${key}`];
   return LABELS[key] ?? key;
 }
 
@@ -199,7 +210,7 @@ export function ProposalDefaultsForm({
               ? Object.entries((data[section.nested] ?? {}) as NestedFlagged).map(([childKey, entry]) => (
                   <VariableInput
                     key={childKey}
-                    label={labelFor(childKey)}
+                    label={labelFor(childKey, section.nested)}
                     entry={entry}
                     disabled={disabled}
                     onChange={(next) => updateNested(section.nested!, childKey, next)}

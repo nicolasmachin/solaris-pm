@@ -23,40 +23,42 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "9.2",
-  date: "12 de agosto de 2026",
+  version: "9.3",
+  date: "13 de agosto de 2026",
   sections: [
     {
-      title: "El ahorro se calcula con la tarifa que tiene el cliente",
+      title: "Armar la propuesta desde el chat",
       items: [
-        "Hasta ahora a todos los residenciales se les calculaba el ahorro con tarifa Simple, aunque tuvieran Doble o Triple.",
-        "Ahora manda la tarifa contratada, si está cargada, y las otras se muestran al lado como comparación.",
-        "Detectado contra la factura de un cliente con Triple: el reporte le mostraba un 88% más de ahorro del real.",
+        "Ya se puede cotizar una propuesta residencial conversando con Claude, desde el celular: se dictan los datos que faltan, muestra el precio final, el ahorro y las cuotas, y solo emite el PDF cuando se confirma.",
+        "En la práctica hay que dictar cinco cosas: la ciudad, cuánto paga de UTE por mes, cuántos paneles, los metros de techo y la potencia del inversor. El resto lo completa solo.",
+        "La cotización del dólar no se puede tocar desde el chat; el markup sí. Las propuestas de empresa se siguen armando desde la aplicación.",
       ],
     },
     {
-      title: "Los meses con días faltantes ahora se estiman",
+      title: "El chat contesta sobre obras y clientes instalados",
       items: [
-        "Si al medidor le faltan días pero midió al menos la mitad del período, los faltantes se completan con el promedio diario y el reporte lo aclara.",
-        "Si falta más de la mitad, no se genera el reporte: queda pendiente para cargar los datos a mano.",
-        "La generación nunca se estima: la informa el inversor, que no pierde días.",
+        '"¿Qué tengo hoy?": el embudo propio, las visitas de hoy y mañana, quiénes reclamaron, los clientes trabados hace más de dos semanas y los pendientes que vencen.',
+        "Proyectos: en qué etapa está una obra y si va en plazo, qué falta, el trámite de UTE con sus tiempos, materiales, documentos con enlace, historial y pendientes.",
+        "Experiencia Solar: buscar un generador —incluidos los cargados por planilla—, su ficha con el próximo mantenimiento y el último reporte fotovoltaico con su PDF.",
+        "Se puede comentar en una obra y registrar una llamada o un WhatsApp con un cliente instalado. Todo respeta los permisos de cada rol.",
       ],
     },
     {
-      title: "Arreglado: el botón de descargar el PDF no hacía nada",
+      title: "Se distingue si el chat toca la base real",
       items: [
-        "En la ficha del generador, \"Descargar\" no bajaba el archivo: se abría sin la sesión iniciada y el servidor lo rechazaba.",
-        "Afectaba también al ícono de descarga de cada versión. El portal del cliente no estaba afectado.",
+        "Al conectarse, el chat avisa si está apuntando a producción o a un entorno de prueba, y lo repite si se le pregunta cómo está la conexión.",
       ],
     },
     {
-      title: "El aviso diario de plantas también le llega a Gabriel",
+      title: "Arreglos en el cotizador",
       items: [
-        "El mail del monitoreo diario pasa a llegarle también a Gabriel Vera, además de a Nicolás.",
+        "El guardado automático ya no falla al abrir una propuesta nueva: antes el indicador se ponía en error hasta completar la ciudad y la cantidad de paneles.",
+        "Las propuestas armadas de noche ya no salen fechadas al día siguiente. A partir de las nueve de la noche, la fecha del PDF se adelantaba un día.",
       ],
     },
   ],
 };
+
 
 /** Versiones anteriores para mostrar en el sidebar de novedades. */
 export type OldRelease = {
@@ -66,6 +68,16 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "9.2",
+    shortDate: "12 ago",
+    highlights: [
+      "Cotizador B2B: propuestas para empresas, con su propio borrador, datos fiscales, tapa propia y una carta escrita para una empresa y no para una casa.",
+      "En las propuestas a empresas la comisión del asesor suma una parte del markup que consiga por encima del de referencia.",
+      "El ahorro de los reportes se calcula con la tarifa que tiene contratada el cliente, no siempre con Simple.",
+      "El saludo de la carta de la propuesta se escribe solo a partir del nombre del cliente.",
+    ],
+  },
   {
     version: "9.1",
     shortDate: "10 ago",

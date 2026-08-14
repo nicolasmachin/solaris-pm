@@ -133,6 +133,39 @@ auditada con `metadata.source = "mcp"` y el nombre de la herramienta.
 | `mover_etapa` | `VENTAS:EDIT` | Cambia la etapa del pipeline. |
 | `comentar_lead` | `VENTAS:COMMENT` | Deja un comentario en el historial. |
 
+### Propuestas
+
+Solo **residenciales**. El cotizador B2B no se expone: necesita razón social y
+RUT, que no son datos que se dicten de memoria, y conviene que tenga rodaje.
+
+| Herramienta | Permiso | Qué hace |
+|---|---|---|
+| `preparar_propuesta` | `VENTAS:EDIT` | Arma o corrige el borrador. Devuelve qué falta o, si está completa, precio, ahorro y cuotas. No emite nada. |
+| `publicar_propuesta` | `VENTAS:CREATE` | Emite el PDF definitivo. Exige `confirmar: true`. |
+
+**Qué hay que dictar y qué sale solo.** De los veinte campos obligatorios, los
+valores por defecto del cotizador y los datos del cliente cubren casi todos. En
+la práctica se piden cinco: **ciudad, cuánto paga de UTE por mes, cantidad de
+paneles, metros cuadrados de techo y potencia del inversor**. Los tres últimos
+de esa lista los pide el conector aunque el esquema los acepte en cero — ver
+"Reglas y decisiones".
+
+**La cotización del dólar no se expone.** Es el único parámetro que mueve el
+precio y que el asesor no debería tocar. El markup sí: es su holgura para
+cotizar más caro o más barato.
+
+**Publicar mueve el cliente.** Al emitir la primera propuesta, el lead pasa solo
+a Cotizado y se sella la fecha de envío. La herramienta lo avisa en la respuesta.
+
+### El día del asesor
+
+| Herramienta | Permiso | Qué hace |
+|---|---|---|
+| `mi_dia` | `VENTAS:VIEW` | Embudo propio, visitas de hoy y mañana, visitas que ya pasaron y siguen sin registrar, quiénes reclamaron, trabados hace 14 días o más, y pendientes que vencen. |
+
+Es la única herramienta que responde sin que haya que nombrar un cliente. Con
+`de_todo_el_equipo` muestra el pipeline completo en vez de solo el propio.
+
 ### Pendientes
 
 | Herramienta | Permiso | Qué hace |
@@ -141,6 +174,44 @@ auditada con `metadata.source = "mcp"` y el nombre de la herramienta.
 | `crear_pendiente` | autenticado | Crea uno **atado a un cliente o proyecto**, con `origin: MCP`. |
 | `completar_pendiente` | dueño o asignado | Lo marca hecho. |
 | `poner_en_espera` | dueño o asignado | Lo pasa a espera con motivo y fecha de recontacto. |
+
+### Proyectos y obra
+
+| Herramienta | Permiso | Qué hace |
+|---|---|---|
+| `buscar_proyecto` | `OPERACIONES:VIEW` | Por nombre de cliente o código. **Excluye los importados por planilla** — esos van por `buscar_generador`. |
+| `ficha_proyecto` | `OPERACIONES:VIEW` | Estado, etapa actual con el semáforo de plazo, avance, atraso, potencia, fechas, cuadrilla y resumen del trámite UTE. |
+| `detalle_etapas` | `OPERACIONES:VIEW` | Etapas y subetapas con responsable y estado. Con `solo_pendientes` muestra únicamente lo que falta. |
+| `tramite_ute` | `TRAMITES_UTE:VIEW` | Los once hitos con fecha y el reparto entre días nuestros y días esperando a UTE. |
+| `obra_y_materiales` | `OPERACIONES:VIEW` | Materiales con su estado de compra, fotos y videos. |
+| `documentos_proyecto` | `OPERACIONES:VIEW` | Documentos generados con enlace de descarga. Excluye las fotos de obra, que son cientos. |
+| `historial_proyecto` | `OPERACIONES:VIEW` | El timeline unificado: etapas, comentarios, interacciones, traspasos, tickets y encuestas. |
+| `pendientes_proyecto` | `OPERACIONES:VIEW` | Los pendientes de la obra **de todo el equipo**, no solo los propios. |
+| `comentar_proyecto` | `OPERACIONES:COMMENT` | Deja un comentario en el historial de la obra. |
+
+Se leen los modelos con los mismos servicios que usa la aplicación
+(`getDisplayStage`, `countdownForStage`, `serializeUteProcess`,
+`getClienteTimeline`) y no las rutas HTTP: dos de ellas piden `OPERACIONES:EDIT`
+para leer, y una consulta no debería exigir permiso de escritura.
+
+**El pipeline no se toca desde el chat.** No hay herramienta para completar
+subetapas ni checklists: eso dispara traspasos y avisos a otras áreas, y merece
+la pantalla.
+
+### Experiencia Solar
+
+| Herramienta | Permiso | Qué hace |
+|---|---|---|
+| `buscar_generador` | `EXPERIENCIA_CLIENTES:VIEW` | La cartera completa, **incluidos los cargados por planilla**. |
+| `ficha_generador` | `EXPERIENCIA_CLIENTES:VIEW` | Ficha 360: recorrido, trámite, último contacto, próximo mantenimiento por aniversario y el aviso de habilitación pendiente. |
+| `reporte_fv` | `EXPERIENCIA_CLIENTES:VIEW` | Último reporte mensual con autoconsumo, ahorro y retorno, más el PDF. |
+| `registrar_interaccion` | `EXPERIENCIA_CLIENTES:CREATE` | Anota una llamada, un WhatsApp, un mail o una visita. |
+
+**Por qué hay dos búsquedas de cliente instalado.** Los generadores livianos
+—los que se cargaron por planilla y no tienen obra en el sistema— están
+excluidos de la lista de proyectos. Buscar uno con `buscar_proyecto` no lo
+encuentra; `buscar_generador` sí. Las descripciones de las dos herramientas se
+apuntan mutuamente para que el modelo elija bien.
 
 ### Lo que las herramientas NO hacen
 
@@ -153,7 +224,24 @@ auditada con `metadata.source = "mcp"` y el nombre de la herramienta.
   toman solo los campos comerciales, armados a mano.
 - **`crear_pendiente` no crea huérfanos.** Sin cliente ni proyecto, pide
   precisión en vez de adivinar.
+- **`publicar_propuesta` no se llama sola.** El parámetro `confirmar` es un
+  literal `true`: sin él la llamada ni siquiera llega al servidor. La
+  descripción dice que solo se pasa después de que la persona haya visto los
+  números y los haya aprobado.
 - **Ninguna manda correos** a clientes.
+
+### La propuesta exige más que el formulario
+
+`draftDataPublishSchema` acepta `0` en la factura mensual, en los metros
+cuadrados de techo y en la potencia del inversor, porque hay borradores
+legítimos a medio llenar. Pero publicar con esos ceros produce una propuesta sin
+sentido: con la factura en cero, el ahorro calculado da infinito.
+
+Quien cotiza mirando el formulario ve el disparate; quien dicta por chat, no.
+Por eso `draftQualityIssues()` (en `draft.service.ts`) agrega esos tres
+chequeos, y las dos herramientas los aplican. Se evalúan sobre el objeto crudo y
+no después de que el esquema valide, para poder pedir todo lo que falta de una
+sola vez en lugar de en dos rondas.
 
 ### Propuestas del generador anterior
 
@@ -169,13 +257,33 @@ Las herramientas que devuelven documentos generan una URL con un token de **15
 minutos** atado al documento concreto:
 
 ```
-/mcp/descargas/proposal-version/<id>?t=<token>
-/mcp/descargas/proposal-generation/<id>?t=<token>
+/mcp/descargas/proposal-version/<id>?t=<token>      propuestas nuevas
+/mcp/descargas/proposal-generation/<id>?t=<token>   propuestas del generador viejo
+/mcp/descargas/project-file/<id>?t=<token>          documentos de proyecto y reportes
 ```
 
 El token lleva `typ: "mcp-download"` y el identificador del recurso. Sin ese
 segundo dato, el token de un PDF serviría para bajar cualquier otro conociendo
 su id. El usuario se revalida al descargar, y una versión descartada no se sirve.
+
+## Producción y desarrollo
+
+Son **dos instalaciones separadas con dos bases separadas**, y cada conector
+apunta a una URL fija: el de producción a `https://app.voltia.com.uy/mcp`, el de
+desarrollo a `http://localhost:4000/mcp`. No hay una que "cambie de entorno".
+
+El problema es que **las herramientas se llaman igual en las dos**. Con los dos
+conectores agregados, nada en la respuesta diría en cuál se está escribiendo. Por
+eso el entorno viaja en tres lugares, derivado de `NODE_ENV`:
+
+| Dónde | En producción | En desarrollo |
+|---|---|---|
+| Nombre del servidor (visible en la lista de conectores) | `voltia-pm` | `voltia-pm (desarrollo)` |
+| Instrucciones que lee el modelo | "apunta a PRODUCCIÓN: todo lo que se cree es real" | "⚠️ NO es producción, los datos son una copia" |
+| `estado_conexion` | "PRODUCCIÓN" + la URL | "DESARROLLO" + la URL + "no lo ve el equipo" |
+
+Ante la duda, `estado_conexion` responde en una línea contra qué base se está
+trabajando.
 
 ## Configuración
 

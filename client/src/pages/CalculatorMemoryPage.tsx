@@ -11,7 +11,8 @@ import type { MemoriaSingletonValue } from "../types/proposals-v2";
 // {{singleton:X}} → [X](singleton:X) para que react-markdown lo parsee como link
 // y lo interceptemos en el componente `a` (chip con el valor en vivo).
 function preprocess(md: string): string {
-  return md.replace(/\{\{singleton:(\w+)\}\}/g, "[$1](singleton:$1)");
+  // [\w.]+ y no \w+: las variables de subobjetos van con punto ("b2b.comisionBasePorcentaje").
+  return md.replace(/\{\{singleton:([\w.]+)\}\}/g, "[$1](singleton:$1)");
 }
 
 function fmtValue(v: MemoriaSingletonValue): string {

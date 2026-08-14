@@ -1352,6 +1352,7 @@ model FileAttachment {
   efpAttachments         EFPAttachment[]        @relation("EFPAttachmentFile")
   proposalGenerations    ProposalGeneration[]   @relation("ProposalAttachment")
   proposalV2Covers       ProposalDefaults[]     @relation("ProposalV2Cover")
+  proposalV2CoversEmpresa ProposalDefaults[]    @relation("ProposalV2CoverEmpresa")
   reporteFvEmisiones     ReporteFvEmision[]     @relation("ReporteFvPdf")
   projectVideos          ProjectVideo[]         @relation("ProjectVideoFile")
   deletedAt              DateTime?              @db.Timestamptz(6)
@@ -1561,6 +1562,10 @@ model SalesLead {
   clientPhone          String?
   address              String?
   stage                SalesStage           @default(NUEVO_LEAD)
+  // Residencial o empresa. Clasifica al cliente potencial y precarga el
+  // cotizador correspondiente; NO restringe: desde cualquier lead se puede
+  // abrir cualquiera de los dos cotizadores.
+  tipoCliente          ProposalVariante     @default(RESIDENCIAL)
   estimatedKwp         Decimal?             @db.Decimal(10, 2)
   estimatedBudgetUsd   Decimal?             @db.Decimal(14, 2)
   uteBillMonthlyUsd    Decimal?             @db.Decimal(10, 2)
@@ -1590,7 +1595,7 @@ model SalesLead {
   createdBy            User                 @relation("LeadCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   activities           SalesActivity[]
   proposals            ProposalGeneration[] @relation("ProposalLead")
-  proposalV2Draft      ProposalV2Draft?
+  proposalV2Drafts     ProposalV2Draft[]
   proposalV2Versions   ProposalV2Version[]
   commission           Commission?
   comments             Comment[]
@@ -3151,8 +3156,18 @@ enum ProposalV2VersionStatus {
 // proyecto. Ver docs/features/proposals-v2/FASE_E_SPEC.md.
 model ProposalV2Draft {
   id     String    @id @default(cuid())
-  leadId String    @unique
+  leadId String
   lead   SalesLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  // Qué cotizador armó este borrador. Residencial y empresa son dos cotizadores
+  // separados (dos botones en la ficha del lead) y cada uno tiene su propio
+  // borrador: se puede estar armando las dos propuestas para el mismo cliente
+  // sin que una pise a la otra. Por eso la unicidad es por el par y no por lead.
+  //
+  // La variante también viaja dentro de `data` — ahí es la que se congela en el
+  // snapshot al publicar y la que elige plantilla y fórmula de comisión; acá es
+  // la que rutea el borrador.
+  variante ProposalVariante @default(RESIDENCIAL)
 
   // Inputs editables (calculadora + template). Shape validado por Zod en el
   // borde (draftDataSchema), no en la BD.
@@ -3165,8 +3180,17 @@ model ProposalV2Draft {
   updatedById String
   updatedBy   User     @relation("ProposalV2DraftUpdatedBy", fields: [updatedById], references: [id])
 
+  @@unique([leadId, variante])
   @@index([leadId])
   @@map("proposal_v2_drafts")
+}
+
+// Variante de propuesta comercial. RESIDENCIAL es la de siempre; EMPRESA es el
+// cotizador B2B, con su propio documento, sus propios defaults y una comisión
+// del asesor que crece con el markup negociado.
+enum ProposalVariante {
+  RESIDENCIAL
+  EMPRESA
 }
 
 // Versión publicada: inmutable en contenido, numerada por lead, soft-deleteable.
@@ -3389,6 +3413,14 @@ model ProposalDefaults {
 
   // Coordenadas overlay para texto sobre la tapa
   coverOverlay Json
+
+  // Tapa propia de las propuestas a empresas. Van como columnas y no dentro del
+  // JSON `data` porque ahí cada clave es un {value, asesorCanOverride} y un
+  // attachmentId no encaja en ese contrato. Si están vacías, el cotizador B2B
+  // usa la tapa residencial (fallback), así funciona antes de que se cargue.
+  coverEmpresaPdfAttachmentId String?
+  coverEmpresaPdfAttachment   FileAttachment? @relation("ProposalV2CoverEmpresa", fields: [coverEmpresaPdfAttachmentId], references: [id])
+  coverEmpresaOverlay         Json?
 
   updatedAt   DateTime @updatedAt @db.Timestamptz(6)
   updatedById String?

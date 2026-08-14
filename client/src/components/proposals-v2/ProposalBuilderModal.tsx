@@ -5,7 +5,8 @@ import { Bug } from "lucide-react";
 
 import { getLead } from "../../api/leads.api";
 import { proposalsV2BuilderApi } from "../../api/proposals-v2-builder.api";
-import { buildInitialDraftData, draftEquals, mergeDraft, validateDraft } from "../../lib/proposalDraft";
+import { draftEquals, validateDraft } from "../../lib/proposalDraft";
+import type { ProposalVariante } from "../../types/proposals-v2";
 import { useDraftAutosave } from "../../hooks/useDraftAutosave";
 import { useDraftPreview } from "../../hooks/useDraftPreview";
 import { useProposalDefaults } from "../../hooks/useProposalDefaults";
@@ -29,47 +30,57 @@ function errMsg(e: unknown): string | undefined {
 
 // Constructor de propuestas v2 como modal grande (rework post-Fase G). La lista de
 // versiones ya NO vive acá: se ve en la sección de propuestas del panel del lead.
-export function ProposalBuilderModal({ leadId, onClose }: { leadId: string; onClose: () => void }) {
+export function ProposalBuilderModal({
+  leadId,
+  onClose,
+  variante = "RESIDENCIAL",
+}: {
+  leadId: string;
+  onClose: () => void;
+  // Qué cotizador abrió el usuario. Residencial y B2B son dos botones distintos
+  // con borradores distintos, así que la variante viaja en todas las llamadas.
+  variante?: ProposalVariante;
+}) {
+  const esEmpresa = variante === "EMPRESA";
   const leadQuery = useQuery({
     queryKey: ["lead-detail", leadId],
     queryFn: () => getLead(leadId),
     enabled: Boolean(leadId),
   });
   const defaultsQuery = useProposalDefaults();
+  // El borrador se pide con init: si no existe lo crea el servidor con la
+  // precarga, y siempre vuelve con el `data` completo. Por eso acá ya no hay
+  // que armar la base ni mergear.
   const draftQuery = useQuery({
-    queryKey: ["proposal-draft", leadId],
-    queryFn: () => proposalsV2BuilderApi.getDraft(leadId),
+    queryKey: ["proposal-draft", leadId, variante],
+    queryFn: () => proposalsV2BuilderApi.initDraft(leadId, variante),
     enabled: Boolean(leadId),
   });
 
   const [data, setData] = useState<ProposalDraftData | null>(null);
-  const [draftExisted, setDraftExisted] = useState(false);
   const initialized = useRef(false);
 
   useEffect(() => {
     if (initialized.current) return;
-    if (leadQuery.isLoading || defaultsQuery.isLoading || draftQuery.isLoading) return;
-    const lead = leadQuery.data;
-    const defaults = defaultsQuery.data;
-    if (!lead || !defaults?.data) return;
-    const base = buildInitialDraftData(defaults.data, lead);
-    setData(mergeDraft(base, draftQuery.data?.data));
-    setDraftExisted(Boolean(draftQuery.data));
+    if (draftQuery.isLoading || !draftQuery.data) return;
+    setData(draftQuery.data.data as ProposalDraftData);
     initialized.current = true;
-  }, [
-    leadQuery.data,
-    leadQuery.isLoading,
-    defaultsQuery.data,
-    defaultsQuery.isLoading,
-    draftQuery.data,
-    draftQuery.isLoading,
-  ]);
+  }, [draftQuery.data, draftQuery.isLoading]);
 
-  const autosave = useDraftAutosave({ leadId, data, enabled: data !== null, draftExisted });
+  // El borrador ya existe en la base apenas se abre el cotizador, así que el
+  // autosave nunca tiene que crearlo y el preview está disponible de entrada.
+  const autosave = useDraftAutosave({
+    leadId,
+    data,
+    enabled: data !== null,
+    draftExisted: true,
+    variante,
+  });
   const preview = useDraftPreview({
     leadId,
     savedTick: autosave.savedTick,
-    enabled: data !== null && (draftExisted || autosave.savedTick > 0),
+    enabled: data !== null,
+    variante,
   });
 
   const versionsQuery = useQuery({
@@ -109,7 +120,7 @@ export function ProposalBuilderModal({ leadId, onClose }: { leadId: string; onCl
     !latestVersionQuery.data || !(data && draftEquals(data, latestVersionQuery.data.snapshot.data));
 
   const publishMut = useMutation({
-    mutationFn: () => proposalsV2BuilderApi.publishVersion(leadId),
+    mutationFn: () => proposalsV2BuilderApi.publishVersion(leadId, variante),
     onSuccess: () => {
       toast.success(`Versión V${nextVersion} publicada`);
       qc.invalidateQueries({ queryKey: ["proposal-versions", leadId] });
@@ -138,6 +149,7 @@ export function ProposalBuilderModal({ leadId, onClose }: { leadId: string; onCl
     savedTick: autosave.savedTick,
     enabled: Boolean(leadId),
     autosaveError: autosaveBlocked,
+    variante,
   });
 
   const loading = leadQuery.isLoading || defaultsQuery.isLoading || draftQuery.isLoading || !data;
@@ -160,8 +172,13 @@ export function ProposalBuilderModal({ leadId, onClose }: { leadId: string; onCl
         <div>
           {/* Sub-header sticky (dentro del modal) */}
           <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-[var(--color-border)] bg-[var(--color-bg-app)]/95 px-6 py-2.5 backdrop-blur">
-            <span className="min-w-0 truncate text-sm font-semibold text-[var(--color-text-primary)]">
-              Propuesta · {lead.clientName}
+            <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-[var(--color-text-primary)]">
+              <span className="min-w-0 truncate">Propuesta · {lead.clientName}</span>
+              {esEmpresa ? (
+                <span className="shrink-0 rounded-full bg-indigo-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-indigo-300">
+                  B2B
+                </span>
+              ) : null}
             </span>
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
               <AutosaveIndicator
@@ -197,7 +214,14 @@ export function ProposalBuilderModal({ leadId, onClose }: { leadId: string; onCl
 
           <div className="flex items-start gap-6 px-6 py-6">
             <div className="min-w-0 flex-1">
-              <ProposalForm data={data} onChange={setData} defaults={defaultsQuery.data?.data ?? {}} errors={errors} />
+              <ProposalForm
+                data={data}
+                onChange={setData}
+                defaults={defaultsQuery.data?.data ?? {}}
+                errors={errors}
+                leadId={leadId}
+                savedTick={autosave.savedTick}
+              />
             </div>
             <div
               className="sticky top-14 hidden shrink-0 md:block md:w-[38%] xl:w-[45%]"
@@ -239,6 +263,7 @@ export function ProposalBuilderModal({ leadId, onClose }: { leadId: string; onCl
               open={debugOpen}
               onClose={() => setDebugOpen(false)}
               leadId={leadId}
+              variante={variante}
               leadName={lead.clientName}
               savedTick={autosave.savedTick}
               autosaveError={autosaveBlocked}

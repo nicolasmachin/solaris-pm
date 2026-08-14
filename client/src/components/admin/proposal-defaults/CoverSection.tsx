@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 
 import { proposalsV2DefaultsApi } from "../../../api/proposals-v2.api";
-import type { CoverOverlay, CoverOverlayText } from "../../../types/proposals-v2";
+import type { CoverOverlay, ProposalVariante, CoverOverlayText } from "../../../types/proposals-v2";
 import { Button } from "../../ui/Button";
 
 const FIELDS: { key: keyof CoverOverlay; label: string }[] = [
@@ -25,6 +25,7 @@ export function CoverSection({
   onChangeOverlay,
   onSaveConfig,
   savingConfig,
+  variante = "RESIDENCIAL",
 }: {
   coverOverlay: CoverOverlay | null;
   coverPdfAttachmentId: string | null;
@@ -33,6 +34,9 @@ export function CoverSection({
   onChangeOverlay: (next: CoverOverlay) => void;
   onSaveConfig: () => void;
   savingConfig: boolean;
+  // Qué tapa administra este bloque. El componente se monta dos veces: una por
+  // variante.
+  variante?: ProposalVariante;
 }) {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -50,7 +54,7 @@ export function CoverSection({
     let cancelled = false;
     let objectUrl: string | null = null;
     proposalsV2DefaultsApi
-      .getCoverBlob()
+      .getCoverBlob(variante)
       .then((blob) => {
         if (cancelled) return;
         objectUrl = URL.createObjectURL(blob);
@@ -63,7 +67,7 @@ export function CoverSection({
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [coverPdfAttachmentId]);
+  }, [coverPdfAttachmentId, variante]);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -71,7 +75,7 @@ export function CoverSection({
     if (!file) return;
     setUploading(true);
     try {
-      await proposalsV2DefaultsApi.uploadCover(file);
+      await proposalsV2DefaultsApi.uploadCover(file, variante);
       toast.success("Tapa subida");
       await qc.invalidateQueries({ queryKey: ["proposal-defaults"] });
     } catch (err) {
@@ -86,7 +90,7 @@ export function CoverSection({
     if (!coverOverlay) return;
     setPreviewing(true);
     try {
-      const blob = await proposalsV2DefaultsApi.previewCover(coverOverlay);
+      const blob = await proposalsV2DefaultsApi.previewCover(coverOverlay, variante);
       const url = URL.createObjectURL(blob);
       window.open(url, "_blank");
       // El tab nuevo retiene el blob; lo revocamos diferido para no cortarlo.

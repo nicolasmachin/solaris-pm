@@ -4,9 +4,25 @@ import { fileURLToPath } from "node:url";
 
 import Handlebars from "handlebars";
 
-import type { ProposalCalculated, ProposalData } from "./types.js";
+import type { ProposalCalculated, ProposalData, ProposalVariante } from "./types.js";
 
-const TEMPLATES_DIR = fileURLToPath(new URL("../../templates/proposal-v2", import.meta.url));
+const TEMPLATES_ROOT = fileURLToPath(new URL("../../templates", import.meta.url));
+
+// Una carpeta de plantillas por variante. La de empresa contiene SOLO los
+// archivos que difieren; todo lo que no esté ahí se toma de la residencial.
+const VARIANT_DIRS: Record<ProposalVariante, string> = {
+  RESIDENCIAL: "proposal-v2",
+  EMPRESA: "proposal-v2-empresa",
+};
+const variantDir = (v: ProposalVariante) => path.join(TEMPLATES_ROOT, VARIANT_DIRS[v]);
+
+// Resuelve un archivo con fallback a la carpeta residencial: así los estilos,
+// los assets y los partials compartidos no se duplican.
+function resolveFile(variante: ProposalVariante, ...segments: string[]): string {
+  const own = path.join(variantDir(variante), ...segments);
+  if (fs.existsSync(own)) return own;
+  return path.join(variantDir("RESIDENCIAL"), ...segments);
+}
 
 // ── Formato uruguayo (miles con ".", decimal con ",") — manual, sin depender de ICU.
 function fmtNum(value: number, decimals = 0): string {
@@ -45,37 +61,75 @@ Handlebars.registerHelper("tarifaLabel", (tarifa: string): string => {
   };
   return map[tarifa] ?? tarifa;
 });
+// Texto según variante: `{{t "tu hogar" "su empresa"}}`. Para las frases
+// sueltas que solo cambian de tratamiento (tuteo vs. institucional) es mucho
+// más legible que un {{#if}} por oración, y evita forkear el partial entero
+// por un título.
+Handlebars.registerHelper("t", function (
+  residencial: string,
+  empresa: string,
+  options: Handlebars.HelperOptions,
+) {
+  const esEmpresa = (options?.data?.root as { esEmpresa?: boolean })?.esEmpresa === true;
+  return esEmpresa ? empresa : residencial;
+});
+
+// Resuelve el nombre namespaceado de un partial según la variante del
+// contexto: `{{> (p "carta")}}` carga EMPRESA/carta o RESIDENCIAL/carta. Con
+// esto el layout es UNO SOLO para las dos variantes y la carpeta de empresa
+// solo lleva los partials que cambian.
+Handlebars.registerHelper("p", function (name: string, options: Handlebars.HelperOptions) {
+  const variante = (options?.data?.root as { variante?: string })?.variante ?? "RESIDENCIAL";
+  return `${variante}/${name}`;
+});
 Handlebars.registerHelper("dateLong", (iso: string) => {
   const [y, m, d] = String(iso).slice(0, 10).split("-").map((p) => Number.parseInt(p, 10));
   return `${d} de ${MESES_LARGOS[(m ?? 1) - 1] ?? ""} de ${y}`;
 });
 
-let initialized = false;
-function init() {
-  if (initialized) return;
-  const partialsDir = path.join(TEMPLATES_DIR, "partials");
-  if (fs.existsSync(partialsDir)) {
+// El registro de partials de Handlebars es GLOBAL al proceso: si las dos
+// carpetas registraran su `carta.hbs` con el nombre plano, una pisaría a la
+// otra según el orden de lectura. Por eso cada partial se registra como
+// "<variante>/<nombre>" y los layouts los invocan así.
+const initialized = new Set<ProposalVariante>();
+function init(variante: ProposalVariante) {
+  if (initialized.has(variante)) return;
+  // Primero la base (para que la variante herede todo), después los propios
+  // de la variante, que pisan al homónimo.
+  const dirs =
+    variante === "RESIDENCIAL"
+      ? [variantDir("RESIDENCIAL")]
+      : [variantDir("RESIDENCIAL"), variantDir(variante)];
+  for (const dir of dirs) {
+    const partialsDir = path.join(dir, "partials");
+    if (!fs.existsSync(partialsDir)) continue;
     for (const file of fs.readdirSync(partialsDir)) {
       if (!file.endsWith(".hbs")) continue;
       const name = file.replace(/\.hbs$/, "");
-      Handlebars.registerPartial(name, fs.readFileSync(path.join(partialsDir, file), "utf8"));
+      Handlebars.registerPartial(
+        `${variante}/${name}`,
+        fs.readFileSync(path.join(partialsDir, file), "utf8"),
+      );
     }
   }
-  initialized = true;
+  initialized.add(variante);
 }
 
-function readStyles(): string {
-  return fs.readFileSync(path.join(TEMPLATES_DIR, "styles", "base.css"), "utf8");
+function readStyles(variante: ProposalVariante): string {
+  return fs.readFileSync(resolveFile(variante, "styles", "base.css"), "utf8");
 }
 
 // Logos oficiales de Voltia embebidos como data URL (PDF self-contained).
+// Cache por variante + archivo: si la carpeta de empresa trae un logo propio
+// con el mismo nombre, cachear solo por nombre serviría el equivocado.
 const logoCache = new Map<string, string>();
-function readLogo(file: string): string {
-  const cached = logoCache.get(file);
+function readLogo(variante: ProposalVariante, file: string): string {
+  const key = `${variante}:${file}`;
+  const cached = logoCache.get(key);
   if (cached) return cached;
-  const buf = fs.readFileSync(path.join(TEMPLATES_DIR, "assets", file));
+  const buf = fs.readFileSync(resolveFile(variante, "assets", file));
   const url = `data:image/png;base64,${buf.toString("base64")}`;
-  logoCache.set(file, url);
+  logoCache.set(key, url);
   return url;
 }
 
@@ -133,14 +187,19 @@ export interface RenderContext {
 }
 
 function render(templateFile: string, ctx: RenderContext): string {
-  init();
-  const source = fs.readFileSync(path.join(TEMPLATES_DIR, templateFile), "utf8");
+  // Los snapshots publicados antes del cotizador B2B no traen variante: se
+  // renderizan como residenciales, que es lo que eran.
+  const variante = ctx.data.variante ?? "RESIDENCIAL";
+  init(variante);
+  const source = fs.readFileSync(resolveFile(variante, templateFile), "utf8");
   const compiled = Handlebars.compile(source);
   return compiled({
     ...ctx,
-    styles: readStyles(),
-    logoMarkBlue: readLogo("voltia-mark-blue.png"),
-    logoStackedWhite: readLogo("voltia-stacked-white.png"),
+    variante,
+    esEmpresa: variante === "EMPRESA",
+    styles: readStyles(variante),
+    logoMarkBlue: readLogo(variante, "voltia-mark-blue.png"),
+    logoStackedWhite: readLogo(variante, "voltia-stacked-white.png"),
     genChart: buildGenChart(ctx.calculated.generacionMensualKwh),
     roi: buildRoiChart(ctx.calculated.retornoInversion16Anios),
   });

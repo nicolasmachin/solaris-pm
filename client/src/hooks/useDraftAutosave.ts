@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { proposalsV2BuilderApi } from "../api/proposals-v2-builder.api";
-import type { ProposalDraftData } from "../types/proposals-v2";
+import type { ProposalDraftData, ProposalVariante } from "../types/proposals-v2";
 
 export type AutosaveStatus = "idle" | "saving" | "saved" | "error" | "error-final";
 
@@ -20,8 +20,10 @@ export function useDraftAutosave(params: {
   // true = el draft ya existía al cargar (no re-guardar el estado inicial);
   // false = no existía (el primer autosave lo crea con los defaults).
   draftExisted: boolean;
+  // Qué cotizador: residencial y B2B tienen borradores separados.
+  variante: ProposalVariante;
 }) {
-  const { leadId, data, enabled, draftExisted } = params;
+  const { leadId, data, enabled, draftExisted, variante } = params;
 
   const [status, setStatus] = useState<AutosaveStatus>("idle");
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
@@ -55,7 +57,7 @@ export function useDraftAutosave(params: {
     inFlight.current = true;
     setStatus("saving");
     try {
-      await proposalsV2BuilderApi.putDraft(leadId, latest.current);
+      await proposalsV2BuilderApi.putDraft(leadId, latest.current, variante);
       savedJson.current = json;
       retries.current = 0;
       setLastSavedAt(Date.now());

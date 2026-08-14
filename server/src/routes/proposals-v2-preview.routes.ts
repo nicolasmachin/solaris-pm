@@ -25,6 +25,7 @@ import {
   type ProposalCalculated,
   type ProposalData,
 } from "../services/proposal/index.js";
+import { draftDataPublishSchema } from "../services/proposal/schemas/draft.schema.js";
 import { badRequest, unauthorized } from "../utils/errors.js";
 
 function ensureUser(request: FastifyRequest) {
@@ -32,60 +33,11 @@ function ensureUser(request: FastifyRequest) {
   return request.user;
 }
 
-const dataSchema = z
-  .object({
-    cliente: z
-      .object({
-        nombre: z.string().min(1, "Falta el nombre del cliente"),
-        dirigidoA: z.string(),
-        ciudad: z.string(),
-      })
-      .strict(),
-    factura: z
-      .object({
-        pagaMensualPesos: z.number().min(0),
-        tarifa: z.enum(["Simple", "Doble", "Triple"]),
-        suministro: z.enum(["monofásico", "trifásico"]),
-        potenciaContratadaKw: z.number().min(0),
-      })
-      .strict(),
-    techo: z
-      .object({
-        descripcion: z.string(),
-        tamanoM2: z.number().min(0),
-      })
-      .strict(),
-    cotizacion: z
-      .object({
-        distanciaInstalacionKm: z.number().min(0),
-        cotizacionDolar: z.number().gt(0),
-        // Acepta decimal (0.2) o porcentaje (20); la calc lo interpreta por magnitud.
-        markupPorcentaje: z.number().min(0).max(100),
-      })
-      .strict(),
-    sistema: z
-      .object({
-        cantidadPaneles: z.number().int().min(1),
-        potenciaPanelW: z.number().min(100),
-        marcaPaneles: z.string(),
-        potenciaInversorKw: z.number().min(0),
-        marcaInversor: z.string(),
-      })
-      .strict(),
-    fecha: z.string().min(1),
-    itemsAdicionales: z.array(
-      z
-        .object({
-          id: z.string(),
-          nombre: z.string(),
-          descripcion: z.string(),
-          precioSinIvaUsd: z.number().min(0),
-          potenciaW: z.number().min(0).optional(),
-        })
-        .strict(),
-    ),
-  })
-  .strict();
+// El `data` de estos endpoints es el MISMO del borrador: se importa el schema
+// canónico en vez de repetirlo. La copia inline que vivía acá se había quedado
+// atrás (le faltaban plazoEntrega, tipoMontaje y notas), y con la variante B2B
+// habría que mantener una cuarta divergencia más.
+const dataSchema = draftDataPublishSchema;
 
 const bodySchema = z
   .object({

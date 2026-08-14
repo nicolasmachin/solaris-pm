@@ -1,72 +1,13 @@
-// Helpers puros del constructor de propuestas v2: armar el draft inicial desde
-// los defaults del singleton + el lead, y mergear el draft guardado (parcial)
-// sobre esa base.
+// Helpers del constructor de propuestas v2 que viven en el cliente: la
+// validación de obligatorios (para pintar los campos en rojo mientras se
+// escribe) y la comparación de borradores.
+//
+// La PRECARGA y el MERGE ya no están acá: viven en el servidor
+// (`server/src/services/proposal/initial-draft.ts`) y llegan resueltos por
+// `POST /draft/init`. Se movieron para que el conector MCP pudiera cotizar sin
+// duplicar la lógica de qué valor trae cada campo.
 
-import { saludoPara } from "./salutation";
-import type { LeadDetail } from "../types/leads.types";
-import {
-  isFlaggedValue,
-  type NestedFlagged,
-  type ProposalDefaultsData,
-  type ProposalDraftData,
-} from "../types/proposals-v2";
-
-function numDefault(data: ProposalDefaultsData, key: string, fallback: number): number {
-  const v = data[key];
-  if (v && isFlaggedValue(v) && typeof v.value === "number") return v.value;
-  return fallback;
-}
-
-function strDefault(data: ProposalDefaultsData, key: string, fallback: string): string {
-  const v = data[key];
-  if (v && isFlaggedValue(v) && typeof v.value === "string") return v.value;
-  return fallback;
-}
-
-// Plazo de entrega por defecto, derivado de los días del singleton (coordinación
-// + instalación). Es sólo la precarga; el asesor lo edita.
-function plazoDefault(data: ProposalDefaultsData): string {
-  const plazos = data.plazos && !isFlaggedValue(data.plazos) ? (data.plazos as NestedFlagged) : {};
-  const dias = (k: string) => {
-    const v = plazos[k]?.value;
-    return typeof v === "number" ? v : 0;
-  };
-  const semanas = Math.max(1, Math.round((dias("diasCoordinacion") + dias("diasInstalacion")) / 7));
-  return `${semanas} a ${semanas + 1} semanas`;
-}
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-export function buildInitialDraftData(
-  defaults: ProposalDefaultsData,
-  lead: Pick<LeadDetail, "clientName" | "roofType" | "notes">,
-): ProposalDraftData {
-  return {
-    cliente: { nombre: lead.clientName, dirigidoA: saludoPara(lead.clientName), ciudad: "" },
-    factura: { pagaMensualPesos: 0, tarifa: "Simple", suministro: "monofásico", potenciaContratadaKw: 0 },
-    techo: { descripcion: lead.roofType ?? "", tamanoM2: 0 },
-    cotizacion: {
-      distanciaInstalacionKm: numDefault(defaults, "distanciaInstalacionKmDefault", 0),
-      cotizacionDolar: numDefault(defaults, "cotizacionDolarDefault", 40),
-      markupPorcentaje: numDefault(defaults, "markupPorcentajeDefault", 15),
-      plazoEntrega: plazoDefault(defaults),
-    },
-    sistema: {
-      cantidadPaneles: 0,
-      potenciaPanelW: numDefault(defaults, "potenciaPanelWDefault", 0),
-      marcaPaneles: strDefault(defaults, "marcaPanelesDefault", ""),
-      potenciaInversorKw: 0,
-      marcaInversor: strDefault(defaults, "marcaInversorDefault", ""),
-      tipoMontaje: lead.roofType ?? "",
-    },
-    fecha: todayIso(),
-    notas: lead.notes ?? "",
-    itemsAdicionales: [],
-  };
-}
-
+import type { ProposalDraftData } from "../types/proposals-v2";
 // Validación de obligatorios (espeja draftDataPublishSchema del backend — no hay
 // zod en el cliente). El backend re-valida en el POST (doble red). Sólo lista lo
 // que efectivamente rompe el schema strict (0 es válido donde el schema usa
@@ -81,6 +22,9 @@ export interface MissingField {
 const REQUIRED: (MissingField & { ok: (d: ProposalDraftData) => boolean })[] = [
   { path: "cliente.nombre", section: "cliente", sectionLabel: "Cliente", label: "Nombre", ok: (d) => d.cliente.nombre.trim().length > 0 },
   { path: "cliente.ciudad", section: "cliente", sectionLabel: "Cliente", label: "Ciudad", ok: (d) => d.cliente.ciudad.trim().length > 0 },
+  // Solo en el cotizador B2B (espeja el superRefine de draftDataPublishSchema).
+  { path: "empresa.razonSocial", section: "empresa", sectionLabel: "Datos de la empresa", label: "Razón social", ok: (d) => d.variante !== "EMPRESA" || d.empresa.razonSocial.trim().length > 0 },
+  { path: "empresa.rut", section: "empresa", sectionLabel: "Datos de la empresa", label: "RUT", ok: (d) => d.variante !== "EMPRESA" || d.empresa.rut.trim().length > 0 },
   { path: "fecha", section: "cliente", sectionLabel: "Cliente", label: "Fecha de la propuesta", ok: (d) => d.fecha.trim().length > 0 },
   { path: "sistema.cantidadPaneles", section: "tecnicos", sectionLabel: "Datos técnicos", label: "Cantidad de paneles", ok: (d) => d.sistema.cantidadPaneles >= 1 },
   { path: "sistema.potenciaPanelW", section: "tecnicos", sectionLabel: "Datos técnicos", label: "Potencia por panel (W)", ok: (d) => d.sistema.potenciaPanelW >= 100 },
@@ -112,26 +56,4 @@ export function draftEquals(a: ProposalDraftData, b: ProposalDraftData): boolean
         : val,
     );
   return stable(a) === stable(b);
-}
-
-// Mergea el draft guardado (parcial, lenient) sobre la base inicial.
-export function mergeDraft(
-  base: ProposalDraftData,
-  stored: Partial<ProposalDraftData> | undefined | null,
-): ProposalDraftData {
-  if (!stored) return base;
-  const cliente = { ...base.cliente, ...stored.cliente };
-  // El saludo se deriva siempre del nombre, incluso en drafts viejos que lo
-  // traen tipeado a mano: es dato calculado, no un campo más del formulario.
-  cliente.dirigidoA = saludoPara(cliente.nombre);
-  return {
-    cliente,
-    factura: { ...base.factura, ...stored.factura },
-    techo: { ...base.techo, ...stored.techo },
-    cotizacion: { ...base.cotizacion, ...stored.cotizacion },
-    sistema: { ...base.sistema, ...stored.sistema },
-    fecha: stored.fecha ?? base.fecha,
-    notas: stored.notas ?? base.notas,
-    itemsAdicionales: stored.itemsAdicionales ?? base.itemsAdicionales,
-  };
 }

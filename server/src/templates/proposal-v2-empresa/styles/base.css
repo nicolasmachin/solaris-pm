@@ -1,0 +1,86 @@
+/* Estilos de la variante EMPRESA (B2B).
+   Mantiene el scaffolding A4 de la residencial y define la identidad propia del
+   documento corporativo: paleta más institucional (azul profundo + grafito),
+   con verde reservado para las cifras de beneficio.
+
+   El diseño de cada página sigue viviendo en estilos inline; acá van el
+   scaffolding, los tokens de color como referencia y las clases que usan los
+   partials rediseñados de esta variante. */
+@page { size: A4; margin: 0; }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: #fff;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  color: #1c2333;
+  -webkit-font-smoothing: antialiased;
+}
+
+.pg { page-break-after: always; break-after: page; }
+.pg:last-child { page-break-after: auto; break-after: auto; }
+
+* { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+/* ── Paleta B2B ────────────────────────────────────────────────────────────
+   azul profundo  #0b2c6b   (institucional, reemplaza al #1836B2 residencial)
+   grafito        #1c2333   (texto principal)
+   gris medio     #5c6479   (texto secundario)
+   línea          #dfe3ec
+   fondo suave    #f5f7fa
+   verde cifra    #0e7a52   (solo para ahorro/retorno)                        */
+
+/* Banda superior de página: reemplaza al eyebrow suelto de la residencial. */
+.b2b-band {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid #0b2c6b;
+  padding-bottom: 9px;
+  margin-bottom: 22px;
+}
+.b2b-band .kicker {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: #0b2c6b;
+}
+.b2b-band .doc {
+  font-size: 9.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #98a0b3;
+}
+.b2b-h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: #1c2333;
+}
+/* Ficha de cifras: la lectura rápida que busca un comité de compras. */
+.b2b-kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.b2b-kpi {
+  border: 1px solid #dfe3ec;
+  border-left: 3px solid #0b2c6b;
+  border-radius: 3px;
+  padding: 13px 16px;
+  background: #fff;
+}
+.b2b-kpi .k {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #8a93a8;
+}
+.b2b-kpi .v {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: #1c2333;
+  margin-top: 6px;
+}
+.b2b-kpi .v.green { color: #0e7a52; }
+.b2b-kpi .d { font-size: 10.5px; color: #5c6479; margin-top: 4px; }

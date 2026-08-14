@@ -27,7 +27,9 @@ export const snapshotCoverOverlaySchema = z
   .strict();
 
 export const SNAPSHOT_VERSION = 1;
-export const TEMPLATE_VERSION = "fase-C-post-D";
+// Informativo (nadie lo parsea): sirve para saber con qué generación de
+// plantillas se emitió un PDF. "b2b" = ya existen las dos variantes.
+export const TEMPLATE_VERSION = "fase-C-post-D-b2b";
 
 export const snapshotSchema = z
   .object({

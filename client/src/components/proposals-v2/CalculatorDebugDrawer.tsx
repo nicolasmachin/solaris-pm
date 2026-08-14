@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { X } from "lucide-react";
 
 import { useDraftCalc } from "../../hooks/useDraftCalc";
+import type { ProposalVariante } from "../../types/proposals-v2";
 import { useLockBodyScroll } from "../../hooks/useLockBodyScroll";
 import type { CalcDebugRow, CalcUnidad } from "../../types/proposals-v2";
 import { Button } from "../ui/Button";
@@ -72,6 +73,7 @@ export function CalculatorDebugDrawer({
   open,
   onClose,
   leadId,
+  variante,
   leadName,
   savedTick,
   autosaveError,
@@ -79,11 +81,12 @@ export function CalculatorDebugDrawer({
   open: boolean;
   onClose: () => void;
   leadId: string;
+  variante: ProposalVariante;
   leadName: string;
   savedTick: number;
   autosaveError: boolean;
 }) {
-  const calc = useDraftCalc({ leadId, savedTick, enabled: open, autosaveError });
+  const calc = useDraftCalc({ leadId, savedTick, enabled: open, autosaveError, variante });
 
   useLockBodyScroll(open);
 

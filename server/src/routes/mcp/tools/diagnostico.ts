@@ -8,11 +8,15 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Action, Module } from "@prisma/client";
 
 import { hasPermission } from "../../../middleware/authorize.middleware.js";
+import { esProduccion, issuerUrl } from "../config.js";
 import type { McpUser } from "../context.js";
 
 /** Módulos que le importan al conector, para el resumen de permisos. */
 const MODULES_DE_INTERES: Array<{ module: Module; actions: Action[] }> = [
   { module: Module.VENTAS, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMMENT] },
+  { module: Module.OPERACIONES, actions: [Action.VIEW, Action.COMMENT] },
+  { module: Module.TRAMITES_UTE, actions: [Action.VIEW] },
+  { module: Module.EXPERIENCIA_CLIENTES, actions: [Action.VIEW, Action.CREATE] },
 ];
 
 export function registerDiagnosticTools(server: McpServer, user: McpUser) {
@@ -27,22 +31,27 @@ export function registerDiagnosticTools(server: McpServer, user: McpUser) {
       annotations: { readOnlyHint: true },
     },
     async () => {
-      const permisos: string[] = [];
+      // Agrupado por módulo: con cuatro módulos, la lista plana de pares
+      // módulo:acción se vuelve ilegible.
+      const porModulo: string[] = [];
       for (const { module, actions } of MODULES_DE_INTERES) {
+        const tiene: string[] = [];
         for (const action of actions) {
-          if (await hasPermission(user.role, module, action)) {
-            permisos.push(`${module}:${action}`);
-          }
+          if (await hasPermission(user.role, module, action)) tiene.push(action);
         }
+        porModulo.push(`${module}: ${tiene.length > 0 ? tiene.join(", ") : "sin acceso"}`);
       }
 
       const lineas = [
-        "Conexión con Voltia PM activa.",
+        esProduccion()
+          ? `Conexión con Voltia PM activa — PRODUCCIÓN (${issuerUrl()}).`
+          : `Conexión con Voltia PM activa — entorno de DESARROLLO (${issuerUrl()}). ` +
+            `No es la base real: lo que se cargue acá no lo ve el equipo.`,
         `Usuario: ${user.name} (${user.email})`,
         `Rol: ${user.role}`,
-        permisos.length > 0
-          ? `Permisos de ventas: ${permisos.join(", ")}`
-          : "Sin permisos de ventas. Las herramientas de ventas van a fallar.",
+        "",
+        "Permisos:",
+        ...porModulo.map((l) => `- ${l}`),
       ];
 
       return { content: [{ type: "text" as const, text: lineas.join("\n") }] };

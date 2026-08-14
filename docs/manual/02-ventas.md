@@ -1,8 +1,9 @@
 # 02 · Ventas
 
-> **Capítulo parcial.** Están escritas las secciones "Fechas del proceso" y
-> "Cotizador de propuestas: precargas y saludo de la carta". El resto del módulo
-> funciona en producción pero todavía no está documentado.
+> **Capítulo parcial.** Están escritas las secciones "Fechas del proceso",
+> "Cotizador de propuestas: precargas y saludo de la carta" y "Cotizador B2B:
+> propuestas a empresas". El resto del módulo funciona en producción pero
+> todavía no está documentado.
 
 Leads, pipeline comercial, reclamos, propuestas, conversión a proyecto y comisiones.
 
@@ -157,6 +158,161 @@ minúsculas → se capitaliza ("SOFÍA" → "Estimada Sofía,").
   `salutation.ts`, no desde la interfaz.
 - Un nombre con apellido primero ("Vanoli Daniel") saluda al apellido: la función
   siempre toma la primera palabra.
+
+---
+
+# Cotizador B2B: propuestas a empresas
+
+## Para qué existe
+
+Una propuesta a una empresa no es la misma que a una casa. El documento
+residencial tutea, habla de "tu hogar" y menciona el 12% de IRPF —un impuesto de
+persona física que a una empresa no le aplica—, y no tiene dónde poner razón
+social ni RUT. Además, en B2B cada negociación es particular: el asesor discute
+el precio caso por caso, y con la comisión fija del 4% le daba casi lo mismo
+cerrar con markup 20% que con 30%.
+
+## Cómo se usa
+
+En la ficha del cliente potencial hay **dos botones**: "Armar propuesta" (el de
+siempre) y **"Cotizador B2B"**. Abren el mismo constructor con **borradores
+separados**: se puede tener a la vez una cotización residencial y una de empresa
+sobre el mismo lead, sin que una pise a la otra.
+
+El lead se clasifica con **Tipo de cliente: Residencial / Empresa (B2B)**. Eso
+**precarga y resalta**, pero no restringe: desde cualquier lead se puede abrir
+cualquiera de los dos cotizadores.
+
+En el cotizador B2B aparecen, además de lo habitual:
+
+- Un chip **B2B** en el encabezado.
+- La sección **"Datos de la empresa"** (razón social, RUT, contacto y cargo).
+  Razón social y RUT son obligatorios para publicar; el resto es opcional.
+- El markup arranca en el valor propio de B2B, no en el residencial.
+- Un panel plegable **"Tu comisión"** debajo del markup, con el desglose en vivo.
+
+## Cómo funciona
+
+### La variante
+
+`variante: RESIDENCIAL | EMPRESA` vive en **dos lugares con roles distintos**:
+como **columna** de `ProposalV2Draft` (rutea el borrador; la unicidad es
+`@@unique([leadId, variante])`) y dentro de **`data`** (viaja al snapshot al
+publicar, y de ahí la leen el calculador y las plantillas).
+
+En el schema Zod es `.default("RESIDENCIAL")` **a propósito**: los snapshots
+publicados antes de esta función no la traen, y si fuera obligatoria todos
+quedarían no-regenerables. Lo mismo con `empresa`, que es opcional y solo se
+exige (vía `superRefine`) cuando la variante es EMPRESA.
+
+Las rutas de borrador aceptan `?variante=EMPRESA`; sin el parámetro asumen
+residencial, así que cualquier cliente anterior sigue funcionando.
+
+### La comisión variable
+
+En `calculator.ts` (§4 Pricing):
+
+```
+markup excedente = max(0, markup% − referencia%) × (costo + mano de obra)   ← 0 si no es EMPRESA
+comisión         = base% × (costo + mano de obra + markup)
+                 + tajada% × markup excedente                                ← 0 si no es EMPRESA
+```
+
+Los tres parámetros viven en el subobjeto `b2b` del singleton
+(`markupReferenciaPorcentaje` **en porcentaje**, `comisionBasePorcentaje` y
+`comisionExcedentePorcentaje` **en fracción** — la mezcla de unidades es la del
+resto del archivo) y se editan en **Admin → Defaults de propuestas → Propuestas a
+empresas (B2B)**.
+
+`resolveDefaults` los aplana a `b2bMarkupReferenciaPorcentaje`,
+`b2bComisionBasePorcentaje` y `b2bComisionExcedentePorcentaje`, **con fallback a
+los valores semilla** en vez de tirar como el resto de las claves: un ambiente
+sin el seed corrido tumbaría también las propuestas residenciales, que son el
+grueso de la operación.
+
+La comisión sigue siendo un **costo dentro del precio**: la paga el cliente y la
+ganancia de la empresa sigue siendo exactamente el markup (`gananciaFinal ≡
+markupUsdSinIva`, con test que lo fija).
+
+El cálculo emite cuatro campos nuevos —`markupExcedenteUsdSinIva`,
+`comisionVentasBaseUsdSinIva`, `comisionVentasExcedenteUsdSinIva` y
+`comisionVentasPctEfectivo`— que alimentan el panel del cotizador
+(`GET /draft/comision`, gateado por **VENTAS:EDIT**, no VIEW: la comisión no la
+tiene que ver cualquiera que pueda mirar Ventas) y el congelamiento de la
+comisión al ganar el lead.
+
+### El documento
+
+`server/src/templates/proposal-v2-empresa/` contiene **solo los partials que
+cambian de fondo** (`carta.hbs` y `como-funciona.hbs`); el resto se hereda de la
+carpeta residencial por fallback. Las frases sueltas se resuelven con el helper
+`{{t "tu inversión" "la inversión"}}`, y el layout (`full.hbs`) es **uno solo**
+para las dos variantes gracias al partial dinámico `{{> (p "carta")}}`.
+
+Los partials se registran namespaceados (`EMPRESA/carta`) porque **el registro de
+Handlebars es global al proceso**: con nombres planos, dos `carta.hbs`
+competirían y ganaría el último leído.
+
+Sobre el IRPF: el documento B2B **no afirma ninguna tasa**. Dice "con los
+descuentos impositivos que correspondan según la situación fiscal de la empresa"
+porque no está verificado qué régimen aplica. Es una decisión consciente, no un
+olvido.
+
+### La tapa
+
+`ProposalDefaults` tiene un segundo par de columnas
+(`coverEmpresaPdfAttachmentId`, `coverEmpresaOverlay`). Si están vacías, el
+cotizador B2B **usa la tapa residencial**, así funciona desde el día uno. En la
+tapa B2B se imprime la **razón social**, no el nombre del contacto.
+
+`publishVersion` snapshotea la tapa **ya resuelta** por variante, así que
+regenerar el PDF años después no depende de qué tapa esté cargada en ese momento.
+
+`coverOverlay.ts` → `acomodarTexto()`: las coordenadas se configuran una vez
+pensando en un nombre de persona, y una razón social larga se salía de la
+página. El orden es **dejarlo → encogerlo un poco → partirlo en dos líneas →
+recortarlo con "…"**. Recortar es el último recurso.
+
+## Permisos
+
+| Acción | Permiso |
+|---|---|
+| Abrir cualquiera de los dos cotizadores, ver borrador y preview | `VENTAS:VIEW` |
+| Guardar el borrador y ver el desglose de comisión | `VENTAS:EDIT` |
+| Publicar una versión | `VENTAS:CREATE` |
+| Editar los parámetros B2B y subir la tapa de empresa | ADMIN (chequeo por rol dentro del handler) |
+
+**No se agregó ningún permiso nuevo**: la variante no es un eje de la matriz.
+Quien puede cotizar, puede cotizar B2B.
+
+## Reglas y decisiones
+
+- **Dos cotizadores, no un selector adentro.** Es lo que se pidió y además evita
+  que un mismo borrador cambie de naturaleza a mitad de camino.
+- **Un lead puede tener las dos propuestas.** Las versiones publicadas comparten
+  la numeración del lead (V1 residencial y V2 de empresa conviven en la lista) y
+  cada una congela su variante.
+- **La lógica de comisión no se duplica en el front.** El panel del cotizador
+  pide el desglose al servidor; si cambian los parámetros, el panel los refleja
+  sin tocar código.
+- **El rediseño gráfico del documento B2B es una etapa aparte**, todavía
+  pendiente. Esta fase corrigió lo que estaba *mal* (tratamiento, IRPF, datos
+  fiscales) manteniendo la identidad visual actual; la carpeta propia de
+  plantillas está lista para rediseñarse sin tocar la residencial.
+
+## Casos borde
+
+- **Una versión publicada antes de julio no se puede regenerar**
+  (`VERSION_SNAPSHOT_OUTDATED`), pero no por la variante: a esos snapshots les
+  faltan `plazoEntrega` y `tipoMontaje`, obligatorios desde antes. Deuda previa.
+- **El saludo de la carta** en B2B sale "Estimados," cuando la razón social trae
+  un sufijo societario (S.A., SRL, cooperativa…), por la misma función que
+  resuelve el saludo residencial.
+- **Cambiar los parámetros B2B no afecta a las propuestas ya publicadas**: cada
+  una congeló su comisión y su porcentaje efectivo en el snapshot.
+- Al abrir el constructor sobre una versión publicada **antes** de este cambio,
+  el aviso "sin cambios" del modal de publicación puede decir que hay cambios
+  (el snapshot viejo no tiene `variante`). Es cosmético: no afecta cálculo ni PDF.
 
 ---
 

@@ -90,5 +90,28 @@ export function resolveDefaults(rawDefaults: unknown): ProposalDefaultsResolved 
     bbva24mFactorCuota: num("bbva24mFactorCuota"),
     bbva36mFactorCuota: num("bbva36mFactorCuota"),
     bbva60mFactorCuota: num("bbva60mFactorCuota"),
+
+    // Comisión variable de las propuestas a empresas. La salida va PLANA a
+    // propósito: `snapshot.defaults` está tipado como record de
+    // number|string|number[], así que un objeto anidado acá rompería la
+    // publicación de todas las propuestas, no solo las B2B.
+    b2bMarkupReferenciaPorcentaje: numIn("b2b", "markupReferenciaPorcentaje", 20),
+    b2bComisionBasePorcentaje: numIn("b2b", "comisionBasePorcentaje", 0.04),
+    b2bComisionExcedentePorcentaje: numIn("b2b", "comisionExcedentePorcentaje", 0.3),
   };
+
+  // Variable dentro de un subobjeto del singleton (como `plazos` o `b2b`).
+  //
+  // A diferencia de `num`, degrada al valor semilla en vez de tirar: si el seed
+  // todavía no corrió en un ambiente, un error acá tumbaría también las
+  // propuestas residenciales, que son las que sostienen la operación. Las
+  // claves planas preexistentes mantienen el comportamiento estricto.
+  function numIn(group: string, key: string, fallback: number): number {
+    const node = raw[group];
+    if (typeof node !== "object" || node === null) return fallback;
+    const entry = (node as Record<string, unknown>)[key];
+    if (typeof entry !== "object" || entry === null || !("value" in entry)) return fallback;
+    const value = (entry as { value: unknown }).value;
+    return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+  }
 }

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>{{{styles}}}</style>
+</head>
+<body>
+{{!-- Documento completo · variante EMPRESA (sin tapa: se concatena aparte).
+     Difiere del residencial en el orden: arranca con el resumen ejecutivo, que
+     es la hoja que circula en un comité de compras, y recién después va la
+     carta. El resto de las páginas es el mismo cuerpo técnico. --}}
+{{> (p "resumen-ejecutivo")}}
+{{> (p "carta")}}
+{{> (p "como-funciona")}}
+{{> (p "servicios")}}
+{{> (p "garantias")}}
+{{> (p "plazo-entrega")}}
+{{> (p "generacion")}}
+{{> (p "cotizacion")}}
+{{> (p "financiacion")}}
+{{> (p "analisis-economico")}}
+{{> (p "tu-retorno")}}
+{{> (p "contratapa")}}
+</body>
+</html>

@@ -111,6 +111,21 @@ const DEFAULT_DATA: Record<string, Flagged | Record<string, Flagged>> = {
   bbva36mFactorCuota: { value: 1.036, asesorCanOverride: false },
   bbva60mFactorCuota: { value: 1.071, asesorCanOverride: false },
 
+  // ── Propuestas a empresas (B2B) ──
+  // Comisión variable: el asesor cobra la base de siempre más una tajada del
+  // markup que consiga por encima de la referencia. Solo aplica a las
+  // propuestas con variante EMPRESA; las residenciales siguen con
+  // comisionVendedorPorcentaje plano.
+  //
+  // Unidades mezcladas, igual que en el resto del archivo: los markups van en
+  // PORCENTAJE (20 = 20%) y las comisiones en FRACCIÓN (0.04 = 4%).
+  b2b: {
+    markupPorcentajeDefault: { value: 20, asesorCanOverride: true }, // precarga del cotizador B2B
+    markupReferenciaPorcentaje: { value: 20, asesorCanOverride: false },
+    comisionBasePorcentaje: { value: 0.04, asesorCanOverride: false },
+    comisionExcedentePorcentaje: { value: 0.3, asesorCanOverride: false },
+  },
+
   // ── Plazos de entrega (días + textos) ──
   plazos: {
     diasPagoInicial: { value: 0, asesorCanOverride: false },

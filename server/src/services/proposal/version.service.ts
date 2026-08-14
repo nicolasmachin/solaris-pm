@@ -4,7 +4,13 @@
 import { randomUUID } from "node:crypto";
 import { promises as fsPromises } from "node:fs";
 
-import { AuditAction, AuditEntityType, Prisma, ProposalV2VersionStatus } from "@prisma/client";
+import {
+  AuditAction,
+  AuditEntityType,
+  Prisma,
+  ProposalVariante,
+  ProposalV2VersionStatus,
+} from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { createAuditEntry } from "../audit.service.js";
@@ -115,7 +121,10 @@ async function renderPdfsFromSnapshot(
     const coverBytes = await loadCoverBytesById(snapshot.coverPdfAttachmentId);
     if (coverBytes) {
       const overlaid = await applyCoverOverlay(coverBytes, snapshot.coverOverlay, {
-        clientName: snapshot.data.cliente.nombre,
+        clientName:
+          snapshot.data.variante === "EMPRESA" && snapshot.data.empresa?.razonSocial
+            ? snapshot.data.empresa.razonSocial
+            : snapshot.data.cliente.nombre,
         city: snapshot.data.cliente.ciudad,
         date: (snapshot.calc as { fechaTextoLargo?: string }).fechaTextoLargo ?? "",
       });
@@ -130,8 +139,14 @@ async function renderPdfsFromSnapshot(
 // Genera el PDF full del borrador actual con el mismo pipeline que la
 // publicación (defaults + calc + tapa + firma del asesor logueado). No cachea.
 // 404 si no hay draft; 400 (ZodError) si el draft no valida.
-export async function generateDraftPreviewPdf(leadId: string, userId: string): Promise<Buffer> {
-  const draft = await prisma.proposalV2Draft.findUnique({ where: { leadId } });
+export async function generateDraftPreviewPdf(
+  leadId: string,
+  userId: string,
+  variante: ProposalVariante = ProposalVariante.RESIDENCIAL,
+): Promise<Buffer> {
+  const draft = await prisma.proposalV2Draft.findUnique({
+    where: { leadId_variante: { leadId, variante } },
+  });
   if (!draft) throw notFound("DRAFT_NOT_FOUND", "El lead no tiene borrador.");
   const data = draftDataPublishSchema.parse(draft.data);
 
@@ -148,8 +163,14 @@ export async function generateDraftPreviewPdf(leadId: string, userId: string): P
 
 // ─── Publicar ────────────────────────────────────────────────────────────────
 
-export async function publishVersion(leadId: string, userId: string) {
-  const draft = await prisma.proposalV2Draft.findUnique({ where: { leadId } });
+export async function publishVersion(
+  leadId: string,
+  userId: string,
+  variante: ProposalVariante = ProposalVariante.RESIDENCIAL,
+) {
+  const draft = await prisma.proposalV2Draft.findUnique({
+    where: { leadId_variante: { leadId, variante } },
+  });
   if (!draft) {
     throw badRequest("DRAFT_NOT_FOUND", "El lead no tiene borrador de propuesta para publicar.");
   }
@@ -174,11 +195,20 @@ export async function publishVersion(leadId: string, userId: string) {
     : undefined;
   const renderAdvisor = buildAdvisor(rawAdvisor ?? {});
 
+  // Se snapshotea la tapa YA RESUELTA por variante: así el snapshot sigue
+  // significando "la tapa que se usó" y regenerar el PDF años después no
+  // depende de qué tapa esté cargada en ese momento.
+  const usaTapaEmpresa =
+    data.variante === "EMPRESA" && Boolean(defaultsRow.coverEmpresaPdfAttachmentId);
   const snapshot = buildSnapshot({
     data,
     defaults,
-    coverOverlay: defaultsRow.coverOverlay,
-    coverPdfAttachmentId: defaultsRow.coverPdfAttachmentId,
+    coverOverlay: usaTapaEmpresa
+      ? (defaultsRow.coverEmpresaOverlay ?? defaultsRow.coverOverlay)
+      : defaultsRow.coverOverlay,
+    coverPdfAttachmentId: usaTapaEmpresa
+      ? defaultsRow.coverEmpresaPdfAttachmentId
+      : defaultsRow.coverPdfAttachmentId,
     calc,
     renderedAt: new Date().toISOString(),
     advisor: snapshotAdvisor,

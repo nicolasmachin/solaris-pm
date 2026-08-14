@@ -1,3 +1,5 @@
+import type { ProposalVariante } from "./proposals-v2";
+
 import type { Comment, ProjectListItem } from "./api.types";
 
 export type SalesStage =
@@ -111,6 +113,8 @@ export interface LeadDetail {
   clientPhone: string | null;
   address: string | null;
   stage: SalesStage;
+  /** Residencial o empresa: clasifica y precarga el cotizador que corresponde. */
+  tipoCliente: ProposalVariante;
   estimatedKwp: number | null;
   estimatedBudgetUsd: number | null;
   uteBillMonthlyUsd: number | null;

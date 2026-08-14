@@ -97,6 +97,32 @@ El markup se expresa en porcentaje (por ejemplo 20 = 20%). Gonzalez con 20%:
 comisión del vendedor ({{singleton:comisionVendedorPorcentaje}}) y la de BBVA
 ({{singleton:comisionBbvaPorcentaje}}). Gonzalez: **USD 390** cada una.
 
+**Comisión del vendedor en propuestas a empresas (B2B).** En el cotizador B2B la
+comisión deja de ser un porcentaje fijo: se le suma una tajada del markup que el
+asesor consiga por encima de un piso.
+
+```
+comisión = {{singleton:b2b.comisionBasePorcentaje}} × (costo + mano de obra + markup)
+         + {{singleton:b2b.comisionExcedentePorcentaje}} × markup excedente
+```
+
+donde el **markup excedente** es lo que supera el markup de referencia
+({{singleton:b2b.markupReferenciaPorcentaje}}), medido en dólares sobre (costo +
+mano de obra). Por debajo de la referencia el excedente es cero y la comisión es
+la de siempre.
+
+Ejemplo con la base de Gonzalez (costo + mano de obra = USD 8.125) y markup 30%:
+markup excedente = 10 puntos × 8.125 = **USD 812**; comisión = 4% × 10.562 +
+30% × 812 = 422 + 244 = **USD 666** (6,31% efectivo, contra 422 del esquema
+plano). Las propuestas residenciales no cambian.
+
+La comisión sigue siendo un **costo dentro del precio**, no un descuento sobre la
+ganancia: el excedente lo paga el cliente y la ganancia de la empresa sigue
+siendo el markup completo (ver §8).
+
+El porcentaje que se congela al ganar el lead es el **efectivo** de esa
+propuesta, no el del singleton.
+
 **Subtotal sin IVA** = costo total + mano de obra + markup + las dos comisiones.
 Gonzalez: **USD 10.529,62**.
 

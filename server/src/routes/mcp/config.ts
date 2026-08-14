@@ -85,3 +85,21 @@ export function isEmailAllowed(email: string): boolean {
 export function isMcpEnabled(): boolean {
   return env.mcpAllowedEmails.trim().length > 0;
 }
+
+/**
+ * A qué instalación está apuntando este servidor.
+ *
+ * No es cosmético. Producción y desarrollo son dos instalaciones con dos bases
+ * distintas, y las herramientas se llaman igual en las dos: sin esta marca, ni
+ * el modelo ni la persona pueden saber si un "creá el lead" fue a parar a la
+ * base real o a una copia. Viaja en el nombre del servidor (que se ve en la
+ * lista de conectores), en las instrucciones y en `estado_conexion`.
+ */
+export function esProduccion(): boolean {
+  return env.nodeEnv === "production";
+}
+
+/** Etiqueta corta del entorno, para mostrarle a una persona. */
+export function entornoLabel(): string {
+  return esProduccion() ? "producción" : "desarrollo";
+}

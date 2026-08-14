@@ -17,7 +17,8 @@ import {
   interpretarMarkup,
   pmt,
 } from "./calculator.js";
-import type { ProposalData, ProposalDefaultsResolved } from "./types.js";
+import { defaultsFixture } from "./test-fixtures.js";
+import type { ProposalData } from "./types.js";
 
 const input: ProposalData = {
   cliente: {
@@ -46,54 +47,8 @@ const input: ProposalData = {
 };
 
 // Defaults corregidos (espejan el singleton tras grant-fix-gonzalez-defaults).
-const defaults: ProposalDefaultsResolved = {
-  precioPanelUsdSinIva: 100,
-  precioEstructuraUsdSinIva: 90,
-  precioElectricaMonoUsdSinIva: 492,
-  precioElectricaTriUsdSinIva: 750,
-  // Neutro (×1 en todos los tramos): mantiene el espejo exacto del Excel Gonzalez.
-  // El escalonado real [1,2,3,4,5,8,10] se testea aparte más abajo.
-  multiplicadorElectricaEscalones: [1, 1, 1, 1, 1, 1, 1],
-  precioInversorMonoSub7Usd: 1000,
-  precioInversorMonoSup7Usd: 1300,
-  precioInversorTriSub11Usd: 1750,
-  precioInversorTri12Usd: 2000,
-  precioInversorTri21Usd: 2200,
-  precioInversorTri31Usd: 2800,
-  precioInversorTri51Usd: 5000,
-  precioInversorTriMas: 8000,
-  precioMeterMonoUsd: 110,
-  precioMeterTriUsd: 220,
-  rendimientoAnualKwhPorKwp: 1479,
-  metrosCuadradosPorPanel: 3,
-  factoresGeneracionMensual: [0.105, 0.095, 0.092, 0.08, 0.07, 0.062, 0.066, 0.074, 0.082, 0.09, 0.092, 0.092],
-  costoFijoTotalPesosMes: 300833.68,
-  negociosPromedioMes: 4,
-  costoFletePorKm: 60,
-  costoNaftaTotalPesos: 700,
-  costoAlojamientoPesos: 3500,
-  costoViaticosPesos: 3000,
-  costoOtrosPesos: 2000,
-  tarifaCatAPorHora: 814,
-  tarifaCatCPorHora: 947,
-  tarifaCatDPorHora: 543,
-  horasManoDeObraPorInstalacion: 10,
-  comisionVendedorPorcentaje: 0.04,
-  comisionBbvaPorcentaje: 0.04,
-  factorAhorroSimple: 1.05,
-  factorAhorroDoble: 0.88,
-  factorAhorroTriple: 0.88,
-  bbva24mInteresUI: 0,
-  bbva36mInteresUI: 0,
-  bbva60mInteresUI: 0.05,
-  cotizacionUI: 6.33,
-  bbva24mGastosAdminCapital: 0.025,
-  bbva36mGastosAdminCapital: 0.045,
-  bbva60mGastosAdminCapital: 0.015,
-  bbva24mFactorCuota: 1.023,
-  bbva36mFactorCuota: 1.036,
-  bbva60mFactorCuota: 1.071,
-};
+const defaults = defaultsFixture;
+
 
 const r = calculate(input, defaults);
 
@@ -216,4 +171,85 @@ test("estructural: editar factorAhorroTriple lo usa la calculadora (no hardcode)
   approx(conTarifa("Triple", defsTriple90).ahorroMensualPesos, 6490 * 0.9, 0.01, "ahorro Triple 0.90");
   // y no afecta a Doble
   approx(conTarifa("Doble", defsTriple90).ahorroMensualPesos, 6490 * 0.88, 0.01, "Doble intacto");
+});
+
+// ─── Comisión variable en propuestas a empresas (B2B) ───────────────────────
+//
+// Fórmula: comisión = base% × (costo + MO + markup) + tajada% × markup excedente,
+// donde el excedente es lo que supera el markup de referencia. Con los defaults
+// de arriba: referencia 20%, base 4%, tajada 30%.
+//
+// Base del caso Gonzalez: costoTotalSinIva 6972.71 + manoDeObra 1152 = 8124.71.
+const BASE_COSTO_MO = 8124.71;
+
+const conVariante = (variante: "RESIDENCIAL" | "EMPRESA", markupPorcentaje: number) =>
+  calculate(
+    { ...input, variante, cotizacion: { ...input.cotizacion, markupPorcentaje } },
+    defaults,
+  );
+
+test("B2B en el markup de referencia: comisión idéntica a la residencial", () => {
+  const empresa = conVariante("EMPRESA", 20);
+  const residencial = conVariante("RESIDENCIAL", 20);
+  approx(empresa.markupExcedenteUsdSinIva, 0, 1e-9, "excedente en la referencia");
+  approx(empresa.comisionVentasUsdSinIva, residencial.comisionVentasUsdSinIva, 1e-9, "comisión igual");
+  approx(empresa.comisionVentasUsdSinIva, 389.99, 0.5, "comisión B2B @20%");
+  approx(empresa.comisionVentasPctEfectivo, 0.04, 1e-9, "pct efectivo = base");
+});
+
+test("B2B con markup 30%: la comisión suma la tajada del excedente", () => {
+  const r30 = conVariante("EMPRESA", 30);
+  // excedente = (30% − 20%) × 8124.71 = 812.47
+  approx(r30.markupExcedenteUsdSinIva, 812.47, 0.5, "markupExcedente");
+  // base = 4% × (8124.71 + 2437.41) = 422.48 ; extra = 30% × 812.47 = 243.74
+  approx(r30.comisionVentasBaseUsdSinIva, 422.48, 0.5, "comisión base");
+  approx(r30.comisionVentasExcedenteUsdSinIva, 243.74, 0.5, "comisión excedente");
+  approx(r30.comisionVentasUsdSinIva, 666.22, 0.5, "comisión total");
+  approx(r30.comisionVentasPctEfectivo, 0.0631, 0.0005, "pct efectivo");
+  // La misma propuesta como residencial cobra solo la parte porcentual.
+  approx(conVariante("RESIDENCIAL", 30).comisionVentasUsdSinIva, 422.48, 0.5, "residencial @30%");
+});
+
+test("B2B por debajo de la referencia: sin excedente ni comisión negativa", () => {
+  const r10 = conVariante("EMPRESA", 10);
+  approx(r10.markupExcedenteUsdSinIva, 0, 1e-9, "excedente clampeado a 0");
+  approx(r10.comisionVentasExcedenteUsdSinIva, 0, 1e-9, "sin tajada");
+  approx(r10.comisionVentasUsdSinIva, r10.comisionVentasBaseUsdSinIva, 1e-9, "solo la base");
+});
+
+test("la variante no contamina: residencial con markup alto sigue en el % plano", () => {
+  const r40 = conVariante("RESIDENCIAL", 40);
+  approx(r40.markupExcedenteUsdSinIva, 0, 1e-9, "sin excedente en residencial");
+  approx(
+    r40.comisionVentasUsdSinIva,
+    (BASE_COSTO_MO + r40.markupUsdSinIva) * defaults.comisionVendedorPorcentaje,
+    0.01,
+    "comisión = 4% plano",
+  );
+});
+
+test("sin variante (snapshots viejos) se comporta como residencial", () => {
+  const sinVariante = calculate({ ...input, cotizacion: { ...input.cotizacion, markupPorcentaje: 30 } }, defaults);
+  approx(sinVariante.comisionVentasUsdSinIva, conVariante("RESIDENCIAL", 30).comisionVentasUsdSinIva, 1e-9, "= residencial");
+});
+
+test("el desglose de comisión suma el total, y el % efectivo lo reconstruye", () => {
+  for (const [variante, markup] of [["EMPRESA", 26], ["EMPRESA", 20], ["RESIDENCIAL", 26]] as const) {
+    const c = conVariante(variante, markup);
+    approx(
+      c.comisionVentasBaseUsdSinIva + c.comisionVentasExcedenteUsdSinIva,
+      c.comisionVentasUsdSinIva,
+      1e-9,
+      `desglose ${variante} @${markup}%`,
+    );
+    const baseComision = c.costoTotalSinIva + c.manoDeObraUsdSinIva + c.markupUsdSinIva;
+    approx(c.comisionVentasPctEfectivo * baseComision, c.comisionVentasUsdSinIva, 1e-6, `pct efectivo ${variante} @${markup}%`);
+  }
+});
+
+test("invariante: la ganancia de la empresa sigue siendo el markup, sin importar la comisión", () => {
+  for (const [variante, markup] of [["EMPRESA", 35], ["EMPRESA", 20], ["RESIDENCIAL", 35], ["RESIDENCIAL", 15]] as const) {
+    const c = conVariante(variante, markup);
+    approx(c.gananciaFinal, c.markupUsdSinIva, 0.01, `gananciaFinal ≡ markup (${variante} @${markup}%)`);
+  }
 });

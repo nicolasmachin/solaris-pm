@@ -4,8 +4,22 @@
 // Mirror de draftDataPublishSchema (schemas/draft.schema.ts) — mantener en
 // sincronía. dirigidoA opcional; tipoMontaje/plazoEntrega/notas se agregaron en
 // Fase F.
+export type ProposalVariante = "RESIDENCIAL" | "EMPRESA";
+
 export interface ProposalData {
+  // Qué propuesta es. Opcional a propósito: los snapshots publicados antes de
+  // la variante B2B no la traen y tienen que seguir regenerándose como
+  // residenciales (el schema Zod inyecta el default al parsearlos).
+  variante?: ProposalVariante;
   cliente: { nombre: string; dirigidoA?: string; ciudad: string };
+  // Datos fiscales del cliente empresa. Obligatorios al publicar una propuesta
+  // EMPRESA (lo valida draftDataPublishSchema), ausentes en las residenciales.
+  empresa?: {
+    razonSocial: string;
+    rut: string;
+    contactoNombre?: string;
+    contactoCargo?: string;
+  };
   factura: {
     pagaMensualPesos: number;
     tarifa: "Simple" | "Doble" | "Triple";
@@ -60,7 +74,17 @@ export interface ProposalCalculated {
   // Pricing
   manoDeObraUsdSinIva: number;
   markupUsdSinIva: number;
+  // Markup por encima de la referencia B2B, en USD. Siempre 0 en residencial.
+  markupExcedenteUsdSinIva: number;
+  // Desglose de la comisión del asesor: la parte porcentual de siempre y, solo
+  // en B2B, la tajada del markup excedente. Su suma es comisionVentasUsdSinIva.
+  comisionVentasBaseUsdSinIva: number;
+  comisionVentasExcedenteUsdSinIva: number;
   comisionVentasUsdSinIva: number;
+  // % que representa la comisión sobre su base, como fracción. En residencial
+  // coincide con defaults.comisionVendedorPorcentaje; en B2B sube con el markup.
+  // Es el que se congela en Commission.porcentaje al ganar el lead.
+  comisionVentasPctEfectivo: number;
   comisionBbvaUsdSinIva: number;
   subtotalSinIva: number;
   iva: number;
@@ -155,6 +179,18 @@ export interface ProposalDefaultsResolved {
   // Comisiones
   comisionVendedorPorcentaje: number;
   comisionBbvaPorcentaje: number;
+
+  // Comisión variable de las propuestas a empresas (grupo `b2b` del singleton,
+  // aplanado acá). El asesor cobra la comisión base de siempre más una tajada
+  // del markup que consiga por encima de la referencia. Solo se usan cuando
+  // data.variante === "EMPRESA".
+  //
+  // OJO con las unidades, que son las del resto del archivo y no coinciden
+  // entre sí: la referencia va en PORCENTAJE (20 = 20%, como markupPorcentaje)
+  // y las dos comisiones en FRACCIÓN (0.04 = 4%, como comisionVendedorPorcentaje).
+  b2bMarkupReferenciaPorcentaje: number;
+  b2bComisionBasePorcentaje: number;
+  b2bComisionExcedentePorcentaje: number;
 
   // Factor de ahorro por tarifa (potenciaTotalW × factor = ahorro mensual $)
   factorAhorroSimple: number;

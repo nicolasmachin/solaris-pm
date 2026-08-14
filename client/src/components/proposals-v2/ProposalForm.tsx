@@ -1,4 +1,5 @@
 import { Button } from "../ui/Button";
+import { ComisionB2BPanel } from "./ComisionB2BPanel";
 import { saludoPara } from "../../lib/salutation";
 import { NumberField, SelectField, TextAreaField, TextField } from "./fields";
 import {
@@ -21,18 +22,27 @@ export function ProposalForm({
   onChange,
   defaults,
   errors,
+  leadId,
+  savedTick,
 }: {
   data: ProposalDraftData;
   onChange: (next: ProposalDraftData) => void;
   defaults: ProposalDefaultsData;
   errors: Record<string, string>;
+  // Para el explicativo de comisión del cotizador B2B, que lee el desglose del
+  // servidor y se refresca con cada autosave confirmado.
+  leadId: string;
+  savedTick: number;
 }) {
+  const esEmpresa = data.variante === "EMPRESA";
   // El saludo de la carta se deriva del nombre; no es un campo editable.
   const setCliente = (p: Partial<ProposalDraftData["cliente"]>) => {
     const cliente = { ...data.cliente, ...p };
     if (p.nombre !== undefined) cliente.dirigidoA = saludoPara(cliente.nombre);
     onChange({ ...data, cliente });
   };
+  const setEmpresa = (p: Partial<ProposalDraftData["empresa"]>) =>
+    onChange({ ...data, empresa: { ...data.empresa, ...p } });
   const setFactura = (p: Partial<ProposalDraftData["factura"]>) => onChange({ ...data, factura: { ...data.factura, ...p } });
   const setTecho = (p: Partial<ProposalDraftData["techo"]>) => onChange({ ...data, techo: { ...data.techo, ...p } });
   const setCotiz = (p: Partial<ProposalDraftData["cotizacion"]>) => onChange({ ...data, cotizacion: { ...data.cotizacion, ...p } });
@@ -77,6 +87,19 @@ export function ProposalForm({
         </div>
       </section>
 
+      {/* 1.b · Datos de la empresa (solo cotizador B2B) */}
+      {esEmpresa ? (
+        <section id="seccion-empresa" className="scroll-mt-28">
+          <h2 className={H2}>Datos de la empresa</h2>
+          <div className={GRID}>
+            <TextField label="Razón social" value={data.empresa.razonSocial} onChange={(v) => setEmpresa({ razonSocial: v })} error={errors["empresa.razonSocial"]} />
+            <TextField label="RUT" value={data.empresa.rut} onChange={(v) => setEmpresa({ rut: v })} placeholder="21 0012 3456 78" error={errors["empresa.rut"]} />
+            <TextField label="Contacto (opcional)" value={data.empresa.contactoNombre} onChange={(v) => setEmpresa({ contactoNombre: v })} placeholder="Nombre de quien recibe la propuesta" />
+            <TextField label="Cargo (opcional)" value={data.empresa.contactoCargo} onChange={(v) => setEmpresa({ contactoCargo: v })} placeholder="Gerente de operaciones" />
+          </div>
+        </section>
+      ) : null}
+
       {/* 2 · Datos técnicos (incluye factura/consumo) */}
       <section id="seccion-tecnicos" className="scroll-mt-28">
         <h2 className={H2}>Datos técnicos del sistema</h2>
@@ -116,6 +139,7 @@ export function ProposalForm({
           <TextField label="Plazo de entrega" value={data.cotizacion.plazoEntrega} onChange={(v) => setCotiz({ plazoEntrega: v })} placeholder="6 a 8 semanas" error={errors["cotizacion.plazoEntrega"]} />
         </div>
         <p className="mt-2 text-[11px] text-[var(--color-text-muted)]">El precio final se calcula automáticamente a partir de estos datos.</p>
+        {esEmpresa ? <ComisionB2BPanel leadId={leadId} savedTick={savedTick} /> : null}
       </section>
 
       {/* 4 · Ítems adicionales (Variante B) */}

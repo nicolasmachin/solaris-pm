@@ -2,6 +2,8 @@
 // del constructor. Cálculo en el server (VENTAS:VIEW), a diferencia del drawer de
 // debug que es admin-only. Ver docs/features/proposals-v2/TANDA_1_SPEC.md §3/§7.
 
+import { ProposalVariante } from "@prisma/client";
+
 import { prisma } from "../../lib/prisma.js";
 import { calculate } from "./calculator.js";
 import { resolveDefaults } from "./resolveDefaults.js";
@@ -81,8 +83,13 @@ export function computeViability(input: {
 // Carga el borrador del lead y devuelve los indicadores. El espacio se saca de
 // los campos crudos (funciona con borrador parcial); el ahorro requiere que el
 // borrador valide strict para correr la calculadora (si no, queda en null).
-export async function computeDraftViability(leadId: string): Promise<ViabilityResult> {
-  const draft = await prisma.proposalV2Draft.findUnique({ where: { leadId } });
+export async function computeDraftViability(
+  leadId: string,
+  variante: ProposalVariante = ProposalVariante.RESIDENCIAL,
+): Promise<ViabilityResult> {
+  const draft = await prisma.proposalV2Draft.findUnique({
+    where: { leadId_variante: { leadId, variante } },
+  });
   const raw = (draft?.data ?? {}) as {
     sistema?: { cantidadPaneles?: unknown; potenciaPanelW?: unknown };
     techo?: { tamanoM2?: unknown };

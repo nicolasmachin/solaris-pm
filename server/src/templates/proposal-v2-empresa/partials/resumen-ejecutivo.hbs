@@ -1,0 +1,127 @@
+{{!-- Página exclusiva de la variante EMPRESA. No tiene gemela en la carpeta
+     residencial: existe porque quien decide una compra corporativa suele leer
+     una sola hoja antes de pasarle el documento al área técnica, y quiere ver
+     inversión, ahorro y repago juntos, sin recorrer 11 páginas. --}}
+<div class="pg" style="width:794px; height:1123px; background:#fff; position:relative; overflow:hidden; padding:54px 56px; display:flex; flex-direction:column;">
+
+  <div class="b2b-band">
+    <span class="kicker">Resumen ejecutivo</span>
+    <span class="doc">Propuesta comercial · {{dateLong data.fecha}}</span>
+  </div>
+
+  <h2 class="b2b-h1">{{#if data.empresa.razonSocial}}{{data.empresa.razonSocial}}{{else}}{{data.cliente.nombre}}{{/if}}</h2>
+  <p style="margin:8px 0 0; font-size:12.5px; line-height:1.6; color:#5c6479; max-width:620px;">
+    Sistema solar fotovoltaico de {{number calculated.potenciaTotalKwp 2}} kWp conectado a la red,
+    dimensionado sobre el consumo relevado en {{data.cliente.ciudad}}. Llave en mano: ingeniería,
+    equipos, instalación, y gestión de la habilitación ante UTE.
+  </p>
+
+  <div class="b2b-kpis" style="margin-top:26px;">
+    <div class="b2b-kpi">
+      <div class="k">Inversión total (IVA incluido)</div>
+      <div class="v">{{currency calculated.totalFinalConIva}}</div>
+      <div class="d">{{number calculated.usdPorWatt 2}} USD por watt instalado</div>
+    </div>
+    <div class="b2b-kpi">
+      <div class="k">Ahorro mensual estimado</div>
+      <div class="v green">{{pesos calculated.ahorroMensualPesos}}</div>
+      <div class="d">{{number (mult calculated.porcentajeAhorro 100)}}% de la factura actual · promedio anual</div>
+    </div>
+    <div class="b2b-kpi">
+      <div class="k">Repago de la inversión</div>
+      <div class="v">{{number calculated.priAnios 1}} años</div>
+      <div class="d">Retorno neto acumulado a 15 años: {{currency roi.finalMilUsd}}</div>
+    </div>
+    <div class="b2b-kpi">
+      <div class="k">Generación anual</div>
+      <div class="v">{{number calculated.energiaAnualKwh}} <span style="font-size:14px; font-weight:600; color:#5c6479;">kWh</span></div>
+      <div class="d">Vida útil estimada del sistema: 25 años</div>
+    </div>
+  </div>
+
+  <div style="margin-top:26px; border-top:1px solid #dfe3ec; padding-top:18px;">
+    <div style="font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#0b2c6b;">Alcance de la instalación</div>
+    <div style="margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:9px 30px; font-size:12px; color:#3a4257;">
+      <div><strong style="color:#1c2333;">{{data.sistema.cantidadPaneles}}</strong> paneles {{data.sistema.marcaPaneles}} de {{data.sistema.potenciaPanelW}} W</div>
+      <div>Inversor {{data.sistema.marcaInversor}} de {{number data.sistema.potenciaInversorKw}} kW, {{data.factura.suministro}}</div>
+      <div>~{{number calculated.metrosCuadradosPaneles}} m² de superficie ocupada</div>
+      <div>Montaje: {{data.sistema.tipoMontaje}}</div>
+      <div>Protecciones DC y AC, y puesta a tierra según UTE</div>
+      <div>Monitoreo de generación en tiempo real</div>
+    </div>
+  </div>
+
+  <div style="margin-top:22px; border-top:1px solid #dfe3ec; padding-top:18px;">
+    <div style="font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#0b2c6b;">Condiciones comerciales</div>
+    <div style="margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:9px 30px; font-size:12px; color:#3a4257;">
+      <div><span style="color:#8a93a8;">Plazo de entrega:</span> {{data.cotizacion.plazoEntrega}}</div>
+      <div><span style="color:#8a93a8;">Forma de pago:</span> 50% al firmar, 50% contra instalación</div>
+      <div><span style="color:#8a93a8;">Cotización del dólar:</span> $ {{number data.cotizacion.cotizacionDolar 2}}</div>
+      <div><span style="color:#8a93a8;">Garantías:</span> ver detalle en el documento</div>
+    </div>
+  </div>
+
+  <div style="margin-top:22px; border-top:1px solid #dfe3ec; padding-top:18px; display:grid; grid-template-columns:1fr 1fr; gap:34px;">
+    <div>
+      <div style="font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#0b2c6b;">Detalle de la inversión</div>
+      <div style="margin-top:12px; font-size:12px; color:#3a4257;">
+        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #eef1f6;">
+          <span style="color:#5c6479;">Sistema llave en mano</span><strong>{{currency calculated.subtotalSinIva}}</strong>
+        </div>
+        {{#if data.itemsAdicionales.length}}
+        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #eef1f6;">
+          <span style="color:#5c6479;">Ítems adicionales</span><strong>{{currency calculated.itemsAdicionalesTotalSinIva}}</strong>
+        </div>
+        {{/if}}
+        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #eef1f6;">
+          <span style="color:#5c6479;">IVA (22%)</span><strong>{{currency calculated.iva}}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; padding:9px 0 0; font-size:13.5px;">
+          <span style="font-weight:700; color:#1c2333;">Total</span>
+          <strong style="color:#0b2c6b;">{{currency calculated.totalFinalConIva}}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div style="font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#0b2c6b;">Retorno acumulado</div>
+      <div style="margin-top:14px; position:relative; height:96px;">
+        <div style="position:absolute; left:0; right:0; top:{{roi.zeroPct}}%; border-top:1px dashed #c2c9d6; z-index:2;"></div>
+        <div style="display:flex; align-items:stretch; gap:4px; height:100%;">
+          {{#each roi.bars}}
+          <div style="flex:1; display:flex; flex-direction:column; height:100%;">
+            <div style="height:{{../roi.zeroPct}}%; display:flex; flex-direction:column; justify-content:flex-end;">
+              {{#if this.isPos}}<div style="height:{{this.h}}%; border-radius:2px 2px 0 0; background:#0e7a52;"></div>{{/if}}
+            </div>
+            <div style="height:{{../roi.botPct}}%; display:flex; flex-direction:column; justify-content:flex-start;">
+              {{#if this.isNeg}}<div style="height:{{this.h}}%; border-radius:0 0 2px 2px; background:#c9d0de;"></div>{{/if}}
+            </div>
+          </div>
+          {{/each}}
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:9.5px; color:#98a0b3;">
+        <span>Año 0</span><span>Año 15</span>
+      </div>
+      <p style="margin:10px 0 0; font-size:11.5px; line-height:1.5; color:#5c6479;">
+        El sistema se paga solo en <strong style="color:#1c2333;">{{number calculated.priAnios 1}} años</strong> y
+        a los 15 acumula un retorno neto estimado de
+        <strong style="color:#0e7a52;">{{currency roi.finalMilUsd}}</strong>.
+      </p>
+    </div>
+  </div>
+
+  {{#if data.empresa.rut}}
+  <div style="margin-top:auto; padding-top:18px; border-top:1px solid #dfe3ec; display:flex; align-items:flex-end; justify-content:space-between;">
+    <div style="font-size:11px; color:#8a93a8;">
+      Emitida para {{data.empresa.razonSocial}} · RUT {{data.empresa.rut}}
+      {{#if data.empresa.contactoNombre}}<br>At. {{data.empresa.contactoNombre}}{{#if data.empresa.contactoCargo}}, {{data.empresa.contactoCargo}}{{/if}}{{/if}}
+    </div>
+    <img src="{{logoMarkBlue}}" alt="Voltia" style="height:34px; width:34px; object-fit:contain; display:block;">
+  </div>
+  {{else}}
+  <div style="margin-top:auto; padding-top:18px; border-top:1px solid #dfe3ec; display:flex; justify-content:flex-end;">
+    <img src="{{logoMarkBlue}}" alt="Voltia" style="height:34px; width:34px; object-fit:contain; display:block;">
+  </div>
+  {{/if}}
+</div>

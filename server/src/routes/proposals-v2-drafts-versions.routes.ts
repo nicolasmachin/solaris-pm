@@ -7,7 +7,14 @@
 //             GET /versions/:id/pdf/{full,summary},
 //             POST /versions/:id/regenerate-pdf (ADMIN)
 
-import { Action, AuditAction, AuditEntityType, Module, Prisma } from "@prisma/client";
+import {
+  Action,
+  AuditAction,
+  AuditEntityType,
+  Module,
+  Prisma,
+  ProposalVariante,
+} from "@prisma/client";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 
@@ -16,7 +23,13 @@ import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
 import { contentDisposition } from "../utils/content-disposition.js";
 import type { CalcDebugRow } from "../services/proposal/calculator-labels.js";
-import { computeDraftCalcRows, getDraft, upsertDraft } from "../services/proposal/draft.service.js";
+import {
+  computeDraftCalcRows,
+  computeDraftComision,
+  ensureDraft,
+  getDraft,
+  upsertDraft,
+} from "../services/proposal/draft.service.js";
 import { computeDraftViability } from "../services/proposal/viability.service.js";
 import { readVersionPdf } from "../services/proposal/proposal-storage.js";
 import { draftDataStorageSchema } from "../services/proposal/schemas/draft.schema.js";
@@ -40,14 +53,24 @@ function ensureUser(request: FastifyRequest) {
 
 // Handler del endpoint de debug de cálculo. El gating de permiso lo hace el
 // middleware authorize(VENTAS, DEBUG_CALCULADORA) en el registro de la ruta.
-export function makeDraftCalcHandler(getRows: (leadId: string) => Promise<CalcDebugRow[]>) {
+export function makeDraftCalcHandler(
+  getRows: (leadId: string, variante: ProposalVariante) => Promise<CalcDebugRow[]>,
+) {
   return async (request: FastifyRequest) => {
     const { leadId } = leadParams.parse(request.params);
-    return { rows: await getRows(leadId) };
+    return { rows: await getRows(leadId, parseVariante(request.query)) };
   };
 }
 
 const leadParams = z.object({ leadId: z.string().min(1) }).strict();
+
+// Qué cotizador. Ausente = residencial, así que todo cliente anterior al
+// cotizador B2B sigue funcionando sin tocar una línea.
+const varianteQuery = z
+  .object({ variante: z.nativeEnum(ProposalVariante).default(ProposalVariante.RESIDENCIAL) })
+  .passthrough();
+const parseVariante = (query: unknown): ProposalVariante =>
+  varianteQuery.parse(query ?? {}).variante;
 const idParams = z.object({ id: z.string().min(1) }).strict();
 const putDraftBody = z.object({ data: draftDataStorageSchema }).strict();
 const discardBody = z.object({ reason: z.string().optional() }).strict();
@@ -98,9 +121,26 @@ export async function registerProposalsV2DraftsVersionsRoutes(app: FastifyInstan
     { preHandler: authorize(Module.VENTAS, Action.VIEW) },
     async (request) => {
       const { leadId } = leadParams.parse(request.params);
-      const draft = await getDraft(leadId);
+      const draft = await getDraft(leadId, parseVariante(request.query));
       if (!draft) throw notFound("DRAFT_NOT_FOUND", "El lead no tiene borrador.");
       return draft;
+    },
+  );
+
+  // Abre el cotizador: devuelve el borrador y, si no existe, lo crea con la
+  // precarga (defaults del singleton + datos del lead). Idempotente — llamarlo
+  // de nuevo no pisa nada.
+  //
+  // Es EDIT y no VIEW porque puede escribir. Antes esta precarga vivía en el
+  // frontend y la fila se creaba de rebote con el primer autosave; tenerla acá
+  // es lo que permite cotizar desde el conector.
+  app.post(
+    "/proposals-v2/leads/:leadId/draft/init",
+    { preHandler: authorize(Module.VENTAS, Action.EDIT) },
+    async (request) => {
+      const user = ensureUser(request);
+      const { leadId } = leadParams.parse(request.params);
+      return ensureDraft(leadId, user.id, parseVariante(request.query));
     },
   );
 
@@ -111,7 +151,7 @@ export async function registerProposalsV2DraftsVersionsRoutes(app: FastifyInstan
     async (request, reply) => {
       const user = ensureUser(request);
       const { leadId } = leadParams.parse(request.params);
-      const pdf = await generateDraftPreviewPdf(leadId, user.id);
+      const pdf = await generateDraftPreviewPdf(leadId, user.id, parseVariante(request.query));
       reply.header("Content-Type", "application/pdf");
       reply.header("Content-Disposition", 'inline; filename="preview.pdf"');
       reply.header("Cache-Control", "no-store");
@@ -134,7 +174,20 @@ export async function registerProposalsV2DraftsVersionsRoutes(app: FastifyInstan
     { preHandler: authorize(Module.VENTAS, Action.VIEW) },
     async (request) => {
       const { leadId } = leadParams.parse(request.params);
-      return computeDraftViability(leadId);
+      return computeDraftViability(leadId, parseVariante(request.query));
+    },
+  );
+
+  // Desglose de la comisión del asesor para el explicativo del cotizador. Es
+  // VENTAS:EDIT (quien cotiza), no VIEW: la comisión no la tiene que ver
+  // cualquiera que pueda mirar Ventas. Devuelve null mientras el borrador esté
+  // incompleto — el panel no se muestra y no hay error.
+  app.get(
+    "/proposals-v2/leads/:leadId/draft/comision",
+    { preHandler: authorize(Module.VENTAS, Action.EDIT) },
+    async (request) => {
+      const { leadId } = leadParams.parse(request.params);
+      return { comision: await computeDraftComision(leadId, parseVariante(request.query)) };
     },
   );
 
@@ -146,7 +199,8 @@ export async function registerProposalsV2DraftsVersionsRoutes(app: FastifyInstan
       const { leadId } = leadParams.parse(request.params);
       const body = putDraftBody.parse(request.body);
 
-      const draft = await upsertDraft(leadId, body.data, user.id);
+      const variante = parseVariante(request.query);
+      const draft = await upsertDraft(leadId, body.data, user.id, variante);
 
       await createAuditEntry({
         entityType: AuditEntityType.proposal,
@@ -154,7 +208,7 @@ export async function registerProposalsV2DraftsVersionsRoutes(app: FastifyInstan
         userId: user.id,
         action: AuditAction.proposal_v2_draft_updated,
         description: "Actualizó el borrador de propuesta",
-        metadata: { leadId, keys: Object.keys(body.data) } as unknown as Prisma.InputJsonValue,
+        metadata: { leadId, variante, keys: Object.keys(body.data) } as unknown as Prisma.InputJsonValue,
       });
 
       return draft;
@@ -168,7 +222,7 @@ export async function registerProposalsV2DraftsVersionsRoutes(app: FastifyInstan
     async (request, reply) => {
       const user = ensureUser(request);
       const { leadId } = leadParams.parse(request.params);
-      const version = await publishVersion(leadId, user.id);
+      const version = await publishVersion(leadId, user.id, parseVariante(request.query));
       return reply.status(201).send(version);
     },
   );

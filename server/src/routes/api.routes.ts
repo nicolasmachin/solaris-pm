@@ -36,6 +36,7 @@ import {
   PhaseType,
   Prisma,
   ProjectStatus,
+  ProposalVariante,
   Role,
   SalesStage,
   StageStatus,
@@ -6873,6 +6874,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
   const leadCreateSchema = z.object({
     clientName: z.string().min(1),
+    tipoCliente: z.nativeEnum(ProposalVariante).optional(),
     clientEmail: z.string().email().optional().nullable(),
     clientPhone: z.string().optional().nullable(),
     address: z.string().optional().nullable(),
@@ -6889,6 +6891,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
   const leadPatchSchema = z.object({
     clientName: z.string().min(1).optional(),
+    tipoCliente: z.nativeEnum(ProposalVariante).optional(),
     clientEmail: z.string().email().optional().nullable(),
     clientPhone: z.string().optional().nullable(),
     address: z.string().optional().nullable(),
@@ -7030,6 +7033,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           code: lead.code,
           clientName: lead.clientName,
           stage: lead.stage,
+          tipoCliente: lead.tipoCliente,
           address: lead.address,
           estimatedKwp: lead.estimatedKwp ? decimalToNumber(lead.estimatedKwp) : null,
           estimatedBudgetUsd: lead.estimatedBudgetUsd ? decimalToNumber(lead.estimatedBudgetUsd) : null,
@@ -7081,6 +7085,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
             code: lead.code,
             clientName: lead.clientName,
             stage: lead.stage,
+            tipoCliente: lead.tipoCliente,
             estimatedKwp: lead.estimatedKwp ? decimalToNumber(lead.estimatedKwp) : null,
             estimatedBudgetUsd: lead.estimatedBudgetUsd ? decimalToNumber(lead.estimatedBudgetUsd) : null,
             assignedTo: lead.assignedTo,
@@ -7152,6 +7157,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       clientPhone: lead.clientPhone,
       address: lead.address,
       stage: lead.stage,
+      tipoCliente: lead.tipoCliente,
       estimatedKwp: lead.estimatedKwp ? decimalToNumber(lead.estimatedKwp) : null,
       estimatedBudgetUsd: lead.estimatedBudgetUsd ? decimalToNumber(lead.estimatedBudgetUsd) : null,
       uteBillMonthlyUsd: lead.uteBillMonthlyUsd ? decimalToNumber(lead.uteBillMonthlyUsd) : null,

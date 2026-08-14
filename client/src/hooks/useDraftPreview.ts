@@ -8,12 +8,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 
 import { proposalsV2BuilderApi } from "../api/proposals-v2-builder.api";
+import type { ProposalVariante } from "../types/proposals-v2";
 
 export type PreviewStatus = "idle" | "loading" | "ready" | "error";
 const DEBOUNCE_MS = 2500;
 
-export function useDraftPreview(params: { leadId: string; savedTick: number; enabled: boolean }) {
-  const { leadId, savedTick, enabled } = params;
+export function useDraftPreview(params: {
+  leadId: string;
+  savedTick: number;
+  enabled: boolean;
+  variante: ProposalVariante;
+}) {
+  const { leadId, savedTick, enabled, variante } = params;
 
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [status, setStatus] = useState<PreviewStatus>("idle");
@@ -26,7 +32,7 @@ export function useDraftPreview(params: { leadId: string; savedTick: number; ena
   const fetchPreview = useCallback(async () => {
     setStatus("loading");
     try {
-      const blob = await proposalsV2BuilderApi.getDraftPreviewBlob(leadId);
+      const blob = await proposalsV2BuilderApi.getDraftPreviewBlob(leadId, variante);
       const url = URL.createObjectURL(blob);
       if (currentUrl.current) URL.revokeObjectURL(currentUrl.current);
       currentUrl.current = url;

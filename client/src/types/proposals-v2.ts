@@ -59,8 +59,19 @@ export interface ProposalItemAdicional {
 /** Estado del form del constructor — mirror de draftDataPublishSchema. Todos los
  *  campos presentes (el form los mantiene poblados); el autosave manda esto y el
  *  backend lo valida lenient. */
+/** Cuál de los dos cotizadores. */
+export type ProposalVariante = "RESIDENCIAL" | "EMPRESA";
+
 export interface ProposalDraftData {
+  variante: ProposalVariante;
   cliente: { nombre: string; dirigidoA: string; ciudad: string };
+  /** Datos fiscales; solo se completan (y se exigen) en el cotizador B2B. */
+  empresa: {
+    razonSocial: string;
+    rut: string;
+    contactoNombre: string;
+    contactoCargo: string;
+  };
   factura: {
     pagaMensualPesos: number;
     tarifa: "Simple" | "Doble" | "Triple";
@@ -87,9 +98,27 @@ export interface ProposalDraftData {
   itemsAdicionales: ProposalItemAdicional[];
 }
 
+/** Desglose de la comisión del asesor (explicativo del cotizador B2B). */
+export interface ComisionDesglose {
+  variante: ProposalVariante;
+  markupPorcentaje: number;
+  markupReferenciaPorcentaje: number;
+  /** Fracciones (0.04 = 4%). */
+  comisionBasePorcentaje: number;
+  comisionExcedentePorcentaje: number;
+  markupExcedenteUsd: number;
+  comisionBaseUsd: number;
+  comisionExcedenteUsd: number;
+  comisionTotalUsd: number;
+  comisionPctEfectivo: number;
+  /** Lo que cobraría la misma propuesta cotizada al markup de referencia. */
+  comisionEnReferenciaUsd: number;
+}
+
 export interface ProposalDraftResponse {
   id: string;
   leadId: string;
+  variante: ProposalVariante;
   data: Partial<ProposalDraftData>;
   createdAt: string;
   updatedAt: string;
@@ -140,6 +169,9 @@ export interface ProposalDefaultsResponse {
   data: ProposalDefaultsData;
   coverOverlay: CoverOverlay | null;
   coverPdfAttachmentId: string | null;
+  /** Tapa propia del cotizador B2B. Null = usa la residencial. */
+  coverEmpresaOverlay: CoverOverlay | null;
+  coverEmpresaPdfAttachmentId: string | null;
   updatedAt: string | null;
 }
 
@@ -148,6 +180,8 @@ export interface ProposalDefaultsResponse {
 export interface ProposalDefaultsUpdateInput {
   data?: ProposalDefaultsData;
   coverOverlay?: CoverOverlay;
+  /** null limpia el overlay propio: la tapa B2B vuelve a las coordenadas de la residencial. */
+  coverEmpresaOverlay?: CoverOverlay | null;
 }
 
 /** Type guard: distingue una variable flagged de un subobjeto. */

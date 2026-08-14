@@ -22,6 +22,7 @@ export function ProposalDefaultsPage() {
 
   const [data, setData] = useState<ProposalDefaultsData>({});
   const [coverOverlay, setCoverOverlay] = useState<CoverOverlay | null>(null);
+  const [coverEmpresaOverlay, setCoverEmpresaOverlay] = useState<CoverOverlay | null>(null);
 
   // Inicializa el form UNA sola vez, recién cuando hay datos válidos (seeded).
   // A partir de ahí el estado local es la fuente de verdad: actualizaciones
@@ -32,6 +33,9 @@ export function ProposalDefaultsPage() {
     if (defaults?.seeded && !initialized.current) {
       setData(defaults.data);
       setCoverOverlay(defaults.coverOverlay);
+      // Sin overlay propio, la tapa B2B arranca con las coordenadas de la
+      // residencial (misma plantilla de Canva, distinto arte).
+      setCoverEmpresaOverlay(defaults.coverEmpresaOverlay ?? defaults.coverOverlay);
       initialized.current = true;
     }
   }, [defaults]);
@@ -69,6 +73,10 @@ export function ProposalDefaultsPage() {
   function handleSaveCover() {
     if (!coverOverlay) return;
     updateMut.mutate({ coverOverlay });
+  }
+  function handleSaveCoverEmpresa() {
+    if (!coverEmpresaOverlay) return;
+    updateMut.mutate({ coverEmpresaOverlay });
   }
 
   return (
@@ -108,6 +116,26 @@ export function ProposalDefaultsPage() {
         onSaveConfig={handleSaveCover}
         savingConfig={updateMut.isPending}
       />
+
+      <div>
+        <h3 className="mb-1 font-display text-base font-bold text-[var(--color-text-primary)]">
+          Tapa de las propuestas a empresas (B2B)
+        </h3>
+        <p className="mb-2 text-sm text-[var(--color-text-muted)]">
+          Opcional. Si no cargás una acá, el cotizador B2B usa la tapa de arriba. En la tapa B2B el
+          nombre que se imprime es la razón social de la empresa.
+        </p>
+        <CoverSection
+          variante="EMPRESA"
+          coverOverlay={coverEmpresaOverlay}
+          coverPdfAttachmentId={defaults.coverEmpresaPdfAttachmentId}
+          updatedAt={defaults.updatedAt}
+          isAdmin={isAdmin}
+          onChangeOverlay={setCoverEmpresaOverlay}
+          onSaveConfig={handleSaveCoverEmpresa}
+          savingConfig={updateMut.isPending}
+        />
+      </div>
 
       <ProposalDefaultsForm data={data} onChange={setData} disabled={!isAdmin} />
     </div>

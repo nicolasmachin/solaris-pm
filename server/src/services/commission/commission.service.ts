@@ -37,9 +37,17 @@ export function readComisionFromSnapshot(snapshot: Prisma.JsonValue): {
   porcentaje: number | null;
 } {
   const snap = snapshot as unknown as ProposalV2Snapshot;
-  const montoUsd =
-    (snap?.calc as { comisionVentasUsdSinIva?: number } | undefined)?.comisionVentasUsdSinIva ?? null;
-  const rawPct = snap?.defaults?.comisionVendedorPorcentaje;
+  const calc = snap?.calc as
+    | { comisionVentasUsdSinIva?: number; comisionVentasPctEfectivo?: number }
+    | undefined;
+  const montoUsd = calc?.comisionVentasUsdSinIva ?? null;
+
+  // El % lo emite el calculador desde el cotizador B2B: en una propuesta a
+  // empresa la comisión sube con el markup, así que el porcentaje global del
+  // singleton dejó de describirla. Para los snapshots publicados antes de ese
+  // cambio se cae al valor de siempre, que para ellos era el correcto.
+  // Ambos son FRACCIÓN (0.04 = 4%), como espera Commission.porcentaje.
+  const rawPct = calc?.comisionVentasPctEfectivo ?? snap?.defaults?.comisionVendedorPorcentaje;
   const pctNum = typeof rawPct === "number" ? rawPct : rawPct != null ? Number(rawPct) : null;
   return { montoUsd, porcentaje: pctNum != null && Number.isFinite(pctNum) ? pctNum : null };
 }

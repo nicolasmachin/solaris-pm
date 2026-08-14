@@ -45,6 +45,7 @@ import { LeadTasks } from "../components/sales/LeadTasks";
 import { LargeModal } from "../components/ui/LargeModal";
 import { DeleteConfirmModal } from "../components/ui/DeleteConfirmModal";
 import { ProposalBuilderModal } from "../components/proposals-v2/ProposalBuilderModal";
+import type { ProposalVariante } from "../types/proposals-v2";
 import { ProposalPreviewModal } from "../components/sales/ProposalPreviewModal";
 import { StageSelect } from "../components/sales/StageSelect";
 import { usePermission } from "../hooks/usePermission";
@@ -549,7 +550,9 @@ function LeadPanel({
   });
   const [showProposalModal, setShowProposalModal] = useState(false);
   const [showDeleteLead, setShowDeleteLead] = useState(false);
-  const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+  // Qué cotizador está abierto: null, el residencial o el B2B. Son dos botones
+  // distintos y cada uno tiene su propio borrador.
+  const [builderVariante, setBuilderVariante] = useState<ProposalVariante | null>(null);
   const [lostReason, setLostReason] = useState("");
   const [pendingStage, setPendingStage] = useState<SalesStage | null>(null);
   const [confirmConvert, setConfirmConvert] = useState(false);
@@ -601,6 +604,7 @@ function LeadPanel({
     roofType: "",
     notes: "",
     assignedToId: "",
+    tipoCliente: "RESIDENCIAL" as ProposalVariante,
   });
 
   useEffect(() => {
@@ -616,6 +620,7 @@ function LeadPanel({
       roofType: lead.roofType ?? "",
       notes: lead.notes ?? "",
       assignedToId: lead.assignedTo?.id ?? "",
+      tipoCliente: lead.tipoCliente ?? "RESIDENCIAL",
     });
     setLostReason(lead.lostReason ?? "");
     setDates({
@@ -640,6 +645,7 @@ function LeadPanel({
         roofType: form.roofType || null,
         notes: form.notes || null,
         assignedToId: form.assignedToId || null,
+        tipoCliente: form.tipoCliente,
       }),
     onSuccess: () => {
       toast.success("Lead actualizado");
@@ -839,6 +845,19 @@ function LeadPanel({
               </label>
             ))}
             <label>
+              <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Tipo de cliente</span>
+              <select
+                className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+                value={form.tipoCliente}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, tipoCliente: event.target.value as ProposalVariante }))
+                }
+              >
+                <option value="RESIDENCIAL">Residencial</option>
+                <option value="EMPRESA">Empresa (B2B)</option>
+              </select>
+            </label>
+            <label>
               <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Asignado a</span>
               <select
                 className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
@@ -920,11 +939,24 @@ function LeadPanel({
         <section className="mb-5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
           <div className="mb-3 flex items-center justify-between">
             <p className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Propuestas comerciales</p>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {canEditSales && (
-                <Button size="sm" variant="secondary" onClick={() => setIsBuilderOpen(true)}>
-                  Armar propuesta
-                </Button>
+                <>
+                  <Button
+                    size="sm"
+                    variant={lead.tipoCliente === "EMPRESA" ? "ghost" : "secondary"}
+                    onClick={() => setBuilderVariante("RESIDENCIAL")}
+                  >
+                    Armar propuesta
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={lead.tipoCliente === "EMPRESA" ? "secondary" : "ghost"}
+                    onClick={() => setBuilderVariante("EMPRESA")}
+                  >
+                    Cotizador B2B
+                  </Button>
+                </>
               )}
               <Button size="sm" onClick={() => setShowProposalModal(true)}>Generar propuesta comercial</Button>
             </div>
@@ -1055,8 +1087,12 @@ function LeadPanel({
         />
       ) : null}
 
-      {isBuilderOpen ? (
-        <ProposalBuilderModal leadId={leadId} onClose={() => setIsBuilderOpen(false)} />
+      {builderVariante ? (
+        <ProposalBuilderModal
+          leadId={leadId}
+          variante={builderVariante}
+          onClose={() => setBuilderVariante(null)}
+        />
       ) : null}
     </>
   );
