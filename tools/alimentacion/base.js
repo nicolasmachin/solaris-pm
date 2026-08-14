@@ -20,10 +20,12 @@ export async function loadBase(sheets) {
   const rows = res.data.values || [];
   const foods = [];
   for (const r of rows) {
-    const name = (r[0] ?? '').toString().trim();
-    if (!name) continue;
+    const raw = (r[0] ?? '').toString();
+    if (!raw.trim()) continue;
+    // Preservar el nombre EXACTO (con espacios): el VLOOKUP de la planilla exige
+    // coincidencia literal, y hay ítems con espacios al final (ej. "Hamburguesa al pan  ").
     const calorias = typeof r[1] === 'number' ? r[1] : Number(r[1]);
-    foods.push({ name, calorias: Number.isFinite(calorias) ? calorias : null, norm: normalize(name) });
+    foods.push({ name: raw, calorias: Number.isFinite(calorias) ? calorias : null, norm: normalize(raw) });
   }
   return foods;
 }
