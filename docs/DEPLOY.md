@@ -176,6 +176,13 @@ docker compose -f docker-compose.prod.yml exec server npx tsx prisma/scripts/see
 # hay que correr estos dos a mano (viven en server/scripts/, no en prisma/scripts/):
 docker compose -f docker-compose.prod.yml exec server npx tsx scripts/seed-email-templates.ts
 docker compose -f docker-compose.prod.yml exec server npx tsx scripts/update-consulta-ute-template.ts
+
+# Fotos de referencia del catálogo de materiales. Las imágenes viajan en el repo
+# (server/prisma/scripts/fotos-materiales/) y este script las aplica al storage y
+# a la base de este entorno. Idempotente: solo toca los ítems cuya foto cambió.
+# Correrlo en CADA deploy que traiga fotos nuevas.
+docker compose -f docker-compose.prod.yml exec server npx tsx prisma/scripts/seed-fotos-materiales.ts --dry-run
+docker compose -f docker-compose.prod.yml exec server npx tsx prisma/scripts/seed-fotos-materiales.ts
 ```
 
 > Tras un grant de **permisos**, reiniciar el server para invalidar el cache de

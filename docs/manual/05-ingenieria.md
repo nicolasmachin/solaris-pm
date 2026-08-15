@@ -199,6 +199,30 @@ conviene resolverla.
 - El popover se dibuja en un **portal con posición fija**: las tablas de
   materiales tienen `overflow-x-auto` y un `absolute` quedaría recortado.
 
+### Carga en lote y paso a producción
+
+Las fotos que se cargan una por una desde la app quedan **solo en el entorno
+donde se cargaron**: el storage no se replica entre desarrollo y producción. Para
+que terminen iguales en los dos, las fotos se versionan en el repo:
+
+- Imágenes en `server/prisma/scripts/fotos-materiales/`.
+- Un `manifest.json` que asocia cada archivo a su ítem por `itemId` (con
+  `itemNombre` como fallback legible).
+- `server/prisma/scripts/seed-fotos-materiales.ts` las aplica al entorno donde se
+  corre, con el **mismo procesamiento** que la subida por la app (reusa
+  `procesarFotoMaterial()`).
+
+```bash
+docker compose exec server npx tsx prisma/scripts/seed-fotos-materiales.ts --dry-run
+docker compose exec server npx tsx prisma/scripts/seed-fotos-materiales.ts
+```
+
+Es idempotente: compara el **hash de la imagen ya procesada** contra la que el
+ítem tiene en el storage y saltea las que están al día, así correrlo dos veces no
+duplica archivos ni cambia `fotoUpdatedAt` (que es lo que invalida el cache del
+navegador). Los ítems que no existen en ese entorno se reportan al final y no
+frenan al resto. En producción se corre después del deploy (ver `DEPLOY.md` §6).
+
 ### En el PDF de la lista de materiales
 
 `POST /projects/:id/materials/export-pdf` antepone una columna **Foto** de 34pt

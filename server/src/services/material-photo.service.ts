@@ -64,17 +64,19 @@ export interface SavedMaterialPhoto {
 }
 
 /**
- * Procesa y guarda la foto de un ítem. Devuelve la ruta relativa; el borrado de
- * la foto anterior queda a cargo del llamador (ver `deleteMaterialPhotoFile`).
+ * Reduce y recomprime la imagen. Separado del guardado para que el script de
+ * carga masiva (`prisma/scripts/seed-fotos-materiales.ts`) use exactamente el
+ * mismo procesamiento que la subida por la app.
  */
-export async function saveMaterialItemPhoto(file: MultipartFile): Promise<SavedMaterialPhoto> {
-  const extension = path.extname(file.filename ?? "").toLowerCase();
-  const heic = esHeic({ filename: file.filename, mimetype: file.mimetype });
+export async function procesarFotoMaterial(
+  original: Buffer,
+  meta: { filename?: string | null; mimetype?: string | null },
+): Promise<Buffer> {
+  const extension = path.extname(meta.filename ?? "").toLowerCase();
+  const heic = esHeic({ filename: meta.filename, mimetype: meta.mimetype });
   if (!ALLOWED_EXTENSIONS.has(extension) && !heic) {
     throw badRequest("INVALID_PHOTO_TYPE", "El archivo tiene que ser una imagen (JPG, PNG, WEBP o HEIC)");
   }
-
-  const original = await file.toBuffer();
   if (original.length > maxUploadBytes()) {
     throw badRequest("FILE_TOO_LARGE", `La imagen supera el límite de ${env.maxFileSizeMb} MB`);
   }
@@ -83,9 +85,8 @@ export async function saveMaterialItemPhoto(file: MultipartFile): Promise<SavedM
   // foto entra pero queda ilegible para todo lo de río abajo.
   const decodificable = heic ? await convertirHeicABufferJpeg(original) : original;
 
-  let procesada: Buffer;
   try {
-    procesada = await sharp(decodificable)
+    return await sharp(decodificable)
       .rotate()
       .resize({ width: MAX_SIDE, height: MAX_SIDE, fit: "inside", withoutEnlargement: true })
       .jpeg({ quality: JPEG_QUALITY, mozjpeg: true })
@@ -93,7 +94,10 @@ export async function saveMaterialItemPhoto(file: MultipartFile): Promise<SavedM
   } catch {
     throw badRequest("INVALID_PHOTO", "No se pudo procesar la imagen");
   }
+}
 
+/** Escribe una imagen ya procesada en el storage del catálogo. */
+export async function guardarFotoMaterialProcesada(procesada: Buffer): Promise<SavedMaterialPhoto> {
   const dir = catalogoDirAbsolute();
   await fsPromises.mkdir(dir, { recursive: true });
 
@@ -104,6 +108,19 @@ export async function saveMaterialItemPhoto(file: MultipartFile): Promise<SavedM
     relativePath: path.join(RELATIVE_DIR, storedFilename),
     sizeBytes: procesada.length,
   };
+}
+
+/**
+ * Procesa y guarda la foto de un ítem. Devuelve la ruta relativa; el borrado de
+ * la foto anterior queda a cargo del llamador (ver `deleteMaterialPhotoFile`).
+ */
+export async function saveMaterialItemPhoto(file: MultipartFile): Promise<SavedMaterialPhoto> {
+  const original = await file.toBuffer();
+  const procesada = await procesarFotoMaterial(original, {
+    filename: file.filename,
+    mimetype: file.mimetype,
+  });
+  return guardarFotoMaterialProcesada(procesada);
 }
 
 /** Borra el archivo físico. Best-effort: si ya no está, no es un error. */
