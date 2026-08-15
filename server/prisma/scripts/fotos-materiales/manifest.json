@@ -128,5 +128,10 @@
     "archivo": "interruptor-termomagnetico.jpg",
     "itemId": "cmohnj6el008km50h97nrrj6l",
     "itemNombre": "Interruptor Termomagnético 50A  4P"
+  },
+  {
+    "archivo": "smart-meter-mono-growatt.jpg",
+    "itemId": "cmohmmmss005zm50ha7fq7sks",
+    "itemNombre": "SPM Smart Meter Mono Growatt"
   }
 ]

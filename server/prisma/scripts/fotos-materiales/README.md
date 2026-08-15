@@ -41,11 +41,9 @@ carpeta está en el `.gitignore`: son HEIC de 1-2 MB) y se pasan a esta con:
 docker compose exec server npx tsx scripts/procesar-fotos-entrada.ts IMG_1234.HEIC=nombre-descriptivo
 ```
 
-## Pendientes
-
-- `medidor-eastron-sdm230.jpg` está procesada pero **sin entrada en el
-  manifiesto**: el catálogo no tiene todavía un ítem para el medidor Eastron
-  SDM230-Modbus. Cuando se cree, agregar la entrada y correr el script.
+> El `smart-meter-mono-growatt.jpg` muestra un Eastron SDM230-Modbus: es el mismo
+> medidor que Growatt vende con su marca como SPM. Si en algún momento se carga
+> el Eastron como ítem aparte, la foto sirve para los dos.
 
 ## Sobre el peso
 
