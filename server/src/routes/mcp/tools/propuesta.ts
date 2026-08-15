@@ -24,6 +24,7 @@ import type { DraftDataPublish } from "../../../services/proposal/schemas/draft.
 import { publishVersion } from "../../../services/proposal/version.service.js";
 import { requirePermission, type McpUser } from "../context.js";
 import { buildDownloadUrl } from "../descargas.routes.js";
+import { hasPermission } from "../../../middleware/authorize.middleware.js";
 import { campos, pesos, porcentaje, texto, usd } from "../format.js";
 
 const VARIANTE = ProposalVariante.RESIDENCIAL;
@@ -59,14 +60,25 @@ function nombrarCampos(paths: string[]): string {
   return paths.map((p) => NOMBRE_CAMPO[p] ?? p).join("\n- ");
 }
 
-/** El resumen que se lee antes de confirmar. Sin costos ni margen. */
-function bloqueResumen(r: NonNullable<Awaited<ReturnType<typeof computeDraftResumenComercial>>>) {
+/**
+ * El resumen que se lee antes de confirmar.
+ *
+ * `verInterno` lo decide quien llama según el permiso: con él se agrega lo que
+ * gana la empresa, que no se le muestra al cliente. El markup en porcentaje va
+ * siempre — lo elige el propio asesor, y poder escribirlo sin poder leerlo era
+ * una asimetría que obligaba a abrir la aplicación para saber con qué quedó.
+ */
+function bloqueResumen(
+  r: NonNullable<Awaited<ReturnType<typeof computeDraftResumenComercial>>>,
+  verInterno: boolean,
+) {
   const sistema = campos([
     ["Precio final (IVA incluido)", usd(r.precioFinalConIva)],
     ["Potencia", `${r.potenciaKwp.toFixed(2)} kWp`],
     ["Paneles", `${r.cantidadPaneles} × ${r.potenciaPanelW} W ${r.marcaPaneles}`.trim()],
     ["Inversor", r.marcaInversor],
     ["Precio por watt", `USD ${r.usdPorWatt.toFixed(2)}`],
+    ["Markup aplicado", `${r.markupPorcentaje.toFixed(1)}%`],
     ["Plazo de entrega", r.plazoEntrega],
   ]);
 
@@ -84,7 +96,17 @@ function bloqueResumen(r: NonNullable<Awaited<ReturnType<typeof computeDraftResu
     ["60 cuotas", pesos(r.cuota60m)],
   ]);
 
-  return [sistema, `AHORRO Y RETORNO\n${ahorro}`, `FINANCIACIÓN BBVA\n${cuotas}`].join("\n\n");
+  const interno = verInterno
+    ? "\n\nINTERNO — no mostrar al cliente\n" +
+      campos([
+        ["Ganancia de la empresa", usd(r.interno.gananciaUsd)],
+        ["Margen sobre la venta", porcentaje(r.interno.margenSobreVenta, 1)],
+      ])
+    : "";
+
+  return (
+    [sistema, `AHORRO Y RETORNO\n${ahorro}`, `FINANCIACIÓN BBVA\n${cuotas}`].join("\n\n") + interno
+  );
 }
 
 export function registerPropuestaTools(server: McpServer, user: McpUser) {
@@ -213,9 +235,13 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
         );
       }
 
+      // La ganancia solo la ve quien ya tiene acceso al cálculo interno en la
+      // aplicación. El markup en porcentaje se muestra siempre.
+      const verInterno = await hasPermission(user.role, Module.VENTAS, Action.DEBUG_CALCULADORA);
+
       return texto(
         `Propuesta lista para ${lead.clientName}:`,
-        bloqueResumen(resumen),
+        bloqueResumen(resumen, verInterno),
         "Si está bien, decime que la emita y genero el PDF.",
       );
     },

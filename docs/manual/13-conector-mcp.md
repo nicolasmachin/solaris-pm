@@ -154,6 +154,31 @@ de esa lista los pide el conector aunque el esquema los acepte en cero — ver
 precio y que el asesor no debería tocar. El markup sí: es su holgura para
 cotizar más caro o más barato.
 
+### El markup y la ganancia
+
+Dos datos distintos con dos tratamientos distintos:
+
+| Dato | Quién lo ve | Por qué |
+|---|---|---|
+| **Markup aplicado** (el porcentaje) | Todos | Lo elige el propio asesor. Se podía escribir pero no consultar, así que para saber con qué markup había quedado una propuesta había que abrir la aplicación. |
+| **Ganancia de la empresa** y margen | Solo con `VENTAS:DEBUG_CALCULADORA` | Es lo que gana Voltia con esa venta. Va bajo el título "INTERNO — no mostrar al cliente". |
+
+El permiso es el mismo que ya abre el desglose de cálculo en la aplicación, y hoy
+lo tiene solo Administrador. Para dárselo a alguien más se marca la casilla en
+Administración → Permisos, sin tocar código.
+
+**El markup en dólares es la ganancia.** La calculadora mantiene la identidad
+`gananciaFinal ≡ markupUsdSinIva`: lo que se agrega sobre el costo es
+exactamente lo que queda al final del flujo de caja. Por eso el porcentaje va
+suelto y los dólares van gateados.
+
+El valor se normaliza antes de mostrarlo: el campo acepta `0.2` o `20` y la
+calculadora lo desambigua por magnitud, así que sin normalizar la misma
+propuesta se leería "0,2%" o "20%" según cómo se hubiera cargado.
+
+Los dos datos aparecen tanto en `preparar_propuesta` (el borrador) como en
+`ver_propuesta` (las ya emitidas).
+
 **Publicar mueve el cliente.** Al emitir la primera propuesta, el lead pasa solo
 a Cotizado y se sella la fecha de envío. La herramienta lo avisa en la respuesta.
 

@@ -16,6 +16,8 @@ import {
   editarLead,
   moverEtapaLead,
 } from "../../../services/sales/leads.service.js";
+import { interpretarMarkup } from "../../../services/proposal/calculator.js";
+import { hasPermission } from "../../../middleware/authorize.middleware.js";
 import { listLeadProposals } from "../../../services/proposal/lead-proposals.service.js";
 import { getVersionById } from "../../../services/proposal/version.service.js";
 import { requirePermission, type McpUser } from "../context.js";
@@ -292,7 +294,7 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
       const snap = version.snapshot as {
         data?: {
           sistema?: { cantidadPaneles?: number; potenciaPanelW?: number; marcaPaneles?: string; marcaInversor?: string };
-          cotizacion?: { plazoEntrega?: string };
+          cotizacion?: { plazoEntrega?: string; markupPorcentaje?: number };
         };
         calc?: Record<string, number>;
       };
@@ -311,8 +313,24 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
         ],
         ["Inversor", sistema.marcaInversor],
         ["Precio por watt", calc.usdPorWatt ? `USD ${calc.usdPorWatt.toFixed(2)}` : null],
+        [
+          "Markup aplicado",
+          snap.data?.cotizacion?.markupPorcentaje !== undefined
+            ? `${(interpretarMarkup(snap.data.cotizacion.markupPorcentaje) * 100).toFixed(1)}%`
+            : null,
+        ],
         ["Plazo de entrega", snap.data?.cotizacion?.plazoEntrega],
       ]);
+
+      // La ganancia solo para quien ya ve el cálculo interno en la aplicación.
+      const verInterno = await hasPermission(user.role, Module.VENTAS, Action.DEBUG_CALCULADORA);
+      const interno =
+        verInterno && calc.markupUsdSinIva !== undefined
+          ? campos([
+              ["Ganancia de la empresa", usd(calc.markupUsdSinIva)],
+              ["Margen sobre la venta", porcentaje(calc.margen, 1)],
+            ])
+          : null;
 
       const retorno = campos([
         ["Ahorro mensual", pesos(calc.ahorroMensualPesos)],
@@ -333,6 +351,7 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
       return texto(
         `Propuesta v${version.versionNumber} de ${lead.clientName} — publicada el ${fechaLarga(version.publishedAt)}`,
         numeros,
+        interno ? `INTERNO — no mostrar al cliente\n${interno}` : null,
         retorno ? `AHORRO Y RETORNO\n${retorno}` : null,
         financiacion ? `FINANCIACIÓN BBVA\n${financiacion}` : null,
         `PDF (el enlace vence en 15 minutos):\n${enlace}`,

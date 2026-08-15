@@ -1,5 +1,17 @@
 # Novedades
 
+## v9.4
+
+### 15 de agosto de 2026
+
+#### Foto de cada material, para no confundir ítems parecidos
+
+- Cada material del catálogo puede tener ahora **una foto de referencia**. En todas las listas aparece un **ojito** al lado del ítem: pasando el mouse por encima se ve la foto, sin salir de la pantalla.
+- Está en la **lista de materiales del proyecto**, en el buscador para **agregar materiales**, en el **consolidador**, en **Stock**, en las **plantillas** y en el **catálogo de Administración**.
+- La foto se carga **desde donde aparece la confusión**: no hace falta ir a Administración. Si el ítem todavía no tiene, el ícono se ve punteado y con un click se sube; si ya tiene, se hace click en el ojito para **cambiarla o quitarla**.
+- Se acepta cualquier foto (también las del iPhone) y se guarda **una sola versión chica**, de unos pocos KB, para que las listas sigan abriendo rápido.
+- El **PDF de la lista de materiales** que se exporta para obra ahora sale con una **miniatura en cada fila**. Si ningún ítem de esa lista tiene foto, el PDF queda compacto como antes.
+
 ## v9.3
 
 ### 13 de agosto de 2026
@@ -11,6 +23,8 @@
 - **No emite nada sin confirmación.** Primero muestra los números, y recién con el visto bueno genera el PDF.
 - **La cotización del dólar no se puede tocar desde el chat**; el markup sí, que es el margen del asesor.
 - Es solo para propuestas **residenciales**: las de empresa se siguen armando desde la aplicación.
+- **El markup aplicado se puede consultar**, no solo cambiar: aparece en el resumen de la propuesta, tanto en la que se está armando como en las ya emitidas. Antes se podía escribir pero no leer, así que había que abrir la aplicación para saber con qué markup había quedado.
+- **La ganancia de la empresa y el margen** aparecen solo para quien ya tiene acceso al cálculo interno (hoy, Administrador), bajo el título "no mostrar al cliente".
 
 #### El chat ahora contesta sobre obras y clientes instalados
 

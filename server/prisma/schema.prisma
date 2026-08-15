@@ -2189,6 +2189,15 @@ model MaterialItem {
 
   activo Boolean @default(true)
 
+  // Foto de referencia del ítem: sirve para identificar visualmente el material
+  // en las listas (hay ítems de nombre parecido que se confunden al comprar o
+  // al preparar la salida a obra). Se guarda UNA sola imagen ya recomprimida a
+  // JPEG chico bajo `storage/catalogo/materiales/`; el original se descarta.
+  // `fotoPath` es la ruta relativa al storage, `fotoUpdatedAt` sirve para
+  // invalidar el cache del navegador cuando se reemplaza.
+  fotoPath      String?
+  fotoUpdatedAt DateTime?
+
   // Campos de stock (unificación con StockProduct)
   // gestionaStock = false → es un servicio / mano de obra, no tiene representación
   // física y no entra al inventario.

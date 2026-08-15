@@ -89,6 +89,12 @@ import {
 } from "../services/file-storage.service.js";
 import { convertirHeicABufferJpeg, esHeic } from "../services/heic.service.js";
 import {
+  deleteMaterialPhotoFile,
+  materialPhotoAbsolutePath,
+  readMaterialPhotoBuffer,
+  saveMaterialItemPhoto,
+} from "../services/material-photo.service.js";
+import {
   copyLeadAttachmentsToProject,
   moveLeadMediaToProject,
 } from "../services/sales/sales.service.js";
@@ -13313,6 +13319,126 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return { success: true, deactivated: false };
     });
 
+    // ─── Materiales: foto de referencia del ítem ──────────────────────────────
+    //
+    // Una foto por ítem del catálogo, para reconocer el material de un vistazo
+    // en cualquier lista (proyecto, consolidador, stock, plantillas). Ver
+    // `material-photo.service.ts` para el procesamiento y el porqué del formato.
+    //
+    // Los permisos son deliberadamente amplios: la foto se carga desde donde se
+    // detecta la confusión, que suele ser la lista del proyecto (Ingeniería /
+    // Operaciones), no Administración. Es el único campo del catálogo que se
+    // puede tocar sin permisos de configuración.
+    const materialPhotoPermsView = [
+      { module: Module.INGENIERIA, action: Action.VIEW },
+      { module: Module.OPERACIONES, action: Action.VIEW },
+      { module: Module.STOCK, action: Action.VIEW },
+      { module: Module.CONFIGURACION, action: Action.VIEW },
+    ];
+    const materialPhotoPermsEdit = [
+      { module: Module.INGENIERIA, action: Action.EDIT },
+      { module: Module.OPERACIONES, action: Action.EDIT },
+      { module: Module.STOCK, action: Action.EDIT },
+      { module: Module.CONFIGURACION, action: Action.EDIT },
+    ];
+
+    // Índice liviano: qué ítems tienen foto y de cuándo es. Lo consumen todas
+    // las listas para saber si dibujar el ojo "con foto" sin tener que sumar el
+    // dato a cada endpoint que devuelve ítems. El valor es el epoch de
+    // `fotoUpdatedAt` y sirve de cache-buster de la URL de la imagen.
+    // Ruta estática antes que `/materials/items/:id`: Fastify prioriza la
+    // estática, así que "con-foto" no cae en el handler paramétrico.
+    app.get("/materials/items/con-foto", { preHandler: authorizeAny(materialPhotoPermsView) }, async () => {
+      const items = await prisma.materialItem.findMany({
+        where: { fotoPath: { not: null } },
+        select: { id: true, fotoUpdatedAt: true },
+      });
+      const fotos: Record<string, number> = {};
+      for (const it of items) fotos[it.id] = it.fotoUpdatedAt?.getTime() ?? 0;
+      return { fotos };
+    });
+
+    app.get("/materials/items/:id/foto", { preHandler: authorizeAny(materialPhotoPermsView) }, async (request, reply) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const item = await prisma.materialItem.findUnique({
+        where: { id },
+        select: { fotoPath: true, fotoUpdatedAt: true },
+      });
+      if (!item?.fotoPath) throw notFound("MATERIAL_PHOTO_NOT_FOUND", "El ítem no tiene foto");
+      const absolutePath = materialPhotoAbsolutePath(item.fotoPath);
+      if (!fs.existsSync(absolutePath)) {
+        throw notFound("MATERIAL_PHOTO_NOT_FOUND", "La foto no está en el storage");
+      }
+      reply.header("Content-Type", "image/jpeg");
+      // La URL lleva `?v=<fotoUpdatedAt>`, así que el contenido de una URL dada
+      // es inmutable: se puede cachear agresivo sin quedar pegado a la vieja.
+      reply.header("Cache-Control", "private, max-age=86400");
+      return reply.send(fs.createReadStream(absolutePath));
+    });
+
+    app.post("/materials/items/:id/foto", { preHandler: authorizeAny(materialPhotoPermsEdit) }, async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const item = await prisma.materialItem.findUnique({
+        where: { id },
+        select: { id: true, nombre: true, fotoPath: true },
+      });
+      if (!item) throw notFound("MATERIAL_ITEM_NOT_FOUND", "Ítem no encontrado");
+
+      const filePart = await request.file();
+      if (!filePart) throw badRequest("NO_FILE", "No se recibió ninguna imagen en el campo 'file'");
+
+      const saved = await saveMaterialItemPhoto(filePart);
+      const anterior = item.fotoPath;
+      const now = new Date();
+      await prisma.materialItem.update({
+        where: { id },
+        data: { fotoPath: saved.relativePath, fotoUpdatedAt: now },
+      });
+      // Recién acá se borra la vieja: si la escritura de la nueva falla, el ítem
+      // se queda con la que tenía en vez de quedar sin foto.
+      if (anterior && anterior !== saved.relativePath) {
+        await deleteMaterialPhotoFile(anterior);
+      }
+
+      await createAuditEntry({
+        entityType: AuditEntityType.material_item,
+        entityId: id,
+        userId: user.id,
+        action: AuditAction.updated,
+        description: `${anterior ? "Reemplazó" : "Agregó"} la foto del material "${item.nombre}"`,
+      });
+
+      return { success: true, fotoUpdatedAt: serializeDate(now), sizeBytes: saved.sizeBytes };
+    });
+
+    app.delete("/materials/items/:id/foto", { preHandler: authorizeAny(materialPhotoPermsEdit) }, async (request) => {
+      const user = ensureUser(request);
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const item = await prisma.materialItem.findUnique({
+        where: { id },
+        select: { id: true, nombre: true, fotoPath: true },
+      });
+      if (!item) throw notFound("MATERIAL_ITEM_NOT_FOUND", "Ítem no encontrado");
+      if (!item.fotoPath) return { success: true, deleted: false };
+
+      await prisma.materialItem.update({
+        where: { id },
+        data: { fotoPath: null, fotoUpdatedAt: null },
+      });
+      await deleteMaterialPhotoFile(item.fotoPath);
+
+      await createAuditEntry({
+        entityType: AuditEntityType.material_item,
+        entityId: id,
+        userId: user.id,
+        action: AuditAction.updated,
+        description: `Quitó la foto del material "${item.nombre}"`,
+      });
+
+      return { success: true, deleted: true };
+    });
+
     // ─── Materiales: Lista por proyecto ───────────────────────────────────────
 
     function serializeProjectMaterial(pm: {
@@ -13725,11 +13851,25 @@ export async function registerApiRoutes(app: FastifyInstance) {
         where: { projectId: id },
         include: {
           materialItem: {
-            select: { nombre: true, unidad: true, category: { select: { nombre: true, orden: true } } },
+            select: { id: true, nombre: true, unidad: true, fotoPath: true, category: { select: { nombre: true, orden: true } } },
           },
         },
         orderBy: { createdAt: "asc" },
       });
+
+      // Miniaturas de los ítems que tienen foto. Se leen una sola vez por ítem
+      // aunque se repita, y si el archivo no está la fila sale sin imagen: un
+      // storage incompleto no puede romper la exportación.
+      const fotoBuffers = new Map<string, Buffer>();
+      for (const relativePath of new Set(
+        materials.map((pm) => pm.materialItem.fotoPath).filter((p): p is string => !!p),
+      )) {
+        const buffer = await readMaterialPhotoBuffer(relativePath);
+        if (buffer) fotoBuffers.set(relativePath, buffer);
+      }
+      // Con fotos las filas son mucho más altas: si ningún ítem tiene, se
+      // mantiene el PDF compacto de siempre.
+      const withPhotos = fotoBuffers.size > 0;
 
       // Directorio de destino dentro del storage del proyecto
       const storageRoot = path.resolve(process.cwd(), "..", env.storagePath, id);
@@ -13771,21 +13911,28 @@ export async function registerApiRoutes(app: FastifyInstance) {
         // ── Definición de columnas según modo ────────────────────────────────
         // Sin precios: Ítem(300) · gap(5) · Cant(80) · gap(5) · Unidad(105) = 495
         // Con precios: Ítem(180) · gap(5) · Cant(40) · gap(5) · Unidad(55) · gap(5) · Precio(95) · gap(5) · Subtotal(105) = 495
+        // Con fotos se antepone una columna de 34pt (+4 de gap) y ese ancho se
+        // le resta a Ítem, para no tocar el resto de la grilla.
+        const PHOTO_W = withPhotos ? 34 : 0;
+        const PHOTO_SHIFT = withPhotos ? PHOTO_W + 4 : 0;
         const C = withPrices
           ? {
-              item:     { x: 50,  w: 180 },
+              item:     { x: 50 + PHOTO_SHIFT, w: 180 - PHOTO_SHIFT },
               cant:     { x: 235, w: 40  },
               unidad:   { x: 280, w: 55  },
               precio:   { x: 340, w: 95  },
               subtotal: { x: 440, w: 105 },
             }
           : {
-              item:     { x: 50,  w: 300 },
+              item:     { x: 50 + PHOTO_SHIFT, w: 300 - PHOTO_SHIFT },
               cant:     { x: 355, w: 80  },
               unidad:   { x: 440, w: 105 },
             };
         const PAGE_BOTTOM = 790;
-        const ROW_H = 16;
+        const ROW_H = withPhotos ? 34 : 16;
+        // Con fotos la fila es alta: el texto se centra en vez de pegarse arriba.
+        const TEXT_DY = withPhotos ? 12 : 3;
+        const PHOTO_SIZE = 28;
         const FONT_SIZE = 8.5;
 
         function fitText(text: string, maxW: number): string {
@@ -13795,7 +13942,22 @@ export async function registerApiRoutes(app: FastifyInstance) {
           return t + "…";
         }
 
-        function drawDataRow(y: number, nombre: string, cant: string, unidad: string, precio?: string, subtotal?: string) {
+        function drawDataRow(rowTop: number, nombre: string, cant: string, unidad: string, fotoPath: string | null, precio?: string, subtotal?: string) {
+          const y = rowTop + TEXT_DY;
+          if (withPhotos) {
+            const buffer = fotoPath ? fotoBuffers.get(fotoPath) : undefined;
+            if (buffer) {
+              try {
+                doc.image(buffer, 50 + (PHOTO_W - PHOTO_SIZE) / 2, rowTop + (ROW_H - PHOTO_SIZE) / 2, {
+                  fit: [PHOTO_SIZE, PHOTO_SIZE],
+                  align: "center",
+                  valign: "center",
+                });
+              } catch {
+                // Una imagen corrupta no puede tumbar la exportación entera.
+              }
+            }
+          }
           doc.font("Helvetica").fontSize(FONT_SIZE).fillColor("#000000");
           doc.text(fitText(nombre, C.item.w), C.item.x, y, { width: C.item.w, lineBreak: false });
           doc.text(cant, C.cant.x, y, { width: C.cant.w, lineBreak: false, align: "right" });
@@ -13808,9 +13970,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
         }
 
         // ── Cabecera de tabla ─────────────────────────────────────────────────
+        // La cabecera y las bandas de categoría mantienen su alto original aunque
+        // las filas de datos crezcan para alojar la miniatura.
+        const HEAD_H = 16;
         let rowY = 110;
-        doc.rect(50, rowY, 495, ROW_H).fill("#1e3a5f");
+        doc.rect(50, rowY, 495, HEAD_H).fill("#1e3a5f");
         doc.font("Helvetica-Bold").fontSize(FONT_SIZE).fillColor("#ffffff");
+        if (withPhotos) doc.text("Foto", 50, rowY + 3, { width: PHOTO_W, lineBreak: false, align: "center" });
         doc.text("Ítem",   C.item.x, rowY + 3, { width: C.item.w, lineBreak: false });
         doc.text("Cant.",  C.cant.x, rowY + 3, { width: C.cant.w, lineBreak: false, align: "right" });
         doc.text("Unidad", C.unidad.x, rowY + 3, { width: C.unidad.w, lineBreak: false, align: "center" });
@@ -13819,7 +13985,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           doc.text("Precio",   Cp.precio.x,   rowY + 3, { width: Cp.precio.w,   lineBreak: false, align: "right" });
           doc.text("Subtotal", Cp.subtotal.x, rowY + 3, { width: Cp.subtotal.w, lineBreak: false, align: "right" });
         }
-        rowY += ROW_H + 1;
+        rowY += HEAD_H + 1;
 
         // ── Filas de datos ────────────────────────────────────────────────────
         const groups = new Map<string, { orden: number; nombre: string; items: typeof materials }>();
@@ -13836,16 +14002,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
         let rowAlt = false;
 
         for (const group of sortedGroups) {
-          if (rowY + ROW_H * 2 > PAGE_BOTTOM) {
+          if (rowY + HEAD_H + ROW_H > PAGE_BOTTOM) {
             doc.addPage();
             rowY = 50;
             rowAlt = false;
           }
 
-          doc.rect(50, rowY, 495, ROW_H - 1).fill("#dbeafe");
+          doc.rect(50, rowY, 495, HEAD_H - 1).fill("#dbeafe");
           doc.font("Helvetica-Bold").fontSize(8).fillColor("#1e3a5f")
              .text(group.nombre, 54, rowY + 3, { width: 487, lineBreak: false });
-          rowY += ROW_H;
+          rowY += HEAD_H;
 
           for (const pm of group.items) {
             if (rowY + ROW_H > PAGE_BOTTOM) {
@@ -13865,10 +14031,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
             if (rowAlt) doc.rect(50, rowY, 495, ROW_H - 1).fill("#f8fafc");
             drawDataRow(
-              rowY + 3,
+              rowY,
               pm.materialItem.nombre,
               qty.toString(),
               pm.materialItem.unidad,
+              pm.materialItem.fotoPath,
               withPrices ? `${price.toFixed(2)} ${pm.moneda}` : undefined,
               withPrices ? `${subtotal.toFixed(2)} ${pm.moneda}` : undefined,
             );

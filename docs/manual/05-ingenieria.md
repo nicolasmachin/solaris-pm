@@ -1,7 +1,8 @@
 # 05 · Ingeniería
 
-> **Capítulo parcial.** Solo está documentado el **consolidador de materiales**.
-> El resto de las herramientas existe y está en producción; falta escribirlas.
+> **Capítulo parcial.** Están documentados el **consolidador de materiales** y la
+> **foto de referencia del material**. El resto de las herramientas existe y está
+> en producción; falta escribirlas.
 
 El workspace de ingeniería y sus herramientas: unifilar, materiales, pre-ingeniería, visitas y proyecto final.
 
@@ -133,6 +134,124 @@ frontend el botón de la Vista compras se habilita con `INGENIERIA:EDIT` ||
 - **Proyecto sin ítems**: no aparece entre los elegibles.
 - **Muchos proyectos**: el PDF pasa a horizontal desde 4, pero las columnas se
   reparten el ancho restante — con muchos proyectos quedan angostas. No hay tope.
+
+---
+
+# Foto de referencia del material
+
+## Para qué existe
+
+El catálogo tiene ítems de nombre casi idéntico (perfiles, sujetadores,
+borneras, cables). Quien compra o quien prepara la salida a obra no siempre sabe
+cuál es cuál leyendo el nombre. Cada ítem del catálogo puede tener **una** foto
+de referencia que se consulta desde cualquier lista de materiales.
+
+No es una galería del material ni documentación del proveedor: es una sola foto,
+chica, para reconocerlo de un vistazo.
+
+## Cómo se usa
+
+En todas las listas de materiales aparece un **ojito** junto al ítem:
+
+| Dónde | Archivo |
+|---|---|
+| Lista de materiales del proyecto | `components/project/materials/MaterialsTable.tsx` |
+| Buscador para agregar materiales al proyecto | `components/project/EngineeringMaterials.tsx` (`AddItemModal`) |
+| Consolidador de materiales | `components/ingenieria/consolidador/ConsolidatedTableView.tsx` |
+| Stock | `pages/Stock.tsx` |
+| Plantillas de materiales | `pages/AdminMaterialTemplates.tsx` |
+| Catálogo en Administración | `pages/AdminMateriales.tsx` (`ItemsPanel`) |
+
+- **Ítem con foto**: el ícono es un ojo lleno. Al pasar el mouse se abre un
+  popover con la imagen. Con click el popover queda fijo y, si el usuario puede
+  editar, aparecen "Cambiar" y "Quitar".
+- **Ítem sin foto**: el ícono es un `+` de imagen punteado y un click abre
+  directamente el selector de archivos. A quien no puede editar no se le muestra
+  nada (queda el hueco de la columna).
+- El click sirve también en celular, donde no hay hover.
+
+La foto se puede cargar **desde cualquiera de esas pantallas**, no solo desde
+Administración: la confusión aparece armando la lista del proyecto, que es donde
+conviene resolverla.
+
+## Cómo funciona
+
+- Campos `fotoPath` y `fotoUpdatedAt` en `MaterialItem` (`schema.prisma`).
+- `server/src/services/material-photo.service.ts` procesa la imagen:
+  `saveMaterialItemPhoto()` la reduce a **480px de lado mayor** y la recomprime a
+  **JPEG calidad 72**; una foto de celular de varios MB queda en 15-25 KB. El
+  original **no se guarda**.
+- El formato es JPEG y no WebP **porque PDFKit solo embebe JPEG y PNG**, y la
+  misma imagen se reusa en el PDF de la lista de materiales.
+- HEIC del iPhone se acepta y se convierte al entrar (`convertirHeicABufferJpeg`),
+  igual que en el resto de los caminos de subida.
+- Los archivos viven en `storage/catalogo/materiales/<uuid>.jpg`. **No son
+  `FileAttachment`** y no cuelgan de ningún proyecto: el ítem es del catálogo
+  global.
+- El frontend no pide la foto ítem por ítem para saber si existe: hay un índice
+  liviano `GET /materials/items/con-foto` → `{ fotos: { itemId: epoch } }`,
+  cacheado 5 minutos por TanStack Query y compartido por todas las listas
+  (`useMaterialPhotoIndex` en `components/materials/MaterialPhoto.tsx`).
+- La imagen se descarga **recién al pasar el mouse**, vía `useAuthBlobUrl` (el
+  endpoint pide `Authorization`, así que un `<img src>` directo no sirve). La URL
+  lleva `?v=<fotoUpdatedAt>`, lo que permite cachearla un día sin quedar pegado a
+  una foto vieja tras un reemplazo.
+- El popover se dibuja en un **portal con posición fija**: las tablas de
+  materiales tienen `overflow-x-auto` y un `absolute` quedaría recortado.
+
+### En el PDF de la lista de materiales
+
+`POST /projects/:id/materials/export-pdf` antepone una columna **Foto** de 34pt
+y sube el alto de fila de 16 a 34pt, restándole el ancho a la columna Ítem (por
+eso los nombres largos se truncan más que antes en el modo con precios).
+
+**Si ningún ítem de esa lista tiene foto, el PDF sale exactamente como antes**:
+la columna no existe y las filas siguen siendo de 16pt.
+
+## Permisos
+
+| Endpoint | Permiso |
+|---|---|
+| `GET /materials/items/con-foto` | `INGENIERIA:VIEW` **o** `OPERACIONES:VIEW` **o** `STOCK:VIEW` **o** `CONFIGURACION:VIEW` |
+| `GET /materials/items/:id/foto` | los mismos cuatro `VIEW` |
+| `POST /materials/items/:id/foto` | `INGENIERIA:EDIT` **o** `OPERACIONES:EDIT` **o** `STOCK:EDIT` **o** `CONFIGURACION:EDIT` |
+| `DELETE /materials/items/:id/foto` | los mismos cuatro `EDIT` |
+
+Es **el único campo del catálogo que se puede tocar sin permisos de
+configuración**, y es deliberado: el resto del ítem (precio, categoría, unidad)
+sigue pidiendo `CONFIGURACION:EDIT` o `STOCK:EDIT`.
+
+Como `OPERACIONES:EDIT` y `STOCK:EDIT` están repartidos ampliamente en la matriz,
+en la práctica hoy pueden cambiar la foto casi todos los roles internos —
+incluidos `ASESOR_COMERCIAL` y `FINANZAS`, que la tienen por vías indirectas.
+Subir o quitar una foto queda auditado (`material_item` / `updated`).
+
+## Reglas y decisiones
+
+- **Una foto por ítem**, no una galería. Subir otra reemplaza la anterior.
+- **El original se descarta.** Lo que se guarda es solo la versión chica: la
+  feature existe para que las listas y el PDF sigan siendo livianos.
+- **La foto se borra recién después** de que la nueva quedó escrita: si falla el
+  reemplazo, el ítem se queda con la que tenía en vez de quedar sin ninguna.
+- **La foto es del catálogo, no del proyecto**: cambiarla se ve en todos los
+  proyectos que usan ese ítem, y en los consolidados viejos también (el
+  consolidado guarda `catalogItemId`, la foto se resuelve en vivo).
+- **Carga perezosa**: el índice se pide una vez por sesión-ish y las imágenes
+  solo cuando se miran. Una lista de 60 ítems no descarga nada hasta el hover.
+
+## Casos borde
+
+- **Archivo que no es imagen**: rechazo con `INVALID_PHOTO_TYPE` por extensión, o
+  `INVALID_PHOTO` si la extensión miente y sharp no puede decodificarlo.
+- **Imagen muy grande**: se corta en el límite global de subida
+  (`MAX_FILE_SIZE_MB`, 20 MB por defecto).
+- **Foto en la base pero archivo faltante en el storage**: el endpoint responde
+  404 y el popover dice "No se pudo cargar la foto"; en el PDF esa fila sale sin
+  imagen en vez de romper la exportación.
+- **Ítem desactivado**: conserva su foto; si vuelve a activarse, sigue ahí.
+- **Borrar el ítem del catálogo**: si está en uso solo se desactiva, así que la
+  foto queda. Si se borra de verdad, **el archivo físico queda huérfano** en
+  `storage/catalogo/materiales/` — hoy no hay limpieza para ese caso.
 
 ---
 

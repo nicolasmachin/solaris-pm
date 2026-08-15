@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { Plus, X, AlertTriangle, Package, ChevronLeft, ChevronRight, ArrowDown, ArrowUp, SlidersHorizontal } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
+import { MaterialPhotoButton } from '../components/materials/MaterialPhoto';
+import { usePermission } from '../hooks/usePermission';
 import {
   createStockMovement, getProductMovements, getStockAlerts, getStockMovements, getStockProducts,
 } from '../api/stock.api';
@@ -643,6 +645,7 @@ function ProductPanel({ product, onClose, onRefresh }: { product: StockProduct; 
 
 export function Stock() {
   const qc = useQueryClient();
+  const canEditStock = usePermission('STOCK', 'EDIT');
   const [newModal, setNewModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<StockProduct | null>(null);
   const [filterCat, setFilterCat] = useState('');
@@ -797,6 +800,7 @@ export function Stock() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-border)] text-xs font-mono text-[var(--color-text-muted)] uppercase tracking-wider">
+                  <th className="px-2 py-3 text-center font-medium w-12">Foto</th>
                   {['Producto', 'Categoría', 'Unidad', 'Stock', 'Mínimo', 'Ubicación', 'Precio sug.'].map(h => (
                     <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
                   ))}
@@ -808,6 +812,10 @@ export function Stock() {
                     className={klass('cursor-pointer hover:bg-[var(--color-bg-card-hover)] transition-colors',
                       p.bajominimo && 'bg-red-500/5',
                       !p.activo && 'opacity-60')}>
+                    {/* La fila abre el detalle del producto: el ojito no debe dispararlo. */}
+                    <td className="px-2 py-3 text-center" onClick={e => e.stopPropagation()}>
+                      <MaterialPhotoButton itemId={p.id} nombre={p.nombre} canEdit={canEditStock} />
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         {p.bajominimo && <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />}

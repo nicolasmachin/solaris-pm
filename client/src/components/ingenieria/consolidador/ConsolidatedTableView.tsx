@@ -13,6 +13,7 @@ import {
   type ProjectSnapshot,
 } from "../../../api/consolidador.api";
 import { usePermission } from "../../../hooks/usePermission";
+import { MaterialPhotoButton } from "../../materials/MaterialPhoto";
 import { useAuthStore } from "../../../store/auth.store";
 import { StatusPill } from "../../project/materials/StatusPill";
 import { MATERIAL_STATUSES, type MaterialStatus } from "../../../types/materials.types";
@@ -406,6 +407,7 @@ export function ConsolidatedTableView({ id, onClose }: { id: string; onClose: ()
                     <table className="w-full text-xs">
                       <thead className="bg-[var(--color-bg-app)] text-[var(--color-text-muted)]">
                         <tr className="text-left text-[10px] uppercase tracking-wider font-mono">
+                          <th className="px-1 py-1.5 w-8 text-center" title="Foto del material">Foto</th>
                           <th className="px-2 py-1.5">Ítem</th>
                           <th className="px-2 py-1.5 w-16">Unidad</th>
                           {projects.map((p) => (
@@ -424,6 +426,13 @@ export function ConsolidatedTableView({ id, onClose }: { id: string; onClose: ()
                           const itemRowClass = comprasOn && isCrossed ? "material-crossed" : "";
                           return (
                             <tr key={item.catalogItemId} className={`${itemRowClass} hover:bg-[var(--color-bg-card-hover)]`}>
+                              <td className="px-1 py-1.5 text-center">
+                                <MaterialPhotoButton
+                                  itemId={item.catalogItemId}
+                                  nombre={item.nombre}
+                                  canEdit={canEdit}
+                                />
+                              </td>
                               <td className="px-2 py-1.5 text-[var(--color-text-primary)]">
                                 <span className="crossable">{item.nombre}</span>
                               </td>

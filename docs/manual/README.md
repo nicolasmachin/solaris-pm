@@ -37,7 +37,7 @@ el manual difiere del código, manda el código y **el manual se corrige**.
 | 02 | [Ventas](02-ventas.md) | Leads, pipeline, reclamos, propuestas comerciales, conversión a proyecto, comisiones | 🟡 Parcial (fechas del proceso · cotizador: precargas y saludo · cotizador B2B) |
 | 03 | [Proyectos](03-proyectos.md) | Pipeline de obra, etapas, subetapas, checklists, ampliaciones, traspasos | ⬜ Pendiente |
 | 04 | [Tareas y tickets](04-tareas.md) | Tareas de proyecto, tareas sueltas, estado en espera, Mis tareas, tickets | ✅ Completo |
-| 05 | [Ingeniería](05-ingenieria.md) | Unifilar, materiales, triángulos, pre-ingeniería, visitas técnicas, proyecto final | 🟡 Parcial (consolidador de materiales) |
+| 05 | [Ingeniería](05-ingenieria.md) | Unifilar, materiales, triángulos, pre-ingeniería, visitas técnicas, proyecto final | 🟡 Parcial (consolidador de materiales · foto del material) |
 | 06 | [Operaciones](06-operaciones.md) | Obra, fotos, videos, stock, logística, agenda de instalación | ⬜ Pendiente |
 | 07 | [Habilitación UTE](07-ute.md) | Trámite, subetapas dinámicas, formularios, documentos firmados | ⬜ Pendiente |
 | 08 | [Finanzas](08-finanzas.md) | Movimientos, cobros, pagos a proveedores, facturación, flujo de fondos, estado de resultados | ⬜ Pendiente |

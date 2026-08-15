@@ -7,6 +7,8 @@ import {
   getMaterialItems, createMaterialItem, patchMaterialItem, deleteMaterialItem,
 } from '../api/materials.api';
 import { getSuppliers } from '../api/finance.api';
+import { MaterialPhotoButton } from '../components/materials/MaterialPhoto';
+import { usePermission } from '../hooks/usePermission';
 import type { MaterialCategory, MaterialItem } from '../types/materials.types';
 import type { Moneda } from '../types/finance.types';
 
@@ -353,6 +355,7 @@ function ItemForm({ initial, categories, suppliers, onSuccess, onCancel }: {
 
 function ItemsPanel() {
   const qc = useQueryClient();
+  const canEditCatalog = usePermission('CONFIGURACION', 'EDIT') || usePermission('STOCK', 'EDIT');
   const [categoryId, setCategoryId] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [showAll, setShowAll] = useState(false);
@@ -453,14 +456,17 @@ function ItemsPanel() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-border)] text-xs font-mono text-[var(--color-text-muted)] uppercase tracking-wider">
-                  {['Categoría', 'Nombre', 'Unidad', 'Precio sug.', 'IVA %', 'Precio sug. c/IVA', 'Proveedor default', 'Usado', 'Estado', ''].map((h, i) => (
-                    <th key={i} className={klass('px-4 py-3 text-left font-medium', i === 9 && 'text-right')}>{h}</th>
+                  {['Foto', 'Categoría', 'Nombre', 'Unidad', 'Precio sug.', 'IVA %', 'Precio sug. c/IVA', 'Proveedor default', 'Usado', 'Estado', ''].map((h, i) => (
+                    <th key={i} className={klass('px-4 py-3 text-left font-medium', i === 0 && 'w-12 px-2 text-center', i === 10 && 'text-right')}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border)]">
                 {filtered.map(it => (
                   <tr key={it.id} className={klass('hover:bg-[var(--color-bg-card-hover)] transition-colors', !it.activo && 'opacity-60')}>
+                    <td className="px-2 py-2 text-center">
+                      <MaterialPhotoButton itemId={it.id} nombre={it.nombre} canEdit={canEditCatalog} />
+                    </td>
                     <td className="px-4 py-2 text-[var(--color-text-muted)]">{it.category?.nombre ?? '—'}</td>
                     <td className="px-4 py-2 font-medium text-[var(--color-text-primary)]">
                       <div>{it.nombre}</div>

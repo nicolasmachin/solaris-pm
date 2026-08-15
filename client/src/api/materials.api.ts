@@ -60,6 +60,30 @@ export const patchMaterialItem = (id: string, body: Partial<{
 export const deleteMaterialItem = (id: string) =>
   apiClient.delete<{ success: true; deactivated: boolean }>(`/api/materials/items/${id}`).then(r => r.data);
 
+// ─── Foto de referencia del ítem ─────────────────────────────────────────────
+//
+// Un solo índice liviano (`/con-foto`) le dice a todas las listas qué ítems
+// tienen foto, para no sumar el dato a cada endpoint que devuelve materiales.
+// El valor es el epoch de la última actualización y se usa como cache-buster.
+
+export const getMaterialPhotoIndex = () =>
+  apiClient.get<{ fotos: Record<string, number> }>('/api/materials/items/con-foto').then(r => r.data.fotos);
+
+/** URL del endpoint de la imagen — se pasa a `useAuthBlobUrl`, no a un <img> directo. */
+export const materialItemFotoUrl = (id: string, version?: number) =>
+  `/api/materials/items/${id}/foto${version ? `?v=${version}` : ''}`;
+
+export const uploadMaterialItemFoto = (id: string, file: File) => {
+  const form = new FormData();
+  form.append('file', file);
+  return apiClient
+    .post<{ success: true; fotoUpdatedAt: string; sizeBytes: number }>(`/api/materials/items/${id}/foto`, form)
+    .then(r => r.data);
+};
+
+export const deleteMaterialItemFoto = (id: string) =>
+  apiClient.delete<{ success: true; deleted: boolean }>(`/api/materials/items/${id}/foto`).then(r => r.data);
+
 // ─── Lista por proyecto ──────────────────────────────────────────────────────
 
 export const getProjectMaterials = (projectId: string) =>

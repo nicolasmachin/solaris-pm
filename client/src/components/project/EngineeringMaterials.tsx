@@ -14,6 +14,7 @@ import { useAuthStore } from '../../store/auth.store';
 import { usePermission } from '../../hooks/usePermission';
 import { todayLocalISO } from '../../utils/date';
 
+import { MaterialPhotoButton } from '../materials/MaterialPhoto';
 import { MaterialsFilters } from './materials/MaterialsFilters';
 import { MaterialsTable } from './materials/MaterialsTable';
 import { applyFilters, hasAnyFilter } from './materials/types';
@@ -168,7 +169,7 @@ function GeneratePrevistosModal({
 
 // ─── Modal: Agregar ítem desde catálogo ────────────────────────────────────────
 
-function AddItemModal({ projectId, existingItemIds, onClose }: { projectId: string; existingItemIds: Set<string>; onClose: () => void }) {
+function AddItemModal({ projectId, existingItemIds, canEdit, onClose }: { projectId: string; existingItemIds: Set<string>; canEdit: boolean; onClose: () => void }) {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [adding, setAdding] = useState<string | null>(null);
@@ -276,6 +277,9 @@ function AddItemModal({ projectId, existingItemIds, onClose }: { projectId: stri
                           const already = existingItemIds.has(it.id) || addedIds.has(it.id);
                           return (
                             <div key={it.id} className="flex items-center gap-3 px-3 py-2 bg-[var(--color-bg-card)]">
+                              {/* La foto acá es clave: es el momento en que se elige
+                                  entre ítems de nombre parecido. */}
+                              <MaterialPhotoButton itemId={it.id} nombre={it.nombre} canEdit={canEdit} />
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm text-[var(--color-text-primary)] truncate">{it.nombre}</p>
                                 <p className="text-xs text-[var(--color-text-muted)]">
@@ -772,6 +776,7 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
         <AddItemModal
           projectId={projectId}
           existingItemIds={existingItemIds}
+          canEdit={canEdit}
           onClose={() => setShowAdd(false)}
         />
       )}

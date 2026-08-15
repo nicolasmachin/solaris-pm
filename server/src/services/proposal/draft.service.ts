@@ -8,7 +8,7 @@ import { Prisma, ProposalVariante } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { AppError, badRequest, notFound } from "../../utils/errors.js";
 import { buildCalcDebugRows, type CalcDebugRow } from "./calculator-labels.js";
-import { calculate } from "./calculator.js";
+import { calculate, interpretarMarkup } from "./calculator.js";
 import { buildInitialDraftData, mergeDraftData } from "./initial-draft.js";
 import { resolveDefaults } from "./resolveDefaults.js";
 import { draftDataPublishSchema, draftDataStorageSchema } from "./schemas/draft.schema.js";
@@ -187,6 +187,27 @@ export interface ResumenComercial {
   cuota24m: number;
   cuota36m: number;
   cuota60m: number;
+  /**
+   * El markup que se está aplicando. No es un dato sensible: lo elige el propio
+   * asesor. Va en el resumen normal porque hasta acá se podía escribir sin
+   * poder consultarlo, que es una asimetría molesta — para saber con qué markup
+   * quedó una propuesta había que abrir la aplicación.
+   */
+  markupPorcentaje: number;
+  /**
+   * Lo que gana la empresa con esta propuesta. Va aparte porque NO se le
+   * muestra al cliente y no todos los que cotizan tienen por qué verlo: quien
+   * consuma esto decide si lo expone según el permiso de quien pregunta.
+   *
+   * `gananciaUsd` es el markup en dólares. La calculadora mantiene la identidad
+   * `gananciaFinal ≡ markupUsdSinIva`, así que es el mismo número por dos
+   * caminos: lo que se agrega sobre el costo y lo que queda al final del flujo
+   * de caja del negocio.
+   */
+  interno: {
+    gananciaUsd: number;
+    margenSobreVenta: number;
+  };
 }
 
 /**
@@ -229,6 +250,15 @@ export async function computeDraftResumenComercial(
     cuota24m: calc.cuota24m,
     cuota36m: calc.cuota36m,
     cuota60m: calc.cuota60m,
+    // El markup se normaliza a porcentaje: el campo acepta 0.2 o 20 y la
+    // calculadora lo desambigua por magnitud, así que devolver el valor crudo
+    // haría que la misma propuesta se leyera "0.2%" o "20%" según cómo se
+    // hubiera cargado.
+    markupPorcentaje: interpretarMarkup(parsed.data.cotizacion.markupPorcentaje) * 100,
+    interno: {
+      gananciaUsd: calc.markupUsdSinIva,
+      margenSobreVenta: calc.margen,
+    },
   };
 }
 

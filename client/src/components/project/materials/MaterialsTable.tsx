@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import { Check, ExternalLink, MoreHorizontal, Palette, StickyNote, Trash2 } from 'lucide-react';
 
 import { patchProjectMaterial, deleteProjectMaterial } from '../../../api/materials.api';
+import { MaterialPhotoButton } from '../../materials/MaterialPhoto';
 import type { MaterialRowColor, ProjectMaterial } from '../../../types/materials.types';
 import { ROW_COLOR_SWATCHES, categoryBadgeClass } from './types';
 import { StatusPill } from './StatusPill';
@@ -35,6 +36,7 @@ export function MaterialsTable({ projectId, rows, canEdit, canViewCatalog }: Pro
             style={{ background: 'var(--color-table-header-bg)', color: 'var(--color-table-header-text)' }}
           >
             <th className="px-2 py-2 text-left font-semibold w-10">#</th>
+            <th className="px-1 py-2 text-center font-semibold w-8" title="Foto del material">Foto</th>
             <th className="px-3 py-2 text-left font-semibold">Material</th>
             <th className="px-2 py-2 text-left font-semibold w-32">Categoría</th>
             <th className="px-2 py-2 text-right font-semibold w-20">Cantidad</th>
@@ -113,6 +115,15 @@ const MaterialRow = memo(function MaterialRow({
             />
           )}
         </span>
+      </td>
+      <td className="px-1 py-2 align-top text-center">
+        {row.materialItem && (
+          <MaterialPhotoButton
+            itemId={row.materialItem.id}
+            nombre={row.materialItem.nombre}
+            canEdit={canEdit}
+          />
+        )}
       </td>
       <td className="px-3 py-2 align-top">
         <div className="crossable font-semibold text-[var(--color-text-primary)]">

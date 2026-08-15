@@ -7,6 +7,7 @@ import {
   deleteMaterialTemplate, setMaterialTemplateItems,
 } from '../api/materialTemplates.api';
 import { getMaterialCategories, getMaterialItems } from '../api/materials.api';
+import { MaterialPhotoButton } from '../components/materials/MaterialPhoto';
 import type { MaterialTemplate, PhaseType } from '../types/materials.types';
 import { PHASE_TYPE_LABELS } from '../types/materials.types';
 
@@ -200,6 +201,7 @@ function TemplateItemsEditor({ template, onSuccess, onClose }: { template: Mater
               ) : (
                 lines.map(l => (
                   <div key={l.materialItemId} className="flex items-center gap-2 px-2 py-1.5 rounded-lg border border-[var(--color-border)]">
+                    <MaterialPhotoButton itemId={l.materialItemId} nombre={l.nombre} canEdit={false} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-[var(--color-text-primary)] truncate">{l.nombre}</p>
                       <p className="text-xs text-[var(--color-text-muted)] truncate">{l.categoria}</p>
@@ -238,6 +240,7 @@ function TemplateItemsEditor({ template, onSuccess, onClose }: { template: Mater
                     <div className="space-y-1">
                       {(catalogByCategory.get(c.id) ?? []).map(it => (
                         <div key={it.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)]">
+                          <MaterialPhotoButton itemId={it.id} nombre={it.nombre} canEdit={false} />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-[var(--color-text-primary)] truncate">{it.nombre}</p>
                             <p className="text-xs text-[var(--color-text-muted)]">{it.unidad}</p>

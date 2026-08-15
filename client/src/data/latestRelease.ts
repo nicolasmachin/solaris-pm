@@ -23,42 +23,20 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "9.3",
-  date: "13 de agosto de 2026",
+  version: "9.4",
+  date: "15 de agosto de 2026",
   sections: [
     {
-      title: "Armar la propuesta desde el chat",
+      title: "Foto de cada material, para no confundir ítems parecidos",
       items: [
-        "Ya se puede cotizar una propuesta residencial conversando con Claude, desde el celular: se dictan los datos que faltan, muestra el precio final, el ahorro y las cuotas, y solo emite el PDF cuando se confirma.",
-        "En la práctica hay que dictar cinco cosas: la ciudad, cuánto paga de UTE por mes, cuántos paneles, los metros de techo y la potencia del inversor. El resto lo completa solo.",
-        "La cotización del dólar no se puede tocar desde el chat; el markup sí. Las propuestas de empresa se siguen armando desde la aplicación.",
-      ],
-    },
-    {
-      title: "El chat contesta sobre obras y clientes instalados",
-      items: [
-        '"¿Qué tengo hoy?": el embudo propio, las visitas de hoy y mañana, quiénes reclamaron, los clientes trabados hace más de dos semanas y los pendientes que vencen.',
-        "Proyectos: en qué etapa está una obra y si va en plazo, qué falta, el trámite de UTE con sus tiempos, materiales, documentos con enlace, historial y pendientes.",
-        "Experiencia Solar: buscar un generador —incluidos los cargados por planilla—, su ficha con el próximo mantenimiento y el último reporte fotovoltaico con su PDF.",
-        "Se puede comentar en una obra y registrar una llamada o un WhatsApp con un cliente instalado. Todo respeta los permisos de cada rol.",
-      ],
-    },
-    {
-      title: "Se distingue si el chat toca la base real",
-      items: [
-        "Al conectarse, el chat avisa si está apuntando a producción o a un entorno de prueba, y lo repite si se le pregunta cómo está la conexión.",
-      ],
-    },
-    {
-      title: "Arreglos en el cotizador",
-      items: [
-        "El guardado automático ya no falla al abrir una propuesta nueva: antes el indicador se ponía en error hasta completar la ciudad y la cantidad de paneles.",
-        "Las propuestas armadas de noche ya no salen fechadas al día siguiente. A partir de las nueve de la noche, la fecha del PDF se adelantaba un día.",
+        "Cada material del catálogo puede tener una foto de referencia. En todas las listas aparece un ojito al lado del ítem: pasando el mouse por encima se ve la foto, sin salir de la pantalla.",
+        "Está en la lista de materiales del proyecto, en el buscador para agregar materiales, en el consolidador, en Stock, en las plantillas y en el catálogo de Administración.",
+        "La foto se carga desde donde aparece la confusión, sin ir a Administración: si el ítem no tiene, el ícono se ve punteado y con un click se sube; si ya tiene, se hace click en el ojito para cambiarla o quitarla.",
+        "El PDF de la lista de materiales que se exporta para obra ahora sale con una miniatura en cada fila. Si ningún ítem tiene foto, queda compacto como antes.",
       ],
     },
   ],
 };
-
 
 /** Versiones anteriores para mostrar en el sidebar de novedades. */
 export type OldRelease = {
@@ -68,6 +46,16 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "9.3",
+    shortDate: "13 ago",
+    highlights: [
+      "Se puede cotizar una propuesta residencial conversando con Claude desde el celular: dicta los datos que faltan, muestra precio, ahorro y cuotas, y emite el PDF recién con la confirmación.",
+      "El chat contesta sobre obras y clientes instalados: qué tengo hoy, en qué etapa va una obra y si está en plazo, trámite de UTE, materiales, documentos e historial.",
+      "Al conectarse, el chat avisa si está apuntando a producción o a un entorno de prueba.",
+      "Arreglos en el cotizador: el guardado automático ya no falla al abrir una propuesta nueva y las propuestas armadas de noche ya no salen fechadas al día siguiente.",
+    ],
+  },
   {
     version: "9.2",
     shortDate: "12 ago",
