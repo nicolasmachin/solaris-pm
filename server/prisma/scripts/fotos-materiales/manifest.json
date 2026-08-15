@@ -1,15 +1,5 @@
 [
   {
-    "archivo": "sujetador-intermedio-paneles.jpg",
-    "itemId": "cmohlcxeu003om50htqmc089u",
-    "itemNombre": "SUJETADOR INTERMEDIO de Paneles"
-  },
-  {
-    "archivo": "sujetador-final-paneles.jpg",
-    "itemId": "cmohlcicj003mm50hn3bhezut",
-    "itemNombre": "SUJETADOR FINAL de Paneles"
-  },
-  {
     "archivo": "anclaje-quimico.jpg",
     "itemId": "cmr3ts3vo00zbmt0yjtagv3dg",
     "itemNombre": "Ancalje quimico"
@@ -133,5 +123,20 @@
     "archivo": "smart-meter-mono-growatt.jpg",
     "itemId": "cmohmmmss005zm50ha7fq7sks",
     "itemNombre": "SPM Smart Meter Mono Growatt"
+  },
+  {
+    "archivo": "anclaje-isopanel-ancho.jpg",
+    "itemId": "cmplp3wwj009zs70j7jizqji6",
+    "itemNombre": "Anclaje Isopanel ancho, con 3 tornillos arriba y 2 laterales"
+  },
+  {
+    "archivo": "sujetador-final-paneles.jpg",
+    "itemId": "cmohlcicj003mm50hn3bhezut",
+    "itemNombre": " SUJETADOR FINAL de Paneles "
+  },
+  {
+    "archivo": "anclaje-isopanel-acero.jpg",
+    "itemId": "cmohlh537003wm50hadctxkgh",
+    "itemNombre": "ANCLAJE  ISOPANEL ACERO"
   }
 ]

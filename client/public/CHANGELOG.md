@@ -11,7 +11,7 @@
 - La foto se carga **desde donde aparece la confusión**: no hace falta ir a Administración. Si el ítem todavía no tiene, el ícono se ve punteado y con un click se sube; si ya tiene, se hace click en el ojito para **cambiarla o quitarla**.
 - Se acepta cualquier foto (también las del iPhone) y se guarda **una sola versión chica**, de unos pocos KB, para que las listas sigan abriendo rápido.
 - El **PDF de la lista de materiales** que se exporta para obra ahora sale con una **miniatura en cada fila**. Si ningún ítem de esa lista tiene foto, el PDF queda compacto como antes.
-- Ya vienen cargadas las primeras **27 fotos**: los perfiles (chato, P y H), los sujetadores de paneles, el anclaje químico, la bornera de tierra, el cable unipolar de aluminio, el smart meter monofásico y toda la familia de llaves termomagnéticas. Cuando un material está cargado en varias medidas, la foto se repite en todas.
+- Ya vienen cargadas las primeras **28 fotos**: los perfiles (chato, P y H), los anclajes de isopanel, el sujetador final de paneles, el anclaje químico, la bornera de tierra, el cable unipolar de aluminio, el smart meter monofásico y toda la familia de llaves termomagnéticas. Cuando un material está cargado en varias medidas, la foto se repite en todas.
 
 ## v9.3
 
