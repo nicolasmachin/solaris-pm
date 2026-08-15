@@ -21,3 +21,9 @@ backup_*
 # atrapaba y las dejaba sin trackear → el deploy no las aplicaría).
 !server/prisma/migrations/**
 client/tsconfig.tsbuildinfo
+
+# Bandeja de entrada de fotos de materiales: los originales del celular (HEIC de
+# varios MB) se dejan acá para procesarlos; al repo van solo las versiones ya
+# reducidas, en server/prisma/scripts/fotos-materiales/.
+server/scripts/fotos-materiales/
+server/scripts/catalogo-prod.json

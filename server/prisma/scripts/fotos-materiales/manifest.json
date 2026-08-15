@@ -1,7 +1,132 @@
 [
   {
-    "archivo": "panel-resun-580.jpg",
-    "itemId": "cmohl35o6002im50hrtpsyiye",
-    "itemNombre": "Paneles Resun 580 W"
+    "archivo": "sujetador-intermedio-paneles.jpg",
+    "itemId": "cmohlcxeu003om50htqmc089u",
+    "itemNombre": "SUJETADOR INTERMEDIO de Paneles"
+  },
+  {
+    "archivo": "sujetador-final-paneles.jpg",
+    "itemId": "cmohlcicj003mm50hn3bhezut",
+    "itemNombre": "SUJETADOR FINAL de Paneles"
+  },
+  {
+    "archivo": "anclaje-quimico.jpg",
+    "itemId": "cmr3ts3vo00zbmt0yjtagv3dg",
+    "itemNombre": "Ancalje quimico"
+  },
+  {
+    "archivo": "perfil-chato.jpg",
+    "itemId": "cmohlbngg003km50honlphk0c",
+    "itemNombre": "PERFIL Chato 4.800 MM"
+  },
+  {
+    "archivo": "perfil-chato.jpg",
+    "itemId": "cmpeao66f00vbp10jomrtyktn",
+    "itemNombre": "PERFIL Chato 3.600 MM"
+  },
+  {
+    "archivo": "perfil-p.jpg",
+    "itemId": "cmohlb7y3003im50hc2exohy9",
+    "itemNombre": "PERFIL P 4.800MM"
+  },
+  {
+    "archivo": "perfil-p.jpg",
+    "itemId": "cmpeap75n00vdp10jk52hn9l7",
+    "itemNombre": "PERFIL P 3.600MM"
+  },
+  {
+    "archivo": "perfil-h.jpg",
+    "itemId": "cms6ovsmu028is60joy32r7g2",
+    "itemNombre": "PERFIL H 4.800 MM"
+  },
+  {
+    "archivo": "bornera-pat-riel-din.jpg",
+    "itemId": "cmohoaei600bim50hn97ekg1q",
+    "itemNombre": "Bornera PAT (Tierra) 7 tornillos RIEL DIN"
+  },
+  {
+    "archivo": "cable-unipolar-aluminio-xlpe.jpg",
+    "itemId": "cmq5t15hv004jmf0j4gjm3a1m",
+    "itemNombre": "Cable unipolar Aluminio 95 mm² XLPE 0,6/1 kV"
+  },
+  {
+    "archivo": "cable-unipolar-aluminio-xlpe.jpg",
+    "itemId": "cmrocfk5r001bt70kx51fnzsl",
+    "itemNombre": "Cable unipolar Aluminio 75 mm² XLPE 0,6/1 kV"
+  },
+  {
+    "archivo": "cable-unipolar-aluminio-xlpe.jpg",
+    "itemId": "cmroce71d0019t70kugq9rs1j",
+    "itemNombre": "Cable unipolar Aluminio 50 mm² XLPE 0,6/1 kV"
+  },
+  {
+    "archivo": "interruptor-termomagnetico.jpg",
+    "itemId": "cmp1ma1cp00hvoz0y7oux8ygj",
+    "itemNombre": "Interruptor Termomagnetico 60A 3P"
+  },
+  {
+    "archivo": "interruptor-termomagnetico.jpg",
+    "itemId": "cmq5t9snn0057mf0jxe1e0c91",
+    "itemNombre": "Interruptor Termomagnetico 80A 4P"
+  },
+  {
+    "archivo": "interruptor-termomagnetico.jpg",
+    "itemId": "cmohnczxw007ym50h81jaxs3p",
+    "itemNombre": "Interruptor Termomagnético 25A  2P"
+  },
+  {
+    "archivo": "interruptor-termomagnetico.jpg",
+    "itemId": "cmohnfur80086m50ho359gwvb",
+    "itemNombre": "Interruptor Termomagnético 25A  3P"
+  },
+  {
+    "archivo": "interruptor-termomagnetico.jpg",
+    "itemId": "cmohni9v1008em50hgp4d2vn6",
+    "itemNombre": "Interruptor Termomagnético 25A  4P"
+  },
+  {
+    "archivo": "interruptor-termomagnetico.jpg",
+    "itemId": "cmohndf1g0080m50h3xe78gdk",
+    "itemNombre": "Interruptor Termomagnético 32A  2P"
+  },
+  {
+    "archivo": "interruptor-termomagnetico.jpg",
+    "itemId": "cmohnh8ok0088m50h30ucu8jz",
+    "itemNombre": "Interruptor Termomagnético 32A  3P"
+  },
+  {
+    "archivo": "interruptor-termomagnetico.jpg",
+    "itemId": "cmohnijyz008gm50h2hx3tez0",
+    "itemNombre": "Interruptor Termomagnético 32A  4P"
+  },
+  {
+    "archivo": "interruptor-termomagnetico.jpg",
+    "itemId": "cmohnedsw0082m50hy00w4cbo",
+    "itemNombre": "Interruptor Termomagnético 40A  2P"
+  },
+  {
+    "archivo": "interruptor-termomagnetico.jpg",
+    "itemId": "cmohnhiyc008am50hq5i1oh2m",
+    "itemNombre": "Interruptor Termomagnético 40A  3P"
+  },
+  {
+    "archivo": "interruptor-termomagnetico.jpg",
+    "itemId": "cmohniu78008im50h242slm2c",
+    "itemNombre": "Interruptor Termomagnético 40A  4P"
+  },
+  {
+    "archivo": "interruptor-termomagnetico.jpg",
+    "itemId": "cmohnerx60084m50hx2bm2ti8",
+    "itemNombre": "Interruptor Termomagnético 50A  2P"
+  },
+  {
+    "archivo": "interruptor-termomagnetico.jpg",
+    "itemId": "cmohnhy1x008cm50hsc76agp8",
+    "itemNombre": "Interruptor Termomagnético 50A  3P"
+  },
+  {
+    "archivo": "interruptor-termomagnetico.jpg",
+    "itemId": "cmohnj6el008km50h97nrrj6l",
+    "itemNombre": "Interruptor Termomagnético 50A  4P"
   }
 ]

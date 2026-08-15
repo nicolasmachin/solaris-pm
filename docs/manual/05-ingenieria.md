@@ -223,6 +223,23 @@ duplica archivos ni cambia `fotoUpdatedAt` (que es lo que invalida el cache del
 navegador). Los ítems que no existen en ese entorno se reportan al final y no
 frenan al resto. En producción se corre después del deploy (ver `DEPLOY.md` §6).
 
+Detalles del flujo:
+
+- Las fotos crudas del celular (HEIC de 1-2 MB) se dejan en
+  `server/scripts/fotos-materiales/`, que **está en el `.gitignore`**, y se pasan
+  a la carpeta versionada con `scripts/procesar-fotos-entrada.ts`. Al repo van
+  solo las versiones de ~24 KB.
+- **Una misma imagen puede ir a varios ítems**: cuando el material está cargado
+  en varias medidas (perfiles de 3.600 y 4.800, cable de aluminio 50/75/95 mm²,
+  termomagnéticas por amperaje) se repite la entrada cambiando el `itemId`. Cada
+  ítem recibe su **propia copia** en el storage, así quitarle la foto a uno no
+  afecta a los otros.
+- El catálogo de desarrollo suele estar atrasado respecto al de producción, y los
+  `itemId` tienen que coincidir para que el manifiesto sirva en los dos lados.
+  `server/scripts/import-catalogo-prod.ts` copia categorías, proveedores e ítems
+  desde un JSON exportado de prod (solo agrega y corrige nombres; no borra ni
+  pisa precios ni stock locales).
+
 ### En el PDF de la lista de materiales
 
 `POST /projects/:id/materials/export-pdf` antepone una columna **Foto** de 34pt
