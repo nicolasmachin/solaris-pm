@@ -21,6 +21,7 @@ import {
   upsertDraft,
 } from "../../../services/proposal/draft.service.js";
 import type { DraftDataPublish } from "../../../services/proposal/schemas/draft.schema.js";
+import { interpretarMarkup } from "../../../services/proposal/calculator.js";
 import { publishVersion } from "../../../services/proposal/version.service.js";
 import { requirePermission, type McpUser } from "../context.js";
 import { buildDownloadUrl } from "../descargas.routes.js";
@@ -109,17 +110,66 @@ function bloqueResumen(
   );
 }
 
+/**
+ * Lo que ya está cargado en el borrador.
+ *
+ * Se muestra siempre, incluso cuando falta algo: hasta acá la herramienta solo
+ * decía qué faltaba, así que no había forma de auditar lo cargado sin abrir la
+ * aplicación — que es justo lo que el conector viene a evitar.
+ */
+function bloqueCargado(d: DraftDataPublish): string {
+  const m2 = d.techo?.tamanoM2;
+  return (
+    "CARGADO EN EL BORRADOR\n" +
+    campos([
+      ["Cliente", d.cliente?.nombre],
+      ["Ciudad", d.cliente?.ciudad || "—"],
+      ["Tipo de techo", d.techo?.descripcion || "—"],
+      ["Superficie de techo", m2 && m2 > 0 ? `${m2} m²` : "—"],
+      ["Tipo de montaje", d.sistema?.tipoMontaje || "—"],
+      [
+        "Paneles",
+        d.sistema?.cantidadPaneles
+          ? `${d.sistema.cantidadPaneles} × ${d.sistema.potenciaPanelW ?? "?"} W ${d.sistema.marcaPaneles ?? ""}`.trim()
+          : "—",
+      ],
+      [
+        "Inversor",
+        d.sistema?.potenciaInversorKw
+          ? `${d.sistema.potenciaInversorKw} kW ${d.sistema.marcaInversor ?? ""}`.trim()
+          : (d.sistema?.marcaInversor ?? "—"),
+      ],
+      ["Suministro", d.factura?.suministro || "—"],
+      [
+        "Potencia contratada",
+        d.factura?.potenciaContratadaKw ? `${d.factura.potenciaContratadaKw} kW` : "—",
+      ],
+      ["Tarifa", d.factura?.tarifa || "—"],
+      ["Factura mensual", d.factura?.pagaMensualPesos ? pesos(d.factura.pagaMensualPesos) : "—"],
+      ["Markup", `${(interpretarMarkup(d.cotizacion?.markupPorcentaje ?? 0) * 100).toFixed(1)}%`],
+      ["Plazo de entrega", d.cotizacion?.plazoEntrega || "—"],
+      [
+        "Ítems adicionales",
+        d.itemsAdicionales?.length
+          ? d.itemsAdicionales.map((i) => `${i.nombre} (${usd(i.precioSinIvaUsd)})`).join(", ")
+          : "—",
+      ],
+      ["Notas", d.notas || "—"],
+    ])
+  );
+}
+
 export function registerPropuestaTools(server: McpServer, user: McpUser) {
   server.registerTool(
     "preparar_propuesta",
     {
       title: "Preparar propuesta residencial",
       description:
-        "Arma o corrige el borrador de la propuesta residencial de un cliente potencial. " +
-        "Se le pasan solo los datos que se conocen; el resto lo completa con los valores " +
-        "por defecto del cotizador y lo que ya sabe del cliente. Devuelve qué falta para " +
-        "poder emitirla o, si ya está completa, el precio final, el ahorro y las cuotas. " +
-        "No emite nada: para eso está publicar_propuesta. " +
+        "Consulta o corrige el borrador de la propuesta residencial de un cliente " +
+        "potencial. Llamada solo con el lead_id NO escribe nada: devuelve el estado del " +
+        "borrador, qué hay cargado y qué falta. Con datos, los guarda. El resto lo " +
+        "completa con los valores por defecto del cotizador y lo que ya sabe del " +
+        "cliente. No emite nada: para eso está publicar_propuesta. " +
         "No sirve para propuestas de empresa, que se arman desde la aplicación.",
       inputSchema: {
         lead_id: z.string().min(1).describe("Identificador del cliente potencial"),
@@ -210,7 +260,11 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
         ...(args.notas !== undefined && { notas: args.notas }),
       };
 
-      await upsertDraft(lead.id, data, user.id, VARIANTE);
+      // Solo se escribe si algo cambió de verdad. Antes se guardaba siempre y
+      // la respuesta decía "guardé lo que me pasaste" aunque no hubiera venido
+      // ningún dato: sugería una escritura que no había ocurrido.
+      const huboCambios = JSON.stringify(data) !== JSON.stringify(actual);
+      if (huboCambios) await upsertDraft(lead.id, data, user.id, VARIANTE);
 
       // Falta de campos (schema) + valores que el schema tolera pero producen
       // una propuesta sin sentido.
@@ -220,10 +274,11 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
 
       if (pendientes.length > 0) {
         return texto(
-          `Guardé lo que me pasaste para ${lead.clientName}. Para poder emitir la propuesta ` +
-            `todavía falta:`,
-          `- ${nombrarCampos(pendientes)}`,
-          "Pasame esos datos y la dejo lista.",
+          huboCambios
+            ? `Guardé lo que me pasaste para ${lead.clientName}.`
+            : `Borrador de ${lead.clientName} (no cambié nada).`,
+          bloqueCargado(data),
+          "FALTA PARA EMITIR\n- " + nombrarCampos(pendientes),
         );
       }
 
@@ -240,7 +295,10 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
       const verInterno = await hasPermission(user.role, Module.VENTAS, Action.DEBUG_CALCULADORA);
 
       return texto(
-        `Propuesta lista para ${lead.clientName}:`,
+        huboCambios
+          ? `Propuesta lista para ${lead.clientName}:`
+          : `Borrador de ${lead.clientName} (no cambié nada), listo para emitir:`,
+        bloqueCargado(data),
         bloqueResumen(resumen, verInterno),
         "Si está bien, decime que la emita y genero el PDF.",
       );

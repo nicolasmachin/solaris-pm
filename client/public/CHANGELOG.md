@@ -1,5 +1,28 @@
 # Novedades
 
+## v9.5
+
+### 17 de agosto de 2026
+
+#### El chat ahora lee las minutas de visita
+
+- **Se puede pedir la minuta completa de un cliente y escucharla**, con las medidas del techo, la instalación eléctrica, el recorrido de la bajada, las sombras y las observaciones. Antes solo llegaba el resumen corto del comentario y el resto quedaba en un PDF que había que abrir a mano.
+- También se pueden **listar los adjuntos de un cliente potencial** —minutas, fotos y videos— y leer el texto de los documentos.
+- Si un PDF es un escaneado sin texto, lo dice y ofrece el enlace, en vez de quedarse callado.
+
+#### La ficha del cliente trae el relevamiento
+
+- **Bloque de contacto**: teléfono, email y dirección, siempre visibles.
+- **Bloque de relevamiento**: tipo de techo, superficie, tipo de montaje, suministro, potencia contratada, tarifa y factura mensual. Estos datos estaban cargados en el cotizador y no se podían consultar desde el chat.
+- **Los campos vacíos se muestran con una raya** en lugar de desaparecer, así se distingue lo que falta cargar de lo que el sistema no muestra.
+- Si el cliente tiene minuta cargada, la ficha lo avisa.
+
+#### Consultar la propuesta sin modificarla
+
+- **Preguntar por el borrador ya no lo guarda.** Antes respondía "guardé lo que me pasaste" aunque no se le hubiera pasado ningún dato. Ahora, si no hay cambios, lo dice y no escribe nada.
+- El borrador **muestra todo lo que tiene cargado**, no solo lo que falta.
+- **La propuesta emitida incluye la configuración técnica**: techo, montaje, suministro, potencia contratada y tarifa, que es lo que se conversa con el cliente en la visita.
+
 ## v9.4
 
 ### 15 de agosto de 2026

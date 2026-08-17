@@ -23,16 +23,28 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "9.4",
-  date: "15 de agosto de 2026",
+  version: "9.5",
+  date: "17 de agosto de 2026",
   sections: [
     {
-      title: "Foto de cada material, para no confundir ítems parecidos",
+      title: "El chat ahora lee las minutas de visita",
       items: [
-        "Cada material del catálogo puede tener una foto de referencia. En todas las listas aparece un ojito al lado del ítem: pasando el mouse por encima se ve la foto, sin salir de la pantalla.",
-        "Está en la lista de materiales del proyecto, en el buscador para agregar materiales, en el consolidador, en Stock, en las plantillas y en el catálogo de Administración.",
-        "La foto se carga desde donde aparece la confusión, sin ir a Administración: si el ítem no tiene, el ícono se ve punteado y con un click se sube; si ya tiene, se hace click en el ojito para cambiarla o quitarla.",
-        "El PDF de la lista de materiales que se exporta para obra ahora sale con una miniatura en cada fila. Si ningún ítem tiene foto, queda compacto como antes.",
+        "Se puede pedir la minuta completa de un cliente y escucharla: medidas del techo, instalación eléctrica, recorrido de la bajada, sombras y observaciones. Antes solo llegaba el resumen corto y el resto quedaba en un PDF.",
+        "También se pueden listar los adjuntos de un cliente potencial —minutas, fotos y videos— y leer el texto de los documentos.",
+      ],
+    },
+    {
+      title: "La ficha del cliente trae el relevamiento",
+      items: [
+        "Bloque de contacto (teléfono, email, dirección) y bloque de relevamiento (tipo de techo, superficie, montaje, suministro, potencia contratada, tarifa y factura mensual).",
+        "Los campos vacíos se muestran con una raya en lugar de desaparecer, así se distingue lo que falta cargar de lo que el sistema no muestra.",
+      ],
+    },
+    {
+      title: "Consultar la propuesta sin modificarla",
+      items: [
+        "Preguntar por el borrador ya no lo guarda: si no hay cambios, lo dice y no escribe nada.",
+        "El borrador muestra todo lo que tiene cargado, no solo lo que falta, y la propuesta emitida incluye la configuración técnica.",
       ],
     },
   ],
@@ -46,6 +58,13 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "9.4",
+    shortDate: "15 ago",
+    highlights: [
+      "Foto de referencia por material en las listas y en el PDF, para no confundir ítems parecidos.",
+    ],
+  },
   {
     version: "9.3",
     shortDate: "13 ago",

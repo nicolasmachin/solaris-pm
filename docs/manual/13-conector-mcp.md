@@ -126,12 +126,32 @@ auditada con `metadata.source = "mcp"` y el nombre de la herramienta.
 | Herramienta | Permiso | Qué hace |
 |---|---|---|
 | `buscar_lead` | `VENTAS:VIEW` | Busca por nombre, teléfono, email, dirección o código. Excluye los cerrados salvo que se pidan. Devuelve hasta 15. |
-| `ficha_lead` | `VENTAS:VIEW` | Todo sobre un cliente: contacto, etapa, fechas, notas, propuestas, pendientes abiertos y últimos 8 comentarios. |
+| `ficha_lead` | `VENTAS:VIEW` | Contacto, etapa, **relevamiento técnico**, fechas, propuestas, pendientes y últimos 8 comentarios. Avisa si hay minuta cargada. |
 | `ver_propuesta` | `VENTAS:VIEW` | Números comerciales de una propuesta + enlace al PDF. |
 | `crear_lead` | `VENTAS:CREATE` | Alta. Se asigna al usuario que la crea. |
 | `editar_lead` | `VENTAS:EDIT` | Datos de contacto y relevamiento, con lista blanca. |
 | `mover_etapa` | `VENTAS:EDIT` | Cambia la etapa del pipeline. |
 | `comentar_lead` | `VENTAS:COMMENT` | Deja un comentario en el historial. |
+
+### Minutas y adjuntos del cliente potencial
+
+| Herramienta | Permiso | Qué hace |
+|---|---|---|
+| `minuta_lead` | `VENTAS:VIEW` | Devuelve el **texto completo** de la minuta de la visita, extraído del PDF. |
+| `documentos_lead` | `VENTAS:VIEW` | Lista adjuntos, fotos y videos, y extrae el texto de los PDF. |
+
+**Por qué texto y no un enlace.** El asistente no puede abrir enlaces. Un enlace
+de descarga sirve para que una persona lo toque en el celular, pero es inútil
+cuando alguien va manejando y pregunta qué decía la minuta. **Todo lo que haya
+que leer viaja en el cuerpo de la respuesta**; el enlace acompaña, nunca
+reemplaza.
+
+La extracción reusa `extractTextFromPdf()` de `minutaExtraction/`, el mismo
+servicio que ya alimenta la precarga de pre-ingeniería. Una minuta de 13 páginas
+son unos 7.000 caracteres, muy por debajo del tope de la respuesta.
+
+**Si el PDF es un escaneado sin reconocimiento de texto**, se dice explícitamente
+y ahí sí se ofrece el enlace: es el único caso en que no hay texto que entregar.
 
 ### Propuestas
 
@@ -140,7 +160,7 @@ RUT, que no son datos que se dicten de memoria, y conviene que tenga rodaje.
 
 | Herramienta | Permiso | Qué hace |
 |---|---|---|
-| `preparar_propuesta` | `VENTAS:EDIT` | Arma o corrige el borrador. Devuelve qué falta o, si está completa, precio, ahorro y cuotas. No emite nada. |
+| `preparar_propuesta` | `VENTAS:EDIT` | Consulta o corrige el borrador. Muestra siempre **qué hay cargado** y qué falta. No emite nada. |
 | `publicar_propuesta` | `VENTAS:CREATE` | Emite el PDF definitivo. Exige `confirmar: true`. |
 
 **Qué hay que dictar y qué sale solo.** De los veinte campos obligatorios, los
@@ -181,6 +201,26 @@ Los dos datos aparecen tanto en `preparar_propuesta` (el borrador) como en
 
 **Publicar mueve el cliente.** Al emitir la primera propuesta, el lead pasa solo
 a Cotizado y se sella la fecha de envío. La herramienta lo avisa en la respuesta.
+
+**Llamarla solo con el `lead_id` no escribe nada.** Devuelve el estado del
+borrador y lo dice: "no cambié nada". Antes guardaba siempre y respondía "guardé
+lo que me pasaste" aunque no hubiera venido ningún dato, lo que sugería una
+escritura que no había ocurrido.
+
+### Dónde vive cada dato del relevamiento
+
+Reparto que sorprende y explica por qué `ficha_lead` lee de dos lados:
+
+| Dato | Dónde está |
+|---|---|
+| Tipo de techo | `SalesLead.roofType` **y** `draft.techo.descripcion` |
+| Superficie de techo, suministro, potencia contratada, tarifa, factura mensual | **solo en el borrador de la propuesta** |
+| Teléfono, email, dirección | `SalesLead` |
+| Medidas exactas, bajada eléctrica, sombras, observaciones | **solo en el PDF de la minuta** |
+
+Los campos vacíos se devuelven con una raya (`—`) en vez de omitirse. Sin eso no
+hay forma de distinguir "el dato no está cargado" de "el conector no lo expone",
+y esa duda obliga a abrir la aplicación igual.
 
 ### El día del asesor
 

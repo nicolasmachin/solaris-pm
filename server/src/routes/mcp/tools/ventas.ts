@@ -5,7 +5,7 @@
 // Cada una audita con `source: "mcp"` para poder medir qué se hace por acá.
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { Action, Module, SalesStage, TaskStatus } from "@prisma/client";
+import { Action, Module, ProposalVariante, SalesStage, TaskStatus } from "@prisma/client";
 import { z } from "zod";
 
 import { prisma } from "../../../lib/prisma.js";
@@ -19,6 +19,7 @@ import {
 import { interpretarMarkup } from "../../../services/proposal/calculator.js";
 import { hasPermission } from "../../../middleware/authorize.middleware.js";
 import { listLeadProposals } from "../../../services/proposal/lead-proposals.service.js";
+import { getDraft } from "../../../services/proposal/draft.service.js";
 import { getVersionById } from "../../../services/proposal/version.service.js";
 import { requirePermission, type McpUser } from "../context.js";
 import { campos, ETAPA_LABEL, fechaCorta, fechaLarga, pesos, porcentaje, texto, usd } from "../format.js";
@@ -148,17 +149,55 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
       const datos = campos([
         ["Código", lead.code],
         ["Etapa", ETAPA_LABEL[lead.stage] ?? lead.stage],
-        ["Teléfono", lead.clientPhone],
-        ["Email", lead.clientEmail],
-        ["Dirección", lead.address],
         ["Asesor", lead.assignedTo?.name],
         ["Reclamos", lead.reclamosCount > 0 ? `${lead.reclamosCount} (último: ${fechaCorta(lead.lastReclamoAt)})` : null],
-        ["Potencia estimada", lead.estimatedKwp ? `${lead.estimatedKwp} kWp` : null],
-        ["Presupuesto estimado", lead.estimatedBudgetUsd ? usd(Number(lead.estimatedBudgetUsd)) : null],
-        ["Factura UTE mensual", lead.uteBillMonthlyUsd ? usd(Number(lead.uteBillMonthlyUsd)) : null],
-        ["Tipo de techo", lead.roofType],
         ["Motivo de pérdida", lead.lostReason],
         ["Convertido en proyecto", lead.convertedToProject?.code],
+      ]);
+
+      // Los campos vacíos se muestran con una raya en vez de omitirse: sin eso
+      // no hay forma de distinguir "el dato no está cargado" de "el conector no
+      // lo expone", y esa duda obliga a abrir la aplicación igual.
+      const contacto = campos([
+        ["Teléfono", lead.clientPhone ?? "—"],
+        ["Email", lead.clientEmail ?? "—"],
+        ["Dirección", lead.address ?? "—"],
+      ]);
+
+      // El relevamiento vive repartido: el tipo de techo en el lead, y el resto
+      // en el borrador de la propuesta, que es donde lo carga quien cotiza.
+      const draft = await getDraft(lead.id, ProposalVariante.RESIDENCIAL);
+      const d = (draft?.data ?? {}) as {
+        techo?: { descripcion?: string; tamanoM2?: number };
+        factura?: {
+          suministro?: string;
+          potenciaContratadaKw?: number;
+          tarifa?: string;
+          pagaMensualPesos?: number;
+        };
+        sistema?: { tipoMontaje?: string; cantidadPaneles?: number; potenciaPanelW?: number };
+      };
+
+      const m2 = d.techo?.tamanoM2;
+      const relevamiento = campos([
+        ["Tipo de techo", lead.roofType ?? d.techo?.descripcion ?? "—"],
+        ["Superficie disponible", m2 && m2 > 0 ? `${m2} m²` : "— (sin cargar)"],
+        ["Tipo de montaje", d.sistema?.tipoMontaje ?? "—"],
+        ["Tipo de suministro", d.factura?.suministro ?? "—"],
+        [
+          "Potencia contratada",
+          d.factura?.potenciaContratadaKw ? `${d.factura.potenciaContratadaKw} kW` : "—",
+        ],
+        ["Tarifa UTE", d.factura?.tarifa ?? "—"],
+        [
+          "Factura mensual",
+          d.factura?.pagaMensualPesos ? pesos(d.factura.pagaMensualPesos) : "—",
+        ],
+        ["Potencia estimada", lead.estimatedKwp ? `${lead.estimatedKwp} kWp` : "—"],
+        [
+          "Presupuesto estimado",
+          lead.estimatedBudgetUsd ? usd(Number(lead.estimatedBudgetUsd)) : "—",
+        ],
       ]);
 
       const fechas = campos([
@@ -210,14 +249,36 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
 
       const bloqueNotas = lead.notes ? `NOTAS\n${lead.notes}` : null;
 
+      // Si hay minuta cargada se avisa: es el dato más rico de la visita y
+      // conviene que quien pregunta sepa que puede pedirla entera.
+      const tieneMinuta = await prisma.fileAttachment.count({
+        where: {
+          leadId: lead.id,
+          deletedAt: null,
+          mimeType: "application/pdf",
+          OR: [
+            { tipo: "MINUTA_RELEVAMIENTO" },
+            { filename: { contains: "minuta", mode: "insensitive" } },
+            { filename: { contains: "Resumen de Visita", mode: "insensitive" } },
+          ],
+        },
+      });
+
       return texto(
         `${lead.clientName}`,
         datos,
+        `CONTACTO\n${contacto}`,
+        `RELEVAMIENTO\n${relevamiento}`,
         fechas ? `FECHAS\n${fechas}` : null,
         bloqueNotas,
         bloquePropuestas,
         bloquePendientes,
         bloqueComentarios,
+        tieneMinuta > 0
+          ? `Hay ${tieneMinuta} minuta${tieneMinuta > 1 ? "s" : ""} de visita cargada${tieneMinuta > 1 ? "s" : ""}. ` +
+            `Pedí "minuta_lead" para leerla completa: trae medidas del techo, ` +
+            `instalación eléctrica y observaciones que no están en esta ficha.`
+          : null,
       );
     },
   );
@@ -293,7 +354,21 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
       // costos, comisiones y margen, que no tienen por qué salir de la app.
       const snap = version.snapshot as {
         data?: {
-          sistema?: { cantidadPaneles?: number; potenciaPanelW?: number; marcaPaneles?: string; marcaInversor?: string };
+          sistema?: {
+            cantidadPaneles?: number;
+            potenciaPanelW?: number;
+            marcaPaneles?: string;
+            marcaInversor?: string;
+            potenciaInversorKw?: number;
+            tipoMontaje?: string;
+          };
+          techo?: { descripcion?: string; tamanoM2?: number };
+          factura?: {
+            suministro?: string;
+            potenciaContratadaKw?: number;
+            tarifa?: string;
+            pagaMensualPesos?: number;
+          };
           cotizacion?: { plazoEntrega?: string; markupPorcentaje?: number };
         };
         calc?: Record<string, number>;
@@ -332,6 +407,34 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
             ])
           : null;
 
+      // La configuración física del sistema: lo que se conversa en la visita.
+      const configuracion = campos([
+        ["Tipo de techo", snap.data?.techo?.descripcion ?? "—"],
+        [
+          "Superficie de techo",
+          snap.data?.techo?.tamanoM2 ? `${snap.data.techo.tamanoM2} m²` : "—",
+        ],
+        ["Tipo de montaje", snap.data?.sistema?.tipoMontaje ?? "—"],
+        [
+          "Potencia del inversor",
+          snap.data?.sistema?.potenciaInversorKw
+            ? `${snap.data.sistema.potenciaInversorKw} kW`
+            : "—",
+        ],
+        ["Tipo de suministro", snap.data?.factura?.suministro ?? "—"],
+        [
+          "Potencia contratada",
+          snap.data?.factura?.potenciaContratadaKw
+            ? `${snap.data.factura.potenciaContratadaKw} kW`
+            : "—",
+        ],
+        ["Tarifa UTE", snap.data?.factura?.tarifa ?? "—"],
+        [
+          "Factura mensual actual",
+          snap.data?.factura?.pagaMensualPesos ? pesos(snap.data.factura.pagaMensualPesos) : "—",
+        ],
+      ]);
+
       const retorno = campos([
         ["Ahorro mensual", pesos(calc.ahorroMensualPesos)],
         ["Ahorro anual", usd(calc.ahorroAnualUsd)],
@@ -351,6 +454,7 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
       return texto(
         `Propuesta v${version.versionNumber} de ${lead.clientName} — publicada el ${fechaLarga(version.publishedAt)}`,
         numeros,
+        configuracion ? `CONFIGURACIÓN\n${configuracion}` : null,
         interno ? `INTERNO — no mostrar al cliente\n${interno}` : null,
         retorno ? `AHORRO Y RETORNO\n${retorno}` : null,
         financiacion ? `FINANCIACIÓN BBVA\n${financiacion}` : null,

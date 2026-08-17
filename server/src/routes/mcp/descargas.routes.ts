@@ -25,7 +25,11 @@ import { signDownloadToken, verifyDownloadToken } from "./tokens.js";
  * `proposal-generation` es el generador anterior (Excel + script). Sigue vivo
  * porque la mayoría de los clientes históricos tienen sus propuestas ahí.
  */
-type RecursoDescargable = "proposal-version" | "proposal-generation" | "project-file";
+type RecursoDescargable =
+  | "proposal-version"
+  | "proposal-generation"
+  | "project-file"
+  | "lead-file";
 
 /** Arma la URL completa con su token. */
 export function buildDownloadUrl(userId: string, tipo: RecursoDescargable, id: string): string {
@@ -148,6 +152,54 @@ export async function registerMcpDescargasRoutes(app: FastifyInstance) {
         .header("Content-Disposition", `inline; filename="propuesta-v${proposal.version}.pdf"`)
         .header("Cache-Control", "no-store")
         .send(fs.createReadStream(proposal.outputFilePath));
+    },
+  );
+
+  // Adjuntos de un cliente potencial: minutas, fotos de la visita, documentos.
+  // Mismo manejo que los de proyecto — se separa el tipo para que un token de
+  // un adjunto de lead no sirva para uno de proyecto ni al revés.
+  app.get(
+    "/mcp/descargas/lead-file/:fileId",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { fileId } = request.params as { fileId: string };
+      const { t } = request.query as { t?: string };
+
+      if (!t) return reply.code(401).send({ error: true, message: "Enlace inválido" });
+
+      const userId = verifyDownloadToken(t, `lead-file:${fileId}`);
+      if (!userId) {
+        return reply.code(401).send({
+          error: true,
+          message: "El enlace venció o no es válido. Pedí el documento de nuevo en el chat.",
+        });
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { deletedAt: true },
+      });
+      if (!user || user.deletedAt) {
+        return reply.code(401).send({ error: true, message: "Enlace inválido" });
+      }
+
+      const file = await prisma.fileAttachment.findFirst({
+        where: { id: fileId, deletedAt: null },
+        select: { filename: true, mimeType: true, url: true },
+      });
+      if (!file) {
+        return reply.code(404).send({ error: true, message: "No existe ese documento" });
+      }
+
+      const ruta = getStoredFilePath(file.url);
+      if (!fs.existsSync(ruta)) {
+        return reply.code(404).send({ error: true, message: "El archivo no está disponible" });
+      }
+
+      return reply
+        .header("Content-Type", file.mimeType || "application/octet-stream")
+        .header("Content-Disposition", contentDisposition("inline", file.filename))
+        .header("Cache-Control", "no-store")
+        .send(fs.createReadStream(ruta));
     },
   );
 
