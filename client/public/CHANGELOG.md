@@ -1,5 +1,20 @@
 # Novedades
 
+## v9.6
+
+### 17 de agosto de 2026
+
+#### Pagos a instaladores tercerizados
+
+- Cuando se gana un proyecto, la app **calcula sola cuánto hay que pagarle al instalador**: la mano de obra de la propuesta ganadora, con el IVA incluido, porque el instalador factura.
+- En **Finanzas hay una pestaña nueva, "Instaladores"**, con todos los trabajos: el total, lo que ya se pagó y el saldo que queda. Ahí se asigna a qué instalador corresponde cada obra y se registran los pagos.
+- Se puede **filtrar por instalador** y ver todo lo suyo de un vistazo.
+- Botón **"Resumen WhatsApp"**: arma el mensaje listo para pegarle al instalador, con las obras en curso y lo que falta de cada una. De las ya saldadas muestra **solo la última**, para que el mensaje no sea interminable.
+- **Los pagos pueden ser parciales**: se puede dar un adelanto y el resto después. El estado va pasando solo de Pendiente a Parcial y a Pagado, y no deja pagar más que el saldo.
+- El monto se puede **corregir a mano** si se negoció otra cosa distinta de lo que estimó el cotizador; queda marcado como corregido.
+- También se pueden **cargar pagos a mano** para trabajos que no salen de un proyecto, como una reparación en garantía.
+- Rol nuevo **Instalador tercerizado**: hace lo mismo que el capataz propio, y además entra desde el menú de su cuenta a **"Mis cobros"** para ver sus trabajos, lo cobrado y lo pendiente. Solo ve lo suyo.
+
 ## v9.5
 
 ### 17 de agosto de 2026

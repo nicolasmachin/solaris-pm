@@ -19,6 +19,9 @@ const Settings = lazy(() => import("./pages/Settings").then((module) => ({ defau
 const ComisionesAsesor = lazy(() =>
   import("./pages/ComisionesAsesor").then((module) => ({ default: module.ComisionesAsesor })),
 );
+const PagosInstalador = lazy(() =>
+  import("./pages/PagosInstalador").then((module) => ({ default: module.PagosInstalador })),
+);
 const ViajeSaoPaulo = lazy(() =>
   import("./pages/ViajeSaoPaulo").then((module) => ({ default: module.ViajeSaoPaulo })),
 );
@@ -274,6 +277,14 @@ export function App() {
           }
         />
         <Route
+          path="/pagos-instalador"
+          element={
+            <PermissionRoute module="PAGOS_INSTALADOR" action="VIEW">
+              <PagosInstalador />
+            </PermissionRoute>
+          }
+        />
+        <Route
           path="/viaje-sao-paulo"
           element={
             <TravelRoute>
@@ -322,6 +333,10 @@ export function App() {
           <Route path="pendientes" element={<FinancePendientesTab />} />
           <Route path="proveedores" element={<FinanceSuppliers />} />
           <Route path="cobros" element={<FinanceCobros />} />
+          {/* Misma pantalla que /pagos-instalador: acá el admin la ve completa
+              (todos los instaladores + gestión); el tercerizado entra por el
+              menú de su cuenta y solo ve lo suyo. */}
+          <Route path="instaladores" element={<PagosInstalador />} />
           <Route path="facturacion" element={<FinanceFacturacionTab />} />
           <Route path="flujo" element={<FinanceCashflowTab />} />
           <Route path="resultados" element={<FinanceResultsTab />} />

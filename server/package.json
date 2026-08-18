@@ -29,6 +29,7 @@
     "test:project-fields": "node --import tsx --test src/validators/projectFields.test.ts",
     "test:interaction-ownership": "node --import tsx --test src/services/clientes/ownership.test.ts",
     "test:commission": "node --import tsx --test src/services/commission/commission.service.test.ts",
+    "test:installer-payment": "node --import tsx --test src/services/installer-payment/installer-payment.service.test.ts",
     "test:stage-progress": "node --import tsx --test src/services/stage-progress.test.ts",
     "test:traspasos-destinatarios": "node --import tsx --test src/services/traspasos/destinatarios.test.ts",
     "test:ute-advance": "node --import tsx --test src/services/ute-sync.advance.test.ts",

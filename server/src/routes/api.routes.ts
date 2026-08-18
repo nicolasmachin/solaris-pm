@@ -88,6 +88,7 @@ import {
   deleteObraPhotoFiles,
 } from "../services/file-storage.service.js";
 import { convertirHeicABufferJpeg, esHeic } from "../services/heic.service.js";
+import { createInstallerPaymentForProject } from "../services/installer-payment/installer-payment.service.js";
 import {
   deleteMaterialPhotoFile,
   materialPhotoAbsolutePath,
@@ -5766,6 +5767,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
     { module: Module.TRASPASOS,           actions: [Action.VIEW, Action.CONFIRM] },
     { module: Module.PORTAL_CLIENTE,      actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.COMMENT] },
     { module: Module.COMISIONES,          actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
+    // VIEW = el instalador ve lo suyo. EDIT = ve los de todos (además de
+    // FINANZAS:VIEW). Gestionar (asignar, pagar, corregir) se gobierna con
+    // FINANZAS, que es donde ya vive el manejo de la plata.
+    { module: Module.PAGOS_INSTALADOR,    actions: [Action.VIEW, Action.EDIT] },
     { module: Module.STOCK,               actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { module: Module.FINANZAS,            actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { module: Module.METRICAS,            actions: [Action.VIEW] },
@@ -7574,6 +7579,29 @@ export async function registerApiRoutes(app: FastifyInstance) {
       }
     } catch (err) {
       request.log.error({ err, leadId: lead.id, projectId: project.id }, "move lead media failed");
+    }
+
+    // Deuda de mano de obra con el instalador: se congela acá, al ganarse el
+    // proyecto, con lo que decía la propuesta ganadora más IVA. Nace SIN
+    // instalador — a quién se le paga se decide después, a mano, desde Finanzas.
+    //
+    // Va en su propio try igual que lo de arriba: si esto falla, el proyecto ya
+    // existe y el pago se puede cargar a mano; tirar la conversión entera sería
+    // mucho peor.
+    try {
+      const { created, payment } = await createInstallerPaymentForProject({
+        projectId: project.id,
+        userId: user.id,
+        leadId: lead.id,
+      });
+      if (created && payment.origenManual) {
+        request.log.warn(
+          { leadId: lead.id, projectId: project.id },
+          "installer payment sin monto: la propuesta ganadora no trae mano de obra",
+        );
+      }
+    } catch (err) {
+      request.log.error({ err, leadId: lead.id, projectId: project.id }, "create installer payment failed");
     }
 
     // Copia la propuesta comercial (última versión publicada) como adjunto del

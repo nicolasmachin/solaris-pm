@@ -5,6 +5,7 @@ const TABS = [
   { to: "pendientes", label: "Pendientes" },
   { to: "proveedores", label: "Proveedores" },
   { to: "cobros", label: "Cobros" },
+  { to: "instaladores", label: "Instaladores" },
   { to: "facturacion", label: "Facturación" },
   { to: "flujo", label: "Flujo de fondos" },
   { to: "resultados", label: "Estado de resultados" },

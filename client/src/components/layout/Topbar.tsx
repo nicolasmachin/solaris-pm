@@ -255,6 +255,14 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
                   Comisiones
                 </button>
               </CanAccess>
+              <CanAccess module="PAGOS_INSTALADOR" action="VIEW">
+                <button
+                  onClick={() => { setUserMenuOpen(false); navigate("/pagos-instalador"); }}
+                  className="w-full text-left px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors"
+                >
+                  Mis cobros
+                </button>
+              </CanAccess>
               {canTravel && (
                 <button
                   onClick={() => { setUserMenuOpen(false); navigate("/viaje-sao-paulo"); }}

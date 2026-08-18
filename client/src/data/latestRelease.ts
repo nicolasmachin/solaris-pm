@@ -23,32 +23,21 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "9.5",
+  version: "9.6",
   date: "17 de agosto de 2026",
   sections: [
     {
-      title: "El chat ahora lee las minutas de visita",
+      title: "Pagos a instaladores tercerizados",
       items: [
-        "Se puede pedir la minuta completa de un cliente y escucharla: medidas del techo, instalación eléctrica, recorrido de la bajada, sombras y observaciones. Antes solo llegaba el resumen corto y el resto quedaba en un PDF.",
-        "También se pueden listar los adjuntos de un cliente potencial —minutas, fotos y videos— y leer el texto de los documentos.",
-      ],
-    },
-    {
-      title: "La ficha del cliente trae el relevamiento",
-      items: [
-        "Bloque de contacto (teléfono, email, dirección) y bloque de relevamiento (tipo de techo, superficie, montaje, suministro, potencia contratada, tarifa y factura mensual).",
-        "Los campos vacíos se muestran con una raya en lugar de desaparecer, así se distingue lo que falta cargar de lo que el sistema no muestra.",
-      ],
-    },
-    {
-      title: "Consultar la propuesta sin modificarla",
-      items: [
-        "Preguntar por el borrador ya no lo guarda: si no hay cambios, lo dice y no escribe nada.",
-        "El borrador muestra todo lo que tiene cargado, no solo lo que falta, y la propuesta emitida incluye la configuración técnica.",
+        "Al ganar un proyecto, la app calcula sola cuánto hay que pagarle al instalador: la mano de obra de la propuesta ganadora con el IVA incluido, porque el instalador factura.",
+        'En Finanzas hay una pestaña nueva, "Instaladores", con el total de cada obra, lo pagado y el saldo. Ahí se asigna a qué instalador corresponde y se registran los pagos, que pueden ser parciales.',
+        'Se puede filtrar por instalador y copiar un "Resumen WhatsApp" con sus obras en curso y lo que falta de cada una; de las saldadas muestra solo la última, para que el mensaje no sea interminable.',
+        'Rol nuevo "Instalador tercerizado": hace lo mismo que el capataz propio y además entra a "Mis cobros" desde el menú de su cuenta para ver sus trabajos y su saldo. Solo ve lo suyo.',
       ],
     },
   ],
 };
+
 
 /** Versiones anteriores para mostrar en el sidebar de novedades. */
 export type OldRelease = {
@@ -58,6 +47,15 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "9.5",
+    shortDate: "17 ago",
+    highlights: [
+      "El chat lee las minutas de visita completas: medidas del techo, instalación eléctrica, recorrido de la bajada, sombras y observaciones.",
+      "La ficha del cliente trae el relevamiento (tipo de techo, superficie, montaje, suministro, potencia contratada, tarifa y factura mensual) y los datos de contacto.",
+      "Consultar el borrador de una propuesta ya no lo modifica.",
+    ],
+  },
   {
     version: "9.4",
     shortDate: "15 ago",

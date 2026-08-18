@@ -140,6 +140,7 @@ enum AuditEntityType {
   reporte_fv_emision
   fv_incidencia
   ensayo_video
+  installer_payment
 }
 
 enum AuditAction {
@@ -286,6 +287,10 @@ enum Module {
   TRASPASOS
   TICKETS
   ENCUESTAS
+  // Pagos de mano de obra a instaladores tercerizados. VIEW lo lleva
+  // INSTALADOR_TERCERIZADO para ver lo suyo; la gestión (asignar, cobrar, corregir
+  // montos) se gobierna con FINANZAS.
+  PAGOS_INSTALADOR
 }
 
 enum Moneda {
@@ -521,6 +526,8 @@ model User {
   clientInteractionsDeleted      ClientInteraction[]         @relation("ClientInteractionDeletedBy")
   commissions                    Commission[]                @relation("CommissionAsesor")
   commissionsCreated             Commission[]                @relation("CommissionCreatedBy")
+  installerPayments              InstallerPayment[]          @relation("InstallerPaymentInstaller")
+  installerPaymentsCreated       InstallerPayment[]          @relation("InstallerPaymentCreatedBy")
   traspasosComoModal             Traspaso[]                  @relation("TraspasoModalUsuario")
   traspasosConfirmados           Traspaso[]                  @relation("TraspasoConfirmadoPor")
   traspasosRecibidos             TraspasoDestinatario[]      @relation("TraspasoDestinatarioUsuario")
@@ -632,6 +639,7 @@ model Project {
   huaweiPlant                     HuaweiPlant?
   fvIncidencias                   FvIncidencia[]
   projectVideos                   ProjectVideo[]
+  installerPayment                InstallerPayment?
   // Sub-fase del E3 (Post-Habilitación). Solo se setea cuando el proyecto llega
   // a POST_HABILITACION (T7). E3-A = compromiso comercial (año 0-2); E3-B = vida
   // útil extendida (año 2-25). Es un flag interno para reportes, no cambia la etapa.
@@ -1783,6 +1791,11 @@ model FinanceMovement {
   projectMaterials     ProjectMaterial[]
   reconciliacionAjuste AccountReconciliation?   @relation("ReconciliationAjuste")
   commission           Commission?
+  // Pago (total o parcial) de mano de obra a un instalador tercerizado. A
+  // diferencia de la comisión —que es 1:1 con su movimiento— acá un mismo pago
+  // puede tener varios movimientos: uno por cada entrega.
+  installerPaymentId   String?
+  installerPayment     InstallerPayment?        @relation("FinanceMovementInstallerPayment", fields: [installerPaymentId], references: [id], onDelete: SetNull)
   // Para transferencias entre cuentas: par de movimientos (GASTO origen +
   // INGRESO destino) con el mismo transferGroupId. Permite eliminarlos juntos
   // y mostrarlos como una sola operación en la UI.
@@ -3228,7 +3241,8 @@ model ProposalV2Version {
   discardedBy   User?     @relation("ProposalV2VersionDiscardedBy", fields: [discardedById], references: [id], onDelete: SetNull)
   discardReason String?
 
-  commissions Commission[]
+  commissions       Commission[]
+  installerPayments InstallerPayment[]
 
   @@unique([leadId, versionNumber])
   @@index([leadId, status])
@@ -3409,6 +3423,83 @@ model Commission {
   @@index([status])
   @@index([fechaVenta])
   @@map("commissions")
+}
+
+enum InstallerPaymentStatus {
+  PENDIENTE
+  PARCIAL
+  PAGADO
+}
+
+// Pago de mano de obra a un instalador tercerizado por una obra.
+//
+// Espejo de `Commission` del lado del gasto, con dos diferencias pedidas por
+// negocio: admite pagos PARCIALES (como los cobros al cliente: total, pagado y
+// saldo) y el instalador se asigna A MANO. Lo segundo no es una simplificación:
+// `Team` (los equipos del calendario, con type TERCERIZADO) no tiene relación con
+// `User`, así que no hay forma de deducir qué persona hizo la obra.
+//
+// El monto se congela de la propuesta ganadora — `calc.manoDeObraUsdSinIva` MÁS
+// IVA, porque el instalador factura — y queda editable: lo que el cotizador
+// estima no siempre es lo que se negocia.
+model InstallerPayment {
+  id String @id @default(cuid())
+
+  // Un pago por proyecto. Nullable + sin @unique no alcanzaría: la carga manual
+  // de un admin puede no tener proyecto, y el @unique nullable de Postgres
+  // permite varios NULL.
+  projectId String?  @unique
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  // Etiqueta libre para pagos manuales sin proyecto (ej. "Reparación garantía").
+  concepto String?
+
+  // Null hasta que un admin lo asigna: es el estado normal apenas se crea, al
+  // ganarse el proyecto. Mientras esté null nadie lo ve en "mis pagos".
+  installerId String?
+  installer   User?   @relation("InstallerPaymentInstaller", fields: [installerId], references: [id], onDelete: SetNull)
+
+  // Mano de obra CON IVA. El instalador emite factura, así que lo que se le paga
+  // es el costo más IVA, no el neto que muestra el desglose del cotizador.
+  montoUsd Decimal @db.Decimal(14, 2)
+
+  // Propuesta de la que salió el monto. Null si se cargó a mano o si el proyecto
+  // no tenía propuesta nueva con snapshot.
+  proposalVersionId String?
+  proposalVersion   ProposalV2Version? @relation(fields: [proposalVersionId], references: [id], onDelete: SetNull)
+
+  // true = no hubo snapshot del cual congelar (nace en 0 y hay que cargarlo).
+  origenManual Boolean @default(false)
+  // true = un admin corrigió el monto congelado. Sirve para no pisarlo si algún
+  // día se recalcula, y para saber que el número no es el del cotizador.
+  montoEditado Boolean @default(false)
+
+  fechaTrabajo DateTime @db.Timestamptz(6)
+  dueDate      DateTime @db.Date
+
+  // DERIVADO de los movimientos pagados, nunca se setea a mano.
+  // Ver recalcularStatus() en installer-payment.service.ts.
+  status InstallerPaymentStatus @default(PENDIENTE)
+  paidAt DateTime?              @db.Timestamptz(6)
+
+  notas String?
+
+  // Un FinanceMovement por pago parcial: así entra solo al flujo de fondos, a las
+  // cuentas y a la conciliación, sin duplicar esa maquinaria.
+  movimientos FinanceMovement[] @relation("FinanceMovementInstallerPayment")
+
+  createdById String
+  createdBy   User   @relation("InstallerPaymentCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(6)
+  deletedAt DateTime? @db.Timestamptz(6)
+
+  @@index([installerId])
+  @@index([status])
+  @@index([fechaTrabajo])
+  @@index([deletedAt])
+  @@map("installer_payments")
 }
 
 model ProposalDefaults {

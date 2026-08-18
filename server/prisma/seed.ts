@@ -105,6 +105,10 @@ const SYSTEM_ROLES: Array<{ name: string; label: string }> = [
   // Sub-rol operativo: arranca como copia de Operaciones y se ajusta aparte
   // desde Admin → Permisos (ver seedPermissions).
   { name: "CAPATAZ", label: "Capataz" },
+  // Capataz de una cuadrilla contratada. Hace lo mismo que el capataz propio
+  // dentro de Operaciones; la diferencia es que a él se le paga por obra, así
+  // que suma PAGOS_INSTALADOR:VIEW para ver sus cobros (ver seedPermissions).
+  { name: "INSTALADOR_TERCERIZADO", label: "Instalador tercerizado" },
 ];
 
 // Rol nuevo → rol base del que clona sus permisos en el seed. Incluye las
@@ -115,6 +119,14 @@ const GERENTE_BASE: Record<string, string> = {
   GERENTE_INGENIERIA: "INGENIERIA",
   GERENTE_FINANZAS: "FINANZAS",
   CAPATAZ: "OPERACIONES",
+  INSTALADOR_TERCERIZADO: "OPERACIONES",
+};
+
+// Permisos que un rol clonado suma por encima de su base.
+const EXTRA_PERMISSIONS: Record<string, Array<{ module: Module; actions: Action[] }>> = {
+  // Solo el tercerizado ve sus pagos: al capataz propio se le paga por sueldo,
+  // no por obra.
+  INSTALADOR_TERCERIZADO: [{ module: Module.PAGOS_INSTALADOR, actions: [Action.VIEW] }],
 };
 
 async function seedSystemRoles(): Promise<Map<string, string>> {
@@ -193,6 +205,9 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "ADMIN", module: Module.PORTAL_CLIENTE, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { roleName: "ADMIN", module: Module.EXPERIENCIA_CLIENTES, actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { roleName: "ADMIN", module: Module.COMISIONES,    actions: [Action.VIEW] },
+    // EDIT es lo que habilita ver los pagos de TODOS los instaladores (ver
+    // canSeeAll en installer-payment.routes.ts); VIEW solo mostraría los propios.
+    { roleName: "ADMIN", module: Module.PAGOS_INSTALADOR, actions: [Action.VIEW, Action.EDIT] },
 
     // CLIENT — portal de lectura + abrir/comentar sus propios tickets.
     { roleName: "CLIENT", module: Module.PORTAL_CLIENTE, actions: [Action.VIEW, Action.CREATE, Action.COMMENT] },
@@ -213,6 +228,7 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "FINANZAS", module: Module.STOCK,        actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { roleName: "FINANZAS", module: Module.TRAMITES_UTE, actions: [Action.VIEW] },
     { roleName: "FINANZAS", module: Module.COMISIONES,   actions: [Action.VIEW] },
+    { roleName: "FINANZAS", module: Module.PAGOS_INSTALADOR, actions: [Action.VIEW, Action.EDIT] },
 
     // INGENIERIA
     { roleName: "INGENIERIA", module: Module.ONBOARDING,   actions: [Action.VIEW, Action.COMMENT] },
@@ -307,6 +323,10 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
   for (const [derivado, base] of Object.entries(GERENTE_BASE)) {
     for (const entry of matrix.filter((e) => e.roleName === base)) {
       matrix.push({ roleName: derivado, module: entry.module, actions: [...entry.actions] });
+    }
+    // Lo que el rol derivado suma por encima de su base (ver EXTRA_PERMISSIONS).
+    for (const extra of EXTRA_PERMISSIONS[derivado] ?? []) {
+      matrix.push({ roleName: derivado, module: extra.module, actions: [...extra.actions] });
     }
   }
 
