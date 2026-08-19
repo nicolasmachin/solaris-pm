@@ -46,7 +46,7 @@ export function emailHabilitado(): boolean {
 
 /**
  * Destinatarios del digest, separados por coma en FV_MONITOR_EMAIL. En
- * producción hoy van Nicolás (nmachin) y Gabriel Vera (gvera), que es quien
+ * producción hoy van Nicolás (nicolas@) y Gabriel Vera (gvera@), que es quien
  * sigue las plantas desde Operaciones.
  *
  * OJO al cambiarlo: el digest se manda como `internal`, y ese modo de
@@ -56,7 +56,7 @@ export function emailHabilitado(): boolean {
  * mail deja de salir sin que nadie se entere.
  */
 export function destinatariosMonitor(): string[] {
-  const raw = process.env.FV_MONITOR_EMAIL || "nmachin@voltia.com.uy";
+  const raw = process.env.FV_MONITOR_EMAIL || "nicolas@voltia.com.uy";
   return [...new Set(raw.split(",").map((s) => s.trim()).filter(Boolean))];
 }
 

@@ -66,7 +66,7 @@ services:
       # CC: el cliente no tiene por qué ver a quién más le llega su reporte.
       REPORTES_FV_BCC: ${REPORTES_FV_BCC:-}
       # Monitoreo diario de plantas. El digest sale prendido, a la casilla de
-      # FV_MONITOR_EMAIL (default nmachin@voltia.com.uy). Si algún día genera
+      # FV_MONITOR_EMAIL (default nicolas@voltia.com.uy). Si algún día genera
       # ruido, FV_MONITOR_EMAIL_ENABLED=false lo apaga sin frenar el monitoreo.
       FV_MONITOR_ENABLED: ${FV_MONITOR_ENABLED:-}
       FV_MONITOR_EMAIL: ${FV_MONITOR_EMAIL:-}

@@ -32,7 +32,11 @@ const NOMBRES_EQUIPO = [
   "gonzalo ingold",
   "alejandra yañez",
 ];
-const SIEMPRE = ["nmachin@voltia.com.uy"];
+// Dirección del dueño del envío: va como destinatario visible y el resto del
+// equipo en copia oculta. Una sola constante para los tres usos — estaba
+// repetida y al cambiar de dirección hubo que tocar los tres.
+const DESTINATARIO_PRINCIPAL = "nicolas@voltia.com.uy";
+const SIEMPRE = [DESTINATARIO_PRINCIPAL];
 
 const DIACRITICS = new RegExp("[\\u0300-\\u036f]", "g");
 const norm = (s: string) =>
@@ -431,8 +435,8 @@ export async function enviarNovedades(now: Date = new Date()): Promise<boolean> 
   const formato = cards ? "marketinero" : "digest";
 
   const ok = await sendEmail({
-    to: "nmachin@voltia.com.uy",
-    bcc: destinatarios.filter((e) => e !== "nmachin@voltia.com.uy"),
+    to: DESTINATARIO_PRINCIPAL,
+    bcc: destinatarios.filter((e) => e !== DESTINATARIO_PRINCIPAL),
     type: "client_facing",
     subject: `Novedades de Voltia PM — ${rangoTexto(desde, hasta)}`,
     html,
