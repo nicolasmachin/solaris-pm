@@ -97,23 +97,31 @@ Hecho y verificado:
   usuario: todas van por `userId`. Solo hubo que tocar `users.email`.
 - Envío de la app a la dirección nueva: probado, llega.
 
-### Lo que falta
+### Su SMTP: resuelto (19/8/2026)
 
-**Su SMTP personal sigue autenticando como `nmachin@` contra Zoho.** Funciona —
-sus mails salen, con remitente `nmachin@`— pero Nicolás decidió que salgan desde
-`nicolas@`. Como esa casilla está en **Google Workspace**, no en Zoho, hay que
-reconfigurarla:
+Reconfigurado contra **Google Workspace** con una contraseña de aplicación, y
+probado con un envío real:
 
 ```
 Host: smtp.gmail.com
-Puerto: 587 (STARTTLS)
+Puerto: 587 (STARTTLS, secure=false)
 Usuario: nicolas@voltia.com.uy
-Contraseña: una contraseña de APLICACIÓN de Google
+Contraseña: de APLICACIÓN, no la del correo
 ```
 
-La contraseña de aplicación la tiene que generar él (Cuenta de Google →
-Seguridad → Verificación en dos pasos → Contraseñas de aplicaciones). Requiere
-tener la verificación en dos pasos activada. **Con la contraseña normal, Google
-rechaza la autenticación.**
+Es la **única** casilla en Google: las otras cuatro van por Zoho. Si alguna vez
+hay que rehacerla, tener presente que Google **rechaza la contraseña normal** —
+hace falta generar una de aplicación desde la cuenta (requiere verificación en
+dos pasos activada), y se usa **sin los espacios** con que Google la muestra.
 
-Mientras tanto no hay nada roto: la consulta a UTE sigue saliendo desde `nmachin@`.
+## Estado final de las cinco casillas
+
+| Usuario | Servidor | Puerto |
+|---|---|---|
+| `nicolas@voltia.com.uy` | `smtp.gmail.com` | 587 STARTTLS |
+| `alejandra@voltia.com.uy` | `smtppro.zoho.com` | 465 SSL |
+| `july@voltia.com.uy` | `smtppro.zoho.com` | 465 SSL |
+| `martin@voltia.com.uy` | `smtppro.zoho.com` | 465 SSL |
+| `reportes@voltia.com.uy` (la app, vía `.env`) | `smtppro.zoho.com` | 465 SSL |
+
+Las cuatro personales se probaron con un envío real y quedaron verificadas.
