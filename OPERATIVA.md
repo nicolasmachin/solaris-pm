@@ -264,7 +264,7 @@ Este backup es **local** (tu DB de desarrollo). No reemplaza a los backups de pr
 
 Guardalas en tu gestor de contraseñas:
 
-- Password admin de Voltia (`nmachin@voltia.com.uy`).
+- Password admin de Voltia (`nicolas@voltia.com.uy`).
 - Password del usuario `voltia` del servidor (para `sudo`).
 - `POSTGRES_PASSWORD` y `JWT_SECRET` (en el `.env` de producción).
 - Llave SSH: `~/.ssh/id_ed25519` en tu Mac. Si cambiás de equipo, copiala al nuevo.
@@ -300,7 +300,7 @@ En tu Mac / repo:
 - Specs: 4 cores · 8 GB RAM · 150 GB disco
 - OS: Ubuntu 24.04 LTS
 - Usuario SSH: `voltia` (sin password, solo llave SSH)
-- Admin app Voltia: `nmachin@voltia.com.uy`
+- Admin app Voltia: `nicolas@voltia.com.uy`
 
 ---
 

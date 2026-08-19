@@ -73,3 +73,47 @@ FROM user_smtp_configs c JOIN users u ON u.id = c."userId";
 
 `verifiedAt` es la última vez que "Probar conexión" dio OK — no garantiza que
 hoy funcione.
+
+---
+
+## Anexo: cambio de usuario de Nicolás (19/8/2026)
+
+`nmachin@voltia.com.uy` → **`nicolas@voltia.com.uy`**, la cuenta nueva de Google
+Workspace. La dirección vieja sigue existiendo en Zoho y recibe, pero deja de ser
+la principal.
+
+Hecho y verificado:
+
+- Usuario renombrado. **Entra con la dirección nueva; la contraseña no cambió.**
+  Verificado: login OK con `nicolas@`, 401 con `nmachin@`.
+- `.env` de prod: `REPORTES_FV_BCC` y `FV_MONITOR_EMAIL` a la nueva.
+  `MCP_ALLOWED_EMAILS` quedó **con las dos** durante la transición, para no
+  perder el acceso desde Claude si algo falla — sacar `nmachin@` cuando esté
+  confirmado.
+- Código: la dirección estaba repetida en tres lugares de
+  `novedades-email.job.ts`; se unificó en `DESTINATARIO_PRINCIPAL`. También el
+  default de `FV_MONITOR_EMAIL` en `reportesFv/monitor/config.ts`.
+- Se verificó que **ninguna tabla guarda el email como texto** para referirse a un
+  usuario: todas van por `userId`. Solo hubo que tocar `users.email`.
+- Envío de la app a la dirección nueva: probado, llega.
+
+### Lo que falta
+
+**Su SMTP personal sigue autenticando como `nmachin@` contra Zoho.** Funciona —
+sus mails salen, con remitente `nmachin@`— pero Nicolás decidió que salgan desde
+`nicolas@`. Como esa casilla está en **Google Workspace**, no en Zoho, hay que
+reconfigurarla:
+
+```
+Host: smtp.gmail.com
+Puerto: 587 (STARTTLS)
+Usuario: nicolas@voltia.com.uy
+Contraseña: una contraseña de APLICACIÓN de Google
+```
+
+La contraseña de aplicación la tiene que generar él (Cuenta de Google →
+Seguridad → Verificación en dos pasos → Contraseñas de aplicaciones). Requiere
+tener la verificación en dos pasos activada. **Con la contraseña normal, Google
+rechaza la autenticación.**
+
+Mientras tanto no hay nada roto: la consulta a UTE sigue saliendo desde `nmachin@`.
