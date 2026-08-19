@@ -75,8 +75,9 @@ Dos cosas que muerden:
 - **Hay un segundo camino de correo**, independiente de estas variables: las
   credenciales SMTP **por usuario** (`user_smtp_configs`, cifradas con
   `SMTP_ENCRYPTION_KEY`), que se usan cuando alguien manda un mail desde su propia
-  casilla. Cambiar el `.env` **no** las arregla; cada usuario tiene que
-  reconfigurar la suya desde su perfil.
+  casilla. Cambiar el `.env` **no** las arregla: hay que actualizarlas aparte (se
+  hizo el 19/8/2026, ver `docs/pendientes/smtp-por-usuario-migracion.md`). Esas
+  casillas también van por Zoho, cada una con su propia dirección y contraseña.
 
 ## 3. Volumen de storage
 
