@@ -31,14 +31,12 @@ Copiar `.env.example` a `.env` en la raíz y completar. Claves críticas:
 | `SMTP_*` / `TWILIO_*` | email / WhatsApp (opcionales: si faltan, se loguea y no rompe) |
 
 > ⚠️ **Gap conocido del compose de prod**: el bloque `server.environment` de
-> `docker-compose.prod.yml` hoy solo forwardea 7 variables (`NODE_ENV`,
-> `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `STORAGE_PATH`,
-> `MAX_FILE_SIZE_MB`, `BASE_URL`). La imagen se buildea sin `.env` (está en
-> `.dockerignore`), así que **cualquier variable que no esté en ese bloque no
-> llega al contenedor**. Antes del primer deploy, **agregar al compose**
-> (`VAR: ${VAR}`): `SMTP_ENCRYPTION_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`,
-> `SMTP_HOST/PORT/USER/PASS/FROM`, `TWILIO_*`. Luego recrear: `docker compose -f
-> docker-compose.prod.yml up -d server`.
+> La imagen se buildea sin `.env` (está en `.dockerignore`), así que **una
+> variable que no esté en el bloque `environment:` del compose no llega al
+> contenedor**, por más que esté en el `.env`. Al agregar una variable nueva hay
+> que sumarla ahí (`VAR: ${VAR:-}`) y recrear: `docker compose -f
+> docker-compose.prod.yml up -d server`. Hoy forwardea 39 (SMTP, Anthropic,
+> OpenAI, Growatt, Huawei, monitoreo FV, MCP y novedades).
 
 > **NODE_ENV=production** en prod: activa el guard del seed (aborta), apaga la
 > redirección de mails de dev (ver abajo) y el modo productivo. El compose de
@@ -54,6 +52,31 @@ Copiar `.env.example` a `.env` en la raíz y completar. Claves críticas:
 > `env_file`), así que aunque alguien la ponga en el `.env` de prod **no se pasa
 > al contenedor**; y (2) el código la ignora si `NODE_ENV=production`. **No
 > agregar `DEV_EMAIL_REDIRECT_TO` al compose de prod bajo ninguna circunstancia.**
+
+### Correo saliente
+
+El dominio se migró a **Google Workspace + Zoho Mail** (18-19 de agosto de 2026).
+Los MX apuntan a Google, pero la casilla que usa Voltia PM para enviar,
+`reportes@voltia.com.uy`, quedó en **Zoho**:
+
+```
+SMTP_HOST=smtppro.zoho.com
+SMTP_PORT=465                 # SSL implícito: el código pone secure=true si el puerto es 465
+SMTP_USER=reportes@voltia.com.uy
+SMTP_FROM=Voltia PM <reportes@voltia.com.uy>
+```
+
+Dos cosas que muerden:
+
+- **La contraseña tiene un `$`.** Docker Compose interpola `$` en los `.env`, así
+  que después de cambiarla hay que confirmar que llega **entera** al contenedor,
+  no fiarse de que el archivo se vea bien:
+  `docker compose -f docker-compose.prod.yml exec -T server node -e 'console.log(process.env.SMTP_PASS.length)'`
+- **Hay un segundo camino de correo**, independiente de estas variables: las
+  credenciales SMTP **por usuario** (`user_smtp_configs`, cifradas con
+  `SMTP_ENCRYPTION_KEY`), que se usan cuando alguien manda un mail desde su propia
+  casilla. Cambiar el `.env` **no** las arregla; cada usuario tiene que
+  reconfigurar la suya desde su perfil.
 
 ## 3. Volumen de storage
 
