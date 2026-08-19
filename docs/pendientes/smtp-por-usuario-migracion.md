@@ -42,22 +42,27 @@ cambie su contraseña la primera vez que entre a Zoho, así que esto va a pasar.
 
 Hoy no hay ninguna alerta: el error aparece recién al fallar un envío.
 
-### Opciones
+### Decisión (19/8/2026)
 
-1. **Que todo salga por una única casilla de sistema** (`reportes@`, la que ya usa
-   la app) poniendo el nombre de la persona en el `From`. Se elimina el problema
-   de raíz: una sola credencial que administra una sola persona. La contra es que
-   las respuestas van a `reportes@` salvo que se setee `Reply-To` con la
-   dirección de cada uno, cosa que el modelo ya soporta.
-2. **Dejarlo como está y avisar mejor**: una verificación periódica de cada
-   configuración y un aviso cuando una deje de andar.
+**Se descarta mandar todo por una casilla de sistema.** La consulta a UTE tiene
+que salir desde la casilla de la persona que la manda, no desde `reportes@`.
+Como esa es justamente la razón de ser de las credenciales por usuario, el
+esquema se mantiene.
 
-La opción 1 es más simple y más robusta; la 2 conserva que cada mail salga
-realmente desde la casilla de quien lo manda, que puede importar para la consulta
-a UTE.
+### Lo que falta entonces: detectar la rotura
 
-**Sin decidir.** Conviene resolverlo antes de que las contraseñas empiecen a
-cambiar.
+Queda pendiente construir la red de seguridad, porque hoy **una credencial vencida
+no se nota hasta que alguien intenta mandar un mail y falla**:
+
+1. **Chequeo periódico** de cada configuración (`transporter.verify()`, que es lo
+   que ya hace "Probar conexión" sin enviar nada) y actualización de `verifiedAt`.
+2. **Aviso cuando una falla**: notificación in-app a esa persona y a un admin, con
+   el texto claro de que hay que actualizar la contraseña en su perfil.
+3. **Señal en la UI**: mostrar en el perfil cuándo se verificó por última vez, y
+   marcarla en rojo si el último chequeo falló.
+
+Sin esto, el modo de falla es el peor posible: silencioso, y se descubre cuando
+alguien creía haber mandado la consulta a UTE y nunca salió.
 
 ## Cómo comprobar el estado
 
