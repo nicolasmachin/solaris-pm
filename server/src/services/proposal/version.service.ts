@@ -23,6 +23,7 @@ import { concatPdfs } from "./concatPdfs.js";
 import { applyCoverOverlay } from "./coverOverlay.js";
 import { generateFullPdfWithCover } from "./full-with-cover.service.js";
 import { generateProposalFullPdf, generateProposalSummaryPdf } from "./pdfGenerator.js";
+import { fechaVigente } from "./initial-draft.js";
 import { resolveDefaults } from "./resolveDefaults.js";
 import { draftDataPublishSchema } from "./schemas/draft.schema.js";
 import {
@@ -148,7 +149,10 @@ export async function generateDraftPreviewPdf(
     where: { leadId_variante: { leadId, variante } },
   });
   if (!draft) throw notFound("DRAFT_NOT_FOUND", "El lead no tiene borrador.");
-  const data = draftDataPublishSchema.parse(draft.data);
+  const parsedDraft = draftDataPublishSchema.parse(draft.data);
+  // Misma regla que al publicar: el preview tiene que mostrar la fecha con la
+  // que va a salir el documento, no la que quedó guardada de la vez anterior.
+  const data = { ...parsedDraft, fecha: fechaVigente(parsedDraft.fecha) };
 
   const defaultsRow = await prisma.proposalDefaults.findUnique({ where: { id: "singleton" } });
   if (!defaultsRow) {
@@ -175,7 +179,23 @@ export async function publishVersion(
     throw badRequest("DRAFT_NOT_FOUND", "El lead no tiene borrador de propuesta para publicar.");
   }
   // Valida el draft.data (ZodError → 400). Defensivo: el data es Json en la BD.
-  const data = draftDataPublishSchema.parse(draft.data);
+  const parsed = draftDataPublishSchema.parse(draft.data);
+
+  // La propuesta se fecha el día que se emite. El borrador vive entre
+  // versiones, así que su fecha quedaba clavada en la de la V1 y una V2
+  // publicada una semana después salía con la fecha vieja en la portada.
+  // Se corrige acá —y no solo al abrir el cotizador— porque publicar no pasa
+  // necesariamente por ahí: el conector (y cualquier cliente que ya tenga el
+  // borrador cargado) llama directo a este endpoint.
+  const fecha = fechaVigente(parsed.fecha);
+  const data = fecha === parsed.fecha ? parsed : { ...parsed, fecha };
+  if (fecha !== parsed.fecha) {
+    // Se persiste para que el borrador no siga mostrando la fecha vencida.
+    await prisma.proposalV2Draft.update({
+      where: { id: draft.id },
+      data: { data: data as unknown as Prisma.InputJsonValue, updatedById: userId },
+    });
+  }
 
   const defaultsRow = await prisma.proposalDefaults.findUnique({ where: { id: "singleton" } });
   if (!defaultsRow) {

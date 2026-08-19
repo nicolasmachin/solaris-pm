@@ -62,13 +62,32 @@ function plazoDefault(raw: Record<string, unknown>): string {
  * imprime en el PDF que ve el cliente. Cotizar de noche no debería adelantar
  * el documento un día.
  */
-function todayIso(): string {
+export function todayIso(): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Montevideo",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   }).format(new Date());
+}
+
+/**
+ * Fecha con la que sale el documento.
+ *
+ * El borrador es uno solo por lead y sobrevive entre versiones, así que su
+ * `fecha` quedaba clavada en el día que se armó la V1: una V2 emitida una
+ * semana después salía con la fecha vieja impresa en la portada. La fecha de
+ * una propuesta es la de su emisión, no la de la primera vez que se abrió el
+ * cotizador.
+ *
+ * Solo se corrige hacia adelante: una fecha de hoy o futura se respeta (se
+ * puede fechar una propuesta para mañana a propósito). El formato es
+ * YYYY-MM-DD, así que la comparación de strings alcanza.
+ */
+export function fechaVigente(fecha: string | undefined | null): string {
+  const hoy = todayIso();
+  if (!fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return hoy;
+  return fecha < hoy ? hoy : fecha;
 }
 
 export interface LeadParaPrecarga {
@@ -175,7 +194,8 @@ export function mergeDraftData(
     techo: { ...base.techo, ...s.techo },
     cotizacion: { ...base.cotizacion, ...s.cotizacion },
     sistema: { ...base.sistema, ...s.sistema },
-    fecha: s.fecha ?? base.fecha,
+    // Se refresca si quedó en el pasado: ver fechaVigente().
+    fecha: fechaVigente(s.fecha ?? base.fecha),
     notas: s.notas ?? base.notas,
     itemsAdicionales: s.itemsAdicionales ?? base.itemsAdicionales,
   };

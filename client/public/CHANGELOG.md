@@ -1,5 +1,14 @@
 # Novedades
 
+## v9.7
+
+### 19 de agosto de 2026
+
+#### Arreglos
+
+- **La propuesta ya sale con la fecha del día en que se emite.** Al hacer una versión nueva sobre un cliente cotizado días antes, la portada seguía mostrando la fecha de la primera propuesta. Pasaba en el cotizador y también al cotizar desde el chat de Claude.
+- Si la fecha quedó vieja, se actualiza sola al abrir el cotizador, en la vista previa y al publicar. Una fecha puesta a futuro a propósito se respeta.
+
 ## v9.6
 
 ### 17 de agosto de 2026

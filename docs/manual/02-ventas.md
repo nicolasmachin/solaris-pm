@@ -139,6 +139,24 @@ Casos especiales: nombre vacío → "Estimado/a cliente,"; razón social (SRL, S
 Ltda., cooperativa…) → "Estimados,"; nombre todo en mayúsculas o todo en
 minúsculas → se capitaliza ("SOFÍA" → "Estimada Sofía,").
 
+### La fecha del documento
+
+La fecha que sale en la portada es la de **emisión**, no la del día en que se
+abrió el cotizador por primera vez. El borrador es uno por lead y sobrevive
+entre versiones, así que su `fecha` quedaba clavada en la de la V1: una V2
+emitida una semana después salía con la fecha vieja impresa.
+
+`initial-draft.ts` → `fechaVigente()` la corrige **solo hacia adelante**: si
+quedó en el pasado la lleva al día de hoy; si es de hoy o futura la respeta
+(fechar una propuesta para más adelante es intencional). Se aplica en tres
+puntos, porque publicar no pasa necesariamente por el formulario: al armar el
+borrador (`mergeDraftData`), en el preview y en `publishVersion`, que además
+persiste la corrección en el borrador. El conector entra por el mismo camino.
+
+`todayIso()` calcula el día en **America/Montevideo** y no en UTC: el servidor
+corre en UTC y un `toISOString()` pelado fecha el documento al día siguiente
+desde las 21:00 hora local.
+
 ## Reglas y decisiones
 
 - **El saludo dejó de ser editable a mano.** Era un campo que repetía un dato ya

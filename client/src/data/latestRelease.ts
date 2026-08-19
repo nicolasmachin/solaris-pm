@@ -23,16 +23,14 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "9.6",
-  date: "17 de agosto de 2026",
+  version: "9.7",
+  date: "19 de agosto de 2026",
   sections: [
     {
-      title: "Pagos a instaladores tercerizados",
+      title: "Arreglos",
       items: [
-        "Al ganar un proyecto, la app calcula sola cuánto hay que pagarle al instalador: la mano de obra de la propuesta ganadora con el IVA incluido, porque el instalador factura.",
-        'En Finanzas hay una pestaña nueva, "Instaladores", con el total de cada obra, lo pagado y el saldo. Ahí se asigna a qué instalador corresponde y se registran los pagos, que pueden ser parciales.',
-        'Se puede filtrar por instalador y copiar un "Resumen WhatsApp" con sus obras en curso y lo que falta de cada una; de las saldadas muestra solo la última, para que el mensaje no sea interminable.',
-        'Rol nuevo "Instalador tercerizado": hace lo mismo que el capataz propio y además entra a "Mis cobros" desde el menú de su cuenta para ver sus trabajos y su saldo. Solo ve lo suyo.',
+        "La propuesta ya sale con la fecha del día en que se emite: antes, al hacer una versión nueva sobre un cliente cotizado días antes, la portada seguía mostrando la fecha de la primera propuesta.",
+        "Si la fecha quedó vieja se actualiza sola al abrir el cotizador, en la vista previa y al publicar. Una fecha puesta a futuro a propósito se respeta.",
       ],
     },
   ],
@@ -47,6 +45,15 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "9.6",
+    shortDate: "17 ago",
+    highlights: [
+      "Al ganar un proyecto, la app calcula sola cuánto hay que pagarle al instalador tercerizado, con el IVA incluido.",
+      'En Finanzas, pestaña "Instaladores" con el total de cada obra, lo pagado y el saldo, filtro por instalador y "Resumen WhatsApp".',
+      'Rol nuevo "Instalador tercerizado", que entra a "Mis cobros" y ve solo sus trabajos.',
+    ],
+  },
   {
     version: "9.5",
     shortDate: "17 ago",
