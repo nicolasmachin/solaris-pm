@@ -85,6 +85,77 @@ function Texto({
   );
 }
 
+// ─── Borrador local ────────────────────────────────────────────────────────
+// El formulario es largo y se completa de una sentada; cerrar la ventana sin
+// querer no puede costar todo lo escrito. Se guarda en el navegador (no en el
+// servidor) porque alcanza para el caso real —una persona, una computadora— y
+// no agrega estado compartido que después haya que resolver entre dos personas
+// editando a la vez.
+//
+// El borrador queda en ESA computadora y ESE navegador: desde otra máquina, el
+// formulario arranca con los datos del proyecto.
+const BORRADOR_VERSION = 1;
+
+interface Borrador {
+  v: number;
+  ctx: EmailTemplateContext;
+  to: string[];
+  cc: string[];
+  bcc: string[];
+  subjectOverride: string | null;
+}
+
+function claveBorrador(projectId: string): string {
+  return `voltia:suministro-individual:${projectId}`;
+}
+
+function leerBorrador(projectId: string): Borrador | null {
+  try {
+    const crudo = localStorage.getItem(claveBorrador(projectId));
+    if (!crudo) return null;
+    const b = JSON.parse(crudo) as Borrador;
+    // Si cambió la forma del formulario, se descarta en vez de intentar
+    // recuperarlo a medias.
+    if (b?.v !== BORRADOR_VERSION || !b.ctx?.tecnica) return null;
+    return b;
+  } catch {
+    // Modo incógnito, almacenamiento bloqueado o JSON corrupto: sin borrador.
+    return null;
+  }
+}
+
+function guardarBorrador(projectId: string, b: Borrador): void {
+  try {
+    localStorage.setItem(claveBorrador(projectId), JSON.stringify(b));
+  } catch {
+    // Guardar es una comodidad: si el navegador no deja, se sigue igual.
+  }
+}
+
+function borrarBorrador(projectId: string): void {
+  try {
+    localStorage.removeItem(claveBorrador(projectId));
+  } catch {
+    /* nada que hacer */
+  }
+}
+
+// Aplica lo guardado SOBRE el contexto fresco del servidor, campo por campo.
+// Así, si más adelante el formulario gana un campo nuevo, un borrador viejo no
+// lo borra: toma el valor del proyecto y conserva lo que el usuario había
+// escrito en el resto.
+function fusionar(
+  servidor: EmailTemplateContext,
+  guardado: EmailTemplateContext,
+): EmailTemplateContext {
+  return {
+    cliente: { ...servidor.cliente, ...guardado.cliente },
+    suministro: { ...servidor.suministro, ...guardado.suministro },
+    tecnica: { ...servidor.tecnica, ...guardado.tecnica },
+    firma: servidor.firma,
+  };
+}
+
 export default function SuministroIndividualUte() {
   const { projectId = "" } = useParams();
   const navigate = useNavigate();
@@ -114,6 +185,7 @@ export default function SuministroIndividualUte() {
   const [ready, setReady] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [bajando, setBajando] = useState(false);
+  const [recuperado, setRecuperado] = useState(false);
 
   // El contexto que llega del servidor mezcla vocabularios: `pasaLinea` viene
   // con el default de la consulta de microgenerador ("No corresponde"), que NO
@@ -128,8 +200,23 @@ export default function SuministroIndividualUte() {
     return { ...context, tecnica: { ...context.tecnica, pasaLinea } };
   }
 
-  function seed(context: EmailTemplateContext) {
-    setCtx(normalizar(context));
+  // `aplicarBorrador` solo va en la carga inicial. Cuando se vuelve a preparar
+  // tras leer la factura de UTE, gana el dato nuevo: reaplicar el borrador
+  // pisaría justamente lo que la IA acaba de extraer.
+  function seed(context: EmailTemplateContext, aplicarBorrador = false) {
+    const borrador = aplicarBorrador ? leerBorrador(projectId) : null;
+    const base = borrador ? fusionar(context, borrador.ctx) : context;
+    setCtx(normalizar(base));
+
+    if (borrador) {
+      setTo(borrador.to);
+      setCc(borrador.cc);
+      setBcc(borrador.bcc);
+      setSubjectOverride(borrador.subjectOverride);
+      setRecuperado(true);
+      return;
+    }
+
     if (template) {
       setTo(splitCsv(renderTemplate(template.toTemplate, context)));
       setCc(splitCsv(renderTemplate(template.ccTemplate, context)));
@@ -138,19 +225,50 @@ export default function SuministroIndividualUte() {
     setSubjectOverride(null);
   }
 
-  useEffect(() => {
-    if (!projectId || !template || ready) return;
+  // Descarta lo escrito y vuelve a los datos del proyecto.
+  function descartarBorrador() {
+    borrarBorrador(projectId);
+    setRecuperado(false);
+    setReady(false);
     prepare.mutate(
       { templateKey: SUMINISTRO_TEMPLATE_KEY, projectId },
       {
         onSuccess: (res) => {
           seed(res.context);
           setReady(true);
+          toast.success("Se volvió a los datos del proyecto");
+        },
+      },
+    );
+  }
+
+  useEffect(() => {
+    if (!projectId || !template || ready) return;
+    prepare.mutate(
+      { templateKey: SUMINISTRO_TEMPLATE_KEY, projectId },
+      {
+        onSuccess: (res) => {
+          seed(res.context, true);
+          setReady(true);
         },
       },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, template]);
+
+  // Autoguardado: cada cambio se persiste en el navegador. Es un objeto chico y
+  // localStorage es sincrónico y rápido, así que no hace falta debounce.
+  useEffect(() => {
+    if (!ready || !ctx) return;
+    guardarBorrador(projectId, {
+      v: BORRADOR_VERSION,
+      ctx,
+      to,
+      cc,
+      bcc,
+      subjectOverride,
+    });
+  }, [ready, ctx, to, cc, bcc, subjectOverride, projectId]);
 
   // Tras confirmar la factura UTE (que completa cuenta, tarifa y potencia),
   // se vuelve a preparar para refrescar el formulario con los datos nuevos.
@@ -261,6 +379,7 @@ export default function SuministroIndividualUte() {
         body: bodyText,
         context: ctx,
       });
+      borrarBorrador(projectId);
       toast.success(
         ctx.tecnica.esAumento ? "Solicitud de aumento enviada a UTE" : "Solicitud enviada a UTE",
       );
@@ -306,6 +425,21 @@ export default function SuministroIndividualUte() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,46%)_minmax(0,54%)]">
         {/* ─── Formulario ─── */}
         <div className="space-y-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
+          {recuperado && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+              <span className="flex-1">
+                Se recuperó lo que habías escrito en este formulario. Se guarda solo en esta
+                computadora, mientras no lo envíes.
+              </span>
+              <button
+                onClick={descartarBorrador}
+                className="flex-shrink-0 font-semibold underline hover:no-underline"
+              >
+                Descartar
+              </button>
+            </div>
+          )}
+
           <div>
             <label className={lbl}>Tipo de trámite</label>
             <div className="inline-flex overflow-hidden rounded-lg border border-[var(--color-border)]">

@@ -202,7 +202,7 @@ export async function seedSuministroIndividualTemplate(prisma: PrismaClient): Pr
       // microgeneración (que va a microgeneracion@). Los tres son editables
       // antes de cada envío y configurables por ADMIN desde Configuración.
       toTemplate: "comercial@ute.com.uy",
-      ccTemplate: "nicolas@voltia.com.uy",
+      ccTemplate: "nicolas@voltia.com.uy, luna@voltia.com.uy, alejandra@voltia.com.uy",
       bccTemplate: "{{cliente.email}}",
       subjectTemplate: SUMINISTRO_INDIVIDUAL_SUBJECT,
       bodyTemplate: SUMINISTRO_INDIVIDUAL_BODY,

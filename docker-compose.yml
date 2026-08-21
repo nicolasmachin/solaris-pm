@@ -47,6 +47,10 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-}
+      # Clave con la que se cifran las contraseñas SMTP de cada usuario
+      # (user_smtp_configs). Sin esto, en local no se puede guardar ni usar el
+      # correo por-usuario: los mails de UTE tiran SMTP_NOT_CONFIGURED.
+      SMTP_ENCRYPTION_KEY: ${SMTP_ENCRYPTION_KEY:-}
       # DEV: redirige TODOS los mails salientes a esta casilla en local, para no
       # spamear al equipo mientras se testea. Vacío = sin redirección. En prod
       # nunca se setea (además el código la ignora si NODE_ENV=production).

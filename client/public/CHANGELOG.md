@@ -12,6 +12,7 @@
 - El correo lleva **adjunto el formulario oficial de UTE ya completo**. Se puede abrir y revisar antes de enviar, con el botón "Ver formulario".
 - Sale desde **tu propia casilla**, con copia configurable, igual que la consulta a UTE.
 - Una vez enviado, el botón pasa a decir **cuándo se pidió el aumento y por cuánto**, y queda una copia del formulario en los documentos del proyecto.
+- **Lo que vas escribiendo se guarda solo.** Si cerrás la ventana sin querer, al volver está todo como lo dejaste, con un aviso y la opción de descartarlo y volver a los datos del proyecto. Se guarda en esa computadora hasta que enviás.
 - El mismo formulario sirve para pedir un **suministro nuevo**: se elige el tipo de trámite arriba de todo y cambia el asunto del correo.
 
 ## v9.7

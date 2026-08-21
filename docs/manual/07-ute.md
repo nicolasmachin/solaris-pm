@@ -49,6 +49,10 @@ trámite y el asunto del correo, no el resto.
 Después de enviar, el botón de la subetapa pasa a decir cuándo se pidió el
 aumento y por cuánto.
 
+**El formulario se autoguarda mientras se completa.** Si se cierra la ventana,
+al volver aparece un aviso con lo recuperado y un enlace para descartarlo y
+volver a los datos del proyecto. El borrador se borra al enviar.
+
 ## Cómo funciona
 
 **El correo** usa el sistema de plantillas (`EmailTemplate`, clave
@@ -137,6 +141,18 @@ los clientes del portal.
 - **La tarifa guardada en el proyecto puede no estar en la lista de UTE** (por
   ejemplo "BT1", que viene de la factura). En ese caso se muestra igual como
   opción, pero conviene elegir la equivalente de la lista antes de enviar.
+- **El borrador vive en el navegador** (`localStorage`, clave
+  `voltia:suministro-individual:<projectId>`), no en el servidor: queda en esa
+  computadora y ese navegador. Desde otra máquina el formulario arranca con los
+  datos del proyecto. En modo incógnito o con el almacenamiento bloqueado no se
+  guarda nada y la pantalla funciona igual.
+- **Al releer la factura de UTE el borrador NO se reaplica**: gana el dato que
+  acaba de extraer la IA. Reaplicarlo pisaría justamente lo que se fue a buscar.
+- **El borrador se fusiona campo por campo sobre los datos del proyecto.** Si el
+  formulario gana un campo nuevo, un borrador viejo no lo deja vacío: toma el
+  valor del proyecto y conserva lo escrito en el resto. Si cambia la forma del
+  borrador (`BORRADOR_VERSION`), se descarta entero en vez de recuperarse a
+  medias.
 - **Enviar dos veces no está bloqueado**: se puede corregir y reenviar. Solo
   queda la última copia del formulario en los documentos del proyecto.
 

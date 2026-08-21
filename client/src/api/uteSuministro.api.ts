@@ -96,7 +96,7 @@ export async function previewFormularioSuministro(
   context: EmailTemplateContext,
 ): Promise<{ blob: Blob; filename: string }> {
   const res = await apiClient.post(
-    `/projects/${projectId}/suministro-individual/preview.xlsx`,
+    `/api/projects/${projectId}/suministro-individual/preview.xlsx`,
     { context },
     { responseType: "blob" },
   );
@@ -110,7 +110,7 @@ export async function enviarSuministroIndividual(
   body: EnviarSuministroBody,
 ): Promise<{ ok: true; emailLogId: string; filename: string }> {
   const { data } = await apiClient.post(
-    `/projects/${projectId}/suministro-individual/enviar`,
+    `/api/projects/${projectId}/suministro-individual/enviar`,
     body,
   );
   return data;
@@ -123,6 +123,6 @@ export interface EstadoSuministro {
 }
 
 export async function getEstadoSuministro(projectId: string): Promise<EstadoSuministro> {
-  const { data } = await apiClient.get(`/projects/${projectId}/suministro-individual/estado`);
+  const { data } = await apiClient.get(`/api/projects/${projectId}/suministro-individual/estado`);
   return data;
 }
