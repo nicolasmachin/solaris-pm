@@ -19,6 +19,7 @@ import { EngineeringModuleSection } from "./EngineeringModuleSection";
 import { VisitasToolPanel } from "../ingenieria/visitas/VisitasToolPanel";
 import { VisitFloatingButton } from "../visitas/VisitFloatingButton";
 import { CanAccess } from "../ui/CanAccess";
+import { SolicitudSuministroButton } from "../ute/SolicitudSuministroButton";
 import { CargarFotosObraButton } from "../obra/CargarFotosObraButton";
 import { ContractBuilderModal } from "../contract/ContractBuilderModal";
 import { ContractVersionsList } from "../contract/ContractVersionsList";
@@ -521,6 +522,7 @@ function SubstageRow({
                 >
                   ✉ Enviar consulta a UTE
                 </button>
+                <SolicitudSuministroButton projectId={projectId} />
               </CanAccess>
             )}
 

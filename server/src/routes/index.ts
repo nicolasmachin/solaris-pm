@@ -26,6 +26,7 @@ import { registerTicketsRoutes } from "./tickets.routes.js";
 import { registerEncuestasRoutes } from "./encuestas.routes.js";
 import { registerTraspasosRoutes } from "./traspasos.routes.js";
 import { registerUnifilarRoutes } from "./unifilar.routes.js";
+import { registerUteSuministroRoutes } from "./ute-suministro.routes.js";
 import { registerVisitasRoutes } from "./visitas.routes.js";
 
 export async function registerRoutes(app: FastifyInstance) {
@@ -66,4 +67,5 @@ export async function registerRoutes(app: FastifyInstance) {
   await app.register(registerEncuestasRoutes, { prefix: "/api" });
   await app.register(registerReportesFvRoutes, { prefix: "/api" });
   await app.register(registerVideosRoutes, { prefix: "/api" });
+  await app.register(registerUteSuministroRoutes, { prefix: "/api" });
 }

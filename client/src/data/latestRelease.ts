@@ -23,9 +23,19 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "9.7",
-  date: "19 de agosto de 2026",
+  version: "9.8",
+  date: "21 de agosto de 2026",
   sections: [
+    {
+      title: "Aumento de potencia contratada a UTE",
+      items: [
+        "En Onboarding, dentro del paso \"Consulta inicial UTE\", hay un botón nuevo para pedirle a UTE que le suba la potencia contratada al cliente. Es opcional: se usa solo cuando el suministro no da para la instalación.",
+        "La pantalla arranca con todos los datos del proyecto ya cargados y se pueden corregir antes de mandar.",
+        "La potencia nueva se elige de una lista, la misma que acepta UTE: los escalones cambian según sea monofásico o trifásico. Debajo se ve el salto de la potencia actual a la nueva.",
+        "El correo lleva adjunto el formulario oficial de UTE ya completo, y se puede revisar antes de enviar con el botón \"Ver formulario\".",
+        "Una vez enviado, el botón dice cuándo se pidió el aumento y por cuánto, y queda una copia del formulario en los documentos del proyecto.",
+      ],
+    },
     {
       title: "Arreglos",
       items: [

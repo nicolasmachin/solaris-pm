@@ -62,6 +62,7 @@ const FinanceIncomeStatement = lazy(() => import("./pages/FinanceIncomeStatement
 const Stock = lazy(() => import("./pages/Stock").then((module) => ({ default: module.Stock })));
 const InformesPage = lazy(() => import("./pages/InformesPage"));
 const ConsultaUte = lazy(() => import("./pages/ConsultaUte"));
+const SuministroIndividualUte = lazy(() => import("./pages/SuministroIndividualUte"));
 const Calendar = lazy(() => import("./pages/Calendar").then((module) => ({ default: module.Calendar })));
 const MisTareas = lazy(() => import("./pages/MisTareas").then((module) => ({ default: module.MisTareas })));
 const MisTareasLayout = lazy(() => import("./pages/MisTareasLayout").then((module) => ({ default: module.MisTareasLayout })));
@@ -461,6 +462,14 @@ export function App() {
           element={
             <PermissionRoute module="TRAMITES_UTE" action="VIEW">
               <ConsultaUte />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/proyecto/:projectId/suministro-individual"
+          element={
+            <PermissionRoute module="TRAMITES_UTE" action="VIEW">
+              <SuministroIndividualUte />
             </PermissionRoute>
           }
         />

@@ -31,7 +31,10 @@ import {
   UteStage,
   UteStatus,
 } from "@prisma/client";
-import { seedConsultaUteTemplate } from "../src/services/email/seed-templates.js";
+import {
+  seedConsultaUteTemplate,
+  seedSuministroIndividualTemplate,
+} from "../src/services/email/seed-templates.js";
 
 import { prisma } from "../src/lib/prisma.js";
 import {
@@ -2056,6 +2059,7 @@ async function run() {
   await seedUteProcesses(admin.id);
   await seedChecklistTemplates(prisma);
   await seedConsultaUteTemplate(prisma);
+  await seedSuministroIndividualTemplate(prisma);
 
   const project1 = await prisma.project.findUnique({
     where: { id: project1Id },

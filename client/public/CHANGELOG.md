@@ -1,5 +1,19 @@
 # Novedades
 
+## v9.8
+
+### 21 de agosto de 2026
+
+#### Aumento de potencia contratada a UTE
+
+- En Onboarding, dentro del paso **"Consulta inicial UTE"**, hay un botón nuevo para **solicitarle a UTE que le suba la potencia contratada al cliente**. Es opcional: aparece siempre, pero solo se usa cuando el suministro no da para la instalación que se va a hacer.
+- La pantalla arranca con **todos los datos del proyecto ya cargados** (dirección, cliente, tarifa, tensión, potencia contratada) y se pueden corregir uno por uno antes de mandar.
+- Se elige la **potencia nueva de una lista**, la misma que acepta UTE: los escalones cambian según el suministro sea monofásico o trifásico. Debajo se ve el salto que se está pidiendo, de la potencia actual a la nueva.
+- El correo lleva **adjunto el formulario oficial de UTE ya completo**. Se puede abrir y revisar antes de enviar, con el botón "Ver formulario".
+- Sale desde **tu propia casilla**, con copia configurable, igual que la consulta a UTE.
+- Una vez enviado, el botón pasa a decir **cuándo se pidió el aumento y por cuánto**, y queda una copia del formulario en los documentos del proyecto.
+- El mismo formulario sirve para pedir un **suministro nuevo**: se elige el tipo de trámite arriba de todo y cambia el asunto del correo.
+
 ## v9.7
 
 ### 19 de agosto de 2026

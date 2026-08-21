@@ -6,7 +6,8 @@ import { AppError, badRequest } from "../../utils/errors.js";
 import { todayUtc } from "../../utils/dates.js";
 import { buildTransporter, getSmtpCredentials } from "./smtp.service.js";
 import { redirectInDev } from "./dev-redirect.js";
-import { CONSULTA_UTE_KEY } from "./seed-templates.js";
+import type { EmailAttachment } from "../email.service.js";
+import { CONSULTA_UTE_KEY, SUMINISTRO_INDIVIDUAL_KEY } from "./seed-templates.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -55,6 +56,14 @@ export interface SendEmailInput {
   bcc?: string;
   subject: string;
   body: string;
+  // Solo para la plantilla de Suministro Individual: la potencia que se le pide
+  // a UTE. Se guarda en el proyecto junto con la fecha de envío para dejar
+  // constancia de que el trámite se pidió y por cuánto.
+  potenciaSolicitada?: string;
+  // Adjuntos ya resueltos por quien llama (buffer en memoria). Este camino de
+  // correo sale desde la casilla del propio usuario; el `EmailLog` no registra
+  // adjuntos, así que su nombre queda en la metadata de auditoría.
+  attachments?: EmailAttachment[];
 }
 
 export async function sendTemplatedEmail(input: SendEmailInput): Promise<{ id: string; status: "SENT" }> {
@@ -104,7 +113,14 @@ export async function sendTemplatedEmail(input: SendEmailInput): Promise<{ id: s
           ? `Mail enviado: ${input.subject}`
           : `Mail falló: ${input.subject}`,
       newValue: status,
-      metadata: { to: to.join(", "), cc: cc.join(", "), bcc: bcc.join(", ") },
+      metadata: {
+        to: to.join(", "),
+        cc: cc.join(", "),
+        bcc: bcc.join(", "),
+        ...(input.attachments?.length
+          ? { adjuntos: input.attachments.map((a) => a.filename).join(", ") }
+          : {}),
+      },
     });
     return log;
   }
@@ -134,6 +150,9 @@ export async function sendTemplatedEmail(input: SendEmailInput): Promise<{ id: s
       subject: dest.subject,
       text: dest.text,
       html: dest.html,
+      // `redirectInDev` solo reescribe destinatarios, asunto y cuerpo: los
+      // adjuntos van intactos también en desarrollo.
+      attachments: input.attachments,
     });
     const log = await registrar(EmailStatus.SENT);
     // Ayuda (no bloqueante): al enviar con éxito la "Consulta UTE" desde
@@ -148,6 +167,34 @@ export async function sendTemplatedEmail(input: SendEmailInput): Promise<{ id: s
         });
       } catch {
         // El mail ya salió; nunca fallar el envío por la auto-captura de fecha.
+      }
+    }
+    // Misma ayuda para el aumento de potencia: deja constancia de que se pidió,
+    // con qué potencia y cuándo. La fecha NO se pisa si ya había una (el primer
+    // pedido es el que cuenta), pero la potencia sí se actualiza: si se reenvía
+    // corrigiendo el valor, lo guardado tiene que ser lo último que se mandó.
+    if (input.templateKey === SUMINISTRO_INDIVIDUAL_KEY && input.projectId) {
+      try {
+        const potencia = input.potenciaSolicitada?.trim();
+        const existente = await prisma.uteDocumentConfig.findUnique({
+          where: { projectId: input.projectId },
+          select: { aumentoPotenciaSentAt: true },
+        });
+        const fecha = existente?.aumentoPotenciaSentAt ?? todayUtc();
+        await prisma.uteDocumentConfig.upsert({
+          where: { projectId: input.projectId },
+          create: {
+            projectId: input.projectId,
+            aumentoPotenciaSentAt: fecha,
+            ...(potencia ? { potSolicitada: potencia } : {}),
+          },
+          update: {
+            aumentoPotenciaSentAt: fecha,
+            ...(potencia ? { potSolicitada: potencia } : {}),
+          },
+        });
+      } catch {
+        // El mail ya salió; nunca fallar el envío por la auto-captura de datos.
       }
     }
     return { id: log.id, status: "SENT" };

@@ -3048,6 +3048,13 @@ model UteDocumentConfig {
   fechaDoc DateTime? @db.Date
   fechaFin DateTime? @db.Date
 
+  // Aumento de potencia contratada (trámite opcional que se pide a UTE desde
+  // Onboarding, ver aumento-potencia). `potSolicitada` es la potencia nueva
+  // que se le pide a UTE — distinta de `potContratada`, que es la vigente hoy.
+  // `aumentoPotenciaSentAt` se completa sola al enviar el mail y no se pisa.
+  potSolicitada         String    @default("")
+  aumentoPotenciaSentAt DateTime? @db.Date
+
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 

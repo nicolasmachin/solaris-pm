@@ -14,10 +14,14 @@
  */
 
 import { prisma } from "../src/lib/prisma.js";
-import { seedConsultaUteTemplate } from "../src/services/email/seed-templates.js";
+import {
+  seedConsultaUteTemplate,
+  seedSuministroIndividualTemplate,
+} from "../src/services/email/seed-templates.js";
 
 async function main() {
   await seedConsultaUteTemplate(prisma);
+  await seedSuministroIndividualTemplate(prisma);
 }
 
 main()

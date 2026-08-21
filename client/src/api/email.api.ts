@@ -63,9 +63,36 @@ export interface EmailTemplateCreate {
 export type EmailTemplateUpdate = Partial<Omit<EmailTemplateCreate, "key">>;
 
 // Contexto que devuelve `prepare` y que el cliente edita para el preview en vivo.
+// ESPEJO de EmailTemplateContext del backend (server/src/services/email/
+// context.service.ts). Si se agrega un campo allá hay que agregarlo acá: el
+// preview del mail se renderiza en el navegador con este mismo objeto.
 export interface EmailTemplateContext {
-  cliente: { nombre: string; ci: string; telefono: string; email: string; esEmpresa: boolean };
-  suministro: { departamento: string; localidad: string; calle: string; numero: string; cuenta: string };
+  cliente: {
+    nombre: string;
+    ci: string;
+    telefono: string;
+    email: string;
+    esEmpresa: boolean;
+    documento: string;
+  };
+  suministro: {
+    departamento: string;
+    localidad: string;
+    calle: string;
+    numero: string;
+    cuenta: string;
+    padron: string;
+    duplicador: string;
+    apartamento: string;
+    avisoAcceso: string;
+    notificaciones: string;
+    notifCalle: string;
+    notifNumero: string;
+    notifDuplicador: string;
+    notifApartamento: string;
+    notifDepartamento: string;
+    notifLocalidad: string;
+  };
   tecnica: {
     tension: string;
     potenciaGenerador: string;
@@ -76,7 +103,22 @@ export interface EmailTemplateContext {
     pasaLinea: string;
     certificadoCarga: string;
     cargaPerturbadora: string;
+    tensionNivel: string;
+    tipoSolicitud: string;
+    tramite: string;
+    tramiteAsociado: string;
+    requerimiento: string;
+    tipoMedida: string;
+    actividad: string;
+    potenciaSolicitada: string;
+    fases: string;
+    dobleContratacion: string;
+    potenciaPunta: string;
+    instaladaCalefaccion: string;
+    observaciones: string;
+    esAumento: boolean;
   };
+  firma: { nombre: string; cargo: string; telefono: string; email: string };
 }
 
 export interface PrepareEmailBody {

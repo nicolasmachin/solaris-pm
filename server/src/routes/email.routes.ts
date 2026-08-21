@@ -88,6 +88,15 @@ const tecnicaOverrideSchema = z
     pasaLinea: z.string(),
     certificadoCarga: z.string(),
     cargaPerturbadora: z.string(),
+    // Campos del formulario de Suministro Individual (aumento de potencia).
+    tipoSolicitud: z.string(),
+    tramite: z.string(),
+    tramiteAsociado: z.string(),
+    actividad: z.string(),
+    potenciaSolicitada: z.string(),
+    fases: z.string(),
+    observaciones: z.string(),
+    esAumento: z.boolean(),
   })
   .partial()
   .strict();
@@ -121,6 +130,8 @@ const sendSchema = z
     bcc: z.string().trim().optional(),
     subject: z.string().trim().min(1),
     body: z.string().min(1),
+    // Solo lo usa la plantilla de Suministro Individual (ver send.service.ts).
+    potenciaSolicitada: z.string().trim().optional(),
   })
   .strict();
 
