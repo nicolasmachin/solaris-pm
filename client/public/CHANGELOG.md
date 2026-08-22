@@ -4,6 +4,21 @@
 
 ### 21 de agosto de 2026
 
+#### Panel de operaciones en el Dashboard (Tiempos & SLA)
+
+- El **Dashboard** ahora muestra, para operaciones, un panel de **triage en vivo** que responde “¿quién está en riesgo ahora?”. Lo ven los roles de operaciones y administración; no aparece para quienes no tienen acceso a Operaciones.
+- **En riesgo ahora**: cuántos proyectos activos están vencidos o por vencer contra el plazo de su etapa, con el reparto vencidos / por vencer / en plazo.
+- **Sin fecha de instalación**: proyectos vendidos que todavía no tienen agenda de obra, ordenados por **días desde la venta** (los más demorados arriba).
+- **Sin comunicación hace X días**: clientes cuya última interacción registrada superó la cadencia objetivo de su etapa (E1/E2/E3). Toma la última interacción cargada en Experiencia Solar; si nunca se registró una, se marca “Sin contacto”.
+- **¿Dónde se rompe el proceso?**: tiempo promedio y % de cumplimiento por etapa, con el **cliente más trabado** en cada una.
+- **Trámites UTE**: clientes sin habilitar ordenados por días desde la venta, el **reparto de espera nosotros vs. UTE** (con los promedios de días de cada lado) y el **tiempo de respuesta de UTE por sub-etapa** (Consulta, Solicitud, etc.), para ver dónde se traba el trámite.
+- En **Administración → Cadencia de contacto** se configura cada cuántos días debería contactarse al cliente en E1, E2 y E3 (lo que dispara la tarjeta “Sin comunicación”).
+
+#### Plan de pagos — cuota única y nombres por defecto
+
+- Ahora se puede armar un plan de pagos de **una sola cuota por el total pendiente**. Antes la primera cuota no podía ser igual al saldo, así que un pago único obligaba a poner un número apenas menor; eso ya no pasa (solo se rechaza si la cuota **supera** el saldo).
+- Al generar el plan por defecto (seña + 3 cuotas), las cuotas vienen con **nombres más claros**: "Pago previo 50%", "Pago obra terminada 30%" y "Pago obra habilitada 20%" (antes eran "Cuota 1/2/3"). Se pueden editar como siempre.
+
 #### Aumento de potencia contratada a UTE
 
 - En Onboarding, dentro del paso **"Consulta inicial UTE"**, hay un botón nuevo para **solicitarle a UTE que le suba la potencia contratada al cliente**. Es opcional: aparece siempre, pero solo se usa cuando el suministro no da para la instalación que se va a hacer.

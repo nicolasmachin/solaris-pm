@@ -122,10 +122,72 @@ error que más fácil se repite al agregar un módulo.
 
 ---
 
+## Cobros a clientes y el plan de pagos
+
+### Para qué existe
+
+Cada proyecto tiene una vista de **Cobros** que muestra, sobre el presupuesto,
+cuánto se cobró y cuánto falta. El **plan de pagos** permite dejar agendados los
+cobros previstos (seña + cuotas) para que aparezcan como pendientes hasta que
+entra la plata.
+
+### Cómo se usa
+
+- Se entra al detalle de cobros de un proyecto (desde Finanzas → Cobros o desde
+  la vista de Cobros del módulo Experiencia Solar).
+- Con el botón de plan de pagos se abre un modal que **precarga una sugerencia**
+  (seña + 3 cuotas) sobre el saldo pendiente, editable fila por fila (descripción,
+  monto, %, fecha). Al confirmar se crean los cobros previstos.
+- Cada cobro se puede marcar pagado, editarle el monto o **eliminarlo** (papelera,
+  con confirmación). Todo se refleja en Movimientos y en los totales.
+
+### Cómo funciona
+
+- El plan **no es una entidad aparte**: el plan de un proyecto = **todos sus
+  cobros previstos vigentes** (`FinanceMovement` INGRESO / PROYECTO_ENTRADA /
+  status PREVISTO / sourceType MANUAL / no borrados). No hace falta un marcador
+  durable. Ver `planPagos.service.ts` (`getPlanPagos`, `createPlanPagos`).
+- Las cuotas guardan su descripción con prefijo **`[PLAN] `** literal, que la UI
+  **strippea al mostrar** (el usuario ve "Seña", no "[PLAN] Seña").
+- Crear/editar el plan es **atómico**: soft-deletea todos los previstos vigentes
+  del proyecto y crea el nuevo set en una transacción. Así "editar el plan"
+  reconcilia sin duplicar. **No toca** los cobros ya cobrados (status != PREVISTO).
+- Sugerencia por defecto (`buildDefaultPlan` en `PlanPagosModal.tsx`): **50/30/20**
+  con **seña fija USD 500** sobre el saldo pendiente. Las 3 cuotas vienen nombradas
+  "Pago previo 50%", "Pago obra terminada 30%" y "Pago obra habilitada 20%".
+- La suma de las cuotas debe coincidir con el **saldo pendiente** (presupuesto −
+  ya cobrado) con tolerancia de **USD 1** (`SUM_TOLERANCE_USD`), no contra el
+  presupuesto bruto — así el plan se puede reabrir después de cobrar algo.
+
+### Permisos
+
+- Ver/registrar/editar/eliminar cobros: `authorizeAny` de **FINANZAS** o
+  **EXPERIENCIA_CLIENTES** (VIEW / CREATE / EDIT). Es lo que deja a Experiencia
+  Solar operar cobros sin ver el resto de Finanzas.
+- Crear/editar el plan de pagos (`/finance/plan-pagos`): **FINANZAS:EDIT**.
+- Las rutas de escritura de cobros solo tocan ingresos de proyecto (INGRESO +
+  PROYECTO_ENTRADA); sobre cualquier otro movimiento responden `NOT_A_COBRO`.
+
+### Reglas y decisiones
+
+- **La primera cuota puede ser igual al saldo pendiente** (un pago único por el
+  total es un plan válido). Solo se rechaza si lo **supera** (`SENIA_GTE_SALDO`).
+  Antes bloqueaba con "mayor o igual", lo que impedía el pago único.
+- El plan admite **una sola cuota**.
+- Si el proyecto no tiene presupuesto, no se puede armar plan (`BUDGET_REQUIRED`).
+- Si no queda saldo pendiente, no hay nada que planificar (`SALDO_PENDIENTE_INVALID`).
+
+### Casos borde
+
+- Seña > 50% del saldo: **warning** (no bloquea), para confirmar que es intencional.
+- Editar el plan cuando ya hubo cobros parciales: la suma se valida contra el
+  saldo pendiente actual, no contra el presupuesto original.
+
+---
+
 ## Qué falta cubrir de este capítulo
 
 - Movimientos: tipos, fuentes y comprobantes
-- Cobros a clientes y el plan de pagos
 - Pagos a proveedores y la aplicación FIFO a facturas
 - Facturación al cliente: qué lleva factura y su estado
 - Flujo de fondos: proyección de costos fijos y filtros

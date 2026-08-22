@@ -15,6 +15,7 @@ import { completeSubstage } from "../api/stages.api";
 import { LATEST_RELEASE, OLDER_RELEASES } from "../data/latestRelease";
 import { VersionHistoryModal } from "../components/layout/VersionFooter";
 import { SelectProyectoObraModal } from "../components/obra/SelectProyectoObraModal";
+import { OperationsPanel } from "../components/dashboard/OperationsPanel";
 import { getMyUpcomingDeadlines, type UpcomingDeadline } from "../api/deadline.api";
 import type { ProjectListItem } from "../types/api.types";
 import type { UteProcess, UteActionKey } from "../api/uteProcess.api";
@@ -72,6 +73,7 @@ export function Dashboard() {
   const isAdmin = user?.role === "ADMIN";
   const canViewFinance = usePermission("FINANZAS", "VIEW");
   const canViewUte = usePermission("TRAMITES_UTE", "VIEW");
+  const canViewOps = usePermission("OPERACIONES", "VIEW");
 
   const { data: pendingDetail = [] } = useQuery({
     queryKey: ["pending-detail"],
@@ -157,6 +159,9 @@ export function Dashboard() {
           {fmtSpanishDate(todayLocal())}
         </p>
       </div>
+
+      {/* Panel de operaciones · Tiempos & SLA (gateado por OPERACIONES:VIEW) */}
+      {canViewOps && <OperationsPanel />}
 
       {/* Grid 2 columnas en desktop */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">

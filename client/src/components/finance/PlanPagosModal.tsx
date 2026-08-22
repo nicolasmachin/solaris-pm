@@ -52,9 +52,9 @@ function buildDefaultPlan(saldoPendiente: number): RowDraft[] {
   cuota3 = r(cuota3);
   return [
     { descripcion: "Seña", monto: r(senia), fechaPrevista: addDaysISO(today, 7) },
-    { descripcion: "Cuota 1", monto: cuota1, fechaPrevista: addDaysISO(today, 30) },
-    { descripcion: "Cuota 2", monto: cuota2, fechaPrevista: addDaysISO(today, 60) },
-    { descripcion: "Cuota 3", monto: cuota3, fechaPrevista: addDaysISO(today, 90) },
+    { descripcion: "Pago previo 50%", monto: cuota1, fechaPrevista: addDaysISO(today, 30) },
+    { descripcion: "Pago obra terminada 30%", monto: cuota2, fechaPrevista: addDaysISO(today, 60) },
+    { descripcion: "Pago obra habilitada 20%", monto: cuota3, fechaPrevista: addDaysISO(today, 90) },
   ];
 }
 
@@ -108,8 +108,10 @@ export function PlanPagosModal({
   const sumOk = Math.abs(diff) <= SUM_TOLERANCE_USD;
   const seniaMonto = rows[0]?.monto ?? 0;
   const seniaPct = saldoPendiente > 0 ? (seniaMonto / saldoPendiente) * 100 : 0;
-  const seniaWarning = saldoPendiente > 0 && seniaPct > 50 && seniaMonto < saldoPendiente;
-  const seniaError = seniaMonto >= saldoPendiente && saldoPendiente > 0;
+  // Una cuota única igual al saldo pendiente es válida (pago único por el total):
+  // solo es error si SUPERA el saldo. El warning de >50% sigue siendo informativo.
+  const seniaWarning = saldoPendiente > 0 && seniaPct > 50 && seniaMonto <= saldoPendiente + SUM_TOLERANCE_USD;
+  const seniaError = saldoPendiente > 0 && seniaMonto > saldoPendiente + SUM_TOLERANCE_USD;
 
   function patchRow(idx: number, patch: Partial<RowDraft>) {
     setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
@@ -376,7 +378,7 @@ export function PlanPagosModal({
               {seniaError && (
                 <p className="mt-3 text-[11px] text-[var(--color-danger-text)] bg-[var(--color-danger-bg)]/40 border border-[var(--color-danger-bg)] rounded p-2 flex items-start gap-2">
                   <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                  La primera cuota no puede ser mayor o igual al saldo pendiente. Ajustá el monto antes de confirmar.
+                  La primera cuota no puede ser mayor al saldo pendiente. Ajustá el monto antes de confirmar.
                 </p>
               )}
 

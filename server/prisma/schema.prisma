@@ -1104,6 +1104,22 @@ model StageSla {
   @@map("stage_slas")
 }
 
+// Cadencia objetivo de contacto por recorrido del cliente (E1/E2/E3): cada
+// cuántos días CALENDARIO como máximo debería haber una interacción registrada
+// antes de considerar al cliente "sin comunicación". Una fila por recorrido.
+// Alimenta el Panel de operaciones (tarjeta "Sin comunicación"). Es config de
+// administración, editable sin tocar código (mismo patrón que StageSla).
+model RecorridoCadencia {
+  id           String   @id @default(cuid())
+  recorrido    String   @unique // "E1" | "E2" | "E3"
+  diasObjetivo Int // días calendario máx. sin contacto
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(6)
+
+  @@map("recorrido_cadencias")
+}
+
 // Qué tipos de notificación entran al resumen diario (digest) de cada rol.
 // Modelo OPT-IN: la existencia de una fila = ese rol recibe ese tipo. Sin fila
 // = no lo recibe (un tipo nuevo arranca apagado para todos hasta que se tilde

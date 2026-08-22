@@ -146,9 +146,9 @@ export type CreatePlanResult = {
  *  - al menos 1 cuota
  *  - cada cuota: monto > 0, dueDate parseable
  *  - sum(montos) coincide con presupuesto ±SUM_TOLERANCE_USD
- *  - primera cuota (la "seña") < presupuesto (si seña >= budget no tiene
- *    sentido matemático). El warning de seña > 50% se valida en el cliente
- *    (es un soft warning, no bloquea).
+ *  - primera cuota (la "seña") <= saldo pendiente (solo bloquea si lo supera;
+ *    una cuota única igual al total es válida). El warning de seña > 50% se
+ *    valida en el cliente (es un soft warning, no bloquea).
  *
  * Atomic: soft-deletea TODOS los cobros previstos vigentes del proyecto
  * (INGRESO, PROYECTO_ENTRADA, status PREVISTO, MANUAL, deletedAt null) y crea
@@ -217,11 +217,13 @@ export async function createPlanPagos(args: {
   }
 
   // Validación matemática de seña: contra saldo pendiente, no presupuesto.
+  // Solo bloquea si la primera cuota SUPERA el saldo (una cuota única igual al
+  // saldo es válida: el plan de un solo pago por el total pendiente).
   const senia = cuotas[0];
-  if (senia.monto >= saldoPendiente) {
+  if (senia.monto > saldoPendiente + SUM_TOLERANCE_USD) {
     throw badRequest(
       "SENIA_GTE_SALDO",
-      `La seña (USD ${senia.monto.toFixed(2)}) no puede ser mayor o igual al saldo pendiente (USD ${saldoPendiente.toFixed(2)}).`,
+      `La seña (USD ${senia.monto.toFixed(2)}) no puede ser mayor al saldo pendiente (USD ${saldoPendiente.toFixed(2)}).`,
     );
   }
 

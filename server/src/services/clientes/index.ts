@@ -53,7 +53,7 @@ export type EtapaInfo = {
 
 // Mapeo pipeline → recorrido. E1 hasta que la obra queda montada (Operaciones
 // completada), E2 mientras se gestiona la habilitación UTE, E3 post-habilitación.
-const RECORRIDO_BY_STAGE: Record<StageType, ClienteRecorrido> = {
+export const RECORRIDO_BY_STAGE: Record<StageType, ClienteRecorrido> = {
   ONBOARDING: "E1",
   INGENIERIA: "E1",
   OPERACIONES: "E1",
