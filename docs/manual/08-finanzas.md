@@ -34,9 +34,11 @@ Desde **Finanzas → Instaladores** (o `/pagos-instalador`), quien gestiona:
 4. Puede **filtrar por instalador** y copiar un **resumen para WhatsApp**.
 
 **El resumen de WhatsApp** (`resumenWhatsApp.ts`) lista las obras en curso con lo
-que falta de cada una, y de las saldadas **solo la última**: un instalador con
-veinte obras cerradas generaría un mensaje ilegible, y lo que importa es dónde
-quedó la cuenta. Los pagos sin instalador asignado quedan afuera.
+que falta de cada una, y de las saldadas **las últimas tres** (ordenadas por
+fecha de obra): un instalador con veinte obras cerradas generaría un mensaje
+ilegible, y lo que importa es dónde quedó la cuenta. Los pagos sin instalador
+asignado quedan afuera. En el listado, cada instalador se muestra con un **color
+estable** (derivado de su id) para identificarlo de un vistazo.
 
 El instalador entra por **el menú de su cuenta → "Mis cobros"** y ve sus
 trabajos, lo cobrado y el saldo. Es solo lectura.
@@ -79,7 +81,9 @@ esa maquinaria.
 | Cargar a mano | `FINANZAS:CREATE` |
 | Asignar instalador / corregir monto | `FINANZAS:EDIT` |
 | Registrar un pago | `FINANZAS:CREATE` |
-| Borrar | `FINANZAS:DELETE` |
+| Corregir una entrega ya registrada | `FINANZAS:EDIT` |
+| Anular una entrega ya registrada | `FINANZAS:DELETE` |
+| Borrar el trabajo entero | `FINANZAS:DELETE` |
 
 El rol **`INSTALADOR_TERCERIZADO`** clona a `CAPATAZ` y suma `PAGOS_INSTALADOR:VIEW`.
 El capataz propio **no** lo lleva: cobra sueldo, no por obra.
@@ -102,8 +106,15 @@ error que más fácil se repite al agregar un módulo.
   cotizador no siempre es lo que se negocia.
 - **No se puede pagar más que el saldo** (`SUPERA_EL_SALDO`) ni bajar el monto
   por debajo de lo ya entregado (`MONTO_MENOR_A_PAGADO`).
-- **Borrar exige que no haya entregas.** Los movimientos de Finanzas nunca se
-  tocan desde acá: es plata que salió, y borrarla descuadraría las cuentas.
+- **Una entrega ya registrada se puede corregir o anular** (`editarEntrega` /
+  `borrarEntrega`) desde el modal de pagos, incluso con el trabajo saldado.
+  Opera **sobre el `FinanceMovement`** de esa entrega (le cambia el monto/fecha o
+  lo soft-borra) y `recalcularStatus` reajusta saldo y estado. Como toca el
+  movimiento, el cambio **se refleja en Finanzas** (Movimientos, flujo,
+  resultados). Corregir no puede dejar el total entregado por encima del monto
+  del trabajo (`SUPERA_EL_MONTO`).
+- **Borrar el trabajo entero exige que no queden entregas vivas**: primero se
+  anulan las entregas (que soft-borran sus movimientos) y recién ahí se borra.
 
 ### Casos borde
 

@@ -111,3 +111,27 @@ export async function registrarPagoInstalador(
 export async function deleteInstallerPayment(id: string): Promise<void> {
   await api.delete(`/api/installer-payments/${id}`);
 }
+
+/** Corregir una entrega ya registrada (monto, fecha o notas). Refleja en Finanzas. */
+export async function editarEntregaInstalador(
+  paymentId: string,
+  movementId: string,
+  body: { montoUsd?: number; fecha?: string; notas?: string },
+): Promise<InstallerPayment> {
+  const { data } = await api.patch<{ payment: InstallerPayment }>(
+    `/api/installer-payments/${paymentId}/pagos/${movementId}`,
+    body,
+  );
+  return data.payment;
+}
+
+/** Anular una entrega ya registrada. Soft-borra su movimiento en Finanzas. */
+export async function borrarEntregaInstalador(
+  paymentId: string,
+  movementId: string,
+): Promise<InstallerPayment> {
+  const { data } = await api.delete<{ payment: InstallerPayment }>(
+    `/api/installer-payments/${paymentId}/pagos/${movementId}`,
+  );
+  return data.payment;
+}

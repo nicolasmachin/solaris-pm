@@ -20,8 +20,10 @@ import { z } from "zod";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize, hasPermission } from "../middleware/authorize.middleware.js";
 import {
+  borrarEntrega,
   createManualInstallerPayment,
   deleteInstallerPayment,
+  editarEntrega,
   installerPaymentMetrics,
   listInstallerPayments,
   registrarPago,
@@ -220,6 +222,50 @@ export async function registerInstallerPaymentRoutes(app: FastifyInstance) {
       await deleteInstallerPayment({ paymentId: id, userId: user.id });
       reply.code(204);
       return null;
+    },
+  );
+
+  // ── Editar / borrar una entrega ya registrada (opera sobre su movimiento de
+  //    Finanzas, así el cambio se refleja en Movimientos / flujo / resultados) ──
+  const entregaParams = z.object({ id: z.string().min(1), movementId: z.string().min(1) }).strict();
+  const entregaUpdateBody = z
+    .object({
+      montoUsd: z.number().positive().optional(),
+      fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      notas: z.string().max(1000).optional(),
+    })
+    .strict()
+    .refine((b) => b.montoUsd != null || b.fecha != null || b.notas !== undefined, {
+      message: "Nada para actualizar.",
+    });
+
+  app.patch(
+    "/installer-payments/:id/pagos/:movementId",
+    { preHandler: [authenticate, authorize(Module.FINANZAS, Action.EDIT)] },
+    async (request) => {
+      const user = ensureUser(request);
+      const { id, movementId } = entregaParams.parse(request.params);
+      const body = entregaUpdateBody.parse(request.body);
+      const payment = await editarEntrega({
+        paymentId: id,
+        movementId,
+        userId: user.id,
+        montoUsd: body.montoUsd,
+        fecha: body.fecha ? parseDateOnly(body.fecha) : undefined,
+        notas: body.notas,
+      });
+      return { payment };
+    },
+  );
+
+  app.delete(
+    "/installer-payments/:id/pagos/:movementId",
+    { preHandler: [authenticate, authorize(Module.FINANZAS, Action.DELETE)] },
+    async (request) => {
+      const user = ensureUser(request);
+      const { id, movementId } = entregaParams.parse(request.params);
+      const payment = await borrarEntrega({ paymentId: id, movementId, userId: user.id });
+      return { payment };
     },
   );
 }

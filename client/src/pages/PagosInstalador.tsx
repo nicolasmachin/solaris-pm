@@ -39,6 +39,20 @@ function fmtDate(iso: string | null) {
   return y && m && d ? `${d}/${m}/${y}` : "—";
 }
 
+// Color estable por instalador para identificarlos de un vistazo en el listado.
+// Se deriva del id (hash simple → índice en la paleta), así el mismo instalador
+// siempre sale del mismo color.
+const INSTALLER_COLORS = [
+  "#f87171", "#fb923c", "#fbbf24", "#a3e635", "#34d399",
+  "#22d3ee", "#60a5fa", "#a78bfa", "#f472b6", "#e879f9",
+];
+function installerColor(id: string | null): string | undefined {
+  if (!id) return undefined;
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return INSTALLER_COLORS[h % INSTALLER_COLORS.length];
+}
+
 function filterBtn(active: boolean) {
   return `px-2.5 py-1 rounded text-xs font-medium ${
     active
@@ -291,7 +305,11 @@ export function PagosInstalador() {
                     </td>
                     {veTodos && (
                       <td className="px-4 py-3">
-                        {p.installerName ?? (
+                        {p.installerName ? (
+                          <span className="font-semibold" style={{ color: installerColor(p.installerId) }}>
+                            {p.installerName}
+                          </span>
+                        ) : (
                           <span className="text-[11px] text-amber-300">Sin asignar</span>
                         )}
                       </td>
@@ -321,18 +339,18 @@ export function PagosInstalador() {
                           </button>
                           <button
                             type="button"
-                            disabled={!p.installerId || p.saldoUsd <= 0}
+                            disabled={!p.installerId || (p.saldoUsd <= 0 && p.pagos.length === 0)}
                             onClick={() => setPagando(p)}
                             title={
                               !p.installerId
                                 ? "Asigná primero a quién se le paga"
                                 : p.saldoUsd <= 0
-                                  ? "Ya está saldado"
+                                  ? "Saldado — abrí para corregir o anular entregas"
                                   : undefined
                             }
                             className="rounded bg-[var(--color-accent)] px-2 py-1 text-[11px] font-semibold text-gray-900 disabled:opacity-40"
                           >
-                            Pagar
+                            {p.saldoUsd > 0 ? "Pagar" : "Pagos"}
                           </button>
                           {p.pagos.length === 0 && (
                             <button

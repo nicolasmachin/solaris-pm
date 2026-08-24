@@ -23,25 +23,16 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "9.8",
-  date: "21 de agosto de 2026",
+  version: "9.9",
+  date: "22 de agosto de 2026",
   sections: [
     {
-      title: "Aumento de potencia contratada a UTE",
+      title: "Pagos a instaladores — corregir y anular entregas",
       items: [
-        "En Onboarding, dentro del paso \"Consulta inicial UTE\", hay un botón nuevo para pedirle a UTE que le suba la potencia contratada al cliente. Es opcional: se usa solo cuando el suministro no da para la instalación.",
-        "La pantalla arranca con todos los datos del proyecto ya cargados y se pueden corregir antes de mandar.",
-        "La potencia nueva se elige de una lista, la misma que acepta UTE: los escalones cambian según sea monofásico o trifásico. Debajo se ve el salto de la potencia actual a la nueva.",
-        "El correo lleva adjunto el formulario oficial de UTE ya completo, y se puede revisar antes de enviar con el botón \"Ver formulario\".",
-        "Lo que vas escribiendo se guarda solo: si cerrás la ventana sin querer, al volver está todo como lo dejaste.",
-        "Una vez enviado, el botón dice cuándo se pidió el aumento y por cuánto, y queda una copia del formulario en los documentos del proyecto.",
-      ],
-    },
-    {
-      title: "Arreglos",
-      items: [
-        "La propuesta ya sale con la fecha del día en que se emite: antes, al hacer una versión nueva sobre un cliente cotizado días antes, la portada seguía mostrando la fecha de la primera propuesta.",
-        "Si la fecha quedó vieja se actualiza sola al abrir el cotizador, en la vista previa y al publicar. Una fecha puesta a futuro a propósito se respeta.",
+        "Ahora se puede corregir o anular una entrega ya registrada a un instalador (por ejemplo, si cargaste un monto que no era), desde el botón de pagos del trabajo, incluso cuando ya está saldado.",
+        "La corrección o anulación se refleja al instante en Finanzas: la entrega es un movimiento, así que se actualizan Movimientos, el flujo de fondos y el estado de resultados.",
+        "En el listado, el nombre de cada instalador se muestra con su propio color, para identificarlos de un vistazo.",
+        "El resumen para WhatsApp ahora muestra las últimas tres obras saldadas (ordenadas por fecha de obra), en vez de solo la última.",
       ],
     },
   ],
@@ -56,6 +47,22 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "9.8",
+    shortDate: "21 ago",
+    highlights: [
+      "Panel de operaciones en el Dashboard (Tiempos & SLA): quién está en riesgo, sin fecha de instalación, sin comunicación y dónde se traba el proceso, con la banda de trámites UTE.",
+      "Plan de pagos: se puede armar de una sola cuota por el total, y las cuotas por defecto vienen con nombres más claros (pago previo 50%, obra terminada 30%, obra habilitada 20%).",
+      "Aumento de potencia contratada a UTE desde Onboarding, con el formulario oficial adjunto ya completo.",
+    ],
+  },
+  {
+    version: "9.7",
+    shortDate: "19 ago",
+    highlights: [
+      "La propuesta ya sale con la fecha del día en que se emite, incluso al hacer una versión nueva sobre un cliente cotizado días antes.",
+    ],
+  },
   {
     version: "9.6",
     shortDate: "17 ago",

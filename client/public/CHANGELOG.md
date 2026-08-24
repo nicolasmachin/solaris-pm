@@ -1,5 +1,16 @@
 # Novedades
 
+## v9.9
+
+### 22 de agosto de 2026
+
+#### Pagos a instaladores — corregir y anular entregas
+
+- Ahora se puede **corregir o anular una entrega ya registrada** a un instalador (por ejemplo, si cargaste un monto que no era). Se hace desde el botón de pagos del trabajo, incluso cuando el trabajo ya está **saldado**.
+- La corrección o anulación **se refleja al instante en Finanzas**: la entrega es un movimiento, así que al cambiarla o darla de baja se actualizan Movimientos, el flujo de fondos y el estado de resultados.
+- En el listado, el nombre de cada **instalador se muestra con su propio color**, para identificarlos de un vistazo.
+- El **resumen para WhatsApp** ahora muestra las **últimas tres obras saldadas** (ordenadas por fecha de obra), en vez de solo la última.
+
 ## v9.8
 
 ### 21 de agosto de 2026

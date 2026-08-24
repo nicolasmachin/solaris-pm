@@ -3,8 +3,9 @@ import type { InstallerPayment } from "../../api/pagosInstalador.api";
 // Resumen para pegarle al instalador por WhatsApp (los *...* son su negrita).
 //
 // Muestra lo que está en curso —lo que todavía se le debe— y de lo ya saldado
-// solo **la última obra**: un instalador con veinte obras cerradas generaría un
-// mensaje ilegible, y lo que importa es dónde quedó la cuenta.
+// solo **las últimas tres obras** (por fecha de obra): un instalador con veinte
+// obras cerradas generaría un mensaje ilegible, y lo que importa es dónde quedó
+// la cuenta.
 
 function fmtUsd(v: number): string {
   return "US$ " + v.toLocaleString("es-UY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -42,18 +43,18 @@ export function buildResumenInstalador(nombre: string, payments: InstallerPaymen
     .filter((p) => p.status !== "PAGADO")
     .sort((a, b) => a.fechaTrabajo.localeCompare(b.fechaTrabajo));
 
-  // La última saldada: por fecha de pago si la tiene, si no por fecha de trabajo.
-  const ultimaPagada = asignados
+  // Las últimas tres saldadas, ordenadas por fecha de obra (más reciente primero).
+  const ultimasPagadas = asignados
     .filter((p) => p.status === "PAGADO")
-    .sort((a, b) => (a.paidAt ?? a.fechaTrabajo).localeCompare(b.paidAt ?? b.fechaTrabajo))
-    .at(-1);
+    .sort((a, b) => b.fechaTrabajo.localeCompare(a.fechaTrabajo))
+    .slice(0, 3);
 
   const saldoTotal = enCurso.reduce((acc, p) => acc + p.saldoUsd, 0);
 
   const lineas: string[] = [];
   lineas.push(`*Pagos — ${nombre}*`);
 
-  if (enCurso.length === 0 && !ultimaPagada) {
+  if (enCurso.length === 0 && ultimasPagadas.length === 0) {
     lineas.push("");
     lineas.push("No hay trabajos registrados.");
     return lineas.join("\n");
@@ -78,13 +79,13 @@ export function buildResumenInstalador(nombre: string, payments: InstallerPaymen
     lineas.push("✅ *No queda nada pendiente.*");
   }
 
-  if (ultimaPagada) {
+  if (ultimasPagadas.length > 0) {
     lineas.push("");
-    lineas.push("*Último trabajo saldado*");
-    const cuando = fmtDate(ultimaPagada.paidAt ?? ultimaPagada.fechaTrabajo);
-    lineas.push(
-      `✅ ${etiqueta(ultimaPagada)} — ${fmtUsd(ultimaPagada.montoUsd)}${cuando ? ` (${cuando})` : ""}`,
-    );
+    lineas.push(ultimasPagadas.length === 1 ? "*Último trabajo saldado*" : "*Últimos trabajos saldados*");
+    for (const p of ultimasPagadas) {
+      const cuando = fmtDate(p.fechaTrabajo);
+      lineas.push(`✅ ${etiqueta(p)} — ${fmtUsd(p.montoUsd)}${cuando ? ` (${cuando})` : ""}`);
+    }
   }
 
   return lineas.join("\n");

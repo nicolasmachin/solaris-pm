@@ -533,6 +533,114 @@ export async function registrarPago(input: {
   return serializeInstallerPayment(fresh);
 }
 
+// ─── Editar / borrar una entrega registrada ──────────────────────────────────
+//
+// Una "entrega" es el FinanceMovement que generó `registrarPago`. Corregir o
+// anular una entrega opera DIRECTAMENTE sobre ese movimiento, así el cambio se
+// refleja en Finanzas (Movimientos, flujo, estado de resultados) sin duplicar
+// lógica, y `recalcularStatus` reajusta el saldo/estado del pago al instalador.
+
+/** Busca la entrega (movimiento vivo) que pertenece a este pago, o tira 404. */
+async function findEntregaOrThrow(paymentId: string, movementId: string) {
+  const payment = await prisma.installerPayment.findFirst({
+    where: { id: paymentId, deletedAt: null },
+    include: INCLUDE_FULL,
+  });
+  if (!payment) throw notFound("INSTALLER_PAYMENT_NOT_FOUND", "El pago no existe");
+  const mov = payment.movimientos.find((m) => m.id === movementId && m.deletedAt === null);
+  if (!mov) {
+    throw notFound("ENTREGA_NOT_FOUND", "La entrega no existe o no pertenece a este pago.");
+  }
+  return { payment, mov };
+}
+
+export async function editarEntrega(input: {
+  paymentId: string;
+  movementId: string;
+  userId: string;
+  montoUsd?: number;
+  fecha?: Date;
+  notas?: string;
+}): Promise<SerializedInstallerPayment> {
+  const { payment, mov } = await findEntregaOrThrow(input.paymentId, input.movementId);
+
+  if (input.montoUsd != null && !(input.montoUsd > 0)) {
+    throw badRequest("MONTO_INVALIDO", "El monto tiene que ser mayor a 0.");
+  }
+  // La suma de todas las entregas no puede superar el monto del trabajo.
+  if (input.montoUsd != null) {
+    const otras = payment.movimientos
+      .filter((m) => m.deletedAt === null && m.id !== mov.id)
+      .reduce((a, m) => a + Number(m.monto), 0);
+    if (otras + input.montoUsd > Number(payment.montoUsd) + 0.005) {
+      throw badRequest(
+        "SUPERA_EL_MONTO",
+        `El total entregado no puede superar el monto del trabajo (USD ${Number(payment.montoUsd).toFixed(2)}).`,
+      );
+    }
+  }
+
+  const data: Prisma.FinanceMovementUpdateInput = {};
+  if (input.montoUsd != null) data.monto = new Prisma.Decimal(input.montoUsd);
+  if (input.fecha) {
+    data.fecha = input.fecha;
+    data.mes = input.fecha.getUTCMonth() + 1;
+    data.anio = input.fecha.getUTCFullYear();
+  }
+  if (input.notas !== undefined) data.observaciones = input.notas.trim() || null;
+
+  await prisma.financeMovement.update({ where: { id: mov.id }, data });
+  await recalcularStatus(payment.id);
+
+  await createAuditEntry({
+    entityType: AuditEntityType.installer_payment,
+    entityId: payment.id,
+    projectId: payment.projectId ?? undefined,
+    userId: input.userId,
+    action: AuditAction.updated,
+    description:
+      input.montoUsd != null
+        ? `Entrega a instalador corregida → USD ${input.montoUsd.toFixed(2)}`
+        : "Entrega a instalador corregida",
+  });
+
+  const fresh = await prisma.installerPayment.findUniqueOrThrow({
+    where: { id: payment.id },
+    include: INCLUDE_FULL,
+  });
+  return serializeInstallerPayment(fresh);
+}
+
+export async function borrarEntrega(input: {
+  paymentId: string;
+  movementId: string;
+  userId: string;
+}): Promise<SerializedInstallerPayment> {
+  const { payment, mov } = await findEntregaOrThrow(input.paymentId, input.movementId);
+
+  // Soft-delete del movimiento: sale de Finanzas y el saldo del pago se recalcula.
+  await prisma.financeMovement.update({
+    where: { id: mov.id },
+    data: { deletedAt: new Date() },
+  });
+  await recalcularStatus(payment.id);
+
+  await createAuditEntry({
+    entityType: AuditEntityType.installer_payment,
+    entityId: payment.id,
+    projectId: payment.projectId ?? undefined,
+    userId: input.userId,
+    action: AuditAction.deleted,
+    description: `Entrega a instalador anulada (USD ${Number(mov.monto).toFixed(2)})`,
+  });
+
+  const fresh = await prisma.installerPayment.findUniqueOrThrow({
+    where: { id: payment.id },
+    include: INCLUDE_FULL,
+  });
+  return serializeInstallerPayment(fresh);
+}
+
 // ─── Listado y métricas ──────────────────────────────────────────────────────
 
 export interface ListFilter {
