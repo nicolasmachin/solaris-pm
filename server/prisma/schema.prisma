@@ -1120,6 +1120,30 @@ model RecorridoCadencia {
   @@map("recorrido_cadencias")
 }
 
+// Tramos de tiempo del embudo comercial (medidos por pares de hitos del lead).
+// Alimentan el Panel de ventas (Embudo & SLA) del Dashboard.
+enum SalesFunnelStep {
+  LEAD_TO_QUOTE // leadCreatedAt → proposalSentAt
+  QUOTE_TO_SCHEDULED // proposalSentAt → visitScheduledAt
+  SCHEDULED_TO_VISIT // visitScheduledAt → visitCompletedAt
+  VISIT_TO_CLOSE // visitCompletedAt → closedAt (ganado)
+  CLOSE_TO_PROJECT // closedAt → convertedAt (handoff a proyecto)
+}
+
+// Plazo objetivo (días HÁBILES) de cada tramo del embudo comercial. Una fila por
+// tramo. Config de administración, editable sin tocar código (mismo patrón que
+// StageSla / RecorridoCadencia). Alimenta el Panel de ventas del Dashboard.
+model SalesStageSla {
+  id          String          @id @default(cuid())
+  step        SalesFunnelStep @unique
+  diasHabiles Int
+  activo      Boolean         @default(true)
+  createdAt   DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime        @updatedAt @db.Timestamptz(6)
+
+  @@map("sales_stage_slas")
+}
+
 // Qué tipos de notificación entran al resumen diario (digest) de cada rol.
 // Modelo OPT-IN: la existencia de una fila = ese rol recibe ese tipo. Sin fila
 // = no lo recibe (un tipo nuevo arranca apagado para todos hasta que se tilde

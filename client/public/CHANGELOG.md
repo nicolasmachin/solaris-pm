@@ -2,6 +2,20 @@
 
 ## v9.9
 
+### 23 de agosto de 2026
+
+#### Panel de ventas en el Dashboard (Embudo & SLA)
+
+- El **Dashboard** ahora muestra, para el área comercial, un panel de **triage del embudo** que responde "¿qué lead atender ahora?". Lo ven los roles de ventas y administración.
+- **Leads trabados ahora**: la lista de leads cuyo paso actual del embudo ya se pasó del plazo, ordenados por atraso, con semáforo y el contador de reclamos.
+- **¿Dónde se rompe el embudo?**: por cada tramo (lead → cotización → visita agendada → visita → cierre → proyecto) muestra el tiempo promedio, el plazo objetivo, el **porcentaje de leads en plazo** y el lead más trabado.
+- **Cumplimiento por vendedor**: tabla con leads abiertos, atrasados y % en plazo de cada asesor (la ve gerencia/administración; cada asesor ve solo sus propios leads).
+- Nueva pantalla **Administración → Plazos del embudo** para definir, en días hábiles, cuánto debería tardar cada tramo.
+
+#### Arreglos
+
+- **Documentos UTE**: se corrigió un error que impedía **guardar la configuración** (y por lo tanto generar los documentos) en proyectos con trámite de aumento de potencia. Ahora guarda sin problemas.
+
 ### 22 de agosto de 2026
 
 #### Pagos a instaladores — corregir y anular entregas

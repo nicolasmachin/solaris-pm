@@ -34,6 +34,7 @@ import { TabMaterialTemplates } from "./AdminMaterialTemplates";
 import { TabCuentas } from "./AdminCuentas";
 import { TabDeadlineRules } from "./AdminDeadlineRules";
 import { TabStageSlas } from "./admin/StageSlasPage";
+import { TabSalesStageSlas } from "./admin/SalesStageSlasPage";
 import { TabCadenciaRecorrido } from "./admin/RecorridoCadenciasPage";
 import { TabDigestConfig } from "./admin/DigestConfigPage";
 import { TabClientes } from "./AdminClientes";
@@ -3220,6 +3221,7 @@ export function Admin() {
           {activeTab === "plantillas-materiales" && <TabMaterialTemplates />}
           {activeTab === "cuentas" && <TabCuentas />}
           {activeTab === "plazos-etapa" && <TabStageSlas />}
+          {activeTab === "plazos-embudo" && <TabSalesStageSlas />}
           {activeTab === "cadencia-contacto" && <TabCadenciaRecorrido />}
           {activeTab === "resumen-diario" && <TabDigestConfig />}
           {activeTab === "deadlines" && <TabDeadlineRules />}

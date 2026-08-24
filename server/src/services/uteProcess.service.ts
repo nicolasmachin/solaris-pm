@@ -123,6 +123,92 @@ export function calculateTimes(process: ProcessDates, now: Date = new Date()): U
   return { ourTimeDays: ourTime, uteTimeDays: uteTime, totalDays };
 }
 
+// ─── Desglose de tiempos v2 (nuestro / UTE / obra) ──────────────────────────
+// Redefinición (ago 2026): el tiempo NUESTRO del trámite arranca cuando la OBRA
+// está finalizada, no en la etapa de solicitud. Antes, el gap
+// consulta-aprobada → solicitud-enviada se contaba como nuestro, pero ese lapso
+// está dominado por la agenda/ejecución de la obra (la solicitud no se puede
+// enviar hasta que la obra esté hecha). Ese tramo pasa a un bucket propio "OBRA".
+//
+//   NUESTRO (4 pasos): obra→solicitud, proyecto-aprobado→docs1,
+//                      docs1-aprobado→ensayos, ensayos-aprobado→docs2.
+//   UTE (esperas de aprobación): consulta, solicitud, docs1, ensayos, docs2→fin.
+//   OBRA (ni nuestro ni de UTE): consulta-aprobada → obra finalizada.
+//
+// `obraFin` = fecha de finalización de la etapa Ejecución de obra del proyecto
+// (dato del proyecto, no del trámite). Null si la obra todavía no terminó.
+
+export type UteBucket = "OURS" | "UTE" | "OBRA";
+
+export interface UteBreakdown {
+  ourDays: number;
+  uteDays: number;
+  obraDays: number;
+  totalDays: number;
+}
+
+// Secuencia ordenada de hitos con el dueño del segmento que sigue a cada uno.
+// `obraFin` se inserta entre la aprobación de la consulta y el envío de la solicitud.
+function uteSequence(
+  process: Record<UteActionKey, Date | null>,
+  obraFin: Date | null,
+): Array<{ date: Date; after: UteBucket | null }> {
+  const raw: Array<{ date: Date | null; after: UteBucket | null }> = [
+    { date: process.consultaSentAt, after: "UTE" },
+    { date: process.consultaApprovedAt, after: "OBRA" },
+    { date: obraFin, after: "OURS" },
+    { date: process.solicitudSentAt, after: "UTE" },
+    { date: process.proyectoApprovedAt, after: "OURS" },
+    { date: process.docs1SentAt, after: "UTE" },
+    { date: process.docs1ApprovedAt, after: "OURS" },
+    { date: process.ensayosSentAt, after: "UTE" },
+    { date: process.ensayosApprovedAt, after: "OURS" },
+    { date: process.docs2SentAt, after: "UTE" },
+    { date: process.finalizedAt, after: null },
+  ];
+  return raw.filter((s): s is { date: Date; after: UteBucket | null } => s.date !== null);
+}
+
+export function calculateUteBreakdown(
+  process: Record<UteActionKey, Date | null>,
+  obraFin: Date | null,
+  now: Date = new Date(),
+): UteBreakdown {
+  const seq = uteSequence(process, obraFin);
+  let ourDays = 0;
+  let uteDays = 0;
+  let obraDays = 0;
+  const add = (bucket: UteBucket | null, days: number) => {
+    if (bucket === "OURS") ourDays += days;
+    else if (bucket === "UTE") uteDays += days;
+    else if (bucket === "OBRA") obraDays += days;
+  };
+  for (let i = 1; i < seq.length; i++) {
+    add(seq[i - 1].after, Math.max(0, diffInDays(seq[i - 1].date, seq[i].date)));
+  }
+  // Tail en curso: si no está finalizado, del último hito a hoy va al dueño del
+  // segmento abierto.
+  if (process.finalizedAt == null && seq.length > 0) {
+    const last = seq[seq.length - 1];
+    if (last.after != null) add(last.after, Math.max(0, diffInDays(last.date, now)));
+  }
+  return { ourDays, uteDays, obraDays, totalDays: ourDays + uteDays + obraDays };
+}
+
+// Dueño del segmento abierto AHORA (o null si finalizado / sin acciones). A
+// diferencia de `waitingParty`, contempla el bucket OBRA (esperando/haciendo la
+// obra tras la aprobación de la consulta).
+export function currentBucket(
+  process: Record<UteActionKey, Date | null>,
+  obraFin: Date | null,
+  finalizedAt: Date | null,
+): UteBucket | null {
+  if (finalizedAt) return null;
+  const seq = uteSequence(process, obraFin);
+  if (seq.length === 0) return null;
+  return seq[seq.length - 1].after;
+}
+
 export function lastActionAt(process: ProcessDates): Date | null {
   let max: Date | null = null;
   for (const key of UTE_ACTION_KEYS) {

@@ -39,6 +39,7 @@ import {
   ProposalVariante,
   Role,
   SalesStage,
+  SalesFunnelStep,
   StageStatus,
   StageType,
   SettingKey,
@@ -172,8 +173,12 @@ import { findNextSubstage, notifyNextSubstageOwner } from "../services/substage-
 import { accumulateSupplierSaldoAFavor } from "../services/supplier-balance.service.js";
 import { contentDisposition } from "../utils/content-disposition.js";
 import { addDays, diffInDays, parseDateOnly, startOfUtcDay, todayUtc, toDateOnlyString } from "../utils/dates.js";
-import { clearStageSlaCache, getSlaMap, countdownForStage, handoffStart, currentStageStart } from "../services/stage-sla.service.js";
+import { clearStageSlaCache, getSlaMap, countdownForStage, handoffStart, currentStageStart, type CountdownStatus } from "../services/stage-sla.service.js";
 import { getCadenciaMap, clearCadenciaCache, recorridoForProject, waitingParty } from "../services/ops-panel.service.js";
+import {
+  FUNNEL_STEPS, STEP_LABEL, getSalesSlaMap, clearSalesSlaCache, currentStep, computeStepCountdown,
+  puedeVerTodoElEmbudo, type LeadTimes,
+} from "../services/sales-panel.service.js";
 import { businessDaysBetween } from "../utils/business-days.js";
 import {
   ALL_NOTIFICATION_TYPES,
@@ -5097,6 +5102,176 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return { sinHabilitar, reparto, promedioPorSubEtapa };
   });
 
+  // ─── Panel de ventas · Embudo & SLA (Fase 2) ───────────────────────────────
+  // Gemelo del panel de operaciones sobre el embudo comercial: mide por pares de
+  // hitos del lead. Gateado por VENTAS:VIEW; gerencia/admin ven todo, el asesor
+  // solo sus leads (assignedToId). Reutiliza el motor de días hábiles.
+  const ventasGuard = authorize(Module.VENTAS, Action.VIEW);
+
+  const LEAD_TIMES_SELECT = {
+    id: true, code: true, clientName: true, stage: true, reclamosCount: true,
+    assignedToId: true, assignedTo: { select: { name: true } },
+    leadCreatedAt: true, createdAt: true, proposalSentAt: true,
+    visitScheduledAt: true, visitCompletedAt: true, closedAt: true, convertedAt: true,
+  } as const;
+
+  // Hitos inicio/fin de cada tramo (para el histórico por tramo).
+  const stepEndpoints: Record<SalesFunnelStep, (l: LeadTimes) => { start: Date | null; end: Date | null }> = {
+    [SalesFunnelStep.LEAD_TO_QUOTE]: (l) => ({ start: l.leadCreatedAt ?? l.createdAt, end: l.proposalSentAt }),
+    [SalesFunnelStep.QUOTE_TO_SCHEDULED]: (l) => ({ start: l.proposalSentAt, end: l.visitScheduledAt }),
+    [SalesFunnelStep.SCHEDULED_TO_VISIT]: (l) => ({ start: l.visitScheduledAt, end: l.visitCompletedAt }),
+    [SalesFunnelStep.VISIT_TO_CLOSE]: (l) => ({ start: l.visitCompletedAt, end: l.closedAt }),
+    [SalesFunnelStep.CLOSE_TO_PROJECT]: (l) => ({ start: l.closedAt, end: l.convertedAt }),
+  };
+
+  // Where de "leads abiertos" (en el embudo): no perdido, no convertido. El asesor
+  // ve solo lo suyo.
+  function leadsAbiertosWhere(userId: string, verTodo: boolean) {
+    return {
+      deletedAt: null,
+      stage: { not: SalesStage.CERRADO_PERDIDO },
+      convertedAt: null,
+      ...(verTodo ? {} : { assignedToId: userId }),
+    };
+  }
+
+  // KPI "En riesgo ahora": leads abiertos por estado del tramo en curso.
+  app.get("/ventas/risk-summary", { preHandler: ventasGuard }, async (request) => {
+    const user = ensureUser(request);
+    const verTodo = puedeVerTodoElEmbudo(user.role);
+    const leads = await prisma.salesLead.findMany({ where: leadsAbiertosWhere(user.id, verTodo), select: LEAD_TIMES_SELECT });
+    const slaMap = await getSalesSlaMap();
+    let ok = 0, warning = 0, overdue = 0, sinSla = 0;
+    for (const l of leads) {
+      const cur = currentStep(l);
+      if (!cur) continue;
+      const cd = computeStepCountdown(cur.since, slaMap.get(cur.step));
+      if (!cd) { sinSla++; continue; }
+      if (cd.status === "overdue") overdue++;
+      else if (cd.status === "warning") warning++;
+      else ok++;
+    }
+    return { ok, warning, overdue, sinSla, total: ok + warning + overdue };
+  });
+
+  // "Leads trabados ahora": abiertos cuyo tramo en curso está en warning/overdue.
+  app.get("/ventas/leads-trabados", { preHandler: ventasGuard }, async (request) => {
+    const user = ensureUser(request);
+    const verTodo = puedeVerTodoElEmbudo(user.role);
+    const leads = await prisma.salesLead.findMany({ where: leadsAbiertosWhere(user.id, verTodo), select: LEAD_TIMES_SELECT });
+    const slaMap = await getSalesSlaMap();
+    const rows: Array<{
+      id: string; code: string; clientName: string; asesorName: string | null;
+      step: SalesFunnelStep; stepLabel: string; elapsedBusinessDays: number;
+      remainingBusinessDays: number; status: CountdownStatus; reclamosCount: number;
+    }> = [];
+    for (const l of leads) {
+      const cur = currentStep(l);
+      if (!cur) continue;
+      const cd = computeStepCountdown(cur.since, slaMap.get(cur.step));
+      if (!cd || cd.status === "ok") continue;
+      rows.push({
+        id: l.id, code: l.code, clientName: l.clientName, asesorName: l.assignedTo?.name ?? null,
+        step: cur.step, stepLabel: STEP_LABEL[cur.step],
+        elapsedBusinessDays: cd.elapsedBusinessDays, remainingBusinessDays: cd.remainingBusinessDays,
+        status: cd.status, reclamosCount: l.reclamosCount,
+      });
+    }
+    rows.sort((a, b) => a.remainingBusinessDays - b.remainingBusinessDays);
+    return { rows };
+  });
+
+  // "¿Dónde se rompe el embudo?": promedio real + % cumplimiento por tramo
+  // (histórico) + el lead abierto más trabado en cada tramo.
+  app.get("/ventas/embudo-por-tramo", { preHandler: ventasGuard }, async (request) => {
+    const user = ensureUser(request);
+    const verTodo = puedeVerTodoElEmbudo(user.role);
+    const leads = await prisma.salesLead.findMany({
+      where: { deletedAt: null, ...(verTodo ? {} : { assignedToId: user.id }) },
+      select: LEAD_TIMES_SELECT,
+    });
+    const slaMap = await getSalesSlaMap();
+    const byStep = new Map<SalesFunnelStep, { durations: number[]; within: number; slaObs: number }>();
+    const worstByStep = new Map<SalesFunnelStep, { clientName: string; code: string; remaining: number; elapsed: number }>();
+    for (const l of leads) {
+      for (const step of FUNNEL_STEPS) {
+        const { start, end } = stepEndpoints[step](l);
+        if (!start || !end) continue;
+        const dias = Math.round((end.getTime() - start.getTime()) / 86_400_000);
+        if (dias < 0) continue;
+        const b = byStep.get(step) ?? { durations: [], within: 0, slaObs: 0 };
+        b.durations.push(dias);
+        const sla = slaMap.get(step);
+        if (sla) {
+          const biz = businessDaysBetween(startOfUtcDay(start), startOfUtcDay(end));
+          b.slaObs++;
+          if (biz - sla <= 0) b.within++;
+        }
+        byStep.set(step, b);
+      }
+      const cur = currentStep(l);
+      if (cur) {
+        const cd = computeStepCountdown(cur.since, slaMap.get(cur.step));
+        if (cd) {
+          const w = worstByStep.get(cur.step);
+          if (!w || cd.remainingBusinessDays < w.remaining) {
+            worstByStep.set(cur.step, { clientName: l.clientName, code: l.code, remaining: cd.remainingBusinessDays, elapsed: cd.elapsedBusinessDays });
+          }
+        }
+      }
+    }
+    const steps = FUNNEL_STEPS.map((step) => {
+      const b = byStep.get(step);
+      const durations = b?.durations ?? [];
+      const avgDias = durations.length > 0 ? Number((durations.reduce((s, d) => s + d, 0) / durations.length).toFixed(1)) : null;
+      const slaObs = b?.slaObs ?? 0;
+      const worst = worstByStep.get(step);
+      return {
+        step, stepLabel: STEP_LABEL[step],
+        slaDiasHabiles: slaMap.get(step) ?? null,
+        avgDias, completedCount: durations.length,
+        complianceRate: slaObs > 0 ? Math.round((b!.within / slaObs) * 100) : null,
+        masTrabado: worst
+          ? { clientName: worst.clientName, code: worst.code, elapsedBusinessDays: worst.elapsed, remainingBusinessDays: worst.remaining }
+          : null,
+      };
+    }).filter((s) => s.completedCount > 0 || s.masTrabado != null);
+    return { steps };
+  });
+
+  // Cumplimiento por vendedor (solo visión total: un asesor no ve al resto).
+  app.get("/ventas/por-vendedor", { preHandler: ventasGuard }, async (request) => {
+    const user = ensureUser(request);
+    if (!puedeVerTodoElEmbudo(user.role)) return { rows: [] };
+    const leads = await prisma.salesLead.findMany({
+      where: { deletedAt: null, stage: { not: SalesStage.CERRADO_PERDIDO }, convertedAt: null },
+      select: LEAD_TIMES_SELECT,
+    });
+    const slaMap = await getSalesSlaMap();
+    const byAsesor = new Map<string, { asesorId: string | null; asesorName: string; abiertos: number; conSla: number; atrasados: number }>();
+    for (const l of leads) {
+      const cur = currentStep(l);
+      if (!cur) continue;
+      const key = l.assignedToId ?? "__none__";
+      const a = byAsesor.get(key) ?? { asesorId: l.assignedToId ?? null, asesorName: l.assignedTo?.name ?? "Sin asignar", abiertos: 0, conSla: 0, atrasados: 0 };
+      a.abiertos++;
+      const cd = computeStepCountdown(cur.since, slaMap.get(cur.step));
+      if (cd) { a.conSla++; if (cd.status === "overdue") a.atrasados++; }
+      byAsesor.set(key, a);
+    }
+    const rows = Array.from(byAsesor.values())
+      .map((a) => ({
+        asesorId: a.asesorId,
+        asesorName: a.asesorName,
+        leadsAbiertos: a.abiertos,
+        atrasados: a.atrasados,
+        enPlazo: a.conSla - a.atrasados,
+        complianceRate: a.conSla > 0 ? Math.round(((a.conSla - a.atrasados) / a.conSla) * 100) : null,
+      }))
+      .sort((x, y) => y.atrasados - x.atrasados);
+    return { rows };
+  });
+
   app.get("/metrics/projects", { preHandler: authorize(Module.METRICAS, Action.VIEW) }, async () => {
     const projects = await prisma.project.findMany({
       // Livianos importados (Experiencia Solar, sin pipeline) fuera del tablero.
@@ -8562,6 +8737,47 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return saved;
   });
 
+  // ─── Plazos del embudo comercial (SalesStageSla) ───────────────────────────
+  // Plazo objetivo en días hábiles de cada tramo del embudo. Una entrada por
+  // tramo. Alimenta el Panel de ventas del Dashboard. Mismo patrón que stage-slas.
+  app.get("/admin/sales-stage-slas", { preHandler: authorize(Module.CONFIGURACION, Action.VIEW) }, async () => {
+    const rows = await prisma.salesStageSla.findMany();
+    const byStep = new Map(rows.map((r) => [r.step, r]));
+    return FUNNEL_STEPS.map((step) => {
+      const row = byStep.get(step);
+      return {
+        step,
+        label: STEP_LABEL[step],
+        diasHabiles: row?.diasHabiles ?? null,
+        activo: row?.activo ?? false,
+        configured: !!row,
+      };
+    });
+  });
+
+  const salesSlaPutSchema = z.object({ diasHabiles: z.number().int().min(1).max(365), activo: z.boolean().optional() }).strict();
+
+  app.put("/admin/sales-stage-slas/:step", { preHandler: authorize(Module.CONFIGURACION, Action.EDIT) }, async (request) => {
+    const user = ensureUser(request);
+    const { step } = z.object({ step: z.nativeEnum(SalesFunnelStep) }).parse(request.params);
+    const body = salesSlaPutSchema.parse(request.body);
+    const activo = body.activo ?? true;
+    const saved = await prisma.salesStageSla.upsert({
+      where: { step },
+      create: { step, diasHabiles: body.diasHabiles, activo },
+      update: { diasHabiles: body.diasHabiles, activo },
+    });
+    clearSalesSlaCache();
+    await createAuditEntry({
+      entityType: AuditEntityType.setting,
+      entityId: saved.id,
+      userId: user.id,
+      action: AuditAction.updated,
+      description: `Definió plazo del embudo ${STEP_LABEL[step]}: ${body.diasHabiles} días hábiles${activo ? "" : " (inactivo)"}`,
+    });
+    return saved;
+  });
+
   // ─── Cadencia de contacto por recorrido (E1/E2/E3) ─────────────────────────
   // Días calendario objetivo entre interacciones registradas antes de marcar al
   // cliente "sin comunicación". Alimenta el Panel de operaciones.
@@ -11902,7 +12118,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
         fechaDoc: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
         fechaFin: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
       })
-      .strict();
+      // Sin `.strict()`: el form del frontend re-manda la config completa (incluye
+      // campos no editables acá, como `potSolicitada`/`aumentoPotenciaSentAt` del
+      // aumento de potencia). Zod los descarta en vez de rechazar el guardado.
+      .strip();
 
     app.put(
       "/projects/:projectId/ute-docs/config",

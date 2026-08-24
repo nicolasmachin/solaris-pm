@@ -53,6 +53,7 @@ export const ADMIN_GROUPS: AdminSidebarGroup[] = [
     items: [
       { tab: "pipeline", label: "Pipeline default" },
       { tab: "plazos-etapa", label: "Plazos por etapa" },
+      { tab: "plazos-embudo", label: "Plazos del embudo" },
       { tab: "cadencia-contacto", label: "Cadencia de contacto" },
       { tab: "deadlines", label: "Reglas de Deadlines" },
       { tab: "checklist-obra", label: "Plantilla de checklist" },
