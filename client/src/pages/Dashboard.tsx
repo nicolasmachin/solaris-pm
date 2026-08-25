@@ -2,7 +2,7 @@ import { Fragment, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import { AlertTriangle, ArrowRight, Camera, Mic } from "lucide-react";
+import { ArrowRight, Mic } from "lucide-react";
 import { useAuthStore } from "../store/auth.store";
 import { usePermission } from "../hooks/usePermission";
 import { getProjects } from "../api/projects.api";
@@ -10,11 +10,9 @@ import { getMyTasks } from "../api/myTasks.api";
 import { getUteProcesses, UTE_STAGE_LABEL, UTE_STATUS_LABEL, UTE_ACTIONS_ORDERED } from "../api/uteProcess.api";
 import { STAGE_AREA } from "../constants/stages";
 import { getCalendarMonth } from "../api/calendar.api";
-import { getPendingDetailMovements } from "../api/finance.api";
 import { completeSubstage } from "../api/stages.api";
 import { LATEST_RELEASE, OLDER_RELEASES } from "../data/latestRelease";
 import { VersionHistoryModal } from "../components/layout/VersionFooter";
-import { SelectProyectoObraModal } from "../components/obra/SelectProyectoObraModal";
 import { OperationsPanel } from "../components/dashboard/OperationsPanel";
 import { SalesPanel } from "../components/dashboard/SalesPanel";
 import { getMyUpcomingDeadlines, type UpcomingDeadline } from "../api/deadline.api";
@@ -72,26 +70,14 @@ function firstName(name: string): string {
 export function Dashboard() {
   const user = useAuthStore(s => s.user);
   const isAdmin = user?.role === "ADMIN";
-  const canViewFinance = usePermission("FINANZAS", "VIEW");
   const canViewUte = usePermission("TRAMITES_UTE", "VIEW");
   const canViewOps = usePermission("OPERACIONES", "VIEW");
   const canViewVentas = usePermission("VENTAS", "VIEW");
-
-  const { data: pendingDetail = [] } = useQuery({
-    queryKey: ["pending-detail"],
-    queryFn: getPendingDetailMovements,
-    enabled: canViewFinance,
-    staleTime: 60_000,
-  });
 
   // Shortcut grande para el rol OPERACIONES (operario): cargar una entrada
   // de visita técnica rápida sin tener que entrar al proyecto manualmente.
   // Reduce la fricción del flujo "tomo el celu, abro la app, grabo".
   const isOperario = user?.role === "OPERACIONES";
-
-  // Acceso directo a "Cargar fotos de obra" para Operaciones y ADMIN. Como no
-  // hay proyecto en contexto, abre un selector y navega al tab Obra.
-  const [obraModalOpen, setObraModalOpen] = useState(false);
 
   return (
     <div>
@@ -112,43 +98,6 @@ export function Dashboard() {
             </p>
           </div>
           <ArrowRight className="w-4 h-4 text-[var(--color-accent)] shrink-0" />
-        </Link>
-      )}
-
-      {(isOperario || isAdmin) && (
-        <button
-          type="button"
-          onClick={() => setObraModalOpen(true)}
-          className="mb-4 flex w-full items-center gap-3 bg-[var(--color-accent)]/15 border border-[var(--color-accent)]/40 rounded-xl px-5 py-4 hover:bg-[var(--color-accent)]/25 transition-colors text-left"
-        >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent)]/30">
-            <Camera className="w-5 h-5 text-[var(--color-accent)]" />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-              Cargar fotos de obra
-            </p>
-            <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
-              Elegí el proyecto y subí las fotos de obra a su galería.
-            </p>
-          </div>
-          <ArrowRight className="w-4 h-4 text-[var(--color-accent)] shrink-0" />
-        </button>
-      )}
-
-      <SelectProyectoObraModal isOpen={obraModalOpen} onClose={() => setObraModalOpen(false)} />
-
-      {/* Banner de pendientes de desglose (existente) */}
-      {canViewFinance && pendingDetail.length > 0 && (
-        <Link
-          to="/finanzas/movimientos"
-          className="mb-4 flex items-center gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl px-5 py-3 hover:bg-amber-500/15 transition-colors"
-        >
-          <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
-          <span className="text-sm text-amber-300 font-medium">
-            {pendingDetail.length} factura{pendingDetail.length > 1 ? "s" : ""} con stock sin desglosar
-          </span>
-          <ArrowRight className="w-4 h-4 text-amber-400 ml-auto" />
         </Link>
       )}
 
