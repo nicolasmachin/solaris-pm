@@ -4529,7 +4529,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
 
     const allProjects = await prisma.project.findMany({
-      where: { deletedAt: null },
+      where: { deletedAt: null, excludedFromMetrics: false },
       include: { stages: { orderBy: { order: "asc" } } },
     });
     // Generadores "livianos" importados por CSV (Experiencia Solar, sin pipeline):
@@ -4744,7 +4744,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     const completedStages = await prisma.stage.findMany({
       where: {
-        project: { deletedAt: null },
+        project: { deletedAt: null, excludedFromMetrics: false },
         status: StageStatus.COMPLETED,
         name: { notIn: [StageType.POSTVENTA, StageType.POST_HABILITACION] },
         ...(fechaFilter ? { actualEndDate: fechaFilter } : {}),
@@ -4835,7 +4835,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
   // su etapa quedan aparte (sinSla).
   app.get("/ops/risk-summary", { preHandler: opsGuard }, async () => {
     const projects = await prisma.project.findMany({
-      where: { deletedAt: null, importedFromCsv: false, status: ProjectStatus.ACTIVE },
+      where: { deletedAt: null, importedFromCsv: false, excludedFromMetrics: false, status: ProjectStatus.ACTIVE },
       select: {
         id: true, saleDate: true, startDate: true, createdAt: true, stageOverride: true,
         stages: { select: OPS_STAGE_SELECT, orderBy: { order: "asc" } },
@@ -4864,7 +4864,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
   app.get("/ops/sin-fecha-instalacion", { preHandler: opsGuard }, async () => {
     const projects = await prisma.project.findMany({
       where: {
-        deletedAt: null, importedFromCsv: false,
+        deletedAt: null, importedFromCsv: false, excludedFromMetrics: false,
         status: { notIn: [ProjectStatus.COMPLETED, ProjectStatus.ARCHIVED] },
         NOT: { installationSchedule: { deletedAt: null } },
         saleDate: { not: null },
@@ -4902,7 +4902,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
   // superan el objetivo (o nunca tuvieron contacto), ordenados por atraso.
   app.get("/ops/sin-comunicacion", { preHandler: opsGuard }, async () => {
     const projects = await prisma.project.findMany({
-      where: { deletedAt: null, importedFromCsv: false, status: ProjectStatus.ACTIVE },
+      where: { deletedAt: null, importedFromCsv: false, excludedFromMetrics: false, status: ProjectStatus.ACTIVE },
       select: {
         id: true, code: true, clientName: true, recorridoManual: true, stageOverride: true,
         stages: { select: OPS_STAGE_SELECT, orderBy: { order: "asc" } },
@@ -4959,7 +4959,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // (a) Duración histórica + cumplimiento por etapa (mismo criterio que /metrics/stages).
     const completed = await prisma.stage.findMany({
       where: {
-        project: { deletedAt: null },
+        project: { deletedAt: null, excludedFromMetrics: false },
         status: StageStatus.COMPLETED,
         name: { notIn: STAGES_EXCL },
       },
@@ -4982,7 +4982,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     // (b) Cliente ACTIVE más trabado por etapa (peor countdown = menor remaining).
     const activos = await prisma.project.findMany({
-      where: { deletedAt: null, importedFromCsv: false, status: ProjectStatus.ACTIVE },
+      where: { deletedAt: null, importedFromCsv: false, excludedFromMetrics: false, status: ProjectStatus.ACTIVE },
       select: {
         id: true, code: true, clientName: true, saleDate: true, startDate: true, createdAt: true, stageOverride: true,
         stages: { select: OPS_STAGE_SELECT, orderBy: { order: "asc" } },
@@ -5040,7 +5040,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
   app.get("/ops/ute-panel", { preHandler: opsGuard }, async () => {
     const now = todayUtc();
     const processes = await prisma.uteProcess.findMany({
-      where: { deletedAt: null, project: { deletedAt: null, importedFromCsv: false } },
+      where: { deletedAt: null, project: { deletedAt: null, importedFromCsv: false, excludedFromMetrics: false } },
       include: { project: { select: { id: true, code: true, clientName: true, saleDate: true, createdAt: true } } },
     });
     const activos = processes.filter((p) => p.finalizedAt == null && p.currentStatus !== UteStatus.CERRADO);
@@ -5100,6 +5100,37 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }));
 
     return { sinHabilitar, reparto, promedioPorSubEtapa };
+  });
+
+  // Omitir / re-incluir un proyecto de las métricas y el panel de Tiempos & SLA.
+  // No borra ni oculta el proyecto del resto de la app (sigue en trámites UTE,
+  // listados, etc.); solo deja de contar en indicadores. Reversible.
+  app.patch("/ops/proyectos/:id/exclusion-metricas", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request) => {
+    const user = ensureUser(request);
+    const { id } = z.object({ id: z.string().min(1) }).parse(request.params);
+    const { excluded } = z.object({ excluded: z.boolean() }).strict().parse(request.body);
+    const proj = await prisma.project.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
+    if (!proj) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+    await prisma.project.update({ where: { id }, data: { excludedFromMetrics: excluded } });
+    await createAuditEntry({
+      entityType: AuditEntityType.project,
+      entityId: id,
+      projectId: id,
+      userId: user.id,
+      action: AuditAction.updated,
+      description: excluded ? "Omitió el proyecto de métricas y SLA" : "Reincluyó el proyecto en métricas y SLA",
+    });
+    return { id, excludedFromMetrics: excluded };
+  });
+
+  // Proyectos omitidos de métricas (para revertir la omisión).
+  app.get("/ops/omitidos", { preHandler: opsGuard }, async () => {
+    const rows = await prisma.project.findMany({
+      where: { deletedAt: null, excludedFromMetrics: true },
+      select: { id: true, code: true, clientName: true, capacityKwp: true },
+      orderBy: { code: "asc" },
+    });
+    return { rows: rows.map((p) => ({ id: p.id, code: p.code, clientName: p.clientName, capacityKwp: decimalToNumber(p.capacityKwp) })) };
   });
 
   // ─── Panel de ventas · Embudo & SLA (Fase 2) ───────────────────────────────
@@ -5275,7 +5306,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
   app.get("/metrics/projects", { preHandler: authorize(Module.METRICAS, Action.VIEW) }, async () => {
     const projects = await prisma.project.findMany({
       // Livianos importados (Experiencia Solar, sin pipeline) fuera del tablero.
-      where: { deletedAt: null, importedFromCsv: false },
+      where: { deletedAt: null, importedFromCsv: false, excludedFromMetrics: false },
       include: {
         stages: {
           orderBy: { order: "asc" },
@@ -10760,7 +10791,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const yearStart = new Date(now.getFullYear(), 0, 1);
 
     const processes = await prisma.uteProcess.findMany({
-      where: { deletedAt: null, project: { deletedAt: null } },
+      where: { deletedAt: null, project: { deletedAt: null, excludedFromMetrics: false } },
       include: {
         project: {
           select: { id: true, code: true, clientName: true, createdAt: true },
@@ -10930,7 +10961,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     allQuarters.reverse();
 
     const processes = await prisma.uteProcess.findMany({
-      where: { deletedAt: null, project: { deletedAt: null } },
+      where: { deletedAt: null, project: { deletedAt: null, excludedFromMetrics: false } },
     });
 
     function median(nums: number[]): number | null {

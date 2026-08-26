@@ -679,6 +679,11 @@ model Project {
   // pero sin pipeline/obra. Se excluye de la lista de Proyectos (solo vive en
   // Experiencia Solar) hasta que, si alguna vez, se lo convierta en proyecto real.
   importedFromCsv                 Boolean                  @default(false)
+  // Omitido de métricas y SLA: proyectos viejos/de seguimiento sin todo cargado
+  // que distorsionan los indicadores. Sigue existiendo y visible en el resto de
+  // la app (p. ej. seguimiento de trámite UTE); solo NO cuenta en el panel de
+  // Tiempos & SLA ni en las métricas. Reversible desde el panel.
+  excludedFromMetrics             Boolean                  @default(false)
   // Ampliación de una instalación ya existente. "Es una ampliación" se deriva de
   // que este campo tenga valor: no hay un enum aparte que pueda quedar
   // desincronizado con el vínculo. El árbol es PLANO — una ampliación de una

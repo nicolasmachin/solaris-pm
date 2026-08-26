@@ -105,3 +105,22 @@ export interface OpsUtePanel {
 export function getOpsUtePanel(): Promise<OpsUtePanel> {
   return apiClient.get<OpsUtePanel>("/api/ops/ute-panel").then((r) => r.data);
 }
+
+// ─── Omitir / re-incluir proyectos de métricas y SLA ──────────────────────────
+export interface OpsOmitidoRow {
+  id: string;
+  code: string;
+  clientName: string;
+  capacityKwp: number | null;
+}
+
+// Omite (excluded=true) o reincluye (excluded=false) un proyecto de las métricas.
+export function setProyectoExclusionMetricas(id: string, excluded: boolean): Promise<{ id: string; excludedFromMetrics: boolean }> {
+  return apiClient
+    .patch<{ id: string; excludedFromMetrics: boolean }>(`/api/ops/proyectos/${id}/exclusion-metricas`, { excluded })
+    .then((r) => r.data);
+}
+
+export function getOpsOmitidos(): Promise<{ rows: OpsOmitidoRow[] }> {
+  return apiClient.get<{ rows: OpsOmitidoRow[] }>("/api/ops/omitidos").then((r) => r.data);
+}

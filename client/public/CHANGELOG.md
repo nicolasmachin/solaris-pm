@@ -2,6 +2,22 @@
 
 ## v9.9
 
+### 25 de agosto de 2026
+
+#### Omitir proyectos de las métricas y el SLA
+
+- En el panel **Operaciones · Tiempos & SLA** del Dashboard, cada proyecto de la lista "Sin fecha de instalación" tiene ahora un botón chico para **omitirlo**. Sirve para los proyectos viejos o de solo seguimiento que no tienen todo cargado y ensucian los indicadores.
+- Un proyecto omitido **deja de contar** en las métricas y el SLA (riesgo, tiempos por etapa, cumplimiento, banda UTE), pero **sigue existiendo y visible** en el resto de la app (por ejemplo, para seguirle el trámite de UTE).
+- Es **reversible**: abajo del panel aparece "Omitidos de métricas" con la lista, y desde ahí se **reincluye** cualquiera con un clic.
+
+#### Dashboard más limpio
+
+- Se quitaron del Dashboard el atajo "Cargar fotos de obra" y el aviso de "facturas con stock sin desglosar".
+
+#### Arreglos
+
+- **Extracción de cédula**: se corrigió un caso en el que la IA tomaba una fecha de la cédula (por ejemplo, el vencimiento) como número de documento. Ahora se le indica explícitamente que use el "N° de Identidad" y, además, el sistema descarta cualquier número que no valide el dígito verificador, en vez de guardarlo mal.
+
 ### 23 de agosto de 2026
 
 #### Panel de ventas en el Dashboard (Embudo & SLA)

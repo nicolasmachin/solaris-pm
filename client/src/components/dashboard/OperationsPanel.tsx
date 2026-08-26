@@ -1,7 +1,8 @@
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { Activity, CalendarClock, MessageSquare, ArrowRight, Landmark } from "lucide-react";
+import { useQuery, useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
+import { Activity, CalendarClock, MessageSquare, ArrowRight, Landmark, EyeOff, Undo2, ChevronDown } from "lucide-react";
 
 import {
   getOpsRiskSummary,
@@ -9,10 +10,22 @@ import {
   getOpsSinComunicacion,
   getOpsProcesoPorEtapa,
   getOpsUtePanel,
+  getOpsOmitidos,
+  setProyectoExclusionMetricas,
   type CountdownStatus,
   type OpsSinComunicacionRow,
 } from "../../api/ops.api";
 import { UTE_STAGE_LABEL } from "../../api/uteProcess.api";
+import { usePermission } from "../../hooks/usePermission";
+
+// Invalida todas las queries del panel tras omitir / reincluir un proyecto.
+const OPS_QUERY_KEYS = [
+  "ops-risk-summary", "ops-sin-fecha-instalacion", "ops-sin-comunicacion",
+  "ops-proceso-por-etapa", "ops-ute-panel", "ops-omitidos",
+];
+function invalidateOps(qc: QueryClient) {
+  for (const k of OPS_QUERY_KEYS) qc.invalidateQueries({ queryKey: [k] });
+}
 
 // ─── helpers de semáforo ────────────────────────────────────────────────────
 const DOT: Record<CountdownStatus, string> = {
@@ -70,6 +83,11 @@ export function OperationsPanel() {
       <div className="mt-3">
         <UteBandCard />
       </div>
+
+      {/* Proyectos omitidos de métricas (colapsable, solo aparece si hay) */}
+      <div className="mt-3">
+        <OmitidosCard />
+      </div>
     </section>
   );
 }
@@ -91,12 +109,23 @@ function RiskStrip() {
 
 // ─── Sin fecha de instalación ────────────────────────────────────────────────
 function SinFechaInstalacionCard() {
+  const qc = useQueryClient();
+  const canEdit = usePermission("OPERACIONES", "EDIT");
   const { data, isLoading } = useQuery({
     queryKey: ["ops-sin-fecha-instalacion"],
     queryFn: getOpsSinFechaInstalacion,
     staleTime: 60_000,
   });
   const rows = data?.rows ?? [];
+
+  const omitMut = useMutation({
+    mutationFn: (id: string) => setProyectoExclusionMetricas(id, true),
+    onSuccess: () => {
+      toast.success("Proyecto omitido de métricas y SLA");
+      invalidateOps(qc);
+    },
+    onError: () => toast.error("No se pudo omitir el proyecto"),
+  });
 
   return (
     <div className={card("p-3")}>
@@ -112,18 +141,87 @@ function SinFechaInstalacionCard() {
       ) : (
         <div className={LIST}>
           {rows.map((r) => (
-            <Link key={r.id} to={`/projects/${r.id}`} className={ROW}>
+            <div key={r.id} className={ROW}>
               {r.status && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${DOT[r.status]}`} />}
-              <div className="min-w-0 flex-1">
+              <Link to={`/projects/${r.id}`} className="min-w-0 flex-1">
                 <p className="text-[13px] font-medium text-[var(--color-text-primary)] truncate leading-tight">{r.clientName}</p>
                 <p className="text-[10px] font-mono text-[var(--color-text-muted)] truncate">
                   {r.code}{r.capacityKwp != null ? ` · ${r.capacityKwp}kWp` : ""}
                 </p>
-              </div>
+              </Link>
               <span className={`text-base font-bold tabular-nums shrink-0 ${r.status ? DAYS_TEXT[r.status] : "text-[var(--color-text-primary)]"}`}>
                 {r.diasDesdeVenta}<span className="text-[10px]">d</span>
               </span>
-            </Link>
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => omitMut.mutate(r.id)}
+                  disabled={omitMut.isPending}
+                  title="Omitir de métricas y SLA"
+                  className="shrink-0 p-1 rounded text-[var(--color-text-muted)] hover:text-red-400 hover:bg-[var(--color-bg-card-hover)] disabled:opacity-40"
+                >
+                  <EyeOff className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Proyectos omitidos de métricas — colapsable, con botón para reincluir.
+function OmitidosCard() {
+  const qc = useQueryClient();
+  const canEdit = usePermission("OPERACIONES", "EDIT");
+  const [open, setOpen] = useState(false);
+  const { data } = useQuery({ queryKey: ["ops-omitidos"], queryFn: getOpsOmitidos, staleTime: 60_000 });
+  const rows = data?.rows ?? [];
+
+  const incluirMut = useMutation({
+    mutationFn: (id: string) => setProyectoExclusionMetricas(id, false),
+    onSuccess: () => {
+      toast.success("Proyecto reincluido en métricas y SLA");
+      invalidateOps(qc);
+    },
+    onError: () => toast.error("No se pudo reincluir el proyecto"),
+  });
+
+  if (rows.length === 0) return null;
+
+  return (
+    <div className={card("p-3")}>
+      <button type="button" onClick={() => setOpen((o) => !o)} className="flex items-center gap-1.5 w-full text-left">
+        <EyeOff className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
+        <h3 className="text-[13px] font-semibold text-[var(--color-text-primary)] leading-tight">
+          Omitidos de métricas
+        </h3>
+        <span className="ml-auto text-[10px] text-[var(--color-text-muted)]">{rows.length}</span>
+        <ChevronDown className={`w-3.5 h-3.5 text-[var(--color-text-muted)] transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className={`${LIST} mt-1`}>
+          {rows.map((r) => (
+            <div key={r.id} className={ROW}>
+              <Link to={`/projects/${r.id}`} className="min-w-0 flex-1">
+                <p className="text-[13px] font-medium text-[var(--color-text-primary)] truncate leading-tight">{r.clientName}</p>
+                <p className="text-[10px] font-mono text-[var(--color-text-muted)] truncate">
+                  {r.code}{r.capacityKwp != null ? ` · ${r.capacityKwp}kWp` : ""}
+                </p>
+              </Link>
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => incluirMut.mutate(r.id)}
+                  disabled={incluirMut.isPending}
+                  title="Reincluir en métricas y SLA"
+                  className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] text-[var(--color-accent)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-40"
+                >
+                  <Undo2 className="w-3 h-3" /> Reincluir
+                </button>
+              )}
+            </div>
           ))}
         </div>
       )}

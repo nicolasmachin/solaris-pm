@@ -46,12 +46,41 @@ export type ExtractedData = z.infer<typeof ExtractedDataSchema>;
 
 export type DocTipo = "cedula" | "factura_ute";
 
+// Valida el dígito verificador de una cédula uruguaya (7 dígitos + verificador).
+// Sirve para descartar números que la IA "inventa" a partir de una fecha
+// (p. ej. leer el Vencimiento 24/08/2027 como CI 2.408.202-7, que NO valida).
+// Devuelve false para RUTs u otros formatos: el caller solo valida si parece CI.
+export function esCiUruguayaValida(raw: string): boolean {
+  const clean = raw.replace(/\D/g, "");
+  if (clean.length < 7 || clean.length > 8) return false;
+  const padded = clean.padStart(8, "0");
+  const numero = padded.slice(0, 7).split("").map(Number);
+  const verificador = Number(padded[7]);
+  const pesos = [2, 9, 8, 7, 6, 3, 4];
+  const suma = numero.reduce((acc, d, i) => acc + d * pesos[i], 0);
+  const esperado = (10 - (suma % 10)) % 10;
+  return esperado === verificador;
+}
+
+// Si el ci_cliente extraído PARECE una cédula (7-8 dígitos) pero NO valida el
+// dígito verificador, lo descartamos (null) en vez de guardar un número falso.
+// RUTs (11-12 dígitos) y otros se dejan pasar sin validar.
+function sanearCi(ci: string | null): string | null {
+  if (!ci) return ci;
+  const digitos = ci.replace(/\D/g, "");
+  if (digitos.length >= 7 && digitos.length <= 8 && !esCiUruguayaValida(ci)) {
+    console.warn(`[ute-extract] ci_cliente descartado: "${ci}" no valida el dígito verificador (probable fecha mal leída)`);
+    return null;
+  }
+  return ci;
+}
+
 const PROMPT_CEDULA = `Sos un asistente de extracción de datos. Analizá esta imagen de cédula de identidad uruguaya y extraé los datos disponibles.
 
 Devolvé ÚNICAMENTE un objeto JSON válido con esta estructura exacta (sin texto adicional, sin markdown, sin backticks):
 {
   "nombre_cliente": "nombre completo tal como figura o null",
-  "ci_cliente": "número de CI sin puntos ni guiones o null",
+  "ci_cliente": "el número rotulado 'N° de Identidad' (formato X.XXX.XXX-X, 7 dígitos + 1 verificador), sin puntos ni guiones, o null",
   "dir_cliente": "dirección completa si figura o null",
   "calle": "nombre de la calle sin número o null",
   "num_calle": "número de la calle como string o null",
@@ -67,6 +96,8 @@ Devolvé ÚNICAMENTE un objeto JSON válido con esta estructura exacta (sin text
   "persona_fisica": true
 }
 
+IMPORTANTE sobre ci_cliente: es el número rotulado "N° de Identidad" (o "N° de Identidade"). NUNCA uses las fechas de Expedición, Vencimiento ni de Nacimiento como cédula. Si no ves claramente el "N° de Identidad", devolvé null.
+
 Si un campo no es visible o no figura en el documento, usá null. No inventes datos. Solo extraé lo que esté claramente visible.`;
 
 const PROMPT_FACTURA = `Sos un asistente de extracción de datos. Analizá este documento que es una factura de UTE (empresa eléctrica de Uruguay) y extraé los datos disponibles.
@@ -74,7 +105,7 @@ const PROMPT_FACTURA = `Sos un asistente de extracción de datos. Analizá este 
 Devolvé ÚNICAMENTE un objeto JSON válido con esta estructura exacta (sin texto adicional, sin markdown, sin backticks):
 {
   "nombre_cliente": "nombre del titular de la cuenta o null",
-  "ci_cliente": "CI o RUT del titular si figura o null",
+  "ci_cliente": "CI (X.XXX.XXX-X) o RUT del titular si figura, sin puntos ni guiones — nunca una fecha, o null",
   "dir_cliente": "dirección del suministro completa o null",
   "calle": "nombre de la calle sin número o null",
   "num_calle": "número de la calle como string o null",
@@ -151,6 +182,9 @@ export async function extractFromDocument(args: {
     throw new Error(`Claude devolvió JSON inválido: ${rawText.slice(0, 200)}`);
   }
   const data = ExtractedDataSchema.parse(parsed);
+  // Red de seguridad: descartar un CI que no valida el dígito verificador
+  // (típico cuando la IA confunde una fecha con la cédula).
+  data.ci_cliente = sanearCi(data.ci_cliente);
 
   return {
     data,
