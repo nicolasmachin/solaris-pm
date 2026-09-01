@@ -146,8 +146,6 @@ async function main() {
     return;
   }
 
-  await ensureFormulas(sheets, start, end);
-
   const values = resolved.map((r) => [serial, r.hora, r.tipo, r.comida, r.cantidad]);
   await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
@@ -155,6 +153,12 @@ async function main() {
     valueInputOption: 'RAW',
     requestBody: { values },
   });
+
+  // Después de escribir (la grilla ya incluye las filas nuevas), garantizar que
+  // A-D y J-T tengan las fórmulas. Es clave al cruzar el final de la grilla
+  // pre-cargada: antes de escribir, esas filas no existen y copyPaste no puede
+  // rellenarlas.
+  await ensureFormulas(sheets, start, end);
 
   const back = (await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
