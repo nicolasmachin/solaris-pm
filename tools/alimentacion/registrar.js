@@ -49,6 +49,23 @@ async function getSheetId(sheets, title) {
   return s.properties.sheetId;
 }
 
+// Asegura que la grilla tenga al menos `neededRow` filas. La API de values.update
+// NO agranda la grilla cuando el rango arranca del todo fuera de ella, así que hay
+// que agregar filas antes (con un colchón para no expandir en cada escritura).
+async function ensureGridRows(sheets, neededRow) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+  const sheet = meta.data.sheets.find((x) => x.properties.title === REGISTRO_TAB);
+  const rowCount = sheet.properties.gridProperties.rowCount;
+  if (neededRow > rowCount) {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: SPREADSHEET_ID,
+      requestBody: {
+        requests: [{ appendDimension: { sheetId: sheet.properties.sheetId, dimension: 'ROWS', length: neededRow - rowCount + 100 } }],
+      },
+    });
+  }
+}
+
 async function lastDataRow(sheets) {
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
@@ -145,6 +162,8 @@ async function main() {
     console.log('CLEAR: limpié el rango de entrada de esas filas.');
     return;
   }
+
+  await ensureGridRows(sheets, end);
 
   const values = resolved.map((r) => [serial, r.hora, r.tipo, r.comida, r.cantidad]);
   await sheets.spreadsheets.values.update({
