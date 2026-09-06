@@ -41,7 +41,7 @@ el manual difiere del código, manda el código y **el manual se corrige**.
 | 06 | [Operaciones](06-operaciones.md) | Obra, fotos, videos, stock, logística, agenda de instalación | ⬜ Pendiente |
 | 07 | [Habilitación UTE](07-ute.md) | Trámite, subetapas dinámicas, formularios, documentos firmados | 🟡 Parcial (aumento de potencia contratada) |
 | 08 | [Finanzas](08-finanzas.md) | Movimientos, cobros, pagos a proveedores, facturación, flujo de fondos, estado de resultados | 🟡 Parcial (solo pagos a instaladores tercerizados) |
-| 09 | [Experiencia del cliente](09-experiencia-cliente.md) | Interacciones, encuestas, mantenimientos, reportes fotovoltaicos, monitoreo diario de plantas | 🟡 Parcial (monitoreo diario) |
+| 09 | [Experiencia del cliente](09-experiencia-cliente.md) | Proceso de posventa, interacciones, encuestas, mantenimientos, reportes fotovoltaicos, monitoreo diario de plantas | 🟡 Parcial (proceso de posventa · monitoreo diario) |
 | 10 | [Portal del cliente](10-portal-cliente.md) | Acceso, proyectos, tickets, encuestas, reportes, notificaciones | 🟡 Parcial (generación diaria, vista como cliente) |
 | 11 | [Métricas](11-metricas.md) | Dashboard, metas, reporte semanal, indicadores | ⬜ Pendiente |
 | 12 | [Infraestructura](12-infraestructura.md) | Docker, base de datos, storage, jobs, correo, IA, respaldos | ⬜ Pendiente |

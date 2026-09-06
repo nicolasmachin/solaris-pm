@@ -63,7 +63,9 @@ export async function registerTraspasosRoutes(app: FastifyInstance) {
     const traspasos = await Promise.all(
       pendientes.map(async (t) => {
         // Se calcula una sola vez y se derivan el resumen por rol y la lista de personas.
-        const dests = await calcularDestinatarios(t.tipo, { payload: t.payload, excludeUserId: user.id });
+        // Sin excluir al usuario actual: tiene que coincidir con lo que hace
+        // confirmarTraspaso, o el preview miente sobre a quién se va a notificar.
+        const dests = await calcularDestinatarios(t.tipo, { payload: t.payload });
         return {
           id: t.id,
           tipo: t.tipo,

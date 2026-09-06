@@ -65,6 +65,10 @@ export function ClienteTimeline({ projectId }: { projectId: string }) {
       {items.map((it) => {
         const src = SOURCE_META[it.source];
         const metaLine = it.kind === "interaction" ? interactionMeta(it.meta) : null;
+        // Comentarios dejados dentro de una etapa/subetapa/tarea: mostrar de dónde
+        // salieron, para que no lleguen sueltos a la ficha.
+        const origen =
+          it.kind === "comment" && typeof it.meta?.origen === "string" ? it.meta.origen : null;
         return (
           <li
             key={it.id}
@@ -81,6 +85,11 @@ export function ClienteTimeline({ projectId }: { projectId: string }) {
                 <span className="text-xs text-[var(--color-text-muted)]">
                   {it.autor?.nombre ?? "—"} · {fmtDateTime(it.createdAt)}
                 </span>
+                {origen && (
+                  <span className="rounded border border-[var(--color-border)] px-1.5 py-0.5 text-[10px] text-[var(--color-text-muted)]">
+                    en {origen}
+                  </span>
+                )}
               </div>
               {metaLine && (
                 <p className="mb-0.5 text-[11px] font-medium text-[var(--color-text-secondary)]">{metaLine}</p>

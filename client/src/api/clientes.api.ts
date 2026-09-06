@@ -41,6 +41,29 @@ export interface ClienteListItem {
   avisoHabilitacionPendiente: boolean; // Regla de Oro: UTE finalizó y CX no avisó
   mantenimiento: MantenimientoInfo | null; // próximo aniversario (mantenimiento)
   hasPortalUser: boolean; // ya tiene usuario de portal (Generador) creado/vinculado
+  diasSinContacto: number | null; // null = nunca hubo contacto registrado
+  fueraDeCadencia: boolean; // supera la cadencia de su etapa (config. en Admin)
+  hayNovedad: boolean; // pasó algo posterior al último contacto registrado
+}
+
+export interface BloqueRecorrido {
+  recorrido: ClienteRecorrido;
+  nombreCorto: string;
+  nombreLargo: string;
+  total: number;
+  fueraDeCadencia: number;
+  conAlerta: number;
+  conNovedad: number;
+  clientes: ClienteListItem[];
+}
+
+// El recorrido: la cartera partida en los tres bloques del proceso, cada uno
+// ordenado por días sin contacto (las alertas con plazo van arriba).
+export async function getRecorrido(filters: ClientesFilters = {}): Promise<BloqueRecorrido[]> {
+  const { data } = await apiClient.get<{ bloques: BloqueRecorrido[] }>("/api/clientes/recorrido", {
+    params: cleanParams(filters),
+  });
+  return data.bloques;
 }
 
 export interface ClienteInteraction {
@@ -68,6 +91,8 @@ export interface ClientesFilters {
   asesorId?: string;
   departamento?: string;
   etapa?: ClienteRecorrido;
+  avisoPendiente?: boolean; // Regla de Oro: habilitados sin aviso registrado
+  fueraDeCadencia?: boolean; // superan la cadencia de contacto de su etapa
   sortBy?: ClienteSortBy;
   sortDir?: SortDir;
 }
@@ -110,6 +135,8 @@ export interface TimelineItem {
     channel?: InteractionChannel;
     direction?: InteractionDirection | null;
     reason?: InteractionReason | null;
+    /** Comentarios: dónde se dejó (etapa, subetapa, checklist o tarea). */
+    origen?: string;
     [key: string]: unknown;
   };
 }

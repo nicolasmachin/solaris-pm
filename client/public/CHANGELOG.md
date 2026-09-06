@@ -1,6 +1,77 @@
 # Novedades
 
+## v10.0
+
+### 4 de septiembre de 2026
+
+#### Experiencia Solar — ver de un vistazo a quién hay que contactar
+
+- El listado de Generadores tiene dos **filtros nuevos**: **"⚠ Aviso pendiente"** (los que ya están habilitados y todavía no se les avisó que pueden encender) y **"Fuera de cadencia"** (los que llevan más días sin contacto de los definidos para su etapa). Antes había que buscarlos a ojo.
+- La columna **Último contacto** ahora muestra **cuántos días** pasaron y se pinta en rojo usando los días definidos en **Administración → Cadencia de contacto**. Antes avisaba siempre a los 7 días, sin importar la etapa del cliente.
+
+#### Experiencia Solar — los pasos de cada cliente, con plazo
+
+- Cada cliente tiene ahora sus **pasos de acompañamiento por etapa**: bienvenida, conversación de expectativa, acceso al portal, presentación del capataz, aviso de fecha de obra, obra terminada, encuestas, y los cinco del cierre de puesta en marcha.
+- **Los plazos arrancan con el hecho, no con la creación.** Confirmar la fecha de obra en el calendario abre el pendiente de avisarle al cliente (2 días hábiles); que UTE habilite abre el aviso de "ya podés encender" y los pasos del cierre (15 días).
+- **Reprogramar una obra ya confirmada ahora exige el motivo**, y genera **un pendiente de aviso propio por cada reprogramación** —con el motivo adentro—, en vez de una casilla única que se tilda una vez. Si a un cliente le mueven la fecha tres veces, quedan tres avisos, no uno.
+- Estos pasos **no frenan la obra ni el trámite**: vencen y se ven, pero no bloquean. Experiencia Solar acompaña, no avanza el proyecto.
+- En la ficha del cliente ahora se ven, arriba de todo, **los días sin contacto** y si hay que avisarle que puede encender.
+
+#### Experiencia Solar — nueva pestaña "Recorrido"
+
+- Una vista con **la cartera dividida en las tres etapas** (Pre-obra, Habilitación, Post-Habilitación), una columna por etapa, para ver de un golpe dónde está cada cliente.
+- Dentro de cada etapa los clientes se ordenan **por días sin contacto**, del que hace más que no se le habla al que menos. **Los que nunca tuvieron contacto van primero.**
+- Dos señales distintas: el **triángulo rojo** marca que hay que avisarle algo y el reloj corre; el **puntito** marca que hay algo nuevo para mirar. El puntito **no cambia el orden** a propósito: si lo hiciera, un cliente con novedad pero contactado ayer taparía al que lleva quince días sin que nadie le hable.
+- Cada etapa muestra sus contadores (con alerta, fuera de cadencia, con novedad) y hay un filtro **"Solo lo que requiere acción"**.
+
+#### Historial del cliente — se limpió el ruido
+
+- El **Historial de la ficha del cliente** dejaba pasar entradas técnicas que no se entendían. Ahora solo muestra **lo que de verdad es una novedad** —avances de etapa, traspasos entre áreas, documentos emitidos, correos enviados, comentarios— y deja fuera el registro técnico interno.
+- El cambio es grande: en un proyecto con **2.547 registros**, al historial llegaban entradas repetidas de un mismo aviso automático. Ese aviso solo, en toda la base, se había escrito **13.693 veces**.
+- También se sacó la duplicación de los comentarios, que aparecían dos veces.
+
+#### Clientes sin comunicación — ahora se ven también los ya habilitados
+
+- El panel de **clientes sin comunicación** excluía a los proyectos terminados y a los cargados por planilla, que es justamente donde está la cartera de post-habilitación. **Esos clientes eran invisibles.** Ahora aparecen.
+
+#### Arreglos
+
+- **La segunda vez que un cliente puntúa bajo, ahora sí avisa.** El sistema evitaba duplicar avisos, pero no distinguía los ya resueltos: si a un cliente ya se le había atendido una nota baja, las siguientes no generaban ninguna alerta. Un cliente reiteradamente disconforme generaba un solo aviso en toda su vida.
+
+#### Encuestas — tres preguntas por encuesta, y distintas según el momento
+
+- Cada encuesta pasa a tener **tres preguntas** en vez de una, y **cada una pregunta cosas distintas** según el momento: la de instalación pregunta por la obra y por la claridad del proceso; la de habilitación, por el acompañamiento durante la espera; la anual, por el año y si nos recomendaría.
+- **Solo la primera es obligatoria**, para no complicar la respuesta. El puntaje de la encuesta es el **promedio** de las que haya contestado.
+- El **aviso por nota baja** salta si **cualquiera** de las tres está por debajo del umbral. Así ya no se pierde el caso del cliente conforme con la instalación pero disconforme con la comunicación, que antes quedaba escondido en una nota única.
+- El **umbral de nota baja pasa a ser configurable** desde la configuración del sistema, en vez de estar fijo en 3.
+- En el panel de Experiencia Solar cada encuesta muestra **las tres notas con su pregunta** y el promedio.
+
+#### Habilitación — el aviso de "ya podés encender" deja de depender de un clic
+
+- **Cuando Tramitación marca el trámite de UTE como terminado, el sistema registra solo la fecha de habilitación.** Antes esa fecha se escribía únicamente si alguien confirmaba el traspaso en Pendientes: si no lo confirmaba, no arrancaba el aviso de "ya podés encender", el cliente no pasaba a post-habilitación y no quedaba fecha para calcular aniversarios, mantenimientos ni encuestas.
+- Se **recuperaron los clientes** que ya estaban habilitados y habían quedado sin esa fecha. Ahora aparecen con su aviso pendiente y con su próximo mantenimiento calculado.
+- **Un traspaso ya no depende de una sola persona:** lo puede confirmar cualquiera de la misma área que lo generó (o un administrador). Antes solo podía hacerlo quien lo había originado, así que si estaba de licencia el traspaso quedaba trabado.
+
+#### Avisos — que las alertas lleguen a quien tiene que actuar
+
+- **Experiencia Solar y Postventa ahora reciben el resumen diario por correo.** Hasta ahora solo lo recibía el administrador, así que quien acompaña al cliente no se enteraba de nada salvo que entrara a la aplicación a mirar la campana.
+- **La alerta por una encuesta con nota baja ya no se pierde.** Se calculaba excluyendo a quien la originaba y, como el área es de una sola persona, no le llegaba a nadie. Ahora llega siempre.
+
+
+### 28 de agosto de 2026
+
+#### Experiencia Solar — el historial del cliente muestra todo lo que se anota del proyecto
+
+- Los comentarios que se dejan **dentro de una etapa, una subetapa o una tarea** del proyecto ahora también aparecen en el **Historial** de la ficha del cliente. Antes solo se veían los comentarios dejados sobre el proyecto en general, así que lo que anotaba quien estaba trabajando en la obra no llegaba a Experiencia Solar.
+- Cada comentario indica **de dónde salió** (por ejemplo "en Ejecución de obra"), para que se entienda el contexto sin tener que abrir el proyecto.
+
 ## v9.9
+
+### 27 de agosto de 2026
+
+#### App móvil — volvés donde estabas
+
+- En el celular, cuando salías de la app y volvías, se abría siempre en el inicio y perdías la página en la que estabas. Ahora la app **te devuelve a la última pantalla** donde estuviste (si volvés dentro de unas horas).
 
 ### 25 de agosto de 2026
 

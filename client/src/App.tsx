@@ -87,6 +87,9 @@ const PendientesSection = lazy(() => import("./modules/traspasos/pages/Pendiente
 const TicketsSection = lazy(() => import("./modules/tickets/TicketsSection").then((module) => ({ default: module.TicketsSection })));
 const ClienteFicha = lazy(() => import("./modules/clientes/pages/ClienteFichaPage").then((module) => ({ default: module.ClienteFichaPage })));
 const EncuestasPage = lazy(() => import("./modules/encuestas/EncuestasPage").then((module) => ({ default: module.EncuestasPage })));
+const RecorridoPage = lazy(() =>
+  import("./modules/clientes/pages/RecorridoPage").then((m) => ({ default: m.RecorridoPage })),
+);
 const ExperienciaSolarLayout = lazy(() => import("./modules/clientes/pages/ExperienciaSolarLayout").then((module) => ({ default: module.ExperienciaSolarLayout })));
 const ClientesCobros = lazy(() => import("./modules/clientes/pages/ClientesCobros").then((module) => ({ default: module.ClientesCobros })));
 const ReportesFvPanel = lazy(() => import("./modules/clientes/pages/ReportesFvPanel").then((module) => ({ default: module.ReportesFvPanel })));
@@ -444,6 +447,7 @@ export function App() {
           }
         >
           <Route index element={<Clientes />} />
+          <Route path="recorrido" element={<RecorridoPage />} />
           <Route path="reportes" element={<ReportesFvPanel />} />
           <Route path="monitoreo" element={<MonitoreoFvPanel />} />
           <Route path="cobros" element={<ClientesCobros />} />

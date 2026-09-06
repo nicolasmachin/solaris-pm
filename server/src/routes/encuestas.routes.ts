@@ -12,7 +12,8 @@ import { prisma } from "../lib/prisma.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { badRequest } from "../utils/errors.js";
-import { NOTA_BAJA_MAX, serializeSurvey } from "../services/encuestas/encuestas.service.js";
+import { getUmbralNotaBaja, serializeSurvey } from "../services/encuestas/encuestas.service.js";
+import { esNotaBaja, promedioNotas } from "../services/encuestas/preguntas.js";
 
 export async function registerEncuestasRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authenticate);
@@ -23,17 +24,29 @@ export async function registerEncuestasRoutes(app: FastifyInstance) {
         tipo: z.nativeEnum(SurveyTipo).optional(),
         estado: z.nativeEnum(SurveyEstado).optional(),
         projectId: z.string().optional(),
-        notaBaja: z.coerce.boolean().optional(),
+        notaBaja: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
       })
       .parse(request.query);
 
+    const umbral = await getUmbralNotaBaja();
     const rows = await prisma.satisfactionSurvey.findMany({
       where: {
         deletedAt: null,
         ...(q.tipo ? { tipo: q.tipo } : {}),
         ...(q.estado ? { estado: q.estado } : {}),
         ...(q.projectId ? { projectId: q.projectId } : {}),
-        ...(q.notaBaja ? { nota: { lte: NOTA_BAJA_MAX } } : {}),
+        // Nota baja = cualquiera de las tres en el umbral o por debajo. No hace
+        // falta chequear el promedio: si las tres están por encima del umbral, el
+        // promedio también lo está.
+        ...(q.notaBaja
+          ? {
+              OR: [
+                { nota: { lte: umbral } },
+                { nota2: { lte: umbral } },
+                { nota3: { lte: umbral } },
+              ],
+            }
+          : {}),
       },
       include: { project: { select: { id: true, clientName: true, code: true } } },
       orderBy: [{ estado: "asc" }, { createdAt: "desc" }],
@@ -55,8 +68,11 @@ export async function registerEncuestasRoutes(app: FastifyInstance) {
         estado: s.estado,
         edicion: s.edicion,
         nota: s.nota,
+        nota2: s.nota2,
+        nota3: s.nota3,
+        notaPromedio: promedioNotas([s.nota, s.nota2, s.nota3]),
         comentario: s.comentario,
-        notaBaja: s.nota != null && s.nota <= NOTA_BAJA_MAX,
+        notaBaja: esNotaBaja([s.nota, s.nota2, s.nota3], umbral),
         respondidaEn: s.respondidaEn?.toISOString() ?? null,
         respondidaPorNombre: s.respondidaPorId ? nameById.get(s.respondidaPorId) ?? null : null,
         traspasoId: s.traspasoId,

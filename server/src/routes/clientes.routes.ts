@@ -21,6 +21,7 @@ import {
   getClienteFicha,
   getClienteTimeline,
   getClienteListItem,
+  getRecorrido,
   listClientes,
   listClientesForExport,
   listInteractions,
@@ -32,6 +33,7 @@ import {
 import { updateProjectClientFields } from "../services/project-fields.service.js";
 import { confirmImport, previewImport } from "../services/clientes/import.service.js";
 import { createPortalUserForProject, resetPortalUserPassword } from "../services/clientes/portal-user.service.js";
+import { completarCheck, listarChecks } from "../services/clientes/recorrido.service.js";
 import { badRequest, forbidden, notFound, unauthorized } from "../utils/errors.js";
 import {
   addressValue,
@@ -74,6 +76,10 @@ const filtersSchema = z.object({
   asesorId: z.string().min(1).optional(),
   departamento: z.string().min(1).optional(),
   etapa: z.enum(["E1", "E2", "E3"]).optional(),
+  // Llegan como string por querystring. NO usar z.coerce.boolean(): convierte
+  // cualquier string no vacío a true, incluido "false".
+  avisoPendiente: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
+  fueraDeCadencia: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
   sortBy: z.enum(["nombre", "fechaEntrega", "potenciaKwp", "etapa", "proximoMantenimiento"]).optional(),
   sortDir: z.enum(["asc", "desc"]).optional(),
 });
@@ -90,6 +96,8 @@ function toFiltros(q: z.infer<typeof filtersSchema>): ClienteFiltros {
     asesorId: q.asesorId,
     departamento: q.departamento,
     etapa: q.etapa,
+    avisoPendiente: q.avisoPendiente,
+    fueraDeCadencia: q.fueraDeCadencia,
     sortBy: q.sortBy,
     sortDir: q.sortDir,
   };
@@ -124,6 +132,38 @@ export async function registerClientesRoutes(app: FastifyInstance) {
     async (request) => {
       const q = listQuerySchema.parse(request.query);
       return listClientes(toFiltros(q), q.page, q.pageSize);
+    },
+  );
+
+  // ─── Recorrido: la cartera en los tres bloques del proceso ───────────────
+  app.get(
+    "/clientes/recorrido",
+    { preHandler: authorize(Module.EXPERIENCIA_CLIENTES, Action.VIEW) },
+    async (request) => {
+      const q = filtersSchema.parse(request.query);
+      return { bloques: await getRecorrido(toFiltros(q)) };
+    },
+  );
+
+  // ─── Checks del recorrido de Experiencia Solar ───────────────────────────
+  app.get(
+    "/clientes/:projectId/checks",
+    { preHandler: authorize(Module.EXPERIENCIA_CLIENTES, Action.VIEW) },
+    async (request) => {
+      const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
+      if (!(await projectExists(projectId))) throw notFound("PROJECT_NOT_FOUND", "El proyecto no existe");
+      return { checks: await listarChecks(projectId) };
+    },
+  );
+
+  app.patch(
+    "/clientes/checks/:checkId",
+    { preHandler: authorize(Module.EXPERIENCIA_CLIENTES, Action.EDIT) },
+    async (request) => {
+      const user = ensureUser(request);
+      const { checkId } = z.object({ checkId: z.string() }).parse(request.params);
+      const { completado } = z.object({ completado: z.boolean() }).parse(request.body);
+      return completarCheck({ checkId, userId: user.id, completado });
     },
   );
 

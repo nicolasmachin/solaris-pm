@@ -23,8 +23,22 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "10.0",
+  date: "28 de agosto de 2026",
+  sections: [
+    {
+      title: "Experiencia Solar — el historial del cliente muestra todo lo que se anota del proyecto",
+      items: [
+        'Los comentarios dejados dentro de una etapa, una subetapa o una tarea del proyecto ahora también aparecen en el Historial de la ficha del cliente. Antes solo se veían los del proyecto en general, así que lo que anotaba quien trabajaba en la obra no llegaba a Experiencia Solar.',
+        'Cada comentario indica de dónde salió (por ejemplo "en Ejecución de obra"), para entender el contexto sin abrir el proyecto.',
+      ],
+    },
+  ],
+};
+
+const RELEASE_9_9: Release = {
   version: "9.9",
-  date: "22 de agosto de 2026",
+  date: "27 de agosto de 2026",
   sections: [
     {
       title: "Pagos a instaladores — corregir y anular entregas",
@@ -47,6 +61,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "9.9",
+    shortDate: "27 ago",
+    highlights: RELEASE_9_9.sections.map((sec) => sec.title),
+  },
   {
     version: "9.8",
     shortDate: "21 ago",

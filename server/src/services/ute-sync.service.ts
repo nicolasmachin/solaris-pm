@@ -14,9 +14,10 @@
 //   - Nombre y orden de las 11 subetapas system son fijos (no editables)
 
 import type { Prisma, PrismaClient, StageStatus, SubstageStatus, UteProcess } from "@prisma/client";
-import { StageType } from "@prisma/client";
+import { PostHabilitacionSubFase, StageType } from "@prisma/client";
 
 import { prisma } from "../lib/prisma.js";
+import { activarCheck } from "./clientes/recorrido.service.js";
 import {
   calculateProjectProgress,
   completeProjectIfAllStagesDone,
@@ -355,10 +356,50 @@ export function planPostventaAdvance(
   return { action: "advance", postventaId: postventa.id, completedAt };
 }
 
+/**
+ * Escribe la fecha de habilitación en el proyecto apenas Tramitación marca el
+ * trámite como terminado.
+ *
+ * Antes esa fecha se escribía en UN SOLO lugar: al confirmar manualmente el
+ * traspaso T8 en Pendientes. Si nadie lo confirmaba, el campo quedaba null y con
+ * él no arrancaba la Regla de Oro (el aviso de "ya podés encender"), no había
+ * ancla para aniversarios, mantenimientos ni encuestas, y el proyecto no pasaba a
+ * E3. En producción eso dejó 20 clientes habilitados fuera de todo radar.
+ *
+ * Ahora el acto que la escribe es el hecho real —UTE habilitó— y no un clic de
+ * seguimiento. Es idempotente: si ya hay fecha, no se pisa.
+ */
+async function marcarHabilitacionEnProyecto(uteProcess: UteProcess): Promise<void> {
+  const proyecto = await prisma.project.findUnique({
+    where: { id: uteProcess.projectId },
+    select: { postHabilitacionInicioEn: true },
+  });
+  if (!proyecto || proyecto.postHabilitacionInicioEn) return;
+
+  await prisma.project.update({
+    where: { id: uteProcess.projectId },
+    data: {
+      postHabilitacionInicioEn: uteProcess.finalizedAt ?? new Date(),
+      postHabilitacionSubFase: PostHabilitacionSubFase.E3_A_COMPROMISO_COMERCIAL,
+    },
+  });
+
+  // El hecho (UTE habilitó) arranca el reloj del aviso al cliente y del cierre
+  // de puesta en marcha. Antes el plazo no existía en ningún lado.
+  await activarCheck(uteProcess.projectId, "e2_habilitacion");
+  for (const c of ["e3_capacitacion", "e3_acceso_inversor", "e3_alta_reportes", "e3_garantias", "e3_portal_recorrido"]) {
+    await activarCheck(uteProcess.projectId, c);
+  }
+}
+
 export async function advancePostventaOnUteFinalizado(uteProcess: UteProcess): Promise<void> {
   // Early-out barato (sin DB) para el caso común: la mayoría de los updates de
   // UTE no finalizan el trámite y regenerateUteSubstages corre en cada uno.
   if (uteProcess.currentStage !== "FINALIZADO" && uteProcess.finalizedAt === null) return;
+
+  // Primero la fecha de habilitación: tiene que quedar escrita aunque el avance
+  // de etapa se saltee (proyecto sin etapa de post-habilitación, sin fecha, etc.).
+  await marcarHabilitacionEnProyecto(uteProcess);
 
   const stages = await prisma.stage.findMany({
     where: { projectId: uteProcess.projectId, deletedAt: null },

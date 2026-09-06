@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, ExternalLink, User, X } from "lucide-react";
 
-import { type EncuestaRow, listEncuestas, type SurveyEstado, type SurveyTipo } from "../../api/encuestas.api";
+import { type EncuestaRow, listEncuestas, PREGUNTAS_POR_TIPO, type SurveyEstado, type SurveyTipo } from "../../api/encuestas.api";
 import { Button } from "../../components/ui/Button";
 import { Spinner } from "../../components/ui/Spinner";
 import { useLockBodyScroll } from "../../hooks/useLockBodyScroll";
@@ -62,7 +62,7 @@ export function EncuestasPage() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-[var(--color-text-muted)]">
-        Respuestas de los Generadores. Las notas bajas (≤3) generan un aviso a Experiencia Solar.
+        Respuestas de los Generadores. Cada encuesta tiene tres preguntas; el puntaje es el promedio. Una nota baja en cualquiera de las tres genera un aviso a Experiencia Solar.
       </p>
 
       <div className="flex flex-wrap items-center gap-1.5">
@@ -110,7 +110,14 @@ export function EncuestasPage() {
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1.5">
                 <EstadoBadge estado={s.estado} />
-                {s.estado === "RESPONDIDA" && <NotaStars nota={s.nota} />}
+                {s.estado === "RESPONDIDA" && (
+                  <div className="flex items-center gap-1.5">
+                    <NotaStars nota={s.notaPromedio != null ? Math.round(s.notaPromedio) : null} />
+                    {s.notaPromedio != null && (
+                      <span className="text-[11px] text-[var(--color-text-muted)]">{s.notaPromedio}</span>
+                    )}
+                  </div>
+                )}
               </div>
             </button>
           ))}
@@ -159,10 +166,29 @@ function EncuestaDetalleModal({ encuesta: s, onClose }: { encuesta: EncuestaRow;
         <div className="space-y-4 p-4">
           {s.estado === "RESPONDIDA" ? (
             <>
-              <div className="flex items-center gap-3">
-                <NotaStars nota={s.nota} />
-                {s.nota != null && (
-                  <span className="text-sm font-medium text-[var(--color-text-primary)]">{s.nota}/5</span>
+              <div className="space-y-2.5">
+                {([s.nota, s.nota2, s.nota3] as Array<number | null>).map((n, i) => (
+                  <div key={i}>
+                    <p className="mb-0.5 text-[11px] text-[var(--color-text-muted)]">
+                      {PREGUNTAS_POR_TIPO[s.tipo][i]}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <NotaStars nota={n} />
+                      {n != null ? (
+                        <span className="text-[12px] text-[var(--color-text-secondary)]">{n}/5</span>
+                      ) : (
+                        <span className="text-[11px] text-[var(--color-text-muted)]">sin responder</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {s.notaPromedio != null && (
+                  <div className="flex items-center gap-2 border-t border-[var(--color-border)] pt-2">
+                    <span className="text-[11px] font-medium text-[var(--color-text-muted)]">Promedio</span>
+                    <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+                      {s.notaPromedio}/5
+                    </span>
+                  </div>
                 )}
               </div>
 

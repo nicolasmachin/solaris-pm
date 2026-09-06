@@ -436,6 +436,10 @@ enum SettingKey {
   PIPELINE_TEMPLATE
   // Hora (0-23, hora Uruguay) a la que se manda el resumen diario de mails.
   DIGEST_SEND_HOUR
+  // Nota (1-5) igual o por debajo de la cual una encuesta se considera "nota
+  // baja" y avisa a Experiencia Solar. Aplica tanto a CUALQUIERA de las tres
+  // notas individuales como al PROMEDIO de la encuesta.
+  ENCUESTA_NOTA_BAJA_MAX
 }
 
 enum SalesStage {
@@ -498,6 +502,7 @@ model User {
   aiRateLimit                    AIRateLimit?
   clientProjects                 Project[]                   @relation("ProjectClient")
   projectClients                 ProjectClient[]             @relation("ProjectClientUser")
+  recorridoChecksCompletados     RecorridoCheck[]            @relation("RecorridoCheckCompletadoPor")
   projectClientsCreated          ProjectClient[]             @relation("ProjectClientCreatedBy")
   technicalVisitsCreated         TechnicalVisit[]            @relation("TechnicalVisitCreator")
   visitInputsCreated             VisitInput[]                @relation("VisitInputCreator")
@@ -629,6 +634,7 @@ model Project {
   informes                        Informe[]                @relation("InformesDeProyecto")
   emailLogs                       EmailLog[]               @relation("EmailLogProject")
   clientInteractions              ClientInteraction[]
+  recorridoChecks                 RecorridoCheck[]
   traspasos                       Traspaso[]
   reporteFvConfig                 ReporteFvConfig?
   reporteFvLecturas               ReporteFvLectura[]
@@ -867,6 +873,54 @@ enum SurveyEstado {
   RESPONDIDA
 }
 
+/// Checks del recorrido de Experiencia Solar.
+///
+/// Viven acá y NO en el pipeline del proyecto a propósito: al equipo de obra no
+/// le aportan y le ensucian su vista, y —sobre todo— acá pueden tener plazo,
+/// responsable y estado que vence **sin frenar la obra**. El avance de etapa lo
+/// sigue determinando el proyecto; Experiencia Solar acompaña, no avanza.
+///
+/// Hay dos clases:
+///   - **fijos**: los que toda cuenta tiene en su etapa (bienvenida, aviso de
+///     fecha de obra, aviso de habilitación…). Se crean del catálogo.
+///   - **dinámicos**: uno nuevo por cada hecho repetible. Hoy: cada reprogramación
+///     de obra genera su propio check, porque tildar una casilla única y darla por
+///     cumplida para siempre es justamente lo que hacía que no se avisara.
+model RecorridoCheck {
+  id          String    @id @default(cuid())
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  /// E1 | E2 | E3
+  recorrido   String
+  /// Código del catálogo (ver services/clientes/recorrido-checks.ts).
+  codigo      String
+  titulo      String
+  /// Orden dentro de la etapa.
+  orden       Int       @default(0)
+
+  /// Vencimiento. Null = sin plazo (no vence, pero queda pendiente a la vista).
+  venceEn     DateTime? @db.Timestamptz(6)
+
+  completadoEn   DateTime? @db.Timestamptz(6)
+  completadoPorId String?
+  completadoPor  User?     @relation("RecorridoCheckCompletadoPor", fields: [completadoPorId], references: [id], onDelete: SetNull)
+
+  /// Contexto del hecho que lo generó (motivo de la reagenda, fecha nueva…).
+  nota        String?
+  /// true = generado por un hecho repetible; false = del catálogo fijo.
+  esDinamico  Boolean   @default(false)
+
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6)
+
+  /// Un check fijo por proyecto+código. Los dinámicos usan códigos con sufijo.
+  @@unique([projectId, codigo])
+  @@index([projectId])
+  @@index([recorrido])
+  @@map("recorrido_checks")
+}
+
 model SatisfactionSurvey {
   id        String  @id @default(cuid())
   projectId String
@@ -878,14 +932,20 @@ model SatisfactionSurvey {
   // que hace idempotente la generación (una por proyecto+tipo+edición).
   edicion Int          @default(0)
 
-  // Nota 1-5 (null hasta que el cliente responde) + comentario opcional.
+  // Tres notas 1-5 (null hasta que el cliente responde) + comentario opcional.
+  // `nota` es la primera y la única obligatoria al responder; nota2 y nota3 son
+  // opcionales para no sumar fricción (la tasa de respuesta hoy es ~5%). El texto
+  // de cada pregunta depende del tipo de encuesta (ver services/encuestas/preguntas.ts).
+  // El puntaje de la encuesta es el PROMEDIO de las notas respondidas.
   nota            Int?
+  nota2           Int?
+  nota3           Int?
   comentario      String?
   respondidaEn    DateTime? @db.Timestamptz(6)
   // Id de usuario CLIENT que respondió (sin relación; lookup puntual en el service).
   respondidaPorId String?
 
-  // Link al T11 disparado si la nota fue baja (≤3). Null si no aplicó.
+  // Link al T11 disparado si la encuesta dio nota baja. Null si no aplicó.
   traspasoId  String?
   // Null si la generó un job/hook de sistema (hito de etapa o cron de aniversario).
   createdById String?

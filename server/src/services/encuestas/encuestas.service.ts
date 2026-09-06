@@ -6,18 +6,45 @@ import {
   SurveyEstado,
   SurveyTipo,
   type StageType,
+  SettingKey,
+  SettingLevel,
   TraspasoTipo,
 } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { badRequest, forbidden, notFound } from "../../utils/errors.js";
 import { createAuditEntry } from "../audit.service.js";
+import { esNotaBaja, promedioNotas } from "./preguntas.js";
 import { createNotification } from "../notification.service.js";
 import { crearTraspasoSiNoExiste } from "../traspasos/traspasos.service.js";
 
-// Nota <= a este umbral dispara el traspaso T11 a Experiencia Solar (decisión de
-// negocio 2026-07-14: escala 1-5, nota baja <= 3).
-export const NOTA_BAJA_MAX = 3;
+// Nota <= a este umbral dispara el traspaso T11 a Experiencia Solar. Configurable
+// en Administración (SettingKey.ENCUESTA_NOTA_BAJA_MAX); este es el valor por
+// defecto si no está seteado. Escala 1-5.
+export const NOTA_BAJA_MAX_DEFAULT = 3;
+
+// Cache corto: lo consulta cada serialización de encuesta.
+let umbralCache: { valor: number; expira: number } | null = null;
+
+export async function getUmbralNotaBaja(): Promise<number> {
+  if (umbralCache && umbralCache.expira > Date.now()) return umbralCache.valor;
+  let valor = NOTA_BAJA_MAX_DEFAULT;
+  try {
+    const setting = await prisma.setting.findFirst({
+      where: { key: SettingKey.ENCUESTA_NOTA_BAJA_MAX, level: SettingLevel.SYSTEM },
+    });
+    const parsed = setting?.value ? Number(setting.value) : NaN;
+    if (Number.isInteger(parsed) && parsed >= 1 && parsed <= 5) valor = parsed;
+  } catch {
+    // Sin config o DB no disponible → default.
+  }
+  umbralCache = { valor, expira: Date.now() + 5 * 60 * 1000 };
+  return valor;
+}
+
+export function clearUmbralNotaBajaCache(): void {
+  umbralCache = null;
+}
 
 export const SURVEY_TIPO_LABEL: Record<SurveyTipo, string> = {
   [SurveyTipo.OBRA]: "instalación",
@@ -46,8 +73,12 @@ export async function serializeSurvey(s: SatisfactionSurvey) {
     estado: s.estado,
     edicion: s.edicion,
     nota: s.nota,
+    nota2: s.nota2,
+    nota3: s.nota3,
+    // Puntaje de la encuesta = promedio de las notas respondidas.
+    notaPromedio: promedioNotas([s.nota, s.nota2, s.nota3]),
     comentario: s.comentario,
-    notaBaja: s.nota != null && s.nota <= NOTA_BAJA_MAX,
+    notaBaja: esNotaBaja([s.nota, s.nota2, s.nota3], await getUmbralNotaBaja()),
     respondidaEn: s.respondidaEn?.toISOString() ?? null,
     respondidaPorId: s.respondidaPorId,
     respondidaPorNombre: s.respondidaPorId ? names.get(s.respondidaPorId) ?? null : null,
@@ -159,10 +190,19 @@ export async function responderEncuesta(params: {
   surveyId: string;
   userId: string;
   nota: number;
+  // Opcionales: no se exigen para no sumar fricción (tasa de respuesta ~5%).
+  nota2?: number | null;
+  nota3?: number | null;
   comentario?: string | null;
 }): Promise<SatisfactionSurvey> {
-  if (!Number.isInteger(params.nota) || params.nota < 1 || params.nota > 5) {
+  const valida = (n: unknown) => Number.isInteger(n) && (n as number) >= 1 && (n as number) <= 5;
+  if (!valida(params.nota)) {
     throw badRequest("NOTA_INVALIDA", "La nota debe ser un número entero de 1 a 5.");
+  }
+  for (const extra of [params.nota2, params.nota3]) {
+    if (extra !== undefined && extra !== null && !valida(extra)) {
+      throw badRequest("NOTA_INVALIDA", "Las notas deben ser números enteros de 1 a 5.");
+    }
   }
 
   const survey = await prisma.satisfactionSurvey.findFirst({
@@ -186,7 +226,10 @@ export async function responderEncuesta(params: {
   // Nota baja → dispara T11 a Experiencia Solar. El acuse humano en Pendientes lo
   // toma el responsable de Experiencia Solar (fallback ADMIN) como modalUsuario,
   // ya que un evento originado por el cliente igual necesita un dueño interno.
-  if (params.nota <= NOTA_BAJA_MAX) {
+  const notasRespondidas = [params.nota, params.nota2, params.nota3];
+  const umbral = await getUmbralNotaBaja();
+  const notaBaja = esNotaBaja(notasRespondidas, umbral);
+  if (notaBaja) {
     const actorUserId = await resolverResponsableInterno();
     if (actorUserId) {
       const traspaso = await crearTraspasoSiNoExiste({
@@ -204,6 +247,8 @@ export async function responderEncuesta(params: {
     data: {
       estado: SurveyEstado.RESPONDIDA,
       nota: params.nota,
+      nota2: params.nota2 ?? null,
+      nota3: params.nota3 ?? null,
       comentario,
       respondidaEn: new Date(),
       respondidaPorId: params.userId,
@@ -218,8 +263,9 @@ export async function responderEncuesta(params: {
     userId: params.userId,
     action: AuditAction.updated,
     description:
-      `Encuesta de ${SURVEY_TIPO_LABEL[survey.tipo]} respondida: ${params.nota}/5` +
-      (params.nota <= NOTA_BAJA_MAX ? " (nota baja → Experiencia Solar)" : ""),
+      `Encuesta de ${SURVEY_TIPO_LABEL[survey.tipo]} respondida: ` +
+      `${notasRespondidas.filter((n) => n != null).join("/")} · promedio ${promedioNotas(notasRespondidas)}/5` +
+      (notaBaja ? " (nota baja → Experiencia Solar)" : ""),
   });
 
   return updated;

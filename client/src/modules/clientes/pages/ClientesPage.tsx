@@ -231,16 +231,18 @@ export function ClientesPage() {
       label: "Último contacto",
       className: "text-[11px]",
       render: (c) => {
-        const d = daysSince(c.ultimoContactoEn);
-        const overdue = d != null && d > 7;
+        // El veredicto lo da el backend con la cadencia configurada (Admin →
+        // Cadencia de contacto), no un umbral fijo en la pantalla.
+        const d = c.diasSinContacto;
         return (
           <div className="flex flex-col gap-0.5">
             <span
               className={
-                overdue
-                  ? "font-medium text-[var(--color-warning-text)]"
+                c.fueraDeCadencia
+                  ? "font-medium text-[var(--color-danger-text)]"
                   : "text-[var(--color-text-muted)]"
               }
+              title={c.fueraDeCadencia ? "Supera la cadencia de contacto de su etapa" : undefined}
             >
               {c.ultimoContactoEn
                 ? `${fmtDate(c.ultimoContactoEn)}${d != null ? ` · ${d}d` : ""}`

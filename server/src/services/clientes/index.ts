@@ -27,6 +27,8 @@ import { decimalToNumber, serializeDate, serializeDateOnly } from "../../utils/s
 import { getAnclaMantenimiento, proximoMantenimiento } from "../../utils/aniversario.js";
 import { lastActionAt } from "../uteProcess.service.js";
 import { TRASPASO_LABEL } from "../traspasos/catalogo.js";
+import { getCadenciaMap } from "../ops-panel.service.js";
+import { ACCIONES_NOVEDAD, textoEvento } from "./eventos.js";
 
 export type ClienteEstado = "ACTIVO" | "FINALIZADO" | "ARCHIVADO" | "PROSPECTO";
 // "Etapa" del CRM = recorrido del cliente en 3 etapas (E1/E2/E3), derivado de la
@@ -118,6 +120,17 @@ export type ClienteListItem = {
   avisoHabilitacionPendiente: boolean; // Regla de Oro: UTE finalizó y CX aún no avisó
   mantenimiento: MantenimientoInfo | null; // próximo aniversario (mantenimiento)
   hasPortalUser: boolean; // ya tiene usuario de portal (Generador) creado/vinculado
+  // Días desde la última interacción registrada. null si nunca hubo contacto.
+  // Se compara contra la cadencia de la etapa (E1/E2/E3) configurada en Admin.
+  diasSinContacto: number | null;
+  // true si supera la cadencia configurada para su etapa (Admin → Cadencia de
+  // contacto). Lo resuelve el backend para que no convivan dos criterios: antes
+  // la pantalla usaba 7 días fijos y el backend la cadencia configurable.
+  fueraDeCadencia: boolean;
+  // Hay algo en el proyecto posterior al último contacto registrado: pasó algo y
+  // el cliente todavía no lo sabe (o al menos, no se lo dijimos nosotros). Es la
+  // "lucecita informativa": marca que hay algo para mirar, NO reordena la lista.
+  hayNovedad: boolean;
 };
 
 export type ClienteFiltros = {
@@ -126,6 +139,10 @@ export type ClienteFiltros = {
   asesorId?: string;
   departamento?: string;
   etapa?: ClienteRecorrido; // recorrido del cliente a filtrar (E1/E2/E3)
+  // Regla de Oro: solo los que están habilitados y todavía no se les avisó.
+  avisoPendiente?: boolean;
+  // Solo los que superan la cadencia de contacto de su etapa (E1/E2/E3).
+  fueraDeCadencia?: boolean;
   sortBy?: ClienteSortBy;
   sortDir?: SortDir;
 };
@@ -218,7 +235,29 @@ function toListItem(p: ProjectListRow): ClienteListItem {
     avisoHabilitacionPendiente: p.postHabilitacionInicioEn != null && p.avisoHabilitacionEn == null,
     mantenimiento: buildMantenimiento(p),
     hasPortalUser: p._count.clients > 0 || p.clientUserId != null,
+    diasSinContacto: diasDesde(p.clientInteractions[0]?.createdAt ?? null),
+    fueraDeCadencia: false, // lo resuelve marcarCadencia() con la config real
+    hayNovedad: false, // lo resuelve marcarNovedades()
   };
+}
+
+// Marca `fueraDeCadencia` según el umbral de la etapa de cada cliente. Un cliente
+// sin ningún contacto registrado siempre está fuera. Si la etapa no tiene
+// cadencia configurada o el cliente no tiene etapa, no se lo marca.
+async function marcarCadencia(items: ClienteListItem[]): Promise<ClienteListItem[]> {
+  const cadencia = await getCadenciaMap();
+  for (const i of items) {
+    const umbral = cadencia.get(i.etapa?.recorrido.codigo ?? "");
+    i.fueraDeCadencia = umbral != null && (i.diasSinContacto === null || i.diasSinContacto > umbral);
+  }
+  return items;
+}
+
+// Días enteros transcurridos desde una fecha. null si no hay fecha (nunca hubo
+// contacto): "nunca" no es lo mismo que "hace 0 días" y se ordena aparte.
+function diasDesde(d: Date | null): number | null {
+  if (!d) return null;
+  return Math.floor((Date.now() - d.getTime()) / (24 * 60 * 60 * 1000));
 }
 
 function buildMantenimiento(p: ProjectListRow): MantenimientoInfo | null {
@@ -251,6 +290,11 @@ function buildWhere(f: ClienteFiltros): Prisma.ProjectWhereInput {
   and.push({ status: { in: f.estado ? ESTADO_STATUSES[f.estado] : DEFAULT_STATUSES } });
   if (f.asesorId) and.push({ salespersonId: f.asesorId });
   if (f.departamento) and.push({ locationProvince: f.departamento });
+  // "Aviso pendiente" = habilitado (hay fecha de habilitación) y sin aviso
+  // registrado. Es la misma condición que usa el job de la Regla de Oro.
+  if (f.avisoPendiente) {
+    and.push({ postHabilitacionInicioEn: { not: null }, avisoHabilitacionEn: null });
+  }
 
   return { deletedAt: null, AND: and };
 }
@@ -293,10 +337,59 @@ function sortItems(items: ClienteListItem[], sortBy: ClienteSortBy, sortDir: Sor
 }
 
 // Proyecta, filtra por etapa (en memoria) y ordena. Reutilizado por list/export.
+/**
+ * Marca qué clientes tienen algo nuevo desde el último contacto registrado.
+ *
+ * "Nuevo" = un evento del historial clasificado como novedad (ver eventos.ts) o
+ * un comentario, posterior a la última interacción con el cliente. Un cliente sin
+ * ningún contacto registrado cuenta como novedad si tiene alguna actividad.
+ *
+ * Se resuelve con dos agregaciones, no una query por cliente.
+ */
+async function marcarNovedades(items: ClienteListItem[]): Promise<ClienteListItem[]> {
+  const ids = items.map((i) => i.projectId);
+  if (ids.length === 0) return items;
+
+  const [audits, comments] = await Promise.all([
+    prisma.auditLog.groupBy({
+      by: ["projectId"],
+      where: { projectId: { in: ids }, action: { in: ACCIONES_NOVEDAD } },
+      _max: { timestamp: true },
+    }),
+    prisma.comment.groupBy({
+      by: ["projectId"],
+      where: { projectId: { in: ids }, deletedAt: null },
+      _max: { createdAt: true },
+    }),
+  ]);
+
+  const ultimaActividad = new Map<string, Date>();
+  const guardar = (pid: string | null, d: Date | null) => {
+    if (!pid || !d) return;
+    const prev = ultimaActividad.get(pid);
+    if (!prev || d > prev) ultimaActividad.set(pid, d);
+  };
+  for (const a of audits) guardar(a.projectId, a._max.timestamp);
+  for (const c of comments) guardar(c.projectId, c._max.createdAt);
+
+  for (const i of items) {
+    const act = ultimaActividad.get(i.projectId);
+    if (!act) continue;
+    i.hayNovedad = i.ultimoContactoEn === null || act > new Date(i.ultimoContactoEn);
+  }
+  return items;
+}
+
 async function projectAndFilter(f: ClienteFiltros): Promise<ClienteListItem[]> {
   const rows = await prisma.project.findMany({ where: buildWhere(f), select: LIST_SELECT });
   let items = rows.map(toListItem);
   if (f.etapa) items = items.filter((i) => i.etapa?.recorrido.codigo === f.etapa);
+  // Fuera de cadencia: se resuelve en memoria porque el umbral depende del
+  // recorrido (E1/E2/E3), que es derivado y no existe como columna. Un cliente
+  // sin ningún contacto registrado siempre cuenta como fuera de cadencia.
+  await marcarCadencia(items);
+  await marcarNovedades(items);
+  if (f.fueraDeCadencia) items = items.filter((i) => i.fueraDeCadencia);
   return sortItems(items, f.sortBy ?? "nombre", f.sortDir ?? "asc");
 }
 
@@ -309,6 +402,61 @@ export async function listClientes(f: ClienteFiltros, page: number, pageSize: nu
   return { items: sorted.slice(start, start + pageSize), total, page, pageSize };
 }
 
+/**
+ * El recorrido de Experiencia Solar: la cartera partida en los tres bloques del
+ * proceso (E1 pre-obra, E2 habilitación, E3 post-habilitación).
+ *
+ * Decisiones de orden, que son el corazón de la vista:
+ *
+ *  - Dentro de cada bloque se ordena por **días sin contacto**, del más urgente
+ *    al menos. Mismo criterio en las tres etapas. Los que nunca tuvieron contacto
+ *    van primero: "nunca" es peor que "hace mucho".
+ *  - **La novedad NO reordena.** Es un "no leído", no una tarea. Si reordenara,
+ *    un cliente con novedad pero contactado ayer taparía al que lleva 15 días sin
+ *    que nadie le hable.
+ *  - Las **alertas con plazo** (hoy: aviso de habilitación pendiente) sí van
+ *    arriba de todo dentro de su bloque, porque el reloj corre.
+ */
+export async function getRecorrido(f: ClienteFiltros = {}) {
+  const items = await projectAndFilter(f);
+
+  const bloques: Record<ClienteRecorrido, ClienteListItem[]> = { E1: [], E2: [], E3: [] };
+  for (const i of items) {
+    const codigo = i.etapa?.recorrido.codigo;
+    if (codigo) bloques[codigo].push(i);
+  }
+
+  const ordenar = (arr: ClienteListItem[]) =>
+    arr.sort((a, b) => {
+      // 1. Alerta con plazo primero.
+      if (a.avisoHabilitacionPendiente !== b.avisoHabilitacionPendiente) {
+        return a.avisoHabilitacionPendiente ? -1 : 1;
+      }
+      // 2. Nunca contactado antes que "hace N días".
+      const an = a.diasSinContacto, bn = b.diasSinContacto;
+      if (an === null && bn !== null) return -1;
+      if (bn === null && an !== null) return 1;
+      if (an === null && bn === null) return a.nombre.localeCompare(b.nombre, "es");
+      // 3. Más días sin contacto primero.
+      return (bn ?? 0) - (an ?? 0);
+    });
+
+  return (["E1", "E2", "E3"] as ClienteRecorrido[]).map((codigo) => {
+    const clientes = ordenar(bloques[codigo]);
+    return {
+      recorrido: codigo,
+      nombreCorto: RECORRIDO_NOMBRE_CORTO[codigo],
+      nombreLargo: RECORRIDO_NOMBRE_LARGO[codigo],
+      total: clientes.length,
+      // Contadores para la cabecera de cada bloque.
+      fueraDeCadencia: clientes.filter((c) => c.fueraDeCadencia).length,
+      conAlerta: clientes.filter((c) => c.avisoHabilitacionPendiente).length,
+      conNovedad: clientes.filter((c) => c.hayNovedad).length,
+      clientes,
+    };
+  });
+}
+
 export async function listClientesForExport(f: ClienteFiltros): Promise<ClienteListItem[]> {
   return projectAndFilter(f);
 }
@@ -317,7 +465,9 @@ export async function listClientesForExport(f: ClienteFiltros): Promise<ClienteL
 // sin que el front tenga que refetchear todo el listado.
 export async function getClienteListItem(projectId: string): Promise<ClienteListItem | null> {
   const p = await prisma.project.findFirst({ where: { id: projectId, deletedAt: null }, select: LIST_SELECT });
-  return p ? toListItem(p) : null;
+  if (!p) return null;
+  const [item] = await marcarNovedades(await marcarCadencia([toListItem(p)]));
+  return item ?? null;
 }
 
 // ─── Ficha 360 ───────────────────────────────────────────────────────────────
@@ -449,22 +599,32 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
     }
   }
 
-  // 2. Comentarios: del lead + del proyecto (solo de nivel superior, sin
-  //    stage/substage/checklist/task).
+  // 2. Comentarios: del lead + TODOS los del proyecto, sin importar dónde se
+  //    dejaron (proyecto, etapa, subetapa, ítem de checklist o tarea). La ficha
+  //    del cliente es la historia clínica: cualquier cosa que se anote sobre el
+  //    proyecto tiene que verse acá, y quien trabaja la obra comenta dentro de la
+  //    etapa, no en el proyecto "raíz". Se guarda el contexto (`origen`) para que
+  //    el comentario no llegue suelto y se entienda de dónde salió.
   const comments = await prisma.comment.findMany({
     where: {
       deletedAt: null,
-      OR: [
-        ...(lead ? [{ leadId: lead.id }] : []),
-        { projectId, stageId: null, substageId: null, checklistItemId: null, taskId: null },
-      ],
+      OR: [...(lead ? [{ leadId: lead.id }] : []), { projectId }],
     },
     select: {
       id: true, content: true, leadId: true, createdAt: true,
       author: { select: { id: true, name: true } },
+      stage: { select: { name: true } },
+      substage: { select: { name: true } },
+      checklistItem: { select: { label: true } },
+      task: { select: { title: true } },
     },
   });
   for (const c of comments) {
+    const origen =
+      c.task?.title ??
+      c.checklistItem?.label ??
+      c.substage?.name ??
+      (c.stage ? getStageLabel(c.stage.name) : null);
     items.push({
       id: `cm-${c.id}`,
       source: c.leadId ? "sales" : "project",
@@ -472,6 +632,7 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
       text: c.content,
       autor: c.author ? { id: c.author.id, nombre: c.author.name } : null,
       createdAt: serializeDate(c.createdAt) ?? "",
+      ...(origen ? { meta: { origen } } : {}),
     });
   }
 
@@ -499,12 +660,10 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
     where: {
       projectId,
       action: {
-        in: [
-          AuditAction.stage_advanced,
-          AuditAction.contract_version_published,
-          AuditAction.proforma_version_published,
-          AuditAction.proposal_v2_version_published,
-        ],
+        // Del catálogo de eventos (services/clientes/eventos.ts): solo los
+        // clasificados como "novedad". El resto es auditoría técnica o ruido —
+        // el 80% del log lo son, y es lo que hacía ilegible esta vista.
+        in: ACCIONES_NOVEDAD,
       },
     },
     select: {
@@ -516,8 +675,13 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
     items.push({
       id: `au-${a.id}`,
       source: "project",
-      kind: a.action === AuditAction.stage_advanced ? "stage_change" : "document",
-      text: a.description,
+      kind:
+        a.action === AuditAction.stage_advanced || a.action === AuditAction.status_changed
+          ? "stage_change"
+          : a.action === AuditAction.traspaso_confirmado || a.action === AuditAction.traspaso_escalado
+            ? "handoff"
+            : "document",
+      text: textoEvento(a.action, a.description),
       autor: a.user ? { id: a.user.id, nombre: a.user.name } : null,
       createdAt: serializeDate(a.timestamp) ?? "",
       meta: { action: a.action },

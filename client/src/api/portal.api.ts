@@ -107,7 +107,17 @@ export interface PortalSurveyRow {
   estado: SurveyEstado;
   edicion: number;
   nota: number | null;
+  nota2: number | null;
+  nota3: number | null;
   comentario: string | null;
+  // Las preguntas dependen del tipo de encuesta (las manda el backend).
+  preguntas: {
+    intro: string;
+    pregunta1: string;
+    pregunta2: string;
+    pregunta3: string;
+    comentario: string;
+  };
   respondidaEn: string | null;
   createdAt: string;
 }
@@ -119,7 +129,7 @@ export async function getPortalSurveys(): Promise<PortalSurveyRow[]> {
 
 export async function responderPortalSurvey(
   id: string,
-  body: { nota: number; comentario?: string },
+  body: { nota: number; nota2?: number | null; nota3?: number | null; comentario?: string },
 ): Promise<EncuestaDetalle> {
   const { data } = await apiClient.post<EncuestaDetalle>(`/api/client/surveys/${id}/responder`, body);
   return data;

@@ -83,6 +83,32 @@ export function ClienteFichaPage() {
               {ESTADO_LABELS[ficha.estado]}
             </span>
             {ficha.etapa && <EtapaChip etapa={ficha.etapa} />}
+            {/* Días sin contacto en primer plano: es el dato que define si este
+                cliente necesita atención hoy, y antes solo se veía en el listado. */}
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                ficha.fueraDeCadencia
+                  ? "bg-[var(--color-danger-bg)] text-[var(--color-danger-text)]"
+                  : "bg-[var(--color-bg-card)] text-[var(--color-text-muted)]"
+              }`}
+              title={
+                ficha.fueraDeCadencia
+                  ? "Supera los días sin contacto definidos para su etapa"
+                  : "Días desde el último contacto registrado"
+              }
+            >
+              <Phone className="h-3 w-3" />
+              {ficha.diasSinContacto === null
+                ? "Sin contacto registrado"
+                : ficha.diasSinContacto === 0
+                  ? "Contactado hoy"
+                  : `${ficha.diasSinContacto} d sin contacto`}
+            </span>
+            {ficha.avisoHabilitacionPendiente && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-danger-bg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--color-danger-text)]">
+                ⚠ Avisar que puede encender
+              </span>
+            )}
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[var(--color-text-muted)]">
             {ficha.mail && (

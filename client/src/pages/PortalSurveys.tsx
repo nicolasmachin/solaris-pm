@@ -16,13 +16,25 @@ function getApiErr(err: unknown): string | undefined {
   return (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
 }
 
+const labelClass = "mb-1.5 block text-[12px] font-medium text-[var(--color-text-primary)]";
+
 function ResponderForm({ survey }: { survey: PortalSurveyRow }) {
   const qc = useQueryClient();
   const [nota, setNota] = useState(0);
+  const [nota2, setNota2] = useState(0);
+  const [nota3, setNota3] = useState(0);
   const [comentario, setComentario] = useState("");
+  const p = survey.preguntas;
 
   const responder = useMutation({
-    mutationFn: () => responderPortalSurvey(survey.id, { nota, comentario: comentario.trim() || undefined }),
+    mutationFn: () =>
+      responderPortalSurvey(survey.id, {
+        nota,
+        // Solo la primera es obligatoria; las otras van si el cliente las contestó.
+        nota2: nota2 > 0 ? nota2 : null,
+        nota3: nota3 > 0 ? nota3 : null,
+        comentario: comentario.trim() || undefined,
+      }),
     onSuccess: () => {
       toast.success("¡Gracias por tu opinión!");
       qc.invalidateQueries({ queryKey: ["portal-surveys"] });
@@ -31,16 +43,26 @@ function ResponderForm({ survey }: { survey: PortalSurveyRow }) {
   });
 
   return (
-    <div className="mt-3 space-y-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] p-3">
+    <div className="mt-3 space-y-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] p-3">
       <div>
-        <label className="mb-1.5 block text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]">
-          ¿Cómo calificás tu experiencia?
-        </label>
+        <label className={labelClass}>{p.pregunta1}</label>
         <StarRatingInput value={nota} onChange={setNota} />
       </div>
       <div>
-        <label className="mb-1 block text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]">
-          Comentario (opcional)
+        <label className={labelClass}>
+          {p.pregunta2} <span className="text-[var(--color-text-muted)]">(opcional)</span>
+        </label>
+        <StarRatingInput value={nota2} onChange={setNota2} />
+      </div>
+      <div>
+        <label className={labelClass}>
+          {p.pregunta3} <span className="text-[var(--color-text-muted)]">(opcional)</span>
+        </label>
+        <StarRatingInput value={nota3} onChange={setNota3} />
+      </div>
+      <div>
+        <label className="mb-1 block text-[12px] font-medium text-[var(--color-text-primary)]">
+          {p.comentario} <span className="text-[var(--color-text-muted)]">(opcional)</span>
         </label>
         <textarea
           value={comentario}
@@ -88,9 +110,7 @@ export function PortalSurveys() {
                     <TipoBadge tipo={s.tipo} edicion={s.edicion} />
                     <span className="truncate text-[12px] text-[var(--color-text-muted)]">{s.projectName}</span>
                   </div>
-                  <p className="mt-1.5 text-sm text-[var(--color-text-primary)]">
-                    Contanos cómo fue tu experiencia con la {tipoLabelConEdicion(s.tipo, s.edicion).toLowerCase()}.
-                  </p>
+                  <p className="mt-1.5 text-sm text-[var(--color-text-primary)]">{s.preguntas.intro}</p>
                   <ResponderForm survey={s} />
                 </div>
               ))}

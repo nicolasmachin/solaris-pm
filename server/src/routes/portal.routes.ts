@@ -13,6 +13,7 @@ import {
   serializeTicket,
 } from "../services/tickets/tickets.service.js";
 import { responderEncuesta, serializeSurvey } from "../services/encuestas/encuestas.service.js";
+import { PREGUNTAS_POR_TIPO } from "../services/encuestas/preguntas.js";
 import { calculateTimes } from "../services/uteProcess.service.js";
 import { badRequest, forbidden, notFound, unauthorized } from "../utils/errors.js";
 import { serializeDate } from "../utils/serialization.js";
@@ -906,7 +907,12 @@ export async function registerPortalRoutes(app: FastifyInstance) {
         estado: s.estado,
         edicion: s.edicion,
         nota: s.nota,
+        nota2: s.nota2,
+        nota3: s.nota3,
         comentario: s.comentario,
+        // Las preguntas dependen del tipo de encuesta: cada una mide una etapa
+        // distinta del recorrido. El front las renderiza tal cual vienen.
+        preguntas: PREGUNTAS_POR_TIPO[s.tipo],
         respondidaEn: s.respondidaEn?.toISOString() ?? null,
         createdAt: s.createdAt.toISOString(),
       }));
@@ -922,6 +928,9 @@ export async function registerPortalRoutes(app: FastifyInstance) {
       const body = z
         .object({
           nota: z.number().int().min(1).max(5),
+          // Opcionales: solo la primera se exige, para no sumar fricción.
+          nota2: z.number().int().min(1).max(5).nullable().optional(),
+          nota3: z.number().int().min(1).max(5).nullable().optional(),
           comentario: z.string().trim().max(2000).optional(),
         })
         .parse(request.body);
@@ -930,6 +939,8 @@ export async function registerPortalRoutes(app: FastifyInstance) {
         surveyId: id,
         userId: user.id,
         nota: body.nota,
+        nota2: body.nota2,
+        nota3: body.nota3,
         comentario: body.comentario,
       });
       return serializeSurvey(s);

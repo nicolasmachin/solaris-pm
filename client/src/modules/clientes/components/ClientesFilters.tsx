@@ -36,6 +36,33 @@ export function ClientesFilters({ filters, onChange, asesores }: ClientesFilters
         />
       </div>
 
+      {/* Dos señales accionables, como toggles: los que hay que avisar y los que
+          están por encima de su cadencia de contacto. */}
+      <button
+        type="button"
+        onClick={() => onChange({ avisoPendiente: filters.avisoPendiente ? undefined : true })}
+        title="Habilitados a los que todavía no se les avisó (Regla de Oro)"
+        className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
+          filters.avisoPendiente
+            ? "border-[var(--color-warning-text)] bg-[var(--color-warning-bg)] text-[var(--color-warning-text)] font-medium"
+            : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+        }`}
+      >
+        ⚠ Aviso pendiente
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange({ fueraDeCadencia: filters.fueraDeCadencia ? undefined : true })}
+        title="Superan los días sin contacto definidos para su etapa"
+        className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
+          filters.fueraDeCadencia
+            ? "border-[var(--color-danger-text)] bg-[var(--color-danger-bg)] text-[var(--color-danger-text)] font-medium"
+            : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+        }`}
+      >
+        Fuera de cadencia
+      </button>
+
       <select
         className={selectClass}
         value={filters.estado ?? ""}
@@ -110,6 +137,8 @@ export function ActiveFilterChips({ filters, asesores, onChange, onClearAll }: A
     chips.push({ key: "asesorId", label: a ? a.nombre : "Asesor" });
   }
   if (filters.departamento) chips.push({ key: "departamento", label: filters.departamento });
+  if (filters.avisoPendiente) chips.push({ key: "avisoPendiente", label: "Aviso pendiente" });
+  if (filters.fueraDeCadencia) chips.push({ key: "fueraDeCadencia", label: "Fuera de cadencia" });
 
   if (chips.length === 0) return null;
 

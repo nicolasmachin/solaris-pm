@@ -71,7 +71,11 @@ export async function crearTraspasoSiNoExiste(params: {
       where: {
         projectId: params.projectId,
         tipo: params.tipo,
-        estado: { not: TraspasoEstado.CANCELADO },
+        // Solo dedupea contra uno TODAVÍA PENDIENTE: si el anterior ya se
+        // confirmó, el hecho nuevo merece su propio traspaso. Antes se dedupeaba
+        // contra cualquiera no cancelado, así que un cliente que puntuaba bajo
+        // por segunda vez no generaba ninguna alerta — una sola en toda su vida.
+        estado: TraspasoEstado.PENDIENTE_CONFIRMACION,
       },
     });
     if (existente) return existente;
@@ -100,15 +104,39 @@ export async function confirmarTraspaso(params: {
   if (traspaso.estado !== TraspasoEstado.PENDIENTE_CONFIRMACION) {
     throw badRequest("TRASPASO_ESTADO_INVALIDO", `El traspaso ya está en estado ${traspaso.estado}.`);
   }
+  // Lo puede confirmar quien lo originó, cualquiera de su MISMO ROL, o un ADMIN.
+  // Antes solo podía el originador, y eso convertía cada traspaso en un punto
+  // único de falla: si esa persona estaba de licencia o ya no trabajaba en la
+  // empresa, el traspaso quedaba trabado hasta escalar a los 5 días hábiles. Con
+  // áreas de una sola persona el riesgo es permanente.
   if (traspaso.modalUsuarioId !== params.userId) {
-    throw forbidden("Solo el usuario que originó el traspaso puede confirmarlo.");
+    const [origen, actor] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: traspaso.modalUsuarioId },
+        select: { role: { select: { name: true } } },
+      }),
+      prisma.user.findUnique({
+        where: { id: params.userId },
+        select: { role: { select: { name: true } } },
+      }),
+    ]);
+    const mismoRol = !!origen && !!actor && origen.role.name === actor.role.name;
+    const esAdmin = actor?.role.name === "ADMIN";
+    if (!mismoRol && !esAdmin) {
+      throw forbidden("Solo alguien del área que originó el traspaso (o un admin) puede confirmarlo.");
+    }
   }
 
   const nota = params.notaAlReceptor?.trim() || null;
 
+  // NO se excluye a quien confirma. Antes se lo sacaba de la lista para no
+  // notificarlo de algo que él mismo hizo, pero en los traspasos que genera el
+  // sistema (T11 por nota baja) el "actor" no hizo nada: lo elige el sistema, y es
+  // justamente quien tiene que enterarse. Con un área de una sola persona eso
+  // dejaba la lista de destinatarios primarios en CERO y la alerta no llegaba a
+  // nadie. Preferimos un aviso redundante a ninguno.
   const destinatarios = await calcularDestinatarios(traspaso.tipo, {
     payload: traspaso.payload,
-    excludeUserId: params.userId,
   });
 
   await prisma.$transaction(async (tx) => {

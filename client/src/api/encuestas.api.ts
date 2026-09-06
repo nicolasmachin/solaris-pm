@@ -12,6 +12,9 @@ export interface EncuestaRow {
   estado: SurveyEstado;
   edicion: number;
   nota: number | null;
+  nota2: number | null;
+  nota3: number | null;
+  notaPromedio: number | null; // puntaje de la encuesta
   comentario: string | null;
   notaBaja: boolean;
   respondidaEn: string | null;
@@ -27,6 +30,9 @@ export interface EncuestaDetalle {
   estado: SurveyEstado;
   edicion: number;
   nota: number | null;
+  nota2: number | null;
+  nota3: number | null;
+  notaPromedio: number | null;
   comentario: string | null;
   notaBaja: boolean;
   respondidaEn: string | null;
@@ -69,3 +75,24 @@ export function tipoLabelConEdicion(tipo: SurveyTipo, edicion: number): string {
   if (tipo === "ANIVERSARIO" && edicion > 0) return `Aniversario (año ${edicion})`;
   return TIPO_LABEL[tipo];
 }
+
+
+// Las preguntas de cada encuesta, para mostrarlas junto a las notas en el panel
+// interno. Tienen que coincidir con services/encuestas/preguntas.ts del backend.
+export const PREGUNTAS_POR_TIPO: Record<SurveyTipo, [string, string, string]> = {
+  OBRA: [
+    "Conformidad general con Voltia",
+    "Claridad e información del proceso",
+    "Trabajo del equipo el día de la instalación",
+  ],
+  HABILITACION: [
+    "Conformidad general",
+    "Acompañamiento durante la espera",
+    "Claridad del momento de encender",
+  ],
+  ANIVERSARIO: [
+    "Conformidad con el sistema y con Voltia",
+    "Probabilidad de recomendarnos",
+    "Respuesta recibida cuando necesitó algo",
+  ],
+};

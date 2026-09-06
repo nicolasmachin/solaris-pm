@@ -69,6 +69,8 @@ import {
 } from "../middleware/authorize.middleware.js";
 import { authorizeByStageContext, authorizeProjectEditAnyPipeline } from "../middleware/authorize-by-stage.middleware.js";
 import { createAuditEntriesForChanges, createAuditEntry } from "../services/audit.service.js";
+import { clearUmbralNotaBajaCache } from "../services/encuestas/encuestas.service.js";
+import { activarCheck, crearCheckReagenda } from "../services/clientes/recorrido.service.js";
 import {
   ENSAYO_VIDEO_EVIDENCE_KIND,
   hasReadyEnsayoVideo,
@@ -4901,8 +4903,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
   // objetivo del recorrido (E1/E2/E3, configurable en Admin). Devuelve los que
   // superan el objetivo (o nunca tuvieron contacto), ordenados por atraso.
   app.get("/ops/sin-comunicacion", { preHandler: opsGuard }, async () => {
+    // Incluye COMPLETED y los importados por planilla a propósito: la cartera de
+    // post-habilitación vive justamente ahí, y excluirla dejaba a E3 invisible —
+    // que es donde más fácil se pierde el contacto, porque el cliente ya no
+    // espera nada. `excludedFromMetrics` sí se respeta (son bajas explícitas).
     const projects = await prisma.project.findMany({
-      where: { deletedAt: null, importedFromCsv: false, excludedFromMetrics: false, status: ProjectStatus.ACTIVE },
+      where: {
+        deletedAt: null,
+        excludedFromMetrics: false,
+        status: { in: [ProjectStatus.ACTIVE, ProjectStatus.COMPLETED] },
+      },
       select: {
         id: true, code: true, clientName: true, recorridoManual: true, stageOverride: true,
         stages: { select: OPS_STAGE_SELECT, orderBy: { order: "asc" } },
@@ -6885,6 +6895,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
   app.patch("/settings/system", { preHandler: authorize(Module.CONFIGURACION, Action.EDIT) }, async (request) => {
     const user = ensureUser(request);
     const body = settingsPatchSchema.parse(request.body);
+    // El umbral de nota baja se cachea 5 min en el service de encuestas; si se
+    // acaba de cambiar, hay que invalidarlo o el cambio no se ve hasta que expire.
+    if (body.some((b) => b.key === SettingKey.ENCUESTA_NOTA_BAJA_MAX)) clearUmbralNotaBajaCache();
 
     const updatedSettings = await Promise.all(
       body.map(async ({ key, value }) => {
@@ -9491,6 +9504,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
     plannedWorkStart: dateOnlySchema.optional(),
     plannedWorkEnd: dateOnlySchema.optional(),
     forceRecalculate: z.boolean().optional(),
+    // Motivo de la reprogramación. Obligatorio cuando se mueven las fechas de una
+    // obra YA CONFIRMADA: sin motivo, quien tiene que avisarle al cliente no sabe
+    // qué decirle y termina preguntando. "Por temas operativos" no sirve.
+    motivo: z.string().trim().min(3).max(500).optional(),
   }).strict();
 
   // Helper de G.2: guarda contra recálculos no confirmados cuando hay overrides
@@ -9945,6 +9962,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
       body.plannedWorkStart !== undefined ||
       body.plannedWorkEnd !== undefined;
     if (wantsSegmentReplace) {
+      // Mover una obra YA CONFIRMADA es una reprogramación: exige motivo y genera
+      // su propio pendiente de aviso al cliente. Si todavía era tentativa, no:
+      // ahí nadie prometió nada y no hay nada que explicar.
+      if (existing.confirmedAt && !body.motivo) {
+        throw badRequest(
+          "MOTIVO_REQUERIDO",
+          "Indicá el motivo de la reprogramación: es lo que hay que contarle al cliente.",
+        );
+      }
       // G.2: si los segmentos cambian, validar overrides manuales antes de aplicar
       const guard = await deadlineRecalcGuard(existing.projectId, body.forceRecalculate ?? false);
       if (guard) return reply.code(409).send(guard);
@@ -9971,6 +9997,18 @@ export async function registerApiRoutes(app: FastifyInstance) {
         segments: { orderBy: { startDate: "asc" } },
       },
     });
+
+    // Cada reprogramación genera SU PROPIO pendiente de aviso, con el motivo
+    // adentro. No se reutiliza uno solo: una casilla que se tilda una vez y queda
+    // tildada para siempre es justo lo que hacía que la segunda reagenda no se
+    // avisara.
+    if (wantsSegmentReplace && existing.confirmedAt && body.motivo) {
+      await crearCheckReagenda(
+        existing.projectId,
+        body.motivo,
+        updated.segments?.[0]?.startDate ?? null,
+      );
+    }
 
     await createAuditEntry({
       entityType: AuditEntityType.installation_schedule,
@@ -10016,6 +10054,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
         segments: { orderBy: { startDate: "asc" } },
       },
     });
+
+    // Confirmar la fecha arranca el plazo del aviso al cliente (2 días hábiles).
+    // Antes, confirmar en el calendario no generaba ninguna obligación visible:
+    // de 33 obras agendadas, 6 quedaron sin confirmar y sus fechas ya pasaron.
+    await activarCheck(existing.projectId, "e1_fecha_obra");
 
     await createAuditEntry({
       entityType: AuditEntityType.installation_schedule,
