@@ -1395,6 +1395,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       where: whereClause,
       include: {
         stages: {
+          where: { deletedAt: null },
           orderBy: { order: "asc" },
         },
         solarSystems: {
@@ -1576,6 +1577,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           orderBy: { code: "asc" },
         },
         stages: {
+          where: { deletedAt: null },
           orderBy: { order: "asc" },
           include: {
             responsibleUser: { select: { id: true, name: true, role: { select: { name: true } } } },
@@ -1802,6 +1804,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       where: { id: project.id },
       include: {
         stages: {
+          where: { deletedAt: null },
           orderBy: { order: "asc" },
         },
         solarSystems: {
@@ -4464,6 +4467,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       },
       include: {
         stages: {
+          where: { deletedAt: null },
           orderBy: { order: "asc" },
         },
       },
@@ -5319,6 +5323,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       where: { deletedAt: null, importedFromCsv: false, excludedFromMetrics: false },
       include: {
         stages: {
+          where: { deletedAt: null },
           orderBy: { order: "asc" },
         },
       },
@@ -5352,6 +5357,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       },
       include: {
         stages: {
+          where: { deletedAt: null },
           orderBy: { order: "asc" },
         },
       },
@@ -8151,6 +8157,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       where: { id: project.id },
       include: {
         stages: {
+          where: { deletedAt: null },
           orderBy: { order: "asc" },
           include: {
             substages: {

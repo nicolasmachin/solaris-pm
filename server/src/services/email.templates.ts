@@ -94,3 +94,134 @@ export function emailDailyDigest(params: {
     text: `Resumen del día: ${params.totalCount} ${plural} en tus proyectos. Entrá a ${BASE_URL} para el detalle.`,
   };
 }
+
+// ─── Resumen diario de Experiencia Solar ────────────────────────────────────
+// Espejo de la pantalla del Recorrido: alertas rojas arriba (lo que tiene reloj
+// y ya venció, lo más arrastrado primero) y después los clientes por etapa que
+// están fuera de cadencia o tienen novedad sin avisar. Se manda solo si hay algo.
+
+export type ExpAlerta = {
+  tipo: "habilitacion" | "check" | "reclamo";
+  projectId: string;
+  cliente: string;
+  titulo: string;
+  detalle: string;
+  dias: number | null;
+};
+
+export type ExpBloque = {
+  nombre: string;
+  total: number;
+  clientes: Array<{
+    projectId: string;
+    nombre: string;
+    diasSinContacto: number | null;
+    fueraDeCadencia: boolean;
+    hayNovedad: boolean;
+  }>;
+};
+
+function clienteLink(projectId: string) {
+  return `${BASE_URL}/clientes/${projectId}`;
+}
+
+// Topes de lo que se lista. Un mail con 50 renglones no se lee: se muestra lo
+// más urgente de cada sección y el resto queda como "y N más" con el link a la
+// vista, que es donde se trabaja.
+const EXP_MAX_ALERTAS = 12;
+const EXP_MAX_POR_BLOQUE = 8;
+
+function expYMas(restantes: number): string {
+  if (restantes <= 0) return "";
+  return (
+    `<div style="margin:6px 0 0;font-size:12px;color:#8a9099;">y ${restantes} más — ` +
+    `<a href="${BASE_URL}/clientes/recorrido" style="color:#8a9099;">verlos en el Recorrido</a></div>`
+  );
+}
+
+export function emailExperienciaDigest(params: {
+  userName: string;
+  alertas: ExpAlerta[];
+  bloques: ExpBloque[];
+  total: number;
+}) {
+  const alertasHtml = params.alertas.length
+    ? `<div style="margin:18px 0 6px;font-size:13px;font-weight:700;color:#b91c1c;">` +
+      `Para hoy (${params.alertas.length})</div>` +
+      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" ` +
+      `style="width:100%;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;">` +
+      params.alertas
+        .slice(0, EXP_MAX_ALERTAS)
+        .map(
+          (a) =>
+            `<tr><td style="padding:10px 14px;border-bottom:1px solid #fee2e2;">` +
+            `<a href="${clienteLink(a.projectId)}" style="color:#12151c;font-weight:600;font-size:13px;text-decoration:none;">` +
+            `${escapeHtml(a.cliente)}</a>` +
+            `<div style="font-size:13px;color:#b91c1c;margin-top:2px;">${escapeHtml(a.titulo)}</div>` +
+            `<div style="font-size:12px;color:#8a9099;">${escapeHtml(a.detalle)}</div>` +
+            `</td></tr>`,
+        )
+        .join("") +
+      `</table>` +
+      expYMas(params.alertas.length - EXP_MAX_ALERTAS)
+    : "";
+
+  const bloquesHtml = params.bloques
+    .map((b) => {
+      const rows = b.clientes
+        .slice(0, EXP_MAX_POR_BLOQUE)
+        .map((c) => {
+          const marcas = [
+            c.fueraDeCadencia
+              ? c.diasSinContacto === null
+                ? "sin contacto registrado"
+                : `${c.diasSinContacto} días sin contacto`
+              : null,
+            c.hayNovedad ? "hay novedad sin avisar" : null,
+          ]
+            .filter(Boolean)
+            .join(" · ");
+          return (
+            `<li style="margin:0 0 6px;">` +
+            `<a href="${clienteLink(c.projectId)}" style="color:#12151c;font-weight:600;font-size:13px;text-decoration:none;">` +
+            `${escapeHtml(c.nombre)}</a>` +
+            `<div style="color:#5a616b;font-size:12px;">${escapeHtml(marcas)}</div></li>`
+          );
+        })
+        .join("");
+      return (
+        `<div style="margin:18px 0 6px;font-size:13px;font-weight:700;color:#12151c;">` +
+        `${escapeHtml(b.nombre)} <span style="font-weight:400;color:#8a9099;">` +
+        `${b.clientes.length} de ${b.total}</span></div>` +
+        `<ul style="margin:0;padding-left:18px;">${rows}</ul>` +
+        expYMas(b.clientes.length - EXP_MAX_POR_BLOQUE)
+      );
+    })
+    .join("");
+
+  const contentHtml =
+    `<p style="margin:0 0 4px;">Hola ${escapeHtml(params.userName)}, esto es lo que está pendiente ` +
+    `en el recorrido de los Generadores:</p>` +
+    alertasHtml +
+    bloquesHtml +
+    `<p style="margin:18px 0 0;color:#8a9099;font-size:12px;">Este resumen es la misma vista del Recorrido ` +
+    `en Experiencia Solar. Si no hay nada pendiente, no se manda.</p>`;
+
+  return {
+    subject: `[Voltia PM] Experiencia Solar — ${params.total} pendiente${params.total === 1 ? "" : "s"}`,
+    html: renderEmailLayout({
+      title: "Recorrido de Experiencia Solar",
+      kicker: "Resumen del día",
+      preheader: `${params.alertas.length} alerta${params.alertas.length === 1 ? "" : "s"} para hoy.`,
+      contentHtml,
+      cta: { label: "Abrir el Recorrido", url: `${BASE_URL}/clientes/recorrido` },
+    }),
+    text:
+      `Experiencia Solar — ${params.total} pendientes.\n` +
+      params.alertas
+        .slice(0, EXP_MAX_ALERTAS)
+        .map((a) => `- ${a.cliente}: ${a.titulo} (${a.detalle})`)
+        .join("\n") +
+      `\nVer: ${BASE_URL}/clientes/recorrido`,
+  };
+}

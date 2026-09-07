@@ -10,11 +10,12 @@ import { ClienteTimeline } from "../components/ClienteTimeline";
 import { ClienteTramiteUteCard } from "../components/ClienteTramiteUteCard";
 import { EditableCell } from "../components/EditableCell";
 import { EtapaChip } from "../components/EtapaChip";
+import { RecorridoChecks } from "../components/RecorridoChecks";
 import { ESTADO_LABELS } from "../constants";
 import { useClienteFicha } from "../hooks/useClienteFicha";
 import { useUpdateCliente } from "../hooks/useUpdateCliente";
 
-type Tab = "resumen" | "interacciones" | "historial";
+type Tab = "resumen" | "pasos" | "interacciones" | "historial";
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
@@ -145,6 +146,7 @@ export function ClienteFichaPage() {
       <div className="flex gap-1 border-b border-[var(--color-border)]">
         {([
           ["resumen", "Resumen"],
+          ["pasos", "Pasos"],
           ["interacciones", "Interacciones"],
           ["historial", "Historial"],
         ] as const).map(([key, label]) => (
@@ -236,6 +238,8 @@ export function ClienteFichaPage() {
           </div>
           <ClienteTramiteUteCard tramiteUte={ficha.tramiteUte} />
         </div>
+      ) : tab === "pasos" ? (
+        <RecorridoChecks projectId={projectId ?? ""} />
       ) : tab === "interacciones" ? (
         <div className="space-y-4">
           {canCreate && projectId && <ClienteInteractionForm projectId={projectId} />}

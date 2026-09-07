@@ -54,6 +54,11 @@ export const NOTIFICATION_TYPE_META: Record<
     label: "Encuesta disponible",
     description: "Se generó una encuesta de satisfacción para un Generador (esta le llega al cliente, no al equipo interno).",
   },
+  resumen_experiencia: {
+    label: "Recorrido de Experiencia Solar",
+    description:
+      "Correo aparte con la vista del Recorrido: alertas vencidas arriba y, por etapa, los Generadores fuera de cadencia o con novedad sin avisar. Solo llega si hay algo pendiente.",
+  },
 };
 
 export const ALL_NOTIFICATION_TYPES = Object.keys(NOTIFICATION_TYPE_META) as NotificationType[];

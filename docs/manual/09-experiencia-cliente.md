@@ -278,17 +278,13 @@ cliente está esperando una respuesta. Ese segundo plano es lo que evita que un
 
 Qué del procedimiento está soportado hoy por el sistema, y con qué.
 
-**El proceso está declarado en el pipeline.** `pipeline-definitions.ts` define dos
-carriles **paralelos** de Experiencia Solar, que corren al costado del pipeline
-técnico y no participan del orden lineal ni del cierre del proyecto:
-
-- `SEGUIMIENTO_PREOBRA` — Mensaje de bienvenida · Seguimiento semanal · Registro
-  en bitácora.
-- `SEGUIMIENTO_HABILITACION` — Aviso de inicio de trámite · Seguimiento semanal ·
-  Aviso de habilitación otorgada (marcado como bloqueante).
-
-Más la etapa `POST_HABILITACION` — Capacitación al cliente · Alta en plataforma de
-monitoreo · Garantías y documentación final.
+**El proceso está declarado fuera del pipeline.** El acompañamiento vive en los
+**checks del recorrido** (`RecorridoCheck` + el catálogo de
+`services/clientes/recorrido-checks.ts`), no en etapas del proyecto — ver "Los
+checks del recorrido" más abajo, incluido por qué se sacaron del pipeline en
+septiembre de 2026. Del pipeline técnico solo queda la etapa `POST_HABILITACION`
+(capacitación, alta en monitoreo, garantías y documentación final), que sí marca
+el cierre del proyecto.
 
 **Bitácora de interacciones.** Modelo `ClientInteraction`, con canal
 (`WHATSAPP`, `EMAIL`, `LLAMADA`, `VISITA`, `OTRO`), dirección (`ENTRANTE` /
@@ -310,11 +306,19 @@ Se usa en tres lugares:
 - El filtro **"Fuera de cadencia"** del listado.
 - El endpoint `/ops/sin-comunicacion` del panel de Operaciones del Dashboard.
 
-**Ninguno dispara alertas todavía**: son vistas de consulta. Lo que sí llega solo
-es el resumen diario por correo (ver más abajo).
+Las tres son **vistas de consulta**: mirarlas no dispara nada por sí mismo. Lo que
+empuja es el **resumen diario del recorrido** por correo (ver más abajo), que sale
+de estos mismos datos.
 
 **Los checks del recorrido** (`RecorridoCheck`) viven **fuera del pipeline del
-proyecto**, y eso es una decisión, no una casualidad: al equipo de obra no le
+proyecto**. Hasta septiembre de 2026 el acompañamiento eran dos carriles paralelos
+(`SEGUIMIENTO_PREOBRA` y `SEGUIMIENTO_HABILITACION`) dentro del pipeline; se
+retiraron con `prisma/scripts/retirar-carriles-cx.ts` (soft-delete, reversible).
+Medido antes de hacerlo: **71 proyectos los tenían y solo 1 estaba completado** —
+no se usaban, porque eran casillas que se tildan una vez y quedan tildadas para
+siempre. El enum `StageType` los conserva por los datos históricos.
+
+Que vivan afuera es una decisión, no una casualidad: al equipo de obra no le
 aportan y le ensucian su vista, y acá sí pueden tener plazo y vencer **sin frenar
 la obra**. El avance de etapa lo sigue determinando el proyecto.
 
@@ -333,6 +337,12 @@ la obra**. El avance de etapa lo sigue determinando el proyecto.
 - **Los checks son de aviso al cliente, no de tarea interna.** El de la encuesta
   no es "encuesta enviada" —eso lo hace el sistema solo— sino "le avisé al cliente
   que la tiene", que es lo que falta hoy.
+
+**Dónde se ven.** Pestaña **Pasos** de la ficha del cliente
+(`RecorridoChecks.tsx`), agrupados por etapa y con el avance de cada una. Se
+tildan con un clic, con permiso `EXPERIENCIA_CLIENTES:EDIT` — sin él se ven pero
+no se tocan. El plazo solo se muestra mientras el paso está pendiente. Completar y
+reabrir quedan auditados; repetir el mismo estado devuelve `CHECK_SIN_CAMBIO`.
 
 **Checks dinámicos por reprogramación.** Cada reagenda de una obra ya confirmada
 crea **su propio check** (`crearCheckReagenda`) con el motivo adentro, en vez de
@@ -382,6 +392,38 @@ aviso de habilitación pendiente, traspasos (asignado / por confirmar / escalado
 tickets y encuestas — se cargan con
 `prisma/scripts/seed-digest-experiencia-solar.ts`, que es idempotente. Se dejan
 afuera los avisos de pipeline interno, que para estos roles son ruido.
+
+**Resumen diario del recorrido** (`digest/experiencia-digest.service.ts`). Además
+del anterior sale un **segundo correo, aparte**, a la misma hora. La diferencia no
+es cosmética: el digest general resume **lo que pasó** (notificaciones de las
+últimas 24 h) y este resume **lo que falta hacer**. Es la pantalla del Recorrido
+empujada al mail, con su misma estructura y su mismo orden, para que el correo y
+la app no cuenten dos historias distintas:
+
+1. **Alertas rojas arriba** — lo que tiene reloj y ya venció: avisos de
+   habilitación pendientes, checks del recorrido con el plazo pasado y reclamos
+   del cliente sin respuesta. Ordenadas por días vencidos, de más a menos.
+2. **Por etapa (E1 → E2 → E3)** — los clientes fuera de cadencia o con novedad sin
+   avisar, en el orden que ya resuelve `getRecorrido` (no se reordena en el mail).
+
+Decisiones que lo gobiernan:
+
+- **Los pendientes que se arrastran no tienen sección propia**: se marcan dentro
+  de la alerta con los días que llevan vencidos. Una lista separada obligaría a
+  leer el mismo cliente dos veces.
+- **Si no hay nada pendiente, no se manda.** Un correo vacío todos los días enseña
+  a ignorarlo.
+- **Hay tope de renglones** (12 alertas, 8 clientes por etapa) y el resto queda
+  como "y N más" con el link al Recorrido, que es donde se trabaja. Medido en
+  desarrollo: sin tope el correo salía con 54 renglones.
+- **Un reclamo cuenta como sin responder** cuando está `ABIERTO`, lo abrió el
+  cliente desde el portal (`origenCliente`) y **no tiene ningún comentario de
+  alguien de Voltia**. Es lo que mide el compromiso de responder el mismo día
+  hábil.
+- **Sin roles hardcodeados**: quién lo recibe es opt-in por rol, con la misma
+  matriz de Administración, mediante el tipo `resumen_experiencia`. No es una
+  notificación in-app: existe en el enum sólo para que la matriz pueda
+  configurarlo.
 
 **Regla de Oro (hito 5).** El job `aviso-habilitacion.service.ts` corre cada 3
 horas: a las 24 h le recuerda al rol Experiencia Solar que avise al cliente, y a
@@ -455,6 +497,7 @@ nosotros.
 | Tickets | `TICKETS` | VIEW / CREATE / EDIT para las áreas internas; DELETE sólo ADMIN |
 | Encuestas | `ENCUESTAS:VIEW` | sólo lectura: las genera el sistema y las responde el cliente |
 | Confirmar traspasos | `TRASPASOS:VIEW/CONFIRM` | EXPERIENCIA_SOLAR entre otros |
+| Recibir el resumen diario del recorrido | ninguno — es opt-in por rol en **Administración → Resumen diario** | EXPERIENCIA_SOLAR, POSTVENTA (cargados por el seed) |
 
 **`OPERACIONES` e `INGENIERIA` no tienen `EXPERIENCIA_CLIENTES:CREATE`**, así que
 no pueden cargar en la bitácora del cliente — pero **sí pueden comentar el

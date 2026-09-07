@@ -325,3 +325,32 @@ export async function exportClientes(filters: ClientesFilters): Promise<void> {
   a.remove();
   window.URL.revokeObjectURL(url);
 }
+
+
+// ─── Checks del recorrido de Experiencia Solar ───────────────────────────────
+
+export interface RecorridoCheck {
+  id: string;
+  recorrido: ClienteRecorrido;
+  codigo: string;
+  titulo: string;
+  detalle: string | null;
+  orden: number;
+  venceEn: string | null;
+  vencido: boolean;
+  completado: boolean;
+  completadoEn: string | null;
+  completadoPor: string | null;
+  nota: string | null;
+  esDinamico: boolean;
+}
+
+export async function getChecks(projectId: string): Promise<RecorridoCheck[]> {
+  const { data } = await apiClient.get<{ checks: RecorridoCheck[] }>(`/api/clientes/${projectId}/checks`);
+  return data.checks;
+}
+
+export async function patchCheck(checkId: string, completado: boolean): Promise<RecorridoCheck> {
+  const { data } = await apiClient.patch<RecorridoCheck>(`/api/clientes/checks/${checkId}`, { completado });
+  return data;
+}

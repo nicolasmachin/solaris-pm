@@ -1,6 +1,16 @@
 # Novedades
 
-## v10.0
+## v10.1
+
+### 7 de septiembre de 2026
+
+#### Experiencia Solar — el Recorrido llega por correo cada mañana
+
+- Un **correo diario** con lo que está pendiente en el Recorrido: arriba **lo que ya venció** —avisos de habilitación sin dar, pasos con el plazo pasado y reclamos del cliente sin responder—, con **lo más arrastrado primero**; abajo, **etapa por etapa**, quiénes están fuera de cadencia o tienen algo nuevo sin avisar.
+- **Si no hay nada pendiente, no se manda.** Un correo vacío todos los días enseña a ignorarlo.
+- Cada nombre lleva directo a la ficha del cliente. Cuando hay muchos se listan los más urgentes y el resto queda como **"y N más"**, con el link al Recorrido.
+- Quién lo recibe se define **por rol** en **Administración → Resumen diario**, con la opción nueva **"Recorrido de Experiencia Solar"**. Ya viene activada para Experiencia Solar y Posventa.
+- Es un correo **aparte del resumen diario de siempre**: aquel cuenta lo que pasó, este cuenta lo que falta hacer.
 
 ### 4 de septiembre de 2026
 
@@ -8,6 +18,22 @@
 
 - El listado de Generadores tiene dos **filtros nuevos**: **"⚠ Aviso pendiente"** (los que ya están habilitados y todavía no se les avisó que pueden encender) y **"Fuera de cadencia"** (los que llevan más días sin contacto de los definidos para su etapa). Antes había que buscarlos a ojo.
 - La columna **Último contacto** ahora muestra **cuántos días** pasaron y se pinta en rojo usando los días definidos en **Administración → Cadencia de contacto**. Antes avisaba siempre a los 7 días, sin importar la etapa del cliente.
+
+#### Proyectos — el pipeline queda solo con las etapas de obra
+
+- Los **carriles de Experiencia Solar salieron del pipeline del proyecto**: al equipo de obra no le aportaban y le ensuciaban la vista. El acompañamiento al cliente ahora vive en la **pestaña Pasos** de su ficha, donde además puede tener plazos y vencer **sin frenar la obra**.
+- Se sacaron de los proyectos que ya los tenían. **No se perdió nada**: quedan guardados y son recuperables. En la práctica no se usaban — de todos los proyectos que los tenían, uno solo tenía algo tildado.
+
+#### Arreglos
+
+- **Las etapas borradas de un proyecto ya no se siguen mostrando.** Varias pantallas las traían igual, así que una etapa eliminada seguía apareciendo en el pipeline como si existiera.
+
+#### Experiencia Solar — nueva pestaña "Pasos" en la ficha del cliente
+
+- Cada cliente tiene ahora la pestaña **Pasos**, con su acompañamiento agrupado por etapa y el avance de cada una (por ejemplo "3/7"). Se tildan con un clic.
+- Los que tienen plazo muestran **cuándo vencen**, y los vencidos quedan resaltados. El plazo solo se muestra mientras el paso está pendiente: uno completado tarde ya no es un pendiente.
+- Cada paso trae **la aclaración de qué hay que hacer** mientras está sin completar, y una vez hecho muestra quién lo hizo y cuándo.
+- Los pasos de reprogramación traen **el motivo y la fecha nueva** adentro, así quien avisa no tiene que ir a buscar el dato.
 
 #### Experiencia Solar — los pasos de cada cliente, con plazo
 
@@ -57,6 +83,8 @@
 - **Experiencia Solar y Postventa ahora reciben el resumen diario por correo.** Hasta ahora solo lo recibía el administrador, así que quien acompaña al cliente no se enteraba de nada salvo que entrara a la aplicación a mirar la campana.
 - **La alerta por una encuesta con nota baja ya no se pierde.** Se calculaba excluyendo a quien la originaba y, como el área es de una sola persona, no le llegaba a nadie. Ahora llega siempre.
 
+
+## v10.0
 
 ### 28 de agosto de 2026
 

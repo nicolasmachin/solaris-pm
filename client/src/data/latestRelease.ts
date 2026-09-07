@@ -23,14 +23,46 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "10.0",
-  date: "28 de agosto de 2026",
+  version: "10.1",
+  date: "7 de septiembre de 2026",
   sections: [
     {
-      title: "Experiencia Solar — el historial del cliente muestra todo lo que se anota del proyecto",
+      title: "Experiencia Solar — el Recorrido, la nueva vista del acompañamiento al cliente",
       items: [
-        'Los comentarios dejados dentro de una etapa, una subetapa o una tarea del proyecto ahora también aparecen en el Historial de la ficha del cliente. Antes solo se veían los del proyecto en general, así que lo que anotaba quien trabajaba en la obra no llegaba a Experiencia Solar.',
-        'Cada comentario indica de dónde salió (por ejemplo "en Ejecución de obra"), para entender el contexto sin abrir el proyecto.',
+        "Una pestaña Recorrido con la cartera dividida en las tres etapas (Pre-obra, Habilitación, Post-Habilitación) y los clientes ordenados por días sin contacto: los que nunca tuvieron contacto van primero.",
+        "El triángulo rojo marca que hay que avisarle algo y el reloj corre; el puntito marca que hay algo nuevo para mirar y a propósito no cambia el orden.",
+        'Filtros nuevos en el listado: "⚠ Aviso pendiente" y "Fuera de cadencia", y la columna Último contacto muestra los días y se pinta según la cadencia definida para cada etapa.',
+      ],
+    },
+    {
+      title: "Experiencia Solar — cada cliente con sus pasos y sus plazos",
+      items: [
+        "Nueva pestaña Pasos en la ficha del cliente, con el acompañamiento agrupado por etapa, el avance de cada una y la aclaración de qué hay que hacer en cada paso.",
+        "Los plazos arrancan con el hecho, no con la creación: confirmar la fecha de obra abre el aviso al cliente, y que UTE habilite abre el aviso de que ya puede encender y los pasos del cierre.",
+        "Reprogramar una obra confirmada ahora exige el motivo y genera un aviso propio por cada reprogramación, en vez de una casilla que se tilda una sola vez.",
+        "Estos pasos no frenan la obra ni el trámite: vencen y se ven, pero no bloquean.",
+      ],
+    },
+    {
+      title: "Experiencia Solar — el Recorrido llega por correo cada mañana",
+      items: [
+        "Un correo diario con lo pendiente: arriba lo que ya venció (avisos de habilitación, pasos con plazo pasado y reclamos sin responder), con lo más arrastrado primero; abajo, etapa por etapa, quiénes están fuera de cadencia o tienen algo nuevo sin avisar.",
+        "Si no hay nada pendiente, no se manda. Quién lo recibe se define por rol en Administración → Resumen diario.",
+      ],
+    },
+    {
+      title: "Encuestas — tres preguntas por encuesta, y distintas según el momento",
+      items: [
+        "Cada encuesta pasa a tener tres preguntas en vez de una, y cada una pregunta cosas distintas según el momento (la obra, la espera del trámite, el año cumplido).",
+        "Solo la primera es obligatoria y el puntaje es el promedio de las contestadas. Al hacer clic en una encuesta se abre la respuesta completa, en vez de llevar a la ficha del cliente.",
+        "La segunda vez que un cliente puntúa bajo ahora sí genera aviso: antes, si ya se le había atendido una, las siguientes quedaban en silencio.",
+      ],
+    },
+    {
+      title: "Proyectos — el pipeline queda solo con las etapas de obra",
+      items: [
+        "Los carriles de Experiencia Solar salieron del pipeline del proyecto: al equipo de obra le ensuciaban la vista. El acompañamiento vive ahora en la pestaña Pasos de la ficha del cliente.",
+        "Se arregló que las etapas borradas de un proyecto se siguieran mostrando en varias pantallas.",
       ],
     },
   ],
@@ -61,6 +93,13 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "10.0",
+    shortDate: "28 ago",
+    highlights: [
+      "El Historial de la ficha del cliente muestra también los comentarios dejados dentro de una etapa, una subetapa o una tarea del proyecto, indicando de dónde salió cada uno.",
+    ],
+  },
   {
     version: "9.9",
     shortDate: "27 ago",

@@ -4,6 +4,7 @@ import { prisma } from "../../lib/prisma.js";
 import { sendEmail } from "../email.service.js";
 import { emailDailyDigest, type DigestGroup } from "../email.templates.js";
 import { getDigestSendHour, getEnabledByRole } from "./digest-config.service.js";
+import { enviarDigestExperiencia } from "./experiencia-digest.service.js";
 
 // Resumen diario por persona: junta las notificaciones in-app de las últimas N
 // horas de cada usuario interno y manda UN solo mail agrupado por proyecto.
@@ -123,6 +124,12 @@ export function startDailyDigestJob() {
       const r = await enviarDigestDiario(now);
       if (r.emails > 0) {
         console.log(`[daily-digest] ${r.notifs} notificaciones → ${r.emails} mails a ${r.users} usuarios`);
+      }
+      // Resumen del recorrido de Experiencia Solar: va a la misma hora pero como
+      // mail aparte, porque no resume lo que pasó sino lo que falta hacer.
+      const e = await enviarDigestExperiencia(now);
+      if (e.emails > 0) {
+        console.log(`[daily-digest] experiencia solar: ${e.total} pendientes → ${e.emails} mails`);
       }
     } catch (err) {
       console.error("[daily-digest] job error:", err);

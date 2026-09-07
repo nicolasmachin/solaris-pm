@@ -31,6 +31,7 @@ const PREFERENCIAS: Record<string, NotificationType[]> = {
     NotificationType.traspaso_escalado,
     NotificationType.ticket_actualizado,
     NotificationType.encuesta_disponible,
+    NotificationType.resumen_experiencia,
   ],
   POSTVENTA: [
     NotificationType.aviso_habilitacion_pendiente,
@@ -38,6 +39,7 @@ const PREFERENCIAS: Record<string, NotificationType[]> = {
     NotificationType.traspaso_por_confirmar,
     NotificationType.ticket_actualizado,
     NotificationType.encuesta_disponible,
+    NotificationType.resumen_experiencia,
   ],
 };
 

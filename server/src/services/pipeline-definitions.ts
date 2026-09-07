@@ -650,71 +650,17 @@ export const PIPELINE_DEFINITIONS: StageTemplate[] = [
       },
     ],
   },
-  // ─── Etapas PARALELAS de Experiencia Solar (§10) ───────────────────────────
-  // Corren al costado del pipeline técnico: no tienen fechas, no participan del
-  // orden lineal ni del cierre del proyecto. Se operan por sus sub-etapas.
-  {
-    order: 9,
-    name: StageType.SEGUIMIENTO_PREOBRA,
-    weight: 0,
-    substages: [
-      {
-        order: 1,
-        name: "Mensaje de bienvenida al Generador",
-        responsableRol: "Experiencia Solar",
-        responsible: "Experiencia Solar",
-        isSystem: true,
-        checklist: [{ label: "Bienvenida enviada al Generador", isRequired: true }],
-      },
-      {
-        order: 2,
-        name: "Seguimiento semanal (preobra)",
-        responsableRol: "Experiencia Solar",
-        responsible: "Experiencia Solar",
-        isSystem: true,
-        checklist: [{ label: "Contacto semanal al día", isRequired: true }],
-      },
-      {
-        order: 3,
-        name: "Registro en bitácora",
-        responsableRol: "Experiencia Solar",
-        responsible: "Experiencia Solar",
-        isSystem: true,
-        checklist: [{ label: "Interacciones registradas en la bitácora", isRequired: true }],
-      },
-    ],
-  },
-  {
-    order: 10,
-    name: StageType.SEGUIMIENTO_HABILITACION,
-    weight: 0,
-    substages: [
-      {
-        order: 1,
-        name: "Aviso de inicio de trámite UTE al Generador",
-        responsableRol: "Experiencia Solar",
-        responsible: "Experiencia Solar",
-        isSystem: true,
-        checklist: [{ label: "Generador informado del inicio del trámite", isRequired: true }],
-      },
-      {
-        order: 2,
-        name: "Seguimiento semanal (habilitación)",
-        responsableRol: "Experiencia Solar",
-        responsible: "Experiencia Solar",
-        isSystem: true,
-        checklist: [{ label: "Contacto semanal al día", isRequired: true }],
-      },
-      {
-        order: 3,
-        name: "Aviso de habilitación otorgada (Regla de Oro 24-48h)",
-        responsableRol: "Experiencia Solar",
-        responsible: "Experiencia Solar",
-        isSystem: true,
-        checklist: [{ label: "Generador avisado de que puede encender", isRequired: true, isBlocker: true }],
-      },
-    ],
-  },
+  // ─── Los carriles de Experiencia Solar YA NO VIVEN ACÁ ─────────────────────
+  // Se movieron al módulo de Experiencia Solar (modelo `RecorridoCheck`), por dos
+  // razones: a Operaciones no le aportaban y le ensuciaban su vista del proyecto,
+  // y sobre todo allá pueden tener fechas, responsable y estados que vencen SIN
+  // frenar la obra. El avance de etapa lo determina el proyecto; Experiencia
+  // Solar acompaña, no avanza el recorrido.
+  //
+  // El enum `StageType` conserva SEGUIMIENTO_PREOBRA y SEGUIMIENTO_HABILITACION
+  // por los datos históricos (71 proyectos los tienen). Al no estar acá, los
+  // proyectos nuevos ya no los crean; los viejos se retiran con
+  // `prisma/scripts/retirar-carriles-cx.ts`.
 ];
 
 export function getStageDefinition(stageType: StageType) {

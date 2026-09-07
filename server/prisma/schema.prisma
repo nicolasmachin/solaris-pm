@@ -194,6 +194,9 @@ enum NotificationType {
   aviso_habilitacion_pendiente
   ticket_actualizado
   encuesta_disponible
+  // No es una notificación in-app: marca qué roles reciben por correo el resumen
+  // diario del recorrido de Experiencia Solar (ver services/digest/experiencia-digest.service.ts).
+  resumen_experiencia
 }
 
 // ─── Traspasos entre áreas (módulo Traspasos v1) ─────────────────────────────
