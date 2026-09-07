@@ -2,12 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { Download, Eye, Search, Send, SlidersHorizontal, Trash2, Upload, UserCheck, UserPlus } from "lucide-react";
+import { AlertTriangle, Circle, Download, Eye, Search, Send, SlidersHorizontal, Trash2, Upload, UserCheck, UserPlus } from "lucide-react";
 
 import {
   deleteCliente,
   exportClientes,
-  type ClienteEstado,
   type ClienteListItem,
   type ClienteRecorrido,
   type ClientesFilters as Filters,
@@ -26,7 +25,7 @@ import { ImportClientesModal } from "../components/ImportClientesModal";
 import { CrearUsuarioModal } from "../components/CrearUsuarioModal";
 import { ReenviarAccesoModal } from "../components/ReenviarAccesoModal";
 import { EtapaChip } from "../components/EtapaChip";
-import { DEPARTAMENTOS_UY, ESTADO_LABELS, RECORRIDO_SHORT } from "../constants";
+import { RECORRIDO_SHORT } from "../constants";
 import { usePortalPreviewStore } from "../../../store/portalPreview.store";
 import { useClientes } from "../hooks/useClientes";
 import { useUpdateCliente } from "../hooks/useUpdateCliente";
@@ -48,23 +47,6 @@ function fmtDate(iso: string | null): string {
 function daysSince(iso: string | null): number | null {
   if (!iso) return null;
   return Math.floor((Date.now() - new Date(iso).getTime()) / (24 * 60 * 60 * 1000));
-}
-
-const ESTADO_PILL: Record<ClienteEstado, string> = {
-  ACTIVO: "bg-[var(--color-state-active-bg)] text-[var(--color-state-active-text)]",
-  FINALIZADO: "bg-[var(--color-state-done-bg)] text-[var(--color-state-done-text)]",
-  ARCHIVADO: "bg-[var(--color-bg-app)] text-[var(--color-text-muted)]",
-  PROSPECTO: "bg-[var(--color-warning-bg)] text-[var(--color-warning-text)]",
-};
-
-function EstadoPill({ estado }: { estado: ClienteEstado }) {
-  return (
-    <span
-      className={`inline-flex items-center rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${ESTADO_PILL[estado]}`}
-    >
-      {ESTADO_LABELS[estado]}
-    </span>
-  );
 }
 
 
@@ -161,24 +143,50 @@ export function ClientesPage() {
   // El search vive en searchInput; el resto en filters.
   const filtersForChips: Filters = { ...filters, search: searchInput.trim() || undefined };
 
-  const deptOptions = [
-    { value: "", label: "— Sin departamento —" },
-    ...DEPARTAMENTOS_UY.map((d) => ({ value: d, label: d })),
-  ];
   const asesorOptions = [
     { value: "", label: "Sin asignar" },
     ...asesores.map((a) => ({ value: a.id, label: a.nombre })),
   ];
-  const estadoOptions = (Object.keys(ESTADO_LABELS) as ClienteEstado[]).map((e) => ({
-    value: e,
-    label: ESTADO_LABELS[e],
-  }));
   const etapaOptions = [
     { value: "", label: "— Sin etapa —" },
     ...(["E1", "E2", "E3"] as ClienteRecorrido[]).map((r) => ({ value: r, label: RECORRIDO_SHORT[r] })),
   ];
 
   const columns: Column<ClienteListItem>[] = [
+    {
+      // Las dos señales del recorrido, juntas y primeras: son lo que hace que la
+      // lista se lea de un golpe. Significan cosas distintas a propósito —
+      // el triángulo pide una acción con plazo, el punto solo dice "mirá esto"—
+      // y por eso ninguna de las dos reordena la lista.
+      key: "señales",
+      label: "",
+      className: "w-8",
+      cardRole: "hidden",
+      render: (c) => (
+        <div className="flex items-center gap-1">
+          {c.avisoHabilitacionPendiente ? (
+            <span title="Acción requerida: avisarle que ya puede encender" className="flex">
+              <AlertTriangle
+                className="h-3.5 w-3.5 shrink-0 text-[var(--color-danger-text)]"
+                aria-label="Hay que avisarle que puede encender"
+              />
+            </span>
+          ) : (
+            <span className="w-3.5 shrink-0" />
+          )}
+          {c.hayNovedad ? (
+            <span title="Novedad: pasó algo y todavía no se lo dijimos" className="flex">
+              <Circle
+                className="h-2 w-2 shrink-0 fill-[var(--color-accent)] text-[var(--color-accent)]"
+                aria-label="Hay algo nuevo desde el último contacto"
+              />
+            </span>
+          ) : (
+            <span className="w-2 shrink-0" />
+          )}
+        </div>
+      ),
+    },
     {
       key: "nombre",
       label: "Nombre",
@@ -192,21 +200,6 @@ export function ClientesPage() {
           canEdit={canEdit}
           ariaLabel="nombre"
           onSave={(v) => saveField(c.projectId, { nombre: v ?? "" })}
-        />
-      ),
-    },
-    {
-      key: "estado",
-      label: "Estado",
-      render: (c) => (
-        <EditableCell
-          value={c.estado}
-          type="text"
-          options={estadoOptions}
-          canEdit={canEdit}
-          ariaLabel="estado"
-          render={(v) => <EstadoPill estado={(v ?? c.estado) as ClienteEstado} />}
-          onSave={(v) => saveField(c.projectId, { estado: (v ?? c.estado) as ClienteEstado })}
         />
       ),
     },
@@ -274,38 +267,6 @@ export function ClientesPage() {
       ),
     },
     {
-      key: "departamento",
-      label: "Departamento",
-      className: "text-[var(--color-text-muted)]",
-      render: (c) => (
-        <EditableCell
-          value={c.departamento}
-          type="text"
-          options={deptOptions}
-          canEdit={canEdit}
-          ariaLabel="departamento"
-          onSave={(v) => saveField(c.projectId, { departamento: v ?? "" })}
-        />
-      ),
-    },
-    {
-      key: "potenciaKwp",
-      label: "Potencia",
-      sortable: true,
-      cardRole: "highlight",
-      className: "tabular-nums",
-      render: (c) => (
-        <EditableCell
-          value={c.potenciaKwp != null ? String(c.potenciaKwp) : null}
-          type="number"
-          canEdit={canEdit}
-          ariaLabel="potencia"
-          render={(v) => (v != null && v !== "" ? `${v} kWp` : <span className="text-[var(--color-text-muted)]">—</span>)}
-          onSave={(v) => saveField(c.projectId, { potencia: v ? Number(v) : 0 })}
-        />
-      ),
-    },
-    {
       key: "fechaEntrega",
       label: "Entrega",
       sortable: true,
@@ -320,29 +281,6 @@ export function ClientesPage() {
           onSave={(v) => saveField(c.projectId, { fechaEntrega: v })}
         />
       ),
-    },
-    {
-      key: "proximoMantenimiento",
-      label: "Próx. mantenimiento",
-      sortable: true,
-      className: "text-[11px]",
-      render: (c) => {
-        const m = c.mantenimiento;
-        if (!m) return <span className="text-[var(--color-text-muted)]">—</span>;
-        const inminente = m.diasRestantes <= 30;
-        const falta = m.diasRestantes === 0 ? "hoy" : `en ${m.diasRestantes} d`;
-        return (
-          <span
-            className={
-              inminente
-                ? "font-medium text-[var(--color-warning-text)]"
-                : "text-[var(--color-text-muted)]"
-            }
-          >
-            cumple {m.aniosQueCumple} {m.aniosQueCumple === 1 ? "año" : "años"} · {falta}
-          </span>
-        );
-      },
     },
     {
       key: "telefono",
@@ -374,41 +312,45 @@ export function ClientesPage() {
     },
     {
       key: "usuario",
-      label: "Usuario",
+      label: "Acceso",
+      className: "w-14",
       render: (c) =>
         c.hasPortalUser ? (
-          <div className="inline-flex items-center gap-1.5">
-            <span className="inline-flex items-center gap-1 rounded-full bg-green-500/15 px-2 py-0.5 text-[11px] font-medium text-green-400">
-              <UserCheck className="h-3.5 w-3.5" /> Con acceso
+          <div className="inline-flex items-center gap-1">
+            <span title="Tiene acceso al portal" className="flex">
+              <UserCheck className="h-4 w-4 text-green-400" aria-label="Con acceso al portal" />
             </span>
             {canCreate && (
               <button
                 type="button"
-                title="Reenviar acceso (resetea la contraseña y arma el mensaje)"
+                title="Reenviar el acceso (resetea la contraseña y arma el mensaje)"
+                aria-label={`Reenviar el acceso de ${c.nombre}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   setReenviarAccesoFor(c);
                 }}
-                className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-card-hover)] hover:text-[var(--color-text-primary)]"
+                className="rounded p-0.5 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-bg-card-hover)] hover:text-[var(--color-text-primary)]"
               >
-                <Send className="h-3 w-3" /> Reenviar
+                <Send className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
         ) : canCreate ? (
           <button
             type="button"
+            title="Sin acceso al portal — crear el usuario"
+            aria-label={`Crear el usuario de portal de ${c.nombre}`}
             onClick={(e) => {
               e.stopPropagation();
               setCrearUserFor(c);
             }}
-            className="inline-flex items-center gap-1 rounded-full border border-[var(--color-accent)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/10"
+            className="rounded p-0.5 text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/10"
           >
-            <UserPlus className="h-3.5 w-3.5" /> Crear usuario
+            <UserPlus className="h-4 w-4" />
           </button>
         ) : (
-          <span className="inline-flex items-center gap-1 text-[11px] text-[var(--color-text-muted)]">
-            <UserPlus className="h-3.5 w-3.5" /> Sin acceso
+          <span title="Sin acceso al portal" className="flex">
+            <UserPlus className="h-4 w-4 text-[var(--color-text-muted)]" aria-label="Sin acceso" />
           </span>
         ),
     },

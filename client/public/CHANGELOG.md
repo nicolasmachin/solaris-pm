@@ -4,6 +4,21 @@
 
 ### 7 de septiembre de 2026
 
+#### Experiencia Solar — la ficha del cliente ahora es una sola pantalla
+
+- Se terminaron las cuatro pestañas (Resumen, Pasos, Interacciones, Historial). Para saber cómo venía un cliente había que recorrer las cuatro y acordarse de lo de la anterior.
+- Arriba hay ahora un **pipeline del recorrido** con las tres etapas —Pre-obra, Habilitación, Post-habilitación—, que **se lee igual que el pipeline del proyecto**: mismo estado, mismos puntitos, mismos colores. Marca en qué etapa está el cliente y muestra el avance de cada una.
+- **Se hace clic en una etapa y abajo aparecen sus pasos**, con su botón de plantillas.
+- **A la derecha, todo el historial de novedades, lo más nuevo arriba**, y arriba de todo el registro de un contacto nuevo. Ya no hay que ir a otra pestaña para ver qué pasó.
+- Los datos del cliente pasaron a una tarjeta plegable: se consultan de a ratos, no son el trabajo. Desde ahí se sigue editando el mail, el teléfono, el estado y la fecha de entrega.
+- **Las interacciones se editan y se borran desde el historial**, con el lápiz y el tacho que aparecen al pasar el mouse. Sigue valiendo la misma regla: solo el autor o un administrador.
+
+#### Experiencia Solar — el listado, más liviano y con las señales a la vista
+
+- Se sacaron las columnas **Estado**, **Departamento**, **Potencia** y **Próximo mantenimiento**: no aportaban y empujaban el resto fuera de la pantalla. El estado ya se deduce de la etapa, y todos esos datos siguen en la ficha del cliente.
+- **Aparecieron las dos señales de notificación** que faltaban, en una columna angosta al principio de cada fila: el **triángulo rojo** (acción requerida, hay plazo) y el **punto amarillo** (hay una novedad que el cliente todavía no sabe). Pasando el mouse por encima dice cuál es cuál.
+- La columna de acceso al portal es ahora **solo un ícono**: verde si tiene acceso, amarillo para crearlo. Se sacaron los botones grandes de "Crear usuario" y "Reenviar".
+
 #### Experiencia Solar — los mensajes modelo, a un clic desde el cliente
 
 - En la pestaña **Pasos** de la ficha, cada etapa tiene ahora un botón **"Plantillas"** con **los mensajes modelo de esa etapa**, y cada paso que tiene mensaje propio muestra un ícono para abrirlo directo.

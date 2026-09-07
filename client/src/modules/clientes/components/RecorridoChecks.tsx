@@ -1,19 +1,13 @@
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { AlertTriangle, Check, MessageSquare } from "lucide-react";
 
-import { getChecks, patchCheck, type ClienteRecorrido, type RecorridoCheck } from "../../../api/clientes.api";
-import { Spinner } from "../../../components/ui/Spinner";
+import { patchCheck, type ClienteRecorrido, type RecorridoCheck } from "../../../api/clientes.api";
 import { usePermission } from "../../../hooks/usePermission";
 import { plantillaDeCheck } from "../plantillas";
 import { PlantillasModal } from "./PlantillasModal";
-
-const BLOQUES: Array<{ codigo: ClienteRecorrido; label: string }> = [
-  { codigo: "E1", label: "E1 · De la venta a la obra" },
-  { codigo: "E2", label: "E2 · De la obra a la habilitación" },
-  { codigo: "E3", label: "E3 · Post-habilitación" },
-];
+import { BLOQUES } from "./RecorridoPipeline";
 
 function fmt(iso: string | null): string {
   if (!iso) return "";
@@ -102,16 +96,24 @@ function Fila({ c, canEdit, onToggle, onVerMensaje, pending }: {
   );
 }
 
-export function RecorridoChecks({ projectId, cliente }: { projectId: string; cliente: string }) {
+/**
+ * Los pasos de UNA etapa del recorrido. La etapa la elige el pipeline de arriba:
+ * mostrar las tres a la vez obligaba a scrollear para llegar a lo de hoy.
+ */
+export function RecorridoChecks({
+  projectId,
+  cliente,
+  recorrido,
+  checks,
+}: {
+  projectId: string;
+  cliente: string;
+  recorrido: ClienteRecorrido;
+  checks: RecorridoCheck[];
+}) {
   const qc = useQueryClient();
   const canEdit = usePermission("EXPERIENCIA_CLIENTES", "EDIT");
-  // Qué plantilla abrir: la etapa manda (define la lista) y el id preselecciona.
-  const [plantillas, setPlantillas] = useState<{ recorrido: ClienteRecorrido; id?: string } | null>(null);
-
-  const { data: checks, isLoading } = useQuery({
-    queryKey: ["cliente-checks", projectId],
-    queryFn: () => getChecks(projectId),
-  });
+  const [plantillaAbierta, setPlantillaAbierta] = useState<{ id?: string } | null>(null);
 
   const toggle = useMutation({
     mutationFn: ({ id, completado }: { id: string; completado: boolean }) => patchCheck(id, completado),
@@ -122,77 +124,60 @@ export function RecorridoChecks({ projectId, cliente }: { projectId: string; cli
     onError: () => toast.error("No se pudo actualizar el paso"),
   });
 
-  if (isLoading) return <div className="flex justify-center py-8"><Spinner size={20} /></div>;
-  if (!checks || checks.length === 0) {
-    return <p className="py-8 text-center text-sm text-[var(--color-text-muted)]">Sin pasos para este cliente.</p>;
-  }
-
-  const pendientesConPlazo = checks.filter((c) => !c.completado && c.vencido).length;
+  const bloque = BLOQUES.find((b) => b.codigo === recorrido);
+  const delBloque = checks.filter((c) => c.recorrido === recorrido);
+  const hechos = delBloque.filter((c) => c.completado).length;
 
   return (
-    <div className="space-y-4">
-      <p className="text-[12px] text-[var(--color-text-muted)]">
-        Los pasos de acompañamiento de este cliente. Los plazos arrancan cuando pasa el hecho que los
-        dispara —se confirma la fecha de obra, UTE habilita—, y <strong>vencer no frena la obra</strong>.
-        {pendientesConPlazo > 0 && (
-          <span className="ml-1 font-medium text-[var(--color-danger-text)]">
-            {pendientesConPlazo} vencido{pendientesConPlazo === 1 ? "" : "s"}.
-          </span>
-        )}
-      </p>
+    <div className="space-y-2.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <div className="min-w-0">
+          <h3 className="text-[13px] font-semibold text-[var(--color-text-primary)]">
+            {recorrido} · {bloque?.largo}
+          </h3>
+          <p className="text-[11px] text-[var(--color-text-muted)]">
+            {hechos} de {delBloque.length} pasos · vencer no frena la obra
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setPlantillaAbierta({})}
+          className="inline-flex shrink-0 items-center gap-1 rounded-md border border-[var(--color-border)] px-2 py-1 text-[11px] text-[var(--color-text-secondary)] hover:border-[var(--color-accent)] hover:text-[var(--color-text-primary)]"
+        >
+          <MessageSquare className="h-3 w-3" />
+          Plantillas
+        </button>
+      </div>
 
-      {BLOQUES.map((b) => {
-        const delBloque = checks.filter((c) => c.recorrido === b.codigo);
-        if (delBloque.length === 0) return null;
-        const hechos = delBloque.filter((c) => c.completado).length;
-        return (
-          <section key={b.codigo}>
-            <div className="mb-1.5 flex items-baseline justify-between gap-2">
-              <h4 className="text-[12px] font-semibold text-[var(--color-text-primary)]">{b.label}</h4>
-              <div className="flex items-baseline gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPlantillas({ recorrido: b.codigo })}
-                  className="inline-flex items-center gap-1 text-[11px] text-[var(--color-text-muted)] hover:text-[var(--color-accent)]"
-                >
-                  <MessageSquare className="h-3 w-3" />
-                  Plantillas
-                </button>
-                <span className="text-[11px] text-[var(--color-text-muted)]">
-                  {hechos}/{delBloque.length}
-                </span>
-              </div>
-            </div>
-            <ul className="space-y-1.5">
-              {delBloque.map((c) => {
-                const plantilla = plantillaDeCheck(c.codigo);
-                return (
-                  <Fila
-                    key={c.id}
-                    c={c}
-                    canEdit={canEdit}
-                    pending={toggle.isPending}
-                    onToggle={() => toggle.mutate({ id: c.id, completado: !c.completado })}
-                    onVerMensaje={
-                      plantilla
-                        ? () => setPlantillas({ recorrido: b.codigo, id: plantilla.id })
-                        : null
-                    }
-                  />
-                );
-              })}
-            </ul>
-          </section>
-        );
-      })}
+      {delBloque.length === 0 ? (
+        <p className="py-6 text-center text-[13px] text-[var(--color-text-muted)]">
+          Esta etapa no tiene pasos cargados.
+        </p>
+      ) : (
+        <ul className="space-y-1.5">
+          {delBloque.map((c) => {
+            const plantilla = plantillaDeCheck(c.codigo);
+            return (
+              <Fila
+                key={c.id}
+                c={c}
+                canEdit={canEdit}
+                pending={toggle.isPending}
+                onToggle={() => toggle.mutate({ id: c.id, completado: !c.completado })}
+                onVerMensaje={plantilla ? () => setPlantillaAbierta({ id: plantilla.id }) : null}
+              />
+            );
+          })}
+        </ul>
+      )}
 
-      {plantillas && (
+      {plantillaAbierta && (
         <PlantillasModal
           projectId={projectId}
           cliente={cliente}
-          recorrido={plantillas.recorrido}
-          plantillaInicial={plantillas.id}
-          onClose={() => setPlantillas(null)}
+          recorrido={recorrido}
+          plantillaInicial={plantillaAbierta.id}
+          onClose={() => setPlantillaAbierta(null)}
         />
       )}
     </div>

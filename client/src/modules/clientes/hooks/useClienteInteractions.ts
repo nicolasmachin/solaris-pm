@@ -59,6 +59,8 @@ export function useEditInteraction(projectId: string) {
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: key });
+      // El feed de novedades de la ficha es donde se ven y se editan.
+      qc.invalidateQueries({ queryKey: ["cliente-timeline", projectId] });
     },
   });
 }
@@ -71,6 +73,9 @@ export function useDeleteInteraction(projectId: string) {
     mutationFn: (id: string) => deleteInteraction(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["cliente", projectId] });
+      qc.invalidateQueries({ queryKey: ["cliente-timeline", projectId] });
+      qc.invalidateQueries({ queryKey: ["clientes"] });
+      qc.invalidateQueries({ queryKey: ["recorrido"] });
     },
   });
 }

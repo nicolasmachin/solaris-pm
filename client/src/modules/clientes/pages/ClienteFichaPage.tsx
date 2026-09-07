@@ -1,21 +1,34 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, ExternalLink, Mail, MapPin, Phone, User } from "lucide-react";
+import { ArrowLeft, ChevronDown, ExternalLink, Mail, MapPin, Phone, User } from "lucide-react";
 
+import { getChecks, type ClienteRecorrido } from "../../../api/clientes.api";
 import { Spinner } from "../../../components/ui/Spinner";
 import { usePermission } from "../../../hooks/usePermission";
 import { ClienteInteractionForm } from "../components/ClienteInteractionForm";
-import { ClienteInteractionList } from "../components/ClienteInteractionList";
 import { ClienteTimeline } from "../components/ClienteTimeline";
 import { ClienteTramiteUteCard } from "../components/ClienteTramiteUteCard";
 import { EditableCell } from "../components/EditableCell";
-import { EtapaChip } from "../components/EtapaChip";
 import { RecorridoChecks } from "../components/RecorridoChecks";
+import { RecorridoPipeline } from "../components/RecorridoPipeline";
 import { ESTADO_LABELS } from "../constants";
 import { useClienteFicha } from "../hooks/useClienteFicha";
 import { useUpdateCliente } from "../hooks/useUpdateCliente";
 
-type Tab = "resumen" | "pasos" | "interacciones" | "historial";
+// La ficha del cliente es UNA pantalla, no cuatro pestañas.
+//
+// Antes había Resumen / Pasos / Interacciones / Historial: para saber cómo venía
+// un cliente había que recorrer las cuatro y recordar lo de la anterior. Ahora:
+//
+//   - Arriba, el **pipeline del recorrido** (E1/E2/E3), leído igual que el
+//     pipeline del proyecto. Se clickea una etapa y abajo aparecen sus pasos.
+//   - Abajo a la izquierda, **los pasos de la etapa elegida**.
+//   - A la derecha, **el historial completo**, lo más nuevo arriba, con el
+//     registro de contacto pegado arriba de todo.
+//
+// Los datos del cliente pasan a una tarjeta plegable: se consultan de a ratos,
+// no son el trabajo.
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
@@ -34,15 +47,29 @@ function DataItem({ label, value }: { label: string; value: React.ReactNode }) {
 export function ClienteFichaPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>("resumen");
   const canCreate = usePermission("EXPERIENCIA_CLIENTES", "CREATE");
   const canEdit = usePermission("EXPERIENCIA_CLIENTES", "EDIT");
   const updateCliente = useUpdateCliente();
+  const [datosAbiertos, setDatosAbiertos] = useState(false);
+  const [etapaSel, setEtapaSel] = useState<ClienteRecorrido | null>(null);
+
   function saveField(patch: Parameters<typeof updateCliente.mutateAsync>[0]["patch"]) {
     return updateCliente.mutateAsync({ projectId: projectId as string, patch }).then(() => undefined);
   }
 
   const { data: ficha, isLoading, isError } = useClienteFicha(projectId);
+  const { data: checks } = useQuery({
+    queryKey: ["cliente-checks", projectId],
+    queryFn: () => getChecks(projectId as string),
+    enabled: Boolean(projectId),
+  });
+
+  // Al abrir, se posa en la etapa donde está el cliente: es lo que se viene a
+  // mirar. Después manda lo que elija la persona.
+  const etapaActual = ficha?.etapa?.recorrido.codigo ?? null;
+  useEffect(() => {
+    if (etapaSel === null && etapaActual) setEtapaSel(etapaActual);
+  }, [etapaActual, etapaSel]);
 
   if (isLoading) {
     return (
@@ -66,8 +93,10 @@ export function ClienteFichaPage() {
     );
   }
 
+  const etapa = etapaSel ?? etapaActual ?? "E1";
+
   return (
-    <div className="space-y-5 p-6">
+    <div className="space-y-4 p-4 sm:p-6">
       <button
         onClick={() => navigate("/clientes")}
         className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
@@ -75,17 +104,14 @@ export function ClienteFichaPage() {
         <ArrowLeft className="h-4 w-4" /> Clientes
       </button>
 
-      {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-2">
+      {/* Header: identidad + las dos señales que definen si hay que hacer algo hoy. */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">{ficha.nombre}</h1>
-            <span className="inline-flex items-center rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-[var(--color-text-secondary)] bg-[var(--color-border)]">
+            <span className="inline-flex items-center rounded bg-[var(--color-border)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-[var(--color-text-secondary)]">
               {ESTADO_LABELS[ficha.estado]}
             </span>
-            {ficha.etapa && <EtapaChip etapa={ficha.etapa} />}
-            {/* Días sin contacto en primer plano: es el dato que define si este
-                cliente necesita atención hoy, y antes solo se veía en el listado. */}
             <span
               className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
                 ficha.fueraDeCadencia
@@ -111,7 +137,7 @@ export function ClienteFichaPage() {
               </span>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[var(--color-text-muted)]">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-[var(--color-text-muted)]">
             {ficha.mail && (
               <span className="inline-flex items-center gap-1.5">
                 <Mail className="h-3.5 w-3.5" /> {ficha.mail}
@@ -136,120 +162,141 @@ export function ClienteFichaPage() {
         </div>
         <button
           onClick={() => navigate(ficha.proyectoUrl)}
-          className="inline-flex items-center gap-2 rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-gray-900 transition-colors hover:bg-[var(--color-accent-hover)]"
+          className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-gray-900 transition-colors hover:bg-[var(--color-accent-hover)]"
         >
           <ExternalLink className="h-4 w-4" /> Ir al proyecto
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-[var(--color-border)]">
-        {([
-          ["resumen", "Resumen"],
-          ["pasos", "Pasos"],
-          ["interacciones", "Interacciones"],
-          ["historial", "Historial"],
-        ] as const).map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm transition-colors ${
-              tab === key
-                ? "border-[var(--color-accent)] font-semibold text-[var(--color-text-primary)]"
-                : "border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-            }`}
-          >
-            {label}
-            {key === "interacciones" && ficha.interacciones.length > 0 && (
-              <span className="ml-1.5 text-[var(--color-text-muted)]">({ficha.interacciones.length})</span>
-            )}
-          </button>
-        ))}
-      </div>
+      {/* El pipeline del recorrido: el mapa de dónde está y qué falta. */}
+      <RecorridoPipeline
+        checks={checks ?? []}
+        etapaActual={etapaActual}
+        seleccionada={etapa}
+        onSelect={setEtapaSel}
+      />
 
-      {tab === "resumen" ? (
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
-            <h3 className="mb-3 text-sm font-semibold text-[var(--color-text-primary)]">Datos del cliente</h3>
-            <dl className="grid grid-cols-2 gap-3">
-              <DataItem
-                label="Potencia"
-                value={ficha.potenciaKwp != null ? `${ficha.potenciaKwp} kWp` : "—"}
+      {/* Dos columnas: a la izquierda lo que hay que hacer, a la derecha lo que pasó. */}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
+        <div className="space-y-4">
+          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] p-4">
+            {checks ? (
+              <RecorridoChecks
+                projectId={projectId ?? ""}
+                cliente={ficha.nombre}
+                recorrido={etapa}
+                checks={checks}
               />
-              <DataItem
-                label="Fecha de venta"
-                value={
-                  ficha.fechaVenta ? (
-                    fmtDate(ficha.fechaVenta)
-                  ) : (
-                    <span className="text-[var(--color-text-muted)]">—</span>
-                  )
-                }
-              />
-              <DataItem
-                label="Fecha de entrega"
-                value={
-                  <EditableCell
-                    value={ficha.fechaEntrega}
-                    type="date"
-                    canEdit={canEdit}
-                    ariaLabel="fecha de entrega"
-                    render={(v) => (v ? fmtDate(v) : <span className="text-[var(--color-text-muted)]">—</span>)}
-                    onSave={(v) => saveField({ fechaEntrega: v })}
-                  />
-                }
-              />
-              <DataItem
-                label="Mail"
-                value={
-                  <EditableCell
-                    value={ficha.mail}
-                    type="email"
-                    canEdit={canEdit}
-                    ariaLabel="mail"
-                    onSave={(v) => saveField({ mail: v })}
-                  />
-                }
-              />
-              <DataItem
-                label="Teléfono"
-                value={
-                  <EditableCell
-                    value={ficha.telefono}
-                    type="tel"
-                    canEdit={canEdit}
-                    ariaLabel="teléfono"
-                    onSave={(v) => saveField({ telefono: v })}
-                  />
-                }
-              />
-              <DataItem label="Departamento" value={ficha.departamento ?? "—"} />
-              <DataItem label="Dirección" value={ficha.direccion ?? "—"} />
-              <DataItem label="Asesor" value={ficha.asesor?.nombre ?? "—"} />
-              <DataItem
-                label="Etapa"
-                value={
-                  ficha.etapa
-                    ? `${ficha.etapa.recorrido.nombreLargo} · ${ficha.etapa.pipeline.label}`
-                    : "—"
-                }
-              />
-            </dl>
+            ) : (
+              <div className="flex justify-center py-6">
+                <Spinner size={18} />
+              </div>
+            )}
           </div>
+
           <ClienteTramiteUteCard tramiteUte={ficha.tramiteUte} />
+
+          {/* Datos del cliente: plegados, porque se consultan de a ratos. */}
+          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)]">
+            <button
+              type="button"
+              onClick={() => setDatosAbiertos((v) => !v)}
+              className="flex w-full items-center justify-between gap-2 px-4 py-2.5 text-left"
+            >
+              <span className="text-[13px] font-semibold text-[var(--color-text-primary)]">Datos del cliente</span>
+              <ChevronDown
+                className={`h-4 w-4 text-[var(--color-text-muted)] transition-transform ${datosAbiertos ? "rotate-180" : ""}`}
+              />
+            </button>
+            {datosAbiertos && (
+              <dl className="grid grid-cols-2 gap-3 border-t border-[var(--color-border)] p-4 sm:grid-cols-3">
+                <DataItem
+                  label="Mail"
+                  value={
+                    <EditableCell
+                      value={ficha.mail}
+                      type="email"
+                      canEdit={canEdit}
+                      ariaLabel="mail"
+                      onSave={(v) => saveField({ mail: v })}
+                    />
+                  }
+                />
+                <DataItem
+                  label="Teléfono"
+                  value={
+                    <EditableCell
+                      value={ficha.telefono}
+                      type="tel"
+                      canEdit={canEdit}
+                      ariaLabel="teléfono"
+                      onSave={(v) => saveField({ telefono: v })}
+                    />
+                  }
+                />
+                <DataItem
+                  label="Estado"
+                  value={
+                    <EditableCell
+                      value={ficha.estado}
+                      type="text"
+                      options={(Object.keys(ESTADO_LABELS) as Array<keyof typeof ESTADO_LABELS>).map((e) => ({
+                        value: e,
+                        label: ESTADO_LABELS[e],
+                      }))}
+                      canEdit={canEdit}
+                      ariaLabel="estado"
+                      render={(v) => ESTADO_LABELS[(v ?? ficha.estado) as keyof typeof ESTADO_LABELS]}
+                      onSave={(v) => saveField({ estado: (v ?? ficha.estado) as typeof ficha.estado })}
+                    />
+                  }
+                />
+                <DataItem
+                  label="Potencia"
+                  value={ficha.potenciaKwp != null ? `${ficha.potenciaKwp} kWp` : "—"}
+                />
+                <DataItem label="Fecha de venta" value={fmtDate(ficha.fechaVenta)} />
+                <DataItem
+                  label="Fecha de entrega"
+                  value={
+                    <EditableCell
+                      value={ficha.fechaEntrega}
+                      type="date"
+                      canEdit={canEdit}
+                      ariaLabel="fecha de entrega"
+                      render={(v) => (v ? fmtDate(v) : <span className="text-[var(--color-text-muted)]">—</span>)}
+                      onSave={(v) => saveField({ fechaEntrega: v })}
+                    />
+                  }
+                />
+                <DataItem label="Departamento" value={ficha.departamento ?? "—"} />
+                <DataItem label="Dirección" value={ficha.direccion ?? "—"} />
+                <DataItem label="Asesor" value={ficha.asesor?.nombre ?? "—"} />
+                <DataItem
+                  label="Próximo mantenimiento"
+                  value={
+                    ficha.mantenimiento
+                      ? `cumple ${ficha.mantenimiento.aniosQueCumple} ${ficha.mantenimiento.aniosQueCumple === 1 ? "año" : "años"} en ${ficha.mantenimiento.diasRestantes} d`
+                      : "—"
+                  }
+                />
+              </dl>
+            )}
+          </div>
         </div>
-      ) : tab === "pasos" ? (
-        <RecorridoChecks projectId={projectId ?? ""} cliente={ficha.nombre} />
-      ) : tab === "interacciones" ? (
-        <div className="space-y-4">
+
+        {/* Historial: todo lo que pasó, lo más nuevo arriba. */}
+        <div className="space-y-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
+          <div className="flex items-baseline justify-between gap-2">
+            <h3 className="text-[13px] font-semibold text-[var(--color-text-primary)]">Novedades</h3>
+            <span className="text-[11px] text-[var(--color-text-muted)]">lo más nuevo arriba</span>
+          </div>
           {canCreate && projectId && <ClienteInteractionForm projectId={projectId} />}
-          <ClienteInteractionList interacciones={ficha.interacciones} projectId={projectId ?? ""} />
+          <div className="max-h-[70vh] overflow-y-auto pr-1">
+            <ClienteTimeline projectId={projectId ?? ""} />
+          </div>
         </div>
-      ) : (
-        <div className="space-y-4">
-          <ClienteTimeline projectId={projectId ?? ""} />
-        </div>
-      )}
+      </div>
     </div>
   );
 }
