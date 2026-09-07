@@ -239,7 +239,7 @@ export function ClienteFichaPage() {
           <ClienteTramiteUteCard tramiteUte={ficha.tramiteUte} />
         </div>
       ) : tab === "pasos" ? (
-        <RecorridoChecks projectId={projectId ?? ""} />
+        <RecorridoChecks projectId={projectId ?? ""} cliente={ficha.nombre} />
       ) : tab === "interacciones" ? (
         <div className="space-y-4">
           {canCreate && projectId && <ClienteInteractionForm projectId={projectId} />}

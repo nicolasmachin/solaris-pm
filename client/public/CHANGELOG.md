@@ -4,6 +4,17 @@
 
 ### 7 de septiembre de 2026
 
+#### Experiencia Solar — los mensajes modelo, a un clic desde el cliente
+
+- En la pestaña **Pasos** de la ficha, cada etapa tiene ahora un botón **"Plantillas"** con **los mensajes modelo de esa etapa**, y cada paso que tiene mensaje propio muestra un ícono para abrirlo directo.
+- El mensaje viene **con el nombre del cliente y el tuyo ya puestos**, y **editable**: son un piso de tono, no un texto obligatorio. Lo que el sistema no puede saber —la fecha, el motivo, el plazo— queda marcado a la vista, y abajo se avisa **qué falta completar** antes de mandarlo.
+- Al copiar, **queda registrado el contacto en la bitácora** (se puede destildar). Es la diferencia entre que el historial del cliente refleje la relación o quede vacío.
+- Están los mensajes de **bienvenida, acceso al portal, presentación del capataz, fecha tentativa y confirmada, reprogramación, visita a la propiedad, obra terminada, avisos de encuesta, "ya podés encender" con la capacitación, material de capacitación, acceso al inversor, alta en reportes y garantías**.
+
+#### Arreglos
+
+- **Registrar un contacto ahora actualiza también el Historial y el Recorrido.** Antes había que recargar la página para verlo reflejado.
+
 #### Experiencia Solar — el Recorrido llega por correo cada mañana
 
 - Un **correo diario** con lo que está pendiente en el Recorrido: arriba **lo que ya venció** —avisos de habilitación sin dar, pasos con el plazo pasado y reclamos del cliente sin responder—, con **lo más arrastrado primero**; abajo, **etapa por etapa**, quiénes están fuera de cadencia o tienen algo nuevo sin avisar.

@@ -145,6 +145,30 @@ que no se negocia son los principios:
 Adaptar el nombre, las fechas y el detalle. El objetivo es el tono y que no falte
 información, no copiarlos literal.
 
+**Están en la app, no sólo acá.** Pestaña **Pasos** de la ficha del cliente: cada
+etapa tiene el botón **"Plantillas"** con los mensajes de esa etapa, y cada paso
+que tiene mensaje propio abre el suyo directo con el ícono de mensaje
+(`plantillas.ts` + `PlantillasModal.tsx`). Que estén en el documento y no en la
+mano de quien escribe es lo mismo que no tenerlos: si copiar cuesta, el aviso sale
+improvisado o no sale.
+
+Tres decisiones del catálogo de la app:
+
+- **Se rellenan solo los marcadores que el sistema sabe de verdad** (el nombre del
+  cliente y el de quien manda). La fecha, el motivo o el plazo quedan como
+  `{marcador}` a la vista, y el modal lista abajo los que falten completar. Un
+  hueco sin llenar se nota al leer; uno inventado por el sistema se manda mal.
+- **El texto es editable antes de copiar.** Son un piso de tono, no un molde.
+- **Al copiar se registra el contacto en la bitácora**, tildado por defecto (se
+  puede destildar). No es una comodidad: la bitácora es 100% manual y por eso está
+  casi vacía, así que copiar el mensaje es la única oportunidad realista de que
+  quede registrado. Se registra como WhatsApp saliente, con el motivo de la
+  plantilla, reusando el mismo hook que la carga manual.
+
+El catálogo de la app cubre además de los 7 hitos: acceso al portal, fecha
+tentativa, reprogramación, visita a la propiedad, los avisos de encuesta, y los
+cinco del cierre de puesta en marcha.
+
 **1 · Bienvenida**
 
 > Hola {nombre}, soy {referente} de Voltia. Voy a ser tu contacto durante todo el

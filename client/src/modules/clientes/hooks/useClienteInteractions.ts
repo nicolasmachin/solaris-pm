@@ -25,6 +25,10 @@ export function useCreateInteraction(projectId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["cliente", projectId] });
       qc.invalidateQueries({ queryKey: ["clientes"] });
+      // Registrar un contacto mueve el historial y apaga el semáforo de días sin
+      // contacto, así que también hay que refrescar el timeline y el Recorrido.
+      qc.invalidateQueries({ queryKey: ["cliente-timeline", projectId] });
+      qc.invalidateQueries({ queryKey: ["recorrido"] });
     },
   });
 }

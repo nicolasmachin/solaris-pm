@@ -1,12 +1,15 @@
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { AlertTriangle, Check } from "lucide-react";
+import { AlertTriangle, Check, MessageSquare } from "lucide-react";
 
-import { getChecks, patchCheck, type RecorridoCheck } from "../../../api/clientes.api";
+import { getChecks, patchCheck, type ClienteRecorrido, type RecorridoCheck } from "../../../api/clientes.api";
 import { Spinner } from "../../../components/ui/Spinner";
 import { usePermission } from "../../../hooks/usePermission";
+import { plantillaDeCheck } from "../plantillas";
+import { PlantillasModal } from "./PlantillasModal";
 
-const BLOQUES: Array<{ codigo: string; label: string }> = [
+const BLOQUES: Array<{ codigo: ClienteRecorrido; label: string }> = [
   { codigo: "E1", label: "E1 · De la venta a la obra" },
   { codigo: "E2", label: "E2 · De la obra a la habilitación" },
   { codigo: "E3", label: "E3 · Post-habilitación" },
@@ -17,10 +20,12 @@ function fmt(iso: string | null): string {
   return new Date(iso).toLocaleDateString("es-UY", { day: "2-digit", month: "2-digit" });
 }
 
-function Fila({ c, canEdit, onToggle, pending }: {
+function Fila({ c, canEdit, onToggle, onVerMensaje, pending }: {
   c: RecorridoCheck;
   canEdit: boolean;
   onToggle: () => void;
+  /** null = este paso no tiene mensaje modelo. */
+  onVerMensaje: (() => void) | null;
   pending: boolean;
 }) {
   return (
@@ -66,6 +71,19 @@ function Fila({ c, canEdit, onToggle, pending }: {
         )}
       </div>
 
+      {/* El mensaje modelo del paso, a un clic. Se ofrece aunque el paso ya esté
+          hecho: puede hacer falta repetirlo. */}
+      {onVerMensaje && (
+        <button
+          type="button"
+          onClick={onVerMensaje}
+          title="Ver el mensaje modelo de este paso"
+          className="shrink-0 rounded p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-bg-card-hover)] hover:text-[var(--color-text-primary)]"
+        >
+          <MessageSquare className="h-3.5 w-3.5" />
+        </button>
+      )}
+
       {/* El plazo solo se muestra mientras está pendiente: uno completado tarde
           ya no es un pendiente. */}
       {!c.completado && c.venceEn && (
@@ -84,9 +102,11 @@ function Fila({ c, canEdit, onToggle, pending }: {
   );
 }
 
-export function RecorridoChecks({ projectId }: { projectId: string }) {
+export function RecorridoChecks({ projectId, cliente }: { projectId: string; cliente: string }) {
   const qc = useQueryClient();
   const canEdit = usePermission("EXPERIENCIA_CLIENTES", "EDIT");
+  // Qué plantilla abrir: la etapa manda (define la lista) y el id preselecciona.
+  const [plantillas, setPlantillas] = useState<{ recorrido: ClienteRecorrido; id?: string } | null>(null);
 
   const { data: checks, isLoading } = useQuery({
     queryKey: ["cliente-checks", projectId],
@@ -129,24 +149,52 @@ export function RecorridoChecks({ projectId }: { projectId: string }) {
           <section key={b.codigo}>
             <div className="mb-1.5 flex items-baseline justify-between gap-2">
               <h4 className="text-[12px] font-semibold text-[var(--color-text-primary)]">{b.label}</h4>
-              <span className="text-[11px] text-[var(--color-text-muted)]">
-                {hechos}/{delBloque.length}
-              </span>
+              <div className="flex items-baseline gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPlantillas({ recorrido: b.codigo })}
+                  className="inline-flex items-center gap-1 text-[11px] text-[var(--color-text-muted)] hover:text-[var(--color-accent)]"
+                >
+                  <MessageSquare className="h-3 w-3" />
+                  Plantillas
+                </button>
+                <span className="text-[11px] text-[var(--color-text-muted)]">
+                  {hechos}/{delBloque.length}
+                </span>
+              </div>
             </div>
             <ul className="space-y-1.5">
-              {delBloque.map((c) => (
-                <Fila
-                  key={c.id}
-                  c={c}
-                  canEdit={canEdit}
-                  pending={toggle.isPending}
-                  onToggle={() => toggle.mutate({ id: c.id, completado: !c.completado })}
-                />
-              ))}
+              {delBloque.map((c) => {
+                const plantilla = plantillaDeCheck(c.codigo);
+                return (
+                  <Fila
+                    key={c.id}
+                    c={c}
+                    canEdit={canEdit}
+                    pending={toggle.isPending}
+                    onToggle={() => toggle.mutate({ id: c.id, completado: !c.completado })}
+                    onVerMensaje={
+                      plantilla
+                        ? () => setPlantillas({ recorrido: b.codigo, id: plantilla.id })
+                        : null
+                    }
+                  />
+                );
+              })}
             </ul>
           </section>
         );
       })}
+
+      {plantillas && (
+        <PlantillasModal
+          projectId={projectId}
+          cliente={cliente}
+          recorrido={plantillas.recorrido}
+          plantillaInicial={plantillas.id}
+          onClose={() => setPlantillas(null)}
+        />
+      )}
     </div>
   );
 }
