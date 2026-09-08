@@ -78,6 +78,8 @@ export interface ClienteInteraction {
 }
 
 export interface ClienteFicha extends ClienteListItem {
+  /** Con qué entra el Generador al portal (mail o alias). null si no tiene acceso. */
+  portalIdentificador: string | null;
   direccion: string | null;
   fechaVenta: string | null; // ISO date (YYYY-MM-DD) — cierre del lead como ganado
   tramiteUte: { etapa: string; desde: string | null } | null;

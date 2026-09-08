@@ -183,7 +183,7 @@ export function ClienteFichaPage() {
             {checks ? (
               <RecorridoChecks
                 projectId={projectId ?? ""}
-                cliente={ficha.nombre}
+                ficha={ficha}
                 recorrido={etapa}
                 checks={checks}
               />

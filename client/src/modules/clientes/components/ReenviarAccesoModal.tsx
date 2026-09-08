@@ -19,7 +19,16 @@ const inputClass =
   "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]";
 const labelClass = "mb-1 block text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]";
 
-export function ReenviarAccesoModal({ cliente, onClose }: { cliente: ClienteListItem; onClose: () => void }) {
+export function ReenviarAccesoModal({
+  cliente,
+  onClose,
+  onReseteado,
+}: {
+  cliente: ClienteListItem;
+  onClose: () => void;
+  /** Se llama con las credenciales nuevas, para encadenar el mensaje ya armado. */
+  onReseteado?: (cred: { identificador: string; password: string }) => void;
+}) {
   const qc = useQueryClient();
   useLockBodyScroll(true);
 
@@ -32,6 +41,7 @@ export function ReenviarAccesoModal({ cliente, onClose }: { cliente: ClienteList
     onSuccess: (res) => {
       setDone(res);
       qc.invalidateQueries({ queryKey: ["clientes"] });
+      qc.invalidateQueries({ queryKey: ["cliente", cliente.projectId] });
       toast.success("Contraseña reseteada");
     },
     onError: (err) => toast.error(getApiErr(err) ?? "No se pudo resetear la contraseña"),
@@ -100,8 +110,15 @@ export function ReenviarAccesoModal({ cliente, onClose }: { cliente: ClienteList
               {copied ? <Check size={14} className="mr-1.5" /> : <Copy size={14} className="mr-1.5" />}
               {copied ? "Copiado" : "Copiar mensaje"}
             </Button>
-            <div className="flex justify-end border-t border-[var(--color-border)] pt-3">
-              <Button size="sm" onClick={onClose}>Listo</Button>
+            <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-3">
+              {onReseteado && (
+                <Button size="sm" onClick={() => onReseteado({ identificador: done.identificador, password })}>
+                  Escribirle el mensaje
+                </Button>
+              )}
+              <Button size="sm" variant={onReseteado ? "secondary" : "primary"} onClick={onClose}>
+                Listo
+              </Button>
             </div>
           </div>
         ) : (

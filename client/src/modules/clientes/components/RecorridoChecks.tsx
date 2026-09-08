@@ -1,25 +1,37 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { AlertTriangle, Check, MessageSquare } from "lucide-react";
+import { AlertTriangle, Check, MessageSquare, Send, UserPlus } from "lucide-react";
 
-import { patchCheck, type ClienteRecorrido, type RecorridoCheck } from "../../../api/clientes.api";
+import {
+  patchCheck,
+  type ClienteFicha,
+  type ClienteRecorrido,
+  type RecorridoCheck,
+} from "../../../api/clientes.api";
 import { usePermission } from "../../../hooks/usePermission";
-import { plantillaDeCheck } from "../plantillas";
+import { plantillaDeCheck, type CredencialesPortal } from "../plantillas";
+import { CrearUsuarioModal } from "./CrearUsuarioModal";
 import { PlantillasModal } from "./PlantillasModal";
+import { ReenviarAccesoModal } from "./ReenviarAccesoModal";
 import { BLOQUES } from "./RecorridoPipeline";
+
+/** El paso del recorrido que se resuelve creando el acceso al portal. */
+const CHECK_PORTAL = "e1_portal";
 
 function fmt(iso: string | null): string {
   if (!iso) return "";
   return new Date(iso).toLocaleDateString("es-UY", { day: "2-digit", month: "2-digit" });
 }
 
-function Fila({ c, canEdit, onToggle, onVerMensaje, pending }: {
+function Fila({ c, canEdit, onToggle, onVerMensaje, accion, pending }: {
   c: RecorridoCheck;
   canEdit: boolean;
   onToggle: () => void;
   /** null = este paso no tiene mensaje modelo. */
   onVerMensaje: (() => void) | null;
+  /** Acción propia del paso: hoy, crear o reenviar el acceso al portal. */
+  accion?: { icon: typeof UserPlus; label: string; onClick: () => void; destacada?: boolean } | null;
   pending: boolean;
 }) {
   return (
@@ -65,6 +77,24 @@ function Fila({ c, canEdit, onToggle, onVerMensaje, pending }: {
         )}
       </div>
 
+      {/* La acción que resuelve el paso, donde está el paso. Obligar a ir al
+          listado a crear el usuario era la razón por la que no se creaban. */}
+      {accion && (
+        <button
+          type="button"
+          onClick={accion.onClick}
+          title={accion.label}
+          aria-label={accion.label}
+          className={`shrink-0 rounded p-1 ${
+            accion.destacada
+              ? "text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10"
+              : "text-[var(--color-text-muted)] hover:bg-[var(--color-bg-card-hover)] hover:text-[var(--color-text-primary)]"
+          }`}
+        >
+          <accion.icon className="h-3.5 w-3.5" />
+        </button>
+      )}
+
       {/* El mensaje modelo del paso, a un clic. Se ofrece aunque el paso ya esté
           hecho: puede hacer falta repetirlo. */}
       {onVerMensaje && (
@@ -102,18 +132,35 @@ function Fila({ c, canEdit, onToggle, onVerMensaje, pending }: {
  */
 export function RecorridoChecks({
   projectId,
-  cliente,
+  ficha,
   recorrido,
   checks,
 }: {
   projectId: string;
-  cliente: string;
+  ficha: ClienteFicha;
   recorrido: ClienteRecorrido;
   checks: RecorridoCheck[];
 }) {
   const qc = useQueryClient();
   const canEdit = usePermission("EXPERIENCIA_CLIENTES", "EDIT");
+  const canCreate = usePermission("EXPERIENCIA_CLIENTES", "CREATE");
   const [plantillaAbierta, setPlantillaAbierta] = useState<{ id?: string } | null>(null);
+  const [accesoAbierto, setAccesoAbierto] = useState<"crear" | "reenviar" | null>(null);
+  // La contraseña sólo existe en el momento de crearla o resetearla: se guarda
+  // acá para que el mensaje de acceso pueda salir completo justo después. El
+  // identificador también, porque la ficha todavía no se refrescó.
+  const [recien, setRecien] = useState<CredencialesPortal | null>(null);
+
+  const portal: CredencialesPortal | null =
+    recien ?? (ficha.portalIdentificador ? { identificador: ficha.portalIdentificador } : null);
+
+  // Al terminar de crear o reenviar el acceso se abre el mensaje ya armado: es el
+  // paso siguiente real, y si no se ofrece acá nadie vuelve a buscarlo.
+  function trasGenerarAcceso(cred: { identificador: string; password: string }) {
+    setRecien(cred);
+    setAccesoAbierto(null);
+    setPlantillaAbierta({ id: "portal" });
+  }
 
   const toggle = useMutation({
     mutationFn: ({ id, completado }: { id: string; completado: boolean }) => patchCheck(id, completado),
@@ -165,6 +212,22 @@ export function RecorridoChecks({
                 pending={toggle.isPending}
                 onToggle={() => toggle.mutate({ id: c.id, completado: !c.completado })}
                 onVerMensaje={plantilla ? () => setPlantillaAbierta({ id: plantilla.id }) : null}
+                accion={
+                  c.codigo === CHECK_PORTAL && canCreate
+                    ? ficha.hasPortalUser
+                      ? {
+                          icon: Send,
+                          label: "Reenviar el acceso (resetea la contraseña)",
+                          onClick: () => setAccesoAbierto("reenviar"),
+                        }
+                      : {
+                          icon: UserPlus,
+                          label: "Crear el usuario de portal del cliente",
+                          onClick: () => setAccesoAbierto("crear"),
+                          destacada: true,
+                        }
+                    : null
+                }
               />
             );
           })}
@@ -174,10 +237,26 @@ export function RecorridoChecks({
       {plantillaAbierta && (
         <PlantillasModal
           projectId={projectId}
-          cliente={cliente}
+          cliente={ficha.nombre}
           recorrido={recorrido}
           plantillaInicial={plantillaAbierta.id}
+          portal={portal}
           onClose={() => setPlantillaAbierta(null)}
+        />
+      )}
+
+      {accesoAbierto === "crear" && (
+        <CrearUsuarioModal
+          cliente={ficha}
+          onClose={() => setAccesoAbierto(null)}
+          onCreado={trasGenerarAcceso}
+        />
+      )}
+      {accesoAbierto === "reenviar" && (
+        <ReenviarAccesoModal
+          cliente={ficha}
+          onClose={() => setAccesoAbierto(null)}
+          onReseteado={trasGenerarAcceso}
         />
       )}
     </div>

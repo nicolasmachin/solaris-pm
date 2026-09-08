@@ -57,7 +57,7 @@ No te voy a escribir todas las semanas porque muchas veces no hay novedades, per
     cuerpo: `Hola {nombre}, te dejo el acceso al portal de Voltia para que veas el avance de tu instalación y del trámite, la documentación y los reportes de generación cuando arranquen.
 
 {usuario y contraseña}
-{link del portal}
+Link: {link del portal}
 
 Te va a pedir cambiar la contraseña al entrar. Cualquier duda escribime.`,
   },
@@ -232,18 +232,45 @@ export function plantillaDeCheck(codigo: string): Plantilla | undefined {
   return PLANTILLAS.find((p) => p.checks.some((c) => codigo === c || codigo.startsWith(`${c}_`)));
 }
 
+export type CredencialesPortal = {
+  /** Mail o alias con el que entra el Generador. */
+  identificador: string;
+  /** Solo se conoce en el momento de crearla o resetearla: no se guarda en claro. */
+  password?: string | null;
+};
+
 /**
  * Rellena solo los marcadores que el sistema conoce de verdad. El resto quedan
  * como están: un hueco a la vista se completa, uno inventado se manda mal.
+ *
+ * Las credenciales del portal son la excepción interesante: el identificador se
+ * sabe siempre que el Generador tenga acceso, pero **la contraseña sólo existe en
+ * el momento en que se crea o se resetea** (después queda hasheada). Por eso, si
+ * viene sin contraseña, se pone el usuario y se deja el hueco de la contraseña
+ * a la vista en vez de inventar una.
  */
 export function renderPlantilla(
   cuerpo: string,
-  datos: { nombre?: string | null; referente?: string | null },
+  datos: {
+    nombre?: string | null;
+    referente?: string | null;
+    portal?: CredencialesPortal | null;
+  },
 ): string {
   const primerNombre = (datos.nombre ?? "").trim().split(/\s+/)[0] ?? "";
   let out = cuerpo;
   if (primerNombre) out = out.replaceAll("{nombre}", primerNombre);
   if (datos.referente?.trim()) out = out.replaceAll("{referente}", datos.referente.trim());
+
+  if (datos.portal?.identificador) {
+    const { identificador, password } = datos.portal;
+    const esMail = identificador.includes("@");
+    const credenciales = password
+      ? `${esMail ? "Email" : "Usuario"}: ${identificador}\nContraseña: ${password}`
+      : `${esMail ? "Email" : "Usuario"}: ${identificador}\nContraseña: {contraseña}`;
+    out = out.replaceAll("{usuario y contraseña}", credenciales);
+  }
+  out = out.replaceAll("{link del portal}", `${window.location.origin}/portal`);
   return out;
 }
 

@@ -4,6 +4,13 @@
 
 ### 8 de septiembre de 2026
 
+#### El acceso al portal se crea desde el paso que lo pide
+
+- En la ficha del cliente, el paso **"Envío del acceso al portal"** de la etapa E1 tiene ahora **el botón para crear el usuario ahí mismo**. Antes había que ir al listado de Generadores a buscarlo, y por eso no se creaban.
+- Si el cliente **ya tiene acceso**, el mismo lugar ofrece **reenviarlo** (resetea la contraseña y arma el mensaje).
+- Al terminar aparece **"Escribirle el mensaje"**, que abre la plantilla de acceso **con el usuario y la contraseña reales ya adentro** — no los huecos genéricos.
+- Si el cliente ya tenía acceso de antes, la plantilla trae **su usuario** igual; la contraseña queda como hueco a completar, porque **no se puede recuperar**: está encriptada. Para mandarla hay que resetearla.
+
 #### Ya está escrito el Manual de Posventa
 
 - Se escribió el **manual completo de Experiencia Solar**: el procedimiento y el modo de usarlo en la app, juntos. Cada paso dice qué hacer, quién lo hace, en qué plazo y en qué pantalla.

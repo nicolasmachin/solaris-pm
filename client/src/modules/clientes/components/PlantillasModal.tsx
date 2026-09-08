@@ -12,6 +12,7 @@ import {
   marcadoresPendientes,
   plantillasDe,
   renderPlantilla,
+  type CredencialesPortal,
   type Plantilla,
 } from "../plantillas";
 
@@ -27,6 +28,7 @@ export function PlantillasModal({
   cliente,
   recorrido,
   plantillaInicial,
+  portal,
   onClose,
 }: {
   projectId: string;
@@ -34,6 +36,11 @@ export function PlantillasModal({
   recorrido: ClienteRecorrido;
   /** Id de la plantilla a abrir seleccionada (cuando se entra desde un paso). */
   plantillaInicial?: string;
+  /**
+   * Credenciales reales del portal, para que el mensaje de acceso salga con el
+   * usuario y la contraseña de verdad en vez de los huecos genéricos.
+   */
+  portal?: CredencialesPortal | null;
   onClose: () => void;
 }) {
   useLockBodyScroll(true);
@@ -46,14 +53,14 @@ export function PlantillasModal({
 
   const [seleccionada, setSeleccionada] = useState<Plantilla | null>(inicial);
   const [texto, setTexto] = useState(() =>
-    inicial ? renderPlantilla(inicial.cuerpo, { nombre: cliente, referente }) : "",
+    inicial ? renderPlantilla(inicial.cuerpo, { nombre: cliente, referente, portal }) : "",
   );
   const [registrar, setRegistrar] = useState(true);
   const [copiado, setCopiado] = useState(false);
 
   function elegir(p: Plantilla) {
     setSeleccionada(p);
-    setTexto(renderPlantilla(p.cuerpo, { nombre: cliente, referente }));
+    setTexto(renderPlantilla(p.cuerpo, { nombre: cliente, referente, portal }));
     setCopiado(false);
   }
 

@@ -531,15 +531,28 @@ export async function getClienteFicha(projectId: string) {
         orderBy: { createdAt: "desc" },
         select: INTERACTION_SELECT,
       },
+      // El usuario de portal del Generador, para poder poner su identificador en
+      // el mensaje de acceso sin que haya que ir a buscarlo a otra pantalla.
+      clients: {
+        where: { user: { deletedAt: null, role: { name: "CLIENT" } } },
+        take: 1,
+        select: { user: { select: { email: true, username: true } } },
+      },
+      clientUser: { select: { email: true, username: true } },
     },
   });
 
   if (!p) return null;
 
   const ute = p.uteProcesses[0] ?? null;
+  const portalUser = p.clients[0]?.user ?? p.clientUser ?? null;
 
   return {
     ...toListItem(p),
+    // Con qué entra el Generador al portal: el mail, o el alias si no tiene mail.
+    // La contraseña no se puede mostrar (está hasheada): para reenviarla hay que
+    // resetearla.
+    portalIdentificador: portalUser ? (portalUser.email ?? portalUser.username) : null,
     direccion: p.clientAddress ?? null,
     // Fecha de venta (cierre del lead como ganado) — se muestra junto a la de entrega.
     fechaVenta: serializeDateOnly(p.saleDate),

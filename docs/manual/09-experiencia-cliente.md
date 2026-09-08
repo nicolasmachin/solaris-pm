@@ -171,6 +171,13 @@ Tres decisiones del catálogo de la app:
   casi vacía, así que copiar el mensaje es la única oportunidad realista de que
   quede registrado. Se registra como WhatsApp saliente, con el motivo de la
   plantilla, reusando el mismo hook que la carga manual.
+- **La plantilla de acceso al portal sale con las credenciales reales.** El paso
+  `e1_portal` lleva el botón de crear (o reenviar) el acceso, y al terminar abre
+  esa plantilla ya completa. La contraseña se pasa por callback y no por la ficha
+  porque **sólo existe en ese instante**: después queda hasheada. El
+  identificador sí queda en la ficha (`portalIdentificador`), así que una
+  plantilla abierta más tarde trae el usuario y deja el hueco de la contraseña a
+  la vista — inventarla sería peor que dejarla en blanco.
 
 El catálogo de la app cubre además de los 7 hitos: acceso al portal, fecha
 tentativa, reprogramación, visita a la propiedad, los avisos de encuesta, y los

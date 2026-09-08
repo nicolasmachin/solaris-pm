@@ -20,7 +20,21 @@ const inputClass =
   "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]";
 const labelClass = "mb-1 block text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]";
 
-export function CrearUsuarioModal({ cliente, onClose }: { cliente: ClienteListItem; onClose: () => void }) {
+export function CrearUsuarioModal({
+  cliente,
+  onClose,
+  onCreado,
+}: {
+  cliente: ClienteListItem;
+  onClose: () => void;
+  /**
+   * Se llama con las credenciales cuando el usuario quedó creado. Sirve para
+   * encadenar el mensaje de acceso ya armado: la contraseña sólo se conoce en
+   * este momento (después queda hasheada), y el identificador todavía no llegó
+   * a la ficha, así que se pasan los dos en vez de esperar al refetch.
+   */
+  onCreado?: (cred: { identificador: string; password: string }) => void;
+}) {
   const qc = useQueryClient();
   useLockBodyScroll(true);
 
@@ -42,6 +56,7 @@ export function CrearUsuarioModal({ cliente, onClose }: { cliente: ClienteListIt
     onSuccess: (res) => {
       setDone(res);
       qc.invalidateQueries({ queryKey: ["clientes"] });
+      qc.invalidateQueries({ queryKey: ["cliente", cliente.projectId] });
       toast.success(res.linked ? "Generador vinculado al proyecto" : "Usuario creado");
     },
     onError: (err) => toast.error(getApiErr(err) ?? "No se pudo crear el usuario"),
@@ -131,8 +146,15 @@ export function CrearUsuarioModal({ cliente, onClose }: { cliente: ClienteListIt
                 </Button>
               </>
             )}
-            <div className="flex justify-end border-t border-[var(--color-border)] pt-3">
-              <Button size="sm" onClick={onClose}>Listo</Button>
+            <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-3">
+              {onCreado && !done.linked && (
+                <Button size="sm" onClick={() => onCreado({ identificador: done.identificador, password })}>
+                  Escribirle el mensaje
+                </Button>
+              )}
+              <Button size="sm" variant={onCreado && !done.linked ? "secondary" : "primary"} onClick={onClose}>
+                Listo
+              </Button>
             </div>
           </div>
         ) : (
