@@ -2,6 +2,14 @@
 
 ## v10.1
 
+### 8 de septiembre de 2026
+
+#### El umbral de "nota baja" de las encuestas ya se configura desde la app
+
+- En **Administración → Configuración** apareció **"Nota baja en las encuestas"**: a partir de qué puntaje una respuesta se considera mala y **genera el aviso a Experiencia Solar**. Por defecto son 3 estrellas o menos.
+- Alcanza con que **una sola de las tres preguntas** esté en el umbral o por debajo para que salte el aviso.
+- Antes el valor existía pero solo se podía cambiar por fuera de la app.
+
 ### 7 de septiembre de 2026
 
 #### Se puede entrar con un usuario corto, y los clientes sin mail ya tienen acceso

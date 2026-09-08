@@ -528,9 +528,11 @@ una tasa de respuesta del ~5%, sumar fricción sería contraproducente.
 (`promedioNotas`). Las tres se miden también por separado.
 
 **Nota baja** = cualquiera de las tres notas en el umbral o por debajo
-(`esNotaBaja`), y eso dispara el traspaso T11. El umbral es **configurable** en la
-configuración del sistema (`SettingKey.ENCUESTA_NOTA_BAJA_MAX`, default 3), con
-cache de 5 minutos que se invalida al guardarlo.
+(`esNotaBaja`), y eso dispara el traspaso T11. El umbral se configura en
+**Administración → Configuración → "Nota baja en las encuestas"**
+(`SettingKey.ENCUESTA_NOTA_BAJA_MAX`, default 3), con cache de 5 minutos que se
+invalida al guardarlo. Las opciones llegan hasta 4 a propósito: con 5 toda
+respuesta sería nota baja y el aviso dejaría de significar algo.
 
 > El criterio del promedio está implementado pero **nunca agrega casos**: si
 > ninguna nota individual está en el umbral o por debajo, el promedio tampoco

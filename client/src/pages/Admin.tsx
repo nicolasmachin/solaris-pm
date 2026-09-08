@@ -1243,7 +1243,18 @@ function RoleDeleteConfirm({
 
 // ─── Tab 3: Configuración del sistema ────────────────────────────────────────
 
-const SETTING_META: Record<string, { label: string; type: "select" | "number" | "text" | "toggle"; options?: { value: string; label: string }[] }> = {
+const SETTING_META: Record<
+  string,
+  {
+    label: string;
+    type: "select" | "number" | "text" | "toggle";
+    options?: { value: string; label: string }[];
+    /** Valor que se muestra mientras la fila no existe en la base. */
+    fallback?: string;
+    /** Explicación bajo el campo, para los que no se entienden solos. */
+    help?: string;
+  }
+> = {
   DEFAULT_CURRENCY:       { label: "Moneda por defecto", type: "select", options: [{ value: "USD", label: "USD — Dólar" }, { value: "UYU", label: "UYU — Peso uruguayo" }, { value: "ARS", label: "ARS — Peso argentino" }] },
   DATE_FORMAT:            { label: "Formato de fecha", type: "select", options: [{ value: "DD/MM/YYYY", label: "DD/MM/YYYY" }, { value: "MM/DD/YYYY", label: "MM/DD/YYYY" }, { value: "YYYY-MM-DD", label: "YYYY-MM-DD" }] },
   TIMEZONE:               { label: "Zona horaria", type: "select", options: [{ value: "America/Argentina/Buenos_Aires", label: "Argentina (GMT-3)" }, { value: "America/Montevideo", label: "Uruguay (GMT-3)" }, { value: "America/Santiago", label: "Chile (GMT-4)" }, { value: "America/Lima", label: "Perú (GMT-5)" }] },
@@ -1253,6 +1264,18 @@ const SETTING_META: Record<string, { label: string; type: "select" | "number" | 
   DEFAULT_LANGUAGE:       { label: "Idioma", type: "select", options: [{ value: "es", label: "Español" }, { value: "en", label: "English" }] },
   CO2_FACTOR:             { label: "Factor CO₂ (ton/MWh)", type: "number" },
   PROPOSAL_SCRIPT_PATH:   { label: "Path del script de propuesta", type: "text" },
+  ENCUESTA_NOTA_BAJA_MAX: {
+    label: "Nota baja en las encuestas",
+    type: "select",
+    fallback: "3",
+    options: [
+      { value: "1", label: "1 estrella" },
+      { value: "2", label: "2 estrellas o menos" },
+      { value: "3", label: "3 estrellas o menos" },
+      { value: "4", label: "4 estrellas o menos" },
+    ],
+    help: "A partir de qué puntaje una respuesta se considera mala y genera un aviso a Experiencia Solar. Alcanza con que UNA de las tres preguntas esté en el umbral o por debajo.",
+  },
 };
 
 function TabConfiguracion() {
@@ -1299,7 +1322,7 @@ function TabConfiguracion() {
     <div style={{ maxWidth: 520 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
         {Object.entries(SETTING_META).map(([key, meta]) => {
-          const val = currentValues[key] ?? "";
+          const val = currentValues[key] ?? meta.fallback ?? "";
           return (
             <div key={key}>
               <label style={labelStyle}>{meta.label}</label>
@@ -1326,6 +1349,11 @@ function TabConfiguracion() {
                 <input style={inputStyle} type="number" step="0.01" value={val} onChange={e => setValue(key, e.target.value)} />
               ) : (
                 <input style={inputStyle} type="text" value={val} onChange={e => setValue(key, e.target.value)} />
+              )}
+              {meta.help && (
+                <p style={{ fontSize: 11, color: "var(--color-text-muted)", marginTop: 4, lineHeight: 1.5 }}>
+                  {meta.help}
+                </p>
               )}
             </div>
           );
