@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.0 — 7 de septiembre de 2026
+**Voltia · Uruguay** · Versión 1.0 — 8 de septiembre de 2026
 
 > Este manual es **el procedimiento y el manual de uso de la app, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -399,3 +399,524 @@ tiene"**, que es lo que realmente falta hoy.
 > sobre otra cosa se ignora.
 
 ---
+
+## 6 · Etapa 2 — De la obra a la habilitación
+
+**Dónde se ve:** ficha del cliente → bloque **E2** del pipeline. O Experiencia
+Solar → **Recorrido**, columna del medio.
+
+**El semáforo interno de esta etapa: 5 días.**
+
+Es **la etapa más difícil de todo el recorrido**, y conviene entender por qué: el
+cliente tiene los paneles instalados en su techo, ya pagó buena parte, **y no
+puede usarlos**. Todos los días los ve y no generan nada. Mientras tanto, el
+trámite avanza en una oficina de UTE sobre la que no tenemos control.
+
+**Lo único que sostiene esta etapa es la expectativa que se fijó en el paso 5.2.**
+Si al cliente se le explicó al principio que esto iba a llevar semanas, la espera
+es tolerable. Si no, cada día es una traición.
+
+---
+
+### 6.1 · Aviso de habilitación otorgada — la Regla de Oro
+
+| | |
+|---|---|
+| **Cuándo** | Apenas UTE habilita |
+| **Quién** | Experiencia Solar |
+| **Plazo** | **24-48 horas. El más corto de todo el recorrido.** |
+| **En la app** | **Pasos** → E2 → *"Aviso de habilitación otorgada"* |
+| **Qué decir** | Plantilla **"Ya podés encender + capacitación"** |
+
+> ## Cada día que pasa el cliente deja de ahorrar plata.
+
+No es una demora administrativa: es dinero suyo que se pierde y que no se
+recupera. Por eso es el único hito con alertas automáticas que escalan.
+
+**Cómo funciona la alerta:** cuando Tramitación marca el trámite como terminado,
+el sistema arranca el reloj solo. A las **24 horas** le recuerda al equipo de
+Experiencia Solar; a las **48 horas** escala a Administración. Además el cliente
+aparece con **triángulo rojo** en el listado y en el Recorrido, y encabeza el
+correo de la mañana.
+
+**Cómo se apaga la alerta:** registrando la interacción con motivo **"Aviso de
+habilitación"** (el botón *"Marcar avisado al Generador"* en la ficha). Tildar el
+paso no alcanza: la alarma mira la bitácora.
+
+**Va junto con la capacitación (hito 6), en el mismo contacto.** Se evaluó
+separarlas —avisar primero y capacitar unos días después con datos reales en la
+app— y se prefirió un solo contacto bien hecho: el cliente está en su momento de
+mayor atención justo cuando le decimos que ya puede encender.
+
+Qué tiene que llevar ese mensaje:
+
+1. **Que ya puede encender**, sin ambigüedad.
+2. **Cómo encenderlo**, paso a paso.
+3. **El acceso a la app** para ver la generación.
+4. **Qué generación esperar hoy**, con un número concreto para su instalación. Sin
+   esto, el cliente no sabe si lo que ve está bien o mal.
+
+---
+
+### 6.2 · Aviso de la encuesta de habilitación
+
+Contacto propio, unos días después de que encendió. Misma regla que la de obra:
+**nunca pegada a otro mensaje**.
+
+---
+
+## 7 · Etapa 3 — Post-habilitación
+
+**Dónde se ve:** ficha del cliente → bloque **E3**.
+
+**El semáforo interno de esta etapa: 10 días.**
+
+El cliente ya está generando. Cambió lo que necesita: antes quería saber cuándo;
+ahora quiere **entender lo que ve** y saber que si algo falla nos enteramos.
+
+**Los cinco pasos de esta etapa vencen a los 15 días hábiles** de la habilitación,
+y el reloj lo arranca solo el sistema cuando Tramitación cierra el trámite.
+
+---
+
+### 7.1 · Capacitación: material y videos
+
+| | |
+|---|---|
+| **Plazo** | 15 días hábiles |
+| **Qué decir** | Plantilla **"Material de capacitación"** |
+
+**No es una llamada: es el envío del material.** El paso se tilda cuando se mandó,
+no cuando el cliente lo miró. Si quiere recorrerlo por teléfono, mejor, pero no es
+condición.
+
+### 7.2 · Acceso a la plataforma del inversor
+
+| | |
+|---|---|
+| **Plazo** | 15 días hábiles |
+| **Qué decir** | Plantilla **"Acceso a la plataforma del inversor"** |
+
+**El usuario y la contraseña los deja registrados el técnico** durante la
+instalación. Acá solo se le entregan al cliente. Si no están registrados, el
+problema es anterior y hay que ir a buscarlo a Operaciones.
+
+### 7.3 · Alta en reportes mensuales
+
+| | |
+|---|---|
+| **Plazo** | 15 días hábiles |
+| **Qué decir** | Plantilla **"Alta en los reportes mensuales"** |
+
+Es **el único correo automático que el cliente va a recibir de nosotros en 25
+años**. Vale la pena decírselo así: no es spam, es su resumen mensual.
+
+### 7.4 · Repaso de garantías
+
+| | |
+|---|---|
+| **Plazo** | 15 días hábiles |
+| **Qué decir** | Plantilla **"Garantías y cierre"** |
+
+**No se produce ningún documento nuevo**: la garantía ya está en el contrato que
+firmó. Lo que se hace es recordarle lo que firmó, en criollo, cuando ya tiene el
+sistema andando y le importa.
+
+Incluye el **mantenimiento anual sin cargo los primeros 2 años**, que también está
+en el contrato y que la mayoría de los clientes no recuerda.
+
+### 7.5 · Recorrido por el portal
+
+Tickets, encuestas, reportes y documentación. Es el paso que convierte el portal
+de "una cosa que me mandaron" en una herramienta que va a usar.
+
+---
+
+## 8 · La rutina diaria de Experiencia Solar
+
+Tres herramientas, en este orden.
+
+### 8.1 · El correo de la mañana
+
+Llega un correo diario con **lo que está pendiente**, con la misma estructura que
+la pantalla del Recorrido:
+
+1. **Arriba, lo que ya venció** — avisos de habilitación sin dar, pasos con el
+   plazo pasado y reclamos del cliente sin responder. Lo más arrastrado primero.
+2. **Abajo, por etapa** — quiénes están fuera de cadencia o tienen novedad sin
+   avisar.
+
+**Si no hay nada pendiente, no llega.** Un correo vacío todos los días enseña a
+ignorarlo.
+
+Es **un correo aparte** del resumen diario de siempre: aquel cuenta lo que pasó,
+este cuenta lo que falta hacer.
+
+> Quién lo recibe se configura por rol en **Administración → Resumen diario**,
+> opción "Recorrido de Experiencia Solar". Si alguien no lo recibe, es porque su
+> rol no lo tiene tildado.
+
+### 8.2 · El Recorrido
+
+**Experiencia Solar → Recorrido.** La cartera partida en las tres etapas, una
+columna cada una.
+
+**Cómo está ordenado, que es lo que lo hace útil:**
+
+1. **Las alertas con plazo van arriba** de su columna. El reloj corre.
+2. Después, **por días sin contacto**, del que hace más que no se le habla al que
+   menos.
+3. **Los que nunca tuvieron contacto van primero**: "nunca" es peor que "hace
+   mucho".
+
+**Las dos señales significan cosas distintas:**
+
+| Señal | Qué dice | Cuándo se apaga |
+|---|---|---|
+| 🔺 **Triángulo rojo** | Hay que avisarle algo **y hay plazo** | Al registrar el aviso |
+| 🟡 **Punto** | Hay algo nuevo para mirar | Al mirarlo |
+
+**El punto no cambia el orden, a propósito.** Es un "no leído", no una tarea. Si
+reordenara, un cliente con novedad pero contactado ayer taparía al que lleva
+quince días sin que nadie le hable.
+
+### 8.3 · La ficha del cliente
+
+Se entra desde cualquiera de las dos vistas anteriores. Es **una sola pantalla**:
+
+- **Arriba, el pipeline del recorrido** — las tres etapas, con el avance de cada
+  una y marcada la etapa donde está el cliente. Se lee igual que el pipeline del
+  proyecto.
+- **Se hace clic en una etapa y abajo aparecen sus pasos**, con el botón de
+  plantillas.
+- **A la derecha, todo el historial**, lo más nuevo arriba, y el formulario para
+  registrar un contacto pegado arriba de todo.
+- Los datos del cliente están en la tarjeta plegable **"Datos del cliente"**.
+
+---
+
+## 9 · Los mensajes modelo
+
+**Están en la app.** Ficha del cliente → una etapa del pipeline → botón
+**"Plantillas"**. Cada paso que tiene mensaje propio también lo abre directo con
+el ícono de mensaje.
+
+Tres cosas para saber:
+
+- **Vienen con el nombre del cliente y el tuyo ya puestos.** Lo que el sistema no
+  puede saber —la fecha, el motivo, el plazo, el nombre del capataz— queda marcado
+  como `{fecha}` a la vista, y abajo dice **qué falta completar**. Un hueco sin
+  llenar se nota al leer; uno inventado por el sistema se manda mal.
+- **El texto se edita antes de copiar.** Son un piso de tono y de información, no
+  un molde. Lo que no se puede perder es lo que el hito exige.
+- **Al copiar queda registrado el contacto en la bitácora** (se puede destildar).
+  Es la diferencia entre que el historial del cliente refleje la relación o quede
+  vacío.
+
+Los 15 mensajes: bienvenida · acceso al portal · presentación del capataz · fecha
+tentativa · fecha confirmada · reprogramación · visita a la propiedad · obra
+terminada · encuesta de instalación · ya podés encender + capacitación · encuesta
+de habilitación · material de capacitación · acceso al inversor · alta en reportes
+· garantías y cierre.
+
+---
+
+## 10 · Reclamos
+
+> ## Respuesta el mismo día hábil, siempre.
+
+Aunque sea *"lo estoy viendo, te confirmo mañana"*. **La solución puede demorar;
+el cliente nunca queda sin respuesta.**
+
+### Por dónde entran
+
+| Vía | Qué pasa |
+|---|---|
+| **Portal del cliente** (tickets) | Queda registrado, notifica a Experiencia Solar y **aparece en el correo de la mañana** si no se respondió |
+| **WhatsApp** | Es por donde entra la mayoría hoy. **No queda registrado solo**: hay que abrirlo como ticket o al menos registrarlo en la bitácora |
+
+**Un reclamo cuenta como sin responder** cuando está abierto, lo abrió el cliente
+desde el portal y **no tiene ningún comentario de alguien de Voltia**. Eso es lo
+que mide el compromiso del mismo día.
+
+### Estados de un ticket
+
+`Abierto` → `Derivado` (pasó a un área técnica) → `En progreso` → `Resuelto` →
+`Cerrado`.
+
+**Derivar no es responder.** Si un reclamo se deriva a Ingeniería, el cliente
+igual tiene que recibir una respuesta ese día: *"ya lo estamos viendo con el
+equipo técnico"*.
+
+### Por qué importa que entren por el portal
+
+Un reclamo por WhatsApp le llega a una persona. Si esa persona está de licencia,
+el reclamo no existe. Por el portal queda registrado, se mide y **nadie tiene que
+acordarse**. Es la razón principal para masificar el acceso al portal.
+
+---
+
+## 11 · Encuestas de satisfacción
+
+**Las genera el sistema solo.** Aparecen en el portal del cliente.
+
+| Encuesta | Cuándo se dispara |
+|---|---|
+| **Instalación** | Al cerrarse la etapa de obra |
+| **Habilitación** | Al finalizar el trámite UTE |
+| **Aniversario** | En cada aniversario de la puesta en marcha |
+
+**Tres preguntas cada una, y distintas según el momento.** Solo la primera es
+obligatoria: con una tasa de respuesta baja, sumar fricción sería contraproducente.
+
+| | Instalación | Habilitación | Aniversario |
+|---|---|---|---|
+| **1** | Conformidad general | Experiencia general | Conformidad del año |
+| **2** | Claridad del proceso | Acompañamiento en la espera | Si nos recomendaría |
+| **3** | El equipo el día de la obra | Claridad al encender | Respuesta cuando necesitó algo |
+
+**El puntaje de la encuesta es el promedio** de las que haya contestado. Las tres
+se miden también por separado: la 2 de habilitación evalúa el acompañamiento; las
+otras, a la empresa y al servicio.
+
+**Nota baja** = **cualquiera** de las tres en el umbral o por debajo. Por defecto,
+3 estrellas o menos; se cambia en Administración → Configuración. Una nota baja
+**genera un aviso a Experiencia Solar** para seguimiento, y **cada nota baja genera
+el suyo**: un cliente reiteradamente disconforme no se silencia después del primero.
+
+**Lo que el sistema NO hace es avisarle al cliente que tiene una encuesta.** Por
+eso hay un paso del recorrido para eso (5.9 y 6.2). Sin ese aviso, la encuesta se
+queda en el portal sin que nadie la vea.
+
+---
+
+## 12 · Mantenimientos y el acompañamiento largo
+
+**El contrato incluye mantenimiento anual sin cargo los primeros 2 años.**
+
+**Estado real:** el sistema calcula y muestra **cuándo cumple años** cada
+instalación (en la ficha, "Próximo mantenimiento"), pero **no hay agendamiento
+automático ni alerta de vencido**. Los mantenimientos se agendan a mano.
+
+Esto es una decisión, no un olvido: auto-agendar visitas a la propiedad de un
+cliente sin que nadie las confirme choca con la regla de que **si no está
+agendado, no se va**. Primero el listado, después la agenda manual.
+
+**Monitoreo diario:** el sistema revisa todos los días que las plantas estén
+generando. Es lo que permite prometerle al cliente que **si su planta deja de
+generar nos enteramos nosotros**. Ver el capítulo de monitoreo en la
+documentación técnica.
+
+---
+
+## 13 · Las reglas duras
+
+Esta es la página que hay que saber de memoria.
+
+> ### 1. Nunca se le devuelve el organigrama al cliente.
+> Nada de *"eso lo tenés que hablar con el capataz"*. Él contrató a Voltia, no a
+> un área.
+
+> ### 2. El cliente nunca es el mensajero de Voltia.
+> Si te preguntan algo que no es tuyo: *"te averiguo y te confirmo"*. La pelota
+> circula puertas adentro.
+
+> ### 3. Si no está agendado, no se va.
+> Ninguna visita a la propiedad del cliente sin que esté en el calendario y
+> avisada. La queja que originó todo esto empezó acá.
+
+> ### 4. Toda reprogramación se avisa el mismo día.
+> Con el motivo, aunque todavía no haya fecha nueva.
+
+> ### 5. Habilitación: 24 a 48 horas.
+> Cada día que pasa el cliente deja de ahorrar.
+
+> ### 6. Reclamos: respuesta el mismo día hábil, siempre.
+> La solución puede demorar. La respuesta no.
+
+> ### 7. No se promete cadencia.
+> Se promete que en cada hito se entera. Una promesa incumplida daña más que el
+> silencio explicado.
+
+> ### 8. Las malas noticias se dan antes de que el cliente pregunte.
+
+> ### 9. Todo mensaje cierra con el próximo paso.
+> *"Ahora arranca el trámite y te aviso cuando habiliten"* — nunca un mensaje que
+> deje al cliente sin saber qué sigue.
+
+> ### 10. Lo que no se registra, no existe.
+> Para el sistema, para quien te reemplaza y para el cliente que reclama dentro de
+> cuatro meses.
+
+---
+
+## 14 · Cuando algo sale mal
+
+### El cliente reclama que nadie le avisó de algo
+
+1. **Mirá el Historial de su ficha** antes de responder. Ahí está todo: los
+   contactos registrados, los avances de etapa, los comentarios de obra.
+2. Si **efectivamente no se le avisó**: se reconoce y se avisa ahora. No se
+   inventa que sí. *"Tenés razón, esto se nos pasó"* cierra una conversación que
+   una excusa mantiene abierta.
+3. Si **sí se le avisó** y no lo recuerda: se le reenvía lo que se le mandó, sin
+   señalarle que ya se lo habíamos dicho.
+
+### Se pasó un plazo y el paso está en rojo
+
+**Vencer no bloquea nada.** El paso vencido no frena la obra ni el trámite: se ve,
+se hace, y listo. Lo que no hay que hacer es tildarlo sin haberlo hecho — el
+tablero pasa a mentir y perdemos la única señal que tenemos.
+
+### El cliente pregunta algo que no sé
+
+*"Te averiguo y te confirmo"*, y un plazo concreto: *"antes de fin del día"*.
+Después se averigua internamente. **Nunca se lo manda a preguntar a otro.**
+
+### Un área tuvo un intercambio con el cliente y no me enteré
+
+Es el problema estructural del modelo, y se resuelve con la regla del capítulo 4:
+cada área comenta el proyecto donde ya está trabajando, y eso llega al Historial
+de la ficha. Si alguien no lo está haciendo, **el problema no es de la persona
+sino de que registrar le cuesta**: hay que mirar desde dónde tendría que hacerlo.
+
+### El cliente no tiene mail
+
+**Ya no es un impedimento para darle acceso al portal.** Se le crea igual: el
+sistema usa su cédula si está cargada, y si no, arma un usuario con su nombre
+(`maria.fernandez`). El modal muestra cuál quedó para dictárselo.
+
+**Lo que sí cambia:** sin mail **no puede recuperar la contraseña solo**. Si se la
+olvida, hay que resetearla desde el botón de reenviar acceso.
+
+### Un cliente sin contacto hace mucho, y no sé qué decirle
+
+No hace falta una novedad para escribir. Un *"te escribo para contarte que tu
+trámite sigue en curso, sin novedades todavía; apenas haya algo te aviso"* vale
+más que el silencio. Lo que no se puede es inventar un avance que no existe.
+
+---
+
+## Anexo A · Los mensajes modelo
+
+Los 15 mensajes están **en la app** (ficha del cliente → etapa → "Plantillas"),
+que es donde hay que usarlos. Se listan acá los cuatro que sostienen el modelo,
+para poder discutirlos en equipo sin abrir el sistema.
+
+**Bienvenida** — la que sostiene todo el modelo por eventos:
+
+> Hola {nombre}, soy {referente} de Voltia. Voy a ser tu contacto durante todo el
+> proceso, así que cualquier cosa escribime directo a mí.
+>
+> Te cuento cómo sigue: primero preparamos la ingeniería y los materiales, después
+> hacemos la instalación (te aviso la fecha apenas la tengamos), y cuando la obra
+> está pronta arranca el trámite con UTE, que es el paso más largo y depende de
+> ellos — suele llevar {plazo UTE}. Cuando UTE habilita, te aviso enseguida para
+> que puedas encender.
+>
+> No te voy a escribir todas las semanas porque muchas veces no hay novedades,
+> pero cada vez que pase algo te aviso. Y si querés saber cómo viene, me preguntás
+> cuando quieras.
+
+**Presentación del capataz** — presentar, no derivar:
+
+> Hola {nombre}, durante la obra te va a coordinar {capataz} para horarios y
+> accesos — te paso su contacto: {teléfono}.
+>
+> Cualquier otra cosa seguí conmigo, como hasta ahora.
+
+**Obra terminada** — las tres cosas que no pueden faltar:
+
+> Hola {nombre}, terminamos la instalación.
+>
+> Ahora arranca el trámite con UTE para que te habiliten la conexión: es el paso
+> más largo y depende de ellos, suele llevar {plazo UTE}.
+>
+> Todavía no podés encender el sistema hasta que UTE habilite — apenas lo hagan te
+> aviso el mismo día.
+
+**Ya podés encender** — la Regla de Oro:
+
+> Hola {nombre}, UTE ya habilitó tu instalación: ya podés encenderla. Te explico
+> cómo:
+>
+> {pasos para encender}
+>
+> Te dejo también el acceso a la app para que veas cuánto estás generando:
+> {accesos e instrucciones}. En un día soleado como hoy deberías ver unos
+> {generación esperable}. Los primeros días conviene mirarla seguido para
+> acostumbrarte.
+>
+> Cualquier duda con la app o con lo que ves, escribime.
+
+---
+
+## Anexo B · La tabla de referentes que se le entrega al cliente
+
+Se entrega en la bienvenida. **Se presenta como "este es tu equipo", nunca como
+"estas son nuestras áreas".**
+
+> **Tu equipo en Voltia**
+>
+> | Para… | Escribile a… |
+> |---|---|
+> | Horarios y accesos el día de la obra | {capataz} — {teléfono} |
+> | Todo lo demás: cómo viene tu instalación, fechas, el trámite, cualquier duda | {referente} — {teléfono} |
+>
+> **Si no sabés a quién, escribile a {referente}.**
+
+**Salvaguarda:** esta tabla **no puede usarse jamás para rebotar** a un cliente
+que preguntó en el lugar equivocado. Si le escribe al capataz algo que no es de
+obra, el capataz lo resuelve internamente — no lo manda a otro lado.
+
+---
+
+## Anexo C · Glosario
+
+| Término | Qué es |
+|---|---|
+| **Generador** | El cliente, una vez que su instalación existe. Es como lo llama UTE y como lo llama la app. |
+| **E1 / E2 / E3** | Las tres etapas del recorrido del cliente. No son las etapas del proyecto. |
+| **Cadencia** | Los días sin contacto a partir de los cuales un cliente se marca. E1: 3 · E2: 5 · E3: 10. **Es una alarma interna, no una promesa al cliente.** |
+| **Paso** | Un hito de acompañamiento del recorrido. Algunos tienen plazo. **Vencer no bloquea.** |
+| **Novedad** | Pasó algo en el proyecto posterior al último contacto registrado: el cliente todavía no lo sabe. |
+| **Regla de Oro** | El aviso de habilitación dentro de 24-48 h. |
+| **Traspaso** | El pase formal de trabajo entre áreas dentro del sistema. |
+| **Ticket** | Un reclamo o consulta registrado, con estado y responsable. |
+| **Portal** | La vista que tiene el cliente: avance, documentación, reportes, tickets y encuestas. |
+
+---
+
+## Anexo D · Qué falta y qué se decidió no hacer
+
+Es la parte que más se consulta cuando algo no aparece donde uno lo busca.
+
+**Decisiones tomadas a propósito:**
+
+- **El sistema no le escribe al cliente por su cuenta.** Toda comunicación
+  saliente la hace una persona; el sistema arma el mensaje y recuerda cuándo. La
+  única excepción es el reporte mensual de generación.
+- **Los mantenimientos no se auto-agendan.** Choca con "si no está agendado, no se
+  va". Primero el listado, después la agenda manual.
+- **No hay check de "contacto semanal".** El cumplimiento se calcula desde las
+  interacciones registradas, no se declara tildando una casilla. Una casilla que
+  se tilda una vez y queda tildada para siempre es exactamente lo que hacía que
+  esto no funcionara.
+- **El acompañamiento salió del pipeline del proyecto.** Al equipo de obra no le
+  aportaba y le ensuciaba la vista; medido antes de sacarlo, de 71 proyectos que
+  lo tenían **uno solo tenía algo tildado**.
+
+**Lo que falta:**
+
+- **El 76 % de los generadores todavía no tiene el acceso al portal creado.** Ya no
+  hace falta el mail para creárselo, pero **hay que crearlos**: no se crean solos.
+  Es lo que más limita a las encuestas y a los reclamos.
+- **Los mails que se le mandan al cliente no cuentan como contacto** en la
+  bitácora: hay que registrarlos aparte.
+- **No hay métricas de satisfacción** consolidadas ni antigüedad de reclamos.
+- **El portal no muestra el estado ni la fecha de obra**, que es lo primero que el
+  cliente querría ver ahí.
+
+---
+
+*Manual de Posventa — Experiencia Solar · Voltia · v1.0 · 8 de septiembre de 2026*

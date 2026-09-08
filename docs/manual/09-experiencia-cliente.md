@@ -11,6 +11,13 @@ encuestas, mantenimientos, reportes fotovoltaicos y monitoreo diario.
 
 # El proceso de posventa
 
+> **El procedimiento para el equipo vive en
+> [`docs/Manual-Posventa-Experiencia-Solar.md`](../Manual-Posventa-Experiencia-Solar.md)**,
+> escrito para Alejandra, los capataces y el resto de las áreas: qué hacer, quién,
+> en qué plazo y en qué pantalla. Este capítulo es el de desarrollo — qué sostiene
+> ese procedimiento en el código y por qué está resuelto así. Lo que sigue resume
+> el procedimiento sólo lo necesario para poder leer el resto.
+
 ## Para qué existe
 
 Voltia le vende a una persona una instalación que tarda meses entre la firma y el

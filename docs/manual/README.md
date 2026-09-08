@@ -19,6 +19,7 @@ comportamiento raro es un error o una decisión.
 | `CLAUDE.md` | *¿Cómo se trabaja en este repo?* | raíz |
 | `docs/features/*/SPEC.md` | *¿Qué se planeó construir en su momento?* | histórico, **no** fuente de verdad |
 | `docs/pendientes/` | *¿Qué falta hacer?* | tablero de trabajo |
+| [Manual de Posventa](../Manual-Posventa-Experiencia-Solar.md) | *¿Qué tiene que hacer el equipo con el cliente, y cuándo?* | `docs/`, para el equipo — no para desarrollo |
 | `docs/DEPLOY.md`, `ROLLBACK.md` | *¿Cómo se pone en producción?* | operación |
 
 **Los SPEC no mandan.** Son documentos de diseño escritos *antes* de construir, y

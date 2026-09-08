@@ -4,6 +4,12 @@
 
 ### 8 de septiembre de 2026
 
+#### Ya está escrito el Manual de Posventa
+
+- Se escribió el **manual completo de Experiencia Solar**: el procedimiento y el modo de usarlo en la app, juntos. Cada paso dice qué hacer, quién lo hace, en qué plazo y en qué pantalla.
+- Tiene 14 capítulos y 4 anexos: el principio rector, quién habla con el cliente, los 7 hitos que se avisan sí o sí, las tres etapas paso por paso, la rutina diaria, reclamos, encuestas, **las 10 reglas duras** y qué hacer cuando algo sale mal.
+- Incluye los **mensajes modelo** y la **tabla de referentes** que se le entrega al cliente en la bienvenida, más un anexo con lo que falta y lo que se decidió no hacer a propósito.
+
 #### El umbral de "nota baja" de las encuestas ya se configura desde la app
 
 - En **Administración → Configuración** apareció **"Nota baja en las encuestas"**: a partir de qué puntaje una respuesta se considera mala y **genera el aviso a Experiencia Solar**. Por defecto son 3 estrellas o menos.
