@@ -466,7 +466,13 @@ enum ProposalStatus {
 
 model User {
   id                             String                      @id @default(cuid())
-  email                          String                      @unique
+  /// Puede ser null: los Generadores del portal muchas veces no tienen mail y
+  /// entran con `username`. Todo usuario tiene email O username (o los dos).
+  email                          String?                     @unique
+  /// Alias corto de ingreso, alternativo al mail. Los internos usan su nombre
+  /// ("nicolas"); los Generadores sin mail, su cédula o un alias generado.
+  /// Siempre en minúsculas: el login no distingue mayúsculas.
+  username                       String?                     @unique
   password                       String
   name                           String
   phone                          String?

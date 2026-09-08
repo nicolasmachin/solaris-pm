@@ -551,7 +551,7 @@ function CredentialsModal({
 }) {
   const [copied, setCopied] = useState(false);
   const portalUrl = `${window.location.origin}/portal`;
-  const message = buildPortalWelcomeMessage({ name, email, password });
+  const message = buildPortalWelcomeMessage({ name, identificador: email, password });
 
   function copy() {
     navigator.clipboard.writeText(message).then(() => {

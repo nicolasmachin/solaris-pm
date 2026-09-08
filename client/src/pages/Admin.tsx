@@ -52,7 +52,9 @@ type UserRole = string;
 interface AdminUser {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
+  /** Alias corto de ingreso, alternativo al mail. */
+  username: string | null;
   role: UserRole;
   createdAt: string;
 }
@@ -197,6 +199,7 @@ function UserModal({
   const isEdit = !!user;
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
+  const [username, setUsername] = useState(user?.username ?? "");
   const [role, setRole] = useState<UserRole>(user?.role ?? "OPERACIONES");
   const [password, setPassword] = useState("");
   const [saving, setSaving] = useState(false);
@@ -209,10 +212,10 @@ function UserModal({
     setSaving(true);
     try {
       if (isEdit) {
-        await apiClient.patch(`/api/users/${user!.id}`, { name, email, role });
+        await apiClient.patch(`/api/users/${user!.id}`, { name, email, username, role });
         toast.success("Usuario actualizado");
       } else {
-        await apiClient.post("/api/users", { name, email, role, password });
+        await apiClient.post("/api/users", { name, email, username, role, password });
         toast.success("Usuario creado");
       }
       onSaved();
@@ -240,6 +243,21 @@ function UserModal({
           <div>
             <label style={labelStyle}>Email *</label>
             <input style={inputStyle} type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+          </div>
+          <div>
+            <label style={labelStyle}>Usuario corto</label>
+            <input
+              style={inputStyle}
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              autoCapitalize="none"
+              spellCheck={false}
+              placeholder="nicolas"
+            />
+            <p style={{ fontSize: 11, color: "var(--color-text-muted)", marginTop: 4 }}>
+              Alternativa al mail para entrar: se puede escribir esto o el mail completo, indistinto.
+              Sin espacios ni arroba; se guarda en minúsculas. Vacío = solo entra con el mail.
+            </p>
           </div>
           {!isEdit && (
             <div>
@@ -387,7 +405,14 @@ function TabUsuarios() {
                   onMouseEnter={e => (e.currentTarget.style.background = "var(--color-bg-card-hover)")}
                   onMouseLeave={e => (e.currentTarget.style.background = "")}>
                   <td style={{ padding: "10px 12px", fontSize: 13, color: "var(--color-text-primary)" }}>{u.name}</td>
-                  <td style={{ padding: "10px 12px", fontSize: 12, color: "var(--color-text-secondary)", fontFamily: "var(--font-mono)" }}>{u.email}</td>
+                  <td style={{ padding: "10px 12px", fontSize: 12, color: "var(--color-text-secondary)", fontFamily: "var(--font-mono)" }}>
+                    {u.email ?? "—"}
+                    {u.username && (
+                      <div style={{ fontSize: 11, color: "var(--color-text-muted)" }} title="También entra escribiendo esto">
+                        o {u.username}
+                      </div>
+                    )}
+                  </td>
                   <td style={{ padding: "10px 12px" }}><RoleBadge role={u.role} /></td>
                   <td style={{ padding: "10px 12px", fontSize: 11, color: "var(--color-text-muted)", fontFamily: "var(--font-mono)" }}>
                     {new Date(u.createdAt).toLocaleDateString("es-AR")}

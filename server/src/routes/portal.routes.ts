@@ -61,7 +61,7 @@ function ensureUser(request: import("fastify").FastifyRequest) {
 function serializeClient(c: {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
   phone: string | null;
   passwordTemporary: boolean;
   deletedAt: Date | null;

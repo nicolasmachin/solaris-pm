@@ -4,6 +4,14 @@
 
 ### 7 de septiembre de 2026
 
+#### Se puede entrar con un usuario corto, y los clientes sin mail ya tienen acceso
+
+- **Los usuarios internos pueden entrar escribiendo un usuario corto** en vez del mail completo: "nicolas" en lugar de nicolas@voltia.com.uy. **Las dos formas funcionan igual**, y no importan las mayúsculas ni los acentos. Se asigna desde **Administración → Usuarios**, en el campo "Usuario corto"; si se deja vacío, se sigue entrando solo con el mail.
+- **Ahora se le puede crear acceso al portal a un cliente aunque no tengamos su mail**, que era el motivo por el que **72 de 95 Generadores no tenían acceso** — y sin acceso no pueden abrir tickets ni responder encuestas.
+- Cuando no hay mail, el sistema arma el usuario en este orden: **la cédula** si está cargada en el proyecto, y si tampoco está, **un alias con su nombre** ("maria.fernandez"). La cédula va primero porque es un dato que el cliente ya se sabe de memoria.
+- El modal de crear usuario **muestra cuál quedó** para que se le dicte tal cual, y el mensaje para copiar dice "Usuario" en vez de "Email" cuando corresponde.
+- La pantalla de ingreso ahora dice **"Usuario o email"**.
+
 #### Experiencia Solar — la ficha del cliente ahora es una sola pantalla
 
 - Se terminaron las cuatro pestañas (Resumen, Pasos, Interacciones, Historial). Para saber cómo venía un cliente había que recorrer las cuatro y acordarse de lo de la anterior.

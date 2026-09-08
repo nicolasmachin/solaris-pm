@@ -68,7 +68,10 @@ export type UserRole =
 
 export interface User {
   id: string;
-  email: string;
+  /** null en los Generadores del portal que no tienen mail: entran con `username`. */
+  email: string | null;
+  /** Alias corto de ingreso, alternativo al mail. */
+  username?: string | null;
   name: string;
   role: UserRole;
   passwordTemporary?: boolean;

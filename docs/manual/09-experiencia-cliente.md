@@ -449,6 +449,35 @@ Decisiones que lo gobiernan:
   notificación in-app: existe en el enum sólo para que la matriz pueda
   configurarlo.
 
+**Acceso al portal sin mail** (`services/clientes/portal-user.service.ts` +
+`utils/username.ts`). Hasta septiembre de 2026 crear el acceso exigía un mail, y
+por eso **72 de 95 generadores no lo tenían**: sin acceso no pueden abrir tickets
+ni responder encuestas, que es la mitad de lo que este módulo mide.
+
+Ahora el identificador de ingreso sale de una cascada (`resolverIdentificador`):
+
+1. **El mail**, si lo tenemos. Es el mejor: se lo sabe y le sirve para recuperar
+   la contraseña.
+2. **La cédula del proyecto** (`Project.ciCliente`), sin puntos ni guion. Va antes
+   que el alias generado porque es un dato que el cliente ya conoce.
+3. **Un alias derivado del nombre** (`maria.fernandez`), con sufijo numérico si ya
+   está tomado.
+
+Detalles que importan:
+
+- El campo `User.email` pasó a ser **opcional**, y se agregó `User.username`
+  (único). El login busca por los dos: **el espacio de nombres es compartido**, así
+  que un alias nunca puede ser el mail de otro — si no, el ingreso sería ambiguo.
+- Los alias se guardan **normalizados**: minúsculas, sin tildes, sin espacios y sin
+  `@`. "Nicolás" y "NICOLAS" resuelven al mismo usuario.
+- Sirve igual para los **usuarios internos**: se asigna en Administración →
+  Usuarios ("Usuario corto") y se puede entrar con el alias o con el mail,
+  indistinto. Lo asigna quien administra usuarios, no cada uno para sí:
+  `PATCH /users/me` no acepta el campo.
+- **Un usuario sin mail no puede recuperar la contraseña por su cuenta.** Hay que
+  resetearla desde la app (botón de reenviar acceso). Es el costo de poder crear el
+  acceso sin mail, y es preferible a no tener acceso.
+
 **Regla de Oro (hito 5).** El job `aviso-habilitacion.service.ts` corre cada 3
 horas: a las 24 h le recuerda al rol Experiencia Solar que avise al cliente, y a
 las 48 h escala a ADMIN. **El sistema no le escribe al cliente**: sólo alerta
@@ -594,8 +623,10 @@ historial de la ficha. Ver "historia clínica" arriba.
 - **El "seguimiento semanal" del pipeline es una casilla de una sola vez.** Se
   tilda y queda tildada para siempre: no es un contador recurrente ni vence.
 - **Las encuestas se depositan en el portal sin avisar por correo**, y el 76 % de
-  los generadores no tiene acceso al portal creado. Medido en producción: 18
-  encuestas pendientes contra 1 respondida.
+  los generadores todavía no tiene el acceso creado. Medido en producción: 18
+  encuestas pendientes contra 1 respondida. Desde septiembre de 2026 **la falta de
+  mail ya no es el impedimento** (ver "Acceso al portal sin mail"), pero los
+  accesos hay que crearlos: nadie los crea solo.
 - **El mantenimiento anual está en el contrato pero no tiene maquinaria.** No
   existe una entidad de mantenimiento: sólo una columna calculada al vuelo
   ("Próximo mantenimiento") en el listado de generadores. No hay alerta de

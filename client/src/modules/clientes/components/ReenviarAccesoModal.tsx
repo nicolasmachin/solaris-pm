@@ -40,8 +40,9 @@ export function ReenviarAccesoModal({ cliente, onClose }: { cliente: ClienteList
   async function copiarMensaje() {
     const texto = buildPortalWelcomeMessage({
       name: done?.name ?? cliente.nombre ?? "",
-      email: done?.email ?? cliente.mail ?? "",
+      identificador: done?.identificador || cliente.mail || "",
       password,
+      esAlias: !!done && !done.email,
     });
     try {
       await navigator.clipboard.writeText(texto);

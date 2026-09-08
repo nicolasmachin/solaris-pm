@@ -161,10 +161,14 @@ async function notificarResumen(r: ResumenEmision): Promise<void> {
   if (r.generados === 0 && r.esperandoDatos === 0 && r.bloqueados === 0) return;
 
   const equipo = await prisma.user.findMany({
-    where: { deletedAt: null, role: { name: { in: ["EXPERIENCIA_SOLAR", "ADMIN"] } } },
+    where: {
+      deletedAt: null,
+      role: { name: { in: ["EXPERIENCIA_SOLAR", "ADMIN"] } },
+      email: { not: null },
+    },
     select: { email: true },
   });
-  const destinatarios = [...new Set(equipo.map((u) => u.email))];
+  const destinatarios = [...new Set(equipo.map((u) => u.email).filter((e): e is string => !!e))];
   if (destinatarios.length === 0) return;
 
   const mes = mesEs(r.periodo);

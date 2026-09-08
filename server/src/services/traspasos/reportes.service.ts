@@ -7,10 +7,10 @@ import { TRASPASO_LABEL } from "./catalogo.js";
 
 async function getAdmins(): Promise<Array<{ email: string }>> {
   const admins = await prisma.user.findMany({
-    where: { deletedAt: null, role: { name: "ADMIN" }, email: { not: "" } },
+    where: { deletedAt: null, role: { name: "ADMIN" }, email: { not: null } },
     select: { email: true },
   });
-  return admins;
+  return admins.filter((a): a is { email: string } => !!a.email);
 }
 
 async function enviarAAdmins(subject: string, html: string, text: string): Promise<number> {

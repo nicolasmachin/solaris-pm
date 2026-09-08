@@ -191,6 +191,7 @@ import {
 } from "../services/digest/digest-config.service.js";
 import { AppError, badRequest, conflict, forbidden, notFound } from "../utils/errors.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../utils/serialization.js";
+import { esUsernameValido, normalizarUsername } from "../utils/username.js";
 import { clientEmailValue, clientPhoneValue, dateOnlyValue } from "../validators/projectFields.js";
 
 const execFileAsync = promisify(execFile);
@@ -440,6 +441,9 @@ const userCreateSchema = z
   .object({
     name: z.string().min(1),
     email: z.string().email(),
+    // Alias corto de ingreso, alternativo al mail ("nicolas" en vez de
+    // nicolas@voltia.com.uy). Opcional: si no viene, se entra con el mail.
+    username: z.string().max(32).nullable().optional(),
     password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
     // role = name del rol en la tabla roles (ej: "ADMIN", "OPERACIONES")
     role: z.string().min(1),
@@ -450,9 +454,37 @@ const userPatchSchema = z
   .object({
     name: z.string().min(1).optional(),
     email: z.string().email().optional(),
+    /** "" borra el alias; el usuario vuelve a entrar solo con el mail. */
+    username: z.string().max(32).nullable().optional(),
     role: z.string().min(1).optional(),
   })
   .strict();
+
+/**
+ * Valida y normaliza un alias de ingreso. Devuelve `null` cuando se pidió
+ * borrarlo. Se chequea contra mail Y alias de los demás porque el login busca por
+ * los dos campos: si un alias fuera el mail de otro, el ingreso sería ambiguo.
+ */
+async function normalizarAliasIngreso(raw: string | null | undefined, userId?: string): Promise<string | null> {
+  if (raw === undefined) return null;
+  const alias = normalizarUsername(raw ?? "");
+  if (!alias) return null;
+  if (!esUsernameValido(alias)) {
+    throw badRequest(
+      "USERNAME_INVALIDO",
+      "El usuario debe tener entre 3 y 32 caracteres: letras, números, punto, guion o guion bajo. Sin espacios ni arroba.",
+    );
+  }
+  const choca = await prisma.user.findFirst({
+    where: {
+      OR: [{ username: alias }, { email: alias }],
+      ...(userId ? { NOT: { id: userId } } : {}),
+    },
+    select: { id: true },
+  });
+  if (choca) throw badRequest("USERNAME_EN_USO", `El usuario "${alias}" ya está tomado.`);
+  return alias;
+}
 
 const userPasswordPatchSchema = z
   .object({
@@ -995,7 +1027,8 @@ function serializeComment(comment: {
 function serializeUserSummary(user: {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
+  username?: string | null;
   role: { id: string; name: string; label: string };
   createdAt: Date;
 }) {
@@ -1003,6 +1036,7 @@ function serializeUserSummary(user: {
     id: user.id,
     name: user.name,
     email: user.email,
+    username: user.username ?? null,
     // Mantiene compat: los consumidores esperan un string con el name del rol.
     role: user.role.name,
     roleId: user.role.id,
@@ -6556,7 +6590,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         ...(nextPhone !== undefined && { phone: nextPhone }),
       },
       select: {
-        id: true, name: true, email: true, createdAt: true, jobTitle: true, phone: true,
+        id: true, name: true, email: true, username: true, createdAt: true, jobTitle: true, phone: true,
         role: { select: { id: true, name: true, label: true } },
       },
     });
@@ -6636,6 +6670,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         id: true,
         name: true,
         email: true,
+        username: true,
         createdAt: true,
         role: { select: { id: true, name: true, label: true } },
       },
@@ -6655,11 +6690,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
       throw badRequest("ROLE_NOT_FOUND", `El rol "${body.role}" no existe`);
     }
 
+    const alias = await normalizarAliasIngreso(body.username);
     const hashedPassword = await bcrypt.hash(body.password, 10);
     const user = await prisma.user.create({
       data: {
         name: body.name,
         email: body.email,
+        username: alias,
         password: hashedPassword,
         roleId: role.id,
       },
@@ -6667,6 +6704,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         id: true,
         name: true,
         email: true,
+        username: true,
         createdAt: true,
         role: { select: { id: true, name: true, label: true } },
       },
@@ -6715,12 +6753,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
       data: {
         ...(body.name !== undefined && { name: body.name }),
         ...(body.email !== undefined && { email: body.email }),
+        ...(body.username !== undefined && {
+          username: await normalizarAliasIngreso(body.username, existingUser.id),
+        }),
         ...(newRoleId !== undefined && { roleId: newRoleId }),
       },
       select: {
         id: true,
         name: true,
         email: true,
+        username: true,
         createdAt: true,
         role: { select: { id: true, name: true, label: true } },
       },

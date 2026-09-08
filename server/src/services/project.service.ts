@@ -820,7 +820,7 @@ export function serializeTask(task: {
   responsible: string;
   userId: string | null;
   user?: ResponsibleUserRef | null;
-  assignees?: Array<{ user: { id: string; name: string; email?: string } }> | null;
+  assignees?: Array<{ user: { id: string; name: string; email?: string | null } }> | null;
   // Pendiente colgado de un lead comercial en vez de un proyecto. `lead` solo
   // viene si la query incluyó la relación; el campo se omite si no.
   leadId?: string | null;

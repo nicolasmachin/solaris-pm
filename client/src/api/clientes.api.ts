@@ -185,7 +185,10 @@ export async function deleteCliente(projectId: string): Promise<void> {
 
 export interface CrearPortalUserPayload {
   name: string;
-  email: string;
+  /** Opcional: sin mail, el backend arma el usuario con la cédula o un alias del nombre. */
+  email?: string | null;
+  /** Alias explícito. Si viene, gana sobre la cascada automática. */
+  username?: string | null;
   temporaryPassword: string;
   phone?: string | null;
 }
@@ -193,7 +196,10 @@ export interface CrearPortalUserPayload {
 export interface CrearPortalUserResult {
   userId: string;
   name: string;
-  email: string;
+  email: string | null;
+  username: string | null;
+  /** Lo que hay que dictarle al cliente para entrar: el mail, o el alias si no tiene. */
+  identificador: string;
   linked: boolean; // true → se vinculó un Generador existente; false → recién creado
 }
 
@@ -213,7 +219,9 @@ export async function crearPortalUser(
 export interface ResetPortalUserResult {
   userId: string;
   name: string;
-  email: string;
+  email: string | null;
+  username: string | null;
+  identificador: string;
 }
 
 // Resetea la contraseña del usuario de portal del proyecto a una nueva temporal

@@ -102,17 +102,23 @@ export function Login() {
                 htmlFor="email"
                 className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5"
               >
-                Email
+                Usuario o email
               </label>
+              {/* type="text" a propósito: se entra con el mail completo o con el
+                  alias corto ("nicolas"), y los Generadores sin mail solo tienen
+                  alias. Un type="email" los dejaría afuera con un error del
+                  navegador antes de llegar al servidor. */}
               <input
                 id="email"
-                type="email"
+                type="text"
                 required
-                autoComplete="email"
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-3 py-2.5 rounded-md text-sm bg-[var(--color-bg-app)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)] transition-colors"
-                placeholder="admin@voltiapm.com"
+                placeholder="tu usuario o tu email"
               />
             </div>
 

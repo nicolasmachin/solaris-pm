@@ -35,7 +35,7 @@ export function CrearUsuarioModal({ cliente, onClose }: { cliente: ClienteListIt
     mutationFn: () =>
       crearPortalUser(cliente.projectId, {
         name: name.trim(),
-        email: email.trim(),
+        email: email.trim() || null,
         temporaryPassword: password,
         phone: phone.trim() || null,
       }),
@@ -47,14 +47,18 @@ export function CrearUsuarioModal({ cliente, onClose }: { cliente: ClienteListIt
     onError: (err) => toast.error(getApiErr(err) ?? "No se pudo crear el usuario"),
   });
 
+  // El mail es opcional. Si está, tiene que ser válido; si no está, el backend
+  // arma el usuario con la cédula del proyecto o con un alias del nombre.
   const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-  const puedeCrear = name.trim().length > 0 && emailValido && password.length >= 8;
+  const puedeCrear = name.trim().length > 0 && (!email.trim() || emailValido) && password.length >= 8;
 
   async function copiarCredenciales() {
+    const identificador = done?.identificador || email.trim();
     const texto = buildPortalWelcomeMessage({
       name,
-      email: done?.email ?? email.trim(),
+      identificador,
       password,
+      esAlias: !done?.email,
     });
     try {
       await navigator.clipboard.writeText(texto);
@@ -109,7 +113,12 @@ export function CrearUsuarioModal({ cliente, onClose }: { cliente: ClienteListIt
                 <div className="space-y-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] p-3">
                   <div>
                     <p className={labelClass}>Usuario</p>
-                    <p className="text-sm text-[var(--color-text-primary)]">{done.email}</p>
+                    <p className="font-mono text-sm text-[var(--color-text-primary)]">{done.identificador}</p>
+                    {!done.email && (
+                      <p className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">
+                        Como no hay mail, entra con este usuario. Dictáselo tal cual.
+                      </p>
+                    )}
                   </div>
                   <div>
                     <p className={labelClass}>Contraseña temporal</p>
@@ -137,7 +146,7 @@ export function CrearUsuarioModal({ cliente, onClose }: { cliente: ClienteListIt
               <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div>
-              <label className={labelClass}>Email (usuario de ingreso)</label>
+              <label className={labelClass}>Email (opcional)</label>
               <input
                 className={inputClass}
                 type="email"
@@ -145,8 +154,15 @@ export function CrearUsuarioModal({ cliente, onClose }: { cliente: ClienteListIt
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="cliente@ejemplo.com"
               />
-              {email.trim() && !emailValido && (
+              {email.trim() && !emailValido ? (
                 <p className="mt-1 text-[11px] text-[var(--color-danger-text)]">Email inválido.</p>
+              ) : (
+                !email.trim() && (
+                  <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">
+                    Sin mail se le arma un usuario igual: la cédula si está cargada en el proyecto, y si no un
+                    alias con su nombre. Se ve acá al crearlo.
+                  </p>
+                )
               )}
             </div>
             <div>

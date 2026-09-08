@@ -237,9 +237,13 @@ export async function registerClientesRoutes(app: FastifyInstance) {
   // ─── Crear (o vincular) el usuario de portal del cliente ─────────────────
   // Acceso rápido: crea el Generador con la password temporal generada en el
   // front y lo vincula al proyecto. Gateado por EXPERIENCIA_CLIENTES.CREATE.
+  // El mail es OPCIONAL: la mayoría de los Generadores no lo tiene cargado, y
+  // exigirlo era lo que dejaba a 72 de 95 sin acceso al portal. Sin mail, el
+  // service arma el usuario con la cédula del proyecto o con un alias del nombre.
   const crearPortalUserSchema = z.object({
     name: z.string().min(1).max(200),
-    email: z.string().email(),
+    email: z.union([z.string().email(), z.literal("")]).nullable().optional(),
+    username: z.string().max(32).nullable().optional(),
     temporaryPassword: z.string().min(8),
     phone: z.string().max(50).nullable().optional(),
   });
@@ -253,7 +257,8 @@ export async function registerClientesRoutes(app: FastifyInstance) {
       const result = await createPortalUserForProject({
         projectId,
         name: body.name,
-        email: body.email,
+        email: body.email || null,
+        username: body.username || null,
         temporaryPassword: body.temporaryPassword,
         phone: body.phone ?? null,
         actorUserId: user.id,

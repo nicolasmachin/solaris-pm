@@ -179,12 +179,13 @@ export async function enviarDigestExperiencia(
   if (resumen.total === 0) return { emails: 0, total: 0 };
 
   const users = await prisma.user.findMany({
-    where: { deletedAt: null, email: { not: "" }, role: { name: { in: roles } } },
+    where: { deletedAt: null, email: { not: null }, role: { name: { in: roles } } },
     select: { name: true, email: true },
   });
 
   let emails = 0;
   for (const user of users) {
+    if (!user.email) continue;
     const template = emailExperienciaDigest({ userName: user.name, ...resumen });
     const ok = await sendEmail({ to: user.email, ...template, type: "internal" });
     if (ok) emails++;

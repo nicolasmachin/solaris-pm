@@ -373,12 +373,12 @@ async function resolverDestinatarios(): Promise<string[]> {
     return [...new Set(override.split(",").map((e) => e.trim()).filter(Boolean))];
   }
   const users = await prisma.user.findMany({
-    where: { deletedAt: null, role: { name: { not: "CLIENT" } } },
+    where: { deletedAt: null, role: { name: { not: "CLIENT" } }, email: { not: null } },
     select: { name: true, email: true },
   });
   const set = new Set<string>(SIEMPRE);
   for (const u of users) {
-    if (NOMBRES_EQUIPO.includes(norm(u.name))) set.add(u.email);
+    if (u.email && NOMBRES_EQUIPO.includes(norm(u.name))) set.add(u.email);
   }
   return [...set];
 }

@@ -16,10 +16,13 @@ const H24_MS = 24 * 60 * 60 * 1000;
 const H48_MS = 48 * 60 * 60 * 1000;
 
 async function usuariosPorRol(roleName: string): Promise<Array<{ id: string; email: string }>> {
-  return prisma.user.findMany({
-    where: { deletedAt: null, role: { name: roleName } },
+  const users = await prisma.user.findMany({
+    where: { deletedAt: null, role: { name: roleName }, email: { not: null } },
     select: { id: true, email: true },
   });
+  // El email es opcional desde que los Generadores pueden entrar sin mail; para
+  // alertar hace falta, así que los que no lo tienen quedan afuera.
+  return users.filter((u): u is { id: string; email: string } => !!u.email);
 }
 
 async function alertar(

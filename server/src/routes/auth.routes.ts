@@ -6,12 +6,32 @@ import { prisma } from "../lib/prisma.js";
 import { authenticate, signToken } from "../middleware/auth.middleware.js";
 import { badRequest, unauthorized } from "../utils/errors.js";
 
+// El campo se sigue llamando `email` por compatibilidad con el cliente y con
+// cualquier integración vieja, pero acepta las dos cosas: el mail completo o el
+// alias corto (`username`). No se valida como email justamente por eso.
 const loginSchema = z
   .object({
-    email: z.string().email("Ingresá un email válido"),
+    email: z.string().trim().min(1, "Ingresá tu usuario o tu email"),
     password: z.string().min(1, "La contraseña es obligatoria"),
   })
   .strict();
+
+/**
+ * Busca al usuario por mail o por alias, sin distinguir mayúsculas. Los dos
+ * campos se guardan normalizados en minúsculas, así que alcanza con bajar lo que
+ * escribió la persona.
+ *
+ * Un identificador nunca puede resolver dos usuarios: `email` y `username` son
+ * únicos cada uno, y al crear un usuario se verifica que el alias no choque con
+ * el mail de otro ni al revés (ver `normalizarIdentificador`).
+ */
+async function buscarPorIdentificador(raw: string) {
+  const id = raw.trim().toLowerCase();
+  return prisma.user.findFirst({
+    where: { OR: [{ email: id }, { username: id }] },
+    include: { role: { select: { name: true } } },
+  });
+}
 
 const changePasswordSchema = z
   .object({
@@ -27,10 +47,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     }
 
     const body = loginSchema.parse(request.body);
-    const user = await prisma.user.findUnique({
-      where: { email: body.email },
-      include: { role: { select: { name: true } } },
-    });
+    const user = await buscarPorIdentificador(body.email);
 
     if (!user || user.deletedAt) {
       throw unauthorized("Credenciales inválidas");

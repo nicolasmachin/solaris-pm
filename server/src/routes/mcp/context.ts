@@ -38,7 +38,8 @@ export async function resolveMcpUser(userId: string): Promise<McpUser | null> {
   if (!user || user.deletedAt) return null;
   if (!isEmailAllowed(user.email)) return null;
 
-  return { id: user.id, email: user.email, name: user.name, role: user.role.name };
+  // El email ya no puede ser null acá: isEmailAllowed lo descartó arriba.
+  return { id: user.id, email: user.email as string, name: user.name, role: user.role.name };
 }
 
 /**

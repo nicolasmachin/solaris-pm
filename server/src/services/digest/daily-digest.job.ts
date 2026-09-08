@@ -63,7 +63,7 @@ export async function enviarDigestDiario(
     where: {
       id: { in: [...byUser.keys()] },
       deletedAt: null,
-      email: { not: "" },
+      email: { not: null },
       role: { name: { not: "CLIENT" } },
     },
     select: { id: true, name: true, email: true, role: { select: { name: true } } },
@@ -104,6 +104,7 @@ export async function enviarDigestDiario(
       groups,
       totalCount: items.length,
     });
+    if (!user.email) continue; // sin mail no hay a dónde mandarlo
     const ok = await sendEmail({ to: user.email, ...template, type: "internal" });
     if (ok) emails++;
   }

@@ -6,7 +6,7 @@ import { unauthorized } from "../utils/errors.js";
 
 type JwtPayload = {
   sub: string;
-  email: string;
+  email: string | null;
   name: string;
   role: string;
   /**
@@ -60,7 +60,7 @@ export async function authenticate(request: import("fastify").FastifyRequest) {
   };
 }
 
-export function signToken(user: { id: string; email: string; name: string; role: string }) {
+export function signToken(user: { id: string; email: string | null; name: string; role: string }) {
   return jwt.sign(
     {
       sub: user.id,

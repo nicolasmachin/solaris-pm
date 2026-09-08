@@ -73,7 +73,10 @@ export function isAllowedRedirectUri(uri: string): boolean {
 }
 
 /** ¿Este usuario está habilitado a conectar? */
-export function isEmailAllowed(email: string): boolean {
+// La allowlist del conector es por mail. Un usuario sin mail (los Generadores del
+// portal entran con alias) nunca está habilitado: no hay contra qué compararlo.
+export function isEmailAllowed(email: string | null | undefined): boolean {
+  if (!email) return false;
   const allowed = env.mcpAllowedEmails
     .split(",")
     .map((e) => e.trim().toLowerCase())
