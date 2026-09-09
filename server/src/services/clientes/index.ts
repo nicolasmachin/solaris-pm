@@ -674,8 +674,14 @@ export async function getClienteFicha(projectId: string) {
   const ute = p.uteProcesses[0] ?? null;
   const portalUser = p.clients[0]?.user ?? p.clientUser ?? null;
 
+  // `toListItem` deja las señales en su valor neutro y las resuelven las funciones
+  // de marcado. La ficha se las salteaba, así que mostraba SIEMPRE "al día" y sin
+  // avisos clave aunque el listado dijera lo contrario para el mismo cliente —
+  // dos pantallas contando cosas distintas del mismo dato.
+  const [item] = await marcarNovedades(await marcarAvisosClave(await marcarCadencia([toListItem(p)])));
+
   return {
-    ...toListItem(p),
+    ...item,
     // Con qué entra el Generador al portal: el mail, o el alias si no tiene mail.
     // La contraseña no se puede mostrar (está hasheada): para reenviarla hay que
     // resetearla.

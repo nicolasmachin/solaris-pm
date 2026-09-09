@@ -191,6 +191,7 @@ import {
 } from "../services/digest/digest-config.service.js";
 import { AppError, badRequest, conflict, forbidden, notFound } from "../utils/errors.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../utils/serialization.js";
+import { UTE_HITO_LABEL } from "../services/ute-timeline.service.js";
 import { esUsernameValido, normalizarUsername } from "../utils/username.js";
 import { clientEmailValue, clientPhoneValue, dateOnlyValue } from "../validators/projectFields.js";
 
@@ -10824,18 +10825,48 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // la etapa E2: es lo único que se mueve mientras él espera. Hasta acá este
     // endpoint no dejaba rastro, así que avanzar el trámite no aparecía en el
     // historial del cliente ni encendía la lucecita de novedad.
-    if (updated.projectId && nextStage !== existing.currentStage) {
-      await createAuditEntry({
-        entityType: AuditEntityType.project,
-        entityId: updated.projectId,
-        projectId: updated.projectId,
-        userId: user.id,
-        action: AuditAction.stage_advanced,
-        fieldChanged: "uteStage",
-        oldValue: existing.currentStage,
-        newValue: nextStage,
-        description: `El trámite UTE pasó a "${UTE_STAGE_LABEL_ES[nextStage] ?? nextStage}"`,
-      });
+    //
+    // Se auditan **los hitos**, no la etapa: marcar "Solicitud enviada" carga una
+    // fecha, y la etapa muchas veces no cambia (se deriva y ya estaba ahí). Con
+    // sólo mirar la etapa, la mayoría de los avances pasaban en silencio. Los
+    // hitos son además lo que el cliente ve en su portal, con la misma etiqueta.
+    if (updated.projectId) {
+      for (const key of UTE_ACTION_KEYS) {
+        const antes = existing[key] as Date | null;
+        const ahora = updated[key] as Date | null;
+        // Sólo cuando el hito se marca: borrarlo o corregir la fecha es una
+        // corrección administrativa, no una novedad para el cliente.
+        if (antes != null || ahora == null) continue;
+        await createAuditEntry({
+          entityType: AuditEntityType.project,
+          entityId: updated.projectId,
+          projectId: updated.projectId,
+          userId: user.id,
+          action: AuditAction.stage_advanced,
+          fieldChanged: key,
+          oldValue: null,
+          newValue: serializeDate(ahora),
+          description: `Trámite UTE: ${UTE_HITO_LABEL[key] ?? key}`,
+        });
+      }
+      // El cambio de etapa se audita aparte sólo si no vino con un hito: si vino
+      // con uno, el hito ya lo cuenta y esto sería el mismo hecho dos veces.
+      const huboHito = UTE_ACTION_KEYS.some(
+        (k) => (existing[k] as Date | null) == null && (updated[k] as Date | null) != null,
+      );
+      if (!huboHito && nextStage !== existing.currentStage) {
+        await createAuditEntry({
+          entityType: AuditEntityType.project,
+          entityId: updated.projectId,
+          projectId: updated.projectId,
+          userId: user.id,
+          action: AuditAction.stage_advanced,
+          fieldChanged: "uteStage",
+          oldValue: existing.currentStage,
+          newValue: nextStage,
+          description: `El trámite UTE pasó a "${UTE_STAGE_LABEL_ES[nextStage] ?? nextStage}"`,
+        });
+      }
     }
 
     return serializeUteProcess(updated);

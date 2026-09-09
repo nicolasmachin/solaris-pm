@@ -14,7 +14,13 @@
 
 #### El avance del trámite UTE ahora aparece en el historial del cliente
 
-- Cuando el trámite pasa de etapa, **queda registrado en el historial del Generador** y enciende la señal de novedad. Hasta ahora no dejaba rastro: era justamente lo único que se mueve mientras el cliente espera, y no se veía.
+- **Cada hito del trámite que se marca queda registrado en el historial del Generador** y enciende la señal de novedad: consulta enviada, caso abierto, consulta aprobada, solicitud enviada, proyecto aprobado, documentos, ensayos y finalización. Con el mismo nombre que el cliente ve en su portal.
+- Hasta ahora no dejaba ningún rastro: era justamente lo único que se mueve mientras el cliente espera, y no se veía en ningún lado.
+- Corregir una fecha ya cargada **no** genera novedad: eso es una corrección administrativa, no algo que contarle al cliente.
+
+#### Arreglos: la ficha del cliente mostraba señales en blanco
+
+- La ficha decía siempre **"al día"** y sin avisos pendientes, aunque el listado marcara al mismo cliente en rojo y fuera de cadencia. Los días sin contacto, la marca de novedad y los avisos clave no se calculaban al abrir la ficha — solo en el listado. Ahora las dos pantallas dicen lo mismo.
 
 #### Arreglos del historial y de las etapas
 

@@ -220,3 +220,23 @@ export function buildUteTimeline(
     };
   });
 }
+
+/**
+ * Etiqueta de usuario final de cada hito, indexada por el campo de fecha que lo
+ * marca. Sale de los mismos pasos del timeline para que **el historial del
+ * cliente y su portal digan exactamente lo mismo**: si acá dijéramos otra cosa,
+ * el equipo no podría responder por la pantalla que el cliente tiene delante.
+ */
+export const UTE_HITO_LABEL: Record<string, string> = {
+  consultaSentAt: "Consulta enviada a UTE",
+  caseOpenedAt: "Caso abierto en UTE",
+  consultaApprovedAt: "Consulta aprobada",
+  solicitudSentAt: "Solicitud enviada",
+  proyectoApprovedAt: "Proyecto aprobado",
+  docs1SentAt: "Documentos de obra enviados",
+  docs1ApprovedAt: "Documentos de obra aprobados",
+  ensayosSentAt: "Ensayos enviados",
+  ensayosApprovedAt: "Ensayos aprobados",
+  docs2SentAt: "Documentos finales enviados",
+  finalizedAt: "Trámite finalizado",
+};
