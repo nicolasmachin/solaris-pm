@@ -12,6 +12,19 @@
 - Antes cada pantalla se los armaba por su cuenta: el proyecto tenía dos enlaces sueltos con formato distinto metidos entre los datos, la ficha un botón grande y el workspace de Ingeniería ninguno.
 - Para que esto funcionara, **el panel de un lead ahora se puede abrir por dirección** (`/ventas?lead=…`): antes solo se abría desde adentro de Ventas.
 
+#### El historial del cliente ahora dice de qué módulo viene cada cosa
+
+- Cada entrada lleva la etiqueta del **módulo del que salió**, en vez de caer todo en "Proyecto": **Ventas · Ingeniería · Operaciones · Proyecto · Trámite UTE · Experiencia Solar · Documentos · Ticket · Encuesta**.
+- **"Proyecto" es el pipeline moviéndose**, transversal a las áreas: completar la etapa de Ingeniería es del proyecto, no de Operaciones.
+- **Los comentarios se etiquetan por dónde se escribieron.** Uno dejado en Pre-Ingeniería es de Ingeniería; uno en Ejecución de obra, de Operaciones.
+- El contrato, la proforma y la propuesta salieron de "Proyecto" y tienen su etiqueta **Documentos**.
+- Lo que hizo **el sistema y no una persona** ahora dice "Automático" en vez de un nombre.
+- Los traspasos dicen **a qué área fue el trabajo**: "Traspaso a Experiencia Solar: Ticket resuelto".
+
+#### Arreglos: se coló información interna en el historial del cliente
+
+- El historial mostraba **cambios de estado de movimientos financieros** ("PREVISTO → PAGADO"), de tickets —que ya aparecen por su lado— y de informes internos. Nada de eso es del cliente. Medido: de los cambios de estado que llegaban, 12 eran de tickets y 11 de finanzas.
+
 #### El avance del trámite UTE ahora aparece en el historial del cliente
 
 - **Cada hito del trámite que se marca queda registrado en el historial del Generador** y enciende la señal de novedad: consulta enviada, caso abierto, consulta aprobada, solicitud enviada, proyecto aprobado, documentos, ensayos y finalización. Con el mismo nombre que el cliente ve en su portal.

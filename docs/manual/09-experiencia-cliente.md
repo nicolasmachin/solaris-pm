@@ -434,6 +434,38 @@ de la cadencia — justo la cartera que hay que acompañar. Se resolvió escribi
 el override manual con `prisma/scripts/backfill-recorrido-importados.ts` (41 en
 desarrollo; idempotente y sólo toca los que no tienen etapa puesta a mano).
 
+**De qué módulo es cada entrada del historial.** La etiqueta dice **de dónde
+viene**, no qué tipo de cosa es (eso lo dice el ícono):
+
+| Etiqueta | Qué trae |
+|---|---|
+| **Ventas** | Etapas del lead, comentarios en el lead, conversión a proyecto |
+| **Ingeniería** | Comentarios dejados en etapas de ingeniería |
+| **Operaciones** | Comentarios dejados en etapas de obra, compras y onboarding |
+| **Proyecto** | El pipeline moviéndose: inicio y cierre de etapas, estado del proyecto |
+| **Trámite UTE** | Los 11 hitos del trámite y su etapa |
+| **Experiencia Solar** | La bitácora de interacciones y los correos al cliente |
+| **Documentos** | Contrato, proforma y propuesta emitidos |
+| **Ticket** / **Encuesta** | Reclamos y respuestas del cliente |
+
+Tres reglas que la gobiernan:
+
+- **"Proyecto" es transversal a las áreas.** Completar la etapa de Ingeniería es
+  un movimiento del pipeline, no una acción de Operaciones; mezclarlos hacía que
+  el avance de cualquier área apareciera como si fuera de obra.
+- **Un comentario pertenece a donde se escribió** (`MODULO_POR_ETAPA`), no al
+  proyecto en bloque.
+- **Lo que no firmó una persona se marca como automático** (`automatico`, derivado
+  de que no haya autor), para no leer un avance del sistema como una decisión.
+
+**Qué NO entra** (`ENTIDADES_DEL_CLIENTE`). El log agrupa por proyecto todo lo que
+pasa alrededor, así que el historial filtra por entidad además de por acción. Sin
+ese filtro entraban cambios de estado de **movimientos financieros**
+("PREVISTO → PAGADO"), de **tickets** —que ya llegan por su propia fuente— y de
+informes internos: medido en desarrollo, de los `status_changed` con proyecto, 12
+eran de tickets y 11 de finanzas. Es una **allowlist** a propósito: el log crece
+con cada módulo nuevo y una denylist dejaría entrar lo próximo sin que nadie lo note.
+
 **Un traspaso, una entrada.** El historial lo arma desde la tabla `Traspaso`, no
 desde la auditoría: antes el mismo hecho salía dos veces —al generarse y al
 confirmarse, con un minuto de diferencia— y la segunda traía el detalle interno de

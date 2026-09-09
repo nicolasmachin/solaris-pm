@@ -18,7 +18,7 @@
 // memoria (getCurrentStage no es expresable en SQL); por eso ordenamos y
 // paginamos también en memoria. La cartera es de cientos de proyectos.
 
-import { Prisma, ProjectStatus, InteractionReason, AuditAction, type InteractionChannel, type InteractionDirection, type StageType } from "@prisma/client";
+import { Prisma, ProjectStatus, InteractionReason, AuditAction, type InteractionChannel, type InteractionDirection, type StageType, AuditEntityType } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { getStageLabel } from "../pipeline-definitions.js";
@@ -26,7 +26,7 @@ import { getCurrentStage } from "../project.service.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../../utils/serialization.js";
 import { getAnclaMantenimiento, proximoMantenimiento } from "../../utils/aniversario.js";
 import { lastActionAt } from "../uteProcess.service.js";
-import { TRASPASO_LABEL } from "../traspasos/catalogo.js";
+import { TRASPASO_CATALOGO, TRASPASO_LABEL } from "../traspasos/catalogo.js";
 import { getCadenciaMap } from "../ops-panel.service.js";
 import { ACCIONES_NOVEDAD, textoEvento } from "./eventos.js";
 
@@ -633,6 +633,7 @@ function serializeInteraction(i: InteractionRow) {
     reason: i.reason,
     content: i.content,
     autor: { id: i.author.id, nombre: i.author.name },
+    automatico: false,
     createdAt: serializeDate(i.createdAt),
     updatedAt: serializeDate(i.updatedAt),
   };
@@ -697,6 +698,54 @@ export async function getClienteFicha(projectId: string) {
   };
 }
 
+/**
+ * A qué módulo pertenece cada etapa del pipeline. Sirve para etiquetar un
+ * comentario por **dónde se dejó**: uno escrito en Pre-Ingeniería es de
+ * Ingeniería, no de Operaciones, aunque los dos vivan en el mismo proyecto.
+ */
+const MODULO_POR_ETAPA: Record<string, TimelineItem["source"]> = {
+  ONBOARDING: "operaciones",
+  PRE_INGENIERIA: "ingenieria",
+  INGENIERIA: "ingenieria",
+  INGENIERIA_FINAL: "ingenieria",
+  REVISION_CAPATAZ: "operaciones",
+  VALIDACION_OPERACIONES: "operaciones",
+  COMPRAS: "operaciones",
+  EJECUCION_OBRA: "operaciones",
+  OPERACIONES: "operaciones",
+  TRAMITACION_UTE: "ute",
+  HABILITACION_UTE: "ute",
+  POST_HABILITACION: "client",
+  POSTVENTA: "client",
+  SEGUIMIENTO_PREOBRA: "client",
+  SEGUIMIENTO_HABILITACION: "client",
+};
+
+/**
+ * Sobre qué entidades un evento puede ser novedad para el cliente. Es una
+ * allowlist a propósito: el log crece con cada módulo nuevo, y una denylist
+ * dejaría entrar lo próximo que se agregue sin que nadie lo note.
+ */
+const ENTIDADES_DEL_CLIENTE: AuditEntityType[] = [
+  AuditEntityType.project,
+  AuditEntityType.stage,
+  AuditEntityType.substage,
+  AuditEntityType.lead,
+  AuditEntityType.proposal,
+  AuditEntityType.contract,
+  AuditEntityType.proforma,
+  AuditEntityType.email_log,
+  AuditEntityType.reporte_fv_emision,
+];
+
+/** Acciones que producen un documento entregable, no un avance de obra. */
+const ACCIONES_DOCUMENTO = new Set<AuditAction>([
+  AuditAction.contract_version_published,
+  AuditAction.proforma_version_published,
+  AuditAction.proposal_v2_version_published,
+  AuditAction.proposal_generated,
+]);
+
 /** Campos de fecha que marcan un hito del trámite UTE (ver `UTE_HITO_LABEL`). */
 const UTE_CAMPOS_HITO = new Set([
   "consultaSentAt",
@@ -723,10 +772,25 @@ const UTE_CAMPOS_HITO = new Set([
 
 export interface TimelineItem {
   id: string;
-  source: "sales" | "project" | "ute" | "client" | "ticket" | "survey";
+  source:
+    | "sales"
+    | "project"
+    | "operaciones"
+    | "ingenieria"
+    | "ute"
+    | "client"
+    | "ticket"
+    | "survey"
+    | "docs";
   kind: "stage_change" | "comment" | "interaction" | "document" | "handoff" | "ticket" | "survey";
   text: string;
   autor: { id: string; nombre: string } | null;
+  /**
+   * Lo produjo el sistema, no una persona. Se deriva de que no haya autor: todo
+   * lo que hace alguien queda firmado. Importa para no leer un avance automático
+   * como si fuera una decisión que alguien tomó.
+   */
+  automatico: boolean;
   createdAt: string; // ISO
   meta?: Record<string, unknown>;
 }
@@ -756,6 +820,7 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
         kind: "stage_change",
         text,
         autor: a.user ? { id: a.user.id, nombre: a.user.name } : null,
+        automatico: false,
         createdAt: serializeDate(a.createdAt) ?? "",
         meta: { action: a.action, fromStage: a.fromStage, toStage: a.toStage },
       });
@@ -777,7 +842,7 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
       id: true, content: true, leadId: true, createdAt: true,
       author: { select: { id: true, name: true } },
       stage: { select: { name: true } },
-      substage: { select: { name: true } },
+      substage: { select: { name: true, stage: { select: { name: true } } } },
       checklistItem: { select: { label: true } },
       task: { select: { title: true } },
     },
@@ -788,12 +853,20 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
       c.checklistItem?.label ??
       c.substage?.name ??
       (c.stage ? getStageLabel(c.stage.name) : null);
+    // Un comentario pertenece al módulo donde se escribió, no al proyecto en
+    // bloque: el de Pre-Ingeniería es de Ingeniería y el de Tramitación es del
+    // trámite. Sin esto todos caían en "Operaciones" y había que leer el
+    // subtítulo para saber de quién era.
+    const etapaDelComentario = c.stage?.name ?? c.substage?.stage?.name ?? null;
     items.push({
       id: `cm-${c.id}`,
-      source: c.leadId ? "sales" : "project",
+      source: c.leadId
+        ? "sales"
+        : (etapaDelComentario ? MODULO_POR_ETAPA[etapaDelComentario] : null) ?? "operaciones",
       kind: "comment",
       text: c.content,
       autor: c.author ? { id: c.author.id, nombre: c.author.name } : null,
+      automatico: false,
       createdAt: serializeDate(c.createdAt) ?? "",
       ...(origen ? { meta: { origen } } : {}),
     });
@@ -811,6 +884,7 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
       kind: "interaction",
       text: i.content,
       autor: { id: i.author.id, nombre: i.author.name },
+      automatico: false,
       createdAt: serializeDate(i.createdAt) ?? "",
       meta: { channel: i.channel, direction: i.direction, reason: i.reason },
     });
@@ -828,6 +902,13 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
         // el 80% del log lo son, y es lo que hacía ilegible esta vista.
         in: ACCIONES_NOVEDAD,
       },
+      // Y sobre QUÉ. El log agrupa por proyecto todo lo que pasa alrededor, así
+      // que sin este filtro entraban cosas que no son del cliente: cambios de
+      // estado de movimientos financieros ("PREVISTO → PAGADO"), de tickets
+      // (que ya llegan por su propia fuente) y de informes internos. Medido en
+      // desarrollo: de los `status_changed` con proyecto, 12 eran de tickets y
+      // 11 de finanzas.
+      entityType: { in: ENTIDADES_DEL_CLIENTE },
     },
     select: {
       id: true, action: true, description: true, timestamp: true, fieldChanged: true,
@@ -840,15 +921,33 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
     // para saber de qué se estaba hablando. Se distinguen por el campo que
     // cambió: los hitos del trámite y su etapa (ver el PATCH de ute-processes).
     const esUte = a.fieldChanged === "uteStage" || UTE_CAMPOS_HITO.has(a.fieldChanged ?? "");
+    // Un contrato o una propuesta no son "Operaciones": son entregables, y se
+    // buscan como tales.
+    const esDoc = ACCIONES_DOCUMENTO.has(a.action);
+    // El avance del pipeline es **del proyecto**, transversal a las áreas:
+    // completar la etapa de Ingeniería no es una acción de Operaciones. Por eso
+    // "Proyecto" es su propia etiqueta y no se mezcla con el área que trabajó.
+    const source: TimelineItem["source"] = esUte
+      ? "ute"
+      : esDoc
+        ? "docs"
+        : a.action === AuditAction.lead_converted
+          ? "sales"
+          : a.action === AuditAction.email_sent
+            ? "client"
+            : "project";
     items.push({
       id: `au-${a.id}`,
-      source: esUte ? "ute" : "project",
+      source,
       kind:
-        a.action === AuditAction.stage_advanced || a.action === AuditAction.status_changed
+        a.action === AuditAction.stage_advanced ||
+        a.action === AuditAction.status_changed ||
+        a.action === AuditAction.lead_converted
           ? "stage_change"
           : "document",
       text: textoEvento(a.action, a.description),
       autor: a.user ? { id: a.user.id, nombre: a.user.name } : null,
+      automatico: false,
       createdAt: serializeDate(a.timestamp) ?? "",
       meta: { action: a.action },
     });
@@ -875,12 +974,17 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
   for (const t of traspasos) {
     const label = TRASPASO_LABEL[t.tipo];
     const nota = t.notaAlReceptor?.trim();
+    // Adónde fue a parar el trabajo es lo que se busca de un traspaso; el título
+    // solo dice qué se cerró.
+    const destino = TRASPASO_CATALOGO[t.tipo]?.areaDestino;
+    const base = destino ? `Traspaso a ${destino}: ${label}` : `Traspaso: ${label}`;
     items.push({
       id: `tr-${t.id}`,
       source: "project",
       kind: "handoff",
-      text: nota ? `Traspaso: ${label} — ${nota}` : `Traspaso: ${label}`,
+      text: nota ? `${base} — ${nota}` : base,
       autor: t.modalUsuario ? { id: t.modalUsuario.id, nombre: t.modalUsuario.name } : null,
+      automatico: false,
       createdAt: serializeDate(t.createdAt) ?? "",
       meta: { tipo: t.tipo, estado: t.estado },
     });
@@ -913,6 +1017,7 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
         kind: "ticket",
         text: `${t.origenCliente ? "El Generador abrió" : "Se abrió"} un ticket: "${t.titulo}"`,
         autor: { id: t.creadoPorId, nombre: nameById.get(t.creadoPorId) ?? "—" },
+        automatico: false,
         createdAt: serializeDate(t.createdAt) ?? "",
         meta: { estado: t.estado },
       });
@@ -925,6 +1030,7 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
           autor: t.resueltoPorId
             ? { id: t.resueltoPorId, nombre: nameById.get(t.resueltoPorId) ?? "—" }
             : null,
+          automatico: !t.resueltoPorId,
           createdAt: serializeDate(t.resueltoEn) ?? "",
           meta: { estado: t.estado },
         });
@@ -958,6 +1064,7 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
         autor: s.respondidaPorId
           ? { id: s.respondidaPorId, nombre: nameById.get(s.respondidaPorId) ?? "—" }
           : null,
+        automatico: !s.respondidaPorId,
         createdAt: serializeDate(s.respondidaEn) ?? "",
         meta: { nota: s.nota, comentario: s.comentario, tipo: s.tipo },
       });

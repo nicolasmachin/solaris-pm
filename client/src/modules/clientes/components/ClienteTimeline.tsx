@@ -33,9 +33,14 @@ function idInteraccion(it: TimelineItem): string | null {
 // "Proyecto", así que había que leer el texto para saber de qué se hablaba.
 const SOURCE_META: Record<TimelineItem["source"], { label: string; className: string }> = {
   sales: { label: "Ventas", className: "bg-blue-500/15 text-blue-400" },
-  project: { label: "Operaciones", className: "bg-purple-500/15 text-purple-400" },
+  ingenieria: { label: "Ingeniería", className: "bg-indigo-500/15 text-indigo-400" },
+  operaciones: { label: "Operaciones", className: "bg-purple-500/15 text-purple-400" },
+  // "Proyecto" es el pipeline moviéndose, transversal a las áreas: completar la
+  // etapa de Ingeniería no es una acción de Operaciones.
+  project: { label: "Proyecto", className: "bg-fuchsia-500/15 text-fuchsia-400" },
   ute: { label: "Trámite UTE", className: "bg-sky-500/15 text-sky-400" },
   client: { label: "Experiencia Solar", className: "bg-emerald-500/15 text-emerald-400" },
+  docs: { label: "Documentos", className: "bg-slate-500/20 text-slate-300" },
   ticket: { label: "Ticket", className: "bg-amber-500/15 text-amber-500" },
   survey: { label: "Encuesta", className: "bg-teal-500/15 text-teal-400" },
 };
@@ -134,7 +139,9 @@ export function ClienteTimeline({ projectId }: { projectId: string }) {
                   {src.label}
                 </span>
                 <span className="text-xs text-[var(--color-text-muted)]">
-                  {it.autor?.nombre ?? "—"} · {fmtDateTime(it.createdAt)}
+                  {/* Lo que hizo el sistema no lleva nombre de persona: leerlo
+                      como una decisión de alguien sería engañoso. */}
+                  {it.automatico ? "Automático" : (it.autor?.nombre ?? "—")} · {fmtDateTime(it.createdAt)}
                 </span>
                 {origen && (
                   <span className="rounded border border-[var(--color-border)] px-1.5 py-0.5 text-[10px] text-[var(--color-text-muted)]">

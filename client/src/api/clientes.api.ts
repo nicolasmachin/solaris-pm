@@ -135,10 +135,21 @@ export async function getClientes(
 
 export interface TimelineItem {
   id: string;
-  source: "sales" | "project" | "ute" | "client" | "ticket" | "survey";
+  source:
+    | "sales"
+    | "project"
+    | "operaciones"
+    | "ingenieria"
+    | "ute"
+    | "client"
+    | "ticket"
+    | "survey"
+    | "docs";
   kind: "stage_change" | "comment" | "interaction" | "document" | "handoff" | "ticket" | "survey";
   text: string;
   autor: { id: string; nombre: string } | null;
+  /** Lo produjo el sistema, no una persona. */
+  automatico: boolean;
   createdAt: string;
   meta?: {
     channel?: InteractionChannel;
