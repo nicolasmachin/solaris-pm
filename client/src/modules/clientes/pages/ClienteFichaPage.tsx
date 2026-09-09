@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, ChevronDown, Mail, MapPin, Phone, User } from "lucide-react";
+import { ArrowLeft, CalendarDays, Mail, MapPin, Phone, User, Wrench, Zap } from "lucide-react";
 
 import { getChecks, type ClienteRecorrido } from "../../../api/clientes.api";
 import { EnlacesModulos } from "../../../components/layout/EnlacesModulos";
@@ -36,22 +36,12 @@ function fmtDate(iso: string | null): string {
   return new Date(iso).toLocaleDateString("es-UY", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
-function DataItem({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div>
-      <dt className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-text-muted)]">{label}</dt>
-      <dd className="text-sm text-[var(--color-text-primary)]">{value}</dd>
-    </div>
-  );
-}
-
 export function ClienteFichaPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const canCreate = usePermission("EXPERIENCIA_CLIENTES", "CREATE");
   const canEdit = usePermission("EXPERIENCIA_CLIENTES", "EDIT");
   const updateCliente = useUpdateCliente();
-  const [datosAbiertos, setDatosAbiertos] = useState(false);
   const [etapaSel, setEtapaSel] = useState<ClienteRecorrido | null>(null);
 
   function saveField(patch: Parameters<typeof updateCliente.mutateAsync>[0]["patch"]) {
@@ -111,7 +101,18 @@ export function ClienteFichaPage() {
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">{ficha.nombre}</h1>
             <span className="inline-flex items-center rounded bg-[var(--color-border)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-[var(--color-text-secondary)]">
-              {ESTADO_LABELS[ficha.estado]}
+              <EditableCell
+                value={ficha.estado}
+                type="text"
+                options={(Object.keys(ESTADO_LABELS) as Array<keyof typeof ESTADO_LABELS>).map((e) => ({
+                  value: e,
+                  label: ESTADO_LABELS[e],
+                }))}
+                canEdit={canEdit}
+                ariaLabel="estado"
+                render={(v) => ESTADO_LABELS[(v ?? ficha.estado) as keyof typeof ESTADO_LABELS]}
+                onSave={(v) => saveField({ estado: (v ?? ficha.estado) as typeof ficha.estado })}
+              />
             </span>
             <span
               className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
@@ -138,25 +139,63 @@ export function ClienteFichaPage() {
               </span>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-[var(--color-text-muted)]">
+          {/* Todos los datos del cliente acá arriba, chicos: estaban plegados al
+              fondo de la pantalla, que es donde nadie los busca. El orden es el
+              del uso —cómo contactarlo, dónde está, qué le instalamos, cuándo—,
+              no el del modelo de datos. */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-[var(--color-text-muted)]">
             {ficha.mail && (
               <span className="inline-flex items-center gap-1.5">
-                <Mail className="h-3.5 w-3.5" /> {ficha.mail}
+                <Mail className="h-3.5 w-3.5 shrink-0" />
+                <a href={`mailto:${ficha.mail}`} className="hover:text-[var(--color-text-primary)]">
+                  {ficha.mail}
+                </a>
               </span>
             )}
             {ficha.telefono && (
               <span className="inline-flex items-center gap-1.5">
-                <Phone className="h-3.5 w-3.5" /> {ficha.telefono}
+                <Phone className="h-3.5 w-3.5 shrink-0" />
+                <a href={`tel:${ficha.telefono}`} className="hover:text-[var(--color-text-primary)]">
+                  {ficha.telefono}
+                </a>
               </span>
             )}
-            {ficha.departamento && (
+            {(ficha.direccion || ficha.departamento) && (
               <span className="inline-flex items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5" /> {ficha.departamento}
+                <MapPin className="h-3.5 w-3.5 shrink-0" />
+                {[ficha.direccion, ficha.departamento].filter(Boolean).join(", ")}
               </span>
             )}
             {ficha.asesor && (
               <span className="inline-flex items-center gap-1.5">
-                <User className="h-3.5 w-3.5" /> {ficha.asesor.nombre}
+                <User className="h-3.5 w-3.5 shrink-0" /> {ficha.asesor.nombre}
+              </span>
+            )}
+            {ficha.potenciaKwp != null && (
+              <span className="inline-flex items-center gap-1.5">
+                <Zap className="h-3.5 w-3.5 shrink-0" /> {ficha.potenciaKwp} kWp
+              </span>
+            )}
+            <span className="inline-flex items-center gap-1.5">
+              <CalendarDays className="h-3.5 w-3.5 shrink-0" />
+              Venta {fmtDate(ficha.fechaVenta)} · Entrega{" "}
+              <EditableCell
+                value={ficha.fechaEntrega}
+                type="date"
+                canEdit={canEdit}
+                ariaLabel="fecha de entrega"
+                render={(v) => (v ? fmtDate(v) : "—")}
+                onSave={(v) => saveField({ fechaEntrega: v })}
+              />
+              {ficha.fechaHabilitacion && <> · Habilitación {fmtDate(ficha.fechaHabilitacion)}</>}
+            </span>
+            {ficha.mantenimiento && (
+              <span className="inline-flex items-center gap-1.5">
+                <Wrench className="h-3.5 w-3.5 shrink-0" />
+                Mantenimiento{" "}
+                {ficha.mantenimiento.diasRestantes === 0
+                  ? "hoy"
+                  : `en ${ficha.mantenimiento.diasRestantes} d`}
               </span>
             )}
           </div>
@@ -204,95 +243,6 @@ export function ClienteFichaPage() {
 
           <ClienteTramiteUteCard projectId={projectId ?? ""} tramiteUte={ficha.tramiteUte} />
 
-          {/* Datos del cliente: plegados, porque se consultan de a ratos. */}
-          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)]">
-            <button
-              type="button"
-              onClick={() => setDatosAbiertos((v) => !v)}
-              className="flex w-full items-center justify-between gap-2 px-4 py-2.5 text-left"
-            >
-              <span className="text-[13px] font-semibold text-[var(--color-text-primary)]">Datos del cliente</span>
-              <ChevronDown
-                className={`h-4 w-4 text-[var(--color-text-muted)] transition-transform ${datosAbiertos ? "rotate-180" : ""}`}
-              />
-            </button>
-            {datosAbiertos && (
-              <dl className="grid grid-cols-2 gap-3 border-t border-[var(--color-border)] p-4 sm:grid-cols-3">
-                <DataItem
-                  label="Mail"
-                  value={
-                    <EditableCell
-                      value={ficha.mail}
-                      type="email"
-                      canEdit={canEdit}
-                      ariaLabel="mail"
-                      onSave={(v) => saveField({ mail: v })}
-                    />
-                  }
-                />
-                <DataItem
-                  label="Teléfono"
-                  value={
-                    <EditableCell
-                      value={ficha.telefono}
-                      type="tel"
-                      canEdit={canEdit}
-                      ariaLabel="teléfono"
-                      onSave={(v) => saveField({ telefono: v })}
-                    />
-                  }
-                />
-                <DataItem
-                  label="Estado"
-                  value={
-                    <EditableCell
-                      value={ficha.estado}
-                      type="text"
-                      options={(Object.keys(ESTADO_LABELS) as Array<keyof typeof ESTADO_LABELS>).map((e) => ({
-                        value: e,
-                        label: ESTADO_LABELS[e],
-                      }))}
-                      canEdit={canEdit}
-                      ariaLabel="estado"
-                      render={(v) => ESTADO_LABELS[(v ?? ficha.estado) as keyof typeof ESTADO_LABELS]}
-                      onSave={(v) => saveField({ estado: (v ?? ficha.estado) as typeof ficha.estado })}
-                    />
-                  }
-                />
-                <DataItem
-                  label="Potencia"
-                  value={ficha.potenciaKwp != null ? `${ficha.potenciaKwp} kWp` : "—"}
-                />
-                <DataItem label="Fecha de venta" value={fmtDate(ficha.fechaVenta)} />
-                <DataItem
-                  label="Fecha de entrega"
-                  value={
-                    <EditableCell
-                      value={ficha.fechaEntrega}
-                      type="date"
-                      canEdit={canEdit}
-                      ariaLabel="fecha de entrega"
-                      render={(v) => (v ? fmtDate(v) : <span className="text-[var(--color-text-muted)]">—</span>)}
-                      onSave={(v) => saveField({ fechaEntrega: v })}
-                    />
-                  }
-                />
-                <DataItem label="Departamento" value={ficha.departamento ?? "—"} />
-                <DataItem label="Dirección" value={ficha.direccion ?? "—"} />
-                <DataItem label="Asesor" value={ficha.asesor?.nombre ?? "—"} />
-                <DataItem
-                  label="Próximo mantenimiento"
-                  value={
-                    ficha.mantenimiento
-                      ? ficha.mantenimiento.diasRestantes === 0
-                        ? "hoy"
-                        : `en ${ficha.mantenimiento.diasRestantes} d`
-                      : "—"
-                  }
-                />
-              </dl>
-            )}
-          </div>
         </div>
 
         {/* Historial: todo lo que pasó, lo más nuevo arriba. */}

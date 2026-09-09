@@ -12,6 +12,15 @@
 - Antes cada pantalla se los armaba por su cuenta: el proyecto tenía dos enlaces sueltos con formato distinto metidos entre los datos, la ficha un botón grande y el workspace de Ingeniería ninguno.
 - Para que esto funcionara, **el panel de un lead ahora se puede abrir por dirección** (`/ventas?lead=…`): antes solo se abría desde adentro de Ventas.
 
+#### Los datos del cliente, arriba de todo
+
+- Estaban plegados al fondo de la ficha, debajo del trámite UTE, que es donde nadie los busca. Ahora están **todos en el encabezado**, chicos y en una o dos filas: mail, teléfono, dirección, asesor, potencia, fechas de venta, entrega y habilitación, y el próximo mantenimiento.
+- El orden es el del uso —cómo contactarlo, dónde está, qué le instalamos, cuándo—, no el del sistema. El mail y el teléfono son clickeables, y la fecha de entrega y el estado se siguen editando ahí mismo.
+
+#### Completar todos los pasos de una etapa de un clic
+
+- Los pasos de Experiencia Solar tienen ahora el mismo atajo que las subetapas del proyecto: un botón **"Completar los N"**. Al retomar un cliente viejo, tildar siete pasos de a uno es lo que hace que no se tilde ninguno.
+
 #### La lista de clientes al costado, y se puede plegar
 
 - La ficha del Generador ahora tiene **la lista de clientes al costado**, igual que el detalle del proyecto: se salta de uno a otro sin volver al listado. Viene ordenada por prioridad de contacto y con las señales de alerta y novedad.

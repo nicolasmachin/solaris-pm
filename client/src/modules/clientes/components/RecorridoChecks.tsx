@@ -179,6 +179,22 @@ export function RecorridoChecks({
   const bloque = BLOQUES.find((b) => b.codigo === recorrido);
   const delBloque = checks.filter((c) => c.recorrido === recorrido);
   const hechos = delBloque.filter((c) => c.completado).length;
+  const pendientes = delBloque.filter((c) => !c.completado);
+
+  // No hay endpoint de "completar todos": se mandan de a uno y se invalida al
+  // final. Son a lo sumo siete, así que no vale la pena una ruta nueva.
+  const completarTodos = useMutation({
+    mutationFn: async () => {
+      for (const c of pendientes) await patchCheck(c.id, true);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cliente-checks", projectId] });
+      qc.invalidateQueries({ queryKey: ["recorrido"] });
+      qc.invalidateQueries({ queryKey: ["clientes"] });
+      toast.success("Pasos completados");
+    },
+    onError: () => toast.error("No se pudieron completar todos los pasos"),
+  });
 
   return (
     <div className="space-y-2.5">
@@ -191,14 +207,30 @@ export function RecorridoChecks({
             {hechos} de {delBloque.length} pasos · vencer no frena la obra
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setPlantillaAbierta({})}
-          className="inline-flex shrink-0 items-center gap-1 rounded-md border border-[var(--color-border)] px-2 py-1 text-[11px] text-[var(--color-text-secondary)] hover:border-[var(--color-accent)] hover:text-[var(--color-text-primary)]"
-        >
-          <MessageSquare className="h-3 w-3" />
-          Plantillas
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          {/* Mismo atajo que el pipeline del proyecto: cuando se retoma un cliente
+              viejo, tildar siete pasos de a uno es lo que hace que no se tilde
+              ninguno. Sólo aparece si queda algo pendiente. */}
+          {canEdit && pendientes.length > 0 && (
+            <button
+              type="button"
+              onClick={() => completarTodos.mutate()}
+              disabled={completarTodos.isPending}
+              className="inline-flex items-center gap-1 rounded-md border border-[var(--color-border)] px-2 py-1 text-[11px] text-[#4ade80] hover:border-[#4ade80] disabled:opacity-50"
+            >
+              <Check className="h-3 w-3" />
+              {completarTodos.isPending ? "Completando…" : `Completar los ${pendientes.length}`}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setPlantillaAbierta({})}
+            className="inline-flex items-center gap-1 rounded-md border border-[var(--color-border)] px-2 py-1 text-[11px] text-[var(--color-text-secondary)] hover:border-[var(--color-accent)] hover:text-[var(--color-text-primary)]"
+          >
+            <MessageSquare className="h-3 w-3" />
+            Plantillas
+          </button>
+        </div>
       </div>
 
       {delBloque.length === 0 ? (

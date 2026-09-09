@@ -219,16 +219,10 @@ export const Sidebar = memo(function Sidebar({ open, onClose }: SidebarProps) {
         />
       )}
 
-      <aside
-        className={`
-          fixed left-0 bottom-0 z-30 flex flex-col
-          bg-[var(--color-bg-sidebar)] border-r border-[var(--color-border)]
-          transition-transform duration-200 overflow-y-auto
-          md:translate-x-0
-          ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-        `}
-        style={{ top: 52, width: 220 }}
-      >
+      {/* El marco (posición fija, ancho y borde) lo pone `SidebarContextual`, que
+          además tiene el botón de plegar. Antes esto traía su propio <aside>
+          fijo, que se montaba ENCIMA del marco y tapaba ese botón. */}
+      <div className="flex flex-1 flex-col">
         {/* Header with "Nuevo" button */}
         <div className="flex items-center justify-between px-3 pt-3 pb-1">
           <p className="text-[9px] font-mono font-medium uppercase tracking-widest text-[var(--color-text-muted)]">
@@ -307,7 +301,7 @@ export const Sidebar = memo(function Sidebar({ open, onClose }: SidebarProps) {
             <ProjectItem key={project.id} project={project} onClick={onClose} />
           ))}
         </div>
-      </aside>
+      </div>
 
       {showModal && (
         <NewProjectModal onClose={() => setShowModal(false)} />

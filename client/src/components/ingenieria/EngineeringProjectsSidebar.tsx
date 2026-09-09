@@ -119,10 +119,7 @@ export const EngineeringProjectsSidebar = memo(function EngineeringProjectsSideb
   const showing = filtered.length;
 
   return (
-    <aside
-      className="fixed left-0 bottom-0 z-30 hidden md:flex flex-col bg-[var(--color-bg-sidebar)] border-r border-[var(--color-border)] overflow-y-auto"
-      style={{ top: 52, width: 220 }}
-    >
+    <div className="flex flex-1 flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-3 pt-3 pb-1">
         <p className="text-[9px] font-mono font-medium uppercase tracking-widest text-[var(--color-text-muted)]">
@@ -178,7 +175,7 @@ export const EngineeringProjectsSidebar = memo(function EngineeringProjectsSideb
           <ProjectItem key={project.projectId} project={project} />
         ))}
       </div>
-    </aside>
+    </div>
   );
 });
 
