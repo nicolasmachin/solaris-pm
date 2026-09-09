@@ -24,45 +24,58 @@ export type Release = {
 
 export const LATEST_RELEASE: Release = {
   version: "10.1",
-  date: "7 de septiembre de 2026",
+  date: "8 de septiembre de 2026",
   sections: [
     {
-      title: "Experiencia Solar — el Recorrido, la nueva vista del acompañamiento al cliente",
+      title: "Experiencia Solar — la ficha del cliente es una sola pantalla",
       items: [
-        "Una pestaña Recorrido con la cartera dividida en las tres etapas (Pre-obra, Habilitación, Post-Habilitación) y los clientes ordenados por días sin contacto: los que nunca tuvieron contacto van primero.",
-        "El triángulo rojo marca que hay que avisarle algo y el reloj corre; el puntito marca que hay algo nuevo para mirar y a propósito no cambia el orden.",
-        'Filtros nuevos en el listado: "⚠ Aviso pendiente" y "Fuera de cadencia", y la columna Último contacto muestra los días y se pinta según la cadencia definida para cada etapa.',
+        "Se terminaron las cuatro pestañas. Arriba, todos los datos del cliente; a la izquierda el recorrido en tres etapas y los pasos de la que elijas; a la derecha, todo el historial con lo más nuevo arriba.",
+        "Se hace clic en una etapa del recorrido y debajo aparecen sus pasos, con las plantillas de mensajes de esa etapa y un botón para completarlos todos.",
+        "La lista de Generadores quedó al costado para saltar de un cliente a otro, y se puede plegar. Las tres listas laterales —Proyectos, Ingeniería y Experiencia Solar— comparten esa preferencia.",
+        "El trámite UTE se despliega con sus diez hitos: exactamente lo que el cliente ve en su portal.",
       ],
     },
     {
-      title: "Experiencia Solar — cada cliente con sus pasos y sus plazos",
+      title: "Experiencia Solar — el Recorrido y los pasos de cada cliente",
       items: [
-        "Nueva pestaña Pasos en la ficha del cliente, con el acompañamiento agrupado por etapa, el avance de cada una y la aclaración de qué hay que hacer en cada paso.",
-        "Los plazos arrancan con el hecho, no con la creación: confirmar la fecha de obra abre el aviso al cliente, y que UTE habilite abre el aviso de que ya puede encender y los pasos del cierre.",
-        "Reprogramar una obra confirmada ahora exige el motivo y genera un aviso propio por cada reprogramación, en vez de una casilla que se tilda una sola vez.",
-        "Estos pasos no frenan la obra ni el trámite: vencen y se ven, pero no bloquean.",
+        "Nueva vista Recorrido con la cartera dividida en Pre-obra, Habilitación y Post-habilitación, ordenada por días sin contacto.",
+        "Cada cliente tiene sus pasos de acompañamiento con plazo. Los plazos arrancan con el hecho, no con la creación: confirmar la fecha de obra abre el aviso al cliente, y que UTE habilite abre el de 'ya podés encender'.",
+        "Tres avisos quedan resaltados y pintan la fila de rojo cuando faltan: la bienvenida, el aviso de fecha de obra y el de habilitación.",
+        "El listado se ordena por prioridad de contacto y se agrupa en bloques plegables por etapa.",
       ],
     },
     {
-      title: "Experiencia Solar — el Recorrido llega por correo cada mañana",
+      title: "Los mensajes modelo, a un clic desde cada paso",
       items: [
-        "Un correo diario con lo pendiente: arriba lo que ya venció (avisos de habilitación, pasos con plazo pasado y reclamos sin responder), con lo más arrastrado primero; abajo, etapa por etapa, quiénes están fuera de cadencia o tienen algo nuevo sin avisar.",
-        "Si no hay nada pendiente, no se manda. Quién lo recibe se define por rol en Administración → Resumen diario.",
+        "Quince mensajes listos para copiar, con el nombre del cliente y el tuyo ya puestos, editables antes de mandar. Al copiar queda registrado el contacto.",
+        "El acceso al portal se crea desde el propio paso que lo pide, y el mensaje sale con el usuario y la contraseña reales.",
       ],
     },
     {
-      title: "Encuestas — tres preguntas por encuesta, y distintas según el momento",
+      title: "Se puede entrar con un usuario corto, y los clientes sin mail ya tienen acceso",
       items: [
-        "Cada encuesta pasa a tener tres preguntas en vez de una, y cada una pregunta cosas distintas según el momento (la obra, la espera del trámite, el año cumplido).",
-        "Solo la primera es obligatoria y el puntaje es el promedio de las contestadas. Al hacer clic en una encuesta se abre la respuesta completa, en vez de llevar a la ficha del cliente.",
-        "La segunda vez que un cliente puntúa bajo ahora sí genera aviso: antes, si ya se le había atendido una, las siguientes quedaban en silencio.",
+        "Los usuarios internos pueden entrar escribiendo un usuario corto en vez del mail completo: las dos formas funcionan igual.",
+        "Ahora se le puede crear acceso al portal a un cliente aunque no tengamos su mail: el sistema usa su cédula o arma un alias con su nombre.",
       ],
     },
     {
-      title: "Proyectos — el pipeline queda solo con las etapas de obra",
+      title: "El historial del cliente dice de qué módulo viene cada cosa",
       items: [
-        "Los carriles de Experiencia Solar salieron del pipeline del proyecto: al equipo de obra le ensuciaban la vista. El acompañamiento vive ahora en la pestaña Pasos de la ficha del cliente.",
-        "Se arregló que las etapas borradas de un proyecto se siguieran mostrando en varias pantallas.",
+        "Cada entrada lleva su etiqueta: Ventas, Ingeniería, Operaciones, Proyecto, Trámite UTE, Experiencia Solar, Documentos, Ticket o Encuesta.",
+        "Aparecen los avances del trámite UTE, los archivos cargados y las subetapas completadas, que antes no dejaban rastro.",
+        "Dejaron de colarse cambios de estado de finanzas, de tickets duplicados y de informes internos.",
+      ],
+    },
+    {
+      title: "El Recorrido llega por correo cada mañana",
+      items: [
+        "Un correo diario con lo vencido arriba y, por etapa, quiénes están fuera de cadencia o tienen novedad sin avisar. Si no hay nada pendiente, no se manda.",
+      ],
+    },
+    {
+      title: "Enlaces entre módulos, iguales y en el mismo lugar",
+      items: [
+        "Una sola fila —Ventas · Proyecto · Ingeniería · Trámite UTE · Experiencia Solar— que lleva al mismo cliente en el otro módulo, presente en las cuatro pantallas.",
       ],
     },
   ],
