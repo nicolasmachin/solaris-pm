@@ -35,7 +35,9 @@ export function ClienteTramiteUteCard({
   projectId: string;
   tramiteUte: { etapa: string; desde: string | null } | null;
 }) {
-  const [abierto, setAbierto] = useState(false);
+  // Abierto por defecto: el detalle del trámite es lo primero que se mira cuando
+  // el cliente llama, y tenerlo plegado obligaba a un clic en cada visita.
+  const [abierto, setAbierto] = useState(true);
   const { data, isLoading } = useQuery({
     queryKey: ["cliente-ute", projectId],
     queryFn: () => getClienteUte(projectId),

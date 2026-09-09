@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { AlertTriangle, Circle, Download, Eye, Search, Send, SlidersHorizontal, Trash2, Upload, UserCheck, UserPlus } from "lucide-react";
+import { AlertTriangle, ChevronDown, Circle, Download, Eye, Search, Send, SlidersHorizontal, Trash2, Upload, UserCheck, UserPlus } from "lucide-react";
 
 import {
   deleteCliente,
@@ -155,6 +155,18 @@ export function ClientesPage() {
     { value: "", label: "— Sin etapa —" },
     ...(["E1", "E2", "E3"] as ClienteRecorrido[]).map((r) => ({ value: r, label: RECORRIDO_SHORT[r] })),
   ];
+
+  // Se guarda lo CERRADO, no lo abierto: así el default —todos desplegados— sale
+  // solo, sin tener que sembrar el estado con las etapas que existan.
+  const [bloquesCerrados, setBloquesCerrados] = useState<Set<string>>(new Set());
+  function toggleBloque(codigo: string) {
+    setBloquesCerrados((prev) => {
+      const next = new Set(prev);
+      if (next.has(codigo)) next.delete(codigo);
+      else next.add(codigo);
+      return next;
+    });
+  }
 
   // Sin orden de columna explícito, la cartera se muestra agrupada por etapa y
   // ordenada por prioridad de contacto (lo resuelve el backend).
@@ -521,9 +533,21 @@ export function ClientesPage() {
                 const delBloque = items.filter((c) => (c.etapa?.recorrido.codigo ?? null) === b.codigo);
                 if (delBloque.length === 0) return null;
                 const urgentes = delBloque.filter((c) => c.avisosClavePendientes.length > 0).length;
+                const clave = b.codigo ?? "sin-etapa";
+                const cerrado = bloquesCerrados.has(clave);
                 return (
-                  <section key={b.codigo ?? "sin-etapa"}>
-                    <div className="sticky top-0 z-20 flex items-baseline gap-2 border-y border-[var(--color-border)] bg-[var(--color-bg-app)] px-4 py-2">
+                  <section key={clave}>
+                    <button
+                      type="button"
+                      onClick={() => toggleBloque(clave)}
+                      aria-expanded={!cerrado}
+                      className="sticky top-0 z-20 flex w-full items-baseline gap-2 border-y border-[var(--color-border)] bg-[var(--color-bg-app)] px-4 py-2 text-left hover:bg-[var(--color-bg-card-hover)]"
+                    >
+                      <ChevronDown
+                        className={`h-3.5 w-3.5 shrink-0 self-center text-[var(--color-text-muted)] transition-transform ${
+                          cerrado ? "-rotate-90" : ""
+                        }`}
+                      />
                       {b.codigo && (
                         <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--color-accent)]">
                           {b.codigo}
@@ -536,16 +560,18 @@ export function ClientesPage() {
                           <span className="ml-2 text-[var(--color-danger-text)]">{urgentes} para hoy</span>
                         )}
                       </span>
-                    </div>
-                    <ResponsiveTable
-                      columns={columns}
-                      data={delBloque}
-                      rowKey={(c) => c.projectId}
-                      rowClassName={rowClassName}
-                      onRowClick={(c) => navigate(`/clientes/${c.projectId}`)}
-                      rowClickableOnDesktop
-                      emptyMessage=""
-                    />
+                    </button>
+                    {!cerrado && (
+                      <ResponsiveTable
+                        columns={columns}
+                        data={delBloque}
+                        rowKey={(c) => c.projectId}
+                        rowClassName={rowClassName}
+                        onRowClick={(c) => navigate(`/clientes/${c.projectId}`)}
+                        rowClickableOnDesktop
+                        emptyMessage=""
+                      />
+                    )}
                   </section>
                 );
               })

@@ -6,6 +6,9 @@
 
 #### El listado de clientes se ordena por urgencia y se agrupa por etapa
 
+- Los bloques de cada etapa **se pueden plegar** con un clic en su cabecera, y vienen **abiertos por defecto**.
+- La tarjeta **Trámite UTE** de la ficha también viene abierta: es lo primero que se mira cuando el cliente llama, y tenerla plegada obligaba a un clic en cada visita.
+
 - **El orden por defecto ya no es alfabético**: ahora es por **prioridad de contacto**. Arriba los que tienen un aviso clave pendiente, y después por días sin contacto — los que **nunca** tuvieron contacto van primero, porque "nunca" es peor que "hace mucho". Es el mismo criterio de la vista Recorrido, así las dos pantallas no ordenan distinto la misma cartera.
 - El listado se muestra **agrupado en bloques por etapa** —Pre-obra, Habilitación, Post-habilitación y Sin etapa—, cada uno con su contador y cuántos necesitan atención hoy. Al ordenar por una columna vuelve a ser una sola lista.
 

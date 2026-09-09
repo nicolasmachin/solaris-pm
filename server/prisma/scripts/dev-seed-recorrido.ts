@@ -153,9 +153,62 @@ async function main(): Promise<void> {
   }
 
   await asignarAsesorFaltante();
+  await repartirContactos(admin.id);
 
   console.log(`\n[dev-seed] listo: ${cursor} clientes con escenarios en E1/E2/E3.`);
   console.log("[dev-seed] entrá a Experiencia Solar → Recorrido para verlos.");
+}
+
+/** Cuántos clientes quedan a propósito sin ningún contacto registrado. */
+const SIN_CONTACTO = 2;
+
+/**
+ * Reparte fechas de último contacto por toda la cartera.
+ *
+ * Sin esto, en desarrollo **81 de 93 clientes no tenían ningún contacto**, así que
+ * empataban todos en el primer escalón del orden por prioridad y la lista salía
+ * alfabética de hecho. Con contactos repartidos en el último mes, el orden por
+ * días sin contacto se puede ver y probar de verdad.
+ *
+ * Se dejan {@link SIN_CONTACTO} clientes sin nada, que son el caso borde: "nunca"
+ * tiene que seguir yendo antes que "hace mucho".
+ *
+ * Solo toca a los clientes que no tienen contacto real: nunca pisa una
+ * interacción cargada a mano.
+ */
+async function repartirContactos(actorId: string): Promise<void> {
+  const sinContacto = await prisma.project.findMany({
+    where: { deletedAt: null, clientInteractions: { none: { deletedAt: null } } },
+    select: { id: true },
+    orderBy: { createdAt: "asc" },
+  });
+  // Los dos primeros quedan sin contacto a propósito.
+  const aRepartir = sinContacto.slice(SIN_CONTACTO);
+  if (aRepartir.length === 0) {
+    console.log(`[dev-seed] no hay clientes sin contacto para repartir (quedan ${sinContacto.length})`);
+    return;
+  }
+
+  await prisma.clientInteraction.createMany({
+    data: aRepartir.map((p) => {
+      // Entre hoy y hace 30 días. Con horas al azar para que dos clientes no
+      // caigan exactamente en el mismo instante y el orden sea estable.
+      const dias = Math.floor(Math.random() * 30);
+      const horas = Math.floor(Math.random() * 24);
+      return {
+        projectId: p.id,
+        authorId: actorId,
+        channel: InteractionChannel.WHATSAPP,
+        direction: InteractionDirection.SALIENTE,
+        reason: InteractionReason.SEGUIMIENTO,
+        content: "[prueba] Contacto de ejemplo repartido para probar el orden por prioridad.",
+        createdAt: new Date(Date.now() - dias * DIA - horas * 60 * 60 * 1000),
+      };
+    }),
+  });
+  console.log(
+    `[dev-seed] contactos repartidos en ${aRepartir.length} clientes; ${SIN_CONTACTO} quedan sin contacto a propósito`,
+  );
 }
 
 /**

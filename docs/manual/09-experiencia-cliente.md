@@ -421,6 +421,32 @@ clasificados como novedad + comentarios) contra el último contacto registrado: 
 "pasó algo y todavía no se lo dijimos". Se resuelve con dos agregaciones, no una
 consulta por cliente.
 
+**Orden y agrupación del listado.** Por defecto se ordena por **prioridad de
+contacto** (`compararPrioridad`, el mismo comparador que usa el Recorrido: avisos
+clave pendientes arriba, después por días sin contacto, y "nunca contactado" antes
+que "hace mucho") y se muestra **agrupado por etapa** en cuatro bloques plegables
+—E1, E2, E3 y **Sin etapa**—. El cuarto bloque no es decorativo: en producción
+buena parte de la cartera no tiene etapa, y sin él esos clientes desaparecían al
+agrupar. Al ordenar por una columna, vuelve a ser una sola lista.
+
+> El front tiene que mandar `sortBy: "prioridad"`, no dejarlo vacío: durante un
+> tiempo inicializaba `"nombre"` y pisaba el default del backend, así que la lista
+> salía alfabética aunque el backend ya ordenara bien.
+
+**Avisos clave** (`marcarAvisosClave`). Tres del catálogo están marcados
+`clave: true` —bienvenida, aviso de fecha de obra y aviso de habilitación— y son
+los que pintan la fila de rojo. La regla no es la misma para los tres:
+
+- La **bienvenida** no la dispara ningún hecho: se debe desde el inicio. Pero sólo
+  cuenta **mientras el cliente sigue en E1**; después ya no se puede dar, y
+  marcarla igual ponía **93 de 93 clientes en rojo** (medido), que es lo mismo que
+  no marcar nada. Con el corte quedan ~37.
+- Los otros dos **los dispara un hecho** (se confirmó la fecha, UTE habilitó), así
+  que sólo cuentan cuando su reloj ya arrancó (`venceEn`). Pedir que se avise algo
+  que todavía no ocurrió sería ruido.
+- La Regla de Oro manda sobre su check: si `avisoHabilitacionPendiente` es true
+  (mira la bitácora, no el check), el aviso entra igual.
+
 **Filtros accionables del listado.** Además de los filtros generales (texto,
 estado, asesor, departamento, etapa) hay dos que marcan trabajo pendiente:
 **"⚠ Aviso pendiente"** (habilitados sin aviso registrado — la misma condición que
