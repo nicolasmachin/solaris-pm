@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 
-import type { InteractionChannel, InteractionReason } from "../../../api/clientes.api";
+import type { InteractionChannel } from "../../../api/clientes.api";
 import { Button } from "../../../components/ui/Button";
 import { CHANNEL_LABELS, CHANNEL_OPTIONS } from "../constants";
 import { useCreateInteraction } from "../hooks/useClienteInteractions";
@@ -22,35 +22,27 @@ export function ClienteInteractionForm({ projectId }: { projectId: string }) {
   const [content, setContent] = useState("");
   const mutation = useCreateInteraction(projectId);
 
-  function registrar(overrides?: { reason?: InteractionReason; content?: string }) {
-    const finalContent = (overrides?.content ?? content).trim();
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const finalContent = content.trim();
     if (!finalContent) {
       toast.error("Escribí un resumen del contacto");
       return;
     }
     // Dirección y motivo ya no se piden: eran dos selects que había que tocar en
     // cada registro y que nadie usaba para filtrar ni para decidir nada. El motivo
-    // sigue existiendo, pero lo pone el sistema cuando significa algo — el aviso
-    // de habilitación (que apaga la Regla de Oro) y las plantillas.
+    // sigue existiendo en el modelo, pero lo pone el sistema donde significa algo
+    // (las plantillas), y el aviso de habilitación lo marca su paso del recorrido.
     mutation.mutate(
-      { channel, content: finalContent, reason: overrides?.reason },
+      { channel, content: finalContent },
       {
         onSuccess: () => {
           setContent("");
-          toast.success(
-            overrides?.reason === "AVISO_HABILITACION"
-              ? "Aviso al Generador registrado"
-              : "Interacción registrada",
-          );
+          toast.success("Interacción registrada");
         },
         onError: (err) => toast.error(getApiErr(err) ?? "No se pudo registrar la interacción"),
       },
     );
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    registrar();
   }
 
   return (
@@ -88,27 +80,14 @@ export function ClienteInteractionForm({ projectId }: { projectId: string }) {
         <span className="text-[11px] text-[var(--color-text-muted)]">
           {content.length}/{MAX}
         </span>
-        <div className="flex items-center gap-2">
-          {/* Regla de Oro: registra el aviso post-habilitación y corta las alertas. */}
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            loading={mutation.isPending}
-            onClick={() =>
-              registrar({
-                reason: "AVISO_HABILITACION",
-                content: content.trim() || "Se avisó al Generador que ya puede empezar a producir su energía.",
-              })
-            }
-            title="Registra el aviso de habilitación y corta las alertas de la Regla de Oro"
-          >
-            Marcar avisado al Generador
-          </Button>
-          <Button type="submit" size="sm" loading={mutation.isPending} disabled={!content.trim()}>
-            Registrar interacción
-          </Button>
-        </div>
+        {/* Acá había un botón "Marcar avisado al Generador" que apagaba la alarma
+            de la Regla de Oro. Se sacó: había dos formas de marcar lo mismo y la
+            obvia —tildar el paso "Aviso de habilitación otorgada" en la etapa E2—
+            no apagaba nada. Ahora eso lo hace el paso, que además deja registrado
+            quién y cuándo. */}
+        <Button type="submit" size="sm" loading={mutation.isPending} disabled={!content.trim()}>
+          Registrar interacción
+        </Button>
       </div>
     </form>
   );

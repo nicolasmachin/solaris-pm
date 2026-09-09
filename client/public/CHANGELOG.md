@@ -12,6 +12,11 @@
 - Antes cada pantalla se los armaba por su cuenta: el proyecto tenía dos enlaces sueltos con formato distinto metidos entre los datos, la ficha un botón grande y el workspace de Ingeniería ninguno.
 - Para que esto funcionara, **el panel de un lead ahora se puede abrir por dirección** (`/ventas?lead=…`): antes solo se abría desde adentro de Ventas.
 
+#### Una sola forma de marcar que se avisó la habilitación
+
+- Se sacó el botón **"Marcar avisado al Generador"** del formulario de contacto. Había **dos formas de marcar lo mismo**, y la obvia —tildar el paso "Aviso de habilitación otorgada" en la etapa E2— no apagaba la alerta: la apagaba el botón escondido.
+- Ahora la apaga **el paso**, que además deja registrado quién lo marcó y cuándo. Destildarlo vuelve a encenderla.
+
 #### Los datos del cliente, arriba de todo
 
 - Estaban plegados al fondo de la ficha, debajo del trámite UTE, que es donde nadie los busca. Ahora están **todos en el encabezado**, chicos y en una o dos filas: mail, teléfono, dirección, asesor, potencia, fechas de venta, entrega y habilitación, y el próximo mantenimiento.

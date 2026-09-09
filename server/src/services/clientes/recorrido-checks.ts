@@ -146,5 +146,11 @@ export const CHECKS_POR_RECORRIDO: Record<string, ChecklistDef[]> = {
   E3: CHECKS_E3,
 };
 
+/**
+ * El aviso de habilitación. Tildarlo es lo que corta las alertas de la Regla de
+ * Oro: por eso el código vive acá y no suelto en el service.
+ */
+export const CODIGO_AVISO_HABILITACION = "e2_habilitacion";
+
 /** Prefijo de los checks dinámicos por reprogramación de obra. */
 export const CODIGO_REAGENDA = "e1_reagenda";

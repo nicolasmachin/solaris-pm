@@ -579,7 +579,11 @@ Detalles que importan:
 horas: a las 24 h le recuerda al rol Experiencia Solar que avise al cliente, y a
 las 48 h escala a ADMIN. **El sistema no le escribe al cliente**: sólo alerta
 internamente. La alarma se apaga cuando alguien registra una interacción con
-motivo `AVISO_HABILITACION` (botón "Marcar avisado al Generador" en la ficha).
+el paso **"Aviso de habilitación otorgada"** (`e2_habilitacion`) de la pestaña de
+pasos: `completarCheck` escribe `avisoHabilitacionEn`, y destildarlo lo vuelve a
+poner en null. Antes lo hacía un botón "Marcar avisado al Generador" dentro del
+formulario de la bitácora; se sacó porque había **dos formas de marcar lo mismo** y
+la obvia (tildar el paso) no apagaba nada.
 
 **Qué llega al historial del cliente.** El registro de actividad se escribió para
 desarrolladores, así que no todo sirve para mostrar. Cada acción está clasificada

@@ -12,7 +12,7 @@ import { prisma } from "../../lib/prisma.js";
 import { addBusinessDays } from "../../utils/business-days.js";
 import { badRequest, notFound } from "../../utils/errors.js";
 import { createAuditEntry } from "../audit.service.js";
-import { CHECKS_POR_RECORRIDO, CODIGO_REAGENDA } from "./recorrido-checks.js";
+import { CHECKS_POR_RECORRIDO, CODIGO_AVISO_HABILITACION, CODIGO_REAGENDA } from "./recorrido-checks.js";
 
 export type CheckSerializado = {
   id: string;
@@ -156,6 +156,20 @@ export async function completarCheck(params: {
       : { completadoEn: null, completadoPorId: null },
     include: { completadoPor: { select: { name: true } } },
   });
+
+  // Regla de Oro: tildar el aviso de habilitación es lo que corta las alertas del
+  // cron. Antes eso lo hacía un botón escondido en el formulario de la bitácora
+  // ("Marcar avisado al Generador"), así que había dos formas de marcar lo mismo
+  // y tildar el paso —lo obvio— no apagaba nada.
+  if (check.codigo === CODIGO_AVISO_HABILITACION) {
+    await prisma.project.updateMany({
+      where: {
+        id: check.projectId,
+        ...(params.completado ? { avisoHabilitacionEn: null } : {}),
+      },
+      data: { avisoHabilitacionEn: params.completado ? new Date() : null },
+    });
+  }
 
   await createAuditEntry({
     entityType: AuditEntityType.project,
