@@ -409,6 +409,8 @@ export interface Project {
   } | null;
   /** Trámite UTE asociado al proyecto (activo, no eliminado). */
   uteProcess?: import("../api/uteProcess.api").UteProcess | null;
+  /** Lead del que salió el proyecto. Permite volver a Ventas sin buscarlo. */
+  leadId?: string | null;
 }
 
 // ─── Substage patch response ──────────────────────────────────────────────────

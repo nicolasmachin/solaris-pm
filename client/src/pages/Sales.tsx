@@ -18,7 +18,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   addReclamo,
   createLead,
@@ -32,6 +32,7 @@ import {
   patchLeadStage,
 } from "../api/leads.api";
 import { getUsers } from "../api/users.api";
+import { EnlacesModulos } from "../components/layout/EnlacesModulos";
 import { CommentThread } from "../components/comments/CommentThread";
 import { LeadAttachments } from "../components/sales/LeadAttachments";
 import { LeadVisitaMedia } from "../components/sales/LeadVisitaMedia";
@@ -760,16 +761,19 @@ function LeadPanel({
               {lead.stage === WON_STAGE ? "✓ Cerrado como Ganado" : "✗ Cerrado como Perdido"}
             </span>
             {lead.convertedToProject ? (
-              <p className="text-xs text-[var(--color-text-secondary)]">
-                Convertido al proyecto{" "}
-                <button
-                  type="button"
-                  onClick={() => navigate(`/projects/${lead.convertedToProject!.id}`)}
-                  className="font-mono text-[var(--color-accent)] hover:underline"
-                >
-                  {lead.convertedToProject.code} · {lead.convertedToProject.clientName}
-                </button>
-              </p>
+              <>
+                <p className="font-mono text-[11px] text-[var(--color-text-muted)]">
+                  Convertido al proyecto {lead.convertedToProject.code}
+                </p>
+                {/* La misma fila de enlaces que en el resto de la app, en vez de
+                    un link suelto que sólo llevaba al proyecto. */}
+                <EnlacesModulos
+                  actual="ventas"
+                  projectId={lead.convertedToProject.id}
+                  leadId={lead.id}
+                  className="justify-center"
+                />
+              </>
             ) : lead.stage === WON_STAGE ? (
               <button
                 type="button"
@@ -1116,7 +1120,22 @@ export function Sales() {
     assignedTo: onlyMine ? "me" : undefined,
     ownerId: ownerId || undefined,
   });
-  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  // El panel del lead se puede abrir por URL (`/ventas?lead=<id>`), que es lo que
+  // permite enlazar a un cliente desde los otros módulos. Sin esto, el panel sólo
+  // se abría desde adentro y no había forma de apuntarle un enlace.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedLeadId = searchParams.get("lead");
+  const setSelectedLeadId = (id: string | null) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (id) next.set("lead", id);
+        else next.delete("lead");
+        return next;
+      },
+      { replace: true },
+    );
+  };
   const [showNewLead, setShowNewLead] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [view, setView] = useSalesView();

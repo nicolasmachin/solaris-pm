@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, ChevronDown, ExternalLink, Mail, MapPin, Phone, User } from "lucide-react";
+import { ArrowLeft, ChevronDown, Mail, MapPin, Phone, User } from "lucide-react";
 
 import { getChecks, type ClienteRecorrido } from "../../../api/clientes.api";
+import { EnlacesModulos } from "../../../components/layout/EnlacesModulos";
 import { Spinner } from "../../../components/ui/Spinner";
 import { usePermission } from "../../../hooks/usePermission";
 import { ClienteInteractionForm } from "../components/ClienteInteractionForm";
@@ -160,12 +161,13 @@ export function ClienteFichaPage() {
             )}
           </div>
         </div>
-        <button
-          onClick={() => navigate(ficha.proyectoUrl)}
-          className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-gray-900 transition-colors hover:bg-[var(--color-accent-hover)]"
-        >
-          <ExternalLink className="h-4 w-4" /> Ir al proyecto
-        </button>
+        <EnlacesModulos
+          actual="experiencia"
+          projectId={projectId ?? null}
+          leadId={ficha.leadId}
+          uteProcessId={ficha.uteProcessId}
+          className="shrink-0 justify-end"
+        />
       </div>
 
       {/* El pipeline del recorrido: el mapa de dónde está y qué falta. */}

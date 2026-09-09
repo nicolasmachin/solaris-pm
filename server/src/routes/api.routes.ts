@@ -1657,6 +1657,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
           orderBy: { createdAt: "desc" },
           take: 1,
         },
+        // Lead de origen: es lo que permite volver a Ventas desde el proyecto sin
+        // tener que buscarlo por nombre.
+        convertedLeads: { select: { id: true }, take: 1 },
       },
     });
 
@@ -1750,6 +1753,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       recentTasks: project.tasks.map(serializeTask),
       recentFiles: project.files.map(serializeFile),
       uteProcess,
+      leadId: project.convertedLeads[0]?.id ?? null,
     };
   });
 
@@ -10674,6 +10678,18 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return serializeUteProcess(row);
   });
 
+  // Etiquetas de usuario final de las etapas del trámite. El enum es interno y
+  // en el historial del cliente no se muestra un código.
+  const UTE_STAGE_LABEL_ES: Record<string, string> = {
+    CONSULTA: "Consulta",
+    SOLICITUD: "Solicitud",
+    DOCS_1: "Documentación 1",
+    DOCS_2: "Documentación 2",
+    RELEVAR: "Relevamiento",
+    ENSAYOS: "Ensayos",
+    FINALIZADO: "Finalizado",
+  };
+
   app.post("/ute-processes", { preHandler: authorize(Module.TRAMITES_UTE, Action.CREATE) }, async (request, reply) => {
     const user = ensureUser(request);
     const body = uteProcessCreateSchema.parse(request.body);
@@ -10803,6 +10819,24 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // si este PATCH finaliza el trámite (carga de finalizedAt → CERRADO), dispara
     // el traspaso de cierre T8. Si no lo finaliza, no dispara nada (idempotente).
     await regenerateUteSubstages(prisma, updated, user.id);
+
+    // El avance del trámite es **la novedad más esperada por el cliente** en toda
+    // la etapa E2: es lo único que se mueve mientras él espera. Hasta acá este
+    // endpoint no dejaba rastro, así que avanzar el trámite no aparecía en el
+    // historial del cliente ni encendía la lucecita de novedad.
+    if (updated.projectId && nextStage !== existing.currentStage) {
+      await createAuditEntry({
+        entityType: AuditEntityType.project,
+        entityId: updated.projectId,
+        projectId: updated.projectId,
+        userId: user.id,
+        action: AuditAction.stage_advanced,
+        fieldChanged: "uteStage",
+        oldValue: existing.currentStage,
+        newValue: nextStage,
+        description: `El trámite UTE pasó a "${UTE_STAGE_LABEL_ES[nextStage] ?? nextStage}"`,
+      });
+    }
 
     return serializeUteProcess(updated);
   });

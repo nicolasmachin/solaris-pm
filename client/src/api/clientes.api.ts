@@ -85,6 +85,9 @@ export interface ClienteInteraction {
 export interface ClienteFicha extends ClienteListItem {
   /** Con qué entra el Generador al portal (mail o alias). null si no tiene acceso. */
   portalIdentificador: string | null;
+  /** Lead de origen y trámite, para los enlaces a los otros módulos. */
+  leadId: string | null;
+  uteProcessId: string | null;
   direccion: string | null;
   tramiteUte: { etapa: string; desde: string | null } | null;
   interacciones: ClienteInteraction[];

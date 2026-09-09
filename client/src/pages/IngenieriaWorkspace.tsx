@@ -21,6 +21,7 @@ import {
   getIngenieriaWorkspace,
   type IngenieriaWorkspaceDocument,
 } from "../api/ingenieria.api";
+import { EnlacesModulos } from "../components/layout/EnlacesModulos";
 import { ToolAccordion } from "../components/ingenieria/ToolAccordion";
 import { UnifilarToolPanel } from "../components/ingenieria/unifilar/UnifilarToolPanel";
 import { MaterialesToolPanel } from "../components/ingenieria/MaterialesToolPanel";
@@ -108,7 +109,7 @@ export function IngenieriaWorkspace() {
           </p>
         )}
         {data?.project && (
-          <div className="mt-3 flex gap-2 flex-wrap">
+          <div className="mt-3 flex gap-2 flex-wrap items-center">
             <Link
               to={`/ingenieria/proyecto/${id}/ute-docs`}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-[var(--color-border)] bg-[var(--color-bg-card)] text-[11px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors"
@@ -116,6 +117,8 @@ export function IngenieriaWorkspace() {
               <FileText className="w-3.5 h-3.5" />
               Documentos UTE
             </Link>
+            <span className="mx-1 h-4 w-px bg-[var(--color-border)]" />
+            <EnlacesModulos actual="ingenieria" projectId={id ?? null} />
           </div>
         )}
       </header>

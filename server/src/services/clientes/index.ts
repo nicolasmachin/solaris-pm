@@ -596,6 +596,7 @@ export async function getClienteListItem(projectId: string): Promise<ClienteList
 // ─── Ficha 360 ───────────────────────────────────────────────────────────────
 
 const UTE_FICHA_SELECT = {
+  id: true,
   currentStage: true,
   createdAt: true,
   consultaSentAt: true,
@@ -662,6 +663,9 @@ export async function getClienteFicha(projectId: string) {
         select: { user: { select: { email: true, username: true } } },
       },
       clientUser: { select: { email: true, username: true } },
+      // Lead de origen y trámite: para poder saltar a Ventas y a Trámites UTE
+      // desde la ficha sin buscar al cliente de nuevo en cada módulo.
+      convertedLeads: { select: { id: true }, take: 1 },
     },
   });
 
@@ -676,6 +680,8 @@ export async function getClienteFicha(projectId: string) {
     // La contraseña no se puede mostrar (está hasheada): para reenviarla hay que
     // resetearla.
     portalIdentificador: portalUser ? (portalUser.email ?? portalUser.username) : null,
+    leadId: p.convertedLeads[0]?.id ?? null,
+    uteProcessId: ute?.id ?? null,
     direccion: p.clientAddress ?? null,
     // Fecha de venta (cierre del lead como ganado) — se muestra junto a la de entrega.
     fechaVenta: serializeDateOnly(p.saleDate),

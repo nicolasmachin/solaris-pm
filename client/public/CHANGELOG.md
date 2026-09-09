@@ -4,6 +4,18 @@
 
 ### 8 de septiembre de 2026
 
+#### Los enlaces entre módulos, todos iguales y en el mismo lugar
+
+- Ahora hay **una sola fila de enlaces** —**Ventas · Proyecto · Ingeniería · Trámite UTE · Experiencia Solar**— que aparece igual en la ficha del cliente, en el proyecto, en el workspace de Ingeniería y en el panel del lead. Cada uno lleva **al mismo cliente** en ese módulo.
+- El orden sigue el recorrido del cliente —venta, obra, ingeniería, trámite, posventa—, así la fila también sirve de mapa del proceso.
+- El módulo donde estás parado se ve marcado, y **no se muestran los que no podés abrir**: un enlace que rebota con "no tenés permiso" es peor que no tenerlo.
+- Antes cada pantalla se los armaba por su cuenta: el proyecto tenía dos enlaces sueltos con formato distinto metidos entre los datos, la ficha un botón grande y el workspace de Ingeniería ninguno.
+- Para que esto funcionara, **el panel de un lead ahora se puede abrir por dirección** (`/ventas?lead=…`): antes solo se abría desde adentro de Ventas.
+
+#### El avance del trámite UTE ahora aparece en el historial del cliente
+
+- Cuando el trámite pasa de etapa, **queda registrado en el historial del Generador** y enciende la señal de novedad. Hasta ahora no dejaba rastro: era justamente lo único que se mueve mientras el cliente espera, y no se veía.
+
 #### Arreglos del historial y de las etapas
 
 - **Un traspaso ya no aparece dos veces en el historial del cliente.** Salía una vez al generarse y otra al confirmarse, con un minuto de diferencia, y la segunda decía "notificó a 8 destinatarios" — maquinaria interna que no cambia nada de la historia del cliente. Queda solo el momento en que el traspaso ocurrió.

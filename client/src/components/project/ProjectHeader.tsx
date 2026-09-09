@@ -3,6 +3,7 @@ import { Contact, FileCheck, GitBranch, HardHat, Mail, MapPin, Phone, Plus, Tras
 import type { Project } from "../../types/api.types";
 import { UTE_STAGE_LABEL, UTE_STATUS_LABEL } from "../../api/uteProcess.api";
 import { getProjectTeamColor, getProjectTeamName } from "./projectTeamColor";
+import { EnlacesModulos } from "../layout/EnlacesModulos";
 import { CanAccess } from "../ui/CanAccess";
 import { CargarFotosObraButton } from "../obra/CargarFotosObraButton";
 import { LiveStageCountdown } from "./LiveStageCountdown";
@@ -169,26 +170,20 @@ export function ProjectHeader({ project, onEdit, onDelete, onAmpliar }: ProjectH
               {UTE_STAGE_LABEL[project.uteProcess.currentStage]} ·{" "}
               {UTE_STATUS_LABEL[project.uteProcess.currentStatus]}
             </span>
-            <button
-              type="button"
-              onClick={() => navigate(`/tramites-ute?highlight=${project.uteProcess!.id}`)}
-              className="text-[var(--color-accent)] hover:underline"
-            >
-              Ver →
-            </button>
           </div>
         ) : null}
-        <div className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] text-[var(--color-text-secondary)]">
-          <HardHat size={12} className="shrink-0" />
-          <span className="text-[var(--color-text-muted)]">Ingeniería:</span>
-          <button
-            type="button"
-            onClick={() => navigate(`/ingenieria/proyecto/${project.id}`)}
-            className="text-[var(--color-accent)] hover:underline"
-          >
-            Abrir workspace →
-          </button>
-        </div>
+
+        {/* Los enlaces a los otros módulos, todos juntos y en el mismo orden que
+            en el resto de la app. Antes eran dos botones sueltos —UTE e
+            Ingeniería— metidos entre los datos, y no había forma de ir a Ventas
+            ni a Experiencia Solar desde acá. */}
+        <EnlacesModulos
+          actual="proyecto"
+          projectId={project.id}
+          leadId={project.leadId}
+          uteProcessId={project.uteProcess?.id ?? null}
+          className="mt-3"
+        />
       </div>
 
       <div className="shrink-0 mt-1 flex flex-col items-end gap-2">
