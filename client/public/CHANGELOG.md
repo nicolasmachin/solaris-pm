@@ -12,6 +12,15 @@
 - Antes cada pantalla se los armaba por su cuenta: el proyecto tenía dos enlaces sueltos con formato distinto metidos entre los datos, la ficha un botón grande y el workspace de Ingeniería ninguno.
 - Para que esto funcionara, **el panel de un lead ahora se puede abrir por dirección** (`/ventas?lead=…`): antes solo se abría desde adentro de Ventas.
 
+#### La lista de clientes al costado, y se puede plegar
+
+- La ficha del Generador ahora tiene **la lista de clientes al costado**, igual que el detalle del proyecto: se salta de uno a otro sin volver al listado. Viene ordenada por prioridad de contacto y con las señales de alerta y novedad.
+- Las tres listas laterales —Proyectos, Ingeniería y Experiencia Solar— **se pueden plegar hacia la izquierda** con el botón de arriba, y queda una pestaña angosta para volver a abrirlas. La preferencia es **una sola para los tres módulos** y se recuerda; por defecto vienen desplegadas.
+
+#### Se recuperó el espacio muerto de arriba
+
+- Entre el menú de módulos y el título de cada pantalla había unos 80 píxeles vacíos, que en una notebook es una franja de pantalla perdida en cada vista. Ahora es la mitad.
+
 #### La ficha del cliente: las novedades ganan lugar
 
 - El **recorrido del cliente** pasó a la mitad izquierda, arriba de los pasos de la etapa, en vez de cruzar toda la pantalla. Así **el historial de novedades arranca a la misma altura** y no queda empujado media pantalla hacia abajo.

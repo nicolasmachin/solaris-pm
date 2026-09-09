@@ -7,6 +7,9 @@ import { MobileNavDrawer } from "./MobileNavDrawer";
 import { BottomTabBar } from "./BottomTabBar";
 import { FinanceInvariantBanner } from "../finance/FinanceInvariantBanner";
 import { EngineeringProjectsSidebar } from "../ingenieria/EngineeringProjectsSidebar";
+import { ClientesSidebar } from "../../modules/clientes/components/ClientesSidebar";
+import { SidebarContextual, SIDEBAR_ANCHO } from "./SidebarContextual";
+import { useSidebarColapsado } from "../../hooks/useSidebarColapsado";
 import { TraspasoPopup } from "../traspasos/TraspasoPopup";
 
 export function AppLayout() {
@@ -20,7 +23,11 @@ export function AppLayout() {
   const matchIngenieriaWorkspace = useMatch("/ingenieria/proyecto/:id");
   const matchIngenieriaWorkspaceSub = useMatch("/ingenieria/proyecto/:id/*");
   const isIngenieriaWorkspace = !!matchIngenieriaWorkspace || !!matchIngenieriaWorkspaceSub;
-  const showSidebar = isProjectDetail || isIngenieriaWorkspace;
+  // La ficha del Generador tiene la misma necesidad que el detalle del proyecto:
+  // saltar de un cliente a otro sin volver al listado.
+  const isClienteFicha = !!useMatch("/clientes/:projectId");
+  const showSidebar = isProjectDetail || isIngenieriaWorkspace || isClienteFicha;
+  const [sidebarColapsado] = useSidebarColapsado();
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-app)]">
@@ -29,13 +36,22 @@ export function AppLayout() {
       {/* Menú principal para móvil (hamburguesa en el topbar) */}
       <MobileNavDrawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
-      {/* Sidebar contextual: Proyectos en /projects/:id, Ingeniería en /ingenieria/proyecto/:id */}
-      {isProjectDetail && <Sidebar open={false} onClose={() => undefined} />}
-      {isIngenieriaWorkspace && <EngineeringProjectsSidebar />}
+      {/* Sidebar contextual: la lista del módulo en el que se está trabajando.
+          Los tres comparten el marco y la preferencia de plegado. */}
+      {showSidebar && (
+        <SidebarContextual>
+          {isProjectDetail && <Sidebar open={false} onClose={() => undefined} />}
+          {isIngenieriaWorkspace && <EngineeringProjectsSidebar />}
+          {isClienteFicha && <ClientesSidebar />}
+        </SidebarContextual>
+      )}
 
       <main
         className="overflow-y-auto min-h-screen"
-        style={{ marginLeft: showSidebar ? 220 : 0, paddingTop: 52 }}
+        style={{
+          marginLeft: showSidebar ? (sidebarColapsado ? 28 : SIDEBAR_ANCHO) : 0,
+          paddingTop: 52,
+        }}
       >
         {/* On mobile, remove the sidebar margin */}
         <style>{`
@@ -45,7 +61,10 @@ export function AppLayout() {
         `}</style>
         {/* pb extra en móvil para que el bottom tab bar no tape el contenido
             (alto del tab bar + safe area). En ≥md vuelve al pb-10 normal. */}
-        <div className="p-6 pb-[calc(72px+env(safe-area-inset-bottom))] md:pb-10">
+        {/* pt chico a propósito: entre el menú de módulos y el título de la
+            pantalla había ~80px muertos (este padding + el de cada página), que
+            en un portátil es una franja de pantalla perdida en cada vista. */}
+        <div className="px-6 pt-3 pb-[calc(72px+env(safe-area-inset-bottom))] md:pb-10">
           <FinanceInvariantBanner />
           <Outlet />
         </div>

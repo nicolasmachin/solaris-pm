@@ -82,7 +82,7 @@ export function ClienteFichaPage() {
 
   if (isError || !ficha) {
     return (
-      <div className="space-y-4 p-6">
+      <div className="space-y-4">
         <button
           onClick={() => navigate("/clientes")}
           className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
@@ -97,7 +97,7 @@ export function ClienteFichaPage() {
   const etapa = etapaSel ?? etapaActual ?? "E1";
 
   return (
-    <div className="space-y-4 p-4 sm:p-6">
+    <div className="space-y-4">
       <button
         onClick={() => navigate("/clientes")}
         className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
