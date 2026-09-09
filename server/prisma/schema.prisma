@@ -418,6 +418,12 @@ enum Action {
   // ADMIN_REPORT = ver los reportes agregados de traspasos. Módulo TRASPASOS,
   // admin-only por default.
   ADMIN_REPORT
+  // FIJAR_ETAPA = empujar a mano la etapa MOSTRADA de un proyecto
+  // (`Project.stageOverride`). Módulo OPERACIONES. Va aparte de EDIT a
+  // propósito: la etapa debería avanzar sola al completarse las subetapas, así
+  // que fijarla es una excepción y no algo que deba poder hacer cualquiera con
+  // permiso de edición sobre el módulo. Solo ADMIN y GERENTE_OPERACIONES.
+  FIJAR_ETAPA
 }
 
 enum SettingLevel {

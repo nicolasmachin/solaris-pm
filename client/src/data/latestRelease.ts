@@ -23,59 +23,15 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "10.1",
-  date: "8 de septiembre de 2026",
+  version: "10.2",
+  date: "9 de septiembre de 2026",
   sections: [
     {
-      title: "Experiencia Solar — la ficha del cliente es una sola pantalla",
+      title: "La etapa del proyecto: quién puede moverla y cómo",
       items: [
-        "Se terminaron las cuatro pestañas. Arriba, todos los datos del cliente; a la izquierda el recorrido en tres etapas y los pasos de la que elijas; a la derecha, todo el historial con lo más nuevo arriba.",
-        "Se hace clic en una etapa del recorrido y debajo aparecen sus pasos, con las plantillas de mensajes de esa etapa y un botón para completarlos todos.",
-        "La lista de Generadores quedó al costado para saltar de un cliente a otro, y se puede plegar. Las tres listas laterales —Proyectos, Ingeniería y Experiencia Solar— comparten esa preferencia.",
-        "El trámite UTE se despliega con sus diez hitos: exactamente lo que el cliente ve en su portal.",
-      ],
-    },
-    {
-      title: "Experiencia Solar — el Recorrido y los pasos de cada cliente",
-      items: [
-        "Nueva vista Recorrido con la cartera dividida en Pre-obra, Habilitación y Post-habilitación, ordenada por días sin contacto.",
-        "Cada cliente tiene sus pasos de acompañamiento con plazo. Los plazos arrancan con el hecho, no con la creación: confirmar la fecha de obra abre el aviso al cliente, y que UTE habilite abre el de 'ya podés encender'.",
-        "Tres avisos quedan resaltados y pintan la fila de rojo cuando faltan: la bienvenida, el aviso de fecha de obra y el de habilitación.",
-        "El listado se ordena por prioridad de contacto y se agrupa en bloques plegables por etapa.",
-      ],
-    },
-    {
-      title: "Los mensajes modelo, a un clic desde cada paso",
-      items: [
-        "Quince mensajes listos para copiar, con el nombre del cliente y el tuyo ya puestos, editables antes de mandar. Al copiar queda registrado el contacto.",
-        "El acceso al portal se crea desde el propio paso que lo pide, y el mensaje sale con el usuario y la contraseña reales.",
-      ],
-    },
-    {
-      title: "Se puede entrar con un usuario corto, y los clientes sin mail ya tienen acceso",
-      items: [
-        "Los usuarios internos pueden entrar escribiendo un usuario corto en vez del mail completo: las dos formas funcionan igual.",
-        "Ahora se le puede crear acceso al portal a un cliente aunque no tengamos su mail: el sistema usa su cédula o arma un alias con su nombre.",
-      ],
-    },
-    {
-      title: "El historial del cliente dice de qué módulo viene cada cosa",
-      items: [
-        "Cada entrada lleva su etiqueta: Ventas, Ingeniería, Operaciones, Proyecto, Trámite UTE, Experiencia Solar, Documentos, Ticket o Encuesta.",
-        "Aparecen los avances del trámite UTE, los archivos cargados y las subetapas completadas, que antes no dejaban rastro.",
-        "Dejaron de colarse cambios de estado de finanzas, de tickets duplicados y de informes internos.",
-      ],
-    },
-    {
-      title: "El Recorrido llega por correo cada mañana",
-      items: [
-        "Un correo diario con lo vencido arriba y, por etapa, quiénes están fuera de cadencia o tienen novedad sin avisar. Si no hay nada pendiente, no se manda.",
-      ],
-    },
-    {
-      title: "Enlaces entre módulos, iguales y en el mismo lugar",
-      items: [
-        "Una sola fila —Ventas · Proyecto · Ingeniería · Trámite UTE · Experiencia Solar— que lleva al mismo cliente en el otro módulo, presente en las cuatro pantallas.",
+        "Fijar la etapa a mano pasó a ser un permiso propio: antes lo podía hacer cualquiera con permiso de edición sobre Operaciones (13 roles, incluidos asesores comerciales, logística e instaladores tercerizados). Ahora solo el Administrador y el Gerente de Operaciones.",
+        "Ya se puede retroceder la etapa, no solo avanzarla: si una obra se pospone, se la baja a donde realmente está. Antes el desplegable solo ofrecía avanzar y el sistema ignoraba en silencio cualquier intento de bajarla.",
+        'La etapa fijada a mano manda siempre, para adelante y para atrás. Sigue con la marca "manual" al lado y la opción "Volver a automático" devuelve el cálculo por subetapas.',
       ],
     },
   ],
@@ -97,7 +53,6 @@ const RELEASE_9_9: Release = {
   ],
 };
 
-
 /** Versiones anteriores para mostrar en el sidebar de novedades. */
 export type OldRelease = {
   version: string;
@@ -106,6 +61,14 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "10.1",
+    shortDate: "8 sep",
+    highlights: [
+      "Experiencia Solar: la ficha del cliente es una sola pantalla, con el recorrido a la izquierda y todo el historial a la derecha.",
+      "Una sola fila de enlaces entre módulos (Ventas · Proyecto · Ingeniería · Trámite UTE · Experiencia Solar), igual en todas las pantallas.",
+    ],
+  },
   {
     version: "10.0",
     shortDate: "28 ago",

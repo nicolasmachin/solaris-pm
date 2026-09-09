@@ -334,10 +334,16 @@ export function getCurrentStage<T extends { status: StageStatus; order: number; 
   );
 }
 
-// Etapa MOSTRADA del proyecto, aplicando el override manual con la regla
-// "empujón hacia adelante": es la más avanzada entre la etapa derivada de las
-// sub-tareas y la fijada a mano (`stageOverride`). Nunca muestra una etapa
-// anterior a la real; si el trabajo real ya pasó el override, gana lo real.
+// Etapa MOSTRADA del proyecto: la fijada a mano (`stageOverride`) si existe, y
+// si no la derivada de las sub-tareas.
+//
+// Hasta septiembre de 2026 regía la regla "empujón hacia adelante": se mostraba
+// la MÁS AVANZADA entre la derivada y la fijada, así que un override anterior al
+// trabajo ya hecho se ignoraba en silencio. Eso hacía imposible corregir una
+// etapa hacia atrás, que es justo lo que hace falta cuando una obra se pospone:
+// la de Santiago Pereyra quedó mostrando "Ejecución de Obra" después de
+// desagendarse y no había forma de bajarla. Ahora el override manda en las dos
+// direcciones y quien lo fija se hace cargo; la UI lo marca como "manual".
 export function getDisplayStage<T extends { status: StageStatus; order: number; name: string }>(
   stages: T[],
   stageOverride: string | null | undefined,
@@ -345,9 +351,7 @@ export function getDisplayStage<T extends { status: StageStatus; order: number; 
   const derived = getCurrentStage(stages);
   if (!stageOverride) return derived;
   const overrideStage = stages.find((s) => s.name === stageOverride && !isParallelStage(s.name));
-  if (!overrideStage) return derived;
-  if (!derived) return overrideStage;
-  return overrideStage.order > derived.order ? overrideStage : derived;
+  return overrideStage ?? derived;
 }
 
 export async function generateProjectCode() {

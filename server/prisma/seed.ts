@@ -127,6 +127,9 @@ const GERENTE_BASE: Record<string, string> = {
 
 // Permisos que un rol clonado suma por encima de su base.
 const EXTRA_PERMISSIONS: Record<string, Array<{ module: Module; actions: Action[] }>> = {
+  // Fijar la etapa a mano es una excepción al avance automático: solo la
+  // gerencia de operaciones y ADMIN. Ver el comentario de FIJAR_ETAPA en el schema.
+  GERENTE_OPERACIONES: [{ module: Module.OPERACIONES, actions: [Action.FIJAR_ETAPA] }],
   // Solo el tercerizado ve sus pagos: al capataz propio se le paga por sueldo,
   // no por obra.
   INSTALADOR_TERCERIZADO: [{ module: Module.PAGOS_INSTALADOR, actions: [Action.VIEW] }],
@@ -193,7 +196,7 @@ async function seedPermissions(roleIdByName: Map<string, string>) {
     { roleName: "ADMIN", module: Module.VENTAS,         actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMMENT, Action.ACCESS_MEMORIA, Action.DEBUG_CALCULADORA] },
     { roleName: "ADMIN", module: Module.ONBOARDING,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { roleName: "ADMIN", module: Module.INGENIERIA,     actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
-    { roleName: "ADMIN", module: Module.OPERACIONES,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { roleName: "ADMIN", module: Module.OPERACIONES,    actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT, Action.FIJAR_ETAPA] },
     { roleName: "ADMIN", module: Module.HABILITACION,   actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { roleName: "ADMIN", module: Module.POSTVENTA,      actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { roleName: "ADMIN", module: Module.METRICAS,       actions: [Action.VIEW] },

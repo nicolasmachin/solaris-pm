@@ -691,8 +691,9 @@ function InstallationCoherenceBanner({
   );
 }
 
-// Control para fijar/limpiar a mano la etapa MOSTRADA del proyecto ("empujón
-// hacia adelante"): solo ofrece etapas por delante de la actual + "automático".
+// Control para fijar/limpiar a mano la etapa MOSTRADA del proyecto. Ofrece
+// TODAS las etapas del pipeline —adelante y atrás— más "volver a automático":
+// cuando una obra se pospone hay que poder bajarla, no solo empujarla.
 function StageOverrideControl({
   projectId,
   stages,
@@ -712,7 +713,8 @@ function StageOverrideControl({
     .sort((a, b) => a.order - b.order);
   const shown = linear.find((s) => s.name === currentStageName) ?? null;
   const shownOrder = shown?.order ?? -Infinity;
-  const forward = linear.filter((s) => s.order > shownOrder);
+  // Todas menos la que ya se está mostrando (elegirla no haría nada).
+  const opciones = linear.filter((s) => s.order !== shownOrder);
 
   const mut = useMutation({
     mutationFn: (stage: string | null) => setProjectStageOverride(projectId, stage),
@@ -757,9 +759,9 @@ function StageOverrideControl({
         className="ml-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
       >
         <option value="">Cambiar etapa…</option>
-        {forward.map((s) => (
+        {opciones.map((s) => (
           <option key={s.name} value={s.name}>
-            Avanzar a {stageLabel(s.name)}
+            {s.order > shownOrder ? "Avanzar a" : "Retroceder a"} {stageLabel(s.name)}
           </option>
         ))}
         {stageOverride ? <option value="__auto__">Volver a automático</option> : null}
@@ -825,6 +827,9 @@ export function ProjectDetail() {
   const canViewObra = usePermission("OPERACIONES", "VIEW");
   // Borrado lógico del proyecto: el endpoint DELETE /projects/:id exige OPERACIONES:EDIT.
   const canDeleteProject = usePermission("OPERACIONES", "EDIT");
+  // Fijar la etapa a mano es una excepción al avance automático y tiene su
+  // propio permiso: solo gerencia de operaciones y ADMIN.
+  const canFijarEtapa = usePermission("OPERACIONES", "FIJAR_ETAPA");
   const isAdmin = useAuthStore((s) => s.user?.role === "ADMIN");
   // Borrar un sistema fotovoltaico adicional: el endpoint DELETE exige OPERACIONES:DELETE.
   const canDeleteSystem = usePermission("OPERACIONES", "DELETE");
@@ -1046,7 +1051,7 @@ export function ProjectDetail() {
         stages={project.stages}
         currentStageName={project.currentStage?.name}
         stageOverride={project.stageOverride}
-        canEdit={canDeleteProject}
+        canEdit={canFijarEtapa}
       />
 
       {/* Documentos del cliente — extracción con IA */}

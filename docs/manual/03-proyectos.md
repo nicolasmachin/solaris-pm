@@ -8,6 +8,89 @@ El pipeline de obra: etapas, subetapas, checklists, ampliaciones y traspasos.
 
 ---
 
+## Cuál es la etapa que se muestra (y cómo se fija a mano)
+
+### Para qué existe
+
+La etapa del proyecto **avanza sola**: cuando se resuelven todas las subetapas de
+una etapa, esa etapa se completa y la siguiente pasa a ser la actual. Ese es el
+comportamiento normal y el que debería regir siempre.
+
+El override manual (`Project.stageOverride`) es la **excepción**: sirve cuando el
+pipeline no refleja la realidad y hay que corregir lo que se muestra sin tocar el
+trabajo registrado. Por ejemplo, la obra ya arrancó pero quedó una subetapa
+pendiente de tildar.
+
+### Cómo se usa
+
+En la ficha del proyecto, la barra **"Etapa mostrada"**. El desplegable ofrece
+**todas** las etapas del pipeline —"Avanzar a…" y "Retroceder a…"— más **"Volver
+a automático"**, que borra el override y devuelve el cálculo por subetapas.
+
+Cuando hay override, al lado de la etapa aparece la marca **manual**.
+
+### Cómo funciona
+
+`getDisplayStage()` en `project.service.ts` decide qué etapa se muestra:
+
+1. Si hay `stageOverride`, **esa** es la etapa mostrada. Manda siempre, para
+   adelante y para atrás.
+2. Si no hay, se usa la derivada por `getCurrentStage()`: la primera etapa en
+   curso, o si ninguna lo está, la primera no completada.
+
+`getCurrentStage()` **ignora Tramitación UTE** mientras la Ejecución de Obra no
+esté completada. El trámite arranca desde el día uno y avanza en paralelo, así
+que si contara adelantaría la etapa de cualquier obra que todavía no empezó.
+
+El override **no se limpia solo**. Nada lo revierte automáticamente: ni completar
+subetapas, ni desagendar la instalación del calendario. Sale solo con "Volver a
+automático".
+
+### Permisos
+
+| Acción | Permiso |
+|---|---|
+| Ver la etapa | `OPERACIONES:VIEW` |
+| **Fijar / retroceder / desfijar la etapa** | **`OPERACIONES:FIJAR_ETAPA`** |
+
+`FIJAR_ETAPA` la tienen **solo ADMIN y GERENTE_OPERACIONES**. Es una acción
+propia, separada de `EDIT`, y se administra desde Administración → Permisos como
+cualquier otra.
+
+`PATCH /projects/:projectId/stage-override` es el **único** lugar de todo el
+sistema que escribe `stageOverride`, y en el frontend el único llamador es ese
+control. Ni el calendario, ni los traspasos, ni el agendado de instalación lo
+tocan: si una etapa aparece fijada a mano, alguien la fijó desde ahí.
+
+### Reglas y decisiones
+
+- **Por qué `FIJAR_ETAPA` y no `EDIT`** (septiembre 2026): con `EDIT` lo podían
+  hacer 13 roles, incluidos asesores comerciales, logística y los instaladores
+  tercerizados. Un instalador movió una obra a "Ejecución de Obra" el día antes
+  de arrancar; la obra se pospuso y la etapa quedó mintiendo. La etapa debería
+  avanzar sola, así que fijarla es una excepción que corresponde a quien tiene la
+  visión completa de operaciones.
+- **Por qué el override manda en las dos direcciones** (septiembre 2026): antes
+  regía "empujón hacia adelante" —se mostraba la más avanzada entre la derivada y
+  la fijada—, así que un override anterior al avance real **se ignoraba en
+  silencio**. Eso hacía imposible corregir hacia atrás una obra pospuesta. Ahora
+  el override manda y quien lo fija se hace cargo; la marca "manual" lo hace
+  visible.
+
+### Casos borde
+
+- **Fijar una etapa por debajo del avance real** es posible y no toca las
+  subetapas: el trabajo registrado queda intacto, solo cambia lo que se muestra.
+  Al volver a automático, la etapa vuelve a donde el pipeline dice.
+- **Desagendar una instalación no revierte el override.** Es el agujero que
+  provocó el caso de Santiago Pereyra: se borró la programación del calendario y
+  la etapa siguió en "Ejecución de Obra". Hoy hay que acordarse de volverla a
+  automático a mano.
+- Una etapa fijada que no existe en el pipeline del proyecto se rechaza al
+  guardar (`STAGE_NOT_IN_PIPELINE`).
+
+---
+
 ## Control de tiempos por etapa (plazos, cuenta regresiva, cumplimiento)
 
 > Esta parte sí está documentada (se trabajó en v9.0). El resto del capítulo

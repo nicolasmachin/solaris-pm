@@ -2140,7 +2140,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
   // a automático. La regla de "más avanzada gana" se aplica al serializar (getDisplayStage).
   app.patch(
     "/projects/:projectId/stage-override",
-    { preHandler: authorize(Module.OPERACIONES, Action.EDIT) },
+    { preHandler: authorize(Module.OPERACIONES, Action.FIJAR_ETAPA) },
     async (request) => {
       const user = ensureUser(request);
       const params = z.object({ projectId: z.string() }).parse(request.params);
@@ -6300,7 +6300,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     { module: Module.VENTAS,              actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMMENT] },
     { module: Module.ONBOARDING,          actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { module: Module.INGENIERIA,          actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
-    { module: Module.OPERACIONES,         actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
+    { module: Module.OPERACIONES,         actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT, Action.FIJAR_ETAPA] },
     { module: Module.HABILITACION,        actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },
     { module: Module.TRAMITES_UTE,        actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { module: Module.POSTVENTA,           actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE, Action.COMPLETE, Action.COMMENT] },

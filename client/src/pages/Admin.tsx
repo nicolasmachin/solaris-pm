@@ -477,6 +477,7 @@ const ACTION_LABELS: Record<string, string> = {
   COMPLETE: "Completar",
   COMMENT: "Comentar",
   CONFIRM: "Confirmar",
+  FIJAR_ETAPA: "Fijar etapa a mano",
   ACCESS_MEMORIA: "Acceso a memoria",
   DEBUG_CALCULADORA: "Debug calculadora",
   ADMIN_REPORT: "Reporte admin",

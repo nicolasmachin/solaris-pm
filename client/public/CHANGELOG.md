@@ -1,5 +1,17 @@
 # Novedades
 
+## v10.2
+
+### 9 de septiembre de 2026
+
+#### La etapa del proyecto: quién puede moverla y cómo
+
+- **Fijar la etapa a mano pasó a ser un permiso propio.** Antes lo podía hacer cualquiera con permiso de edición sobre Operaciones —13 roles, incluidos asesores comerciales, logística y los instaladores tercerizados—. Ahora solo el **Administrador** y el **Gerente de Operaciones**.
+- **Ya se puede retroceder la etapa, no solo avanzarla.** El desplegable ofrece todas las etapas del pipeline: si una obra se pospone, se la baja a donde realmente está. Antes solo dejaba avanzar, y el sistema ignoraba en silencio cualquier intento de bajarla.
+- La etapa fijada a mano ahora **manda siempre**, para adelante y para atrás. Sigue apareciendo la marca **"manual"** al lado, y la opción **"Volver a automático"** devuelve el cálculo por subetapas.
+
+> Por qué: la obra de Santiago Pereyra quedó mostrando "Ejecución de Obra" después de posponerse, y no había forma de corregirla desde la app.
+
 ## v10.1
 
 ### 8 de septiembre de 2026
