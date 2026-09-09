@@ -13,7 +13,7 @@ import {
   type ClientCreateInput,
   type ClientPatchInput,
 } from '../api/clients.api';
-import { buildPortalWelcomeMessage } from '../lib/portalWelcomeMessage';
+import { buildPortalWelcomeMessage } from '../modules/clientes/plantillas';
 
 function klass(...p: (string | false | undefined)[]) {
   return p.filter(Boolean).join(' ');

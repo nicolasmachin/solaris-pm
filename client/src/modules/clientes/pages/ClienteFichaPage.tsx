@@ -176,8 +176,10 @@ export function ClienteFichaPage() {
         onSelect={setEtapaSel}
       />
 
-      {/* Dos columnas: a la izquierda lo que hay que hacer, a la derecha lo que pasó. */}
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
+      {/* Dos columnas a la par: a la izquierda lo que hay que hacer, a la derecha
+          lo que pasó. Mitad y mitad — las dos son el trabajo, no una principal y
+          una barra lateral. */}
+      <div className="grid gap-4 lg:grid-cols-2">
         <div className="space-y-4">
           <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] p-4">
             {checks ? (

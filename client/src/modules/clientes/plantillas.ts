@@ -54,12 +54,12 @@ No te voy a escribir todas las semanas porque muchas veces no hay novedades, per
     cuando: "Junto con la bienvenida o apenas se le crea el usuario.",
     checks: ["e1_portal"],
     motivo: "SEGUIMIENTO",
-    cuerpo: `Hola {nombre}, te dejo el acceso al portal de Voltia para que veas el avance de tu instalación y del trámite, la documentación y los reportes de generación cuando arranquen.
+    cuerpo: `Hola {nombre}, te dejo el acceso al portal de Voltia para que veas el avance de tu instalación, la documentación y tus reportes de generación.
 
 {usuario y contraseña}
 Link: {link del portal}
 
-Te va a pedir cambiar la contraseña al entrar. Cualquier duda escribime.`,
+Te va a pedir cambiar la contraseña al entrar. Cualquier duda, escribime.`,
   },
   {
     id: "capataz",
@@ -277,4 +277,30 @@ export function renderPlantilla(
 /** Marcadores que quedaron sin completar, para avisar antes de mandar. */
 export function marcadoresPendientes(texto: string): string[] {
   return [...new Set(texto.match(/\{[^}]+\}/g) ?? [])];
+}
+
+/**
+ * El mensaje de acceso al portal, listo para mandar.
+ *
+ * Vive acá y no en un helper aparte porque antes había **dos textos distintos
+ * para lo mismo**: el que armaba el modal de crear usuario y el de la plantilla.
+ * Decían cosas parecidas con palabras distintas, y el cliente recibía uno u otro
+ * según por dónde se hubiera pasado. Ahora hay un solo texto: el de la plantilla
+ * `portal`, y este helper es la forma corta de renderizarlo.
+ */
+export function buildPortalWelcomeMessage(params: {
+  name: string;
+  /** El mail o el alias: lo que el cliente tiene que escribir para entrar. */
+  identificador: string;
+  password?: string | null;
+  /** Quién firma. Opcional: sin esto queda el marcador a la vista. */
+  referente?: string | null;
+}): string {
+  const plantilla = PLANTILLAS.find((p) => p.id === "portal");
+  if (!plantilla) return "";
+  return renderPlantilla(plantilla.cuerpo, {
+    nombre: params.name,
+    referente: params.referente,
+    portal: { identificador: params.identificador, password: params.password },
+  });
 }

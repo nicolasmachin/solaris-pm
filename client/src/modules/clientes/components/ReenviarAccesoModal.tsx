@@ -5,7 +5,8 @@ import { Check, Copy, KeyRound, RefreshCw, Send, X } from "lucide-react";
 
 import { resetPortalUser, type ClienteListItem, type ResetPortalUserResult } from "../../../api/clientes.api";
 import { Button } from "../../../components/ui/Button";
-import { buildPortalWelcomeMessage } from "../../../lib/portalWelcomeMessage";
+import { useAuthStore } from "../../../store/auth.store";
+import { buildPortalWelcomeMessage } from "../plantillas";
 import { useLockBodyScroll } from "../../../hooks/useLockBodyScroll";
 
 // Misma temporal por defecto que al crear el usuario. Editable por si se quiere otra.
@@ -26,11 +27,15 @@ export function ReenviarAccesoModal({
 }: {
   cliente: ClienteListItem;
   onClose: () => void;
-  /** Se llama con las credenciales nuevas, para encadenar el mensaje ya armado. */
+  /**
+   * Se llama apenas se resetea la contraseña — no al cerrar el modal —, para que
+   * la plantilla de acceso salga completa aunque se cierre sin copiar nada.
+   */
   onReseteado?: (cred: { identificador: string; password: string }) => void;
 }) {
   const qc = useQueryClient();
   useLockBodyScroll(true);
+  const referente = useAuthStore((s) => s.user?.name ?? null);
 
   const [password, setPassword] = useState(DEFAULT_PASSWORD);
   const [done, setDone] = useState<ResetPortalUserResult | null>(null);
@@ -42,6 +47,7 @@ export function ReenviarAccesoModal({
       setDone(res);
       qc.invalidateQueries({ queryKey: ["clientes"] });
       qc.invalidateQueries({ queryKey: ["cliente", cliente.projectId] });
+      onReseteado?.({ identificador: res.identificador, password });
       toast.success("Contraseña reseteada");
     },
     onError: (err) => toast.error(getApiErr(err) ?? "No se pudo resetear la contraseña"),
@@ -52,7 +58,7 @@ export function ReenviarAccesoModal({
       name: done?.name ?? cliente.nombre ?? "",
       identificador: done?.identificador || cliente.mail || "",
       password,
-      esAlias: !!done && !done.email,
+      referente,
     });
     try {
       await navigator.clipboard.writeText(texto);
@@ -110,15 +116,8 @@ export function ReenviarAccesoModal({
               {copied ? <Check size={14} className="mr-1.5" /> : <Copy size={14} className="mr-1.5" />}
               {copied ? "Copiado" : "Copiar mensaje"}
             </Button>
-            <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-3">
-              {onReseteado && (
-                <Button size="sm" onClick={() => onReseteado({ identificador: done.identificador, password })}>
-                  Escribirle el mensaje
-                </Button>
-              )}
-              <Button size="sm" variant={onReseteado ? "secondary" : "primary"} onClick={onClose}>
-                Listo
-              </Button>
+            <div className="flex justify-end border-t border-[var(--color-border)] pt-3">
+              <Button size="sm" onClick={onClose}>Listo</Button>
             </div>
           </div>
         ) : (

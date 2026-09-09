@@ -1,20 +1,9 @@
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 
-import type {
-  InteractionChannel,
-  InteractionDirection,
-  InteractionReason,
-} from "../../../api/clientes.api";
+import type { InteractionChannel, InteractionReason } from "../../../api/clientes.api";
 import { Button } from "../../../components/ui/Button";
-import {
-  CHANNEL_LABELS,
-  CHANNEL_OPTIONS,
-  DIRECTION_LABELS,
-  DIRECTION_OPTIONS,
-  REASON_LABELS,
-  REASON_OPTIONS,
-} from "../constants";
+import { CHANNEL_LABELS, CHANNEL_OPTIONS } from "../constants";
 import { useCreateInteraction } from "../hooks/useClienteInteractions";
 
 const MAX = 2000;
@@ -30,8 +19,6 @@ const labelClass =
 
 export function ClienteInteractionForm({ projectId }: { projectId: string }) {
   const [channel, setChannel] = useState<InteractionChannel>("WHATSAPP");
-  const [direction, setDirection] = useState<InteractionDirection>("SALIENTE");
-  const [reason, setReason] = useState<InteractionReason>("SEGUIMIENTO");
   const [content, setContent] = useState("");
   const mutation = useCreateInteraction(projectId);
 
@@ -41,8 +28,12 @@ export function ClienteInteractionForm({ projectId }: { projectId: string }) {
       toast.error("Escribí un resumen del contacto");
       return;
     }
+    // Dirección y motivo ya no se piden: eran dos selects que había que tocar en
+    // cada registro y que nadie usaba para filtrar ni para decidir nada. El motivo
+    // sigue existiendo, pero lo pone el sistema cuando significa algo — el aviso
+    // de habilitación (que apaga la Regla de Oro) y las plantillas.
     mutation.mutate(
-      { channel, content: finalContent, direction, reason: overrides?.reason ?? reason },
+      { channel, content: finalContent, reason: overrides?.reason },
       {
         onSuccess: () => {
           setContent("");
@@ -78,34 +69,6 @@ export function ClienteInteractionForm({ projectId }: { projectId: string }) {
             {CHANNEL_OPTIONS.map((c) => (
               <option key={c} value={c}>
                 {CHANNEL_LABELS[c]}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex items-center gap-2">
-          <label className={labelClass}>Dirección</label>
-          <select
-            className={selectClass}
-            value={direction}
-            onChange={(e) => setDirection(e.target.value as InteractionDirection)}
-          >
-            {DIRECTION_OPTIONS.map((d) => (
-              <option key={d} value={d}>
-                {DIRECTION_LABELS[d]}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex items-center gap-2">
-          <label className={labelClass}>Motivo</label>
-          <select
-            className={selectClass}
-            value={reason}
-            onChange={(e) => setReason(e.target.value as InteractionReason)}
-          >
-            {REASON_OPTIONS.map((r) => (
-              <option key={r} value={r}>
-                {REASON_LABELS[r]}
               </option>
             ))}
           </select>

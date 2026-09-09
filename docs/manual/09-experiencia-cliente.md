@@ -327,7 +327,12 @@ el cierre del proyecto.
 **Bitácora de interacciones.** Modelo `ClientInteraction`, con canal
 (`WHATSAPP`, `EMAIL`, `LLAMADA`, `VISITA`, `OTRO`), dirección (`ENTRANTE` /
 `SALIENTE`) y motivo (`BIENVENIDA`, `SEGUIMIENTO`, `AVISO_HABILITACION`,
-`CONSULTA`, `OTRO`). Se carga desde la ficha del cliente
+`CONSULTA`, `OTRO`). **El formulario sólo pide el canal**: dirección y motivo
+salieron de la pantalla en septiembre de 2026 porque eran dos selects que había
+que tocar en cada registro y con los que no se filtraba ni se decidía nada. Los
+campos siguen en el modelo y el motivo lo pone el sistema donde significa algo —
+`AVISO_HABILITACION` desde el botón de la Regla de Oro, y el motivo de la
+plantilla al copiar un mensaje. Se carga desde la ficha del cliente
 (`ClienteInteractionForm`) o por el conector MCP. Es **100 % manual**: lo que no
 se transcribe no existe para el sistema. Alimenta la columna "Último contacto".
 

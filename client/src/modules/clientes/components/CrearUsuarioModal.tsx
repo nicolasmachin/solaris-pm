@@ -5,7 +5,8 @@ import { Check, Copy, KeyRound, User, X } from "lucide-react";
 
 import { crearPortalUser, type ClienteListItem, type CrearPortalUserResult } from "../../../api/clientes.api";
 import { Button } from "../../../components/ui/Button";
-import { buildPortalWelcomeMessage } from "../../../lib/portalWelcomeMessage";
+import { useAuthStore } from "../../../store/auth.store";
+import { buildPortalWelcomeMessage } from "../plantillas";
 import { useLockBodyScroll } from "../../../hooks/useLockBodyScroll";
 
 // Contraseña temporal por defecto. El cliente la cambia en el primer ingreso
@@ -28,15 +29,17 @@ export function CrearUsuarioModal({
   cliente: ClienteListItem;
   onClose: () => void;
   /**
-   * Se llama con las credenciales cuando el usuario quedó creado. Sirve para
-   * encadenar el mensaje de acceso ya armado: la contraseña sólo se conoce en
-   * este momento (después queda hasheada), y el identificador todavía no llegó
-   * a la ficha, así que se pasan los dos en vez de esperar al refetch.
+   * Se llama apenas el usuario queda creado — no al cerrar el modal. La
+   * contraseña sólo se conoce en este momento (después queda hasheada) y el
+   * identificador todavía no llegó a la ficha, así que se pasan los dos en vez
+   * de esperar al refetch. El padre los usa para que la plantilla de acceso
+   * salga completa aunque se cierre el modal sin copiar nada.
    */
   onCreado?: (cred: { identificador: string; password: string }) => void;
 }) {
   const qc = useQueryClient();
   useLockBodyScroll(true);
+  const referente = useAuthStore((s) => s.user?.name ?? null);
 
   const [name, setName] = useState(cliente.nombre ?? "");
   const [email, setEmail] = useState(cliente.mail ?? "");
@@ -57,6 +60,8 @@ export function CrearUsuarioModal({
       setDone(res);
       qc.invalidateQueries({ queryKey: ["clientes"] });
       qc.invalidateQueries({ queryKey: ["cliente", cliente.projectId] });
+      // Vinculado = se reusó un Generador existente y esta contraseña no aplica.
+      if (!res.linked) onCreado?.({ identificador: res.identificador, password });
       toast.success(res.linked ? "Generador vinculado al proyecto" : "Usuario creado");
     },
     onError: (err) => toast.error(getApiErr(err) ?? "No se pudo crear el usuario"),
@@ -68,12 +73,11 @@ export function CrearUsuarioModal({
   const puedeCrear = name.trim().length > 0 && (!email.trim() || emailValido) && password.length >= 8;
 
   async function copiarCredenciales() {
-    const identificador = done?.identificador || email.trim();
     const texto = buildPortalWelcomeMessage({
       name,
-      identificador,
+      identificador: done?.identificador || email.trim(),
       password,
-      esAlias: !done?.email,
+      referente,
     });
     try {
       await navigator.clipboard.writeText(texto);
@@ -146,15 +150,8 @@ export function CrearUsuarioModal({
                 </Button>
               </>
             )}
-            <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-3">
-              {onCreado && !done.linked && (
-                <Button size="sm" onClick={() => onCreado({ identificador: done.identificador, password })}>
-                  Escribirle el mensaje
-                </Button>
-              )}
-              <Button size="sm" variant={onCreado && !done.linked ? "secondary" : "primary"} onClick={onClose}>
-                Listo
-              </Button>
+            <div className="flex justify-end border-t border-[var(--color-border)] pt-3">
+              <Button size="sm" onClick={onClose}>Listo</Button>
             </div>
           </div>
         ) : (

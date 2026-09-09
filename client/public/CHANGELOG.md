@@ -4,6 +4,17 @@
 
 ### 8 de septiembre de 2026
 
+#### Un solo mensaje de acceso al portal, y con la contraseña puesta
+
+- **Había dos textos distintos para lo mismo**: uno lo armaba el modal de crear usuario y otro la plantilla, y el cliente recibía uno u otro según por dónde se hubiera pasado. Ahora hay **un solo mensaje**.
+- **La plantilla trae la contraseña recién creada.** Antes decía "Contraseña: {contraseña}" aunque acabaras de crearla en la misma pantalla.
+- El mensaje **firma con tu nombre** y dice "Email" o "Usuario" según cómo entre ese cliente.
+
+#### La ficha del cliente: mitad y mitad
+
+- Los pasos de la etapa y las Novedades ocupan ahora **la mitad de la pantalla cada uno**. Antes el historial quedaba apretado contra el borde.
+- El formulario de registrar un contacto **perdió los selectores de Dirección y Motivo**: eran dos campos que había que tocar en cada registro y que no cambiaban nada. Queda el canal. El motivo lo sigue poniendo el sistema cuando significa algo — el aviso de habilitación y las plantillas.
+
 #### El acceso al portal se crea desde el paso que lo pide
 
 - En la ficha del cliente, el paso **"Envío del acceso al portal"** de la etapa E1 tiene ahora **el botón para crear el usuario ahí mismo**. Antes había que ir al listado de Generadores a buscarlo, y por eso no se creaban.
