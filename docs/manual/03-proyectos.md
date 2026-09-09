@@ -35,12 +35,14 @@ Cuando hay override, al lado de la etapa aparece la marca **manual**.
 
 1. Si hay `stageOverride`, **esa** es la etapa mostrada. Manda siempre, para
    adelante y para atrás.
-2. Si no hay, se usa la derivada por `getCurrentStage()`: la primera etapa en
-   curso, o si ninguna lo está, la primera no completada.
+2. Si no hay, se usa la derivada por `getCurrentStage()`: **la primera etapa sin
+   completar**, en el orden del pipeline. Si están todas completas, la última.
 
-`getCurrentStage()` **ignora Tramitación UTE** mientras la Ejecución de Obra no
-esté completada. El trámite arranca desde el día uno y avanza en paralelo, así
-que si contara adelantaría la etapa de cualquier obra que todavía no empezó.
+Que sea "la primera sin completar" y no "la primera en curso" importa: Tramitación
+UTE está en curso casi siempre —el trámite arranca al principio y avanza en
+paralelo—, y con la regla anterior tapaba cualquier etapa previa que hubiera
+quedado abierta. Un proyecto con la obra sin empezar figuraba en "Tramitación
+UTE".
 
 El override **no se limpia solo**. Nada lo revierte automáticamente: ni completar
 subetapas, ni desagendar la instalación del calendario. Sale solo con "Volver a
@@ -57,10 +59,17 @@ automático".
 propia, separada de `EDIT`, y se administra desde Administración → Permisos como
 cualquier otra.
 
-`PATCH /projects/:projectId/stage-override` es el **único** lugar de todo el
-sistema que escribe `stageOverride`, y en el frontend el único llamador es ese
-control. Ni el calendario, ni los traspasos, ni el agendado de instalación lo
-tocan: si una etapa aparece fijada a mano, alguien la fijó desde ahí.
+Hay **dos** cosas que escriben `stageOverride`:
+
+1. `PATCH /projects/:projectId/stage-override` — el control manual. Deja
+   auditoría *"Fijó la etapa mostrada en …"*.
+2. **Confirmar un traspaso** (`traspasos.service.ts`): fija la etapa siguiente
+   según `TRASPASO_ADVANCE_STAGE`, y **solo si eso adelanta** respecto de lo que
+   ya se muestra. No deja auditoría propia de la etapa, solo la del traspaso.
+
+Por eso la mayoría de los proyectos aparecen con etapa fijada sin que nadie la
+haya tocado a mano: se la fijó el traspaso. El calendario y el agendado de
+instalación **no** la tocan.
 
 ### Reglas y decisiones
 
@@ -70,6 +79,17 @@ tocan: si una etapa aparece fijada a mano, alguien la fijó desde ahí.
   de arrancar; la obra se pospuso y la etapa quedó mintiendo. La etapa debería
   avanzar sola, así que fijarla es una excepción que corresponde a quien tiene la
   visión completa de operaciones.
+- **Por qué la etapa automática es "la primera sin completar"** (septiembre
+  2026): antes era "la primera en curso", y como Tramitación UTE está en curso
+  desde el principio, tapaba las etapas anteriores abiertas. Había una excepción
+  puntual para ignorar UTE hasta que la obra estuviera completa; se eliminó
+  porque con la regla nueva sobra, y además fallaba en los proyectos viejos,
+  donde la etapa de obra tiene otro nombre.
+- **Por qué el traspaso solo empuja hacia adelante** (septiembre 2026): la
+  comparación "solo si adelanta" vivía en `getDisplayStage` y se sacó de ahí para
+  poder corregir etapas hacia atrás. Se movió a `traspasos.service.ts`, al
+  momento de escribir. Sin eso, confirmar un traspaso con demora —cosa habitual,
+  porque se confirman a mano— haría retroceder un proyecto que ya avanzó más.
 - **Por qué el override manda en las dos direcciones** (septiembre 2026): antes
   regía "empujón hacia adelante" —se mostraba la más avanzada entre la derivada y
   la fijada—, así que un override anterior al avance real **se ignoraba en

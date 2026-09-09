@@ -32,6 +32,7 @@ export const LATEST_RELEASE: Release = {
         "Fijar la etapa a mano pasó a ser un permiso propio: antes lo podía hacer cualquiera con permiso de edición sobre Operaciones (13 roles, incluidos asesores comerciales, logística e instaladores tercerizados). Ahora solo el Administrador y el Gerente de Operaciones.",
         "Ya se puede retroceder la etapa, no solo avanzarla: si una obra se pospone, se la baja a donde realmente está. Antes el desplegable solo ofrecía avanzar y el sistema ignoraba en silencio cualquier intento de bajarla.",
         'La etapa fijada a mano manda siempre, para adelante y para atrás. Sigue con la marca "manual" al lado y la opción "Volver a automático" devuelve el cálculo por subetapas.',
+        "La etapa automática ya no se adelanta por el trámite de UTE: ahora es siempre la primera etapa sin completar. Como el trámite arranca al principio y va en paralelo, antes tapaba cualquier etapa anterior que hubiera quedado abierta.",
       ],
     },
   ],

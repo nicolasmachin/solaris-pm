@@ -12,6 +12,10 @@
 
 > Por qué: la obra de Santiago Pereyra quedó mostrando "Ejecución de Obra" después de posponerse, y no había forma de corregirla desde la app.
 
+#### Arreglos
+
+- **La etapa automática ya no se adelanta por el trámite de UTE.** Ahora es siempre **la primera etapa sin completar**. Como el trámite de UTE arranca al principio y avanza en paralelo, antes tapaba cualquier etapa anterior que hubiera quedado abierta: una obra sin empezar podía figurar en "Tramitación UTE".
+
 ## v10.1
 
 ### 8 de septiembre de 2026

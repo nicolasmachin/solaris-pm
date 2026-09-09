@@ -13,6 +13,7 @@ import { prisma } from "../../lib/prisma.js";
 import { badRequest, forbidden, notFound } from "../../utils/errors.js";
 import { createAuditEntry } from "../audit.service.js";
 import { createNotification } from "../notification.service.js";
+import { getDisplayStage } from "../project.service.js";
 import { TRASPASO_ADVANCE_STAGE, TRASPASO_LABEL } from "./catalogo.js";
 import { calcularDestinatarios } from "./destinatarios.js";
 import { notificarDestinatarios } from "./notificar.js";
@@ -98,7 +99,7 @@ export async function confirmarTraspaso(params: {
 }): Promise<{ traspasoId: string; notificacionesEnviadas: number }> {
   const traspaso = await prisma.traspaso.findUnique({
     where: { id: params.traspasoId },
-    include: { project: { select: { id: true, clientName: true, postHabilitacionInicioEn: true } } },
+    include: { project: { select: { id: true, clientName: true, postHabilitacionInicioEn: true, stageOverride: true } } },
   });
   if (!traspaso) throw notFound("TRASPASO_NOT_FOUND", "El traspaso no existe.");
   if (traspaso.estado !== TraspasoEstado.PENDIENTE_CONFIRMACION) {
@@ -166,10 +167,28 @@ export async function confirmarTraspaso(params: {
     const projectData: Prisma.ProjectUpdateInput = {};
 
     // "Empujón hacia adelante": fija la etapa mostrada en la siguiente del
-    // pipeline. Por defecto sí; getDisplayStage nunca la muestra hacia atrás.
+    // pipeline, pero SOLO si eso adelanta respecto de lo que ya se muestra.
+    //
+    // La comparación se hace acá, al escribir. Antes vivía en getDisplayStage
+    // ("gana la más avanzada"), pero eso hacía imposible corregir una etapa
+    // hacia atrás a mano, así que se sacó de ahí (septiembre 2026). Sin este
+    // guard, confirmar un traspaso con demora —cosa habitual, porque se
+    // confirman a mano— haría RETROCEDER un proyecto que ya avanzó más.
     const avanzarEtapa = params.avanzarEtapa ?? true;
     const nuevaEtapa = avanzarEtapa ? TRASPASO_ADVANCE_STAGE[traspaso.tipo] : undefined;
-    if (nuevaEtapa) projectData.stageOverride = nuevaEtapa;
+    if (nuevaEtapa) {
+      const etapas = await tx.stage.findMany({
+        where: { projectId: traspaso.projectId },
+        select: { name: true, order: true, status: true },
+      });
+      const mostradaHoy = getDisplayStage(etapas, traspaso.project.stageOverride);
+      const destino = etapas.find((e) => e.name === nuevaEtapa);
+      // Sin la etapa destino en el pipeline no hay nada que fijar; y si el
+      // proyecto ya está igual o más adelante, se lo deja como está.
+      if (destino && (!mostradaHoy || destino.order > mostradaHoy.order)) {
+        projectData.stageOverride = nuevaEtapa;
+      }
+    }
 
     // Efecto-consecuencia de T8 (trámite UTE finalizado): arranca la sub-fase
     // E3-A del Post-Habilitación. Idempotente: no pisa una fecha ya seteada.
