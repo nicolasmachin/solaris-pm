@@ -25,14 +25,16 @@ function FilaCliente({ c, onClick }: { c: ClienteListItem; onClick: () => void }
       type="button"
       onClick={onClick}
       className={`flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition-colors hover:bg-[var(--color-bg-card-hover)] ${
-        c.avisoHabilitacionPendiente
+        c.avisosClavePendientes.length > 0
           ? "border-[var(--color-danger-text)]/40 bg-[var(--color-danger-bg)]/30"
           : "border-[var(--color-border)] bg-[var(--color-bg-card)]"
       }`}
     >
       {/* Alerta con plazo: se apaga cuando se registra el aviso. */}
-      {c.avisoHabilitacionPendiente ? (
-        <AlertTriangle className="h-4 w-4 shrink-0 text-[var(--color-danger-text)]" />
+      {c.avisosClavePendientes.length > 0 ? (
+        <span title={c.avisosClavePendientes.join(" · ")} className="flex">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-[var(--color-danger-text)]" />
+        </span>
       ) : (
         <span className="w-4 shrink-0" />
       )}
@@ -83,7 +85,7 @@ export function RecorridoPage() {
   }
 
   const filtrar = (cs: ClienteListItem[]) =>
-    soloPendientes ? cs.filter((c) => c.fueraDeCadencia || c.avisoHabilitacionPendiente) : cs;
+    soloPendientes ? cs.filter((c) => c.fueraDeCadencia || c.avisosClavePendientes.length > 0) : cs;
 
   return (
     <div className="space-y-4">

@@ -1,10 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, Check, Mail, Phone } from 'lucide-react';
-import {
-  getPortalProjectUte,
-  type PortalTimelineItem,
-} from '../api/portal.api';
+import { getPortalProjectUte } from '../api/portal.api';
+import { UteTimeline } from '../components/ute/UteTimeline';
 import { useAuthStore } from '../store/auth.store';
 
 function fmtDate(iso: string | null): string {
@@ -83,7 +81,7 @@ export function PortalProjectUte() {
           </div>
 
           {/* Timeline */}
-          <Timeline items={data.timeline} />
+          <UteTimeline items={data.timeline} />
 
           {/* Contactos UTE */}
           <div className="rounded-md bg-[var(--color-bg-app)] border border-[var(--color-border)] p-4">
@@ -117,84 +115,5 @@ export function PortalProjectUte() {
         </div>
       )}
     </div>
-  );
-}
-
-function Timeline({ items }: { items: PortalTimelineItem[] }) {
-  // Índice del último hito con fecha cargada. Solo marcamos "Último avance"
-  // mientras el trámite no esté finalizado (queda al menos un hito sin fecha);
-  // si están todos cumplidos, no se muestra.
-  const lastDoneIndex = items.reduce((acc, it, idx) => (it.completedAt ? idx : acc), -1);
-  const allDone = items.length > 0 && items.every((it) => it.completedAt);
-  const lastAdvanceIndex = !allDone ? lastDoneIndex : -1;
-
-  return (
-    <ol className="relative">
-      {items.map((item, i) => {
-        const isLast = i === items.length - 1;
-        // Modelo binario: hito con fecha = cumplido (verde); sin fecha = pendiente
-        // (gris). No hay estado "en espera" destacado.
-        const done = item.status === 'completed';
-        return (
-          <li key={item.key} className="relative pl-8 pb-5 last:pb-0">
-            {/* Línea vertical */}
-            {!isLast && (
-              <span
-                aria-hidden="true"
-                className={
-                  done
-                    ? 'absolute left-[10px] top-5 bottom-0 w-0.5 bg-emerald-500/40'
-                    : 'absolute left-[10px] top-5 bottom-0 w-0.5 bg-[var(--color-border)]'
-                }
-              />
-            )}
-            {/* Punto */}
-            <span
-              aria-hidden="true"
-              className={
-                done
-                  ? 'absolute left-1 top-1.5 w-[18px] h-[18px] rounded-full bg-emerald-500 flex items-center justify-center'
-                  : 'absolute left-1.5 top-2 w-[14px] h-[14px] rounded-full border border-[var(--color-border)] bg-[var(--color-bg-app)]'
-              }
-            >
-              {done && <Check className="w-3 h-3 text-white" />}
-            </span>
-            {/* Contenido */}
-            <div>
-              <div className="flex items-baseline justify-between gap-2 flex-wrap">
-                <p
-                  className={
-                    done
-                      ? 'text-sm font-medium text-[var(--color-text-primary)]'
-                      : 'text-sm text-[var(--color-text-muted)]'
-                  }
-                >
-                  {item.label}
-                  {i === lastAdvanceIndex && (
-                    <span className="ml-2 align-middle rounded-full bg-[var(--color-bg-app)] border border-[var(--color-border)] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-[var(--color-text-secondary)]">
-                      Último avance
-                    </span>
-                  )}
-                </p>
-                {item.completedAt && (
-                  <span className="text-[10px] font-mono text-[var(--color-text-muted)]">
-                    {fmtDate(item.completedAt)}
-                  </span>
-                )}
-              </div>
-              <p
-                className={
-                  done
-                    ? 'text-[11px] text-[var(--color-text-muted)] mt-0.5'
-                    : 'text-[11px] text-[var(--color-text-muted)] mt-0.5 italic'
-                }
-              >
-                {item.description}
-              </p>
-            </div>
-          </li>
-        );
-      })}
-    </ol>
   );
 }

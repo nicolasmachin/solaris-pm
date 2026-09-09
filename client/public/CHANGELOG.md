@@ -4,6 +4,26 @@
 
 ### 8 de septiembre de 2026
 
+#### El listado de clientes se ordena por urgencia y se agrupa por etapa
+
+- **El orden por defecto ya no es alfabético**: ahora es por **prioridad de contacto**. Arriba los que tienen un aviso clave pendiente, y después por días sin contacto — los que **nunca** tuvieron contacto van primero, porque "nunca" es peor que "hace mucho". Es el mismo criterio de la vista Recorrido, así las dos pantallas no ordenan distinto la misma cartera.
+- El listado se muestra **agrupado en bloques por etapa** —Pre-obra, Habilitación, Post-habilitación y Sin etapa—, cada uno con su contador y cuántos necesitan atención hoy. Al ordenar por una columna vuelve a ser una sola lista.
+
+#### Los tres avisos que no se pueden pasar por alto
+
+- **La bienvenida**, **el aviso de fecha de obra** y **el aviso de habilitación** quedan resaltados en la lista de pasos de cada cliente, aunque estén al día. El resto del recorrido se puede hacer con más o menos prolijidad; estos tres no.
+- Cuando falta alguno con el plazo corriendo, **la fila del cliente se pinta de rojo** en el listado y en el Recorrido, y el triángulo dice cuál falta. Antes solo avisaba el de habilitación.
+- La bienvenida cuenta **solo mientras el cliente está en Pre-obra**: después ya no se puede dar, y marcar en rojo a toda la cartera vieja por algo que no tiene arreglo apaga la señal en vez de encenderla.
+
+#### El trámite UTE, con el mismo detalle que ve el cliente
+
+- La tarjeta **Trámite UTE** de la ficha ahora se abre y muestra **los diez hitos del trámite con sus fechas** — exactamente lo que el cliente ve en su portal, incluido el número de caso.
+- Antes solo decía la etapa y desde cuándo, así que si el cliente llamaba preguntando por un hito había que ir a buscarlo a otro módulo.
+
+#### Arreglos
+
+- **"Próximo mantenimiento"** decía "cumple 1 año en 60 d". Ahora dice solo cuánto falta.
+
 #### Un solo mensaje de acceso al portal, y con la contraseña puesta
 
 - **Había dos textos distintos para lo mismo**: uno lo armaba el modal de crear usuario y otro la plantilla, y el cliente recibía uno u otro según por dónde se hubiera pasado. Ahora hay **un solo mensaje**.

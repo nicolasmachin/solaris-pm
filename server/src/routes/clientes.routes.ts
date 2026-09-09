@@ -34,7 +34,9 @@ import { updateProjectClientFields } from "../services/project-fields.service.js
 import { confirmImport, previewImport } from "../services/clientes/import.service.js";
 import { createPortalUserForProject, resetPortalUserPassword } from "../services/clientes/portal-user.service.js";
 import { completarCheck, listarChecks } from "../services/clientes/recorrido.service.js";
+import { buildUteTimeline } from "../services/ute-timeline.service.js";
 import { badRequest, forbidden, notFound, unauthorized } from "../utils/errors.js";
+import { serializeDate } from "../utils/serialization.js";
 import {
   addressValue,
   capacityValue,
@@ -80,7 +82,7 @@ const filtersSchema = z.object({
   // cualquier string no vacío a true, incluido "false".
   avisoPendiente: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
   fueraDeCadencia: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
-  sortBy: z.enum(["nombre", "fechaEntrega", "potenciaKwp", "etapa", "proximoMantenimiento"]).optional(),
+  sortBy: z.enum(["prioridad", "nombre", "fechaEntrega", "potenciaKwp", "etapa", "proximoMantenimiento"]).optional(),
   sortDir: z.enum(["asc", "desc"]).optional(),
 });
 
@@ -283,6 +285,37 @@ export async function registerClientesRoutes(app: FastifyInstance) {
         newPassword: body.temporaryPassword,
         actorUserId: user.id,
       });
+    },
+  );
+
+  // El mismo timeline del trámite que ve el cliente en su portal. Es a propósito
+  // el mismo armado (`buildUteTimeline`): si Experiencia Solar viera una versión
+  // distinta de la que ve el cliente, no podría responder por lo que él tiene
+  // delante cuando llama a preguntar.
+  app.get(
+    "/clientes/:projectId/ute",
+    { preHandler: authorize(Module.EXPERIENCIA_CLIENTES, Action.VIEW) },
+    async (request) => {
+      const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
+      const project = await prisma.project.findFirst({
+        where: { id: projectId, deletedAt: null },
+        select: {
+          uteProcesses: {
+            where: { deletedAt: null },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+          },
+        },
+      });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "El proyecto no existe o está borrado");
+
+      const ute = project.uteProcesses[0] ?? null;
+      return {
+        caseNumber: ute?.caseNumber ?? null,
+        currentStage: ute?.currentStage ?? null,
+        finalizedAt: serializeDate(ute?.finalizedAt ?? null),
+        timeline: buildUteTimeline(ute),
+      };
     },
   );
 

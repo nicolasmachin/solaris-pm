@@ -8,7 +8,7 @@ export type InteractionReason = "BIENVENIDA" | "SEGUIMIENTO" | "AVISO_HABILITACI
 export type ClienteEstado = "ACTIVO" | "FINALIZADO" | "ARCHIVADO" | "PROSPECTO";
 // "Etapa" del CRM = recorrido del cliente en 3 etapas (E1/E2/E3).
 export type ClienteRecorrido = "E1" | "E2" | "E3";
-export type ClienteSortBy = "nombre" | "fechaEntrega" | "potenciaKwp" | "etapa" | "proximoMantenimiento";
+export type ClienteSortBy = "prioridad" | "nombre" | "fechaEntrega" | "potenciaKwp" | "etapa" | "proximoMantenimiento";
 export type SortDir = "asc" | "desc";
 
 // Próximo mantenimiento = próximo aniversario de la puesta en marcha. null si el
@@ -43,6 +43,8 @@ export interface ClienteListItem {
   hasPortalUser: boolean; // ya tiene usuario de portal (Generador) creado/vinculado
   diasSinContacto: number | null; // null = nunca hubo contacto registrado
   fueraDeCadencia: boolean; // supera la cadencia de su etapa (config. en Admin)
+  /** Avisos clave pendientes con el reloj corriendo. Vacío = nada urgente. */
+  avisosClavePendientes: string[];
   hayNovedad: boolean; // pasó algo posterior al último contacto registrado
 }
 
@@ -353,11 +355,36 @@ export interface RecorridoCheck {
   completadoPor: string | null;
   nota: string | null;
   esDinamico: boolean;
+  /** Uno de los tres avisos que el cliente sí o sí tiene que recibir. */
+  clave: boolean;
 }
 
 export async function getChecks(projectId: string): Promise<RecorridoCheck[]> {
   const { data } = await apiClient.get<{ checks: RecorridoCheck[] }>(`/api/clientes/${projectId}/checks`);
   return data.checks;
+}
+
+// ─── Trámite UTE: el mismo timeline que ve el cliente en su portal ───────────
+
+export interface UteTimelineItem {
+  key: string;
+  label: string;
+  description: string;
+  responsible: "VOLTIA" | "UTE";
+  status: "completed" | "current" | "pending";
+  completedAt: string | null;
+}
+
+export interface ClienteUte {
+  caseNumber: string | null;
+  currentStage: string | null;
+  finalizedAt: string | null;
+  timeline: UteTimelineItem[];
+}
+
+export async function getClienteUte(projectId: string): Promise<ClienteUte> {
+  const { data } = await apiClient.get<ClienteUte>(`/api/clientes/${projectId}/ute`);
+  return data;
 }
 
 export async function patchCheck(checkId: string, completado: boolean): Promise<RecorridoCheck> {

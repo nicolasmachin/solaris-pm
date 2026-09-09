@@ -10,10 +10,16 @@ import type { ClienteRecorrido, RecorridoCheck } from "../../../api/clientes.api
 // obra sino los pasos de acompañamiento, y una etapa puede estar vencida sin que
 // eso frene nada. Por eso el rojo dice "hay algo vencido", no "está bloqueado".
 
-export const BLOQUES: Array<{ codigo: ClienteRecorrido; corto: string; largo: string }> = [
-  { codigo: "E1", corto: "Pre-obra", largo: "De la venta a la obra" },
-  { codigo: "E2", corto: "Habilitación", largo: "De la obra a la habilitación" },
-  { codigo: "E3", corto: "Post-habilitación", largo: "Puesta en marcha y acompañamiento" },
+export const BLOQUES: Array<{
+  codigo: ClienteRecorrido;
+  corto: string;
+  /** Rótulo del bloque en el listado. */
+  label: string;
+  largo: string;
+}> = [
+  { codigo: "E1", corto: "Pre-obra", label: "Pre-obra", largo: "De la venta a la obra" },
+  { codigo: "E2", corto: "Habilitación", label: "Habilitación", largo: "De la obra a la habilitación" },
+  { codigo: "E3", corto: "Post-habilitación", label: "Post-habilitación", largo: "Puesta en marcha y acompañamiento" },
 ];
 
 type Estado = "COMPLETED" | "IN_PROGRESS" | "PENDING" | "VENCIDO";

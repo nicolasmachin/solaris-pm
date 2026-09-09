@@ -21,6 +21,14 @@ export type ChecklistDef = {
   plazoDiasHabiles: number | null;
   /** Ayuda para quien lo ejecuta. */
   detalle?: string;
+  /**
+   * Los tres avisos que el cliente sí o sí tiene que recibir. Se resaltan en la
+   * pantalla porque el resto del recorrido se puede hacer con más o menos
+   * prolijidad, pero si falta uno de estos el cliente queda a ciegas en el
+   * momento en que más necesita saber: al arrancar, cuando le tocan la casa y
+   * cuando ya puede encender.
+   */
+  clave?: boolean;
 };
 
 export const CHECKS_E1: ChecklistDef[] = [
@@ -29,6 +37,7 @@ export const CHECKS_E1: ChecklistDef[] = [
     titulo: "Bienvenida y presentación",
     orden: 1,
     plazoDiasHabiles: null,
+    clave: true,
     detalle: "La manda el vendedor al cerrar. Sin esto, Experiencia Solar contacta en frío.",
   },
   {
@@ -57,6 +66,7 @@ export const CHECKS_E1: ChecklistDef[] = [
     titulo: "Aviso de fecha de obra confirmada",
     orden: 5,
     plazoDiasHabiles: 2,
+    clave: true,
     detalle: "Dentro de 2 días hábiles de que se confirma en el calendario.",
   },
   {
@@ -81,6 +91,7 @@ export const CHECKS_E2: ChecklistDef[] = [
     titulo: "Aviso de habilitación otorgada",
     orden: 1,
     plazoDiasHabiles: 2,
+    clave: true,
     detalle: "Regla de Oro: dentro de 24-48 h. Cada día que pasa el cliente deja de ahorrar.",
   },
   {

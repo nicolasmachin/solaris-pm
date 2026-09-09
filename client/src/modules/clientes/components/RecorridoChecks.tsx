@@ -39,7 +39,12 @@ function Fila({ c, canEdit, onToggle, onVerMensaje, accion, pending }: {
       className={`flex items-start gap-2.5 rounded-lg border px-2.5 py-2 ${
         c.vencido
           ? "border-[var(--color-danger-text)]/40 bg-[var(--color-danger-bg)]/25"
-          : "border-[var(--color-border)] bg-[var(--color-bg-card)]"
+          : // Los tres avisos que el cliente sí o sí tiene que recibir se
+            // distinguen aunque estén al día: el resto del recorrido se puede
+            // hacer con más o menos prolijidad, estos no.
+            c.clave && !c.completado
+            ? "border-[var(--color-accent)]/45 bg-[var(--color-accent)]/[0.07]"
+            : "border-[var(--color-border)] bg-[var(--color-bg-card)]"
       }`}
     >
       <button

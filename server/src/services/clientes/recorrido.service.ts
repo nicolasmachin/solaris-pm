@@ -28,11 +28,12 @@ export type CheckSerializado = {
   completadoPor: string | null;
   nota: string | null;
   esDinamico: boolean;
+  /** Uno de los tres avisos que el cliente sí o sí tiene que recibir. */
+  clave: boolean;
 };
 
-function detalleDe(recorrido: string, codigo: string): string | null {
-  const def = (CHECKS_POR_RECORRIDO[recorrido] ?? []).find((d) => d.codigo === codigo);
-  return def?.detalle ?? null;
+function defDe(recorrido: string, codigo: string) {
+  return (CHECKS_POR_RECORRIDO[recorrido] ?? []).find((d) => d.codigo === codigo);
 }
 
 function serializar(c: RecorridoCheck & { completadoPor?: { name: string } | null }): CheckSerializado {
@@ -41,7 +42,7 @@ function serializar(c: RecorridoCheck & { completadoPor?: { name: string } | nul
     recorrido: c.recorrido,
     codigo: c.codigo,
     titulo: c.titulo,
-    detalle: detalleDe(c.recorrido, c.codigo),
+    detalle: defDe(c.recorrido, c.codigo)?.detalle ?? null,
     orden: c.orden,
     venceEn: c.venceEn?.toISOString() ?? null,
     // Vencido solo tiene sentido si además está pendiente: uno completado tarde
@@ -52,6 +53,7 @@ function serializar(c: RecorridoCheck & { completadoPor?: { name: string } | nul
     completadoPor: c.completadoPor?.name ?? null,
     nota: c.nota,
     esDinamico: c.esDinamico,
+    clave: defDe(c.recorrido, c.codigo)?.clave ?? false,
   };
 }
 

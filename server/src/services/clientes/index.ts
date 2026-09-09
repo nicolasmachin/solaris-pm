@@ -36,7 +36,13 @@ export type ClienteEstado = "ACTIVO" | "FINALIZADO" | "ARCHIVADO" | "PROSPECTO";
 // (código + nombres) y la sub-etapa del pipeline en curso. Ver
 // EXPERIENCIA_CLIENTES_ROADMAP.md.
 export type ClienteRecorrido = "E1" | "E2" | "E3";
-export type ClienteSortBy = "nombre" | "fechaEntrega" | "potenciaKwp" | "etapa" | "proximoMantenimiento";
+export type ClienteSortBy =
+  | "prioridad"
+  | "nombre"
+  | "fechaEntrega"
+  | "potenciaKwp"
+  | "etapa"
+  | "proximoMantenimiento";
 export type SortDir = "asc" | "desc";
 
 // Próximo mantenimiento = próximo aniversario de la puesta en marcha (año 0 =
@@ -127,6 +133,11 @@ export type ClienteListItem = {
   // contacto). Lo resuelve el backend para que no convivan dos criterios: antes
   // la pantalla usaba 7 días fijos y el backend la cadencia configurable.
   fueraDeCadencia: boolean;
+  // Los avisos clave del recorrido (bienvenida, fecha de obra, habilitación) que
+  // están pendientes y con el reloj corriendo. Vacío = nada urgente. Es lo que
+  // pinta la fila de rojo: el resto del recorrido se puede hacer con más o menos
+  // prolijidad, pero si falta uno de estos el cliente quedó a ciegas.
+  avisosClavePendientes: string[];
   // Hay algo en el proyecto posterior al último contacto registrado: pasó algo y
   // el cliente todavía no lo sabe (o al menos, no se lo dijimos nosotros). Es la
   // "lucecita informativa": marca que hay algo para mirar, NO reordena la lista.
@@ -237,6 +248,7 @@ function toListItem(p: ProjectListRow): ClienteListItem {
     hasPortalUser: p._count.clients > 0 || p.clientUserId != null,
     diasSinContacto: diasDesde(p.clientInteractions[0]?.createdAt ?? null),
     fueraDeCadencia: false, // lo resuelve marcarCadencia() con la config real
+    avisosClavePendientes: [], // lo resuelve marcarAvisosClave()
     hayNovedad: false, // lo resuelve marcarNovedades()
   };
 }
@@ -308,6 +320,27 @@ function compareNullable(a: string | number | null, b: string | number | null, d
   return dir * base;
 }
 
+/**
+ * Prioridad de contacto: quién necesita atención primero.
+ *
+ *  1. **Los avisos clave pendientes van arriba.** Tienen plazo y el reloj corre.
+ *  2. Después, **por días sin contacto**, del que hace más que no se le habla al
+ *     que menos. **Nunca contactado va antes que "hace mucho"**.
+ *  3. La novedad NO entra: es un "no leído", no una tarea. Si ordenara, un
+ *     cliente con novedad pero contactado ayer taparía al que lleva quince días.
+ */
+function compararPrioridad(a: ClienteListItem, b: ClienteListItem): number {
+  const ca = a.avisosClavePendientes.length > 0;
+  const cb = b.avisosClavePendientes.length > 0;
+  if (ca !== cb) return ca ? -1 : 1;
+  const an = a.diasSinContacto;
+  const bn = b.diasSinContacto;
+  if (an === null && bn !== null) return -1;
+  if (bn === null && an !== null) return 1;
+  if (an === null && bn === null) return a.nombre.localeCompare(b.nombre, "es");
+  return (bn ?? 0) - (an ?? 0);
+}
+
 function sortItems(items: ClienteListItem[], sortBy: ClienteSortBy, sortDir: SortDir): ClienteListItem[] {
   const dir: 1 | -1 = sortDir === "desc" ? -1 : 1;
   return [...items].sort((a, b) => {
@@ -329,9 +362,15 @@ function sortItems(items: ClienteListItem[], sortBy: ClienteSortBy, sortDir: Sor
           b.etapa ? RECORRIDO_RANK[b.etapa.recorrido.codigo] : null,
           dir,
         );
+      case "prioridad":
+        // Mismo criterio que la vista Recorrido, para que las dos pantallas no
+        // ordenen distinto la misma cartera. La dirección no aplica: "prioridad
+        // al revés" no significa nada.
+        return compararPrioridad(a, b);
       case "nombre":
-      default:
         return dir * a.nombre.localeCompare(b.nombre, "es");
+      default:
+        return compararPrioridad(a, b);
     }
   });
 }
@@ -346,6 +385,68 @@ function sortItems(items: ClienteListItem[], sortBy: ClienteSortBy, sortDir: Sor
  *
  * Se resuelve con dos agregaciones, no una query por cliente.
  */
+// Los tres avisos que el cliente sí o sí tiene que recibir. Se resuelven acá y no
+// en la pantalla porque el catálogo de checks es del backend.
+const AVISOS_CLAVE: Array<{ codigo: string; etiqueta: string }> = [
+  { codigo: "e1_bienvenida", etiqueta: "Falta la bienvenida" },
+  { codigo: "e1_fecha_obra", etiqueta: "Falta avisar la fecha de obra" },
+  { codigo: "e2_habilitacion", etiqueta: "Falta avisar que ya puede encender" },
+];
+
+/**
+ * Marca qué avisos clave están pendientes en cada cliente.
+ *
+ * La regla no es la misma para los tres, y la diferencia importa:
+ *
+ *  - **La bienvenida se debe desde el minuto uno.** No la dispara ningún hecho:
+ *    si no está tildada, falta. Por eso cuenta esté o no creado su check.
+ *  - **Los otros dos los dispara un hecho** (se confirmó la fecha, UTE habilitó),
+ *    y hasta que ese hecho pasa no hay nada que avisar. Por eso sólo cuentan
+ *    cuando su reloj ya arrancó (`venceEn`), y marcarlos antes sería pedir que
+ *    se avise algo que todavía no ocurrió.
+ */
+async function marcarAvisosClave(items: ClienteListItem[]): Promise<ClienteListItem[]> {
+  const ids = items.map((i) => i.projectId);
+  if (ids.length === 0) return items;
+
+  const rows = await prisma.recorridoCheck.findMany({
+    where: { projectId: { in: ids }, codigo: { in: AVISOS_CLAVE.map((a) => a.codigo) } },
+    select: { projectId: true, codigo: true, completadoEn: true, venceEn: true },
+  });
+  const porProyecto = new Map<string, Map<string, { completado: boolean; conPlazo: boolean }>>();
+  for (const r of rows) {
+    const m = porProyecto.get(r.projectId) ?? new Map();
+    m.set(r.codigo, { completado: !!r.completadoEn, conPlazo: r.venceEn != null });
+    porProyecto.set(r.projectId, m);
+  }
+
+  for (const i of items) {
+    const m = porProyecto.get(i.projectId);
+    const pendientes: string[] = [];
+    for (const aviso of AVISOS_CLAVE) {
+      const row = m?.get(aviso.codigo);
+      if (row?.completado) continue;
+      if (aviso.codigo === "e1_bienvenida") {
+        // Sólo mientras el cliente sigue en E1. Después la bienvenida ya no se
+        // puede dar: marcar en rojo a toda la cartera vieja por algo que ya no
+        // tiene arreglo apaga la señal en vez de encenderla (medido: sin este
+        // corte quedaban 93 de 93 clientes en rojo).
+        if (i.etapa?.recorrido.codigo === "E1") pendientes.push(aviso.etiqueta);
+        continue;
+      }
+      if (row?.conPlazo) pendientes.push(aviso.etiqueta);
+    }
+    // La Regla de Oro tiene su propio cálculo (mira la bitácora, no el check), y
+    // manda: si el sistema dice que hay que avisar, hay que avisar.
+    if (i.avisoHabilitacionPendiente) {
+      const etiqueta = AVISOS_CLAVE[2].etiqueta;
+      if (!pendientes.includes(etiqueta)) pendientes.push(etiqueta);
+    }
+    i.avisosClavePendientes = pendientes;
+  }
+  return items;
+}
+
 async function marcarNovedades(items: ClienteListItem[]): Promise<ClienteListItem[]> {
   const ids = items.map((i) => i.projectId);
   if (ids.length === 0) return items;
@@ -388,9 +489,10 @@ async function projectAndFilter(f: ClienteFiltros): Promise<ClienteListItem[]> {
   // recorrido (E1/E2/E3), que es derivado y no existe como columna. Un cliente
   // sin ningún contacto registrado siempre cuenta como fuera de cadencia.
   await marcarCadencia(items);
+  await marcarAvisosClave(items);
   await marcarNovedades(items);
   if (f.fueraDeCadencia) items = items.filter((i) => i.fueraDeCadencia);
-  return sortItems(items, f.sortBy ?? "nombre", f.sortDir ?? "asc");
+  return sortItems(items, f.sortBy ?? "prioridad", f.sortDir ?? "asc");
 }
 
 // ─── Listado + export ────────────────────────────────────────────────────────
@@ -426,20 +528,7 @@ export async function getRecorrido(f: ClienteFiltros = {}) {
     if (codigo) bloques[codigo].push(i);
   }
 
-  const ordenar = (arr: ClienteListItem[]) =>
-    arr.sort((a, b) => {
-      // 1. Alerta con plazo primero.
-      if (a.avisoHabilitacionPendiente !== b.avisoHabilitacionPendiente) {
-        return a.avisoHabilitacionPendiente ? -1 : 1;
-      }
-      // 2. Nunca contactado antes que "hace N días".
-      const an = a.diasSinContacto, bn = b.diasSinContacto;
-      if (an === null && bn !== null) return -1;
-      if (bn === null && an !== null) return 1;
-      if (an === null && bn === null) return a.nombre.localeCompare(b.nombre, "es");
-      // 3. Más días sin contacto primero.
-      return (bn ?? 0) - (an ?? 0);
-    });
+  const ordenar = (arr: ClienteListItem[]) => arr.sort(compararPrioridad);
 
   return (["E1", "E2", "E3"] as ClienteRecorrido[]).map((codigo) => {
     const clientes = ordenar(bloques[codigo]);
@@ -466,7 +555,7 @@ export async function listClientesForExport(f: ClienteFiltros): Promise<ClienteL
 export async function getClienteListItem(projectId: string): Promise<ClienteListItem | null> {
   const p = await prisma.project.findFirst({ where: { id: projectId, deletedAt: null }, select: LIST_SELECT });
   if (!p) return null;
-  const [item] = await marcarNovedades(await marcarCadencia([toListItem(p)]));
+  const [item] = await marcarNovedades(await marcarAvisosClave(await marcarCadencia([toListItem(p)])));
   return item ?? null;
 }
 

@@ -196,7 +196,7 @@ export function ClienteFichaPage() {
             )}
           </div>
 
-          <ClienteTramiteUteCard tramiteUte={ficha.tramiteUte} />
+          <ClienteTramiteUteCard projectId={projectId ?? ""} tramiteUte={ficha.tramiteUte} />
 
           {/* Datos del cliente: plegados, porque se consultan de a ratos. */}
           <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)]">
@@ -278,7 +278,9 @@ export function ClienteFichaPage() {
                   label="Próximo mantenimiento"
                   value={
                     ficha.mantenimiento
-                      ? `cumple ${ficha.mantenimiento.aniosQueCumple} ${ficha.mantenimiento.aniosQueCumple === 1 ? "año" : "años"} en ${ficha.mantenimiento.diasRestantes} d`
+                      ? ficha.mantenimiento.diasRestantes === 0
+                        ? "hoy"
+                        : `en ${ficha.mantenimiento.diasRestantes} d`
                       : "—"
                   }
                 />

@@ -26,6 +26,7 @@ import { CrearUsuarioModal } from "../components/CrearUsuarioModal";
 import { ReenviarAccesoModal } from "../components/ReenviarAccesoModal";
 import { EtapaChip } from "../components/EtapaChip";
 import { RECORRIDO_SHORT } from "../constants";
+import { BLOQUES as BLOQUES_ETAPA } from "../components/RecorridoPipeline";
 import { usePortalPreviewStore } from "../../../store/portalPreview.store";
 import { useClientes } from "../hooks/useClientes";
 import { useUpdateCliente } from "../hooks/useUpdateCliente";
@@ -152,6 +153,14 @@ export function ClientesPage() {
     ...(["E1", "E2", "E3"] as ClienteRecorrido[]).map((r) => ({ value: r, label: RECORRIDO_SHORT[r] })),
   ];
 
+  // Sin orden de columna explícito, la cartera se muestra agrupada por etapa y
+  // ordenada por prioridad de contacto (lo resuelve el backend).
+  const agrupadoPorEtapa = !filters.sortBy || filters.sortBy === "prioridad";
+  // Fila en rojo cuando falta uno de los tres avisos clave: el triángulo solo se
+  // pierde entre las columnas.
+  const rowClassName = (c: ClienteListItem) =>
+    c.avisosClavePendientes.length > 0 ? "bg-[var(--color-danger-bg)]/30" : "";
+
   const columns: Column<ClienteListItem>[] = [
     {
       // Las dos señales del recorrido, juntas y primeras: son lo que hace que la
@@ -164,11 +173,11 @@ export function ClientesPage() {
       cardRole: "hidden",
       render: (c) => (
         <div className="flex items-center gap-1">
-          {c.avisoHabilitacionPendiente ? (
-            <span title="Acción requerida: avisarle que ya puede encender" className="flex">
+          {c.avisosClavePendientes.length > 0 ? (
+            <span title={`Acción requerida: ${c.avisosClavePendientes.join(" · ")}`} className="flex">
               <AlertTriangle
                 className="h-3.5 w-3.5 shrink-0 text-[var(--color-danger-text)]"
-                aria-label="Hay que avisarle que puede encender"
+                aria-label={c.avisosClavePendientes.join(". ")}
               />
             </span>
           ) : (
@@ -498,18 +507,66 @@ export function ClientesPage() {
           // ESTE div (no al viewport, roto por <main overflow-y-auto>).
           // overflow-auto cubre scroll vertical (sticky) y horizontal a la vez.
           <div className="max-h-[calc(100vh-18rem)] overflow-auto">
-            <ResponsiveTable
-              columns={columns}
-              data={items}
-              rowKey={(c) => c.projectId}
-              onRowClick={(c) => navigate(`/clientes/${c.projectId}`)}
-              rowClickableOnDesktop
-              stickyHeader
-              sortBy={filters.sortBy}
-              sortOrder={filters.sortDir}
-              onSort={handleSort}
-              emptyMessage="Ningún cliente coincide con los filtros."
-            />
+            {agrupadoPorEtapa ? (
+              // Sin orden de columna elegido, la cartera se lee por etapa: dentro
+              // de cada bloque manda la prioridad de contacto. Mezclar las tres
+              // etapas en una sola lista obliga a leer la columna Etapa en cada
+              // fila para saber de qué se está hablando.
+              // El cuarto bloque no es decorativo: 45 de 93 clientes no tienen
+              // etapa (finalizados, importados por planilla), y sin él
+              // desaparecían de la pantalla al agrupar.
+              [...BLOQUES_ETAPA, { codigo: null, label: "Sin etapa" } as const].map((b) => {
+                const delBloque = items.filter((c) => (c.etapa?.recorrido.codigo ?? null) === b.codigo);
+                if (delBloque.length === 0) return null;
+                const urgentes = delBloque.filter((c) => c.avisosClavePendientes.length > 0).length;
+                return (
+                  <section key={b.codigo ?? "sin-etapa"}>
+                    <div className="sticky top-0 z-20 flex items-baseline gap-2 border-y border-[var(--color-border)] bg-[var(--color-bg-app)] px-4 py-2">
+                      {b.codigo && (
+                        <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--color-accent)]">
+                          {b.codigo}
+                        </span>
+                      )}
+                      <span className="text-[12px] font-semibold text-[var(--color-text-primary)]">{b.label}</span>
+                      <span className="text-[11px] text-[var(--color-text-muted)]">
+                        {delBloque.length}
+                        {urgentes > 0 && (
+                          <span className="ml-2 text-[var(--color-danger-text)]">{urgentes} para hoy</span>
+                        )}
+                      </span>
+                    </div>
+                    <ResponsiveTable
+                      columns={columns}
+                      data={delBloque}
+                      rowKey={(c) => c.projectId}
+                      rowClassName={rowClassName}
+                      onRowClick={(c) => navigate(`/clientes/${c.projectId}`)}
+                      rowClickableOnDesktop
+                      emptyMessage=""
+                    />
+                  </section>
+                );
+              })
+            ) : (
+              <ResponsiveTable
+                columns={columns}
+                data={items}
+                rowKey={(c) => c.projectId}
+                rowClassName={rowClassName}
+                onRowClick={(c) => navigate(`/clientes/${c.projectId}`)}
+                rowClickableOnDesktop
+                stickyHeader
+                sortBy={filters.sortBy}
+                sortOrder={filters.sortDir}
+                onSort={handleSort}
+                emptyMessage="Ningún cliente coincide con los filtros."
+              />
+            )}
+            {items.length === 0 && (
+              <p className="py-12 text-center text-sm text-[var(--color-text-muted)]">
+                Ningún cliente coincide con los filtros.
+              </p>
+            )}
           </div>
         )}
       </div>
