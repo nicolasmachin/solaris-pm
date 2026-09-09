@@ -12,6 +12,18 @@
 - Antes cada pantalla se los armaba por su cuenta: el proyecto tenía dos enlaces sueltos con formato distinto metidos entre los datos, la ficha un botón grande y el workspace de Ingeniería ninguno.
 - Para que esto funcionara, **el panel de un lead ahora se puede abrir por dirección** (`/ventas?lead=…`): antes solo se abría desde adentro de Ventas.
 
+#### Más cosas aparecen como novedad en el historial
+
+- **Cargar una foto o un documento** ahora es novedad. Es de las pocas cosas que el cliente percibe como avance concreto, y no llegaba al historial.
+- **Completar una subetapa** de cualquier área también, con la etiqueta del área que la completó.
+- **Agendar la obra en el calendario** aparece como novedad de Operaciones: es la fecha que se le promete al cliente.
+- Los **archivos se etiquetan por la herramienta que los generó**: un unifilar o una lista de materiales van a Ingeniería, una foto de obra a Operaciones, la propuesta a Documentos.
+
+#### Los avances de la misma tanda se agrupan
+
+- Completar una etapa dispara varios registros de golpe —cierra una, abre la siguiente, completa sus subetapas—, y el historial se llenaba de cinco renglones para un solo hecho. Ahora se muestran juntos bajo el primero.
+- **Solo se agrupan los que salieron dentro del mismo minuto**, para que una novedad nueva nunca quede escondida detrás de otra que ya viste. Los comentarios y los contactos no se agrupan nunca: cada uno tiene contenido propio.
+
 #### El historial del cliente ahora dice de qué módulo viene cada cosa
 
 - Cada entrada lleva la etiqueta del **módulo del que salió**, en vez de caer todo en "Proyecto": **Ventas · Ingeniería · Operaciones · Proyecto · Trámite UTE · Experiencia Solar · Documentos · Ticket · Encuesta**.

@@ -67,6 +67,44 @@ function interactionMeta(meta: TimelineItem["meta"]): string | null {
   return parts.length ? parts.join(" · ") : null;
 }
 
+/**
+ * Agrupa avances seguidos del mismo módulo en una sola entrada.
+ *
+ * Completar una etapa dispara varios registros casi simultáneos —cierra la
+ * etapa, abre la siguiente, completa sus subetapas— y el historial se llenaba de
+ * cinco renglones que cuentan un solo hecho. Se agrupan **sólo los avances**
+ * (`stage_change`): un comentario o un contacto tienen contenido propio y
+ * esconderlos sería perder información, no ordenarla.
+ *
+ * **La ventana es de un minuto**, y es a propósito tan corta: agrupar cosas
+ * separadas en el tiempo esconde una novedad nueva detrás de una que la persona
+ * ya vio. Sólo se juntan las que salieron del mismo acto —completar una etapa
+ * dispara varias en el mismo segundo—, nunca dos hechos distintos.
+ *
+ * La ventana se mide contra la **primera** del grupo, no contra la anterior: si
+ * no, una cadena de eventos cada 50 segundos se agruparía sin límite.
+ */
+const VENTANA_AGRUPADO_MS = 60 * 1000;
+
+type Fila = { lider: TimelineItem; resto: TimelineItem[] };
+
+function agrupar(items: TimelineItem[]): Fila[] {
+  const filas: Fila[] = [];
+  for (const it of items) {
+    const ultima = filas[filas.length - 1];
+    const agrupable =
+      ultima &&
+      it.kind === "stage_change" &&
+      ultima.lider.kind === "stage_change" &&
+      ultima.lider.source === it.source &&
+      Math.abs(new Date(ultima.lider.createdAt).getTime() - new Date(it.createdAt).getTime()) <=
+        VENTANA_AGRUPADO_MS;
+    if (agrupable) ultima.resto.push(it);
+    else filas.push({ lider: it, resto: [] });
+  }
+  return filas;
+}
+
 function fmtDateTime(iso: string): string {
   return new Date(iso).toLocaleString("es-UY", {
     day: "2-digit",
@@ -114,7 +152,7 @@ export function ClienteTimeline({ projectId }: { projectId: string }) {
   return (
     <>
       <ol className="space-y-2">
-      {items.map((it) => {
+      {agrupar(items).map(({ lider: it, resto }) => {
         const src = SOURCE_META[it.source];
         const metaLine = it.kind === "interaction" ? interactionMeta(it.meta) : null;
         // Comentarios dejados dentro de una etapa/subetapa/tarea: mostrar de dónde
@@ -176,6 +214,17 @@ export function ClienteTimeline({ projectId }: { projectId: string }) {
               )}
               {it.kind === "survey" && typeof it.meta?.comentario === "string" && it.meta.comentario && (
                 <p className="mt-0.5 text-[12px] italic text-[var(--color-text-muted)]">“{it.meta.comentario}”</p>
+              )}
+              {/* Los avances que vinieron en la misma tanda: se listan debajo,
+                  chicos, en vez de ocupar un renglón completo cada uno. */}
+              {resto.length > 0 && (
+                <ul className="mt-1 space-y-0.5 border-l border-[var(--color-border)] pl-2.5">
+                  {resto.map((r) => (
+                    <li key={r.id} className="text-[12px] text-[var(--color-text-muted)]">
+                      {r.text}
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
 

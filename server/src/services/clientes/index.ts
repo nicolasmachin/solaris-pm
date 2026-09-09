@@ -18,7 +18,7 @@
 // memoria (getCurrentStage no es expresable en SQL); por eso ordenamos y
 // paginamos también en memoria. La cartera es de cientos de proyectos.
 
-import { Prisma, ProjectStatus, InteractionReason, AuditAction, type InteractionChannel, type InteractionDirection, type StageType, AuditEntityType } from "@prisma/client";
+import { Prisma, ProjectStatus, InteractionReason, AuditAction, type InteractionChannel, type InteractionDirection, type StageType, AuditEntityType, SubstageStatus } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { getStageLabel } from "../pipeline-definitions.js";
@@ -736,7 +736,32 @@ const ENTIDADES_DEL_CLIENTE: AuditEntityType[] = [
   AuditEntityType.proforma,
   AuditEntityType.email_log,
   AuditEntityType.reporte_fv_emision,
+  AuditEntityType.file,
 ];
+
+/**
+ * De qué módulo es cada archivo, según la herramienta que lo produjo. Los que no
+ * salen de ninguna herramienta (fotos, subidas a mano) son de obra.
+ */
+const MODULO_POR_TOOL: Record<string, TimelineItem["source"]> = {
+  unifilar: "ingenieria",
+  preing: "ingenieria",
+  triangulos: "ingenieria",
+  consolidado: "ingenieria",
+  "materiales-con-precios": "ingenieria",
+  "materiales-sin-precios": "ingenieria",
+  "efp-attach": "ingenieria",
+  "ute-docs": "ingenieria",
+  "ute-docs-firmados": "ingenieria",
+  "ute-suministro-individual": "ingenieria",
+  "obra-fotos": "operaciones",
+  "ensayos-video": "operaciones",
+  "lead-fotos": "sales",
+  ProposalGenerator: "docs",
+  PropuestaComercial: "docs",
+  "proposal-v2-cover": "docs",
+  "reporte-fv": "client",
+};
 
 /** Acciones que producen un documento entregable, no un avance de obra. */
 const ACCIONES_DOCUMENTO = new Set<AuditAction>([
@@ -893,6 +918,58 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
   // 4. Auditoría del proyecto: avances de etapa del pipeline y documentos
   //    generados/enviados al cliente (contrato, proforma, propuesta). La
   //    `description` de la auditoría ya viene legible en español.
+  // Dos hechos que sí son novedad no se distinguen por su acción, porque se
+  // escriben con el genérico `updated`: **completar una subetapa** y **agendar
+  // la obra**. Van por su cuenta para no tener que abrir `updated` entero (7.947
+  // entradas de puro ruido).
+  const extras = await prisma.auditLog.findMany({
+    where: {
+      projectId,
+      OR: [
+        {
+          entityType: AuditEntityType.substage,
+          fieldChanged: "status",
+          newValue: SubstageStatus.COMPLETED,
+        },
+        { entityType: AuditEntityType.installation_schedule },
+      ],
+    },
+    select: {
+      id: true, action: true, description: true, timestamp: true, entityType: true, entityId: true,
+      user: { select: { id: true, name: true } },
+    },
+  });
+
+  // A qué módulo pertenece cada subetapa completada: sale de su etapa.
+  const substageIds = extras
+    .filter((e) => e.entityType === AuditEntityType.substage)
+    .map((e) => e.entityId);
+  const substages = substageIds.length
+    ? await prisma.substage.findMany({
+        where: { id: { in: substageIds } },
+        select: { id: true, stage: { select: { name: true } } },
+      })
+    : [];
+  const moduloPorSubstage = new Map(
+    substages.map((sub) => [sub.id, MODULO_POR_ETAPA[sub.stage.name] ?? "operaciones"] as const),
+  );
+
+  for (const e of extras) {
+    const esAgenda = e.entityType === AuditEntityType.installation_schedule;
+    items.push({
+      id: `ax-${e.id}`,
+      // Agendar la obra es de Operaciones: es la fecha que se le promete al
+      // cliente, y uno de los tres avisos que no se pueden pasar por alto.
+      source: esAgenda ? "operaciones" : (moduloPorSubstage.get(e.entityId) ?? "operaciones"),
+      kind: "stage_change",
+      text: textoEvento(e.action, e.description),
+      autor: e.user ? { id: e.user.id, nombre: e.user.name } : null,
+      automatico: !e.user,
+      createdAt: serializeDate(e.timestamp) ?? "",
+      meta: { action: e.action },
+    });
+  }
+
   const audits = await prisma.auditLog.findMany({
     where: {
       projectId,
@@ -911,10 +988,26 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
       entityType: { in: ENTIDADES_DEL_CLIENTE },
     },
     select: {
-      id: true, action: true, description: true, timestamp: true, fieldChanged: true,
+      id: true, action: true, description: true, timestamp: true, fieldChanged: true, entityId: true,
       user: { select: { id: true, name: true } },
     },
   });
+  // Los archivos se etiquetan por la herramienta que los generó: un unifilar es
+  // de Ingeniería y una foto de obra es de Operaciones, aunque el evento sea el
+  // mismo "subió un archivo".
+  const fileIds = audits
+    .filter((a) => a.action === AuditAction.file_uploaded)
+    .map((a) => a.entityId);
+  const archivos = fileIds.length
+    ? await prisma.fileAttachment.findMany({
+        where: { id: { in: fileIds } },
+        select: { id: true, toolSource: true },
+      })
+    : [];
+  const moduloPorArchivo = new Map(
+    archivos.map((f) => [f.id, MODULO_POR_TOOL[f.toolSource ?? ""] ?? "operaciones"] as const),
+  );
+
   for (const a of audits) {
     // El trámite UTE escribe en el mismo log que el proyecto, pero es otro
     // módulo y otra gente: mezclarlos bajo "Operaciones" obligaba a leer el texto
@@ -931,11 +1024,13 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
       ? "ute"
       : esDoc
         ? "docs"
-        : a.action === AuditAction.lead_converted
-          ? "sales"
-          : a.action === AuditAction.email_sent
-            ? "client"
-            : "project";
+        : a.action === AuditAction.file_uploaded
+          ? (moduloPorArchivo.get(a.entityId) ?? "operaciones")
+          : a.action === AuditAction.lead_converted
+            ? "sales"
+            : a.action === AuditAction.email_sent
+              ? "client"
+              : "project";
     items.push({
       id: `au-${a.id}`,
       source,
