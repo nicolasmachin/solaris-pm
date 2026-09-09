@@ -28,10 +28,14 @@ function idInteraccion(it: TimelineItem): string | null {
 
 // Feed unificado (solo lectura): Ventas + comentarios + interacciones CX +
 // avances de etapa + documentos + traspasos + tickets.
+// La etiqueta dice **de qué módulo viene** la entrada, no qué tipo de cosa es:
+// eso ya lo dice el ícono. Antes el trámite UTE y la obra caían los dos en
+// "Proyecto", así que había que leer el texto para saber de qué se hablaba.
 const SOURCE_META: Record<TimelineItem["source"], { label: string; className: string }> = {
   sales: { label: "Ventas", className: "bg-blue-500/15 text-blue-400" },
-  project: { label: "Proyecto", className: "bg-purple-500/15 text-purple-400" },
-  client: { label: "Cliente", className: "bg-emerald-500/15 text-emerald-400" },
+  project: { label: "Operaciones", className: "bg-purple-500/15 text-purple-400" },
+  ute: { label: "Trámite UTE", className: "bg-sky-500/15 text-sky-400" },
+  client: { label: "Experiencia Solar", className: "bg-emerald-500/15 text-emerald-400" },
   ticket: { label: "Ticket", className: "bg-amber-500/15 text-amber-500" },
   survey: { label: "Encuesta", className: "bg-teal-500/15 text-teal-400" },
 };

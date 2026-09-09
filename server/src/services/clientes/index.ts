@@ -697,6 +697,21 @@ export async function getClienteFicha(projectId: string) {
   };
 }
 
+/** Campos de fecha que marcan un hito del trámite UTE (ver `UTE_HITO_LABEL`). */
+const UTE_CAMPOS_HITO = new Set([
+  "consultaSentAt",
+  "caseOpenedAt",
+  "consultaApprovedAt",
+  "solicitudSentAt",
+  "proyectoApprovedAt",
+  "docs1SentAt",
+  "docs1ApprovedAt",
+  "ensayosSentAt",
+  "ensayosApprovedAt",
+  "docs2SentAt",
+  "finalizedAt",
+]);
+
 // ─── Timeline unificado del cliente ──────────────────────────────────────────
 // Junta las fuentes de historia del cliente en un solo feed ordenado por fecha
 // DESC. Solo lectura. Fuentes:
@@ -708,7 +723,7 @@ export async function getClienteFicha(projectId: string) {
 
 export interface TimelineItem {
   id: string;
-  source: "sales" | "project" | "client" | "ticket" | "survey";
+  source: "sales" | "project" | "ute" | "client" | "ticket" | "survey";
   kind: "stage_change" | "comment" | "interaction" | "document" | "handoff" | "ticket" | "survey";
   text: string;
   autor: { id: string; nombre: string } | null;
@@ -815,14 +830,19 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
       },
     },
     select: {
-      id: true, action: true, description: true, timestamp: true,
+      id: true, action: true, description: true, timestamp: true, fieldChanged: true,
       user: { select: { id: true, name: true } },
     },
   });
   for (const a of audits) {
+    // El trámite UTE escribe en el mismo log que el proyecto, pero es otro
+    // módulo y otra gente: mezclarlos bajo "Operaciones" obligaba a leer el texto
+    // para saber de qué se estaba hablando. Se distinguen por el campo que
+    // cambió: los hitos del trámite y su etapa (ver el PATCH de ute-processes).
+    const esUte = a.fieldChanged === "uteStage" || UTE_CAMPOS_HITO.has(a.fieldChanged ?? "");
     items.push({
       id: `au-${a.id}`,
-      source: "project",
+      source: esUte ? "ute" : "project",
       kind:
         a.action === AuditAction.stage_advanced || a.action === AuditAction.status_changed
           ? "stage_change"
