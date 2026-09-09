@@ -170,19 +170,23 @@ export function ClienteFichaPage() {
         />
       </div>
 
-      {/* El pipeline del recorrido: el mapa de dónde está y qué falta. */}
-      <RecorridoPipeline
-        checks={checks ?? []}
-        etapaActual={etapaActual}
-        seleccionada={etapa}
-        onSelect={setEtapaSel}
-      />
-
       {/* Dos columnas a la par: a la izquierda lo que hay que hacer, a la derecha
           lo que pasó. Mitad y mitad — las dos son el trabajo, no una principal y
-          una barra lateral. */}
+          una barra lateral.
+
+          El pipeline va DENTRO de la columna izquierda, no cruzado arriba: así el
+          historial empieza a la misma altura que el recorrido y no queda empujado
+          media pantalla hacia abajo. */}
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="space-y-4">
+          {/* El mapa de dónde está el cliente y qué falta. */}
+          <RecorridoPipeline
+            checks={checks ?? []}
+            etapaActual={etapaActual}
+            seleccionada={etapa}
+            onSelect={setEtapaSel}
+          />
+
           <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] p-4">
             {checks ? (
               <RecorridoChecks

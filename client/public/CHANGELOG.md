@@ -12,6 +12,10 @@
 - Antes cada pantalla se los armaba por su cuenta: el proyecto tenía dos enlaces sueltos con formato distinto metidos entre los datos, la ficha un botón grande y el workspace de Ingeniería ninguno.
 - Para que esto funcionara, **el panel de un lead ahora se puede abrir por dirección** (`/ventas?lead=…`): antes solo se abría desde adentro de Ventas.
 
+#### La ficha del cliente: las novedades ganan lugar
+
+- El **recorrido del cliente** pasó a la mitad izquierda, arriba de los pasos de la etapa, en vez de cruzar toda la pantalla. Así **el historial de novedades arranca a la misma altura** y no queda empujado media pantalla hacia abajo.
+
 #### Más cosas aparecen como novedad en el historial
 
 - **Cargar una foto o un documento** ahora es novedad. Es de las pocas cosas que el cliente percibe como avance concreto, y no llegaba al historial.

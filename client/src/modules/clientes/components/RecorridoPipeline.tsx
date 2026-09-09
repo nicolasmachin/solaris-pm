@@ -85,7 +85,7 @@ function Bloque({
       type="button"
       onClick={onClick}
       title={largo}
-      className="w-full min-w-0 text-left transition-opacity hover:opacity-80 md:flex-1"
+      className="w-full min-w-0 text-left transition-opacity hover:opacity-80"
     >
       <p className={`mb-1.5 truncate font-mono text-[11px] uppercase tracking-[0.05em] ${HEADER[estado]}`}>
         {codigo}. {corto}
@@ -151,7 +151,9 @@ export function RecorridoPipeline({
       <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
         Recorrido del cliente
       </p>
-      <div className="flex flex-col gap-2 md:flex-row">
+      {/* En media pantalla los tres bloques no entran uno al lado del otro sin
+          quedar ilegibles: se acomodan en grilla y bajan a uno solo en móvil. */}
+      <div className="grid gap-2 grid-cols-1 sm:grid-cols-3">
         {BLOQUES.map((b) => (
           <Bloque
             key={b.codigo}
