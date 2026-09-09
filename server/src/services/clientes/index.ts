@@ -215,13 +215,38 @@ function estadoFromStatus(status: ProjectStatus): ClienteEstado {
   }
 }
 
-function buildEtapa(stages: ProjectListRow["stages"], recorridoManual: string | null): EtapaInfo | null {
+/**
+ * En qué etapa del recorrido está el cliente.
+ *
+ * El orden de las fuentes importa:
+ *
+ *  1. **El override manual** de la ficha, si está puesto.
+ *  2. **La etapa en curso del pipeline**, si el proyecto lo tiene.
+ *  3. **E3 si el proyecto ya terminó** — sea porque el trámite se habilitó o
+ *     porque no queda ninguna etapa en curso. Este caso no estaba contemplado y
+ *     dejaba fuera del recorrido a los clientes terminados: `getCurrentStage`
+ *     devuelve null cuando todas las etapas están completas, y sin etapa actual
+ *     no había recorrido. Justo al revés de lo que este módulo quiere — un
+ *     cliente cuyo proyecto terminó **sigue siendo cliente**, y está en E3 para
+ *     siempre. Medido en desarrollo: 16 clientes quedaban invisibles por esto.
+ *
+ * Si no hay ninguna de las tres, se devuelve null: es honesto. Los importados por
+ * planilla sin pipeline ni fecha de habilitación no dan para inferir nada, y
+ * adivinarles una etapa sería peor que mostrarlos aparte.
+ */
+function buildEtapa(p: ProjectListRow): EtapaInfo | null {
+  const stages = p.stages;
+  const recorridoManual = p.recorridoManual;
   const current = stages && stages.length > 0 ? getCurrentStage(stages) : null;
   const derivado = current ? RECORRIDO_BY_STAGE[current.name] : null;
+  const terminado =
+    p.postHabilitacionInicioEn != null ||
+    p.actualUteEnd != null ||
+    (p.status === ProjectStatus.COMPLETED && !current);
   // El override manual pisa el derivado (útil para importados sin pipeline).
   const codigo = (["E1", "E2", "E3"].includes(recorridoManual ?? "")
     ? (recorridoManual as ClienteRecorrido)
-    : derivado) as ClienteRecorrido | null;
+    : (derivado ?? (terminado ? "E3" : null))) as ClienteRecorrido | null;
   if (!codigo) return null;
   return {
     recorrido: {
@@ -231,7 +256,9 @@ function buildEtapa(stages: ProjectListRow["stages"], recorridoManual: string | 
     },
     pipeline: current
       ? { stage: current.name, label: getStageLabel(current.name) }
-      : { stage: "MANUAL", label: "Sin pipeline (manual)" },
+      : terminado
+        ? { stage: "TERMINADO", label: "Proyecto terminado" }
+        : { stage: "MANUAL", label: "Sin pipeline (manual)" },
   };
 }
 
@@ -247,7 +274,7 @@ function toListItem(p: ProjectListRow): ClienteListItem {
     fechaVenta: serializeDateOnly(p.saleDate),
     fechaHabilitacion: serializeDateOnly(p.postHabilitacionInicioEn ?? p.actualUteEnd),
     asesor: p.salesperson ? { id: p.salesperson.id, nombre: p.salesperson.name } : null,
-    etapa: buildEtapa(p.stages, p.recorridoManual),
+    etapa: buildEtapa(p),
     estado: estadoFromStatus(p.status),
     ultimoContactoEn: p.clientInteractions[0] ? serializeDate(p.clientInteractions[0].createdAt) : null,
     avisoHabilitacionPendiente: p.postHabilitacionInicioEn != null && p.avisoHabilitacionEn == null,
