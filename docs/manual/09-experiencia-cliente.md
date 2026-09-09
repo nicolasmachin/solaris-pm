@@ -152,9 +152,9 @@ que no se negocia son los principios:
 Adaptar el nombre, las fechas y el detalle. El objetivo es el tono y que no falte
 información, no copiarlos literal.
 
-**Están en la app, no sólo acá.** Pestaña **Pasos** de la ficha del cliente: cada
-etapa tiene el botón **"Plantillas"** con los mensajes de esa etapa, y cada paso
-que tiene mensaje propio abre el suyo directo con el ícono de mensaje
+**Están en la app, no sólo acá.** Ficha del cliente: se clickea una etapa del
+recorrido y su lista de pasos trae el botón **"Plantillas"** con los mensajes de
+esa etapa; cada paso que tiene mensaje propio abre el suyo directo con el ícono
 (`plantillas.ts` + `PlantillasModal.tsx`). Que estén en el documento y no en la
 mano de quien escribe es lo mismo que no tenerlos: si copiar cuesta, el aviso sale
 improvisado o no sale.
@@ -381,11 +381,18 @@ la obra**. El avance de etapa lo sigue determinando el proyecto.
   no es "encuesta enviada" —eso lo hace el sistema solo— sino "le avisé al cliente
   que la tiene", que es lo que falta hoy.
 
-**Dónde se ven.** Pestaña **Pasos** de la ficha del cliente
-(`RecorridoChecks.tsx`), agrupados por etapa y con el avance de cada una. Se
-tildan con un clic, con permiso `EXPERIENCIA_CLIENTES:EDIT` — sin él se ven pero
-no se tocan. El plazo solo se muestra mientras el paso está pendiente. Completar y
-reabrir quedan auditados; repetir el mismo estado devuelve `CHECK_SIN_CAMBIO`.
+**Dónde se ven.** En la ficha del cliente (`RecorridoChecks.tsx`), debajo del
+recorrido: se clickea una etapa del pipeline y aparecen **los pasos de esa etapa**
+—no las tres a la vez, que obligaba a scrollear para llegar a lo de hoy. Se tildan
+con un clic, con permiso `EXPERIENCIA_CLIENTES:EDIT` — sin él se ven pero no se
+tocan; hay además un botón **"Completar los N"** que los manda de a uno (no hay
+endpoint de lote: son siete como máximo). El plazo solo se muestra mientras el
+paso está pendiente. Completar y reabrir quedan auditados; repetir el mismo estado
+devuelve `CHECK_SIN_CAMBIO`.
+
+Los tres marcados `clave: true` en el catálogo —bienvenida, fecha de obra y
+habilitación— se resaltan aunque estén al día. Y el de habilitación tiene un
+efecto extra: **tildarlo apaga la alarma de la Regla de Oro** (ver más abajo).
 
 **Checks dinámicos por reprogramación.** Cada reagenda de una obra ya confirmada
 crea **su propio check** (`crearCheckReagenda`) con el motivo adentro, en vez de
@@ -395,7 +402,8 @@ confirmada **exige motivo** (`MOTIVO_REQUERIDO`): sin él, quien tiene que avisa
 al cliente no sabe qué decirle. Si la obra todavía era tentativa no se exige —
 nadie prometió nada y no hay nada que explicar.
 
-**La pestaña Recorrido** (`/clientes/recorrido`) es la vista de trabajo del área:
+**La pestaña Recorrido** (`/clientes/recorrido`) es la otra vista de trabajo del
+área, además del listado:
 la cartera partida en los tres bloques del proceso, una columna por etapa.
 
 Reglas de orden, que son el corazón de la vista (`getRecorrido`):
@@ -498,6 +506,26 @@ los que pintan la fila de rojo. La regla no es la misma para los tres:
   que todavía no ocurrió sería ruido.
 - La Regla de Oro manda sobre su check: si `avisoHabilitacionPendiente` es true
   (mira la bitácora, no el check), el aviso entra igual.
+
+**La ficha del cliente** (`ClienteFichaPage.tsx`) es **una sola pantalla**, no
+cuatro pestañas: antes había Resumen / Pasos / Interacciones / Historial y para
+saber cómo venía un cliente había que recorrer las cuatro recordando lo de la
+anterior. Cómo está armada:
+
+- **Encabezado**: nombre, estado editable, semáforo de días sin contacto, los
+  avisos clave pendientes, **todos los datos del cliente** en una o dos filas
+  chicas (estaban plegados al fondo, que es donde nadie los busca) y la fila de
+  enlaces a los otros módulos (`EnlacesModulos`).
+- **Mitad izquierda**: el recorrido (`RecorridoPipeline`, mismo lenguaje visual
+  que el pipeline del proyecto), los pasos de la etapa elegida, y el trámite UTE
+  desplegado con **el mismo timeline que ve el cliente en su portal**
+  (`UteTimeline`, compartido con `PortalProjectUte`).
+- **Mitad derecha**: el historial completo con el formulario de contacto arriba.
+  Mitad y mitad a propósito: las dos columnas son el trabajo, no una principal y
+  una barra lateral.
+- **Sidebar**: la lista de Generadores (`ClientesSidebar`), plegable con la misma
+  preferencia que los sidebars de Proyectos e Ingeniería
+  (`useSidebarColapsado`, una sola para los tres módulos).
 
 **Filtros accionables del listado.** Además de los filtros generales (texto,
 estado, asesor, departamento, etapa) hay dos que marcan trabajo pendiente:

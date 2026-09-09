@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.0 — 8 de septiembre de 2026
+**Voltia · Uruguay** · Versión 1.1 — 8 de septiembre de 2026
 
 > Este manual es **el procedimiento y el manual de uso de la app, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -177,7 +177,7 @@ Nadie tiene que entrar a un módulo que no usa para dejar una nota.
 | **Ingeniería** | Cambios de alcance o de diseño que el cliente tiene que saber | Comentarios del proyecto / etapa |
 | **Capataz / Operaciones** | **Todo intercambio con el cliente en la obra** y cualquier incidente: algo que se rompió, un pedido que hizo, una queja al pasar | Comentario en la etapa del proyecto, **desde el celular** |
 | **Tramitación UTE** | Novedades del trámite que cambian el plazo prometido | Comentarios del proyecto / módulo UTE |
-| **Experiencia Solar** | Cada contacto con el cliente: canal, dirección, motivo y qué se dijo | **Interacciones** de la ficha del cliente |
+| **Experiencia Solar** | Cada contacto con el cliente: el canal y qué se dijo | El formulario del **historial** de la ficha |
 
 **Todos esos comentarios llegan al Historial de la ficha del cliente**, indicando
 de dónde salieron (por ejemplo *"en Ejecución de obra"*). El capataz no necesita
@@ -201,7 +201,7 @@ contactos.
 ## 5 · Etapa 1 — De la venta a la obra
 
 **Dónde se ve:** Experiencia Solar → **Recorrido**, columna *Pre-obra*. O la ficha
-del cliente → pestaña **Pasos**, bloque *E1*.
+del cliente → bloque **E1** del recorrido.
 
 **El semáforo interno de esta etapa: 3 días.** Si un cliente de E1 pasa más de 3
 días sin contacto registrado, aparece marcado. **No es una promesa al cliente**:
@@ -236,7 +236,7 @@ va a llegar.
 | **Cuándo** | Junto con la bienvenida o inmediatamente después |
 | **Quién** | Experiencia Solar |
 | **Plazo** | Sin plazo formal — pero es **obligatoria** |
-| **En la app** | **Pasos** → E1 → *"Conversación de expectativa inicial"* |
+| **En la app** | Ficha del cliente → **E1** → *"Conversación de expectativa inicial"* |
 
 Es el paso más importante de toda la etapa y el que más se saltea. Hay que
 cubrir, explícitamente:
@@ -263,13 +263,18 @@ tanto", la ficha tiene que poder responder esa pregunta.
 | **Cuándo** | Apenas se crea el proyecto |
 | **Quién** | Experiencia Solar |
 | **Plazo** | Sin plazo, pero queda pendiente hasta que se haga |
-| **En la app** | Listado de **Generadores** → columna *Portal* → **Crear usuario** |
-| **Qué decir** | Plantilla **"Acceso al portal"** |
+| **En la app** | El **ícono de crear usuario** en el propio paso, o la columna de acceso del listado |
+| **Qué decir** | Plantilla **"Acceso al portal"**, que sale con el usuario y la contraseña reales |
 
-**Cómo se crea:** en el listado de Generadores, la columna de portal muestra
-quién tiene acceso y quién no. En los que no lo tienen aparece el link para
-crearlo; el mail y el teléfono se toman de los datos del cliente. La contraseña
-por defecto es **12345678** y el sistema le pide cambiarla al entrar.
+**Cómo se crea:** desde el propio paso, con el ícono a la derecha (o desde la
+columna de acceso del listado). El mail y el teléfono se toman de los datos del
+cliente y la contraseña por defecto es **12345678**, que el sistema le pide
+cambiar al entrar. Al terminar, la plantilla de acceso sale **con el usuario y la
+contraseña ya adentro**.
+
+> Si el cliente ya tenía acceso de antes, la plantilla trae su usuario pero deja
+> la contraseña en blanco: **no se puede recuperar**. Para mandársela hay que
+> resetearla con el botón de reenviar.
 
 **Qué gana el cliente con el portal:** ve el avance de su trámite, la
 documentación, sus reportes de generación cuando arranquen, y **puede abrirnos un
@@ -288,7 +293,7 @@ reclamo por ahí** en vez de por WhatsApp.
 |---|---|
 | **Cuándo** | Al arrancar la obra, o junto con la fecha confirmada |
 | **Quién** | Experiencia Solar |
-| **En la app** | **Pasos** → E1 → *"Presentación del capataz"* |
+| **En la app** | Ficha del cliente → **E1** → *"Presentación del capataz"* |
 | **Qué decir** | Plantilla **"Presentación del capataz"** |
 
 **Con el alcance explícito**: obra con él, todo lo demás conmigo. Sin esa frase,
@@ -311,7 +316,7 @@ que es tentativa y de qué depende. Plantilla **"Fecha de obra tentativa"**.
 | **Cuándo** | Al confirmarse la fecha en el calendario |
 | **Quién** | Experiencia Solar |
 | **Plazo** | **2 días hábiles** — el sistema abre el pendiente solo |
-| **En la app** | **Pasos** → E1 → *"Aviso de fecha de obra confirmada"* |
+| **En la app** | Ficha del cliente → **E1** → *"Aviso de fecha de obra confirmada"* |
 | **Qué decir** | Plantilla **"Fecha de obra confirmada"** |
 
 **Cómo arranca el plazo:** el reloj **no** empieza cuando se crea el proyecto,
@@ -365,7 +370,7 @@ haber alguien y si el acceso está disponible.
 |---|---|
 | **Cuándo** | El mismo día que termina la instalación |
 | **Quién** | Experiencia Solar |
-| **En la app** | **Pasos** → E1 → *"Aviso de obra terminada y qué sigue"* |
+| **En la app** | Ficha del cliente → **E1** → *"Aviso de obra terminada y qué sigue"* |
 | **Qué decir** | Plantilla **"Obra terminada y qué sigue"** |
 
 **Va antes que la encuesta.** Primero se le cuenta cómo sigue, después se le pide
@@ -388,7 +393,7 @@ El punto 3 es de seguridad y de expectativa a la vez.
 |---|---|
 | **Cuándo** | Después del aviso de obra terminada, como **contacto propio** |
 | **Quién** | Experiencia Solar |
-| **En la app** | **Pasos** → E1 → *"Aviso de la encuesta de obra"* |
+| **En la app** | Ficha del cliente → **E1** → *"Aviso de la encuesta de obra"* |
 
 **La encuesta la genera el sistema solo** al completarse la etapa de obra: aparece
 en el portal del cliente. Lo que **no** hace el sistema es avisarle que la tiene.
@@ -425,7 +430,7 @@ es tolerable. Si no, cada día es una traición.
 | **Cuándo** | Apenas UTE habilita |
 | **Quién** | Experiencia Solar |
 | **Plazo** | **24-48 horas. El más corto de todo el recorrido.** |
-| **En la app** | **Pasos** → E2 → *"Aviso de habilitación otorgada"* |
+| **En la app** | Ficha del cliente → **E2** → *"Aviso de habilitación otorgada"* |
 | **Qué decir** | Plantilla **"Ya podés encender + capacitación"** |
 
 > ## Cada día que pasa el cliente deja de ahorrar plata.
@@ -439,9 +444,13 @@ Experiencia Solar; a las **48 horas** escala a Administración. Además el clien
 aparece con **triángulo rojo** en el listado y en el Recorrido, y encabeza el
 correo de la mañana.
 
-**Cómo se apaga la alerta:** registrando la interacción con motivo **"Aviso de
-habilitación"** (el botón *"Marcar avisado al Generador"* en la ficha). Tildar el
-paso no alcanza: la alarma mira la bitácora.
+**Cómo se apaga la alerta:** **tildando el paso** *"Aviso de habilitación
+otorgada"* en E2. Destildarlo la vuelve a encender, y queda registrado quién lo
+marcó y cuándo.
+
+> Hasta septiembre de 2026 esto lo hacía un botón *"Marcar avisado al Generador"*
+> escondido en el formulario de contacto, y tildar el paso no apagaba nada: había
+> dos formas de marcar lo mismo y la obvia no funcionaba.
 
 **Va junto con la capacitación (hito 6), en el mismo contacto.** Se evaluó
 separarlas —avisar primero y capacitar unos días después con datos reales en la
@@ -556,7 +565,13 @@ este cuenta lo que falta hacer.
 > opción "Recorrido de Experiencia Solar". Si alguien no lo recibe, es porque su
 > rol no lo tiene tildado.
 
-### 8.2 · El Recorrido
+### 8.2 · El listado y el Recorrido
+
+El **listado de Generadores** viene ordenado por **prioridad de contacto** —arriba
+los que tienen un aviso clave pendiente, después por días sin contacto— y agrupado
+en bloques plegables por etapa. Las dos señales están en la primera columna.
+
+### El Recorrido
 
 **Experiencia Solar → Recorrido.** La cartera partida en las tres etapas, una
 columna cada una.
@@ -573,8 +588,14 @@ columna cada una.
 
 | Señal | Qué dice | Cuándo se apaga |
 |---|---|---|
-| 🔺 **Triángulo rojo** | Hay que avisarle algo **y hay plazo** | Al registrar el aviso |
+| 🔺 **Triángulo rojo** | Falta uno de los **tres avisos clave** y hay plazo | Al tildar el paso |
 | 🟡 **Punto** | Hay algo nuevo para mirar | Al mirarlo |
+
+Los tres avisos que pintan la fila de rojo son **la bienvenida**, **el aviso de
+fecha de obra** y **el aviso de habilitación**, y están resaltados en la lista de
+pasos aunque estén al día. La bienvenida sólo cuenta mientras el cliente sigue en
+E1: después ya no se puede dar, y marcar en rojo a toda la cartera vieja por algo
+que no tiene arreglo apaga la señal en vez de encenderla.
 
 **El punto no cambia el orden, a propósito.** Es un "no leído", no una tarea. Si
 reordenara, un cliente con novedad pero contactado ayer taparía al que lleva
@@ -582,16 +603,26 @@ quince días sin que nadie le hable.
 
 ### 8.3 · La ficha del cliente
 
-Se entra desde cualquiera de las dos vistas anteriores. Es **una sola pantalla**:
+Se entra desde cualquiera de las dos vistas anteriores, o desde **la lista de
+Generadores al costado**, que permite saltar de un cliente a otro sin volver al
+listado (se pliega con el botón de arriba). Es **una sola pantalla**, mitad y
+mitad:
 
-- **Arriba, el pipeline del recorrido** — las tres etapas, con el avance de cada
-  una y marcada la etapa donde está el cliente. Se lee igual que el pipeline del
-  proyecto.
-- **Se hace clic en una etapa y abajo aparecen sus pasos**, con el botón de
-  plantillas.
+- **En el encabezado, todos los datos del cliente**: mail y teléfono clickeables,
+  dirección, asesor, potencia, fechas de venta, entrega y habilitación, y el
+  próximo mantenimiento. El estado y la fecha de entrega se editan ahí mismo.
+- **A la izquierda arriba, el recorrido**: las tres etapas con su avance y marcada
+  dónde está el cliente. Se lee igual que el pipeline del proyecto.
+- **Se hace clic en una etapa y debajo aparecen sus pasos**, con el botón de
+  plantillas de esa etapa y el de **"Completar los N"** si quedan pendientes.
 - **A la derecha, todo el historial**, lo más nuevo arriba, y el formulario para
   registrar un contacto pegado arriba de todo.
-- Los datos del cliente están en la tarjeta plegable **"Datos del cliente"**.
+- Abajo a la izquierda, el **trámite UTE** desplegado con sus hitos: es lo mismo
+  que el cliente ve en su portal.
+
+**La fila de enlaces del encabezado** —Ventas · Proyecto · Ingeniería · Trámite
+UTE · Experiencia Solar— lleva al **mismo cliente** en el otro módulo. Está igual
+en todas las pantallas y sólo muestra los módulos que podés abrir.
 
 ---
 
@@ -911,12 +942,14 @@ Es la parte que más se consulta cuando algo no aparece donde uno lo busca.
 - **El 76 % de los generadores todavía no tiene el acceso al portal creado.** Ya no
   hace falta el mail para creárselo, pero **hay que crearlos**: no se crean solos.
   Es lo que más limita a las encuestas y a los reclamos.
-- **Los mails que se le mandan al cliente no cuentan como contacto** en la
-  bitácora: hay que registrarlos aparte.
+- **Los mails que se le mandan al cliente no cuentan como contacto** en el
+  historial: hay que registrarlos aparte.
+- **Los mantenimientos no tienen alerta de vencido**, sólo la cuenta de cuánto
+  falta.
 - **No hay métricas de satisfacción** consolidadas ni antigüedad de reclamos.
 - **El portal no muestra el estado ni la fecha de obra**, que es lo primero que el
   cliente querría ver ahí.
 
 ---
 
-*Manual de Posventa — Experiencia Solar · Voltia · v1.0 · 8 de septiembre de 2026*
+*Manual de Posventa — Experiencia Solar · Voltia · v1.1 · 8 de septiembre de 2026*
