@@ -4,6 +4,12 @@
 
 ### 8 de septiembre de 2026
 
+#### Arreglos del historial y de las etapas
+
+- **Un traspaso ya no aparece dos veces en el historial del cliente.** Salía una vez al generarse y otra al confirmarse, con un minuto de diferencia, y la segunda decía "notificó a 8 destinatarios" — maquinaria interna que no cambia nada de la historia del cliente. Queda solo el momento en que el traspaso ocurrió.
+- **Los Generadores importados por planilla ya tienen etapa.** Eran 41 sin etapa: la etapa se deduce del pipeline del proyecto, y esos nunca tuvieron pipeline. Ahora están todos en Post-habilitación, que es lo que son.
+- Un proyecto **terminado** ya no se queda sin etapa: pasa a Post-habilitación. Antes, cuando todas sus etapas estaban completas, no había "etapa en curso" de la cual deducirla.
+
 #### El listado de clientes se ordena por urgencia y se agrupa por etapa
 
 - Los bloques de cada etapa **se pueden plegar** con un clic en su cabecera, y vienen **abiertos por defecto**.

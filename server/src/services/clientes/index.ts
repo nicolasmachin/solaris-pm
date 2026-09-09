@@ -814,9 +814,7 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
       kind:
         a.action === AuditAction.stage_advanced || a.action === AuditAction.status_changed
           ? "stage_change"
-          : a.action === AuditAction.traspaso_confirmado || a.action === AuditAction.traspaso_escalado
-            ? "handoff"
-            : "document",
+          : "document",
       text: textoEvento(a.action, a.description),
       autor: a.user ? { id: a.user.id, nombre: a.user.name } : null,
       createdAt: serializeDate(a.timestamp) ?? "",
@@ -825,6 +823,16 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
   }
 
   // 5. Traspasos entre áreas (handoffs del recorrido interno del cliente).
+  //
+  // **Una sola entrada por traspaso.** Antes el mismo hecho aparecía dos veces:
+  // una por la tabla y otra por el registro de auditoría de la confirmación
+  // ("Confirmó el traspaso X — notificó a 8 destinatarios"), con un minuto de
+  // diferencia. Leído desde la historia del cliente eran dos renglones para lo
+  // mismo, y el del audit además traía ruido interno.
+  //
+  // Se muestra **el momento en que el traspaso ocurrió**, no la confirmación
+  // posterior: que después se haya notificado a N destinatarios es maquinaria
+  // interna y no cambia nada de la historia del cliente.
   const traspasos = await prisma.traspaso.findMany({
     where: { projectId },
     select: {

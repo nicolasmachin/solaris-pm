@@ -35,8 +35,13 @@ export const EVENTOS: Record<AuditAction, EventoDef> = {
   [AuditAction.status_changed]: { visibilidad: "novedad", etiqueta: "Cambió el estado del proyecto" },
   [AuditAction.email_sent]: { visibilidad: "novedad", etiqueta: "Se le envió un correo" },
   [AuditAction.lead_converted]: { visibilidad: "novedad", etiqueta: "Se convirtió en proyecto" },
-  [AuditAction.traspaso_confirmado]: { visibilidad: "novedad", etiqueta: "Traspaso entre áreas" },
-  [AuditAction.traspaso_escalado]: { visibilidad: "novedad", etiqueta: "Traspaso escalado" },
+  // El traspaso ya llega al historial desde su propia tabla, con el tipo y la
+  // nota al receptor. Contarlo también por auditoría lo duplicaba: dos renglones
+  // con un minuto de diferencia para el mismo hecho. Queda como "auditoria" para
+  // que siga contando como actividad del proyecto (la lucecita de novedad) sin
+  // aparecer dos veces en la lista.
+  [AuditAction.traspaso_confirmado]: { visibilidad: "auditoria" },
+  [AuditAction.traspaso_escalado]: { visibilidad: "auditoria" },
   [AuditAction.contract_version_published]: { visibilidad: "novedad", etiqueta: "Contrato emitido" },
   [AuditAction.proforma_version_published]: { visibilidad: "novedad", etiqueta: "Proforma emitida" },
   [AuditAction.proposal_v2_version_published]: { visibilidad: "novedad", etiqueta: "Propuesta emitida" },

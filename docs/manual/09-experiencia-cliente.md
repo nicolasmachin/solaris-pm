@@ -421,6 +421,26 @@ clasificados como novedad + comentarios) contra el último contacto registrado: 
 "pasó algo y todavía no se lo dijimos". Se resuelve con dos agregaciones, no una
 consulta por cliente.
 
+**De dónde sale la etapa** (`buildEtapa`). En orden: el **override manual** de la
+ficha (`recorridoManual`), la **etapa en curso del pipeline**, y —si no hay
+ninguna— **E3 cuando el proyecto ya terminó** (habilitado o sin etapa en curso).
+Ese último caso faltaba y dejaba fuera del recorrido a los clientes terminados:
+`getCurrentStage` devuelve null con todas las etapas completas, y un cliente cuyo
+proyecto terminó sigue siendo cliente.
+
+Los **importados por planilla** nunca tuvieron pipeline, así que no había de dónde
+derivarla: quedaban sin etapa y por lo tanto fuera del Recorrido, del agrupado y
+de la cadencia — justo la cartera que hay que acompañar. Se resolvió escribiéndoles
+el override manual con `prisma/scripts/backfill-recorrido-importados.ts` (41 en
+desarrollo; idempotente y sólo toca los que no tienen etapa puesta a mano).
+
+**Un traspaso, una entrada.** El historial lo arma desde la tabla `Traspaso`, no
+desde la auditoría: antes el mismo hecho salía dos veces —al generarse y al
+confirmarse, con un minuto de diferencia— y la segunda traía el detalle interno de
+a cuántos se notificó. Los `AuditAction.traspaso_confirmado` / `traspaso_escalado`
+quedaron como `auditoria` en `eventos.ts`: siguen contando como actividad para la
+lucecita de novedad, pero no se listan.
+
 **Orden y agrupación del listado.** Por defecto se ordena por **prioridad de
 contacto** (`compararPrioridad`, el mismo comparador que usa el Recorrido: avisos
 clave pendientes arriba, después por días sin contacto, y "nunca contactado" antes
