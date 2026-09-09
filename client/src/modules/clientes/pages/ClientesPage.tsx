@@ -56,7 +56,10 @@ export function ClientesPage() {
   const activarPreview = usePortalPreviewStore((s) => s.activar);
   const isMobile = useIsMobile();
 
-  const [filters, setFilters] = useState<Filters>({ sortBy: "nombre", sortDir: "asc" });
+  // Por defecto, prioridad de contacto (lo resuelve el backend): arriba lo que
+  // tiene un aviso clave pendiente, después por días sin contacto. El front NO
+  // puede mandar "nombre" acá: pisaba el default y la lista salía alfabética.
+  const [filters, setFilters] = useState<Filters>({ sortBy: "prioridad", sortDir: "asc" });
   const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(1);
   const [filtersSheetOpen, setFiltersSheetOpen] = useState(false);
@@ -118,7 +121,7 @@ export function ClientesPage() {
 
   function clearAll() {
     setSearchInput("");
-    setFilters({ sortBy: "nombre", sortDir: "asc" });
+    setFilters({ sortBy: "prioridad", sortDir: "asc" });
     setPage(1);
   }
 
@@ -276,20 +279,19 @@ export function ClientesPage() {
       ),
     },
     {
-      key: "fechaEntrega",
-      label: "Entrega",
-      sortable: true,
+      key: "fechaVenta",
+      label: "Venta",
       className: "text-[var(--color-text-muted)] text-[11px]",
-      render: (c) => (
-        <EditableCell
-          value={c.fechaEntrega}
-          type="date"
-          canEdit={canEdit}
-          ariaLabel="fecha de entrega"
-          render={(v) => (v ? fmtDate(v) : <span className="text-[var(--color-text-muted)]">—</span>)}
-          onSave={(v) => saveField(c.projectId, { fechaEntrega: v })}
-        />
-      ),
+      render: (c) => (c.fechaVenta ? fmtDate(c.fechaVenta) : <span className="text-[var(--color-text-muted)]">—</span>),
+    },
+    {
+      // "Entrega" no se entendía: no era ni la venta ni la habilitación, sino el
+      // fin de obra. Se muestran las dos fechas que la gente busca de verdad.
+      key: "fechaHabilitacion",
+      label: "Habilitación",
+      className: "text-[var(--color-text-muted)] text-[11px]",
+      render: (c) =>
+        c.fechaHabilitacion ? fmtDate(c.fechaHabilitacion) : <span className="text-[var(--color-text-muted)]">—</span>,
     },
     {
       key: "telefono",

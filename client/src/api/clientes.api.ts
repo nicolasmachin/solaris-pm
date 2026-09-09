@@ -33,7 +33,10 @@ export interface ClienteListItem {
   telefono: string | null;
   departamento: string | null;
   potenciaKwp: number | null;
+  /** Fin de obra. NO es la venta ni la habilitación. */
   fechaEntrega: string | null;
+  fechaVenta: string | null;
+  fechaHabilitacion: string | null;
   asesor: { id: string; nombre: string } | null;
   etapa: EtapaInfo | null;
   estado: ClienteEstado;
@@ -83,7 +86,6 @@ export interface ClienteFicha extends ClienteListItem {
   /** Con qué entra el Generador al portal (mail o alias). null si no tiene acceso. */
   portalIdentificador: string | null;
   direccion: string | null;
-  fechaVenta: string | null; // ISO date (YYYY-MM-DD) — cierre del lead como ganado
   tramiteUte: { etapa: string; desde: string | null } | null;
   interacciones: ClienteInteraction[];
   proyectoUrl: string;

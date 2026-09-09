@@ -118,7 +118,12 @@ export type ClienteListItem = {
   telefono: string | null;
   departamento: string | null;
   potenciaKwp: number | null;
+  // Fin de obra: cuándo se le entregó la instalación. Es `actualEndDate` con
+  // fallback a la planificada — NO es la venta ni la habilitación, que son las
+  // dos fechas que la gente busca cuando lee "entrega".
   fechaEntrega: string | null; // ISO date (YYYY-MM-DD)
+  fechaVenta: string | null; // cierre del lead como ganado
+  fechaHabilitacion: string | null; // cuándo UTE habilitó (puesta en marcha)
   asesor: { id: string; nombre: string } | null;
   etapa: EtapaInfo | null; // recorrido (E1/E2/E3) + sub-etapa del pipeline en curso
   estado: ClienteEstado;
@@ -239,6 +244,8 @@ function toListItem(p: ProjectListRow): ClienteListItem {
     departamento: p.locationProvince || null,
     potenciaKwp: decimalToNumber(p.capacityKwp),
     fechaEntrega: serializeDateOnly(p.actualEndDate ?? p.plannedEndDate),
+    fechaVenta: serializeDateOnly(p.saleDate),
+    fechaHabilitacion: serializeDateOnly(p.postHabilitacionInicioEn ?? p.actualUteEnd),
     asesor: p.salesperson ? { id: p.salesperson.id, nombre: p.salesperson.name } : null,
     etapa: buildEtapa(p.stages, p.recorridoManual),
     estado: estadoFromStatus(p.status),
