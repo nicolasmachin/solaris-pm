@@ -9,6 +9,7 @@ import {
 import { getSuppliers } from '../api/finance.api';
 import { MaterialPhotoButton } from '../components/materials/MaterialPhoto';
 import { usePermission } from '../hooks/usePermission';
+import { useMaterialCatalogPermissions } from '../hooks/useMaterialCatalogPermissions';
 import type { MaterialCategory, MaterialItem } from '../types/materials.types';
 import type { Moneda } from '../types/finance.types';
 
@@ -228,10 +229,14 @@ function CategoriesPanel() {
 
 // ─── Ítem — form ───────────────────────────────────────────────────────────────
 
-function ItemForm({ initial, categories, suppliers, onSuccess, onCancel }: {
+function ItemForm({ initial, categories, suppliers, canSelectSupplier = true, onSuccess, onCancel }: {
   initial?: MaterialItem | null;
   categories: MaterialCategory[];
   suppliers: { id: string; nombre: string }[];
+  // Requiere FINANZAS:VIEW para listar proveedores; sin eso el campo no se
+  // muestra y el ítem queda sin proveedor por defecto (se puede completar
+  // después desde Administración).
+  canSelectSupplier?: boolean;
   onSuccess: () => void;
   onCancel: () => void;
 }) {
@@ -327,13 +332,15 @@ function ItemForm({ initial, categories, suppliers, onSuccess, onCancel }: {
           <p className="text-[10px] text-[var(--color-text-muted)] mt-1">Default: 22% (tasa estándar Uruguay)</p>
         </div>
       </div>
-      <div>
-        <label className={lbl}>Proveedor por defecto</label>
-        <select className={inp} value={form.defaultSupplierId} onChange={e => setF('defaultSupplierId', e.target.value)}>
-          <option value="">— Sin proveedor —</option>
-          {suppliers.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-        </select>
-      </div>
+      {canSelectSupplier && (
+        <div>
+          <label className={lbl}>Proveedor por defecto</label>
+          <select className={inp} value={form.defaultSupplierId} onChange={e => setF('defaultSupplierId', e.target.value)}>
+            <option value="">— Sin proveedor —</option>
+            {suppliers.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+          </select>
+        </div>
+      )}
       {initial && (
         <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
           <input type="checkbox" checked={form.activo} onChange={e => setF('activo', e.target.checked)} />
@@ -355,7 +362,11 @@ function ItemForm({ initial, categories, suppliers, onSuccess, onCancel }: {
 
 function ItemsPanel() {
   const qc = useQueryClient();
-  const canEditCatalog = usePermission('CONFIGURACION', 'EDIT') || usePermission('STOCK', 'EDIT');
+  const { canCreateItems, canEditItems, canDeleteItems } = useMaterialCatalogPermissions();
+  // El proveedor por defecto sale del listado de Finanzas. Quien no tiene
+  // FINANZAS:VIEW (ej. Ingeniería) no puede pedirlo — se le oculta el campo en
+  // vez de dejar un select vacío o un 403 en consola.
+  const canSeeSuppliers = usePermission('FINANZAS', 'VIEW');
   const [categoryId, setCategoryId] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [showAll, setShowAll] = useState(false);
@@ -386,6 +397,7 @@ function ItemsPanel() {
   const { data: suppliers = [] } = useQuery({
     queryKey: ['suppliers', 'true'],
     queryFn: () => getSuppliers({ activo: 'true' }),
+    enabled: canSeeSuppliers,
   });
 
   const { data: items = [], isLoading } = useQuery({
@@ -440,10 +452,12 @@ function ItemsPanel() {
           <input type="checkbox" checked={showAll} onChange={e => setShowAll(e.target.checked)} />
           Mostrar inactivos
         </label>
-        <button onClick={() => setCreating(true)} disabled={categories.filter(c => c.activa).length === 0}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-60 ml-auto">
-          <Plus className="w-4 h-4" /> Nuevo ítem
-        </button>
+        {canCreateItems && (
+          <button onClick={() => setCreating(true)} disabled={categories.filter(c => c.activa).length === 0}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--color-accent)] text-gray-900 text-sm font-semibold hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-60 ml-auto">
+            <Plus className="w-4 h-4" /> Nuevo ítem
+          </button>
+        )}
       </div>
 
       {isLoading ? (
@@ -465,7 +479,7 @@ function ItemsPanel() {
                 {filtered.map(it => (
                   <tr key={it.id} className={klass('hover:bg-[var(--color-bg-card-hover)] transition-colors', !it.activo && 'opacity-60')}>
                     <td className="px-2 py-2 text-center">
-                      <MaterialPhotoButton itemId={it.id} nombre={it.nombre} canEdit={canEditCatalog} />
+                      <MaterialPhotoButton itemId={it.id} nombre={it.nombre} canEdit={canEditItems} />
                     </td>
                     <td className="px-4 py-2 text-[var(--color-text-muted)]">{it.category?.nombre ?? '—'}</td>
                     <td className="px-4 py-2 font-medium text-[var(--color-text-primary)]">
@@ -489,15 +503,21 @@ function ItemsPanel() {
                     </td>
                     <td className="px-4 py-2 text-right">
                       <div className="inline-flex gap-1">
-                        <button title="Editar" onClick={() => setEditing(it)} className="p-1.5 rounded hover:bg-[var(--color-border)] text-[var(--color-text-secondary)]">
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button title={it.activo ? 'Desactivar' : 'Activar'} onClick={() => toggleActive(it)} className="p-1.5 rounded hover:bg-[var(--color-border)] text-[var(--color-text-secondary)]">
-                          <Power className="w-4 h-4" />
-                        </button>
-                        <button title="Eliminar" onClick={() => handleDelete(it)} className="p-1.5 rounded hover:bg-red-500/15 text-red-400">
-                          <X className="w-4 h-4" />
-                        </button>
+                        {canEditItems && (
+                          <>
+                            <button title="Editar" onClick={() => setEditing(it)} className="p-1.5 rounded hover:bg-[var(--color-border)] text-[var(--color-text-secondary)]">
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button title={it.activo ? 'Desactivar' : 'Activar'} onClick={() => toggleActive(it)} className="p-1.5 rounded hover:bg-[var(--color-border)] text-[var(--color-text-secondary)]">
+                              <Power className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                        {canDeleteItems && (
+                          <button title="Eliminar" onClick={() => handleDelete(it)} className="p-1.5 rounded hover:bg-red-500/15 text-red-400">
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -513,6 +533,7 @@ function ItemsPanel() {
           <ItemForm
             categories={categories}
             suppliers={suppliers}
+            canSelectSupplier={canSeeSuppliers}
             onSuccess={() => { setCreating(false); qc.invalidateQueries({ queryKey: ['material-items'] }); }}
             onCancel={() => setCreating(false)}
           />
@@ -524,6 +545,7 @@ function ItemsPanel() {
             initial={editing}
             categories={categories}
             suppliers={suppliers}
+            canSelectSupplier={canSeeSuppliers}
             onSuccess={() => { setEditing(null); qc.invalidateQueries({ queryKey: ['material-items'] }); }}
             onCancel={() => setEditing(null)}
           />
@@ -536,11 +558,16 @@ function ItemsPanel() {
 // ─── Tab principal ─────────────────────────────────────────────────────────────
 
 export function TabMateriales() {
-  const [sub, setSub] = useState<Sub>('categorias');
+  // Las categorías las administra solo CONFIGURACION. Quien entra por el
+  // catálogo (Ingeniería, Stock) ve directamente los ítems y ni siquiera se le
+  // ofrece la pestaña.
+  const { canManageCategories } = useMaterialCatalogPermissions();
+  const subs: Sub[] = canManageCategories ? ['categorias', 'items'] : ['items'];
+  const [sub, setSub] = useState<Sub>(canManageCategories ? 'categorias' : 'items');
   return (
     <div className="space-y-5">
       <div className="flex gap-2 border-b border-[var(--color-border)]">
-        {(['categorias', 'items'] as const).map(s => (
+        {subs.map(s => (
           <button
             key={s}
             onClick={() => setSub(s)}

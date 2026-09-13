@@ -81,6 +81,9 @@ export const ADMIN_TAB_IDS: ReadonlySet<string> = new Set(
 interface Props {
   activeTab: string;
   onTabChange: (tab: string) => void;
+  // Tabs que el usuario puede ver. Si viene undefined se muestran todos (caso
+  // admin completo). Los grupos que quedan sin items no se renderizan.
+  allowedTabs?: ReadonlySet<string>;
   // Mobile drawer: si isOpen, el sidebar se muestra como overlay full-height
   // sobre el contenido. En desktop (md y mayor) isOpen se ignora — el
   // sidebar está siempre visible.
@@ -88,7 +91,7 @@ interface Props {
   onClose?: () => void;
 }
 
-export function AdminSidebar({ activeTab, onTabChange, isOpen = false, onClose }: Props) {
+export function AdminSidebar({ activeTab, onTabChange, allowedTabs, isOpen = false, onClose }: Props) {
   // Cerrar el drawer con Escape (solo si está abierto en mobile).
   useEffect(() => {
     if (!isOpen) return;
@@ -141,6 +144,10 @@ export function AdminSidebar({ activeTab, onTabChange, isOpen = false, onClose }
         <nav className="flex-1 py-3">
           {ADMIN_GROUPS.map((group) => {
             const Icon = group.icon;
+            const items = allowedTabs
+              ? group.items.filter((i) => allowedTabs.has(i.tab))
+              : group.items;
+            if (items.length === 0) return null;
             return (
               <div key={group.label} className="mb-5 last:mb-2">
                 <div className="flex items-center gap-1.5 px-4 mb-1 font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
@@ -148,7 +155,7 @@ export function AdminSidebar({ activeTab, onTabChange, isOpen = false, onClose }
                   {group.label}
                 </div>
                 <ul>
-                  {group.items.map((item) => {
+                  {items.map((item) => {
                     const isActive = item.tab === activeTab;
                     return (
                       <li key={item.tab}>

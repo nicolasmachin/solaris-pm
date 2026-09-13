@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
@@ -29,6 +29,8 @@ import {
 import type { GoalArea, GoalMetric, GoalPeriod, GoalData } from "../types/api.types";
 import type { CategoriaPrincipal } from "../types/finance.types";
 import { CATEGORIA_LABEL } from "../types/finance.types";
+import { usePermission } from "../hooks/usePermission";
+import { useMaterialCatalogPermissions } from "../hooks/useMaterialCatalogPermissions";
 import { TabMateriales } from "./AdminMateriales";
 import { TabMaterialTemplates } from "./AdminMaterialTemplates";
 import { TabCuentas } from "./AdminCuentas";
@@ -3211,7 +3213,22 @@ export function Admin() {
   // se puede compartir el link, y nada se hardcodea en estado local.
   const [searchParams, setSearchParams] = useSearchParams();
   const rawTab = searchParams.get("tab");
-  const activeTab = rawTab && ADMIN_TAB_IDS.has(rawTab) ? rawTab : DEFAULT_TAB;
+
+  // Quien no es admin completo pero administra el catálogo de materiales entra
+  // acá viendo únicamente esa sección: el resto de Administración (usuarios,
+  // permisos, configuración del sistema, reglas) no le corresponde y sus
+  // endpoints le darían 403.
+  const isFullAdmin = usePermission("USUARIOS", "VIEW");
+  const { canAccessSection: canManageMaterialCatalog } = useMaterialCatalogPermissions();
+  const allowedTabs = useMemo(
+    () => (isFullAdmin ? undefined : new Set(canManageMaterialCatalog ? ["materiales"] : [])),
+    [isFullAdmin, canManageMaterialCatalog],
+  );
+
+  const defaultTab = allowedTabs ? ([...allowedTabs][0] ?? DEFAULT_TAB) : DEFAULT_TAB;
+  const tabIsAvailable = (tab: string | null): tab is string =>
+    !!tab && ADMIN_TAB_IDS.has(tab) && (!allowedTabs || allowedTabs.has(tab));
+  const activeTab = tabIsAvailable(rawTab) ? rawTab : defaultTab;
 
   // Si el query param era inválido o estaba ausente, limpiamos la URL para
   // que muestre el tab que efectivamente se está renderizando. Evita
@@ -3237,6 +3254,7 @@ export function Admin() {
       <AdminSidebar
         activeTab={activeTab}
         onTabChange={handleTabChange}
+        allowedTabs={allowedTabs}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
@@ -3259,7 +3277,9 @@ export function Admin() {
               Administración
             </h1>
             <p className="mt-0.5 font-mono text-[11px] text-[var(--color-text-muted)]">
-              Gestión de usuarios, permisos y configuración del sistema
+              {isFullAdmin
+                ? "Gestión de usuarios, permisos y configuración del sistema"
+                : "Catálogo de materiales"}
             </p>
           </header>
 

@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "../../store/auth.store";
 import { useIsMobile } from "../../hooks/useIsMobile";
+import { usePermission } from "../../hooks/usePermission";
+import { useMaterialCatalogPermissions } from "../../hooks/useMaterialCatalogPermissions";
 import { CanAccess } from "../ui/CanAccess";
 
 interface MobileNavDrawerProps {
@@ -32,6 +34,11 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
+  // Ver Topbar: además del admin completo, entra quien administra el catálogo
+  // de materiales.
+  const isFullAdmin = usePermission("USUARIOS", "VIEW");
+  const { canAccessSection: canManageMaterialCatalog } = useMaterialCatalogPermissions();
+  const canSeeAdmin = isFullAdmin || canManageMaterialCatalog;
   const panelRef = useRef<HTMLDivElement>(null);
   const firstLinkRef = useRef<HTMLAnchorElement>(null);
 
@@ -213,12 +220,12 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
               <span>Métricas</span>
             </NavLink>
           </CanAccess>
-          <CanAccess module="USUARIOS" action="VIEW">
+          {canSeeAdmin && (
             <NavLink to="/admin" className={linkClass}>
               <Users size={18} className="shrink-0" />
               <span>Admin</span>
             </NavLink>
-          </CanAccess>
+          )}
         </div>
 
         {/* Footer */}

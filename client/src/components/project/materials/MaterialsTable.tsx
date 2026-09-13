@@ -194,7 +194,7 @@ const MaterialRow = memo(function MaterialRow({
           )}
           {!canEdit && canViewCatalog && row.materialItem && (
             <Link
-              to={`/admin/materiales?item=${row.materialItem.id}`}
+              to="/admin?tab=materiales"
               className="inline-flex items-center gap-1 text-[10px] text-[var(--color-accent)] hover:underline"
             >
               <ExternalLink className="w-3 h-3" /> Catálogo
@@ -427,7 +427,7 @@ function MoreMenu({
 
           {canViewCatalog && row.materialItem && !editingNotes && (
             <Link
-              to={`/admin/materiales?item=${row.materialItem.id}`}
+              to="/admin?tab=materiales"
               className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-left text-[11px] hover:bg-[var(--color-bg-card-hover)] text-[var(--color-text-primary)]"
               onClick={() => setOpen(false)}
             >

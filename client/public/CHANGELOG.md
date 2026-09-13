@@ -1,5 +1,20 @@
 # Novedades
 
+## v10.3
+
+### 13 de septiembre de 2026
+
+#### Ingeniería ya puede dar de alta materiales
+
+- Quien hace ingeniería **entra a Administración y crea ítems nuevos del catálogo** sin depender de un administrador. Hasta ahora tenía que pedirlo cada vez que aparecía un material que no estaba en la lista.
+- Dentro de Administración **solo ve la sección Materiales**: el resto (usuarios, permisos, configuración del sistema, reglas) no le aparece.
+- Puede **crear, editar y desactivar** ítems. **Eliminar** y **administrar las categorías** siguen siendo del administrador — desactivar alcanza para sacar un material de circulación y es reversible.
+- El campo **Proveedor por defecto** solo se muestra a quien tiene acceso a Finanzas; el ítem se puede crear sin proveedor y completarlo después.
+
+#### Arreglos
+
+- El enlace **"Catálogo"** que aparece en la lista de materiales de un proyecto llevaba a una dirección inexistente. Ahora abre Administración en la sección Materiales.
+
 ## v10.2
 
 ### 9 de septiembre de 2026

@@ -14030,7 +14030,24 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return serializeMaterialItem(item);
     });
 
-    app.post("/materials/items", { preHandler: authorizeAny([{ module: Module.CONFIGURACION, action: Action.CREATE }, { module: Module.STOCK, action: Action.CREATE }]) }, async (request) => {
+    // Alta y edición de ítems del catálogo. Además de CONFIGURACION (Admin) y
+    // STOCK, lo puede hacer quien tenga INGENIERIA:CREATE/EDIT: es quien arma las
+    // listas de materiales del proyecto y da de alta ítems nuevos a diario, así
+    // que hacerlo depender de un admin frenaba el trabajo. El borrado sigue
+    // reservado a CONFIGURACION/STOCK — desde Ingeniería se desactiva (PATCH
+    // activo:false), que es reversible y no toca el histórico.
+    const materialItemPermsCreate = [
+      { module: Module.CONFIGURACION, action: Action.CREATE },
+      { module: Module.STOCK, action: Action.CREATE },
+      { module: Module.INGENIERIA, action: Action.CREATE },
+    ];
+    const materialItemPermsEdit = [
+      { module: Module.CONFIGURACION, action: Action.EDIT },
+      { module: Module.STOCK, action: Action.EDIT },
+      { module: Module.INGENIERIA, action: Action.EDIT },
+    ];
+
+    app.post("/materials/items", { preHandler: authorizeAny(materialItemPermsCreate) }, async (request) => {
       const body = itemCreateSchema.parse(request.body);
       const cat = await prisma.materialCategory.findUnique({ where: { id: body.categoryId } });
       if (!cat || !cat.activa) throw badRequest("CATEGORY_INVALID", "La categoría no existe o está inactiva");
@@ -14048,7 +14065,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return serializeMaterialItem(item);
     });
 
-    app.patch("/materials/items/:id", { preHandler: authorizeAny([{ module: Module.CONFIGURACION, action: Action.EDIT }, { module: Module.STOCK, action: Action.EDIT }]) }, async (request) => {
+    app.patch("/materials/items/:id", { preHandler: authorizeAny(materialItemPermsEdit) }, async (request) => {
       const { id } = z.object({ id: z.string() }).parse(request.params);
       const body = itemPatchSchema.parse(request.body);
       const existing = await prisma.materialItem.findUnique({ where: { id } });
@@ -14094,8 +14111,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
     //
     // Los permisos son deliberadamente amplios: la foto se carga desde donde se
     // detecta la confusión, que suele ser la lista del proyecto (Ingeniería /
-    // Operaciones), no Administración. Es el único campo del catálogo que se
-    // puede tocar sin permisos de configuración.
+    // Operaciones), no Administración. Es el campo más abierto del catálogo —
+    // OPERACIONES:EDIT alcanza para la foto pero no para el resto del ítem.
     const materialPhotoPermsView = [
       { module: Module.INGENIERIA, action: Action.VIEW },
       { module: Module.OPERACIONES, action: Action.VIEW },

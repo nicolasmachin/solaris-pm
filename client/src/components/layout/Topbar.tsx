@@ -5,6 +5,7 @@ import { useAuthStore } from "../../store/auth.store";
 import { NotificationBell } from "../notifications/NotificationBell";
 import { CanAccess } from "../ui/CanAccess";
 import { usePermission } from "../../hooks/usePermission";
+import { useMaterialCatalogPermissions } from "../../hooks/useMaterialCatalogPermissions";
 import { useTravelViewer } from "../../hooks/useTravelViewer";
 import { useInformesPendientesCount } from "../../hooks/useInformes";
 
@@ -73,6 +74,11 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
   const { user, clearAuth } = useAuthStore();
   const navigate = useNavigate();
   const canTravel = useTravelViewer();
+  // Administración la abre el admin completo y también quien solo administra el
+  // catálogo de materiales (ve nada más que esa sección adentro).
+  const isFullAdmin = usePermission("USUARIOS", "VIEW");
+  const { canAccessSection: canManageMaterialCatalog } = useMaterialCatalogPermissions();
+  const canSeeAdmin = isFullAdmin || canManageMaterialCatalog;
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -197,11 +203,11 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
               Métricas
             </NavLink>
           </CanAccess>
-          <CanAccess module="USUARIOS" action="VIEW">
+          {canSeeAdmin && (
             <NavLink to="/admin" className={navLinkClass}>
               Admin
             </NavLink>
-          </CanAccess>
+          )}
         </nav>
       </div>
 

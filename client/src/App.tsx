@@ -5,6 +5,7 @@ import { AppLayout } from "./components/layout/AppLayout";
 import { Spinner } from "./components/ui/Spinner";
 import { useAuthStore } from "./store/auth.store";
 import { usePermission } from "./hooks/usePermission";
+import { useMaterialCatalogPermissions } from "./hooks/useMaterialCatalogPermissions";
 import { useTravelViewer } from "./hooks/useTravelViewer";
 import { getMe } from "./api/auth.api";
 import type { UserRole } from "./types/api.types";
@@ -128,6 +129,13 @@ function PermissionRoute({
   action: string;
 }) {
   const allowed = usePermission(module, action);
+  return <GatedRoute allowed={allowed}>{children}</GatedRoute>;
+}
+
+// Gate genérico por booleano ya calculado, para rutas cuyo acceso no sale de un
+// solo par módulo/acción (ej. /admin, que además de USUARIOS lo abre quien
+// administra el catálogo de materiales).
+function GatedRoute({ allowed, children }: { allowed: boolean; children: ReactNode }) {
   const location = useLocation();
 
   useEffect(() => {
@@ -138,6 +146,15 @@ function PermissionRoute({
 
   if (!allowed) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
+}
+
+// Administración: entra el admin completo (USUARIOS:VIEW) y también quien solo
+// administra el catálogo de materiales — en ese caso el panel muestra nada más
+// que esa sección (ver AdminSidebar + Admin.tsx).
+function AdminRoute({ children }: { children: ReactNode }) {
+  const isFullAdmin = usePermission("USUARIOS", "VIEW");
+  const { canAccessSection } = useMaterialCatalogPermissions();
+  return <GatedRoute allowed={isFullAdmin || canAccessSection}>{children}</GatedRoute>;
 }
 
 // Gate del módulo provisional "Guía de viaje São Paulo": solo Nicolás y Gabriel.
@@ -310,9 +327,9 @@ export function App() {
         <Route
           path="/admin"
           element={
-            <PermissionRoute module="USUARIOS" action="VIEW">
+            <AdminRoute>
               <Admin />
-            </PermissionRoute>
+            </AdminRoute>
           }
         />
         <Route

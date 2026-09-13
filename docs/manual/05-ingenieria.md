@@ -1,8 +1,8 @@
 # 05 · Ingeniería
 
-> **Capítulo parcial.** Están documentados el **consolidador de materiales** y la
-> **foto de referencia del material**. El resto de las herramientas existe y está
-> en producción; falta escribirlas.
+> **Capítulo parcial.** Están documentados el **consolidador de materiales**, el
+> **catálogo de materiales** y la **foto de referencia del material**. El resto de
+> las herramientas existe y está en producción; falta escribirlas.
 
 El workspace de ingeniería y sus herramientas: unifilar, materiales, pre-ingeniería, visitas y proyecto final.
 
@@ -137,6 +137,95 @@ frontend el botón de la Vista compras se habilita con `INGENIERIA:EDIT` ||
 
 ---
 
+# Catálogo de materiales (Administración)
+
+## Para qué existe
+
+Es la lista maestra de ítems que alimenta todas las listas de materiales:
+proyectos, consolidador, plantillas, stock y compras. Vive en **Administración →
+Materiales**, con dos pestañas: **Categorías** e **Ítems**.
+
+## Cómo se usa
+
+Se entra por **Admin → Materiales** (`/admin?tab=materiales`). Desde la lista de
+materiales de un proyecto hay un enlace directo **"Catálogo"** para quien no
+puede editar la fila ahí mismo.
+
+- **Ítems**: buscador por nombre/descripción, filtro por categoría y check
+  "Mostrar inactivos". Botón **Nuevo ítem**, y por fila lápiz (editar), interruptor
+  (activar/desactivar) y cruz (eliminar).
+- **Categorías**: alta, renombrado, reordenamiento y baja.
+
+**Ingeniería entra a Administración viendo únicamente esta sección.** El sidebar
+se filtra (`allowedTabs` en `AdminSidebar`) y el resto de las secciones —usuarios,
+permisos, configuración del sistema, reglas— no se le muestra ni se le puede
+abrir por URL: `Admin.tsx` cae al tab permitido si el `?tab=` no está en su lista.
+Tampoco ve la pestaña **Categorías**, que sigue siendo del administrador.
+
+El campo **Proveedor por defecto** se completa con el listado de Finanzas. A quien
+no tiene `FINANZAS:VIEW` el campo no se le muestra (la query ni se dispara) y el
+ítem se crea sin proveedor; se puede completar después desde Administración.
+
+## Cómo funciona
+
+- Modelos `MaterialCategory` y `MaterialItem` en `schema.prisma`; rutas
+  `/materials/categories` y `/materials/items` en `api.routes.ts`.
+- Frontend: `client/src/pages/AdminMateriales.tsx` (`TabMateriales`,
+  `CategoriesPanel`, `ItemsPanel`, `ItemForm`), montado como tab en
+  `pages/Admin.tsx`.
+- Los permisos de UI salen de un único hook,
+  `client/src/hooks/useMaterialCatalogPermissions.ts`, que **espeja el
+  `authorizeAny` de las rutas**. Si cambia uno hay que cambiar el otro: no hay
+  nada que los mantenga sincronizados automáticamente.
+- El acceso a `/admin` ya no es solo `USUARIOS:VIEW`: `AdminRoute` en `App.tsx`
+  deja entrar también a quien administra el catálogo, y el enlace **Admin** de la
+  barra superior y del menú mobile usa el mismo criterio.
+
+## Permisos
+
+| Endpoint | Permiso |
+|---|---|
+| `GET /materials/items` · `/items/:id` · `/categories` | `INGENIERIA:VIEW` |
+| `POST /materials/items` | `CONFIGURACION:CREATE` **o** `STOCK:CREATE` **o** `INGENIERIA:CREATE` |
+| `PATCH /materials/items/:id` | `CONFIGURACION:EDIT` **o** `STOCK:EDIT` **o** `INGENIERIA:EDIT` |
+| `DELETE /materials/items/:id` | `CONFIGURACION:DELETE` **o** `STOCK:DELETE` |
+| `POST`/`PATCH`/`DELETE /materials/categories` | `CONFIGURACION:CREATE` / `EDIT` / `DELETE` |
+
+Con la matriz vigente, **crear y editar ítems** lo pueden hacer: `ADMIN`,
+`INGENIERIA` y `GERENTE_INGENIERIA` (por `INGENIERIA`), y `CAPATAZ`, `FINANZAS`,
+`GERENTE_FINANZAS`, `GERENTE_OPERACIONES`, `INSTALADOR_TERCERIZADO`, `LOGISTICA`
+y `OPERACIONES` (por `STOCK`, desde la pantalla de Stock).
+
+**Ver la sección en Administración es más restrictivo que el endpoint**:
+`canAccessSection` exige `CONFIGURACION` o `INGENIERIA:CREATE/EDIT`, y deja
+`STOCK` afuera a propósito, porque esos roles ya dan de alta ítems desde
+`/stock` y no tienen nada más que hacer en Administración.
+
+## Reglas y decisiones
+
+- **Ingeniería crea y edita, pero no elimina.** Eliminar quedó en
+  `CONFIGURACION`/`STOCK`; desde Ingeniería un ítem se **desactiva**, que es
+  reversible y no toca el histórico.
+- **Las categorías son del administrador.** Definen la estructura del catálogo y
+  de los PDFs; abrirlas a Ingeniería no era el problema a resolver.
+- El permiso se resolvió **reusando `INGENIERIA:CREATE/EDIT`** en vez de crear un
+  módulo `MATERIALES` nuevo: evita una migración del enum `Module` y la matriz ya
+  distingue bien quién hace ingeniería. El costo es que el catálogo queda atado a
+  un permiso que también gobierna otras cosas del módulo.
+
+## Casos borde
+
+- **Eliminar un ítem en uso** no lo borra: `DELETE` lo desactiva y responde
+  `{ deactivated: true }`.
+- **Categoría inactiva**: no se puede crear un ítem contra ella
+  (`CATEGORY_INVALID`); los ítems que ya la tenían la conservan y se siguen
+  editando.
+- **Sin categorías activas**, el botón "Nuevo ítem" queda deshabilitado.
+- Un usuario de Ingeniería que entre a `/admin?tab=usuarios` a mano **no ve esa
+  sección**: cae en Materiales y la URL se corrige sola.
+
+---
+
 # Foto de referencia del material
 
 ## Para qué existe
@@ -258,9 +347,11 @@ la columna no existe y las filas siguen siendo de 16pt.
 | `POST /materials/items/:id/foto` | `INGENIERIA:EDIT` **o** `OPERACIONES:EDIT` **o** `STOCK:EDIT` **o** `CONFIGURACION:EDIT` |
 | `DELETE /materials/items/:id/foto` | los mismos cuatro `EDIT` |
 
-Es **el único campo del catálogo que se puede tocar sin permisos de
-configuración**, y es deliberado: el resto del ítem (precio, categoría, unidad)
-sigue pidiendo `CONFIGURACION:EDIT` o `STOCK:EDIT`.
+La foto es el campo **más abierto** del catálogo: la puede cambiar cualquiera con
+`EDIT` en Ingeniería, Operaciones, Stock o Configuración. El resto del ítem
+(precio, categoría, unidad) pide `CONFIGURACION:EDIT`, `STOCK:EDIT` o
+`INGENIERIA:EDIT` — ver "Catálogo de materiales (Administración)" más arriba —,
+así que `OPERACIONES:EDIT` alcanza para la foto pero no para el ítem.
 
 Como `OPERACIONES:EDIT` y `STOCK:EDIT` están repartidos ampliamente en la matriz,
 en la práctica hoy pueden cambiar la foto casi todos los roles internos —

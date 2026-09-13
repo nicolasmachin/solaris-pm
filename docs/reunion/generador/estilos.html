@@ -1,0 +1,89 @@
+<title>Cómo trabajamos en Voltia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Los colores de área son los mismos cinco que usa el pipeline de Voltia PM,
+   para que el manual y el sistema se lean igual. */
+:root {
+  --paper: #F4F4F1; --surface: #FFFFFF; --surface-2: #E9E9E4;
+  --ink: #16171A; --ink-soft: #3C3E43; --muted: #74767B;
+  --rule: #DBDBD5; --rule-soft: #E8E8E2;
+  --ventas: #2F6FD0; --ingenieria: #7A46C4; --operaciones: #C9762A;
+  --ute: #1F8A4C; --cx: #C74071; --alerta: #B3341F; --alerta-bg: #F8E4E0;
+  --struct: #1F3A5F;
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #121316; --surface: #1A1B1F; --surface-2: #232429;
+    --ink: #ECECE8; --ink-soft: #C6C7C2; --muted: #8B8D92;
+    --rule: #33343A; --rule-soft: #26272C;
+    --ventas: #6FA6EE; --ingenieria: #B489EE; --operaciones: #EDA55E;
+    --ute: #5CC98A; --cx: #EE7BA5; --alerta: #EE8974; --alerta-bg: #3A211C;
+    --struct: #8FB3D9;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #121316; --surface: #1A1B1F; --surface-2: #232429;
+  --ink: #ECECE8; --ink-soft: #C6C7C2; --muted: #8B8D92;
+  --rule: #33343A; --rule-soft: #26272C;
+  --ventas: #6FA6EE; --ingenieria: #B489EE; --operaciones: #EDA55E;
+  --ute: #5CC98A; --cx: #EE7BA5; --alerta: #EE8974; --alerta-bg: #3A211C;
+  --struct: #8FB3D9;
+}
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+.shell { max-width: 1120px; margin: 0 auto; padding: 28px 22px 90px; }
+.cover { padding-bottom: 22px; border-bottom: 1px solid var(--rule); margin-bottom: 30px; }
+.eyebrow { font-family: var(--f-mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 0; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(28px, 4.4vw, 42px); line-height: 1.05; letter-spacing: -.02em; margin: 10px 0 0; text-wrap: balance; }
+.cover p.sub { margin: 12px 0 0; max-width: 64ch; color: var(--ink-soft); }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 18px; font-family: var(--f-mono); font-size: 12px; color: var(--muted); margin: 16px 0 0; }
+
+.layout { display: grid; grid-template-columns: 1fr; gap: 40px; }
+@media (min-width: 1000px) {
+  .layout { grid-template-columns: 208px minmax(0,1fr); gap: 52px; align-items: start; }
+  .toc { position: sticky; top: 22px; max-height: calc(100vh - 44px); overflow-y: auto; }
+}
+main { max-width: 72ch; }
+.toc nav { border-left: 2px solid var(--rule-soft); }
+.toc a { display: block; padding: 5px 0 5px 13px; margin-left: -2px; border-left: 2px solid transparent;
+         font-family: var(--f-display); font-size: 13px; font-weight: 500; line-height: 1.35; color: var(--muted); text-decoration: none; }
+.toc a:hover { color: var(--ink); border-left-color: var(--rule); }
+.toc a .n { font-family: var(--f-mono); font-size: 11px; color: var(--c, var(--muted)); margin-right: 7px; }
+
+h2 { font-family: var(--f-display); font-weight: 700; font-size: 25px; margin: 56px 0 6px; letter-spacing: -.015em;
+     text-wrap: balance; display: flex; gap: 13px; align-items: baseline; }
+h2 .n { font-family: var(--f-mono); font-size: 13px; font-weight: 600; color: var(--c, var(--muted)); flex: none; }
+h3 { font-family: var(--f-display); font-weight: 600; font-size: 18px; margin: 30px 0 8px; text-wrap: balance; }
+h4 { font-family: var(--f-mono); font-weight: 600; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 26px 0 8px; }
+p { margin: 0 0 13px; }
+strong { font-weight: 600; }
+ul, ol { margin: 0 0 15px; padding-left: 21px; }
+li { margin-bottom: 6px; }
+li::marker { color: var(--muted); }
+
+blockquote { margin: 0 0 18px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--rule);
+             border-left: 4px solid var(--c, var(--struct)); border-radius: 4px; }
+blockquote p:last-child { margin-bottom: 0; }
+blockquote h3 { margin: 0; font-size: 17px; }
+
+.tw { overflow-x: auto; margin: 0 0 18px; }
+table { border-collapse: collapse; width: 100%; font-family: var(--f-display); font-size: 14px; }
+th { text-align: left; font-family: var(--f-mono); font-size: 10px; letter-spacing: .09em; text-transform: uppercase;
+     color: var(--muted); padding: 0 14px 8px 0; border-bottom: 1.5px solid var(--rule); }
+td { padding: 10px 14px 10px 0; border-bottom: 1px solid var(--rule-soft); vertical-align: top; line-height: 1.45; }
+td:last-child, th:last-child { padding-right: 0; }
+tr:last-child td { border-bottom: none; }
+
+code { font-family: var(--f-mono); font-size: 13px; background: var(--surface-2); padding: 1px 5px; border-radius: 2px; }
+pre { background: var(--surface); border: 1px solid var(--rule); border-radius: 4px; padding: 14px 16px;
+      overflow-x: auto; font-family: var(--f-mono); font-size: 12.5px; line-height: 1.6; margin: 0 0 18px; }
+.pie { margin-top: 60px; padding-top: 18px; border-top: 1px solid var(--rule); font-family: var(--f-mono); font-size: 11px; color: var(--muted); }
+</style>

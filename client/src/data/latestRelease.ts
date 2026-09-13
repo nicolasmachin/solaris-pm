@@ -23,6 +23,23 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "10.3",
+  date: "13 de septiembre de 2026",
+  sections: [
+    {
+      title: "Ingeniería ya puede dar de alta materiales",
+      items: [
+        "Quien hace ingeniería entra a Administración y crea ítems nuevos del catálogo sin depender de un administrador. Antes tenía que pedirlo cada vez que aparecía un material que no estaba en la lista.",
+        "Dentro de Administración solo ve la sección Materiales: el resto (usuarios, permisos, configuración del sistema, reglas) no le aparece.",
+        "Puede crear, editar y desactivar ítems. Eliminar y administrar las categorías siguen siendo del administrador: desactivar alcanza para sacar un material de circulación y es reversible.",
+        "El campo Proveedor por defecto solo se muestra a quien tiene acceso a Finanzas; el ítem se puede crear sin proveedor y completarlo después.",
+        'Arreglo: el enlace "Catálogo" de la lista de materiales de un proyecto llevaba a una dirección inexistente; ahora abre Administración en la sección Materiales.',
+      ],
+    },
+  ],
+};
+
+const RELEASE_10_2: Release = {
   version: "10.2",
   date: "9 de septiembre de 2026",
   sections: [
@@ -62,6 +79,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "10.2",
+    shortDate: "9 sep",
+    highlights: RELEASE_10_2.sections.map((sec) => sec.title),
+  },
   {
     version: "10.1",
     shortDate: "8 sep",
