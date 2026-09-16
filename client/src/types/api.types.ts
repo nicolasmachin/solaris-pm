@@ -41,7 +41,8 @@ export type NotificationType =
   | "traspaso_por_confirmar"
   | "aviso_habilitacion_pendiente"
   | "ticket_actualizado"
-  | "encuesta_disponible";
+  | "encuesta_disponible"
+  | "capacitacion_comentario";
 export type PhaseType = "MONOFASICO" | "TRIFASICO_230" | "TRIFASICO_400";
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
@@ -451,6 +452,8 @@ export interface Notification {
   message: string;
   read: boolean;
   createdAt: string;
+  /** Ruta interna a la que lleva al tocarla; si viene vacía se navega por tipo. */
+  link?: string | null;
   project?: Pick<ProjectListItem, "id" | "clientName">;
 }
 

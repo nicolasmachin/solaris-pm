@@ -15,6 +15,12 @@ import { createAuditEntry } from "../services/audit.service.js";
 import { bunnyConfigurado, listarColecciones, listarVideos } from "../services/bunny-stream.service.js";
 import * as cap from "../services/capacitacion/capacitacion.service.js";
 import {
+  borrarComentario,
+  crearComentario,
+  editarComentario,
+  listarComentarios,
+} from "../services/capacitacion/comentarios.service.js";
+import {
   firmarTokenMedia,
   miniaturaLocal,
   streamMiniatura,
@@ -134,6 +140,40 @@ async function registerRutasAutenticadas(app: FastifyInstance) {
       .object({ segundos: z.number().min(0).max(24 * 3600), completado: z.boolean().optional() })
       .parse(request.body);
     return cap.guardarProgreso(id, user, body);
+  });
+
+  // ─── Comentarios del video (preguntas del equipo) ─────────────────────────
+  // Leer y escribir alcanza con ver el video; borrar es del autor o de quien
+  // gestiona el módulo (moderación).
+
+  const comentarioBody = z.object({ contenido: z.string().min(1).max(4000) });
+
+  app.get("/capacitacion/videos/:id/comentarios", ver, async (request) => {
+    const user = ensureUser(request);
+    const { id } = idParam.parse(request.params);
+    return { comentarios: await listarComentarios(id, user) };
+  });
+
+  app.post("/capacitacion/videos/:id/comentarios", ver, async (request, reply) => {
+    const user = ensureUser(request);
+    const { id } = idParam.parse(request.params);
+    const { contenido } = comentarioBody.parse(request.body);
+    reply.code(201);
+    return crearComentario(id, user, contenido);
+  });
+
+  app.patch("/capacitacion/comentarios/:id", ver, async (request) => {
+    const user = ensureUser(request);
+    const { id } = idParam.parse(request.params);
+    const { contenido } = comentarioBody.parse(request.body);
+    return editarComentario(id, user, contenido);
+  });
+
+  app.delete("/capacitacion/comentarios/:id", ver, async (request, reply) => {
+    const user = ensureUser(request);
+    const { id } = idParam.parse(request.params);
+    await borrarComentario(id, user);
+    return reply.code(204).send();
   });
 
   // ─── Gestión: secciones ───────────────────────────────────────────────────

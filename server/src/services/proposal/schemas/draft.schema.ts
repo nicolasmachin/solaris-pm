@@ -25,6 +25,42 @@ const itemAdicionalSchema = z
   })
   .strict();
 
+// Ajustes de costo propios de ESTA cotización ("costeo a medida").
+//
+// Cada clave ausente significa "usar lo que sale de los defaults": el cálculo
+// resuelve el valor normal y solo lo pisa si acá hay un número. Por eso todo es
+// opcional y borrar el campo en la UI equivale a volver al valor de fábrica.
+//
+// NO tocan `ProposalDefaults` ni ninguna otra propuesta: viven dentro del `data`
+// de este borrador, se autoguardan con el resto del formulario y viajan al
+// snapshot al publicar, para que la versión emitida se pueda regenerar con los
+// mismos números con que se cotizó.
+//
+// Va como `.optional()` a propósito: los snapshots publicados antes de esta
+// funcionalidad no lo traen, y si fuera obligatorio quedarían no-regenerables
+// (mismo motivo que `variante`).
+const costosOverrideSchema = z
+  .object({
+    // ── Equipamiento: precio unitario en USD sin IVA + cantidad ──
+    panelPrecioUnitario: z.number().min(0).optional(),
+    panelCantidad: z.number().min(0).optional(),
+    estructuraPrecioUnitario: z.number().min(0).optional(),
+    estructuraCantidad: z.number().min(0).optional(),
+    electricaPrecioUnitario: z.number().min(0).optional(),
+    electricaCantidad: z.number().min(0).optional(),
+    inversorPrecioUnitario: z.number().min(0).optional(),
+    inversorCantidad: z.number().min(0).optional(),
+    meterPrecioUnitario: z.number().min(0).optional(),
+    meterCantidad: z.number().min(0).optional(),
+    // ── Bloques de costo, en USD sin IVA ──
+    costoFijoAsignado: z.number().min(0).optional(),
+    costoVariable: z.number().min(0).optional(),
+    manoDeObra: z.number().min(0).optional(),
+  })
+  .strict();
+
+export type CostosOverride = z.infer<typeof costosOverrideSchema>;
+
 // Base sin refinamientos: de acá salen las DOS variantes. No mergear el
 // superRefine de abajo en este objeto — `.superRefine()` devuelve un ZodEffects
 // y ZodEffects no tiene `.deepPartial()`, así que el autosave dejaría de
@@ -92,6 +128,7 @@ const draftDataBaseSchema = z
     fecha: z.string().min(1),
     notas: z.string().optional(),
     itemsAdicionales: z.array(itemAdicionalSchema),
+    costos: costosOverrideSchema.optional(),
   })
   .strict();
 
@@ -200,6 +237,7 @@ export const draftDataStorageSchema = z
     fecha: z.string(),
     notas: z.string(),
     itemsAdicionales: z.array(itemAdicionalLenientSchema),
+    costos: costosOverrideSchema,
   })
   .strict()
   .partial();

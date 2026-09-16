@@ -48,7 +48,7 @@ const DEFAULT_DATA: Record<string, Flagged | Record<string, Flagged>> = {
   precioMeterTriUsd: { value: 220, asesorCanOverride: false }, // B7 trifásico
 
   // ── Generación / dimensionamiento (editables desde Admin) ──
-  rendimientoAnualKwhPorKwp: { value: 1479, asesorCanOverride: false }, // kWh/kWp/año (Uruguay)
+  rendimientoAnualKwhPorKwp: { value: 1400, asesorCanOverride: false }, // kWh/kWp/año (Uruguay)
   metrosCuadradosPorPanel: { value: 3, asesorCanOverride: false }, // m² por panel
   factoresGeneracionMensual: {
     // Factores estacionales Ene→Dic (SPEC §6.9). Suman 1.0.
@@ -87,8 +87,8 @@ const DEFAULT_DATA: Record<string, Flagged | Record<string, Flagged>> = {
 
   // ── Factor de ahorro por tarifa (Excel J16: IF Simple→1.05, else→0.88) ──
   factorAhorroSimple: { value: 1.05, asesorCanOverride: false },
-  factorAhorroDoble: { value: 0.88, asesorCanOverride: false },
-  factorAhorroTriple: { value: 0.88, asesorCanOverride: false }, // placeholder (= Doble hasta definir el real)
+  factorAhorroDoble: { value: 0.8, asesorCanOverride: false },
+  factorAhorroTriple: { value: 0.8, asesorCanOverride: false }, // placeholder (= Doble hasta definir el real)
 
   // ── Defaults de cotización ──
   cotizacionDolarDefault: { value: 40, asesorCanOverride: true }, // Excel C12

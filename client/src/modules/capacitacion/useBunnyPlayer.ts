@@ -9,15 +9,22 @@ import { useEffect, useRef } from "react";
 const BUNNY_ORIGIN = "https://iframe.mediadelivery.net";
 const CONTEXT = "player.js";
 const VERSION = "0.0.4";
+// Eventos que nos interesan. OJO: NO incluir "ready" — el player lo emite solo
+// al cargar, y suscribirse a él hacía que cada "ready" disparara una nueva
+// suscripción, que disparaba otro "ready"… Un bucle que en 12 segundos generaba
+// cientos de miles de mensajes, tumbaba la pestaña y dejaba el video colgado.
+const EVENTOS = ["timeupdate", "ended"] as const;
 
 type Opciones = {
+  /** Cambia al cambiar de video: fuerza suscribirse al iframe nuevo. */
+  videoKey?: string;
   onTiempo?: (segundos: number, duracion: number) => void;
   onFin?: () => void;
 };
 
 export function useBunnyPlayer(
   iframeRef: React.RefObject<HTMLIFrameElement | null>,
-  { onTiempo, onFin }: Opciones,
+  { videoKey, onTiempo, onFin }: Opciones,
 ) {
   // Refs para no re-suscribirse cada vez que el componente rerenderiza.
   const onTiempoRef = useRef(onTiempo);
@@ -26,10 +33,13 @@ export function useBunnyPlayer(
   onFinRef.current = onFin;
 
   useEffect(() => {
+    let suscrito = false;
+
     function suscribir() {
       const win = iframeRef.current?.contentWindow;
-      if (!win) return;
-      for (const evento of ["ready", "timeupdate", "ended"]) {
+      if (!win || suscrito) return;
+      suscrito = true;
+      for (const evento of EVENTOS) {
         win.postMessage(
           JSON.stringify({ context: CONTEXT, version: VERSION, method: "addEventListener", value: evento }),
           BUNNY_ORIGIN,
@@ -47,7 +57,8 @@ export function useBunnyPlayer(
       }
       if (data?.context !== CONTEXT) return;
       if (data.event === "ready") {
-        // El iframe avisa que quedó listo: recién ahí registra los listeners.
+        // El iframe avisa que quedó listo: recién ahí registra los listeners
+        // (una sola vez, ver el comentario de EVENTOS).
         suscribir();
         return;
       }
@@ -61,10 +72,10 @@ export function useBunnyPlayer(
     window.addEventListener("message", onMessage);
     // Además del "ready", se intenta suscribir al toque: si el iframe ya estaba
     // cargado (cambio de video sin recargar) ese evento no vuelve a llegar.
-    const t = window.setTimeout(suscribir, 800);
+    const t = window.setTimeout(suscribir, 1200);
     return () => {
       window.removeEventListener("message", onMessage);
       window.clearTimeout(t);
     };
-  }, [iframeRef]);
+  }, [iframeRef, videoKey]);
 }

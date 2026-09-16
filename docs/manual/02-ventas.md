@@ -1,9 +1,9 @@
 # 02 · Ventas
 
 > **Capítulo parcial.** Están escritas las secciones "Fechas del proceso",
-> "Cotizador de propuestas: precargas y saludo de la carta" y "Cotizador B2B:
-> propuestas a empresas". El resto del módulo funciona en producción pero
-> todavía no está documentado.
+> "Cotizador de propuestas: precargas y saludo de la carta", "Costeo a medida de
+> una cotización" y "Cotizador B2B: propuestas a empresas". El resto del módulo
+> funciona en producción pero todavía no está documentado.
 
 Leads, pipeline comercial, reclamos, propuestas, conversión a proyecto y comisiones.
 
@@ -176,6 +176,99 @@ desde las 21:00 hora local.
   `salutation.ts`, no desde la interfaz.
 - Un nombre con apellido primero ("Vanoli Daniel") saluda al apellido: la función
   siempre toma la primera palabra.
+
+---
+
+# Costeo a medida de una cotización
+
+## Para qué existe
+
+El cotizador calcula el costo del sistema con precios de lista: el panel a tanto,
+la estructura a tanto, la eléctrica según el suministro y el escalón de paneles,
+el inversor según una tabla por potencia. Eso sirve para el 90% de los casos,
+pero no para el que se sale de la norma: un proveedor que cambió el precio esta
+semana, una obra con acceso difícil que dispara la mano de obra, un cliente que
+pone su propio medidor.
+
+Antes, cualquiera de esos casos se costeaba en una planilla aparte y el número
+se metía a mano moviendo el markup hasta que el total diera. Esta sección trae
+esa planilla adentro del cotizador.
+
+## Cómo se usa
+
+En el cotizador, sección **"Costeo de esta cotización"**. Replica la planilla
+original en tres bloques:
+
+- **Costeo** (editable): los cinco ítems con su costo unitario y su cantidad,
+  más los costos fijos y los variables.
+- **Pricing**: costos, mano de obra (editable), markup, comisiones, IVA y total.
+- **Flujo de caja**: cobros, pagos, ganancia final, margen y USD por watt.
+
+Un campo en blanco usa el valor de lista; el placeholder muestra cuál es. Al
+escribir un número, el campo queda resaltado y aparece una flecha para volver al
+original. Arriba hay un botón que devuelve todo de una.
+
+Todo lo demás se recalcula al instante, porque el cálculo lo hace el servidor y
+la consulta se refresca con cada autosave.
+
+## Cómo funciona
+
+Los ajustes viven en `data.costos` del borrador (`ProposalV2Draft`), no en
+`ProposalDefaults`. Son **por cotización**: no tocan los precios de lista ni
+ninguna otra propuesta. Se autoguardan con el resto del formulario y viajan
+dentro del snapshot al publicar, así la versión emitida se regenera con los
+mismos números con que se cotizó.
+
+- Schema: `costosOverrideSchema` en `schemas/draft.schema.ts`, presente en las
+  dos variantes (la lenient del autosave y la strict de publicación).
+- Cálculo: `calculator.ts` §2 y §3 resuelven primero el valor de lista y recién
+  después lo pisan con el ajuste.
+- Endpoint: `GET /api/proposals-v2/leads/:leadId/draft/costeo`, en
+  `draft.service.ts` → `computeDraftCosteo()`.
+- Pantalla: `components/proposals-v2/CosteoPanel.tsx` + `hooks/useDraftCosteo.ts`.
+
+Los valores "de fábrica" que se muestran como referencia **no se recalculan a
+mano**: el servicio corre el motor una segunda vez con los ajustes vaciados. Así
+las reglas de precio (el multiplicador de la eléctrica, la tabla de inversores)
+viven en un solo lugar.
+
+## Permisos
+
+`VENTAS:EDIT`, o sea quien cotiza. Se eligió así —y no el permiso del drawer de
+debug, que es de administración— porque el asesor ajusta los costos de su propia
+propuesta.
+
+**Consecuencia asumida:** el asesor ve el costo real del negocio y, como ya
+editaba el markup, también la ganancia. Fue una decisión tomada al construirlo,
+no un descuido.
+
+## Reglas y decisiones
+
+- **Un campo vacío es "usar el valor de lista"**, no "cero". Borrar el ajuste es
+  la forma de volver al original; la clave se elimina del objeto en vez de
+  quedar como `undefined`, que el autosave mandaría igual y el backend rechaza.
+- **Un cero sí vale**: un ítem bonificado o que aporta el cliente cuesta 0. Por
+  eso el cálculo usa `??` y no `||`.
+- **Paneles y estructuras arrastran la cantidad del sistema** salvo que se la
+  pise. La eléctrica, el inversor y el meter van en cantidad 1 porque su precio
+  de lista ya es el total de la línea.
+- **Subir un costo sube el precio final, no la ganancia relativa**: el markup es
+  un porcentaje sobre costo + mano de obra, así que se mueven juntos. El
+  invariante del motor (`gananciaFinal ≡ markupUsdSinIva`) se mantiene.
+
+## Casos borde
+
+- **La cantidad de paneles queda en dos lugares**: el sistema cotizado y la
+  línea del costeo. Se puede costear 11 y vender 12 — es legítimo, pero pasa
+  desapercibido, así que la pantalla lo avisa en rojo cuando no coinciden.
+- **Si el borrador está incompleto no hay costeo**: el cálculo necesita paneles,
+  suministro, dólar y markup. La sección muestra qué falta en vez de una tabla
+  vacía.
+- **Las propuestas publicadas antes de esta funcionalidad no traen `costos`.**
+  El campo es opcional a propósito: si fuera obligatorio, todas esas versiones
+  quedarían no regenerables (mismo motivo que `variante`).
+- **Cambiar un precio de lista en Admin no mueve las cotizaciones ya ajustadas**
+  en esa línea: el ajuste gana. Sí mueve las líneas sin ajustar.
 
 ---
 

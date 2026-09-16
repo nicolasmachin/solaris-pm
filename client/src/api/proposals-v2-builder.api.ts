@@ -11,6 +11,7 @@ import type {
   ProposalVersionDetail,
   ProposalVersionListItem,
   ViabilityResult,
+  ProposalCosteoResponse,
 } from "../types/proposals-v2";
 
 const P = "/api/proposals-v2";
@@ -126,6 +127,18 @@ export const proposalsV2BuilderApi = {
       params: vp(variante),
     });
     return data.rows;
+  },
+
+  // Costeo de la cotización (VENTAS:EDIT): el cálculo con los ajustes propios
+  // del borrador y el mismo cálculo sin ellos. 400 si el borrador no valida.
+  getDraftCosteo: async (
+    leadId: string,
+    variante?: ProposalVariante,
+  ): Promise<ProposalCosteoResponse> => {
+    const { data } = await api.get<ProposalCosteoResponse>(`${P}/leads/${leadId}/draft/costeo`, {
+      params: vp(variante),
+    });
+    return data;
   },
 
   // Desglose de la comisión del asesor para el explicativo del cotizador

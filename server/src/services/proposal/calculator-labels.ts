@@ -52,6 +52,68 @@ export const calculatorLabels = {
     orden: 50,
   },
 
+  // ── Costeo línea por línea (precio unitario y cantidad efectivos) ──
+  panelPrecioUnitario: {
+    label: "Paneles · precio unitario",
+    descripcion: "Costo de un panel, sin IVA. Ajustable en el costeo de esta cotización.",
+    unidad: "USD",
+    orden: 60,
+  },
+  panelCantidad: {
+    label: "Paneles · cantidad",
+    descripcion: "Cantidad de paneles costeada. Sigue al sistema salvo que se la pise a mano.",
+    unidad: "unidades",
+    orden: 61,
+  },
+  estructuraPrecioUnitario: {
+    label: "Estructuras · precio unitario",
+    descripcion: "Costo de una estructura de montaje, sin IVA.",
+    unidad: "USD",
+    orden: 62,
+  },
+  estructuraCantidad: {
+    label: "Estructuras · cantidad",
+    descripcion: "Cantidad de estructuras costeada. Sigue al sistema salvo que se la pise a mano.",
+    unidad: "unidades",
+    orden: 63,
+  },
+  electricaPrecioUnitario: {
+    label: "Eléctrica · precio",
+    descripcion: "Materiales eléctricos, sin IVA. De fábrica sale del suministro y el escalón de paneles.",
+    unidad: "USD",
+    orden: 64,
+  },
+  electricaCantidad: {
+    label: "Eléctrica · cantidad",
+    descripcion: "Vale 1 porque el precio de fábrica ya es el total de la línea.",
+    unidad: "unidades",
+    orden: 65,
+  },
+  inversorPrecioUnitario: {
+    label: "Inversor · precio unitario",
+    descripcion: "Costo del inversor, sin IVA. De fábrica sale de la tabla por potencia y suministro.",
+    unidad: "USD",
+    orden: 66,
+  },
+  inversorCantidad: {
+    label: "Inversor · cantidad",
+    descripcion: "Cantidad de inversores costeada.",
+    unidad: "unidades",
+    orden: 67,
+  },
+  meterPrecioUnitario: {
+    label: "Meter · precio unitario",
+    descripcion: "Costo del medidor, sin IVA. De fábrica depende del suministro.",
+    unidad: "USD",
+    orden: 68,
+  },
+  meterCantidad: {
+    label: "Meter · cantidad",
+    descripcion: "Cantidad de medidores costeada.",
+    unidad: "unidades",
+    orden: 69,
+  },
+
   // ── Costos ──
   costoEquipamientoSinIva: {
     label: "Costo equipamiento",

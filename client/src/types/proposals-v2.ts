@@ -96,6 +96,26 @@ export interface ProposalDraftData {
   fecha: string;
   notas: string;
   itemsAdicionales: ProposalItemAdicional[];
+  // Ajustes de costo propios de ESTA cotización. Clave ausente = "usar el costo
+  // que sale de los defaults". No tocan los defaults ni ninguna otra propuesta;
+  // se autoguardan con el resto del borrador y viajan a la versión publicada.
+  costos?: ProposalCostosOverride;
+}
+
+export interface ProposalCostosOverride {
+  panelPrecioUnitario?: number;
+  panelCantidad?: number;
+  estructuraPrecioUnitario?: number;
+  estructuraCantidad?: number;
+  electricaPrecioUnitario?: number;
+  electricaCantidad?: number;
+  inversorPrecioUnitario?: number;
+  inversorCantidad?: number;
+  meterPrecioUnitario?: number;
+  meterCantidad?: number;
+  costoFijoAsignado?: number;
+  costoVariable?: number;
+  manoDeObra?: number;
 }
 
 /** Desglose de la comisión del asesor (explicativo del cotizador B2B). */
@@ -187,4 +207,58 @@ export interface ProposalDefaultsUpdateInput {
 /** Type guard: distingue una variable flagged de un subobjeto. */
 export function isFlaggedValue(v: FlaggedValue | NestedFlagged): v is FlaggedValue {
   return typeof v === "object" && v !== null && "value" in v && "asesorCanOverride" in v;
+}
+
+// ─── Costeo de la cotización ───────────────────────────────────────────────
+// Subconjunto de lo que calcula el motor: solo los campos que dibuja la tabla
+// de costeo. Se declara acotado a propósito — replicar los ~45 campos de
+// ProposalCalculated obligaría a mantener dos listas en sincronía a mano.
+export interface ProposalCosteoCalc {
+  // Costeo línea por línea
+  panelPrecioUnitario: number;
+  panelCantidad: number;
+  estructuraPrecioUnitario: number;
+  estructuraCantidad: number;
+  electricaPrecioUnitario: number;
+  electricaCantidad: number;
+  inversorPrecioUnitario: number;
+  inversorCantidad: number;
+  meterPrecioUnitario: number;
+  meterCantidad: number;
+  // Bloques de costo
+  costoEquipamientoSinIva: number;
+  costoEquipamientoConIva: number;
+  costoFijoAsignadoUsdSinIva: number;
+  costoFijoAsignadoUsdConIva: number;
+  costoVariableUsdSinIva: number;
+  costoVariableUsdConIva: number;
+  costoTotalSinIva: number;
+  costoTotalConIva: number;
+  // Pricing
+  manoDeObraUsdSinIva: number;
+  markupUsdSinIva: number;
+  comisionVentasUsdSinIva: number;
+  comisionBbvaUsdSinIva: number;
+  subtotalSinIva: number;
+  iva: number;
+  totalConIva: number;
+  margen: number;
+  usdPorWatt: number;
+  // Flujo de caja (los pagos vienen ya en negativo)
+  cobroAdelantoCliente: number;
+  pagoAlProveedor: number;
+  cobroSaldoCliente: number;
+  pagoManoDeObra: number;
+  pagoIva: number;
+  devolucionIva: number;
+  pagoVendedor: number;
+  pagoBbva: number;
+  gananciaFinal: number;
+}
+
+export interface ProposalCosteoResponse {
+  calc: ProposalCosteoCalc;
+  /** El mismo cálculo sin los ajustes: sirve para marcar qué se desvió. */
+  fabrica: ProposalCosteoCalc;
+  ajustes: ProposalCostosOverride;
 }

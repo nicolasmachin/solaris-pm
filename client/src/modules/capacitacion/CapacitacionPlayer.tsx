@@ -84,6 +84,7 @@ export function CapacitacionPlayer() {
   );
 
   useBunnyPlayer(iframeRef, {
+    videoKey: actual?.id,
     onTiempo: (segundos) => {
       posicion.current = segundos;
       if (Date.now() - ultimoGuardado.current >= GUARDADO_CADA_MS) guardar();

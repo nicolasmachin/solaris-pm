@@ -1,5 +1,6 @@
 import { Button } from "../ui/Button";
 import { ComisionB2BPanel } from "./ComisionB2BPanel";
+import { CosteoPanel } from "./CosteoPanel";
 import { saludoPara } from "../../lib/salutation";
 import { NumberField, SelectField, TextAreaField, TextField } from "./fields";
 import {
@@ -171,6 +172,18 @@ export function ProposalForm({
         <Button size="sm" variant="secondary" onClick={() => setItems([...data.itemsAdicionales, newItem()])}>
           Agregar ítem
         </Button>
+      </section>
+
+      {/* 4b · Costeo de esta cotización */}
+      <section id="seccion-costeo" className="scroll-mt-28">
+        <h2 className={H2}>Costeo de esta cotización</h2>
+        <CosteoPanel
+          data={data}
+          onChange={onChange}
+          leadId={leadId}
+          variante={data.variante ?? "RESIDENCIAL"}
+          savedTick={savedTick}
+        />
       </section>
 
       {/* 5 · Financiación (read-only) */}

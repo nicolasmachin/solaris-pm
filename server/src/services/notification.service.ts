@@ -11,6 +11,8 @@ type CreateNotificationInput = {
   sentEmail?: boolean;
   sentWhatsapp?: boolean;
   uniqueKey?: string | null;
+  /** Ruta interna a la que lleva al tocarla. Sin esto, la campanita navega por tipo. */
+  link?: string | null;
 };
 
 export async function createNotification(input: CreateNotificationInput) {
@@ -24,6 +26,7 @@ export async function createNotification(input: CreateNotificationInput) {
       sentEmail: input.sentEmail ?? false,
       sentWhatsapp: input.sentWhatsapp ?? false,
       uniqueKey: input.uniqueKey ?? null,
+      link: input.link ?? null,
     },
   });
 }

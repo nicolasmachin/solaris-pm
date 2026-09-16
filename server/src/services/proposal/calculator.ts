@@ -85,30 +85,53 @@ export function calculate(
   const metrosCuadradosPaneles = cantidadPaneles * defaults.metrosCuadradosPorPanel;
 
   // ── 2. Costos en USD sin IVA ──
+  // Cada línea se resuelve primero "de fábrica" (defaults + reglas del negocio)
+  // y recién después se pisa con el ajuste propio de ESTA cotización, si lo hay.
+  // Se usa `??` y no `||` a propósito: un costo puesto en 0 es un valor válido
+  // (un ítem bonificado o que aporta el cliente), no una ausencia.
+  const ajustes = data.costos ?? {};
+
   const precioElectricaBase =
     suministro === "monofásico"
       ? defaults.precioElectricaMonoUsdSinIva
       : defaults.precioElectricaTriUsdSinIva;
-  const precioElectrica =
+  const precioElectricaFabrica =
     precioElectricaBase * getMultiplicadorElectrica(cantidadPaneles, defaults.multiplicadorElectricaEscalones);
-  const precioMeter =
+  const precioMeterFabrica =
     suministro === "monofásico" ? defaults.precioMeterMonoUsd : defaults.precioMeterTriUsd;
-  const precioInversor = obtenerPrecioInversor(
+  const precioInversorFabrica = obtenerPrecioInversor(
     suministro,
     potenciaInversorKw,
     cantidadPaneles,
     defaults,
   );
 
+  // Precio unitario y cantidad efectivos de cada ítem del costeo. Paneles y
+  // estructuras siguen la cantidad del sistema salvo que se la pise a mano; la
+  // eléctrica, el inversor y el meter valen 1 porque sus precios de fábrica ya
+  // son el total de esa línea.
+  const panelPrecioUnitario = ajustes.panelPrecioUnitario ?? defaults.precioPanelUsdSinIva;
+  const panelCantidad = ajustes.panelCantidad ?? cantidadPaneles;
+  const estructuraPrecioUnitario =
+    ajustes.estructuraPrecioUnitario ?? defaults.precioEstructuraUsdSinIva;
+  const estructuraCantidad = ajustes.estructuraCantidad ?? cantidadPaneles;
+  const electricaPrecioUnitario = ajustes.electricaPrecioUnitario ?? precioElectricaFabrica;
+  const electricaCantidad = ajustes.electricaCantidad ?? 1;
+  const inversorPrecioUnitario = ajustes.inversorPrecioUnitario ?? precioInversorFabrica;
+  const inversorCantidad = ajustes.inversorCantidad ?? 1;
+  const meterPrecioUnitario = ajustes.meterPrecioUnitario ?? precioMeterFabrica;
+  const meterCantidad = ajustes.meterCantidad ?? 1;
+
   const costoEquipamientoSinIva =
-    defaults.precioPanelUsdSinIva * cantidadPaneles +
-    defaults.precioEstructuraUsdSinIva * cantidadPaneles +
-    precioElectrica +
-    precioInversor +
-    precioMeter;
+    panelPrecioUnitario * panelCantidad +
+    estructuraPrecioUnitario * estructuraCantidad +
+    electricaPrecioUnitario * electricaCantidad +
+    inversorPrecioUnitario * inversorCantidad +
+    meterPrecioUnitario * meterCantidad;
   const costoEquipamientoConIva = costoEquipamientoSinIva * (1 + IVA);
 
   const costoFijoAsignadoUsdSinIva =
+    ajustes.costoFijoAsignado ??
     defaults.costoFijoTotalPesosMes / dolar / defaults.negociosPromedioMes;
   // Los costos fijos (sueldos / BPS / IRAE) son mayormente exentos de IVA, así
   // que con IVA ≈ sin IVA. (Tenemos un único total en el seed.)
@@ -120,7 +143,7 @@ export function calculate(
     defaults.costoAlojamientoPesos +
     defaults.costoViaticosPesos +
     defaults.costoOtrosPesos;
-  const costoVariableUsdSinIva = costoVariablePesos / dolar;
+  const costoVariableUsdSinIva = ajustes.costoVariable ?? costoVariablePesos / dolar;
   const costoVariableUsdConIva = costoVariableUsdSinIva * (1 + IVA);
 
   const costoTotalSinIva =
@@ -137,7 +160,7 @@ export function calculate(
     (defaults.tarifaCatAPorHora + defaults.tarifaCatCPorHora + defaults.tarifaCatDPorHora) *
     defaults.horasManoDeObraPorInstalacion *
     cuadrilla;
-  const manoDeObraUsdSinIva = manoDeObraPesos / dolar;
+  const manoDeObraUsdSinIva = ajustes.manoDeObra ?? manoDeObraPesos / dolar;
 
   // ── 4. Pricing ──
   const esEmpresa = data.variante === "EMPRESA";
@@ -257,6 +280,17 @@ export function calculate(
     potenciaTotalKwp,
     energiaAnualKwh,
     metrosCuadradosPaneles,
+
+    panelPrecioUnitario,
+    panelCantidad,
+    estructuraPrecioUnitario,
+    estructuraCantidad,
+    electricaPrecioUnitario,
+    electricaCantidad,
+    inversorPrecioUnitario,
+    inversorCantidad,
+    meterPrecioUnitario,
+    meterCantidad,
 
     costoEquipamientoSinIva,
     costoEquipamientoConIva,

@@ -22,6 +22,8 @@ function getTypeIcon(type: NotificationType): string {
       return "🔔";
     case "ticket_actualizado":
       return "🎫";
+    case "capacitacion_comentario":
+      return "💬";
     case "traspaso_escalado":
     case "aviso_habilitacion_pendiente":
       return "⚠️";
@@ -96,10 +98,19 @@ export function NotificationBell() {
     },
   });
 
-  function handleItemClick(id: string, projectId: string | null, read: boolean, type?: string) {
+  function handleItemClick(
+    id: string,
+    projectId: string | null,
+    read: boolean,
+    type?: string,
+    link?: string | null,
+  ) {
     if (!read) markOneMutation.mutate(id);
     setOpen(false);
-    if (type === "goals_not_configured") {
+    // Una notificación puede traer su propio destino (ej. el video comentado).
+    if (link) {
+      navigate(link);
+    } else if (type === "goals_not_configured") {
       navigate("/admin");
     } else if (type === "traspaso_por_confirmar") {
       navigate("/mis-tareas/pendientes");

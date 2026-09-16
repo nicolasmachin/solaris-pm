@@ -12,6 +12,7 @@ import { calculate, interpretarMarkup } from "./calculator.js";
 import { buildInitialDraftData, mergeDraftData } from "./initial-draft.js";
 import { resolveDefaults } from "./resolveDefaults.js";
 import { draftDataPublishSchema, draftDataStorageSchema } from "./schemas/draft.schema.js";
+import type { ProposalCalculated, ProposalCostosOverride } from "./types.js";
 
 export function getDraft(leadId: string, variante: ProposalVariante = ProposalVariante.RESIDENCIAL) {
   return prisma.proposalV2Draft.findUnique({ where: { leadId_variante: { leadId, variante } } });
@@ -107,6 +108,47 @@ export async function computeDraftCalcRows(
   const defaults = resolveDefaults(defaultsRow.data);
   const calc = calculate(parsed.data, defaults);
   return buildCalcDebugRows(calc);
+}
+
+/**
+ * Costeo de ESTA cotización: el cálculo con los ajustes aplicados y, al lado, el
+ * mismo cálculo sin ellos.
+ *
+ * Los valores "de fábrica" no se recalculan a mano: se obtienen corriendo el
+ * motor una segunda vez con los ajustes vaciados. Así la pantalla puede mostrar
+ * cuánto se desvió cada línea y ofrecer "volver al valor original" sin duplicar
+ * las reglas de precio (el multiplicador de la eléctrica, la tabla de inversores
+ * por potencia), que viven en un solo lugar y se seguirían moviendo.
+ */
+export async function computeDraftCosteo(
+  leadId: string,
+  variante: ProposalVariante = ProposalVariante.RESIDENCIAL,
+): Promise<{
+  calc: ProposalCalculated;
+  fabrica: ProposalCalculated;
+  ajustes: ProposalCostosOverride;
+}> {
+  const draft = await getDraft(leadId, variante);
+  if (!draft) throw notFound("DRAFT_NOT_FOUND", "El lead no tiene borrador.");
+
+  const parsed = draftDataPublishSchema.safeParse(draft.data);
+  if (!parsed.success) {
+    throw new AppError(400, "PROPOSAL_DRAFT_INVALID", "Faltan campos obligatorios", {
+      missing: draftMissingFields(draft.data),
+    });
+  }
+
+  const defaultsRow = await prisma.proposalDefaults.findUnique({ where: { id: "singleton" } });
+  if (!defaultsRow) {
+    throw badRequest("PROPOSAL_DEFAULTS_NOT_SEEDED", "Los defaults de propuestas no están cargados.");
+  }
+  const defaults = resolveDefaults(defaultsRow.data);
+
+  return {
+    calc: calculate(parsed.data, defaults),
+    fabrica: calculate({ ...parsed.data, costos: undefined }, defaults),
+    ajustes: parsed.data.costos ?? {},
+  };
 }
 
 /**

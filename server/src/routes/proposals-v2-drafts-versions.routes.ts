@@ -25,6 +25,7 @@ import { contentDisposition } from "../utils/content-disposition.js";
 import type { CalcDebugRow } from "../services/proposal/calculator-labels.js";
 import {
   computeDraftCalcRows,
+  computeDraftCosteo,
   computeDraftComision,
   ensureDraft,
   getDraft,
@@ -165,6 +166,23 @@ export async function registerProposalsV2DraftsVersionsRoutes(app: FastifyInstan
     "/proposals-v2/leads/:leadId/draft/calc",
     { preHandler: authorize(Module.VENTAS, Action.DEBUG_CALCULADORA) },
     makeDraftCalcHandler(computeDraftCalcRows),
+  );
+
+  // Costeo de la cotización: el cálculo con los ajustes propios de este
+  // borrador y el mismo cálculo sin ellos, para poder mostrar de cuánto se
+  // desvió cada línea.
+  //
+  // Es VENTAS:EDIT y no DEBUG_CALCULADORA a propósito: el asesor que cotiza
+  // ajusta los costos de su propia propuesta. Eso implica que ve el costo real
+  // y, como ya edita el markup, también la ganancia del negocio — decisión
+  // tomada al construir esto, no un descuido.
+  app.get(
+    "/proposals-v2/leads/:leadId/draft/costeo",
+    { preHandler: authorize(Module.VENTAS, Action.EDIT) },
+    async (request) => {
+      const { leadId } = leadParams.parse(request.params);
+      return computeDraftCosteo(leadId, parseVariante(request.query));
+    },
   );
 
   // Indicadores de viabilidad (ahorro % + espacio) para el sub-header. VENTAS:VIEW

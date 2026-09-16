@@ -195,6 +195,7 @@ enum NotificationType {
   aviso_habilitacion_pendiente
   ticket_actualizado
   encuesta_disponible
+  capacitacion_comentario
   // No es una notificación in-app: marca qué roles reciben por correo el resumen
   // diario del recorrido de Experiencia Solar (ver services/digest/experiencia-digest.service.ts).
   resumen_experiencia
@@ -1615,6 +1616,10 @@ model Notification {
   sentEmail    Boolean          @default(false)
   sentWhatsapp Boolean          @default(false)
   uniqueKey    String?          @unique
+  // Ruta interna a la que lleva la notificación al tocarla (ej.
+  // "/capacitacion/lista/abc?v=xyz"). Cuando está vacía, la campanita decide por
+  // tipo, como siempre.
+  link         String?
   createdAt    DateTime         @default(now()) @db.Timestamptz(6)
 
   @@index([userId, read])
@@ -1655,6 +1660,10 @@ model Comment {
   checklistItem   ChecklistItem? @relation(fields: [checklistItemId], references: [id], onDelete: SetNull)
   taskId          String?
   task            Task?          @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  // Preguntas del equipo debajo de un video de capacitación. Si el video se
+  // quita de la lista, sus comentarios se van con él: no tienen dónde vivir.
+  capacitacionVideoId String?
+  capacitacionVideo   CapacitacionVideo? @relation(fields: [capacitacionVideoId], references: [id], onDelete: Cascade)
   isEdited        Boolean        @default(false)
   editedAt        DateTime?      @db.Timestamptz(6)
   deletedAt       DateTime?      @db.Timestamptz(6)
@@ -1667,6 +1676,7 @@ model Comment {
   @@index([substageId])
   @@index([checklistItemId])
   @@index([taskId])
+  @@index([capacitacionVideoId])
   @@index([authorId])
   @@index([deletedAt])
   @@map("comments")
@@ -4686,7 +4696,8 @@ model CapacitacionVideo {
   createdAt         DateTime          @default(now()) @db.Timestamptz(6)
   updatedAt         DateTime          @updatedAt @db.Timestamptz(6)
 
-  vistas CapacitacionVista[]
+  vistas      CapacitacionVista[]
+  comentarios Comment[]
 
   @@index([listaId, orden])
   @@index([bunnyVideoId])

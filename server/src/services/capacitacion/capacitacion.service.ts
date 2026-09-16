@@ -297,6 +297,20 @@ export async function detalleLista(listaId: string, user: CapUser) {
   };
 }
 
+/** Video visible para el usuario, con lo que necesita el hilo de comentarios. */
+export async function videoParaComentarios(videoId: string, user: CapUser) {
+  const video = await prisma.capacitacionVideo.findFirst({
+    where: {
+      id: videoId,
+      deletedAt: null,
+      lista: { deletedAt: null, seccion: await whereSeccionVisible(user) },
+    },
+    select: { id: true, titulo: true, listaId: true },
+  });
+  if (!video) throw notFound("VIDEO_NOT_FOUND", "Video no encontrado");
+  return video;
+}
+
 /** Datos para servir la miniatura, validando que el usuario pueda ver el video. */
 export async function miniaturaDeVideo(videoId: string, user: CapUser) {
   const video = await prisma.capacitacionVideo.findFirst({

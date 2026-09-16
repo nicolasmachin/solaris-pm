@@ -4,6 +4,15 @@
 
 ### 15 de septiembre de 2026
 
+#### Cotizador: costear a medida y números más realistas
+
+- En el cotizador hay una sección nueva, **Costeo de esta cotización**, con la misma planilla con la que se costea a mano: costeo, pricing y flujo de caja.
+- Se puede **cambiar el costo de cada ítem** (paneles, estructuras, eléctrica, inversor, meter), los costos fijos, los variables y la mano de obra. El precio, el markup, la ganancia y el flujo de caja se recalculan al instante.
+- Lo que cambiás vale **solo para esa cotización**: no afecta a las demás ni a la configuración general. Se guarda solo, y queda pegado a la propuesta que publiques.
+- Cada campo en blanco usa el valor de siempre. Si lo pisás, queda resaltado y aparece una flecha para volver al original.
+- Avisa en rojo si estás costeando una cantidad de paneles distinta a la del sistema que estás vendiendo.
+- **Se ajustaron dos valores del cálculo** para acercar las propuestas a lo que se mide en las instalaciones reales: la generación anual estimada y el factor de ahorro de las tarifas Doble y Triple. Las propuestas nuevas van a mostrar una generación y un ahorro algo menores, y más realistas.
+
 #### Capacitación: videos y documentos para el equipo
 
 - Nueva sección **Capacitación** en el menú de tu usuario (arriba a la derecha): videos y documentos para aprender a usar la app y trabajar mejor.

@@ -44,6 +44,27 @@ export interface ProposalData {
   fecha: string; // ISO date
   notas?: string;
   itemsAdicionales: ProposalItemAdicional[];
+  // Ajustes de costo propios de ESTA cotización. Opcional: los snapshots
+  // publicados antes de esta funcionalidad no lo traen. Ver CostosOverride en
+  // schemas/draft.schema.ts para el porqué de cada clave opcional.
+  costos?: ProposalCostosOverride;
+}
+
+/** Cada clave ausente = "usar el costo que sale de los defaults". */
+export interface ProposalCostosOverride {
+  panelPrecioUnitario?: number;
+  panelCantidad?: number;
+  estructuraPrecioUnitario?: number;
+  estructuraCantidad?: number;
+  electricaPrecioUnitario?: number;
+  electricaCantidad?: number;
+  inversorPrecioUnitario?: number;
+  inversorCantidad?: number;
+  meterPrecioUnitario?: number;
+  meterCantidad?: number;
+  costoFijoAsignado?: number;
+  costoVariable?: number;
+  manoDeObra?: number;
 }
 
 export interface ProposalItemAdicional {
@@ -60,6 +81,21 @@ export interface ProposalCalculated {
   potenciaTotalKwp: number;
   energiaAnualKwh: number;
   metrosCuadradosPaneles: number;
+
+  // Costeo línea por línea: precio unitario y cantidad EFECTIVOS de cada ítem,
+  // ya con los ajustes de la cotización aplicados. Se exponen para que la
+  // pantalla de costeo pueda mostrar la tabla sin tener que replicar las reglas
+  // de precio (multiplicador de la eléctrica, tabla de inversores por potencia).
+  panelPrecioUnitario: number;
+  panelCantidad: number;
+  estructuraPrecioUnitario: number;
+  estructuraCantidad: number;
+  electricaPrecioUnitario: number;
+  electricaCantidad: number;
+  inversorPrecioUnitario: number;
+  inversorCantidad: number;
+  meterPrecioUnitario: number;
+  meterCantidad: number;
 
   // Costos
   costoEquipamientoSinIva: number;
