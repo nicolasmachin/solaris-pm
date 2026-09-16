@@ -24,8 +24,12 @@ documentos sí se suben al storage de la app.
 - **Reproductor** (`/capacitacion/lista/:listaId?v=<videoId>`): el video grande y
   al costado el resto de la lista, con miniatura, duración y tilde de visto. En
   celular la lista queda debajo del video.
-  - **Copiar enlace** copia la dirección de ese video exacto para pasarla por
-    chat. Quien la abra tiene que estar logueado y tener el área habilitada.
+  - **Agrandar / Achicar** cambia el tamaño del reproductor. En "normal" la
+    altura se ata a la del navegador para que el título, los botones y los
+    comentarios entren sin scrollear; "amplio" es el modo teatro. La preferencia
+    queda en `localStorage` (`capacitacion-player-amplio`).
+  - **Copiar enlace** copia el enlace de compartir (ver abajo). Quien lo abra
+    tiene que estar logueado y tener el área habilitada.
   - **Marcar como visto / Visto** marca o desmarca a mano.
   - Debajo del video, **preguntas y comentarios** del equipo.
   - Al terminar un video se marca visto y **pasa solo al siguiente**.
@@ -43,6 +47,26 @@ Botón **Gestionar** en la portada → `/capacitacion/gestion`, con tres pestañ
   qué roles ven cada una.
 - **Seguimiento**: tabla de personas × listas con cuántos videos completó cada
   una y cuándo fue la última vez.
+
+### Compartir un video
+
+"Copiar enlace" no copia la dirección del reproductor sino
+`/api/capacitacion/compartir/<videoId>`, que resuelve el backend:
+
+- al **robot** de WhatsApp, Slack o Telegram le devuelve HTML con las etiquetas
+  Open Graph ya resueltas (título, área y miniatura), así la tarjeta muestra de
+  qué video se trata;
+- a una **persona** la redirige al reproductor (`/capacitacion/lista/...?v=...`),
+  donde valen los permisos de siempre.
+
+Va bajo `/api` a propósito: Caddy manda todo lo que no empieza con `/api` a la
+app (una sola página, con un `<title>` fijo para todas sus direcciones), así que
+sin esto la tarjeta diría "VOLTIA PM" para cualquier video. Poner un
+`/s/<id>` más lindo requiere tocar el Caddyfile del VPS.
+
+Esa página y su miniatura son **públicas** (el robot no tiene sesión): exponen
+título, área y miniatura, nunca el video ni el embed firmado. El id es un cuid,
+que no se adivina. Solo responde para videos de secciones activas.
 
 ### Comentar un video
 
@@ -210,6 +234,7 @@ Otros (todos los internos).
   `server/src/services/bunny-stream.service.ts`.
 - Script de prod: `server/scripts/seed-capacitacion.ts`.
 - Frontend: `client/src/modules/capacitacion/`, `client/src/api/capacitacion.api.ts`.
+- Compartir: `server/src/services/capacitacion/compartir.ts`.
 - Comentarios: `server/src/services/capacitacion/comentarios.service.ts`,
   `client/src/modules/capacitacion/ComentariosVideo.tsx`.
 - Tests: `npm run test:capacitacion` (umbral de visto, progreso, orden, firma).

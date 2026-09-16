@@ -13,6 +13,11 @@
 - Avisa en rojo si estás costeando una cantidad de paneles distinta a la del sistema que estás vendiendo.
 - **Se ajustaron dos valores del cálculo** para acercar las propuestas a lo que se mide en las instalaciones reales: la generación anual estimada y el factor de ahorro de las tarifas Doble y Triple. Las propuestas nuevas van a mostrar una generación y un ahorro algo menores, y más realistas.
 
+#### Capacitación: reproductor más cómodo y enlaces con vista previa
+
+- El video ya **no ocupa toda la pantalla**: queda en un tamaño donde entran también el título, los botones y los comentarios. El botón **Agrandar** lo lleva a pantalla completa de ancho, como el modo teatro de YouTube, y se acuerda de cómo lo dejaste.
+- Al **copiar el enlace** de un video y pegarlo en WhatsApp o Slack, ahora se ve una **tarjeta con el título del video, el área y la miniatura**, en vez del nombre suelto de la app. El video sigue siendo privado: para verlo hay que entrar con tu usuario.
+
 #### Preguntas en los videos de capacitación
 
 - Debajo de cada video hay un espacio para **preguntar o aportar algo**, y que lo vea el resto del equipo.

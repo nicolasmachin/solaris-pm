@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { Bug } from "lucide-react";
+import { Bug, Calculator } from "lucide-react";
 
 import { getLead } from "../../api/leads.api";
 import { proposalsV2BuilderApi } from "../../api/proposals-v2-builder.api";
@@ -18,6 +18,7 @@ import { LargeModal } from "../ui/LargeModal";
 import { Spinner } from "../ui/Spinner";
 import { AutosaveIndicator } from "./AutosaveIndicator";
 import { CalculatorDebugDrawer } from "./CalculatorDebugDrawer";
+import { CosteoDrawer } from "./CosteoDrawer";
 import { ProposalForm } from "./ProposalForm";
 import { ProposalPreview } from "./ProposalPreview";
 import { PublishButton } from "./PublishButton";
@@ -142,6 +143,10 @@ export function ProposalBuilderModal({
   // Drawer de debug de calculadora (gate declarativo VENTAS:DEBUG_CALCULADORA).
   const canDebug = usePermission("VENTAS", "DEBUG_CALCULADORA");
   const [debugOpen, setDebugOpen] = useState(false);
+  // Costeo de la cotización: botón propio y permiso propio (quien cotiza), a
+  // diferencia del debug que es de administración.
+  const canCostear = usePermission("VENTAS", "EDIT");
+  const [costeoOpen, setCosteoOpen] = useState(false);
 
   // Indicadores de viabilidad (ahorro % + espacio) en el sub-header.
   const viability = useViabilityIndicators({
@@ -190,6 +195,17 @@ export function ProposalBuilderModal({
               <Button size="sm" variant="secondary" className="md:hidden" onClick={() => setMobilePreviewOpen(true)}>
                 Ver preview
               </Button>
+              {canCostear ? (
+                <button
+                  type="button"
+                  onClick={() => setCosteoOpen(true)}
+                  aria-label="Costeo"
+                  title="Costeo de la cotización"
+                  className="rounded p-1 text-[var(--color-text-muted)] opacity-50 transition-opacity hover:bg-[var(--color-bg-app)] hover:text-[var(--color-text-primary)] hover:opacity-100"
+                >
+                  <Calculator size={15} />
+                </button>
+              ) : null}
               {canDebug ? (
                 <Button
                   size="sm"
@@ -257,6 +273,19 @@ export function ProposalBuilderModal({
             onConfirm={() => publishMut.mutate()}
             onClose={() => setPublishOpen(false)}
           />
+
+          {canCostear ? (
+            <CosteoDrawer
+              open={costeoOpen}
+              onClose={() => setCosteoOpen(false)}
+              data={draft}
+              onChange={setDraft}
+              leadId={leadId}
+              variante={variante}
+              leadName={lead.clientName}
+              savedTick={autosave.savedTick}
+            />
+          ) : null}
 
           {canDebug ? (
             <CalculatorDebugDrawer

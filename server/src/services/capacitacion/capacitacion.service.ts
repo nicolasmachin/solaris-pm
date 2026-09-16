@@ -325,6 +325,29 @@ export async function miniaturaDeVideo(videoId: string, user: CapUser) {
   return { bunnyVideoId: video.bunnyVideoId, thumbnailFileName: video.thumbnailFileName };
 }
 
+/**
+ * Datos para la tarjeta de vista previa del enlace compartido (WhatsApp, Slack,
+ * etc.). SIN autenticación: el robot que la pide no tiene sesión. Solo expone
+ * título, área y miniatura —nunca el video—, y solo de secciones activas. El id
+ * del video es un cuid que no se puede adivinar.
+ */
+export async function datosCompartir(videoId: string) {
+  const video = await prisma.capacitacionVideo.findFirst({
+    where: { id: videoId, deletedAt: null, lista: { deletedAt: null, seccion: { activa: true } } },
+    select: {
+      id: true,
+      titulo: true,
+      descripcion: true,
+      bunnyVideoId: true,
+      thumbnailFileName: true,
+      duracionSeg: true,
+      lista: { select: { id: true, titulo: true, seccion: { select: { nombre: true } } } },
+    },
+  });
+  if (!video) throw notFound("VIDEO_NOT_FOUND", "Video no encontrado");
+  return video;
+}
+
 export async function embedVideo(videoId: string, user: CapUser) {
   const video = await assertVideoVisible(videoId, user);
   return firmarEmbed(video.bunnyLibraryId, video.bunnyVideoId);

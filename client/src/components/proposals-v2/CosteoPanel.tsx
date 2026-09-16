@@ -104,17 +104,20 @@ export function CosteoPanel({
   leadId,
   variante,
   savedTick,
+  enabled = true,
 }: {
   data: ProposalDraftData;
   onChange: (next: ProposalDraftData) => void;
   leadId: string;
   variante: ProposalVariante;
   savedTick: number;
+  /** Con el drawer cerrado no tiene sentido pedir el cálculo en cada autosave. */
+  enabled?: boolean;
 }) {
   const { data: costeo, status, missing } = useDraftCosteo({
     leadId,
     savedTick,
-    enabled: Boolean(leadId),
+    enabled: enabled && Boolean(leadId),
     variante,
   });
 

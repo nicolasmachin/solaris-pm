@@ -36,6 +36,13 @@ export const LATEST_RELEASE: Release = {
       ],
     },
     {
+      title: "Capacitación: reproductor más cómodo y enlaces con vista previa",
+      items: [
+        "El video ya no ocupa toda la pantalla: queda en un tamaño donde entran también el título, los botones y los comentarios. El botón Agrandar lo lleva al modo teatro, y se acuerda de cómo lo dejaste.",
+        "Al copiar el enlace de un video y pegarlo en WhatsApp o Slack se ve una tarjeta con el título, el área y la miniatura. El video sigue siendo privado: para verlo hay que entrar con tu usuario.",
+      ],
+    },
+    {
       title: "Preguntas en los videos de capacitación",
       items: [
         "Debajo de cada video hay un espacio para preguntar o aportar algo, y que lo vea el resto del equipo.",

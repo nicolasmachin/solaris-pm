@@ -20,6 +20,7 @@ import {
   editarComentario,
   listarComentarios,
 } from "../services/capacitacion/comentarios.service.js";
+import { paginaCompartir } from "../services/capacitacion/compartir.js";
 import {
   firmarTokenMedia,
   miniaturaLocal,
@@ -90,6 +91,31 @@ async function registerRutasConToken(app: FastifyInstance) {
       return reply.send(fs.createReadStream(file.absolutePath));
     });
   }
+
+  // Tarjeta de vista previa del enlace compartido: HTML con Open Graph para el
+  // robot de WhatsApp/Slack, y redirección al reproductor para las personas.
+  // Pública a propósito (el robot no tiene sesión): expone título, área y
+  // miniatura, nunca el video.
+  app.get("/capacitacion/compartir/:id", async (request, reply) => {
+    const { id } = idParam.parse(request.params);
+    const video = await cap.datosCompartir(id);
+    reply.header("Content-Type", "text/html; charset=utf-8");
+    // Que la tarjeta se pueda cachear un rato, pero no eternamente: el título
+    // del video se puede editar.
+    reply.header("Cache-Control", "public, max-age=600");
+    return reply.send(paginaCompartir(video));
+  });
+
+  // Miniatura de esa tarjeta. También pública: WhatsApp no manda credenciales.
+  app.get("/capacitacion/compartir/:id/miniatura.jpg", async (request, reply) => {
+    const { id } = idParam.parse(request.params);
+    const video = await cap.datosCompartir(id);
+    if (!video.thumbnailFileName) {
+      return reply.code(404).send({ error: true, code: "MINIATURA_NOT_FOUND", message: "Sin miniatura" });
+    }
+    reply.header("Cache-Control", "public, max-age=86400");
+    return responder(reply, video.bunnyVideoId, video.thumbnailFileName);
+  });
 
   // Miniatura de un video de Bunny todavía no cargado (selector de gestión).
   app.get("/capacitacion/bunny/miniaturas/:bunnyVideoId", async (request, reply) => {

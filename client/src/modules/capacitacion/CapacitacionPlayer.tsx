@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Check, Link2, PlayCircle } from "lucide-react";
+import { ArrowLeft, Check, Link2, Maximize2, Minimize2, PlayCircle } from "lucide-react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
@@ -17,11 +17,25 @@ import { useBunnyPlayer } from "./useBunnyPlayer";
 // no perder el punto y sin llenar la red de pedidos.
 const GUARDADO_CADA_MS = 15_000;
 
+// Tamaño del reproductor. En "normal" la altura se ata a la del navegador, para
+// que el título, los botones y los comentarios entren sin scrollear (en una
+// pantalla grande, ocupar todo el ancho dejaba todo eso abajo del pliegue).
+// "Amplio" es el modo teatro: usa todo el ancho disponible.
+const PREF_AMPLIO = "capacitacion-player-amplio";
+
 // Reproductor estilo lista de YouTube: el video grande y, al costado, los demás
 // de la lista. El video activo va en la URL (?v=) para poder compartir el link.
 export function CapacitacionPlayer() {
   const { listaId = "" } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [amplio, setAmplio] = useState(() => {
+    try {
+      return localStorage.getItem(PREF_AMPLIO) === "1";
+    } catch {
+      // Safari en privado tira al leer localStorage: se arranca en normal.
+      return false;
+    }
+  });
   const qc = useQueryClient();
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -121,9 +135,24 @@ export function CapacitacionPlayer() {
 
   // Enlace directo a ESTE video, para pasarlo por chat. Lo abre cualquiera que
   // tenga habilitada el área; el resto ve "No encontramos esta capacitación".
+  function alternarTamano() {
+    setAmplio((v) => {
+      const next = !v;
+      try {
+        localStorage.setItem(PREF_AMPLIO, next ? "1" : "0");
+      } catch {
+        // Sin localStorage el modo vale solo para esta visita.
+      }
+      return next;
+    });
+  }
+
   async function copiarEnlace() {
     if (!actual) return;
-    const url = `${window.location.origin}/capacitacion/lista/${listaId}?v=${actual.id}`;
+    // Enlace "de compartir": lo resuelve el backend con el título y la miniatura
+    // del video, para que WhatsApp o Slack muestren la tarjeta. A la persona la
+    // redirige al reproductor.
+    const url = `${window.location.origin}/api/capacitacion/compartir/${actual.id}`;
     try {
       await navigator.clipboard.writeText(url);
       toast.success("Enlace copiado");
@@ -166,7 +195,11 @@ export function CapacitacionPlayer() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-3">
-            <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
+            <div
+              className={`relative mx-auto aspect-video overflow-hidden rounded-lg bg-black ${
+                amplio ? "w-full" : "h-[min(58vh,calc((100vw-2rem)*9/16))] max-w-full"
+              }`}
+            >
               {cargandoEmbed || !embed ? (
                 <div className="flex h-full items-center justify-center">
                   <Spinner size={28} />
@@ -195,6 +228,17 @@ export function CapacitacionPlayer() {
                 )}
               </div>
               <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={alternarTamano}
+                  title={amplio ? "Achicar el reproductor" : "Agrandar el reproductor"}
+                >
+                  <span className="flex items-center gap-1.5">
+                    {amplio ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                    {amplio ? "Achicar" : "Agrandar"}
+                  </span>
+                </Button>
                 <Button size="sm" variant="ghost" onClick={copiarEnlace} title="Copiar enlace a este video">
                   <span className="flex items-center gap-1.5">
                     <Link2 size={14} /> Copiar enlace
