@@ -37,6 +37,7 @@ import {
 } from "../src/services/email/seed-templates.js";
 
 import { prisma } from "../src/lib/prisma.js";
+import { seedCapacitacion } from "../src/services/capacitacion/seed-capacitacion.js";
 import {
   calculateProjectProgress,
   createInitialPipeline,
@@ -2053,6 +2054,8 @@ async function run() {
   await createProjectAudits(project4Id, admin.id);
 
   await seedPermissions(roleIdByName);
+  // Capacitación: VIEW a los roles internos, EDIT a ADMIN y secciones iniciales.
+  await seedCapacitacion(prisma, (msg) => console.log(`   ${msg}`));
   await seedSettings(admin.id);
   await seedLeads(comercial.id, admin.id, project1Id);
   await seedGoals(admin.id);

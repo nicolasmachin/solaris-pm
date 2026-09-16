@@ -47,6 +47,7 @@ el manual difiere del código, manda el código y **el manual se corrige**.
 | 11 | [Métricas](11-metricas.md) | Dashboard, metas, reporte semanal, indicadores | ⬜ Pendiente |
 | 12 | [Infraestructura](12-infraestructura.md) | Docker, base de datos, storage, jobs, correo, IA, respaldos | ⬜ Pendiente |
 | 13 | [Conector MCP](13-conector-mcp.md) | Voltia PM dentro del chat de Claude: autorización, herramientas, permisos | ✅ Completo |
+| 14 | [Capacitación](14-capacitacion.md) | Videos (Bunny Stream) y documentos por área, permisos por sección, progreso y seguimiento | ✅ Completo |
 
 Los capítulos pendientes existen con su esqueleto y se completan a medida que se
 trabaja sobre cada módulo. Un capítulo marcado ⬜ **no significa que la

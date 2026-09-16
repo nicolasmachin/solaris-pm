@@ -41,6 +41,12 @@ services:
       # Límite aparte para los videos de ensayos: se aplica solo en esa ruta.
       MAX_VIDEO_SIZE_MB: ${MAX_VIDEO_SIZE_MB:-500}
       BASE_URL: http://localhost:5173
+      # Bunny Stream (videos de Capacitación) — leídos del .env raíz del repo.
+      BUNNY_STREAM_LIBRARY_ID: ${BUNNY_STREAM_LIBRARY_ID:-}
+      BUNNY_STREAM_API_KEY: ${BUNNY_STREAM_API_KEY:-}
+      BUNNY_STREAM_TOKEN_KEY: ${BUNNY_STREAM_TOKEN_KEY:-}
+      BUNNY_STREAM_CDN_HOSTNAME: ${BUNNY_STREAM_CDN_HOSTNAME:-}
+      BUNNY_STREAM_REFERER: ${BUNNY_STREAM_REFERER:-}
       # SMTP (correo) — leídos del .env raíz del repo
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-}

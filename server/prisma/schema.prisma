@@ -141,6 +141,7 @@ enum AuditEntityType {
   fv_incidencia
   ensayo_video
   installer_payment
+  capacitacion
 }
 
 enum AuditAction {
@@ -266,6 +267,7 @@ model Role {
 
   users       User[]
   permissions Permission[]
+  capacitacionSecciones CapacitacionSeccionRol[]
 
   @@map("roles")
 }
@@ -294,6 +296,10 @@ enum Module {
   // INSTALADOR_TERCERIZADO para ver lo suyo; la gestión (asignar, cobrar, corregir
   // montos) se gobierna con FINANZAS.
   PAGOS_INSTALADOR
+  // Capacitación del equipo (videos de Bunny + documentos por área). VIEW = entrar
+  // al módulo; qué áreas ve cada rol se define por sección (CapacitacionSeccionRol).
+  // EDIT = gestionar contenido y ver todas las secciones y el seguimiento.
+  CAPACITACION
 }
 
 enum Moneda {
@@ -567,6 +573,9 @@ model User {
   projectVideosBorrados          ProjectVideo[]              @relation("ProjectVideoDeletedBy")
   mcpAuthCodes                   McpAuthCode[]
   mcpRefreshTokens               McpRefreshToken[]
+  capacitacionVideosCargados     CapacitacionVideo[]         @relation("CapacitacionVideoCreatedBy")
+  capacitacionDocumentosSubidos  CapacitacionDocumento[]     @relation("CapacitacionDocumentoUploadedBy")
+  capacitacionVistas             CapacitacionVista[]
   passwordTemporary              Boolean                     @default(false)
   deletedAt                      DateTime?                   @db.Timestamptz(6)
   createdAt                      DateTime                    @default(now()) @db.Timestamptz(6)
@@ -4604,4 +4613,128 @@ model ProjectVideo {
   @@index([processingStatus])
   @@index([deletedAt])
   @@map("project_videos")
+}
+
+// ─── Capacitación ────────────────────────────────────────────────────────────
+// Material de capacitación del equipo por área. Los videos viven en Bunny Stream
+// (solo se guarda la referencia); los documentos se suben al storage de la app.
+
+model CapacitacionSeccion {
+  id          String   @id @default(cuid())
+  nombre      String
+  descripcion String?
+  orden       Int      @default(0)
+  // Una sección inactiva solo la ve quien gestiona (CAPACITACION:EDIT).
+  activa      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+
+  roles      CapacitacionSeccionRol[]
+  listas     CapacitacionLista[]
+  documentos CapacitacionDocumento[]
+
+  @@index([orden])
+  @@map("capacitacion_secciones")
+}
+
+// Qué roles ven cada sección. Sin filas = nadie la ve salvo quien gestiona.
+model CapacitacionSeccionRol {
+  id        String              @id @default(cuid())
+  seccionId String
+  seccion   CapacitacionSeccion @relation(fields: [seccionId], references: [id], onDelete: Cascade)
+  roleId    String
+  role      Role                @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([seccionId, roleId])
+  @@index([roleId])
+  @@map("capacitacion_seccion_roles")
+}
+
+model CapacitacionLista {
+  id          String              @id @default(cuid())
+  seccionId   String
+  seccion     CapacitacionSeccion @relation(fields: [seccionId], references: [id], onDelete: Cascade)
+  titulo      String
+  descripcion String?
+  orden       Int                 @default(0)
+  deletedAt   DateTime?           @db.Timestamptz(6)
+  createdAt   DateTime            @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime            @updatedAt @db.Timestamptz(6)
+
+  videos     CapacitacionVideo[]
+  documentos CapacitacionDocumento[]
+
+  @@index([seccionId, orden])
+  @@map("capacitacion_listas")
+}
+
+model CapacitacionVideo {
+  id                String            @id @default(cuid())
+  listaId           String
+  lista             CapacitacionLista @relation(fields: [listaId], references: [id], onDelete: Cascade)
+  bunnyLibraryId    String
+  bunnyVideoId      String
+  titulo            String
+  descripcion       String?
+  duracionSeg       Int?
+  thumbnailFileName String?
+  orden             Int               @default(0)
+  // Quitar un video de la lista no lo borra de Bunny.
+  deletedAt         DateTime?         @db.Timestamptz(6)
+  createdById       String
+  createdBy         User              @relation("CapacitacionVideoCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt         DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime          @updatedAt @db.Timestamptz(6)
+
+  vistas CapacitacionVista[]
+
+  @@index([listaId, orden])
+  @@index([bunnyVideoId])
+  @@map("capacitacion_videos")
+}
+
+// Documentos de capacitación. Guardan los metadatos del archivo en la propia fila
+// (no usan FileAttachment): no pertenecen a proyecto/lead/informe y no deben
+// aparecer en ningún listado de documentos del proyecto.
+model CapacitacionDocumento {
+  id             String              @id @default(cuid())
+  seccionId      String
+  seccion        CapacitacionSeccion @relation(fields: [seccionId], references: [id], onDelete: Cascade)
+  listaId        String?
+  lista          CapacitacionLista?  @relation(fields: [listaId], references: [id], onDelete: SetNull)
+  titulo         String
+  descripcion    String?
+  filename       String
+  storedFilename String
+  mimeType       String
+  sizeBytes      Int
+  url            String
+  orden          Int                 @default(0)
+  deletedAt      DateTime?           @db.Timestamptz(6)
+  uploadedById   String
+  uploadedBy     User                @relation("CapacitacionDocumentoUploadedBy", fields: [uploadedById], references: [id], onDelete: Restrict)
+  createdAt      DateTime            @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime            @updatedAt @db.Timestamptz(6)
+
+  @@index([seccionId, orden])
+  @@index([listaId])
+  @@map("capacitacion_documentos")
+}
+
+// Progreso de cada usuario en cada video.
+model CapacitacionVista {
+  id             String            @id @default(cuid())
+  userId         String
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId        String
+  video          CapacitacionVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  // Máxima posición alcanzada (no la última): retroceder no pierde el avance.
+  segundosVistos Int               @default(0)
+  completadoAt   DateTime?         @db.Timestamptz(6)
+  createdAt      DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime          @updatedAt @db.Timestamptz(6)
+
+  @@unique([userId, videoId])
+  @@index([videoId])
+  @@map("capacitacion_vistas")
 }

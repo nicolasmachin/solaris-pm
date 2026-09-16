@@ -35,6 +35,7 @@
     "test:ute-advance": "node --import tsx --test src/services/ute-sync.advance.test.ts",
     "save": "bash scripts/save.sh",
     "test:cover-overlay": "node --import tsx --test src/services/proposal/coverOverlay.test.ts",
+    "test:capacitacion": "node --import tsx --test src/services/capacitacion/capacitacion.service.test.ts",
     "test:initial-draft": "node --import tsx --test src/services/proposal/initial-draft.test.ts"
   },
   "dependencies": {

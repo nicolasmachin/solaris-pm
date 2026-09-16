@@ -38,4 +38,20 @@ export const env = {
   // Es una allowlist explícita a propósito: tener usuario en la app no alcanza
   // para exponer los datos por fuera de ella.
   mcpAllowedEmails: process.env.MCP_ALLOWED_EMAILS ?? "",
+  // URL pública del front. Se usa como Referer al bajar miniaturas de Bunny
+  // (la biblioteca bloquea los pedidos sin referer).
+  baseUrl: process.env.BASE_URL ?? "http://localhost:5173",
+  // ── Bunny Stream (módulo Capacitación) ─────────────────────────────────
+  // La API key solo se usa del lado del server (listar videos/colecciones);
+  // nunca llega al navegador. Con TOKEN_KEY vacía los embeds salen sin firma
+  // (sirve solo si la biblioteca no tiene token authentication activado).
+  bunnyStreamLibraryId: process.env.BUNNY_STREAM_LIBRARY_ID ?? "",
+  bunnyStreamApiKey: process.env.BUNNY_STREAM_API_KEY ?? "",
+  bunnyStreamTokenKey: process.env.BUNNY_STREAM_TOKEN_KEY ?? "",
+  bunnyStreamCdnHostname: process.env.BUNNY_STREAM_CDN_HOSTNAME ?? "",
+  // Referer con el que el server baja las miniaturas del CDN. Bunny las sirve
+  // solo a los "Allowed domains" de la biblioteca, que listan el dominio de la
+  // app: en dev (localhost) hay que mandar el de producción igual, porque el
+  // pedido lo hace el server, no el navegador de nadie.
+  bunnyStreamReferer: process.env.BUNNY_STREAM_REFERER || process.env.BASE_URL || "http://localhost:5173",
 };

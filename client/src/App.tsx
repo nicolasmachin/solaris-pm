@@ -23,6 +23,18 @@ const ComisionesAsesor = lazy(() =>
 const PagosInstalador = lazy(() =>
   import("./pages/PagosInstalador").then((module) => ({ default: module.PagosInstalador })),
 );
+const CapacitacionHome = lazy(() =>
+  import("./modules/capacitacion/CapacitacionHome").then((m) => ({ default: m.CapacitacionHome })),
+);
+const CapacitacionSeccion = lazy(() =>
+  import("./modules/capacitacion/CapacitacionSeccion").then((m) => ({ default: m.CapacitacionSeccion })),
+);
+const CapacitacionPlayer = lazy(() =>
+  import("./modules/capacitacion/CapacitacionPlayer").then((m) => ({ default: m.CapacitacionPlayer })),
+);
+const CapacitacionGestion = lazy(() =>
+  import("./modules/capacitacion/CapacitacionGestion").then((m) => ({ default: m.CapacitacionGestion })),
+);
 const ViajeSaoPaulo = lazy(() =>
   import("./pages/ViajeSaoPaulo").then((module) => ({ default: module.ViajeSaoPaulo })),
 );
@@ -294,6 +306,41 @@ export function App() {
           element={
             <PermissionRoute module="COMISIONES" action="VIEW">
               <ComisionesAsesor />
+            </PermissionRoute>
+          }
+        />
+        {/* Capacitación: VIEW entra al módulo; qué áreas ve cada rol se define
+            por sección (ver modules/capacitacion). "lista" va antes que ":seccionId"
+            para que no la capture la ruta del área. */}
+        <Route
+          path="/capacitacion"
+          element={
+            <PermissionRoute module="CAPACITACION" action="VIEW">
+              <CapacitacionHome />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/capacitacion/gestion"
+          element={
+            <PermissionRoute module="CAPACITACION" action="EDIT">
+              <CapacitacionGestion />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/capacitacion/lista/:listaId"
+          element={
+            <PermissionRoute module="CAPACITACION" action="VIEW">
+              <CapacitacionPlayer />
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/capacitacion/:seccionId"
+          element={
+            <PermissionRoute module="CAPACITACION" action="VIEW">
+              <CapacitacionSeccion />
             </PermissionRoute>
           }
         />

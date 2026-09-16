@@ -6320,6 +6320,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
     { module: Module.FINANZAS,            actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { module: Module.METRICAS,            actions: [Action.VIEW] },
     { module: Module.INFORMES,            actions: [Action.VIEW, Action.CREATE, Action.EDIT] },
+    // VIEW = entrar a Capacitación (qué áreas ve se define por sección).
+    // EDIT = gestionar contenido, ver todas las secciones y el seguimiento.
+    { module: Module.CAPACITACION,        actions: [Action.VIEW, Action.EDIT] },
     { module: Module.USUARIOS,            actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
     { module: Module.CONFIGURACION,       actions: [Action.VIEW, Action.CREATE, Action.EDIT, Action.DELETE] },
   ];

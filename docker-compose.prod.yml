@@ -40,6 +40,12 @@ services:
       # (no sube el techo global de MAX_FILE_SIZE_MB).
       MAX_VIDEO_SIZE_MB: ${MAX_VIDEO_SIZE_MB:-500}
       BASE_URL: ${BASE_URL}
+      # Bunny Stream (videos de Capacitación) — sin estas, el selector de videos y la reproducción no andan (DEPLOY.md §2).
+      BUNNY_STREAM_LIBRARY_ID: ${BUNNY_STREAM_LIBRARY_ID:-}
+      BUNNY_STREAM_API_KEY: ${BUNNY_STREAM_API_KEY:-}
+      BUNNY_STREAM_TOKEN_KEY: ${BUNNY_STREAM_TOKEN_KEY:-}
+      BUNNY_STREAM_CDN_HOSTNAME: ${BUNNY_STREAM_CDN_HOSTNAME:-}
+      BUNNY_STREAM_REFERER: ${BUNNY_STREAM_REFERER:-}
       # SMTP (correo) — sin estas, sendEmail corta con "SMTP no configurado" y no
       # salen los mails internos (traspasos, avisos, etc.). Ver DEPLOY.md §2.
       SMTP_HOST: ${SMTP_HOST:-}

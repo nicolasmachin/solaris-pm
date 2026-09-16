@@ -2,6 +2,17 @@
 
 ## v10.3
 
+### 15 de septiembre de 2026
+
+#### Capacitación: videos y documentos para el equipo
+
+- Nueva sección **Capacitación** en el menú de tu usuario (arriba a la derecha): videos y documentos para aprender a usar la app y trabajar mejor.
+- Está **dividida por áreas** —Ventas, Ingeniería y Tramitación, Operaciones, Experiencia Solar, Finanzas y Otros—, y cada persona ve solo las de su rol.
+- Los videos se miran **dentro de la app**, con una lista de reproducción al costado: marca cuáles ya viste, recuerda por dónde ibas y pasa solo al siguiente.
+- Cada área tiene también sus **documentos**, que se ven o se descargan.
+- Botón **Copiar enlace** para pasarle a un compañero el link a un video puntual.
+- Quien administra tiene **Gestionar**: arma las áreas y elige qué roles ven cada una, crea listas, agrega videos de la biblioteca de Voltia eligiéndolos con su miniatura, sube documentos y ve en una tabla **quién completó qué**.
+
 ### 13 de septiembre de 2026
 
 #### Ingeniería ya puede dar de alta materiales

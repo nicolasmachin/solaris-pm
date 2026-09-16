@@ -29,6 +29,11 @@ Copiar `.env.example` a `.env` en la raíz y completar. Claves críticas:
 | `OPENAI_API_KEY` | transcripción de audios (Whisper) |
 | `SMTP_ENCRYPTION_KEY` | **cifra las credenciales SMTP por usuario** (AES-256-GCM). Sin esto, guardar el SMTP falla y no se puede mandar mail. Generar con `openssl rand -base64 32` y **no cambiarla nunca** (rompe lo ya cifrado). |
 | `SMTP_*` / `TWILIO_*` | email / WhatsApp (opcionales: si faltan, se loguea y no rompe) |
+| `BUNNY_STREAM_LIBRARY_ID` | id de la biblioteca de Bunny Stream (módulo Capacitación) |
+| `BUNNY_STREAM_API_KEY` | alcanza la **Read-only API Key** de la biblioteca (la app solo lista videos) |
+| `BUNNY_STREAM_TOKEN_KEY` | *Token authentication key* (Stream → Security). La biblioteca tiene prendido *Embed view token authentication*: **sin esto los videos no reproducen** |
+| `BUNNY_STREAM_CDN_HOSTNAME` | `vz-xxxx.b-cdn.net`, de donde se bajan las miniaturas |
+| `BUNNY_STREAM_REFERER` | opcional. Referer con el que el server pide las miniaturas; default `BASE_URL`. Tiene que estar en los *Allowed domains* de Bunny |
 
 > ⚠️ **Gap conocido del compose de prod**: el bloque `server.environment` de
 > La imagen se buildea sin `.env` (está en `.dockerignore`), así que **una
@@ -36,7 +41,7 @@ Copiar `.env.example` a `.env` en la raíz y completar. Claves críticas:
 > contenedor**, por más que esté en el `.env`. Al agregar una variable nueva hay
 > que sumarla ahí (`VAR: ${VAR:-}`) y recrear: `docker compose -f
 > docker-compose.prod.yml up -d server`. Hoy forwardea 39 (SMTP, Anthropic,
-> OpenAI, Growatt, Huawei, monitoreo FV, MCP y novedades).
+> OpenAI, Growatt, Huawei, monitoreo FV, MCP, novedades y Bunny).
 
 > **NODE_ENV=production** en prod: activa el guard del seed (aborta), apaga la
 > redirección de mails de dev (ver abajo) y el modo productivo. El compose de
@@ -207,7 +212,16 @@ docker compose -f docker-compose.prod.yml exec server npx tsx scripts/update-con
 # Correrlo en CADA deploy que traiga fotos nuevas.
 docker compose -f docker-compose.prod.yml exec server npx tsx prisma/scripts/seed-fotos-materiales.ts --dry-run
 docker compose -f docker-compose.prod.yml exec server npx tsx prisma/scripts/seed-fotos-materiales.ts
+
+# Módulo Capacitación: CAPACITACION:VIEW a todos los roles internos, EDIT a ADMIN,
+# y las 6 áreas iniciales con sus roles (solo si todavía no hay ninguna).
+docker compose -f docker-compose.prod.yml exec server npx tsx scripts/seed-capacitacion.ts
 ```
+
+> **Capacitación, además de las envs y el seed**: en Bunny → Stream →
+> biblioteca → Security, *Allowed domains* tiene que incluir el dominio de
+> producción (y `localhost` si se quiere probar en local; si falta, el
+> reproductor muestra 403 dentro del video).
 
 > Tras un grant de **permisos**, reiniciar el server para invalidar el cache de
 > permisos (TTL 5 min): `docker compose -f docker-compose.prod.yml restart server`.

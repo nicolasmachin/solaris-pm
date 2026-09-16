@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 
 import { registerApiRoutes } from "./api.routes.js";
 import { registerAuthRoutes } from "./auth.routes.js";
+import { registerCapacitacionRoutes } from "./capacitacion.routes.js";
 import { registerClientesRoutes } from "./clientes.routes.js";
 import { registerCommissionRoutes } from "./commission.routes.js";
 import { registerInstallerPaymentRoutes } from "./installer-payment.routes.js";
@@ -68,4 +69,5 @@ export async function registerRoutes(app: FastifyInstance) {
   await app.register(registerReportesFvRoutes, { prefix: "/api" });
   await app.register(registerVideosRoutes, { prefix: "/api" });
   await app.register(registerUteSuministroRoutes, { prefix: "/api" });
+  await app.register(registerCapacitacionRoutes, { prefix: "/api" });
 }
