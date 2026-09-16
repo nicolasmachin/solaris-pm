@@ -152,6 +152,42 @@ export async function saveProgreso(videoId: string, body: { segundos: number; co
   return data;
 }
 
+// ─── Comentarios del video ──────────────────────────────────────────────────
+
+export interface ComentarioItem {
+  id: string;
+  contenido: string;
+  autorId: string;
+  autorNombre: string;
+  createdAt: string;
+  editadoAt: string | null;
+  editado: boolean;
+}
+
+export async function listComentarios(videoId: string) {
+  const { data } = await apiClient.get<{ comentarios: ComentarioItem[] }>(
+    `/api/capacitacion/videos/${videoId}/comentarios`,
+  );
+  return data.comentarios;
+}
+
+export async function crearComentario(videoId: string, contenido: string) {
+  const { data } = await apiClient.post<ComentarioItem>(
+    `/api/capacitacion/videos/${videoId}/comentarios`,
+    { contenido },
+  );
+  return data;
+}
+
+export async function editarComentario(id: string, contenido: string) {
+  const { data } = await apiClient.patch<ComentarioItem>(`/api/capacitacion/comentarios/${id}`, { contenido });
+  return data;
+}
+
+export async function borrarComentario(id: string) {
+  await apiClient.delete(`/api/capacitacion/comentarios/${id}`);
+}
+
 // ─── Gestión ────────────────────────────────────────────────────────────────
 
 export async function listRolesAsignables() {

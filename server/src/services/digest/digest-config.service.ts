@@ -54,6 +54,10 @@ export const NOTIFICATION_TYPE_META: Record<
     label: "Encuesta disponible",
     description: "Se generó una encuesta de satisfacción para un Generador (esta le llega al cliente, no al equipo interno).",
   },
+  capacitacion_comentario: {
+    label: "Comentario en capacitación",
+    description: "Alguien comentó en un video de Capacitación en el que participaste o que cargaste vos.",
+  },
   resumen_experiencia: {
     label: "Recorrido de Experiencia Solar",
     description:

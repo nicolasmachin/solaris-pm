@@ -8,6 +8,7 @@ import { getEmbed, getLista, saveProgreso, type VideoItem } from "../../api/capa
 import { Button } from "../../components/ui/Button";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { Spinner } from "../../components/ui/Spinner";
+import { ComentariosVideo } from "./ComentariosVideo";
 import { DocumentoFila } from "./CapacitacionSeccion";
 import { fmtDuracion, Miniatura } from "./capacitacionUi";
 import { useBunnyPlayer } from "./useBunnyPlayer";
@@ -211,6 +212,8 @@ export function CapacitacionPlayer() {
                 </Button>
               </div>
             </div>
+
+            {actual && <ComentariosVideo videoId={actual.id} />}
 
             {data.documentos.length > 0 && (
               <div>

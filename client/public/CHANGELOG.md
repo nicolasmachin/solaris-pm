@@ -13,6 +13,12 @@
 - Avisa en rojo si estás costeando una cantidad de paneles distinta a la del sistema que estás vendiendo.
 - **Se ajustaron dos valores del cálculo** para acercar las propuestas a lo que se mide en las instalaciones reales: la generación anual estimada y el factor de ahorro de las tarifas Doble y Triple. Las propuestas nuevas van a mostrar una generación y un ahorro algo menores, y más realistas.
 
+#### Preguntas en los videos de capacitación
+
+- Debajo de cada video hay un espacio para **preguntar o aportar algo**, y que lo vea el resto del equipo.
+- Cuando alguien comenta, **le avisa por la campanita** a quien cargó el video y a quienes ya participaron de esa conversación. Al tocar el aviso vas directo a ese video.
+- Cada uno puede editar o borrar lo suyo; quien administra Capacitación puede borrar cualquier comentario.
+
 #### Capacitación: videos y documentos para el equipo
 
 - Nueva sección **Capacitación** en el menú de tu usuario (arriba a la derecha): videos y documentos para aprender a usar la app y trabajar mejor.

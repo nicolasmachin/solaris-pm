@@ -36,6 +36,14 @@ export const LATEST_RELEASE: Release = {
       ],
     },
     {
+      title: "Preguntas en los videos de capacitación",
+      items: [
+        "Debajo de cada video hay un espacio para preguntar o aportar algo, y que lo vea el resto del equipo.",
+        "Cuando alguien comenta, le avisa por la campanita a quien cargó el video y a quienes ya participaron de esa conversación. Al tocar el aviso vas directo a ese video.",
+        "Cada uno puede editar o borrar lo suyo; quien administra Capacitación puede borrar cualquier comentario.",
+      ],
+    },
+    {
       title: "Capacitación: videos y documentos para el equipo",
       items: [
         "Nueva sección Capacitación en el menú de tu usuario (arriba a la derecha): videos y documentos para aprender a usar la app y trabajar mejor.",

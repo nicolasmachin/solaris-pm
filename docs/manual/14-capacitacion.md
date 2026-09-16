@@ -27,6 +27,7 @@ documentos sí se suben al storage de la app.
   - **Copiar enlace** copia la dirección de ese video exacto para pasarla por
     chat. Quien la abra tiene que estar logueado y tener el área habilitada.
   - **Marcar como visto / Visto** marca o desmarca a mano.
+  - Debajo del video, **preguntas y comentarios** del equipo.
   - Al terminar un video se marca visto y **pasa solo al siguiente**.
 
 ### Gestionar (permiso `CAPACITACION:EDIT`)
@@ -42,6 +43,17 @@ Botón **Gestionar** en la portada → `/capacitacion/gestion`, con tres pestañ
   qué roles ven cada una.
 - **Seguimiento**: tabla de personas × listas con cuántos videos completó cada
   una y cuándo fue la última vez.
+
+### Comentar un video
+
+Cualquiera que pueda ver el video escribe debajo de él. El autor edita o borra lo
+suyo; quien tiene `CAPACITACION:EDIT` puede borrar cualquiera (moderación).
+
+Al comentar, se notifica **in-app** (campanita) a quien cargó el video y a
+quienes ya escribieron en ese hilo, menos a quien acaba de comentar. La
+notificación lleva su propio destino (`Notification.link`), así que al tocarla se
+abre el reproductor en ese video; el resto de las notificaciones sigue navegando
+por tipo, como siempre. No se manda correo.
 
 ## Cómo funciona
 
@@ -115,6 +127,14 @@ El front escucha los eventos del reproductor de Bunny por el protocolo player.js
 (`useBunnyPlayer.ts`, mensajes `postMessage`): guarda cada 15 segundos mientras
 hay avance real, y al terminar marca visto y salta al siguiente.
 
+### Comentarios
+
+Reutilizan el modelo `Comment` —el mismo de proyectos, leads y tareas— con la
+columna `capacitacionVideoId`, en vez de una tabla propia: es un hilo plano
+ordenado por fecha, sin respuestas anidadas. El borrado es suave (`deletedAt`) y
+queda en auditoría (`comment_added` / `comment_deleted`). Si se quita el video de
+la lista, sus comentarios se van con él (cascade): no tienen dónde vivir.
+
 ## Permisos
 
 | Acción | Permiso |
@@ -124,6 +144,8 @@ hay avance real, y al terminar marca visto y salta al siguiente.
 | Crear listas, agregar y ordenar videos, subir documentos | `CAPACITACION:EDIT` |
 | Ver el listado de videos de Bunny y las colecciones | `CAPACITACION:EDIT` |
 | Ver el seguimiento de quién vio qué | `CAPACITACION:EDIT` |
+| Comentar, editar y borrar lo propio | `CAPACITACION:VIEW` + que el rol tenga el área |
+| Borrar el comentario de otro (moderación) | `CAPACITACION:EDIT` |
 
 El seed (`services/capacitacion/seed-capacitacion.ts`) da `VIEW` a **todos los
 roles internos** (todos menos `CLIENT`) y `EDIT` solo a `ADMIN`. Para que otro
@@ -174,6 +196,8 @@ Otros (todos los internos).
 - Las miniaturas las baja el **server**, no el navegador, así que usan el
   `Referer` de `BUNNY_STREAM_REFERER` (o `BASE_URL`): en local conviene apuntarlo
   al dominio de producción, que es el que está permitido en Bunny.
+- **Comentario en un video que se quita de la lista**: se borra con el video. Si
+  el video se vuelve a agregar, los comentarios no vuelven (el progreso sí).
 - **El reproductor no reporta avance** (si Bunny cambiara su protocolo): no se
   guarda el progreso automático, pero el botón "Marcar como visto" sigue
   funcionando.
@@ -186,4 +210,6 @@ Otros (todos los internos).
   `server/src/services/bunny-stream.service.ts`.
 - Script de prod: `server/scripts/seed-capacitacion.ts`.
 - Frontend: `client/src/modules/capacitacion/`, `client/src/api/capacitacion.api.ts`.
+- Comentarios: `server/src/services/capacitacion/comentarios.service.ts`,
+  `client/src/modules/capacitacion/ComentariosVideo.tsx`.
 - Tests: `npm run test:capacitacion` (umbral de visto, progreso, orden, firma).
