@@ -6,8 +6,12 @@ import { env } from "../../config/env.js";
 // etapa, notificaciones, plantillas) llegaban a las casillas reales de todo el
 // equipo y les llenaban la bandeja de spam, tapando los mails reales.
 //
-// Si `DEV_EMAIL_REDIRECT_TO` está seteada y NO estamos en producción, TODOS los
-// destinatarios (to/cc/bcc) de cada envío se reemplazan por esa única casilla.
+// En desarrollo el correo NO sale salvo que se pida explícitamente:
+//   - `DEV_EMAIL_REDIRECT_TO` vacía  → no se envía nada (se loguea y listo).
+//   - `DEV_EMAIL_REDIRECT_TO=casilla` → TODOS los destinatarios (to/cc/bcc) de
+//     cada envío se reemplazan por esa única casilla.
+// Antes, vaciar la variable mandaba los mails a las casillas REALES del equipo;
+// ahora vaciarla es la forma segura de apagarlos.
 // El asunto se prefija con los destinatarios originales para no perder el
 // contexto de a quién habría ido. El registro (emailLog) sigue guardando los
 // destinatarios reales; solo cambia la entrega efectiva.
@@ -17,6 +21,25 @@ import { env } from "../../config/env.js";
 
 export function devRedirectActive(): boolean {
   return Boolean(env.devEmailRedirectTo) && env.nodeEnv !== "production";
+}
+
+/**
+ * True cuando estamos fuera de producción y no hay casilla de testing: el envío
+ * se corta antes de llegar al SMTP. Evita dos cosas: llenar de "[PRUEBA]" la
+ * casilla de quien desarrolla, y —peor— mandarle correo real al equipo desde una
+ * base local con datos de prueba.
+ */
+export function devEmailBlocked(): boolean {
+  return env.nodeEnv !== "production" && !env.devEmailRedirectTo;
+}
+
+/** Línea de log para un envío bloqueado en desarrollo. */
+export function logMailBloqueado(destinatarios: string | string[], subject: string) {
+  const to = Array.isArray(destinatarios) ? destinatarios.join(", ") : destinatarios;
+  console.log(
+    `[email] DEV: no se envía "${subject}" (para: ${to}). ` +
+      `Seteá DEV_EMAIL_REDIRECT_TO en el .env para recibirlos en una casilla.`,
+  );
 }
 
 export interface RedirectableMail {

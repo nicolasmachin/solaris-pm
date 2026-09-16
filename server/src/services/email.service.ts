@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 import { prisma } from "../lib/prisma.js";
-import { redirectInDev } from "./email/dev-redirect.js";
+import { devEmailBlocked, logMailBloqueado, redirectInDev } from "./email/dev-redirect.js";
 import { isFullHtmlDoc, renderEmailLayout } from "./email/layout.js";
 
 /**
@@ -80,6 +80,12 @@ export async function sendEmail(params: SendEmailParams): Promise<boolean> {
 
   if (!process.env.SMTP_HOST) {
     console.warn("[email] SMTP no configurado, omitiendo envío");
+    return false;
+  }
+
+  // Desarrollo sin casilla de testing: no se manda nada.
+  if (devEmailBlocked()) {
+    logMailBloqueado(params.to, params.subject);
     return false;
   }
 

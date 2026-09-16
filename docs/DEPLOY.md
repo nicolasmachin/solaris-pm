@@ -50,9 +50,11 @@ Copiar `.env.example` a `.env` en la raíz y completar. Claves críticas:
 > explícito.
 
 > ⚠️ **`DEV_EMAIL_REDIRECT_TO` es SOLO de desarrollo — NUNCA en prod.** En local
-> (`docker-compose.yml`) esta variable redirige **todos** los mails salientes a
-> una casilla de testing y les agrega un banner "CORREO DE PRUEBA", para no
-> spamear al equipo mientras se testea. Dos barreras impiden que llegue a prod:
+> (`docker-compose.yml`) el default es **vacío = no se manda ningún mail**: el
+> envío se corta antes del SMTP y solo queda un log. Si se la setea a una
+> casilla, **todos** los mails salientes se redirigen ahí con un banner "CORREO
+> DE PRUEBA", para testear sin spamear al equipo (ni llenar la casilla propia el
+> resto del tiempo). Dos barreras impiden que llegue a prod:
 > (1) **no** está en el `server.environment` de `docker-compose.prod.yml` (ni hay
 > `env_file`), así que aunque alguien la ponga en el `.env` de prod **no se pasa
 > al contenedor**; y (2) el código la ignora si `NODE_ENV=production`. **No

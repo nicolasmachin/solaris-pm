@@ -5,7 +5,7 @@ import { createAuditEntry } from "../audit.service.js";
 import { AppError, badRequest } from "../../utils/errors.js";
 import { todayUtc } from "../../utils/dates.js";
 import { buildTransporter, getSmtpCredentials } from "./smtp.service.js";
-import { redirectInDev } from "./dev-redirect.js";
+import { devEmailBlocked, logMailBloqueado, redirectInDev } from "./dev-redirect.js";
 import type { EmailAttachment } from "../email.service.js";
 import { CONSULTA_UTE_KEY, SUMINISTRO_INDIVIDUAL_KEY } from "./seed-templates.js";
 
@@ -123,6 +123,16 @@ export async function sendTemplatedEmail(input: SendEmailInput): Promise<{ id: s
       },
     });
     return log;
+  }
+
+  // Desarrollo sin casilla de testing: no sale al SMTP. Este camino lo dispara
+  // una persona apretando "Enviar", así que se le avisa en pantalla en vez de
+  // simular un envío que nunca ocurrió; queda registrado como fallido.
+  if (devEmailBlocked()) {
+    const motivo = "Entorno de desarrollo: el envío está apagado (DEV_EMAIL_REDIRECT_TO vacío)";
+    logMailBloqueado(to, input.subject);
+    await registrar(EmailStatus.FAILED, motivo);
+    throw new AppError(503, "DEV_EMAIL_APAGADO", motivo);
   }
 
   try {

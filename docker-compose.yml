@@ -57,10 +57,11 @@ services:
       # (user_smtp_configs). Sin esto, en local no se puede guardar ni usar el
       # correo por-usuario: los mails de UTE tiran SMTP_NOT_CONFIGURED.
       SMTP_ENCRYPTION_KEY: ${SMTP_ENCRYPTION_KEY:-}
-      # DEV: redirige TODOS los mails salientes a esta casilla en local, para no
-      # spamear al equipo mientras se testea. Vacío = sin redirección. En prod
+      # DEV: vacío = NO se manda ningún mail desde local (se loguea y listo).
+      # Con una casilla, TODOS los mails salientes se redirigen ahí con el
+      # cartel "CORREO DE PRUEBA", para testear sin spamear al equipo. En prod
       # nunca se setea (además el código la ignora si NODE_ENV=production).
-      DEV_EMAIL_REDIRECT_TO: ${DEV_EMAIL_REDIRECT_TO:-nfmj@hotmail.com}
+      DEV_EMAIL_REDIRECT_TO: ${DEV_EMAIL_REDIRECT_TO:-}
       # BCC interno de cada reporte fotovoltaico enviado a un cliente (copia de
       # control). Vacío = sin copia.
       REPORTES_FV_BCC: ${REPORTES_FV_BCC:-}

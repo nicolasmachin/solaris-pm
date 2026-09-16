@@ -23,17 +23,33 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "10.4",
+  date: "15 de septiembre de 2026",
+  sections: [
+    {
+      title: "Capacitación: videos y documentos para el equipo",
+      items: [
+        "Nueva sección Capacitación en el menú de tu usuario (arriba a la derecha): videos y documentos para aprender a usar la app y trabajar mejor.",
+        "Está dividida por áreas —Ventas, Ingeniería y Tramitación, Operaciones, Experiencia Solar, Finanzas y Otros—, y cada persona ve solo las de su rol.",
+        "Los videos se miran dentro de la app, con una lista de reproducción al costado: marca cuáles ya viste, recuerda por dónde ibas y pasa solo al siguiente.",
+        "Cada área tiene también sus documentos, que se ven o se descargan.",
+        "Botón Copiar enlace para pasarle a un compañero el link a un video puntual.",
+        "Quien administra tiene Gestionar: arma las áreas y elige qué roles ven cada una, crea listas, agrega videos de la biblioteca de Voltia eligiéndolos con su miniatura, sube documentos y ve en una tabla quién completó qué.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_10_3: Release = {
   version: "10.3",
   date: "13 de septiembre de 2026",
   sections: [
     {
       title: "Ingeniería ya puede dar de alta materiales",
       items: [
-        "Quien hace ingeniería entra a Administración y crea ítems nuevos del catálogo sin depender de un administrador. Antes tenía que pedirlo cada vez que aparecía un material que no estaba en la lista.",
-        "Dentro de Administración solo ve la sección Materiales: el resto (usuarios, permisos, configuración del sistema, reglas) no le aparece.",
-        "Puede crear, editar y desactivar ítems. Eliminar y administrar las categorías siguen siendo del administrador: desactivar alcanza para sacar un material de circulación y es reversible.",
-        "El campo Proveedor por defecto solo se muestra a quien tiene acceso a Finanzas; el ítem se puede crear sin proveedor y completarlo después.",
-        'Arreglo: el enlace "Catálogo" de la lista de materiales de un proyecto llevaba a una dirección inexistente; ahora abre Administración en la sección Materiales.',
+        "Quien hace ingeniería entra a Administración y crea ítems nuevos del catálogo sin depender de un administrador.",
+        "Dentro de Administración solo ve la sección Materiales: el resto no le aparece.",
+        "Puede crear, editar y desactivar ítems. Eliminar y administrar las categorías siguen siendo del administrador.",
       ],
     },
   ],
@@ -79,6 +95,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "10.3",
+    shortDate: "13 sep",
+    highlights: RELEASE_10_3.sections.map((sec) => sec.title),
+  },
   {
     version: "10.2",
     shortDate: "9 sep",

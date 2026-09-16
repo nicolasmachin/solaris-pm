@@ -1,6 +1,6 @@
 # Novedades
 
-## v10.3
+## v10.4
 
 ### 15 de septiembre de 2026
 
@@ -12,6 +12,8 @@
 - Cada área tiene también sus **documentos**, que se ven o se descargan.
 - Botón **Copiar enlace** para pasarle a un compañero el link a un video puntual.
 - Quien administra tiene **Gestionar**: arma las áreas y elige qué roles ven cada una, crea listas, agrega videos de la biblioteca de Voltia eligiéndolos con su miniatura, sube documentos y ve en una tabla **quién completó qué**.
+
+## v10.3
 
 ### 13 de septiembre de 2026
 
