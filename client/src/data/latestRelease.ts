@@ -29,7 +29,7 @@ export const LATEST_RELEASE: Release = {
     {
       title: "Cotizador: costear a medida y números más realistas",
       items: [
-        "Sección nueva \"Costeo de esta cotización\": la misma planilla con la que se costea a mano (costeo, pricing y flujo de caja), con los costos editables.",
+        "Un ícono de calculadora en el encabezado del cotizador abre el costeo de esa propuesta: la misma planilla con la que se costea a mano (costeo, pricing y flujo de caja), con los costos editables.",
         "Se puede cambiar el costo de paneles, estructuras, eléctrica, inversor, meter, los costos fijos, los variables y la mano de obra; el precio y la ganancia se recalculan al instante.",
         "Lo que cambiás vale solo para esa cotización: no afecta a las demás ni a la configuración general, y se guarda solo.",
         "Se ajustaron la generación anual estimada y el factor de ahorro de las tarifas Doble y Triple, para acercar las propuestas a lo que se mide en las instalaciones reales.",

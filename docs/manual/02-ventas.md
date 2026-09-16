@@ -196,8 +196,10 @@ esa planilla adentro del cotizador.
 
 ## Cómo se usa
 
-En el cotizador, sección **"Costeo de esta cotización"**. Replica la planilla
-original en tres bloques:
+En el cotizador, con el **ícono de calculadora** del encabezado, al lado del
+botón de publicar. Es a propósito discreto: son los costos del negocio, no un
+dato de la propuesta, y no tienen por qué estar a la vista de todo el que
+cotiza. Abre un panel lateral que replica la planilla original en tres bloques:
 
 - **Costeo** (editable): los cinco ítems con su costo unitario y su cantidad,
   más los costos fijos y los variables.
@@ -225,7 +227,12 @@ mismos números con que se cotizó.
   después lo pisan con el ajuste.
 - Endpoint: `GET /api/proposals-v2/leads/:leadId/draft/costeo`, en
   `draft.service.ts` → `computeDraftCosteo()`.
-- Pantalla: `components/proposals-v2/CosteoPanel.tsx` + `hooks/useDraftCosteo.ts`.
+- Pantalla: `components/proposals-v2/CosteoDrawer.tsx` (el panel lateral y su
+  botón) + `CosteoPanel.tsx` (las tablas) + `hooks/useDraftCosteo.ts`.
+
+Va en un drawer **aparte del de debug de calculadora**, aunque se parezcan: ese
+es de solo lectura y de administración (`VENTAS:DEBUG_CALCULADORA`), este edita
+el borrador y lo usa quien cotiza. Comparten la forma, no el permiso.
 
 Los valores "de fábrica" que se muestran como referencia **no se recalculan a
 mano**: el servicio corre el motor una segunda vez con los ajustes vaciados. Así

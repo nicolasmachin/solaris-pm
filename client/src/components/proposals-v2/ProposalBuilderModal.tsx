@@ -278,8 +278,8 @@ export function ProposalBuilderModal({
             <CosteoDrawer
               open={costeoOpen}
               onClose={() => setCosteoOpen(false)}
-              data={draft}
-              onChange={setDraft}
+              data={data}
+              onChange={setData}
               leadId={leadId}
               variante={variante}
               leadName={lead.clientName}

@@ -6,7 +6,7 @@
 
 #### Cotizador: costear a medida y números más realistas
 
-- En el cotizador hay una sección nueva, **Costeo de esta cotización**, con la misma planilla con la que se costea a mano: costeo, pricing y flujo de caja.
+- En el cotizador hay un **ícono de calculadora** en el encabezado que abre el costeo de esa propuesta: la misma planilla con la que se costea a mano, con costeo, pricing y flujo de caja.
 - Se puede **cambiar el costo de cada ítem** (paneles, estructuras, eléctrica, inversor, meter), los costos fijos, los variables y la mano de obra. El precio, el markup, la ganancia y el flujo de caja se recalculan al instante.
 - Lo que cambiás vale **solo para esa cotización**: no afecta a las demás ni a la configuración general. Se guarda solo, y queda pegado a la propuesta que publiques.
 - Cada campo en blanco usa el valor de siempre. Si lo pisás, queda resaltado y aparece una flecha para volver al original.
