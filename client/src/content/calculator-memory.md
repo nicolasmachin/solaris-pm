@@ -42,6 +42,13 @@ aproximado). Gonzalez: 11 × 3 = **33 m²**.
 
 ## 3. Costos
 
+> **Estos son los precios de lista.** Cada cotización puede tener sus propios
+> costos, cargados en la sección "Costeo de esta cotización" del cotizador. Ahí
+> se pisa el costo de cualquier ítem, los costos fijos, los variables y la mano
+> de obra, **solo para esa propuesta**: no cambian estos valores ni afectan a las
+> demás cotizaciones. Lo que sigue es lo que se usa cuando no hay ningún ajuste
+> cargado.
+
 ### Equipamiento (lo que cuesta comprar el sistema, sin IVA)
 
 Suma de: paneles ({{singleton:precioPanelUsdSinIva}} × cantidad) + estructuras
