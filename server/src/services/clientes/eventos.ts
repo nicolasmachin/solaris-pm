@@ -47,6 +47,16 @@ export const EVENTOS: Record<AuditAction, EventoDef> = {
   [AuditAction.proposal_v2_version_published]: { visibilidad: "novedad", etiqueta: "Propuesta emitida" },
   [AuditAction.proposal_generated]: { visibilidad: "novedad", etiqueta: "Propuesta generada" },
 
+  // Agenda (mantenimientos, soportes, visitas técnicas). Son novedad: el cliente
+  // los percibe — alguien va a ir a su casa. La etiqueta genérica se pisa con la
+  // descripción real del evento, que ya trae el tipo, la fecha y el equipo.
+  [AuditAction.agenda_evento_creado]: { visibilidad: "novedad" },
+  [AuditAction.agenda_evento_completado]: { visibilidad: "novedad" },
+  [AuditAction.agenda_evento_cancelado]: { visibilidad: "novedad" },
+  // Reprogramar es ruido para el cliente si se toca varias veces antes de que
+  // pase algo: queda como trazabilidad interna.
+  [AuditAction.agenda_evento_actualizado]: { visibilidad: "auditoria" },
+
   // ─── Auditoría: trazabilidad interna, no se muestra ───────────────────────
   [AuditAction.created]: { visibilidad: "auditoria" },
   [AuditAction.updated]: { visibilidad: "auditoria" },

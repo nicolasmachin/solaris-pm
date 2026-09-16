@@ -1,5 +1,21 @@
 # Novedades
 
+## v10.6
+
+### 16 de septiembre de 2026
+
+#### El calendario ya no es solo de obras
+
+- Además de las instalaciones, ahora se pueden agendar **mantenimientos, soportes/reclamos y visitas técnicas**, con el botón **"+ Agendar otra cosa"**.
+- Se agendan en **un día**, y se le pueden sumar **días sueltos** que no tienen por qué ser seguidos: un mantenimiento puede quedar el lunes y el jueves sin tocar el miércoles.
+- Cada uno se distingue por una **barra de color a la izquierda** y un ícono: 🔧 mantenimiento, ⚠ soporte, 🔍 visita. El fondo sigue siendo el color del equipo y el rayado sigue marcando las fechas sin confirmar, igual que siempre.
+- **Filtro para elegir qué ver** (obras, mantenimientos, soporte, visitas). **Cada uno guarda su combinación** y la encuentra igual la próxima vez que entra.
+- Si el evento se asigna a un cliente, **queda en la ficha del proyecto** y **aparece en las novedades del cliente**. Los de soporte pueden además engancharse a un ticket existente.
+
+#### Equipos
+
+- Se dio de baja el equipo **Leo**: ya no se puede asignar a nada nuevo. **Las obras que hizo siguen mostrando su nombre**, para que el histórico no pierda quién las hizo.
+
 ## v10.5
 
 ### 15 de septiembre de 2026

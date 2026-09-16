@@ -23,37 +23,23 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "10.5",
-  date: "15 de septiembre de 2026",
+  version: "10.6",
+  date: "16 de septiembre de 2026",
   sections: [
     {
-      title: "Cotizador: costear a medida y números más realistas",
+      title: "El calendario ya no es solo de obras",
       items: [
-        "Un ícono de calculadora en el encabezado del cotizador abre el costeo de esa propuesta: la misma planilla con la que se costea a mano (costeo, pricing y flujo de caja), con los costos editables.",
-        "Se puede cambiar el costo de paneles, estructuras, eléctrica, inversor, meter, los costos fijos, los variables y la mano de obra; el precio y la ganancia se recalculan al instante.",
-        "Lo que cambiás vale solo para esa cotización: no afecta a las demás ni a la configuración general, y se guarda solo.",
-        "Se ajustaron la generación anual estimada y el factor de ahorro de las tarifas Doble y Triple, para acercar las propuestas a lo que se mide en las instalaciones reales.",
+        'Además de las instalaciones se pueden agendar mantenimientos, soportes/reclamos y visitas técnicas, con el botón "+ Agendar otra cosa".',
+        "Se agendan en un día y se le pueden sumar días sueltos, que no tienen por qué ser seguidos: un mantenimiento puede quedar el lunes y el jueves sin tocar el miércoles.",
+        "Cada tipo se distingue por una barra de color a la izquierda y un ícono. El fondo sigue siendo el color del equipo y el rayado sigue marcando las fechas sin confirmar.",
+        "Filtro para elegir qué ver, y cada uno guarda su propia combinación para la próxima vez.",
+        "Si el evento se asigna a un cliente, queda en la ficha del proyecto y aparece en sus novedades. Los de soporte pueden engancharse a un ticket.",
       ],
     },
     {
-      title: "Capacitación: reproductor más cómodo y enlaces con vista previa",
+      title: "Equipos",
       items: [
-        "El video ya no ocupa toda la pantalla: queda en un tamaño donde entran también el título, los botones y los comentarios. El botón Agrandar lo lleva al modo teatro, y se acuerda de cómo lo dejaste.",
-        "Al copiar el enlace de un video y pegarlo en WhatsApp o Slack se ve una tarjeta con el título, el área y la miniatura. El video sigue siendo privado: para verlo hay que entrar con tu usuario.",
-      ],
-    },
-    {
-      title: "Preguntas en los videos de capacitación",
-      items: [
-        "Debajo de cada video hay un espacio para preguntar o aportar algo, y que lo vea el resto del equipo.",
-        "Cuando alguien comenta, le avisa por la campanita a quien cargó el video y a quienes ya participaron de esa conversación. Al tocar el aviso vas directo a ese video.",
-        "Cada uno puede editar o borrar lo suyo; quien administra Capacitación puede borrar cualquier comentario.",
-      ],
-    },
-    {
-      title: "Arreglos",
-      items: [
-        "El reproductor de Capacitación no arrancaba el video: la pantalla se trababa y quedaba en negro. Ya funciona normalmente.",
+        "Se dio de baja el equipo Leo: ya no se puede asignar a nada nuevo, pero las obras que hizo siguen mostrando su nombre para no perder el histórico.",
       ],
     },
   ],
@@ -132,6 +118,15 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "10.5",
+    shortDate: "15 sep",
+    highlights: [
+      "Cotizador: costear a medida y números más realistas.",
+      "Capacitación: reproductor más cómodo y enlaces con vista previa.",
+      "Preguntas en los videos de capacitación.",
+    ],
+  },
   {
     version: "10.4",
     shortDate: "15 sep",

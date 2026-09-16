@@ -19,6 +19,7 @@ import { ProjectMaterialsList } from "../components/project/EngineeringMaterials
 import { TasksPanel } from "../components/project/TasksPanel";
 import { PortalClientsPanel } from "../components/project/PortalClientsPanel";
 import { ClienteDocsUpload } from "../components/projects/ClienteDocsUpload";
+import { AgendaDelProyecto } from "../components/calendario/AgendaDelProyecto";
 import { TaskDetailModal } from "../components/tasks/TaskDetailModal";
 import { SolarSystemModal } from "../components/project/SolarSystemModal";
 import { AuditHistory } from "../components/project/AuditHistory";
@@ -1029,6 +1030,9 @@ export function ProjectDetail() {
       {installationCheckQuery.data && installationCheckQuery.data.issues.length > 0 && (
         <InstallationCoherenceBanner issues={installationCheckQuery.data.issues} />
       )}
+
+      {/* Mantenimientos, soportes y visitas agendadas para esta obra. */}
+      <AgendaDelProyecto projectId={project.id} />
 
       {/* Sistema fotovoltaico */}
       <SolarSystemsSection

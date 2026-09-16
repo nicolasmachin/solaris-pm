@@ -6,6 +6,7 @@ import { registerCapacitacionRoutes } from "./capacitacion.routes.js";
 import { registerClientesRoutes } from "./clientes.routes.js";
 import { registerCommissionRoutes } from "./commission.routes.js";
 import { registerInstallerPaymentRoutes } from "./installer-payment.routes.js";
+import { registerAgendaRoutes } from "./agenda.routes.js";
 import { registerConsolidadorRoutes } from "./consolidador.routes.js";
 import { registerContractRoutes } from "./contract.routes.js";
 import { registerEFPRoutes } from "./efp.routes.js";
@@ -61,6 +62,7 @@ export async function registerRoutes(app: FastifyInstance) {
   await app.register(registerClientesRoutes, { prefix: "/api" });
   await app.register(registerCommissionRoutes, { prefix: "/api" });
   await app.register(registerInstallerPaymentRoutes, { prefix: "/api" });
+  await app.register(registerAgendaRoutes, { prefix: "/api" });
   await app.register(registerContractRoutes, { prefix: "/api" });
   await app.register(registerProformaRoutes, { prefix: "/api" });
   await app.register(registerTraspasosRoutes, { prefix: "/api" });

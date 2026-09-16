@@ -40,6 +40,16 @@ import {
   type InstallationSchedule,
   type InstallationSegment,
 } from "../api/calendar.api";
+import {
+  getAgendaEventos,
+  TIPO_CALENDARIO_META,
+  type AgendaEvento,
+  type TipoCalendario,
+} from "../api/agenda.api";
+import { EventoBloque } from "../components/calendario/EventoBloque";
+import { FiltrosTipo } from "../components/calendario/FiltrosTipo";
+import { NuevoEventoModal } from "../components/calendario/NuevoEventoModal";
+import { useFiltrosCalendario } from "../components/calendario/useFiltrosCalendario";
 import { getProjects } from "../api/projects.api";
 import { createTeam } from "../api/teams.api";
 import { Button } from "../components/ui/Button";
@@ -64,8 +74,10 @@ function effectiveColor(schedule: InstallationSchedule): string {
 
 function displayTeamName(schedule: InstallationSchedule): string {
   if (schedule.team) return schedule.team.name;
-  // Equipo soft-deleted: mostrar el snapshot
-  return `${schedule.teamName} (eliminado)`;
+  // Equipo dado de baja: se muestra el snapshot guardado en la obra. El
+  // histórico tiene que seguir diciendo QUIÉN la hizo, aunque ese equipo ya no
+  // exista. "(eliminado)" a secas se leía como si la obra fuera la eliminada.
+  return `${schedule.teamName} (ex equipo)`;
 }
 
 // C9 (Traspasos): la obra nace "tentativa" (agendada por Ventas en Onboarding,
@@ -538,13 +550,65 @@ export function Calendar() {
     queryFn: getCalendarTeams,
   });
 
+  // Filtros por TIPO de evento, guardados por usuario. Van aparte del filtro por
+  // equipo: son dos cortes distintos de la misma grilla.
+  const filtros = useFiltrosCalendario();
+  const [showNuevoEvento, setShowNuevoEvento] = useState<{ fecha?: string } | null>(null);
+  const [selectedEventoId, setSelectedEventoId] = useState<string | null>(null);
+
+  // Rango del mes visible, con margen: la semana de la grilla arranca antes del
+  // día 1 y termina después del último.
+  const rangoMes = useMemo(() => {
+    const desde = new Date(Date.UTC(year, month - 1, 1));
+    desde.setUTCDate(desde.getUTCDate() - 7);
+    const hasta = new Date(Date.UTC(year, month, 0));
+    hasta.setUTCDate(hasta.getUTCDate() + 7);
+    return { desde: formatIso(desde), hasta: formatIso(hasta) };
+  }, [year, month]);
+
+  const eventosQuery = useQuery({
+    queryKey: ["agenda-eventos", rangoMes.desde, rangoMes.hasta],
+    queryFn: () => getAgendaEventos({ desde: rangoMes.desde, hasta: rangoMes.hasta }),
+    // La vista anual muestra solo obras: con 12 meses en pantalla los bloques
+    // son de 6 px y sumar eventos ahí no se leería.
+    enabled: view === "month",
+  });
+
   const schedules = (view === "month" ? monthQuery.data?.schedules : yearQuery.data?.schedules) ?? [];
 
   const filteredSchedules = useMemo(() => {
+    // El filtro de tipo apaga las obras enteras.
+    if (!filtros.muestra("OBRA")) return [];
     if (selectedTeams === null) return schedules;
     const set = new Set(selectedTeams);
     return schedules.filter((s) => s.teamId !== null && set.has(s.teamId));
-  }, [schedules, selectedTeams]);
+  }, [schedules, selectedTeams, filtros]);
+
+  const eventos = eventosQuery.data ?? [];
+
+  const filteredEventos = useMemo(
+    () =>
+      eventos.filter((e) => {
+        if (!filtros.muestra(e.tipo)) return false;
+        // Mismo criterio que las obras: si hay filtro de equipo, los eventos sin
+        // equipo asignado quedan fuera.
+        if (selectedTeams !== null) {
+          return e.teamId !== null && new Set(selectedTeams).has(e.teamId);
+        }
+        return true;
+      }),
+    [eventos, filtros, selectedTeams],
+  );
+
+  // Conteos para las píldoras: siempre sobre el total del mes, sin aplicar el
+  // propio filtro de tipo (si no, un filtro apagado mostraría 0 y no se sabría
+  // si hay algo escondido detrás).
+  const countsPorTipo = useMemo(() => {
+    const m = new Map<TipoCalendario, number>();
+    m.set("OBRA", schedules.length);
+    for (const e of eventos) m.set(e.tipo, (m.get(e.tipo) ?? 0) + 1);
+    return m;
+  }, [schedules, eventos]);
 
   const teamCounts = useMemo(() => {
     const map = new Map<string, number>();
@@ -1049,8 +1113,30 @@ export function Calendar() {
             >
               + Nueva instalación
             </Button>
+            {view === "month" && (
+              <button
+                type="button"
+                onClick={() => setShowNuevoEvento({})}
+                className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-card-hover)] hover:text-[var(--color-text-primary)]"
+              >
+                + Agendar otra cosa
+              </button>
+            )}
           </div>
         </div>
+
+        {/* Filtros por tipo de evento (preferencia guardada por usuario) */}
+        {view === "month" && (
+          <div className="md:shrink-0">
+            <FiltrosTipo
+              muestra={filtros.muestra}
+              todosVisibles={filtros.todosVisibles}
+              onToggle={filtros.toggle}
+              onTodos={filtros.mostrarTodos}
+              counts={countsPorTipo}
+            />
+          </div>
+        )}
 
         {/* Filtros por equipo */}
         {teamsQuery.data && teamsQuery.data.length > 0 && (
@@ -1082,6 +1168,21 @@ export function Calendar() {
             <span className="h-2.5 w-5 rounded" style={{ background: "var(--color-text-muted)" }} />
             <span>Fecha confirmada</span>
           </span>
+          {view === "month" && (
+            <span className="inline-flex items-center gap-2">
+              {(["MANTENIMIENTO", "SOPORTE", "VISITA_TECNICA"] as const).map((t) => (
+                <span key={t} className="inline-flex items-center gap-1">
+                  <span
+                    className="h-2.5 w-[3px] rounded-sm"
+                    style={{ background: TIPO_CALENDARIO_META[t].color }}
+                  />
+                  <span>
+                    {TIPO_CALENDARIO_META[t].icono} {TIPO_CALENDARIO_META[t].corto}
+                  </span>
+                </span>
+              ))}
+            </span>
+          )}
         </div>
 
         <div className="flex gap-5 flex-col lg:flex-row md:flex-1 md:min-h-0">
@@ -1092,9 +1193,12 @@ export function Calendar() {
                 year={year}
                 month={month}
                 schedules={filteredSchedules}
+                eventos={filteredEventos}
                 selectedScheduleIds={selectedScheduleIds}
+                selectedEventoId={selectedEventoId}
                 onDayClick={handleDayClick}
                 onScheduleClick={handleScheduleClick}
+                onEventoClick={setSelectedEventoId}
               />
             ) : (
               <YearGrid
@@ -1169,6 +1273,18 @@ export function Calendar() {
           }}
           onCreated={handleCreated}
           onCreateTeamRequested={() => setShowCreateTeamModal(true)}
+        />
+      )}
+
+      {showNuevoEvento && (
+        <NuevoEventoModal
+          equipos={(teamsQuery.data ?? []).map((t) => ({
+            id: t.id,
+            name: t.teamName,
+            color: t.teamColor,
+          }))}
+          fechaInicial={showNuevoEvento.fecha}
+          onClose={() => setShowNuevoEvento(null)}
         />
       )}
 
@@ -1329,16 +1445,22 @@ function MonthGrid({
   year,
   month,
   schedules,
+  eventos,
   selectedScheduleIds,
+  selectedEventoId,
   onDayClick,
   onScheduleClick,
+  onEventoClick,
 }: {
   year: number;
   month: number;
   schedules: InstallationSchedule[];
+  eventos: AgendaEvento[];
   selectedScheduleIds: string[];
+  selectedEventoId: string | null;
   onDayClick: (dayIso: string) => void;
   onScheduleClick: (scheduleId: string) => void;
+  onEventoClick: (eventoId: string) => void;
 }) {
   const weeks = useMemo(() => getWeeksForMonth(year, month), [year, month]);
   const today = new Date();
@@ -1372,9 +1494,12 @@ function MonthGrid({
             monthNumber={month}
             todayIso={todayIso}
             schedules={schedules}
+            eventos={eventos}
             selectedScheduleIds={selectedScheduleIds}
+            selectedEventoId={selectedEventoId}
             onDayClick={onDayClick}
             onScheduleClick={onScheduleClick}
+            onEventoClick={onEventoClick}
           />
         ))}
       </div>
@@ -1394,17 +1519,23 @@ function WeekRow({
   monthNumber,
   todayIso,
   schedules,
+  eventos,
   selectedScheduleIds,
+  selectedEventoId,
   onDayClick,
   onScheduleClick,
+  onEventoClick,
 }: {
   weekStart: Date;
   monthNumber: number;
   todayIso: string;
   schedules: InstallationSchedule[];
+  eventos: AgendaEvento[];
   selectedScheduleIds: string[];
+  selectedEventoId: string | null;
   onDayClick: (dayIso: string) => void;
   onScheduleClick: (scheduleId: string) => void;
+  onEventoClick: (eventoId: string) => void;
 }) {
   const days = useMemo(() => {
     const out: Date[] = [];
@@ -1424,7 +1555,49 @@ function WeekRow({
   // En desktop el padre (MonthGrid) aplica minmax(80px, 1fr) y la semana
   // termina tomando 1fr del alto disponible; en mobile usa esta minHeight.
   const maxLanes = Math.max(1, plan.totalLanes);
-  const minRowHeight = Math.max(WEEK_TRACK_AREA_MIN, maxLanes * DAY_LANE_MIN_HEIGHT);
+
+  // Eventos de agenda de esta semana, agrupados por día. Van SIEMPRE debajo de
+  // las obras: el orden estable es parte de cómo se distinguen de un vistazo.
+  //
+  // No pasan por `computeWeekPlan` a propósito: ese algoritmo resuelve tramos de
+  // varios días, solapamientos y el "+N más". Un evento de agenda dura un día,
+  // así que alcanza con agruparlo por columna, y así el flujo de obras —con su
+  // drag & drop y su resize— queda intacto.
+  const eventosPorDia = useMemo(() => {
+    const porDia = new Map<number, AgendaEvento[]>();
+    for (const ev of eventos) {
+      for (const dia of ev.dias) {
+        const idx = days.findIndex((d) => formatIso(d) === dia.fecha);
+        if (idx === -1) continue;
+        const lista = porDia.get(idx) ?? [];
+        lista.push(ev);
+        porDia.set(idx, lista);
+      }
+    }
+    return porDia;
+  }, [eventos, days]);
+
+  const lanesEventos = useMemo(
+    () => Math.max(0, ...[...eventosPorDia.values()].map((l) => l.length)),
+    [eventosPorDia],
+  );
+
+  const lanesTotales = maxLanes + lanesEventos;
+  const minRowHeight = Math.max(WEEK_TRACK_AREA_MIN, lanesTotales * DAY_LANE_MIN_HEIGHT);
+
+  // Ancho real de un día: decide si en el bloque de un evento entra el nombre,
+  // solo el ícono, o nada. Mismo patrón de medición que la vista anual.
+  const filaRef = useRef<HTMLDivElement | null>(null);
+  const [cellWidthMes, setCellWidthMes] = useState(0);
+  useLayoutEffect(() => {
+    const el = filaRef.current;
+    if (!el) return;
+    const medir = () => setCellWidthMes((el.clientWidth - 6 * 4) / 7);
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // Pills "+N más" que deben ir en el último lane del día que tiene overflow.
   const overflowEntries = Array.from(plan.overflowByDay.entries()).filter(
@@ -1432,7 +1605,7 @@ function WeekRow({
   );
 
   return (
-    <div className="relative md:h-full md:min-h-0" style={{ minHeight: minRowHeight }}>
+    <div ref={filaRef} className="relative md:h-full md:min-h-0" style={{ minHeight: minRowHeight }}>
       {/* Capa de fondo: 7 celdas. Cada celda es droppable y tiene su badge
           con el número del día arriba a la derecha. */}
       <div className="absolute inset-0 grid grid-cols-7 gap-1">
@@ -1462,7 +1635,7 @@ function WeekRow({
         className="pointer-events-none absolute inset-x-0 bottom-0 grid grid-cols-7 gap-1"
         style={{
           top: 26,
-          gridTemplateRows: `repeat(${maxLanes}, 1fr)`,
+          gridTemplateRows: `repeat(${lanesTotales}, 1fr)`,
         }}
       >
         {plan.visibleTracks.map((track) => (
@@ -1497,6 +1670,29 @@ function WeekRow({
             </button>
           );
         })}
+
+        {/* Eventos de agenda: una fila por evento, debajo de las obras. */}
+        {[...eventosPorDia.entries()].flatMap(([dayIdx, lista]) =>
+          lista.map((ev, i) => (
+            <div
+              key={`${ev.id}-${dayIdx}`}
+              style={{
+                gridColumn: `${dayIdx + 1} / span 1`,
+                gridRow: `${maxLanes + i + 1} / span 1`,
+                pointerEvents: "auto",
+                minHeight: 0,
+              }}
+            >
+              <EventoBloque
+                evento={ev}
+                slotHeight={DAY_LANE_MIN_HEIGHT}
+                cellWidth={cellWidthMes}
+                isSelected={selectedEventoId === ev.id}
+                onClick={() => onEventoClick(ev.id)}
+              />
+            </div>
+          )),
+        )}
       </div>
     </div>
   );

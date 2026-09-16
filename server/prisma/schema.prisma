@@ -142,6 +142,7 @@ enum AuditEntityType {
   ensayo_video
   installer_payment
   capacitacion
+  agenda_evento
 }
 
 enum AuditAction {
@@ -182,6 +183,12 @@ enum AuditAction {
   traspaso_escalado
   traspaso_cancelado
   traspaso_pospuesto
+  // Agenda: mantenimientos, soportes y visitas técnicas. Se clasifican como
+  // NOVEDAD del cliente en services/clientes/eventos.ts.
+  agenda_evento_creado
+  agenda_evento_actualizado
+  agenda_evento_completado
+  agenda_evento_cancelado
 }
 
 enum NotificationType {
@@ -456,6 +463,10 @@ enum SettingKey {
   // baja" y avisa a Experiencia Solar. Aplica tanto a CUALQUIERA de las tres
   // notas individuales como al PROMEDIO de la encuesta.
   ENCUESTA_NOTA_BAJA_MAX
+  // Qué tipos de evento muestra el calendario, por usuario (level USER).
+  // JSON: ["OBRA","MANTENIMIENTO","SOPORTE","VISITA_TECNICA"]. Sin valor
+  // guardado se muestran todos.
+  CALENDARIO_FILTROS
 }
 
 enum SalesStage {
@@ -554,6 +565,7 @@ model User {
   commissions                    Commission[]                @relation("CommissionAsesor")
   commissionsCreated             Commission[]                @relation("CommissionCreatedBy")
   installerPayments              InstallerPayment[]          @relation("InstallerPaymentInstaller")
+  agendaEventosCreados           AgendaEvento[]              @relation("AgendaEventoCreatedBy")
   installerPaymentsCreated       InstallerPayment[]          @relation("InstallerPaymentCreatedBy")
   traspasosComoModal             Traspaso[]                  @relation("TraspasoModalUsuario")
   traspasosConfirmados           Traspaso[]                  @relation("TraspasoConfirmadoPor")
@@ -669,6 +681,7 @@ model Project {
   growattPlant                    GrowattPlant?
   huaweiPlant                     HuaweiPlant?
   fvIncidencias                   FvIncidencia[]
+  agendaEventos                   AgendaEvento[]           @relation("AgendaEventoProject")
   projectVideos                   ProjectVideo[]
   installerPayment                InstallerPayment?
   // Sub-fase del E3 (Post-Habilitación). Solo se setea cuando el proyecto llega
@@ -860,6 +873,7 @@ model Ticket {
   cerradoEn     DateTime? @db.Timestamptz(6)
 
   comentarios TicketComment[]
+  agendaEventos AgendaEvento[] @relation("AgendaEventoTicket")
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   updatedAt DateTime  @updatedAt @db.Timestamptz(6)
@@ -2137,6 +2151,80 @@ model InstallationSegment {
   @@map("installation_segments")
 }
 
+// ─── Agenda: eventos que no son obras ────────────────────────────────────────
+// Mantenimientos, soportes/reclamos y visitas técnicas agendadas. Conviven con
+// las obras (`InstallationSchedule`) en el mismo calendario.
+//
+// Por qué un modelo aparte y no reusar InstallationSchedule: ese tiene
+// `projectId @unique` (una obra por proyecto) y campos que solo aplican a una
+// obra (confirmedAt, actualWorkEnd, teamType). Un proyecto puede tener varios
+// mantenimientos, así que habría que romper ese unique y tocar todo el flujo de
+// obra, que ya está probado.
+
+enum TipoEventoAgenda {
+  MANTENIMIENTO
+  SOPORTE
+  VISITA_TECNICA
+}
+
+model AgendaEvento {
+  id     String           @id @default(cuid())
+  tipo   TipoEventoAgenda
+  titulo String
+
+  // Vínculos opcionales: el evento vale por sí solo (se puede agendar algo
+  // suelto con solo un título).
+  projectId String?
+  project   Project? @relation("AgendaEventoProject", fields: [projectId], references: [id], onDelete: SetNull)
+  // Solo tiene sentido en los de tipo SOPORTE. La ruta valida esa coherencia.
+  ticketId  String?
+  ticket    Ticket?  @relation("AgendaEventoTicket", fields: [ticketId], references: [id], onDelete: SetNull)
+
+  // Equipo desnormalizado, mismo criterio que InstallationSchedule: el bloque
+  // se sigue pintando aunque después se borre el equipo.
+  teamId    String?
+  team      Team?   @relation("AgendaEventoTeam", fields: [teamId], references: [id], onDelete: SetNull)
+  teamName  String
+  teamColor String  @default("#378ADD")
+
+  notas String?
+  // Equivalente a "obra completada": el bloque se pinta gris.
+  completadoEn DateTime? @db.Timestamptz(6)
+
+  dias AgendaEventoDia[]
+
+  createdById String
+  createdBy   User   @relation("AgendaEventoCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(6)
+  deletedAt DateTime? @db.Timestamptz(6)
+
+  @@index([projectId])
+  @@index([ticketId])
+  @@index([teamId])
+  @@index([deletedAt])
+  @@map("agenda_eventos")
+}
+
+// Un registro por día, no un rango. Es lo que pide el negocio: el evento se
+// agenda en un día y se le pueden sumar días sueltos, no necesariamente
+// consecutivos. Con rangos habría que modelar varios tramos para expresar lo
+// mismo (que es lo que hacen las obras con InstallationSegment, porque ahí sí
+// lo normal es un bloque corrido de días).
+model AgendaEventoDia {
+  id       String       @id @default(cuid())
+  eventoId String
+  evento   AgendaEvento @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  fecha    DateTime     @db.Date
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([eventoId, fecha])
+  @@index([fecha])
+  @@map("agenda_evento_dias")
+}
+
 enum TeamType {
   PROPIO
   TERCERIZADO
@@ -2154,6 +2242,7 @@ model Team {
   deletedAt DateTime? @db.Timestamptz(6)
 
   installations InstallationSchedule[]
+  agendaEventos AgendaEvento[]        @relation("AgendaEventoTeam")
 
   @@index([deletedAt])
   @@map("teams")
