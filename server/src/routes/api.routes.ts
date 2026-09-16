@@ -157,6 +157,7 @@ import {
   getOperationVisibility,
   isParallelStage,
   PIPELINE_DEFINITIONS,
+  reconciliarConDefiniciones,
 } from "../services/pipeline-definitions.js";
 import { createNotificationIfNotExists } from "../services/notification.service.js";
 import { notifyEngineeringCompleted } from "../services/notify.service.js";
@@ -8550,27 +8551,19 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const body = pipelineTemplatePutSchema.parse(request.body);
 
     // El editor sólo permite modificar subetapas/checklists/labels/pesos, no
-    // agregar ni quitar etapas macro. Validamos que el set de etapas coincida
-    // exactamente con el del pipeline por defecto del código (sea el que sea:
-    // hoy 8 etapas + 2 bloques CX). Así el editor no queda atado a un número fijo.
+    // agregar ni quitar etapas macro.
     const stageNames = new Set(body.stages.map((s) => s.name));
     if (stageNames.size !== body.stages.length) {
       throw badRequest("INVALID_TEMPLATE", "Hay etapas duplicadas en el template.");
     }
-    const expectedStageNames = PIPELINE_DEFINITIONS.map((s) => s.name);
-    const expectedSet = new Set(expectedStageNames);
-    for (const name of expectedStageNames) {
-      if (!stageNames.has(name)) {
-        throw badRequest("INVALID_TEMPLATE", `Falta la etapa ${name} en el template.`);
-      }
-    }
-    for (const name of stageNames) {
-      if (!expectedSet.has(name)) {
-        throw badRequest("INVALID_TEMPLATE", `La etapa ${name} no pertenece al pipeline actual.`);
-      }
-    }
+    // Se reconcilia contra las etapas vigentes en vez de rechazar: una etapa
+    // retirada del código que todavía viaje en el payload (una pestaña abierta
+    // de antes, un template viejo) se descarta, y una que falte se completa.
+    // Antes esto tiraba 400 y dejaba el editor imposible de guardar por una
+    // etapa que ni siquiera se estaba tocando.
+    const stages = reconciliarConDefiniciones(body.stages);
 
-    const json = JSON.stringify({ stages: body.stages });
+    const json = JSON.stringify({ stages });
     // Setting.userId y Setting.projectId son nullable; el @@unique con nullables
     // no matchea igual → hacemos find-then-update/create manual.
     const existing = await prisma.setting.findFirst({
@@ -8599,18 +8592,22 @@ export async function registerApiRoutes(app: FastifyInstance) {
       userId: user.id,
       action: AuditAction.updated,
       description: "Actualizó template del pipeline",
+      // Se cuenta sobre lo reconciliado, que es lo que quedó guardado: auditar el
+      // payload crudo registraría etapas que no se persistieron.
       metadata: {
-        stagesCount: body.stages.length,
-        substagesCount: body.stages.reduce((sum, s) => sum + s.substages.length, 0),
-        checklistCount: body.stages.reduce(
+        stagesCount: stages.length,
+        substagesCount: stages.reduce((sum, s) => sum + s.substages.length, 0),
+        checklistCount: stages.reduce(
           (sum, s) => sum + s.substages.reduce((sub, ss) => sub + (ss.checklist?.length ?? 0), 0),
           0,
         ),
       },
     });
 
+    // Se devuelve lo reconciliado y no el payload: si no, la pantalla se repinta
+    // con etapas que el servidor descartó.
     return {
-      stages: body.stages,
+      stages,
       isCustom: true,
       updatedAt: serializeDate(saved.updatedAt),
     };

@@ -4,6 +4,11 @@
 
 ### 16 de septiembre de 2026
 
+#### Arreglos
+
+- **El editor de etapas del pipeline no dejaba guardar nada.** Cualquier cambio —agregar una subetapa a Onboarding, tocar un checklist, mover un peso— fallaba con un error que hablaba de una etapa distinta a la que se estaba editando. La pantalla cargaba dos etapas de Experiencia Solar que se habían retirado en septiembre y que ya no se podían guardar, así que rechazaba la operación entera. Ya no aparecen y el editor guarda normalmente; todo lo configurado en las demás etapas quedó intacto.
+- Por la misma causa, **los proyectos nuevos seguían naciendo con esas dos etapas retiradas**. Los que se creen de ahora en más ya no las tienen.
+
 #### Ahora se puede editar y eliminar lo agendado
 
 - **Al tocar un mantenimiento, soporte, visita u otro se abre su ficha**, con todo lo que se cargó. Antes solo se marcaba con un recuadro y no había forma de cambiarlo: para corregir cualquier cosa había que darlo de baja y volver a cargarlo, y ni eso se podía.

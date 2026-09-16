@@ -200,6 +200,57 @@ Ver también el resumen diario de correos en
 
 ---
 
+## El template del pipeline (editor de etapas y subetapas)
+
+### Para qué existe
+
+Las etapas macro del proyecto están definidas en el código
+(`PIPELINE_DEFINITIONS`), pero **las subetapas, los checklists, los pesos y las
+etiquetas se editan desde la app** (Admin → pipeline). Esa configuración se
+guarda como un `Setting` de nivel `SYSTEM` con la clave `PIPELINE_TEMPLATE`, y es
+lo que se precarga en cada proyecto nuevo.
+
+### Cómo funciona
+
+`getActivePipelineTemplate()` (en `pipeline-definitions.ts`) devuelve el template
+guardado si existe, y si no, `PIPELINE_DEFINITIONS`. **El template guardado pisa
+al código**: lo que está en `settings` es lo que se usa al crear un proyecto.
+
+Las dos listas se separan con el tiempo: el template quedó grabado en una fecha,
+y las etapas macro se agregan y se retiran después, en el código.
+`reconciliarConDefiniciones()` las vuelve a alinear en cada lectura y en cada
+guardado: **descarta las etapas que ya no existen en el código, completa las que
+falten con su definición por defecto y renumera el orden**. Todo lo que el usuario
+configuró en las etapas vigentes se conserva.
+
+### Reglas y decisiones
+
+- **El editor no agrega ni quita etapas macro**, solo lo de adentro. Eso se
+  resuelve reconciliando y no rechazando: una etapa retirada que todavía viaje en
+  el payload se descarta en silencio.
+- **El `PUT` devuelve y audita lo reconciliado, no el payload.** Si devolviera el
+  payload crudo, la pantalla se repintaría con etapas que el servidor descartó, y
+  el registro de auditoría contaría etapas que nunca se guardaron.
+
+### Casos borde
+
+- **Una etapa retirada del código bloqueaba el editor entero** (septiembre de
+  2026). Los dos carriles de Experiencia Solar —`SEGUIMIENTO_PREOBRA` y
+  `SEGUIMIENTO_HABILITACION`— se sacaron de `PIPELINE_DEFINITIONS`, pero seguían
+  dentro del `Setting` guardado. El `GET` los devolvía y el `PUT` los rechazaba
+  con "La etapa X no pertenece al pipeline actual": **el editor cargaba algo que
+  no podía guardar**, así que fallaba cualquier cambio, aun en una etapa sin
+  relación. Es el caso que motivó la reconciliación.
+- **El mismo desfasaje hacía que los proyectos nuevos nacieran con las etapas
+  retiradas**, porque el template pisa al código al crear el proyecto. 64
+  proyectos las tienen; se limpian con
+  `server/prisma/scripts/retirar-carriles-cx.ts`, que hay que correr aparte.
+- **Si el template guardado no tiene ninguna etapa reconocible, se ignora entero**
+  y se cae a `PIPELINE_DEFINITIONS`. Un template irreconocible es un template
+  corrupto, no una configuración.
+
+---
+
 ## Qué tiene que cubrir este capítulo
 
 - Estructura Proyecto → Etapa → Subetapa → Checklist

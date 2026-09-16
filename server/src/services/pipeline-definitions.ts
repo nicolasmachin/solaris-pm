@@ -682,13 +682,52 @@ export async function getActivePipelineTemplate(): Promise<PipelineTemplate> {
     if (setting && setting.value) {
       const parsed = JSON.parse(setting.value) as { stages?: PipelineTemplate };
       if (parsed && Array.isArray(parsed.stages) && parsed.stages.length > 0) {
-        return parsed.stages as PipelineTemplate;
+        return reconciliarConDefiniciones(parsed.stages as PipelineTemplate);
       }
     }
   } catch {
     // JSON inválido o DB no disponible → usar fallback
   }
   return PIPELINE_DEFINITIONS;
+}
+
+/**
+ * Alinea un template guardado con el juego de etapas que hoy define el código.
+ *
+ * El template vive en `settings` y se guardó en algún momento del pasado; las
+ * etapas macro, en cambio, se agregan y se retiran en el código. Cuando las dos
+ * listas se separan, el template guardado queda con etapas que ya no existen
+ * (los carriles de Experiencia Solar, retirados en septiembre de 2026) o sin
+ * alguna que se agregó después. Eso rompía dos cosas a la vez:
+ *
+ * 1. El editor del pipeline quedaba **imposible de guardar**: cargaba las etapas
+ *    retiradas y el PUT las rechazaba por no pertenecer al pipeline actual, así
+ *    que fallaba cualquier cambio, incluso en una etapa sin relación.
+ * 2. Los proyectos nuevos **seguían naciendo con las etapas retiradas**, porque
+ *    el template pisa al código al crear el proyecto.
+ *
+ * Se conserva todo lo que el usuario configuró (subetapas, checklists, pesos,
+ * labels) de las etapas que siguen vigentes; solo se descartan las retiradas y
+ * se completa con la definición del código lo que falte.
+ */
+export function reconciliarConDefiniciones<T extends { name: StageType; order: number }>(
+  guardadas: T[],
+): Array<T | StageTemplate> {
+  const vigentes = new Set<string>(PIPELINE_DEFINITIONS.map((s) => s.name));
+  const conservadas = guardadas.filter((s) => vigentes.has(s.name));
+
+  // Si al filtrar no quedó nada reconocible, el guardado no sirve.
+  if (conservadas.length === 0) return PIPELINE_DEFINITIONS;
+
+  // Una etapa agregada al código después del último guardado entra con su
+  // definición por defecto, para que el template nunca quede incompleto.
+  const presentes = new Set<string>(conservadas.map((s) => s.name));
+  const faltantes = PIPELINE_DEFINITIONS.filter((s) => !presentes.has(s.name));
+
+  return [...conservadas, ...faltantes]
+    .sort((a, b) => a.order - b.order)
+    // Sacar etapas deja huecos en el orden; se renumera para que quede corrido.
+    .map((stage, i) => ({ ...stage, order: i + 1 }));
 }
 
 export function getOperationVisibility(tipoObra: TipoObra) {
