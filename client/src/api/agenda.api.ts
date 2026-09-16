@@ -4,7 +4,7 @@ import { apiClient } from "./axios";
 // `calendar.api.ts` (InstallationSchedule) — son dos cosas distintas que
 // comparten pantalla.
 
-export type TipoEventoAgenda = "MANTENIMIENTO" | "SOPORTE" | "VISITA_TECNICA";
+export type TipoEventoAgenda = "MANTENIMIENTO" | "SOPORTE" | "VISITA_TECNICA" | "OTRO";
 
 /** Incluye OBRA para los filtros de la pantalla, que sí la contemplan. */
 export type TipoCalendario = "OBRA" | TipoEventoAgenda;
@@ -44,6 +44,9 @@ export const TIPO_CALENDARIO_META: Record<
   MANTENIMIENTO: { label: "Mantenimientos", corto: "Mantenimiento", color: "#1D9E75", icono: "🔧" },
   SOPORTE: { label: "Soporte / Reclamos", corto: "Soporte", color: "#E0A020", icono: "⚠" },
   VISITA_TECNICA: { label: "Visitas técnicas", corto: "Visita", color: "#9B6BDF", icono: "🔍" },
+  // Comodín. El rosa es el único tono que no se confunde con los otros cuatro ni
+  // con el gris de "completado" en una barra de 3 px.
+  OTRO: { label: "Otros", corto: "Otro", color: "#D9568C", icono: "📌" },
 };
 
 export const TIPOS_CALENDARIO: TipoCalendario[] = [
@@ -51,6 +54,7 @@ export const TIPOS_CALENDARIO: TipoCalendario[] = [
   "MANTENIMIENTO",
   "SOPORTE",
   "VISITA_TECNICA",
+  "OTRO",
 ];
 
 export async function getAgendaEventos(params: {
@@ -79,7 +83,15 @@ export async function crearAgendaEvento(body: {
 
 export async function actualizarAgendaEvento(
   id: string,
-  body: { titulo?: string; teamId?: string | null; notas?: string; completado?: boolean },
+  body: {
+    tipo?: TipoEventoAgenda;
+    titulo?: string;
+    teamId?: string | null;
+    projectId?: string | null;
+    ticketId?: string | null;
+    notas?: string;
+    completado?: boolean;
+  },
 ): Promise<AgendaEvento> {
   const { data } = await apiClient.patch<{ evento: AgendaEvento }>(`/api/agenda-eventos/${id}`, body);
   return data.evento;

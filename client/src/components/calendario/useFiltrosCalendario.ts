@@ -18,25 +18,65 @@ import { TIPOS_CALENDARIO, type TipoCalendario } from "../../api/agenda.api";
 const CLAVE = "CALENDARIO_FILTROS";
 const DEBOUNCE_MS = 800;
 
+/**
+ * Versión del formato guardado.
+ *
+ * Hace falta porque un tipo nuevo tiene que aparecer **prendido** para quien ya
+ * había guardado su combinación: si no, el tipo nace invisible y el usuario no
+ * tiene forma de saber que existe. Al subir la versión se listan acá los tipos
+ * que se agregaron, y las preferencias viejas los adoptan.
+ */
+const VERSION_FILTROS = 2;
+const TIPOS_AGREGADOS_POR_VERSION: Record<number, TipoCalendario[]> = {
+  2: ["OTRO"],
+};
+
 interface UserSetting {
   key: string;
   value: string;
 }
 
+interface Guardado {
+  v?: number;
+  tipos?: unknown;
+}
+
+function soloValidos(arr: unknown): TipoCalendario[] {
+  if (!Array.isArray(arr)) return [];
+  return arr.filter((t): t is TipoCalendario => (TIPOS_CALENDARIO as string[]).includes(t));
+}
+
+/** Suma los tipos incorporados después de la versión con la que se guardó. */
+function alDia(tipos: TipoCalendario[], desde: number): TipoCalendario[] {
+  const resultado = [...tipos];
+  for (let v = desde + 1; v <= VERSION_FILTROS; v++) {
+    for (const t of TIPOS_AGREGADOS_POR_VERSION[v] ?? []) {
+      if (!resultado.includes(t)) resultado.push(t);
+    }
+  }
+  return resultado;
+}
+
 function parse(raw: string | undefined): TipoCalendario[] {
   if (!raw) return TIPOS_CALENDARIO;
   try {
-    const arr = JSON.parse(raw);
-    if (!Array.isArray(arr)) return TIPOS_CALENDARIO;
-    const validos = arr.filter((t): t is TipoCalendario =>
-      (TIPOS_CALENDARIO as string[]).includes(t),
-    );
+    const parsed: unknown = JSON.parse(raw);
+    // Formato viejo: el array pelado, sin versión. Es v1.
+    const esArrayPelado = Array.isArray(parsed);
+    const version = esArrayPelado ? 1 : ((parsed as Guardado)?.v ?? 1);
+    const validos = soloValidos(esArrayPelado ? parsed : (parsed as Guardado)?.tipos);
+
     // Guardado corrupto o vacío: se muestran todos. Un calendario en blanco sin
     // explicación se lee como que la app se rompió.
-    return validos.length > 0 ? validos : TIPOS_CALENDARIO;
+    if (validos.length === 0) return TIPOS_CALENDARIO;
+    return alDia(validos, version);
   } catch {
     return TIPOS_CALENDARIO;
   }
+}
+
+function serializar(tipos: TipoCalendario[]): string {
+  return JSON.stringify({ v: VERSION_FILTROS, tipos });
 }
 
 export function useFiltrosCalendario() {
@@ -64,7 +104,7 @@ export function useFiltrosCalendario() {
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => {
         apiClient
-          .patch("/api/settings/user/me", [{ key: CLAVE, value: JSON.stringify(next) }])
+          .patch("/api/settings/user/me", [{ key: CLAVE, value: serializar(next) }])
           .then(() => qc.invalidateQueries({ queryKey: ["user-settings"] }))
           // Que no se pueda guardar la preferencia no debería interrumpir el
           // trabajo: el filtro ya está aplicado en pantalla.

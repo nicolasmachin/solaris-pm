@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -49,6 +50,7 @@ import {
 import { EventoBloque } from "../components/calendario/EventoBloque";
 import { FiltrosTipo } from "../components/calendario/FiltrosTipo";
 import { NuevoEventoModal } from "../components/calendario/NuevoEventoModal";
+import { EventoDetalleModal } from "../components/calendario/EventoDetalleModal";
 import { useFiltrosCalendario } from "../components/calendario/useFiltrosCalendario";
 import { getProjects } from "../api/projects.api";
 import { createTeam } from "../api/teams.api";
@@ -555,6 +557,9 @@ export function Calendar() {
   const filtros = useFiltrosCalendario();
   const [showNuevoEvento, setShowNuevoEvento] = useState<{ fecha?: string } | null>(null);
   const [selectedEventoId, setSelectedEventoId] = useState<string | null>(null);
+  // Cuál está abierto en el panel de detalle. Se guarda el id y no el objeto para
+  // que el modal siempre lea la versión fresca de la query.
+  const [eventoAbiertoId, setEventoAbiertoId] = useState<string | null>(null);
 
   // Rango del mes visible, con margen: la semana de la grilla arranca antes del
   // día 1 y termina después del último.
@@ -585,6 +590,12 @@ export function Calendar() {
   }, [schedules, selectedTeams, filtros]);
 
   const eventos = eventosQuery.data ?? [];
+  const eventoAbierto = eventos.find((e) => e.id === eventoAbiertoId) ?? null;
+
+  const abrirEvento = useCallback((id: string) => {
+    setSelectedEventoId(id);
+    setEventoAbiertoId(id);
+  }, []);
 
   const filteredEventos = useMemo(
     () =>
@@ -1170,7 +1181,7 @@ export function Calendar() {
           </span>
           {view === "month" && (
             <span className="inline-flex items-center gap-2">
-              {(["MANTENIMIENTO", "SOPORTE", "VISITA_TECNICA"] as const).map((t) => (
+              {(["MANTENIMIENTO", "SOPORTE", "VISITA_TECNICA", "OTRO"] as const).map((t) => (
                 <span key={t} className="inline-flex items-center gap-1">
                   <span
                     className="h-2.5 w-[3px] rounded-sm"
@@ -1198,7 +1209,7 @@ export function Calendar() {
                 selectedEventoId={selectedEventoId}
                 onDayClick={handleDayClick}
                 onScheduleClick={handleScheduleClick}
-                onEventoClick={setSelectedEventoId}
+                onEventoClick={abrirEvento}
               />
             ) : (
               <YearGrid
@@ -1273,6 +1284,21 @@ export function Calendar() {
           }}
           onCreated={handleCreated}
           onCreateTeamRequested={() => setShowCreateTeamModal(true)}
+        />
+      )}
+
+      {eventoAbierto && (
+        <EventoDetalleModal
+          evento={eventoAbierto}
+          equipos={(teamsQuery.data ?? []).map((t) => ({
+            id: t.id,
+            name: t.teamName,
+            color: t.teamColor,
+          }))}
+          onClose={() => {
+            setSelectedEventoId(null);
+            setEventoAbiertoId(null);
+          }}
         />
       )}
 

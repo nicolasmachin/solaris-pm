@@ -4,11 +4,25 @@
 
 ### 16 de septiembre de 2026
 
+#### Ahora se puede editar y eliminar lo agendado
+
+- **Al tocar un mantenimiento, soporte, visita u otro se abre su ficha**, con todo lo que se cargó. Antes solo se marcaba con un recuadro y no había forma de cambiarlo: para corregir cualquier cosa había que darlo de baja y volver a cargarlo, y ni eso se podía.
+- Desde ahí se cambia **el tipo, el día o los días, el equipo, el cliente, el ticket, la descripción y las notas**, y se **elimina** con una confirmación.
+- Se puede **marcar como hecho** (queda tachado y en gris) y volver atrás si se marcó por error.
+- Si un evento de soporte se cambia a otro tipo, **el ticket se desengancha solo**.
+- Quien no tenga permiso para modificar operaciones ve la ficha en modo lectura, sin los botones.
+
+#### Una categoría "Otros" para lo que no entra en las demás
+
+- Además de mantenimientos, soportes y visitas, ahora se puede agendar **"Otro"**: una entrega, una reunión en obra, una capacitación, lo que sea.
+- Como "Otro" no dice nada por sí solo, **pide una descripción obligatoria** de qué se trata, que es lo que después se lee en el calendario. Las notas siguen estando para el detalle largo.
+- Tiene su propio color (rosa) e ícono (📌) y su propio filtro, igual que los otros tipos.
+
 #### El calendario ya no es solo de obras
 
 - Además de las instalaciones, ahora se pueden agendar **mantenimientos, soportes/reclamos y visitas técnicas**, con el botón **"+ Agendar otra cosa"**.
 - Se agendan en **un día**, y se le pueden sumar **días sueltos** que no tienen por qué ser seguidos: un mantenimiento puede quedar el lunes y el jueves sin tocar el miércoles.
-- Cada uno se distingue por una **barra de color a la izquierda** y un ícono: 🔧 mantenimiento, ⚠ soporte, 🔍 visita. El fondo sigue siendo el color del equipo y el rayado sigue marcando las fechas sin confirmar, igual que siempre.
+- Cada uno se distingue por una **barra de color a la izquierda** y un ícono: 🔧 mantenimiento, ⚠ soporte, 🔍 visita, 📌 otros. El fondo sigue siendo el color del equipo y el rayado sigue marcando las fechas sin confirmar, igual que siempre.
 - **Filtro para elegir qué ver** (obras, mantenimientos, soporte, visitas). **Cada uno guarda su combinación** y la encuentra igual la próxima vez que entra.
 - Si el evento se asigna a un cliente, **queda en la ficha del proyecto** y **aparece en las novedades del cliente**. Los de soporte pueden además engancharse a un ticket existente.
 

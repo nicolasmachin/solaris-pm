@@ -25,6 +25,7 @@ export const TIPO_EVENTO_LABEL: Record<TipoEventoAgenda, string> = {
   MANTENIMIENTO: "Mantenimiento",
   SOPORTE: "Soporte / Reclamo",
   VISITA_TECNICA: "Visita técnica",
+  OTRO: "Otro",
 };
 
 const INCLUDE = {
@@ -138,6 +139,13 @@ export async function crearAgendaEvento(input: CrearEventoInput): Promise<Serial
     throw badRequest("TICKET_SOLO_EN_SOPORTE", "Solo los eventos de soporte pueden enlazar un ticket.");
   }
 
+  // "Otro" es el comodín: sin una descripción propia el bloque diría solo "Otro",
+  // que en un calendario compartido no le sirve a nadie. El resto de los tipos se
+  // explican solos, así que ahí el título sigue siendo opcional.
+  if (input.tipo === TipoEventoAgenda.OTRO && !input.titulo?.trim()) {
+    throw badRequest("OTRO_SIN_DESCRIPCION", "Contá de qué se trata: en «Otro» la descripción es obligatoria.");
+  }
+
   const proyecto = input.projectId
     ? await prisma.project.findFirst({
         where: { id: input.projectId, deletedAt: null },
@@ -194,16 +202,33 @@ function dedupFechas(fechas: Date[]): Date[] {
 export async function actualizarAgendaEvento(input: {
   id: string;
   userId: string;
+  tipo?: TipoEventoAgenda;
   titulo?: string;
   teamId?: string | null;
+  projectId?: string | null;
+  ticketId?: string | null;
   notas?: string;
   completado?: boolean;
 }): Promise<SerializedAgendaEvento> {
   const actual = await prisma.agendaEvento.findFirst({
     where: { id: input.id, deletedAt: null },
-    select: { id: true, projectId: true, tipo: true, titulo: true },
+    select: { id: true, projectId: true, ticketId: true, tipo: true, titulo: true },
   });
   if (!actual) throw notFound("EVENTO_NOT_FOUND", "El evento no existe.");
+
+  const tipoFinal = input.tipo ?? actual.tipo;
+  const tituloFinal = input.titulo !== undefined ? input.titulo.trim() || actual.titulo : actual.titulo;
+
+  // Mismas reglas que en el alta, para que editar no deje el evento en un estado
+  // que el alta habría rechazado.
+  if (tipoFinal === TipoEventoAgenda.OTRO && !tituloFinal.trim()) {
+    throw badRequest("OTRO_SIN_DESCRIPCION", "Contá de qué se trata: en «Otro» la descripción es obligatoria.");
+  }
+
+  // El ticket solo vive en SOPORTE. Si el evento deja de serlo, se desengancha
+  // solo en vez de fallar: quien cambia el tipo no tiene por qué acordarse.
+  const ticketPedido = input.ticketId !== undefined ? input.ticketId : actual.ticketId;
+  const ticketFinal = tipoFinal === TipoEventoAgenda.SOPORTE ? ticketPedido : null;
 
   let equipo: { id: string; name: string; color: string } | null = null;
   if (input.teamId) {
@@ -214,10 +239,19 @@ export async function actualizarAgendaEvento(input: {
     if (!equipo) throw badRequest("TEAM_NOT_FOUND", "El equipo no existe.");
   }
 
+  if (input.projectId) {
+    const proyecto = await prisma.project.findFirst({
+      where: { id: input.projectId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!proyecto) throw badRequest("PROJECT_NOT_FOUND", "El proyecto no existe.");
+  }
+
   const evento = await prisma.agendaEvento.update({
     where: { id: input.id },
     data: {
-      ...(input.titulo !== undefined ? { titulo: input.titulo.trim() || actual.titulo } : {}),
+      ...(input.tipo !== undefined ? { tipo: input.tipo } : {}),
+      ...(input.titulo !== undefined ? { titulo: tituloFinal } : {}),
       ...(input.teamId !== undefined
         ? {
             teamId: equipo?.id ?? null,
@@ -225,6 +259,8 @@ export async function actualizarAgendaEvento(input: {
             teamColor: equipo?.color ?? SIN_EQUIPO_COLOR,
           }
         : {}),
+      ...(input.projectId !== undefined ? { projectId: input.projectId } : {}),
+      ...(ticketFinal !== actual.ticketId ? { ticketId: ticketFinal } : {}),
       ...(input.notas !== undefined ? { notas: input.notas.trim() || null } : {}),
       ...(input.completado !== undefined
         ? { completadoEn: input.completado ? new Date() : null }

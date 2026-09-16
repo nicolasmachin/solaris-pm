@@ -102,20 +102,16 @@ export async function registerAgendaRoutes(app: FastifyInstance) {
   // ── Edición ────────────────────────────────────────────────────────────────
   const editarBody = z
     .object({
+      tipo: z.nativeEnum(TipoEventoAgenda).optional(),
       titulo: z.string().trim().max(200).optional(),
       teamId: z.string().min(1).nullable().optional(),
+      projectId: z.string().min(1).nullable().optional(),
+      ticketId: z.string().min(1).nullable().optional(),
       notas: z.string().max(2000).optional(),
       completado: z.boolean().optional(),
     })
     .strict()
-    .refine(
-      (b) =>
-        b.titulo !== undefined ||
-        b.teamId !== undefined ||
-        b.notas !== undefined ||
-        b.completado !== undefined,
-      { message: "Nada para actualizar." },
-    );
+    .refine((b) => Object.keys(b).length > 0, { message: "Nada para actualizar." });
 
   app.patch("/agenda-eventos/:id", { preHandler: guardEditar }, async (request) => {
     const user = ensureUser(request);

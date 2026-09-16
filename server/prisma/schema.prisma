@@ -2165,6 +2165,10 @@ enum TipoEventoAgenda {
   MANTENIMIENTO
   SOPORTE
   VISITA_TECNICA
+  // Comodín para lo que no entra en las categorías de arriba (una entrega, una
+  // reunión en obra, una capacitación). Por eso el título es obligatorio en este
+  // tipo: "Otro" solo no le dice nada a quien mira el calendario.
+  OTRO
 }
 
 model AgendaEvento {

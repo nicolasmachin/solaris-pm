@@ -14,15 +14,24 @@ Ejecución de obra: fotos, videos, stock, logística y agenda de instalación.
 
 El calendario (`/calendario`) muestra qué tiene el equipo cada día. Hasta
 septiembre de 2026 solo agendaba **obras**; ahora también **mantenimientos**,
-**soportes/reclamos** y **visitas técnicas**, que antes se coordinaban fuera de la
-app y no se veían en ningún lado.
+**soportes/reclamos**, **visitas técnicas** y **otros**, que antes se coordinaban
+fuera de la app y no se veían en ningún lado.
+
+**"Otro"** es el comodín deliberado: una entrega, una reunión en obra, una
+capacitación. Existe para que lo que no entra en las tres categorías igual quede
+en el calendario, en vez de forzarlo dentro de una que no le corresponde.
 
 ### Cómo se usa
 
 - **"+ Nueva instalación"** agenda una obra, como siempre.
-- **"+ Agendar otra cosa"** abre el alta de los otros tres tipos: se elige tipo,
+- **"+ Agendar otra cosa"** abre el alta de los otros cuatro tipos: se elige tipo,
   equipo, día, y opcionalmente cliente, ticket (solo en soporte), título y notas.
   **"Agregar otro día"** suma días que no tienen por qué ser consecutivos.
+- **Al tocar un evento se abre su ficha** (`EventoDetalleModal.tsx`): ahí se
+  cambia tipo, días, equipo, cliente, ticket, título y notas; se **marca como
+  hecho** (y se vuelve atrás); y se **elimina**, con una confirmación en dos
+  pasos dentro del mismo botón. Las obras no usan esta ficha: siguen con su
+  propio panel.
 - La fila **"Mostrar"** filtra por tipo. **La combinación se guarda por usuario**
   y se recupera al volver a entrar.
 
@@ -64,6 +73,10 @@ celular**. El ícono y el texto aparecen de forma escalonada según el ancho
 disponible (`EventoBloque.tsx`), igual que ya hacía el nombre del cliente en las
 obras:
 
+Los cuatro colores de barra —verde mantenimiento, ámbar soporte, violeta visita,
+rosa otros— se eligieron para no confundirse entre sí **ni con el gris de
+"completado"** en una franja de 3 px.
+
 | Ancho del día | Qué se ve |
 |---|---|
 | ≥ 56 px | barra + ícono + nombre |
@@ -88,12 +101,28 @@ Los mismos que las obras, sobre `OPERACIONES`: `VIEW` para ver, `CREATE` para
 agendar, `EDIT` para editar y mover días, `DELETE` para eliminar. No se creó un
 módulo nuevo: es el mismo calendario y la misma gente.
 
+En la ficha del evento los controles se gatean con `usePermission`: sin `EDIT` los
+campos quedan deshabilitados y se muestra un aviso de solo lectura; sin `DELETE`
+no aparece el botón de eliminar. **No hay ningún guard hardcodeado por rol** — todo
+se resuelve contra la matriz.
+
 ### Reglas y decisiones
 
 - **El ticket solo se puede enganchar a un evento de SOPORTE**
   (`TICKET_SOLO_EN_SOPORTE`). Un reclamo colgando de un mantenimiento aparecería
   donde no corresponde.
 - **Sin título se usa el nombre del cliente**; sin cliente, el nombre del tipo.
+- **En "Otro" el título es obligatorio** (`OTRO_SIN_DESCRIPCION`), en el alta y en
+  la edición. Sin él el bloque del calendario diría solo "Otro", que no le sirve a
+  nadie; los otros tres tipos se explican por sí mismos.
+- **Cambiar el tipo de un evento de soporte a otra cosa desengancha el ticket
+  solo**, en vez de fallar: quien cambia el tipo no tiene por qué acordarse de
+  limpiar el ticket a mano.
+- **Los días de la ficha se sincronizan recién al guardar.** El backend tiene un
+  endpoint por día (agregar / mover / quitar), pero dispararlos con cada tecla del
+  input de fecha llenaría la auditoría de reprogramaciones fantasma:
+  `EventoDetalleModal.tsx` calcula la diferencia contra lo guardado y manda solo
+  los cambios reales, en orden bajas → movimientos → altas.
 - **No se puede quitar el último día** (`ULTIMO_DIA`): un evento sin días no se
   vería en ningún lado. Para sacarlo del calendario se elimina el evento.
 - **Agregar un día que ya existe no falla**: es idempotente.

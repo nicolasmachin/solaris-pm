@@ -26,7 +26,7 @@ interface Props {
   onClose: () => void;
 }
 
-const TIPOS: TipoEventoAgenda[] = ["MANTENIMIENTO", "SOPORTE", "VISITA_TECNICA"];
+const TIPOS: TipoEventoAgenda[] = ["MANTENIMIENTO", "SOPORTE", "VISITA_TECNICA", "OTRO"];
 
 /**
  * Alta de un evento de agenda.
@@ -110,6 +110,10 @@ export function NuevoEventoModal({ equipos, fechaInicial, onClose }: Props) {
   const inputCls =
     "w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm";
   const sinDiasValidos = dias.some((d) => !/^\d{4}-\d{2}-\d{2}$/.test(d));
+  // En "Otro" la descripción es lo único que dice qué es: sin ella el bloque del
+  // calendario diría "Otro" y nada más.
+  const esOtro = tipo === "OTRO";
+  const faltaDescripcion = esOtro && titulo.trim().length === 0;
 
   return (
     <div
@@ -251,14 +255,26 @@ export function NuevoEventoModal({ equipos, fechaInicial, onClose }: Props) {
 
           <div>
             <label className="mb-1 block text-xs text-[var(--color-text-secondary)]">
-              Título (opcional)
+              {esOtro ? "¿De qué se trata?" : "Título (opcional)"}
+              {esOtro && <span className="ml-1 text-[var(--color-danger,#E0564A)]">*</span>}
             </label>
             <input
               value={titulo}
               onChange={(e) => setTitulo(e.target.value)}
-              placeholder={projectId ? "Se usa el nombre del cliente" : "Ej: Relevamiento zona este"}
+              placeholder={
+                esOtro
+                  ? "Ej: Entrega de materiales en obra"
+                  : projectId
+                    ? "Se usa el nombre del cliente"
+                    : "Ej: Relevamiento zona este"
+              }
               className={inputCls}
             />
+            {esOtro && (
+              <p className="mt-1 text-[10px] text-[var(--color-text-muted)]">
+                Es lo que se va a leer en el calendario. Si necesitás más detalle, usá las notas.
+              </p>
+            )}
           </div>
 
           <div>
@@ -280,7 +296,10 @@ export function NuevoEventoModal({ equipos, fechaInicial, onClose }: Props) {
           >
             Cancelar
           </button>
-          <Button disabled={sinDiasValidos || crear.isPending} onClick={() => crear.mutate()}>
+          <Button
+            disabled={sinDiasValidos || faltaDescripcion || crear.isPending}
+            onClick={() => crear.mutate()}
+          >
             {crear.isPending ? "Agendando…" : "Agendar"}
           </Button>
         </div>
