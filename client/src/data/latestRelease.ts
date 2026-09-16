@@ -23,7 +23,7 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "10.4",
+  version: "10.5",
   date: "15 de septiembre de 2026",
   sections: [
     {
@@ -43,6 +43,19 @@ export const LATEST_RELEASE: Release = {
         "Cada uno puede editar o borrar lo suyo; quien administra Capacitación puede borrar cualquier comentario.",
       ],
     },
+    {
+      title: "Arreglos",
+      items: [
+        "El reproductor de Capacitación no arrancaba el video: la pantalla se trababa y quedaba en negro. Ya funciona normalmente.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_10_4: Release = {
+  version: "10.4",
+  date: "15 de septiembre de 2026",
+  sections: [
     {
       title: "Capacitación: videos y documentos para el equipo",
       items: [
@@ -112,6 +125,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "10.4",
+    shortDate: "15 sep",
+    highlights: RELEASE_10_4.sections.map((sec) => sec.title),
+  },
   {
     version: "10.3",
     shortDate: "13 sep",

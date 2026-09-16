@@ -1,6 +1,6 @@
 # Novedades
 
-## v10.4
+## v10.5
 
 ### 15 de septiembre de 2026
 
@@ -18,6 +18,14 @@
 - Debajo de cada video hay un espacio para **preguntar o aportar algo**, y que lo vea el resto del equipo.
 - Cuando alguien comenta, **le avisa por la campanita** a quien cargó el video y a quienes ya participaron de esa conversación. Al tocar el aviso vas directo a ese video.
 - Cada uno puede editar o borrar lo suyo; quien administra Capacitación puede borrar cualquier comentario.
+
+#### Arreglos
+
+- **El reproductor de Capacitación no arrancaba el video**: la pantalla se trababa y el video quedaba en negro. Ya funciona normalmente.
+
+## v10.4
+
+### 15 de septiembre de 2026
 
 #### Capacitación: videos y documentos para el equipo
 
