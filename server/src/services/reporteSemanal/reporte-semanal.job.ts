@@ -479,8 +479,9 @@ export function renderTexto(d: DatosReporte): string {
 
 // ─── Orquestación + cron ──────────────────────────────────────────────────────
 
-function destinatario(): string {
-  return process.env.REPORTE_SEMANAL_EMAIL || "nfmj@hotmail.com";
+/** Casilla del reporte. Único lugar con el default: las rutas lo importan de acá. */
+export function destinatario(): string {
+  return process.env.REPORTE_SEMANAL_EMAIL || "nicolas@voltia.com.uy";
 }
 
 export async function ejecutarReporteSemanal(now: Date = new Date()): Promise<boolean> {
@@ -488,8 +489,8 @@ export async function ejecutarReporteSemanal(now: Date = new Date()): Promise<bo
   const to = destinatario();
   const ok = await sendEmail({
     to,
-    // Casilla personal externa del destinatario: client_facing evita el
-    // guardrail de "solo usuarios internos" del envío interno.
+    // client_facing evita el guardrail de "solo usuarios internos" del envío
+    // interno, por si REPORTE_SEMANAL_EMAIL apunta a una casilla externa.
     type: "client_facing",
     subject: `Indicadores · Semana ${datos.semana.semanaIso} (${datos.semana.etiqueta})`,
     html: renderHtml(datos),

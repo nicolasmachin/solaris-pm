@@ -23,6 +23,19 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "10.7",
+  date: "17 de septiembre de 2026",
+  sections: [
+    {
+      title: "El reporte semanal de indicadores llega al correo de la empresa",
+      items: [
+        "El mail de indicadores que sale los lunes a la madrugada pasa a llegar a la casilla de Voltia, la misma donde llegan el resto de los avisos del sistema. Antes iba a una casilla personal.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_10_6: Release = {
   version: "10.6",
   date: "16 de septiembre de 2026",
   sections: [
@@ -118,6 +131,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "10.6",
+    shortDate: "16 sep",
+    highlights: RELEASE_10_6.sections.map((sec) => sec.title),
+  },
   {
     version: "10.5",
     shortDate: "15 sep",

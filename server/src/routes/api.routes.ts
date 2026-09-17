@@ -164,7 +164,7 @@ import { notifyEngineeringCompleted } from "../services/notify.service.js";
 import { autoPromoteLeadToCotizado } from "../services/proposal/promote-lead.service.js";
 import { crearTraspasoSiNoExiste, STAGE_TO_TRASPASO, STAGE_TO_TRASPASO_EXTRA } from "../services/traspasos/index.js";
 import { fetchBcuRatePreview } from "../services/exchange-rate.service.js";
-import { recolectarDatos as recolectarReporteSemanal, ejecutarReporteSemanal } from "../services/reporteSemanal/reporte-semanal.job.js";
+import { recolectarDatos as recolectarReporteSemanal, ejecutarReporteSemanal, destinatario as destinatarioReporteSemanal } from "../services/reporteSemanal/reporte-semanal.job.js";
 import {
   applyDeadlineRulesToProject,
   countProjectManualOverrides,
@@ -5597,7 +5597,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const datos = await recolectarReporteSemanal(new Date());
     return {
       ...datos,
-      destinatario: process.env.REPORTE_SEMANAL_EMAIL || "nfmj@hotmail.com",
+      destinatario: destinatarioReporteSemanal(),
     };
   });
 
@@ -5614,7 +5614,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         message: "No se pudo enviar el mail (¿SMTP configurado?). Revisá los logs del servidor.",
       });
     }
-    const destinatario = process.env.REPORTE_SEMANAL_EMAIL || "nfmj@hotmail.com";
+    const destinatario = destinatarioReporteSemanal();
     return { ok: true, destinatario };
   });
 

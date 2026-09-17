@@ -1,5 +1,13 @@
 # Novedades
 
+## v10.7
+
+### 17 de septiembre de 2026
+
+#### El reporte semanal de indicadores llega al correo de la empresa
+
+- El mail de indicadores que sale los lunes a la madrugada **pasa a llegar a la casilla de Voltia**, la misma donde llegan el resto de los avisos del sistema. Antes iba a una casilla personal.
+
 ## v10.6
 
 ### 16 de septiembre de 2026
