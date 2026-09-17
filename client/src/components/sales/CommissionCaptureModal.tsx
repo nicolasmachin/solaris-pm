@@ -2,14 +2,15 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
-import { confirmCommission, getEligibleProposals } from "../../api/comisiones.api";
+import { confirmCommission, getEligibleProposals, getLeadCommission } from "../../api/comisiones.api";
 import { Button } from "../ui/Button";
 import { Spinner } from "../ui/Spinner";
 
-// Modal de captura de comisión (Etapa 2). Se abre al marcar el lead como
-// Ganado: el usuario elige la propuesta aceptada (default: la última publicada)
-// y se congela la comisión + se genera el pendiente en Finanzas. Si el lead solo
-// tiene propuestas viejas (sin snapshot), un ADMIN/FINANZAS carga el monto manual.
+// Modal de comisión (Etapa 2). Se abre al marcar el lead como Ganado, pero ya
+// NO es el que hace que la comisión exista: al ganar se congela sola con la
+// última propuesta publicada (ver `congelarComisionAlGanar` en el backend).
+// Acá se ve con cuál quedó y se cambia si el cliente aceptó otra versión. Si el
+// lead no tiene propuestas nuevas, un ADMIN/FINANZAS carga el monto manual.
 
 interface Props {
   open: boolean;
@@ -39,18 +40,34 @@ export function CommissionCaptureModal({ open, onClose, leadId, leadClientName, 
     enabled: open,
   });
 
+  // La comisión que ya quedó congelada al ganar (si la hay): marca cuál está
+  // elegida hoy y cambia el texto de "registrar" a "cambiar".
+  const commissionQ = useQuery({
+    queryKey: ["lead-commission", leadId],
+    queryFn: () => getLeadCommission(leadId),
+    enabled: open,
+  });
+  const congelada = commissionQ.data ?? null;
+
   const proposals = eligibleQ.data?.proposals ?? [];
   const onlyOld = eligibleQ.data?.onlyOld ?? false;
 
-  // Default: la propuesta marcada isDefault (la de mayor versión).
-  const defaultId = useMemo(() => proposals.find((p) => p.isDefault)?.id ?? proposals[0]?.id ?? null, [proposals]);
+  // Default: la propuesta ya congelada; si no hay, la última publicada.
+  const defaultId = useMemo(
+    () =>
+      proposals.find((p) => p.id === congelada?.proposalVersionId)?.id ??
+      proposals.find((p) => p.isDefault)?.id ??
+      proposals[0]?.id ??
+      null,
+    [proposals, congelada],
+  );
   const effectiveSelected = selectedId ?? defaultId;
 
   const confirmMut = useMutation({
     mutationFn: (body: { proposalVersionId?: string; montoManualUsd?: number }) =>
       confirmCommission(leadId, body),
     onSuccess: (res) => {
-      toast.success(res.created ? "Comisión registrada." : "Ya había una comisión para este lead.");
+      toast.success(res.created ? "Comisión registrada." : "Comisión actualizada.");
       qc.invalidateQueries({ queryKey: ["commissions"] });
       qc.invalidateQueries({ queryKey: ["commission-metrics"] });
       qc.invalidateQueries({ queryKey: ["lead-commission", leadId] });
@@ -95,8 +112,10 @@ export function CommissionCaptureModal({ open, onClose, leadId, leadClientName, 
           Comisión del asesor
         </h3>
         <p className="mb-4 text-sm text-[var(--color-text-secondary)]">
-          {leadClientName} · ¿Qué propuesta aceptó el cliente? Se congela la comisión y se genera el
-          pendiente en Finanzas.
+          {leadClientName} ·{" "}
+          {congelada
+            ? "La comisión ya quedó registrada con la última propuesta. Si el cliente aceptó otra versión, elegila acá."
+            : "¿Qué propuesta aceptó el cliente? Se congela la comisión y se genera el pendiente en Finanzas."}
         </p>
 
         {eligibleQ.isLoading ? (
@@ -178,11 +197,11 @@ export function CommissionCaptureModal({ open, onClose, leadId, leadClientName, 
 
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose}>
-            {blockedOld ? "Cerrar" : "Más tarde"}
+            {blockedOld || congelada ? "Cerrar" : "Más tarde"}
           </Button>
           {!blockedOld && (
             <Button loading={confirmMut.isPending} disabled={!canConfirm} onClick={handleConfirm}>
-              Registrar comisión
+              {congelada ? "Guardar propuesta elegida" : "Registrar comisión"}
             </Button>
           )}
         </div>

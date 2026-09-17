@@ -156,14 +156,24 @@ export interface DatosReporte {
   metas: MetaAvance[];
 }
 
-/** Monto de la cotización ganadora, con IVA. Fallback: presupuesto del lead. */
-function montoDeVenta(lead: {
+/**
+ * Monto de la venta, con IVA. El precio es un dato de la **propuesta**, así que
+ * se lee de ahí y no de la comisión: primero la propuesta que quedó congelada
+ * en la comisión, y si no hay comisión (ventas viejas, o cerradas sin pasar por
+ * el modal) la última propuesta publicada del lead. Último recurso: el
+ * presupuesto estimado cargado en el lead.
+ */
+export function montoDeVenta(lead: {
   estimatedBudgetUsd: unknown;
   commission: { proposalVersion: { snapshot: unknown } | null } | null;
+  proposalV2Versions: { snapshot: unknown }[];
 }): number | null {
-  const snap = lead.commission?.proposalVersion?.snapshot as { calc?: { totalConIva?: number } } | null | undefined;
-  const totalConIva = snap?.calc?.totalConIva;
-  if (typeof totalConIva === "number" && Number.isFinite(totalConIva)) return totalConIva;
+  const candidatos = [lead.commission?.proposalVersion?.snapshot, lead.proposalV2Versions[0]?.snapshot];
+  for (const snapshot of candidatos) {
+    const calc = (snapshot as { calc?: { totalFinalConIva?: number; totalConIva?: number } } | null | undefined)?.calc;
+    const total = calc?.totalFinalConIva ?? calc?.totalConIva;
+    if (typeof total === "number" && Number.isFinite(total)) return total;
+  }
   if (lead.estimatedBudgetUsd != null) {
     const n = Number(lead.estimatedBudgetUsd);
     if (Number.isFinite(n)) return n;
@@ -262,6 +272,14 @@ export async function recolectarDatos(now: Date): Promise<DatosReporte> {
         estimatedBudgetUsd: true,
         assignedTo: { select: { name: true } },
         commission: { select: { proposalVersion: { select: { snapshot: true } } } },
+        // Fallback cuando la venta no tiene comisión congelada: la última
+        // propuesta publicada del lead.
+        proposalV2Versions: {
+          where: { status: "PUBLISHED", discardedAt: null },
+          orderBy: { versionNumber: "desc" },
+          take: 1,
+          select: { snapshot: true },
+        },
       },
       orderBy: { closedAt: "asc" },
     }),

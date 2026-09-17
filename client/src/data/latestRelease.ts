@@ -27,6 +27,14 @@ export const LATEST_RELEASE: Release = {
   date: "17 de septiembre de 2026",
   sections: [
     {
+      title: "La comisión se registra sola al ganar la venta",
+      items: [
+        "Al marcar un lead como ganado, la comisión queda registrada sin confirmar nada, tomando el precio de la última propuesta publicada. Antes, si se cerraba el modal sin confirmar, la venta quedaba sin monto para siempre.",
+        "El modal sigue apareciendo, pero ahora es para cambiar la propuesta elegida si el cliente aceptó otra versión: se recalcula la comisión y el pendiente en Finanzas.",
+        "En los informes, el monto de cada venta sale de la propuesta y no de la comisión.",
+      ],
+    },
+    {
       title: "El reporte semanal de indicadores llega al correo de la empresa",
       items: [
         "El mail de indicadores que sale los lunes a la madrugada pasa a llegar a la casilla de Voltia, la misma donde llegan el resto de los avisos del sistema. Antes iba a una casilla personal.",

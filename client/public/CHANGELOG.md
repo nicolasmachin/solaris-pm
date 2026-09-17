@@ -4,6 +4,13 @@
 
 ### 17 de septiembre de 2026
 
+#### La comisión se registra sola al ganar la venta
+
+- **Al marcar un lead como ganado, la comisión queda registrada sin confirmar nada**, tomando el precio de la última propuesta publicada. Antes solo existía si alguien confirmaba el modal; si se cerraba sin confirmar, esa venta quedaba sin monto para siempre.
+- El modal sigue apareciendo, pero ahora es para **cambiar la propuesta elegida** si el cliente aceptó otra versión: muestra cuál quedó tomada y, al elegir otra, se recalcula la comisión y el pendiente en Finanzas.
+- Si la venta no tiene ninguna propuesta cargada, sigue haciendo falta cargar el monto a mano.
+- **En los informes, el monto de cada venta sale de la propuesta**, no de la comisión: aunque una venta vieja no tenga comisión registrada, se muestra el precio de su última propuesta.
+
 #### El reporte semanal de indicadores llega al correo de la empresa
 
 - El mail de indicadores que sale los lunes a la madrugada **pasa a llegar a la casilla de Voltia**, la misma donde llegan el resto de los avisos del sistema. Antes iba a una casilla personal.

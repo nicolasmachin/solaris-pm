@@ -134,10 +134,10 @@ con lo que se ve en pantalla.
 
 - Se **listan** solo las ventas ganadas (cliente, asesor, monto c/IVA) y las
   visitas comerciales (cliente, asesor). El resto va como número.
-- El monto de cada venta sale de la **comisión congelada** al ganar el lead:
-  `commission.proposalVersion.snapshot.calc.totalConIva`. Si no hay, cae al
-  `estimatedBudgetUsd` del lead; si tampoco hay, muestra "s/dato" y no suma a la
-  facturación.
+- El monto de cada venta sale de la **propuesta**, en este orden: la propuesta
+  congelada en la comisión → la última propuesta publicada del lead →
+  `estimatedBudgetUsd`. Si no hay ninguna, muestra "s/dato" y no suma a la
+  facturación (`montoDeVenta`).
 - El avance de metas usa solo las metas **trimestrales** del trimestre en curso.
   Verde = en ritmo (fracción lograda ≥ fracción de tiempo transcurrido).
 - Flags: `REPORTE_SEMANAL_ENABLED=false` lo apaga; `CRON_REPORTE_SEMANAL`
@@ -145,10 +145,11 @@ con lo que se ve en pantalla.
 
 ### Casos borde
 
-- **Venta sin comisión congelada y sin presupuesto en el lead → "s/dato"**. Pasa
-  cuando al marcar el lead como ganado se cierra el modal de comisión sin
-  confirmar, o cuando la venta no tiene ninguna propuesta cargada. El mail no
-  avisa de la diferencia: la venta se cuenta pero la facturación queda corta.
+- **Venta sin ninguna propuesta y sin presupuesto en el lead → "s/dato"**. Desde
+  v10.7 la comisión se congela sola al ganar y el monto se lee de la propuesta,
+  así que solo quedan sin monto las ventas cerradas sin propuesta en el sistema.
+  El mail no avisa de la diferencia: la venta se cuenta pero la facturación queda
+  corta. Ver el capítulo de [Ventas](02-ventas.md).
 - `CRON_REPORTE_SEMANAL` la lee **también** el reporte semanal de traspasos
   (`services/traspasos/reportes.service.ts`): cambiar el horario de uno cambia el
   del otro.

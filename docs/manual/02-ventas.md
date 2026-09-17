@@ -2,8 +2,9 @@
 
 > **Capítulo parcial.** Están escritas las secciones "Fechas del proceso",
 > "Cotizador de propuestas: precargas y saludo de la carta", "Costeo a medida de
-> una cotización" y "Cotizador B2B: propuestas a empresas". El resto del módulo
-> funciona en producción pero todavía no está documentado.
+> una cotización", "Cotizador B2B: propuestas a empresas" y "Comisión del asesor:
+> cómo se registra al ganar". El resto del módulo funciona en producción pero
+> todavía no está documentado.
 
 Leads, pipeline comercial, reclamos, propuestas, conversión a proyecto y comisiones.
 
@@ -434,6 +435,59 @@ Quien puede cotizar, puede cotizar B2B.
 
 ---
 
+## Comisión del asesor: cómo se registra al ganar
+
+### Para qué existe
+
+Cerrar una venta tiene que dejar dos cosas registradas solas: cuánto se vendió y
+cuánto se le debe al asesor. El precio es un dato de la **propuesta**, así que la
+comisión se deriva de ahí y no al revés.
+
+### Cómo funciona
+
+- Al pasar el lead a **CERRADO_GANADO** (por la app o por el conector MCP: los
+  dos entran por `moverEtapaLead`), se llama a `congelarComisionAlGanar`
+  (`commission.service.ts`), que toma la **última propuesta publicada no
+  descartada** y congela la comisión con el monto de su snapshot
+  (`comisionVentasUsdSinIva`), más el pendiente en Finanzas (`FinanceMovement`
+  PREVISTO, subcategoría "Comisiones ventas").
+- Es **best-effort**: si algo falla, el cambio de etapa no se cae. La venta queda
+  ganada y la comisión se puede cargar después.
+- Es **idempotente**: si el lead ya tiene comisión, no la toca.
+- El modal "Comisión del asesor" (`CommissionCaptureModal`) sigue abriéndose al
+  ganar, pero ya **no es lo que hace que la comisión exista**: muestra cuál
+  propuesta quedó tomada y sirve para **cambiarla**. Al elegir otra versión,
+  `confirmCommission` re-congela sobre la misma comisión (`recongelarDesdePropuesta`):
+  recalcula el monto y arrastra el movimiento de Finanzas.
+- El **monto de la venta** que leen los informes sale de la propuesta: la
+  congelada en la comisión, si no la última publicada del lead, y como último
+  recurso el presupuesto estimado del lead (ver `montoDeVenta` en el reporte
+  semanal).
+
+### Reglas y decisiones
+
+- Se congela aunque nadie confirme nada. La decisión es de negocio: es preferible
+  una comisión de más (que después no se paga) a una venta sin monto.
+- Una comisión **ya pagada** no se re-congela desde el modal
+  (`COMISION_PAGADA`): su movimiento puede tener pagos aplicados, así que se
+  edita desde Finanzas, que deja nota de edición.
+- Cambiar la propuesta elegida requiere `VENTAS:EDIT` (el mismo permiso que
+  congelarla). Editar montos/fechas de una comisión sigue siendo solo ADMIN.
+
+### Casos borde
+
+- **Venta sin ninguna propuesta publicada**: no hay monto que leer, así que no se
+  congela nada y hay que cargarlo a mano (ADMIN/FINANZAS, monto manual). Pasa con
+  ventas cerradas sin haber emitido propuesta desde la app.
+- **Propuestas viejas (v1, sin snapshot)**: tampoco tienen comisión calculada;
+  mismo camino manual.
+- Ventas cerradas **antes** de este cambio quedaron sin comisión: se arreglan con
+  `server/scripts/backfill-comisiones-ganados.ts` (dry-run por defecto,
+  `--execute` aplica; `--lead <id> --precio-sin-iva <USD> --precio-con-iva <USD>`
+  para las que no tienen propuesta).
+
+---
+
 ## Qué falta cubrir en este capítulo
 
 - El pipeline de 7 etapas y qué significa cada una
@@ -442,7 +496,8 @@ Quien puede cotizar, puede cotizar B2B.
   (los defaults del cotizador y el saludo ya están documentados arriba)
 - Propuestas v1 (generador viejo por Excel) y la lista unificada
 - Conversión de lead a proyecto: precondiciones y qué se copia
-- Comisiones del asesor: congelamiento al ganar y pago
+- Comisiones del asesor: el pago y el circuito en Finanzas (el congelamiento al
+  ganar ya está documentado arriba)
 - Adjuntos, fotos y videos de la visita comercial
 
 ---

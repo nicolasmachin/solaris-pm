@@ -12,11 +12,14 @@ import { AuditAction, AuditEntityType, Prisma, ProposalVariante, SalesStage } fr
 
 import { prisma } from "../../lib/prisma.js";
 import { createAuditEntriesForChanges, createAuditEntry } from "../audit.service.js";
+import { congelarComisionAlGanar } from "../commission/commission.service.js";
 import { badRequest, notFound } from "../../utils/errors.js";
 
 export interface LeadActor {
   id: string;
   name: string;
+  /** Solo se usa para la carga manual de comisión; el congelado automático no lo mira. */
+  role?: string;
 }
 
 /** Metadata que se adjunta a cada entrada de auditoría. */
@@ -336,6 +339,13 @@ export async function moverEtapaLead(params: {
     description: `Movió el lead '${existing.clientName}' de ${existing.stage} a ${stage}`,
     metadata: params.metadata,
   });
+
+  // Ganar la venta congela la comisión sola, con la última propuesta publicada
+  // (ver `congelarComisionAlGanar`). El modal de comisión queda para cambiar la
+  // propuesta elegida, no para que el registro exista.
+  if (stage === SalesStage.CERRADO_GANADO) {
+    await congelarComisionAlGanar({ leadId, userId: actor.id, userRole: actor.role ?? "" });
+  }
 
   if (stage === SalesStage.CERRADO_PERDIDO) {
     await createAuditEntry({

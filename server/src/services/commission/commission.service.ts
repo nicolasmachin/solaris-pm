@@ -184,9 +184,23 @@ export async function confirmCommission(input: ConfirmCommissionInput): Promise<
   if (!lead.closedAt) throw badRequest("LEAD_NO_CLOSED_AT", "El lead no tiene fecha de cierre.");
   if (!lead.assignedToId) throw badRequest("LEAD_NO_ASESOR", "El lead no tiene un asesor asignado.");
 
-  // Idempotencia: una comisión por lead.
+  // Una comisión por lead. Como ahora se congela sola al ganar (con la última
+  // propuesta), el modal llega casi siempre con una comisión ya creada: si
+  // eligen OTRA propuesta, se re-congela sobre la misma comisión en vez de
+  // ignorar el cambio en silencio.
   const existing = await prisma.commission.findUnique({ where: { leadId } });
-  if (existing) return { commission: serializeCommission(existing), created: false };
+  if (existing) {
+    const cambiaDePropuesta =
+      input.proposalVersionId != null && input.proposalVersionId !== existing.proposalVersionId;
+    if (!cambiaDePropuesta) return { commission: serializeCommission(existing), created: false };
+    const recongelada = await recongelarDesdePropuesta({
+      commission: existing,
+      proposalVersionId: input.proposalVersionId!,
+      lead,
+      userId,
+    });
+    return { commission: recongelada, created: false };
+  }
 
   // Determinar monto / % / origen.
   let montoUsd: number;
@@ -287,6 +301,115 @@ export async function confirmCommission(input: ConfirmCommissionInput): Promise<
   });
 
   return { commission: serializeCommission(commission), created: true };
+}
+
+/**
+ * Cambia la propuesta de una comisión ya congelada: recalcula el monto desde el
+ * snapshot de la nueva versión y arrastra el movimiento de Finanzas. No toca
+ * una comisión ya pagada (ahí el movimiento tiene pagos aplicados: se edita
+ * desde Finanzas, con su nota de edición).
+ */
+async function recongelarDesdePropuesta(params: {
+  commission: CommissionRow;
+  proposalVersionId: string;
+  lead: { id: string; clientName: string; convertedToProjectId: string | null };
+  userId: string;
+}): Promise<SerializedCommission> {
+  const { commission, proposalVersionId, lead, userId } = params;
+
+  if (commission.status === CommissionStatus.PAGADA) {
+    throw badRequest("COMISION_PAGADA", "La comisión ya está pagada: editala desde Finanzas.");
+  }
+
+  const version = await prisma.proposalV2Version.findUnique({ where: { id: proposalVersionId } });
+  if (!version || version.leadId !== lead.id) {
+    throw badRequest("PROPOSAL_NOT_IN_LEAD", "La propuesta no pertenece al lead.");
+  }
+  const { montoUsd, porcentaje } = readComisionFromSnapshot(version.snapshot);
+  if (montoUsd == null) {
+    throw badRequest("PROPOSAL_NO_COMMISSION", "La propuesta no tiene comisión calculada en su snapshot.");
+  }
+
+  const montoAnterior = Number(commission.montoUsd);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.commission.update({
+      where: { id: commission.id },
+      data: {
+        proposalVersionId,
+        proposalGenerationId: null,
+        montoUsd: new Prisma.Decimal(montoUsd),
+        porcentaje: porcentaje != null ? new Prisma.Decimal(porcentaje) : null,
+        origenManual: false,
+      },
+    });
+    if (commission.financeMovementId) {
+      await tx.financeMovement.update({
+        where: { id: commission.financeMovementId },
+        data: { monto: new Prisma.Decimal(montoUsd) },
+      });
+    }
+  });
+
+  await createAuditEntry({
+    entityType: AuditEntityType.commission,
+    entityId: commission.id,
+    projectId: lead.convertedToProjectId ?? null,
+    userId,
+    action: AuditAction.updated,
+    description: `Cambió la propuesta de la comisión de ${lead.clientName} a la versión ${version.versionNumber} (USD ${montoUsd.toFixed(2)})`,
+    metadata: { leadId: lead.id, proposalVersionId, montoAnterior, montoNuevo: montoUsd },
+  });
+
+  const updated = await prisma.commission.findUnique({ where: { id: commission.id } });
+  return serializeCommission(updated!);
+}
+
+// ─── Congelamiento automático al ganar ───────────────────────────────────────
+
+/**
+ * Congela la comisión sola al pasar el lead a CERRADO_GANADO, tomando la
+ * **última propuesta publicada**.
+ *
+ * El precio es un dato de la propuesta, no del modal: antes la comisión (y con
+ * ella el monto de la venta que leen los informes) solo existía si alguien
+ * confirmaba el modal "Comisión del asesor", y cerrarlo dejaba la venta sin
+ * monto para siempre. Ahora el modal sirve para **cambiar** la propuesta
+ * elegida, no para que exista el registro.
+ *
+ * Best-effort: si algo falla, el cambio de etapa no se cae — la venta ya está
+ * marcada como ganada y la comisión se puede cargar después.
+ */
+export async function congelarComisionAlGanar(input: {
+  leadId: string;
+  userId: string;
+  userRole: string;
+}): Promise<SerializedCommission | null> {
+  const { leadId, userId, userRole } = input;
+  try {
+    const existing = await prisma.commission.findUnique({ where: { leadId } });
+    if (existing) return serializeCommission(existing);
+
+    const version = await prisma.proposalV2Version.findFirst({
+      where: { leadId, status: "PUBLISHED", discardedAt: null },
+      orderBy: { versionNumber: "desc" },
+      select: { id: true },
+    });
+    // Sin propuesta publicada no hay de dónde sacar el monto: queda para cargar
+    // a mano (leads viejos, o ventas cerradas sin haber emitido propuesta).
+    if (!version) return null;
+
+    const { commission } = await confirmCommission({
+      leadId,
+      userId,
+      userRole,
+      proposalVersionId: version.id,
+    });
+    return commission;
+  } catch (err) {
+    console.error(`[commission] no se pudo congelar la comisión del lead ${leadId}:`, err);
+    return null;
+  }
 }
 
 // ─── Comisión manual (cargada por un admin, sin lead) ────────────────────────
