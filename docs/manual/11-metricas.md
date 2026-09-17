@@ -90,6 +90,73 @@ Aparece arriba de las tarjetas del Dashboard, solo para quien tiene
 
 ---
 
+## Reporte semanal de indicadores por correo
+
+### Para qué existe
+
+Replica por mail el tablero semanal de indicadores con los datos que la app ya
+calcula, para tenerlo el lunes sin entrar a la app. Las definiciones son las
+mismas de `/metrics/sales` y `/metrics/overview`, así que los números coinciden
+con lo que se ve en pantalla.
+
+### Cómo se usa
+
+- Sale solo los **lunes 00:01 hora de Uruguay** y reporta la semana que acaba de
+  cerrar (lunes 00:00 a domingo 23:59). Asunto: `Indicadores · Semana N (…)`.
+- En **Métricas → pestaña "Reporte semanal"** se ve el mismo informe en pantalla
+  (`WeeklyReportTab`), con el destinatario a la vista.
+- El botón **"Enviar el mail ahora"** lo dispara a mano, siempre a la casilla
+  configurada (no al usuario que aprieta el botón).
+
+### Cómo funciona
+
+- Job `server/src/services/reporteSemanal/reporte-semanal.job.ts`, registrado en
+  `index.ts` con `startReporteSemanalJob()`.
+- Destinatario: `destinatario()`, que lee `REPORTE_SEMANAL_EMAIL` y, si no está
+  seteada, usa `nicolas@voltia.com.uy`. **Es el único lugar con ese default**: las
+  rutas lo importan de ahí. En producción la variable no está seteada, así que
+  rige el default.
+- El mail se manda con `type: "client_facing"` para que el guardrail de
+  "solo usuarios internos" de `sendEmail` no lo frene si algún día el
+  destinatario es una casilla externa.
+- Funciones puras testeables: `calcularSemana`, `calcularTrimestre`,
+  `numeroSemanaIso`; después `recolectarDatos` (DB) y `renderHtml` / `renderTexto`.
+- Endpoints en `api.routes.ts`: `GET /metrics/weekly-report` y
+  `POST /metrics/weekly-report/send`.
+
+### Permisos
+
+- Ver la pestaña y el endpoint `GET`: `METRICAS:VIEW`.
+- Disparar el envío (`POST`): `METRICAS:VIEW` **más** un guard hardcodeado
+  `role === "ADMIN"` que devuelve 403 al resto. Es un guard por rol, no matriz.
+
+### Reglas y decisiones
+
+- Se **listan** solo las ventas ganadas (cliente, asesor, monto c/IVA) y las
+  visitas comerciales (cliente, asesor). El resto va como número.
+- El monto de cada venta sale de la **comisión congelada** al ganar el lead:
+  `commission.proposalVersion.snapshot.calc.totalConIva`. Si no hay, cae al
+  `estimatedBudgetUsd` del lead; si tampoco hay, muestra "s/dato" y no suma a la
+  facturación.
+- El avance de metas usa solo las metas **trimestrales** del trimestre en curso.
+  Verde = en ritmo (fracción lograda ≥ fracción de tiempo transcurrido).
+- Flags: `REPORTE_SEMANAL_ENABLED=false` lo apaga; `CRON_REPORTE_SEMANAL`
+  cambia la expresión cron.
+
+### Casos borde
+
+- **Venta sin comisión congelada y sin presupuesto en el lead → "s/dato"**. Pasa
+  cuando al marcar el lead como ganado se cierra el modal de comisión sin
+  confirmar, o cuando la venta no tiene ninguna propuesta cargada. El mail no
+  avisa de la diferencia: la venta se cuenta pero la facturación queda corta.
+- `CRON_REPORTE_SEMANAL` la lee **también** el reporte semanal de traspasos
+  (`services/traspasos/reportes.service.ts`): cambiar el horario de uno cambia el
+  del otro.
+- Todo el bloque de marketing social (seguidores, pauta, consultas de Meta y
+  TikTok) queda fuera: necesita integrar esas APIs.
+
+---
+
 ## Plantilla
 
 Al escribirlo, seguir la estructura común (ver `README.md`):
