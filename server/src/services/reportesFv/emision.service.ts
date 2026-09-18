@@ -7,7 +7,7 @@
 // tarifas, la config o el motor. Regenerar crea una versión nueva —igual que
 // UnifilarVersion/EFPVersion—; sólo la última es la vigente.
 
-import { FileAttachmentTipo, type Prisma, ReporteFvEmisionEstado } from "@prisma/client";
+import { FileAttachmentTipo, type Prisma, ReporteFvEmisionEstado, ReporteFvFuente } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { AuditAction, AuditEntityType } from "@prisma/client";
@@ -19,6 +19,7 @@ import { exigirConfigCompleta, getConfigEfectiva } from "./config.service.js";
 import { generarReporteFvPdf } from "./pdf/index.js";
 import { construirPdfInput, contextoDesdeConfig } from "./pdf/viewModel.js";
 import type { ReporteFvPdfInput } from "./pdf/types.js";
+import { COBERTURA_MINIMA } from "./growatt/ingesta.service.js";
 import { periodoADate, periodoCerrado, type Periodo } from "./periodo.js";
 
 const TOOL_SOURCE = "reporte-fv";
@@ -77,8 +78,26 @@ export async function generarEmision(
   // sin ninguna advertencia.
   const lectura = await prisma.reporteFvLectura.findFirst({
     where: { projectId: config.projectId, periodo: periodoADate(periodo) },
-    select: { diasConDatos: true, diasEsperados: true },
+    select: { diasConDatos: true, diasEsperados: true, consumoFuente: true },
   });
+
+  // Consumo medido en menos de la mitad del período: no se puede estimar el mes.
+  // La ingesta ya no lo guarda, pero una lectura vieja podía conservar el
+  // consumo de otro rango de días (Percovich, julio 2026: 0 de 30 días medidos
+  // y el reporte salió con el consumo del mes calendario). Un consumo cargado a
+  // mano no depende del medidor y pasa.
+  if (
+    lectura &&
+    lectura.consumoFuente !== ReporteFvFuente.MANUAL &&
+    lectura.diasEsperados != null &&
+    lectura.diasEsperados > 0 &&
+    (lectura.diasConDatos ?? 0) / lectura.diasEsperados < COBERTURA_MINIMA
+  ) {
+    throw badRequest(
+      "REPORTE_FV_COBERTURA_INSUFICIENTE",
+      `${config.clientName} — ${periodo}: el medidor registró ${lectura.diasConDatos ?? 0} de ${lectura.diasEsperados} días; no alcanza para estimar el mes`,
+    );
+  }
 
   const input = construirPdfInput(resultado, {
     ...contextoDesdeConfig(config),

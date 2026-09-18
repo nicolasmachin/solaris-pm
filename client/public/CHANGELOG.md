@@ -19,6 +19,7 @@
 
 #### Arreglos
 
+- **Un reporte podía salir con el consumo de otros días.** Al volver a traer los datos de un período que había cambiado de fechas (por cargar el día de corte), si el medidor no tenía datos del período nuevo se conservaba el consumo del anterior, y el reporte mezclaba la generación de unos días con el consumo de otros. Ahora esos datos se borran, y **no se genera ningún reporte con menos de la mitad de los días medidos por el medidor**.
 - **La pantalla de Reportes FV abre siempre en el mes anterior**, que es el que se reporta. Al aparecer el mes en curso en el selector (por los clientes con día de corte), la pantalla abría en ese mes, donde casi nadie tiene reporte todavía, y parecía que faltaban los del mes.
 - **"Enviar todos" podía volver a mandarle el reporte del mes a un cliente que ya lo había recibido**, si ese reporte se había regenerado antes de enviarse (quedaba la versión vieja pendiente). Ahora el envío en lote saltea a quien ya recibió alguna versión del mes; para reenviar una corrección se hace desde el detalle del cliente.
 

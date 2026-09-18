@@ -869,9 +869,17 @@ comercial y postventa.
 
 - **Lectura tomada antes de cargar el corte.** Si un cliente cargó su día de
   corte después de que se trajeron los datos de un período, esa lectura cubre el
-  mes calendario y no su ciclo, y se superpone con el ciclo siguiente (Percovich,
-  julio 2026). `regenerarPendientes()` lo corrige para lo pendiente; lo ya enviado
-  queda como se mandó.
+  mes calendario y no su ciclo, y se superpone con el ciclo siguiente.
+  `regenerarPendientes()` la vuelve a traer con *force*. Con *force*, un dato que
+  Growatt ya no devuelve **se borra** (salvo que sea manual): antes se conservaba y
+  el 18 de septiembre de 2026 a Percovich le salió el reporte de julio con la
+  generación del ciclo nuevo (7 jun–6 jul) y el consumo del mes calendario viejo,
+  con 0 de 30 días medidos.
+- **Cobertura mínima al emitir.** `generarEmision()` rechaza
+  (`REPORTE_FV_COBERTURA_INSUFICIENTE`) si el consumo viene del medidor y cubre
+  menos de `COBERTURA_MINIMA` (la mitad) de los días del período. La ingesta ya no
+  guarda esos consumos, pero lecturas viejas sí los tienen: en julio de 2026
+  quedaron seis así, y la de Wilfredo Gabitto (3 de 31 días) llegó a enviarse.
 - **Clientes con corte y Huawei.** La ingesta Huawei es siempre por mes
   calendario; el proceso diario de ciclos solo consulta Growatt.
 - **Cambiar el día de corte** cambia qué días cubre cada período para la lista de

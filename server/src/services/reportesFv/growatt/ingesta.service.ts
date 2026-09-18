@@ -33,7 +33,7 @@ const CONCURRENCIA = Math.max(1, Number(process.env.REPORTES_FV_GROWATT_CONCURRE
 // Piso para poder estimar un mes: la mitad del período. Con al menos la mitad
 // de los días medidos, los faltantes se completan con el promedio; por debajo no
 // se reporta el mes. Antes era 0.9 y sólo servía para marcarlo como parcial.
-const COBERTURA_MINIMA = Number(process.env.GROWATT_MIN_COVERAGE || "") || 0.5;
+export const COBERTURA_MINIMA = Number(process.env.GROWATT_MIN_COVERAGE || "") || 0.5;
 
 export interface OpcionesIngesta {
   periodo: Periodo;
@@ -360,8 +360,15 @@ async function guardarLecturaIngesta(
   };
 
   const resolver = (campo: Campo): { valor: number | null; fuente: ReporteFvFuente | null } => {
-    // null nuevo → conservar lo que había.
-    if (nuevo[campo] == null) return { valor: valorExistente[campo], fuente: fuenteExistente[campo] };
+    if (nuevo[campo] == null) {
+      // Con force se está re-midiendo el período (por ejemplo, porque cambió el
+      // día de corte y ahora cubre otros días): lo que había de Growatt ya no
+      // corresponde y se borra. Sin esto, a Percovich (julio 2026) le quedó la
+      // generación del ciclo nuevo con el consumo del mes calendario viejo.
+      if (force && fuenteExistente[campo] !== ReporteFvFuente.MANUAL) return { valor: null, fuente: null };
+      // Sin force, un null nuevo no pisa lo que había.
+      return { valor: valorExistente[campo], fuente: fuenteExistente[campo] };
+    }
     // MANUAL sin force → conservar.
     if (fuenteExistente[campo] === ReporteFvFuente.MANUAL && !force) {
       return { valor: valorExistente[campo], fuente: ReporteFvFuente.MANUAL };
