@@ -811,6 +811,9 @@ saltean, incluso con *force*) y no se emite (`generarEmision()` lo rechaza con
 `REPORTE_FV_PERIODO_ABIERTO`). El panel ofrece el **mes en curso** en el
 selector solo si algún generador habilitado con día de corte ya cerró su ciclo
 (`periodosConDatos()`); en ese mes, solo esos generadores reciben datos y PDF.
+El panel abre por defecto en el **mes anterior** (`ReportesFvPanel.tsx`), no en
+el primero de la lista: si abriera en el mes en curso parecería que no hay
+reportes.
 
 **Envío.** `enviarEmision()` tiene guardas (habilitado, destinatarios, estado
 LISTO, PDF de tamaño razonable, ahorro no disparatado frente al promedio) y un

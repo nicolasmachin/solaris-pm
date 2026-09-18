@@ -154,7 +154,8 @@ días: el PDF y el mail dicen "7 jul al 6 ago 2026". Sin día de corte dicen
 antes que el mes: con corte el día 6, el 7 de septiembre ya se puede reportar el
 ciclo del 7 de agosto al 6 de septiembre. Por eso, cuando algún generador con
 corte ya cerró su ciclo, el selector de período del panel ofrece también el
-**mes en curso**. Ahí el sistema sólo trae datos y genera el PDF de los que ya
+**mes en curso** (la pantalla igual abre en el mes anterior; el mes en curso hay
+que elegirlo a mano). Ahí el sistema sólo trae datos y genera el PDF de los que ya
 cerraron; para los demás el mes sigue abierto y no hace nada. Lo automático
 (ver sección 10) todavía no lo hace solo: ese ciclo lo levanta recién el mes
 siguiente, así que para no esperar hay que generarlo a mano.

@@ -223,8 +223,14 @@ export function ReportesFvPanel() {
     enabled: canView,
   });
 
-  // El periodo por defecto es el primero disponible (el más reciente).
-  const periodoActivo = periodo || periodos[0] || "";
+  // El periodo por defecto es el mes anterior, que es el que se reporta. El mes
+  // en curso puede aparecer primero en la lista (clientes con día de corte que
+  // ya cerraron su ciclo), pero ahí casi nadie tiene reporte todavía.
+  const hoy = new Date();
+  const mesAnterior = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+  const periodoMesAnterior = `${mesAnterior.getFullYear()}-${String(mesAnterior.getMonth() + 1).padStart(2, "0")}`;
+  const periodoActivo =
+    periodo || (periodos.includes(periodoMesAnterior) ? periodoMesAnterior : periodos[0]) || "";
 
   const { data: panel, isLoading } = useQuery({
     queryKey: ["reportes-fv", "panel", periodoActivo],

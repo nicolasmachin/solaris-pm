@@ -12,6 +12,7 @@
 
 #### Arreglos
 
+- **La pantalla de Reportes FV abre siempre en el mes anterior**, que es el que se reporta. Al aparecer el mes en curso en el selector (por los clientes con día de corte), la pantalla abría en ese mes, donde casi nadie tiene reporte todavía, y parecía que faltaban los del mes.
 - **"Enviar todos" podía volver a mandarle el reporte del mes a un cliente que ya lo había recibido**, si ese reporte se había regenerado antes de enviarse (quedaba la versión vieja pendiente). Ahora el envío en lote saltea a quien ya recibió alguna versión del mes; para reenviar una corrección se hace desde el detalle del cliente.
 
 ## v10.7

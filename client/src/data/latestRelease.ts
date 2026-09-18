@@ -32,6 +32,7 @@ export const LATEST_RELEASE: Release = {
         "El reporte ya no dice solo el mes: muestra el período medido, de qué día a qué día. Sin día de corte es el mes completo (1 al 31 de agosto); con día de corte es el ciclo del medidor de UTE (7 de julio al 6 de agosto).",
         "El asunto y el texto del mail al cliente dicen el mismo período que el PDF.",
         "Para los clientes con día de corte, su reporte se puede generar apenas cierra el ciclo, sin esperar al mes siguiente.",
+        "La pantalla de Reportes FV abre siempre en el mes anterior, que es el que se reporta.",
         "\"Enviar todos\" ya no le vuelve a mandar el reporte a un cliente que ya lo recibió ese mes.",
       ],
     },
