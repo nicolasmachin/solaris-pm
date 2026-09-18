@@ -45,10 +45,15 @@ function summaryLines(tarifas: TarifaPdf[], valor: (t: TarifaPdf) => string): st
 
 export function renderReporteFvHtml(input: ReporteFvPdfInput): string {
   const t = input.tarifasMostradas;
-  const mesUpper = input.mes.toUpperCase();
+  // Snapshots anteriores a los textos de período no traen periodoCorto: los de
+  // ciclo del medidor ya traían "del …" en periodoTexto y los de mes calendario
+  // lo traían vacío (se cae al nombre del mes).
+  const periodoCorto = input.periodoCorto || input.mes;
+  const periodoLargo = input.periodoCorto ? `del ${input.periodoTexto}` : input.periodoTexto || input.mes;
+  const periodoUpper = periodoCorto.toUpperCase();
 
   const mailtoSubject = encodeURIComponent(
-    `Comentarios sobre reporte fotovoltaico - ${input.cliente} (${input.mes})`,
+    `Comentarios sobre reporte fotovoltaico - ${input.cliente} (${periodoCorto})`,
   );
 
   const notasHtml =
@@ -75,7 +80,7 @@ export function renderReporteFvHtml(input: ReporteFvPdfInput): string {
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<title>Reporte fotovoltaico — ${esc(input.cliente)} · ${esc(input.mes)}</title>
+<title>Reporte fotovoltaico — ${esc(input.cliente)} · ${esc(periodoCorto)}</title>
 <style>${REPORTE_FV_STYLES}</style>
 </head>
 <body>
@@ -94,7 +99,7 @@ export function renderReporteFvHtml(input: ReporteFvPdfInput): string {
                 <div class="grid-2">
                     <table class="data-table">
                         <tr><td class="label">Cliente</td><td class="value">${esc(input.cliente)}</td></tr>
-                        <tr><td class="label">Mes calculado</td><td class="value">${esc(input.mes)}</td></tr>
+                        <tr><td class="label">Período</td><td class="value">${esc(periodoCorto)}</td></tr>
                         <tr><td class="label">Fecha habilitación UTE</td><td class="value">${esc(input.fechaInst)}</td></tr>
                     </table>
                     <table class="data-table">
@@ -129,7 +134,7 @@ export function renderReporteFvHtml(input: ReporteFvPdfInput): string {
         </div>
 
         <div class="section">
-            <div class="section-header">Resumen económico mes de ${esc(mesUpper)}</div>
+            <div class="section-header">Resumen económico · ${esc(periodoUpper)}</div>
             <div class="section-body">
                 <div class="grid-3">
                     <div class="summary-card summary-card-cost">
@@ -149,7 +154,7 @@ export function renderReporteFvHtml(input: ReporteFvPdfInput): string {
                     ${
                       input.tienePeriodoMedidor
                         ? `<strong>Sobre las diferencias con su factura de UTE.</strong>
-                    Este reporte cubre el período <strong>${esc(input.periodoTexto)}</strong>, alineado con su ciclo de
+                    Este reporte cubre el período <strong>${esc(periodoLargo)}</strong>, alineado con su ciclo de
                     lectura del medidor de UTE, para que los kWh se acerquen a los de su factura. Puede haber pequeñas
                     diferencias porque UTE corre la fecha de lectura por fines de semana y feriados.
                     Los precios utilizados son los del pliego tarifario vigente de UTE.
@@ -157,7 +162,7 @@ export function renderReporteFvHtml(input: ReporteFvPdfInput): string {
                     contempla, como multas o recargos por pagos fuera de fecha, o cargos de terceros.`
                         : `<strong>¿Por qué estos montos no coinciden con mi factura de UTE?</strong>
                     Porque no cubren los mismos días. Este reporte analiza el <strong>mes calendario completo</strong>
-                    (${esc(input.mes)}, del día 1 al último), mientras que UTE factura el período entre dos lecturas del
+                    (${esc(periodoLargo)}), mientras que UTE factura el período entre dos lecturas del
                     medidor, que normalmente va de mitad de mes a mitad del mes siguiente. Su factura, entonces,
                     incluye días que aquí no figuran y deja afuera días que sí están en este reporte.
                     Según cómo haya variado su consumo, el importe de la factura puede resultar mayor o menor que el
@@ -174,12 +179,17 @@ export function renderReporteFvHtml(input: ReporteFvPdfInput): string {
         </div>
 
         <div class="section">
-            <div class="section-header">Resumen energético mes de ${esc(mesUpper)}</div>
+            <div class="section-header">Resumen energético · ${esc(periodoUpper)}</div>
             <div class="section-body">
                 <div class="intro" style="margin-bottom: 10px;">
-                    Todos los indicadores a continuación corresponden a datos mensuales del período analizado: <strong>${esc(input.mes)}</strong>,
+                    ${
+                      input.tienePeriodoMedidor
+                        ? `Todos los indicadores a continuación corresponden al período analizado: <strong>${esc(periodoLargo)}</strong>,
+                    alineado con el ciclo de lectura de su medidor de UTE.`
+                        : `Todos los indicadores a continuación corresponden al período analizado: <strong>${esc(periodoLargo)}</strong>,
                     tomado como mes calendario completo. Por eso los kWh aquí informados no coinciden exactamente con los
-                    de una factura de UTE, que cubre el período entre dos lecturas del medidor.
+                    de una factura de UTE, que cubre el período entre dos lecturas del medidor.`
+                    }
                 </div>
                 <div class="grid-3">
                     <div class="kpi-card"><div class="kpi-label">Generación</div><div class="kpi-value">${input.generacion}</div><div class="kpi-unit">kWh</div></div>
@@ -193,7 +203,7 @@ export function renderReporteFvHtml(input: ReporteFvPdfInput): string {
         </div>
 
         <div class="section">
-            <div class="section-header">Distribución de la energía mes de ${esc(mesUpper)}</div>
+            <div class="section-header">Distribución de la energía · ${esc(periodoUpper)}</div>
             <div class="section-body">
                 <div class="bar-wrap">
                     <div class="bar-title">Del consumo total del cliente: cuánto se cubrió con autoconsumo y cuánto se importó desde UTE. Total: ${input.consumoTotal} kWh</div>

@@ -1,5 +1,19 @@
 # Novedades
 
+## v10.8
+
+### 18 de septiembre de 2026
+
+#### Reportes fotovoltaicos: el reporte dice qué días cubre
+
+- **El reporte ya no dice solo el mes: muestra el período medido, de qué día a qué día.** Sin día de corte cargado, es el mes completo ("1 al 31 ago 2026"); con día de corte, es el ciclo del medidor de UTE ("7 jul al 6 ago 2026"). Antes un cliente con corte el día 6 recibía un reporte que decía "agosto" pero tenía casi todo julio, y una página lo contradecía diciendo que era el mes calendario completo.
+- El **asunto y el texto del mail** al cliente dicen el mismo período que el PDF.
+- **Para los clientes con día de corte, el reporte se puede generar apenas cierra su ciclo**, sin esperar al mes siguiente: en el selector de Reportes FV aparece el mes en curso y, ahí, solo se traen datos y se generan PDF de los que ya cerraron. Los demás siguen esperando a fin de mes.
+
+#### Arreglos
+
+- **"Enviar todos" podía volver a mandarle el reporte del mes a un cliente que ya lo había recibido**, si ese reporte se había regenerado antes de enviarse (quedaba la versión vieja pendiente). Ahora el envío en lote saltea a quien ya recibió alguna versión del mes; para reenviar una corrección se hace desde el detalle del cliente.
+
 ## v10.7
 
 ### 17 de septiembre de 2026

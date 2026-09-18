@@ -20,7 +20,7 @@ import { getConfigEfectiva } from "./config.service.js";
 import { regenerarPdfDesdeSnapshot } from "./emision.service.js";
 import { asuntoReporteFv, cuerpoHtmlReporteFv, cuerpoTextoReporteFv } from "./emailBody.js";
 import { dateAPeriodo, periodoADate } from "./periodo.js";
-import { mesEs } from "./format.js";
+import { mesEs, periodoTextoCorto, periodoTextoLargo } from "./format.js";
 import fs from "node:fs";
 
 const BCC_INTERNO = process.env.REPORTES_FV_BCC || "";
@@ -99,15 +99,19 @@ export async function enviarEmision(emisionId: string, opts: OpcionesEnvio): Pro
 
   try {
     const pdf = await cargarPdf(emision);
-    const mes = mesEs(periodo);
+    // Mismo período que dice el PDF. Con día de corte, el nombre del mes solo
+    // confunde (el de "agosto" con corte 6 es casi todo julio).
+    const corte = config.diaCorteMedidor;
+    const titulo = corte != null ? periodoTextoCorto(periodo, corte) : mesEs(periodo);
+    const periodoTexto = `del ${periodoTextoLargo(periodo, corte)}`;
 
     const ok = await sendEmail({
       to,
       cc: cc.length > 0 ? cc : undefined,
       bcc: BCC_INTERNO || undefined,
-      subject: asuntoReporteFv(mes),
-      html: cuerpoHtmlReporteFv(emision.project.clientName, mes),
-      text: cuerpoTextoReporteFv(emision.project.clientName, mes),
+      subject: asuntoReporteFv(titulo),
+      html: cuerpoHtmlReporteFv(emision.project.clientName, periodoTexto),
+      text: cuerpoTextoReporteFv(emision.project.clientName, periodoTexto),
       type: "client_facing",
       attachments: [{ filename: `reporte-fotovoltaico-${periodo}.pdf`, content: pdf, contentType: "application/pdf" }],
     });
@@ -123,7 +127,7 @@ export async function enviarEmision(emisionId: string, opts: OpcionesEnvio): Pro
         toAddresses: to.join(", "),
         ccAddresses: cc.length > 0 ? cc.join(", ") : null,
         bccAddresses: BCC_INTERNO || null,
-        subject: asuntoReporteFv(mes),
+        subject: asuntoReporteFv(titulo),
         status: EmailStatus.SENT,
       },
     });
@@ -239,8 +243,14 @@ async function registrarEnvio(
 }
 
 /**
- * Envía en lote todas las emisiones LISTO de un periodo (o un subconjunto).
+ * Envía en lote la última versión de cada generador del periodo, si está LISTO.
  * Los que no pasan las guardas quedan OMITIDO sin cortar el resto.
+ *
+ * Si ya se le mandó al cliente alguna versión del periodo, el lote lo saltea:
+ * regenerar un reporte crea una versión nueva y deja las viejas en LISTO, y
+ * sin esto "Enviar todos" le volvía a mandar el mismo mes (caso Percovich,
+ * agosto 2026: v1 LISTO + v2 ENVIADO). Reenviar una corrección se hace desde
+ * el detalle del generador, a propósito.
  */
 export async function enviarLote(
   periodo: string,
@@ -249,16 +259,24 @@ export async function enviarLote(
   const emisiones = await prisma.reporteFvEmision.findMany({
     where: {
       periodo: periodoADate(periodo),
-      estado: ReporteFvEmisionEstado.LISTO,
+      estado: { not: ReporteFvEmisionEstado.ANULADO },
       ...(opts.projectIds ? { projectId: { in: opts.projectIds } } : {}),
     },
-    select: { id: true, projectId: true, version: true },
+    select: { id: true, projectId: true, version: true, estado: true },
     orderBy: [{ projectId: "asc" }, { version: "desc" }],
   });
 
-  // Sólo la última versión LISTO por proyecto.
+  const yaEnviado = new Set(
+    emisiones.filter((e) => e.estado === ReporteFvEmisionEstado.ENVIADO).map((e) => e.projectId),
+  );
+
+  // La última versión por proyecto, sólo si está LISTO y nunca se envió el mes.
   const vistos = new Set<string>();
-  const objetivo = emisiones.filter((e) => (vistos.has(e.projectId) ? false : (vistos.add(e.projectId), true)));
+  const objetivo = emisiones.filter((e) => {
+    if (vistos.has(e.projectId)) return false;
+    vistos.add(e.projectId);
+    return e.estado === ReporteFvEmisionEstado.LISTO && !yaEnviado.has(e.projectId);
+  });
 
   const resultados: ResultadoEnvio[] = [];
   for (const e of objetivo) {

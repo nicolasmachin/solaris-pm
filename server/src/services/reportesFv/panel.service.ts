@@ -13,6 +13,7 @@ import {
   dateAPeriodo,
   type Periodo,
   periodoADate,
+  periodoCerrado,
   periodoMesAnterior,
   sumarMeses,
 } from "./periodo.js";
@@ -364,8 +365,16 @@ export async function periodosConDatos(): Promise<Periodo[]> {
   const periodos = new Set(filas.map((f) => dateAPeriodo(f.periodo)));
 
   // Los últimos 12 meses cerrados, siempre disponibles para poder ingerirlos.
-  // No se ofrece el mes en curso: todavía no terminó y su reporte no tiene
-  // sentido hasta que cierre.
+  // El mes en curso se ofrece sólo si algún generador con día de corte ya
+  // cerró su ciclo (corte 6 → el 7 ya se puede reportar). Para el resto sigue
+  // abierto: la ingesta y la emisión lo saltean.
+  const mesActual = sumarMeses(periodoMesAnterior(), 1);
+  const cortes = await prisma.reporteFvConfig.findMany({
+    where: { habilitado: true, diaCorteMedidor: { not: null } },
+    select: { diaCorteMedidor: true },
+  });
+  if (cortes.some((c) => periodoCerrado(mesActual, c.diaCorteMedidor))) periodos.add(mesActual);
+
   let mes = periodoMesAnterior();
   for (let i = 0; i < 12; i++) {
     periodos.add(mes);

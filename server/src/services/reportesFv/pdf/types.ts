@@ -41,11 +41,14 @@ export interface ReporteFvPdfInput {
   mes: string; // "junio 2026"
   mesAnterior: string;
   /**
-   * Cómo se describe el período cubierto. Mes calendario → false + textos vacíos.
-   * Con día de corte → true + `periodoTexto` ("del 24 de mayo al 23 de junio").
+   * Días que cubre el reporte. Sin día de corte, el mes calendario ("del 1 al
+   * 31 de agosto de 2026"); con corte, el ciclo del medidor ("del 7 de julio
+   * al 6 de agosto de 2026"). `tienePeriodoMedidor` cambia la explicación.
    */
   tienePeriodoMedidor: boolean;
   periodoTexto: string;
+  /** Lo mismo, compacto para títulos: "7 jul al 6 ago 2026". */
+  periodoCorto: string;
   fechaInst: string;
   potencia: string;
   potInst: string;

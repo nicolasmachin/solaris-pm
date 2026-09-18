@@ -6,6 +6,7 @@
 // decimales con coma, NaN/null como "-".
 
 import { round2 } from "./motor/metrics.js";
+import { type Periodo, rangoDelPeriodo } from "./periodo.js";
 
 const MESES_ES = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",
@@ -58,6 +59,38 @@ export function mesEs(periodo: string): string {
   const [anio, mes] = periodo.split("-").map(Number);
   const nombre = MESES_ES[mes - 1] ?? "";
   return `${nombre} ${anio}`;
+}
+
+/**
+ * Días que cubre el reporte, para mostrarle al cliente. Sin día de corte es el
+ * mes calendario ("del 1 al 31 de agosto de 2026"); con corte, el ciclo del
+ * medidor ("del 7 de julio al 6 de agosto de 2026"). El año va una sola vez,
+ * salvo que el ciclo cruce de año.
+ */
+export function periodoTextoLargo(periodo: Periodo, diaCorte: number | null | undefined): string {
+  return textoRango(periodo, diaCorte, (m) => MESES_ES[m], " de ", " de ");
+}
+
+/** Versión compacta para títulos y celdas: "7 jul al 6 ago 2026", "1 al 31 ago 2026". */
+export function periodoTextoCorto(periodo: Periodo, diaCorte: number | null | undefined): string {
+  return textoRango(periodo, diaCorte, (m) => MESES_ES[m].slice(0, 3), " ", " ");
+}
+
+function textoRango(
+  periodo: Periodo,
+  diaCorte: number | null | undefined,
+  nombreMes: (m: number) => string,
+  sepMes: string,
+  sepAnio: string,
+): string {
+  const { desdeDate: d, hastaDate: h } = rangoDelPeriodo(periodo, diaCorte);
+  const hasta = `${h.getUTCDate()}${sepMes}${nombreMes(h.getUTCMonth())}${sepAnio}${h.getUTCFullYear()}`;
+  const mismoAnio = d.getUTCFullYear() === h.getUTCFullYear();
+  const mismoMes = mismoAnio && d.getUTCMonth() === h.getUTCMonth();
+  const desde = mismoMes
+    ? `${d.getUTCDate()}`
+    : `${d.getUTCDate()}${sepMes}${nombreMes(d.getUTCMonth())}${mismoAnio ? "" : `${sepAnio}${d.getUTCFullYear()}`}`;
+  return `${desde} al ${hasta}`;
 }
 
 /** Duración en años y meses: 14 → "1 año y 2 meses". Port de formatear_duracion_meses. */

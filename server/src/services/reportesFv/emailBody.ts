@@ -7,12 +7,13 @@ export function asuntoReporteFv(mesEs: string): string {
   return `Reporte fotovoltaico - ${mesEs}`;
 }
 
-export function cuerpoTextoReporteFv(cliente: string, mesEs: string): string {
+/** `periodo`: los días que cubre, "del 1 al 31 de agosto de 2026" (o el mes). */
+export function cuerpoTextoReporteFv(cliente: string, periodo: string): string {
   return [
     `Hola${cliente ? ` ${cliente}` : ""},`,
     "",
-    `Adjuntamos tu reporte fotovoltaico correspondiente a ${mesEs}, con el detalle`,
-    "de la generación, el consumo y el ahorro económico del mes.",
+    `Adjuntamos tu reporte fotovoltaico correspondiente al período ${periodo}, con el`,
+    "detalle de la generación, el consumo y el ahorro económico.",
     "",
     "Cualquier consulta sobre el reporte, respondé este correo.",
     "",
@@ -21,7 +22,7 @@ export function cuerpoTextoReporteFv(cliente: string, mesEs: string): string {
   ].join("\n");
 }
 
-export function cuerpoHtmlReporteFv(cliente: string, mesEs: string): string {
+export function cuerpoHtmlReporteFv(cliente: string, periodo: string): string {
   const saludo = cliente ? `Hola ${escapeHtml(cliente)},` : "Hola,";
   return `<!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -35,9 +36,9 @@ export function cuerpoHtmlReporteFv(cliente: string, mesEs: string): string {
         <tr><td style="padding:28px;color:#1f2937;font-size:14px;line-height:1.6;">
           <p style="margin:0 0 14px;">${saludo}</p>
           <p style="margin:0 0 14px;">
-            Adjuntamos tu <strong>reporte fotovoltaico</strong> correspondiente a
-            <strong>${escapeHtml(mesEs)}</strong>, con el detalle de la generación, el consumo
-            y el ahorro económico del mes.
+            Adjuntamos tu <strong>reporte fotovoltaico</strong> correspondiente al período
+            <strong>${escapeHtml(periodo)}</strong>, con el detalle de la generación, el consumo
+            y el ahorro económico.
           </p>
           <p style="margin:0 0 14px;">
             El reporte compara cuánto habrías pagado sin paneles contra lo que pagás hoy,

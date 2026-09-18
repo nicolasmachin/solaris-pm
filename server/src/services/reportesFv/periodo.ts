@@ -161,6 +161,24 @@ export function rangoDelPeriodo(periodo: Periodo, diaCorte?: number | null): Ran
   };
 }
 
+/** Hoy en Uruguay (GMT-3 fijo, sin horario de verano) como "YYYY-MM-DD". */
+export function hoyUruguay(ahora: Date = new Date()): string {
+  return new Date(ahora.getTime() - 3 * 3_600_000).toISOString().slice(0, 10);
+}
+
+/**
+ * true si el período ya terminó: su último día (fin de mes, o el día de corte)
+ * es anterior a hoy. Un período abierto no se ingiere ni se emite: los días que
+ * faltan todavía no existen y el reporte saldría con el mes a medias.
+ *
+ * Con día de corte, el período del mes en curso cierra antes de fin de mes (el
+ * de "septiembre" con corte 6 cubre del 7 de agosto al 6 de septiembre) y se
+ * puede reportar sin esperar al mes siguiente.
+ */
+export function periodoCerrado(periodo: Periodo, diaCorte: number | null | undefined, ahora: Date = new Date()): boolean {
+  return rangoDelPeriodo(periodo, diaCorte).hasta < hoyUruguay(ahora);
+}
+
 /**
  * Proporción de días hábiles (lunes a viernes) del mes.
  *

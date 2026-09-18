@@ -4,8 +4,11 @@ Post-habilitación y acompañamiento: el procedimiento de posventa, interaccione
 encuestas, mantenimientos, reportes fotovoltaicos y monitoreo diario.
 
 > **Estado del capítulo.** El procedimiento de posventa, el monitoreo diario de
-> plantas y la ingesta Huawei están escritos y al día. Quedan sin documentar el
-> detalle fino de encuestas y el circuito de reportes fotovoltaicos mensuales.
+> plantas y la ingesta Huawei están escritos y al día. De los reportes
+> fotovoltaicos mensuales está escrito el período, el día de corte y el envío;
+> falta el resto del circuito (motor de cálculo, tarifas, panel). Tampoco está el
+> detalle fino de encuestas. El manual de uso de Reportes FV para el equipo vive
+> dentro de la app (`reportesFv/manual/manual.content.ts`).
 
 ---
 
@@ -763,6 +766,90 @@ historial de la ficha. Ver "historia clínica" arriba.
   ("Próximo mantenimiento") en el listado de generadores. No hay alerta de
   próximo ni de vencido, y los traspasos T12/T13 están definidos pero no se
   disparan desde ningún lado.
+
+---
+
+# Reportes fotovoltaicos mensuales: período, día de corte y envío
+
+## Para qué existe
+
+Cada mes se le manda a cada generador un PDF con lo que generó, consumió y
+ahorró. Esta sección cubre qué días cubre cada reporte, cuándo se puede generar
+y cómo se envía. El cálculo y el panel todavía no están documentados acá.
+
+## Cómo se usa
+
+Experiencia Solar → **Reportes FV** (`/clientes/reportes`). Se elige el período
+en el selector, se traen los datos de las plantas, se generan los PDF y se
+envían: de a uno desde el detalle del generador, o con **"Enviar todos"**.
+
+Lo automático (`reportes-fv.job.ts`) trabaja sobre el **mes anterior**: trae los
+datos los días 2, 4 y 6, genera los PDF el 7 y avisa al equipo por mail. **El
+envío al cliente es manual**: el cron del día 9 existe pero no hace nada salvo
+que `REPORTES_FV_ENVIO_AUTO=true`, y en producción está apagado.
+
+## Cómo funciona
+
+**Período.** Internamente un reporte es un mes `"YYYY-MM"`. Los días que cubre
+salen de `rangoDelPeriodo()` (`periodo.ts`):
+
+- Sin día de corte (`ReporteFvConfig.diaCorteMedidor` null) → mes calendario.
+- Con día de corte D → del día D+1 del mes anterior al día D del mes. El
+  período lleva el nombre del mes de **cierre**, como la factura de UTE: con
+  corte 6, `2026-08` es del 7 de julio al 6 de agosto.
+
+**Qué ve el cliente.** El PDF y el mail nunca muestran solo el nombre del mes:
+muestran los días (`periodoTextoCorto()` / `periodoTextoLargo()` en
+`format.ts`): "7 jul al 6 ago 2026", o "1 al 31 ago 2026" sin corte. Así
+aparece en la fila "Período" de los datos generales, en los títulos de las
+secciones y en el asunto del mail (sin corte el asunto sigue diciendo "agosto
+2026").
+
+**Período abierto.** `periodoCerrado()` dice si el último día del período ya
+pasó (hora de Uruguay). Un período abierto no se ingiere (Growatt y Huawei lo
+saltean, incluso con *force*) y no se emite (`generarEmision()` lo rechaza con
+`REPORTE_FV_PERIODO_ABIERTO`). El panel ofrece el **mes en curso** en el
+selector solo si algún generador habilitado con día de corte ya cerró su ciclo
+(`periodosConDatos()`); en ese mes, solo esos generadores reciben datos y PDF.
+
+**Envío.** `enviarEmision()` tiene guardas (habilitado, destinatarios, estado
+LISTO, PDF de tamaño razonable, ahorro no disparatado frente al promedio) y un
+claim transaccional sobre `enviadoEn` para que dos clicks no manden dos veces.
+Al enviar, el reporte queda publicado en el portal. `enviarLote()` ("Enviar
+todos") toma la **última versión** de cada generador y solo si está LISTO, y
+saltea a los que ya tienen **alguna** versión ENVIADO en ese período. El modal
+de "Enviar todos" primero hace una simulación (dry-run) con la lista de
+destinatarios y recién manda al confirmar.
+
+## Permisos
+
+Todo va sobre el módulo `EXPERIENCIA_CLIENTES` (`reportes-fv.routes.ts`).
+Enviar (individual y en lote) requiere `COMPLETE`: en producción lo tienen
+`ADMIN` y `EXPERIENCIA_SOLAR` (verificado el 18 de septiembre de 2026). Generar
+PDF en lote requiere `CREATE`, que tienen además asesor comercial, gerente
+comercial y postventa.
+
+## Reglas y decisiones
+
+- **Regenerar crea una versión nueva y deja la anterior en LISTO.** Por eso el
+  lote no puede confiar solo en "está LISTO y no se envió": en agosto de 2026
+  José Percovich tenía v1 LISTO y v2 ENVIADO, y "Enviar todos" le iba a volver a
+  mandar la v1. Reenviar una corrección se hace a propósito desde el detalle.
+- **El envío arrancó con aprobación humana** (primer mail saliente a clientes
+  del sistema, con datos económicos). El automático se prende cuando el circuito
+  lleve unos meses estable.
+
+## Casos borde
+
+- **Clientes con día de corte y lo automático.** El cron siempre toma el mes
+  anterior, así que el ciclo de un cliente con corte temprano (cerrado el 6 de
+  septiembre) lo levanta recién en octubre. Para no esperar hay que generarlo a
+  mano desde el panel en el mes en curso.
+- **Snapshots viejos.** El PDF se puede regenerar desde el snapshot guardado en
+  la emisión. Los anteriores al 18 de septiembre de 2026 no traen el texto corto
+  del período y se ven con el nombre del mes, como se mandaron.
+- **Script `reenviar-copia-interna.ts`** sigue armando el mail con el nombre
+  del mes, no con los días.
 
 ---
 

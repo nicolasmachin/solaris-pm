@@ -17,7 +17,7 @@ import {
 
 import { prisma } from "../../../lib/prisma.js";
 import { recalcularSerie } from "../calculo.service.js";
-import { type Periodo, periodoADate, rangoDelPeriodo, ultimoDiaDelPeriodo } from "../periodo.js";
+import { type Periodo, periodoADate, periodoCerrado, rangoDelPeriodo, ultimoDiaDelPeriodo } from "../periodo.js";
 import {
   dataloggersSmartMeter,
   generacionDiaria,
@@ -127,6 +127,9 @@ export async function ejecutarIngesta(ingestaId: string, opts: OpcionesIngesta):
   const diaCortePorProyecto = new Map(configs.map((c) => [c.projectId, c.diaCorteMedidor]));
 
   const objetivo = plantas.filter((p) => {
+    // Período todavía abierto (mes en curso sin día de corte, o corte que aún
+    // no llegó): no hay mes completo que traer. Ni con force.
+    if (!periodoCerrado(opts.periodo, diaCortePorProyecto.get(p.projectId!))) return false;
     if (opts.force) return true;
     const l = lecturaPorProyecto.get(p.projectId!);
     return !(l && l.generacionKwh != null && l.consumoKwh != null && l.exportacionKwh != null);

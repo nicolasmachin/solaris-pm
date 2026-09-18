@@ -4,8 +4,8 @@
 // una entrada al tope de MANUAL_CAMBIOS. La versión y el changelog salen impresos
 // en el PDF. El nombre del archivo descargado incluye la versión.
 
-export const MANUAL_VERSION = "1.4";
-export const MANUAL_ACTUALIZADO = "8 de agosto de 2026";
+export const MANUAL_VERSION = "1.5";
+export const MANUAL_ACTUALIZADO = "18 de septiembre de 2026";
 
 export interface CambioManual {
   version: string;
@@ -15,6 +15,15 @@ export interface CambioManual {
 
 // Más reciente arriba.
 export const MANUAL_CAMBIOS: CambioManual[] = [
+  {
+    version: "1.5",
+    fecha: "18 de septiembre de 2026",
+    cambios: [
+      "El reporte y el mail muestran el período medido (de qué día a qué día) en vez de solo el mes.",
+      "Con día de corte, el reporte se puede generar apenas cierra el ciclo, sin esperar al mes siguiente.",
+      "\"Enviar todos\" saltea a los clientes que ya recibieron alguna versión del reporte del mes.",
+    ],
+  },
   {
     version: "1.4",
     fecha: "8 de agosto de 2026",
@@ -134,6 +143,21 @@ figura en la factura), el reporte pasa a cubrir **ese ciclo** en vez del mes
 calendario (por ejemplo, del 24 de mayo al 23 de junio). Así los kWh se parecen
 mucho más a los de la factura. Cuando usás el ciclo, el sistema le pide a Growatt
 los datos **día por día** y controla que la suma cierre con el total del mes.
+
+**Qué mes es cada ciclo.** El ciclo lleva el nombre del mes en que **cierra**,
+igual que la factura de UTE: con corte el día 6, el reporte de "agosto" cubre del
+7 de julio al 6 de agosto. Al cliente no se le muestra el nombre del mes sino los
+días: el PDF y el mail dicen "7 jul al 6 ago 2026". Sin día de corte dicen
+"1 al 31 ago 2026".
+
+**No hace falta esperar a fin de mes.** El ciclo de un cliente con corte cierra
+antes que el mes: con corte el día 6, el 7 de septiembre ya se puede reportar el
+ciclo del 7 de agosto al 6 de septiembre. Por eso, cuando algún generador con
+corte ya cerró su ciclo, el selector de período del panel ofrece también el
+**mes en curso**. Ahí el sistema sólo trae datos y genera el PDF de los que ya
+cerraron; para los demás el mes sigue abierto y no hace nada. Lo automático
+(ver sección 10) todavía no lo hace solo: ese ciclo lo levanta recién el mes
+siguiente, así que para no esperar hay que generarlo a mano.
 
 Hay dos formas de cargarlo:
 
@@ -256,7 +280,9 @@ Al enviarlo, el reporte queda **publicado en el portal** del cliente.
 ### Enviar todos juntos
 
 En la barra de arriba del listado está **"Enviar todos"**: manda de una vez los
-reportes ya generados del período elegido. Antes de mandar nada te muestra la
+reportes ya generados del período elegido (de cada cliente, la última versión).
+Si a un cliente ya se le mandó alguna versión del reporte de ese mes, lo saltea:
+reenviar una corrección se hace a propósito, desde su detalle. Antes de mandar nada te muestra la
 **lista completa de clientes y direcciones** a las que iría, y los que quedan
 afuera con el motivo. Los correos salen recién cuando confirmás en esa pantalla.
 

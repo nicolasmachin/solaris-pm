@@ -21,7 +21,7 @@
 import { ReporteFvFuente } from "@prisma/client";
 
 import { prisma } from "../../../lib/prisma.js";
-import { periodoADate, type Periodo } from "../periodo.js";
+import { periodoADate, periodoCerrado, type Periodo } from "../periodo.js";
 import { serieDiariaDelMes } from "./client.js";
 import { plantasHuaweiVinculadas } from "./plantas.service.js";
 
@@ -58,6 +58,10 @@ export async function ingerirPeriodoHuawei(
   opts: { force?: boolean; projectIds?: string[] } = {},
 ): Promise<ResumenIngestaHuawei> {
   const force = opts.force ?? false;
+  // Huawei siempre va por mes calendario: el mes en curso no se ingiere.
+  if (!periodoCerrado(periodo, null)) {
+    return { periodo, plantas: 0, guardadas: 0, omitidas: 0, items: [] };
+  }
   let plantas = await plantasHuaweiVinculadas();
   if (opts.projectIds) {
     plantas = plantas.filter((p) => opts.projectIds!.includes(p.projectId!));

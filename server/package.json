@@ -15,6 +15,7 @@
     "test:reportes-fv": "node --import tsx --test src/services/reportesFv/motor/metrics.test.ts",
     "test:reportes-fv-habiles": "node --import tsx --test src/services/reportesFv/motor/diasHabiles.test.ts",
     "test:reportes-fv-growatt": "node --import tsx --test src/services/reportesFv/growatt/metricas.test.ts",
+    "test:reportes-fv-periodo": "node --import tsx --test src/services/reportesFv/periodo.test.ts",
     "test:reportes-fv-golden": "node --import tsx --test src/services/reportesFv/motor/serie.golden.test.ts",
     "test:fv-monitor": "node --import tsx --test src/services/reportesFv/monitor/diagnostico.test.ts",
     "test:fv-exportacion": "node --import tsx --test src/services/reportesFv/monitor/exportacion.test.ts",

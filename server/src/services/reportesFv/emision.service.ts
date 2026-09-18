@@ -19,7 +19,7 @@ import { exigirConfigCompleta, getConfigEfectiva } from "./config.service.js";
 import { generarReporteFvPdf } from "./pdf/index.js";
 import { construirPdfInput, contextoDesdeConfig } from "./pdf/viewModel.js";
 import type { ReporteFvPdfInput } from "./pdf/types.js";
-import { periodoADate, type Periodo } from "./periodo.js";
+import { periodoADate, periodoCerrado, type Periodo } from "./periodo.js";
 
 const TOOL_SOURCE = "reporte-fv";
 
@@ -43,6 +43,12 @@ export async function generarEmision(
   userId: string,
 ): Promise<ResultadoEmision> {
   const config = exigirConfigCompleta(await getConfigEfectiva(projectId));
+  if (!periodoCerrado(periodo, config.diaCorteMedidor)) {
+    throw badRequest(
+      "REPORTE_FV_PERIODO_ABIERTO",
+      `El período ${periodo} de ${config.clientName} todavía no terminó: se puede emitir recién al día siguiente del cierre`,
+    );
+  }
 
   // Recalcula y persiste la serie completa (idempotente): garantiza que el
   // ReporteFvCalculo del periodo esté al día antes de emitir.

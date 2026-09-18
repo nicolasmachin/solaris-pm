@@ -23,6 +23,22 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "10.8",
+  date: "18 de septiembre de 2026",
+  sections: [
+    {
+      title: "Reportes fotovoltaicos: el reporte dice qué días cubre",
+      items: [
+        "El reporte ya no dice solo el mes: muestra el período medido, de qué día a qué día. Sin día de corte es el mes completo (1 al 31 de agosto); con día de corte es el ciclo del medidor de UTE (7 de julio al 6 de agosto).",
+        "El asunto y el texto del mail al cliente dicen el mismo período que el PDF.",
+        "Para los clientes con día de corte, su reporte se puede generar apenas cierra el ciclo, sin esperar al mes siguiente.",
+        "\"Enviar todos\" ya no le vuelve a mandar el reporte a un cliente que ya lo recibió ese mes.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_10_7: Release = {
   version: "10.7",
   date: "17 de septiembre de 2026",
   sections: [
@@ -139,6 +155,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "10.7",
+    shortDate: "17 sep",
+    highlights: RELEASE_10_7.sections.map((sec) => sec.title),
+  },
   {
     version: "10.6",
     shortDate: "16 sep",
