@@ -47,9 +47,9 @@ export async function resolveMcpUser(userId: string): Promise<McpUser | null> {
  * legible en vez de una excepción, para que el chat pueda explicar qué faltó.
  */
 export class McpPermissionError extends Error {
-  constructor(module: Module, action: Action) {
+  constructor(module: Module, action: Action, requisito?: string) {
     super(
-      `No tenés permiso para esta acción (requiere ${action} en ${module}). ` +
+      `No tenés permiso para esta acción (${requisito ?? `requiere ${action} en ${module}`}). ` +
         `Los permisos se administran desde Voltia PM, en Administración → Permisos.`,
     );
     this.name = "McpPermissionError";
@@ -68,4 +68,20 @@ export async function requirePermission(
 ): Promise<void> {
   const allowed = await hasPermission(user.role, module, action);
   if (!allowed) throw new McpPermissionError(module, action);
+}
+
+/**
+ * Pasa si el usuario tiene AL MENOS UNO de los permisos. Espejo de
+ * `authorizeAny` de las rutas HTTP, para recursos compartidos entre módulos
+ * (por ejemplo Cobros, que ven Finanzas y Experiencia Solar).
+ */
+export async function requireAnyPermission(
+  user: McpUser,
+  perms: Array<{ module: Module; action: Action }>,
+): Promise<void> {
+  for (const p of perms) {
+    if (await hasPermission(user.role, p.module, p.action)) return;
+  }
+  const lista = perms.map((p) => `${p.action} en ${p.module}`).join(" o ");
+  throw new McpPermissionError(perms[0].module, perms[0].action, `requiere ${lista}`);
 }

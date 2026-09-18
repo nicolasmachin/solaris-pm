@@ -4,6 +4,14 @@
 
 ### 18 de septiembre de 2026
 
+#### Finanzas desde el chat de Claude
+
+- **Se puede pedir el estado de resultados en el chat**: de un mes, un trimestre, un año o cualquier rango de fechas ("del 10 al 20 de junio"). Da ingresos, egresos por rubro, resultado y rentabilidad, y en qué obras se fue la plata; si se pide el detalle, lista cada cobro y cada pago. Los números son los mismos que la pestaña Estado de resultados.
+- **Cobros a clientes**: cuánto debe cada obra, si tiene plan de pagos o no, la próxima cuota y las vencidas. Se puede pedir solo las que tienen plan, solo las que no, o un cliente puntual con todas sus cuotas.
+- **Cuotas por cobrar**: las vencidas sin cobrar, con los días de atraso, y las que vencen en los próximos días; avisa además cuánto deben las obras que no tienen plan.
+- **Comisiones pendientes** de los asesores, con su vencimiento, y **pagos pendientes a los instaladores tercerizados** por obra.
+- Cada consulta respeta los permisos de la app: quien no ve Finanzas no ve el estado de resultados, y quien solo ve sus comisiones ve solo las suyas.
+
 #### Reportes fotovoltaicos: el reporte dice qué días cubre
 
 - **El reporte ya no dice solo el mes: muestra el período medido, de qué día a qué día.** Sin día de corte cargado, es el mes completo ("1 al 31 ago 2026"); con día de corte, es el ciclo del medidor de UTE ("7 jul al 6 ago 2026"). Antes un cliente con corte el día 6 recibía un reporte que decía "agosto" pero tenía casi todo julio, y una página lo contradecía diciendo que era el mes calendario completo.

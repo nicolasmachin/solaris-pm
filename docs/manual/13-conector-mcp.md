@@ -112,14 +112,14 @@ corta la conexión a nadie.
 
 ## Herramientas
 
-Doce. Cada una chequea su permiso antes de tocar nada, y toda escritura queda
+Treinta y cinco. Cada una chequea su permiso antes de tocar nada, y toda escritura queda
 auditada con `metadata.source = "mcp"` y el nombre de la herramienta.
 
 ### Diagnóstico
 
 | Herramienta | Permiso | Qué hace |
 |---|---|---|
-| `estado_conexion` | ninguno | Confirma que la conexión anda y muestra usuario, rol y permisos de ventas. Es lo primero que hay que pedir cuando algo falla. |
+| `estado_conexion` | ninguno | Confirma que la conexión anda y muestra usuario, rol y permisos de ventas, obra, experiencia del cliente y finanzas. Es lo primero que hay que pedir cuando algo falla. |
 
 ### Ventas
 
@@ -277,6 +277,39 @@ la pantalla.
 excluidos de la lista de proyectos. Buscar uno con `buscar_proyecto` no lo
 encuentra; `buscar_generador` sí. Las descripciones de las dos herramientas se
 apuntan mutuamente para que el modelo elija bien.
+
+### Finanzas
+
+Todas de lectura. Cada número sale del **mismo servicio que usa la pantalla**:
+si el chat y la aplicación dieran cifras distintas para la misma pregunta, el
+error estaría en el servicio y se vería en los dos lados.
+
+| Herramienta | Permiso | Qué hace |
+|---|---|---|
+| `estado_resultados` | `FINANZAS:VIEW` | Estado de resultados de un mes, trimestre, año o cualquier rango (`desde`/`hasta`). Totales por rubro, salidas por obra y los cobros del período; con `detalle` lista cada movimiento. Sin período, el mes en curso. |
+| `cobros_clientes` | `FINANZAS:VIEW` o `EXPERIENCIA_CLIENTES:VIEW` | Presupuesto, cobrado y saldo por obra, y si tiene plan de pagos (próxima cuota, vencidas). Por defecto solo las que deben. Filtra por estado, `con_plan`/`sin_plan` o nombre; con 3 obras o menos muestra cada cuota. |
+| `cobros_pendientes` | ídem | Cuotas de los planes vencidas sin cobrar (con días de atraso) y las que vencen en un rango (por defecto, los próximos 30 días). Avisa cuánto deben las obras sin plan, que no aparecen como cuotas. |
+| `comisiones` | `COMISIONES:VIEW` | Comisiones pendientes (o pagadas, o todas) con vencimiento, más lo pendiente total y lo pagado en el año. Filtra por asesor y año de venta. |
+| `pagos_instaladores` | `PAGOS_INSTALADOR:VIEW` | Mano de obra tercerizada: total, pagado y saldo por obra e instalador, vencidos y trabajos sin instalador asignado. |
+
+**Los períodos** se resuelven en `routes/mcp/periodo.ts` → `resolverPeriodo()`:
+`mes` + `anio`, `trimestre` + `anio`, solo `anio`, o `desde`/`hasta`
+(AAAA-MM-DD, `hasta` inclusive). Sin nada, el mes en curso en hora de Uruguay.
+Un rango al revés devuelve un error legible, no un resultado vacío.
+
+**Ver todo o solo lo propio.** `comisiones` y `pagos_instaladores` replican la
+regla de sus pantallas: quien tiene `FINANZAS:VIEW` o el `EDIT` del módulo ve
+las de todos; el resto, solo las suyas, y el filtro por nombre se ignora.
+
+**Cobros con el permiso de Experiencia del cliente.** Igual que la pantalla de
+Cobros (`authorizeAny`), alcanza con `EXPERIENCIA_CLIENTES:VIEW`. En la matriz
+actual eso incluye a los asesores comerciales: ven los saldos de todas las
+obras, desde la app y desde el chat.
+
+**Pesos y dólares.** Los totales de `cobros_pendientes` suman solo cuotas en
+dólares; una cuota en pesos se muestra con su monto pero no entra al total. El
+estado de resultados convierte con la última cotización (ver cap. 08, Estado de
+resultados), y lo dice al pie de la respuesta.
 
 ### Lo que las herramientas NO hacen
 

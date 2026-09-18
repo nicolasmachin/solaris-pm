@@ -12,6 +12,7 @@ import { VERSION } from "./version.js";
 import type { McpUser } from "./context.js";
 import { registerDiagnosticTools } from "./tools/diagnostico.js";
 import { registerExperienciaSolarTools } from "./tools/experiencia-solar.js";
+import { registerFinanzasTools } from "./tools/finanzas.js";
 import { registerMiDiaTools } from "./tools/mi-dia.js";
 import { registerMinutaTools } from "./tools/minuta.js";
 import { registerPendientesTools } from "./tools/pendientes.js";
@@ -59,6 +60,7 @@ export function buildMcpServer(user: McpUser): McpServer {
   registerPendientesTools(server, user);
   registerProyectosTools(server, user);
   registerExperienciaSolarTools(server, user);
+  registerFinanzasTools(server, user);
 
   return server;
 }

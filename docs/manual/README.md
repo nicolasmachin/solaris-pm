@@ -41,7 +41,7 @@ el manual difiere del código, manda el código y **el manual se corrige**.
 | 05 | [Ingeniería](05-ingenieria.md) | Unifilar, materiales, triángulos, pre-ingeniería, visitas técnicas, proyecto final | 🟡 Parcial (consolidador de materiales · catálogo de materiales · foto del material) |
 | 06 | [Operaciones](06-operaciones.md) | Obra, fotos, videos, stock, logística, agenda de instalación | 🟡 Parcial (calendario: obras y otros eventos) |
 | 07 | [Habilitación UTE](07-ute.md) | Trámite, subetapas dinámicas, formularios, documentos firmados | 🟡 Parcial (aumento de potencia contratada) |
-| 08 | [Finanzas](08-finanzas.md) | Movimientos, cobros, pagos a proveedores, facturación, flujo de fondos, estado de resultados | 🟡 Parcial (solo pagos a instaladores tercerizados) |
+| 08 | [Finanzas](08-finanzas.md) | Movimientos, cobros, pagos a proveedores, facturación, flujo de fondos, estado de resultados | 🟡 Parcial (pagos a instaladores tercerizados · cobros y plan de pagos · estado de resultados) |
 | 09 | [Experiencia del cliente](09-experiencia-cliente.md) | Proceso de posventa, interacciones, encuestas, mantenimientos, reportes fotovoltaicos, monitoreo diario de plantas | 🟡 Parcial (proceso de posventa · monitoreo diario · reportes FV: período y envío) |
 | 10 | [Portal del cliente](10-portal-cliente.md) | Acceso, proyectos, tickets, encuestas, reportes, notificaciones | 🟡 Parcial (generación diaria, vista como cliente) |
 | 11 | [Métricas](11-metricas.md) | Dashboard, metas, reporte semanal, indicadores | 🟡 Parcial (panel de operaciones · reporte semanal por correo) |

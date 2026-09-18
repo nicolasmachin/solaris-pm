@@ -110,6 +110,8 @@ import {
   moverEtapaLead,
 } from "../services/sales/leads.service.js";
 import { crearAmpliacion, resolveRootProject } from "../services/ampliacion.service.js";
+import { calcularEstadoResultados, rangeForPeriod } from "../services/finance/resultados.service.js";
+import { listarCobrosPorProyecto } from "../services/finance/cobros.service.js";
 import {
   copyLatestProposalToProject,
   getLatestPublishedQuote,
@@ -11675,6 +11677,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       { module: Module.FINANZAS, action: Action.VIEW },
     ]);
 
+    // La lógica vive en services/finance/cobros.service.ts: la comparten esta
+    // pantalla y el conector MCP.
     app.get("/finance/cobros-by-project", { preHandler: cobrosReadGuard }, async (request) => {
       const query = z.object({
         estado: z.enum(["PENDIENTE", "PARCIAL", "COMPLETO", "EXCEDIDO", "SIN_PRESUPUESTO"]).optional(),
@@ -11682,110 +11686,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
         activos: z.enum(["true", "false"]).optional(),
       }).parse(request.query);
 
-      const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
-      const fallbackUsdToUyu = lastRate ? (decimalToNumber(lastRate.usdToUyu) ?? 1) : 1;
-
-      const where: Prisma.ProjectWhereInput = { deletedAt: null };
-      if (query.activos === "true") where.status = ProjectStatus.ACTIVE;
-      if (query.clientName && query.clientName.trim().length > 0) {
-        where.clientName = { contains: query.clientName.trim(), mode: "insensitive" };
-      }
-
-      const projects = await prisma.project.findMany({
-        where,
-        select: {
-          id: true,
-          code: true,
-          clientName: true,
-          capacityKwp: true,
-          budgetUsd: true,
-          status: true,
-        },
-        orderBy: [{ status: "asc" }, { clientName: "asc" }],
+      return listarCobrosPorProyecto({
+        estado: query.estado,
+        clientName: query.clientName,
+        activos: query.activos === "true",
       });
-
-      // Cobros agregados por proyecto en una sola query.
-      const projectIds = projects.map((p) => p.id);
-      const cobrosAgg = projectIds.length === 0 ? [] : await prisma.financeMovement.findMany({
-        where: {
-          deletedAt: null,
-          tipoMovimiento: TipoMovimiento.INGRESO,
-          cobrado: true,
-          projectId: { in: projectIds },
-        },
-        select: {
-          projectId: true,
-          fecha: true,
-          monto: true,
-          moneda: true,
-          tipoCambio: true,
-        },
-      });
-
-      const cobrosByProject = new Map<string, typeof cobrosAgg>();
-      for (const m of cobrosAgg) {
-        if (!m.projectId) continue;
-        const arr = cobrosByProject.get(m.projectId) ?? [];
-        arr.push(m);
-        cobrosByProject.set(m.projectId, arr);
-      }
-
-      const items = projects.map((p) => {
-        const cobros = cobrosByProject.get(p.id) ?? [];
-        let totalCobradoUSD = 0;
-        let ultimoCobro: Date | null = null;
-        for (const c of cobros) {
-          totalCobradoUSD += convertMovementToUsd(c, fallbackUsdToUyu);
-          if (!ultimoCobro || c.fecha > ultimoCobro) ultimoCobro = c.fecha;
-        }
-        totalCobradoUSD = roundMoney(totalCobradoUSD);
-        const presupuestoUSD = p.budgetUsd != null ? Number(p.budgetUsd) : null;
-        const saldoPendienteUSD = presupuestoUSD != null
-          ? roundMoney(Math.max(0, presupuestoUSD - totalCobradoUSD))
-          : 0;
-        const saldoAFavorUSD = presupuestoUSD != null
-          ? roundMoney(Math.max(0, totalCobradoUSD - presupuestoUSD))
-          : 0;
-        const estadoCobranza = clasificarEstado(presupuestoUSD, totalCobradoUSD);
-
-        return {
-          id: p.id,
-          clientName: p.clientName,
-          code: p.code,
-          capacity: Number(p.capacityKwp),
-          status: p.status,
-          presupuestoUSD,
-          totalCobradoUSD,
-          saldoPendienteUSD,
-          saldoAFavorUSD,
-          estadoCobranza,
-          ultimoCobro: ultimoCobro ? serializeDateOnly(ultimoCobro) : null,
-          cantidadCobros: cobros.length,
-        };
-      });
-
-      const filtered = query.estado ? items.filter((i) => i.estadoCobranza === query.estado) : items;
-
-      const totales = filtered.reduce(
-        (acc, p) => ({
-          totalPresupuestadoUSD: acc.totalPresupuestadoUSD + (p.presupuestoUSD ?? 0),
-          totalCobradoUSD: acc.totalCobradoUSD + p.totalCobradoUSD,
-          totalPendienteUSD: acc.totalPendienteUSD + p.saldoPendienteUSD,
-          totalSaldoAFavorUSD: acc.totalSaldoAFavorUSD + p.saldoAFavorUSD,
-        }),
-        { totalPresupuestadoUSD: 0, totalCobradoUSD: 0, totalPendienteUSD: 0, totalSaldoAFavorUSD: 0 },
-      );
-
-      return {
-        projects: filtered,
-        totales: {
-          totalPresupuestadoUSD: roundMoney(totales.totalPresupuestadoUSD),
-          totalCobradoUSD: roundMoney(totales.totalCobradoUSD),
-          totalPendienteUSD: roundMoney(totales.totalPendienteUSD),
-          totalSaldoAFavorUSD: roundMoney(totales.totalSaldoAFavorUSD),
-        },
-        tipoCambio: fallbackUsdToUyu,
-      };
     });
 
     app.get("/finance/cobros-by-project/:projectId", { preHandler: cobrosReadGuard }, async (request) => {
@@ -20363,39 +20268,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
   });
 
   // ─── Estado de resultados (P&L) ────────────────────────────────────────────
-
-  type ResultItem = {
-    id: string;
-    fecha: string;
-    descripcion: string;
-    monto: number;
-    moneda: Moneda;
-    projectClientName: string | null;
-    projectCode: string | null;
-    supplierName: string | null;
-  };
-
-  function rangeForPeriod(periodo: "MENSUAL" | "TRIMESTRAL" | "ANUAL", anio: number, mes?: number, trimestre?: number) {
-    if (periodo === "MENSUAL") {
-      const m = mes ?? 1;
-      return {
-        fechaInicio: new Date(Date.UTC(anio, m - 1, 1)),
-        fechaFin: new Date(Date.UTC(anio, m, 1)),
-      };
-    }
-    if (periodo === "TRIMESTRAL") {
-      const t = Math.max(1, Math.min(4, trimestre ?? 1));
-      const startMonth = (t - 1) * 3;
-      return {
-        fechaInicio: new Date(Date.UTC(anio, startMonth, 1)),
-        fechaFin: new Date(Date.UTC(anio, startMonth + 3, 1)),
-      };
-    }
-    return {
-      fechaInicio: new Date(Date.UTC(anio, 0, 1)),
-      fechaFin: new Date(Date.UTC(anio + 1, 0, 1)),
-    };
-  }
+  //
+  // La lógica vive en services/finance/resultados.service.ts: la comparten esta
+  // pantalla y el conector MCP.
 
   app.get("/finance/results", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
     const query = z
@@ -20408,146 +20283,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
       .parse(request.query);
 
     const { fechaInicio, fechaFin } = rangeForPeriod(query.periodo, query.anio, query.mes, query.trimestre);
-
-    const lastRate = await prisma.exchangeRate.findFirst({ orderBy: { createdAt: "desc" } });
-    const fallbackUsdToUyu =
-      lastRate && Number(lastRate.usdToUyu) > 0 ? Number(lastRate.usdToUyu) : 1;
-    const toUsd = (amount: number, moneda: Moneda) =>
-      moneda === Moneda.UYU ? (fallbackUsdToUyu > 0 ? amount / fallbackUsdToUyu : amount) : amount;
-
-    const movements = await prisma.financeMovement.findMany({
-      where: {
-        status: FinanceMovementStatus.PAGADO,
-        deletedAt: null,
-        fecha: { gte: fechaInicio, lt: fechaFin },
-        // Excluir ajustes de conciliación: no son operación, son ruido contable.
-        categoriaPrincipal: { not: CategoriaPrincipal.AJUSTE_CONCILIACION },
-        // Los gastos pagados vía Payment (facturas de proveedor) se cuentan por
-        // el pago real del mes (ver query `payments` más abajo), no por el
-        // movimiento — así se reflejan los pagos parciales y en el mes en que
-        // efectivamente salió la plata. Se excluyen acá para no duplicar.
-        paymentApplications: { none: { payment: { deletedAt: null } } },
-      },
-      include: {
-        project: { select: { id: true, code: true, clientName: true } },
-        supplier: { select: { nombre: true } },
-        fixedCost: { select: { nombre: true } },
-      },
-      orderBy: { fecha: "asc" },
-    });
-
-    // Pagos reales del período (criterio caja): cada Payment cuenta como salida
-    // a proveedor en el mes de su fecha, por su monto completo (incluye pagos
-    // parciales de facturas grandes y anticipos). Esto es lo que hace que un
-    // pago a proveedor aparezca en el Estado de resultados aunque la factura
-    // asociada siga parcialmente pendiente.
-    const payments = await prisma.payment.findMany({
-      where: { deletedAt: null, fecha: { gte: fechaInicio, lt: fechaFin } },
-      include: { supplier: { select: { nombre: true } } },
-      orderBy: { fecha: "asc" },
-    });
-    const paymentItems: ResultItem[] = payments.map((p) => ({
-      id: p.id,
-      fecha: serializeDateNonNull(p.fecha),
-      descripcion: `Pago a ${p.supplier?.nombre ?? "proveedor"}${p.referencia ? ` · ${p.referencia}` : ""}`,
-      monto: Number(p.monto),
-      moneda: p.moneda,
-      projectClientName: null,
-      projectCode: null,
-      supplierName: p.supplier?.nombre ?? null,
-    }));
-    const paymentsTotalUsd = payments.reduce((s, p) => s + toUsd(Number(p.monto), p.moneda), 0);
-
-    function fmtItem(m: typeof movements[number]): ResultItem {
-      return {
-        id: m.id,
-        fecha: serializeDateNonNull(m.fecha),
-        descripcion: m.descripcion,
-        monto: Number(m.monto),
-        moneda: m.moneda,
-        projectClientName: m.project?.clientName ?? null,
-        projectCode: m.project?.code ?? null,
-        supplierName: m.supplier?.nombre ?? null,
-      };
-    }
-
-    const sumUsd = (rows: typeof movements) =>
-      rows.reduce((s, m) => s + toUsd(Number(m.monto), m.moneda), 0);
-
-    const ingresosRows = movements.filter((m) => m.tipoMovimiento === TipoMovimiento.INGRESO);
-    const egresosRows = movements.filter((m) => m.tipoMovimiento === TipoMovimiento.GASTO);
-
-    const fijos = egresosRows.filter((m) => m.categoriaPrincipal === CategoriaPrincipal.FIJO);
-    const variables = egresosRows.filter((m) => m.categoriaPrincipal === CategoriaPrincipal.VARIABLE);
-    const salidasProyecto = egresosRows.filter((m) => m.categoriaPrincipal === CategoriaPrincipal.PROYECTO_SALIDA);
-    const pagoProveedores = egresosRows.filter((m) => m.categoriaPrincipal === CategoriaPrincipal.PAGO_PROVEEDOR);
-    const comprasStock = egresosRows.filter((m) => m.categoriaPrincipal === CategoriaPrincipal.COMPRA_STOCK);
-    const otrosCats = new Set<CategoriaPrincipal>([
-      CategoriaPrincipal.FIJO,
-      CategoriaPrincipal.VARIABLE,
-      CategoriaPrincipal.PROYECTO_SALIDA,
-      CategoriaPrincipal.PAGO_PROVEEDOR,
-      CategoriaPrincipal.COMPRA_STOCK,
-    ]);
-    const otros = egresosRows.filter((m) => !otrosCats.has(m.categoriaPrincipal));
-
-    type ProjectGroup = { projectId: string; clientName: string; code: string; total: number; items: ResultItem[] };
-    const byProjectMap = new Map<string, ProjectGroup>();
-    for (const m of salidasProyecto) {
-      const key = m.projectId ?? "sin-proyecto";
-      let g = byProjectMap.get(key);
-      if (!g) {
-        g = {
-          projectId: m.projectId ?? "",
-          clientName: m.project?.clientName ?? "Sin proyecto",
-          code: m.project?.code ?? "",
-          total: 0,
-          items: [],
-        };
-        byProjectMap.set(key, g);
-      }
-      g.total += toUsd(Number(m.monto), m.moneda);
-      g.items.push(fmtItem(m));
-    }
-    const byProject = Array.from(byProjectMap.values()).sort((a, b) => b.total - a.total);
-
-    // Pago a proveedores = movimientos PAGO_PROVEEDOR residuales (marcados
-    // pagados sin Payment asociado, caso raro) + los pagos reales del mes.
-    const pagoProveedoresItems = [...pagoProveedores.map(fmtItem), ...paymentItems];
-    const pagoProveedoresTotal = sumUsd(pagoProveedores) + paymentsTotalUsd;
-
-    const totalIngresos = sumUsd(ingresosRows);
-    // egresosRows ya excluye lo pagado vía Payment; sumamos los pagos reales aparte.
-    const totalEgresos = sumUsd(egresosRows) + paymentsTotalUsd;
-    const resultado = totalIngresos - totalEgresos;
-    const rentabilidad = totalIngresos > 0 ? Math.round((resultado / totalIngresos) * 1000) / 10 : 0;
+    const resultado = await calcularEstadoResultados(fechaInicio, fechaFin);
 
     return {
       periodo: query.periodo,
       anio: query.anio,
       mes: query.mes ?? null,
       trimestre: query.trimestre ?? null,
-      fechaInicio: serializeDateNonNull(fechaInicio),
-      fechaFin: serializeDateNonNull(fechaFin),
-      fallbackUsdToUyu,
-      ingresos: { total: totalIngresos, items: ingresosRows.map(fmtItem) },
-      egresos: {
-        total: totalEgresos,
-        costosFijos: {
-          total: sumUsd(fijos),
-          items: fijos.map((m) => ({
-            ...fmtItem(m),
-            descripcion: m.fixedCost?.nombre ?? m.descripcion,
-          })),
-        },
-        costosVariables: { total: sumUsd(variables), items: variables.map(fmtItem) },
-        salidasProyecto: { total: sumUsd(salidasProyecto), byProject },
-        pagoProveedores: { total: pagoProveedoresTotal, items: pagoProveedoresItems },
-        comprasStock: { total: sumUsd(comprasStock), items: comprasStock.map(fmtItem) },
-        otros: { total: sumUsd(otros), items: otros.map(fmtItem) },
-      },
-      resultado,
-      rentabilidad,
+      ...resultado,
     };
   });
 }

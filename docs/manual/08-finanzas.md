@@ -133,6 +133,51 @@ error que más fácil se repite al agregar un módulo.
 
 ---
 
+## Estado de resultados
+
+### Para qué existe
+
+Responde "¿cuánto ganamos (o perdimos) en tal período?" con la plata que
+efectivamente entró y salió. Se ve en Finanzas → Estado de resultados (por mes,
+trimestre o año) y desde el chat con la herramienta `estado_resultados` del
+conector (cap. 13), que además acepta cualquier rango de fechas.
+
+### Cómo funciona
+
+- Toda la cuenta vive en `services/finance/resultados.service.ts` →
+  `calcularEstadoResultados(fechaInicio, fechaFin)`. La ruta `GET /finance/results`
+  solo traduce mes/trimestre/año a fechas (`rangeForPeriod()`) y llama al
+  servicio; el conector llama al mismo servicio. Al extraerlo se comparó la
+  respuesta de la pantalla antes y después en 10 períodos: idéntica.
+- **Criterio de caja**: entran los movimientos con estado PAGADO cuya fecha cae
+  en el período, sin los ajustes de conciliación. Los gastos que se pagaron
+  contra facturas de proveedor no se cuentan por el movimiento sino por el
+  **pago** real del período, para que un pago parcial caiga en el mes en que
+  salió la plata.
+- Los egresos se agrupan en costos fijos, costos variables, salidas por obra
+  (agrupadas por proyecto; lo que no tiene proyecto aparece como "Sin
+  proyecto"), pagos a proveedores, compras de stock y otros.
+- **Todo en dólares.** Los pesos se convierten con la **última cotización
+  cargada** (`services/finance/tipo-cambio.ts` → `ultimoUsdToUyu()`).
+
+### Permisos
+
+`FINANZAS:VIEW`, en la pantalla y en el chat.
+
+### Casos borde
+
+- ⚠️ **El resultado de un mes pasado cambia un poco cada vez que se carga una
+  cotización nueva**, porque los pesos se convierten con la última y no con la
+  del movimiento ni la del mes. Es el comportamiento heredado de la pantalla y
+  se conservó a propósito para que el chat dé el mismo número; es una decisión a
+  revisar.
+- Hay **otras dos cuentas de resultados** en el código (`calculateIncomeStatement`
+  y la ruta vieja de reportes) con criterios distintos. La que manda es esta,
+  la de la pestaña Estado de resultados.
+- Lo que se le debe a un instalador tercerizado no aparece hasta que se le paga.
+
+---
+
 ## Cobros a clientes y el plan de pagos
 
 ### Para qué existe
@@ -190,6 +235,12 @@ entra la plata.
 
 ### Casos borde
 
+- **"Cobrado" y "saldo" de la lista de Cobros no usan el mismo criterio que el
+  plan.** La lista (`services/finance/cobros.service.ts` →
+  `listarCobrosPorProyecto()`, compartida con el conector) cuenta todo ingreso
+  marcado como cobrado, en cualquier moneda y categoría; el plan cuenta solo
+  cobros PAGADO en dólares. Por eso la suma de las cuotas vencidas de todos los
+  planes puede no coincidir exacto con el saldo de las obras con plan.
 - Seña > 50% del saldo: **warning** (no bloquea), para confirmar que es intencional.
 - Editar el plan cuando ya hubo cobros parciales: la suma se valida contra el
   saldo pendiente actual, no contra el presupuesto original.
@@ -202,7 +253,6 @@ entra la plata.
 - Pagos a proveedores y la aplicación FIFO a facturas
 - Facturación al cliente: qué lleva factura y su estado
 - Flujo de fondos: proyección de costos fijos y filtros
-- Estado de resultados: por qué es de caja y por qué en dólares
 - Cotización del dólar: origen BCU y carga manual
 
 ---
