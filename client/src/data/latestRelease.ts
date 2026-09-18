@@ -31,9 +31,15 @@ export const LATEST_RELEASE: Release = {
       items: [
         "El reporte ya no dice solo el mes: muestra el período medido, de qué día a qué día. Sin día de corte es el mes completo (1 al 31 de agosto); con día de corte es el ciclo del medidor de UTE (7 de julio al 6 de agosto).",
         "El asunto y el texto del mail al cliente dicen el mismo período que el PDF.",
-        "Para los clientes con día de corte, su reporte se puede generar apenas cierra el ciclo, sin esperar al mes siguiente.",
         "La pantalla de Reportes FV abre siempre en el mes anterior, que es el que se reporta.",
-        "\"Enviar todos\" ya no le vuelve a mandar el reporte a un cliente que ya lo recibió ese mes.",
+      ],
+    },
+    {
+      title: "Reportes fotovoltaicos: el envío deja de ser por mes",
+      items: [
+        "\"Enviar pendientes\" manda todo reporte generado que el cliente todavía no recibió, hasta una fecha de corte, sea del mes que sea. Si a alguien le quedó un mes sin mandar, recibe los dos.",
+        "Desde la misma pantalla se pueden regenerar todos los PDF pendientes antes de enviar.",
+        "Los clientes con día de corte tienen su reporte listo solos a los 7 días de cerrar su ciclo, sin esperar al mes siguiente.",
       ],
     },
   ],

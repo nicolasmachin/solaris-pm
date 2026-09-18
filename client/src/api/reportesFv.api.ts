@@ -354,6 +354,48 @@ export interface ResumenEmisionLote {
   errores: number;
 }
 
+// ─── Pendientes de envío (por fecha de corte) ────────────────────────────────
+
+export interface PendienteEnvio {
+  emisionId: string;
+  projectId: string;
+  cliente: string;
+  periodo: string;
+  /** "7 jul al 6 ago 2026" */
+  periodoTexto: string;
+  cierre: string;
+  version: number;
+  generadoEn: string;
+  diaCorteMedidor: number | null;
+  destinatarios: string[];
+  bloqueosEnvio: string[];
+  formatoViejo: boolean;
+}
+
+export async function getPendientes(hasta: string): Promise<PendienteEnvio[]> {
+  const { data } = await apiClient.get<PendienteEnvio[]>("/api/reportes-fv/pendientes", {
+    params: { hasta },
+  });
+  return data;
+}
+
+export async function regenerarPendientes(
+  hasta: string,
+): Promise<{ regenerados: number; reingeridos: number; errores: Array<{ cliente: string; periodo: string; motivo: string }> }> {
+  const { data } = await apiClient.post("/api/reportes-fv/pendientes/regenerar", { hasta });
+  return data;
+}
+
+export type ResultadoEnvioPendiente = ResultadoEnvio & { cliente: string; periodoTexto: string };
+
+export async function enviarPendientes(
+  hasta: string,
+  opts: { dryRun?: boolean; emisionIds?: string[] } = {},
+): Promise<{ resultados: ResultadoEnvioPendiente[]; resumen: Record<string, number> }> {
+  const { data } = await apiClient.post("/api/reportes-fv/pendientes/enviar", { hasta, ...opts });
+  return data;
+}
+
 /** Genera los PDF de todo un período de una vez. */
 export async function emitirLote(
   periodo: string,

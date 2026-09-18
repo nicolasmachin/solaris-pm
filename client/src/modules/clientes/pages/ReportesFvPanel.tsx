@@ -16,7 +16,7 @@ import {
   type FilaPanel,
 } from "../../../api/reportesFv.api";
 import { ReporteFvDetalle } from "../components/ReporteFvDetalle";
-import { EnviarLoteModal } from "../components/EnviarLoteModal";
+import { EnviarPendientesModal } from "../components/EnviarPendientesModal";
 import { PlantasGrowattModal } from "../components/PlantasGrowattModal";
 import { ManualReportesFvButton } from "../components/ManualReportesFvButton";
 
@@ -605,10 +605,10 @@ export function ReportesFvPanel() {
               <button
                 type="button"
                 onClick={() => setEnvioAbierto(true)}
-                title="Envía por mail los reportes ya generados de este período; primero muestra a quién"
+                title="Envía todos los reportes generados que el cliente todavía no recibió, de cualquier mes; primero muestra a quién"
                 className={BTN_PASO}
               >
-                <Send size={14} /> 3. Enviar todos
+                <Send size={14} /> 3. Enviar pendientes
               </button>
             )}
             <button
@@ -815,18 +815,7 @@ export function ReportesFvPanel() {
 
       {plantasAbierto && <PlantasGrowattModal onClose={() => setPlantasAbierto(false)} />}
       {envioAbierto && (
-        <EnviarLoteModal
-          periodo={periodoActivo}
-          nombrePorEmision={
-            new Map(
-              (panel?.generadores ?? [])
-                .filter((g) => g.emisionId)
-                .map((g) => [g.emisionId as string, g.clientName]),
-            )
-          }
-          onClose={() => setEnvioAbierto(false)}
-          onEnviado={() => qc.invalidateQueries({ queryKey: ["reportes-fv", "panel"] })}
-        />
+        <EnviarPendientesModal canRegenerar={canCreate} onClose={() => setEnvioAbierto(false)} />
       )}
     </div>
   );

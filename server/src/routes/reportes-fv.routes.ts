@@ -28,6 +28,11 @@ import { recalcularSerie } from "../services/reportesFv/calculo.service.js";
 import { generarEmision, regenerarPdfDesdeSnapshot } from "../services/reportesFv/emision.service.js";
 import { ejecutarEmisionMensual } from "../services/reportesFv/reportes-fv.job.js";
 import { enviarEmision, enviarLote } from "../services/reportesFv/envio.service.js";
+import {
+  enviarPendientes,
+  listarPendientes,
+  regenerarPendientes,
+} from "../services/reportesFv/pendientes.service.js";
 import { getIngesta, ingerirPeriodo } from "../services/reportesFv/growatt/ingesta.service.js";
 import { ingerirPeriodoHuawei } from "../services/reportesFv/huawei/ingesta.service.js";
 import {
@@ -417,6 +422,48 @@ export async function registerReportesFvRoutes(app: FastifyInstance) {
         userId: request.user!.id,
         // El mail de resumen es del cron; acá el resultado se ve en pantalla.
         notificar: false,
+      });
+    },
+  );
+
+  // ─── Pendientes de envío (por fecha de corte, no por mes) ───
+  const hastaSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida (YYYY-MM-DD)");
+
+  app.get(
+    "/reportes-fv/pendientes",
+    { preHandler: authorize(EXP, Action.VIEW) },
+    async (request) => {
+      const { hasta } = z.object({ hasta: hastaSchema }).parse(request.query);
+      return listarPendientes(hasta);
+    },
+  );
+
+  // Regenera el PDF de todos los pendientes (versión nueva, no envía nada).
+  app.post(
+    "/reportes-fv/pendientes/regenerar",
+    { preHandler: authorize(EXP, Action.CREATE) },
+    async (request) => {
+      const { hasta } = z.object({ hasta: hastaSchema }).parse(request.body);
+      return regenerarPendientes(hasta, request.user!.id);
+    },
+  );
+
+  // COMPLETE = enviar. Con dryRun devuelve a quién le iría cada uno sin mandar.
+  app.post(
+    "/reportes-fv/pendientes/enviar",
+    { preHandler: authorize(EXP, Action.COMPLETE) },
+    async (request) => {
+      const body = z
+        .object({
+          hasta: hastaSchema,
+          dryRun: z.boolean().optional(),
+          emisionIds: z.array(z.string()).optional(),
+        })
+        .parse(request.body);
+      return enviarPendientes(body.hasta, {
+        dryRun: body.dryRun,
+        emisionIds: body.emisionIds,
+        userId: request.user!.id,
       });
     },
   );

@@ -21,7 +21,8 @@ export const MANUAL_CAMBIOS: CambioManual[] = [
     cambios: [
       "El reporte y el mail muestran el período medido (de qué día a qué día) en vez de solo el mes.",
       "Con día de corte, el reporte se puede generar apenas cierra el ciclo, sin esperar al mes siguiente.",
-      "\"Enviar todos\" saltea a los clientes que ya recibieron alguna versión del reporte del mes.",
+      "El envío ya no es por mes: \"Enviar pendientes\" manda todo lo generado y no recibido hasta una fecha de corte, de cualquier mes.",
+      "Los clientes con día de corte tienen su reporte listo solo, a los 7 días de cerrar su ciclo.",
     ],
   },
   {
@@ -157,8 +158,8 @@ corte ya cerró su ciclo, el selector de período del panel ofrece también el
 **mes en curso** (la pantalla igual abre en el mes anterior; el mes en curso hay
 que elegirlo a mano). Ahí el sistema sólo trae datos y genera el PDF de los que ya
 cerraron; para los demás el mes sigue abierto y no hace nada. Lo automático
-(ver sección 10) todavía no lo hace solo: ese ciclo lo levanta recién el mes
-siguiente, así que para no esperar hay que generarlo a mano.
+(ver sección 10) también lo hace solo: todos los días el sistema mira qué
+clientes con corte cerraron su ciclo, trae sus datos y arma el PDF a los 7 días.
 
 Hay dos formas de cargarlo:
 
@@ -278,14 +279,25 @@ enviado y el botón se bloquea. Si el envío falla, podés reintentarlo.
 
 Al enviarlo, el reporte queda **publicado en el portal** del cliente.
 
-### Enviar todos juntos
+### Enviar todos los pendientes
 
-En la barra de arriba del listado está **"Enviar todos"**: manda de una vez los
-reportes ya generados del período elegido (de cada cliente, la última versión).
-Si a un cliente ya se le mandó alguna versión del reporte de ese mes, lo saltea:
-reenviar una corrección se hace a propósito, desde su detalle. Antes de mandar nada te muestra la
-**lista completa de clientes y direcciones** a las que iría, y los que quedan
-afuera con el motivo. Los correos salen recién cuando confirmás en esa pantalla.
+En la barra de arriba del listado está **"Enviar pendientes"**. No depende del mes
+elegido en el selector: elegís una **fecha de corte** (hoy, por defecto) y entra
+todo reporte generado cuyo período terminó antes de esa fecha y que el cliente
+todavía no recibió, sea del mes que sea. Así un cliente con día de corte, cuyo
+reporte cubre por ejemplo del 7 de julio al 6 de agosto, sale junto con los demás.
+Si a un cliente le quedó un mes sin mandar, recibe los dos, cada uno en su mail.
+De cada reporte se manda la última versión, y nunca uno que el cliente ya recibió.
+
+En esa pantalla:
+
+- **Regenerar PDF de todos** vuelve a armar los PDF de la lista con los datos
+  actuales. Crea una versión nueva de cada uno y no manda nada. A los clientes con
+  día de corte les vuelve a traer los datos antes, por si se tomaron cuando todavía
+  no tenían el corte cargado.
+- **Revisar envío** muestra la **lista completa de clientes y direcciones** a las
+  que iría cada reporte, y los que quedan afuera con el motivo. Los correos salen
+  recién cuando confirmás en esa pantalla.
 
 Sólo lo ven los roles con permiso para enviar; el resto puede generar los PDF
 pero no mandarlos.
@@ -330,6 +342,9 @@ El sistema prepara los reportes automáticamente, sobre el **mes anterior**:
 - **Alrededor del día 7**: calcula y **genera los PDF** de los generadores que
   están completos, y te **avisa por email** con el resumen: cuántos quedaron
   listos, cuántos esperan datos, cuántos necesitan atención.
+- **Clientes con día de corte**: todos los días se revisa quién cerró su ciclo.
+  Entre 2 y 6 días después del cierre se traen sus datos, y al día 7 se genera el
+  PDF y te llega un aviso por mail con los nombres.
 - **El envío al cliente sigue siendo manual**: vos revisás el panel y apretás
   *Enviar*. (El envío automático está previsto pero apagado hasta que el
   proceso lleve unos meses probado.)

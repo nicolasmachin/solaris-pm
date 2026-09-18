@@ -10,6 +10,13 @@
 - El **asunto y el texto del mail** al cliente dicen el mismo período que el PDF.
 - **Para los clientes con día de corte, el reporte se puede generar apenas cierra su ciclo**, sin esperar al mes siguiente: en el selector de Reportes FV aparece el mes en curso y, ahí, solo se traen datos y se generan PDF de los que ya cerraron. Los demás siguen esperando a fin de mes.
 
+#### Reportes fotovoltaicos: el envío deja de ser por mes
+
+- **"Enviar pendientes" reemplaza a "Enviar todos".** Se elige una fecha de corte (hoy, por defecto) y se manda todo reporte generado cuyo período terminó antes de esa fecha y que el cliente todavía no recibió, **sea del mes que sea**. Antes había que elegir un mes, y dentro de "agosto" quedaban mezclados ciclos que empezaban en julio.
+- Si a un cliente le quedó un mes sin mandar, **recibe los dos**, cada uno en su mail.
+- Desde la misma pantalla se pueden **regenerar todos los PDF pendientes** con los datos actuales antes de enviar, y se avisa cuáles tienen el formato anterior.
+- **Los clientes con día de corte tienen su reporte listo solos**: todos los días se revisa quién cerró su ciclo, se traen sus datos y a los 7 días se arma el PDF, con un aviso por mail al equipo. Antes esperaban al mes siguiente.
+
 #### Arreglos
 
 - **La pantalla de Reportes FV abre siempre en el mes anterior**, que es el que se reporta. Al aparecer el mes en curso en el selector (por los clientes con día de corte), la pantalla abría en ese mes, donde casi nadie tiene reporte todavía, y parecía que faltaban los del mes.

@@ -779,14 +779,26 @@ y cómo se envía. El cálculo y el panel todavía no están documentados acá.
 
 ## Cómo se usa
 
-Experiencia Solar → **Reportes FV** (`/clientes/reportes`). Se elige el período
-en el selector, se traen los datos de las plantas, se generan los PDF y se
-envían: de a uno desde el detalle del generador, o con **"Enviar todos"**.
+Experiencia Solar → **Reportes FV** (`/clientes/reportes`). El selector de mes
+sirve para traer datos, generar PDF y consultar. El envío **no es por mes**:
+**"Enviar pendientes"** abre `EnviarPendientesModal`, donde se elige una fecha de
+corte (hoy por defecto) y se ve todo lo generado y no recibido cuyo período cerró
+antes de esa fecha, de cualquier mes. Desde ahí se puede regenerar todo y, tras
+una simulación con las direcciones, enviar. De a uno se sigue enviando desde el
+detalle del generador.
 
-Lo automático (`reportes-fv.job.ts`) trabaja sobre el **mes anterior**: trae los
-datos los días 2, 4 y 6, genera los PDF el 7 y avisa al equipo por mail. **El
-envío al cliente es manual**: el cron del día 9 existe pero no hace nada salvo
-que `REPORTES_FV_ENVIO_AUTO=true`, y en producción está apagado.
+Lo automático (`reportes-fv.job.ts`):
+
+- **Mes anterior** (clientes sin corte, y los con corte cuyo ciclo del mes
+  anterior quedó sin levantar): trae datos los días 2, 4 y 6, genera los PDF el 7
+  y avisa al equipo.
+- **Ciclos del medidor** (`ejecutarCiclosDelMedidor()`, diario 7:30 hora
+  Uruguay): para cada cliente con corte toma su último ciclo cerrado; entre 2 y 6
+  días después del cierre trae los datos (solo si están incompletos), entre 7 y 25
+  genera el PDF si falta, y avisa al equipo con los nombres de lo generado.
+- **Envío**: manual. El cron del día 9 existe pero no hace nada salvo que
+  `REPORTES_FV_ENVIO_AUTO=true` (apagado en producción); si se prende, manda los
+  pendientes a la fecha, con el mismo criterio que el panel.
 
 ## Cómo funciona
 
@@ -811,6 +823,8 @@ saltean, incluso con *force*) y no se emite (`generarEmision()` lo rechaza con
 `REPORTE_FV_PERIODO_ABIERTO`). El panel ofrece el **mes en curso** en el
 selector solo si algún generador habilitado con día de corte ya cerró su ciclo
 (`periodosConDatos()`); en ese mes, solo esos generadores reciben datos y PDF.
+El proceso diario de ciclos hace lo mismo solo, así que el selector con el mes
+en curso queda para rehacer algo a mano.
 El panel abre por defecto en el **mes anterior** (`ReportesFvPanel.tsx`), no en
 el primero de la lista: si abriera en el mes en curso parecería que no hay
 reportes.
@@ -818,11 +832,20 @@ reportes.
 **Envío.** `enviarEmision()` tiene guardas (habilitado, destinatarios, estado
 LISTO, PDF de tamaño razonable, ahorro no disparatado frente al promedio) y un
 claim transaccional sobre `enviadoEn` para que dos clicks no manden dos veces.
-Al enviar, el reporte queda publicado en el portal. `enviarLote()` ("Enviar
-todos") toma la **última versión** de cada generador y solo si está LISTO, y
-saltea a los que ya tienen **alguna** versión ENVIADO en ese período. El modal
-de "Enviar todos" primero hace una simulación (dry-run) con la lista de
-destinatarios y recién manda al confirmar.
+Al enviar, el reporte queda publicado en el portal.
+
+**Pendientes** (`pendientes.service.ts`). `listarPendientes(hasta)`: de cada
+generador y período, la **última versión**, solo si está LISTO, si **ninguna**
+versión de ese período se envió, si el generador está habilitado y si el período
+cerró antes de `hasta` (con el día de corte **actual** de la config).
+`enviarPendientes()` pasa cada uno por `enviarEmision()`; un cliente con dos
+pendientes recibe dos mails. El modal manda solo los `emisionIds` que se vieron en
+la simulación. `regenerarPendientes()` genera una versión nueva de cada
+pendiente; a los clientes con corte les re-ingiere antes el período de Growatt con
+*force*, salvo que la lectura sea manual.
+
+`enviarLote()` (por mes) sigue existiendo en el backend con la misma protección
+de "ya se envió alguna versión", pero el panel ya no lo usa.
 
 ## Permisos
 
@@ -844,10 +867,15 @@ comercial y postventa.
 
 ## Casos borde
 
-- **Clientes con día de corte y lo automático.** El cron siempre toma el mes
-  anterior, así que el ciclo de un cliente con corte temprano (cerrado el 6 de
-  septiembre) lo levanta recién en octubre. Para no esperar hay que generarlo a
-  mano desde el panel en el mes en curso.
+- **Lectura tomada antes de cargar el corte.** Si un cliente cargó su día de
+  corte después de que se trajeron los datos de un período, esa lectura cubre el
+  mes calendario y no su ciclo, y se superpone con el ciclo siguiente (Percovich,
+  julio 2026). `regenerarPendientes()` lo corrige para lo pendiente; lo ya enviado
+  queda como se mandó.
+- **Clientes con corte y Huawei.** La ingesta Huawei es siempre por mes
+  calendario; el proceso diario de ciclos solo consulta Growatt.
+- **Cambiar el día de corte** cambia qué días cubre cada período para la lista de
+  pendientes, pero no regenera nada solo.
 - **Snapshots viejos.** El PDF se puede regenerar desde el snapshot guardado en
   la emisión. Los anteriores al 18 de septiembre de 2026 no traen el texto corto
   del período y se ven con el nombre del mes, como se mandaron.

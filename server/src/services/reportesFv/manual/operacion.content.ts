@@ -8,8 +8,8 @@
 // CONTROL DE VERSIONES: al actualizarla, subí OPERACION_VERSION y agregá una
 // entrada al tope de OPERACION_CAMBIOS.
 
-export const OPERACION_VERSION = "1.1";
-export const OPERACION_ACTUALIZADO = "8 de agosto de 2026";
+export const OPERACION_VERSION = "1.2";
+export const OPERACION_ACTUALIZADO = "18 de septiembre de 2026";
 
 export interface CambioOperacion {
   version: string;
@@ -18,6 +18,14 @@ export interface CambioOperacion {
 }
 
 export const OPERACION_CAMBIOS: CambioOperacion[] = [
+  {
+    version: "1.2",
+    fecha: "18 de septiembre de 2026",
+    cambios: [
+      "El envío ya no es por mes: \"Enviar pendientes\" manda todo lo generado que el cliente no recibió, hasta una fecha de corte.",
+      "Los clientes con día de corte del medidor tienen su reporte listo a los 7 días de cerrar su ciclo, sin esperar al mes siguiente.",
+    ],
+  },
   {
     version: "1.1",
     fecha: "8 de agosto de 2026",
@@ -52,6 +60,7 @@ nada.
 | Todos los días, 8:00 | Revisa que cada planta esté funcionando | No |
 | Días 2, 4 y 6, 6:00 | Trae de Growatt y de Huawei los datos del mes anterior | No |
 | Día 7, 8:00 | Arma los PDF de los que tienen todos los datos y te avisa por mail | No |
+| Todos los días, 7:30 | Clientes con día de corte: trae sus datos entre 2 y 6 días después de que cierra su ciclo, arma el PDF al día 7 y te avisa por mail | No |
 | — | **Enviar al cliente** | **Sólo si lo hacés vos** |
 
 Que la preparación corra sola no tiene riesgo: junta datos y arma borradores. Lo
@@ -109,10 +118,16 @@ sobre todo el ahorro del mes y el acumulado.
 
 ### 5. Enviá
 
-Para mandarlos **todos juntos**, usá **"Enviar todos"** en la barra de arriba:
-primero te muestra la lista de clientes y direcciones a las que iría, y recién
-cuando confirmás salen los correos. Los que no tienen PDF listo quedan afuera y
-te dice por qué.
+Para mandarlos **todos juntos**, usá **"Enviar pendientes"** en la barra de arriba.
+No depende del mes elegido en el selector: elegís una **fecha de corte** (hoy, por
+defecto) y entra todo reporte generado cuyo período terminó antes de esa fecha y
+que el cliente todavía no recibió, sea del mes que sea. Si a un cliente le quedó
+un mes sin mandar, recibe los dos, cada uno en su mail.
+
+En esa pantalla, **"Regenerar PDF de todos"** vuelve a armar los PDF de la lista
+con los datos actuales (no manda nada). **"Revisar envío"** te muestra los
+clientes y las direcciones a las que iría, y los que quedan afuera con el motivo;
+recién cuando confirmás salen los correos.
 
 Para uno solo, desde la ficha: **"Enviar al cliente"**. Cada envío queda registrado con fecha y destinatario, y el
 sistema **no deja mandar dos veces el mismo reporte**.

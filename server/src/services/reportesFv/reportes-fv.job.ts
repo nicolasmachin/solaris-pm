@@ -20,11 +20,20 @@ import { prisma } from "../../lib/prisma.js";
 import { sendEmail } from "../email.service.js";
 import { listarConfigsEfectivas } from "./config.service.js";
 import { generarEmision } from "./emision.service.js";
-import { enviarLote } from "./envio.service.js";
+import { enviarPendientes } from "./pendientes.service.js";
 import { ingerirPeriodoSincrono } from "./growatt/ingesta.service.js";
 import { ingerirPeriodoHuawei } from "./huawei/ingesta.service.js";
-import { mesEs } from "./format.js";
-import { dateAPeriodo, type Periodo, periodoADate, periodoMesAnterior } from "./periodo.js";
+import { mesEs, periodoTextoCorto } from "./format.js";
+import {
+  dateAPeriodo,
+  hoyUruguay,
+  type Periodo,
+  periodoADate,
+  periodoCerrado,
+  periodoMesAnterior,
+  rangoDelPeriodo,
+  sumarMeses,
+} from "./periodo.js";
 
 /** Actor de los jobs: el primer ADMIN activo (no hay usuario de sistema). */
 async function usuarioSistema(): Promise<string | null> {
@@ -160,15 +169,7 @@ async function notificarResumen(r: ResumenEmision): Promise<void> {
   // Sólo se avisa si hubo algo que emitir o algo pendiente que revisar.
   if (r.generados === 0 && r.esperandoDatos === 0 && r.bloqueados === 0) return;
 
-  const equipo = await prisma.user.findMany({
-    where: {
-      deletedAt: null,
-      role: { name: { in: ["EXPERIENCIA_SOLAR", "ADMIN"] } },
-      email: { not: null },
-    },
-    select: { email: true },
-  });
-  const destinatarios = [...new Set(equipo.map((u) => u.email).filter((e): e is string => !!e))];
+  const destinatarios = await destinatariosEquipo();
   if (destinatarios.length === 0) return;
 
   const mes = mesEs(r.periodo);
@@ -191,6 +192,19 @@ async function notificarResumen(r: ResumenEmision): Promise<void> {
   }).catch((err) => console.error("[reportes-fv] no se pudo notificar el resumen:", err));
 }
 
+/** Quiénes reciben los avisos internos del módulo. */
+async function destinatariosEquipo(): Promise<string[]> {
+  const equipo = await prisma.user.findMany({
+    where: {
+      deletedAt: null,
+      role: { name: { in: ["EXPERIENCIA_SOLAR", "ADMIN"] } },
+      email: { not: null },
+    },
+    select: { email: true },
+  });
+  return [...new Set(equipo.map((u) => u.email).filter((e): e is string => !!e))];
+}
+
 export function startReportesFvEmisionJob() {
   const expr = process.env.CRON_REPORTES_FV_EMISION || "0 8 7 * *";
   return cron.schedule(expr, async () => {
@@ -208,14 +222,123 @@ export function startReportesFvEmisionJob() {
   });
 }
 
+// ─── Ciclos del medidor (diario) ──────────────────────────────────────────────
+//
+// Los crons de arriba trabajan sobre el mes anterior, que es lo que cierra para
+// los clientes sin día de corte. Un cliente con corte cierra su ciclo en otro
+// momento del mes (corte 6 → el 6), y esperando al cron mensual su reporte se
+// atrasaba casi un mes. Este job corre todos los días y, para cada cliente con
+// corte, replica el mismo calendario contado desde el cierre de SU ciclo:
+// trae datos entre los días 2 y 6 después del cierre (sólo lo incompleto) y
+// genera el PDF desde el día 7. Nunca envía.
+
+const INGESTA_DESDE = 2;
+const INGESTA_HASTA = 6;
+const EMISION_DESDE = 7;
+// Pasado este margen el ciclo ya lo levanta el cron mensual (o el panel).
+const EMISION_HASTA = 25;
+
+export interface ResumenCiclos {
+  ingeridos: number;
+  emitidos: string[];
+}
+
+export async function ejecutarCiclosDelMedidor(now: Date = new Date()): Promise<ResumenCiclos> {
+  const resumen: ResumenCiclos = { ingeridos: 0, emitidos: [] };
+  const userId = await usuarioSistema();
+  if (!userId) return resumen;
+
+  const hoy = hoyUruguay(now);
+  const mesHoy = dateAPeriodo(new Date(`${hoy}T00:00:00.000Z`));
+  const configs = (await listarConfigsEfectivas({ soloHabilitados: true })).filter(
+    (c) => c.diaCorteMedidor != null,
+  );
+
+  // Agrupados por período para lanzar una sola ingesta por período.
+  const aIngerir = new Map<Periodo, string[]>();
+  const aEmitir = new Map<Periodo, string[]>();
+  for (const c of configs) {
+    // El último ciclo cerrado: el del mes en curso si su corte ya pasó, si no
+    // el del mes anterior.
+    const periodo = periodoCerrado(mesHoy, c.diaCorteMedidor, now) ? mesHoy : sumarMeses(mesHoy, -1);
+    const cierre = rangoDelPeriodo(periodo, c.diaCorteMedidor).hasta;
+    const dias = Math.round(
+      (new Date(`${hoy}T00:00:00.000Z`).getTime() - new Date(`${cierre}T00:00:00.000Z`).getTime()) / 86_400_000,
+    );
+    if (dias >= INGESTA_DESDE && dias <= INGESTA_HASTA) {
+      aIngerir.set(periodo, [...(aIngerir.get(periodo) ?? []), c.projectId]);
+    } else if (dias >= EMISION_DESDE && dias <= EMISION_HASTA) {
+      aEmitir.set(periodo, [...(aEmitir.get(periodo) ?? []), c.projectId]);
+    }
+  }
+
+  for (const [periodo, projectIds] of aIngerir) {
+    // Saltea sola a los que ya tienen la lectura completa.
+    await ingerirPeriodoSincrono({ periodo, modo: ReporteFvIngestaModo.CRON, projectIds, userId });
+    resumen.ingeridos += projectIds.length;
+  }
+
+  const inicio = new Date();
+  for (const [periodo, projectIds] of aEmitir) {
+    // Sin forzar: sólo los que todavía no tienen PDF y ya tienen datos.
+    await ejecutarEmisionMensual(now, { periodo, projectIds, notificar: false, userId });
+  }
+  if (aEmitir.size > 0) {
+    const nuevas = await prisma.reporteFvEmision.findMany({
+      where: { generadoEn: { gte: inicio }, projectId: { in: configs.map((c) => c.projectId) } },
+      select: { projectId: true, periodo: true },
+    });
+    const corte = new Map(configs.map((c) => [c.projectId, c]));
+    resumen.emitidos = nuevas.map((e) => {
+      const c = corte.get(e.projectId)!;
+      return `${c.clientName} (${periodoTextoCorto(dateAPeriodo(e.periodo), c.diaCorteMedidor)})`;
+    });
+  }
+
+  if (resumen.emitidos.length > 0) {
+    const destinatarios = await destinatariosEquipo();
+    if (destinatarios.length > 0) {
+      await sendEmail({
+        to: destinatarios,
+        subject: "Reportes fotovoltaicos nuevos listos para enviar",
+        html:
+          `<p>Se generaron reportes de clientes con día de corte del medidor que cerraron su ciclo:</p>` +
+          `<ul>${resumen.emitidos.map((n) => `<li>${n}</li>`).join("")}</ul>` +
+          `<p>Entrá a Reportes FV en Experiencia Solar para revisarlos y enviarlos.</p>`,
+        type: "internal",
+      }).catch((err) => console.error("[reportes-fv] no se pudo notificar los ciclos:", err));
+    }
+  }
+  return resumen;
+}
+
+export function startReportesFvCiclosJob() {
+  const expr = process.env.CRON_REPORTES_FV_CICLOS || "30 7 * * *";
+  return cron.schedule(
+    expr,
+    async () => {
+      try {
+        const r = await ejecutarCiclosDelMedidor();
+        if (r.ingeridos || r.emitidos.length) {
+          console.log(`[reportes-fv] ciclos del medidor: ${r.ingeridos} ingeridos, emitidos: ${r.emitidos.join(", ")}`);
+        }
+      } catch (err) {
+        console.error("[reportes-fv] ciclos del medidor error:", err);
+      }
+    },
+    { timezone: "America/Montevideo" },
+  );
+}
+
 // ─── Envío mensual (desactivado por default) ──────────────────────────────────
 
-export async function ejecutarEnvioMensual(now: Date = new Date()): Promise<{ periodo: Periodo; resumen: Record<string, number> } | null> {
+export async function ejecutarEnvioMensual(now: Date = new Date()): Promise<{ hasta: string; resumen: Record<string, number> } | null> {
   const userId = await usuarioSistema();
   if (!userId) return null;
-  const periodo = periodoMesAnterior(now);
-  const { resumen } = await enviarLote(periodo, { userId });
-  return { periodo, resumen };
+  // Mismo criterio que el panel: todo lo pendiente cuyo período cerró antes de hoy.
+  const hasta = hoyUruguay(now);
+  const { resumen } = await enviarPendientes(hasta, { userId });
+  return { hasta, resumen };
 }
 
 export function startReportesFvEnvioJob() {
@@ -227,7 +350,7 @@ export function startReportesFvEnvioJob() {
     try {
       const r = await ejecutarEnvioMensual();
       if (r) {
-        console.log(`[reportes-fv] envío mensual de ${r.periodo}: ${JSON.stringify(r.resumen)}`);
+        console.log(`[reportes-fv] envío de pendientes al ${r.hasta}: ${JSON.stringify(r.resumen)}`);
       }
     } catch (err) {
       console.error("[reportes-fv] envío mensual error:", err);
@@ -240,6 +363,7 @@ export function startReportesFvJobs() {
   startReportesFvIngestaJob();
   startReportesFvEmisionJob();
   startReportesFvEnvioJob();
+  startReportesFvCiclosJob();
 }
 
 // Helper de periodo para tests que quieran el mes anterior de una fecha.
