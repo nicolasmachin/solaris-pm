@@ -17,6 +17,7 @@ const MODULES_DE_INTERES: Array<{ module: Module; actions: Action[] }> = [
   { module: Module.OPERACIONES, actions: [Action.VIEW, Action.COMMENT] },
   { module: Module.TRAMITES_UTE, actions: [Action.VIEW] },
   { module: Module.EXPERIENCIA_CLIENTES, actions: [Action.VIEW, Action.CREATE] },
+  { module: Module.METRICAS, actions: [Action.VIEW] },
   { module: Module.FINANZAS, actions: [Action.VIEW] },
   { module: Module.COMISIONES, actions: [Action.VIEW] },
   { module: Module.PAGOS_INSTALADOR, actions: [Action.VIEW] },

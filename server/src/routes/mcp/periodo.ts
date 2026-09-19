@@ -15,6 +15,10 @@ const MESES = [
 
 /** Parámetros de período que aceptan las herramientas. */
 export const periodoInput = {
+  semana: z
+    .enum(["en_curso", "anterior"])
+    .optional()
+    .describe("Semana de lunes a domingo: la que está corriendo o la última cerrada (la del mail de los lunes)."),
   mes: z.number().int().min(1).max(12).optional().describe("Mes (1-12). Va con `anio`."),
   trimestre: z.number().int().min(1).max(4).optional().describe("Trimestre (1-4). Va con `anio`."),
   anio: z
@@ -37,6 +41,7 @@ export const periodoInput = {
 };
 
 export interface PeriodoPedido {
+  semana?: "en_curso" | "anterior";
   mes?: number;
   trimestre?: number;
   anio?: number;
@@ -87,6 +92,19 @@ export function resolverPeriodo(p: PeriodoPedido): PeriodoResuelto {
   const hoy = hoyUruguay();
   const anio = p.anio ?? hoy.anio;
 
+  if (p.semana) {
+    const hoyUtc = new Date(Date.UTC(hoy.anio, hoy.mes - 1, hoy.dia));
+    const lunes = new Date(hoyUtc.getTime() - ((hoyUtc.getUTCDay() + 6) % 7) * 86_400_000);
+    const inicio = p.semana === "anterior" ? new Date(lunes.getTime() - 7 * 86_400_000) : lunes;
+    const fin = new Date(inicio.getTime() + 7 * 86_400_000);
+    const domingo = new Date(fin.getTime() - 86_400_000);
+    return {
+      inicio,
+      fin,
+      etiqueta: `semana del lunes ${ddmm(inicio)} al domingo ${ddmm(domingo)}${p.semana === "en_curso" ? " (en curso)" : ""}`,
+    };
+  }
+
   if (p.mes) {
     return {
       inicio: new Date(Date.UTC(anio, p.mes - 1, 1)),
@@ -115,4 +133,46 @@ export function resolverPeriodo(p: PeriodoPedido): PeriodoResuelto {
     fin: new Date(Date.UTC(hoy.anio, hoy.mes, 1)),
     etiqueta: `${MESES[hoy.mes - 1]} de ${hoy.anio} (mes en curso)`,
   };
+}
+
+/**
+ * El período anterior comparable: el mes, trimestre, año o semana previos; para
+ * un rango libre, un rango de la misma cantidad de días justo antes.
+ */
+export function periodoAnterior(p: PeriodoPedido): PeriodoResuelto {
+  const hoy = hoyUruguay();
+  const anio = p.anio ?? hoy.anio;
+  if (p.desde && p.hasta) {
+    const actual = resolverPeriodo(p);
+    const dias = Math.round((actual.fin.getTime() - actual.inicio.getTime()) / 86_400_000);
+    const iso = (d: Date) => d.toISOString().slice(0, 10);
+    return resolverPeriodo({
+      desde: iso(new Date(actual.inicio.getTime() - dias * 86_400_000)),
+      hasta: iso(new Date(actual.inicio.getTime() - 86_400_000)),
+    });
+  }
+  if (p.semana) {
+    const actual = resolverPeriodo(p);
+    const inicio = new Date(actual.inicio.getTime() - 7 * 86_400_000);
+    const domingo = new Date(actual.inicio.getTime() - 86_400_000);
+    return { inicio, fin: actual.inicio, etiqueta: `semana del lunes ${ddmm(inicio)} al domingo ${ddmm(domingo)}` };
+  }
+  if (p.mes) return resolverPeriodo(p.mes === 1 ? { mes: 12, anio: anio - 1 } : { mes: p.mes - 1, anio });
+  if (p.trimestre) {
+    return resolverPeriodo(p.trimestre === 1 ? { trimestre: 4, anio: anio - 1 } : { trimestre: p.trimestre - 1, anio });
+  }
+  if (p.anio) return resolverPeriodo({ anio: anio - 1 });
+  return resolverPeriodo(hoy.mes === 1 ? { mes: 12, anio: hoy.anio - 1 } : { mes: hoy.mes - 1, anio: hoy.anio });
+}
+
+/**
+ * El mismo período cortado a medianoche de Uruguay (UTC−3) en vez de UTC. Es
+ * lo que corresponde para lo que se guarda con fecha y hora (un lead creado un
+ * 31 a las 22:00 es de ese mes), y es como corta el mail semanal. Los
+ * movimientos financieros, que se guardan como fecha sola, usan el período tal
+ * cual.
+ */
+export function enHoraUruguay(p: PeriodoResuelto): PeriodoResuelto {
+  const tresHoras = 3 * 3_600_000;
+  return { ...p, inicio: new Date(p.inicio.getTime() + tresHoras), fin: new Date(p.fin.getTime() + tresHoras) };
 }

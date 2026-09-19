@@ -12,19 +12,21 @@
 // `startReporteSemanalJob` (cron).
 
 import cron from "node-cron";
-import {
-  GoalArea,
-  GoalMetric,
-  GoalPeriod,
-  ProjectStatus,
-  SalesStage,
-  StageStatus,
-  StageType,
-  TipoMovimiento,
-} from "@prisma/client";
+import { GoalPeriod, TipoMovimiento } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { sendEmail } from "../email.service.js";
+import {
+  META_LABEL,
+  contarPeriodo,
+  fraccionTranscurrida,
+  listarObrasRealizadas,
+  montoDeVenta,
+  resumenObras,
+  valorPorMetrica,
+  ventasGanadas,
+  visitasRealizadas,
+} from "../metricas/indicadores.service.js";
 
 // Uruguay es UTC-3 fijo (sin horario de verano). Trabajamos el "reloj de pared"
 // de Montevideo restando el offset al instante UTC, y volvemos a UTC sumándolo.
@@ -114,6 +116,12 @@ export function calcularTrimestre(now: Date): RangoTrimestre {
 }
 
 // ─── Recolección de datos ─────────────────────────────────────────────────────
+//
+// Las definiciones (qué es un lead, una venta, una obra realizada) y las
+// cuentas viven en `services/metricas/indicadores.service.ts`, compartidas con
+// el dashboard y el conector MCP. Acá solo se arma la semana y el trimestre.
+
+export { montoDeVenta };
 
 export interface VentaGanada {
   cliente: string;
@@ -124,14 +132,6 @@ export interface VentaGanada {
 export interface VisitaComercial {
   cliente: string;
   asesor: string | null;
-}
-
-interface ConteosPeriodo {
-  leads: number;
-  propuestas: number;
-  ganados: number;
-  instalaciones: number;
-  kwp: number;
 }
 
 export interface MetaAvance {
@@ -156,143 +156,19 @@ export interface DatosReporte {
   metas: MetaAvance[];
 }
 
-/**
- * Monto de la venta, con IVA. El precio es un dato de la **propuesta**, así que
- * se lee de ahí y no de la comisión: primero la propuesta que quedó congelada
- * en la comisión, y si no hay comisión (ventas viejas, o cerradas sin pasar por
- * el modal) la última propuesta publicada del lead. Último recurso: el
- * presupuesto estimado cargado en el lead.
- */
-export function montoDeVenta(lead: {
-  estimatedBudgetUsd: unknown;
-  commission: { proposalVersion: { snapshot: unknown } | null } | null;
-  proposalV2Versions: { snapshot: unknown }[];
-}): number | null {
-  const candidatos = [lead.commission?.proposalVersion?.snapshot, lead.proposalV2Versions[0]?.snapshot];
-  for (const snapshot of candidatos) {
-    const calc = (snapshot as { calc?: { totalFinalConIva?: number; totalConIva?: number } } | null | undefined)?.calc;
-    const total = calc?.totalFinalConIva ?? calc?.totalConIva;
-    if (typeof total === "number" && Number.isFinite(total)) return total;
-  }
-  if (lead.estimatedBudgetUsd != null) {
-    const n = Number(lead.estimatedBudgetUsd);
-    if (Number.isFinite(n)) return n;
-  }
-  return null;
-}
-
-/** Conteos de ventas/leads/propuestas/instalaciones sobre un rango [inicio, fin). */
-async function contarPeriodo(inicio: Date, fin: Date): Promise<ConteosPeriodo> {
-  const [leads, propuestas, ganados, obras] = await Promise.all([
-    prisma.salesLead.count({ where: { deletedAt: null, createdAt: { gte: inicio, lt: fin } } }),
-    prisma.salesLead.count({ where: { deletedAt: null, proposalSentAt: { gte: inicio, lt: fin } } }),
-    prisma.salesLead.count({
-      where: { deletedAt: null, stage: SalesStage.CERRADO_GANADO, closedAt: { gte: inicio, lt: fin } },
-    }),
-    contarObras(inicio, fin),
-  ]);
-  return { leads, propuestas, ganados, instalaciones: obras.count, kwp: obras.kwp };
-}
-
-/**
- * "Obra realizada" en el rango: proyecto con etapa EJECUCION_OBRA finalizada
- * (o proyecto COMPLETED), fechado por actualEndDate de la obra (o del proyecto).
- * Incluye obras livianas importadas por CSV, fechadas por plannedEndDate.
- * Réplica de la definición de `/metrics/overview`.
- */
-async function contarObras(inicio: Date, fin: Date): Promise<{ count: number; kwp: number }> {
-  const proyectos = await prisma.project.findMany({
-    where: { deletedAt: null },
-    select: {
-      status: true,
-      actualEndDate: true,
-      plannedEndDate: true,
-      capacityKwp: true,
-      importedFromCsv: true,
-      stages: {
-        where: { name: StageType.EJECUCION_OBRA, status: StageStatus.COMPLETED },
-        select: { actualEndDate: true },
-      },
-    },
-  });
-
-  let count = 0;
-  let kwp = 0;
-  const enRango = (d: Date | null): boolean => d != null && d >= inicio && d < fin;
-
-  for (const p of proyectos) {
-    let instaladoEn: Date | null = null;
-    if (p.importedFromCsv) {
-      instaladoEn = p.plannedEndDate ?? null;
-    } else {
-      const obra = p.stages.find((s) => s.actualEndDate != null);
-      const finalizado = p.status === ProjectStatus.COMPLETED;
-      if (!obra && !finalizado) continue;
-      instaladoEn = obra?.actualEndDate ?? p.actualEndDate ?? null;
-    }
-    if (!enRango(instaladoEn)) continue;
-    count += 1;
-    kwp += p.capacityKwp != null ? Number(p.capacityKwp) : 0;
-  }
-  return { count, kwp: Number(kwp.toFixed(2)) };
-}
-
-const META_LABEL: Record<string, string> = {
-  [GoalMetric.LEADS_CREATED]: "Leads",
-  [GoalMetric.PROPOSALS_SENT]: "Propuestas enviadas",
-  [GoalMetric.CLOSED_WON]: "Nuevas ventas",
-  [GoalMetric.INSTALLATIONS_COUNT]: "Instalaciones",
-  [GoalMetric.KWP_INSTALLED]: "kWp instalados",
-};
-
 export async function recolectarDatos(now: Date): Promise<DatosReporte> {
   const semana = calcularSemana(now);
   const trimestre = calcularTrimestre(now);
 
-  const [
-    leads,
-    propuestasEnviadas,
-    ganadosRaw,
-    visitasRaw,
-    gastosRegistrados,
-    obrasSemana,
-    conteosTrim,
-    goals,
-  ] = await Promise.all([
+  const [leads, propuestasEnviadas, ventasRaw, visitasRaw, gastosRegistrados, obras, goals] = await Promise.all([
     prisma.salesLead.count({ where: { deletedAt: null, createdAt: { gte: semana.inicio, lt: semana.fin } } }),
     prisma.salesLead.count({ where: { deletedAt: null, proposalSentAt: { gte: semana.inicio, lt: semana.fin } } }),
-    prisma.salesLead.findMany({
-      where: {
-        deletedAt: null,
-        stage: SalesStage.CERRADO_GANADO,
-        closedAt: { gte: semana.inicio, lt: semana.fin },
-      },
-      select: {
-        clientName: true,
-        estimatedBudgetUsd: true,
-        assignedTo: { select: { name: true } },
-        commission: { select: { proposalVersion: { select: { snapshot: true } } } },
-        // Fallback cuando la venta no tiene comisión congelada: la última
-        // propuesta publicada del lead.
-        proposalV2Versions: {
-          where: { status: "PUBLISHED", discardedAt: null },
-          orderBy: { versionNumber: "desc" },
-          take: 1,
-          select: { snapshot: true },
-        },
-      },
-      orderBy: { closedAt: "asc" },
-    }),
-    prisma.salesLead.findMany({
-      where: { deletedAt: null, visitCompletedAt: { gte: semana.inicio, lt: semana.fin } },
-      select: { clientName: true, assignedTo: { select: { name: true } } },
-      orderBy: { visitCompletedAt: "asc" },
-    }),
+    ventasGanadas(semana.inicio, semana.fin),
+    visitasRealizadas(semana.inicio, semana.fin),
     prisma.financeMovement.count({
       where: { deletedAt: null, tipoMovimiento: TipoMovimiento.GASTO, fecha: { gte: semana.inicio, lt: semana.fin } },
     }),
-    contarObras(semana.inicio, semana.fin),
-    contarPeriodo(trimestre.inicio, trimestre.fin),
+    listarObrasRealizadas(),
     prisma.goal.findMany({
       where: {
         year: trimestre.anio,
@@ -301,33 +177,19 @@ export async function recolectarDatos(now: Date): Promise<DatosReporte> {
     }),
   ]);
 
-  const ventas: VentaGanada[] = ganadosRaw.map((l) => ({
-    cliente: l.clientName,
-    asesor: l.assignedTo?.name ?? null,
-    montoUsd: montoDeVenta(l),
-  }));
+  const obrasSemana = resumenObras(obras, semana.inicio, semana.fin);
+  const conteosTrim = await contarPeriodo(trimestre.inicio, trimestre.fin, obras);
+
+  const ventas: VentaGanada[] = ventasRaw.map((v) => ({ cliente: v.cliente, asesor: v.asesor, montoUsd: v.montoUsd }));
   const facturacionVendidaUsd = Number(
     ventas.reduce((sum, v) => sum + (v.montoUsd ?? 0), 0).toFixed(2),
   );
-
-  const visitas: VisitaComercial[] = visitasRaw.map((l) => ({
-    cliente: l.clientName,
-    asesor: l.assignedTo?.name ?? null,
-  }));
+  const visitas: VisitaComercial[] = visitasRaw.map((v) => ({ cliente: v.cliente, asesor: v.asesor }));
 
   // Avance de meta: acumulado del trimestre vs objetivo (solo trimestrales, que
   // es como sigue el tablero semanal). Fracción de ritmo = tiempo transcurrido.
-  const trimTotalMs = trimestre.fin.getTime() - trimestre.inicio.getTime();
-  const trimTranscurridoMs = Math.min(Math.max(now.getTime() - trimestre.inicio.getTime(), 0), trimTotalMs);
-  const fraccionTiempo = trimTotalMs > 0 ? trimTranscurridoMs / trimTotalMs : 1;
-
-  const actualPorMetrica: Record<string, number> = {
-    [GoalMetric.LEADS_CREATED]: conteosTrim.leads,
-    [GoalMetric.PROPOSALS_SENT]: conteosTrim.propuestas,
-    [GoalMetric.CLOSED_WON]: conteosTrim.ganados,
-    [GoalMetric.INSTALLATIONS_COUNT]: conteosTrim.instalaciones,
-    [GoalMetric.KWP_INSTALLED]: conteosTrim.kwp,
-  };
+  const fraccionTiempo = fraccionTranscurrida(trimestre.inicio, trimestre.fin, now);
+  const actualPorMetrica = valorPorMetrica(conteosTrim);
 
   const metas: MetaAvance[] = goals
     .filter((g) => g.period === GoalPeriod.QUARTERLY) // preferimos la meta trimestral

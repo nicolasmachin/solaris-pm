@@ -11,10 +11,8 @@ Dashboard, metas del trimestre, indicadores y el reporte semanal por correo.
 ## Qué tiene que cubrir este capítulo
 
 - El dashboard y sus tarjetas
-- Metas: cómo se cargan y cómo se calcula el avance
-- Métricas de ventas y de portafolio
-- El reporte semanal por correo: qué incluye y cuándo sale
-- Qué proyectos entran y cuáles quedan fuera de las métricas
+- Metas: cómo se cargan (el cálculo del avance ya está abajo)
+- Las tarjetas de portafolio del dashboard (presupuesto, ejecutado, CO₂, avance)
 
 ---
 
@@ -90,14 +88,83 @@ Aparece arriba de las tarjetas del Dashboard, solo para quien tiene
 
 ---
 
+## Definiciones compartidas: qué cuenta como lead, venta y obra
+
+### Para qué existe
+
+El dashboard, el mail de los lunes y el conector MCP (cap. 13) muestran los
+mismos indicadores. Para que no puedan dar números distintos, las definiciones
+y las cuentas viven en un solo lugar: `services/metricas/indicadores.service.ts`
+(y `services/metricas/tiempos-etapa.service.ts` para los tiempos por etapa).
+
+### Cómo funciona
+
+| Indicador | Qué cuenta | Función |
+|---|---|---|
+| Lead nuevo | `createdAt` en el período (no `leadCreatedAt`, la fecha editable) | `contarPeriodo()`, `indicadoresDelPeriodo()` |
+| Propuesta enviada | `proposalSentAt` en el período | ídem |
+| Visita realizada | `visitCompletedAt` en el período | `visitasRealizadas()` |
+| Venta | etapa CERRADO_GANADO y `closedAt` en el período; monto según `montoDeVenta()` | `ventasGanadas()` |
+| Venta perdida | etapa CERRADO_PERDIDO y `closedAt` en el período | `indicadoresDelPeriodo()` |
+| Obra realizada | ver abajo | `obrasRealizadasDe()`, `listarObrasRealizadas()` |
+| Tiempos del embudo | días promedio entre dos hitos, sobre los leads cuyo hito final cae en el período | `promedioDias()` |
+| Tiempos por etapa | duración real de cada etapa COMPLETED, filtrada por su fecha de fin; cumplimiento contra el plazo en días hábiles | `tiemposPorEtapa()` |
+
+**Obra realizada**: el proyecto tiene la etapa "Ejecución de obra" finalizada
+con fecha de fin, o está finalizado aunque esa etapa no figure cerrada. La fecha
+es la del fin de la obra, o si no hay, la de finalización del proyecto. Los
+generadores cargados por planilla cuentan en su fecha de entrega. Quedan fuera
+los proyectos borrados y los marcados "fuera de métricas".
+
+Quién usa qué:
+
+- `GET /metrics/overview` → `obrasRealizadasDe()` sobre los proyectos que ya
+  carga para el resto de las tarjetas.
+- `GET /metrics/sales` → `promedioDias()`; los conteos los sigue haciendo en la
+  ruta, con la misma definición.
+- `GET /metrics/stages` → `tiemposPorEtapa()`.
+- El mail semanal → `ventasGanadas()`, `visitasRealizadas()`,
+  `listarObrasRealizadas()`, `contarPeriodo()` y los helpers de metas.
+- El conector → `indicadoresDelPeriodo()`, `avanceMetas()`, `tiemposPorEtapa()`.
+
+Al extraer todo esto se comparó la salida antes y después: 16 respuestas del
+dashboard (overview, sales y stages en 5 períodos, más el histórico de etapas)
+y el mail de 13 semanas distintas, 8 de ellas con ventas o visitas. Todas
+idénticas.
+
+### Reglas y decisiones
+
+- **Avance de metas**: una meta va "en ritmo" si la fracción lograda es al menos
+  la fracción de tiempo transcurrida del período (`fraccionTranscurrida()`).
+  Cada meta se mide sobre su propio período: la trimestral sobre el trimestre,
+  la anual sobre el año.
+
+### Casos borde
+
+- ⚠️ **Hora de corte distinta.** El servidor corre en UTC y el dashboard arma
+  sus períodos con `new Date(año, mes, 1)`, o sea medianoche UTC: en Uruguay,
+  las 21:00 del día anterior. El mail y el conector cortan a medianoche de
+  Uruguay. Un lead creado el 30 de junio a las 22:00 cuenta en julio para el
+  dashboard y en junio para el mail y el chat. Solo afecta lo que pasa en esas
+  tres horas del borde; alinear el dashboard queda pendiente.
+- **La semana del dashboard empieza el domingo** ("esta semana" en
+  `/metrics/sales`); la del mail y el chat, el lunes.
+- Hasta esta extracción, el mail semanal **no** excluía los proyectos marcados
+  "fuera de métricas" y el dashboard sí. Ahora los dos los excluyen. En
+  producción no había ninguno marcado, así que ningún número cambió.
+- `tiemposPorEtapa()` corta a medianoche UTC, igual que la pantalla: las etapas
+  guardan su fecha de fin como día.
+
+---
+
 ## Reporte semanal de indicadores por correo
 
 ### Para qué existe
 
 Replica por mail el tablero semanal de indicadores con los datos que la app ya
 calcula, para tenerlo el lunes sin entrar a la app. Las definiciones son las
-mismas de `/metrics/sales` y `/metrics/overview`, así que los números coinciden
-con lo que se ve en pantalla.
+compartidas (ver la sección anterior); lo mismo, para cualquier período, se
+puede pedir en el chat con la herramienta `indicadores` del conector.
 
 ### Cómo se usa
 
@@ -121,6 +188,9 @@ con lo que se ve en pantalla.
   destinatario es una casilla externa.
 - Funciones puras testeables: `calcularSemana`, `calcularTrimestre`,
   `numeroSemanaIso`; después `recolectarDatos` (DB) y `renderHtml` / `renderTexto`.
+  `recolectarDatos` solo arma la semana y el trimestre: las cuentas las hace
+  `services/metricas/indicadores.service.ts`. `montoDeVenta` vive ahí y el job
+  lo reexporta.
 - Endpoints en `api.routes.ts`: `GET /metrics/weekly-report` y
   `POST /metrics/weekly-report/send`.
 

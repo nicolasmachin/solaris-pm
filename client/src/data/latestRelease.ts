@@ -23,6 +23,29 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "10.9",
+  date: "19 de septiembre de 2026",
+  sections: [
+    {
+      title: "Indicadores y metas desde el chat de Claude",
+      items: [
+        "Los indicadores del mail de los lunes se pueden pedir en el chat para cualquier período (semana, mes, trimestre, año o rango de fechas): leads, propuestas, visitas, ventas con su monto, conversión, tiempos del embudo, obras y kWp.",
+        "Se puede comparar contra el período anterior, ver el desglose por vendedor y la lista de ventas, visitas y obras.",
+        "Avance de las metas del trimestre y del año, y cuánto duran en la realidad las etapas de obra frente a su plazo.",
+      ],
+    },
+    {
+      title: "Finanzas desde el chat de Claude",
+      items: [
+        "Estado de resultados de un mes, trimestre, año o cualquier rango de fechas, con los mismos números que la pestaña Estado de resultados.",
+        "Cobros a clientes con y sin plan de pagos, cuotas vencidas y por vencer.",
+        "Comisiones pendientes de los asesores y pagos pendientes a los instaladores tercerizados.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_10_8: Release = {
   version: "10.8",
   date: "18 de septiembre de 2026",
   sections: [
@@ -162,6 +185,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "10.8",
+    shortDate: "18 sep",
+    highlights: RELEASE_10_8.sections.map((sec) => sec.title),
+  },
   {
     version: "10.7",
     shortDate: "17 sep",

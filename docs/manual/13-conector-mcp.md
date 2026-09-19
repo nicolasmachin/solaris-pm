@@ -112,14 +112,14 @@ corta la conexión a nadie.
 
 ## Herramientas
 
-Treinta y cinco. Cada una chequea su permiso antes de tocar nada, y toda escritura queda
+Treinta y ocho. Cada una chequea su permiso antes de tocar nada, y toda escritura queda
 auditada con `metadata.source = "mcp"` y el nombre de la herramienta.
 
 ### Diagnóstico
 
 | Herramienta | Permiso | Qué hace |
 |---|---|---|
-| `estado_conexion` | ninguno | Confirma que la conexión anda y muestra usuario, rol y permisos de ventas, obra, experiencia del cliente y finanzas. Es lo primero que hay que pedir cuando algo falla. |
+| `estado_conexion` | ninguno | Confirma que la conexión anda y muestra usuario, rol y permisos de ventas, obra, experiencia del cliente, métricas y finanzas. Es lo primero que hay que pedir cuando algo falla. |
 
 ### Ventas
 
@@ -293,9 +293,12 @@ error estaría en el servicio y se vería en los dos lados.
 | `pagos_instaladores` | `PAGOS_INSTALADOR:VIEW` | Mano de obra tercerizada: total, pagado y saldo por obra e instalador, vencidos y trabajos sin instalador asignado. |
 
 **Los períodos** se resuelven en `routes/mcp/periodo.ts` → `resolverPeriodo()`:
-`mes` + `anio`, `trimestre` + `anio`, solo `anio`, o `desde`/`hasta`
-(AAAA-MM-DD, `hasta` inclusive). Sin nada, el mes en curso en hora de Uruguay.
-Un rango al revés devuelve un error legible, no un resultado vacío.
+`semana` (`en_curso` o `anterior`, de lunes a domingo), `mes` + `anio`,
+`trimestre` + `anio`, solo `anio`, o `desde`/`hasta` (AAAA-MM-DD, `hasta`
+inclusive). Sin nada, el mes en curso en hora de Uruguay. Un rango al revés
+devuelve un error legible, no un resultado vacío. El rango sale a medianoche
+UTC, que es como se guardan las fechas de los movimientos; las métricas lo
+corren a medianoche de Uruguay con `enHoraUruguay()` (ver Métricas).
 
 **Ver todo o solo lo propio.** `comisiones` y `pagos_instaladores` replican la
 regla de sus pantallas: quien tiene `FINANZAS:VIEW` o el `EDIT` del módulo ve
@@ -310,6 +313,31 @@ obras, desde la app y desde el chat.
 dólares; una cuota en pesos se muestra con su monto pero no entra al total. El
 estado de resultados convierte con la última cotización (ver cap. 08, Estado de
 resultados), y lo dice al pie de la respuesta.
+
+### Métricas
+
+| Herramienta | Permiso | Qué hace |
+|---|---|---|
+| `indicadores` | `METRICAS:VIEW` | Los indicadores del mail de los lunes para cualquier período: leads, propuestas, visitas, ventas con monto, perdidas, conversión, tiempos del embudo, obras realizadas y kWp. `comparar` agrega el período anterior equivalente (`periodoAnterior()`), `por_asesor` el desglose por vendedor, `detalle` la lista de visitas y obras (las ventas se listan siempre). |
+| `metas` | `METRICAS:VIEW` | Avance de las metas trimestrales y anuales: objetivo, logrado, % y "en ritmo" / "atrasada"; si el período ya cerró, "cumplida" / "no cumplida". |
+| `tiempos_etapas` | `METRICAS:VIEW` | Duración real de cada etapa de obra y cumplimiento del plazo. Sin período, todo el histórico. |
+
+Las tres llaman a los servicios de `services/metricas/`, los mismos del
+dashboard y del mail (cap. 11, "Definiciones compartidas"). Se verificó contra
+la pantalla para el año 2026 y el 2.º trimestre: leads, propuestas, ventas,
+obras, kWp, tiempos del embudo y tiempos por etapa coinciden.
+
+**Hora de corte.** `indicadores` y `metas` cortan a medianoche de Uruguay, como
+el mail; el dashboard corta a medianoche UTC. Un número puede diferir en uno si
+algo pasó entre las 21:00 y las 24:00 del último día. La respuesta lo aclara al
+pie. `tiempos_etapas` corta como el dashboard.
+
+**Quién puede.** El permiso es el de la pantalla de Métricas. En producción lo
+tienen ADMIN, EXPERIENCIA_SOLAR, GERENTE_INGENIERIA, GERENTE_OPERACIONES,
+INGENIERIA, POSTVENTA y TRAMITACION_UTE; **no** lo tienen ASESOR_COMERCIAL,
+GERENTE_COMERCIAL, FINANZAS ni GERENTE_FINANZAS (consultado el 19/9/2026). Los
+que lo tienen ven los montos vendidos y el desglose por asesor, igual que en la
+pestaña "Reporte semanal" de Métricas.
 
 ### Lo que las herramientas NO hacen
 

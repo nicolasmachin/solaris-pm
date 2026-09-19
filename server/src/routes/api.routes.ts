@@ -166,6 +166,8 @@ import { notifyEngineeringCompleted } from "../services/notify.service.js";
 import { autoPromoteLeadToCotizado } from "../services/proposal/promote-lead.service.js";
 import { crearTraspasoSiNoExiste, STAGE_TO_TRASPASO, STAGE_TO_TRASPASO_EXTRA } from "../services/traspasos/index.js";
 import { fetchBcuRatePreview } from "../services/exchange-rate.service.js";
+import { obrasRealizadasDe, promedioDias } from "../services/metricas/indicadores.service.js";
+import { tiemposPorEtapa } from "../services/metricas/tiempos-etapa.service.js";
 import { recolectarDatos as recolectarReporteSemanal, ejecutarReporteSemanal, destinatario as destinatarioReporteSemanal } from "../services/reporteSemanal/reporte-semanal.job.js";
 import {
   applyDeadlineRulesToProject,
@@ -4584,55 +4586,16 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // NO son parte del portafolio activo. Se excluyen de todos los conteos de
     // proyectos y se suman aparte como obras realizadas por su Fecha entrega.
     const projects = allProjects.filter((p) => !p.importedFromCsv);
-    const livianoProjects = allProjects.filter((p) => p.importedFromCsv);
 
     const metricsByProject = projects.map((project) => calculateProjectMetrics(project));
     const activeAndCompletedProjects = projects.filter(
       (project) => project.status === ProjectStatus.ACTIVE || project.status === ProjectStatus.COMPLETED,
     );
 
-    // "Obra realizada" (definición del negocio):
-    //   1) el proyecto tiene la etapa "Ejecución de obra" (EJECUCION_OBRA)
-    //      FINALIZADA (status COMPLETED con actualEndDate), o
-    //   2) en su defecto, el proyecto está marcado como finalizado (status
-    //      COMPLETED) aunque la etapa de obra no figure cerrada.
-    // La FECHA para agrupar por período es la de EJECUCION_OBRA finalizada; si
-    // no la tiene, la fecha de finalización del proyecto (actualEndDate).
-    // Nota: antes se contaba la etapa vieja OPERACIONES iniciada, que el pipeline
-    // nuevo ya no usa (la obra vive en EJECUCION_OBRA), por eso subcontaba.
-    type Installed = { projectId: string; installedAt: Date; capacityKwp: number; pesoObra: number };
-    const installedAll: Installed[] = [];
-    for (const project of projects) {
-      const ejecObra = project.stages.find(
-        (s) =>
-          s.name === StageType.EJECUCION_OBRA &&
-          s.status === StageStatus.COMPLETED &&
-          s.actualEndDate != null,
-      );
-      const proyectoFinalizado = project.status === ProjectStatus.COMPLETED;
-      if (!ejecObra && !proyectoFinalizado) continue;
-      // La fecha de obra finalizada manda; si no hay, la de finalización del proyecto.
-      const installedAt = ejecObra?.actualEndDate ?? project.actualEndDate;
-      if (installedAt == null) continue; // sin fecha ubicable en un período
-      installedAll.push({
-        projectId: project.id,
-        installedAt,
-        capacityKwp: decimalToNumber(project.capacityKwp) ?? 0,
-        pesoObra: project.pesoObra,
-      });
-    }
-
-    // Obras históricas importadas por CSV: se cuentan como realizadas en la fecha
-    // de entrega cargada (plannedEndDate), ya que no tienen etapa Operaciones.
-    const livianoInstalled: Installed[] = livianoProjects
-      .filter((p) => p.plannedEndDate != null)
-      .map((p) => ({
-        projectId: p.id,
-        installedAt: p.plannedEndDate as Date,
-        capacityKwp: decimalToNumber(p.capacityKwp) ?? 0,
-        pesoObra: p.pesoObra,
-      }));
-    installedAll.push(...livianoInstalled);
+    // "Obra realizada": definición compartida con el reporte semanal y el
+    // conector MCP (`obrasRealizadasDe()` en metricas/indicadores.service.ts).
+    // Incluye los generadores livianos por su fecha de entrega.
+    const installedAll = obrasRealizadasDe(allProjects);
 
     const completedInYear = installedAll.filter(
       (p) => p.installedAt >= yearStart && p.installedAt < yearEnd,
@@ -4790,81 +4753,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       };
     }
 
-    const completedStages = await prisma.stage.findMany({
-      where: {
-        project: { deletedAt: null, excludedFromMetrics: false },
-        status: StageStatus.COMPLETED,
-        name: { notIn: [StageType.POSTVENTA, StageType.POST_HABILITACION] },
-        ...(fechaFilter ? { actualEndDate: fechaFilter } : {}),
-      },
-      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-    });
-
-    const grouped = new Map<StageType, typeof completedStages>();
-    for (const stage of completedStages) {
-      const bucket = grouped.get(stage.name) ?? [];
-      bucket.push(stage);
-      grouped.set(stage.name, bucket);
-    }
-
-    const slaMap = await getSlaMap();
-
-    return (Object.values(StageType) as StageType[])
-      .filter((stageName) => stageName !== StageType.POSTVENTA && stageName !== StageType.POST_HABILITACION)
-      .map((stageName) => {
-        const items = grouped.get(stageName) ?? [];
-        const completedCount = items.length;
-        // Calculamos duración on-the-fly desde fechas reales. La columna
-        // persistida `actualDurationDays` no siempre está populada (legacy),
-        // así que la ignoramos y nos basamos en lo que hay en la DB.
-        const durations = items
-          .filter((s) => s.actualStartDate != null && s.actualEndDate != null)
-          .map((s) => {
-            const ms = s.actualEndDate!.getTime() - s.actualStartDate!.getTime();
-            return Math.round(ms / 86_400_000);
-          })
-          .filter((d) => d >= 0);
-        const avgActualDays =
-          durations.length > 0
-            ? Number((durations.reduce((s, d) => s + d, 0) / durations.length).toFixed(2))
-            : 0;
-        const minActualDays = durations.length > 0 ? Math.min(...durations) : 0;
-        const maxActualDays = durations.length > 0 ? Math.max(...durations) : 0;
-
-        // Cumplimiento contra el SLA (días hábiles). Solo cuenta las etapas con
-        // ambas fechas reales; el desvío es actual(hábiles) - SLA (negativo = a
-        // tiempo o antes). complianceRate = % dentro del plazo.
-        const slaDiasHabiles = slaMap.get(stageName) ?? null;
-        let withinSlaCount = 0;
-        let overSlaCount = 0;
-        let deltaSum = 0;
-        let slaObs = 0;
-        if (slaDiasHabiles) {
-          for (const s of items) {
-            if (s.actualStartDate == null || s.actualEndDate == null) continue;
-            const biz = businessDaysBetween(startOfUtcDay(s.actualStartDate), startOfUtcDay(s.actualEndDate));
-            const delta = biz - slaDiasHabiles;
-            slaObs++;
-            deltaSum += delta;
-            if (delta <= 0) withinSlaCount++;
-            else overSlaCount++;
-          }
-        }
-
-        return {
-          stageName,
-          stageLabel: getStageLabel(stageName),
-          avgActualDays,
-          minActualDays,
-          maxActualDays,
-          completedCount,
-          slaDiasHabiles,
-          withinSlaCount,
-          overSlaCount,
-          complianceRate: slaObs > 0 ? Math.round((withinSlaCount / slaObs) * 100) : null,
-          avgDelayBusinessDays: slaObs > 0 ? Number((deltaSum / slaObs).toFixed(1)) : null,
-        };
-      });
+    return tiemposPorEtapa(fechaFilter ? { inicio: fechaFilter.gte, fin: fechaFilter.lt } : undefined);
   });
 
   // ─── Panel de operaciones · Tiempos & SLA (dentro del Dashboard) ───────────
@@ -5493,35 +5382,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const totalClosed = closedWonThisYear + closedLostThisYear;
     const conversionRate = totalClosed > 0 ? Number(((closedWonThisYear / totalClosed) * 100).toFixed(1)) : null;
 
-    // Average pipeline times (only leads with both dates, filtered by year)
-    function avgDays(
-      items: typeof leads,
-      fromFn: (l: typeof leads[0]) => Date | null,
-      toFn: (l: typeof leads[0]) => Date | null,
-      rangeStart: Date,
-      rangeEnd: Date,
-    ): number | null {
-      const valid = items.filter((l) => {
-        const from = fromFn(l);
-        const to = toFn(l);
-        return from && to && to >= from && inRange(to, rangeStart, rangeEnd);
-      });
-      if (valid.length === 0) return null;
-      const total = valid.reduce((sum, l) => {
-        const from = fromFn(l)!;
-        const to = toFn(l)!;
-        return sum + Math.round((to.getTime() - from.getTime()) / 86_400_000);
-      }, 0);
-      return Number((total / valid.length).toFixed(1));
-    }
-
+    // Tiempos del embudo: `promedioDias()` (metricas/indicadores.service.ts),
+    // la misma cuenta que usa el conector MCP.
     const periodStart = filterQuarter ? quarterStart! : yearStart;
     const periodEnd = filterQuarter ? quarterEnd! : yearEnd;
 
-    const avgLeadToProposal = avgDays(leads, (l) => l.createdAt, (l) => l.proposalSentAt, periodStart, periodEnd);
-    const avgProposalToVisit = avgDays(leads, (l) => l.proposalSentAt, (l) => l.visitCompletedAt, periodStart, periodEnd);
-    const avgVisitToClose = avgDays(leads, (l) => l.visitCompletedAt, (l) => l.closedAt, periodStart, periodEnd);
-    const avgProposalToClose = avgDays(leads, (l) => l.proposalSentAt, (l) => l.closedAt, periodStart, periodEnd);
+    const avgLeadToProposal = promedioDias(leads, (l) => l.createdAt, (l) => l.proposalSentAt, periodStart, periodEnd);
+    const avgProposalToVisit = promedioDias(leads, (l) => l.proposalSentAt, (l) => l.visitCompletedAt, periodStart, periodEnd);
+    const avgVisitToClose = promedioDias(leads, (l) => l.visitCompletedAt, (l) => l.closedAt, periodStart, periodEnd);
+    const avgProposalToClose = promedioDias(leads, (l) => l.proposalSentAt, (l) => l.closedAt, periodStart, periodEnd);
 
     // Goals for the period
     const goals = await prisma.goal.findMany({

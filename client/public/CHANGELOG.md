@@ -1,8 +1,15 @@
 # Novedades
 
-## v10.8
+## v10.9
 
-### 18 de septiembre de 2026
+### 19 de septiembre de 2026
+
+#### Indicadores y metas desde el chat de Claude
+
+- **Los indicadores del mail de los lunes se pueden pedir en el chat, para cualquier período**, sin esperar al mail: una semana, un mes, un trimestre, un año o un rango de fechas. Leads nuevos, propuestas enviadas, visitas, ventas cerradas con su monto, ventas perdidas, conversión, cuánto tarda cada paso del embudo, obras realizadas y kWp instalados.
+- Se puede **comparar contra el período anterior** ("junio contra mayo"), ver el **desglose por vendedor** y pedir la lista de cada venta, visita y obra.
+- **Avance de las metas**: cuánto se lleva de cada meta del trimestre y del año, y si va al ritmo del tiempo transcurrido. Las de un período ya cerrado dicen si se cumplieron o no.
+- **Tiempos por etapa de obra**: cuánto duran en la realidad onboarding, ingeniería, compras, obra y trámite UTE, y qué porcentaje terminó dentro del plazo.
 
 #### Finanzas desde el chat de Claude
 
@@ -11,6 +18,10 @@
 - **Cuotas por cobrar**: las vencidas sin cobrar, con los días de atraso, y las que vencen en los próximos días; avisa además cuánto deben las obras que no tienen plan.
 - **Comisiones pendientes** de los asesores, con su vencimiento, y **pagos pendientes a los instaladores tercerizados** por obra.
 - Cada consulta respeta los permisos de la app: quien no ve Finanzas no ve el estado de resultados, y quien solo ve sus comisiones ve solo las suyas.
+
+## v10.8
+
+### 18 de septiembre de 2026
 
 #### Reportes fotovoltaicos: el reporte dice qué días cubre
 
