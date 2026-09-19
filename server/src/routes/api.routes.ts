@@ -167,6 +167,7 @@ import { autoPromoteLeadToCotizado } from "../services/proposal/promote-lead.ser
 import { crearTraspasoSiNoExiste, STAGE_TO_TRASPASO, STAGE_TO_TRASPASO_EXTRA } from "../services/traspasos/index.js";
 import { fetchBcuRatePreview } from "../services/exchange-rate.service.js";
 import { obrasRealizadasDe, promedioDias } from "../services/metricas/indicadores.service.js";
+import { hoyUruguay, inicioDiaUruguay, instantesUruguay } from "../utils/uruguay.js";
 import { tiemposPorEtapa } from "../services/metricas/tiempos-etapa.service.js";
 import { recolectarDatos as recolectarReporteSemanal, ejecutarReporteSemanal, destinatario as destinatarioReporteSemanal } from "../services/reporteSemanal/reporte-semanal.job.js";
 import {
@@ -4566,17 +4567,21 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }).parse(request.query);
 
     const now = new Date();
-    const filterYear = query.year ?? now.getFullYear();
+    const filterYear = query.year ?? hoyUruguay(now).anio;
     const filterQuarter = query.quarter ?? undefined;
 
-    const yearStart = new Date(filterYear, 0, 1);
-    const yearEnd = new Date(filterYear + 1, 0, 1);
+    // Períodos en días calendario. Las obras tienen fecha de solo día y se
+    // comparan tal cual; lo que tiene hora (alta del proyecto, ritmo de las
+    // metas) se corta a medianoche de Uruguay con instantesUruguay().
+    const yearStart = new Date(Date.UTC(filterYear, 0, 1));
+    const yearEnd = new Date(Date.UTC(filterYear + 1, 0, 1));
     let quarterStart: Date | undefined;
     let quarterEnd: Date | undefined;
     if (filterQuarter) {
-      quarterStart = new Date(filterYear, (filterQuarter - 1) * 3, 1);
-      quarterEnd = new Date(filterYear, filterQuarter * 3, 1);
+      quarterStart = new Date(Date.UTC(filterYear, (filterQuarter - 1) * 3, 1));
+      quarterEnd = new Date(Date.UTC(filterYear, filterQuarter * 3, 1));
     }
+    const yearUy = instantesUruguay({ inicio: yearStart, fin: yearEnd });
 
     const allProjects = await prisma.project.findMany({
       where: { deletedAt: null, excludedFromMetrics: false },
@@ -4620,7 +4625,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     // avgDaysToScheduleFirstDate for year
     const withFirstDate = projects.filter(
-      (p) => p.firstDateScheduledAt && p.createdAt >= yearStart && p.createdAt < yearEnd,
+      (p) => p.firstDateScheduledAt && p.createdAt >= yearUy.inicio && p.createdAt < yearUy.fin,
     );
     const avgDaysToScheduleFirstDate =
       withFirstDate.length > 0
@@ -4660,8 +4665,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const metric = g.metric as GoalMetric;
       const target = Number(g.targetValue);
       const actual = opsActualValues[metric] ?? 0;
-      const pStart = g.period === GoalPeriod.QUARTERLY ? (quarterStart ?? yearStart) : yearStart;
-      const pEnd = g.period === GoalPeriod.QUARTERLY ? (quarterEnd ?? yearEnd) : yearEnd;
+      const pStart = inicioDiaUruguay(g.period === GoalPeriod.QUARTERLY ? (quarterStart ?? yearStart) : yearStart);
+      const pEnd = inicioDiaUruguay(g.period === GoalPeriod.QUARTERLY ? (quarterEnd ?? yearEnd) : yearEnd);
       return {
         id: g.id,
         metric,
@@ -5325,25 +5330,25 @@ export async function registerApiRoutes(app: FastifyInstance) {
       quarter: z.coerce.number().int().min(1).max(4).optional(),
     }).parse(request.query);
 
+    // Todas las fechas de esta tarjeta tienen hora: los períodos cortan a
+    // medianoche de Uruguay (utils/uruguay.ts), no a la del servidor (UTC).
     const now = new Date();
-    const filterYear = query.year ?? now.getFullYear();
+    const hoy = hoyUruguay(now);
+    const filterYear = query.year ?? hoy.anio;
     const filterQuarter = query.quarter ?? undefined;
 
-    const yearStart = new Date(filterYear, 0, 1);
-    const yearEnd = new Date(filterYear + 1, 0, 1);
+    const yearStart = inicioDiaUruguay(new Date(Date.UTC(filterYear, 0, 1)));
+    const yearEnd = inicioDiaUruguay(new Date(Date.UTC(filterYear + 1, 0, 1)));
     let quarterStart: Date | undefined;
     let quarterEnd: Date | undefined;
     if (filterQuarter) {
-      quarterStart = new Date(filterYear, (filterQuarter - 1) * 3, 1);
-      quarterEnd = new Date(filterYear, filterQuarter * 3, 1);
+      quarterStart = inicioDiaUruguay(new Date(Date.UTC(filterYear, (filterQuarter - 1) * 3, 1)));
+      quarterEnd = inicioDiaUruguay(new Date(Date.UTC(filterYear, filterQuarter * 3, 1)));
     }
 
-    // Week bounds
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay());
-    weekStart.setHours(0, 0, 0, 0);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 7);
+    // Semana en curso, de domingo a sábado.
+    const weekStart = inicioDiaUruguay(new Date(Date.UTC(hoy.anio, hoy.mes - 1, hoy.dia - hoy.diaSemana)));
+    const weekEnd = new Date(weekStart.getTime() + 7 * 86_400_000);
 
     const leads = await prisma.salesLead.findMany({
       where: { deletedAt: null },
@@ -10816,7 +10821,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
   app.get("/metrics/ute", { preHandler: authorize(Module.TRAMITES_UTE, Action.VIEW) }, async () => {
     const now = new Date();
-    const yearStart = new Date(now.getFullYear(), 0, 1);
+    // finalizedAt es de solo día: el año en curso (de Uruguay) se compara por día.
+    const yearStart = new Date(Date.UTC(hoyUruguay(now).anio, 0, 1));
 
     const processes = await prisma.uteProcess.findMany({
       where: { deletedAt: null, project: { deletedAt: null, excludedFromMetrics: false } },

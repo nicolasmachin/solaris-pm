@@ -14,10 +14,10 @@ import {
   type Indicadores,
 } from "../../../services/metricas/indicadores.service.js";
 import { tiemposPorEtapa } from "../../../services/metricas/tiempos-etapa.service.js";
+import { inicioDiaUruguay } from "../../../utils/uruguay.js";
 import { requirePermission, type McpUser } from "../context.js";
 import { campos, fechaCorta, texto, usd } from "../format.js";
 import {
-  enHoraUruguay,
   hoyUruguay,
   periodoAnterior,
   periodoInput,
@@ -78,12 +78,11 @@ export function registerMetricasTools(server: McpServer, user: McpUser) {
       await requirePermission(user, Module.METRICAS, Action.VIEW);
       const pedido: PeriodoPedido = args;
       const periodo = resolverPeriodo(pedido);
-      const rango = enHoraUruguay(periodo);
       const anteriorP = args.comparar ? periodoAnterior(pedido) : null;
 
       const [d, a] = await Promise.all([
-        indicadoresDelPeriodo(rango.inicio, rango.fin),
-        anteriorP ? indicadoresDelPeriodo(enHoraUruguay(anteriorP).inicio, enHoraUruguay(anteriorP).fin) : null,
+        indicadoresDelPeriodo(periodo),
+        anteriorP ? indicadoresDelPeriodo(anteriorP) : null,
       ]);
       const antes = <K>(f: (x: Indicadores) => K) => (a ? f(a) : undefined);
 
@@ -160,8 +159,6 @@ export function registerMetricasTools(server: McpServer, user: McpUser) {
         ventasTxt,
         asesores,
         ...detalle,
-        "Cortes a medianoche de Uruguay, como el mail de los lunes. El dashboard corta a " +
-          "medianoche UTC (21:00 de Uruguay): un número puede diferir en uno si algo pasó en esas horas del borde.",
       );
     },
   );
@@ -193,8 +190,8 @@ export function registerMetricasTools(server: McpServer, user: McpUser) {
       const t = trimestre ?? (a === hoy.anio ? Math.floor((hoy.mes - 1) / 3) + 1 : undefined);
 
       const now = new Date();
-      const rangoAnio = enHoraUruguay(resolverPeriodo({ anio: a }));
-      const rangoTrimestre = t ? enHoraUruguay(resolverPeriodo({ anio: a, trimestre: t })) : undefined;
+      const rangoAnio = resolverPeriodo({ anio: a });
+      const rangoTrimestre = t ? resolverPeriodo({ anio: a, trimestre: t }) : undefined;
       const metas = await avanceMetas({ anio: a, trimestre: t, rangoAnio, rangoTrimestre, now });
       if (metas.length === 0) {
         return texto(
@@ -205,7 +202,7 @@ export function registerMetricasTools(server: McpServer, user: McpUser) {
 
       // Un período que ya terminó no está "atrasado": se cumplió o no.
       const renglon = (m: (typeof metas)[number]) => {
-        const cerrado = (m.period === GoalPeriod.QUARTERLY ? rangoTrimestre ?? rangoAnio : rangoAnio).fin <= now;
+        const cerrado = inicioDiaUruguay((m.period === GoalPeriod.QUARTERLY ? rangoTrimestre ?? rangoAnio : rangoAnio).fin) <= now;
         const estado = cerrado
           ? m.actual >= m.objetivo ? "CUMPLIDA" : "NO CUMPLIDA"
           : m.enRitmo ? "en ritmo" : "ATRASADA";
@@ -221,8 +218,7 @@ export function registerMetricasTools(server: McpServer, user: McpUser) {
         `Metas ${a}`,
         trimestrales.length ? `${t}.º TRIMESTRE\n${trimestrales.map(renglon).join("\n")}` : null,
         anuales.length ? `AÑO ${a}\n${anuales.map(renglon).join("\n")}` : null,
-        "\"En ritmo\" = lo logrado va al menos en la proporción del tiempo que pasó del período. " +
-          "Se mide con cortes a medianoche de Uruguay; el dashboard corta a medianoche UTC.",
+        "\"En ritmo\" = lo logrado va al menos en la proporción del tiempo que pasó del período.",
       );
     },
   );
@@ -242,8 +238,7 @@ export function registerMetricasTools(server: McpServer, user: McpUser) {
     async (args) => {
       await requirePermission(user, Module.METRICAS, Action.VIEW);
       const hayPeriodo = Object.values(args).some((v) => v !== undefined);
-      // Mismo corte que el dashboard (medianoche UTC): las etapas guardan su
-      // fecha de fin como día, y así el año o trimestre coincide con la pantalla.
+      // Las etapas guardan su fecha de fin como día: se comparan por día.
       const periodo = hayPeriodo ? resolverPeriodo(args) : null;
       const filas = await tiemposPorEtapa(periodo ? { inicio: periodo.inicio, fin: periodo.fin } : undefined);
       const conDatos = filas.filter((f) => f.completedCount > 0);

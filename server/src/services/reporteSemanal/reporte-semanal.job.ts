@@ -27,6 +27,7 @@ import {
   ventasGanadas,
   visitasRealizadas,
 } from "../metricas/indicadores.service.js";
+import { diasDeInstantesUruguay } from "../../utils/uruguay.js";
 
 // Uruguay es UTC-3 fijo (sin horario de verano). Trabajamos el "reloj de pared"
 // de Montevideo restando el offset al instante UTC, y volvemos a UTC sumándolo.
@@ -159,14 +160,19 @@ export interface DatosReporte {
 export async function recolectarDatos(now: Date): Promise<DatosReporte> {
   const semana = calcularSemana(now);
   const trimestre = calcularTrimestre(now);
+  // Semana y trimestre vienen en instantes de Uruguay; las cuentas compartidas
+  // reciben días calendario y cortan cada columna según su tipo.
+  const diasSemana = diasDeInstantesUruguay(semana);
+  const diasTrimestre = diasDeInstantesUruguay(trimestre);
 
   const [leads, propuestasEnviadas, ventasRaw, visitasRaw, gastosRegistrados, obras, goals] = await Promise.all([
     prisma.salesLead.count({ where: { deletedAt: null, createdAt: { gte: semana.inicio, lt: semana.fin } } }),
     prisma.salesLead.count({ where: { deletedAt: null, proposalSentAt: { gte: semana.inicio, lt: semana.fin } } }),
-    ventasGanadas(semana.inicio, semana.fin),
-    visitasRealizadas(semana.inicio, semana.fin),
+    ventasGanadas(diasSemana),
+    visitasRealizadas(diasSemana),
+    // Los movimientos se guardan a medianoche: se cortan por día.
     prisma.financeMovement.count({
-      where: { deletedAt: null, tipoMovimiento: TipoMovimiento.GASTO, fecha: { gte: semana.inicio, lt: semana.fin } },
+      where: { deletedAt: null, tipoMovimiento: TipoMovimiento.GASTO, fecha: { gte: diasSemana.inicio, lt: diasSemana.fin } },
     }),
     listarObrasRealizadas(),
     prisma.goal.findMany({
@@ -177,8 +183,8 @@ export async function recolectarDatos(now: Date): Promise<DatosReporte> {
     }),
   ]);
 
-  const obrasSemana = resumenObras(obras, semana.inicio, semana.fin);
-  const conteosTrim = await contarPeriodo(trimestre.inicio, trimestre.fin, obras);
+  const obrasSemana = resumenObras(obras, diasSemana);
+  const conteosTrim = await contarPeriodo(diasTrimestre, obras);
 
   const ventas: VentaGanada[] = ventasRaw.map((v) => ({ cliente: v.cliente, asesor: v.asesor, montoUsd: v.montoUsd }));
   const facturacionVendidaUsd = Number(

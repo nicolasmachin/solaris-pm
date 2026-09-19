@@ -13,9 +13,9 @@
 //  - venta perdida:       etapa CERRADO_PERDIDO con `closedAt` en el rango;
 //  - obra realizada:      ver `obrasRealizadasDe()`.
 //
-// Los rangos son [inicio, fin): el que llama decide en qué hora corta. El mail
-// y el conector cortan a medianoche de Uruguay; el dashboard, a medianoche UTC
-// (el servidor corre en UTC), que en Uruguay son las 21:00 del día anterior.
+// Los períodos entran en días calendario (`RangoDias`, ver utils/uruguay.ts).
+// Las columnas con hora (las del lead) se cortan a medianoche de Uruguay; las
+// de solo día (obras) y los movimientos financieros, por día.
 
 import {
   GoalArea,
@@ -29,6 +29,7 @@ import {
 } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
+import { instantesUruguay, type RangoDias } from "../../utils/uruguay.js";
 
 // ─── Obras realizadas ─────────────────────────────────────────────────────────
 
@@ -138,8 +139,9 @@ export interface ResumenObras {
   items: ObraRealizada[];
 }
 
-export function resumenObras(obras: ObraRealizada[], inicio: Date, fin: Date): ResumenObras {
-  const items = obras.filter((o) => o.installedAt >= inicio && o.installedAt < fin);
+/** Las obras cuya fecha (un día calendario) cae en el período. */
+export function resumenObras(obras: ObraRealizada[], dias: RangoDias): ResumenObras {
+  const items = obras.filter((o) => o.installedAt >= dias.inicio && o.installedAt < dias.fin);
   return {
     count: items.length,
     kwp: Number(items.reduce((s, o) => s + o.capacityKwp, 0).toFixed(2)),
@@ -184,8 +186,9 @@ export interface Venta {
   fecha: Date;
 }
 
-/** Ventas ganadas en [inicio, fin), de la más vieja a la más nueva. */
-export async function ventasGanadas(inicio: Date, fin: Date): Promise<Venta[]> {
+/** Ventas ganadas en el período (cortado a medianoche de Uruguay), en orden. */
+export async function ventasGanadas(dias: RangoDias): Promise<Venta[]> {
+  const { inicio, fin } = instantesUruguay(dias);
   const leads = await prisma.salesLead.findMany({
     where: { deletedAt: null, stage: SalesStage.CERRADO_GANADO, closedAt: { gte: inicio, lt: fin } },
     select: {
@@ -223,8 +226,9 @@ export interface Visita {
   fecha: Date;
 }
 
-/** Visitas comerciales realizadas en [inicio, fin), en orden. */
-export async function visitasRealizadas(inicio: Date, fin: Date): Promise<Visita[]> {
+/** Visitas comerciales realizadas en el período (medianoche de Uruguay), en orden. */
+export async function visitasRealizadas(dias: RangoDias): Promise<Visita[]> {
+  const { inicio, fin } = instantesUruguay(dias);
   const leads = await prisma.salesLead.findMany({
     where: { deletedAt: null, visitCompletedAt: { gte: inicio, lt: fin } },
     select: { clientName: true, visitCompletedAt: true, assignedTo: { select: { name: true } } },
@@ -243,8 +247,9 @@ export interface ConteosPeriodo {
   kwp: number;
 }
 
-/** Conteos de leads/propuestas/ventas/obras sobre [inicio, fin). */
-export async function contarPeriodo(inicio: Date, fin: Date, obras?: ObraRealizada[]): Promise<ConteosPeriodo> {
+/** Conteos de leads/propuestas/ventas/obras del período. */
+export async function contarPeriodo(dias: RangoDias, obras?: ObraRealizada[]): Promise<ConteosPeriodo> {
+  const { inicio, fin } = instantesUruguay(dias);
   const [leads, propuestas, ganados, todas] = await Promise.all([
     prisma.salesLead.count({ where: { deletedAt: null, createdAt: { gte: inicio, lt: fin } } }),
     prisma.salesLead.count({ where: { deletedAt: null, proposalSentAt: { gte: inicio, lt: fin } } }),
@@ -253,7 +258,7 @@ export async function contarPeriodo(inicio: Date, fin: Date, obras?: ObraRealiza
     }),
     obras ?? listarObrasRealizadas(),
   ]);
-  const o = resumenObras(todas, inicio, fin);
+  const o = resumenObras(todas, dias);
   return { leads, propuestas, ganados, instalaciones: o.count, kwp: o.kwp };
 }
 
@@ -321,7 +326,8 @@ export interface Indicadores {
   porAsesor: IndicadoresAsesor[];
 }
 
-export async function indicadoresDelPeriodo(inicio: Date, fin: Date): Promise<Indicadores> {
+export async function indicadoresDelPeriodo(dias: RangoDias): Promise<Indicadores> {
+  const { inicio, fin } = instantesUruguay(dias);
   const enRango = (d: Date | null) => d != null && d >= inicio && d < fin;
 
   const [leads, ventas, visitas, obras, gastosRegistrados] = await Promise.all([
@@ -336,11 +342,12 @@ export async function indicadoresDelPeriodo(inicio: Date, fin: Date): Promise<In
         assignedTo: { select: { name: true } },
       },
     }),
-    ventasGanadas(inicio, fin),
-    visitasRealizadas(inicio, fin),
+    ventasGanadas(dias),
+    visitasRealizadas(dias),
     listarObrasRealizadas(),
+    // Los movimientos se guardan a medianoche: se cortan por día.
     prisma.financeMovement.count({
-      where: { deletedAt: null, tipoMovimiento: TipoMovimiento.GASTO, fecha: { gte: inicio, lt: fin } },
+      where: { deletedAt: null, tipoMovimiento: TipoMovimiento.GASTO, fecha: { gte: dias.inicio, lt: dias.fin } },
     }),
   ]);
 
@@ -380,7 +387,7 @@ export async function indicadoresDelPeriodo(inicio: Date, fin: Date): Promise<In
       visitaACierre: promedioDias(leads, (l) => l.visitCompletedAt, (l) => l.closedAt, inicio, fin),
       propuestaACierre: promedioDias(leads, (l) => l.proposalSentAt, (l) => l.closedAt, inicio, fin),
     },
-    obras: resumenObras(obras, inicio, fin),
+    obras: resumenObras(obras, dias),
     gastosRegistrados,
     porAsesor: [...porAsesor.values()].sort((a, b) => b.montoUsd - a.montoUsd || b.leads - a.leads),
   };
@@ -430,14 +437,13 @@ export function valorPorMetrica(c: ConteosPeriodo): Record<string, number> {
 /**
  * Avance de las metas cargadas para un año (y, si se pasa, un trimestre): las
  * trimestrales de ese trimestre y las anuales. Cada meta se mide sobre SU
- * período, con los rangos que recibe (`rangoTrimestre`, `rangoAnio`), así el
- * que llama decide la hora de corte.
+ * período. El ritmo compara contra el tiempo transcurrido en hora de Uruguay.
  */
 export async function avanceMetas(opts: {
   anio: number;
   trimestre?: number;
-  rangoAnio: { inicio: Date; fin: Date };
-  rangoTrimestre?: { inicio: Date; fin: Date };
+  rangoAnio: RangoDias;
+  rangoTrimestre?: RangoDias;
   now: Date;
 }): Promise<AvanceMeta[]> {
   const { anio, trimestre, rangoAnio, rangoTrimestre, now } = opts;
@@ -456,15 +462,15 @@ export async function avanceMetas(opts: {
   const obras = await listarObrasRealizadas();
   const hayTrimestrales = goals.some((g) => g.period === GoalPeriod.QUARTERLY) && rangoTrimestre;
   const [conteoAnio, conteoTrim] = await Promise.all([
-    contarPeriodo(rangoAnio.inicio, rangoAnio.fin, obras),
-    hayTrimestrales ? contarPeriodo(rangoTrimestre!.inicio, rangoTrimestre!.fin, obras) : null,
+    contarPeriodo(rangoAnio, obras),
+    hayTrimestrales ? contarPeriodo(rangoTrimestre!, obras) : null,
   ]);
   const valAnio = valorPorMetrica(conteoAnio);
   const valTrim = conteoTrim ? valorPorMetrica(conteoTrim) : null;
 
   return goals.map((g) => {
     const trimestral = g.period === GoalPeriod.QUARTERLY && valTrim && rangoTrimestre;
-    const rango = trimestral ? rangoTrimestre! : rangoAnio;
+    const rango = instantesUruguay(trimestral ? rangoTrimestre! : rangoAnio);
     const objetivo = Number(g.targetValue);
     const actual = (trimestral ? valTrim! : valAnio)[g.metric] ?? 0;
     return {

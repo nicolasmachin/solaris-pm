@@ -296,9 +296,9 @@ error estaría en el servicio y se vería en los dos lados.
 `semana` (`en_curso` o `anterior`, de lunes a domingo), `mes` + `anio`,
 `trimestre` + `anio`, solo `anio`, o `desde`/`hasta` (AAAA-MM-DD, `hasta`
 inclusive). Sin nada, el mes en curso en hora de Uruguay. Un rango al revés
-devuelve un error legible, no un resultado vacío. El rango sale a medianoche
-UTC, que es como se guardan las fechas de los movimientos; las métricas lo
-corren a medianoche de Uruguay con `enHoraUruguay()` (ver Métricas).
+devuelve un error legible, no un resultado vacío. El rango sale en días
+calendario; cada servicio corta sus columnas según el tipo de fecha
+(`utils/uruguay.ts`, ver cap. 11).
 
 **Ver todo o solo lo propio.** `comisiones` y `pagos_instaladores` replican la
 regla de sus pantallas: quien tiene `FINANZAS:VIEW` o el `EDIT` del módulo ve
@@ -327,10 +327,8 @@ dashboard y del mail (cap. 11, "Definiciones compartidas"). Se verificó contra
 la pantalla para el año 2026 y el 2.º trimestre: leads, propuestas, ventas,
 obras, kWp, tiempos del embudo y tiempos por etapa coinciden.
 
-**Hora de corte.** `indicadores` y `metas` cortan a medianoche de Uruguay, como
-el mail; el dashboard corta a medianoche UTC. Un número puede diferir en uno si
-algo pasó entre las 21:00 y las 24:00 del último día. La respuesta lo aclara al
-pie. `tiempos_etapas` corta como el dashboard.
+**Hora de corte.** Igual que el dashboard y el mail: lo que tiene hora se corta
+a medianoche de Uruguay y las fechas de solo día se comparan por día (cap. 11).
 
 **Quién puede.** El permiso es el de la pantalla de Métricas. En producción lo
 tienen ADMIN, EXPERIENCIA_SOLAR, GERENTE_INGENIERIA, GERENTE_OPERACIONES,

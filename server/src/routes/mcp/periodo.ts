@@ -3,8 +3,9 @@
 // Una sola forma de pedir un período en todo el conector: un mes, un
 // trimestre, un año, o un rango libre de fechas. Sin nada, el mes en curso.
 // Las fechas se interpretan en hora de Uruguay para decidir "hoy" y "el mes en
-// curso"; el rango que se devuelve está en UTC a medianoche, que es como
-// guardan sus fechas los movimientos financieros.
+// curso". El rango se devuelve en días calendario (medianoche UTC, ver
+// utils/uruguay.ts): los servicios cortan a medianoche de Uruguay las columnas
+// con hora y comparan por día las de solo fecha.
 
 import { z } from "zod";
 
@@ -58,17 +59,8 @@ export interface PeriodoResuelto {
   etiqueta: string;
 }
 
-/** Hoy en Uruguay, como { anio, mes (1-12), dia }. */
-export function hoyUruguay() {
-  const s = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Montevideo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
-  const [anio, mes, dia] = s.split("-").map(Number);
-  return { anio, mes, dia, iso: s };
-}
+export { hoyUruguay } from "../../utils/uruguay.js";
+import { hoyUruguay } from "../../utils/uruguay.js";
 
 function ddmm(d: Date) {
   return `${d.getUTCDate()}/${d.getUTCMonth() + 1}/${d.getUTCFullYear()}`;
@@ -163,16 +155,4 @@ export function periodoAnterior(p: PeriodoPedido): PeriodoResuelto {
   }
   if (p.anio) return resolverPeriodo({ anio: anio - 1 });
   return resolverPeriodo(hoy.mes === 1 ? { mes: 12, anio: hoy.anio - 1 } : { mes: hoy.mes - 1, anio: hoy.anio });
-}
-
-/**
- * El mismo período cortado a medianoche de Uruguay (UTC−3) en vez de UTC. Es
- * lo que corresponde para lo que se guarda con fecha y hora (un lead creado un
- * 31 a las 22:00 es de ese mes), y es como corta el mail semanal. Los
- * movimientos financieros, que se guardan como fecha sola, usan el período tal
- * cual.
- */
-export function enHoraUruguay(p: PeriodoResuelto): PeriodoResuelto {
-  const tresHoras = 3 * 3_600_000;
-  return { ...p, inicio: new Date(p.inicio.getTime() + tresHoras), fin: new Date(p.fin.getTime() + tresHoras) };
 }

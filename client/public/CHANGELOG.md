@@ -19,6 +19,11 @@
 - **Comisiones pendientes** de los asesores, con su vencimiento, y **pagos pendientes a los instaladores tercerizados** por obra.
 - Cada consulta respeta los permisos de la app: quien no ve Finanzas no ve el estado de resultados, y quien solo ve sus comisiones ve solo las suyas.
 
+#### Arreglos
+
+- **Las métricas cortan los días a la medianoche de Uruguay en todos lados.** El dashboard cerraba cada día a las 21:00 (la medianoche de otro huso horario): un lead cargado el 31 de marzo a las 22:00 contaba en abril. Ahora el dashboard, el mail de los lunes y el chat cuentan igual.
+- **El mail de los lunes podía anotar una obra en la semana equivocada**: una obra terminada un lunes quedaba en la semana anterior. Lo mismo con los gastos cargados un lunes.
+
 ## v10.8
 
 ### 18 de septiembre de 2026

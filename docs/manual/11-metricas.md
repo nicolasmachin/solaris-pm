@@ -130,7 +130,8 @@ Quién usa qué:
 Al extraer todo esto se comparó la salida antes y después: 16 respuestas del
 dashboard (overview, sales y stages en 5 períodos, más el histórico de etapas)
 y el mail de 13 semanas distintas, 8 de ellas con ventas o visitas. Todas
-idénticas.
+idénticas. (Después se corrigió la hora de corte, que sí cambia algunas semanas del
+mail: ver Casos borde.)
 
 ### Reglas y decisiones
 
@@ -141,12 +142,17 @@ idénticas.
 
 ### Casos borde
 
-- ⚠️ **Hora de corte distinta.** El servidor corre en UTC y el dashboard arma
-  sus períodos con `new Date(año, mes, 1)`, o sea medianoche UTC: en Uruguay,
-  las 21:00 del día anterior. El mail y el conector cortan a medianoche de
-  Uruguay. Un lead creado el 30 de junio a las 22:00 cuenta en julio para el
-  dashboard y en junio para el mail y el chat. Solo afecta lo que pasa en esas
-  tres horas del borde; alinear el dashboard queda pendiente.
+- **Hora de corte: siempre Uruguay, según el tipo de fecha** (`utils/uruguay.ts`).
+  Los períodos se arman en días calendario (`RangoDias`, medianoche UTC). Las
+  columnas con hora (alta del lead, propuesta, visita, cierre, alta del
+  proyecto) se cortan a medianoche de Uruguay con `instantesUruguay()`; las de
+  solo día (fin de obra, fin de etapa, trámite UTE) y los movimientos
+  financieros, que se guardan a medianoche, se comparan por día. Correr una
+  fecha de solo día 3 horas la pasaría al día anterior: el mail semanal lo hacía
+  y anotaba en la semana previa las obras terminadas un lunes. El dashboard
+  cortaba las fechas con hora a medianoche UTC (el servidor corre en UTC), o
+  sea a las 21:00 de Uruguay; se corrigió el 19/9/2026 (en producción no cambió
+  ningún número de ese momento).
 - **La semana del dashboard empieza el domingo** ("esta semana" en
   `/metrics/sales`); la del mail y el chat, el lunes.
 - Hasta esta extracción, el mail semanal **no** excluía los proyectos marcados
