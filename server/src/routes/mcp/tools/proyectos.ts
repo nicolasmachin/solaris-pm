@@ -22,7 +22,8 @@ import { prisma } from "../../../lib/prisma.js";
 import { createAuditEntry } from "../../../services/audit.service.js";
 import { getClienteTimeline } from "../../../services/clientes/index.js";
 import { getCurrentStage, getDisplayStage } from "../../../services/project.service.js";
-import { getSlaMap, countdownForStage } from "../../../services/stage-sla.service.js";
+import { getSlaMap } from "../../../services/stage-sla.service.js";
+import { vencimientoEtapaActual } from "../../../services/ops-panel.service.js";
 import { getStageLabel } from "../../../services/pipeline-definitions.js";
 import { serializeUteProcess, UTE_PROCESS_INCLUDE } from "../../../services/uteProcess.service.js";
 import { requirePermission, type McpUser } from "../context.js";
@@ -179,20 +180,10 @@ export function registerProyectosTools(server: McpServer, user: McpUser) {
 
       if (!p) return texto(`No encontré ningún proyecto con el id ${project_id}.`);
 
-      const actual = getDisplayStage(p.stages, p.stageOverride);
+      // Mismo vencimiento que el listado de proyectos y el panel de operaciones:
+      // la cuenta arranca cuando la etapa se recibió, no al inicio del proyecto.
       const slaMap = await getSlaMap();
-      const countdown = actual
-        ? countdownForStage(
-            {
-              name: actual.name,
-              status: actual.status,
-              actualStartDate: actual.actualStartDate,
-              actualEndDate: actual.actualEndDate,
-            },
-            slaMap,
-            p.startDate,
-          )
-        : null;
+      const { etapa: actual, countdown } = vencimientoEtapaActual(p, slaMap);
 
       const completadas = p.stages.filter((s) => s.status === StageStatus.COMPLETED).length;
       const atraso = p.stages.reduce((acc, s) => acc + (s.delayDays ?? 0), 0);

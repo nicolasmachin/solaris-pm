@@ -35,6 +35,13 @@ export const LATEST_RELEASE: Release = {
       ],
     },
     {
+      title: "Control de etapas y operaciones desde el chat de Claude",
+      items: [
+        "Qué obras tienen la etapa vencida o por vencer, con su responsable, como en el panel de operaciones del dashboard.",
+        "Clientes sin comunicación según la cadencia de su recorrido, obras vendidas sin fecha de instalación y el panel de trámites UTE.",
+      ],
+    },
+    {
       title: "Finanzas desde el chat de Claude",
       items: [
         "Estado de resultados de un mes, trimestre, año o cualquier rango de fechas, con los mismos números que la pestaña Estado de resultados.",

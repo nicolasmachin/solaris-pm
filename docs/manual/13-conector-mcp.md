@@ -112,7 +112,7 @@ corta la conexión a nadie.
 
 ## Herramientas
 
-Treinta y ocho. Cada una chequea su permiso antes de tocar nada, y toda escritura queda
+Cuarenta y dos. Cada una chequea su permiso antes de tocar nada, y toda escritura queda
 auditada con `metadata.source = "mcp"` y el nombre de la herramienta.
 
 ### Diagnóstico
@@ -336,6 +336,38 @@ INGENIERIA, POSTVENTA y TRAMITACION_UTE; **no** lo tienen ASESOR_COMERCIAL,
 GERENTE_COMERCIAL, FINANZAS ni GERENTE_FINANZAS (consultado el 19/9/2026). Los
 que lo tienen ven los montos vendidos y el desglose por asesor, igual que en la
 pestaña "Reporte semanal" de Métricas.
+
+### Control de etapas y operaciones
+
+Estado de hoy, no de un período. Todo sale de `services/ops-panel.service.ts`,
+las mismas funciones que responden los endpoints `/ops/*` del panel de
+operaciones del dashboard (cap. 11).
+
+| Herramienta | Permiso | Qué hace |
+|---|---|---|
+| `control_etapas` | `OPERACIONES:VIEW` | Obras activas con la etapa actual vencida o por vencer (≤ 2 días hábiles), de la más atrasada a la menos, con responsable. Resumen por etapa. Filtro por área (ventas, ingeniería, operaciones, UTE, Experiencia Solar) y `estado` (`vencidas`, `vencidas_y_por_vencer` por defecto, `todas`). |
+| `sin_comunicacion` | `OPERACIONES:VIEW` | Clientes fuera de la cadencia de contacto de su recorrido E1/E2/E3, o sin ningún contacto registrado. Incluye obras terminadas. |
+| `obras_sin_fecha` | `OPERACIONES:VIEW` | Obras vendidas sin instalación agendada, por días desde la venta. |
+| `panel_ute` | `OPERACIONES:VIEW` | Trámites sin habilitar: días desde la venta, sub-etapa, a quién le toca (Voltia o UTE); reparto y tiempos promedio; respuesta promedio de UTE por paso. |
+
+**Áreas.** El filtro de `control_etapas` usa el mismo mapeo etapa → área que
+las tarjetas del dashboard. Ese mapeo está en el cliente
+(`client/src/constants/stages.ts` → `STAGE_AREA`) y copiado en
+`tools/operaciones.ts` → `AREA_POR_ETAPA`: si cambia uno, hay que cambiar el
+otro.
+
+**Experiencia Solar.** Sus etapas no llevan plazo (ver cap. 11), así que
+`control_etapas` con el área Experiencia Solar no puede dar vencidas: la
+respuesta lo dice y deriva a `sin_comunicacion`, que es su control.
+
+**`ficha_proyecto` usa el mismo vencimiento.** Antes contaba el plazo de la
+etapa desde la fecha de inicio del proyecto, y podía decir un atraso distinto
+al del listado. Ahora usa `vencimientoEtapaActual()`; se verificó en tres obras
+que dé lo mismo que el listado.
+
+**Quién puede.** `OPERACIONES:VIEW`, el permiso del panel. En producción lo
+tienen casi todos los roles internos, incluidos asesores comerciales,
+Experiencia Solar y los instaladores tercerizados (consultado el 19/9/2026).
 
 ### Lo que las herramientas NO hacen
 

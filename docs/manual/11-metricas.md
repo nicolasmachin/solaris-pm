@@ -50,13 +50,32 @@ Aparece arriba de las tarjetas del Dashboard, solo para quien tiene
   `currentStageStart`, `countdownForStage` → semáforo ok/warning/overdue en días
   hábiles). No recalcula nada por su cuenta.
 - Endpoints backend `GET /ops/risk-summary`, `/ops/sin-fecha-instalacion`,
-  `/ops/sin-comunicacion`, `/ops/proceso-por-etapa` (`api.routes.ts`), con la
-  cadencia y el recorrido en `server/src/services/ops-panel.service.ts`.
+  `/ops/sin-comunicacion`, `/ops/proceso-por-etapa` y `/ops/ute-panel`
+  (`api.routes.ts`). Cada uno es una línea que llama a su función en
+  `server/src/services/ops-panel.service.ts` (`resumenRiesgo()`,
+  `obrasSinFechaInstalacion()`, `clientesSinComunicacion()`, `procesoPorEtapa()`,
+  `panelUte()`), las mismas que usa el conector MCP. Al moverlas se comparó la
+  respuesta de los seis endpoints y del listado de proyectos antes y después:
+  idéntica.
+- La etapa actual y su vencimiento salen de `vencimientoEtapaActual()`: la
+  cuenta arranca cuando la obra llegó a la etapa (cierre de la anterior); si no
+  hay, la fecha de venta, de inicio o de alta. Es el mismo cálculo del listado de
+  Proyectos. `controlEtapas()` devuelve todas las obras activas con ese dato y
+  el responsable de la etapa; `resumenRiesgo()` cuenta sobre esa lista.
 - Frontend: `client/src/components/dashboard/OperationsPanel.tsx`, montado en
   `Dashboard.tsx` con `usePermission("OPERACIONES","VIEW")`.
 - **Unidades**: el SLA por etapa va en días **hábiles** (motor existente); "días
   desde la venta" y "sin comunicación hace X días" van en días **calendario** (así
   se lee "hace X días").
+- **Las etapas de Experiencia Solar no tienen plazo.** Post-habilitación y los
+  dos seguimientos paralelos (preobra y habilitación) no aparecen en
+  Administración → Plazos por etapa (`STAGE_TYPES_CON_SLA` las excluye), así que
+  nunca figuran como vencidas. El control de Experiencia Solar es la cadencia de
+  contacto por recorrido (E1/E2/E3): "Sin comunicación".
+- **Universo distinto al listado de Proyectos.** "En riesgo ahora" y el chat
+  cuentan solo obras **activas** (sin las cargadas por planilla ni las omitidas).
+  El filtro "Solo vencidos" de Proyectos trabaja sobre los estados que estén
+  tildados, que por defecto incluyen también pausados, prospectos y archivados.
 - La última comunicación sale de `ClientInteraction` (las interacciones que se
   registran en Experiencia Solar), no de WhatsApp/mail reales: es "última
   interacción **registrada**".

@@ -11,6 +11,13 @@
 - **Avance de las metas**: cuánto se lleva de cada meta del trimestre y del año, y si va al ritmo del tiempo transcurrido. Las de un período ya cerrado dicen si se cumplieron o no.
 - **Tiempos por etapa de obra**: cuánto duran en la realidad onboarding, ingeniería, compras, obra y trámite UTE, y qué porcentaje terminó dentro del plazo.
 
+#### Control de etapas y operaciones desde el chat de Claude
+
+- **Se puede preguntar qué obras tienen la etapa vencida o por vencer**, igual que el panel de operaciones del dashboard: de la más atrasada a la menos, con el responsable de cada etapa y un resumen de en qué etapas se acumulan. Se puede filtrar por área (ingeniería, operaciones, UTE, etc.).
+- **Clientes sin comunicación**: los que pasaron la cadencia de contacto de su recorrido, o nunca tuvieron un contacto registrado. Es el control de Experiencia Solar, cuyas etapas no llevan plazo.
+- **Obras vendidas sin fecha de instalación** y el **panel de trámites UTE**: cuántos días llevan, en qué paso están, si le toca a Voltia o a UTE y cuánto tarda UTE en responder cada paso.
+- La ficha de un proyecto en el chat ahora dice el mismo atraso de etapa que la app.
+
 #### Finanzas desde el chat de Claude
 
 - **Se puede pedir el estado de resultados en el chat**: de un mes, un trimestre, un año o cualquier rango de fechas ("del 10 al 20 de junio"). Da ingresos, egresos por rubro, resultado y rentabilidad, y en qué obras se fue la plata; si se pide el detalle, lista cada cobro y cada pago. Los números son los mismos que la pestaña Estado de resultados.
