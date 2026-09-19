@@ -129,7 +129,7 @@ auditada con `metadata.source = "mcp"` y el nombre de la herramienta.
 | `ficha_lead` | `VENTAS:VIEW` | Contacto, etapa, **relevamiento técnico**, fechas, propuestas, pendientes y últimos 8 comentarios. Avisa si hay minuta cargada. |
 | `ver_propuesta` | `VENTAS:VIEW` | Números comerciales de una propuesta + enlace al PDF. |
 | `crear_lead` | `VENTAS:CREATE` | Alta. Se asigna al usuario que la crea. |
-| `editar_lead` | `VENTAS:EDIT` | Datos de contacto y relevamiento, con lista blanca. |
+| `editar_lead` | `VENTAS:EDIT` | Datos de contacto y relevamiento, con lista blanca, y las cinco fechas del proceso (alta, propuesta enviada, visita agendada, visita realizada, cierre) como día `AAAA-MM-DD` o `"borrar"`. Las fechas se guardan a las 00:00 de Uruguay, como en la app (cap. 02, Fechas del proceso). |
 | `mover_etapa` | `VENTAS:EDIT` | Cambia la etapa del pipeline. |
 | `comentar_lead` | `VENTAS:COMMENT` | Deja un comentario en el historial. |
 

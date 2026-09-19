@@ -22,7 +22,8 @@ import { listLeadProposals } from "../../../services/proposal/lead-proposals.ser
 import { getDraft } from "../../../services/proposal/draft.service.js";
 import { getVersionById } from "../../../services/proposal/version.service.js";
 import { requirePermission, type McpUser } from "../context.js";
-import { campos, ETAPA_LABEL, fechaCorta, fechaLarga, pesos, porcentaje, texto, usd } from "../format.js";
+import { campos, ETAPA_LABEL, fechaCorta, fechaLarga, fechaLargaUruguay, pesos, porcentaje, texto, usd } from "../format.js";
+import { diaManualUruguay } from "../../../utils/uruguay.js";
 import { buildDownloadUrl } from "../descargas.routes.js";
 
 /** Marca de origen para la auditoría. */
@@ -201,11 +202,11 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
       ]);
 
       const fechas = campos([
-        ["Alta", fechaLarga(lead.leadCreatedAt)],
-        ["Propuesta enviada", fechaLarga(lead.proposalSentAt)],
-        ["Visita agendada", fechaLarga(lead.visitScheduledAt)],
-        ["Visita realizada", fechaLarga(lead.visitCompletedAt)],
-        ["Cierre", fechaLarga(lead.closedAt)],
+        ["Alta", fechaLargaUruguay(lead.leadCreatedAt)],
+        ["Propuesta enviada", fechaLargaUruguay(lead.proposalSentAt)],
+        ["Visita agendada", fechaLargaUruguay(lead.visitScheduledAt)],
+        ["Visita realizada", fechaLargaUruguay(lead.visitCompletedAt)],
+        ["Cierre", fechaLargaUruguay(lead.closedAt)],
       ]);
 
       const propuestas = await listLeadProposals(lead.id, false, lead.clientName);
@@ -527,9 +528,12 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
     {
       title: "Editar cliente potencial",
       description:
-        "Corrige los datos de contacto o de relevamiento de un cliente potencial. " +
-        "Solo cambia lo que se manda. No sirve para cambiar la etapa (usar " +
-        "mover_etapa) ni para reasignar el asesor, que se hace desde la app.",
+        "Corrige los datos de contacto o de relevamiento de un cliente potencial, y " +
+        "las fechas del proceso (alta, propuesta enviada, visita agendada, visita " +
+        "realizada, cierre). Las fechas se completan solas al avanzar el lead: " +
+        "cambiarlas acá es para corregirlas o cargar una que faltó, y solo si la " +
+        "persona lo pide. Solo cambia lo que se manda. No sirve para cambiar la etapa " +
+        "(usar mover_etapa) ni para reasignar el asesor, que se hace desde la app.",
       inputSchema: {
         lead_id: z.string().min(1),
         telefono: z.string().optional(),
@@ -540,10 +544,28 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
         presupuesto_estimado_usd: z.number().positive().optional(),
         tipo_techo: z.string().optional(),
         notas: z.string().optional(),
+        fecha_alta: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal("borrar")]).optional().describe("AAAA-MM-DD, o \"borrar\" para dejarla vacía."),
+        fecha_propuesta_enviada: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal("borrar")]).optional().describe("AAAA-MM-DD, o \"borrar\"."),
+        fecha_visita_agendada: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal("borrar")]).optional().describe("Día en que se ACORDÓ la visita con el cliente (no el día de la visita). AAAA-MM-DD, o \"borrar\"."),
+        fecha_visita_realizada: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal("borrar")]).optional().describe("Día en que se hizo la visita. AAAA-MM-DD, o \"borrar\"."),
+        fecha_cierre: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal("borrar")]).optional().describe("AAAA-MM-DD, o \"borrar\"."),
       },
     },
     async (args) => {
       await requirePermission(user, Module.VENTAS, Action.EDIT);
+
+      // Un día cargado a mano se guarda como las 00:00 de ese día en Uruguay:
+      // es como lo guarda la app, y así cuenta en ese día en las métricas.
+      const fecha = (v: string | undefined) =>
+        v === undefined ? undefined : v === "borrar" ? null : diaManualUruguay(v).toISOString();
+      const fechas = {
+        leadCreatedAt: fecha(args.fecha_alta),
+        proposalSentAt: fecha(args.fecha_propuesta_enviada),
+        visitScheduledAt: fecha(args.fecha_visita_agendada),
+        visitCompletedAt: fecha(args.fecha_visita_realizada),
+        closedAt: fecha(args.fecha_cierre),
+      };
+      const fechasPedidas = Object.fromEntries(Object.entries(fechas).filter(([, v]) => v !== undefined));
 
       // Lista blanca: el nombre y el asesor quedan afuera a propósito.
       // Renombrar por dictado es como se terminan duplicando clientes, y
@@ -561,6 +583,7 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
         }),
         ...(args.tipo_techo !== undefined && { roofType: args.tipo_techo }),
         ...(args.notas !== undefined && { notes: args.notas }),
+        ...fechasPedidas,
       };
 
       if (Object.keys(data).length === 0) {
@@ -585,6 +608,11 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
           ["Presupuesto estimado", lead.estimatedBudgetUsd ? usd(Number(lead.estimatedBudgetUsd)) : null],
           ["Tipo de techo", lead.roofType],
           ["Notas", lead.notes],
+          ["Alta", fechaLargaUruguay(lead.leadCreatedAt)],
+          ["Propuesta enviada", fechaLargaUruguay(lead.proposalSentAt)],
+          ["Visita agendada", fechaLargaUruguay(lead.visitScheduledAt)],
+          ["Visita realizada", fechaLargaUruguay(lead.visitCompletedAt)],
+          ["Cierre", fechaLargaUruguay(lead.closedAt)],
         ]),
       );
     },

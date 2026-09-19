@@ -52,3 +52,18 @@ export function hoyUruguay(now: Date = new Date()) {
   const diaSemana = new Date(Date.UTC(anio, mes - 1, dia)).getUTCDay();
   return { anio, mes, dia, diaSemana, iso: s };
 }
+
+/** El día calendario en Uruguay de un instante, como "AAAA-MM-DD". */
+export function diaUruguayIso(instante: Date): string {
+  return hoyUruguay(instante).iso;
+}
+
+/**
+ * Un día cargado a mano ("AAAA-MM-DD") como instante: las 00:00 de ese día en
+ * Uruguay. Es como se guardan las fechas del proceso de un lead que se editan
+ * a mano: son columnas con hora, y así el día que se ve es el día que se cargó,
+ * tanto en la app como en las métricas.
+ */
+export function diaManualUruguay(dia: string): Date {
+  return inicioDiaUruguay(new Date(`${dia}T00:00:00.000Z`));
+}

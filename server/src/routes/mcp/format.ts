@@ -5,6 +5,8 @@
 // estructurado (el resultado de una herramienta se corta cerca de los 150.000
 // caracteres).
 
+import { diaUruguayIso } from "../../utils/uruguay.js";
+
 const MESES = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",
   "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
@@ -16,6 +18,18 @@ export function fechaLarga(value: Date | string | null | undefined): string | nu
   const d = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(d.getTime())) return null;
   return `${d.getUTCDate()} de ${MESES[d.getUTCMonth()]} de ${d.getUTCFullYear()}`;
+}
+
+/**
+ * Como fechaLarga, pero tomando el día de Uruguay. Para columnas con hora (las
+ * fechas del proceso de un lead): algo registrado a las 22:00 del 12 es del 12,
+ * aunque en UTC ya sea 13.
+ */
+export function fechaLargaUruguay(value: Date | string | null | undefined): string | null {
+  if (!value) return null;
+  const d = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(d.getTime())) return null;
+  return fechaLarga(`${diaUruguayIso(d)}T00:00:00.000Z`);
 }
 
 /** Fecha corta "12/03/2026". */

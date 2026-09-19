@@ -42,6 +42,13 @@ export const LATEST_RELEASE: Release = {
       ],
     },
     {
+      title: "Fechas del lead desde el chat de Claude",
+      items: [
+        "Las fechas del proceso de un cliente potencial (alta, propuesta, visita agendada, visita realizada, cierre) se pueden corregir desde el chat. Siguen completándose solas.",
+        "Todo cambio de fecha queda en el historial, y una fecha cargada a mano se ve el mismo día en el panel, el listado y las métricas.",
+      ],
+    },
+    {
       title: "Finanzas desde el chat de Claude",
       items: [
         "Estado de resultados de un mes, trimestre, año o cualquier rango de fechas, con los mismos números que la pestaña Estado de resultados.",

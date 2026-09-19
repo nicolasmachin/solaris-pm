@@ -18,6 +18,11 @@
 - **Obras vendidas sin fecha de instalación** y el **panel de trámites UTE**: cuántos días llevan, en qué paso están, si le toca a Voltia o a UTE y cuánto tarda UTE en responder cada paso.
 - La ficha de un proyecto en el chat ahora dice el mismo atraso de etapa que la app.
 
+#### Fechas del lead desde el chat de Claude
+
+- **Las fechas del proceso de un cliente potencial se pueden corregir desde el chat**: alta, propuesta enviada, visita agendada, visita realizada y cierre, o dejarlas vacías. Siguen completándose solas como hasta ahora; esto es para los casos en que hay que corregir una o cargar una que faltó.
+- Todo cambio de fecha, desde la app o desde el chat, queda registrado en el historial con la fecha anterior y la nueva.
+
 #### Finanzas desde el chat de Claude
 
 - **Se puede pedir el estado de resultados en el chat**: de un mes, un trimestre, un año o cualquier rango de fechas ("del 10 al 20 de junio"). Da ingresos, egresos por rubro, resultado y rentabilidad, y en qué obras se fue la plata; si se pide el detalle, lista cada cobro y cada pago. Los números son los mismos que la pestaña Estado de resultados.
@@ -29,6 +34,7 @@
 #### Arreglos
 
 - **Las métricas cortan los días a la medianoche de Uruguay en todos lados.** El dashboard cerraba cada día a las 21:00 (la medianoche de otro huso horario): un lead cargado el 31 de marzo a las 22:00 contaba en abril. Ahora el dashboard, el mail de los lunes y el chat cuentan igual.
+- **Una fecha del lead cargada a mano se veía un día antes en el listado de leads** (por ejemplo, una propuesta cargada el 15/6 aparecía como 14/6). Ahora se ve el mismo día en el panel, el listado y las métricas, también para las fechas que ya estaban cargadas.
 - **El mail de los lunes podía anotar una obra en la semana equivocada**: una obra terminada un lunes quedaba en la semana anterior. Lo mismo con los gastos cargados un lunes.
 
 ## v10.8

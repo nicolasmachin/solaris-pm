@@ -75,3 +75,27 @@ export function todayLocalISO(): string {
   const d = String(now.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
+
+// ── Fechas CON HORA vistas como día de Uruguay ──────────────────────────────
+// Las fechas del proceso de un lead (alta, propuesta, visita, cierre) son
+// instantes. Para mostrarlas o editarlas como día se toma el día en Uruguay, y
+// un día cargado a mano se guarda como las 00:00 de Uruguay (03:00 UTC): así
+// el día que se ve es el que se cargó, en la app, en el chat y en las métricas.
+
+/** "YYYY-MM-DD" del día en Uruguay de un instante ISO. */
+export function diaUruguay(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Montevideo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
+/** Un día "YYYY-MM-DD" cargado a mano → ISO de las 00:00 de ese día en Uruguay. */
+export function inicioDiaUruguayIso(dia: string): string {
+  return new Date(`${dia}T00:00:00-03:00`).toISOString();
+}

@@ -25,6 +25,10 @@ propuesta enviada, visita agendada, visita realizada y cierre. Todas se editan a
 mano con "Guardar fechas". Las que el sistema completó solo llevan la etiqueta
 **Auto**.
 
+También se pueden corregir desde el chat de Claude con `editar_lead` (cap. 13):
+un día (`AAAA-MM-DD`) o `"borrar"` por fecha. Es para casos especiales: lo
+normal sigue siendo que se completen solas.
+
 ## Cómo funciona
 
 `cambiarEtapaLead()` en `server/src/services/sales/leads.service.ts` arma un
@@ -65,7 +69,20 @@ minuta que llega tarde no lo devuelve a Visitado. Ambos pasos son no bloqueantes
 — si fallan, la minuta igual quedó subida y el bot lo reporta como advertencia.
 
 La edición manual va por `PATCH /api/leads/:id` (no hay endpoint aparte de
-fechas) y acepta `null` para vaciar cualquiera de ellas.
+fechas) y acepta `null` para vaciar cualquiera de ellas. El chat usa el mismo
+servicio, `editarLead()`.
+
+### Cómo se guarda un día cargado a mano
+
+Las cinco fechas son columnas **con hora**. Un día cargado a mano se guarda como
+las **00:00 de Uruguay** (03:00 UTC): en la app, `inicioDiaUruguayIso()` de
+`client/src/utils/date.ts`; en el chat, `diaManualUruguay()` de
+`server/src/utils/uruguay.ts`. Para mostrarlas y editarlas, el panel toma el día
+de Uruguay (`diaUruguay()`), igual que el listado y las métricas.
+
+Los cambios de fecha quedan en la auditoría ("Actualizó la fecha de visita
+agendada del lead … de 22/07/2026 a 22/09/2026"), con `source: "mcp"` si vinieron
+del chat.
 
 ## Reglas y decisiones
 
@@ -83,6 +100,14 @@ fechas) y acepta `null` para vaciar cualquiera de ellas.
   regla directamente no existía y el campo quedaba vacío salvo carga manual, lo
   que rompía el indicador de "días entre visita y cierre". El frontend incluso
   tenía la etiqueta "Auto" apagada a mano en ese campo, reflejando el hueco.
+- **Hasta v10.9 un día cargado a mano se guardaba a las 00:00 UTC**, que en
+  Uruguay son las 21:00 del día anterior. El panel lo mostraba bien (recortaba la
+  fecha UTC) pero el listado de leads lo mostraba un día antes, y las métricas,
+  que cortan a medianoche de Uruguay, lo habrían contado en el día anterior.
+  `scripts/backfill-fechas-lead-uruguay.ts` corre esos valores (exactamente
+  00:00:00.000 UTC) a las 03:00 UTC. Además, hasta v10.9 los cambios de fecha
+  no quedaban auditados: `editarLead()` no las comparaba.
+- El filtro por rango de fechas del listado de leads corta en días de Uruguay.
 - Un lead puede llegar a `CERRADO_GANADO` sin pasar por `VISITADO`, y en ese caso
   no hay fecha de visita: el promedio de "visita a cierre" lo ignora en vez de
   contarlo como cero.

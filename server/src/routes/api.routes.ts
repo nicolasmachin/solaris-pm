@@ -167,7 +167,7 @@ import { autoPromoteLeadToCotizado } from "../services/proposal/promote-lead.ser
 import { crearTraspasoSiNoExiste, STAGE_TO_TRASPASO, STAGE_TO_TRASPASO_EXTRA } from "../services/traspasos/index.js";
 import { fetchBcuRatePreview } from "../services/exchange-rate.service.js";
 import { obrasRealizadasDe, promedioDias } from "../services/metricas/indicadores.service.js";
-import { hoyUruguay, inicioDiaUruguay, instantesUruguay } from "../utils/uruguay.js";
+import { diaManualUruguay, hoyUruguay, inicioDiaUruguay, instantesUruguay } from "../utils/uruguay.js";
 import { tiemposPorEtapa } from "../services/metricas/tiempos-etapa.service.js";
 import { recolectarDatos as recolectarReporteSemanal, ejecutarReporteSemanal, destinatario as destinatarioReporteSemanal } from "../services/reporteSemanal/reporte-semanal.job.js";
 import {
@@ -7184,8 +7184,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const dateFilter = (() => {
       if (!query.dateField || (!query.dateFrom && !query.dateTo)) return undefined;
       const range: { gte?: Date; lte?: Date } = {};
-      if (query.dateFrom) range.gte = new Date(`${query.dateFrom}T00:00:00.000Z`);
-      if (query.dateTo) range.lte = new Date(`${query.dateTo}T23:59:59.999Z`);
+      // Días de Uruguay: las fechas del lead tienen hora (utils/uruguay.ts).
+      if (query.dateFrom) range.gte = diaManualUruguay(query.dateFrom);
+      if (query.dateTo) range.lte = new Date(diaManualUruguay(query.dateTo).getTime() + 86_400_000 - 1);
       return { [query.dateField]: range };
     })();
 

@@ -14,6 +14,7 @@ import { prisma } from "../../lib/prisma.js";
 import { createAuditEntriesForChanges, createAuditEntry } from "../audit.service.js";
 import { congelarComisionAlGanar } from "../commission/commission.service.js";
 import { badRequest, notFound } from "../../utils/errors.js";
+import { diaUruguayIso } from "../../utils/uruguay.js";
 
 export interface LeadActor {
   id: string;
@@ -179,6 +180,20 @@ function toDateOrNull(value: string | null | undefined): Date | null {
   return value ? new Date(value) : null;
 }
 
+const FECHA_LABEL: Record<string, string> = {
+  leadCreatedAt: "la fecha de alta",
+  proposalSentAt: "la fecha de propuesta enviada",
+  visitScheduledAt: "la fecha de visita agendada",
+  visitCompletedAt: "la fecha de visita realizada",
+  closedAt: "la fecha de cierre",
+};
+
+/** "15/06/2026" en hora de Uruguay, para las descripciones de auditoría. */
+function fechaUruguayCorta(iso: string): string {
+  const [a, m, d] = diaUruguayIso(new Date(iso)).split("-");
+  return `${d}/${m}/${a}`;
+}
+
 export async function editarLead(params: {
   leadId: string;
   data: EditarLeadInput;
@@ -246,9 +261,19 @@ export async function editarLead(params: {
       tipoCliente: lead.tipoCliente,
       notes: lead.notes,
       assignedToId: lead.assignedToId,
+      // Las fechas del proceso también quedan auditadas: se pueden corregir a
+      // mano y cambian las métricas.
+      leadCreatedAt: lead.leadCreatedAt,
+      proposalSentAt: lead.proposalSentAt,
+      visitScheduledAt: lead.visitScheduledAt,
+      visitCompletedAt: lead.visitCompletedAt,
+      closedAt: lead.closedAt,
     },
-    formatter: ({ label, oldValue, newValue }) =>
-      `Actualizó ${label} del lead '${existing.clientName}' de ${oldValue ?? "vacío"} a ${newValue ?? "vacío"}`,
+    labels: FECHA_LABEL,
+    formatter: ({ field, label, oldValue, newValue }) => {
+      const fmt = (v: string | null) => (v && field in FECHA_LABEL ? fechaUruguayCorta(v) : v);
+      return `Actualizó ${label} del lead '${existing.clientName}' de ${fmt(oldValue) ?? "vacío"} a ${fmt(newValue) ?? "vacío"}`;
+    },
     metadata: params.metadata,
   });
 

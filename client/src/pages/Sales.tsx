@@ -50,6 +50,7 @@ import type { ProposalVariante } from "../types/proposals-v2";
 import { ProposalPreviewModal } from "../components/sales/ProposalPreviewModal";
 import { StageSelect } from "../components/sales/StageSelect";
 import { usePermission } from "../hooks/usePermission";
+import { diaUruguay, inicioDiaUruguayIso } from "../utils/date";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { Sheet } from "../components/ui/Sheet";
 import { Button } from "../components/ui/Button";
@@ -625,11 +626,11 @@ function LeadPanel({
     });
     setLostReason(lead.lostReason ?? "");
     setDates({
-      leadCreatedAt: lead.leadCreatedAt ? lead.leadCreatedAt.slice(0, 10) : "",
-      proposalSentAt: lead.proposalSentAt ? lead.proposalSentAt.slice(0, 10) : "",
-      visitScheduledAt: lead.visitScheduledAt ? lead.visitScheduledAt.slice(0, 10) : "",
-      visitCompletedAt: lead.visitCompletedAt ? lead.visitCompletedAt.slice(0, 10) : "",
-      closedAt: lead.closedAt ? lead.closedAt.slice(0, 10) : "",
+      leadCreatedAt: diaUruguay(lead.leadCreatedAt),
+      proposalSentAt: diaUruguay(lead.proposalSentAt),
+      visitScheduledAt: diaUruguay(lead.visitScheduledAt),
+      visitCompletedAt: diaUruguay(lead.visitCompletedAt),
+      closedAt: diaUruguay(lead.closedAt),
     });
   }, [lead]);
 
@@ -658,11 +659,11 @@ function LeadPanel({
   const datesMutation = useMutation({
     mutationFn: () =>
       patchLead(leadId, {
-        leadCreatedAt: dates.leadCreatedAt ? new Date(dates.leadCreatedAt).toISOString() : null,
-        proposalSentAt: dates.proposalSentAt ? new Date(dates.proposalSentAt).toISOString() : null,
-        visitScheduledAt: dates.visitScheduledAt ? new Date(dates.visitScheduledAt).toISOString() : null,
-        visitCompletedAt: dates.visitCompletedAt ? new Date(dates.visitCompletedAt).toISOString() : null,
-        closedAt: dates.closedAt ? new Date(dates.closedAt).toISOString() : null,
+        leadCreatedAt: dates.leadCreatedAt ? inicioDiaUruguayIso(dates.leadCreatedAt) : null,
+        proposalSentAt: dates.proposalSentAt ? inicioDiaUruguayIso(dates.proposalSentAt) : null,
+        visitScheduledAt: dates.visitScheduledAt ? inicioDiaUruguayIso(dates.visitScheduledAt) : null,
+        visitCompletedAt: dates.visitCompletedAt ? inicioDiaUruguayIso(dates.visitCompletedAt) : null,
+        closedAt: dates.closedAt ? inicioDiaUruguayIso(dates.closedAt) : null,
       }),
     onSuccess: () => {
       toast.success("Fechas actualizadas");
