@@ -523,7 +523,7 @@ export function registerProyectosTools(server: McpServer, user: McpUser) {
           : "";
         return (
           `- ${a.filename} (${fechaCorta(a.createdAt)})${origen}\n` +
-          `  ${buildDownloadUrl(user.id, "project-file", a.id)}`
+          `  ${buildDownloadUrl(user.id, "project-file", a.id, a.filename)}`
         );
       });
 

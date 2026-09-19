@@ -34,6 +34,7 @@
 #### Arreglos
 
 - **Las métricas cortan los días a la medianoche de Uruguay en todos lados.** El dashboard cerraba cada día a las 21:00 (la medianoche de otro huso horario): un lead cargado el 31 de marzo a las 22:00 contaba en abril. Ahora el dashboard, el mail de los lunes y el chat cuentan igual.
+- **El PDF de una propuesta bajado desde el chat se guardaba con un código como nombre.** Ahora se guarda como "Propuesta Comercial Voltia - Cliente - V1.pdf", igual que desde la app. Lo mismo con los demás documentos que se abren desde el chat.
 - **Una fecha del lead cargada a mano se veía un día antes en el listado de leads** (por ejemplo, una propuesta cargada el 15/6 aparecía como 14/6). Ahora se ve el mismo día en el panel, el listado y las métricas, también para las fechas que ya estaban cargadas.
 - **El mail de los lunes podía anotar una obra en la semana equivocada**: una obra terminada un lunes quedaba en la semana anterior. Lo mismo con los gastos cargados un lunes.
 

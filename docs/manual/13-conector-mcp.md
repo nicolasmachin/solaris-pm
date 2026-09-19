@@ -413,10 +413,22 @@ Las herramientas que devuelven documentos generan una URL con un token de **15
 minutos** atado al documento concreto:
 
 ```
-/mcp/descargas/proposal-version/<id>?t=<token>      propuestas nuevas
-/mcp/descargas/proposal-generation/<id>?t=<token>   propuestas del generador viejo
-/mcp/descargas/project-file/<id>?t=<token>          documentos de proyecto y reportes
+/mcp/descargas/proposal-version/<id>/<nombre>?t=<token>      propuestas nuevas
+/mcp/descargas/proposal-generation/<id>/<nombre>?t=<token>   propuestas del generador viejo
+/mcp/descargas/project-file/<id>/<nombre>?t=<token>          documentos de proyecto y reportes
+/mcp/descargas/lead-file/<id>/<nombre>?t=<token>             adjuntos del cliente potencial
 ```
+
+**El nombre del archivo va al final de la ruta** (`buildDownloadUrl()`, cuarto
+parámetro). Los navegadores, y sobre todo el iPhone al compartir o guardar un
+PDF abierto en pantalla, ignoran el `filename` del `Content-Disposition` y
+nombran el archivo con el último tramo de la URL: sin el nombre, el PDF se
+guardaba como el id (`47b5effe-….pdf`). El servidor no lee ese tramo (el archivo
+sale del id y el token) y es opcional, así que los enlaces sin nombre siguen
+sirviendo. Las propuestas se nombran igual que en la app,
+`Propuesta Comercial Voltia - {cliente} - V{n}.pdf` (`nombrePdfPropuesta()`,
+`nombrePdfPropuestaVieja()`), y todos los encabezados usan `contentDisposition()`,
+que tolera tildes en el nombre.
 
 El token lleva `typ: "mcp-download"` y el identificador del recurso. Sin ese
 segundo dato, el token de un PDF serviría para bajar cualquier otro conociendo

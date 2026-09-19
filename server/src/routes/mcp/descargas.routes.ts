@@ -32,15 +32,40 @@ type RecursoDescargable =
   | "lead-file";
 
 /** Arma la URL completa con su token. */
-export function buildDownloadUrl(userId: string, tipo: RecursoDescargable, id: string): string {
+export function buildDownloadUrl(
+  userId: string,
+  tipo: RecursoDescargable,
+  id: string,
+  nombreArchivo?: string | null,
+): string {
   const recurso = `${tipo}:${id}`;
   const token = signDownloadToken(userId, recurso);
-  return `${issuerUrl()}/mcp/descargas/${tipo}/${id}?t=${token}`;
+  // El nombre va al final de la ruta porque es lo que usan los navegadores
+  // (sobre todo en el celular) al guardar un PDF abierto en pantalla: ignoran
+  // el filename del Content-Disposition y toman el último tramo de la URL. El
+  // servidor no lo lee — el archivo sale del id y el token —, es solo el nombre.
+  const sufijo = nombreArchivo ? `/${encodeURIComponent(nombreArchivo)}` : "";
+  return `${issuerUrl()}/mcp/descargas/${tipo}/${id}${sufijo}?t=${token}`;
+}
+
+/** Nombre del PDF de una propuesta v2, igual que al descargarla desde la app. */
+export function nombrePdfPropuesta(
+  version: { snapshot: unknown; versionNumber: number },
+  clientNameFallback?: string | null,
+): string {
+  const snapshot = version.snapshot as { data?: { cliente?: { nombre?: string } } } | null;
+  const clientName = snapshot?.data?.cliente?.nombre ?? clientNameFallback ?? "Cliente";
+  return versionPdfFilename("full", clientName, version.versionNumber);
+}
+
+/** Nombre del PDF de una propuesta del generador anterior (mismo esquema que la app). */
+export function nombrePdfPropuestaVieja(clientName: string | null | undefined, version: number): string {
+  return versionPdfFilename("full", clientName || "Cliente", version);
 }
 
 export async function registerMcpDescargasRoutes(app: FastifyInstance) {
   app.get(
-    "/mcp/descargas/proposal-version/:versionId",
+    "/mcp/descargas/proposal-version/:versionId/:nombre?",
     async (request: FastifyRequest, reply: FastifyReply) => {
       const { versionId } = request.params as { versionId: string };
       const { t } = request.query as { t?: string };
@@ -79,8 +104,6 @@ export async function registerMcpDescargasRoutes(app: FastifyInstance) {
           .send({ error: true, message: "Esa versión de la propuesta fue descartada" });
       }
 
-      const snapshot = version.snapshot as { data?: { cliente?: { nombre?: string } } };
-      const clientName = snapshot?.data?.cliente?.nombre ?? "Cliente";
 
       let pdf: Buffer;
       try {
@@ -93,10 +116,7 @@ export async function registerMcpDescargasRoutes(app: FastifyInstance) {
 
       return reply
         .header("Content-Type", "application/pdf")
-        .header(
-          "Content-Disposition",
-          `inline; filename="${versionPdfFilename("full", clientName, version.versionNumber)}"`,
-        )
+        .header("Content-Disposition", contentDisposition("inline", nombrePdfPropuesta(version)))
         // El enlace es de un solo destinatario y de vida corta: que no quede
         // cacheado en el camino.
         .header("Cache-Control", "no-store")
@@ -107,7 +127,7 @@ export async function registerMcpDescargasRoutes(app: FastifyInstance) {
   // Propuestas del generador anterior. El archivo se guarda con ruta absoluta
   // en disco, no bajo el storage de adjuntos.
   app.get(
-    "/mcp/descargas/proposal-generation/:proposalId",
+    "/mcp/descargas/proposal-generation/:proposalId/:nombre?",
     async (request: FastifyRequest, reply: FastifyReply) => {
       const { proposalId } = request.params as { proposalId: string };
       const { t } = request.query as { t?: string };
@@ -132,6 +152,7 @@ export async function registerMcpDescargasRoutes(app: FastifyInstance) {
 
       const proposal = await prisma.proposalGeneration.findUnique({
         where: { id: proposalId },
+        include: { lead: { select: { clientName: true } } },
       });
       if (!proposal || proposal.discardedAt) {
         return reply.code(404).send({ error: true, message: "No existe esa propuesta" });
@@ -149,7 +170,10 @@ export async function registerMcpDescargasRoutes(app: FastifyInstance) {
 
       return reply
         .header("Content-Type", "application/pdf")
-        .header("Content-Disposition", `inline; filename="propuesta-v${proposal.version}.pdf"`)
+        .header(
+          "Content-Disposition",
+          contentDisposition("inline", nombrePdfPropuestaVieja(proposal.lead?.clientName, proposal.version)),
+        )
         .header("Cache-Control", "no-store")
         .send(fs.createReadStream(proposal.outputFilePath));
     },
@@ -159,7 +183,7 @@ export async function registerMcpDescargasRoutes(app: FastifyInstance) {
   // Mismo manejo que los de proyecto — se separa el tipo para que un token de
   // un adjunto de lead no sirva para uno de proyecto ni al revés.
   app.get(
-    "/mcp/descargas/lead-file/:fileId",
+    "/mcp/descargas/lead-file/:fileId/:nombre?",
     async (request: FastifyRequest, reply: FastifyReply) => {
       const { fileId } = request.params as { fileId: string };
       const { t } = request.query as { t?: string };
@@ -206,7 +230,7 @@ export async function registerMcpDescargasRoutes(app: FastifyInstance) {
   // Documentos de un proyecto: unifilar, pre-ingeniería, proyecto final,
   // presupuestos. Cualquier FileAttachment que cuelgue de un proyecto.
   app.get(
-    "/mcp/descargas/project-file/:fileId",
+    "/mcp/descargas/project-file/:fileId/:nombre?",
     async (request: FastifyRequest, reply: FastifyReply) => {
       const { fileId } = request.params as { fileId: string };
       const { t } = request.query as { t?: string };

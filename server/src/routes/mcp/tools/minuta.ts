@@ -116,7 +116,7 @@ export function registerMinutaTools(server: McpServer, user: McpUser) {
           `No pude leer el texto de "${elegida.filename}" — probablemente sea un ` +
             `escaneado sin reconocimiento de texto.`,
           `Para abrirlo a mano (el enlace vence en 15 minutos):\n` +
-            buildDownloadUrl(user.id, "lead-file", elegida.id),
+            buildDownloadUrl(user.id, "lead-file", elegida.id, elegida.filename),
         );
       }
 
@@ -231,7 +231,7 @@ export function registerMinutaTools(server: McpServer, user: McpUser) {
         } catch {
           bloques.push(
             `- ${meta}\n  Sin texto extraíble (escaneado). Enlace: ` +
-              buildDownloadUrl(user.id, "lead-file", p.id),
+              buildDownloadUrl(user.id, "lead-file", p.id, p.filename),
           );
         }
       }

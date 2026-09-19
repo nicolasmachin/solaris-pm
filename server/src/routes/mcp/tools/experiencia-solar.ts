@@ -186,8 +186,12 @@ export function registerExperienciaSolarTools(server: McpServer, user: McpUser) 
       }
 
       const ultima = emisiones[0];
+      // El nombre del archivo, para que el PDF se guarde con su nombre y no con el id.
+      const adjunto = ultima.fileAttachmentId
+        ? await prisma.fileAttachment.findUnique({ where: { id: ultima.fileAttachmentId }, select: { filename: true } })
+        : null;
       const enlace = ultima.fileAttachmentId
-        ? buildDownloadUrl(user.id, "project-file", ultima.fileAttachmentId)
+        ? buildDownloadUrl(user.id, "project-file", ultima.fileAttachmentId, adjunto?.filename)
         : null;
 
       // Los números del período salen de la fila del panel, que es donde el

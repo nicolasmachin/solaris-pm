@@ -24,7 +24,7 @@ import type { DraftDataPublish } from "../../../services/proposal/schemas/draft.
 import { interpretarMarkup } from "../../../services/proposal/calculator.js";
 import { publishVersion } from "../../../services/proposal/version.service.js";
 import { requirePermission, type McpUser } from "../context.js";
-import { buildDownloadUrl } from "../descargas.routes.js";
+import { buildDownloadUrl, nombrePdfPropuesta } from "../descargas.routes.js";
 import { hasPermission } from "../../../middleware/authorize.middleware.js";
 import { campos, pesos, porcentaje, texto, usd } from "../format.js";
 
@@ -344,7 +344,7 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
       }
 
       const version = await publishVersion(lead.id, user.id, VARIANTE);
-      const enlace = buildDownloadUrl(user.id, "proposal-version", version.id);
+      const enlace = buildDownloadUrl(user.id, "proposal-version", version.id, nombrePdfPropuesta(version, lead.clientName));
 
       const movio =
         lead.stage === "NUEVO_LEAD"

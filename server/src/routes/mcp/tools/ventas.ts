@@ -24,7 +24,7 @@ import { getVersionById } from "../../../services/proposal/version.service.js";
 import { requirePermission, type McpUser } from "../context.js";
 import { campos, ETAPA_LABEL, fechaCorta, fechaLarga, fechaLargaUruguay, pesos, porcentaje, texto, usd } from "../format.js";
 import { diaManualUruguay } from "../../../utils/uruguay.js";
-import { buildDownloadUrl } from "../descargas.routes.js";
+import { buildDownloadUrl, nombrePdfPropuesta, nombrePdfPropuestaVieja } from "../descargas.routes.js";
 
 /** Marca de origen para la auditoría. */
 function auditMeta(tool: string) {
@@ -334,7 +334,7 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
               `${lead.clientName} tiene una propuesta del generador anterior ` +
                 `(v${vieja.version}, del ${fechaCorta(vieja.createdAt)}). De esas no ` +
                 `guardamos los números desglosados, así que solo puedo darte el PDF.`,
-              `PDF (el enlace vence en 15 minutos):\n${buildDownloadUrl(user.id, "proposal-generation", vieja.id)}`,
+              `PDF (el enlace vence en 15 minutos):\n${buildDownloadUrl(user.id, "proposal-generation", vieja.id, nombrePdfPropuestaVieja(lead.clientName, vieja.version))}`,
             );
           }
 
@@ -450,7 +450,7 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
         ["60 cuotas", pesos(calc.cuota60m)],
       ]);
 
-      const enlace = buildDownloadUrl(user.id, "proposal-version", version.id);
+      const enlace = buildDownloadUrl(user.id, "proposal-version", version.id, nombrePdfPropuesta(version, lead.clientName));
 
       return texto(
         `Propuesta v${version.versionNumber} de ${lead.clientName} — publicada el ${fechaLarga(version.publishedAt)}`,
