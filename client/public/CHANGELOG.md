@@ -10,6 +10,11 @@
 - Se muestran **solo los cobros efectivos**, no los previstos: un cobro planificado es trabajo nuestro, no algo que el cliente hizo, y el plan de pagos crea cuatro por proyecto.
 - **Los gastos de la obra no aparecen.** Los costos de materiales y las comisiones no son del cliente y no van en su ficha.
 
+#### Arreglos
+
+- **Se puede habilitar a un rol a comentar tickets de soporte sin darle el manejo del ticket.** El tilde **Comentar** de la pantalla de permisos no tenía efecto en los tickets: quien lo tenía veía la caja de comentarios, escribía, y al enviar le aparecía que no tenía permiso. Ahora funciona, y quien comenta no queda habilitado a derivar, poner en progreso, resolver ni cerrar.
+- A quien no puede comentar un ticket **ya no se le muestra la caja de comentarios**, en lugar de avisarle recién cuando aprieta Comentar.
+
 ## v10.9
 
 ### 19 de septiembre de 2026

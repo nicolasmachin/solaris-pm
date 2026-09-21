@@ -40,6 +40,11 @@ export function TicketDetail({ ticketId, onClose }: { ticketId: string; onClose:
   const [esInterno, setEsInterno] = useState(false);
   const [area, setArea] = useState<AreaDerivable>("INGENIERIA");
 
+  // La caja de comentarios se mostraba a cualquiera que pudiera ver el ticket,
+  // así que un rol sin permiso escribía el comentario y recién al enviarlo le
+  // saltaba el error. Se oculta si no puede comentar.
+  const canComment = usePermission("TICKETS", "COMMENT") || usePermission("TICKETS", "EDIT");
+
   // Edición inline y confirmación de borrado.
   const canDelete = usePermission("TICKETS", "DELETE");
   const [editing, setEditing] = useState(false);
@@ -217,7 +222,7 @@ export function TicketDetail({ ticketId, onClose }: { ticketId: string; onClose:
             )}
 
             {/* Nuevo comentario */}
-            {!cerrado && (
+            {!cerrado && canComment && (
               <div className="space-y-2">
                 <textarea value={comentario} onChange={(e) => setComentario(e.target.value)} rows={2} maxLength={4000} placeholder="Escribí un comentario…" className={`${inputClass} resize-none`} />
                 <div className="flex items-center justify-between">

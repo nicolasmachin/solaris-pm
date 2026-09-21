@@ -2,7 +2,7 @@
 //   GET  /tickets                 (VIEW)   — lista con filtros
 //   GET  /tickets/:id             (VIEW)   — detalle (incluye comentarios internos)
 //   POST /tickets                 (CREATE) — abrir
-//   POST /tickets/:id/comentarios (EDIT)
+//   POST /tickets/:id/comentarios (COMMENT o EDIT)
 //   POST /tickets/:id/derivar     (EDIT)   — dispara T9
 //   POST /tickets/:id/en-progreso (EDIT)
 //   POST /tickets/:id/resolver    (EDIT)   — dispara T10
@@ -14,7 +14,7 @@ import { z } from "zod";
 
 import { prisma } from "../lib/prisma.js";
 import { authenticate } from "../middleware/auth.middleware.js";
-import { authorize } from "../middleware/authorize.middleware.js";
+import { authorize, authorizeAny } from "../middleware/authorize.middleware.js";
 import { badRequest } from "../utils/errors.js";
 import {
   actualizarTicket,
@@ -130,7 +130,16 @@ export async function registerTicketsRoutes(app: FastifyInstance) {
     return null;
   });
 
-  app.post("/tickets/:id/comentarios", { preHandler: authorize(Module.TICKETS, Action.EDIT) }, async (request) => {
+  // Comentar es lo más liviano que se puede hacer sobre un ticket, y la pantalla
+  // de permisos ofrece TICKETS:COMMENT desde que existe el módulo. Hasta ahora
+  // esta ruta pedía EDIT, así que tildar "Comentar" a un rol no hacía nada: veía
+  // la caja de comentarios y al enviar le volvía un 403. Se acepta COMMENT o
+  // EDIT (los roles que ya tenían EDIT siguen comentando igual) para que un rol
+  // pueda sumarse a la conversación sin poder además derivar, resolver ni cerrar.
+  app.post("/tickets/:id/comentarios", { preHandler: authorizeAny([
+    { module: Module.TICKETS, action: Action.COMMENT },
+    { module: Module.TICKETS, action: Action.EDIT },
+  ]) }, async (request) => {
     const user = ensureUser(request);
     const { id } = z.object({ id: z.string() }).parse(request.params);
     const body = z

@@ -701,9 +701,19 @@ nosotros.
 | Ver y editar la ficha del cliente, registrar interacciones | `EXPERIENCIA_CLIENTES` | ADMIN, ASESOR_COMERCIAL, GERENTE_COMERCIAL, POSTVENTA, EXPERIENCIA_SOLAR |
 | Ver el panel de clientes sin comunicación | `OPERACIONES:VIEW` | incluye a EXPERIENCIA_SOLAR |
 | Tickets | `TICKETS` | VIEW / CREATE / EDIT para las áreas internas; DELETE sólo ADMIN |
+| Comentar un ticket | `TICKETS:COMMENT` **o** `TICKETS:EDIT` | las áreas internas por su EDIT; los roles que sólo miran, con COMMENT |
 | Encuestas | `ENCUESTAS:VIEW` | sólo lectura: las genera el sistema y las responde el cliente |
 | Confirmar traspasos | `TRASPASOS:VIEW/CONFIRM` | EXPERIENCIA_SOLAR entre otros |
 | Recibir el resumen diario del recorrido | ninguno — es opt-in por rol en **Administración → Resumen diario** | EXPERIENCIA_SOLAR, POSTVENTA (cargados por el seed) |
+
+**Comentar un ticket no es editarlo.** `POST /tickets/:id/comentarios` acepta
+`TICKETS:COMMENT` o `TICKETS:EDIT` (`authorizeAny`), así que a un rol que sólo
+sigue los casos —Logística, por ejemplo— se le puede dar COMMENT para que se
+sume a la conversación sin habilitarlo a derivar, poner en progreso, resolver ni
+cerrar, que siguen pidiendo EDIT. Hasta el 21-sep-2026 la ruta pedía EDIT y el
+tilde "Comentar" de la pantalla de permisos no hacía nada: el rol veía la caja de
+comentarios y al enviar le volvía un 403. Para aplicarlo en un entorno:
+`prisma/scripts/grant-tickets-comment.ts` (sin `--rol` sólo diagnostica).
 
 **`OPERACIONES` e `INGENIERIA` no tienen `EXPERIENCIA_CLIENTES:CREATE`**, así que
 no pueden cargar en la bitácora del cliente — pero **sí pueden comentar el
