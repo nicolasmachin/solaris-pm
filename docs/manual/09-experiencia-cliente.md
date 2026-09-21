@@ -457,6 +457,7 @@ viene**, no qué tipo de cosa es (eso lo dice el ícono):
 | **Trámite UTE** | Los 11 hitos del trámite y su etapa |
 | **Experiencia Solar** | La bitácora de interacciones y los correos al cliente |
 | **Documentos** | Contrato, proforma y propuesta emitidos |
+| **Cobros** | Los pagos que hizo el cliente |
 | **Ticket** / **Encuesta** | Reclamos y respuestas del cliente |
 
 Tres reglas que la gobiernan:
@@ -471,11 +472,29 @@ Tres reglas que la gobiernan:
 
 **Qué NO entra** (`ENTIDADES_DEL_CLIENTE`). El log agrupa por proyecto todo lo que
 pasa alrededor, así que el historial filtra por entidad además de por acción. Sin
-ese filtro entraban cambios de estado de **movimientos financieros**
-("PREVISTO → PAGADO"), de **tickets** —que ya llegan por su propia fuente— y de
-informes internos: medido en desarrollo, de los `status_changed` con proyecto, 12
-eran de tickets y 11 de finanzas. Es una **allowlist** a propósito: el log crece
-con cada módulo nuevo y una denylist dejaría entrar lo próximo sin que nadie lo note.
+ese filtro entraban cambios de estado de **tickets** —que ya llegan por su propia
+fuente— y de informes internos. Es una **allowlist** a propósito: el log crece con
+cada módulo nuevo y una denylist dejaría entrar lo próximo sin que nadie lo note.
+
+**Los cobros del cliente** se leen de `FinanceMovement`, **no del registro de
+auditoría**, y por eso `finance_movement` sigue fuera de la allowlist. Los tres
+recortes:
+
+- **Se lee la tabla, no el log.** En los `status_changed` de finanzas `newValue`
+  viene **vacío** (el estado está sólo dentro del texto de la descripción), y
+  medido en producción **36 cobros nunca tuvieron un cambio de estado** porque se
+  registraron ya cobrados. Contra la tabla el dato es exacto; contra el log habría
+  que adivinarlo parseando descripciones.
+- **Sólo `tipoMovimiento = INGRESO`.** Un gasto de materiales o la comisión del
+  asesor no son del cliente. Quedan fuera 73 movimientos en producción.
+- **Sólo `status = PAGADO`**, con la fecha del movimiento (no la del registro). Un
+  cobro previsto es planificación nuestra, no algo que el cliente hizo, y el plan
+  de pagos crea cuatro por proyecto: listarlos llenaría el historial. Se excluyen
+  27 previstos.
+
+Medido en producción: **100 cobros visibles en 47 clientes**. El texto se arma
+desde el movimiento (`El cliente pagó: Seña — USD 500`), sacándole el prefijo
+`[PLAN] ` que usa el plan de pagos.
 
 **Un traspaso, una entrada.** El historial lo arma desde la tabla `Traspaso`, no
 desde la auditoría: antes el mismo hecho salía dos veces —al generarse y al

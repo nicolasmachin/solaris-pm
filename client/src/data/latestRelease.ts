@@ -23,6 +23,21 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "11.0",
+  date: "21 de septiembre de 2026",
+  sections: [
+    {
+      title: "Los pagos del cliente ahora aparecen en su historial",
+      items: [
+        "Cuando un cliente paga —la seña, una cuota, el saldo—, queda registrado en el historial de su ficha con la etiqueta Cobros: qué pagó, cuánto y cuándo. Antes había que ir a Finanzas a buscarlo.",
+        "Se muestran solo los cobros efectivos, no los previstos: un cobro planificado es trabajo nuestro, no algo que el cliente hizo.",
+        "Los gastos de la obra no aparecen: los costos de materiales y las comisiones no son del cliente.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_10_9: Release = {
   version: "10.9",
   date: "19 de septiembre de 2026",
   sections: [
@@ -199,6 +214,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "10.9",
+    shortDate: "19 sep",
+    highlights: RELEASE_10_9.sections.map((sec) => sec.title),
+  },
   {
     version: "10.8",
     shortDate: "18 sep",

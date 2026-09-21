@@ -1,5 +1,15 @@
 # Novedades
 
+## v11.0
+
+### 21 de septiembre de 2026
+
+#### Los pagos del cliente ahora aparecen en su historial
+
+- Cuando un cliente paga —la seña, una cuota, el saldo—, **queda registrado en el historial de su ficha** con la etiqueta **Cobros**: qué pagó, cuánto y cuándo. Antes no se veía por ningún lado y había que ir a Finanzas a buscarlo.
+- Se muestran **solo los cobros efectivos**, no los previstos: un cobro planificado es trabajo nuestro, no algo que el cliente hizo, y el plan de pagos crea cuatro por proyecto.
+- **Los gastos de la obra no aparecen.** Los costos de materiales y las comisiones no son del cliente y no van en su ficha.
+
 ## v10.9
 
 ### 19 de septiembre de 2026

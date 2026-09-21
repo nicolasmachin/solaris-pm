@@ -18,7 +18,7 @@
 // memoria (getCurrentStage no es expresable en SQL); por eso ordenamos y
 // paginamos también en memoria. La cartera es de cientos de proyectos.
 
-import { Prisma, ProjectStatus, InteractionReason, AuditAction, type InteractionChannel, type InteractionDirection, type StageType, AuditEntityType, SubstageStatus } from "@prisma/client";
+import { Prisma, ProjectStatus, InteractionReason, AuditAction, type InteractionChannel, type InteractionDirection, type StageType, AuditEntityType, SubstageStatus, TipoMovimiento, FinanceMovementStatus } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { getStageLabel } from "../pipeline-definitions.js";
@@ -806,7 +806,8 @@ export interface TimelineItem {
     | "client"
     | "ticket"
     | "survey"
-    | "docs";
+    | "docs"
+    | "cobros";
   kind: "stage_change" | "comment" | "interaction" | "document" | "handoff" | "ticket" | "survey";
   text: string;
   autor: { id: string; nombre: string } | null;
@@ -967,6 +968,55 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
       automatico: !e.user,
       createdAt: serializeDate(e.timestamp) ?? "",
       meta: { action: e.action },
+    });
+  }
+
+  // 4-bis. Los cobros al cliente.
+  //
+  // Faltaban en el historial y no por descuido: los movimientos financieros
+  // estaban excluidos a propósito porque llegaban como "Transición PREVISTO →
+  // PAGADO en movimiento [PLAN] Seña", que nadie entiende, mezclados con
+  // comisiones, pagos a proveedores y ajustes de factura.
+  //
+  // Pero **que el cliente pague sí es del cliente**: es lo primero que se mira
+  // cuando llama. Entran entonces con tres decisiones:
+  //
+  //  - **Se leen los movimientos, no el registro de auditoría.** Ese registro no
+  //    sirve para esto: en los cambios de estado `newValue` viene vacío (el dato
+  //    está sólo dentro del texto), y **36 cobros en producción nunca tuvieron un
+  //    cambio de estado** porque se registraron ya cobrados. Mirando la tabla, el
+  //    dato es exacto y no hay que adivinarlo.
+  //  - **Sólo ingresos.** Un gasto de materiales o la comisión del asesor no son
+  //    del cliente y no tienen por qué estar en su ficha.
+  //  - **Sólo lo efectivamente cobrado**, con la fecha del cobro. Un cobro
+  //    previsto es planificación nuestra, no algo que el cliente hizo; además el
+  //    plan de pagos crea cuatro por proyecto y llenarían el historial.
+  const cobros = await prisma.financeMovement.findMany({
+    where: {
+      projectId,
+      deletedAt: null,
+      tipoMovimiento: TipoMovimiento.INGRESO,
+      status: FinanceMovementStatus.PAGADO,
+    },
+    select: {
+      id: true, descripcion: true, monto: true, moneda: true, fecha: true,
+      creadoPor: { select: { id: true, name: true } },
+    },
+  });
+  for (const c of cobros) {
+    // El plan de pagos prefija "[PLAN] " en la descripción; al cliente eso no le
+    // dice nada.
+    const concepto = c.descripcion.replace(/^\[PLAN\]\s*/, "").trim();
+    const importe = decimalToNumber(c.monto)?.toLocaleString("es-UY") ?? "";
+    items.push({
+      id: `fm-${c.id}`,
+      source: "cobros",
+      kind: "document",
+      text: `El cliente pagó: ${concepto} — ${c.moneda} ${importe}`,
+      autor: c.creadoPor ? { id: c.creadoPor.id, nombre: c.creadoPor.name } : null,
+      automatico: !c.creadoPor,
+      createdAt: serializeDate(c.fecha) ?? "",
+      meta: { movimientoId: c.id },
     });
   }
 

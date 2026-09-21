@@ -144,7 +144,8 @@ export interface TimelineItem {
     | "client"
     | "ticket"
     | "survey"
-    | "docs";
+    | "docs"
+    | "cobros";
   kind: "stage_change" | "comment" | "interaction" | "document" | "handoff" | "ticket" | "survey";
   text: string;
   autor: { id: string; nombre: string } | null;

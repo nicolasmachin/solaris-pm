@@ -41,6 +41,9 @@ const SOURCE_META: Record<TimelineItem["source"], { label: string; className: st
   ute: { label: "Trámite UTE", className: "bg-sky-500/15 text-sky-400" },
   client: { label: "Experiencia Solar", className: "bg-emerald-500/15 text-emerald-400" },
   docs: { label: "Documentos", className: "bg-slate-500/20 text-slate-300" },
+  // Los cobros del cliente tienen etiqueta propia: no son "Operaciones" ni
+  // "Documentos", y es lo primero que se mira cuando el cliente llama por plata.
+  cobros: { label: "Cobros", className: "bg-lime-500/15 text-lime-400" },
   ticket: { label: "Ticket", className: "bg-amber-500/15 text-amber-500" },
   survey: { label: "Encuesta", className: "bg-teal-500/15 text-teal-400" },
 };
