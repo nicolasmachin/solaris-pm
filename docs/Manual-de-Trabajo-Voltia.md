@@ -1,6 +1,6 @@
 # Cómo trabajamos en Voltia
 
-**Manual de trabajo** · Versión 1.0 — 9 de septiembre de 2026
+**Manual de trabajo** · Versión 1.1 — 23 de septiembre de 2026
 
 > Este manual explica **qué tiene que hacer cada uno y cómo hacerlo en Voltia PM**.
 > No hay dos documentos: el procedimiento y la herramienta van juntos, porque
@@ -195,6 +195,28 @@ presentación»**. Tiene el mensaje modelo listo para copiar.
 Todo lo que juntaste en la visita —**el resumen, la minuta, las fotos, los
 videos**— tiene que estar cargado en el proyecto. **Con eso trabaja
 Pre-Ingeniería.** Si falta, arrancan a ciegas.
+
+### 3.4 · El cotizador
+
+**Ventas → el lead → Armar propuesta.** Cargás los datos y el precio se calcula
+solo. Tres cosas que conviene saber:
+
+**Podés cotizar varias instalaciones juntas.** Si el cliente quiere dos techos o
+dos padrones, poné más de uno en **Cantidad de inversores**. La potencia que
+cargás es la de **un** inversor y los paneles van **sumados** entre las dos. Se
+multiplican el inversor y la instalación eléctrica; el resto no.
+
+**Podés ajustar los costos de esa cotización.** El **ícono de calculadora** del
+encabezado abre el costeo: el precio de cada ítem, la mano de obra, los costos
+fijos y variables. Sirve cuando el caso se sale de la norma —un proveedor que
+cambió el precio, una obra con acceso difícil—. **Lo que cambiás vale solo para
+esa cotización**, no toca las demás ni la configuración general, y se guarda
+solo. Un campo en blanco usa el valor de siempre.
+
+**La comisión se registra sola.** Cuando ganás la venta, el sistema toma el
+precio de la última propuesta publicada y congela tu comisión con ese número. Ya
+no hay que cargarla a mano; el modal que aparece es para corregirla si el precio
+cerrado fue otro.
 
 ### A quién le preguntás qué
 
@@ -525,7 +547,30 @@ pierde y no se recupera. A las 48 horas escala a Administración.
 qué generación esperar hoy. Sin ese último dato el cliente no sabe si lo que ve
 está bien o mal.
 
-### 8.6 · Cuando necesitás saber algo
+### 8.6 · Los reportes de generación
+
+**Experiencia Solar → Reportes.** Cada cliente recibe un reporte mensual con lo
+que generó su sistema.
+
+**El envío ya no es por mes calendario, es por fecha de corte.** Cada generador
+tiene el día en que UTE le cierra la factura, y el reporte sale cuando le toca a
+cada uno. El botón **Enviar pendientes** manda los que están en fecha; no hay que
+esperar a fin de mes ni mandarlos todos juntos.
+
+**El reporte dice qué días cubre.** Arriba de todo aparece el período exacto —del
+tal al tal, tantos días— porque un ciclo de UTE no arranca el día 1. Sin eso, el
+cliente comparaba contra su factura y los números no le cerraban.
+
+### 8.7 · Los pagos del cliente
+
+En el **historial de su ficha** aparecen ahora los cobros con la etiqueta
+**Cobros**: qué pagó, cuánto y cuándo. Antes había que ir a Finanzas a buscarlo.
+
+Se muestran **solo los cobros efectivos**, no los previstos: un cobro planificado
+es trabajo nuestro, no algo que el cliente hizo. Los gastos de la obra tampoco
+aparecen, porque no son del cliente.
+
+### 8.8 · Cuando necesitás saber algo
 
 > **No deberías tener que preguntarle a nadie.**
 
@@ -539,7 +584,7 @@ resto lo mirás.
 **Si algo no está, pedilo — pero al gerente del área, no a la persona.** Y si es
 una demora, lo que corresponde es que el área haya dejado el motivo.
 
-### 8.7 · Los otros avisos del acompañamiento
+### 8.9 · Los otros avisos del acompañamiento
 
 Además de los cuatro críticos:
 
@@ -623,6 +668,11 @@ dos formas sirven igual. Si no sabés cuál es el tuyo, te lo dice Administraci�
 | **Experiencia Solar** | Los Generadores, el Recorrido, encuestas y reportes |
 | **Trámites UTE** | Los trámites y sus hitos |
 
+Y en el **menú de tu usuario**, arriba a la derecha, está **Capacitación**:
+videos y documentos para aprender a usar la app, divididos por área. Cada uno ve
+los de su rol. Los videos se miran dentro de la app, con una lista al costado que
+marca cuáles ya viste y recuerda por dónde ibas.
+
 ### El proyecto
 
 Entrás desde **Proyectos** y elegís el cliente en la lista de la izquierda (se
@@ -650,6 +700,18 @@ Entrás desde **Experiencia Solar** y elegís el cliente. Es **una sola pantalla
   contacto nuevo.
 - **Más abajo**: el **trámite UTE** desplegado con todos sus hitos — es lo mismo
   que el cliente ve en su portal.
+
+### El calendario
+
+**Ya no es solo de obras.** Además de las instalaciones se agenda **cualquier
+cosa que ocupe a alguien**: visitas de relevamiento, trámites, mantenimientos, y
+una categoría **Otros** para lo que no entre en las demás.
+
+- Cada evento se asigna a un **equipo**, y el color del calendario es el del
+  equipo.
+- Lo agendado **se puede editar y eliminar**, no solo crear.
+- Las instalaciones siguen funcionando igual que siempre: al confirmar la fecha
+  se avisa solo a Experiencia Solar, y al reprogramar se pide el motivo.
 
 ### El Recorrido
 

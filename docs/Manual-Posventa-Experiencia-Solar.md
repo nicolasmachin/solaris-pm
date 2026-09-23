@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.1 — 8 de septiembre de 2026
+**Voltia · Uruguay** · Versión 1.2 — 23 de septiembre de 2026
 
 > Este manual es **el procedimiento y el manual de uso de la app, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -187,6 +187,21 @@ alcanza**.
 > **Si registrar cuesta, no se registra.** Un comentario de dos líneas desde el
 > celular en la obra vale infinitamente más que un informe prolijo que nadie
 > escribe.
+
+### Lo que aparece solo, sin que nadie lo escriba
+
+Además de los comentarios, el historial junta cosas que el sistema registra por
+su cuenta:
+
+- **Los avances de etapa** y los hitos del trámite UTE.
+- **Los documentos emitidos** — propuestas, contratos, reportes.
+- **Los pagos del cliente**, con la etiqueta **Cobros**: qué pagó, cuánto y
+  cuándo. Antes había que ir a Finanzas a buscarlo. Aparecen **solo los cobros
+  efectivos**, no los previstos —un cobro planificado es trabajo nuestro, no algo
+  que el cliente hizo—, y los gastos de la obra no aparecen porque no son suyos.
+
+Eso importa para la conversación: si el cliente llama por un pago, la respuesta
+está en su ficha y no hay que pedírsela a nadie.
 
 ### Lo que hoy no se puede
 
@@ -519,6 +534,17 @@ problema es anterior y hay que ir a buscarlo a Operaciones.
 
 Es **el único correo automático que el cliente va a recibir de nosotros en 25
 años**. Vale la pena decírselo así: no es spam, es su resumen mensual.
+
+**Cuándo le llega.** No es a fin de mes: **cada generador tiene su fecha de
+corte**, el día en que UTE le cierra la factura, y su reporte sale cuando le toca
+a él. En la pantalla de Reportes, el botón **Enviar pendientes** manda los que
+están en fecha. Por eso no hay un día del mes en que salgan todos juntos.
+
+**El reporte dice qué días cubre.** Arriba de todo aparece el período exacto —del
+tal al tal, tantos días—, porque un ciclo de UTE no arranca el 1 ni termina el
+30. Es lo que le permite al cliente comparar contra su factura y que los números
+le cierren. Si pregunta por qué un mes tiene 28 días y otro 33, la respuesta es
+esa: es el ciclo de su medidor, no un error.
 
 ### 7.4 · Repaso de garantías
 
