@@ -526,8 +526,10 @@ function SubstageRow({
               </CanAccess>
             )}
 
-            {/* Acción dedicada: generador de contrato */}
-            {substage.name === "Contrato" && (
+            {/* Acción dedicada: generador de contrato. Se muestra en la subetapa
+               "Contrato" (SOP nuevo) y también en "Contrato completo enviado" (SOP
+               viejo), para que los proyectos anteriores a la feature puedan generarlo. */}
+            {(substage.name === "Contrato" || substage.name === "Contrato completo enviado") && (
               <CanAccess module="ONBOARDING" action="EDIT">
                 <button
                   onClick={() => setContractOpen(true)}

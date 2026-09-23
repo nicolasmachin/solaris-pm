@@ -15,6 +15,7 @@
 
 #### Arreglos
 
+- **El generador de contrato aparece también en proyectos viejos.** Los proyectos creados antes de que existiera el generador tienen la subetapa de onboarding con el nombre anterior ("Contrato completo enviado") y no mostraban el botón "Generar contrato". Ahora aparece igual, así se puede generar el contrato de esos proyectos. La cláusula particular (por ejemplo, que la mano de obra incluye la instalación de un cargador de auto eléctrico) se escribe en el campo "Observaciones" y sale en el PDF.
 - **Cobros ya no muestra proyectos archivados.** Los clientes cuya venta se cayó y se archivaron seguían apareciendo en el listado de Cobros e inflaban el total pendiente de cobrar. Ahora Cobros muestra solo ventas reales (activas, en pausa o completadas): archivar un proyecto lo saca del listado y del total. Lo mismo al consultar cobros desde el chat de Claude, y en el **Flujo de fondos** (ya no proyecta los cobros de proyectos archivados).
 
 ## v11.0
