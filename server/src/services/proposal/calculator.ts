@@ -77,6 +77,9 @@ export function calculate(
   const dolar = data.cotizacion.cotizacionDolar;
   const { cantidadPaneles, potenciaPanelW, potenciaInversorKw } = data.sistema;
   const suministro = data.factura.suministro;
+  // Cuántas instalaciones cubre la propuesta. Ausente en snapshots anteriores a
+  // esta funcionalidad, que son de una sola instalación.
+  const cantidadInversores = Math.max(1, Math.trunc(data.sistema.cantidadInversores ?? 1));
 
   // ── 1. Helpers básicos ──
   const potenciaTotalKwp = (cantidadPaneles * potenciaPanelW) / 1000;
@@ -95,14 +98,23 @@ export function calculate(
     suministro === "monofásico"
       ? defaults.precioElectricaMonoUsdSinIva
       : defaults.precioElectricaTriUsdSinIva;
+  // Paneles de CADA instalación, no el total de la propuesta. Es lo que hace que
+  // cotizar dos instalaciones de 12 paneles cueste como dos de 12 y no como una
+  // de 24: tanto el escalón de la eléctrica como el precio del inversor escalan
+  // con el tamaño, y multiplicarlos después por la cantidad contaría dos veces.
+  // Se redondea para arriba porque con 25 paneles en 2 instalaciones una lleva
+  // 13 y otra 12: se cotiza sobre la más grande.
+  const panelesPorInstalacion = Math.ceil(cantidadPaneles / cantidadInversores);
+
   const precioElectricaFabrica =
-    precioElectricaBase * getMultiplicadorElectrica(cantidadPaneles, defaults.multiplicadorElectricaEscalones);
+    precioElectricaBase *
+    getMultiplicadorElectrica(panelesPorInstalacion, defaults.multiplicadorElectricaEscalones);
   const precioMeterFabrica =
     suministro === "monofásico" ? defaults.precioMeterMonoUsd : defaults.precioMeterTriUsd;
   const precioInversorFabrica = obtenerPrecioInversor(
     suministro,
     potenciaInversorKw,
-    cantidadPaneles,
+    panelesPorInstalacion,
     defaults,
   );
 
@@ -115,10 +127,13 @@ export function calculate(
   const estructuraPrecioUnitario =
     ajustes.estructuraPrecioUnitario ?? defaults.precioEstructuraUsdSinIva;
   const estructuraCantidad = ajustes.estructuraCantidad ?? cantidadPaneles;
+  // El inversor y la eléctrica van una por instalación; el resto de las líneas
+  // (estructura, meter) no se multiplican. Un ajuste manual del costeo sigue
+  // ganando: si alguien pisó la cantidad a mano, sabe algo que el cálculo no.
   const electricaPrecioUnitario = ajustes.electricaPrecioUnitario ?? precioElectricaFabrica;
-  const electricaCantidad = ajustes.electricaCantidad ?? 1;
+  const electricaCantidad = ajustes.electricaCantidad ?? cantidadInversores;
   const inversorPrecioUnitario = ajustes.inversorPrecioUnitario ?? precioInversorFabrica;
-  const inversorCantidad = ajustes.inversorCantidad ?? 1;
+  const inversorCantidad = ajustes.inversorCantidad ?? cantidadInversores;
   const meterPrecioUnitario = ajustes.meterPrecioUnitario ?? precioMeterFabrica;
   const meterCantidad = ajustes.meterCantidad ?? 1;
 

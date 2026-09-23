@@ -120,6 +120,13 @@ const draftDataBaseSchema = z
         potenciaPanelW: z.number().min(100),
         marcaPaneles: z.string().min(1),
         potenciaInversorKw: z.number().min(0),
+        // Cuántos inversores lleva la propuesta. Sirve para cotizar dos
+        // instalaciones juntas: son todos iguales, con la potencia de arriba.
+        //
+        // Con `.default(1)` y no obligatorio a propósito: los snapshots
+        // publicados antes de esto no lo traen y, si fuera requerido, quedarían
+        // no regenerables (mismo motivo que `variante` y `costos`).
+        cantidadInversores: z.number().int().min(1).default(1),
         marcaInversor: z.string().min(1),
         // Tipo de montaje (Fase F): string libre por ahora ("Techo chapa", …).
         tipoMontaje: z.string().min(1),
@@ -229,6 +236,7 @@ export const draftDataStorageSchema = z
         potenciaPanelW: z.number().min(0),
         marcaPaneles: z.string(),
         potenciaInversorKw: z.number().min(0),
+        cantidadInversores: z.number().int().min(1),
         marcaInversor: z.string(),
         tipoMontaje: z.string(),
       })

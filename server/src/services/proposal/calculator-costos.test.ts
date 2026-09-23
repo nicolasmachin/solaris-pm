@@ -96,3 +96,96 @@ test("subir un costo sube el precio final y NO la ganancia", () => {
   assert.equal(Math.round(caro.gananciaFinal), Math.round(caro.markupUsdSinIva));
   assert.equal(Math.round(normal.gananciaFinal), Math.round(normal.markupUsdSinIva));
 });
+
+// ─── Varias instalaciones en una misma propuesta ────────────────────────────
+// El inversor y la eléctrica van uno por instalación; todo lo demás no se
+// multiplica. Lo delicado es que el escalón de la eléctrica y el precio del
+// inversor escalan con la cantidad de paneles: si se usara el total en vez de
+// los paneles de cada instalación, se contaría dos veces el tamaño.
+
+const dosInstalaciones = (n: number, paneles: number): ProposalData => ({
+  ...base,
+  sistema: { ...base.sistema, cantidadPaneles: paneles, cantidadInversores: n },
+});
+
+test("sin cantidadInversores se comporta como una sola instalación", () => {
+  const sinCampo = calculate(base, defaultsFixture);
+  const conUno = calculate(
+    { ...base, sistema: { ...base.sistema, cantidadInversores: 1 } },
+    defaultsFixture,
+  );
+  assert.deepEqual(conUno, sinCampo);
+});
+
+test("dos inversores multiplican inversor y eléctrica, y nada más", () => {
+  const uno = calculate(dosInstalaciones(1, 12), defaultsFixture);
+  const dos = calculate(dosInstalaciones(2, 24), defaultsFixture);
+
+  // Uno por instalación
+  assert.equal(dos.inversorCantidad, 2);
+  assert.equal(dos.electricaCantidad, 2);
+  // El resto sigue el total de paneles, sin multiplicarse por instalación
+  assert.equal(dos.panelCantidad, 24);
+  assert.equal(dos.estructuraCantidad, 24);
+  assert.equal(dos.meterCantidad, 1);
+  // Y los bloques que no dependen del tamaño quedan igual
+  assert.equal(dos.costoFijoAsignadoUsdSinIva, uno.costoFijoAsignadoUsdSinIva);
+  assert.equal(dos.costoVariableUsdSinIva, uno.costoVariableUsdSinIva);
+});
+
+test("el escalón de la eléctrica se calcula por instalación, no sobre el total", () => {
+  // 24 paneles en 2 instalaciones = 12 cada una → escalón de 12 (≤20 ⇒ ×2),
+  // no el de 24 (≤30 ⇒ ×3). Si se usara el total, cada eléctrica saldría un
+  // 50% más cara.
+  const dos = calculate(dosInstalaciones(2, 24), defaultsFixture);
+  const unaDe12 = calculate(dosInstalaciones(1, 12), defaultsFixture);
+  assert.equal(dos.electricaPrecioUnitario, unaDe12.electricaPrecioUnitario);
+
+  // Y dos instalaciones cuestan exactamente el doble que una sola igual.
+  assert.equal(
+    Math.round(dos.electricaPrecioUnitario * dos.electricaCantidad),
+    Math.round(unaDe12.electricaPrecioUnitario * 2),
+  );
+});
+
+test("el precio del inversor usa los paneles de cada instalación", () => {
+  // El caso especial trifásico (Tri12) aplica a sistemas de menos de 13 paneles
+  // que pasan los 11 kW. Dos instalaciones de 12 paneles tienen que seguir
+  // cayendo ahí, aunque sumadas den 24.
+  const entrada: ProposalData = {
+    ...base,
+    factura: { ...base.factura, suministro: "trifásico" },
+    sistema: {
+      ...base.sistema,
+      cantidadPaneles: 24,
+      cantidadInversores: 2,
+      potenciaInversorKw: 12,
+    },
+  };
+  const r = calculate(entrada, defaultsFixture);
+  assert.equal(r.inversorPrecioUnitario, defaultsFixture.precioInversorTri12Usd);
+
+  // Con una sola instalación de 24 paneles ya no aplica: es un inversor mayor.
+  const unaSola = calculate(
+    { ...entrada, sistema: { ...entrada.sistema, cantidadInversores: 1 } },
+    defaultsFixture,
+  );
+  assert.equal(unaSola.inversorPrecioUnitario, defaultsFixture.precioInversorTri21Usd);
+});
+
+test("los paneles por instalación se redondean para arriba", () => {
+  // 25 paneles en 2 instalaciones: una lleva 13 y otra 12. Se cotiza sobre 13,
+  // que es la más grande.
+  const r = calculate(dosInstalaciones(2, 25), defaultsFixture);
+  const trece = calculate(dosInstalaciones(1, 13), defaultsFixture);
+  assert.equal(r.electricaPrecioUnitario, trece.electricaPrecioUnitario);
+});
+
+test("un ajuste manual del costeo gana sobre la cantidad del sistema", () => {
+  const r = calculate(
+    { ...dosInstalaciones(2, 24), costos: { inversorCantidad: 3, electricaCantidad: 1 } },
+    defaultsFixture,
+  );
+  assert.equal(r.inversorCantidad, 3);
+  assert.equal(r.electricaCantidad, 1);
+});

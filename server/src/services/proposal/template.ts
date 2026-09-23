@@ -51,6 +51,11 @@ Handlebars.registerHelper("percent", (value: number, decimals = 1) =>
   `${fmtNum(value * 100, typeof decimals === "number" ? decimals : 1)} %`,
 );
 Handlebars.registerHelper("mult", (a: number, b: number) => (Number(a) || 0) * (Number(b) || 0));
+
+// `{{#if (varios n)}}` — verdadero cuando hay más de uno. Lo usan los bloques
+// del inversor para hablar en plural solo cuando la propuesta cubre más de una
+// instalación; con un inversor el documento sale exactamente como siempre.
+Handlebars.registerHelper("varios", (n: unknown) => (Number(n) || 1) > 1);
 // Nombre de la tarifa UTE para mostrar en los textos (el enum es Simple/Doble/
 // Triple; UTE las llama "Doble Horario"/"Triple Horario").
 Handlebars.registerHelper("tarifaLabel", (tarifa: string): string => {

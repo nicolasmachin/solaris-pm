@@ -136,7 +136,7 @@ function bloqueCargado(d: DraftDataPublish): string {
       [
         "Inversor",
         d.sistema?.potenciaInversorKw
-          ? `${d.sistema.potenciaInversorKw} kW ${d.sistema.marcaInversor ?? ""}`.trim()
+          ? `${(d.sistema.cantidadInversores ?? 1) > 1 ? `${d.sistema.cantidadInversores} × ` : ""}${d.sistema.potenciaInversorKw} kW ${d.sistema.marcaInversor ?? ""}`.trim()
           : (d.sistema?.marcaInversor ?? "—"),
       ],
       ["Suministro", d.factura?.suministro || "—"],
@@ -182,7 +182,21 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
         cantidad_paneles: z.number().int().positive().optional(),
         potencia_panel_w: z.number().min(100).optional(),
         marca_paneles: z.string().optional(),
-        potencia_inversor_kw: z.number().positive().optional(),
+        potencia_inversor_kw: z
+          .number()
+          .positive()
+          .optional()
+          .describe("Potencia de UN inversor en kW, no la suma de todos"),
+        cantidad_inversores: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe(
+            "Cuántos inversores iguales lleva. Más de uno sirve para cotizar varias " +
+              "instalaciones juntas: multiplica el costo del inversor y el de la " +
+              "instalación eléctrica. Los paneles se cargan sumados en cantidad_paneles.",
+          ),
         marca_inversor: z.string().optional(),
         techo_m2: z.number().positive().optional().describe("Metros cuadrados disponibles"),
         techo_descripcion: z.string().optional().describe("De qué es el techo: chapa, losa…"),
@@ -253,6 +267,9 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
           ...(args.marca_paneles !== undefined && { marcaPaneles: args.marca_paneles }),
           ...(args.potencia_inversor_kw !== undefined && {
             potenciaInversorKw: args.potencia_inversor_kw,
+          }),
+          ...(args.cantidad_inversores !== undefined && {
+            cantidadInversores: args.cantidad_inversores,
           }),
           ...(args.marca_inversor !== undefined && { marcaInversor: args.marca_inversor }),
           ...(args.tipo_montaje !== undefined && { tipoMontaje: args.tipo_montaje }),

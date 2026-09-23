@@ -18,7 +18,7 @@
       <div style="padding:11px 18px; font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#7b8198; text-align:right;">Precio</div>
     </div>
     <div style="display:grid; grid-template-columns:1fr 86px 160px; align-items:center;">
-      <div style="padding:14px 18px;"><div style="font-size:13.5px; font-weight:700; color:#10131f;">Sistema solar fotovoltaico on-grid</div><div style="font-size:11.5px; color:#6b7188; margin-top:2px;">{{data.sistema.cantidadPaneles}} paneles · inversor · estructura · instalación · tramitación</div></div>
+      <div style="padding:14px 18px;"><div style="font-size:13.5px; font-weight:700; color:#10131f;">Sistema solar fotovoltaico on-grid</div><div style="font-size:11.5px; color:#6b7188; margin-top:2px;">{{data.sistema.cantidadPaneles}} paneles · {{#if (varios data.sistema.cantidadInversores)}}{{data.sistema.cantidadInversores}} inversores{{else}}inversor{{/if}} · estructura · instalación · tramitación</div></div>
       <div style="padding:14px 10px; font-size:13px; color:#3a3e50; text-align:right;">{{number (mult calculated.potenciaTotalKwp 1000)}}</div>
       <div style="padding:14px 18px; font-size:13px; color:#3a3e50; text-align:right; white-space:nowrap;">{{currency calculated.subtotalSinIva}} + IVA</div>
     </div>
@@ -41,7 +41,7 @@
       <div style="padding:11px 18px; font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#7b8198; text-align:right;">Precio</div>
     </div>
     <div style="display:grid; grid-template-columns:1fr 86px 160px; align-items:center; border-bottom:1px solid #eef0f6;">
-      <div style="padding:13px 18px;"><div style="font-size:13px; font-weight:700; color:#10131f;">Sistema solar fotovoltaico on-grid</div><div style="font-size:11px; color:#6b7188; margin-top:2px;">{{data.sistema.cantidadPaneles}} paneles · inversor · estructura · instalación · tramitación</div></div>
+      <div style="padding:13px 18px;"><div style="font-size:13px; font-weight:700; color:#10131f;">Sistema solar fotovoltaico on-grid</div><div style="font-size:11px; color:#6b7188; margin-top:2px;">{{data.sistema.cantidadPaneles}} paneles · {{#if (varios data.sistema.cantidadInversores)}}{{data.sistema.cantidadInversores}} inversores{{else}}inversor{{/if}} · estructura · instalación · tramitación</div></div>
       <div style="padding:13px 10px; font-size:13px; color:#3a3e50; text-align:right;">{{number (mult calculated.potenciaTotalKwp 1000)}}</div>
       <div style="padding:13px 18px; font-size:13px; color:#3a3e50; text-align:right; white-space:nowrap;">{{currency calculated.subtotalSinIva}} + IVA</div>
     </div>

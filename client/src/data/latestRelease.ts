@@ -23,6 +23,22 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "11.1",
+  date: "23 de septiembre de 2026",
+  sections: [
+    {
+      title: "Cotizar varias instalaciones en una sola propuesta",
+      items: [
+        "El cotizador tiene un campo nuevo, Cantidad de inversores: poniendo más de uno se cotizan varias instalaciones juntas en una sola propuesta.",
+        "La potencia que se carga es la de un inversor y los paneles van sumados entre todas las instalaciones.",
+        "El costo del inversor y el de la instalación eléctrica se multiplican por la cantidad; el resto no. La eléctrica se calcula por instalación, así que dos de 12 paneles cuestan como dos de 12 y no como una de 24.",
+        "La propuesta lo muestra en las especificaciones y en la línea de cotización. Con un solo inversor el documento queda exactamente como antes.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_11_0: Release = {
   version: "11.0",
   date: "21 de septiembre de 2026",
   sections: [
@@ -214,6 +230,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "11.0",
+    shortDate: "21 sep",
+    highlights: RELEASE_11_0.sections.map((sec) => sec.title),
+  },
   {
     version: "10.9",
     shortDate: "19 sep",

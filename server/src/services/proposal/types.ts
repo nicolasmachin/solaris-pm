@@ -38,6 +38,8 @@ export interface ProposalData {
     potenciaPanelW: number;
     marcaPaneles: string;
     potenciaInversorKw: number;
+    /** Cuántos inversores iguales lleva. Ausente en snapshots previos = 1. */
+    cantidadInversores?: number;
     marcaInversor: string;
     tipoMontaje: string;
   };

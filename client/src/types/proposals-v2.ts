@@ -90,6 +90,8 @@ export interface ProposalDraftData {
     potenciaPanelW: number;
     marcaPaneles: string;
     potenciaInversorKw: number;
+    /** Cuántos inversores iguales lleva la propuesta (por defecto 1). */
+    cantidadInversores?: number;
     marcaInversor: string;
     tipoMontaje: string;
   };

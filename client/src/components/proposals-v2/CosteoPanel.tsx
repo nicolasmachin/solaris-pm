@@ -164,6 +164,10 @@ export function CosteoPanel({
   // (se puede costear de más), pero pasa desapercibido y termina en una
   // propuesta con el costo de un sistema que no es el que se vende.
   const desfasePaneles = c.panelCantidad !== data.sistema.cantidadPaneles;
+  // Lo mismo con los inversores: la cantidad del costeo sale de la del sistema,
+  // así que si difiere es porque alguien la pisó a mano acá.
+  const inversoresDelSistema = data.sistema.cantidadInversores ?? 1;
+  const desfaseInversores = c.inversorCantidad !== inversoresDelSistema;
   const hayAjustes = Object.keys(ajustes).length > 0;
 
   const flujo: { label: string; valor: number; fuerte?: boolean }[] = [
@@ -205,6 +209,13 @@ export function CosteoPanel({
         <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-600">
           Estás costeando <b>{c.panelCantidad} paneles</b> pero el sistema cotizado tiene{" "}
           <b>{data.sistema.cantidadPaneles}</b>. Revisá que sea a propósito.
+        </div>
+      )}
+
+      {desfaseInversores && (
+        <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-600">
+          Estás costeando <b>{c.inversorCantidad} inversores</b> pero la propuesta dice{" "}
+          <b>{inversoresDelSistema}</b>. Revisá que sea a propósito.
         </div>
       )}
 

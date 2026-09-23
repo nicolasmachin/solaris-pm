@@ -1,5 +1,18 @@
 # Novedades
 
+## v11.1
+
+### 23 de septiembre de 2026
+
+#### Cotizar varias instalaciones en una sola propuesta
+
+- El cotizador tiene un campo nuevo, **Cantidad de inversores**. Poniendo más de uno se cotizan **varias instalaciones juntas** en una sola propuesta: dos techos, dos padrones, dos casas del mismo cliente.
+- La potencia que se carga es la de **un** inversor, y los paneles van **sumados** entre todas las instalaciones.
+- El costo del inversor y el de la instalación eléctrica se multiplican por la cantidad. El resto —paneles, estructura, medidor, costos fijos y variables— no.
+- La instalación eléctrica se calcula **por instalación**: dos de 12 paneles cuestan como dos de 12, no como una de 24. Sin esto, cotizar dos juntas salía bastante más caro que cotizarlas por separado.
+- La propuesta lo muestra: "2 unidades de 6 kW cada una" en las especificaciones y "2 inversores" en la línea de cotización. Con un solo inversor el documento queda exactamente como antes.
+- También se puede cotizar así **desde el chat de Claude**.
+
 ## v11.0
 
 ### 21 de septiembre de 2026

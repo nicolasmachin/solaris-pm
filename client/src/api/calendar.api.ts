@@ -65,21 +65,6 @@ export interface ScheduleWithWarning {
   warning: CalendarWarning | null;
 }
 
-export interface InstallationCheckResponse {
-  hasInstallation: boolean;
-  plannedWorkStart: string | null;
-  plannedWorkEnd: string | null;
-  actualWorkEnd: string | null;
-  operationsStatus: string | null;
-  operationsActualStart: string | null;
-  operationsActualEnd: string | null;
-  issues: Array<{
-    severity: "error" | "warning";
-    code: string;
-    message: string;
-  }>;
-}
-
 export async function getCalendarMonth(year: number, month: number): Promise<CalendarResponse> {
   const { data } = await apiClient.get<CalendarResponse>("/api/calendar", {
     params: { year, month },
@@ -215,9 +200,4 @@ export async function deleteSchedule(id: string): Promise<void> {
   });
 }
 
-export async function installationCheck(projectId: string): Promise<InstallationCheckResponse> {
-  const { data } = await apiClient.get<InstallationCheckResponse>(
-    `/api/projects/${projectId}/installation-check`,
-  );
-  return data;
-}
+

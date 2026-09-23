@@ -37,7 +37,6 @@ import { UteProjectTab } from "../components/ute/UteProjectTab";
 import { ProjectObraDestacadoSection } from "../components/obra/ProjectObraDestacadoSection";
 import { CanAccess } from "../components/ui/CanAccess";
 import { getProjectGantt } from "../api/metrics.api";
-import { installationCheck } from "../api/calendar.api";
 import { usePermission } from "../hooks/usePermission";
 import { useAuthStore } from "../store/auth.store";
 import {
@@ -653,45 +652,6 @@ function InstallationScheduleRow({
   );
 }
 
-function InstallationCoherenceBanner({
-  issues,
-}: {
-  issues: Array<{ severity: "error" | "warning"; code: string; message: string }>;
-}) {
-  const navigate = useNavigate();
-  // Sólo renderizamos el banner cuando hay al menos un error.
-  // Los warnings por "rango planificado" se eliminaron del backend.
-  const errors = issues.filter((i) => i.severity === "error");
-  if (errors.length === 0) return null;
-
-  return (
-    <div
-      className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 p-3"
-      role="alert"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="text-xs text-red-300 space-y-1">
-          <p className="font-semibold">Inconsistencias en las fechas de instalación</p>
-          <ul className="list-disc ml-4">
-            {errors.map((issue) => (
-              <li key={issue.code} className="leading-snug">
-                {issue.message}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <button
-          type="button"
-          onClick={() => navigate("/calendario")}
-          className="shrink-0 rounded px-2 py-1 text-[10px] font-semibold border border-red-500/40 text-red-300 hover:bg-black/20"
-        >
-          Ver en calendario
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // Control para fijar/limpiar a mano la etapa MOSTRADA del proyecto. Ofrece
 // TODAS las etapas del pipeline —adelante y atrás— más "volver a automático":
 // cuando una obra se pospone hay que poder bajarla, no solo empujarla.
@@ -863,12 +823,6 @@ export function ProjectDetail() {
     enabled: !!id && canViewMetrics && bottomTab === "timeline",
   });
 
-  const installationCheckQuery = useQuery({
-    queryKey: ["project", id, "installation-check"],
-    queryFn: () => installationCheck(id!),
-    enabled: !!id,
-  });
-
   const deleteProjectMutation = useMutation({
     mutationFn: () => deleteProject(id!),
     onSuccess: () => {
@@ -1026,10 +980,6 @@ export function ProjectDetail() {
           segmentsCount={project.installationSchedule.segments.length}
         />
       ) : null}
-
-      {installationCheckQuery.data && installationCheckQuery.data.issues.length > 0 && (
-        <InstallationCoherenceBanner issues={installationCheckQuery.data.issues} />
-      )}
 
       {/* Mantenimientos, soportes y visitas agendadas para esta obra. */}
       <AgendaDelProyecto projectId={project.id} />

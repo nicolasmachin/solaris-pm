@@ -9271,57 +9271,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return `${String(date.getUTCDate()).padStart(2, "0")}/${String(date.getUTCMonth() + 1).padStart(2, "0")}/${date.getUTCFullYear()}`;
   }
 
-  type InstallationValidationResult =
-    | { ok: false; error: { code: string; message: string } }
-    | { ok: true; warning: { code: string; message: string } | null };
-
-  // Regla 1: coherencia entre fechas de instalación y etapa OPERACIONES.
-  // Sólo comparamos contra las fechas REALES (actualStartDate/actualEndDate).
-  // Las fechas planificadas ya no se usan para esta validación — fueron
-  // eliminadas de la UI y por tanto de la regla.
-  async function validateInstallationAgainstOperations(
-    projectId: string,
-    plannedWorkStart: Date,
-    plannedWorkEnd: Date,
-  ): Promise<InstallationValidationResult> {
-    const operations = await prisma.stage.findFirst({
-      // Pipeline nuevo (8 etapas) usa EJECUCION_OBRA; los proyectos viejos aún
-      // tienen OPERACIONES. Conviven, matcheamos ambos.
-      where: { projectId, name: { in: [StageType.EJECUCION_OBRA, StageType.OPERACIONES] } },
-      select: {
-        actualStartDate: true,
-        actualEndDate: true,
-      },
-    });
-
-    if (!operations) return { ok: true, warning: null };
-
-    // Caso A: Operaciones todavía no inició → permitir sin restricción.
-    // Caso B: instalación empieza antes del inicio real de Operaciones
-    if (operations.actualStartDate && plannedWorkStart.getTime() < operations.actualStartDate.getTime()) {
-      return {
-        ok: false,
-        error: {
-          code: "INSTALL_BEFORE_OPERATIONS",
-          message: `La instalación no puede empezar antes del inicio real de Operaciones (${formatDateEs(operations.actualStartDate)}). Ajustá las fechas.`,
-        },
-      };
-    }
-
-    // Caso C: instalación termina después del fin real de Operaciones
-    if (operations.actualEndDate && plannedWorkEnd.getTime() > operations.actualEndDate.getTime()) {
-      return {
-        ok: false,
-        error: {
-          code: "INSTALL_AFTER_OPERATIONS",
-          message: `La instalación no puede terminar después del cierre real de Operaciones (${formatDateEs(operations.actualEndDate)}). Ajustá las fechas.`,
-        },
-      };
-    }
-
-    return { ok: true, warning: null };
-  }
-
   // Regla 2: identifica si una subetapa es de ejecución de obra
   // (la spec pide OPERACIONES_OBRA_PROPIA/TERCERIZADA pero esos enums no existen;
   // las subetapas se identifican por nombre "Ejecución de Obra" bajo stage OPERACIONES)
@@ -9521,7 +9470,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const user = ensureUser(request);
     const body = calendarCreateSchema.parse(request.body);
     const segments = normalizeIncomingSegments(body);
-    const { start: envStart, end: envEnd } = envelopeOf(segments);
 
     const project = await prisma.project.findFirst({
       where: { id: body.projectId, deletedAt: null },
@@ -9542,12 +9490,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // G.2: guard de recálculo si hay overrides manuales sin confirmación
     const guard = await deadlineRecalcGuard(body.projectId, body.forceRecalculate ?? false);
     if (guard) return reply.code(409).send(guard);
-
-    // Regla 1: verificar coherencia con OPERACIONES (aplicada sobre el envelope)
-    const validation = await validateInstallationAgainstOperations(body.projectId, envStart, envEnd);
-    if (!validation.ok) {
-      throw badRequest(validation.error.code, validation.error.message);
-    }
 
     const team = await loadActiveTeamOrThrow(body.teamId);
 
@@ -9612,7 +9554,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
 
     reply.code(201);
-    return { data: serializeSchedule(created), warning: validation.warning };
+    return { data: serializeSchedule(created), warning: null };
   });
 
   app.patch("/calendar/:id", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request, reply) => {
@@ -9658,11 +9600,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
       if (guard) return reply.code(409).send(guard);
 
       const segments = normalizeIncomingSegments(body);
-      const { start: envStart, end: envEnd } = envelopeOf(segments);
-      const validation = await validateInstallationAgainstOperations(existing.projectId, envStart, envEnd);
-      if (!validation.ok) {
-        throw badRequest(validation.error.code, validation.error.message);
-      }
       updateData.segments = {
         deleteMany: {},
         create: segments,
@@ -9754,82 +9691,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return serializeSchedule(updated);
   });
 
-  app.get("/projects/:id/installation-check", { preHandler: authorize(Module.OPERACIONES, Action.VIEW) }, async (request) => {
-    const params = z.object({ id: z.string() }).parse(request.params);
-
-    const project = await prisma.project.findFirst({
-      where: { id: params.id, deletedAt: null },
-      include: {
-        installationSchedule: {
-          include: { segments: { orderBy: { startDate: "asc" } } },
-        },
-        stages: {
-          where: { name: { in: [StageType.EJECUCION_OBRA, StageType.OPERACIONES] } },
-          select: {
-            status: true,
-            plannedStartDate: true,
-            plannedEndDate: true,
-            actualStartDate: true,
-            actualEndDate: true,
-          },
-          take: 1,
-        },
-      },
-    });
-    if (!project) {
-      throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
-    }
-
-    const install = project.installationSchedule && !project.installationSchedule.deletedAt
-      ? project.installationSchedule
-      : null;
-    const operations = project.stages[0] ?? null;
-
-    // Para los chequeos de coherencia usamos el envelope (primer inicio / último fin).
-    const installEnvelope = install && install.segments.length > 0
-      ? envelopeOf(install.segments)
-      : null;
-
-    const issues: Array<{ severity: "error" | "warning"; code: string; message: string }> = [];
-
-    if (install && installEnvelope && operations) {
-      if (
-        operations.actualStartDate &&
-        installEnvelope.start.getTime() < operations.actualStartDate.getTime()
-      ) {
-        issues.push({
-          severity: "error",
-          code: "INSTALL_BEFORE_OPERATIONS",
-          message: `La instalación empieza el ${formatDateEs(installEnvelope.start)} pero Operaciones recién arrancó el ${formatDateEs(operations.actualStartDate)}.`,
-        });
-      }
-      if (
-        operations.actualEndDate &&
-        installEnvelope.end.getTime() > operations.actualEndDate.getTime()
-      ) {
-        issues.push({
-          severity: "error",
-          code: "INSTALL_AFTER_OPERATIONS",
-          message: `La instalación termina el ${formatDateEs(installEnvelope.end)} pero Operaciones cerró el ${formatDateEs(operations.actualEndDate)}.`,
-        });
-      }
-      // La validación contra rango planificado se eliminó: las fechas
-      // planificadas ya no se muestran en la UI y no forman parte de las
-      // reglas de coherencia.
-    }
-
-    return {
-      hasInstallation: install !== null,
-      plannedWorkStart: installEnvelope ? serializeDateOnly(installEnvelope.start) : null,
-      plannedWorkEnd: installEnvelope ? serializeDateOnly(installEnvelope.end) : null,
-      actualWorkEnd: install ? serializeDateOnly(install.actualWorkEnd) : null,
-      operationsStatus: operations?.status ?? null,
-      operationsActualStart: operations ? serializeDateOnly(operations.actualStartDate) : null,
-      operationsActualEnd: operations ? serializeDateOnly(operations.actualEndDate) : null,
-      issues,
-    };
-  });
-
   // Reprograma un tramo (segment) puntual. Si no se manda segmentId y el schedule
   // tiene exactamente 1 tramo, se toma ese como default (compat con el flujo viejo).
   app.patch("/calendar/:id/reschedule", { preHandler: authorize(Module.OPERACIONES, Action.EDIT) }, async (request, reply) => {
@@ -9886,13 +9747,6 @@ export async function registerApiRoutes(app: FastifyInstance) {
     );
     assertSegmentsNoOverlap(nextSegments);
 
-    // Regla 1 aplicada sobre el envelope resultante.
-    const { start: envStart, end: envEnd } = envelopeOf(nextSegments);
-    const validation = await validateInstallationAgainstOperations(existing.projectId, envStart, envEnd);
-    if (!validation.ok) {
-      throw badRequest(validation.error.code, validation.error.message);
-    }
-
     await prisma.installationSegment.update({
       where: { id: targetSegment.id },
       data: { startDate: newStart, endDate: newEnd },
@@ -9920,7 +9774,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const deadlineRecalc = await recalculateProjectDeadlines(existing.projectId, body.forceRecalculate ?? false);
     reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));
 
-    return { data: serializeSchedule(updated), warning: validation.warning };
+    return { data: serializeSchedule(updated), warning: null };
   });
 
   // ── CRUD de segments ──────────────────────────────────────────────────────────

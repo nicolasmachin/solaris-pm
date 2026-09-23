@@ -1,9 +1,10 @@
 # 02 · Ventas
 
 > **Capítulo parcial.** Están escritas las secciones "Fechas del proceso",
-> "Cotizador de propuestas: precargas y saludo de la carta", "Costeo a medida de
-> una cotización", "Cotizador B2B: propuestas a empresas" y "Comisión del asesor:
-> cómo se registra al ganar". El resto del módulo funciona en producción pero
+> "Cotizador de propuestas: precargas y saludo de la carta", "Varias
+> instalaciones en una misma propuesta", "Costeo a medida de una cotización",
+> "Cotizador B2B: propuestas a empresas" y "Comisión del asesor: cómo se
+> registra al ganar". El resto del módulo funciona en producción pero
 > todavía no está documentado.
 
 Leads, pipeline comercial, reclamos, propuestas, conversión a proyecto y comisiones.
@@ -202,6 +203,95 @@ desde las 21:00 hora local.
   `salutation.ts`, no desde la interfaz.
 - Un nombre con apellido primero ("Vanoli Daniel") saluda al apellido: la función
   siempre toma la primera palabra.
+
+---
+
+# Varias instalaciones en una misma propuesta
+
+## Para qué existe
+
+A veces un cliente quiere dos instalaciones a la vez: dos techos, dos padrones,
+dos casas. El cotizador asumía **un solo inversor**, así que había que cotizar
+una sola y ajustar el precio a mano, o emitir dos propuestas separadas.
+
+## Cómo se usa
+
+En "Datos técnicos del sistema", campo **Cantidad de inversores**. Con más de uno:
+
+- La **potencia del inversor** es la de **uno solo**, no la suma.
+- Los **paneles** se cargan **sumados** entre todas las instalaciones.
+- El costo del **inversor** y el de la **instalación eléctrica** se multiplican
+  por la cantidad. Nada más se multiplica.
+
+También se puede cotizar así desde el chat, con el argumento
+`cantidad_inversores` de `preparar_propuesta`.
+
+## Cómo funciona
+
+El campo es `sistema.cantidadInversores` en el borrador, entero ≥ 1 y **con
+`.default(1)`**: los snapshots publicados antes de esto no lo traen y, si fuera
+obligatorio, quedarían no regenerables (mismo motivo que `variante` y `costos`).
+
+La clave del cálculo es **`panelesPorInstalacion`** en `calculator.ts` §2:
+
+```
+panelesPorInstalacion = ceil(cantidadPaneles / cantidadInversores)
+```
+
+Ese número —y no el total— alimenta las dos reglas que escalan con el tamaño:
+
+- **El escalón de la instalación eléctrica** (`getMultiplicadorElectrica`).
+- **El precio del inversor** (`obtenerPrecioInversor`), que usa la cantidad de
+  paneles para el caso especial trifásico de sistemas de menos de 13 paneles.
+
+Sin ese reparto se contaría dos veces el tamaño: el escalón subiría por los
+paneles sumados y después se multiplicaría otra vez por la cantidad. Dos
+instalaciones de 12 paneles le costarían al cliente un 50% más de eléctrica que
+cotizarlas por separado.
+
+Las cantidades efectivas del costeo salen de ahí:
+
+```ts
+const inversorCantidad  = ajustes.inversorCantidad  ?? cantidadInversores;
+const electricaCantidad = ajustes.electricaCantidad ?? cantidadInversores;
+```
+
+Un ajuste manual del panel de costeo **sigue ganando**: si alguien pisó la
+cantidad a mano, sabe algo que el cálculo no. Cuando difieren, el panel lo avisa
+en rojo.
+
+En el documento, el helper `{{#if (varios ...)}}` de `template.ts` hace que los
+bloques del inversor hablen en plural **solo** cuando hay más de uno. Toca
+`carta.hbs` (las dos variantes), `resumen.hbs`, `resumen-ejecutivo.hbs` y
+`cotizacion.hbs`.
+
+## Reglas y decisiones
+
+- **Todos los inversores son iguales.** Es una cantidad, no una lista de
+  inversores distintos. Eso es lo que mantiene el cambio acotado:
+  `potenciaInversorKw` sigue siendo un número y no se tocó nada aguas abajo
+  (contrato, proforma, documentos UTE, conector del chat). Cotizar inversores de
+  potencias distintas sería un cambio de modelo de datos.
+- **Los paneles por instalación se redondean para arriba**: con 25 paneles en 2
+  instalaciones, una lleva 13 y otra 12; se cotiza sobre la más grande.
+- **Con un inversor el documento sale idéntico al de siempre.** Es el criterio
+  con el que se construyó: nada de lo ya emitido cambia.
+
+## Casos borde
+
+- **La mano de obra no se duplica.** La cuadrilla se calcula por cantidad total
+  de paneles. Dos obras separadas llevan más trabajo que una sola del doble de
+  tamaño; si queda corta, se ajusta en el panel de costeo.
+- **El medidor queda en 1**, aunque dos instalaciones con dos conexiones a UTE
+  llevarían dos. No se multiplica porque no se pidió.
+- **El documento no separa las dos instalaciones**: muestra un sistema con dos
+  inversores, no "instalación 1" e "instalación 2".
+- **La potencia pico, la generación y el ahorro no cambian**: dependen de los
+  paneles, que ya se cargan sumados.
+- **La conversión a proyecto sigue siendo manual.** Nada crea hoy el
+  `SolarSystem` del proyecto desde la propuesta, así que la cantidad se vuelve a
+  cargar a mano al abrir la obra. El modelo del proyecto ya tiene
+  `inverterQuantity`, así que el día que se automatice, encaja.
 
 ---
 

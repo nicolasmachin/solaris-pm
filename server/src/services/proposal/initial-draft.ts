@@ -153,6 +153,7 @@ export function buildInitialDraftData(
       potenciaPanelW: numDefault(raw, "potenciaPanelWDefault", 0),
       marcaPaneles: strDefault(raw, "marcaPanelesDefault", ""),
       potenciaInversorKw: 0,
+      cantidadInversores: 1,
       marcaInversor: strDefault(raw, "marcaInversorDefault", ""),
       tipoMontaje: lead.roofType ?? "",
     },
