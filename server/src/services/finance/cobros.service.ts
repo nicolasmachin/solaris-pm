@@ -68,7 +68,14 @@ export async function listarCobrosPorProyecto(filtro: FiltroCobros) {
   const fallbackUsdToUyu = await cotizacionCobros();
 
   const where: Prisma.ProjectWhereInput = { deletedAt: null };
-  if (filtro.activos) where.status = ProjectStatus.ACTIVE;
+  // Cobros NUNCA incluye archivados ni prospectos: son ventas que no se concretaron
+  // (o todavía no son proyecto), así que no forman parte del pendiente de cobrar.
+  // Al archivar un proyecto caído, sale solo del listado y del total pendiente.
+  if (filtro.activos) {
+    where.status = ProjectStatus.ACTIVE;
+  } else {
+    where.status = { notIn: [ProjectStatus.ARCHIVED, ProjectStatus.PROSPECT] };
+  }
   if (filtro.clientName && filtro.clientName.trim().length > 0) {
     where.clientName = { contains: filtro.clientName.trim(), mode: "insensitive" };
   }

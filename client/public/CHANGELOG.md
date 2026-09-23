@@ -13,6 +13,10 @@
 - La propuesta lo muestra: "2 unidades de 6 kW cada una" en las especificaciones y "2 inversores" en la línea de cotización. Con un solo inversor el documento queda exactamente como antes.
 - También se puede cotizar así **desde el chat de Claude**.
 
+#### Arreglos
+
+- **Cobros ya no muestra proyectos archivados.** Los clientes cuya venta se cayó y se archivaron seguían apareciendo en el listado de Cobros e inflaban el total pendiente de cobrar. Ahora Cobros muestra solo ventas reales (activas, en pausa o completadas): archivar un proyecto lo saca del listado y del total. Lo mismo al consultar cobros desde el chat de Claude, y en el **Flujo de fondos** (ya no proyecta los cobros de proyectos archivados).
+
 ## v11.0
 
 ### 21 de septiembre de 2026

@@ -19549,6 +19549,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
         deletedAt: null,
         tipoMovimiento: TipoMovimiento.INGRESO,
         cobrado: false,
+        // No proyectar cobros de proyectos archivados/prospectos (ventas caídas).
+        // El NOT deja pasar los cobros sin proyecto (projectId null).
+        NOT: { project: { status: { in: [ProjectStatus.ARCHIVED, ProjectStatus.PROSPECT] } } },
         OR: [
           { expectedDate: { gte: now, lte: horizon } },
           { dueDate: { gte: now, lte: horizon } },

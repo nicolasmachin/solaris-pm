@@ -235,6 +235,12 @@ entra la plata.
 
 ### Casos borde
 
+- **Cobros excluye proyectos ARCHIVADOS y PROSPECTOS.** `listarCobrosPorProyecto()`
+  filtra siempre esos estados: una venta caída (archivada) o un prospecto no es
+  algo a cobrar, así que no aparece en el listado ni suma al total pendiente.
+  Archivar un proyecto es la forma de sacarlo de Cobros. El filtro "Activos" además
+  acota a `ACTIVE`; "Todos" trae ACTIVE + PAUSED + COMPLETED. (El detalle por
+  `:projectId` sí abre cualquier proyecto, incluso archivado, si se entra directo.)
 - **"Cobrado" y "saldo" de la lista de Cobros no usan el mismo criterio que el
   plan.** La lista (`services/finance/cobros.service.ts` →
   `listarCobrosPorProyecto()`, compartida con el conector) cuenta todo ingreso
