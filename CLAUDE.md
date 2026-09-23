@@ -266,6 +266,37 @@ opcional ni se pospone a "cuando haya tiempo".
 Los `docs/features/*/SPEC.md` son **históricos**: diseño previo a construir, ya
 marcados como tales. No son fuente de verdad y no se actualizan.
 
+## Manuales del equipo (`docs/*.md`) — OBLIGATORIO
+
+Además del manual técnico hay **dos manuales escritos para el equipo**, no para
+desarrollo. Están en la raíz de `docs/` y **también se actualizan al cerrar cada
+funcionalidad**, en la misma tanda que el CHANGELOG y el manual técnico:
+
+| Manual | Qué cubre | Para quién |
+|---|---|---|
+| `Manual-de-Trabajo-Voltia.md` | Qué hace **cada rol** y cómo lo hace en la app, más "la app pantalla por pantalla" | Todo el equipo; cada uno lee su área |
+| `Manual-Posventa-Experiencia-Solar.md` | El proceso de posventa a fondo: el recorrido en 3 etapas, los hitos, plazos, mensajes modelo y reglas duras | Experiencia Solar (los demás, lo suyo) |
+
+Cómo decidir dónde va un cambio:
+
+- **Toca a un rol** (cotizador, calendario, una pantalla nueva) → al manual de
+  trabajo, en el capítulo de ese rol y, si cambia una pantalla, también en "La
+  app, pantalla por pantalla".
+- **Toca el trato con el cliente de posventa** (reportes, avisos, encuestas,
+  cobros en la ficha) → **a los dos**: resumido en el capítulo 8 del de trabajo y
+  desarrollado en el de posventa.
+- **Es solo interno** (refactors, permisos de backend) → a ninguno.
+
+Están escritos en **segunda persona y en criollo** ("entrás", "cargás"), sin
+nombres de archivo ni de endpoints: el lector no programa. Ese registro se
+respeta; los detalles técnicos van al manual de `docs/manual/`.
+
+Al tocarlos, **subir la versión de su cabecera** (`Versión 1.1 — {fecha}`).
+
+> Estos dos quedaron dos semanas sin actualizar porque no estaban en esta regla:
+> cada vez que se cerraba algo se actualizaban el CHANGELOG y el manual técnico,
+> y estos no. De ahí que estén acá.
+
 ## Roadmap de infraestructura (en curso)
 
 - [x] Fase 1: Dockerizar desarrollo local.
