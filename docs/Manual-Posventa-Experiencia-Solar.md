@@ -107,12 +107,18 @@ Son siete. **Ninguno es opcional.**
 | # | Hito | Etapa | Plazo |
 |---|---|---|---|
 | 1 | **Bienvenida** — quién es su referente, el recorrido completo y cuánto demora cada etapa, **incluido UTE** | E1 | Al cerrar la venta |
-| 2 | **Fecha de obra** — primero la tentativa, después la confirmada | E1 | 2 días hábiles desde que se confirma |
+| 2 | **Fecha de obra** — primero la tentativa, después la confirmada | E1 | 2 días hábiles desde que **Operaciones confirma la fecha en el calendario** |
 | 3 | **Cualquier visita a su propiedad** — materiales, relevamiento o equipo | E1/E2 | Antes de ir. **Si no está agendado, no se va.** |
 | 4 | **Obra terminada y qué sigue** — que arranca el trámite, con su plazo | E1→E2 | El mismo día |
 | 5 | **Ya podés encender** | E2→E3 | **24-48 h** desde la habilitación |
 | 6 | **Capacitación** — cómo usar la app, qué generación esperar | E3 | En el mismo contacto que el 5 |
 | 7 | **Garantías y cierre** | E3 | 15 días hábiles |
+
+> **Ojo con el plazo del hito 2.** Los dos días hábiles corren desde que
+> **Operaciones confirma la fecha en el calendario**, no desde que se cerró la
+> venta. Entre una cosa y la otra pasa bastante: primero va onboarding, después
+> pre-ingeniería, y recién en la validación de Operaciones queda la fecha. Ver
+> 5.5 para el detalle.
 
 **El hito 5 es la Regla de Oro.** Cada día que pasa entre que UTE habilita y que
 el cliente enciende es un día que **deja de ahorrar plata**. Es el único hito con

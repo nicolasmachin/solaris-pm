@@ -304,8 +304,8 @@ cosas**:
 **Vos la marcás en el calendario. Vos no se la comunicás al cliente.**
 
 Al confirmarla, **el sistema le avisa solo a Experiencia Solar** y le abre el
-pendiente de comunicarla, con dos días hábiles de plazo. No hace falta que le
-mandes un mensaje.
+pendiente de comunicarla, con dos días hábiles de plazo **desde que la confirmás
+vos**, no desde que se vendió. No hace falta que le mandes un mensaje.
 
 **Si después hay que moverla:** la reprogramás en el calendario y **el sistema te
 pide el motivo**. Eso genera un aviso propio para que Experiencia Solar se lo
