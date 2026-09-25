@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.3 — 24 de septiembre de 2026
+**Voltia · Uruguay** · Versión 1.4 — 25 de septiembre de 2026
 
 > Este manual es **el procedimiento y el manual de uso de la app, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -379,6 +379,8 @@ quedaba tildada para siempre, y por eso la segunda reagenda no se avisaba.
 | **Qué decir** | Plantilla **"Visita a la propiedad"** |
 
 > ## Regla dura: **si no está agendado, no se va.**
+>
+> ## Y su contracara: **si está agendado, se va.**
 
 La queja que originó la revisión de todo este proceso empezó acá: una visita que
 no estaba en el calendario oficial. **Falló primero como registro** — y por eso
@@ -386,6 +388,15 @@ falló el aviso. No se puede avisar de algo que el sistema no sabe que va a pasa
 
 Se pide confirmación del cliente, no se le informa y punto: hay que saber si va a
 haber alguien y si el acceso está disponible.
+
+**Lo que el cliente hace cuando confirma una visita:** se queda. Pide no ir a
+trabajar, cancela lo que tenía, y espera. Por eso **una fecha confirmada es una
+promesa**, y no ir sin avisar es peor que aparecer sin avisar: la visita sorpresa
+lo incomoda un rato, el plantón le costó el día.
+
+Si por lo que sea no se puede ir, **el cliente se entera antes de la hora, no
+después**. Aunque no haya fecha nueva todavía, aunque el motivo sea nuestro,
+aunque se avise sobre la hora: avisar tarde es malo, no avisar es mucho peor.
 
 ---
 
@@ -900,28 +911,38 @@ Esta es la página que hay que saber de memoria.
 > Ninguna visita a la propiedad del cliente sin que esté en el calendario y
 > avisada. La queja que originó todo esto empezó acá.
 
-> ### 4. Toda reprogramación se avisa el mismo día.
+> ### 4. Si está agendado, se va.
+> Y si por lo que sea no se puede ir, **el cliente se entera antes de la hora, no
+> después**. Una fecha confirmada es una promesa: el cliente se quedó en la casa
+> esperando.
+
+> ### 5. Toda reprogramación se avisa el mismo día.
 > Con el motivo, aunque todavía no haya fecha nueva.
 
-> ### 5. Habilitación: 24 a 48 horas.
+> ### 6. Habilitación: 24 a 48 horas.
 > Cada día que pasa el cliente deja de ahorrar.
 
-> ### 6. Reclamos: respuesta el mismo día hábil, siempre.
+> ### 7. Reclamos: respuesta el mismo día hábil, siempre.
 > La solución puede demorar. La respuesta no.
 
-> ### 7. No se promete cadencia.
+> ### 8. No se promete cadencia.
 > Se promete que en cada hito se entera. Una promesa incumplida daña más que el
 > silencio explicado.
 
-> ### 8. Las malas noticias se dan antes de que el cliente pregunte.
+> ### 9. Las malas noticias se dan antes de que el cliente pregunte.
 
-> ### 9. Todo mensaje cierra con el próximo paso.
+> ### 10. Todo mensaje cierra con el próximo paso.
 > *"Ahora arranca el trámite y te aviso cuando habiliten"* — nunca un mensaje que
 > deje al cliente sin saber qué sigue.
 
-> ### 10. Lo que no se registra, no existe.
+> ### 11. Lo que no se registra, no existe.
 > Para el sistema, para quien te reemplaza y para el cliente que reclama dentro de
 > cuatro meses.
+
+**Las reglas 3 y 4 son la misma regla mirada de los dos lados**, y la 4 es la más
+cara de romper: aparecer sin avisar incomoda, pero dejar al cliente esperando todo
+el día le costó el día. Pidió no ir a trabajar, se quedó en la casa, y no fue
+nadie.
 
 ---
 
@@ -1102,4 +1123,4 @@ Es la parte que más se consulta cuando algo no aparece donde uno lo busca.
 
 ---
 
-*Manual de Posventa — Experiencia Solar · Voltia · v1.3 · 24 de septiembre de 2026*
+*Manual de Posventa — Experiencia Solar · Voltia · v1.4 · 25 de septiembre de 2026*
