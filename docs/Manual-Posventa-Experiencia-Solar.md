@@ -570,12 +570,24 @@ Tres herramientas, en este orden.
 ### 8.1 · El correo de la mañana
 
 Llega un correo diario con **lo que está pendiente**, con la misma estructura que
-la pantalla del Recorrido:
+la pantalla del Recorrido, en tres secciones de arriba abajo por urgencia:
 
-1. **Arriba, lo que ya venció** — avisos de habilitación sin dar, pasos con el
-   plazo pasado y reclamos del cliente sin responder. Lo más arrastrado primero.
-2. **Abajo, por etapa** — quiénes están fuera de cadencia o tienen novedad sin
-   avisar.
+1. **Pendientes** — avisos de habilitación sin dar, pasos con el plazo pasado y
+   reclamos del cliente sin responder. **Tienen plazo y ya venció.** Lo más
+   arrastrado primero.
+2. **Novedades**, por etapa — pasó algo del lado del cliente y todavía nadie lo
+   miró.
+3. **Fuera de cadencia**, por etapa — sin novedad, pero les debemos el contacto
+   del período.
+
+**El asunto ya dice los tres números**: *"2 pendientes · 12 novedades · 71 fuera de
+cadencia"*. No se suman a propósito. Antes venía un total único —"85 pendientes"—
+que asustaba y, peor, escondía las dos o tres cosas que de verdad hay que hacer
+hoy entre setenta que pueden esperar.
+
+**Un cliente aparece una sola vez.** Si tiene novedad va en Novedades aunque
+además esté fuera de cadencia: llamarlo por la novedad salda las dos cosas, y ahí
+mismo se le marcan los días sin contacto.
 
 **Si no hay nada pendiente, no llega.** Un correo vacío todos los días enseña a
 ignorarlo.
@@ -612,6 +624,11 @@ columna cada una.
 |---|---|---|
 | 🔺 **Triángulo rojo** | Falta uno de los **tres avisos clave** y hay plazo | Al tildar el paso |
 | 🟡 **Punto** | Hay algo nuevo para mirar | Al mirarlo |
+
+**Lo que hacemos nosotros en masa no prende el punto.** El envío del reporte
+mensual toca a todos los generadores el mismo día: si prendiera el punto, lo
+prendería en todos a la vez y el punto dejaría de señalar nada. Queda en el
+historial del cliente —importa saber que se mandó y cuándo— pero no pide atención.
 
 Los tres avisos que pintan la fila de rojo son **la bienvenida**, **el aviso de
 fecha de obra** y **el aviso de habilitación**, y están resaltados en la lista de
