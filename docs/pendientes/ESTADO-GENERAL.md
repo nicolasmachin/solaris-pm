@@ -17,6 +17,7 @@
 | Ítem | Estado | Nota |
 |---|---|---|
 | Que el asesor cree el plan de pagos desde "Modalidad de pago definida" | ⬜ | `plan-de-pagos-desde-onboarding.md`. **53 de 68 proyectos activos no tienen plan**: Experiencia Solar sale a cobrar sin saber qué cobrar. |
+| Material grabado para mandarle al cliente (video de bienvenida) | ⬜ | `material-para-el-cliente.md`. Grabado por Nicolás; acompaña la conversación, no la reemplaza. |
 | Manual de Ventas para el equipo comercial | ⬜ | `manual-de-ventas.md`. Como el de Posventa pero del rol comercial; después, el resto de las áreas. Eje: los leads que se enfrían sin que nadie los toque. |
 
 ## 1. Traspasos y notificaciones
