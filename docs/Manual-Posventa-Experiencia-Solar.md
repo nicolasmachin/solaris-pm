@@ -590,14 +590,25 @@ Abrís el cliente, mirás el historial (lo nuevo está arriba) y:
 
 - **Le importa** → se le avisa, con la plantilla de su etapa. Al copiarla queda
   registrado el contacto, y con eso el punto se apaga.
-- **No le importa** → no se le escribe nada. Un archivo interno o un movimiento
-  administrativo no son motivo para molestarlo.
+- **No le importa** → no se le escribe nada (un archivo interno o un movimiento
+  administrativo no son motivo para molestarlo) y se aprieta **"Ya lo vi"**, el
+  botón que está arriba del historial. Apaga el punto sin inventar un contacto.
 
-> **Ojo con el caso "no le importa":** el punto **queda encendido** hasta el
-> próximo contacto real, porque lo único que lo apaga es registrar un contacto. No
-> está mal: es que el sistema no tiene forma de saber que lo mirás y lo descartás.
-> No se registra un contacto que no existió para "limpiar la lista" — eso rompe lo
-> único que después permite saber si al cliente se le habló o no.
+> **Nunca se registra un contacto que no existió para limpiar la lista.** Para eso
+> está "Ya lo vi": el registro de contactos es lo único que después permite saber si
+> al cliente se le habló, y si se ensucia con contactos falsos no sirve para nada.
+
+**Qué hace "Ya lo vi", exactamente:**
+
+- **Apaga el punto para todos**, no solo para vos. Es la misma señal compartida que
+  el resto del recorrido: si lo apretás, Nicolás tampoco lo ve encendido.
+- **No lo silencia para siempre.** Si después pasa algo nuevo, el punto vuelve.
+- **No cuenta como contacto.** Los días sin contacto siguen corriendo y el cliente
+  sigue apareciendo en Fuera de cadencia si le toca. Es a propósito: "lo miré" no
+  es "le hablé".
+- **Queda registrado quién lo apretó y cuándo**, aunque no aparezca en el historial
+  del cliente (no es algo que le pasó a él).
+- Si lo apretaste por error, el botón vuelve a aparecer y lo podés revertir.
 
 **4. Atacás Fuera de cadencia de arriba hacia abajo, hasta donde llegues.** Ya
 viene ordenado por prioridad: arriba están los que hace más que nadie les habla y
@@ -677,7 +688,7 @@ columna cada una.
 | Señal | Qué dice | Cuándo se apaga |
 |---|---|---|
 | 🔺 **Triángulo rojo** | Falta uno de los **tres avisos clave** y hay plazo | Al tildar el paso |
-| 🟡 **Punto** | **Pasó algo después de la última vez que le hablamos** | Al registrar un contacto |
+| 🟡 **Punto** | **Pasó algo después de la última vez que le hablamos** | Al registrar un contacto, o con **"Ya lo vi"** |
 
 **Las dos señales son del cliente, no tuyas.** No hay un "no leído" por persona:
 el punto y el triángulo se ven **iguales para todos** los que abren la pantalla, y

@@ -440,7 +440,7 @@ Las **dos señales son distintas a propósito**:
 | Señal | Qué dice | Cuándo se apaga |
 |---|---|---|
 | Triángulo rojo | Hay que avisarle y hay plazo | Al registrar el aviso |
-| Puntito | Pasó algo posterior al último contacto registrado | Al registrar un contacto |
+| Puntito | Pasó algo posterior al último contacto registrado | Al registrar un contacto, o con "Ya lo vi" |
 
 `hayNovedad` se calcula comparando la última actividad del proyecto (eventos
 clasificados como novedad + comentarios) contra el último contacto registrado: es
@@ -462,8 +462,29 @@ en los manuales del equipo:
   comentarios del proyecto). Sólo un cliente con portal puede generar alguno.
 - **No es un "no leído" con tracking.** No se registra quién abrió la ficha: abrir
   la ficha no lo apaga. Lo que lo apaga es **registrar una interacción en la
-  bitácora** con fecha posterior al hecho. En la UI se describe como "hay algo que
-  contarle".
+  bitácora** con fecha posterior al hecho, o marcar "Ya lo vi" (abajo). En la UI se
+  describe como "hay algo que contarle".
+
+**"Ya lo vi"** (`marcarNovedadVista()` + `POST /clientes/:projectId/novedad-vista`,
+`EXPERIENCIA_CLIENTES:EDIT`). Apaga el punto sin registrar un contacto que no
+existió. Existe porque el flujo real tiene un caso que antes no cerraba: se mira la
+novedad, se decide que al cliente no le importa (un archivo interno, un movimiento
+administrativo) y el punto quedaba encendido hasta el próximo contacto real — lo
+que empujaba a registrar contactos falsos para limpiar la lista, que es
+exactamente lo que vuelve inservible la bitácora.
+
+- Escribe `Project.novedadVistaEn`. El corte de `hayNovedad` pasa a ser **el más
+  reciente** entre `ultimoContactoEn` y `novedadVistaEn`, así que **cualquier
+  actividad posterior vuelve a prender el punto**: no silencia al cliente.
+- **No toca `diasSinContacto` ni la cadencia.** "Lo miré" no es "le hablé": el
+  cliente sigue apareciendo en Fuera de cadencia si le corresponde.
+- Es **global**, como el resto de las señales.
+- Se audita como `updated` sobre `project`, **no** como novedad: si contara como
+  novedad, apagar el punto lo volvería a prender en el mismo acto. Por eso tampoco
+  aparece en el historial del cliente — no es algo que le pasó a él.
+- `{ vista: false }` lo revierte (`novedadVistaEn` a null), para el clic por error.
+- En la UI el botón está arriba del historial de la ficha y **sólo aparece con el
+  punto encendido**: es una acción para un estado, no un toggle permanente.
 
 **Lo que hacemos nosotros en masa no enciende el punto** (`ENTIDADES_SIN_LUZ` en
 `services/clientes/index.ts`). Hoy hay una sola entidad ahí: el envío del reporte

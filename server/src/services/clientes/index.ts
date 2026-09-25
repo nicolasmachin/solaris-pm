@@ -28,6 +28,7 @@ import { getAnclaMantenimiento, proximoMantenimiento } from "../../utils/anivers
 import { lastActionAt } from "../uteProcess.service.js";
 import { TRASPASO_CATALOGO, TRASPASO_LABEL } from "../traspasos/catalogo.js";
 import { getCadenciaMap } from "../ops-panel.service.js";
+import { createAuditEntry } from "../audit.service.js";
 import { ACCIONES_NOVEDAD, textoEvento } from "./eventos.js";
 
 export type ClienteEstado = "ACTIVO" | "FINALIZADO" | "ARCHIVADO" | "PROSPECTO";
@@ -147,6 +148,10 @@ export type ClienteListItem = {
   // el cliente todavía no lo sabe (o al menos, no se lo dijimos nosotros). Es la
   // "lucecita informativa": marca que hay algo para mirar, NO reordena la lista.
   hayNovedad: boolean;
+  // Cuándo se marcó "ya lo vi" por última vez (botón de limpiar la novedad). Sirve
+  // para el tooltip y para distinguir un cliente sin novedad de uno cuya novedad
+  // se descartó a mano. null = nunca se limpió.
+  novedadVistaEn: string | null;
 };
 
 export type ClienteFiltros = {
@@ -186,6 +191,7 @@ const LIST_SELECT = {
   actualUteEnd: true,
   avisoHabilitacionEn: true,
   recorridoManual: true,
+  novedadVistaEn: true,
   clientInteractions: {
     where: { deletedAt: null },
     orderBy: { createdAt: "desc" },
@@ -278,6 +284,7 @@ function toListItem(p: ProjectListRow): ClienteListItem {
     estado: estadoFromStatus(p.status),
     ultimoContactoEn: p.clientInteractions[0] ? serializeDate(p.clientInteractions[0].createdAt) : null,
     avisoHabilitacionPendiente: p.postHabilitacionInicioEn != null && p.avisoHabilitacionEn == null,
+    novedadVistaEn: serializeDate(p.novedadVistaEn),
     mantenimiento: buildMantenimiento(p),
     hasPortalUser: p._count.clients > 0 || p.clientUserId != null,
     diasSinContacto: diasDesde(p.clientInteractions[0]?.createdAt ?? null),
@@ -521,9 +528,63 @@ async function marcarNovedades(items: ClienteListItem[]): Promise<ClienteListIte
   for (const i of items) {
     const act = ultimaActividad.get(i.projectId);
     if (!act) continue;
-    i.hayNovedad = i.ultimoContactoEn === null || act > new Date(i.ultimoContactoEn);
+    // El punto se apaga con lo que pase último: un contacto registrado o un "ya lo
+    // vi" (el botón de limpiar la novedad). Los dos son formas de decir "esto ya
+    // está mirado"; la diferencia es que uno le habló al cliente y el otro no.
+    const fechas = [i.ultimoContactoEn, i.novedadVistaEn]
+      .filter((f): f is string => f !== null)
+      .map((f) => new Date(f).getTime());
+    i.hayNovedad = fechas.length === 0 || act.getTime() > Math.max(...fechas);
   }
   return items;
+}
+
+/**
+ * "Ya lo vi, no hay nada que contarle": apaga el punto de novedad sin registrar un
+ * contacto que no existió, que es lo que ensucia la bitácora y hace que después no
+ * se sepa si al cliente se le habló.
+ *
+ * No lo silencia para siempre: cualquier actividad posterior a esta marca lo
+ * vuelve a prender. Y es **global**, igual que el resto de las señales del
+ * recorrido — lo apaga cualquiera y se apaga para todos, porque no hay estado de
+ * "leído" por persona (ver `marcarNovedades`). Quién lo hizo queda en auditoría.
+ *
+ * `vista: false` lo vuelve a prender (limpiar un cliente por error no deja el
+ * punto apagado hasta que pase algo nuevo).
+ */
+export async function marcarNovedadVista(
+  projectId: string,
+  userId: string,
+  vista: boolean,
+): Promise<ClienteListItem | null> {
+  const proyecto = await prisma.project.findFirst({
+    where: { id: projectId, deletedAt: null },
+    select: { id: true, clientName: true, novedadVistaEn: true },
+  });
+  if (!proyecto) return null;
+
+  await prisma.project.update({
+    where: { id: projectId },
+    data: { novedadVistaEn: vista ? new Date() : null },
+  });
+
+  // Se audita como `updated`, que está clasificado como auditoría y NO como
+  // novedad: si contara como novedad, apagar el punto lo volvería a prender.
+  await createAuditEntry({
+    entityType: AuditEntityType.project,
+    entityId: projectId,
+    projectId,
+    userId,
+    action: AuditAction.updated,
+    fieldChanged: "novedadVistaEn",
+    oldValue: proyecto.novedadVistaEn?.toISOString() ?? null,
+    newValue: vista ? new Date().toISOString() : null,
+    description: vista
+      ? "Marcó las novedades del Generador como vistas"
+      : "Volvió a marcar la novedad del Generador como pendiente",
+  });
+
+  return getClienteListItem(projectId);
 }
 
 async function projectAndFilter(f: ClienteFiltros): Promise<ClienteListItem[]> {

@@ -21,6 +21,7 @@ import {
   getClienteFicha,
   getClienteTimeline,
   getClienteListItem,
+  marcarNovedadVista,
   getRecorrido,
   listClientes,
   listClientesForExport,
@@ -155,6 +156,24 @@ export async function registerClientesRoutes(app: FastifyInstance) {
       const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
       if (!(await projectExists(projectId))) throw notFound("PROJECT_NOT_FOUND", "El proyecto no existe");
       return { checks: await listarChecks(projectId) };
+    },
+  );
+
+  // ─── "Ya lo vi": apaga el punto de novedad sin inventar un contacto ───────
+  // EDIT y no CREATE: no crea nada en la bitácora, marca un campo del proyecto.
+  app.post(
+    "/clientes/:projectId/novedad-vista",
+    { preHandler: authorize(Module.EXPERIENCIA_CLIENTES, Action.EDIT) },
+    async (request) => {
+      const user = ensureUser(request);
+      const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
+      // Sin body se entiende "marcar como vista"; `{ vista: false }` lo revierte.
+      const { vista } = z
+        .object({ vista: z.boolean().default(true) })
+        .parse(request.body ?? {});
+      const item = await marcarNovedadVista(projectId, user.id, vista);
+      if (!item) throw notFound("CLIENTE_NOT_FOUND", "Cliente no encontrado");
+      return item;
     },
   );
 

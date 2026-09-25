@@ -10,6 +10,14 @@
 - El asunto lo dice de entrada: *"2 pendientes · 12 novedades · 85 fuera de cadencia"*. Antes sumaba todo en un solo número y decía "85 pendientes", que asustaba y tapaba las pocas cosas con plazo vencido.
 - **Novedades y fuera de cadencia se solapan, y cada número cuenta a todos los suyos**: un cliente puede tener las dos cosas. Lo que no se repite es el renglón — si tiene novedad se lista arriba, con los días sin contacto marcados ahí mismo, y la sección de abajo aclara cuántos de su cuenta ya están listados arriba.
 
+#### Botón "Ya lo vi" para apagar el punto de novedad
+
+- En la ficha del cliente, arriba del historial, aparece **"Ya lo vi"** cuando el cliente tiene el punto amarillo encendido. Lo apaga **sin registrar un contacto** que no existió.
+- Es para el caso de todos los días: mirás la novedad, es algo interno que al cliente no le importa, y antes el punto quedaba encendido hasta el próximo contacto real — lo que empujaba a anotar contactos falsos para limpiar la lista.
+- **Apaga el punto para todos**, igual que el resto de las señales del recorrido. Y **no lo silencia para siempre**: si después pasa algo nuevo, el punto vuelve.
+- **No cuenta como contacto**: los días sin contacto siguen corriendo y el cliente sigue apareciendo en Fuera de cadencia si le toca. "Lo miré" no es "le hablé".
+- Queda registrado quién lo apretó y cuándo. Si fue por error, el botón vuelve a aparecer y se revierte.
+
 #### Los manuales dicen qué hacer, no solo dónde mirar
 
 - El **Manual de Posventa** tiene una sección nueva, **"La media hora de la mañana"**: la rutina diaria en cinco pasos, desde abrir el correo hasta registrar el último contacto. Antes el capítulo describía las tres pantallas pero no decía qué hacer con ellas.

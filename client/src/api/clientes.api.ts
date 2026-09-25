@@ -49,6 +49,8 @@ export interface ClienteListItem {
   /** Avisos clave pendientes con el reloj corriendo. Vacío = nada urgente. */
   avisosClavePendientes: string[];
   hayNovedad: boolean; // pasó algo posterior al último contacto registrado
+  /** Cuándo se marcó "ya lo vi" por última vez. null = nunca se limpió. */
+  novedadVistaEn: string | null;
 }
 
 export interface BloqueRecorrido {
@@ -406,5 +408,15 @@ export async function getClienteUte(projectId: string): Promise<ClienteUte> {
 
 export async function patchCheck(checkId: string, completado: boolean): Promise<RecorridoCheck> {
   const { data } = await apiClient.patch<RecorridoCheck>(`/api/clientes/checks/${checkId}`, { completado });
+  return data;
+}
+
+/**
+ * "Ya lo vi": apaga el punto de novedad sin registrar un contacto que no existió.
+ * Es global (se apaga para todos) y no es definitivo: cualquier actividad posterior
+ * lo vuelve a prender. `vista: false` lo vuelve a prender a mano.
+ */
+export async function marcarNovedadVista(projectId: string, vista = true): Promise<ClienteListItem> {
+  const { data } = await apiClient.post<ClienteListItem>(`/api/clientes/${projectId}/novedad-vista`, { vista });
   return data;
 }

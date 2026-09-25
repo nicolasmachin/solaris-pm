@@ -722,7 +722,9 @@ queda para que el resto del equipo sepa cómo se trabaja la cartera:
    nuevo.
 2. **Se vacían los Pendientes, todos, hoy.** Son los únicos con plazo vencido.
 3. **Se mira cada Novedad y se decide una cosa: ¿esto le importa al cliente?** Si
-   le importa, se le avisa; si no, no se lo molesta.
+   le importa, se le avisa; si no, no se lo molesta y se aprieta **"Ya lo vi"**,
+   que apaga el punto sin inventar un contacto. Nunca se registra un contacto que
+   no existió para limpiar la lista.
 4. **Se ataca Fuera de cadencia de arriba hacia abajo**, hasta donde se llegue. Acá
    no hace falta tener novedad para escribir: el contacto es el punto.
 5. **Todo contacto se registra**, aunque haya sido corto. Sin registro, para el
@@ -741,7 +743,7 @@ columna cada una, ordenada por días sin contacto.
 | Señal | Qué dice |
 |---|---|
 | 🔺 **Triángulo rojo** | Falta uno de los avisos clave **y hay plazo** |
-| 🟡 **Punto** | Pasó algo después de la última vez que le hablamos. Se apaga al registrar el contacto |
+| 🟡 **Punto** | Pasó algo después de la última vez que le hablamos. Se apaga al registrar el contacto, o con **"Ya lo vi"** (arriba del historial, en la ficha) |
 
 **El punto no cambia el orden a propósito.** Es un «no leído», no una tarea: si
 reordenara, un cliente con novedad pero contactado ayer taparía al que lleva

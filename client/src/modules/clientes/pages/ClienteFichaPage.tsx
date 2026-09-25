@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, CalendarDays, Mail, MapPin, Phone, User, Wrench, Zap } from "lucide-react";
+import { ArrowLeft, CalendarDays, Check, Mail, MapPin, Phone, User, Wrench, Zap } from "lucide-react";
 
 import { getChecks, type ClienteRecorrido } from "../../../api/clientes.api";
 import { EnlacesModulos } from "../../../components/layout/EnlacesModulos";
@@ -15,6 +15,7 @@ import { RecorridoChecks } from "../components/RecorridoChecks";
 import { RecorridoPipeline } from "../components/RecorridoPipeline";
 import { ESTADO_LABELS } from "../constants";
 import { useClienteFicha } from "../hooks/useClienteFicha";
+import { useNovedadVista } from "../hooks/useNovedadVista";
 import { useUpdateCliente } from "../hooks/useUpdateCliente";
 
 // La ficha del cliente es UNA pantalla, no cuatro pestañas.
@@ -41,6 +42,7 @@ export function ClienteFichaPage() {
   const navigate = useNavigate();
   const canCreate = usePermission("EXPERIENCIA_CLIENTES", "CREATE");
   const canEdit = usePermission("EXPERIENCIA_CLIENTES", "EDIT");
+  const novedadVista = useNovedadVista();
   const updateCliente = useUpdateCliente();
   const [etapaSel, setEtapaSel] = useState<ClienteRecorrido | null>(null);
 
@@ -249,7 +251,25 @@ export function ClienteFichaPage() {
         <div className="space-y-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
           <div className="flex items-baseline justify-between gap-2">
             <h3 className="text-[13px] font-semibold text-[var(--color-text-primary)]">Novedades</h3>
-            <span className="text-[11px] text-[var(--color-text-muted)]">lo más nuevo arriba</span>
+            {/*
+              El botón aparece SOLO con el punto encendido: es para el caso "lo
+              mirá, no hay nada que contarle al cliente". Lo que apaga el punto
+              cuando sí hay algo que contarle es registrar el contacto, acá abajo.
+            */}
+            {canEdit && projectId && ficha.hayNovedad ? (
+              <button
+                type="button"
+                onClick={() => novedadVista.mutate({ projectId })}
+                disabled={novedadVista.isPending}
+                title="Apaga el punto amarillo sin registrar un contacto. Se apaga para todos, y vuelve a prenderse si pasa algo nuevo."
+                className="inline-flex items-center gap-1 rounded border border-[var(--color-border)] px-2 py-1 text-[11px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] disabled:opacity-50"
+              >
+                <Check className="h-3 w-3" />
+                {novedadVista.isPending ? "Marcando…" : "Ya lo vi"}
+              </button>
+            ) : (
+              <span className="text-[11px] text-[var(--color-text-muted)]">lo más nuevo arriba</span>
+            )}
           </div>
           {canCreate && projectId && <ClienteInteractionForm projectId={projectId} />}
           <div className="max-h-[70vh] overflow-y-auto pr-1">
