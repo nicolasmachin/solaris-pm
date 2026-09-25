@@ -27,10 +27,11 @@ silencio que el cliente lee como abandono, este arranca del lead que se apaga.
 
 ## Para cuando se retome
 
-Hay una exploración del material ya encargada (pipeline, plazos, reclamos,
-herramientas, fechas del lead, comisión, permisos del rol). Si el resultado se
-perdió, hay que rehacerla: el material está en `docs/manual/02-ventas.md`, en el
-capítulo 3 de `Manual-de-Trabajo-Voltia.md`, y en el enum `SalesStage`.
+**El material ya está relevado y guardado** en
+`material-manual-ventas.md` (mismo directorio): pipeline de 7 etapas con sus
+etiquetas, plazos, reclamos, herramientas del asesor, fechas del lead, comisión y
+permisos del rol, todo verificado contra el código. No hay que rehacer esa
+exploración.
 
 Lo que **no** sale del código y hay que preguntarle a Nicolás:
 
