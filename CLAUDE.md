@@ -288,8 +288,13 @@ Cómo decidir dónde va un cambio:
 - **Es solo interno** (refactors, permisos de backend) → a ninguno.
 
 Están escritos en **segunda persona y en criollo** ("entrás", "cargás"), sin
-nombres de archivo ni de endpoints: el lector no programa. Ese registro se
-respeta; los detalles técnicos van al manual de `docs/manual/`.
+nombres de archivo, de endpoints ni de permisos: el lector no programa. Ese
+registro se respeta; los detalles técnicos van al manual de `docs/manual/`.
+
+**No llevan datos de coyuntura.** Nada de "hoy 72 de 95 clientes no tienen
+acceso": describen **cómo se trabaja**, no cómo está la cartera en un momento.
+Un número medido envejece en una semana y ensucia lo que tiene que durar años;
+si el dato importa, va a un informe, no al manual.
 
 Al tocarlos, **subir la versión de su cabecera** (`Versión 1.1 — {fecha}`).
 

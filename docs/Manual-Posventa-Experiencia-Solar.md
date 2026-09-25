@@ -7,6 +7,10 @@
 > Voltia PM se hace**. No hay un documento aparte para "el proceso" y otro para "el
 > sistema": el sistema existe para sostener el proceso, y separarlos es lo que hace
 > que ninguno de los dos se cumpla.
+>
+> **Describe cómo se trabaja, no cómo está la cartera hoy.** Acá no van cuántos
+> clientes están en tal situación en tal momento: eso envejece en una semana y
+> ensucia lo que sí tiene que durar. Los números del momento van a los informes.
 
 ---
 
@@ -301,10 +305,11 @@ contraseña ya adentro**.
 documentación, sus reportes de generación cuando arranquen, y **puede abrirnos un
 reclamo por ahí** en vez de por WhatsApp.
 
-> **Estado real hoy: 72 de 95 generadores no tienen acceso.** Es la brecha más
-> grande del sistema y la que más limita todo lo demás: sin acceso no pueden abrir
-> tickets ni responder encuestas, así que las encuestas quedan sin responder y los
-> reclamos siguen entrando por WhatsApp a cualquiera.
+> **Este paso arrastra a varios más.** Sin acceso al portal el cliente no puede
+> abrir tickets ni responder encuestas, así que las encuestas quedan sin
+> responder y los reclamos siguen entrando por WhatsApp a cualquiera. Es el paso
+> que más rinde hacer temprano y el que más cuesta recuperar después: al que se
+> le pasó, nadie se lo crea seis meses más tarde.
 
 ---
 
@@ -757,7 +762,7 @@ queda en el portal sin que nadie la vea.
 
 **El contrato incluye mantenimiento anual sin cargo los primeros 2 años.**
 
-**Estado real:** el sistema calcula y muestra **cuándo cumple años** cada
+**Cómo funciona hoy:** el sistema calcula y muestra **cuándo cumple años** cada
 instalación (en la ficha, "Próximo mantenimiento"), pero **no hay agendamiento
 automático ni alerta de vencido**. Los mantenimientos se agendan a mano.
 
