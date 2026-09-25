@@ -272,6 +272,30 @@ Al escribirlo, seguir la estructura común (ver `README.md`):
 ## Cómo se usa
 ## Cómo funciona
 ## Permisos
+## La factura que se le emite al cliente
+
+**Dónde:** Finanzas → Facturación al cliente, columna **Factura**.
+
+El archivo se guarda como un `FileAttachment` del proyecto con
+`toolSource = "factura-cliente"`. **Hay una sola por proyecto**: subir una nueva
+soft-deletea la anterior (`deletedAt`), así que el reemplazo queda en la base pero
+la pantalla muestra una.
+
+| Acción | Endpoint | Permiso |
+|---|---|---|
+| Adjuntar | `POST /finance/facturacion/:projectId/factura` (multipart) | `FINANZAS:EDIT` |
+| Ver / descargar | `GET /finance/facturacion/:projectId/factura[?descargar=true]` | `FINANZAS:VIEW` |
+
+**Por qué no usa el endpoint general de archivos** (`/files/:id/download`): ese
+pide permiso de **Operaciones**, y quien factura puede no tenerlo. El de acá va
+por Finanzas, que es quien trabaja en esa pantalla.
+
+`descargar=true` cambia el `Content-Disposition` de `inline` a `attachment`: la
+misma ruta sirve para la vista previa en el navegador y para bajar el archivo.
+
+El listado de facturación (`GET /finance/facturacion`) devuelve `factura: {id,
+filename, mimeType, subidaEn} | null`, que es lo que decide qué ícono se muestra.
+
 ## Reglas y decisiones
 ## Casos borde
 ```

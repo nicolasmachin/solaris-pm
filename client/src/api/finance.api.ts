@@ -786,6 +786,8 @@ export interface FacturacionRow {
   facturaEmitidaEn: string | null;
   nota: string | null;
   salesperson: { id: string; name: string } | null;
+  /** La factura que se le mandó al cliente, si está adjunta. */
+  factura: { id: string; filename: string; mimeType: string; subidaEn: string | null } | null;
 }
 
 export interface FacturacionResponse {
@@ -800,3 +802,19 @@ export const patchFacturacion = (
   projectId: string,
   body: { facturaEmitida?: boolean; facturaNota?: string | null },
 ) => apiClient.patch(`/api/finance/facturacion/${projectId}`, body).then(r => r.data);
+
+/** Sube la factura del cliente. Reemplaza a la anterior si ya había una. */
+export const subirFacturaCliente = (projectId: string, file: File) => {
+  const form = new FormData();
+  form.append('file', file);
+  return apiClient
+    .post<{ factura: FacturacionRow['factura'] }>(
+      `/api/finance/facturacion/${projectId}/factura`, form,
+      { headers: { 'Content-Type': 'multipart/form-data' } },
+    )
+    .then(r => r.data);
+};
+
+/** La URL para ver la factura en el navegador o bajarla. */
+export const urlFacturaCliente = (projectId: string, descargar = false) =>
+  `/api/finance/facturacion/${projectId}/factura${descargar ? '?descargar=true' : ''}`;

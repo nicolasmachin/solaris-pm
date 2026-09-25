@@ -4,6 +4,13 @@
 
 ### 25 de septiembre de 2026
 
+#### La factura del cliente se puede adjuntar
+
+- En **Finanzas → Facturación al cliente** hay una columna nueva, **Factura**, con un ícono por fila.
+- Si el proyecto **no tiene la factura adjunta**, aparece el ícono de **subir**: se elige el archivo (PDF o imagen) y queda guardado ahí.
+- Si **ya la tiene**, aparecen dos íconos: **ver** (la abre en una pestaña) y **descargar**.
+- **Hay una sola factura por proyecto**: si se sube otra, reemplaza a la anterior. Queda registrado en el historial quién la subió y cuándo.
+
 #### La modalidad de pago se elige, y lo que exige se hace
 
 - La subetapa **"Modalidad de pago definida"** del onboarding ahora pregunta primero **cómo paga el cliente**, con tres opciones: **Financiación bancaria**, **Pago directo** y **Otro**.

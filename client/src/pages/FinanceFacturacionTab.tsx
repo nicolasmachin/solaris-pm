@@ -1,10 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Search } from 'lucide-react';
+import { Download, Eye, Search, Upload } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
 import { ResponsiveTable, type Column } from '../components/ui/ResponsiveTable';
-import { getFacturacion, patchFacturacion, type FacturacionRow } from '../api/finance.api';
+import {
+  getFacturacion, patchFacturacion, subirFacturaCliente, urlFacturaCliente,
+  type FacturacionRow,
+} from '../api/finance.api';
 import { usePermission } from '../hooks/usePermission';
 import { fmtCurrency, fmtDate } from '../lib/finance';
 
@@ -21,6 +24,8 @@ export function FinanceFacturacionTab() {
   const [search, setSearch] = useState('');
   // Nota en edición: null = ninguna. Se edita en un pequeño modal.
   const [editing, setEditing] = useState<{ id: string; clientName: string; value: string } | null>(null);
+  // Proyecto cuya factura se está subiendo, para deshabilitar sólo ese botón.
+  const [subiendo, setSubiendo] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -56,6 +61,31 @@ export function FinanceFacturacionTab() {
       toast.error(msg ?? 'No se pudo actualizar');
     },
   });
+
+  // Subir la factura que se le mandó al cliente. Reemplaza a la anterior si ya
+  // había una: hay una sola factura por proyecto.
+  const subirMutation = useMutation({
+    mutationFn: (vars: { id: string; file: File }) => subirFacturaCliente(vars.id, vars.file),
+    onMutate: (vars) => setSubiendo(vars.id),
+    onSettled: () => setSubiendo(null),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['facturacion'] });
+      toast.success('Factura adjuntada');
+    },
+    onError: () => toast.error('No se pudo adjuntar la factura'),
+  });
+
+  // El input de archivo se crea al vuelo: no hace falta uno oculto por fila.
+  function elegirArchivo(projectId: string) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,image/*';
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (file) subirMutation.mutate({ id: projectId, file });
+    };
+    input.click();
+  }
 
   const notaMutation = useMutation({
     mutationFn: (vars: { id: string; nota: string | null }) =>
@@ -137,6 +167,42 @@ export function FinanceFacturacionTab() {
             <span className="text-[10px] text-[var(--color-text-muted)]">{fmtDate(p.facturaEmitidaEn)}</span>
           )}
         </div>
+      ),
+    },
+    {
+      key: 'factura', label: 'Factura', align: 'center' as const,
+      render: (p: FacturacionRow) => (
+        p.factura ? (
+          <div className="flex items-center justify-center gap-1">
+            <a
+              href={urlFacturaCliente(p.id)}
+              target="_blank"
+              rel="noreferrer"
+              title={`Ver ${p.factura.filename}`}
+              className="rounded p-1.5 text-[var(--color-accent)] hover:bg-[var(--color-bg-card-hover)]"
+            >
+              <Eye className="h-4 w-4" />
+            </a>
+            <a
+              href={urlFacturaCliente(p.id, true)}
+              title="Descargar"
+              className="rounded p-1.5 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)]"
+            >
+              <Download className="h-4 w-4" />
+            </a>
+          </div>
+        ) : canEdit ? (
+          <button
+            onClick={() => elegirArchivo(p.id)}
+            disabled={subiendo === p.id}
+            title="Adjuntar la factura que se le mandó al cliente"
+            className="rounded p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-bg-card-hover)] hover:text-[var(--color-accent)] disabled:opacity-50"
+          >
+            <Upload className="h-4 w-4" />
+          </button>
+        ) : (
+          <span className="text-[11px] text-[var(--color-text-muted)]">—</span>
+        )
       ),
     },
     ...(canEdit ? [{

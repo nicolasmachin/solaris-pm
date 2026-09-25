@@ -11497,6 +11497,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // acción propia de Finanzas (por eso no pasa por el PATCH de proyecto, que
     // exigiría permiso de Operaciones al rol Finanzas).
 
+    // Identifica en FileAttachment a la factura que se le emitió al cliente. Es
+    // una por proyecto: si se sube otra, reemplaza a la anterior.
+    const FACTURA_CLIENTE_SOURCE = "factura-cliente";
+
     app.get("/finance/facturacion", { preHandler: authorize(Module.FINANZAS, Action.VIEW) }, async (request) => {
       const query = z.object({
         estado: z.enum(["pendiente", "emitida", "todas"]).optional().default("pendiente"),
@@ -11516,6 +11520,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
           id: true, code: true, clientName: true, status: true, budgetUsd: true,
           saleDate: true, facturaEmitida: true, facturaEmitidaEn: true, facturaNota: true,
           salesperson: { select: { id: true, name: true } },
+          // El archivo de la factura que se le mandó al cliente, si se adjuntó.
+          files: {
+            where: { toolSource: FACTURA_CLIENTE_SOURCE, deletedAt: null },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { id: true, filename: true, mimeType: true, createdAt: true },
+          },
         },
         // Pendientes primero, luego por fecha de venta más reciente.
         orderBy: [{ facturaEmitida: "asc" }, { saleDate: "desc" }, { createdAt: "desc" }],
@@ -11532,6 +11543,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
         facturaEmitidaEn: p.facturaEmitidaEn ? serializeDate(p.facturaEmitidaEn) : null,
         nota: p.facturaNota,
         salesperson: p.salesperson ?? null,
+        factura: p.files[0]
+          ? {
+              id: p.files[0].id,
+              filename: p.files[0].filename,
+              mimeType: p.files[0].mimeType,
+              subidaEn: serializeDate(p.files[0].createdAt),
+            }
+          : null,
       }));
 
       return {
@@ -11542,6 +11561,98 @@ export async function registerApiRoutes(app: FastifyInstance) {
         },
       };
     });
+
+    // ─── La factura que se le mandó al cliente ────────────────────────────
+    // Se adjunta acá, en la misma pantalla donde se marca emitida, porque es el
+    // momento en que se tiene el archivo en la mano. Subir una reemplaza a la
+    // anterior: hay una sola factura por proyecto, igual que el estado de emisión.
+    app.post(
+      "/finance/facturacion/:projectId/factura",
+      { preHandler: authorize(Module.FINANZAS, Action.EDIT) },
+      async (request, reply) => {
+        const user = ensureUser(request);
+        const params = z.object({ projectId: z.string().min(1) }).parse(request.params);
+        const project = await findProjectOrThrow(params.projectId);
+
+        const parts = request.parts();
+        let creado: { id: string; filename: string; mimeType: string; subidaEn: string | null } | null = null;
+
+        for await (const part of parts) {
+          if (part.type !== "file") continue;
+          const saved = await saveUploadedFile(part, project.id);
+
+          // La anterior se soft-deletea: el historial de auditoría guarda que
+          // hubo un reemplazo, pero la pantalla muestra una sola.
+          await prisma.fileAttachment.updateMany({
+            where: { projectId: project.id, toolSource: FACTURA_CLIENTE_SOURCE, deletedAt: null },
+            data: { deletedAt: new Date() },
+          });
+
+          const attachment = await prisma.fileAttachment.create({
+            data: {
+              projectId: project.id,
+              filename: saved.filename,
+              storedFilename: saved.storedFilename,
+              mimeType: saved.mimeType,
+              sizeBytes: saved.sizeBytes,
+              url: saved.url,
+              tipo: FileAttachmentTipo.OTRO,
+              toolSource: FACTURA_CLIENTE_SOURCE,
+              uploadedById: user.id,
+            },
+          });
+
+          await createAuditEntry({
+            entityType: AuditEntityType.file,
+            entityId: attachment.id,
+            projectId: project.id,
+            userId: user.id,
+            action: AuditAction.file_uploaded,
+            description: `Adjuntó la factura del cliente '${saved.filename}'`,
+          });
+
+          creado = {
+            id: attachment.id,
+            filename: attachment.filename,
+            mimeType: attachment.mimeType,
+            subidaEn: serializeDate(attachment.createdAt),
+          };
+        }
+
+        if (!creado) throw badRequest("FILE_REQUIRED", "Adjuntá el archivo de la factura");
+        reply.code(201);
+        return { factura: creado };
+      },
+    );
+
+    // Ver o descargar la factura. Va por Finanzas y no por el endpoint general de
+    // archivos, que pide permiso de Operaciones.
+    app.get(
+      "/finance/facturacion/:projectId/factura",
+      { preHandler: authorize(Module.FINANZAS, Action.VIEW) },
+      async (request, reply) => {
+        const params = z.object({ projectId: z.string().min(1) }).parse(request.params);
+        const query = z.object({ descargar: z.coerce.boolean().optional() }).parse(request.query);
+
+        const factura = await prisma.fileAttachment.findFirst({
+          where: { projectId: params.projectId, toolSource: FACTURA_CLIENTE_SOURCE, deletedAt: null },
+          orderBy: { createdAt: "desc" },
+        });
+        if (!factura) throw notFound("FACTURA_NOT_FOUND", "Este proyecto no tiene la factura adjunta");
+
+        const absolutePath = getStoredFilePath(factura.url);
+        if (!fs.existsSync(absolutePath)) {
+          throw notFound("FILE_NOT_FOUND", "El archivo de la factura no está en el storage");
+        }
+
+        reply.header("Content-Type", factura.mimeType);
+        reply.header(
+          "Content-Disposition",
+          contentDisposition(query.descargar ? "attachment" : "inline", factura.filename),
+        );
+        return reply.send(fs.createReadStream(absolutePath));
+      },
+    );
 
     // Marcar/revertir emisión y editar la nota, con permiso de Finanzas.
     app.patch("/finance/facturacion/:projectId", { preHandler: authorize(Module.FINANZAS, Action.EDIT) }, async (request) => {
