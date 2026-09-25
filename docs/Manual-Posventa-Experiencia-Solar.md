@@ -184,6 +184,7 @@ Nadie tiene que entrar a un módulo que no usa para dejar una nota.
 | **Capataz / Operaciones** | **Todo intercambio con el cliente en la obra** y cualquier incidente: algo que se rompió, un pedido que hizo, una queja al pasar | Comentario en la etapa del proyecto, **desde el celular** |
 | **Tramitación UTE** | Novedades del trámite que cambian el plazo prometido | Comentarios del proyecto / módulo UTE |
 | **Experiencia Solar** | Cada contacto con el cliente: el canal y qué se dijo | El formulario del **historial** de la ficha |
+| **Finanzas** | Los cobros que entran y las facturas que se emiten | Finanzas — **aparecen solos** en el historial del cliente |
 
 **Todos esos comentarios llegan al Historial de la ficha del cliente**, indicando
 de dónde salieron (por ejemplo *"en Ejecución de obra"*). El capataz no necesita
@@ -211,11 +212,10 @@ está en su ficha y no hay que pedírsela a nadie.
 
 ### Lo que hoy no se puede
 
-El capataz **no puede cargar en la bitácora de Interacciones** (no tiene el
-permiso `EXPERIENCIA_CLIENTES:CREATE`). No es un problema: lo que tiene que hacer
-es comentar el proyecto, y eso llega igual al Historial. La bitácora de
-Interacciones es la herramienta de Experiencia Solar para registrar **sus**
-contactos.
+El capataz **no puede cargar en la bitácora de Interacciones**: no tiene ese
+permiso. No es un problema: lo que tiene que hacer es comentar el proyecto, y eso
+llega igual al Historial. La bitácora de Interacciones es la herramienta de
+Experiencia Solar para registrar **sus** contactos.
 
 ---
 

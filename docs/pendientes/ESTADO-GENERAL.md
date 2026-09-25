@@ -12,6 +12,12 @@
 
 # PARTE A — PENDIENTES
 
+## 0. Plan de pagos desde Onboarding
+
+| Ítem | Estado | Nota |
+|---|---|---|
+| Que el asesor cree el plan de pagos desde "Modalidad de pago definida" | ⬜ | `plan-de-pagos-desde-onboarding.md`. **53 de 68 proyectos activos no tienen plan**: Experiencia Solar sale a cobrar sin saber qué cobrar. |
+
 ## 1. Traspasos y notificaciones
 
 | Ítem | Estado | Nota |
