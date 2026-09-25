@@ -109,7 +109,7 @@ Apenas tengamos la nueva te la confirmo — calculamos {estimación}. Perdón po
     id: "visita",
     recorrido: "E1",
     titulo: "Visita a la propiedad",
-    cuando: "Antes de cualquier visita: materiales, relevamiento o equipo. Si no está agendado, no se va.",
+    cuando: "Antes de cualquier visita: materiales, relevamiento o equipo. Si no está agendado, no vamos.",
     checks: [],
     motivo: "SEGUIMIENTO",
     cuerpo: `Hola {nombre}, te aviso que el {día} entre {franja horaria} pasa el equipo por tu casa a {motivo de la visita}.

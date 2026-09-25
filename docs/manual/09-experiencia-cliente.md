@@ -124,7 +124,7 @@ mantiene un semáforo de días sin contacto por etapa del recorrido —
 |---|---|---|
 | 1 | **Bienvenida** | Quién es su referente, el recorrido completo y cuánto demora cada etapa — **incluido el trámite de UTE y su plazo**. Es la que sostiene todo el modelo por eventos. |
 | 2 | **Fecha de obra** | Primero la tentativa, después la **confirmada**. Toda reprogramación se comunica **el mismo día**. |
-| 3 | **Visita a su propiedad** | Materiales, relevamiento o cuadrilla. **Regla dura: si no está agendado, no se va.** |
+| 3 | **Visita a su propiedad** | Materiales, relevamiento o cuadrilla. **Regla dura: si no está agendado, no vamos.** |
 | 4 | **Obra terminada** | Que terminó y **qué sigue ahora**: arranca el trámite, con su plazo. |
 | 5 | **Ya podés encender** | Dentro de **24-48 h** de la habilitación. Cada día que pasa el cliente deja de ahorrar. |
 | 6 | **Capacitación** | **En el mismo contacto que el hito 5**: cómo usar la app, qué generación esperar, accesos. |
@@ -816,7 +816,7 @@ historial de la ficha. Ver "historia clínica" arriba.
   cuándo. Esto es consecuencia de los guardrails de correo y WhatsApp
   (ver `01-fundamentos.md`), y de una decisión explícita de no automatizar la voz
   de la empresa.
-- **Si no está agendado, no se va.** La visita que generó la queja falló primero
+- **Si no está agendado, no vamos.** La visita que generó la queja falló primero
   como registro: no estaba en el calendario, y por eso nadie pudo avisar.
 
 ## Casos borde

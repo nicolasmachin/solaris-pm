@@ -112,7 +112,7 @@ Son seis. **Ninguno es opcional.**
 |---|---|---|---|
 | 1 | **Bienvenida** — quién es su referente, el recorrido completo y cuánto demora cada etapa, **incluido UTE** | E1 | Al cerrar la venta |
 | 2 | **Fecha de obra** — primero la tentativa, después la confirmada | E1 | 2 días hábiles desde que **Operaciones confirma la fecha en el calendario** |
-| 3 | **Cualquier visita a su propiedad** — materiales, relevamiento o equipo | E1/E2 | Antes de ir. **Si no está agendado, no se va.** |
+| 3 | **Cualquier visita a su propiedad** — materiales, relevamiento o equipo | E1/E2 | Antes de ir. **Si no está agendado, no vamos.** |
 | 4 | **Obra terminada y qué sigue** — que arranca el trámite, con su plazo | E1→E2 | El mismo día |
 | 5 | **Ya podés encender** | E2→E3 | **24-48 h** desde la habilitación |
 | 6 | **Capacitación** — cómo usar la app, qué generación esperar | E3 | En el mismo contacto que el 5 |
@@ -378,9 +378,9 @@ quedaba tildada para siempre, y por eso la segunda reagenda no se avisaba.
 | **Quién** | Quien agenda la visita, coordinado con Experiencia Solar |
 | **Qué decir** | Plantilla **"Visita a la propiedad"** |
 
-> ## Regla dura: **si no está agendado, no se va.**
+> ## Regla dura: **si no está agendado, no vamos.**
 >
-> ## Y su contracara: **si está agendado, se va.**
+> ## Y su contracara: **si está agendado, vamos. Y si no vamos, avisamos.**
 
 La queja que originó la revisión de todo este proceso empezó acá: una visita que
 no estaba en el calendario oficial. **Falló primero como registro** — y por eso
@@ -394,7 +394,7 @@ trabajar, cancela lo que tenía, y espera. Por eso **una fecha confirmada es una
 promesa**, y no ir sin avisar es peor que aparecer sin avisar: la visita sorpresa
 lo incomoda un rato, el plantón le costó el día.
 
-Si por lo que sea no se puede ir, **el cliente se entera antes de la hora, no
+Si por lo que sea no vamos, **el cliente se entera antes de la hora, no
 después**. Aunque no haya fecha nueva todavía, aunque el motivo sea nuestro,
 aunque se avise sobre la hora: avisar tarde es malo, no avisar es mucho peor.
 
@@ -907,14 +907,13 @@ Esta es la página que hay que saber de memoria.
 > Si te preguntan algo que no es tuyo: *"te averiguo y te confirmo"*. La pelota
 > circula puertas adentro.
 
-> ### 3. Si no está agendado, no se va.
+> ### 3. Si no está agendado, no vamos.
 > Ninguna visita a la propiedad del cliente sin que esté en el calendario y
 > avisada. La queja que originó todo esto empezó acá.
 
-> ### 4. Si está agendado, se va.
-> Y si por lo que sea no se puede ir, **el cliente se entera antes de la hora, no
-> después**. Una fecha confirmada es una promesa: el cliente se quedó en la casa
-> esperando.
+> ### 4. Si está agendado, vamos. Y si no vamos, avisamos.
+> **Antes de la hora, no después.** Una fecha confirmada es una promesa: el
+> cliente se quedó en la casa esperando.
 
 > ### 5. Toda reprogramación se avisa el mismo día.
 > Con el motivo, aunque todavía no haya fecha nueva.
@@ -1092,8 +1091,8 @@ Es la parte que más se consulta cuando algo no aparece donde uno lo busca.
 - **El sistema no le escribe al cliente por su cuenta.** Toda comunicación
   saliente la hace una persona; el sistema arma el mensaje y recuerda cuándo. La
   única excepción es el reporte mensual de generación.
-- **Los mantenimientos no se auto-agendan.** Choca con "si no está agendado, no se
-  va". Primero el listado, después la agenda manual.
+- **Los mantenimientos no se auto-agendan.** Choca con "si no está agendado, no
+  vamos". Primero el listado, después la agenda manual.
 - **No hay check de "contacto semanal".** El cumplimiento se calcula desde las
   interacciones registradas, no se declara tildando una casilla. Una casilla que
   se tilda una vez y queda tildada para siempre es exactamente lo que hacía que

@@ -108,7 +108,7 @@ Cada uno anota en **su** etapa del proyecto, desde donde ya trabaja. No hay que
 entrar a otro módulo ni aprender otra pantalla. Eso aparece solo en el historial
 del cliente, con el nombre de tu área.
 
-### Regla 5 — Si no está agendado, no se va
+### Regla 5 — Si no está agendado, no vamos
 
 **Ninguna visita a la propiedad del cliente sin que esté en el calendario y
 avisada.** Vale para el relevamiento, para la visita técnica de coordinación,
@@ -844,7 +844,7 @@ cédula o con un usuario armado con su nombre.
 
 > ### 5. Si tenés que preguntar en qué anda algo, falta un registro.
 
-> ### 6. Si no está agendado, no se va.
+> ### 6. Si no está agendado, no vamos. Y si está agendado, vamos: si no vamos, avisamos.
 
 > ### 7. Toda reprogramación se avisa el mismo día, con el motivo.
 
