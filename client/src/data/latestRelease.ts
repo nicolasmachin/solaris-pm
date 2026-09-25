@@ -23,6 +23,44 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "11.2",
+  date: "24 de septiembre de 2026",
+  sections: [
+    {
+      title: "El resumen diario de Experiencia Solar, en tres secciones",
+      items: [
+        "El correo del recorrido separa lo que antes venía mezclado en un solo número: Pendientes (tienen plazo y ya venció), Novedades (pasó algo en el proyecto después de la última vez que le hablamos) y Fuera de cadencia (les debemos el contacto del período).",
+        "El asunto lo dice de entrada: \"2 pendientes · 12 novedades · 85 fuera de cadencia\". Antes sumaba todo y decía \"85 pendientes\", que asustaba y tapaba las pocas cosas con plazo vencido.",
+        "Un cliente no se repite: si tiene novedad se lista arriba, con los días sin contacto marcados ahí mismo.",
+      ],
+    },
+    {
+      title: "Botón \"Ya lo vi\" para apagar el punto de novedad",
+      items: [
+        "En la ficha del cliente, arriba del historial, aparece cuando el cliente tiene el punto amarillo encendido: lo apaga sin registrar un contacto que no existió.",
+        "Apaga el punto para todos, igual que el resto de las señales, y no lo silencia para siempre: si después pasa algo nuevo, el punto vuelve.",
+        "No cuenta como contacto: los días sin contacto siguen corriendo. \"Lo miré\" no es \"le hablé\".",
+      ],
+    },
+    {
+      title: "El reporte mensual ya no enciende la luz de novedad",
+      items: [
+        "El envío del reporte fotovoltaico toca a todos los generadores el mismo día y prendía el punto amarillo en todos a la vez, con lo cual dejaba de señalar lo que hay que mirar.",
+        "Ahora el envío sigue quedando en el historial del cliente, pero no prende el punto.",
+      ],
+    },
+    {
+      title: "Se saca el paso \"Repaso de garantías\" de Post-habilitación",
+      items: [
+        "La etapa 3 del recorrido pasa de cinco pasos a cuatro: capacitación, acceso al inversor, alta en reportes y recorrido por el portal.",
+        "Se retiró porque no se hacía: la garantía ya está en el contrato firmado y el paso no producía ningún documento nuevo.",
+        "También se retiró la plantilla \"Garantías y cierre\", que se ofrecía desde ese paso. Las plantillas del recorrido pasan de 15 a 14.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_11_1: Release = {
   version: "11.1",
   date: "23 de septiembre de 2026",
   sections: [
@@ -230,6 +268,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "11.1",
+    shortDate: "23 sep",
+    highlights: RELEASE_11_1.sections.map((sec) => sec.title),
+  },
   {
     version: "11.0",
     shortDate: "21 sep",

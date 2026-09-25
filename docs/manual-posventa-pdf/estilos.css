@@ -1,0 +1,256 @@
+/* Sistema visual del Manual de Posventa — Experiencia Solar.
+ *
+ * Cada .pagina es una hoja A4 exacta (794×1123 px a 96 dpi) con su propio pie,
+ * igual que las propuestas comerciales: se renderiza con margin 0 y sin
+ * header/footer de Puppeteer, así el diseño llega al borde.
+ *
+ * Los colores son los de la propuesta comercial de Voltia, que es lo que el
+ * cliente ya ve: no se inventa una paleta nueva para uso interno.
+ */
+
+:root {
+  --azul: #1836b2;
+  --azul-oscuro: #10131f;
+  --gris: #6b7188;
+  --gris-medio: #3a3e50;
+  --gris-claro: #9aa0b4;
+  --azul-fondo: #eef1fb;
+  --borde: #e6e8f2;
+  --rojo: #b91c1c;
+  --rojo-fondo: #fef2f2;
+  --rojo-borde: #fecaca;
+  --amarillo: #b45309;
+  --amarillo-fondo: #fffbeb;
+  --amarillo-borde: #fcd34d;
+  --verde-chat: #e7f6e9;
+}
+
+@page { size: A4; margin: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  font-family: Roboto, Arial, sans-serif;
+  color: var(--azul-oscuro);
+  -webkit-font-smoothing: antialiased;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.pagina {
+  position: relative;
+  width: 794px;
+  height: 1123px;
+  padding: 64px 64px 78px;
+  background: #fff;
+  overflow: hidden;
+  page-break-after: always;
+  break-after: page;
+}
+.pagina:last-child { page-break-after: auto; break-after: auto; }
+
+/* Pie: línea fina, nombre del manual y número. Se repite en todas menos en las
+   páginas a sangre (portada y reglas duras), que llevan su propia versión. */
+.pie {
+  position: absolute;
+  left: 64px; right: 64px; bottom: 40px;
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid var(--borde);
+  font-size: 10px; color: var(--gris-claro);
+}
+.pie.claro { border-top-color: rgba(255,255,255,.25); color: rgba(255,255,255,.65); }
+
+/* ── Tipografía ────────────────────────────────────────────────────────── */
+h1.titulo { font-size: 34px; font-weight: 700; letter-spacing: -.6px; line-height: 1.15; }
+h2.titulo { font-size: 26px; font-weight: 700; letter-spacing: -.4px; line-height: 1.2; }
+.bajada { margin-top: 8px; font-size: 13px; line-height: 1.55; color: var(--gris); }
+p { font-size: 13px; line-height: 1.6; color: var(--gris-medio); }
+strong { color: var(--azul-oscuro); font-weight: 700; }
+.kicker {
+  font-size: 10px; font-weight: 700; letter-spacing: 1.6px;
+  text-transform: uppercase; color: var(--azul);
+}
+
+/* ── Chips de encabezado del paso ──────────────────────────────────────── */
+.fila-chips { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+.chip {
+  display: inline-block; padding: 5px 11px; border-radius: 99px;
+  font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase;
+}
+.chip.etapa { background: var(--azul-fondo); color: var(--azul); }
+.chip.plazo { background: var(--rojo-fondo); color: var(--rojo); border: 1px solid var(--rojo-borde); }
+.chip.sin-plazo { background: #f4f5f9; color: var(--gris); }
+
+/* ── Dos columnas del paso ─────────────────────────────────────────────── */
+.dos-col { display: flex; gap: 26px; margin-top: 24px; }
+.col-izq { flex: 1 1 58%; }
+.col-der { flex: 1 1 42%; }
+
+.rotulo {
+  font-size: 10px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase;
+  color: var(--azul); margin-bottom: 10px;
+}
+
+ol.pasos { list-style: none; counter-reset: p; }
+ol.pasos li {
+  counter-increment: p; position: relative; padding-left: 28px; margin-bottom: 11px;
+  font-size: 13px; line-height: 1.55; color: var(--gris-medio);
+}
+ol.pasos li::before {
+  content: counter(p); position: absolute; left: 0; top: 1px;
+  width: 19px; height: 19px; border-radius: 50%;
+  background: var(--azul); color: #fff;
+  font-size: 10px; font-weight: 700; text-align: center; line-height: 19px;
+}
+
+ul.puntos { list-style: none; }
+ul.puntos li {
+  position: relative; padding-left: 16px; margin-bottom: 9px;
+  font-size: 13px; line-height: 1.55; color: var(--gris-medio);
+}
+ul.puntos li::before {
+  content: ""; position: absolute; left: 0; top: 8px;
+  width: 5px; height: 5px; border-radius: 50%; background: var(--azul);
+}
+
+/* ── Hueco de imagen: el recuadro donde después se pega una captura o una
+      foto. Se deja dibujado para que el lugar ya esté reservado en la página
+      y pegarla no mueva nada. ──────────────────────────────────────────── */
+.hueco {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; padding: 20px; text-align: center;
+  border: 2px dashed #cfd4e4; border-radius: 10px; background: #fafbfe;
+  color: var(--gris-claro); font-size: 11px; line-height: 1.5;
+}
+.hueco .icono { font-size: 22px; color: #cfd4e4; }
+.hueco .que { font-weight: 700; color: var(--gris); font-size: 11px; }
+
+/* ── Burbuja de mensaje ────────────────────────────────────────────────── */
+.mensaje {
+  position: relative; margin-top: 22px; padding: 16px 18px;
+  background: var(--verde-chat); border-radius: 12px 12px 12px 3px;
+  font-size: 12.5px; line-height: 1.6; color: #24402a;
+}
+.mensaje .rotulo-msj {
+  display: block; margin-bottom: 7px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 1.2px;
+  text-transform: uppercase; color: #4a7a54;
+}
+.mensaje .hueco-texto { color: #4a7a54; font-weight: 700; }
+
+/* ── Avisos ────────────────────────────────────────────────────────────── */
+.ojo {
+  margin-top: 20px; padding: 14px 16px 14px 18px;
+  background: var(--amarillo-fondo); border-left: 4px solid var(--amarillo-borde);
+  border-radius: 0 8px 8px 0;
+}
+.ojo .rotulo-ojo {
+  display: block; margin-bottom: 5px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--amarillo);
+}
+.ojo p { font-size: 12px; color: #6b4d10; }
+
+.nota {
+  margin-top: 18px; padding: 14px 16px;
+  background: var(--azul-fondo); border-radius: 8px;
+}
+.nota p { font-size: 12px; color: var(--gris-medio); }
+
+/* ── Regla dura: página entera azul ────────────────────────────────────── */
+.pagina.regla {
+  background: var(--azul); color: #fff;
+  display: flex; flex-direction: column; justify-content: center;
+}
+.pagina.regla .kicker { color: rgba(255,255,255,.55); }
+.pagina.regla .frase {
+  margin: 22px 0 26px;
+  font-size: 52px; font-weight: 700; line-height: 1.1; letter-spacing: -1.4px;
+}
+.pagina.regla .explica {
+  font-size: 14px; line-height: 1.65; color: rgba(255,255,255,.82); max-width: 520px;
+}
+
+/* ── Portada ───────────────────────────────────────────────────────────── */
+.pagina.portada { padding: 0; display: flex; flex-direction: column; }
+.portada .foto { flex: 0 0 620px; margin: 0; border: 0; border-radius: 0; background: #eceffa; }
+.portada .foto .hueco { height: 100%; border: 0; border-radius: 0; background: #eceffa; }
+.portada .texto { flex: 1; padding: 44px 64px 0; }
+.portada .franja { height: 26px; background: var(--azul); }
+.portada h1 { font-size: 52px; font-weight: 700; letter-spacing: -1.4px; line-height: 1.05; }
+.portada .sub { margin-top: 6px; font-size: 30px; font-weight: 700; color: var(--azul); letter-spacing: -.6px; }
+.portada .meta { margin-top: 22px; font-size: 12px; color: var(--gris); }
+.portada .logo { position: absolute; top: 44px; right: 64px; width: 104px; }
+
+/* ── El recorrido en tres etapas ───────────────────────────────────────── */
+.etapas { display: flex; gap: 12px; align-items: stretch; margin-top: 26px; }
+.etapa {
+  flex: 1; padding: 18px 16px; border-radius: 10px;
+  border: 1px solid var(--borde); background: #fff;
+}
+.etapa .cod { font-size: 22px; font-weight: 700; letter-spacing: -.5px; }
+.etapa .nom { margin-top: 3px; font-size: 13px; font-weight: 700; line-height: 1.3; }
+.etapa .rango { margin-top: 8px; font-size: 10.5px; color: var(--gris-claro); line-height: 1.45; }
+.etapa .vive { margin-top: 10px; font-size: 11.5px; line-height: 1.5; color: var(--gris-medio); }
+.etapa .semaforo {
+  margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--borde);
+  font-size: 10.5px; color: var(--gris);
+}
+.etapa .semaforo b { color: var(--azul-oscuro); }
+.etapa.e1 { background: #f7f9ff; }
+.etapa.e2 { background: var(--azul-fondo); }
+.etapa.e3 { background: var(--azul); border-color: var(--azul); color: #fff; }
+.etapa.e3 .rango { color: rgba(255,255,255,.6); }
+.etapa.e3 .vive { color: rgba(255,255,255,.85); }
+.etapa.e3 .semaforo { border-top-color: rgba(255,255,255,.25); color: rgba(255,255,255,.7); }
+.etapa.e3 .semaforo b { color: #fff; }
+.flecha { align-self: center; color: var(--gris-claro); font-size: 18px; }
+
+/* ── Tablas ────────────────────────────────────────────────────────────── */
+table.tabla { width: 100%; border-collapse: collapse; margin-top: 14px; }
+table.tabla th {
+  padding: 9px 12px; text-align: left; background: #f4f5f9;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 1.1px; text-transform: uppercase; color: var(--gris);
+  border-bottom: 1px solid var(--borde);
+}
+table.tabla td {
+  padding: 11px 12px; font-size: 12px; line-height: 1.45;
+  color: var(--gris-medio); border-bottom: 1px solid var(--borde); vertical-align: top;
+}
+table.tabla td.n { width: 26px; font-weight: 700; color: var(--azul); }
+table.tabla td.hito { font-weight: 700; color: var(--azul-oscuro); }
+table.tabla td.etapa-col { width: 58px; color: var(--gris); }
+table.tabla td.plazo { width: 220px; }
+table.tabla tr.destacada td { background: var(--rojo-fondo); }
+table.tabla tr.destacada td.hito { color: var(--rojo); }
+
+/* ── Diagrama vertical (la media hora de la mañana) ────────────────────── */
+.flujo { margin-top: 24px; }
+.paso-flujo { display: flex; gap: 16px; align-items: flex-start; position: relative; padding-bottom: 20px; }
+.paso-flujo:not(:last-child)::before {
+  content: ""; position: absolute; left: 17px; top: 38px; bottom: 0;
+  width: 2px; background: var(--borde);
+}
+.paso-flujo .num {
+  flex: 0 0 36px; width: 36px; height: 36px; border-radius: 50%;
+  background: var(--azul); color: #fff; z-index: 1;
+  font-size: 14px; font-weight: 700; text-align: center; line-height: 36px;
+}
+.paso-flujo.urgente .num { background: var(--rojo); }
+.paso-flujo .cuerpo { flex: 1; padding-top: 6px; }
+.paso-flujo .que { font-size: 15px; font-weight: 700; line-height: 1.35; }
+.paso-flujo.urgente .que { color: var(--rojo); }
+.paso-flujo .porque { margin-top: 5px; font-size: 12px; line-height: 1.5; color: var(--gris); }
+
+/* Rombo de decisión y sus dos ramas. */
+.decision { margin-top: 12px; padding: 14px 16px; background: var(--azul-fondo); border-radius: 8px; }
+.decision .pregunta { font-size: 13px; font-weight: 700; color: var(--azul); }
+.ramas { display: flex; gap: 12px; margin-top: 12px; }
+.rama { flex: 1; padding: 11px 13px; background: #fff; border: 1px solid var(--borde); border-radius: 7px; }
+.rama .et {
+  display: inline-block; margin-bottom: 5px; padding: 2px 8px; border-radius: 99px;
+  font-size: 9px; font-weight: 700; letter-spacing: .8px;
+}
+.rama.si .et { background: #e7f6e9; color: #2f6b3a; }
+.rama.no .et { background: #f4f5f9; color: var(--gris); }
+.rama .accion { font-size: 12px; line-height: 1.45; color: var(--gris-medio); }

@@ -1,12 +1,12 @@
 # Novedades
 
-## v11.1
+## v11.2
 
 ### 24 de septiembre de 2026
 
 #### El resumen diario de Experiencia Solar, en tres secciones
 
-- El correo del recorrido ahora separa lo que antes venía mezclado en un solo número: **Pendientes** (tienen plazo y ya venció), **Novedades** (pasó algo del lado del cliente y nadie lo miró) y **Fuera de cadencia** (sin novedad, pero les debemos el contacto del período).
+- El correo del recorrido ahora separa lo que antes venía mezclado en un solo número: **Pendientes** (tienen plazo y ya venció), **Novedades** (pasó algo en el proyecto después de la última vez que le hablamos) y **Fuera de cadencia** (les debemos el contacto del período).
 - El asunto lo dice de entrada: *"2 pendientes · 12 novedades · 85 fuera de cadencia"*. Antes sumaba todo en un solo número y decía "85 pendientes", que asustaba y tapaba las pocas cosas con plazo vencido.
 - **Novedades y fuera de cadencia se solapan, y cada número cuenta a todos los suyos**: un cliente puede tener las dos cosas. Lo que no se repite es el renglón — si tiene novedad se lista arriba, con los días sin contacto marcados ahí mismo, y la sección de abajo aclara cuántos de su cuenta ya están listados arriba.
 
@@ -35,6 +35,8 @@
 
 - El envío del reporte fotovoltaico mensual toca a todos los generadores el mismo día y prendía el **punto amarillo de novedad** en todos a la vez, con lo cual el punto dejaba de servir para señalar lo que hay que mirar.
 - Ahora el envío **sigue quedando en el historial del cliente** (importa saber que se mandó y cuándo), pero no prende el punto.
+
+## v11.1
 
 ### 23 de septiembre de 2026
 
