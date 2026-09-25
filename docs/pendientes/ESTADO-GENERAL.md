@@ -20,6 +20,14 @@
 | Material grabado para mandarle al cliente (video de bienvenida) | ⬜ | `material-para-el-cliente.md`. Grabado por Nicolás; acompaña la conversación, no la reemplaza. |
 | Manual de Ventas para el equipo comercial | ⬜ | `manual-de-ventas.md`. Como el de Posventa pero del rol comercial; después, el resto de las áreas. Eje: los leads que se enfrían sin que nadie los toque. |
 
+## 0.b Capacitación de Operaciones (pedido del 25/9/2026)
+
+| Ítem | Estado | Nota |
+|---|---|---|
+| Responder las 6 consultas de cierre post-obra por marca (Growatt, Huawei, Fronius) | ⬜ | `pedido-operaciones-post-obra.md`. F1 es el único apoyado en documentación pública de Fronius, no en nuestros equipos. |
+| Pasar las credenciales de los 4 portales (ShinePhone, OSS, FusionSolar, Solar.web) | ⬜ | **Decisión previa**: dónde viven las claves. No van al repo sin que Nicolás lo confirme. |
+| Grabar/subir los 12 videos de capacitación de Operaciones | ⬜ | La sección **Operaciones** de Capacitación existe en prod y está **vacía**. Van ahí, no como enlaces sueltos. |
+
 ## 1. Traspasos y notificaciones
 
 | Ítem | Estado | Nota |
