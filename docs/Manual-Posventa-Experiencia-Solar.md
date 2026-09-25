@@ -565,7 +565,54 @@ de "una cosa que me mandaron" en una herramienta que va a usar.
 
 ## 8 · La rutina diaria de Experiencia Solar
 
-Tres herramientas, en este orden.
+Tres herramientas, en este orden. El orden importa: **el correo dice qué hacer hoy,
+el Recorrido dice a quién le toca, y la ficha es donde se hace.**
+
+### 8.0 · La media hora de la mañana
+
+Esto es la rutina completa. Si un día no hay tiempo para nada más, con esto el
+acompañamiento no se cae.
+
+**1. Abrís el correo.** Si no llegó, es porque no hay nada vencido ni nada nuevo:
+no hay nada que buscar en el sistema.
+
+**2. Vaciás los Pendientes. Siempre, todos, hoy.** Son los únicos que tienen plazo
+y ya se pasó. Cada renglón es un link al cliente. Es la parte no negociable de la
+mañana: si alguna vez hay que elegir, se eligen estos.
+
+Si uno no se puede cerrar hoy —el cliente no contesta, falta un dato de otra
+área—, **se registra el contacto igual con lo que se hizo**. El plazo no se
+arregla, pero mañana el que lo mire sabe que alguien lo está empujando y no vuelve
+a empezar de cero.
+
+**3. Bajás a las Novedades y decidís una sola cosa por cliente: ¿esto le importa?**
+Abrís el cliente, mirás el historial (lo nuevo está arriba) y:
+
+- **Le importa** → se le avisa, con la plantilla de su etapa. Al copiarla queda
+  registrado el contacto, y con eso el punto se apaga.
+- **No le importa** → no se le escribe nada. Un archivo interno o un movimiento
+  administrativo no son motivo para molestarlo.
+
+> **Ojo con el caso "no le importa":** el punto **queda encendido** hasta el
+> próximo contacto real, porque lo único que lo apaga es registrar un contacto. No
+> está mal: es que el sistema no tiene forma de saber que lo mirás y lo descartás.
+> No se registra un contacto que no existió para "limpiar la lista" — eso rompe lo
+> único que después permite saber si al cliente se le habló o no.
+
+**4. Atacás Fuera de cadencia de arriba hacia abajo, hasta donde llegues.** Ya
+viene ordenado por prioridad: arriba están los que hace más que nadie les habla y
+los que no tienen ningún contacto registrado. **No hay que vaciar esta lista todos
+los días** —no es el objetivo y no se puede—; lo que se espera es que nadie se
+quede mucho tiempo en el fondo. Acá **no hace falta tener una novedad para
+escribir**: el contacto es el punto, aunque sea para decir que el trámite sigue en
+UTE y no hay nada nuevo.
+
+**5. Lo que quede abierto, queda en el sistema, no en tu cabeza.** Registrá el
+contacto aunque haya sido corto, y si hay algo por hacer que no es de hoy, dejalo
+como pendiente o como ticket. Mañana el correo lo vuelve a traer.
+
+**Lo que no entra en esta media hora:** los reclamos nuevos. Esos no esperan a la
+mañana siguiente — **respuesta el mismo día hábil, siempre** (sección 10).
 
 ### 8.1 · El correo de la mañana
 
@@ -666,6 +713,12 @@ que no tiene arreglo apaga la señal en vez de encenderla.
 reordenara, un cliente con novedad pero contactado ayer taparía al que lleva
 quince días sin que nadie le hable.
 
+**Qué hacés acá.** El Recorrido es para **elegir a quién le toca**, no para
+trabajar: se lee de arriba hacia abajo dentro de la columna que corresponda y se
+entra al cliente. Es también el lugar donde mirar la foto completa una vez por
+semana: si una columna se está llenando —muchos en E2 sin contacto, por ejemplo—
+eso no lo dice el correo de un día, lo dice la pantalla.
+
 ### 8.3 · La ficha del cliente
 
 Se entra desde cualquiera de las dos vistas anteriores, o desde **la lista de
@@ -688,6 +741,22 @@ mitad:
 **La fila de enlaces del encabezado** —Ventas · Proyecto · Ingeniería · Trámite
 UTE · Experiencia Solar— lleva al **mismo cliente** en el otro módulo. Está igual
 en todas las pantallas y sólo muestra los módulos que podés abrir.
+
+**Qué hacés acá, en orden:**
+
+1. **Leés el historial de arriba**, que es lo que pasó desde la última vez.
+2. **Escribís, con la plantilla de la etapa** si hay una que sirva. Sale del botón
+   Plantillas, o del ícono de mensaje del paso que corresponda.
+3. **Registrás el contacto.** Si copiaste una plantilla ya viene tildado; si
+   hablaste por teléfono o lo cruzaste en la obra, lo cargás a mano. **Esto es lo
+   que mueve las señales**: sin registro, para el sistema no pasó nada.
+4. **Tildás el paso** que acabás de hacer.
+
+> **"Completar los N" es para ponerse al día con lo que realmente se hizo**, no
+> para limpiar la lista. Un paso tildado dice "esto se hizo", y si no se hizo, el
+> tilde miente a todos los que miren ese cliente después — incluido quien tenga
+> que retomarlo cuando vos no estés. Si un paso nunca se va a hacer, no se tilda:
+> se plantea sacarlo del recorrido.
 
 ---
 

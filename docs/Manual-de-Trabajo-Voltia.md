@@ -713,6 +713,24 @@ una categoría **Otros** para lo que no entre en las demás.
 - Las instalaciones siguen funcionando igual que siempre: al confirmar la fecha
   se avisa solo a Experiencia Solar, y al reprogramar se pide el motivo.
 
+### La media hora de la mañana
+
+La rutina, en cinco pasos. Está desarrollada en el Manual de Posventa (8.0); acá
+queda para que el resto del equipo sepa cómo se trabaja la cartera:
+
+1. **Se abre el correo del recorrido.** Si no llegó, no hay nada vencido ni nada
+   nuevo.
+2. **Se vacían los Pendientes, todos, hoy.** Son los únicos con plazo vencido.
+3. **Se mira cada Novedad y se decide una cosa: ¿esto le importa al cliente?** Si
+   le importa, se le avisa; si no, no se lo molesta.
+4. **Se ataca Fuera de cadencia de arriba hacia abajo**, hasta donde se llegue. Acá
+   no hace falta tener novedad para escribir: el contacto es el punto.
+5. **Todo contacto se registra**, aunque haya sido corto. Sin registro, para el
+   sistema no pasó nada y el cliente sigue apareciendo como olvidado.
+
+Los **reclamos nuevos no esperan a la mañana siguiente**: respuesta el mismo día
+hábil, siempre.
+
 ### El Recorrido
 
 **Experiencia Solar → Recorrido.** La cartera partida en las tres etapas, una

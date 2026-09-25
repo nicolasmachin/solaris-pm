@@ -10,6 +10,13 @@
 - El asunto lo dice de entrada: *"2 pendientes · 12 novedades · 85 fuera de cadencia"*. Antes sumaba todo en un solo número y decía "85 pendientes", que asustaba y tapaba las pocas cosas con plazo vencido.
 - **Novedades y fuera de cadencia se solapan, y cada número cuenta a todos los suyos**: un cliente puede tener las dos cosas. Lo que no se repite es el renglón — si tiene novedad se lista arriba, con los días sin contacto marcados ahí mismo, y la sección de abajo aclara cuántos de su cuenta ya están listados arriba.
 
+#### Los manuales dicen qué hacer, no solo dónde mirar
+
+- El **Manual de Posventa** tiene una sección nueva, **"La media hora de la mañana"**: la rutina diaria en cinco pasos, desde abrir el correo hasta registrar el último contacto. Antes el capítulo describía las tres pantallas pero no decía qué hacer con ellas.
+- Cada herramienta ganó su **"Qué hacés acá"**: el Recorrido es para elegir a quién le toca, la ficha es donde se trabaja, y el orden dentro de la ficha es leer → escribir → registrar → tildar.
+- Queda dicho por qué **no se registra un contacto que no existió** para limpiar la lista, y que **"Completar los N" es para ponerse al día con lo que realmente se hizo**: un paso tildado dice "esto se hizo" a todos los que miren ese cliente después.
+- La versión corta quedó también en el **Manual de Trabajo**, para el resto del equipo.
+
 #### Se saca el paso "Repaso de garantías" de Post-habilitación
 
 - La etapa 3 del recorrido del cliente pasa de **cinco pasos a cuatro**: capacitación, acceso al inversor, alta en reportes y recorrido por el portal. El **Repaso de garantías** se retiró porque no se hacía: la garantía ya está en el contrato firmado y el paso no producía ningún documento nuevo, así que sumaba un renglón a la lista sin sumar trabajo.
