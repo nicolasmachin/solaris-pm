@@ -6,11 +6,21 @@
  * la misma estructura y el mismo orden que la pantalla del Recorrido, para que
  * el mail y la app no cuenten dos historias distintas:
  *
- *   1. **Alertas rojas arriba** — lo que tiene reloj y ya venció: avisos de
- *      habilitación pendientes, pasos del recorrido vencidos y reclamos del
- *      cliente sin respuesta.
- *   2. **Por etapa (E1 → E2 → E3)** — quiénes están fuera de la cadencia de su
- *      etapa y quiénes tienen novedad sin avisar.
+ *   1. **Pendientes** — lo que tiene reloj y ya venció: avisos de habilitación,
+ *      pasos del recorrido vencidos y reclamos del cliente sin respuesta.
+ *   2. **Novedades**, por etapa (E1 → E2 → E3) — clientes con algo nuevo que
+ *      nadie miró: pasó algo del lado de ellos y hay que enterarse.
+ *   3. **Fuera de cadencia**, por etapa — clientes que no tienen novedad pero a
+ *      los que les debemos el contacto del período.
+ *
+ * Los tres números **no se suman** en el asunto. Un total único daba un número
+ * grande ("85 pendientes") que asustaba y escondía las pocas alertas con reloj,
+ * que son las únicas que hay que accionar hoy. El asunto dice "2 pendientes ·
+ * 12 novedades · 71 fuera de cadencia".
+ *
+ * Un cliente aparece **una sola vez**: si tiene novedad va en Novedades aunque
+ * también esté fuera de cadencia (contactarlo por la novedad cierra las dos
+ * cosas), y ahí se le marcan igual los días sin contacto.
  *
  * Los pendientes que **se arrastran** no van en una sección propia: se marcan
  * dentro de la alerta con los días que llevan vencidos, que es la información
@@ -37,8 +47,11 @@ function diasDesde(fecha: Date, now: Date): number {
 
 export type ResumenExperiencia = {
   alertas: ExpAlerta[];
-  bloques: ExpBloque[];
-  /** Alertas + clientes listados en los bloques. 0 = no se manda nada. */
+  /** Clientes con algo nuevo sin mirar, agrupados por etapa. */
+  novedades: ExpBloque[];
+  /** Clientes sin novedad a los que les debemos el contacto del período. */
+  cadencia: ExpBloque[];
+  /** Alertas + clientes listados en las dos secciones. 0 = no se manda nada. */
   total: number;
 };
 
@@ -139,26 +152,34 @@ export async function construirResumenExperiencia(now: Date = new Date()): Promi
   // Lo más viejo primero: es lo que se viene arrastrando.
   alertas.sort((a, b) => (b.dias ?? Number.MAX_SAFE_INTEGER) - (a.dias ?? Number.MAX_SAFE_INTEGER));
 
-  // Bloques por etapa: solo lo accionable (fuera de cadencia o con novedad sin
-  // avisar). El orden viene ya resuelto por getRecorrido, no se reordena acá.
-  const bloques: ExpBloque[] = bloquesRecorrido
-    .map((b) => ({
-      nombre: `${b.recorrido} · ${b.nombreCorto}`,
-      total: b.total,
-      clientes: b.clientes
-        .filter((c) => c.fueraDeCadencia || c.hayNovedad)
-        .map((c) => ({
+  // Las dos secciones de abajo se arman con el mismo agrupado por etapa, cada una
+  // con su criterio. El orden de las etapas viene ya resuelto por getRecorrido, no
+  // se reordena acá.
+  const agrupar = (
+    incluir: (c: (typeof bloquesRecorrido)[number]["clientes"][number]) => boolean,
+  ): ExpBloque[] =>
+    bloquesRecorrido
+      .map((b) => ({
+        nombre: `${b.recorrido} · ${b.nombreCorto}`,
+        total: b.total,
+        clientes: b.clientes.filter(incluir).map((c) => ({
           projectId: c.projectId,
           nombre: c.nombre,
           diasSinContacto: c.diasSinContacto,
           fueraDeCadencia: c.fueraDeCadencia,
           hayNovedad: c.hayNovedad,
         })),
-    }))
-    .filter((b) => b.clientes.length > 0);
+      }))
+      .filter((b) => b.clientes.length > 0);
 
-  const total = alertas.length + bloques.reduce((acc, b) => acc + b.clientes.length, 0);
-  return { alertas, bloques, total };
+  // La novedad manda: un cliente con novedad no se repite abajo aunque también
+  // esté fuera de cadencia.
+  const novedades = agrupar((c) => c.hayNovedad);
+  const cadencia = agrupar((c) => c.fueraDeCadencia && !c.hayNovedad);
+
+  const contar = (bs: ExpBloque[]) => bs.reduce((acc, b) => acc + b.clientes.length, 0);
+  const total = alertas.length + contar(novedades) + contar(cadencia);
+  return { alertas, novedades, cadencia, total };
 }
 
 /**

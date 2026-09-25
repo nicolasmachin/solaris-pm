@@ -96,9 +96,10 @@ export function emailDailyDigest(params: {
 }
 
 // ─── Resumen diario de Experiencia Solar ────────────────────────────────────
-// Espejo de la pantalla del Recorrido: alertas rojas arriba (lo que tiene reloj
-// y ya venció, lo más arrastrado primero) y después los clientes por etapa que
-// están fuera de cadencia o tienen novedad sin avisar. Se manda solo si hay algo.
+// Espejo de la pantalla del Recorrido, en tres secciones que se leen de arriba
+// abajo por urgencia: Pendientes (tienen reloj y ya venció, lo más arrastrado
+// primero), Novedades (algo nuevo sin mirar) y Fuera de cadencia (les debemos el
+// contacto del período). Se manda solo si hay algo.
 
 export type ExpAlerta = {
   tipo: "habilitacion" | "check" | "reclamo";
@@ -142,12 +143,15 @@ function expYMas(restantes: number): string {
 export function emailExperienciaDigest(params: {
   userName: string;
   alertas: ExpAlerta[];
-  bloques: ExpBloque[];
+  novedades: ExpBloque[];
+  cadencia: ExpBloque[];
   total: number;
 }) {
   const alertasHtml = params.alertas.length
     ? `<div style="margin:18px 0 6px;font-size:13px;font-weight:700;color:#b91c1c;">` +
-      `Para hoy (${params.alertas.length})</div>` +
+      `Pendientes (${params.alertas.length})</div>` +
+      `<div style="margin:0 0 6px;font-size:12px;color:#8a9099;">` +
+      `Tienen plazo y ya venció.</div>` +
       `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" ` +
       `style="width:100%;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;">` +
       params.alertas
@@ -166,58 +170,104 @@ export function emailExperienciaDigest(params: {
       expYMas(params.alertas.length - EXP_MAX_ALERTAS)
     : "";
 
-  const bloquesHtml = params.bloques
-    .map((b) => {
-      const rows = b.clientes
-        .slice(0, EXP_MAX_POR_BLOQUE)
-        .map((c) => {
-          const marcas = [
-            c.fueraDeCadencia
-              ? c.diasSinContacto === null
-                ? "sin contacto registrado"
-                : `${c.diasSinContacto} días sin contacto`
-              : null,
-            c.hayNovedad ? "hay novedad sin avisar" : null,
-          ]
-            .filter(Boolean)
-            .join(" · ");
-          return (
-            `<li style="margin:0 0 6px;">` +
-            `<a href="${clienteLink(c.projectId)}" style="color:#12151c;font-weight:600;font-size:13px;text-decoration:none;">` +
-            `${escapeHtml(c.nombre)}</a>` +
-            `<div style="color:#5a616b;font-size:12px;">${escapeHtml(marcas)}</div></li>`
-          );
-        })
-        .join("");
-      return (
-        `<div style="margin:18px 0 6px;font-size:13px;font-weight:700;color:#12151c;">` +
-        `${escapeHtml(b.nombre)} <span style="font-weight:400;color:#8a9099;">` +
-        `${b.clientes.length} de ${b.total}</span></div>` +
-        `<ul style="margin:0;padding-left:18px;">${rows}</ul>` +
-        expYMas(b.clientes.length - EXP_MAX_POR_BLOQUE)
-      );
-    })
-    .join("");
+  // Los días sin contacto se muestran siempre que el cliente esté fuera de
+  // cadencia, también en la sección de novedades: al llamarlo para enterarse de
+  // la novedad se salda el contacto, así que hace falta saberlo ahí mismo.
+  const sinContacto = (dias: number | null) =>
+    dias === null ? "sin contacto registrado" : `${dias} días sin contacto`;
+
+  const renderBloques = (bloques: ExpBloque[], marcasDe: (c: ExpBloque["clientes"][number]) => string) =>
+    bloques
+      .map((b) => {
+        const rows = b.clientes
+          .slice(0, EXP_MAX_POR_BLOQUE)
+          .map((c) => {
+            const marcas = marcasDe(c);
+            return (
+              `<li style="margin:0 0 6px;">` +
+              `<a href="${clienteLink(c.projectId)}" style="color:#12151c;font-weight:600;font-size:13px;text-decoration:none;">` +
+              `${escapeHtml(c.nombre)}</a>` +
+              (marcas
+                ? `<div style="color:#5a616b;font-size:12px;">${escapeHtml(marcas)}</div>`
+                : "") +
+              `</li>`
+            );
+          })
+          .join("");
+        return (
+          `<div style="margin:14px 0 6px;font-size:13px;font-weight:700;color:#12151c;">` +
+          `${escapeHtml(b.nombre)} <span style="font-weight:400;color:#8a9099;">` +
+          `${b.clientes.length} de ${b.total}</span></div>` +
+          `<ul style="margin:0;padding-left:18px;">${rows}</ul>` +
+          expYMas(b.clientes.length - EXP_MAX_POR_BLOQUE)
+        );
+      })
+      .join("");
+
+  // Los tres números se cuentan por separado y NO se suman: un total único daba
+  // un número grande que asustaba y escondía las pocas alertas con reloj, que son
+  // las únicas que hay que accionar hoy.
+  const contar = (bloques: ExpBloque[]) => bloques.reduce((acc, b) => acc + b.clientes.length, 0);
+  const pendientes = params.alertas.length;
+  const nNovedades = contar(params.novedades);
+  const nCadencia = contar(params.cadencia);
+  const plural = (n: number, sing: string, plur: string) => `${n} ${n === 1 ? sing : plur}`;
+  const resumenCorto = [
+    pendientes > 0 ? plural(pendientes, "pendiente", "pendientes") : null,
+    nNovedades > 0 ? plural(nNovedades, "novedad", "novedades") : null,
+    nCadencia > 0 ? `${nCadencia} fuera de cadencia` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const seccion = (titulo: string, subtitulo: string, cuerpo: string) =>
+    `<div style="margin:22px 0 2px;font-size:13px;font-weight:700;color:#12151c;">${titulo}</div>` +
+    `<div style="margin:0 0 2px;font-size:12px;color:#8a9099;">${subtitulo}</div>` +
+    cuerpo;
+
+  const novedadesHtml =
+    nNovedades > 0
+      ? seccion(
+          `Novedades (${nNovedades})`,
+          "Pasó algo del lado del cliente y todavía nadie lo miró.",
+          renderBloques(params.novedades, (c) =>
+            c.fueraDeCadencia ? sinContacto(c.diasSinContacto) : "",
+          ),
+        )
+      : "";
+
+  const cadenciaHtml =
+    nCadencia > 0
+      ? seccion(
+          `Fuera de cadencia (${nCadencia})`,
+          "Sin novedad, pero les debemos el contacto del período.",
+          renderBloques(params.cadencia, (c) => sinContacto(c.diasSinContacto)),
+        )
+      : "";
 
   const contentHtml =
-    `<p style="margin:0 0 4px;">Hola ${escapeHtml(params.userName)}, esto es lo que está pendiente ` +
+    `<p style="margin:0 0 4px;">Hola ${escapeHtml(params.userName)}, esto es lo que hay ` +
     `en el recorrido de los Generadores:</p>` +
     alertasHtml +
-    bloquesHtml +
+    novedadesHtml +
+    cadenciaHtml +
     `<p style="margin:18px 0 0;color:#8a9099;font-size:12px;">Este resumen es la misma vista del Recorrido ` +
     `en Experiencia Solar. Si no hay nada pendiente, no se manda.</p>`;
 
   return {
-    subject: `[Voltia PM] Experiencia Solar — ${params.total} pendiente${params.total === 1 ? "" : "s"}`,
+    subject: `[Voltia PM] Experiencia Solar — ${resumenCorto}`,
     html: renderEmailLayout({
       title: "Recorrido de Experiencia Solar",
       kicker: "Resumen del día",
-      preheader: `${params.alertas.length} alerta${params.alertas.length === 1 ? "" : "s"} para hoy.`,
+      preheader:
+        pendientes > 0
+          ? `${plural(pendientes, "pendiente", "pendientes")} para hoy.`
+          : "Sin pendientes para hoy.",
       contentHtml,
       cta: { label: "Abrir el Recorrido", url: `${BASE_URL}/clientes/recorrido` },
     }),
     text:
-      `Experiencia Solar — ${params.total} pendientes.\n` +
+      `Experiencia Solar — ${resumenCorto}.\n` +
       params.alertas
         .slice(0, EXP_MAX_ALERTAS)
         .map((a) => `- ${a.cliente}: ${a.titulo} (${a.detalle})`)

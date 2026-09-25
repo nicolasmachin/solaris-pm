@@ -432,6 +432,14 @@ clasificados como novedad + comentarios) contra el último contacto registrado: 
 "pasó algo y todavía no se lo dijimos". Se resuelve con dos agregaciones, no una
 consulta por cliente.
 
+**Lo que hacemos nosotros en masa no enciende el punto** (`ENTIDADES_SIN_LUZ` en
+`services/clientes/index.ts`). Hoy hay una sola entidad ahí: el envío del reporte
+fotovoltaico mensual (`reporte_fv_emision`). Toca a todos los generadores el mismo
+día, así que prendía el punto en todos a la vez y el punto dejaba de señalar nada.
+Medido en producción antes del cambio: en **43 de 104 proyectos** el evento de
+novedad más reciente era ese envío. Sigue en el historial —importa saber que se
+mandó y cuándo—, pero no pide atención.
+
 **De dónde sale la etapa** (`buildEtapa`). En orden: el **override manual** de la
 ficha (`recorridoManual`), la **etapa en curso del pipeline**, y —si no hay
 ninguna— **E3 cuando el proyecto ya terminó** (habilitado o sin etapa en curso).
@@ -571,13 +579,26 @@ es cosmética: el digest general resume **lo que pasó** (notificaciones de las
 empujada al mail, con su misma estructura y su mismo orden, para que el correo y
 la app no cuenten dos historias distintas:
 
-1. **Alertas rojas arriba** — lo que tiene reloj y ya venció: avisos de
-   habilitación pendientes, checks del recorrido con el plazo pasado y reclamos
-   del cliente sin respuesta. Ordenadas por días vencidos, de más a menos.
-2. **Por etapa (E1 → E2 → E3)** — los clientes fuera de cadencia o con novedad sin
-   avisar, en el orden que ya resuelve `getRecorrido` (no se reordena en el mail).
+1. **Pendientes** — lo que tiene reloj y ya venció: avisos de habilitación
+   pendientes, checks del recorrido con el plazo pasado y reclamos del cliente sin
+   respuesta. Ordenados por días vencidos, de más a menos.
+2. **Novedades**, por etapa (E1 → E2 → E3) — clientes con algo nuevo que nadie
+   miró.
+3. **Fuera de cadencia**, por etapa — clientes sin novedad a los que les debemos
+   el contacto del período.
+
+Las dos últimas usan el orden que ya resuelve `getRecorrido`; no se reordena en el
+mail.
 
 Decisiones que lo gobiernan:
+
+- **Los tres números no se suman.** El asunto dice "2 pendientes · 12 novedades ·
+  71 fuera de cadencia". Hasta el 24-sep-2026 sumaba todo en un total único y
+  decía "85 pendientes": un número grande que asustaba y que **tapaba las pocas
+  alertas con reloj**, que son las únicas que hay que accionar hoy.
+- **Un cliente aparece una sola vez.** Si tiene novedad va en Novedades aunque
+  también esté fuera de cadencia —contactarlo por la novedad cierra las dos
+  cosas— y ahí mismo se le marcan los días sin contacto.
 
 - **Los pendientes que se arrastran no tienen sección propia**: se marcan dentro
   de la alerta con los días que llevan vencidos. Una lista separada obligaría a

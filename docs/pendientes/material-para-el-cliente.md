@@ -27,6 +27,7 @@ Los pasos del recorrido donde hoy hay solo texto y un video ayudaría:
 | **Bienvenida y presentación** | E1 | El pedido concreto. Es el primer contacto después de firmar. |
 | **Conversación de expectativa inicial** | E1 | Es el paso que el manual marca como el más importante y el que más se saltea. Un video no lo reemplaza, pero deja el relato completo por escrito y siempre igual. |
 | **La espera de UTE** | E2 | El manual llama a E2 *"la etapa más difícil"*: el cliente tiene los paneles y no puede usarlos. Es donde más se pierde la paciencia y donde un video explicando el trámite rendiría. |
+| **Aviso de habilitación otorgada** | E2 → E3 | Pedido concreto (24-09-2026). El cliente tiene que **encender la instalación**: cortar el precinto de UTE, subir la llave. Es una maniobra física, la hace solo y nunca la hizo antes. Un video de un minuto mostrándolo evita la llamada de "¿y ahora qué toco?" y el miedo a romper algo. |
 | **Capacitación** | E3 | Ya está previsto como "material y videos de la app". Verificar qué hay hecho antes de grabar de nuevo. |
 
 ## A definir
@@ -37,4 +38,17 @@ Los pasos del recorrido donde hoy hay solo texto y un video ayudaría:
   que Experiencia Solar pega en el mensaje.
 - **Cómo lo manda Experiencia Solar.** Lo natural es que el link ya venga en la
   plantilla del paso, para que no dependa de acordarse.
-- **Qué se graba primero.** El de bienvenida es el pedido; el resto es propuesta.
+- **Qué se graba primero.** El de bienvenida y el del encendido son los pedidos
+  concretos; el resto es propuesta.
+
+## Nota sobre el video del encendido
+
+Es el que tiene el mejor costo-beneficio de todos: dura un minuto, se graba una
+vez, no envejece (el precinto y la llave son iguales en todas las instalaciones) y
+va pegado a un paso del recorrido que **ya existe y tiene plazo** (el aviso de
+habilitación, la Regla de Oro: el mismo día). No hay que inventar el momento de
+mandarlo, ya está.
+
+Lo que muestra: dónde está el precinto, cómo se corta, qué llave se sube, cómo se
+verifica que quedó generando (el inversor encendido, la app mostrando producción).
+

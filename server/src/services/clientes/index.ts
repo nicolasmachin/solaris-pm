@@ -481,6 +481,13 @@ async function marcarAvisosClave(items: ClienteListItem[]): Promise<ClienteListI
   return items;
 }
 
+// Entidades que SÍ van al historial del cliente pero NO encienden el punto de
+// novedad. El envío del reporte fotovoltaico mensual es nuestro y en masa: toca
+// todos los generadores el mismo día y prendía el punto en los 80 a la vez, con
+// lo cual dejaba de señalar lo que realmente hay que mirar. Queda en el historial
+// (importa saber que se mandó), pero no pide atención.
+const ENTIDADES_SIN_LUZ: AuditEntityType[] = [AuditEntityType.reporte_fv_emision];
+
 async function marcarNovedades(items: ClienteListItem[]): Promise<ClienteListItem[]> {
   const ids = items.map((i) => i.projectId);
   if (ids.length === 0) return items;
@@ -488,7 +495,11 @@ async function marcarNovedades(items: ClienteListItem[]): Promise<ClienteListIte
   const [audits, comments] = await Promise.all([
     prisma.auditLog.groupBy({
       by: ["projectId"],
-      where: { projectId: { in: ids }, action: { in: ACCIONES_NOVEDAD } },
+      where: {
+        projectId: { in: ids },
+        action: { in: ACCIONES_NOVEDAD },
+        NOT: { entityType: { in: ENTIDADES_SIN_LUZ } },
+      },
       _max: { timestamp: true },
     }),
     prisma.comment.groupBy({
