@@ -204,20 +204,12 @@ Cualquier duda para entrar, escribime.`,
 
 También los vas a tener siempre en el portal. Es el único correo automático que vas a recibir de nosotros.`,
   },
-  {
-    id: "garantias",
-    recorrido: "E3",
-    titulo: "Garantías y cierre",
-    cuando: "Dentro de los 15 días hábiles. Cierra el acompañamiento de la puesta en marcha.",
-    checks: ["e3_garantias"],
-    motivo: "SEGUIMIENTO",
-    cuerpo: `Hola {nombre}, te paso la documentación final de tu instalación: {documentos}.
-
-Un par de cosas para que tengas presentes: la garantía cubre {alcance} por {plazo}, y tenés mantenimiento anual sin cargo los primeros 2 años — yo te voy a estar contactando cuando corresponda.
-
-Nosotros seguimos monitoreando tu planta todos los días, así que si algo deja de generar nos enteramos y te avisamos.`,
-  },
 ];
+
+// Retirada el 24-09-2026 junto con el paso `e3_garantias`: la plantilla "Garantías
+// y cierre". Se ofrecía desde ese paso del recorrido, así que sin el paso no tenía
+// desde dónde abrirse.
+
 
 /** Las plantillas de una etapa del recorrido, en el orden en que se usan. */
 export function plantillasDe(recorrido: ClienteRecorrido): Plantilla[] {

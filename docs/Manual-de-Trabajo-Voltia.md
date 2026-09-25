@@ -1,6 +1,6 @@
 # Cómo trabajamos en Voltia
 
-**Manual de trabajo** · Versión 1.1 — 23 de septiembre de 2026
+**Manual de trabajo** · Versión 1.2 — 24 de septiembre de 2026
 
 > Este manual explica **qué tiene que hacer cada uno y cómo hacerlo en Voltia PM**.
 > No hay dos documentos: el procedimiento y la herramienta van juntos, porque
@@ -594,7 +594,7 @@ Además de los cuatro críticos:
 - **Reprogramaciones** — el mismo día, con el motivo
 - **Avisos de encuesta** — como contacto propio, nunca pegados a otro mensaje
 - **Al cerrar la puesta en marcha** — capacitación, acceso al inversor, alta en
-  reportes, garantías y recorrido por el portal
+  reportes y recorrido por el portal
 
 ---
 
@@ -852,4 +852,4 @@ cédula o con un usuario armado con su nombre.
 
 ---
 
-*Cómo trabajamos en Voltia · v1.0 · 9 de septiembre de 2026*
+*Cómo trabajamos en Voltia · v1.2 · 24 de septiembre de 2026*

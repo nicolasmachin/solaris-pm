@@ -10,6 +10,12 @@
 - El asunto lo dice de entrada: *"2 pendientes · 12 novedades · 71 fuera de cadencia"*. Antes sumaba todo y decía "85 pendientes", que asustaba y tapaba las pocas cosas con plazo vencido.
 - Un cliente aparece **una sola vez**: si tiene novedad va en Novedades aunque también esté fuera de cadencia, y ahí mismo se le marcan los días sin contacto.
 
+#### Se saca el paso "Repaso de garantías" de Post-habilitación
+
+- La etapa 3 del recorrido del cliente pasa de **cinco pasos a cuatro**: capacitación, acceso al inversor, alta en reportes y recorrido por el portal. El **Repaso de garantías** se retiró porque no se hacía: la garantía ya está en el contrato firmado y el paso no producía ningún documento nuevo, así que sumaba un renglón a la lista sin sumar trabajo.
+- También se retiró la plantilla de mensaje **"Garantías y cierre"**, que se ofrecía desde ese paso. Las plantillas del recorrido pasan de 15 a 14.
+- El paso desaparece de los clientes que ya lo tenían. **Nada más cambia**: la etapa de cierre del proyecto sigue con su "Garantías y documentación final", que es del pipeline de obra y no del recorrido del cliente.
+
 #### El reporte mensual ya no enciende la luz de novedad
 
 - El envío del reporte fotovoltaico mensual toca a todos los generadores el mismo día y prendía el **punto amarillo de novedad** en todos a la vez, con lo cual el punto dejaba de servir para señalar lo que hay que mirar.

@@ -118,7 +118,7 @@ mantiene un semáforo de días sin contacto por etapa del recorrido —
 **E1: 3 días · E2: 5 · E3: 10** — para que ningún cliente quede olvidado. Ver
 "Semáforo de días sin contacto" más abajo.
 
-### Los 7 hitos que se avisan sí o sí
+### Los 6 hitos que se avisan sí o sí
 
 | # | Hito | Qué se le dice |
 |---|---|---|
@@ -128,7 +128,6 @@ mantiene un semáforo de días sin contacto por etapa del recorrido —
 | 4 | **Obra terminada** | Que terminó y **qué sigue ahora**: arranca el trámite, con su plazo. |
 | 5 | **Ya podés encender** | Dentro de **24-48 h** de la habilitación. Cada día que pasa el cliente deja de ahorrar. |
 | 6 | **Capacitación** | **En el mismo contacto que el hito 5**: cómo usar la app, qué generación esperar, accesos. |
-| 7 | **Garantías y cierre** | Documentación final, qué cubre la garantía y el **mantenimiento anual sin cargo los primeros 2 años** (está en el contrato). |
 
 El trámite de UTE **no tiene aviso propio de inicio**: se explica en la bienvenida
 (hito 1) junto con su plazo esperable.
@@ -182,9 +181,9 @@ Tres decisiones del catálogo de la app:
   plantilla abierta más tarde trae el usuario y deja el hueco de la contraseña a
   la vista — inventarla sería peor que dejarla en blanco.
 
-El catálogo de la app cubre además de los 7 hitos: acceso al portal, fecha
+El catálogo de la app cubre además de los 6 hitos: acceso al portal, fecha
 tentativa, reprogramación, visita a la propiedad, los avisos de encuesta, y los
-cinco del cierre de puesta en marcha.
+cuatro del cierre de puesta en marcha.
 
 **1 · Bienvenida**
 
@@ -239,14 +238,6 @@ cinco del cierre de puesta en marcha.
 > acostumbrarte.
 > Cualquier duda con la app o con lo que ves, escribime.
 
-**7 · Garantías y cierre**
-
-> Hola {nombre}, te paso la documentación final de tu instalación: {documentos}.
-> Un par de cosas para que tengas presentes: la garantía cubre {alcance} por
-> {plazo}, y tenés **mantenimiento anual sin cargo los primeros 2 años** — yo te
-> voy a estar contactando cuando corresponda.
-> Nosotros seguimos monitoreando tu planta todos los días, así que si algo deja de
-> generar nos enteramos y te avisamos.
 
 ## La ficha del cliente como historia clínica
 
@@ -367,6 +358,24 @@ siempre. El enum `StageType` los conserva por los datos históricos.
 Que vivan afuera es una decisión, no una casualidad: al equipo de obra no le
 aportan y le ensucian su vista, y acá sí pueden tener plazo y vencer **sin frenar
 la obra**. El avance de etapa lo sigue determinando el proyecto.
+
+**Sacar un check del catálogo no lo saca de la base.** El listado se arma con las
+filas de `recorrido_checks`, no con el catálogo: `serializar()` sólo va al catálogo
+a buscar el detalle y el `clave`. Una definición retirada deja las filas viejas
+visibles y sin detalle, así que retirar un paso son dos cosas — sacar la definición
+y borrar las filas con un script. Precedente:
+`prisma/scripts/retirar-check-garantias.ts` (borrado duro; `RecorridoCheck` no
+tiene `deletedAt`).
+
+**Se retiró `e3_garantias` ("Repaso de garantías") el 24-09-2026.** No se hacía: la
+garantía ya está en el contrato firmado y el paso no producía ningún documento
+nuevo. Medido antes de sacarlo: 72 filas en producción, 28 tildadas, y las 28
+marcadas el mismo día y dentro del mismo minuto que otros checks de E3 del mismo
+proyecto — limpieza en masa, no 28 repasos. Con él se retiró la plantilla de
+mensaje "Garantías y cierre", que se ofrecía desde ese paso. **La subetapa
+`POST_HABILITACION` del pipeline del proyecto sigue teniendo su "Garantías y
+documentación final"**: es otra cosa (el cierre del proyecto, no el recorrido del
+cliente) y no se tocó.
 
 - Se crean **por demanda** (`ensureChecks`, idempotente): la primera vez que se
   piden para un proyecto. Así los ~95 clientes que ya existen entran sin backfill,

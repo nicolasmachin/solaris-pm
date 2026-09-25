@@ -387,7 +387,7 @@ async function marcarHabilitacionEnProyecto(uteProcess: UteProcess): Promise<voi
   // El hecho (UTE habilitó) arranca el reloj del aviso al cliente y del cierre
   // de puesta en marcha. Antes el plazo no existía en ningún lado.
   await activarCheck(uteProcess.projectId, "e2_habilitacion");
-  for (const c of ["e3_capacitacion", "e3_acceso_inversor", "e3_alta_reportes", "e3_garantias", "e3_portal_recorrido"]) {
+  for (const c of ["e3_capacitacion", "e3_acceso_inversor", "e3_alta_reportes", "e3_portal_recorrido"]) {
     await activarCheck(uteProcess.projectId, c);
   }
 }

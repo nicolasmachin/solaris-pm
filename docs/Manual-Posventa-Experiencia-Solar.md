@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.2 — 23 de septiembre de 2026
+**Voltia · Uruguay** · Versión 1.3 — 24 de septiembre de 2026
 
 > Este manual es **el procedimiento y el manual de uso de la app, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -106,7 +106,7 @@ proyecto** (esas son de obra e ingeniería): son las del cliente.
 
 ### Los hitos que se avisan sí o sí
 
-Son siete. **Ninguno es opcional.**
+Son seis. **Ninguno es opcional.**
 
 | # | Hito | Etapa | Plazo |
 |---|---|---|---|
@@ -116,7 +116,6 @@ Son siete. **Ninguno es opcional.**
 | 4 | **Obra terminada y qué sigue** — que arranca el trámite, con su plazo | E1→E2 | El mismo día |
 | 5 | **Ya podés encender** | E2→E3 | **24-48 h** desde la habilitación |
 | 6 | **Capacitación** — cómo usar la app, qué generación esperar | E3 | En el mismo contacto que el 5 |
-| 7 | **Garantías y cierre** | E3 | 15 días hábiles |
 
 > **Ojo con el plazo del hito 2.** Los dos días hábiles corren desde que
 > **Operaciones confirma la fecha en el calendario**, no desde que se cerró la
@@ -509,7 +508,7 @@ Contacto propio, unos días después de que encendió. Misma regla que la de obr
 El cliente ya está generando. Cambió lo que necesita: antes quería saber cuándo;
 ahora quiere **entender lo que ve** y saber que si algo falla nos enteramos.
 
-**Los cinco pasos de esta etapa vencen a los 15 días hábiles** de la habilitación,
+**Los cuatro pasos de esta etapa vencen a los 15 días hábiles** de la habilitación,
 y el reloj lo arranca solo el sistema cuando Tramitación cierra el trámite.
 
 ---
@@ -557,21 +556,7 @@ tal al tal, tantos días—, porque un ciclo de UTE no arranca el 1 ni termina e
 le cierren. Si pregunta por qué un mes tiene 28 días y otro 33, la respuesta es
 esa: es el ciclo de su medidor, no un error.
 
-### 7.4 · Repaso de garantías
-
-| | |
-|---|---|
-| **Plazo** | 15 días hábiles |
-| **Qué decir** | Plantilla **"Garantías y cierre"** |
-
-**No se produce ningún documento nuevo**: la garantía ya está en el contrato que
-firmó. Lo que se hace es recordarle lo que firmó, en criollo, cuando ya tiene el
-sistema andando y le importa.
-
-Incluye el **mantenimiento anual sin cargo los primeros 2 años**, que también está
-en el contrato y que la mayoría de los clientes no recuerda.
-
-### 7.5 · Recorrido por el portal
+### 7.4 · Recorrido por el portal
 
 Tickets, encuestas, reportes y documentación. Es el paso que convierte el portal
 de "una cosa que me mandaron" en una herramienta que va a usar.
@@ -681,11 +666,10 @@ Tres cosas para saber:
   Es la diferencia entre que el historial del cliente refleje la relación o quede
   vacío.
 
-Los 15 mensajes: bienvenida · acceso al portal · presentación del capataz · fecha
+Los 14 mensajes: bienvenida · acceso al portal · presentación del capataz · fecha
 tentativa · fecha confirmada · reprogramación · visita a la propiedad · obra
 terminada · encuesta de instalación · ya podés encender + capacitación · encuesta
-de habilitación · material de capacitación · acceso al inversor · alta en reportes
-· garantías y cierre.
+de habilitación · material de capacitación · acceso al inversor · alta en reportes.
 
 ---
 
@@ -867,7 +851,7 @@ más que el silencio. Lo que no se puede es inventar un avance que no existe.
 
 ## Anexo A · Los mensajes modelo
 
-Los 15 mensajes están **en la app** (ficha del cliente → etapa → "Plantillas"),
+Los 14 mensajes están **en la app** (ficha del cliente → etapa → "Plantillas"),
 que es donde hay que usarlos. Se listan acá los cuatro que sostienen el modelo,
 para poder discutirlos en equipo sin abrir el sistema.
 
@@ -973,12 +957,18 @@ Es la parte que más se consulta cuando algo no aparece donde uno lo busca.
 - **El acompañamiento salió del pipeline del proyecto.** Al equipo de obra no le
   aportaba y le ensuciaba la vista; medido antes de sacarlo, de 71 proyectos que
   lo tenían **uno solo tenía algo tildado**.
+- **Se retiró el paso "Repaso de garantías" de E3** (24-09-2026). No se hacía: la
+  garantía ya está en el contrato firmado y el paso no producía ningún documento
+  nuevo, así que sumaba un renglón a la lista sin sumar trabajo. El criterio vale
+  para el próximo paso que se quiera agregar: **primero que funcione bien lo que
+  ya está definido.** Un paso que "queda lindo" agrega complejidad y ruido antes
+  que valor; cuando el recorrido corra como un relojito se vuelve a discutir.
 
 **Lo que falta:**
 
-- **El 76 % de los generadores todavía no tiene el acceso al portal creado.** Ya no
-  hace falta el mail para creárselo, pero **hay que crearlos**: no se crean solos.
-  Es lo que más limita a las encuestas y a los reclamos.
+- **Los accesos al portal no se crean solos.** Ya no hace falta el mail para
+  creárselos, pero hay que crearlos uno por uno, y mientras falten son el techo
+  de las encuestas y de los reclamos.
 - **Los mails que se le mandan al cliente no cuentan como contacto** en el
   historial: hay que registrarlos aparte.
 - **Los mantenimientos no tienen alerta de vencido**, sólo la cuenta de cuánto
@@ -989,4 +979,4 @@ Es la parte que más se consulta cuando algo no aparece donde uno lo busca.
 
 ---
 
-*Manual de Posventa — Experiencia Solar · Voltia · v1.1 · 8 de septiembre de 2026*
+*Manual de Posventa — Experiencia Solar · Voltia · v1.3 · 24 de septiembre de 2026*

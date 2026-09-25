@@ -125,20 +125,28 @@ export const CHECKS_E3: ChecklistDef[] = [
     detalle: "Es el único correo automático que recibe el cliente en 25 años.",
   },
   {
-    codigo: "e3_garantias",
-    titulo: "Repaso de garantías",
-    orden: 4,
-    plazoDiasHabiles: 15,
-    detalle: "No se produce ningún documento: ya está en el contrato. Se le recuerda lo que firmó.",
-  },
-  {
     codigo: "e3_portal_recorrido",
     titulo: "Recorrido por las funcionalidades del portal",
-    orden: 5,
+    orden: 4,
     plazoDiasHabiles: 15,
     detalle: "Tickets, encuestas, reportes y documentación.",
   },
 ];
+
+// Retirado el 24-09-2026: `e3_garantias` ("Repaso de garantías"). No se hacía. La
+// garantía ya está en el contrato firmado y el paso no producía ningún documento
+// nuevo: era un recordatorio que sumaba un renglón a la lista sin sumar trabajo
+// real. Medido antes de sacarlo: de 72 filas en producción, las 28 tildadas se
+// marcaron todas el mismo día y en el mismo minuto que otros checks de E3 del
+// mismo proyecto — limpieza en masa, no 28 repasos.
+//
+// Criterio de fondo, que vale para el próximo paso que se quiera agregar: primero
+// que funcione lo que ya está definido; los pasos "que quedan lindos" agregan
+// complejidad y ruido a la lista antes de agregar valor.
+//
+// Las filas viejas se borran con `prisma/scripts/retirar-check-garantias.ts`: el
+// listado sale de la tabla, no del catálogo, así que sacar la definición no las
+// hace desaparecer solas.
 
 export const CHECKS_POR_RECORRIDO: Record<string, ChecklistDef[]> = {
   E1: CHECKS_E1,

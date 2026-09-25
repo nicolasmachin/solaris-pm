@@ -103,7 +103,6 @@ const ESCENARIOS_E3: Escenario[] = [
       "e3_capacitacion",
       "e3_acceso_inversor",
       "e3_alta_reportes",
-      "e3_garantias",
       "e3_portal_recorrido",
     ],
     conPlazo: [],
@@ -112,7 +111,7 @@ const ESCENARIOS_E3: Escenario[] = [
     nombre: "cierre a medias",
     diasSinContacto: 20,
     completar: ["e1_bienvenida", "e2_habilitacion", "e3_capacitacion"],
-    conPlazo: [{ codigo: "e3_garantias", venceEnDias: -5 }],
+    conPlazo: [{ codigo: "e3_portal_recorrido", venceEnDias: -5 }],
   },
   { nombre: "nunca contactado", diasSinContacto: null, completar: [], conPlazo: [] },
 ];
