@@ -291,6 +291,13 @@ Están escritos en **segunda persona y en criollo** ("entrás", "cargás"), sin
 nombres de archivo, de endpoints ni de permisos: el lector no programa. Ese
 registro se respeta; los detalles técnicos van al manual de `docs/manual/`.
 
+**Las plantillas de mensajes se citan enteras.** Cuando un manual menciona una
+plantilla ("Plantilla *Bienvenida*"), va el texto completo tal como sale en la
+app, **la primera vez que aparece**, marcado como cita y en letra más chica; las
+veces siguientes, sólo el nombre. Quien lee el manual sin la app abierta no tiene
+forma de saber a qué mensaje se refiere, y el manual existe justamente para
+leerse sin la app al lado.
+
 **No llevan datos de coyuntura.** Nada de "hoy 72 de 95 clientes no tienen
 acceso": describen **cómo se trabaja**, no cómo está la cartera en un momento.
 Un número medido envejece en una semana y ensucia lo que tiene que durar años;

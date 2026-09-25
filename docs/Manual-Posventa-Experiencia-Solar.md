@@ -243,6 +243,13 @@ es una alarma de gestión para que nadie quede olvidado.
 | **En la app** | Ficha del cliente → **Pasos** → E1 → *"Bienvenida y presentación"* |
 | **Qué decir** | Plantilla **"Bienvenida y presentación"** |
 
+> **El texto, tal como sale en la app:**
+>
+>> Hola {nombre}, soy {referente} de Voltia. Voy a ser tu contacto durante todo el proceso, así que cualquier cosa escribime directo a mí.
+>>
+>> Te cuento cómo sigue: primero preparamos la ingeniería y los materiales, después hacemos la instalación (te aviso la fecha apenas la tengamos), y cuando la obra está pronta arranca el trámite con UTE, que es el paso más largo y depende de ellos — suele llevar {plazo UTE}. Cuando UTE habilita, te aviso enseguida para que puedas encender.
+>>
+>> No te voy a escribir todas las semanas porque muchas veces no hay novedades, pero cada vez que pase algo te aviso. Y si querés saber cómo viene, me preguntás cuando quieras.
 **Por qué la manda el vendedor y no Experiencia Solar:** el cliente ya lo conoce.
 Si el primer mensaje después de firmar viene de alguien que nunca vio, arranca en
 frío. La bienvenida **presenta** a Experiencia Solar; no la reemplaza.
@@ -290,6 +297,14 @@ tanto", la ficha tiene que poder responder esa pregunta.
 | **En la app** | El **ícono de crear usuario** en el propio paso, o la columna de acceso del listado |
 | **Qué decir** | Plantilla **"Acceso al portal"**, que sale con el usuario y la contraseña reales |
 
+> **El texto, tal como sale en la app:**
+>
+>> Hola {nombre}, te dejo el acceso al portal de Voltia para que veas el avance de tu instalación, la documentación y tus reportes de generación.
+>>
+>> {usuario y contraseña}
+>> Link: {link del portal}
+>>
+>> Te va a pedir cambiar la contraseña al entrar. Cualquier duda, escribime.
 **Cómo se crea:** desde el propio paso, con el ícono a la derecha (o desde la
 columna de acceso del listado). El mail y el teléfono se toman de los datos del
 cliente y la contraseña por defecto es **12345678**, que el sistema le pide
@@ -346,6 +361,11 @@ la empresa.
 | **En la app** | Ficha del cliente → **E1** → *"Presentación del capataz"* |
 | **Qué decir** | Plantilla **"Presentación del capataz"** |
 
+> **El texto, tal como sale en la app:**
+>
+>> Hola {nombre}, durante la obra te va a coordinar {capataz} para horarios y accesos — te paso su contacto: {teléfono}.
+>>
+>> Cualquier otra cosa seguí conmigo, como hasta ahora.
 **Con el alcance explícito**: obra con él, todo lo demás conmigo. Sin esa frase,
 el cliente asume que el capataz reemplazó a Experiencia Solar y deja de escribirle
 — y ahí perdemos la vista de la relación.
@@ -359,6 +379,12 @@ el cliente asume que el capataz reemplazó a Experiencia Solar y deja de escribi
 **a) Fecha tentativa** — apenas hay una fecha, aunque no esté cerrada. Se avisa
 que es tentativa y de qué depende. Plantilla **"Fecha de obra tentativa"**.
 
+> **El texto, tal como sale en la app:**
+>
+>> Hola {nombre}, ya tenemos fecha tentativa para tu instalación: {fecha}.
+>>
+>> Todavía depende del clima y de la logística, así que te la confirmo en cuanto esté cerrada.
+
 **b) Fecha confirmada:**
 
 | | |
@@ -369,6 +395,11 @@ que es tentativa y de qué depende. Plantilla **"Fecha de obra tentativa"**.
 | **En la app** | Ficha del cliente → **E1** → *"Aviso de fecha de obra confirmada"* |
 | **Qué decir** | Plantilla **"Fecha de obra confirmada"** |
 
+> **El texto, tal como sale en la app:**
+>
+>> Hola {nombre}, te confirmo la instalación para el {fecha}. El equipo llega cerca de las {hora}.
+>>
+>> Durante la obra te va a coordinar {capataz} para horarios y accesos, te paso su contacto: {teléfono}. Cualquier otra cosa seguí conmigo.
 **Cómo arranca el plazo:** el reloj **no** empieza cuando se crea el proyecto,
 sino cuando **alguien confirma la fecha en el calendario de obra**. Ahí el paso
 pasa a tener vencimiento y aparece en el correo de la mañana si se pasa.
@@ -384,6 +415,11 @@ pasa a tener vencimiento y aparece en el correo de la mañana si se pasa.
 | **Plazo** | **1 día hábil** |
 | **Qué decir** | Plantilla **"Reprogramación de la obra"** |
 
+> **El texto, tal como sale en la app:**
+>
+>> Hola {nombre}, te aviso que tenemos que mover la fecha del {fecha} por {motivo}.
+>>
+>> Apenas tengamos la nueva te la confirmo — calculamos {estimación}. Perdón por el cambio.
 **Mover una obra ya confirmada exige el motivo en el sistema.** No es un trámite:
 quien tiene que avisarle al cliente necesita saber qué decirle. Si la obra todavía
 era tentativa no se pide motivo — nadie prometió nada.
@@ -403,6 +439,11 @@ quedaba tildada para siempre, y por eso la segunda reagenda no se avisaba.
 | **Quién** | Quien agenda la visita, coordinado con Experiencia Solar |
 | **Qué decir** | Plantilla **"Visita a la propiedad"** |
 
+> **El texto, tal como sale en la app:**
+>
+>> Hola {nombre}, te aviso que el {día} entre {franja horaria} pasa el equipo por tu casa a {motivo de la visita}.
+>>
+>> No hace falta que estés, pero necesitamos {acceso requerido}. ¿Te queda bien ese día?
 > ## Regla dura: **si no está agendado, no vamos.**
 >
 > ## Y su contracara: **si está agendado, vamos. Y si no vamos, avisamos.**
@@ -434,6 +475,13 @@ aunque se avise sobre la hora: avisar tarde es malo, no avisar es mucho peor.
 | **En la app** | Ficha del cliente → **E1** → *"Aviso de obra terminada y qué sigue"* |
 | **Qué decir** | Plantilla **"Obra terminada y qué sigue"** |
 
+> **El texto, tal como sale en la app:**
+>
+>> Hola {nombre}, terminamos la instalación.
+>>
+>> Ahora arranca el trámite con UTE para que te habiliten la conexión: es el paso más largo y depende de ellos, suele llevar {plazo UTE}.
+>>
+>> Todavía no podés encender el sistema hasta que UTE habilite — apenas lo hagan te aviso el mismo día.
 **Va antes que la encuesta.** Primero se le cuenta cómo sigue, después se le pide
 que evalúe. Al revés parece que le pedimos una nota antes de terminar de
 explicarle qué pasó.
@@ -460,6 +508,12 @@ El punto 3 es de seguridad y de expectativa a la vez.
 en el portal del cliente. Lo que **no** hace el sistema es avisarle que la tiene.
 Por eso el paso no es "encuesta enviada" sino **"le avisé al cliente que la
 tiene"**, que es lo que realmente falta hoy.
+
+> **El texto, tal como sale en la app:**
+>
+>> Hola {nombre}, te dejamos una encuesta cortita en el portal sobre cómo te fue con la instalación. Son tres preguntas y solo la primera es obligatoria.
+>>
+>> Nos sirve mucho para saber qué mejorar. Gracias.
 
 > **Nunca pegado a otro mensaje.** Un pedido de encuesta al final de un mensaje
 > sobre otra cosa se ignora.
@@ -494,6 +548,15 @@ es tolerable. Si no, cada día es una traición.
 | **En la app** | Ficha del cliente → **E2** → *"Aviso de habilitación otorgada"* |
 | **Qué decir** | Plantilla **"Ya podés encender + capacitación"** |
 
+> **El texto, tal como sale en la app:**
+>
+>> Hola {nombre}, UTE ya habilitó tu instalación: ya podés encenderla. Te explico cómo:
+>>
+>> {pasos para encender}
+>>
+>> Te dejo también el acceso a la app para que veas cuánto estás generando: {accesos e instrucciones}. En un día soleado como hoy deberías ver unos {generación esperable}. Los primeros días conviene mirarla seguido para acostumbrarte.
+>>
+>> Cualquier duda con la app o con lo que ves, escribime.
 > ## Cada día que pasa el cliente deja de ahorrar plata.
 
 No es una demora administrativa: es dinero suyo que se pierde y que no se
@@ -531,7 +594,13 @@ Qué tiene que llevar ese mensaje:
 ### 6.2 · Aviso de la encuesta de habilitación
 
 Contacto propio, unos días después de que encendió. Misma regla que la de obra:
-**nunca pegada a otro mensaje**.
+**nunca pegada a otro mensaje**. Plantilla **"Aviso de la encuesta de habilitación"**.
+
+> **El texto, tal como sale en la app:**
+>
+>> Hola {nombre}, ahora que ya estás generando te dejamos una encuesta cortita en el portal sobre cómo viviste la espera del trámite y el acompañamiento.
+>>
+>> Son tres preguntas. Gracias.
 
 ---
 
@@ -556,6 +625,13 @@ y el reloj lo arranca solo el sistema cuando Tramitación cierra el trámite.
 | **Plazo** | 15 días hábiles |
 | **Qué decir** | Plantilla **"Material de capacitación"** |
 
+> **El texto, tal como sale en la app:**
+>
+>> Hola {nombre}, te paso el material para que le saques el jugo a tu instalación:
+>>
+>> {videos y material}
+>>
+>> En el portal tenés además tus reportes de generación, la documentación de la obra y un lugar para abrirnos un reclamo o una consulta cuando lo necesites. Si querés lo recorremos juntos por teléfono.
 **No es una llamada: es el envío del material.** El paso se tilda cuando se mandó,
 no cuando el cliente lo miró. Si quiere recorrerlo por teléfono, mejor, pero no es
 condición.
@@ -567,6 +643,14 @@ condición.
 | **Plazo** | 15 días hábiles |
 | **Qué decir** | Plantilla **"Acceso a la plataforma del inversor"** |
 
+> **El texto, tal como sale en la app:**
+>
+>> Hola {nombre}, te paso el acceso a la plataforma del inversor, que es donde ves la generación en vivo:
+>>
+>> {usuario y contraseña}
+>> {app o link}
+>>
+>> Cualquier duda para entrar, escribime.
 **El usuario y la contraseña los deja registrados el técnico** durante la
 instalación. Acá solo se le entregan al cliente. Si no están registrados, el
 problema es anterior y hay que ir a buscarlo a Operaciones.
@@ -578,6 +662,11 @@ problema es anterior y hay que ir a buscarlo a Operaciones.
 | **Plazo** | 15 días hábiles |
 | **Qué decir** | Plantilla **"Alta en los reportes mensuales"** |
 
+> **El texto, tal como sale en la app:**
+>
+>> Hola {nombre}, te dimos de alta en los reportes mensuales: todos los meses te va a llegar por correo un resumen de cuánto generó tu instalación y cuánto ahorraste.
+>>
+>> También los vas a tener siempre en el portal. Es el único correo automático que vas a recibir de nosotros.
 Es **el único correo automático que el cliente va a recibir de nosotros en 25
 años**. Vale la pena decírselo así: no es spam, es su resumen mensual.
 
@@ -813,6 +902,10 @@ en todas las pantallas y sólo muestra los módulos que podés abrir.
 **"Plantillas"**. Cada paso que tiene mensaje propio también lo abre directo con
 el ícono de mensaje.
 
+**En este manual, cada plantilla está citada entera en el paso donde se usa**, en
+letra más chica y marcada como cita, para que se pueda leer sin tener la app
+abierta. Si vuelve a mencionarse más adelante, va solo el nombre.
+
 Tres cosas para saber:
 
 - **Vienen con el nombre del cliente y el tuyo ya puestos.** Lo que el sistema no
@@ -1017,57 +1110,37 @@ más que el silencio. Lo que no se puede es inventar un avance que no existe.
 
 ---
 
-## Anexo A · Los mensajes modelo
+## Anexo A · Índice de los mensajes modelo
 
-Los 14 mensajes están **en la app** (ficha del cliente → etapa → "Plantillas"),
-que es donde hay que usarlos. Se listan acá los cuatro que sostienen el modelo,
-para poder discutirlos en equipo sin abrir el sistema.
+**Cada uno está citado entero en su paso**, que es donde hay que usarlo. Acá van
+sólo los catorce con su lugar, para encontrarlos rápido.
 
-**Bienvenida** — la que sostiene todo el modelo por eventos:
+| Mensaje | Dónde está | Etapa |
+|---|---|---|
+| Bienvenida y presentación | 5.1 | E1 |
+| Acceso al portal | 5.3 | E1 |
+| Presentación del capataz | 5.5 | E1 |
+| Fecha de obra tentativa | 5.6 | E1 |
+| Fecha de obra confirmada | 5.6 | E1 |
+| Reprogramación de la obra | 5.7 | E1 |
+| Visita a la propiedad | 5.8 | E1 |
+| Obra terminada y qué sigue | 5.9 | E1 |
+| Aviso de la encuesta de instalación | 5.10 | E1 |
+| Ya podés encender + capacitación | 6.1 | E2 |
+| Aviso de la encuesta de habilitación | 6.2 | E2 |
+| Material de capacitación | 7.1 | E3 |
+| Acceso a la plataforma del inversor | 7.2 | E3 |
+| Alta en los reportes mensuales | 7.3 | E3 |
 
-> Hola {nombre}, soy {referente} de Voltia. Voy a ser tu contacto durante todo el
-> proceso, así que cualquier cosa escribime directo a mí.
->
-> Te cuento cómo sigue: primero preparamos la ingeniería y los materiales, después
-> hacemos la instalación (te aviso la fecha apenas la tengamos), y cuando la obra
-> está pronta arranca el trámite con UTE, que es el paso más largo y depende de
-> ellos — suele llevar {plazo UTE}. Cuando UTE habilita, te aviso enseguida para
-> que puedas encender.
->
-> No te voy a escribir todas las semanas porque muchas veces no hay novedades,
-> pero cada vez que pase algo te aviso. Y si querés saber cómo viene, me preguntás
-> cuando quieras.
+**Los cuatro que sostienen el modelo**, si hay que discutir sólo algunos en
+equipo: la **bienvenida** (es la que explica que no va a haber contacto semanal y
+por qué), la **presentación del capataz** (presentar sin derivar), **obra
+terminada** (las tres cosas que no pueden faltar) y **ya podés encender** (la
+Regla de Oro).
 
-**Presentación del capataz** — presentar, no derivar:
-
-> Hola {nombre}, durante la obra te va a coordinar {capataz} para horarios y
-> accesos — te paso su contacto: {teléfono}.
->
-> Cualquier otra cosa seguí conmigo, como hasta ahora.
-
-**Obra terminada** — las tres cosas que no pueden faltar:
-
-> Hola {nombre}, terminamos la instalación.
->
-> Ahora arranca el trámite con UTE para que te habiliten la conexión: es el paso
-> más largo y depende de ellos, suele llevar {plazo UTE}.
->
-> Todavía no podés encender el sistema hasta que UTE habilite — apenas lo hagan te
-> aviso el mismo día.
-
-**Ya podés encender** — la Regla de Oro:
-
-> Hola {nombre}, UTE ya habilitó tu instalación: ya podés encenderla. Te explico
-> cómo:
->
-> {pasos para encender}
->
-> Te dejo también el acceso a la app para que veas cuánto estás generando:
-> {accesos e instrucciones}. En un día soleado como hoy deberías ver unos
-> {generación esperable}. Los primeros días conviene mirarla seguido para
-> acostumbrarte.
->
-> Cualquier duda con la app o con lo que ves, escribime.
+**Lo que todavía no hay:** una plantilla para *"no hay novedad"*, que es
+justamente el contacto que más se repite en la espera de UTE. Mientras tanto se
+escribe a mano.
 
 ---
 

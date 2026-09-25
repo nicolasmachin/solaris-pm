@@ -158,6 +158,27 @@ def mensaje(rotulo, texto, margen=22):
             f'  </div>\n')
 
 
+def plantilla(nombre, texto, margen=20):
+    """
+    La plantilla citada entera, como se ve en la app.
+
+    Va en letra más chica que el cuerpo y con la barra verde a la izquierda para
+    que se lea como cita y no se confunda con el texto del manual. Existe porque
+    quien lee el manual sin la app abierta no tiene forma de saber a qué mensaje
+    se refiere "la plantilla de bienvenida".
+    """
+    parrafos = "".join(
+        f'<p style="margin: {0 if i == 0 else 8}px 0 0; font-size: 12.5px; line-height: 1.5; '
+        f'color: {VERDE_TEXTO}">{linea}</p>'
+        for i, linea in enumerate(texto.split("\n\n")))
+    return (f'  <div style="margin-top: {margen}px; padding: 14px 16px; background: {VERDE_FONDO}; '
+            f'border-radius: 4px 10px 10px 4px; border-left: 3px solid {VERDE}">\n'
+            f'    <div style="font-family: {SANS}; font-size: 10px; font-weight: 600; letter-spacing: 1.4px; '
+            f'color: {VERDE}; margin-bottom: 8px">PLANTILLA · {nombre.upper()}</div>\n'
+            f'    {parrafos}\n'
+            f'  </div>\n')
+
+
 def hueco(que, detalle, alto=190, margen=22):
     """El recuadro reservado para una captura de pantalla que todavía no está."""
     return (f'  <div style="margin-top: {margen}px; min-height: {alto}px; border: 2px dashed #c3cbe4; '
@@ -289,3 +310,48 @@ def escribir(destino, paginas):
 
 if __name__ == "__main__":
     print(__doc__)
+
+
+# ── Control de desborde ──────────────────────────────────────────────────────
+# Lo que se pasa del borde de la hoja se RECORTA en el PDF, sin aviso ninguno.
+# Como no hay forma de renderizar acá para medir, se estima la altura sumando lo
+# que ocupa cada bloque. No es exacta: sirve para detectar la página que se fue
+# de largo, no para ajustar al píxel.
+
+ANCHO_UTIL = 650          # 794 menos los 72 px de margen de cada lado
+ALTO_UTIL = ALTO - 72 - 56 - 34   # menos padding y el pie con su línea
+
+
+def altura_estimada(cuerpo: str) -> int:
+    """Alto aproximado del contenido de una página, en píxeles."""
+    import re as _re
+
+    total = 0
+    for bloque in _re.finditer(
+        r'<(h1|h2|p|div|table)\b[^>]*style="([^"]*)"[^>]*>(.*?)</\1>', cuerpo, _re.S
+    ):
+        etiqueta, estilo, texto = bloque.groups()
+        plano = _re.sub(r"<[^>]+>", "", texto)
+        fs = float((_re.search(r"font-size:\s*([\d.]+)px", estilo) or [0, 15])[1])
+        lh = float((_re.search(r"line-height:\s*([\d.]+)", estilo) or [0, 1.5])[1])
+        mt = float((_re.search(r"margin(?:-top)?:\s*([\d.]+)px", estilo) or [0, 0])[1])
+        pad = float((_re.search(r"padding:\s*([\d.]+)px", estilo) or [0, 0])[1]) * 2
+        # ~2 caracteres por píxel de ancho a tamaño de cuerpo: aproximación burda
+        # pero estable para comparar páginas entre sí.
+        por_linea = max(1, int(ANCHO_UTIL / (fs * 0.5)))
+        lineas = max(1, -(-len(plano) // por_linea))
+        total += int(lineas * fs * lh + mt + pad)
+    return total
+
+
+def revisar(paginas):
+    """Devuelve las páginas cuya altura estimada supera la hoja."""
+    largas = []
+    for archivo, titulo_board, html in paginas:
+        if html is None:
+            continue
+        cuerpo = html.split('flex-direction: column">', 1)[-1]
+        alto = altura_estimada(cuerpo)
+        if alto > ALTO_UTIL:
+            largas.append((titulo_board, alto))
+    return largas
