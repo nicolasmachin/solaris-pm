@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.4 — 25 de septiembre de 2026
+**Voltia · Uruguay** · Versión 1.5 — 25 de septiembre de 2026
 
 > Este manual es **el procedimiento y el manual de uso de la app, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -312,7 +312,32 @@ reclamo por ahí** en vez de por WhatsApp.
 
 ---
 
-### 5.4 · Presentación del capataz
+### 5.4 · Contrato firmado, recabado y archivado
+
+| | |
+|---|---|
+| **Cuándo** | Apenas el asesor manda el contrato. **Va al principio, no al final.** |
+| **Quién** | Experiencia Solar coordina; el asesor es quien lo envía |
+| **Plazo** | Sin plazo formal, pero queda pendiente hasta que esté |
+| **En la app** | Ficha del cliente → **E1** → *"Contrato firmado por las dos partes, recabado y archivado"* |
+
+**El problema que resuelve:** hoy el contrato se manda y nadie lo recaba firmado,
+así que **no queda en ningún lado**. El asesor lo envía en PDF desde el onboarding
+y ahí se corta: no hay un paso que diga quién junta la versión con las dos firmas.
+
+**Cómo se coordina, según dónde esté el cliente:**
+
+- **En Montevideo** → se coordina para que pase a firmarlo por la empresa.
+- **En el interior** → por correo: va el nuestro ya firmado y vuelve la versión
+  que él también firmó.
+
+**Se archiva en la ficha del proyecto**, no en el correo de quien lo recibió. Un
+contrato firmado que vive en la bandeja de entrada de una persona no existe para
+la empresa.
+
+---
+
+### 5.5 · Presentación del capataz
 
 | | |
 |---|---|
@@ -327,7 +352,7 @@ el cliente asume que el capataz reemplazó a Experiencia Solar y deja de escribi
 
 ---
 
-### 5.5 · Aviso de fecha de obra
+### 5.6 · Aviso de fecha de obra
 
 **Van dos mensajes distintos.**
 
@@ -350,7 +375,7 @@ pasa a tener vencimiento y aparece en el correo de la mañana si se pasa.
 
 ---
 
-### 5.6 · Reprogramación de la obra
+### 5.7 · Reprogramación de la obra
 
 | | |
 |---|---|
@@ -370,7 +395,7 @@ quedaba tildada para siempre, y por eso la segunda reagenda no se avisaba.
 
 ---
 
-### 5.7 · Visita a la propiedad
+### 5.8 · Visita a la propiedad
 
 | | |
 |---|---|
@@ -400,7 +425,7 @@ aunque se avise sobre la hora: avisar tarde es malo, no avisar es mucho peor.
 
 ---
 
-### 5.8 · Aviso de obra terminada y qué sigue
+### 5.9 · Aviso de obra terminada y qué sigue
 
 | | |
 |---|---|
@@ -423,7 +448,7 @@ El punto 3 es de seguridad y de expectativa a la vez.
 
 ---
 
-### 5.9 · Aviso de la encuesta de instalación
+### 5.10 · Aviso de la encuesta de instalación
 
 | | |
 |---|---|
@@ -871,7 +896,7 @@ otras, a la empresa y al servicio.
 el suyo**: un cliente reiteradamente disconforme no se silencia después del primero.
 
 **Lo que el sistema NO hace es avisarle al cliente que tiene una encuesta.** Por
-eso hay un paso del recorrido para eso (5.9 y 6.2). Sin ese aviso, la encuesta se
+eso hay un paso del recorrido para eso (5.10 y 6.2). Sin ese aviso, la encuesta se
 queda en el portal sin que nadie la vea.
 
 ---
@@ -1122,4 +1147,4 @@ Es la parte que más se consulta cuando algo no aparece donde uno lo busca.
 
 ---
 
-*Manual de Posventa — Experiencia Solar · Voltia · v1.4 · 25 de septiembre de 2026*
+*Manual de Posventa — Experiencia Solar · Voltia · v1.5 · 25 de septiembre de 2026*

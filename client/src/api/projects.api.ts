@@ -103,6 +103,8 @@ export async function patchProject(
     uteCodigoAS?: string | null;
     llevaFactura?: boolean;
     facturaNota?: string | null;
+    modalidadPago?: "DIRECTO_50_50" | "FINANCIACION_BANCARIA" | "OTRO";
+    modalidadPagoNota?: string | null;
   }
 ): Promise<Project> {
   const { data } = await apiClient.patch<Project>(`/api/projects/${id}`, body);

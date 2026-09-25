@@ -55,16 +55,25 @@ export const CHECKS_E1: ChecklistDef[] = [
     detalle: "Por WhatsApp. Sin plazo, pero aparece pendiente hasta que se haga.",
   },
   {
+    codigo: "e1_contrato_firmado",
+    titulo: "Contrato firmado por las dos partes, recabado y archivado",
+    orden: 4,
+    plazoDiasHabiles: null,
+    detalle:
+      "Coordinarlo con el cliente: si está en Montevideo, que pase a firmarlo; si es del interior, " +
+      "por correo (va el nuestro firmado y vuelve con su firma). Va al principio, no al final.",
+  },
+  {
     codigo: "e1_capataz",
     titulo: "Presentación del capataz",
-    orden: 4,
+    orden: 5,
     plazoDiasHabiles: null,
     detalle: "Con el alcance explícito: obra con él, todo lo demás con Experiencia Solar.",
   },
   {
     codigo: "e1_fecha_obra",
     titulo: "Aviso de fecha de obra confirmada",
-    orden: 5,
+    orden: 6,
     plazoDiasHabiles: 2,
     clave: true,
     detalle: "Dentro de 2 días hábiles de que se confirma en el calendario.",
@@ -72,14 +81,14 @@ export const CHECKS_E1: ChecklistDef[] = [
   {
     codigo: "e1_obra_terminada",
     titulo: "Aviso de obra terminada y qué sigue",
-    orden: 6,
+    orden: 7,
     plazoDiasHabiles: null,
     detalle: "Que terminó y que ahora arranca el trámite, con su plazo. Va ANTES que la encuesta.",
   },
   {
     codigo: "e1_encuesta_obra",
     titulo: "Aviso de la encuesta de obra",
-    orden: 7,
+    orden: 8,
     plazoDiasHabiles: null,
     detalle: "Contacto propio, nunca pegado a otro mensaje.",
   },

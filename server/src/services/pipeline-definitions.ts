@@ -149,8 +149,20 @@ export const PIPELINE_DEFINITIONS: StageTemplate[] = [
         responsableRol: "Asesor Comercial",
         responsible: "Asesor Comercial",
         isSystem: true,
+        // Cada modalidad exige su documento, y ese ítem está respaldado por
+        // evidencia: no se puede tildar sin que el documento exista, y se marca
+        // solo cuando aparece. Antes acá se podía dar la subetapa por cerrada sin
+        // haber elegido siquiera la modalidad —y entonces los ítems condicionados
+        // ni se exigían—, así que el proyecto seguía sin proforma y sin plan de
+        // pagos, y Experiencia Solar salía a cobrar sin saber qué cobrar.
         checklist: [
           { label: "Modalidad de pago definida", isRequired: true },
+          {
+            label: "Proforma generada",
+            isRequired: true,
+            evidenceKind: "proforma",
+            appliesWhenModalidadPago: ModalidadPago.FINANCIACION_BANCARIA,
+          },
           {
             label: "Proforma enviada al banco",
             isRequired: true,
@@ -161,6 +173,18 @@ export const PIPELINE_DEFINITIONS: StageTemplate[] = [
             isRequired: true,
             isBlocker: true,
             appliesWhenModalidadPago: ModalidadPago.FINANCIACION_BANCARIA,
+          },
+          {
+            label: "Plan de pagos creado",
+            isRequired: true,
+            evidenceKind: "plan-pagos",
+            appliesWhenModalidadPago: ModalidadPago.DIRECTO_50_50,
+          },
+          {
+            label: "Qué se acordó, explicado",
+            isRequired: true,
+            evidenceKind: "modalidad-otro",
+            appliesWhenModalidadPago: ModalidadPago.OTRO,
           },
         ],
       },

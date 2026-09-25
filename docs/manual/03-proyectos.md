@@ -73,6 +73,55 @@ instalación **no** la tocan.
 
 ### Reglas y decisiones
 
+### Ítems de checklist respaldados por evidencia
+
+`services/checklist-evidencias.ts`. Un ítem con `evidenceKind` **no se puede
+tildar a mano**: el PATCH del checklist consulta `faltaEvidencia()` y devuelve 422
+si el documento no existe. Al revés, quien produce la evidencia llama a
+`completarPorEvidencia()` y el ítem se marca solo.
+
+| `evidenceKind` | Qué exige | Quién la marca |
+|---|---|---|
+| `ensayo-video` | Un video de ensayo `READY` | `project-video.service.ts` |
+| `proforma` | Una `ProformaVersion` publicada | `proforma-version.service.ts` → `publishVersion()` |
+| `plan-pagos` | Un cobro previsto manual (mismo criterio que `planPagos.service.ts`) | `createPlanPagos()` |
+| `modalidad-otro` | `Project.modalidadPagoNota` con texto | el PATCH del proyecto |
+
+Cosas que conviene saber:
+
+- **`completarPorEvidencia()` verifica antes de marcar**, aunque quien la llama
+  suele venir de crear la evidencia. Es barato y evita el error que se cometió al
+  sincronizar los proyectos viejos: llamarla a ciegas tildó 32 ítems de proyectos
+  que no tenían nada hecho.
+- **`despintarPorEvidencia()`** hace lo contrario: si la evidencia desaparece (se
+  borra la nota), el ítem vuelve a estar pendiente. Sin eso quedaría tildado
+  afirmando algo que ya no es cierto.
+- **ADMIN está exento del guard**, igual que en el resto del checklist.
+- Un `evidenceKind` desconocido **no bloquea**: si se retira una evidencia del
+  catálogo, esos ítems siguen funcionando como ítems normales.
+
+### La subetapa "Modalidad de pago definida" no cierra sin modalidad
+
+El filtro de ítems pendientes compara `item.appliesWhenModalidadPago ===
+project.modalidadPago`: con `modalidadPago` en null **ningún ítem condicionado se
+exige**, así que la subetapa se daba por completada sin proforma, sin plan de
+pagos y sin saber cómo paga el cliente. Por eso hay un guard aparte
+(`MODALIDAD_PAGO_REQUERIDA`) antes de ese filtro.
+
+`ModalidadPago` tiene tres valores: `FINANCIACION_BANCARIA`, `DIRECTO_50_50` y
+`OTRO` (este último obliga a llenar `modalidadPagoNota`).
+
+**El plan de pagos se abrió a `ONBOARDING:EDIT`** con `authorizeAny`, mismo
+precedente que la pestaña Cobros de Experiencia Solar: se abre la herramienta, no
+el módulo Finanzas entero.
+
+**Los proyectos que ya existían no reciben ítems nuevos del catálogo** — el
+checklist se copia al crear el proyecto. Para eso está
+`prisma/scripts/sync-checklist-modalidad-pago.ts`, que los agrega a las subetapas
+**sin completar** (las cerradas se dejan como están: agregarles un pendiente las
+volvería inconsistentes).
+
+
 - **Por qué `FIJAR_ETAPA` y no `EDIT`** (septiembre 2026): con `EDIT` lo podían
   hacer 13 roles, incluidos asesores comerciales, logística y los instaladores
   tercerizados. Un instalador movió una obra a "Ejecución de Obra" el día antes

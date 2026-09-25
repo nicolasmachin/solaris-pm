@@ -72,9 +72,12 @@ import { createAuditEntriesForChanges, createAuditEntry } from "../services/audi
 import { clearUmbralNotaBajaCache } from "../services/encuestas/encuestas.service.js";
 import { activarCheck, crearCheckReagenda } from "../services/clientes/recorrido.service.js";
 import {
-  ENSAYO_VIDEO_EVIDENCE_KIND,
-  hasReadyEnsayoVideo,
-} from "../services/project-video.service.js";
+  completarPorEvidencia,
+  despintarPorEvidencia,
+  EVIDENCIA_MODALIDAD_OTRO,
+  faltaEvidencia,
+  SUBETAPA_MODALIDAD_PAGO,
+} from "../services/checklist-evidencias.js";
 import { syncCommissionFromMovement } from "../services/commission/sync-commission-status.js";
 import { listLeadProposals } from "../services/proposal/lead-proposals.service.js";
 import { createPlanPagos, getPlanPagos } from "../services/planPagos.service.js";
@@ -293,6 +296,8 @@ const projectPatchSchema = z
     executedUsd: z.coerce.number().nonnegative().optional(),
     estimatedMwhYear: z.coerce.number().positive().nullable().optional(),
     modalidadPago: z.nativeEnum(ModalidadPago).nullable().optional(),
+    // Qué se acordó, cuando la modalidad es OTRO. Vacío la borra.
+    modalidadPagoNota: z.string().trim().max(1000).nullable().optional(),
     clientEmail: clientEmailValue.nullable().optional(),
     clientPhone: clientPhoneValue.nullable().optional(),
     clientAddress: z.string().nullable().optional(),
@@ -868,6 +873,9 @@ function normalizeProjectInput(input: Record<string, unknown>) {
     normalized.co2TonsAvoided = new Prisma.Decimal((estimatedMwhYear * 0.5).toFixed(2));
   }
   if (source.modalidadPago !== undefined) normalized.modalidadPago = source.modalidadPago;
+  if (source.modalidadPagoNota !== undefined) {
+    normalized.modalidadPagoNota = source.modalidadPagoNota || null;
+  }
   if (source.clientEmail !== undefined) normalized.clientEmail = source.clientEmail;
   if (source.clientPhone !== undefined) normalized.clientPhone = source.clientPhone;
   if (source.clientAddress !== undefined) normalized.clientAddress = source.clientAddress;
@@ -934,6 +942,7 @@ const projectFieldLabels: Record<string, string> = {
   estimatedMwhYear: "generación estimada anual",
   co2TonsAvoided: "CO2 evitado",
   modalidadPago: "modalidad de pago",
+  modalidadPagoNota: "detalle de la modalidad de pago",
   clientEmail: "email del cliente",
   clientPhone: "teléfono del cliente",
   clientAddress: "dirección del cliente",
@@ -1998,6 +2007,17 @@ export async function registerApiRoutes(app: FastifyInstance) {
         `Actualizó ${label} de ${oldValue ?? "vacío"} a ${newValue ?? "vacío"} en proyecto ${project.code}`,
     });
 
+    // Escribir la explicación del caso particular ES la evidencia: marca su ítem
+    // sola. Y si se borra, el ítem vuelve a quedar pendiente — si no, seguiría
+    // tildado afirmando que hay una explicación que ya no existe.
+    if (body.modalidadPagoNota !== undefined) {
+      if ((updatedProject.modalidadPagoNota ?? "").trim()) {
+        await completarPorEvidencia(project.id, EVIDENCIA_MODALIDAD_OTRO, user.id).catch(() => undefined);
+      } else {
+        await despintarPorEvidencia(project.id, EVIDENCIA_MODALIDAD_OTRO).catch(() => undefined);
+      }
+    }
+
     return serializeProject(updatedProject);
   });
 
@@ -3023,6 +3043,17 @@ export async function registerApiRoutes(app: FastifyInstance) {
       );
     }
 
+    // Regla 3: la modalidad de pago se elige o la subetapa no cierra. Sin ella,
+    // el filtro de abajo no exige NINGÚN ítem condicionado —la comparación contra
+    // null nunca da true—, así que la subetapa se daba por completada sin
+    // proforma, sin plan de pagos y sin saber cómo paga el cliente.
+    if (substage.name === SUBETAPA_MODALIDAD_PAGO && !substage.project.modalidadPago) {
+      throw badRequest(
+        "MODALIDAD_PAGO_REQUERIDA",
+        "Antes de completar esta subetapa hay que elegir cómo paga el cliente: financiación bancaria, pago directo u otro.",
+      );
+    }
+
     const pendingItems = substage.checklistItems.filter((item) => {
       if (!item.appliesWhenModalidadPago) {
         return !item.completed;
@@ -3340,19 +3371,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
 
     // Los ítems respaldados por evidencia no se pueden tildar "de palabra": hace
-    // falta que el video exista. Es el punto de la feature — antes eran casillas
-    // que se marcaban sin que nadie hubiera subido nada.
-    if (
-      body.completed === true &&
-      item.evidenceKind === ENSAYO_VIDEO_EVIDENCE_KIND &&
-      user.role !== "ADMIN" &&
-      !(await hasReadyEnsayoVideo(item.projectId))
-    ) {
-      throw new AppError(
-        422,
-        "EVIDENCE_REQUIRED",
-        "Para marcar este ítem hay que subir antes el video del ensayo, en la sección Obra del proyecto.",
-      );
+    // falta que exista lo que dicen que existe (el video del ensayo, la proforma,
+    // el plan de pagos, la explicación del caso particular). Es el punto de la
+    // feature — antes eran casillas que se marcaban sin que nadie hubiera hecho
+    // nada. El catálogo de evidencias vive en `checklist-evidencias.ts`.
+    if (body.completed === true && user.role !== "ADMIN") {
+      const falta = await faltaEvidencia(item.projectId, item.evidenceKind);
+      if (falta) throw new AppError(422, "EVIDENCE_REQUIRED", falta);
     }
 
     const updateData: Record<string, unknown> = {};
@@ -11573,13 +11598,23 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     // ─── Asistente Plan de Pagos Previstos ─────────────────────────────────
     // Crea cobros previstos estructurados (seña + cuotas) a partir del
-    // presupuesto del proyecto en una sola transacción. Identificación del
-    // plan: prefijo "[PLAN] " en descripcion. Solo lectura/escritura para
-    // FINANZAS.{VIEW,EDIT}.
+    // presupuesto del proyecto en una sola transacción.
+    //
+    // Abierto también a ONBOARDING.EDIT: el plan se crea desde la subetapa
+    // "Modalidad de pago definida", que es donde el asesor ya acordó con el
+    // cliente cómo paga. Estaba solo en Finanzas y por eso no se hacía —el
+    // asesor no lo veía y Experiencia Solar no lo podía crear—, y después nadie
+    // sabía qué cobrar. Mismo criterio que la pestaña Cobros de Experiencia
+    // Solar: se abre esta herramienta, no el módulo Finanzas entero.
 
     app.get(
       "/finance/plan-pagos/:projectId",
-      { preHandler: authorize(Module.FINANZAS, Action.VIEW) },
+      {
+        preHandler: authorizeAny([
+          { module: Module.FINANZAS, action: Action.VIEW },
+          { module: Module.ONBOARDING, action: Action.EDIT },
+        ]),
+      },
       async (request) => {
         const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
         return getPlanPagos(projectId);
@@ -11603,7 +11638,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     app.post(
       "/finance/plan-pagos",
-      { preHandler: authorize(Module.FINANZAS, Action.EDIT) },
+      {
+        preHandler: authorizeAny([
+          { module: Module.FINANZAS, action: Action.EDIT },
+          { module: Module.ONBOARDING, action: Action.EDIT },
+        ]),
+      },
       async (request, reply) => {
         const user = ensureUser(request);
         const body = planPagosBodySchema.parse(request.body);

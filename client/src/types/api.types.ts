@@ -412,6 +412,9 @@ export interface Project {
   uteProcess?: import("../api/uteProcess.api").UteProcess | null;
   /** Lead del que salió el proyecto. Permite volver a Ventas sin buscarlo. */
   leadId?: string | null;
+  modalidadPago?: "DIRECTO_50_50" | "FINANCIACION_BANCARIA" | "OTRO" | null;
+  /** Qué se acordó, cuando la modalidad es OTRO. */
+  modalidadPagoNota?: string | null;
 }
 
 // ─── Substage patch response ──────────────────────────────────────────────────

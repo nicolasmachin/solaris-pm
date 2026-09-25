@@ -54,6 +54,10 @@ enum TipoObra {
 enum ModalidadPago {
   DIRECTO_50_50
   FINANCIACION_BANCARIA
+  /// Casos particulares que no entran en las dos anteriores (un canje, un pago
+  /// adelantado, una condición negociada). Obliga a explicar cuál es en
+  /// `modalidadPagoNota`: si no, nadie sabe después qué se acordó.
+  OTRO
 }
 
 enum StageStatus {
@@ -624,6 +628,9 @@ model Project {
   actualUteStart                  DateTime?                @db.Date
   actualUteEnd                    DateTime?                @db.Date
   modalidadPago                   ModalidadPago?
+  /// Qué se acordó, cuando la modalidad es OTRO. Es lo que hace que el caso
+  /// particular quede explicado y no solo marcado como "otro".
+  modalidadPagoNota               String?
   firstDateScheduledAt            DateTime?                @db.Timestamptz(6)
   clientEmail                     String?
   clientPhone                     String?

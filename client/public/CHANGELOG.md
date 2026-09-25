@@ -2,6 +2,22 @@
 
 ## v11.2
 
+### 25 de septiembre de 2026
+
+#### La modalidad de pago se elige, y lo que exige se hace
+
+- La subetapa **"Modalidad de pago definida"** del onboarding ahora pregunta primero **cómo paga el cliente**, con tres opciones: **Financiación bancaria**, **Pago directo** y **Otro**.
+- Cada una pide lo suyo, ahí mismo: financiación pide la **proforma**, pago directo pide el **plan de pagos**, y "Otro" pide **explicar qué se acordó**.
+- **El plan de pagos ahora lo crea el asesor**, desde esa misma subetapa. Antes la herramienta vivía solo en Finanzas: el asesor no la veía, Experiencia Solar no la podía crear, y el proyecto llegaba a la etapa de cobrar sin que nadie supiera qué cobrar. Se puede crear y también editar.
+- **La subetapa no se puede completar sin elegir la modalidad.** Antes se podía dar por cerrada sin elegirla, y en ese caso ni siquiera se exigían la proforma ni el resto.
+- Y los ítems nuevos **no se pueden tildar "de palabra"**: hace falta que el documento exista. Cuando se genera la proforma, se crea el plan o se escribe la explicación, el ítem **se marca solo**. Si la explicación se borra, vuelve a quedar pendiente.
+
+#### Contrato firmado por las dos partes
+
+- El recorrido de Experiencia Solar tiene un paso nuevo en la etapa 1: **"Contrato firmado por las dos partes, recabado y archivado"**.
+- Hoy el contrato se manda pero nadie lo recaba firmado, así que no queda en ningún lado. Coordinarlo pasa a ser de Experiencia Solar: si el cliente está en Montevideo, que pase a firmarlo; si es del interior, por correo (va el nuestro firmado y vuelve con su firma).
+- Aparece solo en los clientes que ya existen, sin necesidad de hacer nada.
+
 ### 24 de septiembre de 2026
 
 #### El resumen diario de Experiencia Solar, en tres secciones

@@ -8,6 +8,7 @@ import { AuditAction, AuditEntityType, Prisma, ProformaVersionStatus } from "@pr
 import { prisma } from "../../lib/prisma.js";
 import { AppError, badRequest, notFound } from "../../utils/errors.js";
 import { createAuditEntry } from "../audit.service.js";
+import { completarPorEvidencia, EVIDENCIA_PROFORMA } from "../checklist-evidencias.js";
 import {
   cleanupProformaVersionDir,
   readProformaPdf,
@@ -85,6 +86,10 @@ export async function publishVersion(projectId: string, userId: string) {
           versionId: created.id,
         } as unknown as Prisma.InputJsonValue,
       });
+
+      // El ítem "Proforma generada" de la subetapa de modalidad de pago se marca
+      // solo: el asesor ya hizo el trabajo, no hace falta que además lo tilde.
+      await completarPorEvidencia(projectId, EVIDENCIA_PROFORMA, userId).catch(() => undefined);
 
       return created;
     } catch (err) {

@@ -1,6 +1,6 @@
 # Cómo trabajamos en Voltia
 
-**Manual de trabajo** · Versión 1.3 — 25 de septiembre de 2026
+**Manual de trabajo** · Versión 1.4 — 25 de septiembre de 2026
 
 > Este manual explica **qué tiene que hacer cada uno y cómo hacerlo en Voltia PM**.
 > No hay dos documentos: el procedimiento y la herramienta van juntos, porque
@@ -130,8 +130,18 @@ fecha tentativa.
 
 ### 3.1 · La modalidad de pago — lo que más se nos está cayendo
 
-**En el onboarding definís cómo paga el cliente.** Son dos caminos y cada uno te
-deja una tarea distinta:
+**En el onboarding definís cómo paga el cliente.** Lo primero que te pregunta la
+subetapa es eso, con tres opciones, y **cada una te deja una tarea que no podés
+saltear**: hasta que no la hagas, la subetapa no se puede dar por completada.
+
+| Si elegís… | Tenés que… |
+|---|---|
+| **Financiación bancaria** | Generar la **proforma** |
+| **Pago directo** | Crear el **plan de pagos** |
+| **Otro** | **Explicar qué se acordó**, en el campo que aparece |
+
+Esas casillas **no se pueden tildar a mano**: se marcan solas cuando el documento
+existe. Y si no elegís ninguna de las tres, la subetapa no cierra.
 
 #### Si paga directo con nosotros
 
@@ -143,9 +153,17 @@ Armás el **calendario de pagos**: la seña más tres cuotas.
 | 30 % | Con la obra terminada |
 | 20 % | Cuando se habilita |
 
-**En la app:** en el proyecto, sección de Finanzas → **Plan de pagos**. Las tres
-cuotas ya vienen cargadas con esos porcentajes; solo confirmás los montos y las
-fechas previstas.
+**En la app:** el botón **«Crear o editar el plan de pagos»**, en esa misma
+subetapa. Antes esto vivía solo en Finanzas —vos no lo veías y Experiencia Solar
+no lo podía crear—, y así **el proyecto llegaba a la etapa de cobrar sin que nadie
+supiera qué cobrar**. Ahora lo hacés vos, que sos quien lo acordó con el cliente,
+y lo podés editar después si cambia.
+
+#### Si es un caso particular
+
+Un canje, un pago adelantado, una condición negociada. Elegís **Otro** y escribís
+qué se acordó. No es burocracia: **dentro de seis meses, cuando haya que cobrar,
+esa línea va a ser lo único que exista** sobre lo que hablaste con el cliente.
 
 #### Si va con financiación bancaria
 
@@ -874,4 +892,4 @@ cédula o con un usuario armado con su nombre.
 
 ---
 
-*Cómo trabajamos en Voltia · v1.3 · 25 de septiembre de 2026*
+*Cómo trabajamos en Voltia · v1.4 · 25 de septiembre de 2026*

@@ -23,8 +23,7 @@ import { SolicitudSuministroButton } from "../ute/SolicitudSuministroButton";
 import { CargarFotosObraButton } from "../obra/CargarFotosObraButton";
 import { ContractBuilderModal } from "../contract/ContractBuilderModal";
 import { ContractVersionsList } from "../contract/ContractVersionsList";
-import { ProformaBuilderModal } from "../proforma/ProformaBuilderModal";
-import { ProformaVersionsList } from "../proforma/ProformaVersionsList";
+import { ModalidadPagoPanel } from "./ModalidadPagoPanel";
 import { stageLabel } from "../../constants/stages";
 
 // Conjuntos de etapas por área. Incluyen los nombres viejos (5 etapas) y los
@@ -276,7 +275,6 @@ function SubstageRow({
   const [checklistPendingItems, setChecklistPendingItems] = useState<{ id: string; label: string }[]>([]);
   const [showDeadlineModal, setShowDeadlineModal] = useState(false);
   const [contractOpen, setContractOpen] = useState(false);
-  const [proformaOpen, setProformaOpen] = useState(false);
 
   const currentUser = useAuthStore((s) => s.user);
   const canEditDeadline = currentUser?.role === "ADMIN" || currentUser?.role === "OPERACIONES";
@@ -544,19 +542,10 @@ function SubstageRow({
               </CanAccess>
             )}
 
-            {/* Acción dedicada: generador de proforma BBVA */}
+            {/* Cómo paga el cliente, y la herramienta que esa elección exige */}
             {substage.name === "Modalidad de pago definida" && (
               <CanAccess module="ONBOARDING" action="EDIT">
-                <button
-                  onClick={() => setProformaOpen(true)}
-                  className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-3 py-2 text-xs font-semibold text-black hover:opacity-90"
-                >
-                  🏦 Generar proforma BBVA
-                </button>
-                <ProformaVersionsList projectId={projectId} />
-                {proformaOpen && (
-                  <ProformaBuilderModal projectId={projectId} onClose={() => setProformaOpen(false)} />
-                )}
+                <ModalidadPagoPanel projectId={projectId} />
               </CanAccess>
             )}
 

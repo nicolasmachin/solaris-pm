@@ -17,6 +17,7 @@ import {
 } from "@prisma/client";
 
 import { prisma } from "../lib/prisma.js";
+import { completarPorEvidencia, EVIDENCIA_PLAN_PAGOS } from "./checklist-evidencias.js";
 import { AppError, badRequest, notFound } from "../utils/errors.js";
 
 export const PLAN_PREFIX = "[PLAN] ";
@@ -280,6 +281,10 @@ export async function createPlanPagos(args: {
 
     return { existingCount: existing.length, createdRows };
   });
+
+  // El ítem "Plan de pagos creado" de la subetapa de modalidad de pago se marca
+  // solo: el plan ya existe, no hace falta que además alguien lo tilde.
+  await completarPorEvidencia(projectId, EVIDENCIA_PLAN_PAGOS, userId).catch(() => undefined);
 
   return {
     created: result.createdRows.length,
