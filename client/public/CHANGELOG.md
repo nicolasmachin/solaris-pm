@@ -7,8 +7,8 @@
 #### El resumen diario de Experiencia Solar, en tres secciones
 
 - El correo del recorrido ahora separa lo que antes venía mezclado en un solo número: **Pendientes** (tienen plazo y ya venció), **Novedades** (pasó algo del lado del cliente y nadie lo miró) y **Fuera de cadencia** (sin novedad, pero les debemos el contacto del período).
-- El asunto lo dice de entrada: *"2 pendientes · 12 novedades · 71 fuera de cadencia"*. Antes sumaba todo y decía "85 pendientes", que asustaba y tapaba las pocas cosas con plazo vencido.
-- Un cliente aparece **una sola vez**: si tiene novedad va en Novedades aunque también esté fuera de cadencia, y ahí mismo se le marcan los días sin contacto.
+- El asunto lo dice de entrada: *"2 pendientes · 12 novedades · 85 fuera de cadencia"*. Antes sumaba todo en un solo número y decía "85 pendientes", que asustaba y tapaba las pocas cosas con plazo vencido.
+- **Novedades y fuera de cadencia se solapan, y cada número cuenta a todos los suyos**: un cliente puede tener las dos cosas. Lo que no se repite es el renglón — si tiene novedad se lista arriba, con los días sin contacto marcados ahí mismo, y la sección de abajo aclara cuántos de su cuenta ya están listados arriba.
 
 #### Se saca el paso "Repaso de garantías" de Post-habilitación
 

@@ -8,19 +8,30 @@
  *
  *   1. **Pendientes** — lo que tiene reloj y ya venció: avisos de habilitación,
  *      pasos del recorrido vencidos y reclamos del cliente sin respuesta.
- *   2. **Novedades**, por etapa (E1 → E2 → E3) — clientes con algo nuevo que
- *      nadie miró: pasó algo del lado de ellos y hay que enterarse.
- *   3. **Fuera de cadencia**, por etapa — clientes que no tienen novedad pero a
- *      los que les debemos el contacto del período.
+ *   2. **Novedades**, por etapa (E1 → E2 → E3) — pasó algo en el proyecto después
+ *      de la última vez que le hablamos al cliente, así que hay algo que contarle.
+ *      Ojo con cómo se lee: la mayoría de esos hechos son **nuestros** (avanzó de
+ *      etapa, se emitió el contrato, se subió un archivo, alguien comentó), no del
+ *      cliente; y no dice que nadie lo haya mirado —eso no se registra en ningún
+ *      lado— sino que **todavía no se registró un contacto posterior**.
+ *   3. **Fuera de cadencia**, por etapa — les debemos el contacto del período.
  *
  * Los tres números **no se suman** en el asunto. Un total único daba un número
  * grande ("85 pendientes") que asustaba y escondía las pocas alertas con reloj,
  * que son las únicas que hay que accionar hoy. El asunto dice "2 pendientes ·
- * 12 novedades · 71 fuera de cadencia".
+ * 12 novedades · 85 fuera de cadencia".
  *
- * Un cliente aparece **una sola vez**: si tiene novedad va en Novedades aunque
- * también esté fuera de cadencia (contactarlo por la novedad cierra las dos
- * cosas), y ahí se le marcan igual los días sin contacto.
+ * **Las dos últimas se solapan y los números lo dicen igual.** Estar fuera de
+ * cadencia y tener novedad son condiciones independientes: un cliente puede tener
+ * las dos. Cada número cuenta **todos** los que cumplen su condición, porque un
+ * número que excluye a los de la otra sección no es el que se quiere saber
+ * ("¿cuántos están fuera de cadencia?" se responde con todos, no con los que
+ * además no tienen novedad).
+ *
+ * Lo que no se repite es el **renglón**: un cliente con las dos cosas se lista una
+ * sola vez, arriba en Novedades, con los días sin contacto marcados ahí mismo
+ * (contactarlo por la novedad salda las dos cosas). La sección de abajo aclara
+ * cuántos de su cuenta ya están listados arriba.
  *
  * Los pendientes que **se arrastran** no van en una sección propia: se marcan
  * dentro de la alerta con los días que llevan vencidos, que es la información
@@ -47,11 +58,16 @@ function diasDesde(fecha: Date, now: Date): number {
 
 export type ResumenExperiencia = {
   alertas: ExpAlerta[];
-  /** Clientes con algo nuevo sin mirar, agrupados por etapa. */
+  /** Clientes con actividad posterior al último contacto registrado, por etapa. */
   novedades: ExpBloque[];
-  /** Clientes sin novedad a los que les debemos el contacto del período. */
+  /**
+   * Clientes fuera de cadencia que NO están listados en `novedades`. Es la lista,
+   * no la cuenta: la cuenta real es `cadenciaTotal`.
+   */
   cadencia: ExpBloque[];
-  /** Alertas + clientes listados en las dos secciones. 0 = no se manda nada. */
+  /** Todos los que están fuera de cadencia, incluidos los listados en `novedades`. */
+  cadenciaTotal: number;
+  /** Alertas + clientes listados (sin repetir). 0 = no se manda nada. */
   total: number;
 };
 
@@ -172,14 +188,20 @@ export async function construirResumenExperiencia(now: Date = new Date()): Promi
       }))
       .filter((b) => b.clientes.length > 0);
 
-  // La novedad manda: un cliente con novedad no se repite abajo aunque también
-  // esté fuera de cadencia.
+  // La novedad manda para el RENGLÓN: un cliente con novedad se lista arriba y no
+  // se repite abajo. La CUENTA de abajo, en cambio, los incluye (ver la cabecera
+  // del archivo): son condiciones independientes y el número que interesa es
+  // cuántos están fuera de cadencia, no cuántos lo están y además no tienen nada.
   const novedades = agrupar((c) => c.hayNovedad);
   const cadencia = agrupar((c) => c.fueraDeCadencia && !c.hayNovedad);
+  const cadenciaTotal = bloquesRecorrido.reduce(
+    (acc, b) => acc + b.clientes.filter((c) => c.fueraDeCadencia).length,
+    0,
+  );
 
   const contar = (bs: ExpBloque[]) => bs.reduce((acc, b) => acc + b.clientes.length, 0);
   const total = alertas.length + contar(novedades) + contar(cadencia);
-  return { alertas, novedades, cadencia, total };
+  return { alertas, novedades, cadencia, cadenciaTotal, total };
 }
 
 /**

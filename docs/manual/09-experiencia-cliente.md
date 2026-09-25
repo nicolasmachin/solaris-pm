@@ -423,8 +423,14 @@ Reglas de orden, que son el corazón de la vista (`getRecorrido`):
 1. **Las alertas con plazo van arriba** de su bloque — hoy, el aviso de
    habilitación pendiente. El reloj corre.
 2. Después, **por días sin contacto**, del más urgente al menos, con el mismo
-   criterio en las tres etapas. **Los que nunca tuvieron contacto van primero**:
-   "nunca" es peor que "hace mucho".
+   criterio en las tres etapas. **Los que nunca tuvieron contacto van primero:**
+   `diasSinContacto` es null, no hay número con el que ordenarlos, así que dónde
+   van es una decisión. Van arriba porque son los únicos de los que **no se sabe
+   si se les explicó el proceso**; el modelo no promete cadencia y descansa en esa
+   explicación inicial, así que un cliente sin contacto registrado puede estar
+   esperando sin saber qué esperar. Ojo con leerlo como un hecho del cliente:
+   puede haber habido contacto real y no registrado — es una laguna de la bitácora
+   tanto como del trato, y hasta que alguien la mire son indistinguibles.
 3. **La novedad NO reordena.** Es un "no leído", no una tarea. Si reordenara, un
    cliente con novedad pero contactado ayer taparía al que lleva quince días sin
    que nadie le hable.
@@ -434,12 +440,30 @@ Las **dos señales son distintas a propósito**:
 | Señal | Qué dice | Cuándo se apaga |
 |---|---|---|
 | Triángulo rojo | Hay que avisarle y hay plazo | Al registrar el aviso |
-| Puntito | Hay algo nuevo para mirar | Al mirarlo |
+| Puntito | Pasó algo posterior al último contacto registrado | Al registrar un contacto |
 
 `hayNovedad` se calcula comparando la última actividad del proyecto (eventos
 clasificados como novedad + comentarios) contra el último contacto registrado: es
 "pasó algo y todavía no se lo dijimos". Se resuelve con dos agregaciones, no una
 consulta por cliente.
+
+**Las dos señales son globales, no por usuario.** Ni `hayNovedad` ni
+`avisoHabilitacionPendiente` tienen estado por persona: `marcarNovedades()` y
+`compararPrioridad()` no reciben usuario, y no existe tabla de "leído por". El
+punto se apaga para **todos** cuando alguien registra la interacción, y el
+triángulo cuando alguien tilda el paso (`avisoHabilitacionEn` está en `Project`).
+Quién hizo qué se responde con el historial, no con las señales.
+
+**Dos lecturas erradas que el nombre invita**, y conviene no repetirlas en la UI ni
+en los manuales del equipo:
+
+- **No es actividad del cliente.** Los eventos que lo prenden son casi todos
+  internos (`stage_advanced`, `contract_version_published`, `file_uploaded`,
+  comentarios del proyecto). Sólo un cliente con portal puede generar alguno.
+- **No es un "no leído" con tracking.** No se registra quién abrió la ficha: abrir
+  la ficha no lo apaga. Lo que lo apaga es **registrar una interacción en la
+  bitácora** con fecha posterior al hecho. En la UI se describe como "hay algo que
+  contarle".
 
 **Lo que hacemos nosotros en masa no enciende el punto** (`ENTIDADES_SIN_LUZ` en
 `services/clientes/index.ts`). Hoy hay una sola entidad ahí: el envío del reporte

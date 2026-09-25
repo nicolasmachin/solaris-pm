@@ -556,8 +556,14 @@ export async function listClientes(f: ClienteFiltros, page: number, pageSize: nu
  * Decisiones de orden, que son el corazón de la vista:
  *
  *  - Dentro de cada bloque se ordena por **días sin contacto**, del más urgente
- *    al menos. Mismo criterio en las tres etapas. Los que nunca tuvieron contacto
- *    van primero: "nunca" es peor que "hace mucho".
+ *    al menos. Mismo criterio en las tres etapas. Los que **nunca** tuvieron
+ *    contacto van primero: `diasSinContacto` es null y no hay número con el que
+ *    ordenarlos, así que la posición es una decisión, y van arriba porque son los
+ *    únicos de los que **no se sabe si les explicamos el proceso**. Un cliente al
+ *    que se le habló hace 20 días al menos escuchó una vez qué iba a pasar y
+ *    cuánto demora; uno sin ningún contacto registrado puede estar esperando sin
+ *    saber nada, y como no se promete cadencia, ese silencio no tiene ninguna
+ *    explicación de respaldo.
  *  - **La novedad NO reordena.** Es un "no leído", no una tarea. Si reordenara,
  *    un cliente con novedad pero contactado ayer taparía al que lleva 15 días sin
  *    que nadie le hable.

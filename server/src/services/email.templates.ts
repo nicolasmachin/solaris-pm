@@ -98,8 +98,12 @@ export function emailDailyDigest(params: {
 // ─── Resumen diario de Experiencia Solar ────────────────────────────────────
 // Espejo de la pantalla del Recorrido, en tres secciones que se leen de arriba
 // abajo por urgencia: Pendientes (tienen reloj y ya venció, lo más arrastrado
-// primero), Novedades (algo nuevo sin mirar) y Fuera de cadencia (les debemos el
-// contacto del período). Se manda solo si hay algo.
+// primero), Novedades (pasó algo después de la última vez que le hablamos) y Fuera
+// de cadencia (les debemos el contacto del período). Se manda solo si hay algo.
+//
+// Las dos últimas se solapan: son condiciones independientes y un cliente puede
+// tener las dos. Cada número cuenta todos los suyos; lo que no se repite es el
+// renglón (ver `digest/experiencia-digest.service.ts`).
 
 export type ExpAlerta = {
   tipo: "habilitacion" | "check" | "reclamo";
@@ -145,6 +149,7 @@ export function emailExperienciaDigest(params: {
   alertas: ExpAlerta[];
   novedades: ExpBloque[];
   cadencia: ExpBloque[];
+  cadenciaTotal: number;
   total: number;
 }) {
   const alertasHtml = params.alertas.length
@@ -210,7 +215,11 @@ export function emailExperienciaDigest(params: {
   const contar = (bloques: ExpBloque[]) => bloques.reduce((acc, b) => acc + b.clientes.length, 0);
   const pendientes = params.alertas.length;
   const nNovedades = contar(params.novedades);
-  const nCadencia = contar(params.cadencia);
+  // La cuenta es la real (todos los que están fuera de cadencia); la lista de
+  // abajo trae sólo los que no se listaron arriba.
+  const nCadencia = params.cadenciaTotal;
+  const cadenciaListados = contar(params.cadencia);
+  const cadenciaArriba = nCadencia - cadenciaListados;
   const plural = (n: number, sing: string, plur: string) => `${n} ${n === 1 ? sing : plur}`;
   const resumenCorto = [
     pendientes > 0 ? plural(pendientes, "pendiente", "pendientes") : null,
@@ -229,7 +238,7 @@ export function emailExperienciaDigest(params: {
     nNovedades > 0
       ? seccion(
           `Novedades (${nNovedades})`,
-          "Pasó algo del lado del cliente y todavía nadie lo miró.",
+          "Pasó algo en el proyecto después de la última vez que le hablamos.",
           renderBloques(params.novedades, (c) =>
             c.fueraDeCadencia ? sinContacto(c.diasSinContacto) : "",
           ),
@@ -240,8 +249,15 @@ export function emailExperienciaDigest(params: {
     nCadencia > 0
       ? seccion(
           `Fuera de cadencia (${nCadencia})`,
-          "Sin novedad, pero les debemos el contacto del período.",
-          renderBloques(params.cadencia, (c) => sinContacto(c.diasSinContacto)),
+          "Les debemos el contacto del período." +
+            (cadenciaArriba > 0
+              ? ` ${cadenciaArriba} de ellos ya ${
+                  cadenciaArriba === 1 ? "está" : "están"
+                } más arriba, con novedad.`
+              : ""),
+          cadenciaListados > 0
+            ? renderBloques(params.cadencia, (c) => sinContacto(c.diasSinContacto))
+            : "",
         )
       : "";
 

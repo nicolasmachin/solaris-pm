@@ -723,7 +723,7 @@ columna cada una, ordenada por días sin contacto.
 | Señal | Qué dice |
 |---|---|
 | 🔺 **Triángulo rojo** | Falta uno de los avisos clave **y hay plazo** |
-| 🟡 **Punto** | Hay algo nuevo para mirar |
+| 🟡 **Punto** | Pasó algo después de la última vez que le hablamos. Se apaga al registrar el contacto |
 
 **El punto no cambia el orden a propósito.** Es un «no leído», no una tarea: si
 reordenara, un cliente con novedad pero contactado ayer taparía al que lleva

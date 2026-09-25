@@ -575,8 +575,8 @@ la pantalla del Recorrido, en tres secciones de arriba abajo por urgencia:
 1. **Pendientes** — avisos de habilitación sin dar, pasos con el plazo pasado y
    reclamos del cliente sin responder. **Tienen plazo y ya venció.** Lo más
    arrastrado primero.
-2. **Novedades**, por etapa — pasó algo del lado del cliente y todavía nadie lo
-   miró.
+2. **Novedades**, por etapa — **pasó algo en el proyecto después de la última vez
+   que le hablamos**, así que hay algo que contarle.
 3. **Fuera de cadencia**, por etapa — sin novedad, pero les debemos el contacto
    del período.
 
@@ -615,15 +615,41 @@ columna cada una.
 1. **Las alertas con plazo van arriba** de su columna. El reloj corre.
 2. Después, **por días sin contacto**, del que hace más que no se le habla al que
    menos.
-3. **Los que nunca tuvieron contacto van primero**: "nunca" es peor que "hace
-   mucho".
+3. **Los que nunca tuvieron contacto van primero.** No es una frase hecha: de
+   ellos no sabemos si alguien les explicó el proceso. A un cliente al que se le
+   habló hace veinte días ya le contamos una vez qué va a pasar y cuánto demora,
+   así que su espera tiene una explicación atrás; el que no tiene ningún contacto
+   registrado puede estar esperando sin saber nada, y como **no le prometemos una
+   frecuencia de contacto**, no hay nada que sostenga ese silencio.
+   Con una salvedad: puede ser que se le haya hablado y no se registró. Ahí lo que
+   hay que arreglar es el registro, no el trato — pero hasta que alguien lo mire,
+   es indistinguible del cliente olvidado, y por eso va arriba.
 
 **Las dos señales significan cosas distintas:**
 
 | Señal | Qué dice | Cuándo se apaga |
 |---|---|---|
 | 🔺 **Triángulo rojo** | Falta uno de los **tres avisos clave** y hay plazo | Al tildar el paso |
-| 🟡 **Punto** | Hay algo nuevo para mirar | Al mirarlo |
+| 🟡 **Punto** | **Pasó algo después de la última vez que le hablamos** | Al registrar un contacto |
+
+**Las dos señales son del cliente, no tuyas.** No hay un "no leído" por persona:
+el punto y el triángulo se ven **iguales para todos** los que abren la pantalla, y
+cuando se apagan, se apagan para todos. Si tu compañera registra el contacto, el
+punto de ese cliente desaparece también de tu pantalla — y al revés, el punto
+encendido no significa que *vos* no lo miraste, significa que **nadie registró un
+contacto** después de lo que pasó. Para saber quién hizo qué está el historial, que
+sí dice el nombre.
+
+**Ojo con cómo se lee el punto**, porque el nombre engaña de dos maneras:
+
+- **No quiere decir que el cliente hizo algo.** La mayoría de los hechos que lo
+  prenden son **nuestros**: el proyecto avanzó de etapa, se emitió el contrato, se
+  cargó un archivo, alguien comentó. El punto dice "hay algo que contarle", no
+  "el cliente se movió".
+- **No quiere decir que nadie lo haya mirado.** El sistema no registra quién
+  abrió qué. Lo único que compara es **la fecha del último hecho contra la fecha
+  del último contacto registrado en la bitácora**: mirar la ficha no lo apaga,
+  **registrar el contacto sí**.
 
 **Lo que hacemos nosotros en masa no prende el punto.** El envío del reporte
 mensual toca a todos los generadores el mismo día: si prendiera el punto, lo
