@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.6 — 27 de septiembre de 2026
+**Voltia · Uruguay** · Versión 1.7 — 27 de septiembre de 2026
 
 > Este manual es **el procedimiento y el manual de uso de la app, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -27,6 +27,10 @@
 
 **Las secciones 13 (Reglas duras) y 14 (Cuando algo sale mal) son las que hay que
 saber de memoria.** El resto se consulta.
+
+**Si un cliente te pregunta algo y no sabés qué contestar**, mirá primero el
+**Anexo E**: están las preguntas que más se repiten, con qué está pasando y un
+mensaje para responder.
 
 ---
 
@@ -1249,4 +1253,184 @@ Es la parte que más se consulta cuando algo no aparece donde uno lo busca.
 
 ---
 
-*Manual de Posventa — Experiencia Solar · Voltia · v1.6 · 27 de septiembre de 2026*
+## Anexo E · Las preguntas que hacen los clientes
+
+Las que se repiten, sacadas de lo que los clientes preguntan de verdad. Para cada
+una: **qué está pasando** (para que entiendas antes de contestar) y **un mensaje
+para responder**, que se adapta como cualquier plantilla.
+
+Todas cierran con el próximo paso: es la regla 10.
+
+---
+
+### "¿Hay novedades? ¿En qué anda lo mío?"
+
+**La más frecuente**, y casi siempre durante la espera de UTE. El cliente no
+necesita una novedad: necesita saber que alguien lo tiene presente y en qué parte
+del recorrido está. Mirá el trámite UTE en su ficha antes de contestar — es la
+misma vista que él tiene en el portal.
+
+> **Para responder:**
+>
+>> Hola {nombre}, gracias por escribir. Tu trámite está en {etapa del trámite}, que es la parte que depende de UTE. Todavía no hay novedad de su lado, pero lo estamos siguiendo: apenas se mueva algo te aviso el mismo día.
+
+---
+
+### "¿Cuánto demora UTE? ¿Ya aprobaron mi proyecto?"
+
+**El plazo de aprobación suele ir de 2 a 6 semanas** desde que se mandan los
+papeles, y no depende de nosotros. Voltia consulta a UTE a las dos semanas si no
+hubo respuesta. Lo que se le da al cliente es **la fecha en que se mandaron los
+papeles y el rango**, no una fecha: una fecha que UTE no cumple la rompemos
+nosotros.
+
+> **Para responder:**
+>
+>> Hola {nombre}, tus papeles se presentaron en UTE el {fecha de envío}. La aprobación suele llevar entre 2 y 6 semanas y depende de ellos, así que no te puedo prometer un día. Nosotros consultamos a las dos semanas si no tuvimos respuesta; apenas sepa algo te aviso.
+
+---
+
+### "¿Cuándo es la instalación? Tengo que coordinar con el banco"
+
+Con financiación bancaria, el cliente necesita la fecha para firmar el crédito, y
+el banco a veces necesita la obra para liberar el pago: **las dos cosas se
+esperan una a la otra**. Si todavía no hay fecha confirmada en el calendario, no
+se inventa una: se le dice de qué depende. Y si la fecha existe, avisale también
+que el banco tiene que tener todo listo antes.
+
+> **Para responder:**
+>
+>> Hola {nombre}, la fecha de instalación la confirmamos cuando {de qué depende}. Apenas la tengamos te la paso, así coordinás con el banco. Te conviene ir adelantando lo que te pidan ellos, así no se nos traba la obra esperando el crédito.
+
+---
+
+### "¿Se puede hacer la obra aunque UTE todavía no haya habilitado?"
+
+**Sí, y es lo habitual**: la obra se hace para ir adelantando, y la habilitación
+llega después. Lo que **no** se puede es **encender** el sistema hasta que UTE
+habilite. Es la confusión más común sobre el orden de las cosas.
+
+> **Para responder:**
+>
+>> Hola {nombre}, sí: la instalación la hacemos para ir adelantando, sin esperar a UTE. Lo único que no vas a poder hacer es encender el sistema hasta que ellos habiliten. Cuando pase, te aviso el mismo día.
+
+---
+
+### "¿Cómo es el pago? ¿Cuándo pago cada parte?"
+
+Depende de cómo se acordó, y está en la ficha del proyecto (subetapa **Modalidad
+de pago definida**):
+
+- **Pago directo:** 50 % antes de la obra, 30 % con la obra terminada y 20 %
+  cuando se habilita. El detalle, con montos y fechas, está en el plan de pagos.
+- **Financiación bancaria:** paga el banco, contra la proforma.
+- **Otro:** lo que se haya acordado está escrito en esa misma subetapa.
+
+Si no está cargado, **no se contesta de memoria**: se pregunta al asesor.
+
+> **Para responder:**
+>
+>> Hola {nombre}, te paso cómo quedó el pago: {cuotas con montos y fechas}. Cualquier duda con esto, escribime.
+
+---
+
+### "¿Me mandan el contrato firmado por ustedes antes de que yo firme con el banco?"
+
+Es una pregunta de **confianza**: el cliente va a comprometer un crédito y quiere
+tener algo firmado por la empresa antes. Es razonable y se le da. Coordinalo como
+el paso del contrato firmado (5.4): en Montevideo que pase a buscarlo; en el
+interior, por correo.
+
+> **Para responder:**
+>
+>> Hola {nombre}, claro, te lo mandamos firmado por nosotros para que lo tengas antes de ir al banco. {cómo se lo hacemos llegar}. Cuando lo firmes vos, nos lo devolvés y queda archivado.
+
+---
+
+### "No puedo entrar al portal"
+
+Casi siempre es la contraseña. La contraseña **no se puede recuperar**, así que
+se resetea con el botón de reenviar acceso y se le manda la nueva. Si no tiene
+mail, **no puede recuperarla solo**: por eso le escribe a Experiencia Solar.
+
+> **Para responder:**
+>
+>> Hola {nombre}, te generé una contraseña nueva para el portal: {usuario y contraseña}. Te va a pedir cambiarla cuando entres. Si sigue sin funcionar, avisame y lo vemos juntos.
+
+---
+
+### "¿Dónde veo cuánto está generando?"
+
+En la **plataforma del inversor**, que muestra la generación en vivo. El acceso
+lo deja registrado el técnico en la instalación; si no está, el problema es
+anterior y se va a buscar a Operaciones. El **reporte mensual** es otra cosa: un
+resumen por correo, no en vivo.
+
+> **Para responder:**
+>
+>> Hola {nombre}, la generación en vivo la ves en la app del inversor: {usuario, contraseña y link}. Además, todos los meses te llega por correo el resumen de cuánto generaste y cuánto ahorraste.
+
+---
+
+### "Hoy generó poco, ¿está bien?"
+
+Casi siempre es el **clima**: un día nublado genera mucho menos, y en invierno el
+sol está más bajo. Lo que sirve es compararlo con **lo que se le dijo que
+esperara** al encender. Si un día soleado genera mucho menos que eso, o si la
+generación es **cero**, ahí sí es un problema: se abre un reclamo y se avisa a
+Operaciones.
+
+> **Para responder:**
+>
+>> Hola {nombre}, la generación cambia mucho con el clima: en un día nublado es normal ver bastante menos. En un día soleado como los que tuviste al principio deberías andar por {generación esperable}. Si ves cero, o mucho menos en un día de sol, avisame y lo revisamos.
+
+---
+
+### "¿Por qué el reporte de este mes tiene 28 días y el anterior 33?"
+
+**Es el ciclo de su medidor, no un error.** Cada reporte cubre exactamente el
+período de su factura de UTE, que no arranca el 1 ni termina el 30. Por eso los
+números le cierran contra la factura.
+
+> **Para responder:**
+>
+>> Hola {nombre}, el reporte cubre exactamente el mismo período que tu factura de UTE, que va de fecha de corte a fecha de corte. Por eso a veces son 28 días y otras 33: es el ciclo de tu medidor. Así podés comparar los números directo con la factura.
+
+---
+
+### "¿Tengo que estar en casa el día de la obra o de la visita?"
+
+**No hace falta**, pero sí que haya **acceso**: a la casa, al techo, al tablero.
+Por eso la visita se confirma con el cliente y no se informa y listo.
+
+> **Para responder:**
+>
+>> Hola {nombre}, no hace falta que estés, pero necesitamos {acceso requerido}. ¿Nos lo podés dejar resuelto para el {día}?
+
+---
+
+### "¿Puedo agregar más paneles?"
+
+**Se puede ver, pero no se promete.** Depende del espacio, del inversor que tiene
+y de la potencia contratada con UTE. Se pasa la consulta a Ingeniería y se le
+contesta con lo que diga.
+
+> **Para responder:**
+>
+>> Hola {nombre}, buena pregunta. Depende del espacio, de tu inversor y de la potencia que tenés contratada con UTE, así que lo consulto con el equipo de ingeniería y te respondo con los números.
+
+---
+
+### "Me llegó un mensaje de UTE" / "UTE me pide un documento"
+
+Pasa durante el trámite: UTE le escribe al cliente directamente. **No se le
+explica el trámite: se le pide que nos reenvíe lo que le llegó** y se pasa a
+Tramitación, que sabe qué hacer. El cliente no tiene que entender el trámite.
+
+> **Para responder:**
+>
+>> Hola {nombre}, gracias por avisar. Reenviame lo que te llegó y lo vemos con la persona que lleva tu trámite: te digo si hace falta que hagas algo o si lo resolvemos nosotros.
+
+---
+
+*Manual de Posventa — Experiencia Solar · Voltia · v1.7 · 27 de septiembre de 2026*
