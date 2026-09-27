@@ -1189,7 +1189,10 @@ obra, el capataz lo resuelve internamente — no lo manda a otro lado.
 | **E1 / E2 / E3** | Las tres etapas del recorrido del cliente. No son las etapas del proyecto. |
 | **Cadencia** | Los días sin contacto a partir de los cuales un cliente se marca. E1: 3 · E2: 5 · E3: 10. **Es una alarma interna, no una promesa al cliente.** |
 | **Paso** | Un hito de acompañamiento del recorrido. Algunos tienen plazo. **Vencer no bloquea.** |
-| **Novedad** | Pasó algo en el proyecto posterior al último contacto registrado: el cliente todavía no lo sabe. |
+| **Novedad** | Pasó algo en el proyecto después del último contacto registrado: hay algo que contarle. No quiere decir que el cliente haya hecho algo (casi siempre es algo nuestro) ni que nadie lo haya mirado. |
+| **Pendiente** | En el correo de la mañana: algo que tiene plazo y ya se venció. Es lo único obligatorio del día. |
+| **Fuera de cadencia** | Un cliente que lleva más días sin contacto que los de su etapa. Puede tener novedad o no: son cosas independientes. |
+| **"Ya lo vi"** | El botón que apaga el punto de novedad cuando al cliente no le importa lo que pasó. **No cuenta como contacto.** |
 | **Regla de Oro** | El aviso de habilitación dentro de 24-48 h. |
 | **Traspaso** | El pase formal de trabajo entre áreas dentro del sistema. |
 | **Ticket** | Un reclamo o consulta registrado, con estado y responsable. |
@@ -1213,8 +1216,14 @@ Es la parte que más se consulta cuando algo no aparece donde uno lo busca.
   se tilda una vez y queda tildada para siempre es exactamente lo que hacía que
   esto no funcionara.
 - **El acompañamiento salió del pipeline del proyecto.** Al equipo de obra no le
-  aportaba y le ensuciaba la vista; medido antes de sacarlo, de 71 proyectos que
-  lo tenían **uno solo tenía algo tildado**.
+  aportaba y le ensuciaba la vista, y **nadie lo usaba**: eran casillas que se
+  tildaban una vez y quedaban tildadas para siempre.
+- **"Ya lo vi" no cuenta como contacto.** Apaga el punto de novedad pero los días
+  sin contacto siguen corriendo, y el cliente sigue apareciendo fuera de cadencia
+  si le toca. A propósito: **"lo miré" no es "le hablé"**.
+- **Las señales son de todos, no de cada uno.** No hay un "no leído" por persona:
+  si alguien registra un contacto o aprieta "Ya lo vi", el punto se apaga para
+  todos los que miran ese cliente. Para saber quién hizo qué está el historial.
 - **Se retiró el paso "Repaso de garantías" de E3** (24-09-2026). No se hacía: la
   garantía ya está en el contrato firmado y el paso no producía ningún documento
   nuevo, así que sumaba un renglón a la lista sin sumar trabajo. El criterio vale
@@ -1234,6 +1243,9 @@ Es la parte que más se consulta cuando algo no aparece donde uno lo busca.
 - **No hay métricas de satisfacción** consolidadas ni antigüedad de reclamos.
 - **El portal no muestra el estado ni la fecha de obra**, que es lo primero que el
   cliente querría ver ahí.
+- **Ingeniería y Tramitación UTE no tienen dónde comentar** en sus pantallas, y
+  ninguna pantalla que no sea la ficha del cliente muestra el historial completo.
+  Cada área debería poder escribir donde trabaja y leer todo lo del cliente.
 
 ---
 

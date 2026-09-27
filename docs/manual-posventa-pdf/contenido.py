@@ -791,8 +791,14 @@ def construir():
                   "E2: 5 · E3: 10. <strong>Es una alarma interna, no una promesa al cliente.</strong>"],
                  ["Paso", "Un hito de acompañamiento del recorrido. Algunos tienen plazo. "
                   "<strong>Vencer no bloquea.</strong>"],
-                 ["Novedad", "Pasó algo en el proyecto posterior al último contacto registrado: el cliente "
-                  "todavía no lo sabe."],
+                 ["Novedad", "Pasó algo en el proyecto después del último contacto registrado: hay algo "
+                  "que contarle. No quiere decir que el cliente haya hecho algo."],
+                 ["Pendiente", "En el correo de la mañana: tiene plazo y ya se venció. Lo único obligatorio "
+                  "del día."],
+                 ["Fuera de cadencia", "Más días sin contacto que los de su etapa. Puede tener novedad o no: "
+                  "son cosas independientes."],
+                 ["\"Ya lo vi\"", "Apaga el punto de novedad cuando al cliente no le importa lo que pasó. "
+                  "<strong>No cuenta como contacto.</strong>"],
                  ["Regla de Oro", "El aviso de habilitación dentro de 24-48 horas."],
                  ["Traspaso", "El pase formal de trabajo entre áreas dentro del sistema."],
                  ["Ticket", "Un reclamo o consulta registrado, con estado y responsable."],
@@ -801,25 +807,34 @@ def construir():
                 anchos=[160, None], margen=26),
         p))
 
-    nueva("AnexoQueFalta.dc.html", "37 · Anexo D · Qué falta", lambda p: pagina(
-        "Anexo D · Qué falta y qué se decidió no hacer",
+    nueva("AnexoDecisiones.dc.html", "37 · Anexo D · Qué se decidió no hacer", lambda p: pagina(
+        "Anexo D · Qué se decidió no hacer",
         kicker("ANEXO D")
-        + titulo("Qué falta y qué se decidió no hacer")
-        + bajada("Es la parte que más se consulta cuando algo no aparece donde uno lo busca.")
-        + subtitulo("Decisiones tomadas a propósito", margen=26, tamano=20)
-        + numerados(["<strong>El sistema no le escribe al cliente por su cuenta.</strong> Toda comunicación "
+        + titulo("Qué se decidió no hacer")
+        + bajada("Es la parte que más se consulta cuando algo no aparece donde uno lo busca: antes de pensar que falta, conviene ver si no se decidió así a propósito.")
+                + numerados(["<strong>El sistema no le escribe al cliente por su cuenta.</strong> Toda comunicación "
                      "saliente la hace una persona; el sistema arma el mensaje y recuerda cuándo. La única "
                      "excepción es el reporte mensual de generación.",
                      "<strong>Los mantenimientos no se auto-agendan.</strong> Choca con \"si no está "
                      "agendado, no se va\".",
                      "<strong>No hay check de \"contacto semanal\".</strong> El cumplimiento se calcula "
                      "desde las interacciones registradas, no se declara tildando una casilla.",
-                     "<strong>El acompañamiento salió del pipeline del proyecto.</strong> Al equipo de obra "
-                     "no le aportaba y le ensuciaba la vista.",
+                     "<strong>El acompañamiento salió del pipeline del proyecto.</strong> Nadie lo usaba: "
+                     "eran casillas que se tildaban una vez y quedaban tildadas para siempre.",
+                     "<strong>\"Ya lo vi\" no cuenta como contacto.</strong> Apaga el punto pero los días sin "
+                     "contacto siguen corriendo: \"lo miré\" no es \"le hablé\".",
+                     "<strong>Las señales son de todos.</strong> Si alguien apaga el punto, se apaga para "
+                     "todos; quién hizo qué, está en el historial.",
                      "<strong>Se retiró el paso \"Repaso de garantías\" de E3.</strong> No se hacía: la "
                      "garantía ya está en el contrato firmado. Primero que funcione bien lo que ya está "
-                     "definido."], margen=14)
-        + subtitulo("Lo que falta", margen=26, tamano=20)
+                     "definido."], margen=14),
+        p))
+
+    nueva("AnexoQueFalta.dc.html", "38 · Anexo D · Qué falta", lambda p: pagina(
+        "Anexo D · Qué falta",
+        kicker("ANEXO D, SEGUNDA PARTE")
+        + titulo("Qué falta")
+        + bajada("Lo que se sabe que no está, y que no se decidió dejar afuera: está pendiente.")
         + numerados(["<strong>Los accesos al portal no se crean solos.</strong> Mientras falten son el techo "
                      "de las encuestas y de los reclamos.",
                      "<strong>Los mails que se le mandan al cliente no cuentan como contacto</strong> en el "
@@ -828,7 +843,9 @@ def construir():
                      "cuánto falta.",
                      "<strong>No hay métricas de satisfacción</strong> consolidadas ni antigüedad de reclamos.",
                      "<strong>El portal no muestra el estado ni la fecha de obra</strong>, que es lo primero "
-                     "que el cliente querría ver ahí."], margen=14),
+                     "que el cliente querría ver ahí.",
+                     "<strong>Ingeniería y Tramitación no tienen dónde comentar</strong>, y sólo la ficha del "
+                     "cliente muestra el historial completo."], margen=14),
         p))
 
     return P
