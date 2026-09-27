@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.5 — 25 de septiembre de 2026
+**Voltia · Uruguay** · Versión 1.6 — 27 de septiembre de 2026
 
 > Este manual es **el procedimiento y el manual de uso de la app, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -314,6 +314,12 @@ contraseña ya adentro**.
 > Si el cliente ya tenía acceso de antes, la plantilla trae su usuario pero deja
 > la contraseña en blanco: **no se puede recuperar**. Para mandársela hay que
 > resetearla con el botón de reenviar.
+
+**Si el cliente no tiene mail, igual se le crea el acceso.** El sistema usa su
+cédula si está cargada, y si no, arma un usuario con su nombre (por ejemplo
+`maria.fernandez`). La pantalla muestra cuál quedó, para dictárselo. Lo que sí
+cambia: **sin mail no puede recuperar la contraseña solo** — si se la olvida, hay
+que resetearla con el botón de reenviar acceso.
 
 **Qué gana el cliente con el portal:** ve el avance de su trámite, la
 documentación, sus reportes de generación cuando arranquen, y **puede abrirnos un
@@ -1093,14 +1099,25 @@ cada área comenta el proyecto donde ya está trabajando, y eso llega al Histori
 de la ficha. Si alguien no lo está haciendo, **el problema no es de la persona
 sino de que registrar le cuesta**: hay que mirar desde dónde tendría que hacerlo.
 
-### El cliente no tiene mail
+### Un cliente figura "sin contacto", pero yo sí le hablé
 
-**Ya no es un impedimento para darle acceso al portal.** Se le crea igual: el
-sistema usa su cédula si está cargada, y si no, arma un usuario con su nombre
-(`maria.fernandez`). El modal muestra cuál quedó para dictárselo.
+**El contacto quedó registrado en el lugar equivocado.** Los días sin contacto se
+cuentan **sólo** con lo que se registra en la ficha del cliente de Experiencia
+Solar (el formulario "Registrar interacción", o al copiar una plantilla). Lo que
+se escribe como **comentario en el proyecto** se lee en el historial igual que
+todo lo demás, pero **no cuenta como contacto**: para el semáforo, al cliente no
+le habló nadie.
 
-**Lo que sí cambia:** sin mail **no puede recuperar la contraseña solo**. Si se la
-olvida, hay que resetearla desde el botón de reenviar acceso.
+Se nota porque en el historial se ve la conversación con la etiqueta de otra área
+—*Operaciones*, *Trámite UTE*— en vez de *Experiencia Solar*.
+
+**Qué hacer:** registrar el contacto en la ficha del cliente, con la fecha en que
+ocurrió. Y de ahí en adelante, los contactos con el cliente se registran **siempre
+desde Experiencia Solar**, aunque en ese momento se esté mirando el proyecto.
+
+> Esto pasó de verdad: durante semanas los contactos se anotaron como comentarios
+> del proyecto, decenas de clientes figuraban sin contacto aunque estaban
+> atendidos, y el correo de la mañana se llenó de pendientes que no lo eran.
 
 ### Un cliente sin contacto hace mucho, y no sé qué decirle
 
@@ -1220,4 +1237,4 @@ Es la parte que más se consulta cuando algo no aparece donde uno lo busca.
 
 ---
 
-*Manual de Posventa — Experiencia Solar · Voltia · v1.5 · 25 de septiembre de 2026*
+*Manual de Posventa — Experiencia Solar · Voltia · v1.6 · 27 de septiembre de 2026*

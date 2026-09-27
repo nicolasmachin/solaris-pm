@@ -312,17 +312,18 @@ def construir():
                 ("EN LA APP", "El ícono de crear usuario en el propio paso, o la columna de acceso del listado"),
                 ("QUÉ DECIR", "Plantilla <strong>\"Acceso al portal\"</strong>, que sale con el usuario y la "
                               "contraseña reales")]),
-         parrafo("<strong>Cómo se crea:</strong> desde el propio paso, con el ícono a la derecha. El mail y "
-                 "el teléfono se toman de los datos del cliente y la contraseña por defecto es "
-                 "<strong>12345678</strong>, que el sistema le pide cambiar al entrar. Al terminar, la "
-                 "plantilla sale con el usuario y la contraseña ya adentro.", margen=22),
+         parrafo("<strong>Cómo se crea:</strong> con el ícono del propio paso. La contraseña por defecto es "
+                 "<strong>12345678</strong> y el sistema pide cambiarla al entrar; la plantilla sale con el "
+                 "usuario y la contraseña ya adentro.", margen=18),
          aviso("Si el cliente <strong>ya tenía acceso</strong>, la plantilla trae su usuario pero deja la "
                "contraseña en blanco: no se puede recuperar. Para mandársela hay que resetearla con el "
-               "botón de reenviar.", "ojo", margen=20),
-         subtitulo("Qué gana el cliente con el portal", margen=26, tamano=19),
-         parrafo("Ve el avance de su trámite, la documentación, sus reportes de generación cuando "
-                 "arranquen, y <strong>puede abrirnos un reclamo por ahí</strong> en vez de por WhatsApp.",
-                 margen=10),
+               "botón de reenviar.", "ojo", margen=16),
+         parrafo("<strong>Si no tiene mail, igual se le crea el acceso</strong>: se usa su cédula o un usuario "
+                 "con su nombre (<em>maria.fernandez</em>), que la pantalla muestra para dictárselo. Sin mail "
+                 "no puede recuperar la contraseña solo.", margen=14, tamano=14),
+         parrafo("<strong>Qué gana el cliente:</strong> ve el avance, la documentación y sus reportes, y "
+                 "<strong>puede abrirnos un reclamo por ahí</strong> en vez de por WhatsApp.",
+                 margen=16, tamano=14),
          cita("portal"),
          aviso("<strong>Este paso arrastra a varios más.</strong> Sin acceso al portal el cliente no puede "
                "abrir tickets ni responder encuestas. Al que se le pasó, nadie se lo crea seis meses "
