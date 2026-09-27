@@ -1,6 +1,6 @@
 # Novedades
 
-## v11.2
+## v11.3
 
 ### 25 de septiembre de 2026
 
@@ -24,6 +24,8 @@
 - El recorrido de Experiencia Solar tiene un paso nuevo en la etapa 1: **"Contrato firmado por las dos partes, recabado y archivado"**.
 - Hoy el contrato se manda pero nadie lo recaba firmado, así que no queda en ningún lado. Coordinarlo pasa a ser de Experiencia Solar: si el cliente está en Montevideo, que pase a firmarlo; si es del interior, por correo (va el nuestro firmado y vuelve con su firma).
 - Aparece solo en los clientes que ya existen, sin necesidad de hacer nada.
+
+## v11.2
 
 ### 24 de septiembre de 2026
 

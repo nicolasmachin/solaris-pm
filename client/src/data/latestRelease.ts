@@ -23,6 +23,37 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "11.3",
+  date: "25 de septiembre de 2026",
+  sections: [
+    {
+      title: "La factura del cliente se puede adjuntar",
+      items: [
+        "En Finanzas → Facturación al cliente hay una columna nueva, Factura, con un ícono por fila.",
+        "Si el proyecto no tiene la factura adjunta aparece el ícono de subir; si ya la tiene, uno para verla y otro para descargarla.",
+        "Hay una sola factura por proyecto: si se sube otra, reemplaza a la anterior.",
+      ],
+    },
+    {
+      title: "La modalidad de pago se elige, y lo que exige se hace",
+      items: [
+        "La subetapa \"Modalidad de pago definida\" pregunta primero cómo paga el cliente: financiación bancaria, pago directo u otro.",
+        "Cada opción pide lo suyo ahí mismo: la proforma, el plan de pagos o la explicación de qué se acordó.",
+        "El plan de pagos ahora lo crea el asesor desde esa subetapa, y lo puede editar.",
+        "La subetapa no se puede completar sin elegir la modalidad, y los ítems no se pueden tildar sin que el documento exista: se marcan solos cuando aparece.",
+      ],
+    },
+    {
+      title: "Contrato firmado por las dos partes",
+      items: [
+        "El recorrido de Experiencia Solar tiene un paso nuevo en la etapa 1: contrato firmado por las dos partes, recabado y archivado.",
+        "Si el cliente está en Montevideo, que pase a firmarlo; si es del interior, por correo, con ida y vuelta.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_11_2: Release = {
   version: "11.2",
   date: "24 de septiembre de 2026",
   sections: [
@@ -268,6 +299,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "11.2",
+    shortDate: "24 sep",
+    highlights: RELEASE_11_2.sections.map((sec) => sec.title),
+  },
   {
     version: "11.1",
     shortDate: "23 sep",
