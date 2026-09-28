@@ -58,7 +58,7 @@ const LABELS: Record<string, string> = {
   bbva24mFactorCuota: "BBVA 24 cuotas — factor cuota",
   bbva36mFactorCuota: "BBVA 36 cuotas — factor cuota",
   bbva60mFactorCuota: "BBVA 60 cuotas — factor cuota",
-  precioSeguroGranizoUsdPorPanelAno: "Seguro granizo (USD/panel/año)",
+  precioSeguroGranizoUsdPorPanelAno: "Plan granizo (USD/panel/año)",
   // b2b (nested). Van con el prefijo del grupo porque
   // `markupPorcentajeDefault` también existe a nivel plano (el residencial) y
   // si no, las dos mostrarían la misma etiqueta.

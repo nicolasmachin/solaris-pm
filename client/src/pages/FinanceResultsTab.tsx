@@ -180,6 +180,24 @@ function ResultsTable({ data }: { data: ResultsDto }) {
         <span className="tabular-nums text-red-400">-{fmtCurrency(e.total, "USD")}</span>
       </div>
 
+      {data.planGranizo && (data.planGranizo.ingresos.total > 0 || data.planGranizo.reposiciones.total > 0) && (
+        <>
+          <SectionLabel>Plan de Protección contra Granizo (aparte de las ventas)</SectionLabel>
+          <CategoryRow
+            label="Anualidades cobradas"
+            value={data.planGranizo.ingresos.total}
+            variant="positive"
+            items={data.planGranizo.ingresos.items}
+          />
+          <CategoryRow
+            label="Reposiciones"
+            value={data.planGranizo.reposiciones.total}
+            variant="negative"
+            items={data.planGranizo.reposiciones.items}
+          />
+        </>
+      )}
+
       <div className="px-4 py-4 border-t-2 border-[var(--color-border-hover)] flex justify-between items-center">
         <span className="text-base font-semibold text-[var(--color-text-primary)]">Resultado</span>
         <span

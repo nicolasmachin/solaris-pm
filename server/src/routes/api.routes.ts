@@ -11218,6 +11218,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         where: {
           deletedAt: null,
           tipoMovimiento: TipoMovimiento.INGRESO,
+          // El seguro de granizo se cobra aparte (Experiencia Solar → Seguro granizo).
+          categoriaPrincipal: { not: CategoriaPrincipal.SEGURO_GRANIZO },
           cobrado: true,
           projectId,
         },
@@ -11234,6 +11236,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         where: {
           deletedAt: null,
           tipoMovimiento: TipoMovimiento.INGRESO,
+          categoriaPrincipal: { not: CategoriaPrincipal.SEGURO_GRANIZO },
           status: FinanceMovementStatus.PREVISTO,
           projectId,
         },
@@ -18063,7 +18066,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
       const movements = await prisma.financeMovement.findMany({
         where: { anio, deletedAt: null },
-        select: { mes: true, categoriaPrincipal: true, monto: true, moneda: true, tipoCambio: true },
+        select: { mes: true, categoriaPrincipal: true, monto: true, moneda: true, tipoCambio: true, tipoMovimiento: true, status: true },
       });
 
       function toUsd(monto: Prisma.Decimal, moneda: Moneda, tipoCambio: Prisma.Decimal | null): number {
@@ -18073,17 +18076,26 @@ export async function registerApiRoutes(app: FastifyInstance) {
         return rate > 0 ? amount / rate : amount;
       }
 
-      const entradaCats = new Set<CategoriaPrincipal>([CategoriaPrincipal.PROYECTO_ENTRADA, CategoriaPrincipal.COBRO_CLIENTE]);
+      const entradaCats = new Set<CategoriaPrincipal>([
+        CategoriaPrincipal.PROYECTO_ENTRADA,
+        CategoriaPrincipal.COBRO_CLIENTE,
+      ]);
       const costoCats = new Set<CategoriaPrincipal>([CategoriaPrincipal.PROYECTO_SALIDA, CategoriaPrincipal.COMPRA_STOCK, CategoriaPrincipal.CONSUMO_STOCK]);
       const fijoCats = new Set<CategoriaPrincipal>([CategoriaPrincipal.FIJO]);
       const variableCats = new Set<CategoriaPrincipal>([CategoriaPrincipal.VARIABLE, CategoriaPrincipal.PAGO_PROVEEDOR, CategoriaPrincipal.OTRO]);
 
-      const byMes: Record<number, { entradas: number; costoInstalaciones: number; costosFijos: number; costosVariables: number }> = {};
-      for (let m = 1; m <= 12; m++) byMes[m] = { entradas: 0, costoInstalaciones: 0, costosFijos: 0, costosVariables: 0 };
+      const byMes: Record<number, { entradas: number; costoInstalaciones: number; costosFijos: number; costosVariables: number; planGranizo: number }> = {};
+      for (let m = 1; m <= 12; m++) byMes[m] = { entradas: 0, costoInstalaciones: 0, costosFijos: 0, costosVariables: 0, planGranizo: 0 };
 
       for (const mov of movements) {
         const usd = toUsd(mov.monto, mov.moneda, mov.tipoCambio);
-        if (entradaCats.has(mov.categoriaPrincipal)) byMes[mov.mes].entradas += usd;
+        // Plan de Protección contra Granizo: línea aparte, neto de anualidades
+        // cobradas menos reposiciones. Sólo lo efectivamente cobrado/pagado.
+        if (mov.categoriaPrincipal === CategoriaPrincipal.SEGURO_GRANIZO) {
+          if (mov.status === FinanceMovementStatus.PAGADO) {
+            byMes[mov.mes].planGranizo += mov.tipoMovimiento === TipoMovimiento.INGRESO ? usd : -usd;
+          }
+        } else if (entradaCats.has(mov.categoriaPrincipal)) byMes[mov.mes].entradas += usd;
         else if (costoCats.has(mov.categoriaPrincipal)) byMes[mov.mes].costoInstalaciones += usd;
         else if (fijoCats.has(mov.categoriaPrincipal)) byMes[mov.mes].costosFijos += usd;
         else if (variableCats.has(mov.categoriaPrincipal)) byMes[mov.mes].costosVariables += usd;
@@ -18095,7 +18107,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         return {
           mes: Number(mes), entradas: d.entradas, costoInstalaciones: d.costoInstalaciones,
           resultadoBruto, costosFijos: d.costosFijos, costosVariables: d.costosVariables,
-          totalCostosOp, resultadoOperativo: resultadoBruto - totalCostosOp,
+          totalCostosOp, planGranizo: d.planGranizo,
+          resultadoOperativo: resultadoBruto - totalCostosOp + d.planGranizo,
         };
       });
 
@@ -18106,8 +18119,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
         costosFijos: acc.costosFijos + m.costosFijos,
         costosVariables: acc.costosVariables + m.costosVariables,
         totalCostosOp: acc.totalCostosOp + m.totalCostosOp,
+        planGranizo: acc.planGranizo + m.planGranizo,
         resultadoOperativo: acc.resultadoOperativo + m.resultadoOperativo,
-      }), { entradas: 0, costoInstalaciones: 0, resultadoBruto: 0, costosFijos: 0, costosVariables: 0, totalCostosOp: 0, resultadoOperativo: 0 });
+      }), { entradas: 0, costoInstalaciones: 0, resultadoBruto: 0, costosFijos: 0, costosVariables: 0, totalCostosOp: 0, planGranizo: 0, resultadoOperativo: 0 });
 
       return { anio, meses, totales };
     });

@@ -18,6 +18,7 @@
 // memoria (getCurrentStage no es expresable en SQL); por eso ordenamos y
 // paginamos también en memoria. La cartera es de cientos de proyectos.
 
+import { resumenPlanPorProyecto, type ResumenPlan } from "../seguro-granizo/polizas.service.js";
 import { Prisma, ProjectStatus, InteractionReason, AuditAction, type InteractionChannel, type InteractionDirection, type StageType, AuditEntityType, SubstageStatus, TipoMovimiento, FinanceMovementStatus } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
@@ -132,6 +133,10 @@ export type ClienteListItem = {
   avisoHabilitacionPendiente: boolean; // Regla de Oro: UTE finalizó y CX aún no avisó
   mantenimiento: MantenimientoInfo | null; // próximo aniversario (mantenimiento)
   hasPortalUser: boolean; // ya tiene usuario de portal (Generador) creado/vinculado
+  // Plan de Protección contra Granizo (propio o, si es una ampliación, el de la
+  // obra original). `alerta` = por vencer / en gracia / suspendido / vencido:
+  // pinta el nombre en rojo.
+  planGranizo: ResumenPlan | null;
   // Días desde la última interacción registrada. null si nunca hubo contacto.
   // Se compara contra la cadencia de la etapa (E1/E2/E3) configurada en Admin.
   diasSinContacto: number | null;
@@ -287,6 +292,7 @@ function toListItem(p: ProjectListRow): ClienteListItem {
     novedadVistaEn: serializeDate(p.novedadVistaEn),
     mantenimiento: buildMantenimiento(p),
     hasPortalUser: p._count.clients > 0 || p.clientUserId != null,
+    planGranizo: null, // lo resuelve marcarPlanGranizo()
     diasSinContacto: diasDesde(p.clientInteractions[0]?.createdAt ?? null),
     fueraDeCadencia: false, // lo resuelve marcarCadencia() con la config real
     avisosClavePendientes: [], // lo resuelve marcarAvisosClave()
@@ -587,6 +593,12 @@ export async function marcarNovedadVista(
   return getClienteListItem(projectId);
 }
 
+async function marcarPlanGranizo(items: ClienteListItem[]): Promise<ClienteListItem[]> {
+  const planes = await resumenPlanPorProyecto(items.map((i) => i.projectId));
+  for (const i of items) i.planGranizo = planes.get(i.projectId) ?? null;
+  return items;
+}
+
 async function projectAndFilter(f: ClienteFiltros): Promise<ClienteListItem[]> {
   const rows = await prisma.project.findMany({ where: buildWhere(f), select: LIST_SELECT });
   let items = rows.map(toListItem);
@@ -597,6 +609,7 @@ async function projectAndFilter(f: ClienteFiltros): Promise<ClienteListItem[]> {
   await marcarCadencia(items);
   await marcarAvisosClave(items);
   await marcarNovedades(items);
+  await marcarPlanGranizo(items);
   if (f.fueraDeCadencia) items = items.filter((i) => i.fueraDeCadencia);
   return sortItems(items, f.sortBy ?? "prioridad", f.sortDir ?? "asc");
 }
@@ -667,7 +680,7 @@ export async function listClientesForExport(f: ClienteFiltros): Promise<ClienteL
 export async function getClienteListItem(projectId: string): Promise<ClienteListItem | null> {
   const p = await prisma.project.findFirst({ where: { id: projectId, deletedAt: null }, select: LIST_SELECT });
   if (!p) return null;
-  const [item] = await marcarNovedades(await marcarAvisosClave(await marcarCadencia([toListItem(p)])));
+  const [item] = await marcarPlanGranizo(await marcarNovedades(await marcarAvisosClave(await marcarCadencia([toListItem(p)]))));
   return item ?? null;
 }
 
@@ -757,7 +770,7 @@ export async function getClienteFicha(projectId: string) {
   // de marcado. La ficha se las salteaba, así que mostraba SIEMPRE "al día" y sin
   // avisos clave aunque el listado dijera lo contrario para el mismo cliente —
   // dos pantallas contando cosas distintas del mismo dato.
-  const [item] = await marcarNovedades(await marcarAvisosClave(await marcarCadencia([toListItem(p)])));
+  const [item] = await marcarPlanGranizo(await marcarNovedades(await marcarAvisosClave(await marcarCadencia([toListItem(p)]))));
 
   return {
     ...item,

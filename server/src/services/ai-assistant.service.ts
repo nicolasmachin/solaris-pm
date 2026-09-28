@@ -80,7 +80,7 @@ TABLE finance_movements (
   "accountId" text FK -> accounts.id,
   "deletedAt" timestamp
 );
--- "CategoriaPrincipal": FIJO | VARIABLE | PROYECTO_ENTRADA | PROYECTO_SALIDA | COMPRA_STOCK | CONSUMO_STOCK | PAGO_PROVEEDOR | COBRO_CLIENTE | AJUSTE_CONCILIACION | OTRO
+-- "CategoriaPrincipal": FIJO | VARIABLE | PROYECTO_ENTRADA | PROYECTO_SALIDA | COMPRA_STOCK | CONSUMO_STOCK | PAGO_PROVEEDOR | COBRO_CLIENTE | AJUSTE_CONCILIACION | TRANSFERENCIA | SEGURO_GRANIZO | OTRO
 
 -- Pagos a proveedores (Payment + PaymentApplication)
 TABLE payments (

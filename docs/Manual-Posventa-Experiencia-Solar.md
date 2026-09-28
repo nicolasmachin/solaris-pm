@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.9 — 28 de septiembre de 2026
+**Voltia · Uruguay** · Versión 1.10 — 28 de septiembre de 2026
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -1587,13 +1587,21 @@ partes:
 
 **Qué explicar:**
 
-- Voltia ofrece una **cobertura de granizo sobre los paneles**, de USD 12 por panel por año, IVA incluido.
-- Cubre **sólo los paneles**: no el inversor ni la estructura.
-- No es un negocio: el monto está pensado para cubrir el recambio y la mano de obra.
+- Voltia tiene el **Plan de Protección contra Granizo**: si el granizo le rompe paneles, Voltia se los repone con todo incluido (panel nuevo, traslado, mano de obra y puesta en marcha), sin deducible.
+- Cuesta **USD 12 por panel por año, IVA incluido**, y se paga por adelantado una vez al año. Es siempre por **todos** los paneles de la instalación.
+- Cubre **sólo los paneles** y **sólo por granizo**: no el inversor, la estructura ni el cableado, y no el viento, el rayo, los golpes ni el robo.
+- Si lo contrata con la obra, cubre desde la puesta en marcha. Si ya tiene la instalación, empieza a cubrir **30 días después del primer pago** (carencia).
+- Si graniza: que **no toque los paneles ni suba al techo**, que apague el inversor si puede hacerlo sin riesgo, y que nos avise **dentro de los 10 días hábiles** con fotos tomadas desde el suelo.
 
-**Política interna:** es lo mismo que dice la propuesta comercial: no prometas nada distinto. Condiciones y forma de cobro **[A CONFIRMAR]**
+**Política interna:**
 
-**Cuándo escalar:** para contratarla o dudas de cobro, al asesor comercial.
+- **No es un seguro y no se le dice así.** Cobrar por asumir un riesgo es actividad aseguradora. Decís *plan*, *condiciones del plan*, *anualidad*, *daño por granizo*; nunca *seguro*, *póliza*, *prima*, *siniestro* ni *asegurado*. Si el cliente dice "seguro", le contestás con "el plan".
+- El plan se activa con **dos cosas**: el Anexo A firmado (alcanza una foto de la hoja firmada) y el pago de la primera anualidad. Si falta cualquiera, no hay cobertura.
+- Si la anualidad no se paga dentro de los **15 días** del vencimiento, el plan queda **suspendido**; al pagar corre una nueva carencia de 30 días.
+- Cuando avisa un daño lo registrás en Voltia PM y le respondés **el mismo día hábil**. Después: inspección dentro de 10 días hábiles del aviso, confirmación por escrito de qué se repone, y reposición dentro de 30 días de la inspección (60 si la tormenta pegó en muchas obras). Si algo no se repone, se le dice por qué citando la sección de las condiciones.
+- Lo que se cobra no es ganancia: es la reserva para reponer cuando una tormenta pegue en varias obras el mismo día.
+
+**Cuándo escalar:** quién inspecciona y repone todavía está por definir; mientras tanto, a Operaciones.
 
 #### 20. Ampliación
 

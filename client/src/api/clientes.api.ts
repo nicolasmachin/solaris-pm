@@ -1,4 +1,5 @@
 import { apiClient } from "./axios";
+import type { ResumenPlan } from "./planGranizo.api";
 
 // ─── Tipos del módulo Experiencia de Clientes (Ola 1 / MVP) ──────────────────
 
@@ -44,6 +45,8 @@ export interface ClienteListItem {
   avisoHabilitacionPendiente: boolean; // Regla de Oro: UTE finalizó y CX no avisó
   mantenimiento: MantenimientoInfo | null; // próximo aniversario (mantenimiento)
   hasPortalUser: boolean; // ya tiene usuario de portal (Generador) creado/vinculado
+  /** Plan de Protección contra Granizo. `alerta` = nombre en rojo (por vencer, en gracia, suspendido o vencido). */
+  planGranizo: ResumenPlan | null;
   diasSinContacto: number | null; // null = nunca hubo contacto registrado
   fueraDeCadencia: boolean; // supera la cadencia de su etapa (config. en Admin)
   /** Avisos clave pendientes con el reloj corriendo. Vacío = nada urgente. */

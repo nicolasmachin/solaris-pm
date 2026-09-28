@@ -129,8 +129,15 @@ export async function calcularEstadoResultados(fechaInicio: Date, fechaFin: Date
   const sumUsd = (rows: typeof movements) =>
     rows.reduce((s, m) => s + toUsd(Number(m.monto), m.moneda), 0);
 
-  const ingresosRows = movements.filter((m) => m.tipoMovimiento === TipoMovimiento.INGRESO);
-  const egresosRows = movements.filter((m) => m.tipoMovimiento === TipoMovimiento.GASTO);
+  // Plan de Protección contra Granizo: va en un bloque aparte (anualidades
+  // cobradas y reposiciones), no se mezcla con ventas ni con costos de obra.
+  // Sí entra al resultado del período.
+  const esPlanGranizo = (m: (typeof movements)[number]) =>
+    m.categoriaPrincipal === CategoriaPrincipal.SEGURO_GRANIZO;
+  const planIngresosRows = movements.filter((m) => esPlanGranizo(m) && m.tipoMovimiento === TipoMovimiento.INGRESO);
+  const planGastosRows = movements.filter((m) => esPlanGranizo(m) && m.tipoMovimiento === TipoMovimiento.GASTO);
+  const ingresosRows = movements.filter((m) => !esPlanGranizo(m) && m.tipoMovimiento === TipoMovimiento.INGRESO);
+  const egresosRows = movements.filter((m) => !esPlanGranizo(m) && m.tipoMovimiento === TipoMovimiento.GASTO);
 
   const fijos = egresosRows.filter((m) => m.categoriaPrincipal === CategoriaPrincipal.FIJO);
   const variables = egresosRows.filter((m) => m.categoriaPrincipal === CategoriaPrincipal.VARIABLE);
@@ -186,9 +193,13 @@ export async function calcularEstadoResultados(fechaInicio: Date, fechaFin: Date
   const totalIngresos = sumUsd(ingresosRows);
   // egresosRows ya excluye lo pagado vía Payment; se suman los pagos reales aparte.
   const totalEgresos = sumUsd(egresosRows) + paymentsTotalUsd;
-  const resultado = totalIngresos - totalEgresos;
+  const planIngresos = sumUsd(planIngresosRows);
+  const planGastos = sumUsd(planGastosRows);
+  const resultado = totalIngresos - totalEgresos + planIngresos - planGastos;
   const rentabilidad =
-    totalIngresos > 0 ? Math.round((resultado / totalIngresos) * 1000) / 10 : 0;
+    totalIngresos + planIngresos > 0
+      ? Math.round((resultado / (totalIngresos + planIngresos)) * 1000) / 10
+      : 0;
 
   return {
     fechaInicio: fechaInicio.toISOString(),
@@ -206,6 +217,11 @@ export async function calcularEstadoResultados(fechaInicio: Date, fechaFin: Date
       pagoProveedores: { total: pagoProveedoresTotal, items: pagoProveedoresItems },
       comprasStock: { total: sumUsd(comprasStock), items: comprasStock.map(fmtItem) },
       otros: { total: sumUsd(otros), items: otros.map(fmtItem) },
+    },
+    planGranizo: {
+      ingresos: { total: planIngresos, items: planIngresosRows.map(fmtItem) },
+      reposiciones: { total: planGastos, items: planGastosRows.map(fmtItem) },
+      neto: planIngresos - planGastos,
     },
     resultado,
     rentabilidad,

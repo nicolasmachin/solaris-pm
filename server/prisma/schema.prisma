@@ -147,6 +147,9 @@ enum AuditEntityType {
   installer_payment
   capacitacion
   agenda_evento
+  seguro_granizo_poliza
+  seguro_granizo_siniestro
+  plan_granizo_documento
 }
 
 enum AuditAction {
@@ -193,6 +196,10 @@ enum AuditAction {
   agenda_evento_actualizado
   agenda_evento_completado
   agenda_evento_cancelado
+  plan_granizo_draft_updated
+  plan_granizo_version_published
+  plan_granizo_version_discarded
+  plan_granizo_version_restored
 }
 
 enum NotificationType {
@@ -207,6 +214,9 @@ enum NotificationType {
   ticket_actualizado
   encuesta_disponible
   capacitacion_comentario
+  // Seguro de granizo: póliza a ≤30 días de vencer / cobro impago pasada la gracia.
+  seguro_granizo_por_vencer
+  seguro_granizo_impago
   // No es una notificación in-app: marca qué roles reciben por correo el resumen
   // diario del recorrido de Experiencia Solar (ver services/digest/experiencia-digest.service.ts).
   resumen_experiencia
@@ -277,8 +287,8 @@ model Role {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  users       User[]
-  permissions Permission[]
+  users                 User[]
+  permissions           Permission[]
   capacitacionSecciones CapacitacionSeccionRol[]
 
   @@map("roles")
@@ -349,6 +359,9 @@ enum CategoriaPrincipal {
   COBRO_CLIENTE
   AJUSTE_CONCILIACION
   TRANSFERENCIA
+  // Cuota anual del seguro de granizo (autoseguro de Voltia). Es un ingreso
+  // pero NO suma al saldo de la obra (budgetUsd): ver services/seguro-granizo.
+  SEGURO_GRANIZO
   OTRO
 }
 
@@ -581,8 +594,8 @@ model User {
   reporteFvEmisionesGeneradas    ReporteFvEmision[]          @relation("ReporteFvEmisionGeneradaPor")
   reporteFvEnviosRealizados      ReporteFvEnvio[]            @relation("ReporteFvEnvioEnviadoPor")
   growattPlantsVinculadas        GrowattPlant[]              @relation("GrowattPlantVinculadaPor")
-  huaweiPlantsVinculadas          HuaweiPlant[]           @relation("HuaweiPlantVinculadaPor")
-  huaweiPlantsSilenciadas         HuaweiPlant[]           @relation("HuaweiPlantMonitoreoSilenciadaPor")
+  huaweiPlantsVinculadas         HuaweiPlant[]               @relation("HuaweiPlantVinculadaPor")
+  huaweiPlantsSilenciadas        HuaweiPlant[]               @relation("HuaweiPlantMonitoreoSilenciadaPor")
   growattPlantsSilenciadas       GrowattPlant[]              @relation("GrowattPlantMonitoreoSilenciadaPor")
   fvMonitorCorridasLanzadas      FvMonitorCorrida[]          @relation("FvMonitorCorridaLanzadaPor")
   fvIncidenciasRevisadas         FvIncidencia[]              @relation("FvIncidenciaRevisadaPor")
@@ -604,45 +617,45 @@ model User {
 }
 
 model Project {
-  id                              String                   @id @default(cuid())
-  code                            String                   @unique
+  id                              String                      @id @default(cuid())
+  code                            String                      @unique
   tenantId                        String?
   clientName                      String
-  capacityKwp                     Decimal                  @db.Decimal(10, 2)
+  capacityKwp                     Decimal                     @db.Decimal(10, 2)
   // Cuántas "obras" vale el proyecto para la métrica ponderada. Default 1;
   // sólo ADMIN lo sube a mano desde la ficha (ej. una obra grande = 5).
-  pesoObra                        Int                      @default(1)
+  pesoObra                        Int                         @default(1)
   locationCity                    String
   locationProvince                String
   status                          ProjectStatus
-  startDate                       DateTime                 @db.Date
-  saleDate                        DateTime?                @db.Date
-  plannedEndDate                  DateTime?                @db.Date
-  actualEndDate                   DateTime?                @db.Date
-  budgetUsd                       Decimal?                 @db.Decimal(14, 2)
-  executedUsd                     Decimal                  @db.Decimal(14, 2)
-  estimatedMwhYear                Decimal?                 @db.Decimal(10, 2)
-  co2TonsAvoided                  Decimal?                 @db.Decimal(10, 2)
-  actualOnboardingEnd             DateTime?                @db.Date
-  actualEngineeringEnd            DateTime?                @db.Date
-  actualUteStart                  DateTime?                @db.Date
-  actualUteEnd                    DateTime?                @db.Date
+  startDate                       DateTime                    @db.Date
+  saleDate                        DateTime?                   @db.Date
+  plannedEndDate                  DateTime?                   @db.Date
+  actualEndDate                   DateTime?                   @db.Date
+  budgetUsd                       Decimal?                    @db.Decimal(14, 2)
+  executedUsd                     Decimal                     @db.Decimal(14, 2)
+  estimatedMwhYear                Decimal?                    @db.Decimal(10, 2)
+  co2TonsAvoided                  Decimal?                    @db.Decimal(10, 2)
+  actualOnboardingEnd             DateTime?                   @db.Date
+  actualEngineeringEnd            DateTime?                   @db.Date
+  actualUteStart                  DateTime?                   @db.Date
+  actualUteEnd                    DateTime?                   @db.Date
   modalidadPago                   ModalidadPago?
   /// Qué se acordó, cuando la modalidad es OTRO. Es lo que hace que el caso
   /// particular quede explicado y no solo marcado como "otro".
   modalidadPagoNota               String?
-  firstDateScheduledAt            DateTime?                @db.Timestamptz(6)
+  firstDateScheduledAt            DateTime?                   @db.Timestamptz(6)
   clientEmail                     String?
   clientPhone                     String?
   clientAddress                   String?
   uteCodigoPS                     String?
   uteCodigoAS                     String?
   createdById                     String
-  createdBy                       User                     @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy                       User                        @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   salespersonId                   String?
-  salesperson                     User?                    @relation("ProjectSalesperson", fields: [salespersonId], references: [id], onDelete: SetNull)
+  salesperson                     User?                       @relation("ProjectSalesperson", fields: [salespersonId], references: [id], onDelete: SetNull)
   clientUserId                    String?
-  clientUser                      User?                    @relation("ProjectClient", fields: [clientUserId], references: [id], onDelete: SetNull)
+  clientUser                      User?                       @relation("ProjectClient", fields: [clientUserId], references: [id], onDelete: SetNull)
   stages                          Stage[]
   substages                       Substage[]
   checklistItems                  ChecklistItem[]
@@ -652,9 +665,9 @@ model Project {
   auditLogs                       AuditLog[]
   notifications                   Notification[]
   comments                        Comment[]
-  settings                        Setting[]                @relation("SettingProject")
-  convertedLeads                  SalesLead[]              @relation("LeadConvertedTo")
-  proposals                       ProposalGeneration[]     @relation("ProposalProject")
+  settings                        Setting[]                   @relation("SettingProject")
+  convertedLeads                  SalesLead[]                 @relation("LeadConvertedTo")
+  proposals                       ProposalGeneration[]        @relation("ProposalProject")
   solarSystems                    SolarSystem[]
   financeMovements                FinanceMovement[]
   projectMaterials                ProjectMaterial[]
@@ -675,8 +688,8 @@ model Project {
   engineeringFinalProject         EngineeringFinalProject?
   uteDocumentConfig               UteDocumentConfig?
   uteDocumentGenerations          UteDocumentGeneration[]
-  informes                        Informe[]                @relation("InformesDeProyecto")
-  emailLogs                       EmailLog[]               @relation("EmailLogProject")
+  informes                        Informe[]                   @relation("InformesDeProyecto")
+  emailLogs                       EmailLog[]                  @relation("EmailLogProject")
   clientInteractions              ClientInteraction[]
   recorridoChecks                 RecorridoCheck[]
   traspasos                       Traspaso[]
@@ -688,15 +701,18 @@ model Project {
   growattPlant                    GrowattPlant?
   huaweiPlant                     HuaweiPlant?
   fvIncidencias                   FvIncidencia[]
-  agendaEventos                   AgendaEvento[]           @relation("AgendaEventoProject")
+  agendaEventos                   AgendaEvento[]              @relation("AgendaEventoProject")
   projectVideos                   ProjectVideo[]
   installerPayment                InstallerPayment?
+  seguroGranizoPoliza             SeguroGranizoPoliza?
+  planGranizoDraft                PlanGranizoDraft?
+  planGranizoVersions             PlanGranizoVersion[]
   // Sub-fase del E3 (Post-Habilitación). Solo se setea cuando el proyecto llega
   // a POST_HABILITACION (T7). E3-A = compromiso comercial (año 0-2); E3-B = vida
   // útil extendida (año 2-25). Es un flag interno para reportes, no cambia la etapa.
   postHabilitacionSubFase         PostHabilitacionSubFase?
-  postHabilitacionInicioEn        DateTime?                @db.Timestamptz(6)
-  postHabilitacionFechaAproximada Boolean                  @default(false)
+  postHabilitacionInicioEn        DateTime?                   @db.Timestamptz(6)
+  postHabilitacionFechaAproximada Boolean                     @default(false)
   // Etapa fijada a mano para la vista (dashboard/lista). "Empujón hacia
   // adelante": la etapa mostrada es la MÁS AVANZADA entre la derivada de las
   // sub-tareas y esta. Permite avanzar aunque quede un ítem pendiente. Se setea
@@ -704,11 +720,11 @@ model Project {
   stageOverride                   StageType?
   // Equipo de obra tercerizado vs propio. Condiciona sub-tareas del pipeline
   // (ej. logística de envío en Compras). Spec v3, C13.
-  equipoTercerizado               Boolean                  @default(false)
+  equipoTercerizado               Boolean                     @default(false)
   // Regla de Oro del aviso post-habilitación (§8.2): se setea cuando CX registra
   // el aviso al cliente de que ya puede encender. Mientras esté null y
   // postHabilitacionInicioEn tenga valor, el cron alerta a las 24/48hs.
-  avisoHabilitacionEn             DateTime?                @db.Timestamptz(6)
+  avisoHabilitacionEn             DateTime?                   @db.Timestamptz(6)
   // Override manual del recorrido E1/E2/E3 en Experiencia Solar (útil para
   // clientes importados sin pipeline). Si está seteado, pisa el derivado.
   recorridoManual                 String?
@@ -717,30 +733,30 @@ model Project {
   // posterior a esta fecha, así que no lo silencia para siempre. Es global (lo
   // apaga cualquiera y se apaga para todos), igual que el resto de las señales
   // del recorrido; quién lo hizo queda en el log de auditoría.
-  novedadVistaEn                  DateTime?                @db.Timestamptz(6)
+  novedadVistaEn                  DateTime?                   @db.Timestamptz(6)
   // Datos del cliente que se cargan desde el form del proyecto y/o se
   // extraen de la cédula con IA. Ver feature ute-doc-extraction.
   // nombreCliente: nombre tal cual figura en la cédula, usado en los docs
   // UTE. Independiente de clientName (nombre del proyecto). Puede coincidir
   // pero la extracción de cédula sólo toca este campo, nunca clientName.
-  nombreCliente                   String                   @default("")
-  ciCliente                       String                   @default("")
-  calle                           String                   @default("")
-  numCalle                        String                   @default("")
-  personaFisica                   Boolean                  @default(true)
-  empresa                         Boolean                  @default(false)
+  nombreCliente                   String                      @default("")
+  ciCliente                       String                      @default("")
+  calle                           String                      @default("")
+  numCalle                        String                      @default("")
+  personaFisica                   Boolean                     @default(true)
+  empresa                         Boolean                     @default(false)
   // Rutas relativas dentro de STORAGE_PATH/projects/{id}/ute-docs/
   cedulaPath                      String?
   facturaUtePath                  String?
   // Generador "liviano" cargado por CSV en Experiencia Solar: existe como cliente
   // pero sin pipeline/obra. Se excluye de la lista de Proyectos (solo vive en
   // Experiencia Solar) hasta que, si alguna vez, se lo convierta en proyecto real.
-  importedFromCsv                 Boolean                  @default(false)
+  importedFromCsv                 Boolean                     @default(false)
   // Omitido de métricas y SLA: proyectos viejos/de seguimiento sin todo cargado
   // que distorsionan los indicadores. Sigue existiendo y visible en el resto de
   // la app (p. ej. seguimiento de trámite UTE); solo NO cuenta en el panel de
   // Tiempos & SLA ni en las métricas. Reversible desde el panel.
-  excludedFromMetrics             Boolean                  @default(false)
+  excludedFromMetrics             Boolean                     @default(false)
   // Ampliación de una instalación ya existente. "Es una ampliación" se deriva de
   // que este campo tenga valor: no hay un enum aparte que pueda quedar
   // desincronizado con el vínculo. El árbol es PLANO — una ampliación de una
@@ -750,19 +766,19 @@ model Project {
   // SetNull y no Cascade: borrar la obra original no puede arrastrar la
   // ampliación, que tiene su propia plata, sus materiales y su trámite UTE.
   parentProjectId                 String?
-  parentProject                   Project?                 @relation("ProjectAmpliacion", fields: [parentProjectId], references: [id], onDelete: SetNull)
-  ampliaciones                    Project[]                @relation("ProjectAmpliacion")
+  parentProject                   Project?                    @relation("ProjectAmpliacion", fields: [parentProjectId], references: [id], onDelete: SetNull)
+  ampliaciones                    Project[]                   @relation("ProjectAmpliacion")
   // Facturación al cliente. No todos los clientes "llevan factura" (algunos exigen
   // factura fiscal y otros no). Una sola factura por proyecto: el estado de emisión
   // vive en el propio proyecto. El check y la nota se editan al crear/editar el
   // proyecto; "marcar emitida" es una acción del módulo Finanzas.
-  llevaFactura                    Boolean                  @default(false)
+  llevaFactura                    Boolean                     @default(false)
   facturaNota                     String?
-  facturaEmitida                  Boolean                  @default(false)
-  facturaEmitidaEn                DateTime?                @db.Timestamptz(6)
-  deletedAt                       DateTime?                @db.Timestamptz(6)
-  createdAt                       DateTime                 @default(now()) @db.Timestamptz(6)
-  updatedAt                       DateTime                 @updatedAt @db.Timestamptz(6)
+  facturaEmitida                  Boolean                     @default(false)
+  facturaEmitidaEn                DateTime?                   @db.Timestamptz(6)
+  deletedAt                       DateTime?                   @db.Timestamptz(6)
+  createdAt                       DateTime                    @default(now()) @db.Timestamptz(6)
+  updatedAt                       DateTime                    @updatedAt @db.Timestamptz(6)
 
   @@index([status])
   @@index([importedFromCsv])
@@ -885,8 +901,8 @@ model Ticket {
   resueltoPorId String?
   cerradoEn     DateTime? @db.Timestamptz(6)
 
-  comentarios TicketComment[]
-  agendaEventos AgendaEvento[] @relation("AgendaEventoTicket")
+  comentarios   TicketComment[]
+  agendaEventos AgendaEvento[]  @relation("AgendaEventoTicket")
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   updatedAt DateTime  @updatedAt @db.Timestamptz(6)
@@ -939,32 +955,32 @@ enum SurveyEstado {
 ///     de obra genera su propio check, porque tildar una casilla única y darla por
 ///     cumplida para siempre es justamente lo que hacía que no se avisara.
 model RecorridoCheck {
-  id          String    @id @default(cuid())
-  projectId   String
-  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   /// E1 | E2 | E3
-  recorrido   String
+  recorrido String
   /// Código del catálogo (ver services/clientes/recorrido-checks.ts).
-  codigo      String
-  titulo      String
+  codigo    String
+  titulo    String
   /// Orden dentro de la etapa.
-  orden       Int       @default(0)
+  orden     Int    @default(0)
 
   /// Vencimiento. Null = sin plazo (no vence, pero queda pendiente a la vista).
-  venceEn     DateTime? @db.Timestamptz(6)
+  venceEn DateTime? @db.Timestamptz(6)
 
-  completadoEn   DateTime? @db.Timestamptz(6)
+  completadoEn    DateTime? @db.Timestamptz(6)
   completadoPorId String?
-  completadoPor  User?     @relation("RecorridoCheckCompletadoPor", fields: [completadoPorId], references: [id], onDelete: SetNull)
+  completadoPor   User?     @relation("RecorridoCheckCompletadoPor", fields: [completadoPorId], references: [id], onDelete: SetNull)
 
   /// Contexto del hecho que lo generó (motivo de la reagenda, fecha nueva…).
-  nota        String?
+  nota       String?
   /// true = generado por un hecho repetible; false = del catálogo fijo.
-  esDinamico  Boolean   @default(false)
+  esDinamico Boolean @default(false)
 
-  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
-  updatedAt   DateTime  @updatedAt @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
 
   /// Un check fijo por proyecto+código. Los dinámicos usan códigos con sufijo.
   @@unique([projectId, codigo])
@@ -1356,47 +1372,47 @@ model ProjectChecklistItem {
 }
 
 model Task {
-  id          String         @id @default(cuid())
+  id            String         @id @default(cuid())
   // Si projectId es null, es una "tarea suelta" (standalone) — no atada a un
   // proyecto. Se gestiona desde "Mis Tareas". Las tareas atadas a un proyecto
   // mantienen el comportamiento anterior (cascade delete con el proyecto).
-  projectId   String?
+  projectId     String?
   // Un pendiente comercial cuelga de un lead en lugar de un proyecto. Conviven:
   // una ampliación sobre una instalación existente tiene proyecto, un reclamo
   // previo a la venta tiene lead. La regla "nunca huérfano" se valida en la capa
   // que crea (conector, minutas), no acá: las tareas sueltas de Mis Tareas son
   // legítimamente `projectId: null` sin lead.
-  leadId      String?
-  stageId     String?
-  substageId  String?
-  title       String
-  description String?
-  status      TaskStatus
-  priority    TaskPriority
-  origin      TaskOrigin     @default(MANUAL)
+  leadId        String?
+  stageId       String?
+  substageId    String?
+  title         String
+  description   String?
+  status        TaskStatus
+  priority      TaskPriority
+  origin        TaskOrigin     @default(MANUAL)
   // Qué se está esperando y cuándo reconsultar. Solo tienen sentido con
   // status WAITING.
   waitingReason String?
-  followUpAt    DateTime?    @db.Date
+  followUpAt    DateTime?      @db.Date
   /// @deprecated usar userId + relación user. Se conserva como referencia legacy.
-  responsible String
+  responsible   String
   // userId = asignado "primario" (legacy). Se mantiene sincronizado con el
   // primer elemento de `assignees` para retrocompat; la fuente de verdad de la
   // asignación es la tabla `assignees` (many-to-many), que permite varios
   // responsables por tarea. Cualquiera de ellos puede resolverla.
-  userId      String?
-  user        User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
-  assignees   TaskAssignee[]
-  project     Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  lead        SalesLead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  stage       Stage?         @relation(fields: [stageId], references: [id], onDelete: SetNull)
-  substage    Substage?      @relation(fields: [substageId], references: [id], onDelete: SetNull)
-  comments    Comment[]
-  dueDate     DateTime?      @db.Date
-  completedAt DateTime?      @db.Timestamptz(6)
-  deletedAt   DateTime?      @db.Timestamptz(6)
-  createdAt   DateTime       @default(now()) @db.Timestamptz(6)
-  updatedAt   DateTime       @updatedAt @db.Timestamptz(6)
+  userId        String?
+  user          User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  assignees     TaskAssignee[]
+  project       Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lead          SalesLead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  stage         Stage?         @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  substage      Substage?      @relation(fields: [substageId], references: [id], onDelete: SetNull)
+  comments      Comment[]
+  dueDate       DateTime?      @db.Date
+  completedAt   DateTime?      @db.Timestamptz(6)
+  deletedAt     DateTime?      @db.Timestamptz(6)
+  createdAt     DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(6)
 
   @@index([projectId])
   @@index([leadId])
@@ -1482,46 +1498,46 @@ model McpRefreshToken {
 }
 
 model FileAttachment {
-  id                     String                 @id @default(cuid())
+  id                      String                 @id @default(cuid())
   // Un FileAttachment debe estar ligado a UN owner: o un Project, o un
   // SalesLead. La validación (XOR) se hace a nivel de service.
-  projectId              String?
-  leadId                 String?
-  stageId                String?
-  substageId             String?
+  projectId               String?
+  leadId                  String?
+  stageId                 String?
+  substageId              String?
   // Owner alternativo: adjunto de un Informe (módulo Informes). Parte del XOR
   // de owner — la validación que exige exactamente uno de
   // project/lead/stage/substage/informe se hace a nivel de service.
-  informeId              String?
-  filename               String
-  storedFilename         String
-  mimeType               String
-  sizeBytes              Int
-  url                    String
-  tipo                   FileAttachmentTipo? // null = upload manual legacy
+  informeId               String?
+  filename                String
+  storedFilename          String
+  mimeType                String
+  sizeBytes               Int
+  url                     String
+  tipo                    FileAttachmentTipo? // null = upload manual legacy
   // Trazabilidad fina del origen para documentos generados por herramientas del
   // módulo Ingeniería. `tipo` queda como índice grueso (UNIFILAR, etc.); estos
   // campos permiten badges "Ingeniería: Unifilar v3" y filtros por origen.
-  toolSource             String?
-  toolVersion            Int?
-  toolEntityId           String?
-  uploadedById           String
-  uploadedBy             User                   @relation("FileUploadedBy", fields: [uploadedById], references: [id], onDelete: Restrict)
-  project                Project?               @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  lead                   SalesLead?             @relation("LeadAttachments", fields: [leadId], references: [id], onDelete: Cascade)
-  stage                  Stage?                 @relation(fields: [stageId], references: [id], onDelete: SetNull)
-  substage               Substage?              @relation(fields: [substageId], references: [id], onDelete: SetNull)
-  informe                Informe?               @relation("InformeAdjuntos", fields: [informeId], references: [id], onDelete: Cascade)
-  preIngenieriaFotos     PreIngenieriaFoto[]
-  preIngenieriaMinutaFor PreIngenieriaVersion[] @relation("MinutaSource")
-  efpAttachments         EFPAttachment[]        @relation("EFPAttachmentFile")
-  proposalGenerations    ProposalGeneration[]   @relation("ProposalAttachment")
-  proposalV2Covers       ProposalDefaults[]     @relation("ProposalV2Cover")
-  proposalV2CoversEmpresa ProposalDefaults[]    @relation("ProposalV2CoverEmpresa")
-  reporteFvEmisiones     ReporteFvEmision[]     @relation("ReporteFvPdf")
-  projectVideos          ProjectVideo[]         @relation("ProjectVideoFile")
-  deletedAt              DateTime?              @db.Timestamptz(6)
-  createdAt              DateTime               @default(now()) @db.Timestamptz(6)
+  toolSource              String?
+  toolVersion             Int?
+  toolEntityId            String?
+  uploadedById            String
+  uploadedBy              User                   @relation("FileUploadedBy", fields: [uploadedById], references: [id], onDelete: Restrict)
+  project                 Project?               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lead                    SalesLead?             @relation("LeadAttachments", fields: [leadId], references: [id], onDelete: Cascade)
+  stage                   Stage?                 @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  substage                Substage?              @relation(fields: [substageId], references: [id], onDelete: SetNull)
+  informe                 Informe?               @relation("InformeAdjuntos", fields: [informeId], references: [id], onDelete: Cascade)
+  preIngenieriaFotos      PreIngenieriaFoto[]
+  preIngenieriaMinutaFor  PreIngenieriaVersion[] @relation("MinutaSource")
+  efpAttachments          EFPAttachment[]        @relation("EFPAttachmentFile")
+  proposalGenerations     ProposalGeneration[]   @relation("ProposalAttachment")
+  proposalV2Covers        ProposalDefaults[]     @relation("ProposalV2Cover")
+  proposalV2CoversEmpresa ProposalDefaults[]     @relation("ProposalV2CoverEmpresa")
+  reporteFvEmisiones      ReporteFvEmision[]     @relation("ReporteFvPdf")
+  projectVideos           ProjectVideo[]         @relation("ProjectVideoFile")
+  deletedAt               DateTime?              @db.Timestamptz(6)
+  createdAt               DateTime               @default(now()) @db.Timestamptz(6)
 
   @@index([projectId])
   @@index([leadId])
@@ -1671,31 +1687,31 @@ model Permission {
 }
 
 model Comment {
-  id              String         @id @default(cuid())
-  content         String
-  authorId        String
-  author          User           @relation(fields: [authorId], references: [id], onDelete: Restrict)
-  projectId       String?
-  project         Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  leadId          String?
-  lead            SalesLead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  stageId         String?
-  stage           Stage?         @relation(fields: [stageId], references: [id], onDelete: SetNull)
-  substageId      String?
-  substage        Substage?      @relation(fields: [substageId], references: [id], onDelete: SetNull)
-  checklistItemId String?
-  checklistItem   ChecklistItem? @relation(fields: [checklistItemId], references: [id], onDelete: SetNull)
-  taskId          String?
-  task            Task?          @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  id                  String             @id @default(cuid())
+  content             String
+  authorId            String
+  author              User               @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  projectId           String?
+  project             Project?           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  leadId              String?
+  lead                SalesLead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  stageId             String?
+  stage               Stage?             @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  substageId          String?
+  substage            Substage?          @relation(fields: [substageId], references: [id], onDelete: SetNull)
+  checklistItemId     String?
+  checklistItem       ChecklistItem?     @relation(fields: [checklistItemId], references: [id], onDelete: SetNull)
+  taskId              String?
+  task                Task?              @relation(fields: [taskId], references: [id], onDelete: SetNull)
   // Preguntas del equipo debajo de un video de capacitación. Si el video se
   // quita de la lista, sus comentarios se van con él: no tienen dónde vivir.
   capacitacionVideoId String?
   capacitacionVideo   CapacitacionVideo? @relation(fields: [capacitacionVideoId], references: [id], onDelete: Cascade)
-  isEdited        Boolean        @default(false)
-  editedAt        DateTime?      @db.Timestamptz(6)
-  deletedAt       DateTime?      @db.Timestamptz(6)
-  createdAt       DateTime       @default(now()) @db.Timestamptz(6)
-  updatedAt       DateTime       @updatedAt @db.Timestamptz(6)
+  isEdited            Boolean            @default(false)
+  editedAt            DateTime?          @db.Timestamptz(6)
+  deletedAt           DateTime?          @db.Timestamptz(6)
+  createdAt           DateTime           @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime           @updatedAt @db.Timestamptz(6)
 
   @@index([projectId])
   @@index([leadId])
@@ -1728,57 +1744,60 @@ model Setting {
 }
 
 model SalesLead {
-  id                   String               @id @default(cuid())
-  code                 String               @unique
-  tenantId             String?
-  clientName           String
-  clientEmail          String?
-  clientPhone          String?
-  address              String?
-  stage                SalesStage           @default(NUEVO_LEAD)
+  id                    String               @id @default(cuid())
+  code                  String               @unique
+  tenantId              String?
+  clientName            String
+  clientEmail           String?
+  clientPhone           String?
+  address               String?
+  stage                 SalesStage           @default(NUEVO_LEAD)
   // Residencial o empresa. Clasifica al cliente potencial y precarga el
   // cotizador correspondiente; NO restringe: desde cualquier lead se puede
   // abrir cualquiera de los dos cotizadores.
-  tipoCliente          ProposalVariante     @default(RESIDENCIAL)
-  estimatedKwp         Decimal?             @db.Decimal(10, 2)
-  estimatedBudgetUsd   Decimal?             @db.Decimal(14, 2)
-  uteBillMonthlyUsd    Decimal?             @db.Decimal(10, 2)
-  roofType             String?
-  notes                String?
-  lostReason           String?
+  tipoCliente           ProposalVariante     @default(RESIDENCIAL)
+  estimatedKwp          Decimal?             @db.Decimal(10, 2)
+  estimatedBudgetUsd    Decimal?             @db.Decimal(14, 2)
+  uteBillMonthlyUsd     Decimal?             @db.Decimal(10, 2)
+  roofType              String?
+  notes                 String?
+  lostReason            String?
   // Contador de reclamos (insistencias) hechos al lead. Es transversal a la
   // etapa: un lead en cualquier stage puede acumular reclamos. Se muestra como
   // "xR" en la tarjeta y se incrementa con el botón "+" desde el kanban.
-  reclamosCount        Int                  @default(0)
-  lastReclamoAt        DateTime?            @db.Timestamptz(6)
+  reclamosCount         Int                  @default(0)
+  // El cliente contrata el seguro de granizo. Al convertir el lead en proyecto
+  // se crea la póliza (pendiente de inicio hasta la habilitación UTE).
+  contrataSeguroGranizo Boolean              @default(false)
+  lastReclamoAt         DateTime?            @db.Timestamptz(6)
   // Fecha de "alta comercial" del lead. Por default copia createdAt en
   // los registros nuevos (auto-fill en el handler de POST), pero es
   // editable desde el panel "Fechas del proceso" para corregir backfills
   // manuales o fechas históricas.
-  leadCreatedAt        DateTime?            @db.Timestamptz(6)
-  proposalSentAt       DateTime?            @db.Timestamptz(6)
-  visitScheduledAt     DateTime?            @db.Timestamptz(6)
-  visitCompletedAt     DateTime?            @db.Timestamptz(6)
-  closedAt             DateTime?            @db.Timestamptz(6)
-  assignedToId         String?
-  assignedTo           User?                @relation("LeadAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
-  convertedToProjectId String?
-  convertedToProject   Project?             @relation("LeadConvertedTo", fields: [convertedToProjectId], references: [id], onDelete: SetNull)
-  convertedAt          DateTime?            @db.Timestamptz(6)
-  createdById          String
-  createdBy            User                 @relation("LeadCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
-  activities           SalesActivity[]
-  proposals            ProposalGeneration[] @relation("ProposalLead")
-  proposalV2Drafts     ProposalV2Draft[]
-  proposalV2Versions   ProposalV2Version[]
-  commission           Commission?
-  comments             Comment[]
-  tasks                Task[]
-  attachments          FileAttachment[]     @relation("LeadAttachments")
-  videos               ProjectVideo[]       @relation("SalesLeadVideos")
-  deletedAt            DateTime?            @db.Timestamptz(6)
-  createdAt            DateTime             @default(now()) @db.Timestamptz(6)
-  updatedAt            DateTime             @updatedAt @db.Timestamptz(6)
+  leadCreatedAt         DateTime?            @db.Timestamptz(6)
+  proposalSentAt        DateTime?            @db.Timestamptz(6)
+  visitScheduledAt      DateTime?            @db.Timestamptz(6)
+  visitCompletedAt      DateTime?            @db.Timestamptz(6)
+  closedAt              DateTime?            @db.Timestamptz(6)
+  assignedToId          String?
+  assignedTo            User?                @relation("LeadAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  convertedToProjectId  String?
+  convertedToProject    Project?             @relation("LeadConvertedTo", fields: [convertedToProjectId], references: [id], onDelete: SetNull)
+  convertedAt           DateTime?            @db.Timestamptz(6)
+  createdById           String
+  createdBy             User                 @relation("LeadCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  activities            SalesActivity[]
+  proposals             ProposalGeneration[] @relation("ProposalLead")
+  proposalV2Drafts      ProposalV2Draft[]
+  proposalV2Versions    ProposalV2Version[]
+  commission            Commission?
+  comments              Comment[]
+  tasks                 Task[]
+  attachments           FileAttachment[]     @relation("LeadAttachments")
+  videos                ProjectVideo[]       @relation("SalesLeadVideos")
+  deletedAt             DateTime?            @db.Timestamptz(6)
+  createdAt             DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime             @updatedAt @db.Timestamptz(6)
 
   @@index([stage])
   @@index([tenantId])
@@ -1910,71 +1929,74 @@ model ExchangeRate {
 }
 
 model FinanceMovement {
-  id                   String                   @id @default(cuid())
-  fecha                DateTime
-  mes                  Int
-  anio                 Int
-  tipoMovimiento       TipoMovimiento
-  categoriaPrincipal   CategoriaPrincipal
-  subcategoriaId       String?
-  subcategoria         FinanceSubcategory?      @relation(fields: [subcategoriaId], references: [id])
-  descripcion          String
-  monto                Decimal                  @db.Decimal(14, 2)
-  moneda               Moneda                   @default(USD)
-  ivaTasa              Float?                   @default(22.0)
-  tipoCambio           Decimal?                 @db.Decimal(10, 4)
-  pagado               Boolean                  @default(false)
-  cobrado              Boolean                  @default(false)
-  impactaFlujo         Boolean                  @default(true)
-  status               FinanceMovementStatus    @default(PAGADO)
-  expectedDate         DateTime?                @db.Date
-  dueDate              DateTime?                @db.Date
-  invoiceNumber        String?
-  sourceType           MovementSourceType       @default(MANUAL)
-  materialItemId       String?
-  materialItem         MaterialItem?            @relation(fields: [materialItemId], references: [id])
-  quantity             Decimal?                 @db.Decimal(10, 2)
-  unitPrice            Decimal?                 @db.Decimal(12, 2)
+  id                      String                   @id @default(cuid())
+  fecha                   DateTime
+  mes                     Int
+  anio                    Int
+  tipoMovimiento          TipoMovimiento
+  categoriaPrincipal      CategoriaPrincipal
+  subcategoriaId          String?
+  subcategoria            FinanceSubcategory?      @relation(fields: [subcategoriaId], references: [id])
+  descripcion             String
+  monto                   Decimal                  @db.Decimal(14, 2)
+  moneda                  Moneda                   @default(USD)
+  ivaTasa                 Float?                   @default(22.0)
+  tipoCambio              Decimal?                 @db.Decimal(10, 4)
+  pagado                  Boolean                  @default(false)
+  cobrado                 Boolean                  @default(false)
+  impactaFlujo            Boolean                  @default(true)
+  status                  FinanceMovementStatus    @default(PAGADO)
+  expectedDate            DateTime?                @db.Date
+  dueDate                 DateTime?                @db.Date
+  invoiceNumber           String?
+  sourceType              MovementSourceType       @default(MANUAL)
+  materialItemId          String?
+  materialItem            MaterialItem?            @relation(fields: [materialItemId], references: [id])
+  quantity                Decimal?                 @db.Decimal(10, 2)
+  unitPrice               Decimal?                 @db.Decimal(12, 2)
   // Desglose de factura → impacta stock cuando pasa a A_PAGAR
-  requiresItemDetail   Boolean                  @default(false)
-  hasItemDetail        Boolean                  @default(false)
-  noTieneMateriales    Boolean                  @default(false)
-  depositoIngresoId    String?
-  invoiceItems         InvoiceItem[]
-  projectId            String?
-  project              Project?                 @relation(fields: [projectId], references: [id])
-  supplierId           String?
-  supplier             Supplier?                @relation(fields: [supplierId], references: [id])
-  accountId            String?
-  account              Account?                 @relation(fields: [accountId], references: [id])
-  observaciones        String?
-  estadoAprobacion     EstadoAprobacion         @default(REGISTRADO)
-  archivoAdjuntoUrl    String?
-  paymentApplications  PaymentApplication[]
-  comprobantes         FinanceComprobante[]
-  movimientosStock     StockMovement[]
-  historial            FinanceApprovalHistory[]
-  projectMaterials     ProjectMaterial[]
-  reconciliacionAjuste AccountReconciliation?   @relation("ReconciliationAjuste")
-  commission           Commission?
+  requiresItemDetail      Boolean                  @default(false)
+  hasItemDetail           Boolean                  @default(false)
+  noTieneMateriales       Boolean                  @default(false)
+  depositoIngresoId       String?
+  invoiceItems            InvoiceItem[]
+  projectId               String?
+  project                 Project?                 @relation(fields: [projectId], references: [id])
+  supplierId              String?
+  supplier                Supplier?                @relation(fields: [supplierId], references: [id])
+  accountId               String?
+  account                 Account?                 @relation(fields: [accountId], references: [id])
+  observaciones           String?
+  estadoAprobacion        EstadoAprobacion         @default(REGISTRADO)
+  archivoAdjuntoUrl       String?
+  paymentApplications     PaymentApplication[]
+  comprobantes            FinanceComprobante[]
+  movimientosStock        StockMovement[]
+  historial               FinanceApprovalHistory[]
+  projectMaterials        ProjectMaterial[]
+  reconciliacionAjuste    AccountReconciliation?   @relation("ReconciliationAjuste")
+  commission              Commission?
   // Pago (total o parcial) de mano de obra a un instalador tercerizado. A
   // diferencia de la comisión —que es 1:1 con su movimiento— acá un mismo pago
   // puede tener varios movimientos: uno por cada entrega.
-  installerPaymentId   String?
-  installerPayment     InstallerPayment?        @relation("FinanceMovementInstallerPayment", fields: [installerPaymentId], references: [id], onDelete: SetNull)
+  installerPaymentId      String?
+  installerPayment        InstallerPayment?        @relation("FinanceMovementInstallerPayment", fields: [installerPaymentId], references: [id], onDelete: SetNull)
   // Para transferencias entre cuentas: par de movimientos (GASTO origen +
   // INGRESO destino) con el mismo transferGroupId. Permite eliminarlos juntos
   // y mostrarlos como una sola operación en la UI.
-  transferGroupId      String?
-  fixedCostId          String?
-  fixedCost            FixedCost?               @relation(fields: [fixedCostId], references: [id])
-  creadoPorId          String?
-  creadoPor            User?                    @relation("FinanceMovCreadoPor", fields: [creadoPorId], references: [id])
-  aprobadoPorId        String?
-  aprobadoPor          User?                    @relation("FinanceMovAprobadoPor", fields: [aprobadoPorId], references: [id])
-  deletedAt            DateTime?
-  createdAt            DateTime                 @default(now())
-  updatedAt            DateTime                 @updatedAt
+  transferGroupId         String?
+  fixedCostId             String?
+  fixedCost               FixedCost?               @relation(fields: [fixedCostId], references: [id])
+  creadoPorId             String?
+  creadoPor               User?                    @relation("FinanceMovCreadoPor", fields: [creadoPorId], references: [id])
+  aprobadoPorId           String?
+  aprobadoPor             User?                    @relation("FinanceMovAprobadoPor", fields: [aprobadoPorId], references: [id])
+  deletedAt               DateTime?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  seguroGranizoPeriodo    SeguroGranizoPeriodo?    @relation("SeguroGranizoPeriodoCobro")
+  seguroGranizoGasto      SeguroGranizoSiniestro?  @relation("SeguroGranizoSiniestroGasto")
+  seguroGranizoAmpliacion SeguroGranizoAmpliacion? @relation("SeguroGranizoAmpliacionCobro")
 
   @@index([fecha])
   @@index([mes, anio])
@@ -2204,7 +2226,7 @@ model AgendaEvento {
   teamName  String
   teamColor String  @default("#378ADD")
 
-  notas String?
+  notas        String?
   // Equivalente a "obra completada": el bloque se pinta gris.
   completadoEn DateTime? @db.Timestamptz(6)
 
@@ -2259,7 +2281,7 @@ model Team {
   deletedAt DateTime? @db.Timestamptz(6)
 
   installations InstallationSchedule[]
-  agendaEventos AgendaEvento[]        @relation("AgendaEventoTeam")
+  agendaEventos AgendaEvento[]         @relation("AgendaEventoTeam")
 
   @@index([deletedAt])
   @@map("teams")
@@ -4602,7 +4624,7 @@ model FvIncidencia {
   huaweiPlantId  String?
   huaweiPlant    HuaweiPlant?  @relation(fields: [huaweiPlantId], references: [id], onDelete: Cascade)
   projectId      String?
-  project        Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  project        Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
   diagnostico FvDiagnostico
   estado      FvIncidenciaEstado @default(ABIERTA)
@@ -4854,4 +4876,216 @@ model CapacitacionVista {
   @@unique([userId, videoId])
   @@index([videoId])
   @@map("capacitacion_vistas")
+}
+
+// ─── Seguro contra granizo (autoseguro de Voltia) ────────────────────────────
+// Una póliza por proyecto. La vigencia se parte en períodos anuales; cada
+// período tiene su cobro (FinanceMovement INGRESO / SEGURO_GRANIZO). El estado
+// de pago se lee siempre del movimiento: no se guarda dos veces.
+
+enum SeguroGranizoEstado {
+  PENDIENTE_INICIO // contratada, espera la habilitación UTE para arrancar
+  ACTIVA
+  CANCELADA
+}
+
+enum SeguroGranizoOrigen {
+  VENTA // creada al convertir un lead que la contrató
+  MANUAL
+}
+
+enum SiniestroGranizoEstado {
+  REPORTADO
+  EVALUADO
+  REPUESTO
+  RECHAZADO
+}
+
+model SeguroGranizoPoliza {
+  id        String              @id @default(cuid())
+  projectId String              @unique
+  project   Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  leadId    String?
+  origen    SeguroGranizoOrigen @default(MANUAL)
+  estado    SeguroGranizoEstado @default(PENDIENTE_INICIO)
+
+  // fechaVencimiento = `hasta` del último período (desnormalizado para ordenar).
+  fechaInicio      DateTime? @db.Date
+  fechaVencimiento DateTime? @db.Date
+
+  // Aplican al próximo período que se genere. Cada período guarda su snapshot.
+  cantidadPaneles       Int
+  cantidadPanelesFuente String  @default("MANUAL") // UNIFILAR | PROPUESTA | MANUAL
+  precioPorPanelUsd     Decimal @db.Decimal(10, 2)
+  montoAnualUsd         Decimal @db.Decimal(12, 2)
+  notas                 String?
+
+  // Adhesión al contratar la obra: sin carencia, cubre desde la puesta en marcha.
+  sinCarencia    Boolean   @default(false)
+  // Anexo A (solicitud de adhesión) firmado: sin esto no hay cobertura.
+  anexoFirmadoEn DateTime? @db.Date
+  anexoFileId    String?
+  // Identifica la instalación (condiciones, def. \"Instalación\"). Se actualiza si
+  // se cambia el inversor.
+  inversorSerie  String?
+
+  canceladaEn       DateTime? @db.Timestamptz(6)
+  canceladaPorId    String?
+  motivoCancelacion String?
+
+  creadoPorId String?
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6)
+  deletedAt   DateTime? @db.Timestamptz(6)
+
+  periodos     SeguroGranizoPeriodo[]
+  siniestros   SeguroGranizoSiniestro[]
+  ampliaciones SeguroGranizoAmpliacion[]
+
+  @@index([estado])
+  @@index([fechaVencimiento])
+  @@map("seguro_granizo_polizas")
+}
+
+model SeguroGranizoPeriodo {
+  id       String              @id @default(cuid())
+  polizaId String
+  poliza   SeguroGranizoPoliza @relation(fields: [polizaId], references: [id], onDelete: Cascade)
+  numero   Int
+  // Cobertura [desde, hasta).
+  desde    DateTime            @db.Date
+  hasta    DateTime            @db.Date
+
+  cantidadPaneles   Int
+  precioPorPanelUsd Decimal @db.Decimal(10, 2)
+  montoUsd          Decimal @db.Decimal(12, 2)
+
+  financeMovementId String?          @unique
+  financeMovement   FinanceMovement? @relation("SeguroGranizoPeriodoCobro", fields: [financeMovementId], references: [id], onDelete: SetNull)
+
+  // Año cuyo inicio se fija al registrar el pago (pago + 30 días de carencia):
+  // primera anualidad de un cliente existente o re-adhesión.
+  inicioAlPagar Boolean @default(false)
+
+  creadoPorId String?
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([polizaId, numero])
+  @@map("seguro_granizo_periodos")
+}
+
+model SeguroGranizoSiniestro {
+  id        String              @id @default(cuid())
+  polizaId  String
+  poliza    SeguroGranizoPoliza @relation(fields: [polizaId], references: [id], onDelete: Cascade)
+  projectId String
+
+  fechaEvento         DateTime               @db.Date
+  descripcion         String
+  panelesAfectados    Int?
+  // Día en que avisó el cliente (plazo: 10 días hábiles desde el granizo).
+  fechaAviso          DateTime               @default(now()) @db.Date
+  // Tormenta que afectó muchas obras: el plazo de reposición pasa de 30 a 60 días.
+  eventoMasivo        Boolean                @default(false)
+  fechaInspeccion     DateTime?              @db.Date
+  fechaReposicion     DateTime?              @db.Date
+  panelesRepuestos    Int?
+  // Causal de la sección 4 de las condiciones (ver siniestros.service.ts).
+  motivoRechazoCodigo String?
+  // Costo de la reposición registrado como gasto en Finanzas.
+  financeMovementId   String?                @unique
+  financeMovement     FinanceMovement?       @relation("SeguroGranizoSiniestroGasto", fields: [financeMovementId], references: [id], onDelete: SetNull)
+  estado              SiniestroGranizoEstado @default(REPORTADO)
+  // ¿Había cobertura activa (vigente y paga) el día del evento? Se calcula al
+  // registrarlo; no bloquea la carga.
+  cubiertoAlEvento    Boolean                @default(true)
+
+  evaluadoEn     DateTime? @db.Timestamptz(6)
+  evaluacionNota String?
+  resueltoEn     DateTime? @db.Timestamptz(6)
+  motivoRechazo  String?
+  costoRealUsd   Decimal?  @db.Decimal(12, 2)
+  costoDetalle   String?
+
+  creadoPorId String?
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6)
+  deletedAt   DateTime? @db.Timestamptz(6)
+
+  @@index([polizaId])
+  @@index([projectId])
+  @@map("seguro_granizo_siniestros")
+}
+
+// Ampliación hecha por Voltia sumada a un plan: los paneles nuevos cubren desde
+// su puesta en marcha y se cobra la parte proporcional a los meses que faltan
+// hasta la próxima anualidad (condiciones, sección 3).
+model SeguroGranizoAmpliacion {
+  id        String              @id @default(cuid())
+  polizaId  String
+  poliza    SeguroGranizoPoliza @relation(fields: [polizaId], references: [id], onDelete: Cascade)
+  // Proyecto de la ampliación (Project.parentProjectId = obra del plan).
+  projectId String
+
+  paneles  Int
+  desde    DateTime @db.Date // puesta en marcha de la ampliación
+  hasta    DateTime @db.Date // fin de la anualidad en curso
+  meses    Int
+  montoUsd Decimal  @db.Decimal(12, 2)
+
+  financeMovementId String?          @unique
+  financeMovement   FinanceMovement? @relation("SeguroGranizoAmpliacionCobro", fields: [financeMovementId], references: [id], onDelete: SetNull)
+
+  creadoPorId String?
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([polizaId, projectId])
+  @@map("seguro_granizo_ampliaciones")
+}
+
+// ─── Documento del plan de granizo (condiciones + Anexo A) ───────────────────
+// Mismo patrón que ProformaDraft / ProformaVersion: un borrador por proyecto con
+// autosave y versiones publicadas inmutables con su PDF en disco.
+
+enum PlanGranizoVersionStatus {
+  PUBLISHED
+  DISCARDED
+}
+
+model PlanGranizoDraft {
+  id        String  @id @default(cuid())
+  projectId String  @unique
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  data Json
+
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+  createdById String
+  updatedById String
+
+  @@map("plan_granizo_drafts")
+}
+
+model PlanGranizoVersion {
+  id            String                   @id @default(cuid())
+  projectId     String
+  project       Project                  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  versionNumber Int
+  status        PlanGranizoVersionStatus @default(PUBLISHED)
+
+  snapshot Json
+  pdfPath  String
+  label    String?
+
+  publishedAt   DateTime @default(now()) @db.Timestamptz(6)
+  publishedById String
+
+  discardedAt   DateTime? @db.Timestamptz(6)
+  discardedById String?
+  discardReason String?
+
+  @@unique([projectId, versionNumber])
+  @@index([projectId, status])
+  @@map("plan_granizo_versions")
 }

@@ -104,6 +104,7 @@ const RecorridoPage = lazy(() =>
   import("./modules/clientes/pages/RecorridoPage").then((m) => ({ default: m.RecorridoPage })),
 );
 const ExperienciaSolarLayout = lazy(() => import("./modules/clientes/pages/ExperienciaSolarLayout").then((module) => ({ default: module.ExperienciaSolarLayout })));
+const PlanGranizoPage = lazy(() => import("./modules/clientes/pages/PlanGranizoPage").then((module) => ({ default: module.PlanGranizoPage })));
 const ClientesCobros = lazy(() => import("./modules/clientes/pages/ClientesCobros").then((module) => ({ default: module.ClientesCobros })));
 const ReportesFvPanel = lazy(() => import("./modules/clientes/pages/ReportesFvPanel").then((module) => ({ default: module.ReportesFvPanel })));
 const MonitoreoFvPanel = lazy(() => import("./modules/clientes/pages/MonitoreoFvPanel").then((module) => ({ default: module.MonitoreoFvPanel })));
@@ -515,6 +516,7 @@ export function App() {
           <Route path="reportes" element={<ReportesFvPanel />} />
           <Route path="monitoreo" element={<MonitoreoFvPanel />} />
           <Route path="cobros" element={<ClientesCobros />} />
+          <Route path="plan-granizo" element={<PlanGranizoPage />} />
           <Route path="encuestas" element={<EncuestasPage />} />
         </Route>
         <Route

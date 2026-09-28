@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { AlertTriangle, ChevronDown, Circle, Download, Eye, Search, Send, SlidersHorizontal, Trash2, Upload, UserCheck, UserPlus } from "lucide-react";
+import { AlertTriangle, ChevronDown, Circle, CloudHail, Download, Eye, Search, Send, SlidersHorizontal, Trash2, Upload, UserCheck, UserPlus } from "lucide-react";
 
 import {
   deleteCliente,
@@ -30,6 +30,7 @@ import { BLOQUES as BLOQUES_ETAPA } from "../components/RecorridoPipeline";
 import { usePortalPreviewStore } from "../../../store/portalPreview.store";
 import { useClientes } from "../hooks/useClientes";
 import { useUpdateCliente } from "../hooks/useUpdateCliente";
+import { etiquetaAlerta, NOMBRE_ALERTA } from "../../../components/planGranizo/estado";
 
 const PAGE_SIZE = 50;
 const SORTABLE: Record<string, ClienteSortBy> = {
@@ -218,13 +219,28 @@ export function ClientesPage() {
       sortable: true,
       className: "font-medium text-[var(--color-text-primary)]",
       render: (c) => (
-        <EditableCell
-          value={c.nombre}
-          type="text"
-          canEdit={canEdit}
-          ariaLabel="nombre"
-          onSave={(v) => saveField(c.projectId, { nombre: v ?? "" })}
-        />
+        <div className="flex flex-wrap items-center gap-1.5">
+          {/* En rojo: el Plan de Protección contra Granizo está por vencer (≤ 1 mes),
+              en gracia, suspendido o vencido. */}
+          <span className={c.planGranizo?.alerta ? `font-semibold ${NOMBRE_ALERTA}` : undefined}>
+            <EditableCell
+              value={c.nombre}
+              type="text"
+              canEdit={canEdit}
+              ariaLabel="nombre"
+              onSave={(v) => saveField(c.projectId, { nombre: v ?? "" })}
+            />
+          </span>
+          {c.planGranizo?.alerta ? (
+            <span className="whitespace-nowrap rounded-full bg-[var(--color-danger-bg)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-danger-text)]">
+              Granizo: {etiquetaAlerta(c.planGranizo)}
+            </span>
+          ) : c.planGranizo ? (
+            <span title="Tiene el Plan de Protección contra Granizo" className="text-[var(--color-text-muted)]">
+              <CloudHail size={12} />
+            </span>
+          ) : null}
+        </div>
       ),
     },
     {

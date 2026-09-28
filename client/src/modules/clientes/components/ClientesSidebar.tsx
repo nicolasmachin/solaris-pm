@@ -34,7 +34,12 @@ function Item({ c }: { c: ClienteListItem }) {
         ) : (
           <span className="w-3 shrink-0" />
         )}
-        <span className="min-w-0 flex-1 truncate text-[12px] text-[var(--color-text-primary)]">
+        {/* En rojo: Plan de Protección contra Granizo por vencer, en gracia,
+            suspendido o vencido. */}
+        <span
+          className={`min-w-0 flex-1 truncate text-[12px] ${c.planGranizo?.alerta ? "font-semibold text-[var(--color-danger-text)]" : "text-[var(--color-text-primary)]"}`}
+          title={c.planGranizo?.alerta ? "Plan de granizo: requiere acción" : undefined}
+        >
           {c.nombre}
         </span>
         {c.hayNovedad && (

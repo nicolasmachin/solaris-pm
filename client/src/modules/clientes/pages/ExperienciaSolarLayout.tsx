@@ -12,6 +12,7 @@ export function ExperienciaSolarLayout() {
     { to: "reportes", label: "Reportes FV", end: false },
     { to: "monitoreo", label: "Monitoreo", end: false },
     { to: "cobros", label: "Cobros", end: false },
+    { to: "plan-granizo", label: "Plan granizo", end: false },
     { to: "encuestas", label: "Encuestas", end: false },
   ];
 

@@ -17,6 +17,8 @@ import { ESTADO_LABELS } from "../constants";
 import { useClienteFicha } from "../hooks/useClienteFicha";
 import { useNovedadVista } from "../hooks/useNovedadVista";
 import { useUpdateCliente } from "../hooks/useUpdateCliente";
+import { PlanGranizoCard } from "../../../components/planGranizo/PlanGranizoCard";
+import { etiquetaAlerta, NOMBRE_ALERTA } from "../../../components/planGranizo/estado";
 
 // La ficha del cliente es UNA pantalla, no cuatro pestañas.
 //
@@ -101,7 +103,16 @@ export function ClienteFichaPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">{ficha.nombre}</h1>
+            <h1
+              className={`font-display text-2xl font-bold ${ficha.planGranizo?.alerta ? NOMBRE_ALERTA : "text-[var(--color-text-primary)]"}`}
+            >
+              {ficha.nombre}
+            </h1>
+            {ficha.planGranizo?.alerta ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-danger-bg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--color-danger-text)]">
+                Plan granizo: {etiquetaAlerta(ficha.planGranizo)}
+              </span>
+            ) : null}
             <span className="inline-flex items-center rounded bg-[var(--color-border)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-[var(--color-text-secondary)]">
               <EditableCell
                 value={ficha.estado}
@@ -244,6 +255,8 @@ export function ClienteFichaPage() {
           </div>
 
           <ClienteTramiteUteCard projectId={projectId ?? ""} tramiteUte={ficha.tramiteUte} />
+
+          {projectId ? <PlanGranizoCard projectId={projectId} /> : null}
 
         </div>
 

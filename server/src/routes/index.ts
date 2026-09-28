@@ -24,6 +24,8 @@ import { registerProposalsV2DraftsVersionsRoutes } from "./proposals-v2-drafts-v
 import { registerProposalsV2PreviewRoutes } from "./proposals-v2-preview.routes.js";
 import { registerReportesFvRoutes } from "./reportes-fv.routes.js";
 import { registerSalesRoutes } from "./sales.routes.js";
+import { registerPlanGranizoDocumentoRoutes } from "./plan-granizo-documento.routes.js";
+import { registerSeguroGranizoRoutes } from "./seguro-granizo.routes.js";
 import { registerTicketsRoutes } from "./tickets.routes.js";
 import { registerEncuestasRoutes } from "./encuestas.routes.js";
 import { registerTraspasosRoutes } from "./traspasos.routes.js";
@@ -72,4 +74,6 @@ export async function registerRoutes(app: FastifyInstance) {
   await app.register(registerVideosRoutes, { prefix: "/api" });
   await app.register(registerUteSuministroRoutes, { prefix: "/api" });
   await app.register(registerCapacitacionRoutes, { prefix: "/api" });
+  await app.register(registerSeguroGranizoRoutes, { prefix: "/api" });
+  await app.register(registerPlanGranizoDocumentoRoutes, { prefix: "/api" });
 }

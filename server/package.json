@@ -12,6 +12,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "db:seed": "node --import tsx prisma/seed.ts",
+    "test:seguro-granizo": "node --import tsx --test src/services/seguro-granizo/estado.test.ts src/services/seguro-granizo/plazos.test.ts",
     "test:reportes-fv": "node --import tsx --test src/services/reportesFv/motor/metrics.test.ts",
     "test:reportes-fv-habiles": "node --import tsx --test src/services/reportesFv/motor/diasHabiles.test.ts",
     "test:reportes-fv-growatt": "node --import tsx --test src/services/reportesFv/growatt/metricas.test.ts",

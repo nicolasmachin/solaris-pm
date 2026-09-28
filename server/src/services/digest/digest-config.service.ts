@@ -58,6 +58,14 @@ export const NOTIFICATION_TYPE_META: Record<
     label: "Comentario en capacitación",
     description: "Alguien comentó en un video de Capacitación en el que participaste o que cargaste vos.",
   },
+  seguro_granizo_por_vencer: {
+    label: "Seguro de granizo por vencer",
+    description: "Falta un mes o menos para que venza el seguro de granizo de un Generador y la renovación todavía no se cobró.",
+  },
+  seguro_granizo_impago: {
+    label: "Seguro de granizo impago",
+    description: "Pasaron más de 30 días sin cobrar la cuota del seguro de granizo: el Generador quedó sin cobertura.",
+  },
   resumen_experiencia: {
     label: "Recorrido de Experiencia Solar",
     description:

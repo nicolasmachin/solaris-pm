@@ -50,6 +50,13 @@ export interface ResultsDto {
     comprasStock: ResultsCategoryItems;
     otros: ResultsCategoryItems;
   };
+  // Plan de Protección contra Granizo: anualidades cobradas y reposiciones, en
+  // línea aparte (no se mezcla con ventas ni con costos de obra).
+  planGranizo: {
+    ingresos: ResultsCategoryItems;
+    reposiciones: ResultsCategoryItems;
+    neto: number;
+  };
   resultado: number;
   rentabilidad: number;
 }

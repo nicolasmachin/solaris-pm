@@ -24,6 +24,7 @@ import { CargarFotosObraButton } from "../obra/CargarFotosObraButton";
 import { ContractBuilderModal } from "../contract/ContractBuilderModal";
 import { ContractVersionsList } from "../contract/ContractVersionsList";
 import { ModalidadPagoPanel } from "./ModalidadPagoPanel";
+import { PlanGranizoDocSection } from "../planGranizo/PlanGranizoDocSection";
 import { stageLabel } from "../../constants/stages";
 
 // Conjuntos de etapas por área. Incluyen los nombres viejos (5 etapas) y los
@@ -539,6 +540,12 @@ function SubstageRow({
                 {contractOpen && (
                   <ContractBuilderModal projectId={projectId} onClose={() => setContractOpen(false)} />
                 )}
+                {/* Si el cliente contrata el Plan de Protección contra Granizo, las
+                    condiciones con el Anexo A se generan junto con el contrato. */}
+                <div className="mt-3 rounded-lg border border-[var(--color-border)] p-3">
+                  <p className="mb-2 text-xs font-semibold text-[var(--color-text-primary)]">Plan de Protección contra Granizo (opcional)</p>
+                  <PlanGranizoDocSection projectId={projectId} canGenerate />
+                </div>
               </CanAccess>
             )}
 

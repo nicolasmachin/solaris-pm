@@ -4,6 +4,17 @@
 
 ### 28 de septiembre de 2026
 
+#### Plan de Protección contra Granizo
+
+- Nueva pestaña **Plan granizo** en **Experiencia Solar**: todos los clientes con el plan, con su estado, cuándo vence, el próximo cobro y qué les falta. Arriba, cuántos planes cubren hoy, cuánto se cobró en el año, cuánto se gastó en reposiciones y cuánto queda por cobrar.
+- **El nombre del cliente sale en rojo** cuando falta un mes o menos para que venza el plan, cuando venció sin pago (15 días de gracia) o cuando quedó suspendido. Se ve en esa pestaña, en la lista de Generadores, en la barra lateral y en la ficha del cliente.
+- En la **ficha del cliente** hay una tarjeta del plan: se da de alta (con la obra o como instalación existente) y se abre para cargar el **Anexo A firmado**, las **fotos de inicio** de los paneles, el **número de serie del inversor**, registrar el **cobro de cada anualidad** con la fecha real del pago y sumar **ampliaciones** con su cobro proporcional.
+- Se aplican solas las reglas de las condiciones: sin Anexo A firmado y sin la primera anualidad paga el plan no cubre, las instalaciones existentes tienen 30 días de carencia, y si no paga dentro de los 15 días del vencimiento queda suspendido.
+- **Daños por granizo**: se registra el aviso con fotos y se sigue hasta la inspección y la reposición, con el plazo que corre en cada paso. Si no se repone, se elige la causal de las condiciones que hay que citarle al cliente. No deja reponer un panel más de una vez por año.
+- **Condiciones y Anexo A**: desde la ficha del cliente o desde la subetapa **Contrato** del Onboarding se genera el documento para mandarle al cliente, con el Anexo A ya completo con sus datos (se pueden corregir antes de generarlo).
+- En **Finanzas**, las anualidades y el costo de las reposiciones van en una línea propia, **Plan granizo**, en el Estado de resultados. No suman al saldo de la obra.
+- La propuesta comercial ahora dice **"Plan de Protección contra Granizo"** y ya no dice que cubre rayos ni vientos.
+
 #### "La aplicación de tu inversor", no "la app"
 
 - El mensaje modelo **"Ya podés encender + capacitación"** ahora dice *"la aplicación de tu inversor"* en vez de *"la app"*. Hay dos cosas distintas —el portal de Voltia y la aplicación del inversor— y "la app" no dejaba claro de cuál se hablaba.

@@ -340,13 +340,18 @@ TEMAS_FAQ = [
 
     (19, "E3", "Granizo",
      "\"¿qué pasa si cae granizo?\", \"¿tienen seguro?\", \"¿cubren los paneles?\"",
-     ["Voltia ofrece una <strong>cobertura de granizo sobre los paneles</strong>, de USD 12 por panel por año, "
-      "IVA incluido.",
-      "Cubre <strong>sólo los paneles</strong>: no el inversor ni la estructura.",
-      "No es un negocio: el monto está pensado para cubrir el recambio y la mano de obra."],
-     "es lo mismo que dice la propuesta comercial: no prometas nada distinto. Condiciones y forma de cobro "
-     "[A CONFIRMAR]",
-     "para contratarla o dudas de cobro, al asesor comercial."),
+     ["Voltia tiene el <strong>Plan de Protección contra Granizo</strong>: si el granizo le rompe paneles, "
+      "se los repone con todo incluido (panel, traslado, mano de obra y puesta en marcha), sin deducible.",
+      "Cuesta <strong>USD 12 por panel por año, IVA incluido</strong>, por adelantado y siempre por todos los paneles.",
+      "Cubre <strong>sólo los paneles y sólo por granizo</strong>: no el inversor, la estructura ni el cableado, "
+      "y no el viento, el rayo, los golpes ni el robo.",
+      "Con la obra, cubre desde la puesta en marcha. Si ya tiene la instalación, 30 días después del primer pago.",
+      "Si graniza: que no toque los paneles ni suba al techo, y que avise dentro de los 10 días hábiles con fotos."],
+     "<strong>no es un seguro y no se le dice así</strong>: decís plan, condiciones, anualidad y daño por granizo. "
+     "Se activa con el Anexo A firmado y la primera anualidad paga. Con más de 15 días de atraso queda suspendido "
+     "y al pagar corre una nueva carencia. Un aviso de daño se registra en Voltia PM y se responde el mismo día hábil; "
+     "inspección en 10 días hábiles y reposición en 30 días (60 si la tormenta pegó en muchas obras).",
+     "quién inspecciona y repone está por definir; mientras tanto, a Operaciones."),
 
     (20, "E3", "Ampliación",
      "\"¿puedo agregar más paneles?\", \"compré un auto eléctrico, ¿me da para más?\", \"quiero ampliar\"",

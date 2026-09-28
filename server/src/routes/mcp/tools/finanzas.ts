@@ -90,6 +90,7 @@ export function registerFinanzasTools(server: McpServer, user: McpUser) {
       const resumen = campos([
         ["Ingresos", usd(r.ingresos.total)],
         ["Egresos", usd(e.total)],
+        ["Plan granizo (neto)", usd(r.planGranizo.neto)],
         ["Resultado", usd(r.resultado)],
         ["Rentabilidad", r.ingresos.total > 0 ? `${r.rentabilidad.toLocaleString("es-UY")}%` : "— (sin ingresos)"],
       ]);

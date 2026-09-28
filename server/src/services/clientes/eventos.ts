@@ -44,6 +44,7 @@ export const EVENTOS: Record<AuditAction, EventoDef> = {
   [AuditAction.traspaso_escalado]: { visibilidad: "auditoria" },
   [AuditAction.contract_version_published]: { visibilidad: "novedad", etiqueta: "Contrato emitido" },
   [AuditAction.proforma_version_published]: { visibilidad: "novedad", etiqueta: "Proforma emitida" },
+  [AuditAction.plan_granizo_version_published]: { visibilidad: "novedad", etiqueta: "Condiciones del plan de granizo emitidas" },
   [AuditAction.proposal_v2_version_published]: { visibilidad: "novedad", etiqueta: "Propuesta emitida" },
   [AuditAction.proposal_generated]: { visibilidad: "novedad", etiqueta: "Propuesta generada" },
 
@@ -84,6 +85,8 @@ export const EVENTOS: Record<AuditAction, EventoDef> = {
   [AuditAction.contract_version_restored]: { visibilidad: "auditoria" },
   [AuditAction.proforma_version_discarded]: { visibilidad: "auditoria" },
   [AuditAction.proforma_version_restored]: { visibilidad: "auditoria" },
+  [AuditAction.plan_granizo_version_discarded]: { visibilidad: "auditoria" },
+  [AuditAction.plan_granizo_version_restored]: { visibilidad: "auditoria" },
   [AuditAction.proposal_v2_version_discarded]: { visibilidad: "auditoria" },
   [AuditAction.proposal_v2_version_restored]: { visibilidad: "auditoria" },
   [AuditAction.proposal_v2_version_pdf_regenerated]: { visibilidad: "auditoria" },
@@ -97,6 +100,7 @@ export const EVENTOS: Record<AuditAction, EventoDef> = {
   [AuditAction.proposal_v2_draft_updated]: { visibilidad: "descartable" },
   [AuditAction.contract_draft_updated]: { visibilidad: "descartable" },
   [AuditAction.proforma_draft_updated]: { visibilidad: "descartable" },
+  [AuditAction.plan_granizo_draft_updated]: { visibilidad: "descartable" },
 };
 
 /** Acciones que llegan al historial del cliente. */

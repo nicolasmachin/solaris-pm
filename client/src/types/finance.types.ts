@@ -7,7 +7,7 @@ export type MovementSourceType = 'MANUAL' | 'PROJECT_MATERIALS';
 export type CategoriaPrincipal =
   | 'PROYECTO_ENTRADA' | 'COBRO_CLIENTE'
   | 'PROYECTO_SALIDA' | 'COMPRA_STOCK' | 'CONSUMO_STOCK' | 'PAGO_PROVEEDOR'
-  | 'FIJO' | 'VARIABLE' | 'TRANSFERENCIA' | 'OTRO';
+  | 'FIJO' | 'VARIABLE' | 'TRANSFERENCIA' | 'SEGURO_GRANIZO' | 'OTRO';
 export type MetodoPago = 'TRANSFERENCIA' | 'EFECTIVO' | 'CHEQUE' | 'TARJETA_DEBITO' | 'TARJETA_CREDITO' | 'CRYPTO' | 'OTRO';
 export type EstadoAprobacion =
   | 'BORRADOR' | 'REGISTRADO' | 'PENDIENTE_APROBACION'
@@ -29,6 +29,8 @@ export const CATEGORIA_LABEL: Record<CategoriaPrincipal, string> = {
   FIJO: 'Costo fijo',
   VARIABLE: 'Costo variable',
   TRANSFERENCIA: 'Transferencia',
+  // Nombre interno heredado; en pantalla es el plan, nunca "seguro".
+  SEGURO_GRANIZO: 'Plan granizo',
   OTRO: 'Otro',
 };
 

@@ -102,6 +102,8 @@ export async function listarCobrosPorProyecto(filtro: FiltroCobros) {
           where: {
             deletedAt: null,
             tipoMovimiento: TipoMovimiento.INGRESO,
+            // El seguro de granizo es un ingreso aparte: no salda la obra.
+            categoriaPrincipal: { not: CategoriaPrincipal.SEGURO_GRANIZO },
             cobrado: true,
             projectId: { in: projectIds },
           },
