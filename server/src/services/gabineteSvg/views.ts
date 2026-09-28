@@ -5,7 +5,7 @@
 // Convención: `s` es la escala en px por cm; todas las medidas del gabinete
 // están en cm y se multiplican por `s` al dibujar.
 
-import { circle, dimH, dimV, extLine, fitScale, leader, line, polygon, rect, text } from "./draw.js";
+import { circle, dimH, dimV, extLine, fitScale, leader, line, polygon, r, rect, text } from "./draw.js";
 import { COLOR } from "./layout.js";
 import type { GabineteInputs } from "./types.js";
 
@@ -67,9 +67,8 @@ export function vistaFrontal(box: Box, g: GabineteInputs, scale?: number): strin
   const x = box.x + pad.left + (availW - w) / 2;
   const y = box.y + pad.top + (availH - h) / 2;
 
-  // Alero de la tapa: sobresale a los lados. Si hay ala declarada se usa esa
-  // medida a escala; si no, un saliente fijo chico para que se lea el volumen.
-  const over = g.alaTapaCm ? Math.min(g.alaTapaCm * s, 14) : 5;
+  // Alero de la tapa: sobresale a los lados, con el ala declarada a escala.
+  const over = Math.min(g.alaTapaCm * s, 14);
   const capH = Math.max(7, WALL * 1.6);
 
   const parts = [
@@ -82,14 +81,37 @@ export function vistaFrontal(box: Box, g: GabineteInputs, scale?: number): strin
     }),
     // Alero superior.
     rect(x - over, y, w + over * 2, capH, { fill: COLOR.metalFillDark, stroke: COLOR.metalStrokeDark }),
-    // Cotas.
+    // Cotas generales.
     extLine(x, y + h, x, y + h + 26),
     extLine(x + w, y + h, x + w, y + h + 26),
     dimH(x, x + w, y + h + 20, cm(g.anchoCm)),
-    extLine(x, y, x - 30, y),
-    extLine(x, y + h, x - 30, y + h),
-    dimV(y, y + h, x - 24, cm(g.altoCm)),
+    extLine(x, y, x - 34, y),
+    extLine(x, y + h, x - 34, y + h),
+    dimV(y, y + h, x - 28, cm(g.altoCm)),
   ];
+
+  // Ejes de las bisagras, acotados desde cada extremo. Van sobre el lado que
+  // abre; el resto se reparte entre medio.
+  const hingeX = g.bisagrasLado.toLowerCase().startsWith("der") ? x + w : x;
+  const dist = Math.min(g.bisagraDistExtremoCm * s, h / 2 - 6);
+  const n = Math.max(1, g.bisagrasCantidad);
+  const hingeYs: number[] =
+    n === 1
+      ? [y + h / 2]
+      : Array.from({ length: n }, (_, i) => y + dist + ((h - dist * 2) * i) / (n - 1));
+
+  for (const hy of hingeYs) {
+    parts.push(
+      rect(hingeX - 3, hy - 9, 6, 18, { fill: COLOR.metalStrokeDark, stroke: COLOR.metalStrokeDark }),
+    );
+  }
+  // Solo se acota la primera (las demás se reparten parejo, y así lo dice la
+  // tabla de medidas de la hoja 2).
+  parts.push(
+    extLine(hingeX, y, hingeX + (hingeX === x ? -1 : 1) * 16, y),
+    dimV(y, hingeYs[0], hingeX + (hingeX === x ? -14 : 14), cm(g.bisagraDistExtremoCm), { size: 9.5 }),
+  );
+
   return parts.join("");
 }
 
@@ -106,7 +128,7 @@ export function vistaLateral(box: Box, g: GabineteInputs, scale?: number): strin
   const x = box.x + pad.left + (availW - w) / 2;
   const y = box.y + pad.top + (availH - h) / 2;
 
-  const over = g.alaTapaCm ? Math.min(g.alaTapaCm * s, 12) : 5;
+  const over = Math.min(g.alaTapaCm * s, 12);
   const capH = Math.max(7, WALL * 1.6);
 
   const parts = [
@@ -127,6 +149,16 @@ export function vistaLateral(box: Box, g: GabineteInputs, scale?: number): strin
     extLine(x, y + h, x, y + h + 26),
     extLine(x + w, y + h, x + w, y + h + 26),
     dimH(x, x + w, y + h + 20, cm(g.profundidadCm)),
+    // Ala de la tapa: la cota es muy corta para meterle el número adentro, así
+    // que la medida va corrida a la izquierda con su rótulo.
+    extLine(x - over, y, x - over, y - 22),
+    extLine(x, y, x, y - 22),
+    line(x - over - 30, y - 18, x + 3, y - 18, { color: COLOR.dim }),
+    text(x - over - 34, y - 14, `ala ${cm(g.alaTapaCm)}`, {
+      size: 9,
+      color: COLOR.dim,
+      anchor: "end",
+    }),
   ];
   return parts.join("");
 }
@@ -158,22 +190,23 @@ export function vistaPosterior(box: Box, g: GabineteInputs): string {
     }),
   ];
 
-  // Agujeros de amure repartidos sobre la pestaña.
+  // Agujeros de amure repartidos sobre la pestaña, en la cantidad declarada.
   if (g.pestanaAmure) {
     const rad = Math.max(1.6, flange * 0.14);
     const inset = flange / 2;
     const colsX = [x + inset, x + w - inset];
     const rowsY = [y + inset, y + h - inset];
-    const nV = 4; // agujeros por lado vertical
-    const nH = 3; // agujeros por lado horizontal
+    const nV = Math.max(2, g.agujerosAmureVertical);
+    const nH = Math.max(1, g.agujerosAmureHorizontal);
     for (const cx of colsX) {
       for (let i = 0; i < nV; i++) {
         parts.push(circle(cx, y + inset + ((h - inset * 2) * i) / (nV - 1), rad));
       }
     }
+    // Los del lado horizontal van entre los de las esquinas, sin repetirlos.
     for (const cy of rowsY) {
-      for (let i = 1; i < nH - 1 + 1; i++) {
-        parts.push(circle(x + inset + ((w - inset * 2) * i) / nH, cy, rad));
+      for (let i = 1; i < nH + 1; i++) {
+        parts.push(circle(x + inset + ((w - inset * 2) * i) / (nH + 1), cy, rad));
       }
     }
     // Cota del ancho de pestaña, abajo a la izquierda. La cota es más angosta
@@ -193,6 +226,19 @@ export function vistaPosterior(box: Box, g: GabineteInputs): string {
         `de ${cm(g.pestanaAnchoCm)} para amure`,
         `(en toda la vuelta)`,
       ]),
+      // Los agujeros, acotados: cuántos por lado y de qué diámetro.
+      leader(
+        x + w - flange / 2,
+        y + h - flange / 2,
+        x + w + 16,
+        y + h - flange * 1.2,
+        [
+          `Agujeros Ø ${fmt(g.agujeroAmureDiamMm)} mm`,
+          `${g.agujerosAmureVertical} por lado vertical`,
+          `${g.agujerosAmureHorizontal} por lado horizontal`,
+          `repartidos parejo`,
+        ],
+      ),
     );
   }
 
@@ -312,10 +358,31 @@ export function vistaInterior(box: Box, g: GabineteInputs): string {
       fill: g.fondoAbierto ? "#FFFFFF" : COLOR.metalFillLight,
       stroke: COLOR.metalStrokeDark,
     }),
-    // Bisagras sobre el canto izquierdo.
-    rect(x - 3, y + h * 0.18, 6, h * 0.1, { fill: COLOR.metalStrokeDark, stroke: COLOR.metalStrokeDark }),
-    rect(x - 3, y + h * 0.72, 6, h * 0.1, { fill: COLOR.metalStrokeDark, stroke: COLOR.metalStrokeDark }),
   ];
+
+  // Bisagras sobre el canto que abre, en la cantidad declarada.
+  const nB = Math.max(1, g.bisagrasCantidad);
+  const distB = Math.min(g.bisagraDistExtremoCm * s, h / 2 - 6);
+  const ys =
+    nB === 1
+      ? [y + h / 2]
+      : Array.from({ length: nB }, (_, i) => y + distB + ((h - distB * 2) * i) / (nB - 1));
+  for (const by of ys) {
+    parts.push(
+      rect(x - 3, by - h * 0.05, 6, h * 0.1, {
+        fill: COLOR.metalStrokeDark,
+        stroke: COLOR.metalStrokeDark,
+      }),
+    );
+  }
+  parts.push(
+    text(box.x + box.w / 2, box.y + box.h - 2, `Apertura ${g.bisagrasLado.toLowerCase()}`, {
+      size: 8.5,
+      color: COLOR.text,
+      anchor: "middle",
+    }),
+  );
+
   return parts.join("");
 }
 
@@ -461,6 +528,142 @@ export function corteMarcoPuerta(box: Box, g: GabineteInputs): string {
     line(xPared + t + 10, yPared + t + marcoAla + 40, xPared + t, yPared + t + marcoAla, {
       color: COLOR.dim,
       width: 0.6,
+    }),
+    text(box.x + box.w - 2, box.y + 8, "Detalle sin escala", {
+      size: 8,
+      color: "#6B7280",
+      anchor: "end",
+    }),
+  ].join("");
+}
+
+// ─── Despiece: las dos piezas en L ────────────────────────────────────────────
+// Planta esquemática del cuerpo visto desde arriba, separando las dos piezas y
+// marcando dónde solapan y cada cuánto van los tornillos. Es la vista que
+// faltaba: el armado estaba dicho con palabras ("dos piezas en L") pero sin
+// ninguna medida.
+
+export function despieceL(box: Box, g: GabineteInputs): string {
+  // Las dos piezas van separadas, como en cualquier despiece: dibujarlas
+  // ensambladas no dejaba ver dónde termina una y empieza la otra, que es
+  // justamente el dato.
+  //
+  // Cada pieza es una L de dos tramos: uno del largo del frente (o del fondo) y
+  // otro del largo del lateral. En el extremo libre del tramo largo va el
+  // solape sobre el que monta la otra pieza.
+  // top generoso: arriba de cada pieza va su cota, y con menos aire se pisaba
+  // con el subtítulo del bloque.
+  const pad = { left: 24, right: 24, top: 68, bottom: 52 };
+  const availW = (box.w - pad.left - pad.right - 54) / 2; // dos piezas + aire
+  const availH = box.h - pad.top - pad.bottom;
+  const s = fitScale(g.anchoCm, g.profundidadCm, availW, availH);
+  const t = 5;
+
+  const largo = g.anchoCm * s; // frente / fondo
+  const ala = g.profundidadCm * s; // lateral
+  const solape = Math.max(7, Math.min(g.solapeUnionCm * s, 26));
+
+  function pieza(px: number, py: number, nombre: string, detalle: string, fill: string): string {
+    return [
+      // Tramo largo (frente o fondo) + tramo lateral, formando la L.
+      rect(px, py, largo, t, { fill, stroke: COLOR.metalStrokeDark }),
+      rect(px, py, t, ala, { fill, stroke: COLOR.metalStrokeDark }),
+      // Solape en el extremo libre del tramo largo.
+      rect(px + largo - solape, py, solape, t, {
+        fill: COLOR.metalFillDark,
+        stroke: COLOR.metalStrokeDark,
+      }),
+      // Cotas de los dos tramos.
+      extLine(px, py - 4, px, py - 26),
+      extLine(px + largo, py - 4, px + largo, py - 26),
+      dimH(px, px + largo, py - 20, cm(g.anchoCm), { size: 9.5 }),
+      extLine(px - 4, py, px - 26, py),
+      extLine(px - 4, py + ala, px - 26, py + ala),
+      dimV(py, py + ala, px - 20, cm(g.profundidadCm), { size: 9.5 }),
+      // Cota del solape: solo el número bajo el tramo sombreado. La palabra
+      // "solape" va en la nota al pie del bloque — puesta acá al lado se metía
+      // encima de la cota de la otra pieza.
+      extLine(px + largo - solape, py + t, px + largo - solape, py + t + 28),
+      extLine(px + largo, py + t, px + largo, py + t + 28),
+      line(px + largo - solape, py + t + 22, px + largo, py + t + 22, { color: COLOR.dim }),
+      text(px + largo - solape / 2, py + t + 34, cm(g.solapeUnionCm), {
+        size: 8.5,
+        color: COLOR.dim,
+        anchor: "middle",
+      }),
+      // Rótulo.
+      text(px, py + ala + 26, nombre, { size: 9.5, bold: true }),
+      text(px, py + ala + 38, detalle, { size: 8.5, color: "#4B5563" }),
+    ].join("");
+  }
+
+  const yTop = box.y + pad.top;
+  const xA = box.x + pad.left + 26;
+  // La separación entre piezas tiene que dejar lugar a la cota del solape de la
+  // izquierda y a la cota vertical de la derecha, que si no se encimaban.
+  const xB = xA + availW + 54;
+
+  const parts = [
+    viewTitle(box, "DESPIECE — LAS DOS PIEZAS EN L"),
+    text(box.x + box.w / 2, box.y + 22, "Cada pieza doblada en L; se unen por el solape", {
+      size: 8.5,
+      color: "#6B7280",
+      anchor: "middle",
+    }),
+    pieza(xA, yTop, "PIEZA A", "frente + lateral", COLOR.metalFill),
+    pieza(xB, yTop, "PIEZA B", "fondo + lateral", COLOR.metalFillLight),
+  ];
+
+  // Un tornillo dibujado sobre el solape de cada pieza, y el paso al pie: el
+  // solape es corto y repartirlos ahí no se leería.
+  parts.push(
+    circle(xA + largo - solape / 2, yTop + t / 2, 2, { fill: COLOR.hole }),
+    circle(xB + largo - solape / 2, yTop + t / 2, 2, { fill: COLOR.hole }),
+    text(
+      box.x + box.w / 2,
+      box.y + box.h - 22,
+      `Tramo sombreado = solape de unión (${cm(g.solapeUnionCm)})`,
+      { size: 8.5, color: COLOR.text, anchor: "middle" },
+    ),
+    text(
+      box.x + box.w / 2,
+      box.y + box.h - 8,
+      `${g.tornillos}, cada ${cm(g.pasoTornillosCm)} a lo largo del solape`,
+      { size: 8.5, color: COLOR.text, anchor: "middle" },
+    ),
+  );
+
+  return parts.join("");
+}
+
+// ─── Detalle de plegado ───────────────────────────────────────────────────────
+// El radio interior del doblez, que ningún dibujo de conjunto muestra y el
+// taller necesita para calcular el desarrollo de la chapa.
+
+export function detallePlegado(box: Box, g: GabineteInputs): string {
+  const t = 9;
+  const arm = 52;
+  const x = box.x + 46;
+  const y = box.y + 40;
+
+  return [
+    viewTitle(box, "DETALLE DE PLEGADO"),
+    // Chapa doblada a 90°, dibujada como dos tramos con el codo redondeado.
+    `<path d="M ${r(x)} ${r(y)} L ${r(x)} ${r(y + arm - t * 1.6)} Q ${r(x)} ${r(y + arm)} ${r(
+      x + t * 1.6,
+    )} ${r(y + arm)} L ${r(x + arm)} ${r(y + arm)} L ${r(x + arm)} ${r(y + arm + t)} L ${r(
+      x - t,
+    )} ${r(y + arm + t)} L ${r(x - t)} ${r(y)} Z" fill="${COLOR.metalFill}" stroke="${
+      COLOR.metalStrokeDark
+    }" stroke-width="1" />`,
+    // Cota del radio interior.
+    leader(x + t * 0.6, y + arm - t * 0.6, x + arm - 4, y + arm - 26, [
+      `Radio interior ${fmt(g.radioDoblezMm)} mm`,
+    ]),
+    text(box.x + box.w / 2, y + arm + 34, `Espesor de chapa ${fmt(g.espesorMm)} mm`, {
+      size: 9,
+      color: COLOR.text,
+      anchor: "middle",
     }),
     text(box.x + box.w - 2, box.y + 8, "Detalle sin escala", {
       size: 8,

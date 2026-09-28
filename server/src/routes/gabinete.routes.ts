@@ -16,8 +16,8 @@ import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
 import { saveBufferAsAttachment } from "../services/file-storage.service.js";
-import { buildGabineteSvg, type GabineteInputs } from "../services/gabineteSvg/index.js";
-import { gabineteSvgToPdf } from "../services/gabineteSvg/pdf.js";
+import { buildGabineteSvgs, type GabineteInputs } from "../services/gabineteSvg/index.js";
+import { gabineteSvgsToPdf } from "../services/gabineteSvg/pdf.js";
 import { badRequest, notFound, unauthorized } from "../utils/errors.js";
 import { serializeDate } from "../utils/serialization.js";
 
@@ -37,13 +37,26 @@ const designSchema = z.object({
   fondoAbierto: z.boolean().default(true),
   pestanaAmure: z.boolean().default(true),
   pestanaAnchoCm: z.number().min(0).max(30).default(3),
-  alaTapaCm: z.number().min(0).max(30).optional().nullable(),
-  union: z.string().trim().max(120).optional().nullable(),
-  tornillos: z.string().trim().max(120).optional().nullable(),
-  perfilPuertaCm: z.number().min(0).max(30).optional().nullable(),
-  perfilMarcoCm: z.number().min(0).max(30).optional().nullable(),
-  solapePuertaCm: z.number().min(0).max(30).optional().nullable(),
-  holguraPuertaMm: z.number().min(0).max(50).optional().nullable(),
+  // Medidas de taller: ninguna es nullable. Si el fabricante no especificó
+  // algo, vale el default —una decisión tomada— y no un hueco que el taller
+  // resuelva por su cuenta. Los valores tienen que coincidir con los @default
+  // del schema de Prisma.
+  alaTapaCm: z.number().min(0).max(30).default(3),
+  radioDoblezMm: z.number().min(0).max(50).default(2),
+  union: z.string().trim().min(1).max(120).default("Dos piezas en L atornilladas"),
+  tornillos: z.string().trim().min(1).max(120).default("Tornillo punta mecha tipo T1"),
+  solapeUnionCm: z.number().min(0).max(30).default(3),
+  pasoTornillosCm: z.number().min(1).max(100).default(15),
+  agujeroAmureDiamMm: z.number().min(1).max(50).default(6),
+  agujerosAmureVertical: z.number().int().min(2).max(20).default(4),
+  agujerosAmureHorizontal: z.number().int().min(1).max(20).default(3),
+  perfilPuertaCm: z.number().min(0).max(30).default(2),
+  perfilMarcoCm: z.number().min(0).max(30).default(2),
+  solapePuertaCm: z.number().min(0).max(30).default(1),
+  holguraPuertaMm: z.number().min(0).max(50).default(2),
+  bisagrasCantidad: z.number().int().min(1).max(10).default(2),
+  bisagrasLado: z.string().trim().min(1).max(30).default("Izquierda"),
+  bisagraDistExtremoCm: z.number().min(0).max(100).default(12),
   material: z.string().trim().min(1).max(120).default("Chapa galvanizada en caliente"),
   espesorMm: z.number().positive().max(20).default(1.5),
   acabado: z.string().trim().min(1).max(120).default("Galvanizado"),
@@ -94,13 +107,22 @@ export function toInputs(
     fondoAbierto: design.fondoAbierto,
     pestanaAmure: design.pestanaAmure,
     pestanaAnchoCm: design.pestanaAnchoCm,
-    alaTapaCm: design.alaTapaCm ?? null,
-    union: design.union ?? null,
-    tornillos: design.tornillos ?? null,
-    perfilPuertaCm: design.perfilPuertaCm ?? null,
-    perfilMarcoCm: design.perfilMarcoCm ?? null,
-    solapePuertaCm: design.solapePuertaCm ?? null,
-    holguraPuertaMm: design.holguraPuertaMm ?? null,
+    alaTapaCm: design.alaTapaCm,
+    radioDoblezMm: design.radioDoblezMm,
+    union: design.union,
+    tornillos: design.tornillos,
+    solapeUnionCm: design.solapeUnionCm,
+    pasoTornillosCm: design.pasoTornillosCm,
+    agujeroAmureDiamMm: design.agujeroAmureDiamMm,
+    agujerosAmureVertical: design.agujerosAmureVertical,
+    agujerosAmureHorizontal: design.agujerosAmureHorizontal,
+    perfilPuertaCm: design.perfilPuertaCm,
+    perfilMarcoCm: design.perfilMarcoCm,
+    solapePuertaCm: design.solapePuertaCm,
+    holguraPuertaMm: design.holguraPuertaMm,
+    bisagrasCantidad: design.bisagrasCantidad,
+    bisagrasLado: design.bisagrasLado,
+    bisagraDistExtremoCm: design.bisagraDistExtremoCm,
     material: design.material,
     espesorMm: design.espesorMm,
     acabado: design.acabado,
@@ -305,14 +327,16 @@ export async function registerGabineteRoutes(app: FastifyInstance) {
       }
 
       const user = ensureUser(request);
-      const svg = buildGabineteSvg(
+      const hojas = buildGabineteSvgs(
         toInputs(body, {
           cliente,
           proyectoCodigo: codigo,
           contacto: { nombre: user.name, email: user.email ?? null },
         }),
       );
-      return reply.type("image/svg+xml").send(svg);
+      // JSON y no SVG suelto: la lámina tiene más de una hoja y el constructor
+      // las muestra todas.
+      return reply.send({ hojas });
     },
   );
 
@@ -351,7 +375,7 @@ export async function registerGabineteRoutes(app: FastifyInstance) {
 
       let pdfBytes: Uint8Array;
       try {
-        pdfBytes = await gabineteSvgToPdf(buildGabineteSvg(inputs));
+        pdfBytes = await gabineteSvgsToPdf(buildGabineteSvgs(inputs));
       } catch (err) {
         request.log.error({ err }, "No se pudo generar el PDF del gabinete");
         throw badRequest("GABINETE_PDF_ERROR", "No se pudo generar la lámina");

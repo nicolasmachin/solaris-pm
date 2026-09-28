@@ -1,18 +1,29 @@
-// Lámina de fabricación del gabinete metálico: A4 vertical con las vistas
-// acotadas, las especificaciones de taller y las notas.
+// Lámina de fabricación del gabinete metálico: dos hojas A4 verticales.
 //
-// Está calcada del plano que Voltia ya venía mandando al fabricante (ver
-// `docs/manual/05-ingenieria.md`), con todo lo que ahí era texto fijo ahora
-// tomado de los datos del gabinete: lo que el fabricante suele preguntar
-// —espesor, chapa, cómo se arma— tiene que estar respondido en la hoja.
+//   Hoja 1 — Conjunto: frontal, lateral, posterior e isométrica acotadas, las
+//            especificaciones generales y las notas.
+//   Hoja 2 — Detalles: corte del encuentro puerta/marco, detalle de la pestaña
+//            de amure, despiece de las dos piezas en L, detalle de plegado,
+//            interior con las bisagras, y la TABLA DE MEDIDAS completa.
+//
+// El principio que ordena todo esto: **el dibujo nunca asume una medida en
+// silencio**. Cada cosa que se dibuja sale de un campo con valor por defecto
+// editable, y además está escrita en la tabla de la hoja 2, para que ninguna
+// medida dependa de que el fabricante interprete bien un trazo.
+//
+// El plano que Voltia venía mandando (una sola hoja, ver el manual) fue la
+// referencia de partida, no un molde: acá se agregaron las vistas y las cotas
+// que en aquel faltaban.
 
-import { rect, text, textLines, wrap } from "./draw.js";
+import { line, rect, text, textLines, wrap } from "./draw.js";
 import { COLOR, FONT, MARGIN, PAGE_H, PAGE_W } from "./layout.js";
 import type { GabineteInputs } from "./types.js";
 import {
   cm,
   corteMarcoPuerta,
+  despieceL,
   detallePestana,
+  detallePlegado,
   escalaFrontalLateral,
   vistaFrontal,
   vistaInterior,
@@ -31,20 +42,17 @@ export function especificaciones(g: GabineteInputs): string[] {
     "Gabinete metálico para exterior",
     "Con tapa frontal",
     `Construcción: ${g.fondoAbierto ? "fondo abierto (sin fondo)" : "con fondo de chapa"}`,
+    `Material: ${g.material}`,
+    `Espesor de chapa: ${fmtMm(g.espesorMm)} mm`,
+    `Armado: ${g.union}`,
+    `Fijación: ${g.tornillos}`,
+    `Cierre: ${g.tipoCierre}`,
+    g.ventilacion ? "Con orificios / rejillas de ventilación" : "Sin orificios ni rejillas de ventilación",
+    `Bisagras: ${g.bisagras} — ${g.bisagrasCantidad}, apertura ${g.bisagrasLado.toLowerCase()}`,
   ];
   if (g.pestanaAmure) {
     specs.push(`Pestaña perimetral para amure de ${cm(g.pestanaAnchoCm)} en toda la vuelta (posterior)`);
   }
-  if (g.alaTapaCm) specs.push(`Ala/reborde de la tapa: ${cm(g.alaTapaCm)}`);
-  specs.push(`Material: ${g.material}`);
-  specs.push(`Espesor de chapa: ${fmtMm(g.espesorMm)} mm`);
-  if (g.union) specs.push(`Armado: ${g.union}`);
-  if (g.tornillos) specs.push(`Fijación: ${g.tornillos}`);
-  specs.push(`Cierre: ${g.tipoCierre}`);
-  specs.push(
-    g.ventilacion ? "Con orificios / rejillas de ventilación" : "Sin orificios ni rejillas de ventilación",
-  );
-  specs.push(`Bisagras: ${g.bisagras}`);
   if (g.gradoIp) specs.push(`Grado de protección sugerido: ${g.gradoIp}`);
   specs.push(`Acabado: ${g.acabado}`);
   for (const extra of g.specsExtra ?? []) {
@@ -57,14 +65,57 @@ function fmtMm(n: number): string {
   return Number.isInteger(n) ? String(n) : String(n).replace(".", ",");
 }
 
+/**
+ * Tabla completa de medidas de taller. Existe para que **ninguna medida quede
+ * sujeta a que se lea bien un dibujo**: todo lo que el fabricante necesita está
+ * también acá, escrito. Las que el fabricante no especificó salen con el valor
+ * por defecto, que es una decisión tomada y no un hueco.
+ */
+export function tablaMedidas(g: GabineteInputs): { etiqueta: string; valor: string }[] {
+  const filas: { etiqueta: string; valor: string }[] = [
+    { etiqueta: "Ancho exterior", valor: cm(g.anchoCm) },
+    { etiqueta: "Alto exterior", valor: cm(g.altoCm) },
+    { etiqueta: "Profundidad exterior", valor: cm(g.profundidadCm) },
+    { etiqueta: "Espesor de chapa", valor: `${fmtMm(g.espesorMm)} mm` },
+    { etiqueta: "Radio interior de plegado", valor: `${fmtMm(g.radioDoblezMm)} mm` },
+    { etiqueta: "Ala / reborde de la tapa", valor: cm(g.alaTapaCm) },
+    { etiqueta: "Solape de unión entre las piezas en L", valor: cm(g.solapeUnionCm) },
+    { etiqueta: "Paso de tornillos de unión", valor: `cada ${cm(g.pasoTornillosCm)}` },
+  ];
+  if (g.pestanaAmure) {
+    filas.push(
+      { etiqueta: "Ancho de pestaña de amure", valor: cm(g.pestanaAnchoCm) },
+      { etiqueta: "Diámetro de agujero de amure", valor: `Ø ${fmtMm(g.agujeroAmureDiamMm)} mm` },
+      {
+        etiqueta: "Agujeros de amure por lado",
+        valor: `${g.agujerosAmureVertical} vertical · ${g.agujerosAmureHorizontal} horizontal`,
+      },
+    );
+  }
+  filas.push(
+    { etiqueta: "Ala del perfil de la puerta", valor: cm(g.perfilPuertaCm) },
+    { etiqueta: "Ala del perfil del marco", valor: cm(g.perfilMarcoCm) },
+    { etiqueta: "Solape puerta sobre marco", valor: cm(g.solapePuertaCm) },
+    { etiqueta: "Holgura puerta / marco", valor: `${fmtMm(g.holguraPuertaMm)} mm` },
+    { etiqueta: "Bisagras", valor: `${g.bisagrasCantidad}, apertura ${g.bisagrasLado.toLowerCase()}` },
+    { etiqueta: "Eje de bisagra al extremo", valor: cm(g.bisagraDistExtremoCm) },
+    { etiqueta: "Tolerancia general", valor: `± ${fmtMm(g.toleranciaMm)} mm` },
+  );
+  for (const extra of g.specsExtra ?? []) {
+    if (extra.etiqueta?.trim()) filas.push({ etiqueta: extra.etiqueta, valor: extra.valor });
+  }
+  return filas;
+}
+
 function notas(g: GabineteInputs): string[] {
   const out = [
     "Todas las medidas son exteriores.",
-    "Medidas en centímetros.",
+    "Medidas en centímetros salvo donde se indica mm.",
     `Tolerancia general: ± ${fmtMm(g.toleranciaMm)} mm.`,
   ];
   if (g.fondoAbierto) out.push("Fondo abierto 100% (sin placa).");
   if (g.pestanaAmure) out.push(`Pestaña de amure de ${cm(g.pestanaAnchoCm)} en toda la vuelta posterior.`);
+  out.push("La hoja 2 tiene los detalles de fabricación y la tabla completa de medidas.");
   if (g.notas?.trim()) {
     for (const linea of g.notas.split("\n")) {
       if (linea.trim()) out.push(linea.trim());
@@ -75,8 +126,8 @@ function notas(g: GabineteInputs): string[] {
 
 /**
  * Lista con viñetas. Devuelve el SVG y el alto ocupado: el alto real importa
- * porque debajo va el corte de puerta, y estimarlo por cantidad de ítems lo
- * encimaba en cuanto una especificación ocupaba dos renglones.
+ * para apilar bloques sin que se pisen, y estimarlo por cantidad de ítems
+ * fallaba en cuanto una línea ocupaba dos renglones.
  */
 function bulletList(
   x: number,
@@ -90,7 +141,7 @@ function bulletList(
   const parts: string[] = [];
   for (const item of items) {
     const lines = wrap(item, width - 12, size);
-    parts.push(text(x, cursor, "•", { size, color: COLOR.text }));
+    parts.push(text(x, cursor, "\u2022", { size, color: COLOR.text }));
     const { svg } = textLines(x + 11, cursor, lines, { size, lineHeight: lineH });
     parts.push(svg);
     cursor += lines.length * lineH + size * 0.25;
@@ -98,11 +149,7 @@ function bulletList(
   return { svg: parts.join(""), height: cursor - y };
 }
 
-/**
- * Recuadro de notas. Envuelve el texto ANTES de dibujar el marco para que el
- * alto salga del contenido real: estimarlo por cantidad de ítems desbordaba la
- * caja en cuanto una nota ocupaba dos renglones.
- */
+/** Recuadro de notas, dimensionado por el texto ya envuelto. */
 function notasBox(x: number, y: number, width: number, items: string[]): { svg: string; height: number } {
   const size = 9.5;
   const lineH = 13;
@@ -123,17 +170,76 @@ function notasBox(x: number, y: number, width: number, items: string[]): { svg: 
   return { svg: parts.join(""), height };
 }
 
-export function buildGabineteSvg(g: GabineteInputs): string {
-  const parts: string[] = [
+/** Tabla de dos columnas con las medidas. */
+function tablaBox(
+  x: number,
+  y: number,
+  width: number,
+  filas: { etiqueta: string; valor: string }[],
+): { svg: string; height: number } {
+  const size = 9.5;
+  const rowH = 16;
+  const header = 30;
+  const height = header + filas.length * rowH + 8;
+  const valorX = x + width - 12;
+
+  const parts = [
+    rect(x, y, width, height, { fill: "#FFFFFF", stroke: COLOR.boxBorder, strokeWidth: 1 }),
+    text(x + 12, y + 20, "TABLA DE MEDIDAS", { size: 10.5, bold: true }),
+    line(x, y + header - 8, x + width, y + header - 8, { color: COLOR.boxBorder, width: 0.8 }),
+  ];
+  filas.forEach((f, i) => {
+    const ry = y + header + 8 + i * rowH;
+    // Fondo alternado: la tabla es larga y sin esto se salta de renglón.
+    if (i % 2 === 1) {
+      parts.push(rect(x + 1, ry - 11, width - 2, rowH, { fill: "#F3F4F6", stroke: "none" }));
+    }
+    parts.push(
+      text(x + 12, ry, f.etiqueta, { size, color: COLOR.text }),
+      text(valorX, ry, f.valor, { size, color: COLOR.text, anchor: "end", bold: true }),
+    );
+  });
+  return { svg: parts.join(""), height };
+}
+
+function svgOpen(): string[] {
+  return [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${PAGE_W}" height="${PAGE_H}" viewBox="0 0 ${PAGE_W} ${PAGE_H}">`,
     `<rect width="${PAGE_W}" height="${PAGE_H}" fill="#FFFFFF" />`,
   ];
+}
 
+function svgClose(parts: string[]): string {
+  parts.push(`<style>text { font-family: ${FONT}; }</style>`);
+  parts.push("</svg>");
+  return parts.join("\n");
+}
+
+function pie(g: GabineteInputs, hoja: string): string[] {
+  const out: string[] = [];
+  if (g.contacto) {
+    const c = g.contacto;
+    const datos = [c.nombre, c.telefono, c.email].filter(Boolean).join("  \u00b7  ");
+    out.push(text(MARGIN, PAGE_H - 16, `Solicita: ${datos}`, { size: 9.5, color: "#4B5563" }));
+  }
+  out.push(
+    text(PAGE_W - MARGIN, PAGE_H - 16, `Voltia  \u00b7  ${hoja}`, {
+      size: 9.5,
+      color: "#4B5563",
+      anchor: "end",
+    }),
+  );
+  return out;
+}
+
+// ─── Hoja 1: el gabinete terminado ────────────────────────────────────────────
+
+function hojaGeneral(g: GabineteInputs): string {
+  const parts = svgOpen();
   const left = MARGIN;
   const right = PAGE_W - MARGIN;
   const contentW = right - left;
 
-  // ─── Encabezado ───
   let y = MARGIN + 18;
   parts.push(text(left, y, g.titulo.toUpperCase(), { size: 19, bold: true }));
   y += 22;
@@ -149,13 +255,14 @@ export function buildGabineteSvg(g: GabineteInputs): string {
   const construccion = [
     g.fondoAbierto ? "fondo abierto (sin placa)" : "con fondo de chapa",
     g.pestanaAmure ? `con pestaña perimetral de ${cm(g.pestanaAnchoCm)} para amure` : null,
+    // Sin toLowerCase: comerse la mayúscula dejaba "dos piezas en l".
+    g.union.charAt(0).toLowerCase() + g.union.slice(1),
   ]
     .filter(Boolean)
     .join(", ");
   parts.push(text(left, y, `Construcción: ${construccion}`, { size: 11.5 }));
   y += 15;
 
-  // Línea del pedido: de qué obra es y cuántas unidades.
   const pedido = [
     g.cliente ? `Obra: ${g.cliente}` : null,
     g.proyectoCodigo,
@@ -163,13 +270,9 @@ export function buildGabineteSvg(g: GabineteInputs): string {
     g.fecha,
   ]
     .filter(Boolean)
-    .join("  ·  ");
+    .join("  \u00b7  ");
   parts.push(text(left, y, pedido, { size: 10, color: "#4B5563" }));
 
-  // ─── Fila 1: frontal + lateral (escala compartida) + especificaciones ───
-  // Tres columnas por fila: cada dibujo tiene su celda y ninguno invade al de
-  // al lado, que es lo que pasaba cuando el corte colgaba de la lista de
-  // especificaciones y su largo dependía del texto.
   const colA = left;
   const colB = left + contentW * 0.34;
   const colC = left + contentW * 0.66;
@@ -177,13 +280,11 @@ export function buildGabineteSvg(g: GabineteInputs): string {
   const wB = contentW * 0.3;
   const wC = right - colC;
 
-  const row1Y = y + 24;
-  const row1H = 370;
+  // Fila 1: frontal + lateral (escala compartida) + especificaciones.
+  const row1Y = y + 34;
+  const row1H = 440;
   const colFrontal: Box = { x: colA, y: row1Y, w: wA, h: row1H };
   const colLateral: Box = { x: colB, y: row1Y, w: wB, h: row1H };
-
-  // Una sola escala para las dos vistas: están lado a lado y tienen que
-  // leerse como el mismo objeto.
   const sVista = escalaFrontalLateral(g, colFrontal, colLateral);
   parts.push(vistaFrontal(colFrontal, g, sVista));
   parts.push(vistaLateral(colLateral, g, sVista));
@@ -197,31 +298,64 @@ export function buildGabineteSvg(g: GabineteInputs): string {
   );
   parts.push(bulletList(colC, row1Y + 18, wC, especificaciones(g), 10).svg);
 
-  // ─── Fila 2: posterior + isométrica + notas ───
-  const row2Y = row1Y + row1H + 30;
-  const row2H = 262;
-  parts.push(vistaPosterior({ x: colA, y: row2Y, w: wA + 30, h: row2H }, g));
-  parts.push(vistaIsometrica({ x: colB + 30, y: row2Y, w: wB, h: row2H }, g));
+  // Fila 2: posterior + isométrica + notas.
+  const row2Y = row1Y + row1H + 44;
+  const row2H = 380;
+  parts.push(vistaPosterior({ x: colA, y: row2Y, w: wA + 40, h: row2H }, g));
+  parts.push(vistaIsometrica({ x: colB + 40, y: row2Y, w: wB, h: row2H }, g));
   parts.push(notasBox(colC, row2Y - 4, wC, notas(g)).svg);
 
-  // ─── Fila 3: interior + detalle de pestaña + corte de puerta ───
-  const row3Y = row2Y + row2H + 30;
-  const row3H = 196;
-  parts.push(vistaInterior({ x: colA, y: row3Y, w: wA, h: row3H }, g));
-  parts.push(detallePestana({ x: colB, y: row3Y, w: wB, h: row3H }, g));
-  parts.push(corteMarcoPuerta({ x: colC, y: row3Y, w: wC, h: row3H }, g));
+  parts.push(...pie(g, "Hoja 1 de 2 \u2014 Conjunto"));
+  return svgClose(parts);
+}
 
-  // ─── Pie: quién pide ───
-  if (g.contacto) {
-    const c = g.contacto;
-    const pie = [c.nombre, c.telefono, c.email].filter(Boolean).join("  ·  ");
-    parts.push(
-      text(left, PAGE_H - 16, `Solicita: ${pie}`, { size: 9.5, color: "#4B5563" }),
-      text(right, PAGE_H - 16, "Voltia", { size: 9.5, color: "#4B5563", anchor: "end" }),
-    );
-  }
+// ─── Hoja 2: detalles de fabricación ──────────────────────────────────────────
 
-  parts.push(`<style>text { font-family: ${FONT}; }</style>`);
-  parts.push("</svg>");
-  return parts.join("\n");
+function hojaDetalles(g: GabineteInputs): string {
+  const parts = svgOpen();
+  const left = MARGIN;
+  const right = PAGE_W - MARGIN;
+  const contentW = right - left;
+
+  let y = MARGIN + 16;
+  parts.push(text(left, y, `${g.titulo.toUpperCase()} \u2014 DETALLES DE FABRICACIÓN`, { size: 15, bold: true }));
+  y += 16;
+  parts.push(
+    text(left, y, "Los detalles están ampliados y no guardan escala con el conjunto: valen por sus cotas.", {
+      size: 9.5,
+      color: "#4B5563",
+    }),
+  );
+
+  const half = contentW / 2;
+
+  // Fila 1: corte puerta/marco + detalle de pestaña.
+  const row1Y = y + 30;
+  const row1H = 220;
+  parts.push(corteMarcoPuerta({ x: left, y: row1Y, w: half - 10, h: row1H }, g));
+  parts.push(detallePestana({ x: left + half + 10, y: row1Y, w: half - 10, h: row1H }, g));
+
+  // Fila 2: despiece de las dos L + plegado + vista interior.
+  const row2Y = row1Y + row1H + 20;
+  const row2H = 300;
+  parts.push(despieceL({ x: left, y: row2Y, w: contentW * 0.46, h: row2H }, g));
+  parts.push(detallePlegado({ x: left + contentW * 0.5, y: row2Y, w: contentW * 0.22, h: row2H }, g));
+  parts.push(vistaInterior({ x: left + contentW * 0.74, y: row2Y, w: contentW * 0.26, h: row2H }, g));
+
+  // Fila 3: la tabla con todas las medidas.
+  const row3Y = row2Y + row2H + 20;
+  parts.push(tablaBox(left, row3Y, contentW, tablaMedidas(g)).svg);
+
+  parts.push(...pie(g, "Hoja 2 de 2 \u2014 Detalles"));
+  return svgClose(parts);
+}
+
+/** Las dos hojas de la lámina, en orden. */
+export function buildGabineteSvgs(g: GabineteInputs): string[] {
+  return [hojaGeneral(g), hojaDetalles(g)];
+}
+
+/** Compatibilidad: la primera hoja, para quien solo quiere el conjunto. */
+export function buildGabineteSvg(g: GabineteInputs): string {
+  return hojaGeneral(g);
 }

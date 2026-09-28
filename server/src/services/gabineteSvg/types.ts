@@ -25,15 +25,31 @@ export interface GabineteInputs {
   fondoAbierto: boolean;
   pestanaAmure: boolean;
   pestanaAnchoCm: number;
-  alaTapaCm?: number | null;
-  union?: string | null;
-  tornillos?: string | null;
+
+  // ── Medidas de taller ──
+  // Ninguna es opcional: el dibujo nunca inventa una medida en silencio. Si el
+  // fabricante no especificó algo, sale impreso el valor por defecto, que es
+  // una decisión tomada y corregible, no un hueco.
+  alaTapaCm: number;
+  radioDoblezMm: number;
+  union: string;
+  tornillos: string;
+  solapeUnionCm: number;
+  pasoTornillosCm: number;
+  agujeroAmureDiamMm: number;
+  agujerosAmureVertical: number;
+  agujerosAmureHorizontal: number;
 
   // Encuentro puerta / marco, para el corte transversal.
-  perfilPuertaCm?: number | null;
-  perfilMarcoCm?: number | null;
-  solapePuertaCm?: number | null;
-  holguraPuertaMm?: number | null;
+  perfilPuertaCm: number;
+  perfilMarcoCm: number;
+  solapePuertaCm: number;
+  holguraPuertaMm: number;
+
+  // Bisagras
+  bisagrasCantidad: number;
+  bisagrasLado: string;
+  bisagraDistExtremoCm: number;
 
   // Chapa y terminación
   material: string;

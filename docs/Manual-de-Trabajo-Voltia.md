@@ -1,6 +1,6 @@
 # Cómo trabajamos en Voltia
 
-**Manual de trabajo** · Versión 1.7 — 28 de septiembre de 2026
+**Manual de trabajo** · Versión 1.8 — 28 de septiembre de 2026
 
 > Este manual explica **qué tiene que hacer cada uno y cómo hacerlo en Voltia PM**.
 > No hay dos documentos: el procedimiento y la herramienta van juntos, porque
@@ -322,12 +322,18 @@ Mientras cargás las medidas, **el plano de la derecha se va dibujando solo**. L
 mirás, y cuando está, **Emitir lámina**: sale un PDF que queda guardado en los
 documentos del proyecto y es el que le mandás al fabricante.
 
-Lo importante: **todo lo que el taller pregunta tiene que estar cargado antes de
-emitir**. El espesor y el tipo de chapa, cómo se arma el cuerpo, con qué
-tornillos, y las medidas del encuentro entre la puerta y el marco —cuánto dobla
-el perfil de la puerta, cuánto el del marco, cuánto montan entre sí y qué
-holgura queda—. Ese último detalle sale dibujado en corte, que es lo que
-necesitan para doblar los perfiles.
+**Ninguna medida queda sin definir.** Todas vienen con un valor cargado —el
+espesor de la chapa, el radio con que se pliega, el ala de la tapa, cuánto
+solapan las dos piezas en L, cada cuánto van los tornillos, el diámetro y la
+cantidad de agujeros para amurar, los perfiles de la puerta y del marco, cuánto
+montan, qué holgura queda, cuántas bisagras, de qué lado abre y a qué altura
+van—. Repasalas y corregí las que no correspondan: lo que no cambies **sale
+impreso igual**, así el taller nunca tiene que resolver nada por su cuenta.
+
+La lámina son **dos hojas**: la primera es el gabinete terminado; la segunda
+tiene los detalles de fabricación —el corte que muestra cómo asienta la puerta,
+el despiece de las dos piezas en L, el plegado— y una **tabla con todas las
+medidas escritas**, por si el dibujo se imprime mal o llega por foto.
 
 Si el fabricante pide un dato que no tiene casillero, lo agregás abajo en
 **Especificaciones adicionales** y sale impreso igual.

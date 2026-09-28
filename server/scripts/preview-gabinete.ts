@@ -1,10 +1,11 @@
-// One-off: renderiza una lámina de gabinete de ejemplo a PNG para revisarla.
-// Uso: docker compose exec server npx tsx scripts/preview-gabinete.ts /out.png
+// One-off: renderiza las hojas de una lámina de gabinete a PNG para revisarlas.
+// Uso: docker compose exec server npx tsx scripts/preview-gabinete.ts /tmp/gab
+//      (escribe /tmp/gab-1.png, /tmp/gab-2.png)
 import { writeFileSync } from "node:fs";
 import { Resvg } from "@resvg/resvg-js";
-import { buildGabineteSvg, PAGE_W } from "../src/services/gabineteSvg/index.js";
+import { buildGabineteSvgs, PAGE_W } from "../src/services/gabineteSvg/index.js";
 
-const svg = buildGabineteSvg({
+const hojas = buildGabineteSvgs({
   titulo: "Gabinete metálico exterior con tapa",
   anchoCm: 50,
   altoCm: 85,
@@ -12,13 +13,22 @@ const svg = buildGabineteSvg({
   fondoAbierto: true,
   pestanaAmure: true,
   pestanaAnchoCm: 3,
-  alaTapaCm: null,
-  union: "Dos piezas en L",
+  alaTapaCm: 3,
+  radioDoblezMm: 2,
+  union: "Dos piezas en L atornilladas",
   tornillos: "Tornillo punta mecha tipo T1",
+  solapeUnionCm: 3,
+  pasoTornillosCm: 15,
+  agujeroAmureDiamMm: 6,
+  agujerosAmureVertical: 4,
+  agujerosAmureHorizontal: 3,
   perfilPuertaCm: 2,
   perfilMarcoCm: 2,
   solapePuertaCm: 1,
   holguraPuertaMm: 2,
+  bisagrasCantidad: 2,
+  bisagrasLado: "Izquierda",
+  bisagraDistExtremoCm: 12,
   material: "Chapa galvanizada en caliente",
   espesorMm: 1.5,
   acabado: "Galvanizado",
@@ -36,10 +46,17 @@ const svg = buildGabineteSvg({
   contacto: { nombre: "Nicolás Machin", telefono: "099 123 456", email: "nicolas@voltia.com.uy" },
 });
 
-const out = process.argv[2] ?? "/tmp/gabinete.png";
-const resvg = new Resvg(svg, {
-  fitTo: { mode: "width", value: PAGE_W * 2 },
-  font: { fontFiles: ["/app/src/services/unifilarSvg/fonts/Roboto-Regular.ttf", "/app/src/services/unifilarSvg/fonts/Roboto-Bold.ttf"], loadSystemFonts: false, defaultFontFamily: "Roboto" },
+const base = process.argv[2] ?? "/tmp/gab";
+const fonts = [
+  "/app/src/services/unifilarSvg/fonts/Roboto-Regular.ttf",
+  "/app/src/services/unifilarSvg/fonts/Roboto-Bold.ttf",
+];
+hojas.forEach((svg, i) => {
+  const resvg = new Resvg(svg, {
+    fitTo: { mode: "width", value: PAGE_W * 2 },
+    font: { fontFiles: fonts, loadSystemFonts: false, defaultFontFamily: "Roboto" },
+  });
+  const out = `${base}-${i + 1}.png`;
+  writeFileSync(out, resvg.render().asPng());
+  console.log("escrito:", out);
 });
-writeFileSync(out, resvg.render().asPng());
-console.log("escrito:", out);

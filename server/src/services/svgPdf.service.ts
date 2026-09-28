@@ -46,25 +46,21 @@ export interface SvgToPdfOptions {
 /** Devuelve un PDF A4 (vertical u horizontal según la proporción del SVG). */
 export async function renderSvgToPdf(
   svg: string,
+  options: SvgToPdfOptions,
+): Promise<Uint8Array> {
+  return await renderSvgsToPdf([svg], options);
+}
+
+/** Igual, con una página por SVG. Todas las páginas comparten dimensiones. */
+export async function renderSvgsToPdf(
+  svgs: string[],
   { pageW, pageH, scale = 2 }: SvgToPdfOptions,
 ): Promise<Uint8Array> {
-  const resvg = new Resvg(svg, {
-    fitTo: { mode: "width", value: pageW * scale },
-    font: {
-      fontFiles: fontPaths(),
-      loadSystemFonts: false,
-      defaultFontFamily: "Roboto",
-    },
-  });
-  const png = resvg.render().asPng();
-
   const pdf = await PDFDocument.create();
   // El SVG apaisado va a A4 horizontal; el vertical, a A4 vertical.
   const landscape = pageW > pageH;
   const ptW = landscape ? A4_PT_H : A4_PT_W;
   const ptH = landscape ? A4_PT_W : A4_PT_H;
-  const page = pdf.addPage([ptW, ptH]);
-  const img = await pdf.embedPng(png);
 
   // Encajar manteniendo proporción, centrado.
   const aspect = pageW / pageH;
@@ -74,12 +70,22 @@ export async function renderSvgToPdf(
     drawH = ptH;
     drawW = ptH * aspect;
   }
-  page.drawImage(img, {
-    x: (ptW - drawW) / 2,
-    y: (ptH - drawH) / 2,
-    width: drawW,
-    height: drawH,
-  });
+
+  const fonts = fontPaths();
+  for (const svg of svgs) {
+    const resvg = new Resvg(svg, {
+      fitTo: { mode: "width", value: pageW * scale },
+      font: { fontFiles: fonts, loadSystemFonts: false, defaultFontFamily: "Roboto" },
+    });
+    const img = await pdf.embedPng(resvg.render().asPng());
+    const page = pdf.addPage([ptW, ptH]);
+    page.drawImage(img, {
+      x: (ptW - drawW) / 2,
+      y: (ptH - drawH) / 2,
+      width: drawW,
+      height: drawH,
+    });
+  }
 
   return await pdf.save();
 }

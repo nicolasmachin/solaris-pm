@@ -426,8 +426,11 @@ el fabricante preguntaba **espesor** y **chapa**, y en la conversación aparecí
 medidas que en el plano no estaban (el perfil de la puerta, cómo se arma el
 cuerpo).
 
-La herramienta genera esa lámina desde los datos del gabinete, así todo lo que el
-taller necesita sale impreso en la hoja.
+La herramienta genera esa lámina desde los datos del gabinete. El principio que
+la ordena: **ninguna medida queda implícita**. Todo lo que se dibuja sale de un
+campo con valor por defecto editable, y además está escrito en la tabla de
+medidas de la hoja 2, para que nada dependa de que el taller interprete bien un
+trazo ni de que el fabricante conteste un WhatsApp.
 
 ## Cómo se usa
 
@@ -437,7 +440,8 @@ Dentro del workspace del proyecto (`/ingenieria/proyecto/:id`), tarjeta
 1. **Nuevo gabinete** crea uno con los valores del gabinete que más se pide
    (50 × 85 × 26 cm, chapa galvanizada de 1,5 mm, fondo abierto, pestaña de 3 cm).
 2. Se ajustan las medidas en el formulario de la izquierda. **La lámina de la
-   derecha se redibuja sola** (450 ms después de dejar de tipear).
+   derecha se redibuja sola** (450 ms después de dejar de tipear) y muestra las
+   dos hojas.
 3. **Emitir lámina (PDF)** guarda los cambios y congela una versión.
 
 Un proyecto puede tener **varios gabinetes**; cada uno lleva su nombre, sus
@@ -445,17 +449,43 @@ medidas y su propio historial de láminas.
 
 ### Qué lleva la lámina
 
-Siete vistas, todas acotadas con las medidas cargadas: frontal, lateral derecha,
-posterior, isométrica, interior con la puerta abierta, detalle de la pestaña de
-amure y **corte del encuentro puerta/marco**. Más las especificaciones
-generales, el recuadro de notas, de qué obra es el pedido, cuántas unidades y a
-quién responderle.
+**Hoja 1 — Conjunto**: frontal (con ancho, alto y la posición de las bisagras),
+lateral derecha (profundidad y ala de la tapa), posterior (pestaña de amure con
+diámetro y cantidad de agujeros) e isométrica, más las especificaciones
+generales y las notas.
+
+**Hoja 2 — Detalles de fabricación**: corte del encuentro puerta/marco, detalle
+de la pestaña de amure, **despiece de las dos piezas en L**, detalle de plegado,
+interior con las bisagras, y la **TABLA DE MEDIDAS** completa.
 
 El **corte de puerta y marco** se agregó porque un instalador que ya había
 fabricado gabinetes marcó que faltaba: sin ver cómo asienta la puerta sobre el
 marco, el taller no sabe cómo doblar los perfiles. Acota ala de la puerta, ala
-del marco, solape y holgura, y es el único dibujo de la lámina **sin escala**
-(lo aclara al pie): es un detalle ampliado que se lee por sus cotas.
+del marco, solape y holgura.
+
+El **despiece** y el **detalle de plegado** se agregaron al cerrar la decisión de
+que el fabricante podía no contestar nunca: el armado en dos piezas en L estaba
+dicho con palabras pero sin ninguna medida, y el radio de plegado —que hace
+falta para calcular el desarrollo de la chapa— no figuraba en ningún lado.
+
+### Los valores por defecto
+
+Cada medida arranca con un default. **No son un relleno: son la decisión que se
+toma si nadie dice otra cosa**, y salen impresas como cualquier otra medida.
+
+| Medida | Default |
+|---|---|
+| Ala / reborde de la tapa | 3 cm |
+| Radio interior de plegado | 2 mm |
+| Solape de unión entre las piezas en L | 3 cm |
+| Paso de tornillos de unión | cada 15 cm |
+| Diámetro de agujero de amure | 6 mm |
+| Agujeros de amure | 4 por lado vertical · 3 por lado horizontal |
+| Ala del perfil de la puerta / del marco | 2 cm / 2 cm |
+| Solape puerta sobre marco | 1 cm |
+| Holgura puerta / marco | 2 mm |
+| Bisagras | 2, apertura izquierda, eje a 12 cm del extremo |
+| Tolerancia general | ± 2 mm |
 
 ## Cómo funciona
 
@@ -463,9 +493,14 @@ del marco, solape y holgura, y es el único dibujo de la lámina **sin escala**
   se edita in-place; **emitir** crea una versión con un `snapshot` JSON de todos
   los campos, para que una lámina vieja siga siendo reproducible aunque el
   diseño cambie después.
+- **Ningún campo de medida es nullable**, ni en Prisma ni en el schema Zod de la
+  ruta: todos tienen `@default` / `.default()`, y los dos juegos de valores
+  tienen que coincidir. Es la traducción en código de "que no queden medidas
+  sueltas".
 - Dibujo en `server/src/services/gabineteSvg/`: `draw.ts` (primitivas y cotas),
-  `views.ts` (una función por vista), `index.ts` (`buildGabineteSvg()`, que
-  arma la hoja A4), `types.ts` (`GabineteInputs`, el contrato del dibujo).
+  `views.ts` (una función por vista), `index.ts` (`buildGabineteSvgs()`, que
+  arma las dos hojas, más `especificaciones()` y `tablaMedidas()`), `types.ts`
+  (`GabineteInputs`, el contrato del dibujo).
 - Rutas en `server/src/routes/gabinete.routes.ts`.
 - Frontend: `client/src/api/gabinete.api.ts`,
   `components/ingenieria/gabinete/GabineteToolPanel.tsx` (lista) y
@@ -473,31 +508,32 @@ del marco, solape y holgura, y es el único dibujo de la lámina **sin escala**
 
 ### El preview sale del server, no del navegador
 
-`POST /gabinetes/preview` devuelve el **mismo SVG** que después se rasteriza al
-PDF, y el constructor lo inyecta tal cual. Es deliberado: si el dibujo se
-reimplementara en el cliente para que el preview fuera instantáneo, las dos
-versiones se despegarían en la primera corrección de geometría y el fabricante
-recibiría algo distinto de lo que se vio en pantalla. El costo es un request por
-cada pausa al tipear.
+`POST /gabinetes/preview` devuelve `{ hojas: string[] }` con **los mismos SVG**
+que después se rasterizan al PDF, y el constructor los inyecta tal cual. Es
+deliberado: si el dibujo se reimplementara en el cliente para que el preview
+fuera instantáneo, las dos versiones se despegarían en la primera corrección de
+geometría y el fabricante recibiría algo distinto de lo que se vio en pantalla.
+El costo es un request por cada pausa al tipear.
 
 Las respuestas fuera de orden se descartan con un contador (`lastRequest`): sin
 eso, una petición lenta puede pisar el dibujo de una más nueva.
 
 ### SVG → PDF
 
-`renderSvgToPdf()` en `server/src/services/svgPdf.service.ts`, compartido con el
-generador de unifilares: rasteriza con resvg-js y embebe el PNG con pdf-lib. Las
-fuentes Roboto viven en `unifilarSvg/fonts/` y se cargan explícitamente porque
-el container Node no trae fuentes del sistema — sin eso el PDF sale **sin
-texto**.
+`renderSvgsToPdf()` en `server/src/services/svgPdf.service.ts`, compartido con el
+generador de unifilares (que usa el atajo `renderSvgToPdf()` de una sola hoja):
+rasteriza con resvg-js y embebe un PNG por página con pdf-lib. Las fuentes
+Roboto viven en `unifilarSvg/fonts/` y se cargan explícitamente porque el
+container Node no trae fuentes del sistema — sin eso el PDF sale **sin texto**.
 
 ### Escalas
 
 Frontal y lateral comparten una escala (`escalaFrontalLateral()`) porque están
 lado a lado: si cada una se escalara para llenar su celda, el mismo gabinete se
 vería de distinto alto en cada vista y el taller lo lee mal. La posterior, la
-isométrica y la interior escalan cada una para su celda; los dos detalles
-(pestaña y corte de puerta) son esquemáticos y no están a escala.
+isométrica, la interior y el despiece escalan cada una para su celda; el corte
+de puerta, el detalle de pestaña y el de plegado son esquemáticos y **lo dicen
+en el dibujo** ("Detalle sin escala").
 
 ## Permisos
 
@@ -522,24 +558,26 @@ rol. En el panel, "Nuevo gabinete" y el botón de eliminar se ocultan según
 - **Borrar un gabinete no borra sus láminas**: quedan como documentos del
   proyecto, por lo mismo.
 - **Las medidas son exteriores**, y la lámina lo dice en las notas.
-- **Campos opcionales que no se completan no se imprimen** (el ala de la tapa,
-  por ejemplo). El corte de puerta es la excepción: si no hay medidas cargadas
-  se dibuja igual con valores por defecto (2 / 2 / 1 cm y 2 mm), porque un
-  gabinete con puerta siempre tiene ese encuentro y omitir el detalle era peor
-  que mostrarlo con medidas a confirmar.
+- **La tabla de medidas duplica a propósito lo que ya está acotado en los
+  dibujos.** No es redundancia por descuido: un número escrito no se presta a
+  interpretación y sobrevive a una impresión mala o a una foto de WhatsApp.
 - **Especificaciones adicionales** (`specsExtra`, JSON) existe para no tener que
   tocar la app cada vez que el taller pide un dato nuevo: se agrega como
-  etiqueta + valor y sale impreso al final de las especificaciones. Cuando un
-  dato se vuelve habitual, conviene promoverlo a campo propio.
+  etiqueta + valor, sale impreso al final de las especificaciones **y también en
+  la tabla de medidas**. Cuando un dato se vuelve habitual, conviene promoverlo
+  a campo propio.
 
 ## Casos borde
 
-- **Gabinete sin pestaña de amure**: la vista posterior pierde los agujeros y el
-  detalle de pestaña dice "Sin pestaña de amure".
+- **Gabinete sin pestaña de amure**: la vista posterior pierde los agujeros, el
+  detalle de pestaña dice "Sin pestaña de amure" y las filas de amure salen de
+  la tabla de medidas.
 - **Fondo cerrado**: la posterior y la interior dibujan la chapa de fondo y los
   títulos dejan de decir "(sin fondo)".
+- **Una sola bisagra**: se dibuja centrada, y la cota al extremo deja de tener
+  sentido (sigue saliendo en la tabla).
 - **Medidas muy desproporcionadas** (un gabinete muy bajo y ancho): las vistas se
-  reescalan solas, pero los dos detalles mantienen su tamaño fijo.
+  reescalan solas, pero los detalles mantienen su tamaño fijo.
 - **Falla la generación del PDF**: la ruta responde `GABINETE_PDF_ERROR` y **no**
   crea la versión, para que no quede una versión sin lámina.
 - El texto de las especificaciones se corta en renglones con una medida
@@ -548,10 +586,8 @@ rol. En el panel, "Nuevo gabinete" y el botón de eliminar se ocultan según
 
 ## Lo que falta
 
-Las medidas de taller todavía no están cerradas: al cierre de esta versión
-estaban pendientes de confirmar con el fabricante los detalles de **rebordes y
-grueso de las pestañas donde se unen las dos piezas en L**. Cuando lleguen, el
-lugar donde sumarlas es un campo propio en `CabinetDesign` + su cota en la vista
-que corresponda (o, si son datos sueltos, `specsExtra`). También queda pendiente
-una **vista de despiece de las dos piezas en L**, que hoy solo se menciona como
-texto en las especificaciones.
+- **Ventilación**: hoy es un sí/no. Si un gabinete lleva rejillas, sus medidas y
+  su posición no se dibujan — van por `specsExtra`.
+- **Entradas de cable / prensacables**: mismo caso, no hay campo ni dibujo.
+- El despiece muestra **un tornillo representativo** sobre el solape y el paso
+  como nota, en vez de repartirlos a lo largo del solape.

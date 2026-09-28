@@ -14,13 +14,24 @@ export interface GabineteForm {
   fondoAbierto: boolean;
   pestanaAmure: boolean;
   pestanaAnchoCm: number;
-  alaTapaCm?: number | null;
-  union?: string | null;
-  tornillos?: string | null;
-  perfilPuertaCm?: number | null;
-  perfilMarcoCm?: number | null;
-  solapePuertaCm?: number | null;
-  holguraPuertaMm?: number | null;
+  // Medidas de taller: ninguna opcional. Si el fabricante no especificó algo,
+  // vale el default —una decisión tomada— y no un hueco en la lámina.
+  alaTapaCm: number;
+  radioDoblezMm: number;
+  union: string;
+  tornillos: string;
+  solapeUnionCm: number;
+  pasoTornillosCm: number;
+  agujeroAmureDiamMm: number;
+  agujerosAmureVertical: number;
+  agujerosAmureHorizontal: number;
+  perfilPuertaCm: number;
+  perfilMarcoCm: number;
+  solapePuertaCm: number;
+  holguraPuertaMm: number;
+  bisagrasCantidad: number;
+  bisagrasLado: string;
+  bisagraDistExtremoCm: number;
   material: string;
   espesorMm: number;
   acabado: string;
@@ -74,13 +85,14 @@ export const emitirGabinete = (id: string, label?: string | null) =>
   apiClient.post<GabineteVersion>(`/api/gabinetes/${id}/emitir`, { label }).then((r) => r.data);
 
 /**
- * SVG de la lámina sin persistir nada. El dibujo se genera en el server (mismo
- * código que el PDF), así el preview nunca se despega del entregable.
+ * Las hojas de la lámina en SVG, sin persistir nada. El dibujo se genera en el
+ * server (mismo código que el PDF), así el preview nunca se despega del
+ * entregable.
  */
 export const previewGabinete = (body: Partial<GabineteForm> & { projectId?: string }) =>
   apiClient
-    .post<string>("/api/gabinetes/preview", body, { responseType: "text" })
-    .then((r) => r.data);
+    .post<{ hojas: string[] }>("/api/gabinetes/preview", body)
+    .then((r) => r.data.hojas);
 
 /** Valores con los que arranca un gabinete nuevo: el que más se pide. */
 export const GABINETE_DEFAULTS: GabineteForm = {
@@ -91,13 +103,22 @@ export const GABINETE_DEFAULTS: GabineteForm = {
   fondoAbierto: true,
   pestanaAmure: true,
   pestanaAnchoCm: 3,
-  alaTapaCm: null,
+  alaTapaCm: 3,
+  radioDoblezMm: 2,
   union: "Dos piezas en L atornilladas",
   tornillos: "Tornillo punta mecha tipo T1",
+  solapeUnionCm: 3,
+  pasoTornillosCm: 15,
+  agujeroAmureDiamMm: 6,
+  agujerosAmureVertical: 4,
+  agujerosAmureHorizontal: 3,
   perfilPuertaCm: 2,
   perfilMarcoCm: 2,
   solapePuertaCm: 1,
   holguraPuertaMm: 2,
+  bisagrasCantidad: 2,
+  bisagrasLado: "Izquierda",
+  bisagraDistExtremoCm: 12,
   material: "Chapa galvanizada en caliente",
   espesorMm: 1.5,
   acabado: "Galvanizado",
