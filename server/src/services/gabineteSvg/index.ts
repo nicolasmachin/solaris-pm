@@ -20,13 +20,13 @@ import { COLOR, FONT, MARGIN, PAGE_H, PAGE_W } from "./layout.js";
 import type { GabineteInputs } from "./types.js";
 import {
   cm,
-  corteMarcoPuerta,
+  corteTapaCuerpo,
   despieceL,
   detallePestana,
-  detallePlegado,
   escalaFrontalLateral,
+  frenteSinTapa,
+  tapaSuelta,
   vistaFrontal,
-  vistaInterior,
   vistaIsometrica,
   vistaLateral,
   vistaPosterior,
@@ -39,21 +39,22 @@ export { PAGE_H, PAGE_W } from "./layout.js";
 /** Las especificaciones de la columna derecha, en orden de lectura del taller. */
 export function especificaciones(g: GabineteInputs): string[] {
   const specs: string[] = [
-    "Gabinete metálico para exterior",
-    "Con tapa frontal",
-    `Construcción: ${g.fondoAbierto ? "fondo abierto (sin fondo)" : "con fondo de chapa"}`,
+    "Gabinete metálico para exterior, íntegramente en CHAPA PLEGADA",
     `Material: ${g.material}`,
     `Espesor de chapa: ${fmtMm(g.espesorMm)} mm`,
-    `Armado: ${g.union}`,
-    `Fijación: ${g.tornillos}`,
-    `Cierre: ${g.tipoCierre}`,
-    g.ventilacion ? "Con orificios / rejillas de ventilación" : "Sin orificios ni rejillas de ventilación",
-    `Bisagras: ${g.bisagras} — ${g.bisagrasCantidad}, apertura ${g.bisagrasLado.toLowerCase()}`,
+    `Construcción: ${g.fondoAbierto ? "fondo abierto (sin fondo)" : "con fondo de chapa"}`,
+    `Cuerpo: ${g.union}`,
+    `Fijación entre piezas: ${g.tornillos}, cada ${cm(g.pasoTornillosCm)}`,
+    `Frente del cuerpo con reborde plegado de ${cm(g.rebordeFrenteCm)} hacia adentro (asiento de la tapa)`,
+    `Tapa suelta, plegada en las cuatro caras, reborde de ${cm(g.rebordeTapaCm)}`,
+    // Lo que NO se pide va escrito: sin esto el fabricante cotiza herrajes que
+    // no queremos y el pedido vuelve con preguntas.
+    "SE ENTREGA SIN HERRAJES: sin bisagras y sin cierre",
+    "Tapa y cuerpo sin perforaciones (salvo los agujeros de amure)",
   ];
   if (g.pestanaAmure) {
     specs.push(`Pestaña perimetral para amure de ${cm(g.pestanaAnchoCm)} en toda la vuelta (posterior)`);
   }
-  if (g.gradoIp) specs.push(`Grado de protección sugerido: ${g.gradoIp}`);
   specs.push(`Acabado: ${g.acabado}`);
   for (const extra of g.specsExtra ?? []) {
     if (extra.etiqueta?.trim()) specs.push(`${extra.etiqueta}: ${extra.valor}`);
@@ -77,8 +78,6 @@ export function tablaMedidas(g: GabineteInputs): { etiqueta: string; valor: stri
     { etiqueta: "Alto exterior", valor: cm(g.altoCm) },
     { etiqueta: "Profundidad exterior", valor: cm(g.profundidadCm) },
     { etiqueta: "Espesor de chapa", valor: `${fmtMm(g.espesorMm)} mm` },
-    { etiqueta: "Radio interior de plegado", valor: `${fmtMm(g.radioDoblezMm)} mm` },
-    { etiqueta: "Ala / reborde de la tapa", valor: cm(g.alaTapaCm) },
     { etiqueta: "Solape de unión entre las piezas en L", valor: cm(g.solapeUnionCm) },
     { etiqueta: "Paso de tornillos de unión", valor: `cada ${cm(g.pasoTornillosCm)}` },
   ];
@@ -93,12 +92,12 @@ export function tablaMedidas(g: GabineteInputs): { etiqueta: string; valor: stri
     );
   }
   filas.push(
-    { etiqueta: "Ala del perfil de la puerta", valor: cm(g.perfilPuertaCm) },
-    { etiqueta: "Ala del perfil del marco", valor: cm(g.perfilMarcoCm) },
-    { etiqueta: "Solape puerta sobre marco", valor: cm(g.solapePuertaCm) },
-    { etiqueta: "Holgura puerta / marco", valor: `${fmtMm(g.holguraPuertaMm)} mm` },
-    { etiqueta: "Bisagras", valor: `${g.bisagrasCantidad}, apertura ${g.bisagrasLado.toLowerCase()}` },
-    { etiqueta: "Eje de bisagra al extremo", valor: cm(g.bisagraDistExtremoCm) },
+    { etiqueta: "Reborde plegado del frente del cuerpo", valor: cm(g.rebordeFrenteCm) },
+    { etiqueta: "Reborde plegado de la tapa", valor: cm(g.rebordeTapaCm) },
+    { etiqueta: "Solape de la tapa sobre el cuerpo", valor: cm(g.solapeTapaCm) },
+    { etiqueta: "Holgura tapa / cuerpo", valor: `${fmtMm(g.holguraTapaMm)} mm` },
+    { etiqueta: "Herrajes", valor: "no se proveen" },
+    { etiqueta: "Perforaciones (fuera del amure)", valor: "ninguna" },
     { etiqueta: "Tolerancia general", valor: `± ${fmtMm(g.toleranciaMm)} mm` },
   );
   for (const extra of g.specsExtra ?? []) {
@@ -109,9 +108,11 @@ export function tablaMedidas(g: GabineteInputs): { etiqueta: string; valor: stri
 
 function notas(g: GabineteInputs): string[] {
   const out = [
+    "Todo el gabinete se fabrica en chapa plegada.",
     "Todas las medidas son exteriores.",
     "Medidas en centímetros salvo donde se indica mm.",
     `Tolerancia general: ± ${fmtMm(g.toleranciaMm)} mm.`,
+    "La tapa se entrega suelta, sin bisagras ni cierre.",
   ];
   if (g.fondoAbierto) out.push("Fondo abierto 100% (sin placa).");
   if (g.pestanaAmure) out.push(`Pestaña de amure de ${cm(g.pestanaAnchoCm)} en toda la vuelta posterior.`);
@@ -253,8 +254,9 @@ function hojaGeneral(g: GabineteInputs): string {
   );
   y += 16;
   const construccion = [
+    "chapa plegada",
     g.fondoAbierto ? "fondo abierto (sin placa)" : "con fondo de chapa",
-    g.pestanaAmure ? `con pestaña perimetral de ${cm(g.pestanaAnchoCm)} para amure` : null,
+    g.pestanaAmure ? `pestaña perimetral de ${cm(g.pestanaAnchoCm)} para amure` : null,
     // Sin toLowerCase: comerse la mayúscula dejaba "dos piezas en l".
     g.union.charAt(0).toLowerCase() + g.union.slice(1),
   ]
@@ -329,18 +331,18 @@ function hojaDetalles(g: GabineteInputs): string {
 
   const half = contentW / 2;
 
-  // Fila 1: corte puerta/marco + detalle de pestaña.
+  // Fila 1: corte del encuentro tapa/cuerpo + detalle de la pestaña de amure.
   const row1Y = y + 30;
   const row1H = 220;
-  parts.push(corteMarcoPuerta({ x: left, y: row1Y, w: half - 10, h: row1H }, g));
+  parts.push(corteTapaCuerpo({ x: left, y: row1Y, w: half - 10, h: row1H }, g));
   parts.push(detallePestana({ x: left + half + 10, y: row1Y, w: half - 10, h: row1H }, g));
 
-  // Fila 2: despiece de las dos L + plegado + vista interior.
+  // Fila 2: despiece de las dos L + el frente del cuerpo + la tapa suelta.
   const row2Y = row1Y + row1H + 20;
   const row2H = 300;
   parts.push(despieceL({ x: left, y: row2Y, w: contentW * 0.46, h: row2H }, g));
-  parts.push(detallePlegado({ x: left + contentW * 0.5, y: row2Y, w: contentW * 0.22, h: row2H }, g));
-  parts.push(vistaInterior({ x: left + contentW * 0.74, y: row2Y, w: contentW * 0.26, h: row2H }, g));
+  parts.push(frenteSinTapa({ x: left + contentW * 0.48, y: row2Y, w: contentW * 0.26, h: row2H }, g));
+  parts.push(tapaSuelta({ x: left + contentW * 0.74, y: row2Y, w: contentW * 0.26, h: row2H }, g));
 
   // Fila 3: la tabla con todas las medidas.
   const row3Y = row2Y + row2H + 20;

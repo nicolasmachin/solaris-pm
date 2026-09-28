@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.10 — 28 de septiembre de 2026
+**Voltia · Uruguay** · Versión 1.11 — 28 de septiembre de 2026
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -1812,4 +1812,27 @@ partes:
 
 ---
 
-*Manual de Posventa — Experiencia Solar · Voltia · v1.9 · 28 de septiembre de 2026*
+## Anexo F · Las pantallas
+
+La versión maquetada del manual termina con ocho hojas de capturas, para el que
+nunca entró a la app y necesita ver de qué se le está hablando. No son un
+capítulo aparte: repiten lo que ya se explicó, con la pantalla al lado.
+
+| Hoja | Qué muestra | Dónde está en la app |
+|---|---|---|
+| La ficha del cliente | La pantalla entera, con el recorrido a la izquierda y el historial a la derecha | Experiencia Solar → Generadores → el nombre del cliente |
+| Los pasos de la etapa | La lista de pasos, con los que tienen plazo resaltados, y el botón de plantillas | Dentro de la ficha |
+| Los mensajes modelo | El panel de plantillas: se elige a la izquierda, se lee a la derecha, se copia | Botón **Plantillas** de la etapa |
+| El trámite de UTE | Los hitos con sus fechas — lo mismo que ve el cliente | Dentro de la ficha |
+| El portal del cliente | Su pantalla tal cual la ve él | Se abre en modo cliente desde el listado |
+| Los reportes mensuales | El tablero desde donde salen, con los tres pasos numerados | Experiencia Solar → Reportes FV |
+| El listado de clientes | Agrupado por etapa y ordenado por prioridad de contacto | Experiencia Solar → Generadores |
+| El calendario de obra | Dónde se agenda, y la diferencia entre fecha tentativa y confirmada | Calendario |
+
+Las capturas se sacan solas contra el entorno local con
+`docs/manual-posventa-pdf/capturas.mjs`; si una pantalla cambia, se vuelven a
+sacar y se suben, no se retocan a mano.
+
+---
+
+*Manual de Posventa — Experiencia Solar · Voltia · v1.11 · 28 de septiembre de 2026*

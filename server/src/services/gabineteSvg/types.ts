@@ -30,8 +30,9 @@ export interface GabineteInputs {
   // Ninguna es opcional: el dibujo nunca inventa una medida en silencio. Si el
   // fabricante no especificó algo, sale impreso el valor por defecto, que es
   // una decisión tomada y corregible, no un hueco.
-  alaTapaCm: number;
-  radioDoblezMm: number;
+  //
+  // Todo se fabrica en chapa plegada y se entrega sin herrajes: no hay
+  // bisagras, cierre, ventilación ni grado IP porque no son parte del pedido.
   union: string;
   tornillos: string;
   solapeUnionCm: number;
@@ -40,27 +41,16 @@ export interface GabineteInputs {
   agujerosAmureVertical: number;
   agujerosAmureHorizontal: number;
 
-  // Encuentro puerta / marco, para el corte transversal.
-  perfilPuertaCm: number;
-  perfilMarcoCm: number;
-  solapePuertaCm: number;
-  holguraPuertaMm: number;
-
-  // Bisagras
-  bisagrasCantidad: number;
-  bisagrasLado: string;
-  bisagraDistExtremoCm: number;
+  // Encuentro tapa / cuerpo.
+  rebordeTapaCm: number;
+  rebordeFrenteCm: number;
+  solapeTapaCm: number;
+  holguraTapaMm: number;
 
   // Chapa y terminación
   material: string;
   espesorMm: number;
   acabado: string;
-
-  // Cierre y aberturas
-  tipoCierre: string;
-  bisagras: string;
-  ventilacion: boolean;
-  gradoIp?: string | null;
 
   toleranciaMm: number;
 

@@ -1,0 +1,18 @@
+{
+  "_comentario": "id del asset en el canvas → archivo en imagenes/. Solo lo usa espacio.mjs: las URLs /_blob/ no resuelven fuera del artifact, y sin el archivo real la imagen mide cero y la hoja parece entrar cuando no entra.",
+  "b2f147bf02b92484b8558c53a06e0ae0": "portada.jpg",
+  "ba026e93a5c4deccb1cce71f3f8a2bf9": "portadilla-e1.jpg",
+  "294fb9b20f0c556a8474cbe3f2f76e65": "portadilla-e2.jpg",
+  "7a6e4b4dd365df3dec1ddc9ab43b6bc3": "portadilla-e3.jpg",
+  "9e1076439b37ecb7e912e7e51fd3241f": "cierre.jpg",
+  "0668c9715214e19bfb962f90def1e356": "ficha-encabezado.png",
+  "7d12e76a60ddf71686963835eeae7ae9": "ficha-cliente.png",
+  "c6b293f462d3d2e3272cbbb22cdbcd54": "tramite-ute.png",
+  "0931914e600bb5e58f7a3d18b911eb75": "plantillas.png",
+  "3a4089cd2f312ead916c4184c7c99086": "reportes-fv.png",
+  "685c0ffbd6517ff5b75a7e65842864c9": "listado-clientes.png",
+  "7e790e097b7b7f2659e88cee1a86f3e6": "recorrido-etapas.png",
+  "5e4bc2b717be45ea55913a98004d51ce": "calendario.png",
+  "ba28daa6ab82cd96e68263c2429930b5": "portal-cliente.png",
+  "f1ee815f7a6797acf2f7d1a3bdc1632e": "pasos-e2.png"
+}

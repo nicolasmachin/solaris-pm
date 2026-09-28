@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Aviso de fecha de obra</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&amp;family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&amp;display=swap" rel="stylesheet">
+<style>
+body { margin: 0; font-family: 'Source Serif 4', Georgia, serif; background: #ffffff; }
+</style>
+</helmet>
+<div style="width: 794px; height: 1123px; box-sizing: border-box; padding: 72px 72px 56px; background: #ffffff; display: flex; flex-direction: column">
+  <div style="display: flex; justify-content: space-between; align-items: center">
+    <div style="font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 2.2px; color: #1836b2">ETAPA 1 · PASO 5</div>
+    <div style="font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1.4px; color: #ffffff; background: #8f1d1d; padding: 6px 13px; border-radius: 4px">2 DÍAS HÁBILES</div>
+  </div>
+  <h1 style="margin: 16px 0 0; font-family: 'Barlow', sans-serif; font-size: 40px; font-weight: 700; letter-spacing: -1px; line-height: 1.08; color: #10131f; text-wrap: balance">Aviso de fecha de obra</h1>
+  <p style="margin: 12px 0 0; max-width: 610px; font-size: 16px; line-height: 1.6; color: #3a3e50; text-wrap: pretty">Van dos mensajes distintos: primero la tentativa, después la confirmada.</p>
+  <div style="display: flex; gap: 16px; margin-top: 26px">
+    <div style="flex-grow: 1; flex-basis: 0; padding: 20px; background: #f7f8fb; border-radius: 10px">
+      <div style="font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 1.4px; color: #767676">A · TENTATIVA</div>
+      <p style="margin: 10px 0 0; font-size: 14.5px; line-height: 1.55; color: #3a3e50">Apenas hay una fecha, aunque no esté cerrada. Se avisa <strong>que es tentativa y de qué depende</strong>.</p>
+      <div style="margin-top: 12px; font-family: 'Barlow', sans-serif; font-size: 12px; color: #6b7188">Plantilla "Fecha de obra tentativa"</div>
+    </div>
+    <div style="flex-grow: 1; flex-basis: 0; padding: 20px; background: #f4f6fd; border-radius: 10px">
+      <div style="font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 1.4px; color: #1836b2">B · CONFIRMADA</div>
+      <p style="margin: 10px 0 0; font-size: 14.5px; line-height: 1.55; color: #3a3e50">Al confirmarse la fecha en el calendario. <strong>2 días hábiles</strong>: el sistema abre el pendiente solo.</p>
+      <div style="margin-top: 12px; font-family: 'Barlow', sans-serif; font-size: 12px; color: #6b7188">Plantilla "Fecha de obra confirmada"</div>
+    </div>
+  </div>
+  <div style="margin-top: 24px; padding: 18px 20px; background: #f4f6fd; border-radius: 8px">
+    <div style="font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 1.6px; color: #1836b2; margin-bottom: 7px">LO QUE IMPORTA</div>
+    <p style="margin: 0; font-size: 14.5px; line-height: 1.55; color: #3a3e50"><strong>Cómo arranca el plazo.</strong> El reloj <strong>no</strong> empieza cuando se crea el proyecto, sino cuando alguien <strong>confirma la fecha en el calendario de obra</strong>. Ahí el paso pasa a tener vencimiento y aparece en el correo de la mañana si se pasa.</p>
+  </div>
+  <div style="margin-top: 16px; padding: 18px 20px; background: #fdf8ec; border-radius: 8px">
+    <div style="font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 1.6px; color: #8a5a10; margin-bottom: 7px">OJO</div>
+    <p style="margin: 0; font-size: 14.5px; line-height: 1.55; color: #5c4210">Los dos días hábiles cuentan desde esa confirmación, <strong>no desde que se cerró la venta</strong>: entre una cosa y la otra pasan onboarding, pre-ingeniería y la validación de Operaciones.</p>
+  </div>
+  <div style="margin-top: 18px; padding: 14px 16px; background: #e9f4ea; border-radius: 4px 10px 10px 4px; border-left: 3px solid #3d6b47">
+    <div style="font-family: 'Barlow', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 1.4px; color: #3d6b47; margin-bottom: 8px">PLANTILLA · FECHA DE OBRA TENTATIVA</div>
+    <p style="margin: 0px 0 0; font-size: 12.5px; line-height: 1.5; color: #24402a">Hola [nombre], ya tenemos fecha tentativa para tu instalación: [fecha].</p><p style="margin: 8px 0 0; font-size: 12.5px; line-height: 1.5; color: #24402a">Todavía depende del clima y de la logística, así que te la confirmo en cuanto esté cerrada.</p>
+  </div>
+  <div style="margin-top: 14px; padding: 14px 16px; background: #e9f4ea; border-radius: 4px 10px 10px 4px; border-left: 3px solid #3d6b47">
+    <div style="font-family: 'Barlow', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 1.4px; color: #3d6b47; margin-bottom: 8px">PLANTILLA · FECHA DE OBRA CONFIRMADA</div>
+    <p style="margin: 0px 0 0; font-size: 12.5px; line-height: 1.5; color: #24402a">Hola [nombre], te confirmo la instalación para el [fecha]. El equipo llega cerca de las [hora].</p><p style="margin: 8px 0 0; font-size: 12.5px; line-height: 1.5; color: #24402a">Durante la obra te va a coordinar [capataz] para horarios y accesos, te paso su contacto: [teléfono]. Cualquier otra cosa seguí conmigo.</p>
+  </div>
+
+  <div style="flex-grow: 1"></div>
+  <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 11px; border-top: 1px solid #e6e8f2; font-family: 'Barlow', sans-serif; font-size: 11px; color: #767676">
+    <span>Manual de Posventa · Experiencia Solar · Voltia</span>
+    <span>14</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":794,"height":1123}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

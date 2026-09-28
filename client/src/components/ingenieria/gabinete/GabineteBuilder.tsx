@@ -192,8 +192,9 @@ export function GabineteBuilder({
         </Section>
 
         <p className="text-[11px] text-[var(--color-text-muted)] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2">
-          Todas las medidas vienen con un valor por defecto y salen impresas en la lámina. Ninguna
-          queda sin definir: si el fabricante no especificó algo, revisá el valor y corregilo.
+          Todo se fabrica en <strong>chapa plegada</strong> y se pide <strong>sin herrajes</strong>: la
+          tapa va suelta, sin bisagras ni cierre. Todas las medidas vienen con un valor por defecto y
+          salen impresas en la lámina; ninguna queda sin definir.
         </p>
 
         <Section title="Medidas exteriores">
@@ -217,19 +218,8 @@ export function GabineteBuilder({
                 onChange={(v) => set("pestanaAnchoCm", v ?? 0)}
               />
             )}
-            <NumField
-              label="Ala / reborde de la tapa"
-              value={form.alaTapaCm}
-              onChange={(v) => set("alaTapaCm", v ?? 0)}
-            />
+
           </div>
-          <NumField
-            label="Radio interior de plegado"
-            suffix="mm"
-            step={0.5}
-            value={form.radioDoblezMm}
-            onChange={(v) => set("radioDoblezMm", v ?? 0)}
-          />
         </Section>
 
         <Section title="Armado del cuerpo">
@@ -280,20 +270,21 @@ export function GabineteBuilder({
           </div>
         </Section>
 
-        <Section title="Encuentro puerta / marco">
+        <Section title="Encuentro tapa / cuerpo">
           <p className="text-[11px] text-[var(--color-text-muted)] -mt-1">
-            Es el corte que el taller necesita para doblar los perfiles: cómo asienta la puerta sobre el marco.
+            El frente del cuerpo lleva un reborde plegado hacia adentro, y la tapa el suyo, que monta
+            sobre él. Es el corte que el taller necesita para doblar.
           </p>
           <div className="grid grid-cols-2 gap-3">
-            <NumField label="Ala del perfil de la puerta" value={form.perfilPuertaCm} onChange={(v) => set("perfilPuertaCm", v ?? 0)} />
-            <NumField label="Ala del marco" value={form.perfilMarcoCm} onChange={(v) => set("perfilMarcoCm", v ?? 0)} />
-            <NumField label="Solape de la puerta" value={form.solapePuertaCm} onChange={(v) => set("solapePuertaCm", v ?? 0)} />
+            <NumField label="Reborde del frente del cuerpo" value={form.rebordeFrenteCm} onChange={(v) => set("rebordeFrenteCm", v ?? 0)} />
+            <NumField label="Reborde de la tapa" value={form.rebordeTapaCm} onChange={(v) => set("rebordeTapaCm", v ?? 0)} />
+            <NumField label="Solape de la tapa sobre el cuerpo" value={form.solapeTapaCm} onChange={(v) => set("solapeTapaCm", v ?? 0)} />
             <NumField
               label="Holgura"
               suffix="mm"
               step={0.5}
-              value={form.holguraPuertaMm}
-              onChange={(v) => set("holguraPuertaMm", v ?? 0)}
+              value={form.holguraTapaMm}
+              onChange={(v) => set("holguraTapaMm", v ?? 0)}
             />
           </div>
         </Section>
@@ -303,39 +294,7 @@ export function GabineteBuilder({
             <TextField label="Material" value={form.material} onChange={(v) => set("material", v)} />
             <NumField label="Espesor de chapa" suffix="mm" step={0.1} value={form.espesorMm} onChange={(v) => set("espesorMm", v ?? 0)} />
             <TextField label="Acabado" value={form.acabado} onChange={(v) => set("acabado", v)} />
-            <TextField label="Grado de protección" value={form.gradoIp} onChange={(v) => set("gradoIp", v)} placeholder="IP54" />
           </div>
-        </Section>
-
-        <Section title="Cierre y bisagras">
-          <div className="grid grid-cols-2 gap-3">
-            <TextField label="Cierre" value={form.tipoCierre} onChange={(v) => set("tipoCierre", v)} />
-            <TextField label="Tipo de bisagra" value={form.bisagras} onChange={(v) => set("bisagras", v)} />
-            <NumField
-              label="Cantidad de bisagras"
-              suffix="un"
-              step={1}
-              value={form.bisagrasCantidad}
-              onChange={(v) => set("bisagrasCantidad", v ?? 1)}
-            />
-            <div>
-              <label className={lbl}>Lado de apertura</label>
-              <select
-                className={inp}
-                value={form.bisagrasLado}
-                onChange={(e) => set("bisagrasLado", e.target.value)}
-              >
-                <option value="Izquierda">Izquierda</option>
-                <option value="Derecha">Derecha</option>
-              </select>
-            </div>
-            <NumField
-              label="Eje de bisagra al extremo"
-              value={form.bisagraDistExtremoCm}
-              onChange={(v) => set("bisagraDistExtremoCm", v ?? 0)}
-            />
-          </div>
-          <Check label="Con orificios / rejillas de ventilación" checked={form.ventilacion} onChange={(v) => set("ventilacion", v)} />
         </Section>
 
         <Section title="Notas y extras">

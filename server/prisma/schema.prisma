@@ -5128,48 +5128,37 @@ model CabinetDesign {
   // asumir en silencio una medida que después el taller resuelve por su cuenta.
   // Si el fabricante no especifica algo, sale impresa la medida por defecto —
   // que es una decisión tomada, no un hueco— y se corrige cuando haga falta.
+  //
+  // El gabinete se fabrica ENTERO EN CHAPA PLEGADA y se entrega SIN HERRAJES:
+  // la tapa va suelta, sin bisagras ni cierre, y Voltia decide después qué le
+  // pone. Por eso acá no hay campos de bisagra, cierre, ventilación ni grado
+  // IP: no son parte del pedido.
 
-  // Reborde/ala de la tapa frontal.
-  alaTapaCm       Float  @default(3)
-  // Radio interior de plegado: lo pregunta cualquier taller que pliega chapa.
-  radioDoblezMm   Float  @default(2)
-
-  // Armado del cuerpo. El gabinete se hace en dos piezas en L que se unen
-  // atornilladas: el solape es la pestaña donde una monta sobre la otra.
+  // Armado del cuerpo. Se hace en dos piezas en L que se unen atornilladas: el
+  // solape es la pestaña donde una monta sobre la otra.
   union           String @default("Dos piezas en L atornilladas")
   tornillos       String @default("Tornillo punta mecha tipo T1")
   solapeUnionCm   Float  @default(3)
   pasoTornillosCm Float  @default(15)
 
-  // Agujeros de amure sobre la pestaña posterior.
+  // Agujeros de amure sobre la pestaña posterior. Son las únicas perforaciones
+  // del gabinete: tapa y cuerpo se entregan lisos.
   agujeroAmureDiamMm      Float @default(6)
   agujerosAmureVertical   Int   @default(4)
   agujerosAmureHorizontal Int   @default(3)
 
-  // Perfil del encuentro puerta / marco, para el corte transversal de la
-  // lámina. Sin esto el taller no sabe cómo asienta la puerta: es lo primero
-  // que preguntan los que ya fabricaron gabinetes.
-  perfilPuertaCm   Float @default(2)
-  perfilMarcoCm    Float @default(2)
-  solapePuertaCm   Float @default(1)
-  holguraPuertaMm  Float @default(2)
-
-  // Bisagras: cuántas, de qué lado abre y a qué distancia del borde van los
-  // ejes. El dibujo las ponía a ojo.
-  bisagrasCantidad     Int    @default(2)
-  bisagrasLado         String @default("Izquierda")
-  bisagraDistExtremoCm Float  @default(12)
+  // Encuentro tapa / cuerpo. El cuerpo lleva un reborde plegado hacia adentro
+  // en el frente, y la tapa su propio reborde perimetral que monta sobre él.
+  // Sin estas cuatro medidas el taller no sabe cómo asienta la tapa.
+  rebordeTapaCm    Float @default(2)
+  rebordeFrenteCm  Float @default(2)
+  solapeTapaCm     Float @default(1)
+  holguraTapaMm    Float @default(2)
 
   // Chapa y terminación
   material  String @default("Chapa galvanizada en caliente")
   espesorMm Float  @default(1.5)
   acabado   String @default("Galvanizado")
-
-  // Cierre y aberturas
-  tipoCierre  String  @default("A presión (sin candado)")
-  bisagras    String  @default("Ocultas (interior)")
-  ventilacion Boolean @default(false)
-  gradoIp     String? @default("IP54")
 
   toleranciaMm Float @default(2)
 

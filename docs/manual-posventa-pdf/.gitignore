@@ -1,0 +1,5 @@
+# Salida de contenido.py y de vista-previa.mjs: se regeneran con un comando y
+# lo que vale es lo publicado en el canvas.
+paginas/
+vistas/
+__pycache__/

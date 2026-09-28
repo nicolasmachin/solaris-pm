@@ -7,8 +7,9 @@
 #### Gabinete metálico: el plano para el fabricante se arma solo
 
 - Herramienta nueva en **Ingeniería → Gabinete metálico**, dentro del proyecto. Se cargan las medidas y la app arma la **lámina que se le manda al fabricante**, de **dos hojas**: la primera con el gabinete terminado, la segunda con los detalles de fabricación y una **tabla con todas las medidas**.
-- **Ninguna medida queda librada al criterio del taller.** Todo lo que se dibuja sale de un campo, y todos los campos **vienen con un valor por defecto** que se puede cambiar: espesor y tipo de chapa, radio de plegado, ala de la tapa, solape entre las dos piezas en L, paso de los tornillos, diámetro y cantidad de agujeros de amure, perfiles de la puerta y del marco, solape, holgura, cantidad de bisagras, de qué lado abre y a qué distancia del borde van.
-- Las vistas: frontal, lateral, posterior, isométrica, **corte del encuentro puerta/marco** (cómo asienta la puerta), detalle de la pestaña de amure, **despiece de las dos piezas en L**, detalle de plegado e interior con las bisagras.
+- Está pensada para el gabinete que fabricamos siempre: **todo en chapa plegada** y **sin herrajes**. La tapa se pide suelta —sin bisagras ni cierre— y lisa, sin perforaciones; el herraje lo decidimos después nosotros. La lámina lo dice con todas las letras, así el fabricante no cotiza cosas que no le pedimos.
+- **Ninguna medida queda librada al criterio del taller.** Todo lo que se dibuja sale de un campo, y todos los campos **vienen con un valor por defecto** que se puede cambiar: espesor y tipo de chapa, solape entre las dos piezas en L, paso de los tornillos, diámetro y cantidad de agujeros de amure, reborde del frente del cuerpo, reborde de la tapa, solape y holgura entre ambos.
+- Las vistas: frontal con la tapa puesta, lateral, posterior, isométrica, **corte del encuentro tapa/cuerpo** (cómo asienta la tapa), detalle de la pestaña de amure, **despiece de las dos piezas en L**, **frente del cuerpo sin tapa** (donde se ve el reborde) y **la tapa como pieza suelta**.
 - **La vista previa se actualiza mientras cargás las medidas**, y muestra las dos hojas.
 - La lámina sale con **de qué obra es, cuántas unidades hay que fabricar y a quién responderle**, y un campo de notas libres.
 - **Un proyecto puede tener varios gabinetes** (el del medidor, el de protecciones), cada uno con su lámina.

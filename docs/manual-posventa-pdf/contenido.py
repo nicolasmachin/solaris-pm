@@ -18,9 +18,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from generar import (  # noqa: E402
     AZUL, AZUL_FONDO, BORDE, GRIS, GRIS_CLARO, NEGRO, ROJO, ROJO_FONDO, SANS, TEXTO,
     VERDE, VERDE_FONDO, VERDE_TEXTO, ANCHO, ALTO,
-    aviso, bajada, ficha, hueco, kicker, mensaje, numerados, pagina, parrafo,
-    paso, plantilla, portadilla, subtitulo, tabla, tema, titulo,
+    aviso, bajada, ficha, figura, hueco, kicker, mensaje, numerados, pagina,
+    pagina_captura, parrafo, paso, plantilla, portadilla, subtitulo, tabla, tema,
+    titulo,
 )
+import imagenes as IMG  # noqa: E402
 
 # Los mensajes modelo, tal como salen en la app (client/src/modules/clientes/
 # plantillas.ts). Se citan enteros en el paso donde se usan: quien lee el manual
@@ -522,7 +524,7 @@ def construir():
         ["Bienvenida y presentación", "Conversación de expectativa inicial", "Envío del acceso al portal",
          "Presentación del capataz", "Aviso de fecha de obra", "Aviso de reprogramación",
          "Aviso de visita a la propiedad", "Aviso de obra terminada", "Aviso de la encuesta de obra"],
-        p))
+        p, foto=IMG.PORTADILLA_E1))
 
     nueva("E1Bienvenida.dc.html", "10 · Bienvenida", lambda p: paso(
         "ETAPA 1 · PASO 1", "SIN PLAZO FORMAL", "Bienvenida y presentación",
@@ -703,7 +705,7 @@ def construir():
         "buena parte, y no puede usarlos. Todos los días los ve y no generan nada.",
         "5",
         ["Aviso de habilitación otorgada — la Regla de Oro", "Aviso de la encuesta de habilitación"],
-        p))
+        p, foto=IMG.PORTADILLA_E2))
 
     existente("PasoEncender.dc.html", "19 · Ya podés encender")
 
@@ -742,7 +744,7 @@ def construir():
         "10",
         ["Capacitación: material y videos", "Acceso a la plataforma del inversor",
          "Alta en reportes mensuales", "Recorrido por el portal"],
-        p))
+        p, foto=IMG.PORTADILLA_E3))
 
     nueva("E3Capacitacion.dc.html", "22 · Capacitación y acceso al inversor", lambda p: pagina(
         "Capacitación · Acceso al inversor",
@@ -873,8 +875,9 @@ def construir():
         + titulo("La ficha del cliente")
         + bajada("Es <strong>una sola pantalla</strong>, no cuatro pestañas: el recorrido arriba a la "
                  "izquierda, los pasos de la etapa elegida abajo, y todo el historial a la derecha.")
-        + hueco("CAPTURA DE PANTALLA", "La ficha completa, con el recorrido y el historial", alto=230,
-                margen=24)
+        + figura(IMG.FICHA_ENCABEZADO,
+                 "Arriba de la ficha: los datos del cliente, el recorrido en tres etapas y los pasos de la "
+                 "etapa abierta. La pantalla entera está en el <strong>Anexo F</strong>.", margen=22)
         + subtitulo("Qué hacés acá, en orden", margen=26)
         + numerados(["<strong>Leés</strong> el historial de arriba, que es lo que pasó desde la última vez.",
                      "<strong>Escribís</strong>, con la plantilla de la etapa si hay una que sirva.",
@@ -1232,6 +1235,87 @@ def construir():
             return pagina(f"Anexo E · temas {grupo[0][0]} a {grupo[-1][0]}", cuerpo, p)
         rango = f"tema {grupo[0][0]}" if len(grupo) == 1 else f"temas {grupo[0][0]}–{grupo[-1][0]}"
         nueva(f"AnexoFAQ{nro_hoja}.dc.html", f"Anexo E · {rango}", hacer)
+
+    # ── Anexo F · Las pantallas ──────────────────────────────────────────────
+    # El manual se lee lejos de la computadora, así que las pantallas van todas
+    # juntas al final: el que nunca entró a la app ve de qué se le está
+    # hablando, y el que ya trabaja en ella puede saltearlo entero.
+    for archivo, titulo_board, args in [
+        ("AnexoPantallaFicha.dc.html", "Anexo F · La ficha del cliente", dict(
+            titulo="La ficha del cliente",
+            bajada="La pantalla donde pasa casi todo el trabajo de Experiencia Solar. Es <strong>una "
+                   "sola</strong>: a la izquierda el recorrido y los pasos, a la derecha el historial y el "
+                   "cuadro para registrar el contacto.",
+            url=IMG.FICHA_CLIENTE,
+            epigrafe="Se entra desde <strong>Experiencia Solar → Generadores</strong>, haciendo clic en el "
+                     "nombre del cliente.")),
+        ("AnexoPantallaPasos.dc.html", "Anexo F · Los pasos de la etapa", dict(
+            titulo="Los pasos de la etapa",
+            bajada="Cada etapa trae su lista de pasos. Los <strong>resaltados</strong> son los que tienen "
+                   "plazo y mueven el semáforo; el resto se tildan igual, pero no vencen.",
+            url=IMG.RECORRIDO_ETAPAS,
+            epigrafe="El botón <strong>Plantillas</strong>, arriba a la derecha, abre los mensajes modelo de "
+                     "esa etapa. <strong>Completar los N</strong> sirve para ponerse al día, no para saltear "
+                     "trabajo.",
+            ancho="88%")),
+        ("AnexoPantallaReglaOro.dc.html", "Anexo F · La Regla de Oro", dict(
+            titulo="El paso de la Regla de Oro",
+            bajada="Así se ve la etapa 2 en la ficha de alguien que ya tiene la obra hecha y espera a UTE. "
+                   "El paso resaltado es el que tiene <strong>plazo en horas</strong>.",
+            url=IMG.PASOS_E2,
+            epigrafe="La alerta se apaga <strong>tildando el paso</strong>. Destildarlo la vuelve a encender, y "
+                     "queda registrado quién lo marcó y cuándo.")),
+        ("AnexoPantallaPlantillas.dc.html", "Anexo F · Los mensajes modelo", dict(
+            titulo="Los mensajes modelo",
+            bajada="El texto ya escrito para cada paso. Se elige a la izquierda, se lee a la derecha y se "
+                   "copia con el botón: <strong>es un piso de tono, no un texto obligatorio</strong>.",
+            url=IMG.PLANTILLAS,
+            epigrafe="Lo que está entre corchetes hay que completarlo antes de mandar. El tilde de "
+                     "<strong>registrar el contacto en la bitácora</strong> viene marcado: si se deja, el "
+                     "contacto queda anotado solo.")),
+        ("AnexoPantallaUte.dc.html", "Anexo F · El trámite de UTE", dict(
+            titulo="El trámite de UTE, hito por hito",
+            bajada="Dentro de la ficha, el trámite se despliega con todos sus hitos y sus fechas. "
+                   "<strong>Es exactamente lo que el cliente ve en su portal</strong>.",
+            url=IMG.TRAMITE_UTE,
+            epigrafe="Si el cliente pregunta en qué anda su trámite, se le lee de acá. No hace falta "
+                     "consultarle nada a Tramitación.",
+            ancho="86%")),
+        ("AnexoPantallaPortal.dc.html", "Anexo F · El portal del cliente", dict(
+            titulo="El portal, como lo ve el cliente",
+            bajada="Conviene conocerlo de memoria: es lo que el cliente tiene abierto cuando escribe. Desde "
+                   "el listado se puede abrir <strong>en modo cliente</strong> para ver su pantalla tal cual.",
+            url=IMG.PORTAL_CLIENTE,
+            epigrafe="El cliente ve el avance del trámite, sus reportes, sus tickets y las encuestas. "
+                     "<strong>No ve</strong> el historial interno ni los comentarios del equipo.")),
+        ("AnexoPantallaReportes.dc.html", "Anexo F · Los reportes mensuales", dict(
+            titulo="Los reportes mensuales",
+            bajada="El tablero desde donde salen los reportes de generación. Cada generador tiene su fecha de "
+                   "corte, así que no salen todos el mismo día: <strong>Enviar pendientes</strong> manda los "
+                   "que están en fecha.",
+            url=IMG.REPORTES_FV,
+            epigrafe="Los tres botones numerados marcan el orden: traer los datos, generar el PDF y recién "
+                     "ahí enviar.")),
+        ("AnexoPantallaListado.dc.html", "Anexo F · El listado de clientes", dict(
+            titulo="El listado de clientes",
+            bajada="La pantalla de la media hora de la mañana. Los clientes vienen <strong>agrupados por "
+                   "etapa y ordenados por prioridad de contacto</strong>, no alfabéticamente.",
+            url=IMG.LISTADO_CLIENTES,
+            epigrafe="El triángulo de la izquierda marca al que tiene algo pendiente. La columna "
+                     "<strong>último contacto</strong> dice hace cuántos días que nadie le escribe.")),
+        ("AnexoPantallaCalendario.dc.html", "Anexo F · El calendario de obra", dict(
+            titulo="El calendario de obra",
+            bajada="Donde se agenda la instalación. Importa para el manual por una sola razón: "
+                   "<strong>el plazo de avisar la fecha empieza a correr cuando la fecha se confirma acá</strong>.",
+            url=IMG.CALENDARIO,
+            epigrafe="La leyenda distingue la <strong>fecha tentativa</strong> de la <strong>confirmada</strong>. "
+                     "Hasta que no está confirmada, al cliente se le avisa como tentativa.")),
+    ]:
+        nueva(archivo, titulo_board, lambda p, a=args: pagina_captura(numero=p, **a))
+
+    # La hoja de cierre está maquetada a mano, como la portada: la foto va a
+    # sangre y no lleva el pie de las páginas de contenido.
+    existente("Cierre.dc.html", "Cierre")
 
     return P
 

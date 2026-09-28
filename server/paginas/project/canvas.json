@@ -1,0 +1,566 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-09-25T02:40:00Z"
+  },
+  "title": "Manual de Posventa — Experiencia Solar",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "designSystems": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 794,
+      "h": 1123,
+      "title": "1 · Portada",
+      "paper": "a4"
+    },
+    "ComoUsar.dc.html": {
+      "x": 874,
+      "y": 0,
+      "w": 794,
+      "h": 1123,
+      "title": "2 · Cómo usar este manual",
+      "paper": "a4"
+    },
+    "PorQueExiste.dc.html": {
+      "x": 1748,
+      "y": 0,
+      "w": 794,
+      "h": 1123,
+      "title": "3 · Por qué existe Experiencia Solar",
+      "paper": "a4"
+    },
+    "PrincipioRector.dc.html": {
+      "x": 2622,
+      "y": 0,
+      "w": 794,
+      "h": 1123,
+      "title": "4 · El principio rector",
+      "paper": "a4"
+    },
+    "QueSePromete.dc.html": {
+      "x": 3496,
+      "y": 0,
+      "w": 794,
+      "h": 1123,
+      "title": "5 · Qué se promete y qué no",
+      "paper": "a4"
+    },
+    "Recorrido.dc.html": {
+      "x": 4370,
+      "y": 0,
+      "w": 794,
+      "h": 1123,
+      "title": "6 · El recorrido del cliente",
+      "paper": "a4"
+    },
+    "QuienHabla.dc.html": {
+      "x": 0,
+      "y": 1243,
+      "w": 794,
+      "h": 1123,
+      "title": "7 · Quién habla con el cliente",
+      "paper": "a4"
+    },
+    "QueRegistra.dc.html": {
+      "x": 874,
+      "y": 1243,
+      "w": 794,
+      "h": 1123,
+      "title": "8 · Qué registra cada área",
+      "paper": "a4"
+    },
+    "PortadillaE1.dc.html": {
+      "x": 1748,
+      "y": 1243,
+      "w": 794,
+      "h": 1123,
+      "title": "9 · Etapa 1",
+      "paper": "a4"
+    },
+    "E1Bienvenida.dc.html": {
+      "x": 2622,
+      "y": 1243,
+      "w": 794,
+      "h": 1123,
+      "title": "10 · Bienvenida",
+      "paper": "a4"
+    },
+    "E1Expectativa.dc.html": {
+      "x": 3496,
+      "y": 1243,
+      "w": 794,
+      "h": 1123,
+      "title": "11 · Conversación de expectativa",
+      "paper": "a4"
+    },
+    "E1Portal.dc.html": {
+      "x": 4370,
+      "y": 1243,
+      "w": 794,
+      "h": 1123,
+      "title": "12 · Acceso al portal",
+      "paper": "a4"
+    },
+    "E1Capataz.dc.html": {
+      "x": 0,
+      "y": 2486,
+      "w": 794,
+      "h": 1123,
+      "title": "13 · Capataz y reprogramación",
+      "paper": "a4"
+    },
+    "E1Fecha.dc.html": {
+      "x": 874,
+      "y": 2486,
+      "w": 794,
+      "h": 1123,
+      "title": "14 · Fecha de obra",
+      "paper": "a4"
+    },
+    "ReglaAgenda.dc.html": {
+      "x": 1748,
+      "y": 2486,
+      "w": 794,
+      "h": 1123,
+      "title": "15 · Regla dura: si no está agendado",
+      "paper": "a4"
+    },
+    "E1Visita.dc.html": {
+      "x": 2622,
+      "y": 2486,
+      "w": 794,
+      "h": 1123,
+      "title": "16 · Visita y encuesta de obra",
+      "paper": "a4"
+    },
+    "E1ObraTerminada.dc.html": {
+      "x": 3496,
+      "y": 2486,
+      "w": 794,
+      "h": 1123,
+      "title": "17 · Obra terminada",
+      "paper": "a4"
+    },
+    "PortadillaE2.dc.html": {
+      "x": 4370,
+      "y": 2486,
+      "w": 794,
+      "h": 1123,
+      "title": "18 · Etapa 2",
+      "paper": "a4"
+    },
+    "PasoEncender.dc.html": {
+      "x": 0,
+      "y": 3729,
+      "w": 794,
+      "h": 1123,
+      "title": "19 · Ya podés encender",
+      "paper": "a4"
+    },
+    "E2Espera.dc.html": {
+      "x": 874,
+      "y": 3729,
+      "w": 794,
+      "h": 1123,
+      "title": "20 · La espera de UTE",
+      "paper": "a4"
+    },
+    "PortadillaE3.dc.html": {
+      "x": 1748,
+      "y": 3729,
+      "w": 794,
+      "h": 1123,
+      "title": "21 · Etapa 3",
+      "paper": "a4"
+    },
+    "E3Capacitacion.dc.html": {
+      "x": 2622,
+      "y": 3729,
+      "w": 794,
+      "h": 1123,
+      "title": "22 · Capacitación y acceso al inversor",
+      "paper": "a4"
+    },
+    "E3Reportes.dc.html": {
+      "x": 3496,
+      "y": 3729,
+      "w": 794,
+      "h": 1123,
+      "title": "23 · Alta en reportes mensuales",
+      "paper": "a4"
+    },
+    "E3Portal.dc.html": {
+      "x": 4370,
+      "y": 3729,
+      "w": 794,
+      "h": 1123,
+      "title": "24 · Recorrido por el portal",
+      "paper": "a4"
+    },
+    "MediaHora.dc.html": {
+      "x": 0,
+      "y": 4972,
+      "w": 794,
+      "h": 1123,
+      "title": "25 · La media hora de la mañana",
+      "paper": "a4"
+    },
+    "CorreoManana.dc.html": {
+      "x": 874,
+      "y": 4972,
+      "w": 794,
+      "h": 1123,
+      "title": "26 · El correo de la mañana",
+      "paper": "a4"
+    },
+    "Senales.dc.html": {
+      "x": 1748,
+      "y": 4972,
+      "w": 794,
+      "h": 1123,
+      "title": "27 · Las dos señales",
+      "paper": "a4"
+    },
+    "FichaCliente.dc.html": {
+      "x": 2622,
+      "y": 4972,
+      "w": 794,
+      "h": 1123,
+      "title": "28 · La ficha del cliente",
+      "paper": "a4"
+    },
+    "MensajesModelo.dc.html": {
+      "x": 3496,
+      "y": 4972,
+      "w": 794,
+      "h": 1123,
+      "title": "29 · Los mensajes modelo",
+      "paper": "a4"
+    },
+    "Reclamos.dc.html": {
+      "x": 4370,
+      "y": 4972,
+      "w": 794,
+      "h": 1123,
+      "title": "30 · Reclamos",
+      "paper": "a4"
+    },
+    "Encuestas.dc.html": {
+      "x": 0,
+      "y": 6215,
+      "w": 794,
+      "h": 1123,
+      "title": "31 · Encuestas de satisfacción",
+      "paper": "a4"
+    },
+    "Mantenimientos.dc.html": {
+      "x": 874,
+      "y": 6215,
+      "w": 794,
+      "h": 1123,
+      "title": "32 · Mantenimientos",
+      "paper": "a4"
+    },
+    "PlanGranizo.dc.html": {
+      "x": 1748,
+      "y": 6215,
+      "w": 794,
+      "h": 1123,
+      "title": "32b · Plan de Protección contra Granizo",
+      "paper": "a4"
+    },
+    "PlanGranizoDanio.dc.html": {
+      "x": 2622,
+      "y": 6215,
+      "w": 794,
+      "h": 1123,
+      "title": "32c · Cuando graniza",
+      "paper": "a4"
+    },
+    "ReglasDuras.dc.html": {
+      "x": 3496,
+      "y": 6215,
+      "w": 794,
+      "h": 1123,
+      "title": "33 · Las once reglas duras",
+      "paper": "a4"
+    },
+    "SaleMal.dc.html": {
+      "x": 4370,
+      "y": 6215,
+      "w": 794,
+      "h": 1123,
+      "title": "34 · Cuando algo sale mal",
+      "paper": "a4"
+    },
+    "AnexoReferentes.dc.html": {
+      "x": 0,
+      "y": 7458,
+      "w": 794,
+      "h": 1123,
+      "title": "35 · Anexo B · La tabla de referentes",
+      "paper": "a4"
+    },
+    "AnexoGlosario.dc.html": {
+      "x": 874,
+      "y": 7458,
+      "w": 794,
+      "h": 1123,
+      "title": "36 · Anexo C · Glosario",
+      "paper": "a4"
+    },
+    "AnexoDecisiones.dc.html": {
+      "x": 1748,
+      "y": 7458,
+      "w": 794,
+      "h": 1123,
+      "title": "37 · Anexo D · Qué se decidió no hacer",
+      "paper": "a4"
+    },
+    "AnexoQueFalta.dc.html": {
+      "x": 2622,
+      "y": 7458,
+      "w": 794,
+      "h": 1123,
+      "title": "38 · Anexo D · Qué falta",
+      "paper": "a4"
+    },
+    "AnexoFAQ.dc.html": {
+      "x": 3496,
+      "y": 7458,
+      "w": 794,
+      "h": 1123,
+      "title": "Anexo E · Preguntas frecuentes",
+      "paper": "a4"
+    },
+    "AnexoFAQ1.dc.html": {
+      "x": 4370,
+      "y": 7458,
+      "w": 794,
+      "h": 1123,
+      "title": "Anexo E · temas 1–2",
+      "paper": "a4"
+    },
+    "AnexoFAQ2.dc.html": {
+      "x": 0,
+      "y": 8701,
+      "w": 794,
+      "h": 1123,
+      "title": "Anexo E · temas 3–4",
+      "paper": "a4"
+    },
+    "AnexoFAQ3.dc.html": {
+      "x": 874,
+      "y": 8701,
+      "w": 794,
+      "h": 1123,
+      "title": "Anexo E · temas 5–6",
+      "paper": "a4"
+    },
+    "AnexoFAQ4.dc.html": {
+      "x": 1748,
+      "y": 8701,
+      "w": 794,
+      "h": 1123,
+      "title": "Anexo E · temas 7–9",
+      "paper": "a4"
+    },
+    "AnexoFAQ5.dc.html": {
+      "x": 2622,
+      "y": 8701,
+      "w": 794,
+      "h": 1123,
+      "title": "Anexo E · temas 10–12",
+      "paper": "a4"
+    },
+    "AnexoFAQ6.dc.html": {
+      "x": 3496,
+      "y": 8701,
+      "w": 794,
+      "h": 1123,
+      "title": "Anexo E · temas 13–15",
+      "paper": "a4"
+    },
+    "AnexoFAQ7.dc.html": {
+      "x": 4370,
+      "y": 8701,
+      "w": 794,
+      "h": 1123,
+      "title": "Anexo E · temas 16–17",
+      "paper": "a4"
+    },
+    "AnexoFAQ8.dc.html": {
+      "x": 0,
+      "y": 9944,
+      "w": 794,
+      "h": 1123,
+      "title": "Anexo E · temas 18–19",
+      "paper": "a4"
+    },
+    "AnexoFAQ9.dc.html": {
+      "x": 874,
+      "y": 9944,
+      "w": 794,
+      "h": 1123,
+      "title": "Anexo E · tema 20",
+      "paper": "a4"
+    },
+    "AnexoPantallaFicha.dc.html": {
+      "x": 1748,
+      "y": 9944,
+      "w": 794,
+      "h": 1123,
+      "title": "Anexo F · La ficha del cliente",
+      "paper": "a4"
+    },
+    "AnexoPantallaPasos.dc.html": {
+      "x": 2622,
+      "y": 9944,
+      "w": 794,
+      "h": 1123,
+      "title": "Anexo F · Los pasos de la etapa",
+      "paper": "a4"
+    },
+    "AnexoPantallaReglaOro.dc.html": {
+      "x": 3496,
+      "y": 9944,
+      "w": 794,
+      "h": 1123,
+      "title": "Anexo F · La Regla de Oro",
+      "paper": "a4"
+    },
+    "AnexoPantallaPlantillas.dc.html": {
+      "x": 4370,
+      "y": 9944,
+      "w": 794,
+      "h": 1123,
+      "title": "Anexo F · Los mensajes modelo",
+      "paper": "a4"
+    },
+    "AnexoPantallaUte.dc.html": {
+      "x": 0,
+      "y": 11187,
+      "w": 794,
+      "h": 1123,
+      "title": "Anexo F · El trámite de UTE",
+      "paper": "a4"
+    },
+    "AnexoPantallaPortal.dc.html": {
+      "x": 874,
+      "y": 11187,
+      "w": 794,
+      "h": 1123,
+      "title": "Anexo F · El portal del cliente",
+      "paper": "a4"
+    },
+    "AnexoPantallaReportes.dc.html": {
+      "x": 1748,
+      "y": 11187,
+      "w": 794,
+      "h": 1123,
+      "title": "Anexo F · Los reportes mensuales",
+      "paper": "a4"
+    },
+    "AnexoPantallaListado.dc.html": {
+      "x": 2622,
+      "y": 11187,
+      "w": 794,
+      "h": 1123,
+      "title": "Anexo F · El listado de clientes",
+      "paper": "a4"
+    },
+    "AnexoPantallaCalendario.dc.html": {
+      "x": 3496,
+      "y": 11187,
+      "w": 794,
+      "h": 1123,
+      "title": "Anexo F · El calendario de obra",
+      "paper": "a4"
+    },
+    "Cierre.dc.html": {
+      "x": 4370,
+      "y": 11187,
+      "w": 794,
+      "h": 1123,
+      "title": "Cierre",
+      "paper": "a4"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "ComoUsar.dc.html",
+    "PorQueExiste.dc.html",
+    "PrincipioRector.dc.html",
+    "QueSePromete.dc.html",
+    "Recorrido.dc.html",
+    "QuienHabla.dc.html",
+    "QueRegistra.dc.html",
+    "PortadillaE1.dc.html",
+    "E1Bienvenida.dc.html",
+    "E1Expectativa.dc.html",
+    "E1Portal.dc.html",
+    "E1Capataz.dc.html",
+    "E1Fecha.dc.html",
+    "ReglaAgenda.dc.html",
+    "E1Visita.dc.html",
+    "E1ObraTerminada.dc.html",
+    "PortadillaE2.dc.html",
+    "PasoEncender.dc.html",
+    "E2Espera.dc.html",
+    "PortadillaE3.dc.html",
+    "E3Capacitacion.dc.html",
+    "E3Reportes.dc.html",
+    "E3Portal.dc.html",
+    "MediaHora.dc.html",
+    "CorreoManana.dc.html",
+    "Senales.dc.html",
+    "FichaCliente.dc.html",
+    "MensajesModelo.dc.html",
+    "Reclamos.dc.html",
+    "Encuestas.dc.html",
+    "Mantenimientos.dc.html",
+    "PlanGranizo.dc.html",
+    "PlanGranizoDanio.dc.html",
+    "ReglasDuras.dc.html",
+    "SaleMal.dc.html",
+    "AnexoReferentes.dc.html",
+    "AnexoGlosario.dc.html",
+    "AnexoDecisiones.dc.html",
+    "AnexoQueFalta.dc.html",
+    "AnexoFAQ.dc.html",
+    "AnexoFAQ1.dc.html",
+    "AnexoFAQ2.dc.html",
+    "AnexoFAQ3.dc.html",
+    "AnexoFAQ4.dc.html",
+    "AnexoFAQ5.dc.html",
+    "AnexoFAQ6.dc.html",
+    "AnexoFAQ7.dc.html",
+    "AnexoFAQ8.dc.html",
+    "AnexoFAQ9.dc.html",
+    "AnexoPantallaFicha.dc.html",
+    "AnexoPantallaPasos.dc.html",
+    "AnexoPantallaReglaOro.dc.html",
+    "AnexoPantallaPlantillas.dc.html",
+    "AnexoPantallaUte.dc.html",
+    "AnexoPantallaPortal.dc.html",
+    "AnexoPantallaReportes.dc.html",
+    "AnexoPantallaListado.dc.html",
+    "AnexoPantallaCalendario.dc.html",
+    "Cierre.dc.html"
+  ],
+  "notes": {
+    "muestra": {
+      "x": 0,
+      "y": -300,
+      "text": "Manual de Posventa — Experiencia Solar",
+      "kind": "title1",
+      "maxW": 5164
+    }
+  }
+}

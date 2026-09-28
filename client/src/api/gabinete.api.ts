@@ -16,8 +16,9 @@ export interface GabineteForm {
   pestanaAnchoCm: number;
   // Medidas de taller: ninguna opcional. Si el fabricante no especificó algo,
   // vale el default —una decisión tomada— y no un hueco en la lámina.
-  alaTapaCm: number;
-  radioDoblezMm: number;
+  //
+  // No hay bisagras, cierre, ventilación ni grado IP: el gabinete es todo
+  // chapa plegada y se entrega sin herrajes.
   union: string;
   tornillos: string;
   solapeUnionCm: number;
@@ -25,20 +26,13 @@ export interface GabineteForm {
   agujeroAmureDiamMm: number;
   agujerosAmureVertical: number;
   agujerosAmureHorizontal: number;
-  perfilPuertaCm: number;
-  perfilMarcoCm: number;
-  solapePuertaCm: number;
-  holguraPuertaMm: number;
-  bisagrasCantidad: number;
-  bisagrasLado: string;
-  bisagraDistExtremoCm: number;
+  rebordeTapaCm: number;
+  rebordeFrenteCm: number;
+  solapeTapaCm: number;
+  holguraTapaMm: number;
   material: string;
   espesorMm: number;
   acabado: string;
-  tipoCierre: string;
-  bisagras: string;
-  ventilacion: boolean;
-  gradoIp?: string | null;
   toleranciaMm: number;
   cantidad: number;
   notas?: string | null;
@@ -103,8 +97,6 @@ export const GABINETE_DEFAULTS: GabineteForm = {
   fondoAbierto: true,
   pestanaAmure: true,
   pestanaAnchoCm: 3,
-  alaTapaCm: 3,
-  radioDoblezMm: 2,
   union: "Dos piezas en L atornilladas",
   tornillos: "Tornillo punta mecha tipo T1",
   solapeUnionCm: 3,
@@ -112,20 +104,13 @@ export const GABINETE_DEFAULTS: GabineteForm = {
   agujeroAmureDiamMm: 6,
   agujerosAmureVertical: 4,
   agujerosAmureHorizontal: 3,
-  perfilPuertaCm: 2,
-  perfilMarcoCm: 2,
-  solapePuertaCm: 1,
-  holguraPuertaMm: 2,
-  bisagrasCantidad: 2,
-  bisagrasLado: "Izquierda",
-  bisagraDistExtremoCm: 12,
+  rebordeTapaCm: 2,
+  rebordeFrenteCm: 2,
+  solapeTapaCm: 1,
+  holguraTapaMm: 2,
   material: "Chapa galvanizada en caliente",
   espesorMm: 1.5,
   acabado: "Galvanizado",
-  tipoCierre: "A presión (sin candado)",
-  bisagras: "Ocultas (interior)",
-  ventilacion: false,
-  gradoIp: "IP54",
   toleranciaMm: 2,
   cantidad: 1,
   notas: null,

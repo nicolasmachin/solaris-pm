@@ -57,7 +57,7 @@ export function cm(n: number): string {
 // sobresale. Acotada en ancho (abajo) y alto (izquierda).
 
 export function vistaFrontal(box: Box, g: GabineteInputs, scale?: number): string {
-  const pad = { left: 46, right: 14, top: 14, bottom: 34 };
+  const pad = { left: 46, right: 20, top: 20, bottom: 34 };
   const availW = box.w - pad.left - pad.right;
   const availH = box.h - pad.top - pad.bottom;
   const s = scale ?? fitScale(g.anchoCm, g.altoCm, availW, availH);
@@ -67,58 +67,40 @@ export function vistaFrontal(box: Box, g: GabineteInputs, scale?: number): strin
   const x = box.x + pad.left + (availW - w) / 2;
   const y = box.y + pad.top + (availH - h) / 2;
 
-  // Alero de la tapa: sobresale a los lados, con el ala declarada a escala.
-  const over = Math.min(g.alaTapaCm * s, 14);
-  const capH = Math.max(7, WALL * 1.6);
+  // Lo que se ve de frente es la tapa puesta: una chapa a ras del cuerpo con
+  // su reborde plegado marcando el perímetro. No hay alero ni herrajes.
+  const borde = Math.max(4, Math.min(g.rebordeTapaCm * s, 16));
 
-  const parts = [
-    viewTitle(box, "VISTA FRONTAL"),
-    // Cuerpo + tapa (marco interior).
-    rect(x, y, w, h, { fill: COLOR.metalFill }),
-    rect(x + WALL, y + capH + WALL, w - WALL * 2, h - capH - WALL * 2, {
+  return [
+    viewTitle(box, "VISTA FRONTAL (TAPA PUESTA)"),
+    rect(x, y, w, h, { fill: COLOR.metalFill, stroke: COLOR.metalStrokeDark }),
+    rect(x + borde, y + borde, w - borde * 2, h - borde * 2, {
       fill: COLOR.metalFillLight,
       stroke: COLOR.metalStroke,
     }),
-    // Alero superior.
-    rect(x - over, y, w + over * 2, capH, { fill: COLOR.metalFillDark, stroke: COLOR.metalStrokeDark }),
-    // Cotas generales.
+    // Cotas.
     extLine(x, y + h, x, y + h + 26),
     extLine(x + w, y + h, x + w, y + h + 26),
     dimH(x, x + w, y + h + 20, cm(g.anchoCm)),
     extLine(x, y, x - 34, y),
     extLine(x, y + h, x - 34, y + h),
     dimV(y, y + h, x - 28, cm(g.altoCm)),
-  ];
-
-  // Ejes de las bisagras, acotados desde cada extremo. Van sobre el lado que
-  // abre; el resto se reparte entre medio.
-  const hingeX = g.bisagrasLado.toLowerCase().startsWith("der") ? x + w : x;
-  const dist = Math.min(g.bisagraDistExtremoCm * s, h / 2 - 6);
-  const n = Math.max(1, g.bisagrasCantidad);
-  const hingeYs: number[] =
-    n === 1
-      ? [y + h / 2]
-      : Array.from({ length: n }, (_, i) => y + dist + ((h - dist * 2) * i) / (n - 1));
-
-  for (const hy of hingeYs) {
-    parts.push(
-      rect(hingeX - 3, hy - 9, 6, 18, { fill: COLOR.metalStrokeDark, stroke: COLOR.metalStrokeDark }),
-    );
-  }
-  // Solo se acota la primera (las demás se reparten parejo, y así lo dice la
-  // tabla de medidas de la hoja 2).
-  parts.push(
-    extLine(hingeX, y, hingeX + (hingeX === x ? -1 : 1) * 16, y),
-    dimV(y, hingeYs[0], hingeX + (hingeX === x ? -14 : 14), cm(g.bisagraDistExtremoCm), { size: 9.5 }),
-  );
-
-  return parts.join("");
+    // El reborde de la tapa, acotado arriba a la derecha (a la izquierda se
+    // salía de la hoja).
+    extLine(x + w - borde, y - 4, x + w - borde, y - 22),
+    extLine(x + w, y - 4, x + w, y - 22),
+    line(x + w - borde - 4, y - 18, x + w + 28, y - 18, { color: COLOR.dim }),
+    text(x + w + 32, y - 14, `reborde ${cm(g.rebordeTapaCm)}`, {
+      size: 9,
+      color: COLOR.dim,
+    }),
+  ].join("");
 }
 
 // ─── Vista lateral ────────────────────────────────────────────────────────────
 
 export function vistaLateral(box: Box, g: GabineteInputs, scale?: number): string {
-  const pad = { left: 14, right: 14, top: 14, bottom: 34 };
+  const pad = { left: 20, right: 20, top: 20, bottom: 34 };
   const availW = box.w - pad.left - pad.right;
   const availH = box.h - pad.top - pad.bottom;
   const s = scale ?? fitScale(g.profundidadCm, g.altoCm, availW, availH);
@@ -128,38 +110,34 @@ export function vistaLateral(box: Box, g: GabineteInputs, scale?: number): strin
   const x = box.x + pad.left + (availW - w) / 2;
   const y = box.y + pad.top + (availH - h) / 2;
 
-  const over = Math.min(g.alaTapaCm * s, 12);
-  const capH = Math.max(7, WALL * 1.6);
-
   const parts = [
     viewTitle(box, "VISTA LATERAL DERECHA"),
-    rect(x, y, w, h, { fill: COLOR.metalFill }),
-    // Alero: sobresale hacia el frente (izquierda de esta vista).
-    rect(x - over, y, w + over, capH, { fill: COLOR.metalFillDark, stroke: COLOR.metalStrokeDark }),
-    // Pestaña de amure: se ve como un pie doblado al fondo (derecha).
-    ...(g.pestanaAmure
-      ? [
-          line(x + w, y + capH, x + w, y + h, { color: COLOR.metalStrokeDark }),
-          rect(x + w, y + h - Math.min(g.pestanaAnchoCm * s, 18), 3, Math.min(g.pestanaAnchoCm * s, 18), {
-            fill: COLOR.metalFillDark,
-            stroke: COLOR.metalStrokeDark,
-          }),
-        ]
-      : []),
+    rect(x, y, w, h, { fill: COLOR.metalFill, stroke: COLOR.metalStrokeDark }),
+    // Canto de la tapa, al frente (izquierda de esta vista).
+    rect(x, y, Math.max(3, WALL * 0.8), h, {
+      fill: COLOR.metalFillDark,
+      stroke: COLOR.metalStrokeDark,
+    }),
+  ];
+
+  // Pestaña de amure: el doblez del fondo, contra el muro (derecha).
+  if (g.pestanaAmure) {
+    const f = Math.max(5, Math.min(g.pestanaAnchoCm * s, 18));
+    parts.push(
+      rect(x + w, y, 3, h, { fill: COLOR.metalFillDark, stroke: COLOR.metalStrokeDark }),
+      extLine(x + w, y - 4, x + w, y - 22),
+      extLine(x + w + 3, y - 4, x + w + 3, y - 22),
+      line(x + w - 30, y - 18, x + w + 6, y - 18, { color: COLOR.dim }),
+      text(x + w + 10, y - 14, `pestaña ${cm(g.pestanaAnchoCm)}`, { size: 9, color: COLOR.dim }),
+    );
+    void f;
+  }
+
+  parts.push(
     extLine(x, y + h, x, y + h + 26),
     extLine(x + w, y + h, x + w, y + h + 26),
     dimH(x, x + w, y + h + 20, cm(g.profundidadCm)),
-    // Ala de la tapa: la cota es muy corta para meterle el número adentro, así
-    // que la medida va corrida a la izquierda con su rótulo.
-    extLine(x - over, y, x - over, y - 22),
-    extLine(x, y, x, y - 22),
-    line(x - over - 30, y - 18, x + 3, y - 18, { color: COLOR.dim }),
-    text(x - over - 34, y - 14, `ala ${cm(g.alaTapaCm)}`, {
-      size: 9,
-      color: COLOR.dim,
-      anchor: "end",
-    }),
-  ];
+  );
   return parts.join("");
 }
 
@@ -249,32 +227,48 @@ export function vistaPosterior(box: Box, g: GabineteInputs): string {
 // Proyección simple: la profundidad se dibuja como un desplazamiento diagonal.
 
 export function vistaIsometrica(box: Box, g: GabineteInputs): string {
-  const pad = { left: 20, right: 20, top: 16, bottom: 20 };
+  const pad = { left: 24, right: 24, top: 20, bottom: 26 };
   const availW = box.w - pad.left - pad.right;
   const availH = box.h - pad.top - pad.bottom;
 
-  // Ángulo de 30°: dx/dy por cm de profundidad.
+  // Proyección a 30°: la profundidad se dibuja como un corrimiento diagonal.
   const DX = Math.cos(Math.PI / 6);
   const DY = Math.sin(Math.PI / 6);
-  // El bounding box de la proyección mide (ancho + prof·cos) × (alto + prof·sen).
-  const totalCmW = g.anchoCm + g.profundidadCm * DX;
-  const totalCmH = g.altoCm + g.profundidadCm * DY;
-  const s = fitScale(totalCmW, totalCmH, availW, availH);
+  const s = fitScale(
+    g.anchoCm + g.profundidadCm * DX,
+    g.altoCm + g.profundidadCm * DY,
+    availW,
+    availH,
+  );
 
   const w = g.anchoCm * s;
   const h = g.altoCm * s;
   const dx = g.profundidadCm * DX * s;
   const dy = g.profundidadCm * DY * s;
-
+  // (x, y) = esquina superior izquierda de la cara frontal.
   const x = box.x + pad.left + (availW - (w + dx)) / 2;
-  const y = box.y + pad.top + (availH - (h + dy)) / 2 + dy;
+  const y = box.y + pad.top + dy + (availH - (h + dy)) / 2;
 
-  const capH = Math.max(7, WALL * 1.6);
-  const over = g.alaTapaCm ? Math.min(g.alaTapaCm * s, 10) : 4;
+  // El gabinete es un prisma recto: la tapa va a ras del frente, sin alero ni
+  // techo que sobresalga. Lo único que se marca en el frente es el reborde
+  // plegado de la tapa.
+  const borde = Math.max(3, Math.min(g.rebordeTapaCm * s, 12));
 
-  const parts = [
+  return [
     viewTitle(box, "VISTA ISOMÉTRICA"),
-    // Cara lateral (derecha, hacia el fondo).
+
+    // Techo del cuerpo.
+    polygon(
+      [
+        [x, y],
+        [x + w, y],
+        [x + w + dx, y - dy],
+        [x + dx, y - dy],
+      ],
+      { fill: COLOR.metalFillLight, stroke: COLOR.metalStrokeDark },
+    ),
+
+    // Lateral derecho (la cara que se aleja): el tono más oscuro.
     polygon(
       [
         [x + w, y],
@@ -284,113 +278,121 @@ export function vistaIsometrica(box: Box, g: GabineteInputs): string {
       ],
       { fill: COLOR.metalFillDark, stroke: COLOR.metalStrokeDark },
     ),
-    // Cara frontal.
+
+    // Frente: la tapa puesta, con su reborde perimetral.
     rect(x, y, w, h, { fill: COLOR.metalFill, stroke: COLOR.metalStrokeDark }),
-    // Tapa superior (alero).
-    polygon(
-      [
-        [x - over, y],
-        [x + w + over, y],
-        [x + w + over + dx, y - dy],
-        [x - over + dx, y - dy],
-      ],
-      { fill: COLOR.metalFillLight, stroke: COLOR.metalStrokeDark },
-    ),
-    // Canto del alero sobre la cara frontal.
-    rect(x - over, y, w + over * 2, capH, { fill: COLOR.metalFillDark, stroke: COLOR.metalStrokeDark }),
-  ];
+    rect(x + borde, y + borde, w - borde * 2, h - borde * 2, {
+      fill: COLOR.metalFill,
+      stroke: COLOR.metalStroke,
+      strokeWidth: 0.8,
+    }),
 
-  // Pestaña de amure asomando por detrás: una banda fina en el plano del
-  // fondo, corrida hacia afuera del cuerpo.
-  if (g.pestanaAmure) {
-    const f = Math.max(4, Math.min(g.pestanaAnchoCm * s, 11));
-    parts.push(
-      polygon(
-        [
-          [x + dx, y - dy + h],
-          [x + w + dx, y - dy + h],
-          [x + w + dx, y - dy + h + f],
-          [x + dx, y - dy + h + f],
-        ],
-        { fill: COLOR.metalFillDark, stroke: COLOR.metalStrokeDark },
-      ),
-    );
-  }
-
-  return parts.join("");
+    text(x + (w + dx) / 2, y + h + 18, "Tapa a ras del frente; fondo abierto al muro", {
+      size: 8.5,
+      color: "#6B7280",
+      anchor: "middle",
+    }),
+  ].join("");
 }
 
-// ─── Vista interior (tapa abierta) ────────────────────────────────────────────
+// ─── Frente del cuerpo, sin la tapa ────────────────────────────────────────
+// Es la vista que muestra el reborde plegado del frente, contra el que asienta
+// la tapa. Reemplazó a la "vista interior con la puerta abierta": sin bisagras,
+// la tapa no se abre — se saca.
 
-export function vistaInterior(box: Box, g: GabineteInputs): string {
-  const pad = { left: 14, right: 14, top: 14, bottom: 18 };
+export function frenteSinTapa(box: Box, g: GabineteInputs): string {
+  const pad = { left: 24, right: 24, top: 24, bottom: 40 };
   const availW = box.w - pad.left - pad.right;
   const availH = box.h - pad.top - pad.bottom;
-
-  // La puerta abierta ocupa ~55% del ancho del cuerpo a la izquierda.
-  const doorRatio = 0.55;
-  const s = fitScale(g.anchoCm * (1 + doorRatio), g.altoCm, availW, availH);
+  const s = fitScale(g.anchoCm, g.altoCm, availW, availH);
 
   const w = g.anchoCm * s;
   const h = g.altoCm * s;
-  const doorW = w * doorRatio;
-  const totalW = w + doorW;
-  const x = box.x + pad.left + (availW - totalW) / 2 + doorW;
+  const x = box.x + pad.left + (availW - w) / 2;
   const y = box.y + pad.top + (availH - h) / 2;
 
-  const flange = g.pestanaAmure ? Math.max(8, Math.min(g.pestanaAnchoCm * s, 20)) : WALL;
+  const borde = Math.max(6, Math.min(g.rebordeFrenteCm * s, 20));
 
-  const parts = [
-    viewTitle(box, g.fondoAbierto ? "VISTA INTERIOR (SIN FONDO)" : "VISTA INTERIOR"),
-    // Puerta abierta hacia la izquierda, en perspectiva plana.
-    polygon(
-      [
-        [x - doorW, y - 8],
-        [x, y],
-        [x, y + h],
-        [x - doorW, y + h + 8],
-      ],
-      { fill: COLOR.metalFillLight, stroke: COLOR.metalStrokeDark },
-    ),
-    // Cuerpo con la pestaña perimetral y el fondo.
-    rect(x, y, w, h, { fill: COLOR.metalFill, stroke: COLOR.metalStrokeDark }),
-    rect(x + flange, y + flange, w - flange * 2, h - flange * 2, {
+  return [
+    viewTitle(box, "FRENTE DEL CUERPO (SIN TAPA)"),
+    // El reborde perimetral plegado hacia adentro.
+    rect(x, y, w, h, { fill: COLOR.metalFillDark, stroke: COLOR.metalStrokeDark }),
+    // El hueco: por acá se ve el muro, porque el fondo es abierto.
+    rect(x + borde, y + borde, w - borde * 2, h - borde * 2, {
       fill: g.fondoAbierto ? "#FFFFFF" : COLOR.metalFillLight,
       stroke: COLOR.metalStrokeDark,
     }),
-  ];
+    extLine(x, y - 4, x, y - 20),
+    extLine(x + borde, y - 4, x + borde, y - 20),
+    line(x, y - 16, x + borde + 26, y - 16, { color: COLOR.dim }),
+    text(x + borde + 30, y - 12, `reborde ${cm(g.rebordeFrenteCm)}`, {
+      size: 9,
+      color: COLOR.dim,
+    }),
+    text(
+      x + w / 2,
+      y + h + 20,
+      g.fondoAbierto ? "Sin fondo: se ve el muro" : "Con fondo de chapa",
+      { size: 8.5, color: "#6B7280", anchor: "middle" },
+    ),
+  ].join("");
+}
 
-  // Bisagras sobre el canto que abre, en la cantidad declarada.
-  const nB = Math.max(1, g.bisagrasCantidad);
-  const distB = Math.min(g.bisagraDistExtremoCm * s, h / 2 - 6);
-  const ys =
-    nB === 1
-      ? [y + h / 2]
-      : Array.from({ length: nB }, (_, i) => y + distB + ((h - distB * 2) * i) / (nB - 1));
-  for (const by of ys) {
-    parts.push(
-      rect(x - 3, by - h * 0.05, 6, h * 0.1, {
-        fill: COLOR.metalStrokeDark,
-        stroke: COLOR.metalStrokeDark,
-      }),
-    );
-  }
-  parts.push(
-    text(box.x + box.w / 2, box.y + box.h - 2, `Apertura ${g.bisagrasLado.toLowerCase()}`, {
+// ─── La tapa, como pieza suelta ───────────────────────────────────────────────
+// Se entrega sin herrajes y sin perforaciones: es una chapa con su reborde
+// plegado en las cuatro caras.
+
+export function tapaSuelta(box: Box, g: GabineteInputs): string {
+  const pad = { left: 28, right: 28, top: 24, bottom: 46 };
+  const availW = box.w - pad.left - pad.right;
+  const availH = box.h - pad.top - pad.bottom;
+
+  // La tapa mide lo mismo que el frente del gabinete.
+  const s = fitScale(g.anchoCm, g.altoCm, availW, availH);
+  const w = g.anchoCm * s;
+  const h = g.altoCm * s;
+  const x = box.x + pad.left + (availW - w) / 2;
+  const y = box.y + pad.top + (availH - h) / 2;
+  const borde = Math.max(5, Math.min(g.rebordeTapaCm * s, 16));
+
+  return [
+    viewTitle(box, "LA TAPA (PIEZA SUELTA)"),
+    rect(x, y, w, h, { fill: COLOR.metalFill, stroke: COLOR.metalStrokeDark }),
+    // Línea del plegado perimetral.
+    rect(x + borde, y + borde, w - borde * 2, h - borde * 2, {
+      fill: COLOR.metalFillLight,
+      stroke: COLOR.metalStroke,
+      dash: "4 3",
+    }),
+    extLine(x, y - 4, x, y - 22),
+    extLine(x + borde, y - 4, x + borde, y - 22),
+    line(x - 28, y - 18, x + borde + 4, y - 18, { color: COLOR.dim }),
+    text(x - 32, y - 14, `reborde ${cm(g.rebordeTapaCm)}`, {
+      size: 9,
+      color: COLOR.dim,
+      anchor: "end",
+    }),
+    extLine(x, y + h, x, y + h + 24),
+    extLine(x + w, y + h, x + w, y + h + 24),
+    dimH(x, x + w, y + h + 18, cm(g.anchoCm), { size: 9.5 }),
+    text(x + w / 2, y + h + 36, "Plegada en las cuatro caras", {
+      size: 8.5,
+      color: "#6B7280",
+      anchor: "middle",
+    }),
+    text(x + w / 2, y + h + 48, "Sin perforaciones ni herrajes", {
       size: 8.5,
       color: COLOR.text,
       anchor: "middle",
     }),
-  );
-
-  return parts.join("");
+  ].join("");
 }
 
 // ─── Detalle de la pestaña ────────────────────────────────────────────────────
 // Corte del doblez en L: la pared del gabinete y la pestaña de amure, acotadas.
 
 export function detallePestana(box: Box, g: GabineteInputs): string {
-  const parts = [viewTitle(box, "DETALLE PESTAÑA POSTERIOR")];
+  const parts = [viewTitle(box, "DETALLE PESTAÑA DE AMURE")];
   if (!g.pestanaAmure) {
     parts.push(
       text(box.x + box.w / 2, box.y + box.h / 2, "Sin pestaña de amure", {
@@ -436,96 +438,89 @@ export function detallePestana(box: Box, g: GabineteInputs): string {
 // El dibujo NO está a escala del resto de la lámina: es un detalle ampliado y
 // se lee por sus cotas, como en cualquier plano de taller.
 
-export function corteMarcoPuerta(box: Box, g: GabineteInputs): string {
+export function corteTapaCuerpo(box: Box, g: GabineteInputs): string {
   const t = 6; // espesor visual de la chapa en el detalle
-  const perfilMarco = g.perfilMarcoCm ?? 2;
-  const perfilPuerta = g.perfilPuertaCm ?? 2;
-  const solape = g.solapePuertaCm ?? 1;
-  const holgura = g.holguraPuertaMm ?? 2;
+  const rebordeFrente = g.rebordeFrenteCm;
+  const rebordeTapa = g.rebordeTapaCm;
+  const solape = g.solapeTapaCm;
+  const holgura = g.holguraTapaMm;
 
-  // Escala del detalle: que el ala más larga ocupe ~54 px.
-  const maxCm = Math.max(perfilMarco, perfilPuerta, solape, 1);
+  // Escala del detalle: que el reborde más largo ocupe ~46 px.
+  const maxCm = Math.max(rebordeFrente, rebordeTapa, solape, 1);
   const s = 46 / maxCm;
   const gap = Math.max(3, (holgura / 10) * s); // holgura: mm → cm → px
 
-  const marcoAla = perfilMarco * s;
-  const puertaAla = perfilPuerta * s;
+  const frenteAla = rebordeFrente * s;
+  const tapaAla = rebordeTapa * s;
   const solapePx = Math.max(solape * s, 10);
 
   // Corte por un lateral: el eje horizontal es la profundidad (izquierda =
-  // frente del gabinete), el vertical es hacia el interior.
+  // frente del gabinete), el vertical va hacia el interior.
   const xPared = box.x + 96; // arista del frente del cuerpo
   const yPared = box.y + 54;
-  const paredLen = Math.min(box.w - 150, 84); // tramo de pared que se muestra
+  const paredLen = Math.min(box.w - 150, 84);
 
-  // La puerta monta por fuera: su ala corre paralela a la pared, separada por
-  // la holgura, y su canto apoya contra el ala del marco.
-  const xPuerta = xPared - gap - t;
-  const yPuertaTop = yPared - 24;
-  const puertaCaraLen = marcoAla + 34;
+  const xTapa = xPared - gap - t;
+  const yTapaTop = yPared - 24;
+  const tapaCaraLen = frenteAla + 34;
 
   return [
-    viewTitle(box, "CORTE — PERFIL DE PUERTA Y MARCO"),
+    viewTitle(box, "CORTE — ENCUENTRO TAPA / CUERPO"),
 
-    // ── Cuerpo (marco): pared lateral + ala doblada hacia el interior.
+    // Cuerpo: pared lateral + reborde del frente plegado hacia adentro.
     rect(xPared, yPared, paredLen, t, {
       fill: COLOR.metalFillDark,
       stroke: COLOR.metalStrokeDark,
     }),
-    rect(xPared, yPared + t, t, marcoAla, {
+    rect(xPared, yPared + t, t, frenteAla, {
       fill: COLOR.metalFillDark,
       stroke: COLOR.metalStrokeDark,
     }),
 
-    // ── Puerta: cara frontal (de canto) + ala que envuelve el borde.
-    rect(xPuerta, yPuertaTop, t, puertaCaraLen, {
+    // Tapa: su cara + el reborde plegado que monta sobre el cuerpo.
+    rect(xTapa, yTapaTop, t, tapaCaraLen, {
       fill: COLOR.metalFill,
       stroke: COLOR.metalStrokeDark,
     }),
-    rect(xPuerta, yPuertaTop, solapePx + t, t, {
+    rect(xTapa, yTapaTop, solapePx + t, t, {
       fill: COLOR.metalFill,
       stroke: COLOR.metalStrokeDark,
     }),
 
-    // ── Cotas.
-    // Ala de la puerta (el tramo que envuelve), arriba.
-    extLine(xPuerta, yPuertaTop, xPuerta, yPuertaTop - 22),
-    extLine(xPuerta + solapePx + t, yPuertaTop, xPuerta + solapePx + t, yPuertaTop - 22),
-    dimH(xPuerta, xPuerta + solapePx + t, yPuertaTop - 16, cm(solape), { size: 9.5 }),
-    text(xPuerta + solapePx + t + 8, yPuertaTop - 12, "solape", { size: 8.5, color: COLOR.dim }),
+    // Cotas.
+    extLine(xTapa, yTapaTop, xTapa, yTapaTop - 22),
+    extLine(xTapa + solapePx + t, yTapaTop, xTapa + solapePx + t, yTapaTop - 22),
+    dimH(xTapa, xTapa + solapePx + t, yTapaTop - 16, cm(solape), { size: 9.5 }),
+    text(xTapa + solapePx + t + 8, yTapaTop - 12, "solape", { size: 8.5, color: COLOR.dim }),
 
-    // Ala del marco (hacia adentro), a la derecha.
     extLine(xPared + t, yPared + t, xPared + t + 44, yPared + t),
-    extLine(xPared + t, yPared + t + marcoAla, xPared + t + 44, yPared + t + marcoAla),
-    dimV(yPared + t, yPared + t + marcoAla, xPared + t + 38, cm(perfilMarco), { size: 9.5 }),
+    extLine(xPared + t, yPared + t + frenteAla, xPared + t + 44, yPared + t + frenteAla),
+    dimV(yPared + t, yPared + t + frenteAla, xPared + t + 38, cm(rebordeFrente), { size: 9.5 }),
 
-    // Ala de la puerta (su tramo de canto), a la izquierda.
-    extLine(xPuerta, yPuertaTop + t, xPuerta - 40, yPuertaTop + t),
-    extLine(xPuerta, yPuertaTop + t + puertaAla, xPuerta - 40, yPuertaTop + t + puertaAla),
-    dimV(yPuertaTop + t, yPuertaTop + t + puertaAla, xPuerta - 34, cm(perfilPuerta), { size: 9.5 }),
+    extLine(xTapa, yTapaTop + t, xTapa - 40, yTapaTop + t),
+    extLine(xTapa, yTapaTop + t + tapaAla, xTapa - 40, yTapaTop + t + tapaAla),
+    dimV(yTapaTop + t, yTapaTop + t + tapaAla, xTapa - 34, cm(rebordeTapa), { size: 9.5 }),
 
-    // Holgura y asiento: rótulos cortos, pegados a lo que nombran y en
-    // renglones distintos para que no se pisen entre sí.
-    line(xPuerta + t / 2, yPuertaTop + puertaCaraLen, xPuerta + t / 2, yPuertaTop + puertaCaraLen + 10, {
+    // Holgura y asiento, en renglones distintos para que no se pisen.
+    line(xTapa + t / 2, yTapaTop + tapaCaraLen, xTapa + t / 2, yTapaTop + tapaCaraLen + 10, {
       color: COLOR.dim,
       width: 0.6,
     }),
-    line(xPared + t / 2, yPared + t + marcoAla, xPared + t / 2, yPuertaTop + puertaCaraLen + 10, {
+    line(xPared + t / 2, yPared + t + frenteAla, xPared + t / 2, yTapaTop + tapaCaraLen + 10, {
       color: COLOR.dim,
       width: 0.6,
       dash: "2 2",
     }),
-    text(xPuerta + t / 2, yPuertaTop + puertaCaraLen + 22, `holgura ${holgura} mm`, {
+    text(xTapa + t / 2, yTapaTop + tapaCaraLen + 22, `holgura ${fmt(holgura)} mm`, {
       size: 8.5,
       color: COLOR.dim,
       anchor: "middle",
     }),
-    // Un renglón más abajo que "holgura": compartían altura y se pisaban.
-    text(xPared + t + 14, yPared + t + marcoAla + 44, "asiento de la puerta", {
+    text(xPared + t + 14, yPared + t + frenteAla + 44, "asiento de la tapa", {
       size: 8.5,
       color: COLOR.text,
     }),
-    line(xPared + t + 10, yPared + t + marcoAla + 40, xPared + t, yPared + t + marcoAla, {
+    line(xPared + t + 10, yPared + t + frenteAla + 40, xPared + t, yPared + t + frenteAla, {
       color: COLOR.dim,
       width: 0.6,
     }),
@@ -634,41 +629,4 @@ export function despieceL(box: Box, g: GabineteInputs): string {
   );
 
   return parts.join("");
-}
-
-// ─── Detalle de plegado ───────────────────────────────────────────────────────
-// El radio interior del doblez, que ningún dibujo de conjunto muestra y el
-// taller necesita para calcular el desarrollo de la chapa.
-
-export function detallePlegado(box: Box, g: GabineteInputs): string {
-  const t = 9;
-  const arm = 52;
-  const x = box.x + 46;
-  const y = box.y + 40;
-
-  return [
-    viewTitle(box, "DETALLE DE PLEGADO"),
-    // Chapa doblada a 90°, dibujada como dos tramos con el codo redondeado.
-    `<path d="M ${r(x)} ${r(y)} L ${r(x)} ${r(y + arm - t * 1.6)} Q ${r(x)} ${r(y + arm)} ${r(
-      x + t * 1.6,
-    )} ${r(y + arm)} L ${r(x + arm)} ${r(y + arm)} L ${r(x + arm)} ${r(y + arm + t)} L ${r(
-      x - t,
-    )} ${r(y + arm + t)} L ${r(x - t)} ${r(y)} Z" fill="${COLOR.metalFill}" stroke="${
-      COLOR.metalStrokeDark
-    }" stroke-width="1" />`,
-    // Cota del radio interior.
-    leader(x + t * 0.6, y + arm - t * 0.6, x + arm - 4, y + arm - 26, [
-      `Radio interior ${fmt(g.radioDoblezMm)} mm`,
-    ]),
-    text(box.x + box.w / 2, y + arm + 34, `Espesor de chapa ${fmt(g.espesorMm)} mm`, {
-      size: 9,
-      color: COLOR.text,
-      anchor: "middle",
-    }),
-    text(box.x + box.w - 2, box.y + 8, "Detalle sin escala", {
-      size: 8,
-      color: "#6B7280",
-      anchor: "end",
-    }),
-  ].join("");
 }

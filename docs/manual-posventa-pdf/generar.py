@@ -237,6 +237,46 @@ def hueco(que, detalle, alto=190, margen=22):
             f'  </div>\n')
 
 
+def figura(url, epigrafe, margen=20, ancho="100%"):
+    """Una captura de pantalla con su marco y el epígrafe que dice qué mirar.
+
+    La imagen va con `width` y sin alto fijo: la hoja se mide después con
+    `espacio.mjs`, y el alto real sale de la proporción del archivo.
+    """
+    return (f'  <figure style="margin: {margen}px 0 0">\n'
+            f'    <img src="{url}" alt="" style="display: block; width: {ancho}; margin: 0 auto; '
+            f'border: 1px solid {BORDE}; border-radius: 8px">\n'
+            f'    <figcaption style="margin-top: 8px; font-family: {SANS}; font-size: 11.5px; '
+            f'line-height: 1.45; color: {GRIS}; text-align: center">{epigrafe}</figcaption>\n'
+            f'  </figure>\n')
+
+
+def pagina_captura(titulo, bajada, url, epigrafe, numero, rotulo="ANEXO F · LAS PANTALLAS",
+                   ancho="100%"):
+    """Una hoja del anexo visual: un rótulo, la pantalla grande y qué mirar.
+
+    La imagen se limita con `max-height` para que ninguna captura larga empuje
+    el pie fuera de la hoja.
+    """
+    cuerpo = (
+        f'  <div style="font-family: {SANS}; font-size: 11px; font-weight: 600; letter-spacing: 2.2px; '
+        f'color: {AZUL}">{rotulo}</div>\n'
+        f'  <h1 style="margin: 10px 0 0; font-family: {SANS}; font-size: 30px; font-weight: 700; '
+        f'letter-spacing: -.8px; line-height: 1.1; color: {NEGRO}; text-wrap: balance">{titulo}</h1>\n'
+        f'  <p style="margin: 10px 0 0; max-width: 610px; font-size: 14.5px; line-height: 1.55; '
+        f'color: {TEXTO}; text-wrap: pretty">{bajada}</p>\n'
+        f'  <figure style="margin: 20px 0 0; flex-shrink: 1; min-height: 0; display: flex; '
+        f'flex-direction: column">\n'
+        f'    <img src="{url}" alt="" style="display: block; width: {ancho}; max-height: 720px; '
+        f'object-fit: contain; object-position: top; margin: 0 auto; border: 1px solid {BORDE}; '
+        f'border-radius: 8px">\n'
+        f'    <figcaption style="margin-top: 9px; font-family: {SANS}; font-size: 11.5px; '
+        f'line-height: 1.45; color: {GRIS}">{epigrafe}</figcaption>\n'
+        f'  </figure>\n'
+    )
+    return pagina(titulo, cuerpo, numero)
+
+
 def numerados(items, margen=18):
     """Lista con círculos numerados, para los pasos de una instrucción."""
     out = f'  <div style="margin-top: {margen}px; display: flex; flex-direction: column; gap: 11px">\n'
@@ -273,8 +313,13 @@ def tabla(cabeceras, filas, anchos=None, margen=20):
             f'<thead><tr>{ths}</tr></thead><tbody>{trs}</tbody></table>\n')
 
 
-def portadilla(etapa, nombre, desde, hasta, vive, semaforo, pasos, numero):
-    """Las tres páginas que abren cada etapa del recorrido."""
+def portadilla(etapa, nombre, desde, hasta, vive, semaforo, pasos, numero, foto=None):
+    """Las tres páginas que abren cada etapa del recorrido.
+
+    Con `foto`, la hoja lleva esa imagen a sangre bajo un velo azul. El velo es
+    opaco a propósito: el texto va en blanco encima y una foto clara lo borra.
+    Como la imagen es fondo y no contenido, no cambia la altura de nada.
+    """
     lista = ""
     for i, p in enumerate(pasos, 1):
         lista += (f'      <div style="display: flex; gap: 14px; padding: 11px 0; '
@@ -305,7 +350,11 @@ def portadilla(etapa, nombre, desde, hasta, vive, semaforo, pasos, numero):
         f'color: #8f9ad4; margin-bottom: 8px">LOS PASOS DE ESTA ETAPA</div>\n'
         f'{lista}  </div>\n'
     )
-    return pagina(f"Etapa {etapa} — {nombre}", cuerpo, numero, fondo=AZUL,
+    fondo = AZUL
+    if foto:
+        fondo = (f"linear-gradient(180deg, rgba(12,22,72,.86) 0%, rgba(24,54,178,.70) 55%, "
+                 f"rgba(12,22,72,.90) 100%), url('{foto}') center / cover no-repeat")
+    return pagina(f"Etapa {etapa} — {nombre}", cuerpo, numero, fondo=fondo,
                   padding="80px 72px 56px", color_pie="#8f9ad4", borde_pie="#4a63c6")
 
 

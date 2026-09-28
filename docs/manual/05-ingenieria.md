@@ -423,21 +423,24 @@ Los gabinetes de intemperie se mandan a fabricar a medida. Hasta ahora el plano
 se dibujaba a mano una vez, se mandaba por WhatsApp y cada pedido nuevo era
 editar aquel dibujo o volver a explicarlo. El ida y vuelta era siempre el mismo:
 el fabricante preguntaba **espesor** y **chapa**, y en la conversación aparecían
-medidas que en el plano no estaban (el perfil de la puerta, cómo se arma el
-cuerpo).
+medidas que en el plano no estaban.
 
-La herramienta genera esa lámina desde los datos del gabinete. El principio que
-la ordena: **ninguna medida queda implícita**. Todo lo que se dibuja sale de un
-campo con valor por defecto editable, y además está escrito en la tabla de
-medidas de la hoja 2, para que nada dependa de que el taller interprete bien un
-trazo ni de que el fabricante conteste un WhatsApp.
+Dos decisiones ordenan toda la herramienta:
+
+1. **Ninguna medida queda implícita.** Todo lo que se dibuja sale de un campo con
+   valor por defecto editable, y además está escrito en la tabla de medidas de la
+   hoja 2. Nada depende de que el taller interprete un trazo ni de que el
+   fabricante conteste un mensaje.
+2. **El gabinete es todo chapa plegada y se entrega sin herrajes.** Es lo único
+   que este fabricante hace. La tapa va suelta —sin bisagras ni cierre— y lisa,
+   sin perforaciones; Voltia decide después qué herraje le pone.
 
 ## Cómo se usa
 
 Dentro del workspace del proyecto (`/ingenieria/proyecto/:id`), tarjeta
 **Gabinete metálico**.
 
-1. **Nuevo gabinete** crea uno con los valores del gabinete que más se pide
+1. **Nuevo gabinete** crea uno con los valores del que más se pide
    (50 × 85 × 26 cm, chapa galvanizada de 1,5 mm, fondo abierto, pestaña de 3 cm).
 2. Se ajustan las medidas en el formulario de la izquierda. **La lámina de la
    derecha se redibuja sola** (450 ms después de dejar de tipear) y muestra las
@@ -447,44 +450,44 @@ Dentro del workspace del proyecto (`/ingenieria/proyecto/:id`), tarjeta
 Un proyecto puede tener **varios gabinetes**; cada uno lleva su nombre, sus
 medidas y su propio historial de láminas.
 
+### Cómo es el gabinete
+
+Un **cuerpo** de chapa plegada sin fondo, armado con **dos piezas en L**
+atornilladas, con una **pestaña perimetral atrás** para amurar y un **reborde
+plegado hacia adentro en el frente**, que es donde asienta la tapa. Y una
+**tapa** suelta, plegada en sus cuatro caras, que monta sobre ese reborde.
+
 ### Qué lleva la lámina
 
-**Hoja 1 — Conjunto**: frontal (con ancho, alto y la posición de las bisagras),
-lateral derecha (profundidad y ala de la tapa), posterior (pestaña de amure con
-diámetro y cantidad de agujeros) e isométrica, más las especificaciones
-generales y las notas.
+**Hoja 1 — Conjunto**: frontal con la tapa puesta, lateral derecha, posterior
+(pestaña de amure con diámetro y cantidad de agujeros) e isométrica, más las
+especificaciones generales y las notas.
 
-**Hoja 2 — Detalles de fabricación**: corte del encuentro puerta/marco, detalle
-de la pestaña de amure, **despiece de las dos piezas en L**, detalle de plegado,
-interior con las bisagras, y la **TABLA DE MEDIDAS** completa.
+**Hoja 2 — Detalles de fabricación**: corte del encuentro tapa/cuerpo, detalle de
+la pestaña de amure, **despiece de las dos piezas en L**, **frente del cuerpo sin
+tapa** (donde se ve el reborde), **la tapa como pieza suelta**, y la **TABLA DE
+MEDIDAS** completa.
 
-El **corte de puerta y marco** se agregó porque un instalador que ya había
-fabricado gabinetes marcó que faltaba: sin ver cómo asienta la puerta sobre el
-marco, el taller no sabe cómo doblar los perfiles. Acota ala de la puerta, ala
-del marco, solape y holgura.
-
-El **despiece** y el **detalle de plegado** se agregaron al cerrar la decisión de
-que el fabricante podía no contestar nunca: el armado en dos piezas en L estaba
-dicho con palabras pero sin ninguna medida, y el radio de plegado —que hace
-falta para calcular el desarrollo de la chapa— no figuraba en ningún lado.
+Las especificaciones dicen explícitamente lo que **no** se pide —"SE ENTREGA SIN
+HERRAJES", "sin perforaciones"—, y la tabla lo repite como filas
+("Herrajes: no se proveen"). Es a propósito: sin eso el fabricante cotiza
+bisagras y cierre, y el pedido vuelve con preguntas.
 
 ### Los valores por defecto
 
-Cada medida arranca con un default. **No son un relleno: son la decisión que se
-toma si nadie dice otra cosa**, y salen impresas como cualquier otra medida.
+Cada medida arranca con un default. **No son relleno: son la decisión que se toma
+si nadie dice otra cosa**, y salen impresas como cualquier otra medida.
 
 | Medida | Default |
 |---|---|
-| Ala / reborde de la tapa | 3 cm |
-| Radio interior de plegado | 2 mm |
 | Solape de unión entre las piezas en L | 3 cm |
 | Paso de tornillos de unión | cada 15 cm |
 | Diámetro de agujero de amure | 6 mm |
 | Agujeros de amure | 4 por lado vertical · 3 por lado horizontal |
-| Ala del perfil de la puerta / del marco | 2 cm / 2 cm |
-| Solape puerta sobre marco | 1 cm |
-| Holgura puerta / marco | 2 mm |
-| Bisagras | 2, apertura izquierda, eje a 12 cm del extremo |
+| Reborde plegado del frente del cuerpo | 2 cm |
+| Reborde plegado de la tapa | 2 cm |
+| Solape de la tapa sobre el cuerpo | 1 cm |
+| Holgura tapa / cuerpo | 2 mm |
 | Tolerancia general | ± 2 mm |
 
 ## Cómo funciona
@@ -531,8 +534,8 @@ container Node no trae fuentes del sistema — sin eso el PDF sale **sin texto**
 Frontal y lateral comparten una escala (`escalaFrontalLateral()`) porque están
 lado a lado: si cada una se escalara para llenar su celda, el mismo gabinete se
 vería de distinto alto en cada vista y el taller lo lee mal. La posterior, la
-isométrica, la interior y el despiece escalan cada una para su celda; el corte
-de puerta, el detalle de pestaña y el de plegado son esquemáticos y **lo dicen
+isométrica, el despiece, el frente sin tapa y la tapa escalan cada una para su
+celda; el corte tapa/cuerpo y el detalle de pestaña son esquemáticos y **lo dicen
 en el dibujo** ("Detalle sin escala").
 
 ## Permisos
@@ -552,6 +555,12 @@ rol. En el panel, "Nuevo gabinete" y el botón de eliminar se ocultan según
 
 ## Reglas y decisiones
 
+- **Solo se pide lo que se hace plegando chapa.** Bisagras, cierre, ventilación y
+  grado IP salieron del modelo, no se guardan y no se imprimen: no los provee
+  este fabricante, y un IP sin herrajes ni burlete no se puede garantizar.
+- **La tapa no tiene alero.** Va a ras del frente; lo único que sobresale es su
+  reborde plegado. La primera versión de la lámina le dibujaba un techo saliente
+  y por eso la isométrica estaba mal.
 - **Las láminas emitidas no se pisan.** A diferencia del unifilar —que mantiene
   solo el plano vigente y soft-deletea los anteriores—, acá cada versión queda:
   una lámina vieja puede ser un pedido que el fabricante todavía tiene en curso.
@@ -572,10 +581,8 @@ rol. En el panel, "Nuevo gabinete" y el botón de eliminar se ocultan según
 - **Gabinete sin pestaña de amure**: la vista posterior pierde los agujeros, el
   detalle de pestaña dice "Sin pestaña de amure" y las filas de amure salen de
   la tabla de medidas.
-- **Fondo cerrado**: la posterior y la interior dibujan la chapa de fondo y los
-  títulos dejan de decir "(sin fondo)".
-- **Una sola bisagra**: se dibuja centrada, y la cota al extremo deja de tener
-  sentido (sigue saliendo en la tabla).
+- **Fondo cerrado**: la posterior y el frente sin tapa dibujan la chapa de fondo
+  y los títulos dejan de decir "(sin fondo)".
 - **Medidas muy desproporcionadas** (un gabinete muy bajo y ancho): las vistas se
   reescalan solas, pero los detalles mantienen su tamaño fijo.
 - **Falla la generación del PDF**: la ruta responde `GABINETE_PDF_ERROR` y **no**
@@ -586,8 +593,8 @@ rol. En el panel, "Nuevo gabinete" y el botón de eliminar se ocultan según
 
 ## Lo que falta
 
-- **Ventilación**: hoy es un sí/no. Si un gabinete lleva rejillas, sus medidas y
-  su posición no se dibujan — van por `specsExtra`.
-- **Entradas de cable / prensacables**: mismo caso, no hay campo ni dibujo.
+- **Rejillas de ventilación y entradas de prensacables**: los gabinetes en obra a
+  veces las llevan, pero no se piden al fabricante (se agregan después), así que
+  no hay campo ni dibujo. Si alguna vez se pidieran, van como campos nuevos.
 - El despiece muestra **un tornillo representativo** sobre el solape y el paso
   como nota, en vez de repartirlos a lo largo del solape.
