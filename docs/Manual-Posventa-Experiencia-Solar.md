@@ -29,8 +29,8 @@
 saber de memoria.** El resto se consulta.
 
 **Si un cliente te pregunta algo y no sabés qué contestar**, mirá primero el
-**Anexo E**: están las preguntas que más se repiten, con qué está pasando y un
-mensaje para responder.
+**Anexo E**: están las preguntas que más se repiten, con la respuesta explicada
+para que armes la tuya con los datos de su ficha.
 
 ---
 
@@ -1255,181 +1255,193 @@ Es la parte que más se consulta cuando algo no aparece donde uno lo busca.
 
 ## Anexo E · Las preguntas que hacen los clientes
 
-Las que se repiten, sacadas de lo que los clientes preguntan de verdad. Para cada
-una: **qué está pasando** (para que entiendas antes de contestar) y **un mensaje
-para responder**, que se adapta como cualquier plantilla.
+Las que más se repiten, sacadas de lo que los clientes preguntan de verdad.
 
-Todas cierran con el próximo paso: es la regla 10.
+**No son mensajes para copiar.** Cada una trae la respuesta **para vos**: qué
+está pasando, dónde está el dato de ese cliente, qué se puede decir y qué no.
+Con eso armás tu respuesta, con tus palabras y con la información de su ficha.
+Y como todo mensaje, cierra con el próximo paso (regla 10).
 
 ---
 
 ### "¿Hay novedades? ¿En qué anda lo mío?"
 
-**La más frecuente**, y casi siempre durante la espera de UTE. El cliente no
-necesita una novedad: necesita saber que alguien lo tiene presente y en qué parte
-del recorrido está. Mirá el trámite UTE en su ficha antes de contestar — es la
-misma vista que él tiene en el portal.
+Es la más frecuente, y casi siempre llega durante la espera de UTE. **Lo que el
+cliente está preguntando en realidad es si alguien lo tiene presente.** No
+necesita una novedad; necesita saber en qué parte del recorrido está y que no se
+olvidaron de él.
 
-> **Para responder:**
->
->> Hola {nombre}, gracias por escribir. Tu trámite está en {etapa del trámite}, que es la parte que depende de UTE. Todavía no hay novedad de su lado, pero lo estamos siguiendo: apenas se mueva algo te aviso el mismo día.
+Antes de contestar, abrí su ficha: el **trámite UTE** muestra en qué etapa está,
+y es la misma vista que él tiene en el portal. El historial te dice qué fue lo
+último que se le contó.
+
+Si no hay novedad, se dice que no hay — nunca se inventa un avance. Lo que sí se
+le da es la etapa en la que está, de quién depende y el compromiso de avisarle
+apenas se mueva algo.
 
 ---
 
 ### "¿Cuánto demora UTE? ¿Ya aprobaron mi proyecto?"
 
-**El plazo de aprobación suele ir de 2 a 6 semanas** desde que se mandan los
-papeles, y no depende de nosotros. Voltia consulta a UTE a las dos semanas si no
-hubo respuesta. Lo que se le da al cliente es **la fecha en que se mandaron los
-papeles y el rango**, no una fecha: una fecha que UTE no cumple la rompemos
-nosotros.
+**La aprobación de UTE suele llevar entre 2 y 6 semanas** desde que se presentan
+los papeles, y no depende de nosotros. Voltia consulta a UTE a las dos semanas si
+no hubo respuesta.
 
-> **Para responder:**
->
->> Hola {nombre}, tus papeles se presentaron en UTE el {fecha de envío}. La aprobación suele llevar entre 2 y 6 semanas y depende de ellos, así que no te puedo prometer un día. Nosotros consultamos a las dos semanas si no tuvimos respuesta; apenas sepa algo te aviso.
+El dato que le importa al cliente es **la fecha en que se presentaron sus
+papeles**: está en el trámite UTE de su ficha. Con esa fecha y el rango, él mismo
+puede ubicarse.
+
+**Nunca se promete un día.** Una fecha que UTE no cumple la rompemos nosotros, y
+el cliente no distingue quién falló. Si ya pasaron las dos semanas, se le puede
+decir que se consultó y qué respondieron; si no respondieron, se le dice eso.
 
 ---
 
 ### "¿Cuándo es la instalación? Tengo que coordinar con el banco"
 
-Con financiación bancaria, el cliente necesita la fecha para firmar el crédito, y
-el banco a veces necesita la obra para liberar el pago: **las dos cosas se
-esperan una a la otra**. Si todavía no hay fecha confirmada en el calendario, no
-se inventa una: se le dice de qué depende. Y si la fecha existe, avisale también
-que el banco tiene que tener todo listo antes.
+Con financiación bancaria, **el crédito y la obra se esperan uno al otro**: el
+cliente necesita la fecha para firmar con el banco, y el banco a veces necesita
+que la obra esté para liberar el pago. Es el punto donde más se traban los
+proyectos financiados.
 
-> **Para responder:**
->
->> Hola {nombre}, la fecha de instalación la confirmamos cuando {de qué depende}. Apenas la tengamos te la paso, así coordinás con el banco. Te conviene ir adelantando lo que te pidan ellos, así no se nos traba la obra esperando el crédito.
+La fecha está en el **calendario de obra**. Si está confirmada, se le da. Si no
+lo está, **no se inventa una**: se le dice de qué depende (normalmente, de que
+termine la ingeniería y Operaciones la agende).
+
+Lo que sí conviene decirle siempre: que vaya adelantando lo que le pide el banco.
+Lo que más atrasa estas obras es un pedido del banco que el cliente nunca vio.
 
 ---
 
 ### "¿Se puede hacer la obra aunque UTE todavía no haya habilitado?"
 
-**Sí, y es lo habitual**: la obra se hace para ir adelantando, y la habilitación
-llega después. Lo que **no** se puede es **encender** el sistema hasta que UTE
-habilite. Es la confusión más común sobre el orden de las cosas.
+**Sí, es lo habitual**: la instalación se hace para ir adelantando, y la
+habilitación de UTE llega después. Lo que **no** se puede es **encender** el
+sistema hasta que UTE habilite.
 
-> **Para responder:**
->
->> Hola {nombre}, sí: la instalación la hacemos para ir adelantando, sin esperar a UTE. Lo único que no vas a poder hacer es encender el sistema hasta que ellos habiliten. Cuando pase, te aviso el mismo día.
+Es la confusión más común sobre el orden de las cosas: muchos clientes creen que
+primero habilita UTE y después se instala. Conviene explicarle el orden completo
+una vez, así no vuelve a preguntar: instalación, trámite, habilitación, y recién
+ahí encender.
 
 ---
 
 ### "¿Cómo es el pago? ¿Cuándo pago cada parte?"
 
-Depende de cómo se acordó, y está en la ficha del proyecto (subetapa **Modalidad
-de pago definida**):
+Depende de lo que se acordó con el asesor, y está escrito en la subetapa
+**Modalidad de pago definida** del onboarding:
 
 - **Pago directo:** 50 % antes de la obra, 30 % con la obra terminada y 20 %
-  cuando se habilita. El detalle, con montos y fechas, está en el plan de pagos.
+  cuando se habilita. Los montos y las fechas exactas están en el **plan de
+  pagos** del proyecto.
 - **Financiación bancaria:** paga el banco, contra la proforma.
-- **Otro:** lo que se haya acordado está escrito en esa misma subetapa.
+- **Otro:** lo que se acordó está escrito en esa misma subetapa.
 
-Si no está cargado, **no se contesta de memoria**: se pregunta al asesor.
+En la pestaña **Cobros** ves además qué pagó ya y qué le falta.
 
-> **Para responder:**
->
->> Hola {nombre}, te paso cómo quedó el pago: {cuotas con montos y fechas}. Cualquier duda con esto, escribime.
+**Si no está cargado, no se contesta de memoria**: se le pregunta al asesor que
+cerró la venta. Un número mal dicho sobre plata es de las cosas que más cuesta
+arreglar después.
 
 ---
 
-### "¿Me mandan el contrato firmado por ustedes antes de que yo firme con el banco?"
+### "¿Me mandan el contrato firmado por ustedes antes de firmar con el banco?"
 
-Es una pregunta de **confianza**: el cliente va a comprometer un crédito y quiere
-tener algo firmado por la empresa antes. Es razonable y se le da. Coordinalo como
-el paso del contrato firmado (5.4): en Montevideo que pase a buscarlo; en el
-interior, por correo.
+Es una pregunta de **confianza**: el cliente está por comprometer un crédito y
+quiere tener algo firmado por la empresa antes. Es razonable y se le da.
 
-> **Para responder:**
->
->> Hola {nombre}, claro, te lo mandamos firmado por nosotros para que lo tengas antes de ir al banco. {cómo se lo hacemos llegar}. Cuando lo firmes vos, nos lo devolvés y queda archivado.
+Se coordina igual que el paso del contrato firmado: si está en Montevideo, que
+pase a buscarlo; si es del interior, por correo, con ida y vuelta. Cuando lo
+devuelva firmado por él, queda archivado en la ficha del proyecto.
+
+Tomalo como una señal, no como un trámite: un cliente que desconfía necesita más
+contacto que el resto, sobre todo hasta que empiece la obra.
 
 ---
 
 ### "No puedo entrar al portal"
 
-Casi siempre es la contraseña. La contraseña **no se puede recuperar**, así que
-se resetea con el botón de reenviar acceso y se le manda la nueva. Si no tiene
-mail, **no puede recuperarla solo**: por eso le escribe a Experiencia Solar.
+Casi siempre es la **contraseña**, y la contraseña no se puede recuperar: se
+resetea con el botón de reenviar acceso y se le manda la nueva. El sistema le va
+a pedir cambiarla al entrar.
 
-> **Para responder:**
->
->> Hola {nombre}, te generé una contraseña nueva para el portal: {usuario y contraseña}. Te va a pedir cambiarla cuando entres. Si sigue sin funcionar, avisame y lo vemos juntos.
+Si el cliente **no tiene mail**, no puede recuperarla solo: por eso te escribe a
+vos. En ese caso, fijate con qué usuario entra (su cédula o un usuario con su
+nombre) y dáselo junto con la contraseña.
 
 ---
 
 ### "¿Dónde veo cuánto está generando?"
 
 En la **plataforma del inversor**, que muestra la generación en vivo. El acceso
-lo deja registrado el técnico en la instalación; si no está, el problema es
-anterior y se va a buscar a Operaciones. El **reporte mensual** es otra cosa: un
-resumen por correo, no en vivo.
+lo deja registrado el técnico durante la instalación; si no está, el problema es
+anterior y hay que ir a buscarlo a Operaciones.
 
-> **Para responder:**
->
->> Hola {nombre}, la generación en vivo la ves en la app del inversor: {usuario, contraseña y link}. Además, todos los meses te llega por correo el resumen de cuánto generaste y cuánto ahorraste.
+No confundirlo con el **reporte mensual**: ese es un resumen que le llega por
+correo una vez por mes, con cuánto generó y cuánto ahorró. Muchos clientes
+preguntan por uno pensando en el otro.
 
 ---
 
 ### "Hoy generó poco, ¿está bien?"
 
 Casi siempre es el **clima**: un día nublado genera mucho menos, y en invierno el
-sol está más bajo. Lo que sirve es compararlo con **lo que se le dijo que
-esperara** al encender. Si un día soleado genera mucho menos que eso, o si la
-generación es **cero**, ahí sí es un problema: se abre un reclamo y se avisa a
-Operaciones.
+sol está más bajo y los días son más cortos. Un día malo aislado no dice nada.
 
-> **Para responder:**
->
->> Hola {nombre}, la generación cambia mucho con el clima: en un día nublado es normal ver bastante menos. En un día soleado como los que tuviste al principio deberías andar por {generación esperable}. Si ves cero, o mucho menos en un día de sol, avisame y lo revisamos.
+Lo que sirve es compararlo con **lo que se le dijo que esperara** cuando encendió:
+ese número está en el mensaje del aviso de habilitación, en su historial.
+
+Sí es un problema si **genera cero**, o si en un día de sol está muy por debajo de
+lo esperado varios días seguidos. Ahí se abre un reclamo y se avisa a
+Operaciones — y conviene mirarlo antes de que él vuelva a escribir.
 
 ---
 
 ### "¿Por qué el reporte de este mes tiene 28 días y el anterior 33?"
 
 **Es el ciclo de su medidor, no un error.** Cada reporte cubre exactamente el
-período de su factura de UTE, que no arranca el 1 ni termina el 30. Por eso los
-números le cierran contra la factura.
+período de su factura de UTE, de fecha de corte a fecha de corte, y ese período
+no arranca el 1 ni termina el 30.
 
-> **Para responder:**
->
->> Hola {nombre}, el reporte cubre exactamente el mismo período que tu factura de UTE, que va de fecha de corte a fecha de corte. Por eso a veces son 28 días y otras 33: es el ciclo de tu medidor. Así podés comparar los números directo con la factura.
+Es justamente lo que le permite comparar los números del reporte con su factura
+y que le cierren. Explicado así, la pregunta se convierte en algo a favor.
 
 ---
 
 ### "¿Tengo que estar en casa el día de la obra o de la visita?"
 
-**No hace falta**, pero sí que haya **acceso**: a la casa, al techo, al tablero.
-Por eso la visita se confirma con el cliente y no se informa y listo.
+**No hace falta que esté**, pero sí que haya **acceso**: a la casa, al techo, al
+tablero, a donde haga falta llegar. Por eso las visitas se confirman con el
+cliente y no se le informan y listo.
 
-> **Para responder:**
->
->> Hola {nombre}, no hace falta que estés, pero necesitamos {acceso requerido}. ¿Nos lo podés dejar resuelto para el {día}?
+Antes de contestar, sabé qué acceso hace falta para esa visita en particular, y
+pedíselo concreto. Un "no hace falta que estés" sin decir qué tiene que dejar
+resuelto termina con la cuadrilla en la puerta sin poder entrar.
 
 ---
 
 ### "¿Puedo agregar más paneles?"
 
-**Se puede ver, pero no se promete.** Depende del espacio, del inversor que tiene
-y de la potencia contratada con UTE. Se pasa la consulta a Ingeniería y se le
-contesta con lo que diga.
+**Se puede evaluar, pero no se promete.** Depende del espacio que queda, del
+inversor que tiene (puede no admitir más paneles) y de la potencia que tiene
+contratada con UTE, que a veces hay que aumentar con otro trámite.
 
-> **Para responder:**
->
->> Hola {nombre}, buena pregunta. Depende del espacio, de tu inversor y de la potencia que tenés contratada con UTE, así que lo consulto con el equipo de ingeniería y te respondo con los números.
+La consulta se pasa a Ingeniería, y se le contesta con lo que diga. Si da para
+avanzar, pasa a ser una venta nueva: se le avisa al asesor.
 
 ---
 
 ### "Me llegó un mensaje de UTE" / "UTE me pide un documento"
 
-Pasa durante el trámite: UTE le escribe al cliente directamente. **No se le
-explica el trámite: se le pide que nos reenvíe lo que le llegó** y se pasa a
-Tramitación, que sabe qué hacer. El cliente no tiene que entender el trámite.
+Durante el trámite, **UTE a veces le escribe al cliente directamente**: le pide
+un documento, una foto, una firma, o le avisa de un cambio.
 
-> **Para responder:**
->
->> Hola {nombre}, gracias por avisar. Reenviame lo que te llegó y lo vemos con la persona que lleva tu trámite: te digo si hace falta que hagas algo o si lo resolvemos nosotros.
+No hace falta explicarle el trámite. Lo que hay que hacer es **pedirle que te
+reenvíe lo que le llegó** y pasárselo a Tramitación, que sabe qué significa y qué
+hay que hacer. Después se le contesta si tiene que hacer algo él o si lo
+resolvemos nosotros.
+
+El cliente no tiene por qué entender el trámite de UTE: para eso está Voltia.
 
 ---
 
