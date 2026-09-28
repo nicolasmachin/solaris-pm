@@ -104,172 +104,257 @@ PLANTILLAS = {
 }
 
 
-# El Anexo E, tal como quedó en docs/Manual-Posventa-Experiencia-Solar.md.
+# El Anexo E: una sola fuente para el manual (.md) y para las páginas. Cada tema:
+# (número, etapa, título, cómo lo pregunta, qué explicar [...], política, escalar).
+# Las políticas son las del documento que armó Nicolás el 27-09-2026; lo que se
+# agregó al extenderlo es el porqué y dónde mirar, no reglas nuevas.
 TEMAS_FAQ = [
     (1, "E1", "Novedades del proyecto",
-     "\"¿en qué anda lo mío?\", \"¿hay novedades?\", \"¿cómo va el trámite?\"",
-     ["En qué etapa está, qué sigue y cuándo, aproximadamente.",
-      "Que esa información la puede ver en el portal de Voltia."],
-     "mirá la ficha, la etapa y el trámite UTE antes de contestar. <strong>Nunca \"no hay novedades\" a secas.</strong>",
-     "si la ficha no permite saber en qué está, al responsable de la etapa."),
+     "\"¿en qué anda lo mío?\", \"¿hay novedades?\", \"¿cómo va el trámite?\", \"hace mucho que no sé nada\"",
+     ["<strong>Qué está preguntando en realidad:</strong> si alguien lo tiene presente. Casi nunca necesita "
+      "una novedad; necesita saber en qué parte del recorrido está y que no se olvidaron de él.",
+      "Contale <strong>en qué etapa está, qué sigue y cuándo, aproximadamente</strong>. Si la etapa depende de "
+      "UTE, decíselo, y con qué rango de tiempo (tema 7).",
+      "Mostrale que eso mismo lo puede ver <strong>en el portal de Voltia</strong>, en el avance de su trámite. "
+      "Es la forma de que la próxima vez no tenga que preguntar."],
+     "antes de contestar, mirá su ficha: la etapa en la que está, el trámite UTE y qué fue lo último que se le "
+     "contó. <strong>Nunca \"no hay novedades\" a secas</strong>: aunque no haya novedad, siempre hay una etapa "
+     "y un próximo paso que se pueden decir.",
+     "si con la ficha no se puede saber en qué está, al responsable de esa etapa. No se le contesta hasta saberlo."),
+
     (2, "E1", "Fecha de instalación",
-     "\"¿cuándo me instalan?\", \"¿ya tienen fecha?\"",
-     ["Se le da fecha cuando se cumplen las condiciones, y se le avisa con tiempo.",
-      "Si falta algo que depende de él (seña, crédito), decíselo claro."],
-     "para dar fecha tiene que estar <strong>todo</strong>: OK de UTE a la consulta inicial, ingeniería hecha y "
-     "validada por Operaciones, fecha en agenda, y <strong>seña paga (50 %)</strong> si es pago directo o "
-     "<strong>crédito aprobado</strong> si es con banco. Los materiales no son condición. No hay plazo de "
-     "anticipación definido: \"te avisamos con tiempo\".",
-     "si todas las condiciones están y no hay fecha, a Operaciones."),
+     "\"¿cuándo me instalan?\", \"¿ya tienen fecha?\", \"¿para cuándo sería la obra?\"",
+     ["La fecha se da <strong>cuando se cumplen las condiciones</strong> (ver la política), y se le avisa con "
+      "tiempo para que se organice.",
+      "Si lo que falta <strong>depende de él</strong> —la seña o el crédito—, decíselo claro y sin vueltas: "
+      "es la forma más rápida de destrabar la obra.",
+      "Si lo que falta depende de nosotros (ingeniería, la agenda), no se inventa una fecha: se le dice qué "
+      "falta y que apenas esté se le confirma."],
+     "para dar fecha tiene que estar <strong>todo</strong> esto: el OK de UTE a la consulta inicial, la "
+     "ingeniería hecha, la ingeniería validada por Operaciones, la fecha en la agenda, y <strong>la seña paga "
+     "(50 %)</strong> si el pago es directo, o <strong>el crédito aprobado</strong> si es con financiación "
+     "bancaria. Los materiales no son condición: son tema interno. No hay un plazo de anticipación definido: "
+     "\"te avisamos con tiempo\".",
+     "si todas las condiciones están cumplidas y todavía no hay fecha, a Operaciones."),
+
     (3, "E1", "Las dos aprobaciones de UTE",
-     "\"¿por qué hay que esperar a UTE para instalar?\", \"¿no me instalaron ya?, ¿por qué no anda?\"",
-     ["Son <strong>dos aprobaciones</strong>: la <strong>consulta</strong>, antes de la obra, y la "
-      "<strong>habilitación</strong>, después.",
-      "En la consulta UTE analiza el consumo histórico (sale casi en el día) y la red, que puede pedir obras a "
-      "cargo de UTE o del cliente. En residenciales casi nunca pasa; en industriales sí.",
-      "Por eso se espera: para no instalar y descubrir después un costo que haga desistir.",
-      "Entre la obra y la habilitación, el sistema queda <strong>instalado pero apagado, con precinto</strong>."],
-     "la obra se hace <strong>después de la consulta aprobada</strong>; antes, sólo excepcionalmente por "
-     "logística. <strong>Encender antes de la habilitación, nunca.</strong>",
-     "pedidos de obra antes de la consulta, al asesor comercial y a Operaciones."),
+     "\"¿por qué hay que esperar a UTE para instalar?\", \"¿no me instalaron ya?, ¿por qué no anda?\", "
+     "\"¿cuántas veces tiene que aprobar UTE?\"",
+     ["Son <strong>dos aprobaciones distintas</strong>: la <strong>consulta</strong>, antes de la obra, y la "
+      "<strong>habilitación</strong> final, después. Casi todas las dudas sobre UTE vienen de creer que es una sola.",
+      "En la consulta, UTE hace dos análisis: el <strong>consumo histórico</strong>, para definir la potencia "
+      "(sale casi en el día), y el <strong>análisis de la red</strong>, que hace su área de proyectos y puede "
+      "pedir obras en la red, a cargo de UTE o del cliente. En residenciales casi nunca pasa; en industriales sí.",
+      "<strong>Por eso se espera:</strong> para no instalar y descubrir después un costo que haga desistir. "
+      "Es una protección para el cliente, no una traba.",
+      "Entre la obra y la habilitación, el sistema queda <strong>instalado pero apagado, con precinto</strong>. "
+      "Si nadie se lo explicó, va a creer que algo anda mal."],
+     "la obra se hace <strong>después de la consulta aprobada</strong>. Hacerla antes, preferentemente no; "
+     "excepcionalmente, por logística, y es más viable en residenciales chicas. <strong>Encender antes de la "
+     "habilitación, nunca.</strong>",
+     "si el cliente pide hacer la obra antes de la consulta, al asesor comercial y a Operaciones."),
+
     (4, "E1", "El día de la obra",
-     "\"¿cuánto dura?\", \"¿tengo que estar en casa?\", \"¿entran a la casa?\"",
-     ["Una residencial típica lleva <strong>de 2 a 4 días</strong>, según el montaje.",
-      "Hace falta alguien que reciba al equipo al principio; que esté durante es recomendable, no obligatorio.",
-      "<strong>No se trabaja adentro</strong>: puede dejar la casa cerrada con acceso exterior.",
-      "Se recomienda dejar acceso a un baño."],
-     None,
-     "necesidades de acceso especiales, a Operaciones."),
+     "\"¿cuánto dura?\", \"¿tengo que estar en casa?\", \"¿entran a la casa?\", \"¿tengo que preparar algo?\"",
+     ["Una residencial típica lleva <strong>de 2 a 4 días</strong>, según la dificultad del montaje (el techo, "
+      "el acceso, la distancia al tablero).",
+      "Hace falta <strong>alguien que reciba al equipo al principio</strong>, para abrir y mostrar dónde van las "
+      "cosas. Que esté durante la obra es recomendable, no obligatorio.",
+      "<strong>No se trabaja adentro de la casa</strong>: puede dejarla cerrada, siempre que haya acceso por "
+      "afuera al techo y al tablero.",
+      "Se recomienda dejar acceso a un baño para el equipo: son varios días de trabajo."],
+     "lo que se le pide tiene que ser concreto: qué acceso hace falta y a qué hora llega el equipo. Un \"no hace "
+     "falta que estés\" sin decir qué tiene que dejar resuelto termina con la cuadrilla en la puerta.",
+     "necesidades de acceso especiales (llaves, portería, horarios restringidos), a Operaciones."),
+
     (5, "E1", "Pago y financiación",
-     "\"¿cuándo pago?\", \"¿cuánto falta pagar?\", \"¿cómo es con el banco?\"",
-     ["<strong>Pago directo:</strong> seña al confirmar; se completa el <strong>50 %</strong> entre 10 y 15 días "
-      "antes de la obra; <strong>30 %</strong> con la obra terminada; <strong>20 %</strong> cuando UTE habilita.",
+     "\"¿cuándo pago?\", \"¿cuánto falta pagar?\", \"¿cómo es con el banco?\", \"¿cuánto es la seña?\"",
+     ["<strong>Pago directo:</strong> una seña al confirmar, y se completa el <strong>50 %</strong> entre 10 y "
+      "15 días antes de la obra. Después, el <strong>30 %</strong> con la obra terminada y el <strong>20 "
+      "%</strong> cuando UTE habilita.",
       "<strong>Financiación bancaria:</strong> se firma el contrato para presentar al banco, y la obra se agenda "
-      "<strong>recién con el crédito aprobado</strong>."],
-     None,
+      "<strong>recién con el crédito aprobado</strong>. Por eso conviene que vaya adelantando lo que le pide el "
+      "banco: es lo que más atrasa estas obras.",
+      "Para decirle cuánto le falta, mirá la pestaña <strong>Cobros</strong> de su ficha: ahí está qué pagó y "
+      "qué queda previsto."],
+     "los montos y las fechas se sacan del <strong>plan de pagos</strong> del proyecto, no de memoria. Si no "
+     "está cargado, no se contesta: se le pregunta al asesor. Un número mal dicho sobre plata es de lo que más "
+     "cuesta arreglar.",
      "cualquier duda de montos, al asesor comercial."),
+
     (6, "E1", "El portal y la aplicación del inversor",
-     "\"¿dónde veo cómo va?\", \"¿cómo entro?\", \"no tengo usuario\"",
-     ["Son <strong>dos cosas distintas</strong>.",
-      "<strong>El portal de Voltia:</strong> seguimiento del trámite, encuestas, tickets, fecha de corte y tarifa.",
-      "<strong>La aplicación de tu inversor:</strong> generación en tiempo real, histórico y consumo."],
-     "el usuario del portal se genera con un clic y se manda por WhatsApp; el cliente cambia la contraseña al "
-     "entrar. Para la aplicación del inversor se manda el link y las credenciales; si no tiene usuario, lo creás "
-     "siguiendo el video instructivo.",
+     "\"¿dónde veo cómo va?\", \"¿cómo entro?\", \"no tengo usuario\", \"¿qué es la app?\"",
+     ["Son <strong>dos cosas distintas</strong>, y conviene explicarlo así desde el principio, con esos dos "
+      "nombres siempre:",
+      "<strong>El portal de Voltia:</strong> el seguimiento del trámite, las encuestas, los tickets, y donde "
+      "carga su fecha de corte y su tarifa.",
+      "<strong>La aplicación de tu inversor:</strong> la generación en tiempo real, el histórico y el consumo. "
+      "Es de la marca del inversor, no de Voltia."],
+     "el usuario del portal se genera con un clic desde su ficha, se copia y se le manda por WhatsApp; el "
+     "cliente cambia la contraseña al entrar. Para la aplicación del inversor se le manda el link de descarga "
+     "y las credenciales; si no tiene usuario, lo creás siguiendo el video instructivo.",
      "problemas técnicos de la plataforma del inversor, a Operaciones."),
+
     (7, "E2", "Cuánto demora UTE",
-     "\"¿cuánto falta?\", \"¿por qué tarda tanto?\", \"¿cuándo me habilitan?\"",
+     "\"¿cuánto falta?\", \"¿por qué tarda tanto?\", \"¿cuándo me habilitan?\", \"ya pasó un mes\"",
      ["La <strong>consulta</strong> suele llevar alrededor de <strong>mes y medio</strong>.",
-      "La <strong>habilitación</strong>, desde que termina la obra, habitualmente <strong>entre 2 y 4 semanas</strong>.",
-      "Son rangos: UTE no da fechas."],
-     "<strong>nunca fechas exactas.</strong> Si pasó más de un mes, mirá quién tiene la pelota. <strong>Nunca "
-     "digas \"estamos esperando a UTE\" sin verificarlo</strong>: una parte de los trámites abiertos depende de Voltia.",
-     "si está trabado del lado de Voltia, al responsable de tramitación UTE."),
+      "La <strong>habilitación</strong>, contada desde que termina la obra, habitualmente <strong>entre 2 y 4 "
+      "semanas</strong>.",
+      "Son <strong>rangos</strong>: UTE no da fechas. Si le damos un día y UTE no lo cumple, la promesa rota es "
+      "nuestra, y el cliente no distingue quién falló."],
+     "<strong>nunca fechas exactas.</strong> Si pasó más de un mes, antes de contestar mirá <strong>quién tiene "
+     "la pelota</strong> en el trámite. <strong>Nunca digas \"estamos esperando a UTE\" sin verificarlo</strong>: "
+     "una parte de los trámites abiertos está esperando algo de Voltia, no de UTE.",
+     "si el trámite está trabado del lado de Voltia, al responsable de tramitación UTE."),
+
     (8, "E2", "Mensajes de UTE",
-     "\"me llegó un mensaje de UTE, ¿tengo que hacer algo?\", \"me dicen que aumenté la potencia\"",
+     "\"me llegó un mensaje de UTE, ¿tengo que hacer algo?\", \"me dicen que aumenté la potencia\", \"¿esto es "
+     "normal?\"",
      ["Son <strong>informativos</strong>: no tiene que hacer nada.",
       "Al aprobar la consulta, UTE manda una notificación que <strong>parece un pedido de aumento de "
-      "potencia</strong>. Es normal.",
-      "Al habilitar al final, UTE no manda nada: eso lo avisa Voltia."],
-     "pedí captura del mensaje para identificar cuál es.",
-     "si no es ninguno de los conocidos, al responsable de tramitación UTE."),
+      "potencia</strong>. Es normal y es la que más asusta. Por eso se le manda un ejemplo antes, en uno de los "
+      "mensajes que siguen a la bienvenida: si ya la vio, cuando le llega no pregunta.",
+      "Al habilitar al final, <strong>UTE no manda nada</strong>: la habilitación se la avisa Voltia."],
+     "pedí captura del mensaje para identificar cuál es antes de contestar. No se le explica el trámite: se le "
+     "dice si tiene que hacer algo o no.",
+     "si el mensaje no es ninguno de los conocidos, al responsable de tramitación UTE."),
+
     (9, "E2", "Habilitación y encendido",
      "\"¿ya me habilitaron?\", \"¿cómo lo prendo?\", \"¿viene alguien a prenderlo?\"",
-     ["<strong>El encendido lo hace el cliente</strong>: cortar el precinto y subir la llave de microgeneración. "
-      "<strong>No se toca el inversor.</strong>",
-      "Después se confirma que quedó generando."],
-     "Voltia avisa dentro de las <strong>24 a 48 horas</strong> de la habilitación, sin esperar que pregunte. "
-     "<strong>Si pregunta él, el aviso llegó tarde.</strong> Al confirmar que genera, se recuerda el 20 % final. "
-     "Que vaya alguien a encender es excepción.",
+     ["<strong>El encendido lo hace el cliente</strong>: cortar el precinto y subir la llave de "
+      "microgeneración. <strong>No se toca el inversor.</strong> Es una maniobra de un minuto, y conviene "
+      "explicarla paso a paso.",
+      "Después se confirma con él que <strong>quedó generando</strong>: en la aplicación del inversor tiene que "
+      "verse la generación subiendo."],
+     "Voltia avisa dentro de las <strong>24 a 48 horas</strong> de otorgada la habilitación, sin esperar que "
+     "pregunte. <strong>Si pregunta él, el aviso llegó tarde.</strong> Al confirmar que genera, se le recuerda "
+     "el <strong>20 % final</strong>. Que vaya alguien de Voltia a encender es excepción, no la regla.",
      "si no logra encender o no genera, a Operaciones."),
+
     (10, "E3", "\"Genera poco\"",
      "\"genera menos de lo que me dijeron\", \"tengo 6 kWp y no paso de 3 kW\", \"con sol no llega\"",
-     ["Se compara la generación real (aplicación del inversor) contra la esperada (gráfico de la propuesta), "
-      "<strong>por mes y no por día</strong>.",
-      "El pico depende de la altura del sol, la orientación y la temperatura: <strong>en invierno, con sol, es "
-      "normal no llegar a la potencia nominal</strong>. Mostrale la curva de un día soleado de ese mes."],
-     "contestar <strong>con números, no con opiniones</strong>.",
+     ["Se compara la generación <strong>real</strong> (la aplicación del inversor) contra la "
+      "<strong>esperada</strong> (el gráfico de la propuesta), <strong>por mes y no por día</strong>. Un día "
+      "nublado aislado no dice nada.",
+      "El pico de potencia depende de la altura del sol, la orientación y la temperatura. <strong>En invierno, "
+      "con sol, es normal no llegar a la potencia nominal</strong>: los 6 kWp son en condiciones ideales, no un "
+      "piso de cada día.",
+      "Lo que más convence es mostrarle <strong>la curva de potencia de un día soleado de ese mes</strong>: ve "
+      "que el sistema anda y entiende por qué no llega al número."],
+     "se contesta <strong>con números, no con opiniones</strong>. Un \"está bien, es normal\" sin datos se lee "
+     "como que no lo miraste.",
      "si el mes está <strong>más de 20 % por debajo</strong> de lo esperado, a Operaciones."),
+
     (11, "E3", "\"No veo el ahorro\"",
-     "\"la factura sigue alta\", \"no noto la diferencia\"",
-     ["Casi nunca es la generación: es percepción.",
-      "<strong>Efecto rebote</strong>: con paneles se consume más sin darse cuenta.",
-      "El reporte mensual muestra qué pagaría hoy <strong>sin</strong> paneles.",
-      "Aparece sobre todo en invierno, con más consumo y menos generación. Un sistema no se evalúa por el peor "
-      "mes: se mira <strong>el promedio anual</strong>."],
+     "\"la factura sigue alta\", \"no noto la diferencia\", \"no sé si vale la pena\"",
+     ["Casi nunca es la generación: <strong>es percepción</strong>. Antes de discutirlo, mirá los números del "
+      "reporte.",
+      "<strong>Efecto rebote:</strong> con paneles, sin darse cuenta, se consume más —se prende más el aire, "
+      "se usa más el calefón—.",
+      "El reporte mensual muestra <strong>qué pagaría hoy sin paneles</strong>: esa es la comparación que "
+      "importa, no la factura del año pasado.",
+      "Aparece sobre todo <strong>en invierno</strong> o al terminarlo, cuando se juntan más consumo y menos "
+      "generación, y un año con más días nublados lo acentúa. Un sistema no se evalúa por el peor mes —igual que "
+      "no se vende mostrando enero—: se mira <strong>el promedio anual</strong>."],
      None,
-     "si los números muestran un problema de generación, pasa al tema 10."),
+     "si los números muestran de verdad un problema de generación, pasa al tema 10."),
+
     (12, "E3", "Factura de UTE y reporte mensual",
      "\"el reporte no coincide con la factura\", \"no entiendo la factura\"",
-     ["UTE factura <strong>por fecha de corte</strong>, no por mes calendario: se comparan períodos distintos.",
-      "El cliente carga su fecha de corte en el portal de Voltia."],
-     "si no coincide, <strong>primero verificá si cargó la fecha de corte</strong>. Se enseña a cargarla en la "
-     "puesta en marcha, y la factura se explica <strong>al mes del encendido</strong>, con la factura real.",
+     ["UTE factura <strong>por fecha de corte</strong>, no por mes calendario. Si el reporte y la factura no "
+      "coinciden, casi siempre es porque se están comparando períodos distintos.",
+      "El cliente <strong>carga su fecha de corte en el portal de Voltia</strong>, y con eso el reporte cubre "
+      "exactamente el mismo período que su factura."],
+     "si no coincide, <strong>primero verificá si cargó la fecha de corte</strong>. La fecha de corte se enseña "
+     "a cargar en la puesta en marcha, y la factura se le explica <strong>al mes del encendido, con su factura "
+     "real en la mano</strong>: antes no hay nada que comparar.",
      None),
+
     (13, "E3", "Tarifa",
      "\"¿me conviene cambiar de tarifa?\", \"¿doble horario o simple?\"",
-     ["Puede cambiarla en el portal para que el reporte calcule bien; el reporte muestra los tres escenarios.",
-      "<strong>Con paneles suele convenir la simple</strong>: en doble horario la generación cae en el horario "
-      "barato y siempre vende barato; en la simple se pasa menos de los escalones y vende un poco más caro."],
-     "<strong>no cambiar en caliente</strong>: esperar varios meses de datos reales.",
+     ["Puede cambiar la tarifa en el portal para que el reporte calcule bien. El reporte muestra <strong>los tres "
+      "escenarios a propósito</strong>, para que vea la diferencia con sus propios números.",
+      "<strong>Con paneles suele convenir la simple.</strong> En la doble horario la generación cae siempre en el "
+      "horario barato, así que siempre vende barato. En la simple, como baja el consumo, se pasa menos de los "
+      "escalones y vende un poco más caro."],
+     "<strong>no cambiar en caliente</strong>: esperar varios meses de datos reales antes de recomendar un "
+     "cambio.",
      None),
+
     (14, "E3", "Auto eléctrico",
      "\"compré un auto eléctrico, ¿cuándo lo cargo?\", \"¿lo cargo con los paneles?\"",
      ["Conviene <strong>tarifa triple horario y cargar de madrugada</strong>.",
-      "No conviene cargarlo de día con el excedente: esa energía vale más vendida a UTE, con el descuento de IVA "
-      "e IRPF. <strong>De día se vende, de madrugada se carga.</strong>"],
+      "No conviene cargarlo de día con el excedente, aunque parezca lo lógico: esa energía vale más "
+      "<strong>vendida a UTE</strong>, con el descuento de IVA e IRPF, que lo que cuesta comprarla de "
+      "madrugada. <strong>De día se vende, de madrugada se carga.</strong>"],
      None,
      "si quiere ampliar el sistema por el auto, tema 20."),
+
     (15, "E3", "Corte de luz",
      "\"se cortó la luz y los paneles no andan\", \"¿no me daba luz igual?\"",
-     ["Un sistema conectado a la red <strong>sin baterías se apaga solo por seguridad</strong>, para no energizar "
-      "una línea donde puede haber alguien trabajando.",
-      "Vuelve solo cuando vuelve la luz. <strong>No es una falla.</strong>"],
-     "hoy todos los sistemas son conectados a red. Cuando entren los híbridos con baterías, verificar el tipo de "
-     "sistema antes de contestar, y actualizar este tema.",
+     ["Un sistema conectado a la red <strong>sin baterías se apaga solo por seguridad</strong>, para no "
+      "energizar una línea donde puede haber alguien trabajando.",
+      "Vuelve solo cuando vuelve la luz. <strong>No es una falla</strong>, y no hay que hacer nada."],
+     "hoy todos los sistemas son conectados a red. Cuando entren sistemas híbridos con baterías, hay que "
+     "verificar en la ficha el tipo de sistema antes de contestar, y actualizar este tema.",
      None),
+
     (16, "E3", "La aplicación no muestra la generación",
      "\"no me aparece nada\", \"la aplicación está en cero\", \"dejó de mostrar datos\"",
-     ["Casi siempre es <strong>conectividad</strong>. Preguntale qué luz tiene el inversor: <strong>si está "
-      "verde, genera bien</strong>, sólo perdió internet.",
-      "Preguntale si cambió la contraseña del wifi o el router."],
-     "mandale el video de reconexión de su marca para que lo haga solo. Si no se anima, que abra un ticket desde "
-     "el portal de Voltia.",
+     ["Casi siempre es <strong>conectividad</strong>, no generación. Preguntale qué luz tiene el inversor: "
+      "<strong>si está verde, genera bien</strong>; sólo perdió internet, y no perdió generación.",
+      "Preguntale si <strong>cambió la contraseña del wifi o el router</strong>: es la causa más común.",
+      "Cuando se resuelve, enseñale a hacerlo solo: es de las consultas que más se repiten y que menos hace "
+      "falta que pasen por Voltia."],
+     "mandale el <strong>video de reconexión de su marca</strong> para que lo haga solo, si se anima. Si no, que "
+     "abra un ticket de soporte desde el portal de Voltia.",
      "si la luz no está verde, pasa al tema 17."),
+
     (17, "E3", "Falla del inversor (luz roja)",
-     "\"el inversor tiene una luz roja\", \"me sale un error\"",
-     ["Que se registra el caso y se le da seguimiento.",
-      "Cómo abrir el ticket desde el portal de Voltia, para la próxima."],
-     "es raro que lo reporte el cliente primero: con falla el inversor sigue conectado y la reporta, así que "
-     "<strong>Voltia debería enterarse antes y contactarlo</strong>. Si el cliente no abre el ticket, lo abre "
-     "Experiencia Solar.",
+     "\"el inversor tiene una luz roja\", \"me sale un error\", \"se apagó el inversor\"",
+     ["Que <strong>se registra el caso y se le da seguimiento</strong>, y cuándo va a tener novedades.",
+      "Cómo <strong>abrir el ticket desde el portal de Voltia</strong>, para la próxima."],
+     "es raro que lo reporte el cliente primero: con falla, el inversor sigue conectado y la reporta, así que "
+     "<strong>Voltia debería enterarse antes y contactarlo</strong>. Si llama él primero, algo falló en el "
+     "monitoreo. Se registra como caso técnico. Si el cliente no abre el ticket, lo abre Experiencia Solar, pero "
+     "la meta es que lo haga solo.",
      "a Operaciones [A CONFIRMAR]"),
+
     (18, "E3", "Limpieza y mantenimiento",
-     "\"¿cada cuánto los limpio?\", \"¿hacen mantenimiento?\", \"¿cuánto sale?\"",
-     ["<strong>Limpieza por el cliente:</strong> sólo con agua, sin productos. Cada 6 meses. <strong>Si subir al "
-      "techo no es seguro, que no suba.</strong>",
-      "<strong>Mantenimiento de Voltia:</strong> una vez por año. Limpieza, reajuste de la tornillería y revisión "
-      "de la parte eléctrica y del inversor.",
-      "<strong>Los dos primeros son gratis</strong> (año 1 y 2). Desde el tercero, del orden de USD 100 por "
-      "visita según la distancia.",
-      "<strong>Si se vuelan paneles, Voltia se hace cargo</strong> siempre que haya hecho un mantenimiento en el "
-      "último año."],
-     "los dos gratis <strong>los propone Voltia</strong>, sin esperar al cliente, y se confirman con él. La "
-     "condición de la voladura se comunica al entregar el sistema y antes de que venza el segundo año.",
+     "\"¿cada cuánto los limpio?\", \"¿con qué los limpio?\", \"¿hacen mantenimiento?\", \"¿cuánto sale?\"",
+     ["<strong>Limpieza por el cliente:</strong> sólo con agua, sin ningún producto. Puede usar hidrolavadora, "
+      "cepillo, lampazo o trapo. Recomendado cada 6 meses. <strong>Si subir al techo no es seguro, que no "
+      "suba.</strong>",
+      "<strong>Mantenimiento de Voltia:</strong> recomendado una vez por año. Incluye limpieza, revisión "
+      "estructural con reajuste de toda la tornillería —se afloja con el viento y el tiempo— y revisión "
+      "preventiva de la parte eléctrica y del funcionamiento del inversor.",
+      "<strong>Los dos primeros son gratis</strong>, al primer y al segundo año de la obra. Desde el tercero se "
+      "cobran, del orden de USD 100 por visita según la distancia, y quedan a criterio del cliente.",
+      "<strong>Si se vuelan paneles, Voltia se hace cargo</strong>, siempre que haya hecho un mantenimiento en "
+      "el último año."],
+     "la condición de la voladura existe porque, sin revisar la tornillería, no se puede responder años "
+     "después. Los dos gratis <strong>los propone Voltia</strong>, sin esperar a que el cliente los pida, y la "
+     "fecha se confirma con él. La condición se comunica al entregar el sistema y antes de que venza el "
+     "segundo año.",
      "para agendar o cotizar, a Operaciones."),
+
     (19, "E3", "Granizo",
      "\"¿qué pasa si cae granizo?\", \"¿tienen seguro?\", \"¿cubren los paneles?\"",
-     ["Voltia ofrece una <strong>cobertura de granizo</strong> de USD 12 por panel por año, IVA incluido.",
-      "Cubre <strong>sólo los paneles</strong>, no el inversor ni la estructura.",
-      "No es un negocio: es para cubrir el recambio y la mano de obra."],
-     "es lo mismo que dice la propuesta comercial; no prometas nada distinto. Condiciones y forma de cobro "
+     ["Voltia ofrece una <strong>cobertura de granizo sobre los paneles</strong>, de USD 12 por panel por año, "
+      "IVA incluido.",
+      "Cubre <strong>sólo los paneles</strong>: no el inversor ni la estructura.",
+      "No es un negocio: el monto está pensado para cubrir el recambio y la mano de obra."],
+     "es lo mismo que dice la propuesta comercial: no prometas nada distinto. Condiciones y forma de cobro "
      "[A CONFIRMAR]",
      "para contratarla o dudas de cobro, al asesor comercial."),
+
     (20, "E3", "Ampliación",
-     "\"¿puedo agregar más paneles?\", \"¿me da para más?\", \"quiero ampliar\"",
-     ["Que lo va a contactar el equipo de ventas para cotizarle."],
+     "\"¿puedo agregar más paneles?\", \"compré un auto eléctrico, ¿me da para más?\", \"quiero ampliar\"",
+     ["Que lo va a <strong>contactar el equipo de ventas</strong> para cotizarle.",
+      "No hace falta explicarle nada técnico: si hay lugar, si el inversor da o si hay que tramitar con UTE, "
+      "lo ve el vendedor con él."],
      "<strong>Experiencia Solar no evalúa ni promete nada técnico.</strong> Lo pasa a ventas cargándolo como "
-     "cliente potencial; si hay lugar, si el inversor da o si hay que tramitar con UTE, lo ve el vendedor.",
+     "cliente potencial en Voltia PM.",
      "directo a ventas."),
 ]
 
@@ -414,7 +499,7 @@ def construir():
         + aviso("<strong>Si registrar cuesta, no se registra.</strong> Un comentario de dos líneas desde el "
                 "celular en la obra vale infinitamente más que un informe prolijo que nadie escribe.",
                 "ojo", margen=22)
-        + subtitulo("Lo que aparece solo, sin que nadie lo escriba", margen=26, tamano=20)
+        + subtitulo("Lo que aparece solo, sin que nadie lo escriba", margen=18, tamano=19)
         + numerados([
             "<strong>Los avances de etapa</strong> y los hitos del trámite UTE.",
             "<strong>Los documentos emitidos</strong>: propuestas, contratos, reportes.",
@@ -514,15 +599,15 @@ def construir():
         + cita("capataz", margen=16)
         + aviso("<strong>Con el alcance explícito</strong>: obra con él, todo lo demás conmigo. Sin esa "
                 "frase, el cliente asume que el capataz reemplazó a Experiencia Solar.", "clave", margen=16)
-        + f'  <div style="margin-top: 34px; padding-top: 30px; border-top: 2px solid {BORDE}"></div>\n'
+        + f'  <div style="margin-top: 24px; padding-top: 20px; border-top: 2px solid {BORDE}"></div>\n'
         + titulo("Aviso de reprogramación", tamano=34)
         + ficha([("CUÁNDO", "<strong>El mismo día</strong> en que se mueve la fecha"),
                  ("QUIÉN", "Experiencia Solar"),
                  ("PLAZO", "<strong>1 día hábil</strong>"),
                  ("QUÉ DECIR", "Plantilla <strong>\"Reprogramación de la obra\"</strong>")], margen=20)
-        + parrafo("<strong>Mover una obra ya confirmada exige el motivo en el sistema.</strong> No es un "
-                  "trámite: quien tiene que avisarle al cliente necesita saber qué decirle. Si la obra "
-                  "todavía era tentativa no se pide motivo — nadie prometió nada.", margen=20)
+        + parrafo("<strong>Mover una obra ya confirmada exige el motivo en el sistema</strong>: quien le "
+                  "avisa al cliente necesita saber qué decirle. Si era tentativa no se pide motivo — nadie "
+                  "prometió nada.", margen=16)
         + cita("reagenda", margen=16)
         + aviso("<strong>Cada reprogramación genera su propio pendiente</strong>, con el motivo adentro. Si "
                 "a un cliente le mueven la fecha tres veces, quedan tres avisos, no uno.", "ojo", margen=16),
@@ -1054,20 +1139,25 @@ def construir():
                      "marcado <strong>A CONFIRMAR</strong> todavía no es política cerrada."], margen=12),
         p))
 
-    # Los veinte temas se reparten solos en hojas: se llena cada una hasta donde
-    # entra, sin partir un tema al medio. Así, si un tema crece o se agrega uno,
-    # la paginación se rehace sola en vez de desbordar una hoja.
-    from generar import ALTO_UTIL, altura_estimada
-    hojas, actual = [], []
+    # Los veinte temas se reparten en hojas según lo que MIDE cada uno, dibujado
+    # con las fuentes reales (alturas-temas.json, lo produce medir-temas.mjs). La
+    # primera versión estimaba la altura y se equivocó: los temas desbordaron la
+    # hoja y taparon el pie. Si se cambia el texto de un tema, hay que volver a
+    # medir antes de regenerar.
+    alturas = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "alturas-temas.json")))
+    # Lo que queda libre en la hoja: 1123 menos los márgenes (72 + 56), el pie
+    # (~34), el rótulo de arriba y su aire (~35), y un margen de seguridad.
+    DISPONIBLE = 1123 - 72 - 56 - 34 - 35 - 30
+    SEPARADOR = 37      # la línea y el aire entre dos temas de la misma hoja
+    hojas, actual, usado = [], [], 0
     for t in TEMAS_FAQ:
-        prueba = actual + [t]
-        cuerpo = kicker("X") + "".join(
-            tema(x[0], x[2], x[3], x[4], x[5], x[6], primero=(k == 0)) for k, x in enumerate(prueba))
-        if actual and altura_estimada(cuerpo) > ALTO_UTIL - 90:
+        alto = alturas[str(t[0])] + (SEPARADOR if actual else 0)
+        if actual and usado + alto > DISPONIBLE:
             hojas.append(actual)
-            actual = [t]
-        else:
-            actual = prueba
+            actual, usado = [], 0
+            alto = alturas[str(t[0])]
+        actual.append(t)
+        usado += alto
     if actual:
         hojas.append(actual)
 
@@ -1078,8 +1168,8 @@ def construir():
             cuerpo = kicker(rotulo) + '  <div style="margin-top: 16px"></div>\n' + "".join(
                 tema(x[0], x[2], x[3], x[4], x[5], x[6], primero=(k == 0)) for k, x in enumerate(grupo))
             return pagina(f"Anexo E · temas {grupo[0][0]} a {grupo[-1][0]}", cuerpo, p)
-        nueva(f"AnexoFAQ{nro_hoja}.dc.html",
-              f"Anexo E · temas {grupo[0][0]}–{grupo[-1][0]}", hacer)
+        rango = f"tema {grupo[0][0]}" if len(grupo) == 1 else f"temas {grupo[0][0]}–{grupo[-1][0]}"
+        nueva(f"AnexoFAQ{nro_hoja}.dc.html", f"Anexo E · {rango}", hacer)
 
     return P
 

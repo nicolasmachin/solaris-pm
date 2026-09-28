@@ -24,6 +24,27 @@ después se publican al canvas con la herramienta de Artifacts.
   cambiar una función acá.
 - `contenido.py` — qué dice cada página y en qué orden van.
 
+## Antes de publicar: medir
+
+**Lo que se pasa del borde de la hoja se recorta sin aviso**, y el texto tapa el
+pie. Por eso cada cambio se mide dibujando las hojas de verdad, con el mismo
+motor de los PDF de propuestas y las fuentes reales:
+
+```bash
+# las fuentes locales (el contenedor no llega a Google Fonts)
+# van en <dir-fuentes>/fonts-local.css + los .woff2
+docker compose exec -T -w /app server node medir.mjs <dir-paginas> <dir-fuentes>
+```
+
+Cada hoja tiene que dar **1123** (entra justo, con el pie abajo). Más que eso, se
+pasa. La estimación de `altura_estimada()` sirve para una primera pasada, pero
+**no reemplaza la medición**: la primera versión no contaba las listas y dio por
+buenas ocho hojas que desbordaban.
+
+**El Anexo E se reparte con medidas reales**: `medir-temas.mjs` mide cada tema y
+deja `alturas-temas.json`, que `contenido.py` usa para decidir cuántos temas
+entran por hoja. Si se cambia el texto de un tema, hay que volver a medir.
+
 ## De dónde sale el texto
 
 De `docs/Manual-Posventa-Experiencia-Solar.md`, que es **la fuente de verdad**.

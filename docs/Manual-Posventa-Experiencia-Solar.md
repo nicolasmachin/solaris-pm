@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.8 — 28 de septiembre de 2026
+**Voltia · Uruguay** · Versión 1.9 — 28 de septiembre de 2026
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -47,7 +47,7 @@ relación, desde que firma hasta años después de encender.
 
 ### El principio rector
 
-> **La responsable de Experiencia Solar es la dueña del caso, no el canal por
+> **El responsable de Experiencia Solar es el dueño del caso, no el canal por
 > donde pasa todo.**
 
 Esto es lo más importante del manual y lo más fácil de malinterpretar en las dos
@@ -1335,103 +1335,89 @@ partes:
 
 #### 1. Novedades del proyecto
 
-**Cómo lo puede preguntar:** "¿en qué anda lo mío?", "¿hay novedades?", "¿cómo va
-el trámite?".
+**Cómo lo puede preguntar:** "¿en qué anda lo mío?", "¿hay novedades?", "¿cómo va el trámite?", "hace mucho que no sé nada".
 
 **Qué explicar:**
-- En qué etapa está, qué sigue y cuándo, aproximadamente.
-- Que esa información la puede ver en el portal de Voltia.
 
-**Política interna:** mirá la ficha, la etapa y el trámite UTE antes de contestar.
-**Nunca "no hay novedades" a secas.**
+- **Qué está preguntando en realidad:** si alguien lo tiene presente. Casi nunca necesita una novedad; necesita saber en qué parte del recorrido está y que no se olvidaron de él.
+- Contale **en qué etapa está, qué sigue y cuándo, aproximadamente**. Si la etapa depende de UTE, decíselo, y con qué rango de tiempo (tema 7).
+- Mostrale que eso mismo lo puede ver **en el portal de Voltia**, en el avance de su trámite. Es la forma de que la próxima vez no tenga que preguntar.
 
-**Cuándo escalar:** si la ficha no permite saber en qué está, al responsable de la
-etapa.
+**Política interna:** antes de contestar, mirá su ficha: la etapa en la que está, el trámite UTE y qué fue lo último que se le contó. **Nunca "no hay novedades" a secas**: aunque no haya novedad, siempre hay una etapa y un próximo paso que se pueden decir.
+
+**Cuándo escalar:** si con la ficha no se puede saber en qué está, al responsable de esa etapa. No se le contesta hasta saberlo.
 
 #### 2. Fecha de instalación
 
-**Cómo lo puede preguntar:** "¿cuándo me instalan?", "¿ya tienen fecha?".
+**Cómo lo puede preguntar:** "¿cuándo me instalan?", "¿ya tienen fecha?", "¿para cuándo sería la obra?".
 
 **Qué explicar:**
-- Se le da fecha cuando se cumplen las condiciones, y se le avisa con tiempo.
-- Si falta algo que depende de él (seña, crédito), decíselo claro.
 
-**Política interna:** para dar fecha tiene que estar **todo** esto: OK de UTE a la
-consulta inicial, ingeniería hecha, ingeniería validada por Operaciones, fecha en
-agenda, y **seña paga (50 %)** si el pago es directo, o **crédito aprobado** si es
-con financiación bancaria. Los materiales no son condición: son tema interno. No
-hay un plazo de anticipación definido: "te avisamos con tiempo".
+- La fecha se da **cuando se cumplen las condiciones** (ver la política), y se le avisa con tiempo para que se organice.
+- Si lo que falta **depende de él** —la seña o el crédito—, decíselo claro y sin vueltas: es la forma más rápida de destrabar la obra.
+- Si lo que falta depende de nosotros (ingeniería, la agenda), no se inventa una fecha: se le dice qué falta y que apenas esté se le confirma.
 
-**Cuándo escalar:** si todas las condiciones están y no hay fecha, a Operaciones.
+**Política interna:** para dar fecha tiene que estar **todo** esto: el OK de UTE a la consulta inicial, la ingeniería hecha, la ingeniería validada por Operaciones, la fecha en la agenda, y **la seña paga (50 %)** si el pago es directo, o **el crédito aprobado** si es con financiación bancaria. Los materiales no son condición: son tema interno. No hay un plazo de anticipación definido: "te avisamos con tiempo".
+
+**Cuándo escalar:** si todas las condiciones están cumplidas y todavía no hay fecha, a Operaciones.
 
 #### 3. Las dos aprobaciones de UTE
 
-**Cómo lo puede preguntar:** "¿por qué hay que esperar a UTE para instalar?", "¿no
-me instalaron ya?, ¿por qué no anda?", "¿cuántas veces tiene que aprobar UTE?".
+**Cómo lo puede preguntar:** "¿por qué hay que esperar a UTE para instalar?", "¿no me instalaron ya?, ¿por qué no anda?", "¿cuántas veces tiene que aprobar UTE?".
 
 **Qué explicar:**
-- Son **dos aprobaciones**: la **consulta**, antes de la obra, y la
-  **habilitación** final, después.
-- En la consulta UTE hace dos análisis: el consumo histórico para definir la
-  potencia (sale casi en el día) y el análisis de la red por su área de proyectos,
-  que puede pedir obras en la red, a cargo de UTE o del cliente. En residenciales
-  casi nunca pasa; en industriales sí.
-- Por eso se espera: para no instalar y descubrir después un costo que haga
-  desistir.
-- Entre la obra y la habilitación, el sistema queda **instalado pero apagado, con
-  precinto**.
 
-**Política interna:** la obra se hace **después de la consulta aprobada**. Hacerla
-antes, preferentemente no; excepcionalmente por logística, más viable en
-residenciales chicas. **Encender antes de la habilitación, nunca.**
+- Son **dos aprobaciones distintas**: la **consulta**, antes de la obra, y la **habilitación** final, después. Casi todas las dudas sobre UTE vienen de creer que es una sola.
+- En la consulta, UTE hace dos análisis: el **consumo histórico**, para definir la potencia (sale casi en el día), y el **análisis de la red**, que hace su área de proyectos y puede pedir obras en la red, a cargo de UTE o del cliente. En residenciales casi nunca pasa; en industriales sí.
+- **Por eso se espera:** para no instalar y descubrir después un costo que haga desistir. Es una protección para el cliente, no una traba.
+- Entre la obra y la habilitación, el sistema queda **instalado pero apagado, con precinto**. Si nadie se lo explicó, va a creer que algo anda mal.
 
-**Cuándo escalar:** pedidos de obra antes de la consulta, al asesor comercial y a
-Operaciones.
+**Política interna:** la obra se hace **después de la consulta aprobada**. Hacerla antes, preferentemente no; excepcionalmente, por logística, y es más viable en residenciales chicas. **Encender antes de la habilitación, nunca.**
+
+**Cuándo escalar:** si el cliente pide hacer la obra antes de la consulta, al asesor comercial y a Operaciones.
 
 #### 4. El día de la obra
 
-**Cómo lo puede preguntar:** "¿cuánto dura?", "¿tengo que estar en casa?", "¿entran
-a la casa?".
+**Cómo lo puede preguntar:** "¿cuánto dura?", "¿tengo que estar en casa?", "¿entran a la casa?", "¿tengo que preparar algo?".
 
 **Qué explicar:**
-- Una residencial típica lleva **de 2 a 4 días**, según la dificultad del montaje.
-- Hace falta alguien que reciba al equipo al principio. Que esté durante es
-  recomendable, no obligatorio.
-- **No se trabaja adentro**: puede dejar la casa cerrada con acceso exterior.
-- Se recomienda dejar acceso a un baño.
 
-**Cuándo escalar:** necesidades de acceso especiales, a Operaciones.
+- Una residencial típica lleva **de 2 a 4 días**, según la dificultad del montaje (el techo, el acceso, la distancia al tablero).
+- Hace falta **alguien que reciba al equipo al principio**, para abrir y mostrar dónde van las cosas. Que esté durante la obra es recomendable, no obligatorio.
+- **No se trabaja adentro de la casa**: puede dejarla cerrada, siempre que haya acceso por afuera al techo y al tablero.
+- Se recomienda dejar acceso a un baño para el equipo: son varios días de trabajo.
+
+**Política interna:** lo que se le pide tiene que ser concreto: qué acceso hace falta y a qué hora llega el equipo. Un "no hace falta que estés" sin decir qué tiene que dejar resuelto termina con la cuadrilla en la puerta.
+
+**Cuándo escalar:** necesidades de acceso especiales (llaves, portería, horarios restringidos), a Operaciones.
 
 #### 5. Pago y financiación
 
-**Cómo lo puede preguntar:** "¿cuándo pago?", "¿cuánto falta pagar?", "¿cómo es con
-el banco?".
+**Cómo lo puede preguntar:** "¿cuándo pago?", "¿cuánto falta pagar?", "¿cómo es con el banco?", "¿cuánto es la seña?".
 
 **Qué explicar:**
-- **Pago directo:** seña al confirmar; se completa el **50 %** entre 10 y 15 días
-  antes de la obra; **30 %** con la obra terminada; **20 %** cuando UTE habilita.
-- **Financiación bancaria:** se firma el contrato para presentar al banco, y la
-  obra se agenda **recién con el crédito aprobado**.
+
+- **Pago directo:** una seña al confirmar, y se completa el **50 %** entre 10 y 15 días antes de la obra. Después, el **30 %** con la obra terminada y el **20 %** cuando UTE habilita.
+- **Financiación bancaria:** se firma el contrato para presentar al banco, y la obra se agenda **recién con el crédito aprobado**. Por eso conviene que vaya adelantando lo que le pide el banco: es lo que más atrasa estas obras.
+- Para decirle cuánto le falta, mirá la pestaña **Cobros** de su ficha: ahí está qué pagó y qué queda previsto.
+
+**Política interna:** los montos y las fechas se sacan del **plan de pagos** del proyecto, no de memoria. Si no está cargado, no se contesta: se le pregunta al asesor. Un número mal dicho sobre plata es de lo que más cuesta arreglar.
 
 **Cuándo escalar:** cualquier duda de montos, al asesor comercial.
 
-#### 6. Acceso al portal y a la aplicación del inversor
+#### 6. El portal y la aplicación del inversor
 
-**Cómo lo puede preguntar:** "¿dónde veo cómo va?", "¿cómo entro?", "no tengo
-usuario".
+**Cómo lo puede preguntar:** "¿dónde veo cómo va?", "¿cómo entro?", "no tengo usuario", "¿qué es la app?".
 
-**Qué explicar:** son **dos cosas distintas**.
-- **El portal de Voltia:** seguimiento del trámite, encuestas, tickets, fecha de
-  corte y tarifa.
-- **La aplicación de tu inversor:** generación en tiempo real, histórico y consumo.
+**Qué explicar:**
 
-**Política interna:** el usuario del portal se genera con un clic, se copia y se
-manda por WhatsApp; el cliente cambia la contraseña al entrar. Para la aplicación
-del inversor se manda el link de descarga y las credenciales; si no tiene usuario,
-lo creás siguiendo el video instructivo.
+- Son **dos cosas distintas**, y conviene explicarlo así desde el principio, con esos dos nombres siempre:
+- **El portal de Voltia:** el seguimiento del trámite, las encuestas, los tickets, y donde carga su fecha de corte y su tarifa.
+- **La aplicación de tu inversor:** la generación en tiempo real, el histórico y el consumo. Es de la marca del inversor, no de Voltia.
 
-**Cuándo escalar:** problemas técnicos de la plataforma del inversor, a
-Operaciones.
+**Política interna:** el usuario del portal se genera con un clic desde su ficha, se copia y se le manda por WhatsApp; el cliente cambia la contraseña al entrar. Para la aplicación del inversor se le manda el link de descarga y las credenciales; si no tiene usuario, lo creás siguiendo el video instructivo.
+
+**Cuándo escalar:** problemas técnicos de la plataforma del inversor, a Operaciones.
 
 ---
 
@@ -1439,52 +1425,42 @@ Operaciones.
 
 #### 7. Cuánto demora UTE
 
-**Cómo lo puede preguntar:** "¿cuánto falta?", "¿por qué tarda tanto?", "¿cuándo me
-habilitan?".
+**Cómo lo puede preguntar:** "¿cuánto falta?", "¿por qué tarda tanto?", "¿cuándo me habilitan?", "ya pasó un mes".
 
 **Qué explicar:**
+
 - La **consulta** suele llevar alrededor de **mes y medio**.
-- La **habilitación**, desde que termina la obra, habitualmente **entre 2 y 4
-  semanas**.
-- Son rangos: UTE no da fechas.
+- La **habilitación**, contada desde que termina la obra, habitualmente **entre 2 y 4 semanas**.
+- Son **rangos**: UTE no da fechas. Si le damos un día y UTE no lo cumple, la promesa rota es nuestra, y el cliente no distingue quién falló.
 
-**Política interna:** **nunca fechas exactas.** Si pasó más de un mes, mirá quién
-tiene la pelota antes de contestar. **Nunca digas "estamos esperando a UTE" sin
-verificarlo**: una parte de los trámites abiertos depende de Voltia.
+**Política interna:** **nunca fechas exactas.** Si pasó más de un mes, antes de contestar mirá **quién tiene la pelota** en el trámite. **Nunca digas "estamos esperando a UTE" sin verificarlo**: una parte de los trámites abiertos está esperando algo de Voltia, no de UTE.
 
-**Cuándo escalar:** si el trámite está trabado del lado de Voltia, al responsable
-de tramitación UTE.
+**Cuándo escalar:** si el trámite está trabado del lado de Voltia, al responsable de tramitación UTE.
 
 #### 8. Mensajes de UTE
 
-**Cómo lo puede preguntar:** "me llegó un mensaje de UTE, ¿tengo que hacer algo?",
-"me dicen que aumenté la potencia".
+**Cómo lo puede preguntar:** "me llegó un mensaje de UTE, ¿tengo que hacer algo?", "me dicen que aumenté la potencia", "¿esto es normal?".
 
 **Qué explicar:**
+
 - Son **informativos**: no tiene que hacer nada.
-- Al aprobar la consulta, UTE manda una notificación que **parece un pedido de
-  aumento de potencia**. Es normal.
-- Al habilitar al final, UTE no manda nada: eso lo avisa Voltia.
+- Al aprobar la consulta, UTE manda una notificación que **parece un pedido de aumento de potencia**. Es normal y es la que más asusta. Por eso se le manda un ejemplo antes, en uno de los mensajes que siguen a la bienvenida: si ya la vio, cuando le llega no pregunta.
+- Al habilitar al final, **UTE no manda nada**: la habilitación se la avisa Voltia.
 
-**Política interna:** pedí captura del mensaje para identificar cuál es.
+**Política interna:** pedí captura del mensaje para identificar cuál es antes de contestar. No se le explica el trámite: se le dice si tiene que hacer algo o no.
 
-**Cuándo escalar:** si el mensaje no es ninguno de los conocidos, al responsable de
-tramitación UTE.
+**Cuándo escalar:** si el mensaje no es ninguno de los conocidos, al responsable de tramitación UTE.
 
 #### 9. Habilitación y encendido
 
-**Cómo lo puede preguntar:** "¿ya me habilitaron?", "¿cómo lo prendo?", "¿viene
-alguien a prenderlo?".
+**Cómo lo puede preguntar:** "¿ya me habilitaron?", "¿cómo lo prendo?", "¿viene alguien a prenderlo?".
 
 **Qué explicar:**
-- **El encendido lo hace el cliente**: cortar el precinto y subir la llave de
-  microgeneración. **No se toca el inversor.**
-- Después se confirma que quedó generando.
 
-**Política interna:** Voltia avisa dentro de las **24 a 48 horas** de otorgada la
-habilitación, sin esperar que pregunte. **Si pregunta él, el aviso llegó tarde.**
-Al confirmar que genera, se recuerda el **20 % final**. Que vaya alguien de Voltia
-a encender es excepción.
+- **El encendido lo hace el cliente**: cortar el precinto y subir la llave de microgeneración. **No se toca el inversor.** Es una maniobra de un minuto, y conviene explicarla paso a paso.
+- Después se confirma con él que **quedó generando**: en la aplicación del inversor tiene que verse la generación subiendo.
+
+**Política interna:** Voltia avisa dentro de las **24 a 48 horas** de otorgada la habilitación, sin esperar que pregunte. **Si pregunta él, el aviso llegó tarde.** Al confirmar que genera, se le recuerda el **20 % final**. Que vaya alguien de Voltia a encender es excepción, no la regla.
 
 **Cuándo escalar:** si no logra encender o no genera, a Operaciones.
 
@@ -1494,178 +1470,144 @@ a encender es excepción.
 
 #### 10. "Genera poco"
 
-**Cómo lo puede preguntar:** "genera menos de lo que me dijeron", "tengo 6 kWp y no
-paso de 3 kW", "con sol no llega".
+**Cómo lo puede preguntar:** "genera menos de lo que me dijeron", "tengo 6 kWp y no paso de 3 kW", "con sol no llega".
 
 **Qué explicar:**
-- Se compara la generación real (aplicación del inversor) contra la esperada
-  (gráfico de la propuesta), **por mes y no por día**.
-- El pico de potencia depende de la altura del sol, la orientación y la
-  temperatura: **en invierno, con sol, es normal no llegar a la potencia
-  nominal**. Mostrale la curva de potencia de un día soleado de ese mes.
 
-**Política interna:** contestar **con números, no con opiniones**.
+- Se compara la generación **real** (la aplicación del inversor) contra la **esperada** (el gráfico de la propuesta), **por mes y no por día**. Un día nublado aislado no dice nada.
+- El pico de potencia depende de la altura del sol, la orientación y la temperatura. **En invierno, con sol, es normal no llegar a la potencia nominal**: los 6 kWp son en condiciones ideales, no un piso de cada día.
+- Lo que más convence es mostrarle **la curva de potencia de un día soleado de ese mes**: ve que el sistema anda y entiende por qué no llega al número.
 
-**Cuándo escalar:** si el mes está **más de 20 % por debajo** de lo esperado, a
-Operaciones.
+**Política interna:** se contesta **con números, no con opiniones**. Un "está bien, es normal" sin datos se lee como que no lo miraste.
+
+**Cuándo escalar:** si el mes está **más de 20 % por debajo** de lo esperado, a Operaciones.
 
 #### 11. "No veo el ahorro"
 
-**Cómo lo puede preguntar:** "la factura sigue alta", "no noto la diferencia".
+**Cómo lo puede preguntar:** "la factura sigue alta", "no noto la diferencia", "no sé si vale la pena".
 
 **Qué explicar:**
-- Casi nunca es la generación: es percepción.
-- **Efecto rebote**: con paneles se consume más sin darse cuenta.
-- El reporte mensual muestra qué pagaría hoy **sin** paneles.
-- Aparece sobre todo en invierno o al terminarlo, cuando se juntan más consumo y
-  menos generación; un año con más días nublados lo acentúa.
-- Un sistema no se evalúa por el peor mes —igual que no se vende mostrando
-  enero—: se mira **el promedio anual**.
 
-**Cuándo escalar:** si los números muestran un problema de generación, pasa al
-tema 10.
+- Casi nunca es la generación: **es percepción**. Antes de discutirlo, mirá los números del reporte.
+- **Efecto rebote:** con paneles, sin darse cuenta, se consume más —se prende más el aire, se usa más el calefón—.
+- El reporte mensual muestra **qué pagaría hoy sin paneles**: esa es la comparación que importa, no la factura del año pasado.
+- Aparece sobre todo **en invierno** o al terminarlo, cuando se juntan más consumo y menos generación, y un año con más días nublados lo acentúa. Un sistema no se evalúa por el peor mes —igual que no se vende mostrando enero—: se mira **el promedio anual**.
+
+**Cuándo escalar:** si los números muestran de verdad un problema de generación, pasa al tema 10.
 
 #### 12. Factura de UTE y reporte mensual
 
-**Cómo lo puede preguntar:** "el reporte no coincide con la factura", "no entiendo
-la factura".
+**Cómo lo puede preguntar:** "el reporte no coincide con la factura", "no entiendo la factura".
 
 **Qué explicar:**
-- UTE factura **por fecha de corte**, no por mes calendario: se están comparando
-  períodos distintos.
-- El cliente carga su fecha de corte en el portal de Voltia.
 
-**Política interna:** si no coincide, **primero verificá si cargó la fecha de
-corte**. La fecha de corte se enseña a cargar en la puesta en marcha, y la factura
-se explica **al mes del encendido, con la factura real en la mano**.
+- UTE factura **por fecha de corte**, no por mes calendario. Si el reporte y la factura no coinciden, casi siempre es porque se están comparando períodos distintos.
+- El cliente **carga su fecha de corte en el portal de Voltia**, y con eso el reporte cubre exactamente el mismo período que su factura.
+
+**Política interna:** si no coincide, **primero verificá si cargó la fecha de corte**. La fecha de corte se enseña a cargar en la puesta en marcha, y la factura se le explica **al mes del encendido, con su factura real en la mano**: antes no hay nada que comparar.
 
 #### 13. Tarifa
 
-**Cómo lo puede preguntar:** "¿me conviene cambiar de tarifa?", "¿doble horario o
-simple?".
+**Cómo lo puede preguntar:** "¿me conviene cambiar de tarifa?", "¿doble horario o simple?".
 
 **Qué explicar:**
-- Puede cambiar la tarifa en el portal para que el reporte calcule bien; el
-  reporte muestra los tres escenarios a propósito.
-- **Con paneles suele convenir la simple**: en la doble horario la generación cae
-  siempre en el horario barato, así que siempre vende barato; en la simple, como
-  baja el consumo, se pasa menos de los escalones y vende un poco más caro.
 
-**Política interna:** **no cambiar en caliente**: esperar varios meses de datos
-reales.
+- Puede cambiar la tarifa en el portal para que el reporte calcule bien. El reporte muestra **los tres escenarios a propósito**, para que vea la diferencia con sus propios números.
+- **Con paneles suele convenir la simple.** En la doble horario la generación cae siempre en el horario barato, así que siempre vende barato. En la simple, como baja el consumo, se pasa menos de los escalones y vende un poco más caro.
+
+**Política interna:** **no cambiar en caliente**: esperar varios meses de datos reales antes de recomendar un cambio.
 
 #### 14. Auto eléctrico
 
-**Cómo lo puede preguntar:** "compré un auto eléctrico, ¿cuándo lo cargo?", "¿lo
-cargo con los paneles?".
+**Cómo lo puede preguntar:** "compré un auto eléctrico, ¿cuándo lo cargo?", "¿lo cargo con los paneles?".
 
 **Qué explicar:**
+
 - Conviene **tarifa triple horario y cargar de madrugada**.
-- No conviene cargarlo de día con el excedente: esa energía vale más **vendida a
-  UTE**, con el descuento de IVA e IRPF, que lo que cuesta comprarla de madrugada.
-  **De día se vende, de madrugada se carga.**
+- No conviene cargarlo de día con el excedente, aunque parezca lo lógico: esa energía vale más **vendida a UTE**, con el descuento de IVA e IRPF, que lo que cuesta comprarla de madrugada. **De día se vende, de madrugada se carga.**
 
 **Cuándo escalar:** si quiere ampliar el sistema por el auto, tema 20.
 
 #### 15. Corte de luz
 
-**Cómo lo puede preguntar:** "se cortó la luz y los paneles no andan", "¿no me daba
-luz igual?".
+**Cómo lo puede preguntar:** "se cortó la luz y los paneles no andan", "¿no me daba luz igual?".
 
 **Qué explicar:**
-- Un sistema conectado a la red **sin baterías se apaga solo por seguridad**, para
-  no energizar una línea donde puede haber alguien trabajando.
-- Vuelve solo cuando vuelve la luz. **No es una falla.**
 
-**Política interna:** hoy todos los sistemas son conectados a red. Cuando entren
-sistemas híbridos con baterías, hay que verificar en la ficha el tipo de sistema
-antes de contestar, y actualizar este tema.
+- Un sistema conectado a la red **sin baterías se apaga solo por seguridad**, para no energizar una línea donde puede haber alguien trabajando.
+- Vuelve solo cuando vuelve la luz. **No es una falla**, y no hay que hacer nada.
+
+**Política interna:** hoy todos los sistemas son conectados a red. Cuando entren sistemas híbridos con baterías, hay que verificar en la ficha el tipo de sistema antes de contestar, y actualizar este tema.
 
 #### 16. La aplicación no muestra la generación
 
-**Cómo lo puede preguntar:** "no me aparece nada", "la aplicación está en cero",
-"dejó de mostrar datos".
+**Cómo lo puede preguntar:** "no me aparece nada", "la aplicación está en cero", "dejó de mostrar datos".
 
 **Qué explicar:**
-- Casi siempre es **conectividad**. Preguntale qué luz tiene el inversor: **si está
-  verde, genera bien**, sólo perdió internet, y no perdió generación.
-- Preguntale si cambió la contraseña del wifi o el router.
 
-**Política interna:** mandale el video de reconexión de su marca para que lo haga
-solo, si se anima. Si no, que abra un ticket de soporte desde el portal de Voltia.
+- Casi siempre es **conectividad**, no generación. Preguntale qué luz tiene el inversor: **si está verde, genera bien**; sólo perdió internet, y no perdió generación.
+- Preguntale si **cambió la contraseña del wifi o el router**: es la causa más común.
+- Cuando se resuelve, enseñale a hacerlo solo: es de las consultas que más se repiten y que menos hace falta que pasen por Voltia.
+
+**Política interna:** mandale el **video de reconexión de su marca** para que lo haga solo, si se anima. Si no, que abra un ticket de soporte desde el portal de Voltia.
 
 **Cuándo escalar:** si la luz no está verde, pasa al tema 17.
 
 #### 17. Falla del inversor (luz roja)
 
-**Cómo lo puede preguntar:** "el inversor tiene una luz roja", "me sale un error".
+**Cómo lo puede preguntar:** "el inversor tiene una luz roja", "me sale un error", "se apagó el inversor".
 
 **Qué explicar:**
-- Que se registra el caso y se le da seguimiento.
-- Cómo abrir el ticket desde el portal de Voltia, para la próxima.
 
-**Política interna:** es raro que lo reporte el cliente primero: con falla, el
-inversor sigue conectado y la reporta, así que **Voltia debería enterarse antes y
-contactarlo**. Se registra como caso técnico. Si el cliente no abre el ticket, lo
-abre Experiencia Solar, pero la meta es que lo haga solo.
+- Que **se registra el caso y se le da seguimiento**, y cuándo va a tener novedades.
+- Cómo **abrir el ticket desde el portal de Voltia**, para la próxima.
 
-**Cuándo escalar:** a Operaciones **[A CONFIRMAR]**.
+**Política interna:** es raro que lo reporte el cliente primero: con falla, el inversor sigue conectado y la reporta, así que **Voltia debería enterarse antes y contactarlo**. Si llama él primero, algo falló en el monitoreo. Se registra como caso técnico. Si el cliente no abre el ticket, lo abre Experiencia Solar, pero la meta es que lo haga solo.
+
+**Cuándo escalar:** a Operaciones **[A CONFIRMAR]**
 
 #### 18. Limpieza y mantenimiento
 
-**Cómo lo puede preguntar:** "¿cada cuánto los limpio?", "¿con qué los limpio?",
-"¿hacen mantenimiento?", "¿cuánto sale?".
+**Cómo lo puede preguntar:** "¿cada cuánto los limpio?", "¿con qué los limpio?", "¿hacen mantenimiento?", "¿cuánto sale?".
 
 **Qué explicar:**
-- **Limpieza por el cliente:** sólo con agua, sin ningún producto. Puede usar
-  hidrolavadora, cepillo, lampazo o trapo. Recomendado cada 6 meses. **Si subir al
-  techo no es seguro, que no suba.**
-- **Mantenimiento de Voltia:** recomendado una vez por año. Incluye limpieza,
-  revisión estructural con reajuste de toda la tornillería (se afloja con el
-  viento y el tiempo) y revisión preventiva de la parte eléctrica y del inversor.
-- **Los dos primeros son gratis**: al primer y al segundo año de la obra. Desde el
-  tercero se cobran, del orden de USD 100 por visita según la distancia, y quedan
-  a criterio del cliente.
-- **Si se vuelan paneles, Voltia se hace cargo siempre que haya hecho un
-  mantenimiento en el último año.**
 
-**Política interna:** la condición de la voladura existe porque sin revisar la
-tornillería no se puede responder años después. **Los mantenimientos gratis los
-propone y agenda Voltia**, sin esperar a que el cliente pida: se le ofrece fecha y
-se confirma con él, como cualquier visita. La condición de la voladura se comunica
-al entregar el sistema y antes de que venza el segundo año.
+- **Limpieza por el cliente:** sólo con agua, sin ningún producto. Puede usar hidrolavadora, cepillo, lampazo o trapo. Recomendado cada 6 meses. **Si subir al techo no es seguro, que no suba.**
+- **Mantenimiento de Voltia:** recomendado una vez por año. Incluye limpieza, revisión estructural con reajuste de toda la tornillería —se afloja con el viento y el tiempo— y revisión preventiva de la parte eléctrica y del funcionamiento del inversor.
+- **Los dos primeros son gratis**, al primer y al segundo año de la obra. Desde el tercero se cobran, del orden de USD 100 por visita según la distancia, y quedan a criterio del cliente.
+- **Si se vuelan paneles, Voltia se hace cargo**, siempre que haya hecho un mantenimiento en el último año.
+
+**Política interna:** la condición de la voladura existe porque, sin revisar la tornillería, no se puede responder años después. Los dos gratis **los propone Voltia**, sin esperar a que el cliente los pida, y la fecha se confirma con él. La condición se comunica al entregar el sistema y antes de que venza el segundo año.
 
 **Cuándo escalar:** para agendar o cotizar, a Operaciones.
 
 #### 19. Granizo
 
-**Cómo lo puede preguntar:** "¿qué pasa si cae granizo?", "¿tienen seguro?",
-"¿cubren los paneles?".
+**Cómo lo puede preguntar:** "¿qué pasa si cae granizo?", "¿tienen seguro?", "¿cubren los paneles?".
 
 **Qué explicar:**
-- Voltia ofrece una **cobertura de granizo sobre los paneles**, de USD 12 por
-  panel por año, IVA incluido.
-- Cubre **sólo los paneles**, no el inversor ni la estructura.
-- No es un negocio: es para cubrir el recambio y la mano de obra.
 
-**Política interna:** es lo mismo que dice la propuesta comercial; no prometas nada
-distinto. Condiciones y forma de cobro **[A CONFIRMAR]**.
+- Voltia ofrece una **cobertura de granizo sobre los paneles**, de USD 12 por panel por año, IVA incluido.
+- Cubre **sólo los paneles**: no el inversor ni la estructura.
+- No es un negocio: el monto está pensado para cubrir el recambio y la mano de obra.
+
+**Política interna:** es lo mismo que dice la propuesta comercial: no prometas nada distinto. Condiciones y forma de cobro **[A CONFIRMAR]**
 
 **Cuándo escalar:** para contratarla o dudas de cobro, al asesor comercial.
 
 #### 20. Ampliación
 
-**Cómo lo puede preguntar:** "¿puedo agregar más paneles?", "compré un auto
-eléctrico, ¿me da para más?", "quiero ampliar".
+**Cómo lo puede preguntar:** "¿puedo agregar más paneles?", "compré un auto eléctrico, ¿me da para más?", "quiero ampliar".
 
-**Qué explicar:** que lo va a contactar el equipo de ventas para cotizarle.
+**Qué explicar:**
 
-**Política interna:** **Experiencia Solar no evalúa ni promete nada técnico.** Lo
-pasa a ventas cargándolo como cliente potencial. Si hay lugar, si hace falta
-visita, si el inversor da o si hay que tramitar con UTE, lo ve el vendedor.
+- Que lo va a **contactar el equipo de ventas** para cotizarle.
+- No hace falta explicarle nada técnico: si hay lugar, si el inversor da o si hay que tramitar con UTE, lo ve el vendedor con él.
+
+**Política interna:** **Experiencia Solar no evalúa ni promete nada técnico.** Lo pasa a ventas cargándolo como cliente potencial en Voltia PM.
 
 **Cuándo escalar:** directo a ventas.
 
 ---
 
-*Manual de Posventa — Experiencia Solar · Voltia · v1.8 · 28 de septiembre de 2026*
+*Manual de Posventa — Experiencia Solar · Voltia · v1.9 · 28 de septiembre de 2026*

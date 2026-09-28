@@ -366,25 +366,75 @@ ALTO_UTIL = ALTO - 72 - 56 - 34   # menos padding y el pie con su línea
 
 
 def altura_estimada(cuerpo: str) -> int:
-    """Alto aproximado del contenido de una página, en píxeles."""
+    """
+    Alto aproximado del contenido de una página, en píxeles.
+
+    Mide sólo los bloques "hoja" —párrafos, ítems de lista, títulos y los div que
+    no contienen otros div— para no contar dos veces el texto de un recuadro y su
+    contenido. A eso le suma el relleno de los recuadros con fondo y la altura
+    mínima de los huecos de captura.
+
+    La primera versión no contaba los <li>: las páginas hechas de listas (el
+    anexo de preguntas frecuentes) daban mucho menos de lo que medían, y se
+    desbordaron hasta tapar el pie. Si se agrega un tipo de bloque nuevo, hay que
+    sumarlo acá.
+    """
     import re as _re
 
-    total = 0
-    for bloque in _re.finditer(
-        r'<(h1|h2|p|div|table)\b[^>]*style="([^"]*)"[^>]*>(.*?)</\1>', cuerpo, _re.S
-    ):
-        etiqueta, estilo, texto = bloque.groups()
+    def medida(estilo, texto, fs_def=15.0, lh_def=1.5):
         plano = _re.sub(r"<[^>]+>", "", texto)
-        fs = float((_re.search(r"font-size:\s*([\d.]+)px", estilo) or [0, 15])[1])
-        lh = float((_re.search(r"line-height:\s*([\d.]+)", estilo) or [0, 1.5])[1])
-        mt = float((_re.search(r"margin(?:-top)?:\s*([\d.]+)px", estilo) or [0, 0])[1])
-        pad = float((_re.search(r"padding:\s*([\d.]+)px", estilo) or [0, 0])[1]) * 2
-        # ~2 caracteres por píxel de ancho a tamaño de cuerpo: aproximación burda
-        # pero estable para comparar páginas entre sí.
-        por_linea = max(1, int(ANCHO_UTIL / (fs * 0.5)))
-        lineas = max(1, -(-len(plano) // por_linea))
-        total += int(lineas * fs * lh + mt + pad)
-    return total
+        plano = _re.sub(r"\s+", " ", plano).strip()
+        fs = float((_re.search(r"font-size:\s*([\d.]+)px", estilo) or [0, fs_def])[1])
+        lh_m = _re.search(r"line-height:\s*([\d.]+)(px)?", estilo)
+        # "line-height: 22px" es absoluto; "line-height: 1.5" es un multiplicador.
+        lh = (float(lh_m.group(1)) / fs if lh_m.group(2) else float(lh_m.group(1))) if lh_m else lh_def
+        m = _re.search(r"margin:\s*([\d.]+)px(?:\s+[\d.]+px\s+([\d.]+)px)?", estilo)
+        mt = float(m.group(1)) if m else 0.0
+        mb = float(m.group(2)) if m and m.group(2) else 0.0
+        mt2 = _re.search(r"margin-top:\s*([\d.]+)px", estilo)
+        if mt2:
+            mt = float(mt2.group(1))
+        # Ancho útil menos las sangrías: las listas y los recuadros son más angostos.
+        ancho = ANCHO_UTIL - 60
+        por_linea = max(1, int(ancho / (fs * 0.48)))
+        lineas = max(1, -(-len(plano) // por_linea)) if plano else 0
+        return lineas * fs * lh + mt + mb
+
+    total = 0.0
+    # Hojas de texto
+    for b in _re.finditer(r'<(p|li|h1|h2)\b([^>]*)>(.*?)</\1>', cuerpo, _re.S):
+        estilo = (_re.search(r'style="([^"]*)"', b.group(2)) or [None, ""])[1]
+        total += medida(estilo, b.group(3))
+    # Divs sin otros divs adentro (rótulos, kickers, encabezados de tema)
+    for b in _re.finditer(r'<div\b([^>]*)>((?:(?!<div\b).)*?)</div>', cuerpo, _re.S):
+        interior = b.group(2)
+        if _re.search(r"<(p|li|h1|h2|ul)\b", interior):
+            continue
+        texto = _re.sub(r"<[^>]+>", "", interior).strip()
+        estilo = (_re.search(r'style="([^"]*)"', b.group(1)) or [None, ""])[1]
+        if texto:
+            total += medida(estilo, interior)
+        else:
+            mt = _re.search(r"margin-top:\s*([\d.]+)px", estilo)
+            total += float(mt.group(1)) if mt else 0.0
+    # Relleno de recuadros con fondo, altura de los huecos y separadores
+    for b in _re.finditer(r'<div\b[^>]*style="([^"]*)"', cuerpo):
+        estilo = b.group(1)
+        if "background" in estilo:
+            pad = _re.search(r"padding:\s*([\d.]+)px", estilo)
+            total += 2 * float(pad.group(1)) if pad else 0.0
+        mh = _re.search(r"min-height:\s*([\d.]+)px", estilo)
+        if mh:
+            total += float(mh.group(1))
+        pt = _re.search(r"padding-top:\s*([\d.]+)px", estilo)
+        if pt and "background" not in estilo:
+            total += float(pt.group(1))
+    # Las tablas: una fila ~ 2 líneas de su texto
+    for b in _re.finditer(r"<tr\b[^>]*>(.*?)</tr>", cuerpo, _re.S):
+        celdas = _re.findall(r"<t[dh]\b[^>]*>(.*?)</t[dh]>", b.group(1), _re.S)
+        largo = max((len(_re.sub(r"<[^>]+>", "", c)) for c in celdas), default=0)
+        total += max(1, -(-largo // 45)) * 20 + 20
+    return int(total)
 
 
 def revisar(paginas):
