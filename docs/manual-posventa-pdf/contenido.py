@@ -520,7 +520,7 @@ def construir():
     nueva("PortadillaE1.dc.html", "9 · Etapa 1", lambda p: portadilla(
         "1", "De la venta a la obra", "la firma", "la obra terminada",
         "Expectativa y ansiedad. Compró algo que todavía no existe, y todo lo que ve es una promesa.",
-        "3",
+        "5 días hábiles",
         ["Bienvenida y presentación", "Conversación de expectativa inicial", "Envío del acceso al portal",
          "Presentación del capataz", "Aviso de fecha de obra", "Aviso de reprogramación",
          "Aviso de visita a la propiedad", "Aviso de obra terminada", "Aviso de la encuesta de obra"],
@@ -703,7 +703,7 @@ def construir():
         "2", "De la obra a la habilitación", "la obra terminada", "que UTE habilita",
         "La etapa más difícil de todo el recorrido: tiene los paneles instalados en su techo, ya pagó "
         "buena parte, y no puede usarlos. Todos los días los ve y no generan nada.",
-        "5",
+        "5 días hábiles",
         ["Aviso de habilitación otorgada — la Regla de Oro", "Aviso de la encuesta de habilitación"],
         p, foto=IMG.PORTADILLA_E2))
 
@@ -720,8 +720,9 @@ def construir():
                 "la espera es tolerable. Si no, cada día es una traición.", "clave", margen=24)
         + subtitulo("Qué se hace durante la espera", margen=30)
         + parrafo("No hay pasos con plazo entre la obra y la habilitación, pero <strong>la cadencia de 5 "
-                  "días sigue corriendo</strong>. Un cliente de E2 que pasa más de cinco días sin contacto "
-                  "aparece marcado, y eso es a propósito: es la etapa donde el silencio más se nota.",
+                  "días hábiles sigue corriendo</strong>. Un cliente de E2 que pasa más de una semana de "
+                  "trabajo sin contacto aparece marcado, y eso es a propósito: es la etapa donde el "
+                  "silencio más se nota.",
                   margen=12)
         + parrafo("<strong>No hace falta una novedad para escribir.</strong> Un \"te escribo para contarte "
                   "que tu trámite sigue en curso, sin novedades todavía; apenas haya algo te aviso\" vale "
@@ -741,7 +742,7 @@ def construir():
         "3", "Post-habilitación", "que UTE habilita", "siempre",
         "El cliente ya está generando. Cambió lo que necesita: antes quería saber cuándo; ahora quiere "
         "entender lo que ve y saber que si algo falla nos enteramos.",
-        "10",
+        "sin cadencia",
         ["Capacitación: material y videos", "Acceso a la plataforma del inversor",
          "Alta en reportes mensuales", "Recorrido por el portal"],
         p, foto=IMG.PORTADILLA_E3))
@@ -1125,8 +1126,8 @@ def construir():
                   "que contarle. No quiere decir que el cliente haya hecho algo."],
                  ["Pendiente", "En el correo de la mañana: tiene plazo y ya se venció. Lo único obligatorio "
                   "del día."],
-                 ["Fuera de cadencia", "Más días sin contacto que los de su etapa. Puede tener novedad o no: "
-                  "son cosas independientes."],
+                 ["Fuera de cadencia", "Más días hábiles sin contacto que los de su etapa. Solo E1 y E2: "
+                  "los habilitados no entran. Puede tener novedad o no: son cosas independientes."],
                  ["\"Ya lo vi\"", "Apaga el punto de novedad cuando al cliente no le importa lo que pasó. "
                   "<strong>No cuenta como contacto.</strong>"],
                  ["Regla de Oro", "El aviso de habilitación dentro de 24-48 horas."],

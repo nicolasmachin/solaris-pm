@@ -4,13 +4,21 @@
 
 ### 28 de septiembre de 2026
 
+#### Cadencia de contacto: una semana hábil, y los habilitados salen del semáforo
+
+- La cadencia pasa a contarse en **días hábiles**: no cuentan sábados ni domingos, así que a quien se le escribió el viernes no aparece marcado el lunes. Los días que muestra la columna **Último contacto** también son hábiles, para que el número que ves sea el mismo que decide el color.
+- **E1 y E2 quedan en 5 días hábiles** —una semana de trabajo—. Antes E1 estaba en 3.
+- **La etapa 3 deja de tener cadencia.** Un cliente ya habilitado no tiene de qué hablar cada diez días: sus pasos de E3 se cierran en las primeras semanas y después el contacto lo dan el reporte mensual, la encuesta de aniversario y el mantenimiento. Con la regla anterior, casi todos los habilitados figuraban en rojo sin tener nada pendiente, y la lista solo podía crecer porque esa etapa no termina nunca.
+- Los habilitados **siguen apareciendo cuando pasa algo** —una encuesta con nota baja, un reclamo, una novedad del proyecto—: por el hecho, no por el calendario.
+- En **Administración → Cadencia de contacto** ahora se aclara que los días son hábiles, y que una etapa desactivada no marca a nadie.
+
 #### Gabinete metálico: el plano para el fabricante se arma solo
 
 - Herramienta nueva en **Ingeniería → Gabinete metálico**, dentro del proyecto. Se cargan las medidas y la app arma **la lámina que se le manda al fabricante**: una hoja con las vistas acotadas, las especificaciones, las notas y una **tabla con todas las medidas escritas**.
 - Está hecha para el gabinete que pedimos siempre: **todo en chapa plegada**, **sin herrajes** y **sin perforar**. La tapa va suelta —sin bisagras ni cierre—, y los agujeros de amure los hace el instalador en obra. La lámina lo dice con todas las letras, así el fabricante no cotiza ni hace cosas que no le pedimos.
-- **Ninguna medida queda librada al criterio del taller.** Todo sale de un campo, y todos los campos **vienen con un valor por defecto** que se puede cambiar: espesor y tipo de chapa, ancho de la pestaña de amure, solape entre las dos piezas en L, paso de los tornillos, reborde del frente del cuerpo, reborde de la tapa, solape y holgura entre ambos.
+- **Ninguna medida queda librada al criterio del taller, y todas van acotadas sobre el dibujo**, en la vista donde esa parte se ve: ancho y alto en la frontal; profundidad, reborde de la tapa, reborde del frente, solape y holgura entre ambos y pestaña de amure en la lateral; la unión de las dos piezas en L en la posterior. Todos los valores **vienen cargados por defecto** y se pueden cambiar.
 - Las vistas: frontal con la tapa puesta, lateral, posterior e isométrica.
-- **La vista previa se actualiza mientras cargás las medidas**, así ves el plano antes de emitirlo.
+- **La vista previa se actualiza mientras cargás las medidas**, así ves el plano antes de emitirlo. El formulario ocupa menos lugar que el dibujo, y con **Ampliar** se ve la lámina a pantalla completa sin descargar el PDF.
 - La lámina sale con **de qué obra es, cuántas unidades hay que fabricar y a quién responderle**, y un campo de notas libres.
 - **Un proyecto puede tener varios gabinetes** (el del medidor, el de protecciones), cada uno con su lámina.
 - **Emitir lámina** genera el PDF y lo guarda en los documentos del proyecto como **v1, v2, v3…**: las anteriores no se pisan, porque cada una puede haber salido en un pedido distinto.

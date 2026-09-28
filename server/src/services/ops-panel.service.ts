@@ -257,7 +257,8 @@ export async function clientesSinComunicacion() {
       const recorrido = recorridoForProject(displayStage?.name ?? null, p.recorridoManual);
       const objetivo = cadenciaMap.get(recorrido) ?? null;
       const last = lastByProject.get(p.id) ?? null;
-      const diasSinContacto = last ? diffInDays(last, now) : null;
+      // Hábiles, igual que el umbral de cadencia contra el que se compara.
+      const diasSinContacto = last ? businessDaysBetween(last, now) : null;
       return {
         id: p.id,
         code: p.code,

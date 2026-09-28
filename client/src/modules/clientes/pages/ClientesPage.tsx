@@ -275,10 +275,10 @@ export function ClientesPage() {
                   ? "font-medium text-[var(--color-danger-text)]"
                   : "text-[var(--color-text-muted)]"
               }
-              title={c.fueraDeCadencia ? "Supera la cadencia de contacto de su etapa" : undefined}
+              title={c.fueraDeCadencia ? "Supera la cadencia de contacto de su etapa (se mide en días hábiles)" : undefined}
             >
               {c.ultimoContactoEn
-                ? `${fmtDate(c.ultimoContactoEn)}${d != null ? ` · ${d}d` : ""}`
+                ? `${fmtDate(c.ultimoContactoEn)}${d != null ? ` · ${d} d háb.` : ""}`
                 : "Sin contacto"}
             </span>
             {c.avisoHabilitacionPendiente && (

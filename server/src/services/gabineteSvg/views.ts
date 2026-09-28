@@ -85,22 +85,13 @@ export function vistaFrontal(box: Box, g: GabineteInputs, scale?: number): strin
     extLine(x, y, x - 34, y),
     extLine(x, y + h, x - 34, y + h),
     dimV(y, y + h, x - 28, cm(g.altoCm)),
-    // El reborde de la tapa, acotado arriba a la derecha (a la izquierda se
-    // salía de la hoja).
-    extLine(x + w - borde, y - 4, x + w - borde, y - 22),
-    extLine(x + w, y - 4, x + w, y - 22),
-    line(x + w - borde - 4, y - 18, x + w + 28, y - 18, { color: COLOR.dim }),
-    text(x + w + 32, y - 14, `reborde ${cm(g.rebordeTapaCm)}`, {
-      size: 9,
-      color: COLOR.dim,
-    }),
   ].join("");
 }
 
 // ─── Vista lateral ────────────────────────────────────────────────────────────
 
 export function vistaLateral(box: Box, g: GabineteInputs, scale?: number): string {
-  const pad = { left: 20, right: 20, top: 20, bottom: 34 };
+  const pad = { left: 86, right: 96, top: 20, bottom: 40 };
   const availW = box.w - pad.left - pad.right;
   const availH = box.h - pad.top - pad.bottom;
   const s = scale ?? fitScale(g.profundidadCm, g.altoCm, availW, availH);
@@ -110,27 +101,67 @@ export function vistaLateral(box: Box, g: GabineteInputs, scale?: number): strin
   const x = box.x + pad.left + (availW - w) / 2;
   const y = box.y + pad.top + (availH - h) / 2;
 
+  // De costado se ve el canto de la tapa: su reborde plegado es la
+  // profundidad de la tapa como pieza, y es la medida que el taller necesita
+  // para plegarla. Va a escala, no como un canto decorativo.
+  const rebTapa = Math.max(4, g.rebordeTapaCm * s);
+  const rebFrente = Math.max(4, g.rebordeFrenteCm * s);
+  const solape = Math.max(3, g.solapeTapaCm * s);
+
   const parts = [
     viewTitle(box, "VISTA LATERAL DERECHA"),
+    // Cuerpo.
     rect(x, y, w, h, { fill: COLOR.metalFill, stroke: COLOR.metalStrokeDark }),
-    // Canto de la tapa, al frente (izquierda de esta vista).
-    rect(x, y, Math.max(3, WALL * 0.8), h, {
+    // Tapa: monta por fuera del frente (izquierda), solapando sobre la pared.
+    rect(x - rebTapa + solape, y, rebTapa, h, {
       fill: COLOR.metalFillDark,
       stroke: COLOR.metalStrokeDark,
     }),
+    // Reborde del frente del cuerpo, que dobla hacia adentro: queda oculto
+    // detrás de la pared lateral, así que va punteado.
+    line(x + rebFrente, y, x + rebFrente, y + h, {
+      color: COLOR.metalStroke,
+      width: 0.8,
+      dash: "4 3",
+    }),
+
+    // ── Cotas de la tapa y del frente, a la izquierda.
+    extLine(x - rebTapa + solape, y - 4, x - rebTapa + solape, y - 26),
+    extLine(x + solape, y - 4, x + solape, y - 26),
+    line(x - rebTapa + solape - 40, y - 22, x + solape + 4, y - 22, { color: COLOR.dim }),
+    text(x - rebTapa + solape - 44, y - 18, `reborde tapa ${cm(g.rebordeTapaCm)}`, {
+      size: 9,
+      color: COLOR.dim,
+      anchor: "end",
+    }),
+
+    extLine(x, y + h + 4, x, y + h + 40),
+    extLine(x + rebFrente, y + h + 4, x + rebFrente, y + h + 40),
+    line(x - 40, y + h + 36, x + rebFrente + 4, y + h + 36, { color: COLOR.dim }),
+    text(x - 44, y + h + 40, `reborde frente ${cm(g.rebordeFrenteCm)}`, {
+      size: 9,
+      color: COLOR.dim,
+      anchor: "end",
+    }),
+
+    // Solape de la tapa sobre el cuerpo y holgura entre ambos.
+    leader(x + solape / 2, y + h * 0.34, x + w + 14, y + h * 0.3, [
+      `solape ${cm(g.solapeTapaCm)}`,
+      `holgura ${fmt(g.holguraTapaMm)} mm`,
+    ]),
   ];
 
   // Pestaña de amure: el doblez del fondo, contra el muro (derecha).
   if (g.pestanaAmure) {
-    const f = Math.max(5, Math.min(g.pestanaAnchoCm * s, 18));
+    const f = Math.max(4, g.pestanaAnchoCm * s);
     parts.push(
-      rect(x + w, y, 3, h, { fill: COLOR.metalFillDark, stroke: COLOR.metalStrokeDark }),
-      extLine(x + w, y - 4, x + w, y - 22),
-      extLine(x + w + 3, y - 4, x + w + 3, y - 22),
-      line(x + w - 30, y - 18, x + w + 6, y - 18, { color: COLOR.dim }),
-      text(x + w + 10, y - 14, `pestaña ${cm(g.pestanaAnchoCm)}`, { size: 9, color: COLOR.dim }),
+      rect(x + w, y, f, 4, { fill: COLOR.metalFillDark, stroke: COLOR.metalStrokeDark }),
+      rect(x + w, y + h - 4, f, 4, { fill: COLOR.metalFillDark, stroke: COLOR.metalStrokeDark }),
+      extLine(x + w, y - 4, x + w, y - 26),
+      extLine(x + w + f, y - 4, x + w + f, y - 26),
+      line(x + w - 4, y - 22, x + w + f + 14, y - 22, { color: COLOR.dim }),
+      text(x + w + f + 18, y - 18, `pestaña ${cm(g.pestanaAnchoCm)}`, { size: 9, color: COLOR.dim }),
     );
-    void f;
   }
 
   parts.push(
@@ -197,6 +228,19 @@ export function vistaPosterior(box: Box, g: GabineteInputs): string {
       ]),
     );
   }
+
+  // Unión de las dos piezas en L: cae sobre el canto lateral y se acota acá,
+  // que es donde se ve el largo del solape.
+  const xUnion = x + flange * 0.5;
+  parts.push(
+    line(xUnion, y, xUnion, y + h, { color: COLOR.metalStrokeDark, width: 0.8, dash: "5 3" }),
+    leader(xUnion, y + h * 0.5, x + w + 16, y + h * 0.45, [
+      `Unión de las dos piezas en L:`,
+      `solape ${cm(g.solapeUnionCm)}`,
+      `${g.tornillos},`,
+      `cada ${cm(g.pasoTornillosCm)}`,
+    ]),
+  );
 
   return parts.join("");
 }

@@ -144,7 +144,7 @@ export function ClienteFichaPage() {
                 ? "Sin contacto registrado"
                 : ficha.diasSinContacto === 0
                   ? "Contactado hoy"
-                  : `${ficha.diasSinContacto} d sin contacto`}
+                  : `${ficha.diasSinContacto} d háb. sin contacto`}
             </span>
             {ficha.avisoHabilitacionPendiente && (
               <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-danger-bg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--color-danger-text)]">

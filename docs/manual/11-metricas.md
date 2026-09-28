@@ -35,8 +35,9 @@ Aparece arriba de las tarjetas del Dashboard, solo para quien tiene
 - **Sin fecha de instalación**: vendidos sin agenda de obra, ordenados por días
   desde la venta (más demorado arriba). Cada fila linkea a la ficha.
 - **Sin comunicación hace X días**: clientes cuya última interacción registrada
-  superó la cadencia objetivo de su recorrido (E1/E2/E3). "Sin contacto" si nunca
-  se registró una.
+  superó la cadencia objetivo de su recorrido, contada en **días hábiles**. Hoy
+  son E1 y E2 (5 días hábiles); **E3 no tiene cadencia**, así que los habilitados
+  no aparecen acá. "Sin contacto" si nunca se registró una.
 - **¿Dónde se rompe el proceso?**: promedio real + % cumplimiento SLA por etapa, y
   el cliente más trabado en cada una.
 - **Trámites UTE** (banda): sin habilitar por demora desde la venta + reparto de
@@ -71,7 +72,7 @@ Aparece arriba de las tarjetas del Dashboard, solo para quien tiene
   dos seguimientos paralelos (preobra y habilitación) no aparecen en
   Administración → Plazos por etapa (`STAGE_TYPES_CON_SLA` las excluye), así que
   nunca figuran como vencidas. El control de Experiencia Solar es la cadencia de
-  contacto por recorrido (E1/E2/E3): "Sin comunicación".
+  contacto por recorrido (hoy solo E1 y E2): "Sin comunicación".
 - **Universo distinto al listado de Proyectos.** "En riesgo ahora" y el chat
   cuentan solo obras **activas** (sin las cargadas por planilla ni las omitidas).
   El filtro "Solo vencidos" de Proyectos trabaja sobre los estados que estén

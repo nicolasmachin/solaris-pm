@@ -1,6 +1,6 @@
 # Cómo trabajamos en Voltia
 
-**Manual de trabajo** · Versión 2.0 — 28 de septiembre de 2026
+**Manual de trabajo** · Versión 2.1 — 28 de septiembre de 2026
 
 > Este manual explica **qué tiene que hacer cada uno y cómo hacerlo en Voltia PM**.
 > No hay dos documentos: el procedimiento y la herramienta van juntos, porque
@@ -335,8 +335,12 @@ correspondan: lo que no cambies **sale impreso igual**, así el taller nunca
 tiene que resolver nada por su cuenta.
 
 Es **una sola hoja**: el gabinete dibujado de frente, de costado, de atrás y en
-perspectiva, las especificaciones, las notas y al pie una **tabla con todas las
-medidas escritas**, por si el dibujo se imprime mal o llega por foto.
+perspectiva, con **cada medida acotada sobre el dibujo** —el costado es el que
+muestra cómo encastra la tapa en el cuerpo—, más las especificaciones y las
+notas.
+
+Mientras cargás, el dibujo se va armando al costado. Con **Ampliar** lo ves a
+pantalla completa, sin tener que bajar el PDF.
 
 Si el fabricante pide un dato que no tiene casillero, lo agregás abajo en
 **Especificaciones adicionales** y sale impreso igual.
@@ -827,7 +831,8 @@ queda para que el resto del equipo sepa cómo se trabaja la cartera:
    que apaga el punto sin inventar un contacto. Nunca se registra un contacto que
    no existió para limpiar la lista.
 4. **Se ataca Fuera de cadencia de arriba hacia abajo**, hasta donde se llegue. Acá
-   no hace falta tener novedad para escribir: el contacto es el punto.
+   no hace falta tener novedad para escribir: el contacto es el punto. Son
+   clientes de E1 y E2: los ya habilitados no entran en esta lista.
 5. **Todo contacto se registra**, aunque haya sido corto. Sin registro, para el
    sistema no pasó nada y el cliente sigue apareciendo como olvidado.
 
@@ -865,7 +870,7 @@ quince mensajes listos.
 
 Llega un correo diario con lo pendiente: **arriba lo vencido** —avisos sin dar,
 pasos con el plazo pasado, reclamos sin responder— y abajo, por etapa, quiénes
-están fuera de cadencia.
+están fuera de cadencia (solo E1 y E2).
 
 **Si no hay nada pendiente, no llega.**
 
@@ -966,7 +971,7 @@ cédula o con un usuario armado con su nombre.
 | **Subetapa** | Las tareas dentro de una etapa, con su checklist. |
 | **Traspaso** | El pase de trabajo de un área a la siguiente. Lo genera el sistema al completarse una etapa. |
 | **Paso** | Un aviso al cliente dentro del recorrido de Experiencia Solar. Algunos tienen plazo; **vencer no bloquea**. |
-| **Cadencia** | Los días sin contacto a partir de los cuales un cliente se marca. |
+| **Cadencia** | Los **días hábiles** sin contacto a partir de los cuales un cliente se marca: hoy 5 en E1 y E2. **E3 no tiene**, porque no termina nunca y marcaría a todos para siempre. |
 | **Novedad** | Pasó algo en el proyecto después del último contacto: el cliente todavía no lo sabe. |
 | **Ticket** | Un reclamo o consulta registrado, con estado y responsable. |
 | **Portal** | Lo que ve el cliente: avance, documentación, reportes, tickets y encuestas. |

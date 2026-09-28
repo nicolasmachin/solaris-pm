@@ -48,7 +48,7 @@ function Item({ c }: { c: ClienteListItem }) {
       </div>
       <p className="mt-0.5 pl-[18px] text-[10px] text-[var(--color-text-muted)]">
         {c.etapa?.recorrido.codigo ?? "—"} ·{" "}
-        {c.diasSinContacto === null ? "sin contacto" : `${c.diasSinContacto} d`}
+        {c.diasSinContacto === null ? "sin contacto" : `${c.diasSinContacto} d háb.`}
       </p>
     </NavLink>
   );

@@ -179,7 +179,7 @@ export function emailExperienciaDigest(params: {
   // cadencia, también en la sección de novedades: al llamarlo para enterarse de
   // la novedad se salda el contacto, así que hace falta saberlo ahí mismo.
   const sinContacto = (dias: number | null) =>
-    dias === null ? "sin contacto registrado" : `${dias} días sin contacto`;
+    dias === null ? "sin contacto registrado" : `${dias} días hábiles sin contacto`;
 
   const renderBloques = (bloques: ExpBloque[], marcasDe: (c: ExpBloque["clientes"][number]) => string) =>
     bloques

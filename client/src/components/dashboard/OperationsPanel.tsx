@@ -233,8 +233,9 @@ function OmitidosCard() {
 function comText(r: OpsSinComunicacionRow): { big: string; note: string } {
   if (r.sinContacto) return { big: "—", note: "Sin contacto" };
   return {
-    big: `${r.diasSinContacto}d`,
-    note: r.atraso != null && r.atraso > 0 ? `+${r.atraso}d` : "ok",
+    // Hábiles, igual que la cadencia contra la que se compara.
+    big: `${r.diasSinContacto} d háb.`,
+    note: r.atraso != null && r.atraso > 0 ? `+${r.atraso}` : "ok",
   };
 }
 

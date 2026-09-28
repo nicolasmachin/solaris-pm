@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.11 — 28 de septiembre de 2026
+**Voltia · Uruguay** · Versión 1.12 — 28 de septiembre de 2026
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -87,6 +87,10 @@ Si te preguntan algo que no es tuyo, no se deriva al cliente. Se responde
 | Que tiene **un referente** con nombre | Fechas del trámite UTE, que no dependen de nosotros |
 | **Respuesta el mismo día hábil** ante un reclamo | La **solución** el mismo día |
 | Que si su planta deja de generar **nos enteramos nosotros** | Que nunca va a fallar nada |
+
+**La cadencia se mide en días hábiles** y hoy es de **5 en E1 y E2**; **E3 no
+tiene**. Se configura en Administración → Cadencia de contacto, y una etapa
+desactivada simplemente no marca.
 
 **Por qué no se promete cadencia:** una promesa incumplida daña más que el
 silencio explicado. Si le decimos "te escribo todas las semanas" y pasan diez
@@ -231,9 +235,11 @@ Experiencia Solar para registrar **sus** contactos.
 **Dónde se ve:** Experiencia Solar → **Recorrido**, columna *Pre-obra*. O la ficha
 del cliente → bloque **E1** del recorrido.
 
-**El semáforo interno de esta etapa: 3 días.** Si un cliente de E1 pasa más de 3
-días sin contacto registrado, aparece marcado. **No es una promesa al cliente**:
-es una alarma de gestión para que nadie quede olvidado.
+**El semáforo interno de esta etapa: 5 días hábiles.** Si un cliente de E1 pasa
+más de una semana de trabajo sin contacto registrado, aparece marcado. Son
+hábiles: no cuentan sábados ni domingos, así que a quien se le escribió el
+viernes no aparece el lunes. **No es una promesa al cliente**: es una alarma de
+gestión para que nadie quede olvidado.
 
 ---
 
@@ -543,7 +549,8 @@ tiene"**, que es lo que realmente falta hoy.
 **Dónde se ve:** ficha del cliente → bloque **E2** del pipeline. O Experiencia
 Solar → **Recorrido**, columna del medio.
 
-**El semáforo interno de esta etapa: 5 días.**
+**El semáforo interno de esta etapa: 5 días hábiles**, igual que en E1: una
+semana de trabajo.
 
 Es **la etapa más difícil de todo el recorrido**, y conviene entender por qué: el
 cliente tiene los paneles instalados en su techo, ya pagó buena parte, **y no
@@ -631,7 +638,16 @@ Contacto propio, unos días después de que encendió. Misma regla que la de obr
 
 **Dónde se ve:** ficha del cliente → bloque **E3**.
 
-**El semáforo interno de esta etapa: 10 días.**
+**Esta etapa no tiene semáforo de cadencia.** Es la única. E3 no termina nunca,
+así que un plazo que se repite marcaría en rojo, para siempre, a todo cliente
+habilitado — y no habría nada que decirle. Lo que sostiene el vínculo acá no es
+un plazo sino **los cuatro pasos de abajo** (que sí tienen plazo), y después
+**el reporte mensual, la encuesta de aniversario y el mantenimiento**, que llegan
+solos.
+
+Que no haya semáforo no significa que el cliente quede suelto: si pasa algo —una
+encuesta con nota baja, un reclamo, una caída de generación— aparece igual, por
+el hecho, no por el calendario.
 
 El cliente ya está generando. Cambió lo que necesita: antes quería saber cuándo;
 ahora quiere **entender lo que ve** y saber que si algo falla nos enteramos.
@@ -799,7 +815,9 @@ la pantalla del Recorrido, en tres secciones de arriba abajo por urgencia:
 2. **Novedades**, por etapa — **pasó algo en el proyecto después de la última vez
    que le hablamos**, así que hay algo que contarle.
 3. **Fuera de cadencia**, por etapa — sin novedad, pero les debemos el contacto
-   del período.
+   del período. Acá **solo entran E1 y E2**: E3 no tiene cadencia, así que un
+   cliente habilitado nunca aparece en esta lista por tiempo. Si aparece, es
+   porque pasó algo, y entonces va en una de las dos secciones de arriba.
 
 **El asunto ya dice los tres números**: *"2 pendientes · 12 novedades · 71 fuera de
 cadencia"*. No se suman a propósito. Antes venía un total único —"85 pendientes"—
@@ -1835,4 +1853,4 @@ sacar y se suben, no se retocan a mano.
 
 ---
 
-*Manual de Posventa — Experiencia Solar · Voltia · v1.11 · 28 de septiembre de 2026*
+*Manual de Posventa — Experiencia Solar · Voltia · v1.12 · 28 de septiembre de 2026*

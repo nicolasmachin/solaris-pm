@@ -26,7 +26,7 @@ function CadenciaRow({ row }: { row: RecorridoCadenciaRow }) {
   const saveMut = useMutation({
     mutationFn: () => {
       const n = Number.parseInt(dias, 10);
-      if (!Number.isFinite(n) || n <= 0) throw new Error("Ingresá un número de días mayor a 0");
+      if (!Number.isFinite(n) || n <= 0) throw new Error("Ingresá un número de días hábiles mayor a 0");
       return putRecorridoCadencia(row.recorrido, { diasObjetivo: n, activo });
     },
     onSuccess: () => {
@@ -51,7 +51,7 @@ function CadenciaRow({ row }: { row: RecorridoCadenciaRow }) {
           placeholder="—"
           className="w-24 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
         />
-        <span className="ml-2 text-[11px] text-[var(--color-text-muted)]">días</span>
+        <span className="ml-2 text-[11px] text-[var(--color-text-muted)]">días hábiles</span>
       </td>
       <td className="px-3 py-2 text-center">
         <input type="checkbox" checked={activo} onChange={(e) => setActivo(e.target.checked)} />
@@ -77,10 +77,16 @@ export function TabCadenciaRecorrido() {
       <div className="mb-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4 text-xs text-[var(--color-text-secondary)]">
         <p className="font-semibold mb-1">Cadencia de contacto (E1/E2/E3)</p>
         <p className="text-[11px] text-[var(--color-text-muted)]">
-          Definí cada cuántos <strong>días</strong> como máximo debería registrarse una interacción con el cliente en
-          cada etapa de su recorrido. Cuando pasa ese objetivo sin una interacción registrada, el cliente aparece en la
-          tarjeta <strong>“Sin comunicación”</strong> del Panel de operaciones. Cuenta la última interacción registrada
-          en Experiencia Solar; si nunca se registró ninguna, se muestra como “Sin contacto”.
+          Definí cada cuántos <strong>días hábiles</strong> como máximo debería registrarse una interacción con el
+          cliente en cada etapa de su recorrido: no cuentan sábados ni domingos, así que 5 es una semana de trabajo.
+          Cuando pasa ese objetivo sin una interacción registrada, el cliente aparece en la tarjeta{" "}
+          <strong>“Sin comunicación”</strong> del Panel de operaciones. Cuenta la última interacción registrada en
+          Experiencia Solar; si nunca se registró ninguna, se muestra como “Sin contacto”.
+        </p>
+        <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">
+          Una etapa <strong>desactivada no tiene cadencia</strong>: sus clientes nunca se marcan por tiempo sin
+          contacto. Así está <strong>E3</strong>, donde los pasos se cierran en las primeras semanas y después el
+          contacto lo dan el reporte mensual y el aniversario, no un plazo que se repite para siempre.
         </p>
       </div>
 

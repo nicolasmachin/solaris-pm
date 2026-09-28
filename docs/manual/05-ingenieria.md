@@ -427,10 +427,10 @@ medidas que en el plano no estaban.
 
 Dos decisiones ordenan toda la herramienta:
 
-1. **Ninguna medida queda implícita.** Todo lo que se dibuja sale de un campo con
-   valor por defecto editable, y además está escrito en la tabla de medidas de la
-   hoja 2. Nada depende de que el taller interprete un trazo ni de que el
-   fabricante conteste un mensaje.
+1. **Ninguna medida queda implícita, y cada una va acotada sobre el dibujo.**
+   Todo lo que se dibuja sale de un campo con valor por defecto editable, y la
+   cota se pone en la vista donde esa parte se ve. Nada depende de que el
+   fabricante conteste un mensaje ni de que el taller resuelva por su cuenta.
 2. **El gabinete es todo chapa plegada, y se entrega sin herrajes y sin
    perforar.** Es lo único que este fabricante hace. La tapa va suelta —sin
    bisagras ni cierre—, y los agujeros de amure los hace Voltia en obra.
@@ -447,6 +447,10 @@ Dentro del workspace del proyecto (`/ingenieria/proyecto/:id`), tarjeta
    dos hojas.
 3. **Emitir lámina (PDF)** guarda los cambios y congela una versión.
 
+El formulario ocupa un tercio del ancho y el dibujo el resto: los datos son
+pocos y el plano es lo que hay que mirar. **Ampliar** lo abre a pantalla
+completa, para revisarlo sin descargar el PDF.
+
 Un proyecto puede tener **varios gabinetes**; cada uno lleva su nombre, sus
 medidas y su propio historial de láminas.
 
@@ -460,24 +464,50 @@ plegado hacia adentro en el frente**, que es donde asienta la tapa. Y una
 ### Qué lleva la lámina
 
 **Una sola hoja A4**: frontal con la tapa puesta, lateral derecha, posterior e
-isométrica —las cuatro acotadas—, las especificaciones generales, las notas y al
-pie la **TABLA DE MEDIDAS** completa.
+isométrica, las especificaciones generales y las notas.
+
+**Cada medida va acotada sobre el dibujo**, en la vista donde esa parte se ve:
+
+| Medida | Dónde se acota |
+|---|---|
+| Ancho, alto | Frontal |
+| Profundidad | Lateral |
+| Reborde de la tapa (su profundidad como pieza) | Lateral |
+| Reborde plegado del frente del cuerpo | Lateral (línea oculta punteada) |
+| Solape de la tapa y holgura | Lateral (llamada) |
+| Ancho de pestaña de amure | Lateral y posterior |
+| Solape de unión de las dos L y paso de tornillos | Posterior (llamada) |
+| Espesor de chapa | Especificaciones (es del material, no geométrica) |
+| Tolerancia | Notas |
+
+La **lateral** es la vista clave: de costado el reborde de la tapa se ve como lo
+que es —cuánto dobla hacia atrás, o sea la profundidad de la tapa— mientras que
+de frente parecía el ancho de un marco. Por eso la frontal no lo acota.
 
 Las especificaciones dicen explícitamente lo que **no** se pide —"SE ENTREGA SIN
-HERRAJES", "SIN NINGUNA PERFORACIÓN"—, y la tabla lo repite como filas
-("Herrajes: no se proveen", "Perforaciones: ninguna — se hacen en obra"). Es a
-propósito: sin eso el fabricante cotiza bisagras y cierre, o perfora la pestaña,
+HERRAJES", "SIN NINGUNA PERFORACIÓN"—, y el dibujo lo repite sobre la pestaña
+("SIN perforar: los agujeros de amure se hacen en obra"). Es a propósito: sin
+eso el fabricante cotiza bisagras y cierre, o perfora la pestaña por su cuenta,
 y el pedido vuelve con preguntas.
 
-#### Hubo una hoja 2 y se sacó
+#### Lo que se probó y se descartó
 
-Durante el desarrollo la lámina tuvo una segunda hoja con dibujos de detalle:
-corte del encuentro tapa/cuerpo, despiece de las dos piezas en L, frente del
-cuerpo sin tapa y la tapa suelta. **Se eliminó**: no se entendían solos, y ni el
-fabricante ni el instalador necesitan que les expliquen cómo se arma un
-gabinete. Las medidas que esos detalles acotaban siguen estando, escritas en la
-tabla y en las especificaciones. El código de esas vistas está en el historial
-de git (`views.ts`, antes del 28-sep-2026) por si alguna vez vuelven.
+La lámina llegó a tener **una hoja 2** con dibujos de detalle (corte del
+encuentro tapa/cuerpo, despiece de las dos piezas en L, frente sin tapa, la tapa
+suelta) y después **una tabla de medidas** al pie. Las dos cosas se sacaron, por
+razones distintas y las dos del usuario:
+
+- Los detalles **no se entendían solos** ("no entiendo qué es todo esto"), y ni
+  el fabricante ni el instalador necesitan que les expliquen cómo se arma un
+  gabinete.
+- La tabla **no dice a qué parte corresponde cada número**: una medida escrita
+  sin dibujo es ambigua. De ahí la regla actual: toda medida va acotada sobre la
+  vista donde esa parte se ve.
+
+También se probó una **vista en planta** para acotar el encuentro tapa/cuerpo;
+quedó ilegible a la escala que permitía la hoja y se reemplazó por acotar esas
+medidas en la lateral. El código de todas esas vistas está en el historial de
+git (`views.ts`, 28-sep-2026).
 
 ### Los valores por defecto
 
@@ -493,6 +523,7 @@ si nadie dice otra cosa**, y salen impresas como cualquier otra medida.
 | Solape de la tapa sobre el cuerpo | 1 cm |
 | Holgura tapa / cuerpo | 2 mm |
 | Tolerancia general | ± 2 mm |
+| Ancho de pestaña de amure | 3 cm |
 
 ## Cómo funciona
 
@@ -507,7 +538,7 @@ si nadie dice otra cosa**, y salen impresas como cualquier otra medida.
 - Dibujo en `server/src/services/gabineteSvg/`: `draw.ts` (primitivas y cotas),
   `views.ts` (una función por vista), `index.ts` (`buildGabineteSvgs()`, que
   arma la hoja —devuelve un array de una— más `especificaciones()` y
-  `tablaMedidas()`), `types.ts`
+  `especificaciones()`), `types.ts`
   (`GabineteInputs`, el contrato del dibujo).
 - Rutas en `server/src/routes/gabinete.routes.ts`.
 - Frontend: `client/src/api/gabinete.api.ts`,
@@ -571,14 +602,11 @@ rol. En el panel, "Nuevo gabinete" y el botón de eliminar se ocultan según
 - **Borrar un gabinete no borra sus láminas**: quedan como documentos del
   proyecto, por lo mismo.
 - **Las medidas son exteriores**, y la lámina lo dice en las notas.
-- **La tabla de medidas duplica a propósito lo que ya está acotado en los
-  dibujos.** No es redundancia por descuido: un número escrito no se presta a
-  interpretación y sobrevive a una impresión mala o a una foto de WhatsApp.
 - **Especificaciones adicionales** (`specsExtra`, JSON) existe para no tener que
   tocar la app cada vez que el taller pide un dato nuevo: se agrega como
-  etiqueta + valor, sale impreso al final de las especificaciones **y también en
-  la tabla de medidas**. Cuando un dato se vuelve habitual, conviene promoverlo
-  a campo propio.
+  etiqueta + valor y sale impreso al final de las especificaciones. Cuando un
+  dato se vuelve habitual, conviene promoverlo a campo propio **con su cota en
+  el dibujo**.
 
 ## Casos borde
 

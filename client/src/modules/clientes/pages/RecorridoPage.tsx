@@ -13,10 +13,12 @@ const BLOQUE_COLOR: Record<string, string> = {
   E3: "border-t-emerald-500",
 };
 
+// Los días son hábiles, igual que el umbral de cadencia: el número que se
+// ve es el mismo que decide el color.
 function diasTexto(d: number | null): string {
   if (d === null) return "Sin contacto";
   if (d === 0) return "hoy";
-  return `${d} d`;
+  return `${d} d háb.`;
 }
 
 function FilaCliente({ c, onClick }: { c: ClienteListItem; onClick: () => void }) {

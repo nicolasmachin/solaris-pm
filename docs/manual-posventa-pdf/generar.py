@@ -343,7 +343,7 @@ def portadilla(etapa, nombre, desde, hasta, vive, semaforo, pasos, numero, foto=
         f'border-radius: 8px; display: inline-block; align-self: flex-start">\n'
         f'    <span style="font-family: {SANS}; font-size: 13px; color: #b8bdd4">Semáforo interno</span> '
         f'<span style="font-family: {SANS}; font-size: 20px; font-weight: 700; color: #ffffff; '
-        f'margin-left: 8px">{semaforo} días</span>\n'
+        f'margin-left: 8px">{semaforo}</span>\n'
         f'  </div>\n'
         f'  <div style="margin-top: 40px">\n'
         f'    <div style="font-family: {SANS}; font-size: 11px; font-weight: 600; letter-spacing: 2px; '

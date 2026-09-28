@@ -26,6 +26,7 @@ import { getStageLabel } from "../pipeline-definitions.js";
 import { getCurrentStage } from "../project.service.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../../utils/serialization.js";
 import { getAnclaMantenimiento, proximoMantenimiento } from "../../utils/aniversario.js";
+import { businessDaysBetween } from "../../utils/business-days.js";
 import { lastActionAt } from "../uteProcess.service.js";
 import { TRASPASO_CATALOGO, TRASPASO_LABEL } from "../traspasos/catalogo.js";
 import { getCadenciaMap } from "../ops-panel.service.js";
@@ -312,11 +313,16 @@ async function marcarCadencia(items: ClienteListItem[]): Promise<ClienteListItem
   return items;
 }
 
-// Días enteros transcurridos desde una fecha. null si no hay fecha (nunca hubo
+// Días HÁBILES transcurridos desde una fecha. null si no hay fecha (nunca hubo
 // contacto): "nunca" no es lo mismo que "hace 0 días" y se ordena aparte.
+//
+// Son hábiles y no corridos porque la cadencia es un objetivo de trabajo: un
+// cliente al que se le escribió el viernes no está descuidado el lunes. Es el
+// mismo número que decide el semáforo, así que lo que se muestra y lo que se
+// compara no pueden contradecirse.
 function diasDesde(d: Date | null): number | null {
   if (!d) return null;
-  return Math.floor((Date.now() - d.getTime()) / (24 * 60 * 60 * 1000));
+  return businessDaysBetween(d, new Date());
 }
 
 function buildMantenimiento(p: ProjectListRow): MantenimientoInfo | null {

@@ -346,7 +346,7 @@ operaciones del dashboard (cap. 11).
 | Herramienta | Permiso | Qué hace |
 |---|---|---|
 | `control_etapas` | `OPERACIONES:VIEW` | Obras activas con la etapa actual vencida o por vencer (≤ 2 días hábiles), de la más atrasada a la menos, con responsable. Resumen por etapa. Filtro por área (ventas, ingeniería, operaciones, UTE, Experiencia Solar) y `estado` (`vencidas`, `vencidas_y_por_vencer` por defecto, `todas`). |
-| `sin_comunicacion` | `OPERACIONES:VIEW` | Clientes fuera de la cadencia de contacto de su recorrido E1/E2/E3, o sin ningún contacto registrado. Incluye obras terminadas. |
+| `sin_comunicacion` | `OPERACIONES:VIEW` | Clientes fuera de la cadencia de contacto de su recorrido, en **días hábiles**, o sin ningún contacto registrado. Hoy solo E1 y E2: **E3 no tiene cadencia** y sus clientes no salen acá. Incluye obras terminadas. |
 | `obras_sin_fecha` | `OPERACIONES:VIEW` | Obras vendidas sin instalación agendada, por días desde la venta. |
 | `panel_ute` | `OPERACIONES:VIEW` | Trámites sin habilitar: días desde la venta, sub-etapa, a quién le toca (Voltia o UTE); reparto y tiempos promedio; respuesta promedio de UTE por paso. |
 

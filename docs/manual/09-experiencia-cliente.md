@@ -114,9 +114,9 @@ etapa, el silencio se lee como abandono. Con esa conversación hecha, el mismo
 silencio se lee como "seguimos esperando a UTE, como me avisaron".
 
 **Vigilancia interna** (esto no es una promesa al cliente, es gestión): el sistema
-mantiene un semáforo de días sin contacto por etapa del recorrido —
-**E1: 3 días · E2: 5 · E3: 10** — para que ningún cliente quede olvidado. Ver
-"Semáforo de días sin contacto" más abajo.
+mantiene un semáforo de días **hábiles** sin contacto por etapa del recorrido —
+**E1: 5 · E2: 5 · E3: sin cadencia** — para que ningún cliente quede olvidado.
+Ver "Semáforo de días sin contacto" más abajo.
 
 ### Los 6 hitos que se avisan sí o sí
 
@@ -331,10 +331,27 @@ plantilla al copiar un mensaje. Se carga desde la ficha del cliente
 se transcribe no existe para el sistema. Alimenta la columna "Último contacto".
 
 **Semáforo de días sin contacto.** `RecorridoCadencia` guarda el objetivo por
-etapa del recorrido (hoy E1: 3 · E2: 5 · E3: 10 días, configurable en
-**Administración → Cadencia de contacto**). Es la **única** fuente del criterio:
-el backend calcula `diasSinContacto` y `fueraDeCadencia` por cliente y la pantalla
-usa ese veredicto, en vez del umbral fijo de 7 días que tenía antes.
+etapa del recorrido (hoy **E1: 5 · E2: 5 días hábiles · E3: desactivada**,
+configurable en **Administración → Cadencia de contacto**). Es la **única** fuente
+del criterio: el backend calcula `diasSinContacto` y `fueraDeCadencia` por cliente
+y la pantalla usa ese veredicto, en vez del umbral fijo de 7 días que tenía antes.
+
+**Se cuenta en días hábiles**, con `businessDaysBetween()` de
+`utils/business-days.ts` (excluye sábados y domingos; los feriados todavía no).
+`diasSinContacto` **es** ese número hábil, no el corrido: se decidió así para que
+el número que se muestra sea el mismo que decide el color, y no se vea un 7 sin
+marcar al lado de un 6 marcado. La UI lo rotula "d háb.".
+
+**E3 no tiene cadencia**, y es a propósito. `getCadenciaMap()` solo devuelve las
+filas con `activo: true` y `diasObjetivo > 0`, así que una etapa desactivada deja
+`umbral == null` y `marcarCadencia()` nunca la marca. El motivo: E3 va desde la
+habilitación **para siempre**, así que un plazo que se repite marcaba en rojo a
+todo cliente habilitado sin que hubiera nada que decirle — al cambiarlo, 17 de los
+22 habilitados en producción figuraban fuera de cadencia con sus cuatro pasos de
+E3 ya completos, y 17 de esos 22 venían recibiendo el reporte mensual por mail.
+En E3 el contacto recurrente lo dan el reporte mensual, la encuesta de aniversario
+y el mantenimiento; el extraordinario, los hechos (nota baja, reclamo, caída de
+generación).
 
 Se usa en tres lugares:
 

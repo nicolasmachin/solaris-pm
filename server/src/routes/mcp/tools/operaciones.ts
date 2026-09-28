@@ -240,7 +240,7 @@ export function registerOperacionesTools(server: McpServer, user: McpUser) {
               conAtraso,
               (r) =>
                 `- ${r.clientName} [${r.code}] · ${r.recorrido}${r.stageLabel ? ` · ${r.stageLabel}` : ""} · ` +
-                `${r.diasSinContacto} días sin contacto (objetivo ${r.cadenciaObjetivo}, ${r.atraso} de atraso)` +
+                `${r.diasSinContacto} días hábiles sin contacto (objetivo ${r.cadenciaObjetivo}, ${r.atraso} de atraso)` +
                 ` · último ${fechaCorta(r.ultimoContactoEn)}`,
             )}`
           : null,

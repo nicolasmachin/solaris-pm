@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { FileDown, Loader2, Plus, Trash2 } from "lucide-react";
+import { FileDown, Loader2, Maximize2, Plus, Trash2, X } from "lucide-react";
 import {
   emitirGabinete,
   patchGabinete,
@@ -113,6 +113,8 @@ export function GabineteBuilder({
   const qc = useQueryClient();
   const [form, setForm] = useState<GabineteForm>(() => ({ ...gabinete }));
   const [hojas, setHojas] = useState<string[] | null>(null);
+  // Ver la lámina en grande sin tener que descargar el PDF.
+  const [ampliada, setAmpliada] = useState(false);
   const [previewError, setPreviewError] = useState(false);
   const [loadingPreview, setLoadingPreview] = useState(true);
 
@@ -175,7 +177,7 @@ export function GabineteBuilder({
   );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(260px,1fr)_1.9fr] gap-5">
       {/* ── Formulario ── */}
       <div className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
         <Section title="Identificación">
@@ -324,6 +326,15 @@ export function GabineteBuilder({
           <div className="flex gap-2">
             <button
               type="button"
+              onClick={() => setAmpliada(true)}
+              disabled={!hojas}
+              className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-50 inline-flex items-center gap-1.5"
+              title="Ver la lámina en grande"
+            >
+              <Maximize2 className="w-3.5 h-3.5" /> Ampliar
+            </button>
+            <button
+              type="button"
               onClick={() => saveMut.mutate()}
               disabled={saveMut.isPending || !dirty}
               className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-50"
@@ -342,7 +353,7 @@ export function GabineteBuilder({
           </div>
         </div>
 
-        <div className="rounded-lg border border-[var(--color-border)] bg-white p-2 overflow-auto max-h-[70vh] space-y-3">
+        <div className="rounded-lg border border-[var(--color-border)] bg-white p-2 overflow-auto max-h-[78vh] space-y-3">
           {previewError ? (
             <p className="p-8 text-center text-sm text-red-500">No se pudo generar la vista previa.</p>
           ) : hojas ? (
@@ -369,6 +380,40 @@ export function GabineteBuilder({
           ← Volver a la lista de gabinetes
         </button>
       </div>
+
+      {/* Lámina ampliada: ocupa casi toda la pantalla, para revisarla sin
+          descargar el PDF. Escape o click afuera la cierran. */}
+      {ampliada && hojas && (
+        <div
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setAmpliada(false);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setAmpliada(false);
+          }}
+          role="dialog"
+          aria-label="Lámina del gabinete"
+          tabIndex={-1}
+          ref={(el) => el?.focus()}
+        >
+          <div className="relative bg-white rounded-lg shadow-2xl max-h-[95vh] w-full max-w-[min(900px,95vw)] overflow-auto">
+            <button
+              type="button"
+              onClick={() => setAmpliada(false)}
+              aria-label="Cerrar"
+              className="sticky top-2 left-full mr-2 z-10 rounded-full bg-white/90 border border-gray-300 p-1.5 text-gray-600 hover:bg-gray-100"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="p-3 -mt-8">
+              {hojas.map((h, i) => (
+                <div key={i} className="[&>svg]:w-full [&>svg]:h-auto" dangerouslySetInnerHTML={{ __html: h }} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

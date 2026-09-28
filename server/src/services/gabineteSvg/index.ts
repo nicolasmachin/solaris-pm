@@ -7,10 +7,12 @@
 // no se entendían solos. Las medidas que esos detalles acotaban **siguen
 // estando**, escritas en la tabla y en las especificaciones.
 //
-// El principio que ordena la lámina: **el dibujo nunca asume una medida en
-// silencio**. Cada cosa que se dibuja sale de un campo con valor por defecto
-// editable, y toda medida está además escrita en la tabla, para que ninguna
-// dependa de que se interprete bien un trazo.
+// El principio que ordena la lámina: **toda medida está acotada sobre el
+// dibujo**, en la vista donde esa parte se ve. Hubo una tabla de medidas al pie
+// y se sacó: un número en una tabla no dice a qué parte del gabinete
+// corresponde. Por eso la lateral acota el encuentro tapa/cuerpo (de costado se
+// ve el reborde de la tapa como lo que es, su profundidad) y la posterior
+// acota la unión de las dos piezas en L.
 
 import { line, rect, text, textLines, wrap } from "./draw.js";
 import { COLOR, FONT, MARGIN, PAGE_H, PAGE_W } from "./layout.js";
@@ -58,39 +60,6 @@ function fmtMm(n: number): string {
   return Number.isInteger(n) ? String(n) : String(n).replace(".", ",");
 }
 
-/**
- * Tabla completa de medidas de taller. Existe para que **ninguna medida quede
- * sujeta a que se lea bien un dibujo**: todo lo que el fabricante necesita está
- * también acá, escrito. Las que el fabricante no especificó salen con el valor
- * por defecto, que es una decisión tomada y no un hueco.
- */
-export function tablaMedidas(g: GabineteInputs): { etiqueta: string; valor: string }[] {
-  const filas: { etiqueta: string; valor: string }[] = [
-    { etiqueta: "Ancho exterior", valor: cm(g.anchoCm) },
-    { etiqueta: "Alto exterior", valor: cm(g.altoCm) },
-    { etiqueta: "Profundidad exterior", valor: cm(g.profundidadCm) },
-    { etiqueta: "Espesor de chapa", valor: `${fmtMm(g.espesorMm)} mm` },
-    { etiqueta: "Solape de unión entre las piezas en L", valor: cm(g.solapeUnionCm) },
-    { etiqueta: "Paso de tornillos de unión", valor: `cada ${cm(g.pasoTornillosCm)}` },
-  ];
-  if (g.pestanaAmure) {
-    filas.push({ etiqueta: "Ancho de pestaña de amure", valor: cm(g.pestanaAnchoCm) });
-  }
-  filas.push(
-    { etiqueta: "Reborde plegado del frente del cuerpo", valor: cm(g.rebordeFrenteCm) },
-    { etiqueta: "Reborde plegado de la tapa", valor: cm(g.rebordeTapaCm) },
-    { etiqueta: "Solape de la tapa sobre el cuerpo", valor: cm(g.solapeTapaCm) },
-    { etiqueta: "Holgura tapa / cuerpo", valor: `${fmtMm(g.holguraTapaMm)} mm` },
-    { etiqueta: "Herrajes", valor: "no se proveen" },
-    { etiqueta: "Perforaciones", valor: "ninguna — se hacen en obra" },
-    { etiqueta: "Tolerancia general", valor: `± ${fmtMm(g.toleranciaMm)} mm` },
-  );
-  for (const extra of g.specsExtra ?? []) {
-    if (extra.etiqueta?.trim()) filas.push({ etiqueta: extra.etiqueta, valor: extra.valor });
-  }
-  return filas;
-}
-
 function notas(g: GabineteInputs): string[] {
   const out = [
     "Todo el gabinete se fabrica en chapa plegada.",
@@ -100,7 +69,6 @@ function notas(g: GabineteInputs): string[] {
     "La tapa se entrega suelta, sin bisagras ni cierre.",
     "El gabinete se entrega sin perforar: los agujeros de amure se hacen en obra.",
   ];
-  // La tabla de medidas va en esta misma hoja, al pie.
   if (g.fondoAbierto) out.push("Fondo abierto 100% (sin placa).");
   if (g.pestanaAmure) out.push(`Pestaña de amure de ${cm(g.pestanaAnchoCm)} en toda la vuelta posterior.`);
   if (g.notas?.trim()) {
@@ -154,39 +122,6 @@ function notasBox(x: number, y: number, width: number, items: string[]): { svg: 
     parts.push(svg);
     cursor += h;
   }
-  return { svg: parts.join(""), height };
-}
-
-/** Tabla de dos columnas con las medidas. */
-function tablaBox(
-  x: number,
-  y: number,
-  width: number,
-  filas: { etiqueta: string; valor: string }[],
-): { svg: string; height: number } {
-  const size = 9;
-  const rowH = 14;
-  const header = 26;
-  const height = header + filas.length * rowH + 8;
-  const valorX = x + width - 12;
-
-  const parts = [
-    rect(x, y, width, height, { fill: "#FFFFFF", stroke: COLOR.boxBorder, strokeWidth: 1 }),
-    text(x + 12, y + 16, "TABLA DE MEDIDAS", { size: 10, bold: true }),
-    // La línea iba a la misma altura que el texto y lo tachaba.
-    line(x, y + header - 2, x + width, y + header - 2, { color: COLOR.boxBorder, width: 0.8 }),
-  ];
-  filas.forEach((f, i) => {
-    const ry = y + header + 7 + i * rowH;
-    // Fondo alternado: la tabla es larga y sin esto se salta de renglón.
-    if (i % 2 === 1) {
-      parts.push(rect(x + 1, ry - 10, width - 2, rowH, { fill: "#F3F4F6", stroke: "none" }));
-    }
-    parts.push(
-      text(x + 12, ry, f.etiqueta, { size, color: COLOR.text }),
-      text(valorX, ry, f.valor, { size, color: COLOR.text, anchor: "end", bold: true }),
-    );
-  });
   return { svg: parts.join(""), height };
 }
 
@@ -262,16 +197,18 @@ function hoja(g: GabineteInputs): string {
     .join("  \u00b7  ");
   parts.push(text(left, y, pedido, { size: 10, color: "#4B5563" }));
 
+  // La lateral concentra las cotas del encuentro tapa/cuerpo, así que se lleva
+  // la columna más ancha; la frontal solo tiene ancho y alto.
   const colA = left;
-  const colB = left + contentW * 0.34;
-  const colC = left + contentW * 0.66;
-  const wA = contentW * 0.32;
-  const wB = contentW * 0.3;
+  const colB = left + contentW * 0.26;
+  const colC = left + contentW * 0.64;
+  const wA = contentW * 0.24;
+  const wB = contentW * 0.36;
   const wC = right - colC;
 
   // Fila 1: frontal + lateral (escala compartida) + especificaciones.
   const row1Y = y + 30;
-  const row1H = 360;
+  const row1H = 430;
   const colFrontal: Box = { x: colA, y: row1Y, w: wA, h: row1H };
   const colLateral: Box = { x: colB, y: row1Y, w: wB, h: row1H };
   const sVista = escalaFrontalLateral(g, colFrontal, colLateral);
@@ -288,14 +225,13 @@ function hoja(g: GabineteInputs): string {
   parts.push(bulletList(colC, row1Y + 18, wC, especificaciones(g), 9.5).svg);
 
   // Fila 2: posterior + isométrica + notas.
-  const row2Y = row1Y + row1H + 26;
-  const row2H = 272;
+  const row2Y = row1Y + row1H + 34;
+  const row2H = 330;
   parts.push(vistaPosterior({ x: colA, y: row2Y, w: wA + 40, h: row2H }, g));
   parts.push(vistaIsometrica({ x: colB + 40, y: row2Y, w: wB, h: row2H }, g));
   parts.push(notasBox(colC, row2Y - 4, wC, notas(g)).svg);
 
-  // Al pie, la tabla con todas las medidas escritas.
-  parts.push(tablaBox(left, row2Y + row2H + 18, contentW, tablaMedidas(g)).svg);
+
 
   parts.push(...pie(g));
   return svgClose(parts);
