@@ -215,17 +215,12 @@ export function vistaPosterior(box: Box, g: GabineteInputs): string {
         color: COLOR.dim,
         anchor: "end",
       }),
-      leader(x + w - flange / 2, y + flange * 1.6, x + w + 16, y + flange * 1.6, [
-        `Pestaña perimetral`,
-        `de ${cm(g.pestanaAnchoCm)} para amure`,
-        `(en toda la vuelta)`,
-      ]),
-      // Lo que NO lleva, dicho en el dibujo.
-      leader(x + w - flange / 2, y + h - flange / 2, x + w + 16, y + h - flange * 1.2, [
-        `Pestaña SIN perforar:`,
-        `los agujeros de amure`,
-        `se hacen en obra`,
-      ]),
+      leader(x + w - flange / 2, y + flange * 1.6, x + w + 14, y + flange * 1.4, [
+        `Pestaña perimetral de ${cm(g.pestanaAnchoCm)}`,
+        `para amure, en toda la vuelta.`,
+        `SIN perforar: los agujeros`,
+        `se hacen en obra.`,
+      ], { size: 9 }),
     );
   }
 
@@ -234,12 +229,19 @@ export function vistaPosterior(box: Box, g: GabineteInputs): string {
   const xUnion = x + flange * 0.5;
   parts.push(
     line(xUnion, y, xUnion, y + h, { color: COLOR.metalStrokeDark, width: 0.8, dash: "5 3" }),
-    leader(xUnion, y + h * 0.5, x + w + 16, y + h * 0.45, [
-      `Unión de las dos piezas en L:`,
-      `solape ${cm(g.solapeUnionCm)}`,
-      `${g.tornillos},`,
-      `cada ${cm(g.pasoTornillosCm)}`,
-    ]),
+    // El rótulo de la unión va debajo del dibujo: a los costados no entra sin
+    // salirse del margen o pisar la vista de al lado.
+    line(xUnion, y + h, xUnion, y + h + 46, { color: COLOR.dim, width: 0.6 }),
+    text(x + w / 2, y + h + 58, `Unión de las dos piezas en L: solape ${cm(g.solapeUnionCm)}`, {
+      size: 8.5,
+      color: COLOR.dim,
+      anchor: "middle",
+    }),
+    text(x + w / 2, y + h + 70, `${g.tornillos} cada ${cm(g.pasoTornillosCm)}`, {
+      size: 8.5,
+      color: COLOR.dim,
+      anchor: "middle",
+    }),
   );
 
   return parts.join("");
@@ -313,6 +315,78 @@ export function vistaIsometrica(box: Box, g: GabineteInputs): string {
       size: 8.5,
       color: "#6B7280",
       anchor: "middle",
+    }),
+  ].join("");
+}
+
+// ─── La tapa, como pieza ──────────────────────────────────────────────────────
+// La tapa se fabrica aparte, así que lleva su propio plano: de frente con sus
+// medidas y de canto, donde se ve la profundidad de su reborde plegado — lo que
+// en el taller se llama el espesor de la tapa.
+
+export function planoTapa(box: Box, g: GabineteInputs): string {
+  const pad = { left: 44, right: 22, top: 26, bottom: 48 };
+  const availH = box.h - pad.top - pad.bottom;
+  // El canto va al lado del frente, a la misma escala, para que se lea que es
+  // la misma pieza vista de otro lado.
+  const anchoCanto = g.rebordeTapaCm;
+  const sepCm = 5;
+  const availW = box.w - pad.left - pad.right;
+  const s = fitScale(g.anchoCm + sepCm + anchoCanto, g.altoCm, availW, availH);
+
+  const w = g.anchoCm * s;
+  const h = g.altoCm * s;
+  const reb = Math.max(4, g.rebordeTapaCm * s);
+  const chapa = Math.max(2.5, g.espesorMm * s * 0.4);
+
+  const x = box.x + pad.left;
+  const y = box.y + pad.top + (availH - h) / 2;
+  const xCanto = x + w + sepCm * s;
+
+  return [
+    viewTitle(box, "LA TAPA — PIEZA SUELTA"),
+
+    // ── De frente: la chapa con la línea del plegado perimetral.
+    rect(x, y, w, h, { fill: COLOR.metalFill, stroke: COLOR.metalStrokeDark }),
+    rect(x + reb, y + reb, w - reb * 2, h - reb * 2, {
+      fill: COLOR.metalFillLight,
+      stroke: COLOR.metalStroke,
+      dash: "4 3",
+    }),
+    text(x + w / 2, y + h / 2, "línea de plegado", {
+      size: 8.5,
+      color: "#6B7280",
+      anchor: "middle",
+    }),
+
+    // Ancho y alto de la tapa: son los del frente del gabinete.
+    extLine(x, y + h, x, y + h + 26),
+    extLine(x + w, y + h, x + w, y + h + 26),
+    dimH(x, x + w, y + h + 20, cm(g.anchoCm), { size: 9.5 }),
+    extLine(x, y, x - 30, y),
+    extLine(x, y + h, x - 30, y + h),
+    dimV(y, y + h, x - 24, cm(g.altoCm), { size: 9.5 }),
+
+    // ── De canto: la tapa es una bandeja poco profunda. Acá se ve cuánto
+    //    dobla el reborde, que es la medida que el taller pide.
+    rect(xCanto, y, chapa, h, { fill: COLOR.metalFillDark, stroke: COLOR.metalStrokeDark }),
+    rect(xCanto, y, reb, chapa, { fill: COLOR.metalFillDark, stroke: COLOR.metalStrokeDark }),
+    rect(xCanto, y + h - chapa, reb, chapa, {
+      fill: COLOR.metalFillDark,
+      stroke: COLOR.metalStrokeDark,
+    }),
+    text(xCanto + reb / 2, y - 8, "de canto", { size: 8.5, color: "#6B7280", anchor: "middle" }),
+
+    // El reborde, acotado: es el "espesor" de la tapa.
+    extLine(xCanto, y + h + 4, xCanto, y + h + 22),
+    extLine(xCanto + reb, y + h + 4, xCanto + reb, y + h + 22),
+    line(xCanto - 4, y + h + 18, xCanto + reb + 10, y + h + 18, { color: COLOR.dim }),
+    text(xCanto + reb + 14, y + h + 22, `reborde`, { size: 9, color: COLOR.dim }),
+    text(xCanto + reb + 14, y + h + 33, cm(g.rebordeTapaCm), { size: 9, color: COLOR.dim }),
+
+    text(x, box.y + box.h - 4, "Plegada en las cuatro caras · sin perforar", {
+      size: 8.5,
+      color: COLOR.text,
     }),
   ].join("");
 }

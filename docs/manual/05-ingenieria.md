@@ -463,8 +463,9 @@ plegado hacia adentro en el frente**, que es donde asienta la tapa. Y una
 
 ### Qué lleva la lámina
 
-**Una sola hoja A4**: frontal con la tapa puesta, lateral derecha, posterior e
-isométrica, las especificaciones generales y las notas.
+**Una sola hoja A4**: frontal con la tapa puesta, lateral derecha, posterior,
+**el plano de la tapa** (de frente y de canto) e isométrica, más las
+especificaciones generales y las notas.
 
 **Cada medida va acotada sobre el dibujo**, en la vista donde esa parte se ve:
 
@@ -477,12 +478,15 @@ isométrica, las especificaciones generales y las notas.
 | Solape de la tapa y holgura | Lateral (llamada) |
 | Ancho de pestaña de amure | Lateral y posterior |
 | Solape de unión de las dos L y paso de tornillos | Posterior (llamada) |
+| Ancho y alto de la tapa | Plano de la tapa |
+| Reborde plegado de la tapa (su profundidad) | Plano de la tapa, vista de canto |
 | Espesor de chapa | Especificaciones (es del material, no geométrica) |
 | Tolerancia | Notas |
 
-La **lateral** es la vista clave: de costado el reborde de la tapa se ve como lo
-que es —cuánto dobla hacia atrás, o sea la profundidad de la tapa— mientras que
-de frente parecía el ancho de un marco. Por eso la frontal no lo acota.
+El reborde de la tapa aparece dos veces a propósito: en la **lateral**, para ver
+cómo encastra en el cuerpo, y en el **plano de la tapa**, que es la pieza que el
+taller fabrica aparte. De frente parecería el ancho de un marco; de canto se ve
+como lo que es —cuánto dobla hacia atrás—, y por eso la frontal no lo acota.
 
 Las especificaciones dicen explícitamente lo que **no** se pide —"SE ENTREGA SIN
 HERRAJES", "SIN NINGUNA PERFORACIÓN"—, y el dibujo lo repite sobre la pestaña

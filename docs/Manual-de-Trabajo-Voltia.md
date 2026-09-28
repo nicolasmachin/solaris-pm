@@ -335,9 +335,9 @@ correspondan: lo que no cambies **sale impreso igual**, así el taller nunca
 tiene que resolver nada por su cuenta.
 
 Es **una sola hoja**: el gabinete dibujado de frente, de costado, de atrás y en
-perspectiva, con **cada medida acotada sobre el dibujo** —el costado es el que
-muestra cómo encastra la tapa en el cuerpo—, más las especificaciones y las
-notas.
+perspectiva, **el plano de la tapa** aparte —de frente y de canto, donde se ve
+cuánto dobla su reborde—, con **cada medida acotada sobre el dibujo**, más las
+especificaciones y las notas.
 
 Mientras cargás, el dibujo se va armando al costado. Con **Ampliar** lo ves a
 pantalla completa, sin tener que bajar el PDF.

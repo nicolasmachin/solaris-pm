@@ -20,6 +20,7 @@ import type { GabineteInputs } from "./types.js";
 import {
   cm,
   escalaFrontalLateral,
+  planoTapa,
   vistaFrontal,
   vistaIsometrica,
   vistaLateral,
@@ -208,7 +209,7 @@ function hoja(g: GabineteInputs): string {
 
   // Fila 1: frontal + lateral (escala compartida) + especificaciones.
   const row1Y = y + 30;
-  const row1H = 430;
+  const row1H = 330;
   const colFrontal: Box = { x: colA, y: row1Y, w: wA, h: row1H };
   const colLateral: Box = { x: colB, y: row1Y, w: wB, h: row1H };
   const sVista = escalaFrontalLateral(g, colFrontal, colLateral);
@@ -224,14 +225,16 @@ function hoja(g: GabineteInputs): string {
   );
   parts.push(bulletList(colC, row1Y + 18, wC, especificaciones(g), 9.5).svg);
 
-  // Fila 2: posterior + isométrica + notas.
-  const row2Y = row1Y + row1H + 34;
-  const row2H = 330;
-  parts.push(vistaPosterior({ x: colA, y: row2Y, w: wA + 40, h: row2H }, g));
-  parts.push(vistaIsometrica({ x: colB + 40, y: row2Y, w: wB, h: row2H }, g));
+  // Fila 2: posterior + la tapa + notas. La tapa va acá, al lado de la
+  // posterior: las dos son vistas verticales y se leen juntas.
+  const row2Y = row1Y + row1H + 30;
+  const row2H = 300;
+  parts.push(vistaPosterior({ x: colA, y: row2Y, w: wA + 60, h: row2H }, g));
+  parts.push(planoTapa({ x: colB + 56, y: row2Y, w: wB - 16, h: row2H }, g));
   parts.push(notasBox(colC, row2Y - 4, wC, notas(g)).svg);
 
-
+  // Fila 3: la isométrica, chica — es para ubicarse, no lleva cotas.
+  parts.push(vistaIsometrica({ x: left + contentW * 0.06, y: row2Y + row2H + 26, w: contentW * 0.34, h: 190 }, g));
 
   parts.push(...pie(g));
   return svgClose(parts);
