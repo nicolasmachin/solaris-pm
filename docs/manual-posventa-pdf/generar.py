@@ -179,6 +179,49 @@ def plantilla(nombre, texto, margen=20):
             f'  </div>\n')
 
 
+def tema(numero, titulo_tema, como, explicar, politica, escalar, primero=False):
+    """
+    Un tema del anexo de preguntas frecuentes, con sus cuatro partes: cómo lo
+    pregunta el cliente, qué explicar, la política interna y a quién se escala.
+
+    La política va en un recuadro azul porque es lo que manda; lo marcado como
+    [A CONFIRMAR] se pinta en ámbar para que no se lea como política cerrada.
+    """
+    def marcar(t):
+        return t.replace("[A CONFIRMAR]",
+                         f'<span style="font-family: {SANS}; font-size: 10px; font-weight: 700; '
+                         f'letter-spacing: .8px; color: {AMBAR}; background: {AMBAR_FONDO}; '
+                         f'padding: 2px 7px; border-radius: 3px">A CONFIRMAR</span>')
+
+    borde = "" if primero else f"border-top: 1px solid {BORDE}; padding-top: 18px; "
+    items = "".join(
+        f'<li style="margin: 0 0 5px; font-size: 13px; line-height: 1.5; color: {TEXTO}">{marcar(x)}</li>'
+        for x in explicar)
+    bloque = (
+        f'  <div style="margin-top: {0 if primero else 18}px; {borde}">\n'
+        f'    <div style="display: flex; gap: 10px; align-items: baseline">\n'
+        f'      <span style="font-family: {SANS}; font-size: 13px; font-weight: 700; color: {AZUL}">{numero:02d}</span>\n'
+        f'      <span style="font-family: {SANS}; font-size: 18px; font-weight: 700; color: {NEGRO}; '
+        f'line-height: 1.25">{titulo_tema}</span>\n'
+        f'    </div>\n'
+        f'    <p style="margin: 5px 0 0 27px; font-size: 12.5px; line-height: 1.45; color: {GRIS}; '
+        f'font-style: italic">{como}</p>\n'
+        f'    <ul style="margin: 9px 0 0 27px; padding-left: 16px">{items}</ul>\n'
+    )
+    if politica:
+        bloque += (
+            f'    <div style="margin: 9px 0 0 27px; padding: 10px 13px; background: {AZUL_FONDO}; border-radius: 6px">\n'
+            f'      <span style="font-family: {SANS}; font-size: 10px; font-weight: 700; letter-spacing: 1.2px; '
+            f'color: {AZUL}">POLÍTICA · </span>'
+            f'<span style="font-size: 13px; line-height: 1.5; color: {TEXTO}">{marcar(politica)}</span>\n'
+            f'    </div>\n')
+    if escalar:
+        bloque += (
+            f'    <p style="margin: 8px 0 0 27px; font-family: {SANS}; font-size: 12px; line-height: 1.45; '
+            f'color: {GRIS}"><strong style="color: {NEGRO}; font-weight: 600">Escalar →</strong> {marcar(escalar)}</p>\n')
+    return bloque + "  </div>\n"
+
+
 def hueco(que, detalle, alto=190, margen=22):
     """El recuadro reservado para una captura de pantalla que todavía no está."""
     return (f'  <div style="margin-top: {margen}px; min-height: {alto}px; border: 2px dashed #c3cbe4; '
