@@ -42,7 +42,10 @@ export type NotificationType =
   | "aviso_habilitacion_pendiente"
   | "ticket_actualizado"
   | "encuesta_disponible"
-  | "capacitacion_comentario";
+  | "capacitacion_comentario"
+  | "seguro_granizo_por_vencer"
+  | "seguro_granizo_impago"
+  | "seguro_granizo_danio_plazo";
 export type PhaseType = "MONOFASICO" | "TRIFASICO_230" | "TRIFASICO_400";
 
 // ─── Auth ────────────────────────────────────────────────────────────────────

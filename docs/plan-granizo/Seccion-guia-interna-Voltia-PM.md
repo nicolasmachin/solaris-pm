@@ -123,8 +123,17 @@ suma al saldo de la obra.
 vencimiento, al precio vigente. Si hace falta antes, está **Generar la
 siguiente**.
 
-> El aviso automático de vencimiento, al equipo y al cliente, está en
-> desarrollo. Mientras tanto, el aviso es el nombre en rojo.
+**Cómo te enterás:** cuando un plan está por vencer, venció sin pago o quedó
+suspendido, o cuando un daño se pasó del plazo, te llega el aviso por la campana.
+Si ya venció, además aparece en los pendientes del correo de la mañana.
+
+**Al cliente le escribís vos**: Voltia PM no le manda nada solo. En la ficha, si
+el plan está en rojo, aparece **Avisar al cliente** con el mensaje listo, con
+fechas, monto y paneles ya puestos. Completás los datos para el pago y lo
+copiás; el contacto queda registrado. En el plan (**Mensajes al cliente**) y en
+cada daño (**Mensaje al cliente**) están los demás mensajes.
+
+![Mensaje de aviso de vencimiento](capturas/cap-10-mensaje-vencimiento.png)
 
 ---
 
@@ -190,4 +199,5 @@ como una instalación existente, con 30 días de carencia.
 ## Cambios en "Qué falta cerrar"
 
 - ~~Integrar el cobro anual y el aviso de renovación a Voltia PM.~~ →
-  **Integrado el cobro anual. Falta el aviso automático de renovación.**
+  **Hecho.** Voltia PM avisa al equipo y deja el mensaje al cliente listo para
+  mandar.

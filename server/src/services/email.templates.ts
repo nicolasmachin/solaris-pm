@@ -106,7 +106,7 @@ export function emailDailyDigest(params: {
 // renglón (ver `digest/experiencia-digest.service.ts`).
 
 export type ExpAlerta = {
-  tipo: "habilitacion" | "check" | "reclamo";
+  tipo: "habilitacion" | "check" | "reclamo" | "granizo";
   projectId: string;
   cliente: string;
   titulo: string;

@@ -961,6 +961,11 @@ tentativa · fecha confirmada · reprogramación · visita a la propiedad · obr
 terminada · encuesta de instalación · ya podés encender + capacitación · encuesta
 de habilitación · material de capacitación · acceso al inversor · alta en reportes.
 
+Aparte, el **Plan de Protección contra Granizo** tiene sus ocho mensajes, que se
+abren desde el plan y no desde una etapa (cap. 12.1): plan activo · aviso de
+vencimiento · vencido sin pago · plan suspendido · recibimos el aviso de daño ·
+confirmación de la reposición · no corresponde reponer · paneles repuestos.
+
 ---
 
 ## 10 · Reclamos
@@ -1058,6 +1063,186 @@ Y la promesa tiene una consecuencia: **cuando el monitoreo detecta una falla, se
 contacta al cliente antes de que llame él.** Si el primero en enterarse de que su
 inversor tiene una luz roja es el cliente, el monitoreo no sirvió (Anexo E, tema
 17).
+
+### 12.1 · El Plan de Protección contra Granizo
+
+Por USD 12 por panel por año, IVA incluido, si el granizo le rompe paneles al
+cliente, Voltia se los repone con todo incluido: panel nuevo, traslado, mano de
+obra y puesta en marcha, sin deducible. Cubre **sólo los paneles** y **sólo por
+granizo**. Es siempre por **todos** los paneles de la instalación, y cada
+instalación —identificada por el número de serie de su inversor— tiene su
+propio plan.
+
+> **No es un seguro, y no se le dice así.** Cobrar por asumir un riesgo es
+> actividad aseguradora. Decís **plan**, **condiciones del plan**, **anualidad**,
+> **daño por granizo** y **cliente**. Nunca *seguro*, *póliza*, *prima*,
+> *siniestro* ni *asegurado*, ni por escrito ni en voz alta. Si el cliente dice
+> "seguro", le contestás con "el plan".
+
+Todo se maneja en **Experiencia Solar → Plan granizo** y en la tarjeta **Plan de
+Protección contra Granizo** de la ficha del cliente.
+
+**Cómo se adhiere un cliente**
+
+1. **Le mandás el documento.** Con **Condiciones y Anexo A** (en la tarjeta del
+   plan, o en la subetapa **Contrato** del Onboarding si se vende con la obra)
+   sale un solo PDF con las condiciones, el Anexo A ya completo con sus datos y
+   el Anexo B para cuando graniza. Revisás los datos, generás y se lo mandás.
+2. **Das de alta el plan** en la ficha: **instalación nueva** si se adhiere con la
+   obra (arranca con la puesta en marcha, sin carencia) o **existente** si ya
+   estaba instalada (cubre 30 días después del primer pago).
+3. **El plan se activa con dos cosas:** el **Anexo A firmado** (alcanza una foto
+   de la hoja firmada) y el **pago de la primera anualidad**. Subís el Anexo A y
+   marcás el cobro con **la fecha real del pago**. Si falta cualquiera de las
+   dos, no hay cobertura, y Voltia PM lo muestra como "Falta firma o pago".
+4. **Instalaciones existentes: le pedís fotos actuales de los paneles** (por
+   WhatsApp alcanza) y las subís al plan. Son la única prueba si después aparece
+   un daño previo.
+
+**Cómo se sigue en el tiempo**
+
+- **El nombre en rojo es tu aviso.** Sale en rojo en la pestaña Plan granizo, en
+  la lista de Generadores, en la barra lateral y en la ficha cuando falta **un
+  mes o menos** para vencer y la anualidad siguiente no está paga, cuando venció
+  sin pago, o cuando quedó suspendido.
+- **La anualidad siguiente se genera sola** 30 días antes del vencimiento, al
+  precio vigente, con su cobro en Finanzas.
+- **Las condiciones prometen avisarle al cliente el vencimiento, y cualquier
+  cambio de precio, con 30 días de anticipación.** Voltia PM no le escribe solo:
+  **le escribís vos**. Cuando el plan se pone en rojo te llega el aviso (ver
+  abajo), y en la ficha aparece **Avisar al cliente** con el mensaje listo.
+- **Atraso:** si no paga dentro de los **15 días** del vencimiento, sigue
+  cubierto ("En gracia"). Pasados los 15 días queda **suspendido** y no cubre; si
+  paga después, corre una nueva carencia de 30 días desde el pago.
+- **Ampliaciones hechas por Voltia:** los paneles nuevos se suman al plan desde
+  su puesta en marcha, con **Sumar ampliación**. Voltia PM calcula el cobro
+  proporcional hasta la próxima anualidad.
+- **Cambio de inversor:** actualizás el número de serie en el plan. El plan sigue
+  igual.
+- **Baja:** con **Dar de baja el plan** y el motivo. La anualidad en curso no se
+  reintegra y el plan cubre hasta el fin del período pago.
+
+**Cómo te enterás**
+
+Todos los días, a primera hora, Voltia PM revisa los planes:
+
+- **Pone en marcha solos** los planes contratados con la obra cuando se registra
+  la habilitación.
+- **Genera la anualidad siguiente** 30 días antes del vencimiento.
+- **Te avisa por la campana**, y en el resumen de avisos del correo, cuando un
+  plan está **por vencer**, **venció sin pago** o **quedó suspendido**, y
+  cuando **un daño se pasó del plazo** de inspección o de reposición.
+- En el **correo de la mañana** de Experiencia Solar, entre los **pendientes**,
+  aparecen los planes vencidos sin pago y los daños con el plazo pasado.
+
+Cada aviso llega una sola vez por hito. Y **no le escribe al cliente**: eso lo
+hacés vos con los mensajes modelo del plan.
+
+**Los mensajes modelo del plan**
+
+Están en el plan (**Mensajes al cliente**), en la tarjeta de la ficha cuando el
+plan está en rojo (**Avisar al cliente**) y en cada daño (**Mensaje al
+cliente**). Vienen con las fechas, los montos y los paneles ya puestos; lo que no
+sabe Voltia PM, como los datos para el pago, queda marcado para completar. Al
+copiar, queda registrado el contacto.
+
+*"Plan activo"* — Cuando ya tiene el Anexo A firmado y la primera anualidad paga.
+
+> **El texto, tal como sale en Voltia PM:**
+>
+>> Hola {nombre}, ya quedó activo tu Plan de Protección contra Granizo: cubre desde el {cubre desde} hasta el {vence}.
+>>
+>> Si graniza y ves paneles dañados, no los toques ni subas al techo. Mandanos fotos tomadas desde el suelo y los datos del Anexo B dentro de los 10 días hábiles, y coordinamos la inspección.
+
+*"Aviso de vencimiento"* — Cuando el nombre se pone en rojo por "Por vencer": las condiciones prometen avisar con 30 días de anticipación.
+
+> **El texto, tal como sale en Voltia PM:**
+>
+>> Hola {nombre}, te escribo por tu Plan de Protección contra Granizo. La anualidad vence el {vence}. Para seguir cubierto un año más son {monto} ({paneles} paneles × {precio} por panel, IVA incluido).{cambio de precio}
+>>
+>> Si la pagás antes del {vence}, sigue sin corte. {datos para el pago}
+>>
+>> Si preferís no renovarlo, avisame y lo damos de baja.
+
+*"Vencido sin pago (en gracia)"* — Venció la anualidad y todavía no pagó. Sigue cubierto 15 días.
+
+> **El texto, tal como sale en Voltia PM:**
+>
+>> Hola {nombre}, la anualidad de tu Plan de Protección contra Granizo venció el {venció} y todavía no nos figura el pago de {monto}.
+>>
+>> Tenés hasta el {fin de la gracia} para pagarla sin perder la cobertura. Después el plan queda suspendido y, al pagar, pasan 30 días hasta que vuelve a cubrir. {datos para el pago}
+
+*"Plan suspendido"* — Pasaron más de 15 días del vencimiento sin pago.
+
+> **El texto, tal como sale en Voltia PM:**
+>
+>> Hola {nombre}, tu Plan de Protección contra Granizo quedó suspendido porque la anualidad que venció el {venció} no se pagó. Mientras está suspendido, si graniza no cubre.
+>>
+>> Si querés reactivarlo son {monto}, y vuelve a cubrir 30 días después del pago. {datos para el pago}
+
+**Cuando graniza**
+
+1. **Llega el aviso** por WhatsApp o correo, con el formulario del Anexo B y
+   fotos. Lo registrás en el plan (**Registrar daño**) **el mismo día** y le
+   respondés el mismo día hábil. Si la tormenta pegó en muchas obras, marcás
+   **evento masivo**.
+2. **Chequeo:** Voltia PM te dice si ese día el plan tenía cobertura y si el aviso
+   llegó fuera de plazo (más de 10 días hábiles del granizo). Un aviso fuera de
+   plazo se atiende igual, pero se puede rechazar si ya no se puede confirmar que
+   fue granizo.
+3. **Inspección en sitio** dentro de 10 días hábiles del aviso. La marcás con su
+   fecha y lo que se vio.
+4. **Confirmación por escrito** al cliente: cuántos paneles se reponen y la
+   fecha. Un WhatsApp alcanza.
+5. **Reposición** dentro de 30 días de la inspección (60 si es evento masivo). La
+   marcás con la fecha, los paneles y el costo real, que queda como gasto del
+   plan. Cada panel se repone **una vez por año** como máximo.
+6. **Si algo no se repone**, elegís la causal: cada una cita la sección de las
+   condiciones, que es lo que le decís al cliente.
+
+Cada daño muestra cuánto queda para inspeccionar o reponer, y en rojo si se pasó
+el plazo.
+
+Los mensajes de cada paso, desde **Mensaje al cliente** en el daño:
+
+*"Recibimos el aviso de daño"* — El mismo día hábil en que avisa.
+
+> **El texto, tal como sale en Voltia PM:**
+>
+>> Hola {nombre}, recibimos tu aviso por el granizo del {fecha del granizo}, gracias por las fotos. Vamos a coordinar la inspección en los próximos días hábiles: ¿qué días y horarios te quedan bien?
+>>
+>> Mientras tanto, no toques los paneles ni subas al techo.
+
+*"Confirmación de la reposición"* — Después de la inspección: cuántos paneles se reponen y la fecha.
+
+> **El texto, tal como sale en Voltia PM:**
+>
+>> Hola {nombre}, ya revisamos tu instalación: vamos a reponer {paneles a reponer} paneles dañados por el granizo, sin ningún costo para vos. La reposición la hacemos el {fecha de reposición}.
+>>
+>> Cualquier cosa, escribime.
+
+*"No corresponde reponer"* — Si algo no se repone: se dice por qué, citando la sección de las condiciones.
+
+> **El texto, tal como sale en Voltia PM:**
+>
+>> Hola {nombre}, revisamos tu instalación después del granizo del {fecha del granizo}. En este caso no corresponde reponer: {causal}.
+>>
+>> Si tenés cualquier duda, escribime y lo vemos.
+
+*"Paneles repuestos"* — Al terminar la reposición.
+
+> **El texto, tal como sale en Voltia PM:**
+>
+>> Hola {nombre}, ya quedaron repuestos los paneles y verificamos que la instalación vuelve a generar normalmente.
+>>
+>> Cualquier cosa, escribime.
+
+**La plata del plan no es ganancia:** es la reserva para reponer cuando una
+tormenta pega en varias obras el mismo día. En Finanzas va en una línea propia y
+no suma al saldo de la obra.
+
+**Cuándo escalar:** quién inspecciona y repone todavía está por definir; mientras
+tanto, a Operaciones.
 
 ---
 
@@ -1190,6 +1375,8 @@ sólo los catorce con su lugar, para encontrarlos rápido.
 | Material de capacitación | 7.1 | E3 |
 | Acceso a la plataforma del inversor | 7.2 | E3 |
 | Alta en los reportes mensuales | 7.3 | E3 |
+| Plan de granizo: plan activo, aviso de vencimiento, vencido sin pago, plan suspendido | 12.1 | Plan de granizo |
+| Plan de granizo: recibimos el aviso de daño, confirmación de la reposición, no corresponde reponer, paneles repuestos | 12.1 | Plan de granizo |
 
 **Los cuatro que sostienen el modelo**, si hay que discutir sólo algunos en
 equipo: la **bienvenida** (es la que explica que no va a haber contacto semanal y
@@ -1239,6 +1426,10 @@ obra, el capataz lo resuelve internamente — no lo manda a otro lado.
 | **Traspaso** | El pase formal de trabajo entre áreas dentro del sistema. |
 | **Ticket** | Un reclamo o consulta registrado, con estado y responsable. |
 | **Portal** | La vista que tiene el cliente: avance, documentación, reportes, tickets y encuestas. |
+| **Plan de Protección contra Granizo** | El servicio de reposición de paneles por granizo de Voltia. **No es un seguro**, y no se le dice así (cap. 12.1). |
+| **Anualidad** | Lo que paga el cliente por un año de plan: USD 12 por panel, IVA incluido. |
+| **Carencia** | Los 30 días desde el primer pago en que el plan todavía no cubre. No aplica si se adhiere con la obra. |
+| **Gracia** | Los 15 días después del vencimiento en que el plan sigue cubriendo aunque no haya pagado. Después queda suspendido. |
 
 ---
 
@@ -1250,7 +1441,9 @@ Es la parte que más se consulta cuando algo no aparece donde uno lo busca.
 
 - **El sistema no le escribe al cliente por su cuenta.** Toda comunicación
   saliente la hace una persona; el sistema arma el mensaje y recuerda cuándo. La
-  única excepción es el reporte mensual de generación.
+  única excepción es el reporte mensual de generación. Vale también para el plan
+  de granizo: el aviso de vencimiento que prometen las condiciones lo manda
+  Experiencia Solar con el mensaje modelo (28-09-2026).
 - **El sistema no agenda los mantenimientos solo.** La iniciativa es de Voltia —
   los dos gratis se proponen sin esperar al cliente— pero la fecha la confirma
   una persona con él. Que el sistema agende solo choca con "si no está agendado,
@@ -1284,6 +1477,7 @@ Es la parte que más se consulta cuando algo no aparece donde uno lo busca.
   historial: hay que registrarlos aparte.
 - **Los mantenimientos no tienen alerta de vencido**, sólo la cuenta de cuánto
   falta.
+
 - **No hay métricas de satisfacción** consolidadas ni antigüedad de reclamos.
 - **El portal no muestra el estado ni la fecha de obra**, que es lo primero que el
   cliente querría ver ahí.

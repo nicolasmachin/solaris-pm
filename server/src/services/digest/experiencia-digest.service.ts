@@ -42,6 +42,7 @@
  * roles hardcodeados acá.
  */
 
+import { alertasPlanGranizoResumen } from "../seguro-granizo/plan-granizo.job.js";
 import { TicketEstado } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
@@ -163,6 +164,12 @@ export async function construirResumenExperiencia(now: Date = new Date()): Promi
       detalle: `Abierto hace ${dias} día${dias === 1 ? "" : "s"}`,
       dias,
     });
+  }
+
+  // 4. Plan de Protección contra Granizo: anualidades vencidas sin pago y daños
+  //    con el plazo de inspección o reposición pasado.
+  for (const a of await alertasPlanGranizoResumen(now)) {
+    alertas.push({ tipo: "granizo", ...a });
   }
 
   // Lo más viejo primero: es lo que se viene arrastrando.

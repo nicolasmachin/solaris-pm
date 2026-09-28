@@ -7,6 +7,7 @@ import { planGranizoApi, type DanioPlan, type PlanGranizo } from "../../api/plan
 import { Button } from "../ui/Button";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { ArchivoThumb } from "./ArchivoThumb";
+import { MensajesPlanModal } from "./MensajesPlanModal";
 import { ESTADO_DANIO_LABEL, errMsg, fmtFecha, fmtUsd, hoyIso } from "./estado";
 import { usePlanMutation } from "./usePlanMutation";
 
@@ -138,6 +139,7 @@ function DanioCard({ plan, d, canEdit, canDelete }: { plan: PlanGranizo; d: Dani
     motivoNota: d.motivoRechazo ?? "",
   });
   const [borrar, setBorrar] = useState(false);
+  const [mensaje, setMensaje] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const motivos = useQuery({ queryKey: ["plan-granizo-motivos"], queryFn: planGranizoApi.motivosRechazo, staleTime: Infinity, enabled: accion === "rechazo" });
@@ -234,8 +236,10 @@ function DanioCard({ plan, d, canEdit, canDelete }: { plan: PlanGranizo; d: Dani
         ) : null}
       </div>
 
+      {mensaje ? <MensajesPlanModal plan={plan} danio={d} onClose={() => setMensaje(false)} /> : null}
       {canEdit && accion === null ? (
         <div className="flex flex-wrap gap-2 pt-1">
+          <Button size="sm" variant="ghost" onClick={() => setMensaje(true)}>Mensaje al cliente</Button>
           {d.estado === "REPORTADO" ? (
             <Button size="sm" variant="secondary" onClick={() => setAccion("inspeccion")}>Marcar inspeccionado</Button>
           ) : null}

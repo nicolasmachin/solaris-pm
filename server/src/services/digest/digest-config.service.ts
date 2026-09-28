@@ -59,12 +59,16 @@ export const NOTIFICATION_TYPE_META: Record<
     description: "Alguien comentó en un video de Capacitación en el que participaste o que cargaste vos.",
   },
   seguro_granizo_por_vencer: {
-    label: "Seguro de granizo por vencer",
-    description: "Falta un mes o menos para que venza el seguro de granizo de un Generador y la renovación todavía no se cobró.",
+    label: "Plan de granizo por vencer",
+    description: "Falta un mes o menos para que venza el Plan de Protección contra Granizo de un Generador y la anualidad siguiente todavía no se cobró.",
   },
   seguro_granizo_impago: {
-    label: "Seguro de granizo impago",
-    description: "Pasaron más de 30 días sin cobrar la cuota del seguro de granizo: el Generador quedó sin cobertura.",
+    label: "Plan de granizo vencido sin pago",
+    description: "La anualidad del plan de granizo venció sin pago (sigue cubierto 15 días) o pasaron los 15 días y quedó suspendido.",
+  },
+  seguro_granizo_danio_plazo: {
+    label: "Daño por granizo con plazo vencido",
+    description: "Un daño por granizo pasó el plazo de inspección (10 días hábiles) o de reposición (30 días, 60 si es evento masivo).",
   },
   resumen_experiencia: {
     label: "Recorrido de Experiencia Solar",

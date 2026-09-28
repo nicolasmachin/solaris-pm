@@ -31,6 +31,9 @@ const PREFERENCIAS: Record<string, NotificationType[]> = {
     NotificationType.traspaso_escalado,
     NotificationType.ticket_actualizado,
     NotificationType.encuesta_disponible,
+    NotificationType.seguro_granizo_por_vencer,
+    NotificationType.seguro_granizo_impago,
+    NotificationType.seguro_granizo_danio_plazo,
     NotificationType.resumen_experiencia,
   ],
   POSTVENTA: [
@@ -39,6 +42,9 @@ const PREFERENCIAS: Record<string, NotificationType[]> = {
     NotificationType.traspaso_por_confirmar,
     NotificationType.ticket_actualizado,
     NotificationType.encuesta_disponible,
+    NotificationType.seguro_granizo_por_vencer,
+    NotificationType.seguro_granizo_impago,
+    NotificationType.seguro_granizo_danio_plazo,
     NotificationType.resumen_experiencia,
   ],
 };

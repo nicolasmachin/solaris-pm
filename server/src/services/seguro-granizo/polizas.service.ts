@@ -314,6 +314,12 @@ async function cargarPoliza(id: string, db: Tx | typeof prisma = prisma): Promis
   return p;
 }
 
+// Todos los planes vigentes en la base (sin baja lógica), con todo lo que hace
+// falta para calcular su estado. Lo usan el job diario y el resumen de la mañana.
+export function listarPolizasCompletas() {
+  return prisma.seguroGranizoPoliza.findMany({ where: { deletedAt: null }, include: polizaInclude });
+}
+
 export async function getPoliza(id: string) {
   return serializePoliza(await cargarPoliza(id));
 }

@@ -1331,3 +1331,230 @@ la vinculación hoy sólo se tocan por script, no hay endpoint.
 | `HUAWEI_MIN_COVERAGE` | 0.9 | cobertura mínima del mes |
 
 ---
+
+---
+
+# Plan de Protección contra Granizo
+
+## Para qué existe
+
+Registrar y controlar a los clientes que tienen el **Plan de Protección contra
+Granizo**: USD 12 por panel por año (IVA incluido) a cambio de que Voltia
+reponga, con todo incluido, los paneles que rompa el granizo. Es un **servicio
+de reposición de Voltia, no un seguro**. En todo lo que se muestra se dice
+*plan*, *anualidad* y *daño por granizo*. En el código quedó el nombre interno
+`SeguroGranizo*` / `seguro-granizo`, que no se muestra.
+
+Las reglas salen de las **Condiciones generales del plan** (documento para el
+cliente) y de la **guía interna del equipo**. Las dos las aprobó Nicolás el
+28-09-2026 y están pendientes de revisión legal.
+
+## Cómo se usa
+
+- **Experiencia Solar → Plan granizo** (`PlanGranizoPage`): la lista de planes
+  con indicadores, filtros por estado y los que requieren acción primero.
+- **Ficha del cliente** → tarjeta `PlanGranizoCard`: sirve para dar de alta el
+  plan y abrirlo (`PlanGranizoModal`). Desde el modal se hace todo:
+  - activación: Anexo A firmado, fotos de inicio y número de serie del inversor;
+  - anualidades y sus cobros;
+  - ampliaciones;
+  - daños por granizo;
+  - baja.
+- **Condiciones y Anexo A** (`PlanGranizoDocSection` →
+  `PlanGranizoDocBuilderModal`): está en la tarjeta de la ficha y en la
+  subetapa **Contrato** del Onboarding (`StageDrawer`).
+- **Nombre en rojo** cuando el plan está por vencer (≤ 30 días y la anualidad
+  siguiente sin pagar), en gracia, suspendido o vencido. Sale en:
+  - `PlanGranizoPage`;
+  - la lista de Generadores (`ClientesPage`);
+  - la barra lateral (`ClientesSidebar`);
+  - el encabezado de la ficha (`ClienteFichaPage`).
+
+  El dato viene en `ClienteListItem.planGranizo`, que calcula
+  `resumenPlanPorProyecto()`.
+
+## Cómo funciona
+
+**Modelo.**
+- `SeguroGranizoPoliza`: uno por proyecto, `projectId @unique`.
+- `SeguroGranizoPeriodo`: una anualidad. Tiene `@@unique([polizaId, numero])`
+  y su cobro en `financeMovementId`.
+- `SeguroGranizoSiniestro`: un daño por granizo, con su gasto de reposición en
+  `financeMovementId`.
+- `SeguroGranizoAmpliacion`: una ampliación sumada, con su cobro proporcional.
+- `PlanGranizoDraft` / `PlanGranizoVersion`: el documento.
+- Las fotos de inicio, las fotos de cada daño y el Anexo A firmado son
+  `FileAttachment`, distinguidos por `toolSource`:
+  `plan-granizo-fotos-inicio`, `seguro-granizo-siniestro` y
+  `plan-granizo-anexo`.
+
+**El estado no se guarda: se calcula.** `estado.ts` →
+`calcularEstadoPoliza()` es una función pura y tiene tests. Recibe el plan y sus
+anualidades, con el pago de cada una leído del `FinanceMovement` vinculado
+(`status === PAGADO` y la `fecha` como fecha de pago). Si Finanzas marca cobrado
+o borra el movimiento desde Movimientos, el plan lo refleja sin sincronizar nada.
+
+- **Activación:** no cubre sin `anexoFirmadoEn` y sin la primera anualidad
+  paga. En el primer año no hay gracia.
+- **Carencia** (`coberturaDesdePeriodo()`):
+  - Con `sinCarencia` (adhesión con la obra), la anualidad 1 cubre desde la
+    puesta en marcha.
+  - Con `inicioAlPagar` (cliente existente, o re-adhesión después de una baja),
+    el inicio es provisorio hasta el pago y `aplicarPago()` lo fija en pago +
+    30 días, con 12 meses desde ahí.
+  - En una renovación, si pagó dentro de los 15 días del vencimiento no hay
+    corte. Si pagó después, cubre desde pago + 30.
+- **Estados visibles:** `PENDIENTE_INICIO`, `PENDIENTE_ACTIVACION`,
+  `EN_CARENCIA`, `VIGENTE`, `POR_VENCER`, `EN_GRACIA`, `SUSPENDIDA`, `VENCIDA` y
+  `CANCELADA`. `alerta` vale true para los cuatro que pintan en rojo.
+- **Renovación** (`renovarPoliza()`): genera la anualidad siguiente **siempre
+  desde el vencimiento de la anterior**, aunque ya haya pasado. El precio es el
+  vigente en Admin (`precioSeguroGranizoUsdPorPanelAno` de `ProposalDefaults`,
+  o 12 si no está cargado). Recuenta los paneles con `resolverCantidadPaneles()`
+  (último unifilar de la obra y de sus ampliaciones, o la propuesta publicada),
+  salvo que la cantidad se haya cargado a mano.
+- **Baja:** anula los cobros pendientes que se pidan y borra las anualidades
+  que todavía no arrancaron. Sigue cubriendo hasta el fin del período pago.
+  `reactivarPoliza()` hace una re-adhesión si ya no le queda anualidad.
+- **Ampliación** (`agregarAmpliacion()`): suma los paneles al plan y a la
+  anualidad en curso, para que cuenten en el límite anual. Cobra
+  `precio × paneles × meses / 12` hasta el fin de la anualidad en curso; un mes
+  empezado cuenta entero (`mesesHasta()`). Si la ampliación es anterior al
+  inicio del plan, los paneles entran en la primera anualidad sin cobro aparte.
+- **Daños** (`siniestros.service.ts`):
+  - Estados `REPORTADO` → `EVALUADO` → `REPUESTO` / `RECHAZADO`.
+  - `REPUESTO` exige fecha, paneles repuestos y costo. Crea o actualiza un
+    `FinanceMovement` GASTO / `SEGURO_GRANIZO` con `sincronizarGasto()`, y lo
+    anula si el daño deja de estar repuesto o se borra.
+  - Límite: lo repuesto en la anualidad del evento no puede superar los
+    paneles de esa anualidad.
+  - `RECHAZADO` exige una causal de `MOTIVOS_RECHAZO` (`plazos.ts`); cada una
+    cita la sección de las condiciones.
+  - `cubiertoAlEvento` se calcula al registrarlo con `cubiertoEn()` y no
+    bloquea la carga.
+- **Plazos de un daño** (`plazos.ts` → `calcularPlazosDanio()`):
+  - aviso: ≤ 10 días hábiles desde el granizo;
+  - inspección: ≤ 10 días hábiles desde el aviso;
+  - reposición: ≤ 30 días corridos desde la inspección, 60 si es evento masivo.
+
+  Los días hábiles salen de `utils/business-days.ts`, que todavía no descuenta
+  feriados.
+- **Documento** (`documento/`): mismo patrón que la proforma (borrador con
+  autosave, vista previa y versiones con su PDF en
+  `projects/{projectId}/plan-granizo/{versionId}/condiciones.pdf`).
+  - La precarga (`buildPlanGranizoDocContext()`) toma los datos del cliente del
+    proyecto, y los paneles, el precio, si es instalación nueva o existente,
+    el número de serie y si hay fotos, del plan.
+  - El texto de las condiciones es fijo en `template.ts`. Cada versión guarda
+    `templateVersion` para saber qué texto firmó el cliente.
+  - No se publica sin el RUT de Voltia.
+
+**Job diario** (`plan-granizo.job.ts` → `chequearPlanesGranizo()`, cron
+`CRON_PLAN_GRANIZO`, default `30 6 * * *`):
+
+1. Pone en marcha los planes `PENDIENTE_INICIO` cuya obra ya tiene puesta en
+   marcha (`getAnclaMantenimiento()`). Si la cantidad de paneles no era manual,
+   la recuenta.
+2. Renueva los planes `ACTIVA` a los que les faltan ≤ 30 días para el fin de su
+   última anualidad.
+3. Avisa a los usuarios de `EXPERIENCIA_SOLAR` (`usuariosPorRol()` en
+   `services/usuarios-por-rol.ts`) con `createNotificationByUniqueKey()`, un
+   aviso por hito y por usuario. Los hitos salen de `avisosPlanGranizo()`:
+   - `seguro_granizo_por_vencer`: por vencer. Clave: la anualidad en curso.
+   - `seguro_granizo_impago`: en gracia o suspendido. Clave: la anualidad
+     impaga y el estado.
+   - `seguro_granizo_danio_plazo`: daño con la inspección o la reposición
+     vencida. Clave: el daño y la etapa.
+
+Correrlo dos veces el mismo día no duplica nada; se probó con fechas simuladas.
+El correo de la mañana de Experiencia Solar (`construirResumenExperiencia()`)
+suma entre sus pendientes, con `tipo: "granizo"`, lo que devuelve
+`alertasPlanGranizoResumen()`: planes en gracia o suspendidos y daños con el
+plazo vencido. Los tres tipos de aviso están habilitados en el correo para
+`EXPERIENCIA_SOLAR` y `POSTVENTA` (`seed-digest-experiencia-solar.ts`).
+
+**Mensajes modelo del plan** (`components/planGranizo/mensajes.ts` +
+`MensajesPlanModal`): son 8, los cuatro del plan y los cuatro de un daño.
+- `mensajeSugerido()` preselecciona el que corresponde al estado.
+- `renderMensaje()` completa fechas, montos, paneles, precio y causal. Si
+  cambió el precio respecto de la anualidad anterior, agrega el cambio.
+- Al copiar registran la interacción, como los mensajes del recorrido.
+
+**Finanzas.** La categoría `SEGURO_GRANIZO` queda **afuera del saldo de la
+obra**: se excluye en `listarCobrosPorProyecto()` y en
+`/finance/cobros-by-project/:projectId`. Va en una línea propia en el Estado de
+resultados (cap. 08).
+
+## Permisos
+
+- Todo el plan usa `EXPERIENCIA_CLIENTES` (VIEW / CREATE / EDIT / DELETE),
+  menos dos endpoints: marcar cobrada una anualidad
+  (`PATCH /seguro-granizo/periodos/:id/cobro`) y una ampliación
+  (`PATCH /seguro-granizo/ampliaciones/:id/cobro`) aceptan también
+  `FINANZAS:EDIT`.
+- El documento (`/projects/:projectId/plan-granizo/*`) acepta
+  `EXPERIENCIA_CLIENTES` **o** `ONBOARDING`, porque se genera desde los dos
+  lugares.
+- Las fotos y el Anexo A se sirven por `/seguro-granizo/archivos/:id`: la
+  descarga genérica de archivos pide `OPERACIONES`, que Experiencia Solar no
+  tiene.
+- Con la matriz actual, `ASESOR_COMERCIAL` también tiene `EXPERIENCIA_CLIENTES`
+  completo, así que puede crear planes y darlos de baja. Queda planteado si se
+  restringe.
+
+## Reglas y decisiones
+
+- **Vocabulario:** nunca "seguro", "póliza", "prima", "siniestro" ni
+  "asegurado" en nada visible. Es un requisito legal: cobrar por asumir un
+  riesgo es actividad aseguradora. La propuesta comercial ya dice "Plan de
+  Protección contra Granizo", y la nota de garantías dejó de decir que cubre
+  rayos y vientos.
+- **La anualidad es un ingreso aparte** en resultados, y el costo de las
+  reposiciones es un gasto de la misma categoría. Cómo se registra
+  contablemente (ingreso mes a mes o provisión) lo define el contador y puede
+  cambiar.
+- **Un plan por instalación**, identificada por el número de serie del
+  inversor. Una ampliación de la misma obra no tiene plan propio (el alta lo
+  rechaza con `AMPLIACION_SUMA_AL_PLAN`): se suma al plan de la obra original.
+- **Voltia PM no le escribe al cliente** (Manual de Posventa, Anexo D). Las
+  condiciones prometen avisar el vencimiento y los cambios de precio con 30
+  días. Ese aviso lo manda Experiencia Solar con el mensaje modelo "Aviso de
+  vencimiento"; Voltia PM avisa al equipo y deja el mensaje listo. Lo decidió
+  Nicolás el 28-09-2026.
+
+## Casos borde
+
+- **Cargar un cliente que ya pagaba** antes de que existiera esto: alta como
+  instalación nueva (sin carencia) con la fecha de inicio real y "ya pagó la
+  primera anualidad". Si no, arranca como existente con carencia.
+- **El multipart del server acepta un archivo por pedido**
+  (`limits.files: 1`). Las fotos se suben de a una: el cliente lo hace en
+  secuencia.
+- **Un plan vencido hace días y renovado tarde** sigue desde el vencimiento: si
+  paga dentro de los 15 días no pierde cobertura. No es una re-adhesión.
+- **Cambiar la cantidad de paneles** rige desde la próxima anualidad, salvo que
+  se tilde "recalcular también las anualidades que falta cobrar".
+- **Si Finanzas borra el cobro** de una anualidad, el plan la muestra "Sin
+  cobro en Finanzas" y ofrece **Regenerar cobro**.
+
+## Archivos
+
+- Servicios: `services/seguro-granizo/`
+  - `estado.ts`, `plazos.ts` y `fechas.ts`: puros, con tests
+    (`npm run test:seguro-granizo`);
+  - `polizas.service.ts`;
+  - `siniestros.service.ts`;
+  - `documento/` (`schema.ts`, `contexto.ts`, `template.ts`,
+    `documento.service.ts`).
+- Rutas: `routes/seguro-granizo.routes.ts` y
+  `routes/plan-granizo-documento.routes.ts`.
+- Cliente:
+  - `api/planGranizo.api.ts`;
+  - `components/planGranizo/`;
+  - `modules/clientes/pages/PlanGranizoPage.tsx`;
+  - `hooks/useDocumentoAutosave.ts`.
+- Job: `services/seguro-granizo/plan-granizo.job.ts`.
+- Migraciones: `seguro_granizo`, `plan_granizo_condiciones`,
+  `plan_granizo_instalacion` y `plan_granizo_avisos`.
+- Deploy: correr `prisma/scripts/seed-digest-experiencia-solar.ts` para que los
+  avisos del plan entren al correo de Experiencia Solar y Postventa.

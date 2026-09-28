@@ -10,6 +10,7 @@ import { Spinner } from "../ui/Spinner";
 import { EstadoPlanChip } from "./EstadoPlanChip";
 import { fmtFecha, fmtUsd, hoyIso } from "./estado";
 import { PlanGranizoDocSection } from "./PlanGranizoDocSection";
+import { MensajesPlanModal } from "./MensajesPlanModal";
 import { PlanGranizoModal } from "./PlanGranizoModal";
 import { usePlanMutation } from "./usePlanMutation";
 
@@ -26,6 +27,7 @@ export function PlanGranizoCard({ projectId }: { projectId: string }) {
   const canEdit = usePermission("EXPERIENCIA_CLIENTES", "EDIT");
   const [abierto, setAbierto] = useState(false);
   const [alta, setAlta] = useState(false);
+  const [mensajes, setMensajes] = useState(false);
 
   const d = q.data;
   const plan = d?.poliza ?? null;
@@ -70,9 +72,17 @@ export function PlanGranizoCard({ projectId }: { projectId: string }) {
               {!plan.sinCarencia && plan.fotosInicio.length === 0 ? <li>• Faltan las fotos de inicio de los paneles</li> : null}
             </ul>
           ) : null}
-          <Button size="sm" onClick={() => setAbierto(true)}>
-            Abrir el plan
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => setAbierto(true)}>
+              Abrir el plan
+            </Button>
+            {plan.estado.alerta ? (
+              <Button size="sm" variant="danger" onClick={() => setMensajes(true)}>
+                Avisar al cliente
+              </Button>
+            ) : null}
+          </div>
+          {mensajes ? <MensajesPlanModal plan={plan} onClose={() => setMensajes(false)} /> : null}
         </>
       ) : alta ? (
         <AltaPlan projectId={projectId} d={d} onDone={() => setAlta(false)} />

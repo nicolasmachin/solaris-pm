@@ -11,6 +11,7 @@ import { LargeModal } from "../ui/LargeModal";
 import { Spinner } from "../ui/Spinner";
 import { ArchivoThumb } from "./ArchivoThumb";
 import { DaniosSection } from "./DaniosSection";
+import { MensajesPlanModal } from "./MensajesPlanModal";
 import { EstadoPlanChip } from "./EstadoPlanChip";
 import { COBRO_LABEL, ESTADO_PLAN_AYUDA, fmtFecha, fmtUsd, hoyIso, NOMBRE_ALERTA } from "./estado";
 import { usePlanMutation } from "./usePlanMutation";
@@ -60,8 +61,10 @@ export function PlanGranizoModal({ polizaId, onClose }: { polizaId: string; onCl
 
 function Encabezado({ plan }: { plan: PlanGranizo }) {
   const e = plan.estado;
+  const [mensajes, setMensajes] = useState(false);
   return (
     <div className="space-y-2 pr-8">
+      {mensajes ? <MensajesPlanModal plan={plan} onClose={() => setMensajes(false)} /> : null}
       <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">Plan de Protección contra Granizo</p>
       <div className="flex flex-wrap items-center gap-2">
         <Link
@@ -76,6 +79,9 @@ function Encabezado({ plan }: { plan: PlanGranizo }) {
         ) : (
           <span className="text-[11px] font-medium text-[var(--color-text-muted)]">No cubre hoy</span>
         )}
+        <Button size="sm" variant={e.alerta ? "primary" : "secondary"} className="ml-auto" onClick={() => setMensajes(true)}>
+          Mensajes al cliente
+        </Button>
       </div>
       <p className="text-xs text-[var(--color-text-secondary)]">{ESTADO_PLAN_AYUDA[e.estado]}</p>
       <div className="flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-[var(--color-text-secondary)]">

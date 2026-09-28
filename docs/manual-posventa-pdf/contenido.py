@@ -1013,6 +1013,63 @@ def construir():
                 "clave", margen=16),
         p))
 
+    nueva("PlanGranizo.dc.html", "32b · Plan de Protección contra Granizo", lambda p: pagina(
+        "Plan de Protección contra Granizo",
+        kicker("CAPÍTULO 12.1")
+        + titulo("El Plan de Protección contra Granizo", tamano=34)
+        + bajada("USD 12 por panel por año, IVA incluido. Si el granizo le rompe paneles, Voltia se los repone "
+                 "con todo incluido. Sólo paneles, sólo por granizo, siempre todos los paneles.")
+        + aviso("<strong>No es un seguro, y no se le dice así.</strong> Decís plan, condiciones del plan, "
+                "anualidad y daño por granizo. Nunca seguro, póliza, prima, siniestro ni asegurado.", "duro",
+                margen=18)
+        + subtitulo("Cómo se adhiere", margen=22, tamano=20)
+        + numerados([
+            "Con <strong>Condiciones y Anexo A</strong> (ficha del cliente, o subetapa Contrato del Onboarding) "
+            "sale un solo PDF con el Anexo A completo. Revisás los datos, generás y se lo mandás.",
+            "Das de alta el plan: <strong>nueva</strong> si se adhiere con la obra (sin carencia) o "
+            "<strong>existente</strong> (cubre 30 días después del primer pago).",
+            "Se activa con <strong>el Anexo A firmado y la primera anualidad paga</strong>. Subís la hoja firmada "
+            "y marcás el cobro con la fecha real del pago.",
+            "Instalación existente: pedile <strong>fotos actuales de los paneles</strong> y subilas. Son la única "
+            "prueba si aparece un daño previo.",
+        ], margen=12)
+        + subtitulo("Cómo se sigue", margen=22, tamano=20)
+        + parrafo("<strong>El nombre en rojo es tu aviso:</strong> falta un mes o menos para vencer, venció sin "
+                  "pago o quedó suspendido. La anualidad siguiente se genera sola 30 días antes; cuando se pone "
+                  "en rojo, le avisás el vencimiento. Con más de <strong>15 días</strong> de atraso queda "
+                  "suspendido, y si paga después corre una nueva carencia. Voltia PM te avisa por la campana y en el "
+                  "correo de la mañana, pero <strong>al cliente le escribís vos</strong>: en la ficha está "
+                  "<strong>Avisar al cliente</strong>, con el mensaje listo.", margen=8, tamano=14)
+        + parrafo("Las ampliaciones de Voltia se suman desde su puesta en marcha, con cobro proporcional. Si se "
+                  "cambia el inversor, actualizás el número de serie. La baja no reintegra la anualidad en curso "
+                  "y cubre hasta el fin del período pago.", margen=8, tamano=14),
+        p))
+
+    nueva("PlanGranizoDanio.dc.html", "32c · Cuando graniza", lambda p: pagina(
+        "Cuando graniza",
+        kicker("CAPÍTULO 12.1 · PLAN DE GRANIZO")
+        + titulo("Cuando graniza", tamano=34)
+        + bajada("El cliente avisa por WhatsApp o correo con el formulario del Anexo B y fotos.")
+        + numerados([
+            "<strong>Registrás el daño el mismo día</strong> (Registrar daño, en el plan) y le respondés ese "
+            "mismo día hábil. Si la tormenta pegó en muchas obras, marcás <strong>evento masivo</strong>.",
+            "<strong>Chequeo:</strong> Voltia PM te dice si ese día el plan cubría y si el aviso llegó fuera de "
+            "plazo (más de 10 días hábiles).",
+            "<strong>Inspección en sitio</strong> dentro de 10 días hábiles del aviso: fecha y lo que se vio.",
+            "<strong>Confirmación por escrito</strong> al cliente: cuántos paneles se reponen y la fecha.",
+            "<strong>Reposición</strong> dentro de 30 días de la inspección (60 si es evento masivo): fecha, "
+            "paneles y costo real. Cada panel se repone una vez por año como máximo.",
+            "<strong>Si algo no se repone</strong>, elegís la causal: cada una cita la sección de las "
+            "condiciones, que es lo que le decís al cliente.",
+        ], margen=16)
+        + aviso("Cada daño muestra cuánto queda para inspeccionar o reponer, y se pone en rojo si se pasó el "
+                "plazo.", "clave", margen=22)
+        + aviso("<strong>La plata del plan no es ganancia:</strong> es la reserva para reponer cuando una tormenta "
+                "pega en varias obras el mismo día. En Finanzas va en una línea propia.", "ojo", margen=16)
+        + parrafo("<strong>Cuándo escalar:</strong> quién inspecciona y repone está por definir; mientras tanto, "
+                  "a Operaciones.", margen=18, tamano=14),
+        p))
+
     existente("ReglasDuras.dc.html", "33 · Las once reglas duras")
     existente("SaleMal.dc.html", "34 · Cuando algo sale mal")
 

@@ -1,6 +1,6 @@
 # Cómo trabajamos en Voltia
 
-**Manual de trabajo** · Versión 1.5 — 28 de septiembre de 2026
+**Manual de trabajo** · Versión 1.6 — 28 de septiembre de 2026
 
 > Este manual explica **qué tiene que hacer cada uno y cómo hacerlo en Voltia PM**.
 > No hay dos documentos: el procedimiento y la herramienta van juntos, porque
@@ -186,6 +186,21 @@ No alcanza con mandar la proforma.
 pago definida»**. Al elegir financiación bancaria aparecen dos casillas más:
 *Proforma enviada al banco* y *Crédito aprobado*. **La segunda es bloqueante: sin
 eso tildado, el proyecto no debería avanzar a la obra.**
+
+### 3.1 bis · El Plan de Protección contra Granizo en la venta
+
+Con la propuesta se ofrece el **Plan de Protección contra Granizo**: USD 12 por
+panel por año, IVA incluido, y si el granizo le rompe paneles, Voltia se los
+repone con todo incluido. **No es un seguro y no se le dice así**: decís
+*plan*, *anualidad* y *daño por granizo*.
+
+Si se adhiere al contratar la obra, **no tiene carencia**: cubre desde la puesta
+en marcha. Por eso conviene ofrecerlo en la venta.
+
+**En Voltia PM:** en el onboarding, subetapa **Contrato**, abajo del contrato,
+está **Condiciones y Anexo A**. Genera un solo PDF con las condiciones y el
+Anexo A ya completo con los datos del cliente. Revisás los datos, lo generás y se
+lo mandás con el contrato. El plan lo sigue Experiencia Solar.
 
 ### 3.2 · El pasaje del cliente a Experiencia Solar
 
@@ -591,6 +606,26 @@ Se muestran **solo los cobros efectivos**, no los previstos: un cobro planificad
 es trabajo nuestro, no algo que el cliente hizo. Los gastos de la obra tampoco
 aparecen, porque no son del cliente.
 
+### 8.7 bis · El Plan de Protección contra Granizo
+
+Lo manejás en **Experiencia Solar → Plan granizo** y en la tarjeta del plan de
+la ficha del cliente. **No es un seguro**: decís plan, anualidad y daño por
+granizo.
+
+- **Para activarlo** hacen falta el **Anexo A firmado** (alcanza una foto) y la
+  **primera anualidad paga**. Subís la hoja y marcás el cobro con la fecha real
+  del pago. Si la instalación ya existía, pedís **fotos de los paneles** y las
+  subís.
+- **El nombre del cliente en rojo** quiere decir que falta un mes o menos para
+  vencer, que venció sin pago o que quedó suspendido. Además te llega el aviso
+  por la campana y, si ya venció, aparece en los pendientes del correo de la
+  mañana. **Le escribís vos**: en la ficha está **Avisar al cliente**, con el
+  mensaje listo. Voltia PM no le escribe solo.
+- **Si avisa un daño por granizo**, lo registrás en el plan el mismo día y le
+  respondés ese día. Voltia PM te marca los plazos de inspección y reposición.
+
+El procedimiento completo está en el Manual de Posventa, capítulo 12.1.
+
 ### 8.8 · Cuando necesitás saber algo
 
 > **No deberías tener que preguntarle a nadie.**
@@ -688,7 +723,7 @@ dos formas sirven igual. Si no sabés cuál es el tuyo, te lo dice Administraci�
 | **Ingeniería** | Las herramientas del proyectista |
 | **Calendario** | La agenda de instalaciones |
 | **Ventas** | Los leads y las propuestas |
-| **Experiencia Solar** | Los Generadores, el Recorrido, encuestas y reportes |
+| **Experiencia Solar** | Los Generadores, el Recorrido, encuestas, reportes y el Plan de Protección contra Granizo |
 | **Trámites UTE** | Los trámites y sus hitos |
 
 Y en el **menú de tu usuario**, arriba a la derecha, está **Capacitación**:
@@ -723,6 +758,9 @@ Entrás desde **Experiencia Solar** y elegís el cliente. Es **una sola pantalla
   contacto nuevo.
 - **Más abajo**: el **trámite UTE** desplegado con todos sus hitos — es lo mismo
   que el cliente ve en su portal.
+- **Debajo del trámite**: la tarjeta del **Plan de Protección contra Granizo**,
+  para darlo de alta, abrirlo y generar las condiciones con el Anexo A. Si el
+  plan necesita atención, el nombre del cliente sale en rojo arriba de todo.
 
 ### El calendario
 

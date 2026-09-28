@@ -3,6 +3,7 @@ import { NotificationType } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
 import { createNotificationByUniqueKey } from "../notification.service.js";
+import { usuariosPorRol } from "../usuarios-por-rol.js";
 
 // Regla de Oro del aviso post-habilitación (§8.2 del protocolo).
 // Cuando el trámite UTE finaliza (T8 setea Project.postHabilitacionInicioEn),
@@ -14,16 +15,6 @@ import { createNotificationByUniqueKey } from "../notification.service.js";
 
 const H24_MS = 24 * 60 * 60 * 1000;
 const H48_MS = 48 * 60 * 60 * 1000;
-
-async function usuariosPorRol(roleName: string): Promise<Array<{ id: string; email: string }>> {
-  const users = await prisma.user.findMany({
-    where: { deletedAt: null, role: { name: roleName }, email: { not: null } },
-    select: { id: true, email: true },
-  });
-  // El email es opcional desde que los Generadores pueden entrar sin mail; para
-  // alertar hace falta, así que los que no lo tienen quedan afuera.
-  return users.filter((u): u is { id: string; email: string } => !!u.email);
-}
 
 async function alertar(
   destinatarios: Array<{ id: string; email: string }>,

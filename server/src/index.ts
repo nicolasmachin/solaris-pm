@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { startPlanGranizoJob } from "./services/seguro-granizo/plan-granizo.job.js";
 import path from "node:path";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
@@ -96,6 +97,7 @@ async function start() {
   startReporteSemanalJob();
   startDailyDigestJob();
   startNovedadesJob();
+  startPlanGranizoJob();
 
   // La cola de compresión de videos vive en memoria: un reinicio la vacía. Sin
   // esto, un video subido justo antes de un deploy quedaría "procesando" para

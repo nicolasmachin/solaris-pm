@@ -217,6 +217,8 @@ enum NotificationType {
   // Seguro de granizo: póliza a ≤30 días de vencer / cobro impago pasada la gracia.
   seguro_granizo_por_vencer
   seguro_granizo_impago
+  // Daño por granizo con el plazo de inspección o de reposición vencido.
+  seguro_granizo_danio_plazo
   // No es una notificación in-app: marca qué roles reciben por correo el resumen
   // diario del recorrido de Experiencia Solar (ver services/digest/experiencia-digest.service.ts).
   resumen_experiencia

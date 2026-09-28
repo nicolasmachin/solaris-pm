@@ -24,6 +24,11 @@ function getTypeIcon(type: NotificationType): string {
       return "🎫";
     case "capacitacion_comentario":
       return "💬";
+    // Plan de Protección contra Granizo: vencimiento, falta de pago, plazo de un daño.
+    case "seguro_granizo_por_vencer":
+    case "seguro_granizo_impago":
+    case "seguro_granizo_danio_plazo":
+      return "🧊";
     case "traspaso_escalado":
     case "aviso_habilitacion_pendiente":
       return "⚠️";

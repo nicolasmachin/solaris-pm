@@ -14,6 +14,8 @@
 - **Condiciones y Anexo A**: desde la ficha del cliente o desde la subetapa **Contrato** del Onboarding se genera el documento para mandarle al cliente, con el Anexo A ya completo con sus datos (se pueden corregir antes de generarlo).
 - En **Finanzas**, las anualidades y el costo de las reposiciones van en una línea propia, **Plan granizo**, en el Estado de resultados. No suman al saldo de la obra.
 - La propuesta comercial ahora dice **"Plan de Protección contra Granizo"** y ya no dice que cubre rayos ni vientos.
+- **Avisos del plan:** todos los días Voltia PM pone en marcha los planes que esperaban la habilitación, genera la anualidad siguiente 30 días antes del vencimiento y avisa a Experiencia Solar por la campana cuando un plan está por vencer, venció sin pago o quedó suspendido, y cuando un daño se pasó del plazo. Los vencidos aparecen también en los pendientes del correo de la mañana.
+- **Mensajes modelo del plan:** ocho mensajes listos para copiar (plan activo, aviso de vencimiento, vencido sin pago, suspendido y los cuatro de un daño), con fechas, montos y paneles ya puestos. En la ficha, si el plan está en rojo, aparece **Avisar al cliente**. Al copiar queda registrado el contacto. Voltia PM no le escribe al cliente por su cuenta.
 
 #### "La aplicación de tu inversor", no "la app"
 

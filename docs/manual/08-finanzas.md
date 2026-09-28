@@ -159,6 +159,12 @@ conector (cap. 13), que además acepta cualquier rango de fechas.
   proyecto"), pagos a proveedores, compras de stock y otros.
 - **Todo en dólares.** Los pesos se convierten con la **última cotización
   cargada** (`services/finance/tipo-cambio.ts` → `ultimoUsdToUyu()`).
+- **Plan de Protección contra Granizo:** los movimientos de la categoría
+  `SEGURO_GRANIZO` (las anualidades cobradas son INGRESO y las reposiciones son
+  GASTO) no entran en ingresos ni en egresos. Van en el bloque `planGranizo`
+  (`ingresos`, `reposiciones` y `neto`) y sí suman al `resultado`. El reporte
+  anual (`/finance/reports/results`) los muestra en la columna `planGranizo`,
+  sólo con lo PAGADO. Ver cap. 09, "Plan de Protección contra Granizo".
 
 ### Permisos
 
@@ -235,6 +241,12 @@ entra la plata.
 
 ### Casos borde
 
+- **Los cobros del Plan de Protección contra Granizo no son cobros de la obra.**
+  La categoría `SEGURO_GRANIZO` se excluye del cobrado y de los previstos de
+  `listarCobrosPorProyecto()` y de `/finance/cobros-by-project/:projectId`: la
+  anualidad del plan no salda el presupuesto. Se gestionan desde Experiencia
+  Solar → Plan granizo (cap. 09), y las rutas de cobros de esta pantalla no los
+  pueden tocar (`NOT_A_COBRO`).
 - **Cobros excluye proyectos ARCHIVADOS y PROSPECTOS.** `listarCobrosPorProyecto()`
   filtra siempre esos estados: una venta caída (archivada) o un prospecto no es
   algo a cobrar, así que no aparece en el listado ni suma al total pendiente.
