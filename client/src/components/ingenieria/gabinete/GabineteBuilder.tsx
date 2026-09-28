@@ -192,9 +192,10 @@ export function GabineteBuilder({
         </Section>
 
         <p className="text-[11px] text-[var(--color-text-muted)] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] px-3 py-2">
-          Todo se fabrica en <strong>chapa plegada</strong> y se pide <strong>sin herrajes</strong>: la
-          tapa va suelta, sin bisagras ni cierre. Todas las medidas vienen con un valor por defecto y
-          salen impresas en la lámina; ninguna queda sin definir.
+          Todo se fabrica en <strong>chapa plegada</strong> y se pide <strong>sin herrajes y sin
+          perforar</strong>: la tapa va suelta, y los agujeros de amure los hacés en obra. Todas las
+          medidas vienen con un valor por defecto y salen impresas en la lámina; ninguna queda sin
+          definir.
         </p>
 
         <Section title="Medidas exteriores">
@@ -240,51 +241,6 @@ export function GabineteBuilder({
               label="Paso de tornillos"
               value={form.pasoTornillosCm}
               onChange={(v) => set("pasoTornillosCm", v ?? 0)}
-            />
-          </div>
-        </Section>
-
-        <Section title="Amure">
-          <div className="grid grid-cols-3 gap-3">
-            <NumField
-              label="Ø del agujero"
-              suffix="mm"
-              step={0.5}
-              value={form.agujeroAmureDiamMm}
-              onChange={(v) => set("agujeroAmureDiamMm", v ?? 0)}
-            />
-            <NumField
-              label="Agujeros lado vertical"
-              suffix="un"
-              step={1}
-              value={form.agujerosAmureVertical}
-              onChange={(v) => set("agujerosAmureVertical", v ?? 2)}
-            />
-            <NumField
-              label="Agujeros lado horizontal"
-              suffix="un"
-              step={1}
-              value={form.agujerosAmureHorizontal}
-              onChange={(v) => set("agujerosAmureHorizontal", v ?? 1)}
-            />
-          </div>
-        </Section>
-
-        <Section title="Encuentro tapa / cuerpo">
-          <p className="text-[11px] text-[var(--color-text-muted)] -mt-1">
-            El frente del cuerpo lleva un reborde plegado hacia adentro, y la tapa el suyo, que monta
-            sobre él. Es el corte que el taller necesita para doblar.
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            <NumField label="Reborde del frente del cuerpo" value={form.rebordeFrenteCm} onChange={(v) => set("rebordeFrenteCm", v ?? 0)} />
-            <NumField label="Reborde de la tapa" value={form.rebordeTapaCm} onChange={(v) => set("rebordeTapaCm", v ?? 0)} />
-            <NumField label="Solape de la tapa sobre el cuerpo" value={form.solapeTapaCm} onChange={(v) => set("solapeTapaCm", v ?? 0)} />
-            <NumField
-              label="Holgura"
-              suffix="mm"
-              step={0.5}
-              value={form.holguraTapaMm}
-              onChange={(v) => set("holguraTapaMm", v ?? 0)}
             />
           </div>
         </Section>
@@ -392,9 +348,13 @@ export function GabineteBuilder({
           ) : hojas ? (
             hojas.map((hoja, i) => (
               <div key={i}>
-                <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400 mb-1 px-1">
-                  Hoja {i + 1} de {hojas.length}
-                </p>
+                {/* La lámina es de una hoja; el rótulo solo aparece si alguna
+                    vez vuelve a tener más de una. */}
+                {hojas.length > 1 && (
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400 mb-1 px-1">
+                    Hoja {i + 1} de {hojas.length}
+                  </p>
+                )}
                 {/* El SVG lo genera nuestro propio backend a partir de datos
                     validados con Zod; no hay HTML de terceros acá. */}
                 <div className="[&>svg]:w-full [&>svg]:h-auto" dangerouslySetInnerHTML={{ __html: hoja }} />

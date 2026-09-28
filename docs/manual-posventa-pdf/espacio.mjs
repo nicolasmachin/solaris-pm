@@ -41,6 +41,11 @@ for (const f of archivos) {
   let cuerpo = dc.replace(/<helmet>[\s\S]*?<\/helmet>/, "");
   cuerpo = cuerpo.replace(/\/_blob\/([0-9a-f]{32})/g, (todo, id) =>
     mapaAssets[id] ? `file://${dirImgs}/${mapaAssets[id]}` : todo);
+  // Un <div> de más o de menos el navegador lo corrige solo, y la hoja sale
+  // con otro layout sin que nada avise. Pasó al pegar una captura a mano.
+  const abre = (cuerpo.match(/<div\b/g) || []).length;
+  const cierra = (cuerpo.match(/<\/div>/g) || []).length;
+  if (abre !== cierra) console.log(`      DIVS DESBALANCEADOS (${abre} abren, ${cierra} cierran)  ${f}`);
   fs.writeFileSync(`${tmp}/${f}.html`, `<!doctype html><html><head><meta charset="utf-8">${helmet}</head><body>${cuerpo}</body></html>`);
   await page.goto(`file://${tmp}/${f}.html`, { waitUntil: "networkidle2", timeout: 20000 });
   await page.evaluate(() => document.fonts.ready);
@@ -52,9 +57,19 @@ for (const f of archivos) {
       (d) => getComputedStyle(d).flexGrow === "1" && d.children.length === 0 && !d.textContent.trim(),
     );
     const libre = spacers.reduce((max, d) => Math.max(max, d.getBoundingClientRect().height), 0);
-    return { alto: Math.round(root.scrollHeight), libre: Math.round(libre) };
+    // El marco tiene el alto fijo del A4, así que su scrollHeight sigue dando
+    // 1123 aunque el contenido se salga: hay que mirar hasta dónde llega lo que
+    // hay adentro. Sin esto, una hoja rota se publica como si entrara.
+    const tope = root.getBoundingClientRect();
+    let fondo = 0;
+    for (const el of root.querySelectorAll("*")) {
+      const b = el.getBoundingClientRect();
+      if (b.height || b.width) fondo = Math.max(fondo, b.bottom - tope.top);
+    }
+    return { alto: Math.round(root.scrollHeight), fondo: Math.round(fondo), libre: Math.round(libre) };
   });
-  const estado = r.alto > 1123 ? "SE PASA" : "ok";
+  const seSale = r.alto > 1123 || r.fondo > 1123;
+  const estado = seSale ? `SE PASA (contenido hasta ${r.fondo})` : "ok";
   console.log(`${String(r.alto).padStart(5)} ${estado.padEnd(8)} libre:${String(r.libre).padStart(4)}px  ${f}`);
 }
 await browser.close();

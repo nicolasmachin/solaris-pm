@@ -49,6 +49,14 @@ se puede gastar en una imagen. Reemplaza a `medir.mjs`, que solo daba el alto y
 además pedía las fuentes locales: el contenedor sí llega a Google Fonts, así que
 esa vuelta no hacía falta.
 
+**No alcanza con el alto del marco.** El marco tiene los 1123 px fijos, así que
+su `scrollHeight` sigue diciendo 1123 aunque el contenido se salga por abajo: una
+hoja rota pasaba la medición y recién en el PDF aparecía partida en dos. Por eso
+`espacio.mjs` mide además **hasta dónde llega el contenido** y avisa cuando un
+archivo tiene los `<div>` **desbalanceados**, que fue la causa: al pegar una
+captura a mano sobró un `</div>`, el navegador lo corrigió a su manera y la
+página salió con tres columnas.
+
 **Las imágenes hay que mapearlas para medir.** En el canvas viven como
 `/_blob/<id>`, que fuera del artifact no resuelve: sin el archivo real la imagen
 mide cero y la hoja parece entrar cuando no entra. `assets-locales.json` apunta
@@ -100,6 +108,31 @@ Para mirar una hoja antes de publicarla, sin abrir el canvas:
 docker compose exec -T -w /app server node vista-previa.mjs paginas/project /tmp/vistas Main.dc.html,Cierre.dc.html
 ```
 
+## Ojo con `docker compose cp` a `/app`
+
+`/app` en el contenedor **es la carpeta `server/` del repo**, montada. Todo lo que
+se copia ahí aparece como archivo del repo, y un `save.sh` lo commitea: así se
+colaron 32 MB de copias de las fotos y las hojas. Están en el `.gitignore` de
+`server/`, pero conviene igual **borrar lo copiado al terminar**:
+
+```bash
+docker compose exec -T server rm -rf /app/paginas /app/imagenes /app/*.mjs
+```
+
+## El PDF
+
+El canvas exporta el PDF desde su menú ("All artboards"), pero eso hay que
+hacerlo a mano. Para sacarlo desde acá:
+
+```bash
+docker compose cp docs/manual-posventa-pdf/pdf.mjs server:/app/pdf.mjs
+docker compose exec -T -w /app server node pdf.mjs paginas/project /tmp/manual.pdf
+docker compose cp server:/tmp/manual.pdf docs/Manual-Posventa-Experiencia-Solar-vX.Y.pdf
+```
+
+Toma el orden de `canvas.json` y saltea (avisando) las hojas que no estén en la
+carpeta.
+
 ## Por qué doce páginas están escritas a mano
 
 Las que tienen diseño propio —la portada, el cierre, las reglas duras, el
@@ -107,7 +140,12 @@ recorrido en tres etapas, las dos señales— no salen de una plantilla y se
 escribieron sueltas. `contenido.py` las conoce (`EXISTENTES`), no las reescribe,
 y solo las cuenta para el orden y la numeración.
 
-De esas doce, **la portada y el cierre viven en el repo**, en `paginas-a-mano/`,
-porque llevan foto y se tocan. Las otras diez viven solo en el canvas: si hay que
-cambiarlas, se editan ahí y no se publican desde acá, para no pisarlas con un
-archivo viejo.
+Las doce viven en `paginas-a-mano/` y se publican desde ahí, igual que las
+generadas: antes estaban solo en el canvas y eso obligaba a bajarlas cada vez que
+había que armar el PDF completo. **Si alguien las edita en el canvas, hay que
+volver a bajarlas** antes de publicar, o el archivo del repo las pisa:
+
+```bash
+# bajarlas de nuevo (se guardan bajo <carpeta>/project/)
+# action "read" del artifact, con los paths de paginas-a-mano/
+```

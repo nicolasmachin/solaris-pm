@@ -1,1 +1,16 @@
 scripts/fixtures/
+
+# Copias que deja `docker compose cp ... server:/app/...` al trabajar con la
+# maqueta del manual: /app es este directorio montado, así que todo lo que se
+# copia adentro del contenedor aparece acá. Los originales viven en
+# docs/manual-posventa-pdf/.
+/paginas/
+/imagenes/
+/fotos-src/
+/capturas-src/
+/espacio.mjs
+/capturas.mjs
+/vista-previa.mjs
+/pdf.mjs
+/preparar-imagenes.mjs
+/assets-locales.json

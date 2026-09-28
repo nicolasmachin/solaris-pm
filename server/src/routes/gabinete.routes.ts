@@ -42,15 +42,12 @@ const designSchema = z.object({
   // resuelva por su cuenta. Los valores tienen que coincidir con los @default
   // del schema de Prisma.
   //
-  // No hay bisagras, cierre, ventilación ni grado IP: el gabinete es todo
-  // chapa plegada y se entrega sin herrajes.
+  // No hay bisagras, cierre, ventilación, grado IP ni agujeros: el gabinete es
+  // todo chapa plegada y se entrega sin herrajes y sin perforar.
   union: z.string().trim().min(1).max(120).default("Dos piezas en L atornilladas"),
   tornillos: z.string().trim().min(1).max(120).default("Tornillo punta mecha tipo T1"),
   solapeUnionCm: z.number().min(0).max(30).default(3),
   pasoTornillosCm: z.number().min(1).max(100).default(15),
-  agujeroAmureDiamMm: z.number().min(1).max(50).default(6),
-  agujerosAmureVertical: z.number().int().min(2).max(20).default(4),
-  agujerosAmureHorizontal: z.number().int().min(1).max(20).default(3),
   rebordeTapaCm: z.number().min(0).max(30).default(2),
   rebordeFrenteCm: z.number().min(0).max(30).default(2),
   solapeTapaCm: z.number().min(0).max(30).default(1),
@@ -105,9 +102,6 @@ export function toInputs(
     tornillos: design.tornillos,
     solapeUnionCm: design.solapeUnionCm,
     pasoTornillosCm: design.pasoTornillosCm,
-    agujeroAmureDiamMm: design.agujeroAmureDiamMm,
-    agujerosAmureVertical: design.agujerosAmureVertical,
-    agujerosAmureHorizontal: design.agujerosAmureHorizontal,
     rebordeTapaCm: design.rebordeTapaCm,
     rebordeFrenteCm: design.rebordeFrenteCm,
     solapeTapaCm: design.solapeTapaCm,

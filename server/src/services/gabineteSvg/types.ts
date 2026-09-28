@@ -31,15 +31,13 @@ export interface GabineteInputs {
   // fabricante no especificó algo, sale impreso el valor por defecto, que es
   // una decisión tomada y corregible, no un hueco.
   //
-  // Todo se fabrica en chapa plegada y se entrega sin herrajes: no hay
-  // bisagras, cierre, ventilación ni grado IP porque no son parte del pedido.
+  // Todo se fabrica en chapa plegada y se entrega sin herrajes y sin ninguna
+  // perforación: no hay bisagras, cierre, ventilación, grado IP ni agujeros de
+  // amure porque no son parte del pedido.
   union: string;
   tornillos: string;
   solapeUnionCm: number;
   pasoTornillosCm: number;
-  agujeroAmureDiamMm: number;
-  agujerosAmureVertical: number;
-  agujerosAmureHorizontal: number;
 
   // Encuentro tapa / cuerpo.
   rebordeTapaCm: number;

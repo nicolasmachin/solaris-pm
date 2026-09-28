@@ -17,15 +17,12 @@ export interface GabineteForm {
   // Medidas de taller: ninguna opcional. Si el fabricante no especificó algo,
   // vale el default —una decisión tomada— y no un hueco en la lámina.
   //
-  // No hay bisagras, cierre, ventilación ni grado IP: el gabinete es todo
-  // chapa plegada y se entrega sin herrajes.
+  // No hay bisagras, cierre, ventilación, grado IP ni agujeros: el gabinete es
+  // todo chapa plegada y se entrega sin herrajes y sin perforar.
   union: string;
   tornillos: string;
   solapeUnionCm: number;
   pasoTornillosCm: number;
-  agujeroAmureDiamMm: number;
-  agujerosAmureVertical: number;
-  agujerosAmureHorizontal: number;
   rebordeTapaCm: number;
   rebordeFrenteCm: number;
   solapeTapaCm: number;
@@ -101,9 +98,6 @@ export const GABINETE_DEFAULTS: GabineteForm = {
   tornillos: "Tornillo punta mecha tipo T1",
   solapeUnionCm: 3,
   pasoTornillosCm: 15,
-  agujeroAmureDiamMm: 6,
-  agujerosAmureVertical: 4,
-  agujerosAmureHorizontal: 3,
   rebordeTapaCm: 2,
   rebordeFrenteCm: 2,
   solapeTapaCm: 1,

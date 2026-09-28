@@ -1,31 +1,23 @@
-// Lámina de fabricación del gabinete metálico: dos hojas A4 verticales.
+// Lámina de fabricación del gabinete metálico: UNA hoja A4 vertical con las
+// vistas acotadas, las especificaciones, las notas y la tabla de medidas.
 //
-//   Hoja 1 — Conjunto: frontal, lateral, posterior e isométrica acotadas, las
-//            especificaciones generales y las notas.
-//   Hoja 2 — Detalles: corte del encuentro puerta/marco, detalle de la pestaña
-//            de amure, despiece de las dos piezas en L, detalle de plegado,
-//            interior con las bisagras, y la TABLA DE MEDIDAS completa.
+// Hubo una segunda hoja con dibujos de detalle (corte del encuentro
+// tapa/cuerpo, despiece de las dos piezas en L, la tapa suelta). Se sacó: el
+// fabricante y el instalador ya saben cómo se arma un gabinete, y los dibujos
+// no se entendían solos. Las medidas que esos detalles acotaban **siguen
+// estando**, escritas en la tabla y en las especificaciones.
 //
-// El principio que ordena todo esto: **el dibujo nunca asume una medida en
+// El principio que ordena la lámina: **el dibujo nunca asume una medida en
 // silencio**. Cada cosa que se dibuja sale de un campo con valor por defecto
-// editable, y además está escrita en la tabla de la hoja 2, para que ninguna
-// medida dependa de que el fabricante interprete bien un trazo.
-//
-// El plano que Voltia venía mandando (una sola hoja, ver el manual) fue la
-// referencia de partida, no un molde: acá se agregaron las vistas y las cotas
-// que en aquel faltaban.
+// editable, y toda medida está además escrita en la tabla, para que ninguna
+// dependa de que se interprete bien un trazo.
 
 import { line, rect, text, textLines, wrap } from "./draw.js";
 import { COLOR, FONT, MARGIN, PAGE_H, PAGE_W } from "./layout.js";
 import type { GabineteInputs } from "./types.js";
 import {
   cm,
-  corteTapaCuerpo,
-  despieceL,
-  detallePestana,
   escalaFrontalLateral,
-  frenteSinTapa,
-  tapaSuelta,
   vistaFrontal,
   vistaIsometrica,
   vistaLateral,
@@ -50,7 +42,7 @@ export function especificaciones(g: GabineteInputs): string[] {
     // Lo que NO se pide va escrito: sin esto el fabricante cotiza herrajes que
     // no queremos y el pedido vuelve con preguntas.
     "SE ENTREGA SIN HERRAJES: sin bisagras y sin cierre",
-    "Tapa y cuerpo sin perforaciones (salvo los agujeros de amure)",
+    "SIN NINGUNA PERFORACIÓN: los agujeros de amure los hace el instalador",
   ];
   if (g.pestanaAmure) {
     specs.push(`Pestaña perimetral para amure de ${cm(g.pestanaAnchoCm)} en toda la vuelta (posterior)`);
@@ -82,14 +74,7 @@ export function tablaMedidas(g: GabineteInputs): { etiqueta: string; valor: stri
     { etiqueta: "Paso de tornillos de unión", valor: `cada ${cm(g.pasoTornillosCm)}` },
   ];
   if (g.pestanaAmure) {
-    filas.push(
-      { etiqueta: "Ancho de pestaña de amure", valor: cm(g.pestanaAnchoCm) },
-      { etiqueta: "Diámetro de agujero de amure", valor: `Ø ${fmtMm(g.agujeroAmureDiamMm)} mm` },
-      {
-        etiqueta: "Agujeros de amure por lado",
-        valor: `${g.agujerosAmureVertical} vertical · ${g.agujerosAmureHorizontal} horizontal`,
-      },
-    );
+    filas.push({ etiqueta: "Ancho de pestaña de amure", valor: cm(g.pestanaAnchoCm) });
   }
   filas.push(
     { etiqueta: "Reborde plegado del frente del cuerpo", valor: cm(g.rebordeFrenteCm) },
@@ -97,7 +82,7 @@ export function tablaMedidas(g: GabineteInputs): { etiqueta: string; valor: stri
     { etiqueta: "Solape de la tapa sobre el cuerpo", valor: cm(g.solapeTapaCm) },
     { etiqueta: "Holgura tapa / cuerpo", valor: `${fmtMm(g.holguraTapaMm)} mm` },
     { etiqueta: "Herrajes", valor: "no se proveen" },
-    { etiqueta: "Perforaciones (fuera del amure)", valor: "ninguna" },
+    { etiqueta: "Perforaciones", valor: "ninguna — se hacen en obra" },
     { etiqueta: "Tolerancia general", valor: `± ${fmtMm(g.toleranciaMm)} mm` },
   );
   for (const extra of g.specsExtra ?? []) {
@@ -113,10 +98,11 @@ function notas(g: GabineteInputs): string[] {
     "Medidas en centímetros salvo donde se indica mm.",
     `Tolerancia general: ± ${fmtMm(g.toleranciaMm)} mm.`,
     "La tapa se entrega suelta, sin bisagras ni cierre.",
+    "El gabinete se entrega sin perforar: los agujeros de amure se hacen en obra.",
   ];
+  // La tabla de medidas va en esta misma hoja, al pie.
   if (g.fondoAbierto) out.push("Fondo abierto 100% (sin placa).");
   if (g.pestanaAmure) out.push(`Pestaña de amure de ${cm(g.pestanaAnchoCm)} en toda la vuelta posterior.`);
-  out.push("La hoja 2 tiene los detalles de fabricación y la tabla completa de medidas.");
   if (g.notas?.trim()) {
     for (const linea of g.notas.split("\n")) {
       if (linea.trim()) out.push(linea.trim());
@@ -178,22 +164,23 @@ function tablaBox(
   width: number,
   filas: { etiqueta: string; valor: string }[],
 ): { svg: string; height: number } {
-  const size = 9.5;
-  const rowH = 16;
-  const header = 30;
+  const size = 9;
+  const rowH = 14;
+  const header = 26;
   const height = header + filas.length * rowH + 8;
   const valorX = x + width - 12;
 
   const parts = [
     rect(x, y, width, height, { fill: "#FFFFFF", stroke: COLOR.boxBorder, strokeWidth: 1 }),
-    text(x + 12, y + 20, "TABLA DE MEDIDAS", { size: 10.5, bold: true }),
-    line(x, y + header - 8, x + width, y + header - 8, { color: COLOR.boxBorder, width: 0.8 }),
+    text(x + 12, y + 16, "TABLA DE MEDIDAS", { size: 10, bold: true }),
+    // La línea iba a la misma altura que el texto y lo tachaba.
+    line(x, y + header - 2, x + width, y + header - 2, { color: COLOR.boxBorder, width: 0.8 }),
   ];
   filas.forEach((f, i) => {
-    const ry = y + header + 8 + i * rowH;
+    const ry = y + header + 7 + i * rowH;
     // Fondo alternado: la tabla es larga y sin esto se salta de renglón.
     if (i % 2 === 1) {
-      parts.push(rect(x + 1, ry - 11, width - 2, rowH, { fill: "#F3F4F6", stroke: "none" }));
+      parts.push(rect(x + 1, ry - 10, width - 2, rowH, { fill: "#F3F4F6", stroke: "none" }));
     }
     parts.push(
       text(x + 12, ry, f.etiqueta, { size, color: COLOR.text }),
@@ -216,7 +203,7 @@ function svgClose(parts: string[]): string {
   return parts.join("\n");
 }
 
-function pie(g: GabineteInputs, hoja: string): string[] {
+function pie(g: GabineteInputs): string[] {
   const out: string[] = [];
   if (g.contacto) {
     const c = g.contacto;
@@ -224,7 +211,7 @@ function pie(g: GabineteInputs, hoja: string): string[] {
     out.push(text(MARGIN, PAGE_H - 16, `Solicita: ${datos}`, { size: 9.5, color: "#4B5563" }));
   }
   out.push(
-    text(PAGE_W - MARGIN, PAGE_H - 16, `Voltia  \u00b7  ${hoja}`, {
+    text(PAGE_W - MARGIN, PAGE_H - 16, "Voltia", {
       size: 9.5,
       color: "#4B5563",
       anchor: "end",
@@ -233,17 +220,17 @@ function pie(g: GabineteInputs, hoja: string): string[] {
   return out;
 }
 
-// ─── Hoja 1: el gabinete terminado ────────────────────────────────────────────
+// ─── La lámina ────────────────────────────────────────────────────────────────
 
-function hojaGeneral(g: GabineteInputs): string {
+function hoja(g: GabineteInputs): string {
   const parts = svgOpen();
   const left = MARGIN;
   const right = PAGE_W - MARGIN;
   const contentW = right - left;
 
   let y = MARGIN + 18;
-  parts.push(text(left, y, g.titulo.toUpperCase(), { size: 19, bold: true }));
-  y += 22;
+  parts.push(text(left, y, g.titulo.toUpperCase(), { size: 18, bold: true }));
+  y += 21;
   parts.push(
     text(
       left,
@@ -283,8 +270,8 @@ function hojaGeneral(g: GabineteInputs): string {
   const wC = right - colC;
 
   // Fila 1: frontal + lateral (escala compartida) + especificaciones.
-  const row1Y = y + 34;
-  const row1H = 440;
+  const row1Y = y + 30;
+  const row1H = 360;
   const colFrontal: Box = { x: colA, y: row1Y, w: wA, h: row1H };
   const colLateral: Box = { x: colB, y: row1Y, w: wB, h: row1H };
   const sVista = escalaFrontalLateral(g, colFrontal, colLateral);
@@ -298,66 +285,31 @@ function hojaGeneral(g: GabineteInputs): string {
       anchor: "middle",
     }),
   );
-  parts.push(bulletList(colC, row1Y + 18, wC, especificaciones(g), 10).svg);
+  parts.push(bulletList(colC, row1Y + 18, wC, especificaciones(g), 9.5).svg);
 
   // Fila 2: posterior + isométrica + notas.
-  const row2Y = row1Y + row1H + 44;
-  const row2H = 380;
+  const row2Y = row1Y + row1H + 26;
+  const row2H = 272;
   parts.push(vistaPosterior({ x: colA, y: row2Y, w: wA + 40, h: row2H }, g));
   parts.push(vistaIsometrica({ x: colB + 40, y: row2Y, w: wB, h: row2H }, g));
   parts.push(notasBox(colC, row2Y - 4, wC, notas(g)).svg);
 
-  parts.push(...pie(g, "Hoja 1 de 2 \u2014 Conjunto"));
+  // Al pie, la tabla con todas las medidas escritas.
+  parts.push(tablaBox(left, row2Y + row2H + 18, contentW, tablaMedidas(g)).svg);
+
+  parts.push(...pie(g));
   return svgClose(parts);
 }
 
-// ─── Hoja 2: detalles de fabricación ──────────────────────────────────────────
-
-function hojaDetalles(g: GabineteInputs): string {
-  const parts = svgOpen();
-  const left = MARGIN;
-  const right = PAGE_W - MARGIN;
-  const contentW = right - left;
-
-  let y = MARGIN + 16;
-  parts.push(text(left, y, `${g.titulo.toUpperCase()} \u2014 DETALLES DE FABRICACIÓN`, { size: 15, bold: true }));
-  y += 16;
-  parts.push(
-    text(left, y, "Los detalles están ampliados y no guardan escala con el conjunto: valen por sus cotas.", {
-      size: 9.5,
-      color: "#4B5563",
-    }),
-  );
-
-  const half = contentW / 2;
-
-  // Fila 1: corte del encuentro tapa/cuerpo + detalle de la pestaña de amure.
-  const row1Y = y + 30;
-  const row1H = 220;
-  parts.push(corteTapaCuerpo({ x: left, y: row1Y, w: half - 10, h: row1H }, g));
-  parts.push(detallePestana({ x: left + half + 10, y: row1Y, w: half - 10, h: row1H }, g));
-
-  // Fila 2: despiece de las dos L + el frente del cuerpo + la tapa suelta.
-  const row2Y = row1Y + row1H + 20;
-  const row2H = 300;
-  parts.push(despieceL({ x: left, y: row2Y, w: contentW * 0.46, h: row2H }, g));
-  parts.push(frenteSinTapa({ x: left + contentW * 0.48, y: row2Y, w: contentW * 0.26, h: row2H }, g));
-  parts.push(tapaSuelta({ x: left + contentW * 0.74, y: row2Y, w: contentW * 0.26, h: row2H }, g));
-
-  // Fila 3: la tabla con todas las medidas.
-  const row3Y = row2Y + row2H + 20;
-  parts.push(tablaBox(left, row3Y, contentW, tablaMedidas(g)).svg);
-
-  parts.push(...pie(g, "Hoja 2 de 2 \u2014 Detalles"));
-  return svgClose(parts);
-}
-
-/** Las dos hojas de la lámina, en orden. */
+/**
+ * Las hojas de la lámina. Hoy es una sola; sigue devolviendo un array porque el
+ * preview y el PDF ya saben pintar N hojas y no cuesta nada dejarlo abierto.
+ */
 export function buildGabineteSvgs(g: GabineteInputs): string[] {
-  return [hojaGeneral(g), hojaDetalles(g)];
+  return [hoja(g)];
 }
 
-/** Compatibilidad: la primera hoja, para quien solo quiere el conjunto. */
+/** La lámina, para quien quiere un SVG suelto. */
 export function buildGabineteSvg(g: GabineteInputs): string {
-  return hojaGeneral(g);
+  return hoja(g);
 }

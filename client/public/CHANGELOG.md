@@ -6,11 +6,11 @@
 
 #### Gabinete metálico: el plano para el fabricante se arma solo
 
-- Herramienta nueva en **Ingeniería → Gabinete metálico**, dentro del proyecto. Se cargan las medidas y la app arma la **lámina que se le manda al fabricante**, de **dos hojas**: la primera con el gabinete terminado, la segunda con los detalles de fabricación y una **tabla con todas las medidas**.
-- Está pensada para el gabinete que fabricamos siempre: **todo en chapa plegada** y **sin herrajes**. La tapa se pide suelta —sin bisagras ni cierre— y lisa, sin perforaciones; el herraje lo decidimos después nosotros. La lámina lo dice con todas las letras, así el fabricante no cotiza cosas que no le pedimos.
-- **Ninguna medida queda librada al criterio del taller.** Todo lo que se dibuja sale de un campo, y todos los campos **vienen con un valor por defecto** que se puede cambiar: espesor y tipo de chapa, solape entre las dos piezas en L, paso de los tornillos, diámetro y cantidad de agujeros de amure, reborde del frente del cuerpo, reborde de la tapa, solape y holgura entre ambos.
-- Las vistas: frontal con la tapa puesta, lateral, posterior, isométrica, **corte del encuentro tapa/cuerpo** (cómo asienta la tapa), detalle de la pestaña de amure, **despiece de las dos piezas en L**, **frente del cuerpo sin tapa** (donde se ve el reborde) y **la tapa como pieza suelta**.
-- **La vista previa se actualiza mientras cargás las medidas**, y muestra las dos hojas.
+- Herramienta nueva en **Ingeniería → Gabinete metálico**, dentro del proyecto. Se cargan las medidas y la app arma **la lámina que se le manda al fabricante**: una hoja con las vistas acotadas, las especificaciones, las notas y una **tabla con todas las medidas escritas**.
+- Está hecha para el gabinete que pedimos siempre: **todo en chapa plegada**, **sin herrajes** y **sin perforar**. La tapa va suelta —sin bisagras ni cierre—, y los agujeros de amure los hace el instalador en obra. La lámina lo dice con todas las letras, así el fabricante no cotiza ni hace cosas que no le pedimos.
+- **Ninguna medida queda librada al criterio del taller.** Todo sale de un campo, y todos los campos **vienen con un valor por defecto** que se puede cambiar: espesor y tipo de chapa, ancho de la pestaña de amure, solape entre las dos piezas en L, paso de los tornillos, reborde del frente del cuerpo, reborde de la tapa, solape y holgura entre ambos.
+- Las vistas: frontal con la tapa puesta, lateral, posterior e isométrica.
+- **La vista previa se actualiza mientras cargás las medidas**, así ves el plano antes de emitirlo.
 - La lámina sale con **de qué obra es, cuántas unidades hay que fabricar y a quién responderle**, y un campo de notas libres.
 - **Un proyecto puede tener varios gabinetes** (el del medidor, el de protecciones), cada uno con su lámina.
 - **Emitir lámina** genera el PDF y lo guarda en los documentos del proyecto como **v1, v2, v3…**: las anteriores no se pisan, porque cada una puede haber salido en un pedido distinto.

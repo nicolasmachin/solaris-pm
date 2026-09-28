@@ -431,9 +431,9 @@ Dos decisiones ordenan toda la herramienta:
    valor por defecto editable, y además está escrito en la tabla de medidas de la
    hoja 2. Nada depende de que el taller interprete un trazo ni de que el
    fabricante conteste un mensaje.
-2. **El gabinete es todo chapa plegada y se entrega sin herrajes.** Es lo único
-   que este fabricante hace. La tapa va suelta —sin bisagras ni cierre— y lisa,
-   sin perforaciones; Voltia decide después qué herraje le pone.
+2. **El gabinete es todo chapa plegada, y se entrega sin herrajes y sin
+   perforar.** Es lo único que este fabricante hace. La tapa va suelta —sin
+   bisagras ni cierre—, y los agujeros de amure los hace Voltia en obra.
 
 ## Cómo se usa
 
@@ -459,19 +459,25 @@ plegado hacia adentro en el frente**, que es donde asienta la tapa. Y una
 
 ### Qué lleva la lámina
 
-**Hoja 1 — Conjunto**: frontal con la tapa puesta, lateral derecha, posterior
-(pestaña de amure con diámetro y cantidad de agujeros) e isométrica, más las
-especificaciones generales y las notas.
-
-**Hoja 2 — Detalles de fabricación**: corte del encuentro tapa/cuerpo, detalle de
-la pestaña de amure, **despiece de las dos piezas en L**, **frente del cuerpo sin
-tapa** (donde se ve el reborde), **la tapa como pieza suelta**, y la **TABLA DE
-MEDIDAS** completa.
+**Una sola hoja A4**: frontal con la tapa puesta, lateral derecha, posterior e
+isométrica —las cuatro acotadas—, las especificaciones generales, las notas y al
+pie la **TABLA DE MEDIDAS** completa.
 
 Las especificaciones dicen explícitamente lo que **no** se pide —"SE ENTREGA SIN
-HERRAJES", "sin perforaciones"—, y la tabla lo repite como filas
-("Herrajes: no se proveen"). Es a propósito: sin eso el fabricante cotiza
-bisagras y cierre, y el pedido vuelve con preguntas.
+HERRAJES", "SIN NINGUNA PERFORACIÓN"—, y la tabla lo repite como filas
+("Herrajes: no se proveen", "Perforaciones: ninguna — se hacen en obra"). Es a
+propósito: sin eso el fabricante cotiza bisagras y cierre, o perfora la pestaña,
+y el pedido vuelve con preguntas.
+
+#### Hubo una hoja 2 y se sacó
+
+Durante el desarrollo la lámina tuvo una segunda hoja con dibujos de detalle:
+corte del encuentro tapa/cuerpo, despiece de las dos piezas en L, frente del
+cuerpo sin tapa y la tapa suelta. **Se eliminó**: no se entendían solos, y ni el
+fabricante ni el instalador necesitan que les expliquen cómo se arma un
+gabinete. Las medidas que esos detalles acotaban siguen estando, escritas en la
+tabla y en las especificaciones. El código de esas vistas está en el historial
+de git (`views.ts`, antes del 28-sep-2026) por si alguna vez vuelven.
 
 ### Los valores por defecto
 
@@ -482,8 +488,6 @@ si nadie dice otra cosa**, y salen impresas como cualquier otra medida.
 |---|---|
 | Solape de unión entre las piezas en L | 3 cm |
 | Paso de tornillos de unión | cada 15 cm |
-| Diámetro de agujero de amure | 6 mm |
-| Agujeros de amure | 4 por lado vertical · 3 por lado horizontal |
 | Reborde plegado del frente del cuerpo | 2 cm |
 | Reborde plegado de la tapa | 2 cm |
 | Solape de la tapa sobre el cuerpo | 1 cm |
@@ -502,7 +506,8 @@ si nadie dice otra cosa**, y salen impresas como cualquier otra medida.
   sueltas".
 - Dibujo en `server/src/services/gabineteSvg/`: `draw.ts` (primitivas y cotas),
   `views.ts` (una función por vista), `index.ts` (`buildGabineteSvgs()`, que
-  arma las dos hojas, más `especificaciones()` y `tablaMedidas()`), `types.ts`
+  arma la hoja —devuelve un array de una— más `especificaciones()` y
+  `tablaMedidas()`), `types.ts`
   (`GabineteInputs`, el contrato del dibujo).
 - Rutas en `server/src/routes/gabinete.routes.ts`.
 - Frontend: `client/src/api/gabinete.api.ts`,
@@ -533,10 +538,8 @@ container Node no trae fuentes del sistema — sin eso el PDF sale **sin texto**
 
 Frontal y lateral comparten una escala (`escalaFrontalLateral()`) porque están
 lado a lado: si cada una se escalara para llenar su celda, el mismo gabinete se
-vería de distinto alto en cada vista y el taller lo lee mal. La posterior, la
-isométrica, el despiece, el frente sin tapa y la tapa escalan cada una para su
-celda; el corte tapa/cuerpo y el detalle de pestaña son esquemáticos y **lo dicen
-en el dibujo** ("Detalle sin escala").
+vería de distinto alto en cada vista y el taller lo lee mal. La posterior y la
+isométrica escalan cada una para su celda.
 
 ## Permisos
 
@@ -555,9 +558,10 @@ rol. En el panel, "Nuevo gabinete" y el botón de eliminar se ocultan según
 
 ## Reglas y decisiones
 
-- **Solo se pide lo que se hace plegando chapa.** Bisagras, cierre, ventilación y
-  grado IP salieron del modelo, no se guardan y no se imprimen: no los provee
-  este fabricante, y un IP sin herrajes ni burlete no se puede garantizar.
+- **Solo se pide lo que se hace plegando chapa.** Bisagras, cierre, ventilación,
+  grado IP y los agujeros de amure salieron del modelo, no se guardan y no se
+  imprimen: no los provee este fabricante, un IP sin herrajes ni burlete no se
+  puede garantizar, y las perforaciones las hace el instalador.
 - **La tapa no tiene alero.** Va a ras del frente; lo único que sobresale es su
   reborde plegado. La primera versión de la lámina le dibujaba un techo saliente
   y por eso la isométrica estaba mal.
@@ -578,11 +582,10 @@ rol. En el panel, "Nuevo gabinete" y el botón de eliminar se ocultan según
 
 ## Casos borde
 
-- **Gabinete sin pestaña de amure**: la vista posterior pierde los agujeros, el
-  detalle de pestaña dice "Sin pestaña de amure" y las filas de amure salen de
-  la tabla de medidas.
-- **Fondo cerrado**: la posterior y el frente sin tapa dibujan la chapa de fondo
-  y los títulos dejan de decir "(sin fondo)".
+- **Gabinete sin pestaña de amure**: la vista posterior deja de dibujarla y la
+  fila del ancho de pestaña sale de la tabla de medidas.
+- **Fondo cerrado**: la posterior dibuja la chapa de fondo y los títulos dejan de
+  decir "(sin fondo)".
 - **Medidas muy desproporcionadas** (un gabinete muy bajo y ancho): las vistas se
   reescalan solas, pero los detalles mantienen su tamaño fijo.
 - **Falla la generación del PDF**: la ruta responde `GABINETE_PDF_ERROR` y **no**
@@ -596,5 +599,3 @@ rol. En el panel, "Nuevo gabinete" y el botón de eliminar se ocultan según
 - **Rejillas de ventilación y entradas de prensacables**: los gabinetes en obra a
   veces las llevan, pero no se piden al fabricante (se agregan después), así que
   no hay campo ni dibujo. Si alguna vez se pidieran, van como campos nuevos.
-- El despiece muestra **un tornillo representativo** sobre el solape y el paso
-  como nota, en vez de repartirlos a lo largo del solape.

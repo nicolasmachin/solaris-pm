@@ -1,6 +1,6 @@
 # Cómo trabajamos en Voltia
 
-**Manual de trabajo** · Versión 1.9 — 28 de septiembre de 2026
+**Manual de trabajo** · Versión 2.0 — 28 de septiembre de 2026
 
 > Este manual explica **qué tiene que hacer cada uno y cómo hacerlo en Voltia PM**.
 > No hay dos documentos: el procedimiento y la herramienta van juntos, porque
@@ -322,23 +322,21 @@ Mientras cargás las medidas, **el plano de la derecha se va dibujando solo**. L
 mirás, y cuando está, **Emitir lámina**: sale un PDF que queda guardado en los
 documentos del proyecto y es el que le mandás al fabricante.
 
-**Es el gabinete de siempre: todo chapa plegada y sin herrajes.** La tapa se pide
-suelta —sin bisagras y sin cierre— y lisa, sin ninguna perforación: el herraje lo
-elegimos después nosotros. La lámina se lo dice al fabricante con todas las
-letras, así no te cotiza cosas que no le pediste.
+**Es el gabinete de siempre: todo chapa plegada, sin herrajes y sin perforar.**
+La tapa se pide suelta —sin bisagras y sin cierre— y los agujeros para amurar
+los hacés vos en obra. La lámina se lo dice al fabricante con todas las letras,
+así no te cotiza ni te hace cosas que no le pediste.
 
 **Ninguna medida queda sin definir.** Todas vienen con un valor cargado —el
-espesor de la chapa, cuánto solapan las dos piezas en L, cada cuánto van los
-tornillos, el diámetro y la cantidad de agujeros para amurar, el reborde del
-frente del cuerpo, el de la tapa, cuánto montan entre sí y qué holgura queda—.
-Repasalas y corregí las que no correspondan: lo que no cambies **sale impreso
-igual**, así el taller nunca tiene que resolver nada por su cuenta.
+espesor de la chapa, el ancho de la pestaña, cuánto solapan las dos piezas en L,
+cada cuánto van los tornillos, el reborde del frente del cuerpo, el de la tapa,
+cuánto montan entre sí y qué holgura queda—. Repasalas y corregí las que no
+correspondan: lo que no cambies **sale impreso igual**, así el taller nunca
+tiene que resolver nada por su cuenta.
 
-La lámina son **dos hojas**: la primera es el gabinete terminado; la segunda
-tiene los detalles de fabricación —el corte que muestra cómo asienta la tapa
-sobre el cuerpo, el despiece de las dos piezas en L, el frente sin tapa y la
-tapa sola— y una **tabla con todas las medidas escritas**, por si el dibujo se
-imprime mal o llega por foto.
+Es **una sola hoja**: el gabinete dibujado de frente, de costado, de atrás y en
+perspectiva, las especificaciones, las notas y al pie una **tabla con todas las
+medidas escritas**, por si el dibujo se imprime mal o llega por foto.
 
 Si el fabricante pide un dato que no tiene casillero, lo agregás abajo en
 **Especificaciones adicionales** y sale impreso igual.

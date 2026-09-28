@@ -5129,10 +5129,10 @@ model CabinetDesign {
   // Si el fabricante no especifica algo, sale impresa la medida por defecto —
   // que es una decisión tomada, no un hueco— y se corrige cuando haga falta.
   //
-  // El gabinete se fabrica ENTERO EN CHAPA PLEGADA y se entrega SIN HERRAJES:
-  // la tapa va suelta, sin bisagras ni cierre, y Voltia decide después qué le
-  // pone. Por eso acá no hay campos de bisagra, cierre, ventilación ni grado
-  // IP: no son parte del pedido.
+  // El gabinete se fabrica ENTERO EN CHAPA PLEGADA y se entrega SIN HERRAJES Y
+  // SIN NINGUNA PERFORACIÓN: la tapa va suelta, y los agujeros de amure los
+  // hace Voltia en obra. Por eso acá no hay campos de bisagra, cierre,
+  // ventilación, grado IP ni agujeros: nada de eso es parte del pedido.
 
   // Armado del cuerpo. Se hace en dos piezas en L que se unen atornilladas: el
   // solape es la pestaña donde una monta sobre la otra.
@@ -5140,12 +5140,6 @@ model CabinetDesign {
   tornillos       String @default("Tornillo punta mecha tipo T1")
   solapeUnionCm   Float  @default(3)
   pasoTornillosCm Float  @default(15)
-
-  // Agujeros de amure sobre la pestaña posterior. Son las únicas perforaciones
-  // del gabinete: tapa y cuerpo se entregan lisos.
-  agujeroAmureDiamMm      Float @default(6)
-  agujerosAmureVertical   Int   @default(4)
-  agujerosAmureHorizontal Int   @default(3)
 
   // Encuentro tapa / cuerpo. El cuerpo lleva un reborde plegado hacia adentro
   // en el frente, y la tapa su propio reborde perimetral que monta sobre él.

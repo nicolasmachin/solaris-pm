@@ -106,11 +106,6 @@ export function polygon(
   return `<polygon points="${pts}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" />`;
 }
 
-export function circle(x: number, y: number, radius: number, opts: { fill?: string; stroke?: string } = {}): string {
-  const { fill = "none", stroke = COLOR.hole } = opts;
-  return `<circle cx="${r(x)}" cy="${r(y)}" r="${r(radius)}" fill="${fill}" stroke="${stroke}" stroke-width="1" />`;
-}
-
 // ─── Cotas ────────────────────────────────────────────────────────────────────
 // Línea con punta de flecha en ambos extremos y la medida en el medio, como en
 // un plano de taller. Las flechas se dibujan a mano (triángulos) en vez de con
