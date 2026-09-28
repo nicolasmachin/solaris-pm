@@ -2,6 +2,13 @@
 
 ## v11.3
 
+### 28 de septiembre de 2026
+
+#### "La aplicación de tu inversor", no "la app"
+
+- El mensaje modelo **"Ya podés encender + capacitación"** ahora dice *"la aplicación de tu inversor"* en vez de *"la app"*. Hay dos cosas distintas —el portal de Voltia y la aplicación del inversor— y "la app" no dejaba claro de cuál se hablaba.
+- El paso de la etapa 3 **"Capacitación: material y videos de la app"** pasa a llamarse **"Capacitación: material y videos"**.
+
 ### 25 de septiembre de 2026
 
 #### La factura del cliente se puede adjuntar

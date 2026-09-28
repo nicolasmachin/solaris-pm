@@ -298,6 +298,11 @@ veces siguientes, sólo el nombre. Quien lee el manual sin la app abierta no tie
 forma de saber a qué mensaje se refiere, y el manual existe justamente para
 leerse sin la app al lado.
 
+**Nunca "la app" a secas.** Hay tres cosas distintas y cada una tiene su nombre:
+**Voltia PM** (la herramienta interna), **el portal de Voltia** (lo que ve el
+cliente) y **la aplicación del inversor** (la generación en vivo). "La app"
+confunde a quien lee y, dicho al cliente, lo confunde a él.
+
 **No llevan datos de coyuntura.** Nada de "hoy 72 de 95 clientes no tienen
 acceso": describen **cómo se trabaja**, no cómo está la cartera en un momento.
 Un número medido envejece en una semana y ensucia lo que tiene que durar años;

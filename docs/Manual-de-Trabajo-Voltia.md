@@ -1,6 +1,6 @@
 # Cómo trabajamos en Voltia
 
-**Manual de trabajo** · Versión 1.4 — 25 de septiembre de 2026
+**Manual de trabajo** · Versión 1.5 — 28 de septiembre de 2026
 
 > Este manual explica **qué tiene que hacer cada uno y cómo hacerlo en Voltia PM**.
 > No hay dos documentos: el procedimiento y la herramienta van juntos, porque
@@ -149,9 +149,12 @@ Armás el **calendario de pagos**: la seña más tres cuotas.
 
 | Cuota | Cuándo |
 |---|---|
-| 50 % | Antes de la obra |
+| 50 % | Una seña al confirmar, y se completa el 50 % entre 10 y 15 días antes de la obra |
 | 30 % | Con la obra terminada |
-| 20 % | Cuando se habilita |
+| 20 % | Cuando UTE habilita |
+
+**Sin el 50 % pago no se da fecha de obra.** Con financiación bancaria, la
+condición es el crédito aprobado.
 
 **En la app:** el botón **«Crear o editar el plan de pagos»**, en esa misma
 subetapa. Antes esto vivía solo en Finanzas —vos no lo veías y Experiencia Solar
@@ -892,4 +895,4 @@ cédula o con un usuario armado con su nombre.
 
 ---
 
-*Cómo trabajamos en Voltia · v1.4 · 25 de septiembre de 2026*
+*Cómo trabajamos en Voltia · v1.5 · 28 de septiembre de 2026*

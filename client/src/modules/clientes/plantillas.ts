@@ -151,9 +151,9 @@ Nos sirve mucho para saber qué mejorar. Gracias.`,
 
 {pasos para encender}
 
-Te dejo también el acceso a la app para que veas cuánto estás generando: {accesos e instrucciones}. En un día soleado como hoy deberías ver unos {generación esperable}. Los primeros días conviene mirarla seguido para acostumbrarte.
+Te dejo también el acceso a la aplicación de tu inversor para que veas cuánto estás generando: {accesos e instrucciones}. En un día soleado como hoy deberías ver unos {generación esperable}. Los primeros días conviene mirarla seguido para acostumbrarte.
 
-Cualquier duda con la app o con lo que ves, escribime.`,
+Cualquier duda con la aplicación o con lo que ves, escribime.`,
   },
   {
     id: "encuesta_habilitacion",

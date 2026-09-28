@@ -52,3 +52,10 @@ mandarlo, ya está.
 Lo que muestra: dónde está el precinto, cómo se corta, qué llave se sube, cómo se
 verifica que quedó generando (el inversor encendido, la app mostrando producción).
 
+## Videos de reconexión del wifi (uno por marca de inversor)
+
+Surgió del Anexo E del Manual de Posventa (tema 16, "la aplicación no muestra la
+generación"). Casi siempre es que el inversor perdió internet porque el cliente
+cambió la contraseña del wifi o el router. Con un video corto por marca, el
+cliente lo resuelve solo, y es justamente el tipo de consulta que el anexo busca
+que deje de llegar.

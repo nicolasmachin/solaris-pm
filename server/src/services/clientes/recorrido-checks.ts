@@ -114,7 +114,7 @@ export const CHECKS_E2: ChecklistDef[] = [
 export const CHECKS_E3: ChecklistDef[] = [
   {
     codigo: "e3_capacitacion",
-    titulo: "Capacitación: material y videos de la app",
+    titulo: "Capacitación: material y videos",
     orden: 1,
     plazoDiasHabiles: 15,
     detalle: "No es una llamada: es el envío del material. El check es 'le mandé el material'.",
