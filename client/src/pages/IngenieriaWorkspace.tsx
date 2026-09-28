@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
+  Box,
   Calculator,
   ClipboardList,
   Download,
@@ -29,6 +30,7 @@ import { TriangulosToolPanel } from "../components/ingenieria/TriangulosToolPane
 import { PreIngenieriaToolPanel } from "../components/ingenieria/preing/PreIngenieriaToolPanel";
 import { VisitasReadOnlyPanel } from "../components/ingenieria/visitas/VisitasReadOnlyPanel";
 import { EFPToolPanel } from "../components/ingenieria/efp/EFPToolPanel";
+import { GabineteToolPanel } from "../components/ingenieria/gabinete/GabineteToolPanel";
 
 const MONTHS_ES_SHORT = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 function formatShortDate(iso: string): string {
@@ -44,6 +46,7 @@ function iconFor(key: string): LucideIcon {
   if (key === "preing") return ClipboardList;
   if (key === "visitas") return Mic;
   if (key === "efp") return BookOpen;
+  if (key === "gabinete") return Box;
   if (key === "memoria") return FileText;
   return Lightbulb;
 }
@@ -155,6 +158,7 @@ export function IngenieriaWorkspace() {
                   {h.key === "preing" && <PreIngenieriaToolPanel projectId={id} />}
                   {h.key === "visitas" && <VisitasReadOnlyPanel projectId={id} />}
                   {h.key === "efp" && <EFPToolPanel projectId={id} />}
+                  {h.key === "gabinete" && <GabineteToolPanel projectId={id} />}
                 </ToolAccordion>
               </div>
             );

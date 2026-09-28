@@ -1,6 +1,6 @@
 # Cómo trabajamos en Voltia
 
-**Manual de trabajo** · Versión 1.6 — 28 de septiembre de 2026
+**Manual de trabajo** · Versión 1.7 — 28 de septiembre de 2026
 
 > Este manual explica **qué tiene que hacer cada uno y cómo hacerlo en Voltia PM**.
 > No hay dos documentos: el procedimiento y la herramienta van juntos, porque
@@ -306,6 +306,37 @@ con Experiencia Solar quién le avisa al cliente.
 | Si lo relevado no coincide con lo vendido | Asesor comercial del proyecto |
 | Qué hay que ajustar del paquete | Gerente de Operaciones (después de la validación) |
 | Que se corrija algo de la instalación | **Gerente de Operaciones — nunca al capataz** |
+
+### 4.1 · El gabinete metálico que se manda a fabricar
+
+Cuando la obra necesita un gabinete a medida, **no lo dibujás a mano ni reenviás
+el plano del pedido anterior**: lo armás en el proyecto y Voltia PM te da la
+lámina para mandarle al fabricante.
+
+Entrás al proyecto en Ingeniería, abrís **Gabinete metálico** y le das **Nuevo
+gabinete**. Viene precargado el que más pedimos —50 × 85 × 26 cm, chapa
+galvanizada de 1,5 mm, fondo abierto y pestaña de 3 cm para amurar—, así que
+muchas veces solo cambiás lo que difiere.
+
+Mientras cargás las medidas, **el plano de la derecha se va dibujando solo**. Lo
+mirás, y cuando está, **Emitir lámina**: sale un PDF que queda guardado en los
+documentos del proyecto y es el que le mandás al fabricante.
+
+Lo importante: **todo lo que el taller pregunta tiene que estar cargado antes de
+emitir**. El espesor y el tipo de chapa, cómo se arma el cuerpo, con qué
+tornillos, y las medidas del encuentro entre la puerta y el marco —cuánto dobla
+el perfil de la puerta, cuánto el del marco, cuánto montan entre sí y qué
+holgura queda—. Ese último detalle sale dibujado en corte, que es lo que
+necesitan para doblar los perfiles.
+
+Si el fabricante pide un dato que no tiene casillero, lo agregás abajo en
+**Especificaciones adicionales** y sale impreso igual.
+
+Si la obra lleva **más de un gabinete** (el del medidor y el de protecciones,
+por ejemplo), hacés uno por cada uno. Y si hay que corregir algo después de
+haber mandado el pedido, corregís y volvés a emitir: la lámina nueva sale como
+v2 y **la anterior no se borra**, porque puede ser la que el fabricante tiene
+sobre la mesa.
 
 ### Qué registrás
 

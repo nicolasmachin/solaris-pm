@@ -4,6 +4,17 @@
 
 ### 28 de septiembre de 2026
 
+#### Gabinete metálico: el plano para el fabricante se arma solo
+
+- Herramienta nueva en **Ingeniería → Gabinete metálico**, dentro del proyecto. Se cargan las medidas y la app arma la **lámina que se le manda al fabricante**, con las vistas acotadas, las especificaciones de taller y las notas.
+- La lámina trae **siete vistas**: frontal, lateral, posterior, isométrica, interior con la puerta abierta, detalle de la pestaña de amure y **corte del encuentro puerta/marco** —el que muestra cómo asienta la puerta, que es lo que el taller siempre termina preguntando por teléfono—.
+- Todo lo que antes era texto fijo ahora es un campo: **espesor y tipo de chapa**, cómo se arma (dos piezas en L), con qué tornillos, el cierre, las bisagras, la ventilación, el grado IP, el acabado y la tolerancia. Se responden en la hoja las dos preguntas de siempre: *espesor* y *chapa*.
+- **La vista previa se actualiza mientras cargás las medidas**, así se ve el plano antes de emitirlo.
+- La lámina sale con **de qué obra es, cuántas unidades hay que fabricar y a quién responderle**, y un campo de notas libres para lo que haya que aclarar.
+- **Un proyecto puede tener varios gabinetes** (el del medidor, el de protecciones), cada uno con su lámina.
+- **Emitir lámina** genera el PDF y lo guarda en los documentos del proyecto como **v1, v2, v3…**: las anteriores no se pisan, porque cada una puede haber salido en un pedido distinto.
+- Si el fabricante pide un dato que todavía no tiene casillero, se agrega en **Especificaciones adicionales** y sale impreso igual.
+
 #### Plan de Protección contra Granizo
 
 - Nueva pestaña **Plan granizo** en **Experiencia Solar**: todos los clientes con el plan, con su estado, cuándo vence, el próximo cobro y qué les falta. Arriba, cuántos planes cubren hoy, cuánto se cobró en el año, cuánto se gastó en reposiciones y cuánto queda por cobrar.

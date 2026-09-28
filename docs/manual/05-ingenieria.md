@@ -1,8 +1,9 @@
 # 05 · Ingeniería
 
 > **Capítulo parcial.** Están documentados el **consolidador de materiales**, el
-> **catálogo de materiales** y la **foto de referencia del material**. El resto de
-> las herramientas existe y está en producción; falta escribirlas.
+> **catálogo de materiales**, la **foto de referencia del material** y el
+> **diseñador de gabinetes**. El resto de las herramientas existe y está en
+> producción; falta escribirlas.
 
 El workspace de ingeniería y sus herramientas: unifilar, materiales, pre-ingeniería, visitas y proyecto final.
 
@@ -410,3 +411,147 @@ sobre cómo funciona hoy**:
 - `docs/features/*/SPEC.md` si existe para este módulo: es diseño previo, puede
   contradecir a la implementación.
 - `docs/pendientes/` para saber qué falta.
+
+
+---
+
+# Diseñador de gabinetes metálicos
+
+## Para qué existe
+
+Los gabinetes de intemperie se mandan a fabricar a medida. Hasta ahora el plano
+se dibujaba a mano una vez, se mandaba por WhatsApp y cada pedido nuevo era
+editar aquel dibujo o volver a explicarlo. El ida y vuelta era siempre el mismo:
+el fabricante preguntaba **espesor** y **chapa**, y en la conversación aparecían
+medidas que en el plano no estaban (el perfil de la puerta, cómo se arma el
+cuerpo).
+
+La herramienta genera esa lámina desde los datos del gabinete, así todo lo que el
+taller necesita sale impreso en la hoja.
+
+## Cómo se usa
+
+Dentro del workspace del proyecto (`/ingenieria/proyecto/:id`), tarjeta
+**Gabinete metálico**.
+
+1. **Nuevo gabinete** crea uno con los valores del gabinete que más se pide
+   (50 × 85 × 26 cm, chapa galvanizada de 1,5 mm, fondo abierto, pestaña de 3 cm).
+2. Se ajustan las medidas en el formulario de la izquierda. **La lámina de la
+   derecha se redibuja sola** (450 ms después de dejar de tipear).
+3. **Emitir lámina (PDF)** guarda los cambios y congela una versión.
+
+Un proyecto puede tener **varios gabinetes**; cada uno lleva su nombre, sus
+medidas y su propio historial de láminas.
+
+### Qué lleva la lámina
+
+Siete vistas, todas acotadas con las medidas cargadas: frontal, lateral derecha,
+posterior, isométrica, interior con la puerta abierta, detalle de la pestaña de
+amure y **corte del encuentro puerta/marco**. Más las especificaciones
+generales, el recuadro de notas, de qué obra es el pedido, cuántas unidades y a
+quién responderle.
+
+El **corte de puerta y marco** se agregó porque un instalador que ya había
+fabricado gabinetes marcó que faltaba: sin ver cómo asienta la puerta sobre el
+marco, el taller no sabe cómo doblar los perfiles. Acota ala de la puerta, ala
+del marco, solape y holgura, y es el único dibujo de la lámina **sin escala**
+(lo aclara al pie): es un detalle ampliado que se lee por sus cotas.
+
+## Cómo funciona
+
+- Modelos `CabinetDesign` y `CabinetDesignVersion` (`schema.prisma`). El diseño
+  se edita in-place; **emitir** crea una versión con un `snapshot` JSON de todos
+  los campos, para que una lámina vieja siga siendo reproducible aunque el
+  diseño cambie después.
+- Dibujo en `server/src/services/gabineteSvg/`: `draw.ts` (primitivas y cotas),
+  `views.ts` (una función por vista), `index.ts` (`buildGabineteSvg()`, que
+  arma la hoja A4), `types.ts` (`GabineteInputs`, el contrato del dibujo).
+- Rutas en `server/src/routes/gabinete.routes.ts`.
+- Frontend: `client/src/api/gabinete.api.ts`,
+  `components/ingenieria/gabinete/GabineteToolPanel.tsx` (lista) y
+  `GabineteBuilder.tsx` (constructor + preview).
+
+### El preview sale del server, no del navegador
+
+`POST /gabinetes/preview` devuelve el **mismo SVG** que después se rasteriza al
+PDF, y el constructor lo inyecta tal cual. Es deliberado: si el dibujo se
+reimplementara en el cliente para que el preview fuera instantáneo, las dos
+versiones se despegarían en la primera corrección de geometría y el fabricante
+recibiría algo distinto de lo que se vio en pantalla. El costo es un request por
+cada pausa al tipear.
+
+Las respuestas fuera de orden se descartan con un contador (`lastRequest`): sin
+eso, una petición lenta puede pisar el dibujo de una más nueva.
+
+### SVG → PDF
+
+`renderSvgToPdf()` en `server/src/services/svgPdf.service.ts`, compartido con el
+generador de unifilares: rasteriza con resvg-js y embebe el PNG con pdf-lib. Las
+fuentes Roboto viven en `unifilarSvg/fonts/` y se cargan explícitamente porque
+el container Node no trae fuentes del sistema — sin eso el PDF sale **sin
+texto**.
+
+### Escalas
+
+Frontal y lateral comparten una escala (`escalaFrontalLateral()`) porque están
+lado a lado: si cada una se escalara para llenar su celda, el mismo gabinete se
+vería de distinto alto en cada vista y el taller lo lee mal. La posterior, la
+isométrica y la interior escalan cada una para su celda; los dos detalles
+(pestaña y corte de puerta) son esquemáticos y no están a escala.
+
+## Permisos
+
+| Endpoint | Permiso |
+|---|---|
+| `GET /projects/:projectId/gabinetes` · `GET /gabinetes/:id` | `INGENIERIA:VIEW` |
+| `POST /gabinetes/preview` | `INGENIERIA:VIEW` |
+| `POST /projects/:projectId/gabinetes` · `PATCH /gabinetes/:id` · `POST /gabinetes/:id/emitir` | `INGENIERIA:EDIT` |
+| `DELETE /gabinetes/:id` | `INGENIERIA:DELETE` |
+
+Con la matriz vigente: ven la herramienta todos los roles con `INGENIERIA:VIEW`
+(incluidos `ASESOR_COMERCIAL` y `LOGISTICA`, en lectura), y **diseñan y emiten**
+`ADMIN`, `INGENIERIA` y `GERENTE_INGENIERIA`. No hay ningún guard por nombre de
+rol. En el panel, "Nuevo gabinete" y el botón de eliminar se ocultan según
+`usePermission`.
+
+## Reglas y decisiones
+
+- **Las láminas emitidas no se pisan.** A diferencia del unifilar —que mantiene
+  solo el plano vigente y soft-deletea los anteriores—, acá cada versión queda:
+  una lámina vieja puede ser un pedido que el fabricante todavía tiene en curso.
+- **Borrar un gabinete no borra sus láminas**: quedan como documentos del
+  proyecto, por lo mismo.
+- **Las medidas son exteriores**, y la lámina lo dice en las notas.
+- **Campos opcionales que no se completan no se imprimen** (el ala de la tapa,
+  por ejemplo). El corte de puerta es la excepción: si no hay medidas cargadas
+  se dibuja igual con valores por defecto (2 / 2 / 1 cm y 2 mm), porque un
+  gabinete con puerta siempre tiene ese encuentro y omitir el detalle era peor
+  que mostrarlo con medidas a confirmar.
+- **Especificaciones adicionales** (`specsExtra`, JSON) existe para no tener que
+  tocar la app cada vez que el taller pide un dato nuevo: se agrega como
+  etiqueta + valor y sale impreso al final de las especificaciones. Cuando un
+  dato se vuelve habitual, conviene promoverlo a campo propio.
+
+## Casos borde
+
+- **Gabinete sin pestaña de amure**: la vista posterior pierde los agujeros y el
+  detalle de pestaña dice "Sin pestaña de amure".
+- **Fondo cerrado**: la posterior y la interior dibujan la chapa de fondo y los
+  títulos dejan de decir "(sin fondo)".
+- **Medidas muy desproporcionadas** (un gabinete muy bajo y ancho): las vistas se
+  reescalan solas, pero los dos detalles mantienen su tamaño fijo.
+- **Falla la generación del PDF**: la ruta responde `GABINETE_PDF_ERROR` y **no**
+  crea la versión, para que no quede una versión sin lámina.
+- El texto de las especificaciones se corta en renglones con una medida
+  **aproximada** del ancho (`wrap()` en `draw.ts`, 0,5 em por carácter): un valor
+  muy largo en una especificación adicional puede quedar algo corrido.
+
+## Lo que falta
+
+Las medidas de taller todavía no están cerradas: al cierre de esta versión
+estaban pendientes de confirmar con el fabricante los detalles de **rebordes y
+grueso de las pestañas donde se unen las dos piezas en L**. Cuando lleguen, el
+lugar donde sumarlas es un campo propio en `CabinetDesign` + su cota en la vista
+que corresponda (o, si son datos sueltos, `specsExtra`). También queda pendiente
+una **vista de despiece de las dos piezas en L**, que hoy solo se menciona como
+texto en las especificaciones.

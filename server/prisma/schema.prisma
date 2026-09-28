@@ -150,6 +150,7 @@ enum AuditEntityType {
   seguro_granizo_poliza
   seguro_granizo_siniestro
   plan_granizo_documento
+  cabinet_design
 }
 
 enum AuditAction {
@@ -681,6 +682,7 @@ model Project {
   uteProcesses                    UteProcess[]
   clients                         ProjectClient[]
   unifilarVersions                UnifilarVersion[]
+  cabinetDesigns                  CabinetDesign[]
   preIngenieriaVersions           PreIngenieriaVersion[]
   contractDraft                   ContractDraft?
   contractVersions                ContractVersion[]
@@ -1559,6 +1561,7 @@ enum FileAttachmentTipo {
   PRE_INGENIERIA
   MINUTA_RELEVAMIENTO
   REPORTE_FOTOVOLTAICO
+  GABINETE
   OTRO
 }
 
@@ -5090,4 +5093,99 @@ model PlanGranizoVersion {
   @@unique([projectId, versionNumber])
   @@index([projectId, status])
   @@map("plan_granizo_versions")
+}
+
+
+// ─── Gabinetes metálicos (Ingeniería) ─────────────────────────────────────────
+//
+// Herramienta para diseñar el gabinete que se manda a fabricar: se cargan las
+// medidas y las especificaciones de taller, y la app emite una lámina PDF con
+// las vistas acotadas, lista para mandarle al fabricante.
+//
+// Un proyecto puede tener varios (el del medidor, el de protecciones), y cada
+// uno versiona sus láminas: el diseño se edita in-place y "Emitir lámina"
+// congela un snapshot + el PDF, como el unifilar.
+
+model CabinetDesign {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  nombre String
+
+  // Medidas exteriores, en centímetros (la lámina aclara que son exteriores).
+  anchoCm        Float
+  altoCm         Float
+  profundidadCm  Float
+
+  // Construcción
+  fondoAbierto    Boolean @default(true)
+  pestanaAmure    Boolean @default(true)
+  pestanaAnchoCm  Float   @default(3)
+  // Reborde/ala de la tapa frontal y cómo se arma el cuerpo. Nullables porque
+  // no siempre los especifica el fabricante.
+  alaTapaCm       Float?
+  union           String?
+  tornillos       String?
+
+  // Perfil del encuentro puerta / marco, para el corte transversal de la
+  // lámina. Sin esto el taller no sabe cómo asienta la puerta: es lo primero
+  // que preguntan los que ya fabricaron gabinetes.
+  perfilPuertaCm   Float?
+  perfilMarcoCm    Float?
+  solapePuertaCm   Float?
+  holguraPuertaMm  Float?
+
+  // Chapa y terminación
+  material  String @default("Chapa galvanizada en caliente")
+  espesorMm Float  @default(1.5)
+  acabado   String @default("Galvanizado")
+
+  // Cierre y aberturas
+  tipoCierre  String  @default("A presión (sin candado)")
+  bisagras    String  @default("Ocultas (interior)")
+  ventilacion Boolean @default(false)
+  gradoIp     String? @default("IP54")
+
+  toleranciaMm Float @default(2)
+
+  // Pedido al fabricante
+  cantidad Int     @default(1)
+  notas    String?
+
+  // Especificaciones que el fabricante pida y todavía no tengan campo propio:
+  // array de { etiqueta, valor }. Se imprimen al final de las especificaciones.
+  specsExtra Json?
+
+  versions CabinetDesignVersion[]
+
+  createdById String
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6)
+  deletedAt   DateTime? @db.Timestamptz(6)
+
+  @@index([projectId, deletedAt])
+  @@map("cabinet_designs")
+}
+
+model CabinetDesignVersion {
+  id       String        @id @default(cuid())
+  designId String
+  design   CabinetDesign @relation(fields: [designId], references: [id], onDelete: Cascade)
+
+  versionNumber Int
+  // Congela todos los campos del diseño al momento de emitir, para que la
+  // lámina vieja siga siendo reproducible aunque el diseño cambie.
+  snapshot Json
+  label    String?
+
+  // PDF emitido (FileAttachment del proyecto, toolSource "gabinete").
+  fileAttachmentId String?
+
+  createdById String
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([designId, versionNumber])
+  @@index([designId])
+  @@map("cabinet_design_versions")
 }

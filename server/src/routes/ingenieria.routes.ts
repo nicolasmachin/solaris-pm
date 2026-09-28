@@ -271,6 +271,13 @@ export async function registerIngenieriaRoutes(app: FastifyInstance) {
       const reportesCount = await prisma.visitReport.count({
         where: { visit: { projectId: project.id, deletedAt: null } },
       });
+      const gabinetesInfo = await prisma.cabinetDesign.findMany({
+        where: { projectId: project.id, deletedAt: null },
+        select: { _count: { select: { versions: true } } },
+      });
+      const gabinetesCount = gabinetesInfo.length;
+      const gabinetesLaminas = gabinetesInfo.reduce((acc, g) => acc + g._count.versions, 0);
+
       const efpInfo = await prisma.engineeringFinalProject.findFirst({
         where: { projectId: project.id, deletedAt: null },
         select: {
@@ -356,6 +363,20 @@ export async function registerIngenieriaRoutes(app: FastifyInstance) {
               : `v${efpLastVersion ?? "?"} · ${efpVersionsCount} ${efpVersionsCount === 1 ? "versión" : "versiones"}${efpStatus ? ` · ${efpStatus}` : ""}`,
           disponible: true,
           ruta: `/ingenieria/proyecto/${project.id}/proyecto-final`,
+        },
+        {
+          key: "gabinete",
+          nombre: "Gabinete metálico",
+          icono: "box",
+          estado:
+            gabinetesCount === 0
+              ? "Sin gabinetes diseñados"
+              : `${gabinetesCount} gabinete${gabinetesCount === 1 ? "" : "s"}` +
+                (gabinetesLaminas > 0
+                  ? ` · ${gabinetesLaminas} lámina${gabinetesLaminas === 1 ? "" : "s"} emitida${gabinetesLaminas === 1 ? "" : "s"}`
+                  : " · sin láminas emitidas"),
+          disponible: true,
+          ruta: null,
         },
         {
           key: "memoria",
