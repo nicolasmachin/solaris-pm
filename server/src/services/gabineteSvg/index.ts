@@ -225,16 +225,19 @@ function hoja(g: GabineteInputs): string {
   );
   parts.push(bulletList(colC, row1Y + 18, wC, especificaciones(g), 9.5).svg);
 
-  // Fila 2: posterior + la tapa + notas. La tapa va acá, al lado de la
-  // posterior: las dos son vistas verticales y se leen juntas.
+  // Fila 2: posterior + la tapa + isométrica. Las notas bajan a la fila 3:
+  // pegadas acá le comían el ancho al plano de la tapa y terminaban
+  // superpuestas con su rótulo.
   const row2Y = row1Y + row1H + 30;
   const row2H = 300;
-  parts.push(vistaPosterior({ x: colA, y: row2Y, w: wA + 60, h: row2H }, g));
-  parts.push(planoTapa({ x: colB + 56, y: row2Y, w: wB - 16, h: row2H }, g));
-  parts.push(notasBox(colC, row2Y - 4, wC, notas(g)).svg);
+  parts.push(vistaPosterior({ x: colA, y: row2Y, w: contentW * 0.33, h: row2H }, g));
+  parts.push(planoTapa({ x: left + contentW * 0.34, y: row2Y, w: contentW * 0.36, h: row2H }, g));
+  parts.push(
+    vistaIsometrica({ x: left + contentW * 0.72, y: row2Y + 20, w: contentW * 0.28, h: row2H - 40 }, g),
+  );
 
-  // Fila 3: la isométrica, chica — es para ubicarse, no lleva cotas.
-  parts.push(vistaIsometrica({ x: left + contentW * 0.06, y: row2Y + row2H + 26, w: contentW * 0.34, h: 190 }, g));
+  // Fila 3: las notas, en el hueco que quedaba al pie.
+  parts.push(notasBox(left, row2Y + row2H + 26, contentW * 0.56, notas(g)).svg);
 
   parts.push(...pie(g));
   return svgClose(parts);

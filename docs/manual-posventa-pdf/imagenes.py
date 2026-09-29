@@ -9,6 +9,11 @@ la línea de acá. El script que las prepara en la medida correcta es
 `preparar-imagenes.mjs`; el que saca las capturas de la app, `capturas.mjs`.
 """
 
+# El logo de marca, en las tres formas que usa la maqueta.
+LOGO = "/_blob/fceabe45b0a94985f8b086c5659dd1b0"              # completo, portada y cierre
+LOGO_ISOTIPO = "/_blob/baa0359c4ef0ed78003b3e040a4963aa"       # solo la V, pies sobre blanco
+LOGO_ISOTIPO_BLANCO = "/_blob/17e994db89caae8d602d7657a2149918"  # solo la V, pies sobre azul
+
 # Fotos de instalaciones nuestras.
 PORTADA = "/_blob/b2f147bf02b92484b8558c53a06e0ae0"          # aérea, tres filas a suelo
 PORTADILLA_E1 = "/_blob/ba026e93a5c4deccb1cce71f3f8a2bf9"     # estructura en obra

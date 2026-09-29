@@ -54,7 +54,14 @@ ANCHO, ALTO = 794, 1123
 
 def pagina(titulo_tab, cuerpo, numero, fondo="#ffffff", padding="72px 72px 56px",
            color_pie=GRIS_CLARO, borde_pie=BORDE):
-    """El armazón de una hoja: head, helmet, marco A4, pie y bloque de lógica."""
+    """El armazón de una hoja: head, helmet, marco A4, pie y bloque de lógica.
+
+    El pie lleva el isotipo. Va la variante blanca cuando la hoja es de fondo
+    azul —se detecta por el color del pie, que en esas es claro—, porque el
+    isotipo azul sobre azul no se ve.
+    """
+    import imagenes as IMG
+    iso = IMG.LOGO_ISOTIPO if color_pie == GRIS_CLARO else IMG.LOGO_ISOTIPO_BLANCO
     return f"""<!doctype html>
 <html lang="es">
 <head>
@@ -74,7 +81,7 @@ body {{ margin: 0; font-family: {SERIF}; background: #ffffff; }}
 {cuerpo}
   <div style="flex-grow: 1"></div>
   <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 11px; border-top: 1px solid {borde_pie}; font-family: {SANS}; font-size: 11px; color: {color_pie}">
-    <span>Manual de Posventa · Experiencia Solar · Voltia</span>
+    <span style="display: flex; align-items: center; gap: 7px"><img src="{iso}" alt="Voltia" style="display: block; height: 13px; width: auto">Manual de Posventa · Experiencia Solar</span>
     <span>{numero}</span>
   </div>
 </div>

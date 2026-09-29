@@ -36,7 +36,9 @@ export function escalaFrontalLateral(g: GabineteInputs, frontal: Box, lateral: B
 }
 
 function viewTitle(box: Box, label: string): string {
-  return text(box.x + box.w / 2, box.y - 6, label, {
+  // Separado del borde de la celda: con un gabinete alto, el dibujo llena la
+  // caja y la línea de cota de arriba rozaba el título.
+  return text(box.x + box.w / 2, box.y - 14, label, {
     size: 11,
     bold: true,
     anchor: "middle",
@@ -57,7 +59,7 @@ export function cm(n: number): string {
 // sobresale. Acotada en ancho (abajo) y alto (izquierda).
 
 export function vistaFrontal(box: Box, g: GabineteInputs, scale?: number): string {
-  const pad = { left: 46, right: 20, top: 20, bottom: 34 };
+  const pad = { left: 46, right: 20, top: 24, bottom: 36 };
   const availW = box.w - pad.left - pad.right;
   const availH = box.h - pad.top - pad.bottom;
   const s = scale ?? fitScale(g.anchoCm, g.altoCm, availW, availH);
@@ -91,7 +93,11 @@ export function vistaFrontal(box: Box, g: GabineteInputs, scale?: number): strin
 // ─── Vista lateral ────────────────────────────────────────────────────────────
 
 export function vistaLateral(box: Box, g: GabineteInputs, scale?: number): string {
-  const pad = { left: 86, right: 96, top: 20, bottom: 40 };
+  // top: "reborde tapa" y "pestaña"; bottom: la cota de profundidad y
+  // "reborde frente".
+  // El pad izquierdo tiene que contener los rótulos que salen para ese lado:
+  // si no, se meten en la vista frontal, que está pegada.
+  const pad = { left: 104, right: 96, top: 46, bottom: 60 };
   const availW = box.w - pad.left - pad.right;
   const availH = box.h - pad.top - pad.bottom;
   const s = scale ?? fitScale(g.profundidadCm, g.altoCm, availW, availH);
@@ -128,18 +134,24 @@ export function vistaLateral(box: Box, g: GabineteInputs, scale?: number): strin
     // ── Cotas de la tapa y del frente, a la izquierda.
     extLine(x - rebTapa + solape, y - 4, x - rebTapa + solape, y - 26),
     extLine(x + solape, y - 4, x + solape, y - 26),
-    line(x - rebTapa + solape - 40, y - 22, x + solape + 4, y - 22, { color: COLOR.dim }),
-    text(x - rebTapa + solape - 44, y - 18, `reborde tapa ${cm(g.rebordeTapaCm)}`, {
-      size: 9,
+    line(x - rebTapa + solape - 34, y - 22, x + solape + 4, y - 22, { color: COLOR.dim }),
+    text(x - rebTapa + solape - 38, y - 22, "reborde", {
+      size: 8.5,
+      color: COLOR.dim,
+      anchor: "end",
+    }),
+    text(x - rebTapa + solape - 38, y - 12, `tapa ${cm(g.rebordeTapaCm)}`, {
+      size: 8.5,
       color: COLOR.dim,
       anchor: "end",
     }),
 
     extLine(x, y + h + 4, x, y + h + 40),
     extLine(x + rebFrente, y + h + 4, x + rebFrente, y + h + 40),
-    line(x - 40, y + h + 36, x + rebFrente + 4, y + h + 36, { color: COLOR.dim }),
-    text(x - 44, y + h + 40, `reborde frente ${cm(g.rebordeFrenteCm)}`, {
-      size: 9,
+    line(x - 34, y + h + 36, x + rebFrente + 4, y + h + 36, { color: COLOR.dim }),
+    text(x - 38, y + h + 34, "reborde", { size: 8.5, color: COLOR.dim, anchor: "end" }),
+    text(x - 38, y + h + 44, `frente ${cm(g.rebordeFrenteCm)}`, {
+      size: 8.5,
       color: COLOR.dim,
       anchor: "end",
     }),
@@ -176,7 +188,9 @@ export function vistaLateral(box: Box, g: GabineteInputs, scale?: number): strin
 // Muestra la pestaña perimetral de amure y, si el fondo es abierto, el hueco.
 
 export function vistaPosterior(box: Box, g: GabineteInputs): string {
-  const pad = { left: 40, right: 100, top: 14, bottom: 40 };
+  // bottom generoso: debajo del dibujo van la cota de la pestaña y las dos
+  // líneas de la unión de las piezas en L.
+  const pad = { left: 40, right: 100, top: 18, bottom: 96 };
   const availW = box.w - pad.left - pad.right;
   const availH = box.h - pad.top - pad.bottom;
   const s = fitScale(g.anchoCm, g.altoCm, availW, availH);
@@ -215,12 +229,16 @@ export function vistaPosterior(box: Box, g: GabineteInputs): string {
         color: COLOR.dim,
         anchor: "end",
       }),
-      leader(x + w - flange / 2, y + flange * 1.6, x + w + 14, y + flange * 1.4, [
-        `Pestaña perimetral de ${cm(g.pestanaAnchoCm)}`,
-        `para amure, en toda la vuelta.`,
-        `SIN perforar: los agujeros`,
-        `se hacen en obra.`,
-      ], { size: 9 }),
+      // Líneas cortas a propósito: la celda de esta vista es angosta y con
+      // renglones largos la llamada se metía en el dibujo de al lado.
+      leader(x + w - flange / 2, y + flange * 1.6, x + w + 12, y + flange * 1.2, [
+        `Pestaña perimetral`,
+        `de ${cm(g.pestanaAnchoCm)} para amure,`,
+        `en toda la vuelta.`,
+        `SIN perforar: los`,
+        `agujeros se hacen`,
+        `en obra.`,
+      ], { size: 8.5 }),
     );
   }
 
@@ -325,7 +343,10 @@ export function vistaIsometrica(box: Box, g: GabineteInputs): string {
 // en el taller se llama el espesor de la tapa.
 
 export function planoTapa(box: Box, g: GabineteInputs): string {
-  const pad = { left: 44, right: 22, top: 26, bottom: 48 };
+  // El pad derecho reserva lugar para el canto Y para su rótulo: sin eso el
+  // dibujo se escalaba hasta el borde de la celda y el texto se metía en el
+  // bloque de al lado.
+  const pad = { left: 44, right: 86, top: 26, bottom: 70 };
   const availH = box.h - pad.top - pad.bottom;
   // El canto va al lado del frente, a la misma escala, para que se lea que es
   // la misma pieza vista de otro lado.
@@ -384,7 +405,7 @@ export function planoTapa(box: Box, g: GabineteInputs): string {
     text(xCanto + reb + 14, y + h + 22, `reborde`, { size: 9, color: COLOR.dim }),
     text(xCanto + reb + 14, y + h + 33, cm(g.rebordeTapaCm), { size: 9, color: COLOR.dim }),
 
-    text(x, box.y + box.h - 4, "Plegada en las cuatro caras · sin perforar", {
+    text(x, y + h + 56, "Plegada en las cuatro caras · sin perforar", {
       size: 8.5,
       color: COLOR.text,
     }),
