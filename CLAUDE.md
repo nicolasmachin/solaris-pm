@@ -268,24 +268,42 @@ marcados como tales. No son fuente de verdad y no se actualizan.
 
 ## Manuales del equipo (`docs/*.md`) — OBLIGATORIO
 
-Además del manual técnico hay **dos manuales escritos para el equipo**, no para
-desarrollo. Están en la raíz de `docs/` y **también se actualizan al cerrar cada
-funcionalidad**, en la misma tanda que el CHANGELOG y el manual técnico:
+Además del manual técnico hay **manuales escritos para el equipo**, no para
+desarrollo. Están en la raíz de `docs/` y **todo cambio que afecte cómo se
+trabaja actualiza todos los que toca**, en la misma tanda que el CHANGELOG y el
+manual técnico. No es "el manual del área y listo": si el cambio aparece en tres
+documentos, se corrigen los tres.
 
-| Manual | Qué cubre | Para quién |
+Son de dos niveles:
+
+| Documento | Qué cubre | Estado |
 |---|---|---|
-| `Manual-de-Trabajo-Voltia.md` | Qué hace **cada rol** y cómo lo hace en la app, más "la app pantalla por pantalla" | Todo el equipo; cada uno lee su área |
-| `Manual-Posventa-Experiencia-Solar.md` | El proceso de posventa a fondo: el recorrido en 3 etapas, los hitos, plazos, mensajes modelo y reglas duras | Experiencia Solar (los demás, lo suyo) |
+| **Procedimiento General de Trabajo (PGT) de Voltia** | Lo que **conecta** a las áreas: el recorrido, las reglas comunes, qué hace cada área a grandes rasgos, dónde termina su trabajo y cómo se lo pasa a la siguiente. **Solo generalidades, sin detalle.** | Hoy es `Manual-de-Trabajo-Voltia.md`; se está recortando a PGT |
+| **Manual de trabajo de Ventas** | El detalle del área: cómo se hace cada cosa y en qué pantalla | Por armar |
+| **Manual de trabajo de Ingeniería** | Ídem | Por armar |
+| **Manual de trabajo de Operaciones** | Ídem, con **Obra** y **Logística** como sub-áreas | Por armar |
+| **Manual de trabajo de Tramitación UTE** | Ídem | Por armar |
+| `Manual-Posventa-Experiencia-Solar.md` | El proceso de posventa a fondo: el recorrido en 3 etapas, los hitos, plazos, mensajes modelo y reglas duras | Existe (a confirmar si pasa a llamarse "Manual de trabajo de Experiencia Solar") |
 
-Cómo decidir dónde va un cambio:
+Cómo decidir qué se toca:
 
-- **Toca a un rol** (cotizador, calendario, una pantalla nueva) → al manual de
-  trabajo, en el capítulo de ese rol y, si cambia una pantalla, también en "La
-  app, pantalla por pantalla".
+- **Cambia cómo se hace algo dentro de un área** (el cotizador, el gabinete, una
+  pantalla nueva) → al **manual de esa área**.
+- **Cambia cómo se conectan las áreas** (un traspaso, quién avisa a quién, una
+  regla común, qué hace un área o dónde termina su trabajo) → al **PGT**, y
+  además a los manuales de **cada área involucrada**.
 - **Toca el trato con el cliente de posventa** (reportes, avisos, encuestas,
-  cobros en la ficha) → **a los dos**: resumido en el capítulo 8 del de trabajo y
-  desarrollado en el de posventa.
+  cobros en la ficha) → al **de Experiencia Solar**, y a los de las áreas que
+  intervienen.
 - **Es solo interno** (refactors, permisos de backend) → a ninguno.
+
+Ante la duda, se revisan todos: es más barato leer un capítulo de más que dejar
+un manual diciendo lo contrario que otro.
+
+**Cada manual tiene su canvas A4 y su PDF** (ver `docs/manual-posventa-pdf/` y
+`docs/manual-trabajo-pdf/`). El `.md` es la fuente de verdad; cuando cambia, en
+la misma tanda se regenera y se republica su canvas y se rehace su PDF. Un canvas
+desactualizado es un manual desactualizado: es lo que el equipo lee.
 
 Están escritos **en tercera persona, hablándole al rol y no al lector**, y en
 criollo: "el asesor carga", "Experiencia Solar avisa", "se entra desde
@@ -315,7 +333,7 @@ si el dato importa, va a un informe, no al manual.
 
 Al tocarlos, **subir la versión de su cabecera** (`Versión 1.1 — {fecha}`).
 
-> Estos dos quedaron dos semanas sin actualizar porque no estaban en esta regla:
+> Los dos primeros quedaron dos semanas sin actualizar porque no estaban en esta regla:
 > cada vez que se cerraba algo se actualizaban el CHANGELOG y el manual técnico,
 > y estos no. De ahí que estén acá.
 
