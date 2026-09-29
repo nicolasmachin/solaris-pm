@@ -1,6 +1,6 @@
 # Generador de los documentos de la reunión
 
-Convierte `docs/Manual-de-Trabajo-Voltia.md` en la página HTML y en el PDF.
+Convierte `docs/Procedimiento-General-de-Trabajo-Voltia.md` (antes `Manual-de-Trabajo-Voltia.md`) en la página HTML y en el PDF.
 
 Está versionado porque el scratchpad de la sesión se borra: sin esto, cada vez
 que hay que regenerar el PDF se rehace el conversor desde cero.

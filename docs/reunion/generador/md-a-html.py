@@ -7,7 +7,7 @@ un ítem de lista y trababa el recorrido.
 """
 import re, html, sys
 
-MD = '/Users/nicolasmachin/Dev/voltia-pm/docs/Manual-de-Trabajo-Voltia.md'
+MD = '/Users/nicolasmachin/Dev/voltia-pm/docs/Procedimiento-General-de-Trabajo-Voltia.md'
 S = '/private/tmp/claude-501/-Users-nicolasmachin-Dev-voltia-pm/fce0a8bb-e714-426e-93fd-cb7895ac6015/scratchpad'
 
 def inline(t):

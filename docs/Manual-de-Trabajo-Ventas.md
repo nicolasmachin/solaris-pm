@@ -26,6 +26,11 @@ sabe cómo sigue.
 *Por ordenar: del lead a la venta, y de la venta al onboarding completo. Por
 ahora está lo que venía del manual de trabajo (abajo).*
 
+> **Material de base:** `docs/pendientes/material-manual-ventas.md` tiene el
+> relevamiento completo del proceso comercial (24-09-2026, verificado contra el
+> código): el pipeline de 7 etapas, los reclamos, las propuestas, el panel del
+> lead. Antes de usarlo, reverificar lo que haya cambiado desde esa fecha.
+
 ## 3 · Lineamientos
 
 *Por escribir.*
