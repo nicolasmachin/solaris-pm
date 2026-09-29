@@ -211,40 +211,49 @@ desde las 21:00 hora local.
 ## Para qué existe
 
 A veces un cliente quiere dos instalaciones a la vez (dos techos, dos padrones,
-dos casas), o una sola instalación con más de un inversor. El cotizador asumía
-**un solo inversor**. Hay dos formas de cotizar más de uno:
-
-- **Inversores iguales**: una cantidad de inversores idénticos (misma marca y
-  potencia). Es la forma clásica.
-- **Inversores distintos**: una lista, cada uno con su marca, su potencia y sus
-  paneles (por ejemplo, un Growatt de 8 kW y un Huawei de 6 kW).
+dos casas), o una sola instalación con más de un inversor, a veces de marcas o
+potencias distintas (por ejemplo, un Growatt de 8 kW y un Huawei de 6 kW). El
+cotizador asumía **un solo inversor**.
 
 ## Cómo se usa
 
-En "Datos técnicos del sistema":
+En "Datos técnicos del sistema" (`ProposalForm.tsx`):
 
-- **Inversores iguales**: campo **Cantidad de inversores**. La **potencia del
-  inversor** es la de **uno solo**, no la suma. Los **paneles** se cargan
-  **sumados** entre todos.
-- **Inversores distintos**: casilla **Inversores distintos**
-  (`InversoresDistintosField.tsx`). Al marcarla desaparecen potencia, cantidad y
-  marca, y aparece una fila por inversor con **Marca**, **Potencia (kW)** y
-  **Paneles**. La lista arranca con los inversores que ya había (mínimo dos,
-  copias de la potencia y marca actuales) para que el precio no salte. Se
-  agregan filas con **Agregar inversor** y se quitan con el tachito mientras
-  queden al menos dos. Al desmarcar la casilla se vuelve a un único inversor con
-  los datos del primero de la lista.
+- **Por defecto se ve UN inversor**: **Marca de inversor** y **Potencia
+  inversor (kW)**, como en el 99% de los casos. El campo "Cantidad de
+  inversores" no está a la vista.
+- Debajo hay un botón chico **+ Agregar inversor**. Al tocarlo se pasa a la
+  **lista** (`InversoresDistintosField.tsx`): una tarjeta por inversor con
+  **Marca**, **Potencia (kW)** y **Paneles**. La primera queda con la marca y
+  potencia que ya estaban; la nueva, con la misma marca y la potencia en 0 para
+  que se cargue la suya.
+- **Dos inversores iguales se cotizan igual**: agregando otro con los mismos
+  valores. No hay un modo aparte para "iguales" en la pantalla.
+- En la lista, **Agregar inversor** suma otra fila (con la marca de la última) y
+  el tachito quita cualquiera. **Si se quitan hasta quedar uno, se vuelve a la
+  vista simple** con la marca y potencia del que quedó (sin lista, cantidad 1).
 - **Paneles por inversor**: vacío = automático (el valor repartido se ve como
   placeholder). Escribir un número lo fija; borrarlo vuelve al automático.
   Debajo de la lista se ve el resumen ("1 Growatt de 8 kW + 1 Huawei de 6 kW ·
   14 kW en total · 24 de 24 paneles") y, si lo cargado a mano no cuadra, un aviso
   rojo.
+- **Borradores de antes con varios inversores iguales** (`cantidadInversores` >
+  1 y sin lista): se muestran tal cual, con el campo **Cantidad de inversores**
+  heredado a la vista y una nota. No cambian de precio si nadie los toca. Si se
+  pone la cantidad en 1, vuelve a la vista simple; si se toca **+ Agregar
+  inversor**, recién ahí se convierte a la lista (N filas iguales + la nueva).
+  Es la opción conservadora: convertir no es neutro en precio. La forma
+  clásica cotiza cada inversor sobre `ceil(paneles / N)` (el más grande), y la
+  lista reparte exacto (21 paneles en 2: clásica 11 y 11; lista 11 y 10). Si un
+  inversor cruza un escalón de la eléctrica, el precio baja un poco. Por eso
+  solo se convierte cuando el usuario toca el botón.
 
-En los dos casos, el costo del **inversor** y el de la **instalación eléctrica**
-van **uno por inversor**. Nada más se multiplica.
+En todos los casos, el costo del **inversor** y el de la **instalación
+eléctrica** van **uno por inversor**. Nada más se multiplica.
 
 Desde el chat: `preparar_propuesta` acepta `cantidad_inversores` (iguales) y
-`inversores` (lista de `{ marca, potencia_kw, paneles? }`, distintos). Ver
+`inversores` (lista de `{ marca, potencia_kw, paneles? }`). Los argumentos de
+cantidad siguen existiendo en el chat aunque la pantalla ya no los muestre. Ver
 capítulo 13.
 
 ## Cómo funciona
@@ -382,6 +391,9 @@ proyecto no se tocó** (tiene un solo `inverterBrand` / `inverterPowerKw` /
   antes de multiplicar.
 - **Los paneles se reparten por potencia** y se pueden pisar a mano; lo pisado
   tiene que cuadrar con el total para publicar.
+- **La pantalla no tiene modo "iguales"**: dos inversores iguales son dos filas
+  iguales de la lista. La forma clásica (`cantidadInversores` sin lista) sigue
+  existiendo en los datos por compatibilidad y para el chat.
 - **Si administración fijó la marca del inversor** (`marcaInversorDefault` sin
   `asesorCanOverride`), las marcas de cada fila tampoco se pueden editar.
 - **Paneles por instalación redondeados para arriba** (solo inversores iguales):

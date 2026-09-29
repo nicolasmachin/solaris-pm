@@ -4,14 +4,15 @@
 
 ### 29 de septiembre de 2026
 
-#### Cotizador: inversores distintos en una misma propuesta
+#### Cotizador: varios inversores en una misma propuesta, también de distinta marca o potencia
 
-- En **Datos técnicos del sistema** hay una casilla nueva, **Inversores distintos**. Al marcarla, en vez de una sola marca y una sola potencia aparece **una fila por inversor**, cada una con **su marca, su potencia y sus paneles**. Así se puede cotizar, por ejemplo, **un Growatt de 8 kW y un Huawei de 6 kW** para el mismo cliente.
+- En **Datos técnicos del sistema** se sigue viendo **un solo inversor** (marca y potencia), como casi siempre. Debajo hay un botón chico, **+ Agregar inversor**: al tocarlo aparece **una fila por inversor**, cada una con **su marca, su potencia y sus paneles**. Así se puede cotizar, por ejemplo, **un Growatt de 8 kW y un Huawei de 6 kW** para el mismo cliente. Dos inversores iguales se cotizan igual: agregando otro con los mismos datos.
 - **Los paneles se reparten solos** entre los inversores, en proporción a la potencia de cada uno (con 24 paneles, 14 van al de 8 kW y 10 al de 6 kW). Si hace falta otro reparto, se escribe a mano cuántos lleva cada uno; borrando el número vuelve al automático. Si lo cargado a mano no suma los paneles del sistema, aparece un aviso en rojo y la propuesta no se puede publicar hasta corregirlo.
 - **Cada inversor se cotiza por separado**: su precio sale de su potencia, y la instalación eléctrica de cada uno se calcula con los paneles que lleva ese inversor. En el **Costeo**, debajo de las líneas de Inversor y Eléctrica, se ve lo que cuesta cada uno.
-- Se pueden agregar tantos inversores como haga falta, y quitarlos mientras queden al menos dos. Desmarcando la casilla se vuelve a la forma de siempre (inversores iguales), con los datos del primero.
+- Se pueden agregar tantos inversores como haga falta y quitar cualquiera. Si se quitan hasta quedar uno, se vuelve a la vista de un solo inversor.
+- Las propuestas en borrador que ya tenían **varios inversores iguales** se siguen viendo como antes, con su campo **Cantidad de inversores**, y no cambian de precio. Recién al tocar **+ Agregar inversor** pasan a la vista de una fila por inversor.
 - En la propuesta que recibe el cliente los inversores se describen uno por uno: **"1 Growatt de 8 kW + 1 Huawei de 6 kW"**, y si hay iguales se agrupan (**"2 Growatt de 6 kW + 1 Huawei de 8 kW"**).
-- Las propuestas ya emitidas y las que se sigan cotizando con inversores iguales no cambian en nada: ni el precio ni el documento.
+- Las propuestas ya emitidas no cambian en nada, ni el precio ni el documento. Las de un solo inversor salen igual que siempre.
 - Desde el chat también se puede cotizar así, pasándole la lista de inversores con su marca y su potencia.
 - Cuando la obra todavía no tiene el sistema cargado, **el contrato y la proforma** toman los inversores de la propuesta: la proforma los describe uno por uno y el contrato los pone en el campo de marca. Conviene revisarlos antes de generar, como siempre con lo precargado.
 

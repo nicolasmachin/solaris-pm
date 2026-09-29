@@ -56,31 +56,24 @@ export function ProposalForm({
   };
   const fixedHint = (key: string) => (canOverride(key) ? undefined : "Fijado por administración");
 
-  // Inversores distintos: la lista manda con 2 o más elementos.
-  const distintos = listaInversoresDistintos(data.sistema) !== null;
-  const activarDistintos = () => {
-    // Arranca con los inversores que ya había (todos iguales), mínimo dos, para
-    // que el precio no salte de golpe: después se cambia la marca o la potencia
-    // del que corresponda.
-    const n = Math.max(2, data.sistema.cantidadInversores ?? 1);
-    const inversores = Array.from({ length: n }, () => ({
-      marca: data.sistema.marcaInversor,
-      potenciaKw: data.sistema.potenciaInversorKw,
-    }));
+  // Inversores. Por defecto se ve UN inversor (marca + potencia). "+ Agregar
+  // inversor" pasa a la lista (una fila por inversor); la lista manda con 2 o
+  // más elementos, y al quitar hasta quedar uno se vuelve a la vista simple.
+  const conLista = listaInversoresDistintos(data.sistema) !== null;
+  // Borradores de antes con N inversores iguales y sin lista: se respetan tal
+  // cual (mismo precio) y se muestra el campo Cantidad heredado. Recién al tocar
+  // "+ Agregar inversor" pasan a la lista.
+  const cantidadHeredada = !conLista && (data.sistema.cantidadInversores ?? 1) > 1;
+  const agregarInversor = () => {
+    const actual = { marca: data.sistema.marcaInversor, potenciaKw: data.sistema.potenciaInversorKw };
+    // Los que ya había (N iguales, o uno) + uno nuevo con la misma marca y sin
+    // potencia, para que se cargue la suya.
+    const n = Math.max(1, data.sistema.cantidadInversores ?? 1);
+    const inversores = [
+      ...Array.from({ length: n }, () => ({ ...actual })),
+      { marca: data.sistema.marcaInversor, potenciaKw: 0 },
+    ];
     setSistema(sincronizarSistemaInversores({ ...data.sistema, inversores }));
-  };
-  const desactivarDistintos = () => {
-    // Vuelve a un único inversor con los datos del primero de la lista.
-    const { inversores, ...resto } = data.sistema;
-    const primero = inversores?.[0];
-    onChange({
-      ...data,
-      sistema: {
-        ...resto,
-        cantidadInversores: 1,
-        ...(primero && { marcaInversor: primero.marca, potenciaInversorKw: primero.potenciaKw }),
-      },
-    });
   };
 
   const setItems = (items: ProposalItemAdicional[]) => onChange({ ...data, itemsAdicionales: items });
@@ -146,38 +139,35 @@ export function ProposalForm({
           <NumberField label="Cantidad de paneles" value={data.sistema.cantidadPaneles} onChange={(v) => setSistema({ cantidadPaneles: v })} min={1} error={errors["sistema.cantidadPaneles"]} />
           <NumberField label="Potencia por panel (W)" value={data.sistema.potenciaPanelW} onChange={(v) => setSistema({ potenciaPanelW: v })} min={0} disabled={!canOverride("potenciaPanelWDefault")} hint={fixedHint("potenciaPanelWDefault")} error={errors["sistema.potenciaPanelW"]} />
           <TextField label="Marca de paneles" value={data.sistema.marcaPaneles} onChange={(v) => setSistema({ marcaPaneles: v })} disabled={!canOverride("marcaPanelesDefault")} hint={fixedHint("marcaPanelesDefault")} error={errors["sistema.marcaPaneles"]} />
-          {distintos ? null : (
+          {conLista ? null : (
             <>
-              <NumberField label="Potencia inversor (kW)" value={data.sistema.potenciaInversorKw} onChange={(v) => setSistema({ potenciaInversorKw: v })} min={0} step={0.1} hint="Por inversor, no el total." error={errors["sistema.potenciaInversorKw"]} />
-              <NumberField label="Cantidad de inversores" value={data.sistema.cantidadInversores ?? 1} onChange={(v) => setSistema({ cantidadInversores: Math.max(1, Math.trunc(v) || 1) })} min={1} step={1} hint="Más de uno para cotizar varias instalaciones juntas. Los paneles se cargan sumados." error={errors["sistema.cantidadInversores"]} />
               <TextField label="Marca de inversor" value={data.sistema.marcaInversor} onChange={(v) => setSistema({ marcaInversor: v })} disabled={!canOverride("marcaInversorDefault")} hint={fixedHint("marcaInversorDefault")} error={errors["sistema.marcaInversor"]} />
+              <NumberField label="Potencia inversor (kW)" value={data.sistema.potenciaInversorKw} onChange={(v) => setSistema({ potenciaInversorKw: v })} min={0} step={0.1} hint={cantidadHeredada ? "Por inversor, no el total." : undefined} error={errors["sistema.potenciaInversorKw"]} />
+              {cantidadHeredada ? (
+                <NumberField label="Cantidad de inversores" value={data.sistema.cantidadInversores ?? 1} onChange={(v) => setSistema({ cantidadInversores: Math.max(1, Math.trunc(v) || 1) })} min={1} step={1} hint="Borrador armado con varios inversores iguales: se mantiene así. Con 1 vuelve a la vista de un inversor." error={errors["sistema.cantidadInversores"]} />
+              ) : null}
             </>
           )}
           <TextField label="Tipo de montaje" value={data.sistema.tipoMontaje} onChange={(v) => setSistema({ tipoMontaje: v })} placeholder="Techo chapa / teja / suelo…" error={errors["sistema.tipoMontaje"]} />
         </div>
 
-        <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm text-[var(--color-text-primary)]">
-          <input
-            type="checkbox"
-            className="mt-0.5"
-            checked={distintos}
-            onChange={(e) => (e.target.checked ? activarDistintos() : desactivarDistintos())}
-          />
-          <span>
-            <span className="font-medium">Inversores distintos</span>
-            <span className="block text-[11px] text-[var(--color-text-muted)]">
-              Cada inversor con su marca y su potencia (por ejemplo, un Growatt de 8 kW y un Huawei de 6 kW). Cada uno se cotiza por separado, con los paneles que lleva.
-            </span>
-          </span>
-        </label>
-        {distintos ? (
+        {conLista ? (
           <InversoresDistintosField
             sistema={data.sistema}
             onChange={(sistema) => onChange({ ...data, sistema })}
             marcaEditable={canOverride("marcaInversorDefault")}
             error={Boolean(errors["sistema.inversores"])}
           />
-        ) : null}
+        ) : (
+          <button
+            type="button"
+            onClick={agregarInversor}
+            className="mt-2 inline-flex items-center gap-1 rounded border border-dashed border-[var(--color-border)] px-2 py-1 text-xs font-semibold text-[var(--color-text-secondary)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
+            title="Para cotizar más de un inversor: iguales o de distinta marca o potencia"
+          >
+            + Agregar inversor
+          </button>
+        )}
 
         <p className={SUB}>Techo</p>
         <div className={GRID}>

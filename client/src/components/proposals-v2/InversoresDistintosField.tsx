@@ -1,5 +1,7 @@
-// Inversores distintos: una fila por inversor con su marca, su potencia y sus
-// paneles. Los paneles se reparten solos en proporción a la potencia (el valor
+// Lista de inversores (se abre con "+ Agregar inversor" desde el formulario):
+// una fila por inversor con su marca, su potencia y sus paneles. Sirve igual
+// para inversores iguales o distintos. Al quitar hasta quedar uno, se vuelve a
+// la vista simple de un inversor (sin lista, cantidad 1). Los paneles se reparten solos en proporción a la potencia (el valor
 // automático se ve como placeholder); escribir un número lo fija a mano y
 // borrarlo lo vuelve al automático.
 //
@@ -81,8 +83,20 @@ export function InversoresDistintosField({
   const descuadre = asignados - Math.trunc(sistema.cantidadPaneles);
   const totalKw = lista.reduce((a, i) => a + (i.potenciaKw || 0), 0);
 
-  const setLista = (next: ProposalInversor[]) =>
-    onChange(sincronizarSistemaInversores({ ...sistema, inversores: next }));
+  const setLista = (next: ProposalInversor[]) => {
+    if (next.length >= 2) {
+      onChange(sincronizarSistemaInversores({ ...sistema, inversores: next }));
+      return;
+    }
+    // Queda uno (o ninguno): vuelta a la vista simple con los datos del que quedó.
+    const { inversores: _fuera, ...resto } = sistema;
+    const unico = next[0];
+    onChange({
+      ...resto,
+      cantidadInversores: 1,
+      ...(unico && { marcaInversor: unico.marca, potenciaInversorKw: unico.potenciaKw }),
+    });
+  };
 
   const update = (idx: number, p: Partial<ProposalInversor>) =>
     setLista(
@@ -104,9 +118,8 @@ export function InversoresDistintosField({
             <button
               type="button"
               onClick={() => setLista(lista.filter((_, i) => i !== idx))}
-              disabled={lista.length <= 2}
-              title={lista.length <= 2 ? "Con inversores distintos van al menos dos" : "Quitar este inversor"}
-              className="text-[var(--color-text-muted)] hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-[var(--color-text-muted)]"
+              title="Quitar este inversor"
+              className="text-[var(--color-text-muted)] hover:text-red-500"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
