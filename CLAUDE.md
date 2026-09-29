@@ -278,11 +278,11 @@ Son de dos niveles:
 
 | Documento | Qué cubre | Estado |
 |---|---|---|
-| **Procedimiento General de Trabajo (PGT) de Voltia** | Lo que **conecta** a las áreas: el recorrido, las reglas comunes, qué hace cada área a grandes rasgos, dónde termina su trabajo y cómo se lo pasa a la siguiente. **Solo generalidades, sin detalle.** | Hoy es `Manual-de-Trabajo-Voltia.md`; se está recortando a PGT |
-| **Manual de trabajo de Ventas** | El detalle del área: procedimiento, lineamientos y herramientas | Por armar |
-| **Manual de trabajo de Ingeniería** | Ídem | Por armar |
-| **Manual de trabajo de Operaciones** | Ídem. **Obra** y **Logística** son partes de este manual, pero armadas para poder imprimirse y entregarse como **librillos independientes** (el capataz recibe solo el de Obra) | Por armar |
-| **Manual de trabajo de Tramitación UTE** | Ídem | Por armar |
+| **Procedimiento General de Trabajo (PGT) de Voltia** | Lo que **conecta** a las áreas: el recorrido, las reglas comunes, qué hace cada área a grandes rasgos, dónde termina su trabajo y cómo se lo pasa a la siguiente. **Solo generalidades, sin detalle.** | `Procedimiento-General-de-Trabajo-Voltia.md` (v3.0, borrador en revisión) |
+| **Manual de trabajo de Ventas** | El detalle del área: procedimiento, lineamientos y herramientas | `Manual-de-Trabajo-Ventas.md`, esqueleto con el material que salió del PGT |
+| **Manual de trabajo de Ingeniería** | Ídem | `Manual-de-Trabajo-Ingenieria.md`, esqueleto |
+| **Manual de trabajo de Operaciones** | Ídem. **Obra** y **Logística** son partes de este manual, pero armadas para poder imprimirse y entregarse como **librillos independientes** (el capataz recibe solo el de Obra) | `Manual-de-Trabajo-Operaciones.md`, esqueleto (partes A, B y C) |
+| **Manual de trabajo de Tramitación UTE** | Ídem | `Manual-de-Trabajo-Tramitacion-UTE.md`, esqueleto |
 | **Manual de trabajo de Experiencia Solar** | Con el subtítulo grande **"Manual de Posventa"**. El proceso de posventa a fondo: el recorrido en 3 etapas, los hitos, plazos, mensajes modelo y reglas duras | Existe como `Manual-Posventa-Experiencia-Solar.md`; falta renombrarlo |
 | **Manual de trabajo de Finanzas** | Ídem que los de área | `Manual-de-Trabajo-Finanzas.md`, esqueleto; se completa al final, pero **se le va sumando información en cada ajuste que toque a Finanzas** |
 | **Manual de trabajo de Gerencia** | **Criterios y decisiones estratégicas**: qué se decidió, por qué, desde cuándo rige y a qué manual afecta. No es un manual de tareas | `Manual-de-Trabajo-Gerencia.md`, esqueleto; **cada decisión de criterio que se tome se registra ahí** |
