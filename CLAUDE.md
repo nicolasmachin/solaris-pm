@@ -304,6 +304,11 @@ Cómo decidir qué se toca:
 - **Toca el trato con el cliente de posventa** (reportes, avisos, encuestas,
   cobros en la ficha) → al **de Experiencia Solar**, y a los de las áreas que
   intervienen.
+- **Toca cobros, pagos, facturas, comisiones o resultados** → al **de Finanzas**
+  (aunque todavía esté en armado: se le suma el dato).
+- **Es una decisión de criterio** (una política, un plazo, qué se promete, por
+  qué algo se hace así) → al **de Gerencia**, con su porqué y desde cuándo rige,
+  además de los manuales donde se aplica.
 - **Es solo interno** (refactors, permisos de backend) → a ninguno.
 
 Ante la duda, se revisan todos: es más barato leer un capítulo de más que dejar
