@@ -287,9 +287,14 @@ Cómo decidir dónde va un cambio:
   desarrollado en el de posventa.
 - **Es solo interno** (refactors, permisos de backend) → a ninguno.
 
-Están escritos en **segunda persona y en criollo** ("entrás", "cargás"), sin
-nombres de archivo, de endpoints ni de permisos: el lector no programa. Ese
-registro se respeta; los detalles técnicos van al manual de `docs/manual/`.
+Están escritos **en tercera persona, hablándole al rol y no al lector**, y en
+criollo: "el asesor carga", "Experiencia Solar avisa", "se entra desde
+Proyectos" — nunca "entrás", "cargás", "tu trabajo". Los rótulos van igual:
+"Qué hace", "Dónde termina su trabajo", "A quién le pregunta qué". La única
+excepción son las frases que se le dicen **al cliente** y las plantillas, que
+siguen con el voseo porque le hablan a él. Sin nombres de archivo, de endpoints
+ni de permisos: el lector no programa. Los detalles técnicos van al manual de
+`docs/manual/`.
 
 **Las plantillas de mensajes se citan enteras.** Cuando un manual menciona una
 plantilla ("Plantilla *Bienvenida*"), va el texto completo tal como sale en la

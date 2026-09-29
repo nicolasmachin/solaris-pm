@@ -38,7 +38,7 @@ from generar import (  # noqa: E402
 )
 
 PIE = "Manual de Trabajo · Cómo trabajamos en Voltia"
-VERSION = "Versión 2.1 · septiembre de 2026"
+VERSION = "Versión 2.2 · septiembre de 2026"
 generar.configurar(PIE, IMG.LOGO_ISOTIPO, IMG.LOGO_ISOTIPO_BLANCO)
 
 # Las plantillas son las mismas que cita el de Posventa (copiadas de la app,
@@ -63,7 +63,7 @@ def rotulo(texto, color=GRIS_CLARO):
 
 
 def rol(capitulo, nombre, haces, termina, margen=22):
-    """La apertura del capítulo de un rol: qué hacés y dónde termina lo tuyo.
+    """La apertura del capítulo de un rol: qué hace y dónde termina su trabajo.
 
     Son las dos preguntas con las que arranca cada capítulo del .md, y las que
     más se consultan: por eso van juntas y a la vista, antes que el detalle.
@@ -73,12 +73,12 @@ def rol(capitulo, nombre, haces, termina, margen=22):
         + titulo(nombre)
         + f'  <div style="margin-top: {margen}px; display: flex; background: {AZUL_FONDO}; border-radius: 10px">\n'
           f'    <div style="flex-grow: 1.4; flex-basis: 0; padding: 18px 20px">\n'
-          f'      {rotulo("QUÉ HACÉS", AZUL)}\n'
+          f'      {rotulo("QUÉ HACE", AZUL)}\n'
           f'      <p style="margin: 8px 0 0; font-size: 14.5px; line-height: 1.55; color: {TEXTO}">{haces}</p>\n'
           f'    </div>\n'
           f'    <div style="width: 1px; background: #d6dcf0; margin: 16px 0"></div>\n'
           f'    <div style="flex-grow: 1; flex-basis: 0; padding: 18px 20px">\n'
-          f'      {rotulo("DÓNDE TERMINA TU TRABAJO", AZUL)}\n'
+          f'      {rotulo("DÓNDE TERMINA SU TRABAJO", AZUL)}\n'
           f'      <p style="margin: 8px 0 0; font-size: 14.5px; line-height: 1.55; color: {NEGRO}; '
           f'font-weight: 600">{termina}</p>\n'
           f'    </div>\n'
@@ -101,9 +101,9 @@ def en_pm(texto, margen=18):
             f'  </div>\n')
 
 
-def preguntale(filas, margen=18, titulo_tabla="A quién le preguntás qué"):
+def preguntale(filas, margen=18, titulo_tabla="A quién le pregunta qué"):
     return (subtitulo(titulo_tabla, margen=margen + 8, tamano=19)
-            + tabla(["NECESITÁS SABER…", "PREGUNTALE A…"], filas, anchos=[None, 250], margen=10))
+            + tabla(["NECESITA SABER…", "LE PREGUNTA A…"], filas, anchos=[None, 250], margen=10))
 
 
 def frase(texto, margen=24, tamano=24):
@@ -234,7 +234,7 @@ def cierre():
   </div>
   <div style="flex-grow: 1; padding: 62px 72px 0; display: flex; flex-direction: column">
     <div style="font-family: {SANS}; font-size: 11px; font-weight: 600; letter-spacing: 2.4px; color: {AZUL}">LA REGLA QUE SOSTIENE A LAS DEMÁS</div>
-    <p style="margin: 20px 0 0; max-width: 580px; font-size: 27px; line-height: 1.32; letter-spacing: -.4px; color: {NEGRO}; font-weight: 600">Si tenés que preguntarle a alguien en qué anda algo, <span style="color: {AZUL}">es porque falta un registro</span>.</p>
+    <p style="margin: 20px 0 0; max-width: 580px; font-size: 27px; line-height: 1.32; letter-spacing: -.4px; color: {NEGRO}; font-weight: 600">Si hay que preguntarle a alguien en qué anda algo, <span style="color: {AZUL}">es porque falta un registro</span>.</p>
     <p style="margin: 26px 0 0; max-width: 560px; font-size: 16px; line-height: 1.62; color: {TEXTO}">Cada uno anota en su etapa, desde donde ya trabaja, y eso llega solo al historial del cliente. Así Experiencia Solar le contesta algo cierto sin salir a preguntar, y el cliente nunca es el mensajero de Voltia.</p>
     <div style="flex-grow: 1"></div>
     <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 34px; font-family: {SANS}; font-size: 12px; color: {GRIS_CLARO}">
@@ -308,8 +308,8 @@ def recorrido(numero):
                      "<strong>Termina la obra</strong> → arranca E2.",
                      "<strong>UTE habilita</strong> → arranca E3."], margen=12)
         + aviso("<strong>Cómo cambia de etapa un proyecto.</strong> Cuando un área termina lo suyo, <strong>completa "
-                "su etapa en el sistema y el trabajo pasa solo al área siguiente</strong>, que recibe un aviso. No hay "
-                "que mandar un mensaje avisando: eso ya lo hace Voltia PM.", "clave", margen=22)
+                "su etapa en el sistema y el trabajo pasa solo al área siguiente</strong>, que recibe un aviso. No hace "
+                "falta mandar un mensaje avisando: eso ya lo hace Voltia PM.", "clave", margen=22)
     )
     return pagina("El recorrido completo", cuerpo, numero)
 
@@ -322,7 +322,7 @@ def anexo_reglas(numero):
         ("Nunca se le devuelve el organigrama al cliente.", "Él contrató a Voltia, no a un área."),
         ("El cliente nunca es el mensajero de Voltia.", "«Te averiguo y te confirmo», y se resuelve puertas adentro."),
         ("El que se demora avisa. Nadie pide explicaciones.", None),
-        ("Si tenés que preguntar en qué anda algo, falta un registro.", None),
+        ("Si hay que preguntar en qué anda algo, falta un registro.", None),
         ("Si no está agendado, no vamos. Y si está agendado, vamos: si no vamos, avisamos.", None),
         ("Toda reprogramación se avisa el mismo día, con el motivo.", None),
         ("Habilitación: 24 a 48 horas.", "Cada día que pasa el cliente deja de ahorrar."),
@@ -386,14 +386,14 @@ def construir():
     nueva("Main.dc.html", "Portada", lambda p: portada())
 
     # ── Capítulo 0 ───────────────────────────────────────────────────────────
-    nueva("QueLeer.dc.html", "Qué leer según tu rol", lambda p: pagina(
-        "Qué leer según tu rol",
+    nueva("QueLeer.dc.html", "Qué lee cada rol", lambda p: pagina(
+        "Qué lee cada rol",
         kicker("CAPÍTULO 0")
-        + titulo("Qué leer según tu rol")
-        + bajada("Este manual explica <strong>qué tiene que hacer cada uno y cómo hacerlo en Voltia PM</strong>. "
-                 "Está escrito para leerlo de a pedazos: buscá tu área y leé lo tuyo.")
+        + titulo("Qué lee cada rol")
+        + bajada("Este manual explica <strong>qué tiene que hacer cada rol y cómo lo hace en Voltia PM</strong>. "
+                 "Está escrito para leerlo de a pedazos: cada rol tiene su capítulo.")
         + tabla(
-            ["SI SOS…", "LEÉ", "CONSULTÁ CUANDO LO NECESITES"],
+            ["ROL", "LEE", "CONSULTA CUANDO LO NECESITA"],
             [["Asesor comercial", "1, 2, 3", "9, 12"],
              ["Ingeniería", "1, 2, 4", "11"],
              ["Gerente de Operaciones", "1, 2, 5", "11, 12"],
@@ -407,8 +407,8 @@ def construir():
                 "las que hacen que el resto funcione.", "clave", margen=26)
         + subtitulo("Qué es este documento", margen=32)
         + parrafo("No hay dos documentos: <strong>el procedimiento y la herramienta van juntos</strong>, porque "
-                  "separarlos es lo que hace que ninguno de los dos se cumpla. Cada capítulo dice qué hacés, dónde "
-                  "termina tu trabajo, qué registrás y en qué pantalla de Voltia PM se hace.")
+                  "separarlos es lo que hace que ninguno de los dos se cumpla. Cada capítulo dice qué hace el rol, dónde "
+                  "termina su trabajo, qué registra y en qué pantalla de Voltia PM se hace.")
         + parrafo("El trato con el cliente de posventa —los avisos, los plazos, los mensajes modelo— está "
                   "desarrollado a fondo en el <strong>Manual de Posventa</strong>. Acá queda lo que el resto del "
                   "equipo necesita saber de eso."),
@@ -433,15 +433,15 @@ def construir():
                 [["El capataz", "Horarios, accesos y materiales del día de obra"],
                  ["Experiencia Solar", "Todo lo demás"]], anchos=[190, None], margen=18)
         + parrafo("El vendedor deja de ser el contacto cuando termina el onboarding. Ni el gerente de Operaciones, ni "
-                  "Logística, ni Ingeniería, ni Tramitación contactan al cliente. <strong>Si necesitás coordinar algo "
-                  "con él, se lo pedís a una de esas dos personas.</strong>", margen=16)
+                  "Logística, ni Ingeniería, ni Tramitación contactan al cliente. <strong>Quien necesita coordinar algo "
+                  "con él se lo pide a una de esas dos personas.</strong>", margen=16)
         + separador(30)
         + titulo("Regla 2 — Nunca se le devuelve el organigrama al cliente", tamano=34)
         + parrafo("Decirle <em>«eso lo tenés que hablar con el capataz»</em> o <em>«ese tema es de Ingeniería»</em> es "
                   "explicarle cómo estamos organizados por dentro. <strong>No le sirve: él contrató a Voltia, no a un "
                   "área.</strong>", margen=16)
-        + dicho("Si te pregunta algo que no es tuyo: <strong>«te averiguo y te confirmo»</strong>, y lo resolvés "
-                "puertas adentro.", margen=18)
+        + dicho("Si pregunta algo que no le corresponde a quien lo atiende: <strong>«te averiguo y te confirmo»</strong>, "
+                "y se resuelve puertas adentro.", margen=18)
         + aviso("<strong>El cliente nunca es el mensajero de Voltia.</strong>", "duro", margen=16),
         p))
 
@@ -449,19 +449,19 @@ def construir():
         "Las cinco reglas · 3 a 5",
         kicker("CAPÍTULO 2 · LAS CINCO REGLAS QUE VALEN PARA TODOS")
         + titulo("Regla 3 — El que se demora avisa. Nadie pide explicaciones.", tamano=30)
-        + parrafo("Si tu etapa se está demorando, <strong>dejás un comentario diciendo por qué</strong>. No esperás a "
-                  "que te vengan a preguntar.", margen=14)
-        + parrafo("Y al revés: <strong>no le pedís explicaciones a otra área</strong> porque su etapa lleva mucho "
+        + parrafo("El área cuya etapa se está demorando <strong>deja un comentario diciendo por qué</strong>. No espera a "
+                  "que le vengan a preguntar.", margen=14)
+        + parrafo("Y al revés: <strong>ningún área le pide explicaciones a otra</strong> porque su etapa lleva mucho "
                   "tiempo. Si hay una fecha comprometida con el cliente y no se va a cumplir, lo que corresponde es "
                   "<strong>reprogramarla en el calendario</strong>: eso le avisa solo a Experiencia Solar.", margen=10)
         + aviso("Lo que está fuera de plazo se trata en la <strong>reunión de coordinación</strong>, no entre dos "
                 "áreas por mensaje.", "ojo", margen=14)
         + separador(26)
-        + titulo("Regla 4 — Todo se registra donde ya estás trabajando", tamano=30)
-        + frase("Si tenés que preguntarle a alguien en qué anda algo, es porque falta un registro.", margen=16, tamano=20)
-        + parrafo("Cada uno anota en <strong>su</strong> etapa del proyecto, desde donde ya trabaja. No hay que entrar "
+        + titulo("Regla 4 — Todo se registra donde ya se está trabajando", tamano=30)
+        + frase("Si hay que preguntarle a alguien en qué anda algo, es porque falta un registro.", margen=16, tamano=20)
+        + parrafo("Cada área anota en <strong>su</strong> etapa del proyecto, desde donde ya trabaja. No hay que entrar "
                   "a otro módulo ni aprender otra pantalla. Eso aparece solo en el historial del cliente, con el "
-                  "nombre de tu área.", margen=14)
+                  "nombre del área.", margen=14)
         + separador(26)
         + titulo("Regla 5 — Si no está agendado, no vamos", tamano=30)
         + parrafo("<strong>Ninguna visita a la propiedad del cliente sin que esté en el calendario y avisada.</strong> "
@@ -485,22 +485,22 @@ def construir():
     nueva("Comercial1.dc.html", "Comercial · modalidad de pago", lambda p: pagina(
         "Asesor comercial",
         rol("3", "Asesor comercial",
-            "Vendés, cerrás, cobrás la seña, firmás el contrato, juntás los datos administrativos y armás la "
-            "carpeta. Presentás la consulta inicial a UTE y das la fecha tentativa.",
+            "Vende, cierra, cobra la seña, firma el contrato, junta los datos administrativos y arma la "
+            "carpeta. Presenta la consulta inicial a UTE y da la fecha tentativa.",
             "Cuando el onboarding está completo y el cliente sabe cómo sigue.")
         + subtitulo("3.1 · La modalidad de pago — lo que más se nos está cayendo", margen=30, tamano=21)
-        + parrafo("<strong>En el onboarding definís cómo paga el cliente.</strong> Lo primero que te pregunta la "
-                  "subetapa es eso, con tres opciones, y <strong>cada una te deja una tarea que no podés "
-                  "saltear</strong>: hasta que no la hagas, la subetapa no se puede dar por completada.", margen=12)
-        + tabla(["SI ELEGÍS…", "TENÉS QUE…"],
+        + parrafo("<strong>En el onboarding, el asesor define cómo paga el cliente.</strong> Es lo primero que pregunta la "
+                  "subetapa, con tres opciones, y <strong>cada una deja una tarea que no se puede "
+                  "saltear</strong>: hasta que no se hace, la subetapa no se puede dar por completada.", margen=12)
+        + tabla(["SI ELIGE…", "TIENE QUE…"],
                 [["Financiación bancaria", "Generar la <strong>proforma</strong>"],
                  ["Pago directo", "Crear el <strong>plan de pagos</strong>"],
                  ["Otro", "<strong>Explicar qué se acordó</strong>, en el campo que aparece"]],
                 anchos=[220, None], margen=16)
         + aviso("Esas casillas <strong>no se pueden tildar a mano</strong>: se marcan solas cuando el documento existe. "
-                "Y si no elegís ninguna de las tres, la subetapa no cierra.", "ojo", margen=18)
+                "Y si no se elige ninguna de las tres, la subetapa no cierra.", "ojo", margen=18)
         + subtitulo("Si paga directo con nosotros", margen=26, tamano=18)
-        + parrafo("Armás el <strong>calendario de pagos</strong>: la seña más tres cuotas.", margen=8, tamano=14.5)
+        + parrafo("El asesor arma el <strong>calendario de pagos</strong>: la seña más tres cuotas.", margen=8, tamano=14.5)
         + tabla(["CUOTA", "CUÁNDO"],
                 [["50 %", "Una seña al confirmar, y se completa el 50 % entre 10 y 15 días antes de la obra"],
                  ["30 %", "Con la obra terminada"],
@@ -513,20 +513,20 @@ def construir():
         + aviso("<strong>Sin el 50 % pago no se da fecha de obra.</strong> Con financiación bancaria, la condición es "
                 "el crédito aprobado.", "duro", margen=14)
         + en_pm("El botón <strong>«Crear o editar el plan de pagos»</strong>, en esa misma subetapa. Antes esto vivía "
-                "solo en Finanzas —vos no lo veías y Experiencia Solar no lo podía crear—, y así <strong>el proyecto "
-                "llegaba a la etapa de cobrar sin que nadie supiera qué cobrar</strong>. Ahora lo hacés vos, que sos "
-                "quien lo acordó con el cliente, y lo podés editar después si cambia.")
+                "solo en Finanzas —el asesor no lo veía y Experiencia Solar no lo podía crear—, y así <strong>el proyecto "
+                "llegaba a la etapa de cobrar sin que nadie supiera qué cobrar</strong>. Ahora lo hace el asesor, que es "
+                "quien lo acordó con el cliente, y lo puede editar después si cambia.")
         + subtitulo("Si es un caso particular", margen=28, tamano=18)
-        + parrafo("Un canje, un pago adelantado, una condición negociada. Elegís <strong>Otro</strong> y escribís qué "
-                  "se acordó. No es burocracia: <strong>dentro de seis meses, cuando haya que cobrar, esa línea va a "
-                  "ser lo único que exista</strong> sobre lo que hablaste con el cliente.", margen=10)
+        + parrafo("Un canje, un pago adelantado, una condición negociada. Se elige <strong>Otro</strong> y se escribe "
+                  "qué se acordó. No es burocracia: <strong>dentro de seis meses, cuando haya que cobrar, esa línea va a "
+                  "ser lo único que exista</strong> sobre lo que se habló con el cliente.", margen=10)
         + subtitulo("Si va con financiación bancaria", margen=28, tamano=18)
-        + parrafo("Armás la proforma y <strong>le hacés seguimiento todas las semanas hasta que salga</strong>.", margen=10)
+        + parrafo("El asesor arma la proforma y <strong>le hace seguimiento todas las semanas hasta que salga</strong>.", margen=10)
         + aviso("<strong>Este es el problema que más nos está pasando.</strong> Llega el día de la obra, está todo "
                 "planificado, y el cliente no quiere que empecemos porque el banco todavía no le contestó.<br><br>"
                 "Lo que pasa siempre es lo mismo: el banco le pide algo al cliente, el cliente nunca vio el pedido, "
                 "y <strong>los dos quedan esperando algo que no va a pasar solo</strong>.", "ojo", margen=16)
-        + parrafo("<strong>Tu trabajo es hablar con las dos partes cada semana</strong> y ver qué está pendiente. No "
+        + parrafo("<strong>El trabajo del asesor es hablar con las dos partes cada semana</strong> y ver qué está pendiente. No "
                   "alcanza con mandar la proforma.", margen=16)
         + en_pm("En el proyecto, etapa <strong>Onboarding</strong> → subetapa <strong>«Modalidad de pago "
                 "definida»</strong>. Al elegir financiación bancaria aparecen dos casillas más: <em>Proforma enviada "
@@ -541,21 +541,21 @@ def construir():
         + parrafo("Con la propuesta se ofrece el <strong>Plan de Protección contra Granizo</strong>: USD 12 por panel "
                   "por año, IVA incluido, y si el granizo le rompe paneles, Voltia se los repone con todo incluido.",
                   margen=10)
-        + aviso("<strong>No es un seguro y no se le dice así</strong>: decís <em>plan</em>, <em>anualidad</em> y "
+        + aviso("<strong>No es un seguro y no se le dice así</strong>: se dice <em>plan</em>, <em>anualidad</em> y "
                 "<em>daño por granizo</em>.", "duro", margen=14)
-        + parrafo("Si se adhiere al contratar la obra, <strong>no tiene carencia</strong>: cubre desde la puesta en "
+        + parrafo("Si el cliente se adhiere al contratar la obra, <strong>no tiene carencia</strong>: cubre desde la puesta en "
                   "marcha. Por eso conviene ofrecerlo en la venta.", margen=14)
         + en_pm("En el onboarding, subetapa <strong>Contrato</strong>, abajo del contrato, está <strong>Condiciones y "
                 "Anexo A</strong>. Genera un solo PDF con las condiciones y el Anexo A ya completo con los datos del "
-                "cliente. Revisás los datos, lo generás y se lo mandás con el contrato. El plan lo sigue Experiencia "
+                "cliente. El asesor revisa los datos, lo genera y lo manda con el contrato. El plan lo sigue Experiencia "
                 "Solar.", margen=14)
         + separador(26)
         + subtitulo("3.2 · El pasaje del cliente a Experiencia Solar", margen=22, tamano=21)
-        + parrafo("<strong>Antes de irte, presentás a Alejandra.</strong> No basta con que ella escriba: el cliente "
+        + parrafo("<strong>Antes de irse, el asesor presenta a Alejandra.</strong> No basta con que ella escriba: el cliente "
                   "tiene que saber quién es antes de recibir su primer mensaje. <strong>Van en este orden, y no al "
                   "revés:</strong>", margen=10)
         + tabla(["", "QUIÉN", "CUÁNDO"],
-                [["1", "Vos le presentás a Alejandra al cliente", "Al cerrar el onboarding"],
+                [["1", "El asesor le presenta a Alejandra al cliente", "Al cerrar el onboarding"],
                  ["2", "Alejandra le escribe", "Al día siguiente, máximo"]], anchos=[30, None, 210], margen=12)
         + dicho("«De acá en adelante vas a seguir en contacto con Alejandra, te paso su contacto.»", margen=16,
                 rotulo_txt="ALGO ASÍ")
@@ -571,15 +571,15 @@ def construir():
                 "Tiene el mensaje modelo listo para copiar: es este.", margen=12)
         + cita("bienvenida", margen=16)
         + separador(26)
-        + subtitulo("3.3 · Lo que dejás cargado para los que siguen", margen=22, tamano=21)
-        + parrafo("Todo lo que juntaste en la visita —<strong>el resumen, la minuta, las fotos, los videos</strong>— "
+        + subtitulo("3.3 · Lo que deja cargado para los que siguen", margen=22, tamano=21)
+        + parrafo("Todo lo que el asesor juntó en la visita —<strong>el resumen, la minuta, las fotos, los videos</strong>— "
                   "tiene que estar cargado en el proyecto. <strong>Con eso trabaja Pre-Ingeniería.</strong> Si falta, "
                   "arrancan a ciegas.", margen=10)
         + preguntale([["Si entró la seña, cómo se le cobra", "Finanzas"],
-                      ["Qué fecha tentativa podés prometer", "Operaciones"]], margen=18)
-        + subtitulo("Y a vos, ¿quién te pregunta?", margen=26, tamano=19)
+                      ["Qué fecha tentativa puede prometer", "Operaciones"]], margen=18)
+        + subtitulo("Y al asesor, ¿quién le pregunta?", margen=26, tamano=19)
         + parrafo("<strong>No tenemos un responsable de ventas.</strong> Cada proyecto tiene su asesor asignado, así "
-                  "que <strong>cualquier duda de cualquier área sobre esa venta te la preguntan a vos</strong>: qué se "
+                  "que <strong>cualquier duda de cualquier área sobre esa venta se le pregunta a él</strong>: qué se "
                   "prometió, qué alcance, qué condiciones especiales.", margen=10),
         p))
 
@@ -587,21 +587,21 @@ def construir():
         "Asesor comercial · el cotizador",
         kicker("CAPÍTULO 3 · ASESOR COMERCIAL")
         + titulo("3.4 · El cotizador", tamano=34)
-        + bajada("<strong>Ventas → el lead → Armar propuesta.</strong> Cargás los datos y el precio se calcula solo. "
+        + bajada("<strong>Ventas → el lead → Armar propuesta.</strong> Se cargan los datos y el precio se calcula solo. "
                  "Tres cosas que conviene saber:")
-        + subtitulo("Podés cotizar varias instalaciones juntas", margen=26, tamano=18)
-        + parrafo("Si el cliente quiere dos techos o dos padrones, poné más de uno en <strong>Cantidad de "
-                  "inversores</strong>. La potencia que cargás es la de <strong>un</strong> inversor y los paneles van "
+        + subtitulo("Se pueden cotizar varias instalaciones juntas", margen=26, tamano=18)
+        + parrafo("Si el cliente quiere dos techos o dos padrones, se pone más de uno en <strong>Cantidad de "
+                  "inversores</strong>. La potencia que se carga es la de <strong>un</strong> inversor y los paneles van "
                   "<strong>sumados</strong> entre las dos. Se multiplican el inversor y la instalación eléctrica; el "
                   "resto no.", margen=8)
-        + subtitulo("Podés ajustar los costos de esa cotización", margen=24, tamano=18)
+        + subtitulo("Se pueden ajustar los costos de esa cotización", margen=24, tamano=18)
         + parrafo("El <strong>ícono de calculadora</strong> del encabezado abre el costeo: el precio de cada ítem, la "
                   "mano de obra, los costos fijos y variables. Sirve cuando el caso se sale de la norma —un proveedor "
                   "que cambió el precio, una obra con acceso difícil—.", margen=8)
-        + aviso("<strong>Lo que cambiás vale solo para esa cotización</strong>, no toca las demás ni la configuración "
+        + aviso("<strong>Lo que se cambia vale solo para esa cotización</strong>, no toca las demás ni la configuración "
                 "general, y se guarda solo. Un campo en blanco usa el valor de siempre.", "clave", margen=14)
         + subtitulo("La comisión se registra sola", margen=24, tamano=18)
-        + parrafo("Cuando ganás la venta, el sistema toma el precio de la última propuesta publicada y congela tu "
+        + parrafo("Cuando el asesor gana la venta, el sistema toma el precio de la última propuesta publicada y congela su "
                   "comisión con ese número. Ya no hay que cargarla a mano; el modal que aparece es para corregirla si "
                   "el precio cerrado fue otro.", margen=8),
         p))
@@ -614,23 +614,23 @@ def construir():
             "validación de Operaciones, cerrás el paquete definitivo.",
             "Cuando la lista de materiales está cerrada y no se toca más. A partir de ahí Logística compra sobre esa "
             "lista.")
-        + subtitulo("Con qué trabajás", margen=28, tamano=19)
+        + subtitulo("Con qué trabaja", margen=28, tamano=19)
         + parrafo("Con lo que el vendedor dejó cargado en el proyecto: el resumen de la visita, la minuta, las fotos y "
-                  "los videos. <strong>Si falta algo, se lo pedís al asesor comercial de ese proyecto</strong>: está "
+                  "los videos. <strong>Si falta algo, se lo pide al asesor comercial de ese proyecto</strong>: está "
                   "indicado en el proyecto.", margen=8)
         + subtitulo("Cuándo entra Operaciones", margen=22, tamano=19)
-        + parrafo("<strong>Todavía no.</strong> Cuando arrancás la pre-ingeniería, Operaciones no sabe nada de esta "
-                  "obra. Entran recién en la validación, cuando vos terminás.", margen=8)
+        + parrafo("<strong>Todavía no.</strong> Cuando arranca la pre-ingeniería, Operaciones no sabe nada de esta "
+                  "obra. Entra recién en la validación, cuando Ingeniería termina.", margen=8)
         + subtitulo("La visita de relevamiento", margen=22, tamano=19)
-        + parrafo("Hay que ir a la propiedad. <strong>Se agenda y se avisa antes</strong> (regla 5). Coordinás con "
+        + parrafo("Hay que ir a la propiedad. <strong>Se agenda y se avisa antes</strong> (regla 5). Ingeniería coordina con "
                   "Experiencia Solar quién le avisa al cliente.", margen=8)
         + preguntale([["Cuándo pueden ir a relevar", "Gerente de Operaciones"],
                       ["Si lo relevado no coincide con lo vendido", "Asesor comercial del proyecto"],
                       ["Qué hay que ajustar del paquete", "Gerente de Operaciones (después de la validación)"],
                       ["Que se corrija algo de la instalación", "<strong>Gerente de Operaciones — nunca al capataz</strong>"]],
                      margen=14)
-        + aviso("<strong>Qué registrás:</strong> cualquier <strong>cambio de alcance o de diseño</strong> que el "
-                "cliente tenga que saber. Lo dejás como comentario en tu etapa y le llega solo a Experiencia Solar.",
+        + aviso("<strong>Qué registra:</strong> cualquier <strong>cambio de alcance o de diseño</strong> que el "
+                "cliente tenga que saber. Lo deja como comentario en su etapa y le llega solo a Experiencia Solar.",
                 "clave", margen=22),
         p))
 
@@ -638,22 +638,22 @@ def construir():
         "Ingeniería · el gabinete metálico",
         kicker("CAPÍTULO 4 · INGENIERÍA")
         + titulo("4.1 · El gabinete metálico que se manda a fabricar", tamano=32)
-        + bajada("Cuando la obra necesita un gabinete a medida, <strong>no lo dibujás a mano ni reenviás el plano del "
-                 "pedido anterior</strong>: lo armás en el proyecto y Voltia PM te da la lámina para mandarle al "
+        + bajada("Cuando la obra necesita un gabinete a medida, <strong>no se dibuja a mano ni se reenvía el plano del "
+                 "pedido anterior</strong>: se arma en el proyecto y Voltia PM da la lámina para mandarle al "
                  "fabricante.")
         + numerados([
-            "Entrás al proyecto en Ingeniería, abrís <strong>Gabinete metálico</strong> y le das <strong>Nuevo "
+            "Se entra al proyecto en Ingeniería, se abre <strong>Gabinete metálico</strong> y se le da <strong>Nuevo "
             "gabinete</strong>. Viene precargado el que más pedimos —50 × 85 × 26 cm, chapa galvanizada de 1,5 mm, "
-            "fondo abierto y pestaña de 3 cm para amurar—, así que muchas veces solo cambiás lo que difiere.",
-            "Mientras cargás las medidas, <strong>el plano de la derecha se va dibujando solo</strong>. Con "
-            "<strong>Ampliar</strong> lo ves a pantalla completa, sin tener que bajar el PDF.",
+            "fondo abierto y pestaña de 3 cm para amurar—, así que muchas veces solo se cambia lo que difiere.",
+            "Mientras se cargan las medidas, <strong>el plano de la derecha se va dibujando solo</strong>. Con "
+            "<strong>Ampliar</strong> se ve a pantalla completa, sin tener que bajar el PDF.",
             "Cuando está, <strong>Emitir lámina</strong>: sale un PDF que queda guardado en los documentos del "
-            "proyecto y es el que le mandás al fabricante."], margen=18)
+            "proyecto y es el que se le manda al fabricante."], margen=18)
         + figura(IMG.GABINETE, "El gabinete abierto: las medidas a la izquierda y la lámina que se va dibujando a la "
                  "derecha.", margen=20)
         + aviso("<strong>Es el gabinete de siempre: todo chapa plegada, sin herrajes y sin perforar.</strong> La tapa se "
-                "pide suelta —sin bisagras y sin cierre— y los agujeros para amurar los hacés vos en obra. La lámina "
-                "se lo dice al fabricante con todas las letras, así no te cotiza ni te hace cosas que no le pediste.",
+                "pide suelta —sin bisagras y sin cierre— y los agujeros para amurar se hacen en obra. La lámina "
+                "se lo dice al fabricante con todas las letras, así no cotiza ni hace cosas que no se le pidieron.",
                 "clave", margen=18),
         p))
 
@@ -663,20 +663,20 @@ def construir():
         + subtitulo("Ninguna medida queda sin definir", margen=12, tamano=21)
         + parrafo("Todas vienen con un valor cargado —el espesor de la chapa, el ancho de la pestaña, cuánto solapan "
                   "las dos piezas en L, cada cuánto van los tornillos, el reborde del frente del cuerpo, el de la "
-                  "tapa, cuánto montan entre sí y qué holgura queda—. Repasalas y corregí las que no correspondan: "
-                  "lo que no cambies <strong>sale impreso igual</strong>, así el taller nunca tiene que resolver "
+                  "tapa, cuánto montan entre sí y qué holgura queda—. El proyectista las repasa y corrige las que no "
+                  "correspondan: lo que no se cambia <strong>sale impreso igual</strong>, así el taller nunca tiene que resolver "
                   "nada por su cuenta.", margen=10)
         + subtitulo("Qué trae la lámina", margen=26, tamano=19)
         + parrafo("Es <strong>una sola hoja</strong>: el gabinete dibujado de frente, de costado, de atrás y en "
                   "perspectiva, <strong>el plano de la tapa</strong> aparte —de frente y de canto, donde se ve cuánto "
                   "dobla su reborde—, con <strong>cada medida acotada sobre el dibujo</strong>, más las "
                   "especificaciones y las notas.", margen=8)
-        + parrafo("Si el fabricante pide un dato que no tiene casillero, lo agregás abajo en <strong>Especificaciones "
+        + parrafo("Si el fabricante pide un dato que no tiene casillero, se agrega abajo en <strong>Especificaciones "
                   "adicionales</strong> y sale impreso igual.", margen=12)
         + subtitulo("Más de un gabinete, o una corrección", margen=26, tamano=19)
         + parrafo("Si la obra lleva <strong>más de un gabinete</strong> (el del medidor y el de protecciones, por "
-                  "ejemplo), hacés uno por cada uno.", margen=8)
-        + aviso("Si hay que corregir algo después de haber mandado el pedido, corregís y volvés a emitir: la lámina "
+                  "ejemplo), se hace uno por cada uno.", margen=8)
+        + aviso("Si hay que corregir algo después de haber mandado el pedido, se corrige y se vuelve a emitir: la lámina "
                 "nueva sale como v2 y <strong>la anterior no se borra</strong>, porque puede ser la que el "
                 "fabricante tiene sobre la mesa.", "ojo", margen=16),
         p))
@@ -685,26 +685,26 @@ def construir():
     nueva("Operaciones1.dc.html", "Operaciones · validación y fecha", lambda p: pagina(
         "Operaciones",
         rol("5", "Operaciones",
-            "Validás lo que proyectó Ingeniería, <strong>confirmás la fecha de obra</strong>, planificás, ejecutás "
-            "la instalación y controlás los costos.",
+            "Valida lo que proyectó Ingeniería, <strong>confirma la fecha de obra</strong>, planifica, ejecuta "
+            "la instalación y controla los costos.",
             "Cuando la obra está terminada y toda la documentación está cargada.")
         + subtitulo("5.1 · La validación", margen=28, tamano=21)
-        + parrafo("Cuando Ingeniería termina, el proyecto pasa a vos. En esta etapa hacés <strong>cuatro "
+        + parrafo("Cuando Ingeniería termina, el proyecto pasa a Operaciones. En esta etapa hace <strong>cuatro "
                   "cosas</strong>:", margen=8)
-        + numerados(["<strong>Marcás la fecha de obra en el calendario.</strong>",
-                     "Revisás la pre-ingeniería, sobre todo <strong>la lista de materiales</strong>.",
-                     "Hacés la <strong>visita técnica de coordinación</strong> (se agenda y se avisa).",
-                     "Devolvés a Ingeniería lo que haya que corregir."], margen=12)
+        + numerados(["<strong>Marca la fecha de obra en el calendario.</strong>",
+                     "Revisa la pre-ingeniería, sobre todo <strong>la lista de materiales</strong>.",
+                     "Hace la <strong>visita técnica de coordinación</strong> (se agenda y se avisa).",
+                     "Devuelve a Ingeniería lo que haya que corregir."], margen=12)
         + subtitulo("5.2 · La fecha de obra", margen=28, tamano=21)
-        + frase("Vos la marcás en el calendario. Vos no se la comunicás al cliente.", margen=12, tamano=20)
+        + frase("Operaciones la marca en el calendario. Operaciones no se la comunica al cliente.", margen=12, tamano=20)
         + parrafo("Al confirmarla, <strong>el sistema le avisa solo a Experiencia Solar</strong> y le abre el pendiente "
-                  "de comunicarla, con dos días hábiles de plazo <strong>desde que la confirmás vos</strong>, no desde "
-                  "que se vendió. No hace falta que le mandes un mensaje.", margen=14)
-        + parrafo("<strong>Si después hay que moverla:</strong> la reprogramás en el calendario y <strong>el sistema te "
+                  "de comunicarla, con dos días hábiles de plazo <strong>desde que Operaciones la confirma</strong>, no desde "
+                  "que se vendió. No hace falta mandarle un mensaje.", margen=14)
+        + parrafo("<strong>Si después hay que moverla:</strong> se reprograma en el calendario y <strong>el sistema "
                   "pide el motivo</strong>. Eso genera un aviso propio para que Experiencia Solar se lo explique al "
-                  "cliente el mismo día. Si a un cliente le movés la fecha tres veces, quedan tres avisos, no uno.",
+                  "cliente el mismo día. Si a un cliente le mueven la fecha tres veces, quedan tres avisos, no uno.",
                   margen=10)
-        + aviso("<strong>Reprogramar es el mecanismo.</strong> Que Experiencia Solar te venga a pedir explicaciones es "
+        + aviso("<strong>Reprogramar es el mecanismo.</strong> Que Experiencia Solar tenga que pedir explicaciones es "
                 "la señal de que no se usó.", "clave", margen=16),
         p))
 
@@ -737,19 +737,19 @@ def construir():
         kicker("CAPÍTULO 5 · OPERACIONES")
         + titulo("5.4 · El capataz", tamano=34)
         + subtitulo("Con el cliente", margen=20, tamano=19)
-        + parrafo("<strong>Hablás directo</strong> de horarios, accesos, llegada y levantada de materiales. Todo lo demás "
+        + parrafo("<strong>Habla directo</strong> de horarios, accesos, llegada y levantada de materiales. Todo lo demás "
                   "va por Experiencia Solar.", margen=8)
-        + parrafo("Si el cliente te pregunta algo que no es de obra: <strong>no lo mandes a otro lado</strong>. Le decís "
-                  "que se lo averiguás, y se lo pasás a Experiencia Solar.", margen=10)
-        + subtitulo("Lo que anotás", margen=24, tamano=19)
+        + parrafo("Si el cliente le pregunta algo que no es de obra, <strong>no lo manda a otro lado</strong>: le dice "
+                  "que se lo averigua, y se lo pasa a Experiencia Solar.", margen=10)
+        + subtitulo("Lo que anota", margen=24, tamano=19)
         + parrafo("<strong>Todo intercambio con el cliente y cualquier incidente.</strong> Algo que se rompió, un pedido "
                   "que hizo, una queja al pasar. <strong>Se anota desde el celular, en la etapa de obra del proyecto, "
-                  "en diez segundos.</strong> No entrás a ningún otro módulo. Eso aparece solo en el historial del "
+                  "en diez segundos.</strong> No hace falta entrar a ningún otro módulo. Eso aparece solo en el historial del "
                   "cliente.", margen=8)
         + aviso("Si registrar cuesta, no se registra. Dos líneas valen infinitamente más que un informe prolijo que "
                 "nadie escribe.", "ojo", margen=14)
-        + subtitulo("Lo que dejás para cerrar la obra", margen=24, tamano=19)
-        + parrafo("<strong>Sin esto completo la obra no se cierra, y es tu responsabilidad que esté:</strong>", margen=8)
+        + subtitulo("Lo que deja para cerrar la obra", margen=24, tamano=19)
+        + parrafo("<strong>Sin esto completo la obra no se cierra, y es responsabilidad del capataz que esté:</strong>", margen=8)
         + vinetas(["Llevarle al cliente <strong>los documentos de habilitación</strong> y traerlos firmados",
                    "<strong>Fotos</strong>: generales, del tablero y protecciones, de la puesta a tierra",
                    "<strong>Videos de los ensayos</strong>",
@@ -757,11 +757,11 @@ def construir():
                    "<strong>La documentación UTE firmada</strong>",
                    "El recorrido y la explicación al cliente"], margen=10, tamano=14)
         + parrafo("Todo eso <strong>se carga en el proyecto</strong>. Si después Tramitación descubre que faltó una "
-                  "firma, el reclamo le llega a tu gerente.", margen=8, tamano=14.5),
+                  "firma, el reclamo le llega a su gerente.", margen=8, tamano=14.5),
         p))
 
-    nueva("Operaciones4.dc.html", "Operaciones · a quién preguntar", lambda p: pagina(
-        "Operaciones · a quién le preguntás",
+    nueva("Operaciones4.dc.html", "Operaciones · a quién preguntar · Logística", lambda p: pagina(
+        "Operaciones · a quién le pregunta",
         kicker("CAPÍTULO 5 · OPERACIONES")
         + preguntale([["Si hay stock o hay que comprar", "Logística"],
                       ["Si está todo el material en depósito", "Logística"],
@@ -769,16 +769,16 @@ def construir():
                       ["Algo del cliente que no es de obra", "Experiencia Solar"]], margen=0)
         + separador(34)
         + rol("6", "Logística",
-              "Comprás los materiales de la lista definitiva, seguís los pedidos y los recibís en depósito.",
+              "Compra los materiales de la lista definitiva, sigue los pedidos y los recibe en depósito.",
               "Cuando el material está en depósito y la obra se puede planificar.", margen=18)
         + subtitulo("Con el cliente", margen=24, tamano=19)
-        + parrafo("<strong>No lo contactás.</strong> Si hay que coordinar una entrega en su propiedad, se coordina con "
+        + parrafo("<strong>No lo contacta.</strong> Si hay que coordinar una entrega en su propiedad, se coordina con "
                   "el capataz o con Experiencia Solar.", margen=8)
         + preguntale([["Si la lista está cerrada de verdad", "Ingeniería"],
-                      ["Si tenés aprobación para el gasto", "Finanzas"],
+                      ["Si tiene aprobación para el gasto", "Finanzas"],
                       ["Qué hacer si un material demora", "Gerente de Operaciones"]], margen=10)
-        + aviso("<strong>Qué registrás:</strong> si algo demora y puede mover la fecha de obra, lo avisás. Es de las "
-                "pocas cosas de tu área que cambian lo que el cliente ya sabe.", "clave", margen=22),
+        + aviso("<strong>Qué registra:</strong> si algo demora y puede mover la fecha de obra, lo avisa. Es de las "
+                "pocas cosas del área que cambian lo que el cliente ya sabe.", "clave", margen=22),
         p))
 
     # Capítulo 7 · Tramitación UTE
@@ -788,40 +788,40 @@ def construir():
             "Los hitos del trámite: consulta, apertura del caso, aprobación de la consulta, solicitud, aprobación "
             "del proyecto, documentos de obra, ensayos, documentos finales y habilitación.",
             "Cuando UTE habilita.")
-        + subtitulo("Lo más importante de tu etapa", margen=26, tamano=19)
+        + subtitulo("Lo más importante de la etapa", margen=26, tamano=19)
         + parrafo("Es la etapa donde <strong>el cliente ya tiene los paneles en el techo y no puede usarlos</strong>, y "
-                  "donde la demora no depende de nosotros. Lo único que se mueve mientras él espera <strong>son tus "
-                  "hitos</strong>.", margen=8)
-        + aviso("<strong>Cada hito que marcás aparece en el historial del cliente</strong>, con el mismo nombre que él "
-                "ve en su portal. Es lo que le permite a Experiencia Solar responderle algo cierto sin preguntarte. "
+                  "donde la demora no depende de nosotros. Lo único que se mueve mientras él espera <strong>son los "
+                  "hitos de Tramitación</strong>.", margen=8)
+        + aviso("<strong>Cada hito que se marca aparece en el historial del cliente</strong>, con el mismo nombre que él "
+                "ve en su portal. Es lo que le permite a Experiencia Solar responderle algo cierto sin tener que preguntar. "
                 "Marcarlos no es burocracia: es la única información que existe durante semanas.", "clave", margen=14)
         + subtitulo("Cuando falta documentación", margen=24, tamano=19)
-        + parrafo("Si descubrís que faltó una firma o un documento de la obra, <strong>se lo reclamás al Gerente de "
+        + parrafo("Si Tramitación descubre que faltó una firma o un documento de la obra, <strong>se lo reclama al Gerente de "
                   "Operaciones</strong>. Nunca directo al capataz.", margen=8)
         + preguntale([["Cómo responder una observación de UTE", "Ingeniería"],
                       ["Que se corrija algo de la instalación", "<strong>Gerente de Operaciones</strong>"],
                       ["Documentación de obra que falta", "<strong>Gerente de Operaciones</strong>"]], margen=12)
         + subtitulo("Cuando habilita", margen=24, tamano=19)
         + parrafo("Al cerrar el trámite, <strong>el sistema le avisa solo a Experiencia Solar</strong> y arranca un "
-                  "reloj de 24 a 48 horas. No hace falta que mandes un mensaje.", margen=8),
+                  "reloj de 24 a 48 horas. No hace falta mandar un mensaje.", margen=8),
         p))
 
     # Capítulo 8 · Experiencia Solar
-    nueva("ES1.dc.html", "Experiencia Solar · qué sos", lambda p: pagina(
+    nueva("ES1.dc.html", "Experiencia Solar · qué es", lambda p: pagina(
         "Experiencia Solar",
         rol("8", "Experiencia Solar",
-            "Acompañás al cliente <strong>de punta a punta</strong>, desde que firma hasta años después de que "
-            "enciende. No sos el último eslabón: estás en toda la cadena.",
-            "No termina. Sos la dueña del caso.")
-        + subtitulo("8.1 · Lo que sos y lo que no", margen=26, tamano=21)
-        + frase("Sos la dueña del caso, no el canal por donde pasa todo.", margen=12, tamano=21)
-        + parrafo("No sos una ventanilla única —si todo tuviera que pasar por vos sería teléfono descompuesto y más "
-                  "lento—: sos la responsable de que el cliente esté bien informado <strong>aunque otros hablen con "
-                  "él</strong>. Como el médico de cabecera: el especialista te habla directo, pero él tiene tu "
-                  "historia completa y responde por cómo va todo.", margen=14)
+            "Acompaña al cliente <strong>de punta a punta</strong>, desde que firma hasta años después de que "
+            "enciende. No es el último eslabón: está en toda la cadena.",
+            "No termina. Experiencia Solar es la dueña del caso.")
+        + subtitulo("8.1 · Lo que es y lo que no", margen=26, tamano=21)
+        + frase("Experiencia Solar es la dueña del caso, no el canal por donde pasa todo.", margen=12, tamano=21)
+        + parrafo("No es una ventanilla única —si todo tuviera que pasar por ella sería teléfono descompuesto y más "
+                  "lento—: es la responsable de que el cliente esté bien informado <strong>aunque otros hablen con "
+                  "él</strong>. Como el médico de cabecera: el especialista le habla directo al paciente, pero el "
+                  "médico de cabecera tiene la historia completa y responde por cómo va todo.", margen=14)
         + subtitulo("8.2 · El primer contacto", margen=26, tamano=21)
-        + parrafo("<strong>Después de que te presentó el vendedor, y al día siguiente como máximo.</strong> En esas "
-                  "primeras comunicaciones hacés tres cosas:", margen=8)
+        + parrafo("<strong>Después de que la presentó el vendedor, y al día siguiente como máximo.</strong> En esas "
+                  "primeras comunicaciones hace tres cosas:", margen=8)
         + numerados(["<strong>La conversación de expectativa inicial</strong>: el recorrido completo con plazos reales, "
                      "<strong>incluido UTE</strong>. Es una conversación, idealmente por teléfono. Lo que se busca es "
                      "que el cliente pueda repetir con sus palabras cuánto va a demorar y por qué. <strong>Sin esto, "
@@ -833,11 +833,11 @@ def construir():
     nueva("ES2.dc.html", "Experiencia Solar · referentes y ritmo", lambda p: pagina(
         "Experiencia Solar · la tabla de referentes",
         kicker("CAPÍTULO 8 · EXPERIENCIA SOLAR")
-        + subtitulo("8.3 · La tabla que le entregás al cliente", margen=12, tamano=21)
+        + subtitulo("8.3 · La tabla que se le entrega al cliente", margen=12, tamano=21)
         + tabla(["PARA…", "ESCRIBILE A…"],
                 [["Horarios, accesos y materiales del día de obra", "<strong>[capataz]</strong> — [teléfono]"],
                  ["Todo lo demás", "<strong>Alejandra</strong> — [teléfono]"]], anchos=[None, 240], margen=14)
-        + dicho("«Si alguna vez sentís que no te estamos respondiendo, escribime a mí» — y le pasás el contacto de "
+        + dicho("«Si alguna vez sentís que no te estamos respondiendo, escribime a mí» — con el contacto de "
                 "Nicolás. Para lo de obra, el de Gabriel.", margen=16, rotulo_txt="Y DESPUÉS, COMO CIERRE")
         + subtitulo("Dos cuidados", margen=22, tamano=18)
         + numerados(["Se presenta como <strong>«este es tu equipo»</strong>, nunca como «estas son nuestras áreas».",
@@ -845,13 +845,13 @@ def construir():
                      "presenta al mismo nivel que el contacto habitual, el cliente aprende que por ahí lo atienden "
                      "más rápido."], margen=10)
         + separador(26)
-        + subtitulo("8.4 · Cada cuánto hablás con el cliente", margen=22, tamano=21)
+        + subtitulo("8.4 · Cada cuánto se habla con el cliente", margen=22, tamano=21)
         + frase("Como máximo una semana sin que el cliente sepa algo. Aunque no haya novedades.", margen=12, tamano=19)
         + dicho("«Te escribo para contarte que tu trámite sigue en curso, sin novedades todavía; apenas haya algo te "
                 "aviso.»", margen=14)
         + parrafo("Eso vale más que el silencio. Lo que no se puede es <strong>inventar un avance que no "
                   "existe</strong>.", margen=12)
-        + en_pm("El listado y la vista <strong>Recorrido</strong> te marcan a quién hace más que no se le habla. Los "
+        + en_pm("El listado y la vista <strong>Recorrido</strong> marcan a quién hace más que no se le habla. Los "
                 "que nunca tuvieron contacto van primero.", margen=14),
         p))
 
@@ -866,7 +866,7 @@ def construir():
                  ["Ya podés encender", "<strong style=\"color: #8f1d1d\">24 a 48 horas</strong>"]],
                 anchos=[260, None], margen=22)
         + parrafo("<strong>Los tres primeros y el de habilitación se abren solos</strong> cuando pasa el hecho que los "
-                  "dispara. No hace falta que nadie te avise: aparecen en tu pantalla, en el correo de la mañana, y "
+                  "dispara. No hace falta que nadie avise: aparecen en la pantalla de Experiencia Solar, en el correo de la mañana, y "
                   "pintan la ficha del cliente de rojo.", margen=18)
         + aviso("<strong>El de habilitación es el más urgente de todos.</strong> Cada día que pasa <strong>el cliente "
                 "deja de ahorrar plata</strong>: no es una demora administrativa, es dinero suyo que se pierde y no se "
@@ -905,32 +905,32 @@ def construir():
                   "efectivos</strong>, no los previstos: un cobro planificado es trabajo nuestro, no algo que el "
                   "cliente hizo. Los gastos de la obra tampoco aparecen, porque no son del cliente.", margen=8, tamano=14.5)
         + subtitulo("8.7 bis · El Plan de Protección contra Granizo", margen=24, tamano=20)
-        + parrafo("Lo manejás en <strong>Experiencia Solar → Plan granizo</strong> y en la tarjeta del plan de la ficha "
-                  "del cliente. <strong>No es un seguro</strong>: decís plan, anualidad y daño por granizo.",
+        + parrafo("Se maneja en <strong>Experiencia Solar → Plan granizo</strong> y en la tarjeta del plan de la ficha "
+                  "del cliente. <strong>No es un seguro</strong>: se dice plan, anualidad y daño por granizo.",
                   margen=8, tamano=14.5)
         + vinetas(["<strong>Para activarlo</strong> hacen falta el <strong>Anexo A firmado</strong> (alcanza una foto) y "
-                   "la <strong>primera anualidad paga</strong>. Subís la hoja y marcás el cobro con la fecha real del "
-                   "pago. Si la instalación ya existía, pedís <strong>fotos de los paneles</strong> y las subís.",
+                   "la <strong>primera anualidad paga</strong>. Se sube la hoja y se marca el cobro con la fecha real "
+                   "del pago. Si la instalación ya existía, se piden <strong>fotos de los paneles</strong> y se suben.",
                    "<strong>El nombre del cliente en rojo</strong> quiere decir que falta un mes o menos para vencer, "
-                   "que venció sin pago o que quedó suspendido. Te llega el aviso por la campana y, si ya venció, "
-                   "aparece en los pendientes del correo de la mañana. <strong>Le escribís vos</strong>: en la ficha "
+                   "que venció sin pago o que quedó suspendido. Llega el aviso por la campana y, si ya venció, "
+                   "aparece en los pendientes del correo de la mañana. <strong>Le escribe Experiencia Solar</strong>: en la ficha "
                    "está <strong>Avisar al cliente</strong>, con el mensaje listo. Voltia PM no le escribe solo.",
-                   "<strong>Si avisa un daño por granizo</strong>, lo registrás en el plan el mismo día y le respondés "
-                   "ese día. Voltia PM te marca los plazos de inspección y reposición."], margen=10, tamano=13.5)
+                   "<strong>Si el cliente avisa un daño por granizo</strong>, se registra en el plan el mismo día y se le "
+                   "responde ese día. Voltia PM marca los plazos de inspección y reposición."], margen=10, tamano=13.5)
         + parrafo("El procedimiento completo está en el Manual de Posventa, capítulo 12.1.", margen=4, tamano=13),
         p))
 
-    nueva("ES5.dc.html", "Experiencia Solar · cuando necesitás saber algo", lambda p: pagina(
-        "Experiencia Solar · cuando necesitás saber algo",
+    nueva("ES5.dc.html", "Experiencia Solar · cuando necesita saber algo", lambda p: pagina(
+        "Experiencia Solar · cuando necesita saber algo",
         kicker("CAPÍTULO 8 · EXPERIENCIA SOLAR")
-        + titulo("8.8 · Cuando necesitás saber algo", tamano=34)
-        + frase("No deberías tener que preguntarle a nadie.", margen=20, tamano=24)
+        + titulo("8.8 · Cuando Experiencia Solar necesita saber algo", tamano=34)
+        + frase("No debería tener que preguntarle a nadie.", margen=20, tamano=24)
         + parrafo("La información está en el <strong>historial del cliente</strong>: los avances de etapa, los "
                   "comentarios de obra, los hitos del trámite, los documentos emitidos, los contactos anteriores. "
                   "Todo con el nombre del área de donde salió.", margen=20, tamano=16)
-        + aviso("<strong>Lo único que te llega por mensaje de Operaciones es la fecha de obra.</strong> El resto lo "
-                "mirás.", "clave", margen=20)
-        + parrafo("<strong>Si algo no está, pedilo — pero al gerente del área, no a la persona.</strong> Y si es una "
+        + aviso("<strong>Lo único que le llega por mensaje de Operaciones es la fecha de obra.</strong> El resto lo "
+                "mira.", "clave", margen=20)
+        + parrafo("<strong>Si algo no está, lo pide — pero al gerente del área, no a la persona.</strong> Y si es una "
                   "demora, lo que corresponde es que el área haya dejado el motivo.", margen=20, tamano=16)
         + figura(IMG.FICHA_ENCABEZADO, "La ficha del cliente: arriba sus datos, a la izquierda el recorrido en tres "
                  "etapas y a la derecha todo el historial.", margen=26),
@@ -996,11 +996,11 @@ def construir():
         kicker("CAPÍTULO 11")
         + titulo("Voltia PM, pantalla por pantalla")
         + subtitulo("Cómo se entra", margen=26, tamano=19)
-        + parrafo("Con tu <strong>mail o con tu usuario corto</strong> —«nicolas» en vez del mail completo—, las dos "
-                  "formas sirven igual. Si no sabés cuál es el tuyo, te lo dice Administración.", margen=8)
+        + parrafo("Con el <strong>mail o con el usuario corto</strong> —«nicolas» en vez del mail completo—, las dos "
+                  "formas sirven igual. Quien no sabe cuál es el suyo se lo pregunta a Administración.", margen=8)
         + subtitulo("El menú", margen=26, tamano=19)
         + tabla(["MENÚ", "PARA QUÉ"],
-                [["Mis tareas", "Lo que tenés pendiente vos: tareas, traspasos por confirmar, tickets"],
+                [["Mis tareas", "Lo que cada uno tiene pendiente: tareas, traspasos por confirmar, tickets"],
                  ["Dashboard", "El panorama general"],
                  ["Proyectos", "El pipeline de cada obra, sus etapas y sus comentarios"],
                  ["Ingeniería", "Las herramientas del proyectista"],
@@ -1009,34 +1009,34 @@ def construir():
                  ["Experiencia Solar", "Los Generadores, el Recorrido, encuestas, reportes y el Plan de Protección "
                   "contra Granizo"],
                  ["Trámites UTE", "Los trámites y sus hitos"]], anchos=[170, None], margen=10)
-        + aviso("En el <strong>menú de tu usuario</strong>, arriba a la derecha, está <strong>Capacitación</strong>: "
+        + aviso("En el <strong>menú del usuario</strong>, arriba a la derecha, está <strong>Capacitación</strong>: "
                 "videos y documentos para aprender a usar Voltia PM, divididos por área. Cada uno ve los de su rol. "
-                "Los videos se miran adentro, con una lista al costado que marca cuáles ya viste y recuerda por dónde "
-                "ibas.", "clave", margen=22),
+                "Los videos se miran adentro, con una lista al costado que marca cuáles ya se vieron y recuerda por "
+                "dónde se iba.", "clave", margen=22),
         p))
 
     nueva("App2.dc.html", "Voltia PM · el proyecto", lambda p: pagina(
         "Voltia PM · el proyecto",
         kicker("CAPÍTULO 11 · VOLTIA PM, PANTALLA POR PANTALLA")
         + titulo("El proyecto", tamano=34)
-        + parrafo("Entrás desde <strong>Proyectos</strong> y elegís el cliente en la lista de la izquierda (se puede "
+        + parrafo("Se entra desde <strong>Proyectos</strong> y se elige el cliente en la lista de la izquierda (se puede "
                   "plegar con el botón de arriba).", margen=12)
         + figura(IMG.PROYECTO, "Arriba la fila de botones que lleva al mismo cliente en los otros módulos; abajo el "
                  "pipeline con las ocho etapas y sus subetapas.", margen=18)
         + vinetas(["<strong>El pipeline</strong> muestra las ocho etapas con su avance. Se hace clic en una y se abre con "
                    "sus subetapas y su checklist.",
-                   "<strong>Para comentar</strong>, entrás a la etapa donde estás trabajando y escribís ahí. <strong>Eso es "
+                   "<strong>Para comentar</strong>, se entra a la etapa donde se está trabajando y se escribe ahí. <strong>Eso es "
                    "lo que llega al historial del cliente.</strong>",
                    "<strong>Para subir fotos, videos o documentos</strong>, también dentro de su etapa.",
                    "Arriba hay una fila de botones —<strong>Proyecto · Ingeniería · Trámite UTE · Experiencia "
-                   "Solar</strong>— que te lleva <strong>al mismo cliente</strong> en el otro módulo."], margen=18),
+                   "Solar</strong>— que lleva <strong>al mismo cliente</strong> en el otro módulo."], margen=18),
         p))
 
     nueva("App3.dc.html", "Voltia PM · la ficha del cliente", lambda p: pagina(
         "Voltia PM · la ficha del cliente",
         kicker("CAPÍTULO 11 · VOLTIA PM, PANTALLA POR PANTALLA")
         + titulo("La ficha del cliente", tamano=34)
-        + parrafo("Entrás desde <strong>Experiencia Solar</strong> y elegís el cliente. Es <strong>una sola "
+        + parrafo("Se entra desde <strong>Experiencia Solar</strong> y se elige el cliente. Es <strong>una sola "
                   "pantalla</strong>:", margen=12)
         + vinetas(["<strong>Arriba</strong>: todos sus datos —mail, teléfono, dirección, asesor, potencia, fechas— y "
                    "cuántos días hace que no se lo contacta.",
@@ -1116,8 +1116,8 @@ def construir():
         + titulo("Los mensajes modelo", tamano=30)
         + parrafo("En la ficha del cliente, dentro de cada etapa, el botón <strong>Plantillas</strong>. Hay quince "
                   "mensajes listos.", margen=10)
-        + vinetas(["<strong>Vienen con el nombre del cliente y el tuyo ya puestos.</strong> Lo que el sistema no puede "
-                   "saber —una fecha, un motivo, un plazo— queda marcado a la vista y abajo te dice <strong>qué falta "
+        + vinetas(["<strong>Vienen con el nombre del cliente y el de quien escribe ya puestos.</strong> Lo que el sistema no puede "
+                   "saber —una fecha, un motivo, un plazo— queda marcado a la vista y abajo dice <strong>qué falta "
                    "completar</strong>.",
                    "<strong>Se editan antes de copiar.</strong> Son un piso de tono, no un molde.",
                    "<strong>Al copiar queda registrado el contacto.</strong>"], margen=10, tamano=14)
@@ -1144,7 +1144,7 @@ def construir():
         kicker("CAPÍTULO 12")
         + titulo("Cuando algo sale mal")
         + caso("El cliente reclama que nadie le avisó de algo", numerados([
-            "<strong>Mirá el historial de su ficha antes de responder.</strong> Ahí está todo.",
+            "<strong>Se mira el historial de su ficha antes de responder.</strong> Ahí está todo.",
             "Si <strong>efectivamente no se le avisó</strong>: se reconoce y se avisa ahora. <em>«Tenés razón, esto se "
             "nos pasó»</em> cierra una conversación que una excusa mantiene abierta.",
             "Si <strong>sí se le avisó</strong> y no lo recuerda: se le reenvía lo que se le mandó, sin señalarle que "
@@ -1153,11 +1153,11 @@ def construir():
             "<strong>Vencer no bloquea nada.</strong> No frena la obra ni el trámite: se ve, se hace, y listo. Lo que no "
             "hay que hacer es <strong>tildarlo sin haberlo hecho</strong>: ahí el tablero pasa a mentir y perdemos la "
             "única señal que tenemos.", margen=8))
-        + caso("El cliente te pregunta algo que no sabés", parrafo(
-            "<em>«Te averiguo y te confirmo»</em>, con un plazo concreto: <em>«antes de fin del día»</em>. Después lo "
-            "averiguás internamente. <strong>Nunca lo mandás a preguntar a otro.</strong>", margen=8))
-        + caso("Otra área tuvo un intercambio con el cliente y no te enteraste", parrafo(
-            "Se resuelve con la regla 4: cada uno anota en su etapa y llega solo. <strong>Si alguien no lo está "
+        + caso("El cliente pregunta algo que quien lo atiende no sabe", parrafo(
+            "<em>«Te averiguo y te confirmo»</em>, con un plazo concreto: <em>«antes de fin del día»</em>. Después se "
+            "averigua internamente. <strong>Nunca se lo manda a preguntar a otro.</strong>", margen=8))
+        + caso("Otra área tuvo un intercambio con el cliente y Experiencia Solar no se enteró", parrafo(
+            "Se resuelve con la regla 4: cada área anota en su etapa y llega solo. <strong>Si alguien no lo está "
             "haciendo, el problema no es de la persona: es que registrar le cuesta.</strong> Hay que mirar desde dónde "
             "tendría que hacerlo.", margen=8)),
         p))
@@ -1166,11 +1166,11 @@ def construir():
         "Cuando algo sale mal · 2",
         kicker("CAPÍTULO 12 · CUANDO ALGO SALE MAL")
         + caso("Una etapa lleva mucho tiempo", parrafo(
-            "<strong>No pidas explicaciones.</strong> Fijate si el área dejó el motivo en su etapa. Si no está y la "
+            "<strong>No se piden explicaciones.</strong> Se mira si el área dejó el motivo en su etapa. Si no está y la "
             "demora afecta algo que ya le prometimos al cliente, se plantea en la reunión de coordinación.", margen=8),
             margen=12)
-        + aviso("<strong>La excepción:</strong> si el cliente te está pidiendo explicaciones a vos y necesitás algo "
-                "cierto que decirle, preguntá — <strong>al gerente del área</strong>, no a la persona que está "
+        + aviso("<strong>La excepción:</strong> si el cliente le está pidiendo explicaciones a Experiencia Solar y hace "
+                "falta algo cierto que decirle, se pregunta — <strong>al gerente del área</strong>, no a la persona que está "
                 "ejecutando.", "clave", margen=14)
         + caso("El cliente no tiene mail", parrafo(
             "<strong>No es un impedimento</strong> para darle acceso al portal. Se le crea igual con la cédula o con un "

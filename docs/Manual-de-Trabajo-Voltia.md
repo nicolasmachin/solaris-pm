@@ -1,18 +1,18 @@
 # Cómo trabajamos en Voltia
 
-**Manual de trabajo** · Versión 2.1 — 28 de septiembre de 2026
+**Manual de trabajo** · Versión 2.2 — 28 de septiembre de 2026
 
-> Este manual explica **qué tiene que hacer cada uno y cómo hacerlo en Voltia PM**.
+> Este manual explica **qué tiene que hacer cada rol y cómo lo hace en Voltia PM**.
 > No hay dos documentos: el procedimiento y la herramienta van juntos, porque
 > separarlos es lo que hace que ninguno de los dos se cumpla.
 >
-> Está escrito para leerlo de a pedazos. Buscá tu área y leé lo tuyo.
+> Está escrito para leerlo de a pedazos: cada rol tiene su capítulo.
 
 ---
 
-## 0 · Qué leer según tu rol
+## 0 · Qué lee cada rol
 
-| Si sos… | Leé | Consultá cuando lo necesites |
+| Rol | Lee | Consulta cuando lo necesita |
 |---|---|---|
 | **Asesor comercial** | 1, 2, 3 | 9, 12 |
 | **Ingeniería** | 1, 2, 4 | 11 |
@@ -57,8 +57,8 @@ recorrido se divide en tres tramos:
 ### Cómo cambia de etapa un proyecto
 
 Cuando un área termina lo suyo, **completa su etapa en el sistema y el trabajo
-pasa sola al área siguiente**, que recibe un aviso. No hay que mandar un mensaje
-avisando: eso ya lo hace la app.
+pasa solo al área siguiente**, que recibe un aviso. No hace falta mandar un
+mensaje avisando: eso ya lo hace Voltia PM.
 
 ---
 
@@ -75,7 +75,7 @@ avisando: eso ya lo hace la app.
 
 El vendedor deja de ser el contacto cuando termina el onboarding. Ni el gerente
 de Operaciones, ni Logística, ni Ingeniería, ni Tramitación contactan al cliente.
-Si necesitás coordinar algo con él, se lo pedís a una de esas dos personas.
+Quien necesita coordinar algo con él se lo pide a una de esas dos personas.
 
 ### Regla 2 — Nunca se le devuelve el organigrama al cliente
 
@@ -83,30 +83,31 @@ Decirle *«eso lo tenés que hablar con el capataz»* o *«ese tema es de
 Ingeniería»* es explicarle cómo estamos organizados por dentro. **No le sirve: él
 contrató a Voltia, no a un área.**
 
-Si te pregunta algo que no es tuyo: **«te averiguo y te confirmo»**, y lo
-resolvés puertas adentro. **El cliente nunca es el mensajero de Voltia.**
+Si pregunta algo que no le corresponde a quien lo atiende, la respuesta es **«te
+averiguo y te confirmo»**, y se resuelve puertas adentro. **El cliente nunca es
+el mensajero de Voltia.**
 
 ### Regla 3 — El que se demora avisa. Nadie pide explicaciones.
 
-Si tu etapa se está demorando, **dejás un comentario diciendo por qué**. No
-esperás a que te vengan a preguntar.
+El área cuya etapa se está demorando **deja un comentario diciendo por qué**. No
+espera a que le vengan a preguntar.
 
-Y al revés: **no le pedís explicaciones a otra área** porque su etapa lleva mucho
-tiempo. Si hay una fecha comprometida con el cliente y no se va a cumplir, lo que
-corresponde es **reprogramarla en el calendario** — eso le avisa solo a
+Y al revés: **ningún área le pide explicaciones a otra** porque su etapa lleva
+mucho tiempo. Si hay una fecha comprometida con el cliente y no se va a cumplir,
+lo que corresponde es **reprogramarla en el calendario** — eso le avisa solo a
 Experiencia Solar.
 
 Lo que está fuera de plazo se trata en la **reunión de coordinación**, no entre
 dos áreas por mensaje.
 
-### Regla 4 — Todo se registra donde ya estás trabajando
+### Regla 4 — Todo se registra donde ya se está trabajando
 
-> **Si tenés que preguntarle a alguien en qué anda algo, es porque falta un
+> **Si hay que preguntarle a alguien en qué anda algo, es porque falta un
 > registro.**
 
-Cada uno anota en **su** etapa del proyecto, desde donde ya trabaja. No hay que
+Cada área anota en **su** etapa del proyecto, desde donde ya trabaja. No hay que
 entrar a otro módulo ni aprender otra pantalla. Eso aparece solo en el historial
-del cliente, con el nombre de tu área.
+del cliente, con el nombre del área.
 
 ### Regla 5 — Si no está agendado, no vamos
 
@@ -118,34 +119,34 @@ para dejar materiales y para la obra.
 
 ## 3 · Asesor comercial
 
-### Qué hacés
+### Qué hace
 
-Vendés, cerrás, cobrás la seña, firmás el contrato, juntás los datos
-administrativos y armás la carpeta. Presentás la consulta inicial a UTE y das la
-fecha tentativa.
+Vende, cierra, cobra la seña, firma el contrato, junta los datos administrativos
+y arma la carpeta. Presenta la consulta inicial a UTE y da la fecha tentativa.
 
-### Dónde termina tu trabajo
+### Dónde termina su trabajo
 
 **Cuando el onboarding está completo y el cliente sabe cómo sigue.**
 
 ### 3.1 · La modalidad de pago — lo que más se nos está cayendo
 
-**En el onboarding definís cómo paga el cliente.** Lo primero que te pregunta la
-subetapa es eso, con tres opciones, y **cada una te deja una tarea que no podés
-saltear**: hasta que no la hagas, la subetapa no se puede dar por completada.
+**En el onboarding, el asesor define cómo paga el cliente.** Es lo primero que
+pregunta la subetapa, con tres opciones, y **cada una deja una tarea que no se
+puede saltear**: hasta que no se hace, la subetapa no se puede dar por
+completada.
 
-| Si elegís… | Tenés que… |
+| Si elige… | Tiene que… |
 |---|---|
 | **Financiación bancaria** | Generar la **proforma** |
 | **Pago directo** | Crear el **plan de pagos** |
 | **Otro** | **Explicar qué se acordó**, en el campo que aparece |
 
 Esas casillas **no se pueden tildar a mano**: se marcan solas cuando el documento
-existe. Y si no elegís ninguna de las tres, la subetapa no cierra.
+existe. Y si no se elige ninguna de las tres, la subetapa no cierra.
 
 #### Si paga directo con nosotros
 
-Armás el **calendario de pagos**: la seña más tres cuotas.
+El asesor arma el **calendario de pagos**: la seña más tres cuotas.
 
 | Cuota | Cuándo |
 |---|---|
@@ -156,21 +157,23 @@ Armás el **calendario de pagos**: la seña más tres cuotas.
 **Sin el 50 % pago no se da fecha de obra.** Con financiación bancaria, la
 condición es el crédito aprobado.
 
-**En la app:** el botón **«Crear o editar el plan de pagos»**, en esa misma
-subetapa. Antes esto vivía solo en Finanzas —vos no lo veías y Experiencia Solar
-no lo podía crear—, y así **el proyecto llegaba a la etapa de cobrar sin que nadie
-supiera qué cobrar**. Ahora lo hacés vos, que sos quien lo acordó con el cliente,
-y lo podés editar después si cambia.
+**En Voltia PM:** el botón **«Crear o editar el plan de pagos»**, en esa misma
+subetapa. Antes esto vivía solo en Finanzas —el asesor no lo veía y Experiencia
+Solar no lo podía crear—, y así **el proyecto llegaba a la etapa de cobrar sin
+que nadie supiera qué cobrar**. Ahora lo hace el asesor, que es quien lo acordó
+con el cliente, y lo puede editar después si cambia.
 
 #### Si es un caso particular
 
-Un canje, un pago adelantado, una condición negociada. Elegís **Otro** y escribís
-qué se acordó. No es burocracia: **dentro de seis meses, cuando haya que cobrar,
-esa línea va a ser lo único que exista** sobre lo que hablaste con el cliente.
+Un canje, un pago adelantado, una condición negociada. Se elige **Otro** y se
+escribe qué se acordó. No es burocracia: **dentro de seis meses, cuando haya que
+cobrar, esa línea va a ser lo único que exista** sobre lo que se habló con el
+cliente.
 
 #### Si va con financiación bancaria
 
-Armás la proforma y **le hacés seguimiento todas las semanas hasta que salga**.
+El asesor arma la proforma y **le hace seguimiento todas las semanas hasta que
+salga**.
 
 > **Este es el problema que más nos está pasando.** Llega el día de la obra, está
 > todo planificado, y el cliente no quiere que empecemos porque el banco todavía
@@ -179,10 +182,10 @@ Armás la proforma y **le hacés seguimiento todas las semanas hasta que salga**
 > Lo que pasa siempre es lo mismo: el banco le pide algo al cliente, el cliente
 > nunca vio el pedido, y **los dos quedan esperando algo que no va a pasar solo**.
 
-**Tu trabajo es hablar con las dos partes cada semana** y ver qué está pendiente.
-No alcanza con mandar la proforma.
+**El trabajo del asesor es hablar con las dos partes cada semana** y ver qué está
+pendiente. No alcanza con mandar la proforma.
 
-**En la app:** en el proyecto, etapa **Onboarding** → subetapa **«Modalidad de
+**En Voltia PM:** en el proyecto, etapa **Onboarding** → subetapa **«Modalidad de
 pago definida»**. Al elegir financiación bancaria aparecen dos casillas más:
 *Proforma enviada al banco* y *Crédito aprobado*. **La segunda es bloqueante: sin
 eso tildado, el proyecto no debería avanzar a la obra.**
@@ -191,27 +194,27 @@ eso tildado, el proyecto no debería avanzar a la obra.**
 
 Con la propuesta se ofrece el **Plan de Protección contra Granizo**: USD 12 por
 panel por año, IVA incluido, y si el granizo le rompe paneles, Voltia se los
-repone con todo incluido. **No es un seguro y no se le dice así**: decís
+repone con todo incluido. **No es un seguro y no se le dice así**: se dice
 *plan*, *anualidad* y *daño por granizo*.
 
-Si se adhiere al contratar la obra, **no tiene carencia**: cubre desde la puesta
-en marcha. Por eso conviene ofrecerlo en la venta.
+Si el cliente se adhiere al contratar la obra, **no tiene carencia**: cubre desde
+la puesta en marcha. Por eso conviene ofrecerlo en la venta.
 
 **En Voltia PM:** en el onboarding, subetapa **Contrato**, abajo del contrato,
 está **Condiciones y Anexo A**. Genera un solo PDF con las condiciones y el
-Anexo A ya completo con los datos del cliente. Revisás los datos, lo generás y se
-lo mandás con el contrato. El plan lo sigue Experiencia Solar.
+Anexo A ya completo con los datos del cliente. El asesor revisa los datos, lo
+genera y lo manda con el contrato. El plan lo sigue Experiencia Solar.
 
 ### 3.2 · El pasaje del cliente a Experiencia Solar
 
-**Antes de irte, presentás a Alejandra.** No basta con que ella escriba: el
-cliente tiene que saber quién es antes de recibir su primer mensaje.
+**Antes de irse, el asesor presenta a Alejandra.** No basta con que ella
+escriba: el cliente tiene que saber quién es antes de recibir su primer mensaje.
 
 **Van en este orden, y no al revés:**
 
 | | Quién | Cuándo |
 |---|---|---|
-| 1 | Vos le presentás a Alejandra al cliente | Al cerrar el onboarding |
+| 1 | El asesor le presenta a Alejandra al cliente | Al cerrar el onboarding |
 | 2 | Alejandra le escribe | Al día siguiente, máximo |
 
 Algo así:
@@ -223,84 +226,85 @@ Algo así:
 mensaje de alguien que no conoce y desconfía. La presentación previa convierte
 ese mensaje en la continuación de una relación, no en un contacto frío.
 
-**En la app:** en la ficha del cliente, etapa **E1** → paso **«Bienvenida y
+**En Voltia PM:** en la ficha del cliente, etapa **E1** → paso **«Bienvenida y
 presentación»**. Tiene el mensaje modelo listo para copiar.
 
-### 3.3 · Lo que dejás cargado para los que siguen
+### 3.3 · Lo que deja cargado para los que siguen
 
-Todo lo que juntaste en la visita —**el resumen, la minuta, las fotos, los
+Todo lo que el asesor juntó en la visita —**el resumen, la minuta, las fotos, los
 videos**— tiene que estar cargado en el proyecto. **Con eso trabaja
 Pre-Ingeniería.** Si falta, arrancan a ciegas.
 
 ### 3.4 · El cotizador
 
-**Ventas → el lead → Armar propuesta.** Cargás los datos y el precio se calcula
-solo. Tres cosas que conviene saber:
+**Ventas → el lead → Armar propuesta.** Se cargan los datos y el precio se
+calcula solo. Tres cosas que conviene saber:
 
-**Podés cotizar varias instalaciones juntas.** Si el cliente quiere dos techos o
-dos padrones, poné más de uno en **Cantidad de inversores**. La potencia que
-cargás es la de **un** inversor y los paneles van **sumados** entre las dos. Se
-multiplican el inversor y la instalación eléctrica; el resto no.
+**Se pueden cotizar varias instalaciones juntas.** Si el cliente quiere dos
+techos o dos padrones, se pone más de uno en **Cantidad de inversores**. La
+potencia que se carga es la de **un** inversor y los paneles van **sumados**
+entre las dos. Se multiplican el inversor y la instalación eléctrica; el resto
+no.
 
-**Podés ajustar los costos de esa cotización.** El **ícono de calculadora** del
-encabezado abre el costeo: el precio de cada ítem, la mano de obra, los costos
-fijos y variables. Sirve cuando el caso se sale de la norma —un proveedor que
-cambió el precio, una obra con acceso difícil—. **Lo que cambiás vale solo para
-esa cotización**, no toca las demás ni la configuración general, y se guarda
+**Se pueden ajustar los costos de esa cotización.** El **ícono de calculadora**
+del encabezado abre el costeo: el precio de cada ítem, la mano de obra, los
+costos fijos y variables. Sirve cuando el caso se sale de la norma —un proveedor
+que cambió el precio, una obra con acceso difícil—. **Lo que se cambia vale solo
+para esa cotización**, no toca las demás ni la configuración general, y se guarda
 solo. Un campo en blanco usa el valor de siempre.
 
-**La comisión se registra sola.** Cuando ganás la venta, el sistema toma el
-precio de la última propuesta publicada y congela tu comisión con ese número. Ya
-no hay que cargarla a mano; el modal que aparece es para corregirla si el precio
-cerrado fue otro.
+**La comisión se registra sola.** Cuando el asesor gana la venta, el sistema toma
+el precio de la última propuesta publicada y congela su comisión con ese número.
+Ya no hay que cargarla a mano; el modal que aparece es para corregirla si el
+precio cerrado fue otro.
 
-### A quién le preguntás qué
+### A quién le pregunta qué
 
-| Necesitás saber… | Preguntale a… |
+| Necesita saber… | Le pregunta a… |
 |---|---|
 | Si entró la seña, cómo se le cobra | Finanzas |
-| Qué fecha tentativa podés prometer | Operaciones |
+| Qué fecha tentativa puede prometer | Operaciones |
 
-### Y a vos, ¿quién te pregunta?
+### Y al asesor, ¿quién le pregunta?
 
 **No tenemos un responsable de ventas.** Cada proyecto tiene su asesor asignado,
-así que **cualquier duda de cualquier área sobre esa venta te la preguntan a
-vos**: qué se prometió, qué alcance, qué condiciones especiales.
+así que **cualquier duda de cualquier área sobre esa venta se le pregunta a
+él**: qué se prometió, qué alcance, qué condiciones especiales.
 
 ---
 
 ## 4 · Ingeniería
 
-### Qué hacés
+### Qué hace
 
 Relevamiento, pre-ingeniería, unifilar, memorias, planos y la lista de
-materiales. Después de la validación de Operaciones, cerrás el paquete
+materiales. Después de la validación de Operaciones, cierra el paquete
 definitivo.
 
-### Dónde termina tu trabajo
+### Dónde termina su trabajo
 
 **Cuando la lista de materiales está cerrada y no se toca más.** A partir de ahí
 Logística compra sobre esa lista.
 
-### Con qué trabajás
+### Con qué trabaja
 
 Con lo que el vendedor dejó cargado en el proyecto: el resumen de la visita, la
-minuta, las fotos y los videos. **Si falta algo, se lo pedís al asesor comercial
+minuta, las fotos y los videos. **Si falta algo, se lo pide al asesor comercial
 de ese proyecto** — está indicado en el proyecto.
 
 ### Cuándo entra Operaciones
 
-**Todavía no.** Cuando arrancás la pre-ingeniería, Operaciones no sabe nada de
-esta obra. Entran recién en la validación, cuando vos terminás.
+**Todavía no.** Cuando arranca la pre-ingeniería, Operaciones no sabe nada de
+esta obra. Entra recién en la validación, cuando Ingeniería termina.
 
 ### La visita de relevamiento
 
-Hay que ir a la propiedad. **Se agenda y se avisa antes** (regla 5). Coordinás
-con Experiencia Solar quién le avisa al cliente.
+Hay que ir a la propiedad. **Se agenda y se avisa antes** (regla 5). Ingeniería
+coordina con Experiencia Solar quién le avisa al cliente.
 
-### A quién le preguntás qué
+### A quién le pregunta qué
 
-| Necesitás saber… | Preguntale a… |
+| Necesita saber… | Le pregunta a… |
 |---|---|
 | Cuándo pueden ir a relevar | Gerente de Operaciones |
 | Si lo relevado no coincide con lo vendido | Asesor comercial del proyecto |
@@ -309,90 +313,91 @@ con Experiencia Solar quién le avisa al cliente.
 
 ### 4.1 · El gabinete metálico que se manda a fabricar
 
-Cuando la obra necesita un gabinete a medida, **no lo dibujás a mano ni reenviás
-el plano del pedido anterior**: lo armás en el proyecto y Voltia PM te da la
-lámina para mandarle al fabricante.
+Cuando la obra necesita un gabinete a medida, **no se dibuja a mano ni se reenvía
+el plano del pedido anterior**: se arma en el proyecto y Voltia PM da la lámina
+para mandarle al fabricante.
 
-Entrás al proyecto en Ingeniería, abrís **Gabinete metálico** y le das **Nuevo
-gabinete**. Viene precargado el que más pedimos —50 × 85 × 26 cm, chapa
+Se entra al proyecto en Ingeniería, se abre **Gabinete metálico** y se le da
+**Nuevo gabinete**. Viene precargado el que más pedimos —50 × 85 × 26 cm, chapa
 galvanizada de 1,5 mm, fondo abierto y pestaña de 3 cm para amurar—, así que
-muchas veces solo cambiás lo que difiere.
+muchas veces solo se cambia lo que difiere.
 
-Mientras cargás las medidas, **el plano de la derecha se va dibujando solo**. Lo
-mirás, y cuando está, **Emitir lámina**: sale un PDF que queda guardado en los
-documentos del proyecto y es el que le mandás al fabricante.
+Mientras se cargan las medidas, **el plano de la derecha se va dibujando solo**.
+Cuando está, **Emitir lámina**: sale un PDF que queda guardado en los documentos
+del proyecto y es el que se le manda al fabricante.
 
 **Es el gabinete de siempre: todo chapa plegada, sin herrajes y sin perforar.**
 La tapa se pide suelta —sin bisagras y sin cierre— y los agujeros para amurar
-los hacés vos en obra. La lámina se lo dice al fabricante con todas las letras,
-así no te cotiza ni te hace cosas que no le pediste.
+se hacen en obra. La lámina se lo dice al fabricante con todas las letras, así
+no cotiza ni hace cosas que no se le pidieron.
 
 **Ninguna medida queda sin definir.** Todas vienen con un valor cargado —el
 espesor de la chapa, el ancho de la pestaña, cuánto solapan las dos piezas en L,
 cada cuánto van los tornillos, el reborde del frente del cuerpo, el de la tapa,
-cuánto montan entre sí y qué holgura queda—. Repasalas y corregí las que no
-correspondan: lo que no cambies **sale impreso igual**, así el taller nunca
-tiene que resolver nada por su cuenta.
+cuánto montan entre sí y qué holgura queda—. El proyectista las repasa y corrige
+las que no correspondan: lo que no se cambia **sale impreso igual**, así el
+taller nunca tiene que resolver nada por su cuenta.
 
 Es **una sola hoja**: el gabinete dibujado de frente, de costado, de atrás y en
 perspectiva, **el plano de la tapa** aparte —de frente y de canto, donde se ve
 cuánto dobla su reborde—, con **cada medida acotada sobre el dibujo**, más las
 especificaciones y las notas.
 
-Mientras cargás, el dibujo se va armando al costado. Con **Ampliar** lo ves a
+Mientras se carga, el dibujo se va armando al costado. Con **Ampliar** se ve a
 pantalla completa, sin tener que bajar el PDF.
 
-Si el fabricante pide un dato que no tiene casillero, lo agregás abajo en
+Si el fabricante pide un dato que no tiene casillero, se agrega abajo en
 **Especificaciones adicionales** y sale impreso igual.
 
 Si la obra lleva **más de un gabinete** (el del medidor y el de protecciones,
-por ejemplo), hacés uno por cada uno. Y si hay que corregir algo después de
-haber mandado el pedido, corregís y volvés a emitir: la lámina nueva sale como
-v2 y **la anterior no se borra**, porque puede ser la que el fabricante tiene
-sobre la mesa.
+por ejemplo), se hace uno por cada uno. Y si hay que corregir algo después de
+haber mandado el pedido, se corrige y se vuelve a emitir: la lámina nueva sale
+como v2 y **la anterior no se borra**, porque puede ser la que el fabricante
+tiene sobre la mesa.
 
-### Qué registrás
+### Qué registra
 
 Cualquier **cambio de alcance o de diseño** que el cliente tenga que saber. Lo
-dejás como comentario en tu etapa y le llega solo a Experiencia Solar.
+deja como comentario en su etapa y le llega solo a Experiencia Solar.
 
 ---
 
 ## 5 · Operaciones
 
-### Qué hacés
+### Qué hace
 
-Validás lo que proyectó Ingeniería, **confirmás la fecha de obra**, planificás,
-ejecutás la instalación y controlás los costos.
+Valida lo que proyectó Ingeniería, **confirma la fecha de obra**, planifica,
+ejecuta la instalación y controla los costos.
 
-### Dónde termina tu trabajo
+### Dónde termina su trabajo
 
 **Cuando la obra está terminada y toda la documentación está cargada.**
 
 ### 5.1 · La validación
 
-Cuando Ingeniería termina, el proyecto pasa a vos. En esta etapa hacés **cuatro
-cosas**:
+Cuando Ingeniería termina, el proyecto pasa a Operaciones. En esta etapa hace
+**cuatro cosas**:
 
-1. **Marcás la fecha de obra en el calendario.**
-2. Revisás la pre-ingeniería, sobre todo **la lista de materiales**.
-3. Hacés la **visita técnica de coordinación** (se agenda y se avisa).
-4. Devolvés a Ingeniería lo que haya que corregir.
+1. **Marca la fecha de obra en el calendario.**
+2. Revisa la pre-ingeniería, sobre todo **la lista de materiales**.
+3. Hace la **visita técnica de coordinación** (se agenda y se avisa).
+4. Devuelve a Ingeniería lo que haya que corregir.
 
 ### 5.2 · La fecha de obra
 
-**Vos la marcás en el calendario. Vos no se la comunicás al cliente.**
+**Operaciones la marca en el calendario. Operaciones no se la comunica al
+cliente.**
 
 Al confirmarla, **el sistema le avisa solo a Experiencia Solar** y le abre el
-pendiente de comunicarla, con dos días hábiles de plazo **desde que la confirmás
-vos**, no desde que se vendió. No hace falta que le mandes un mensaje.
+pendiente de comunicarla, con dos días hábiles de plazo **desde que Operaciones
+la confirma**, no desde que se vendió. No hace falta mandarle un mensaje.
 
-**Si después hay que moverla:** la reprogramás en el calendario y **el sistema te
+**Si después hay que moverla:** se reprograma en el calendario y **el sistema
 pide el motivo**. Eso genera un aviso propio para que Experiencia Solar se lo
-explique al cliente el mismo día. Si a un cliente le movés la fecha tres veces,
+explique al cliente el mismo día. Si a un cliente le mueven la fecha tres veces,
 quedan tres avisos, no uno.
 
-> **Reprogramar es el mecanismo.** Que Experiencia Solar te venga a pedir
+> **Reprogramar es el mecanismo.** Que Experiencia Solar tenga que pedir
 > explicaciones es la señal de que no se usó.
 
 ### 5.3 · El registro del avance de obra
@@ -420,26 +425,28 @@ Experiencia Solar **antes** de que el cliente pregunte.
 
 #### Con el cliente
 
-**Hablás directo** de horarios, accesos, llegada y levantada de materiales. Todo
+**Habla directo** de horarios, accesos, llegada y levantada de materiales. Todo
 lo demás va por Experiencia Solar.
 
-Si el cliente te pregunta algo que no es de obra: **no lo mandes a otro lado**.
-Le decís que se lo averiguás, y se lo pasás a Experiencia Solar.
+Si el cliente le pregunta algo que no es de obra, **no lo manda a otro lado**: le
+dice que se lo averigua, y se lo pasa a Experiencia Solar.
 
-#### Lo que anotás
+#### Lo que anota
 
 **Todo intercambio con el cliente y cualquier incidente.** Algo que se rompió, un
 pedido que hizo, una queja al pasar.
 
 **Se anota desde el celular, en la etapa de obra del proyecto, en diez segundos.**
-No entrás a ningún otro módulo. Eso aparece solo en el historial del cliente.
+No hace falta entrar a ningún otro módulo. Eso aparece solo en el historial del
+cliente.
 
 > Si registrar cuesta, no se registra. Dos líneas valen infinitamente más que un
 > informe prolijo que nadie escribe.
 
-#### Lo que dejás para cerrar la obra
+#### Lo que deja para cerrar la obra
 
-**Sin esto completo la obra no se cierra, y es tu responsabilidad que esté:**
+**Sin esto completo la obra no se cierra, y es responsabilidad del capataz que
+esté:**
 
 - Llevarle al cliente **los documentos de habilitación** y traerlos firmados
 - **Fotos**: generales, del tablero y protecciones, de la puesta a tierra
@@ -449,11 +456,11 @@ No entrás a ningún otro módulo. Eso aparece solo en el historial del cliente.
 - El recorrido y la explicación al cliente
 
 Todo eso **se carga en el proyecto**. Si después Tramitación descubre que faltó
-una firma, el reclamo le llega a tu gerente.
+una firma, el reclamo le llega a su gerente.
 
-### A quién le preguntás qué
+### A quién le pregunta qué
 
-| Necesitás saber… | Preguntale a… |
+| Necesita saber… | Le pregunta a… |
 |---|---|
 | Si hay stock o hay que comprar | Logística |
 | Si está todo el material en depósito | Logística |
@@ -464,67 +471,67 @@ una firma, el reclamo le llega a tu gerente.
 
 ## 6 · Logística
 
-### Qué hacés
+### Qué hace
 
-Comprás los materiales de la lista definitiva, seguís los pedidos y los recibís
-en depósito.
+Compra los materiales de la lista definitiva, sigue los pedidos y los recibe en
+depósito.
 
-### Dónde termina tu trabajo
+### Dónde termina su trabajo
 
 **Cuando el material está en depósito y la obra se puede planificar.**
 
 ### Con el cliente
 
-**No lo contactás.** Si hay que coordinar una entrega en su propiedad, se
+**No lo contacta.** Si hay que coordinar una entrega en su propiedad, se
 coordina con el capataz o con Experiencia Solar.
 
-### A quién le preguntás qué
+### A quién le pregunta qué
 
-| Necesitás saber… | Preguntale a… |
+| Necesita saber… | Le pregunta a… |
 |---|---|
 | Si la lista está cerrada de verdad | Ingeniería |
-| Si tenés aprobación para el gasto | Finanzas |
+| Si tiene aprobación para el gasto | Finanzas |
 | Qué hacer si un material demora | Gerente de Operaciones |
 
-### Qué registrás
+### Qué registra
 
-**Si algo demora y puede mover la fecha de obra, lo avisás.** Es de las pocas
-cosas de tu área que cambian lo que el cliente ya sabe.
+**Si algo demora y puede mover la fecha de obra, lo avisa.** Es de las pocas
+cosas del área que cambian lo que el cliente ya sabe.
 
 ---
 
 ## 7 · Tramitación UTE
 
-### Qué hacés
+### Qué hace
 
 Los hitos del trámite: consulta, apertura del caso, aprobación de la consulta,
 solicitud, aprobación del proyecto, documentos de obra, ensayos, documentos
 finales y habilitación.
 
-### Dónde termina tu trabajo
+### Dónde termina su trabajo
 
 **Cuando UTE habilita.**
 
-### Lo más importante de tu etapa
+### Lo más importante de la etapa
 
 Es la etapa donde **el cliente ya tiene los paneles en el techo y no puede
 usarlos**, y donde la demora no depende de nosotros. Lo único que se mueve
-mientras él espera **son tus hitos**.
+mientras él espera **son los hitos de Tramitación**.
 
-> **Cada hito que marcás aparece en el historial del cliente**, con el mismo
+> **Cada hito que se marca aparece en el historial del cliente**, con el mismo
 > nombre que él ve en su portal. Es lo que le permite a Experiencia Solar
-> responderle algo cierto sin preguntarte.
+> responderle algo cierto sin tener que preguntar.
 
 Marcarlos no es burocracia: es la única información que existe durante semanas.
 
 ### Cuando falta documentación
 
-Si descubrís que faltó una firma o un documento de la obra, **se lo reclamás al
-Gerente de Operaciones**. Nunca directo al capataz.
+Si Tramitación descubre que faltó una firma o un documento de la obra, **se lo
+reclama al Gerente de Operaciones**. Nunca directo al capataz.
 
-### A quién le preguntás qué
+### A quién le pregunta qué
 
-| Necesitás saber… | Preguntale a… |
+| Necesita saber… | Le pregunta a… |
 |---|---|
 | Cómo responder una observación de UTE | Ingeniería |
 | Que se corrija algo de la instalación | **Gerente de Operaciones** |
@@ -533,37 +540,37 @@ Gerente de Operaciones**. Nunca directo al capataz.
 ### Cuando habilita
 
 Al cerrar el trámite, **el sistema le avisa solo a Experiencia Solar** y arranca
-un reloj de 24 a 48 horas. No hace falta que mandes un mensaje.
+un reloj de 24 a 48 horas. No hace falta mandar un mensaje.
 
 ---
 
 ## 8 · Experiencia Solar
 
-### Qué hacés
+### Qué hace
 
-Acompañás al cliente **de punta a punta**, desde que firma hasta años después de
-que enciende. No sos el último eslabón: estás en toda la cadena.
+Acompaña al cliente **de punta a punta**, desde que firma hasta años después de
+que enciende. No es el último eslabón: está en toda la cadena.
 
-### Dónde termina tu trabajo
+### Dónde termina su trabajo
 
-**No termina.** Sos la dueña del caso.
+**No termina.** Experiencia Solar es la dueña del caso.
 
-### 8.1 · Lo que sos y lo que no
+### 8.1 · Lo que es y lo que no
 
-> **Sos la dueña del caso, no el canal por donde pasa todo.**
+> **Experiencia Solar es la dueña del caso, no el canal por donde pasa todo.**
 
-No sos una ventanilla única —si todo tuviera que pasar por vos sería teléfono
-descompuesto y más lento—: sos la responsable de que el cliente esté bien
+No es una ventanilla única —si todo tuviera que pasar por ella sería teléfono
+descompuesto y más lento—: es la responsable de que el cliente esté bien
 informado **aunque otros hablen con él**.
 
-Como el médico de cabecera: el especialista te habla directo, pero él tiene tu
-historia completa y responde por cómo va todo.
+Como el médico de cabecera: el especialista le habla directo al paciente, pero el
+médico de cabecera tiene la historia completa y responde por cómo va todo.
 
 ### 8.2 · El primer contacto
 
-**Después de que te presentó el vendedor, y al día siguiente como máximo.**
+**Después de que la presentó el vendedor, y al día siguiente como máximo.**
 
-En esas primeras comunicaciones hacés tres cosas:
+En esas primeras comunicaciones hace tres cosas:
 
 1. **La conversación de expectativa inicial** — el recorrido completo con plazos
    reales, **incluido UTE**. Es una conversación, idealmente por teléfono. Lo que
@@ -572,7 +579,7 @@ En esas primeras comunicaciones hacés tres cosas:
 2. **La tabla de referentes** — a quién escribirle para qué (abajo).
 3. **El acceso al portal.**
 
-### 8.3 · La tabla que le entregás al cliente
+### 8.3 · La tabla que se le entrega al cliente
 
 | Para… | Escribile a… |
 |---|---|
@@ -581,8 +588,8 @@ En esas primeras comunicaciones hacés tres cosas:
 
 Y después, como cierre:
 
-> «Si alguna vez sentís que no te estamos respondiendo, escribime a mí» — y le
-> pasás el contacto de Nicolás. Para lo de obra, el de Gabriel.
+> «Si alguna vez sentís que no te estamos respondiendo, escribime a mí» — con el
+> contacto de Nicolás. Para lo de obra, el de Gabriel.
 
 **Dos cuidados:**
 
@@ -592,7 +599,7 @@ Y después, como cierre:
    se presenta al mismo nivel que el contacto habitual, el cliente aprende que
    por ahí lo atienden más rápido.
 
-### 8.4 · Cada cuánto hablás con el cliente
+### 8.4 · Cada cuánto se habla con el cliente
 
 **Como máximo una semana sin que el cliente sepa algo.** Aunque no haya
 novedades:
@@ -603,7 +610,7 @@ novedades:
 Eso vale más que el silencio. Lo que no se puede es **inventar un avance que no
 existe**.
 
-**En la app:** el listado y la vista **Recorrido** te marcan a quién hace más que
+**En Voltia PM:** el listado y la vista **Recorrido** marcan a quién hace más que
 no se le habla. Los que nunca tuvieron contacto van primero.
 
 ### 8.5 · Los cuatro avisos que no se pueden fallar
@@ -616,16 +623,17 @@ no se le habla. Los que nunca tuvieron contacto van primero.
 | **Ya podés encender** | **24 a 48 horas** |
 
 **Los tres primeros y el de habilitación se abren solos** cuando pasa el hecho
-que los dispara. No hace falta que nadie te avise: aparecen en tu pantalla, en el
-correo de la mañana, y pintan la ficha del cliente de rojo.
+que los dispara. No hace falta que nadie avise: aparecen en la pantalla de
+Experiencia Solar, en el correo de la mañana, y pintan la ficha del cliente de
+rojo.
 
 **El de habilitación es el más urgente de todos.** Cada día que pasa **el cliente
 deja de ahorrar plata** — no es una demora administrativa, es dinero suyo que se
 pierde y no se recupera. A las 48 horas escala a Administración.
 
-**En el mismo contacto va la capacitación:** cómo encender, el acceso a la app, y
-qué generación esperar hoy. Sin ese último dato el cliente no sabe si lo que ve
-está bien o mal.
+**En el mismo contacto va la capacitación:** cómo encender, el acceso a la
+aplicación del inversor, y qué generación esperar hoy. Sin ese último dato el
+cliente no sabe si lo que ve está bien o mal.
 
 ### 8.6 · Los reportes de generación
 
@@ -652,36 +660,37 @@ aparecen, porque no son del cliente.
 
 ### 8.7 bis · El Plan de Protección contra Granizo
 
-Lo manejás en **Experiencia Solar → Plan granizo** y en la tarjeta del plan de
-la ficha del cliente. **No es un seguro**: decís plan, anualidad y daño por
+Se maneja en **Experiencia Solar → Plan granizo** y en la tarjeta del plan de la
+ficha del cliente. **No es un seguro**: se dice plan, anualidad y daño por
 granizo.
 
 - **Para activarlo** hacen falta el **Anexo A firmado** (alcanza una foto) y la
-  **primera anualidad paga**. Subís la hoja y marcás el cobro con la fecha real
-  del pago. Si la instalación ya existía, pedís **fotos de los paneles** y las
-  subís.
+  **primera anualidad paga**. Se sube la hoja y se marca el cobro con la fecha
+  real del pago. Si la instalación ya existía, se piden **fotos de los paneles**
+  y se suben.
 - **El nombre del cliente en rojo** quiere decir que falta un mes o menos para
-  vencer, que venció sin pago o que quedó suspendido. Además te llega el aviso
-  por la campana y, si ya venció, aparece en los pendientes del correo de la
-  mañana. **Le escribís vos**: en la ficha está **Avisar al cliente**, con el
-  mensaje listo. Voltia PM no le escribe solo.
-- **Si avisa un daño por granizo**, lo registrás en el plan el mismo día y le
-  respondés ese día. Voltia PM te marca los plazos de inspección y reposición.
+  vencer, que venció sin pago o que quedó suspendido. Además llega el aviso por
+  la campana y, si ya venció, aparece en los pendientes del correo de la mañana.
+  **Le escribe Experiencia Solar**: en la ficha está **Avisar al cliente**, con
+  el mensaje listo. Voltia PM no le escribe solo.
+- **Si el cliente avisa un daño por granizo**, se registra en el plan el mismo
+  día y se le responde ese día. Voltia PM marca los plazos de inspección y
+  reposición.
 
 El procedimiento completo está en el Manual de Posventa, capítulo 12.1.
 
-### 8.8 · Cuando necesitás saber algo
+### 8.8 · Cuando Experiencia Solar necesita saber algo
 
-> **No deberías tener que preguntarle a nadie.**
+> **No debería tener que preguntarle a nadie.**
 
 La información está en el **historial del cliente**: los avances de etapa, los
 comentarios de obra, los hitos del trámite, los documentos emitidos, los
 contactos anteriores. Todo con el nombre del área de donde salió.
 
-**Lo único que te llega por mensaje de Operaciones es la fecha de obra.** El
-resto lo mirás.
+**Lo único que le llega por mensaje de Operaciones es la fecha de obra.** El
+resto lo mira.
 
-**Si algo no está, pedilo — pero al gerente del área, no a la persona.** Y si es
+**Si algo no está, lo pide — pero al gerente del área, no a la persona.** Y si es
 una demora, lo que corresponde es que el área haya dejado el motivo.
 
 ### 8.9 · Los otros avisos del acompañamiento
@@ -711,7 +720,7 @@ el cliente nunca queda sin respuesta.**
 
 | Vía | Qué pasa |
 |---|---|
-| **El portal del cliente** | Queda registrado, avisa a Experiencia Solar y aparece en el correo de la mañana si no se respondió |
+| **El portal de Voltia** | Queda registrado, avisa a Experiencia Solar y aparece en el correo de la mañana si no se respondió |
 | **WhatsApp** | Es por donde entra la mayoría. **No queda registrado solo**: hay que abrirlo como ticket o al menos anotarlo |
 
 ### Derivar no es responder
@@ -750,18 +759,19 @@ disconforme no se silencia después del primero.
 
 ---
 
-## 11 · La app, pantalla por pantalla
+## 11 · Voltia PM, pantalla por pantalla
 
 ### Cómo se entra
 
-Con tu **mail o con tu usuario corto** —«nicolas» en vez del mail completo—, las
-dos formas sirven igual. Si no sabés cuál es el tuyo, te lo dice Administración.
+Con el **mail o con el usuario corto** —«nicolas» en vez del mail completo—, las
+dos formas sirven igual. Quien no sabe cuál es el suyo se lo pregunta a
+Administración.
 
 ### El menú
 
 | Menú | Para qué |
 |---|---|
-| **Mis tareas** | Lo que tenés pendiente vos: tareas, traspasos por confirmar, tickets |
+| **Mis tareas** | Lo que cada uno tiene pendiente: tareas, traspasos por confirmar, tickets |
 | **Dashboard** | El panorama general |
 | **Proyectos** | El pipeline de cada obra, sus etapas y sus comentarios |
 | **Ingeniería** | Las herramientas del proyectista |
@@ -770,27 +780,28 @@ dos formas sirven igual. Si no sabés cuál es el tuyo, te lo dice Administraci�
 | **Experiencia Solar** | Los Generadores, el Recorrido, encuestas, reportes y el Plan de Protección contra Granizo |
 | **Trámites UTE** | Los trámites y sus hitos |
 
-Y en el **menú de tu usuario**, arriba a la derecha, está **Capacitación**:
-videos y documentos para aprender a usar la app, divididos por área. Cada uno ve
-los de su rol. Los videos se miran dentro de la app, con una lista al costado que
-marca cuáles ya viste y recuerda por dónde ibas.
+Y en el **menú del usuario**, arriba a la derecha, está **Capacitación**: videos
+y documentos para aprender a usar Voltia PM, divididos por área. Cada uno ve los
+de su rol. Los videos se miran adentro, con una lista al costado que marca cuáles
+ya se vieron y recuerda por dónde se iba.
 
 ### El proyecto
 
-Entrás desde **Proyectos** y elegís el cliente en la lista de la izquierda (se
-puede plegar con el botón de arriba).
+Se entra desde **Proyectos** y se elige el cliente en la lista de la izquierda
+(se puede plegar con el botón de arriba).
 
 - **El pipeline** muestra las ocho etapas con su avance. Se hace clic en una y se
   abre con sus subetapas y su checklist.
-- **Para comentar**, entrás a la etapa donde estás trabajando y escribís ahí.
-  **Eso es lo que llega al historial del cliente.**
+- **Para comentar**, se entra a la etapa donde se está trabajando y se escribe
+  ahí. **Eso es lo que llega al historial del cliente.**
 - **Para subir fotos, videos o documentos**, también dentro de su etapa.
 - Arriba hay una fila de botones —**Proyecto · Ingeniería · Trámite UTE ·
-  Experiencia Solar**— que te lleva **al mismo cliente** en el otro módulo.
+  Experiencia Solar**— que lleva **al mismo cliente** en el otro módulo.
 
 ### La ficha del cliente
 
-Entrás desde **Experiencia Solar** y elegís el cliente. Es **una sola pantalla**:
+Se entra desde **Experiencia Solar** y se elige el cliente. Es **una sola
+pantalla**:
 
 - **Arriba**: todos sus datos —mail, teléfono, dirección, asesor, potencia,
   fechas— y cuántos días hace que no se lo contacta.
@@ -860,9 +871,9 @@ quince días sin que nadie le hable.
 En la ficha del cliente, dentro de cada etapa, el botón **Plantillas**. Hay
 quince mensajes listos.
 
-- **Vienen con el nombre del cliente y el tuyo ya puestos.** Lo que el sistema no
-  puede saber —una fecha, un motivo, un plazo— queda marcado a la vista y abajo
-  te dice **qué falta completar**.
+- **Vienen con el nombre del cliente y el de quien escribe ya puestos.** Lo que
+  el sistema no puede saber —una fecha, un motivo, un plazo— queda marcado a la
+  vista y abajo dice **qué falta completar**.
 - **Se editan antes de copiar.** Son un piso de tono, no un molde.
 - **Al copiar queda registrado el contacto.**
 
@@ -874,7 +885,7 @@ están fuera de cadencia (solo E1 y E2).
 
 **Si no hay nada pendiente, no llega.**
 
-### El portal del cliente
+### El portal de Voltia
 
 El cliente ve **el avance de su trámite con todos los hitos, su documentación,
 sus reportes de generación**, y puede **abrir un reclamo** desde ahí.
@@ -893,7 +904,7 @@ plantilla del mensaje sale con el usuario y la contraseña adentro.
 
 ### El cliente reclama que nadie le avisó de algo
 
-1. **Mirá el historial de su ficha antes de responder.** Ahí está todo.
+1. **Se mira el historial de su ficha antes de responder.** Ahí está todo.
 2. Si **efectivamente no se le avisó**: se reconoce y se avisa ahora. *«Tenés
    razón, esto se nos pasó»* cierra una conversación que una excusa mantiene
    abierta.
@@ -906,26 +917,26 @@ plantilla del mensaje sale con el usuario y la contraseña adentro.
 listo. Lo que no hay que hacer es **tildarlo sin haberlo hecho** — ahí el tablero
 pasa a mentir y perdemos la única señal que tenemos.
 
-### El cliente te pregunta algo que no sabés
+### El cliente pregunta algo que quien lo atiende no sabe
 
 *«Te averiguo y te confirmo»*, con un plazo concreto: *«antes de fin del día»*.
-Después lo averiguás internamente. **Nunca lo mandás a preguntar a otro.**
+Después se averigua internamente. **Nunca se lo manda a preguntar a otro.**
 
-### Otra área tuvo un intercambio con el cliente y no te enteraste
+### Otra área tuvo un intercambio con el cliente y Experiencia Solar no se enteró
 
-Se resuelve con la regla 4: cada uno anota en su etapa y llega solo. **Si alguien
+Se resuelve con la regla 4: cada área anota en su etapa y llega solo. **Si alguien
 no lo está haciendo, el problema no es de la persona: es que registrar le cuesta.**
 Hay que mirar desde dónde tendría que hacerlo.
 
 ### Una etapa lleva mucho tiempo
 
-**No pidas explicaciones.** Fijate si el área dejó el motivo en su etapa. Si no
-está y la demora afecta algo que ya le prometimos al cliente, se plantea en la
+**No se piden explicaciones.** Se mira si el área dejó el motivo en su etapa. Si
+no está y la demora afecta algo que ya le prometimos al cliente, se plantea en la
 reunión de coordinación.
 
-**La excepción:** si el cliente te está pidiendo explicaciones a vos y necesitás
-algo cierto que decirle, preguntá — **al gerente del área**, no a la persona que
-está ejecutando.
+**La excepción:** si el cliente le está pidiendo explicaciones a Experiencia
+Solar y hace falta algo cierto que decirle, se pregunta — **al gerente del
+área**, no a la persona que está ejecutando.
 
 ### El cliente no tiene mail
 
@@ -946,7 +957,7 @@ cédula o con un usuario armado con su nombre.
 
 > ### 4. El que se demora avisa. Nadie pide explicaciones.
 
-> ### 5. Si tenés que preguntar en qué anda algo, falta un registro.
+> ### 5. Si hay que preguntar en qué anda algo, falta un registro.
 
 > ### 6. Si no está agendado, no vamos. Y si está agendado, vamos: si no vamos, avisamos.
 
@@ -965,17 +976,17 @@ cédula o con un usuario armado con su nombre.
 
 | Palabra | Qué es |
 |---|---|
-| **Generador** | El cliente, una vez que su instalación existe. Es como lo llama UTE y como lo llama la app. |
+| **Generador** | El cliente, una vez que su instalación existe. Es como lo llama UTE y como lo llama Voltia PM. |
 | **E1 / E2 / E3** | Los tres tramos del acompañamiento al cliente. **No son las etapas del proyecto.** |
 | **Etapa** | Cada uno de los ocho tramos del proyecto, de Onboarding a Trámite UTE. |
 | **Subetapa** | Las tareas dentro de una etapa, con su checklist. |
 | **Traspaso** | El pase de trabajo de un área a la siguiente. Lo genera el sistema al completarse una etapa. |
 | **Paso** | Un aviso al cliente dentro del recorrido de Experiencia Solar. Algunos tienen plazo; **vencer no bloquea**. |
-| **Cadencia** | Los **días hábiles** sin contacto a partir de los cuales un cliente se marca: hoy 5 en E1 y E2. **E3 no tiene**, porque no termina nunca y marcaría a todos para siempre. |
+| **Cadencia** | Los **días hábiles** sin contacto a partir de los cuales un cliente se marca: 5 en E1 y E2. **E3 no tiene**, porque no termina nunca y marcaría a todos para siempre. |
 | **Novedad** | Pasó algo en el proyecto después del último contacto: el cliente todavía no lo sabe. |
 | **Ticket** | Un reclamo o consulta registrado, con estado y responsable. |
 | **Portal** | Lo que ve el cliente: avance, documentación, reportes, tickets y encuestas. |
 
 ---
 
-*Cómo trabajamos en Voltia · v1.5 · 28 de septiembre de 2026*
+*Cómo trabajamos en Voltia · v2.2 · 28 de septiembre de 2026*
