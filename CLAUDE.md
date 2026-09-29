@@ -279,11 +279,13 @@ Son de dos niveles:
 | Documento | Qué cubre | Estado |
 |---|---|---|
 | **Procedimiento General de Trabajo (PGT) de Voltia** | Lo que **conecta** a las áreas: el recorrido, las reglas comunes, qué hace cada área a grandes rasgos, dónde termina su trabajo y cómo se lo pasa a la siguiente. **Solo generalidades, sin detalle.** | Hoy es `Manual-de-Trabajo-Voltia.md`; se está recortando a PGT |
-| **Manual de trabajo de Ventas** | El detalle del área: cómo se hace cada cosa y en qué pantalla | Por armar |
+| **Manual de trabajo de Ventas** | El detalle del área: procedimiento, lineamientos y herramientas | Por armar |
 | **Manual de trabajo de Ingeniería** | Ídem | Por armar |
-| **Manual de trabajo de Operaciones** | Ídem, con **Obra** y **Logística** como sub-áreas | Por armar |
+| **Manual de trabajo de Operaciones** | Ídem. **Obra** y **Logística** son partes de este manual, pero armadas para poder imprimirse y entregarse como **librillos independientes** (el capataz recibe solo el de Obra) | Por armar |
 | **Manual de trabajo de Tramitación UTE** | Ídem | Por armar |
-| `Manual-Posventa-Experiencia-Solar.md` | El proceso de posventa a fondo: el recorrido en 3 etapas, los hitos, plazos, mensajes modelo y reglas duras | Existe (a confirmar si pasa a llamarse "Manual de trabajo de Experiencia Solar") |
+| **Manual de trabajo de Experiencia Solar** | Con el subtítulo grande **"Manual de Posventa"**. El proceso de posventa a fondo: el recorrido en 3 etapas, los hitos, plazos, mensajes modelo y reglas duras | Existe como `Manual-Posventa-Experiencia-Solar.md`; falta renombrarlo |
+| **Manual de trabajo de Finanzas** | Ídem que los de área | `Manual-de-Trabajo-Finanzas.md`, esqueleto; se completa al final, pero **se le va sumando información en cada ajuste que toque a Finanzas** |
+| **Manual de trabajo de Gerencia** | **Criterios y decisiones estratégicas**: qué se decidió, por qué, desde cuándo rige y a qué manual afecta. No es un manual de tareas | `Manual-de-Trabajo-Gerencia.md`, esqueleto; **cada decisión de criterio que se tome se registra ahí** |
 
 **Cada manual de área sigue el modelo del de Posventa**: son tres cosas juntas,
 en un solo documento —el **procedimiento** (qué se hace, quién, en qué orden y

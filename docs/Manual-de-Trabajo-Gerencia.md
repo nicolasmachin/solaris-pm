@@ -1,0 +1,63 @@
+# Manual de trabajo de Gerencia
+
+**Voltia · Uruguay** · Versión 0.1 — 28 de septiembre de 2026 · *en armado*
+
+> Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
+> se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
+> manual de tareas como los de las áreas: es la referencia para decidir.
+>
+> Lo que conecta a todas las áreas está en el **Procedimiento General de Trabajo
+> (PGT) de Voltia**. Los detalles de cada área, en su manual de trabajo.
+>
+> **Estado:** esqueleto. Cada vez que se toma una decisión de criterio, se
+> registra acá con su porqué.
+
+---
+
+## 1 · Para qué existe Gerencia
+
+*Por escribir.*
+
+## 2 · Qué decide Gerencia y qué decide cada área
+
+*Por escribir.*
+
+## 3 · Criterios y decisiones
+
+Cada decisión se anota con **qué se decidió, por qué, desde cuándo rige** y a
+qué manual afecta.
+
+*Por escribir.*
+
+## 4 · Cómo se toman y se comunican las decisiones
+
+*Por escribir.*
+
+## 5 · Las herramientas y cómo se usan
+
+*Por escribir.*
+
+---
+
+## Temas a documentar
+
+Temas de criterio que ya aparecieron en el trabajo con Voltia PM. **Están
+nombrados, no descriptos**: antes de escribir cada uno hay que confirmar la
+decisión vigente.
+
+- Las reglas que valen para todas las áreas y quién las cambia
+- La reunión de coordinación: qué se trata ahí y qué no
+- El escalamiento del cliente: cuándo interviene Gerencia
+- Las políticas con el cliente que todavía están marcadas "a confirmar" en el Manual de Posventa
+- El Plan de Protección contra Granizo como producto: por qué no es un seguro, carencias y plazos
+- Los plazos por etapa y la cadencia de contacto con el cliente
+- Las metas y los indicadores que se siguen cada semana
+- Los roles, las gerencias y qué ve cada uno en Voltia PM
+
+---
+
+## Anexo · Registro de cambios
+
+| Versión | Fecha | Qué se agregó o modificó |
+|---|---|---|
+| 0.1 | 28 de septiembre de 2026 | Se crea el manual con su estructura y la lista de temas a documentar. |
