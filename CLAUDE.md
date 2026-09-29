@@ -294,6 +294,14 @@ que no son de manual) y las **herramientas** de Voltia PM que se usan y **cómo
 se usan**, pantalla por pantalla—. No hay un documento para "el proceso" y otro
 para "el sistema". El PGT, en cambio, no baja a ese nivel.
 
+**Cada manual arranca diciendo quién lo tiene que leer**, y **lo que un área
+necesita saber de otra se repite en su propio manual**, a propósito (como hace el
+de Posventa con lo que tienen que saber las demás áreas): nadie tiene que ir a
+leer un pedacito de cada manual. Por eso, cuando cambia algo que está repetido,
+se corrige en **todos** los manuales donde aparece. Gerencia lee todos. El
+**Reglamento interno** (horario, horas extras, seguridad, sanciones) también es
+parte de la serie y cuelga de Operaciones.
+
 Cómo decidir qué se toca:
 
 - **Cambia cómo se hace algo dentro de un área** (el cotizador, el gabinete, una

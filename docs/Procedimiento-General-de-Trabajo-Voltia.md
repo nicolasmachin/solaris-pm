@@ -24,9 +24,14 @@
 | **Manual de trabajo de Experiencia Solar** — *Manual de Posventa* | El acompañamiento del cliente de punta a punta | Experiencia Solar |
 | **Manual de trabajo de Finanzas** | Procedimiento, lineamientos y herramientas del área | Finanzas |
 | **Manual de trabajo de Gerencia** | Los criterios y las decisiones estratégicas, con su porqué | Gerencia |
+| **Reglamento interno** | Horario, horas extras, uso de las medidas de seguridad, sanciones | Todo el equipo; cuelga de Operaciones |
 
 **El PGT lo lee todo el mundo, entero.** Es corto a propósito. Después, cada
-uno lee el manual de su área.
+uno lee **el manual de su área**, y Gerencia los lee todos.
+
+Cada manual arranca diciendo quién lo tiene que leer. **Lo que un área necesita
+saber de otra está repetido en su propio manual**, a propósito: nadie tiene que
+ir a buscar un pedacito a cada manual para poder hacer su trabajo.
 
 Cada documento cierra con un **registro de cambios**: qué se agregó o modificó
 en cada versión.
@@ -36,12 +41,18 @@ en cada versión.
 ## 1 · El recorrido de un proyecto
 
 Un cliente pasa por **ocho etapas**, desde que firma hasta que su instalación
-queda habilitada:
+queda habilitada. Cada etapa tiene un área dueña:
 
-```
-Venta → Onboarding → Pre-Ingeniería → Validación de Operaciones →
-Ingeniería Final → Compras → Obra → Trámite UTE
-```
+| | Etapa | Área dueña |
+|---|---|---|
+| 1 | Venta | Ventas |
+| 2 | Onboarding | Ventas |
+| 3 | Pre-Ingeniería | Ingeniería |
+| 4 | Validación de Operaciones | Operaciones |
+| 5 | Ingeniería Final | Ingeniería |
+| 6 | Compras | Logística |
+| 7 | Obra | Operaciones (Obra) |
+| 8 | Trámite UTE | Tramitación UTE |
 
 En paralelo, y desde el primer día, **Experiencia Solar acompaña al cliente** en
 tres tramos:
