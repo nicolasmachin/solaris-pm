@@ -285,6 +285,13 @@ Son de dos niveles:
 | **Manual de trabajo de Tramitación UTE** | Ídem | Por armar |
 | `Manual-Posventa-Experiencia-Solar.md` | El proceso de posventa a fondo: el recorrido en 3 etapas, los hitos, plazos, mensajes modelo y reglas duras | Existe (a confirmar si pasa a llamarse "Manual de trabajo de Experiencia Solar") |
 
+**Cada manual de área sigue el modelo del de Posventa**: son tres cosas juntas,
+en un solo documento —el **procedimiento** (qué se hace, quién, en qué orden y
+en qué plazo), los **lineamientos** (las reglas y el criterio para los casos
+que no son de manual) y las **herramientas** de Voltia PM que se usan y **cómo
+se usan**, pantalla por pantalla—. No hay un documento para "el proceso" y otro
+para "el sistema". El PGT, en cambio, no baja a ese nivel.
+
 Cómo decidir qué se toca:
 
 - **Cambia cómo se hace algo dentro de un área** (el cotizador, el gabinete, una
