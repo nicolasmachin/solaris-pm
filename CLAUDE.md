@@ -333,6 +333,14 @@ si el dato importa, va a un informe, no al manual.
 
 Al tocarlos, **subir la versión de su cabecera** (`Versión 1.1 — {fecha}`).
 
+**Cada manual cierra con un anexo "Registro de cambios"**: una entrada por
+versión, la más nueva arriba, con la fecha y **qué se agregó o modificó** en esa
+versión (en lenguaje del lector, no de desarrollo: "se agrega el capítulo del
+gabinete metálico", no "se refactorizó la sección 4"). Cada vez que se sube la
+versión de la cabecera, se agrega su entrada en el anexo, y ese anexo va también
+al canvas. Lo que no se sabe de versiones viejas no se inventa: se dice que no
+hay registro.
+
 > Los dos primeros quedaron dos semanas sin actualizar porque no estaban en esta regla:
 > cada vez que se cerraba algo se actualizaban el CHANGELOG y el manual técnico,
 > y estos no. De ahí que estén acá.
