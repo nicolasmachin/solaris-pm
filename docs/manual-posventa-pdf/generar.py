@@ -51,6 +51,19 @@ FUENTES = (
 
 ANCHO, ALTO = 794, 1123
 
+# Lo único que cambia de un manual a otro en el armazón: el texto del pie y los
+# isotipos, que son assets de cada canvas (la misma imagen tiene otra URL en
+# otro artifact). El Manual de Trabajo reusa este archivo y los pisa con
+# configurar(); si no se llama, quedan los del de Posventa.
+PIE = "Manual de Posventa · Experiencia Solar"
+ISOTIPOS = None   # (sobre blanco, sobre azul); None = los de imagenes.py
+
+
+def configurar(pie, isotipo, isotipo_blanco):
+    global PIE, ISOTIPOS
+    PIE = pie
+    ISOTIPOS = (isotipo, isotipo_blanco)
+
 
 def pagina(titulo_tab, cuerpo, numero, fondo="#ffffff", padding="72px 72px 56px",
            color_pie=GRIS_CLARO, borde_pie=BORDE):
@@ -60,8 +73,12 @@ def pagina(titulo_tab, cuerpo, numero, fondo="#ffffff", padding="72px 72px 56px"
     azul —se detecta por el color del pie, que en esas es claro—, porque el
     isotipo azul sobre azul no se ve.
     """
-    import imagenes as IMG
-    iso = IMG.LOGO_ISOTIPO if color_pie == GRIS_CLARO else IMG.LOGO_ISOTIPO_BLANCO
+    if ISOTIPOS:
+        claro, blanco = ISOTIPOS
+    else:
+        import imagenes as IMG
+        claro, blanco = IMG.LOGO_ISOTIPO, IMG.LOGO_ISOTIPO_BLANCO
+    iso = claro if color_pie == GRIS_CLARO else blanco
     return f"""<!doctype html>
 <html lang="es">
 <head>
@@ -81,7 +98,7 @@ body {{ margin: 0; font-family: {SERIF}; background: #ffffff; }}
 {cuerpo}
   <div style="flex-grow: 1"></div>
   <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 11px; border-top: 1px solid {borde_pie}; font-family: {SANS}; font-size: 11px; color: {color_pie}">
-    <span style="display: flex; align-items: center; gap: 7px"><img src="{iso}" alt="Voltia" style="display: block; height: 13px; width: auto">Manual de Posventa · Experiencia Solar</span>
+    <span style="display: flex; align-items: center; gap: 7px"><img src="{iso}" alt="Voltia" style="display: block; height: 13px; width: auto">{PIE}</span>
     <span>{numero}</span>
   </div>
 </div>

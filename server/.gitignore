@@ -13,4 +13,8 @@ scripts/fixtures/
 /vista-previa.mjs
 /pdf.mjs
 /preparar-imagenes.mjs
+/preparar-logo.mjs
+/logo-voltia.png
+/capturas-src/
+/fotos-src/
 /assets-locales.json

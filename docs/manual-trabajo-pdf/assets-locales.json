@@ -1,0 +1,19 @@
+{
+  "_comentario": "id del asset en el canvas del Manual de Trabajo → archivo en imagenes/. Solo para medir y armar el PDF local (espacio.mjs, pdf.mjs, vista-previa.mjs).",
+  "ef21d2fe6d9aed7de35b4bcab73e8f4d": "logo-completo.png",
+  "ba67c81bafdbf146eee7dce51ab4e09d": "logo-isotipo.png",
+  "1a7aed3aa87af4dd8549a34dea0fd705": "logo-isotipo-blanco.png",
+  "6f621fef30bf94710ee05cfdd9eefed6": "portada.jpg",
+  "716c08fbd2657a45118abdc7b3073cc5": "portadilla-parte1.jpg",
+  "d926bd5812afbeb5cd0a0b97b68e0509": "portadilla-parte2.jpg",
+  "7cabd494b9982c36b615e0c64bc79beb": "portadilla-parte3.jpg",
+  "c26257da33eeb3eed9ed56285f7a4ee6": "cierre.jpg",
+  "44f8c53fcc79f1f74efa1be4a5389e5a": "proyecto.png",
+  "3fae42b30545d5c43dc09eb4b50dcb2c": "recorrido.png",
+  "88816b54dfe5a6295b6ad2f2836f6d4b": "gabinete.png",
+  "80f7931e4d3eb26e6e2a59eb420e8639": "ficha-encabezado.png",
+  "bd5afd7da356d68f18b9c9da4da50e2d": "calendario.png",
+  "bd542bef9bb372594176194b2d92a9a2": "portal-cliente.png",
+  "b01876e529f4ff76522eaee62251277a": "plantillas.png",
+  "6b8e379ef96cd77c39db8514d73bd6c5": "tramite-ute.png"
+}

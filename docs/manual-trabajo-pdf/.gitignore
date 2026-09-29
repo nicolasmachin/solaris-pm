@@ -1,0 +1,5 @@
+# Salida de contenido.py: se regenera con un comando y lo que vale es lo
+# publicado en el canvas.
+paginas/
+vistas/
+__pycache__/

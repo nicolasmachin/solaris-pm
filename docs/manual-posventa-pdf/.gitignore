@@ -3,3 +3,6 @@
 paginas/
 vistas/
 __pycache__/
+
+# Copia de trabajo del logo: el original vive en client/public/logo-voltia.png.
+logo-voltia.png
