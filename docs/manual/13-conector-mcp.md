@@ -170,6 +170,30 @@ paneles, metros cuadrados de techo y potencia del inversor**. Los tres últimos
 de esa lista los pide el conector aunque el esquema los acepte en cero — ver
 "Reglas y decisiones".
 
+**Inversores.** Hay dos formas, las mismas del formulario (capítulo 02, "Varios
+inversores en una misma propuesta"):
+
+- **Iguales**: `potencia_inversor_kw` (de UN inversor), `cantidad_inversores` y
+  `marca_inversor`. Son los argumentos de siempre y no cambiaron.
+- **Distintos**: `inversores`, una lista de `{ marca, potencia_kw, paneles? }`.
+  Con dos o más, la propuesta pasa a inversores distintos: cada uno se cotiza por
+  separado y, si no se pasan `paneles`, se reparten solos por potencia. Una
+  lista vacía o de uno vuelve a inversores iguales (con los datos del primero,
+  si vino).
+- Si el borrador está en modo distintos y llegan `potencia_inversor_kw`,
+  `cantidad_inversores` o `marca_inversor` **sin** `inversores`, se sale del
+  modo distintos: esos argumentos describen inversores todos iguales, y
+  mezclarlos con la lista daría una propuesta ambigua.
+- Cantidad / potencia / marca clásicas se derivan de la lista antes de guardar
+  (`sincronizarSistemaInversores()`), igual que en el formulario.
+
+En `preparar_propuesta` (bloque "Cargado en el borrador" y el resumen) y en
+`ver_propuesta` (filas "Inversor" y "Potencia del inversor"), con inversores
+distintos se muestra la descripción: "1 Growatt de 8 kW + 1 Huawei de 6 kW".
+Los faltantes de un inversor puntual (`sistema.inversores.1.marca`) se traducen
+a un único "los inversores: marca y potencia de cada uno, y que los paneles
+asignados sumen los del sistema".
+
 **La cotización del dólar no se expone.** Es el único parámetro que mueve el
 precio y que el asesor no debería tocar. El markup sí: es su holgura para
 cotizar más caro o más barato.

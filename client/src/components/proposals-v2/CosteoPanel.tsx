@@ -9,7 +9,7 @@
 // muestra en blanco cuando no hay ajuste: escribir un número lo pisa, borrarlo
 // vuelve al original.
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { RotateCcw } from "lucide-react";
 
 import { useDraftCosteo } from "../../hooks/useDraftCosteo";
@@ -240,8 +240,17 @@ export function CosteoPanel({
                 const precio = c[`${key}PrecioUnitario` as keyof ProposalCosteoCalc] as number;
                 const cant = c[`${key}Cantidad` as keyof ProposalCosteoCalc] as number;
                 const sub = precio * cant;
+                // Inversores distintos: debajo de "Eléctrica" e "Inversor" va el
+                // costo de fábrica de cada uno (el costo/unidad de la línea es el
+                // promedio, para que × cantidad dé la suma).
+                const detalle =
+                  (key === "inversor" || key === "electrica") && c.inversoresDetalle
+                    ? c.inversoresDetalle
+                    : null;
+                const lineaPisada = ajustes[kPrecio] !== undefined || ajustes[kCant] !== undefined;
                 return (
-                  <tr key={key} className="border-b border-[var(--color-border)]/60">
+                  <Fragment key={key}>
+                  <tr className="border-b border-[var(--color-border)]/60">
                     <td className={`${td} font-medium`}>{nombre}</td>
                     <td className={tdNum}>
                       <CostoInput
@@ -263,6 +272,37 @@ export function CosteoPanel({
                       {usd(sub * (1 + IVA))}
                     </td>
                   </tr>
+                  {detalle?.map((inv, i) => {
+                    const pu = key === "inversor" ? inv.precioInversorUsdSinIva : inv.precioElectricaUsdSinIva;
+                    return (
+                      <tr
+                        key={`${key}-${i}`}
+                        className="border-b border-[var(--color-border)]/40 text-[var(--color-text-muted)]"
+                      >
+                        <td className={`${td} pl-5 text-xs`} colSpan={2}>
+                          ↳ {inv.marca || "Sin marca"} {String(inv.potenciaKw).replace(".", ",")} kW ·{" "}
+                          {inv.paneles} paneles
+                          {key === "electrica" && inv.multiplicadorElectrica !== 1
+                            ? ` · ×${String(inv.multiplicadorElectrica).replace(".", ",")}`
+                            : ""}
+                        </td>
+                        <td className={`${tdNum} text-xs`}>1</td>
+                        <td className={`${tdNum} text-xs ${lineaPisada ? "line-through" : ""}`}>{usd(pu)}</td>
+                        <td className={`${tdNum} text-xs ${lineaPisada ? "line-through" : ""}`}>
+                          {usd(pu * (1 + IVA))}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {detalle && lineaPisada ? (
+                    <tr className="border-b border-[var(--color-border)]/40">
+                      <td className={`${td} pl-5 text-[11px] text-[var(--color-accent)]`} colSpan={5}>
+                        Esta línea está pisada a mano: vale el mismo costo para todos los inversores y
+                        no el de cada uno.
+                      </td>
+                    </tr>
+                  ) : null}
+                  </Fragment>
                 );
               })}
               <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-app)]/40">

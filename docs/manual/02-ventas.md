@@ -206,92 +206,203 @@ desde las 21:00 hora local.
 
 ---
 
-# Varias instalaciones en una misma propuesta
+# Varios inversores en una misma propuesta
 
 ## Para qué existe
 
-A veces un cliente quiere dos instalaciones a la vez: dos techos, dos padrones,
-dos casas. El cotizador asumía **un solo inversor**, así que había que cotizar
-una sola y ajustar el precio a mano, o emitir dos propuestas separadas.
+A veces un cliente quiere dos instalaciones a la vez (dos techos, dos padrones,
+dos casas), o una sola instalación con más de un inversor. El cotizador asumía
+**un solo inversor**. Hay dos formas de cotizar más de uno:
+
+- **Inversores iguales**: una cantidad de inversores idénticos (misma marca y
+  potencia). Es la forma clásica.
+- **Inversores distintos**: una lista, cada uno con su marca, su potencia y sus
+  paneles (por ejemplo, un Growatt de 8 kW y un Huawei de 6 kW).
 
 ## Cómo se usa
 
-En "Datos técnicos del sistema", campo **Cantidad de inversores**. Con más de uno:
+En "Datos técnicos del sistema":
 
-- La **potencia del inversor** es la de **uno solo**, no la suma.
-- Los **paneles** se cargan **sumados** entre todas las instalaciones.
-- El costo del **inversor** y el de la **instalación eléctrica** se multiplican
-  por la cantidad. Nada más se multiplica.
+- **Inversores iguales**: campo **Cantidad de inversores**. La **potencia del
+  inversor** es la de **uno solo**, no la suma. Los **paneles** se cargan
+  **sumados** entre todos.
+- **Inversores distintos**: casilla **Inversores distintos**
+  (`InversoresDistintosField.tsx`). Al marcarla desaparecen potencia, cantidad y
+  marca, y aparece una fila por inversor con **Marca**, **Potencia (kW)** y
+  **Paneles**. La lista arranca con los inversores que ya había (mínimo dos,
+  copias de la potencia y marca actuales) para que el precio no salte. Se
+  agregan filas con **Agregar inversor** y se quitan con el tachito mientras
+  queden al menos dos. Al desmarcar la casilla se vuelve a un único inversor con
+  los datos del primero de la lista.
+- **Paneles por inversor**: vacío = automático (el valor repartido se ve como
+  placeholder). Escribir un número lo fija; borrarlo vuelve al automático.
+  Debajo de la lista se ve el resumen ("1 Growatt de 8 kW + 1 Huawei de 6 kW ·
+  14 kW en total · 24 de 24 paneles") y, si lo cargado a mano no cuadra, un aviso
+  rojo.
 
-También se puede cotizar así desde el chat, con el argumento
-`cantidad_inversores` de `preparar_propuesta`.
+En los dos casos, el costo del **inversor** y el de la **instalación eléctrica**
+van **uno por inversor**. Nada más se multiplica.
+
+Desde el chat: `preparar_propuesta` acepta `cantidad_inversores` (iguales) y
+`inversores` (lista de `{ marca, potencia_kw, paneles? }`, distintos). Ver
+capítulo 13.
 
 ## Cómo funciona
 
-El campo es `sistema.cantidadInversores` en el borrador, entero ≥ 1 y **con
-`.default(1)`**: los snapshots publicados antes de esto no lo traen y, si fuera
-obligatorio, quedarían no regenerables (mismo motivo que `variante` y `costos`).
+### Datos
 
-La clave del cálculo es **`panelesPorInstalacion`** en `calculator.ts` §2:
+- `sistema.cantidadInversores`: entero ≥ 1 con **`.default(1)`**: los snapshots
+  publicados antes no lo traen y, si fuera obligatorio, quedarían no
+  regenerables (mismo motivo que `variante` y `costos`).
+- `sistema.inversores?: { marca, potenciaKw, paneles? }[]`: **opcional**. Con
+  **0 o 1 elementos se ignora** y manda la forma clásica
+  (`listaInversoresDistintos()` devuelve `null`). Recién con **2 o más** la
+  propuesta está en modo distintos. Esa regla es la que garantiza que ninguna
+  versión ya emitida cambie de precio.
+- En modo distintos, `cantidadInversores`, `potenciaInversorKw` y
+  `marcaInversor` quedan **derivados** de la lista por
+  `sincronizarSistemaInversores()`: cantidad = largo de la lista, potencia =
+  **suma** de kW, marca = marcas sin repetir unidas con " + " ("Growatt +
+  Huawei"). Se derivan en el formulario al editar y otra vez en el servidor en
+  `upsertDraft()` (y en `preparar_propuesta`), así que cualquier camino de
+  escritura deja el borrador coherente. Sirven solo para lo que los lee aguas
+  abajo (contrato, proforma, conector, el `varios` de las plantillas): **el
+  cálculo no los usa** en modo distintos.
 
-```
-panelesPorInstalacion = ceil(cantidadPaneles / cantidadInversores)
-```
+Toda la lógica pura vive en `server/src/services/proposal/inversores.ts`. El
+cliente tiene una **copia** en `client/src/lib/inversores.ts` (cliente y
+servidor no comparten código) para mostrar el reparto mientras se escribe; hay
+que mantenerlas en sincronía.
 
-Ese número —y no el total— alimenta las dos reglas que escalan con el tamaño:
+### Reparto de paneles
 
-- **El escalón de la instalación eléctrica** (`getMultiplicadorElectrica`).
-- **El precio del inversor** (`obtenerPrecioInversor`), que usa la cantidad de
-  paneles para el caso especial trifásico de sistemas de menos de 13 paneles.
+`resolverPanelesInversores(cantidadPaneles, inversores)`:
 
-Sin ese reparto se contaría dos veces el tamaño: el escalón subiría por los
-paneles sumados y después se multiplicaría otra vez por la cantidad. Dos
-instalaciones de 12 paneles le costarían al cliente un 50% más de eléctrica que
-cotizarlas por separado.
+- Los inversores con `paneles` cargado se respetan tal cual.
+- Lo que queda del total se reparte entre los demás **en proporción a su
+  potencia**, con `repartirProporcional()` (método de los **mayores restos**:
+  cada uno recibe la parte entera de su cuota y los sobrantes van de a uno a los
+  de resto más grande; desempate por potencia y después por orden). La suma da
+  siempre exacto el total. Con 24 paneles y 8 + 6 kW: 14 y 10.
+- Si todas las potencias están en 0, reparte en partes iguales.
+- Si lo cargado a mano supera el total, los automáticos quedan en 0.
 
-Las cantidades efectivas del costeo salen de ahí:
+`panelesInversoresDescuadre()` da la diferencia entre lo asignado y el total. Si
+no es 0, el `superRefine` de `draftDataPublishSchema` agrega un issue en
+`sistema.inversores` y **no se puede publicar** (ni ver costeo/preview, que usan
+el mismo schema). Solo puede pasar con paneles cargados a mano.
+
+### Cálculo
+
+En `calculator.ts` §2:
+
+- **Inversores iguales**: `panelesPorInstalacion = ceil(cantidadPaneles /
+  cantidadInversores)`. Ese número —no el total— alimenta el escalón de la
+  eléctrica (`getMultiplicadorElectrica`) y el precio del inversor
+  (`obtenerPrecioInversor`, que usa los paneles para el caso especial trifásico
+  de menos de 13). Sin ese reparto se contaría dos veces el tamaño.
+- **Inversores distintos**: cada inversor se cotiza con **sus** paneles y **su**
+  potencia: `obtenerPrecioInversor(suministro, potenciaKw, paneles)` y
+  `precioElectricaBase × getMultiplicadorElectrica(paneles)`. La línea del
+  costeo lleva como **costo/unidad el promedio** y como cantidad la cantidad de
+  inversores, así precio × cantidad = la suma exacta. El detalle va en
+  `calculated.inversoresDetalle` (marca, potencia, paneles, si son manuales,
+  precio del inversor, multiplicador y precio de la eléctrica). Esa clave
+  **solo existe en modo distintos**: se agrega condicionalmente para que el
+  resultado de una propuesta clásica sea el mismo objeto de siempre. En el
+  debug de la calculadora se excluye (`ExcludedKeys` en `calculator-labels.ts`).
+
+Las cantidades efectivas del costeo:
 
 ```ts
 const inversorCantidad  = ajustes.inversorCantidad  ?? cantidadInversores;
 const electricaCantidad = ajustes.electricaCantidad ?? cantidadInversores;
 ```
 
-Un ajuste manual del panel de costeo **sigue ganando**: si alguien pisó la
-cantidad a mano, sabe algo que el cálculo no. Cuando difieren, el panel lo avisa
-en rojo.
+**Ajustes manuales del costeo** (`costos.inversorPrecioUnitario`, etc.): siguen
+ganando y **pisan la línea entera**. En modo distintos eso significa que el
+precio pisado vale igual para todos los inversores (se pierde la diferencia
+entre uno y otro); si se pisa solo la cantidad, se multiplica el promedio. El
+panel de costeo muestra debajo de las líneas Inversor y Eléctrica una sub-fila
+por inversor con su precio de fábrica; si la línea está pisada, esas sub-filas
+se tachan y un aviso lo explica. Si la cantidad del costeo difiere de la de la
+propuesta, el aviso rojo de siempre.
 
-En el documento, el helper `{{#if (varios ...)}}` de `template.ts` hace que los
-bloques del inversor hablen en plural **solo** cuando hay más de uno. Toca
-`carta.hbs` (las dos variantes), `resumen.hbs`, `resumen-ejecutivo.hbs` y
-`cotizacion.hbs`.
+La compatibilidad se verificó comparando el `calculate()` nuevo contra el de la
+versión anterior en 4320 combinaciones clásicas (suministro, paneles, potencia,
+cantidad, escalones, ajustes): resultado idéntico. Tests en
+`calculator-inversores.test.ts` (`npm run test:inversores`).
+
+### Documento
+
+Helpers de `template.ts`:
+
+- `{{#if (varios n)}}`: plural solo con más de un inversor (inversores iguales).
+- `{{#if (inversoresDistintos data.sistema)}}` y `{{inversoresTexto
+  data.sistema}}`: en modo distintos el bloque del inversor muestra
+  `describirInversores()`: "1 Growatt de 8 kW + 1 Huawei de 6 kW", agrupando
+  los iguales ("2 Growatt de 6 kW + 1 Huawei de 8 kW"), en el orden de la lista.
+
+Tocan `carta.hbs` (las dos variantes), `resumen.hbs`, `resumen-ejecutivo.hbs`
+(empresa: "Inversores: 1 Growatt de 8 kW + …") y `cotizacion.hbs` ("N
+inversores", que usa la cantidad derivada).
+
+### Aguas abajo (contrato, proforma, conector)
+
+Nada crea hoy el `SolarSystem` del proyecto desde la propuesta: la cantidad,
+marca y potencia del inversor del proyecto se cargan a mano, y **el modelo del
+proyecto no se tocó** (tiene un solo `inverterBrand` / `inverterPowerKw` /
+`inverterQuantity`). Lo que lee el snapshot cuando el proyecto no tiene
+`SolarSystem`:
+
+- **Contrato** (`contract-context.service.ts` → `buildContractContext()`):
+  cantidad = `cantidadInversores` del snapshot (antes no se precargaba), potencia
+  = `potenciaInversorKw` (en modo distintos, la **suma**), y marca = en modo
+  distintos **la descripción completa** ("1 Growatt de 8 kW + 1 Huawei de
+  6 kW"), porque el contrato tiene un solo campo de marca y uno de potencia. Es
+  precarga: se corrige en el formulario. Limitación: la fila "Potencia nominal
+  del inversor" del contrato muestra la suma.
+- **Proforma** (`proforma-context.service.ts`): en modo distintos, "• 2
+  inversores monofásicos: 1 Growatt de 8 kW + 1 Huawei de 6 kW."; con varios
+  iguales, "• 2 inversores monofásicos de 6 kW cada uno." (antes decía "1
+  inversor" porque no leía la cantidad del snapshot).
+- **Documentos UTE**: leen solo el `SolarSystem`; no cambian.
+- **Conector**: `preparar_propuesta` y `ver_propuesta` muestran la descripción
+  (capítulo 13). `computeDraftResumenComercial()` devuelve la descripción en
+  `marcaInversor` en modo distintos.
 
 ## Reglas y decisiones
 
-- **Todos los inversores son iguales.** Es una cantidad, no una lista de
-  inversores distintos. Eso es lo que mantiene el cambio acotado:
-  `potenciaInversorKw` sigue siendo un número y no se tocó nada aguas abajo
-  (contrato, proforma, documentos UTE, conector del chat). Cotizar inversores de
-  potencias distintas sería un cambio de modelo de datos.
-- **Los paneles por instalación se redondean para arriba**: con 25 paneles en 2
-  instalaciones, una lleva 13 y otra 12; se cotiza sobre la más grande.
-- **Con un inversor el documento sale idéntico al de siempre.** Es el criterio
-  con el que se construyó: nada de lo ya emitido cambia.
+- **Con 0 o 1 elemento en la lista, manda la forma clásica.** Es lo que protege
+  a las versiones ya emitidas.
+- **Potencia derivada = suma.** Es la potencia total de inversores, que es lo
+  que le importa a quien la lee aguas abajo. Ojo: en modo iguales el mismo campo
+  es la potencia de **uno**; las plantillas y el conector ya distinguen los dos
+  modos, pero cualquier lector nuevo tiene que mirar `listaInversoresDistintos()`
+  antes de multiplicar.
+- **Los paneles se reparten por potencia** y se pueden pisar a mano; lo pisado
+  tiene que cuadrar con el total para publicar.
+- **Si administración fijó la marca del inversor** (`marcaInversorDefault` sin
+  `asesorCanOverride`), las marcas de cada fila tampoco se pueden editar.
+- **Paneles por instalación redondeados para arriba** (solo inversores iguales):
+  con 25 paneles en 2 instalaciones se cotiza sobre 13.
+- **Con un inversor el documento sale idéntico al de siempre.**
 
 ## Casos borde
 
 - **La mano de obra no se duplica.** La cuadrilla se calcula por cantidad total
-  de paneles. Dos obras separadas llevan más trabajo que una sola del doble de
-  tamaño; si queda corta, se ajusta en el panel de costeo.
-- **El medidor queda en 1**, aunque dos instalaciones con dos conexiones a UTE
-  llevarían dos. No se multiplica porque no se pidió.
-- **El documento no separa las dos instalaciones**: muestra un sistema con dos
-  inversores, no "instalación 1" e "instalación 2".
+  de paneles, en los dos modos.
+- **El medidor queda en 1.**
+- **El documento no separa instalaciones**: muestra un sistema con varios
+  inversores.
 - **La potencia pico, la generación y el ahorro no cambian**: dependen de los
-  paneles, que ya se cargan sumados.
-- **La conversión a proyecto sigue siendo manual.** Nada crea hoy el
-  `SolarSystem` del proyecto desde la propuesta, así que la cantidad se vuelve a
-  cargar a mano al abrir la obra. El modelo del proyecto ya tiene
-  `inverterQuantity`, así que el día que se automatice, encaja.
+  paneles.
+- **El suministro es uno solo para toda la propuesta**: no se puede cotizar un
+  inversor monofásico y otro trifásico en la misma.
+- **Un ajuste manual del precio del inversor en modo distintos** borra la
+  diferencia entre inversores (vale el mismo para todos). Si se necesita costear
+  cada uno a otro precio, no hay ajuste por inversor: se pisa con el total
+  dividido por la cantidad.
 
 ---
 

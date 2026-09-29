@@ -2,6 +2,23 @@
 
 ## v11.4
 
+### 29 de septiembre de 2026
+
+#### Cotizador: inversores distintos en una misma propuesta
+
+- En **Datos técnicos del sistema** hay una casilla nueva, **Inversores distintos**. Al marcarla, en vez de una sola marca y una sola potencia aparece **una fila por inversor**, cada una con **su marca, su potencia y sus paneles**. Así se puede cotizar, por ejemplo, **un Growatt de 8 kW y un Huawei de 6 kW** para el mismo cliente.
+- **Los paneles se reparten solos** entre los inversores, en proporción a la potencia de cada uno (con 24 paneles, 14 van al de 8 kW y 10 al de 6 kW). Si hace falta otro reparto, se escribe a mano cuántos lleva cada uno; borrando el número vuelve al automático. Si lo cargado a mano no suma los paneles del sistema, aparece un aviso en rojo y la propuesta no se puede publicar hasta corregirlo.
+- **Cada inversor se cotiza por separado**: su precio sale de su potencia, y la instalación eléctrica de cada uno se calcula con los paneles que lleva ese inversor. En el **Costeo**, debajo de las líneas de Inversor y Eléctrica, se ve lo que cuesta cada uno.
+- Se pueden agregar tantos inversores como haga falta, y quitarlos mientras queden al menos dos. Desmarcando la casilla se vuelve a la forma de siempre (inversores iguales), con los datos del primero.
+- En la propuesta que recibe el cliente los inversores se describen uno por uno: **"1 Growatt de 8 kW + 1 Huawei de 6 kW"**, y si hay iguales se agrupan (**"2 Growatt de 6 kW + 1 Huawei de 8 kW"**).
+- Las propuestas ya emitidas y las que se sigan cotizando con inversores iguales no cambian en nada: ni el precio ni el documento.
+- Desde el chat también se puede cotizar así, pasándole la lista de inversores con su marca y su potencia.
+- Cuando la obra todavía no tiene el sistema cargado, **el contrato y la proforma** toman los inversores de la propuesta: la proforma los describe uno por uno y el contrato los pone en el campo de marca. Conviene revisarlos antes de generar, como siempre con lo precargado.
+
+#### Arreglos
+
+- La proforma de una obra cotizada con **varios inversores iguales** decía "1 inversor" cuando el proyecto todavía no tenía el sistema cargado. Ahora dice cuántos son ("2 inversores monofásicos de 6 kW cada uno"). El contrato, en el mismo caso, ahora precarga la cantidad de inversores.
+
 ### 28 de septiembre de 2026
 
 #### Cadencia de contacto: una semana hábil, y los habilitados salen del semáforo
