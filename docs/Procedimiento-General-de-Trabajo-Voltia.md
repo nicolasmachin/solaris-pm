@@ -142,8 +142,8 @@ manual.
 | ↳ **Logística** | Compra los materiales de la lista definitiva, sigue los pedidos y los recibe en depósito | Cuando el material está en depósito y la obra se puede planificar |
 | **Tramitación UTE** | Los hitos del trámite: consulta, solicitud, aprobaciones, documentos de obra, ensayos, documentos finales y habilitación | Cuando UTE habilita |
 | **Experiencia Solar** | Acompaña al cliente de punta a punta. Es **la dueña del caso, no el canal por donde pasa todo** | No termina |
-| **Finanzas** | Cobros, pagos, facturación, comisiones y resultados | *Por definir en su manual* |
-| **Gerencia** | Los criterios y las decisiones estratégicas; la reunión de coordinación; el escalamiento | — |
+| **Finanzas** | Cobra a los clientes según el plan de pagos, paga a proveedores, instaladores y comisiones, emite las facturas y lleva los resultados | Cuando el proyecto está cobrado entero y sus gastos pagados |
+| **Gerencia** | Define los criterios y las decisiones estratégicas, conduce la reunión de coordinación y atiende el escalamiento | No termina: responde por el conjunto |
 
 **Experiencia Solar, como el médico de cabecera:** el especialista le habla
 directo al paciente, pero el médico de cabecera tiene la historia completa y
@@ -170,11 +170,13 @@ otra arranca a ciegas:
 | Ingeniería | Logística | La lista de materiales definitiva, cerrada |
 | Operaciones | Experiencia Solar | La fecha de obra confirmada **en el calendario**: el aviso le llega solo |
 | Logística | Obra | El material en depósito |
+| Obra | Experiencia Solar | La obra terminada: el aviso llega solo, arranca E2 y Experiencia Solar le cuenta al cliente qué sigue |
 | Obra | Tramitación UTE | La documentación de obra firmada, las fotos y los videos de los ensayos, cargados en el proyecto |
 | Tramitación UTE | Experiencia Solar | La habilitación marcada: el aviso le llega solo y arranca el reloj de 24 a 48 horas |
 
-Tres cosas que se avisan solas, sin que nadie escriba: **la fecha de obra
-confirmada, cada reprogramación (con su motivo) y la habilitación**. Todas le
+Cuatro cosas que se avisan solas, sin que nadie escriba: **la fecha de obra
+confirmada, cada reprogramación (con su motivo), la obra terminada y la
+habilitación**. Todas le
 llegan a Experiencia Solar, que es quien se las cuenta al cliente.
 
 ---

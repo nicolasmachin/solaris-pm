@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 0.1 — 29 de septiembre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.2 — 29 de septiembre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Operaciones, juntos**. Sigue el mismo modelo que el Manual de trabajo de
@@ -132,6 +132,9 @@ esté:**
 - **El checklist firmado** por el cliente
 - **La documentación UTE firmada**
 - El recorrido y la explicación al cliente
+- **Los sobrantes retirados y el lugar limpio.** Nada de caños, perfiles ni
+  recortes en la propiedad del cliente. Vale igual para la cuadrilla propia y
+  para la tercerizada.
 
 Todo eso **se carga en el proyecto**. Si después Tramitación descubre que faltó
 una firma, el reclamo le llega a su gerente.
@@ -178,4 +181,5 @@ cosas del área que cambian lo que el cliente ya sabe.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.2 | 29 de septiembre de 2026 | Obra: para cerrar la obra, los sobrantes tienen que quedar retirados y el lugar limpio, también con cuadrilla tercerizada. |
 | 0.1 | 29 de septiembre de 2026 | Se crea el manual, con sus tres partes (Operaciones, Obra, Logística), a partir del detalle que estaba en el manual de trabajo general (v2.2). |
