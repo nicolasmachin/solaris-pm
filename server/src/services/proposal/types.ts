@@ -41,6 +41,12 @@ export interface ProposalData {
     /** Cuántos inversores iguales lleva. Ausente en snapshots previos = 1. */
     cantidadInversores?: number;
     marcaInversor: string;
+    /**
+     * Inversores distintos (cada uno con su marca y potencia). Solo cuenta con
+     * 2 o más; con eso los tres campos de arriba quedan derivados de la lista.
+     * Ver services/proposal/inversores.ts.
+     */
+    inversores?: { marca: string; potenciaKw: number; paneles?: number }[];
     tipoMontaje: string;
   };
   fecha: string; // ISO date
@@ -169,6 +175,22 @@ export interface ProposalCalculated {
   // Formateados
   fechaTextoLargo: string; // "19 de junio de 2026"
   mesYAnio: string; // "Junio 2026"
+
+  // Desglose por inversor, SOLO en modo inversores distintos (ausente en las
+  // propuestas clásicas). Precios "de fábrica": no reflejan los ajustes
+  // manuales del costeo, que pisan la línea entera.
+  inversoresDetalle?: ProposalInversorDetalle[];
+}
+
+export interface ProposalInversorDetalle {
+  marca: string;
+  potenciaKw: number;
+  paneles: number;
+  /** true si los paneles se cargaron a mano; false si salen del reparto. */
+  panelesManual: boolean;
+  precioInversorUsdSinIva: number;
+  multiplicadorElectrica: number;
+  precioElectricaUsdSinIva: number;
 }
 
 // ─── Defaults resueltos (sin los wrappers {value, asesorCanOverride}) ───────

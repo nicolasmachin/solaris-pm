@@ -23,6 +23,47 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "11.4",
+  date: "28 de septiembre de 2026",
+  sections: [
+    {
+      title: "Cadencia de contacto: una semana hábil, y los habilitados salen del semáforo",
+      items: [
+        "La cadencia se cuenta en días hábiles, y los días de Último contacto también.",
+        "E1 y E2 quedan en 5 días hábiles. Antes E1 estaba en 3.",
+        "La etapa 3 deja de tener cadencia: los habilitados ya no figuran en rojo sin tener nada pendiente.",
+        "Siguen apareciendo cuando pasa algo: una encuesta con nota baja, un reclamo, una novedad.",
+      ],
+    },
+    {
+      title: "Gabinete metálico: el plano para el fabricante se arma solo",
+      items: [
+        "Herramienta nueva en Ingeniería → Gabinete metálico: se cargan las medidas y sale la lámina para el fabricante.",
+        "Todo chapa plegada, sin herrajes y sin perforar; ninguna medida queda librada al criterio del taller.",
+        "La vista previa se actualiza mientras se cargan las medidas, y con Ampliar se ve a pantalla completa.",
+        "Cada emisión se guarda como v1, v2, v3… en los documentos del proyecto, sin pisar las anteriores.",
+      ],
+    },
+    {
+      title: "Plan de Protección contra Granizo",
+      items: [
+        "Nueva pestaña Plan granizo en Experiencia Solar, con el estado de cada plan, vencimientos y cobros.",
+        "El nombre del cliente sale en rojo cuando el plan está por vencer, venció sin pago o quedó suspendido.",
+        "En la ficha del cliente se da de alta el plan, se carga el Anexo A, las fotos y los cobros, y se siguen los daños por granizo.",
+        "Las condiciones y el Anexo A se generan desde la ficha o desde la subetapa Contrato del Onboarding.",
+        "Ocho mensajes modelo del plan, listos para copiar.",
+      ],
+    },
+    {
+      title: "\"La aplicación de tu inversor\", no \"la app\"",
+      items: [
+        "El mensaje \"Ya podés encender + capacitación\" ahora dice \"la aplicación de tu inversor\".",
+      ],
+    },
+  ],
+};
+
+const RELEASE_11_3: Release = {
   version: "11.3",
   date: "25 de septiembre de 2026",
   sections: [
@@ -299,6 +340,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "11.3",
+    shortDate: "25 sep",
+    highlights: RELEASE_11_3.sections.map((sec) => sec.title),
+  },
   {
     version: "11.2",
     shortDate: "24 sep",

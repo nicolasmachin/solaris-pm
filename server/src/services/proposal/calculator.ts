@@ -1,5 +1,11 @@
 import { obtenerPrecioInversor } from "./inversorPricing.js";
-import type { ProposalCalculated, ProposalData, ProposalDefaultsResolved } from "./types.js";
+import { listaInversoresDistintos, resolverPanelesInversores } from "./inversores.js";
+import type {
+  ProposalCalculated,
+  ProposalData,
+  ProposalDefaultsResolved,
+  ProposalInversorDetalle,
+} from "./types.js";
 
 const IVA = 0.22;
 
@@ -79,7 +85,13 @@ export function calculate(
   const suministro = data.factura.suministro;
   // Cuántas instalaciones cubre la propuesta. Ausente en snapshots anteriores a
   // esta funcionalidad, que son de una sola instalación.
-  const cantidadInversores = Math.max(1, Math.trunc(data.sistema.cantidadInversores ?? 1));
+  // Con dos o más inversores en `sistema.inversores` la propuesta está en modo
+  // "inversores distintos" (cada uno con su marca y potencia) y la cantidad es
+  // el largo de la lista. Sin lista, todo sigue exactamente como antes.
+  const listaDistintos = listaInversoresDistintos(data.sistema);
+  const cantidadInversores = listaDistintos
+    ? listaDistintos.length
+    : Math.max(1, Math.trunc(data.sistema.cantidadInversores ?? 1));
 
   // ── 1. Helpers básicos ──
   const potenciaTotalKwp = (cantidadPaneles * potenciaPanelW) / 1000;
@@ -106,17 +118,36 @@ export function calculate(
   // 13 y otra 12: se cotiza sobre la más grande.
   const panelesPorInstalacion = Math.ceil(cantidadPaneles / cantidadInversores);
 
-  const precioElectricaFabrica =
-    precioElectricaBase *
-    getMultiplicadorElectrica(panelesPorInstalacion, defaults.multiplicadorElectricaEscalones);
+  // Inversores distintos: cada uno se cotiza con SUS paneles y SU potencia (el
+  // precio del inversor y el escalón de la eléctrica), y la línea del costeo
+  // lleva el promedio como "costo/unidad" para que precio × cantidad dé
+  // exactamente la suma. El detalle por inversor va en `inversoresDetalle`.
+  let inversoresDetalle: ProposalInversorDetalle[] | undefined;
+  if (listaDistintos) {
+    inversoresDetalle = resolverPanelesInversores(cantidadPaneles, listaDistintos).map((inv) => {
+      const multiplicadorElectrica = getMultiplicadorElectrica(
+        inv.paneles,
+        defaults.multiplicadorElectricaEscalones,
+      );
+      return {
+        ...inv,
+        precioInversorUsdSinIva: obtenerPrecioInversor(suministro, inv.potenciaKw, inv.paneles, defaults),
+        multiplicadorElectrica,
+        precioElectricaUsdSinIva: precioElectricaBase * multiplicadorElectrica,
+      };
+    });
+  }
+  const promedio = (vals: number[]) => vals.reduce((a, b) => a + b, 0) / vals.length;
+
+  const precioElectricaFabrica = inversoresDetalle
+    ? promedio(inversoresDetalle.map((i) => i.precioElectricaUsdSinIva))
+    : precioElectricaBase *
+      getMultiplicadorElectrica(panelesPorInstalacion, defaults.multiplicadorElectricaEscalones);
   const precioMeterFabrica =
     suministro === "monofásico" ? defaults.precioMeterMonoUsd : defaults.precioMeterTriUsd;
-  const precioInversorFabrica = obtenerPrecioInversor(
-    suministro,
-    potenciaInversorKw,
-    panelesPorInstalacion,
-    defaults,
-  );
+  const precioInversorFabrica = inversoresDetalle
+    ? promedio(inversoresDetalle.map((i) => i.precioInversorUsdSinIva))
+    : obtenerPrecioInversor(suministro, potenciaInversorKw, panelesPorInstalacion, defaults);
 
   // Precio unitario y cantidad efectivos de cada ítem del costeo. Paneles y
   // estructuras siguen la cantidad del sistema salvo que se la pise a mano; la
@@ -363,5 +394,10 @@ export function calculate(
 
     fechaTextoLargo,
     mesYAnio,
+
+    // Solo en modo inversores distintos. Se agrega condicionalmente (y no como
+    // `undefined`) para que el resultado de una propuesta clásica sea
+    // exactamente el mismo objeto que antes.
+    ...(inversoresDetalle && { inversoresDetalle }),
   };
 }

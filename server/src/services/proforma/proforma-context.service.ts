@@ -5,6 +5,11 @@
 
 import { prisma } from "../../lib/prisma.js";
 import { notFound } from "../../utils/errors.js";
+import {
+  describirInversores,
+  listaInversoresDistintos,
+  type InversorItem,
+} from "../proposal/inversores.js";
 
 export interface ProformaContext {
   cliente?: { nombre?: string; documento?: string; direccion?: string; telefono?: string; email?: string };
@@ -84,7 +89,12 @@ export async function buildProformaContext(projectId: string): Promise<ProformaC
     cantidadPaneles != null && potenciaPanelW != null
       ? Math.round((cantidadPaneles * potenciaPanelW) / 10) / 100
       : undefined;
-  const inversorCantidad = ss?.inverterQuantity ?? 1;
+  const inversorCantidad = ss?.inverterQuantity ?? num(snapSistema.cantidadInversores) ?? 1;
+  // Inversores distintos en la propuesta (y sin SolarSystem cargado): se
+  // describen uno por uno en vez de "N inversor de <suma> kW".
+  const listaSnap = ss
+    ? null
+    : listaInversoresDistintos(snapSistema as { inversores?: Partial<InversorItem>[] });
   const inversorPotenciaKw = num(ss?.inverterPowerKw) ?? num(snapSistema.potenciaInversorKw);
   let inversorTipo = "monofásico";
   if (ss?.inverterPhaseType) inversorTipo = ss.inverterPhaseType === "MONOFASICO" ? "monofásico" : "trifásico";
@@ -94,7 +104,11 @@ export async function buildProformaContext(projectId: string): Promise<ProformaC
     `Instalación solar fotovoltaica, llave en mano, con objetos trasportables, para uso residencial, de ${fmtKw(potenciaKw)} kW de potencia.\n` +
     `Características principales:\n` +
     `• ${cantidadPaneles ?? ""} paneles solares de ${potenciaPanelW ?? ""}W.\n` +
-    `• ${inversorCantidad} inversor ${inversorTipo} de ${fmtKw(inversorPotenciaKw)} kW.\n` +
+    (listaSnap
+      ? `• ${listaSnap.length} inversores ${inversorTipo === "monofásico" ? "monofásicos" : "trifásicos"}: ${describirInversores(listaSnap)}.\n`
+      : inversorCantidad > 1
+        ? `• ${inversorCantidad} inversores ${inversorTipo === "monofásico" ? "monofásicos" : "trifásicos"} de ${fmtKw(inversorPotenciaKw)} kW cada uno.\n`
+        : `• ${inversorCantidad} inversor ${inversorTipo} de ${fmtKw(inversorPotenciaKw)} kW.\n`) +
     `• Instalación incluída.`;
 
   return { cliente, descripcion };

@@ -4,6 +4,11 @@
 
 import { prisma } from "../../lib/prisma.js";
 import { notFound } from "../../utils/errors.js";
+import {
+  describirInversores,
+  listaInversoresDistintos,
+  type InversorItem,
+} from "../proposal/inversores.js";
 
 // Espeja (parcial) la forma de ContractDataPublish; el cliente mergea esto sobre
 // los defaults del form.
@@ -101,14 +106,25 @@ export async function buildContractContext(projectId: string): Promise<ContractC
     num(snapCalc.energiaAnualKwh) ??
     (num(project.estimatedMwhYear) != null ? Math.round(num(project.estimatedMwhYear)! * 1000) : undefined);
 
+  // Propuesta con inversores distintos (y sin SolarSystem cargado): el
+  // contrato tiene UN campo de marca y UNO de potencia, así que la marca lleva
+  // la descripción completa ("1 Growatt de 8 kW + 1 Huawei de 6 kW") y la
+  // potencia es la suma, que es lo que la propuesta guarda derivado. Es una
+  // precarga: el asesor la puede corregir en el formulario del contrato.
+  const listaSnap = listaInversoresDistintos(
+    snapSistema as { inversores?: Partial<InversorItem>[] },
+  );
+
   const sistema: ContractContext["sistema"] = {
     cantidadPaneles,
     potenciaUnitariaWp,
     potenciaTotalKwp,
     marcaPaneles: nonEmpty(ss?.panelBrand) ?? nonEmpty(snapSistema.marcaPaneles as string),
-    cantidadInversores: ss?.inverterQuantity ?? undefined,
+    cantidadInversores: ss?.inverterQuantity ?? num(snapSistema.cantidadInversores),
     potenciaInversorKw: num(ss?.inverterPowerKw) ?? num(snapSistema.potenciaInversorKw),
-    marcaInversor: nonEmpty(ss?.inverterBrand) ?? nonEmpty(snapSistema.marcaInversor as string),
+    marcaInversor:
+      nonEmpty(ss?.inverterBrand) ??
+      (listaSnap ? describirInversores(listaSnap) : nonEmpty(snapSistema.marcaInversor as string)),
     tipoTecho: nonEmpty(snapTecho.descripcion as string) ?? nonEmpty(snapSistema.tipoMontaje as string),
     generacionAnualKwh,
   };

@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import Handlebars from "handlebars";
 
+import { describirInversores, listaInversoresDistintos } from "./inversores.js";
 import type { ProposalCalculated, ProposalData, ProposalVariante } from "./types.js";
 
 const TEMPLATES_ROOT = fileURLToPath(new URL("../../templates", import.meta.url));
@@ -56,6 +57,18 @@ Handlebars.registerHelper("mult", (a: number, b: number) => (Number(a) || 0) * (
 // del inversor para hablar en plural solo cuando la propuesta cubre más de una
 // instalación; con un inversor el documento sale exactamente como siempre.
 Handlebars.registerHelper("varios", (n: unknown) => (Number(n) || 1) > 1);
+// Inversores distintos (marca y potencia propias de cada uno). Con
+// `{{#if (inversoresDistintos data.sistema)}}` el bloque del inversor cambia a
+// la descripción de `{{inversoresTexto data.sistema}}`: "1 Growatt de 8 kW +
+// 1 Huawei de 6 kW" (agrupa los iguales). Sin lista, los bloques siguen igual.
+Handlebars.registerHelper(
+  "inversoresDistintos",
+  (sistema: ProposalData["sistema"] | undefined) => listaInversoresDistintos(sistema) !== null,
+);
+Handlebars.registerHelper("inversoresTexto", (sistema: ProposalData["sistema"] | undefined) => {
+  const lista = listaInversoresDistintos(sistema);
+  return lista ? describirInversores(lista) : "";
+});
 // Nombre de la tarifa UTE para mostrar en los textos (el enum es Simple/Doble/
 // Triple; UTE las llama "Doble Horario"/"Triple Horario").
 Handlebars.registerHelper("tarifaLabel", (tarifa: string): string => {

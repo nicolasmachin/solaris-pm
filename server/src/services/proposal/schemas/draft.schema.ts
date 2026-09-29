@@ -15,6 +15,8 @@
 
 import { z } from "zod";
 
+import { listaInversoresDistintos, panelesInversoresDescuadre } from "../inversores.js";
+
 const itemAdicionalSchema = z
   .object({
     id: z.string(),
@@ -60,6 +62,25 @@ const costosOverrideSchema = z
   .strict();
 
 export type CostosOverride = z.infer<typeof costosOverrideSchema>;
+
+// Un inversor de la lista de "inversores distintos". `paneles` es opcional:
+// ausente = se reparte solo en proporción a la potencia (ver inversores.ts).
+const inversorItemSchema = z
+  .object({
+    marca: z.string().min(1, "Falta la marca del inversor"),
+    potenciaKw: z.number().gt(0, "Falta la potencia del inversor"),
+    paneles: z.number().int().min(0).optional(),
+  })
+  .strict();
+
+const inversorItemLenientSchema = z
+  .object({
+    marca: z.string(),
+    potenciaKw: z.number().min(0),
+    paneles: z.number().int().min(0),
+  })
+  .strict()
+  .partial();
 
 // Base sin refinamientos: de acá salen las DOS variantes. No mergear el
 // superRefine de abajo en este objeto — `.superRefine()` devuelve un ZodEffects
@@ -128,6 +149,11 @@ const draftDataBaseSchema = z
         // no regenerables (mismo motivo que `variante` y `costos`).
         cantidadInversores: z.number().int().min(1).default(1),
         marcaInversor: z.string().min(1),
+        // Inversores distintos (cada uno con su marca y potencia). Opcional:
+        // con 0 o 1 elementos se ignora y manda la forma clásica de arriba, así
+        // que las versiones ya publicadas no cambian. Con 2 o más, los tres
+        // campos de arriba quedan derivados de la lista (sincronizarSistemaInversores).
+        inversores: z.array(inversorItemSchema).optional(),
         // Tipo de montaje (Fase F): string libre por ahora ("Techo chapa", …).
         tipoMontaje: z.string().min(1),
       })
@@ -142,6 +168,24 @@ const draftDataBaseSchema = z
 // Los `path` de estos issues los consume draftMissingFields() para armar la
 // lista de "qué falta para publicar" del botón Publicar.
 export const draftDataPublishSchema = draftDataBaseSchema.superRefine((data, ctx) => {
+  // Inversores distintos con paneles cargados a mano: tienen que sumar lo mismo
+  // que el sistema. El reparto automático siempre cuadra, así que esto solo
+  // salta cuando alguien pisó los paneles de un inversor.
+  const lista = listaInversoresDistintos(data.sistema);
+  if (lista) {
+    const descuadre = panelesInversoresDescuadre(data.sistema.cantidadPaneles, lista);
+    if (descuadre !== 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["sistema", "inversores"],
+        message:
+          descuadre > 0
+            ? `Los paneles de los inversores suman ${descuadre} más que los del sistema`
+            : `A los inversores les faltan ${-descuadre} paneles para llegar a los del sistema`,
+      });
+    }
+  }
+
   if (data.variante !== "EMPRESA") return;
   if (!data.empresa?.razonSocial?.trim()) {
     ctx.addIssue({
@@ -238,6 +282,7 @@ export const draftDataStorageSchema = z
         potenciaInversorKw: z.number().min(0),
         cantidadInversores: z.number().int().min(1),
         marcaInversor: z.string(),
+        inversores: z.array(inversorItemLenientSchema),
         tipoMontaje: z.string(),
       })
       .strict()

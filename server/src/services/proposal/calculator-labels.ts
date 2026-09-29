@@ -22,7 +22,9 @@ export interface CalcLabelMeta {
 }
 
 // Claves de ProposalCalculated que NO se muestran en el debug (strings formateados).
-type ExcludedKeys = "fechaTextoLargo" | "mesYAnio";
+// `inversoresDetalle` es una lista de objetos (solo en modo inversores
+// distintos), no un intermedio numérico.
+type ExcludedKeys = "fechaTextoLargo" | "mesYAnio" | "inversoresDetalle";
 type CalcKey = Exclude<keyof ProposalCalculated, ExcludedKeys>;
 
 export const calculatorLabels = {

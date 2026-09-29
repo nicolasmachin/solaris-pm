@@ -1,5 +1,7 @@
 import { Button } from "../ui/Button";
 import { ComisionB2BPanel } from "./ComisionB2BPanel";
+import { InversoresDistintosField } from "./InversoresDistintosField";
+import { listaInversoresDistintos, sincronizarSistemaInversores } from "../../lib/inversores";
 import { saludoPara } from "../../lib/salutation";
 import { NumberField, SelectField, TextAreaField, TextField } from "./fields";
 import {
@@ -53,6 +55,33 @@ export function ProposalForm({
     return v && isFlaggedValue(v) ? v.asesorCanOverride : true;
   };
   const fixedHint = (key: string) => (canOverride(key) ? undefined : "Fijado por administración");
+
+  // Inversores distintos: la lista manda con 2 o más elementos.
+  const distintos = listaInversoresDistintos(data.sistema) !== null;
+  const activarDistintos = () => {
+    // Arranca con los inversores que ya había (todos iguales), mínimo dos, para
+    // que el precio no salte de golpe: después se cambia la marca o la potencia
+    // del que corresponda.
+    const n = Math.max(2, data.sistema.cantidadInversores ?? 1);
+    const inversores = Array.from({ length: n }, () => ({
+      marca: data.sistema.marcaInversor,
+      potenciaKw: data.sistema.potenciaInversorKw,
+    }));
+    setSistema(sincronizarSistemaInversores({ ...data.sistema, inversores }));
+  };
+  const desactivarDistintos = () => {
+    // Vuelve a un único inversor con los datos del primero de la lista.
+    const { inversores, ...resto } = data.sistema;
+    const primero = inversores?.[0];
+    onChange({
+      ...data,
+      sistema: {
+        ...resto,
+        cantidadInversores: 1,
+        ...(primero && { marcaInversor: primero.marca, potenciaInversorKw: primero.potenciaKw }),
+      },
+    });
+  };
 
   const setItems = (items: ProposalItemAdicional[]) => onChange({ ...data, itemsAdicionales: items });
   const updateItem = (id: string, p: Partial<ProposalItemAdicional>) =>
@@ -117,11 +146,38 @@ export function ProposalForm({
           <NumberField label="Cantidad de paneles" value={data.sistema.cantidadPaneles} onChange={(v) => setSistema({ cantidadPaneles: v })} min={1} error={errors["sistema.cantidadPaneles"]} />
           <NumberField label="Potencia por panel (W)" value={data.sistema.potenciaPanelW} onChange={(v) => setSistema({ potenciaPanelW: v })} min={0} disabled={!canOverride("potenciaPanelWDefault")} hint={fixedHint("potenciaPanelWDefault")} error={errors["sistema.potenciaPanelW"]} />
           <TextField label="Marca de paneles" value={data.sistema.marcaPaneles} onChange={(v) => setSistema({ marcaPaneles: v })} disabled={!canOverride("marcaPanelesDefault")} hint={fixedHint("marcaPanelesDefault")} error={errors["sistema.marcaPaneles"]} />
-          <NumberField label="Potencia inversor (kW)" value={data.sistema.potenciaInversorKw} onChange={(v) => setSistema({ potenciaInversorKw: v })} min={0} step={0.1} hint="Por inversor, no el total." error={errors["sistema.potenciaInversorKw"]} />
-          <NumberField label="Cantidad de inversores" value={data.sistema.cantidadInversores ?? 1} onChange={(v) => setSistema({ cantidadInversores: Math.max(1, Math.trunc(v) || 1) })} min={1} step={1} hint="Más de uno para cotizar varias instalaciones juntas. Los paneles se cargan sumados." error={errors["sistema.cantidadInversores"]} />
-          <TextField label="Marca de inversor" value={data.sistema.marcaInversor} onChange={(v) => setSistema({ marcaInversor: v })} disabled={!canOverride("marcaInversorDefault")} hint={fixedHint("marcaInversorDefault")} error={errors["sistema.marcaInversor"]} />
+          {distintos ? null : (
+            <>
+              <NumberField label="Potencia inversor (kW)" value={data.sistema.potenciaInversorKw} onChange={(v) => setSistema({ potenciaInversorKw: v })} min={0} step={0.1} hint="Por inversor, no el total." error={errors["sistema.potenciaInversorKw"]} />
+              <NumberField label="Cantidad de inversores" value={data.sistema.cantidadInversores ?? 1} onChange={(v) => setSistema({ cantidadInversores: Math.max(1, Math.trunc(v) || 1) })} min={1} step={1} hint="Más de uno para cotizar varias instalaciones juntas. Los paneles se cargan sumados." error={errors["sistema.cantidadInversores"]} />
+              <TextField label="Marca de inversor" value={data.sistema.marcaInversor} onChange={(v) => setSistema({ marcaInversor: v })} disabled={!canOverride("marcaInversorDefault")} hint={fixedHint("marcaInversorDefault")} error={errors["sistema.marcaInversor"]} />
+            </>
+          )}
           <TextField label="Tipo de montaje" value={data.sistema.tipoMontaje} onChange={(v) => setSistema({ tipoMontaje: v })} placeholder="Techo chapa / teja / suelo…" error={errors["sistema.tipoMontaje"]} />
         </div>
+
+        <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm text-[var(--color-text-primary)]">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={distintos}
+            onChange={(e) => (e.target.checked ? activarDistintos() : desactivarDistintos())}
+          />
+          <span>
+            <span className="font-medium">Inversores distintos</span>
+            <span className="block text-[11px] text-[var(--color-text-muted)]">
+              Cada inversor con su marca y su potencia (por ejemplo, un Growatt de 8 kW y un Huawei de 6 kW). Cada uno se cotiza por separado, con los paneles que lleva.
+            </span>
+          </span>
+        </label>
+        {distintos ? (
+          <InversoresDistintosField
+            sistema={data.sistema}
+            onChange={(sistema) => onChange({ ...data, sistema })}
+            marcaEditable={canOverride("marcaInversorDefault")}
+            error={Boolean(errors["sistema.inversores"])}
+          />
+        ) : null}
 
         <p className={SUB}>Techo</p>
         <div className={GRID}>

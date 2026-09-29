@@ -9,6 +9,11 @@ import { prisma } from "../../lib/prisma.js";
 import { AppError, badRequest, notFound } from "../../utils/errors.js";
 import { buildCalcDebugRows, type CalcDebugRow } from "./calculator-labels.js";
 import { calculate, interpretarMarkup } from "./calculator.js";
+import {
+  describirInversores,
+  listaInversoresDistintos,
+  sincronizarSistemaInversores,
+} from "./inversores.js";
 import { buildInitialDraftData, mergeDraftData } from "./initial-draft.js";
 import { resolveDefaults } from "./resolveDefaults.js";
 import { draftDataPublishSchema, draftDataStorageSchema } from "./schemas/draft.schema.js";
@@ -165,6 +170,9 @@ export async function upsertDraft(
   variante: ProposalVariante = ProposalVariante.RESIDENCIAL,
 ) {
   const parsed = draftDataStorageSchema.parse(data);
+  // Con inversores distintos, cantidad / potencia / marca clásicas se derivan
+  // de la lista acá, para cualquier camino de escritura (formulario o chat).
+  if (parsed.sistema) parsed.sistema = sincronizarSistemaInversores(parsed.sistema);
   // La variante de la fila manda sobre la que venga en el body: el borrador es
   // del cotizador desde el que se está escribiendo, y así un body sin variante
   // (o con la otra) no puede reetiquetar el borrador equivocado.
@@ -207,6 +215,10 @@ export function draftQualityIssues(rawData: unknown): string[] {
   if (!positivo("factura", "pagaMensualPesos")) issues.push("factura.pagaMensualPesos");
   if (!positivo("techo", "tamanoM2")) issues.push("techo.tamanoM2");
   if (!positivo("sistema", "potenciaInversorKw")) issues.push("sistema.potenciaInversorKw");
+  // Inversores distintos: cada uno necesita su potencia (el schema ya lo exige
+  // al publicar, pero acá se pregunta junto con el resto).
+  const lista = listaInversoresDistintos(d.sistema as Parameters<typeof listaInversoresDistintos>[0]);
+  if (lista?.some((i) => !(i.potenciaKw > 0) || !i.marca.trim())) issues.push("sistema.inversores");
 
   return issues;
 }
@@ -281,7 +293,12 @@ export async function computeDraftResumenComercial(
     cantidadPaneles: parsed.data.sistema.cantidadPaneles,
     potenciaPanelW: parsed.data.sistema.potenciaPanelW,
     marcaPaneles: parsed.data.sistema.marcaPaneles,
-    marcaInversor: parsed.data.sistema.marcaInversor,
+    // Con inversores distintos va la descripción entera ("1 Growatt de 8 kW +
+    // 1 Huawei de 6 kW"): la marca sola no dice qué se está vendiendo.
+    marcaInversor: (() => {
+      const lista = listaInversoresDistintos(parsed.data.sistema);
+      return lista ? describirInversores(lista) : parsed.data.sistema.marcaInversor;
+    })(),
     usdPorWatt: calc.usdPorWatt,
     plazoEntrega: parsed.data.cotizacion.plazoEntrega,
     ahorroMensualPesos: calc.ahorroMensualPesos,

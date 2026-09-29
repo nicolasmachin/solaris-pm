@@ -93,6 +93,12 @@ export interface ProposalDraftData {
     /** Cuántos inversores iguales lleva la propuesta (por defecto 1). */
     cantidadInversores?: number;
     marcaInversor: string;
+    /**
+     * Inversores distintos (marca y potencia de cada uno; paneles opcional, si
+     * falta se reparte por potencia). Solo cuenta con 2 o más: ahí cantidad,
+     * potencia (suma) y marca de arriba quedan derivadas de la lista.
+     */
+    inversores?: ProposalInversor[];
     tipoMontaje: string;
   };
   fecha: string;
@@ -102,6 +108,23 @@ export interface ProposalDraftData {
   // que sale de los defaults". No tocan los defaults ni ninguna otra propuesta;
   // se autoguardan con el resto del borrador y viajan a la versión publicada.
   costos?: ProposalCostosOverride;
+}
+
+export interface ProposalInversor {
+  marca: string;
+  potenciaKw: number;
+  paneles?: number;
+}
+
+/** Desglose por inversor del costeo (solo con inversores distintos). */
+export interface ProposalInversorDetalle {
+  marca: string;
+  potenciaKw: number;
+  paneles: number;
+  panelesManual: boolean;
+  precioInversorUsdSinIva: number;
+  multiplicadorElectrica: number;
+  precioElectricaUsdSinIva: number;
 }
 
 export interface ProposalCostosOverride {
@@ -256,6 +279,8 @@ export interface ProposalCosteoCalc {
   pagoVendedor: number;
   pagoBbva: number;
   gananciaFinal: number;
+  /** Solo con inversores distintos: precio de fábrica de cada uno. */
+  inversoresDetalle?: ProposalInversorDetalle[];
 }
 
 export interface ProposalCosteoResponse {

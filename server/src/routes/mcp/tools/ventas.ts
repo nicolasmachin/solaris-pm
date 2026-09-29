@@ -17,6 +17,7 @@ import {
   moverEtapaLead,
 } from "../../../services/sales/leads.service.js";
 import { interpretarMarkup } from "../../../services/proposal/calculator.js";
+import { describirInversores, listaInversoresDistintos } from "../../../services/proposal/inversores.js";
 import { hasPermission } from "../../../middleware/authorize.middleware.js";
 import { listLeadProposals } from "../../../services/proposal/lead-proposals.service.js";
 import { getDraft } from "../../../services/proposal/draft.service.js";
@@ -361,6 +362,7 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
             marcaPaneles?: string;
             marcaInversor?: string;
             potenciaInversorKw?: number;
+            inversores?: { marca: string; potenciaKw: number; paneles?: number }[];
             tipoMontaje?: string;
           };
           techo?: { descripcion?: string; tamanoM2?: number };
@@ -376,6 +378,9 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
       };
       const calc = snap.calc ?? {};
       const sistema = snap.data?.sistema ?? {};
+      // Inversores distintos: "1 Growatt de 8 kW + 1 Huawei de 6 kW".
+      const listaInv = listaInversoresDistintos(sistema);
+      const inversoresTexto = listaInv ? describirInversores(listaInv) : null;
 
       const numeros = campos([
         ["Precio final (IVA incluido)", usd(calc.totalFinalConIva ?? calc.totalConIva)],
@@ -387,7 +392,7 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
               (sistema.marcaPaneles ? ` ${sistema.marcaPaneles}` : "")
             : null,
         ],
-        ["Inversor", sistema.marcaInversor],
+        ["Inversor", inversoresTexto ?? sistema.marcaInversor],
         ["Precio por watt", calc.usdPorWatt ? `USD ${calc.usdPorWatt.toFixed(2)}` : null],
         [
           "Markup aplicado",
@@ -418,7 +423,9 @@ export function registerVentasTools(server: McpServer, user: McpUser) {
         ["Tipo de montaje", snap.data?.sistema?.tipoMontaje ?? "—"],
         [
           "Potencia del inversor",
-          snap.data?.sistema?.potenciaInversorKw
+          inversoresTexto
+            ? inversoresTexto
+            : snap.data?.sistema?.potenciaInversorKw
             ? `${snap.data.sistema.potenciaInversorKw} kW`
             : "—",
         ],

@@ -22,6 +22,11 @@ import {
 } from "../../../services/proposal/draft.service.js";
 import type { DraftDataPublish } from "../../../services/proposal/schemas/draft.schema.js";
 import { interpretarMarkup } from "../../../services/proposal/calculator.js";
+import {
+  describirInversores,
+  listaInversoresDistintos,
+  sincronizarSistemaInversores,
+} from "../../../services/proposal/inversores.js";
 import { publishVersion } from "../../../services/proposal/version.service.js";
 import { requirePermission, type McpUser } from "../context.js";
 import { buildDownloadUrl, nombrePdfPropuesta } from "../descargas.routes.js";
@@ -53,12 +58,17 @@ const NOMBRE_CAMPO: Record<string, string> = {
   "sistema.marcaPaneles": "la marca de los paneles",
   "sistema.potenciaInversorKw": "la potencia del inversor en kW",
   "sistema.marcaInversor": "la marca del inversor",
+  "sistema.inversores":
+    "los inversores: marca y potencia de cada uno, y que los paneles asignados sumen los del sistema",
   "sistema.tipoMontaje": "el tipo de montaje",
   fecha: "la fecha de la propuesta",
 };
 
 function nombrarCampos(paths: string[]): string {
-  return paths.map((p) => NOMBRE_CAMPO[p] ?? p).join("\n- ");
+  // Los errores de un inversor puntual llegan como "sistema.inversores.1.marca":
+  // en el chat alcanza con decir que hay que revisar los inversores.
+  const normalizados = paths.map((p) => (p.startsWith("sistema.inversores") ? "sistema.inversores" : p));
+  return [...new Set(normalizados)].map((p) => NOMBRE_CAMPO[p] ?? p).join("\n- ");
 }
 
 /**
@@ -135,7 +145,9 @@ function bloqueCargado(d: DraftDataPublish): string {
       ],
       [
         "Inversor",
-        d.sistema?.potenciaInversorKw
+        listaInversoresDistintos(d.sistema)
+          ? describirInversores(listaInversoresDistintos(d.sistema)!)
+          : d.sistema?.potenciaInversorKw
           ? `${(d.sistema.cantidadInversores ?? 1) > 1 ? `${d.sistema.cantidadInversores} × ` : ""}${d.sistema.potenciaInversorKw} kW ${d.sistema.marcaInversor ?? ""}`.trim()
           : (d.sistema?.marcaInversor ?? "—"),
       ],
@@ -198,6 +210,26 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
               "instalación eléctrica. Los paneles se cargan sumados en cantidad_paneles.",
           ),
         marca_inversor: z.string().optional(),
+        inversores: z
+          .array(
+            z.object({
+              marca: z.string().min(1),
+              potencia_kw: z.number().positive(),
+              paneles: z
+                .number()
+                .int()
+                .min(0)
+                .optional()
+                .describe("Paneles de este inversor. Si no se pasa, se reparten solos por potencia."),
+            }),
+          )
+          .optional()
+          .describe(
+            "Inversores DISTINTOS (marca y potencia propias), por ejemplo un Growatt de 8 kW y " +
+              "un Huawei de 6 kW. Con dos o más reemplaza a potencia_inversor_kw, " +
+              "cantidad_inversores y marca_inversor, y cada inversor se cotiza por separado. " +
+              "Una lista vacía vuelve a inversores iguales.",
+          ),
         techo_m2: z.number().positive().optional().describe("Metros cuadrados disponibles"),
         techo_descripcion: z.string().optional().describe("De qué es el techo: chapa, losa…"),
         tipo_montaje: z.string().optional(),
@@ -276,6 +308,44 @@ export function registerPropuestaTools(server: McpServer, user: McpUser) {
         },
         ...(args.notas !== undefined && { notas: args.notas }),
       };
+      // Inversores. Una lista de 2+ pasa a inversores distintos; una lista vacía
+      // o de uno vuelve a inversores iguales (con los datos del primero, si
+      // vino). Si no vino la lista pero sí algún dato de los inversores
+      // iguales, se sale del modo distintos: esos datos describen inversores
+      // todos iguales y mezclarlos con una lista daría una propuesta ambigua.
+      if (args.inversores !== undefined) {
+        const lista = args.inversores.map((i) => ({
+          marca: i.marca,
+          potenciaKw: i.potencia_kw,
+          ...(i.paneles !== undefined && { paneles: i.paneles }),
+        }));
+        if (lista.length >= 2) {
+          data.sistema = { ...data.sistema, inversores: lista };
+        } else {
+          const { inversores: _fuera, ...resto } = data.sistema as typeof data.sistema & {
+            inversores?: unknown;
+          };
+          data.sistema = {
+            ...resto,
+            cantidadInversores: 1,
+            ...(lista[0] && { marcaInversor: lista[0].marca, potenciaInversorKw: lista[0].potenciaKw }),
+          };
+        }
+      } else if (
+        listaInversoresDistintos(data.sistema) &&
+        (args.potencia_inversor_kw !== undefined ||
+          args.cantidad_inversores !== undefined ||
+          args.marca_inversor !== undefined)
+      ) {
+        const { inversores: _fuera, ...resto } = data.sistema as typeof data.sistema & {
+          inversores?: unknown;
+        };
+        data.sistema = resto;
+      }
+      // Lo mismo que hace upsertDraft al guardar: con la lista, cantidad /
+      // potencia / marca clásicas se derivan de ella. Se aplica también acá para
+      // que el "cargado" y los faltantes que se devuelven sean los guardados.
+      data.sistema = sincronizarSistemaInversores(data.sistema);
 
       // Solo se escribe si algo cambió de verdad. Antes se guardaba siempre y
       // la respuesta decía "guardé lo que me pasaste" aunque no hubiera venido
