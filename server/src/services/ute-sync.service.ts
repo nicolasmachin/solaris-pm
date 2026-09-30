@@ -14,7 +14,7 @@
 //   - Nombre y orden de las 11 subetapas system son fijos (no editables)
 
 import type { Prisma, PrismaClient, StageStatus, SubstageStatus, UteProcess } from "@prisma/client";
-import { PostHabilitacionSubFase, StageType } from "@prisma/client";
+import { NotificationType, PostHabilitacionSubFase, StageType } from "@prisma/client";
 
 import { prisma } from "../lib/prisma.js";
 import { activarCheck } from "./clientes/recorrido.service.js";
@@ -25,6 +25,8 @@ import {
 } from "./project.service.js";
 import { UTE_ACTION_KEYS, type UteActionKey } from "./uteProcess.service.js";
 import { SUMINISTRO_PRINCIPAL } from "./suministros.service.js";
+import { createNotificationByUniqueKey } from "./notification.service.js";
+import { usuariosPorRol } from "./usuarios-por-rol.js";
 
 export type UteSubstageSpec = {
   uteAction: UteActionKey;
@@ -273,19 +275,110 @@ export async function regenerateUteSubstages(
   // dispara (evita traspasos "fantasma" desde jobs/sync sin responsable).
   actorUserId?: string,
 ): Promise<void> {
-  // Solo el trámite del suministro principal maneja las subetapas y la etapa
-  // de Habilitación UTE del proyecto. Los de otros suministros (proyectos con
-  // inversores distintos) todavía no tienen dónde reflejarse en el pipeline, y
-  // dejarlos pisar al principal lo marcaría habilitado con una sola cuenta.
-  if (uteProcess.suministro !== SUMINISTRO_PRINCIPAL) return;
+  // Proyectos con varios suministros (una cuenta UTE por inversor): cada uno
+  // tiene su trámite, pero la etapa de Habilitación y lo que dispara (Regla de
+  // Oro, Post-Habilitación) son del proyecto. Las subetapas siguen las fechas
+  // del trámite principal, y el proyecto se da por habilitado recién cuando
+  // TODOS los trámites terminaron (`vistaDelProyecto`).
+  const tramites = await tx.uteProcess.findMany({
+    where: { projectId: uteProcess.projectId, deletedAt: null },
+  });
+  const principal = tramites.find((t) => t.suministro === SUMINISTRO_PRINCIPAL);
+  if (!principal) return;
+
+  // Uno que termina mientras otro sigue: aviso a Experiencia Solar para que le
+  // diga al cliente que ya puede encender ESE inversor.
+  await avisarHabilitacionParcial(uteProcess, tramites);
+
+  const vista = vistaDelProyecto(principal, tramites);
+
   await ensureUteSubstages(tx, uteProcess.projectId);
-  await syncUteSubstages(tx, uteProcess);
+  await syncUteSubstages(tx, vista);
 
   const stage = await findHabilitacionStage(tx, uteProcess.projectId);
   if (stage) {
     await syncStageProgress(stage.id, actorUserId ? { actorUserId } : undefined);
-    await advancePostventaOnUteFinalizado(uteProcess);
+    await advancePostventaOnUteFinalizado(vista);
     await calculateProjectProgress(uteProcess.projectId);
+  }
+}
+
+const terminado = (t: Pick<UteProcess, "currentStage" | "currentStatus" | "finalizedAt">) =>
+  t.finalizedAt !== null || t.currentStage === "FINALIZADO" || t.currentStatus === "CERRADO";
+
+/**
+ * El trámite principal "visto como el del proyecto". Con un solo suministro es
+ * el trámite tal cual. Con varios:
+ *
+ *   - Si falta terminar alguno, el principal se ve SIN finalizar (aunque lo
+ *     esté): así la última subetapa queda en curso, la etapa no se completa y
+ *     no arrancan la Regla de Oro ni Post-Habilitación. Habilitar una sola
+ *     cuenta no es habilitar la obra.
+ *   - Si terminaron todos, la fecha de habilitación del proyecto es la del
+ *     ÚLTIMO en terminar.
+ *
+ * Pura, sin DB (se testea en ute-sync.suministros.test.ts).
+ */
+export function vistaDelProyecto(principal: UteProcess, tramites: UteProcess[]): UteProcess {
+  if (tramites.length <= 1) return principal;
+  if (!tramites.every(terminado)) {
+    return {
+      ...principal,
+      finalizedAt: null,
+      currentStage: principal.currentStage === "FINALIZADO" ? "DOCS_2" : principal.currentStage,
+      currentStatus: principal.currentStatus === "CERRADO" ? "ESPERANDO" : principal.currentStatus,
+    };
+  }
+  const fechas = tramites.map((t) => t.finalizedAt).filter((d): d is Date => d !== null);
+  const ultima = fechas.length ? new Date(Math.max(...fechas.map((d) => d.getTime()))) : principal.finalizedAt;
+  return { ...principal, finalizedAt: ultima };
+}
+
+/**
+ * Aviso in-app a Experiencia Solar cuando UTE habilita un suministro y el
+ * proyecto todavía tiene otro pendiente. Idempotente (una vez por trámite y
+ * usuario). El aviso formal —con su reloj de 24/48 h— es el de la Regla de Oro,
+ * que arranca cuando se habilita el último.
+ */
+async function avisarHabilitacionParcial(uteProcess: UteProcess, tramites: UteProcess[]): Promise<void> {
+  if (tramites.length <= 1 || !terminado(uteProcess)) return;
+  const pendientes = tramites.filter((t) => !terminado(t));
+  if (pendientes.length === 0) return;
+  try {
+    const project = await prisma.project.findUnique({
+      where: { id: uteProcess.projectId },
+      select: { clientName: true },
+    });
+    const sistema = await prisma.solarSystem.findFirst({
+      where: { projectId: uteProcess.projectId, order: uteProcess.suministro, deletedAt: null },
+      select: { inverterBrand: true, inverterPowerKw: true },
+    });
+    const inversor = sistema
+      ? [sistema.inverterBrand, sistema.inverterPowerKw != null ? `de ${Number(sistema.inverterPowerKw)} kW` : null]
+          .filter(Boolean)
+          .join(" ")
+      : "";
+    const faltan = pendientes.map((t) => t.suministro).join(", ");
+    const title = `UTE habilitó el suministro ${uteProcess.suministro} de ${project?.clientName ?? "un cliente"}`;
+    const message =
+      `El suministro ${uteProcess.suministro}${inversor ? ` (inversor ${inversor})` : ""} ya está habilitado. ` +
+      `Avisale al cliente que puede encender ese inversor. ` +
+      `Falta${pendientes.length === 1 ? "" : "n"} el suministro ${faltan}: el aviso de habilitación de la obra ` +
+      `y la Regla de Oro arrancan cuando se habilite el último.`;
+    const cx = await usuariosPorRol("EXPERIENCIA_SOLAR");
+    for (const u of cx) {
+      await createNotificationByUniqueKey({
+        userId: u.id,
+        projectId: uteProcess.projectId,
+        type: NotificationType.aviso_habilitacion_pendiente,
+        title,
+        message,
+        uniqueKey: `hab-parcial:${uteProcess.id}:${u.id}`,
+      });
+    }
+  } catch (err) {
+    // Es un aviso: nunca puede romper la actualización del trámite.
+    console.error(`[ute-sync] no se pudo avisar la habilitación parcial de ${uteProcess.id}:`, err);
   }
 }
 

@@ -10,7 +10,8 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
 
 import { prisma } from "../lib/prisma.js";
-import { UTE_PRINCIPAL } from "../services/suministros.service.js";
+import { SUMINISTRO_PRINCIPAL } from "../services/suministros.service.js";
+import { vistaDelProyecto } from "../services/ute-sync.service.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
@@ -321,20 +322,34 @@ export async function registerClientesRoutes(app: FastifyInstance) {
         where: { id: projectId, deletedAt: null },
         select: {
           uteProcesses: {
-            where: { deletedAt: null, ...UTE_PRINCIPAL },
-            orderBy: { createdAt: "desc" },
-            take: 1,
+            where: { deletedAt: null },
+            orderBy: { suministro: "asc" },
           },
+          uteDocumentConfigs: { select: { suministro: true, cuentaUte: true } },
         },
       });
       if (!project) throw notFound("PROJECT_NOT_FOUND", "El proyecto no existe o está borrado");
 
-      const ute = project.uteProcesses[0] ?? null;
+      // Lo mismo que ve el cliente en su portal: el trámite principal, que da la
+      // obra por finalizada recién cuando terminaron todos sus suministros.
+      const principal = project.uteProcesses.find((u) => u.suministro === SUMINISTRO_PRINCIPAL) ?? null;
+      const ute = principal ? vistaDelProyecto(principal, project.uteProcesses) : null;
       return {
         caseNumber: ute?.caseNumber ?? null,
         currentStage: ute?.currentStage ?? null,
         finalizedAt: serializeDate(ute?.finalizedAt ?? null),
         timeline: buildUteTimeline(ute),
+        // Con varios suministros, dónde está cada cuenta: sirve para avisarle al
+        // cliente qué inversor ya puede encender.
+        suministros:
+          project.uteProcesses.length > 1
+            ? project.uteProcesses.map((u) => ({
+                numero: u.suministro,
+                cuentaUte: project.uteDocumentConfigs.find((c) => c.suministro === u.suministro)?.cuentaUte || null,
+                currentStage: u.currentStage,
+                finalizedAt: serializeDate(u.finalizedAt),
+              }))
+            : [],
       };
     },
   );

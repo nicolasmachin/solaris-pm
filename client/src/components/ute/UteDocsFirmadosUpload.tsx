@@ -8,12 +8,13 @@ import { ACCEPT_FOTOS } from "../../utils/fileAccept";
 
 interface Props {
   projectId: string;
+  suministro?: number;
 }
 
 // Subida de documentos UTE firmados. Acepta PDF, imágenes y ZIP. Sin
 // compresión (son documentos firmados, se preserva calidad). El backend acepta
 // 1 archivo por request (multipart files:1) → loop secuencial con progreso.
-export function UteDocsFirmadosUpload({ projectId }: Props) {
+export function UteDocsFirmadosUpload({ projectId, suministro = 1 }: Props) {
   const qc = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -31,7 +32,7 @@ export function UteDocsFirmadosUpload({ projectId }: Props) {
 
     for (let i = 0; i < list.length; i++) {
       try {
-        await uploadUteDocFirmado(projectId, list[i]);
+        await uploadUteDocFirmado(projectId, list[i], suministro);
         ok++;
       } catch (err) {
         failed++;

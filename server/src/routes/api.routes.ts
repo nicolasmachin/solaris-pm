@@ -10169,10 +10169,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
       })
       .parse(request.query);
 
+    // Todos los trámites: un proyecto con varios suministros tiene una tarjeta
+    // por cada cuenta UTE (cada una se rotula con su número).
     const rows = await prisma.uteProcess.findMany({
       where: {
         deletedAt: null,
-        ...UTE_PRINCIPAL,
         project: { deletedAt: null },
         ...(query.stage ? { currentStage: query.stage } : {}),
         ...(query.status ? { currentStatus: query.status } : {}),
@@ -10499,6 +10500,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const existing = await prisma.uteProcess.findFirst({ where: { id, deletedAt: null } });
     if (!existing) throw notFound("UTE_PROCESS_NOT_FOUND", "Trámite UTE no encontrado");
     await prisma.uteProcess.update({ where: { id }, data: { deletedAt: new Date() } });
+    // Sin ese suministro, el proyecto puede quedar con todos sus trámites
+    // terminados: se reevalúa sobre el principal.
+    if (existing.suministro !== SUMINISTRO_PRINCIPAL) {
+      const principal = await prisma.uteProcess.findFirst({
+        where: { projectId: existing.projectId, deletedAt: null, ...UTE_PRINCIPAL },
+      });
+      if (principal) await regenerateUteSubstages(prisma, principal);
+    }
     return { success: true };
   });
 
@@ -10510,7 +10519,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const yearStart = new Date(Date.UTC(hoyUruguay(now).anio, 0, 1));
 
     const processes = await prisma.uteProcess.findMany({
-      where: { deletedAt: null, ...UTE_PRINCIPAL, project: { deletedAt: null, excludedFromMetrics: false } },
+      // Por trámite: con varios suministros, cada cuenta UTE es un trámite real
+      // con sus propios tiempos.
+      where: { deletedAt: null, project: { deletedAt: null, excludedFromMetrics: false } },
       include: {
         project: {
           select: { id: true, code: true, clientName: true, createdAt: true },
@@ -10680,7 +10691,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
     allQuarters.reverse();
 
     const processes = await prisma.uteProcess.findMany({
-      where: { deletedAt: null, ...UTE_PRINCIPAL, project: { deletedAt: null, excludedFromMetrics: false } },
+      // Por trámite: con varios suministros, cada cuenta UTE es un trámite real
+      // con sus propios tiempos.
+      where: { deletedAt: null, project: { deletedAt: null, excludedFromMetrics: false } },
     });
 
     function median(nums: number[]): number | null {
@@ -11966,12 +11979,17 @@ export async function registerApiRoutes(app: FastifyInstance) {
           })
           .strict()
           .parse(request.body);
+        const { suministro } = suministroQuerySchema.parse(request.query);
+        // Los ZIP se guardan con null en el principal (como siempre) y con su
+        // número en los demás, para que cada suministro tenga su vigente.
+        const suministroArchivo = suministro === SUMINISTRO_PRINCIPAL ? null : suministro;
 
         const { zipBuffer, zipFilename, docsGenerated, generationId, projectCode } =
           await generateUteDocs({
             projectId,
             userId: user.id,
             docs: body.docs,
+            suministro,
           });
 
         // Persistir el ZIP como FileAttachment del proyecto (toolSource
@@ -11980,12 +11998,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
         // Si la persistencia falla no se interrumpe la descarga.
         try {
           const previous = await prisma.fileAttachment.findMany({
-            where: { projectId, toolSource: "ute-docs", deletedAt: null },
+            where: { projectId, toolSource: "ute-docs", suministro: suministroArchivo, deletedAt: null },
             select: { id: true, url: true },
           });
 
           const ymd = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-          const storedName = `voltia_ute_${projectCode}_${ymd}.zip`;
+          const storedName = suministroArchivo
+            ? `voltia_ute_${projectCode}_suministro-${suministro}_${ymd}.zip`
+            : `voltia_ute_${projectCode}_${ymd}.zip`;
           const stored = await saveBufferAsAttachment(
             zipBuffer,
             storedName,
@@ -12004,6 +12024,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
               tipo: FileAttachmentTipo.OTRO,
               toolSource: "ute-docs",
               toolEntityId: generationId,
+              suministro: suministroArchivo,
               uploadedById: user.id,
             },
           });
@@ -12027,8 +12048,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
           projectId,
           userId: user.id,
           action: AuditAction.created,
-          description: `Generó ${docsGenerated.length} documento${docsGenerated.length === 1 ? "" : "s"} UTE`,
-          metadata: { kind: "ute_docs", docs: docsGenerated },
+          description:
+            `Generó ${docsGenerated.length} documento${docsGenerated.length === 1 ? "" : "s"} UTE` +
+            (suministroArchivo ? ` del suministro ${suministro}` : ""),
+          metadata: { kind: "ute_docs", docs: docsGenerated, suministro },
         });
 
         reply
@@ -12046,9 +12069,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
       async (request) => {
         const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
         await findProjectOrThrow(projectId);
+        const { suministro } = suministroQuerySchema.parse(request.query);
 
         const file = await prisma.fileAttachment.findFirst({
-          where: { projectId, toolSource: "ute-docs", deletedAt: null },
+          where: {
+            projectId,
+            toolSource: "ute-docs",
+            suministro: suministro === SUMINISTRO_PRINCIPAL ? null : suministro,
+            deletedAt: null,
+          },
           orderBy: { createdAt: "desc" },
           include: { uploadedBy: { select: { id: true, name: true } } },
         });
@@ -12102,6 +12131,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         const user = ensureUser(request);
         const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
         await findProjectOrThrow(projectId);
+        const { suministro } = suministroQuerySchema.parse(request.query);
 
         const created: ReturnType<typeof mapFirmado>[] = [];
         for await (const part of request.parts()) {
@@ -12126,6 +12156,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
               url: saved.url,
               tipo: FileAttachmentTipo.UPLOAD_MANUAL,
               toolSource: "ute-docs-firmados",
+              suministro: suministro === SUMINISTRO_PRINCIPAL ? null : suministro,
               uploadedById: user.id,
             },
             include: { uploadedBy: { select: { id: true, name: true } } },
@@ -12138,7 +12169,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
             projectId,
             userId: user.id,
             action: AuditAction.file_uploaded,
-            description: `Subió documento UTE firmado '${saved.filename}'`,
+            description:
+              `Subió documento UTE firmado '${saved.filename}'` +
+              (suministro === SUMINISTRO_PRINCIPAL ? "" : ` (suministro ${suministro})`),
           });
         }
 
@@ -12158,8 +12191,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
         const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
         await findProjectOrThrow(projectId);
 
+        const { suministro } = suministroQuerySchema.parse(request.query);
         const files = await prisma.fileAttachment.findMany({
-          where: { projectId, toolSource: "ute-docs-firmados", deletedAt: null },
+          where: {
+            projectId,
+            toolSource: "ute-docs-firmados",
+            suministro: suministro === SUMINISTRO_PRINCIPAL ? null : suministro,
+            deletedAt: null,
+          },
           orderBy: { createdAt: "desc" },
           include: { uploadedBy: { select: { id: true, name: true } } },
         });

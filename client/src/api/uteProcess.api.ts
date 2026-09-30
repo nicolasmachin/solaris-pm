@@ -39,6 +39,13 @@ export type UteProcess = {
     uteCodigoPS: string | null;
     uteCodigoAS: string | null;
   };
+  /** Suministro (cuenta UTE) del trámite; 1 = el principal. */
+  suministro: number;
+  /** Cuántos trámites tiene el proyecto: más de 1 = varios suministros. */
+  suministrosTotal: number;
+  cuentaUte: string | null;
+  /** PS/AS de un suministro que no es el principal (de sus papeles UTE). */
+  codigosSuministro: { ps: string | null; as: string | null } | null;
   currentStage: UteStage;
   currentStatus: UteStatus;
   stageManuallySet: boolean;
@@ -308,4 +315,12 @@ export async function getUteQuarterlyEvolution(): Promise<UteQuarterlyEvolution>
     "/api/metrics/ute/quarterly-evolution",
   );
   return data;
+}
+
+/**
+ * Nombre con que se muestra un trámite: el cliente y, si el proyecto tiene
+ * varios suministros (una cuenta UTE por inversor), cuál es.
+ */
+export function nombreTramite(p: Pick<UteProcess, "project" | "suministro" | "suministrosTotal">): string {
+  return p.suministrosTotal > 1 ? `${p.project.clientName} · Suministro ${p.suministro}` : p.project.clientName;
 }

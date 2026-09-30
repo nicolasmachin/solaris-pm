@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.12 — 28 de septiembre de 2026
+**Voltia · Uruguay** · Versión 1.13 — 30 de septiembre de 2026
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -592,6 +592,14 @@ el sistema arranca el reloj solo. A las **24 horas** le recuerda al equipo de
 Experiencia Solar; a las **48 horas** escala a Administración. Además el cliente
 aparece con **triángulo rojo** en el listado y en el Recorrido, y encabeza el
 correo de la mañana.
+
+**Si la obra tiene más de un suministro** —una cuenta UTE por inversor, por
+ejemplo dos casas—, cada cuenta tiene su propio trámite y UTE las habilita por
+separado. Cuando sale una y la otra todavía no, a Experiencia Solar le llega un
+aviso: **se le escribe al cliente que ya puede encender ese inversor**. La Regla
+de Oro, con su reloj de 24-48 horas, arranca **cuando se habilita la última**:
+ese es el aviso de que la obra entera quedó habilitada. En la ficha, el trámite
+UTE muestra en qué anda cada suministro.
 
 **Cómo se apaga la alerta:** **tildando el paso** *"Aviso de habilitación
 otorgada"* en E2. Destildarlo la vuelve a encender, y queda registrado quién lo
@@ -1434,7 +1442,7 @@ obra, el capataz lo resuelve internamente — no lo manda a otro lado.
 |---|---|
 | **Generador** | El cliente, una vez que su instalación existe. Es como lo llama UTE y como lo llama Voltia PM. |
 | **E1 / E2 / E3** | Las tres etapas del recorrido del cliente. No son las etapas del proyecto. |
-| **Cadencia** | Los días sin contacto a partir de los cuales un cliente se marca. E1: 3 · E2: 5 · E3: 10. **Es una alarma interna, no una promesa al cliente.** |
+| **Cadencia** | Los días hábiles sin contacto a partir de los cuales un cliente se marca. E1 y E2: 5; E3 no tiene. **Es una alarma interna, no una promesa al cliente.** |
 | **Paso** | Un hito de acompañamiento del recorrido. Algunos tienen plazo. **Vencer no bloquea.** |
 | **Novedad** | Pasó algo en el proyecto después del último contacto registrado: hay algo que contarle. No quiere decir que el cliente haya hecho algo (casi siempre es algo nuestro) ni que nadie lo haya mirado. |
 | **Pendiente** | En el correo de la mañana: algo que tiene plazo y ya se venció. Es lo único obligatorio del día. |
@@ -1853,4 +1861,13 @@ sacar y se suben, no se retocan a mano.
 
 ---
 
-*Manual de Posventa — Experiencia Solar · Voltia · v1.12 · 28 de septiembre de 2026*
+## Anexo · Registro de cambios
+
+| Versión | Fecha | Qué se agregó o modificó |
+|---|---|---|
+| 1.13 | 30 de septiembre de 2026 | Obras con más de un suministro: se avisa al cliente cuando se habilita cada cuenta, y la Regla de Oro arranca con la última. Se corrige la cadencia del glosario (5 días hábiles en E1 y E2; E3 sin cadencia). Se agrega este registro. |
+| 1.12 y anteriores | hasta el 28 de septiembre de 2026 | No hay registro detallado de cada versión. |
+
+---
+
+*Manual de Posventa — Experiencia Solar · Voltia · v1.13 · 30 de septiembre de 2026*

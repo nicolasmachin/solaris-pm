@@ -73,6 +73,8 @@ export type WaitingParty = "US" | "UTE" | null;
 
 export interface OpsUteSinHabilitarRow {
   id: string;
+  /** Clave de la fila: un proyecto con varios suministros tiene un trámite por cada uno. */
+  key?: string;
   code: string;
   clientName: string;
   diasDesdeVenta: number;

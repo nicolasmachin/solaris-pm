@@ -239,22 +239,7 @@ export function deriveStage(process: ProcessDates): UteStage {
 
 // ─── Serialización ──────────────────────────────────────────────────────────
 
-type UteProcessRow = Prisma.UteProcessGetPayload<{
-  include: {
-    project: {
-      select: {
-        id: true;
-        code: true;
-        clientName: true;
-        locationCity: true;
-        clientPhone: true;
-        clientEmail: true;
-        uteCodigoPS: true;
-        uteCodigoAS: true;
-      };
-    };
-  };
-}>;
+type UteProcessRow = Prisma.UteProcessGetPayload<{ include: typeof UTE_PROCESS_INCLUDE }>;
 
 export type SerializedUteProcess = {
   id: string;
@@ -269,6 +254,17 @@ export type SerializedUteProcess = {
     uteCodigoPS: string | null;
     uteCodigoAS: string | null;
   };
+  /** Suministro (cuenta UTE) de este trámite; 1 = el principal. */
+  suministro: number;
+  /** Cuántos trámites vivos tiene el proyecto (más de 1 = varios suministros). */
+  suministrosTotal: number;
+  /** Cuenta UTE del suministro, si está cargada. */
+  cuentaUte: string | null;
+  /**
+   * Códigos PS/AS de un suministro que no es el principal (de sus papeles UTE).
+   * Los del principal siguen en `project.uteCodigoPS/AS`.
+   */
+  codigosSuministro: { ps: string | null; as: string | null } | null;
   currentStage: UteStage;
   currentStatus: UteStatus;
   stageManuallySet: boolean;
@@ -313,6 +309,16 @@ export function serializeUteProcess(row: UteProcessRow, now: Date = new Date()):
       uteCodigoPS: row.project.uteCodigoPS,
       uteCodigoAS: row.project.uteCodigoAS,
     },
+    suministro: row.suministro,
+    suministrosTotal: row.project._count.uteProcesses,
+    cuentaUte: row.project.uteDocumentConfigs.find((c) => c.suministro === row.suministro)?.cuentaUte || null,
+    codigosSuministro:
+      row.suministro === 1
+        ? null
+        : (() => {
+            const c = row.project.uteDocumentConfigs.find((x) => x.suministro === row.suministro);
+            return { ps: c?.ps || null, as: c?.asUte || null };
+          })(),
     currentStage: row.currentStage,
     currentStatus: row.currentStatus,
     stageManuallySet: row.stageManuallySet,
@@ -351,6 +357,9 @@ export const UTE_PROCESS_INCLUDE = {
       clientEmail: true,
       uteCodigoPS: true,
       uteCodigoAS: true,
+      // Para rotular el trámite cuando el proyecto tiene varios suministros.
+      uteDocumentConfigs: { select: { suministro: true, cuentaUte: true, ps: true, asUte: true } },
+      _count: { select: { uteProcesses: { where: { deletedAt: null } } } },
     },
   },
 } satisfies Prisma.UteProcessInclude;

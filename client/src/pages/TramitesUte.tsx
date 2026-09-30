@@ -28,6 +28,7 @@ import {
   type UteSortBy,
   type UteStage,
   type UteStatus,
+  nombreTramite,
 } from "../api/uteProcess.api";
 import { getProjects, patchProject } from "../api/projects.api";
 import type { ProjectListItem } from "../types/api.types";
@@ -475,8 +476,16 @@ function UteTableRow({
           className="cursor-pointer truncate max-w-[200px]"
           onClick={() => onRowClick(process.id)}
         >
-          {process.project.clientName}
+          {nombreTramite(process)}
         </div>
+        {process.codigosSuministro ? (
+          <div
+            className="mt-0.5 text-[11px] text-[var(--color-text-muted)]"
+            title="Los códigos de este suministro se cargan en sus Documentos UTE"
+          >
+            PS {process.codigosSuministro.ps ?? "—"} · AS {process.codigosSuministro.as ?? "—"}
+          </div>
+        ) : (
         <div className="mt-0.5 flex items-center gap-1 text-[11px]">
           <UteCodigoInline
             projectId={process.project.id}
@@ -492,6 +501,7 @@ function UteTableRow({
             value={process.project.uteCodigoAS}
           />
         </div>
+        )}
       </td>
       <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
         <select
@@ -581,7 +591,7 @@ function UteTableRow({
         <NotesCellButton
           processId={process.id}
           value={process.notes}
-          clientName={process.project.clientName}
+          clientName={nombreTramite(process)}
         />
       </td>
     </tr>
@@ -1069,8 +1079,14 @@ function UteDetailDrawer({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h2 className="font-display text-lg font-bold text-[var(--color-text-primary)] truncate">
-                {process.project.clientName}
+                {nombreTramite(process)}
               </h2>
+              {process.suministrosTotal > 1 && (
+                <p className="text-[11px] text-[var(--color-text-muted)]">
+                  {process.cuentaUte ? `Cuenta ${process.cuentaUte} · ` : ""}la obra queda habilitada cuando terminan los{" "}
+                  {process.suministrosTotal} trámites
+                </p>
+              )}
               <button
                 type="button"
                 onClick={() => navigate(`/projects/${process.projectId}`)}

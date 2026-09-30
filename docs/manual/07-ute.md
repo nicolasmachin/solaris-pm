@@ -2,7 +2,7 @@
 
 > **Capítulo parcial.** Están documentadas la **solicitud de suministro individual
 > / aumento de potencia contratada** y los **proyectos con varios suministros**
-> (hasta la consulta a UTE). El resto del módulo (proceso de
+> (consulta, papeles y trámites por suministro). El resto del módulo (proceso de
 > habilitación, subetapas dinámicas, formularios PDF, documentos firmados)
 > sigue pendiente de escribir: la funcionalidad existe y está en producción,
 > lo que falta es la documentación.
@@ -191,6 +191,17 @@ Lo que se acordó con Nicolás (30-09-2026):
    suministros)"** y cuántas faltan. La pantalla de la consulta muestra una
    **pestaña por suministro**, cada una con su factura, su cuenta, su titular y
    la potencia de su inversor; al mandar una, salta a la siguiente pendiente.
+4. **Documentos UTE** (`/ingenieria/proyecto/:id/ute-docs?suministro=N`): una
+   pestaña por suministro. Cada uno genera su propio ZIP con su inversor, sus
+   paneles, su cuenta y su titular (la sección "Cliente" pasa a ser "Titular del
+   suministro N", vacío = igual que el proyecto). En los documentos del proyecto
+   hay un par de bloques "generados / firmados" por suministro.
+5. **Trámites UTE**: una tarjeta por suministro ("Cliente · Suministro 2"), cada
+   una con sus fechas. En la pestaña UTE del proyecto, una pestaña por trámite.
+6. **Habilitación**: cuando UTE habilita un suministro y queda otro pendiente,
+   Experiencia Solar recibe un aviso in-app para decirle al cliente que ya puede
+   encender ese inversor. El proyecto se da por habilitado (etapa completa,
+   Regla de Oro, Post-Habilitación, E3) cuando termina **el último**.
 
 ## Cómo funciona
 
@@ -235,7 +246,27 @@ config de ese suministro y no toca el proyecto.
 
 **La config de documentos UTE** (`GET/PUT/DELETE /projects/:projectId/ute-docs/config`)
 acepta `?suministro=N` (default 1). El DELETE ("Resetear") borra solo la del
-suministro pedido.
+suministro pedido; la pantalla vuelve a guardar la cuenta y el titular de ese
+suministro, que no son "datos de los papeles".
+
+**Los papeles** (`POST .../ute-docs/generate`, `GET .../ute-docs/generado`,
+`GET/POST .../ute-docs/firmados`) aceptan `?suministro=N`. El generador
+(`ute-docs/generator.ts` → `generateUteDocs()`) toma el `SolarSystem` de ese
+`order`, su config, y el proyecto "visto desde el suministro"
+(`proyectoDelSuministro()`: titular y dirección propios encima de los del
+proyecto). Los archivos llevan `FileAttachment.suministro` (null = principal) y
+cada suministro tiene su ZIP vigente; `UteDocumentGeneration.suministro` queda
+para auditoría.
+
+**El trámite del proyecto** (`ute-sync.service.ts` → `regenerateUteSubstages()`,
+llamado con cualquier trámite del proyecto): las subetapas de Habilitación UTE
+siguen las fechas del principal, pero se calculan sobre `vistaDelProyecto()`:
+si algún trámite no terminó, el principal se ve sin finalizar (la última
+subetapa queda en curso y no corren ni la Regla de Oro ni Post-Habilitación);
+si terminaron todos, la fecha de habilitación es la del último.
+`avisarHabilitacionParcial()` manda la notificación a `EXPERIENCIA_SOLAR`
+(idempotente por `hab-parcial:<trámite>:<usuario>`). Borrar un trámite
+secundario reevalúa el proyecto.
 
 ## Permisos
 
@@ -248,14 +279,19 @@ suministro pedido.
 
 ## Reglas y decisiones
 
-- **El trámite del suministro 1 es "el trámite del proyecto".** Todo lo que
-  habla de "el trámite UTE" —subetapas de Habilitación, tablero y métricas de
-  Trámites, portal del cliente, ficha de Experiencia Solar, Regla de Oro,
-  monitoreo, conector— filtra por `UTE_PRINCIPAL`. Así, un proyecto con dos
-  suministros se ve igual que antes en esas pantallas.
-- **Un trámite que no es el principal no mueve el pipeline**:
-  `regenerateUteSubstages()` sale sin hacer nada. Si pudiera, habilitar una sola
-  cuenta daría el proyecto por habilitado.
+- **Qué ve todos los trámites y qué ve solo el principal.** El tablero y las
+  métricas de Trámites UTE y la banda UTE del panel de operaciones cuentan
+  **cada trámite** (cada cuenta es trabajo real con sus propios tiempos). La
+  ficha del proyecto (`uteProcess`), el conector y el monitoreo leen el
+  **principal** (`UTE_PRINCIPAL`). El portal y la ficha de Experiencia Solar
+  muestran el principal pero **"finalizado" solo cuando terminaron todos**
+  (`vistaDelProyecto()`); la ficha además lista el estado de cada suministro.
+- **Habilitar una cuenta no es habilitar la obra.** Por eso el proyecto espera
+  al último trámite, y el aviso intermedio es solo una notificación (sin reloj
+  de 24/48 h): el formal es el de la Regla de Oro.
+- **Los códigos PS/AS** de la fila del tablero son los del proyecto (principal).
+  Los de otro suministro se muestran de lectura, tomados de su config UTE, y se
+  cargan en sus Documentos UTE.
 - **Los datos del suministro extra se guardan con lo que salió en la consulta**,
   no en un formulario aparte: lo que se le mandó a UTE es lo que vale.
 
@@ -272,12 +308,12 @@ suministro pedido.
   muestra el inversor del suministro para que no se cargue la del proyecto
   entero.
 
-## Lo que falta (partes 2 a 4)
+## Lo que falta (partes 3 y 4)
 
-- **Documentos UTE** por suministro (hoy el generador usa el suministro 1).
-- **Tablero de Trámites UTE** con una tarjeta por suministro, y cuándo se avisa
-  la habilitación y se pasa a Post-Habilitación (propuesta: aviso por cada uno;
-  Post-Habilitación con el último).
+- **"Finalizar trámite" desde la etapa** (`POST /projects/:projectId/ute/finalizar`)
+  cierra solo el trámite principal: con otro pendiente, la etapa no se completa.
+- **El encabezado del trámite en la ficha de Experiencia Solar** muestra la
+  etapa del principal (la lista de suministros de abajo dice el resto).
 - **Contrato**: la fila "Potencia nominal del inversor" muestra la suma cuando
   hay varios inversores distintos (el contrato ya nombra a todos los inversores y
   suma los paneles, igual que la proforma: `resumirSistemasVarios()`). Falta

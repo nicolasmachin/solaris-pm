@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { ChevronLeft, Download, RotateCcw, Save } from "lucide-react";
@@ -7,6 +7,7 @@ import { ChevronLeft, Download, RotateCcw, Save } from "lucide-react";
 import {
   createSolarSystem,
   getProject,
+  getSuministros,
   patchProject,
   patchSolarSystem,
   type SolarSystemPayload,
@@ -20,6 +21,7 @@ import {
   UTE_DOC_KEYS,
   UTE_DOC_LABEL,
   deleteUteDocsConfig,
+  saveUteDocsConfig,
   type UteDocKey,
   type UteDocumentConfig,
 } from "../api/uteDocs.api";
@@ -89,17 +91,80 @@ function configToForm(c: UteDocumentConfig): ConfigForm {
   };
 }
 
+// Un proyecto con varios suministros (un inversor por cuenta UTE) lleva un
+// juego de papeles por cada uno. El contenedor elige el suministro (pestañas,
+// y `?suministro=N` para entrar directo) y el formulario de siempre trabaja
+// sobre ese: su inversor, su cuenta y, si lo tiene, su titular.
 export function UteDocsPage() {
   const { projectId } = useParams<{ projectId: string }>();
+  const [params, setParams] = useSearchParams();
+  const suministrosQ = useQuery({
+    queryKey: ["suministros", projectId],
+    queryFn: () => getSuministros(projectId!),
+    enabled: !!projectId,
+  });
+  const suministros = suministrosQ.data ?? [];
+  const pedido = Number(params.get("suministro") ?? "1");
+  const suministro = suministros.some((s) => s.numero === pedido) ? pedido : 1;
+  const varios = suministros.length > 1;
+
+  if (!projectId) return null;
+  return (
+    <div>
+      {varios && (
+        <div className="px-6 pt-6 max-w-5xl">
+          <p className="mb-2 text-xs text-[var(--color-text-secondary)]">
+            Este proyecto tiene <b>{suministros.length} suministros</b>, uno por inversor: cada cuenta UTE lleva su propio juego de papeles.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {suministros.map((s) => (
+              <button
+                key={s.numero}
+                onClick={() => setParams(s.numero === 1 ? {} : { suministro: String(s.numero) })}
+                className={`rounded-lg border px-3 py-1.5 text-left text-xs ${
+                  s.numero === suministro
+                    ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-text-primary)]"
+                    : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent)]/60"
+                }`}
+              >
+                <span className="font-semibold">Suministro {s.numero}</span>
+                <span className="ml-1.5">
+                  {s.inversor ?? "inversor sin cargar"}
+                  {s.cuentaUte ? ` · Cta ${s.cuentaUte}` : ""}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      <UteDocsForm key={suministro} projectId={projectId} suministro={suministro} varios={varios} />
+    </div>
+  );
+}
+
+// Titular y dirección propios de un suministro que no es el principal
+// (en su config UTE; vacío = igual que el proyecto).
+type TitularFields = {
+  titularNombre: string;
+  titularCi: string;
+  titularEmpresa: boolean | null;
+  calle: string;
+  numCalle: string;
+  localidad: string;
+  departamento: string;
+};
+
+function UteDocsForm({ projectId, suministro, varios }: { projectId: string; suministro: number; varios: boolean }) {
+  const principal = suministro === 1;
   const qc = useQueryClient();
   const projectQ = useQuery({
     queryKey: ["project", projectId],
     queryFn: () => getProject(projectId!),
     enabled: !!projectId,
   });
-  const configQ = useUteDocsConfig(projectId!);
-  const saveMut = useSaveUteDocsConfig(projectId!);
-  const generateMut = useGenerateUteDocs(projectId!);
+  const configQ = useUteDocsConfig(projectId!, suministro);
+  const saveMut = useSaveUteDocsConfig(projectId!, suministro);
+  const generateMut = useGenerateUteDocs(projectId!, suministro);
 
   // Patch del Project para los campos editables de la sección "Datos del proyecto".
   const patchProjectMut = useMutation({
@@ -115,7 +180,7 @@ export function UteDocsPage() {
   const saveSolarMut = useMutation({
     mutationFn: async (args: { systemId: string | null; body: SolarSystemPayload }) => {
       if (args.systemId) return patchSolarSystem(projectId!, args.systemId, args.body);
-      return createSolarSystem(projectId!, { order: 1, ...args.body });
+      return createSolarSystem(projectId!, { order: suministro, ...args.body });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["project", projectId] });
@@ -227,7 +292,7 @@ export function UteDocsPage() {
   // quedan en blanco si no hay dato.
   useEffect(() => {
     if (projectQ.data && !solarFields) {
-      const primary = projectQ.data.solarSystems?.[0] ?? null;
+      const primary = projectQ.data.solarSystems?.find((s) => s.order === suministro) ?? null;
       const orDefault = <T,>(actual: T | null | undefined, def: T): T =>
         actual != null && actual !== "" ? actual : def;
       // kW (DB) → W (form). Si hay valor, convierto y muestro en W.
@@ -248,10 +313,12 @@ export function UteDocsPage() {
   }, [projectQ.data, solarFields]);
 
   const project = projectQ.data;
-  const primarySolar = project?.solarSystems?.[0] ?? null;
+  const primarySolar = project?.solarSystems?.find((s) => s.order === suministro) ?? null;
   const projectFilename = useMemo(
-    () => (project?.clientName ?? "proyecto").replace(/[^a-zA-Z0-9_-]+/g, "_"),
-    [project],
+    () =>
+      (project?.clientName ?? "proyecto").replace(/[^a-zA-Z0-9_-]+/g, "_") +
+      (suministro === 1 ? "" : `_suministro-${suministro}`),
+    [project, suministro],
   );
 
   if (!projectId) return null;
@@ -265,6 +332,36 @@ export function UteDocsPage() {
 
   function patch(key: keyof ConfigForm, value: string | boolean | null) {
     setForm((cur) => (cur ? { ...cur, [key]: value } : cur));
+  }
+
+  // Lo que va a los papeles como titular y dirección. En el principal, los datos
+  // del proyecto; en los demás, lo propio del suministro y, donde está vacío, el
+  // proyecto (mismo criterio que el server).
+  const titular: TitularFields = {
+    titularNombre: form.titularNombre ?? "",
+    titularCi: form.titularCi ?? "",
+    titularEmpresa: form.titularEmpresa ?? null,
+    calle: form.calle ?? "",
+    numCalle: form.numCalle ?? "",
+    localidad: form.localidad ?? "",
+    departamento: form.departamento ?? "",
+  };
+  const efectivo: ProjectFields = principal
+    ? projectFields
+    : {
+        ...projectFields,
+        nombreCliente: titular.titularNombre.trim() || projectFields.nombreCliente,
+        ciCliente: titular.titularCi.trim() || projectFields.ciCliente,
+        calle: titular.calle.trim() || projectFields.calle,
+        numCalle: titular.numCalle.trim() || projectFields.numCalle,
+        locationCity: titular.localidad.trim() || projectFields.locationCity,
+        locationProvince: titular.departamento.trim() || projectFields.locationProvince,
+        empresa: titular.titularEmpresa ?? projectFields.empresa,
+        personaFisica: titular.titularEmpresa != null ? !titular.titularEmpresa : projectFields.personaFisica,
+      };
+  function patchTitular(key: keyof TitularFields, value: string | boolean | null) {
+    const v = typeof value === "string" ? (value.trim() === "" ? null : value) : value;
+    setForm((cur) => (cur ? { ...cur, [key]: v } : cur));
   }
 
   function patchProjectField<K extends keyof ProjectFields>(key: K, value: ProjectFields[K]) {
@@ -380,10 +477,17 @@ export function UteDocsPage() {
   async function handleReset() {
     if (!confirm("¿Borrar todos los datos cargados en la config UTE y volver a los valores por defecto? Los datos del proyecto y del sistema FV se conservan.")) return;
     try {
-      await deleteUteDocsConfig(projectId!);
+      // En un suministro que no es el principal, la config también guarda su
+      // cuenta y su titular: esos se conservan (no son "datos de los papeles").
+      const conservar = principal
+        ? null
+        : { cuentaUte: form!.cuentaUte, ...titular, titularNombre: titular.titularNombre || null, titularCi: titular.titularCi || null };
+      await deleteUteDocsConfig(projectId!, suministro);
+      if (conservar) await saveUteDocsConfig(projectId!, conservar, suministro);
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["project", projectId] }),
         qc.invalidateQueries({ queryKey: ["ute-docs-config", projectId] }),
+        qc.invalidateQueries({ queryKey: ["suministros", projectId] }),
       ]);
       setForm(null);
       setProjectFields(null);
@@ -443,7 +547,7 @@ export function UteDocsPage() {
         <div className="mt-2 flex items-start justify-between gap-3 flex-wrap">
           <div>
             <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">
-              Documentos UTE
+              Documentos UTE{varios ? ` · Suministro ${suministro}` : ""}
             </h1>
             <p className="text-sm text-[var(--color-text-muted)] font-mono mt-0.5">
               {project?.code} · {project?.clientName}
@@ -485,14 +589,27 @@ export function UteDocsPage() {
 
       {/* Cliente — viven en Project. Se editan acá y también se extraen con IA
           desde cédula / factura UTE (feature ute-doc-extraction). */}
-      <Section title="Cliente">
-        <Text label="Nombre (cédula)" value={projectFields.nombreCliente} onChange={(v) => patchProjectField("nombreCliente", v)} />
-        <Text label="CI cliente" value={projectFields.ciCliente} onChange={(v) => patchProjectField("ciCliente", v)} />
-        <Text label="Calle" value={projectFields.calle} onChange={(v) => patchProjectField("calle", v)} />
-        <Text label="Num calle" value={projectFields.numCalle} onChange={(v) => patchProjectField("numCalle", v)} />
-        <Checkbox label="Persona Fisica" checked={projectFields.personaFisica} onChange={(v) => patchProjectField("personaFisica", v)} />
-        <Checkbox label="Empresa" checked={projectFields.empresa} onChange={(v) => patchProjectField("empresa", v)} />
-      </Section>
+      {principal ? (
+        <Section title="Cliente">
+          <Text label="Nombre (cédula)" value={projectFields.nombreCliente} onChange={(v) => patchProjectField("nombreCliente", v)} />
+          <Text label="CI cliente" value={projectFields.ciCliente} onChange={(v) => patchProjectField("ciCliente", v)} />
+          <Text label="Calle" value={projectFields.calle} onChange={(v) => patchProjectField("calle", v)} />
+          <Text label="Num calle" value={projectFields.numCalle} onChange={(v) => patchProjectField("numCalle", v)} />
+          <Checkbox label="Persona Fisica" checked={projectFields.personaFisica} onChange={(v) => patchProjectField("personaFisica", v)} />
+          <Checkbox label="Empresa" checked={projectFields.empresa} onChange={(v) => patchProjectField("empresa", v)} />
+        </Section>
+      ) : (
+        <Section title={`Titular del suministro ${suministro} (vacío = igual que el proyecto)`}>
+          <Text label={`Nombre (cédula) · proyecto: ${projectFields.nombreCliente || "—"}`} value={titular.titularNombre} onChange={(v) => patchTitular("titularNombre", v)} />
+          <Text label={`CI · proyecto: ${projectFields.ciCliente || "—"}`} value={titular.titularCi} onChange={(v) => patchTitular("titularCi", v)} />
+          <Text label={`Calle · proyecto: ${projectFields.calle || "—"}`} value={titular.calle} onChange={(v) => patchTitular("calle", v)} />
+          <Text label={`Num calle · proyecto: ${projectFields.numCalle || "—"}`} value={titular.numCalle} onChange={(v) => patchTitular("numCalle", v)} />
+          <Text label={`Localidad · proyecto: ${projectFields.locationCity || "—"}`} value={titular.localidad} onChange={(v) => patchTitular("localidad", v)} />
+          <Text label={`Departamento · proyecto: ${projectFields.locationProvince || "—"}`} value={titular.departamento} onChange={(v) => patchTitular("departamento", v)} />
+          <Checkbox label="Persona Fisica" checked={efectivo.personaFisica} onChange={(v) => patchTitular("titularEmpresa", !v)} />
+          <Checkbox label="Empresa" checked={efectivo.empresa} onChange={(v) => patchTitular("titularEmpresa", v)} />
+        </Section>
+      )}
 
       {/* Representante — los inputs muestran nombreCliente / ciCliente
           (cédula) por defecto, tracking en vivo del cliente. Si el usuario
@@ -502,16 +619,16 @@ export function UteDocsPage() {
       <Section title="Representante del cliente">
         <Text
           label="Representa"
-          value={form.representa || projectFields.nombreCliente}
+          value={form.representa || efectivo.nombreCliente}
           onChange={(v) =>
-            patch("representa", v === projectFields.nombreCliente ? "" : v)
+            patch("representa", v === efectivo.nombreCliente ? "" : v)
           }
         />
         <Text
           label="CI Repre"
-          value={form.ciRepre || projectFields.ciCliente}
+          value={form.ciRepre || efectivo.ciCliente}
           onChange={(v) =>
-            patch("ciRepre", v === projectFields.ciCliente ? "" : v)
+            patch("ciRepre", v === efectivo.ciCliente ? "" : v)
           }
         />
         <Text label="Calidad Repre" value={form.calidadRepre} onChange={(v) => patch("calidadRepre", v)} />
@@ -765,7 +882,7 @@ export function UteDocsPage() {
 
       <PreviewDatos
         form={form}
-        projectFields={projectFields}
+        projectFields={efectivo}
         solarFields={solarFields}
       />
     </div>

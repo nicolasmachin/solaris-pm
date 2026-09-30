@@ -42,7 +42,7 @@
     "test:cover-overlay": "node --import tsx --test src/services/proposal/coverOverlay.test.ts",
     "test:capacitacion": "node --import tsx --test src/services/capacitacion/capacitacion.service.test.ts",
     "test:initial-draft": "node --import tsx --test src/services/proposal/initial-draft.test.ts",
-    "test:suministros": "node --import tsx --test src/services/suministros.service.test.ts"
+    "test:suministros": "node --import tsx --test src/services/suministros.service.test.ts src/services/ute-sync.suministros.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",

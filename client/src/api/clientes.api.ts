@@ -402,6 +402,8 @@ export interface ClienteUte {
   currentStage: string | null;
   finalizedAt: string | null;
   timeline: UteTimelineItem[];
+  /** Con varios suministros (una cuenta UTE por inversor), el estado de cada uno. Vacío si hay uno solo. */
+  suministros: { numero: number; cuentaUte: string | null; currentStage: string; finalizedAt: string | null }[];
 }
 
 export async function getClienteUte(projectId: string): Promise<ClienteUte> {

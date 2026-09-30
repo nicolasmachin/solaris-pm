@@ -22,6 +22,7 @@ import {
   type UteProcess,
   type UtePatchInput,
   type UteStage,
+  nombreTramite,
 } from "../../api/uteProcess.api";
 import { Button } from "../ui/Button";
 import { STAGE_BADGE_COLORS, STATUS_BADGE_COLORS } from "./UteProcessDetail";
@@ -111,7 +112,7 @@ function UteKanbanCard({
         </button>
         <button type="button" onClick={onClick} className="min-w-0 flex-1 text-left">
           <div className="mb-1 truncate text-[12px] font-semibold text-[var(--color-text-primary)]">
-            {process.project.clientName}
+            {nombreTramite(process)}
           </div>
           <div className="mb-1.5">
             <span
@@ -273,7 +274,7 @@ function TransitionModal({
               {UTE_STAGE_LABEL[fromStage]} → <strong>{UTE_STAGE_LABEL[toStage]}</strong>
             </p>
             <p className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">
-              {process.project.clientName}
+              {nombreTramite(process)}
             </p>
           </div>
           <button

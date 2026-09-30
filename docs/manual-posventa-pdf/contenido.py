@@ -734,7 +734,10 @@ def construir():
         + cita("encuesta_habilitacion", margen=16)
         + parrafo("En la ficha, el <strong>trámite UTE</strong> se despliega con todos sus hitos, y es "
                   "<strong>la misma vista que el cliente ve en su portal</strong>: si pregunta en qué anda, "
-                  "se le lee de ahí sin pedirle nada a Tramitación.", margen=16),
+                  "se le lee de ahí sin pedirle nada a Tramitación.", margen=16)
+        + parrafo("<strong>Con más de un suministro</strong> (una cuenta UTE por inversor), UTE habilita "
+                  "cada una por separado: cuando sale una, se le avisa al cliente que ya puede encender "
+                  "<strong>ese</strong> inversor. La Regla de Oro arranca con la última.", margen=12),
         p))
 
     # ── Etapa 3 ──────────────────────────────────────────────────────────────
@@ -1118,8 +1121,8 @@ def construir():
                   "lo llama Voltia PM."],
                  ["E1 / E2 / E3", "Las tres etapas del recorrido del cliente. <strong>No son las etapas del "
                   "proyecto.</strong>"],
-                 ["Cadencia", "Los días sin contacto a partir de los cuales un cliente se marca. E1: 3 · "
-                  "E2: 5 · E3: 10. <strong>Es una alarma interna, no una promesa al cliente.</strong>"],
+                 ["Cadencia", "Los días hábiles sin contacto a partir de los cuales un cliente se marca. "
+                  "E1 y E2: 5; E3 no tiene. <strong>Es una alarma interna, no una promesa al cliente.</strong>"],
                  ["Paso", "Un hito de acompañamiento del recorrido. Algunos tienen plazo. "
                   "<strong>Vencer no bloquea.</strong>"],
                  ["Novedad", "Pasó algo en el proyecto después del último contacto registrado: hay algo "
@@ -1313,6 +1316,23 @@ def construir():
                      "Hasta que no está confirmada, al cliente se le avisa como tentativa.")),
     ]:
         nueva(archivo, titulo_board, lambda p, a=args: pagina_captura(numero=p, **a))
+
+    # Registro de cambios: una entrada por versión, la más nueva arriba. Sale del
+    # anexo del mismo nombre del .md.
+    nueva("AnexoRegistro.dc.html", "Anexo · Registro de cambios", lambda p: pagina(
+        "Anexo · Registro de cambios",
+        kicker("ANEXO")
+        + titulo("Registro de cambios")
+        + bajada("Qué se agregó o se modificó en cada versión del manual, la más nueva arriba.")
+        + tabla(["VERSIÓN", "FECHA", "QUÉ SE AGREGÓ O MODIFICÓ"],
+                [["1.13", "30 de septiembre de 2026",
+                  "Obras con más de un suministro: se avisa al cliente cuando se habilita cada cuenta, y la "
+                  "Regla de Oro arranca con la última. Se corrige la cadencia del glosario (5 días hábiles en "
+                  "E1 y E2; E3 sin cadencia). Se agrega este registro."],
+                 ["1.12 y anteriores", "hasta el 28 de septiembre de 2026",
+                  "No hay registro detallado de cada versión."]],
+                anchos=[110, 150, None], margen=26),
+        p))
 
     # La hoja de cierre está maquetada a mano, como la portada: la foto va a
     # sangre y no lleva el pie de las páginas de contenido.

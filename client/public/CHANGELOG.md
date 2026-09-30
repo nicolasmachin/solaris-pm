@@ -12,7 +12,10 @@
 - Si el segundo suministro es de **otro titular**, se carga su factura (y su cédula) en su pestaña: la lectura automática completa los datos de ese suministro sin tocar los del proyecto. Lo que sale en la consulta queda guardado para ese suministro.
 - En los datos técnicos del proyecto, con más de un sistema cada uno se muestra como **Suministro 1, Suministro 2…**, y el botón pasa a ser **Agregar suministro**.
 - **El contrato y la proforma siguen siendo uno solo** y ahora nombran todos los inversores del proyecto, con los paneles sumados.
-- Por ahora, el tablero de Trámites UTE, los papeles de UTE y las fechas del proyecto siguen el **suministro 1**. Los trámites y los papeles de cada suministro vienen en los próximos pasos.
+- **Documentos UTE** tiene una pestaña por suministro: cada uno arma su propio juego de papeles, con su inversor, sus paneles, su cuenta y su titular (lo que se deja vacío toma los datos del proyecto). En los documentos del proyecto se ven los generados y los firmados de cada uno.
+- **Trámites UTE** muestra **una tarjeta por suministro** («Cliente · Suministro 2»), cada una con sus propias fechas. En la pestaña UTE del proyecto hay una pestaña por trámite.
+- **La obra queda habilitada cuando UTE habilita todas las cuentas.** Si sale una antes, a Experiencia Solar le llega un aviso para decirle al cliente que ya puede encender **ese** inversor; el aviso formal, la Regla de Oro y el paso a Post-Habilitación arrancan con la última.
+- En la ficha del cliente (Experiencia Solar) y en su portal, el trámite figura finalizado recién cuando terminaron todos; la ficha además muestra en qué anda cada suministro.
 
 ## v11.4
 

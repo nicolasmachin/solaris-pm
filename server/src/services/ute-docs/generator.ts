@@ -21,6 +21,7 @@ import {
 import { MAPPINGS } from "./mappings.js";
 import { buildVariables, type UteVariables } from "./variables.js";
 import { SUMINISTRO_PRINCIPAL, uteConfigKey } from "../suministros.service.js";
+import type { Project, UteDocumentConfig } from "@prisma/client";
 
 const FONT_SIZE = 11;
 
@@ -96,16 +97,21 @@ export async function generateUteDocs(args: {
   projectId: string;
   userId: string;
   docs: UteDocKey[];
+  /** Suministro (cuenta UTE) para el que se arman los papeles. Default: el principal. */
+  suministro?: number;
 }): Promise<GenerateResult> {
   const { projectId, userId, docs } = args;
+  const suministro = args.suministro ?? SUMINISTRO_PRINCIPAL;
   if (docs.length === 0) throw badRequest("DOCS_EMPTY", "Elegí al menos un documento para generar.");
 
-  // 1) Cargar proyecto + sistema principal + config UTE (con upsert defaults).
+  // 1) Cargar proyecto + el sistema de ese suministro + su config UTE (con
+  //    upsert defaults). Cada suministro es una cuenta UTE con su juego de
+  //    papeles: su inversor, sus paneles, su cuenta y, si lo tiene, su titular.
   const project = await prisma.project.findFirst({
     where: { id: projectId, deletedAt: null },
     include: {
       solarSystems: {
-        where: { deletedAt: null, order: 1 },
+        where: { deletedAt: null, order: suministro },
         orderBy: { order: "asc" },
         take: 1,
       },
@@ -113,13 +119,17 @@ export async function generateUteDocs(args: {
   });
   if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
 
-  let config = await prisma.uteDocumentConfig.findUnique({ where: uteConfigKey(projectId) });
+  let config = await prisma.uteDocumentConfig.findUnique({ where: uteConfigKey(projectId, suministro) });
   if (!config) {
-    config = await prisma.uteDocumentConfig.create({ data: { projectId } });
+    config = await prisma.uteDocumentConfig.create({ data: { projectId, suministro } });
   }
 
   const primarySolar = project.solarSystems[0] ?? null;
-  const variables: UteVariables = buildVariables({ project, config, primarySolar });
+  const variables: UteVariables = buildVariables({
+    project: proyectoDelSuministro(project, config, suministro),
+    config,
+    primarySolar,
+  });
 
   // 2) Generar cada doc y armar el ZIP.
   const zipBufferChunks: Buffer[] = [];
@@ -160,6 +170,7 @@ export async function generateUteDocs(args: {
   const generation = await prisma.uteDocumentGeneration.create({
     data: {
       projectId,
+      suministro,
       configSnapshot: variables as unknown as object,
       docsGenerated: generated,
       generatedById: userId,
@@ -168,7 +179,10 @@ export async function generateUteDocs(args: {
 
   const proyName = (project.clientName ?? "proyecto").replace(/[^a-zA-Z0-9_-]+/g, "_");
   const today = new Date().toISOString().slice(0, 10);
-  const zipFilename = `docs_ute_${proyName}_${today}.zip`;
+  const zipFilename =
+    suministro === SUMINISTRO_PRINCIPAL
+      ? `docs_ute_${proyName}_${today}.zip`
+      : `docs_ute_${proyName}_suministro-${suministro}_${today}.zip`;
 
   return {
     zipBuffer,
@@ -176,6 +190,32 @@ export async function generateUteDocs(args: {
     docsGenerated: generated,
     generationId: generation.id,
     projectCode: project.code,
+  };
+}
+
+/**
+ * El proyecto "visto desde" un suministro: en los que no son el principal, el
+ * titular y la dirección que tengan cargados reemplazan a los del proyecto (lo
+ * vacío queda como el proyecto). El principal es el proyecto tal cual, así sus
+ * papeles salen exactamente como siempre.
+ *
+ * Mismo criterio que el campo "Cliente" de siempre: sale del nombre de la
+ * cédula, nunca del título del proyecto.
+ */
+function proyectoDelSuministro<P extends Project>(project: P, config: UteDocumentConfig, suministro: number): P {
+  if (suministro === SUMINISTRO_PRINCIPAL) return project;
+  const t = (v: string | null | undefined) => (v && v.trim() ? v.trim() : null);
+  const empresa = config.titularEmpresa ?? project.empresa;
+  return {
+    ...project,
+    nombreCliente: t(config.titularNombre) ?? project.nombreCliente,
+    ciCliente: t(config.titularCi) ?? project.ciCliente,
+    calle: t(config.calle) ?? project.calle,
+    numCalle: t(config.numCalle) ?? project.numCalle,
+    locationCity: t(config.localidad) ?? project.locationCity,
+    locationProvince: t(config.departamento) ?? project.locationProvince,
+    empresa,
+    personaFisica: config.titularEmpresa != null ? !config.titularEmpresa : project.personaFisica,
   };
 }
 

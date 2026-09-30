@@ -845,6 +845,11 @@ historial de la ficha. Ver "historia clínica" arriba.
   avance de etapa, para que quede registrada aunque ese avance se saltee, y es
   idempotente: si ya hay fecha, no se pisa. Usa `finalizedAt` —la fecha real en
   que UTE habilitó—, no la del día en que alguien la carga.
+  **Con varios suministros** (una cuenta UTE por inversor) se escribe cuando
+  termina **el último** trámite, con su fecha; al terminar uno antes, Experiencia
+  Solar recibe solo un aviso in-app para decirle al cliente que encienda ese
+  inversor (`ute-sync.service.ts` → `vistaDelProyecto()` y
+  `avisarHabilitacionParcial()`; detalle en el capítulo 07).
   Antes se escribía en un solo lugar: al confirmar manualmente el traspaso T8. Si
   nadie lo confirmaba, no arrancaba la Regla de Oro, no había ancla de aniversario
   para encuestas ni mantenimientos, y el proyecto no pasaba a E3. En producción eso

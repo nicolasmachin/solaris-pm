@@ -6,7 +6,7 @@
 import { ProjectStatus, StageStatus, StageType, UteStatus } from "@prisma/client";
 
 import { prisma } from "../lib/prisma.js";
-import { UTE_PRINCIPAL } from "./suministros.service.js";
+import { SUMINISTRO_PRINCIPAL } from "./suministros.service.js";
 import { businessDaysBetween } from "../utils/business-days.js";
 import { diffInDays, startOfUtcDay, todayUtc } from "../utils/dates.js";
 import { decimalToNumber } from "../utils/serialization.js";
@@ -370,8 +370,10 @@ export async function procesoPorEtapa() {
 // sub-etapa. Reutiliza calculateTimes / waitingParty (motor UTE).
 export async function panelUte() {
   const now = todayUtc();
+  // Todos los trámites: con varios suministros cada cuenta UTE es un trámite
+  // aparte, y uno pendiente no puede desaparecer porque el otro ya habilitó.
   const processes = await prisma.uteProcess.findMany({
-    where: { deletedAt: null, ...UTE_PRINCIPAL, project: { deletedAt: null, importedFromCsv: false, excludedFromMetrics: false } },
+    where: { deletedAt: null, project: { deletedAt: null, importedFromCsv: false, excludedFromMetrics: false } },
     include: { project: { select: { id: true, code: true, clientName: true, saleDate: true, createdAt: true } } },
   });
   const activos = processes.filter((p) => p.finalizedAt == null && p.currentStatus !== UteStatus.CERRADO);
@@ -383,8 +385,13 @@ export async function panelUte() {
       const base = p.project.saleDate ?? p.project.createdAt;
       return {
         id: p.project.id,
+        // Clave única de la fila: un proyecto puede tener un trámite por suministro.
+        key: p.id,
         code: p.project.code,
-        clientName: p.project.clientName,
+        clientName:
+          p.suministro === SUMINISTRO_PRINCIPAL
+            ? p.project.clientName
+            : `${p.project.clientName} · suministro ${p.suministro}`,
         diasDesdeVenta: base ? diffInDays(base, now) : 0,
         subEtapa: p.currentStage, // enum UteStage; label en el front
         esperandoA: waitingParty(p, p.finalizedAt), // "US" | "UTE" | null

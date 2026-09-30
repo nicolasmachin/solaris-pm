@@ -36,16 +36,19 @@ function FileIcon({ mimeType }: { mimeType: string }) {
 
 interface Props {
   projectId: string;
+  /** Suministro (cuenta UTE). Solo se muestra en el título si el proyecto tiene varios. */
+  suministro?: number;
+  varios?: boolean;
 }
 
-export function UteDocsFirmadosBlock({ projectId }: Props) {
+export function UteDocsFirmadosBlock({ projectId, suministro = 1, varios = false }: Props) {
   const qc = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const { data: firmados = [], isLoading } = useQuery({
-    queryKey: ["ute-docs-firmados", projectId],
-    queryFn: () => getUteDocsFirmados(projectId),
+    queryKey: ["ute-docs-firmados", projectId, suministro],
+    queryFn: () => getUteDocsFirmados(projectId, suministro),
   });
 
   const deleteMut = useMutation({
@@ -85,10 +88,10 @@ export function UteDocsFirmadosBlock({ projectId }: Props) {
         <div className="flex items-center gap-2">
           <PenLine className="h-4 w-4 text-[var(--color-accent)]" />
           <h3 className="font-display text-sm font-semibold text-[var(--color-text-primary)]">
-            Documentos UTE firmados
+            Documentos UTE firmados{varios ? ` · Suministro ${suministro}` : ""}
           </h3>
         </div>
-        <UteDocsFirmadosUpload projectId={projectId} />
+        <UteDocsFirmadosUpload projectId={projectId} suministro={suministro} />
       </div>
 
       {isLoading ? (

@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { LayoutGrid, List, Lock, Trash2, Upload } from "lucide-react";
 import { getProjectDocuments, deleteFile, uploadFile, type ProjectDocument } from "../../api/files.api";
+import { getSuministros } from "../../api/projects.api";
 import { UteDocsGeneradosBlock } from "../ute/UteDocsGeneradosBlock";
 import { UteDocsFirmadosBlock } from "../ute/UteDocsFirmadosBlock";
 import { Spinner } from "../ui/Spinner";
@@ -62,6 +63,14 @@ function matchesOrigin(doc: ProjectDocument, filter: OriginFilter): boolean {
 }
 
 export function DocumentsStrip({ projectId }: { projectId: string }) {
+  // Un juego de papeles UTE por suministro (cuenta UTE). Mientras carga, o si
+  // falla, se muestra el principal como siempre.
+  const suministrosQ = useQuery({
+    queryKey: ["suministros", projectId],
+    queryFn: () => getSuministros(projectId),
+    enabled: !!projectId,
+  });
+  const numerosSuministro = suministrosQ.data?.length ? suministrosQ.data.map((s) => s.numero) : [1];
   const [previewDoc, setPreviewDoc] = useState<ProjectDocument | null>(null);
   const [originFilter, setOriginFilter] = useState<OriginFilter>("todos");
   // Vista grilla (cards horizontales) o lista (filas verticales). La lista es
@@ -172,11 +181,14 @@ export function DocumentsStrip({ projectId }: { projectId: string }) {
 
   return (
     <>
-      {/* Bloques destacados de documentos UTE (arriba del listado general) */}
-      <div className="mb-4 grid gap-4 md:grid-cols-2">
-        <UteDocsGeneradosBlock projectId={projectId} />
-        <UteDocsFirmadosBlock projectId={projectId} />
-      </div>
+      {/* Bloques destacados de documentos UTE (arriba del listado general).
+          Con varios suministros, un par por cada cuenta UTE. */}
+      {numerosSuministro.map((n) => (
+        <div key={n} className="mb-4 grid gap-4 md:grid-cols-2">
+          <UteDocsGeneradosBlock projectId={projectId} suministro={n} varios={numerosSuministro.length > 1} />
+          <UteDocsFirmadosBlock projectId={projectId} suministro={n} varios={numerosSuministro.length > 1} />
+        </div>
+      ))}
 
       <section
         className="mb-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5"

@@ -122,15 +122,16 @@ export async function saveUteDocsConfig(
 
 // Borra la config UTE para que el próximo GET la recree con los defaults
 // del schema. Lo usa el botón "Resetear datos" del form.
-export async function deleteUteDocsConfig(projectId: string): Promise<void> {
-  await apiClient.delete(`/api/projects/${projectId}/ute-docs/config`);
+export async function deleteUteDocsConfig(projectId: string, suministro: number = 1): Promise<void> {
+  await apiClient.delete(`/api/projects/${projectId}/ute-docs/config`, { params: { suministro } });
 }
 
-export async function generateUteDocs(projectId: string, docs: UteDocKey[]): Promise<Blob> {
+// `suministro`: cuenta UTE del proyecto (un juego de papeles por cada una).
+export async function generateUteDocs(projectId: string, docs: UteDocKey[], suministro: number = 1): Promise<Blob> {
   const response = await apiClient.post(
     `/api/projects/${projectId}/ute-docs/generate`,
     { docs },
-    { responseType: "blob" },
+    { responseType: "blob", params: { suministro } },
   );
   return response.data as Blob;
 }
@@ -147,27 +148,29 @@ export interface UteDocFile {
   downloadUrl: string;
 }
 
-export async function getUteDocGenerado(projectId: string): Promise<UteDocFile | null> {
+export async function getUteDocGenerado(projectId: string, suministro: number = 1): Promise<UteDocFile | null> {
   const { data } = await apiClient.get<{ generado: UteDocFile | null }>(
     `/api/projects/${projectId}/ute-docs/generado`,
+    { params: { suministro } },
   );
   return data.generado;
 }
 
-export async function getUteDocsFirmados(projectId: string): Promise<UteDocFile[]> {
+export async function getUteDocsFirmados(projectId: string, suministro: number = 1): Promise<UteDocFile[]> {
   const { data } = await apiClient.get<{ firmados: UteDocFile[] }>(
     `/api/projects/${projectId}/ute-docs/firmados`,
+    { params: { suministro } },
   );
   return data.firmados;
 }
 
-export async function uploadUteDocFirmado(projectId: string, file: File): Promise<UteDocFile> {
+export async function uploadUteDocFirmado(projectId: string, file: File, suministro: number = 1): Promise<UteDocFile> {
   const form = new FormData();
   form.append("file", file, file.name);
   const { data } = await apiClient.post<{ firmados: UteDocFile[] }>(
     `/api/projects/${projectId}/ute-docs/firmados`,
     form,
-    { headers: { "Content-Type": "multipart/form-data" } },
+    { headers: { "Content-Type": "multipart/form-data" }, params: { suministro } },
   );
   return data.firmados[0];
 }

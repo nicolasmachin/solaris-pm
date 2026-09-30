@@ -23,15 +23,19 @@ function fmtSize(bytes: number): string {
 
 interface Props {
   projectId: string;
+  /** Suministro (cuenta UTE). Solo se muestra en el título si el proyecto tiene varios. */
+  suministro?: number;
+  varios?: boolean;
 }
 
-export function UteDocsGeneradosBlock({ projectId }: Props) {
+export function UteDocsGeneradosBlock({ projectId, suministro = 1, varios = false }: Props) {
+  const generadorUrl = `/ingenieria/proyecto/${projectId}/ute-docs${suministro === 1 ? "" : `?suministro=${suministro}`}`;
   const navigate = useNavigate();
   const [downloading, setDownloading] = useState(false);
 
   const { data: generado, isLoading } = useQuery({
-    queryKey: ["ute-docs-generado", projectId],
-    queryFn: () => getUteDocGenerado(projectId),
+    queryKey: ["ute-docs-generado", projectId, suministro],
+    queryFn: () => getUteDocGenerado(projectId, suministro),
   });
 
   async function handleDownload() {
@@ -52,7 +56,7 @@ export function UteDocsGeneradosBlock({ projectId }: Props) {
       <div className="mb-3 flex items-center gap-2">
         <FileArchive className="h-4 w-4 text-[var(--color-accent)]" />
         <h3 className="font-display text-sm font-semibold text-[var(--color-text-primary)]">
-          Documentos UTE generados
+          Documentos UTE generados{varios ? ` · Suministro ${suministro}` : ""}
         </h3>
       </div>
 
@@ -65,7 +69,7 @@ export function UteDocsGeneradosBlock({ projectId }: Props) {
           </p>
           <button
             type="button"
-            onClick={() => navigate(`/ingenieria/proyecto/${projectId}/ute-docs`)}
+            onClick={() => navigate(generadorUrl)}
             className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-xs font-semibold text-black hover:opacity-90"
           >
             Generar ahora
@@ -99,7 +103,7 @@ export function UteDocsGeneradosBlock({ projectId }: Props) {
             </button>
             <button
               type="button"
-              onClick={() => navigate(`/ingenieria/proyecto/${projectId}/ute-docs`)}
+              onClick={() => navigate(generadorUrl)}
               className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]/30"
             >
               <ArrowUpRight size={14} />

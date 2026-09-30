@@ -1525,6 +1525,10 @@ model FileAttachment {
   toolSource              String?
   toolVersion             Int?
   toolEntityId            String?
+  // Suministro (cuenta UTE) al que corresponde el archivo, en los que son por
+  // suministro: papeles de UTE generados y firmados. null = el principal (o no
+  // aplica). Ver suministros.service.ts.
+  suministro              Int?
   uploadedById            String
   uploadedBy              User                   @relation("FileUploadedBy", fields: [uploadedById], references: [id], onDelete: Restrict)
   project                 Project?               @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -3366,6 +3370,8 @@ model UteDocumentGeneration {
   id             String   @id @default(cuid())
   projectId      String
   project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  // Suministro (cuenta UTE) para el que se generaron los papeles.
+  suministro     Int      @default(1)
   configSnapshot Json
   docsGenerated  String[]
   generatedById  String

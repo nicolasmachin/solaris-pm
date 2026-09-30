@@ -369,7 +369,7 @@ function UteBandCard() {
             ) : (
               <div className={LIST}>
                 {sinHabilitar.map((r) => (
-                  <Link key={r.id} to={`/projects/${r.id}`} className={ROW}>
+                  <Link key={r.key ?? r.id} to={`/projects/${r.id}`} className={ROW}>
                     <div className="min-w-0 flex-1">
                       <p className="text-[13px] font-medium text-[var(--color-text-primary)] truncate leading-tight">{r.clientName}</p>
                       <p className="text-[10px] font-mono text-[var(--color-text-muted)] truncate">{r.code} · {uteStageLabel(r.subEtapa)}</p>

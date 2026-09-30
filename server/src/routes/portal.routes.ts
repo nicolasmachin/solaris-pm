@@ -4,7 +4,8 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
 import { prisma } from "../lib/prisma.js";
-import { UTE_PRINCIPAL } from "../services/suministros.service.js";
+import { SUMINISTRO_PRINCIPAL } from "../services/suministros.service.js";
+import { vistaDelProyecto } from "../services/ute-sync.service.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize, hasPermission } from "../middleware/authorize.middleware.js";
 import { buildUteTimeline } from "../services/ute-timeline.service.js";
@@ -498,26 +499,31 @@ export async function registerPortalRoutes(app: FastifyInstance) {
           capacityKwp: true,
           locationCity: true,
           locationProvince: true,
+          // Todos los trámites: con varios suministros (una cuenta UTE por
+          // inversor) la obra está habilitada recién cuando terminan todos.
           uteProcesses: {
-            where: { deletedAt: null, ...UTE_PRINCIPAL },
-            select: { id: true, currentStage: true, finalizedAt: true, caseNumber: true },
+            where: { deletedAt: null },
+            select: { id: true, suministro: true, currentStage: true, currentStatus: true, finalizedAt: true, caseNumber: true },
             orderBy: { createdAt: "desc" },
-            take: 1,
           },
         },
         orderBy: { createdAt: "desc" },
       });
 
-      return projects.map((p) => ({
-        id: p.id,
-        code: p.code,
-        clientName: p.clientName,
-        capacityKwp: Number(p.capacityKwp),
-        location: `${p.locationCity}, ${p.locationProvince}`,
-        uteCaseNumber: p.uteProcesses[0]?.caseNumber ?? null,
-        uteCurrentStage: p.uteProcesses[0]?.currentStage ?? null,
-        uteFinalized: !!p.uteProcesses[0]?.finalizedAt,
-      }));
+      return projects.map((p) => {
+        const principal = p.uteProcesses.find((u) => u.suministro === SUMINISTRO_PRINCIPAL) ?? null;
+        const todos = p.uteProcesses.length > 0 && p.uteProcesses.every((u) => !!u.finalizedAt);
+        return {
+          id: p.id,
+          code: p.code,
+          clientName: p.clientName,
+          capacityKwp: Number(p.capacityKwp),
+          location: `${p.locationCity}, ${p.locationProvince}`,
+          uteCaseNumber: principal?.caseNumber ?? null,
+          uteCurrentStage: principal ? (todos ? principal.currentStage : principal.currentStage === "FINALIZADO" ? "DOCS_2" : principal.currentStage) : null,
+          uteFinalized: todos,
+        };
+      });
     },
   );
 
@@ -536,9 +542,8 @@ export async function registerPortalRoutes(app: FastifyInstance) {
         },
         include: {
           uteProcesses: {
-            where: { deletedAt: null, ...UTE_PRINCIPAL },
+            where: { deletedAt: null },
             orderBy: { createdAt: "desc" },
-            take: 1,
           },
         },
       });
@@ -547,7 +552,10 @@ export async function registerPortalRoutes(app: FastifyInstance) {
         throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
       }
 
-      const ute = project.uteProcesses[0] ?? null;
+      // Con varios suministros el cliente ve el trámite principal, pero
+      // "finalizado" recién cuando terminaron todas sus cuentas.
+      const principal = project.uteProcesses.find((u) => u.suministro === SUMINISTRO_PRINCIPAL) ?? null;
+      const ute = principal ? vistaDelProyecto(principal, project.uteProcesses) : null;
       const timeline = buildUteTimeline(ute);
       const times = ute ? calculateTimes(ute, new Date()) : null;
 

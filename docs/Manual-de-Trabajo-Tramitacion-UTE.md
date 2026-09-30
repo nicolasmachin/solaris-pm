@@ -42,11 +42,26 @@ medidores. **Cada inversor es un suministro**, y para UTE cada suministro es una
 cuenta distinta: **lleva su consulta, sus papeles y su trámite**, y UTE los
 resuelve por separado. Puede incluso estar a nombre de otro titular.
 
-**En Voltia PM:** el proyecto muestra un suministro por inversor en sus datos
-técnicos. La consulta inicial sale **una por cuenta**, desde Onboarding, con una
-pestaña por suministro. Por ahora, el tablero de Trámites UTE y las fechas del
-proyecto siguen **el suministro 1**; el seguimiento del trámite de los demás en
-el tablero todavía no está.
+**La obra queda habilitada cuando UTE habilita todas las cuentas.** Si sale
+una antes que la otra, se marca igual en su trámite: a Experiencia Solar le llega
+un aviso para decirle al cliente que ya puede encender ese inversor, pero el
+aviso formal de habilitación (y su plazo de 24 a 48 horas) arranca con la
+última.
+
+**En Voltia PM:**
+
+- **La consulta inicial** sale una por cuenta, desde Onboarding, con una pestaña
+  por suministro.
+- **Documentos UTE** tiene una pestaña por suministro: cada una arma su propio
+  juego de papeles, con su inversor, sus paneles, su cuenta y su titular. En los
+  documentos del proyecto se ven los generados y los firmados de cada uno.
+- **Trámites UTE** muestra **una tarjeta por suministro** ("Cliente · Suministro
+  2"), cada una con sus propias fechas. En la pestaña UTE del proyecto hay una
+  pestaña por trámite.
+- Los **códigos PS y AS** de la fila del tablero son los del suministro 1; los
+  de los demás se cargan en sus Documentos UTE.
+- **"Finalizar" desde la etapa del proyecto** cierra solo el trámite del
+  suministro 1; los demás se cierran desde su propia tarjeta.
 
 ## 5 · Cuando falta documentación
 
@@ -80,5 +95,5 @@ un reloj de 24 a 48 horas. No hace falta mandar un mensaje.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.2 | 30 de septiembre de 2026 | Se agrega qué pasa con los proyectos de más de un suministro: una consulta y un trámite por cada cuenta UTE. |
+| 0.2 | 30 de septiembre de 2026 | Se agrega qué pasa con los proyectos de más de un suministro: una consulta, un juego de papeles y un trámite por cada cuenta UTE, y la obra habilitada cuando salen todas. |
 | 0.1 | 29 de septiembre de 2026 | Se crea el manual con el detalle de Tramitación que estaba en el manual de trabajo general (v2.2). |

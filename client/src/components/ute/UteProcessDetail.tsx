@@ -62,6 +62,10 @@ export function UteProcessDetail({ process }: { process: UteProcess }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ute-processes"] });
       qc.invalidateQueries({ queryKey: ["project", process.projectId] });
+      // Proyectos con varios suministros: el trámite de otra cuenta se ve por id,
+      // y la lista de suministros muestra su estado.
+      qc.invalidateQueries({ queryKey: ["ute-process", process.id] });
+      qc.invalidateQueries({ queryKey: ["suministros", process.projectId] });
     },
     onError: (e: unknown) => {
       const msg =

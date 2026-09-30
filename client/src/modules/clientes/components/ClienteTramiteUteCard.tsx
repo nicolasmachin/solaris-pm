@@ -97,6 +97,31 @@ export function ClienteTramiteUteCard({
                   </span>
                 )}
               </div>
+              {data.suministros?.length > 1 && (
+                <div className="mb-3 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] p-3">
+                  <p className="mb-2 text-[11px] text-[var(--color-text-secondary)]">
+                    Tiene <b>{data.suministros.length} suministros</b>, uno por inversor. La obra queda habilitada cuando UTE
+                    habilita todos; cuando sale uno, ya se puede avisar que encienda ese inversor.
+                  </p>
+                  <ul className="space-y-1">
+                    {data.suministros.map((s) => (
+                      <li key={s.numero} className="flex flex-wrap items-center gap-2 text-[12px]">
+                        <span className="font-semibold text-[var(--color-text-primary)]">Suministro {s.numero}</span>
+                        {s.cuentaUte && <span className="text-[var(--color-text-muted)]">Cta {s.cuentaUte}</span>}
+                        {s.finalizedAt ? (
+                          <span className="inline-flex items-center gap-1 text-emerald-400">
+                            <Check className="h-3.5 w-3.5" /> Habilitado el {fmtDate(s.finalizedAt)}
+                          </span>
+                        ) : (
+                          <span className="text-[var(--color-text-secondary)]">
+                            {UTE_STAGE_LABELS[s.currentStage] ?? s.currentStage}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <UteTimeline items={data.timeline} />
             </>
           )}
