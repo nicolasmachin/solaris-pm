@@ -358,11 +358,15 @@ inversores", que usa la cantidad derivada).
 
 ### Aguas abajo (contrato, proforma, conector)
 
-Nada crea hoy el `SolarSystem` del proyecto desde la propuesta: la cantidad,
-marca y potencia del inversor del proyecto se cargan a mano, y **el modelo del
-proyecto no se tocó** (tiene un solo `inverterBrand` / `inverterPowerKw` /
-`inverterQuantity`). Lo que lee el snapshot cuando el proyecto no tiene
-`SolarSystem`:
+**Con más de un inversor, la conversión crea los sistemas.** Si la última
+propuesta publicada lleva inversores distintos, o varios iguales, al convertir
+el lead se crea **un `SolarSystem` por inversor** (marca, potencia, paneles del
+reparto), cada uno es un **suministro** con su trámite UTE
+(`suministros.service.ts` → `crearSuministrosDesdePropuesta()`; el detalle en
+el capítulo 07, "Proyectos con varios suministros"). Con un solo inversor no se
+crea nada y el sistema se sigue cargando a mano, como siempre.
+
+Lo que lee el snapshot cuando el proyecto no tiene `SolarSystem`:
 
 - **Contrato** (`contract-context.service.ts` → `buildContractContext()`):
   cantidad = `cantidadInversores` del snapshot (antes no se precargaba), potencia
@@ -375,7 +379,13 @@ proyecto no se tocó** (tiene un solo `inverterBrand` / `inverterPowerKw` /
   inversores monofásicos: 1 Growatt de 8 kW + 1 Huawei de 6 kW."; con varios
   iguales, "• 2 inversores monofásicos de 6 kW cada uno." (antes decía "1
   inversor" porque no leía la cantidad del snapshot).
-- **Documentos UTE**: leen solo el `SolarSystem`; no cambian.
+- **Documentos UTE**: leen solo el `SolarSystem` del suministro 1; la tanda por
+  suministro está pendiente (capítulo 07).
+- **Con varios `SolarSystem`** (un suministro por inversor), contrato y proforma
+  leen **todos** (`suministros.service.ts` → `resumirSistemasVarios()`): paneles
+  sumados, inversores descritos uno por uno y, en el contrato, la potencia
+  total. Con un solo sistema no cambia nada. Sin esto, un proyecto convertido
+  con dos inversores habría salido con el del primero.
 - **Conector**: `preparar_propuesta` y `ver_propuesta` muestran la descripción
   (capítulo 13). `computeDraftResumenComercial()` devuelve la descripción en
   `marcaInversor` en modo distintos.

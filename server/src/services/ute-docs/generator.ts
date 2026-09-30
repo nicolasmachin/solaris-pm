@@ -20,6 +20,7 @@ import {
 } from "./coordinates.js";
 import { MAPPINGS } from "./mappings.js";
 import { buildVariables, type UteVariables } from "./variables.js";
+import { SUMINISTRO_PRINCIPAL, uteConfigKey } from "../suministros.service.js";
 
 const FONT_SIZE = 11;
 
@@ -112,7 +113,7 @@ export async function generateUteDocs(args: {
   });
   if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
 
-  let config = await prisma.uteDocumentConfig.findUnique({ where: { projectId } });
+  let config = await prisma.uteDocumentConfig.findUnique({ where: uteConfigKey(projectId) });
   if (!config) {
     config = await prisma.uteDocumentConfig.create({ data: { projectId } });
   }
@@ -178,27 +179,29 @@ export async function generateUteDocs(args: {
   };
 }
 
-export async function getOrCreateConfig(projectId: string) {
+export async function getOrCreateConfig(projectId: string, suministro: number = SUMINISTRO_PRINCIPAL) {
   const project = await prisma.project.findFirst({ where: { id: projectId, deletedAt: null } });
   if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
-  let config = await prisma.uteDocumentConfig.findUnique({ where: { projectId } });
+  let config = await prisma.uteDocumentConfig.findUnique({ where: uteConfigKey(projectId, suministro) });
   if (!config) {
-    config = await prisma.uteDocumentConfig.create({ data: { projectId } });
+    config = await prisma.uteDocumentConfig.create({ data: { projectId, suministro } });
   }
   return config;
 }
 
 export async function upsertConfig(args: {
   projectId: string;
+  suministro?: number;
   data: Record<string, unknown>;
 }) {
+  const suministro = args.suministro ?? SUMINISTRO_PRINCIPAL;
   const project = await prisma.project.findFirst({ where: { id: args.projectId, deletedAt: null } });
   if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
-  // Sanitizar: nunca permitir override de projectId, id, createdAt, updatedAt
-  const { id: _id, projectId: _pid, createdAt: _ca, updatedAt: _ua, ...rest } = args.data;
+  // Sanitizar: nunca permitir override de projectId, suministro, id, createdAt, updatedAt
+  const { id: _id, projectId: _pid, suministro: _s, createdAt: _ca, updatedAt: _ua, ...rest } = args.data;
   const updated = await prisma.uteDocumentConfig.upsert({
-    where: { projectId: args.projectId },
-    create: { projectId: args.projectId, ...rest },
+    where: uteConfigKey(args.projectId, suministro),
+    create: { projectId: args.projectId, suministro, ...rest },
     update: { ...rest },
   });
   return updated;

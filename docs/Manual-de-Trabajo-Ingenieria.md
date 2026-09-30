@@ -1,6 +1,6 @@
 # Manual de trabajo de Ingeniería
 
-**Voltia · Uruguay** · Versión 0.1 — 29 de septiembre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.2 — 30 de septiembre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ingeniería, juntos**: qué se hace, quién lo hace, en qué plazo, con qué
@@ -28,7 +28,20 @@ ingeniería final.*
 
 ## 3 · Lineamientos
 
-*Por escribir.*
+### Proyectos con más de un suministro
+
+Cuando la venta lleva más de un inversor, **cada inversor es un suministro**:
+una cuenta UTE aparte, que puede ser de otro titular. Para Ingeniería eso
+significa:
+
+- **Un unifilar por suministro**, cada uno con su inversor y sus paneles.
+- **Un solo proyecto de ingeniería y una sola memoria**, que aclaran que son
+  dos suministros y describen los dos.
+
+**En Voltia PM:** los suministros se ven en los datos técnicos del proyecto (un
+sistema por inversor). Las herramientas de Ingeniería todavía trabajan con un
+solo unifilar por proyecto; el soporte para uno por suministro está en
+preparación.
 
 ## 4 · Las herramientas y cómo se usan
 
@@ -115,4 +128,5 @@ deja como comentario en su etapa y le llega solo a Experiencia Solar.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.2 | 30 de septiembre de 2026 | Primer lineamiento: los proyectos con más de un suministro llevan un unifilar por suministro y un solo proyecto y memoria. |
 | 0.1 | 29 de septiembre de 2026 | Se crea el manual con el detalle de Ingeniería que estaba en el manual de trabajo general (v2.2). |

@@ -1,7 +1,8 @@
 # 07 · Habilitación UTE
 
-> **Capítulo parcial.** Está documentada la **solicitud de suministro individual
-> / aumento de potencia contratada**. El resto del módulo (proceso de
+> **Capítulo parcial.** Están documentadas la **solicitud de suministro individual
+> / aumento de potencia contratada** y los **proyectos con varios suministros**
+> (hasta la consulta a UTE). El resto del módulo (proceso de
 > habilitación, subetapas dinámicas, formularios PDF, documentos firmados)
 > sigue pendiente de escribir: la funcionalidad existe y está en producción,
 > lo que falta es la documentación.
@@ -155,6 +156,134 @@ los clientes del portal.
   medias.
 - **Enviar dos veces no está bloqueado**: se puede corregir y reenviar. Solo
   queda la última copia del formulario en los documentos del proyecto.
+
+---
+
+# Proyectos con varios suministros
+
+## Para qué existe
+
+Una propuesta puede llevar **inversores distintos** (el cotizador lo permite
+desde el 29-09-2026): el caso típico es un cliente con dos casas, dos padrones o
+dos medidores. Para UTE eso son **dos suministros**, dos cuentas, y cada una
+lleva su propia consulta, su propio juego de papeles y su propio trámite. Hasta
+esto, el sistema asumía una sola cuenta UTE por proyecto.
+
+Lo que se acordó con Nicolás (30-09-2026):
+
+- **Un inversor, un suministro.** Dos inversores sobre el mismo medidor no es un
+  caso que se contemple: cada inversor es una cuenta UTE.
+- **Cada suministro tiene su trámite**, porque UTE los resuelve por separado.
+- **El titular puede ser otro** (dos hermanos, una empresa y su dueño).
+- **Contrato y proforma son uno solo** y nombran todos los inversores (ya
+  hecho); unifilares, uno por suministro; proyecto de ingeniería y memoria, uno
+  solo que aclara que son dos. *(Lo pendiente: ver "Lo que falta" abajo.)*
+
+## Cómo se usa
+
+1. **Al convertir el lead**, si la última propuesta publicada lleva más de un
+   inversor, el proyecto nace con **un sistema por inversor** (marca, potencia y
+   paneles repartidos como en la propuesta) y un trámite UTE por cada uno. Eso
+   vale también para la forma clásica de "varios inversores iguales".
+2. En un proyecto ya abierto, **"Agregar suministro"** en los datos técnicos
+   agrega un sistema más, y con él su trámite.
+3. En Onboarding, el botón de la consulta dice **"Enviar consultas a UTE (N
+   suministros)"** y cuántas faltan. La pantalla de la consulta muestra una
+   **pestaña por suministro**, cada una con su factura, su cuenta, su titular y
+   la potencia de su inversor; al mandar una, salta a la siguiente pendiente.
+
+## Cómo funciona
+
+**No hay una tabla "suministro".** El número de suministro une tres cosas que
+ya existían y ahora pueden repetirse dentro del proyecto:
+
+| Qué | Dónde | Clave |
+|---|---|---|
+| Inversor y paneles | `SolarSystem` | `order` |
+| Cuenta UTE y datos de los papeles | `UteDocumentConfig` | `suministro` (único con `projectId`) |
+| El trámite | `UteProcess` | `suministro` |
+
+La lógica está en `services/suministros.service.ts`:
+
+- `listSuministros()` — lo que devuelve `GET /projects/:projectId/suministros`:
+  por cada número, el inversor, la cuenta, el titular y la dirección resueltos,
+  la factura y la fecha de la consulta. Los números salen de los sistemas **y**
+  de los trámites vivos, siempre con el 1.
+- `datosSuministro()` — resuelve titular y dirección. **El suministro 1 lee
+  siempre del proyecto**, como antes. Los demás leen de su `UteDocumentConfig`
+  (`titularNombre`, `titularCi`, `titularEmpresa`, `calle`, `numCalle`,
+  `localidad`, `departamento`) y **lo que tienen vacío cae al proyecto**. La
+  factura y la cédula **no** caen: la factura del 1 no es la del 2.
+- `crearSuministrosDesdePropuesta()` — lo llama `POST /leads/:id/convert`. Si
+  el proyecto ya tiene sistemas no hace nada. Si falla, la conversión sigue.
+- `asegurarTramiteSuministro()` / `retirarTramiteSuministroSinUso()` — al crear
+  un sistema se crea su trámite; al borrarlo, el trámite se retira **solo si no
+  tiene nada cargado** (ni fechas, ni caso, ni notas).
+
+**La consulta.** `buildEmailContext()` y `prepareEmail()` reciben `suministro`;
+`POST /emails/send` recibe `suministro` y, para los que no son el principal,
+`datosSuministro`. Después del envío, `registrarConsultaUteEnviada()` (en
+`email/send.service.ts`) pone la fecha de consulta **solo en el trámite de ese
+suministro** y, si no es el principal, guarda en su config la cuenta, el titular
+y la dirección con que salió la consulta: es el primer lugar donde se cargan.
+
+**La factura y la cédula** (`POST/DELETE /projects/:projectId/ute-extract?suministro=N`)
+de un suministro que no es el principal se guardan en
+`storage/projects/<id>/ute-docs/suministro-N/` y su ruta va a su config, no al
+proyecto. `useUteExtract(projectId, suministro)` manda los datos leídos a la
+config de ese suministro y no toca el proyecto.
+
+**La config de documentos UTE** (`GET/PUT/DELETE /projects/:projectId/ute-docs/config`)
+acepta `?suministro=N` (default 1). El DELETE ("Resetear") borra solo la del
+suministro pedido.
+
+## Permisos
+
+- `GET /projects/:projectId/suministros`: `ONBOARDING:VIEW`, `TRAMITES_UTE:VIEW`
+  u `OPERACIONES:VIEW` (cualquiera). Lo usan el botón de Onboarding y la
+  pantalla de la consulta, que a su vez exigen `TRAMITES_UTE:VIEW`.
+- Lo demás no cambió de permiso: la consulta se prepara y envía con el
+  permiso de siempre, la factura con `OPERACIONES:EDIT`, la config UTE con
+  `INGENIERIA`, y crear/borrar sistemas con `OPERACIONES`.
+
+## Reglas y decisiones
+
+- **El trámite del suministro 1 es "el trámite del proyecto".** Todo lo que
+  habla de "el trámite UTE" —subetapas de Habilitación, tablero y métricas de
+  Trámites, portal del cliente, ficha de Experiencia Solar, Regla de Oro,
+  monitoreo, conector— filtra por `UTE_PRINCIPAL`. Así, un proyecto con dos
+  suministros se ve igual que antes en esas pantallas.
+- **Un trámite que no es el principal no mueve el pipeline**:
+  `regenerateUteSubstages()` sale sin hacer nada. Si pudiera, habilitar una sola
+  cuenta daría el proyecto por habilitado.
+- **Los datos del suministro extra se guardan con lo que salió en la consulta**,
+  no en un formulario aparte: lo que se le mandó a UTE es lo que vale.
+
+## Casos borde
+
+- **Borrar el sistema de un suministro que ya tiene consulta** deja el trámite
+  vivo, y el suministro sigue apareciendo en la consulta (sin inversor). Es
+  historia del trámite: la decide una persona.
+- **Proyectos existentes**: todos quedaron como suministro 1 (la migración es
+  aditiva, sin backfill). A 30-09-2026 ningún proyecto de producción tenía más
+  de un sistema ni más de un trámite.
+- **"Pot. comprometida generador" no se precarga** con la potencia del
+  inversor: sigue siendo manual, igual que en el suministro 1. La pestaña
+  muestra el inversor del suministro para que no se cargue la del proyecto
+  entero.
+
+## Lo que falta (partes 2 a 4)
+
+- **Documentos UTE** por suministro (hoy el generador usa el suministro 1).
+- **Tablero de Trámites UTE** con una tarjeta por suministro, y cuándo se avisa
+  la habilitación y se pasa a Post-Habilitación (propuesta: aviso por cada uno;
+  Post-Habilitación con el último).
+- **Contrato**: la fila "Potencia nominal del inversor" muestra la suma cuando
+  hay varios inversores distintos (el contrato ya nombra a todos los inversores y
+  suma los paneles, igual que la proforma: `resumirSistemasVarios()`). Falta
+  separar la potencia por suministro o rotularla como total.
+- **Unifilar** por suministro; pre-ingeniería, proyecto final y memoria que
+  mencionen los dos.
 
 ---
 

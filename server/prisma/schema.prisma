@@ -690,7 +690,7 @@ model Project {
   proformaVersions                ProformaVersion[]
   technicalVisits                 TechnicalVisit[]
   engineeringFinalProject         EngineeringFinalProject?
-  uteDocumentConfig               UteDocumentConfig?
+  uteDocumentConfigs              UteDocumentConfig[]
   uteDocumentGenerations          UteDocumentGeneration[]
   informes                        Informe[]                   @relation("InformesDeProyecto")
   emailLogs                       EmailLog[]                  @relation("EmailLogProject")
@@ -2349,6 +2349,11 @@ model UteProcess {
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  // Suministro (cuenta UTE) de este trámite. Cada suministro tiene el suyo:
+  // UTE los resuelve por separado. El 1 es el principal y es el que manejan
+  // las subetapas de Habilitación UTE del proyecto.
+  suministro Int @default(1)
+
   currentStage     UteStage  @default(CONSULTA)
   currentStatus    UteStatus @default(PENDIENTE)
   stageManuallySet Boolean   @default(false)
@@ -2379,6 +2384,7 @@ model UteProcess {
   deletedAt   DateTime? @db.Timestamptz(6)
 
   @@index([projectId])
+  @@index([projectId, suministro])
   @@index([currentStage])
   @@index([currentStatus])
   @@index([deletedAt])
@@ -3259,8 +3265,27 @@ model EFPAttachment {
 // representante, etc.) más los datos técnicos UTE-específicos.
 model UteDocumentConfig {
   id        String  @id @default(cuid())
-  projectId String  @unique
+  projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Número de suministro (cuenta UTE) al que corresponden estos datos. Un
+  // proyecto puede llevar varios: cada inversor distinto es un suministro con
+  // su propio trámite. Coincide con `SolarSystem.order` y `UteProcess.suministro`.
+  // El 1 es el principal, y sus datos de titular y dirección viven en Project.
+  suministro Int @default(1)
+
+  // Titular, dirección y archivos propios de un suministro que NO es el
+  // principal. null = igual que el proyecto (el caso normal: mismo cliente).
+  // En el suministro 1 no se usan: su fuente es Project, como siempre.
+  titularNombre  String?
+  titularCi      String?
+  titularEmpresa Boolean?
+  calle          String?
+  numCalle       String?
+  localidad      String?
+  departamento   String?
+  facturaUtePath String?
+  cedulaPath     String?
 
   // Datos del trámite UTE específicos al expediente. Los datos generales
   // del cliente (CI, calle, persona física/empresa) viven en Project.
@@ -3330,6 +3355,8 @@ model UteDocumentConfig {
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 
+  @@unique([projectId, suministro])
+  @@index([projectId])
   @@map("ute_document_configs")
 }
 

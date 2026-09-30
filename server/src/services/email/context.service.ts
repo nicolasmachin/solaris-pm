@@ -1,5 +1,6 @@
 import { prisma } from "../../lib/prisma.js";
 import { notFound } from "../../utils/errors.js";
+import { SUMINISTRO_PRINCIPAL, datosSuministro, uteConfigKey } from "../suministros.service.js";
 
 // Contexto plano por namespaces que consumen las plantillas Handlebars.
 export interface EmailTemplateContext {
@@ -130,7 +131,15 @@ function derivarFases(ute: { fasesMono: boolean; fasesTri: boolean } | null): st
 // Construye el contexto del mail joineando Project + UteDocumentConfig (los datos
 // están repartidos entre ambos). Los campos derivables con default no se marcan
 // como faltantes; sí los datos de fuente directa que salgan vacíos.
-export async function buildEmailContext(projectId: string, senderUserId?: string): Promise<BuiltContext> {
+//
+// `suministro` elige la cuenta UTE: en un proyecto con inversores distintos
+// cada suministro tiene su consulta, con su cuenta y, si los tiene cargados,
+// su propio titular y su dirección (si no, los del proyecto).
+export async function buildEmailContext(
+  projectId: string,
+  senderUserId?: string,
+  suministro: number = SUMINISTRO_PRINCIPAL,
+): Promise<BuiltContext> {
   const project = await prisma.project.findFirst({
     where: { id: projectId, deletedAt: null },
     select: {
@@ -144,12 +153,14 @@ export async function buildEmailContext(projectId: string, senderUserId?: string
       locationCity: true,
       calle: true,
       numCalle: true,
+      facturaUtePath: true,
+      cedulaPath: true,
     },
   });
   if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
 
   const ute = await prisma.uteDocumentConfig.findUnique({
-    where: { projectId },
+    where: uteConfigKey(projectId, suministro),
     select: {
       cuentaUte: true,
       potContratada: true,
@@ -157,26 +168,36 @@ export async function buildEmailContext(projectId: string, senderUserId?: string
       tarifa: true,
       fasesMono: true,
       fasesTri: true,
+      titularNombre: true,
+      titularCi: true,
+      titularEmpresa: true,
+      calle: true,
+      numCalle: true,
+      localidad: true,
+      departamento: true,
+      facturaUtePath: true,
+      cedulaPath: true,
     },
   });
 
-  const esEmpresa = project.empresa;
-  const nombre = project.nombreCliente.trim() || project.clientName;
+  const datos = datosSuministro(project, ute, suministro);
+  const esEmpresa = datos.titularEmpresa;
+  const nombre = datos.titularNombre;
 
   const context: EmailTemplateContext = {
     cliente: {
       nombre,
-      ci: project.ciCliente,
+      ci: datos.titularCi,
       telefono: project.clientPhone ?? "",
       email: project.clientEmail ?? "",
       esEmpresa,
       documento: esEmpresa ? "RUT" : "CI",
     },
     suministro: {
-      departamento: project.locationProvince,
-      localidad: project.locationCity,
-      calle: project.calle,
-      numero: project.numCalle,
+      departamento: datos.departamento,
+      localidad: datos.localidad,
+      calle: datos.calle,
+      numero: datos.numCalle,
       cuenta: ute?.cuentaUte ?? "",
       padron: "",
       duplicador: "",

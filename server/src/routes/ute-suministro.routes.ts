@@ -19,6 +19,7 @@ import { createAuditEntry } from "../services/audit.service.js";
 import { deleteStoredFile, saveBufferAsAttachment } from "../services/file-storage.service.js";
 import { sendTemplatedEmail } from "../services/email/send.service.js";
 import { SUMINISTRO_INDIVIDUAL_KEY } from "../services/email/seed-templates.js";
+import { uteConfigKey } from "../services/suministros.service.js";
 import type { EmailTemplateContext } from "../services/email/context.service.js";
 import { datosFormularioDesdeContexto } from "../services/ute-suministro/mapping.js";
 import {
@@ -153,7 +154,7 @@ export async function registerUteSuministroRoutes(app: FastifyInstance) {
       const { projectId } = paramsSchema.parse(request.params);
       await proyectoOTirar(projectId);
       const config = await prisma.uteDocumentConfig.findUnique({
-        where: { projectId },
+        where: uteConfigKey(projectId),
         select: { aumentoPotenciaSentAt: true, potSolicitada: true, potContratada: true },
       });
       return {

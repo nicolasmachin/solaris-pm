@@ -305,9 +305,19 @@ function SolarSystemsSection({
             Sistema fotovoltaico
           </p>
           <h2 className="mt-1 text-lg font-semibold text-[var(--color-text-primary)]">Datos técnicos</h2>
+          {systems.length > 1 && (
+            <p className="mt-1 max-w-xl text-xs text-[var(--color-text-secondary)]">
+              Un sistema por inversor: cada uno es un <b>suministro</b> con su propia cuenta UTE, su consulta y su trámite.
+            </p>
+          )}
         </div>
-        <Button size="sm" variant="secondary" onClick={onCreate}>
-          {systems.length === 0 ? "Agregar sistema" : "Agregar sistema"}
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={onCreate}
+          title={systems.length > 0 ? "Un sistema más es un suministro más: otra cuenta UTE, con su consulta y su trámite" : undefined}
+        >
+          {systems.length === 0 ? "Agregar sistema" : "Agregar suministro"}
         </Button>
       </div>
 
@@ -336,7 +346,8 @@ function SolarSystemsSection({
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                    {system.description || `Sistema ${system.order}`}
+                    Suministro {system.order}
+                    {system.description && system.description !== `Suministro ${system.order}` ? ` · ${system.description}` : ""}
                   </span>
                   <Badge label={getPhaseTypeShortLabel(system.inverterPhaseType)} className="bg-[var(--color-border)] text-[var(--color-text-primary)]" />
                 </div>

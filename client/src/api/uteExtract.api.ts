@@ -32,9 +32,10 @@ export interface UteExtractResponse {
 export async function uteExtractDelete(
   projectId: string,
   tipo: UteExtractTipo,
+  suministro: number = 1,
 ): Promise<void> {
   await apiClient.delete(`/api/projects/${projectId}/ute-extract`, {
-    params: { tipo },
+    params: { tipo, suministro },
   });
 }
 
@@ -42,6 +43,8 @@ export async function uteExtract(
   projectId: string,
   tipo: UteExtractTipo,
   file: File,
+  // Suministro (cuenta UTE) al que pertenece el documento. Default: el principal.
+  suministro: number = 1,
 ): Promise<UteExtractResponse> {
   const form = new FormData();
   form.append("file", file);
@@ -49,7 +52,7 @@ export async function uteExtract(
     `/api/projects/${projectId}/ute-extract`,
     form,
     {
-      params: { tipo },
+      params: { tipo, suministro },
       headers: { "Content-Type": "multipart/form-data" },
     },
   );

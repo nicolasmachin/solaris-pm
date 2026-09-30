@@ -18,6 +18,7 @@ import {
 } from "@prisma/client";
 
 import { prisma } from "../../../lib/prisma.js";
+import { UTE_PRINCIPAL } from "../../suministros.service.js";
 import {
   dataloggersSmartMeter,
   estadoInversor,
@@ -125,7 +126,7 @@ async function cargarObjetivo(plantIds?: bigint[]): Promise<PlantaObjetivo[]> {
           postHabilitacionInicioEn: true,
           actualUteEnd: true,
           uteProcesses: {
-            where: { deletedAt: null },
+            where: { deletedAt: null, ...UTE_PRINCIPAL },
             select: { currentStage: true, finalizedAt: true },
           },
           stages: {

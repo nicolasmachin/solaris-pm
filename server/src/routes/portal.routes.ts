@@ -4,6 +4,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
 import { prisma } from "../lib/prisma.js";
+import { UTE_PRINCIPAL } from "../services/suministros.service.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize, hasPermission } from "../middleware/authorize.middleware.js";
 import { buildUteTimeline } from "../services/ute-timeline.service.js";
@@ -498,7 +499,7 @@ export async function registerPortalRoutes(app: FastifyInstance) {
           locationCity: true,
           locationProvince: true,
           uteProcesses: {
-            where: { deletedAt: null },
+            where: { deletedAt: null, ...UTE_PRINCIPAL },
             select: { id: true, currentStage: true, finalizedAt: true, caseNumber: true },
             orderBy: { createdAt: "desc" },
             take: 1,
@@ -535,7 +536,7 @@ export async function registerPortalRoutes(app: FastifyInstance) {
         },
         include: {
           uteProcesses: {
-            where: { deletedAt: null },
+            where: { deletedAt: null, ...UTE_PRINCIPAL },
             orderBy: { createdAt: "desc" },
             take: 1,
           },

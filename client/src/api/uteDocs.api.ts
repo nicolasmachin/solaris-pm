@@ -4,6 +4,19 @@ import { apiClient } from "./axios";
 export interface UteDocumentConfig {
   id: string;
   projectId: string;
+  // Suministro (cuenta UTE) de esta config; 1 = el principal.
+  suministro: number;
+  // Titular, dirección y archivos propios de un suministro que no es el
+  // principal (null = igual que el proyecto). En el 1 no se usan.
+  titularNombre: string | null;
+  titularCi: string | null;
+  titularEmpresa: boolean | null;
+  calle: string | null;
+  numCalle: string | null;
+  localidad: string | null;
+  departamento: string | null;
+  facturaUtePath: string | null;
+  cedulaPath: string | null;
   // Cliente (datos del trámite — los generales viven en Project ahora)
   cuentaUte: string;
   casoUte: string;
@@ -89,16 +102,21 @@ export const UTE_DOC_LABEL: Record<UteDocKey, string> = {
   contrato: "Contrato",
 };
 
-export async function getUteDocsConfig(projectId: string): Promise<UteDocumentConfig> {
-  const { data } = await apiClient.get<UteDocumentConfig>(`/api/projects/${projectId}/ute-docs/config`);
+export async function getUteDocsConfig(projectId: string, suministro: number = 1): Promise<UteDocumentConfig> {
+  const { data } = await apiClient.get<UteDocumentConfig>(`/api/projects/${projectId}/ute-docs/config`, {
+    params: { suministro },
+  });
   return data;
 }
 
 export async function saveUteDocsConfig(
   projectId: string,
-  body: Partial<Omit<UteDocumentConfig, "id" | "projectId" | "createdAt" | "updatedAt">>,
+  body: Partial<Omit<UteDocumentConfig, "id" | "projectId" | "suministro" | "createdAt" | "updatedAt">>,
+  suministro: number = 1,
 ): Promise<UteDocumentConfig> {
-  const { data } = await apiClient.put<UteDocumentConfig>(`/api/projects/${projectId}/ute-docs/config`, body);
+  const { data } = await apiClient.put<UteDocumentConfig>(`/api/projects/${projectId}/ute-docs/config`, body, {
+    params: { suministro },
+  });
   return data;
 }
 

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { ArrowLeft, Send, Sparkles, Upload } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Send, Sparkles, Upload } from "lucide-react";
 
-import { getProject } from "../api/projects.api";
+import { getProject, getSuministros, type Suministro } from "../api/projects.api";
 import { useAuthStore } from "../store/auth.store";
 import { useEmailTemplates, usePrepareEmail, useSendEmail } from "../hooks/useEmail";
 import { useUteExtract } from "../hooks/useUteExtract";
@@ -43,10 +43,138 @@ function calcularFaltantes(ctx: EmailTemplateContext, bcc: string[]): string[] {
   return checks.filter(([, v]) => !v.trim()).map(([label]) => label);
 }
 
+function fechaCorta(iso: string): string {
+  const [y, m, d] = iso.slice(0, 10).split("-");
+  return `${d}/${m}/${y}`;
+}
+
+// Un proyecto con inversores distintos tiene un suministro (cuenta UTE) por
+// inversor, y a UTE se le manda una consulta por cada uno. Esta página detecta
+// cuántos hay: con uno solo es la pantalla de siempre; con más, una pestaña por
+// suministro, cada una con su formulario, su factura y su envío.
 export default function ConsultaUte() {
   const { projectId = "" } = useParams();
   const navigate = useNavigate();
+  const qc = useQueryClient();
+  const suministrosQ = useQuery({
+    queryKey: ["suministros", projectId],
+    queryFn: () => getSuministros(projectId),
+    enabled: !!projectId,
+  });
+  const suministros = suministrosQ.data ?? [];
+  const varios = suministros.length > 1;
+  const [elegido, setElegido] = useState<number | null>(null);
+
+  // Arranca en el primero que todavía no tiene la consulta mandada.
+  useEffect(() => {
+    if (elegido !== null || suministros.length === 0) return;
+    setElegido(suministros.find((s) => !s.consultaSentAt)?.numero ?? suministros[0].numero);
+  }, [suministros, elegido]);
+
+  if (suministrosQ.isLoading || elegido === null) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center text-sm text-[var(--color-text-muted)]">
+        Preparando la consulta…
+      </div>
+    );
+  }
+
+  const actual = suministros.find((s) => s.numero === elegido) ?? null;
+
+  async function onEnviada(numero: number) {
+    await qc.invalidateQueries({ queryKey: ["suministros", projectId] });
+    if (!varios) {
+      toast.success("Consulta enviada a UTE");
+      navigate(-1);
+      return;
+    }
+    const pendiente = suministros.find((s) => s.numero !== numero && !s.consultaSentAt);
+    if (pendiente) {
+      toast.success(`Consulta del suministro ${numero} enviada. Falta la del suministro ${pendiente.numero}.`);
+      setElegido(pendiente.numero);
+    } else {
+      toast.success(`Consulta del suministro ${numero} enviada. Ya salieron todas.`);
+      navigate(-1);
+    }
+  }
+
+  return (
+    <div>
+      {varios && (
+        <div className="mb-4 space-y-3">
+          <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]">
+            <ArrowLeft className="h-3.5 w-3.5" /> Volver
+          </button>
+          <div className="rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/5 px-3 py-2.5 text-sm text-[var(--color-text-secondary)]">
+            Este proyecto tiene <b className="text-[var(--color-text-primary)]">{suministros.length} suministros</b>, uno
+            por inversor. A UTE va <b className="text-[var(--color-text-primary)]">una consulta por cada cuenta</b>, cada
+            una con su factura, su titular y la potencia de su inversor.
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {suministros.map((s) => (
+              <SuministroTab key={s.numero} s={s} activo={s.numero === elegido} onClick={() => setElegido(s.numero)} />
+            ))}
+          </div>
+        </div>
+      )}
+      <ConsultaUteForm
+        key={elegido}
+        projectId={projectId}
+        suministro={elegido}
+        info={varios ? actual : null}
+        onEnviada={() => onEnviada(elegido)}
+      />
+    </div>
+  );
+}
+
+function SuministroTab({ s, activo, onClick }: { s: Suministro; activo: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`min-w-[200px] rounded-lg border px-3 py-2 text-left transition ${
+        activo
+          ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10"
+          : "border-[var(--color-border)] bg-[var(--color-bg-card)] hover:border-[var(--color-accent)]/60"
+      }`}
+    >
+      <div className="text-sm font-semibold text-[var(--color-text-primary)]">Suministro {s.numero}</div>
+      <div className="text-[11px] text-[var(--color-text-secondary)]">
+        {s.inversor ?? "Inversor sin cargar"}
+        {s.cuentaUte ? ` · Cta ${s.cuentaUte}` : " · sin cuenta"}
+      </div>
+      <div
+        className={`mt-1 flex items-center gap-1 text-[11px] font-medium ${
+          s.consultaSentAt ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
+        }`}
+      >
+        {s.consultaSentAt ? (
+          <>
+            <CheckCircle2 className="h-3.5 w-3.5" /> Consulta enviada el {fechaCorta(s.consultaSentAt)}
+          </>
+        ) : (
+          "Consulta pendiente"
+        )}
+      </div>
+    </button>
+  );
+}
+
+function ConsultaUteForm({
+  projectId,
+  suministro,
+  info,
+  onEnviada,
+}: {
+  projectId: string;
+  suministro: number;
+  /** Datos del suministro cuando el proyecto tiene más de uno (null = el caso de siempre). */
+  info: Suministro | null;
+  onEnviada: () => void;
+}) {
+  const navigate = useNavigate();
   const currentUser = useAuthStore((s) => s.user);
+  const principal = suministro === 1;
 
   const { data: project } = useQuery({ queryKey: ["project", projectId], queryFn: () => getProject(projectId), enabled: !!projectId });
   const { data: templates } = useEmailTemplates({ activo: true });
@@ -57,7 +185,7 @@ export default function ConsultaUte() {
 
   const prepare = usePrepareEmail();
   const send = useSendEmail();
-  const extractor = useUteExtract(projectId);
+  const extractor = useUteExtract(projectId, suministro);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [ctx, setCtx] = useState<EmailTemplateContext | null>(null);
@@ -83,7 +211,7 @@ export default function ConsultaUte() {
   useEffect(() => {
     if (!projectId || !template || ready) return;
     prepare.mutate(
-      { templateKey: TEMPLATE_KEY, projectId },
+      { templateKey: TEMPLATE_KEY, projectId, suministro },
       {
         onSuccess: (res) => {
           seed(res.context);
@@ -100,7 +228,7 @@ export default function ConsultaUte() {
   const prevConfirming = useRef(false);
   useEffect(() => {
     if (prevConfirming.current && !extractor.isConfirming && !extractor.modalOpen) {
-      prepare.mutate({ templateKey: TEMPLATE_KEY, projectId }, { onSuccess: (res) => seed(res.context) });
+      prepare.mutate({ templateKey: TEMPLATE_KEY, projectId, suministro }, { onSuccess: (res) => seed(res.context) });
     }
     prevConfirming.current = extractor.isConfirming;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -153,9 +281,26 @@ export default function ConsultaUte() {
         bcc: bcc.join(", "),
         subject,
         body: bodyText,
+        suministro,
+        // Los suministros que no son el principal no tienen otro lugar donde
+        // estén cargados su cuenta, su titular y su dirección: se guardan con
+        // lo que salió en la consulta.
+        ...(principal || !ctx
+          ? {}
+          : {
+              datosSuministro: {
+                cuenta: ctx.suministro.cuenta,
+                titularNombre: ctx.cliente.nombre,
+                titularCi: ctx.cliente.ci,
+                titularEmpresa: ctx.cliente.esEmpresa,
+                calle: ctx.suministro.calle,
+                numCalle: ctx.suministro.numero,
+                localidad: ctx.suministro.localidad,
+                departamento: ctx.suministro.departamento,
+              },
+            }),
       });
-      toast.success("Consulta enviada a UTE");
-      navigate(-1);
+      onEnviada();
     } catch (err) {
       const code = (err as { response?: { data?: { code?: string; message?: string } } })?.response?.data;
       if (code?.code === "SMTP_NOT_CONFIGURED") {
@@ -176,15 +321,24 @@ export default function ConsultaUte() {
   }
 
   const ciLabel = ctx.cliente.esEmpresa ? "RUT" : "C.I. / RUT";
+  const facturaCargada = principal ? !!project?.facturaUtePath : !!info?.facturaUtePath;
 
   return (
     <div>
-      <button onClick={() => navigate(-1)} className="mb-3 flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]">
-        <ArrowLeft className="h-3.5 w-3.5" /> Volver
-      </button>
+      {!info && (
+        <button onClick={() => navigate(-1)} className="mb-3 flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]">
+          <ArrowLeft className="h-3.5 w-3.5" /> Volver
+        </button>
+      )}
       <h1 className="mb-1 text-lg font-bold text-[var(--color-text-primary)]">
         {project?.clientName ?? ctx.cliente.nombre} · Enviar consulta a UTE
+        {info && ` · Suministro ${suministro}`}
       </h1>
+      {info?.consultaSentAt && (
+        <p className="mb-2 text-xs text-emerald-600 dark:text-emerald-400">
+          La consulta de este suministro ya salió el {fechaCorta(info.consultaSentAt)}. Si la mandás de nuevo, esa fecha no cambia.
+        </p>
+      )}
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,46%)_minmax(0,54%)]">
         {/* ─── Formulario ─── */}
@@ -212,9 +366,11 @@ export default function ConsultaUte() {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-[var(--color-text-primary)]">Cargar factura UTE</p>
               <p className="text-[11px] leading-snug text-[var(--color-text-secondary)]">
-                {project?.facturaUtePath
+                {facturaCargada
                   ? "Ya hay una factura cargada y sus datos ya están en el formulario. Subí otra para reemplazar."
-                  : "La IA lee la factura y completa cuenta, tarifa, potencia y más. Revisás y ajustás abajo."}
+                  : info
+                    ? `Cargá la factura de la cuenta del suministro ${suministro}: la IA completa cuenta, tarifa, potencia y más.`
+                    : "La IA lee la factura y completa cuenta, tarifa, potencia y más. Revisás y ajustás abajo."}
               </p>
             </div>
             <button
@@ -222,7 +378,7 @@ export default function ConsultaUte() {
               disabled={extractor.isExtracting}
               className="flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-xs font-semibold text-black hover:opacity-90 disabled:opacity-50"
             >
-              <Upload className="h-3.5 w-3.5" /> {extractor.isExtracting ? "Leyendo…" : project?.facturaUtePath ? "Reemplazar" : "Cargar factura"}
+              <Upload className="h-3.5 w-3.5" /> {extractor.isExtracting ? "Leyendo…" : facturaCargada ? "Reemplazar" : "Cargar factura"}
             </button>
             <input ref={fileRef} type="file" accept={ACCEPT_FOTOS_Y_PDF} className="hidden" onChange={onPickFactura} />
           </div>
@@ -277,6 +433,12 @@ export default function ConsultaUte() {
 
           <div className="border-t border-dashed border-[var(--color-border)] pt-3">
             <p className={`${lbl} mb-2`}>Datos técnicos de la solicitud</p>
+            {info?.inversor && (
+              <p className="mb-2 text-xs text-[var(--color-text-secondary)]">
+                Inversor de este suministro: <b className="text-[var(--color-text-primary)]">{info.inversor}</b>
+                {info.paneles ? ` · ${info.paneles} paneles` : ""}. La potencia comprometida es la de este inversor, no la del proyecto entero.
+              </p>
+            )}
             <div className="space-y-2">
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -317,7 +479,7 @@ export default function ConsultaUte() {
               title={potenciaGeneradorVacia ? "Completá la Pot. comprometida generador" : undefined}
               className="flex items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50"
             >
-              <Send className="h-4 w-4" /> {send.isPending ? "Enviando…" : "Enviar consulta"}
+              <Send className="h-4 w-4" /> {send.isPending ? "Enviando…" : info ? `Enviar consulta del suministro ${suministro}` : "Enviar consulta"}
             </button>
           </div>
         </div>

@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.1 — 28 de septiembre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.2 — 30 de septiembre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -27,7 +27,25 @@
 Cada decisión se anota con **qué se decidió, por qué, desde cuándo rige** y a
 qué manual afecta.
 
-*Por escribir.*
+### Una venta con varios inversores: un suministro por inversor
+
+**Qué se decidió.** Cuando una venta lleva más de un inversor (dos casas, dos
+padrones, dos medidores), **cada inversor es un suministro**: una cuenta UTE
+propia, con su consulta, sus papeles, su unifilar y su trámite, que puede estar a
+nombre de otro titular. En cambio, el **contrato** y la **proforma** son **uno
+solo**, y el **proyecto de ingeniería** y la **memoria** también, aclarando que
+son dos suministros.
+
+**Por qué.** UTE trata cada cuenta por separado: la consulta, la aprobación y la
+habilitación de una no dicen nada de la otra. Para el cliente, en cambio, es una
+sola compra, un solo precio y un solo contrato. No se contempla el caso de dos
+inversores sobre un mismo medidor.
+
+**Desde cuándo rige.** 30 de septiembre de 2026.
+
+**A qué manuales afecta.** Ventas (el cotizador y la consulta inicial a UTE),
+Tramitación UTE (un trámite por cuenta) e Ingeniería (un unifilar por
+suministro).
 
 ## 4 · Cómo se toman y se comunican las decisiones
 
@@ -60,4 +78,5 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.2 | 30 de septiembre de 2026 | Primera decisión registrada: una venta con varios inversores lleva un suministro por inversor, con contrato y proforma únicos. |
 | 0.1 | 28 de septiembre de 2026 | Se crea el manual con su estructura y la lista de temas a documentar. |

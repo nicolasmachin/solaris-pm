@@ -106,6 +106,8 @@ const prepareSchema = z
     templateKey: z.string().trim().min(1),
     projectId: z.string().min(1).optional(),
     leadId: z.string().min(1).optional(),
+    // Cuenta UTE del proyecto a la que va el mail (default 1, el principal).
+    suministro: z.number().int().min(1).max(20).optional(),
     overrides: z
       .object({
         tecnica: tecnicaOverrideSchema.optional(),
@@ -132,6 +134,22 @@ const sendSchema = z
     body: z.string().min(1),
     // Solo lo usa la plantilla de Suministro Individual (ver send.service.ts).
     potenciaSolicitada: z.string().trim().optional(),
+    // Consulta UTE de un proyecto con varios suministros: a cuál corresponde y,
+    // para los que no son el principal, los datos con que salió (se guardan).
+    suministro: z.number().int().min(1).max(20).optional(),
+    datosSuministro: z
+      .object({
+        cuenta: z.string().trim().max(40),
+        titularNombre: z.string().trim().max(200),
+        titularCi: z.string().trim().max(40),
+        titularEmpresa: z.boolean(),
+        calle: z.string().trim().max(200),
+        numCalle: z.string().trim().max(40),
+        localidad: z.string().trim().max(120),
+        departamento: z.string().trim().max(120),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 
@@ -221,6 +239,7 @@ export async function registerEmailRoutes(app: FastifyInstance) {
       templateKey: body.templateKey,
       projectId: body.projectId,
       leadId: body.leadId,
+      suministro: body.suministro,
       overrides: body.overrides as EmailOverrides | undefined,
       senderUserId: user.id,
     });

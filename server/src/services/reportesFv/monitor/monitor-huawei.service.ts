@@ -16,6 +16,7 @@
 import { FvDiagnostico, ReporteFvFuente, type StageType } from "@prisma/client";
 
 import { prisma } from "../../../lib/prisma.js";
+import { UTE_PRINCIPAL } from "../../suministros.service.js";
 import { estadoActual, serieDiariaDelMes } from "../huawei/client.js";
 import { dateADia, type Dia } from "./dias.js";
 import { diagnosticarHuawei, leerUmbralesHuawei, type EstadoSalud } from "./diagnostico-huawei.js";
@@ -73,7 +74,7 @@ export async function ejecutarMonitorHuawei(fecha: Dia): Promise<ResumenMonitorH
           clientName: true,
           postHabilitacionInicioEn: true,
           actualUteEnd: true,
-          uteProcesses: { select: { currentStage: true, finalizedAt: true } },
+          uteProcesses: { where: { deletedAt: null, ...UTE_PRINCIPAL }, select: { currentStage: true, finalizedAt: true } },
           stages: {
             where: { deletedAt: null, name: { in: ETAPAS_UTE as StageType[] } },
             select: { name: true, actualEndDate: true, status: true },

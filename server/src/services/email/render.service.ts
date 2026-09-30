@@ -40,6 +40,7 @@ export async function prepareEmail(params: {
   templateKey: string;
   projectId?: string;
   leadId?: string;
+  suministro?: number;
   overrides?: EmailOverrides;
   // Usuario que prepara la consulta: su firma (nombre/cargo/tel/email) va al cuerpo.
   senderUserId?: string;
@@ -49,7 +50,7 @@ export async function prepareEmail(params: {
   let context: EmailTemplateContext;
   let missingVariables: string[];
   if (params.projectId) {
-    const built = await buildEmailContext(params.projectId, params.senderUserId);
+    const built = await buildEmailContext(params.projectId, params.senderUserId, params.suministro);
     context = built.context;
     missingVariables = built.missingVariables;
   } else {

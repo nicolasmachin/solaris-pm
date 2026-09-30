@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 0.1 — 29 de septiembre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.2 — 30 de septiembre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -146,6 +146,21 @@ ese mensaje en la continuación de una relación, no en un contacto frío.
 **En Voltia PM:** en la ficha del cliente, etapa **E1** → paso **«Bienvenida y
 presentación»**. Tiene el mensaje modelo listo para copiar.
 
+### La consulta inicial a UTE
+
+**Se manda una consulta por cada cuenta UTE.** Si la venta tiene un solo
+inversor, es una sola, como siempre. Si tiene varios, cada inversor es un
+suministro y cada suministro lleva **su** consulta: con su factura, su número de
+cuenta, su titular y **la potencia de su inversor**, no la del proyecto entero.
+Mandar una sola creyendo que alcanza deja la otra cuenta sin trámite.
+
+**En Voltia PM:** en el proyecto, etapa **Onboarding** → subetapa **«Consulta
+inicial UTE»**. Con varios suministros el botón dice **«Enviar consultas a UTE»**
+y cuántas faltan. Adentro hay una pestaña por suministro; al mandar una, pasa
+sola a la siguiente. Si el segundo suministro es de otro titular, se carga su
+factura (y su cédula) en su pestaña y se corrigen ahí el nombre, la cédula y la
+dirección: lo que sale en la consulta queda guardado para ese suministro.
+
 ### Lo que deja cargado para los que siguen
 
 Todo lo que el asesor juntó en la visita —**el resumen, la minuta, las fotos, los
@@ -158,10 +173,17 @@ Pre-Ingeniería.** Si falta, arrancan a ciegas.
 calcula solo.
 
 **Se pueden cotizar varias instalaciones juntas.** Si el cliente quiere dos
-techos o dos padrones, se pone más de uno en **Cantidad de inversores**. La
-potencia que se carga es la de **un** inversor y los paneles van **sumados**
-entre las dos. Se multiplican el inversor y la instalación eléctrica; el resto
-no.
+casas, dos padrones o dos medidores, se toca **+ Agregar inversor** y aparece
+una fila por inversor, cada una con su marca, su potencia y sus paneles (pueden
+ser de marcas o potencias distintas). Los paneles se reparten solos según la
+potencia de cada uno, o se cargan a mano. Cada inversor se cotiza con los
+paneles que lleva.
+
+**Cada inversor es un suministro.** Para UTE, dos inversores son **dos cuentas**:
+cada una lleva su consulta, sus papeles y su trámite, y puede estar a nombre de
+otro titular. Al convertir la venta, el proyecto nace con un suministro por
+inversor. El contrato y la proforma siguen siendo **uno solo**, con todos los
+inversores.
 
 **Se pueden ajustar los costos de esa cotización.** El **ícono de calculadora**
 del encabezado abre el costeo: el precio de cada ítem, la mano de obra, los
@@ -190,4 +212,5 @@ esa venta se le pregunta a él.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.2 | 30 de septiembre de 2026 | El cotizador con inversores distintos y qué pasa con cada uno (un suministro por inversor). Se agrega la consulta inicial a UTE: una por cada cuenta. |
 | 0.1 | 29 de septiembre de 2026 | Se crea el manual con el detalle de Ventas que estaba en el manual de trabajo general (v2.2). |

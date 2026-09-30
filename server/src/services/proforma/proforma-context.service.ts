@@ -5,6 +5,7 @@
 
 import { prisma } from "../../lib/prisma.js";
 import { notFound } from "../../utils/errors.js";
+import { resumirSistemasVarios } from "../suministros.service.js";
 import {
   describirInversores,
   listaInversoresDistintos,
@@ -45,7 +46,8 @@ export async function buildProformaContext(projectId: string): Promise<ProformaC
       locationCity: true,
       clientPhone: true,
       clientEmail: true,
-      solarSystems: { where: { deletedAt: null }, orderBy: { order: "asc" }, take: 1 },
+      // Todos: con varios suministros la proforma es una sola y nombra a todos.
+      solarSystems: { where: { deletedAt: null }, orderBy: { order: "asc" } },
       convertedLeads: {
         select: {
           proposalV2Versions: {
@@ -83,7 +85,8 @@ export async function buildProformaContext(projectId: string): Promise<ProformaC
   const snapSistema = snapshot?.data?.sistema ?? {};
   const snapFactura = snapshot?.data?.factura ?? {};
 
-  const cantidadPaneles = ss?.panelQuantity ?? num(snapSistema.cantidadPaneles);
+  const varios = resumirSistemasVarios(project.solarSystems);
+  const cantidadPaneles = varios?.paneles ?? ss?.panelQuantity ?? num(snapSistema.cantidadPaneles);
   const potenciaPanelW = ss?.panelPowerW ?? num(snapSistema.potenciaPanelW);
   const potenciaKw =
     cantidadPaneles != null && potenciaPanelW != null
@@ -92,9 +95,12 @@ export async function buildProformaContext(projectId: string): Promise<ProformaC
   const inversorCantidad = ss?.inverterQuantity ?? num(snapSistema.cantidadInversores) ?? 1;
   // Inversores distintos en la propuesta (y sin SolarSystem cargado): se
   // describen uno por uno en vez de "N inversor de <suma> kW".
-  const listaSnap = ss
-    ? null
-    : listaInversoresDistintos(snapSistema as { inversores?: Partial<InversorItem>[] });
+  // Con varios suministros, la lista sale de sus sistemas.
+  const listaSnap = varios
+    ? varios.inversores
+    : ss
+      ? null
+      : listaInversoresDistintos(snapSistema as { inversores?: Partial<InversorItem>[] });
   const inversorPotenciaKw = num(ss?.inverterPowerKw) ?? num(snapSistema.potenciaInversorKw);
   let inversorTipo = "monofásico";
   if (ss?.inverterPhaseType) inversorTipo = ss.inverterPhaseType === "MONOFASICO" ? "monofásico" : "trifásico";

@@ -4,6 +4,7 @@
 
 import { prisma } from "../../lib/prisma.js";
 import { notFound } from "../../utils/errors.js";
+import { resumirSistemasVarios } from "../suministros.service.js";
 import {
   describirInversores,
   listaInversoresDistintos,
@@ -52,10 +53,10 @@ export async function buildContractContext(projectId: string): Promise<ContractC
       locationProvince: true,
       estimatedMwhYear: true,
       budgetUsd: true,
+      // Todos: con varios suministros el contrato es uno solo y nombra a todos.
       solarSystems: {
         where: { deletedAt: null },
         orderBy: { order: "asc" },
-        take: 1,
       },
       convertedLeads: {
         select: {
@@ -95,7 +96,11 @@ export async function buildContractContext(projectId: string): Promise<ContractC
   const snapTecho = snapshot?.data?.techo ?? {};
   const snapCalc = snapshot?.calc ?? {};
 
-  const cantidadPaneles = ss?.panelQuantity ?? num(snapSistema.cantidadPaneles);
+  // Varios suministros: un sistema por inversor. El contrato suma paneles e
+  // inversores y describe cada uno, igual que hace con la propuesta.
+  const varios = resumirSistemasVarios(project.solarSystems);
+
+  const cantidadPaneles = varios?.paneles ?? ss?.panelQuantity ?? num(snapSistema.cantidadPaneles);
   const potenciaUnitariaWp = ss?.panelPowerW ?? num(snapSistema.potenciaPanelW);
   const potenciaTotalKwp =
     cantidadPaneles != null && potenciaUnitariaWp != null
@@ -120,11 +125,16 @@ export async function buildContractContext(projectId: string): Promise<ContractC
     potenciaUnitariaWp,
     potenciaTotalKwp,
     marcaPaneles: nonEmpty(ss?.panelBrand) ?? nonEmpty(snapSistema.marcaPaneles as string),
-    cantidadInversores: ss?.inverterQuantity ?? num(snapSistema.cantidadInversores),
-    potenciaInversorKw: num(ss?.inverterPowerKw) ?? num(snapSistema.potenciaInversorKw),
-    marcaInversor:
-      nonEmpty(ss?.inverterBrand) ??
-      (listaSnap ? describirInversores(listaSnap) : nonEmpty(snapSistema.marcaInversor as string)),
+    cantidadInversores: varios
+      ? varios.inversores.length
+      : (ss?.inverterQuantity ?? num(snapSistema.cantidadInversores)),
+    potenciaInversorKw: varios
+      ? varios.potenciaTotalKw
+      : (num(ss?.inverterPowerKw) ?? num(snapSistema.potenciaInversorKw)),
+    marcaInversor: varios
+      ? varios.descripcion
+      : (nonEmpty(ss?.inverterBrand) ??
+        (listaSnap ? describirInversores(listaSnap) : nonEmpty(snapSistema.marcaInversor as string))),
     tipoTecho: nonEmpty(snapTecho.descripcion as string) ?? nonEmpty(snapSistema.tipoMontaje as string),
     generacionAnualKwh,
   };

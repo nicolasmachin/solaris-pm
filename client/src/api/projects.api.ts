@@ -127,6 +127,32 @@ export async function deleteSolarSystem(projectId: string, solarSystemId: string
 }
 
 // Fija (o limpia con null) la etapa mostrada del proyecto a mano.
+// Suministros (cuentas UTE) del proyecto: uno por sistema/inversor. Con uno
+// solo es el caso de siempre; con más, cada uno tiene su consulta y su trámite.
+export interface Suministro {
+  numero: number;
+  inversor: string | null;
+  paneles: number | null;
+  cuentaUte: string;
+  uteProcessId: string | null;
+  consultaSentAt: string | null;
+  titularNombre: string;
+  titularCi: string;
+  titularEmpresa: boolean;
+  titularPropio: boolean;
+  calle: string;
+  numCalle: string;
+  localidad: string;
+  departamento: string;
+  facturaUtePath: string | null;
+  cedulaPath: string | null;
+}
+
+export async function getSuministros(projectId: string): Promise<Suministro[]> {
+  const { data } = await apiClient.get<Suministro[]>(`/api/projects/${projectId}/suministros`);
+  return data;
+}
+
 export async function setProjectStageOverride(projectId: string, stage: string | null): Promise<{ stageOverride: string | null }> {
   const { data } = await apiClient.patch(`/api/projects/${projectId}/stage-override`, { stage });
   return data;

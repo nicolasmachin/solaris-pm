@@ -11,6 +11,7 @@ import type { TipoRed, VisitInput, VisitReport } from "@prisma/client";
 import { z } from "zod";
 
 import { prisma } from "../lib/prisma.js";
+import { UTE_PRINCIPAL } from "./suministros.service.js";
 import { AppError } from "../utils/errors.js";
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -114,7 +115,7 @@ async function buildProjectContext(projectId: string): Promise<ProjectContext> {
         include: { author: { select: { name: true } } },
       },
       uteProcesses: {
-        where: { deletedAt: null },
+        where: { deletedAt: null, ...UTE_PRINCIPAL },
         select: { currentStage: true, currentStatus: true, caseNumber: true },
       },
       unifilarVersions: {

@@ -6,6 +6,7 @@
 import { ProjectStatus, StageStatus, StageType, UteStatus } from "@prisma/client";
 
 import { prisma } from "../lib/prisma.js";
+import { UTE_PRINCIPAL } from "./suministros.service.js";
 import { businessDaysBetween } from "../utils/business-days.js";
 import { diffInDays, startOfUtcDay, todayUtc } from "../utils/dates.js";
 import { decimalToNumber } from "../utils/serialization.js";
@@ -370,7 +371,7 @@ export async function procesoPorEtapa() {
 export async function panelUte() {
   const now = todayUtc();
   const processes = await prisma.uteProcess.findMany({
-    where: { deletedAt: null, project: { deletedAt: null, importedFromCsv: false, excludedFromMetrics: false } },
+    where: { deletedAt: null, ...UTE_PRINCIPAL, project: { deletedAt: null, importedFromCsv: false, excludedFromMetrics: false } },
     include: { project: { select: { id: true, code: true, clientName: true, saleDate: true, createdAt: true } } },
   });
   const activos = processes.filter((p) => p.finalizedAt == null && p.currentStatus !== UteStatus.CERRADO);

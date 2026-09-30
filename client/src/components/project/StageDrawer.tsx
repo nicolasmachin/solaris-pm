@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getSuministros } from "../../api/projects.api";
 import toast from "react-hot-toast";
 import type { Stage, Substage, SubstageStatus, FileAttachment, ChecklistItem } from "../../types/api.types";
 import { patchSubstage, patchStage, createSubstage, deleteSubstage, completeSubstage, completeAllSubstages, getStageUnassignedSubstagesCount } from "../../api/stages.api";
@@ -515,12 +516,7 @@ function SubstageRow({
             {/* Acción dedicada: enviar la consulta de microgenerador a UTE */}
             {substage.name === "Consulta inicial UTE" && (
               <CanAccess module="TRAMITES_UTE" action="VIEW">
-                <button
-                  onClick={() => navigate(`/proyecto/${projectId}/consulta-ute`)}
-                  className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-3 py-2 text-xs font-semibold text-black hover:opacity-90"
-                >
-                  ✉ Enviar consulta a UTE
-                </button>
+                <ConsultaUteButton projectId={projectId} onClick={() => navigate(`/proyecto/${projectId}/consulta-ute`)} />
                 <SolicitudSuministroButton projectId={projectId} />
               </CanAccess>
             )}
@@ -1571,5 +1567,31 @@ function DeadlineEditModal({
         </div>
       </div>
     </div>
+  );
+}
+
+// Botón de la consulta a UTE. Con varios suministros (un inversor por cuenta
+// UTE) avisa que son varias consultas y cuántas faltan, para que no se mande
+// una sola creyendo que alcanza.
+function ConsultaUteButton({ projectId, onClick }: { projectId: string; onClick: () => void }) {
+  const { data: suministros } = useQuery({
+    queryKey: ["suministros", projectId],
+    queryFn: () => getSuministros(projectId),
+    enabled: !!projectId,
+  });
+  const total = suministros?.length ?? 1;
+  const pendientes = suministros?.filter((s) => !s.consultaSentAt).length ?? 0;
+  return (
+    <button
+      onClick={onClick}
+      className="mb-3 flex w-full flex-col items-center justify-center rounded-lg bg-[var(--color-accent)] px-3 py-2 text-xs font-semibold text-black hover:opacity-90"
+    >
+      <span>✉ {total > 1 ? `Enviar consultas a UTE (${total} suministros)` : "Enviar consulta a UTE"}</span>
+      {total > 1 && (
+        <span className="text-[10px] font-normal opacity-80">
+          {pendientes === 0 ? "Ya salieron todas" : `Faltan ${pendientes} de ${total}`}
+        </span>
+      )}
+    </button>
   );
 }

@@ -152,6 +152,15 @@ import {
   type UteActionKey,
 } from "../services/uteProcess.service.js";
 import {
+  SUMINISTRO_PRINCIPAL,
+  UTE_PRINCIPAL,
+  asegurarTramiteSuministro,
+  crearSuministrosDesdePropuesta,
+  listSuministros,
+  retirarTramiteSuministroSinUso,
+  uteConfigKey,
+} from "../services/suministros.service.js";
+import {
   isUteManagedSubstage,
   regenerateUteSubstages,
 } from "../services/ute-sync.service.js";
@@ -1668,7 +1677,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
           },
         },
         uteProcesses: {
-          where: { deletedAt: null },
+          where: { deletedAt: null, ...UTE_PRINCIPAL },
           include: UTE_PROCESS_INCLUDE,
           orderBy: { createdAt: "desc" },
           take: 1,
@@ -2058,6 +2067,25 @@ export async function registerApiRoutes(app: FastifyInstance) {
     return solarSystems.map(serializeSolarSystem);
   });
 
+  // Suministros (cuentas UTE) del proyecto: uno por sistema/inversor. Con uno
+  // solo es el caso de siempre; con más, Onboarding manda una consulta a UTE
+  // por cada uno. Lo leen Onboarding y Tramitación UTE, además de Operaciones.
+  app.get(
+    "/projects/:projectId/suministros",
+    {
+      preHandler: authorizeAny([
+        { module: Module.ONBOARDING, action: Action.VIEW },
+        { module: Module.TRAMITES_UTE, action: Action.VIEW },
+        { module: Module.OPERACIONES, action: Action.VIEW },
+      ]),
+    },
+    async (request) => {
+      const params = z.object({ projectId: z.string() }).parse(request.params);
+      await findProjectOrThrow(params.projectId);
+      return listSuministros(params.projectId);
+    },
+  );
+
   app.post("/projects/:projectId/systems", { preHandler: authorize(Module.OPERACIONES, Action.CREATE) }, async (request, reply) => {
     const user = ensureUser(request);
     const params = z.object({ projectId: z.string() }).parse(request.params);
@@ -2078,6 +2106,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
         ...normalizeSolarSystemInput(body),
       },
     });
+
+    // Un sistema más = un suministro más, con su propio trámite UTE.
+    await asegurarTramiteSuministro(params.projectId, solarSystem.order, user.id);
 
     await createAuditEntry({
       entityType: AuditEntityType.solar_system,
@@ -2111,6 +2142,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       where: { id: solarSystem.id },
       data: updateData,
     });
+    if (updatedSolarSystem.order !== solarSystem.order) {
+      await asegurarTramiteSuministro(params.projectId, updatedSolarSystem.order, user.id);
+    }
 
     await createAuditEntriesForChanges({
       entityType: AuditEntityType.solar_system,
@@ -2146,6 +2180,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         deletedAt: new Date(),
       },
     });
+    await retirarTramiteSuministroSinUso(params.projectId, solarSystem.order);
 
     await createAuditEntry({
       entityType: AuditEntityType.solar_system,
@@ -7711,6 +7746,24 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     await regenerateUteSubstages(prisma, newUteProcessFromLead);
 
+    // Propuesta con más de un inversor: un sistema por inversor, cada uno su
+    // suministro con su trámite UTE. No falla la conversión si algo sale mal.
+    try {
+      const creados = await crearSuministrosDesdePropuesta(project.id, lead.id, user.id);
+      if (creados) {
+        await createAuditEntry({
+          entityType: AuditEntityType.project,
+          entityId: project.id,
+          projectId: project.id,
+          userId: user.id,
+          action: AuditAction.created,
+          description: `Creó un suministro por inversor desde la propuesta: ${creados}`,
+        });
+      }
+    } catch (err) {
+      request.log.error({ err, projectId: project.id }, "No se pudieron crear los suministros desde la propuesta");
+    }
+
     await prisma.salesLead.update({
       where: { id: lead.id },
       data: {
@@ -10119,6 +10172,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const rows = await prisma.uteProcess.findMany({
       where: {
         deletedAt: null,
+        ...UTE_PRINCIPAL,
         project: { deletedAt: null },
         ...(query.stage ? { currentStage: query.stage } : {}),
         ...(query.status ? { currentStatus: query.status } : {}),
@@ -10209,7 +10263,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
 
     const existing = await prisma.uteProcess.findFirst({
-      where: { projectId: project.id, deletedAt: null },
+      where: { projectId: project.id, deletedAt: null, ...UTE_PRINCIPAL },
       select: { id: true },
     });
     if (existing) {
@@ -10391,7 +10445,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const { projectId } = z.object({ projectId: z.string() }).parse(request.params);
 
       const ute = await prisma.uteProcess.findFirst({
-        where: { projectId, deletedAt: null },
+        where: { projectId, deletedAt: null, ...UTE_PRINCIPAL },
         select: { id: true },
       });
       if (!ute) {
@@ -10456,7 +10510,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     const yearStart = new Date(Date.UTC(hoyUruguay(now).anio, 0, 1));
 
     const processes = await prisma.uteProcess.findMany({
-      where: { deletedAt: null, project: { deletedAt: null, excludedFromMetrics: false } },
+      where: { deletedAt: null, ...UTE_PRINCIPAL, project: { deletedAt: null, excludedFromMetrics: false } },
       include: {
         project: {
           select: { id: true, code: true, clientName: true, createdAt: true },
@@ -10626,7 +10680,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     allQuarters.reverse();
 
     const processes = await prisma.uteProcess.findMany({
-      where: { deletedAt: null, project: { deletedAt: null, excludedFromMetrics: false } },
+      where: { deletedAt: null, ...UTE_PRINCIPAL, project: { deletedAt: null, excludedFromMetrics: false } },
     });
 
     function median(nums: number[]): number | null {
@@ -11787,6 +11841,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
     );
 
     // ─── Generador de documentos UTE ────────────────────────────────────────
+    // `?suministro=N` elige la cuenta UTE (default 1, el principal): un
+    // proyecto con inversores distintos tiene una config por suministro.
+    const suministroQuerySchema = z.object({
+      suministro: z.coerce.number().int().min(1).max(20).default(SUMINISTRO_PRINCIPAL),
+    });
+
     // GET config: devuelve la config UTE actual del proyecto (la crea con
     // defaults si no existía).
     app.get(
@@ -11794,7 +11854,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       { preHandler: authorize(Module.INGENIERIA, Action.VIEW) },
       async (request) => {
         const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
-        return getOrCreateUteDocConfig(projectId);
+        const { suministro } = suministroQuerySchema.parse(request.query);
+        return getOrCreateUteDocConfig(projectId, suministro);
       },
     );
 
@@ -11845,6 +11906,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
         areaPaneles: z.string().optional(),
         fechaDoc: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
         fechaFin: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+        // Titular y dirección propios de un suministro que no es el principal
+        // (null = igual que el proyecto). En el suministro 1 no se usan.
+        titularNombre: z.string().trim().max(200).nullable().optional(),
+        titularCi: z.string().trim().max(40).nullable().optional(),
+        titularEmpresa: z.boolean().nullable().optional(),
+        calle: z.string().trim().max(200).nullable().optional(),
+        numCalle: z.string().trim().max(40).nullable().optional(),
+        localidad: z.string().trim().max(120).nullable().optional(),
+        departamento: z.string().trim().max(120).nullable().optional(),
       })
       // Sin `.strict()`: el form del frontend re-manda la config completa (incluye
       // campos no editables acá, como `potSolicitada`/`aumentoPotenciaSentAt` del
@@ -11863,7 +11933,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         else if (raw.fechaDoc) data.fechaDoc = parseDateOnly(raw.fechaDoc);
         if (raw.fechaFin === null) data.fechaFin = null;
         else if (raw.fechaFin) data.fechaFin = parseDateOnly(raw.fechaFin);
-        return upsertUteDocConfig({ projectId, data });
+        const { suministro } = suministroQuerySchema.parse(request.query);
+        return upsertUteDocConfig({ projectId, suministro, data });
       },
     );
 
@@ -11874,7 +11945,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
       { preHandler: authorize(Module.INGENIERIA, Action.EDIT) },
       async (request, reply) => {
         const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
-        await prisma.uteDocumentConfig.deleteMany({ where: { projectId } });
+        // Solo la del suministro pedido: resetear los papeles del 1 no puede
+        // borrar la cuenta y el titular del 2.
+        const { suministro } = suministroQuerySchema.parse(request.query);
+        await prisma.uteDocumentConfig.deleteMany({ where: { projectId, suministro } });
         reply.code(204);
       },
     );
@@ -12152,8 +12226,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
       async (request, reply) => {
         const user = ensureUser(request);
         const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
-        const { tipo } = z
-          .object({ tipo: z.enum(["cedula", "factura_ute"]) })
+        const { tipo, suministro } = z
+          .object({
+            tipo: z.enum(["cedula", "factura_ute"]),
+            // Factura/cédula de otro suministro del proyecto (otra cuenta UTE,
+            // quizá otro titular). Default: el principal.
+            suministro: z.coerce.number().int().min(1).max(20).default(SUMINISTRO_PRINCIPAL),
+          })
           .parse(request.query);
 
         const project = await prisma.project.findFirst({
@@ -12202,17 +12281,31 @@ export async function registerApiRoutes(app: FastifyInstance) {
         // si ya existía. Mismo path resolution que file-storage.service.ts.
         const ext = mime === "application/pdf" ? "pdf" : mime === "image/png" ? "png" : "jpg";
         const fileName = `${tipo}.${ext}`;
-        const relativePath = path.join("projects", projectId, "ute-docs", fileName);
+        // Los suministros que no son el principal van a su propia carpeta: la
+        // factura del 2 no puede pisar la del 1.
+        const relativePath =
+          suministro === SUMINISTRO_PRINCIPAL
+            ? path.join("projects", projectId, "ute-docs", fileName)
+            : path.join("projects", projectId, "ute-docs", `suministro-${suministro}`, fileName);
         const absolutePath = path.resolve(process.cwd(), "..", env.storagePath, relativePath);
         await fsPromises.mkdir(path.dirname(absolutePath), { recursive: true });
         await fsPromises.writeFile(absolutePath, fileBuffer);
 
-        // Persistir la ruta en Project.{cedulaPath|facturaUtePath}.
+        // Persistir la ruta en {cedulaPath|facturaUtePath}: del proyecto para el
+        // suministro principal, de su config UTE para los demás.
         const pathField = tipo === "cedula" ? "cedulaPath" : "facturaUtePath";
-        await prisma.project.update({
-          where: { id: projectId },
-          data: { [pathField]: relativePath },
-        });
+        if (suministro === SUMINISTRO_PRINCIPAL) {
+          await prisma.project.update({
+            where: { id: projectId },
+            data: { [pathField]: relativePath },
+          });
+        } else {
+          await prisma.uteDocumentConfig.upsert({
+            where: uteConfigKey(projectId, suministro),
+            create: { projectId, suministro, [pathField]: relativePath },
+            update: { [pathField]: relativePath },
+          });
+        }
 
         // Llamar a Claude para extraer.
         let extracted;
@@ -12235,10 +12328,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
           projectId,
           userId: user.id,
           action: AuditAction.created,
-          description: `Extrajo datos de ${tipo === "cedula" ? "cédula" : "factura UTE"} con IA`,
+          description:
+            `Extrajo datos de ${tipo === "cedula" ? "cédula" : "factura UTE"} con IA` +
+            (suministro === SUMINISTRO_PRINCIPAL ? "" : ` (suministro ${suministro})`),
           metadata: {
             kind: "ute_extract",
             tipo,
+            suministro,
             archivo: relativePath,
             tokensInput: extracted.tokensInput,
             tokensOutput: extracted.tokensOutput,
@@ -12263,15 +12359,23 @@ export async function registerApiRoutes(app: FastifyInstance) {
       async (request, reply) => {
         const user = ensureUser(request);
         const { projectId } = z.object({ projectId: z.string().min(1) }).parse(request.params);
-        const { tipo } = z
-          .object({ tipo: z.enum(["cedula", "factura_ute"]) })
+        const { tipo, suministro } = z
+          .object({
+            tipo: z.enum(["cedula", "factura_ute"]),
+            suministro: z.coerce.number().int().min(1).max(20).default(SUMINISTRO_PRINCIPAL),
+          })
           .parse(request.query);
         const project = await prisma.project.findFirst({
           where: { id: projectId, deletedAt: null },
         });
         if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
         const pathField = tipo === "cedula" ? "cedulaPath" : "facturaUtePath";
-        const currentPath = project[pathField];
+        const configSuministro =
+          suministro === SUMINISTRO_PRINCIPAL
+            ? null
+            : await prisma.uteDocumentConfig.findUnique({ where: uteConfigKey(projectId, suministro) });
+        const currentPath =
+          suministro === SUMINISTRO_PRINCIPAL ? project[pathField] : (configSuministro?.[pathField] ?? null);
         if (currentPath) {
           // Best-effort: si el unlink falla (archivo ya no existe en disco),
           // igual limpiamos la ruta en DB.
@@ -12282,18 +12386,27 @@ export async function registerApiRoutes(app: FastifyInstance) {
             // ignore
           }
         }
-        await prisma.project.update({
-          where: { id: projectId },
-          data: { [pathField]: null },
-        });
+        if (suministro === SUMINISTRO_PRINCIPAL) {
+          await prisma.project.update({
+            where: { id: projectId },
+            data: { [pathField]: null },
+          });
+        } else if (configSuministro) {
+          await prisma.uteDocumentConfig.update({
+            where: { id: configSuministro.id },
+            data: { [pathField]: null },
+          });
+        }
         await createAuditEntry({
           entityType: AuditEntityType.project,
           entityId: projectId,
           projectId,
           userId: user.id,
           action: AuditAction.deleted,
-          description: `Eliminó archivo ${tipo === "cedula" ? "cédula" : "factura UTE"}`,
-          metadata: { kind: "ute_extract_delete", tipo, archivo: currentPath },
+          description:
+            `Eliminó archivo ${tipo === "cedula" ? "cédula" : "factura UTE"}` +
+            (suministro === SUMINISTRO_PRINCIPAL ? "" : ` (suministro ${suministro})`),
+          metadata: { kind: "ute_extract_delete", tipo, suministro, archivo: currentPath },
         });
         reply.code(204);
       },

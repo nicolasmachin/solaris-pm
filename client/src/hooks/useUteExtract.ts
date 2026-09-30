@@ -64,9 +64,15 @@ function buildProjectPatch(
 }
 
 // Campos que van a UteDocumentConfig. Misma regla "solo si está vacío".
+//
+// En un suministro que no es el principal, el titular y la dirección también
+// van acá (a su config), porque pueden ser distintos de los del proyecto: el
+// proyecto no se toca.
 function buildConfigPatch(
   data: Partial<UteExtractedData>,
   config: UteDocumentConfig | undefined,
+  tipo: UteExtractTipo,
+  suministro: number,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   const fill = <K extends keyof UteDocumentConfig>(field: K, value: unknown): void => {
@@ -74,6 +80,13 @@ function buildConfigPatch(
     if (config && !isEmpty(config[field])) return;
     out[field as string] = value;
   };
+  if (suministro !== 1) {
+    // Misma regla que en el proyecto: la cédula manda en el nombre.
+    if (tipo === "cedula" && data.nombre_cliente) out.titularNombre = data.nombre_cliente;
+    fill("titularCi", data.ci_cliente);
+    fill("calle", data.calle);
+    fill("numCalle", data.num_calle);
+  }
   fill("cuentaUte", data.cuenta_ute);
   fill("casoUte", data.caso_ute);
   fill("oficina", data.oficina_ute);
@@ -82,16 +95,19 @@ function buildConfigPatch(
   return out;
 }
 
-export function useUteExtract(projectId: string) {
+// `suministro`: a qué cuenta UTE del proyecto pertenece el documento. El 1 (el
+// principal) guarda en el proyecto como siempre; los demás, en su config.
+export function useUteExtract(projectId: string, suministro: number = 1) {
   const qc = useQueryClient();
+  const principal = suministro === 1;
   const projectQ = useQuery({
     queryKey: ["project", projectId],
     queryFn: () => getProject(projectId),
     enabled: !!projectId,
   });
   const configQ = useQuery({
-    queryKey: ["ute-docs-config", projectId],
-    queryFn: () => getUteDocsConfig(projectId),
+    queryKey: principal ? ["ute-docs-config", projectId] : ["ute-docs-config", projectId, suministro],
+    queryFn: () => getUteDocsConfig(projectId, suministro),
     enabled: !!projectId,
   });
   const [modalOpen, setModalOpen] = useState(false);
@@ -100,7 +116,7 @@ export function useUteExtract(projectId: string) {
 
   const extractMut = useMutation({
     mutationFn: (args: { file: File; tipo: UteExtractTipo }) =>
-      uteExtract(projectId, args.tipo, args.file),
+      uteExtract(projectId, args.tipo, args.file, suministro),
     onSuccess: (resp) => {
       setExtracted(resp.extraido);
       setTipoActual(resp.tipo);
@@ -108,6 +124,7 @@ export function useUteExtract(projectId: string) {
       // Invalidar project para que la ruta del archivo (cedulaPath /
       // facturaUtePath) se vea actualizada.
       qc.invalidateQueries({ queryKey: ["project", projectId] });
+      qc.invalidateQueries({ queryKey: ["suministros", projectId] });
     },
     onError: (err) => {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
@@ -117,11 +134,11 @@ export function useUteExtract(projectId: string) {
 
   const confirmMut = useMutation({
     mutationFn: async (args: { data: Partial<UteExtractedData>; tipo: UteExtractTipo }) => {
-      const projectPatch = buildProjectPatch(args.data, args.tipo, projectQ.data);
-      const configPatch = buildConfigPatch(args.data, configQ.data);
+      const projectPatch = principal ? buildProjectPatch(args.data, args.tipo, projectQ.data) : {};
+      const configPatch = buildConfigPatch(args.data, configQ.data, args.tipo, suministro);
       const ops: Promise<unknown>[] = [];
       if (Object.keys(projectPatch).length > 0) ops.push(patchProject(projectId, projectPatch));
-      if (Object.keys(configPatch).length > 0) ops.push(saveUteDocsConfig(projectId, configPatch));
+      if (Object.keys(configPatch).length > 0) ops.push(saveUteDocsConfig(projectId, configPatch, suministro));
       if (ops.length === 0) return { applied: 0 };
       await Promise.all(ops);
       return { applied: Object.keys(projectPatch).length + Object.keys(configPatch).length };
@@ -135,6 +152,7 @@ export function useUteExtract(projectId: string) {
       qc.invalidateQueries({ queryKey: ["project", projectId] });
       qc.invalidateQueries({ queryKey: ["projects"] });
       qc.invalidateQueries({ queryKey: ["ute-docs-config", projectId] });
+      qc.invalidateQueries({ queryKey: ["suministros", projectId] });
       setModalOpen(false);
       setExtracted(null);
     },
@@ -152,7 +170,12 @@ export function useUteExtract(projectId: string) {
     const c = configQ.data;
     // nombre_cliente NO se marca como "ya en proyecto" — la cédula siempre
     // pisa nombreCliente (no afecta clientName / título del proyecto).
-    if (p) {
+    if (!principal) {
+      // Suministro con datos propios: lo que ya está es lo de su config.
+      if (c && !isEmpty(c.titularCi)) out.add("ci_cliente");
+      if (c && !isEmpty(c.calle)) out.add("calle");
+      if (c && !isEmpty(c.numCalle)) out.add("num_calle");
+    } else if (p) {
       if (!isEmpty(p.ciCliente)) out.add("ci_cliente");
       if (!isEmpty(p.calle)) out.add("calle");
       if (!isEmpty(p.numCalle)) out.add("num_calle");

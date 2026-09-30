@@ -19,6 +19,7 @@ import {
 import { z } from "zod";
 
 import { prisma } from "../../../lib/prisma.js";
+import { UTE_PRINCIPAL } from "../../../services/suministros.service.js";
 import { createAuditEntry } from "../../../services/audit.service.js";
 import { getClienteTimeline } from "../../../services/clientes/index.js";
 import { getCurrentStage, getDisplayStage } from "../../../services/project.service.js";
@@ -170,7 +171,7 @@ export function registerProyectosTools(server: McpServer, user: McpUser) {
             },
           },
           uteProcesses: {
-            where: { deletedAt: null },
+            where: { deletedAt: null, ...UTE_PRINCIPAL },
             orderBy: { createdAt: "desc" },
             take: 1,
             include: UTE_PROCESS_INCLUDE,
@@ -353,7 +354,7 @@ export function registerProyectosTools(server: McpServer, user: McpUser) {
       await requirePermission(user, Module.TRAMITES_UTE, Action.VIEW);
 
       const row = await prisma.uteProcess.findFirst({
-        where: { projectId: project_id, deletedAt: null },
+        where: { projectId: project_id, deletedAt: null, ...UTE_PRINCIPAL },
         orderBy: { createdAt: "desc" },
         include: UTE_PROCESS_INCLUDE,
       });

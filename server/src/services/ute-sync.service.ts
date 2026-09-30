@@ -24,6 +24,7 @@ import {
   syncStageProgress,
 } from "./project.service.js";
 import { UTE_ACTION_KEYS, type UteActionKey } from "./uteProcess.service.js";
+import { SUMINISTRO_PRINCIPAL } from "./suministros.service.js";
 
 export type UteSubstageSpec = {
   uteAction: UteActionKey;
@@ -272,6 +273,11 @@ export async function regenerateUteSubstages(
   // dispara (evita traspasos "fantasma" desde jobs/sync sin responsable).
   actorUserId?: string,
 ): Promise<void> {
+  // Solo el trámite del suministro principal maneja las subetapas y la etapa
+  // de Habilitación UTE del proyecto. Los de otros suministros (proyectos con
+  // inversores distintos) todavía no tienen dónde reflejarse en el pipeline, y
+  // dejarlos pisar al principal lo marcaría habilitado con una sola cuenta.
+  if (uteProcess.suministro !== SUMINISTRO_PRINCIPAL) return;
   await ensureUteSubstages(tx, uteProcess.projectId);
   await syncUteSubstages(tx, uteProcess);
 

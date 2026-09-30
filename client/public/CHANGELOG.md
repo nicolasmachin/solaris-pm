@@ -1,5 +1,19 @@
 # Novedades
 
+## v11.5
+
+### 30 de septiembre de 2026
+
+#### Ventas con más de un inversor: un suministro por inversor, y una consulta a UTE por cada cuenta
+
+- Cuando una venta lleva **más de un inversor** (dos casas, dos padrones, dos medidores), cada inversor pasa a ser un **suministro**: una cuenta UTE aparte, con su consulta y su trámite, que puede estar a nombre de otro titular.
+- Al convertir el lead, **el proyecto nace con un sistema por inversor**, con su marca, su potencia y los paneles que le tocaron en la propuesta. Con un solo inversor todo sigue igual que siempre.
+- En Onboarding, el botón de la consulta dice **«Enviar consultas a UTE (2 suministros)»** y cuántas faltan. Adentro hay **una pestaña por suministro**, cada una con su factura, su cuenta, su titular y la potencia de **su** inversor; al mandar una, pasa sola a la siguiente.
+- Si el segundo suministro es de **otro titular**, se carga su factura (y su cédula) en su pestaña: la lectura automática completa los datos de ese suministro sin tocar los del proyecto. Lo que sale en la consulta queda guardado para ese suministro.
+- En los datos técnicos del proyecto, con más de un sistema cada uno se muestra como **Suministro 1, Suministro 2…**, y el botón pasa a ser **Agregar suministro**.
+- **El contrato y la proforma siguen siendo uno solo** y ahora nombran todos los inversores del proyecto, con los paneles sumados.
+- Por ahora, el tablero de Trámites UTE, los papeles de UTE y las fechas del proyecto siguen el **suministro 1**. Los trámites y los papeles de cada suministro vienen en los próximos pasos.
+
 ## v11.4
 
 ### 29 de septiembre de 2026

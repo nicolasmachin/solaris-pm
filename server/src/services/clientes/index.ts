@@ -22,6 +22,7 @@ import { resumenPlanPorProyecto, type ResumenPlan } from "../seguro-granizo/poli
 import { Prisma, ProjectStatus, InteractionReason, AuditAction, type InteractionChannel, type InteractionDirection, type StageType, AuditEntityType, SubstageStatus, TipoMovimiento, FinanceMovementStatus } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
+import { UTE_PRINCIPAL } from "../suministros.service.js";
 import { getStageLabel } from "../pipeline-definitions.js";
 import { getCurrentStage } from "../project.service.js";
 import { decimalToNumber, serializeDate, serializeDateOnly } from "../../utils/serialization.js";
@@ -743,7 +744,7 @@ export async function getClienteFicha(projectId: string) {
       ...LIST_SELECT,
       clientAddress: true,
       uteProcesses: {
-        where: { deletedAt: null },
+        where: { deletedAt: null, ...UTE_PRINCIPAL },
         orderBy: { updatedAt: "desc" },
         take: 1,
         select: UTE_FICHA_SELECT,

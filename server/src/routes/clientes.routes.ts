@@ -10,6 +10,7 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
 
 import { prisma } from "../lib/prisma.js";
+import { UTE_PRINCIPAL } from "../services/suministros.service.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAuditEntry } from "../services/audit.service.js";
@@ -320,7 +321,7 @@ export async function registerClientesRoutes(app: FastifyInstance) {
         where: { id: projectId, deletedAt: null },
         select: {
           uteProcesses: {
-            where: { deletedAt: null },
+            where: { deletedAt: null, ...UTE_PRINCIPAL },
             orderBy: { createdAt: "desc" },
             take: 1,
           },

@@ -1,6 +1,6 @@
 # Manual de trabajo de Tramitación UTE
 
-**Voltia · Uruguay** · Versión 0.1 — 29 de septiembre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.2 — 30 de septiembre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Tramitación UTE, juntos**. Sigue el mismo modelo que el Manual de trabajo de
@@ -35,17 +35,30 @@ Marcarlos no es burocracia: es la única información que existe durante semanas
 
 *Por escribir: hito por hito, qué se presenta, qué se espera y qué se marca.*
 
-## 4 · Cuando falta documentación
+## 4 · Proyectos con más de un suministro
+
+Algunas ventas llevan **más de un inversor**: dos casas, dos padrones, dos
+medidores. **Cada inversor es un suministro**, y para UTE cada suministro es una
+cuenta distinta: **lleva su consulta, sus papeles y su trámite**, y UTE los
+resuelve por separado. Puede incluso estar a nombre de otro titular.
+
+**En Voltia PM:** el proyecto muestra un suministro por inversor en sus datos
+técnicos. La consulta inicial sale **una por cuenta**, desde Onboarding, con una
+pestaña por suministro. Por ahora, el tablero de Trámites UTE y las fechas del
+proyecto siguen **el suministro 1**; el seguimiento del trámite de los demás en
+el tablero todavía no está.
+
+## 5 · Cuando falta documentación
 
 Si Tramitación descubre que faltó una firma o un documento de la obra, **se lo
 reclama al Gerente de Operaciones**. Nunca directo al capataz.
 
-## 5 · Cuando habilita
+## 6 · Cuando habilita
 
 Al cerrar el trámite, **el sistema le avisa solo a Experiencia Solar** y arranca
 un reloj de 24 a 48 horas. No hace falta mandar un mensaje.
 
-## 6 · A quién le pregunta qué
+## 7 · A quién le pregunta qué
 
 | Necesita saber… | Le pregunta a… |
 |---|---|
@@ -53,11 +66,11 @@ un reloj de 24 a 48 horas. No hace falta mandar un mensaje.
 | Que se corrija algo de la instalación | **Gerente de Operaciones** |
 | Documentación de obra que falta | **Gerente de Operaciones** |
 
-## 7 · Lineamientos
+## 8 · Lineamientos
 
 *Por escribir.*
 
-## 8 · Las herramientas y cómo se usan
+## 9 · Las herramientas y cómo se usan
 
 *Por escribir: Trámites UTE, el trámite dentro de la ficha, los documentos UTE.*
 
@@ -67,4 +80,5 @@ un reloj de 24 a 48 horas. No hace falta mandar un mensaje.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.2 | 30 de septiembre de 2026 | Se agrega qué pasa con los proyectos de más de un suministro: una consulta y un trámite por cada cuenta UTE. |
 | 0.1 | 29 de septiembre de 2026 | Se crea el manual con el detalle de Tramitación que estaba en el manual de trabajo general (v2.2). |

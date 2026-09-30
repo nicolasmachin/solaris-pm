@@ -8,6 +8,7 @@ import { buildTransporter, getSmtpCredentials } from "./smtp.service.js";
 import { devEmailBlocked, logMailBloqueado, redirectInDev } from "./dev-redirect.js";
 import type { EmailAttachment } from "../email.service.js";
 import { CONSULTA_UTE_KEY, SUMINISTRO_INDIVIDUAL_KEY } from "./seed-templates.js";
+import { SUMINISTRO_PRINCIPAL, uteConfigKey } from "../suministros.service.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -60,6 +61,22 @@ export interface SendEmailInput {
   // a UTE. Se guarda en el proyecto junto con la fecha de envío para dejar
   // constancia de que el trámite se pidió y por cuánto.
   potenciaSolicitada?: string;
+  // Consulta UTE: a qué suministro (cuenta UTE) del proyecto corresponde. Sin
+  // valor = el principal, como siempre.
+  suministro?: number;
+  // Datos con que salió la consulta de un suministro que no es el principal.
+  // Se guardan en su config: es el primer lugar donde se cargan (el principal
+  // los tiene en el proyecto) y lo que se le mandó a UTE es lo que vale.
+  datosSuministro?: {
+    cuenta: string;
+    titularNombre: string;
+    titularCi: string;
+    titularEmpresa: boolean;
+    calle: string;
+    numCalle: string;
+    localidad: string;
+    departamento: string;
+  };
   // Adjuntos ya resueltos por quien llama (buffer en memoria). Este camino de
   // correo sale desde la casilla del propio usuario; el `EmailLog` no registra
   // adjuntos, así que su nombre queda en la metadata de auditoría.
@@ -117,6 +134,7 @@ export async function sendTemplatedEmail(input: SendEmailInput): Promise<{ id: s
         to: to.join(", "),
         cc: cc.join(", "),
         bcc: bcc.join(", "),
+        ...(input.suministro && input.suministro !== SUMINISTRO_PRINCIPAL ? { suministro: input.suministro } : {}),
         ...(input.attachments?.length
           ? { adjuntos: input.attachments.map((a) => a.filename).join(", ") }
           : {}),
@@ -170,14 +188,7 @@ export async function sendTemplatedEmail(input: SendEmailInput): Promise<{ id: s
     // UTE del proyecto SI todavía está vacía. Es solo una ayuda: no pisa una
     // fecha ya cargada y la carga/edición manual sigue funcionando igual.
     if (input.templateKey === CONSULTA_UTE_KEY && input.projectId) {
-      try {
-        await prisma.uteProcess.updateMany({
-          where: { projectId: input.projectId, deletedAt: null, consultaSentAt: null },
-          data: { consultaSentAt: todayUtc() },
-        });
-      } catch {
-        // El mail ya salió; nunca fallar el envío por la auto-captura de fecha.
-      }
+      await registrarConsultaUteEnviada(input.projectId, input.suministro, input.datosSuministro);
     }
     // Misma ayuda para el aumento de potencia: deja constancia de que se pidió,
     // con qué potencia y cuándo. La fecha NO se pisa si ya había una (el primer
@@ -187,12 +198,12 @@ export async function sendTemplatedEmail(input: SendEmailInput): Promise<{ id: s
       try {
         const potencia = input.potenciaSolicitada?.trim();
         const existente = await prisma.uteDocumentConfig.findUnique({
-          where: { projectId: input.projectId },
+          where: uteConfigKey(input.projectId),
           select: { aumentoPotenciaSentAt: true },
         });
         const fecha = existente?.aumentoPotenciaSentAt ?? todayUtc();
         await prisma.uteDocumentConfig.upsert({
-          where: { projectId: input.projectId },
+          where: uteConfigKey(input.projectId),
           create: {
             projectId: input.projectId,
             aumentoPotenciaSentAt: fecha,
@@ -212,6 +223,55 @@ export async function sendTemplatedEmail(input: SendEmailInput): Promise<{ id: s
     const message = (err as { message?: string }).message ?? "Error desconocido del SMTP";
     await registrar(EmailStatus.FAILED, message);
     throw new AppError(500, "SMTP_SEND_FAILED", message);
+  }
+}
+
+/**
+ * Ayudas (no bloqueantes) después de mandar una "Consulta UTE" desde
+ * Onboarding. El mail ya salió: nada de esto puede hacer fallar el envío.
+ *
+ * - Completa la fecha de consulta del trámite de ese suministro si estaba vacía
+ *   (no pisa una fecha cargada; la carga manual sigue funcionando igual).
+ * - En un suministro que no es el principal, guarda en su config la cuenta, el
+ *   titular y la dirección con que salió la consulta.
+ */
+export async function registrarConsultaUteEnviada(
+  projectId: string,
+  suministroPedido: number | undefined,
+  datos: SendEmailInput["datosSuministro"],
+): Promise<void> {
+  const suministro = suministroPedido ?? SUMINISTRO_PRINCIPAL;
+  try {
+    // Solo el trámite de ESE suministro: con dos cuentas UTE hay dos
+    // consultas, y mandar una no dice nada de la otra.
+    await prisma.uteProcess.updateMany({
+      where: { projectId, suministro, deletedAt: null, consultaSentAt: null },
+      data: { consultaSentAt: todayUtc() },
+    });
+  } catch {
+    // El mail ya salió; nunca fallar el envío por la auto-captura de fecha.
+  }
+  if (suministro !== SUMINISTRO_PRINCIPAL && datos) {
+    try {
+      const d = datos;
+      const config = {
+        cuentaUte: d.cuenta,
+        titularNombre: d.titularNombre || null,
+        titularCi: d.titularCi || null,
+        titularEmpresa: d.titularEmpresa,
+        calle: d.calle || null,
+        numCalle: d.numCalle || null,
+        localidad: d.localidad || null,
+        departamento: d.departamento || null,
+      };
+      await prisma.uteDocumentConfig.upsert({
+        where: uteConfigKey(projectId, suministro),
+        create: { projectId, suministro, ...config },
+        update: config,
+      });
+    } catch {
+      // Idem: el mail ya salió.
+    }
   }
 }
 

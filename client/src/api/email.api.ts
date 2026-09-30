@@ -125,6 +125,8 @@ export interface PrepareEmailBody {
   templateKey: string;
   projectId?: string;
   leadId?: string;
+  /** Cuenta UTE del proyecto (proyectos con varios suministros). Default 1. */
+  suministro?: number;
   overrides?: {
     tecnica?: Partial<EmailTemplateContext["tecnica"]>;
     to?: string;
@@ -154,6 +156,19 @@ export interface SendEmailBody {
   bcc?: string;
   subject: string;
   body: string;
+  /** Consulta UTE: a qué suministro del proyecto corresponde. */
+  suministro?: number;
+  /** Datos con que salió la consulta de un suministro que no es el principal (se guardan). */
+  datosSuministro?: {
+    cuenta: string;
+    titularNombre: string;
+    titularCi: string;
+    titularEmpresa: boolean;
+    calle: string;
+    numCalle: string;
+    localidad: string;
+    departamento: string;
+  };
 }
 
 export interface EmailLog {

@@ -97,14 +97,41 @@ Observaciones:
 - En el Mac, el Python de python.org no trae los certificados: correr con
   `SSL_CERT_FILE=/etc/ssl/cert.pem`.
 
-## Consulta enviada al ejecutivo de Biller (30-sep-2026) — sin respuesta todavía
+## Respuesta de Biller (Mateo, contacto@biller.uy, 30-sep-2026)
 
-1. ¿Es esperado que todo recibo por API sea un CFE (e-Factura con cobranza propia) que usa el CAE?
-2. ¿Los recibos cuentan en el cupo de 1.000 comprobantes mensuales?
-3. ¿`/v2/recibos/cancelar` genera una nota de crédito ante DGI o solo lo borra en Biller?
+Confirmó que **es el comportamiento esperado**:
+
+1. **Los recibos son Comprobantes de Cobranza y siguen la numeración del tipo de
+   comprobante al que se asocian.** Un recibo de una e-Factura usa la secuencia de
+   e-Factura: por eso salieron MF-640360/61 después de la MF-640358. No es un registro
+   interno de pago: se emite el comprobante de cobranza.
+2. **Cuentan en el cupo mensual.** Una factura + dos recibos parciales = 3 comprobantes;
+   si además se documenta una seña, suma otro. Pasados los 1.000 del Plan Grande, cada
+   bloque de 1.000 cuesta $99 + IVA. (Voltia emite 20-30 por mes, así que no es problema.)
+3. **Un recibo no se anula con nota de crédito**, se cancela con `recibos/cancelar`, y la
+   cancelación es **total**: no hay cancelación parcial. Son dos flujos distintos:
+   factura mal emitida → NC; recibo mal emitido → cancelación del recibo.
+
+Ofreció seguir respondiendo dudas a medida que avance la integración.
 
 Quedan abiertas, para el contador o para probar: tasa de cambio del recibo (la de la factura
 o la del cobro), `recibos/crear` vs `pagos/crear`, y cómo se llama el estado de un rechazo DGI.
+
+## Regla de diseño: nada fiscal se emite sin confirmación (decidido 30-sep-2026)
+
+Vale para **todo lo que llegue a DGI**, no solo los recibos: facturas, notas de crédito,
+notas de débito, recibos y anulaciones.
+
+- Antes de cada emisión, Voltia PM arma un **borrador** con los datos exactos que va a
+  mandar (cliente, ítems, moneda, tasa, fecha, referencias), lo muestra y **espera el OK
+  explícito** de una persona. Recién ahí llama a Biller.
+- **Ningún job, cambio de etapa ni automatismo emite por su cuenta.** Un automatismo puede
+  dejar el borrador armado y avisar, nunca emitir.
+- Lo mismo para las herramientas del MCP: arman el borrador, lo muestran y piden
+  confirmación (ya estaba en el handoff original, ahora aplica a todos los comprobantes).
+- El motivo: lo emitido no se edita. Una factura mal emitida se corrige con una nota de
+  crédito y un recibo mal emitido se cancela entero; en los dos casos queda el error
+  registrado ante DGI y consume comprobantes del cupo. Es más barato confirmar antes.
 
 ## Decisión pendiente: recibo (CFE) o pago (registro)
 

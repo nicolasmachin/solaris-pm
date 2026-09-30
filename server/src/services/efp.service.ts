@@ -15,6 +15,7 @@ import type { EFPVersion } from "@prisma/client";
 import { z } from "zod";
 
 import { prisma } from "../lib/prisma.js";
+import { UTE_PRINCIPAL } from "./suministros.service.js";
 import { AppError } from "../utils/errors.js";
 import {
   parseCantidadPaneles,
@@ -504,7 +505,7 @@ export async function buildEFPSnapshots(projectId: string): Promise<{
       };
 
   const ute = await prisma.uteProcess.findFirst({
-    where: { projectId, deletedAt: null },
+    where: { projectId, deletedAt: null, ...UTE_PRINCIPAL },
     orderBy: { createdAt: "asc" },
     select: { caseNumber: true, currentStage: true, currentStatus: true },
   });
@@ -587,7 +588,7 @@ export async function generateEFPVersionWithAI(args: {
         },
       },
       uteProcesses: {
-        where: { deletedAt: null },
+        where: { deletedAt: null, ...UTE_PRINCIPAL },
         select: { currentStage: true, currentStatus: true, caseNumber: true },
       },
       preIngenieriaVersions: {

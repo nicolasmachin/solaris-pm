@@ -23,9 +23,34 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
-  version: "11.4",
-  date: "28 de septiembre de 2026",
+  version: "11.5",
+  date: "30 de septiembre de 2026",
   sections: [
+    {
+      title: "Ventas con más de un inversor: un suministro por inversor",
+      items: [
+        "Cada inversor es un suministro: una cuenta UTE aparte, con su consulta y su trámite, y puede ser de otro titular.",
+        "Al convertir el lead, el proyecto nace con un sistema por inversor, con los paneles de la propuesta.",
+        "En Onboarding, una pestaña por suministro para mandar una consulta a UTE por cada cuenta.",
+        "El contrato y la proforma siguen siendo uno solo y nombran todos los inversores.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_11_4: Release = {
+  version: "11.4",
+  date: "29 de septiembre de 2026",
+  sections: [
+    {
+      title: "Cotizador: varios inversores en una misma propuesta, también de distinta marca o potencia",
+      items: [
+        "Con + Agregar inversor aparece una fila por inversor, cada una con su marca, su potencia y sus paneles.",
+        "Los paneles se reparten solos según la potencia de cada inversor, o se cargan a mano.",
+        "Cada inversor se cotiza por separado, con su instalación eléctrica.",
+        "En la propuesta se describen uno por uno: \"1 Growatt de 8 kW + 1 Huawei de 6 kW\".",
+      ],
+    },
     {
       title: "Cadencia de contacto: una semana hábil, y los habilitados salen del semáforo",
       items: [
@@ -340,6 +365,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "11.4",
+    shortDate: "29 sep",
+    highlights: RELEASE_11_4.sections.map((sec) => sec.title),
+  },
   {
     version: "11.3",
     shortDate: "25 sep",
