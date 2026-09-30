@@ -30,6 +30,24 @@ function nonEmpty(s: string | null | undefined): string | undefined {
   return s && s.trim() ? s.trim() : undefined;
 }
 
+// Tipos de `device/list` de Growatt que son inversores (el 3 es el medidor).
+const TIPOS_INVERSOR_GROWATT = [1, 4, 5, 7];
+
+/**
+ * Serie de los inversores del proyecto según Growatt, de lo que guardó la última
+ * ingesta. Con varios (un inversor por suministro) van todos, separados por " / ".
+ * Solo Growatt: las plantas Huawei no se miran acá.
+ */
+async function seriesInversorGrowatt(projectId: string): Promise<string | undefined> {
+  const equipos = await prisma.growattDevice.findMany({
+    where: { tipo: { in: TIPOS_INVERSOR_GROWATT }, plant: { projectId } },
+    orderBy: { primeraVezEn: "asc" },
+    select: { deviceSn: true },
+  });
+  const series = [...new Set(equipos.map((e) => e.deviceSn.trim()).filter(Boolean))];
+  return series.length ? series.join(" / ") : undefined;
+}
+
 export async function buildPlanGranizoDocContext(projectId: string): Promise<PlanGranizoDocContext> {
   const project = await prisma.project.findUnique({
     where: { id: projectId },
@@ -66,6 +84,14 @@ export async function buildPlanGranizoDocContext(projectId: string): Promise<Pla
   // Instalación nueva (adhesión con la obra) si ya lo dice el plan; si no hay
   // plan, si la obra todavía no está en marcha.
   const instalacion = (poliza ? poliza.sinCarencia : !puestaEnMarcha) ? "NUEVA" : "EXISTENTE";
+  // Número de serie del inversor. Instalación nueva: queda en blanco, porque el
+  // documento se genera en el onboarding y el inversor todavía no existe.
+  // Instalación que ya funciona: si el plan no lo tiene cargado, se toma de
+  // Growatt (los equipos de sus plantas, que guarda la ingesta).
+  const serieGrowatt =
+    instalacion === "EXISTENTE" && !nonEmpty(poliza?.inversorSerie)
+      ? await seriesInversorGrowatt(projectId)
+      : undefined;
   const fotos = poliza
     ? await prisma.fileAttachment.count({
         where: { toolSource: TOOL_SOURCE_FOTOS_INICIO, toolEntityId: poliza.id, deletedAt: null },
@@ -84,7 +110,7 @@ export async function buildPlanGranizoDocContext(projectId: string): Promise<Pla
       cantidadPaneles: poliza?.cantidadPaneles ?? paneles.cantidad ?? undefined,
       precioPorPanelUsd: poliza ? Number(poliza.precioPorPanelUsd) : precio,
       instalacion,
-      inversorSerie: nonEmpty(poliza?.inversorSerie),
+      inversorSerie: nonEmpty(poliza?.inversorSerie) ?? serieGrowatt,
       fotosAdjuntas: instalacion === "EXISTENTE" ? fotos > 0 : null,
     },
     empresa: EMPRESA_DEFAULT,

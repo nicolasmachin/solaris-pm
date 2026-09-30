@@ -1467,6 +1467,12 @@ o borra el movimiento desde Movimientos, el plan lo refleja sin sincronizar nada
   - La precarga (`buildPlanGranizoDocContext()`) toma los datos del cliente del
     proyecto, y los paneles, el precio, si es instalación nueva o existente,
     el número de serie y si hay fotos, del plan.
+  - **Número de serie del inversor**: en una instalación **nueva** queda en
+    blanco a propósito (el documento se genera en el onboarding y el inversor
+    todavía no existe). En una **existente**, si el plan no lo tiene cargado, se
+    toma de Growatt (`seriesInversorGrowatt()`: los equipos tipo inversor de
+    `growatt_devices` de las plantas del proyecto, varios separados por " / ").
+    Solo Growatt; las plantas Huawei no se consultan.
   - El texto de las condiciones es fijo en `template.ts`. Cada versión guarda
     `templateVersion` para saber qué texto firmó el cliente.
   - No se publica sin el RUT de Voltia.

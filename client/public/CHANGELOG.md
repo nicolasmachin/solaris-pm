@@ -24,6 +24,10 @@
 
 - El contrato con el cliente ahora sale a nombre de **VOLTIA SAS** (RUT 221075240012) en lugar de la empresa unipersonal. Los documentos de UTE siguen como estaban, hasta que VOLTIA SAS quede registrada como firma instaladora.
 
+#### Plan de Protección contra Granizo
+
+- En las **Condiciones y Anexo A** de un cliente con la instalación **ya funcionando**, el **número de serie del inversor** se completa solo desde Growatt. En una instalación nueva queda en blanco, porque cuando se genera el documento el inversor todavía no está instalado.
+
 #### Arreglos
 
 - El contrato de una obra con **inversores distintos** decía «Potencia nominal del inversor: 14 kW» cuando eran dos inversores de 8 y 6 kW: mostraba la suma como si fuera de uno. Ahora dice **«Potencia nominal total de los inversores»** y la fila siguiente, **«Inversores: 1 Growatt de 8 kW + 1 Huawei de 6 kW»**. Con varios inversores iguales dice **«de cada inversor»**. En el formulario del contrato hay una casilla para indicarlo; viene marcada sola cuando corresponde.
