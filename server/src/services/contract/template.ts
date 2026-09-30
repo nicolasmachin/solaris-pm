@@ -21,9 +21,13 @@ function voltiaLogoDataUrl(): string {
 }
 
 // Datos fijos de la Empresa (Voltia).
+//
+// Desde el 30-09-2026 el contrato se firma con VOLTIA SAS. Solo el contrato: los
+// documentos de UTE siguen con la unipersonal de Nicolás (ute_document_configs →
+// `fi`/`rut`) hasta que la SAS quede registrada como firma instaladora.
 export const VOLTIA_EMPRESA = {
-  representante: "MACHIN JUSTET NICOLAS FERNANDO",
-  rut: "150733900014",
+  razonSocial: "VOLTIA SAS",
+  rut: "221075240012",
   nombreFantasia: "VOLTIA",
   categoriaUte: "Categoría A",
   domicilio: "Río Branco 1585, Montevideo, Uruguay",
@@ -95,7 +99,7 @@ export function renderContractHtml(data: ContractDataPublish): string {
 
   <p class="intro">En la ciudad de ${esc(data.contrato.lugar)}, a los ${f.dia} días del mes de ${f.mes} de ${f.anio}.</p>
 
-  <p>Entre por una parte <strong>${esc(e.representante)}</strong>, RUT ${esc(e.rut)}, nombre de fantasía
+  <p>Entre por una parte <strong>${esc(e.razonSocial)}</strong>, RUT ${esc(e.rut)}, nombre de fantasía
   <strong>${esc(e.nombreFantasia)}</strong>, con firma instaladora habilitada por UTE – ${esc(e.categoriaUte)},
   con domicilio en calle ${esc(e.domicilio)}, en adelante "la Empresa",</p>
   <p>y por la otra parte:</p>

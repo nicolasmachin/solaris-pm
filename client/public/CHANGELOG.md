@@ -20,6 +20,10 @@
 - **Proyecto Final de Ingeniería**: sigue siendo uno solo, y el borrador que arma la IA describe cada suministro por separado en vez de sumar los inversores.
 - El **Plan de Protección contra Granizo** cuenta los paneles de todos los suministros.
 
+#### Contrato con VOLTIA SAS
+
+- El contrato con el cliente ahora sale a nombre de **VOLTIA SAS** (RUT 221075240012) en lugar de la empresa unipersonal. Los documentos de UTE siguen como estaban, hasta que VOLTIA SAS quede registrada como firma instaladora.
+
 #### Arreglos
 
 - El contrato de una obra con **inversores distintos** decía «Potencia nominal del inversor: 14 kW» cuando eran dos inversores de 8 y 6 kW: mostraba la suma como si fuera de uno. Ahora dice **«Potencia nominal total de los inversores»** y la fila siguiente, **«Inversores: 1 Growatt de 8 kW + 1 Huawei de 6 kW»**. Con varios inversores iguales dice **«de cada inversor»**. En el formulario del contrato hay una casilla para indicarlo; viene marcada sola cuando corresponde.
