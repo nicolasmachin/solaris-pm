@@ -27,3 +27,7 @@ client/tsconfig.tsbuildinfo
 # reducidas, en server/prisma/scripts/fotos-materiales/.
 server/scripts/fotos-materiales/
 server/scripts/catalogo-prod.json
+
+# Salidas de la prueba de Biller (facturas de test, logs)
+docs/pendientes/facturacion-biller/biller_salida_*.json
+docs/pendientes/facturacion-biller/factura_*.pdf

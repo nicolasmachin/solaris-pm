@@ -1,0 +1,2548 @@
+openapi: 3.0.0
+info:
+  title: Biller API Doc
+  description: |-
+    # Introducción
+
+    ¡Bienvenido a la API de Biller!
+
+    Mediante la API vas a poder emitir comprobantes y obtener los PDFs de los comprobantes emitidos.
+  version: 1.0.0
+servers:
+- url: https://test.biller.uy
+  description: Testing
+- url: https://biller.uy
+  description: Producción
+security:
+- bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+x-tagGroups:
+- name: Aspectos generales
+  tags:
+  - Primeros pasos
+  - Ambientes y URL
+  - Autenticación
+  - Códigos de error
+- name: Endpoints
+  tags:
+  - Comprobantes
+  - Recibos
+  - Pagos
+  - Clientes
+  - Productos
+  - Servicios DGI
+tags:
+- name: Primeros pasos
+  description: |-
+    Comenzá a integrar con Biller en minutos siguiendo estos pasos:
+
+    1. Registrar un usuario en [test.biller.uy](https://test.biller.uy).
+
+    2. Ingresar con el usuario creado y registrar una empresa en forma de prueba.
+
+    3. Obtener el ID de la sucursal — se encuentra en **Ajustes / Sucursales**.
+
+    4. Obtener el token de la empresa en `{ambiente}.biller.uy/api/tokens`. Más información en la sección [Autenticación](#tag/Autenticación).
+
+    5. Emitir un e-Ticket de prueba usando el cliente integrado en esta documentación — cada endpoint tiene un botón **Test Request** con ejemplos precargados.
+- name: Ambientes y URL
+  description: |-
+    ## Ambientes
+
+    Existen dos ambientes para operar en Biller: **testing** y **producción**. Están completamente separados — la creación de una cuenta en uno no implica disponibilidad en el otro.
+
+    Cada ambiente utiliza su homólogo en DGI, por lo que cualquier comprobante emitido en Biller será enviado al ambiente correspondiente en DGI.
+
+    | Ambiente | URL base |
+    | --- | --- |
+    | Testing | `https://test.biller.uy` |
+    | Producción | `https://biller.uy` |
+
+    ## URL
+
+    La URL para interactuar con Biller tiene la forma:
+
+    ```
+    https://{ambiente}.biller.uy/{versión}/{llamado}?{parámetros}
+    ```
+
+    Por ejemplo, emisión de comprobantes en ambiente de test usando la v3:
+
+    ```
+    POST https://test.biller.uy/v3/comprobantes/emitir
+    ```
+
+    ## Versionado
+
+    La API mantiene dos versiones activas: **v2** y **v3**. La mayoría de los endpoints se encuentran en v2; los nuevos desarrollos se incorporan en v3.
+
+    Las nuevas versiones introducen cambios incompatibles con las anteriores para no afectar integraciones existentes. La versión debe especificarse en la URL de cada solicitud.
+- name: Autenticación
+  description: |-
+    ## Bearer Token
+
+    Todos los llamados requieren autenticación mediante Bearer Token. Cada token está asociado unívocamente a una empresa.
+
+    **Para obtener un token:**
+    1. Crear un usuario en el sistema
+    2. Crear una empresa
+    3. Generar el token en `{ambiente}.biller.uy/api/tokens`
+
+    | Ambiente | URL de tokens |
+    | --- | --- |
+    | Testing | `https://test.biller.uy/api/tokens` |
+    | Producción | `https://biller.uy/api/tokens` |
+
+    **Encabezados requeridos en cada solicitud:**
+
+    ```
+    Authorization: Bearer su-token-aqui
+    Content-Type: application/json
+    ```
+
+    ## Rate limiting
+
+    | Operación | Límite |
+    | --- | --- |
+    | Creación de comprobantes y consultas a DGI | 1 llamado/segundo por token |
+    | Resto de operaciones | 30 llamados/segundo por token |
+- name: Códigos de error
+  description: |-
+    ## Códigos de respuesta HTTP
+
+    <table><thead><tr><th style="white-space:nowrap">Nro</th><th style="white-space:nowrap">Estado</th><th>Descripción</th></tr></thead><tbody><tr><td style="white-space:nowrap">400</td><td style="white-space:nowrap">Bad Request</td><td>La solicitud contiene sintaxis errónea, no debería repetirse.</td></tr><tr><td style="white-space:nowrap">403</td><td style="white-space:nowrap">Forbidden</td><td>No tiene los privilegios para hacer la solicitud realizada.</td></tr><tr><td style="white-space:nowrap">404</td><td style="white-space:nowrap">Not Found</td><td>Página o recurso no encontrado.</td></tr><tr><td style="white-space:nowrap">422</td><td style="white-space:nowrap">Unprocessable Entity</td><td>La solicitud es sintácticamente correcta, pero contiene errores en los datos.</td></tr><tr><td style="white-space:nowrap">429</td><td style="white-space:nowrap">Too Many Requests</td><td>Se realizaron más solicitudes que las permitidas. Reintentar en unos segundos.</td></tr><tr><td style="white-space:nowrap">500</td><td style="white-space:nowrap">Internal Server Error</td><td>Error interno del servidor.</td></tr></tbody></table>
+- name: Comprobantes
+  description: Endpoints para emitir, anular y consultar Comprobantes Fiscales Electrónicos (CFEs).
+- name: Recibos
+  description: Endpoints para emitir y cancelar recibos asociados a comprobantes.
+- name: Pagos
+  description: Endpoints para registrar pagos asociados a comprobantes.
+- name: Clientes
+  description: Endpoints para gestionar clientes en Biller.
+- name: Productos
+  description: Endpoints para cargar productos y servicios al catálogo de la empresa.
+- name: Servicios DGI
+  description: |-
+    # Servicios web de DGI
+
+    ¡Bienvenido a la API de comunicación con DGI brindada por Biller!
+
+    Mediante esta API vas a poder consumir los siguientes servicios web que brinda la DGI:
+
+    - Servicio de Certificado Único
+    - Servicio de Registro: Datos de entidad
+    - Servicio de Registro: Nombre de la entidad
+    - Servicio de Registro: Actividad empresarial
+
+    Para usar esta API es necesario ser usuario de Biller y pertenecer al plan que incluye el uso de APIs.
+
+    Al hacer uso de la API se utiliza el certificado digital de la empresa logueada para establecer la
+    comunicacion con DGI.
+
+    ## La API expone los siguientes endpoints:
+paths:
+  /v3/comprobantes/emitir:
+    post:
+      tags:
+      - Comprobantes
+      summary: Emisión de CFEs
+      description: |-
+        <span style="color:#00b96b;font-weight:600;font-family:monospace">POST</span> <code>/v3/comprobantes/emitir</code>
+
+        # Tabla de valores:
+
+        <details open>
+        <summary>Tabla de valores:</summary>
+
+        | Clave | Valor | Detalle |
+        | --- | --- | --- |
+        | tipo_comprobante | entero | 101 - e-Ticket  <br>102 - Nota de crédito de e-Ticket  <br>103 - Nota de débito de e-Ticket  <br>  <br>111 - e-Factura  <br>112 - Nota de crédito de e-Factura  <br>113 - Nota de débito de e-Factura  <br>  <br>121 - e-Factura de exportación  <br>122 - Nota de crédito de e-Factura de exportación  <br>123 - Nota de débito de e-Factura de exportación  <br>  <br>124 - eRemito de exportación  <br>  <br>131 - e-Ticket Venta por cuenta ajena  <br>132 - NC e-Ticket Venta por cuenta ajena  <br>133 - ND e-Ticket venta por cuenta ajena  <br>  <br>141 - e-Factura Venta por cuenta ajena  <br>142 - NC e-Factura Venta por cuenta ajena  <br>143 - ND e-Factura venta por cuenta ajena  <br>  <br>151 - eBoleta de entrada  <br>152 - NC eBoleta de entrada  <br>153 - ND eBoleta de entrada  <br>  <br>181 - eRemito  <br>182 - eResguardo |
+        | numero_interno | string | Número interno que referencia al comprobante  <br>**El número debería ser único y no utilizado en el ambiente de test** |
+        | forma_pago | entero | 1 - contado  <br>2 - crédito |
+        | fecha_emision | string | Formato dd/mm/aaaa  <br>**Mínimo 01/10/2011  <br>Máximo dos meses a futuro** |
+        | fecha_vencimiento | string | Formato dd/mm/aaaa |
+        | sucursal | entero | ID de sucursal de la empresa en Biller.  <br>Obtener de test o producción. |
+        | moneda | string | UYU  <br>USD  <br>ARS  <br>BRL  <br>EUR  <br>... |
+        | tasa_cambio | float | Si el campo no se incluye se obtiene de la fecha de cierre anterior a fecha_emision. Si se incluye se toma el valor enviado |
+        | montos_brutos | booleano | **True o 1**, indica que los precios de los ítems ya incluyen IVA.  <br>**False, 0** o si no se envía el campo, se calculará el IVA correspondiente y se sumará al total. |
+        | numero_compra | string (50) | Número de orden del CFE que se emite. |
+        | lugar_entrega | string |  |
+        | **cliente** | objeto | Ver sección [cliente](#cliente) |
+        | **items** | array de objetos | Ver sección [detalle de ítems](#detalle_items) |
+        | **descuentosRecargos** | array de objetos | Ver sección [descuentos y recargos globales](#descuentos_recargos) |
+        | referencia_global | booleano | (Para notas ajuste)  <br>Indica si se utiliza una referencia global o no.  <br>**Mutuamente excluyente con referencias** |
+        | razon_referencia | string | (Para notas ajuste)  <br>Detalle de razón de referencia. A utilizar por ejemplo en caso de tener que anular comprobantes tradicionales.  <br>**Obligatorio en caso de tener referencia_global** |
+        | **referencias** | string | Ver sección [referencia](#referencia)  <br>**Mutuamente excluyente con referencia_global** |
+        | tipo_traslado | entero | **Obligatorio para remitos  <br>**1: Venta  <br>2: Traslados internos |
+        | adenda | string | Cadena a enviar al cliente en la adenda y a mostrar en el PDF. |
+        | informacion_adicional | string (150) |  |
+        | modalidad_venta | entero | **Obligatorio sólo en exportaciones**  <br>1 - Régimen General  <br>2 - Consignación  <br>3 - Precio Revisable  <br>4 - Bienes propios a exclaves aduaneros  <br>80 - Régimen TAX FREE  <br>90 - Régimen general - exportación de servicios  <br>99 - Otras transacciones |
+        | clausula_venta | string (3) | **Obligatorio sólo en exportaciones**  <br>"CFR" - CFR: Cost and Freight"  <br>"CIF" - CIF: Cost, Insurance and Freight  <br>"CIP" - CIP: Carriage And Insurance Paid To  <br>"CPT" - CPT: Carriage Paid To  <br>"DAP" - DAP: Delivered At Place  <br>"DAT" - DAT: Delivered At Terminal  <br>"DDP" - DDP: Delivered Duty Paid  <br>"DDU" - DDU: Delivered Duty Unpaid  <br>"EXW" - EXW: Ex Works  <br>"FAS" - FAS: Free Alongside Ship  <br>"FCA" - FCA: Free Carrier  <br>"FOB" - FOB: Free On Board  <br>"N/A" - N/A No aplica |
+        | via_transporte | entero | **Obligatorio sólo en exportaciones**  <br>1 - Marítimo  <br>2 - Aéreo  <br>3 - Terrestre  <br>8 - N/A  <br>9 - Otro |
+        | indicador_pagos_terceros | booleano | En caso de no enviarse se toma por defecto False |
+        | emails_notificacion | array de string | Emails a dónde se enviará el PDF del Comprobante (se suman a los emails definidos en cliente_sucursal) |
+
+        </details>
+
+
+        ### <a id="cliente"></a>Cliente
+
+        <details open>
+        <summary>Cliente</summary>
+
+        | Clave | Valor | Detalle |
+        | --- | --- | --- |
+        | razon_social | string (70) | Nombre principal para clientes con tipo_documento 2 y 7 |
+        | nombre_fantasia | string (30) | Nombre principal para clientes con tipo_documento 3, 5 y 6 |
+        | tipo_documento | int (1) | 2 - RUT  <br>3 - CI  <br>4 - Otro  <br>5 - Pasaporte  <br>6 - DNI  <br>7 - NIFE |
+        | documento | string |  |
+        | pais | string | UY  <br>AR  <br>BR  <br>US  <br>PY  <br>CL  <br>... |
+        | informacion_adicional | string (150) |  |
+        | sucursal | objeto | Ver sección [Sucursal del cliente](#sucursal_cliente) |
+
+        </details>
+
+
+        ### <a id="sucursal_cliente"></a>Sucursal del cliente
+
+        <details open>
+        <summary>Sucursal del cliente</summary>
+
+        | Clave | Valor | Detalle |
+        | --- | --- | --- |
+        | direccion | string (70) |  |
+        | ciudad | string (30) |  |
+        | departamento | string (30) |  |
+        | pais | string | UY  <br>AR  <br>BR  <br>US  <br>PY  <br>CL  <br>...  <br>**Único campo obligatorio para clientes que no son empresas** |
+        | emails | array de string | Email al que se enviará el PDF del comprobante |
+        | sustituir_emails | boolean | Por defecto false. Si es true, reemplaza los emails existentes con los indicados en emails. En caso contrario, los indicados se agregan a los existentes, manteniendo los ya registrados. |
+
+        </details>
+
+
+        ### <a id="detalle_items"></a>Detalle de ítems
+
+        <details open>
+        <summary>Detalle de ítems</summary>
+
+        | Clave | Valor | Detalle |
+        | --- | --- | --- |
+        | codigo | string (35) |  |
+        | cantidad | float (3 decimales) |  |
+        | concepto | string (80) |  |
+        | precio | float (6 decimales) |  |
+        | unidad_medida | string (4) |  |
+        | codigo_ean | entero (13) |  |
+        | codigo_dun | entero (14) |  |
+        | codigo_gtin_13 | string (13) | Solo dígitos numéricos. |
+        | ncm | string (20) | **Obligatorio sólo en exportaciones.** Código de posición arancelaria. |
+        | indicador_facturacion | entero | 1 - Exento de IVA  <br>2 - Tasa mínima  <br>3 - Tasa básica  <br>4 - Otra tasa  <br>5 - Entrega gratuita  <br>6 - Producto o servicio no facturable  <br>7 - Producto o servicio no facturable negativo  <br>8 - Ítem a rebajar en e-remitos y en e-remitos de exportación  <br>9 - Ítem a anular en resguardos  <br>10 - Exportación y asimiladas  <br>11 - Impuesto percibido  <br>12 - IVA en suspenso  <br>13 - Ítem vendido no contribuyente  <br>14 - Ítem vendido contribuyente monotributo  <br>15 - Ítem vendido contribuyente IMEBA  <br>16 - Ítem Vendido Contribuyente IVA mínimo, Monotributo o Monotributo MIDES. |
+        | descripcion | string | "lorem ipsum" |
+        | descuento_tipo | string | $ o % |
+        | descuento_cantidad | float | Si descuento_tipo es "$", máximo 15 enteros y 2 decimales. Si descuento_tipo es "%", máximo 3 enteros y 3 decimales. |
+        | recargo_tipo | string | $ o % |
+        | recargo_cantidad | float | Si recargo_tipo es "$", máximo 15 enteros y 2 decimales. Si recargo_tipo es "%", máximo 3 enteros y 3 decimales. |
+        | indicador_agente_responsable | string | R - Responsable sobre un producto o servicio vendido  <br>A - Responsable sobre un concepto asociado al producto o servicio vendido  <br>  <br>Debe incluirse cuando el CFE no e-Resguardo incluye Retenciones/Percepciones. |
+        | retencionesPercepciones | array de objetos | Ver sección [Retenciones/Percepciones](#retenciones_percepciones) |
+
+        </details>
+
+        ---
+
+        <details>
+        <summary>Retenciones/Percepciones</summary>
+
+        Las `retencionesPercepciones` cumplen el rol de `ítems` para los e-Resguardos y también pueden incluirse en el resto de los CFEs, salvo e-Remitos, e-Remitos de Exportación y e-Factura de Exportación (y sus notas de ajuste).
+
+        El valor de la retención será calculado automáticamente como `tasa` / 100 \* `monto_sujeto`.
+
+        | **Clave** | **Valor** | **Detalle** |
+        | --- | --- | --- |
+        | codigo | integer | Debe corresponder a un [código registrado en la DGI](https://www.efactura.dgi.gub.uy/files/codigos-de-retenciones-percepciones?es), asociado a la retención/percepción/crédito fiscal.  <br>El mismo es formado por el número de formulario y de línea de la Retención/Percepción en DGI. |
+        | tasa | float (3 enteros y 3 decimales) |  |
+        | monto_sujeto | integer |  |
+        | indicador_facturacion | integer | 9 - Ítem a anular en e-Resguardos.  <br>No aplica en caso de que el CFE no sea e-Resguardo o que no se desee anular un e-Resguardo previo. |
+
+        </details>
+
+
+        ---
+
+        <details>
+        <summary>Descuentos y recargos globales</summary>
+
+        | Clave | Valor | Detalle |
+        | --- | --- | --- |
+        | es_recargo | booleano |  |
+        | desc_rec_tipo | string | $ o % |
+        | glosa | string (50) | Razón del descuento/recargo |
+        | valor | float (2 decimales) | Valor en $ o % |
+        | indicador_facturacion | entero | Ver items indicador_facturacion por valores posibles.  <br>Valor debe coincidir con el del ítem o ítems que se desea afectar. |
+
+        </details>
+
+        ---
+
+        <details>
+        <summary>Referencia</summary>
+
+        La referencia se usa para asociar comprobantes entre sí.
+        Un comprobante puede estar relacionado a uno, varios o ningún comprobante.
+        Hay tipos de comprobantes que necesariamente requieren relacionarse con otros: Notas de crédito y débito, por ejemplo.
+        En cambio, otros tipos de comprobantes, si quieren omitir el campo de referencia, pueden hacerlo.
+
+        Para asociar comprobantes, existen 3 formas de enviar la información.
+
+        La más sencilla, es enviar el ID del comprobante almacenado en Biller.
+        Por ejemplo, si se emitió la e-Factura A-1 y el sistema devolvió el ID 100, al emitir la nota de crédito se puede enviar el siguiente ejemplo para realizar la asociación.
+
+        ``` json
+        "referencias": [100]
+
+         ```
+
+        La segunda opción, es brindar el tipo, serie y número del comprobante a asociar, como en el siguiente ejemplo.
+
+        ``` json
+        "referencias": [
+          {
+            "tipo": 111,
+            "serie": "A",
+            "numero": 1
+          }
+        ]
+
+         ```
+
+        Por último, se pueden hacer asociaciones a comprobantes que no hayan sido emitidos en Biller.
+        Para esto se deberá además especificar la fecha de emisión del comprobante, ya que es necesario enviarlo a la DGI.
+
+        ``` json
+        "referencias": [
+          {
+            "tipo": 111,
+            "serie": "A",
+            "numero": 1,
+            "fecha": "2020-01-01"
+          }
+        ]
+
+         ```
+
+        En caso de querer asociar a más de 1 comprobante se puede combinar cualquiera de los formatos de asociación.
+
+        ``` json
+        "referencias": [
+          100,
+          {
+            "tipo": 111,
+            "serie": "A",
+            "numero": 2
+          }
+        ]
+
+         ```
+
+        Además, en caso de que no se quiera asociar específicamente, existe la referencia global. En este tipo de referecia podrás simplemente escribir una referencia y no asociar directamente a determinados comprobantes.
+
+        ``` json
+        "referencia_global": 1,
+        "razon_referencia": "Referencia global"
+
+         ```
+
+        </details>
+
+        ---
+
+        <details>
+        <summary>CAEs especiales</summary>
+
+        En el caso de que la empresa no esté comprendida dentro del régimen general de facturación y utilice CAEs especiales, se deberán agregar dependiendo del tipo de CAE y causal, los siguientes campos:
+
+        ``` json
+        "cae": {
+            "especial": 1,
+            "causal_especial": 1
+          }
+
+         ```
+
+        </details>
+
+        ---
+
+        <details>
+        <summary>Complemento Fiscal</summary>
+
+        El complemento fiscal se usa para especificar un mandante al momento de emitir un
+        comprobante de venta por cuenta ajena.
+
+        | Clave | Valor | Detalle |
+        | --- | --- | --- |
+        | nombre | string (255) | Nombre del mandante |
+        | tipo_documento | entero | 2 - RUT  <br>3 - CI  <br>4 - Otros  <br>5 - Pasaporte  <br>6 - DNI  <br>7 - NIFE |
+        | documento | string (255) | Valor del documento del mandante sin puntos ni guiones |
+        | pais | string (2) | UY  <br>AR  <br>BR  <br>US  <br>PY  <br>CL  <br>... |
+
+
+        ``` json
+        "complementoFiscal": {
+            "nombre": "DA VINCI",
+            "tipo_documento": 2,
+            "documento": "210980330017",
+            "pais": "UY"
+          }
+
+         ```
+
+        </details>
+      requestBody:
+        content:
+          application/json:
+            examples:
+              00-e-ticket-sin-receptor:
+                summary: e-Ticket sin receptor
+                value:
+                  tipo_comprobante: 101
+                  forma_pago: 1
+                  sucursal: 6
+                  moneda: UYU
+                  montos_brutos: 0
+                  cliente: '-'
+                  items:
+                  - cantidad: 1
+                    concepto: Pelota de fútbol
+                    precio: 200
+                    indicador_facturacion: 3
+              01-e-factura-con-descuentos:
+                summary: e-Factura con descuentos
+                value:
+                  tipo_comprobante: 111
+                  forma_pago: 2
+                  fecha_vencimiento: 31/12/2016
+                  sucursal: 6
+                  moneda: UYU
+                  cliente:
+                    tipo_documento: 2
+                    documento: '214987440015'
+                    razon_social: Arcos Plateados SRL
+                    nombre_fantasia: McBurger
+                    sucursal:
+                      direccion: Amézaga 2100
+                      ciudad: Montevideo
+                      departamento: Montevideo
+                      pais: UY
+                  items:
+                  - cantidad: 1
+                    concepto: Pelota de basketball
+                    precio: 1000
+                    indicador_facturacion: 3
+                    descuento_tipo: $
+                    descuento_cantidad: 100
+                  - cantidad: 2
+                    concepto: Inflador
+                    precio: 100
+                    indicador_facturacion: 3
+                    recargo_tipo: '%'
+                    recargo_cantidad: 10
+                  descuentosRecargos:
+                  - es_recargo: false
+                    desc_rec_tipo: '%'
+                    glosa: Promoción verano
+                    valor: 10
+                    indicador_facturacion: 3
+                  - es_recargo: false
+                    desc_rec_tipo: $
+                    glosa: Descuento por uso
+                    valor: 50
+                    indicador_facturacion: 3
+                  emails_notificacion:
+                  - prueba@biller.uy
+                  - test@biller.uy
+              02-e-factura-con-informacion-adicional-receptor:
+                summary: e-Factura con informacion_adicional receptor
+                value:
+                  tipo_comprobante: 111
+                  forma_pago: 2
+                  fecha_vencimiento: 31/12/2016
+                  sucursal: 6
+                  moneda: UYU
+                  informacion_adicional: Norma que le adjudica el tratamiento de exportación o exportación
+                    de servicios
+                  cliente:
+                    tipo_documento: 2
+                    documento: '214987440015'
+                    razon_social: Arcos Plateados SRL
+                    nombre_fantasia: McBurger
+                    informacion_adicional: El número de registro del usuario en el Área de Zonas Francas
+                    sucursal:
+                      direccion: Amézaga 2100
+                      ciudad: Montevideo
+                      departamento: Montevideo
+                      pais: UY
+                  items:
+                  - cantidad: 1
+                    concepto: Pelota de basketball
+                    precio: 1000
+                    indicador_facturacion: 3
+                    descuento_tipo: $
+                    descuento_cantidad: 100
+                  - cantidad: 2
+                    concepto: Inflador
+                    precio: 100
+                    indicador_facturacion: 3
+                    recargo_tipo: '%'
+                    recargo_cantidad: 10
+              03-e-factura-de-exportacion:
+                summary: e-Factura de exportación
+                value:
+                  tipo_comprobante: 121
+                  forma_pago: 2
+                  fecha_vencimiento: 31/12/2016
+                  sucursal: 6
+                  modalidad_venta: 1
+                  clausula_venta: CFR
+                  via_transporte: 1
+                  moneda: UYU
+                  cliente:
+                    tipo_documento: 2
+                    documento: '214987440015'
+                    razon_social: Arcos Plateados SRL
+                    nombre_fantasia: McBurger
+                    sucursal:
+                      direccion: Amézaga 2100
+                      ciudad: Montevideo
+                      departamento: Montevideo
+                      pais: UY
+                  items:
+                  - cantidad: 1
+                    concepto: Pelota de basketball
+                    precio: 1000
+                    ncm: EJR7
+                    indicador_facturacion: 10
+                  - cantidad: 2
+                    concepto: Inflador
+                    precio: 100
+                    ncm: AB213
+                    indicador_facturacion: 10
+              04-nota-de-credito-de-e-factura:
+                summary: Nota de Crédito de e-Factura
+                value:
+                  tipo_comprobante: 112
+                  forma_pago: 1
+                  sucursal: 303
+                  moneda: UYU
+                  cliente:
+                    tipo_documento: 2
+                    documento: '214987440015'
+                    razon_social: Arcos Plateados SRL
+                    nombre_fantasia: McBurger
+                    sucursal:
+                      direccion: Amézaga 2100
+                      ciudad: Montevideo
+                      departamento: Montevideo
+                      pais: UY
+                  items:
+                  - cantidad: 1
+                    codigo: '12092'
+                    concepto: Camión Mercedes
+                    precio: 679
+                    indicador_facturacion: 3
+                  referencias:
+                  - tipo: 111
+                    serie: D
+                    numero: 497383
+              05-e-resguardo:
+                summary: e-Resguardo
+                value:
+                  tipo_comprobante: 182
+                  sucursal: 303
+                  moneda: UYU
+                  cliente:
+                    tipo_documento: 2
+                    documento: '199389470037'
+                    razon_social: Arcos Plateados SRL
+                    nombre_fantasia: Mc Burguer
+                    sucursal:
+                      direccion: Daniel Muñoz 1956
+                      ciudad: Montevideo
+                      departamento: Montevideo
+                      pais: UY
+                  retencionesPercepciones:
+                  - codigo: '1144131'
+                    tasa: '2'
+                    monto_sujeto: '123400'
+              06-e-remito:
+                summary: e-Remito
+                value:
+                  tipo_comprobante: 181
+                  fecha_emision: 29/07/2022
+                  sucursal: 6
+                  tipo_traslado: 1
+                  cliente:
+                    tipo_documento: 2
+                    documento: '211003420017'
+                    razon_social: Chokora SRL
+                    nombre_fantasia: Biller
+                    sucursal:
+                      direccion: Luis Lamas 3481
+                      ciudad: Montevideo
+                      departamento: Montevideo
+                      pais: UY
+                  items:
+                  - codigo: '140'
+                    cantidad: 40
+                    concepto: Botellas de plástico 500ml
+                  - codigo: '145'
+                    cantidad: 45
+                    concepto: Tapas plásticas
+              07-e-ticket-venta-por-cuenta-ajena:
+                summary: e-Ticket Venta por Cuenta Ajena
+                value:
+                  tipo_comprobante: '131'
+                  forma_pago: '1'
+                  moneda: UYU
+                  sucursal: '1'
+                  lugar_entrega: Prueba lugar entrega
+                  cliente: '-'
+                  items:
+                  - cantidad: '12'
+                    concepto: Prueba producto
+                    indicador_facturacion: '1'
+                    precio: '580'
+                  - cantidad: '1'
+                    concepto: Prueba producto 2
+                    indicador_facturacion: '1'
+                    precio: '680'
+                  complementoFiscal:
+                    nombre: DA VINCI
+                    tipo_documento: 2
+                    documento: '210980330017'
+                    pais: UY
+              08-e-ticket-con-retenciones-percepciones:
+                summary: e-Ticket con Retenciones/Percepciones
+                value:
+                  tipo_comprobante: 101
+                  fecha_emision: 15/05/2019
+                  forma_pago: 1
+                  sucursal: 1
+                  moneda: UYU
+                  montos_brutos: 1
+                  cliente:
+                    tipo_documento: 6
+                    documento: '123456'
+                    razon_social: ARA
+                    nombre_fantasia: Pumas
+                    pais: AR
+                    sucursal:
+                      direccion: Av. 18 de Julio 2352
+                      ciudad: Montevideo
+                      departamento: Montevideo
+                      pais: UY
+                  items:
+                  - codigo: 1
+                    cantidad: 1
+                    concepto: Producto IVA Básico
+                    precio: 10
+                    indicador_facturacion: 3
+                    indicador_agente_responsable: A
+                    retencionesPercepciones:
+                    - codigo: 1145143
+                      tasa: '10.0'
+                      monto_sujeto: 400
+                  - codigo: 2
+                    cantidad: 1
+                    concepto: Producto No Facturable
+                    precio: 30
+                    indicador_facturacion: 6
+                    indicador_agente_responsable: R
+                    retencionesPercepciones:
+                    - codigo: 1145143
+                      tasa: '10.0'
+                      monto_sujeto: 400
+                    - codigo: 1246162
+                      tasa: '5.0'
+                      monto_sujeto: 100
+              09-e-boleta-con-retenciones-percepciones:
+                summary: e-Boleta con Retenciones/Percepciones
+                value:
+                  tipo_comprobante: 151
+                  forma_pago: 1
+                  sucursal: 1
+                  fecha_emision: 10/02/2020
+                  moneda: UYU
+                  montos_brutos: 0
+                  cliente:
+                    tipo_documento: 2
+                    documento: '218541100012'
+                    razon_social: Facar SRL
+                    nombre_fantasia: AF
+                    sucursal:
+                      pais: UY
+                      direccion: Los trompos 1532
+                      ciudad: Montevideo
+                  items:
+                  - cantidad: 1
+                    concepto: Pelota de fútbol
+                    precio: 100
+                    indicador_facturacion: 12
+                    descuento_tipo: '%'
+                    descuento_cantidad: 10
+                    indicador_agente_responsable: A
+                    retencionesPercepciones:
+                    - codigo: 1145143
+                      tasa: '10.0'
+                      monto_sujeto: 400
+              10-e-factura-con-caes-especiales:
+                summary: e-Factura con CAEs especiales
+                value:
+                  moneda: UYU
+                  sucursal: 1
+                  tipo_comprobante: 111
+                  forma_pago: '2'
+                  cliente:
+                    tipo_documento: '2'
+                    documento: '211003420017'
+                    razon_social: Chokora SRL
+                    nombre_fantasia: Biller
+                    sucursal:
+                      direccion: Av. Luis Alberto de Herrera 1248
+                      ciudad: Montevideo
+                      departamento: Montevideo
+                      pais: UY
+                  items:
+                  - cantidad: 1
+                    concepto: Pelota de fútbol
+                    precio: 200
+                    indicador_facturacion: 1
+                  cae:
+                    especial: 1
+                    causal_especial: 1
+              11-e-ticket-con-gtin13:
+                summary: e-Ticket con GTIN13
+                value:
+                  tipo_comprobante: '101'
+                  forma_pago: '1'
+                  moneda: UYU
+                  montos_brutos: '1'
+                  sucursal: '1'
+                  cliente:
+                    tipo_documento: 4
+                    documento: '52380452'
+                    razon_social: Benicio dominguez
+                    sucursal:
+                      direccion: Julio Bastos 37
+                      ciudad: DURAZNO
+                      departamento: DURAZNO
+                      pais: UY
+                  items:
+                  - cantidad: 10000
+                    concepto: Pelota
+                    indicador_facturacion: 3
+                    precio: 10000
+                    codigo_gtin_13: '2687918000001'
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: Content-Type
+        in: header
+        schema:
+          type: string
+        example: application/json
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                id: 43574
+                serie: C
+                numero: '2055262'
+                hash: ym4F2zXETOX9sw7xVxOn/6uGDdw=
+        '422':
+          description: Unprocessable Entity — error de validación en los datos enviados.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    field:
+                      type: string
+                      description: Campo que falló la validación.
+                    message:
+                      type: array
+                      items:
+                        type: string
+                      description: Mensajes de error asociados al campo.
+              example:
+              - field: Comprobantes[cliente_sucursal]
+                message:
+                - Debe especificar receptor por ser mayor a 5000 UI.
+  /v2/comprobantes/anular:
+    post:
+      tags:
+      - Comprobantes
+      summary: Anulación de CFEs
+      description: |-
+        <span style="color:#00b96b;font-weight:600;font-family:monospace">POST</span> <code>/v2/comprobantes/anular</code>
+
+        Permite la anulación de e-Tickets y e-Facturas que no tengan comprobantes asociados, creando una Nota de Crédito que anule el CFE en su totalidad.
+
+        Retorna la información del comprobante anulador.
+
+        El comprobante puede identificarse por `id` o por la combinación de `tipo_comprobante`, `serie` y `numero`.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - fecha_emision_hoy
+              properties:
+                id:
+                  type: integer
+                  description: Id del comprobante a anular. Obligatorio si no se envía tipo_comprobante,
+                    serie y numero.
+                  example: 43573
+                tipo_comprobante:
+                  type: integer
+                  description: Tipo del comprobante a anular. Obligatorio si no se envía id.
+                  example: 111
+                serie:
+                  type: string
+                  description: Serie del comprobante a anular. Obligatorio si no se envía id.
+                  example: A
+                numero:
+                  type: integer
+                  description: Número del comprobante a anular. Obligatorio si no se envía id.
+                  example: 1
+                fecha_emision_hoy:
+                  type: boolean
+                  description: |-
+                    - True: la nota de crédito se emite con fecha de hoy.
+                    - False: se emite con la fecha del comprobante a anular.
+                  example: true
+                sucursal:
+                  type: integer
+                  description: Id de la sucursal emisora del nuevo comprobante. De no enviarse se toma
+                    la del comprobante a anular.
+                  example: 1
+            examples:
+              00-anular-con-tipo-comprobante-serie-y-numero:
+                summary: Anular con tipo comprobante, serie y número
+                value:
+                  tipo_comprobante: 111
+                  serie: C
+                  numero: 4266
+                  fecha_emision_hoy: 1
+              01-anular-con-id:
+                summary: Anular con ID
+                value:
+                  id: 2
+                  fecha_emision_hoy: 0
+              02-anular-con-id-y-sucursal:
+                summary: Anular con ID y sucursal distinta a la original
+                value:
+                  id: 2
+                  fecha_emision_hoy: 0
+                  sucursal: 5
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/json
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                example-0:
+                  summary: Anular con tipo comprobante, serie y número
+                  value:
+                    id: 7
+                    tipo_comprobante: 112
+                    serie: FD
+                    numero: '96708'
+                    hash: rNnOkfAj0WLwNNiFTCoOlkrLGRA=
+                    fecha_emision: '2024-03-05'
+                example-1:
+                  summary: Anular con ID
+                  value:
+                    id: 8
+                    tipo_comprobante: 102
+                    serie: B
+                    numero: '221150'
+                    hash: b4iX4ivAwdVMg3TfyObflzvcXys=
+                    fecha_emision: '2018-05-07'
+          description: OK
+  /v2/recibos/crear:
+    post:
+      tags:
+      - Recibos
+      summary: Emisión de recibos
+      description: |-
+        <span style="color:#00b96b;font-weight:600;font-family:monospace">POST</span> <code>/v2/recibos/crear</code>
+
+        Los comprobantes de cobranza o recibos se utilizan para registrar un pago, ya sea de un e-Ticket, una e-Factura o sus correspondientes de Venta por Cuenta Ajena.
+
+        Puede ser emitido por la parcialidad como por la totalidad del monto a pagar. Además, podrá asociarse a más de un comprobante o a ninguno ("Adelanto").
+
+        Si el monto total de las referencias es menor al monto del pago se agregará un ítem en el recibo por la diferencia con el concepto de "Adelanto".
+
+        El recibo debe incluir el receptor (`cliente`) con su documento y dirección. Si no se envía, el endpoint responde `422 cliente required`.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - cliente
+              - sucursal
+              - moneda
+              - pago
+              properties:
+                tipo_comprobante:
+                  type: integer
+                  description: 'Tipo de CFE del recibo. Ej.: 101 e-Ticket, 111 e-Factura.'
+                  example: 111
+                forma_pago:
+                  type: integer
+                  description: |-
+                    - 1: Contado
+                    - 2: Crédito
+                  example: 1
+                fecha_emision:
+                  type: string
+                  description: Fecha de emisión en formato aaaa-mm-dd. Si se omite, se usa la fecha actual.
+                  example: '2021-05-27'
+                fecha_vencimiento:
+                  type: string
+                  nullable: true
+                  description: Fecha de vencimiento en formato aaaa-mm-dd. Puede ser null.
+                  example: null
+                sucursal:
+                  type: integer
+                  description: ID de la sucursal emisora. Se encuentra en Ajustes / Sucursales.
+                  example: 204
+                moneda:
+                  type: string
+                  description: Código de moneda (UYU, USD, etc.).
+                  example: UYU
+                montos_brutos:
+                  type: integer
+                  description: |-
+                    Indica si los montos de las referencias incluyen impuestos.
+                    - 0: no incluyen impuestos
+                    - 1: incluyen impuestos
+                  example: 0
+                tasa_cambio:
+                  type: number
+                  description: Tasa de cambio respecto a la moneda local. Requerida cuando la moneda no
+                    es UYU.
+                  example: 0
+                cliente:
+                  type: object
+                  description: Receptor del comprobante. Obligatorio.
+                  required:
+                  - tipo_documento
+                  - documento
+                  properties:
+                    tipo_documento:
+                      type: integer
+                      description: |-
+                        - 2: RUT
+                        - 3: CI
+                        - 4: Otro
+                        - 5: Pasaporte
+                        - 6: DNI
+                        - 7: NIFE
+                      example: 2
+                    documento:
+                      type: string
+                      description: Número de documento sin puntos ni guiones.
+                      example: '214987440015'
+                    razon_social:
+                      type: string
+                      description: Nombre principal para tipo_documento 2 (RUT) y 7 (NIFE). Máx. 70 caracteres.
+                      example: Arcos Plateados SRL
+                    nombre_fantasia:
+                      type: string
+                      description: Nombre principal para tipo_documento 3 (CI), 5 (Pasaporte) y 6 (DNI).
+                        Máx. 30 caracteres.
+                      example: McBurguer
+                    sucursal:
+                      type: object
+                      description: Dirección del cliente.
+                      properties:
+                        direccion:
+                          type: string
+                          description: Máx. 70 caracteres.
+                          example: Amézaga 2100
+                        ciudad:
+                          type: string
+                          description: Máx. 30 caracteres.
+                          example: Montevideo
+                        departamento:
+                          type: string
+                          description: Máx. 30 caracteres.
+                          example: Montevideo
+                        pais:
+                          type: string
+                          description: Código de país ISO 3166-1 alpha-2.
+                          example: UY
+                referencias:
+                  type: array
+                  description: Comprobantes que se están pagando. Se omite (o va vacío) para un adelanto.
+                  items:
+                    type: object
+                    properties:
+                      padre:
+                        type: integer
+                        description: ID del comprobante que se quiere pagar.
+                        example: 79508
+                      total:
+                        type: number
+                        description: Monto a pagar de ese comprobante. Debe ser menor o igual al monto
+                          del campo pago.
+                        example: 1200
+                pago:
+                  type: object
+                  description: Información del pago.
+                  required:
+                  - fecha
+                  - monto
+                  properties:
+                    fecha:
+                      type: string
+                      description: Fecha del pago en formato aaaa-mm-dd.
+                      example: '2021-05-27'
+                    monto:
+                      type: number
+                      description: Monto total del pago. Debe ser mayor o igual al total de las referencias.
+                      example: 1800
+                    referencia:
+                      type: string
+                      description: Información para identificar el pago, NO el comprobante a pagar.
+                      example: Transferencia Itaú 2185
+                adenda:
+                  type: string
+                  description: Texto libre agregado al comprobante.
+                informacion_adicional:
+                  type: string
+                  description: Información adicional del comprobante.
+                emails_notificacion:
+                  type: array
+                  description: Emails a los que se enviará el PDF del recibo.
+                  items:
+                    type: string
+                  example:
+                  - cliente@empresa.com
+            examples:
+              00-recibo-de-e-factura:
+                summary: Recibo de e-Factura
+                value:
+                  tipo_comprobante: 111
+                  forma_pago: 1
+                  fecha_vencimiento: null
+                  sucursal: 204
+                  moneda: UYU
+                  montos_brutos: 0
+                  tasa_cambio: 0
+                  cliente:
+                    tipo_documento: 2
+                    documento: '214987440015'
+                    razon_social: Arcos Plateados SRL
+                    nombre_fantasia: McBurguer
+                    sucursal:
+                      direccion: Amézaga 2100
+                      ciudad: Montevideo
+                      departamento: Montevideo
+                      pais: UY
+                  referencias:
+                  - padre: 79508
+                    total: 1200
+                  - padre: 79509
+                    total: 600
+                  pago:
+                    fecha: '2021-05-27'
+                    monto: 1800
+                    referencia: Transferencia Itaú 2185
+              01-recibo-de-e-ticket:
+                summary: Recibo de e-Ticket
+                value:
+                  tipo_comprobante: 101
+                  forma_pago: 1
+                  fecha_vencimiento: null
+                  sucursal: 303
+                  moneda: UYU
+                  montos_brutos: 0
+                  cliente:
+                    tipo_documento: 3
+                    documento: '52165030'
+                    nombre_fantasia: Juan Pérez
+                    sucursal:
+                      pais: UY
+                      ciudad: Montevideo
+                      direccion: Sarandí 420
+                  referencias:
+                  - padre: 150448
+                    total: 1830
+                  pago:
+                    fecha: '2021-05-27'
+                    monto: 1830
+                    referencia: Transferencia Itaú 2185
+              02-recibo-de-e-factura-con-saldo-sin-asociar:
+                summary: Recibo de e-Factura con saldo sin asociar
+                value:
+                  tipo_comprobante: 111
+                  forma_pago: 1
+                  fecha_vencimiento: null
+                  sucursal: 102
+                  moneda: UYU
+                  montos_brutos: 0
+                  tasa_cambio: 0
+                  cliente:
+                    tipo_documento: 2
+                    documento: '214987440015'
+                    razon_social: Arcos Plateados SRL
+                    nombre_fantasia: McBurguer
+                    sucursal:
+                      direccion: Amézaga 2100
+                      ciudad: Montevideo
+                      departamento: Montevideo
+                      pais: UY
+                  referencias:
+                  - padre: 39754
+                    total: 600
+                  pago:
+                    fecha: '2021-05-27'
+                    monto: 1100
+                    referencia: Transferencia BROU 1092
+              03-recibo-de-e-ticket-adelanto:
+                summary: Recibo de e-Ticket Adelanto
+                value:
+                  tipo_comprobante: 101
+                  forma_pago: 1
+                  fecha_vencimiento: null
+                  sucursal: 303
+                  moneda: UYU
+                  montos_brutos: 0
+                  tasa_cambio: 0
+                  cliente:
+                    tipo_documento: 3
+                    documento: '53857909'
+                    razon_social: Matías Pérez
+                    sucursal:
+                      direccion: Sarandi 420
+                      ciudad: Montevideo
+                      departamento: Montevideo
+                      pais: UY
+                  pago:
+                    fecha: '2021-05-27'
+                    monto: 1800
+                    referencia: Transferencia Itaú 2111
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                example-0:
+                  summary: Recibo de e-Factura
+                  value:
+                    id: 79890
+                    serie: C
+                    numero: '2641500'
+                    hash: XnRfCq0xILn5O0ykjeqq35rpvOA=
+                example-1:
+                  summary: Recibo de e-Ticket
+                  value:
+                    id: 281867
+                    serie: MT
+                    numero: 13315
+                    hash: /brdoQxwbwHiIeDW4+yRjf1eJkQ=
+                example-2:
+                  summary: Recibo de e-Factura con saldo sin asociar
+                  value:
+                    id: 39945
+                    serie: D
+                    numero: '132500'
+                    hash: XnRfCJLSADJasdjhAS890OA=
+                example-3:
+                  summary: Recibo de e-Ticket Adelanto
+                  value:
+                    id: 150714
+                    serie: L
+                    numero: '204650'
+                    hash: Z7YSwj044kz6SGd/EvyRuJvlK5Q=
+          description: OK
+  /v2/recibos/cancelar:
+    post:
+      tags:
+      - Recibos
+      summary: Cancelación de recibos
+      description: |-
+        <span style="color:#00b96b;font-weight:600;font-family:monospace">POST</span> <code>/v2/recibos/cancelar</code>
+
+        Permite cancelar un recibo previamente emitido.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                id: 302968
+                serie: MF
+                numero: 161970
+                hash: uJdCvnEVk4wAj8jytD1yBpnxzDM=
+          description: OK
+      parameters:
+      - name: id
+        in: query
+        required: true
+        schema:
+          type: integer
+        example: 155803
+        description: ID del recibo a cancelar
+  /v2/pagos/crear:
+    post:
+      tags:
+      - Pagos
+      summary: Registro de pagos
+      description: |-
+        <span style="color:#00b96b;font-weight:600;font-family:monospace">POST</span> <code>/v2/pagos/crear</code>
+
+        Permite registrar un pago y asociarlo a uno o más comprobantes emitidos por la empresa autenticada.
+
+        El monto total del pago debe coincidir con la suma de los montos asociados. Los comprobantes deben pertenecer a la empresa, ser del mismo cliente, tener la misma moneda y ser del mismo tipo.
+
+        También se pueden registrar montos negativos para revertir un pago anterior.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - fecha
+              - monto
+              - referencia
+              - comprobantes
+              properties:
+                fecha:
+                  type: string
+                  description: Fecha del pago en formato aaaa-mm-dd o dd/mm/aaaa.
+                  example: '2026-05-28'
+                monto:
+                  type: number
+                  description: Monto total del pago. Debe coincidir con la suma de los montos de los comprobantes
+                    asociados.
+                  example: 1500
+                referencia:
+                  type: string
+                  description: Información para identificar el pago. Máx. 255 caracteres.
+                  example: Transferencia BROU 12345
+                comprobantes:
+                  type: array
+                  minItems: 1
+                  description: Comprobantes a los que se asigna el pago.
+                  items:
+                    type: object
+                    required:
+                    - id
+                    - monto
+                    properties:
+                      id:
+                        type: integer
+                        description: ID del comprobante al que se asigna el pago.
+                        example: 79508
+                      monto:
+                        type: number
+                        description: Monto que se asigna a ese comprobante. No puede superar su saldo
+                          pendiente.
+                        example: 1000
+            examples:
+              example-0:
+                summary: Pago de varios comprobantes
+                value:
+                  fecha: '2026-05-28'
+                  monto: 1500
+                  referencia: Transferencia BROU 12345
+                  comprobantes:
+                  - id: 79508
+                    monto: 1000
+                  - id: 79509
+                    monto: 500
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/json
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: ID del pago creado.
+                    example: 302968
+              example:
+                id: 302968
+          description: Created
+  /v2/clientes/crear:
+    post:
+      tags:
+      - Clientes
+      summary: Creación de clientes
+      description: |-
+        <span style="color:#00b96b;font-weight:600;font-family:monospace">POST</span> <code>/v2/clientes/crear</code>
+
+        Permite la creación de clientes sin la necesidad de emitir un comprobante.
+        En el caso de emitir desde biller.uy podrán autocompletar la información en los comprobantes con la cargada.
+
+        Lleva los mismos campos que el objeto `cliente` y `sucursal` de emisión de CFEs, pero en un único objeto plano.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - tipo_documento
+              - documento
+              - pais
+              properties:
+                razon_social:
+                  type: string
+                  description: Nombre principal para clientes con tipo_documento 2 (RUT) y 7 (NIFE). Máx.
+                    70 caracteres.
+                  example: DA VINCI SRL
+                nombre_fantasia:
+                  type: string
+                  description: Nombre principal para clientes con tipo_documento 3 (CI), 5 (Pasaporte)
+                    y 6 (DNI). Máx. 30 caracteres.
+                  example: Da Vinci
+                tipo_documento:
+                  type: integer
+                  description: |-
+                    - 2: RUT
+                    - 3: CI
+                    - 4: Otro
+                    - 5: Pasaporte
+                    - 6: DNI
+                    - 7: NIFE
+                  example: 2
+                documento:
+                  type: string
+                  description: Número de documento sin puntos ni guiones.
+                  example: '210980330017'
+                pais:
+                  type: string
+                  description: Código de país ISO 3166-1 alpha-2.
+                  example: UY
+                informacion_adicional:
+                  type: string
+                  description: Información adicional del cliente. Máx. 150 caracteres.
+                direccion:
+                  type: string
+                  description: Dirección de la sucursal del cliente. Máx. 70 caracteres.
+                ciudad:
+                  type: string
+                  description: Ciudad de la sucursal. Máx. 30 caracteres.
+                departamento:
+                  type: string
+                  description: Departamento de la sucursal. Máx. 30 caracteres.
+                emails:
+                  type: array
+                  description: Emails a los que se enviará el PDF del comprobante.
+                  items:
+                    type: string
+                  example:
+                  - cliente@empresa.com
+            examples:
+              00-creacion-cliente-con-ci:
+                summary: Creación cliente con CI
+                value:
+                  nombre_fantasia: Martín Perez
+                  tipo_documento: 3
+                  documento: '47348269'
+                  direccion: 18 de Julio esquina Ejido
+                  ciudad: Montevideo
+                  departamento: Montevideo
+                  pais: UY
+              01-creacion-cliente-con-rut:
+                summary: Creación cliente con RUT
+                value:
+                  razon_social: Chokora SRL
+                  tipo_documento: 2
+                  documento: '217832560011'
+                  direccion: Av. Luis Alberto de Herrera 1248
+                  ciudad: Montevideo
+                  departamento: Montevideo
+                  pais: UY
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/json
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                example-0:
+                  summary: Creación cliente con CI
+                  value:
+                    cliente: 32070
+                    sucursal: 38168
+                example-1:
+                  summary: Creación cliente con RUT
+                  value:
+                    cliente: 32163
+                    sucursal: 38325
+          description: OK
+  /v2/productos/cargar:
+    post:
+      tags:
+      - Productos
+      summary: Creación de productos y servicios
+      description: |-
+        <span style="color:#00b96b;font-weight:600;font-family:monospace">POST</span> <code>/v2/productos/cargar</code>
+
+        Permite la creación de productos y servicios sin la necesidad de emitir un comprobante.
+        En el caso de emitir desde biller.uy podrán autocompletar la información en los comprobantes con la cargada.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - codigo
+              - nombre
+              - precio
+              - moneda
+              - indicador_facturacion
+              - es_servicio
+              properties:
+                codigo:
+                  type: string
+                  description: Código del producto. Máximo 35 caracteres.
+                  example: PROD-001
+                nombre:
+                  type: string
+                  description: Nombre del producto o servicio. Máximo 80 caracteres.
+                  example: Silla de oficina
+                descripcion:
+                  type: string
+                  description: Descripción adicional del producto o servicio.
+                  example: Silla ergonómica con ruedas
+                precio:
+                  type: number
+                  description: Precio unitario con hasta 6 decimales.
+                  example: 1500.0
+                moneda:
+                  type: string
+                  description: Moneda del precio (UYU, USD, etc.).
+                  example: UYU
+                unidad_medida:
+                  type: string
+                  description: Unidad de medida. Máximo 4 caracteres.
+                  example: UNI
+                indicador_facturacion:
+                  type: integer
+                  description: |-
+                    - 1: Exento de IVA
+                    - 2: Tasa mínima
+                    - 3: Tasa básica
+                    - 4: Otra tasa (requiere `impuesto_tasa`)
+                    - 5: Entrega gratuita
+                    - 6: Producto o servicio no facturable
+                    - 7: Producto o servicio no facturable negativo
+                    - 8: Ítem a rebajar en e-remitos
+                    - 9: Ítem a anular en resguardos
+                    - 10: Exportación y asimiladas
+                    - 11: Impuesto percibido
+                    - 12: IVA en suspenso
+                    - 13: Ítem vendido no contribuyente
+                    - 14: Ítem vendido contribuyente monotributo
+                    - 15: Ítem vendido contribuyente IMEBA
+                    - 16: Ítem vendido contribuyente IVA mínimo, Monotributo o Monotributo MIDES
+                  example: 3
+                impuesto_tasa:
+                  type: number
+                  description: Obligatorio cuando `indicador_facturacion` es 4 (Otra tasa). Tasa de IVA
+                    a aplicar.
+                  example: 10.5
+                inventario:
+                  type: number
+                  description: Cantidad de stock existente. Si el producto ya existe, sobreescribe el
+                    valor. Admite decimales.
+                  example: 100.0
+                es_servicio:
+                  type: boolean
+                  description: |-
+                    - True: es un servicio, no usa stock.
+                    - False: es un producto, se hace seguimiento de stock con las ventas.
+                  example: false
+            examples:
+              00-creacion-de-producto:
+                summary: Creación de producto
+                value:
+                  codigo: CAM 01
+                  nombre: Camiseta 01
+                  descripcion: Camiseta azul talles de S a L
+                  moneda: UYU
+                  precio: '599'
+                  indicador_facturacion: 1
+                  inventario: '5'
+                  es_servicio: false
+              01-creacion-de-servicio:
+                summary: Creación de servicio
+                value:
+                  codigo: LMP SLLN
+                  nombre: Limpieza de sillón
+                  descripcion: Limpieza profunda de mueble
+                  moneda: UYU
+                  precio: '1300'
+                  indicador_facturacion: 1
+                  es_servicio: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/json
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                example-0:
+                  summary: Creación de producto
+                  value:
+                    id: 67926
+                example-1:
+                  summary: Creación de servicio
+                  value:
+                    id: 68012
+          description: Created
+  /v2/comprobantes/obtener:
+    get:
+      tags:
+      - Comprobantes
+      summary: Obtener
+      description: |-
+        <span style="color:#0082d0;font-weight:600;font-family:monospace">GET</span> <code>/v2/comprobantes/obtener</code>
+
+        Devuelve información de todos los comprobantes emitidos o recibidos que cumplan con los criterios detallados en la solicitud.
+
+        Para identificar comprobantes de cobranza, habrá un campo `indicador_cobranza_propia` que estará en 1 cuando el comprobante obtenido sea un recibo.
+
+        Ninguno de los campos es obligatorio, pero si `id` no está definido y `desde` tampoco, se tomará como `desde` la fecha de hoy a las 00:00:00.
+
+        **Obtener información de ítems**
+
+        Puede obtenerse información acerca de los `items` de un comprobante siempre y cuando el parámetro `id` en el llamado esté definido. Lo mismo aplica para las `retenciones_percepciones` en el caso de los e-Resguardos.
+
+        **Obtener comprobantes recibidos**
+
+        Este llamado devuelve todos los comprobantes emitidos a la empresa y que fueron enviados vía mail a la casilla que la empresa tiene publicada en DGI. En este caso, se agrega un parámetro `recibidos` a la url como se muestra en el ejemplo.
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: Content-Type
+        in: header
+        schema:
+          type: string
+        example: application/json
+      - name: id
+        in: query
+        schema:
+          type: string
+        description: ID del CFE
+        example: '53616'
+      - name: sucursal
+        in: query
+        schema:
+          type: string
+        description: Sucursal emisora
+        example: '6'
+      - name: desde
+        in: query
+        schema:
+          type: string
+        description: Fecha creación desde en formato aaaa-mm-dd hh:mm:ss
+        example: '2019-10-01 00:00:00'
+      - name: hasta
+        in: query
+        schema:
+          type: string
+        description: Fecha creación hasta en formato aaaa-mm-dd hh:mm:ss
+        example: '2019-11-01 00:00:00'
+      - name: tipo_comprobante
+        in: query
+        schema:
+          type: string
+        description: Revisar "Tabla de Valores". De querer utilizarse es obligatorio incluir serie y numero
+        example: '101'
+      - name: serie
+        in: query
+        schema:
+          type: string
+        description: De querer utilizarse es obligatorio incluir tipo_comprobante y numero
+        example: L
+      - name: numero
+        in: query
+        schema:
+          type: string
+        description: Número del comprobante ante DGI. De querer utilizarse es obligatorio incluir serie
+          y tipo_comprobante
+        example: '479177'
+      - name: numero_interno
+        in: query
+        schema:
+          type: string
+        description: Identificador propio de la empresa para el comprobante, pueden ser letras y números,
+          debe ser único
+        example: AB1997
+      - name: recibidos
+        in: query
+        schema:
+          type: string
+        description: Por defecto false
+        example: '1'
+      responses:
+        '200':
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/json
+          content:
+            application/json:
+              schema:
+                type: array
+              example:
+              - id: 53616
+                tipo_comprobante: 101
+                serie: C
+                numero: 2069514
+                moneda: UYU
+                indicador_cobranza_propia: 0
+                tot_iva_tasa_min: 0
+                tot_iva_tasa_bas: 44
+                tot_iva_tasa_otra: null
+                descuentosRecargos: null
+                total: 244
+                cliente: []
+                esNotaAjuste: false
+                fecha_creacion: '2019-10-15 15:10:39'
+                fecha_emision: '2019-10-15'
+                fecha_vencimiento: '2019-10-30'
+                cae:
+                  numero: '76747726'
+                  serie: C
+                  inicio: 1
+                  fin: 1000000
+                  fecha_expiracion: '2021-10-15'
+          description: OK
+  /v3/comprobantes/detalle:
+    get:
+      tags:
+      - Comprobantes
+      summary: Detalle
+      description: |-
+        <span style="color:#0082d0;font-weight:600;font-family:monospace">GET</span> <code>/v3/comprobantes/detalle</code>
+
+        Devuelve el detalle completo de un comprobante por su `id`, incluyendo `items`, `cliente`, `cae` y los comprobantes asociados:
+
+        - `referencias`: comprobantes a los que este hace referencia (por ejemplo, el comprobante que anula una Nota de Crédito).
+        - `referenciado_por`: comprobantes que hacen referencia a este (por ejemplo, la Nota de Crédito que lo anuló).
+
+        Si no hay asociados, el campo es un array vacío (`[]`).
+      security:
+      - bearerAuth: []
+      x-codeSamples:
+      - lang: shell
+        label: Shell Curl
+        source: |-
+          curl 'https://test.biller.uy/v3/comprobantes/detalle?id=1' \
+            --header 'Content-Type: application/json' \
+            --header 'Authorization: Bearer YOUR_SECRET_TOKEN'
+      parameters:
+      - name: Content-Type
+        in: header
+        schema:
+          type: string
+        example: application/json
+      - name: id
+        in: query
+        required: true
+        schema:
+          type: integer
+        description: Id del comprobante.
+        example: 1
+      responses:
+        '200':
+          description: OK
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: application/json
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                example-0:
+                  summary: e-Factura anulada por una Nota de Crédito
+                  value:
+                    id: 1
+                    tipo_comprobante: 111
+                    serie: C
+                    numero: 4266
+                    sucursal: 1
+                    numero_interno: null
+                    informacion_adicional: null
+                    moneda: UYU
+                    tasa_cambio: '1.000'
+                    montos_brutos: 0
+                    numero_compra: null
+                    lugar_entrega: null
+                    indicador_cobranza_propia: 0
+                    items:
+                    - id: 1
+                      codigo: '123'
+                      cantidad: '123.000'
+                      concepto: Descripción 123
+                      descripcion: ''
+                      precio: '123.000000'
+                      indicador_facturacion: 3
+                      impuesto_tasa: '0.220'
+                      descuento_tipo: $
+                      descuento_cantidad: '0.000'
+                      recargo_tipo: $
+                      recargo_cantidad: '0.000'
+                    retenciones_percepciones: null
+                    tot_iva_tasa_min: 0
+                    tot_iva_tasa_bas: 3328.38
+                    tot_iva_tasa_otra: null
+                    descuentos_recargos: null
+                    total: '18457.38'
+                    estado: Aceptado DGI
+                    cliente:
+                      id: 1
+                      tipo_documento: RUT
+                      documento: '211003420017'
+                      razon_social: Chokora SRL
+                      nombre_fantasia: Biller
+                      sucursal:
+                        id: 1
+                        direccion: Av. Luis Alberto de Herrera 1248
+                        ciudad: Montevideo
+                        departamento: Montevideo
+                        pais: UY
+                    referencia_global: ''
+                    razon_referencia: ''
+                    referencias: []
+                    referenciado_por:
+                    - id: 2
+                      tipo_comprobante: 112
+                      serie: C
+                      numero: 24380
+                      fecha_emision: '2018-03-21'
+                    modalidad_venta: null
+                    clausula_venta: null
+                    via_transporte: null
+                    tipo_traslado: null
+                    adenda: null
+                    es_nota_ajuste: false
+                    fecha_creacion: '2018-02-02 16:47:32'
+                    fecha_emision: '2018-02-02'
+                    fecha_vencimiento: null
+                    indicador_pagos_terceros: null
+                    cae:
+                      numero: '90200000001'
+                      serie: A
+                      inicio: 1
+                      fin: 1000000
+                      fecha_expiracion: '2022-01-01'
+                example-1:
+                  summary: Nota de Crédito que anula una e-Factura
+                  value:
+                    id: 2
+                    tipo_comprobante: 112
+                    serie: C
+                    numero: 24380
+                    sucursal: 1
+                    numero_interno: null
+                    informacion_adicional: null
+                    moneda: UYU
+                    tasa_cambio: '1.000'
+                    montos_brutos: 0
+                    numero_compra: null
+                    lugar_entrega: null
+                    indicador_cobranza_propia: 0
+                    items:
+                    - id: 2
+                      codigo: '123'
+                      cantidad: '123.000'
+                      concepto: Descripción 123
+                      descripcion: ''
+                      precio: '123.000000'
+                      indicador_facturacion: 3
+                      impuesto_tasa: '0.220'
+                      descuento_tipo: $
+                      descuento_cantidad: '0.000'
+                      recargo_tipo: $
+                      recargo_cantidad: '0.000'
+                    retenciones_percepciones: null
+                    tot_iva_tasa_min: 0
+                    tot_iva_tasa_bas: 3328.38
+                    tot_iva_tasa_otra: null
+                    descuentos_recargos: null
+                    total: '18457.38'
+                    estado: Aceptado DGI
+                    cliente:
+                      id: 1
+                      tipo_documento: RUT
+                      documento: '211003420017'
+                      razon_social: Chokora SRL
+                      nombre_fantasia: Biller
+                      sucursal:
+                        id: 1
+                        direccion: Av. Luis Alberto de Herrera 1248
+                        ciudad: Montevideo
+                        departamento: Montevideo
+                        pais: UY
+                    referencia_global: ''
+                    razon_referencia: ''
+                    referencias:
+                    - id: 1
+                      tipo_comprobante: 111
+                      serie: C
+                      numero: 4266
+                      fecha_emision: '2018-02-02'
+                    referenciado_por: []
+                    modalidad_venta: null
+                    clausula_venta: null
+                    via_transporte: null
+                    tipo_traslado: null
+                    adenda: null
+                    es_nota_ajuste: true
+                    fecha_creacion: '2018-03-21 16:12:01'
+                    fecha_emision: '2018-03-21'
+                    fecha_vencimiento: null
+                    indicador_pagos_terceros: null
+                    cae:
+                      numero: '90200000001'
+                      serie: A
+                      inicio: 1
+                      fin: 1000000
+                      fecha_expiracion: '2022-01-01'
+        '404':
+          description: Not Found — el comprobante no existe, no pertenece a la empresa o todavía no fue
+            emitido como CFE.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: integer
+                  status:
+                    type: integer
+              example:
+                name: Not Found
+                message: Comprobante no existe o no tiene acceso.
+                code: 0
+                status: 404
+        '422':
+          description: 'Unprocessable Entity — error de validación en los datos enviados. Otros mensajes
+            posibles: "Debe indicar id."'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    field:
+                      type: string
+                      description: Campo que falló la validación.
+                    message:
+                      type: string
+                      description: Mensaje de error asociado al campo.
+              example:
+              - field: id
+                message: Id es inválido.
+        '405':
+          description: Method Not Allowed — el endpoint sólo admite GET.
+  /v2/comprobantes/pdf:
+    get:
+      tags:
+      - Comprobantes
+      summary: Obtener PDF
+      description: |-
+        <span style="color:#0082d0;font-weight:600;font-family:monospace">GET</span> <code>/v2/comprobantes/pdf</code>
+
+        Devuelve el PDF de la representación impresa del comprobante. El comprobante debe existir previamente en el sistema.
+
+        La respuesta contiene el contenido del archivo PDF codificado en base64.
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: Content-Type
+        in: header
+        schema:
+          type: string
+        example: application/json
+      - name: id
+        in: query
+        required: true
+        schema:
+          type: integer
+        description: Id del CFE
+        example: '43573'
+      - name: template
+        in: query
+        schema:
+          type: string
+          enum:
+          - generico
+          - ticket-generico
+        description: Formato de representación impresa. Si no se incluye, se usa el definido en Ajustes/Representación
+          impresa.
+        example: generico
+      responses:
+        '200':
+          description: OK
+          headers:
+            Date:
+              schema:
+                type: string
+                example: Wed, 03 Jul 2019 17:47:34 GMT
+            Content-Type:
+              schema:
+                type: string
+                example: text/html; charset=UTF-8
+            Transfer-Encoding:
+              schema:
+                type: string
+                example: chunked
+            Connection:
+              schema:
+                type: string
+                example: keep-alive
+            Server:
+              schema:
+                type: string
+                example: Apache
+            Vary:
+              schema:
+                type: string
+                example: Accept,Accept-Encoding
+            Expires:
+              schema:
+                type: string
+                example: Thu, 19 Nov 1981 08:52:00 GMT
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store, no-cache, must-revalidate
+            Pragma:
+              schema:
+                type: string
+                example: no-cache
+            X-Rate-Limit-Limit:
+              schema:
+                type: integer
+                example: '1'
+            X-Rate-Limit-Remaining:
+              schema:
+                type: integer
+                example: '0'
+            X-Rate-Limit-Reset:
+              schema:
+                type: integer
+                example: '1'
+            Set-Cookie:
+              schema:
+                type: string
+                example: _csrf=69f4d799a5045bbbd16c765d26eaf5329555492aea3f6dd105f068b3444645d6a%3A2%3A%7Bi%3A0%3Bs%3A5%3A%22_csrf%22%3Bi%3A1%3Bs%3A32%3A%22DKeICPZZjZnHRWH8ZxhlcfPyocLe0q_p%22%3B%7D;
+                  path=/; HttpOnly
+            Content-Encoding:
+              schema:
+                type: string
+                example: gzip
+            X-Frame-Options:
+              schema:
+                type: string
+                example: DENY
+            X-Content-Type-Options:
+              schema:
+                type: string
+                example: nosniff
+            X-XSS-Protection:
+              schema:
+                type: string
+                example: 1; mode=block
+            Content-Security-Policy:
+              schema:
+                type: string
+                example: frame-ancestors 'self'
+            X-Content-Security-Policy:
+              schema:
+                type: string
+                example: frame-ancestors 'self'
+          content:
+            text/plain:
+              schema:
+                type: string
+              examples:
+                example-0:
+                  summary: Obtener PDF
+                  value: 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MCA0MTMgNTc1IDMwNiA1OTUgMzM3IDU4NyAyNjMgNTg4IDU4NyBdCl0KPj4KZW5kb2JqCjE4IDAgb2JqCjw8IC9MZW5ndGggNzU2ID4+CnN0cmVhbQovQ0lESW5pdCAvUHJvY1NldCBmaW5kcmVzb3VyY2UgYmVnaW4KMTIgZGljdCBiZWdpbgpiZWdpbmNtYXAKL0NJRFN5c3RlbUluZm8gPDwgL1JlZ2lzdHJ5IChBZG9iZSkgL09yZGVyaW5nIChVQ1MpIC9TdXBwbGVtZW50IDAgPj4gZGVmCi9DTWFwTmFtZSAvQWRvYmUtSWRlbnRpdHktVUNTIGRlZgovQ01hcFR5cGUgMiBkZWYKMSBiZWdpbmNvZGVzcGFjZXJhbmdlCjwwMDAwPiA8RkZGRj4KZW5kY29kZXNwYWNlcmFuZ2UKMiBiZWdpbmJmcmFuZ2UKPDAwMDA+IDwwMDAwPiA8MDAwMD4KPDAwMDE+IDwwMDM4PiBbPDAwMzE+IDwwMDJFPiA8MDAzNT4gPDAwMzA+IDwwMDJDPiA8MDA1Mz4gPDAwNzU+IDwwMDYyPiA8MDA3ND4gPDAwNkY+IDwwMDYxPiA8MDA2Qz4gPDAwMjA+IDwwMDQ5PiA8MDA1Nj4gPDAwNDE+IDwwMDMyPiA8MDAyNT4gPDAwMzM+IDwwMDREPiA8MDA2RT4gPDAwMzg+IDwwMDU0PiA8MDA2Mz4gPDAwNjU+IDwwMDczPiA8MDA3Mj4gPDAwNjk+IDwwMDQyPiA8MDA0Qz4gPDAwNkQ+IDwwMDM2PiA8MDA3Nj4gPDAwNjQ+IDwwMDM0PiA8MDAyRD4gPDAwNDY+IDwwMDU1PiA8MDA1OT4gPDAwNDM+IDwwMDUyPiA8MDA0Rj4gPDAwNTA+IDwwMDQ0PiA8MDAzNz4gPDAwNjc+IDwwMDc5PiA8MDAyRj4gPDAwNjg+IDwwMDNBPiA8MDAzOT4gPDAwNjY+IDwwMDcwPiA8MDBFRD4gPDAwNDU+IDwwMDcxPiBdCmVuZGJmcmFuZ2UKZW5kY21hcApDTWFwTmFtZSBjdXJyZW50ZGljdCAvQ01hcCBkZWZpbmVyZXNvdXJjZSBwb3AKZW5kCmVuZAoKZW5kc3RyZWFtCmVuZG9iago2IDAgb2JqCjw8IC9UeXBlIC9Gb250Ci9TdWJ0eXBlIC9UeXBlMAov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aXR5LVVDUyBkZWYKL0NNYXBUeXBlIDIgZGVmCjEgYmVnaW5jb2Rlc3BhY2VyYW5nZQo8MDAwMD4gPEZGRkY+CmVuZGNvZGVzcGFjZXJhbmdlCjIgYmVnaW5iZnJhbmdlCjwwMDAwPiA8MDAwMD4gPDAwMDA+CjwwMDAxPiA8MDAyMz4gWzwwMDU1PiA8MDA1OT4gPDAwMjA+IDwwMDMxPiA8MDAyRT4gPDAwMzg+IDwwMDMzPiA8MDAzMD4gPDAwMkM+IDwwMDU0PiA8MDA2Rj4gPDAwNzQ+IDwwMDYxPiA8MDA2Qz4gPDAwNzA+IDwwMDY3PiA8MDA3Mj4gPDAwNDM+IDwwMDZFPiA8MDA2Mz4gPDAwNjU+IDwwMDUyPiA8MDA2OT4gPDAwNjQ+IDwwMDZEPiA8MDA2Mj4gPDAwNEU+IDwwMEZBPiA8MDA0Nj4gPDAwNjg+IDwwMDczPiA8MDBGMz4gPDAwNTY+IDwwMDREPiA8MDA0ND4gXQplbmRiZnJhbmdlCmVuZGNtYXAKQ01hcE5hbWUgY3VycmVudGRpY3QgL0NNYXAgZGVmaW5lcmVzb3VyY2UgcG9wCmVuZAplbmQKCmVuZHN0cmVhbQplbmRvYmoKNyAwIG9iago8PCAvVHlwZSAvRm9udAovU3VidHlwZSAvVHlwZTAKL0Jhc2VGb250IC9JQk1QbGV4U2Fucy1TZW1pQm9sZAovRW5jb2RpbmcgL0lkZW50aXR5LUgKL0Rlc2NlbmRhbnRGb250cyBbMjIgMCBSXQovVG9Vbmljb2RlIDIzIDAgUj4+CmVuZG9iagoyIDAgb2JqCjw8Ci9UeXBlIC9QYWdlcwovS2lkcyAKWwo1IDAgUgpdCi9Db3VudCAxCi9Qcm9jU2V0IFsvUERGIC9UZXh0IC9JbWFnZUIgL0ltYWdlQ10KPj4KZW5kb2JqCnhyZWYKMCAyNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAyMDQxNyAwMDAwMCBuIAowMDAwMDAwMTU3IDAwMDAwIG4gCjAwMDAwMDAyNTIgMDAwMDAgbiAKMDAwMDAwNTQ4MSAwMDAwMCBuIAowMDAwMDE1MjYwIDAwMDAwIG4gCjAwMDAwMjAyNzEgMDAwMDAgbiAKMDAwMDAwMDI4OSAwMDAwMCBuIAowMDAwMDA1NDExIDAwMDAwIG4gCjAwMDAwMDU0MzEgMDAwMDAgbiAKMDAwMDAwNTgwOSAwMDAwMCBuIAowMDAwMDA4NTQ2IDAwMDAwIG4gCjAwMDAwMDU2MDIgMDAwMDAgbiAKMDAwMDAwNTc4OSAwMDAwMCBuIAowMDAwMDA4NTY3IDAwMDAwIG4gCjAwMDAwMDg3ODIgMDAwMDAgbiAKMDAwMDAxNDAwNiAwMDAwMCBuIAowMDAwMDE0NDUyIDAwMDAwIG4gCjAwMDAwMTM5ODUgMDAwMDAgbiAKMDAwMDAxNTQwNCAwMDAwMCBuIAowMDAwMDE1NjIxIDAwMDAwIG4gCjAwMDAwMTkyNDYgMDAwMDAgbiAKMDAwMDAxOTYxMCAwMDAwMCBuIAowMDAwMDE5MjI1IDAwMDAwIG4gCnRyYWlsZXIKPDwKL1NpemUgMjUKL0luZm8gMSAwIFIKL1Jvb3QgMTAgMCBSCj4+CnN0YXJ0eHJlZgoyMDUxNQolJUVPRgo=
+                example-1:
+                  summary: Obtener PDF Ticket genérico
+                  value: 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CmVuZG9iagoxNCAwIG9iago8PAovVHlwZSAvRm9udAovU3VidHlwZSAvQ0lERm9udFR5cGUyCi9CYXNlRm9udCAvTmltYnVzU2Fucy1Cb2xkCi9DSURTeXN0ZW1JbmZvIDw8Ci9SZWdpc3RyeSAoQWRvYmUpCi9PcmRlcmluZyAoSWRlbnRpdHkpCi9TdXBwbGVtZW50IDAKPj4KL0ZvbnREZXNjcmlwdG9yIDE5IDAgUgovQ0lEVG9HSURNYXAgL0lkZW50aXR5Ci9XIFsgMCBbIDI3NiA3MTYgMjc2IDI3NiA1NTIgMzg2IDcxNiA2NjIgNjYyIDYwNiA2MDYgNTUyIDcxNiA2MDYgNjA2IDU1MiA2MDYgMzMwIDgyNiA2NjIgNjA2IDI3NiA2NjIgNzE2IDI3NiA1NTIgODgyIDc3MiA2MDZdXQo+PgplbmRvYmoKMTUgMCBvYmoKPDwKL0xlbmd0aCA1NjAKPj4Kc3RyZWFtCi9DSURJbml0IC9Qcm9jU2V0IGZpbmRyZXNvdXJjZSBiZWdpbgoxMiBkaWN0IGJlZ2luCmJlZ2luY21hcAovQ0lEU3lzdGVtSW5mbyA8PCAvUmVnaXN0cnkgKEFkb2JlKSAvT3JkZXJpbmcgKFVDUykgL1N1cHBsZW1lbnQgMCA+PiBkZWYKL0NNYXBOYW1lIC9BZG9iZS1JZGVudGl0eS1VQ1MgZGVmCi9DTWFwVHlwZSAyIGRlZgoxIGJlZ2luY29kZXNwYWNlcmFuZ2UKPDAwMDA+IDxGRkZGPgplbmRjb2Rlc3BhY2VyYW5nZQoyIGJlZ2luYmZyYW5nZQo8MDAwMD4gPDAwMDA+IDwwMDAwPgo8MDAwMT4gPDAwMUM+IFs8MDA0Mj4gPDAwNjk+IDwwMDZDPiA8MDA2NT4gPDAwNzI+IDwwMDU1PiA8MDA1OT4gPDAwNTA+IDwwMDc1PiA8MDA2Mj4gPDAwNjE+IDwwMDQzPiA8MDA2Rj4gPDAwNkU+IDwwMDYzPiA8MDA3MD4gPDAwNzQ+IDwwMDREPiA8MDA1Mz4gPDAwNTQ+IDwwMDQ5PiA8MDA1Nj4gPDAwNDE+IDwwMDIwPiA8MDAzMj4gPDAwMjU+IDwwMDRGPiA8MDA0Qz4gXQplbmRiZnJhbmdlCmVuZGNtYXAKQ01hcE5hbWUgY3VycmVudGRpY3QgL0NNYXAgZGVmaW5lcmVzb3VyY2UgcG9wCmVuZAplbmQKCmVuZHN0cmVhbQplbmRvYmoKMTYgMCBvYmoKPDwKL1R5cGUgL0ZvbnQKL1N1YnR5cGUgL0NJREZvbnRUeXBlMgovQmFzZUZvbnQgL05pbWJ1c1NhbnMtUmVndWxhcgovQ0lEU3lzdGVtSW5mbyA8PAovUmVnaXN0cnkgKEFkb2JlKQovT3JkZXJpbmcgKElkZW50aXR5KQovU3VwcGxlbWVudCAwCj4+Ci9Gb250RGVzY3JpcHRvciAyMCAwIFIKL0NJRFRvR0lETWFwIC9JZGVudGl0eQovVyBbIDAgWyAyNzYgMjc2IDU1MiA1NTIgNTUyIDU1MiA1NTIgNTUyIDU1MiA1NTIgNTUyIDIyMCA0OTYgNTUyIDgyNiA4MjYgNTUyIDU1MiAyNzYgNTUyIDQ5NiA1NTIgMzMwIDYwNiA0OTYgMzMwIDcxNiAyNzYgNTUyIDU1MiAyNzYgNTUyIDU1MiA2NjIgMjc2IDQ5NiAyNzYgNTUyIDU1MiA3MTYgNTUyIDY2MiAyNzYgNTUyIDU1MiA0OTYgMjc2IDY2MiAyMjAgMjc2IDY2MiA2NjIgNzE2XV0KPj4KZW5kb2JqCjE3IDAgb2JqCjw8Ci9MZW5ndGggNzI4Cj4+CnN0cmVhbQovQ0lESW5pdCAvUHJvY1NldCBmaW5kcmVzb3VyY2UgYmVnaW4KMTIgZGljdCBiZWdpbgpiZWdpbmNtYXAKL0NJRFN5c3RlbUluZm8gPDwgL1JlZ2lzdHJ5IChBZG9iZSkgL09yZGVyaW5nIChVQ1MpIC9TdXBwbGVtZW50IDAgPj4gZGVmCi9DTWFwTmFtZSAvQWRvYmUtSWRlbnRpdHktVUNTIGRlZgovQ01hcFR5cGUgMiBkZWYKMSBiZWdpbmNvZGVzcGFjZXJhbmdlCjwwMDAwPiA8RkZGRj4KZW5kY29kZXNwYWNlcmFuZ2UKMiBiZWdpbmJmcmFuZ2UKPDAwMDA+IDwwMDAwPiA8MDAwMD4KPDAwMDE+IDwwMDM0PiBbPDAwMjA+IDwwMDMwPiA8MDAzMj4gPDAwMzQ+IDwwMDM2PiA8MDAzMz4gPDAwMzE+IDwwMDM1PiA8MDA0Qz4gPDAwNzU+IDwwMDY5PiA8MDA3Mz4gPDAwNjE+IDwwMDZEPiA8MDA0RD4gPDAwNkY+IDwwMDZFPiA8MDA3ND4gPDAwNjU+IDwwMDc2PiA8MDA2ND4gPDAwMkQ+IDwwMDQ2PiA8MDA2Mz4gPDAwNzI+IDwwMDQzPiA8MDAzQT4gPDAwNjg+IDwwMEYzPiA8MDAyRj4gPDAwMzc+IDwwMDM4PiA8MDA0MT4gPDAwMkM+IDwwMDc4PiA8MDAyRT4gPDAwNjc+IDwwMDcxPiA8MDA0ND4gPDAwMzk+IDwwMDUwPiA8MDA2Nj4gPDAwNzA+IDwwMDYyPiA8MDA3OT4gPDAwNDk+IDwwMDU2PiA8MDA2Qz4gPDAwRUQ+IDwwMDQ1PiA8MDA1Mz4gPDAwNTI+IF0KZW5kYmZyYW5nZQplbmRjbWFwCkNNYXBOYW1lIGN1cnJlbnRkaWN0IC9DTWFwIGRlZmluZXJlc291cmNlIHBvcAplbmQKZW5kCgplbmRzdHJlYW0KZW5kb2JqCjE4IDAgb2JqCjQ5NTEKZW5kb2JqCjE5IDAgb2JqCjw8Ci9UeXBlIC9Gb250RGVzY3JpcHRvcgovRm9udE5hbWUgL1FQQUFBQStOaW1idXNTYW5zLUJvbGQKL0ZsYWdzIDQKL0ZvbnRCQm94IFsgLTE4OCAtMzA3IDEwNjkgMTA3MF0KL0l0YWxpY0FuZ2xlIDAKL0FzY2VudCA3MjkKL0Rlc2NlbnQgLTI3MQovQ2FwSGVpZ2h0IDcyOQovU3RlbVYgNjkKL0ZvbnRGaWxlMiAyMSAwIFIKPj4KZW5kb2JqCjIwIDAgb2JqCjw8Ci9UeXBlIC9Gb250RGVzY3JpcHRvcgovRm9udE5hbWUgL1FVQUFBQStOaW1idXNTYW5zLVJlZ3VsYXIKL0ZsYWdzIDQKL0ZvbnRCQm94IFsgLTIxMCAtMjk5IDEwMzIgMTA3NV0KL0l0YWxpY0FuZ2xlIDAKL0FzY2VudCA3MjkKL0Rlc2NlbnQgLTI3MQovQ2FwSGVpZ2h0IDcyOQovU3RlbVYgNTAKL0ZvbnRGaWxlMiAyMiAwIFIKPj4KZW5kb2JqCjIxIDAgb2JqCjw8Ci9MZW5ndGgxIDM4MDAKL0xlbmd0aCAyMyAwIFIKL0ZpbHRlciAvRmxhdGVEZWNvZGUKPj4Kc3RyZWFtCnichVcNVFRlGv7ee+/MIJrGzwwSjswIM0g0DMMwMw4IgwTx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MjYwMCAwMDAwMCBuIAowMDAwMDAyNjkzIDAwMDAwIG4gCjAwMDAwMDI4MzcgMDAwMDAgbiAKMDAwMDAwMjk4NCAwMDAwMCBuIAowMDAwMDA4MTA4IDAwMDAwIG4gCjAwMDAwMDg0MzkgMDAwMDAgbiAKMDAwMDAwOTA1MSAwMDAwMCBuIAowMDAwMDA5NDgxIDAwMDAwIG4gCjAwMDAwMTAyNjEgMDAwMDAgbiAKMDAwMDAxMDI4MiAwMDAwMCBuIAowMDAwMDEwNDg2IDAwMDAwIG4gCjAwMDAwMTA2OTMgMDAwMDAgbiAKMDAwMDAxMzU1OCAwMDAwMCBuIAowMDAwMDE4MTU2IDAwMDAwIG4gCjAwMDAwMTgxNzcgMDAwMDAgbiAKMDAwMDAxODM4NSAwMDAwMCBuIAowMDAwMDE4NDM1IDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgMjcKL1Jvb3QgMjUgMCBSCi9JbmZvIDI2IDAgUgovSUQgWzw0QUZCQjJDQUNFOTBFOTY0N0YwRjg1NzZEM0U4QUMwNz4gPDRBRkJCMkNBQ0U5MEU5NjQ3RjBGODU3NkQzRThBQzA3Pl0gPj4Kc3RhcnR4cmVmCjE4Njg0CiUlRU9GCg==
+  /v2/comprobantes/recibidos/obtener:
+    get:
+      tags:
+      - Comprobantes
+      summary: Obtener comprobantes recibidos DGI
+      description: |-
+        <span style="color:#0082d0;font-weight:600;font-family:monospace">GET</span> <code>/v2/comprobantes/recibidos/obtener</code>
+
+        Cuando le emiten un comprobante a tu empresa, se envía a DGI y a Biller en forma paralela.
+
+        Este llamado, devuelve información de todos los comprobantes recibidos DGI dentro de las fechas elegidas.
+
+        Como la información que Biller obtiene de DGI es limitada, no se pueden ver los items de los comprobantes y solo se muestran los montos totales.
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: fecha_desde
+        in: query
+        schema:
+          type: string
+        description: Fecha creación desde en formato aaaa-mm-dd
+        example: '2020-02-01'
+      - name: fecha_hasta
+        in: query
+        schema:
+          type: string
+        description: Fecha creación hasta en formato aaaa-mm-dd
+        example: '2020-06-01'
+      responses:
+        '200':
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: |-
+                [
+                 {
+                    "tipo": 111,
+                    "serie": "B",
+                    "numero": 129,
+                    "estado": "AE",
+                    "fecha": "2020-03-02",
+                    "rut_emisor": "217832560011",
+                    "moneda": "USD",
+                    "total_neto": 180,
+                    "total_iva": 39.6,
+                    "monto_total": 219.6,
+                    "total_retenido": 0
+                  },
+                  {
+                    "tipo": 111,
+                    "serie": "D",
+                    "numero": 327825,
+                    "estado": "AE",
+                    "fecha": "2020-04-19",
+                    "rut_emisor": "217832560011",
+                    "moneda": "UYU",
+                    "total_neto": 749,
+                    "total_iva": 164.78,
+                    "monto_total": 913.78,
+                    "total_retenido": 0
+                  }
+                ]
+          description: OK
+  /v3/comprobantes/notificaciones/obtener:
+    get:
+      tags:
+      - Comprobantes
+      summary: Obtener notificaciones
+      description: |-
+        <span style="color:#0082d0;font-weight:600;font-family:monospace">GET</span> <code>/v3/comprobantes/notificaciones/obtener</code>
+
+        Las notificaciones son los envíos por email del PDF de un comprobante a sus destinatarios (por ejemplo, al cliente o a las direcciones indicadas en `emails_notificacion` al emitir). Cada notificación tiene un estado: `PENDIENTE` (creada, aún no enviada), `ENVIADA` (entregada) o `ERROR` (falló el envío).
+
+        Este endpoint devuelve las notificaciones de un comprobante puntual. Sólo se incluyen las que están en estado `PENDIENTE` o `ENVIADA` — las que fallaron (`ERROR`) no se muestran acá.
+
+        El comprobante a consultar se indica de una de estas dos formas: por su `id`, o por la combinación de `tipo_comprobante`, `serie` y `numero`. Sólo se puede usar una de las dos.
+
+        Si el comprobante no tiene notificaciones asociadas, la respuesta es un array vacío (`[]`).
+      security:
+      - bearerAuth: []
+      x-codeSamples:
+      - lang: shell
+        label: Shell Curl
+        source: |-
+          curl 'https://test.biller.uy/v3/comprobantes/notificaciones/obtener?tipo_comprobante=111&serie=C&numero=4266' \
+            --header 'Content-Type: application/json' \
+            --header 'Authorization: Bearer YOUR_SECRET_TOKEN'
+      parameters:
+      - name: Content-Type
+        in: header
+        schema:
+          type: string
+        example: application/json
+      - name: id
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+        description: Id del comprobante. Obligatorio si no se envían tipo_comprobante, serie y numero.
+      - name: tipo_comprobante
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+        description: Tipo del comprobante. Obligatorio junto con serie y numero.
+        example: 111
+      - name: serie
+        in: query
+        schema:
+          type: string
+          maxLength: 2
+        description: Serie del comprobante. Obligatorio junto con tipo_comprobante y numero.
+        example: C
+      - name: numero
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+        description: Número del comprobante. Obligatorio junto con tipo_comprobante y serie.
+        example: 4266
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+              example:
+              - email: enviada@dominio.com
+                estado: ENVIADA
+                fecha_envio: '2018-02-02 10:16:22'
+              - email: pendiente@dominio.com
+                estado: PENDIENTE
+                fecha_envio: null
+        '422':
+          description: 'Unprocessable Entity — error de validación en los datos enviados. Otros mensajes
+            posibles: "Id no puede estar vacío si no se indica tipo, serie y número.", "No se puede pasar
+            id y tipo, serie y número al mismo tiempo."'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    field:
+                      type: string
+                      description: Campo que falló la validación.
+                    message:
+                      type: string
+                      description: Mensaje de error asociado al campo.
+              example:
+              - field: id
+                message: Comprobante 999999 no existe o no tiene acceso.
+        '405':
+          description: Method Not Allowed — el endpoint sólo admite GET.
+  /v3/comprobantes/notificaciones/enviar:
+    post:
+      tags:
+      - Comprobantes
+      summary: Enviar notificaciones
+      description: |-
+        <span style="color:#00b96b;font-weight:600;font-family:monospace">POST</span> <code>/v3/comprobantes/notificaciones/enviar</code>
+
+        Las notificaciones son los envíos por email del PDF de un comprobante a sus destinatarios (por ejemplo, al cliente o a las direcciones indicadas en `emails_notificacion` al emitir). Cada notificación tiene un estado: `PENDIENTE` (creada, aún no enviada), `ENVIADA` (entregada) o `ERROR` (falló el envío).
+
+        Este endpoint crea una notificación en estado `PENDIENTE` para cada email indicado. El envío real del email es asíncrono, no ocurre en el momento de esta llamada.
+
+        El comprobante a notificar se indica de una de estas dos formas: por su `id`, o por la combinación de `tipo_comprobante`, `serie` y `numero`. Sólo se puede usar una de las dos.
+
+        La validación de `emails` es todo-o-nada: si alguno de los emails no es válido, no se crea ninguna notificación.
+        Requiere que la empresa esté verificada. una empresa "verificada" es una empresa que ya terminó el proceso de habilitación como emisor electrónico (no está en trial/pendiente de alta), y por eso recién ahí se le permite emitir/notificar comprobantes reales.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - emails
+              properties:
+                id:
+                  type: integer
+                  minimum: 1
+                  description: Id del comprobante. Obligatorio si no se envían tipo_comprobante, serie
+                    y numero.
+                  example: 1
+                tipo_comprobante:
+                  type: integer
+                  minimum: 1
+                  description: Tipo del comprobante. Obligatorio junto con serie y numero.
+                  example: 111
+                serie:
+                  type: string
+                  maxLength: 2
+                  description: Serie del comprobante. Obligatorio junto con tipo_comprobante y numero.
+                  example: C
+                numero:
+                  type: integer
+                  minimum: 1
+                  description: Número del comprobante. Obligatorio junto con tipo_comprobante y serie.
+                  example: 4266
+                emails:
+                  type: array
+                  items:
+                    type: string
+                  description: Emails a los que se enviará la notificación. No puede estar vacío, máximo
+                    10, cada uno validado por formato y DNS.
+                  example:
+                  - uno@biller.uy
+                  - dos@biller.uy
+            examples:
+              00-enviar-con-id:
+                summary: Enviar con ID
+                value:
+                  id: 1
+                  emails:
+                  - uno@biller.uy
+                  - dos@biller.uy
+              01-enviar-con-tipo-comprobante-serie-y-numero:
+                summary: Enviar con tipo comprobante, serie y número
+                value:
+                  tipo_comprobante: 111
+                  serie: C
+                  numero: 4266
+                  emails:
+                  - receptor@biller.uy
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+              examples:
+                example-0:
+                  summary: Enviar con ID
+                  value:
+                  - id: 101
+                    comprobante: 1
+                    email: uno@biller.uy
+                    estado: PENDIENTE
+                  - id: 102
+                    comprobante: 1
+                    email: dos@biller.uy
+                    estado: PENDIENTE
+                example-1:
+                  summary: Enviar con tipo comprobante, serie y número
+                  value:
+                  - id: 103
+                    comprobante: 1
+                    email: receptor@biller.uy
+                    estado: PENDIENTE
+        '422':
+          description: 'Unprocessable Entity — error de validación en los datos enviados. Otros mensajes
+            posibles: "Emails no puede estar vacío.", comprobante no encontrado ("Comprobante 999999 no
+            existe o no tiene acceso."), o error de exclusividad entre id y tipo, serie y número.'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    field:
+                      type: string
+                      description: Campo que falló la validación.
+                    message:
+                      type: string
+                      description: Mensaje de error asociado al campo.
+              example:
+              - field: emails
+                message: No se pueden enviar más de 10 emails a la vez.
+        '403':
+          description: Forbidden — la empresa no se encuentra verificada.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                name: Forbidden
+                message: La empresa no se encuentra verificada.
+                code: 0
+                status: 403
+        '405':
+          description: Method Not Allowed — el endpoint sólo admite POST.
+  /v2/dgi/empresas/actividad-empresarial:
+    get:
+      tags:
+      - Servicios DGI
+      summary: Actividad empresarial
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: rut
+        in: query
+        schema:
+          type: string
+        description: Rut de la empresa a consultar
+        example: '210475730011'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                RUT: '210475730011'
+                Denominacion: ADMINISTRACION NACIONAL DE COMBUSTIBLES ALCOHOL Y PORTLAND
+                NombreFantasia: {}
+                TipoEntidad: '13'
+                DescripcionTipoEntidad: PERSONAS DE DERECHO PUBLICO ESTATAL
+                EstadoActividad: AA
+                FechaInicioActivdad: '1931-10-15'
+                WS_DomFiscalLocPrincipal:
+                  WS_PersonaActEmpresarial.WS_DomFiscalLocPrincipalItem:
+                    Local_Sec_Nro: '1'
+                    Local_Nom_Fnt: {}
+                    TipoLocal_Id: '1'
+                    TipoLocal_Dsc: PRINCIPAL
+                    Local_Fec_Ini: '1931-10-15'
+                    Local_Fec_Canc: '0000-00-00'
+                    TipoDom_Id: '2'
+                    TipoDom_Des: FISCAL
+                    CalOcup_id: '1'
+                    Calocup_Des: PROPIETARIO
+                    TerCod_Id: '0'
+                    Tercod_Des: {}
+                    Calle_id: '1209022'
+                    Calle_Nom: LAVALLEJA AV.DEL LIBERTADOR BR
+                    Dom_Pta_Nro: '0'
+                    Dom_Bis_Flg: {}
+                    Dom_Ap_Nro: '0'
+                    Loc_Id: '2100000'
+                    Loc_Nom: MONTEVIDEO
+                    Dpto_Id: '10'
+                    Dpto_Nom: MONTEVIDEO
+                    Dom_Pst_Cod: '11100'
+                    Dom_Coment: {}
+                    Dom_Err_Cod: N
+                    Contactos:
+                      WS_Domicilio.WS_DomicilioItem.Contacto:
+                      - TipoCtt_Id: '5'
+                        TipoCtt_Des: TELEFONO FIJO
+                        DomCtt_Val: '19312228'
+                      - TipoCtt_Id: '1'
+                        TipoCtt_Des: CORREO ELECTRONICO
+                        DomCtt_Val: SIBARRURI@ANCAP.COM.UY
+                    Complementos: {}
+                WS_PersonaActividades:
+                  WS_PersonaActEmpresarial.WS_PersonaActividadesItem:
+                  - GiroCod: '11010'
+                    GiroNom: DESTILACION, RECTIFICACION Y MEZCLA DE BEBIDAS ALCOHOLIC
+                    GiroFec_Ini: '2016-09-08'
+                  - GiroCod: '18119'
+                    GiroNom: OTRAS ACT.DE IMPRESION, GRABACION Y REPRODUCCION
+                    GiroFec_Ini: '2007-10-19'
+                  - GiroCod: '19201'
+                    GiroNom: 'REFINACION DE PETROLEO: COMBUSTIBLES'
+                    GiroFec_Ini: '1931-10-15'
+                  - GiroCod: '19202'
+                    GiroNom: FABRICACION DE ACEITES, GRASAS Y LUBRICANTES
+                    GiroFec_Ini: '2016-09-08'
+                  - GiroCod: '19209'
+                    GiroNom: FABR.DE OTROS PRODUCTOS DE LA REFINACION DE PETROLEO NCP
+                    GiroFec_Ini: '2016-09-08'
+                  - GiroCod: '23940'
+                    GiroNom: FABRICACION DE CEMENTO, CAL Y YESO
+                    GiroFec_Ini: '2016-09-08'
+                  - GiroCod: '46610'
+                    GiroNom: COMERCIO POR MAYOR COMBUSTIBLES SOLIDOS, LIQUIDOS Y GASEOSOS
+                    GiroFec_Ini: '2016-09-08'
+                  - GiroCod: '46692'
+                    GiroNom: COMERCIO AL POR MAYOR DE FERTILIZANTES Y AGROQUIMICOS
+                    GiroFec_Ini: '2016-09-08'
+                  - GiroCod: '52295'
+                    GiroNom: PROVEEDORES MARITIMOS
+                    GiroFec_Ini: '2016-09-08'
+      description: <span style="color:#0082d0;font-weight:600;font-family:monospace">GET</span> <code>/v2/dgi/empresas/actividad-empresarial</code>
+  /v2/dgi/empresas/certificado-unico:
+    get:
+      tags:
+      - Servicios DGI
+      summary: Datos de certificado único
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: rut
+        in: query
+        schema:
+          type: string
+        description: |
+          RUT de la empresa a consultar
+        example: '210475730011'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                Flag: OK
+                RUT: '210475730011'
+                RespuestaOK:
+                  Numero: '214477082'
+                  Denominacion: ADMINISTRACION NACIONAL DE COMBUSTIBLES ALCOHOL Y PORTLAND
+                  DomicilioFiscal: LAVALLEJA AV.DEL LIBERTADOR BR S/N - MONTEVIDEO
+                  TipoContribuyente: GRANDES CONTRIBUYENTES
+                  Estado: Certificado de Vigencia Anual Habilitado.
+                  Emision: '2021-05-21'
+                  Vencimiento: '2022-05-31'
+      description: <span style="color:#0082d0;font-weight:600;font-family:monospace">GET</span> <code>/v2/dgi/empresas/certificado-unico</code>
+  /v2/dgi/empresas/datos-entidad:
+    get:
+      tags:
+      - Servicios DGI
+      summary: Datos de entidad
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: rut
+        in: query
+        schema:
+          type: string
+        description: Rut de la empresa a consultar
+        example: '210475730011'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                RUC: '210475730011'
+                RazonSocial: ADMINISTRACION NACIONAL DE COMBUSTIBLES ALCOHOL Y PORTLAND
+                WS_DomicilioFiscalPrincipal:
+                  Local_Sec_Nro: '1'
+                  Local_Nom_Fnt: {}
+                  TipoLocal_Id: '1'
+                  TipoLocal_Dsc: PRINCIPAL
+                  Local_Fec_Canc: '0000-00-00'
+                  Local_Fec_Ini: '1931-10-15'
+                  TipoDom_Id: '2'
+                  TipoDom_Des: FISCAL
+                  CalOcup_id: '1'
+                  Calocup_Des: PROPIETARIO
+                  TerCod_Id: '0'
+                  Tercod_Des: {}
+                  Calle_id: '1209022'
+                  Calle_Nom: LAVALLEJA AV.DEL LIBERTADOR BR
+                  Dom_Pta_Nro: '0'
+                  Dom_Bis_Flg: {}
+                  Dom_Ap_Nro: '0'
+                  Loc_Id: '2100000'
+                  Loc_Nom: MONTEVIDEO
+                  Dpto_Id: '10'
+                  Dpto_Nom: MONTEVIDEO
+                  Dom_Pst_Cod: '11100'
+                  Dom_Coment: {}
+                  Dom_Err_Cod: N
+                  Contactos:
+                    WS_Entidad.WS_DomicilioFiscalPrincipal.Contacto:
+                    - TipoCtt_Id: '5'
+                      TipoCtt_Des: TELEFONO FIJO
+                      DomCtt_Val: '19312228'
+                    - TipoCtt_Id: '1'
+                      TipoCtt_Des: CORREO ELECTRONICO
+                      DomCtt_Val: SIBARRURI@ANCAP.COM.UY
+                  Complementos: {}
+      description: <span style="color:#0082d0;font-weight:600;font-family:monospace">GET</span> <code>/v2/dgi/empresas/datos-entidad</code>
+  /v2/dgi/empresas/nombre-entidad:
+    get:
+      tags:
+      - Servicios DGI
+      summary: Nombre de la entidad
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: documento
+        in: query
+        schema:
+          type: string
+        description: RUT o documento de la empresa o persona a consultar
+        example: '210475730011'
+      - name: tipoDocumento
+        in: query
+        schema:
+          type: string
+        description: Tipo de documento
+        example: '2'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                PrimerNombre: {}
+                SegundoNombre: {}
+                PrimerApellido: {}
+                SegundoApellido: {}
+                RazonSocial: ADMINISTRACION NACIONAL DE COMBUSTIBLES ALCOHOL Y PORTLAND
+      description: <span style="color:#0082d0;font-weight:600;font-family:monospace">GET</span> <code>/v2/dgi/empresas/nombre-entidad</code>

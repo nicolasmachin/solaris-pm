@@ -183,8 +183,15 @@ llegan a Experiencia Solar, que es quien se las cuenta al cliente.
 
 ## 5 · A quién se le pregunta qué
 
-La regla general: **cada área le pregunta al gerente del área, no a la persona
-que está ejecutando**. Y el cliente nunca hace de mensajero.
+Dos reglas, según qué se busca:
+
+- **Una consulta de información** (qué se prometió, si hay stock, algo del
+  plano) se le hace **directo a quien la tiene**.
+- **Un reclamo o una corrección** (algo mal hecho, algo que falta, una demora que
+  afecta al cliente) va **al gerente del área, no a la persona que está
+  ejecutando**.
+
+Y en ningún caso el cliente hace de mensajero.
 
 | Si hace falta saber… | Se le pregunta a… |
 |---|---|
