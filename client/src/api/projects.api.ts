@@ -132,6 +132,9 @@ export async function deleteSolarSystem(projectId: string, solarSystemId: string
 export interface Suministro {
   numero: number;
   inversor: string | null;
+  inversorMarca: string | null;
+  inversorKw: number | null;
+  panelW: number | null;
   paneles: number | null;
   cuentaUte: string;
   uteProcessId: string | null;

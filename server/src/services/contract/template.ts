@@ -128,8 +128,14 @@ export function renderContractHtml(data: ContractDataPublish): string {
   <p><strong>2.2 Inversor</strong></p>
   <table class="tec">
     <tr><td class="k">Cantidad de inversores</td><td>${esc(s.cantidadInversores)}</td></tr>
-    <tr><td class="k">Potencia nominal del inversor</td><td>${fmtNum(s.potenciaInversorKw, 2)} kW</td></tr>
-    <tr><td class="k">Marca del inversor</td><td>${esc(s.marcaInversor)}</td></tr>
+    <tr><td class="k">${
+      s.inversoresDistintos
+        ? "Potencia nominal total de los inversores"
+        : Number(s.cantidadInversores) > 1
+          ? "Potencia nominal de cada inversor"
+          : "Potencia nominal del inversor"
+    }</td><td>${fmtNum(s.potenciaInversorKw, 2)} kW</td></tr>
+    <tr><td class="k">${s.inversoresDistintos ? "Inversores" : "Marca del inversor"}</td><td>${esc(s.marcaInversor)}</td></tr>
     <tr><td class="k">Conectividad para monitoreo</td><td>Sí</td></tr>
   </table>
   <p><strong>2.3 Estructura y montaje</strong></p>

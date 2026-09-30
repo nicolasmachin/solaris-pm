@@ -43,8 +43,11 @@ significa:
 **En Voltia PM:** los suministros se ven en los datos técnicos del proyecto (un
 sistema por inversor). **Documentos UTE** tiene una pestaña por suministro: la
 sección del cliente pasa a ser "Titular del suministro", y lo que se deja vacío
-toma los datos del proyecto. El unifilar todavía es uno por proyecto; el soporte
-para uno por suministro está en preparación.
+toma los datos del proyecto. **El unifilar** también tiene una pestaña por
+suministro, cada una con sus versiones: el primero de cada suministro viene
+precargado con su inversor y sus paneles, y el plano lleva "Suministro N" en el
+rótulo. **El Proyecto Final** sigue siendo uno solo: al generarlo con IA, el
+borrador ya describe cada suministro por separado.
 
 ## 4 · Las herramientas y cómo se usan
 

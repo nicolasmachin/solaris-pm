@@ -18,6 +18,8 @@ export interface ContractData {
     cantidadInversores: number;
     potenciaInversorKw: number;
     marcaInversor: string;
+    /** Inversores distintos (o uno por suministro): la potencia es la total y la marca los describe a todos. */
+    inversoresDistintos: boolean;
     tipoTecho: string;
     generacionAnualKwh: number;
   };

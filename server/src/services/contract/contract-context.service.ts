@@ -24,6 +24,7 @@ export interface ContractContext {
     cantidadInversores?: number;
     potenciaInversorKw?: number;
     marcaInversor?: string;
+    inversoresDistintos?: boolean;
     tipoTecho?: string;
     generacionAnualKwh?: number;
   };
@@ -131,6 +132,7 @@ export async function buildContractContext(projectId: string): Promise<ContractC
     potenciaInversorKw: varios
       ? varios.potenciaTotalKw
       : (num(ss?.inverterPowerKw) ?? num(snapSistema.potenciaInversorKw)),
+    inversoresDistintos: !!varios || !!listaSnap,
     marcaInversor: varios
       ? varios.descripcion
       : (nonEmpty(ss?.inverterBrand) ??

@@ -2077,6 +2077,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
         { module: Module.ONBOARDING, action: Action.VIEW },
         { module: Module.TRAMITES_UTE, action: Action.VIEW },
         { module: Module.OPERACIONES, action: Action.VIEW },
+        // Ingeniería: un juego de papeles UTE y un unifilar por suministro.
+        { module: Module.INGENIERIA, action: Action.VIEW },
       ]),
     },
     async (request) => {

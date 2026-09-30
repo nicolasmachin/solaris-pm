@@ -33,6 +33,7 @@ export function buildInitialContractData(context: ContractContext | undefined): 
       cantidadInversores: s.cantidadInversores ?? 1,
       potenciaInversorKw: s.potenciaInversorKw ?? 0,
       marcaInversor: s.marcaInversor ?? "",
+      inversoresDistintos: s.inversoresDistintos ?? false,
       tipoTecho: s.tipoTecho ?? "",
       generacionAnualKwh: s.generacionAnualKwh ?? 0,
     },

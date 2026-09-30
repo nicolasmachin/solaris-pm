@@ -373,8 +373,7 @@ Lo que lee el snapshot cuando el proyecto no tiene `SolarSystem`:
   = `potenciaInversorKw` (en modo distintos, la **suma**), y marca = en modo
   distintos **la descripción completa** ("1 Growatt de 8 kW + 1 Huawei de
   6 kW"), porque el contrato tiene un solo campo de marca y uno de potencia. Es
-  precarga: se corrige en el formulario. Limitación: la fila "Potencia nominal
-  del inversor" del contrato muestra la suma.
+  precarga: se corrige en el formulario.
 - **Proforma** (`proforma-context.service.ts`): en modo distintos, "• 2
   inversores monofásicos: 1 Growatt de 8 kW + 1 Huawei de 6 kW."; con varios
   iguales, "• 2 inversores monofásicos de 6 kW cada uno." (antes decía "1
@@ -384,7 +383,14 @@ Lo que lee el snapshot cuando el proyecto no tiene `SolarSystem`:
 - **Con varios `SolarSystem`** (un suministro por inversor), contrato y proforma
   leen **todos** (`suministros.service.ts` → `resumirSistemasVarios()`): paneles
   sumados, inversores descritos uno por uno y, en el contrato, la potencia
-  total. Con un solo sistema no cambia nada. Sin esto, un proyecto convertido
+  total. Con un solo sistema no cambia nada.
+- **El rótulo de la potencia en el contrato** depende de
+  `sistema.inversoresDistintos` (opcional en `contract.schema.ts`, así los
+  contratos guardados antes siguen validando): con `true` la fila dice "Potencia
+  nominal **total** de los inversores" y la de marca pasa a "Inversores"; sin él,
+  con más de un inversor dice "de **cada** inversor"; con uno, como siempre. La
+  precarga lo pone en `true` con varios `SolarSystem` o con inversores distintos
+  en la propuesta; el formulario tiene la casilla para cambiarlo. Sin esto, un proyecto convertido
   con dos inversores habría salido con el del primero.
 - **Conector**: `preparar_propuesta` y `ver_propuesta` muestran la descripción
   (capítulo 13). `computeDraftResumenComercial()` devuelve la descripción en

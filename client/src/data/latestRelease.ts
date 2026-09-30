@@ -32,7 +32,7 @@ export const LATEST_RELEASE: Release = {
         "Cada inversor es un suministro: una cuenta UTE aparte, con su consulta y su trámite, y puede ser de otro titular.",
         "Al convertir el lead, el proyecto nace con un sistema por inversor, con los paneles de la propuesta.",
         "En Onboarding, una pestaña por suministro para mandar una consulta a UTE por cada cuenta.",
-        "Documentos UTE y Trámites UTE: un juego de papeles y una tarjeta por suministro.",
+        "Documentos UTE, unifilar y Trámites UTE: un juego de papeles, un plano y una tarjeta por suministro.",
         "La obra queda habilitada cuando salen todas las cuentas; con cada una, aviso para encender ese inversor.",
         "El contrato y la proforma siguen siendo uno solo y nombran todos los inversores.",
       ],

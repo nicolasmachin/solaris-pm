@@ -15,7 +15,7 @@ import type { EFPVersion } from "@prisma/client";
 import { z } from "zod";
 
 import { prisma } from "../lib/prisma.js";
-import { UTE_PRINCIPAL } from "./suministros.service.js";
+import { UTE_PRINCIPAL, listSuministros } from "./suministros.service.js";
 import { AppError } from "../utils/errors.js";
 import {
   parseCantidadPaneles,
@@ -174,7 +174,16 @@ interface BuildPromptArgs {
     categoria: string;
     notas: string | null;
   }[];
-  uteEstado: { currentStage: string; currentStatus: string; caseNumber: string | null }[];
+  uteEstado: { suministro?: number; currentStage: string; currentStatus: string; caseNumber: string | null }[];
+  /** Con más de uno, la obra tiene varias cuentas UTE (un inversor por cada una). */
+  suministros?: {
+    numero: number;
+    inversor: string | null;
+    paneles: number | null;
+    cuentaUte: string;
+    titular: string | null;
+    direccion: string;
+  }[];
   visits: {
     id: string;
     visitDate: Date;
@@ -191,8 +200,9 @@ interface BuildPromptArgs {
   } | null;
 }
 
-function buildUserPrompt(args: BuildPromptArgs): string {
+export function buildUserPrompt(args: BuildPromptArgs): string {
   const { project, preIng, materiales, uteEstado, visits, previousEFPVersion } = args;
+  const suministros = args.suministros ?? [];
 
   let prompt = `# DATOS DEL PROYECTO
 
@@ -206,10 +216,21 @@ Teléfono del cliente: ${project.clientPhone ?? "—"}
 Email del cliente: ${project.clientEmail ?? "—"}
 `;
 
+  if (suministros.length > 1) {
+    prompt += `\n# SUMINISTROS (${suministros.length}) — IMPORTANTE
+
+La obra tiene ${suministros.length} suministros: ${suministros.length} cuentas UTE distintas, una por inversor, cada una con su propio unifilar y su propio trámite. Es UN SOLO proyecto final y una sola memoria: en el resumen ejecutivo y en la descripción del sistema aclará que son ${suministros.length} suministros y describí cada uno por separado (inversor, paneles, cuenta UTE y, si tiene, su titular y su dirección). No sumes los inversores como si fueran uno.
+`;
+    for (const x of suministros) {
+      prompt += `- Suministro ${x.numero}: inversor ${x.inversor ?? "sin cargar"} · ${x.paneles ?? "?"} paneles · cuenta UTE ${x.cuentaUte || "sin cargar"}${x.titular ? ` · titular ${x.titular}` : ""} · ${x.direccion}\n`;
+    }
+  }
+
   if (uteEstado.length > 0) {
     prompt += `\n# TRÁMITE UTE\n`;
     for (const u of uteEstado) {
-      prompt += `- Etapa: ${u.currentStage} · Status: ${u.currentStatus}${u.caseNumber ? ` · Caso UTE: ${u.caseNumber}` : ""}\n`;
+      const cual = uteEstado.length > 1 && u.suministro ? `Suministro ${u.suministro} · ` : "";
+      prompt += `- ${cual}Etapa: ${u.currentStage} · Status: ${u.currentStatus}${u.caseNumber ? ` · Caso UTE: ${u.caseNumber}` : ""}\n`;
     }
   }
 
@@ -587,9 +608,11 @@ export async function generateEFPVersionWithAI(args: {
           },
         },
       },
+      // Todos: con varios suministros el documento tiene que nombrar cada trámite.
       uteProcesses: {
-        where: { deletedAt: null, ...UTE_PRINCIPAL },
-        select: { currentStage: true, currentStatus: true, caseNumber: true },
+        where: { deletedAt: null },
+        orderBy: { suministro: "asc" },
+        select: { suministro: true, currentStage: true, currentStatus: true, caseNumber: true },
       },
       preIngenieriaVersions: {
         orderBy: { versionNumber: "desc" },
@@ -678,6 +701,14 @@ export async function generateEFPVersionWithAI(args: {
       : null,
     materiales,
     uteEstado: project.uteProcesses,
+    suministros: (await listSuministros(projectId)).map((x) => ({
+      numero: x.numero,
+      inversor: x.inversor,
+      paneles: x.paneles,
+      cuentaUte: x.cuentaUte,
+      titular: x.titularPropio ? x.titularNombre : null,
+      direccion: [x.calle, x.numCalle].filter(Boolean).join(" ") + (x.localidad ? `, ${x.localidad}` : ""),
+    })),
     visits: visits.map((v) => ({
       id: v.id,
       visitDate: v.visitDate,

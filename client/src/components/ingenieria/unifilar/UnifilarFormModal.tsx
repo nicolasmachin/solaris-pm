@@ -36,11 +36,14 @@ import {
 export function UnifilarFormModal({
   projectId,
   initialForm,
+  suministro = 1,
   onClose,
   onSuccess,
 }: {
   projectId: string;
   initialForm: UnifilarFormInput | null;
+  /** Suministro (cuenta UTE) del unifilar. Default: el principal. */
+  suministro?: number;
   onClose: () => void;
   onSuccess: (created: { id: string; versionNumber: number }) => void;
 }) {
@@ -72,14 +75,14 @@ export function UnifilarFormModal({
   }, [form]);
 
   const previewQ = useQuery({
-    queryKey: ["unifilar-preview", projectId, debouncedForm],
-    queryFn: () => getUnifilarPreviewSvg(projectId, debouncedForm),
+    queryKey: ["unifilar-preview", projectId, suministro, debouncedForm],
+    queryFn: () => getUnifilarPreviewSvg(projectId, debouncedForm, suministro),
     staleTime: 0,
     placeholderData: (prev) => prev,
   });
 
   const createMut = useMutation({
-    mutationFn: () => createUnifilarVersion(projectId, form),
+    mutationFn: () => createUnifilarVersion(projectId, form, suministro),
     onSuccess: (created) => {
       onSuccess(created);
     },

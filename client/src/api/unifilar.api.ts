@@ -5,6 +5,7 @@ export type TipoProteccionDC = "TERMOMAGNETICO" | "FUSIBLE";
 
 export interface UnifilarVersionListItem {
   id: string;
+  suministro: number;
   versionNumber: number;
   label: string | null;
   createdAt: string;
@@ -71,9 +72,12 @@ export interface UnifilarFormInput {
   largoAcIcpTableroM: number;
 }
 
-export async function getUnifilarVersions(projectId: string): Promise<UnifilarVersionListItem[]> {
+// `suministro`: con varios inversores hay un unifilar por cuenta UTE, cada uno
+// con su numeración de versiones. Default: el principal.
+export async function getUnifilarVersions(projectId: string, suministro: number = 1): Promise<UnifilarVersionListItem[]> {
   const { data } = await apiClient.get<{ versions: UnifilarVersionListItem[] }>(
     `/api/projects/${projectId}/unifilar-versions`,
+    { params: { suministro } },
   );
   return data.versions;
 }
@@ -86,10 +90,12 @@ export async function getUnifilarVersion(id: string): Promise<UnifilarVersionFul
 export async function createUnifilarVersion(
   projectId: string,
   body: UnifilarFormInput,
+  suministro: number = 1,
 ): Promise<UnifilarVersionFull> {
   const { data } = await apiClient.post<UnifilarVersionFull>(
     `/api/projects/${projectId}/unifilar-versions`,
     body,
+    { params: { suministro } },
   );
   return data;
 }
@@ -101,11 +107,12 @@ export async function deleteUnifilarVersion(id: string): Promise<void> {
 export async function getUnifilarPreviewSvg(
   projectId: string,
   body: UnifilarFormInput,
+  suministro: number = 1,
 ): Promise<string> {
   const { data } = await apiClient.post<string>(
     `/api/projects/${projectId}/unifilar-preview`,
     body,
-    { responseType: "text", transformResponse: (v) => v },
+    { responseType: "text", transformResponse: (v) => v, params: { suministro } },
   );
   return data;
 }

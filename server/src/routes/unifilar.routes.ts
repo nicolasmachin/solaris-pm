@@ -13,6 +13,35 @@ import { generateUnifilarSvg, type UnifilarInputs } from "../services/unifilarSv
 import { svgToPdf } from "../services/unifilarSvg/pdf.js";
 import { badRequest, notFound, unauthorized } from "../utils/errors.js";
 import { serializeDate } from "../utils/serialization.js";
+import { SUMINISTRO_PRINCIPAL, datosSuministro, uteConfigKey } from "../services/suministros.service.js";
+
+// Proyectos con varios suministros (una cuenta UTE por inversor): un unifilar
+// por suministro, cada uno con su numeración. `?suministro=N`, default 1.
+const suministroQuery = z.object({
+  suministro: z.coerce.number().int().min(1).max(20).default(SUMINISTRO_PRINCIPAL),
+});
+
+/**
+ * Cliente y ubicación del rótulo del plano. El principal, como siempre (título y
+ * ciudad del proyecto). Otro suministro lleva su titular y su dirección si los
+ * tiene propios, y "· Suministro N" para que no se confundan los planos.
+ */
+async function encabezado(
+  project: { id: string; clientName: string; locationCity: string; locationProvince: string },
+  suministro: number,
+): Promise<{ cliente: string; ubicacion: string }> {
+  const base = { cliente: project.clientName, ubicacion: `${project.locationCity}, ${project.locationProvince}` };
+  if (suministro === SUMINISTRO_PRINCIPAL) return base;
+  const [full, config] = await Promise.all([
+    prisma.project.findUniqueOrThrow({ where: { id: project.id } }),
+    prisma.uteDocumentConfig.findUnique({ where: uteConfigKey(project.id, suministro) }),
+  ]);
+  const d = datosSuministro(full, config, suministro);
+  return {
+    cliente: `${d.titularPropio ? d.titularNombre : project.clientName} · Suministro ${suministro}`,
+    ubicacion: `${d.localidad}, ${d.departamento}`,
+  };
+}
 
 const tipoRedEnum = z.enum(["MONO_230", "TRI_230_SN", "TRI_400_CN"]) satisfies z.ZodType<TipoRed>;
 const tipoProteccionDcEnum = z.enum(["TERMOMAGNETICO", "FUSIBLE"]) satisfies z.ZodType<TipoProteccionDC>;
@@ -116,6 +145,7 @@ function inputsFromVersion(v: {
 
 function serializeVersionListItem(v: {
   id: string;
+  suministro: number;
   versionNumber: number;
   label: string | null;
   createdAt: Date;
@@ -125,6 +155,7 @@ function serializeVersionListItem(v: {
 }) {
   return {
     id: v.id,
+    suministro: v.suministro,
     versionNumber: v.versionNumber,
     label: v.label,
     createdAt: serializeDate(v.createdAt),
@@ -187,12 +218,14 @@ export async function registerUnifilarRoutes(app: FastifyInstance) {
         select: { id: true },
       });
       if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+      const { suministro } = suministroQuery.parse(request.query);
 
       const versions = await prisma.unifilarVersion.findMany({
-        where: { projectId: params.projectId },
+        where: { projectId: params.projectId, suministro },
         orderBy: { versionNumber: "desc" },
         select: {
           id: true,
+          suministro: true,
           versionNumber: true,
           label: true,
           createdAt: true,
@@ -225,6 +258,7 @@ export async function registerUnifilarRoutes(app: FastifyInstance) {
       const user = ensureUser(request);
       const params = z.object({ projectId: z.string() }).parse(request.params);
       const body: FormInput = formSchema.parse(request.body);
+      const { suministro } = suministroQuery.parse(request.query);
 
       const project = await prisma.project.findFirst({
         where: { id: params.projectId, deletedAt: null },
@@ -236,19 +270,21 @@ export async function registerUnifilarRoutes(app: FastifyInstance) {
       }
 
       const last = await prisma.unifilarVersion.findFirst({
-        where: { projectId: params.projectId },
+        where: { projectId: params.projectId, suministro },
         orderBy: { versionNumber: "desc" },
         select: { versionNumber: true },
       });
       const nextVersion = (last?.versionNumber ?? 0) + 1;
+      const rotulo = await encabezado(project, suministro);
 
       const created = await prisma.unifilarVersion.create({
         data: {
           projectId: params.projectId,
+          suministro,
           versionNumber: nextVersion,
           label: body.label?.trim() || null,
-          snapshotCliente: project.clientName,
-          snapshotUbicacion: `${project.locationCity}, ${project.locationProvince}`,
+          snapshotCliente: rotulo.cliente,
+          snapshotUbicacion: rotulo.ubicacion,
           snapshotFecha: new Date(),
           snapshotAutor: user.name,
           tipoRed: body.tipoRed,
@@ -283,10 +319,13 @@ export async function registerUnifilarRoutes(app: FastifyInstance) {
       try {
         const svg = generateUnifilarSvg(inputsFromVersion(created));
         const pdfBytes = await svgToPdf(svg);
-        const filenameBase = `unifilar_${project.clientName.replace(/[^\w-]+/g, "_")}_v${nextVersion}.pdf`;
+        const sufijo = suministro === SUMINISTRO_PRINCIPAL ? "" : `_suministro-${suministro}`;
+        const filenameBase = `unifilar_${project.clientName.replace(/[^\w-]+/g, "_")}${sufijo}_v${nextVersion}.pdf`;
+        const suministroArchivo = suministro === SUMINISTRO_PRINCIPAL ? null : suministro;
 
+        // Queda el vigente de cada suministro: se reemplaza solo el de este.
         const previousAttachments = await prisma.fileAttachment.findMany({
-          where: { projectId: params.projectId, tipo: "UNIFILAR", deletedAt: null },
+          where: { projectId: params.projectId, tipo: "UNIFILAR", suministro: suministroArchivo, deletedAt: null },
           select: { id: true, url: true },
         });
 
@@ -312,6 +351,7 @@ export async function registerUnifilarRoutes(app: FastifyInstance) {
             toolSource: "unifilar",
             toolVersion: created.versionNumber,
             toolEntityId: created.id,
+            suministro: suministroArchivo,
             uploadedById: user.id,
           },
         });
@@ -386,17 +426,19 @@ export async function registerUnifilarRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const params = z.object({ projectId: z.string() }).parse(request.params);
       const body: FormInput = formSchema.parse(request.body);
+      const { suministro } = suministroQuery.parse(request.query);
 
       const project = await prisma.project.findFirst({
         where: { id: params.projectId, deletedAt: null },
-        select: { clientName: true, locationCity: true, locationProvince: true },
+        select: { id: true, clientName: true, locationCity: true, locationProvince: true },
       });
       if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
 
       const user = ensureUser(request);
+      const rotulo = await encabezado(project, suministro);
       const inputs: UnifilarInputs = {
-        cliente: project.clientName,
-        ubicacion: `${project.locationCity}, ${project.locationProvince}`,
+        cliente: rotulo.cliente,
+        ubicacion: rotulo.ubicacion,
         fecha: fechaTexto(new Date()),
         autor: user.name,
         tipoRed: body.tipoRed,
@@ -435,12 +477,14 @@ export async function registerUnifilarRoutes(app: FastifyInstance) {
       const params = z.object({ id: z.string() }).parse(request.params);
       const v = await prisma.unifilarVersion.findUnique({
         where: { id: params.id },
-        select: { id: true, projectId: true },
+        select: { id: true, projectId: true, suministro: true },
       });
       if (!v) throw notFound("UNIFILAR_NOT_FOUND", "Versión no encontrada");
 
-      // Regla de negocio simple: no eliminar si es la única del proyecto.
-      const count = await prisma.unifilarVersion.count({ where: { projectId: v.projectId } });
+      // Regla de negocio simple: no eliminar si es la única (del suministro).
+      const count = await prisma.unifilarVersion.count({
+        where: { projectId: v.projectId, suministro: v.suministro },
+      });
       if (count <= 1) {
         throw badRequest(
           "UNIFILAR_LAST_VERSION",

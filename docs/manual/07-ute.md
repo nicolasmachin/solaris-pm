@@ -198,7 +198,13 @@ Lo que se acordó con Nicolás (30-09-2026):
    hay un par de bloques "generados / firmados" por suministro.
 5. **Trámites UTE**: una tarjeta por suministro ("Cliente · Suministro 2"), cada
    una con sus fechas. En la pestaña UTE del proyecto, una pestaña por trámite.
-6. **Habilitación**: cuando UTE habilita un suministro y queda otro pendiente,
+6. **Unifilar** (workspace de Ingeniería): una pestaña por suministro, cada
+   una con sus versiones (v1, v2… por suministro). El primero de un suministro
+   se precarga con su inversor y sus paneles. El rótulo del plano dice
+   "· Suministro N" y, si tiene titular propio, su nombre y su localidad.
+7. **Proyecto final (EFP)**: uno solo. La IA recibe los suministros con la
+   instrucción de describir cada uno por separado.
+8. **Habilitación**: cuando UTE habilita un suministro y queda otro pendiente,
    Experiencia Solar recibe un aviso in-app para decirle al cliente que ya puede
    encender ese inversor. El proyecto se da por habilitado (etapa completa,
    Regla de Oro, Post-Habilitación, E3) cuando termina **el último**.
@@ -258,6 +264,19 @@ proyecto). Los archivos llevan `FileAttachment.suministro` (null = principal) y
 cada suministro tiene su ZIP vigente; `UteDocumentGeneration.suministro` queda
 para auditoría.
 
+**El unifilar** (`routes/unifilar.routes.ts`): `UnifilarVersion.suministro`,
+único por (proyecto, suministro, versión). Listar, crear y previsualizar aceptan
+`?suministro=N`; `encabezado()` arma el rótulo. El PDF vigente se guarda como
+`FileAttachment` con `suministro` (null = principal) y se reemplaza solo el de
+ese suministro. No se puede borrar la única versión **de un suministro**. El
+plan de granizo (`polizas.service.ts` → `panelesDeUnifilar()`) suma la última
+versión de cada suministro.
+
+**El proyecto final** (`efp.service.ts` → `buildUserPrompt()`): con más de un
+suministro agrega la sección "SUMINISTROS — IMPORTANTE" (inversor, paneles,
+cuenta, titular propio y localidad de cada uno) y lista el trámite de cada
+suministro.
+
 **El trámite del proyecto** (`ute-sync.service.ts` → `regenerateUteSubstages()`,
 llamado con cualquier trámite del proyecto): las subetapas de Habilitación UTE
 siguen las fechas del principal, pero se calculan sobre `vistaDelProyecto()`:
@@ -308,18 +327,15 @@ secundario reevalúa el proyecto.
   muestra el inversor del suministro para que no se cargue la del proyecto
   entero.
 
-## Lo que falta (partes 3 y 4)
+## Lo que no cubre
 
+- **La pre-ingeniería** sigue siendo una por proyecto (sus datos eléctricos son
+  texto libre y ya admiten varias instalaciones). El proyecto final toma de ahí
+  lo técnico y de los suministros la separación por cuenta.
 - **"Finalizar trámite" desde la etapa** (`POST /projects/:projectId/ute/finalizar`)
   cierra solo el trámite principal: con otro pendiente, la etapa no se completa.
 - **El encabezado del trámite en la ficha de Experiencia Solar** muestra la
   etapa del principal (la lista de suministros de abajo dice el resto).
-- **Contrato**: la fila "Potencia nominal del inversor" muestra la suma cuando
-  hay varios inversores distintos (el contrato ya nombra a todos los inversores y
-  suma los paneles, igual que la proforma: `resumirSistemasVarios()`). Falta
-  separar la potencia por suministro o rotularla como total.
-- **Unifilar** por suministro; pre-ingeniería, proyecto final y memoria que
-  mencionen los dos.
 
 ---
 

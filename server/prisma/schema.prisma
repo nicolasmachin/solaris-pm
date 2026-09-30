@@ -2866,6 +2866,10 @@ model UnifilarVersion {
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  // Suministro (cuenta UTE) de este unifilar: con varios inversores hay un
+  // unifilar por suministro, cada uno con su numeración de versiones.
+  suministro Int @default(1)
+
   versionNumber Int
   label         String?
   createdAt     DateTime @default(now()) @db.Timestamptz(6)
@@ -2912,7 +2916,7 @@ model UnifilarVersion {
   largoAcInversorIcpM Int
   largoAcIcpTableroM  Int
 
-  @@unique([projectId, versionNumber])
+  @@unique([projectId, suministro, versionNumber])
   @@index([projectId])
   @@map("unifilar_versions")
 }

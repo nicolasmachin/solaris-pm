@@ -56,9 +56,34 @@ export function ContractForm({
         <p className={SUB}>Inversor</p>
         <div className={GRID}>
           <NumberField label="Cantidad de inversores" value={data.sistema.cantidadInversores} onChange={(v) => setSistema({ cantidadInversores: v })} min={1} error={errors["sistema.cantidadInversores"]} />
-          <NumberField label="Potencia inversor (kW)" value={data.sistema.potenciaInversorKw} onChange={(v) => setSistema({ potenciaInversorKw: v })} min={0} step={0.1} />
-          <TextField label="Marca de inversor" value={data.sistema.marcaInversor} onChange={(v) => setSistema({ marcaInversor: v })} error={errors["sistema.marcaInversor"]} />
+          <NumberField
+            label={
+              data.sistema.inversoresDistintos
+                ? "Potencia total de los inversores (kW)"
+                : data.sistema.cantidadInversores > 1
+                  ? "Potencia de cada inversor (kW)"
+                  : "Potencia inversor (kW)"
+            }
+            value={data.sistema.potenciaInversorKw}
+            onChange={(v) => setSistema({ potenciaInversorKw: v })}
+            min={0}
+            step={0.1}
+          />
+          <TextField
+            label={data.sistema.inversoresDistintos ? "Inversores (marca y potencia de cada uno)" : "Marca de inversor"}
+            value={data.sistema.marcaInversor}
+            onChange={(v) => setSistema({ marcaInversor: v })}
+            error={errors["sistema.marcaInversor"]}
+          />
         </div>
+        <label className="mt-2 flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
+          <input
+            type="checkbox"
+            checked={data.sistema.inversoresDistintos}
+            onChange={(e) => setSistema({ inversoresDistintos: e.target.checked })}
+          />
+          Inversores distintos o en suministros separados: la potencia es la <b>total</b> y el contrato los describe uno por uno
+        </label>
         <p className={SUB}>Estructura y energía</p>
         <div className={GRID}>
           <TextField label="Tipo de techo" value={data.sistema.tipoTecho} onChange={(v) => setSistema({ tipoTecho: v })} placeholder="Chapa / teja / hormigón…" error={errors["sistema.tipoTecho"]} />

@@ -135,6 +135,10 @@ export interface SuministroResumen extends DatosSuministro {
   numero: number;
   /** "Growatt de 8 kW" (o null si el suministro todavía no tiene sistema cargado). */
   inversor: string | null;
+  /** Datos sueltos del sistema, para precargar formularios (unifilar). */
+  inversorMarca: string | null;
+  inversorKw: number | null;
+  panelW: number | null;
   paneles: number | null;
   cuentaUte: string;
   uteProcessId: string | null;
@@ -178,6 +182,9 @@ export async function listSuministros(projectId: string): Promise<SuministroResu
     return {
       numero,
       inversor,
+      inversorMarca: sistema?.inverterBrand?.trim() || null,
+      inversorKw: kw,
+      panelW: sistema?.panelPowerW ?? null,
       paneles: sistema?.panelQuantity ?? null,
       cuentaUte: config?.cuentaUte ?? "",
       uteProcessId: tramite?.id ?? null,

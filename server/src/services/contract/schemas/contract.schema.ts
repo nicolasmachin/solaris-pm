@@ -35,6 +35,11 @@ export const contractDataPublishSchema = z
         cantidadInversores: z.number().int().min(1),
         potenciaInversorKw: z.number().min(0),
         marcaInversor: z.string().min(1),
+        // Varios inversores distintos (o uno por suministro): la potencia es la
+        // TOTAL y `marcaInversor` los describe uno por uno. Sin esto, la fila
+        // "Potencia nominal del inversor" leía la suma como si fuera de uno.
+        // Opcional: los contratos guardados antes no lo traen y siguen valiendo.
+        inversoresDistintos: z.boolean().optional(),
         tipoTecho: z.string().min(1),
         generacionAnualKwh: z.number().min(0),
       })

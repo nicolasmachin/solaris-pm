@@ -69,13 +69,20 @@ export async function precioPlanPorPanelUsd(): Promise<number> {
 
 export type FuentePaneles = "UNIFILAR" | "PROPUESTA" | "MANUAL";
 
+// Con varios suministros hay un unifilar por cada uno: los paneles de la obra
+// son la suma de la última versión de cada suministro.
 async function panelesDeUnifilar(projectId: string): Promise<number | null> {
-  const u = await prisma.unifilarVersion.findFirst({
+  const versiones = await prisma.unifilarVersion.findMany({
     where: { projectId },
     orderBy: { versionNumber: "desc" },
-    select: { cantidadPaneles: true },
+    select: { suministro: true, cantidadPaneles: true },
   });
-  return u?.cantidadPaneles && u.cantidadPaneles > 0 ? u.cantidadPaneles : null;
+  const ultimaPorSuministro = new Map<number, number>();
+  for (const v of versiones) {
+    if (!ultimaPorSuministro.has(v.suministro)) ultimaPorSuministro.set(v.suministro, v.cantidadPaneles);
+  }
+  const total = [...ultimaPorSuministro.values()].reduce((a, n) => a + (n > 0 ? n : 0), 0);
+  return total > 0 ? total : null;
 }
 
 async function panelesDePropuesta(projectId: string): Promise<number | null> {

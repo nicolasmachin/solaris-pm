@@ -16,6 +16,13 @@
 - **Trámites UTE** muestra **una tarjeta por suministro** («Cliente · Suministro 2»), cada una con sus propias fechas. En la pestaña UTE del proyecto hay una pestaña por trámite.
 - **La obra queda habilitada cuando UTE habilita todas las cuentas.** Si sale una antes, a Experiencia Solar le llega un aviso para decirle al cliente que ya puede encender **ese** inversor; el aviso formal, la Regla de Oro y el paso a Post-Habilitación arrancan con la última.
 - En la ficha del cliente (Experiencia Solar) y en su portal, el trámite figura finalizado recién cuando terminaron todos; la ficha además muestra en qué anda cada suministro.
+- **Unifilar**: una pestaña por suministro, cada una con sus versiones. El primero de cada suministro viene precargado con su inversor y sus paneles, y el plano lleva «Suministro 2» en el rótulo (con el titular y la localidad de ese suministro, si son otros).
+- **Proyecto Final de Ingeniería**: sigue siendo uno solo, y el borrador que arma la IA describe cada suministro por separado en vez de sumar los inversores.
+- El **Plan de Protección contra Granizo** cuenta los paneles de todos los suministros.
+
+#### Arreglos
+
+- El contrato de una obra con **inversores distintos** decía «Potencia nominal del inversor: 14 kW» cuando eran dos inversores de 8 y 6 kW: mostraba la suma como si fuera de uno. Ahora dice **«Potencia nominal total de los inversores»** y la fila siguiente, **«Inversores: 1 Growatt de 8 kW + 1 Huawei de 6 kW»**. Con varios inversores iguales dice **«de cada inversor»**. En el formulario del contrato hay una casilla para indicarlo; viene marcada sola cuando corresponde.
 
 ## v11.4
 
