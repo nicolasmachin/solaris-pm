@@ -123,18 +123,15 @@ Si pregunta algo que no le corresponde a quien lo atiende, la respuesta es **«t
 averiguo y te confirmo»**, y se resuelve puertas adentro. **El cliente nunca es
 el mensajero de Voltia.**
 
-### Regla 3 — El que se demora avisa. Nadie pide explicaciones.
+### Regla 3 — Si una etapa se atrasa, el área avisa por qué
 
-El área cuya etapa se está demorando **deja un comentario diciendo por qué**. No
-espera a que le vengan a preguntar.
+Cuando un área ve que su etapa se va a demorar, **lo escribe en esa etapa del
+proyecto, con el motivo**, sin esperar a que alguien le pregunte. Así cualquiera
+que mire el proyecto sabe qué pasa, y nadie tiene que salir a averiguarlo.
 
-Y al revés: **ningún área le pide explicaciones a otra** porque su etapa lleva
-mucho tiempo. Si hay una fecha comprometida con el cliente y no se va a cumplir,
-lo que corresponde es **reprogramarla en el calendario**: eso le avisa solo a
-Experiencia Solar.
-
-Lo que está fuera de plazo se trata en la **reunión de coordinación**, no entre
-dos áreas por mensaje.
+Si el atraso mueve una fecha que ya se le dio al cliente, **la fecha se cambia
+en el calendario**. Eso le avisa a Experiencia Solar, que es quien se lo cuenta
+al cliente.
 
 ### Regla 4 — Todo se registra donde ya se está trabajando
 
@@ -326,7 +323,7 @@ registrar le cuesta. Hay que mirar desde dónde tendría que hacerlo.
 > ### 3. El cliente nunca es el mensajero de Voltia.
 > «Te averiguo y te confirmo», y se resuelve puertas adentro.
 
-> ### 4. El que se demora avisa. Nadie pide explicaciones.
+> ### 4. Si una etapa se atrasa, el área avisa por qué.
 
 > ### 5. Si hay que preguntar en qué anda algo, falta un registro.
 
