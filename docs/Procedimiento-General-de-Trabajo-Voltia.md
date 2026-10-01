@@ -66,7 +66,8 @@ Así, quien ya lo leyó sabe qué cambió sin tener que leerlo entero de nuevo.
 ## 1 · El recorrido de un proyecto
 
 Un cliente pasa por **ocho etapas**, desde que firma hasta que su instalación
-queda habilitada. Cada etapa tiene un área dueña:
+queda **habilitada**: es decir, hasta que UTE la aprueba y el cliente ya puede
+encenderla y empezar a generar su energía. Cada etapa tiene un área dueña:
 
 | | Etapa | Área dueña |
 |---|---|---|
@@ -351,6 +352,7 @@ registrar le cuesta. Hay que mirar desde dónde tendría que hacerlo.
 | **Área** | Cada sector de Voltia: Ventas, Ingeniería, Operaciones, Tramitación UTE, Experiencia Solar, Finanzas y Gerencia. |
 | **Generador** | El cliente, una vez que su instalación existe. Es como lo llama UTE y como lo llama Voltia PM. |
 | **E1 / E2 / E3** | Los tres tramos del acompañamiento al cliente. **No son las etapas del proyecto.** |
+| **Onboarding** | La segunda etapa del proyecto: después de cerrar la venta, el asesor firma el contrato con el cliente, cobra la seña, define cómo va a pagar y junta los datos para empezar. |
 | **Etapa** | Cada uno de los ocho tramos del proyecto, de Venta a Trámite UTE. |
 | **Subetapa** | Las tareas dentro de una etapa, con su checklist. |
 | **Traspaso** | El pase de trabajo de un área a la siguiente. Lo genera Voltia PM al completarse una etapa. |

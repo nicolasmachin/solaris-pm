@@ -318,6 +318,47 @@ def flujo_etapas(etapas, tramos):
             f'  </figure>\n')
 
 
+def quien_habla(filas):
+    """La regla 1 dibujada: el cliente en el centro, unido solo al capataz y a
+    Experiencia Solar (con de qué habla cada uno, del .md), y el resto de las
+    áreas afuera, sin línea hacia el cliente."""
+    W, H = 650, 176
+    cx, cy = 325, 76
+    verde, verde_claro = COLOR_AREA["Experiencia Solar"]
+    p = []
+    # Las áreas que no hablan con el cliente, en gris, abajo.
+    otras = ["Ventas (después del onboarding)", "Ingeniería", "Gerente de Operaciones", "Logística", "Tramitación UTE"]
+    ancho = W / len(otras)
+    for i, o in enumerate(otras):
+        x = i * ancho + 6
+        p.append(f'<rect x="{x}" y="{H - 44}" width="{ancho - 12}" height="38" rx="6" fill="#f3f4f8" '
+                 f'stroke="#d5d9e6" stroke-dasharray="4 3"/>')
+        p.append(_txt(x + (ancho - 12) / 2, H - 21, o, 10, 600, GRIS, max_chars=18, salto=11, anchor="middle"))
+    p.append(_txt(W / 2, H - 52, "NO HABLAN CON EL CLIENTE: LE PIDEN A UNO DE LOS DOS", 9.5, 700, GRIS_CLARO,
+                  anchor="middle"))
+    # El cliente.
+    p.append(f'<circle cx="{cx}" cy="{cy - 30}" r="34" fill="{NEGRO}"/>')
+    p.append(_txt(cx, cy - 26, "Cliente", 13, 700, "#ffffff", anchor="middle"))
+    # Los dos que hablan con él.
+    lados = [(0, filas[0]), (W - 210, filas[1])]
+    for x, (quien, que) in lados:
+        quien = quien.strip("*")
+        y = cy - 70
+        fuerte = COLOR_AREA["Operaciones"][0] if "capataz" in quien.lower() else verde
+        claro = COLOR_AREA["Operaciones"][1] if "capataz" in quien.lower() else verde_claro
+        p.append(f'<rect x="{x}" y="{y}" width="210" height="82" rx="8" fill="{claro}" stroke="{fuerte}" stroke-width="1.5"/>')
+        p.append(_txt(x + 14, y + 24, quien, 14, 700, fuerte))
+        p.append(_txt(x + 14, y + 44, en_linea(que), 11, 500, TEXTO, max_chars=34, salto=13))
+        x_borde = x + 210 if x == 0 else x
+        x_cli = cx - 34 if x == 0 else cx + 34
+        p.append(f'<line x1="{x_borde}" y1="{cy - 30}" x2="{x_cli}" y2="{cy - 30}" stroke="{fuerte}" stroke-width="3"/>')
+    etiqueta = "Solo el capataz y Experiencia Solar hablan con el cliente; el resto de las áreas no"
+    return (f'  <figure style="margin: 18px 0 0">\n'
+            f'    <svg viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="{etiqueta}" '
+            f'style="display: block; max-width: 100%; height: auto">{"".join(p)}</svg>\n'
+            f'  </figure>\n')
+
+
 def juntar_recorrido(crudos):
     """Si el capítulo tiene la tabla de etapas (con su área dueña) y la de los
     tramos E1/E2/E3, las dos se dibujan juntas en el lugar de la de tramos: el
@@ -337,6 +378,8 @@ def juntar_recorrido(crudos):
 def html_de(tipo, c):
     if tipo == "flujo":
         return flujo_etapas(*c)
+    if tipo == "tabla" and [x.strip().lower() for x in c[0]] == ["quién", "de qué habla"]:
+        return quien_habla(c[1])
     if tipo == "h3":
         return (f'  <h2 style="margin: 28px 0 0; font-family: {SANS}; font-size: 21px; font-weight: 700; '
                 f'letter-spacing: -.4px; line-height: 1.2; color: {NEGRO}">{en_linea(c)}</h2>\n')
