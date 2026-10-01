@@ -235,6 +235,40 @@ el banco hasta que salga.
 
 **La comisión.** El asesor cobra una comisión por cada venta que cierra.
 
+### Ingeniería
+
+**Qué hace.** Diseña la instalación desde la oficina. No va a la propiedad del
+cliente: todo lo que necesita lo trae la visita de venta. Al ganar el lead, ese
+material pasa al proyecto.
+
+**Qué recibe.**
+
+- **El resumen de la visita**, con lo que se habló y el relevamiento técnico.
+- **Las fotos**: el bot que arma el resumen las adjunta al documento y también
+  las sube al lead.
+- **Los videos**: se suben al lead; no van en el resumen.
+
+**Con qué trabaja.**
+
+- **El módulo de Ingeniería de Voltia PM**: el constructor del unifilar, el
+  diseño de los gabinetes metálicos y el de los triángulos de aluminio para las
+  estructuras.
+- **Una habilidad de Claude** con el paso a paso de la ingeniería y los criterios
+  que definió Voltia.
+- **Claude Design**, para los planos.
+
+**Qué entrega.**
+
+- **Las memorias**: la descriptiva y la de cálculo.
+- **Los planos**.
+- **Las planillas** de verificación estructural y de vuelco.
+- **La lista de materiales**.
+
+**La lista de materiales, mapeada.** Voltia PM toma la lista de Ingeniería y
+**mapea cada material con los que usa Voltia**. Esa lista mapeada es la que
+reciben **Validación de Operaciones**, para revisar que no falte nada, y
+**Compras**.
+
 ---
 
 ## 4 · Cómo se pasa el trabajo de un área a otra

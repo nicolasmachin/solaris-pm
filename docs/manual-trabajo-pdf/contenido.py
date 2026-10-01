@@ -534,6 +534,82 @@ def juntar_ventas(crudos):
     return out
 
 
+def trabajo_ingenieria(recibe, trabaja, entrega):
+    """El trabajo de Ingeniería en un dibujo: qué recibe, con qué trabaja y qué
+    entrega (lo que está en negrita en cada lista del .md), y abajo cómo la
+    lista de materiales, mapeada en Voltia PM, llega a Validación de
+    Operaciones y a Compras."""
+    W = 650
+    violeta, violeta_claro = COLOR_AREA["Ingeniería"]
+    naranja, naranja_claro = COLOR_AREA["Operaciones"]
+    col_w, gap = 196, 31
+    cols = [("RECIBE", recibe, "#f3f4f8", GRIS), ("TRABAJA CON", trabaja, violeta_claro, violeta),
+            ("ENTREGA", entrega, violeta, "#ffffff")]
+    item_h, item_sep = 40, 6
+    p = [f'<defs><marker id="pgt-i" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" '
+         f'orient="auto"><path d="M0 0L10 5L0 10z" fill="{NEGRO}"/></marker></defs>']
+    alto_col = 24 + max(len(c[1]) for c in cols) * (item_h + item_sep)
+    for k, (rot, items, fondo, color) in enumerate(cols):
+        x = k * (col_w + gap)
+        p.append(f'<rect x="{x}" y="0" width="{col_w}" height="{alto_col}" rx="8" fill="{fondo}"/>')
+        p.append(_txt(x + 12, 17, rot, 10, 700, color))
+        for j, it in enumerate(items):
+            y = 26 + j * (item_h + item_sep)
+            claro = k == 2
+            p.append(f'<rect x="{x + 8}" y="{y}" width="{col_w - 16}" height="{item_h}" rx="5" '
+                     f'fill="{"#ffffff22" if claro else "#ffffff"}"/>')
+            lineas = len(_renglones(it, 28))
+            y_t = y + (24 if lineas == 1 else 17)
+            p.append(_txt(x + 16, y_t, it, 11.5, 600, "#ffffff" if claro else NEGRO, max_chars=28, salto=14))
+        if k < 2:
+            xa = x + col_w + 3
+            p.append(f'<line x1="{xa}" y1="{alto_col / 2}" x2="{xa + gap - 6}" y2="{alto_col / 2}" '
+                     f'stroke="{NEGRO}" stroke-width="1.6" marker-end="url(#pgt-i)"/>')
+    # La lista de materiales mapeada y a quién le llega.
+    y_m = alto_col + 34
+    x_lista = 2 * (col_w + gap)
+    p.append(f'<path d="M{x_lista + col_w / 2} {alto_col} V{y_m - 2}" stroke="{NEGRO}" stroke-width="1.4" '
+             f'marker-end="url(#pgt-i)"/>')
+    p.append(f'<rect x="{x_lista - 120}" y="{y_m}" width="{col_w + 120}" height="40" rx="6" fill="{violeta_claro}" '
+             f'stroke="{violeta}"/>')
+    p.append(_txt(x_lista - 108, y_m + 17, "VOLTIA PM MAPEA LA LISTA", 9.5, 700, violeta))
+    p.append(_txt(x_lista - 108, y_m + 31, "cada material, con los que usa Voltia", 11, 500, NEGRO))
+    y_d = y_m + 70
+    destinos = [("Validación de Operaciones", "revisa que no falte nada"), ("Compras", "compra sobre esa lista")]
+    for k, (t, d) in enumerate(destinos):
+        x = 120 + k * 240
+        p.append(f'<rect x="{x}" y="{y_d}" width="210" height="44" rx="6" fill="{naranja_claro}" stroke="{naranja}"/>')
+        p.append(_txt(x + 12, y_d + 18, t, 12, 700, naranja))
+        p.append(_txt(x + 12, y_d + 34, d, 10.5, 500, NEGRO))
+        p.append(f'<path d="M{x_lista - 20} {y_m + 40} C{x_lista - 20} {y_m + 58} {x + 105} {y_d - 20} {x + 105} {y_d - 2}" '
+                 f'fill="none" stroke="{NEGRO}" stroke-width="1.4" marker-end="url(#pgt-i)"/>')
+    H = y_d + 48
+    etiqueta = "El trabajo de Ingeniería: qué recibe, con qué trabaja, qué entrega y a quién le llega la lista de materiales"
+    return (f'  <figure style="margin: 18px 0 0">\n'
+            f'    <svg viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="{etiqueta}" '
+            f'style="display: block; max-width: 100%; height: auto">{"".join(p)}</svg>\n'
+            f'  </figure>\n')
+
+
+def juntar_ingenieria(crudos):
+    """En la sección de Ingeniería, el dibujo va después de "Qué hace", armado con
+    lo que está en negrita en las listas de qué recibe, con qué trabaja y qué
+    entrega. Las listas quedan debajo, como detalle."""
+    def lista_de(rotulo):
+        k = next((i for i, (t, c) in enumerate(crudos) if t == "p" and c.startswith(rotulo)), None)
+        if k is None or k + 1 >= len(crudos) or crudos[k + 1][0] != "lista":
+            return None, None
+        return k, [re.match(r"\*\*(.+?)\*\*", x).group(1) for x in crudos[k + 1][1]]
+    k_r, recibe = lista_de("**Qué recibe.**")
+    _, trabaja = lista_de("**Con qué trabaja.**")
+    _, entrega = lista_de("**Qué entrega.**")
+    if not (recibe and trabaja and entrega):
+        return crudos
+    out = list(crudos)
+    out.insert(k_r, ("ingenieria", (recibe, trabaja, entrega)))
+    return out
+
+
 def juntar_recorrido(crudos):
     """Si el capítulo tiene la tabla de etapas (con su área dueña) y la de los
     tramos E1/E2/E3, las dos se dibujan juntas en el lugar de la de tramos: el
@@ -555,6 +631,8 @@ def html_de(tipo, c):
         return flujo_etapas(*c)
     if tipo == "ventas":
         return proceso_ventas(*c)
+    if tipo == "ingenieria":
+        return trabajo_ingenieria(*c)
     if tipo == "tarjetas":
         return tarjetas_areas(*c)
     if tipo == "tabla" and [x.strip().lower() for x in c[0]] == ["quién", "de qué habla"]:
@@ -804,7 +882,7 @@ def construir():
         crudos = bloques_de(cap["lineas"])
         if cap["num"] == 0 and len(parrafos) > 1:
             crudos = [("cita", [" ".join(parrafos[1:])])] + crudos
-        crudos = juntar_ventas(partir_areas(juntar_recorrido(crudos)))
+        crudos = juntar_ingenieria(juntar_ventas(partir_areas(juntar_recorrido(crudos))))
         cabeza1 = apertura(cap["num"], cap["titulo"])
         cabeza2 = continua(cap["num"], cap["titulo"])
         BLOQUES[f"{clave}_ap"] = cabeza1
@@ -830,7 +908,8 @@ def construir():
             if k + 1 >= len(items):
                 return 0
             t, c = items[k][1], items[k][2]
-            if not (t == "h3" or (t == "p" and c.rstrip().rstrip("*").endswith(":"))):
+            rotulo = t == "p" and re.fullmatch(r"\*\*[^*]{1,60}\*\*", c.strip()) is not None
+            if not (t == "h3" or rotulo or (t == "p" and c.rstrip().rstrip("*").endswith(":"))):
                 return 0
             sid, st, sc = items[k + 1]
             if st == "tabla" and "cab" in ALTURAS.get(sid, {}):

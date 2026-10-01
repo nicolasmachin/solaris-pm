@@ -91,6 +91,16 @@ lo que todavía no está confirmado se marca *(a confirmar)*.
     (en esta máquina existe la skill `voltia-fv-ingenieria`: eléctrica, tierra,
     tableros, memorias, materiales, plantillas estructurales por montaje);
   - los **planos** hoy se hacen con **Claude Design**.
+  - y **sobre todo, el módulo de Ingeniería de Voltia PM**: el constructor del
+    unifilar, el diseño de los gabinetes metálicos, el diseño de los triángulos
+    de aluminio para las estructuras.
+- **Entregables de la skill** (al hacer todo el análisis): memoria descriptiva y
+  de cálculo; el prompt para generar los planos en Claude Design; las planillas
+  de verificación estructural y de vuelco; el listado de materiales.
+- **La lista de materiales** se procesa después en una herramienta de Voltia PM
+  que **mapea** cada material definido por Ingeniería con los materiales que usa
+  Voltia. Eso es lo que llega como insumo a **Compras** y a **Validación de
+  Operaciones** (para revisar que no falte nada).
 - *(sigue)*
 - **Ojo:** el manual de Ingeniería y el PGT (regla 5, "relevamiento") todavía
   hablan de una visita de relevamiento de Ingeniería: corregir cuando se cierre
