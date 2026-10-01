@@ -84,6 +84,13 @@ lo que todavía no está confirmado se marca *(a confirmar)*.
   **también las sube al lead como imágenes**. Los **videos** los comparte
   Nicolás en el bot y se adjuntan al lead, pero **no van en la minuta**.
 - Al ganar el lead, todo eso **pasa al proyecto**, y es el insumo de Ingeniería.
+- Con el resumen de la visita, Ingeniería tiene todo para armar la ingeniería.
+- **Herramientas:**
+  - una **habilidad (skill) de Claude** con el paso a paso de cómo se hace la
+    ingeniería y, sobre todo, **los criterios definidos para la empresa**
+    (en esta máquina existe la skill `voltia-fv-ingenieria`: eléctrica, tierra,
+    tableros, memorias, materiales, plantillas estructurales por montaje);
+  - los **planos** hoy se hacen con **Claude Design**.
 - *(sigue)*
 - **Ojo:** el manual de Ingeniería y el PGT (regla 5, "relevamiento") todavía
   hablan de una visita de relevamiento de Ingeniería: corregir cuando se cierre

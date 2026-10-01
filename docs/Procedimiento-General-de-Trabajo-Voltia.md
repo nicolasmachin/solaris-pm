@@ -80,18 +80,18 @@ encenderla y empezar a generar su energía. Cada etapa tiene un área dueña:
 | 7 | Obra | Operaciones (Obra) |
 | 8 | Trámite UTE | Tramitación UTE |
 
-En paralelo, y desde el primer día, **Experiencia Solar acompaña al cliente** en
-tres tramos:
+En paralelo, desde que termina el onboarding, **Experiencia Solar acompaña al
+cliente** en tres tramos:
 
 | | Tramo | Desde | Hasta |
 |---|---|---|---|
-| **E1** | Pre-obra | Se cierra la venta | La obra termina |
+| **E1** | Pre-obra | Se completa el onboarding | La obra termina |
 | **E2** | Habilitación | La obra termina | UTE habilita |
 | **E3** | Post-habilitación | UTE habilita | Para siempre |
 
 **Cuatro momentos conectan las dos líneas:**
 
-1. **Se cierra la venta** → arranca E1.
+1. **Se completa el onboarding** → arranca E1.
 2. **Se confirma la fecha de obra** → Experiencia Solar se la comunica al cliente.
 3. **Termina la obra** → arranca E2.
 4. **UTE habilita** → arranca E3.
@@ -222,7 +222,10 @@ Tiene diez tareas:
 - Fecha tentativa de obra
 - Comunicación al cliente
 
-Cuando el onboarding está completo, el proyecto pasa a **Ingeniería** y la etapa
+La última tarea del onboarding es **presentarle al cliente a quien va a ser su
+referente de ahora en adelante**: el responsable de Experiencia Solar. Cuando el
+onboarding está completo pasan dos cosas: el proyecto pasa a **Ingeniería** y el
+cliente entra en la **etapa 1 de Experiencia Solar** (E1). Desde ahí, la etapa
 deja de ser de Ventas.
 
 **Después del onboarding.** El asesor sigue el cobro, para que no quede en una

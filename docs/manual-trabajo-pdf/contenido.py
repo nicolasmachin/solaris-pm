@@ -213,8 +213,8 @@ def flujo_etapas(etapas, tramos):
     Experiencia Solar: son los cuatro momentos.
 
     Lo que se decide acá y no viene del .md: dónde cae cada tramo y cada
-    momento. E1 arranca al cerrar la venta (al empezar Onboarding) y termina
-    con la obra; E2 es el Trámite UTE; E3 arranca con la habilitación. La fecha
+    momento. E1 arranca cuando se completa el onboarding (al empezar
+    Pre-Ingeniería) y termina con la obra; E2 es el Trámite UTE; E3 arranca con la habilitación. La fecha
     de obra se confirma en la validación de Operaciones."""
     W, col = 650, 72
     caja_w, caja_h = 64, 54
@@ -278,7 +278,7 @@ def flujo_etapas(etapas, tramos):
     fuerte, claro = COLOR_AREA["Experiencia Solar"]
     p.append(f'<rect x="0" y="{y_es}" width="{W}" height="{es_h}" rx="6" fill="{claro}"/>')
     p.append(_txt(10, y_es + 15, "EXPERIENCIA SOLAR · EN PARALELO", 9.5, 700, fuerte))
-    lugar = {"E1": (1, 7), "E2": (7, 8), "E3": (8, 9)}
+    lugar = {"E1": (2, 7), "E2": (7, 8), "E3": (8, 9)}
     tono = {"E1": "#3d6b47", "E2": "#5a8a63", "E3": "#6f9c77"}
     yb, hb = y_es + 24, es_h - 30
     inicio = {}
@@ -295,9 +295,9 @@ def flujo_etapas(etapas, tramos):
         p.append(_txt(x0 + 7, yb + 28, f"{desde} → {hasta}", 9, 500, "#e3f0e5", max_chars=ancho, salto=10))
 
     # Los cuatro momentos: flechas punteadas desde lo que las dispara.
-    (xv, yv), (xva, yva), (xo, yo), (xt, yt) = pos[0], pos[3], pos[6], pos[7]
+    (xv, yv), (xva, yva), (xo, yo), (xt, yt) = pos[1], pos[3], pos[6], pos[7]
     disparos = [
-        (1, xv + caja_w, yv + caja_h, inicio["E1"] + 4),          # se cierra la venta → E1
+        (1, xv + caja_w / 2, yv + caja_h, inicio["E1"] + 4),      # se completa el onboarding → E1
         (2, xva + caja_w / 2, yva + caja_h, xva + caja_w / 2),    # fecha confirmada → aviso
         (3, xo + caja_w / 2, yo + caja_h, inicio["E2"] + 4),      # termina la obra → E2
         (4, xt + caja_w, yt + caja_h, inicio["E3"] + 4),          # UTE habilita → E3
@@ -445,7 +445,8 @@ def proceso_ventas(pasos, tareas_onboarding):
     """Todo el proceso de Ventas en un dibujo: el embudo (de la consulta al
     cierre, con un escalón por paso del .md, cada vez más angosto), y a la
     derecha lo que pasa después del cierre: se crea el proyecto, el asesor hace
-    el onboarding y el proyecto pasa a Ingeniería."""
+    el onboarding y, al completarlo, el proyecto pasa a Ingeniería y el cliente
+    entra en E1 de Experiencia Solar."""
     W = 650
     azul, azul_claro = COLOR_AREA["Ventas"]
     violeta = COLOR_AREA["Ingeniería"][0]
@@ -476,9 +477,8 @@ def proceso_ventas(pasos, tareas_onboarding):
         ("LEAD GANADO", "Se crea el proyecto con todos los datos y archivos del lead", azul_claro, azul, NEGRO),
         ("ONBOARDING", f"{tareas_onboarding} tareas, las hace el asesor: contrato, seña, modalidad de pago, "
                        "consulta inicial a UTE…", azul, "#c9d1f3", "#ffffff"),
-        ("PASA A INGENIERÍA", "La etapa deja de ser de Ventas", COLOR_AREA["Ingeniería"][1], violeta, NEGRO),
     ]
-    alturas = [62, 86, 54]
+    alturas = [62, 86]
     y = y0
     centros = []
     for (rot, txt_, fondo, color_rot, color_txt), h in zip(cajas, alturas):
@@ -487,9 +487,24 @@ def proceso_ventas(pasos, tareas_onboarding):
         p.append(_txt(x + 12, y + 35, txt_, 11.5, 500, color_txt, max_chars=36, salto=14))
         centros.append((y, h))
         y += h + 22
-    for (ya, ha), (yb, hb) in zip(centros, centros[1:]):
-        p.append(f'<line x1="{x + w / 2}" y1="{ya + ha}" x2="{x + w / 2}" y2="{yb - 2}" stroke="{NEGRO}" '
-                 f'stroke-width="1.4" marker-end="url(#pgt-v)"/>')
+    (ya, ha), (yb, hb) = centros
+    p.append(f'<line x1="{x + w / 2}" y1="{ya + ha}" x2="{x + w / 2}" y2="{yb - 2}" stroke="{NEGRO}" '
+             f'stroke-width="1.4" marker-end="url(#pgt-v)"/>')
+    # Al completar el onboarding, dos cosas a la vez: Ingeniería y E1.
+    verde, verde_claro = COLOR_AREA["Experiencia Solar"]
+    medio = (w - 8) / 2
+    finales = [(x, "INGENIERÍA", "El proyecto pasa a la pre-ingeniería", COLOR_AREA["Ingeniería"][1], violeta),
+               (x + medio + 8, "EXPERIENCIA SOLAR", "Arranca E1: el asesor le presentó a su referente",
+                verde_claro, verde)]
+    y_ab = yb + hb
+    for xf, rot, txt_, fondo, color_rot in finales:
+        p.append(f'<rect x="{xf}" y="{y}" width="{medio}" height="72" rx="8" fill="{fondo}"/>')
+        p.append(_txt(xf + 10, y + 17, rot, 9.5, 700, color_rot))
+        p.append(_txt(xf + 10, y + 33, txt_, 11, 500, NEGRO, max_chars=18, salto=13))
+        p.append(f'<path d="M{x + w / 2} {y_ab} C{x + w / 2} {y_ab + 12} {xf + medio / 2} {y - 12} '
+                 f'{xf + medio / 2} {y - 2}" fill="none" stroke="{NEGRO}" stroke-width="1.4" '
+                 f'marker-end="url(#pgt-v)"/>')
+    y += 72 + 22
     # Del final del embudo al lead ganado.
     yb = y0 + n * (alto + sep) - sep - alto / 2
     p.append(f'<path d="M{x_centro + ancho_min / 2 + 6} {yb} C{x - 30} {yb} {x - 40} {y0 + 31} {x - 2} {y0 + 31}" '
