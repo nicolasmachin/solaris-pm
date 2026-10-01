@@ -61,6 +61,18 @@ await page.evaluate(() => localStorage.setItem("voltia-theme", "light"));
 async function abrir(url, espera = 4000) {
   await page.goto(`${BASE}${url}`, { waitUntil: "networkidle2", timeout: 60000 });
   await esperar(espera);
+  // Un traspaso pendiente abre un aviso encima de todo. Se cierra con
+  // "Cancelar": no confirma ni pospone nada.
+  for (let i = 0; i < 3; i++) {
+    const cerro = await page.evaluate(() => {
+      const b = [...document.querySelectorAll("button")].find((x) => x.textContent?.trim() === "Cancelar");
+      if (!b) return false;
+      b.click();
+      return true;
+    });
+    if (!cerro) break;
+    await esperar(800);
+  }
 }
 
 async function guardar(nombre, opciones = {}) {
@@ -118,6 +130,30 @@ try {
   }
 } catch (e) {
   console.error("  ✗ gabinete:", e.message);
+}
+
+// 5. Ventas: el pipeline en sus tres vistas y el panel de un lead.
+try {
+  await abrir("/ventas");
+  await guardar("ventas-kanban");
+  for (const vista of ["Priorizada", "Lista"]) {
+    if (await clic(vista)) await guardar(`ventas-${vista.toLowerCase()}`);
+    else console.log(`  · no encontré la vista ${vista}`);
+  }
+  await abrir("/ventas");
+  // Abre el primer lead del Kanban para mostrar su panel.
+  const abrio = await page.evaluate(() => {
+    const t = [...document.querySelectorAll("*")].find(
+      (x) => x.children.length === 0 && x.textContent?.trim() === "Juan Corbo");
+    if (!t) return false;
+    t.click();
+    return true;
+  });
+  await esperar(2500);
+  if (abrio) await guardar("ventas-lead");
+  else console.log("  · no encontré un lead para abrir");
+} catch (e) {
+  console.error("  ✗ ventas:", e.message);
 }
 
 await browser.close();

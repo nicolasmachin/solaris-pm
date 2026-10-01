@@ -65,13 +65,13 @@ Así, quien ya lo leyó sabe qué cambió sin tener que leerlo entero de nuevo.
 
 ## 1 · El recorrido de un proyecto
 
-Un cliente pasa por **ocho etapas**, desde que firma hasta que su instalación
-queda **habilitada**: es decir, hasta que UTE la aprueba y el cliente ya puede
+Un cliente pasa por **ocho etapas**, desde que hace su primera consulta hasta
+que su instalación queda **habilitada**: es decir, hasta que UTE la aprueba y el cliente ya puede
 encenderla y empezar a generar su energía. Cada etapa tiene un área dueña:
 
 | | Etapa | Área dueña |
 |---|---|---|
-| 1 | Venta | Ventas |
+| 1 | Venta: de la consulta al cierre | Ventas |
 | 2 | Onboarding | Ventas |
 | 3 | Pre-Ingeniería | Ingeniería |
 | 4 | Validación de Operaciones | Operaciones |
@@ -159,7 +159,7 @@ manual.
 | Área | Qué hace | Dónde termina su trabajo |
 |---|---|---|
 | **Ventas** | Vende, cierra la venta con el cliente y deja todo listo para empezar: el contrato, la seña, cómo va a pagar y la consulta inicial a UTE | Cuando el onboarding está completo y el cliente sabe cómo sigue |
-| **Ingeniería** | Va a la propiedad del cliente a relevar, diseña la instalación —planos y cálculos— y arma la lista de materiales. Después de que Operaciones la revisa, la deja cerrada | Cuando la lista de materiales está cerrada y no se toca más |
+| **Ingeniería** | Trabaja desde la oficina, sin ir a la propiedad: con lo que trajo la visita de venta —el resumen de la visita, las fotos y los videos— diseña la instalación, con planos y cálculos, y arma la lista de materiales. Después de que Operaciones la revisa, la deja cerrada | Cuando la lista de materiales está cerrada y no se toca más |
 | **Operaciones** | Valida lo que proyectó Ingeniería, confirma la fecha de obra, planifica, ejecuta la instalación y controla los costos | Cuando la obra está terminada y toda la documentación está cargada |
 | ↳ **Obra** (el capataz) | Lleva adelante la instalación en la propiedad y habla con el cliente de lo del día | Cuando deja cargado todo lo necesario para cerrar la obra |
 | ↳ **Logística** | Compra los materiales de la lista definitiva, sigue los pedidos y los recibe en depósito | Cuando el material está en depósito y la obra se puede planificar |
@@ -172,6 +172,65 @@ manual.
 directo al paciente, pero el médico de cabecera tiene la historia completa y
 responde por cómo va todo. Por eso las demás áreas no tienen que pasar por ella
 para todo, pero sí tienen que dejar registrado lo que hacen (regla 4).
+
+### Ventas
+
+**Qué hace.** Todo el camino comercial: desde que una persona escribe
+preguntando por una instalación solar hasta que la venta está cerrada y el
+proyecto, listo para empezar.
+
+**De dónde vienen las consultas.** De **Marketing**: el contenido, las redes
+sociales y la publicidad en redes hacen que la gente escriba. Esas consultas les
+llegan a los asesores comerciales a su casilla. Marketing hoy lo lleva Gerencia
+y no tiene manual propio.
+
+**El embudo de ventas.** No todas las consultas terminan en una venta: en cada
+paso hay gente que no sigue. De cada 100 consultas que llegan se cierran, más o
+menos, 2 ventas.
+
+1. **Consulta.** El asesor responde con el *speech*: un mensaje con un orden de
+   precio e información general, que dice qué mandar para avanzar, como la
+   factura de UTE. Muchos quedan acá, al ver el precio.
+2. **Lead.** Quien manda su factura de UTE pasa a ser un **lead**, un cliente
+   potencial, y recién ahí se registra en Voltia PM.
+3. **Propuesta.** Se arma la propuesta comercial y se le envía.
+4. **Visita de venta.** A quien quiere avanzar se le ofrece una visita a su casa.
+   La visita incluye el **relevamiento técnico**, para ir una sola vez. Al salir
+   se arma el **resumen de la visita** —lo que se habló, el techo, el montaje, las
+   medidas, la instalación eléctrica, un video, tomas con dron y fotos— y se le
+   envía al cliente. Es el paso donde más clientes deciden comprar.
+5. **Cierre.** La conversación sigue con el asesor, y el cliente confirma o no la
+   venta.
+
+Cada paso queda registrado en Voltia PM, en el **pipeline comercial**.
+
+**Cuando el cliente confirma.** El asesor marca el lead como **ganado** en
+Voltia PM, y eso crea el proyecto solo, con todos los datos del lead, incluidos
+los archivos adjuntos.
+
+**El onboarding.** Es la primera etapa del proyecto, y también la hace el asesor.
+Tiene diez tareas:
+
+- Confirmación formal por escrito
+- Cobro de la seña
+- Contrato
+- Recolección de los datos administrativos
+- Modalidad de pago definida
+- Organización de la carpeta digital
+- Registro en la planilla de operaciones
+- Consulta inicial a UTE
+- Fecha tentativa de obra
+- Comunicación al cliente
+
+Cuando el onboarding está completo, el proyecto pasa a **Ingeniería** y la etapa
+deja de ser de Ventas.
+
+**Después del onboarding.** El asesor sigue el cobro, para que no quede en una
+zona gris sin que nadie lo mire: si el cliente paga directo, crea el **plan de
+pagos**; si va con **financiación bancaria**, sigue la proforma y el trámite con
+el banco hasta que salga.
+
+**La comisión.** El asesor cobra una comisión por cada venta que cierra.
 
 ---
 

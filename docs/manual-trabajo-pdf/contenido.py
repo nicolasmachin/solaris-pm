@@ -441,6 +441,84 @@ def tarjetas_areas(filas, primera=True):
     return out + '  </div>\n'
 
 
+def proceso_ventas(pasos, tareas_onboarding):
+    """Todo el proceso de Ventas en un dibujo: el embudo (de la consulta al
+    cierre, con un escalón por paso del .md, cada vez más angosto), y a la
+    derecha lo que pasa después del cierre: se crea el proyecto, el asesor hace
+    el onboarding y el proyecto pasa a Ingeniería."""
+    W = 650
+    azul, azul_claro = COLOR_AREA["Ventas"]
+    violeta = COLOR_AREA["Ingeniería"][0]
+    n = len(pasos)
+    alto, sep = 44, 6
+    y0 = 26
+    ancho_max, ancho_min, x_centro = 380, 170, 196
+    tonos = ["#3d56c2", "#2f4bb8", "#2440ad", "#1836b2", "#122a8f"]
+    p = [f'<defs><marker id="pgt-v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" '
+         f'orient="auto"><path d="M0 0L10 5L0 10z" fill="{NEGRO}"/></marker></defs>']
+    p.append(_txt(x_centro, 14, "100 CONSULTAS", 10, 700, GRIS, anchor="middle"))
+    for k, titulo in enumerate(pasos):
+        a1 = ancho_max - (ancho_max - ancho_min) * k / n
+        a2 = ancho_max - (ancho_max - ancho_min) * (k + 1) / n
+        y = y0 + k * (alto + sep)
+        pts = (f"{x_centro - a1 / 2},{y} {x_centro + a1 / 2},{y} "
+               f"{x_centro + a2 / 2},{y + alto} {x_centro - a2 / 2},{y + alto}")
+        p.append(f'<polygon points="{pts}" fill="{tonos[k % len(tonos)]}"/>')
+        p.append(f'<text x="{x_centro}" y="{y + alto / 2 + 5}" font-family="Barlow, sans-serif" font-size="14" '
+                 f'font-weight="700" fill="#ffffff" text-anchor="middle">{k + 1} · {en_linea(titulo)}</text>')
+    y_fin = y0 + n * (alto + sep)
+    p.append(_txt(x_centro, y_fin + 12, "≈ 2 VENTAS", 10, 700, GRIS, anchor="middle"))
+
+    # Después del cierre, a la derecha.
+    x = 420
+    w = W - x
+    cajas = [
+        ("LEAD GANADO", "Se crea el proyecto con todos los datos y archivos del lead", azul_claro, azul, NEGRO),
+        ("ONBOARDING", f"{tareas_onboarding} tareas, las hace el asesor: contrato, seña, modalidad de pago, "
+                       "consulta inicial a UTE…", azul, "#c9d1f3", "#ffffff"),
+        ("PASA A INGENIERÍA", "La etapa deja de ser de Ventas", COLOR_AREA["Ingeniería"][1], violeta, NEGRO),
+    ]
+    alturas = [62, 86, 54]
+    y = y0
+    centros = []
+    for (rot, txt_, fondo, color_rot, color_txt), h in zip(cajas, alturas):
+        p.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="8" fill="{fondo}"/>')
+        p.append(_txt(x + 12, y + 18, rot, 10, 700, color_rot))
+        p.append(_txt(x + 12, y + 35, txt_, 11.5, 500, color_txt, max_chars=36, salto=14))
+        centros.append((y, h))
+        y += h + 22
+    for (ya, ha), (yb, hb) in zip(centros, centros[1:]):
+        p.append(f'<line x1="{x + w / 2}" y1="{ya + ha}" x2="{x + w / 2}" y2="{yb - 2}" stroke="{NEGRO}" '
+                 f'stroke-width="1.4" marker-end="url(#pgt-v)"/>')
+    # Del final del embudo al lead ganado.
+    yb = y0 + n * (alto + sep) - sep - alto / 2
+    p.append(f'<path d="M{x_centro + ancho_min / 2 + 6} {yb} C{x - 30} {yb} {x - 40} {y0 + 31} {x - 2} {y0 + 31}" '
+             f'fill="none" stroke="{NEGRO}" stroke-width="1.4" marker-end="url(#pgt-v)"/>')
+    p.append(_txt(x - 60, yb - 8, "confirma", 10.5, 600, GRIS, anchor="middle"))
+    H = max(y_fin + 20, y - 22 + 4)
+    etiqueta = "El proceso de Ventas: el embudo de la consulta al cierre, y después el proyecto, el onboarding y el pase a Ingeniería"
+    return (f'  <figure style="margin: 18px 0 0">\n'
+            f'    <svg viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="{etiqueta}" '
+            f'style="display: block; max-width: 100%; height: auto">{"".join(p)}</svg>\n'
+            f'  </figure>\n')
+
+
+def juntar_ventas(crudos):
+    """En la sección de Ventas, el dibujo del proceso va antes de la lista del
+    embudo (que queda como leyenda). Toma los pasos de esa lista (lo que está
+    en negrita) y cuántas tareas tiene el onboarding."""
+    i_emb = next((k for k, (t, c) in enumerate(crudos)
+                  if t == "p" and c.startswith("**El embudo de ventas.**")), None)
+    if i_emb is None or i_emb + 1 >= len(crudos) or crudos[i_emb + 1][0] != "numerada":
+        return crudos
+    pasos = [re.match(r"\*\*(.+?)\.?\*\*", x).group(1).rstrip(".") for x in crudos[i_emb + 1][1]]
+    i_onb = next((k for k, (t, c) in enumerate(crudos) if t == "p" and c.startswith("**El onboarding.**")), None)
+    tareas = len(crudos[i_onb + 1][1]) if i_onb is not None and crudos[i_onb + 1][0] == "lista" else 0
+    out = list(crudos)
+    out.insert(i_emb + 1, ("ventas", (pasos, tareas)))
+    return out
+
+
 def juntar_recorrido(crudos):
     """Si el capítulo tiene la tabla de etapas (con su área dueña) y la de los
     tramos E1/E2/E3, las dos se dibujan juntas en el lugar de la de tramos: el
@@ -460,6 +538,8 @@ def juntar_recorrido(crudos):
 def html_de(tipo, c):
     if tipo == "flujo":
         return flujo_etapas(*c)
+    if tipo == "ventas":
+        return proceso_ventas(*c)
     if tipo == "tarjetas":
         return tarjetas_areas(*c)
     if tipo == "tabla" and [x.strip().lower() for x in c[0]] == ["quién", "de qué habla"]:
@@ -474,6 +554,11 @@ def html_de(tipo, c):
         cab, filas = c
         return tabla_pgt([en_linea(x).upper() for x in cab], [[en_linea(x) for x in f] for f in filas],
                          anchos_de(cab))
+    if tipo == "lista" and len(c) >= 8:
+        lis = "".join(f'<li style="margin: 0 0 5px; font-size: 14px; line-height: 1.45; color: {TEXTO}">'
+                      f'{en_linea(x)}</li>' for x in c)
+        return (f'  <ul style="margin: 12px 0 0; padding-left: 20px; columns: 2; column-gap: 28px">'
+                f'{lis}</ul>\n')
     if tipo == "lista":
         lis = "".join(f'<li style="margin: 0 0 8px; font-size: 15px; line-height: 1.55; color: {TEXTO}">'
                       f'{en_linea(x)}</li>' for x in c)
@@ -704,7 +789,7 @@ def construir():
         crudos = bloques_de(cap["lineas"])
         if cap["num"] == 0 and len(parrafos) > 1:
             crudos = [("cita", [" ".join(parrafos[1:])])] + crudos
-        crudos = partir_areas(juntar_recorrido(crudos))
+        crudos = juntar_ventas(partir_areas(juntar_recorrido(crudos)))
         cabeza1 = apertura(cap["num"], cap["titulo"])
         cabeza2 = continua(cap["num"], cap["titulo"])
         BLOQUES[f"{clave}_ap"] = cabeza1
