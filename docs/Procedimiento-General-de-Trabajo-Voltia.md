@@ -183,8 +183,8 @@ proyecto, listo para empezar.
 
 **De dónde vienen las consultas.** De **Marketing**: el contenido, las redes
 sociales y la publicidad en redes hacen que la gente escriba. Esas consultas les
-llegan a los asesores comerciales a su casilla. Marketing hoy lo lleva Gerencia
-y no tiene manual propio.
+llegan a los asesores comerciales. Marketing depende de Gerencia y no tiene
+manual propio.
 
 **El embudo de ventas.** No todas las consultas terminan en una venta: en cada
 paso hay gente que no sigue. De cada 100 consultas que llegan se cierran, más o
@@ -219,19 +219,11 @@ uno tiene su plazo:
 Voltia PM, y eso crea el proyecto solo, con todos los datos del lead, incluidos
 los archivos adjuntos.
 
-**El onboarding.** Es la primera etapa del proyecto, y también la hace el asesor.
-Tiene diez tareas:
-
-- Confirmación formal por escrito
-- Cobro de la seña
-- Contrato
-- Recolección de los datos administrativos
-- Modalidad de pago definida
-- Organización de la carpeta digital
-- Registro en la planilla de operaciones
-- Consulta inicial a UTE
-- Fecha tentativa de obra
-- Comunicación al cliente
+**El onboarding.** Es la primera etapa del proyecto, y también la hace el asesor:
+confirma la venta por escrito, firma el contrato, cobra la seña, define con el
+cliente cómo va a pagar, junta los datos para empezar, presenta la consulta
+inicial a UTE y da una fecha tentativa de obra. Las tareas una por una están en
+el Manual de trabajo de Ventas.
 
 La última tarea del onboarding es **presentarle al cliente a quien va a ser su
 referente de ahora en adelante**: el responsable de Experiencia Solar. Cuando el
@@ -255,15 +247,12 @@ material pasa al proyecto.
 **Qué recibe.**
 
 - **El resumen de la visita**, con lo que se habló y el relevamiento técnico.
-- **Las fotos**: el bot que arma el resumen las adjunta al documento y también
-  las sube al lead.
-- **Los videos**: se suben al lead; no van en el resumen.
+- **Las fotos y los videos** de la visita, que quedan cargados en el lead.
 
 **Con qué trabaja.**
 
-- **El módulo de Ingeniería de Voltia PM**: el constructor del unifilar, el
-  diseño de los gabinetes metálicos y el de los triángulos de aluminio para las
-  estructuras.
+- **El módulo de Ingeniería de Voltia PM**, con las herramientas para diseñar la
+  instalación.
 - **Herramientas de diseño y cálculo**, con los criterios que definió Voltia
   para hacer la ingeniería. Cuáles son y cómo se usan está en el Manual de
   trabajo de Ingeniería.
@@ -326,22 +315,18 @@ la etapa donde el cliente ya tiene los paneles instalados y **todavía no los
 puede usar**, y donde la demora no depende de Voltia: por eso cada hito que se
 marca importa, porque es lo único que se mueve mientras el cliente espera.
 
-**Los hitos del trámite.** Son once, y cada uno se marca en Voltia PM cuando
-ocurre. El cliente ve los mismos en el portal de Voltia.
+**Los pasos del trámite.** El trámite avanza por hitos, y cada uno se marca en
+Voltia PM cuando ocurre; el cliente ve los mismos en el portal de Voltia. A
+grandes rasgos son cuatro pasos:
 
-1. **Consulta enviada**
-2. **Caso abierto en UTE**
-3. **Consulta aprobada**
-4. **Solicitud enviada**
-5. **Proyecto aprobado**
-6. **Documentos 1 enviados**
-7. **Documentos 1 aprobados**
-8. **Ensayos enviados**
-9. **Ensayos aprobados**
-10. **Documentos finales enviados**
-11. **Trámite finalizado**
+1. **La consulta**, antes de la obra
+2. **La solicitud y la aprobación del proyecto**
+3. **Los documentos de obra y los ensayos**
+4. **La habilitación**
 
-La consulta (el primer hito) la presenta Ventas en el onboarding; desde ahí, el
+Los hitos uno por uno están en el Manual de trabajo de Tramitación UTE.
+
+La consulta la presenta Ventas en el onboarding; desde ahí, el
 trámite lo sigue Tramitación. **Cuando UTE habilita**, Tramitación marca el
 trámite como finalizado y Voltia PM le avisa solo a Experiencia Solar, que tiene
 de 24 a 48 horas para decirle al cliente que ya puede encender.
@@ -362,8 +347,8 @@ vive el cliente.
 | **E2** | Habilitación | La obra termina | UTE habilita | **La etapa más difícil**: tiene los paneles en el techo y no los puede usar |
 | **E3** | Post-habilitación | UTE habilita | Para siempre | Está generando, y ahora necesita entender lo que ve |
 
-**Cada cuánto se le habla.** En E1 y E2, si un cliente pasa **5 días hábiles**
-sin un contacto registrado, Voltia PM lo marca. En E3 no hay plazo fijo, porque
+**Cada cuánto se le habla.** En E1 y E2, si un cliente pasa **una semana de
+trabajo** sin un contacto registrado, Voltia PM lo marca. En E3 no hay plazo fijo, porque
 esa etapa no termina nunca: el contacto lo dan el reporte mensual de generación,
 la encuesta de aniversario y el mantenimiento, y el cliente vuelve a aparecer si
 pasa algo.
@@ -387,7 +372,7 @@ trabajo de Finanzas, que está en armado.
 
 **Qué hace.** Define los criterios y las decisiones de fondo de la empresa,
 conduce la reunión de coordinación entre áreas y atiende los casos que el
-cliente le lleva por encima de su referente. Hoy también lleva **Marketing**: el
+cliente le lleva por encima de su referente. También lleva **Marketing**: el
 contenido, las redes sociales y la publicidad que generan las consultas. Los
 criterios y las decisiones, con su porqué, van en el Manual de trabajo de
 Gerencia.
@@ -406,7 +391,7 @@ otra arranca a ciegas:
 | De | A | Qué le deja |
 |---|---|---|
 | Ventas | Ingeniería | Todo lo de la visita cargado en el proyecto: el resumen, la minuta, las fotos y los videos |
-| Ventas | Experiencia Solar | El cliente **presentado**: el asesor le presenta a Alejandra antes de que ella le escriba |
+| Ventas | Experiencia Solar | El cliente **presentado**: el asesor le presenta al responsable de Experiencia Solar antes de que este le escriba |
 | Ingeniería | Operaciones | La pre-ingeniería, con la lista de materiales preliminar, para validar |
 | Operaciones | Ingeniería | El informe del capataz, si hay algo que cambiar, para la Ingeniería Final |
 | Ingeniería | Logística | La lista de materiales de la Ingeniería Final, ya revisada por el capataz |
@@ -466,7 +451,7 @@ Y en ningún caso el cliente hace de mensajero.
   en cada aniversario), pero **no le avisa al cliente que las tiene**: ese aviso
   lo da Experiencia Solar.
 - **El escalamiento:** al cliente se le dice que, si alguna vez siente que no le
-  estamos respondiendo, le escriba a Nicolás, y para lo de obra, a Gabriel. Va
+  estamos respondiendo, le escriba a la Gerencia, y para lo de obra, al gerente de Operaciones. Va
   **como excepción**, nunca como un contacto más: si se presenta al mismo nivel
   que el habitual, el cliente aprende que por ahí lo atienden más rápido.
 
@@ -481,26 +466,18 @@ Voltia PM es la herramienta interna. Tres nombres que no se mezclan: **Voltia
 PM** (la herramienta), **el portal de Voltia** (lo que ve el cliente) y **la
 aplicación del inversor** (la generación en vivo). Nunca "la app" a secas.
 
-Se entra con el **mail o con el usuario corto** («nicolas» en vez del mail
-completo). Quien no sabe cuál es el suyo se lo pregunta a Administración.
+Se entra con el **mail o con el usuario corto**, una versión corta del nombre. Quien no sabe cuál es el suyo se lo pregunta a Administración.
 
-| Menú | Para qué |
-|---|---|
-| **Mis tareas** | Lo que cada uno tiene pendiente: tareas, traspasos por confirmar, tickets |
-| **Dashboard** | El panorama general |
-| **Proyectos** | El pipeline de cada obra, sus etapas y sus comentarios |
-| **Ingeniería** | Las herramientas del proyectista |
-| **Calendario** | La agenda: instalaciones, visitas, trámites, mantenimientos |
-| **Ventas** | Los leads y las propuestas |
-| **Experiencia Solar** | Los clientes, el Recorrido, encuestas, reportes y el Plan de Protección contra Granizo |
-| **Trámites UTE** | Los trámites y sus hitos |
+El menú tiene una sección por cada área —Ventas, Ingeniería, Proyectos,
+Calendario, Experiencia Solar, Trámites UTE— y **Mis tareas**, con lo que cada
+uno tiene pendiente.
 
 **Dos cosas valen para todas las áreas:**
 
 - **Se comenta y se sube todo dentro de la etapa donde se está trabajando.** Eso
   es lo que llega al historial del cliente, con el nombre del área.
-- En el proyecto, la fila de botones de arriba —**Proyecto · Ingeniería · Trámite
-  UTE · Experiencia Solar**— lleva **al mismo cliente** en el otro módulo.
+- Desde un proyecto se puede saltar **al mismo cliente** en las otras secciones,
+  sin tener que buscarlo de nuevo.
 
 En el **menú del usuario**, arriba a la derecha, está **Capacitación**: videos y
 documentos para aprender a usar Voltia PM, divididos por área.
@@ -573,7 +550,7 @@ registrar le cuesta. Hay que mirar desde dónde tendría que hacerlo.
 | **Subetapa** | Las tareas dentro de una etapa, con su checklist. |
 | **Traspaso** | El pase de trabajo de un área a la siguiente. Lo genera Voltia PM al completarse una etapa. |
 | **Paso** | Un aviso al cliente dentro del recorrido de Experiencia Solar. Algunos tienen plazo; **vencer no bloquea**. |
-| **Cadencia** | Los **días hábiles** sin contacto a partir de los cuales un cliente se marca: 5 en E1 y E2. **E3 no tiene**, porque no termina nunca y marcaría a todos para siempre. |
+| **Cadencia** | Cuánto tiempo puede pasar un cliente sin contacto antes de que Voltia PM lo marque. Vale para E1 y E2; **E3 no tiene**, porque no termina nunca y marcaría a todos para siempre. |
 | **Novedad** | Pasó algo en el proyecto después del último contacto: el cliente todavía no lo sabe. |
 | **Ticket** | Un reclamo o consulta registrado, con estado y responsable. |
 | **Portal de Voltia** | Lo que ve el cliente: avance, documentación, reportes, tickets y encuestas. |

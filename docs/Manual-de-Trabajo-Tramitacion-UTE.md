@@ -1,6 +1,6 @@
 # Manual de trabajo de Tramitación UTE
 
-**Voltia · Uruguay** · Versión 0.2 — 30 de septiembre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.3 — 1 de octubre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Tramitación UTE, juntos**. Sigue el mismo modelo que el Manual de trabajo de
@@ -32,6 +32,21 @@ mientras él espera **son los hitos de Tramitación**.
 Marcarlos no es burocracia: es la única información que existe durante semanas.
 
 ## 3 · Procedimiento
+
+Los once hitos del trámite, tal como se marcan en Voltia PM (y como los ve el
+cliente en el portal de Voltia):
+
+1. Consulta enviada
+2. Caso abierto en UTE
+3. Consulta aprobada
+4. Solicitud enviada
+5. Proyecto aprobado
+6. Documentos 1 enviados
+7. Documentos 1 aprobados
+8. Ensayos enviados
+9. Ensayos aprobados
+10. Documentos finales enviados
+11. Trámite finalizado
 
 *Por escribir: hito por hito, qué se presenta, qué se espera y qué se marca.*
 
@@ -95,5 +110,6 @@ un reloj de 24 a 48 horas. No hace falta mandar un mensaje.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.3 | 1 de octubre de 2026 | Se agregan los once hitos del trámite tal como se marcan en Voltia PM (salen del PGT, que queda en cuatro pasos generales). |
 | 0.2 | 30 de septiembre de 2026 | Se agrega qué pasa con los proyectos de más de un suministro: una consulta, un juego de papeles y un trámite por cada cuenta UTE, y la obra habilitada cuando salen todas. |
 | 0.1 | 29 de septiembre de 2026 | Se crea el manual con el detalle de Tramitación que estaba en el manual de trabajo general (v2.2). |

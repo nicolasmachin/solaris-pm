@@ -287,6 +287,14 @@ Son de dos niveles:
 | **Manual de trabajo de Finanzas** | Ídem que los de área | `Manual-de-Trabajo-Finanzas.md`, esqueleto; se completa al final, pero **se le va sumando información en cada ajuste que toque a Finanzas** |
 | **Manual de trabajo de Gerencia** | **Criterios y decisiones estratégicas**: qué se decidió, por qué, desde cuándo rige y a qué manual afecta. No es un manual de tareas | `Manual-de-Trabajo-Gerencia.md`, esqueleto; **cada decisión de criterio que se tome se registra ahí** |
 
+**El PGT lleva solo lo que cambia poco: el proceso.** Nada de lo que es "de
+hoy": nombres de personas (va el rol: "el responsable de Experiencia Solar",
+no "Alejandra"), cantidades que cambian ("diez tareas"), listas de tareas o
+hitos uno por uno, herramientas puntuales (el bot, una habilidad de IA, un
+constructor de Voltia PM), el menú. Todo eso va al manual del área, que se
+actualiza más seguido. Excepción pedida: los plazos de cada etapa, que se
+toman de Voltia PM.
+
 **Cada manual de área sigue el modelo del de Posventa**: son tres cosas juntas,
 en un solo documento —el **procedimiento** (qué se hace, quién, en qué orden y
 en qué plazo), los **lineamientos** (las reglas y el criterio para los casos

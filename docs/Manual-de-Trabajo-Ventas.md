@@ -31,6 +31,22 @@ ahora está lo que venía del manual de trabajo (abajo).*
 > código): el pipeline de 7 etapas, los reclamos, las propuestas, el panel del
 > lead. Antes de usarlo, reverificar lo que haya cambiado desde esa fecha.
 
+### Las tareas del onboarding
+
+Tal como están definidas hoy en Voltia PM (salen del PGT, que las describe en
+general):
+
+- Confirmación formal por escrito
+- Cobro de la seña
+- Contrato
+- Recolección de los datos administrativos
+- Modalidad de pago definida
+- Organización de la carpeta digital
+- Registro en la planilla de operaciones
+- Consulta inicial a UTE
+- Fecha tentativa de obra
+- Comunicación al cliente (la presentación del responsable de Experiencia Solar)
+
 ## 3 · Lineamientos
 
 *Por escribir.*
@@ -213,4 +229,5 @@ esa venta se le pregunta a él.
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
 | 0.2 | 30 de septiembre de 2026 | El cotizador con inversores distintos y qué pasa con cada uno (un suministro por inversor). Se agrega la consulta inicial a UTE: una por cada cuenta. |
+| 0.2 | 1 de octubre de 2026 | Se agregan las tareas del onboarding una por una (el PGT las describe en general). |
 | 0.1 | 29 de septiembre de 2026 | Se crea el manual con el detalle de Ventas que estaba en el manual de trabajo general (v2.2). |

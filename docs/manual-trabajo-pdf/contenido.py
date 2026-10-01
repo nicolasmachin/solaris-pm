@@ -484,8 +484,9 @@ def proceso_ventas(pasos, tareas_onboarding):
     w = W - x
     cajas = [
         ("LEAD GANADO", "Se crea el proyecto con todos los datos y archivos del lead", azul_claro, azul, NEGRO),
-        ("ONBOARDING", f"{tareas_onboarding} tareas, las hace el asesor: contrato, seña, modalidad de pago, "
-                       "consulta inicial a UTE…", azul, "#c9d1f3", "#ffffff"),
+        # Sin la cantidad de tareas: cambia seguido y no aporta.
+        ("ONBOARDING", "Lo hace el asesor: contrato, seña, modalidad de pago, consulta inicial a UTE…",
+         azul, "#c9d1f3", "#ffffff"),
     ]
     alturas = [62, 86]
     y = y0
@@ -674,11 +675,12 @@ def camino_operaciones():
 
 
 def hitos_ute(hitos):
-    """Los once hitos del trámite UTE como una línea de tiempo en dos filas."""
+    """Los pasos del trámite UTE como una línea de tiempo: en una fila si son
+    pocos, en dos si son muchos."""
     W = 650
     verde_az, claro = COLOR_AREA["Tramitación UTE"]
     n = len(hitos)
-    fila1 = (n + 1) // 2
+    fila1 = n if n <= 6 else (n + 1) // 2
     paso = W / fila1
     p = []
     for k, h in enumerate(hitos):
@@ -692,7 +694,7 @@ def hitos_ute(hitos):
         p.append(f'<text x="{cx}" y="{cy + 4}" font-family="Barlow, sans-serif" font-size="11" font-weight="700" '
                  f'fill="#ffffff" text-anchor="middle">{k + 1}</text>')
         p.append(_txt(cx, cy + 30, h, 10.5, 600, NEGRO, max_chars=14, salto=12, anchor="middle"))
-    H = 18 + 82 + 58
+    H = 18 + (82 if n > fila1 else 0) + 58
     etiqueta = "Los once hitos del trámite UTE, de la consulta enviada al trámite finalizado"
     return (f'  <figure style="margin: 18px 0 0">\n'
             f'    <svg viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="{etiqueta}" '
@@ -723,7 +725,7 @@ def juntar_secciones(crudos):
         if t == "p" and c.startswith("Operaciones tiene tres momentos en el recorrido"):
             out.append((t, c))
             out.append(("operaciones", None))
-        elif t == "p" and c.startswith("**Los hitos del trámite.**") and k + 1 < len(crudos) \
+        elif t == "p" and c.startswith(("**Los hitos del trámite.**", "**Los pasos del trámite.**")) and k + 1 < len(crudos) \
                 and crudos[k + 1][0] == "numerada":
             out.append((t, c))
             out.append(("hitos", [re.sub(r"\*", "", x) for x in crudos[k + 1][1]]))
