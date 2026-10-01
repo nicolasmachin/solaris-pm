@@ -161,12 +161,12 @@ manual.
 | Área | Qué hace | Dónde termina su trabajo |
 |---|---|---|
 | **Ventas** | Vende, cierra la venta con el cliente y deja todo listo para empezar: el contrato, la seña, cómo va a pagar y la consulta inicial a UTE | Cuando el onboarding está completo y el cliente sabe cómo sigue |
-| **Ingeniería** | Trabaja desde la oficina, sin ir a la propiedad: con lo que trajo la visita de venta —el resumen de la visita, las fotos y los videos— diseña la instalación, con planos y cálculos, y arma la lista de materiales. Después de que Operaciones la revisa, la deja cerrada | Cuando la lista de materiales está cerrada y no se toca más |
+| **Ingeniería** | Con lo que trajo la visita de venta —el resumen, las fotos y los videos— diseña la instalación, con planos y cálculos, y arma la lista de materiales. Después de que Operaciones la revisa, la ajusta en la Ingeniería Final | Cuando la lista de materiales está cerrada y no se toca más |
 | **Operaciones** | Valida lo que proyectó Ingeniería, confirma la fecha de obra, planifica, ejecuta la instalación y controla los costos | Cuando la obra está terminada y toda la documentación está cargada |
 | ↳ **Obra** (el capataz) | Lleva adelante la instalación en la propiedad y habla con el cliente de lo del día | Cuando deja cargado todo lo necesario para cerrar la obra |
 | ↳ **Logística** | Compra los materiales de la lista definitiva, sigue los pedidos y los recibe en depósito | Cuando el material está en depósito y la obra se puede planificar |
 | **Tramitación UTE** | Hace el trámite ante UTE paso a paso, desde la primera consulta hasta que UTE habilita la instalación | Cuando UTE habilita |
-| **Experiencia Solar** | Acompaña al cliente desde que firma hasta mucho después de que enciende: es la responsable de que siempre sepa en qué está su instalación | No termina |
+| **Experiencia Solar** | Acompaña al cliente desde que termina el onboarding hasta mucho después de que enciende: es su referente | No termina |
 | **Finanzas** | Cobra a los clientes según el plan de pagos, paga a proveedores, instaladores y comisiones, emite las facturas y lleva los resultados | Cuando el proyecto está cobrado entero y sus gastos pagados |
 | **Gerencia** | Define los criterios y las decisiones estratégicas, conduce la reunión de coordinación y atiende el escalamiento | No termina: responde por el conjunto |
 
@@ -240,9 +240,8 @@ el banco hasta que salga.
 
 ### Ingeniería
 
-**Qué hace.** Diseña la instalación desde la oficina. No va a la propiedad del
-cliente: todo lo que necesita lo trae la visita de venta. Al ganar el lead, ese
-material pasa al proyecto.
+**Qué hace.** Diseña la instalación con lo que trae la visita de venta, que al
+ganar el lead pasa al proyecto.
 
 **Qué recibe.**
 
@@ -334,9 +333,9 @@ de 24 a 48 horas para decirle al cliente que ya puede encender.
 ### Experiencia Solar
 
 **Qué hace.** Acompaña al cliente desde que termina el onboarding hasta mucho
-después de que enciende. Es su **referente**: la persona a la que le escribe y
-la responsable de que siempre sepa en qué está su instalación, aunque otras
-áreas también hablen con él.
+después de que enciende: es su **referente**, la persona a la que le escribe.
+Para acompañarlo necesita saber en qué está todo, y por eso las demás áreas
+dejan registrado lo que hacen.
 
 **Las tres etapas del cliente.** No son las etapas del proyecto: son las que
 vive el cliente.
