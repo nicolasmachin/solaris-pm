@@ -167,7 +167,176 @@ def anchos_de(cabeceras):
     return a
 
 
+def _renglones(texto, max_chars):
+    """Corta un texto en renglones de a lo sumo max_chars, por palabras."""
+    out, linea = [], ""
+    palabras = []
+    for w in texto.split():
+        # Una palabra con guion que no entra se corta en el guion.
+        if len(w) > max_chars and "-" in w:
+            a, b = w.split("-", 1)
+            palabras += [a + "-", b]
+        else:
+            palabras.append(w)
+    for w in palabras:
+        if linea and len(linea) + (0 if linea.endswith("-") else 1) + len(w) > max_chars:
+            out.append(linea)
+            linea = w
+        else:
+            linea = (linea + w) if linea.endswith("-") else f"{linea} {w}".strip()
+    if linea:
+        out.append(linea)
+    return out
+
+
+def _txt(x, y, texto, tam, peso, color, max_chars=99, salto=None, anchor="start"):
+    salto = salto or round(tam * 1.25)
+    tspans = "".join(f'<tspan x="{x}" dy="{0 if i == 0 else salto}">{en_linea(l)}</tspan>'
+                     for i, l in enumerate(_renglones(texto, max_chars)))
+    return (f'<text x="{x}" y="{y}" font-family="Barlow, sans-serif" font-size="{tam}" '
+            f'font-weight="{peso}" fill="{color}" text-anchor="{anchor}">{tspans}</text>')
+
+
+# Un color por área, el mismo en todos los dibujos del PGT.
+COLOR_AREA = {"Ventas": ("#1836b2", "#e8ecfa"), "Ingeniería": ("#7a3fb0", "#f1e9f8"),
+              "Operaciones": ("#c25a12", "#fbece2"), "Tramitación UTE": ("#127a7a", "#e0f2f2"),
+              "Experiencia Solar": ("#3d6b47", "#e9f4ea")}
+
+
+def flujo_etapas(etapas, tramos):
+    """El recorrido del capítulo 1 en carriles, con los datos del .md: una fila
+    por área, cada etapa en el carril de su dueña (Logística y Obra van dentro
+    de Operaciones), flechas que muestran cuándo el trabajo pasa de un área a
+    otra, y abajo el carril de Experiencia Solar con sus tres tramos. Las
+    flechas punteadas bajan desde el punto del flujo que dispara cada cosa en
+    Experiencia Solar: son los cuatro momentos.
+
+    Lo que se decide acá y no viene del .md: dónde cae cada tramo y cada
+    momento. E1 arranca al cerrar la venta (al empezar Onboarding) y termina
+    con la obra; E2 es el Trámite UTE; E3 arranca con la habilitación. La fecha
+    de obra se confirma en la validación de Operaciones."""
+    W, col = 650, 72
+    caja_w, caja_h = 64, 54
+    carril_h, sep = 80, 6
+    carriles = ["Ventas", "Ingeniería", "Operaciones", "Tramitación UTE"]
+    y_es = len(carriles) * (carril_h + sep) + 18
+    es_h = 104
+    H = y_es + es_h + 2
+    flecha = "#10131f"
+    p = [f'<defs><marker id="pgt-f" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" '
+         f'orient="auto"><path d="M0 0L10 5L0 10z" fill="{flecha}"/></marker></defs>']
+
+    def carril_de(duena):
+        base = duena.split("(")[0].strip()
+        sub = duena[duena.find("(") + 1:duena.find(")")] if "(" in duena else ""
+        return base, sub
+
+    # Los carriles.
+    for i, c in enumerate(carriles):
+        y = i * (carril_h + sep)
+        fuerte, claro = COLOR_AREA[c]
+        p.append(f'<rect x="0" y="{y}" width="{W}" height="{carril_h}" rx="6" fill="{claro}"/>')
+        p.append(_txt(10, y + 15, c.upper(), 9.5, 700, fuerte))
+
+    # Las etapas, cada una en su carril.
+    pos = []
+    for k, (num, etapa, duena) in enumerate(etapas):
+        base, sub = carril_de(duena)
+        i = carriles.index(base)
+        x = k * col + (col - caja_w) / 2
+        y = i * (carril_h + sep) + carril_h - caja_h - 6
+        pos.append((x, y))
+        fuerte = COLOR_AREA[base][0]
+        p.append(f'<rect x="{x}" y="{y}" width="{caja_w}" height="{caja_h}" rx="6" fill="{fuerte}"/>')
+        p.append(_txt(x + 6, y + 13, num, 9.5, 700, "#ffffffb3"))
+        p.append(_txt(x + 6, y + 26, etapa, 10, 700, "#ffffff", max_chars=11, salto=11))
+        if sub:
+            p.append(_txt(x + 6, y + caja_h - 6, sub.upper(), 7.5, 600, "#ffffffcc"))
+    # La instalación habilitada, al final del carril de Tramitación.
+    xh = len(etapas) * col + (col - caja_w) / 2
+    yh = pos[-1][1]
+    p.append(f'<rect x="{xh}" y="{yh}" width="{caja_w}" height="{caja_h}" rx="6" fill="#3d6b47"/>'
+             f'<path d="M{xh + 8} {yh + 13}l4 4 8-9" fill="none" stroke="#fff" stroke-width="2.4" '
+             f'stroke-linecap="round" stroke-linejoin="round"/>')
+    p.append(_txt(xh + 6, yh + 40, "Habilitada", 10, 700, "#ffffff"))
+
+    # El pase de trabajo entre etapas.
+    puntos = pos + [(xh, yh)]
+    for (x1, y1), (x2, y2) in zip(puntos, puntos[1:]):
+        a = (x1 + caja_w, y1 + caja_h / 2)
+        b = (x2 - 2, y2 + caja_h / 2)
+        if abs(a[1] - b[1]) < 1:
+            p.append(f'<line x1="{a[0]}" y1="{a[1]}" x2="{b[0]}" y2="{b[1]}" stroke="{flecha}" '
+                     f'stroke-width="1.3" marker-end="url(#pgt-f)"/>')
+        else:
+            mx = (a[0] + b[0]) / 2
+            p.append(f'<path d="M{a[0]} {a[1]} C{mx} {a[1]} {mx} {b[1]} {b[0]} {b[1]}" fill="none" '
+                     f'stroke="{flecha}" stroke-width="1.3" marker-end="url(#pgt-f)"/>')
+
+    # El carril de Experiencia Solar con sus tramos (desde → hasta, del .md).
+    fuerte, claro = COLOR_AREA["Experiencia Solar"]
+    p.append(f'<rect x="0" y="{y_es}" width="{W}" height="{es_h}" rx="6" fill="{claro}"/>')
+    p.append(_txt(10, y_es + 15, "EXPERIENCIA SOLAR · EN PARALELO", 9.5, 700, fuerte))
+    lugar = {"E1": (1, 7), "E2": (7, 8), "E3": (8, 9)}
+    tono = {"E1": "#3d6b47", "E2": "#5a8a63", "E3": "#6f9c77"}
+    yb, hb = y_es + 24, es_h - 30
+    inicio = {}
+    for cod, nombre, desde, hasta in tramos:
+        cod = cod.strip("*")
+        a, b = lugar[cod]
+        x0 = a * col + (col - caja_w) / 2
+        x1 = (b - 1) * col + (col + caja_w) / 2
+        inicio[cod] = x0
+        p.append(f'<rect x="{x0}" y="{yb}" width="{x1 - x0}" height="{hb}" rx="6" fill="{tono[cod]}"/>')
+        titulo = f"{cod} · {nombre}" if b - a > 1 else cod
+        p.append(_txt(x0 + 7, yb + 15, titulo, 11, 700, "#ffffff"))
+        ancho = max(10, int((x1 - x0 - 12) / 5.2))
+        p.append(_txt(x0 + 7, yb + 28, f"{desde} → {hasta}", 9, 500, "#e3f0e5", max_chars=ancho, salto=10))
+
+    # Los cuatro momentos: flechas punteadas desde lo que las dispara.
+    (xv, yv), (xva, yva), (xo, yo), (xt, yt) = pos[0], pos[3], pos[6], pos[7]
+    disparos = [
+        (1, xv + caja_w, yv + caja_h, inicio["E1"] + 4),          # se cierra la venta → E1
+        (2, xva + caja_w / 2, yva + caja_h, xva + caja_w / 2),    # fecha confirmada → aviso
+        (3, xo + caja_w / 2, yo + caja_h, inicio["E2"] + 4),      # termina la obra → E2
+        (4, xt + caja_w, yt + caja_h, inicio["E3"] + 4),          # UTE habilita → E3
+    ]
+    for n, x1, y1, x2 in disparos:
+        p.append(f'<path d="M{x1} {y1} C{x1} {y1 + 30} {x2} {yb - 30} {x2} {yb - 1}" fill="none" '
+                 f'stroke="{flecha}" stroke-width="1.3" stroke-dasharray="3 3" marker-end="url(#pgt-f)"/>')
+        cy = y1 + 16 if n != 2 else y1 + 14
+        cx = x1 + (x2 - x1) * 0.15
+        p.append(f'<circle cx="{cx}" cy="{cy}" r="9" fill="{AZUL}"/>'
+                 f'<text x="{cx}" y="{cy + 3.5}" font-family="Barlow, sans-serif" font-size="10.5" '
+                 f'font-weight="700" fill="#ffffff" text-anchor="middle">{n}</text>')
+
+    etiqueta = ("El recorrido en carriles por área: cada etapa en el carril de su dueña, el pase de trabajo "
+                "entre áreas y los cuatro momentos que disparan los tramos de Experiencia Solar")
+    return (f'  <figure style="margin: 20px 0 0">\n'
+            f'    <svg viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="{etiqueta}" '
+            f'style="display: block; max-width: 100%; height: auto">{"".join(p)}</svg>\n'
+            f'  </figure>\n')
+
+
+def juntar_recorrido(crudos):
+    """Si el capítulo tiene la tabla de etapas (con su área dueña) y la de los
+    tramos E1/E2/E3, las dos se dibujan juntas en el lugar de la de tramos: el
+    dibujo necesita las dos para alinear cada tramo con sus etapas."""
+    def es(c, cab):
+        return [x.strip().lower() for x in c[0]] == cab
+    i_et = next((k for k, (t, c) in enumerate(crudos) if t == "tabla" and es(c, ["", "etapa", "área dueña"])), None)
+    i_tr = next((k for k, (t, c) in enumerate(crudos) if t == "tabla" and es(c, ["", "tramo", "desde", "hasta"])), None)
+    if i_et is None or i_tr is None:
+        return crudos
+    out = list(crudos)
+    out[i_tr] = ("flujo", (crudos[i_et][1][1], crudos[i_tr][1][1]))
+    del out[i_et]
+    return out
+
+
 def html_de(tipo, c):
+    if tipo == "flujo":
+        return flujo_etapas(*c)
     if tipo == "h3":
         return (f'  <h2 style="margin: 28px 0 0; font-family: {SANS}; font-size: 21px; font-weight: 700; '
                 f'letter-spacing: -.4px; line-height: 1.2; color: {NEGRO}">{en_linea(c)}</h2>\n')
@@ -408,6 +577,7 @@ def construir():
         crudos = bloques_de(cap["lineas"])
         if cap["num"] == 0 and len(parrafos) > 1:
             crudos = [("cita", [" ".join(parrafos[1:])])] + crudos
+        crudos = juntar_recorrido(crudos)
         cabeza1 = apertura(cap["num"], cap["titulo"])
         cabeza2 = continua(cap["num"], cap["titulo"])
         BLOQUES[f"{clave}_ap"] = cabeza1
@@ -436,7 +606,7 @@ def construir():
             if not (t == "h3" or (t == "p" and c.rstrip().rstrip("*").endswith(":"))):
                 return 0
             sid, st, sc = items[k + 1]
-            if st == "tabla" and sid in ALTURAS:
+            if st == "tabla" and "cab" in ALTURAS.get(sid, {}):
                 return 16 + ALTURAS[sid]["cab"] + ALTURAS[sid]["filas"][0]
             return alto(sid, BLOQUES[sid])
 
@@ -444,7 +614,7 @@ def construir():
             html = BLOQUES[bid]
             h = alto(bid, html)
             junto = lo_que_sigue(k_item)
-            if t == "tabla" and bid in ALTURAS and usado + h > CAPACIDAD:
+            if t == "tabla" and "cab" in ALTURAS.get(bid, {}) and usado + h > CAPACIDAD:
                 cab, filas = c
                 med = ALTURAS[bid]
                 resto = list(range(len(filas)))

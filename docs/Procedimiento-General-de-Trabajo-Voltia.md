@@ -75,7 +75,7 @@ queda habilitada. Cada etapa tiene un área dueña:
 | 3 | Pre-Ingeniería | Ingeniería |
 | 4 | Validación de Operaciones | Operaciones |
 | 5 | Ingeniería Final | Ingeniería |
-| 6 | Compras | Logística |
+| 6 | Compras | Operaciones (Logística) |
 | 7 | Obra | Operaciones (Obra) |
 | 8 | Trámite UTE | Tramitación UTE |
 
