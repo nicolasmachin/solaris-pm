@@ -105,3 +105,45 @@ lo que todavía no está confirmado se marca *(a confirmar)*.
 - **Ojo:** el manual de Ingeniería y el PGT (regla 5, "relevamiento") todavía
   hablan de una visita de relevamiento de Ingeniería: corregir cuando se cierre
   esta parte.
+
+### Corrección del flujo (1-oct, Nicolás)
+
+- La lista de materiales mapeada **no va a Compras directo**: va **solo a
+  Validación de Operaciones**, junto con la pre-ingeniería y los planos.
+- **Validación de Operaciones** revisa si le falta algo para poder ejecutar la
+  obra sin problemas, y **agenda la obra** en el calendario de Operaciones.
+  Validan dos personas:
+  - el **gerente de Operaciones**, que **agenda** la fecha;
+  - el **capataz**, que **valida la pre-ingeniería**: si hay algo que
+    modificar, deja un **informe** que es el insumo de la Ingeniería Final. Si
+    no hay nada que modificar, no informa nada.
+- **Entregables de Validación de Operaciones:** el informe del capataz (si
+  corresponde) y la fecha agendada.
+- Al darse por validada la etapa:
+  - **vuelve a Ingeniería para la Ingeniería Final**, que hace los ajustes según
+    lo que marcó el capataz;
+  - **Experiencia Solar recibe la confirmación de la fecha** para avisarle al
+    cliente. → **Verificar que el manual de Posventa diga lo mismo.**
+- **Ingeniería Final** confirma toda la documentación y recién ahí **le pasa a
+  Compras**. *(siguió hablando y se cortó acá)*
+- **A corregir:** el dibujo de Ingeniería del PGT (hoy manda la lista a
+  Validación y a Compras a la vez) y el capítulo 4 (pases de trabajo).
+
+### Compras (1-oct)
+
+- **Único insumo:** la lista de materiales de la **Ingeniería Final**, que ya
+  pasó por la validación del capataz.
+- **Entregable:** la lista de materiales **preparada para salir a obra**.
+- La preparación de la lista para salir a obra la hace **el capataz**, pero
+  Compras tiene que asegurarse de que **para el día de preparación de
+  materiales esté todo listo, todo en el local**.
+- **Instalación tercerizada** (la otra variante): Compras se encarga de que se
+  arme el **kit de materiales** para el instalador tercerizado, se coordine el
+  **flete** y se mande.
+- **Plazos:** hay que validar los plazos de cada etapa y **tienen que estar en
+  el PGT**. Leídos de prod (stage_slas / sales_stage_slas, 1-oct, días
+  hábiles): Onboarding 3 · Pre-Ingeniería 10 · Validación de Operaciones 2 ·
+  Ingeniería Final 3 · Compras 6 · Obra 10 · Trámite UTE 30. Embudo: lead →
+  propuesta 2 · propuesta → visita agendada 3 · agendada → visita 5 · visita →
+  cierre 5 · cierre → proyecto 2. (Hay filas viejas INGENIERIA 3, OPERACIONES
+  10, HABILITACION_UTE 30 de tipos de etapa que ya no se usan.)

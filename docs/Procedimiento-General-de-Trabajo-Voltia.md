@@ -67,18 +67,20 @@ Así, quien ya lo leyó sabe qué cambió sin tener que leerlo entero de nuevo.
 
 Un cliente pasa por **ocho etapas**, desde que hace su primera consulta hasta
 que su instalación queda **habilitada**: es decir, hasta que UTE la aprueba y el cliente ya puede
-encenderla y empezar a generar su energía. Cada etapa tiene un área dueña:
+encenderla y empezar a generar su energía. Cada etapa tiene un área dueña y un
+**plazo**: cuánto puede durar, en días hábiles. Voltia PM muestra en cada
+proyecto cuánto le queda a su etapa.
 
-| | Etapa | Área dueña |
-|---|---|---|
-| 1 | Venta: de la consulta al cierre | Ventas |
-| 2 | Onboarding | Ventas |
-| 3 | Pre-Ingeniería | Ingeniería |
-| 4 | Validación de Operaciones | Operaciones |
-| 5 | Ingeniería Final | Ingeniería |
-| 6 | Compras | Operaciones (Logística) |
-| 7 | Obra | Operaciones (Obra) |
-| 8 | Trámite UTE | Tramitación UTE |
+| | Etapa | Área dueña | Plazo |
+|---|---|---|---|
+| 1 | Venta: de la consulta al cierre | Ventas | Por paso del embudo (capítulo 3) |
+| 2 | Onboarding | Ventas | 3 días hábiles |
+| 3 | Pre-Ingeniería | Ingeniería | 10 días hábiles |
+| 4 | Validación de Operaciones | Operaciones | 2 días hábiles |
+| 5 | Ingeniería Final | Ingeniería | 3 días hábiles |
+| 6 | Compras | Operaciones (Logística) | 6 días hábiles |
+| 7 | Obra | Operaciones (Obra) | 10 días hábiles |
+| 8 | Trámite UTE | Tramitación UTE | 30 días hábiles |
 
 En paralelo, desde que termina el onboarding, **Experiencia Solar acompaña al
 cliente** en tres tramos:
@@ -202,7 +204,16 @@ menos, 2 ventas.
 5. **Cierre.** La conversación sigue con el asesor, y el cliente confirma o no la
    venta.
 
-Cada paso queda registrado en Voltia PM, en el **pipeline comercial**.
+Cada paso queda registrado en Voltia PM, en el **pipeline comercial**, y cada
+uno tiene su plazo:
+
+| Paso | Plazo |
+|---|---|
+| De lead a propuesta enviada | 2 días hábiles |
+| De la propuesta a la visita agendada | 3 días hábiles |
+| De la visita agendada a la visita | 5 días hábiles |
+| De la visita al cierre | 5 días hábiles |
+| Del cierre al proyecto creado | 2 días hábiles |
 
 **Cuando el cliente confirma.** El asesor marca el lead como **ganado** en
 Voltia PM, y eso crea el proyecto solo, con todos los datos del lead, incluidos
@@ -265,9 +276,42 @@ material pasa al proyecto.
 - **La lista de materiales**.
 
 **La lista de materiales, mapeada.** Voltia PM toma la lista de Ingeniería y
-**mapea cada material con los que usa Voltia**. Esa lista mapeada es la que
-reciben **Validación de Operaciones**, para revisar que no falte nada, y
-**Compras**.
+**mapea cada material con los que usa Voltia**.
+
+**Dos pasadas.** La pre-ingeniería —con los planos y la lista mapeada— va
+**primero a Validación de Operaciones**, no a Compras. Cuando Operaciones la
+valida, vuelve a Ingeniería para la **Ingeniería Final**: ahí se hacen los
+ajustes que marcó el capataz y se confirma toda la documentación. **Recién esa
+lista final va a Compras.**
+
+### Operaciones
+
+Operaciones tiene tres momentos en el recorrido: la **Validación**, las
+**Compras** (Logística) y la **Obra**.
+
+**La Validación de Operaciones.** Recibe la pre-ingeniería con los planos y la
+lista de materiales, y revisa si falta algo para poder hacer la obra sin
+problemas. Validan dos personas:
+
+- **El gerente de Operaciones** agenda la obra en el calendario de Operaciones.
+- **El capataz** revisa la pre-ingeniería. Si hay algo que cambiar, deja un
+  **informe**, que es lo que usa Ingeniería en la Ingeniería Final. Si no hay
+  nada que cambiar, no informa nada.
+
+Lo que deja la Validación es **la fecha de obra agendada** y, si hace falta,
+**el informe del capataz**. Cuando la etapa se da por validada pasan dos cosas:
+el proyecto **vuelve a Ingeniería** para la Ingeniería Final, y **Experiencia
+Solar recibe la fecha confirmada** para avisarle al cliente.
+
+**Las Compras.** Las hace Logística, y su único punto de partida es **la lista
+de materiales de la Ingeniería Final**, que ya pasó por el capataz. Lo que
+entrega es **la lista de materiales lista para salir a obra**:
+
+- **Si la obra la hace el equipo propio**, la preparación de los materiales para
+  salir a obra la hace el capataz. Compras tiene que asegurarse de que, para el
+  día de la preparación, **esté todo en el local**.
+- **Si la obra la hace un instalador tercerizado**, Compras arma el **kit de
+  materiales**, coordina el **flete** y se lo manda.
 
 ---
 
@@ -285,10 +329,10 @@ otra arranca a ciegas:
 | Ventas | Ingeniería | Todo lo de la visita cargado en el proyecto: el resumen, la minuta, las fotos y los videos |
 | Ventas | Experiencia Solar | El cliente **presentado**: el asesor le presenta a Alejandra antes de que ella le escriba |
 | Ingeniería | Operaciones | La pre-ingeniería, con la lista de materiales preliminar, para validar |
-| Operaciones | Ingeniería | Lo que haya que corregir del paquete |
-| Ingeniería | Logística | La lista de materiales definitiva, cerrada |
+| Operaciones | Ingeniería | El informe del capataz, si hay algo que cambiar, para la Ingeniería Final |
+| Ingeniería | Logística | La lista de materiales de la Ingeniería Final, ya revisada por el capataz |
 | Operaciones | Experiencia Solar | La fecha de obra confirmada **en el calendario**: el aviso le llega solo |
-| Logística | Obra | El material en depósito |
+| Logística | Obra | Los materiales listos para salir a obra: todo en el local o, si la obra es tercerizada, el kit enviado |
 | Obra | Experiencia Solar | La obra terminada: el aviso llega solo, arranca E2 y Experiencia Solar le cuenta al cliente qué sigue |
 | Obra | Tramitación UTE | La documentación de obra firmada, las fotos y los videos de los ensayos, cargados en el proyecto |
 | Tramitación UTE | Experiencia Solar | La habilitación marcada: el aviso le llega solo y arranca el reloj de 24 a 48 horas |

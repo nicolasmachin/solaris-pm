@@ -217,11 +217,11 @@ def flujo_etapas(etapas, tramos):
     Pre-Ingeniería) y termina con la obra; E2 es el Trámite UTE; E3 arranca con la habilitación. La fecha
     de obra se confirma en la validación de Operaciones."""
     W, col = 650, 72
-    caja_w, caja_h = 64, 54
-    carril_h, sep = 80, 6
+    caja_w, caja_h = 64, 66
+    carril_h, sep = 88, 6
     carriles = ["Ventas", "Ingeniería", "Operaciones", "Tramitación UTE"]
     y_es = len(carriles) * (carril_h + sep) + 18
-    es_h = 104
+    es_h = 66
     H = y_es + es_h + 2
     flecha = "#10131f"
     p = [f'<defs><marker id="pgt-f" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" '
@@ -237,11 +237,13 @@ def flujo_etapas(etapas, tramos):
         y = i * (carril_h + sep)
         fuerte, claro = COLOR_AREA[c]
         p.append(f'<rect x="0" y="{y}" width="{W}" height="{carril_h}" rx="6" fill="{claro}"/>')
-        p.append(_txt(10, y + 15, c.upper(), 9.5, 700, fuerte))
+        p.append(_txt(10, y + 11.5, c.upper(), 9, 700, fuerte))
 
     # Las etapas, cada una en su carril.
     pos = []
-    for k, (num, etapa, duena) in enumerate(etapas):
+    for k, fila in enumerate(etapas):
+        num, etapa, duena = fila[:3]
+        plazo = fila[3] if len(fila) > 3 else ""
         base, sub = carril_de(duena)
         i = carriles.index(base)
         x = k * col + (col - caja_w) / 2
@@ -250,9 +252,15 @@ def flujo_etapas(etapas, tramos):
         fuerte = COLOR_AREA[base][0]
         p.append(f'<rect x="{x}" y="{y}" width="{caja_w}" height="{caja_h}" rx="6" fill="{fuerte}"/>')
         p.append(_txt(x + 6, y + 13, num, 9.5, 700, "#ffffffb3"))
-        p.append(_txt(x + 6, y + 26, etapa, 10, 700, "#ffffff", max_chars=11, salto=11))
+        p.append(_txt(x + 6, y + 25, etapa, 9.5, 700, "#ffffff", max_chars=11, salto=10.5))
         if sub:
-            p.append(_txt(x + 6, y + caja_h - 6, sub.upper(), 7.5, 600, "#ffffffcc"))
+            p.append(_txt(x + 6, y + caja_h - 19, sub.upper(), 7.5, 600, "#ffffffcc"))
+        # El plazo de la etapa, abajo: "3 días hábiles" → "3 d háb."
+        m = re.match(r"(\d+) días hábiles", plazo)
+        corto = f"{m.group(1)} d háb." if m else ("ver embudo" if plazo else "")
+        if corto:
+            p.append(f'<rect x="{x + 4}" y="{y + caja_h - 15}" width="{caja_w - 8}" height="12" rx="3" fill="#ffffff26"/>')
+            p.append(_txt(x + caja_w / 2, y + caja_h - 6, corto, 8.5, 700, "#ffffff", anchor="middle"))
     # La instalación habilitada, al final del carril de Tramitación.
     xh = len(etapas) * col + (col - caja_w) / 2
     yh = pos[-1][1]
@@ -291,8 +299,9 @@ def flujo_etapas(etapas, tramos):
         p.append(f'<rect x="{x0}" y="{yb}" width="{x1 - x0}" height="{hb}" rx="6" fill="{tono[cod]}"/>')
         titulo = f"{cod} · {nombre}" if b - a > 1 else cod
         p.append(_txt(x0 + 7, yb + 15, titulo, 11, 700, "#ffffff"))
-        ancho = max(10, int((x1 - x0 - 12) / 5.2))
-        p.append(_txt(x0 + 7, yb + 28, f"{desde} → {hasta}", 9, 500, "#e3f0e5", max_chars=ancho, salto=10))
+        # El desde → hasta solo entra en E1; E2 y E3 los dicen los momentos.
+        if b - a > 1:
+            p.append(_txt(x0 + 120, yb + 15, f"{desde} → {hasta}", 9.5, 500, "#e3f0e5"))
 
     # Los cuatro momentos: flechas punteadas desde lo que las dispara.
     (xv, yv), (xva, yva), (xo, yo), (xt, yt) = pos[1], pos[3], pos[6], pos[7]
@@ -536,9 +545,9 @@ def juntar_ventas(crudos):
 
 def trabajo_ingenieria(recibe, trabaja, entrega):
     """El trabajo de Ingeniería en un dibujo: qué recibe, con qué trabaja y qué
-    entrega (lo que está en negrita en cada lista del .md), y abajo cómo la
-    lista de materiales, mapeada en Voltia PM, llega a Validación de
-    Operaciones y a Compras."""
+    entrega (lo que está en negrita en cada lista del .md), y abajo el camino
+    de la lista de materiales mapeada: Validación de Operaciones, Ingeniería
+    Final y recién ahí Compras."""
     W = 650
     violeta, violeta_claro = COLOR_AREA["Ingeniería"]
     naranja, naranja_claro = COLOR_AREA["Operaciones"]
@@ -574,16 +583,25 @@ def trabajo_ingenieria(recibe, trabaja, entrega):
              f'stroke="{violeta}"/>')
     p.append(_txt(x_lista - 108, y_m + 17, "VOLTIA PM MAPEA LA LISTA", 9.5, 700, violeta))
     p.append(_txt(x_lista - 108, y_m + 31, "cada material, con los que usa Voltia", 11, 500, NEGRO))
-    y_d = y_m + 70
-    destinos = [("Validación de Operaciones", "revisa que no falte nada"), ("Compras", "compra sobre esa lista")]
-    for k, (t, d) in enumerate(destinos):
-        x = 120 + k * 240
-        p.append(f'<rect x="{x}" y="{y_d}" width="210" height="44" rx="6" fill="{naranja_claro}" stroke="{naranja}"/>')
-        p.append(_txt(x + 12, y_d + 18, t, 12, 700, naranja))
-        p.append(_txt(x + 12, y_d + 34, d, 10.5, 500, NEGRO))
-        p.append(f'<path d="M{x_lista - 20} {y_m + 40} C{x_lista - 20} {y_m + 58} {x + 105} {y_d - 20} {x + 105} {y_d - 2}" '
-                 f'fill="none" stroke="{NEGRO}" stroke-width="1.4" marker-end="url(#pgt-i)"/>')
-    H = y_d + 48
+    # La pre-ingeniería no va a Compras: pasa por la Validación, vuelve a
+    # Ingeniería para la Ingeniería Final y recién ahí llega a Compras.
+    y_d = y_m + 66
+    pasos = [("Validación de Operaciones", "el capataz la revisa", naranja_claro, naranja),
+             ("Ingeniería Final", "ajustes del informe del capataz", violeta_claro, violeta),
+             ("Compras", "compra sobre la lista final", naranja_claro, naranja)]
+    ancho_p, sep_p = 196, 31
+    for k, (t, d, fondo, color) in enumerate(pasos):
+        x = k * (ancho_p + sep_p)
+        p.append(f'<rect x="{x}" y="{y_d}" width="{ancho_p}" height="46" rx="6" fill="{fondo}" stroke="{color}"/>')
+        p.append(_txt(x + 12, y_d + 19, t, 12, 700, color))
+        p.append(_txt(x + 12, y_d + 35, d, 10.5, 500, NEGRO))
+        if k < len(pasos) - 1:
+            xa = x + ancho_p + 3
+            p.append(f'<line x1="{xa}" y1="{y_d + 23}" x2="{xa + sep_p - 6}" y2="{y_d + 23}" stroke="{NEGRO}" '
+                     f'stroke-width="1.4" marker-end="url(#pgt-i)"/>')
+    p.append(f'<path d="M{x_lista - 20} {y_m + 40} C{x_lista - 20} {y_m + 56} {ancho_p / 2} {y_d - 18} {ancho_p / 2} {y_d - 2}" '
+             f'fill="none" stroke="{NEGRO}" stroke-width="1.4" marker-end="url(#pgt-i)"/>')
+    H = y_d + 50
     etiqueta = "El trabajo de Ingeniería: qué recibe, con qué trabaja, qué entrega y a quién le llega la lista de materiales"
     return (f'  <figure style="margin: 18px 0 0">\n'
             f'    <svg viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="{etiqueta}" '
@@ -616,7 +634,8 @@ def juntar_recorrido(crudos):
     dibujo necesita las dos para alinear cada tramo con sus etapas."""
     def es(c, cab):
         return [x.strip().lower() for x in c[0]] == cab
-    i_et = next((k for k, (t, c) in enumerate(crudos) if t == "tabla" and es(c, ["", "etapa", "área dueña"])), None)
+    i_et = next((k for k, (t, c) in enumerate(crudos) if t == "tabla" and
+                 (es(c, ["", "etapa", "área dueña"]) or es(c, ["", "etapa", "área dueña", "plazo"]))), None)
     i_tr = next((k for k, (t, c) in enumerate(crudos) if t == "tabla" and es(c, ["", "tramo", "desde", "hasta"])), None)
     if i_et is None or i_tr is None:
         return crudos
