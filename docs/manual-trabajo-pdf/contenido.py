@@ -200,7 +200,8 @@ def _txt(x, y, texto, tam, peso, color, max_chars=99, salto=None, anchor="start"
 # Un color por área, el mismo en todos los dibujos del PGT.
 COLOR_AREA = {"Ventas": ("#1836b2", "#e8ecfa"), "Ingeniería": ("#7a3fb0", "#f1e9f8"),
               "Operaciones": ("#c25a12", "#fbece2"), "Tramitación UTE": ("#127a7a", "#e0f2f2"),
-              "Experiencia Solar": ("#3d6b47", "#e9f4ea")}
+              "Experiencia Solar": ("#3d6b47", "#e9f4ea"), "Finanzas": ("#8a5a10", "#fdf8ec"),
+              "Gerencia": ("#10131f", "#eef0f5")}
 
 
 def flujo_etapas(etapas, tramos):
@@ -359,6 +360,87 @@ def quien_habla(filas):
             f'  </figure>\n')
 
 
+def partir_areas(crudos):
+    """La tabla de las áreas se dibuja como tarjetas, y en vez de un bloque se
+    arma uno por fila de tarjetas: así el corte de hoja puede caer entre filas."""
+    out = []
+    for t, c in crudos:
+        if t == "tabla" and [x.strip().lower() for x in c[0]] == ["área", "qué hace", "dónde termina su trabajo"]:
+            grupos, actual = [], []
+            filas = c[1]
+            for k, f in enumerate(filas):
+                tiene_subs = k + 1 < len(filas) and filas[k + 1][0].startswith("↳")
+                if f[0].startswith("↳"):
+                    grupos[-1].append(f)
+                    continue
+                if tiene_subs:
+                    if actual:
+                        grupos.append(actual)
+                    grupos.append([f])
+                    actual = []
+                    continue
+                actual.append(f)
+                if len(actual) == 2:
+                    grupos.append(actual)
+                    actual = []
+            if actual:
+                grupos.append(actual)
+            for k, g in enumerate(grupos):
+                out.append(("tarjetas", (g, k == 0)))
+        else:
+            out.append((t, c))
+    return out
+
+
+def tarjetas_areas(filas, primera=True):
+    """La tabla de las áreas como tarjetas, una por área con su color. Las filas
+    que empiezan con "↳" son sub-áreas y van como tarjetas chicas adentro de la
+    anterior (Obra y Logística dentro de Operaciones)."""
+    areas = []
+    for nombre, hace, termina in filas:
+        sub = nombre.startswith("↳")
+        limpio = re.sub(r"[↳*]", "", nombre).strip()
+        if sub:
+            areas[-1]["subs"].append((limpio, hace, termina))
+        else:
+            areas.append({"nombre": limpio, "hace": hace, "termina": termina, "subs": []})
+
+    def color(nombre):
+        base = nombre.split("(")[0].strip()
+        return COLOR_AREA.get(base, (NEGRO, "#eef0f5"))
+
+    def cuerpo(nombre, hace, termina, fuerte, chica=False):
+        tam = 13 if chica else 14
+        titulo = 15 if chica else 17
+        return (f'<div style="font-family: {SANS}; font-size: {titulo}px; font-weight: 700; color: {fuerte}">'
+                f'{en_linea(nombre)}</div>'
+                f'<p style="margin: 6px 0 0; font-size: {tam}px; line-height: 1.45; color: {TEXTO}">{en_linea(hace)}</p>'
+                f'<div style="margin-top: 9px; padding-top: 8px; border-top: 1px solid {fuerte}33; display: flex; '
+                f'gap: 6px; align-items: baseline">'
+                f'<span style="font-family: {SANS}; font-size: 9.5px; font-weight: 700; letter-spacing: 1.2px; '
+                f'color: {fuerte}; flex-shrink: 0">TERMINA</span>'
+                f'<span style="font-size: {tam - 1}px; line-height: 1.4; color: {NEGRO}">{en_linea(termina)}</span></div>')
+
+    margen = 18 if primera else 10
+    out = f'  <div style="margin-top: {margen}px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">\n'
+    for a in areas:
+        fuerte, claro = color(a["nombre"])
+        ancho = "grid-column: 1 / span 2; " if a["subs"] else ""
+        out += (f'    <div style="{ancho}padding: 14px 16px; background: {claro}; border-radius: 8px; '
+                f'border-top: 4px solid {fuerte}">')
+        if a["subs"]:
+            out += (f'<div style="display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 12px">'
+                    f'<div>{cuerpo(a["nombre"], a["hace"], a["termina"], fuerte)}</div>')
+            for n, h, t in a["subs"]:
+                out += (f'<div style="padding: 10px 12px; background: #ffffff; border-radius: 6px">'
+                        f'{cuerpo(n, h, t, fuerte, chica=True)}</div>')
+            out += '</div>'
+        else:
+            out += cuerpo(a["nombre"], a["hace"], a["termina"], fuerte)
+        out += '</div>\n'
+    return out + '  </div>\n'
+
+
 def juntar_recorrido(crudos):
     """Si el capítulo tiene la tabla de etapas (con su área dueña) y la de los
     tramos E1/E2/E3, las dos se dibujan juntas en el lugar de la de tramos: el
@@ -378,6 +460,8 @@ def juntar_recorrido(crudos):
 def html_de(tipo, c):
     if tipo == "flujo":
         return flujo_etapas(*c)
+    if tipo == "tarjetas":
+        return tarjetas_areas(*c)
     if tipo == "tabla" and [x.strip().lower() for x in c[0]] == ["quién", "de qué habla"]:
         return quien_habla(c[1])
     if tipo == "h3":
@@ -620,7 +704,7 @@ def construir():
         crudos = bloques_de(cap["lineas"])
         if cap["num"] == 0 and len(parrafos) > 1:
             crudos = [("cita", [" ".join(parrafos[1:])])] + crudos
-        crudos = juntar_recorrido(crudos)
+        crudos = partir_areas(juntar_recorrido(crudos))
         cabeza1 = apertura(cap["num"], cap["titulo"])
         cabeza2 = continua(cap["num"], cap["titulo"])
         BLOQUES[f"{clave}_ap"] = cabeza1

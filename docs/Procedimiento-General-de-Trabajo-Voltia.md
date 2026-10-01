@@ -158,13 +158,13 @@ manual.
 
 | Área | Qué hace | Dónde termina su trabajo |
 |---|---|---|
-| **Ventas** | Vende, cierra, cobra la seña, firma el contrato, junta los datos administrativos, arma la carpeta, presenta la consulta inicial a UTE, da la fecha tentativa y define con el cliente cómo va a pagar | Cuando el onboarding está completo y el cliente sabe cómo sigue |
-| **Ingeniería** | Relevamiento, pre-ingeniería, unifilar, memorias, planos y la lista de materiales; después de la validación de Operaciones, cierra el paquete definitivo | Cuando la lista de materiales está cerrada y no se toca más |
+| **Ventas** | Vende, cierra la venta con el cliente y deja todo listo para empezar: el contrato, la seña, cómo va a pagar y la consulta inicial a UTE | Cuando el onboarding está completo y el cliente sabe cómo sigue |
+| **Ingeniería** | Va a la propiedad del cliente a relevar, diseña la instalación —planos y cálculos— y arma la lista de materiales. Después de que Operaciones la revisa, la deja cerrada | Cuando la lista de materiales está cerrada y no se toca más |
 | **Operaciones** | Valida lo que proyectó Ingeniería, confirma la fecha de obra, planifica, ejecuta la instalación y controla los costos | Cuando la obra está terminada y toda la documentación está cargada |
 | ↳ **Obra** (el capataz) | Lleva adelante la instalación en la propiedad y habla con el cliente de lo del día | Cuando deja cargado todo lo necesario para cerrar la obra |
 | ↳ **Logística** | Compra los materiales de la lista definitiva, sigue los pedidos y los recibe en depósito | Cuando el material está en depósito y la obra se puede planificar |
-| **Tramitación UTE** | Los hitos del trámite: consulta, solicitud, aprobaciones, documentos de obra, ensayos, documentos finales y habilitación | Cuando UTE habilita |
-| **Experiencia Solar** | Acompaña al cliente de punta a punta. Es **la dueña del caso, no el canal por donde pasa todo** | No termina |
+| **Tramitación UTE** | Hace el trámite ante UTE paso a paso, desde la primera consulta hasta que UTE habilita la instalación | Cuando UTE habilita |
+| **Experiencia Solar** | Acompaña al cliente desde que firma hasta mucho después de que enciende: es la responsable de que siempre sepa en qué está su instalación | No termina |
 | **Finanzas** | Cobra a los clientes según el plan de pagos, paga a proveedores, instaladores y comisiones, emite las facturas y lleva los resultados | Cuando el proyecto está cobrado entero y sus gastos pagados |
 | **Gerencia** | Define los criterios y las decisiones estratégicas, conduce la reunión de coordinación y atiende el escalamiento | No termina: responde por el conjunto |
 
