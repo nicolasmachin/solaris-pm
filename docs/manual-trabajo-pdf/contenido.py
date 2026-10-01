@@ -628,6 +628,114 @@ def juntar_ingenieria(crudos):
     return out
 
 
+def camino_operaciones():
+    """El camino de un proyecto por Operaciones: la Validación (el gerente
+    agenda, el capataz revisa), la vuelta a Ingeniería Final, las Compras (con
+    sus dos variantes) y la Obra, con lo que entrega cada paso. La fecha
+    confirmada en la Validación le llega a Experiencia Solar."""
+    W = 650
+    naranja, naranja_claro = COLOR_AREA["Operaciones"]
+    violeta, violeta_claro = COLOR_AREA["Ingeniería"]
+    verde, verde_claro = COLOR_AREA["Experiencia Solar"]
+    pasos = [
+        ("VALIDACIÓN", ["El gerente agenda", "el capataz revisa"], "Fecha + informe", naranja, naranja_claro),
+        ("INGENIERÍA FINAL", ["Ajusta según", "el informe"], "Lista final", violeta, violeta_claro),
+        ("COMPRAS", ["Propio: todo en el local", "Tercerizado: kit y flete"], "Materiales listos", naranja, naranja_claro),
+        ("OBRA", ["Instala con los", "materiales y la ingeniería"], "Obra terminada", naranja, naranja_claro),
+    ]
+    w, gap, h = 146, 22, 120
+    p = [f'<defs><marker id="pgt-o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" '
+         f'orient="auto"><path d="M0 0L10 5L0 10z" fill="{NEGRO}"/></marker></defs>']
+    for k, (rot, lineas, entrega, fuerte, claro) in enumerate(pasos):
+        x = k * (w + gap)
+        p.append(f'<rect x="{x}" y="0" width="{w}" height="{h}" rx="8" fill="{claro}"/>'
+                 f'<rect x="{x}" y="0" width="{w}" height="4" rx="2" fill="{fuerte}"/>')
+        p.append(_txt(x + 10, 22, rot, 10, 700, fuerte))
+        for j, l in enumerate(lineas):
+            p.append(_txt(x + 10, 44 + j * 15, l, 11, 500, NEGRO, max_chars=26))
+        p.append(f'<rect x="{x + 8}" y="{h - 34}" width="{w - 16}" height="26" rx="5" fill="{fuerte}"/>')
+        p.append(_txt(x + 16, h - 17, f"Entrega: {entrega}", 10.5, 700, "#ffffff"))
+        if k < len(pasos) - 1:
+            xa = x + w + 2
+            p.append(f'<line x1="{xa}" y1="{h / 2}" x2="{xa + gap - 4}" y2="{h / 2}" stroke="{NEGRO}" '
+                     f'stroke-width="1.5" marker-end="url(#pgt-o)"/>')
+    # La fecha confirmada le llega a Experiencia Solar.
+    y_es = h + 34
+    p.append(f'<path d="M{w / 2} {h} V{y_es - 2}" stroke="{NEGRO}" stroke-width="1.3" stroke-dasharray="3 3" '
+             f'marker-end="url(#pgt-o)"/>')
+    p.append(f'<rect x="0" y="{y_es}" width="{3 * w + 2 * gap}" height="34" rx="6" fill="{verde_claro}" stroke="{verde}"/>')
+    p.append(_txt(10, y_es + 21, "Experiencia Solar recibe la fecha confirmada y se la avisa al cliente", 11, 600, verde))
+    H = y_es + 38
+    etiqueta = "El camino por Operaciones: Validación, Ingeniería Final, Compras y Obra, con lo que entrega cada paso"
+    return (f'  <figure style="margin: 18px 0 0">\n'
+            f'    <svg viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="{etiqueta}" '
+            f'style="display: block; max-width: 100%; height: auto">{"".join(p)}</svg>\n'
+            f'  </figure>\n')
+
+
+def hitos_ute(hitos):
+    """Los once hitos del trámite UTE como una línea de tiempo en dos filas."""
+    W = 650
+    verde_az, claro = COLOR_AREA["Tramitación UTE"]
+    n = len(hitos)
+    fila1 = (n + 1) // 2
+    paso = W / fila1
+    p = []
+    for k, h in enumerate(hitos):
+        fila, i = (0, k) if k < fila1 else (1, k - fila1)
+        cx = paso * i + paso / 2
+        cy = 18 + fila * 82
+        if i < (fila1 if fila == 0 else n - fila1) - 1:
+            p.append(f'<line x1="{cx}" y1="{cy}" x2="{cx + paso}" y2="{cy}" stroke="{verde_az}" stroke-width="3"/>')
+        final = k == n - 1
+        p.append(f'<circle cx="{cx}" cy="{cy}" r="13" fill="{"#3d6b47" if final else verde_az}"/>')
+        p.append(f'<text x="{cx}" y="{cy + 4}" font-family="Barlow, sans-serif" font-size="11" font-weight="700" '
+                 f'fill="#ffffff" text-anchor="middle">{k + 1}</text>')
+        p.append(_txt(cx, cy + 30, h, 10.5, 600, NEGRO, max_chars=14, salto=12, anchor="middle"))
+    H = 18 + 82 + 58
+    etiqueta = "Los once hitos del trámite UTE, de la consulta enviada al trámite finalizado"
+    return (f'  <figure style="margin: 18px 0 0">\n'
+            f'    <svg viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="{etiqueta}" '
+            f'style="display: block; max-width: 100%; height: auto">{"".join(p)}</svg>\n'
+            f'  </figure>\n')
+
+
+def etapas_cliente(filas):
+    """Las tres etapas que vive el cliente (E1/E2/E3) como tarjetas."""
+    tonos = ["#3d6b47", "#5a8a63", "#6f9c77"]
+    out = '  <div style="margin-top: 16px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">\n'
+    for k, (cod, nombre, desde, hasta, vive) in enumerate(filas):
+        out += (f'    <div style="padding: 14px 14px 16px; background: {tonos[k % 3]}; border-radius: 8px">'
+                f'<div style="font-family: {SANS}; font-size: 22px; font-weight: 700; color: #ffffff">{en_linea(cod.strip("*"))}</div>'
+                f'<div style="font-family: {SANS}; font-size: 14px; font-weight: 700; color: #ffffff">{en_linea(nombre)}</div>'
+                f'<div style="margin-top: 6px; font-family: {SANS}; font-size: 11px; line-height: 1.35; color: #e3f0e5">'
+                f'{en_linea(desde)} → {en_linea(hasta)}</div>'
+                f'<p style="margin: 10px 0 0; font-size: 13px; line-height: 1.45; color: #ffffff">{en_linea(vive)}</p></div>\n')
+    return out + '  </div>\n'
+
+
+def juntar_secciones(crudos):
+    """Los dibujos de Operaciones, Tramitación UTE y Experiencia Solar."""
+    out = []
+    k = 0
+    while k < len(crudos):
+        t, c = crudos[k]
+        if t == "p" and c.startswith("Operaciones tiene tres momentos en el recorrido"):
+            out.append((t, c))
+            out.append(("operaciones", None))
+        elif t == "p" and c.startswith("**Los hitos del trámite.**") and k + 1 < len(crudos) \
+                and crudos[k + 1][0] == "numerada":
+            out.append((t, c))
+            out.append(("hitos", [re.sub(r"\*", "", x) for x in crudos[k + 1][1]]))
+            k += 1
+        elif t == "tabla" and [x.strip().lower() for x in c[0]][:2] == ["", "etapa"] and len(c[0]) == 5:
+            out.append(("etapas_cliente", c[1]))
+        else:
+            out.append((t, c))
+        k += 1
+    return out
+
+
 def juntar_recorrido(crudos):
     """Si el capítulo tiene la tabla de etapas (con su área dueña) y la de los
     tramos E1/E2/E3, las dos se dibujan juntas en el lugar de la de tramos: el
@@ -652,6 +760,12 @@ def html_de(tipo, c):
         return proceso_ventas(*c)
     if tipo == "ingenieria":
         return trabajo_ingenieria(*c)
+    if tipo == "operaciones":
+        return camino_operaciones()
+    if tipo == "hitos":
+        return hitos_ute(c)
+    if tipo == "etapas_cliente":
+        return etapas_cliente(c)
     if tipo == "tarjetas":
         return tarjetas_areas(*c)
     if tipo == "tabla" and [x.strip().lower() for x in c[0]] == ["quién", "de qué habla"]:
@@ -901,7 +1015,7 @@ def construir():
         crudos = bloques_de(cap["lineas"])
         if cap["num"] == 0 and len(parrafos) > 1:
             crudos = [("cita", [" ".join(parrafos[1:])])] + crudos
-        crudos = juntar_ingenieria(juntar_ventas(partir_areas(juntar_recorrido(crudos))))
+        crudos = juntar_secciones(juntar_ingenieria(juntar_ventas(partir_areas(juntar_recorrido(crudos)))))
         cabeza1 = apertura(cap["num"], cap["titulo"])
         cabeza2 = continua(cap["num"], cap["titulo"])
         BLOQUES[f"{clave}_ap"] = cabeza1
@@ -928,9 +1042,13 @@ def construir():
                 return 0
             t, c = items[k][1], items[k][2]
             rotulo = t == "p" and re.fullmatch(r"\*\*[^*]{1,60}\*\*", c.strip()) is not None
-            if not (t == "h3" or rotulo or (t == "p" and c.rstrip().rstrip("*").endswith(":"))):
-                return 0
             sid, st, sc = items[k + 1]
+            presenta = t == "p" and st in ("hitos", "operaciones", "ventas", "ingenieria", "flujo", "etapas_cliente")
+            if not (t == "h3" or rotulo or presenta or (t == "p" and c.rstrip().rstrip("*").endswith(":"))):
+                return 0
+            # Un párrafo que presenta un dibujo viaja con el dibujo.
+            if st in ("hitos", "operaciones", "ventas", "ingenieria", "flujo", "etapas_cliente"):
+                return alto(sid, BLOQUES[sid])
             if st == "tabla" and "cab" in ALTURAS.get(sid, {}):
                 return 16 + ALTURAS[sid]["cab"] + ALTURAS[sid]["filas"][0]
             return alto(sid, BLOQUES[sid])

@@ -313,6 +313,85 @@ entrega es **la lista de materiales lista para salir a obra**:
 - **Si la obra la hace un instalador tercerizado**, Compras arma el **kit de
   materiales**, coordina el **flete** y se lo manda.
 
+**La Obra.** El equipo de obra recibe los materiales y la ingeniería, y hace la
+instalación. Lo que entrega es **la obra terminada**, con todo lo necesario para
+darla por cerrada: los controles de obra finalizada cumplidos y los documentos
+firmados, cargados en Voltia PM. El detalle de qué hace falta para cerrar una
+obra está en el Manual de trabajo de Operaciones.
+
+### Tramitación UTE
+
+**Qué hace.** El trámite ante UTE para que la instalación quede habilitada. Es
+la etapa donde el cliente ya tiene los paneles instalados y **todavía no los
+puede usar**, y donde la demora no depende de Voltia: por eso cada hito que se
+marca importa, porque es lo único que se mueve mientras el cliente espera.
+
+**Los hitos del trámite.** Son once, y cada uno se marca en Voltia PM cuando
+ocurre. El cliente ve los mismos en el portal de Voltia.
+
+1. **Consulta enviada**
+2. **Caso abierto en UTE**
+3. **Consulta aprobada**
+4. **Solicitud enviada**
+5. **Proyecto aprobado**
+6. **Documentos 1 enviados**
+7. **Documentos 1 aprobados**
+8. **Ensayos enviados**
+9. **Ensayos aprobados**
+10. **Documentos finales enviados**
+11. **Trámite finalizado**
+
+La consulta (el primer hito) la presenta Ventas en el onboarding; desde ahí, el
+trámite lo sigue Tramitación. **Cuando UTE habilita**, Tramitación marca el
+trámite como finalizado y Voltia PM le avisa solo a Experiencia Solar, que tiene
+de 24 a 48 horas para decirle al cliente que ya puede encender.
+
+### Experiencia Solar
+
+**Qué hace.** Acompaña al cliente desde que termina el onboarding hasta mucho
+después de que enciende. Es su **referente**: la persona a la que le escribe y
+la responsable de que siempre sepa en qué está su instalación, aunque otras
+áreas también hablen con él.
+
+**Las tres etapas del cliente.** No son las etapas del proyecto: son las que
+vive el cliente.
+
+| | Etapa | Desde | Hasta | Lo que vive el cliente |
+|---|---|---|---|---|
+| **E1** | Pre-obra | Se completa el onboarding | La obra termina | Expectativa y ansiedad: compró algo que todavía no existe |
+| **E2** | Habilitación | La obra termina | UTE habilita | **La etapa más difícil**: tiene los paneles en el techo y no los puede usar |
+| **E3** | Post-habilitación | UTE habilita | Para siempre | Está generando, y ahora necesita entender lo que ve |
+
+**Cada cuánto se le habla.** En E1 y E2, si un cliente pasa **5 días hábiles**
+sin un contacto registrado, Voltia PM lo marca. En E3 no hay plazo fijo, porque
+esa etapa no termina nunca: el contacto lo dan el reporte mensual de generación,
+la encuesta de aniversario y el mantenimiento, y el cliente vuelve a aparecer si
+pasa algo.
+
+**Los avisos que no se pueden fallar.** La bienvenida, la fecha de obra, toda
+visita a la propiedad, la obra terminada y qué sigue, y **«ya podés encender»**,
+de 24 a 48 horas después de la habilitación, junto con la capacitación.
+
+Todo el detalle está en el Manual de trabajo de Experiencia Solar (Manual de
+Posventa).
+
+### Finanzas
+
+**Qué hace.** Cobra a los clientes según el plan de pagos que dejó armado Ventas,
+paga a los proveedores, a los instaladores y las comisiones, emite las facturas
+y lleva los resultados de la empresa. Su trabajo con un proyecto termina cuando
+está cobrado entero y sus gastos, pagados. El detalle está en el Manual de
+trabajo de Finanzas, que está en armado.
+
+### Gerencia
+
+**Qué hace.** Define los criterios y las decisiones de fondo de la empresa,
+conduce la reunión de coordinación entre áreas y atiende los casos que el
+cliente le lleva por encima de su referente. Hoy también lleva **Marketing**: el
+contenido, las redes sociales y la publicidad que generan las consultas. Los
+criterios y las decisiones, con su porqué, van en el Manual de trabajo de
+Gerencia.
+
 ---
 
 ## 4 · Cómo se pasa el trabajo de un área a otra
