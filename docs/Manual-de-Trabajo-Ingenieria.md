@@ -1,6 +1,6 @@
 # Manual de trabajo de Ingeniería
 
-**Voltia · Uruguay** · Versión 0.2 — 30 de septiembre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.3 — 1 de octubre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ingeniería, juntos**: qué se hace, quién lo hace, en qué plazo, con qué
@@ -50,6 +50,27 @@ rótulo. **El Proyecto Final** sigue siendo uno solo: al generarlo con IA, el
 borrador ya describe cada suministro por separado.
 
 ## 4 · Las herramientas y cómo se usan
+
+Ingeniería trabaja desde la oficina, sin ir a la propiedad del cliente: todo lo
+que necesita lo trae la visita de venta (el resumen de la visita, las fotos y
+los videos, que al ganar el lead pasan al proyecto).
+
+- **El módulo de Ingeniería de Voltia PM**: el constructor del unifilar, el
+  diseño de los gabinetes metálicos y el de los triángulos de aluminio para las
+  estructuras.
+- **Una habilidad de Claude** (un asistente de inteligencia artificial) que ya
+  tiene el paso a paso de cómo se hace la ingeniería y, sobre todo, los
+  criterios definidos por Voltia. Al hacer el análisis entrega: las memorias
+  descriptiva y de cálculo, el pedido para generar los planos en Claude Design,
+  las planillas de verificación estructural y de vuelco, y la lista de
+  materiales.
+- **Claude Design**, donde se hacen los planos.
+- **El mapeo de materiales** en Voltia PM: la lista de Ingeniería se cruza con
+  los materiales que usa Voltia, y esa lista mapeada es la que reciben
+  Validación de Operaciones y Compras.
+
+> Estas herramientas cambian seguido: por eso el detalle está acá y no en el PGT.
+
 
 *Por escribir: el gabinete metálico está abajo; faltan el unifilar, la
 pre-ingeniería, la lista de materiales, los triángulos, la visita técnica y el
@@ -134,5 +155,6 @@ deja como comentario en su etapa y le llega solo a Experiencia Solar.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.3 | 1 de octubre de 2026 | Se agregan las herramientas con que se trabaja: el módulo de Ingeniería de Voltia PM, la habilidad de Claude con los criterios de Voltia, Claude Design para los planos y el mapeo de materiales. Ingeniería no hace visita de relevamiento: trabaja con lo que trae la visita de venta. |
 | 0.2 | 30 de septiembre de 2026 | Primer lineamiento: los proyectos con más de un suministro llevan un juego de papeles de UTE y un unifilar por suministro, y un solo proyecto y memoria. |
 | 0.1 | 29 de septiembre de 2026 | Se crea el manual con el detalle de Ingeniería que estaba en el manual de trabajo general (v2.2). |

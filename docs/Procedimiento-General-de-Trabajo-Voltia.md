@@ -253,9 +253,9 @@ material pasa al proyecto.
 - **El módulo de Ingeniería de Voltia PM**: el constructor del unifilar, el
   diseño de los gabinetes metálicos y el de los triángulos de aluminio para las
   estructuras.
-- **Una habilidad de Claude** con el paso a paso de la ingeniería y los criterios
-  que definió Voltia.
-- **Claude Design**, para los planos.
+- **Herramientas de diseño y cálculo**, con los criterios que definió Voltia
+  para hacer la ingeniería. Cuáles son y cómo se usan está en el Manual de
+  trabajo de Ingeniería.
 
 **Qué entrega.**
 
