@@ -2,39 +2,64 @@
 
 **Voltia · Uruguay** · Versión 3.0 — 29 de septiembre de 2026
 
-> El PGT es **lo que conecta a todas las áreas**: el recorrido de un proyecto,
-> las reglas que valen para todos, qué hace cada área, dónde termina su trabajo
-> y cómo se lo pasa a la siguiente.
->
-> **No baja al detalle.** Cómo se hace cada cosa, con qué criterio y en qué
-> pantalla de Voltia PM está en el **manual de trabajo de cada área**. Si algo
-> de acá contradice a un manual de área, uno de los dos está mal y se corrige.
+> Cómo trabaja Voltia en su conjunto: por qué etapas pasa cada instalación, qué
+> área se ocupa de cada una, cómo se pasan el trabajo entre ellas y qué reglas
+> valen para todos.
 
 ---
 
-## 0 · Los documentos de trabajo de Voltia
+## 0 · Qué es este documento
 
-| Documento | Qué tiene | Quién lo lee |
+### El PGT
+
+Este documento se llama **Procedimiento General de Trabajo**, o **PGT**.
+Explica cómo trabaja Voltia en su conjunto: por qué etapas pasa cada
+instalación solar desde que se vende hasta que queda funcionando, qué área de
+la empresa se ocupa de cada etapa, cómo se pasan el trabajo de un área a otra y
+qué reglas valen para todos.
+
+**El PGT no explica cómo se hace cada tarea.** Eso está en el manual de cada
+área, que se listan más abajo. Por ejemplo: el PGT dice que Ventas acuerda con
+el cliente cómo va a pagar; **cómo** se carga eso en Voltia PM —el sistema que
+usamos todos para trabajar— está en el Manual de trabajo de Ventas.
+
+### Cómo se lee
+
+**Todos los que trabajan en Voltia leen el PGT entero**, empezando por acá. Es
+corto a propósito. Después, cada uno lee **el manual de su área**. Gerencia los
+lee todos.
+
+Cada manual empieza diciendo quién lo tiene que leer. Si un área necesita saber
+algo de otra, **eso está repetido en su propio manual**: nadie tiene que salir a
+buscar pedacitos en los manuales de los demás.
+
+Las palabras que se usan mucho y que alguien nuevo puede no conocer —Voltia PM,
+UTE, etapa, E1— están explicadas en el **glosario**, al final del PGT.
+
+### Los documentos de trabajo de Voltia
+
+| Documento | Qué explica | Quién lo lee |
 |---|---|---|
-| **Procedimiento General de Trabajo (PGT)** | Lo que conecta a las áreas. Este documento | Todo el equipo |
-| **Manual de trabajo de Ventas** | Procedimiento, lineamientos y herramientas del área | Asesores comerciales y Gerencia Comercial |
-| **Manual de trabajo de Ingeniería** | Ídem | Ingeniería |
-| **Manual de trabajo de Operaciones** | Ídem, con dos partes que también salen como librillos sueltos: **Obra** y **Logística** | Operaciones; el capataz, el librillo de Obra; Logística, el suyo |
-| **Manual de trabajo de Tramitación UTE** | Ídem | Tramitación UTE |
-| **Manual de trabajo de Experiencia Solar** — *Manual de Posventa* | El acompañamiento del cliente de punta a punta | Experiencia Solar |
-| **Manual de trabajo de Finanzas** | Procedimiento, lineamientos y herramientas del área | Finanzas |
-| **Manual de trabajo de Gerencia** | Los criterios y las decisiones estratégicas, con su porqué | Gerencia |
-| **Reglamento interno** | Horario, horas extras, uso de las medidas de seguridad, sanciones | Todo el equipo; cuelga de Operaciones |
+| **Procedimiento General de Trabajo (PGT)** | Cómo trabaja Voltia en su conjunto. Es este documento | Todo el equipo |
+| **Manual de trabajo de Ventas** | Cómo se vende: del primer contacto con el cliente hasta que la venta está cerrada y lista para empezar | Los asesores comerciales y la Gerencia Comercial |
+| **Manual de trabajo de Ingeniería** | Cómo se proyecta la instalación: el relevamiento, los planos, los cálculos y la lista de materiales | Ingeniería |
+| **Manual de trabajo de Operaciones** | Cómo se planifica y se hace la obra. Tiene dos partes que también se entregan sueltas: **Obra**, para el capataz y su equipo, y **Logística**, para quien compra y recibe los materiales | Operaciones; el capataz, la parte de Obra; Logística, la suya |
+| **Manual de trabajo de Tramitación UTE** | Cómo se hace el trámite ante UTE para que la instalación quede habilitada | Tramitación UTE |
+| **Manual de trabajo de Experiencia Solar** — *Manual de Posventa* | Cómo se acompaña al cliente de punta a punta: qué se le avisa, cuándo y con qué mensaje | Experiencia Solar |
+| **Manual de trabajo de Finanzas** | Cómo se cobra, se paga y se factura | Finanzas |
+| **Manual de trabajo de Gerencia** | Las decisiones de fondo de la empresa y por qué se tomaron | Gerencia |
+| **Reglamento interno** | El horario, las horas extras, el uso de las medidas de seguridad y las sanciones | Todo el equipo |
 
-**El PGT lo lee todo el mundo, entero.** Es corto a propósito. Después, cada
-uno lee **el manual de su área**, y Gerencia los lee todos.
+### Si dos documentos dicen cosas distintas
 
-Cada manual arranca diciendo quién lo tiene que leer. **Lo que un área necesita
-saber de otra está repetido en su propio manual**, a propósito: nadie tiene que
-ir a buscar un pedacito a cada manual para poder hacer su trabajo.
+Uno de los dos está mal. **Se avisa a Gerencia** y se corrige: los documentos
+tienen que decir siempre lo mismo.
 
-Cada documento cierra con un **registro de cambios**: qué se agregó o modificó
-en cada versión.
+### Las versiones
+
+Arriba de cada documento dice su **versión** y su fecha. Al final de cada uno
+está el **registro de cambios**: qué se agregó o se modificó en cada versión.
+Así, quien ya lo leyó sabe qué cambió sin tener que leerlo entero de nuevo.
 
 ---
 
@@ -321,6 +346,9 @@ registrar le cuesta. Hay que mirar desde dónde tendría que hacerlo.
 
 | Palabra | Qué es |
 |---|---|
+| **Voltia PM** | El sistema interno que usamos todos para trabajar: ahí están los proyectos, los clientes, el calendario y todo lo que cada área registra. |
+| **UTE** | La empresa estatal de electricidad. Para que un cliente genere su propia energía conectado a la red, UTE tiene que aprobar la instalación y habilitarla. |
+| **Área** | Cada sector de Voltia: Ventas, Ingeniería, Operaciones, Tramitación UTE, Experiencia Solar, Finanzas y Gerencia. |
 | **Generador** | El cliente, una vez que su instalación existe. Es como lo llama UTE y como lo llama Voltia PM. |
 | **E1 / E2 / E3** | Los tres tramos del acompañamiento al cliente. **No son las etapas del proyecto.** |
 | **Etapa** | Cada uno de los ocho tramos del proyecto, de Venta a Trámite UTE. |

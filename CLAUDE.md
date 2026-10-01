@@ -336,6 +336,12 @@ siguen con el voseo porque le hablan a él. Sin nombres de archivo, de endpoints
 ni de permisos: el lector no programa. Los detalles técnicos van al manual de
 `docs/manual/`.
 
+**Escritos para alguien que entra hoy a la empresa ("para Doña María"): no se
+da nada por asumido.** Cada documento dice qué es y qué no es antes de entrar
+en materia; cada palabra propia de Voltia (Voltia PM, UTE, etapa, E1, traspaso)
+se explica la primera vez o está en el glosario; nada de "ídem" ni de
+referencias a algo que el lector todavía no vio.
+
 **Las plantillas de mensajes se citan enteras.** Cuando un manual menciona una
 plantilla ("Plantilla *Bienvenida*"), va el texto completo tal como sale en la
 app, **la primera vez que aparece**, marcado como cita y en letra más chica; las
