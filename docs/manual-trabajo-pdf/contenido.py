@@ -537,10 +537,16 @@ def juntar_ventas(crudos):
     if i_emb is None or i_emb + 1 >= len(crudos) or crudos[i_emb + 1][0] != "numerada":
         return crudos
     pasos = [re.match(r"\*\*(.+?)\.?\*\*", x).group(1).rstrip(".") for x in crudos[i_emb + 1][1]]
+    # Si la lista son solo los nombres de los pasos, es el dibujo y no se
+    # repite como texto; si cada paso trae su explicación, queda como leyenda.
+    solo_nombres = all(re.fullmatch(r"\*\*[^*]+\*\*", x.strip()) for x in crudos[i_emb + 1][1])
     i_onb = next((k for k, (t, c) in enumerate(crudos) if t == "p" and c.startswith("**El onboarding.**")), None)
     tareas = len(crudos[i_onb + 1][1]) if i_onb is not None and crudos[i_onb + 1][0] == "lista" else 0
     out = list(crudos)
-    out.insert(i_emb + 1, ("ventas", (pasos, tareas)))
+    if solo_nombres:
+        out[i_emb + 1] = ("ventas", (pasos, tareas))
+    else:
+        out.insert(i_emb + 1, ("ventas", (pasos, tareas)))
     return out
 
 

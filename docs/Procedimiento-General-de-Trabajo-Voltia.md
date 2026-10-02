@@ -73,7 +73,7 @@ proyecto cuánto le queda a su etapa.
 
 | | Etapa | Área dueña | Plazo |
 |---|---|---|---|
-| 1 | Venta: de la consulta al cierre | Ventas | Por paso del embudo (capítulo 3) |
+| 1 | Venta: de la consulta al cierre | Ventas | Por paso del embudo (Manual de Ventas) |
 | 2 | Onboarding | Ventas | 3 días hábiles |
 | 3 | Pre-Ingeniería | Ingeniería | 10 días hábiles |
 | 4 | Validación de Operaciones | Operaciones | 2 días hábiles |
@@ -191,30 +191,14 @@ manual propio.
 paso hay gente que no sigue. De cada 100 consultas que llegan se cierran, más o
 menos, 2 ventas.
 
-1. **Consulta.** El asesor responde con el *speech*: un mensaje con un orden de
-   precio e información general, que dice qué mandar para avanzar, como la
-   factura de UTE. Muchos quedan acá, al ver el precio.
-2. **Lead.** Quien manda su factura de UTE pasa a ser un **lead**, un cliente
-   potencial, y recién ahí se registra en Voltia PM.
-3. **Propuesta.** Se arma la propuesta comercial y se le envía.
-4. **Visita de venta.** A quien quiere avanzar se le ofrece una visita a su casa.
-   La visita incluye el **relevamiento técnico**, para ir una sola vez. Al salir
-   se arma el **resumen de la visita** —lo que se habló, el techo, el montaje, las
-   medidas, la instalación eléctrica, un video, tomas con dron y fotos— y se le
-   envía al cliente. Es el paso donde más clientes deciden comprar.
-5. **Cierre.** La conversación sigue con el asesor, y el cliente confirma o no la
-   venta.
+1. **Consulta**
+2. **Lead**
+3. **Propuesta**
+4. **Visita de venta**
+5. **Cierre**
 
-Cada paso queda registrado en Voltia PM, en el **pipeline comercial**, y cada
-uno tiene su plazo:
-
-| Paso | Plazo |
-|---|---|
-| De lead a propuesta enviada | 2 días hábiles |
-| De la propuesta a la visita agendada | 3 días hábiles |
-| De la visita agendada a la visita | 5 días hábiles |
-| De la visita al cierre | 5 días hábiles |
-| Del cierre al proyecto creado | 2 días hábiles |
+Cada paso queda registrado en el **pipeline comercial** de Voltia PM. Qué pasa
+en cada uno y sus plazos están en el Manual de trabajo de Ventas.
 
 **Cuando el cliente confirma.** El asesor marca el lead como **ganado** en
 Voltia PM, y eso crea el proyecto solo, con todos los datos del lead, incluidos

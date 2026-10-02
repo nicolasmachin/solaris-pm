@@ -31,6 +31,35 @@ ahora está lo que venía del manual de trabajo (abajo).*
 > código): el pipeline de 7 etapas, los reclamos, las propuestas, el panel del
 > lead. Antes de usarlo, reverificar lo que haya cambiado desde esa fecha.
 
+### El embudo, paso a paso
+
+De cada 100 consultas que llegan se cierran, más o menos, 2 ventas.
+
+1. **Consulta.** El asesor responde con el *speech*: un mensaje con un orden de
+   precio e información general, que dice qué mandar para avanzar, como la
+   factura de UTE. Muchos quedan acá, al ver el precio.
+2. **Lead.** Quien manda su factura de UTE pasa a ser un **lead**, un cliente
+   potencial, y recién ahí se registra en Voltia PM.
+3. **Propuesta.** Se arma la propuesta comercial y se le envía.
+4. **Visita de venta.** A quien quiere avanzar se le ofrece una visita a su casa.
+   La visita incluye el **relevamiento técnico**, para ir una sola vez. Al salir
+   se arma el **resumen de la visita** —lo que se habló, el techo, el montaje, las
+   medidas, la instalación eléctrica, un video, tomas con dron y fotos— y se le
+   envía al cliente. Es el paso donde más clientes deciden comprar.
+5. **Cierre.** La conversación sigue con el asesor, y el cliente confirma o no la
+   venta.
+
+Cada paso queda registrado en Voltia PM, en el **pipeline comercial**, y cada
+uno tiene su plazo:
+
+| Paso | Plazo |
+|---|---|
+| De lead a propuesta enviada | 2 días hábiles |
+| De la propuesta a la visita agendada | 3 días hábiles |
+| De la visita agendada a la visita | 5 días hábiles |
+| De la visita al cierre | 5 días hábiles |
+| Del cierre al proyecto creado | 2 días hábiles |
+
 ### Las tareas del onboarding
 
 Tal como están definidas hoy en Voltia PM (salen del PGT, que las describe en
@@ -229,5 +258,6 @@ esa venta se le pregunta a él.
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
 | 0.2 | 30 de septiembre de 2026 | El cotizador con inversores distintos y qué pasa con cada uno (un suministro por inversor). Se agrega la consulta inicial a UTE: una por cada cuenta. |
+| 0.3 | 1 de octubre de 2026 | Se agrega el embudo paso a paso, con lo que pasa en cada paso y sus plazos (sale del PGT, que queda con el dibujo del embudo). |
 | 0.2 | 1 de octubre de 2026 | Se agregan las tareas del onboarding una por una (el PGT las describe en general). |
 | 0.1 | 29 de septiembre de 2026 | Se crea el manual con el detalle de Ventas que estaba en el manual de trabajo general (v2.2). |
