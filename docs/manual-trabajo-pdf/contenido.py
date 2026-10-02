@@ -553,8 +553,8 @@ def juntar_ventas(crudos):
 def trabajo_ingenieria(recibe, trabaja, entrega):
     """El trabajo de Ingeniería en un dibujo: qué recibe, con qué trabaja y qué
     entrega (lo que está en negrita en cada lista del .md), y abajo el camino
-    de la lista de materiales mapeada: Validación de Operaciones, Ingeniería
-    Final y recién ahí Compras."""
+    de lo que entrega: Validación de Operaciones, Ingeniería Final y recién ahí
+    Compras."""
     W = 650
     violeta, violeta_claro = COLOR_AREA["Ingeniería"]
     naranja, naranja_claro = COLOR_AREA["Operaciones"]
@@ -581,18 +581,12 @@ def trabajo_ingenieria(recibe, trabaja, entrega):
             xa = x + col_w + 3
             p.append(f'<line x1="{xa}" y1="{alto_col / 2}" x2="{xa + gap - 6}" y2="{alto_col / 2}" '
                      f'stroke="{NEGRO}" stroke-width="1.6" marker-end="url(#pgt-i)"/>')
-    # La lista de materiales mapeada y a quién le llega.
-    y_m = alto_col + 34
+    # De lo que entrega Ingeniería a la Validación de Operaciones.
     x_lista = 2 * (col_w + gap)
-    p.append(f'<path d="M{x_lista + col_w / 2} {alto_col} V{y_m - 2}" stroke="{NEGRO}" stroke-width="1.4" '
-             f'marker-end="url(#pgt-i)"/>')
-    p.append(f'<rect x="{x_lista - 120}" y="{y_m}" width="{col_w + 120}" height="40" rx="6" fill="{violeta_claro}" '
-             f'stroke="{violeta}"/>')
-    p.append(_txt(x_lista - 108, y_m + 17, "VOLTIA PM MAPEA LA LISTA", 9.5, 700, violeta))
-    p.append(_txt(x_lista - 108, y_m + 31, "cada material, con los que usa Voltia", 11, 500, NEGRO))
+    y_m = alto_col
     # La pre-ingeniería no va a Compras: pasa por la Validación, vuelve a
     # Ingeniería para la Ingeniería Final y recién ahí llega a Compras.
-    y_d = y_m + 66
+    y_d = y_m + 40
     pasos = [("Validación de Operaciones", "el capataz la revisa", naranja_claro, naranja),
              ("Ingeniería Final", "ajustes del informe del capataz", violeta_claro, violeta),
              ("Compras", "compra sobre la lista final", naranja_claro, naranja)]
@@ -606,7 +600,7 @@ def trabajo_ingenieria(recibe, trabaja, entrega):
             xa = x + ancho_p + 3
             p.append(f'<line x1="{xa}" y1="{y_d + 23}" x2="{xa + sep_p - 6}" y2="{y_d + 23}" stroke="{NEGRO}" '
                      f'stroke-width="1.4" marker-end="url(#pgt-i)"/>')
-    p.append(f'<path d="M{x_lista - 20} {y_m + 40} C{x_lista - 20} {y_m + 56} {ancho_p / 2} {y_d - 18} {ancho_p / 2} {y_d - 2}" '
+    p.append(f'<path d="M{x_lista + col_w / 2} {y_m} C{x_lista + col_w / 2} {y_m + 22} {ancho_p / 2} {y_d - 20} {ancho_p / 2} {y_d - 2}" '
              f'fill="none" stroke="{NEGRO}" stroke-width="1.4" marker-end="url(#pgt-i)"/>')
     H = y_d + 50
     etiqueta = "El trabajo de Ingeniería: qué recibe, con qué trabaja, qué entrega y a quién le llega la lista de materiales"

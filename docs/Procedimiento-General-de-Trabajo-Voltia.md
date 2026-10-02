@@ -268,10 +268,7 @@ ganar el lead pasa al proyecto.
 - **Las planillas** de verificación estructural y de vuelco.
 - **La lista de materiales**.
 
-**La lista de materiales, mapeada.** Voltia PM toma la lista de Ingeniería y
-**mapea cada material con los que usa Voltia**.
-
-**Dos pasadas.** La pre-ingeniería —con los planos y la lista mapeada— va
+**Dos pasadas.** La pre-ingeniería —con los planos y la lista de materiales— va
 **primero a Validación de Operaciones**, no a Compras. Cuando Operaciones la
 valida, vuelve a Ingeniería para la **Ingeniería Final**: ahí se hacen los
 ajustes que marcó el capataz y se confirma toda la documentación. **Recién esa
