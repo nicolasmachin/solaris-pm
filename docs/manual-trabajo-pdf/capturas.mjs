@@ -156,5 +156,23 @@ try {
   console.error("  ✗ ventas:", e.message);
 }
 
+// 6. El calendario en un mes con obras agendadas (mayo de 2026 en la base
+//    local): se retrocede desde el mes actual con la flecha "‹".
+try {
+  await abrir("/calendario");
+  const meses = Number(process.env.CAPTURA_MESES_ATRAS || 4);
+  for (let i = 0; i < meses; i++) {
+    await page.evaluate(() => {
+      const b = [...document.querySelectorAll("button")].find((x) => x.textContent?.trim() === "‹");
+      b?.click();
+    });
+    await esperar(900);
+  }
+  await esperar(1500);
+  await guardar("calendario-con-obras");
+} catch (e) {
+  console.error("  ✗ calendario:", e.message);
+}
+
 await browser.close();
 proxy.close();

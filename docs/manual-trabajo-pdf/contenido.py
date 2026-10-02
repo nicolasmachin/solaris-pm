@@ -795,37 +795,58 @@ def cliente_burbujas(items):
             f'  </figure>\n')
 
 
-# Las marcas sobre la captura del proyecto (capítulo 7): dónde está cada cosa,
-# en porcentaje de la imagen. Se ubicaron mirando la captura; si la pantalla
-# cambia, hay que volver a sacarla (capturas.mjs) y revisar estas posiciones.
-MARCAS_PROYECTO = [
-    (1, 46, 2.5, "El menú, con una sección por área"),
-    (2, 7, 45, "La lista de clientes, para elegir con cuál trabajar"),
-    (3, 57, 21, "Los botones que llevan al mismo cliente en otras secciones"),
-    (4, 69.5, 10, "El plazo de la etapa en curso, en cuenta regresiva"),
-    (5, 56, 66, "El recorrido del proyecto, etapa por etapa"),
-]
+# Las pantallas del capítulo 7, cada una con sus marcas: dónde está cada cosa,
+# en porcentaje de la imagen. Se ubicaron mirando las capturas; si una
+# pantalla cambia, hay que volver a sacarla (capturas.mjs) y revisar las
+# posiciones. La clave es cómo empieza el párrafo del .md que la presenta.
+PANTALLAS = {
+    "**El proyecto.**": ("PROYECTO_PANTALLA", [
+        (1, 46, 2.5, "El menú, con una sección por área"),
+        (2, 7, 45, "La lista de clientes, para elegir con cuál trabajar"),
+        (3, 57, 21, "Los botones que llevan al mismo cliente en otras secciones"),
+        (4, 69.5, 10, "El plazo de la etapa en curso, en cuenta regresiva"),
+        (5, 56, 66, "El recorrido del proyecto, etapa por etapa"),
+    ]),
+    "**La ficha del cliente.**": ("FICHA_ENCABEZADO", [
+        (1, 56, 17, "Los datos del cliente y cuántos días hace que no se lo contacta"),
+        (2, 59, 30.5, "Los botones que llevan al mismo cliente en otras secciones"),
+        (3, 37, 50, "Sus tres etapas, con los pasos de cada una"),
+        (4, 77, 55, "Para registrar un contacto; debajo, todo el historial"),
+    ]),
+    "**El calendario.**": ("CALENDARIO_OBRAS", [
+        (1, 13, 10.6, "El mes, con flechas para ir y venir"),
+        (2, 63, 14.7, "Qué mostrar: obras, mantenimientos, visitas…"),
+        (3, 53, 21, "Rayado, fecha tentativa; lleno, fecha confirmada"),
+        (4, 36, 59, "Cada obra agendada, del color de su equipo"),
+        (5, 70, 7.8, "Para agendar una obra u otra cosa"),
+    ]),
+    "**El portal de Voltia.**": ("PORTAL_RECORTE", [
+        (1, 57, 9.4, "Lo que el cliente puede abrir: proyectos, reportes, reclamos y encuestas"),
+        (2, 49, 35, "En qué está su trámite"),
+        (3, 26.5, 55, "Cada paso del trámite, con su fecha"),
+    ]),
+}
 
 
-def pantalla_anotada():
-    """La pantalla de un proyecto en Voltia PM con números sobre cada parte y,
-    debajo, qué es cada número."""
+def pantalla_anotada(clave):
+    """Una pantalla de Voltia PM con números sobre cada parte y, debajo, qué es
+    cada número."""
+    img, marcas_def = PANTALLAS[clave]
     marcas = "".join(
         f'<div style="position: absolute; left: {x}%; top: {y}%; transform: translate(-50%, -50%); width: 26px; '
         f'height: 26px; border-radius: 50%; background: {ROJO}; color: #ffffff; font-family: {SANS}; font-size: 13px; '
         f'font-weight: 700; line-height: 26px; text-align: center; box-shadow: 0 0 0 3px #ffffff">{n}</div>'
-        for n, x, y, _ in MARCAS_PROYECTO)
+        for n, x, y, _ in marcas_def)
     leyenda = "".join(
-        f'<div style="display: flex; gap: 10px; align-items: baseline; margin-top: 7px">'
+        f'<div style="display: flex; gap: 10px; align-items: baseline; margin-top: 6px">'
         f'<span style="flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; background: {ROJO}; color: #ffffff; '
         f'font-family: {SANS}; font-size: 11px; font-weight: 700; line-height: 20px; text-align: center">{n}</span>'
-        f'<span style="font-size: 14px; line-height: 1.45; color: {TEXTO}">{t}</span></div>'
-        for n, _, _, t in MARCAS_PROYECTO)
-    return (f'  <figure style="margin: 18px 0 0">\n'
+        f'<span style="font-size: 13.5px; line-height: 1.4; color: {TEXTO}">{t}</span></div>'
+        for n, _, _, t in marcas_def)
+    return (f'  <figure style="margin: 12px 0 0">\n'
             f'    <div style="position: relative; border: 1px solid {BORDE}; border-radius: 8px; overflow: hidden">'
-            f'<img src="{IMG.PROYECTO_PANTALLA}" alt="La pantalla de un proyecto en Voltia PM" '
-            f'style="display: block; width: 100%">{marcas}</div>\n'
-            f'    <figcaption style="margin-top: 10px">{leyenda}</figcaption>\n'
+            f'<img src="{getattr(IMG, img)}" alt="" style="display: block; width: 100%">{marcas}</div>\n'
+            f'    <figcaption style="margin-top: 8px">{leyenda}</figcaption>\n'
             f'  </figure>\n')
 
 
@@ -860,8 +881,10 @@ def juntar_cliente_pm_casos(crudos, num):
     if num == 7:
         for t, c in crudos:
             out.append((t, c))
-            if t == "p" and c.startswith("El menú tiene una sección por cada área"):
-                out.append(("pantalla", None))
+            if t == "p":
+                clave = next((k for k in PANTALLAS if c.startswith(k)), None)
+                if clave:
+                    out.append(("pantalla", clave))
         return out
     if num == 8:
         casos = []
@@ -904,7 +927,7 @@ def html_de(tipo, c):
     if tipo == "burbujas":
         return cliente_burbujas(c)
     if tipo == "pantalla":
-        return pantalla_anotada()
+        return pantalla_anotada(c)
     if tipo == "casos":
         return casos_tarjetas(c)
     if tipo == "operaciones":
@@ -1196,7 +1219,8 @@ def construir():
             t, c = items[k][1], items[k][2]
             rotulo = t == "p" and re.fullmatch(r"\*\*[^*]{1,60}\*\*", c.strip()) is not None
             sid, st, sc = items[k + 1]
-            presenta = t == "p" and st in ("hitos", "operaciones", "ventas", "ingenieria", "flujo", "etapas_cliente")
+            presenta = t == "p" and st in ("hitos", "operaciones", "ventas", "ingenieria", "flujo", "etapas_cliente",
+                                           "pantalla")
             if not (t == "h3" or rotulo or presenta or (t == "p" and c.rstrip().rstrip("*").endswith(":"))):
                 return 0
             # Un párrafo que presenta un dibujo viaja con el dibujo.

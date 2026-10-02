@@ -486,6 +486,20 @@ uno tiene pendiente.
 En el **menú del usuario**, arriba a la derecha, está **Capacitación**: videos y
 documentos para aprender a usar Voltia PM, divididos por área.
 
+### Las pantallas que usan todos
+
+**El proyecto.** Donde se sigue cada obra: sus etapas, en qué está y cuánto le
+queda a la etapa en curso.
+
+**La ficha del cliente.** La pantalla de Experiencia Solar: los datos del
+cliente, sus tres etapas y todo su historial, con lo que registró cada área.
+
+**El calendario.** Donde se agenda todo lo que ocupa a alguien —las obras, las
+visitas, los mantenimientos—, cada cosa con su color.
+
+**El portal de Voltia.** Lo que ve el cliente: el avance de su trámite paso por
+paso, sus reportes, sus reclamos y sus encuestas.
+
 Cómo se usa cada pantalla está en el manual del área que la usa.
 
 ---
