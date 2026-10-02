@@ -2842,6 +2842,33 @@ model AIRateLimit {
   @@map("ai_rate_limits")
 }
 
+// Registro central del gasto de IA: una fila por llamada a Claude o por audio
+// transcripto. Es un log, sin relaciones: borrar un usuario o un proyecto no
+// borra lo que se gastó. `feature` es texto (lista en services/ai/usage.ts).
+model AIUsage {
+  id           String   @id @default(cuid())
+  feature      String
+  provider     String
+  model        String
+  tokensInput  Int      @default(0)
+  tokensOutput Int      @default(0)
+  cacheRead    Int      @default(0)
+  cacheWrite   Int      @default(0)
+  audioSeconds Decimal? @db.Decimal(10, 2)
+  costUsd      Decimal? @db.Decimal(10, 6)
+  durationMs   Int?
+  ok           Boolean
+  error        String?
+  userId       String?
+  projectId    String?
+  entityId     String?
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([createdAt])
+  @@index([feature, createdAt])
+  @@map("ai_usage")
+}
+
 // ─── Generador de unifilares ──────────────────────────────────────────────
 //
 // `UnifilarVersion` representa un snapshot inmutable de un plano unifilar

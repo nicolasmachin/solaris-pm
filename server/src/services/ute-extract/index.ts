@@ -7,6 +7,7 @@
 // document (base64) para PDFs sin conversión previa.
 
 import Anthropic from "@anthropic-ai/sdk";
+import { createMessage, type AIUsageCtx } from "../ai/usage.js";
 import { z } from "zod";
 
 const MODEL_ID = "claude-haiku-4-5-20251001";
@@ -127,6 +128,7 @@ export async function extractFromDocument(args: {
   fileBuffer: Buffer;
   mimeType: string;
   tipo: DocTipo;
+  ctx?: AIUsageCtx;
 }): Promise<{ data: ExtractedData; tokensInput: number; tokensOutput: number }> {
   const { fileBuffer, mimeType, tipo } = args;
   const base64 = fileBuffer.toString("base64");
@@ -157,7 +159,7 @@ export async function extractFromDocument(args: {
         },
       };
 
-  const response = await getClient().messages.create({
+  const response = await createMessage(getClient(), "ute_extract", {
     model: MODEL_ID,
     max_tokens: MAX_TOKENS,
     messages: [
@@ -166,7 +168,7 @@ export async function extractFromDocument(args: {
         content: [contentBlock, { type: "text", text: prompt }],
       },
     ],
-  });
+  }, args.ctx);
 
   const rawText = response.content
     .map((b) => (b.type === "text" ? b.text : ""))

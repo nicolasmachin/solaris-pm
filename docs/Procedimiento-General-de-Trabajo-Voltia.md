@@ -1,6 +1,6 @@
 # Procedimiento General de Trabajo (PGT) de Voltia
 
-**Voltia · Uruguay** · Versión 3.0 — 29 de septiembre de 2026
+**Voltia · Uruguay** · Borrador en revisión — 1 de octubre de 2026
 
 > Cómo trabaja Voltia en su conjunto: por qué etapas pasa cada instalación, qué
 > área se ocupa de cada una, cómo se pasan el trabajo entre ellas y qué reglas
@@ -100,7 +100,7 @@ cliente** en tres tramos:
 
 ---
 
-## 2 · Las cinco reglas que valen para todos
+## 2 · Las reglas que valen para todos
 
 ### Regla 1 — Solo dos personas hablan con el cliente
 
@@ -151,6 +151,26 @@ historial del cliente, con el nombre del área, y lo ven todos.
 avisada.** Vale para el relevamiento, para la visita técnica de coordinación,
 para dejar materiales y para la obra. Y si está agendada y no se puede ir, **se
 avisa antes de la hora**.
+
+### Regla 6 — Toda reprogramación se avisa el mismo día
+
+Si una fecha que ya se le dio al cliente se mueve, **se le avisa ese mismo día,
+con el motivo**, aunque todavía no haya fecha nueva.
+
+### Regla 7 — Habilitación: de 24 a 48 horas
+
+Cuando UTE habilita, el cliente tiene que saber **en 24 a 48 horas** que ya puede
+encender. Cada día que pasa sin saberlo, deja de ahorrar.
+
+### Regla 8 — Reclamos: respuesta el mismo día hábil, siempre
+
+Aunque sea «lo estoy viendo, te confirmo mañana». **La solución puede demorar; la
+respuesta no.**
+
+### Regla 9 — Todo mensaje al cliente cierra con el próximo paso
+
+Nunca un mensaje que lo deje sin saber qué sigue: «ahora arranca el trámite, y te
+aviso apenas habiliten».
 
 ---
 
@@ -426,10 +446,6 @@ Y en ningún caso el cliente hace de mensajero.
   venta, la fecha de obra confirmada, la obra terminada y qué sigue, y **«ya
   podés encender», de 24 a 48 horas después de la habilitación**. Cada día que
   pasa sin ese último, el cliente deja de ahorrar.
-- **Toda reprogramación se avisa el mismo día**, con el motivo, aunque todavía no
-  haya fecha nueva.
-- **Todo mensaje al cliente cierra con el próximo paso**: nunca queda sin saber qué
-  sigue.
 - **Reclamos: respuesta el mismo día hábil, siempre.** Aunque sea «lo estoy
   viendo, te confirmo mañana». Derivar a un área técnica no es responder: el
   cliente igual tiene que escuchar algo ese día. Conviene que entren por el
@@ -514,6 +530,17 @@ registrar le cuesta. Hay que mirar desde dónde tendría que hacerlo.
 > ### 5. Si no está agendado, no vamos.
 > Y si está agendado y no se puede ir, se avisa antes de la hora.
 
+> ### 6. Toda reprogramación se avisa el mismo día.
+> Con el motivo, aunque todavía no haya fecha nueva.
+
+> ### 7. Habilitación: de 24 a 48 horas.
+> Cada día que pasa, el cliente deja de ahorrar.
+
+> ### 8. Reclamos: respuesta el mismo día hábil, siempre.
+> La solución puede demorar; la respuesta no.
+
+> ### 9. Todo mensaje al cliente cierra con el próximo paso.
+
 ---
 
 ## Anexo · Glosario
@@ -540,22 +567,5 @@ registrar le cuesta. Hay que mirar desde dónde tendría que hacerlo.
 
 ## Anexo · Registro de cambios
 
-Hasta la versión 2.2 este documento se llamaba **"Cómo trabajamos en Voltia —
-Manual de trabajo"** y tenía, además de lo general, el detalle de cada área.
-
-| Versión | Fecha | Qué se agregó o modificó |
-|---|---|---|
-| 3.0 | 29 de septiembre de 2026 | Pasa a ser el **Procedimiento General de Trabajo (PGT)**: queda solo lo que conecta a las áreas. El detalle de cada área se muda a su manual de trabajo. Se agregan la lista de documentos de trabajo, la tabla de las áreas, qué le deja cada área a la siguiente y a quién se le pregunta qué, todo junto. |
-| 2.2 | 28 de septiembre de 2026 | El manual pasa a hablarle al rol y no al lector ("qué hace", "dónde termina su trabajo"). "La app" pasa a llamarse Voltia PM. |
-| 2.1 | 28 de septiembre de 2026 | Gabinete metálico: cada medida acotada sobre el dibujo y la vista a pantalla completa. La cadencia pasa a contarse en días hábiles y E3 deja de tenerla. |
-| 2.0 | 28 de septiembre de 2026 | Gabinete metálico: sin herrajes y sin perforar; los agujeros de amure se hacen en obra. |
-| 1.9 | 28 de septiembre de 2026 | Gabinete metálico: la tapa se pide suelta, sin bisagras ni cierre. |
-| 1.8 | 28 de septiembre de 2026 | Gabinete metálico: ninguna medida queda sin definir. |
-| 1.7 | 28 de septiembre de 2026 | Se agrega el gabinete metálico que se manda a fabricar (Ingeniería). |
-| 1.6 | 28 de septiembre de 2026 | Se agrega el Plan de Protección contra Granizo, en la venta y en Experiencia Solar. |
-| 1.5 | 28 de septiembre de 2026 | El calendario de pagos: seña, 50 % antes de la obra, 30 % con la obra y 20 % con UTE. Sin el 50 % pago no se da fecha de obra. |
-| 1.4 | 25 de septiembre de 2026 | La modalidad de pago con sus tres opciones y lo que exige cada una. |
-| 1.3 | 25 de septiembre de 2026 | Se agrega la media hora de la mañana. |
-| 1.2 | 24 de septiembre de 2026 | El plazo para avisar la fecha de obra corre desde que Operaciones la confirma, no desde la venta. |
-| 1.1 | 23 de septiembre de 2026 | Se agregan el cotizador, los reportes de generación, los pagos del cliente y el calendario. |
-| 1.0 | 9 de septiembre de 2026 | Primera versión. |
+Este documento todavía es un borrador. Los cambios se empiezan a registrar desde
+la versión 1.0, cuando quede aprobado.

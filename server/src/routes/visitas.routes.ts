@@ -157,7 +157,7 @@ async function runTranscriptionAsync(
     data: { transcriptionStatus: "PROCESSING" },
   });
   try {
-    const result = await transcribeAudio(absolutePath);
+    const result = await transcribeAudio(absolutePath, { userId, entityId: visitId });
     await prisma.visitInput.update({
       where: { id: visitInputId },
       data: { transcription: result.text, transcriptionStatus: "COMPLETED" },

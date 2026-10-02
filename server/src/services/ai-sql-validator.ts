@@ -29,6 +29,7 @@ const FORBIDDEN_TABLES = [
   "audit_logs",
   "ai_queries",
   "ai_rate_limits",
+  "ai_usage",
   "file_attachments",
   "user_notification_preferences",
   "_prisma_migrations",

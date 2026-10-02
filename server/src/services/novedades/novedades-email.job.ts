@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { createMessage } from "../ai/usage.js";
 import cron from "node-cron";
 import { z } from "zod";
 
@@ -240,7 +241,7 @@ async function generateMarketingCards(dias: DiaNov[]): Promise<Card[] | null> {
   const client = getAnthropic();
   if (!client) return null;
   try {
-    const resp = await client.messages.create({
+    const resp = await createMessage(client, "novedades_mail", {
       model: NOVEDADES_MODEL,
       max_tokens: 4000,
       system: SYSTEM_MKT,

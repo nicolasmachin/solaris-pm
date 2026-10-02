@@ -11,6 +11,8 @@
 // manual ("Crear nueva versión") tampoco — duplica la versión actual sin IA.
 
 import Anthropic from "@anthropic-ai/sdk";
+import { costoAnthropic } from "./ai/pricing.js";
+import { createMessage } from "./ai/usage.js";
 import type { EFPVersion } from "@prisma/client";
 import { z } from "zod";
 
@@ -340,10 +342,7 @@ function summarizePreviousEFP(content: unknown): string {
 }
 
 function calculateCostUsd(modelUsed: string, tokensInput: number, tokensOutput: number): number {
-  if (modelUsed.includes("haiku")) {
-    return (tokensInput * 1.0) / 1_000_000 + (tokensOutput * 5.0) / 1_000_000;
-  }
-  return (tokensInput * 3.0) / 1_000_000 + (tokensOutput * 15.0) / 1_000_000;
+  return costoAnthropic(modelUsed, { input: tokensInput, output: tokensOutput }) ?? 0;
 }
 
 function stripCodeFences(text: string): string {
@@ -735,7 +734,7 @@ export async function generateEFPVersionWithAI(args: {
 
   const client = getClient();
   const t0 = Date.now();
-  const response = await client.messages.create({
+  const response = await createMessage(client, "efp", {
     model: DEFAULT_MODEL,
     max_tokens: 16000,
     system: SYSTEM_PROMPT,
@@ -749,7 +748,7 @@ export async function generateEFPVersionWithAI(args: {
       },
     ],
     tool_choice: { type: "tool", name: "generate_efp_draft" },
-  });
+  }, { userId: generatedById, projectId });
   const latencyMs = Date.now() - t0;
 
   console.log(

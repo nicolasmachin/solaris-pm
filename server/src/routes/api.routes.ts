@@ -212,6 +212,7 @@ import { decimalToNumber, serializeDate, serializeDateOnly } from "../utils/seri
 import { UTE_HITO_LABEL } from "../services/ute-timeline.service.js";
 import { esUsernameValido, normalizarUsername } from "../utils/username.js";
 import { clientEmailValue, clientPhoneValue, dateOnlyValue } from "../validators/projectFields.js";
+import { getGastoIA } from "../services/ai/usage-report.service.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -12355,6 +12356,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
             fileBuffer,
             mimeType: mime,
             tipo: tipo as "cedula" | "factura_ute",
+            ctx: { userId: user.id, projectId },
           });
         } catch (err) {
           throw badRequest(
@@ -18812,7 +18814,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
       const startTime = Date.now();
       try {
-        const result = await processQuestion(body.question);
+        const result = await processQuestion(body.question, user.id);
         const durationMs = Date.now() - startTime;
 
         await prisma.aIQuery.create({
@@ -18917,6 +18919,15 @@ export async function registerApiRoutes(app: FastifyInstance) {
         user: q.user,
       }));
     });
+
+  // ─── Gasto de IA ───────────────────────────────────────────────────────────
+  // Mismo permiso que la pestaña de Admin que lo muestra (USUARIOS:VIEW).
+  app.get("/ai/usage", { preHandler: authorize(Module.USUARIOS, Action.VIEW) }, async (request) => {
+    const query = z.object({
+      meses: z.coerce.number().int().min(1).max(24).optional().default(6),
+    }).parse(request.query);
+    return getGastoIA(query.meses);
+  });
 
   // ─── Costos fijos predefinidos ─────────────────────────────────────────────
 

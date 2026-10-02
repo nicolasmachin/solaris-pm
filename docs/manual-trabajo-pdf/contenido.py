@@ -50,7 +50,7 @@ generar.configurar(PIE, IMG.LOGO_ISOTIPO, IMG.LOGO_ISOTIPO_BLANCO)
 # después de la última parte, sin portadilla propia.
 PARTES = [
     ("1", "Cómo se conecta Voltia", [0, 1, 2],
-     "Los documentos de trabajo, el recorrido de un proyecto y las cinco reglas que valen para todas "
+     "Los documentos de trabajo, el recorrido de un proyecto y las reglas que valen para todas "
      "las áreas.", IMG.PORTADILLA_PARTE1),
     ("2", "Las áreas y cómo trabajan juntas", [3, 4, 5],
      "Qué hace cada área, qué le deja a la siguiente y a quién se le pregunta qué.", IMG.PORTADILLA_PARTE2),
@@ -977,7 +977,12 @@ def hoja_reglas(lineas, numero):
 def leer_fuente():
     lineas = open(FUENTE, encoding="utf-8").read().split("\n")
     m = re.search(r"Versión ([\d.]+) — (.+)$", lineas[2])
-    version = f"Versión {m.group(1)} · {m.group(2).split(' de ', 1)[-1]}"
+    if m:
+        version = f"Versión {m.group(1)} · {m.group(2).split(' de ', 1)[-1]}"
+    else:
+        # Mientras es borrador la cabecera no lleva número: "Borrador en revisión — fecha".
+        b = re.search(r"· ([^·]+?) — (.+)$", lineas[2])
+        version = f"{b.group(1)} · {b.group(2).split(' de ', 1)[-1]}" if b else "Borrador"
     # La presentación (la cita de arriba): su primer párrafo va a la portada y
     # el resto al principio del capítulo 0.
     intro, i = [], 4

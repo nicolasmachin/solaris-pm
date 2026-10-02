@@ -7,6 +7,8 @@
 //   5. Persistir VisitReport con métricas y tokens
 
 import Anthropic from "@anthropic-ai/sdk";
+import { costoAnthropic } from "./ai/pricing.js";
+import { createMessage } from "./ai/usage.js";
 import type { TipoRed, VisitInput, VisitReport } from "@prisma/client";
 import { z } from "zod";
 
@@ -289,17 +291,7 @@ function calculateCostUsd(
   tokensInput: number,
   tokensOutput: number,
 ): number {
-  // Sonnet 4.5: $3/M input, $15/M output (precios oficiales 2025).
-  // Si en el futuro cambiás el modelo, ajustar acá.
-  const inputCostPer1M = 3.0;
-  const outputCostPer1M = 15.0;
-  if (modelUsed.includes("haiku")) {
-    return ((tokensInput * 1.0) / 1_000_000) + ((tokensOutput * 5.0) / 1_000_000);
-  }
-  return (
-    (tokensInput * inputCostPer1M) / 1_000_000 +
-    (tokensOutput * outputCostPer1M) / 1_000_000
-  );
+  return costoAnthropic(modelUsed, { input: tokensInput, output: tokensOutput }) ?? 0;
 }
 
 // ─── Función pública ───────────────────────────────────────────────────────
@@ -416,12 +408,12 @@ Devolvé el JSON según el schema indicado.`;
 
   const client = getClient();
   const t0 = Date.now();
-  const response = await client.messages.create({
+  const response = await createMessage(client, "visita_informe", {
     model: DEFAULT_MODEL,
     max_tokens: 4000,
     system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: consolidatePrompt }],
-  });
+  }, { userId: generatedById, projectId: visit.projectId, entityId: visitId });
   const latencyMs = Date.now() - t0;
 
   const textBlock = response.content.find((c) => c.type === "text");
@@ -530,7 +522,7 @@ export async function generateVisitReport(
 
   const client = getClient();
   const t0 = Date.now();
-  const response = await client.messages.create({
+  const response = await createMessage(client, "visita_informe", {
     model: DEFAULT_MODEL,
     max_tokens: 4000,
     system: SYSTEM_PROMPT,
@@ -547,7 +539,7 @@ export async function generateVisitReport(
         }),
       },
     ],
-  });
+  }, { userId: generatedById, projectId: visit.projectId, entityId: visitId });
   const latencyMs = Date.now() - t0;
 
   const textBlock = response.content.find((c) => c.type === "text");

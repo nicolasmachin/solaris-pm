@@ -8,6 +8,7 @@
 // que invoca a este servicio.
 
 import Anthropic from "@anthropic-ai/sdk";
+import { createMessage } from "../ai/usage.js";
 import { PDFParse } from "pdf-parse";
 import { z } from "zod";
 
@@ -109,7 +110,7 @@ export async function callClaudeForExtraction(
   const model = modelOverride ?? DEFAULT_MODEL;
 
   const t0 = Date.now();
-  const response = await client.messages.create({
+  const response = await createMessage(client, "minuta", {
     model,
     max_tokens: MAX_OUTPUT_TOKENS,
     system: SYSTEM_PROMPT,

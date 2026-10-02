@@ -11,6 +11,8 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import { costoAnthropic } from "./ai/pricing.js";
+import { createMessage } from "./ai/usage.js";
 import { Pool } from "pg";
 
 import { ensureLimit, validateSQL } from "./ai-sql-validator.js";
@@ -211,9 +213,6 @@ Tu respuesta debe ser:
 - NO menciones la query SQL ni JSON técnico — sólo la respuesta natural.`;
 
 const MODEL_ID = "claude-sonnet-4-5";
-// Pricing aproximado (Sonnet 4.5/4.6, USD por 1M tokens). Ajustable.
-const PRICE_INPUT_PER_M = 3.0;
-const PRICE_OUTPUT_PER_M = 15.0;
 
 export type ProcessQuestionResult = {
   generatedSQL: string;
@@ -249,7 +248,7 @@ export class AIExecutionError extends Error {
   }
 }
 
-export async function processQuestion(question: string): Promise<ProcessQuestionResult> {
+export async function processQuestion(question: string, userId?: string): Promise<ProcessQuestionResult> {
   if (!isAIAssistantEnabled()) {
     throw new Error("El assistant IA no está configurado. Falta ANTHROPIC_API_KEY o DATABASE_URL_READONLY.");
   }
@@ -257,12 +256,12 @@ export async function processQuestion(question: string): Promise<ProcessQuestion
   const pool = getReadonlyPool();
 
   // Fase 1: generar SQL.
-  const sqlResp = await ai.messages.create({
+  const sqlResp = await createMessage(ai, "asistente", {
     model: MODEL_ID,
     max_tokens: 1500,
     system: SYSTEM_GENERATE_SQL,
     messages: [{ role: "user", content: question }],
-  });
+  }, { userId });
   const sqlText = sqlResp.content
     .filter((c) => c.type === "text")
     .map((c) => (c as { type: "text"; text: string }).text)
@@ -299,12 +298,12 @@ export async function processQuestion(question: string): Promise<ProcessQuestion
   const truncatedNote = rows.length > 50 ? `\n(Mostrando primeras 50 filas de ${rows.length} totales.)` : "";
   const userMsg = `Pregunta: ${question}\n\nResultado de la query SQL (${rows.length} filas):\n${JSON.stringify(sample, null, 2)}${truncatedNote}\n\nRespondé en español rioplatense, claro y conciso.`;
 
-  const respGen = await ai.messages.create({
+  const respGen = await createMessage(ai, "asistente", {
     model: MODEL_ID,
     max_tokens: 1200,
     system: SYSTEM_NATURAL_RESPONSE,
     messages: [{ role: "user", content: userMsg }],
-  });
+  }, { userId });
   const naturalResponse = respGen.content
     .filter((c) => c.type === "text")
     .map((c) => (c as { type: "text"; text: string }).text)
@@ -314,7 +313,7 @@ export async function processQuestion(question: string): Promise<ProcessQuestion
   // Cálculo de costo / tokens combinados.
   const tokensInput = sqlResp.usage.input_tokens + respGen.usage.input_tokens;
   const tokensOutput = sqlResp.usage.output_tokens + respGen.usage.output_tokens;
-  const costUSD = (tokensInput * PRICE_INPUT_PER_M / 1_000_000) + (tokensOutput * PRICE_OUTPUT_PER_M / 1_000_000);
+  const costUSD = costoAnthropic(MODEL_ID, { input: tokensInput, output: tokensOutput }) ?? 0;
 
   return {
     generatedSQL: safeSQL,
