@@ -426,6 +426,10 @@ Y en ningún caso el cliente hace de mensajero.
   venta, la fecha de obra confirmada, la obra terminada y qué sigue, y **«ya
   podés encender», de 24 a 48 horas después de la habilitación**. Cada día que
   pasa sin ese último, el cliente deja de ahorrar.
+- **Toda reprogramación se avisa el mismo día**, con el motivo, aunque todavía no
+  haya fecha nueva.
+- **Todo mensaje al cliente cierra con el próximo paso**: nunca queda sin saber qué
+  sigue.
 - **Reclamos: respuesta el mismo día hábil, siempre.** Aunque sea «lo estoy
   viendo, te confirmo mañana». Derivar a un área técnica no es responder: el
   cliente igual tiene que escuchar algo ese día. Conviene que entren por el
@@ -496,27 +500,19 @@ registrar le cuesta. Hay que mirar desde dónde tendría que hacerlo.
 ## Anexo · Las reglas en una página
 
 > ### 1. Solo el capataz y Experiencia Solar hablan con el cliente.
+> Quien necesita coordinar algo con él se lo pide a uno de los dos.
 
 > ### 2. Nunca se le devuelve el organigrama al cliente.
-> Él contrató a Voltia, no a un área.
-
-> ### 3. El cliente nunca es el mensajero de Voltia.
 > «Te averiguo y te confirmo», y se resuelve puertas adentro.
 
-> ### 4. Si una etapa se atrasa, el área avisa por qué.
+> ### 3. Si una etapa se atrasa, el área avisa por qué.
+> Y si mueve una fecha que ya se le dio al cliente, se cambia en el calendario.
 
-> ### 5. Si hay que preguntar en qué anda algo, falta un registro.
+> ### 4. Todo se registra donde ya se está trabajando.
+> Si hay que preguntar en qué anda algo, falta un registro.
 
-> ### 6. Si no está agendado, no vamos. Y si está agendado, vamos: si no vamos, avisamos.
-
-> ### 7. Toda reprogramación se avisa el mismo día, con el motivo.
-
-> ### 8. Habilitación: 24 a 48 horas.
-> Cada día que pasa el cliente deja de ahorrar.
-
-> ### 9. Reclamos: respuesta el mismo día hábil, siempre.
-
-> ### 10. Todo mensaje al cliente cierra con el próximo paso.
+> ### 5. Si no está agendado, no vamos.
+> Y si está agendado y no se puede ir, se avisa antes de la hora.
 
 ---
 
