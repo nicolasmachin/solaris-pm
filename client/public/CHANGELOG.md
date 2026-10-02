@@ -10,6 +10,12 @@
 - El gasto se ve **por función** (asistente de preguntas, Proyecto Final, informes y audios de visitas técnicas, lectura de minutas, de cédulas y de facturas, mail de novedades) y **por modelo**, en dólares.
 - Se empieza a medir desde hoy: lo anterior no quedó registrado. El bot de Telegram no está incluido.
 
+#### Reporte mensual de indicadores por correo
+
+- Además del reporte de los lunes, ahora llega por correo un **reporte mensual de indicadores** el día 1 de cada mes a las 00:01, con el mes que terminó: leads, propuestas, ventas con su monto, facturación, visitas, gastos, instalaciones, kWp y avance de metas.
+- Debajo de cada número aparece el del **mes anterior**, para comparar de un vistazo.
+- Las metas muestran cómo cerró el trimestre al que pertenece ese mes.
+
 ## v11.5
 
 ### 30 de septiembre de 2026

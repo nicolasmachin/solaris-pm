@@ -181,6 +181,7 @@ import { fetchBcuRatePreview } from "../services/exchange-rate.service.js";
 import { obrasRealizadasDe, promedioDias } from "../services/metricas/indicadores.service.js";
 import { diaManualUruguay, hoyUruguay, inicioDiaUruguay, instantesUruguay } from "../utils/uruguay.js";
 import { tiemposPorEtapa } from "../services/metricas/tiempos-etapa.service.js";
+import { ejecutarReporteMensual } from "../services/reporteSemanal/reporte-mensual.job.js";
 import { recolectarDatos as recolectarReporteSemanal, ejecutarReporteSemanal, destinatario as destinatarioReporteSemanal } from "../services/reporteSemanal/reporte-semanal.job.js";
 import {
   applyDeadlineRulesToProject,
@@ -5306,6 +5307,23 @@ export async function registerApiRoutes(app: FastifyInstance) {
     }
     const destinatario = destinatarioReporteSemanal();
     return { ok: true, destinatario };
+  });
+
+  // Reporte mensual: el cron lo manda el día 1 a las 00:01 con el mes que cerró.
+  // Este envío manual manda el último mes cerrado, a la misma casilla.
+  app.post("/metrics/monthly-report/send", { preHandler: authorize(Module.METRICAS, Action.VIEW) }, async (request, reply) => {
+    const user = ensureUser(request);
+    if (user.role !== "ADMIN") {
+      throw new AppError(403, "SOLO_ADMIN", "Solo un administrador puede disparar el envío del reporte mensual");
+    }
+    const ok = await ejecutarReporteMensual(new Date());
+    if (!ok) {
+      return reply.status(502).send({
+        ok: false,
+        message: "No se pudo enviar el mail (¿SMTP configurado?). Revisá los logs del servidor.",
+      });
+    }
+    return { ok: true, destinatario: destinatarioReporteSemanal() };
   });
 
   // ─── Goals CRUD ─────────────────────────────────────────────────────────────

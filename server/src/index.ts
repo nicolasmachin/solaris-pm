@@ -16,6 +16,7 @@ import { startEncuestasAniversarioJob } from "./services/encuestas/aniversario.j
 import { startReportesFvJobs } from "./services/reportesFv/reportes-fv.job.js";
 import { startFvMonitorJob } from "./services/reportesFv/monitor/monitor.job.js";
 import { startReporteSemanalJob } from "./services/reporteSemanal/reporte-semanal.job.js";
+import { startReporteMensualJob } from "./services/reporteSemanal/reporte-mensual.job.js";
 import { startDailyDigestJob } from "./services/digest/daily-digest.job.js";
 import { startNovedadesJob } from "./services/novedades/novedades-email.job.js";
 import { recoverPendingProjectVideos } from "./services/project-video.service.js";
@@ -95,6 +96,7 @@ async function start() {
   startReportesFvJobs();
   startFvMonitorJob();
   startReporteSemanalJob();
+  startReporteMensualJob();
   startDailyDigestJob();
   startNovedadesJob();
   startPlanGranizoJob();

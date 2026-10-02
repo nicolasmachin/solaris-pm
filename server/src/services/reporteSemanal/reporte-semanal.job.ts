@@ -33,10 +33,10 @@ import { diasDeInstantesUruguay } from "../../utils/uruguay.js";
 // de Montevideo restando el offset al instante UTC, y volvemos a UTC sumándolo.
 const OFFSET_MVD_MIN = 180;
 
-function aRelojMvd(instante: Date): Date {
+export function aRelojMvd(instante: Date): Date {
   return new Date(instante.getTime() - OFFSET_MVD_MIN * 60_000);
 }
-function desdeRelojMvd(pared: Date): Date {
+export function desdeRelojMvd(pared: Date): Date {
   return new Date(pared.getTime() + OFFSET_MVD_MIN * 60_000);
 }
 
@@ -143,8 +143,8 @@ export interface MetaAvance {
   enRitmo: boolean;
 }
 
-export interface DatosReporte {
-  semana: RangoSemana;
+/** Los indicadores de un período cualquiera (semana o mes). */
+export interface IndicadoresPeriodo {
   trimestre: RangoTrimestre;
   leads: number;
   propuestasEnviadas: number;
@@ -157,22 +157,39 @@ export interface DatosReporte {
   metas: MetaAvance[];
 }
 
+export interface DatosReporte extends IndicadoresPeriodo {
+  semana: RangoSemana;
+}
+
 export async function recolectarDatos(now: Date): Promise<DatosReporte> {
   const semana = calcularSemana(now);
-  const trimestre = calcularTrimestre(now);
-  // Semana y trimestre vienen en instantes de Uruguay; las cuentas compartidas
+  return { semana, ...(await recolectarIndicadores(semana, now)) };
+}
+
+/**
+ * Indicadores del período `[inicio, fin)` (instantes de Uruguay) y avance de
+ * metas del trimestre al que pertenece `ref` (medido a ese mismo instante).
+ * El semanal usa `ref = now` (trimestre en curso); el mensual, el cierre del
+ * mes, para que el 1 de octubre muestre cómo terminó el tercer trimestre.
+ */
+export async function recolectarIndicadores(
+  periodo: { inicio: Date; fin: Date },
+  ref: Date,
+): Promise<IndicadoresPeriodo> {
+  const trimestre = calcularTrimestre(new Date(ref.getTime() - 1));
+  // Período y trimestre vienen en instantes de Uruguay; las cuentas compartidas
   // reciben días calendario y cortan cada columna según su tipo.
-  const diasSemana = diasDeInstantesUruguay(semana);
+  const diasPeriodo = diasDeInstantesUruguay(periodo);
   const diasTrimestre = diasDeInstantesUruguay(trimestre);
 
   const [leads, propuestasEnviadas, ventasRaw, visitasRaw, gastosRegistrados, obras, goals] = await Promise.all([
-    prisma.salesLead.count({ where: { deletedAt: null, createdAt: { gte: semana.inicio, lt: semana.fin } } }),
-    prisma.salesLead.count({ where: { deletedAt: null, proposalSentAt: { gte: semana.inicio, lt: semana.fin } } }),
-    ventasGanadas(diasSemana),
-    visitasRealizadas(diasSemana),
+    prisma.salesLead.count({ where: { deletedAt: null, createdAt: { gte: periodo.inicio, lt: periodo.fin } } }),
+    prisma.salesLead.count({ where: { deletedAt: null, proposalSentAt: { gte: periodo.inicio, lt: periodo.fin } } }),
+    ventasGanadas(diasPeriodo),
+    visitasRealizadas(diasPeriodo),
     // Los movimientos se guardan a medianoche: se cortan por día.
     prisma.financeMovement.count({
-      where: { deletedAt: null, tipoMovimiento: TipoMovimiento.GASTO, fecha: { gte: diasSemana.inicio, lt: diasSemana.fin } },
+      where: { deletedAt: null, tipoMovimiento: TipoMovimiento.GASTO, fecha: { gte: diasPeriodo.inicio, lt: diasPeriodo.fin } },
     }),
     listarObrasRealizadas(),
     prisma.goal.findMany({
@@ -183,7 +200,7 @@ export async function recolectarDatos(now: Date): Promise<DatosReporte> {
     }),
   ]);
 
-  const obrasSemana = resumenObras(obras, diasSemana);
+  const obrasPeriodo = resumenObras(obras, diasPeriodo);
   const conteosTrim = await contarPeriodo(diasTrimestre, obras);
 
   const ventas: VentaGanada[] = ventasRaw.map((v) => ({ cliente: v.cliente, asesor: v.asesor, montoUsd: v.montoUsd }));
@@ -194,7 +211,7 @@ export async function recolectarDatos(now: Date): Promise<DatosReporte> {
 
   // Avance de meta: acumulado del trimestre vs objetivo (solo trimestrales, que
   // es como sigue el tablero semanal). Fracción de ritmo = tiempo transcurrido.
-  const fraccionTiempo = fraccionTranscurrida(trimestre.inicio, trimestre.fin, now);
+  const fraccionTiempo = fraccionTranscurrida(trimestre.inicio, trimestre.fin, ref);
   const actualPorMetrica = valorPorMetrica(conteosTrim);
 
   const metas: MetaAvance[] = goals
@@ -208,7 +225,6 @@ export async function recolectarDatos(now: Date): Promise<DatosReporte> {
     });
 
   return {
-    semana,
     trimestre,
     leads,
     propuestasEnviadas,
@@ -216,8 +232,8 @@ export async function recolectarDatos(now: Date): Promise<DatosReporte> {
     facturacionVendidaUsd,
     visitas,
     gastosRegistrados,
-    instalaciones: obrasSemana.count,
-    kwp: obrasSemana.kwp,
+    instalaciones: obrasPeriodo.count,
+    kwp: obrasPeriodo.kwp,
     metas,
   };
 }
@@ -228,11 +244,35 @@ function usd(n: number): string {
   return `US$ ${n.toLocaleString("es-UY", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
+/** Lo que cambia entre el reporte semanal y el mensual: títulos y comparación. */
+export interface EncabezadoReporte {
+  kicker: string; // "Reporte semanal de indicadores"
+  titulo: string; // "Semana 39 · 2026"
+  subtitulo: string; // "lunes 21/09 – domingo 27/09/2026"
+  /** "esta semana" / "este mes", para los textos de "sin ventas…". */
+  enElPeriodo: string;
+  pie: string;
+  /** Período anterior para comparar cada número (solo el mensual). */
+  anterior?: { etiqueta: string; datos: IndicadoresPeriodo };
+}
+
 export function renderHtml(d: DatosReporte): string {
-  const kpi = (label: string, valor: string): string => `
+  return renderIndicadoresHtml(d, {
+    kicker: "Reporte semanal de indicadores",
+    titulo: `Semana ${d.semana.semanaIso} · ${d.semana.anioIso}`,
+    subtitulo: d.semana.etiqueta,
+    enElPeriodo: "esta semana",
+    pie: "Generado automáticamente los lunes 00:01 (hora Uruguay) por Voltia PM.",
+  });
+}
+
+export function renderIndicadoresHtml(d: IndicadoresPeriodo, enc: EncabezadoReporte): string {
+  const prev = enc.anterior;
+  const kpi = (label: string, valor: string, previo?: string): string => `
     <td style="padding:12px 14px; border:1px solid #e6e8f0; border-radius:8px;">
       <div style="font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:#8a90a6;">${label}</div>
       <div style="font-size:24px; font-weight:700; color:#1836B2; margin-top:4px;">${valor}</div>
+      ${previo !== undefined && prev ? `<div style="font-size:11px; color:#8a90a6; margin-top:2px;">${escapar(prev.etiqueta)}: ${previo}</div>` : ""}
     </td>`;
 
   const ventasHtml = d.ventas.length
@@ -256,7 +296,7 @@ export function renderHtml(d: DatosReporte): string {
           <td style="padding:8px; font-weight:700; text-align:right; color:#1836B2;">${usd(d.facturacionVendidaUsd)}</td>
         </tr>
       </table>`
-    : `<p style="color:#8a90a6; font-size:13px;">Sin ventas cerradas esta semana.</p>`;
+    : `<p style="color:#8a90a6; font-size:13px;">Sin ventas cerradas ${enc.enElPeriodo}.</p>`;
 
   const visitasHtml = d.visitas.length
     ? `<table style="width:100%; border-collapse:collapse; font-size:13px;">
@@ -273,7 +313,7 @@ export function renderHtml(d: DatosReporte): string {
           )
           .join("")}
       </table>`
-    : `<p style="color:#8a90a6; font-size:13px;">Sin visitas comerciales esta semana.</p>`;
+    : `<p style="color:#8a90a6; font-size:13px;">Sin visitas comerciales ${enc.enElPeriodo}.</p>`;
 
   const metasHtml = d.metas.length
     ? `<table style="width:100%; border-collapse:collapse; font-size:13px;">
@@ -294,26 +334,26 @@ export function renderHtml(d: DatosReporte): string {
 
   return `
   <div style="font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:#2b2f3a; max-width:640px;">
-    <p style="font-size:12px; color:#8a90a6; margin:0 0 2px;">Reporte semanal de indicadores</p>
-    <h2 style="margin:0 0 2px; color:#1836B2;">Semana ${d.semana.semanaIso} · ${d.semana.anioIso}</h2>
-    <p style="font-size:13px; color:#5a6070; margin:0 0 18px;">${d.semana.etiqueta}</p>
+    <p style="font-size:12px; color:#8a90a6; margin:0 0 2px;">${escapar(enc.kicker)}</p>
+    <h2 style="margin:0 0 2px; color:#1836B2;">${escapar(enc.titulo)}</h2>
+    <p style="font-size:13px; color:#5a6070; margin:0 0 18px;">${escapar(enc.subtitulo)}</p>
 
     <table style="width:100%; border-collapse:separate; border-spacing:8px 0; margin-bottom:20px;">
       <tr>
-        ${kpi("Leads", String(d.leads))}
-        ${kpi("Propuestas", String(d.propuestasEnviadas))}
-        ${kpi("Ventas", String(d.ventas.length))}
+        ${kpi("Leads", String(d.leads), prev && String(prev.datos.leads))}
+        ${kpi("Propuestas", String(d.propuestasEnviadas), prev && String(prev.datos.propuestasEnviadas))}
+        ${kpi("Ventas", String(d.ventas.length), prev && String(prev.datos.ventas.length))}
       </tr>
       <tr><td style="height:8px;"></td></tr>
       <tr>
-        ${kpi("Facturación", usd(d.facturacionVendidaUsd))}
-        ${kpi("Visitas", String(d.visitas.length))}
-        ${kpi("Gastos reg.", String(d.gastosRegistrados))}
+        ${kpi("Facturación", usd(d.facturacionVendidaUsd), prev && usd(prev.datos.facturacionVendidaUsd))}
+        ${kpi("Visitas", String(d.visitas.length), prev && String(prev.datos.visitas.length))}
+        ${kpi("Gastos reg.", String(d.gastosRegistrados), prev && String(prev.datos.gastosRegistrados))}
       </tr>
       <tr><td style="height:8px;"></td></tr>
       <tr>
-        ${kpi("Instalaciones", String(d.instalaciones))}
-        ${kpi("kWp", d.kwp.toLocaleString("es-UY"))}
+        ${kpi("Instalaciones", String(d.instalaciones), prev && String(prev.datos.instalaciones))}
+        ${kpi("kWp", d.kwp.toLocaleString("es-UY"), prev && prev.datos.kwp.toLocaleString("es-UY"))}
         <td></td>
       </tr>
     </table>
@@ -327,7 +367,7 @@ export function renderHtml(d: DatosReporte): string {
     <h3 style="color:#2b2f3a; font-size:15px; margin:22px 0 8px;">Avance de metas</h3>
     ${metasHtml}
 
-    <p style="color:#b0b4c0; font-size:11px; margin-top:24px;">Generado automáticamente los lunes 00:01 (hora Uruguay) por Voltia PM.</p>
+    <p style="color:#b0b4c0; font-size:11px; margin-top:24px;">${escapar(enc.pie)}</p>
   </div>`;
 }
 
@@ -340,9 +380,13 @@ function escapar(s: string): string {
 }
 
 export function renderTexto(d: DatosReporte): string {
+  return renderIndicadoresTexto(d, `Reporte semanal · Semana ${d.semana.semanaIso}/${d.semana.anioIso}`, d.semana.etiqueta);
+}
+
+export function renderIndicadoresTexto(d: IndicadoresPeriodo, titulo: string, subtitulo: string): string {
   const lineas = [
-    `Reporte semanal · Semana ${d.semana.semanaIso}/${d.semana.anioIso}`,
-    d.semana.etiqueta,
+    titulo,
+    subtitulo,
     "",
     `Leads: ${d.leads}`,
     `Propuestas enviadas: ${d.propuestasEnviadas}`,

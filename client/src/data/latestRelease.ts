@@ -33,6 +33,13 @@ export const LATEST_RELEASE: Release = {
         "Se mide todo: el asistente de preguntas, el Proyecto Final, los informes y audios de las visitas técnicas, la lectura de minutas, de cédulas y de facturas, y el mail de novedades.",
       ],
     },
+    {
+      title: "Reporte mensual de indicadores por correo",
+      items: [
+        "El día 1 de cada mes llega por correo el reporte de indicadores del mes que terminó, con el mismo formato que el de los lunes.",
+        "Cada número viene con el del mes anterior para comparar.",
+      ],
+    },
   ],
 };
 

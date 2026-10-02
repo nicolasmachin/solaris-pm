@@ -4,7 +4,7 @@
 > producción; lo que falta es la documentación. Se completa cuando se trabaje
 > sobre este módulo.
 
-Dashboard, metas del trimestre, indicadores y el reporte semanal por correo.
+Dashboard, metas del trimestre, indicadores y los reportes semanal y mensual por correo.
 
 ---
 
@@ -183,12 +183,13 @@ mail: ver Casos borde.)
 
 ---
 
-## Reporte semanal de indicadores por correo
+## Reporte semanal y mensual de indicadores por correo
 
 ### Para qué existe
 
-Replica por mail el tablero semanal de indicadores con los datos que la app ya
-calcula, para tenerlo el lunes sin entrar a la app. Las definiciones son las
+Replica por mail el tablero de indicadores con los datos que la app ya
+calcula, para tenerlo el lunes (la semana) y el día 1 (el mes) sin entrar a la
+app. Las definiciones son las
 compartidas (ver la sección anterior); lo mismo, para cualquier período, se
 puede pedir en el chat con la herramienta `indicadores` del conector.
 
@@ -200,6 +201,12 @@ puede pedir en el chat con la herramienta `indicadores` del conector.
   (`WeeklyReportTab`), con el destinatario a la vista.
 - El botón **"Enviar el mail ahora"** lo dispara a mano, siempre a la casilla
   configurada (no al usuario que aprieta el botón).
+- **Mensual** (desde v11.6): sale solo el **día 1 de cada mes a las 00:01 hora de
+  Uruguay** con el mes que acaba de cerrar. Asunto: `Indicadores · Septiembre de
+  2026`. Trae los mismos números y listados que el semanal y, debajo de cada
+  número, el del **mes anterior** para comparar. No tiene pantalla propia: se
+  reenvía a mano con `POST /metrics/monthly-report/send`, que manda el último mes
+  cerrado.
 
 ### Cómo funciona
 
@@ -219,12 +226,21 @@ puede pedir en el chat con la herramienta `indicadores` del conector.
   lo reexporta.
 - Endpoints en `api.routes.ts`: `GET /metrics/weekly-report` y
   `POST /metrics/weekly-report/send`.
+- **El mensual** vive en `reporteSemanal/reporte-mensual.job.ts`
+  (`startReporteMensualJob()`, `ejecutarReporteMensual()`). No repite cuentas:
+  el semanal expone `recolectarIndicadores(periodo, ref)` (los indicadores de
+  cualquier rango) y `renderIndicadoresHtml` / `renderIndicadoresTexto`, que
+  reciben el encabezado y, opcional, el período anterior para comparar. El
+  semanal es ese mismo núcleo con la semana; el mensual, con el mes cerrado y el
+  previo. Fechas puras testeables: `calcularMesCerrado`, `mesAnterior`. Mismo
+  destinatario que el semanal (`destinatario()`).
 
 ### Permisos
 
 - Ver la pestaña y el endpoint `GET`: `METRICAS:VIEW`.
-- Disparar el envío (`POST`): `METRICAS:VIEW` **más** un guard hardcodeado
-  `role === "ADMIN"` que devuelve 403 al resto. Es un guard por rol, no matriz.
+- Disparar el envío (`POST` del semanal y del mensual): `METRICAS:VIEW` **más**
+  un guard hardcodeado `role === "ADMIN"` que devuelve 403 al resto. Es un guard
+  por rol, no matriz.
 
 ### Reglas y decisiones
 
@@ -234,10 +250,14 @@ puede pedir en el chat con la herramienta `indicadores` del conector.
   congelada en la comisión → la última propuesta publicada del lead →
   `estimatedBudgetUsd`. Si no hay ninguna, muestra "s/dato" y no suma a la
   facturación (`montoDeVenta`).
-- El avance de metas usa solo las metas **trimestrales** del trimestre en curso.
-  Verde = en ritmo (fracción lograda ≥ fracción de tiempo transcurrido).
-- Flags: `REPORTE_SEMANAL_ENABLED=false` lo apaga; `CRON_REPORTE_SEMANAL`
-  cambia la expresión cron.
+- El avance de metas usa solo las metas **trimestrales**. En el semanal, las del
+  trimestre en curso; en el mensual, las del trimestre **al que pertenece el mes
+  cerrado, medidas al cierre del mes**: el mail del 1 de octubre muestra cómo
+  terminó el tercer trimestre, no el arranque del cuarto. Verde = en ritmo
+  (fracción lograda ≥ fracción de tiempo transcurrido).
+- Flags: `REPORTE_SEMANAL_ENABLED=false` / `REPORTE_MENSUAL_ENABLED=false` los
+  apagan; `CRON_REPORTE_SEMANAL` / `CRON_REPORTE_MENSUAL` cambian la expresión
+  cron (default mensual: `1 0 1 * *`).
 
 ### Casos borde
 
