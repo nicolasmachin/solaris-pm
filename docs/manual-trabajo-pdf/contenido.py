@@ -1085,8 +1085,8 @@ def cierre(version):
     <img src="{IMG.CIERRE}" alt="" style="display: block; width: 100%; height: 100%; object-fit: cover">
   </div>
   <div style="flex-grow: 1; padding: 62px 72px 0; display: flex; flex-direction: column">
-    <div style="font-family: {SANS}; font-size: 11px; font-weight: 600; letter-spacing: 2.4px; color: {AZUL}">REGLA 4</div>
-    <p style="margin: 20px 0 0; max-width: 580px; font-size: 27px; line-height: 1.32; letter-spacing: -.4px; color: {NEGRO}; font-weight: 600">Si hay que preguntarle a alguien en qué anda algo, <span style="color: {AZUL}">es porque falta un registro</span>.</p>
+    <!-- Sin frase por ahora: más adelante va la misión de Voltia. -->
+    <img src="{IMG.LOGO}" alt="Voltia" style="display: block; height: 48px; width: auto; align-self: flex-start">
     <div style="flex-grow: 1"></div>
     <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 34px; font-family: {SANS}; font-size: 12px; color: {GRIS_CLARO}">
       <span style="display: flex; align-items: center; gap: 7px"><img src="{IMG.LOGO_ISOTIPO}" alt="Voltia" style="display: block; height: 13px; width: auto">{PIE}</span>
