@@ -127,8 +127,8 @@ el mensajero de Voltia.**
 
 ### Regla 3 — Si una etapa se atrasa, el área avisa por qué
 
-Cuando un área ve que su etapa se va a demorar, **lo escribe en esa etapa del
-proyecto, con el motivo**, sin esperar a que alguien le pregunte. Así cualquiera
+Cuando un área ve que su etapa se va a demorar, **lo deja escrito en su módulo
+de Voltia PM, con el motivo**, sin esperar a que alguien le pregunte. Así cualquiera
 que mire el proyecto sabe qué pasa, y nadie tiene que salir a averiguarlo.
 
 Si el atraso mueve una fecha que ya se le dio al cliente, **la fecha se cambia
@@ -140,9 +140,10 @@ al cliente.
 > **Si hay que preguntarle a alguien en qué anda algo, es porque falta un
 > registro.**
 
-Cada área anota en **su** etapa del proyecto, desde donde ya trabaja. No hay que
-entrar a otro módulo ni aprender otra pantalla. Eso aparece solo en el historial
-del cliente, con el nombre del área.
+Cada área registra en **su módulo** de Voltia PM, el que usa para trabajar, con
+las vistas que le sirven. No hay que entrar al módulo de otra área. Por detrás,
+la ficha del cliente es una sola: lo que registra cada área aparece en el
+historial del cliente, con el nombre del área, y lo ven todos.
 
 ### Regla 5 — Si no está agendado, no vamos
 
@@ -473,8 +474,8 @@ uno tiene pendiente.
 
 **Dos cosas valen para todas las áreas:**
 
-- **Se comenta y se sube todo dentro de la etapa donde se está trabajando.** Eso
-  es lo que llega al historial del cliente, con el nombre del área.
+- **Cada área registra en su módulo.** Por detrás la ficha del cliente es una
+  sola, y todo llega a su historial con el nombre del área.
 - Desde un proyecto se puede saltar **al mismo cliente** en las otras secciones,
   sin tener que buscarlo de nuevo.
 
@@ -492,7 +493,7 @@ ve, se hace, y listo. Lo que no se hace nunca es **tildar algo sin haberlo
 hecho**: ahí el tablero pasa a mentir y se pierde la única señal que hay.
 
 **Una etapa lleva mucho tiempo.** No se piden explicaciones: se mira si el área
-dejó el motivo en su etapa. Si no está y la demora afecta algo que ya se le
+dejó el motivo escrito. Si no está y la demora afecta algo que ya se le
 prometió al cliente, se plantea en la reunión de coordinación. La excepción: si
 el cliente está pidiendo explicaciones y hace falta algo cierto que decirle, se
 pregunta — al gerente del área.
