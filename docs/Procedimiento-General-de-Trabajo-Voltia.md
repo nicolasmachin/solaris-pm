@@ -506,24 +506,24 @@ Cómo se usa cada pantalla está en el manual del área que la usa.
 
 ## 8 · Cuando algo sale mal
 
-**Se pasó un plazo.** Vencer no bloquea nada: no frena la obra ni el trámite. Se
-ve, se hace, y listo. Lo que no se hace nunca es **tildar algo sin haberlo
-hecho**: ahí el tablero pasa a mentir y se pierde la única señal que hay.
+**Se vence un plazo.** Nada se frena: la etapa sigue. Quien la tiene la termina
+lo antes posible y, si la demora va a seguir, deja escrito por qué. Lo que no se
+hace es marcar una tarea como hecha para que deje de figurar vencida.
 
-**Una etapa lleva mucho tiempo.** No se piden explicaciones: se mira si el área
-dejó el motivo escrito. Si no está y la demora afecta algo que ya se le
-prometió al cliente, se plantea en la reunión de coordinación. La excepción: si
-el cliente está pidiendo explicaciones y hace falta algo cierto que decirle, se
-pregunta — al gerente del área.
+**Falta algo para poder avanzar.** Un dato de la venta, una firma, un material.
+Se le pide por Voltia PM al área que lo tenía que dejar, y si no aparece, a su
+gerente. No se arranca a ciegas ni se resuelve por fuera.
 
-**El cliente reclama que nadie le avisó.** Primero se mira el historial de su
-ficha. Si efectivamente no se le avisó, se reconoce y se avisa ahora: *«tenés
-razón, esto se nos pasó»* cierra una conversación que una excusa mantiene
-abierta. Si sí se le avisó, se le reenvía lo que se le mandó, sin señalarle que
-ya se lo habíamos dicho.
+**El cliente le escribe a alguien que no es su referente.** Se le responde «te
+averiguo y te confirmo» y se le pasa a Experiencia Solar. No se lo deriva ni se
+le promete nada que no se sabe si se cumple.
 
-**Un área no está registrando.** El problema no es de la persona: es que
-registrar le cuesta. Hay que mirar desde dónde tendría que hacerlo.
+**Hay que cambiar algo que ya se le prometió al cliente.** Una fecha, el
+alcance, una condición. Se decide adentro, se registra, y Experiencia Solar se
+lo cuenta el mismo día. El cliente nunca se entera en la obra.
+
+**Un problema se repite.** Se lleva a la reunión de coordinación. Lo que se
+cambia es cómo se trabaja, no se busca a quién culpar.
 
 ---
 

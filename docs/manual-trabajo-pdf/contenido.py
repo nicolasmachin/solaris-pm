@@ -855,14 +855,14 @@ def casos_tarjetas(casos):
     debajo."""
     out = '  <div style="margin-top: 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">\n'
     for titulo, cuerpo in casos:
-        out += (f'    <div style="border-radius: 8px; overflow: hidden; border: 1px solid {ROJO}33; background: #fdf6f5">'
-                f'<div style="padding: 11px 14px; background: {ROJO}; font-family: {SANS}; font-size: 14px; '
+        out += (f'    <div style="border-radius: 8px; overflow: hidden; border: 1px solid #f0dcb4; background: #fdf8ec">'
+                f'<div style="padding: 11px 14px; background: #8a5a10; font-family: {SANS}; font-size: 14px; '
                 f'font-weight: 700; color: #ffffff; display: flex; gap: 8px; align-items: center">'
                 f'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" '
                 f'stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0"><path d="M12 3l9 16H3z"></path>'
                 f'<path d="M12 10v4M12 17h.01"></path></svg>{en_linea(titulo)}</div>'
                 f'<p style="margin: 0; padding: 12px 14px 14px; font-size: 13.5px; line-height: 1.5; color: {TEXTO}; '
-                f'background: #fdf6f5">{en_linea(cuerpo)}</p></div>\n')
+                f'background: #fdf8ec">{en_linea(cuerpo)}</p></div>\n')
     return out + '  </div>\n'
 
 
