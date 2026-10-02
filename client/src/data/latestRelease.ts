@@ -23,6 +23,20 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "11.6",
+  date: "1 de octubre de 2026",
+  sections: [
+    {
+      title: "Administración: cuánto se gasta en inteligencia artificial",
+      items: [
+        "Nueva pestaña «Gasto de IA» en Administración: lo que gasta Voltia PM en inteligencia artificial, por mes, por función y por modelo, en dólares.",
+        "Se mide todo: el asistente de preguntas, el Proyecto Final, los informes y audios de las visitas técnicas, la lectura de minutas, de cédulas y de facturas, y el mail de novedades.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_11_5: Release = {
   version: "11.5",
   date: "30 de septiembre de 2026",
   sections: [
@@ -367,6 +381,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "11.5",
+    shortDate: "30 sep",
+    highlights: RELEASE_11_5.sections.map((sec) => sec.title),
+  },
   {
     version: "11.4",
     shortDate: "29 sep",

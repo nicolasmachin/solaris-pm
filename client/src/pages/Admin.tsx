@@ -39,6 +39,7 @@ import { TabStageSlas } from "./admin/StageSlasPage";
 import { TabSalesStageSlas } from "./admin/SalesStageSlasPage";
 import { TabCadenciaRecorrido } from "./admin/RecorridoCadenciasPage";
 import { TabDigestConfig } from "./admin/DigestConfigPage";
+import { TabGastoIA } from "./admin/GastoIAPage";
 import { TabClientes } from "./AdminClientes";
 import { TabCostosFijos } from "./AdminCostosFijos";
 import { TabChecklistTemplates } from "./AdminChecklistTemplates";
@@ -3289,6 +3290,7 @@ export function Admin() {
           {activeTab === "pipeline" && <TabPipeline />}
           {activeTab === "permisos" && <TabPermisos />}
           {activeTab === "configuracion" && <TabConfiguracion />}
+          {activeTab === "gasto-ia" && <TabGastoIA />}
           {activeTab === "objetivos" && <TabObjetivos />}
           {activeTab === "finanzas" && <TabFinanzas />}
           {activeTab === "costos-fijos" && <TabCostosFijos />}

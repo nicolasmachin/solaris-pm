@@ -1,5 +1,15 @@
 # Novedades
 
+## v11.6
+
+### 1 de octubre de 2026
+
+#### Administración: cuánto se gasta en inteligencia artificial
+
+- Nueva pestaña **Gasto de IA** en Administración (sección Sistema): muestra lo que gasta Voltia PM en inteligencia artificial este mes, el mes anterior y los últimos seis, con un gráfico por mes.
+- El gasto se ve **por función** (asistente de preguntas, Proyecto Final, informes y audios de visitas técnicas, lectura de minutas, de cédulas y de facturas, mail de novedades) y **por modelo**, en dólares.
+- Se empieza a medir desde hoy: lo anterior no quedó registrado. El bot de Telegram no está incluido.
+
 ## v11.5
 
 ### 30 de septiembre de 2026

@@ -46,7 +46,7 @@ el manual difiere del código, manda el código y **el manual se corrige**.
 | 09 | [Experiencia del cliente](09-experiencia-cliente.md) | Proceso de posventa, interacciones, encuestas, mantenimientos, reportes fotovoltaicos, monitoreo diario de plantas, Plan de Protección contra Granizo | 🟡 Parcial (proceso de posventa · monitoreo diario · reportes FV: período y envío · plan de granizo) |
 | 10 | [Portal del cliente](10-portal-cliente.md) | Acceso, proyectos, tickets, encuestas, reportes, notificaciones | 🟡 Parcial (generación diaria, vista como cliente) |
 | 11 | [Métricas](11-metricas.md) | Dashboard, metas, reporte semanal, indicadores | 🟡 Parcial (panel de operaciones · reporte semanal por correo · definiciones compartidas de indicadores) |
-| 12 | [Infraestructura](12-infraestructura.md) | Docker, base de datos, storage, jobs, correo, IA, respaldos | ⬜ Pendiente |
+| 12 | [Infraestructura](12-infraestructura.md) | Docker, base de datos, storage, jobs, correo, IA, respaldos | 🟡 Parcial (resumen diario por correo · gasto de IA) |
 | 13 | [Conector MCP](13-conector-mcp.md) | Voltia PM dentro del chat de Claude: autorización, herramientas, permisos | ✅ Completo |
 | 14 | [Capacitación](14-capacitacion.md) | Videos (Bunny Stream) y documentos por área, permisos por sección, progreso y seguimiento | ✅ Completo |
 

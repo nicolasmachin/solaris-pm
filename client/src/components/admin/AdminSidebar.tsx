@@ -68,6 +68,7 @@ export const ADMIN_GROUPS: AdminSidebarGroup[] = [
     icon: Settings,
     items: [
       { tab: "configuracion", label: "Configuración del sistema" },
+      { tab: "gasto-ia", label: "Gasto de IA" },
     ],
   },
 ];
