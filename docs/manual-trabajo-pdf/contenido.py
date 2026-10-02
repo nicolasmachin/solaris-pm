@@ -1228,7 +1228,9 @@ def construir():
                 return alto(sid, BLOQUES[sid])
             if st == "tabla" and "cab" in ALTURAS.get(sid, {}):
                 return 16 + ALTURAS[sid]["cab"] + ALTURAS[sid]["filas"][0]
-            return alto(sid, BLOQUES[sid])
+            # En cadena: si lo que sigue también tiene que ir con lo suyo
+            # (título → párrafo → dibujo), se suma todo.
+            return alto(sid, BLOQUES[sid]) + lo_que_sigue(k + 1)
 
         for k_item, (bid, t, c) in enumerate(items):
             html = BLOQUES[bid]
