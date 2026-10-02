@@ -85,14 +85,19 @@ export function renderPlanGranizoHtml(data: PlanGranizoDocData): string {
   const p = data.plan;
   const e = data.empresa;
   const precio = usd(p.precioPorPanelUsd);
+  // Cobertura opcional de vandalismo: cambia el título, qué cubre y qué no, y el
+  // reporte de daño. Sin ella el documento sale exactamente como siempre.
+  const v = p.incluyeVandalismo === true;
+  const titulo = tituloPlan(v);
+  const causas = v ? "el granizo o un acto de vandalismo" : "el granizo";
   const contacto = [c.telefono, c.email].map((x) => x?.trim()).filter(Boolean).join(" · ");
 
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><style>${STYLES}</style></head><body>
 
   <div class="kicker">Documento para el cliente</div>
-  <h1>Plan de Protección<br>contra Granizo</h1>
+  <h1>Plan de Protección<br>contra Granizo${v ? " y Vandalismo" : ""}</h1>
   <div class="subtitulo">Condiciones generales</div>
-  <p class="lead">Si el granizo daña los paneles de su instalación, Voltia los repone sin costo adicional: panel nuevo, mano de obra y puesta en marcha incluidos.</p>
+  <p class="lead">Si ${causas} ${v ? "dañan" : "daña"} los paneles de su instalación, Voltia los repone sin costo adicional: panel nuevo, mano de obra y puesta en marcha incluidos.</p>
 
   <div class="tiles">
     <div class="tile"><div class="big">USD ${precio}</div><div class="small">por panel, por año<br>IVA incluido</div></div>
@@ -101,17 +106,26 @@ export function renderPlanGranizoHtml(data: PlanGranizoDocData): string {
   </div>
 
   <h2><span class="n">1</span>Qué es este plan</h2>
-  <p>Voltia se compromete a reponer, sin costo adicional, los paneles solares del Cliente que resulten dañados por granizo, a cambio de un cargo anual de <strong>USD ${precio} por panel, IVA incluido</strong>.</p>
+  <p>Voltia se compromete a reponer, sin costo adicional, los paneles solares del Cliente que resulten dañados por granizo${v ? " o por vandalismo" : ""}, a cambio de un cargo anual de <strong>USD ${precio} por panel, IVA incluido</strong>.</p>
   <p>Las partes son <strong>${esc(e.razonSocial)}</strong> (RUT ${esc(e.rut)}, domicilio fiscal ${esc(e.domicilio)}), en adelante "Voltia", y la persona o empresa indicada en el Anexo A, en adelante "el Cliente".</p>
   <p>Este plan es un <strong>servicio de reposición prestado directamente por Voltia</strong> sobre instalaciones que Voltia construyó. No es una póliza de seguro ni está emitido por una compañía aseguradora. Voltia responde con su propio stock, personal y recursos.</p>
 
   <h2><span class="n">2</span>Definiciones</h2>
   <table class="def">
-    <tr><td class="k">Granizo</td><td>Precipitación de hielo en forma de piedras que impacta directamente sobre los paneles.</td></tr>
-    <tr><td class="k">Evento</td><td>Una tormenta de granizo en una fecha determinada. Todos los daños de ese día cuentan como un solo evento.</td></tr>
+    <tr><td class="k">Granizo</td><td>Precipitación de hielo en forma de piedras que impacta directamente sobre los paneles.</td></tr>${
+      v
+        ? `
+    <tr><td class="k">Vandalismo</td><td>Daño intencional causado por terceros ajenos al Cliente directamente sobre los paneles, por ejemplo con piedras u objetos arrojados o golpes. No incluye el robo de paneles ni de otros equipos.</td></tr>`
+        : ""
+    }
+    <tr><td class="k">Evento</td><td>${
+      v
+        ? "Una tormenta de granizo o un hecho de vandalismo en una fecha determinada. Todos los daños de ese día por la misma causa cuentan como un solo evento."
+        : "Una tormenta de granizo en una fecha determinada. Todos los daños de ese día cuentan como un solo evento."
+    }</td></tr>
     <tr><td class="k">Instalación</td><td>El conjunto de paneles conectados al inversor cuyo número de serie figura en el Anexo A. Cada instalación tiene su propio plan.</td></tr>
     <tr><td class="k">Panel cubierto</td><td>Cada panel de la instalación, construida por Voltia en la dirección indicada en el Anexo A.</td></tr>
-    <tr><td class="k">Daño cubierto</td><td>Rotura del vidrio, fisura visible de celdas o deformación del marco causada por granizo, que Voltia verifica en sitio.</td></tr>
+    <tr><td class="k">Daño cubierto</td><td>Rotura del vidrio, fisura visible de celdas o deformación del marco causada por granizo${v ? " o por vandalismo" : ""}, que Voltia verifica en sitio.</td></tr>
     <tr><td class="k">Reposición</td><td>Retiro del panel dañado y colocación de uno nuevo, funcionando y conectado.</td></tr>
     <tr><td class="k">Período de carencia</td><td>Los primeros 30 días corridos desde el pago de la primera anualidad, en los que el plan todavía no cubre.</td></tr>
   </table>
@@ -136,7 +150,11 @@ export function renderPlanGranizoHtml(data: PlanGranizoDocData): string {
   <div class="box no">
     <ol>
       <li><strong>Otros equipos:</strong> inversor, estructura, cableado, protecciones, medidor y tableros.</li>
-      <li><strong>Otras causas:</strong> viento, rayo, sobretensión, incendio, inundación, caída de árboles u objetos, robo, vandalismo o golpes.</li>
+      <li><strong>Otras causas:</strong> ${
+        v
+          ? "viento, rayo, sobretensión, incendio, inundación, caída de árboles u objetos y robo. También los daños causados por el propio Cliente o por personas a su cargo."
+          : "viento, rayo, sobretensión, incendio, inundación, caída de árboles u objetos, robo, vandalismo o golpes."
+      }</li>
       <li><strong>Daños previos:</strong> los que existían antes de la adhesión, incluidos los visibles en las fotos de inicio, o que ocurrieron durante el período de carencia.</li>
       <li><strong>Microfisuras no visibles:</strong> las que solo se detectan con equipos especiales, salvo que el panel pierda más de 20 % de generación frente a los paneles vecinos.</li>
       <li><strong>Pérdida de generación:</strong> la energía no generada o el ahorro perdido mientras se repone el panel.</li>
@@ -156,15 +174,15 @@ export function renderPlanGranizoHtml(data: PlanGranizoDocData): string {
     <li><strong>Atraso:</strong> si la anualidad no se paga dentro de los 15 días del vencimiento, el plan queda suspendido. Para reactivarlo se paga la anualidad y corre una nueva carencia de 30 días.</li>
   </ul>
 
-  <h2><span class="n">6</span>Qué hacer si graniza</h2>
+  <h2><span class="n">6</span>${v ? "Qué hacer si hay un daño" : "Qué hacer si graniza"}</h2>
   <ul class="pasos">
     <li><span class="num">1</span><span><strong>No tocar los paneles.</strong> Un vidrio roto puede dejar partes con tensión. Si es seguro hacerlo, apagar el inversor desde su llave.</span></li>
-    <li><span class="num">2</span><span><strong>Avisar a Voltia dentro de los 10 días hábiles</strong> del evento, por WhatsApp o correo, con los datos del formulario del Anexo B.</span></li>
+    <li><span class="num">2</span><span><strong>Avisar a Voltia dentro de los 10 días hábiles</strong> del evento, por WhatsApp o correo, con los datos del formulario del Anexo B.${v ? " Si fue vandalismo, contar qué pasó y cuándo se notó." : ""}</span></li>
     <li><span class="num">3</span><span><strong>Enviar fotos</strong> de los paneles, tomadas desde el suelo o un lugar seguro. Nunca subir al techo.</span></li>
     <li><span class="num">4</span><span><strong>Inspección:</strong> Voltia visita la instalación dentro de los 10 días hábiles siguientes al aviso y confirma por escrito qué paneles se reponen.</span></li>
     <li><span class="num">5</span><span><strong>Reposición:</strong> Voltia coordina la fecha con el Cliente y repone los paneles (ver sección 7).</span></li>
   </ul>
-  <p class="nota">Los avisos fuera de plazo se atienden igual, pero Voltia puede rechazarlos si ya no es posible confirmar que el daño fue por granizo.</p>
+  <p class="nota">Los avisos fuera de plazo se atienden igual, pero Voltia puede rechazarlos si ya no es posible confirmar que el daño fue por ${v ? "granizo o por vandalismo" : "granizo"}.</p>
 
   <h2><span class="n">7</span>Reposición: plazos y límites</h2>
   <ul>
@@ -210,13 +228,14 @@ export function renderPlanGranizoHtml(data: PlanGranizoDocData): string {
       <tr><td class="k">Número de serie del inversor</td><td>${esc(p.inversorSerie)}</td></tr>
       <tr><td class="k">Teléfono y correo</td><td>${esc(contacto)}</td></tr>
       <tr><td class="k">Cantidad de paneles</td><td>${p.cantidadPaneles}</td></tr>
+      <tr><td class="k">Cobertura</td><td>${v ? "Granizo y vandalismo" : "Granizo"}</td></tr>
       <tr><td class="k">Instalación nueva o existente</td><td>${p.instalacion === "NUEVA" ? "Nueva" : "Existente"}</td></tr>
       <tr><td class="k">Fotos actuales de los paneles (solo existentes)</td><td>${
         p.instalacion === "EXISTENTE" ? `Adjuntas: ${p.fotosAdjuntas ? "sí" : "no"}` : "No corresponde"
       }</td></tr>
       <tr><td class="k">Anualidad (USD, IVA incluido)</td><td>USD ${usd(p.anualidadUsd)}</td></tr>
     </table>
-    <div class="box info"><p style="margin:0">El Cliente declara que <strong>recibió, leyó y acepta</strong> las Condiciones generales del Plan de Protección contra Granizo de Voltia, que forman parte de esta solicitud.</p></div>
+    <div class="box info"><p style="margin:0">El Cliente declara que <strong>recibió, leyó y acepta</strong> las Condiciones generales del ${titulo} de Voltia, que forman parte de esta solicitud.</p></div>
     <p class="nota">Fecha de emisión: ${fechaLarga(data.fecha)}.</p>
     <div class="firmas">
       <div class="firma">Firma del Cliente</div><div class="firma">Aclaración</div><div class="firma corta">Fecha</div>
@@ -228,13 +247,18 @@ export function renderPlanGranizoHtml(data: PlanGranizoDocData): string {
 
   <section class="anexo">
     <div class="kicker">Anexo B · Guardar para cuando haga falta</div>
-    <h1 style="font-size:22pt">Reporte de daño por granizo</h1>
-    <p class="lead">Si graniza y ve paneles dañados, responda estas preguntas y envíelas a Voltia por WhatsApp o correo dentro de los 10 días hábiles.</p>
+    <h1 style="font-size:22pt">${v ? "Reporte de daño" : "Reporte de daño por granizo"}</h1>
+    <p class="lead">${v ? "Si ve paneles dañados por granizo o por vandalismo" : "Si graniza y ve paneles dañados"}, responda estas preguntas y envíelas a Voltia por WhatsApp o correo dentro de los 10 días hábiles.</p>
     <table class="form">
       <tr><td class="k">Nombre del titular</td><td></td></tr>
       <tr><td class="k">Dirección de la instalación</td><td></td></tr>
       <tr><td class="k">Teléfono de contacto</td><td></td></tr>
-      <tr><td class="k">Fecha del granizo</td><td></td></tr>
+${
+      v
+        ? `      <tr><td class="k">¿Qué pasó? (granizo / vandalismo)</td><td></td></tr>
+      <tr><td class="k">Fecha del daño</td><td></td></tr>`
+        : `      <tr><td class="k">Fecha del granizo</td><td></td></tr>`
+    }
       <tr><td class="k">Hora aproximada</td><td></td></tr>
       <tr><td class="k">¿Cuántos paneles ve dañados? (aproximado)</td><td></td></tr>
       <tr><td class="k">¿La instalación sigue generando? (sí / no / no sé)</td><td></td></tr>
@@ -262,9 +286,14 @@ export function buildHeaderHtml(): string {
   </div>`;
 }
 
-export function buildFooterHtml(razonSocial: string): string {
+/** "Plan de Protección contra Granizo" o "… contra Granizo y Vandalismo". */
+export function tituloPlan(incluyeVandalismo: boolean | undefined): string {
+  return incluyeVandalismo ? "Plan de Protección contra Granizo y Vandalismo" : "Plan de Protección contra Granizo";
+}
+
+export function buildFooterHtml(razonSocial: string, incluyeVandalismo?: boolean): string {
   return `<div style="width:100%; box-sizing:border-box; padding:0 18mm; font-family:Helvetica, Arial, sans-serif; font-size:7pt; color:#6b7188; display:flex; justify-content:space-between;">
-    <span>Plan de Protección contra Granizo · Condiciones generales · ${esc(razonSocial)}</span>
+    <span>${tituloPlan(incluyeVandalismo)} · Condiciones generales · ${esc(razonSocial)}</span>
     <span><span class="pageNumber"></span> / <span class="totalPages"></span></span>
   </div>`;
 }

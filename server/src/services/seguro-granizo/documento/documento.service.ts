@@ -24,7 +24,7 @@ import {
   type PlanGranizoDocData,
   type PlanGranizoDocSnapshot,
 } from "./schema.js";
-import { buildFooterHtml, buildHeaderHtml, renderPlanGranizoHtml } from "./template.js";
+import { buildFooterHtml, buildHeaderHtml, renderPlanGranizoHtml, tituloPlan } from "./template.js";
 
 const PUBLISH_MAX_RETRIES = 3;
 
@@ -33,13 +33,13 @@ const PUBLISH_MAX_RETRIES = 3;
 export function generatePlanGranizoPdf(data: PlanGranizoDocData): Promise<Buffer> {
   return renderHtmlToPdf(renderPlanGranizoHtml(data), {
     headerHtml: buildHeaderHtml(),
-    footerHtml: buildFooterHtml(data.empresa.razonSocial),
+    footerHtml: buildFooterHtml(data.empresa.razonSocial, data.plan.incluyeVandalismo),
   });
 }
 
-export function planGranizoPdfFilename(nombre: string, versionNumber: number): string {
+export function planGranizoPdfFilename(nombre: string, versionNumber: number, incluyeVandalismo = false): string {
   const limpio = (nombre ?? "").replace(/[/\\:*?"<>|]/g, "").replace(/\s+/g, " ").trim() || "Cliente";
-  return `Plan de Protección contra Granizo - ${limpio} - V${versionNumber}.pdf`;
+  return `${tituloPlan(incluyeVandalismo)} - ${limpio} - V${versionNumber}.pdf`;
 }
 
 function versionDir(projectId: string, versionId: string) {
@@ -116,7 +116,7 @@ export async function publishVersion(projectId: string, userId: string) {
         projectId,
         userId,
         action: AuditAction.plan_granizo_version_published,
-        description: `Generó la versión ${created.versionNumber} de las condiciones del plan de granizo (${data.plan.cantidadPaneles} paneles, USD ${data.plan.anualidadUsd}/año)`,
+        description: `Generó la versión ${created.versionNumber} de las condiciones del plan de granizo${data.plan.incluyeVandalismo ? " con vandalismo" : ""} (${data.plan.cantidadPaneles} paneles, USD ${data.plan.anualidadUsd}/año)`,
       });
       return toLightDto(created);
     } catch (err) {
@@ -149,6 +149,7 @@ function toLightDto(row: {
     clientName: snap?.data?.cliente?.nombre ?? null,
     cantidadPaneles: snap?.data?.plan?.cantidadPaneles ?? null,
     anualidadUsd: snap?.data?.plan?.anualidadUsd ?? null,
+    incluyeVandalismo: snap?.data?.plan?.incluyeVandalismo === true,
   };
 }
 
@@ -170,7 +171,7 @@ export async function getVersionPdf(versionId: string) {
     throw badRequest("PLAN_GRANIZO_PDF_MISSING", "El PDF de la versión no está disponible en disco.");
   }
   const snap = v.snapshot as unknown as PlanGranizoDocSnapshot;
-  return { version: v, buf, filename: planGranizoPdfFilename(snap?.data?.cliente?.nombre ?? "Cliente", v.versionNumber) };
+  return { version: v, buf, filename: planGranizoPdfFilename(snap?.data?.cliente?.nombre ?? "Cliente", v.versionNumber, snap?.data?.plan?.incluyeVandalismo === true) };
 }
 
 export async function setVersionStatus(versionId: string, userId: string, descartar: boolean, reason?: string) {

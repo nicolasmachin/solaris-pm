@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.13 — 30 de septiembre de 2026
+**Voltia · Uruguay** · Versión 1.14 — 2 de octubre de 2026
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -1095,7 +1095,9 @@ inversor tiene una luz roja es el cliente, el monitoreo no sirvió (Anexo E, tem
 Por USD 12 por panel por año, IVA incluido, si el granizo le rompe paneles al
 cliente, Voltia se los repone con todo incluido: panel nuevo, traslado, mano de
 obra y puesta en marcha, sin deducible. Cubre **sólo los paneles** y **sólo por
-granizo**. Es siempre por **todos** los paneles de la instalación, y cada
+granizo**, salvo que el cliente elija sumar **vandalismo**: el daño a propósito
+de terceros (piedras, golpes), al mismo precio y con el mismo trámite, sin
+denuncia policial. El robo nunca está cubierto. Es siempre por **todos** los paneles de la instalación, y cada
 instalación —identificada por el número de serie de su inversor— tiene su
 propio plan.
 
@@ -1809,7 +1811,7 @@ partes:
 
 - Voltia tiene el **Plan de Protección contra Granizo**: si el granizo le rompe paneles, Voltia se los repone con todo incluido (panel nuevo, traslado, mano de obra y puesta en marcha), sin deducible.
 - Cuesta **USD 12 por panel por año, IVA incluido**, y se paga por adelantado una vez al año. Es siempre por **todos** los paneles de la instalación.
-- Cubre **sólo los paneles** y **sólo por granizo**: no el inversor, la estructura ni el cableado, y no el viento, el rayo, los golpes ni el robo.
+- Cubre **sólo los paneles** y **sólo por granizo**: no el inversor, la estructura ni el cableado, y no el viento, el rayo, los golpes ni el robo. Si al contratarlo eligió **vandalismo**, también cubre los paneles rotos a propósito por terceros; el robo, nunca.
 - Si lo contrata con la obra, cubre desde la puesta en marcha. Si ya tiene la instalación, empieza a cubrir **30 días después del primer pago** (carencia).
 - Si graniza: que **no toque los paneles ni suba al techo**, que apague el inversor si puede hacerlo sin riesgo, y que nos avise **dentro de los 10 días hábiles** con fotos tomadas desde el suelo.
 
@@ -1865,9 +1867,10 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.14 | 2 de octubre de 2026 | El Plan de Protección puede incluir vandalismo, al mismo precio. |
 | 1.13 | 30 de septiembre de 2026 | Obras con más de un suministro: se avisa al cliente cuando se habilita cada cuenta, y la Regla de Oro arranca con la última. Se corrige la cadencia del glosario (5 días hábiles en E1 y E2; E3 sin cadencia). Se agrega este registro. |
 | 1.12 y anteriores | hasta el 28 de septiembre de 2026 | No hay registro detallado de cada versión. |
 
 ---
 
-*Manual de Posventa — Experiencia Solar · Voltia · v1.13 · 30 de septiembre de 2026*
+*Manual de Posventa — Experiencia Solar · Voltia · v1.14 · 2 de octubre de 2026*

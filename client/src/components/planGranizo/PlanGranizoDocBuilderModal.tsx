@@ -177,6 +177,20 @@ export function PlanGranizoDocBuilderModal({ projectId, onClose }: { projectId: 
                       Se adjuntan las fotos actuales de los paneles
                     </label>
                   ) : null}
+                  <label className="flex items-start gap-2 text-sm text-[var(--color-text-primary)] sm:col-span-2">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5"
+                      checked={data.plan.incluyeVandalismo ?? false}
+                      onChange={(e) => setPlan({ incluyeVandalismo: e.target.checked })}
+                    />
+                    <span>
+                      Incluye vandalismo
+                      <span className="block text-[11px] text-[var(--color-text-muted)]">
+                        También repone los paneles dañados intencionalmente por terceros (piedras, golpes), al mismo precio y con el mismo trámite que el granizo. El robo sigue sin cubrirse.
+                      </span>
+                    </span>
+                  </label>
                   <div className="self-end text-sm text-[var(--color-text-secondary)]">
                     Anualidad: <strong className="text-[var(--color-text-primary)]">{fmtUsd(data.plan.anualidadUsd)}</strong>
                   </div>

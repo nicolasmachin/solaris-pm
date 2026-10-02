@@ -346,7 +346,8 @@ TEMAS_FAQ = [
       "se los repone con todo incluido (panel, traslado, mano de obra y puesta en marcha), sin deducible.",
       "Cuesta <strong>USD 12 por panel por año, IVA incluido</strong>, por adelantado y siempre por todos los paneles.",
       "Cubre <strong>sólo los paneles y sólo por granizo</strong>: no el inversor, la estructura ni el cableado, "
-      "y no el viento, el rayo, los golpes ni el robo.",
+      "y no el viento, el rayo, los golpes ni el robo. Si eligió <strong>vandalismo</strong>, también los paneles "
+      "rotos a propósito por terceros; el robo, nunca.",
       "Con la obra, cubre desde la puesta en marcha. Si ya tiene la instalación, 30 días después del primer pago.",
       "Si graniza: que no toque los paneles ni suba al techo, y que avise dentro de los 10 días hábiles con fotos."],
      "<strong>no es un seguro y no se le dice así</strong>: decís plan, condiciones, anualidad y daño por granizo. "
@@ -1025,7 +1026,8 @@ def construir():
         kicker("CAPÍTULO 12.1")
         + titulo("El Plan de Protección contra Granizo", tamano=34)
         + bajada("USD 12 por panel por año, IVA incluido. Si el granizo le rompe paneles, Voltia se los repone "
-                 "con todo incluido. Sólo paneles, sólo por granizo, siempre todos los paneles.")
+                 "con todo incluido. Sólo paneles, siempre todos los paneles. El vandalismo se suma si el cliente "
+                 "lo elige, al mismo precio.")
         + aviso("<strong>No es un seguro, y no se le dice así.</strong> Decís plan, condiciones del plan, "
                 "anualidad y daño por granizo. Nunca seguro, póliza, prima, siniestro ni asegurado.", "duro",
                 margen=18)
@@ -1325,7 +1327,9 @@ def construir():
         + titulo("Registro de cambios")
         + bajada("Qué se agregó o se modificó en cada versión del manual, la más nueva arriba.")
         + tabla(["VERSIÓN", "FECHA", "QUÉ SE AGREGÓ O MODIFICÓ"],
-                [["1.13", "30 de septiembre de 2026",
+                [["1.14", "2 de octubre de 2026",
+                  "El Plan de Protección puede incluir vandalismo, al mismo precio."],
+                 ["1.13", "30 de septiembre de 2026",
                   "Obras con más de un suministro: se avisa al cliente cuando se habilita cada cuenta, y la "
                   "Regla de Oro arranca con la última. Se corrige la cadencia del glosario (5 días hábiles en "
                   "E1 y E2; E3 sin cadencia). Se agrega este registro."],

@@ -1,5 +1,16 @@
 # Novedades
 
+## v11.7
+
+### 2 de octubre de 2026
+
+#### Plan de Protección: vandalismo opcional
+
+- En el generador de **Condiciones y Anexo A** del plan hay una casilla nueva, **Incluye vandalismo**. Marcada, el plan también repone los **paneles dañados a propósito por terceros** (piedras, objetos arrojados, golpes), **al mismo precio** (USD 12 por panel por año) y con el mismo trámite que el granizo: aviso, fotos e inspección de Voltia, sin denuncia policial.
+- El documento pasa a llamarse **Plan de Protección contra Granizo y Vandalismo**: lo dice en el título, en lo que cubre y no cubre, en el Anexo A (con una línea nueva, **Cobertura**) y en el reporte de daño, que ahora pregunta qué pasó.
+- **Siguen sin cubrirse** el robo, el resto de los equipos (inversor, estructura, cableado) y los daños causados por el propio cliente.
+- Sin la casilla, el documento sale exactamente igual que antes. En la lista de versiones se ve cuáles incluyen vandalismo.
+
 ## v11.6
 
 ### 1 de octubre de 2026

@@ -23,6 +23,20 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "11.7",
+  date: "2 de octubre de 2026",
+  sections: [
+    {
+      title: "Plan de Protección: vandalismo opcional",
+      items: [
+        "Casilla nueva «Incluye vandalismo» en las Condiciones y Anexo A: el plan también repone paneles dañados a propósito por terceros, al mismo precio y con el mismo trámite que el granizo.",
+        "El documento pasa a llamarse «contra Granizo y Vandalismo»; el robo y los demás equipos siguen sin cubrirse.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_11_6: Release = {
   version: "11.6",
   date: "1 de octubre de 2026",
   sections: [
@@ -388,6 +402,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "11.6",
+    shortDate: "1 oct",
+    highlights: RELEASE_11_6.sections.map((sec) => sec.title),
+  },
   {
     version: "11.5",
     shortDate: "30 sep",

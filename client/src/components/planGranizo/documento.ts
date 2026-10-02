@@ -27,6 +27,7 @@ export function buildInitialDocData(ctx: PlanGranizoDocContext | undefined): Pla
       instalacion: ctx?.plan.instalacion ?? "NUEVA",
       inversorSerie: ctx?.plan.inversorSerie ?? "",
       fotosAdjuntas: ctx?.plan.fotosAdjuntas ?? null,
+      incluyeVandalismo: false,
     },
     empresa: ctx?.empresa ?? { razonSocial: "Voltia SAS", rut: "221075240012", domicilio: "Av. Gral. Rondeau 2110, Montevideo" },
     fecha: hoyIso(),
@@ -59,7 +60,8 @@ export function validateDoc(d: PlanGranizoDocData): { ok: boolean; missing: Miss
   return { ok: missing.length === 0, missing };
 }
 
-export function docPdfFilename(clientName: string | null | undefined, versionNumber: number) {
+export function docPdfFilename(clientName: string | null | undefined, versionNumber: number, incluyeVandalismo = false) {
   const limpio = (clientName ?? "").replace(/[/\\:*?"<>|]/g, "").replace(/\s+/g, " ").trim() || "Cliente";
-  return `Plan de Protección contra Granizo - ${limpio} - V${versionNumber}.pdf`;
+  const titulo = incluyeVandalismo ? "Plan de Protección contra Granizo y Vandalismo" : "Plan de Protección contra Granizo";
+  return `${titulo} - ${limpio} - V${versionNumber}.pdf`;
 }

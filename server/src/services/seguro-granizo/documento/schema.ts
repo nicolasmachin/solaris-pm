@@ -33,6 +33,11 @@ export const planGranizoDocPublishSchema = z
         inversorSerie: z.string().optional(),
         // Sólo instalaciones existentes: ¿se adjuntan las fotos actuales?
         fotosAdjuntas: z.boolean().nullable().optional(),
+        // Cobertura opcional (decisión de la reunión del 30-09-2026): el plan
+        // también repone los paneles dañados por vandalismo, al mismo precio y
+        // con el mismo trámite que el granizo. Opcional y sin default para que
+        // las versiones emitidas antes sigan validando igual (= sin vandalismo).
+        incluyeVandalismo: z.boolean().optional(),
       })
       .strict(),
     // Datos de Voltia que cita la sección 1 (editables hasta cerrar el texto legal).
@@ -72,6 +77,7 @@ export const planGranizoDocStorageSchema = z
         instalacion: z.enum(["NUEVA", "EXISTENTE"]),
         inversorSerie: z.string(),
         fotosAdjuntas: z.boolean().nullable(),
+        incluyeVandalismo: z.boolean(),
       })
       .partial()
       .strict(),

@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.2 — 30 de septiembre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.3 — 2 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -26,6 +26,27 @@
 
 Cada decisión se anota con **qué se decidió, por qué, desde cuándo rige** y a
 qué manual afecta.
+
+### El Plan de Protección puede incluir vandalismo
+
+**Qué se decidió.** El Plan de Protección contra Granizo puede incluir, **a
+elección del cliente**, el **vandalismo**: el daño intencional que terceros le
+hacen a los paneles (piedras, objetos arrojados, golpes). Va **al mismo precio**
+(USD 12 por panel por año), **sólo para los paneles** y con el mismo trámite que
+el granizo: aviso, fotos e inspección de Voltia, **sin denuncia policial**. Siguen
+sin cubrirse el robo, el resto de los equipos y los daños causados por el propio
+cliente.
+
+**Por qué.** Lo piden los clientes con paneles expuestos, y para Voltia el
+trabajo de reponer un panel es el mismo sea cual sea la causa. Se decidió no
+exigir denuncia policial para que el trámite sea igual de simple que el del
+granizo; la inspección de Voltia es la que confirma el daño.
+
+**Desde cuándo rige.** Decidido en la reunión del 30 de septiembre de 2026;
+disponible en el documento del plan desde el 2 de octubre de 2026.
+
+**A qué manuales afecta.** Ventas (lo ofrece el asesor con la obra) y
+Experiencia Solar (lo sigue y atiende los daños).
 
 ### Una venta con varios inversores: un suministro por inversor
 
@@ -78,5 +99,6 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.3 | 2 de octubre de 2026 | Se registra la decisión de que el Plan de Protección puede incluir vandalismo, al mismo precio. |
 | 0.2 | 30 de septiembre de 2026 | Primera decisión registrada: una venta con varios inversores lleva un suministro por inversor, con contrato y proforma únicos. |
 | 0.1 | 28 de septiembre de 2026 | Se crea el manual con su estructura y la lista de temas a documentar. |

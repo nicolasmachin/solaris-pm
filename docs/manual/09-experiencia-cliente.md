@@ -1385,6 +1385,17 @@ cliente) y de la **guía interna del equipo**. Las dos las aprobó Nicolás el
 - **Condiciones y Anexo A** (`PlanGranizoDocSection` →
   `PlanGranizoDocBuilderModal`): está en la tarjeta de la ficha y en la
   subetapa **Contrato** del Onboarding (`StageDrawer`).
+- **Vandalismo opcional** (desde el 02-10-2026): casilla **Incluye vandalismo**
+  en el generador → `plan.incluyeVandalismo` en el documento (`documento/schema.ts`,
+  opcional y sin default: las versiones anteriores validan igual y salen sin
+  vandalismo). Con `true`, `template.ts` cambia título ("…contra Granizo y
+  Vandalismo", `tituloPlan()`), agrega la definición de vandalismo (terceros,
+  sólo paneles, sin robo), lo saca de "Qué no cubre" (y suma ahí los daños del
+  propio cliente), agrega la fila **Cobertura** al Anexo A y adapta el Anexo B.
+  Mismo precio y mismo trámite, sin denuncia policial. El dato vive sólo en el
+  snapshot de la versión del documento (`toLightDto` lo expone para la lista y el
+  nombre del PDF); **la póliza no lo guarda**, así que el registro de un daño no
+  distingue la causa.
 - **Nombre en rojo** cuando el plan está por vencer (≤ 30 días y la anualidad
   siguiente sin pagar), en gracia, suspendido o vencido. Sale en:
   - `PlanGranizoPage`;

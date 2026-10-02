@@ -61,7 +61,7 @@ export function PlanGranizoDocVersionsList({ projectId }: { projectId: string })
 
   function download(v: PlanGranizoDocVersion) {
     planGranizoDocApi
-      .downloadVersionPdf(v.id, docPdfFilename(v.clientName, v.versionNumber))
+      .downloadVersionPdf(v.id, docPdfFilename(v.clientName, v.versionNumber, v.incluyeVandalismo))
       .catch(() => toast.error("No se pudo descargar el PDF"));
   }
   function preview(v: PlanGranizoDocVersion) {
@@ -103,6 +103,7 @@ export function PlanGranizoDocVersionsList({ projectId }: { projectId: string })
                 <span className="ml-2 text-[11px] text-[var(--color-text-muted)]">
                   {relative(v.publishedAt)}
                   {v.cantidadPaneles ? ` · ${v.cantidadPaneles} paneles · ${fmtUsd(v.anualidadUsd)}/año` : ""}
+                  {v.incluyeVandalismo ? " · con vandalismo" : ""}
                 </span>
               </div>
               <div className="flex shrink-0 items-center">

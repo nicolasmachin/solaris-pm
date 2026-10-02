@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 0.2 — 30 de septiembre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.4 — 2 de octubre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -164,10 +164,17 @@ repone con todo incluido. **No es un seguro y no se le dice así**: se dice
 Si el cliente se adhiere al contratar la obra, **no tiene carencia**: cubre desde
 la puesta en marcha. Por eso conviene ofrecerlo en la venta.
 
+**El vandalismo es opcional.** Si el cliente lo quiere, el plan también repone los
+paneles dañados a propósito por terceros (piedras, objetos arrojados, golpes),
+**al mismo precio** y con el mismo trámite que el granizo. El robo y el resto de
+los equipos siguen sin cubrirse.
+
 **En Voltia PM:** en el onboarding, subetapa **Contrato**, abajo del contrato,
 está **Condiciones y Anexo A**. Genera un solo PDF con las condiciones y el
-Anexo A ya completo con los datos del cliente. El asesor revisa los datos, lo
-genera y lo manda con el contrato. El plan lo sigue Experiencia Solar.
+Anexo A ya completo con los datos del cliente. Si el cliente quiere vandalismo,
+el asesor marca **Incluye vandalismo** y el documento sale como *Plan de
+Protección contra Granizo y Vandalismo*. Revisa los datos, lo genera y lo manda
+con el contrato. El plan lo sigue Experiencia Solar.
 
 ### El pasaje del cliente a Experiencia Solar
 
@@ -257,6 +264,7 @@ esa venta se le pregunta a él.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.4 | 2 de octubre de 2026 | El Plan de Protección puede incluir vandalismo, al mismo precio. |
 | 0.2 | 30 de septiembre de 2026 | El cotizador con inversores distintos y qué pasa con cada uno (un suministro por inversor). Se agrega la consulta inicial a UTE: una por cada cuenta. |
 | 0.3 | 1 de octubre de 2026 | Se agrega el embudo paso a paso, con lo que pasa en cada paso y sus plazos (sale del PGT, que queda con el dibujo del embudo). |
 | 0.2 | 1 de octubre de 2026 | Se agregan las tareas del onboarding una por una (el PGT las describe en general). |

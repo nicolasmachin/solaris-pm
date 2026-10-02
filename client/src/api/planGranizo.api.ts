@@ -273,6 +273,8 @@ export interface PlanGranizoDocData {
     instalacion: "NUEVA" | "EXISTENTE";
     inversorSerie: string;
     fotosAdjuntas: boolean | null;
+    /** Cobertura opcional: también repone paneles dañados por vandalismo (mismo precio). */
+    incluyeVandalismo: boolean;
   };
   empresa: { razonSocial: string; rut: string; domicilio: string };
   fecha: string;
@@ -300,6 +302,7 @@ export interface PlanGranizoDocVersion {
   clientName: string | null;
   cantidadPaneles: number | null;
   anualidadUsd: number | null;
+  incluyeVandalismo: boolean;
 }
 
 export const planGranizoDocApi = {
