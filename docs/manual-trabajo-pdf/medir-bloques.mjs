@@ -13,9 +13,15 @@ import puppeteer from "puppeteer";
 
 const [entrada, salida] = process.argv.slice(2);
 const { helmet, ancho, bloques } = JSON.parse(fs.readFileSync(entrada, "utf8"));
+// Las imágenes viven en el canvas como /_blob/<id>: sin apuntarlas al archivo
+// local miden cero y el bloque parece entrar cuando no entra.
+const dirImgs = process.env.DIR_IMAGENES || "/tmp/mt/imagenes";
+let mapa = {};
+try { mapa = JSON.parse(fs.readFileSync(process.env.MAPA_ASSETS || "/tmp/mt/assets-locales.json", "utf8")); } catch {}
+const conImagenes = (html) => html.replace(/\/_blob\/([0-9a-f]{32})/g, (t, id) => (mapa[id] ? `file://${dirImgs}/${mapa[id]}` : t));
 
 const cuerpo = Object.entries(bloques)
-  .map(([id, html]) => `<div class="b" data-id="${id}" style="display: flow-root">${html}</div>`)
+  .map(([id, html]) => `<div class="b" data-id="${id}" style="display: flow-root">${conImagenes(html)}</div>`)
   .join("\n");
 fs.writeFileSync("/tmp/medir-bloques.html",
   `<!doctype html><html><head><meta charset="utf-8">${helmet}</head>` +

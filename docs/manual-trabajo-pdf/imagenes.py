@@ -24,3 +24,4 @@ CALENDARIO = "/_blob/bd5afd7da356d68f18b9c9da4da50e2d"
 PORTAL_CLIENTE = "/_blob/bd542bef9bb372594176194b2d92a9a2"
 PLANTILLAS = "/_blob/b01876e529f4ff76522eaee62251277a"
 TRAMITE_UTE = "/_blob/6b8e379ef96cd77c39db8514d73bd6c5"
+PROYECTO_PANTALLA = "/_blob/f7b71c1dbe829a9f60a1e7e4915f74ff"  # el proyecto entero, con el menú, para anotar

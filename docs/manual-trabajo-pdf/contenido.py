@@ -39,7 +39,7 @@ sys.path.insert(1, POSVENTA)
 import imagenes as IMG  # noqa: E402
 import generar  # noqa: E402
 from generar import (  # noqa: E402
-    AZUL, AZUL_FONDO, BORDE, GRIS, GRIS_CLARO, NEGRO, SANS, SERIF, TEXTO,
+    AZUL, AZUL_FONDO, BORDE, GRIS, GRIS_CLARO, NEGRO, ROJO, SANS, SERIF, TEXTO,
     ANCHO, ALTO, FUENTES, altura_estimada, numerados, pagina,
 )
 
@@ -744,6 +744,139 @@ def juntar_secciones(crudos):
     return out
 
 
+def cliente_burbujas(items):
+    """Capítulo 6: el cliente en el centro y, alrededor, una burbuja por cada
+    cosa que todas las áreas tienen que saber de él (cada ítem de la lista del
+    .md: el rótulo en negrita arriba, el resto debajo)."""
+    W = 650
+    lado_w, centro_w = 250, 150
+    azul, azul_claro = COLOR_AREA["Ventas"]
+    burbujas = []
+    for it in items:
+        m = re.match(r"\*\*(.+?)\*\*:?\s*(.*)", it)
+        rot, resto = (m.group(1).rstrip(":"), m.group(2)) if m else ("", it)
+        # "**Reclamos: respuesta el mismo día…**": el rótulo es lo de antes de
+        # los dos puntos; lo demás pasa al texto de la burbuja.
+        if ":" in rot:
+            rot, extra = rot.split(":", 1)
+            resto = f"{extra.strip()} {resto}".strip()
+        if resto:
+            resto = resto[0].upper() + resto[1:]
+        resto = re.sub(r"\*\*", "", resto)
+        lineas = _renglones(resto, 44)
+        burbujas.append((rot, lineas, 34 + len(lineas) * 13))
+    izq = burbujas[0::2]
+    der = burbujas[1::2]
+    gap = 12
+    alto = max(sum(b[2] for b in lado) + gap * (len(lado) - 1) for lado in (izq, der))
+    p = []
+    cx, cy = W / 2, alto / 2
+    # La persona.
+    p.append(f'<circle cx="{cx}" cy="{cy - 34}" r="22" fill="{azul}"/>'
+             f'<path d="M{cx - 40} {cy + 40} Q{cx - 40} {cy - 6} {cx} {cy - 6} Q{cx + 40} {cy - 6} {cx + 40} {cy + 40} Z" '
+             f'fill="{azul}"/>')
+    p.append(_txt(cx, cy + 62, "EL CLIENTE", 11, 700, azul, anchor="middle"))
+    for lado, x in ((izq, 0), (der, W - lado_w)):
+        y = (alto - (sum(b[2] for b in lado) + gap * (len(lado) - 1))) / 2
+        for rot, lineas, h in lado:
+            p.append(f'<rect x="{x}" y="{y}" width="{lado_w}" height="{h}" rx="20" fill="{azul_claro}"/>')
+            xb = x + lado_w if x == 0 else x
+            xp = cx - 44 if x == 0 else cx + 44
+            p.append(f'<line x1="{xb}" y1="{y + h / 2}" x2="{xp}" y2="{cy}" stroke="#c9d1f3" stroke-width="2"/>')
+            p.append(_txt(x + 16, y + 21, rot, 12, 700, azul))
+            for j, l in enumerate(lineas):
+                p.append(_txt(x + 16, y + 38 + j * 13, l, 10.5, 500, NEGRO))
+            y += h + gap
+    H = alto + 4
+    etiqueta = "Lo que todas las áreas tienen que saber del cliente"
+    return (f'  <figure style="margin: 18px 0 0">\n'
+            f'    <svg viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="{etiqueta}" '
+            f'style="display: block; max-width: 100%; height: auto">{"".join(p)}</svg>\n'
+            f'  </figure>\n')
+
+
+# Las marcas sobre la captura del proyecto (capítulo 7): dónde está cada cosa,
+# en porcentaje de la imagen. Se ubicaron mirando la captura; si la pantalla
+# cambia, hay que volver a sacarla (capturas.mjs) y revisar estas posiciones.
+MARCAS_PROYECTO = [
+    (1, 46, 2.5, "El menú, con una sección por área"),
+    (2, 7, 45, "La lista de clientes, para elegir con cuál trabajar"),
+    (3, 57, 21, "Los botones que llevan al mismo cliente en otras secciones"),
+    (4, 69.5, 10, "El plazo de la etapa en curso, en cuenta regresiva"),
+    (5, 56, 66, "El recorrido del proyecto, etapa por etapa"),
+]
+
+
+def pantalla_anotada():
+    """La pantalla de un proyecto en Voltia PM con números sobre cada parte y,
+    debajo, qué es cada número."""
+    marcas = "".join(
+        f'<div style="position: absolute; left: {x}%; top: {y}%; transform: translate(-50%, -50%); width: 26px; '
+        f'height: 26px; border-radius: 50%; background: {ROJO}; color: #ffffff; font-family: {SANS}; font-size: 13px; '
+        f'font-weight: 700; line-height: 26px; text-align: center; box-shadow: 0 0 0 3px #ffffff">{n}</div>'
+        for n, x, y, _ in MARCAS_PROYECTO)
+    leyenda = "".join(
+        f'<div style="display: flex; gap: 10px; align-items: baseline; margin-top: 7px">'
+        f'<span style="flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; background: {ROJO}; color: #ffffff; '
+        f'font-family: {SANS}; font-size: 11px; font-weight: 700; line-height: 20px; text-align: center">{n}</span>'
+        f'<span style="font-size: 14px; line-height: 1.45; color: {TEXTO}">{t}</span></div>'
+        for n, _, _, t in MARCAS_PROYECTO)
+    return (f'  <figure style="margin: 18px 0 0">\n'
+            f'    <div style="position: relative; border: 1px solid {BORDE}; border-radius: 8px; overflow: hidden">'
+            f'<img src="{IMG.PROYECTO_PANTALLA}" alt="La pantalla de un proyecto en Voltia PM" '
+            f'style="display: block; width: 100%">{marcas}</div>\n'
+            f'    <figcaption style="margin-top: 10px">{leyenda}</figcaption>\n'
+            f'  </figure>\n')
+
+
+def casos_tarjetas(casos):
+    """Capítulo 8: cada caso en una tarjeta, el problema arriba y qué hacer
+    debajo."""
+    out = '  <div style="margin-top: 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">\n'
+    for titulo, cuerpo in casos:
+        out += (f'    <div style="border-radius: 8px; overflow: hidden; border: 1px solid {ROJO}33; background: #fdf6f5">'
+                f'<div style="padding: 11px 14px; background: {ROJO}; font-family: {SANS}; font-size: 14px; '
+                f'font-weight: 700; color: #ffffff; display: flex; gap: 8px; align-items: center">'
+                f'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" '
+                f'stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0"><path d="M12 3l9 16H3z"></path>'
+                f'<path d="M12 10v4M12 17h.01"></path></svg>{en_linea(titulo)}</div>'
+                f'<p style="margin: 0; padding: 12px 14px 14px; font-size: 13.5px; line-height: 1.5; color: {TEXTO}; '
+                f'background: #fdf6f5">{en_linea(cuerpo)}</p></div>\n')
+    return out + '  </div>\n'
+
+
+def juntar_cliente_pm_casos(crudos, num):
+    """Los dibujos de los capítulos 6, 7 y 8."""
+    out = []
+    if num == 6:
+        hecho = False
+        for t, c in crudos:
+            if t == "lista" and not hecho:
+                out.append(("burbujas", c))
+                hecho = True
+            else:
+                out.append((t, c))
+        return out
+    if num == 7:
+        for t, c in crudos:
+            out.append((t, c))
+            if t == "p" and c.startswith("El menú tiene una sección por cada área"):
+                out.append(("pantalla", None))
+        return out
+    if num == 8:
+        casos = []
+        for t, c in crudos:
+            m = re.match(r"\*\*(.+?)\*\*\s*(.*)", c) if t == "p" else None
+            if m:
+                casos.append((m.group(1), m.group(2)))
+            else:
+                out.append((t, c))
+        if casos:
+            out.insert(0, ("casos", casos))
+        return out
+    return crudos
+
+
 def juntar_recorrido(crudos):
     """Si el capítulo tiene la tabla de etapas (con su área dueña) y la de los
     tramos E1/E2/E3, las dos se dibujan juntas en el lugar de la de tramos: el
@@ -768,6 +901,12 @@ def html_de(tipo, c):
         return proceso_ventas(*c)
     if tipo == "ingenieria":
         return trabajo_ingenieria(*c)
+    if tipo == "burbujas":
+        return cliente_burbujas(c)
+    if tipo == "pantalla":
+        return pantalla_anotada()
+    if tipo == "casos":
+        return casos_tarjetas(c)
     if tipo == "operaciones":
         return camino_operaciones()
     if tipo == "hitos":
@@ -1029,6 +1168,7 @@ def construir():
         if cap["num"] == 0 and len(parrafos) > 1:
             crudos = [("cita", [" ".join(parrafos[1:])])] + crudos
         crudos = juntar_secciones(juntar_ingenieria(juntar_ventas(partir_areas(juntar_recorrido(crudos)))))
+        crudos = juntar_cliente_pm_casos(crudos, cap["num"])
         cabeza1 = apertura(cap["num"], cap["titulo"])
         cabeza2 = continua(cap["num"], cap["titulo"])
         BLOQUES[f"{clave}_ap"] = cabeza1
