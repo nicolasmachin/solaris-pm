@@ -11,6 +11,7 @@ import { entornoLabel, esProduccion, issuerUrl } from "./config.js";
 import { VERSION } from "./version.js";
 import type { McpUser } from "./context.js";
 import { registerDiagnosticTools } from "./tools/diagnostico.js";
+import { registerDocumentosTools } from "./tools/documentos.js";
 import { registerExperienciaSolarTools } from "./tools/experiencia-solar.js";
 import { registerFinanzasTools } from "./tools/finanzas.js";
 import { registerMetricasTools } from "./tools/metricas.js";
@@ -61,6 +62,7 @@ export function buildMcpServer(user: McpUser): McpServer {
   registerPropuestaTools(server, user);
   registerPendientesTools(server, user);
   registerProyectosTools(server, user);
+  registerDocumentosTools(server, user);
   registerOperacionesTools(server, user);
   registerExperienciaSolarTools(server, user);
   registerFinanzasTools(server, user);

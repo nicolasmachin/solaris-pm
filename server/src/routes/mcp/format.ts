@@ -81,3 +81,16 @@ export function texto(...bloques: Array<string | null | undefined>) {
   const cuerpo = bloques.filter(Boolean).join("\n\n");
   return { content: [{ type: "text" as const, text: cuerpo }] };
 }
+
+/** Bloque de imagen para mandar una foto o un plano escaneado al chat. */
+export function imagen(base64: string, mediaType: string) {
+  return { type: "image" as const, data: base64, mimeType: mediaType };
+}
+
+/**
+ * Resultado que mezcla texto e imágenes. Los textos van en el orden en que se
+ * pasan; las imágenes, después de su encabezado.
+ */
+export function contenido(bloques: Array<{ type: "text"; text: string } | ReturnType<typeof imagen>>) {
+  return { content: bloques };
+}

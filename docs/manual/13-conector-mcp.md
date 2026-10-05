@@ -112,7 +112,7 @@ corta la conexión a nadie.
 
 ## Herramientas
 
-Cuarenta y dos. Cada una chequea su permiso antes de tocar nada, y toda escritura queda
+Cuarenta y tres. Cada una chequea su permiso antes de tocar nada, y toda escritura queda
 auditada con `metadata.source = "mcp"` y el nombre de la herramienta.
 
 ### Diagnóstico
@@ -273,7 +273,7 @@ Es la única herramienta que responde sin que haya que nombrar un cliente. Con
 | `detalle_etapas` | `OPERACIONES:VIEW` | Etapas y subetapas con responsable y estado. Con `solo_pendientes` muestra únicamente lo que falta. |
 | `tramite_ute` | `TRAMITES_UTE:VIEW` | Los once hitos con fecha y el reparto entre días nuestros y días esperando a UTE. |
 | `obra_y_materiales` | `OPERACIONES:VIEW` | Materiales con su estado de compra, fotos y videos. |
-| `documentos_proyecto` | `OPERACIONES:VIEW` | Documentos generados con enlace de descarga. Excluye las fotos de obra, que son cientos. |
+| `documentos_proyecto` | `OPERACIONES:VIEW` | Los adjuntos de la obra con su **id** y, si son pocos, el enlace de descarga. Se filtra por nombre con `busqueda`; las fotos de obra quedan afuera salvo `incluir_fotos`. Para leerlos, `leer_documentos`. |
 | `historial_proyecto` | `OPERACIONES:VIEW` | El timeline unificado: etapas, comentarios, interacciones, traspasos, tickets y encuestas. |
 | `pendientes_proyecto` | `OPERACIONES:VIEW` | Los pendientes de la obra **de todo el equipo**, no solo los propios. |
 | `comentar_proyecto` | `OPERACIONES:COMMENT` | Deja un comentario en el historial de la obra. |
@@ -392,6 +392,44 @@ que dé lo mismo que el listado.
 **Quién puede.** `OPERACIONES:VIEW`, el permiso del panel. En producción lo
 tienen casi todos los roles internos, incluidos asesores comerciales,
 Experiencia Solar y los instaladores tercerizados (consultado el 19/9/2026).
+
+### Leer documentos
+
+| Herramienta | Permiso | Qué hace |
+|---|---|---|
+| `leer_documentos` | el del dueño del archivo: `OPERACIONES:VIEW` si es de un proyecto, `VENTAS:VIEW` si es de un cliente potencial | Trae el **contenido** de hasta 10 adjuntos a la vez, por id. |
+
+Para qué existe: la ingeniería de una obra vive en los adjuntos (memoria,
+planos, listas de materiales, proyecto final). Con esto se traen al chat y se
+vuelven a analizar sin descargar nada.
+
+Qué devuelve según el archivo (`services/documentos/lectura.service.ts` →
+`leerContenidoAdjunto()`):
+
+| Archivo | Qué devuelve |
+|---|---|
+| PDF con texto (memorias, informes, propuestas, listas, reportes FV) | El texto. |
+| **Unifilar** nuestro | El plano **vuelto a dibujar** como imagen. |
+| **Lámina de gabinete** nuestra | Las hojas vueltas a dibujar, una imagen cada una. |
+| Planilla `.xlsx` | Las filas, hoja por hoja. |
+| Imagen (foto de obra, documento fotografiado) | La imagen reducida a 1400 px. |
+| PDF escaneado, ZIP, video, Word | No se lee: dice por qué y deja el enlace. |
+
+**Por qué los planos se vuelven a dibujar.** El unifilar y la lámina del
+gabinete se generan desde un SVG y en el PDF los rótulos quedan como trazos:
+extraerles texto devuelve doce caracteres. Como los datos de cada versión están
+guardados (`UnifilarVersion`, el `snapshot` de `CabinetDesignVersion`), se
+vuelve a generar el SVG y se rasteriza con sharp. **El dibujo sale del generador
+de hoy sobre los datos de esa versión**: si el generador cambió desde que se
+emitió el PDF, puede no ser idéntico al archivo. La respuesta lo aclara.
+
+**Topes.** 30.000 caracteres por documento cuando se piden varios, 120.000 en
+toda la respuesta (el resultado de una herramienta se corta cerca de los
+150.000) y 4 imágenes por llamada. Un documento largo se corta en partes y la
+respuesta dice cómo pedir la siguiente (`parte`).
+
+**Lo que no hace.** No renderiza un PDF escaneado: no hay un renderer de PDF en
+el servidor. Tampoco lee Word ni abre los ZIP de documentación de UTE.
 
 ### Lo que las herramientas NO hacen
 

@@ -1,6 +1,6 @@
 # Manual de trabajo de Ingeniería
 
-**Voltia · Uruguay** · Versión 0.3 — 1 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.4 — 5 de octubre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ingeniería, juntos**: qué se hace, quién lo hace, en qué plazo, con qué
@@ -68,6 +68,15 @@ los videos, que al ganar el lead pasan al proyecto).
 - **El mapeo de materiales** en Voltia PM: la lista de Ingeniería se cruza con
   los materiales que usa Voltia, y esa lista mapeada es la que reciben
   Validación de Operaciones y Compras.
+
+- **Los documentos de la obra, leídos desde el chat de Claude.** El conector de
+  Voltia PM le deja a Claude abrir los adjuntos del proyecto —la memoria, la
+  lista de materiales, la propuesta, los reportes, las planillas— y leerlos para
+  analizarlos de nuevo, sin descargar ni adjuntar nada. Los planos del unifilar
+  y del gabinete se los muestra como dibujo, porque en PDF los rótulos no se
+  pueden leer como texto. Un PDF escaneado no lo puede leer: ahí hay que abrirlo
+  con el enlace. Se le pide por el nombre del cliente ("traeme los documentos de
+  tal obra" y después "leé la memoria y el unifilar").
 
 > Estas herramientas cambian seguido: por eso el detalle está acá y no en el PGT.
 
@@ -155,6 +164,7 @@ deja como comentario en su etapa y le llega solo a Experiencia Solar.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.4 | 5 de octubre de 2026 | Se agrega, entre las herramientas, la lectura de los documentos de la obra desde el chat de Claude: qué puede leer, qué no, y cómo se le pide. |
 | 0.3 | 1 de octubre de 2026 | Se agregan las herramientas con que se trabaja: el módulo de Ingeniería de Voltia PM, la habilidad de Claude con los criterios de Voltia, Claude Design para los planos y el mapeo de materiales. Ingeniería no hace visita de relevamiento: trabaja con lo que trae la visita de venta. |
 | 0.2 | 30 de septiembre de 2026 | Primer lineamiento: los proyectos con más de un suministro llevan un juego de papeles de UTE y un unifilar por suministro, y un solo proyecto y memoria. |
 | 0.1 | 29 de septiembre de 2026 | Se crea el manual con el detalle de Ingeniería que estaba en el manual de trabajo general (v2.2). |

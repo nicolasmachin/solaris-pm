@@ -23,6 +23,21 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "11.8",
+  date: "5 de octubre de 2026",
+  sections: [
+    {
+      title: "Los documentos del proyecto se pueden leer desde el chat de Claude",
+      items: [
+        "Claude lee los adjuntos de una obra —memorias, informes, listas de materiales, propuestas, reportes y planillas— sin que haya que descargarlos ni adjuntarlos a mano.",
+        "Los planos se ven: el unifilar y la lámina del gabinete se vuelven a dibujar y se muestran como imagen. Las fotos de obra también.",
+        "La lista de documentos del proyecto ya no se corta en 25 y se puede buscar por nombre.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_11_7: Release = {
   version: "11.7",
   date: "2 de octubre de 2026",
   sections: [
@@ -402,6 +417,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "11.7",
+    shortDate: "2 oct",
+    highlights: RELEASE_11_7.sections.map((sec) => sec.title),
+  },
   {
     version: "11.6",
     shortDate: "1 oct",

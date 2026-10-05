@@ -35,6 +35,9 @@ function auditMeta(tool: string) {
   return { source: "mcp", tool };
 }
 
+const TOPE_DOCUMENTOS = 100;
+/** Con más documentos que esto, los enlaces se piden aparte. */
+const TOPE_ENLACES = 20;
 const TOPE_BUSQUEDA = 15;
 
 const ESTADO_LABEL: Record<ProjectStatus, string> = {
@@ -479,13 +482,31 @@ export function registerProyectosTools(server: McpServer, user: McpUser) {
     {
       title: "Documentos del proyecto",
       description:
-        "Lista los documentos generados de un proyecto —unifilar, pre-ingeniería, " +
-        "proyecto final, presupuestos— con un enlace para abrirlos. Los enlaces duran " +
-        "15 minutos.",
-      inputSchema: { project_id: z.string().min(1) },
+        "Lista los adjuntos de un proyecto: unifilar, pre-ingeniería, memoria, proyecto " +
+        "final, listas de materiales, presupuestos, documentación de UTE y lo que se haya " +
+        "subido a mano. De cada uno da el id y un enlace de 15 minutos. Para LEER el " +
+        "contenido de uno o varios, pasarle esos ids a leer_documentos. Las fotos de obra " +
+        "no vienen salvo que se pidan.",
+      inputSchema: {
+        project_id: z.string().min(1),
+        busqueda: z
+          .string()
+          .optional()
+          .describe("Parte del nombre del archivo, por ejemplo \"memoria\" o \"unifilar\"."),
+        incluir_fotos: z
+          .boolean()
+          .optional()
+          .describe("Incluir las fotos de obra, que son cientos. Por defecto no."),
+        incluir_enlaces: z
+          .boolean()
+          .optional()
+          .describe(
+            "Enlaces de descarga. Vienen solos cuando son pocos documentos; con muchos hay que pedirlos.",
+          ),
+      },
       annotations: { readOnlyHint: true },
     },
-    async ({ project_id }) => {
+    async ({ project_id, busqueda, incluir_fotos, incluir_enlaces }) => {
       await requirePermission(user, Module.OPERACIONES, Action.VIEW);
 
       const p = await prisma.project.findFirst({
@@ -500,37 +521,63 @@ export function registerProyectosTools(server: McpServer, user: McpUser) {
           deletedAt: null,
           // Las fotos de obra se cuentan aparte en obra_y_materiales: son
           // cientos y ahogarían la lista.
-          NOT: { toolSource: "obra-fotos" },
+          ...(incluir_fotos ? {} : { NOT: { toolSource: "obra-fotos" } }),
+          ...(busqueda ? { filename: { contains: busqueda, mode: "insensitive" as const } } : {}),
         },
         select: {
           id: true,
           filename: true,
+          mimeType: true,
+          sizeBytes: true,
           tipo: true,
           toolSource: true,
           toolVersion: true,
           createdAt: true,
         },
         orderBy: { createdAt: "desc" },
-        take: 25,
+        take: TOPE_DOCUMENTOS,
       });
 
       if (archivos.length === 0) {
-        return texto(`${p.clientName} [${p.code}] no tiene documentos generados todavía.`);
+        return texto(
+          busqueda
+            ? `${p.clientName} [${p.code}] no tiene documentos que coincidan con "${busqueda}".`
+            : `${p.clientName} [${p.code}] no tiene documentos cargados todavía.`,
+        );
       }
 
+      const fotosOcultas = incluir_fotos
+        ? 0
+        : await prisma.fileAttachment.count({
+            where: { projectId: p.id, deletedAt: null, toolSource: "obra-fotos" },
+          });
+
+      // Cada enlace son cuatro renglones de token: con muchos documentos tapan
+      // la lista, y lo que se suele querer es leerlos, no abrirlos.
+      const conEnlaces = incluir_enlaces ?? archivos.length <= TOPE_ENLACES;
       const lista = archivos.map((a) => {
         const origen = a.toolSource
           ? ` · ${a.toolSource}${a.toolVersion ? ` v${a.toolVersion}` : ""}`
           : "";
+        const peso = a.sizeBytes ? ` · ${Math.round(a.sizeBytes / 1024)} KB` : "";
         return (
-          `- ${a.filename} (${fechaCorta(a.createdAt)})${origen}\n` +
-          `  ${buildDownloadUrl(user.id, "project-file", a.id, a.filename)}`
+          `- ${a.filename} (${fechaCorta(a.createdAt)})${origen}${peso}\n` +
+          `  id: ${a.id}` +
+          (conEnlaces ? `\n  ${buildDownloadUrl(user.id, "project-file", a.id, a.filename)}` : "")
         );
       });
 
       return texto(
-        `Documentos de ${p.clientName} [${p.code}] — los enlaces vencen en 15 minutos:`,
+        `${archivos.length} documento${archivos.length > 1 ? "s" : ""} de ${p.clientName} [${p.code}]` +
+          (archivos.length === TOPE_DOCUMENTOS ? " (los más nuevos)" : "") +
+          (conEnlaces ? " — los enlaces vencen en 15 minutos:" : ":"),
         lista.join("\n"),
+        fotosOcultas > 0
+          ? `Además hay ${fotosOcultas} foto${fotosOcultas > 1 ? "s" : ""} de obra, que no se listan acá: pedilas con incluir_fotos.`
+          : null,
+        conEnlaces
+          ? "Para leer el contenido de uno o varios: leer_documentos con esos ids."
+          : "Para leer el contenido: leer_documentos con esos ids. Para los enlaces de descarga: incluir_enlaces.",
       );
     },
   );

@@ -1,5 +1,18 @@
 # Novedades
 
+## v11.8
+
+### 5 de octubre de 2026
+
+#### Los documentos del proyecto se pueden leer desde el chat de Claude
+
+- **Claude ya puede leer los adjuntos de una obra**: memorias, informes, listas de materiales, propuestas, reportes y planillas. Se le pide "traeme los documentos de tal cliente" y después "leé la memoria y el unifilar", y los analiza sin que haya que descargar ni adjuntar nada a mano.
+- **Los planos se ven**: el unifilar y la lámina del gabinete metálico se vuelven a dibujar y se le muestran como imagen, porque en PDF los rótulos están dibujados y no se pueden leer como texto.
+- **Las fotos también**: una foto de obra, de un tablero o de un documento sacada con el teléfono se le muestra como imagen.
+- **Las planillas de Excel** (formularios de UTE, listas) se leen fila por fila.
+- Un PDF escaneado sin reconocimiento de texto no se puede leer: ahí avisa y deja el enlace para abrirlo.
+- La lista de documentos del proyecto **ya no se corta en 25**, se puede buscar por nombre ("memoria", "unifilar") y, si se piden, incluye las fotos de obra.
+
 ## v11.7
 
 ### 2 de octubre de 2026
