@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.14 — 2 de octubre de 2026
+**Voltia · Uruguay** · Versión 1.15 — 5 de octubre de 2026
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -119,7 +119,7 @@ Son seis. **Ninguno es opcional.**
 | # | Hito | Etapa | Plazo |
 |---|---|---|---|
 | 1 | **Bienvenida** — quién es su referente, el recorrido completo y cuánto demora cada etapa, **incluido UTE** | E1 | Al cerrar la venta |
-| 2 | **Fecha de obra** — primero la tentativa, después la confirmada | E1 | 2 días hábiles desde que **Operaciones confirma la fecha en el calendario** |
+| 2 | **Fecha de obra** — una sola vez, cuando está confirmada | E1 | 2 días hábiles desde que **Operaciones confirma la fecha en el calendario** |
 | 3 | **Cualquier visita a su propiedad** — materiales, relevamiento o equipo | E1/E2 | Antes de ir. **Si no está agendado, no vamos.** |
 | 4 | **Obra terminada y qué sigue** — que arranca el trámite, con su plazo | E1→E2 | El mismo día |
 | 5 | **Ya podés encender** | E2→E3 | **24-48 h** desde la habilitación |
@@ -398,18 +398,12 @@ el cliente asume que el capataz reemplazó a Experiencia Solar y deja de escribi
 
 ### 5.6 · Aviso de fecha de obra
 
-**Van dos mensajes distintos.**
+**Al cliente la fecha de obra se le dice una sola vez: cuando ya se sabe.** La
+fecha tentativa que Operaciones agenda al entrar a Validación es interna y **no
+se le comunica**: decirle una fecha y después otra confunde y le saca confianza.
+La plantilla **"Fecha de obra tentativa"** sigue en Voltia PM, pero no se usa.
 
-**a) Fecha tentativa** — apenas hay una fecha, aunque no esté cerrada. Se avisa
-que es tentativa y de qué depende. Plantilla **"Fecha de obra tentativa"**.
-
-> **El texto, tal como sale en Voltia PM:**
->
->> Hola {nombre}, ya tenemos fecha tentativa para tu instalación: {fecha}.
->>
->> Todavía depende del clima y de la logística, así que te la confirmo en cuanto esté cerrada.
-
-**b) Fecha confirmada:**
+**La fecha confirmada:**
 
 | | |
 |---|---|
@@ -1392,7 +1386,7 @@ sólo los catorce con su lugar, para encontrarlos rápido.
 | Bienvenida y presentación | 5.1 | E1 |
 | Acceso al portal | 5.3 | E1 |
 | Presentación del capataz | 5.5 | E1 |
-| Fecha de obra tentativa | 5.6 | E1 |
+| Fecha de obra tentativa (no se usa) | 5.6 | E1 |
 | Fecha de obra confirmada | 5.6 | E1 |
 | Reprogramación de la obra | 5.7 | E1 |
 | Visita a la propiedad | 5.8 | E1 |
@@ -1867,6 +1861,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.15 | 5 de octubre de 2026 | Al cliente la fecha de obra se le dice una sola vez, cuando está confirmada: la fecha tentativa es interna y no se le comunica. |
 | 1.14 | 2 de octubre de 2026 | El Plan de Protección puede incluir vandalismo, al mismo precio. |
 | 1.13 | 30 de septiembre de 2026 | Obras con más de un suministro: se avisa al cliente cuando se habilita cada cuenta, y la Regla de Oro arranca con la última. Se corrige la cadencia del glosario (5 días hábiles en E1 y E2; E3 sin cadencia). Se agrega este registro. |
 | 1.12 y anteriores | hasta el 28 de septiembre de 2026 | No hay registro detallado de cada versión. |

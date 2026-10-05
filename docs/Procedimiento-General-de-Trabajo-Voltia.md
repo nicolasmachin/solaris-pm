@@ -292,13 +292,16 @@ lista de materiales, y revisa si falta algo para poder hacer la obra sin
 problemas. Validan dos personas, en este orden:
 
 1. **El gerente de Operaciones** agenda una **fecha tentativa** de obra en el
-   calendario, el mismo día que el proyecto entra a la etapa.
+   calendario, el mismo día que el proyecto entra a la etapa. Es interna: **al
+   cliente no se le dice**.
 2. **El capataz** revisa la pre-ingeniería, en 2 días hábiles. Si hay algo que
    cambiar, deja un **informe**, que es lo que usa Ingeniería en la Ingeniería
-   Final. Mientras tanto, **Experiencia Solar le avisa al cliente la fecha
-   tentativa**.
+   Final.
 3. **El gerente de Operaciones** confirma la **fecha definitiva**, en 2 días
-   hábiles más: si el cliente aceptó la tentativa, queda esa; si no, se cambia.
+   hábiles más. Recién ahí **Experiencia Solar se la avisa al cliente**.
+
+**Al cliente la fecha de obra se le dice una sola vez: cuando ya se sabe.**
+Decirle una fecha y después otra confunde y le saca confianza.
 
 Lo que deja la Validación es **la fecha de obra confirmada** y, si hace falta,
 **el informe del capataz**. Después el proyecto **vuelve a Ingeniería** para la
@@ -413,7 +416,7 @@ otra arranca a ciegas:
 | Ingeniería | Operaciones | La pre-ingeniería, con la lista de materiales preliminar, para validar |
 | Operaciones | Ingeniería | El informe del capataz, si hay algo que cambiar, para la Ingeniería Final |
 | Ingeniería | Logística | La lista de materiales de la Ingeniería Final, ya revisada por el capataz |
-| Operaciones | Experiencia Solar | La fecha tentativa de obra, para avisarle al cliente, y después la fecha confirmada **en el calendario**: el aviso le llega solo |
+| Operaciones | Experiencia Solar | La fecha de obra confirmada **en el calendario**: el aviso le llega solo |
 | Logística | Obra | Los materiales listos para salir a obra: todo en el local o, si la obra es tercerizada, el kit enviado |
 | Obra | Experiencia Solar | La obra terminada: el aviso llega solo, arranca E2 y Experiencia Solar le cuenta al cliente qué sigue |
 | Obra | Tramitación UTE | La documentación de obra firmada, las fotos y los videos de los ensayos, cargados en el proyecto |

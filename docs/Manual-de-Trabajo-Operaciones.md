@@ -87,7 +87,7 @@ Si el proyecto entra a Validación un lunes, la obra es, como muy temprano, el *
 
 > **Un día de atraso es un día más de obra.**
 
-Si el informe del capataz sale dos días tarde, la obra pasa al lunes de la cuarta semana, y hay que volver a hablar con el cliente.
+Si el informe del capataz sale dos días tarde, la obra pasa al lunes de la cuarta semana, y se corre todo lo que viene después.
 
 **El camino, paso a paso:**
 
@@ -96,8 +96,8 @@ Si el informe del capataz sale dos días tarde, la obra pasa al lunes de la cuar
 | 1 · Visita de venta | Gerente Comercial | Visita la casa del cliente y hace el relevamiento técnico | — | Antes |
 | 2 · Pre-ingeniería | Ingeniería | Sube a Voltia PM la pre-ingeniería y la lista de materiales preliminar | — | Antes |
 | 3 · Validación de Operaciones | Gerente de Operaciones | Agenda la fecha tentativa de obra en el calendario | Día 0 | Lunes, semana 1 |
-| 4 · Informe del capataz y aviso al cliente | Capataz · Experiencia Solar | El capataz revisa lo relevado y carga su informe; Experiencia Solar le avisa al cliente la fecha tentativa | 2 días hábiles | Miércoles, semana 1 |
-| 5 · Fecha definitiva | Gerente de Operaciones | Confirma la fecha: si el cliente aceptó, queda la tentativa; si no, se cambia | 2 días hábiles | Viernes, semana 1 |
+| 4 · Informe del capataz | Capataz | Revisa lo relevado y carga su informe | 2 días hábiles | Miércoles, semana 1 |
+| 5 · Fecha definitiva | Gerente de Operaciones · Experiencia Solar | El gerente confirma la fecha en el calendario; recién ahí Experiencia Solar se la avisa al cliente | 2 días hábiles | Viernes, semana 1 |
 | 6 · Ingeniería Final | Ingeniería | Hace los cambios del informe del capataz y cierra la lista de materiales definitiva | 3 días hábiles | Miércoles, semana 2 |
 | 7 · Compras | Logística | Compra y recibe todo el material, y coordina la entrega | 5 días hábiles | Miércoles, semana 3 |
 | 8 · Obra | Capataz y su equipo · Gerente de Operaciones | Se hace la obra; al terminar, el gerente de Operaciones la marca como pronta | — | Jueves, semana 3 |
@@ -109,12 +109,12 @@ Si el informe del capataz sale dos días tarde, la obra pasa al lunes de la cuar
 
 Hay dos fechas, y en el calendario de Voltia PM se ven distinto:
 
-- **La fecha tentativa** (con **rayas**): la agenda el gerente de Operaciones el mismo día que el proyecto entra a Validación. Experiencia Solar se la avisa al cliente, diciéndole que todavía puede cambiar.
+- **La fecha tentativa** (con **rayas**): la agenda el gerente de Operaciones el mismo día que el proyecto entra a Validación. **Es interna: al cliente no se le dice.**
 - **La fecha confirmada** (en **color sólido**): la confirma el gerente de Operaciones, como mucho 2 días hábiles después del informe del capataz. Al confirmarla, **Voltia PM le avisa solo a Experiencia Solar** y le abre el pendiente de comunicársela al cliente. No hace falta mandarle un mensaje.
 
-Los mensajes que le manda Experiencia Solar al cliente son estos:
+> **Al cliente la fecha de obra se le dice una sola vez: cuando ya se sabe.**
 
-> **Plantilla «Fecha de obra tentativa».** «Hola {nombre}, ya tenemos fecha tentativa para tu instalación: {fecha}. Todavía depende del clima y de la logística, así que te la confirmo en cuanto esté cerrada.»
+Decirle una fecha y después otra confunde y le saca confianza. El mensaje que le manda Experiencia Solar es este:
 
 > **Plantilla «Fecha de obra confirmada».** «Hola {nombre}, te confirmo la instalación para el {fecha}. El equipo llega cerca de las {hora}. Durante la obra te va a coordinar {capataz} para horarios y accesos, te paso su contacto: {teléfono}. Cualquier otra cosa seguí conmigo.»
 
@@ -305,9 +305,9 @@ Logística avisa en cuanto lo sabe, no el día de la obra. El gerente de Operaci
 
 Si al relevamiento le falta algo para poder opinar (una foto, una medida), el capataz marca el informe como **Bloqueado** y avisa a quien hizo la visita y al gerente de Operaciones. **No se vuelve a la casa del cliente** sin que Experiencia Solar lo coordine.
 
-### El cliente no acepta la fecha tentativa
+### El cliente no puede en la fecha confirmada
 
-El gerente de Operaciones busca otra y la confirma dentro de los 2 días hábiles. Si la fecha nueva corre todo el camino, Ingeniería y Logística tienen que saberlo.
+Se reprograma en el calendario, con el motivo, y Experiencia Solar le confirma la nueva. Si la fecha nueva corre todo el camino, Ingeniería y Logística tienen que saberlo.
 
 # Parte B · Obra
 
@@ -659,7 +659,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 | Pre-ingeniería | El primer diseño de la instalación que hace Ingeniería, con los planos y la lista de materiales preliminar |
 | Ingeniería Final | La etapa en que Ingeniería aplica lo que marcó el capataz y cierra la lista de materiales definitiva |
 | Informe del capataz | Lo que deja el capataz al revisar la pre-ingeniería: qué hay que cambiar, o que no hay nada que cambiar |
-| Fecha tentativa | La primera fecha de obra; se ve con rayas en el calendario y todavía puede cambiar |
+| Fecha tentativa | La primera fecha de obra, interna (al cliente no se le dice); se ve con rayas en el calendario y todavía puede cambiar |
 | Fecha confirmada | La fecha de obra definitiva; se ve en color sólido en el calendario |
 | Datalogger | El módulo que conecta el inversor a internet |
 | Smartmeter | El medidor que mide el consumo de la casa para que el inversor sepa cuánto inyectar |
@@ -671,7 +671,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.4 | 5 de octubre de 2026 | Se reordena el manual con el mismo modelo que el de Experiencia Solar. Se agregan: el capítulo de seguridad, con la responsabilidad en cadena (operario, capataz, gerente de Operaciones) y las sanciones; la regla de los tres presupuestos para las compras en plaza; qué tiene que saber Operaciones de las otras áreas; por qué Operaciones es el área más crítica (todo atraso de otra área le cae a la obra) y qué tiene que estar para confirmar una fecha; la regla de que en obra el criterio del instalador le gana al del proyectista; dónde empieza y termina cada etapa, con lo que recibe y lo que entrega; los 12 días hasta la obra; todo el módulo de Proyectos de Voltia PM explicado (lista, proyecto, panel de etapa, subetapas de Operaciones, calendario, las 23 fotos, videos, pagos a instaladores); los mensajes al cliente citados enteros; las reglas del área; los criterios técnicos de obra; qué hacer cuando algo sale mal; las hojas para llevar a la obra; las reglas en una página y el glosario. |
+| 0.4 | 5 de octubre de 2026 | Se reordena el manual con el mismo modelo que el de Experiencia Solar. Se agregan: al cliente la fecha de obra se le dice una sola vez, cuando está confirmada; el capítulo de seguridad, con la responsabilidad en cadena (operario, capataz, gerente de Operaciones) y las sanciones; la regla de los tres presupuestos para las compras en plaza; qué tiene que saber Operaciones de las otras áreas; por qué Operaciones es el área más crítica (todo atraso de otra área le cae a la obra) y qué tiene que estar para confirmar una fecha; la regla de que en obra el criterio del instalador le gana al del proyectista; dónde empieza y termina cada etapa, con lo que recibe y lo que entrega; los 12 días hasta la obra; todo el módulo de Proyectos de Voltia PM explicado (lista, proyecto, panel de etapa, subetapas de Operaciones, calendario, las 23 fotos, videos, pagos a instaladores); los mensajes al cliente citados enteros; las reglas del área; los criterios técnicos de obra; qué hacer cuando algo sale mal; las hojas para llevar a la obra; las reglas en una página y el glosario. |
 | 0.3 | 5 de octubre de 2026 | Se incorpora el material de Operaciones: el flujo antes de la obra con sus 9 pasos y plazos, la guía del informe del capataz, las 4 cosas que se cierran el día de obra, la guía de firmas de los 7 documentos de UTE y la puesta en marcha por marca. Sin contraseñas. |
 | 0.2 | 29 de septiembre de 2026 | Obra: para cerrar la obra, los sobrantes tienen que quedar retirados y el lugar limpio, también con cuadrilla tercerizada. |
 | 0.1 | 29 de septiembre de 2026 | Se crea el manual, con sus tres partes (Operaciones, Obra, Logística), a partir del detalle que estaba en el manual de trabajo general. |

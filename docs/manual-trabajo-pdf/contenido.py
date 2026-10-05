@@ -1001,7 +1001,7 @@ def linea_tiempo():
     filas = [
         ("Gerente de Operaciones", [(0, 1, "Tentativa", op, op_f), (3, 2, "Definitiva", op, op_f)]),
         ("Capataz", [(1, 2, "Informe", op, op_f), (13, 1, "Obra", op, op)]),
-        ("Experiencia Solar", [(1, 2, "Avisa tentativa", es, es_f), (5, 2, "Avisa confirmada", es, es_f)]),
+        ("Experiencia Solar", [(5, 2, "Avisa la fecha al cliente", es, es_f)]),
         ("Ingeniería", [(5, 3, "Ingeniería Final", ing, ing_f)]),
         ("Logística", [(8, 5, "Compras: todo en el local", op, "#ffffff")]),
     ]

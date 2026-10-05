@@ -55,6 +55,19 @@ una obra parada esperando una respuesta mueve toda la agenda.
 **A qué manuales afecta.** Al Manual de trabajo de Operaciones y al de
 Ingeniería.
 
+### Al cliente la fecha de obra se le dice una sola vez
+
+**Qué se decidió.** La fecha tentativa que agenda Operaciones es interna. Al
+cliente se le comunica la fecha de obra una sola vez, cuando el gerente de
+Operaciones la confirma.
+
+**Por qué.** Decirle una fecha y después otra confunde al cliente y le saca
+confianza.
+
+**Desde cuándo rige.** 5 de octubre de 2026.
+
+**A qué manuales afecta.** Al PGT, al de Operaciones y al de Experiencia Solar.
+
 ### Seguridad: sin flexibilidad, y la sanción alcanza a toda la cadena
 
 **Qué se decidió.** Nadie trabaja en obra sin las medidas de seguridad. La
@@ -158,7 +171,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.4 | 5 de octubre de 2026 | Se registran cuatro decisiones: seguridad sin flexibilidad, con sanción a toda la cadena; compras en plaza con tres presupuestos, salvo que esperar el tercero frene una obra; Operaciones es el área más crítica y los plazos de las demás áreas se cumplen; en obra, el criterio del instalador le gana al del proyectista. |
+| 0.4 | 5 de octubre de 2026 | Se registran cinco decisiones: al cliente la fecha de obra se le dice una sola vez; seguridad sin flexibilidad, con sanción a toda la cadena; compras en plaza con tres presupuestos, salvo que esperar el tercero frene una obra; Operaciones es el área más crítica y los plazos de las demás áreas se cumplen; en obra, el criterio del instalador le gana al del proyectista. |
 | 0.3 | 2 de octubre de 2026 | Se registra la decisión de que el Plan de Protección puede incluir vandalismo, al mismo precio. |
 | 0.2 | 30 de septiembre de 2026 | Primera decisión registrada: una venta con varios inversores lleva un suministro por inversor, con contrato y proforma únicos. |
 | 0.1 | 28 de septiembre de 2026 | Se crea el manual con su estructura y la lista de temas a documentar. |

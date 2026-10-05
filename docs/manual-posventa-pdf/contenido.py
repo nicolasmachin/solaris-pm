@@ -623,26 +623,11 @@ def construir():
 
     nueva("E1Fecha.dc.html", "14 · Fecha de obra", lambda p: paso(
         "ETAPA 1 · PASO 5", "2 DÍAS HÁBILES", "Aviso de fecha de obra",
-        "Van dos mensajes distintos: primero la tentativa, después la confirmada.",
-        [f'  <div style="display: flex; gap: 16px; margin-top: 26px">\n'
-         f'    <div style="flex-grow: 1; flex-basis: 0; padding: 20px; background: #f7f8fb; border-radius: 10px">\n'
-         f'      <div style="font-family: {SANS}; font-size: 11px; font-weight: 600; letter-spacing: 1.4px; '
-         f'color: {GRIS_CLARO}">A · TENTATIVA</div>\n'
-         f'      <p style="margin: 10px 0 0; font-size: 14.5px; line-height: 1.55; color: {TEXTO}">'
-         f'Apenas hay una fecha, aunque no esté cerrada. Se avisa <strong>que es tentativa y de qué '
-         f'depende</strong>.</p>\n'
-         f'      <div style="margin-top: 12px; font-family: {SANS}; font-size: 12px; color: {GRIS}">'
-         f'Plantilla "Fecha de obra tentativa"</div>\n'
-         f'    </div>\n'
-         f'    <div style="flex-grow: 1; flex-basis: 0; padding: 20px; background: {AZUL_FONDO}; border-radius: 10px">\n'
-         f'      <div style="font-family: {SANS}; font-size: 11px; font-weight: 600; letter-spacing: 1.4px; '
-         f'color: {AZUL}">B · CONFIRMADA</div>\n'
-         f'      <p style="margin: 10px 0 0; font-size: 14.5px; line-height: 1.55; color: {TEXTO}">'
-         f'Al confirmarse la fecha en el calendario. <strong>2 días hábiles</strong>: el sistema abre el '
-         f'pendiente solo.</p>\n'
-         f'      <div style="margin-top: 12px; font-family: {SANS}; font-size: 12px; color: {GRIS}">'
-         f'Plantilla "Fecha de obra confirmada"</div>\n'
-         f'    </div>\n  </div>\n',
+        "Un solo mensaje: cuando la fecha está confirmada.",
+        [aviso("<strong>Al cliente la fecha de obra se le dice una sola vez: cuando ya se sabe.</strong> "
+               "La fecha tentativa que agenda Operaciones es interna y no se le comunica: decirle una fecha "
+               "y después otra confunde y le saca confianza. La plantilla \"Fecha de obra tentativa\" sigue "
+               "en Voltia PM, pero no se usa.", "duro", margen=26),
          aviso("<strong>Cómo arranca el plazo.</strong> El reloj <strong>no</strong> empieza cuando se crea "
                "el proyecto, sino cuando alguien <strong>confirma la fecha en el calendario de obra</strong>. "
                "Ahí el paso pasa a tener vencimiento y aparece en el correo de la mañana si se pasa.",
@@ -650,8 +635,7 @@ def construir():
          aviso("Los dos días hábiles cuentan desde esa confirmación, <strong>no desde que se cerró la "
                "venta</strong>: entre una cosa y la otra pasan onboarding, pre-ingeniería y la "
                "validación de Operaciones.", "ojo", margen=16),
-         cita("tentativa", margen=18),
-         cita("confirmada", margen=14)],
+         cita("confirmada", margen=18)],
         p))
 
     existente("ReglaAgenda.dc.html", "15 · Regla dura: si no está agendado")
