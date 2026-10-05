@@ -26,6 +26,7 @@ import {
 } from "../../api/uteProcess.api";
 import { Button } from "../ui/Button";
 import { STAGE_BADGE_COLORS, STATUS_BADGE_COLORS } from "./UteProcessDetail";
+import { CierreSinHitosDialog, mensajeHitosIncompletos } from "./CierreSinHitosDialog";
 
 // ─── Definición de transiciones ─────────────────────────────────────────────
 
@@ -371,16 +372,25 @@ export function UteKanbanBoard({
     return map;
   }, [processes]);
 
+  // Arrastrar una tarjeta a "Finalizado" cierra el trámite: si faltan hitos el
+  // backend lo rechaza y acá se pide el motivo antes de reintentar.
+  const [cierrePendiente, setCierrePendiente] = useState<
+    { mensaje: string; vars: { id: string; body: UtePatchInput } } | null
+  >(null);
+
   const patch = useMutation({
     mutationFn: ({ id, body }: { id: string; body: UtePatchInput }) => patchUteProcess(id, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ute-processes"] });
     },
-    onError: (e: unknown) => {
-      const msg =
-        (e as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error
-          ?.message ?? "No se pudo mover el trámite";
-      toast.error(msg);
+    onError: (e: unknown, vars) => {
+      const faltan = mensajeHitosIncompletos(e);
+      if (faltan) {
+        setCierrePendiente({ mensaje: faltan, vars });
+        return;
+      }
+      const d = (e as { response?: { data?: { message?: string } } })?.response?.data;
+      toast.error(d?.message ?? "No se pudo mover el trámite");
     },
   });
 
@@ -443,6 +453,18 @@ export function UteKanbanBoard({
           onConfirm={handleConfirm}
         />
       ) : null}
+
+      <CierreSinHitosDialog
+        mensaje={cierrePendiente?.mensaje ?? null}
+        guardando={patch.isPending}
+        onCerrar={() => setCierrePendiente(null)}
+        onConfirmar={(extra) => {
+          if (!cierrePendiente) return;
+          const { id, body } = cierrePendiente.vars;
+          setCierrePendiente(null);
+          patch.mutate({ id, body: { ...body, ...extra } });
+        }}
+      />
     </>
   );
 }

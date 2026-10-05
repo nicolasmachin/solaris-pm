@@ -49,6 +49,9 @@ export type UteProcess = {
   currentStage: UteStage;
   currentStatus: UteStatus;
   stageManuallySet: boolean;
+  /** El trámite se cerró con hitos sin cargar, con el motivo escrito. */
+  cierreSinHitos: boolean;
+  cierreSinHitosMotivo: string | null;
   caseNumber: string | null;
   notes: string | null;
   dateColors: UteDateColors;
@@ -125,6 +128,10 @@ export type UtePatchInput = Partial<
   currentStatus?: UteStatus;
   stageManuallySet?: boolean;
   dateColors?: UteDateColors | null;
+  // Cerrar el trámite con hitos sin cargar: el backend lo rechaza salvo que
+  // venga este par, y entonces lo guarda para que quede a la vista.
+  cierreSinHitos?: boolean;
+  cierreSinHitosMotivo?: string;
 };
 
 export async function patchUteProcess(id: string, body: UtePatchInput): Promise<UteProcess> {

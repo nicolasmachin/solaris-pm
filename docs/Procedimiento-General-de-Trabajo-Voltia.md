@@ -76,9 +76,9 @@ proyecto cuánto le queda a su etapa.
 | 1 | Venta: de la consulta al cierre | Ventas | Por paso del embudo (Manual de Ventas) |
 | 2 | Onboarding | Ventas | 3 días hábiles |
 | 3 | Pre-Ingeniería | Ingeniería | 10 días hábiles |
-| 4 | Validación de Operaciones | Operaciones | 2 días hábiles |
+| 4 | Validación de Operaciones | Operaciones | 4 días hábiles |
 | 5 | Ingeniería Final | Ingeniería | 3 días hábiles |
-| 6 | Compras | Operaciones (Logística) | 6 días hábiles |
+| 6 | Compras | Operaciones (Logística) | 5 días hábiles |
 | 7 | Obra | Operaciones (Obra) | 10 días hábiles |
 | 8 | Trámite UTE | Tramitación UTE | 30 días hábiles |
 
@@ -281,17 +281,26 @@ Operaciones tiene tres momentos en el recorrido: la **Validación**, las
 
 **La Validación de Operaciones.** Recibe la pre-ingeniería con los planos y la
 lista de materiales, y revisa si falta algo para poder hacer la obra sin
-problemas. Validan dos personas:
+problemas. Validan dos personas, en este orden:
 
-- **El gerente de Operaciones** agenda la obra en el calendario de Operaciones.
-- **El capataz** revisa la pre-ingeniería. Si hay algo que cambiar, deja un
-  **informe**, que es lo que usa Ingeniería en la Ingeniería Final. Si no hay
-  nada que cambiar, no informa nada.
+1. **El gerente de Operaciones** agenda una **fecha tentativa** de obra en el
+   calendario, el mismo día que el proyecto entra a la etapa.
+2. **El capataz** revisa la pre-ingeniería, en 2 días hábiles. Si hay algo que
+   cambiar, deja un **informe**, que es lo que usa Ingeniería en la Ingeniería
+   Final. Mientras tanto, **Experiencia Solar le avisa al cliente la fecha
+   tentativa**.
+3. **El gerente de Operaciones** confirma la **fecha definitiva**, en 2 días
+   hábiles más: si el cliente aceptó la tentativa, queda esa; si no, se cambia.
 
-Lo que deja la Validación es **la fecha de obra agendada** y, si hace falta,
-**el informe del capataz**. Cuando la etapa se da por validada pasan dos cosas:
-el proyecto **vuelve a Ingeniería** para la Ingeniería Final, y **Experiencia
-Solar recibe la fecha confirmada** para avisarle al cliente.
+Lo que deja la Validación es **la fecha de obra confirmada** y, si hace falta,
+**el informe del capataz**. Después el proyecto **vuelve a Ingeniería** para la
+Ingeniería Final.
+
+**Desde que el proyecto entra a Validación hasta la obra pasan, como mínimo,
+12 días hábiles**, porque cada área trabaja después de la otra: Validación 4,
+Ingeniería Final 3 y Compras 5. Por eso la fecha tentativa nunca puede quedar
+antes, y **un día de atraso en cualquiera de esas etapas es un día más de
+obra**.
 
 **Las Compras.** Las hace Logística, y su único punto de partida es **la lista
 de materiales de la Ingeniería Final**, que ya pasó por el capataz. Lo que
@@ -396,7 +405,7 @@ otra arranca a ciegas:
 | Ingeniería | Operaciones | La pre-ingeniería, con la lista de materiales preliminar, para validar |
 | Operaciones | Ingeniería | El informe del capataz, si hay algo que cambiar, para la Ingeniería Final |
 | Ingeniería | Logística | La lista de materiales de la Ingeniería Final, ya revisada por el capataz |
-| Operaciones | Experiencia Solar | La fecha de obra confirmada **en el calendario**: el aviso le llega solo |
+| Operaciones | Experiencia Solar | La fecha tentativa de obra, para avisarle al cliente, y después la fecha confirmada **en el calendario**: el aviso le llega solo |
 | Logística | Obra | Los materiales listos para salir a obra: todo en el local o, si la obra es tercerizada, el kit enviado |
 | Obra | Experiencia Solar | La obra terminada: el aviso llega solo, arranca E2 y Experiencia Solar le cuenta al cliente qué sigue |
 | Obra | Tramitación UTE | La documentación de obra firmada, las fotos y los videos de los ensayos, cargados en el proyecto |

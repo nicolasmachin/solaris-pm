@@ -13,6 +13,7 @@ import {
   type UtePatchInput,
 } from "../../api/uteProcess.api";
 import { Button } from "../ui/Button";
+import { CierreSinHitosDialog, mensajeHitosIncompletos } from "./CierreSinHitosDialog";
 
 // Paleta pública de colores para badges (sincronizada con los que usa la tabla).
 export const STAGE_BADGE_COLORS: Record<string, { bg: string; text: string }> = {
@@ -57,6 +58,10 @@ export function UteProcessDetail({ process }: { process: UteProcess }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [process.id]);
 
+  // Cuando el backend rechaza el cierre por hitos faltantes, el body que se
+  // quiso guardar queda acá para reintentarlo con el motivo escrito.
+  const [cierrePendiente, setCierrePendiente] = useState<{ mensaje: string; body: UtePatchInput } | null>(null);
+
   const patch = useMutation({
     mutationFn: (body: UtePatchInput) => patchUteProcess(process.id, body),
     onSuccess: () => {
@@ -67,11 +72,14 @@ export function UteProcessDetail({ process }: { process: UteProcess }) {
       qc.invalidateQueries({ queryKey: ["ute-process", process.id] });
       qc.invalidateQueries({ queryKey: ["suministros", process.projectId] });
     },
-    onError: (e: unknown) => {
-      const msg =
-        (e as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error
-          ?.message ?? "No se pudo guardar";
-      toast.error(msg);
+    onError: (e: unknown, body) => {
+      const faltan = mensajeHitosIncompletos(e);
+      if (faltan) {
+        setCierrePendiente({ mensaje: faltan, body });
+        return;
+      }
+      const d = (e as { response?: { data?: { message?: string } } })?.response?.data;
+      toast.error(d?.message ?? "No se pudo guardar");
     },
   });
 
@@ -125,6 +133,15 @@ export function UteProcessDetail({ process }: { process: UteProcess }) {
 
   return (
     <div>
+      {/* Un trámite cerrado sin todos sus pasos no es lo mismo que uno completo:
+          se avisa acá para que nadie lea el "Finalizado" como una habilitación. */}
+      {process.cierreSinHitos && (
+        <div className="mx-5 mt-4 rounded-md bg-[var(--color-warning-bg)] px-3 py-2 text-[13px] leading-relaxed text-[var(--color-warning-text)]">
+          <strong>Cerrado sin completar todos los pasos.</strong>
+          {process.cierreSinHitosMotivo ? ` ${process.cierreSinHitosMotivo}` : ""}
+        </div>
+      )}
+
       {/* Pipeline visual */}
       <div className="border-b border-[var(--color-border)] px-5 py-4">
         <div className="flex items-center gap-0.5">
@@ -371,6 +388,18 @@ export function UteProcessDetail({ process }: { process: UteProcess }) {
           Guardar
         </Button>
       </div>
+
+      <CierreSinHitosDialog
+        mensaje={cierrePendiente?.mensaje ?? null}
+        guardando={patch.isPending}
+        onCerrar={() => setCierrePendiente(null)}
+        onConfirmar={(extra) => {
+          if (!cierrePendiente) return;
+          const body = { ...cierrePendiente.body, ...extra };
+          setCierrePendiente(null);
+          patch.mutate(body);
+        }}
+      />
     </div>
   );
 }

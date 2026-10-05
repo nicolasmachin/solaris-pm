@@ -56,11 +56,7 @@ quedan tres avisos, no uno.
 > **Reprogramar es el mecanismo.** Que Experiencia Solar tenga que pedir
 > explicaciones es la señal de que no se usó.
 
-## A.3 bis · El flujo antes de la obra (documento de Operaciones, 5-10-2026)
-
-> Material que armó Operaciones («Flujo de Obra · Pre-Obra»). Hay diferencias
-> con los plazos de Voltia PM y con el PGT que están por resolver: ver la nota
-> al final de esta sección.
+## A.3 bis · El flujo antes de la obra, paso a paso
 
 **Cuánto tarda una obra.** El reloj arranca cuando el proyecto entra a
 Validación de Operaciones y se agenda la **fecha tentativa**. Desde ahí hasta la
@@ -74,27 +70,21 @@ semana, y hay que volver a hablar con el cliente.
 En el calendario de Voltia PM: **rayas** = fecha tentativa; **sólido** = fecha
 confirmada.
 
-| Paso | Responsable (según el documento) | Qué pasa | Plazo | Vence (si entra un lunes) |
+| Paso | Responsable | Qué pasa | Plazo | Vence (si entra un lunes) |
 |---|---|---|---|---|
-| 1 · Visita técnica | Nico | Visita la casa del cliente y releva | — | Antes |
+| 1 · Visita de venta | Gerente Comercial | Visita la casa del cliente y hace el relevamiento técnico | — | Antes |
 | 2 · Pre-ingeniería | Ingeniería | Sube el relevamiento y la lista de materiales preliminar a Voltia PM | — | Antes |
-| 3 · Validación de Operaciones | Gabi | Agenda la fecha tentativa de obra (en el calendario, con rayas) | Día 0 | Lunes, semana 1 |
+| 3 · Validación de Operaciones | Gerente de Operaciones | Agenda la fecha tentativa de obra (en el calendario, con rayas) | Día 0 | Lunes, semana 1 |
 | 4 · Informe del capataz + aviso al cliente | Capataz · Experiencia Solar | El capataz revisa lo relevado y carga su informe; Experiencia Solar le avisa al cliente la fecha tentativa | 2 días hábiles | Miércoles, semana 1 |
-| 5 · Fecha definitiva | Gabriel | Confirma la fecha en Voltia PM: si el cliente aceptó, queda la tentativa; si no, se cambia. Pasa a color sólido | 2 días hábiles | Viernes, semana 1 |
+| 5 · Fecha definitiva | Gerente de Operaciones | Confirma la fecha en Voltia PM: si el cliente aceptó, queda la tentativa; si no, se cambia. Pasa a color sólido | 2 días hábiles | Viernes, semana 1 |
 | 6 · Ingeniería final | Ingeniería | Hace los cambios del informe del capataz y cierra la lista de materiales definitiva | 3 días hábiles | Miércoles, semana 2 |
-| 7 · Compras y logística | Logística (Gonzalo) | Compra y recibe todo el material, y coordina la entrega | 5 días hábiles | Miércoles, semana 3 |
-| 8 · Obra | Equipo instalador · Gabriel | Se hace la obra; al terminar, Gabriel la marca como pronta en Voltia PM | — | Jueves, semana 3 |
-| 9 · Experiencia Solar | Posventa | Seguimiento con el cliente después de la obra | — | Después |
+| 7 · Compras y logística | Logística | Compra y recibe todo el material, y coordina la entrega | 5 días hábiles | Miércoles, semana 3 |
+| 8 · Obra | Equipo instalador · Gerente de Operaciones | Se hace la obra; al terminar, el gerente de Operaciones la marca como pronta en Voltia PM | — | Jueves, semana 3 |
+| 9 · Experiencia Solar | Experiencia Solar | Seguimiento con el cliente después de la obra | — | Después |
 
 **Entrega de materiales (paso 7), en este orden:** Logística → el capataz
 define si es el mismo día de la obra o el día antes → Logística → Experiencia
 Solar → el cliente sabe el día y que alguien tiene que recibir el material.
-
-> **Por resolver (5-10-2026):** Voltia PM tiene Validación = 2 días hábiles (acá
-> son 4: informe + fecha definitiva) y Compras = 6 (acá son 5); el PGT dice que
-> Experiencia Solar recibe la fecha **confirmada**, y acá avisa la
-> **tentativa** en el paso 4; falta definir el rol de «Gabi» y de «Gabriel»
-> (el manual va por rol, no por nombre).
 
 ## A.4 · Planificación y control de costos
 

@@ -462,10 +462,10 @@ function UteTableRow({
     mutationFn: (body: Parameters<typeof patchUteProcess>[1]) => patchUteProcess(process.id, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["ute-processes"] }),
     onError: (e: unknown) => {
-      const msg =
-        (e as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error
-          ?.message ?? "No se pudo guardar";
-      toast.error(msg);
+      // El cierre con hitos faltantes se resuelve en el detalle del trámite y
+      // en el tablero, que tienen el diálogo del motivo; acá alcanza el aviso.
+      const d = (e as { response?: { data?: { message?: string } } })?.response?.data;
+      toast.error(d?.message ?? "No se pudo guardar");
     },
   });
 
