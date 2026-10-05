@@ -145,6 +145,7 @@ import {
   UTE_PROCESS_INCLUDE,
   calculateTimes,
   deriveStage,
+  hitosFaltantes,
   serializeUteProcess,
   validateCoherence,
   validateDateColors,
@@ -10183,6 +10184,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
       ensayosApprovedAt: uteDateSchema.optional(),
       docs2SentAt: uteDateSchema.optional(),
       finalizedAt: uteDateSchema.optional(),
+      // Escape para cerrar el trámite con hitos sin cargar: hay que decir por
+      // qué, y queda registrado. Ver la validación más abajo.
+      cierreSinHitos: z.boolean().optional(),
+      cierreSinHitosMotivo: z.string().trim().min(5).max(500).optional(),
     })
     .strict()
     .refine((v) => Object.keys(v).length > 0, { message: "Debés enviar al menos un campo" });
@@ -10400,6 +10405,29 @@ export async function registerApiRoutes(app: FastifyInstance) {
       }
     }
 
+    // Cerrar el trámite dispara el aviso de "ya podés encender", con plazo en
+    // horas: no puede salir de mover el selector de etapa. Si falta algún hito,
+    // se rechaza con la lista, y solo se deja pasar con motivo escrito, que
+    // queda guardado y se muestra en la ficha.
+    const quedaFinalizado = nextStage === UteStage.FINALIZADO || mergedRow.finalizedAt != null;
+    const yaEstabaFinalizado =
+      existing.currentStage === UteStage.FINALIZADO || existing.finalizedAt != null;
+    const faltantes = quedaFinalizado ? hitosFaltantes(mergedRow) : [];
+    const estrenaCierre = quedaFinalizado && !yaEstabaFinalizado;
+    if (faltantes.length > 0 && estrenaCierre && !body.cierreSinHitos) {
+      throw badRequest(
+        "UTE_HITOS_INCOMPLETOS",
+        `No se puede dar el trámite por finalizado: faltan ${faltantes.length} hito(s) — ` +
+          `${faltantes.map((f) => f.label).join(", ")}. Cargá esas fechas, o marcá que el ` +
+          `trámite se cerró sin esos pasos y explicá por qué.`,
+      );
+    }
+    if (faltantes.length > 0 && estrenaCierre && body.cierreSinHitos && !body.cierreSinHitosMotivo) {
+      throw badRequest("UTE_CIERRE_SIN_MOTIVO", "Para cerrar el trámite sin esos pasos hay que escribir el motivo.");
+    }
+    const marcaCierreSinHitos =
+      faltantes.length > 0 && estrenaCierre && body.cierreSinHitos && body.cierreSinHitosMotivo;
+
     const updated = await prisma.uteProcess.update({
       where: { id },
       data: {
@@ -10409,6 +10437,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
         currentStage: nextStage,
         currentStatus: nextStatus,
         stageManuallySet: nextStageManuallySet,
+        ...(marcaCierreSinHitos
+          ? {
+              cierreSinHitos: true,
+              cierreSinHitosMotivo: body.cierreSinHitosMotivo,
+              cierreSinHitosEn: new Date(),
+              cierreSinHitosPorId: user.id,
+            }
+          : {}),
         ...(dateColorsData !== undefined ? { dateColors: dateColorsData as Prisma.InputJsonValue } : {}),
       },
       include: UTE_PROCESS_INCLUDE,

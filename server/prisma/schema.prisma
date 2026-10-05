@@ -2386,6 +2386,17 @@ model UteProcess {
   docs2SentAt DateTime? @db.Date
   finalizedAt DateTime? @db.Date
 
+  // Cierre sin todos los hitos. Marcar el trámite como finalizado dispara el
+  // aviso de "ya podés encender", que tiene plazo en horas: por eso cerrar sin
+  // los hitos cargados exige decir por qué, y queda a la vista en la ficha.
+  // El caso que lo motivó: un cliente que no avanzó con la obra quedó marcado
+  // como finalizado desde el selector de etapa, sin una sola fecha, y el
+  // sistema le avisó que encendiera una planta que no existía.
+  cierreSinHitos       Boolean   @default(false)
+  cierreSinHitosMotivo String?
+  cierreSinHitosEn     DateTime? @db.Timestamptz(6)
+  cierreSinHitosPorId  String?
+
   createdById String?
   createdAt   DateTime  @default(now()) @db.Timestamptz(6)
   updatedAt   DateTime  @updatedAt @db.Timestamptz(6)

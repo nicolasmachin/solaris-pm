@@ -2,6 +2,7 @@ import { Prisma, UteStage, UteStatus } from "@prisma/client";
 
 import { diffInDays, startOfUtcDay } from "../utils/dates.js";
 import { serializeDate, serializeDateOnly } from "../utils/serialization.js";
+import { UTE_HITO_LABEL } from "./ute-timeline.service.js";
 
 // ─── Tipos ──────────────────────────────────────────────────────────────────
 
@@ -218,6 +219,24 @@ export function lastActionAt(process: ProcessDates): Date | null {
   return max;
 }
 
+// ─── Cierre del trámite ─────────────────────────────────────────────────────
+
+/**
+ * Los hitos que faltan para dar un trámite por terminado.
+ *
+ * Importa porque cerrar el trámite dispara el aviso de "ya podés encender", que
+ * tiene plazo en horas y le dice al cliente que prenda su planta. Marcar
+ * "Finalizado" en el selector de etapa es una declaración; los hitos con fecha
+ * son el hecho. Un cliente que ni siquiera hizo la obra llegó a recibir ese
+ * aviso porque alguien movió el selector sin cargar una sola fecha.
+ */
+export function hitosFaltantes(process: ProcessDates): { clave: UteActionKey; label: string }[] {
+  return UTE_ACTION_KEYS.filter((k) => (process[k] as Date | null) == null).map((clave) => ({
+    clave,
+    label: UTE_HITO_LABEL[clave] ?? clave,
+  }));
+}
+
 // ─── Derivación de stage ────────────────────────────────────────────────────
 
 // Prioridad top-down: la primera condición que matchea gana. `RELEVAR` es
@@ -268,6 +287,9 @@ export type SerializedUteProcess = {
   currentStage: UteStage;
   currentStatus: UteStatus;
   stageManuallySet: boolean;
+  /** El trámite se cerró con hitos sin cargar, con motivo escrito. */
+  cierreSinHitos: boolean;
+  cierreSinHitosMotivo: string | null;
   caseNumber: string | null;
   notes: string | null;
   dateColors: DateColorsMap;
@@ -322,6 +344,8 @@ export function serializeUteProcess(row: UteProcessRow, now: Date = new Date()):
     currentStage: row.currentStage,
     currentStatus: row.currentStatus,
     stageManuallySet: row.stageManuallySet,
+    cierreSinHitos: row.cierreSinHitos,
+    cierreSinHitosMotivo: row.cierreSinHitosMotivo,
     caseNumber: row.caseNumber,
     notes: row.notes,
     dateColors,

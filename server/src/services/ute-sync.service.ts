@@ -469,6 +469,11 @@ export function planPostventaAdvance(
  * seguimiento. Es idempotente: si ya hay fecha, no se pisa.
  */
 async function marcarHabilitacionEnProyecto(uteProcess: UteProcess): Promise<void> {
+  // Sin fecha de habilitación no hay habilitación: el selector de etapa en
+  // "Finalizado" es una declaración, la fecha es el hecho. Antes se caía a
+  // `new Date()` y eso le avisó a un cliente sin obra que encendiera su planta.
+  if (!uteProcess.finalizedAt) return;
+
   const proyecto = await prisma.project.findUnique({
     where: { id: uteProcess.projectId },
     select: { postHabilitacionInicioEn: true },
@@ -478,7 +483,7 @@ async function marcarHabilitacionEnProyecto(uteProcess: UteProcess): Promise<voi
   await prisma.project.update({
     where: { id: uteProcess.projectId },
     data: {
-      postHabilitacionInicioEn: uteProcess.finalizedAt ?? new Date(),
+      postHabilitacionInicioEn: uteProcess.finalizedAt,
       postHabilitacionSubFase: PostHabilitacionSubFase.E3_A_COMPROMISO_COMERCIAL,
     },
   });
