@@ -279,6 +279,14 @@ lista final va a Compras.**
 Operaciones tiene tres momentos en el recorrido: la **Validación**, las
 **Compras** (Logística) y la **Obra**.
 
+**Operaciones es el área más crítica, porque es el final de la cadena.** Todo
+lo que otra área no hace en tiempo y forma le cae a la obra: una venta sin
+cobrar, una ingeniería sin terminar o un material que no llegó son una obra que
+no se puede arrancar; una coordinación mal hecha con el cliente es un día
+perdido o una vuelta más. Y cada obra que se mueve, mueve toda la agenda. Por
+eso **Operaciones necesita, sí o sí, que todas las demás áreas cumplan sus
+plazos.**
+
 **La Validación de Operaciones.** Recibe la pre-ingeniería con los planos y la
 lista de materiales, y revisa si falta algo para poder hacer la obra sin
 problemas. Validan dos personas, en este orden:

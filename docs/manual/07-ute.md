@@ -314,11 +314,35 @@ secundario reevalúa el proyecto.
 - **Los datos del suministro extra se guardan con lo que salió en la consulta**,
   no en un formulario aparte: lo que se le mandó a UTE es lo que vale.
 
+- **Cerrar el trámite exige los hitos, o un motivo escrito.** Dar un trámite por
+  finalizado dispara el aviso de "ya podés encender", que tiene plazo de 24-48 h
+  y le dice al cliente que prenda su planta. Por eso el PATCH de
+  `/ute-processes/:id` rechaza el cierre (`UTE_HITOS_INCOMPLETOS`) si falta
+  alguno de los 11 hitos de `UTE_ACTION_KEYS`, y solo lo acepta con
+  `cierreSinHitos: true` + `cierreSinHitosMotivo`, que quedan guardados en el
+  trámite y se muestran en su detalle. La validación corre **solo cuando el
+  trámite estrena el cierre**: editar uno ya cerrado no vuelve a pedir nada.
+- **La fecha manda sobre el selector.** `marcarHabilitacionEnProyecto()` exige
+  `finalizedAt`: sin esa fecha no escribe `postHabilitacionInicioEn` ni activa
+  los pasos de E2/E3. Antes caía a `new Date()`, y mover el selector de etapa a
+  "Finalizado" alcanzaba para avisarle a un cliente **que no había hecho la
+  obra** que encendiera su planta (Ernesto Cameto, 1-oct-2026). El selector es
+  una declaración; la fecha es el hecho.
+
 ## Casos borde
 
 - **Borrar el sistema de un suministro que ya tiene consulta** deja el trámite
   vivo, y el suministro sigue apareciendo en la consulta (sin inversor). Es
   historia del trámite: la decide una persona.
+- **Trámites cerrados sin hitos de antes.** A 5-oct-2026 producción tenía 6
+  trámites finalizados con hitos faltantes. Cuatro (Medina, Labandera, Gambaro,
+  Portela) son habilitaciones **reales**: tienen fecha de habilitación y obra
+  hecha, y solo les faltan los pasos intermedios, cargados a medias. Esos no se
+  tocan. Los otros dos (Cameto, Rodrigo Alvarez) estaban marcados "Finalizado"
+  **sin fecha**, y son el error que motivó la validación.
+  `scripts/fix-habilitacion-sin-fecha.ts` revierte el disparo falso: borra
+  `postHabilitacionInicioEn` y desactiva los pasos de E2/E3 que no estén
+  completados, solo en los trámites sin `finalizedAt`.
 - **Proyectos existentes**: todos quedaron como suministro 1 (la migración es
   aditiva, sin backfill). A 30-09-2026 ningún proyecto de producción tenía más
   de un sistema ni más de un trámite.

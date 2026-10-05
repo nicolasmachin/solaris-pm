@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.3 — 2 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.4 — 5 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -26,6 +26,65 @@
 
 Cada decisión se anota con **qué se decidió, por qué, desde cuándo rige** y a
 qué manual afecta.
+
+### Operaciones es el área más crítica: los plazos de las demás áreas se cumplen
+
+**Qué se decidió.** Operaciones se considera el área más crítica de Voltia,
+porque es el final de la cadena: todo atraso de otra área (una venta sin
+cobrar, una ingeniería sin terminar, un material que no llegó, una coordinación
+mal hecha con el cliente) termina en una obra que no se puede arrancar o en una
+vuelta más, y cada obra que se mueve, mueve toda la agenda. Por eso el
+cumplimiento de los plazos de las demás áreas no es opcional.
+
+**Desde cuándo rige.** 5 de octubre de 2026.
+
+**A qué manuales afecta.** Al PGT y al Manual de trabajo de Operaciones.
+
+### En obra, el criterio del instalador le gana al del proyectista
+
+**Qué se decidió.** Si algo del proyecto no cierra en la casa del cliente, el
+capataz lo resuelve en el momento, con su criterio, y no deja la obra parada
+esperando a Ingeniería. Anota qué cambió y por qué, con una foto. No aplica a
+lo que exige UTE ni a la seguridad.
+
+**Por qué.** Quien está en la obra ve lo que desde el escritorio no se ve, y
+una obra parada esperando una respuesta mueve toda la agenda.
+
+**Desde cuándo rige.** 5 de octubre de 2026.
+
+**A qué manuales afecta.** Al Manual de trabajo de Operaciones y al de
+Ingeniería.
+
+### Seguridad: sin flexibilidad, y la sanción alcanza a toda la cadena
+
+**Qué se decidió.** Nadie trabaja en obra sin las medidas de seguridad. La
+responsabilidad es en cadena: el operario es el primer responsable y el capataz
+el segundo. Si el gerente de Operaciones encuentra a un operario sin protección,
+se sanciona al operario y al capataz; si lo encuentra Gerencia, al operario, al
+capataz y al gerente de Operaciones.
+
+**Por qué.** Para que el control sea parte del trabajo de cada uno: el capataz
+no puede descargar la responsabilidad en el operario, ni el gerente en el
+capataz.
+
+**Desde cuándo rige.** 5 de octubre de 2026.
+
+**A qué manuales afecta.** Al Manual de trabajo de Operaciones (Obra) y al
+Reglamento interno.
+
+### Compras en plaza: tres presupuestos, pero la obra va primero
+
+**Qué se decidió.** Lo ideal, para lo que se compra en plaza, es pedir al menos
+tres presupuestos. Pero si los plazos están apretados o vencidos, no se espera
+el tercero para comprar algo que frena una obra: la ejecución va primero que el
+procedimiento. Las importaciones pueden tener otro camino.
+
+**Por qué.** Lo que se ahorra con un tercer presupuesto se pierde varias veces
+con una obra que se mueve y arrastra toda la agenda.
+
+**Desde cuándo rige.** 5 de octubre de 2026.
+
+**A qué manuales afecta.** Al Manual de trabajo de Operaciones (Logística).
 
 ### El Plan de Protección puede incluir vandalismo
 
@@ -99,6 +158,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.4 | 5 de octubre de 2026 | Se registran cuatro decisiones: seguridad sin flexibilidad, con sanción a toda la cadena; compras en plaza con tres presupuestos, salvo que esperar el tercero frene una obra; Operaciones es el área más crítica y los plazos de las demás áreas se cumplen; en obra, el criterio del instalador le gana al del proyectista. |
 | 0.3 | 2 de octubre de 2026 | Se registra la decisión de que el Plan de Protección puede incluir vandalismo, al mismo precio. |
 | 0.2 | 30 de septiembre de 2026 | Primera decisión registrada: una venta con varios inversores lleva un suministro por inversor, con contrato y proforma únicos. |
 | 0.1 | 28 de septiembre de 2026 | Se crea el manual con su estructura y la lista de temas a documentar. |

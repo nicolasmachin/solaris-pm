@@ -32,7 +32,20 @@ import sys
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 POSVENTA = os.path.join(AQUI, "..", "manual-posventa-pdf")
-FUENTE = os.path.join(AQUI, "..", "Procedimiento-General-de-Trabajo-Voltia.md")
+# El mismo generador arma más de un manual: MANUAL=operaciones toma el de
+# Operaciones. Lo que cambia entre uno y otro está en CONFIG y en PARTES.
+MANUAL = os.environ.get("MANUAL", "pgt")
+CONFIG = {
+    "pgt": {"fuente": "Procedimiento-General-de-Trabajo-Voltia.md",
+            "pie": "Procedimiento General de Trabajo · Voltia",
+            "titulo": "Procedimiento General de Trabajo", "subtitulo": "PGT de Voltia", "corto": "PGT",
+            "canvas": "Procedimiento General de Trabajo (PGT) de Voltia"},
+    "operaciones": {"fuente": "Manual-de-Trabajo-Operaciones.md",
+                    "pie": "Manual de trabajo de Operaciones · Voltia",
+                    "titulo": "Manual de trabajo de Operaciones", "subtitulo": "Operaciones · Obra · Logística",
+                    "corto": "Operaciones", "canvas": "Manual de trabajo de Operaciones"},
+}[MANUAL]
+FUENTE = os.path.join(AQUI, "..", CONFIG["fuente"])
 sys.path.insert(0, AQUI)
 sys.path.insert(1, POSVENTA)
 
@@ -43,7 +56,7 @@ from generar import (  # noqa: E402
     ANCHO, ALTO, FUENTES, altura_estimada, numerados, pagina,
 )
 
-PIE = "Procedimiento General de Trabajo · Voltia"
+PIE = CONFIG["pie"]
 generar.configurar(PIE, IMG.LOGO_ISOTIPO, IMG.LOGO_ISOTIPO_BLANCO)
 
 # Las partes agrupan capítulos (por número de capítulo del .md). Los anexos van
@@ -58,6 +71,19 @@ PARTES = [
      "Lo que todas las áreas tienen que saber del trato con el cliente, la herramienta y qué hacer "
      "cuando algo sale mal.", IMG.PORTADILLA_PARTE3),
 ]
+
+if MANUAL == "operaciones":
+    PARTES = [
+        ("A", "Operaciones", [0, 1, 2, 3, 4, 5, 6, 7, 8],
+         "Para el gerente de Operaciones: dónde empieza y termina cada etapa, los 12 días hasta la obra, "
+         "la fecha de obra y las reglas del área.", IMG.PORTADILLA_PARTE2),
+        ("B", "Obra", [9, 10, 11, 12, 13, 14, 15, 16, 17],
+         "El librillo del capataz y su equipo: el informe del capataz, la preparación, la seguridad, los criterios técnicos, "
+         "la puesta en marcha y el cierre de la obra.", IMG.PORTADILLA_PARTE3),
+        ("C", "Logística", [18, 19, 20],
+         "Las compras y la entrega de materiales: dónde empieza y termina, y qué hacer si algo demora.",
+         IMG.PORTADILLA_PARTE1),
+    ]
 
 # Lo que entra en una hoja: 1123 menos los márgenes (72 + 56) y el pie. Con
 # alturas medidas (medir-bloques.mjs) el colchón es chico; sin ellas se
@@ -84,7 +110,7 @@ def bloques_de(lineas):
     out, i = [], 0
     while i < len(lineas):
         l = lineas[i]
-        if not l.strip() or l.strip() == "---":
+        if not l.strip() or l.strip() == "---" or l.startswith("# "):
             i += 1
             continue
         if l.startswith("### "):
@@ -123,7 +149,7 @@ def bloques_de(lineas):
             out.append(("numerada", items))
         else:
             par = []
-            while i < len(lineas) and lineas[i].strip() and not re.match(r"^(\||>|- |\d+\. |### |---)", lineas[i]):
+            while i < len(lineas) and lineas[i].strip() and not re.match(r"^(\||>|- |\d+\. |### |---|# )", lineas[i]):
                 par.append(lineas[i].strip())
                 i += 1
             out.append(("p", " ".join(par)))
@@ -911,7 +937,147 @@ def juntar_recorrido(crudos):
     return out
 
 
+def juntar_operaciones(crudos):
+    """En el manual de Operaciones: la tabla de etapas (arranca / recibe /
+    entrega / termina) se dibuja en tarjetas, y antes de la tabla de pasos va
+    la línea de tiempo de los 12 días."""
+    out = []
+    for t, c in crudos:
+        cab = [x.strip().lower() for x in c[0]] if t == "tabla" else []
+        if cab == ["etapa", "arranca cuando", "recibe", "entrega", "termina cuando"]:
+            # Una tarjeta por bloque, para que se puedan repartir entre hojas.
+            for k in range(len(c[1])):
+                out.append(("etapas_io", (c[1], k)))
+            continue
+        if cab[:2] == ["paso", "responsable"]:
+            out.append(("tiempo", None))
+        out.append((t, c))
+    return out
+
+
+def etapas_io(filas, solo):
+    """Una tarjeta por etapa de Operaciones, de arriba abajo, con una flecha
+    entre una y otra: cuándo arranca, qué recibe, qué entrega, cuándo termina."""
+    color, fondo = COLOR_AREA["Operaciones"]
+    entre = {0: "Ingeniería Final (Ingeniería)"}
+    html = '  <div style="margin-top: 14px">\n'
+    for k, f in enumerate(filas):
+        if k != solo:
+            continue
+        nombre, arranca, recibe, entrega, termina = (f + [""] * 5)[:5]
+        celda = lambda rot, txt, fuerte=False: (
+            f'<div style="padding: 9px 12px; background: {"#ffffff" if not fuerte else fondo}; border-radius: 6px">'
+            f'<div style="font-family: {SANS}; font-size: 10.5px; font-weight: 700; letter-spacing: 1.3px; '
+            f'color: {color}">{rot}</div><div style="margin-top: 3px; font-size: 13.5px; line-height: 1.42; '
+            f'color: {TEXTO}">{en_linea(txt)}</div></div>')
+        html += (f'    <div style="border: 1.5px solid {color}; border-radius: 12px; overflow: hidden">\n'
+                 f'      <div style="padding: 9px 14px; background: {color}; font-family: {SANS}; font-size: 16px; '
+                 f'font-weight: 700; color: #ffffff">{en_linea(nombre)}</div>\n'
+                 f'      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 8px; '
+                 f'background: {fondo}">'
+                 f'{celda("ARRANCA CUANDO", arranca)}{celda("RECIBE", recibe)}'
+                 f'{celda("ENTREGA", entrega)}{celda("TERMINA CUANDO", termina)}</div>\n'
+                 f'    </div>\n')
+        if k < len(filas) - 1:
+            medio = entre.get(k)
+            rot = (f'<span style="font-family: {SANS}; font-size: 12px; font-weight: 600; color: {COLOR_AREA["Ingeniería"][0]}; '
+                   f'padding: 2px 10px; border: 1px solid {COLOR_AREA["Ingeniería"][0]}; border-radius: 99px; '
+                   f'background: {COLOR_AREA["Ingeniería"][1]}">pasa por {medio}</span>' if medio else "")
+            html += (f'    <div style="display: flex; align-items: center; gap: 12px; height: 34px; padding-left: 40px">'
+                     f'<svg width="14" height="34" viewBox="0 0 14 34"><line x1="7" y1="0" x2="7" y2="26" '
+                     f'stroke="{color}" stroke-width="2"/><polygon points="1,24 13,24 7,33" fill="{color}"/></svg>'
+                     f'{rot}</div>\n')
+    return html + "  </div>\n"
+
+
+def linea_tiempo():
+    """Los 12 días hábiles entre la Validación y la obra, si el proyecto entra
+    un lunes: tres semanas de cinco días y una fila por quien trabaja."""
+    izq, ancho, dias = 128, ANCHO - 144, 15
+    col = (ancho - izq) / dias
+    op, op_f = COLOR_AREA["Operaciones"]
+    ing, ing_f = COLOR_AREA["Ingeniería"]
+    es, es_f = COLOR_AREA["Experiencia Solar"]
+    filas = [
+        ("Gerente de Operaciones", [(0, 1, "Tentativa", op, op_f), (3, 2, "Definitiva", op, op_f)]),
+        ("Capataz", [(1, 2, "Informe", op, op_f), (13, 1, "Obra", op, op)]),
+        ("Experiencia Solar", [(1, 2, "Avisa tentativa", es, es_f), (5, 2, "Avisa confirmada", es, es_f)]),
+        ("Ingeniería", [(5, 3, "Ingeniería Final", ing, ing_f)]),
+        ("Logística", [(8, 5, "Compras: todo en el local", op, "#ffffff")]),
+    ]
+    y0, alto_f = 52, 40
+    alto_total = y0 + len(filas) * alto_f + 58
+    s = [f'<svg viewBox="0 0 {ancho} {alto_total}" width="100%" role="img" '
+         f'aria-label="Los 12 días hábiles entre la Validación de Operaciones y la obra" '
+         f'style="display: block; margin-top: 14px">']
+    for w in range(3):
+        x = izq + w * 5 * col
+        s.append(f'<rect x="{x + 1}" y="0" width="{5 * col - 2}" height="22" rx="5" fill="#eef0f5"/>')
+        s.append(_txt(x + 2.5 * col, 15, f"Semana {w + 1}", 12, 700, NEGRO, anchor="middle"))
+        for d, letra in enumerate("LMMJV"):
+            s.append(_txt(x + (d + .5) * col, 40, letra, 11, 600, GRIS_CLARO, anchor="middle"))
+    for d in range(dias + 1):
+        x = izq + d * col
+        s.append(f'<line x1="{x}" y1="46" x2="{x}" y2="{y0 + len(filas) * alto_f}" stroke="{BORDE}" '
+                 f'stroke-width="{1.6 if d % 5 == 0 else .7}"/>')
+    for i, (quien, barras) in enumerate(filas):
+        y = y0 + i * alto_f
+        s.append(_txt(0, y + 25, quien, 12, 600, NEGRO, max_chars=20, salto=13))
+        for d, n, txt, borde, relleno in barras:
+            x = izq + d * col + 2
+            w = n * col - 4
+            s.append(f'<rect x="{x}" y="{y + 7}" width="{w}" height="{alto_f - 14}" rx="6" fill="{relleno}" '
+                     f'stroke="{borde}" stroke-width="1.5"/>')
+            claro = relleno == borde
+            if n == 1 and not claro:
+                # Una marca de un día: el rótulo va al lado, no entra adentro.
+                s.append(_txt(x + w + 6, y + 24, txt, 11.5, 700, borde))
+                continue
+            tam = 10.5 if n < 3 else 11.5
+            dos = len(_renglones(txt, max(4, int(w / 6.2)))) > 1
+            s.append(_txt(x + w / 2, y + (19 if dos else 24), txt, tam, 700, "#ffffff" if claro else borde,
+                          max_chars=max(4, int(w / 6.2)), salto=11, anchor="middle"))
+    yb = y0 + len(filas) * alto_f + 14
+    x1, x2 = izq + 1 * col, izq + 13 * col
+    s.append(f'<path d="M{x1} {yb} v8 H{x2} v-8" fill="none" stroke="{NEGRO}" stroke-width="1.5"/>')
+    s.append(_txt((x1 + x2) / 2, yb + 28, "12 días hábiles como mínimo, de la Validación a la obra", 13, 700, NEGRO,
+                  anchor="middle"))
+    s.append("</svg>")
+    return "  " + "".join(s) + "\n"
+
+
 def html_de(tipo, c):
+    if tipo == "etapas_io":
+        return etapas_io(*c)
+    if tipo == "tiempo":
+        return linea_tiempo()
+    if tipo == "lista" and all(x.startswith("[ ] ") for x in c):
+        caja = (f'<span style="display: inline-block; width: 15px; height: 15px; border: 1.8px solid {NEGRO}; '
+                f'border-radius: 3px; flex-shrink: 0; margin-top: 2px"></span>')
+        lis = "".join(f'<div style="display: flex; gap: 12px; padding: 9px 0; border-bottom: 1px solid {BORDE}; '
+                      f'font-size: 15px; line-height: 1.4; color: {TEXTO}">{caja}<span>{en_linea(x[4:])}</span></div>'
+                      for x in c)
+        return f'  <div style="margin-top: 12px">{lis}</div>\n'
+    if tipo == "cita" and c and re.match(r"### \d+\. ", c[0]):
+        m = re.match(r"### (\d+)\. (.+)", c[0])
+        sub = " ".join(c[1:])
+        return (f'  <div style="margin-top: 12px; display: flex; gap: 14px; padding: 14px 18px; '
+                f'background: {AZUL_FONDO}; border-radius: 10px">\n'
+                f'    <div style="font-family: {SANS}; font-size: 22px; font-weight: 700; color: {AZUL}; '
+                f'line-height: 1.1; width: 26px; flex-shrink: 0">{m.group(1)}</div>\n'
+                f'    <div><div style="font-family: {SANS}; font-size: 17px; font-weight: 700; color: {NEGRO}; '
+                f'line-height: 1.3">{en_linea(m.group(2))}</div>'
+                + (f'<div style="margin-top: 4px; font-size: 14px; line-height: 1.5; color: {TEXTO}">{en_linea(sub)}</div>'
+                   if sub else "") + '</div>\n  </div>\n')
+    if tipo == "cita" and " ".join(c).startswith("**Plantilla"):
+        texto = " ".join(c)
+        m = re.match(r"\*\*(Plantilla [^*]+?)\.?\*\*\s*(.*)", texto)
+        return (f'  <div style="margin-top: 14px; padding: 12px 16px; border-left: 3px solid {COLOR_AREA["Experiencia Solar"][0]}; '
+                f'background: {COLOR_AREA["Experiencia Solar"][1]}; border-radius: 0 8px 8px 0">\n'
+                f'    <div style="font-family: {SANS}; font-size: 11px; font-weight: 700; letter-spacing: 1.4px; '
+                f'color: {COLOR_AREA["Experiencia Solar"][0]}">{en_linea(m.group(1)).upper()} · LA MANDA EXPERIENCIA SOLAR</div>\n'
+                f'    <p style="margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: {TEXTO}; font-style: italic">'
+                f'{en_linea(m.group(2))}</p>\n  </div>\n')
     if tipo == "flujo":
         return flujo_etapas(*c)
     if tipo == "ventas":
@@ -1059,15 +1225,15 @@ class Component extends DCLogic {{
 
 
 def portada(version, bajada):
-    return suelta("Portada — PGT", f"""<div style="width: {ANCHO}px; height: {ALTO}px; box-sizing: border-box; display: flex; flex-direction: column; background: #ffffff">
+    return suelta(f"Portada — {CONFIG['corto']}", f"""<div style="width: {ANCHO}px; height: {ALTO}px; box-sizing: border-box; display: flex; flex-direction: column; background: #ffffff">
   <div style="height: 596px; position: relative; overflow: hidden; background: #dfe4f6">
     <img src="{IMG.PORTADA}" alt="" style="display: block; width: 100%; height: 100%; object-fit: cover">
     <div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(16,24,72,.12) 0%, rgba(16,24,72,0) 42%, rgba(255,255,255,.22) 100%)"></div>
   </div>
   <div style="flex-grow: 1; padding: 54px 72px 0; display: flex; flex-direction: column">
     <img src="{IMG.LOGO}" alt="Voltia" style="display: block; height: 42px; width: auto; align-self: flex-start">
-    <h1 style="margin: 16px 0 0; font-family: {SANS}; font-size: 58px; font-weight: 700; line-height: 1.02; letter-spacing: -1.6px; color: {NEGRO}">Procedimiento General de Trabajo</h1>
-    <div style="margin-top: 10px; font-family: {SANS}; font-size: 30px; font-weight: 600; letter-spacing: -.5px; color: {AZUL}">PGT de Voltia</div>
+    <h1 style="margin: 16px 0 0; font-family: {SANS}; font-size: 58px; font-weight: 700; line-height: 1.02; letter-spacing: -1.6px; color: {NEGRO}">{CONFIG['titulo']}</h1>
+    <div style="margin-top: 10px; font-family: {SANS}; font-size: 30px; font-weight: 600; letter-spacing: -.5px; color: {AZUL}">{CONFIG['subtitulo']}</div>
     <p style="margin: 22px 0 0; max-width: 560px; font-size: 16px; line-height: 1.6; color: {TEXTO}">{bajada}</p>
     <div style="flex-grow: 1"></div>
     <div style="display: flex; align-items: center; gap: 8px; padding-bottom: 30px">
@@ -1080,7 +1246,7 @@ def portada(version, bajada):
 
 
 def cierre(version):
-    return suelta("Cierre — PGT", f"""<div style="width: {ANCHO}px; height: {ALTO}px; box-sizing: border-box; display: flex; flex-direction: column; background: #ffffff">
+    return suelta(f"Cierre — {CONFIG['corto']}", f"""<div style="width: {ANCHO}px; height: {ALTO}px; box-sizing: border-box; display: flex; flex-direction: column; background: #ffffff">
   <div style="height: 470px; position: relative; overflow: hidden; background: #dfe4f6">
     <img src="{IMG.CIERRE}" alt="" style="display: block; width: 100%; height: 100%; object-fit: cover">
   </div>
@@ -1134,7 +1300,7 @@ def leer_fuente():
     lineas = open(FUENTE, encoding="utf-8").read().split("\n")
     m = re.search(r"Versión ([\d.]+) — (.+)$", lineas[2])
     if m:
-        version = f"Versión {m.group(1)} · {m.group(2).split(' de ', 1)[-1]}"
+        version = f"Versión {m.group(1)} · {m.group(2).split(' · ')[0].split(' de ', 1)[-1]}"
     else:
         # Mientras es borrador la cabecera no lleva número: "Borrador en revisión — fecha".
         b = re.search(r"· ([^·]+?) — (.+)$", lineas[2])
@@ -1184,8 +1350,11 @@ def construir():
         crudos = bloques_de(cap["lineas"])
         if cap["num"] == 0 and len(parrafos) > 1:
             crudos = [("cita", [" ".join(parrafos[1:])])] + crudos
-        crudos = juntar_secciones(juntar_ingenieria(juntar_ventas(partir_areas(juntar_recorrido(crudos)))))
-        crudos = juntar_cliente_pm_casos(crudos, cap["num"])
+        if MANUAL == "pgt":
+            crudos = juntar_secciones(juntar_ingenieria(juntar_ventas(partir_areas(juntar_recorrido(crudos)))))
+            crudos = juntar_cliente_pm_casos(crudos, cap["num"])
+        else:
+            crudos = juntar_operaciones(crudos)
         cabeza1 = apertura(cap["num"], cap["titulo"])
         cabeza2 = continua(cap["num"], cap["titulo"])
         BLOQUES[f"{clave}_ap"] = cabeza1
@@ -1214,11 +1383,12 @@ def construir():
             rotulo = t == "p" and re.fullmatch(r"\*\*[^*]{1,60}\*\*", c.strip()) is not None
             sid, st, sc = items[k + 1]
             presenta = t == "p" and st in ("hitos", "operaciones", "ventas", "ingenieria", "flujo", "etapas_cliente",
-                                           "pantalla")
+                                           "pantalla", "etapas_io", "tiempo")
             if not (t == "h3" or rotulo or presenta or (t == "p" and c.rstrip().rstrip("*").endswith(":"))):
                 return 0
             # Un párrafo que presenta un dibujo viaja con el dibujo.
-            if st in ("hitos", "operaciones", "ventas", "ingenieria", "flujo", "etapas_cliente"):
+            if st in ("hitos", "operaciones", "ventas", "ingenieria", "flujo", "etapas_cliente", "etapas_io",
+                      "tiempo"):
                 return alto(sid, BLOQUES[sid])
             if st == "tabla" and "cab" in ALTURAS.get(sid, {}):
                 return 16 + ALTURAS[sid]["cab"] + ALTURAS[sid]["filas"][0]
@@ -1305,6 +1475,11 @@ if __name__ == "__main__":
     os.makedirs(carpeta, exist_ok=True)
     boards, orden = {}, []
     for i, (archivo, titulo_board, html) in enumerate(paginas):
+        # Un canvas nuevo tiene sus propias copias de las imágenes, con otra
+        # dirección: REMAP_ASSETS es un JSON {id viejo: url nueva}.
+        if os.environ.get("REMAP_ASSETS"):
+            for viejo, nuevo in json.load(open(os.environ["REMAP_ASSETS"])).items():
+                html = html.replace(f"/_blob/{viejo}", nuevo)
         with open(os.path.join(carpeta, archivo), "w", encoding="utf-8") as f:
             f.write(html)
         col, fila = i % 6, i // 6
@@ -1314,13 +1489,13 @@ if __name__ == "__main__":
     indice = {
         "v": 3,
         "createdOnFiles": {"v": 1, "at": "2026-09-29T02:45:00Z"},
-        "title": "Procedimiento General de Trabajo (PGT) de Voltia",
+        "title": CONFIG["canvas"],
         "launch": {"view": "canvas"},
         "pages": [],
         "designSystems": [],
         "boards": boards,
         "order": orden,
-        "notes": {"titulo": {"x": 0, "y": -300, "text": "Procedimiento General de Trabajo (PGT) de Voltia",
+        "notes": {"titulo": {"x": 0, "y": -300, "text": CONFIG["canvas"],
                              "kind": "title1", "maxW": 6 * ANCHO + 5 * 80}},
     }
     with open(os.path.join(carpeta, "canvas.json"), "w", encoding="utf-8") as f:

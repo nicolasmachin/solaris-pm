@@ -1,6 +1,6 @@
 # Manual de trabajo de Tramitación UTE
 
-**Voltia · Uruguay** · Versión 0.3 — 1 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.4 — 5 de octubre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Tramitación UTE, juntos**. Sigue el mismo modelo que el Manual de trabajo de
@@ -88,6 +88,23 @@ reclama al Gerente de Operaciones**. Nunca directo al capataz.
 Al cerrar el trámite, **el sistema le avisa solo a Experiencia Solar** y arranca
 un reloj de 24 a 48 horas. No hace falta mandar un mensaje.
 
+**Cerrar el trámite no es mover el selector: es cargar la fecha.** Lo que le
+avisa al cliente que ya puede encender su planta es la **fecha de habilitación**.
+Si marcás "Finalizado" sin esa fecha, no pasa nada y el cliente no se entera.
+
+Y para poder cerrarlo, **tienen que estar cargados todos los pasos del trámite**.
+Si falta alguno, la app no te deja y te dice cuáles son. Ahí tenés dos caminos:
+
+- **Cargar las fechas que faltan**, que es lo normal.
+- **Cerrarlo igual**, si el trámite se terminó sin esos pasos (UTE salteó uno, el
+  cliente no siguió adelante). Tenés que tildarlo y **escribir por qué**. Ese
+  motivo queda guardado y se ve en el trámite, para que el que lo mire después
+  entienda por qué está cerrado a medias.
+
+> Esto se puso porque pasó al revés: un cliente que **no había hecho la obra**
+> quedó marcado como finalizado desde el selector, sin una sola fecha, y el
+> sistema le avisó que encendiera una planta que no existía.
+
 ## 7 · A quién le pregunta qué
 
 | Necesita saber… | Le pregunta a… |
@@ -110,6 +127,7 @@ un reloj de 24 a 48 horas. No hace falta mandar un mensaje.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.4 | 5 de octubre de 2026 | Para cerrar un trámite hay que tener todos los pasos cargados, o decir por qué se cierra sin ellos; y lo que avisa al cliente es la fecha de habilitación, no el selector de etapa. |
 | 0.3 | 1 de octubre de 2026 | Se agregan los once hitos del trámite tal como se marcan en Voltia PM (salen del PGT, que queda en cuatro pasos generales). |
 | 0.2 | 30 de septiembre de 2026 | Se agrega qué pasa con los proyectos de más de un suministro: una consulta, un juego de papeles y un trámite por cada cuenta UTE, y la obra habilitada cuando salen todas. |
 | 0.1 | 29 de septiembre de 2026 | Se crea el manual con el detalle de Tramitación que estaba en el manual de trabajo general (v2.2). |

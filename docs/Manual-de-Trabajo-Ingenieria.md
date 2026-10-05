@@ -1,6 +1,6 @@
 # Manual de trabajo de Ingeniería
 
-**Voltia · Uruguay** · Versión 0.4 — 5 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.5 — 5 de octubre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ingeniería, juntos**: qué se hace, quién lo hace, en qué plazo, con qué
@@ -27,6 +27,18 @@ toca más. A partir de ahí Logística compra sobre esa lista.
 ingeniería final.*
 
 ## 3 · Lineamientos
+
+### En obra, el criterio del instalador le gana al del proyectista
+
+Si algo del proyecto no cierra en la casa del cliente, **el capataz lo resuelve
+ahí**, con su criterio, y no deja la obra parada esperando una respuesta de
+Ingeniería. Anota en el proyecto qué cambió y por qué, con una foto.
+
+Para Ingeniería quiere decir dos cosas: **lo que cambió en obra se pasa a los
+planos finales** (para que lo presentado a UTE coincida con lo instalado), y lo
+que no se puede cambiar en obra —lo que exige UTE y la seguridad— **se marca
+como tal** en los documentos, para que el capataz sepa qué consultar antes de
+tocarlo.
 
 ### Proyectos con más de un suministro
 
@@ -164,6 +176,7 @@ deja como comentario en su etapa y le llega solo a Experiencia Solar.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.5 | 5 de octubre de 2026 | Nuevo lineamiento: en obra, el criterio del instalador le gana al del proyectista; lo que cambió en obra se pasa a los planos finales. |
 | 0.4 | 5 de octubre de 2026 | Se agrega, entre las herramientas, la lectura de los documentos de la obra desde el chat de Claude: qué puede leer, qué no, y cómo se le pide. |
 | 0.3 | 1 de octubre de 2026 | Se agregan las herramientas con que se trabaja: el módulo de Ingeniería de Voltia PM, la habilidad de Claude con los criterios de Voltia, Claude Design para los planos y el mapeo de materiales. Ingeniería no hace visita de relevamiento: trabaja con lo que trae la visita de venta. |
 | 0.2 | 30 de septiembre de 2026 | Primer lineamiento: los proyectos con más de un suministro llevan un juego de papeles de UTE y un unifilar por suministro, y un solo proyecto y memoria. |

@@ -4,6 +4,13 @@
 
 ### 5 de octubre de 2026
 
+#### Un trámite de UTE no se cierra con un clic
+
+- Para dar un trámite por **finalizado** ahora tienen que estar cargados **todos sus pasos**. Si falta alguno, la app no deja cerrarlo y dice cuáles son.
+- Si el trámite realmente se terminó sin esos pasos —UTE salteó uno, el cliente no siguió adelante— se puede **cerrar igual**, pero hay que tildarlo y **escribir por qué**. El motivo queda guardado y se ve en el trámite.
+- **Lo que le avisa al cliente que ya puede encender es la fecha de habilitación**, no el selector de etapa. Antes alcanzaba con elegir "Finalizado" en la lista para que saliera el aviso, aunque no hubiera una sola fecha cargada.
+- Un cliente que **no había hecho la obra** había quedado marcado como finalizado y el sistema le avisó que encendiera su planta. Ya no puede volver a pasar, y se corrigieron los casos que habían quedado así.
+
 #### El historial ahora dice quién completó cada etapa y quién la volvió para atrás
 
 - Cuando una etapa pasa a **en curso** o se **completa**, queda registrado en el historial del proyecto con el nombre de quien lo hizo y la hora.
