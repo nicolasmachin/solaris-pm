@@ -160,6 +160,10 @@ enum AuditAction {
   status_changed
   file_uploaded
   stage_advanced
+  // Una etapa que estaba completa (o en curso) vuelve atrás porque se reabrió
+  // una subetapa. Se separa de `stage_advanced` para que el historial distinga
+  // "se completó" de "se deshizo", que es la pregunta que se termina haciendo.
+  stage_reverted
   alert_triggered
   comment_added
   comment_edited

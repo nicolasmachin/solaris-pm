@@ -32,6 +32,10 @@ type EventoDef = {
 export const EVENTOS: Record<AuditAction, EventoDef> = {
   // ─── Novedad: el cliente lo percibe o cambia su situación ──────────────────
   [AuditAction.stage_advanced]: { visibilidad: "novedad", etiqueta: "Avanzó de etapa" },
+  // Retroceder NO es novedad para el cliente: es una corrección interna (se
+  // reabrió una subetapa). Contarle "volviste para atrás" lo confundiría y además
+  // suele ser el mismo hecho visto dos veces. Queda registrado para nosotros.
+  [AuditAction.stage_reverted]: { visibilidad: "auditoria" },
   [AuditAction.status_changed]: { visibilidad: "novedad", etiqueta: "Cambió el estado del proyecto" },
   [AuditAction.email_sent]: { visibilidad: "novedad", etiqueta: "Se le envió un correo" },
   [AuditAction.lead_converted]: { visibilidad: "novedad", etiqueta: "Se convirtió en proyecto" },

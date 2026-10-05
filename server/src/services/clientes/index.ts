@@ -1184,6 +1184,7 @@ export async function getClienteTimeline(projectId: string): Promise<TimelineIte
       source,
       kind:
         a.action === AuditAction.stage_advanced ||
+        a.action === AuditAction.stage_reverted ||
         a.action === AuditAction.status_changed ||
         a.action === AuditAction.lead_converted
           ? "stage_change"

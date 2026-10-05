@@ -1,4 +1,6 @@
 import {
+  AuditAction,
+  AuditEntityType,
   ModalidadPago,
   PhaseType,
   Prisma,
@@ -12,6 +14,7 @@ import {
 } from "@prisma/client";
 
 import { prisma } from "../lib/prisma.js";
+import { createAuditEntry } from "./audit.service.js";
 import {
   PARALLEL_STAGE_TYPES,
   PIPELINE_DEFINITIONS,
@@ -116,6 +119,19 @@ export function calculateStageProgress(
   return progressPercent;
 }
 
+/** Para decidir si una transición de etapa avanza o retrocede. */
+const ORDEN_ESTADO: Record<StageStatus, number> = {
+  [StageStatus.PENDING]: 0,
+  [StageStatus.IN_PROGRESS]: 1,
+  [StageStatus.COMPLETED]: 2,
+};
+
+const ESTADO_LABEL: Record<StageStatus, string> = {
+  [StageStatus.PENDING]: "pendiente",
+  [StageStatus.IN_PROGRESS]: "en curso",
+  [StageStatus.COMPLETED]: "completada",
+};
+
 export async function syncStageProgress(stageId: string, opts?: { actorUserId?: string }) {
   const stage = await prisma.stage.findUnique({
     where: { id: stageId },
@@ -180,6 +196,32 @@ export async function syncStageProgress(stageId: string, opts?: { actorUserId?: 
     where: { id: stageId },
     data: updateData,
   });
+
+  // Auditar el cambio de estado de la etapa.
+  //
+  // Casi todas las etapas se mueven por acá —derivadas de sus subetapas—, no por
+  // el PATCH manual, que sí auditaba. Por eso en producción no había una sola
+  // entrada de etapa con el campo "estado": quedaba sin registro quién completó
+  // una etapa y, sobre todo, quién la hizo volver atrás al reabrir una subetapa.
+  const nuevoEstado = updateData.status as StageStatus | undefined;
+  if (nuevoEstado && nuevoEstado !== stage.status && opts?.actorUserId) {
+    const retrocede = ORDEN_ESTADO[nuevoEstado] < ORDEN_ESTADO[stage.status];
+    const etiqueta = getStageLabel(stage.name);
+    await createAuditEntry({
+      entityType: AuditEntityType.stage,
+      entityId: stageId,
+      projectId: stage.projectId,
+      userId: opts.actorUserId,
+      action: retrocede ? AuditAction.stage_reverted : AuditAction.stage_advanced,
+      fieldChanged: "status",
+      oldValue: stage.status,
+      newValue: nuevoEstado,
+      description: retrocede
+        ? `La etapa ${etiqueta} volvió a ${ESTADO_LABEL[nuevoEstado]} (estaba ${ESTADO_LABEL[stage.status]})`
+        : `La etapa ${etiqueta} pasó a ${ESTADO_LABEL[nuevoEstado]}`,
+      metadata: { motivo: "subetapas", etapa: stage.name },
+    });
+  }
 
   // Verificar si todas las etapas del proyecto quedaron completas, sin importar si
   // esta llamada transicionó la etapa. Cubre el caso donde la última etapa ya estaba

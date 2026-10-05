@@ -2648,7 +2648,23 @@ export async function registerApiRoutes(app: FastifyInstance) {
           description: `Completó etapa ${getStageLabel(stage.name)}`,
         });
       } else {
+        // Cualquier otro estado (volver a pendiente, bloquear). Antes se guardaba
+        // sin dejar rastro: quedaba una etapa retrocedida sin saber quién fue.
         updateData.status = body.status;
+        if (body.status !== stage.status) {
+          await createAuditEntry({
+            entityType: AuditEntityType.stage,
+            entityId: stage.id,
+            projectId: params.projectId,
+            userId: user.id,
+            action: AuditAction.stage_reverted,
+            fieldChanged: "status",
+            oldValue: stage.status,
+            newValue: body.status,
+            description: `Cambió a mano la etapa ${getStageLabel(stage.name)} de ${formatStageStatus(stage.status)} a ${formatStageStatus(body.status)}`,
+            metadata: { motivo: "manual", etapa: stage.name },
+          });
+        }
       }
     }
 

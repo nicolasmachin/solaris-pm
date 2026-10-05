@@ -4,6 +4,14 @@
 
 ### 5 de octubre de 2026
 
+#### El historial ahora dice quién completó cada etapa y quién la volvió para atrás
+
+- Cuando una etapa pasa a **en curso** o se **completa**, queda registrado en el historial del proyecto con el nombre de quien lo hizo y la hora.
+- Y si alguien **reabre una subetapa** y la etapa vuelve para atrás, también queda anotado, con el detalle de adónde volvió: *"La etapa Ingeniería Final volvió a en curso (estaba completada)"*.
+- Antes esto no se guardaba en ningún lado. Las etapas se mueven solas cuando se completan sus subetapas, y ese movimiento no dejaba rastro: se podía ver quién tildó cada subetapa, pero no quién hizo avanzar o retroceder la etapa.
+- Lo mismo si se cambia el estado **a mano** desde la pantalla de la etapa.
+- Al cliente **no** se le muestra el retroceso en sus novedades: es una corrección interna nuestra. El avance sí lo sigue viendo, como siempre.
+
 #### Los documentos del proyecto se pueden leer desde el chat de Claude
 
 - **Claude ya puede leer los adjuntos de una obra**: memorias, informes, listas de materiales, propuestas, reportes y planillas. Se le pide "traeme los documentos de tal cliente" y después "leé la memoria y el unifilar", y los analiza sin que haya que descargar ni adjuntar nada a mano.
