@@ -9818,6 +9818,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
         plannedWorkEnd: dateOnlySchema,
         segmentId: z.string().optional(),
         forceRecalculate: z.boolean().optional(),
+        // Mismo criterio que PATCH /calendar/:id: mover una obra YA CONFIRMADA
+        // exige el motivo y le abre a Experiencia Solar su aviso al cliente.
+        motivo: z.string().trim().min(3).max(500).optional(),
       })
       .strict()
       .parse(request.body);
@@ -9842,6 +9845,20 @@ export async function registerApiRoutes(app: FastifyInstance) {
 
     // Permitimos fechas pasadas a propósito: sirve para ajustar el calendario
     // a las fechas reales en las que se ejecutó la obra.
+
+    // Una obra confirmada que se mueve a hoy o más adelante es una
+    // reprogramación: hay que contársela al cliente, así que pide motivo. Si se
+    // lleva a una fecha pasada es un ajuste a lo que de verdad pasó, y no hay
+    // nada nuevo que avisar. Antes esta ruta (la que usan el botón Reprogramar
+    // y el arrastre del calendario) no pedía motivo ni generaba el aviso.
+    const esReprogramacion =
+      Boolean(existing.confirmedAt) && body.plannedWorkStart >= (toDateOnlyString(new Date()) ?? "");
+    if (esReprogramacion && !body.motivo) {
+      throw badRequest(
+        "MOTIVO_REQUERIDO",
+        "Indicá el motivo de la reprogramación: es lo que hay que contarle al cliente.",
+      );
+    }
 
     const targetSegment = body.segmentId
       ? existing.segments.find((s) => s.id === body.segmentId)
@@ -9884,8 +9901,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
       projectId: existing.projectId,
       userId: user.id,
       action: AuditAction.updated,
-      description: `Reprogramó un tramo de la instalación: ${toDateOnlyString(targetSegment.startDate)}→${toDateOnlyString(targetSegment.endDate)} → ${toDateOnlyString(newStart)}→${toDateOnlyString(newEnd)}`,
+      description: `Reprogramó un tramo de la instalación: ${toDateOnlyString(targetSegment.startDate)}→${toDateOnlyString(targetSegment.endDate)} → ${toDateOnlyString(newStart)}→${toDateOnlyString(newEnd)}${body.motivo ? ` · Motivo: ${body.motivo}` : ""}`,
     });
+
+    if (esReprogramacion && body.motivo) {
+      await crearCheckReagenda(existing.projectId, body.motivo, newStart);
+    }
 
     const deadlineRecalc = await recalculateProjectDeadlines(existing.projectId, body.forceRecalculate ?? false);
     reply.header("X-Deadline-Recalc", JSON.stringify(deadlineRecalc));

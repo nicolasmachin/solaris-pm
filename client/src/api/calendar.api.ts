@@ -135,7 +135,7 @@ export async function patchSchedule(
 
 export async function rescheduleSchedule(
   id: string,
-  body: { plannedWorkStart: string; plannedWorkEnd: string; segmentId?: string },
+  body: { plannedWorkStart: string; plannedWorkEnd: string; segmentId?: string; motivo?: string },
 ): Promise<ScheduleWithWarning> {
   return withDeadlineConfirm(async (forceRecalculate) => {
     const { data } = await apiClient.patch<ScheduleWithWarning>(

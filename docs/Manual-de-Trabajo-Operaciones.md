@@ -4,7 +4,7 @@
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
-> Lo leen **el gerente de Operaciones, el capataz y su equipo, y Logística**. Gerencia lo lee entero. Tiene tres partes, y las dos últimas se pueden imprimir y entregar como **librillos independientes**: la **Parte A · Operaciones** es la del gerente; la **Parte B · Obra** es la del capataz y su equipo, en la propiedad del cliente; la **Parte C · Logística** es la de las compras y la entrega de materiales.
+> Es el manual de **toda el área de Operaciones**: el gerente de Operaciones, los capataces, los operarios y Logística. El gerente lo tiene que saber de memoria. Gerencia lo lee entero. Tiene tres partes: la **Parte A · Operaciones**, cómo funciona el área entera; la **Parte B · Obra**, el trabajo en la propiedad del cliente; y la **Parte C · Logística**, las compras y la entrega de materiales. Las dos últimas se pueden imprimir y entregar también como **librillos independientes**.
 >
 > Lo que conecta a Operaciones con las demás áreas está en el **Procedimiento General de Trabajo (PGT) de Voltia**. Lo que Operaciones necesita saber de las otras áreas está repetido acá, a propósito, para no tener que ir a buscarlo a otro manual.
 
@@ -16,7 +16,7 @@
 
 **Qué no es.** No es un manual de electricidad ni de montaje: quien instala ya sabe instalar. Tampoco explica cómo trabajan las otras áreas: eso está en el PGT y en el manual de cada una. Acá está solo lo que Operaciones tiene que saber de ellas.
 
-**Cómo se lee.** El gerente de Operaciones lee todo. El capataz y su equipo leen la **Parte B · Obra**. Logística lee la **Parte C · Logística**. Al final hay un glosario con las palabras propias de Voltia y el registro de cambios del manual.
+**Cómo se lee.** Todos los del área lo leen entero, porque el trabajo de cada uno depende del de los otros. **El gerente de Operaciones lo tiene que saber de memoria.** Para la obra y para el depósito, la Parte B · Obra y la Parte C · Logística se imprimen también por separado. Al final hay un glosario con las palabras propias de Voltia y el registro de cambios del manual.
 
 ### Lo que Operaciones tiene que saber de las otras áreas
 
@@ -122,7 +122,9 @@ Los mensajes que le manda Experiencia Solar al cliente son estos:
 
 Se reprograma en el calendario, **el mismo día** que se sabe, y se deja escrito el motivo. Experiencia Solar necesita el motivo para explicárselo al cliente ese mismo día. Si a un cliente le mueven la fecha tres veces, son tres avisos, no uno.
 
-> **Cómo está hoy Voltia PM:** el botón **Reprogramar** del calendario todavía no pide el motivo ni le genera el aviso a Experiencia Solar. Hasta que se corrija, quien reprograma escribe el motivo en los **Comentarios** del proyecto y le avisa a Experiencia Solar.
+**Voltia PM pide el motivo** cuando la obra ya tenía la fecha confirmada, tanto con el botón **Reprogramar** como al arrastrar la obra a otro día, y con ese motivo le genera el aviso a Experiencia Solar. Si la obra todavía era tentativa, o se la lleva a una fecha que ya pasó (para dejar anotado cuándo se hizo de verdad), no lo pide.
+
+> **Hasta que se publique la próxima versión de Voltia PM**, el botón Reprogramar todavía no pide el motivo: quien reprograma lo escribe en los **Comentarios** del proyecto y le avisa a Experiencia Solar.
 
 > **Plantilla «Reprogramación de la obra».** «Hola {nombre}, te aviso que tenemos que mover la fecha del {fecha} por {motivo}. Apenas tengamos la nueva te la confirmo — calculamos {estimación}. Perdón por el cambio.»
 
@@ -258,7 +260,7 @@ Se abre tocando una tarjeta del recorrido. Tiene:
 
 - **Fecha tentativa:** se ve rayada. **Fecha confirmada:** en color sólido.
 - Al abrir una obra: si está confirmada o no, el equipo, las notas y el botón **Confirmar fecha** (después dice quién la confirmó y cuándo).
-- **Reprogramar:** se elige el tramo y se ponen las fechas nuevas. Una obra puede tener **varios tramos** (por ejemplo, si se hace en dos partes): **+ Agregar tramo**.
+- **Reprogramar:** se elige el tramo, se ponen las fechas nuevas y, si la fecha ya estaba confirmada, el motivo. Una obra puede tener **varios tramos** (por ejemplo, si se hace en dos partes): **+ Agregar tramo**.
 - Al confirmar la fecha, a Experiencia Solar le llega el aviso para comunicársela al cliente.
 
 ### Las fotos de obra
@@ -311,7 +313,7 @@ El gerente de Operaciones busca otra y la confirma dentro de los 2 días hábile
 
 ## 9 · El librillo de obra
 
-**Para quién es.** Para el capataz y su equipo, y para el instalador tercerizado cuando la obra no la hace una cuadrilla propia.
+**Para quién es.** Para todos los que trabajan en la obra: el capataz, los operarios y el instalador tercerizado cuando la obra no la hace una cuadrilla propia. El resto del área también lo conoce, porque es lo que se le promete al cliente.
 
 **Qué hace el capataz.** Revisa cada proyecto antes de la obra (el informe del capataz), prepara los materiales, lleva adelante la instalación en la casa del cliente, la deja funcionando y deja cargado todo lo necesario para cerrarla.
 

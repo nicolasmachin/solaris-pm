@@ -4,6 +4,12 @@
 
 ### 5 de octubre de 2026
 
+#### Reprogramar una obra confirmada pide el motivo
+
+- Al mover en el calendario una obra que **ya tenía la fecha confirmada**, ahora hay que escribir **por qué** se mueve. Vale para el botón **Reprogramar** y también para cuando se arrastra la obra a otro día o se estira.
+- Con ese motivo, **Experiencia Solar recibe el aviso** para contárselo al cliente el mismo día. Antes, al reprogramar desde el calendario, no le llegaba nada.
+- Si la obra todavía era tentativa, o se la lleva a una fecha que ya pasó (para dejar anotado cuándo se hizo de verdad), no se pide motivo.
+
 #### Un trámite de UTE no se cierra con un clic
 
 - Para dar un trámite por **finalizado** ahora tienen que estar cargados **todos sus pasos**. Si falta alguno, la app no deja cerrarlo y dice cuáles son.

@@ -679,11 +679,13 @@ export function Calendar() {
       segmentId: string;
       plannedWorkStart: string;
       plannedWorkEnd: string;
+      motivo?: string;
     }) =>
       rescheduleSchedule(args.id, {
         plannedWorkStart: args.plannedWorkStart,
         plannedWorkEnd: args.plannedWorkEnd,
         segmentId: args.segmentId,
+        motivo: args.motivo,
       }),
     onSuccess: (res) => {
       toast.success("Instalación reprogramada");
@@ -902,6 +904,12 @@ export function Calendar() {
         toast.error("El tramo se superpone con otro del mismo proyecto");
         return;
       }
+      // Una obra confirmada que se mueve hacia adelante pide el motivo: pasa
+      // por el diálogo en lugar de guardarse directo.
+      if (pideMotivo(schedule, startIso, todayIso)) {
+        setMoveRequest({ schedule, segmentId: meta.segmentId, targetStart: startIso, targetEnd: endIso });
+        return;
+      }
       rescheduleMutation.mutate({
         id: schedule.id,
         segmentId: meta.segmentId,
@@ -939,6 +947,15 @@ export function Calendar() {
         );
         if (overlap) {
           toast.error(`El tramo se superpone con otro del ${overlap.startDate} al ${overlap.endDate}`);
+          return;
+        }
+        if (pideMotivo(schedule, rs.currentStart, todayIso)) {
+          setMoveRequest({
+            schedule,
+            segmentId: rs.segmentId,
+            targetStart: rs.currentStart,
+            targetEnd: rs.currentEnd,
+          });
           return;
         }
       }
@@ -1328,12 +1345,14 @@ export function Calendar() {
         <ReprogramModal
           schedule={primarySelected}
           onCancel={() => setShowReprogram(false)}
-          onConfirm={(segmentId, start, end) =>
+          todayIso={todayIso}
+          onConfirm={(segmentId, start, end, motivo) =>
             moveMutation.mutate({
               id: primarySelected.id,
               segmentId,
               plannedWorkStart: start,
               plannedWorkEnd: end,
+              motivo,
             })
           }
           loading={moveMutation.isPending}
@@ -1345,13 +1364,15 @@ export function Calendar() {
           clientName={moveRequest.schedule.project?.clientName ?? "el proyecto"}
           targetStart={moveRequest.targetStart}
           targetEnd={moveRequest.targetEnd}
+          requiereMotivo={pideMotivo(moveRequest.schedule, moveRequest.targetStart, todayIso)}
           onCancel={() => setMoveRequest(null)}
-          onConfirm={() =>
+          onConfirm={(motivo) =>
             moveMutation.mutate({
               id: moveRequest.schedule.id,
               segmentId: moveRequest.segmentId,
               plannedWorkStart: moveRequest.targetStart,
               plannedWorkEnd: moveRequest.targetEnd,
+              motivo,
             })
           }
           loading={moveMutation.isPending}
@@ -3262,10 +3283,46 @@ function NewScheduleModal({
   );
 }
 
+/**
+ * Mover una obra con la fecha YA CONFIRMADA a hoy o más adelante es una
+ * reprogramación: se le avisa al cliente, así que pide el motivo. Llevarla a una
+ * fecha pasada es ajustar el calendario a lo que de verdad pasó: no pide nada.
+ * Es el mismo criterio que aplica el servidor.
+ */
+function pideMotivo(schedule: InstallationSchedule, nuevoInicio: string, todayIso: string): boolean {
+  return Boolean(schedule.confirmedAt) && nuevoInicio >= todayIso;
+}
+
+function MotivoReprogramacion({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="mb-4">
+      <label
+        htmlFor="motivo-reprogramacion"
+        className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]"
+      >
+        Motivo de la reprogramación
+      </label>
+      <textarea
+        id="motivo-reprogramacion"
+        rows={2}
+        maxLength={500}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Por ejemplo: lluvia, falta un material, el cliente pidió otro día"
+        className="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg-app)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:outline-none"
+      />
+      <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+        La fecha ya estaba confirmada: Experiencia Solar recibe el aviso con este motivo para contárselo al cliente.
+      </p>
+    </div>
+  );
+}
+
 function MoveConfirmDialog({
   clientName,
   targetStart,
   targetEnd,
+  requiereMotivo,
   onCancel,
   onConfirm,
   loading,
@@ -3273,20 +3330,29 @@ function MoveConfirmDialog({
   clientName: string;
   targetStart: string;
   targetEnd: string;
+  requiereMotivo: boolean;
   onCancel: () => void;
-  onConfirm: () => void;
+  onConfirm: (motivo?: string) => void;
   loading: boolean;
 }) {
+  const [motivo, setMotivo] = useState("");
+  const faltaMotivo = requiereMotivo && motivo.trim().length < 3;
   return (
     <ModalShell title="Mover instalación" onClose={onCancel}>
       <p className="text-sm text-[var(--color-text-secondary)] mb-4">
         ¿Mover {clientName} a {formatRangeShort(targetStart, targetEnd)}?
       </p>
+      {requiereMotivo && <MotivoReprogramacion value={motivo} onChange={setMotivo} />}
       <div className="flex justify-end gap-2">
         <Button size="sm" variant="ghost" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button size="sm" onClick={onConfirm} loading={loading}>
+        <Button
+          size="sm"
+          onClick={() => onConfirm(requiereMotivo ? motivo.trim() : undefined)}
+          loading={loading}
+          disabled={faltaMotivo}
+        >
           Confirmar
         </Button>
       </div>
@@ -3296,15 +3362,18 @@ function MoveConfirmDialog({
 
 function ReprogramModal({
   schedule,
+  todayIso,
   onCancel,
   onConfirm,
   loading,
 }: {
   schedule: InstallationSchedule;
+  todayIso: string;
   onCancel: () => void;
-  onConfirm: (segmentId: string, start: string, end: string) => void;
+  onConfirm: (segmentId: string, start: string, end: string, motivo?: string) => void;
   loading: boolean;
 }) {
+  const [motivo, setMotivo] = useState("");
   const segments = schedule.segments;
   const [selectedSegmentId, setSelectedSegmentId] = useState<string>(
     segments[0]?.id ?? "",
@@ -3333,6 +3402,8 @@ function ReprogramModal({
   const rangeInvalid = Boolean(start && end && end < start);
   const unchanged =
     !!current && start === current.startDate && end === current.endDate;
+  const requiereMotivo = Boolean(start) && pideMotivo(schedule, start, todayIso);
+  const faltaMotivo = requiereMotivo && motivo.trim().length < 3;
 
   return (
     <ModalShell title="Reprogramar tramo" onClose={onCancel}>
@@ -3363,6 +3434,11 @@ function ReprogramModal({
         onChangeStart={handleStartChange}
         onChangeEnd={setEnd}
       />
+      {requiereMotivo && (
+        <div className="mt-4">
+          <MotivoReprogramacion value={motivo} onChange={setMotivo} />
+        </div>
+      )}
       <div className="mt-4 flex justify-end gap-2">
         <Button size="sm" variant="ghost" onClick={onCancel}>
           Cancelar
@@ -3370,8 +3446,8 @@ function ReprogramModal({
         <Button
           size="sm"
           loading={loading}
-          disabled={rangeInvalid || !start || !end || unchanged || !current}
-          onClick={() => current && onConfirm(current.id, start, end)}
+          disabled={rangeInvalid || !start || !end || unchanged || !current || faltaMotivo}
+          onClick={() => current && onConfirm(current.id, start, end, requiereMotivo ? motivo.trim() : undefined)}
         >
           Confirmar nuevas fechas
         </Button>

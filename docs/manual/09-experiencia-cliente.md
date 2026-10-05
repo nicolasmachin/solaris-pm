@@ -431,6 +431,19 @@ confirmada **exige motivo** (`MOTIVO_REQUERIDO`): sin él, quien tiene que avisa
 al cliente no sabe qué decirle. Si la obra todavía era tentativa no se exige —
 nadie prometió nada y no hay nada que explicar.
 
+Vale para los **dos caminos** que mueven fechas: `PATCH /calendar/:id` (reemplazo
+de tramos) y `PATCH /calendar/:id/reschedule` (un tramo puntual, que es el que usan
+el botón **Reprogramar**, el arrastre del mes y el arrastre y el estirado de la
+vista anual). Hasta el 5-oct-2026 el segundo **no pedía motivo ni creaba el
+check**, así que desde la web ninguna reprogramación le llegaba a Experiencia
+Solar. En `/reschedule` hay un matiz: si la obra confirmada se lleva a una fecha
+**pasada** no se pide motivo ni se crea check, porque es ajustar el calendario a
+lo que de verdad pasó (la ruta admite fechas pasadas a propósito). En el cliente,
+`pideMotivo()` de `Calendar.tsx` aplica el mismo criterio: el arrastre que cae en
+ese caso abre el diálogo de mover con el campo de motivo, en vez de guardar
+directo. **Agujero conocido:** agregar, editar o borrar un tramo
+(`/calendar/:id/segments`) no pide motivo.
+
 **La pestaña Recorrido** (`/clientes/recorrido`) es la otra vista de trabajo del
 área, además del listado:
 la cartera partida en los tres bloques del proceso, una columna por etapa.

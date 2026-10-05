@@ -75,10 +75,10 @@ PARTES = [
 if MANUAL == "operaciones":
     PARTES = [
         ("A", "Operaciones", [0, 1, 2, 3, 4, 5, 6, 7, 8],
-         "Para el gerente de Operaciones: dónde empieza y termina cada etapa, los 12 días hasta la obra, "
+         "Cómo funciona el área entera: dónde empieza y termina cada etapa, los 12 días hasta la obra, "
          "la fecha de obra y las reglas del área.", IMG.PORTADILLA_PARTE2),
         ("B", "Obra", [9, 10, 11, 12, 13, 14, 15, 16, 17],
-         "El librillo del capataz y su equipo: el informe del capataz, la preparación, la seguridad, los criterios técnicos, "
+         "El trabajo en la propiedad del cliente: el informe del capataz, la preparación, la seguridad, los criterios técnicos, "
          "la puesta en marcha y el cierre de la obra.", IMG.PORTADILLA_PARTE3),
         ("C", "Logística", [18, 19, 20],
          "Las compras y la entrega de materiales: dónde empieza y termina, y qué hacer si algo demora.",
