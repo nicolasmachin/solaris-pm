@@ -116,6 +116,12 @@ def bloques_de(lineas):
         if l.startswith("### "):
             out.append(("h3", l[4:].strip()))
             i += 1
+        elif re.match(r"^!\[[^\]]*\]\(captura:[\w-]+\)\s*$", l):
+            # Una captura de Voltia PM: ![epígrafe](captura:nombre), con el
+            # nombre de capturas-operaciones.json.
+            m = re.match(r"^!\[([^\]]*)\]\(captura:([\w-]+)\)", l)
+            out.append(("captura", (m.group(2), m.group(1))))
+            i += 1
         elif l.startswith("|"):
             filas = []
             while i < len(lineas) and lineas[i].startswith("|"):
@@ -149,7 +155,7 @@ def bloques_de(lineas):
             out.append(("numerada", items))
         else:
             par = []
-            while i < len(lineas) and lineas[i].strip() and not re.match(r"^(\||>|- |\d+\. |### |---|# )", lineas[i]):
+            while i < len(lineas) and lineas[i].strip() and not re.match(r"^(\||>|- |\d+\. |### |---|# |!\[)", lineas[i]):
                 par.append(lineas[i].strip())
                 i += 1
             out.append(("p", " ".join(par)))
@@ -1046,7 +1052,24 @@ def linea_tiempo():
     return "  " + "".join(s) + "\n"
 
 
+CAPTURAS = json.load(open(os.path.join(AQUI, "capturas-operaciones.json")))
+
+
+def captura(nombre, epigrafe):
+    """Una pantalla de Voltia PM con su epígrafe. Las altas (los paneles de
+    etapa) se limitan de alto para que no ocupen una hoja entera."""
+    return (f'  <figure style="margin: 16px 0 0">\n'
+            f'    <img src="/_blob/{CAPTURAS[nombre]}" alt="{en_linea(epigrafe)}" style="display: block; '
+            f'max-width: 100%; max-height: 520px; width: auto; margin: 0 auto; border: 1px solid {BORDE}; '
+            f'border-radius: 8px">\n'
+            f'    <figcaption style="margin-top: 7px; font-family: {SANS}; font-size: 12px; line-height: 1.45; '
+            f'color: {GRIS}; text-align: center">{en_linea(epigrafe)}</figcaption>\n'
+            f'  </figure>\n')
+
+
 def html_de(tipo, c):
+    if tipo == "captura":
+        return captura(*c)
     if tipo == "etapas_io":
         return etapas_io(*c)
     if tipo == "tiempo":
@@ -1383,12 +1406,12 @@ def construir():
             rotulo = t == "p" and re.fullmatch(r"\*\*[^*]{1,60}\*\*", c.strip()) is not None
             sid, st, sc = items[k + 1]
             presenta = t == "p" and st in ("hitos", "operaciones", "ventas", "ingenieria", "flujo", "etapas_cliente",
-                                           "pantalla", "etapas_io", "tiempo")
+                                           "pantalla", "etapas_io", "tiempo", "captura")
             if not (t == "h3" or rotulo or presenta or (t == "p" and c.rstrip().rstrip("*").endswith(":"))):
                 return 0
             # Un párrafo que presenta un dibujo viaja con el dibujo.
             if st in ("hitos", "operaciones", "ventas", "ingenieria", "flujo", "etapas_cliente", "etapas_io",
-                      "tiempo"):
+                      "tiempo", "captura"):
                 return alto(sid, BLOQUES[sid])
             if st == "tabla" and "cab" in ALTURAS.get(sid, {}):
                 return 16 + ALTURAS[sid]["cab"] + ALTURAS[sid]["filas"][0]

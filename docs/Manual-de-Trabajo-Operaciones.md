@@ -112,6 +112,8 @@ Hay dos fechas, y en el calendario de Voltia PM se ven distinto:
 - **La fecha tentativa** (con **rayas**): la agenda el gerente de Operaciones el mismo día que el proyecto entra a Validación. **Es interna: al cliente no se le dice.**
 - **La fecha confirmada** (en **color sólido**): la confirma el gerente de Operaciones, como mucho 2 días hábiles después del informe del capataz. Al confirmarla, **Voltia PM le avisa solo a Experiencia Solar** y le abre el pendiente de comunicársela al cliente. No hace falta mandarle un mensaje.
 
+![El calendario: las obras con rayas tienen la fecha tentativa; las de color sólido, la fecha confirmada.](captura:ops-calendario-mes)
+
 > **Al cliente la fecha de obra se le dice una sola vez: cuando ya se sabe.**
 
 Decirle una fecha y después otra confunde y le saca confianza. El mensaje que le manda Experiencia Solar es este:
@@ -123,6 +125,8 @@ Decirle una fecha y después otra confunde y le saca confianza. El mensaje que l
 Se reprograma en el calendario, **el mismo día** que se sabe, y se deja escrito el motivo. Experiencia Solar necesita el motivo para explicárselo al cliente ese mismo día. Si a un cliente le mueven la fecha tres veces, son tres avisos, no uno.
 
 **Voltia PM pide el motivo** cuando la obra ya tenía la fecha confirmada, tanto con el botón **Reprogramar** como al arrastrar la obra a otro día, y con ese motivo le genera el aviso a Experiencia Solar. Si la obra todavía era tentativa, o se la lleva a una fecha que ya pasó (para dejar anotado cuándo se hizo de verdad), no lo pide.
+
+![Reprogramar una obra con la fecha confirmada: Voltia PM pide el motivo, que le llega a Experiencia Solar.](captura:ops-calendario-reprogramar)
 
 > **Hasta que se publique la próxima versión de Voltia PM**, el botón Reprogramar todavía no pide el motivo: quien reprograma lo escribe en los **Comentarios** del proyecto y le avisa a Experiencia Solar.
 
@@ -186,6 +190,8 @@ Se entra desde **Proyectos** en el menú de arriba (en el celular, **Operaciones
 - Desde cada fila se puede **ver**, **archivar** o **eliminar** el proyecto. Tocar la fila abre el proyecto.
 - **Nuevo proyecto** crea uno a mano. Lo normal es que no haga falta: el proyecto se crea solo cuando el asesor marca el lead como ganado.
 
+![La lista de proyectos: arriba el buscador y los filtros; en cada fila, el plazo de la etapa en semáforo.](captura:ops-lista-proyectos)
+
 ### El proyecto, de arriba abajo
 
 **El encabezado.** El nombre del cliente, la potencia, la ubicación, el email, el teléfono, la dirección, la fecha tentativa de obra y en qué está el trámite de UTE. Al lado del nombre, el lápiz para **editar** los datos del proyecto. Botones:
@@ -197,11 +203,15 @@ Se entra desde **Proyectos** en el menú de arriba (en el celular, **Operaciones
 - La **fila de accesos** al mismo cliente en los otros módulos: Ventas, Ingeniería, Trámite UTE y Experiencia Solar.
 - A la derecha, la **cuenta regresiva** de la etapa en curso, en días hábiles (se pausa el fin de semana), el estado del proyecto y el **equipo instalador**.
 
+![El encabezado del proyecto: los datos del cliente, los botones y la fila de accesos a los otros módulos.](captura:ops-proyecto-encabezado)
+
 **La instalación.** Una línea con las fechas de obra, cuántos tramos tiene, el equipo y si está **Confirmada** o **Sin confirmar**. Debajo, lo que hay **agendado para esta obra**: mantenimientos, soportes y visitas.
 
 **El sistema fotovoltaico.** El inversor (marca, modelo, cantidad y fase) y los paneles. Si la venta lleva **más de un inversor**, cada uno es un **suministro** distinto, con su cuenta de UTE y su trámite: se agrega con **Agregar suministro**.
 
 **El recorrido por etapas.** Una tarjeta por etapa, con el color del área dueña, el avance, la cuenta regresiva si está en curso o *en plazo / N días tarde* si ya terminó, y sus subetapas. **Tocando una tarjeta se abre el panel de la etapa** (más abajo). En Voltia PM la etapa de obra se llama **Ejecución de Obra**.
+
+![El recorrido del proyecto: una tarjeta por etapa, con su plazo y sus subetapas. Tocando una se abre su panel.](captura:ops-proyecto-recorrido)
 
 **Etapa mostrada.** Quien tiene permiso puede adelantar o atrasar a mano la etapa que se muestra, y después **volver a automático**.
 
@@ -212,6 +222,8 @@ Se entra desde **Proyectos** en el menú de arriba (en el celular, **Operaciones
 - **Documentos UTE generados:** los que se imprimen para que firme el cliente. Se descargan en un ZIP; si todavía no están, **Generar ahora**.
 - **Documentos UTE firmados:** donde se sube el PDF con las firmas después de la obra (**Subir**).
 - **Documentos:** todos los demás archivos del proyecto. Se filtran por origen (manual, Ingeniería, lista de materiales, presupuesto, cálculos). Los que genera Ingeniería llevan su etiqueta (por ejemplo *Ingeniería · Unifilar v3*) y no se pueden borrar.
+
+![Los documentos de UTE de cada suministro: los generados para imprimir y los firmados que se suben después de la obra.](captura:ops-proyecto-documentos-ute)
 
 **Tareas.** Pendientes y completadas, con responsable, prioridad y comentarios. **+ Nueva tarea** para agregar una.
 
@@ -227,6 +239,12 @@ Se entra desde **Proyectos** en el menú de arriba (en el celular, **Operaciones
 - **UTE:** el trámite de UTE del proyecto, por suministro.
 - **Cronograma:** las etapas en el tiempo.
 
+![La pestaña Compras: la lista de materiales del proyecto, con el estado de cada uno.](captura:ops-pestana-compras)
+
+![La pestaña Materiales: lo que salió del stock para esta obra.](captura:ops-pestana-materiales)
+
+![La pestaña Costos: lo previsto contra lo real.](captura:ops-pestana-costos)
+
 ### El panel de una etapa
 
 Se abre tocando una tarjeta del recorrido. Tiene:
@@ -236,6 +254,8 @@ Se abre tocando una tarjeta del recorrido. Tiene:
 - **La etapa se completa sola** cuando todas sus subetapas están completas. Ahí aparece el aviso de **traspaso**: un cartel con a quién le pasa el trabajo, para confirmar con **Confirmar y notificar** (y una nota opcional para quien lo recibe).
 - Al pie, notas, comentarios y archivos de la etapa.
 
+![El panel de una etapa: las fechas, el responsable y las subetapas, cada una con su estado.](captura:ops-panel-compras)
+
 ### Las subetapas de Operaciones
 
 **Validación de Operaciones** (dueño: gerente de Operaciones):
@@ -244,6 +264,8 @@ Se abre tocando una tarjeta del recorrido. Tiene:
 - **Fecha de obra confirmada.** Su checklist: la fecha confirmada y el evento del calendario marcado como confirmado. **Se completa a mano**: confirmar la fecha en el calendario no la completa sola.
 - Cuando las dos están completas, el proyecto vuelve a Ingeniería para la Ingeniería Final, y a Experiencia Solar le llega el aviso.
 
+![El panel de Validación de Operaciones: las dos subetapas y, debajo, donde se carga el informe del capataz con foto, video y nota.](captura:ops-panel-validacion)
+
 **Compras** (dueño: Logística):
 
 - **Materiales listos:** la lista definitiva recibida de Ingeniería, con la documentación para UTE, el stock controlado y lo que faltaba, comprado.
@@ -251,10 +273,14 @@ Se abre tocando una tarjeta del recorrido. Tiene:
 - **Materiales recibidos en depósito:** recibidos y **verificados en cantidad y estado** (obligatorio).
 - Ninguna se completa sola: marcar los materiales como *Recibido* en la pestaña Compras no completa estas subetapas.
 
+![El panel de Compras, con sus tres subetapas.](captura:ops-panel-compras)
+
 **Ejecución de Obra** (dueño: gerente de Operaciones):
 
 - **Planificación y logística.**
 - **Control de costos**, que incluye registrar el material sobrante.
+
+![El panel de Ejecución de Obra: el botón para cargar las fotos y sus dos subetapas.](captura:ops-panel-obra)
 
 ### El calendario
 
@@ -263,9 +289,13 @@ Se abre tocando una tarjeta del recorrido. Tiene:
 - **Reprogramar:** se elige el tramo, se ponen las fechas nuevas y, si la fecha ya estaba confirmada, el motivo. Una obra puede tener **varios tramos** (por ejemplo, si se hace en dos partes): **+ Agregar tramo**.
 - Al confirmar la fecha, a Experiencia Solar le llega el aviso para comunicársela al cliente.
 
+![Una obra abierta en el calendario: confirmada o no, el equipo, los tramos y el botón Reprogramar.](captura:ops-calendario-detalle)
+
 ### Las fotos de obra
 
 **Subir fotos** carga varias a la vez; **Descargar todas** las baja juntas. El botón **Checklist de fotos** muestra la lista de las **23 fotos** que tiene que tener cada obra, y el PDF para firmar:
+
+![Las fotos de obra: Checklist de fotos, Descargar todas y Subir fotos.](captura:ops-obra-fotos)
 
 | Sección | Fotos |
 |---|---|
@@ -277,7 +307,11 @@ Se abre tocando una tarjeta del recorrido. Tiene:
 
 Al cerrar se anotan además el **número de precinto**, el **valor de la puesta a tierra** y si falta alguna foto. **Voltia PM no controla que estén las 23**: la lista es para consultar, y el control lo hace el capataz.
 
+![El checklist de fotos: las 23 fotos, por sección, y el PDF para firmar.](captura:ops-checklist-fotos)
+
 **El checklist de referencia** de la obra: una lista de controles (cableado, ajuste de conexiones, prueba de strings, puesta a tierra, montaje de paneles) que se marca OK o Pendiente, con observaciones.
+
+![Los videos de la obra, con su tipo, y el checklist de referencia.](captura:ops-obra-videos-checklist)
 
 ### Los videos
 
@@ -290,6 +324,8 @@ En **Capacitación** (menú de usuario) están los videos de puesta en marcha de
 ### Pagos a instaladores
 
 Es una pantalla aparte, **Pagos a instaladores**: por obra, el instalador, la fecha, cuánto se pagó, el saldo y el estado (pendiente, parcial o pagado). El instalador tercerizado ve sus cobros en **Mis cobros**.
+
+![Los pagos a instaladores: por obra, cuánto se pagó, el saldo y el estado.](captura:ops-pagos-instalador)
 
 ## 8 · Cuando algo sale mal
 
@@ -345,6 +381,8 @@ Si algo del proyecto no cierra en la casa del cliente, el capataz lo resuelve ah
 4. Revisar el relevamiento y la lista preliminar, y cargar el informe: hay **Foto**, **Video** y **Nota**, y un botón amarillo redondo para **grabar un audio**.
 5. En la misma pantalla, en **Informe del capataz**, cambiar el estado a **Completado**.
 
+![Donde se carga el informe del capataz: el panel de la etapa Validación de Operaciones.](captura:ops-panel-validacion)
+
 **Los estados del informe:** Pendiente · En progreso · Bloqueado · Completado. Mientras no diga **Completado**, el proyecto no avanza: no se puede confirmar la fecha y la Ingeniería Final no arranca. **Si no hay nada que cambiar, igual se marca Completado**, con una nota que lo diga. Si al relevamiento le falta algo para poder opinar, se marca **Bloqueado** y se avisa a quien hizo la visita y al gerente de Operaciones.
 
 ## 11 · Antes de salir a la obra
@@ -353,9 +391,7 @@ Si algo del proyecto no cierra en la casa del cliente, el capataz lo resuelve ah
 
 **La preparación de materiales.** La hace el capataz, con la lista de materiales definitiva, el día de preparación que acordó con Logística. Para ese día **todo tiene que estar en el local**: si falta algo, se avisa al gerente de Operaciones ese mismo día, no el día de la obra.
 
-**La entrega en la casa del cliente.** El capataz define con Logística si el material va el mismo día de la obra o el día anterior. Logística se lo pasa a Experiencia Solar, que le avisa al cliente el día y que alguien tiene que estar para recibirlo.
-
-> **Plantilla «Visita a la propiedad».** «Hola {nombre}, te aviso que el {día} entre {franja horaria} pasa el equipo por tu casa a {motivo de la visita}. No hace falta que estés, pero necesitamos {acceso requerido}. ¿Te queda bien ese día?»
+**La entrega en la casa del cliente.** El capataz define con Logística si el material va el mismo día de la obra o el día anterior, y **el capataz le avisa directo al cliente** el día, la franja horaria y que alguien tiene que estar para recibirlo (o qué acceso hace falta). Es de lo que el capataz habla directo con el cliente: horarios, accesos y materiales.
 
 **Lo que se lleva impreso:** los documentos de UTE para que firme el cliente, que se imprimen desde el proyecto en Voltia PM, en **Documentos UTE generados**.
 
@@ -477,6 +513,8 @@ Si el cliente le pregunta algo que no es de obra, **no lo manda a otro lado**: l
 
 **Todo lo que habla con el cliente y cualquier incidente**: algo que se rompió, un pedido que hizo, una queja al pasar. **Y todo lo que se resolvió distinto al proyecto**, con una foto.
 
+![Los comentarios del proyecto: ahí va lo del día de obra y lo que se resolvió distinto al proyecto.](captura:ops-pestana-comentarios)
+
 **Se anota desde el celular, en la etapa Obra del proyecto, en diez segundos.** No hace falta entrar a ningún otro módulo: aparece solo en el historial del cliente.
 
 > Si registrar cuesta, no se registra. Dos líneas valen más que un informe prolijo que nadie escribe.
@@ -580,7 +618,7 @@ Se hace el máximo esfuerzo (hasta 3 jabalinas, capítulo 13) y **se anota la me
 
 **El plazo.** 5 días hábiles.
 
-**Con el cliente.** **No lo contacta.** Si hay que coordinar una entrega en su casa, se coordina con el capataz y Experiencia Solar le avisa al cliente.
+**Con el cliente.** **No lo contacta.** Si hay que coordinar una entrega en su casa, se la pasa al capataz, que es quien habla con el cliente de la entrega.
 
 ## 19 · Las compras y la entrega
 
@@ -599,8 +637,7 @@ compra en la ferretería más cercana.
 
 1. Logística confirma qué día va a estar todo el material.
 2. El capataz define si el material va a la casa del cliente el mismo día de la obra o el día anterior.
-3. Logística se lo pasa a Experiencia Solar.
-4. Experiencia Solar le avisa al cliente el día y que alguien tiene que estar para recibirlo.
+3. El capataz le avisa al cliente el día, la franja horaria y que alguien tiene que estar para recibirlo.
 
 *A completar con Logística:* cómo se compra (proveedores, pedidos, aprobación de Finanzas), cómo se sigue un pedido, cómo se recibe en el local y cómo se maneja el stock en Voltia PM.
 
@@ -671,7 +708,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.4 | 5 de octubre de 2026 | Se reordena el manual con el mismo modelo que el de Experiencia Solar. Se agregan: al cliente la fecha de obra se le dice una sola vez, cuando está confirmada; el capítulo de seguridad, con la responsabilidad en cadena (operario, capataz, gerente de Operaciones) y las sanciones; la regla de los tres presupuestos para las compras en plaza; qué tiene que saber Operaciones de las otras áreas; por qué Operaciones es el área más crítica (todo atraso de otra área le cae a la obra) y qué tiene que estar para confirmar una fecha; la regla de que en obra el criterio del instalador le gana al del proyectista; dónde empieza y termina cada etapa, con lo que recibe y lo que entrega; los 12 días hasta la obra; todo el módulo de Proyectos de Voltia PM explicado (lista, proyecto, panel de etapa, subetapas de Operaciones, calendario, las 23 fotos, videos, pagos a instaladores); los mensajes al cliente citados enteros; las reglas del área; los criterios técnicos de obra; qué hacer cuando algo sale mal; las hojas para llevar a la obra; las reglas en una página y el glosario. |
+| 0.4 | 5 de octubre de 2026 | Se reordena el manual con el mismo modelo que el de Experiencia Solar. Se agregan: las capturas de Voltia PM en cada pantalla que se explica; la entrega de materiales la coordina el capataz con el cliente; al cliente la fecha de obra se le dice una sola vez, cuando está confirmada; el capítulo de seguridad, con la responsabilidad en cadena (operario, capataz, gerente de Operaciones) y las sanciones; la regla de los tres presupuestos para las compras en plaza; qué tiene que saber Operaciones de las otras áreas; por qué Operaciones es el área más crítica (todo atraso de otra área le cae a la obra) y qué tiene que estar para confirmar una fecha; la regla de que en obra el criterio del instalador le gana al del proyectista; dónde empieza y termina cada etapa, con lo que recibe y lo que entrega; los 12 días hasta la obra; todo el módulo de Proyectos de Voltia PM explicado (lista, proyecto, panel de etapa, subetapas de Operaciones, calendario, las 23 fotos, videos, pagos a instaladores); los mensajes al cliente citados enteros; las reglas del área; los criterios técnicos de obra; qué hacer cuando algo sale mal; las hojas para llevar a la obra; las reglas en una página y el glosario. |
 | 0.3 | 5 de octubre de 2026 | Se incorpora el material de Operaciones: el flujo antes de la obra con sus 9 pasos y plazos, la guía del informe del capataz, las 4 cosas que se cierran el día de obra, la guía de firmas de los 7 documentos de UTE y la puesta en marcha por marca. Sin contraseñas. |
 | 0.2 | 29 de septiembre de 2026 | Obra: para cerrar la obra, los sobrantes tienen que quedar retirados y el lugar limpio, también con cuadrilla tercerizada. |
 | 0.1 | 29 de septiembre de 2026 | Se crea el manual, con sus tres partes (Operaciones, Obra, Logística), a partir del detalle que estaba en el manual de trabajo general. |

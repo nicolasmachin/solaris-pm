@@ -1,0 +1,21 @@
+{
+ "_comentario": "Capturas del manual de Operaciones: nombre que usa el .md (captura:nombre) → id del asset en su canvas. Las sacas con capturas-operaciones.mjs.",
+ "ops-calendario-detalle": "fcae4e6f103857429d6d38785074fde1",
+ "ops-calendario-mes": "8f4a5b77c6b7f580d9f0ba9e16a54fee",
+ "ops-calendario-reprogramar": "162dc74d68a3edc27b471b78837b19f8",
+ "ops-checklist-fotos": "73d818401ea31c9a124d2d60143d2b02",
+ "ops-lista-proyectos": "049f97f9b6e9124e591548188288b60f",
+ "ops-obra-fotos": "740abf57fa4cd205237b9efa2ae08c8d",
+ "ops-obra-videos-checklist": "44e66c1c5901618d33b6bf7be0be61e3",
+ "ops-pagos-instalador": "e98fdf40930d6a30e81d53319e7683e8",
+ "ops-panel-compras": "00805185659f3d10691b8adc5074170e",
+ "ops-panel-obra": "6d9f15d8fc3d5a3faa7f0e8acdbc83aa",
+ "ops-panel-validacion": "a4d31fe76b192d50d85aac27d874cf4c",
+ "ops-pestana-comentarios": "48cbb8332819445b11083fb3065b73d4",
+ "ops-pestana-compras": "bed66553f490e8be3fd3fe0f86eb3d34",
+ "ops-pestana-costos": "dc6e74b7e0d0f245696ebab19b97152f",
+ "ops-pestana-materiales": "5e79d0985abf345b086819bf2d7483ec",
+ "ops-proyecto-documentos-ute": "3b38030aa1e539dacdfd7b9dcd4af4ea",
+ "ops-proyecto-encabezado": "681c6ce7182888821a65207a6010e212",
+ "ops-proyecto-recorrido": "3b97c96d771abf91e6788e9d1b71b09c"
+}
