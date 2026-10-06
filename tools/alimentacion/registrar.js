@@ -104,7 +104,7 @@ async function ensureFormulas(sheets, start, end) {
   });
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId: SPREADSHEET_ID,
-    requestBody: { requests: [copy(0, 4) /* A:D */, copy(9, 20) /* J:T */] },
+    requestBody: { requests: [copy(0, 4) /* A:D */, copy(9, 21) /* J:U (incluye Azucar agregada) */] },
   });
   console.log('  (fórmulas replicadas en las filas nuevas)');
 }
