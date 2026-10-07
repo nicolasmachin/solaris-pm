@@ -2,7 +2,9 @@
 set -eo pipefail
 
 DATE=$(date +%Y-%m-%d_%H-%M)
-BACKUP_DIR="/Users/nicolasmachin/Library/CloudStorage/OneDrive-Personal/1. Voltia/Cosas Nico/Backups"
+BACKUP_DIR="$HOME/Backups/voltia-pm"
+# Copia en Google Drive vía rclone (remoto "gdrive", configurado en la VPS de desarrollo)
+DRIVE_DIR="gdrive:Backups Voltia PM"
 FILENAME="voltiapm_backup_$DATE.sql.gz"
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 
@@ -28,6 +30,17 @@ echo "Backup guardado: $FILENAME ($FILESIZE)"
 
 find "$BACKUP_DIR" -name "voltiapm_backup_*.sql.gz" \
   -mtime +30 -delete
+
+if command -v rclone >/dev/null && rclone listremotes 2>/dev/null | grep -q '^gdrive:$'; then
+  if rclone copy "$BACKUP_DIR/$FILENAME" "$DRIVE_DIR" 2>/dev/null; then
+    echo "Copia subida a Google Drive."
+    rclone delete "$DRIVE_DIR" --min-age 30d --include "voltiapm_backup_*.sql.gz" 2>/dev/null || true
+  else
+    echo "AVISO: no se pudo subir a Google Drive. El backup quedó solo en $BACKUP_DIR."
+  fi
+else
+  echo "AVISO: rclone/gdrive no configurado. El backup quedó solo en $BACKUP_DIR."
+fi
 
 echo ""
 echo "2/3 — Commit de cambios..."
