@@ -44,12 +44,18 @@ function Modal({ title, onClose, children, maxWidth = 'max-w-md' }: { title: str
 
 // ─── Categoría — form ──────────────────────────────────────────────────────────
 
-function CategoryForm({ initial, onSuccess, onCancel }: { initial?: MaterialCategory | null; onSuccess: () => void; onCancel: () => void }) {
+function CategoryForm({ initial, categories, onSuccess, onCancel }: { initial?: MaterialCategory | null; categories: MaterialCategory[]; onSuccess: () => void; onCancel: () => void }) {
   const [nombre, setNombre] = useState(initial?.nombre ?? '');
   const [descripcion, setDescripcion] = useState(initial?.descripcion ?? '');
   const [activa, setActiva] = useState(initial?.activa ?? true);
+  const [parentId, setParentId] = useState(initial?.parentId ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Solo dos niveles: una subcategoría no puede ser padre. Y una categoría que
+  // ya tiene hijas no puede pasar a colgar de otra.
+  const rubros = categories.filter(c => c.esRubro && c.id !== initial?.id);
+  const tieneHijas = (initial?._count?.children ?? 0) > 0;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -61,10 +67,15 @@ function CategoryForm({ initial, onSuccess, onCancel }: { initial?: MaterialCate
           nombre,
           descripcion: descripcion || null,
           activa,
+          ...(tieneHijas ? {} : { parentId: parentId || null }),
         });
         toast.success('Categoría actualizada');
       } else {
-        await createMaterialCategory({ nombre, ...(descripcion ? { descripcion } : {}) });
+        await createMaterialCategory({
+          nombre,
+          ...(descripcion ? { descripcion } : {}),
+          ...(parentId ? { parentId } : {}),
+        });
         toast.success('Categoría creada');
       }
       onSuccess();
@@ -79,6 +90,24 @@ function CategoryForm({ initial, onSuccess, onCancel }: { initial?: MaterialCate
     <form onSubmit={submit} className="space-y-4">
       <div><label className={lbl}>Nombre *</label><input className={inp} value={nombre} onChange={e => setNombre(e.target.value)} required autoFocus /></div>
       <div><label className={lbl}>Descripción</label><textarea className={klass(inp, 'resize-none')} rows={2} value={descripcion} onChange={e => setDescripcion(e.target.value)} /></div>
+      <div>
+        <label className={lbl}>Depende de</label>
+        {tieneHijas ? (
+          <p className="text-xs text-[var(--color-text-muted)]">
+            Es un rubro con subcategorías, no puede colgar de otro.
+          </p>
+        ) : (
+          <>
+            <select className={inp} value={parentId} onChange={e => setParentId(e.target.value)}>
+              <option value="">— Es un rubro (primer nivel) —</option>
+              {rubros.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
+            </select>
+            <p className="text-[10px] text-[var(--color-text-muted)] mt-1">
+              Elegir un rubro la convierte en subcategoría suya. El catálogo tiene dos niveles.
+            </p>
+          </>
+        )}
+      </div>
       {initial && (
         <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
           <input type="checkbox" checked={activa} onChange={e => setActiva(e.target.checked)} />
@@ -114,12 +143,26 @@ function CategoriesPanel() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['material-categories'] }),
   });
 
-  function move(idx: number, dir: -1 | 1) {
+  // El listado viene como árbol (cada rubro seguido de sus subcategorías), así
+  // que mover por índice de la lista plana mezclaría niveles. Se reordena
+  // sólo entre hermanos: el backend asigna el orden dentro del nivel.
+  function move(cat: MaterialCategory, dir: -1 | 1) {
+    const hermanos = categories.filter(c => c.parentId === cat.parentId);
+    const idx = hermanos.findIndex(c => c.id === cat.id);
     const target = idx + dir;
-    if (target < 0 || target >= categories.length) return;
-    const next = categories.slice();
+    if (target < 0 || target >= hermanos.length) return;
+    const next = hermanos.slice();
     [next[idx], next[target]] = [next[target], next[idx]];
     reorderMut.mutate(next.map(c => c.id));
+  }
+
+  function esPrimerHermano(cat: MaterialCategory) {
+    const hermanos = categories.filter(c => c.parentId === cat.parentId);
+    return hermanos[0]?.id === cat.id;
+  }
+  function esUltimoHermano(cat: MaterialCategory) {
+    const hermanos = categories.filter(c => c.parentId === cat.parentId);
+    return hermanos[hermanos.length - 1]?.id === cat.id;
   }
 
   async function toggleActive(c: MaterialCategory) {
@@ -171,21 +214,29 @@ function CategoriesPanel() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border)]">
-              {categories.map((c, idx) => (
+              {categories.map((c) => (
                 <tr key={c.id} className={klass('hover:bg-[var(--color-bg-card-hover)] transition-colors', !c.activa && 'opacity-60')}>
                   <td className="px-4 py-2">
                     <div className="flex items-center gap-1">
-                      <button onClick={() => move(idx, -1)} disabled={idx === 0 || reorderMut.isPending} className="p-1 rounded hover:bg-[var(--color-border)] disabled:opacity-30">
+                      <button onClick={() => move(c, -1)} disabled={esPrimerHermano(c) || reorderMut.isPending} className="p-1 rounded hover:bg-[var(--color-border)] disabled:opacity-30">
                         <ChevronUp className="w-4 h-4" />
                       </button>
-                      <button onClick={() => move(idx, 1)} disabled={idx === categories.length - 1 || reorderMut.isPending} className="p-1 rounded hover:bg-[var(--color-border)] disabled:opacity-30">
+                      <button onClick={() => move(c, 1)} disabled={esUltimoHermano(c) || reorderMut.isPending} className="p-1 rounded hover:bg-[var(--color-border)] disabled:opacity-30">
                         <ChevronDown className="w-4 h-4" />
                       </button>
                     </div>
                   </td>
-                  <td className="px-4 py-2 font-medium text-[var(--color-text-primary)]">
-                    <div>{c.nombre}</div>
-                    {c.descripcion && <div className="text-xs text-[var(--color-text-muted)]">{c.descripcion}</div>}
+                  <td className={klass('px-4 py-2 text-[var(--color-text-primary)]', c.esRubro ? 'font-semibold' : 'font-medium')}>
+                    <div className={c.esRubro ? '' : 'pl-6'}>
+                      {!c.esRubro && <span className="text-[var(--color-text-muted)] mr-1">└</span>}
+                      {c.nombre}
+                      {c.esRubro && (c._count?.children ?? 0) > 0 && (
+                        <span className="ml-2 font-mono text-[10px] text-[var(--color-text-muted)]">
+                          {c._count?.children} subcategorías
+                        </span>
+                      )}
+                    </div>
+                    {c.descripcion && <div className={klass('text-xs text-[var(--color-text-muted)]', c.esRubro ? '' : 'pl-6')}>{c.descripcion}</div>}
                   </td>
                   <td className="px-4 py-2 text-[var(--color-text-muted)] tabular-nums">{c._count?.items ?? 0}</td>
                   <td className="px-4 py-2">
@@ -215,12 +266,12 @@ function CategoriesPanel() {
 
       {creating && (
         <Modal title="Nueva categoría" onClose={() => setCreating(false)}>
-          <CategoryForm onSuccess={() => { setCreating(false); qc.invalidateQueries({ queryKey: ['material-categories'] }); }} onCancel={() => setCreating(false)} />
+          <CategoryForm categories={categories} onSuccess={() => { setCreating(false); qc.invalidateQueries({ queryKey: ['material-categories'] }); }} onCancel={() => setCreating(false)} />
         </Modal>
       )}
       {editing && (
         <Modal title={`Editar "${editing.nombre}"`} onClose={() => setEditing(null)}>
-          <CategoryForm initial={editing} onSuccess={() => { setEditing(null); qc.invalidateQueries({ queryKey: ['material-categories'] }); }} onCancel={() => setEditing(null)} />
+          <CategoryForm initial={editing} categories={categories} onSuccess={() => { setEditing(null); qc.invalidateQueries({ queryKey: ['material-categories'] }); }} onCancel={() => setEditing(null)} />
         </Modal>
       )}
     </div>
@@ -302,10 +353,21 @@ function ItemForm({ initial, categories, suppliers, canSelectSupplier = true, on
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={lbl}>Categoría *</label>
+          {/* Los rubros que tienen subcategorías se muestran como encabezado y
+              no se pueden elegir: un ítem va siempre en la categoría más
+              específica, si no vuelve a quedar en la bolsa grande. */}
           <select className={inp} value={form.categoryId} onChange={e => setF('categoryId', e.target.value)} required>
-            {categories.filter(c => c.activa || c.id === form.categoryId).map(c => (
-              <option key={c.id} value={c.id}>{c.nombre}</option>
-            ))}
+            {categories
+              .filter(c => c.activa || c.id === form.categoryId)
+              .map(c => {
+                const esPadre = (c._count?.children ?? 0) > 0;
+                return (
+                  <option key={c.id} value={c.id} disabled={esPadre}>
+                    {c.esRubro ? c.nombre : `\u00a0\u00a0\u00a0· ${c.nombre}`}
+                    {esPadre ? ' —' : ''}
+                  </option>
+                );
+              })}
           </select>
         </div>
         <div>

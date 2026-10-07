@@ -5,7 +5,11 @@
 // de la lista por proyecto.
 //
 // Autorización: ver = INGENIERIA.VIEW (lo consume la herramienta al aplicar);
-// administrar = CONFIGURACION (mismo criterio que las categorías de material).
+// administrar = CONFIGURACION **o INGENIERIA**. La plantilla es la base de
+// trabajo de quien arma la lista de materiales y se ajusta seguido —qué va
+// siempre, qué se ofrece para elegir—; dejarla detrás de permisos de
+// administrador obligaba a pedirle el cambio a un admin cada vez. Mismo
+// criterio que el catálogo de materiales.
 
 import { Action, Module, PhaseType, Prisma } from "@prisma/client";
 import type { FastifyInstance } from "fastify";
@@ -16,6 +20,23 @@ import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize, authorizeAny } from "../middleware/authorize.middleware.js";
 import { badRequest, conflict, notFound } from "../utils/errors.js";
 import { serializeDate } from "../utils/serialization.js";
+
+/**
+ * Quién puede administrar plantillas. Espeja `useMaterialCatalogPermissions`
+ * en el cliente: si cambia acá, cambia allá.
+ */
+const adminPlantillasCreate = [
+  { module: Module.CONFIGURACION, action: Action.CREATE },
+  { module: Module.INGENIERIA, action: Action.CREATE },
+];
+const adminPlantillasEdit = [
+  { module: Module.CONFIGURACION, action: Action.EDIT },
+  { module: Module.INGENIERIA, action: Action.EDIT },
+];
+const adminPlantillasDelete = [
+  { module: Module.CONFIGURACION, action: Action.DELETE },
+  { module: Module.INGENIERIA, action: Action.DELETE },
+];
 
 interface TemplateItemRow {
   id: string;
@@ -157,7 +178,7 @@ export async function registerMaterialTemplatesRoutes(app: FastifyInstance) {
 
   app.post(
     "/material-templates",
-    { preHandler: authorize(Module.CONFIGURACION, Action.CREATE) },
+    { preHandler: authorizeAny(adminPlantillasCreate) },
     async (request) => {
       const body = templateCreateSchema.parse(request.body);
       const dup = await prisma.materialTemplate.findUnique({ where: { nombre: body.nombre } });
@@ -180,7 +201,7 @@ export async function registerMaterialTemplatesRoutes(app: FastifyInstance) {
 
   app.patch(
     "/material-templates/:id",
-    { preHandler: authorize(Module.CONFIGURACION, Action.EDIT) },
+    { preHandler: authorizeAny(adminPlantillasEdit) },
     async (request) => {
       const { id } = z.object({ id: z.string() }).parse(request.params);
       const body = templatePatchSchema.parse(request.body);
@@ -201,7 +222,7 @@ export async function registerMaterialTemplatesRoutes(app: FastifyInstance) {
 
   app.delete(
     "/material-templates/:id",
-    { preHandler: authorize(Module.CONFIGURACION, Action.DELETE) },
+    { preHandler: authorizeAny(adminPlantillasDelete) },
     async (request) => {
       const { id } = z.object({ id: z.string() }).parse(request.params);
       const existing = await prisma.materialTemplate.findUnique({
@@ -221,7 +242,7 @@ export async function registerMaterialTemplatesRoutes(app: FastifyInstance) {
   // Reemplaza el set completo de líneas de una plantilla.
   app.put(
     "/material-templates/:id/items",
-    { preHandler: authorize(Module.CONFIGURACION, Action.EDIT) },
+    { preHandler: authorizeAny(adminPlantillasEdit) },
     async (request) => {
       const { id } = z.object({ id: z.string() }).parse(request.params);
       const body = templateItemsSchema.parse(request.body);

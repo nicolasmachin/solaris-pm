@@ -268,7 +268,14 @@ function AddItemModal({ projectId, existingItemIds, canEdit, onClose }: { projec
                       onClick={() => toggleCat(c.id)}
                       className="w-full flex items-center justify-between px-3 py-2 bg-[var(--color-bg-card-hover)] text-left text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-border)] transition-colors"
                     >
-                      <span>{c.nombre}</span>
+                      {/* El rubro va como contexto: "Eléctrica › Cables". Los
+                          ítems cuelgan de la subcategoría, nunca del rubro. */}
+                      <span>
+                        {c.parentNombre && (
+                          <span className="text-[var(--color-text-muted)] font-normal">{c.parentNombre} › </span>
+                        )}
+                        {c.nombre}
+                      </span>
                       <span className="text-xs text-[var(--color-text-muted)] font-mono">{catItems.length} ítem{catItems.length !== 1 ? 's' : ''}</span>
                     </button>
                     {isOpen && (

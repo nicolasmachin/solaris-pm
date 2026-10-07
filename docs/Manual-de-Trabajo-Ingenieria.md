@@ -1,6 +1,6 @@
 # Manual de trabajo de Ingeniería
 
-**Voltia · Uruguay** · Versión 0.5 — 5 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.6 — 7 de octubre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ingeniería, juntos**: qué se hace, quién lo hace, en qué plazo, con qué
@@ -93,9 +93,41 @@ los videos, que al ganar el lead pasan al proyecto).
 > Estas herramientas cambian seguido: por eso el detalle está acá y no en el PGT.
 
 
-*Por escribir: el gabinete metálico está abajo; faltan el unifilar, la
-pre-ingeniería, la lista de materiales, los triángulos, la visita técnica y el
-Proyecto Final de Ingeniería.*
+### El catálogo de materiales, por rubro y subgrupo
+
+Los materiales que Voltia usa están en un catálogo único, en **Administración →
+Materiales**, ordenado en dos niveles: los **rubros** (Paneles solares,
+Inversores, Estructuras, Eléctrica, Consumibles) y, adentro de cada uno,
+**subgrupos**.
+
+Eléctrica es el rubro grande —más de la mitad del catálogo— y está abierta en:
+Cables, Canalización (caños, codos, cuplas, bandejas, cámaras), Protecciones
+(térmicas, diferenciales, descargadores, fusibles), Terminales y conexionado,
+Tableros y gabinetes, Puesta a tierra, y Fijación y varios.
+
+Esto importa al armar la lista de materiales de una obra: al agregar un ítem,
+los grupos se abren por subgrupo, así que para elegir el cable se entra a
+**Eléctrica › Cables** y se ven solo los cables, no las 175 cosas del rubro.
+
+**Un ítem nuevo se carga siempre en el subgrupo**, nunca en el rubro: los rubros
+que tienen subgrupos aparecen deshabilitados en el selector. Si un ítem queda en
+el rubro, no aparece en ningún subgrupo y hay que ir a buscarlo con el buscador.
+
+Crear o renombrar subgrupos lo hace el administrador. Dar de alta **ítems** del
+catálogo lo hace Ingeniería.
+
+### Las plantillas de lista de materiales
+
+La plantilla es el punto de partida de la lista de una obra: en vez de armarla
+desde cero, se aplica la plantilla que corresponde y se ajusta.
+
+**Las configura Ingeniería**, que es quien las usa: crear, editar y borrar
+plantillas se hace desde **Administración → Plantillas de materiales**, y se
+entra a esa sección aunque no se tenga el resto del panel de administración.
+
+*Por escribir: cómo se arma la lista de materiales con la plantilla; el
+unifilar, la pre-ingeniería, los triángulos, la visita técnica y el Proyecto
+Final de Ingeniería.*
 
 ---
 
@@ -176,6 +208,7 @@ deja como comentario en su etapa y le llega solo a Experiencia Solar.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.6 | 7 de octubre de 2026 | Se agrega el catálogo de materiales por rubro y subgrupo (Eléctrica abierta en Cables, Canalización, Protecciones, Terminales, Tableros, Puesta a tierra y Fijación), con la regla de cargar el ítem en el subgrupo y no en el rubro; y que las plantillas de lista de materiales las configura Ingeniería. |
 | 0.5 | 5 de octubre de 2026 | Nuevo lineamiento: en obra, el criterio del instalador le gana al del proyectista; lo que cambió en obra se pasa a los planos finales. |
 | 0.4 | 5 de octubre de 2026 | Se agrega, entre las herramientas, la lectura de los documentos de la obra desde el chat de Claude: qué puede leer, qué no, y cómo se le pide. |
 | 0.3 | 1 de octubre de 2026 | Se agregan las herramientas con que se trabaja: el módulo de Ingeniería de Voltia PM, la habilidad de Claude con los criterios de Voltia, Claude Design para los planos y el mapeo de materiales. Ingeniería no hace visita de relevamiento: trabaja con lo que trae la visita de venta. |

@@ -15,8 +15,12 @@ export interface MaterialCatalogPermissions {
   canEditItems: boolean;
   canDeleteItems: boolean;
   canManageCategories: boolean;
+  /** Administrar plantillas de lista de materiales. */
+  canManageTemplates: boolean;
   /** Alcanza para entrar a la sección Materiales del panel de Administración. */
   canAccessSection: boolean;
+  /** Alcanza para entrar a la sección Plantillas de materiales. */
+  canAccessTemplates: boolean;
 }
 
 export function useMaterialCatalogPermissions(): MaterialCatalogPermissions {
@@ -29,10 +33,18 @@ export function useMaterialCatalogPermissions(): MaterialCatalogPermissions {
   const ingCreate = usePermission("INGENIERIA", "CREATE");
   const ingEdit = usePermission("INGENIERIA", "EDIT");
 
+  const ingDelete = usePermission("INGENIERIA", "DELETE");
+
   const canCreateItems = configCreate || stockCreate || ingCreate;
   const canEditItems = configEdit || stockEdit || ingEdit;
   const canDeleteItems = configDelete || stockDelete;
   const canManageCategories = configCreate || configEdit || configDelete;
+
+  // Las plantillas las arma y las ajusta quien carga la lista de materiales:
+  // son su base de trabajo, no configuración del sistema. Espeja el
+  // `authorizeAny` de `material-templates.routes.ts`.
+  const canManageTemplates =
+    configCreate || configEdit || configDelete || ingCreate || ingEdit || ingDelete;
 
   // Entrar a Administración → Materiales no es lo mismo que poder tocar el
   // catálogo. STOCK queda deliberadamente afuera de este gate: esos roles ya dan
@@ -46,6 +58,8 @@ export function useMaterialCatalogPermissions(): MaterialCatalogPermissions {
     canEditItems,
     canDeleteItems,
     canManageCategories,
+    canManageTemplates,
     canAccessSection,
+    canAccessTemplates: canManageTemplates,
   };
 }

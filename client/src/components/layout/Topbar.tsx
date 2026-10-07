@@ -77,8 +77,9 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
   // Administración la abre el admin completo y también quien solo administra el
   // catálogo de materiales (ve nada más que esa sección adentro).
   const isFullAdmin = usePermission("USUARIOS", "VIEW");
-  const { canAccessSection: canManageMaterialCatalog } = useMaterialCatalogPermissions();
-  const canSeeAdmin = isFullAdmin || canManageMaterialCatalog;
+  const { canAccessSection: canManageMaterialCatalog, canAccessTemplates } =
+    useMaterialCatalogPermissions();
+  const canSeeAdmin = isFullAdmin || canManageMaterialCatalog || canAccessTemplates;
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 

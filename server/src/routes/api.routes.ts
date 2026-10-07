@@ -13640,6 +13640,8 @@ export async function registerApiRoutes(app: FastifyInstance) {
       nombre: z.string().min(1),
       descripcion: z.string().optional(),
       orden: z.number().int().optional(),
+      // Segundo nivel: la categoría cuelga de un rubro. Null = rubro.
+      parentId: z.string().nullable().optional(),
     }).strict();
 
     const categoryPatchSchema = z.object({
@@ -13647,7 +13649,40 @@ export async function registerApiRoutes(app: FastifyInstance) {
       descripcion: z.string().nullable().optional(),
       orden: z.number().int().optional(),
       activa: z.boolean().optional(),
+      parentId: z.string().nullable().optional(),
     }).strict();
+
+    /**
+     * El catálogo tiene dos niveles y no más: una subcategoría no puede colgar
+     * de otra subcategoría, ni una categoría de sí misma. Con 8 rubros y ~300
+     * ítems, un árbol más profundo complica la UI sin resolver nada.
+     */
+    async function validarPadreDeCategoria(parentId: string | null | undefined, selfId?: string) {
+      if (!parentId) return;
+      if (selfId && parentId === selfId) {
+        throw badRequest("CATEGORY_PARENT_SELF", "Una categoría no puede colgar de sí misma");
+      }
+      const padre = await prisma.materialCategory.findUnique({
+        where: { id: parentId },
+        select: { id: true, parentId: true },
+      });
+      if (!padre) throw badRequest("CATEGORY_PARENT_NOT_FOUND", "La categoría padre no existe");
+      if (padre.parentId) {
+        throw badRequest(
+          "CATEGORY_PARENT_IS_CHILD",
+          "Solo se permiten dos niveles: no se puede colgar de una subcategoría",
+        );
+      }
+      if (selfId) {
+        const tieneHijas = await prisma.materialCategory.count({ where: { parentId: selfId } });
+        if (tieneHijas > 0) {
+          throw badRequest(
+            "CATEGORY_HAS_CHILDREN",
+            "Esta categoría tiene subcategorías: no puede pasar a ser subcategoría de otra",
+          );
+        }
+      }
+    }
 
     app.get("/materials/categories", { preHandler: authorize(Module.INGENIERIA, Action.VIEW) }, async (request) => {
       const query = z.object({ activa: z.enum(["true", "false", "all"]).optional() }).parse(request.query);
@@ -13655,13 +13690,32 @@ export async function registerApiRoutes(app: FastifyInstance) {
       if (query.activa !== "all") where.activa = query.activa === "false" ? false : true;
       const categories = await prisma.materialCategory.findMany({
         where,
-        include: { _count: { select: { items: true } } },
+        include: { _count: { select: { items: true, children: true } } },
         orderBy: [{ orden: "asc" }, { nombre: "asc" }],
       });
-      return categories.map((c) => ({
+      // El orden de salida es el del árbol (rubro y debajo sus subcategorías),
+      // para que el cliente pueda pintarlo sin reordenar.
+      const porPadre = new Map<string, typeof categories>();
+      const rubros = categories.filter((c) => !c.parentId);
+      for (const c of categories) {
+        if (!c.parentId) continue;
+        if (!porPadre.has(c.parentId)) porPadre.set(c.parentId, []);
+        porPadre.get(c.parentId)!.push(c);
+      }
+      const ordenadas = rubros.flatMap((r) => [r, ...(porPadre.get(r.id) ?? [])]);
+      // Las huérfanas (padre inactivo y filtrado) se agregan al final para que
+      // nunca desaparezca un ítem del listado.
+      const vistas = new Set(ordenadas.map((c) => c.id));
+      for (const c of categories) if (!vistas.has(c.id)) ordenadas.push(c);
+
+      const nombrePorId = new Map(categories.map((c) => [c.id, c.nombre]));
+      return ordenadas.map((c) => ({
         id: c.id, nombre: c.nombre, descripcion: c.descripcion, orden: c.orden, activa: c.activa,
+        parentId: c.parentId,
+        parentNombre: c.parentId ? nombrePorId.get(c.parentId) ?? null : null,
+        esRubro: !c.parentId,
         createdAt: serializeDate(c.createdAt), updatedAt: serializeDate(c.updatedAt),
-        _count: c._count,
+        _count: { items: c._count.items, children: c._count.children },
       }));
     });
 
@@ -13669,7 +13723,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const body = categoryCreateSchema.parse(request.body);
       const dup = await prisma.materialCategory.findUnique({ where: { nombre: body.nombre } });
       if (dup) throw conflict("CATEGORY_NAME_EXISTS", "Ya existe una categoría con ese nombre");
-      const last = await prisma.materialCategory.findFirst({ orderBy: { orden: "desc" } });
+      await validarPadreDeCategoria(body.parentId);
+      // El orden se cuenta dentro del nivel: entre rubros, o entre las
+      // subcategorías de un mismo rubro.
+      const last = await prisma.materialCategory.findFirst({
+        where: { parentId: body.parentId ?? null },
+        orderBy: { orden: "desc" },
+      });
       const orden = body.orden ?? ((last?.orden ?? 0) + 1);
       return prisma.materialCategory.create({ data: { ...body, orden } });
     });
@@ -13683,6 +13743,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
         const dup = await prisma.materialCategory.findUnique({ where: { nombre: body.nombre } });
         if (dup) throw conflict("CATEGORY_NAME_EXISTS", "Ya existe una categoría con ese nombre");
       }
+      if (body.parentId !== undefined) await validarPadreDeCategoria(body.parentId, id);
       return prisma.materialCategory.update({ where: { id }, data: body });
     });
 
@@ -13690,11 +13751,13 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const { id } = z.object({ id: z.string() }).parse(request.params);
       const existing = await prisma.materialCategory.findUnique({
         where: { id },
-        include: { _count: { select: { items: true } } },
+        include: { _count: { select: { items: true, children: true } } },
       });
       if (!existing) throw notFound("CATEGORY_NOT_FOUND", "Categoría no encontrada");
-      if (existing._count.items > 0) {
-        // soft delete: desactivar
+      // Un rubro con subcategorías se desactiva, nunca se borra: borrarlo
+      // dejaría las subcategorías colgando de la nada (el FK es SET NULL) y
+      // sus ítems aparecerían sueltos en el listado.
+      if (existing._count.items > 0 || existing._count.children > 0) {
         await prisma.materialCategory.update({ where: { id }, data: { activa: false } });
         return { success: true, deactivated: true };
       }
@@ -13794,7 +13857,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const items = await prisma.materialItem.findMany({
         where,
         include: {
-          category: { select: { id: true, nombre: true, orden: true, activa: true } },
+          category: { select: { id: true, nombre: true, orden: true, activa: true, parentId: true } },
           defaultSupplier: { select: { id: true, nombre: true } },
           _count: { select: { projectMaterials: true } },
         },
@@ -13808,7 +13871,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const item = await prisma.materialItem.findUnique({
         where: { id },
         include: {
-          category: { select: { id: true, nombre: true, orden: true, activa: true } },
+          category: { select: { id: true, nombre: true, orden: true, activa: true, parentId: true } },
           defaultSupplier: { select: { id: true, nombre: true } },
           _count: { select: { projectMaterials: true } },
         },
@@ -13845,7 +13908,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const item = await prisma.materialItem.create({
         data: body,
         include: {
-          category: { select: { id: true, nombre: true, orden: true, activa: true } },
+          category: { select: { id: true, nombre: true, orden: true, activa: true, parentId: true } },
           defaultSupplier: { select: { id: true, nombre: true } },
         },
       });
@@ -13868,7 +13931,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const updated = await prisma.materialItem.update({
         where: { id }, data: body,
         include: {
-          category: { select: { id: true, nombre: true, orden: true, activa: true } },
+          category: { select: { id: true, nombre: true, orden: true, activa: true, parentId: true } },
           defaultSupplier: { select: { id: true, nombre: true } },
         },
       });

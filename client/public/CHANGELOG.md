@@ -1,6 +1,20 @@
 # Novedades
 
-## v11.8
+## v11.9
+
+### 7 de octubre de 2026
+
+#### El catálogo de materiales se ordena en subgrupos
+
+- **Eléctrica** tenía adentro 175 de los 307 ítems del catálogo: cables, caños, codos, bandejas, térmicas, diferenciales, tableros, terminales y jabalinas, todo junto. Por eso buscar un cable obligaba a recorrer el rubro entero.
+- Ahora el catálogo tiene **dos niveles**: los rubros de siempre y, adentro, subgrupos. Eléctrica quedó abierta en **Cables · Canalización · Protecciones · Terminales y conexionado · Tableros y gabinetes · Puesta a tierra · Fijación y varios**.
+- Al **agregar un ítem a la lista de un proyecto**, los grupos ahora se abren por subgrupo y muestran de qué rubro son ("Eléctrica › Cables"), así se llega al cable sin pasar por las térmicas.
+- En **Administración → Materiales** las subcategorías se ven indentadas debajo de su rubro, y al crear una categoría se elige de qué rubro cuelga. Un ítem nuevo se carga siempre en el subgrupo, no en el rubro.
+
+#### Las plantillas de materiales las configura Ingeniería
+
+- Administrar las **plantillas de lista de materiales** ya no es solo del administrador: también lo puede hacer **Ingeniería**, que es quien las usa. Crear, editar y borrar plantillas, y entrar a esa sección de Administración aunque no tenga el resto del panel.
+- Las **categorías del catálogo** siguen siendo del administrador: definen la estructura del catálogo y de los PDF.
 
 ### 5 de octubre de 2026
 

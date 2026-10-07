@@ -3221,11 +3221,15 @@ export function Admin() {
   // permisos, configuración del sistema, reglas) no le corresponde y sus
   // endpoints le darían 403.
   const isFullAdmin = usePermission("USUARIOS", "VIEW");
-  const { canAccessSection: canManageMaterialCatalog } = useMaterialCatalogPermissions();
-  const allowedTabs = useMemo(
-    () => (isFullAdmin ? undefined : new Set(canManageMaterialCatalog ? ["materiales"] : [])),
-    [isFullAdmin, canManageMaterialCatalog],
-  );
+  const { canAccessSection: canManageMaterialCatalog, canAccessTemplates } =
+    useMaterialCatalogPermissions();
+  const allowedTabs = useMemo(() => {
+    if (isFullAdmin) return undefined;
+    const tabs: string[] = [];
+    if (canManageMaterialCatalog) tabs.push("materiales");
+    if (canAccessTemplates) tabs.push("plantillas-materiales");
+    return new Set(tabs);
+  }, [isFullAdmin, canManageMaterialCatalog, canAccessTemplates]);
 
   const defaultTab = allowedTabs ? ([...allowedTabs][0] ?? DEFAULT_TAB) : DEFAULT_TAB;
   const tabIsAvailable = (tab: string | null): tab is string =>

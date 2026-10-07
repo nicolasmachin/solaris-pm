@@ -37,8 +37,9 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
   // Ver Topbar: además del admin completo, entra quien administra el catálogo
   // de materiales.
   const isFullAdmin = usePermission("USUARIOS", "VIEW");
-  const { canAccessSection: canManageMaterialCatalog } = useMaterialCatalogPermissions();
-  const canSeeAdmin = isFullAdmin || canManageMaterialCatalog;
+  const { canAccessSection: canManageMaterialCatalog, canAccessTemplates } =
+    useMaterialCatalogPermissions();
+  const canSeeAdmin = isFullAdmin || canManageMaterialCatalog || canAccessTemplates;
   const panelRef = useRef<HTMLDivElement>(null);
   const firstLinkRef = useRef<HTMLAnchorElement>(null);
 

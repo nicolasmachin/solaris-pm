@@ -23,6 +23,29 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "11.9",
+  date: "7 de octubre de 2026",
+  sections: [
+    {
+      title: "El catálogo de materiales se ordena en subgrupos",
+      items: [
+        "Eléctrica tenía adentro 175 de los 307 ítems del catálogo: cables, caños, bandejas, térmicas, tableros y jabalinas, todo junto. Buscar un cable obligaba a recorrer el rubro entero.",
+        "Ahora el catálogo tiene dos niveles. Eléctrica quedó abierta en Cables · Canalización · Protecciones · Terminales y conexionado · Tableros y gabinetes · Puesta a tierra · Fijación y varios.",
+        'Al agregar un ítem a la lista de un proyecto, los grupos se abren por subgrupo y muestran de qué rubro son ("Eléctrica › Cables").',
+        "En Administración → Materiales las subcategorías se ven debajo de su rubro, y al crear una categoría se elige de qué rubro cuelga.",
+      ],
+    },
+    {
+      title: "Las plantillas de materiales las configura Ingeniería",
+      items: [
+        "Administrar las plantillas de lista de materiales ya no es solo del administrador: también lo puede hacer Ingeniería, que es quien las usa.",
+        "Las categorías del catálogo siguen siendo del administrador: definen la estructura del catálogo y de los PDF.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_11_8: Release = {
   version: "11.8",
   date: "5 de octubre de 2026",
   sections: [
@@ -417,6 +440,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "11.8",
+    shortDate: "5 oct",
+    highlights: RELEASE_11_8.sections.map((sec) => sec.title),
+  },
   {
     version: "11.7",
     shortDate: "2 oct",

@@ -2464,12 +2464,26 @@ model ClientInteraction {
 
 // ─── Catálogo de materiales ──────────────────────────────────────────────────
 
+// Categorías del catálogo de materiales, en DOS NIVELES.
+//
+// El segundo nivel existe porque "Electrica" juntaba 175 de los 307 ítems del
+// catálogo —cables, caños, térmicas, tableros, terminales y jabalinas en la
+// misma bolsa—, y así no se puede ofrecer "elegí el cable" sin hacer scroll por
+// todo el rubro. Las categorías de primer nivel (`parentId = null`) siguen
+// siendo las de siempre; las de segundo cuelgan de una de ellas.
+//
+// Los ítems se cuelgan de la categoría más específica que exista: si el rubro
+// tiene subcategorías, van en una de ellas.
 model MaterialCategory {
   id          String  @id @default(cuid())
   nombre      String  @unique
   descripcion String?
   orden       Int     @default(0)
   activa      Boolean @default(true)
+
+  parentId String?
+  parent   MaterialCategory?  @relation("MaterialCategoryTree", fields: [parentId], references: [id])
+  children MaterialCategory[] @relation("MaterialCategoryTree")
 
   items MaterialItem[]
 
@@ -2478,6 +2492,7 @@ model MaterialCategory {
 
   @@index([activa])
   @@index([orden])
+  @@index([parentId])
   @@map("material_categories")
 }
 

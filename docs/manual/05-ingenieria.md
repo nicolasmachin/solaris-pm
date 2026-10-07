@@ -155,7 +155,36 @@ puede editar la fila ahí mismo.
 - **Ítems**: buscador por nombre/descripción, filtro por categoría y check
   "Mostrar inactivos". Botón **Nuevo ítem**, y por fila lápiz (editar), interruptor
   (activar/desactivar) y cruz (eliminar).
-- **Categorías**: alta, renombrado, reordenamiento y baja.
+- **Categorías**: alta, renombrado, reordenamiento y baja. Las subcategorías se
+  ven indentadas debajo de su rubro y el reordenamiento es **entre hermanas**
+  (una subcategoría se mueve dentro de su rubro, no sobre toda la lista).
+
+### Dos niveles de categoría
+
+El catálogo tiene **rubros** (primer nivel) y **subcategorías** (segundo). No
+hay un tercer nivel: el backend lo rechaza (`CATEGORY_PARENT_IS_CHILD`), y una
+categoría que ya tiene hijas no puede pasar a colgar de otra
+(`CATEGORY_HAS_CHILDREN`).
+
+Existe porque **"Electrica" juntaba 175 de los 307 ítems**: cables, caños,
+codos, bandejas, térmicas, diferenciales, tableros, terminales y jabalinas en la
+misma bolsa. Con eso no se puede ofrecer "elegí el cable" sin recorrer el rubro
+entero, que es lo que hacía inusable la carga de la lista de materiales.
+
+Hoy Eléctrica está abierta en: Cables (36), Canalización (51), Protecciones
+(29), Terminales y conexionado (28), Tableros y gabinetes (13), Puesta a tierra
+(5), Fijación y varios (8). Los conteos son del catálogo local al momento de
+escribir esto; en producción pueden diferir.
+
+El reparto lo hizo `server/prisma/scripts/seed-subcategorias-electrica.ts`,
+**idempotente**: crea las subcategorías que falten y solo mueve los ítems que
+todavía cuelgan del rubro padre, así que un ítem reclasificado a mano no se
+pisa. Tiene `--dry-run` y reporta al final lo que cayó en "Fijación y varios",
+que es el cajón de sastre a revisar.
+
+**Los ítems van siempre en la categoría más específica.** En el formulario del
+ítem, los rubros que tienen subcategorías aparecen deshabilitados: si un ítem
+quedara en el rubro, vuelve a la bolsa grande y no aparece en ningún subgrupo.
 
 **Ingeniería entra a Administración viendo únicamente esta sección.** El sidebar
 se filtra (`allowedTabs` en `AdminSidebar`) y el resto de las secciones —usuarios,
@@ -191,11 +220,18 @@ no tiene `FINANZAS:VIEW` el campo no se le muestra (la query ni se dispara) y el
 | `PATCH /materials/items/:id` | `CONFIGURACION:EDIT` **o** `STOCK:EDIT` **o** `INGENIERIA:EDIT` |
 | `DELETE /materials/items/:id` | `CONFIGURACION:DELETE` **o** `STOCK:DELETE` |
 | `POST`/`PATCH`/`DELETE /materials/categories` | `CONFIGURACION:CREATE` / `EDIT` / `DELETE` |
+| `POST`/`PATCH`/`DELETE /material-templates` | `CONFIGURACION` **o** `INGENIERIA` (CREATE/EDIT/DELETE) |
 
 Con la matriz vigente, **crear y editar ítems** lo pueden hacer: `ADMIN`,
 `INGENIERIA` y `GERENTE_INGENIERIA` (por `INGENIERIA`), y `CAPATAZ`, `FINANZAS`,
 `GERENTE_FINANZAS`, `GERENTE_OPERACIONES`, `INSTALADOR_TERCERIZADO`, `LOGISTICA`
 y `OPERACIONES` (por `STOCK`, desde la pantalla de Stock).
+
+Las **plantillas de lista de materiales** las administra también `INGENIERIA`:
+son la base de trabajo de quien arma la lista y se ajustan seguido, así que
+dejarlas detrás de permisos de administrador obligaba a pedir el cambio cada
+vez. Las **categorías**, en cambio, siguen siendo de `CONFIGURACION`: definen la
+estructura del catálogo y de los PDF.
 
 **Ver la sección en Administración es más restrictivo que el endpoint**:
 `canAccessSection` exige `CONFIGURACION` o `INGENIERIA:CREATE/EDIT`, y deja

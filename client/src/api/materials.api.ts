@@ -8,10 +8,10 @@ import { todayLocalISO } from '../utils/date';
 export const getMaterialCategories = (params?: { activa?: 'true' | 'false' | 'all' }) =>
   apiClient.get<MaterialCategory[]>('/api/materials/categories', { params }).then(r => r.data);
 
-export const createMaterialCategory = (body: { nombre: string; descripcion?: string; orden?: number }) =>
+export const createMaterialCategory = (body: { nombre: string; descripcion?: string; orden?: number; parentId?: string | null }) =>
   apiClient.post<MaterialCategory>('/api/materials/categories', body).then(r => r.data);
 
-export const patchMaterialCategory = (id: string, body: Partial<{ nombre: string; descripcion: string | null; orden: number; activa: boolean }>) =>
+export const patchMaterialCategory = (id: string, body: Partial<{ nombre: string; descripcion: string | null; orden: number; activa: boolean; parentId: string | null }>) =>
   apiClient.patch<MaterialCategory>(`/api/materials/categories/${id}`, body).then(r => r.data);
 
 export const deleteMaterialCategory = (id: string) =>

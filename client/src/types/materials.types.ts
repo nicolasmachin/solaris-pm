@@ -1,14 +1,22 @@
 import type { Moneda } from './finance.types';
 
+/**
+ * Categoría del catálogo, en dos niveles: los rubros (`esRubro`, sin padre) y
+ * sus subcategorías. El backend ya devuelve la lista ordenada como árbol —cada
+ * rubro seguido de sus hijas—, así que alcanza con recorrerla en orden.
+ */
 export interface MaterialCategory {
   id: string;
   nombre: string;
   descripcion: string | null;
   orden: number;
   activa: boolean;
+  parentId: string | null;
+  parentNombre: string | null;
+  esRubro: boolean;
   createdAt: string;
   updatedAt: string;
-  _count?: { items: number };
+  _count?: { items: number; children?: number };
 }
 
 export interface MaterialItem {
@@ -29,7 +37,7 @@ export interface MaterialItem {
   bajoMinimo: boolean;
   createdAt: string;
   updatedAt: string;
-  category?: { id: string; nombre: string; orden: number; activa: boolean };
+  category?: { id: string; nombre: string; orden: number; activa: boolean; parentId?: string | null };
   defaultSupplier?: { id: string; nombre: string };
   _count?: { projectMaterials: number };
 }
