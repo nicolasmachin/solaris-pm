@@ -51,6 +51,11 @@ voltia-pm/
 
 Toda la operación es vía Docker Compose desde la raíz del repo.
 
+> **Desde oct-2026 el desarrollo vive en la VPS `Voltia-Desarrollo` (179.27.98.89, Antel), no en la Mac.**
+> Se entra con VS Code Remote-SSH (alias `voltia-dev`, usuario `nicolas`) y los puertos se abren por el túnel.
+> El firewall corta todo acceso de internet a los contenedores (regla `DOCKER-USER` en `/etc/ufw/after.rules`):
+> no publicar puertos "para probar rápido". No levantar ahí los bots que también corren en prod (mismos tokens).
+
 ```bash
 # Primera vez (build + levantar)
 docker compose up -d --build
@@ -100,7 +105,7 @@ docker compose exec server npx prisma studio
 
 `bash save.sh` desde la raíz hace en una sola pasada:
 
-1. `pg_dump` comprimido del Postgres dockerizado a OneDrive (`Backups/voltiapm_backup_<fecha>.sql.gz`), con purga de backups > 30 días.
+1. `pg_dump` comprimido del Postgres dockerizado a `~/Backups/voltia-pm/voltiapm_backup_<fecha>.sql.gz` y copia a Google Drive (carpeta "Backups Voltia PM") vía rclone, remoto `gdrive` configurado en la VPS de desarrollo. Purga de backups > 30 días en los dos lados. Si rclone no está configurado o falla, avisa y sigue (queda la copia local).
 2. `git add -A && git commit -m "chore: guardado automático <fecha>"` (skip si no hay cambios).
 3. `git push` a GitHub.
 
