@@ -75,10 +75,16 @@ export function kwhMes(c: CargaJustificacion): number {
 export function balance(d: DatosJustificacion) {
   const incrementoMensual = Math.round(d.cargas.reduce((a, c) => a + kwhMes(c), 0) * 10) / 10;
   const incrementoAnual = Math.round(incrementoMensual * 12);
-  const consumoProyectado = Math.round(nz(d.consumoAnualActualKwh)) + incrementoAnual;
+  // Misma regla que calcularBalance() del server: sin consumo cargado pero con
+  // la potencia que dijo UTE, el consumo actual se deduce de esa potencia.
+  const consumoEstimadoDesdeUte = nz(d.consumoAnualActualKwh) <= 0 && nz(d.potenciaUteKw) > 0;
+  const consumoActual = Math.round(
+    consumoEstimadoDesdeUte ? nz(d.potenciaUteKw) * nz(d.productividadKwhKw) : nz(d.consumoAnualActualKwh),
+  );
+  const consumoProyectado = consumoActual + incrementoAnual;
   const generacion = Math.round(nz(d.potenciaSolicitadaKw) * nz(d.productividadKwhKw));
   const potenciaJustificada = d.productividadKwhKw > 0 ? Math.floor((consumoProyectado / d.productividadKwhKw) * 100) / 100 : 0;
-  return { incrementoMensual, incrementoAnual, consumoProyectado, generacion, potenciaJustificada, cumple: generacion <= consumoProyectado };
+  return { incrementoMensual, incrementoAnual, consumoActual, consumoEstimadoDesdeUte, consumoProyectado, generacion, potenciaJustificada, cumple: generacion <= consumoProyectado };
 }
 
 export function fmt(v: number, dec = 0): string {

@@ -7,6 +7,7 @@
 #### El inversor entra en la plantilla de materiales
 
 - La plantilla **Base** ahora trae el **inversor Growatt de 6 kW**, en cero como el resto. Si la obra lleva otro, se cambia con **⇄**.
+- Al cargar cantidades, **Enter** guarda y pasa directo a la cantidad siguiente (**Shift + Enter**, a la anterior): la lista se completa de corrido, sin el mouse.
 - En el catálogo, inversores, medidores, dongles y el Shine pasan a un rubro nuevo, **Inversor y monitoreo**, con dos grupos: **Inversores** (monofásicos y trifásicos juntos, para poder pasar de uno a otro con ⇄) y **Monitoreo y medición**.
 
 #### Arreglos

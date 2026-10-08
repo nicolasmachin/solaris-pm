@@ -259,7 +259,13 @@ function drawTablaBalance(doc: PDFKit.PDFDocument, f: Fonts, b: Balance): void {
   const filasConsumo: [string, string, boolean][] =
     b.consumoAnualActualKwh > 0
       ? [
-          ["Consumo anual actual de la cuenta", `${fmtNum(b.consumoAnualActualKwh)} kWh`, false],
+          [
+            b.consumoActualEstimadoDesdeUte
+              ? `Consumo anual actual de la cuenta (según UTE: ${fmtNum(b.consumoAnualActualKwh / b.productividadKwhKw, 2)} kW × ${fmtNum(b.productividadKwhKw)})`
+              : "Consumo anual actual de la cuenta",
+            `${fmtNum(b.consumoAnualActualKwh)} kWh`,
+            false,
+          ],
           ["Incremento anual estimado (nuevas cargas × 12)", `${fmtNum(b.incrementoAnualKwh)} kWh`, false],
           ["Consumo anual proyectado", `${fmtNum(b.consumoAnualProyectadoKwh)} kWh`, true],
         ]

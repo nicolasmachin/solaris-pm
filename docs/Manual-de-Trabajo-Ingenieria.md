@@ -247,8 +247,10 @@ Cómo se arma la lista de una obra:
    se toca.
 2. La lista se ve **por secciones**, iguales a los subgrupos del catálogo
    (Eléctrica › Cables, Eléctrica › Protecciones…). Se recorre sección por
-   sección completando cantidades. Los renglones en cero tienen la casilla
-   resaltada y cada sección dice cuántos le faltan.
+   sección completando cantidades: **Enter** guarda la cantidad y pasa a la
+   siguiente (**Shift + Enter** vuelve a la anterior), así se completa de
+   corrido sin el mouse. Los renglones en cero tienen la casilla resaltada y
+   cada sección dice cuántos le faltan.
 3. Cuando un renglón no es la variante que lleva esta obra, se toca **⇄** al
    lado del nombre y se elige la que va. Solo ofrece materiales del **mismo
    subgrupo**. Se puede cambiar mientras el material está **Pendiente**: si ya se
@@ -353,7 +355,7 @@ deja como comentario en su etapa y le llega solo a Experiencia Solar.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.9 | 8 de octubre de 2026 | En el informe de justificación de potencia, el consumo del último año pasa a ser un dato que se carga solo si se conoce: la factura no lo trae y en una cuenta nueva no existe. La plantilla Base de materiales trae el inversor Growatt de 6 kW, que se cambia en el renglón si la obra lleva otro; en el catálogo, el rubro Inversor y monitoreo reemplaza a los de inversores monofásicos y trifásicos, con dos subgrupos: Inversores y Monitoreo y medición. |
+| 0.9 | 8 de octubre de 2026 | En el informe de justificación de potencia, el consumo del último año pasa a ser un dato que se carga solo si se conoce: la factura no lo trae y en una cuenta nueva no existe. La plantilla Base de materiales trae el inversor Growatt de 6 kW, que se cambia en el renglón si la obra lleva otro; en el catálogo, el rubro Inversor y monitoreo reemplaza a los de inversores monofásicos y trifásicos, con dos subgrupos: Inversores y Monitoreo y medición. Al cargar cantidades, Enter pasa a la siguiente. |
 | 0.8 | 7 de octubre de 2026 | La lista de materiales se arma desde una sola plantilla, Base, con las cantidades en cero: se agrega cómo se arma la lista paso a paso, el cambio de variante en el mismo renglón, por qué no hay una plantilla por tipo de conexión y que un material en cero no sale para compras. En el catálogo se suma el rubro Monitoreo y medición. |
 | 0.7 | 7 de octubre de 2026 | Nuevo lineamiento: cuando UTE recorta la potencia pedida por el balance anual, Ingeniería contesta con un informe de justificación de potencia. Se agrega la herramienta que arma ese informe en Voltia PM, paso por paso. |
 | 0.6 | 7 de octubre de 2026 | Se agrega el catálogo de materiales por rubro y subgrupo (Eléctrica abierta en Cables, Canalización, Protecciones, Terminales, Tableros, Puesta a tierra y Fijación), con la regla de cargar el ítem en el subgrupo y no en el rubro; y que las plantillas de lista de materiales las configura Ingeniería. |

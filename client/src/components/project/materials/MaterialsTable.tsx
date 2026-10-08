@@ -313,14 +313,26 @@ function QuantityInput({
       onChange={(e) => setDraft(e.target.value)}
       onBlur={commit}
       onKeyDown={(e) => {
-        if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-        else if (e.key === 'Escape') {
+        if (e.key === 'Enter') {
+          // Enter guarda y salta a la cantidad siguiente (Shift+Enter, a la
+          // anterior): la plantilla Base se completa de corrido, sin mouse.
+          const el = e.target as HTMLInputElement;
+          const all = Array.from(document.querySelectorAll<HTMLInputElement>('input[data-qty-input]'));
+          const next = all[all.indexOf(el) + (e.shiftKey ? -1 : 1)];
+          e.preventDefault();
+          el.blur();
+          if (next) {
+            next.focus();
+            next.select();
+          }
+        } else if (e.key === 'Escape') {
           setDraft(String(value));
           (e.target as HTMLInputElement).blur();
         }
       }}
       onFocus={(e) => e.target.select()}
-      title={zero ? 'Falta la cantidad' : undefined}
+      data-qty-input=""
+      title={zero ? 'Falta la cantidad · Enter pasa a la siguiente' : 'Enter pasa a la siguiente'}
       className={`w-16 px-1.5 py-0.5 text-right text-xs tabular-nums bg-[var(--color-bg-app)] text-[var(--color-text-primary)] border rounded focus:outline-none focus:border-[var(--color-accent)] disabled:opacity-50 ${
         zero ? 'border-[var(--color-warning-text)]' : 'border-[var(--color-border)]'
       }`}

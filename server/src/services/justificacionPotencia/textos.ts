@@ -59,7 +59,11 @@ export function textoAntecedentes(d: DatosJustificacion): string {
 
 export function textoJustificacion(d: DatosJustificacion, b: Balance): string {
   const partes: string[] = [];
-  if (b.consumoAnualActualKwh > 0) {
+  if (b.consumoActualEstimadoDesdeUte) {
+    partes.push(
+      `Según la respuesta de UTE a la consulta, el consumo registrado en el último año admite una potencia de ${fmtNum(d.potenciaUteKw ?? 0, 2)} kW, lo que equivale a un consumo del orden de ${fmtNum(b.consumoAnualActualKwh)} kWh anuales. Sumando el incremento estimado de ${fmtNum(b.incrementoMensualKwh)} kWh/mes (${fmtNum(b.incrementoAnualKwh)} kWh/año), el consumo anual proyectado del suministro asciende a ${fmtNum(b.consumoAnualProyectadoKwh)} kWh.`,
+    );
+  } else if (b.consumoAnualActualKwh > 0) {
     partes.push(
       `El consumo registrado en el último año es del orden de ${fmtNum(b.consumoAnualActualKwh)} kWh. Sumando el incremento estimado de ${fmtNum(b.incrementoMensualKwh)} kWh/mes (${fmtNum(b.incrementoAnualKwh)} kWh/año), el consumo anual proyectado del suministro asciende a ${fmtNum(b.consumoAnualProyectadoKwh)} kWh.`,
     );

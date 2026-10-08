@@ -50,6 +50,7 @@ test("estimación directa y cuenta sin consumo histórico (caso ESTILO)", () => 
   const d = datosSchema.parse({
     ...soler,
     consumoAnualActualKwh: null,
+    potenciaUteKw: null,
     potenciaSolicitadaKw: 19,
     cargas: [
       { id: "a", tipo: "UNIFICACION", concepto: "Cuenta anterior", cuentaUte: "8355290000", potenciaContratadaKw: 9.2, kwhMes: 450 },
@@ -79,4 +80,20 @@ test("los textos escritos a mano ganan; los vacíos se completan solos", () => {
 test("fmtNum usa formato uruguayo", () => {
   assert.equal(fmtNum(1600), "1.600");
   assert.equal(fmtNum(25.5, 2), "25,5");
+});
+
+test("sin consumo cargado pero con la potencia de UTE: el consumo actual se deduce de esa potencia", () => {
+  const b = calcularBalance(datosSchema.parse({ ...soler, consumoAnualActualKwh: null }));
+  assert.equal(b.consumoActualEstimadoDesdeUte, true);
+  assert.equal(b.consumoAnualActualKwh, 24_650); // 17 kW × 1.450
+  assert.equal(b.consumoAnualProyectadoKwh, 24_650 + 13_320);
+  assert.match(textosAutomaticos(datosSchema.parse({ ...soler, consumoAnualActualKwh: null }), b).justificacion, /Según la respuesta de UTE.*17 kW.*24\.650 kWh/);
+});
+
+test("consumo cargado a mano le gana a la estimación por UTE; sin ninguno de los dos es cuenta nueva", () => {
+  assert.equal(calcularBalance(datosSchema.parse(soler)).consumoActualEstimadoDesdeUte, false);
+  const nueva = calcularBalance(datosSchema.parse({ ...soler, consumoAnualActualKwh: null, potenciaUteKw: null }));
+  assert.equal(nueva.consumoActualEstimadoDesdeUte, false);
+  assert.equal(nueva.consumoAnualActualKwh, 0);
+  assert.equal(nueva.consumoAnualProyectadoKwh, 13_320);
 });

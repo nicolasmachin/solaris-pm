@@ -20,6 +20,13 @@ export interface Balance {
   incrementoMensualKwh: number;
   incrementoAnualKwh: number;
   consumoAnualActualKwh: number;
+  /**
+   * true cuando el consumo actual no se cargó y se dedujo de la potencia que
+   * dijo UTE (potenciaUteKw × productividad): UTE llega a esa potencia
+   * dividiendo el consumo del último año, así que la cuenta tiene historia
+   * aunque la factura no traiga el total anual.
+   */
+  consumoActualEstimadoDesdeUte: boolean;
   consumoAnualProyectadoKwh: number;
   potenciaSolicitadaKw: number;
   productividadKwhKw: number;
@@ -63,9 +70,13 @@ export function calcularBalance(d: DatosJustificacion): Balance {
   }));
   const incrementoMensualKwh = redondear(cargas.reduce((acc, c) => acc + c.kwhMes, 0), 1);
   const incrementoAnualKwh = redondear(incrementoMensualKwh * 12, 0);
-  const consumoAnualActualKwh = redondear(nz(d.consumoAnualActualKwh), 0);
-  const consumoAnualProyectadoKwh = consumoAnualActualKwh + incrementoAnualKwh;
   const productividadKwhKw = d.productividadKwhKw;
+  const consumoActualEstimadoDesdeUte = nz(d.consumoAnualActualKwh) <= 0 && nz(d.potenciaUteKw) > 0;
+  const consumoAnualActualKwh = redondear(
+    consumoActualEstimadoDesdeUte ? nz(d.potenciaUteKw) * productividadKwhKw : nz(d.consumoAnualActualKwh),
+    0,
+  );
+  const consumoAnualProyectadoKwh = consumoAnualActualKwh + incrementoAnualKwh;
   const generacionAnualKwh = redondear(d.potenciaSolicitadaKw * productividadKwhKw, 0);
   // Se redondea hacia abajo: decir que se justifican 25,01 kW cuando da 25,009
   // es prometerle a UTE más de lo que dan las cuentas.
@@ -76,6 +87,7 @@ export function calcularBalance(d: DatosJustificacion): Balance {
     incrementoMensualKwh,
     incrementoAnualKwh,
     consumoAnualActualKwh,
+    consumoActualEstimadoDesdeUte,
     consumoAnualProyectadoKwh,
     potenciaSolicitadaKw: d.potenciaSolicitadaKw,
     productividadKwhKw,

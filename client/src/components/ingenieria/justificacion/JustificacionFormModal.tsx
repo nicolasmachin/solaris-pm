@@ -183,7 +183,9 @@ export function JustificacionFormModal({
               label="Consumo último año (kWh)"
               value={datos.consumoAnualActualKwh}
               onChange={(v) => set("consumoAnualActualKwh", v)}
-              placeholder="vacío si es cuenta nueva"
+              placeholder={
+                b.consumoEstimadoDesdeUte ? `≈ ${fmt(b.consumoActual)} según UTE` : "vacío si es cuenta nueva"
+              }
             />
           </div>
         </Seccion>
@@ -260,6 +262,10 @@ export function JustificacionFormModal({
         {/* 4. Balance */}
         <Seccion titulo="4. Balance anual de energía">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <Dato
+              label={b.consumoEstimadoDesdeUte ? "Consumo actual (según UTE)" : "Consumo actual"}
+              valor={b.consumoActual > 0 ? `${fmt(b.consumoActual)} kWh/año` : "Cuenta nueva"}
+            />
             <Dato label="Nuevas cargas" valor={`${fmt(b.incrementoMensual)} kWh/mes`} />
             <Dato label="Consumo anual proyectado" valor={`${fmt(b.consumoProyectado)} kWh`} />
             <Dato label={`Generación de ${fmt(datos.potenciaSolicitadaKw, 2)} kW`} valor={`${fmt(b.generacion)} kWh/año`} />

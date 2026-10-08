@@ -289,6 +289,9 @@ cantidades en cero.
    **"N sin cantidad"**. Cada sección tiene **+ Agregar**, que abre el buscador del
    catálogo con esa sección ya desplegada.
 3. Se completan las cantidades. La casilla en cero aparece con borde de aviso.
+   **Enter** guarda y pasa a la cantidad siguiente; **Shift + Enter**, a la
+   anterior (`QuantityInput` busca los `input[data-qty-input]` en el orden del
+   DOM, que es el de las secciones).
 4. Lo que depende de la obra se resuelve con **⇄ (cambiar variante)** junto al
    nombre: ofrece los demás ítems activos de **la misma subcategoría**
    (diferencial 2P ⇄ 4P, caño 1" ⇄ 1¼", medidor SPM ⇄ TPM, inversor 6 kW ⇄ 10 kW trifásico). El renglón toma el
