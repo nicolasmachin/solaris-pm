@@ -135,10 +135,16 @@ se completa, de arriba hacia abajo:
 1. **La consulta a UTE.** Si es una microgeneración nueva o una ampliación, la
    potencia pedida (viene cargada de los documentos de UTE o de los inversores
    del proyecto), la que UTE dijo que da (opcional) y el **consumo del último
-   año** de la cuenta, en kWh, si se conoce. La factura no lo trae, y en una
-   **cuenta nueva** (cliente que recién contrata, obra en construcción) no
-   existe: en ese caso se deja vacío y el consumo del informe sale solo de las
-   cargas proyectadas.
+   año** de la cuenta, en kWh, si se conoce. La factura no lo trae, así que
+   normalmente se deja vacío:
+   - Si se cargó **lo que UTE dijo que da**, Voltia PM deduce el consumo de ahí.
+     UTE llega a esa potencia dividiendo el consumo del último año entre lo que
+     genera cada kW, así que se hace la cuenta al revés: 5 kW × 1.450 = unos
+     7.250 kWh al año. El informe lo aclara ("según la respuesta de UTE…") y no
+     lo presenta como una lectura del medidor.
+   - Si tampoco hay respuesta de UTE con potencia, es una **cuenta nueva**
+     (cliente que recién contrata, obra en construcción): el consumo del informe
+     sale solo de las cargas proyectadas.
 2. **Por qué el consumo actual no sirve para dimensionar.** Se elige una de
    cuatro situaciones: se suman cargas nuevas, obra en construcción, instalación
    recién habilitada, o mudanza / unificación de cuentas.
@@ -355,7 +361,7 @@ deja como comentario en su etapa y le llega solo a Experiencia Solar.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
-| 0.9 | 8 de octubre de 2026 | En el informe de justificación de potencia, el consumo del último año pasa a ser un dato que se carga solo si se conoce: la factura no lo trae y en una cuenta nueva no existe. La plantilla Base de materiales trae el inversor Growatt de 6 kW, que se cambia en el renglón si la obra lleva otro; en el catálogo, el rubro Inversor y monitoreo reemplaza a los de inversores monofásicos y trifásicos, con dos subgrupos: Inversores y Monitoreo y medición. Al cargar cantidades, Enter pasa a la siguiente. |
+| 0.9 | 8 de octubre de 2026 | En el informe de justificación de potencia, el consumo del último año pasa a ser un dato que se carga solo si se conoce: la factura no lo trae. Si no se carga, se deduce de la potencia que dijo UTE; si tampoco hay, se trata como cuenta nueva. La plantilla Base de materiales trae el inversor Growatt de 6 kW, que se cambia en el renglón si la obra lleva otro; en el catálogo, el rubro Inversor y monitoreo reemplaza a los de inversores monofásicos y trifásicos, con dos subgrupos: Inversores y Monitoreo y medición. Al cargar cantidades, Enter pasa a la siguiente. |
 | 0.8 | 7 de octubre de 2026 | La lista de materiales se arma desde una sola plantilla, Base, con las cantidades en cero: se agrega cómo se arma la lista paso a paso, el cambio de variante en el mismo renglón, por qué no hay una plantilla por tipo de conexión y que un material en cero no sale para compras. En el catálogo se suma el rubro Monitoreo y medición. |
 | 0.7 | 7 de octubre de 2026 | Nuevo lineamiento: cuando UTE recorta la potencia pedida por el balance anual, Ingeniería contesta con un informe de justificación de potencia. Se agrega la herramienta que arma ese informe en Voltia PM, paso por paso. |
 | 0.6 | 7 de octubre de 2026 | Se agrega el catálogo de materiales por rubro y subgrupo (Eléctrica abierta en Cables, Canalización, Protecciones, Terminales, Tableros, Puesta a tierra y Fijación), con la regla de cargar el ítem en el subgrupo y no en el rubro; y que las plantillas de lista de materiales las configura Ingeniería. |

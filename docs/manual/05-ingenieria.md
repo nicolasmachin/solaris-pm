@@ -909,9 +909,17 @@ automáticos, IA y generar, `DELETE` para borrar versiones. El panel oculta
 
 ## Casos borde
 
-- **Cuenta nueva, sin consumo histórico**: `consumoAnualActualKwh` es opcional
-  (la factura no lo trae y una cuenta recién contratada no lo tiene). Vacío o 0
-  cuenta como 0: la tabla del PDF (`drawTablaBalance()`) muestra solo "Consumo anual proyectado (cargas previstas × 12)", `textos.ts` usa la
+- **Consumo actual sin cargar** (la factura no trae el total anual):
+  `consumoAnualActualKwh` es opcional. Si está vacío o en 0 y hay
+  `potenciaUteKw`, `calcularBalance()` lo deduce como `potenciaUteKw ×
+  productividad` y marca `consumoActualEstimadoDesdeUte`: UTE llega a su potencia
+  dividiendo el consumo anual, así que la cuenta inversa da ese consumo con el
+  factor de Voltia (si UTE usa otro factor, el número se corre un poco, pero el
+  balance queda medido con la misma vara). El texto automático, la fila del PDF y
+  el prompt de la IA lo presentan como deducido de la respuesta de UTE, no como
+  lectura. Lo cargado a mano le gana a la estimación. La copia del cálculo en
+  `catalogo.ts` → `balance()` repite la regla.
+- **Cuenta nueva** (sin consumo ni potencia de UTE): cuenta como 0: la tabla del PDF (`drawTablaBalance()`) muestra solo "Consumo anual proyectado (cargas previstas × 12)", `textos.ts` usa la
   frase sin consumo previo y el balance sale solo de las cargas.
 - **Textos heredados**: una versión nueva arranca con `ultimaVersionDatos`,
   textos incluidos, y esos textos tienen los números viejos. El formulario
