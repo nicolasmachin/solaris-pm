@@ -1,6 +1,6 @@
 # Manual de trabajo de Ventas
 
-**Voltia · Uruguay** · Versión 0.4 — 2 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.5 — 7 de octubre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ventas, juntos**: qué se hace, quién lo hace, en qué plazo, con qué criterio y
@@ -213,6 +213,14 @@ sola a la siguiente. Si el segundo suministro es de otro titular, se carga su
 factura (y su cédula) en su pestaña y se corrigen ahí el nombre, la cédula y la
 dirección: lo que sale en la consulta queda guardado para ese suministro.
 
+**Si UTE contesta con menos potencia que la pedida** ("el balance del último año
+da para tantos kW, ¿abrimos el caso por esa potencia?"), el asesor **no
+contesta que sí por su cuenta**: esa respuesta la da Ingeniería. Si el cliente
+va a consumir más que hasta ahora (se muda, suma equipos, la obra está en
+construcción), Ingeniería le manda a UTE un informe que justifica la potencia
+pedida. Le sirve al asesor saber qué cargas nuevas le contó el cliente en la
+visita: es lo que va en ese informe.
+
 ### Lo que deja cargado para los que siguen
 
 Todo lo que el asesor juntó en la visita —**el resumen, la minuta, las fotos, los
@@ -264,6 +272,7 @@ esa venta se le pregunta a él.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.5 | 7 de octubre de 2026 | Si UTE contesta la consulta con menos potencia que la pedida, la respuesta la da Ingeniería con un informe de justificación; el asesor no acepta la potencia menor por su cuenta. |
 | 0.4 | 2 de octubre de 2026 | El Plan de Protección puede incluir vandalismo, al mismo precio. |
 | 0.2 | 30 de septiembre de 2026 | El cotizador con inversores distintos y qué pasa con cada uno (un suministro por inversor). Se agrega la consulta inicial a UTE: una por cada cuenta. |
 | 0.3 | 1 de octubre de 2026 | Se agrega el embudo paso a paso, con lo que pasa en cada paso y sus plazos (sale del PGT, que queda con el dibujo del embudo). |

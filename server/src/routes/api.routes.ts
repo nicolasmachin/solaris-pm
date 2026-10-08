@@ -4266,6 +4266,11 @@ export async function registerApiRoutes(app: FastifyInstance) {
         sourceLabel = file.toolVersion
           ? `Ingeniería · Pre-ingeniería v${file.toolVersion}`
           : "Ingeniería · Pre-ingeniería";
+      } else if (file.toolSource === "justif-potencia") {
+        source = "generated";
+        sourceLabel = file.toolVersion
+          ? `Ingeniería · Justificación de potencia UTE v${file.toolVersion}`
+          : "Ingeniería · Justificación de potencia UTE";
       } else if (file.toolSource === "consolidado") {
         source = "generated";
         sourceLabel = file.toolVersion

@@ -1,6 +1,6 @@
 # Manual de trabajo de Tramitación UTE
 
-**Voltia · Uruguay** · Versión 0.4 — 5 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.5 — 7 de octubre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Tramitación UTE, juntos**. Sigue el mismo modelo que el Manual de trabajo de
@@ -78,12 +78,31 @@ aviso formal de habilitación (y su plazo de 24 a 48 horas) arranca con la
 - **"Finalizar" desde la etapa del proyecto** cierra solo el trámite del
   suministro 1; los demás se cierran desde su propia tarjeta.
 
-## 5 · Cuando falta documentación
+## 5 · Cuando UTE contesta la consulta con menos potencia
+
+Antes de abrir el caso, UTE compara **lo que va a generar la planta en un año**
+con **lo que consumió la cuenta en el último año** (el balance anual). Si no da,
+no abre el caso por la potencia pedida: contesta con la potencia que sí da y
+pregunta si se abre el caso por esa.
+
+Esa respuesta **la contesta Ingeniería**, no Tramitación. Si el cliente va a
+consumir más que hasta ahora (se muda, suma equipos, la obra está en
+construcción), Ingeniería arma en Voltia PM el **informe de justificación de
+potencia**, lo firma y lo manda en el mismo hilo del mail de la consulta. Si el
+consumo no va a cambiar, se acepta la potencia que da el balance.
+
+Mientras tanto el hito **Caso abierto en UTE** no se marca: se marca cuando UTE
+abre el caso, por la potencia que sea.
+
+La **potencia contratada** es otra cosa: si no alcanza, se pide el aumento de
+potencia del suministro, que es un trámite aparte.
+
+## 6 · Cuando falta documentación
 
 Si Tramitación descubre que faltó una firma o un documento de la obra, **se lo
 reclama al Gerente de Operaciones**. Nunca directo al capataz.
 
-## 6 · Cuando habilita
+## 7 · Cuando habilita
 
 Al cerrar el trámite, **el sistema le avisa solo a Experiencia Solar** y arranca
 un reloj de 24 a 48 horas. No hace falta mandar un mensaje.
@@ -105,19 +124,20 @@ Si falta alguno, la app no te deja y te dice cuáles son. Ahí tenés dos camino
 > quedó marcado como finalizado desde el selector, sin una sola fecha, y el
 > sistema le avisó que encendiera una planta que no existía.
 
-## 7 · A quién le pregunta qué
+## 8 · A quién le pregunta qué
 
 | Necesita saber… | Le pregunta a… |
 |---|---|
 | Cómo responder una observación de UTE | Ingeniería |
+| Qué contestar cuando UTE da menos potencia que la pedida | Ingeniería |
 | Que se corrija algo de la instalación | **Gerente de Operaciones** |
 | Documentación de obra que falta | **Gerente de Operaciones** |
 
-## 8 · Lineamientos
+## 9 · Lineamientos
 
 *Por escribir.*
 
-## 9 · Las herramientas y cómo se usan
+## 10 · Las herramientas y cómo se usan
 
 *Por escribir: Trámites UTE, el trámite dentro de la ficha, los documentos UTE.*
 
@@ -127,6 +147,7 @@ Si falta alguno, la app no te deja y te dice cuáles son. Ahí tenés dos camino
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.5 | 7 de octubre de 2026 | Se agrega qué pasa cuando UTE contesta la consulta con menos potencia que la pedida: lo contesta Ingeniería con el informe de justificación de potencia, y el caso abierto se marca cuando UTE lo abre. |
 | 0.4 | 5 de octubre de 2026 | Para cerrar un trámite hay que tener todos los pasos cargados, o decir por qué se cierra sin ellos; y lo que avisa al cliente es la fecha de habilitación, no el selector de etapa. |
 | 0.3 | 1 de octubre de 2026 | Se agregan los once hitos del trámite tal como se marcan en Voltia PM (salen del PGT, que queda en cuatro pasos generales). |
 | 0.2 | 30 de septiembre de 2026 | Se agrega qué pasa con los proyectos de más de un suministro: una consulta, un juego de papeles y un trámite por cada cuenta UTE, y la obra habilitada cuando salen todas. |

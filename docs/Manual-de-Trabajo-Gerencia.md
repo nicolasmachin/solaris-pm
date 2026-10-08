@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.4 — 5 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.5 — 7 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -140,6 +140,29 @@ inversores sobre un mismo medidor.
 Tramitación UTE (un trámite por cuenta) e Ingeniería (un unifilar por
 suministro).
 
+### La potencia que UTE recorta se puede justificar con la proyección de consumo
+
+**Qué se decidió.** Cuando UTE contesta la consulta con menos potencia que la
+pedida porque el consumo del último año no alcanza, y el cliente va a consumir
+más que hasta ahora, se le contesta con un **informe técnico de justificación de
+potencia** firmado por el ingeniero responsable. El criterio que se discute con
+UTE es **solo el balance anual de energía** (lo generado en un año no supera lo
+consumido en un año). Para estimar la generación se toma **1.450 kWh por año por
+cada kW instalado**, ajustable caso a caso. Las cargas se estiman siempre con
+criterio conservador.
+
+**Por qué.** El consumo histórico no refleja el de una casa en construcción, una
+empresa que se muda o un cliente que suma un auto eléctrico o una piscina
+climatizada. Con este tipo de informe UTE abrió casos por la potencia pedida.
+La potencia contratada es otro límite y se resuelve aparte, con el aumento de
+potencia del suministro.
+
+**Desde cuándo rige.** Los informes se mandan así desde marzo de 2026; el
+criterio y el valor de 1.450 kWh por kW quedan fijados el 7 de octubre de 2026.
+
+**A qué manuales afecta.** Ingeniería (arma el informe) y Tramitación UTE (sabe
+que esa respuesta la da Ingeniería).
+
 ## 4 · Cómo se toman y se comunican las decisiones
 
 *Por escribir.*
@@ -171,6 +194,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.5 | 7 de octubre de 2026 | Se registra la decisión de justificar ante UTE la potencia recortada con un informe de proyección de consumo: el criterio es el balance anual y la generación se estima en 1.450 kWh por kW. |
 | 0.4 | 5 de octubre de 2026 | Se registran cinco decisiones: al cliente la fecha de obra se le dice una sola vez; seguridad sin flexibilidad, con sanción a toda la cadena; compras en plaza con tres presupuestos, salvo que esperar el tercero frene una obra; Operaciones es el área más crítica y los plazos de las demás áreas se cumplen; en obra, el criterio del instalador le gana al del proyectista. |
 | 0.3 | 2 de octubre de 2026 | Se registra la decisión de que el Plan de Protección puede incluir vandalismo, al mismo precio. |
 | 0.2 | 30 de septiembre de 2026 | Primera decisión registrada: una venta con varios inversores lleva un suministro por inversor, con contrato y proforma únicos. |

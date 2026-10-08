@@ -115,6 +115,11 @@ function buildToolSourceLabel(toolSource: string | null, toolVersion: number | n
   if (toolSource === "efp-attach") {
     return "Ingeniería · Anexo de Proyecto Final";
   }
+  if (toolSource === "justif-potencia") {
+    return toolVersion
+      ? `Ingeniería · Justificación de potencia UTE v${toolVersion}`
+      : "Ingeniería · Justificación de potencia UTE";
+  }
   return null;
 }
 
@@ -263,6 +268,9 @@ export async function registerIngenieriaRoutes(app: FastifyInstance) {
       const preIngenieriaCount = await prisma.preIngenieriaVersion.count({
         where: { projectId: project.id },
       });
+      const justificacionCount = await prisma.justificacionPotenciaVersion.count({
+        where: { projectId: project.id },
+      });
       const visitasInfo = await prisma.technicalVisit.aggregate({
         where: { projectId: project.id, deletedAt: null },
         _count: { id: true },
@@ -339,6 +347,17 @@ export async function registerIngenieriaRoutes(app: FastifyInstance) {
             preIngenieriaCount === 0
               ? "Sin versiones generadas"
               : `${preIngenieriaCount} ${preIngenieriaCount === 1 ? "versión" : "versiones"} generada${preIngenieriaCount === 1 ? "" : "s"}`,
+          disponible: true,
+          ruta: null,
+        },
+        {
+          key: "justif-potencia",
+          nombre: "Justificación de potencia ante UTE",
+          icono: "scale",
+          estado:
+            justificacionCount === 0
+              ? "Solo si UTE recorta la potencia pedida"
+              : `${justificacionCount} ${justificacionCount === 1 ? "versión" : "versiones"} generada${justificacionCount === 1 ? "" : "s"}`,
           disponible: true,
           ruta: null,
         },
