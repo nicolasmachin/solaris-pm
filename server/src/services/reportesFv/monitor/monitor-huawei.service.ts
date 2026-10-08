@@ -9,9 +9,9 @@
 // requests POR PLANTA en Growatt. Por eso no tiene concurrencia ni corrida
 // propia: entra entero en el mismo ciclo.
 //
-// Además guarda la generación diaria en `ReporteFvGeneracionDiaria`, que es lo
-// que alimenta el gráfico día a día del portal del cliente. Sale gratis: la
-// serie ya vino en la misma llamada.
+// Además guarda la generación y la exportación diarias en
+// `ReporteFvGeneracionDiaria`, que es lo que alimenta el gráfico día a día del
+// portal del cliente. Sale gratis: la serie ya vino en la misma llamada.
 
 import { FvDiagnostico, ReporteFvFuente, type StageType } from "@prisma/client";
 
@@ -20,7 +20,7 @@ import { UTE_PRINCIPAL } from "../../suministros.service.js";
 import { estadoActual, serieDiariaDelMes } from "../huawei/client.js";
 import { dateADia, type Dia } from "./dias.js";
 import { diagnosticarHuawei, leerUmbralesHuawei, type EstadoSalud } from "./diagnostico-huawei.js";
-import { guardarGeneracionDiaria } from "./generacion-diaria.service.js";
+import { guardarExportacionHuawei, guardarGeneracionDiaria } from "./generacion-diaria.service.js";
 import { resolverHabilitadoEn, resolverOperativaDesde, ETAPAS_UTE } from "./habilitacion.js";
 import { registrarDeteccion, resolverIncidencias } from "./incidencias.service.js";
 
@@ -115,6 +115,7 @@ export async function ejecutarMonitorHuawei(fecha: Dia): Promise<ResumenMonitorH
     const serieMap = new Map<Dia, number>(dias.map((d) => [d.fecha as Dia, d.generacionKwh]));
     if (serieMap.size) {
       await guardarGeneracionDiaria(projectId, null, serieMap, ReporteFvFuente.HUAWEI);
+      await guardarExportacionHuawei(projectId, dias);
     }
 
     const habilitadoEn = resolverHabilitadoEn({

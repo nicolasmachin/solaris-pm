@@ -32,6 +32,30 @@ export async function guardarExportacionDiaria(
   });
 }
 
+/**
+ * Exportación diaria de una planta Huawei, a partir de la misma serie del mes
+ * que ya trajo el monitoreo (`ongrid_power`): no cuesta otra llamada.
+ *
+ * Ojo: el cliente de Huawei convierte un campo ausente en 0, y una planta sin
+ * medidor no puede distinguirse de una que no exportó. Por eso sólo se guarda
+ * el día si el medidor reportó algo (consumo o exportación > 0): sin medidor
+ * el consumo es siempre 0. Un día en que el medidor reporta consumo y cero de
+ * exportación sí se guarda como 0, que es un dato real.
+ */
+export async function guardarExportacionHuawei(
+  projectId: string,
+  dias: { fecha: string; consumoKwh: number; exportacionKwh: number }[],
+): Promise<number> {
+  let escritos = 0;
+  for (const d of dias) {
+    if (!Number.isFinite(d.exportacionKwh) || d.exportacionKwh < 0) continue;
+    if (d.consumoKwh <= 0 && d.exportacionKwh <= 0) continue;
+    await guardarExportacionDiaria(projectId, d.fecha as Dia, d.exportacionKwh);
+    escritos++;
+  }
+  return escritos;
+}
+
 export async function guardarGeneracionDiaria(
   projectId: string,
   growattPlantId: bigint | null,

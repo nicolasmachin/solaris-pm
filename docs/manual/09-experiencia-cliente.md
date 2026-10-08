@@ -1186,9 +1186,19 @@ que el mail y el listado de incidencias muestran las dos marcas juntas.
 - Corre **al final y aislado**: si FusionSolar está caído no arruina la corrida
   de las ~150 plantas Growatt. Y **no corre si la de Growatt se rompió**: en ese
   escenario no se toca ninguna incidencia de ninguna marca.
-- De paso guarda la generación diaria en `ReporteFvGeneracionDiaria` con fuente
-  `HUAWEI`, que es lo que alimenta el gráfico día a día del portal. Sale gratis:
-  la serie ya vino en la misma llamada.
+- De paso guarda la generación **y la exportación** diarias en
+  `ReporteFvGeneracionDiaria` con fuente `HUAWEI`, que es lo que alimenta el
+  gráfico día a día del portal. Sale gratis: la serie ya vino en la misma
+  llamada (`ongrid_power`). La exportación se guarda con
+  `guardarExportacionHuawei()` sólo si el medidor reportó algo ese día (consumo
+  o exportación > 0): el cliente de Huawei convierte un campo ausente en 0, y
+  sin ese filtro una planta sin medidor (Fiermarin) quedaría como "exporta 0"
+  en vez de "no medimos". Hasta el 8-oct-2026 la exportación diaria no se
+  guardaba (sí la mensual de la ingesta); los meses anteriores se rellenan con
+  `scripts/reportes-fv/backfill-huawei-diaria.ts --desde YYYY-MM`, que también
+  completa la generación de meses que el monitoreo nunca trajo (sólo pide el
+  mes en curso). Verificado contra la factura UTE de Estilo (16/08–16/09):
+  472 kWh de "Activa Saliente" en la factura, 472,45 kWh en la serie diaria.
 - `FvIncidencia` tiene ahora **dos FK nullables** (`growattPlantId`,
   `huaweiPlantId`) con un CHECK que exige exactamente una, más un índice único
   parcial propio para Huawei — el gemelo del de Growatt, contra corridas
