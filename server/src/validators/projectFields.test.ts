@@ -19,13 +19,24 @@ const patchBodySchema = z
   })
   .strict();
 
-test("teléfono: acepta 09 + 7 dígitos", () => {
-  assert.equal(clientPhoneValue.safeParse("099123456").success, true);
-  assert.equal(clientPhoneValue.safeParse("091000006").success, true);
+test("teléfono: acepta celular uruguayo, fijo, +598, Argentina y con separadores", () => {
+  for (const ok of [
+    "099123456",
+    "091000006",
+    "099 123 456",
+    "+59899123456",
+    "+598 99 123 456",
+    "24001234",
+    "+54 9 11 1234-5678",
+    "(011) 4321-5678",
+    "0054 9 341 555.1234",
+  ]) {
+    assert.equal(clientPhoneValue.safeParse(ok).success, true, `debería aceptar ${ok}`);
+  }
 });
 
-test("teléfono: rechaza +598, espacios, corto y largo", () => {
-  for (const bad of ["+59899123456", "099 123 456", "0991234", "0991234567", "12345678"]) {
+test("teléfono: rechaza letras, muy corto y muy largo", () => {
+  for (const bad of ["099abc456", "12345", "+1234567890123456", "099123456 int 2", "++59899123456"]) {
     assert.equal(clientPhoneValue.safeParse(bad).success, false, `debería rechazar ${bad}`);
   }
 });
@@ -59,7 +70,7 @@ test("body PATCH: rechaza campo desconocido (.strict)", () => {
 });
 
 test("body PATCH: rechaza valores inválidos", () => {
-  assert.equal(patchBodySchema.safeParse({ telefono: "+59899123456" }).success, false);
+  assert.equal(patchBodySchema.safeParse({ telefono: "099abc456" }).success, false);
   assert.equal(patchBodySchema.safeParse({ mail: "x" }).success, false);
   assert.equal(patchBodySchema.safeParse({ fechaEntrega: "ayer" }).success, false);
 });

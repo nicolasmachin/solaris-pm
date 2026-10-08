@@ -10,9 +10,21 @@ import { z } from "zod";
 // Email válido o "" (para limpiar el campo).
 export const clientEmailValue = z.union([z.string().email("Email inválido"), z.literal("")]);
 
-// Teléfono uruguayo: "09" + 7 dígitos, o "" para limpiar.
+// Teléfono: formato libre, o "" para limpiar. Antes se exigía el celular
+// uruguayo "09" + 7 dígitos, y dejaba afuera a los clientes con número de
+// Argentina (u otro país) y a los fijos. Ahora acepta dígitos con "+",
+// espacios, guiones, puntos y paréntesis, con entre 6 y 15 dígitos (15 es el
+// largo máximo de un número internacional).
 export const clientPhoneValue = z.union([
-  z.string().regex(/^09\d{7}$/, "El teléfono debe tener formato 09 + 7 dígitos (ej. 099123456)"),
+  z
+    .string()
+    .trim()
+    .max(40, "El teléfono es demasiado largo")
+    .regex(/^\+?[\d\s().-]+$/, "El teléfono solo puede tener números, +, espacios, guiones y paréntesis")
+    .refine((v) => {
+      const digitos = v.replace(/\D/g, "").length;
+      return digitos >= 6 && digitos <= 15;
+    }, "El teléfono debe tener entre 6 y 15 números"),
   z.literal(""),
 ]);
 

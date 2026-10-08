@@ -1,6 +1,6 @@
 # Procedimiento General de Trabajo (PGT) de Voltia
 
-**Voltia · Uruguay** · Borrador en revisión — 7 de octubre de 2026
+**Voltia · Uruguay** · Borrador en revisión — 8 de octubre de 2026
 
 > Cómo trabaja Voltia en su conjunto: por qué etapas pasa cada instalación, qué
 > área se ocupa de cada una, cómo se pasan el trabajo entre ellas y qué reglas
@@ -183,7 +183,7 @@ manual.
 |---|---|---|
 | **Ventas** | Vende, cierra la venta con el cliente y deja todo listo para empezar: el contrato, la seña, cómo va a pagar y la consulta inicial a UTE | Cuando el onboarding está completo y el cliente sabe cómo sigue |
 | **Ingeniería** | Con lo que trajo la visita de venta —el resumen, las fotos y los videos— diseña la instalación, con planos y cálculos, y arma la lista de materiales. Después de que Operaciones la revisa, la ajusta en la Ingeniería Final | Cuando la lista de materiales está cerrada y no se toca más |
-| **Operaciones** | Valida lo que proyectó Ingeniería, confirma la fecha de obra, planifica, ejecuta la instalación y controla los costos | Cuando la obra está terminada y toda la documentación está cargada |
+| **Operaciones** | Valida lo que proyectó Ingeniería, confirma la fecha de obra, planifica, ejecuta la instalación y controla los costos. Después hace los mantenimientos y las visitas de soporte | Cuando la obra está terminada y toda la documentación está cargada |
 | ↳ **Obra** (el capataz) | Lleva adelante la instalación en la propiedad y habla con el cliente de lo del día | Cuando deja cargado todo lo necesario para cerrar la obra |
 | ↳ **Logística** | Compra los materiales de la lista definitiva, sigue los pedidos y los recibe en depósito | Cuando el material está en depósito y la obra se puede planificar |
 | **Tramitación UTE** | Hace el trámite ante UTE paso a paso, desde la primera consulta hasta que UTE habilita la instalación | Cuando UTE habilita |
@@ -277,14 +277,17 @@ lista final va a Compras.**
 ### Operaciones
 
 Operaciones tiene tres momentos en el recorrido: la **Validación**, las
-**Compras** (Logística) y la **Obra**.
+**Compras** (Logística) y la **Obra**. Y sigue después del recorrido: los
+**mantenimientos** y las **visitas de soporte** los coordina Experiencia Solar
+con el cliente y los hace Operaciones.
 
-**Operaciones es el área más crítica, porque es el final de la cadena.** Todo
-lo que otra área no hace en tiempo y forma le cae a la obra: una venta sin
+**Operaciones es el área más crítica, porque es el centro de la cadena:** todo
+gira alrededor de la obra. Todo lo que otra área no hace en tiempo y forma le cae a la obra: una venta sin
 cobrar, una ingeniería sin terminar o un material que no llegó son una obra que
 no se puede arrancar; una coordinación mal hecha con el cliente es un día
-perdido o una vuelta más. Y cada obra que se mueve, mueve toda la agenda. Por
-eso **Operaciones necesita, sí o sí, que todas las demás áreas cumplan sus
+perdido o una vuelta más. Y cada obra que se mueve, mueve toda la agenda. **Cada atraso es
+plata:** lo que cuesta la vuelta de más, y lo que se dejó de hacer mientras
+tanto. Por eso **Operaciones necesita, sí o sí, que todas las demás áreas cumplan sus
 plazos.**
 
 **La Validación de Operaciones.** Recibe la pre-ingeniería con los planos y la

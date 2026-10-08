@@ -1,10 +1,8 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 0.5 — 7 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.6 — 8 de octubre de 2026 · *en armado*
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
->
-> Es el manual de **toda el área de Operaciones**: el gerente de Operaciones, los capataces, los operarios y Logística. El gerente lo tiene que saber de memoria. Gerencia lo lee entero. Tiene tres partes: la **Parte A · Operaciones**, cómo funciona el área entera; la **Parte B · Obra**, el trabajo en la propiedad del cliente; y la **Parte C · Logística**, las compras y la entrega de materiales. Las dos últimas se pueden imprimir y entregar también como **librillos independientes**.
 >
 > Lo que conecta a Operaciones con las demás áreas está en el **Procedimiento General de Trabajo (PGT) de Voltia**. Lo que Operaciones necesita saber de las otras áreas está repetido acá, a propósito, para no tener que ir a buscarlo a otro manual.
 
@@ -12,11 +10,13 @@
 
 ## 0 · Qué es este manual
 
-**Qué es.** El manual de trabajo del área de Operaciones: cómo se pasa de un proyecto ya diseñado por Ingeniería a una instalación funcionando en la casa del cliente, con toda la documentación cargada.
+**Qué es.** El manual de trabajo del área de Operaciones: cómo se pasa de un proyecto ya diseñado por Ingeniería a una instalación funcionando en la casa del cliente, con toda la documentación cargada, y cómo se la cuida después, con los mantenimientos y las visitas de soporte.
 
 **Qué no es.** No es un manual de electricidad ni de montaje: quien instala ya sabe instalar. Tampoco explica cómo trabajan las otras áreas: eso está en el PGT y en el manual de cada una. Acá está solo lo que Operaciones tiene que saber de ellas.
 
-**Cómo se lee.** Todos los del área lo leen entero, porque el trabajo de cada uno depende del de los otros. **El gerente de Operaciones lo tiene que saber de memoria.** Para la obra y para el depósito, la Parte B · Obra y la Parte C · Logística se imprimen también por separado. Al final hay un glosario con las palabras propias de Voltia y el registro de cambios del manual.
+**Quién lo lee.** Toda el área de Operaciones: el gerente de Operaciones, los capataces, los operarios y Logística. Todos lo leen entero, porque el trabajo de cada uno depende del de los otros. **El gerente de Operaciones lo tiene que saber de memoria.** Gerencia también lo lee entero.
+
+**Cómo está armado.** Tiene tres partes: la **Parte A · Operaciones**, cómo funciona el área entera; la **Parte B · Obra**, el trabajo en la propiedad del cliente; y la **Parte C · Logística**, las compras y la entrega de materiales. Las Partes B y C se imprimen también por separado, como **librillos independientes**: el capataz recibe solo el de Obra. Al final hay un glosario con las palabras propias de Voltia y el registro de cambios del manual.
 
 ### Lo que Operaciones tiene que saber de las otras áreas
 
@@ -30,13 +30,15 @@
 
 ## 1 · Qué hace Operaciones y dónde termina su trabajo
 
-**Qué hace.** Valida lo que proyectó Ingeniería, **confirma la fecha de obra**, compra y prepara los materiales, hace la instalación y la deja funcionando y documentada.
+**Qué hace.** Valida lo que proyectó Ingeniería, **confirma la fecha de obra**, compra y prepara los materiales, hace la instalación y la deja funcionando y documentada. Y después, durante toda la vida de la instalación, hace los **mantenimientos** y las **visitas de soporte** cuando algo falla en la casa del cliente.
 
 **Dónde termina su trabajo.** Cuando la obra está terminada, la instalación quedó funcionando y **toda la documentación de obra está cargada en Voltia PM**. Ahí el gerente de Operaciones marca la obra como pronta: el proyecto pasa a Tramitación UTE, y Experiencia Solar le cuenta al cliente qué sigue.
 
+Con la obra termina el trabajo de Operaciones **en el recorrido del proyecto**, no con la instalación: los mantenimientos y las visitas de soporte los coordina Experiencia Solar con el cliente, y los hace Operaciones.
+
 ### Por qué Operaciones es el área más crítica
 
-Operaciones es **el final de la cadena**: todo lo que las otras áreas no hacen en tiempo y forma termina en una obra que no se puede arrancar, o en una vuelta más a la casa del cliente para terminar algo. Y una obra que se mueve **mueve toda la agenda**: las obras de los otros clientes, las cuadrillas, las entregas de materiales y los avisos.
+Operaciones es **el centro de la cadena**: todo gira alrededor de la obra. Ventas vende una instalación, Ingeniería la diseña, Logística compra lo que lleva, Tramitación UTE la habilita y Experiencia Solar acompaña al cliente que la usa. Por eso todo lo que las otras áreas no hacen en tiempo y forma termina en una obra que no se puede arrancar, o en una vuelta más a la casa del cliente para terminar algo. Y una obra que se mueve **mueve toda la agenda**: las obras de los otros clientes, las cuadrillas, las entregas de materiales y los avisos.
 
 | Si falla… | Lo que le pasa a la obra |
 |---|---|
@@ -47,6 +49,8 @@ Operaciones es **el final de la cadena**: todo lo que las otras áreas no hacen 
 | Experiencia Solar: la coordinación con el cliente quedó mal hecha | El equipo llega y no puede entrar, o el cliente no está para firmar |
 
 > **Operaciones necesita, sí o sí, que todas las demás áreas cumplan sus plazos.**
+
+No es por prolijidad. **Cada atraso es plata.** Una obra que se corre es una cuadrilla que estaba organizada para ese día, una vuelta más a la casa del cliente, y la obra de otro cliente que se podría haber hecho en ese lugar y no se hizo. La obra que se mueve no se pierde; lo que se dejó de hacer mientras tanto, sí. Y de que cada obra salga en su fecha vive Voltia.
 
 Por eso, para **confirmar una fecha de obra** tienen que estar todas estas cosas: la respuesta de UTE a la consulta inicial, la ingeniería hecha y validada por Operaciones, la fecha en el calendario, y **la seña cobrada** si el cliente paga directo o **el crédito aprobado** si paga con financiación del banco. Si falta una, la fecha no se confirma.
 
@@ -62,14 +66,7 @@ Lo que sí hace siempre: **anota en el proyecto qué cambió y por qué**, con u
 
 ## 2 · Dónde empieza y dónde termina cada etapa
 
-Operaciones es dueña de **tres etapas** del recorrido del proyecto: **Validación de Operaciones**, **Compras** y **Obra**. Entre la Validación y las Compras, el proyecto vuelve un momento a Ingeniería para la Ingeniería Final.
-
-**Todo el área, de punta a punta:**
-
-- **Arranca cuando** Ingeniería termina la pre-ingeniería y el proyecto entra a Validación de Operaciones.
-- **Recibe** la pre-ingeniería con los planos, la lista de materiales preliminar y el resumen de la visita de venta (con las fotos y los videos de la casa).
-- **Entrega** la instalación funcionando y la documentación de obra completa: las fotos, los videos de los ensayos y los documentos de UTE firmados por el cliente.
-- **Termina cuando** el gerente de Operaciones marca la obra como pronta.
+Operaciones es dueña de **tres etapas** del recorrido del proyecto: **Validación de Operaciones**, **Compras** y **Obra**. Entre la Validación y las Compras, el proyecto vuelve un momento a Ingeniería para la Ingeniería Final. Y, fuera del recorrido, hace los **mantenimientos** y el **soporte** de las instalaciones que ya funcionan.
 
 **Cada etapa, con lo que necesita para arrancar y lo que deja:**
 
@@ -78,6 +75,25 @@ Operaciones es dueña de **tres etapas** del recorrido del proyecto: **Validaci�
 | Validación de Operaciones | Ingeniería termina la pre-ingeniería | La pre-ingeniería, los planos, la lista de materiales preliminar y el resumen de la visita | La **fecha de obra confirmada** en el calendario y el **informe del capataz** | El informe del capataz está **Completado** y la fecha está confirmada. El proyecto vuelve a Ingeniería |
 | Compras | Ingeniería Final cierra la lista de materiales definitiva | La **lista de materiales definitiva**, ya revisada por el capataz | **Todo el material en el local** para el día de preparación o, si la obra es tercerizada, **el kit enviado** | El material está listo para salir a obra y la entrega está coordinada |
 | Obra | El material está listo y la fecha está confirmada | Los materiales preparados, los planos finales y los documentos de UTE impresos | La instalación funcionando, **las fotos, los 2 videos de los ensayos y los documentos de UTE firmados**, y el lugar limpio | El gerente de Operaciones marca la obra como pronta |
+
+### Fuera del recorrido: mantenimientos y soporte
+
+Después de la obra, Operaciones vuelve a la casa del cliente por dos motivos distintos, que se explican y se registran por separado. Los dos se coordinan de la misma forma: **Experiencia Solar acuerda la fecha con el cliente y Operaciones va**. Operaciones no le propone fechas al cliente.
+
+**El mantenimiento.** Es una visita para cuidar una instalación que funciona bien. **Lo dispara una fecha, no un problema.** El contrato incluye un mantenimiento por año sin cargo los primeros 2 años, y después se recomienda uno por año. Incluye la limpieza de los paneles, la revisión de la estructura con el reajuste de toda la tornillería (se afloja con el viento y el tiempo) y la revisión preventiva de la parte eléctrica. Importa también por otra razón: si se vuelan paneles, Voltia se hace cargo solo si hizo un mantenimiento en el último año.
+
+- **Arranca cuando** Experiencia Solar confirma la fecha con el cliente.
+- **Entrega** el **informe del mantenimiento**: qué se hizo y qué se encontró.
+- **Termina cuando** el informe está cargado.
+
+**El soporte.** Es una visita porque **hay un problema** en la instalación. **Lo dispara un problema, no una fecha.** Casi siempre sale de un **ticket de soporte**, que puede abrir el cliente desde el portal de Voltia o puede abrir Voltia.
+
+- **Arranca cuando** Experiencia Solar, a partir del ticket, confirma la visita con el cliente.
+- **Recibe** el ticket, con el problema que se reportó.
+- **Entrega** el **informe del soporte**: qué se encontró, qué se hizo y si el problema quedó resuelto.
+- **Termina cuando** el informe está cargado y el problema está resuelto.
+
+> *En definición:* cómo se agendan los mantenimientos y dónde se carga cada informe en Voltia PM todavía no está definido. Se completa cuando quede resuelto.
 
 ## 3 · Del proyecto a la obra: los 12 días
 
@@ -691,6 +707,15 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 |---|---|
 | Voltia PM | La herramienta interna de Voltia, donde se registra todo el trabajo de cada proyecto |
 | UTE | La empresa eléctrica estatal. Tiene que aprobar (habilitar) cada instalación antes de que el cliente la encienda |
+| Onboarding | La etapa que sigue a la venta: el asesor firma el contrato con el cliente, cobra la seña, define cómo va a pagar y junta los datos para empezar |
+| Seña | El primer pago del cliente, que se cobra al firmar el contrato. Sin la seña cobrada (o el crédito aprobado, si paga con financiación del banco) no se confirma la fecha de obra |
+| Consulta inicial a UTE | El pedido que se le hace a UTE, antes de la obra, para saber si la instalación se puede conectar en ese suministro. Sin su respuesta no se confirma la fecha de obra |
+| Local | El local de Voltia, donde se recibe el material de las compras y se prepara para cada obra |
+| Día de preparación | El día, antes de la obra, en que el capataz junta y prepara en el local todo el material de la lista definitiva. Lo acuerda con Logística |
+| Obra tercerizada | Una obra que hace un instalador de afuera de Voltia, en vez de una cuadrilla propia. Logística le arma el kit de materiales y se lo envía |
+| Mantenimiento | Visita agendada para cuidar una instalación que funciona bien. La dispara una fecha, no un problema |
+| Soporte | Visita porque hay un problema en la instalación. Casi siempre sale de un ticket |
+| Ticket | Un reclamo o consulta registrado en Voltia PM, con estado y responsable. Lo puede abrir el cliente desde el portal de Voltia o lo puede abrir Voltia |
 | Etapa | Cada uno de los tramos del recorrido de un proyecto, con un área dueña y un plazo |
 | Validación de Operaciones | La etapa en que Operaciones revisa la pre-ingeniería, el capataz hace su informe y se confirma la fecha de obra |
 | Pre-ingeniería | El primer diseño de la instalación que hace Ingeniería, con los planos y la lista de materiales preliminar |
@@ -708,6 +733,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.6 | 8 de octubre de 2026 | Los mantenimientos y las visitas de soporte pasan a ser parte del trabajo de Operaciones, explicados por separado, cada uno con su informe. Operaciones es el centro de la cadena, no el final, y se explica por qué cada atraso es plata. La presentación del manual dice una sola vez quién lo lee y cómo está armado. |
 | 0.5 | 7 de octubre de 2026 | En la pestaña Compras: la lista se ve por secciones, y un material con cantidad en cero es uno que Ingeniería todavía no completó, que no sale en el PDF ni en el consolidado de compras. |
 | 0.4 | 5 de octubre de 2026 | Se reordena el manual con el mismo modelo que el de Experiencia Solar. Se agregan: las capturas de Voltia PM en cada pantalla que se explica; la entrega de materiales la coordina el capataz con el cliente; al cliente la fecha de obra se le dice una sola vez, cuando está confirmada; el capítulo de seguridad, con la responsabilidad en cadena (operario, capataz, gerente de Operaciones) y las sanciones; la regla de los tres presupuestos para las compras en plaza; qué tiene que saber Operaciones de las otras áreas; por qué Operaciones es el área más crítica (todo atraso de otra área le cae a la obra) y qué tiene que estar para confirmar una fecha; la regla de que en obra el criterio del instalador le gana al del proyectista; dónde empieza y termina cada etapa, con lo que recibe y lo que entrega; los 12 días hasta la obra; todo el módulo de Proyectos de Voltia PM explicado (lista, proyecto, panel de etapa, subetapas de Operaciones, calendario, las 23 fotos, videos, pagos a instaladores); los mensajes al cliente citados enteros; las reglas del área; los criterios técnicos de obra; qué hacer cuando algo sale mal; las hojas para llevar a la obra; las reglas en una página y el glosario. |
 | 0.3 | 5 de octubre de 2026 | Se incorpora el material de Operaciones: el flujo antes de la obra con sus 9 pasos y plazos, la guía del informe del capataz, las 4 cosas que se cierran el día de obra, la guía de firmas de los 7 documentos de UTE y la puesta en marcha por marca. Sin contraseñas. |

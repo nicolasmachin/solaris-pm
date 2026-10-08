@@ -1,5 +1,13 @@
 # Novedades
 
+## v12.0
+
+### 8 de octubre de 2026
+
+#### Arreglos
+
+- El **teléfono del cliente** ya no exige el formato de celular uruguayo (09 y 7 números). Ahora se puede cargar un número de **Argentina** u otro país, un fijo, o escribirlo con **+**, espacios, guiones o paréntesis, en el proyecto, en la ficha del cliente y al pasar un lead a proyecto.
+
 ## v11.9
 
 ### 7 de octubre de 2026

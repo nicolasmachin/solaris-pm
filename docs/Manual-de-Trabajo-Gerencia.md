@@ -1,6 +1,6 @@
 # Manual de trabajo de Gerencia
 
-**Voltia · Uruguay** · Versión 0.5 — 7 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.6 — 8 de octubre de 2026 · *en armado*
 
 > Este manual reúne **los criterios y las decisiones estratégicas** de Voltia: qué
 > se decidió, por qué, y cómo se aplica cuando aparece un caso nuevo. No es un
@@ -30,15 +30,37 @@ qué manual afecta.
 ### Operaciones es el área más crítica: los plazos de las demás áreas se cumplen
 
 **Qué se decidió.** Operaciones se considera el área más crítica de Voltia,
-porque es el final de la cadena: todo atraso de otra área (una venta sin
-cobrar, una ingeniería sin terminar, un material que no llegó, una coordinación
-mal hecha con el cliente) termina en una obra que no se puede arrancar o en una
-vuelta más, y cada obra que se mueve, mueve toda la agenda. Por eso el
-cumplimiento de los plazos de las demás áreas no es opcional.
+porque es el centro de la cadena: todo gira alrededor de la obra. Todo atraso
+de otra área (una venta sin cobrar, una ingeniería sin terminar, un material que
+no llegó, una coordinación mal hecha con el cliente) termina en una obra que no
+se puede arrancar o en una vuelta más, y cada obra que se mueve, mueve toda la
+agenda. Por eso el cumplimiento de los plazos de las demás áreas no es opcional.
+
+**Por qué.** No es por prolijidad: cada atraso es plata. Lo que cuesta la vuelta
+de más, y lo que se dejó de hacer mientras tanto —la obra de otro cliente que se
+podría haber hecho en ese lugar—. De que cada obra salga en su fecha vive
+Voltia.
 
 **Desde cuándo rige.** 5 de octubre de 2026.
 
 **A qué manuales afecta.** Al PGT y al Manual de trabajo de Operaciones.
+
+### Los mantenimientos y el soporte son de Operaciones
+
+**Qué se decidió.** El trabajo de Operaciones no es solo la obra: los
+mantenimientos y las visitas de soporte en la casa del cliente también los hace
+Operaciones, durante toda la vida de la instalación. Son dos cosas distintas: el
+mantenimiento lo dispara una fecha; el soporte, un problema, casi siempre con un
+ticket. Los dos los coordina con el cliente Experiencia Solar, y los dos cierran
+con un informe de lo que se hizo.
+
+**Por qué.** Es trabajo en la instalación, con las mismas personas, las mismas
+herramientas y la misma agenda que la obra.
+
+**Desde cuándo rige.** 8 de octubre de 2026.
+
+**A qué manuales afecta.** Al PGT, al Manual de trabajo de Operaciones y al de
+Experiencia Solar.
 
 ### En obra, el criterio del instalador le gana al del proyectista
 
@@ -194,6 +216,7 @@ decisión vigente.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.6 | 8 de octubre de 2026 | Se registra que los mantenimientos y las visitas de soporte son trabajo de Operaciones. Se corrige por qué Operaciones es el área más crítica: es el centro de la cadena, no el final, y cada atraso es plata. |
 | 0.5 | 7 de octubre de 2026 | Se registra la decisión de justificar ante UTE la potencia recortada con un informe de proyección de consumo: el criterio es el balance anual y la generación se estima en 1.450 kWh por kW. |
 | 0.4 | 5 de octubre de 2026 | Se registran cinco decisiones: al cliente la fecha de obra se le dice una sola vez; seguridad sin flexibilidad, con sanción a toda la cadena; compras en plaza con tres presupuestos, salvo que esperar el tercero frene una obra; Operaciones es el área más crítica y los plazos de las demás áreas se cumplen; en obra, el criterio del instalador le gana al del proyectista. |
 | 0.3 | 2 de octubre de 2026 | Se registra la decisión de que el Plan de Protección puede incluir vandalismo, al mismo precio. |

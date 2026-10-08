@@ -1,6 +1,6 @@
 # Manual de Posventa — Experiencia Solar
 
-**Voltia · Uruguay** · Versión 1.15 — 5 de octubre de 2026
+**Voltia · Uruguay** · Versión 1.16 — 8 de octubre de 2026
 
 > Este manual es **el procedimiento y el manual de uso de Voltia PM, juntos**. Cada
 > paso dice qué hay que hacer, quién lo hace, en qué plazo, **y en qué pantalla de
@@ -1062,7 +1062,9 @@ queda en el portal sin que nadie la vea.
 **El contrato incluye mantenimiento anual sin cargo los primeros 2 años.**
 
 **Los dos mantenimientos gratis los propone Voltia, sin esperar a que el cliente
-los pida.** Se le ofrece una fecha y se confirma con él, como cualquier visita. Y
+los pida.** Se le ofrece una fecha y se confirma con él, como cualquier visita.
+Experiencia Solar la coordina con el cliente, y la visita la hace Operaciones,
+igual que las de soporte cuando algo falla. Y
 antes de que venza el segundo año, se le recuerda la condición de la cobertura de
 voladura: sin un mantenimiento en el último año, no hay cobertura.
 
@@ -1861,6 +1863,7 @@ sacar y se suben, no se retocan a mano.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 1.16 | 8 de octubre de 2026 | Los mantenimientos y las visitas de soporte los hace Operaciones; Experiencia Solar los coordina con el cliente. |
 | 1.15 | 5 de octubre de 2026 | Al cliente la fecha de obra se le dice una sola vez, cuando está confirmada: la fecha tentativa es interna y no se le comunica. |
 | 1.14 | 2 de octubre de 2026 | El Plan de Protección puede incluir vandalismo, al mismo precio. |
 | 1.13 | 30 de septiembre de 2026 | Obras con más de un suministro: se avisa al cliente cuando se habilita cada cuenta, y la Regla de Oro arranca con la última. Se corrige la cadencia del glosario (5 días hábiles en E1 y E2; E3 sin cadencia). Se agrega este registro. |

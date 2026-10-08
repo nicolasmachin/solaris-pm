@@ -23,6 +23,19 @@ export type Release = {
 };
 
 export const LATEST_RELEASE: Release = {
+  version: "12.0",
+  date: "8 de octubre de 2026",
+  sections: [
+    {
+      title: "Arreglos",
+      items: [
+        "El teléfono del cliente ya no exige el formato de celular uruguayo: se puede cargar un número de Argentina u otro país, un fijo, o escribirlo con +, espacios, guiones o paréntesis.",
+      ],
+    },
+  ],
+};
+
+const RELEASE_11_9: Release = {
   version: "11.9",
   date: "7 de octubre de 2026",
   sections: [
@@ -449,6 +462,11 @@ export type OldRelease = {
 };
 
 export const OLDER_RELEASES: OldRelease[] = [
+  {
+    version: "11.9",
+    shortDate: "7 oct",
+    highlights: RELEASE_11_9.sections.map((sec) => sec.title),
+  },
   {
     version: "11.8",
     shortDate: "5 oct",
