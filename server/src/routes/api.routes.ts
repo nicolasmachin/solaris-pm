@@ -14096,7 +14096,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
       createdAt: Date; updatedAt: Date;
       materialItem?: {
         id: string; nombre: string; unidad: string; categoryId: string;
-        category: { id: string; nombre: string; orden: number };
+        category: {
+          id: string; nombre: string; orden: number;
+          parent: { id: string; nombre: string; orden: number } | null;
+        };
       } | null;
       supplier?: { id: string; nombre: string } | null;
       movement?: { id: string; status: FinanceMovementStatus; descripcion: string } | null;
@@ -14129,7 +14132,14 @@ export async function registerApiRoutes(app: FastifyInstance) {
       materialItem: {
         select: {
           id: true, nombre: true, unidad: true, categoryId: true,
-          category: { select: { id: true, nombre: true, orden: true } },
+          // El rubro (parent) ordena las secciones de la lista: el orden de una
+          // subcategoría es relativo a su rubro, no global.
+          category: {
+            select: {
+              id: true, nombre: true, orden: true,
+              parent: { select: { id: true, nombre: true, orden: true } },
+            },
+          },
         },
       },
       supplier: { select: { id: true, nombre: true } },
@@ -14164,9 +14174,12 @@ export async function registerApiRoutes(app: FastifyInstance) {
       return materials.map(serializeProjectMaterial);
     });
 
+    // Cantidad 0 es válida: es un renglón "a completar" (lo deja la plantilla
+    // base, que carga todo lo que siempre va en cero). Mientras está en cero no
+    // sale en el PDF, ni en el consolidado de compras, ni en el flujo de fondos.
     const projectMaterialCreateSchema = z.object({
       materialItemId: z.string(),
-      quantity: z.coerce.number().int({ message: "Las cantidades deben ser enteras" }).positive(),
+      quantity: z.coerce.number().int({ message: "Las cantidades deben ser enteras" }).nonnegative(),
       unitPrice: z.coerce.number().nonnegative().optional(),
       moneda: z.nativeEnum(Moneda).optional(),
       ivaTasa: z.coerce.number().min(0).max(100).optional(),
@@ -14214,7 +14227,10 @@ export async function registerApiRoutes(app: FastifyInstance) {
     });
 
     const projectMaterialPatchSchema = z.object({
-      quantity: z.coerce.number().int({ message: "Las cantidades deben ser enteras" }).positive().optional(),
+      quantity: z.coerce.number().int({ message: "Las cantidades deben ser enteras" }).nonnegative().optional(),
+      // Cambiar el renglón por otra variante del mismo grupo del catálogo
+      // (diferencial 2P ⇄ 4P, caño 1" ⇄ 1¼"). Ver el PATCH.
+      materialItemId: z.string().optional(),
       unitPrice: z.coerce.number().nonnegative().optional(),
       moneda: z.nativeEnum(Moneda).optional(),
       ivaTasa: z.coerce.number().min(0).max(100).optional(),
@@ -14231,10 +14247,41 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const body = projectMaterialPatchSchema.parse(request.body);
       const existing = await prisma.projectMaterial.findFirst({ where: { id: materialId, projectId: id } });
       if (!existing) throw notFound("PROJECT_MATERIAL_NOT_FOUND", "Material del proyecto no encontrado");
+
+      // Cambio de variante: el renglón pasa a ser otro ítem del mismo grupo y
+      // toma su precio, moneda, IVA y proveedor del catálogo (como un alta
+      // nueva). Solo mientras está PENDIENTE y sin movimiento en Finanzas: si
+      // ya se pidió o se pagó, cambiarle el ítem reescribiría lo comprado.
+      const { materialItemId: newItemId, ...rest } = body;
+      let swapData: Prisma.ProjectMaterialUncheckedUpdateInput = {};
+      if (newItemId && newItemId !== existing.materialItemId) {
+        if (existing.status !== MaterialStatus.PENDIENTE || existing.movementId) {
+          throw badRequest("MATERIAL_SWAP_LOCKED", "Solo se puede cambiar la variante de un material pendiente");
+        }
+        const [current, next] = await Promise.all([
+          prisma.materialItem.findUnique({ where: { id: existing.materialItemId }, select: { categoryId: true } }),
+          prisma.materialItem.findUnique({ where: { id: newItemId } }),
+        ]);
+        if (!next || !next.activo) throw badRequest("MATERIAL_ITEM_INVALID", "El ítem no existe o está inactivo");
+        if (next.categoryId !== current?.categoryId) {
+          throw badRequest("MATERIAL_SWAP_OTHER_CATEGORY", "Solo se puede cambiar por un ítem del mismo grupo");
+        }
+        const dup = await prisma.projectMaterial.findFirst({ where: { projectId: id, materialItemId: newItemId } });
+        if (dup) throw conflict("MATERIAL_ALREADY_IN_LIST", `"${next.nombre}" ya está en la lista`);
+        swapData = {
+          materialItemId: next.id,
+          unitPrice: next.precioSugerido ?? 0,
+          moneda: next.moneda,
+          ivaTasa: next.ivaTasa,
+          supplierId: next.defaultSupplierId ?? null,
+        };
+      }
+
       const updated = await prisma.projectMaterial.update({
         where: { id: materialId },
         data: {
-          ...body,
+          ...swapData,
+          ...rest,
           lastEditedAt: new Date(),
           lastEditedById: user.id,
           lastEditedRole: user.role,
@@ -14255,6 +14302,19 @@ export async function registerApiRoutes(app: FastifyInstance) {
         await tx.projectMaterial.delete({ where: { id: materialId } });
       });
       return { success: true, previstoEliminado: !!existing.movementId };
+    });
+
+    // ─── Materiales: quitar los renglones en cero ─────────────────────────────
+    // Cierra la carga desde la plantilla base: lo que quedó en cero no va en
+    // esta obra. Solo toca renglones pendientes y sin movimiento en Finanzas.
+    app.post("/projects/:id/materials/remove-zero", { preHandler: authorizeAny(materialPermsEdit) }, async (request) => {
+      const { id } = z.object({ id: z.string() }).parse(request.params);
+      const project = await prisma.project.findFirst({ where: { id, deletedAt: null } });
+      if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
+      const { count } = await prisma.projectMaterial.deleteMany({
+        where: { projectId: id, quantity: 0, status: MaterialStatus.PENDIENTE, movementId: null },
+      });
+      return { eliminados: count };
     });
 
     // ─── Materiales: aplicar plantilla ────────────────────────────────────────
@@ -14486,8 +14546,9 @@ export async function registerApiRoutes(app: FastifyInstance) {
       const project = await prisma.project.findFirst({ where: { id, deletedAt: null }, select: { id: true, clientName: true, code: true } });
       if (!project) throw notFound("PROJECT_NOT_FOUND", "Proyecto no encontrado");
 
+      // Los renglones en cero son "a completar": no se le mandan al proveedor.
       const materials = await prisma.projectMaterial.findMany({
-        where: { projectId: id },
+        where: { projectId: id, quantity: { gt: 0 } },
         include: {
           materialItem: {
             select: { id: true, nombre: true, unidad: true, fotoPath: true, category: { select: { nombre: true, orden: true } } },
@@ -19467,6 +19528,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // 2) Materiales proyectados — agrupados por proyecto > categoría.
     const pms = await prisma.projectMaterial.findMany({
       where: {
+        quantity: { gt: 0 },
         expectedDate: { not: null },
         movementId: null,
         project: { deletedAt: null },
@@ -19933,6 +19995,7 @@ export async function registerApiRoutes(app: FastifyInstance) {
     // 3) Materiales proyectados (ProjectMaterial.expectedDate dentro del horizonte).
     const pms = await prisma.projectMaterial.findMany({
       where: {
+        quantity: { gt: 0 },
         expectedDate: { gte: now, lte: horizon },
         movementId: null,
         project: { deletedAt: null },

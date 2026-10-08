@@ -1,13 +1,13 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { Fragment, memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Check, ExternalLink, MoreHorizontal, Palette, StickyNote, Trash2 } from 'lucide-react';
+import { ArrowLeftRight, Check, ExternalLink, MoreHorizontal, Palette, Plus, StickyNote, Trash2 } from 'lucide-react';
 
-import { patchProjectMaterial, deleteProjectMaterial } from '../../../api/materials.api';
+import { patchProjectMaterial, deleteProjectMaterial, getMaterialItems } from '../../../api/materials.api';
 import { MaterialPhotoButton } from '../../materials/MaterialPhoto';
 import type { MaterialRowColor, ProjectMaterial } from '../../../types/materials.types';
-import { ROW_COLOR_SWATCHES, categoryBadgeClass } from './types';
+import { ROW_COLOR_SWATCHES, categoryBadgeClass, groupBySection, isZero } from './types';
 import { StatusPill } from './StatusPill';
 
 // ─── Tabla principal ───────────────────────────────────────────────────────
@@ -17,9 +17,15 @@ type Props = {
   rows: ProjectMaterial[];
   canEdit: boolean;
   canViewCatalog: boolean;
+  /** Ítems que ya están en la lista completa (no solo en las filas filtradas). */
+  existingItemIds: Set<string>;
+  /** Abre el alta de materiales con esa sección del catálogo desplegada. */
+  onAddInSection?: (categoryId: string) => void;
 };
 
-export function MaterialsTable({ projectId, rows, canEdit, canViewCatalog }: Props) {
+export function MaterialsTable({ projectId, rows, canEdit, canViewCatalog, existingItemIds, onAddInSection }: Props) {
+  const groups = useMemo(() => groupBySection(rows), [rows]);
+
   if (rows.length === 0) {
     return (
       <div className="text-center py-10 text-xs text-[var(--color-text-muted)] border border-dashed border-[var(--color-border)] rounded-lg">
@@ -46,16 +52,58 @@ export function MaterialsTable({ projectId, rows, canEdit, canViewCatalog }: Pro
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, idx) => (
-            <MaterialRow
-              key={row.id}
-              projectId={projectId}
-              row={row}
-              index={idx + 1}
-              canEdit={canEdit}
-              canViewCatalog={canViewCatalog}
-            />
-          ))}
+          {(() => {
+            let n = 0;
+            return groups.map(({ section, rows: sectionRows }) => {
+              const zeros = sectionRows.filter(isZero).length;
+              return (
+                <Fragment key={section.key}>
+                  <tr className="bg-[var(--color-bg-app)]/60 border-t border-[var(--color-border)]">
+                    <td colSpan={8} className="px-3 py-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-semibold text-[var(--color-text-primary)]">
+                          {section.parentLabel && (
+                            <span className="font-normal text-[var(--color-text-muted)]">{section.parentLabel} › </span>
+                          )}
+                          {section.label}
+                        </span>
+                        <span className="text-[10px] text-[var(--color-text-muted)] tabular-nums">{sectionRows.length}</span>
+                        {zeros > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-warning-bg)]/40 text-[var(--color-warning-text)]">
+                            {zeros} sin cantidad
+                          </span>
+                        )}
+                        {canEdit && onAddInSection && section.categoryId && (
+                          <button
+                            type="button"
+                            onClick={() => onAddInSection(section.categoryId!)}
+                            className="ml-auto inline-flex items-center gap-1 text-[10px] text-[var(--color-accent)] hover:underline"
+                            title="Agregar un material de esta sección"
+                          >
+                            <Plus className="w-3 h-3" /> Agregar
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                  {sectionRows.map((row) => {
+                    n += 1;
+                    return (
+                      <MaterialRow
+                        key={row.id}
+                        projectId={projectId}
+                        row={row}
+                        index={n}
+                        canEdit={canEdit}
+                        canViewCatalog={canViewCatalog}
+                        existingItemIds={existingItemIds}
+                      />
+                    );
+                  })}
+                </Fragment>
+              );
+            });
+          })()}
         </tbody>
       </table>
     </div>
@@ -70,12 +118,14 @@ const MaterialRow = memo(function MaterialRow({
   index,
   canEdit,
   canViewCatalog,
+  existingItemIds,
 }: {
   projectId: string;
   row: ProjectMaterial;
   index: number;
   canEdit: boolean;
   canViewCatalog: boolean;
+  existingItemIds: Set<string>;
 }) {
   const qc = useQueryClient();
 
@@ -85,7 +135,10 @@ const MaterialRow = memo(function MaterialRow({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['project-materials', projectId] });
     },
-    onError: () => toast.error('No se pudo guardar el cambio'),
+    onError: (err) =>
+      toast.error(
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'No se pudo guardar el cambio',
+      ),
   });
 
   const deleteMut = useMutation({
@@ -126,8 +179,19 @@ const MaterialRow = memo(function MaterialRow({
         )}
       </td>
       <td className="px-3 py-2 align-top">
-        <div className="crossable font-semibold text-[var(--color-text-primary)]">
-          {row.materialItem?.nombre ?? '—'}
+        <div className="flex items-start gap-1">
+          <div className="crossable font-semibold text-[var(--color-text-primary)]">
+            {row.materialItem?.nombre ?? '—'}
+          </div>
+          {/* Cambiar de variante solo mientras no se pidió ni se pagó. */}
+          {canEdit && row.materialItem && row.status === 'PENDIENTE' && !row.movementId && (
+            <VariantSwap
+              row={row}
+              existingItemIds={existingItemIds}
+              disabled={patchMut.isPending}
+              onPick={(itemId) => patchMut.mutate({ materialItemId: itemId })}
+            />
+          )}
         </div>
         {row.notes && (
           <div className="crossable text-[10px] text-[var(--color-text-muted)] mt-0.5">{row.notes}</div>
@@ -147,11 +211,12 @@ const MaterialRow = memo(function MaterialRow({
         {canEdit ? (
           <QuantityInput
             value={row.quantity}
+            zero={isZero(row)}
             disabled={patchMut.isPending}
             onCommit={(q) => patchMut.mutate({ quantity: q })}
           />
         ) : (
-          <span className="crossable">{row.quantity}</span>
+          <span className={isZero(row) ? 'text-[var(--color-warning-text)]' : 'crossable'}>{row.quantity}</span>
         )}
       </td>
       <td className="px-2 py-2 align-top">
@@ -210,10 +275,13 @@ const MaterialRow = memo(function MaterialRow({
 
 function QuantityInput({
   value,
+  zero,
   disabled,
   onCommit,
 }: {
   value: number;
+  /** En cero = falta completar: se resalta para que no pase de largo. */
+  zero: boolean;
   disabled: boolean;
   onCommit: (q: number) => void;
 }) {
@@ -252,8 +320,101 @@ function QuantityInput({
         }
       }}
       onFocus={(e) => e.target.select()}
-      className="w-16 px-1.5 py-0.5 text-right text-xs tabular-nums bg-[var(--color-bg-app)] text-[var(--color-text-primary)] border border-[var(--color-border)] rounded focus:outline-none focus:border-[var(--color-accent)] disabled:opacity-50"
+      title={zero ? 'Falta la cantidad' : undefined}
+      className={`w-16 px-1.5 py-0.5 text-right text-xs tabular-nums bg-[var(--color-bg-app)] text-[var(--color-text-primary)] border rounded focus:outline-none focus:border-[var(--color-accent)] disabled:opacity-50 ${
+        zero ? 'border-[var(--color-warning-text)]' : 'border-[var(--color-border)]'
+      }`}
     />
+  );
+}
+
+// ─── Cambiar variante ──────────────────────────────────────────────────────
+//
+// Ofrece los demás ítems activos del mismo grupo del catálogo (la misma
+// subcategoría): así un solo renglón de la plantilla cubre diferencial 2P o 4P,
+// caño de 1" o 1¼", sin tener los dos renglones y que uno quede siempre en cero.
+
+function VariantSwap({
+  row,
+  existingItemIds,
+  disabled,
+  onPick,
+}: {
+  row: ProjectMaterial;
+  existingItemIds: Set<string>;
+  disabled: boolean;
+  onPick: (itemId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const categoryId = row.materialItem?.categoryId;
+
+  // Misma query que el alta de materiales: queda en caché para toda la lista.
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ['material-items', 'all-active'],
+    queryFn: () => getMaterialItems({ activo: 'true' }),
+    enabled: open,
+  });
+  const options = useMemo(
+    () =>
+      items
+        .filter((it) => it.categoryId === categoryId && it.id !== row.materialItemId)
+        .sort((a, b) => a.nombre.localeCompare(b.nombre)),
+    [items, categoryId, row.materialItemId],
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [open]);
+
+  return (
+    <div className="relative shrink-0" ref={ref}>
+      <button
+        type="button"
+        title="Cambiar por otra variante del mismo grupo"
+        disabled={disabled}
+        onClick={() => setOpen((v) => !v)}
+        className="mt-px p-0.5 rounded text-[var(--color-text-muted)] hover:text-[var(--color-accent)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-50"
+      >
+        <ArrowLeftRight className="w-3 h-3" />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full mt-1 z-30 w-72 max-h-64 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-xl p-1">
+          <p className="px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)]">
+            Cambiar por
+          </p>
+          {isLoading ? (
+            <p className="px-2 py-2 text-[11px] text-[var(--color-text-muted)]">Cargando…</p>
+          ) : options.length === 0 ? (
+            <p className="px-2 py-2 text-[11px] text-[var(--color-text-muted)]">No hay otros ítems en este grupo.</p>
+          ) : (
+            options.map((it) => {
+              const already = existingItemIds.has(it.id);
+              return (
+                <button
+                  key={it.id}
+                  type="button"
+                  disabled={already}
+                  onClick={() => {
+                    setOpen(false);
+                    onPick(it.id);
+                  }}
+                  className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded text-left text-[11px] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-50 disabled:cursor-default disabled:hover:bg-transparent"
+                >
+                  <span className="truncate">{it.nombre}</span>
+                  {already && <span className="shrink-0 text-[9px] text-[var(--color-text-muted)]">ya está</span>}
+                </button>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

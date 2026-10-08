@@ -132,3 +132,48 @@ export function categoryBadgeClass(nombre: string | undefined): string {
   if (n.includes('mano de obra')) return 'bg-violet-500/15 text-violet-400 border-violet-500/30';
   return 'bg-[var(--color-border)] text-[var(--color-text-secondary)] border-[var(--color-border)]';
 }
+
+// ─── Secciones de la lista ─────────────────────────────────────────────────
+//
+// La lista se recorre por secciones = la categoría del ítem en el catálogo
+// ("Eléctrica › Cables"). El orden de una subcategoría es relativo a su rubro,
+// así que se ordena por rubro (orden, nombre) y después por subcategoría.
+
+export type MaterialSection = {
+  key: string;
+  categoryId: string | null;
+  label: string;
+  parentLabel: string | null;
+  sort: [number, string, number, string];
+};
+
+export function sectionOf(m: ProjectMaterial): MaterialSection {
+  const cat = m.materialItem?.category;
+  if (!cat) return { key: '__none__', categoryId: null, label: 'Sin categoría', parentLabel: null, sort: [9999, '', 0, ''] };
+  const parent = cat.parent ?? null;
+  return {
+    key: cat.id,
+    categoryId: cat.id,
+    label: cat.nombre,
+    parentLabel: parent?.nombre ?? null,
+    sort: parent ? [parent.orden, parent.nombre, cat.orden, cat.nombre] : [cat.orden, cat.nombre, -1, ''],
+  };
+}
+
+export function groupBySection(rows: ProjectMaterial[]): Array<{ section: MaterialSection; rows: ProjectMaterial[] }> {
+  const map = new Map<string, { section: MaterialSection; rows: ProjectMaterial[] }>();
+  for (const r of rows) {
+    const s = sectionOf(r);
+    const g = map.get(s.key) ?? { section: s, rows: [] };
+    g.rows.push(r);
+    map.set(s.key, g);
+  }
+  const cmp = (a: MaterialSection, b: MaterialSection) =>
+    a.sort[0] - b.sort[0] || a.sort[1].localeCompare(b.sort[1]) || a.sort[2] - b.sort[2] || a.sort[3].localeCompare(b.sort[3]);
+  return Array.from(map.values()).sort((a, b) => cmp(a.section, b.section));
+}
+
+/** Renglón "a completar": lo deja la plantilla base en cero. */
+export function isZero(m: ProjectMaterial): boolean {
+  return Number(m.quantity) === 0;
+}

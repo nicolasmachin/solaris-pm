@@ -24,6 +24,15 @@
 - Administrar las **plantillas de lista de materiales** ya no es solo del administrador: también lo puede hacer **Ingeniería**, que es quien las usa. Crear, editar y borrar plantillas, y entrar a esa sección de Administración aunque no tenga el resto del panel.
 - Las **categorías del catálogo** siguen siendo del administrador: definen la estructura del catálogo y de los PDF.
 
+#### Una sola plantilla de materiales: la lista se arma completando cantidades
+
+- Las tres plantillas por tipo de conexión (Monofásico, Trifásico 230 y Trifásico 400) se reemplazan por **una sola plantilla "Base"** con todo lo que va en casi todas las obras, **con la cantidad en cero**. Armar la lista pasa a ser completar números, no sacar y agregar.
+- Lo que cambia según la obra se resuelve en el mismo renglón con el botón **⇄**, que lo **cambia por otro del mismo grupo**: diferencial de 2 o 4 polos, caño de 1" o 1¼", medidor monofásico o trifásico.
+- La lista ahora se ve **por secciones** (Cables, Canalización, Protecciones…), cada una con su **+ Agregar**, que abre el catálogo directo en esa sección.
+- Los materiales en cero se ven resaltados, y arriba de la lista aparece cuántos faltan completar, con un botón para **quitar los que quedaron en cero** (los que no van en esa obra).
+- Mientras un material está en cero **no sale en el PDF ni en el consolidado de compras**. Al exportar, avisa cuántos quedan afuera.
+- En el catálogo, los **medidores, dongles y el Shine** pasan a un grupo propio, **Monitoreo y medición**, y la **jabalina** pasa a **Puesta a tierra**.
+
 ### 5 de octubre de 2026
 
 #### Reprogramar una obra confirmada pide el motivo

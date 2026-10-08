@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { ChevronDown, DollarSign, FileText, LayoutTemplate, Plus, RefreshCw, Search, Sparkles, X } from 'lucide-react';
+import { AlertTriangle, ChevronDown, DollarSign, FileText, LayoutTemplate, Plus, RefreshCw, Search, Sparkles, X } from 'lucide-react';
 import {
   getProjectMaterials, createProjectMaterial,
   generateProjectPrevistos, regenerateProjectPrevistos, exportMaterialsPdf,
-  getMaterialCategories, getMaterialItems, getRegenerateImpact,
+  getMaterialCategories, getMaterialItems, getRegenerateImpact, removeZeroProjectMaterials,
 } from '../../api/materials.api';
 import { getMaterialTemplates, applyMaterialTemplate } from '../../api/materialTemplates.api';
 import type { MaterialItem, ProjectMaterial } from '../../types/materials.types';
@@ -17,7 +17,7 @@ import { todayLocalISO } from '../../utils/date';
 import { MaterialPhotoButton } from '../materials/MaterialPhoto';
 import { MaterialsFilters } from './materials/MaterialsFilters';
 import { MaterialsTable } from './materials/MaterialsTable';
-import { applyFilters, hasAnyFilter } from './materials/types';
+import { applyFilters, hasAnyFilter, isZero } from './materials/types';
 import { useMaterialsFilters } from './materials/useMaterialsFilters';
 
 function klass(...p: (string | false | undefined)[]) { return p.filter(Boolean).join(' '); }
@@ -169,12 +169,15 @@ function GeneratePrevistosModal({
 
 // ─── Modal: Agregar ítem desde catálogo ────────────────────────────────────────
 
-function AddItemModal({ projectId, existingItemIds, canEdit, onClose }: { projectId: string; existingItemIds: Set<string>; canEdit: boolean; onClose: () => void }) {
+function AddItemModal({ projectId, existingItemIds, canEdit, initialCategoryId, onClose }: { projectId: string; existingItemIds: Set<string>; canEdit: boolean; initialCategoryId?: string | null; onClose: () => void }) {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [adding, setAdding] = useState<string | null>(null);
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
-  const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
+  // Desde el "+ Agregar" de una sección de la lista llega abierta esa sección.
+  const [expandedCats, setExpandedCats] = useState<Set<string>>(
+    () => new Set(initialCategoryId ? [initialCategoryId] : []),
+  );
 
   const { data: categories = [] } = useQuery({
     queryKey: ['material-categories', 'true'],
@@ -371,8 +374,8 @@ function ApplyTemplateModal({ projectId, existingCount, onClose }: { projectId: 
 
         <div className="px-4 py-3 border-b border-[var(--color-border)]">
           <p className="text-xs text-[var(--color-text-muted)]">
-            Precarga la base de materiales de la plantilla. Solo se agregan los ítems que aún no están en la lista
-            {existingCount > 0 ? ` (hoy tenés ${existingCount} cargado${existingCount === 1 ? '' : 's'})` : ''}; las cantidades las ajustás después.
+            Precarga los materiales que siempre van, con la cantidad en cero para completar. Solo se agregan los que aún no están en la lista
+            {existingCount > 0 ? ` (hoy tenés ${existingCount} cargado${existingCount === 1 ? '' : 's'})` : ''}. Lo que dependa de la obra (2P o 4P, 1" o 1¼") se cambia en cada renglón con ⇄.
           </p>
         </div>
 
@@ -507,6 +510,7 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
   const canViewCatalog = usePermission('CONFIGURACION', 'VIEW') || isAdmin;
 
   const [showAdd, setShowAdd] = useState(false);
+  const [addCategoryId, setAddCategoryId] = useState<string | null>(null);
   const [showTemplate, setShowTemplate] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [isRegenerateMode, setIsRegenerateMode] = useState(false);
@@ -521,6 +525,18 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
   });
 
   const filtered = useMemo(() => applyFilters(materials, filterState), [materials, filterState]);
+
+  // Renglones en cero = "a completar" (los deja la plantilla base). No salen en
+  // el PDF, ni en compras, ni en el flujo de fondos hasta que tengan cantidad.
+  const zeroCount = useMemo(() => materials.filter(isZero).length, [materials]);
+  const removeZeroMut = useMutation({
+    mutationFn: () => removeZeroProjectMaterials(projectId),
+    onSuccess: (r) => {
+      toast.success(`${r.eliminados} material${r.eliminados === 1 ? '' : 'es'} en cero quitado${r.eliminados === 1 ? '' : 's'}`);
+      qc.invalidateQueries({ queryKey: ['project-materials', projectId] });
+    },
+    onError: (err) => toast.error(getApiErr(err) ?? 'No se pudieron quitar'),
+  });
 
   // Metadata para el header
   const categoryCount = useMemo(() => {
@@ -598,6 +614,12 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
 
   async function handleExportPdf(includePrecios: boolean) {
     setPdfDropOpen(false);
+    if (
+      zeroCount > 0 &&
+      !window.confirm(
+        `Hay ${zeroCount} material${zeroCount === 1 ? '' : 'es'} sin cantidad. No van a salir en el PDF.\n\n¿Exportar igual?`,
+      )
+    ) return;
     setPdfLoading(true);
     try {
       await exportMaterialsPdf(projectId, includePrecios);
@@ -738,6 +760,27 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
         <>
           <MaterialsFilters materials={materials} filtered={filtered} />
 
+          {canEdit && zeroCount > 0 && (
+            <div className="mx-4 mt-3 flex items-center gap-2 flex-wrap rounded-lg border border-[var(--color-warning-text)]/40 bg-[var(--color-warning-bg)]/30 px-3 py-2">
+              <AlertTriangle className="w-4 h-4 text-[var(--color-warning-text)] shrink-0" />
+              <p className="text-xs text-[var(--color-text-primary)] flex-1 min-w-[200px]">
+                <strong>{zeroCount}</strong> material{zeroCount === 1 ? '' : 'es'} sin cantidad. Mientras estén en cero no salen en el PDF ni en compras.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm(`¿Quitar los ${zeroCount} materiales que quedaron en cero? Se quitan los que no van en esta obra.`)) {
+                    removeZeroMut.mutate();
+                  }
+                }}
+                disabled={removeZeroMut.isPending}
+                className="text-[11px] px-2.5 py-1 rounded-md border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] disabled:opacity-60"
+              >
+                {removeZeroMut.isPending ? 'Quitando…' : 'Quitar los que están en cero'}
+              </button>
+            </div>
+          )}
+
           {materials.length > 0 && (
             <CostBreakdown projectId={projectId} rows={filtered} filtersActive={hasAnyFilter(filterState)} />
           )}
@@ -773,6 +816,8 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
                 rows={filtered}
                 canEdit={canEdit}
                 canViewCatalog={canViewCatalog}
+                existingItemIds={existingItemIds}
+                onAddInSection={(categoryId) => { setAddCategoryId(categoryId); setShowAdd(true); }}
               />
             )}
           </div>
@@ -784,7 +829,8 @@ export function EngineeringMaterials({ projectId, plannedWorkStart }: { projectI
           projectId={projectId}
           existingItemIds={existingItemIds}
           canEdit={canEdit}
-          onClose={() => setShowAdd(false)}
+          initialCategoryId={addCategoryId}
+          onClose={() => { setShowAdd(false); setAddCategoryId(null); }}
         />
       )}
 

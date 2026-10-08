@@ -1,6 +1,6 @@
 # Manual de trabajo de Ingeniería
 
-**Voltia · Uruguay** · Versión 0.7 — 7 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.8 — 7 de octubre de 2026 · *en armado*
 
 > Este manual es **el procedimiento, los lineamientos y las herramientas de
 > Ingeniería, juntos**: qué se hace, quién lo hace, en qué plazo, con qué
@@ -196,8 +196,12 @@ la respuesta al mail de UTE, en el mismo hilo de la consulta.
 
 Los materiales que Voltia usa están en un catálogo único, en **Administración →
 Materiales**, ordenado en dos niveles: los **rubros** (Paneles solares,
-Inversores, Estructuras, Eléctrica, Consumibles) y, adentro de cada uno,
-**subgrupos**.
+Inversores, Monitoreo y medición, Estructuras, Eléctrica, Consumibles) y,
+adentro de cada uno, **subgrupos**.
+
+Monitoreo y medición junta los medidores inteligentes, los dongles y los
+módulos de comunicación del inversor, de todas las marcas, sean monofásicos o
+trifásicos.
 
 Eléctrica es el rubro grande —más de la mitad del catálogo— y está abierta en:
 Cables, Canalización (caños, codos, cuplas, bandejas, cámaras), Protecciones
@@ -215,18 +219,56 @@ el rubro, no aparece en ningún subgrupo y hay que ir a buscarlo con el buscador
 Crear o renombrar subgrupos lo hace el administrador. Dar de alta **ítems** del
 catálogo lo hace Ingeniería.
 
-### Las plantillas de lista de materiales
+### La plantilla de lista de materiales y cómo se arma la lista
 
-La plantilla es el punto de partida de la lista de una obra: en vez de armarla
-desde cero, se aplica la plantilla que corresponde y se ajusta.
+La **lista de materiales** de una obra es todo lo que hay que comprar y llevar
+para instalarla, con su cantidad. Vive en el proyecto, en la pestaña
+**Compras**, y la comparten Ingeniería y Operaciones.
 
-**Las configura Ingeniería**, que es quien las usa: crear, editar y borrar
-plantillas se hace desde **Administración → Plantillas de materiales**, y se
-entra a esa sección aunque no se tenga el resto del panel de administración.
+La **plantilla** es el punto de partida de esa lista. Hay **una sola**, la
+plantilla **Base**, con todo lo que va en casi todas las obras: paneles, cable
+solar, conectores, tierra, canalización, protecciones, tableros, terminales,
+fijación y sujetadores. **Viene con todas las cantidades en cero**: armar la
+lista es completar números, no sacar y agregar renglones.
 
-*Por escribir: cómo se arma la lista de materiales con la plantilla; el
-unifilar, la pre-ingeniería, los triángulos, la visita técnica y el Proyecto
-Final de Ingeniería.*
+**No hay una plantilla por tipo de conexión** (monofásica o trifásica). Lo que
+cambia entre una y otra es casi siempre la misma pieza en otra medida: el
+diferencial de 2 o de 4 polos, el descargador, el medidor, el caño de 1" o de
+1¼". Eso se cambia en el mismo renglón.
+
+Cómo se arma la lista de una obra:
+
+1. En la pestaña **Compras** del proyecto, **Usar plantilla → Base**. Si la
+   lista ya tenía materiales, se agregan solo los que faltan; lo que estaba no
+   se toca.
+2. La lista se ve **por secciones**, iguales a los subgrupos del catálogo
+   (Eléctrica › Cables, Eléctrica › Protecciones…). Se recorre sección por
+   sección completando cantidades. Los renglones en cero tienen la casilla
+   resaltada y cada sección dice cuántos le faltan.
+3. Cuando un renglón no es la variante que lleva esta obra, se toca **⇄** al
+   lado del nombre y se elige la que va. Solo ofrece materiales del **mismo
+   subgrupo**. Se puede cambiar mientras el material está **Pendiente**: si ya se
+   pidió, no.
+4. Lo que no está en la plantilla se agrega con **+ Agregar** de su sección, que
+   abre el catálogo directo ahí. Quedan afuera de la plantilla, a propósito,
+   **el inversor**, que cambia en cada obra, y **la estructura que depende del
+   techo** (perfiles, tornillos, anclajes, losas).
+5. Al terminar, arriba de la lista aparece cuántos materiales quedaron en cero.
+   Si no van en esta obra, **Quitar los que están en cero** los saca todos juntos.
+
+**Un material en cero no existe para compras**: no sale en el PDF de la lista
+ni en el consolidado con el que se compra. Por eso la lista no se da por
+cerrada con renglones en cero; al exportar el PDF, Voltia PM avisa cuántos
+quedan afuera.
+
+**La plantilla la configura Ingeniería**, que es quien la usa: crearla,
+editarla y borrarla se hace desde **Administración → Plantillas de
+materiales**, y se entra a esa sección aunque no se tenga el resto del panel de
+administración. Si un material empieza a ir en casi todas las obras, se suma a
+la Base en cero.
+
+*Por escribir: el unifilar, la pre-ingeniería, los triángulos, la visita
+técnica y el Proyecto Final de Ingeniería.*
 
 ---
 
@@ -307,6 +349,7 @@ deja como comentario en su etapa y le llega solo a Experiencia Solar.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.8 | 7 de octubre de 2026 | La lista de materiales se arma desde una sola plantilla, Base, con las cantidades en cero: se agrega cómo se arma la lista paso a paso, el cambio de variante en el mismo renglón, por qué no hay una plantilla por tipo de conexión y que un material en cero no sale para compras. En el catálogo se suma el rubro Monitoreo y medición. |
 | 0.7 | 7 de octubre de 2026 | Nuevo lineamiento: cuando UTE recorta la potencia pedida por el balance anual, Ingeniería contesta con un informe de justificación de potencia. Se agrega la herramienta que arma ese informe en Voltia PM, paso por paso. |
 | 0.6 | 7 de octubre de 2026 | Se agrega el catálogo de materiales por rubro y subgrupo (Eléctrica abierta en Cables, Canalización, Protecciones, Terminales, Tableros, Puesta a tierra y Fijación), con la regla de cargar el ítem en el subgrupo y no en el rubro; y que las plantillas de lista de materiales las configura Ingeniería. |
 | 0.5 | 5 de octubre de 2026 | Nuevo lineamiento: en obra, el criterio del instalador le gana al del proyectista; lo que cambió en obra se pasa a los planos finales. |

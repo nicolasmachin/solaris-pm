@@ -1,6 +1,6 @@
 # Manual de trabajo de Operaciones
 
-**Voltia · Uruguay** · Versión 0.4 — 5 de octubre de 2026 · *en armado*
+**Voltia · Uruguay** · Versión 0.5 — 7 de octubre de 2026 · *en armado*
 
 > Este manual explica **cómo trabaja Operaciones**: el procedimiento (qué se hace, quién lo hace, en qué orden y en qué plazo), los lineamientos (las reglas y el criterio para los casos que no son de manual) y las herramientas de Voltia PM que se usan y cómo se usan.
 >
@@ -233,7 +233,7 @@ Se entra desde **Proyectos** en el menú de arriba (en el celular, **Operaciones
 
 - **Historial de actividad:** quién hizo qué y cuándo.
 - **Comentarios:** donde se anota lo que no tiene otro lugar (el motivo de una reprogramación, lo del día de obra, lo que se resolvió distinto al proyecto).
-- **Compras:** la lista de materiales del proyecto, compartida con Ingeniería. Cada material está **Pendiente**, **Pedido** o **Recibido**, y se puede filtrar, marcar con color, sumar foto y notas, y exportar con o sin precios.
+- **Compras:** la lista de materiales del proyecto, compartida con Ingeniería, ordenada por secciones (cables, canalización, protecciones…). Cada material está **Pendiente**, **Pedido** o **Recibido**, y se puede filtrar, marcar con color, sumar foto y notas, y exportar con o sin precios. Un material con **cantidad en cero** es uno que Ingeniería todavía no completó: no sale en el PDF ni en el consolidado de compras, así que no se compra hasta que tenga cantidad.
 - **Materiales:** lo que salió del stock para esta obra. **+ Registrar consumo** para descontar un material del stock.
 - **Costos:** el costo previsto y el real, el margen y la carga de costos que no son materiales (mano de obra, flete, tercerizados). La ve quien tiene acceso a Finanzas.
 - **UTE:** el trámite de UTE del proyecto, por suministro.
@@ -708,6 +708,7 @@ No se manda a obra sin preguntar: se consulta con Ingeniería si sirve.
 
 | Versión | Fecha | Qué se agregó o modificó |
 |---|---|---|
+| 0.5 | 7 de octubre de 2026 | En la pestaña Compras: la lista se ve por secciones, y un material con cantidad en cero es uno que Ingeniería todavía no completó, que no sale en el PDF ni en el consolidado de compras. |
 | 0.4 | 5 de octubre de 2026 | Se reordena el manual con el mismo modelo que el de Experiencia Solar. Se agregan: las capturas de Voltia PM en cada pantalla que se explica; la entrega de materiales la coordina el capataz con el cliente; al cliente la fecha de obra se le dice una sola vez, cuando está confirmada; el capítulo de seguridad, con la responsabilidad en cadena (operario, capataz, gerente de Operaciones) y las sanciones; la regla de los tres presupuestos para las compras en plaza; qué tiene que saber Operaciones de las otras áreas; por qué Operaciones es el área más crítica (todo atraso de otra área le cae a la obra) y qué tiene que estar para confirmar una fecha; la regla de que en obra el criterio del instalador le gana al del proyectista; dónde empieza y termina cada etapa, con lo que recibe y lo que entrega; los 12 días hasta la obra; todo el módulo de Proyectos de Voltia PM explicado (lista, proyecto, panel de etapa, subetapas de Operaciones, calendario, las 23 fotos, videos, pagos a instaladores); los mensajes al cliente citados enteros; las reglas del área; los criterios técnicos de obra; qué hacer cuando algo sale mal; las hojas para llevar a la obra; las reglas en una página y el glosario. |
 | 0.3 | 5 de octubre de 2026 | Se incorpora el material de Operaciones: el flujo antes de la obra con sus 9 pasos y plazos, la guía del informe del capataz, las 4 cosas que se cierran el día de obra, la guía de firmas de los 7 documentos de UTE y la puesta en marcha por marca. Sin contraseñas. |
 | 0.2 | 29 de septiembre de 2026 | Obra: para cerrar la obra, los sobrantes tienen que quedar retirados y el lugar limpio, también con cuadrilla tercerizada. |

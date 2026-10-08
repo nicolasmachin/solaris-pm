@@ -537,7 +537,7 @@ export async function buildEFPSnapshots(projectId: string): Promise<{
   };
 
   const materials = await prisma.projectMaterial.findMany({
-    where: { projectId },
+    where: { projectId, quantity: { gt: 0 } },
     include: { materialItem: { select: { id: true, nombre: true, unidad: true } } },
   });
   const snapshotMaterials: SnapshotMaterials = {

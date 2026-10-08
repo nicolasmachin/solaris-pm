@@ -156,7 +156,7 @@ function TemplateItemsEditor({ template, onSuccess, onClose }: { template: Mater
       nombre: it.nombre,
       unidad: it.unidad,
       categoria: it.category?.nombre ?? '',
-      quantity: '1',
+      quantity: '0',
     }]);
   }
   function removeItem(id: string) { setLines(prev => prev.filter(l => l.materialItemId !== id)); }
@@ -169,7 +169,7 @@ function TemplateItemsEditor({ template, onSuccess, onClose }: { template: Mater
         template.id,
         lines.map((l, idx) => {
           const q = parseFloat(l.quantity.replace(',', '.'));
-          return { materialItemId: l.materialItemId, quantity: isFinite(q) && q > 0 ? q : 1, orden: idx };
+          return { materialItemId: l.materialItemId, quantity: isFinite(q) && q >= 0 ? q : 0, orden: idx };
         }),
       );
       toast.success(`Plantilla "${template.nombre}" guardada (${lines.length} ítems)`);

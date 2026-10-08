@@ -1,5 +1,8 @@
-// Plantillas de lista de materiales: ABM del catálogo maestro de plantillas
-// (set reutilizable de ítems por tipo de instalación). La aplicación de una
+// Plantillas de lista de materiales: ABM del catálogo maestro de plantillas.
+// Una plantilla es "lo que siempre va", con cantidades en cero: aplicarla deja
+// los renglones listos para llenar cantidades, y lo que cambia de una obra a
+// otra (2P/4P, 1"/1¼") se resuelve cambiando la variante en la lista, no con
+// una plantilla por tipo de instalación. La aplicación de una
 // plantilla sobre la lista de un proyecto vive en api.routes.ts
 // (POST /projects/:id/materials/apply-template), porque reutiliza los helpers
 // de la lista por proyecto.
@@ -139,7 +142,7 @@ const templateItemsSchema = z
         z
           .object({
             materialItemId: z.string(),
-            quantity: z.coerce.number().positive().optional(),
+            quantity: z.coerce.number().nonnegative().optional(),
             orden: z.coerce.number().int().optional(),
           })
           .strict(),
@@ -280,7 +283,9 @@ export async function registerMaterialTemplatesRoutes(app: FastifyInstance) {
             data: deduped.map((it, idx) => ({
               templateId: id,
               materialItemId: it.materialItemId,
-              quantity: it.quantity ?? 1,
+              // Por defecto en cero: la plantilla dice qué va, la cantidad
+              // la pone quien arma la lista de cada obra.
+              quantity: it.quantity ?? 0,
               orden: it.orden ?? idx,
             })),
           });

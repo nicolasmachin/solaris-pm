@@ -1,7 +1,8 @@
 # 05 · Ingeniería
 
 > **Capítulo parcial.** Están documentados el **consolidador de materiales**, el
-> **catálogo de materiales**, la **foto de referencia del material**, el
+> **catálogo de materiales**, las **plantillas y la lista de materiales del
+> proyecto**, la **foto de referencia del material**, el
 > **diseñador de gabinetes** y la **justificación de potencia ante UTE**. El resto de las herramientas existe y está en
 > producción; falta escribirlas.
 
@@ -13,7 +14,6 @@ El workspace de ingeniería y sus herramientas: unifilar, materiales, pre-ingeni
 
 - El workspace y su acordeón de herramientas
 - Unifilar: generación del SVG y del PDF
-- Plantillas de materiales
 - Cálculo de triángulos
 - Pre-ingeniería: extracción desde minuta con IA y PDF
 - Visita técnica: audio, fotos, transcripción y el informe vivo
@@ -260,6 +260,127 @@ estructura del catálogo y de los PDF.
 - **Sin categorías activas**, el botón "Nuevo ítem" queda deshabilitado.
 - Un usuario de Ingeniería que entre a `/admin?tab=usuarios` a mano **no ve esa
   sección**: cae en Materiales y la URL se corrige sola.
+
+---
+
+# Plantillas y lista de materiales del proyecto
+
+## Para qué existe
+
+La lista de materiales de cada obra se arma en el proyecto (la comparten
+Ingeniería y Operaciones; en el proyecto es la pestaña **Compras**). La
+**plantilla** es el punto de partida: carga de una vez lo que va en casi todas
+las obras, para que armar la lista sea **completar cantidades** y no elegir
+entre los 307 ítems del catálogo.
+
+Hasta el 7-oct-2026 había tres plantillas por tipo de conexión (Monofásico,
+Trifásico 230, Trifásico 400) generadas con el **promedio del uso histórico**
+(`seed-material-templates.ts`). No servían: cargaban cantidades promedio que
+siempre había que corregir, y siempre faltaba o sobraba algo, así que se
+terminaba revisando todo. Se reemplazaron por **una sola plantilla "Base"** con
+cantidades en cero.
+
+## Cómo se usa
+
+1. En la lista del proyecto, **Usar plantilla → Base**. Agrega solo los ítems
+   que todavía no están, todos con cantidad **0**.
+2. La lista se ve **por secciones** (la subcategoría del catálogo, "Eléctrica ›
+   Cables"), cada una con su contador y, si tiene renglones en cero, la etiqueta
+   **"N sin cantidad"**. Cada sección tiene **+ Agregar**, que abre el buscador del
+   catálogo con esa sección ya desplegada.
+3. Se completan las cantidades. La casilla en cero aparece con borde de aviso.
+4. Lo que depende de la obra se resuelve con **⇄ (cambiar variante)** junto al
+   nombre: ofrece los demás ítems activos de **la misma subcategoría**
+   (diferencial 2P ⇄ 4P, caño 1" ⇄ 1¼", medidor SPM ⇄ TPM). El renglón toma el
+   precio, la moneda, el IVA y el proveedor del ítem nuevo.
+5. Mientras haya renglones en cero se ve un recuadro arriba de la lista
+   ("N materiales sin cantidad") con **Quitar los que están en cero**, que
+   elimina los que no van en esa obra.
+
+## Cómo funciona
+
+- Modelos `MaterialTemplate` / `MaterialTemplateItem` / `ProjectMaterial` en
+  `schema.prisma`. ABM de plantillas en `routes/material-templates.routes.ts`;
+  aplicar, editar renglón, cambiar variante y quitar ceros en `api.routes.ts`
+  (`/projects/:id/materials/...`).
+- **Cantidad 0 es válida** en `ProjectMaterial` (`POST`/`PATCH` aceptan
+  `nonnegative`) y en `MaterialTemplateItem` (default 0 en `PUT .../items`). Un
+  renglón en cero significa **"a completar"**, y por eso **queda afuera** de:
+  el PDF de la lista (`export-pdf`), el consolidador
+  (`consolidador.routes.ts`), los materiales proyectados del flujo de fondos
+  (los dos `findMany` de `ProjectMaterial` con `expectedDate`) y el snapshot del
+  EFP (`efp.service.ts` → `buildEFPSnapshots()`). El conector MCP sí los muestra
+  (`× 0`), porque describe la lista tal cual está.
+- **No hay botón Guardar**: cada celda se guarda sola al salir. Por eso el aviso
+  de ceros no es "al guardar" sino un recuadro permanente en la lista, y una
+  confirmación al **Exportar** el PDF ("no van a salir en el PDF").
+- **Cambiar variante** es `PATCH /projects/:id/materials/:materialId` con
+  `materialItemId`. Valida que el ítem nuevo esté activo, que sea de la **misma
+  `categoryId`** (`MATERIAL_SWAP_OTHER_CATEGORY`), que no esté ya en la lista
+  (`MATERIAL_ALREADY_IN_LIST`, 409) y que el renglón esté `PENDIENTE` y sin
+  `movementId` (`MATERIAL_SWAP_LOCKED`). En la UI el botón ⇄ ni se muestra fuera
+  de esos casos (`VariantSwap` en `MaterialsTable.tsx`).
+- **Quitar ceros** es `POST /projects/:id/materials/remove-zero`: borra los
+  renglones con `quantity = 0`, `PENDIENTE` y sin `movementId`.
+- **Secciones**: `groupBySection()` en `components/project/materials/types.ts`
+  ordena por rubro (orden, nombre) y después por subcategoría. Hace falta porque
+  el `orden` de una subcategoría es **relativo a su rubro**: ordenar solo por
+  `category.orden` mezclaba "Cables" con "Paneles solares". El `GET` de la lista
+  trae `category.parent` para esto.
+- **El contenido de "Base"** lo carga `server/prisma/scripts/seed-plantilla-base.ts`
+  (idempotente, `--dry-run`; aborta si falta algún ítem, `--skip-missing` para
+  local). Sale de las 37 obras con lista en prod al 7-oct-2026: entra lo que
+  aparece en la mitad o más, con la variante más usada. Además:
+  - crea la categoría **"Monitoreo y medición"** y mueve ahí medidores, dongles y
+    el Shine (estaban repartidos entre "Inversores Monofasicos" y "Trifasicos",
+    y sin eso el ⇄ no podía pasar de SPM a TPM);
+  - mueve la jabalina de "Terminales y conexionado" a "Puesta a tierra";
+  - **desactiva** las tres plantillas viejas (no las borra).
+
+## Permisos
+
+| Endpoint | Permiso |
+|---|---|
+| `GET /projects/:id/materials` | `INGENIERIA:VIEW` **o** `OPERACIONES:VIEW` |
+| `POST`/`PATCH`/`DELETE /projects/:id/materials...`, `apply-template`, `remove-zero` | `INGENIERIA:EDIT` **o** `OPERACIONES:EDIT` |
+| `POST /projects/:id/materials/export-pdf` | `INGENIERIA:VIEW` |
+| `GET /material-templates` | `INGENIERIA:VIEW` **o** `OPERACIONES:VIEW` |
+| `POST`/`PATCH`/`DELETE /material-templates` y `PUT .../items` | `CONFIGURACION` **o** `INGENIERIA` (CREATE/EDIT/DELETE) |
+
+Cambiar variante y quitar ceros no agregaron permisos: usan los de editar la
+lista. No hay guards por rol.
+
+## Reglas y decisiones
+
+- **Una plantilla, no una por tipo de conexión.** Lo que cambia entre
+  monofásico y trifásico es casi siempre la misma pieza en otra medida. Con dos
+  renglones (2P y 4P) uno queda siempre en cero y ensucia el aviso; con uno y el
+  ⇄ no.
+- **El ⇄ se limita a la misma subcategoría**, que es lo que define "variante".
+  Si dos variantes reales están en grupos distintos, la solución es moverlas de
+  categoría (como se hizo con los medidores), no abrir el ⇄ a todo el catálogo.
+- **Quedan afuera de "Base"** el inversor (cambia en cada obra) y la estructura
+  que depende del techo (perfiles C/P/H, punta mecha, anclajes, losas): ninguna
+  llega a dos tercios de las obras. Se cargan por sección. Si sirve, más adelante
+  se agregan plantillas chicas por tipo de montaje que se suman a la base
+  (aplicar plantilla ya agrega solo lo que falta).
+- **Agregar a mano desde el catálogo sigue entrando con cantidad 1**, no 0: quien
+  lo agrega ya sabe que va.
+- El campo **Tipo de instalación** (`phaseType`) de la plantilla sigue
+  existiendo pero ya no se usa para nada.
+
+## Casos borde
+
+- **Aplicar "Base" sobre una lista que ya tiene ítems**: solo agrega los que
+  faltan; lo cargado no se toca.
+- **Renglón en cero que ya se pidió** (`PEDIDO`/`RECIBIDO`) o con movimiento en
+  Finanzas: no lo quita "Quitar los que están en cero" ni se le puede cambiar la
+  variante. Hay que resolverlo a mano.
+- **Ítem duplicado en el catálogo**: "Precintos de seguridad c/bloqueo de llave"
+  está dos veces con el mismo nombre. El script usa el más usado en obras y lo
+  avisa; unificarlos queda pendiente.
+- **Catálogo local atrasado**: al 7-oct el local tenía 293 ítems contra 307 en
+  prod (faltaban los caños flexibles). Por eso existe `--skip-missing`.
 
 ---
 

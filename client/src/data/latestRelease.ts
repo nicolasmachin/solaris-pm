@@ -42,6 +42,15 @@ export const LATEST_RELEASE: Release = {
         "Las categorías del catálogo siguen siendo del administrador: definen la estructura del catálogo y de los PDF.",
       ],
     },
+    {
+      title: "Una sola plantilla de materiales: la lista se arma completando cantidades",
+      items: [
+        'Las tres plantillas por tipo de conexión se reemplazan por una sola, "Base", con todo lo que va en casi todas las obras y la cantidad en cero.',
+        'Lo que cambia según la obra se resuelve en el mismo renglón con el botón ⇄: diferencial de 2 o 4 polos, caño de 1" o 1¼", medidor mono o trifásico.',
+        "La lista se ve por secciones, cada una con su + Agregar que abre el catálogo directo ahí.",
+        "Los materiales en cero se resaltan, no salen en el PDF ni en compras, y hay un botón para quitar los que no van en esa obra.",
+      ],
+    },
   ],
 };
 

@@ -84,8 +84,9 @@ async function buildConsolidation(projectIds: string[]): Promise<{
       ubicacion: `${p.locationCity}, ${p.locationProvince}`,
     }));
 
+  // Los renglones en cero (todavía sin completar) no se compran.
   const materials = await prisma.projectMaterial.findMany({
-    where: { projectId: { in: projectIds } },
+    where: { projectId: { in: projectIds }, quantity: { gt: 0 } },
     include: {
       materialItem: {
         include: {

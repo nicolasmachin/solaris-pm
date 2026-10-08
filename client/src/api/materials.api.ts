@@ -104,6 +104,8 @@ export const createProjectMaterial = (projectId: string, body: {
 
 export const patchProjectMaterial = (projectId: string, materialId: string, body: Partial<{
   quantity: number;
+  /** Cambiar por otra variante del mismo grupo del catálogo (solo pendientes). */
+  materialItemId: string;
   unitPrice: number;
   moneda: Moneda;
   ivaTasa: number;
@@ -113,6 +115,10 @@ export const patchProjectMaterial = (projectId: string, materialId: string, body
   crossed: boolean;
   rowColor: 'yellow' | 'green' | 'blue' | 'purple' | 'red' | 'gray' | null;
 }>) => apiClient.patch<ProjectMaterial>(`/api/projects/${projectId}/materials/${materialId}`, body).then(r => r.data);
+
+// Quita los renglones que quedaron en cero (pendientes y sin movimiento).
+export const removeZeroProjectMaterials = (projectId: string) =>
+  apiClient.post<{ eliminados: number }>(`/api/projects/${projectId}/materials/remove-zero`).then(r => r.data);
 
 export const deleteProjectMaterial = (projectId: string, materialId: string) =>
   apiClient.delete<{ success: true; previstoEliminado: boolean }>(`/api/projects/${projectId}/materials/${materialId}`).then(r => r.data);

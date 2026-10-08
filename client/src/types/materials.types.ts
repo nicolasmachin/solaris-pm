@@ -113,7 +113,12 @@ export interface ProjectMaterial {
     nombre: string;
     unidad: string;
     categoryId: string;
-    category: { id: string; nombre: string; orden: number };
+    category: {
+      id: string;
+      nombre: string;
+      orden: number;
+      parent?: { id: string; nombre: string; orden: number } | null;
+    };
   };
   supplier?: { id: string; nombre: string };
   movement?: { id: string; status: string; descripcion: string };

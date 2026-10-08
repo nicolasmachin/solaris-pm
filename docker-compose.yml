@@ -91,7 +91,10 @@ services:
     depends_on:
       - server
     environment:
-      VITE_API_URL: http://localhost:4000
+      # Vacío = el navegador pide /api y /auth al 5173 y Vite los pasa al server
+      # (ver vite.config.ts). Con el desarrollo en la VPS solo hay que reenviar el 5173.
+      VITE_API_URL: ""
+      API_PROXY_TARGET: http://server:4000
     ports:
       - "5173:5173"
     volumes:
